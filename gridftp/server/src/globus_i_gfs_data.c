@@ -759,7 +759,11 @@ globus_l_gfs_data_authorize(
 
             do
             {
+#ifdef HAVE_FGETPWENT
                 pwent = fgetpwent(pw);
+#else
+                pwent = NULL;
+#endif
             }
             while(pwent != NULL && 
                 strcmp(pwent->pw_name, session_info->username) != 0);
