@@ -3292,6 +3292,13 @@ globus_l_ftp_client_parse_feat(
 	            GLOBUS_FTP_CLIENT_FEATURE_SIZE,
 	            GLOBUS_FTP_CLIENT_TRUE);
 	    }
+	    else if(strncmp(feature_label, "MLST", 4) == 0)
+	    {
+	        globus_i_ftp_client_feature_set(
+	            target->features,
+	            GLOBUS_FTP_CLIENT_FEATURE_MLST,
+	            GLOBUS_FTP_CLIENT_TRUE);
+	    }
 	    p = eol + 2;
 
 	}

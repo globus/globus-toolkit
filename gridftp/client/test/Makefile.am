@@ -76,6 +76,7 @@ test_PROGRAMS= \
 	globus-ftp-client-extended-get-caching-test \
 	globus-ftp-client-extended-put-test \
 	globus-ftp-client-extended-transfer-test \
+	globus-ftp-client-feat-test \
 	globus-ftp-client-lingering-get-test \
 	globus-ftp-client-mkdir-test \
 	globus-ftp-client-modification-time-test \
@@ -191,6 +192,9 @@ globus_ftp_client_cache_all_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_exist_test_SOURCES = globus_ftp_client_exist_test.c $(LibHeaders)
 globus_ftp_client_exist_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_feat_test_SOURCES = globus_ftp_client_feat_test.c $(LibHeaders)
+globus_ftp_client_feat_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_modification_time_test_SOURCES = globus_ftp_client_modification_time_test.c $(LibHeaders)
 globus_ftp_client_modification_time_test_LDFLAGS = $(GPT_LDFLAGS)
