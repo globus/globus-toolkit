@@ -267,6 +267,8 @@ gram_job_request(char * gatekeeper_url,
     char *                       gatekeeper_host;
 	char *                       gatekeeper_princ;
     unsigned short               gatekeeper_port = 0;
+	char * 						 auth_msg_buf;
+	int 						 auth_msg_buf_size;
     nexus_byte_t                 type;
     nexus_byte_t *               contact_msg_buffer;
     nexus_byte_t *               tmp_buffer;
@@ -332,7 +334,10 @@ gram_job_request(char * gatekeeper_url,
     nexus_user_put_int(&tmp_buffer, &count, 1);
     nexus_user_put_char(&tmp_buffer, callback_url, strlen(callback_url));
     nexus_user_put_startpoint_transfer(&tmp_buffer, &reply_sp, 1);
-  
+
+#if 1 
+	if (strncmp(gatekeeper_url,"x-nexus://",10) == 0) 
+	{
     if (nexus_split_url(gatekeeper_url,
                         &gatekeeper_host,
                         &gatekeeper_port,
@@ -341,6 +346,8 @@ gram_job_request(char * gatekeeper_url,
         fprintf(stderr, " invalid url.\n");
         return (1);
     }
+
+
 	/* for testing, will get the gatekeeper_princ from the
 	 * gatekeeper_host. Use ! as a seperator
 	 */
@@ -350,7 +357,32 @@ gram_job_request(char * gatekeeper_url,
 			gatekeeper_princ++;
 		} else
 		 gatekeeper_princ = gatekeeper_host;
+	} else
+#endif
 
+    {
+	   char *cp, *sp, *qp;
+
+		if ((cp = strdup(gatekeeper_url)))
+		{
+		  gatekeeper_host = gatekeeper_princ = cp;
+		  if ((sp = strchr(cp,':')))
+		  {
+		    *sp++ = '\0';
+	        if ((qp = strchr(sp, ':')))
+		    {
+		      *qp++ = '\0';
+			  gatekeeper_princ = qp;
+		    }
+		    gatekeeper_port = atoi(sp);
+		  } else
+			gatekeeper_port = 754;
+		} else
+		{
+		  fprintf(stderr,"strdup failed for gatekeeper_url");
+		  return(0);
+		}
+	}
 
     /* Connecting to the gatekeeper.
      */
@@ -383,7 +415,19 @@ gram_job_request(char * gatekeeper_url,
         return (GRAM_ERROR_AUTHORIZATION);
     }
 
-    printf("Authentication complete\n");
+	if (grami_ggg_get_token_nexus((void *) &gatekeeper_fd,
+			 (void **) &auth_msg_buf, &auth_msg_buf_size))
+    {
+	   fprintf(stderr, "Authoirization message not received");
+	   return (GRAM_ERROR_AUTHORIZATION);
+    }
+	if (auth_msg_buf_size > 1 )
+	{
+		fprintf(stderr, auth_msg_buf);
+		return (GRAM_ERROR_AUTHORIZATION);
+	}
+
+    printf("Authentication/authorization complete\n");
 #else
     printf("WARNING: No authentication being performed\n");
 #endif /* GSS_AUTHENTICATION */
