@@ -124,8 +124,6 @@ typedef struct globus_l_xio_gssapi_ftp_handle_s
     globus_xio_iovec_t                  auth_read_iov;
     globus_xio_iovec_t                  auth_write_iov;
     globus_xio_iovec_t *                read_iov;
-    globus_xio_iovec_t *                write_iov;
-    globus_size_t                       write_iov_size;
 
     globus_byte_t *                     write_buffer;
     globus_size_t                       write_buffer_length;
@@ -2017,7 +2015,7 @@ globus_l_xio_gssapi_ftp_write_cb(
 
         globus_xio_driver_finished_write(op, result, nbytes);
 
-        globus_free(handle->write_iov[0].iov_base);
+        globus_free(handle->auth_write_iov.iov_base);
     }
     globus_mutex_unlock(&handle->mutex);
 
@@ -2081,7 +2079,7 @@ globus_l_xio_gssapi_ftp_write(
                 (handle->write_buffer_length+length)*2;
             handle->write_buffer = globus_libc_realloc(
                 handle->write_buffer, handle->write_buffer_length);
-            globus_assert(handle->write_buffer != NULL);
+            globus_assert(handle->write_buffer != NULL); /* XXX remove this */
         }
         GlobusXIOUtilIovSerialize(handle->write_buffer, iovec, iovec_count);
 
@@ -2095,13 +2093,13 @@ globus_l_xio_gssapi_ftp_write(
         }
 
         /* deconstipation */
-        handle->write_iov = (globus_xio_iovec_t *) iovec;
         /* if the server is not yet open
             really just a special case for 220 message */
         if(handle->state != GSSAPI_FTP_STATE_OPEN && !handle->client)
         {
-            handle->write_iov[0].iov_len = length;
-            handle->write_iov[0].iov_base = handle->write_buffer;
+            handle->auth_write_iov.iov_len = length;
+            handle->auth_write_iov.iov_base = 
+                strdup((char*)handle->write_buffer);
 
             cb = globus_l_xio_gssapi_ftp_user_server_write_cb;
         }
@@ -2116,14 +2114,14 @@ globus_l_xio_gssapi_ftp_write(
                 goto err;
             }
             
-            handle->write_iov[0].iov_base = encoded_buf;
-            handle->write_iov[0].iov_len = globus_libc_strlen(encoded_buf);
+            handle->auth_write_iov.iov_base = encoded_buf;
+            handle->auth_write_iov.iov_len = globus_libc_strlen(encoded_buf);
             cb = globus_l_xio_gssapi_ftp_write_cb;
         }
 
         res = globus_xio_driver_pass_write(
             op, 
-            handle->write_iov, 
+            &handle->auth_write_iov, 
             1,
             length,
             cb,
@@ -2163,7 +2161,7 @@ globus_l_xio_gssapi_ftp_client_read_cb(
     int                                 ctr;
     int                                 ndx;
     int                                 tmp_i;
-    globus_byte_t *                     out_buffer;
+    globus_byte_t *                     out_buffer = NULL;
     globus_size_t                       out_length;
     char *                              send_buffer;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
