@@ -244,7 +244,7 @@ collate_packages() {
 		tar czf package-output/$f.tar.gz $f
 	done
 
-	$GPT_LOCATION/sbin/gpt-bundle -srcdir=package-output -all -exclude=mmjfs -exclude=gt3_hostinfo
+	$GPT_LOCATION/sbin/gpt-bundle -srcdir=package-output -all -exclude=mmjfs -exclude=gt3_hostinfo -exclude=sdb
 
 	cp fait_accompli/* package-output
 	cp install-alpha2-src package-output
