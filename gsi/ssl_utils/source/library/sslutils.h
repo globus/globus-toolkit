@@ -222,6 +222,19 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 #define PRXYERR_R_DELEGATE_CREATE		141
 #define PRXYERR_R_BUFFER_TOO_SMALL		142
 
+/* constants for gsi error messages 
+ *  this information is kept internally by the
+ *  proxy_cred_desc structure
+ */
+
+#define CRED_TYPE_PERMANENT                     0
+#define CRED_TYPE_PROXY                         1
+#define CRED_OWNER_USER                         0  
+#define CRED_OWNER_SERVER                       1 
+
+
+
+
 /**********************************************************************
                                Type definitions
 **********************************************************************/
@@ -236,6 +249,8 @@ typedef struct proxy_cred_desc_struct {
 	char					 *certdir ;
 	char					 *certfile;
 	int						 num_null_enc_ciphers;
+	int                  	type; /*  for gsi err messages */
+  	int 			owner; /* for gsi error messages */
 }  proxy_cred_desc;
 
 /* proxy_verify_ctx_desc - common to all verifys */
