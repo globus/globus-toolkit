@@ -40,10 +40,8 @@ import org.apache.commons.logging.LogFactory;
 public class JobStateMonitor {
     private static Log logger = LogFactory.getLog(JobStateMonitor.class);
 
-    /** Reference to the runtime used to start the SEG process */
-    private static Runtime runtime = Runtime.getRuntime();
     /** Reference to the SEG-monitoring thread. */
-    private Seg seg;
+    private SchedulerEventGenerator seg;
     /**
      * JobStateChangeListener which will be notified of job state
      * changes for registered job IDs.
@@ -136,11 +134,12 @@ public class JobStateMonitor {
         this.listener = listener;
         this.recoveryListener = recoveryListener;
         this.mapping = new java.util.HashMap();
-        this.cachedEvents = new java.util.TreeSet(SegEvent.getComparator());
+        this.cachedEvents = new java.util.TreeSet(SchedulerEvent.getComparator());
         this.cacheFlushTask = null;
         this.recoveryTask = null;
 
-        this.seg = new Seg(segPath, userName, schedulerName); 
+        this.seg = new SchedulerEventGenerator(segPath, userName,
+                schedulerName, this); 
     }
 
     /**
@@ -171,17 +170,9 @@ public class JobStateMonitor {
             java.util.List events = getCachedEvents(localId);
 
             if (events != null) {
-                SegEvent e;
-
-                java.util.Iterator eventIt = events.iterator();
-
-                while (eventIt.hasNext()) {
-                    e = (SegEvent) eventIt.next();
-
-                    logger.debug("Replaying event: " + e);
-
-                    dispatchEvent(resourceKey, e);
-                }
+                DispatcherThread t = new DispatcherThread(resourceKey,
+                        events);
+                t.start();
             }
         }
         logger.debug("Exiting registerJobID");
@@ -212,10 +203,15 @@ public class JobStateMonitor {
             timestamp = new java.util.Date();
         }
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("starting seg with timestamp " + timestamp.toString());
+        }
+
         seg.start(timestamp);
         lastEventTimestamp = timestamp;
 
         if (cacheFlushTask == null) {
+            logger.debug("creating flush task");
             cacheFlushTask = new java.util.TimerTask() {
                 public void run() {
                     flushCache();
@@ -227,6 +223,7 @@ public class JobStateMonitor {
         }
 
         if (recoveryTask == null && recoveryListener != null) {
+            logger.debug("creating recovery update task");
             recoveryTask = new java.util.TimerTask() {
                 public void run() {
                     updateRecoveryInfo();
@@ -264,45 +261,6 @@ public class JobStateMonitor {
         logger.debug("Exiting stop()");
     }
 
-    /**
-     * Call the jobStateChange callback for a SEG event.
-     *
-     * @param resourceKey
-     *     Resource key associated with the job ID in the event.
-     * @param e
-     *     Event containing the job state change information.
-     */
-    private void dispatchEvent(ResourceKey resourceKey, SegEvent e)
-    {
-        logger.debug("Entering dispatchEvent()");
-
-        synchronized (mapping) {
-            logger.debug("dispatching " + e.toString());
-            listener.jobStateChanged(resourceKey, e.getTimeStamp(),
-                    e.getState(), e.getExitCode());
-            synchronized (cachedEvents) {
-                if (cachedEvents.isEmpty()) {
-                    if (recoveryTask != null) {
-                        synchronized (recoveryTask) {
-                            lastEventTimestamp = e.getTimeStamp();
-                        }
-                    }
-                }
-            }
-        }
-        logger.debug("Exiting dispatchEvent()");
-    }
-
-    private void cacheEvent(SegEvent e)
-    {
-        logger.debug("Entering cacheEvent()");
-        synchronized (cachedEvents) {
-            logger.debug("caching " + e.toString());
-            cachedEvents.add(e);
-        }
-        logger.debug("Exiting cacheEvent()");
-    }
-
     private void flushCache()
     {
         logger.debug("Entering flushCache()");
@@ -318,7 +276,7 @@ public class JobStateMonitor {
             java.util.Date d = null;
 
             while (i.hasNext()) {
-                d = ((SegEvent) i.next()).getTimeStamp();
+                d = ((SchedulerEvent) i.next()).getTimeStamp();
 
                 if (d.compareTo(flushDate) <= 0) {
                     /* Remove older than MAX_CACHE_AGE */
@@ -368,7 +326,7 @@ public class JobStateMonitor {
      * @param localId
      *     Job identifier to look up.
      *
-     * @return Returns a list of SegEvents associated with the Job ID.
+     * @return Returns a list of SchedulerEvents associated with the Job ID.
      */
     private java.util.List getCachedEvents(String localId)
     {
@@ -379,11 +337,11 @@ public class JobStateMonitor {
             java.util.Iterator i = cachedEvents.iterator();
 
             while (i.hasNext()) {
-                SegEvent e = (SegEvent) i.next();
+                SchedulerEvent e = (SchedulerEvent) i.next();
 
                 if (e.getLocalId().equals(localId)) {
-                    i.remove();
-
+                    logger.debug("adding " + e.toString()
+                            + "to list to replay");
                     result.add(e);
                 }
             }
@@ -417,208 +375,95 @@ public class JobStateMonitor {
     }
 
     /**
-     * Scheduler Event Generator monitor thread.
-     * 
-     * The Seg object creates a Scheduler Event Generator process to 
-     * monitor job state changes associated with a particular scheduler.
-     *
-     * The Seg object will repeatedly start the SEG process if it terminates
-     * prematurely, until its shutdown() method is called.
+     * Store an event in the JobStateMonitor's cache
      */
-    private class Seg extends Thread {
-        /** Path to the SEG executable */
-        private java.io.File path;
-        /**
-         * Username of the account to run the SEG as.
-         *
-         * <b>This is currently ignored.</b>
-         */
-        private String userName;
-        /** Path to the SEG executable */
-        private String schedulerName;
-        /** SEG Process handle */
-        private Process proc;
-        /**
-         * Flag indicating that the SEG process should no longer be
-         * restarted and the thread should terminate.
-         */
-        private boolean shutdownCalled;
-        /**
-         * Timestamp of last event we've received from a SEG.
-         */
-        private java.util.Date timeStamp;
-
-        /**
-         * SEG constructor.
-         *
-         * @param path
-         *     Path to the Scheduler Event Generator executable.
-         * @param userName
-         *     Username to sudo(8) to start the SEG.
-         * @param schedulerName
-         *     Name of the scheduler SEG module to use (fork, lsf, etc).
-         */
-        public Seg(java.io.File path, String userName,
-                String schedulerName) 
-        {
-            this.path = path;
-            this.userName = userName;
-            this.schedulerName = schedulerName;
-            this.proc = null;
-            this.shutdownCalled = false;
-            this.timeStamp = null;
+    private void cacheEvent(SchedulerEvent e)
+    {
+        logger.debug("Entering cacheEvent()");
+        synchronized (cachedEvents) {
+            logger.debug("caching " + e.toString());
+            cachedEvents.add(e);
         }
+        logger.debug("Exiting cacheEvent()");
+    }
 
-        /**
-         * Start and monitor a SEG process.
-         *
-         * When the SEG terminates by itself for whatever reason, this thread
-         * will restart it using the timestamp of the last item which was in
-         * the event cache.
-         */
-        public void run() {
-            try {
-                while (startSegProcess(timeStamp)) {
-                    java.io.BufferedReader stdout;
-                    String input; 
+    /**
+     * Look up the localId to ResourceKey mapping for a specified id.
+     */
+    private ResourceKey getMapping(String localId)
+    {
+        synchronized (mapping) {
+            return (ResourceKey) mapping.get(localId);
+        }
+    }
 
-                    stdout = new java.io.BufferedReader(
-                            new java.io.InputStreamReader(
-                                    proc.getInputStream()));
-                    while ((input = stdout.readLine()) != null) {
-                        java.util.StringTokenizer tok =
-                                new java.util.StringTokenizer(input, ";");
-                        int tokenCount = tok.countTokens();
-                        String tokens[] = new String[tok.countTokens()];
+    void addEvent(SchedulerEvent e) {
+        String localId = e.getLocalId();
 
-                        for (int i = 0; i < tokens.length; i++) {
-                            tokens[i] = tok.nextToken();
-                        }
+        ResourceKey mapping = getMapping(localId);
 
-                        if (tokens[0].equals("001")) {
-                            // Job state change message
-                            if (tokens.length < 5) {
-                                // Invalid message
-                            }
+        if (mapping != null) {
+            dispatchEvent(mapping, e);
+        } else {
+            cacheEvent(e);
+        }
+    }
 
-                            StateEnumeration se;
+    /**
+     * Call the jobStateChange callback for a SEG event.
+     *
+     * @param resourceKey
+     *     Resource key associated with the job ID in the event.
+     * @param e
+     *     Event containing the job state change information.
+     */
+    void dispatchEvent(ResourceKey resourceKey, SchedulerEvent e)
+    {
+        logger.debug("Entering dispatchEvent()");
 
-                            switch (Integer.parseInt(tokens[3])) {
-                                case 1:
-                                    se = StateEnumeration.Pending;
-                                    break;
-                                case 2:
-                                    se = StateEnumeration.Active;
-                                    break;
-                                case 4:
-                                    se = StateEnumeration.Failed;
-                                    break;
-                                case 8:
-                                    se = StateEnumeration.Done;
-                                    break;
-                                case 16:
-                                    se = StateEnumeration.Suspended;
-                                    break;
-                                case 32:
-                                    se = StateEnumeration.Unsubmitted;
-                                    break;
-                                default:
-                                    se = null;
-                            }
+        synchronized (mapping) {
+            logger.debug("dispatching " + e.toString());
+            listener.jobStateChanged(resourceKey, e.getTimeStamp(),
+                    e.getState(), e.getExitCode());
 
-                            SegEvent e = new SegEvent(
-                                new java.util.Date(
-                                    Long.parseLong(tokens[1])*1000),
-                                tokens[2],
-                                se,
-                                Integer.parseInt(tokens[4]));
-
-                            timeStamp = e.getTimeStamp();
-
-                            synchronized (mapping) {
-                                ResourceKey resourceKey = 
-                                        (ResourceKey) mapping.get(tokens[2]);
-
-                                if (resourceKey != null) {
-                                    dispatchEvent(resourceKey, e);
-                                } else {
-                                    cacheEvent(e);
-                                }
-                            }
-                        } else {
-                            // Unknown message type
+            synchronized (cachedEvents) {
+                /* If called from a DispatcherThread, the event may
+                 * be in the cache. If so, when we remove it the cached
+                 * may be empty
+                 */
+                if (cachedEvents.remove(e) && cachedEvents.isEmpty()) {
+                    if (recoveryTask != null) {
+                        synchronized (recoveryTask) {
+                            lastEventTimestamp = e.getTimeStamp();
                         }
                     }
                 }
-            } catch (java.io.IOException ioe) {
             }
         }
+        logger.debug("Exiting dispatchEvent()");
+    }
 
-        /**
-         * Start a scheduler event generator process.
-         * 
-         * This function is called to start a new scheduler event generator
-         * process. This process will monitor the output of the scheduler
-         * and send this object job state change notifications via the
-         * processes's standard output stream.
-         *
-         * If the shutdown method of this object has been called, then the
-         * process will not be started.
-         *
-         * @retval true New process started.
-         * @reval false Did not create a new seg process.
-         */
-        private synchronized boolean startSegProcess(java.util.Date timeStamp)
-                throws java.io.IOException
+    private class DispatcherThread extends Thread {
+        private ResourceKey resourceKey;
+        private java.util.List events;
+
+        public DispatcherThread(ResourceKey resourceKey,
+                java.util.List events)
         {
-            proc = null;
+            super();
 
-            if (!shutdownCalled) {
-                String [] cmd;
-
-                // TODO: sudo integration here
-                if (timeStamp != null) {
-                    cmd = new String[] {
-                        path.toString(),
-                        "-s", schedulerName,
-                        "-t", Long.toString(
-                                timeStamp.getTime() / 1000)};
-                } else {
-                    cmd = new String[] {
-                        path.toString(), "-s", schedulerName
-                    };
-                }
-                proc = runtime.exec(cmd);
-                return true;
-            } else {
-                return false;
-            }
+            this.resourceKey = resourceKey;
+            this.events = events;
         }
 
-        /**
-         * Tell a SEG process to terminate.
-         * 
-         * This funcName
-         * by this object and will cause the thread associated with this
-         * object to terminate once all input has been processed.
-         */
-        public synchronized void shutdown()
-                throws java.io.IOException
-        {
-            if (shutdownCalled) {
-                return;
-            } else {
-                if (proc != null) {
-                    proc.getOutputStream().close();
-                }
-                shutdownCalled = true;
-            }
-        }
-        
-        public void start(java.util.Date timeStamp) {
-            this.timeStamp = timeStamp;
+        public void run() {
+            java.util.Iterator i = events.iterator();
 
-            start();
+            while (i.hasNext()) {
+                SchedulerEvent e = (SchedulerEvent) i.next();
+
+                dispatchEvent(resourceKey, e);
+            }
         }
     }
 }
