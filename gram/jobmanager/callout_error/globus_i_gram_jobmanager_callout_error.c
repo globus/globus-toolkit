@@ -30,7 +30,7 @@ static int globus_l_gram_jobmanager_callout_error_deactivate(void);
  */
 globus_module_descriptor_t globus_i_gram_jobmanager_callout_error_module =
 {
-    "globus_sysconfig",
+    "globus_gram_jobmanager_callout_error",
     globus_l_gram_jobmanager_callout_error_activate,
     globus_l_gram_jobmanager_callout_error_deactivate,
     GLOBUS_NULL,
