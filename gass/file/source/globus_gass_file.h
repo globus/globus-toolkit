@@ -25,6 +25,7 @@ CVS Information:
 #endif
 
 #include <stdio.h>
+#include "globus_gass_common.h"
 
 EXTERN_C_BEGIN
 
