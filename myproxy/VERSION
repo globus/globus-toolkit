@@ -1,8 +1,18 @@
-This is MyProxy v0.6.0 22 Mar 2004
+This is MyProxy v0.6.1 30 Mar 2004
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.6.1 30 Mar 2004 (GPT package version 1.13)
+  - fixed bug where myproxy-server would always delegate new-style
+    proxy credentials from end-entity credentials in repository.
+    myproxy-server now respects proxy type in certificate request
+    when end-entity credentials are stored in repository.
+    however, if repository contains proxy credentials, the server will
+    delegate a proxy of the same type as stored in the repository
+    irrespective of the certificate request, because new-style
+    and old-style proxies can't be mixed.
+
 v0.6.0 22 Mar 2004 (GPT package version 1.12)
   - added max_proxy_lifetime server configuration option for limiting
     the lifetime of retrieved credentials
