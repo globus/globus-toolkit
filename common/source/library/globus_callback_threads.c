@@ -1106,9 +1106,9 @@ globus_callback_space_attr_set_behavior(
             "globus_callback_space_attr_set_behavior", "attr");
     }
     
-    if(behavior != GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE ||
-        behavior != GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED ||
-        behavior != GLOBUS_CALLBACK_SPACE_BEHAVIOR_THREADED)
+    if(!(behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE ||
+        behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED ||
+        behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_THREADED))
     {
         return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
             "globus_callback_space_attr_set_behavior", "behavior");
