@@ -8,9 +8,6 @@ Description:
 #ifndef _OLDGAA_API_H
 #define _OLDGAA_API_H_
 
-#ifndef HAVE_SYS_TIME_H
-#define HAVE_SYS_TIME_H 1
-#endif
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus
@@ -28,7 +25,6 @@ EXTERN_C_BEGIN
 /**********************************************************************
                              Include header files
 **********************************************************************/
- 
 #ifndef NO_GLOBUS_CONFIG_H
 #include <globus_config.h>
 #endif

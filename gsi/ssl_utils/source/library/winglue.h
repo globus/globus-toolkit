@@ -27,16 +27,16 @@ extern "C" {
 
 #include <windows.h>
 
-#if 0
+#undef X509_NAME
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "ssl.h"
-#include "err.h"
-#include "bio.h"
-#include "pem.h"
-#include "x509.h"
-#include "stack.h"
-#endif
+#include "openssl/ssl.h"
+#include "openssl/err.h"
+#include "openssl/bio.h"
+#include "openssl/pem.h"
+#include "openssl/x509.h"
+#include "openssl/stack.h"
 /**********************************************************************
                                Define constants
 **********************************************************************/
