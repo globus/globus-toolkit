@@ -852,7 +852,7 @@ globus_gridftp_server_finished_transfer(
                 op);
         }
         
-        if(result != GLOBUS_SUCCESS || op->sending)
+        if(result != GLOBUS_SUCCESS || !op->sending)
         {
             /* XXX mode s only */
             op->event_callback(
