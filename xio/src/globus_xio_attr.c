@@ -1,6 +1,8 @@
 #include "globus_common.h"
 #include "globus_i_xio.h"
 
+globus_list_t *                         globus_i_xio_outstanding_attrs_list;
+
 /*******************************************************************
  *                     internal functions
  ******************************************************************/
@@ -58,6 +60,12 @@ globus_xio_attr_init(
         GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE);
     xio_attr->max = GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE;
     xio_attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    
+    globus_mutex_lock(&globus_i_xio_mutex);
+    {
+        globus_list_insert(&globus_i_xio_outstanding_attrs_list, xio_attr);
+    }
+    globus_mutex_unlock(&globus_i_xio_mutex);
     
     *attr = xio_attr;
 
@@ -143,17 +151,37 @@ globus_xio_attr_destroy(
         goto err;
     }
     
-    for(ctr = 0; ctr < attr->ndx; ctr++)
+    globus_mutex_lock(&globus_i_xio_mutex);
     {
-        /* report the last seen error but be sure to attempt to clean 
-            them all */
-        tmp_res = attr->entry[ctr].driver->attr_destroy_func(
-                attr->entry[ctr].driver_data);
-        if(tmp_res != GLOBUS_SUCCESS)
+        if(!attr->unloaded)
         {
-            res = tmp_res;
+            for(ctr = 0; ctr < attr->ndx; ctr++)
+            {
+                GlobusXIODebugPrintf(
+                    GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
+                    ("[globus_xio_attr_destroy]: destroying attr @0x%x "
+                        "driver @0x%x, %s\n", 
+                    attr,
+                    attr->entry[ctr].driver,
+                    attr->entry[ctr].driver->name));
+                                
+                /* report the last seen error but be sure to attempt to clean 
+                    them all */
+                tmp_res = attr->entry[ctr].driver->attr_destroy_func(
+                        attr->entry[ctr].driver_data);
+                if(tmp_res != GLOBUS_SUCCESS)
+                {
+                    res = tmp_res;
+                }
+            }
+            
+            globus_list_remove(
+                &globus_i_xio_outstanding_attrs_list,
+                globus_list_search(
+                    globus_i_xio_outstanding_attrs_list, attr));
         }
     }
+    globus_mutex_unlock(&globus_i_xio_mutex);
     
     globus_callback_space_destroy(attr->space);
     globus_free(attr->entry);
@@ -251,7 +279,13 @@ globus_xio_attr_copy(
             goto err;
         }
     }
-
+    
+    globus_mutex_lock(&globus_i_xio_mutex);
+    {
+        globus_list_insert(&globus_i_xio_outstanding_attrs_list, xio_attr_dst);
+    }
+    globus_mutex_unlock(&globus_i_xio_mutex);
+    
     *dst = xio_attr_dst;
 
     GlobusXIODebugExit();

@@ -386,10 +386,11 @@ void
 globus_i_xio_close_handles(
     globus_xio_driver_t                 driver)
 {
-    globus_list_t *                     list;
     globus_list_t *                     tmp_list;
     globus_list_t *                     c_handles = NULL;
     globus_xio_handle_t                 handle;
+    globus_xio_server_t                 server;
+    globus_xio_attr_t                   attr;
     globus_bool_t                       found;
     int                                 ctr;
     globus_i_xio_monitor_t              monitor;
@@ -397,17 +398,22 @@ globus_i_xio_close_handles(
     GlobusXIOName(globus_i_xio_close_handles);
 
     GlobusXIODebugInternalEnter();
-
+    
+    GlobusXIODebugPrintf(
+        GLOBUS_XIO_DEBUG_INFO, 
+        ("[globus_i_xio_close_handles]: closing driver @0x%x, %s\n", 
+        driver, driver->name));
+        
     globus_i_xio_monitor_init(&monitor);
 
     globus_mutex_lock(&globus_i_xio_mutex);
     {
+        /* close all open handles */
         tmp_list = globus_list_copy(globus_i_xio_outstanding_handles_list);
-        for(list = tmp_list;
-            !globus_list_empty(list);
-            list = globus_list_rest(list))
+        while(!globus_list_empty(tmp_list))
         {
-            handle = (globus_xio_handle_t) globus_list_first(list);
+            handle = (globus_xio_handle_t) 
+                globus_list_remove(&tmp_list, tmp_list);
 
             globus_assert(handle->context != NULL);
             globus_mutex_lock(&handle->context->mutex);
@@ -419,6 +425,14 @@ globus_i_xio_close_handles(
                     ctr < handle->context->stack_size && !found; 
                     ctr++)
                 {
+                    GlobusXIODebugPrintf(
+                        GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
+                        ("[globus_i_xio_close_handles]: checking handle @0x%x "
+                            "driver @0x%x, %s\n", 
+                        handle,
+                        handle->context->entry[ctr].driver,
+                        handle->context->entry[ctr].driver->name));
+        
                     /* cancel on al handles */
                     if(driver == NULL || 
                         handle->context->entry[ctr].driver == driver)
@@ -471,14 +485,94 @@ globus_i_xio_close_handles(
             }
             globus_mutex_unlock(&handle->context->mutex);
         }
+        
+        /* close all open servers */
+        tmp_list = globus_list_copy(globus_i_xio_outstanding_servers_list);
+        while(!globus_list_empty(tmp_list))
+        {
+            server = (globus_xio_server_t) 
+                globus_list_remove(&tmp_list, tmp_list);
+            
+            globus_mutex_lock(&server->mutex);
+            {
+                globus_assert(server->sd_monitor == NULL);
+                found = GLOBUS_FALSE;
+                for(ctr = 0; 
+                    ctr < server->stack_size && !found; 
+                    ctr++)
+                {
+                    if(driver == NULL || 
+                        server->entry[ctr].driver == driver)
+                    {
+                        found = GLOBUS_TRUE;
+                        GlobusXIODebugPrintf(
+                            GLOBUS_XIO_DEBUG_INFO, 
+                            ("[globus_i_xio_close_handles] : "
+                            "will wait on server @0x%x state=%d\n", 
+                            server, server->state));
+                            
+                        globus_list_remove(
+                            &globus_i_xio_outstanding_servers_list,
+                            globus_list_search(
+                                globus_i_xio_outstanding_servers_list, server));
+                        
+                        server->sd_monitor = &monitor;
+                        monitor.count++;
+                        
+                        if(server->state != 
+                            GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING &&
+                            server->state != GLOBUS_XIO_SERVER_STATE_CLOSING &&
+                            server->state != GLOBUS_XIO_SERVER_STATE_CLOSED)
+                        {
+                            res = globus_i_xio_server_close(
+                                server, NULL, NULL);
+                            if(res != GLOBUS_SUCCESS)
+                            {
+                                monitor.count--;
+                            }
+                        }
+                    }
+                }
+            }
+            globus_mutex_unlock(&server->mutex);
+        }
+        
+        /* destroy the internals of all attrs */
+        tmp_list = globus_list_copy(globus_i_xio_outstanding_attrs_list);
+        while(!globus_list_empty(tmp_list))
+        {
+            attr = (globus_xio_attr_t)
+                globus_list_remove(&tmp_list, tmp_list);
+            for(ctr = 0;
+                ctr < attr->ndx && 
+                    driver != NULL && 
+                    attr->entry[ctr].driver != driver;
+                ctr++)
+            { }
+
+            if(ctr < attr->ndx)
+            {
+                globus_list_remove(
+                    &globus_i_xio_outstanding_attrs_list,
+                    globus_list_search(
+                        globus_i_xio_outstanding_attrs_list, attr));
+                            
+                for(ctr = 0; ctr < attr->ndx; ctr++)
+                {
+                    attr->entry[ctr].driver->attr_destroy_func(
+                        attr->entry[ctr].driver_data);
+                }
+                
+                attr->unloaded = GLOBUS_TRUE;
+            }
+        }
     }
     globus_mutex_unlock(&globus_i_xio_mutex);
 
-    for(list = c_handles; 
-        !globus_list_empty(list); 
-        list = globus_list_rest(list))
+    tmp_list = c_handles;
+    while(!globus_list_empty(tmp_list))
     {
-        handle = (globus_xio_handle_t) globus_list_first(list);
+        handle = (globus_xio_handle_t) globus_list_remove(&tmp_list, tmp_list);
 
         res = globus_l_xio_register_close(handle->close_op);
         if(res != GLOBUS_SUCCESS)
@@ -572,6 +666,8 @@ globus_l_xio_activate()
     globus_cond_init(&globus_i_xio_cond, NULL);
     globus_i_xio_timer_init(&globus_i_xio_timeout_timer);
     globus_i_xio_outstanding_handles_list = NULL;
+    globus_i_xio_outstanding_servers_list = NULL;
+    globus_i_xio_outstanding_attrs_list = NULL;
     globus_l_xio_active = GLOBUS_TRUE;
     
     globus_i_xio_load_init();

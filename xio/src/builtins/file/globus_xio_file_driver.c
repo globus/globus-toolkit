@@ -25,7 +25,8 @@ GlobusDebugDefine(GLOBUS_XIO_FILE);
 
 enum globus_l_xio_error_levels
 {
-    GLOBUS_L_XIO_FILE_DEBUG_TRACE       = 1
+    GLOBUS_L_XIO_FILE_DEBUG_TRACE       = 1,
+    GLOBUS_L_XIO_FILE_DEBUG_INFO        = 2
 };
 
 static
@@ -602,6 +603,11 @@ globus_l_xio_file_write(
     
     GlobusXIOFileDebugEnter();
     
+    GlobusXIOFileDebugPrintf(
+        GLOBUS_L_XIO_FILE_DEBUG_INFO,
+        ("[%s] count=%d, 1st buflen=%d\n",
+            _xio_name, iovec_count, (int) iovec[0].iov_len));
+            
     handle = (globus_l_handle_t *) driver_specific_handle;
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)

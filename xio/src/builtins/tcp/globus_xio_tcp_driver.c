@@ -26,7 +26,8 @@ GlobusDebugDefine(GLOBUS_XIO_TCP);
 
 enum globus_l_xio_error_levels
 {
-    GLOBUS_L_XIO_TCP_DEBUG_TRACE       = 1
+    GLOBUS_L_XIO_TCP_DEBUG_TRACE       = 1,
+    GLOBUS_L_XIO_TCP_DEBUG_INFO        = 2
 };
 
 static
@@ -1996,6 +1997,12 @@ globus_l_xio_tcp_write(
     GlobusXIOName(globus_l_xio_tcp_write);
     
     GlobusXIOTcpDebugEnter();
+    
+    GlobusXIOTcpDebugPrintf(
+        GLOBUS_L_XIO_TCP_DEBUG_INFO,
+        ("[%s] count=%d, 1st buflen=%d\n",
+            _xio_name, iovec_count, (int) iovec[0].iov_len));
+
     handle = (globus_l_handle_t *) driver_specific_handle;
     attr = (globus_l_attr_t *)
         GlobusXIOOperationGetDataDescriptor(op, GLOBUS_FALSE);

@@ -30,5 +30,6 @@ caching needs to be finished
 dont do unnecessary error_get/puts
 
 reexamine build process
+load needs overhaul to prevent dangling drivers
 
 documentation

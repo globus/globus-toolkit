@@ -180,8 +180,10 @@ globus_i_xio_handle_destroy(
                         " :: signalling handle unload.\n"));
 
                 handle->sd_monitor->count--;
-                handle->sd_monitor = NULL;
-                globus_cond_signal(&globus_i_xio_cond);
+                if(handle->sd_monitor->count == 0)
+                {
+                    globus_cond_signal(&globus_i_xio_cond);
+                }
             }
             else
             {

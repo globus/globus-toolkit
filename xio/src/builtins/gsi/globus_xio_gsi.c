@@ -1691,6 +1691,8 @@ globus_l_xio_gsi_read_cb(
     
     if(handle->attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE) 
     {
+        handle->unwrapped_buffer_length = nbytes;
+        
         result = globus_l_xio_gsi_unwrapped_buffer_to_iovec(
             handle,&bytes_read);
         /* above will return result from handle */

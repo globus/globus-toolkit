@@ -284,6 +284,8 @@ typedef struct globus_i_xio_attr_ent_s
 
 typedef struct globus_i_xio_attr_s
 {
+    globus_bool_t                       unloaded;
+    
     globus_xio_timeout_callback_t       open_timeout_cb;
     globus_reltime_t                    open_timeout_period;
     globus_xio_timeout_callback_t       read_timeout_cb;
@@ -327,6 +329,8 @@ typedef struct globus_i_xio_server_entry_s
  */
 typedef struct globus_i_xio_server_s
 {
+    globus_i_xio_monitor_t *            sd_monitor;
+    
     globus_xio_server_state_t           state;
 
     globus_xio_timeout_server_callback_t accept_timeout;
@@ -633,6 +637,12 @@ globus_i_xio_blocking_destroy(
 /*************************************************************************
  *                     internal function signatures
  ************************************************************************/
+globus_result_t
+globus_i_xio_server_close(
+    globus_xio_server_t                 xio_server,
+    globus_xio_server_callback_t        cb,
+    void *                              user_arg);
+
 void
 globus_l_xio_driver_purge_read_eof(
     globus_i_xio_context_entry_t *      my_context);
@@ -822,6 +832,8 @@ globus_i_xio_driver_attr_cntl(
 
 extern globus_i_xio_timer_t             globus_i_xio_timeout_timer;
 extern globus_list_t *                  globus_i_xio_outstanding_handles_list;
+extern globus_list_t *                  globus_i_xio_outstanding_servers_list;
+extern globus_list_t *                  globus_i_xio_outstanding_attrs_list;
 extern globus_mutex_t                   globus_i_xio_mutex;
 extern globus_cond_t                    globus_i_xio_cond;
 
