@@ -432,9 +432,7 @@ globus_result_t
 globus_xio_data_descriptor_destroy(
     globus_xio_data_descriptor_t            data_desc)
 {
-    int                                     ctr;
     globus_result_t                         res = GLOBUS_SUCCESS;
-    globus_result_t                         tmp_res;
     globus_i_xio_op_t *                     op;
     globus_i_xio_handle_t *                 handle;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
