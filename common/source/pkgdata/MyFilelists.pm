@@ -72,8 +72,8 @@ sub dev_files {
 sub hdr_files {
   my $self = shift;
   $self->{'filelist'}->noflavor_headers();
-  my $list = $self->{'filelist'}->get_list();
   $self->{'filelist'}->add_package_metadata_files('hdr', 'noflavor');
+  my $list = $self->{'filelist'}->get_list();
   $self->{'filelist'}->reset();
   return $list;
 }
