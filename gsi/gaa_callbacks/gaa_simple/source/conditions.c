@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 /** @defgroup gaa_simple_conditions_static "gaa simple conditions.c static routines"
  */
@@ -621,4 +623,207 @@ gaa_simple_check_notafter(gaa_ptr		gaa,
 
     return(GAA_S_SUCCESS);
 
+}
+
+#define ARGSTEP 16
+
+/** gaa_simple_external_user_cond()
+ *
+ * @ingroup gaa_simple
+ *
+ * Run an external program with authenticated identities as command-line
+ * arguments, and report the results.
+ *
+ * @param gaa
+ *        input gaa pointer
+ * @param sc
+ *        input security context
+ * @param cond
+ *        input/output condition to check.
+ * @param valid_time
+ *        output valid time period
+ * @param req_options
+ *        input request options (passed on to any condition-evaluation
+ *        callbacks used by credential conditions)
+ * @param output_flags
+ *        output status pointer.  On success, *output_flags will be set to
+ *        the appropriate combination of GAA_COND_FLG_EVALUATED,
+ *        GAA_COND_FLG_MET, GAA_COND_FLG_ENFORCE.
+ * @param params
+ *        input, should be a (gaa_string *) pointer to a string that
+ *	  contains the name of the external program to run.
+ *
+ * @retval GAA_S_SUCCESS
+ *         external program returned 0
+ * @retval standard gaa error returns
+ *
+ * @note
+ *         This function forks and executes the program specified by the params,
+ *         with the list of identities (from the security context) as
+ *         command-line arguments; the command line is of the form
+ *	   "auth1 name1 auth2 name2 ...", where each "auth" value is the
+ *	   defining authority of an identity (e.g., X509) and each "name"
+ *         value is the corresponding principal name.  If the program's
+ *	   return value is 0, the function returns "yes"; if the execution fails
+ *         (e.g. because the specified program does not exist) or returns
+ *         a non-zero exit status, it returns "no".
+ */
+gaa_status
+gaa_simple_external_user_cond(gaa_ptr		gaa,
+			      gaa_sc_ptr	sc,
+			      gaa_condition *	cond,
+			      gaa_time_period *valid_time,
+			      gaa_list_ptr	req_options,
+			      gaa_status *    output_flags,
+			      void *		params)
+{
+    char *			progname = 0;
+    char **			argv = 0;
+    int 			argc = 0;
+    int				arglen = 0;
+    gaa_status			status = GAA_S_SUCCESS;
+    gaa_list_ptr		credlist;
+    gaa_list_entry_ptr		ent;
+    gaa_list_entry_ptr		cond_ent;
+    gaa_cred *			idcred;
+    int				addit;
+    int				ynm;
+    pid_t			pid;
+    int				childstat;
+    gaa_time_period		cred_vtp;
+    gaa_condition *		idcond;
+    gaa_time_period		vtp;
+    char			estr[1024];
+
+    gaa_set_callback_err("gaaa_simple_external_user_cond");
+    if (params == 0)
+	return(GAA_STATUS(GAA_S_CONFIG_ERR, 0));
+    if ((progname = *(char **)params) == 0)
+	return(GAA_STATUS(GAA_S_CONFIG_ERR, 0));
+    if (cond == 0 || cond->authority == 0)
+	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
+
+    *output_flags = 0;
+
+    if ((argv = (char **)malloc((arglen = ARGSTEP) * sizeof(char *))) == 0)
+    {
+	    gaa_set_callback_err("gaa_simple_external_user_cond: memory allocation error");
+	    return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
+    }
+    argv[0] = progname;
+
+    if ((status = gaa_getcreds(gaa, sc, &credlist, GAA_IDENTITY)) != GAA_S_SUCCESS)
+    {
+	gaa_set_callback_err("gaa_simple_external_user_cond: gaa_getcreds failed");
+	return(status);
+    }
+
+    for (ent = gaa_list_first(credlist); ent; ent = gaa_list_next(ent))
+	if (idcred = (gaa_cred *)gaa_list_entry_value(ent))
+	{
+	    if (idcred->principal && 
+		idcred->principal->authority &&
+		idcred->principal->value &&
+		((cond->value == 0) ||
+		 (strcmp(idcred->principal->authority, cond->value) == 0)))
+	    {
+		if (gaa_verify_cred(idcred) != GAA_S_SUCCESS)
+		    continue;
+		/*
+		 * Found a matching credential, and verified the raw cred
+		 * is still valid.  Add to argc if there are no conditions
+		 * or if all conditions are met.  Otherwise, keep looking
+		 * for another match.
+		 */
+		    
+		cred_vtp.start_time = cred_vtp.end_time = 0;
+		addit = 1;
+		ynm = GAA_C_MAYBE;
+		if (idcred->info.id_info)
+		    for (cond_ent =
+			     gaa_list_first(idcred->info.id_info->conditions);
+			 (addit && cond_ent); cond_ent = gaa_list_next(cond_ent))
+		    {
+			if (idcond = (gaa_condition *)gaa_list_entry_value(cond_ent))
+			{
+			    if ((status =
+				 gaa_check_condition(gaa, sc,
+						     idcond, &vtp,
+						     &ynm,
+						     req_options)) != GAA_S_SUCCESS)
+				addit = 0;
+			    else if (ynm != GAA_C_YES)
+				addit = 0;
+
+			    if (addit)
+			    {
+				if (vtp.start_time > cred_vtp.start_time)
+				    cred_vtp.start_time = vtp.start_time;
+				if ((vtp.end_time &&
+				     (vtp.end_time < cred_vtp.end_time)) ||
+				    (cred_vtp.end_time == 0))
+				    cred_vtp.end_time = vtp.end_time;
+			    }
+			}
+		    }
+		if (addit)
+		{
+		    if (++argc >= arglen)
+		    {
+			argv = (char **)realloc(argv,
+						((arglen += ARGSTEP) * sizeof(char *)));
+			if (argv == 0)
+			{
+			    gaa_set_callback_err("gaa_simple_external_user_cond: memory allocation error");
+			    return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
+			}
+		    }
+		    argv[argc] = idcred->principal->authority;
+		    argv[++argc] = idcred->principal->value;
+		}
+	    }
+	}
+    if (argc >= arglen)
+    {
+	argv = (char **)realloc(argv,
+				(++arglen * sizeof(char *)));
+	if (argv == 0)
+	{
+	    gaa_set_callback_err("gaa_simple_external_user_cond: memory allocation error");
+	    return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
+	}
+    }
+    argv[++argc] = 0;
+
+    if ((pid = fork()) < 0)
+    {
+	free(argv);
+	gaa_set_callback_err("gaa_simple_external_user_cond: fork failed");
+	return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
+    }
+    else if (pid == 0)
+    {
+	execvp(progname, argv);
+	exit(-1);
+    }
+    else
+    {
+	free(argv);
+	if (waitpid(pid, &childstat, 0) < 0)
+	{
+	    gaa_set_callback_err("gaa_simple_external_user_cond: wait failed");
+	    return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
+	}
+	if (WIFEXITED(childstat))
+	{
+	    *output_flags = GAA_COND_FLG_EVALUATED;
+	    if (WEXITSTATUS(childstat) == 0)
+		*output_flags |= GAA_COND_FLG_MET;
+	    snprintf(estr, sizeof(estr),
+		     "gaa_simple_user_cond: child('%s') exited with status %d",
+		     progname, WEXITSTATUS(childstat));
+	    gaa_set_callback_err(estr);
+	}
+	return(GAA_S_SUCCESS);
+    }
 }
