@@ -207,7 +207,7 @@ AC_SUBST(GSSAPI_LIBS)
 AC_SUBST(GSSAPI_LDFLAGS)
 AC_SUBST(GSSAPI_CFLAGS)
 
-if test "$with_gssapi" != "no"; then
+if test "$gssapi_type" != "none"; then
 	AC_DEFINE(FTP_SECURITY_EXTENSIONS)
 	GSSAPI_SRC="gssapi.c radix.c secure_ext.c"
 	AC_CHECK_FUNCS(setenv)

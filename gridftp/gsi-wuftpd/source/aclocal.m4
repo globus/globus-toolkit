@@ -4,17 +4,38 @@ dnl GSSAPI_CONFIG
 dnl
 dnl Figure out our GSSAPI configuration
 dnl
+dnl Sets the following variables:
+dnl  gssapi_type              The type of GSSAPI the user requested.
+dnl                           May be: "globus", "krb5" or "none".
+dnl  GSSAPI_LIBS              Libraries that need to be linked in for GSSAPI
+dnl  GSSAPI_LDFLAGS           Linker flags needed for GSSAPI
+dnl  GSSAPI_CFLAGS            Compiler flags needed for GSSAPI
+dnl
+dnl Called AC_DEFINE with one or more of the following:
+dnl  GSSAPI                   The user requested GSSAPI support
+dnl  GSSAPI_GLOBUS            The user requested Globus/GSI GSSAPI support   
+dnl  GSSAPI_KRB5              The user requested Kerberos 5 GSSAPI support
+dnl  HAVE_GSS_SEAL            The gss_seal() function is present.
+dnl  HAVE_GSS_UNSEAL          The gss_unseal() function is present.
+dnl  HAVE_GSS_EXPORT_NAME     The gss_export_name() function is present.
+
 
 AC_DEFUN([GSSAPI_CONFIG],
 [
 
 AC_MSG_CHECKING(for type of gssapi support)
 
-AC_ARG_WITH(gssapi,
-[  --with-gssapi=<type>        Specify type of GSSAPI
+AC_ARG_ENABLE(gssapi,
+[  --enable-gssapi=<type>      Specify type of GSSAPI
                               Options are: krb5, globus, gsi],
-[case $withval in
-  no)	# No support
+[gssapi_type=$enableval], [gssapi_type="none"]);
+
+AC_ARG_WITH(gssapi,
+[  --with-gssapi=<type>        Obsolete. Use --enable-gssapi instead.]
+[gssapi_type=$withval], [gssapi_type="none"]);
+
+case $gssapi_type in
+  no|none)	# No support
 		AC_MSG_RESULT(none)
 		;;
   krb5) # Kerberos 5 support
@@ -23,18 +44,15 @@ AC_ARG_WITH(gssapi,
   gsi|globus) # Globus SSLeasy
 		AC_MSG_RESULT([Globus/GSI SSLeay])
 		# Make sure it is "globus" and not "gsi"
-		with_gssapi="globus"
+		gssapi_type="globus"
 		;;
   *)	# Unrecognized type
-		with_gssapi=no
+		gssapi_type="none"
 		AC_MSG_ERROR(Unrecognized GSSAPI type)
 		;;
-esac],
-[with_gssapi=no
-AC_MSG_RESULT(none)
-])
+esac
 
-if test "$with_gssapi" != "no" ; then
+if test "$gssapi_type" != "none" ; then
 
 	# Do stuff here for any GSSAPI library
 	AC_DEFINE(GSSAPI)
@@ -47,7 +65,7 @@ if test "$with_gssapi" != "no" ; then
 
 fi
 
-if test "$with_gssapi" = "globus" ; then
+if test "$gssapi_type" = "globus" ; then
 
 	# Globus GSSAPI configuration
 	AC_DEFINE(GSSAPI_GLOBUS)
@@ -114,12 +132,16 @@ if test "$with_gssapi" = "globus" ; then
 	dnl Find SSLeay installation directory
 	GSSAPI_LIBS="$GSSAPI_LIBS -lssl"
 
+	dnl XXX Should be able to figure this out from Globus/GSI install dir
   AC_MSG_CHECKING(for ssleay directory)
   AC_ARG_WITH(ssl-dir,
      [  --with-ssl-dir=<DIR>  Root directory for ssleay stuff],
      ssleay_dir=$withval,
      ssleay_dir="/usr/local/ssl"
   )
+	if test ! -d ${ssleay_dir} ; then
+		AC_MSG_ERROR(Cannot find SSLeay installation directory)
+	fi
   AC_MSG_RESULT($ssleay_dir)
 
   if test "$ssleay_dir" != "none" ; then
@@ -134,7 +156,7 @@ if test "$with_gssapi" = "globus" ; then
 
   # End Globus/GSI section
 
-elif test "$with_gssapi" = "krb5" ; then
+elif test "$gssapi_type" = "krb5" ; then
 
 	# Kerberos 5 GSSAPI configuration
 	AC_DEFINE(GSSAPI_KRB5)
@@ -169,7 +191,7 @@ AC_SUBST(GSSAPI_LIBS)
 AC_SUBST(GSSAPI_LDFLAGS)
 AC_SUBST(GSSAPI_CFLAGS)
 
-if test "$with_gssapi" != "no" ; then
+if test "$gssapi_type" != "none" ; then
   dnl Check for the existance of specific GSSAPI routines.
   dnl Need to do this after GSSAPI_LIBS is completely filled out
   ORIG_LIBS="$LIBS"
