@@ -2355,25 +2355,48 @@ globus_gsi_sysconfig_set_key_permissions_unix(
     char *                              filename)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
+    struct stat                         stx;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_set_key_permissions_unix";
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    result = globus_gsi_sysconfig_file_exists_unix(filename);
-    if(result != GLOBUS_SUCCESS)
+    if(lstat(filename, &stx) != 0)
     {
-        if(!GLOBUS_GSI_SYSCONFIG_FILE_ZERO_LENGTH(result))
-        {
-            GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_SYSCONFIG_ERROR_SETTING_PERMS);
-            goto exit;
-        }
-        else
-        {
-            result = GLOBUS_SUCCESS;
-        }
+        result = globus_error_put(
+            globus_error_wrap_errno_error(
+                GLOBUS_GSI_SYSCONFIG_MODULE,
+                errno,
+                GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                __FILE__":%d:%s: Error getting status of keyfile\n",
+                __LINE__,
+                _function_name_));
+        goto exit;
     }
+
+    /*
+     * use any stat output as random data, as it will 
+     * have file sizes, and last use times in it. 
+     */
+    RAND_add((void*)&stx, sizeof(stx), 2);
+
+    if(S_ISDIR(stx.st_mode))
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
+            ("File: %s", filename));
+        goto exit;
+    }
+    else if(!S_ISREG(stx.st_mode))
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
+            ("File: %s", filename));
+        goto exit;
+    }
+
+    printf("mode: %d IF_REG: %d IF_LNK: %d\n", stx.st_mode, S_IFREG, S_IFLNK);
     
     if(chmod(filename, S_IRUSR|S_IWUSR) < 0)
     {
