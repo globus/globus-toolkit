@@ -252,14 +252,13 @@ globus_netlogger_write(
     globus_netlogger_handle_t *              nl_handle,
     const char *                             event,
     const char *                             id,
-    int                                      level,
+    const char *                             level,
     const char *                             tag)
 {
     struct globus_netlogger_handle_s *       s_nl_handle;
     char *                                   outstr;
     int                                      outstr_len;
     int                                      rc;
-    char *                                   level_str;
     static char *                            myname=
                                                   "globus_netlogger_write";
 
@@ -311,8 +310,11 @@ globus_netlogger_write(
      */
 #   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     {
-        outstr_len = strlen(s_nl_handle->main_str) + 1 +
-                     strlen("LVL=18446744073709551616") + 1;
+        outstr_len = strlen(s_nl_handle->main_str) + 1;
+        if(level != GLOBUS_NULL)
+        { 
+            outstr_len += strlen(" LVL=") + strlen(level) + 1;
+        }
         if(tag != GLOBUS_NULL)
         {
             outstr_len += strlen(tag);
@@ -330,6 +332,11 @@ globus_netlogger_write(
          * apparently strcpy is much faster than sprintf
          */
         strcpy(outstr, s_nl_handle->main_str);
+        if(level != GLOBUS_NULL)
+        { 
+            strcat(outstr, " LVL=");
+            strcat(outstr, level);
+        }
         if(id != GLOBUS_NULL)
         {
             strcat(outstr, " ID=");
@@ -350,8 +357,7 @@ globus_netlogger_write(
                  s_nl_handle->nl_handle,
                  (char *)event,
                  (char *)outstr,
-                 "LVL=%d",
-                 level);
+                 "");
         if(rc != 1)
         {
             return globus_error_put(
@@ -456,16 +462,14 @@ globus_netlogger_handle_init(
     }
 #   endif
 
-    ms_len = strlen("HOST=") + strlen(hostname) + 1 +
-               strlen("PROG=") + strlen(progname) + 1;
+    ms_len = 1;
     if(pid != GLOBUS_NULL)
     {
         ms_len += strlen("PID=") + strlen(pid) + 1;
         s_gnl_handle->pid = strdup(pid);
     }
     main_str = (char *)globus_malloc(ms_len);
-
-    sprintf(main_str, "HOST=%s PROG=%s", hostname, progname);
+    main_str[0] = '\0';
     if(pid != GLOBUS_NULL)
     {
         strcat(main_str, " PID=");
@@ -478,7 +482,6 @@ globus_netlogger_handle_init(
 
     return GLOBUS_SUCCESS;
 }
-
 
 /*
  *  netlogger handle destroy

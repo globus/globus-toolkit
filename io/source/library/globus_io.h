@@ -1328,7 +1328,7 @@ globus_netlogger_write(
     globus_netlogger_handle_t *       nl_handle,
     const char *                      event,
     const char *                      id,
-    int                               level,
+    const char *                      level,
     const char *                      tag);
 
 globus_result_t
