@@ -147,7 +147,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	method = packet_get_string(NULL);
 
 #ifdef GSSAPI
-	if (strcmp(user, "") == 0) {
+	if (user[0] == '\0') {
 	    debug("received empty username for %s", method);
 	    if (strcmp(method, "external-keyx") == 0) {
 		char *lname = NULL;
@@ -164,7 +164,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #endif
 
 	debug("userauth-request for user %s service %s method %s",
-	      (user && user[0]) ? user : "<implicit>", service, method);
+	      user[0] ? user : "<implicit>", service, method);
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
 
 	if ((style = strchr(user, ':')) != NULL)
@@ -175,7 +175,6 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	if ((authctxt->attempt++ == 0) ||
 	    (strcmp(user, authctxt->user) != 0) ||
 	    (strcmp(user, "") == 0)) {
-		/* setup auth context */
 		if (authctxt->user) {
 		    xfree(authctxt->user);
 		    authctxt->user = NULL;
@@ -188,15 +187,17 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		    xfree(authctxt->style);
 		    authctxt->style = NULL;
 		}
-		authctxt->pw = NULL;
 		authctxt->valid = 0;
 #ifdef GSSAPI
 		/* If we're going to set the username based on the
 		   GSSAPI context later, then wait until then to
-		   verify it. */
-		if ((strcmp(user, "") != 0) ||
-		    ((strcmp(method, "gssapi") != 0) &&
-		     (strcmp(method, "gssapi-with-mic") != 0))) {
+		   verify it. Just put in placeholders for now. */
+		if ((strcmp(user, "") == 0) &&
+		    ((strcmp(method, "gssapi") == 0) ||
+		     (strcmp(method, "gssapi-with-mic") == 0))) {
+			authctxt->pw = fakepw();
+			authctxt->user = xstrdup(user);
+		} else {
 #endif
 		authctxt->pw = PRIVSEP(getpwnamallow(user));
 		authctxt->user = xstrdup(user);
