@@ -282,16 +282,6 @@ globus_netlogger_write(
                 2,
                 myname));
     }
-    if(id == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "gsid",
-                3,
-                myname));
-    }
     if(!g_globus_i_io_use_netlogger)
     {
         return globus_error_put(
@@ -320,12 +310,15 @@ globus_netlogger_write(
      */
 #   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     {
-        outstr_len = strlen(s_nl_handle->main_str) + strlen(id) + 1 +
-                     strlen("LVL=18446744073709551616") + 1 +
-                     strlen("ID=") + strlen(id) + 1;
+        outstr_len = strlen(s_nl_handle->main_str) + 1 +
+                     strlen("LVL=18446744073709551616") + 1;
         if(tag != GLOBUS_NULL)
         {
             outstr_len += strlen(tag);
+        }
+        if(id != GLOBUS_NULL)
+        {
+            outstr_len += strlen(" ID=") + strlen(id);
         }
         if(s_nl_handle->desc != GLOBUS_NULL)
         {
@@ -336,7 +329,11 @@ globus_netlogger_write(
          * apparently strcpy is much faster than sprintf
          */
         strcpy(outstr, s_nl_handle->main_str);
-        strcat(outstr, id);
+        if(id != GLOBUS_NULL)
+        {
+            strcat(outstr, " ID=");
+            strcat(outstr, id);
+        }
         if(s_nl_handle->desc != GLOBUS_NULL)
         {
             strcat(outstr, " SOCK_DESC=");
@@ -373,6 +370,7 @@ globus_netlogger_handle_init(
 {
     struct globus_netlogger_handle_s *       s_nl_handle;
     char *                                   main_str;
+    int                                      ms_len = 0;
     static char *                            myname=
                                                 "globus_netlogger_handle_init";
 
@@ -382,8 +380,38 @@ globus_netlogger_handle_init(
             globus_io_error_construct_null_parameter(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
-                "handle",
+                "nl_handle",
                 1,
+                myname));
+    }
+    if(nl_handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                2,
+                myname));
+    }
+    if(hostname == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "hostname",
+                3,
+                myname));
+    }
+    if(progname == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "progname",
+                4,
                 myname));
     }
 
@@ -406,18 +434,23 @@ globus_netlogger_handle_init(
     s_nl_handle->nl_handle = GLOBUS_NULL;
 
     s_nl_handle->nl_handle = (NLhandle *)handle;
-    main_str = (char *)globus_malloc( 
-                   strlen("HOST=") + strlen(hostname) + 1 +
-                   strlen("PROG=") + strlen(progname) + 1 +
-                   strlen("GSID=") + 
-                               strlen(progname) + 1 +
-                               strlen(hostname) + 1 +
-                               strlen(pid) + 1);
-    sprintf(main_str, "HOST=%s PROG=%s GSID=%s-%s-%s-",
-              hostname, progname, progname, hostname, pid);
+    ms_len = strlen("HOST=") + strlen(hostname) + 1 +
+               strlen("PROG=") + strlen(progname) + 1;
+    if(pid != GLOBUS_NULL)
+    {
+        ms_len += strlen("PID=") + strlen(pid) + 1;
+        s_nl_handle->pid = strdup(pid);
+    }
+    main_str = (char *)globus_malloc(ms_len);
+
+    sprintf(main_str, "HOST=%s PROG=%s", hostname, progname);
+    if(pid != GLOBUS_NULL)
+    {
+        strcat(main_str, " PID=");
+        strcat(main_str, pid);
+    }
     s_nl_handle->hostname = strdup(hostname);
     s_nl_handle->progname = strdup(progname);
-    s_nl_handle->pid = strdup(pid);
     s_nl_handle->main_str = main_str;
     s_nl_handle->desc = GLOBUS_NULL;
 
