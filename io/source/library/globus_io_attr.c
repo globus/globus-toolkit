@@ -404,17 +404,6 @@ globus_io_attr_get_callback_space(
 
 
 void
-globus_i_io_get_callback_space(
-    globus_io_handle_t *		handle,
-    globus_callback_space_t *           space)
-{
-    if(handle)
-    {
-        *space = handle->socket_attr.space;
-    }
-}
-
-void
 globus_i_io_set_callback_space(
     globus_io_handle_t *		handle,
     globus_callback_space_t             space)
@@ -422,6 +411,41 @@ globus_i_io_set_callback_space(
     if(handle)
     {   
         handle->socket_attr.space = space;
+    }
+}
+
+void
+globus_i_io_setup_cond_space_from_handle(
+    globus_io_handle_t *                handle,
+    globus_cond_t *                     cond)
+{
+    globus_condattr_t                   condattr;
+    
+    if(handle)
+    {
+        globus_condattr_init(&condattr);
+        globus_condattr_setspace(&condattr, handle->socket_attr.space);
+        globus_cond_init(cond, &condattr);
+        globus_condattr_destroy(&condattr);
+    }
+}
+
+void
+globus_i_io_setup_cond_space_from_attr(
+    globus_io_attr_t *                  attr,
+    globus_cond_t *                     cond)
+{
+    globus_condattr_t                   condattr;
+    globus_callback_space_t             user_space;
+    
+    if(attr)
+    {
+        globus_io_attr_get_callback_space(attr, &user_space);
+        
+        globus_condattr_init(&condattr);
+        globus_condattr_setspace(&condattr, user_space);
+        globus_cond_init(cond, &condattr);
+        globus_condattr_destroy(&condattr);
     }
 }
 

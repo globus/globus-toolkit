@@ -1180,14 +1180,12 @@ globus_io_write(
     try_wrote = *nbytes_written;
 
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
     monitor.done = GLOBUS_FALSE;
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-    handle->blocking_write = GLOBUS_TRUE;
-    
     result = globus_io_register_write(handle,
 				     buf + try_wrote,
 				     nbytes - try_wrote,
@@ -1210,8 +1208,6 @@ globus_io_write(
 
     globus_mutex_unlock(&monitor.mutex);
     
-    handle->blocking_write = GLOBUS_FALSE;
-
     if(nbytes_written)
     {
 	*nbytes_written = monitor.nbytes + try_wrote;
@@ -1309,15 +1305,13 @@ globus_io_send(
 	return GLOBUS_SUCCESS;
     }
     try_wrote = *nbytes_written;
-
+    
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
     monitor.done = GLOBUS_FALSE;
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
-    
-    handle->blocking_write = GLOBUS_TRUE;
     
     result = globus_io_register_send(handle,
 				     buf + try_wrote,
@@ -1341,8 +1335,6 @@ globus_io_send(
     }
 
     globus_mutex_unlock(&monitor.mutex);
-    
-    handle->blocking_write = GLOBUS_FALSE;
         
     if(nbytes_written)
     {
@@ -1424,14 +1416,12 @@ globus_io_writev(
     globus_result_t			result; 
 
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
     monitor.done = GLOBUS_FALSE;
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-    handle->blocking_write = GLOBUS_TRUE;
-    
     result = globus_io_register_writev(handle,
 				       iov,
 				       iovcnt,
@@ -1454,8 +1444,6 @@ globus_io_writev(
 
     globus_mutex_unlock(&monitor.mutex);
 
-    handle->blocking_write = GLOBUS_FALSE;
-    
     if(nbytes_written)
     {
 	*nbytes_written = monitor.nbytes;

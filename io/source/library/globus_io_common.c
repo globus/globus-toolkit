@@ -253,13 +253,10 @@ globus_io_cancel(
     globus_result_t			result;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
     monitor.done = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
-    
-    /* we're going to poll on global space, save users space */
-    handle->blocking_cancel = GLOBUS_TRUE;
     
     result = globus_io_register_cancel(handle,
 				      perform_callbacks,
@@ -279,8 +276,6 @@ globus_io_cancel(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-    
-    handle->blocking_cancel = GLOBUS_FALSE;
     
     globus_mutex_destroy(&monitor.mutex);
 
@@ -337,14 +332,11 @@ globus_io_close(
     globus_result_t			result;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
     monitor.done = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-    /* we're going to poll on global space, save users space */
-    handle->blocking_cancel = GLOBUS_TRUE;
-    
     result = globus_io_register_close(handle,
 				      globus_i_io_monitor_callback,
 				      (void *) &monitor);
@@ -363,8 +355,6 @@ globus_io_close(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    handle->blocking_cancel = GLOBUS_FALSE;
-
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);
@@ -498,13 +488,11 @@ globus_io_listen(
     globus_result_t			result;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
     monitor.done = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-    handle->blocking_read = GLOBUS_TRUE;
-        
     result = globus_io_register_listen(handle,
 				       globus_i_io_monitor_callback,
 				       (void *) &monitor);
@@ -524,8 +512,6 @@ globus_io_listen(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    handle->blocking_read = GLOBUS_FALSE;
-
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);
@@ -849,10 +835,6 @@ globus_i_io_initialize_handle(
     
     globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE);
     handle->socket_attr.space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    
-    handle->blocking_read = GLOBUS_FALSE;
-    handle->blocking_write = GLOBUS_FALSE;
-    handle->blocking_cancel = GLOBUS_FALSE;
     
     return GLOBUS_SUCCESS;
 }

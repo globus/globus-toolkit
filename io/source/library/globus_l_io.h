@@ -338,6 +338,16 @@ globus_i_io_set_callback_space(
     globus_io_handle_t *		handle,
     globus_callback_space_t             space);
 
+void
+globus_i_io_setup_cond_space_from_handle(
+    globus_io_handle_t *                handle,
+    globus_cond_t *                     cond);
+
+void
+globus_i_io_setup_cond_space_from_attr(
+    globus_io_attr_t *                  attr,
+    globus_cond_t *                     cond);
+   
 typedef struct
 {
     globus_io_handle_t *		handle;

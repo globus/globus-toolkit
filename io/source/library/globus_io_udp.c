@@ -702,7 +702,7 @@ globus_io_udp_recvfrom(
                    globus_malloc(sizeof(globus_i_io_udp_monitor_t));
 
     globus_mutex_init(&monitor->mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor->cond, GLOBUS_NULL);
+    globus_i_io_setup_cond_space_from_handle(handle, &monitor->cond);
     monitor->done = GLOBUS_FALSE;
     monitor->err = GLOBUS_NULL;
     monitor->use_err = GLOBUS_FALSE;
@@ -710,8 +710,6 @@ globus_io_udp_recvfrom(
     monitor->host = host;
     monitor->nbytes_received = nbytes_received;
     
-    handle->blocking_read = GLOBUS_TRUE;
-        
     result = globus_io_udp_register_recvfrom(
 				    handle,
 				    buf,
@@ -737,8 +735,6 @@ globus_io_udp_recvfrom(
     }
     globus_mutex_unlock(&monitor->mutex);
     
-    handle->blocking_read = GLOBUS_FALSE;
-
     globus_mutex_destroy(&monitor->mutex);
     globus_cond_destroy(&monitor->cond);
     if(monitor->use_err)
