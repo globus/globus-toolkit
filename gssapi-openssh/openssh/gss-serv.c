@@ -151,6 +151,7 @@ ssh_gssapi_krb5_localname(char **user)
     return(1);
 }
 	
+#ifndef HAVE_GSSAPI_EXT
 /* Make sure that this is called _after_ we've setuid to the user */
 
 /* This writes out any forwarded credentials. Its specific to the Kerberos
@@ -161,7 +162,7 @@ ssh_gssapi_krb5_localname(char **user)
  * populated.
  */
 
-void
+OM_uint32
 ssh_gssapi_krb5_storecreds() {
 	krb5_ccache ccache;
 	krb5_error_code problem;
@@ -174,30 +175,30 @@ ssh_gssapi_krb5_storecreds() {
 
 	if (gssapi_client_creds==NULL) {
 		debug("No credentials stored"); 
-		return;
+		return GSS_S_NO_CRED;
 	}
 		
 	if (ssh_gssapi_krb5_init() == 0)
-		return;
+		return GSS_S_FAILURE;
 
 	if (options.gss_use_session_ccache) {
         	snprintf(ccname,sizeof(ccname),"/tmp/krb5cc_%d_XXXXXX",geteuid());
        
         	if ((tmpfd = mkstemp(ccname))==-1) {
                 	log("mkstemp(): %.100s", strerror(errno));
-                	return;
+                  	return GSS_S_FAILURE;
         	}
 	        if (fchmod(tmpfd, S_IRUSR | S_IWUSR) == -1) {
 	               	log("fchmod(): %.100s", strerror(errno));
 	               	close(tmpfd);
-	               	return;
+	               	return GSS_S_FAILURE;
 	        }
         } else {
         	snprintf(ccname,sizeof(ccname),"/tmp/krb5cc_%d",geteuid());
         	tmpfd = open(ccname, O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
         	if (tmpfd == -1) {
         		log("open(): %.100s", strerror(errno));
-        		return;
+        		return GSS_S_FAILURE;
         	}
         }
 
@@ -207,7 +208,7 @@ ssh_gssapi_krb5_storecreds() {
         if ((problem = krb5_cc_resolve(krb_context, name, &ccache))) {
                 log("krb5_cc_default(): %.100s", 
                 	krb5_get_err_text(krb_context,problem));
-                return;
+                return GSS_S_FAILURE;
         }
 
 	if ((problem = krb5_parse_name(krb_context, gssapi_client_name.value, 
@@ -215,7 +216,7 @@ ssh_gssapi_krb5_storecreds() {
 		log("krb5_parse_name(): %.100s", 
 			krb5_get_err_text(krb_context,problem));
 		krb5_cc_destroy(krb_context,ccache);
-		return;
+		return GSS_S_FAILURE;
 	}
 	
 	if ((problem = krb5_cc_initialize(krb_context, ccache, princ))) {
@@ -223,7 +224,7 @@ ssh_gssapi_krb5_storecreds() {
 			krb5_get_err_text(krb_context,problem));
 		krb5_free_principal(krb_context,princ);
 		krb5_cc_destroy(krb_context,ccache);
-		return;
+		return GSS_S_FAILURE;
 	}
 	
 	krb5_free_principal(krb_context,princ);
@@ -248,8 +249,9 @@ ssh_gssapi_krb5_storecreds() {
 	gssapi_cred_store.envvar="KRB5CCNAME";
 	gssapi_cred_store.envval=strdup(name);
 
-	return;
+	return GSS_S_COMPLETE;
 }
+#endif /* HAVE_GSSAPI_EXT */
 
 #endif /* KRB5 */
 
@@ -287,19 +289,18 @@ ssh_gssapi_gsi_localname(char **user)
     return(globus_gss_assist_gridmap(gssapi_client_name.value, user) == 0);
 }
 
+#ifndef HAVE_GSSAPI_EXT
 /*
  * Handle setting up child environment for GSI.
  *
  * Make sure that this is called _after_ we've setuid to the user.
  */
-void
+OM_uint32
 ssh_gssapi_gsi_storecreds()
 {
 	OM_uint32	major_status;
 	OM_uint32	minor_status;
-	
-	/* should use gss_export_cred() instead */
-	
+
 	if (gssapi_client_creds != NULL)
 	{
 		char *creds_env = NULL;
@@ -346,7 +347,7 @@ ssh_gssapi_gsi_storecreds()
 				gssapi_cred_store.envvar="X509_USER_PROXY";
 				gssapi_cred_store.envval=strdup(value);
 
-				return;
+				return GSS_S_COMPLETE;
 			}
 			else
 			{
@@ -361,31 +362,45 @@ ssh_gssapi_gsi_storecreds()
 		}
 	}	
 }
+#endif /* HAVE_GSSAPI_EXT */
 
 #endif /* GSI */
 
 void
 ssh_gssapi_cleanup_creds(void *ignored)
 {
+	/* OM_uint32 min_stat; */
+
 	if (gssapi_cred_store.filename!=NULL) {
 		/* Unlink probably isn't sufficient */
 		debug("removing gssapi cred file\"%s\"",gssapi_cred_store.filename);
 		unlink(gssapi_cred_store.filename);
 	}
+	/* DK ?? 
+	if (gssapi_client_creds != GSS_C_NO_CREDENTIAL)
+		gss_release_cred(&min_stat, &gssapi_client_creds);
+	*/
 }
 
-void 
-ssh_gssapi_storecreds()
+#ifndef HAVE_GSSAPI_EXT
+OM_uint32
+gss_export_cred(OM_uint32 *            minor_status,
+                const gss_cred_id_t    cred_handle,
+		const gss_OID          desired_mech,
+  		OM_uint32              option_req,
+		gss_buffer_t           export_buffer)
 {
+	OM_uint32 maj_stat = GSS_S_FAILURE;
+
 	switch (gssapi_client_type) {
 #ifdef KRB5
 	case GSS_KERBEROS:
-		ssh_gssapi_krb5_storecreds();
+		maj_stat = ssh_gssapi_krb5_storecreds();
 		break;
 #endif
 #ifdef GSI
 	case GSS_GSI:
-		ssh_gssapi_gsi_storecreds();
+		maj_stat = ssh_gssapi_gsi_storecreds();
 		break;
 #endif /* GSI */
 	case GSS_LAST_ENTRY:
@@ -396,11 +411,47 @@ ssh_gssapi_storecreds()
 		log("ssh_gssapi_do_child: Unknown mechanism");
 	
 	}
-	
+
+	if (GSS_ERROR(maj_stat)) {
+		*minor_status = GSS_S_FAILURE;
+		return maj_stat;
+	}
+	return 0;
+}
+#endif /* HAVE_GSSAPI_EXT */
+
+void 
+ssh_gssapi_storecreds()
+{
+   	OM_uint32 maj_stat, min_stat;
+	gss_buffer_desc export_cred = GSS_C_EMPTY_BUFFER;
+	char *p;
+
+	if (gssapi_client_creds == GSS_C_NO_CREDENTIAL)
+		return;
+
+	maj_stat = gss_export_cred(&min_stat, gssapi_client_creds,
+				   GSS_C_NO_OID, 1, &export_cred);
+	if (GSS_ERROR(maj_stat)) {
+		ssh_gssapi_error(maj_stat, min_stat);
+		return;
+	}
+
+	p = strchr((char *) export_cred.value, '=');
+	if (p == NULL) {
+		log("Failed to parse exported credentials string '%.100s'",
+		    (char *)export_cred.value);
+		gss_release_buffer(&min_stat, &export_cred);
+		return;
+	}
+	*p++ = '\0';
+	gssapi_cred_store.envvar = strdup((char *)export_cred.value);
+	gssapi_cred_store.envval = strdup(p);
+	gss_release_buffer(&min_stat, &export_cred);
+
 	if (options.gss_cleanup_creds) {
 		fatal_add_cleanup(ssh_gssapi_cleanup_creds, NULL);
 	}
-
 }
 
 /* This allows GSSAPI methods to do things to the childs environment based
