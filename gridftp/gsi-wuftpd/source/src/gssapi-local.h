@@ -16,6 +16,8 @@ int gssapi_wrap_message();
 int gssapi_can_encrypt();
 int gssapi_handle_auth_data();
 int gssapi_fix_env();
+int gssapi_remove_delegation();
+
 int gssapi_chown_delegation(uid_t uid, gid_t gid);
 gss_ctx_id_t gssapi_get_gss_ctx_id_t(void);
 

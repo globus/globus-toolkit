@@ -233,7 +233,7 @@ gssapi_chown_delegation(uid_t uid, gid_t gid)
  * Remove the forwarded proxy credentials
  */
 int
-gssapi_remove_delegation(void)
+gssapi_remove_delegation()
 {
     char *envstr;
     int envstr_index;
