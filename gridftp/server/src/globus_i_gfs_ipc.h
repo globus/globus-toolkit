@@ -5,6 +5,187 @@ typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
 
 #include "globus_i_gridftp_server.h"
 
+/************************************************************************
+ *   packing macros
+ *   --------------
+ ***********************************************************************/
+#define GFSEncodeUInt32(_start, _len, _buf, _w)                         \
+do                                                                      \
+{                                                                       \
+    globus_size_t                       _ndx;                           \
+    uint32_t                            _cw;                            \
+    _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
+    /* verify buffer size */                                            \
+    if(_ndx + 4 > _len)                                                 \
+    {                                                                   \
+        _len *= 2;                                                      \
+        _start = globus_libc_realloc(_start, _len);                     \
+        _buf = _start + _ndx;                                           \
+    }                                                                   \
+    _cw = htonl((uint32_t)_w);                                          \
+    memcpy(_buf, &_cw, 4);                                              \
+    _buf += 4;                                                          \
+} while(0)
+
+
+#define GFSDecodeUInt32(_buf, _len, _w)                                 \
+do                                                                      \
+{                                                                       \
+    uint32_t                            _cw;                            \
+    /* verify buffer size */                                            \
+    if(_len - 4 < 0)                                                    \
+    {                                                                   \
+        goto decode_err;                                                \
+    }                                                                   \
+    memcpy(&_cw, _buf, 4);                                              \
+    _w = htonl((uint32_t)_cw);                                          \
+    _buf += 4;                                                          \
+    _len -= 4;                                                          \
+} while(0)
+
+
+/*
+ *  if architecture is big endian already
+ */
+#if !defined(WORDS_BIGENDIAN)
+
+
+#define GFSEncodeUInt64(_start, _len, _buf, _w)                         \
+do                                                                      \
+{                                                                       \
+    globus_size_t                       _ndx;                           \
+    _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
+    if(_ndx + 8 > _len)                                                 \
+    {                                                                   \
+        _len *= 2;                                                      \
+        _start = globus_libc_realloc(_start, _len);                     \
+        _buf = _start + _ndx;                                           \
+    }                                                                   \
+    memcpy(_buf, &_w, 8);                                               \
+    _buf += 8;                                                          \
+} while(0)
+
+#define GFSDecodeUInt64(_buf, _len, _w)                                 \
+do                                                                      \
+{                                                                       \
+    if(_len - 8 < 0)                                                    \
+    {                                                                   \
+        goto decode_err;                                                \
+    }                                                                   \
+                                                                        \
+    memcpy(&_w, _buf, 8);                                               \
+    _buf += 8;                                                          \
+    _len -= 8;                                                          \
+} while(0)
+
+#else                                                                
+/* not a big indian arch */
+#define GFSEncodeUInt64(_start, _len, _buf, _w)                         \
+do                                                                      \
+{                                                                       \
+    globus_size_t                       _ndx;                           \
+    uint64_t                            _cw;                            \
+    uint32_t                            _lo = _w & 0xffffffff;          \
+    uint32_t                            _hi = _w >> 32U;                \
+                                                                        \
+    _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
+    if(_ndx + 8 > _len)                                                 \
+    {                                                                   \
+        _len *= 2;                                                      \
+        _start = globus_libc_realloc(_start, _len);                     \
+        _buf = _start + _ndx;                                           \
+    }                                                                   \
+                                                                        \
+    _lo = ntohl(_lo);                                                   \
+    _hi = ntohl(_hi);                                                   \
+    _cw = ((uint64_t) _lo) << 32U | _hi;                                \
+    memcpy(_buf, &_cw, 8);                                              \
+    _buf += 8;                                                          \
+} while(0)
+
+#define GFSDecodeUInt64(_buf, _len, _w)                                 \
+do                                                                      \
+{                                                                       \
+    uint64_t                            _cw;                            \
+    uint32_t                            _lo;                            \
+    uint32_t                            _hi;                            \
+                                                                        \
+    if(_len - 8 < 0)                                                    \
+    {                                                                   \
+        goto decode_err;                                                \
+    }                                                                   \
+                                                                        \
+    memcpy(&_cw, _buf, 8);                                              \
+    _lo = _cw & 0xffffffff;                                             \
+    _hi = _cw >> 32U;                                                   \
+    _lo = ntohl(_lo);                                                   \
+    _hi = ntohl(_hi);                                                   \
+    _w = ((uint64_t) _lo) << 32U | _hi;                                 \
+    _buf += 8;                                                          \
+    _len -= 8;                                                          \
+} while(0)
+#endif                                                               
+
+#define GFSEncodeChar(_start, _len, _buf, _w)                           \
+do                                                                      \
+{                                                                       \
+    globus_size_t                       _ndx;                           \
+    _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
+    if(_ndx >= _len)                                                    \
+    {                                                                   \
+        _len *= 2;                                                      \
+        _start = globus_libc_realloc(_start, _len);                     \
+        _buf = _start + _ndx;                                           \
+    }                                                                   \
+    *_buf = (char)_w;                                                   \
+    _buf++;                                                             \
+} while(0)
+
+#define GFSDecodeChar(_buf, _len, _w)                                   \
+do                                                                      \
+{                                                                       \
+    if(_len - 1 < 0)                                                    \
+    {                                                                   \
+        goto decode_err;                                                \
+    }                                                                   \
+    _w = (char)*_buf;                                                   \
+    _buf++;                                                             \
+    _len--;                                                             \
+} while(0)
+
+#define GFSEncodeString(_start, _len, _buf, _w)                         \
+do                                                                      \
+{                                                                       \
+    char *                              _str=(char*)_w;                 \
+    if(_str == NULL)                                                    \
+    {                                                                   \
+        GFSEncodeChar(_start, _len, _buf, '\0');                        \
+    }                                                                   \
+    else                                                                \
+    {                                                                   \
+        for(_str = (char *)_w; *_str != '\0'; _str++)                   \
+        {                                                               \
+            GFSEncodeChar(_start, _len, _buf, *_str);                   \
+        }                                                               \
+        GFSEncodeChar(_start, _len, _buf, *_str);                       \
+    }                                                                   \
+} while(0)
+
+#define GFSDecodeString(_buf, _len, _w)                                 \
+do                                                                      \
+{                                                                       \
+    int                                 _ctr;                           \
+    /* make sure that strip in terminated properly */                   \
+    for(_ctr = 0; _ctr < _len && _buf[_ctr] != '\0'; _ctr++);           \
+    if(_buf[_ctr] != '\0')                                              \
+    {                                                                   \
+        goto decode_err;                                                \
+    }                                                                   \
+    _w = strdup(_buf);                                                  \
+    _ctr = strlen(_buf) + 1;                                            \
+    _buf += _ctr;                                                       \
+    _len -= _ctr;                                                       \
+} while(0)
 
 typedef globus_gfs_operation_type_t     globus_gfs_ipc_request_type_t;
 typedef globus_gfs_finished_info_t     globus_gfs_ipc_reply_t;
@@ -12,18 +193,6 @@ typedef globus_gfs_event_info_t        globus_gfs_ipc_event_reply_t;
 typedef globus_gfs_data_finished_info_t globus_gfs_ipc_data_reply_t;
 typedef globus_gfs_cmd_finshed_info_t   globus_gfs_ipc_command_reply_t;
 typedef globus_gfs_stat_finished_info_t globus_gfs_ipc_stat_reply_t;
-
-
-typedef enum
-{
-    GLOBUS_GFS_IPC_STATE_OPENING,
-    GLOBUS_GFS_IPC_STATE_OPEN,
-    GLOBUS_GFS_IPC_STATE_AUTHENTICATING,
-    GLOBUS_GFS_IPC_STATE_CLOSING,
-    GLOBUS_GFS_IPC_STATE_ERROR, 
-} globus_gfs_ipc_state_t;
-
-
 
 typedef enum
 {
@@ -40,9 +209,6 @@ typedef struct globus_i_gfs_community_s
     int                                 cs_count;
     char **                             cs;
 } globus_i_gfs_community_t;
-
-
-
 
 /*
  *  callbacks
