@@ -40,7 +40,7 @@ public class TransferJob {
         this.status = status;
         this.attempts = attempts;
         this.dbAdapter = TransferDbAdapter.getTransferDbAdapter();
-        processURLs();
+     //   processURLs();
     }
 
     public void processURLs() {
