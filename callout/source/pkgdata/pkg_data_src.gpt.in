@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_callout" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="3" Age="0"/>
+    <Aging_Version Major="0" Minor="4" Age="0"/>
     <Description> Globus Callout Library</Description>
     <Functional_Group>Common</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -13,7 +13,7 @@
         <Source_Dependencies Type="compile">
             <Dependency Name="globus_core">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>                
             <Dependency Name="globus_common">
@@ -23,7 +23,7 @@
             </Dependency>        
             <Dependency Name="globus_libtool">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -36,7 +36,7 @@
             </Dependency>        
             <Dependency Name="globus_libtool">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

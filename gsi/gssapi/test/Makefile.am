@@ -54,7 +54,7 @@ test_PROGRAMS= \
 	gssapi-inquire-sec-ctx-by-oid-test \
 	gssapi-acquire-test \
 	gssapi-module-test
-#	gssapi-group-test \
+
 
 gssapi_anonymous_test_SOURCES = gssapi_anonymous_test.c
 

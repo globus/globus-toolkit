@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_ssl_utils" Format_Version="0.02">
 
-  <Aging_Version Major="2" Minor="4" Age="0"/>
+  <Aging_Version Major="2" Minor="5" Age="0"/>
   <Description> SSL Utilities Library</Description>
   <Functional_Group >Security</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -11,7 +11,7 @@
   <src_pkg>
 
     <Source_Dependencies Type="compile" >
-      <Dependency Name="globus_core"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_core"><Version><Simple_Version Major="4"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_common"> <Version><Simple_Version Major="3"></Simple_Version></Version> </Dependency>
       <Dependency Name="globus_openssl"><Version><Simple_Version Major="1"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_openssl_module"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
