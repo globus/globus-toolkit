@@ -197,7 +197,7 @@ extern struct sockaddr_in his_addr;
 int 
 g_seek(
     FILE *                               fin,
-    int                                  ndx);
+    off_t                                  ndx);
 
 void
 g_force_close(
@@ -2199,7 +2199,7 @@ globus_l_wu_perf_update(
 int 
 g_seek(
     FILE *                               fin,
-    int                                  ndx)
+    off_t                                ndx)
 {
     register int i;
     register int n;

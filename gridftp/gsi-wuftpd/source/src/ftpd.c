@@ -2698,6 +2698,20 @@ void pass(char *passwd)
     }
     askpasswd = 0;
 
+#ifdef GSSAPI
+    if (gssapi_authentication_required)
+    {
+	/*
+	 * Disallow login unless gssapi authentication has been done.
+	 */
+	if (gssapi_identity() == NULL)
+	{
+	    reply(530, "Must perform GSSAPI authentication");
+	    return;
+	}
+    }
+#endif /* GSSAPI */
+
     /* Disable lreply() if the first character of the password is '-' since
      * some hosts don't understand continuation messages and hang... */
 
@@ -4256,7 +4270,7 @@ retrieve(
     char realname[MAXPATHLEN];
     int stat_ret = -1;
 
-    int                            tmp_restart = 0; /* added by JB */
+    off_t                            tmp_restart = 0; /* added by JB */
 
     extern int checknoretrieve(char *);
 
@@ -4695,7 +4709,7 @@ store(
     int                                       TransferIncomplete = 1;
     char *                                    gunique(char *local);
     time_t                                    start_time = time(NULL);
-    int                                       tmp_restart; /* added by JB */
+    off_t                                       tmp_restart; /* added by JB */
 
     struct aclmember *                        entry = NULL;
 
