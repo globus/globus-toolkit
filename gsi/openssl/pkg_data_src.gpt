@@ -29,7 +29,7 @@
 
       <Build_Step Macro_Args="libs='ssl crypto sasl' regex='lib$${i}FLAVOR'">RUN_FLAVOR_MAKEFILES_GPTMACRO</Build_Step>
 
-      <Build_Step>./config --prefix=INSTALLDIR_GPTMACRO threads shared</Build_Step>
+      <Build_Step>./config --prefix=INSTALLDIR_GPTMACRO FLAVOR_CONFIGOPTS_GPTMACRO CONFIGOPTS_GPTMACRO</Build_Step>
 
       <Build_Step>MAKE_GPTMACRO</Build_Step>
 
