@@ -312,6 +312,9 @@ main(int argc,
 /*
     nexus_mutex_lock(&job_manager_monitor.mutex);
 */
+    fprintf(log_fp,"after send_rsr\n");
+    fprintf(log_fp,"job status = %d\n", job_status);
+
     if (job_status == 0)
     {
         while (!job_manager_monitor.done)
@@ -323,6 +326,7 @@ main(int argc,
 	    nexus_usleep(1000000);
     	    nexus_fd_handle_events(NEXUS_FD_POLL_NONBLOCKING_ALL, 
                                    &message_handled);
+    fprintf(log_fp,"before grami_jm_poll\n");
 	    grami_jm_poll(); 
         } /* endwhile */
 /*

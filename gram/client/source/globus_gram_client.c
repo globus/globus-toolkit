@@ -255,7 +255,9 @@ gram_job_request(char * gatekeeper_url,
         strcpy(* job_contact, job_request_monitor.job_contact_str);
     }
 
+/*
     free(contact_msg_buffer);
+*/
 
     return(job_request_monitor.job_status);
 
@@ -318,11 +320,12 @@ graml_job_request_reply_handler(nexus_endpoint_t * endpoint,
     nexus_byte_t *   ptr;
     graml_job_request_monitor_s * job_request_monitor;
 
-    job_request_monitor = nexus_endpoint_get_user_pointer(endpoint);
+    job_request_monitor = (graml_job_request_monitor_s * )nexus_endpoint_get_user_pointer(endpoint);
 
-    printf("in graml_job_request_reply_handler()\n");
+    printf("jjj in graml_job_request_reply_handler() %x jjj\n", job_request_monitor);
 
-    nexus_get_int(buffer, &job_request_monitor->job_status, 1);
+    nexus_get_int(buffer, &(job_request_monitor->job_status), 1);
+    printf("job status = %d\n", job_request_monitor->job_status);
     if (job_request_monitor->job_status == 0)
     {
         nexus_get_int(buffer, &count, 1);
@@ -336,6 +339,7 @@ graml_job_request_reply_handler(nexus_endpoint_t * endpoint,
     job_request_monitor->done = NEXUS_TRUE;
     nexus_cond_signal(&job_request_monitor->cond);
     nexus_mutex_unlock(&job_request_monitor->mutex);
+    printf("end of graml_job_request_reply_handler()\n");
 } /* graml_job_request_reply_handler() */
 
 /******************************************************************************
@@ -587,7 +591,7 @@ graml_start_time_callback_handler(nexus_endpoint_t * endpoint,
 {
     graml_start_time_monitor_s * start_time_monitor;
 
-    start_time_monitor = nexus_endpoint_get_user_pointer(endpoint);
+    start_time_monitor = (graml_start_time_monitor_s *)nexus_endpoint_get_user_pointer(endpoint);
 
     printf("in graml_start_time_callback_handler()\n");
 
