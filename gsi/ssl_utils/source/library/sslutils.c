@@ -1013,15 +1013,19 @@ proxy_sign(
     X509 **                             new_cert,
     int                                 seconds,
     STACK_OF(X509_EXTENSION) *          extensions,
-    int                                 limited_proxy)
+    globus_proxy_type_t                 proxy_type)
 {
     char *                              newcn;
     X509_NAME *                         subject_name = NULL;
     int                                 rc = 0;
         
-    if(limited_proxy)
+    if(proxy_type == GLOBUS_LIMITED_PROXY)
     {
         newcn = "limited proxy";
+    }
+    else if(proxy_type == GLOBUS_RESTRICTED_PROXY)
+    {
+        newcn = "restricted proxy";
     }
     else
     {
@@ -1512,13 +1516,15 @@ proxy_marshal_tmp(
         return 1;
     }
 
-    if ((envstr = (char *)malloc(strlen(X509_USER_PROXY) +
+/*      if ((envstr = (char *)malloc(strlen(X509_USER_PROXY) + */
+    if ((envstr = (char *)malloc(strlen(X509_USER_DELEG_PROXY) +
                                  strlen(filename) + 2)) == NULL)
     {
         PRXYerr(PRXYERR_F_PROXY_TMP, PRXYERR_R_OUT_OF_MEMORY);
         return 1;
     }
-    strcpy(envstr,X509_USER_PROXY);
+/*      strcpy(envstr,X509_USER_PROXY); */
+    strcpy(envstr,X509_USER_DELEG_PROXY);
     strcat(envstr,"=");
     strcat(envstr,filename);
 
@@ -1843,20 +1849,25 @@ proxy_check_proxy_name(
         if ((data->length == 5 && 
              !memcmp(data->data,"proxy",5)) || 
             (data->length == 13 && 
-             !memcmp(data->data,"limited proxy",13)))
+             !memcmp(data->data,"limited proxy",13)) ||
+	    (data->length == 16 && !memcmp(data->data,"restricted proxy",16)))
         {
         
             if (data->length == 13)
             {
-                ret = 2; /* its a limited proxy */
+                ret = GLOBUS_LIMITED_PROXY; /* its a limited proxy */
             }
-            else
+            else if (data->length == 16)
+	    {
+                ret = GLOBUS_RESTRICTED_PROXY; /* its a restricted proxy */
+            }
+	    else
             {
-                ret = 1; /* its a proxy */
+                ret = GLOBUS_REGULAR_PROXY; /* its a proxy */
             }
 #ifdef DEBUG
-            fprintf(stderr,"Subject is a %sproxy\n",
-                    (ret == 2)?"limited ":"");
+	    /* changed by slang: just using data->data since its been checked */
+            fprintf(stderr,"Subject is a %s\n", data->data);
 #endif
             /*
              * Lets dup the issuer, and add the CN=proxy. This should
@@ -1871,10 +1882,7 @@ proxy_check_proxy_name(
             ne = X509_NAME_ENTRY_create_by_NID(NULL,
                                                NID_commonName,
                                                V_ASN1_APP_CHOOSE,
-                                               (ret == 2) ?
-                                               (unsigned char *)
-                                               "limited proxy" :
-                                               (unsigned char *)"proxy",
+                                               data->data,
                                                -1);
 
             X509_NAME_add_entry(name,ne,X509_NAME_entry_count(name),0);
@@ -2786,7 +2794,9 @@ proxy_get_base_name(
             if ((data->length == 5 && 
                  !memcmp(data->data,"proxy",5)) ||
                 (data->length == 13 && 
-                 !memcmp(data->data,"limited proxy",13)))
+                 !memcmp(data->data,"limited proxy",13)) ||
+		(data->length == 16 &&
+		 !memcmp(data->data,"restricted proxy",16)))
             {
                 ne = X509_NAME_delete_entry(subject,
                                             X509_NAME_entry_count(subject)-1);
@@ -4330,7 +4340,7 @@ proxy_create_local(
     const char *                        outfile,
     int                                 hours,
     int                                 bits,
-    int                                 limit_proxy,
+    globus_proxy_type_t                 proxy_type,
     int                                 (*kpcallback)(),
     char *                              restriction_buf,
     int                                 restriction_len)
@@ -4424,7 +4434,7 @@ proxy_create_local(
                    &ncert,
                    hours*60*60,
                    extensions,
-                   limit_proxy))
+                   proxy_type))
     {
         goto err;
     }
