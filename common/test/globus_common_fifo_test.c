@@ -23,12 +23,10 @@ int main( int argc, char * argv[] )
 {
 	int * data, i;
 	int currentFifoSize;
-	int newFifoSize;
 	globus_fifo_t currentFifo;
 	globus_fifo_t * newFifoPtr;
 	globus_fifo_t relocatedFifo;
 	int rc;
-	char errorString[256];
 	int numOfItems;
 	int * middleItem;
 	int middleIndex;
