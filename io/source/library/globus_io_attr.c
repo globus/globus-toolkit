@@ -161,6 +161,8 @@ globus_i_io_attr_activate(void)
 	GLOBUS_IO_SECURE_PROTECTION_MODE_NONE;
     globus_l_io_securesocketattr_default.delegation_mode =
 	GLOBUS_IO_SECURE_DELEGATION_MODE_NONE;
+    globus_l_io_securesocketattr_default.proxy_mode =
+        GLOBUS_IO_SECURE_PROXY_MODE_NONE;
     globus_l_io_securesocketattr_default.credential =
 	GSS_C_NO_CREDENTIAL;
     globus_l_io_securesocketattr_default.authorized_identity =
@@ -2713,6 +2715,7 @@ globus_io_attr_set_secure_authentication_mode(
     {
 	instance->channel_mode = GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR;
 	instance->delegation_mode = GLOBUS_IO_SECURE_DELEGATION_MODE_NONE;
+        instance->proxy_mode = GLOBUS_IO_SECURE_PROXY_MODE_NONE;
 	instance->protection_mode = GLOBUS_IO_SECURE_PROTECTION_MODE_NONE;
 	instance->authorization_mode = GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE;
 	instance->authentication_mode = mode;
@@ -4246,7 +4249,7 @@ globus_io_attr_set_secure_proxy_mode(
 		1,
 		myname,
 		"authentication_mode",
-		"delegation_mode"));
+		"proxy_mode"));
     }
     
     instance->proxy_mode = mode;

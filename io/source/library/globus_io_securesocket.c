@@ -361,7 +361,7 @@ globus_i_io_securesocket_register_accept(
       case GLOBUS_IO_SECURE_PROXY_MODE_LIMITED:
         accept_info->ret_flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
         break;
-      case GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY:
+      case GLOBUS_IO_SECURE_PROXY_MODE_MANY:
         accept_info->ret_flags |= GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;  
 	break;
     } 
@@ -470,7 +470,7 @@ globus_i_io_securesocket_register_connect_callback(
       case GLOBUS_IO_SECURE_PROXY_MODE_LIMITED:
         flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
         break;
-      case GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY:
+      case GLOBUS_IO_SECURE_PROXY_MODE_MANY:
 	flags |= GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;
 	break;
     } 
@@ -760,6 +760,22 @@ globus_i_io_securesocket_set_attr(
 
 	goto error_exit;
     }
+
+    
+    if(instance->proxy_mode !=
+       handle->securesocket_attr.proxy_mode)
+    {
+	err = globus_io_error_construct_immutable_attribute(
+	    GLOBUS_IO_MODULE,
+	    GLOBUS_NULL,
+	    "attr",
+	    2,
+	    myname,
+	    "proxy_mode");
+
+	goto error_exit;
+    }
+
     
     if(instance->credential !=
        handle->securesocket_attr.credential)
