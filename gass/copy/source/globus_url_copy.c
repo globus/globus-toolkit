@@ -67,7 +67,8 @@ typedef struct
     int                                 restart_retries;
     int                                 restart_interval;
     int                                 restart_timeout;
-    
+    globus_bool_t			striped;
+
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
      */
@@ -342,7 +343,8 @@ enum
     arg_nodcau,
     arg_encrypt_data,
     arg_recurse,
-    arg_num = arg_recurse
+    arg_striped,
+    arg_num = arg_striped
 };
 
 #define listname(x) x##_aliases
@@ -373,6 +375,7 @@ flagdef(arg_notpt, "-notpt", "-no-third-party-transfers");
 flagdef(arg_nodcau, "-nodcau", "-no-data-channel-authentication");
 flagdef(arg_encrypt_data, "-edc", "-encrypt-data-channel");
 flagdef(arg_recurse, "-r", "-recurse");
+flagdef(arg_striped, "-stripe", "-striped");
 
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
@@ -410,7 +413,8 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_notpt);                \
     setupopt(arg_nodcau);               \
     setupopt(arg_encrypt_data);         \
-    setupopt(arg_recurse);
+    setupopt(arg_recurse);		\
+    setupopt(arg_striped);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
@@ -1175,8 +1179,12 @@ globus_l_guc_transfer_files(
             }
         }
         globus_mutex_unlock(&monitor.mutex);
-    
-
+    	
+	if(g_verbose_flag)
+	{
+	    printf("\n");
+	}
+	
         if (monitor.use_err)
         {
             fprintf(stderr, "error: %s\n",
@@ -1187,7 +1195,8 @@ globus_l_guc_transfer_files(
             globus_object_free(monitor.err);
             ret_val = 1;
         }
-
+	
+	
         if(source_io_handle)
         {
             globus_free(source_io_handle);
@@ -1260,6 +1269,7 @@ globus_l_guc_parse_arguments(
     guc_info->restart_retries = 5;
     guc_info->restart_interval = 0;
     guc_info->restart_timeout = 0;
+    guc_info->striped = GLOBUS_FALSE;
 
     /* determine the program name */
     
@@ -1354,6 +1364,9 @@ globus_l_guc_parse_arguments(
         case arg_recurse:
             guc_info->recurse = GLOBUS_TRUE;
             break;
+	case arg_striped:
+	    guc_info->striped = GLOBUS_TRUE;
+	    break;
         default:
             globus_url_copy_l_args_error_fmt("parse panic, arg id = %d",
                                        instance->id_number);
@@ -1834,8 +1847,17 @@ globus_l_guc_gass_attr_init(
             parallelism.fixed.size = guc_info->num_streams;
             globus_ftp_client_operationattr_set_parallelism(
                 ftp_attr,
-                &parallelism);
-        }
+                &parallelism);        	
+	}
+
+	if (guc_info->striped)
+	{
+		globus_ftp_client_operationattr_set_mode(
+                	ftp_attr,
+                	GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
+
+		globus_ftp_client_operationattr_set_striped(ftp_attr, GLOBUS_TRUE);
+	}
 
         if (subject  ||
             url_info.user ||
