@@ -49,12 +49,13 @@ MYEND
 
 RESULT=`${bindir}/globusrun -s -r "${TARGET_MACH_FORK}"  "&(executable=\$(GLOBUS_TOOLS_PREFIX)/bin/globus-sh-exec)(arguments=\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
 
-if [ $? -ne 0 ]
+THIS_STATUS=$?
+if [ $THIS_STATUS -ne 0 ]
 then
     @ECHO@ "Cleaning failed: " 1>&2
     @ECHO@ "$RESULT" 1>&2
     @RM@ -rf $TMPSCRIPT > /dev/null 2>&1
-    exit 1
+    exit $THIS_STATUS
 fi
 
 @RM@ -rf $TMPSCRIPT > /dev/null 2>&1
