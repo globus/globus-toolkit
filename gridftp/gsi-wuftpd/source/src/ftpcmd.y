@@ -1,5 +1,5 @@
 /****************************************************************************    
-  Copyright (c) 1999 WU-FTPD Development Group.  
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
   All rights reserved.
    
   Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994  
@@ -753,8 +753,12 @@ cmd: USER SP username CRLF
 	=	{
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE MINFO %s", $6);
+#ifdef SITE_NEWER
 	    if ($2 && $6 && !restrict_check("."))
 		newer($6, ".", 1);
+#else
+	    reply(500, "Command no longer honored by this server");
+#endif
 	    free($6);
 	}
     | SITE check_login SP MINFO SP STRING SP pathname CRLF
@@ -762,8 +766,12 @@ cmd: USER SP username CRLF
 	    if (log_commands)
 		syslog(LOG_INFO, "SITE MINFO %s %s", $6,
 		       CHECKNULL($8));
+#ifdef SITE_NEWER
 	    if ($2 && $6 && $8 && !restrict_check($8))
 		newer($6, $8, 1);
+#else
+	    reply(500, "Command no longer honored by this server");
+#endif
 	    free($6);
 	    if ($8)
 		free($8);
@@ -1926,13 +1934,13 @@ void site_exec(char *cmd)
 	}
 	if (!maxfound)
 	    maxlines = defmaxlines;
-	lreply(200, cmd);
+	lreply(200, "%s", cmd);
 	while (fgets(buf, sizeof buf, cmdf)) {
 	    size_t len = strlen(buf);
 
 	    if (len > 0 && buf[len - 1] == '\n')
 		buf[--len] = '\0';
-	    lreply(200, buf);
+	    lreply(200, "%s", buf);
 	    if (maxlines <= 0)
 		++lines;
 	    else if (++lines >= maxlines) {

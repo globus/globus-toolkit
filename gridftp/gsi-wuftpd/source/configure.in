@@ -7,7 +7,7 @@ AC_INIT(src/ftpd.c)
 
 divert(0)dnl
 #
-# Copyright (c) 1999 WU-FTPD Development Group.  
+# Copyright (c) 1999,2000 WU-FTPD Development Group.  
 # All rights reserved.
 #  
 # Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994  
@@ -150,6 +150,10 @@ AC_ARG_ENABLE(chmod,	 [  --enable-chmod          allow ftp users to set SETUID/S
 	[ chmod=$enableval ], [ chmod=no ])
 AC_ARG_ENABLE(rfc931,	 [  --enable-rfc931         do RFC931 lookups (more log information, but slower)],
 	[ rfc931=$enableval ], [ rfc931=no ])
+AC_ARG_ENABLE(ratios,    [  --enable-ratios         compile in support for upload-download ratios ],
+       [ ratio=$enableval ], [ ratio=no ])
+AC_ARG_ENABLE(passwd,    [  --enable-passwd         support alternative passwd/shadow files ],
+	[ passwd=$enableval ], [ passwd=no ])
 AC_ARG_ENABLE(daemon,	 [  --disable-daemon        don't allow running as standalone daemon],
 	[ daemon=$enableval ], [ daemon=yes ])
 AC_ARG_ENABLE(map-chdir, [  --disable-map-chdir     don't keep track of user's path changes],
@@ -811,43 +815,40 @@ if test $pam = yes; then
 		# Some PAM implementations require -ldl...
 		LIBS="$LIBS -ldl"
 	fi
+fi
+dnl ===========================================================================
+dnl See if we have shadow passwords...
+dnl ============================================================================
+AC_CHECK_LIB(shadow, setspent, result=yes, result=no)
+SHADOW_PASSWORD=0
+LIBSHADOW=0
+if test $result = yes; then
+	LIBS="$LIBS -lshadow"
+	SHADOW_PASSWORD=1
+	LIBSHADOW=1
 else
-	dnl ===========================================================================
-	dnl If we don't have PAM, see if we have shadow passwords...
-	dnl ============================================================================
-	AC_CHECK_LIB(shadow, setspent, result=yes, result=no)
-	SHADOW_PASSWORD=0
-	LIBSHADOW=0
+	AC_CHECK_LIB(shadow, getspnam, result=yes, result=no)
 	if test $result = yes; then
 		LIBS="$LIBS -lshadow"
 		SHADOW_PASSWORD=1
 		LIBSHADOW=1
 	else
-		AC_CHECK_LIB(shadow, getspnam, result=yes, result=no)
+		AC_CHECK_LIB(c, setspent, result=yes, result=no)
 		if test $result = yes; then
-			LIBS="$LIBS -lshadow"
 			SHADOW_PASSWORD=1
-			LIBSHADOW=1
-		else
-			AC_CHECK_LIB(c, setspent, result=yes, result=no)
-			if test $result = yes; then
-				if test -f /etc/shadow; then
-					SHADOW_PASSWORD=1
-				fi
+		fi
+	fi
+fi
+if test $SHADOW_PASSWORD = 1; then
+	if test $ac_cv_func_fgetspent != yes; then
+		AC_CHECK_LIB(shadow, fgetspent, result=yes, result=no)
+		if test $result = yes; then
+			if test $LIBSHADOW != 1; then
+				LIBS="$LIBS -lshadow"
 			fi
 		fi
 	fi
-	if test $SHADOW_PASSWORD = 1; then
-		if test $ac_cv_func_fgetspent != yes; then
-			AC_CHECK_LIB(shadow, fgetspent, result=yes, result=no)
-			if test $result = yes; then
-				if test $LIBSHADOW != 1; then
-					LIBS="$LIBS -lshadow"
-				fi
-			fi
-		fi
-		AC_DEFINE(SHADOW_PASSWORD)
-	fi
+	AC_DEFINE(SHADOW_PASSWORD)
 fi
 if test $ac_cv_header_skey_h = no; then
   if test $skey = yes; then
@@ -877,6 +878,12 @@ if test $chmod = yes; then
 fi
 if test $rfc931 = yes; then
 	AC_DEFINE(USE_RFC931)
+fi
+if test "$ratio" = "yes"; then
+	AC_DEFINE(RATIO)
+fi
+if test "$passwd" = "yes"; then
+	AC_DEFINE(OTHER_PASSWD)
 fi
 if test $daemon = yes; then
 	AC_DEFINE(DAEMON)

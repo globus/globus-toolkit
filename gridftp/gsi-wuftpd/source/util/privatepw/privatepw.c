@@ -1,6 +1,6 @@
 /**************************************************************************** 
 
-   Copyright (c) 1999 WU-FTPD Development Group. 
+   Copyright (c) 1999,2000 WU-FTPD Development Group. 
    All rights reserved.
    
    Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994 

@@ -1,6 +1,6 @@
 /****************************************************************************  
  
-  Copyright (c) 1999 WU-FTPD Development Group.  
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
   All rights reserved.
   
   Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994
@@ -106,6 +106,47 @@ char *time_quota(long curstate, long softlimit, long timelimit, char *timeleft);
 
 extern int type, transflag, ftwflag, authenticated, autospout_free, data,
     pdata, anonymous, guest;
+
+#ifdef TRANSFER_COUNT
+extern int data_count_total;	/* total number of data bytes */
+extern int data_count_in;
+extern int data_count_out;
+extern int byte_count_total;	/* total number of general traffic */
+extern int byte_count_in;
+extern int byte_count_out;
+extern int file_count_total;	/* total number of data files */
+extern int file_count_in;
+extern int file_count_out;
+extern int xfer_count_total;	/* total number of transfers */
+extern int xfer_count_in;
+extern int xfer_count_out;
+#ifdef TRANSFER_LIMIT  
+extern int file_limit_raw_in;
+extern int file_limit_raw_out;
+extern int file_limit_raw_total;
+extern int file_limit_data_in;  
+extern int file_limit_data_out; 
+extern int file_limit_data_total;
+extern int data_limit_raw_in;
+extern int data_limit_raw_out;
+extern int data_limit_raw_total;
+extern int data_limit_data_in;  
+extern int data_limit_data_out; 
+extern int data_limit_data_total;
+#ifdef RATIO /* 1998/08/06 K.Wakui */
+#define TRUNC_KB(n)   ((n)/1024+(((n)%1024)?1:0))
+extern time_t	login_time;
+extern time_t	limit_time;
+extern off_t    total_free_dl;
+extern int      upload_download_rate;
+#endif /* RATIO */
+#endif
+#endif
+
+#ifdef OTHER_PASSWD
+#include "getpwnam.h"
+extern char _path_passwd[];
+#endif
 
 #ifdef LOG_FAILED
 extern char the_user[];
@@ -408,6 +449,96 @@ void msg_massage(const char *inbuf, char *outbuf, size_t outlen)
 		outlen -= 1;
 		*outptr = '\0';
 		break;
+
+#ifdef TRANSFER_COUNT
+#ifdef TRANSFER_LIMIT
+#ifdef RATIO
+            case 'x':
+                switch (*++inptr) {
+                case 'u':       /* upload bytes */
+                    sprintf(outptr,"%d", TRUNC_KB(data_count_in) );
+                    break;
+                case 'd':       /* download bytes */
+                    sprintf(outptr,"%d", TRUNC_KB(data_count_out) );
+                    break;
+                case 'R':       /* rate 1:n */
+                    if( upload_download_rate > 0 ) {
+                        sprintf(outptr,"%d", upload_download_rate );
+                    }
+                    else {
+                        strcpy(outptr,"free");
+                    }
+                    break;
+                case 'c':       /* credit bytes */
+                    if( upload_download_rate > 0 ) {
+                        off_t credit=( data_count_in * upload_download_rate) - (data_count_out - total_free_dl);
+                        sprintf(outptr,"%d", TRUNC_KB(credit) );
+                    }
+                    else {
+                        strcpy(outptr,"unlimited");
+                    }
+                    break;
+                case 'T':       /* time limit (minutes) */
+                    if( limit_time > 0 ) {
+                        sprintf(outptr,"%d", limit_time );
+                    }
+                    else {
+                        strcpy(outptr,"unlimited");
+                    }
+                    break;
+                case 'E':       /* elapsed time from loggedin (minutes) */
+                    sprintf(outptr,"%d", (time(NULL)-login_time)/60 );
+                    break;
+                case 'L':       /* times left until force logout (minutes) */
+                    if( limit_time > 0 ) {
+                        sprintf(outptr,"%d", limit_time-(time(NULL)-login_time)/60 );
+                    }
+                    else {
+                        strcpy(outptr,"unlimited");
+                    }
+                    break;
+                case 'U':       /* upload limit */
+		    if( data_limit_raw_in > 0 ) {
+			sprintf(outptr,"%d", TRUNC_KB(data_limit_raw_in));
+		    }
+		    else if( data_limit_data_in > 0 ) {
+			sprintf(outptr,"%d", TRUNC_KB(data_limit_data_in));
+		    }
+		    else if( data_limit_raw_total > 0 ) {
+			sprintf(outptr,"%d", TRUNC_KB(data_limit_raw_total));
+		    }
+		    else if( data_limit_data_total > 0 ) {
+			sprintf(outptr,"%d", TRUNC_KB(data_limit_data_total));
+		    }
+		    else {
+			strcpy(outptr, "unlimited");
+		    }
+                    break;
+                case 'D':       /* download limit */
+		    if( data_limit_raw_out > 0 ) {
+			sprintf(outptr,"%d", TRUNC_KB(data_limit_raw_out));
+		    }
+		    else if( data_limit_data_out > 0 ) {
+			sprintf(outptr,"%d", TRUNC_KB(data_limit_data_out));
+		    }
+		    else if( data_limit_raw_total > 0 ) {
+			sprintf(outptr,"%d", TRUNC_KB(data_limit_raw_total));
+		    }
+		    else if( data_limit_data_total > 0 ) {
+			sprintf(outptr,"%d", TRUNC_KB(data_limit_data_total));
+		    }
+		    else {
+			strcpy(outptr, "unlimited");
+		    }
+                    break;
+                default:
+                    strcpy(outptr,"%??");
+                    break;
+                }
+                break;
+#endif /* RATIO */
+#endif
+#endif
 
 	    default:
 		*outptr++ = '%';

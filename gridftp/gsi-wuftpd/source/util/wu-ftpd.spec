@@ -1,7 +1,7 @@
 Summary: An FTP daemon originally developed by Washington University.
 Name: wu-ftpd
 
-%define ver 2.6.0
+%define ver 2.6.1
 
 Version: %{ver}
 Release: 1

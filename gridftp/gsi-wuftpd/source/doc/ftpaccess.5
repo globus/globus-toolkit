@@ -1,5 +1,5 @@
 .\"
-.\" Copyright (c) 1999 WU-FTPD Development Group. 
+.\" Copyright (c) 1999,2000 WU-FTPD Development Group. 
 .\" All rights reserved.
 .\" 
 .\" Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994 
@@ -221,13 +221,12 @@ parameter applies the limit to the total traffic rather than just data
 files.
 
 .TP 0.5i
-.B byte-limit [<raw>] <in|out|total> <count> [<class>]
+.B data-limit [<raw>] <in|out|total> <count> [<class>]
 
 Limit the number of data bytes a user in the given class may transfer.  The
 limit may be place on bytes in, out or total.  If no class is specified,
 the limit is the default for classes which do not have a limit specified.
-Note that this limit will preventtransfers once it has been exceeded, but
-will not terminate a transfer in progress.  The optional
+The optional
 .B raw
 parameter applies the limit to total traffic rather than just data files.
 
@@ -408,6 +407,19 @@ to replace the cookie with a specified text string:
     %q      current number of allocated inodes
     %H      time limit for excessive disk use
     %h      time limit for excessive files
+
+ ratios:
+
+    %xu     Uploaded bytes
+    %xd     Downloaded bytes
+    %xR     Upload/Download ratio (1:n)
+    %xc     Credit bytes
+    %xT     Time limit (minutes)
+    %xE     Elapsed time since login (minutes)
+    %xL     Time left
+    %xU     Upload limit
+    %xD     Download limit
+
 .fi
 
 The message will only be displayed once to avoid annoying the user.
@@ -478,6 +490,31 @@ syslog.  Without this option the messages are written to xferlog.
 
 syslog+xferlog sends the transfer log messages to both the system log and
 the xferlog.
+
+.SH Upload/Download ratios
+In order for any of these commands to work, you must compile WU-FTPD with
+--enable-ratios.
+
+.TP 0.5i
+.B ul-dl-rate <rate> [<class> ...]
+
+Specify Upload/Download ratio (1:rate).
+When ftp user uploaded 1 bytes, (s)he can take <rate> bytes.
+By default, there is no ratio.
+
+.TP 0.5i
+.B dl-free <filename> [<class> ...]
+
+The file <filename> can be downloaded freely (=ignoring the ratio)
+
+.TP 0.5i
+.B dl-free-dir <dirname> [<class> ...]
+
+All files in the directory <dirname> and its subdirectories can be
+downloaded freely (=ignoring the ratio)
+Note that both dl-free and dl-free-dir are relative to the system's
+root, not the chroot environment.
+
 
 .SH Miscellaneous Capabilities
 
@@ -630,6 +667,18 @@ to specific users when all users were allowed.
 
 Normally, anonymous users are allowed to log in on the virtual server.
 This option denies them access.
+
+.TP 0.5i
+.B virtual <address> passwd <file>
+
+Use a different passwd file for the virtual domain. The daemon needs to be
+compiled with --enable-passwd (or OTHER_PASSWD) for this option to work.
+
+.TP 0.5i
+.B virtual <address> shadow <file>
+
+Use a different shadow file for this virtual domain. The daemon needs to be
+compiled with --enable-passwd (or OTHER_PASSWD) for this option to work.
 
 .TP 0.5i
 .B defaultserver deny <username> [<username> ...]

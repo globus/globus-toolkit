@@ -1,6 +1,6 @@
 #!/bin/sh -
 #
-# Copyright (c) 1999 WU-FTPD Development Group.  
+# Copyright (c) 1999,2000 WU-FTPD Development Group.  
 # All rights reserved.
 #  
 # Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994  
@@ -26,7 +26,7 @@
 if [ ! -r edit ]; then echo 0 > edit; fi
 touch edit
 awk '	{	edit = $1 + 1; }\
-END	{	printf "char version[] = \"Version wu-2.6.0(%d) ", edit > "vers.c";\
+END	{	printf "char version[] = \"Version wu-2.6.1(%d) ", edit > "vers.c";\
 #LANG=
 #LC_TIME=
 		printf "%d\n", edit > "edit"; }' < edit
