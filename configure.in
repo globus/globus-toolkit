@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.32 $)
+AC_REVISION($Revision: 1.33 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -23,8 +23,8 @@ AC_ARG_ENABLE(anonymous-auth,
 	else
 	   AC_MSG_RESULT([SSL anonymous authentication support disabled])
 	fi,
-	AC_DEFINE(SUPPORT_SSL_ANONYMOUS_AUTH)
-	AC_MSG_RESULT([SSL anonymous authentication support enabled]))
+#	AC_DEFINE(SUPPORT_SSL_ANONYMOUS_AUTH)
+	AC_MSG_RESULT([SSL anonymous authentication support disabled]))
 
 AC_ARG_ENABLE(conditional-encryption,
 	[  --enable-conditional-encryption  Only encrypt when sending passphrase],
