@@ -12,26 +12,26 @@ enum
     GLOBUS_XIO_FILE_SET_MODE = 1,
     GLOBUS_XIO_FILE_GET_MODE,
     GLOBUS_XIO_FILE_SET_FLAGS,
-    GLOBUS_XIO_FILE_GET_FALGS,
-    GLOBUS_XIO_FILE_MAX_CMD = GLOBUS_XIO_FILE_GET_EOF,
-}
+    GLOBUS_XIO_FILE_GET_FLAGS,
+    GLOBUS_XIO_FILE_MAX_CMD = GLOBUS_XIO_FILE_GET_FLAGS,
+};
 
 /*
- *  attribute structure 
+ *  attribute structure
  */
 struct globus_l_xio_file_attr_s
 {
     int                                         mode;
     int                                         flags;
-}
+};
 
 /*
  *  target structure
  */
 struct globus_l_xio_file_target_s
 {
-    char                                        cs[256];
-}
+    char                                        pathname[256];
+};
 
 /*
  *  handle structure
@@ -41,6 +41,7 @@ struct globus_l_xio_file_handle_s
     int                                         fd;
 };
 
+static
 globus_result_t
 globus_xio_driver_file(
     globus_xio_driver_t *                       out_driver)
@@ -51,8 +52,9 @@ globus_xio_driver_file(
 }
 
 /*
- *  initialize a driver attribute 
+ *  initialize a driver attribute
  */
+static
 globus_result_t
 globus_xio_driver_file_attr_init(
     void **                                     out_attr)
@@ -77,6 +79,7 @@ globus_xio_driver_file_attr_init(
 /*
  *  modify the attribute structure
  */
+static
 globus_result_t
 globus_xio_driver_file_attr_cntl(
     void *                                      attr,
@@ -86,7 +89,7 @@ globus_xio_driver_file_attr_cntl(
     struct globus_l_xio_file_attr_s *           file_attr;
     int *                                       out_i;
 
-    file_attr = (struct globus_l_xio_file_attr_s *)attr;
+    file_attr = (struct globus_l_xio_file_attr_s *) attr;
     switch(cmd)
     {
         case GLOBUS_XIO_FILE_SET_MODE:
@@ -118,6 +121,7 @@ globus_xio_driver_file_attr_cntl(
 /*
  *  copy an attribute structure
  */
+static
 globus_result_t
 globus_xio_driver_file_attr_copy(
     void **                                     dst,
@@ -138,6 +142,7 @@ globus_xio_driver_file_attr_copy(
 /*
  *  destroy an attr structure
  */
+static
 globus_result_t
 globus_xio_driver_file_attr_destroy(
     void *                                      attr)
@@ -152,6 +157,7 @@ globus_xio_driver_file_attr_destroy(
  *
  *  all we need to do is hang onto the contact string here
  */
+static
 globus_result_t
 globus_xio_driver_file_target_init(
     void **                                     out_target,
@@ -164,7 +170,8 @@ globus_xio_driver_file_target_init(
     /* create the target structure and copy the contact string into it */
     target = (struct globus_l_xio_file_target_s *)
                 globus_malloc(sizeof(struct globus_l_xio_file_target_s));
-    sprintf(target->cs, "%s", contact_string);
+    strncpy(target->pathname, contact_string, sizeof(target->pathname) - 1);
+    target->pathname[sizeof(target->pathname) - 1] = '\0';
 
     return GLOBUS_SUCCESS;
 }
@@ -172,6 +179,7 @@ globus_xio_driver_file_target_init(
 /*
  *  destroy the target structure
  */
+static
 globus_result_t
 globus_xio_driver_file_target_destroy(
     void *                                      target)
@@ -184,6 +192,7 @@ globus_xio_driver_file_target_destroy(
 /*
  *  open a file
  */
+static
 globus_result_t
 globus_xio_driver_file_open(
     void **                                     driver_handle,
@@ -194,15 +203,19 @@ globus_xio_driver_file_open(
 {
     struct globus_l_xio_file_target_s *         file_target;
     struct globus_l_xio_file_handle_s *         file_handle;
-    int                                         fd;
+    struct globus_l_xio_file_attr_s *           file_attr;
 
     file_target = (struct globus_l_xio_file_target_s *) target;
-
+    file_attr = (struct globus_l_xio_file_attr_s *) driver_handle_attr;
+    
     /*
-     * open the file referenced by the contact string given in target 
+     * open the file referenced by the contact string given in target
      * init.
      */
-    fd = open(file_target->cs, file_attr->flags, file_attr->mode);
+    fd = open(
+        file_target->pathname, 
+        (file_attr ? file_attr->flags : O_CREAT), 
+        (file_attr ? file_attr->mode : S_IRWXU));
     if(fd < 0)
     {
         return GLOBUS_FAILURE;
@@ -216,7 +229,7 @@ globus_xio_driver_file_open(
     *driver_handle = file_handle;
 
     /* tell globus_xio that we have finished the open request */
-    globus_xio_driver_finished_open(context, op);
+    globus_xio_driver_finished_open(context, op, GLOBUS_SUCCESS);
 
     return GLOBUS_SUCCESS;
 }
@@ -224,6 +237,7 @@ globus_xio_driver_file_open(
 /*
  *  close a file
  */
+static
 globus_result_t
 globus_xio_driver_file_close(
     void *                                      driver_handle,
@@ -233,21 +247,23 @@ globus_xio_driver_file_close(
     struct globus_l_xio_file_handle_s *         file_handle;
 
     file_handle = (struct globus_l_xio_file_handle_s *) driver_handle;
+    
     /* preform the posix close operation */
     close(file_handle->fd);
     globus_free(file_handle);
 
     /* tell globus_xio that we have finished the close operation */
-    globus_xio_driver_finished_close(op);
+    globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
     /* tell globus_xio that we are finished with the context */
-    globus_xio_driver_context_close(op);
-    
+    globus_xio_driver_context_close(context);
+
     return GLOBUS_SUCCESS;
 }
 
 /*
  *  read from a file
  */
+static
 globus_result_t
 globus_xio_driver_file_read(
     void *                                      driver_handle,
@@ -259,14 +275,15 @@ globus_xio_driver_file_read(
     ssize_t                                     total_nbytes = 0;
     ssize_t                                     nbytes;
     int                                         ctr;
+    globus_result_t                             res = GLOBUS_SUCCESS;
 
     file_handle = (struct globus_l_xio_file_handle_s *) driver_handle;
 
-    /* preform all read requests in the iovec */
+    /* perform all read requests in the iovec */
     for(ctr = 0; ctr < iovec_count; ctr++)
     {
-        nbytes = read(file_handle->fd, 
-                      iovec[ctr].iov_base, 
+        nbytes = read(file_handle->fd,
+                      iovec[ctr].iov_base,
                       iovec[ctr].iov_len);
 
         /* check the return codes */
@@ -277,23 +294,24 @@ globus_xio_driver_file_read(
                         GLOBUS_XIO_MODULE,
                         NULL,
                         errno));
-            return res;
+            break;
         }
         else if(nbytes == 0)
         {
-            /* set nbytes in iovec to be EOF (represented by -1) */
-            rovec[ctr].nbytes = -1;
-            return GLOBUS_SUCCESS;
+            break;
         }
-        else
-        {
-            /* set the number of bytes writen in the iovec */
-            iovec[ctr].nbytes = nbytes;
-        }
+        
+        total_nbytes += nbytes;
+    }
+    
+    if(total_nbytes == 0 && res == GLOBUS_SUCCESS)
+    {
+        /* set nbytes to be EOF (represented by -1) */
+        total_nbytes = -1;
     }
 
     /* tell globus_xio that we have finished the read operation */
-    globus_xio_driver_finished_read(op);
+    globus_xio_driver_finished_read(op, res, total_nbytes);
 
     return GLOBUS_SUCCESS;
 }
@@ -301,6 +319,7 @@ globus_xio_driver_file_read(
 /*
  *  write to a file
  */
+static
 globus_result_t
 globus_xio_driver_file_write(
     void *                                      driver_handle,
@@ -309,17 +328,18 @@ globus_xio_driver_file_write(
     globus_xio_driver_operation_t               op)
 {
     struct globus_l_xio_file_handle_s *         file_handle;
+    ssize_t                                     total_nbytes = 0;
     ssize_t                                     nbytes;
     int                                         ctr;
-    globus_result_t                             res;
+    globus_result_t                             res = GLOBUS_SUCCESS;
 
     file_handle = (struct globus_l_xio_file_handle_s *) driver_handle;
 
     /* preform all write requests in the iovec */
     for(ctr = 0; ctr < iovec_count; ctr++)
     {
-        nbytes = fwrite(file_handle->fd,
-                        iovec[ctr].iov_base, 
+        nbytes = write(file_handle->fd,
+                        iovec[ctr].iov_base,
                         iovec[ctr].iov_len);
         /* check the return codes */
         if(nbytes < 0)
@@ -329,60 +349,57 @@ globus_xio_driver_file_write(
                         GLOBUS_XIO_MODULE,
                         NULL,
                         errno));
-            return res;
+            break;
         }
-        else
-        {
-            /* set the number of bytes writen in the iovec */
-            iovec[ctr].nbytes = nbytes;
-        }
+        
+        total_nbytes += nbytes;
     }
 
     /* tell globus io that the write request is complete */
-    globus_xio_driver_finished_write(op);
+    globus_xio_driver_finished_write(op, res, total_nbytes);
 
     return GLOBUS_SUCCESS;
 }
 
-static globus_xio_driver_t globus_xio_driver_file_info = 
+static globus_xio_driver_t globus_xio_driver_file_info =
 {
     /*
      *  main io interface functions
      */
-    globus_xio_driver_file_open,
-    globus_xio_driver_file_close,
-    globus_xio_driver_file_read,
-    globus_xio_driver_file_write,     
-    NULL,
-    1,
+    globus_xio_driver_file_open,                      /* open_func           */
+    globus_xio_driver_file_close,                     /* close_func          */
+    globus_xio_driver_file_read,                      /* read_func           */
+    globus_xio_driver_file_write,                     /* write_func          */
+    NULL,                                             /* handle_cntl_func    */
+    0,                                                /* max_handle_cntl_cmd */
 
-    globus_xio_driver_file_target_init,
-    globus_xio_driver_file_target_destory,
+    globus_xio_driver_file_target_init,               /* target_init_func    */
+    globus_xio_driver_file_target_destory,            /* target_destroy_finc */
 
     /*
      *  No server functions.
      */
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    0,
+    NULL,                                             /* server_init_func    */
+    NULL,                                             /* server_accept_func  */
+    NULL,                                             /* server_destroy_func */
+    NULL,                                             /* server_cntl_func    */
+    0,                                                /* max_server_cntl_cmd */
 
     /*
      *  driver attr functions.  All or none may be NULL
      */
-    globus_xio_driver_file_attr_init,
-    globus_xio_driver_file_attr_copy,
-    globus_xio_driver_file_attr_cntl,
-    globus_xio_driver_file_attr_destroy,
-    GLOBUS_XIO_FILE_MAX_CMD,
-    
+    globus_xio_driver_file_attr_init,                 /* attr_init_func      */
+    globus_xio_driver_file_attr_copy,                 /* attr_copy_func      */
+    globus_xio_driver_file_attr_cntl,                 /* attr_cntl_func      */
+    globus_xio_driver_file_attr_destroy,              /* attr_destroy_func   */
+    GLOBUS_XIO_FILE_MAX_CMD,                          /* max_attr_cntl_cmd   */
+
     /*
      *  No need for data descriptors.
      */
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    0,
+    NULL,                                             /* dd_init             */
+    NULL,                                             /* dd_copy             */
+    NULL,                                             /* dd_destroy          */
+    NULL,                                             /* dd_cntl             */
+    0,                                                /* max_dd_cntl_cmd     */
 };

@@ -33,8 +33,9 @@
             <B>Timeouts</B><BR><BR>
             Built into the the library are IO timeouts.  This is a convience to
             the user in that they do not have to set their own alarms to determine
-            if an io operation is taking to long.  With globus_xio the simple set
-            a timeout value and they will be notified when time has elapsed.
+            if an io operation is taking to long.  With globus_xio they simply set
+            a timeout value and they will be notified when if an operation has not
+            progressed for the specified amount of time.
             </LI><BR>
             <LI>
             <B>Signals</B><BR><BR>
@@ -47,7 +48,7 @@
             to pass in meta data describing the buffer.  Also, after an IO operation
             has completed, Globus XIO returns a data descriptor to the user.  This
             allows for some interesting extensions.  In the furture we hope
-            to make it possible for a user to read from and protocol stack and pass
+            to make it possible for a user to read from the protocol stack and pass
             the buffer and data descriptor received to a write on a completely
             different protocol stack and have things automatically massaged and
             negiotiated for compatablity.
