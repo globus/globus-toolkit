@@ -13,7 +13,6 @@ public class RingBuffer {
     private int numObjects, maxObjects;
     private int inputIndex, outputIndex;
 
-
     public RingBuffer(int capacity) {
         maxObjects = capacity;
         numObjects = 0;
@@ -24,27 +23,32 @@ public class RingBuffer {
     /*Returns and removes next object (FIFO) if there is one;
       if ringbuffer is empty, returns null.*/
     public synchronized CustomByteBuffer getNext() {
-        if (numObjects == 0)
+        try {
+            while (numObjects == 0) {
+                wait();
+            }
+        } catch (InterruptedException e) {
             return null;
-        else {
-            CustomByteBuffer theNext;
-            theNext = queue[outputIndex];
-            queue[outputIndex] = null;
-            outputIndex = (outputIndex + 1) % maxObjects;
-            numObjects --;
-            return theNext;
         }
+        
+        CustomByteBuffer theNext;
+        theNext = queue[outputIndex];
+        queue[outputIndex] = null;
+        outputIndex = (outputIndex + 1) % maxObjects;
+        numObjects --;
+        return theNext;
     }
 
     /*Returns true if insert was successful, false if ringbuffer 
       was already full and the insert failed.*/
     public synchronized boolean insert(CustomByteBuffer newBuf) {
-        if (numObjects == maxObjects)
+        if (numObjects == maxObjects) {
             return false;
-        else {
+        } else {
             queue[inputIndex] = newBuf;
             inputIndex = (inputIndex + 1) % maxObjects;
             numObjects ++;
+            notify();
             return true;
         }
     }

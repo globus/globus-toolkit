@@ -77,13 +77,6 @@ public class Receiver {
         UsageMonitorPacket packet;
         short code;
 
-        while (theRing.isEmpty()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ie) {
-            }
-        }
-        
         bufFromRing = theRing.getNext();
         code = bufFromRing.getShort();
         switch (code) {
@@ -189,17 +182,8 @@ class HandlerThread extends Thread {
         CustomByteBuffer bufFromRing;
 
         while(stillGood) {
-            /*todo: Maybe the thread should wait() while the ring is empty,
-              and the receiverThread should notify() this thread when
-              stuff comes in...*/
-            while (theRing.isEmpty()) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ie) {
-                }
-            }
-        
             bufFromRing = theRing.getNext();
+
             componentCode = bufFromRing.getShort();
             versionCode = bufFromRing.getShort();
             bufFromRing.rewind();
