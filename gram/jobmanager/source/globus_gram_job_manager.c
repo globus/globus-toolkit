@@ -103,6 +103,9 @@ static char * graml_env_logname;
 static char * graml_env_home;
 static char * graml_env_tz;
 
+static char * graml_poe_executable = NULL;
+static char * graml_mpirun_executable = NULL;
+
 globus_module_descriptor_t globus_i_gram_jobmanager_module = {
     "globus_gram_jobmanager",
     globus_i_gram_jobmanager_activate,
@@ -119,7 +122,8 @@ Returns:
 int
 globus_i_gram_jobmanager_activate(void)
 {
-    int rc;
+    int              rc;
+    globus_result_t  res;
 
     globus_l_is_initialized = 1;
 
@@ -129,7 +133,23 @@ globus_i_gram_jobmanager_activate(void)
         return(rc);
     }
 
-    return 0;
+    /* 
+     * don't bother about errors; we will only signal error if we really
+     * need to use one of the executables, and it's not defined.
+     */
+    res = globus_common_get_attribute_from_config_file(
+	GLOBUS_NULL,
+	GLOBUS_SH_COMMANDS_SH_LOCATION,
+	"GLOBUS_SH_POE",
+	&graml_poe_executable );
+    
+    res = globus_common_get_attribute_from_config_file(
+	GLOBUS_NULL,
+	GLOBUS_SH_COMMANDS_SH_LOCATION,
+	"GLOBUS_SH_MPIRUN",
+	&graml_mpirun_executable );
+    
+    return GLOBUS_SUCCESS;
 } /* globus_i_gram_jobmanager_activate() */
 
 /******************************************************************************
@@ -147,6 +167,12 @@ globus_i_gram_jobmanager_deactivate(void)
     {
         return(GLOBUS_FAILURE);
     }
+
+    if (graml_poe_executable)
+	globus_libc_free(graml_poe_executable);
+
+    if (graml_mpirun_executable)
+	globus_libc_free(graml_mpirun_executable);
 
     rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -393,6 +419,16 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
 
     if (strncmp(request->jobmanager_type, "poe", 3) == 0)
     {   /* GRAMI_POE_MANAGER */
+
+	if (!graml_poe_executable)
+	{
+	    grami_fprintf(request->jobmanager_log_fp,
+			  "JMI: poe not found!\n");
+	    request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_DONE;
+	    request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_POE_NOT_FOUND;
+	    return(GLOBUS_FAILURE);
+	}
+
         if (request->job_type == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE)
 	{
 	    char hostname[MAXHOSTNAMELEN];
@@ -473,10 +509,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
             ++i;
             (new_args)[i] = GLOBUS_NULL;
 
-
-            request->executable = (char *) globus_libc_malloc (sizeof(char *) *
-                                              strlen(GLOBUS_POE_PATH) + 1);
-            strcpy(request->executable, GLOBUS_POE_PATH);
+            request->executable = globus_libc_strdup(graml_poe_executable);
             globus_libc_free(request->arguments);
             request->arguments = new_args;
         }
@@ -485,6 +518,15 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
     {
 	if (request->job_type == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI)
 	{
+	    if (!graml_mpirun_executable)
+	    {
+		grami_fprintf(request->jobmanager_log_fp,
+			      "JMI: mpirun not found!\n");
+		request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_DONE;
+		request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_MPIRUN_NOT_FOUND;
+		return(GLOBUS_FAILURE);
+	    }
+
 	    /* total up the number of arguments
 	     */
 	    for (i = 0; (request->arguments)[i]; i++)
@@ -518,9 +560,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
 	    
 	    (new_args)[i+3] = NULL;
 	    
-	    request->executable = (char *) globus_libc_malloc (sizeof(char *) *
-					 strlen(GLOBUS_MPIRUN_PATH) + 1);
-	    strcpy(request->executable, GLOBUS_MPIRUN_PATH);
+	    request->executable = globus_libc_strdup(graml_mpirun_executable);
 	    globus_libc_free(request->arguments);
 	    request->arguments = new_args;
         }

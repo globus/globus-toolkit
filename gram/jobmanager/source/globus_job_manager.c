@@ -797,8 +797,10 @@ int main(int argc,
 
     if (!conf.install_path)
     {
-	error = globus_common_install_path_from_config_file(
+	error = globus_common_get_attribute_from_config_file(
 	    conf.deploy_path,
+	    GLOBUS_INSTALL_PATH_SH_LOCATION,
+	    "GLOBUS_INSTALL_PATH",
 	    &conf.install_path );
 	if (error != GLOBUS_SUCCESS)
 	{
