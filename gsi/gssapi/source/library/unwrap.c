@@ -226,45 +226,63 @@ GSS_CALLCONV gss_unwrap(
         /* now get the date from SSL. 
          * We don't know how big it is, so assume the max?
          */
-        rc = SSL_read(context->gss_ssl, readarea, sizeof(readarea));
+
+        while((rc = SSL_read(context->gs_ssl, readarea, sizeof(readarea))) > 0)
+        {
+            void * realloc_ptr;
+
+            realloc_ptr = realloc(
+                output_message_buffer->value,
+                rc + output_message_buffer->length);
+
+            if(realloc_ptr == NULL)
+            {
+                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                major_status = GSS_S_FAILURE;
+
+                /* free allocated mem */
+                if(output_message_buffer->value)
+                { 
+                    free(output_message_buffer->value);
+                }
+                
+                goto exit;
+                
+            }
+
+            output_message_buffer->value = realloc_ptr;
+
+            memcpy(output_message_buffer->value +
+                   output_message_buffer->length,
+                   readarea,
+                   rc);
+            
+            output_message_buffer->length += rc;
+        }
+        
         if (rc < 0)
         {
-            unsigned int                ssl_error;
-
-            ssl_error = SSL_get_error(context->gss_ssl, rc);
+            ssl_error = SSL_get_error(context->gs_ssl, rc);
             
-            if(ssl_error == SSL_ERROR_WANT_READ)
+            if(!ssl_error == SSL_ERROR_WANT_READ)
             {
-                output_message_buffer->value = NULL;
-                output_message_buffer->length = 0;
-            }
-            else
-            { 
+                char errbuf[256];
+                
                 /* Problem, we should have some data here! */
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status, 
                     GLOBUS_GSI_GSSAPI_ERROR_WRAP_BIO,
                     ("\n        SSL_read rc=%d", rc));
                 major_status = GSS_S_FAILURE;
+
+                /* free allocated mem */
+                if(output_message_buffer->value)
+                { 
+                    free(output_message_buffer->value);
+                }
+
                 goto exit;
             }
-        }
-        else if (rc == 0)
-        {
-            output_message_buffer->value = NULL;
-            output_message_buffer->length = rc;
-        }
-        else
-        {
-            output_message_buffer->value = (char *) malloc(rc);
-            if (output_message_buffer->value == NULL)
-            {
-                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-                major_status = GSS_S_FAILURE;
-                goto exit;
-            }
-            output_message_buffer->length = rc;
-            memcpy(output_message_buffer->value, readarea, rc);
         }
                 
         if (conf_state)
