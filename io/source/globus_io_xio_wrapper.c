@@ -106,7 +106,6 @@ typedef enum
     GLOBUS_I_IO_TCP_HANDLE  = 2
 } globus_l_io_handle_type_t;
 
-
 typedef struct globus_l_io_delegation_cb_arg_s
 {
     void *                              user_arg;
@@ -137,22 +136,32 @@ typedef struct globus_l_io_handle_s
     globus_l_io_handle_type_t                   type;
     globus_io_handle_t *                        io_handle;
     globus_xio_handle_t                         xio_handle;
+    
+    globus_io_secure_authorization_mode_t       authorization_mode;
+    globus_io_secure_authorization_data_t       authz_data;
+    globus_list_t *                             pending_ops;
+    globus_mutex_t                              pending_lock;
+    
     /* used only for listener */
     globus_xio_server_t                         xio_server;
     globus_xio_target_t                         xio_target;
     globus_xio_attr_t                           xio_attr;
-    globus_io_secure_authorization_mode_t       authorization_mode;
-    globus_io_secure_authorization_data_t       authz_data;
 } globus_l_io_handle_t;
 
 typedef struct
 {
     globus_bool_t                       done;
-    globus_result_t                     result;
+    globus_object_t *                   error;
     globus_mutex_t                      lock;
     globus_cond_t                       cond;
-    void *                              arg;
 } globus_l_io_monitor_t;
+
+typedef struct
+{
+    int                                 refs;
+    globus_io_callback_t                callback;
+    void *                              user_arg;
+} globus_l_io_cancel_info_t;
 
 typedef struct
 {
@@ -165,11 +174,9 @@ typedef struct
         globus_io_writev_callback_t     writev;
     } cb;
     void *                              user_arg;
+    globus_l_io_cancel_info_t *         cancel_info;
 } globus_l_io_bounce_t;
 
-
-
-static globus_mutex_t                   globus_l_io_driver_lock;
 static globus_xio_driver_t              globus_l_io_file_driver;
 static globus_xio_driver_t              globus_l_io_tcp_driver;
 static globus_xio_driver_t              globus_l_io_gsi_driver;
@@ -221,8 +228,6 @@ globus_l_io_activate(void)
         goto error_load_gsi;
     }
     
-    globus_mutex_init(&globus_l_io_driver_lock, GLOBUS_NULL);
-    
     return GLOBUS_SUCCESS;
 
 error_load_gsi:
@@ -245,9 +250,67 @@ globus_l_io_deactivate(void)
     globus_xio_driver_unload(globus_l_io_file_driver);
     globus_xio_driver_unload(globus_l_io_tcp_driver);
     globus_xio_driver_unload(globus_l_io_gsi_driver);
-    globus_mutex_destroy(&globus_l_io_driver_lock);
     
     return globus_module_deactivate(GLOBUS_XIO_MODULE);
+}
+
+static
+globus_result_t
+globus_l_io_handle_init(
+    globus_l_io_handle_t **             _ihandle,
+    globus_io_handle_t *                io_handle,
+    globus_l_io_handle_type_t           type)
+{
+    globus_result_t                     result;
+    globus_l_io_handle_t *              ihandle;
+    GlobusIOName(globus_l_io_handle_init);
+    
+    result = GlobusLIOMalloc(ihandle, globus_l_io_handle_t);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_alloc;
+    }
+    
+    ihandle->type               = type;
+    ihandle->io_handle          = io_handle;
+    ihandle->xio_handle         = GLOBUS_NULL;
+    ihandle->xio_server         = GLOBUS_NULL;
+    ihandle->xio_target         = GLOBUS_NULL;
+    ihandle->xio_attr           = GLOBUS_NULL;
+    ihandle->authorization_mode = GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE;
+    ihandle->authz_data         = GLOBUS_NULL;
+    ihandle->pending_ops        = GLOBUS_NULL;
+    globus_mutex_init(&ihandle->pending_lock, GLOBUS_NULL);
+    
+    *_ihandle = ihandle;
+    
+    return GLOBUS_SUCCESS;
+    
+error_alloc:
+    return result;
+}
+
+static
+void
+globus_l_io_handle_destroy(
+    globus_l_io_handle_t *              ihandle)
+{
+    GlobusIOName(globus_l_io_handle_destroy);
+    
+    if(ihandle->authz_data)
+    {
+        globus_io_secure_authorization_data_destroy(&ihandle->authz_data);
+    }
+    if(ihandle->xio_attr)
+    {
+        globus_xio_attr_destroy(ihandle->xio_attr);
+    }
+    if(ihandle->xio_target)
+    {
+        globus_xio_target_destroy(ihandle->xio_target);
+    }
+    globus_mutex_destroy(&ihandle->pending_lock);
+    globus_free(ihandle);
 }
 
 static
@@ -420,14 +483,14 @@ globus_l_io_bounce_iovec_cb(
 
 static
 void
-globus_l_io_bounce_cb(
+globus_l_io_bounce_accept_cb(
     globus_xio_handle_t                 handle,
     globus_result_t                     result,
     void *                              user_arg)
 {
     globus_l_io_bounce_t *              bounce_info;
     globus_l_io_handle_t *              ihandle;
-    GlobusIOName(globus_l_io_bounce_cb);
+    GlobusIOName(globus_l_io_bounce_accept_cb);
     
     bounce_info = (globus_l_io_bounce_t *) user_arg;
     ihandle = bounce_info->handle;
@@ -445,11 +508,10 @@ globus_l_io_bounce_cb(
     
     if(result != GLOBUS_SUCCESS)
     {
-        globus_free(ihandle);
+        globus_l_io_handle_destroy(ihandle);
     }
     globus_free(bounce_info);
 }
-
 
 static
 void
@@ -726,16 +788,11 @@ globus_l_io_bounce_authz_cb(
     
     if(result != GLOBUS_SUCCESS)
     {
-        if(ihandle->authz_data)
-        {
-            globus_free(ihandle->authz_data);
-        }
-        globus_free(ihandle);
+        globus_l_io_handle_destroy(ihandle);
     }
     
     globus_free(bounce_info);
 }
-
 
 static
 void
@@ -761,58 +818,6 @@ globus_l_io_bounce_listen_cb(
 
 static
 void
-globus_l_io_blocking_xio_data_cb(
-    globus_xio_handle_t                 xio_handle, 
-    globus_result_t                     result,
-    globus_byte_t *                     buffer,
-    globus_size_t                       len,
-    globus_size_t                       nbytes, 
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg)
-{
-    globus_l_io_monitor_t *             monitor;
-    GlobusIOName(globus_l_io_blocking_xio_data_cb);
-    
-    monitor = (globus_l_io_monitor_t *) user_arg;
-    
-    globus_mutex_lock(&monitor->lock);
-    {
-        *((globus_size_t *) monitor->arg) = nbytes;
-        monitor->done = GLOBUS_TRUE;
-        monitor->result = result;
-        globus_cond_signal(&monitor->cond);
-    }
-    globus_mutex_unlock(&monitor->lock);
-}
-
-static
-void
-globus_l_io_blocking_xio_iovec_cb(
-    globus_xio_handle_t                 xio_handle,
-    globus_result_t                     result,
-    globus_xio_iovec_t *                iovec,
-    int                                 count,
-    globus_size_t                       nbytes,
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg)
-{
-    globus_l_io_monitor_t *             monitor;
-    GlobusIOName(globus_l_io_blocking_xio_iovec_cb);
-    
-    monitor = (globus_l_io_monitor_t *) user_arg;
-    
-    globus_mutex_lock(&monitor->lock);
-    {
-        *((globus_size_t *) monitor->arg) = nbytes;
-        monitor->done = GLOBUS_TRUE;
-        monitor->result = result;
-        globus_cond_signal(&monitor->cond);
-    }
-    globus_mutex_unlock(&monitor->lock);
-}
-
-static
-void
 globus_l_io_blocking_xio_cb(
     globus_xio_handle_t                 handle,
     globus_result_t                     result,
@@ -826,7 +831,7 @@ globus_l_io_blocking_xio_cb(
     globus_mutex_lock(&monitor->lock);
     {
         monitor->done = GLOBUS_TRUE;
-        monitor->result = result;
+        monitor->error = globus_error_get(result);
         globus_cond_signal(&monitor->cond);
     }
     globus_mutex_unlock(&monitor->lock);
@@ -847,7 +852,7 @@ globus_l_io_blocking_cb(
     globus_mutex_lock(&monitor->lock);
     {
         monitor->done = GLOBUS_TRUE;
-        monitor->result = result;
+        monitor->error = globus_error_get(result);
         globus_cond_signal(&monitor->cond);
     }
     globus_mutex_unlock(&monitor->lock);
@@ -1306,7 +1311,8 @@ globus_l_io_file_open(
     globus_l_io_monitor_t               monitor;
     GlobusIOName(globus_l_io_file_open);
     
-    result = GlobusLIOMalloc(ihandle, globus_l_io_handle_t);
+    result = globus_l_io_handle_init(
+        &ihandle, handle, GLOBUS_I_IO_FILE_HANDLE);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_alloc;
@@ -1344,7 +1350,7 @@ globus_l_io_file_open(
     if(result != GLOBUS_SUCCESS)
     {
         monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
+        monitor.error = globus_error_get(result);
     }
     
     globus_mutex_lock(&monitor.lock);
@@ -1359,31 +1365,25 @@ globus_l_io_file_open(
     globus_mutex_destroy(&monitor.lock);
     globus_cond_destroy(&monitor.cond);
     
-    if(monitor.result != GLOBUS_SUCCESS)
+    if(monitor.error != GLOBUS_NULL)
     {
-        result = monitor.result;
+        result = globus_error_put(monitor.error);
         goto error_open;
     }
     
-    ihandle->type = GLOBUS_I_IO_FILE_HANDLE;
-    ihandle->io_handle = handle;
-    ihandle->authz_data = GLOBUS_NULL;
     *handle = ihandle;
     
-    /* XXX globus_xio_target_destroy(target); */
     globus_xio_stack_destroy(stack);
     
     return GLOBUS_SUCCESS;
 
 error_open:
-    /* XXX globus_xio_target_destroy(target); */
-    
 error_target:
 error_push:
     globus_xio_stack_destroy(stack);
     
 error_stack:
-    globus_free(ihandle);
+    globus_l_io_handle_destroy(ihandle);
 
 error_alloc:
     return result;
@@ -1495,7 +1495,8 @@ globus_io_file_posix_convert(
     
     GlobusLIOCheckNullParam(handle);
     
-    result = GlobusLIOMalloc(ihandle, globus_l_io_handle_t);
+    result = globus_l_io_handle_init(
+        &ihandle, handle, GLOBUS_I_IO_FILE_HANDLE);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_alloc;
@@ -1549,7 +1550,7 @@ globus_io_file_posix_convert(
     if(result != GLOBUS_SUCCESS)
     {
         monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
+        monitor.error = globus_error_get(result);
     }
     
     globus_mutex_lock(&monitor.lock);
@@ -1564,25 +1565,20 @@ globus_io_file_posix_convert(
     globus_mutex_destroy(&monitor.lock);
     globus_cond_destroy(&monitor.cond);
     
-    if(monitor.result != GLOBUS_SUCCESS)
+    if(monitor.error != GLOBUS_NULL)
     {
-        result = monitor.result;
+        result = globus_error_put(monitor.error);
         goto error_open;
     }
     
-    ihandle->type = GLOBUS_I_IO_FILE_HANDLE;
-    ihandle->io_handle = handle;
-    ihandle->authz_data = GLOBUS_NULL;
     *handle = ihandle;
     
-    /* XXX globus_xio_target_destroy(target); */
     globus_xio_stack_destroy(stack);
     globus_xio_attr_destroy(myattr);
     
     return GLOBUS_SUCCESS;
 
 error_open:
-    /* XXX globus_xio_target_destroy(target); */
 
 error_target:
 error_push:
@@ -1593,7 +1589,7 @@ error_cntl:
     globus_xio_attr_destroy(myattr);
     
 error_attr:
-    globus_free(ihandle);
+    globus_l_io_handle_destroy(ihandle);
 
 error_alloc:
     *handle = GLOBUS_NULL;
@@ -1634,14 +1630,12 @@ globus_io_tcp_register_connect(
         goto error_bounce;
     }
     
-    result = GlobusLIOMalloc(ihandle, globus_l_io_handle_t);
+    result = globus_l_io_handle_init(&ihandle, handle, GLOBUS_I_IO_TCP_HANDLE);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_handle;
     }
 
-    memset(ihandle, 0, sizeof(globus_l_io_handle_t));
-    
     result = globus_xio_stack_init(&stack, GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1688,8 +1682,6 @@ globus_io_tcp_register_connect(
         goto error_target;
     }
 
-    ihandle->type = GLOBUS_I_IO_TCP_HANDLE;
-    ihandle->io_handle = handle;
     bounce_info->handle = ihandle;
     bounce_info->cb.non_io = callback;
     bounce_info->user_arg = callback_arg;
@@ -1706,27 +1698,18 @@ globus_io_tcp_register_connect(
         goto error_open;
     }
     
-    /* XXX globus_xio_target_destroy(target); */
     globus_xio_stack_destroy(stack);
     
     return GLOBUS_SUCCESS;
 
 error_open:
-    /* XXX globus_xio_target_destroy(target); */
 error_target:
 error_authz:
-    if(ihandle->authz_data->identity != GSS_C_NO_NAME)
-    {
-        OM_uint32                       minor_status;
-
-        gss_release_name(&minor_status,
-                         ihandle->authz_data->identity);
-    }
 error_push:
     globus_xio_stack_destroy(stack);
     
 error_stack:
-    globus_free(ihandle);
+    globus_l_io_handle_destroy(ihandle);
     
 error_handle:
     globus_free(bounce_info);
@@ -1760,7 +1743,7 @@ globus_io_tcp_connect(
     if(result != GLOBUS_SUCCESS)
     {
         monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
+        monitor.error = globus_error_get(result);
     }
     
     globus_mutex_lock(&monitor.lock);
@@ -1775,16 +1758,15 @@ globus_io_tcp_connect(
     globus_mutex_destroy(&monitor.lock);
     globus_cond_destroy(&monitor.cond);
     
-    if(monitor.result != GLOBUS_SUCCESS)
+    if(monitor.error != GLOBUS_NULL)
     {
-        result = monitor.result;
+        result = globus_error_put(monitor.error);
         goto error_register;
     }
     
     return GLOBUS_SUCCESS;
     
 error_register:
-    globus_free(*handle);
     *handle = GLOBUS_NULL;
     return result;
 }
@@ -1843,7 +1825,7 @@ globus_io_tcp_create_listener(
         goto error_cntl;
     }
     
-    result = GlobusLIOMalloc(ihandle, globus_l_io_handle_t);
+    result = globus_l_io_handle_init(&ihandle, handle, GLOBUS_I_IO_TCP_HANDLE);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_alloc;
@@ -1880,15 +1862,6 @@ globus_io_tcp_create_listener(
         goto error_server;
     }
     
-    ihandle->type = GLOBUS_I_IO_TCP_HANDLE;
-    ihandle->xio_handle = GLOBUS_NULL;
-    ihandle->xio_target = GLOBUS_NULL;
-    ihandle->xio_attr = iattr->attr;
-    ihandle->authz_data = GLOBUS_NULL;
-    globus_free(iattr);
-    ihandle->io_handle = handle;
-    *handle = ihandle;
-    
     if(!*port)
     {
         char *                          contact_string;
@@ -1911,6 +1884,10 @@ globus_io_tcp_create_listener(
         globus_free(contact_string);
     }
     
+    ihandle->xio_attr = iattr->attr;
+    globus_free(iattr);
+    *handle = ihandle;
+    
     globus_xio_stack_destroy(stack);
     
     return GLOBUS_SUCCESS;
@@ -1923,7 +1900,7 @@ error_push:
     globus_xio_stack_destroy(stack);
     
 error_stack:
-    globus_free(ihandle);
+    globus_l_io_handle_destroy(ihandle);
     
 error_alloc:
 error_cntl:
@@ -1988,8 +1965,6 @@ error_register:
     
 error_bounce:
 error_registered:
-    free(*handle);
-    *handle = GLOBUS_NULL;
     return result;
 }
 
@@ -2010,7 +1985,7 @@ globus_io_tcp_listen(
     if(result != GLOBUS_SUCCESS)
     {
         monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
+        monitor.error = globus_error_get(result);
     }
     
     globus_mutex_lock(&monitor.lock);
@@ -2025,9 +2000,9 @@ globus_io_tcp_listen(
     globus_mutex_destroy(&monitor.lock);
     globus_cond_destroy(&monitor.cond);
     
-    if(monitor.result != GLOBUS_SUCCESS)
+    if(monitor.error != GLOBUS_NULL)
     {
-        result = monitor.result;
+        result = globus_error_put(monitor.error);
         goto error_register;
     }
     
@@ -2037,9 +2012,10 @@ error_register:
     return result;
 }
 
-/** XXX regardless, listener attr will be applied...
+/** 
+ * attr passed on create_listener will always be applied.
  * this attr will also be applied, except that it can't change whether or not
- * gsi is used
+ * gsi is used and other things that need to be set before a socket is accepted
  */
 globus_result_t
 globus_io_tcp_register_accept(
@@ -2052,6 +2028,7 @@ globus_io_tcp_register_accept(
     globus_result_t                     result;
     globus_l_io_handle_t *              ihandle;
     globus_l_io_bounce_t *              bounce_info;
+    globus_xio_target_t                 target;
     GlobusIOName(globus_io_tcp_register_accept);
     
     GlobusLIOCheckNullParam(new_handle);
@@ -2082,30 +2059,27 @@ globus_io_tcp_register_accept(
         goto error_bounce;
     }
     
-    result = GlobusLIOMalloc(ihandle, globus_l_io_handle_t);
+    result = globus_l_io_handle_init(
+        &ihandle, new_handle, GLOBUS_I_IO_TCP_HANDLE);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_handle;
     }
     
-    ihandle->type = GLOBUS_I_IO_TCP_HANDLE;
-    ihandle->io_handle = new_handle;
-    ihandle->xio_server = GLOBUS_NULL;
-    ihandle->xio_target = GLOBUS_NULL;
-    ihandle->xio_attr = GLOBUS_NULL;
-    ihandle->authz_data = GLOBUS_NULL;
     bounce_info->handle = ihandle;
     bounce_info->cb.non_io = callback;
     bounce_info->user_arg = callback_arg;
     *new_handle = ihandle;
     
+    target = (*listener_handle)->xio_target;
+    (*listener_handle)->xio_target = GLOBUS_NULL;
+    
     result = globus_xio_register_open(
         &ihandle->xio_handle,
         attr ? (*attr)->attr : GLOBUS_NULL,
-        (*listener_handle)->xio_target,
-        globus_l_io_bounce_cb,
+        target,
+        globus_l_io_bounce_accept_cb,
         bounce_info);
-    (*listener_handle)->xio_target = GLOBUS_NULL;
     if(result != GLOBUS_SUCCESS)
     {
         goto error_open;
@@ -2114,7 +2088,7 @@ globus_io_tcp_register_accept(
     return GLOBUS_SUCCESS;
 
 error_open:
-    globus_free(ihandle);
+    globus_l_io_handle_destroy(ihandle);
 error_handle:
     globus_free(bounce_info);
 error_bounce:
@@ -2146,7 +2120,7 @@ globus_io_tcp_accept(
     if(result != GLOBUS_SUCCESS)
     {
         monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
+        monitor.error = globus_error_get(result);
     }
     
     globus_mutex_lock(&monitor.lock);
@@ -2161,9 +2135,9 @@ globus_io_tcp_accept(
     globus_mutex_destroy(&monitor.lock);
     globus_cond_destroy(&monitor.cond);
     
-    if(monitor.result != GLOBUS_SUCCESS)
+    if(monitor.error != GLOBUS_NULL)
     {
-        result = monitor.result;
+        result = globus_error_put(monitor.error);
         goto error_register;
     }
     
@@ -2220,7 +2194,8 @@ globus_io_tcp_get_local_address(
         goto error_ipv6;
     }
     
-    sscanf(cs, "%d.%d.%d.%d:%hu", &host[0], &host[1], &host[2], &host[3], port);
+    sscanf(
+        cs, "%d.%d.%d.%d:%hu", &host[0], &host[1], &host[2], &host[3], port);
     globus_free(cs);
     
     return GLOBUS_SUCCESS;
@@ -2349,54 +2324,36 @@ globus_io_try_read(
     globus_size_t *                     nbytes_read)
 {
     globus_result_t                     result;
-    globus_l_io_monitor_t               monitor;
     GlobusIOName(globus_io_try_read);
     
     GlobusLIOCheckNullParam(nbytes_read);
     *nbytes_read = 0;
     GlobusLIOCheckHandle(handle, 0);
     
-    monitor.done = GLOBUS_FALSE;
-    monitor.arg = nbytes_read;
-    globus_mutex_init(&monitor.lock, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
-    
-    result = globus_xio_register_read(
+    result = globus_xio_read(
         (*handle)->xio_handle,
         buf,
         max_nbytes,
         0,
-        GLOBUS_NULL,
-        globus_l_io_blocking_xio_data_cb,
-        &monitor);
+        nbytes_read,
+        GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
-    }
-    
-    globus_mutex_lock(&monitor.lock);
-    {
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.lock);
-        }
-    }
-    globus_mutex_unlock(&monitor.lock);
-    
-    globus_mutex_destroy(&monitor.lock);
-    globus_cond_destroy(&monitor.cond);
-    
-    if(monitor.result != GLOBUS_SUCCESS)
-    {
-        result = monitor.result;
-        goto error_register;
+        goto error_read;
     }
     
     return GLOBUS_SUCCESS;
     
-error_register:
-    if(globus_xio_error_is_canceled(result))
+error_read:
+    if(globus_xio_error_is_eof(result))
+    {
+        result = globus_error_put(
+            globus_io_error_construct_eof(
+                GLOBUS_IO_MODULE,
+                globus_error_get(result),
+                (*handle)->io_handle));
+    }
+    else if(globus_xio_error_is_canceled(result))
     {
         result = globus_error_put(
             globus_io_error_construct_io_cancelled(
@@ -2417,53 +2374,27 @@ globus_io_read(
     globus_size_t *                     nbytes_read)
 {
     globus_result_t                     result;
-    globus_l_io_monitor_t               monitor;
     GlobusIOName(globus_io_read);
     
     GlobusLIOCheckNullParam(nbytes_read);
     *nbytes_read = 0;
     GlobusLIOCheckHandle(handle, 0);
     
-    monitor.done = GLOBUS_FALSE;
-    monitor.arg = nbytes_read;
-    globus_mutex_init(&monitor.lock, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
-    
-    result = globus_xio_register_read(
+    result = globus_xio_read(
         (*handle)->xio_handle,
         buf,
         max_nbytes,
         wait_for_nbytes,
-        GLOBUS_NULL,
-        globus_l_io_blocking_xio_data_cb,
-        &monitor);
+        nbytes_read,
+        GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
-    }
-    
-    globus_mutex_lock(&monitor.lock);
-    {
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.lock);
-        }
-    }
-    globus_mutex_unlock(&monitor.lock);
-    
-    globus_mutex_destroy(&monitor.lock);
-    globus_cond_destroy(&monitor.cond);
-    
-    if(monitor.result != GLOBUS_SUCCESS)
-    {
-        result = monitor.result;
-        goto error_register;
+        goto error_read;
     }
     
     return GLOBUS_SUCCESS;
     
-error_register:
+error_read:
     if(globus_xio_error_is_eof(result))
     {
         result = globus_error_put(
@@ -2591,7 +2522,7 @@ globus_io_register_send(
         dd,
         globus_l_io_bounce_io_cb,
         bounce_info);
-    dd = GLOBUS_NULL;
+    dd = GLOBUS_NULL; /* XXX is xio freeing this for us ?? */
     if(result != GLOBUS_SUCCESS)
     {
         goto error_register;
@@ -2677,53 +2608,27 @@ globus_io_try_write(
     globus_size_t *                     nbytes_written)
 {
     globus_result_t                     result;
-    globus_l_io_monitor_t               monitor;
     GlobusIOName(globus_io_try_write);
     
     GlobusLIOCheckNullParam(nbytes_written);
     *nbytes_written = 0;
     GlobusLIOCheckHandle(handle, 0);
     
-    monitor.done = GLOBUS_FALSE;
-    monitor.arg = nbytes_written;
-    globus_mutex_init(&monitor.lock, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
-    
-    result = globus_xio_register_write(
+    result = globus_xio_write(
         (*handle)->xio_handle,
         buf,
         max_nbytes,
         0,
-        GLOBUS_NULL,
-        globus_l_io_blocking_xio_data_cb,
-        &monitor);
+        nbytes_written,
+        GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
-    }
-    
-    globus_mutex_lock(&monitor.lock);
-    {
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.lock);
-        }
-    }
-    globus_mutex_unlock(&monitor.lock);
-    
-    globus_mutex_destroy(&monitor.lock);
-    globus_cond_destroy(&monitor.cond);
-    
-    if(monitor.result != GLOBUS_SUCCESS)
-    {
-        result = monitor.result;
-        goto error_register;
+        goto error_write;
     }
     
     return GLOBUS_SUCCESS;
     
-error_register:
+error_write:
     if(globus_xio_error_is_canceled(result))
     {
         result = globus_error_put(
@@ -2745,7 +2650,6 @@ globus_io_try_send(
     globus_size_t *                     nbytes_sent)
 {
     globus_result_t                     result;
-    globus_l_io_monitor_t               monitor;
     globus_xio_data_descriptor_t        dd;
     GlobusIOName(globus_io_try_send);
     
@@ -2776,46 +2680,21 @@ globus_io_try_send(
         dd = GLOBUS_NULL;
     }
     
-    monitor.done = GLOBUS_FALSE;
-    monitor.arg = nbytes_sent;
-    globus_mutex_init(&monitor.lock, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
-    
-    result = globus_xio_register_write(
+    result = globus_xio_write(
         (*handle)->xio_handle,
         buf,
         nbytes,
         0,
-        dd,
-        globus_l_io_blocking_xio_data_cb,
-        &monitor);
+        nbytes_sent,
+        dd);
+    dd = GLOBUS_NULL; /* XXX is xio freeing this for us ?? */
     if(result != GLOBUS_SUCCESS)
     {
-        monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
+        goto error_write;
     }
-    
-    globus_mutex_lock(&monitor.lock);
-    {
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.lock);
-        }
-    }
-    globus_mutex_unlock(&monitor.lock);
-    
-    globus_mutex_destroy(&monitor.lock);
-    globus_cond_destroy(&monitor.cond);
-    
-    if(monitor.result != GLOBUS_SUCCESS)
-    {
-        result = monitor.result;
-        goto error_register;
-    }
-    
     return GLOBUS_SUCCESS;
     
-error_register:
+error_write:
     if(globus_xio_error_is_canceled(result))
     {
         result = globus_error_put(
@@ -2843,53 +2722,27 @@ globus_io_write(
     globus_size_t *                     nbytes_written)
 {
     globus_result_t                     result;
-    globus_l_io_monitor_t               monitor;
     GlobusIOName(globus_io_write);
     
     GlobusLIOCheckNullParam(nbytes_written);
     *nbytes_written = 0;
     GlobusLIOCheckHandle(handle, 0);
     
-    monitor.done = GLOBUS_FALSE;
-    monitor.arg = nbytes_written;
-    globus_mutex_init(&monitor.lock, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
-    
-    result = globus_xio_register_write(
+    result = globus_xio_write(
         (*handle)->xio_handle,
         buf,
         nbytes,
         nbytes,
-        GLOBUS_NULL,
-        globus_l_io_blocking_xio_data_cb,
-        &monitor);
+        nbytes_written,
+        GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
-    }
-    
-    globus_mutex_lock(&monitor.lock);
-    {
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.lock);
-        }
-    }
-    globus_mutex_unlock(&monitor.lock);
-    
-    globus_mutex_destroy(&monitor.lock);
-    globus_cond_destroy(&monitor.cond);
-    
-    if(monitor.result != GLOBUS_SUCCESS)
-    {
-        result = monitor.result;
-        goto error_register;
+        goto error_write;
     }
     
     return GLOBUS_SUCCESS;
     
-error_register:
+error_write:
     if(globus_xio_error_is_canceled(result))
     {
         result = globus_error_put(
@@ -2911,7 +2764,6 @@ globus_io_send(
     globus_size_t *                     nbytes_sent)
 {
     globus_result_t                     result;
-    globus_l_io_monitor_t               monitor;
     globus_xio_data_descriptor_t        dd;
     GlobusIOName(globus_io_send);
     
@@ -2942,47 +2794,22 @@ globus_io_send(
         dd = GLOBUS_NULL;
     }
     
-    monitor.done = GLOBUS_FALSE;
-    monitor.arg = nbytes_sent;
-    globus_mutex_init(&monitor.lock, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
-    
-    result = globus_xio_register_write(
+    result = globus_xio_write(
         (*handle)->xio_handle,
         buf,
         nbytes,
         nbytes,
-        dd,
-        globus_l_io_blocking_xio_data_cb,
-        &monitor);
-    dd = GLOBUS_NULL;
+        nbytes_sent,
+        dd);
+    dd = GLOBUS_NULL; /* XXX is xio freeing this for us ?? */
     if(result != GLOBUS_SUCCESS)
     {
-        monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
+        goto error_write;
     }
-    
-    globus_mutex_lock(&monitor.lock);
-    {
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.lock);
-        }
-    }
-    globus_mutex_unlock(&monitor.lock);
-    
-    globus_mutex_destroy(&monitor.lock);
-    globus_cond_destroy(&monitor.cond);
-    
-    if(monitor.result != GLOBUS_SUCCESS)
-    {
-        result = monitor.result;
-        goto error_register;
-    }
-    
+
     return GLOBUS_SUCCESS;
     
-error_register:
+error_write:
     if(globus_xio_error_is_canceled(result))
     {
         result = globus_error_put(
@@ -3010,7 +2837,6 @@ globus_io_writev(
     globus_size_t *                     bytes_written)
 {
     globus_result_t                     result;
-    globus_l_io_monitor_t               monitor;
     int                                 i;
     globus_size_t                       nbytes;
     GlobusIOName(globus_io_writev);
@@ -3020,52 +2846,27 @@ globus_io_writev(
     GlobusLIOCheckNullParam(iov);
     GlobusLIOCheckHandle(handle, 0);
     
-    monitor.done = GLOBUS_FALSE;
-    monitor.arg = bytes_written;
-    globus_mutex_init(&monitor.lock, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
-
     nbytes = 0;
     for(i = 0; i < iovcnt; i++)
     {
         nbytes += iov[i].iov_len;
     }
     
-    result = globus_xio_register_writev(
+    result = globus_xio_writev(
         (*handle)->xio_handle,
         iov,
         iovcnt,
         nbytes,
-        GLOBUS_NULL,
-        globus_l_io_blocking_xio_iovec_cb,
-        &monitor);
+        bytes_written,
+        GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
-    }
-    
-    globus_mutex_lock(&monitor.lock);
-    {
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.lock);
-        }
-    }
-    globus_mutex_unlock(&monitor.lock);
-    
-    globus_mutex_destroy(&monitor.lock);
-    globus_cond_destroy(&monitor.cond);
-    
-    if(monitor.result != GLOBUS_SUCCESS)
-    {
-        result = monitor.result;
-        goto error_register;
+        goto error_write;
     }
     
     return GLOBUS_SUCCESS;
     
-error_register:
+error_write:
     if(globus_xio_error_is_canceled(result))
     {
         result = globus_error_put(
@@ -3095,11 +2896,7 @@ globus_l_io_bounce_close_cb(
     if(*bounce_info->u_handle)
     {
         *bounce_info->u_handle = GLOBUS_NULL;
-        if(bounce_info->handle->authz_data)
-        {
-            globus_free(bounce_info->handle->authz_data);
-        }
-        globus_free(bounce_info->handle);
+        globus_l_io_handle_destroy(bounce_info->handle);
     }
     
     bounce_info->cb.non_io(
@@ -3124,7 +2921,7 @@ globus_l_io_server_close_cb(
     if(bounce_info->u_handle)
     {
         *bounce_info->u_handle = GLOBUS_NULL;
-        globus_free(bounce_info->handle);
+        globus_l_io_handle_destroy(bounce_info->handle);
     }
     
     bounce_info->cb.non_io(
@@ -3163,32 +2960,28 @@ globus_io_register_close(
     
     if(ihandle->xio_handle)
     {
+        globus_xio_handle_t             xio_handle;
+        
+        xio_handle = ihandle->xio_handle;
+        ihandle->xio_handle = GLOBUS_NULL;
+        
         result = globus_xio_register_close(
-            ihandle->xio_handle,
+            xio_handle,
             GLOBUS_NULL,
             globus_l_io_bounce_close_cb,
             bounce_info);
-        ihandle->xio_handle = GLOBUS_NULL;
     }
     else if(ihandle->xio_server)
     {
-        if(ihandle->xio_attr)
-        {
-            globus_xio_attr_destroy(ihandle->xio_attr);
-            ihandle->xio_attr = GLOBUS_NULL;
-        }
+        globus_xio_server_t             xio_server;
         
-        if(ihandle->xio_target)
-        {
-            globus_xio_target_destroy(ihandle->xio_target);
-            ihandle->xio_target = GLOBUS_NULL;
-        }
+        xio_server = ihandle->xio_server;
+        ihandle->xio_server = GLOBUS_NULL;
         
         result = globus_xio_server_register_close(
-            ihandle->xio_server,
+            xio_server,
             globus_l_io_server_close_cb,
             bounce_info);
-        ihandle->xio_server = GLOBUS_NULL;
     }
     else
     {
@@ -3212,7 +3005,7 @@ error_register:
     globus_free(bounce_info);
     
 error_alloc:
-    globus_free(ihandle);
+    globus_l_io_handle_destroy(ihandle);
     *handle = GLOBUS_NULL;
     return result;
 }
@@ -3234,7 +3027,7 @@ globus_io_close(
     if(result != GLOBUS_SUCCESS)
     {
         monitor.done = GLOBUS_TRUE;
-        monitor.result = result;
+        monitor.error = globus_error_get(result);
     }
     
     globus_mutex_lock(&monitor.lock);
@@ -3249,9 +3042,9 @@ globus_io_close(
     globus_mutex_destroy(&monitor.lock);
     globus_cond_destroy(&monitor.cond);
     
-    if(monitor.result != GLOBUS_SUCCESS)
+    if(monitor.error != GLOBUS_NULL)
     {
-        result = monitor.result;
+        result = globus_error_put(monitor.error);
         goto error_register;
     }
     
@@ -3326,9 +3119,16 @@ globus_io_handle_type_t
 globus_io_get_handle_type(
     globus_io_handle_t *                handle)
 {
+    globus_l_io_handle_t *              ihandle;
     GlobusIOName(globus_io_get_handle_type);
     
-    return GLOBUS_SUCCESS;
+    GlobusLIOCheckHandle(handle, 0);
+    ihandle = *handle;
+    
+    if(ihandle->type == GLOBUS_I_IO_FILE_HANDLE)
+        return GLOBUS_IO_HANDLE_TYPE_FILE;
+    else
+        return GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED;
 }
 
 globus_result_t
@@ -3371,8 +3171,6 @@ globus_io_tcp_set_attr(
     
     return GLOBUS_SUCCESS;
 }
-
-/* XXXXX */
 
 globus_result_t
 globus_io_tcp_get_security_context(
@@ -3445,7 +3243,6 @@ globus_l_io_accept_delegation_cb(
 
     return;
 }
-
 
 globus_result_t
 globus_io_register_init_delegation(
@@ -3533,7 +3330,6 @@ globus_io_register_accept_delegation(
     globus_l_io_handle_t *              ihandle;
     globus_l_io_delegation_cb_arg_t *   wrapper;
     GlobusIOName(globus_io_register_accept_delegation);
-
 
     ihandle = *handle;
 
@@ -3625,6 +3421,9 @@ globus_io_attr_set_secure_authentication_mode(
             globus_l_io_gsi_driver, 
             GLOBUS_XIO_GSI_SET_ANON);
         break;
+      default:
+        globus_assert(0 && "Unexpected state");
+        break;
     }
     
     return result;
@@ -3641,7 +3440,6 @@ globus_io_attr_get_secure_authentication_mode(
     *mode = (*attr)->authentication_mode;
     return GLOBUS_SUCCESS;
 }
-
 
 globus_result_t
 globus_io_attr_set_secure_authorization_mode(
@@ -3716,6 +3514,7 @@ globus_io_attr_get_secure_authorization_mode(
         goto done;
     }
     
+    memset(*data, 0, sizeof(globus_l_io_secure_authorization_data_t));
     *mode = (*attr)->authorization_mode;
 
     switch((*attr)->authorization_mode)
@@ -3799,6 +3598,7 @@ globus_io_secure_authorization_data_destroy(
     }
 
     globus_free(*data);
+    *data = GLOBUS_NULL;
     
     return GLOBUS_SUCCESS;
 }
@@ -4069,7 +3869,6 @@ globus_io_attr_get_secure_proxy_mode(
             GLOBUS_XIO_GSI_GET_PROXY_MODE,
             mode);
 }
-
 
 /* netlogger functions */
 
