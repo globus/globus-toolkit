@@ -1738,7 +1738,8 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         req->executable = (tmp_param)[0];
     else
     {
-        req->executable = GLOBUS_GRAM_CLIENT_DEFAULT_EXE;
+        req->executable = GLOBUS_GRAM_CLIENT_ERROR_UNDEFINED_EXE;
+        return(GLOBUS_FAILURE);
     }
 
     /********************************** 
