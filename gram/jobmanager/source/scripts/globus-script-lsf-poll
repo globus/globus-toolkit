@@ -43,7 +43,7 @@ arg_file=$1
         # then return with an error immediately
 
 if [ ! -f $arg_file ] ; then
-   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTOCOL_ERROR_BAD_SCRIPT_ARG_FILE
    exit 1
 fi
 
@@ -68,17 +68,17 @@ $DEBUG_ECHO executing bjobs with job id $grami_job_id >> $grami_logfile
 status=`${bjobs} $grami_job_id | ${grep} $grami_job_id | ${awk} '{print $3}'`
 
 case $status in
-	"PEND")  gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING;;
-	"RUN")   gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE;;
-	"DONE")  gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_DONE;;
-	"EXIT")  gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;;
-	"USUSP") gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_SUSPENDED;;
-	"SSUSP") gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_SUSPENDED;;
-	"PSUSP") gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_SUSPENDED;;
-	"PEND")  gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING;;
-	"UNKWN") gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;;
-	"ZOMBI") gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;;
-	      *) gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;;
+	"PEND")  gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;;
+	"RUN")   gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE;;
+	"DONE")  gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;;
+	"EXIT")  gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;;
+	"USUSP") gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED;;
+	"SSUSP") gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED;;
+	"PSUSP") gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED;;
+	"PEND")  gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING;;
+	"UNKWN") gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;;
+	"ZOMBI") gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;;
+	      *) gram_job_state=$GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;;
 esac
 
 	# Return appropriate job status

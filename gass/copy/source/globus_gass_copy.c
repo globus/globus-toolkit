@@ -7,6 +7,7 @@
  */
 
 #include "globus_gass_copy.h"
+#include <sys/timeb.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -34,20 +35,20 @@ struct globus_gass_copy_perf_info_s
 
     globus_mutex_t                          lock;
 
-    time_t                                  start_time;
+    double                                  start_time;
 
-    time_t                                  prev_time;
-    globus_size_t                           prev_bytes;
+    double                                  prev_time;
+    globus_off_t                            prev_bytes;
 
-    globus_size_t                           live_bytes;
+    globus_off_t                            live_bytes;
 };
 
 static
 void
 globus_l_gass_copy_perf_ftp_cb(
-    globus_ftp_client_handle_t *            handle,
     void *                                  user_arg,
-    globus_size_t                           bytes,
+    globus_ftp_client_handle_t *            handle,
+    globus_off_t                            bytes,
     float                                   instantaneous_throughput,
     float                                   avg_throughput);
 
@@ -895,7 +896,7 @@ globus_gass_copy_get_url_mode(
  *        see performance info
  *
  * @param callback
- *        the performance callback @see globus_gass_copy_performance_cb_t
+ *        the performance callback
  *
  * @param user_arg
  *        a user pointer that will be passed to all callbacks for a given
@@ -904,6 +905,8 @@ globus_gass_copy_get_url_mode(
  * @return
  *        - GLOBUS_SUCCESS
  *        - error on a NULL or busy handle
+ *
+ * @see globus_gass_copy_performance_cb_t
  */
 
 globus_result_t
@@ -1007,38 +1010,40 @@ globus_l_gass_copy_perf_local_cb(
     globus_gass_copy_perf_info_t *          perf_info;
     float                                   instantaneous_throughput;
     float                                   avg_throughput;
-    time_t                                  time_now;
-    globus_size_t                           bytes_now;
-    time_t                                  time_elapsed;
+    double                                  time_now;
+    globus_off_t                            bytes_now;
+    double                                  time_elapsed;
+    struct timeb                            timebuf;
 
     perf_info = (globus_gass_copy_perf_info_t *) user_arg;
 
     globus_mutex_lock(&perf_info->lock);
     {
-        time_now = time(NULL);
+        ftime(&timebuf);
+        time_now = timebuf.time + (timebuf.millitm / 1000.0);
         bytes_now = perf_info->live_bytes;
     }
     globus_mutex_unlock(&perf_info->lock);
 
     time_elapsed = time_now - perf_info->prev_time;
-    if(time_elapsed == 0)
+    if(time_elapsed < 0.1)
     {
         /* shouldnt be possible (callback delay is 2 secs) */
-        time_elapsed = 1;
+        time_elapsed = 0.1;
     }
 
-    instantaneous_throughput = (float)
+    instantaneous_throughput =
         (bytes_now - perf_info->prev_bytes) /
         time_elapsed;
 
     time_elapsed = time_now - perf_info->start_time;
-    if(time_elapsed == 0)
+    if(time_elapsed < 0.1)
     {
         /* shouldnt be possible (callback delay is 2 secs) */
-        time_elapsed = 1;
+        time_elapsed = 0.1;
     }
 
-    avg_throughput = (float)
+    avg_throughput =
         bytes_now /
         time_elapsed;
 
@@ -1046,8 +1051,8 @@ globus_l_gass_copy_perf_local_cb(
     perf_info->prev_bytes = bytes_now;
 
     perf_info->callback(
-        perf_info->copy_handle,
         perf_info->user_arg,
+        perf_info->copy_handle,
         bytes_now,
         instantaneous_throughput,
         avg_throughput);
@@ -1058,9 +1063,9 @@ globus_l_gass_copy_perf_local_cb(
 static
 void
 globus_l_gass_copy_perf_ftp_cb(
-    globus_ftp_client_handle_t *            handle,
     void *                                  user_arg,
-    globus_size_t                           bytes,
+    globus_ftp_client_handle_t *            handle,
+    globus_off_t                            bytes,
     float                                   instantaneous_throughput,
     float                                   avg_throughput)
 {
@@ -1069,8 +1074,8 @@ globus_l_gass_copy_perf_ftp_cb(
     perf_info = (globus_gass_copy_perf_info_t *) user_arg;
 
     perf_info->callback(
-        perf_info->copy_handle,
         perf_info->user_arg,
+        perf_info->copy_handle,
         bytes,
         instantaneous_throughput,
         avg_throughput);
@@ -1083,8 +1088,10 @@ globus_l_gass_copy_perf_setup_local_callback(
 {
     globus_reltime_t                        delay_time;
     globus_reltime_t                        period_time;
+    struct timeb                            timebuf;
 
-    perf_info->start_time = time(NULL);
+    ftime(&timebuf);
+    perf_info->start_time = timebuf.time + (timebuf.millitm / 1000.0);
     perf_info->prev_time = perf_info->start_time;
     perf_info->prev_bytes = 0;
     perf_info->live_bytes = 0;
@@ -1612,6 +1619,7 @@ globus_l_gass_copy_target_populate(
 	target->attr = attr;
 	target->data.io.free_handle = GLOBUS_TRUE;
 	target->data.io.seekable = GLOBUS_TRUE;
+	target->data.io.handle = GLOBUS_NULL;
 	target->n_simultaneous = 1;
 
 	break;
@@ -1739,7 +1747,10 @@ globus_l_gass_copy_target_destroy(
     case GLOBUS_GASS_COPY_URL_MODE_IO:
 	if(target->data.io.free_handle == GLOBUS_TRUE)
 	{
-	    globus_libc_free((target->data.io.handle));
+	    if(target->data.io.handle)
+	    {
+	        globus_libc_free((target->data.io.handle));
+	    }
 	    globus_libc_free((target->url));
 
 	}
@@ -2691,7 +2702,9 @@ globus_l_gass_copy_io_setup_put(
         result = globus_io_file_open(
 	    parsed_url.url_path,
 	    (GLOBUS_IO_FILE_WRONLY|GLOBUS_IO_FILE_CREAT|GLOBUS_IO_FILE_TRUNC),
-	    (GLOBUS_IO_FILE_IRWXU|GLOBUS_IO_FILE_IRWXG|GLOBUS_IO_FILE_IRWXO),
+	    (GLOBUS_IO_FILE_IRUSR|GLOBUS_IO_FILE_IWUSR|
+	        GLOBUS_IO_FILE_IRGRP|GLOBUS_IO_FILE_IWGRP|
+	        GLOBUS_IO_FILE_IROTH|GLOBUS_IO_FILE_IWOTH),
 	    state->dest.attr->io,
 	    state->dest.data.io.handle);
 
@@ -3592,9 +3605,6 @@ globus_l_gass_copy_write_from_queue(
 	    globus_l_gass_copy_wait_for_ftp_callbacks(handle);
 	    /* do cleanup */
 
-	    globus_l_gass_copy_state_free(handle->state);
-	    handle->state = GLOBUS_NULL;
-
             if(handle->performance)
             {
                 if(state->dest.mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
@@ -3606,6 +3616,9 @@ globus_l_gass_copy_write_from_queue(
                     globus_l_gass_copy_perf_cancel_local_callback(handle->performance);
                 }
             }
+
+	    globus_l_gass_copy_state_free(handle->state);
+	    handle->state = GLOBUS_NULL;
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    if(handle->state == GLOBUS_NULL)
@@ -4543,11 +4556,24 @@ globus_gass_copy_register_url_to_url(
             "register_url_to_url(): source or dest is URL_MODE_UNSUPPORTED\n");
 #endif
 	if(source_url_mode == GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED)
+	{
 	    sprintf(src_msg, "  %s,  GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED.",
-                    source_url);
+                source_url);
+        }
+        else
+        {
+            *src_msg = '\0';
+        }
+
 	if(dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED)
-	    sprintf(src_msg, "  %s,  GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED.",
-                    dest_url);
+	{
+	    sprintf(dest_msg, "  %s,  GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED.",
+                dest_url);
+        }
+        else
+        {
+            *dest_msg = '\0';
+        }
 
 	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
 	err = globus_error_construct_string(

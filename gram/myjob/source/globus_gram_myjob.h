@@ -24,8 +24,18 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "globus_common.h"
 
+/* determine whether to use MP or DUCT */
+#include "globus_mp_mpi.h"
+
+#ifdef GLOBUS_MP_HAS_MPI_PROTO
+#define GLOBUS_GRAM_MYJOB_USES_MP
+#else
+#define GLOBUS_GRAM_MYJOB_USES_DUCT
+#include "globus_duct_runtime.h"
+#endif
+
+#include "globus_common.h"
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -46,7 +56,7 @@ EXTERN_C_BEGIN
 
 /*
  * gram_myjob_*() error codes
- */ 
+ */
 #define GLOBUS_GRAM_MYJOB_ERROR_BASE		(0x000f0000)
 #define GLOBUS_GRAM_MYJOB_SUCCESS		0
 #define GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED	\
@@ -236,7 +246,7 @@ globus_gram_myjob_kill(void);
     globus_gram_myjob_receive(B,L)
 #define gram_myjob_kill() \
     globus_gram_myjob_Kill()
-    
+
 EXTERN_C_END
 
 #endif /* GLOBUS_I_GRAM_MYJOB_INCLUDE */

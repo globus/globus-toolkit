@@ -18,17 +18,10 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#ifdef GLOBUS_GRAM_MYJOB_MP
 
 #include "globus_gram_myjob.h"
 
-#ifdef GLOBUS_GRAM_MYJOB_MP_INX
-#include "globus_mp_inx.h"
-#elsif GLOBUS_GRAM_MYJOB_MP_MPL
-#include "globus_mp_mpl.h"
-#elsif GLOBUS_GRAM_MYJOB_MP_MPI
-#include "globus_mp_mpi.h"
-#endif
+#ifdef GLOBUS_GRAM_MYJOB_USES_MP
 
 #include "globus_common.h"
 
@@ -45,10 +38,10 @@ static int				graml_myjob_rank;
 /******************************************************************************
 			 Module activation definitions
 ******************************************************************************/
-static int 
+static int
 globus_l_gram_myjob_activate();
 
-static int 
+static int
 globus_l_gram_myjob_deactivate();
 
 
@@ -64,7 +57,7 @@ globus_module_descriptor_t		globus_i_gram_myjob_module =
 /*
  * globus_l_gram_myjob_activate()
  */
-static int 
+static int
 globus_l_gram_myjob_activate()
 {
     GLOBUS_MP_INITIALIZE();
@@ -72,7 +65,7 @@ globus_l_gram_myjob_activate()
     GLOBUS_MP_COMMUNICATOR_ALLOC(graml_myjob_communicator);
 
     graml_myjob_initialized = GLOBUS_TRUE;
-    
+
     return GLOBUS_SUCCESS;
 }
 
@@ -87,7 +80,7 @@ globus_l_gram_myjob_deactivate()
     GLOBUS_MP_NODE_SHUTDOWN();
 
     graml_myjob_initialized = GLOBUS_FALSE;
-    
+
     return GLOBUS_SUCCESS;
 }
 
@@ -159,7 +152,7 @@ Description:	Send a message to another process in this job
 
 Parameters:	see API
 
-Returns:	
+Returns:
 ******************************************************************************/
 int
 globus_gram_myjob_send(
@@ -214,7 +207,7 @@ Description:	Wait for a new message to arrive
 
 Parameters:	see API
 
-Returns:	
+Returns:
 ******************************************************************************/
 int
 globus_gram_myjob_receive(
@@ -274,4 +267,4 @@ globus_gram_myjob_kill()
     return GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE;
 }
 
-#endif /* GLOBUS_GRAM_MYJOB_MP */
+#endif /* GLOBUS_GRAM_MYJOB_USES_MP */

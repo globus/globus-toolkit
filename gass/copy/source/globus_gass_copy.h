@@ -104,9 +104,11 @@ typedef struct globus_gass_copy_perf_info_s globus_gass_copy_perf_info_t;
  *
  * @param instantaneous_throughput
  *        instantaneous rate of transfer (since last callback or start)
+ *        (bytes / sec)
  *
  * @param avg_throughput
  *        the avg thoughput calculated since the start of the transfer
+ *        (bytes / sec)
  *
  * @return
  *        - n/a
@@ -115,7 +117,7 @@ typedef struct globus_gass_copy_perf_info_s globus_gass_copy_perf_info_t;
 typedef void (*globus_gass_copy_performance_cb_t)(
     globus_gass_copy_handle_t *                     handle,
     void *                                          user_arg,
-    globus_size_t                                   total_bytes,
+    globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
 

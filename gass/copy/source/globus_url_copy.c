@@ -79,7 +79,7 @@ void
 globus_l_gass_copy_performance_cb(
     globus_gass_copy_handle_t *                     handle,
     void *                                          user_arg,
-    globus_size_t                                   total_bytes,
+    globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
 
@@ -220,15 +220,14 @@ static globus_args_option_descriptor_t args_options[arg_num];
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
 static globus_bool_t verbose_flag = GLOBUS_FALSE;
-#if defined(USE_NETLOGGER)
-static NLhandle   * lp = NULL;
-#endif
-
 /*
  *  net logger handle
  */
 static NLhandle   *                    g_globus_nl_handle;
 
+/*
+#define GLOBUS_BUILD_WITH_NETLOGGER 1
+*/
 /******************************************************************************
 Function: main()
 Description:
@@ -282,7 +281,8 @@ main(int argc, char **argv)
     double                             start_time = 0;
     my_monitor_t                       monitor;
     globus_gass_copy_handle_t          gass_copy_handle;
-    char                               buffer[512];
+    char                               buffer[64];
+    char                               my_hostname[64];
     globus_result_t                    result;
     globus_netlogger_handle_t          gnl_handle;
     globus_ftp_client_handleattr_t     ftp_handleattr;
@@ -410,11 +410,17 @@ main(int argc, char **argv)
     globus_gass_copy_attr_init(&dest_gass_copy_attr);
 
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    g_globus_nl_handle = NetLoggerOpen(argv[0], NULL, NL_ENV);
+    sprintf(buffer, "%d", getpid());
+    globus_libc_gethostname(my_hostname, MAXHOSTNAMELEN);
 
     globus_netlogger_handle_init(
         &gnl_handle,
-        g_globus_nl_handle);
+        my_hostname,
+        "globus-url-copy",
+        buffer);
+    globus_netlogger_set_desc(
+        &gnl_handle,
+        "DISK");
 
     globus_ftp_client_handleattr_init(&ftp_handleattr);
 
@@ -674,14 +680,6 @@ main(int argc, char **argv)
     }
 #   endif
 
-#if defined(USE_NETLOGGER)
-    lp = NetLoggerOpen(NL_FILE,
-                       "globus-url-copy",
-                       "/home/smartin/nl_file",
-                       "w",
-                       0);
-#endif
-
     if (verbose_flag)
     {
         result = globus_gass_copy_register_performance_cb(
@@ -922,12 +920,12 @@ void
 globus_l_gass_copy_performance_cb(
     globus_gass_copy_handle_t *                     handle,
     void *                                          user_arg,
-    globus_size_t                                   total_bytes,
+    globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput)
 {
     globus_libc_fprintf(stderr,
-        " %d bytes -- average %.2f KB/sec -- instantaneous %.2f KB/sec\r",
+        " %" GLOBUS_OFF_T_FORMAT " bytes -- average %.2f KB/sec -- instantaneous %.2f KB/sec\r",
         total_bytes,
         avg_throughput / 1024,
         instantaneous_throughput / 1024);

@@ -18,17 +18,18 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#ifdef GLOBUS_GRAM_MYJOB_DUCT
+
+#include "globus_gram_myjob.h"
+
+#ifdef GLOBUS_GRAM_MYJOB_USES_DUCT
 
 #include "globus_common.h"
 
 #include <assert.h>
 #include <stdlib.h>
 
-#include "globus_gram_myjob.h"
-
 #include "nexus.h"
-#include "globus_duct_runtime.h"
+
 
 
 /******************************************************************************
@@ -98,7 +99,7 @@ s_myjob_init ()
   assert (!err);
 
   duct_contact = getenv ("GLOBUS_GRAM_MYJOB_CONTACT");
-  
+
   if ( duct_contact != NULL ) {
     err = globus_duct_runtime_init (&s_duct,
 				    duct_contact,
@@ -147,7 +148,7 @@ s_myjob_reset ()
   assert (!err);
 }
 
-static void 
+static void
 s_myjob_done ()
 {
   globus_fifo_destroy (&s_incoming_msgs);
@@ -168,10 +169,10 @@ s_myjob_activate ()
 
   err = GLOBUS_FAILURE;
 
-  if ( globus_module_activate (GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS ) 
+  if ( globus_module_activate (GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS )
     goto activate_common_module_error;
 
-  if ( globus_module_activate (GLOBUS_NEXUS_MODULE) != GLOBUS_SUCCESS ) 
+  if ( globus_module_activate (GLOBUS_NEXUS_MODULE) != GLOBUS_SUCCESS )
     goto activate_nexus_module_error;
 
   if ( globus_module_activate (GLOBUS_DUCT_RUNTIME_MODULE) != GLOBUS_SUCCESS )
@@ -199,7 +200,7 @@ activate_common_module_error:
 }
 
 
-int 
+int
 globus_gram_myjob_activate ()
 {
   int err;
@@ -254,7 +255,7 @@ globus_gram_myjob_deactivate ()
 }
 
 
-void 
+void
 globus_gram_myjob_atexit ()
 {
   if ( s_myjob_module_enabled != 0 ) {
@@ -270,7 +271,7 @@ globus_module_descriptor_t              globus_i_gram_myjob_module =
     globus_gram_myjob_deactivate,
     globus_gram_myjob_atexit
 };
- 
+
 
 int
 globus_gram_myjob_rank (int * rankp)
@@ -284,7 +285,7 @@ globus_gram_myjob_rank (int * rankp)
   globus_list_t *sorted_addrs_list;
   globus_list_t *list_iter;
 
-  if ( rankp == NULL ) 
+  if ( rankp == NULL )
     return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
 
   if ( ! s_myjob_initialized )
@@ -302,7 +303,7 @@ globus_gram_myjob_rank (int * rankp)
   assert (!err);
 
   addrs_list = NULL;
-  
+
   err = globus_list_insert (&addrs_list, (void *) (long) local_addr);
   assert (!err);
 
@@ -321,12 +322,12 @@ globus_gram_myjob_rank (int * rankp)
   addrs_list = NULL;
 
   list_iter = sorted_addrs_list;
-  
+
   (*rankp) = -1;
 
   for (i=0; i<(remote_count+1); i++) {
     if ( ((int) (long) globus_list_first (list_iter))
-	 == local_addr ) 
+	 == local_addr )
       (*rankp) = i;
     list_iter = globus_list_rest (list_iter);
   }
@@ -351,7 +352,7 @@ globus_gram_myjob_size (int * sizep)
   if ( ! s_myjob_initialized )
     return GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED;
 
-  if ( sizep == NULL ) 
+  if ( sizep == NULL )
     return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
 
   if ( s_myjob_alone ) {
@@ -366,7 +367,7 @@ globus_gram_myjob_size (int * sizep)
   assert (!err);
 
   globus_free (remote_addrs);
-  
+
   (*sizep) = remote_count + 1;
 
   return GLOBUS_SUCCESS;
@@ -394,8 +395,8 @@ globus_gram_myjob_send (int             dest_addr,
 
   if ( (msg == NULL) || (msg_len < 0)
        || (dest_addr > (size-1))
-       || (dest_addr < 0) 
-       || (s_myjob_alone != 0) ) 
+       || (dest_addr < 0)
+       || (s_myjob_alone != 0) )
     return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
 
   if ( ! s_myjob_initialized )
@@ -408,7 +409,7 @@ globus_gram_myjob_send (int             dest_addr,
   assert (!err);
 
   addrs_list = NULL;
-  
+
   err = globus_list_insert (&addrs_list, (void *) (long) local_addr);
   assert (!err);
 
@@ -427,7 +428,7 @@ globus_gram_myjob_send (int             dest_addr,
   addrs_list = NULL;
 
   list_iter = sorted_addrs_list;
-  
+
   for (i=0; i<dest_addr; i++) {
     list_iter = globus_list_rest (list_iter);
   }
@@ -453,7 +454,7 @@ globus_gram_myjob_receive (globus_byte_t * msgp,
   int i;
   globus_gram_myjob_msg_t *duct_msgp;
 
-  if ( (msgp == NULL) || (msg_lenp == NULL) || (s_myjob_alone != 0) ) 
+  if ( (msgp == NULL) || (msg_lenp == NULL) || (s_myjob_alone != 0) )
     return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
 
   if ( ! s_myjob_initialized )
@@ -478,7 +479,7 @@ globus_gram_myjob_receive (globus_byte_t * msgp,
 
   globus_free (duct_msgp->msg);
   globus_free (duct_msgp);
-  
+
   err = nexus_mutex_unlock (&s_mutex);
   assert (!err);
 
@@ -494,4 +495,4 @@ globus_gram_myjob_kill ()
   return 1;
 }
 
-#endif /* GLOBUS_GRAM_MYJOB_DUCT */
+#endif /* GLOBUS_GRAM_MYJOB_USES_DUCT */

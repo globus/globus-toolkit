@@ -27,8 +27,6 @@
 
 #include "globus_common.h"
 #include "globus_rsl.h"
-#include "lber.h"
-#include "ldap.h"
 
 
 /*
