@@ -9,7 +9,6 @@
 #endif
 
 #include "globus_i_ftp_client.h"
-#include "globus_error_string.h"
 
 #include <string.h>
 
@@ -64,7 +63,6 @@ globus_ftp_client_handleattr_init(
 		GLOBUS_FTP_CLIENT_MODULE->module_name,
 		myname));
     }
-    i_attr->nl_handle = GLOBUS_NULL;
     *attr = i_attr;
     
     return GLOBUS_SUCCESS;
@@ -352,60 +350,6 @@ globus_ftp_client_handleattr_remove_cached_url(
 /*@}*/
 
 /**
- * @name Netlogger management
- */
-/**
- * Set the netlogger handle used with this transfer.
- * @ingroup globus_ftp_client_handleattr
- *
- * Each handle can have a netlogger handle associated with it
- * for logging its data.
- *
- * Only 1 netlogger handle can be associated with a client handle.
- *
- * @param attr
- *        The attribute set to modify.
- * @param nl_handle
- *        The open netlogger handle to be associated with this
- *        attribute set.
- */
-globus_result_t
-globus_ftp_client_handleattr_set_netlogger(
-    globus_ftp_client_handleattr_t *            attr,
-    globus_netlogger_handle_t *                 nl_handle)
-{
-    globus_object_t *                           err = GLOBUS_SUCCESS;
-    globus_i_ftp_client_handleattr_t *          i_attr;
-    static char * myname = "globus_ftp_client_handleattr_set_netlogger";
-
-    if(attr == GLOBUS_NULL)
-    {
-        err = globus_error_construct_string(
-                GLOBUS_FTP_CLIENT_MODULE,
-                GLOBUS_NULL,
-                "[%s] Cannot modify NULL attribute at %s\n",
-                GLOBUS_FTP_CLIENT_MODULE->module_name,
-                myname);
-        return globus_error_put(err);
-    }
-    if(nl_handle == GLOBUS_NULL)
-    {
-        err = globus_error_construct_string(
-                GLOBUS_FTP_CLIENT_MODULE,
-                GLOBUS_NULL,
-                "[%s] Cannot set NULL netlogger handle at %s\n",
-                GLOBUS_FTP_CLIENT_MODULE->module_name,
-                myname);
-        return globus_error_put(err);
-    }
-    i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
-
-    i_attr->nl_handle = nl_handle;
-
-    return GLOBUS_SUCCESS;
-}
-
-/**
  * @name Plugin Management
  */
 /*@{*/
@@ -652,7 +596,7 @@ globus_ftp_client_operationattr_init(
     i_attr->type			= GLOBUS_FTP_CONTROL_TYPE_IMAGE;
     i_attr->mode			= GLOBUS_FTP_CONTROL_MODE_STREAM;
     i_attr->append			= GLOBUS_FALSE;
-    i_attr->dcau.mode			= GLOBUS_FTP_CONTROL_DCAU_DEFAULT;
+    i_attr->dcau.mode			= GLOBUS_FTP_CONTROL_DCAU_NONE;
     i_attr->data_prot			= GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
     i_attr->read_all			= GLOBUS_FALSE;
     i_attr->read_all_intermediate_callback= GLOBUS_NULL;
@@ -1167,19 +1111,6 @@ error_exit:
  * buffer can make a significant impact on the performance of a file
  * transfer. The user may set the buffer to either a system-dependent
  * default value, or to a fixed value.
- *
- * The actual implementation of this attribute is designed to be as widely
- * interoperable as possible. In addition to supporting the SBUF command
- * described in the GridFTP protocol extensions document, it also supports
- * other commands and site commands which are used by other servers to
- * set TCP buffer sizes. These are 
- * - SITE RETRBUFSIZE
- * - SITE RBUFSZ
- * - SITE RBUFSIZ
- * - SITE STORBUFIZE
- * - SITE SBUFSZ
- * - SITE SBUFSIZ
- * - SITE BUFSIZE
  *
  * This attribute is affects any type of data transfer done with the
  * ftp client library.
@@ -1911,15 +1842,10 @@ error_exit:
  * attribute set.
  * @ingroup globus_ftp_client_operationattr
  *
- * Data channel authentication is a GridFTP extension, and may not be
- * supported by all servers. If a server supports it, then the default
- * is to delegate a credential to the server, and authenticate all
- * data channels with that delegated credential.
- *
  * @param attr
  *        The attribute set to query or modify.
  * @param dcau
- *        The value of data channel authentication attribute.
+ *        The value of data channel authentication attribute. 
  */
 globus_result_t
 globus_ftp_client_operationattr_set_dcau(
@@ -2686,7 +2612,6 @@ globus_i_ftp_client_handleattr_copy(
     }
     
     dest->cache_all = src->cache_all;
-    dest->nl_handle = src->nl_handle;
     dest->url_cache = GLOBUS_NULL;
     dest->plugins = GLOBUS_NULL;
     

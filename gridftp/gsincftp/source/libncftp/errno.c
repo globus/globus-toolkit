@@ -105,8 +105,6 @@ static const char *gErrList[kErrLast - kErrFirst + 2] = {
 	"timed out while waiting for server response",			/* -193 */
 	"data transfer timed out",					/* -194 */
 	"canceled by user",						/* -195 */
-	"bad protection level",						/* -196 */
-	"could not set protection level",						/* -197 */
 	NULL,								
 };
 

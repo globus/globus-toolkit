@@ -35,10 +35,11 @@ GSS_CALLCONV gss_init_delegation(
     const gss_OID_set                   restriction_oids,
     const gss_buffer_set_t              restriction_buffers,
     const gss_buffer_t                  input_token,
-    OM_uint32                           time_req,
     gss_buffer_t                        output_token)
 {
     OM_uint32 		                major_status = GSS_S_COMPLETE;
+    OM_uint32                           time_req; /* probably a
+                                                     parameter */
     gss_ctx_id_desc *                   context;
     gss_cred_id_desc *                  cred;
     X509_REQ *                          reqp = NULL;
@@ -47,7 +48,7 @@ GSS_CALLCONV gss_init_delegation(
     X509_EXTENSION *                    ex = NULL;
     STACK_OF(X509_EXTENSION) *          extensions = NULL;
     int                                 i;
-    int                                 cert_chain_length = 0;
+    int                                 cert_chain_length;
     
 #ifdef DEBUG
     fprintf(stderr, "init_delegation:\n") ;
@@ -55,41 +56,34 @@ GSS_CALLCONV gss_init_delegation(
 
     *minor_status = 0;
     output_token->length = 0;
+    time_req = GSS_C_INDEFINITE;
     context = (gss_ctx_id_desc *) context_handle;
-
+    if (cred_handle == GSS_C_NO_CREDENTIAL)
+	cred_handle = context->cred_handle;
     cred = (gss_cred_id_desc *) cred_handle; 
         
     /* parameter checking goes here */
 
-    /* take the cred from the context if no cred is given us
-     * explicitly
-     */
-    
-    if (cred_handle == GSS_C_NO_CREDENTIAL)
-    {
-	cred = (gss_cred_id_desc *) context->cred_handle;
-    }
-    
     if(minor_status == NULL)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        /* *minor_status = gsi_generate_minor_status(); */
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
     
     if(context_handle == GSS_C_NO_CONTEXT)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(cred_handle == GSS_C_NO_CREDENTIAL)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -97,8 +91,8 @@ GSS_CALLCONV gss_init_delegation(
     if(desired_mech != GSS_C_NO_OID &&
        desired_mech != (gss_OID) gss_mech_globus_gssapi_ssleay)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -107,16 +101,16 @@ GSS_CALLCONV gss_init_delegation(
        (restriction_buffers == GSS_C_NO_BUFFER_SET ||
         restriction_oids->count != restriction_buffers->count))
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(output_token == GSS_C_NO_BUFFER)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -130,18 +124,17 @@ GSS_CALLCONV gss_init_delegation(
          * there will always be one
          */
 
-    	major_status = gs_put_token(context, input_token);
+    	major_status = gs_put_token(minor_status,context,input_token);
 
     	if (major_status != GSS_S_COMPLETE)
         {
-            *minor_status = gsi_generate_minor_status();
             return major_status;
     	}
     }
     else if(context->delegation_state != GS_DELEGATION_START)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -193,7 +186,6 @@ GSS_CALLCONV gss_init_delegation(
                 {
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                     major_status = GSS_S_FAILURE;
-                    *minor_status = gsi_generate_minor_status();
                     return major_status;
                 }
             
@@ -202,24 +194,27 @@ GSS_CALLCONV gss_init_delegation(
                 {
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                     major_status = GSS_S_FAILURE;
-                    *minor_status = gsi_generate_minor_status();
                     goto err;
                 }
             }
         }
 
-        if(proxy_sign(cred->pcd->ucert,
-                      cred->pcd->upkey,
-                      reqp,
-                      &ncert,
-                      time_req,
-                      extensions,
-                      0))
+        if(proxy_sign_ext(0,
+                          cred->pcd->ucert,
+                          cred->pcd->upkey,
+                          EVP_md5(),
+                          reqp,
+                          &ncert,
+                          0,
+                          /*time_req, why can we use GSS_C_INDEFINITE here?*/
+                          0, /* don't want limited proxy */
+                          0,
+                          "proxy",
+                          extensions))
         {
             /* should probably return a error related to not being
                able to sign the cert */
             GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_ADD_EXT);
-            *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             goto err;
         }
@@ -234,16 +229,23 @@ GSS_CALLCONV gss_init_delegation(
 
         /* push the number of certs in the cert chain */
 
-        if(cred->pcd->cert_chain != NULL)
+        cert_chain_length = sk_X509_num(cred->pcd->cert_chain);
+        
+        /*
+         * XXX: Look at me. Seems like sk_X509_num() returns -1 if the
+         *      chain is uninitialized. Maybe it's indicating an error?
+         */
+        if (cert_chain_length == -1)
         {
-            cert_chain_length = sk_X509_num(cred->pcd->cert_chain);
+            cert_chain_length = 0;
         }
         
         /* Add one for the issuer's certificate */
+        cert_chain_length++;
         
-        i2d_integer_bio(context->gs_sslbio, cert_chain_length + 1);
+        i2d_integer_bio(context->gs_sslbio, cert_chain_length);
 
-        for(i=cert_chain_length-1;i>=0;i--)
+        for(i=sk_X509_num(cred->pcd->cert_chain)-1;i>=0;i--)
         {
             cert = sk_X509_value(cred->pcd->cert_chain,i);
             
@@ -270,7 +272,7 @@ GSS_CALLCONV gss_init_delegation(
         break;
     }
     
-    gs_get_token(context, output_token);
+    gs_get_token(minor_status,context,output_token);
 
     if (context->delegation_state != GS_DELEGATION_START)
     {
@@ -341,8 +343,6 @@ proxy_extension_create(
     }
     asn1_oct_string = NULL;
 
-    X509_EXTENSION_set_critical(ex,1);
-    
     return ex;
 
 err:

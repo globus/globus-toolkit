@@ -432,9 +432,6 @@ SetProtectionLevel(int t, const char *const val, FILE *const fp)
 			protectionString = "Authenticated";
 		(void) fprintf(fp, "%s", protectionString);
 	} else {
-	        /* We only support clear protection level now */
-	        gProtectionLevel = kProtectionLevelClear;
-		/*
 		if(toupper(val[0]) == kProtectionLevelClear)
 			gProtectionLevel = kProtectionLevelClear;
 		else if(toupper(val[0]) == kProtectionLevelSafe)
@@ -443,7 +440,6 @@ SetProtectionLevel(int t, const char *const val, FILE *const fp)
 			gProtectionLevel = kProtectionLevelPrivate;
 		else if(toupper(val[0]) == kProtectionLevelAuthenticated)
 			gProtectionLevel = kProtectionLevelAuthenticated;
-		*/
 	}
 }	/* SetProtectionLevel */
 #endif
@@ -687,7 +683,7 @@ InitPrefs(void)
 #endif
 
 #if HAVE_GSSAPI
-	gProtectionLevel = kProtectionLevelClear;
+	gProtectionLevel = 'C';
 #endif
 	gSavePasswords = -1;
 #ifdef ncftp

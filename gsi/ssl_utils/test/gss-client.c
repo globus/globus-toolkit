@@ -187,11 +187,7 @@ int client_establish_context(s, service_name, deleg_flag, oid,
 				    NULL);	/* ignore time_rec */
 
 	  if (token_ptr != GSS_C_NO_BUFFER)
-          {
-              OM_uint32 min_stat_2;
-              
-              (void) gss_release_buffer(&min_stat_2, &recv_tok);
-          }
+	       (void) gss_release_buffer(&min_stat, &recv_tok);
 
 	  if (maj_stat!=GSS_S_COMPLETE && maj_stat!=GSS_S_CONTINUE_NEEDED) {
 	       display_status("initializing context", maj_stat, min_stat);
@@ -537,15 +533,11 @@ int main(argc, argv)
 	       if (!argc) usage();
 	       mechanism = *argv;
 	   } else if (strcmp(*argv, "-d") == 0) {
-	       deleg_flag |= GSS_C_DELEG_FLAG;
+	       deleg_flag = GSS_C_DELEG_FLAG;
 	  } else if (strcmp(*argv, "-f") == 0) {
 	       use_file = 1;
 	  } else if (strcmp(*argv, "-e") == 0) {
 	       use_encrypt = 1;
-          } else if (strcmp(*argv, "-no_limited") == 0) {
-              deleg_flag |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
-          } else if (strcmp(*argv, "-limited_many") == 0) {
-              deleg_flag |= GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;
 	  } else 
 	       break;
 	  argc--; argv++;

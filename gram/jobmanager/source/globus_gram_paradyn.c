@@ -12,7 +12,7 @@
 #include <fcntl.h>
 
 #include "globus_gram_job_manager.h"
-#include "globus_gram_protocol.h"
+#include "globus_gram_client.h"
 
 /******************************************************************************
                                Type definitions
@@ -59,10 +59,10 @@ Returns:        1 if it successfully
 int
 grami_paradyn_rewrite_params(globus_gram_jobmanager_request_t * params)
 {
-    char paradyn_port[GLOBUS_GRAM_PROTOCOL_PARAM_SIZE];
-    char paradyn_host[GLOBUS_GRAM_PROTOCOL_PARAM_SIZE];
-    char paradynd_type[GLOBUS_GRAM_PROTOCOL_PARAM_SIZE];
-    char paradynd_location[GLOBUS_GRAM_PROTOCOL_PARAM_SIZE*2];
+    char paradyn_port[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
+    char paradyn_host[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
+    char paradynd_type[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
+    char paradynd_location[GLOBUS_GRAM_CLIENT_PARAM_SIZE*2];
     int i;
     char ** new_args;
 

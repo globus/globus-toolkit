@@ -277,12 +277,6 @@ unset lac_cxxflags_opt
 case ${host}--$1 in
     *solaris2*)
         dnl On Solaris, avoid the pre-ansi BSD compatibility compiler
-
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi 
         if test ! -z "$CC"; then
             AC_CHECK_PROG(lac_cv_CC, $CC, $CC, , , /usr/ucb/cc)
         fi
@@ -435,11 +429,6 @@ case ${host}--$1 in
 	lac_F90FLAGS="$lac_64bit_flag $lac_F90FLAGS"
       ;;	
     *-ibm-aix*--pthreads )
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi 
 	if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
 	    AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
 	    AC_PATH_PROGS(lac_cv_CXX, $CXX xlC_r)
@@ -469,11 +458,6 @@ case ${host}--$1 in
 	fi
       ;;
     *-ibm-aix*--no )
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi 
 	if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
 	    AC_PATH_PROGS(lac_cv_CC, $CC xlc gcc)
 	    AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC xlC c++ g++ gcc)
@@ -503,11 +487,6 @@ case ${host}--$1 in
 	fi
       ;;
     alpha-dec-osf[45]* )
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi 
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx c++ g++ gcc)
 	if test "$1" = "pthreads" ; then
@@ -526,11 +505,6 @@ case ${host}--$1 in
       ;;
     alpha-cray-unicosmk* )
 	dnl Cray T3E
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi 
 	AC_PATH_PROGS(lac_cv_CC, $CC cc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX CC)
 	lac_CFLAGS="-Xm $lac_CFLAGS"
@@ -540,22 +514,12 @@ case ${host}--$1 in
 	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
       ;;
     *linux*--pthreads )
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi 
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
 	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
 	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
       ;;
     * ) 
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi 
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++  g++ gcc)
 	AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)

@@ -40,9 +40,6 @@ static char gCopyright[] = "@(#) LibNcFTP Copyright 1995-2000, by Mike Gleason. 
 #	endif
 #endif
 
-#ifdef HAVE_GSSAPI
-#       include "gssapi.h"
-#endif
 
 
 
@@ -1229,14 +1226,6 @@ tryPort:
 
 	(void) SetLinger(cip, dataSocket, 1);
 	(void) SetKeepAlive(cip, dataSocket);
-#if HAVE_GSSAPI
-	if(cip->protectionLevel == kProtectionLevelAuthenticated ||
-	   cip->protectionLevel == kProtectionLevelSafe ||
-	   cip->protectionLevel == kProtectionLevelPrivate)
-	{
-	    /* TODO: authenticate our data channel */
-	}
-#endif
 
 #if defined(IP_TOS) && defined(IPTOS_THROUGHPUT)
 	/* Data connection is a non-interactive data stream, so

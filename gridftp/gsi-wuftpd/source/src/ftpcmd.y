@@ -80,8 +80,6 @@ globus_ftp_control_parallelism_t		g_parallelism;
 globus_ftp_control_dcau_t			g_dcau;
 globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
 globus_fifo_t					g_restarts;
-
-extern gss_cred_id_t                            g_deleg_cred;
 #endif
 
 extern int dolreplies;
@@ -626,25 +624,8 @@ cmd: USER SP username CRLF
 		switch ($4) {
 
 		case MODE_S:
-#                   if defined(USE_GLOBUS_DATA_CODE)
-			res = globus_ftp_control_local_mode(
-				  &g_data_handle,
-				  GLOBUS_FTP_CONTROL_MODE_STREAM);
-			if(res == GLOBUS_SUCCESS)
-			{
-			    g_send_restart_info = GLOBUS_FALSE;
-			    mode = $4;
-			    reply(200, "MODE S ok.");
-			    
-			}
-			else
-			{
-			    reply(502, "Failure setting MODE S.");
-			}
-#		    else
-			reply(200, "MODE S ok.");
-			mode = $4;
-#                   endif
+		    reply(200, "MODE S ok.");
+		    mode = $4;
 		    break;
 
 #               if defined(USE_GLOBUS_DATA_CODE)
@@ -776,7 +757,7 @@ cmd: USER SP username CRLF
 		    CHECKNULL($6));
 #endif
 	    if ($2 && $6 != NULL && !restrict_check($6))
-		store($6, "r+", 0, $4.offset);
+		store($6, "r+", 0, (int) $4.offset);
 	    if ($6 != NULL)
 		free($6);
 	}
@@ -1059,8 +1040,7 @@ cmd: USER SP username CRLF
 			g_dcau.subject.subject = globus_libc_strdup($4+2);
 		    }
 		    res = globus_ftp_control_local_dcau(&g_data_handle,
-		                                        &g_dcau,
-                                                        g_deleg_cred);
+		                                        &g_dcau);
 		    if(res != GLOBUS_SUCCESS)
 		    {
 		        reply(432, "Data channel authentication failed");
@@ -1626,7 +1606,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		dologout(0);
 	    }
 	    if (log_commands)
-		syslog(LOG_INFO, "REST %d", (int) $4);
+		syslog(LOG_INFO, "REST %d", (int) restart_point);
 	    if ($2)
 	    {
 #           if USE_GLOBUS_DATA_CODE
@@ -2340,7 +2320,6 @@ char * feattab[] =
     "SIZE",
 #ifdef USE_GLOBUS_DATA_CODE
     "PARALLEL",
-    "DCAU",
 #endif
     NULL
 };
@@ -2799,19 +2778,12 @@ int yylex(void)
 		    while (isdigit(cbuf[++cpos]));
 		    c = cbuf[cpos];
 		    cbuf[cpos] = '\0';
-#ifdef USE_GLOBUS_DATA_CODE
-		    sscanf(cp,"%"GLOBUS_OFF_T_FORMAT, &yylval.Bignum);
-#else
-                    yylval.Number = atoi(cp);
-#endif
+		    yylval.Bignum = atoll(cp);
 		    cbuf[cpos] = c;
 
 		    state = EARGS5;
-#ifdef USE_GLOBUS_DATA_CODE
+
 		    return (BIGNUM);
-#else
-                    return(NUMBER);
-#endif                    
 		}
 		break;
 
@@ -2822,20 +2794,12 @@ int yylex(void)
 		    while (isdigit(cbuf[++cpos]));
 		    c = cbuf[cpos];
 		    cbuf[cpos] = '\0';
-#ifdef USE_GLOBUS_DATA_CODE
-		    sscanf(cp,"%"GLOBUS_OFF_T_FORMAT, &yylval.Bignum);
-#else
-                    yylval.Number = atoi(cp);
-#endif
+		    yylval.Bignum = atoll(cp);
 		    cbuf[cpos] = c;
 
 		    state = STR1;
 
-#ifdef USE_GLOBUS_DATA_CODE
 		    return (BIGNUM);
-#else
-                    return(NUMBER);
-#endif                    
 		}
 		break;
 	    case OPTSARGS:

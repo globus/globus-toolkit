@@ -81,16 +81,14 @@ GSS_CALLCONV gss_delete_sec_context
 
 	if ((*context_handle)->gs_state == GS_CON_ST_DONE
 			&& (*context_handle)->gs_ssl 
-			&& output_token != GSS_C_NO_BUFFER)
-        {
-            SSL_shutdown((*context_handle)->gs_ssl);
-
-            gs_get_token(*context_handle,
-                             output_token);
-
+			&& output_token != GSS_C_NO_BUFFER) {
+		SSL_shutdown((*context_handle)->gs_ssl);
+		gs_get_token(minor_status,
+				*context_handle,
+				output_token);
 #ifdef DEBUG
-            fprintf(stderr,"delete_sec_context:output_token->length=%d\n",
-                    output_token->length);
+	fprintf(stderr,"delete_sec_context:output_token->length=%d\n",
+			output_token->length);
 #endif
 	}
 

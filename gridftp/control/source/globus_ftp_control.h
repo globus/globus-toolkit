@@ -24,6 +24,7 @@
 #include <globus_gss_assist.h>
 #include <globus_handle_table.h>
 
+
 /**
  * @mainpage Globus GSIFTP Control Connection API
  *
@@ -78,8 +79,7 @@ typedef enum globus_ftp_control_dcau_mode_e
 {
     GLOBUS_FTP_CONTROL_DCAU_NONE = 'N',
     GLOBUS_FTP_CONTROL_DCAU_SELF = 'A',
-    GLOBUS_FTP_CONTROL_DCAU_SUBJECT = 'S',
-    GLOBUS_FTP_CONTROL_DCAU_DEFAULT
+    GLOBUS_FTP_CONTROL_DCAU_SUBJECT = 'S'
 } globus_ftp_control_dcau_mode_t;
 
 /**
@@ -312,7 +312,7 @@ typedef enum globus_ftp_data_connection_state_e
     GLOBUS_FTP_DATA_STATE_CONNECT_WRITE, /* connected for writing */
     GLOBUS_FTP_DATA_STATE_CLOSING, /* closing all connections */
     GLOBUS_FTP_DATA_STATE_EOF, /* user has received eof */
-    GLOBUS_FTP_DATA_STATE_SEND_EOF /* not used for state at all */
+    GLOBUS_FTP_DATA_STATE_SEND_EOF, /* not used for state at all */
 } globus_ftp_data_connection_state_t;
 
 #define GLOBUS_FTP_CONTROL_READ_BUFFER_SIZE 100
@@ -562,8 +562,6 @@ globus_ftp_control_rw_queue_element_t;
 
 typedef struct globus_ftp_cc_handle_s
 {
-    globus_io_attr_t                                 io_attr;
-
     globus_fifo_t                                    readers;
     globus_fifo_t                                    writers;
     globus_ftp_control_command_callback_t	     command_cb; 
@@ -654,8 +652,6 @@ typedef struct globus_i_ftp_dc_handle_s
     globus_ftp_control_callback_t               close_callback;
     void *                                      close_callback_arg;
 
-    globus_netlogger_handle_t *                 nl_handle;
-
     struct globus_ftp_control_handle_s *        whos_my_daddy;
 } globus_i_ftp_dc_handle_t;
 
@@ -744,14 +740,6 @@ globus_ftp_control_local_layout(
     globus_ftp_control_handle_t *               handle,
     globus_ftp_control_layout_t *               layout,
     globus_size_t                               data_size);
-
-/*
- *  NET LOGGER STUFF
- */
-globus_result_t
-globus_ftp_control_set_netlogger(
-    globus_ftp_control_handle_t *               handle,
-    globus_netlogger_handle_t *                 nl_handle);
 
 /*****************************************************************
  *  standard layout functions 
@@ -1485,9 +1473,8 @@ globus_ftp_control_get_type(
 
 globus_result_t
 globus_ftp_control_local_dcau(
-    globus_ftp_control_handle_t *               handle,
-    const globus_ftp_control_dcau_t *           dcau,
-    gss_cred_id_t                               delegated_credential_handle);
+    globus_ftp_control_handle_t *		handle,
+    const globus_ftp_control_dcau_t *	        dcau);
 
 globus_result_t
 globus_ftp_control_get_dcau(

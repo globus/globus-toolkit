@@ -666,7 +666,7 @@ globus_ftp_client_delete(
     static char * myname = "globus_ftp_client_delete";
 
     /* Check arguments for validity */
-    if(u_handle == GLOBUS_NULL)
+    if(handle == GLOBUS_NULL)
     {
 	err = globus_error_construct_string(
 	    GLOBUS_FTP_CLIENT_MODULE,
@@ -1720,7 +1720,7 @@ globus_ftp_client_move(
 
 
     rc = globus_url_parse(dest_url,
-                          &url);
+			   &url);
     
     if(rc != GLOBUS_SUCCESS)
     {
@@ -1743,13 +1743,11 @@ globus_ftp_client_move(
 	    "[%s] Destination URL does not contain a path compenent at %s\n",
 	    GLOBUS_FTP_CLIENT_MODULE->module_name,
 	    myname);
-        globus_url_destroy(&url);
+
 	goto free_urls_exit;
+
     }
 
-    globus_url_destroy(&url);
-
-    
     /* Obtain a connection to the source FTP server, maybe cached */
     err = globus_i_ftp_client_target_find(handle,
 					  source_url,
@@ -1832,6 +1830,7 @@ source_problem_exit:
 	globus_i_ftp_client_target_release(handle,
 					   handle->source);
     }
+
 free_urls_exit:
     globus_libc_free(handle->dest_url);
 free_source_url_exit:
@@ -2222,6 +2221,11 @@ globus_l_ftp_client_extended_get(
     if((!attr) || (! *attr ) ||
 	    ((*attr) && (*attr)->mode == GLOBUS_FTP_CONTROL_MODE_STREAM))
     {
+        if((handle->partial_offset != -1 && handle->partial_end_offset != -1)
+           && handle->partial_offset > handle->base_offset)
+        {
+	    handle->base_offset = handle->partial_offset;
+        }
 	if(restart && restart->type == GLOBUS_FTP_CLIENT_RESTART_STREAM)
 	{
 	   if(((!attr) || (!*attr) ||
@@ -2708,6 +2712,11 @@ globus_l_ftp_client_extended_put(
     if((!attr) || (!*attr) ||
 	    ((*attr) && (*attr)->mode == GLOBUS_FTP_CONTROL_MODE_STREAM))
     {
+        if((handle->partial_offset != -1 && handle->partial_end_offset != -1)
+           && handle->partial_offset > handle->base_offset)
+        {
+	    handle->base_offset = handle->partial_offset;
+        }
 	if(restart && restart->type == GLOBUS_FTP_CLIENT_RESTART_STREAM)
 	{
 	   if(((!attr) || (!*attr) ||
@@ -4553,7 +4562,7 @@ globus_i_ftp_client_target_activate(
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_CONTROL_ESTABLISHMENT;
 	globus_i_ftp_client_plugin_notify_connect(handle,
-						  target->url_string);
+						  &target->url);
 	
 	if(handle->state == desired_state)
 	{
@@ -4574,7 +4583,7 @@ globus_i_ftp_client_target_activate(
 
 		globus_i_ftp_client_plugin_notify_fault(
 		    handle,
-		    target->url_string,
+		    &target->url,
 		    err);
 
 		goto error_exit;
@@ -4610,7 +4619,7 @@ globus_i_ftp_client_target_activate(
 
 	globus_i_ftp_client_plugin_notify_command(
 	    handle,
-	    target->url_string,
+	    &target->url,
 	    target->mask,
 	    "NOOP" CRLF);
 
@@ -4631,7 +4640,7 @@ globus_i_ftp_client_target_activate(
 
 		globus_i_ftp_client_plugin_notify_fault(
 		    handle,
-		    target->url_string,
+		    &target->url,
 		    err);
 
 		goto error_exit;

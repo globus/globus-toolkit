@@ -39,26 +39,11 @@
 
 EXTERN_C_BEGIN
 
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #include "globus_common.h"
 #include "globus_gss_assist.h"
 #endif
-
-/*
-#define GLOBUS_BUILD_WITH_NETLOGGER 1
-*/
-
-/*
- *  If this is a Netlogger aware build, include the logging headers
- */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-#include "NetLogger.h"
-#else
-typedef void NLhandle;
-#endif
-
-struct globus_netlogger_handle_s;
-typedef struct globus_netlogger_handle_s *  globus_netlogger_handle_t;
 
 /**
  * @defgroup globus_io_activation Activation
@@ -162,13 +147,7 @@ typedef struct
 {
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
     globus_object_t *			attr;
-
-    /*
-     * NETLOGGER
-     */
-    globus_netlogger_handle_t *         nl_handle;
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+#endif
 } globus_io_attr_t;
 
 typedef struct globus_io_handle_s globus_io_handle_t;
@@ -297,42 +276,6 @@ typedef globus_bool_t (*globus_io_secure_authorization_callback_t)(
     globus_result_t			result,
     char *				identity,
     gss_ctx_id_t *			context_handle);
-
-
-/**
- * Signature of a Globus I/O delegation callback.
- *
- * This callback function is invoked once delegation is completed. 
- *
- * The parameters to this function are
- *
- * @param arg
- * The callback argument passed to the delegation function.
- * @param handle
- * The handle used in the delegation process.
- * @param result
- * The result of the authentication operation.
- * @param delegated_cred
- * The credential involved in the delegation.
- * @param time_rec
- * Parameter returning the actual time in seconds the received
- * credential is valid for. This parameter will be 0 if this callback
- * is a result of a call to init delegation.
- *
- * @return
- * This function returns GLOBUS_SUCCESS on success, or a
- * globus_result_t indicating the error that occured.
- *
- * @ingroup security
- */
-
-typedef void (* globus_io_delegation_callback_t)(
-    void *				arg,
-    globus_io_handle_t *		handle,
-    globus_result_t			result,
-    gss_cred_id_t                       delegated_cred,
-    OM_uint32                           time_rec);
-
 
 typedef void (*globus_io_udp_sendto_callback_t)(
     void *				arg, 
@@ -586,36 +529,6 @@ typedef enum
 } globus_io_secure_delegation_mode_t;
 
 
-/**
- * Security Proxy mode
- *
- * The setting of this mode determines if and what kind of proxy
- * certificates will be accepted for authentication. The mode may be
- * changed by calling the globus_io_attr_set_secure_proxy_mode()
- * function. 
- *
- * @ingroup security
- */
-typedef enum
-{
-    /** 
-     * Accept a full or level 1 limited proxy, but not a level >=2
-     * limited proxy.
-     */
-    GLOBUS_IO_SECURE_PROXY_MODE_NONE = 0,
-    /** 
-     * Do not accept any form of limited proxy. This would be used by
-     * the gatekeeper and sshd. This behavior is unchanged from today.
-     */
-    GLOBUS_IO_SECURE_PROXY_MODE_LIMITED,
-    /**
-     * Accept any proxy, limited or otherwise, as valid authentication.
-     */
-    GLOBUS_IO_SECURE_PROXY_MODE_MANY
-} globus_io_secure_proxy_mode_t;
-
-
-
 /*
    Globus I/O Attribute Objects 
    GLOBUS_IO_OBJECT_TYPE_BASE
@@ -680,7 +593,6 @@ typedef struct
     globus_io_secure_channel_mode_t		channel_mode;
     globus_io_secure_protection_mode_t		protection_mode;
     globus_io_secure_delegation_mode_t		delegation_mode;
-    globus_io_secure_proxy_mode_t		proxy_mode;
     gss_cred_id_t				credential;
     globus_bool_t				internal_credential;
     char *					authorized_identity;
@@ -880,14 +792,7 @@ struct globus_io_handle_s
     /* some handle state information */
     volatile globus_io_handle_state_t		state;
     void *					user_pointer;
-
-    /* 
-     *  NETLOGGER
-     */
-    char *                                      nl_event_id;
-    globus_netlogger_handle_t *                 nl_handle;
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+#endif
 };
 
 /* Core API Functions */
@@ -1244,46 +1149,6 @@ globus_result_t
 globus_io_attr_get_udp_multicast_interface(
     globus_io_attr_t * attr,
     char ** interface);
-
-/* delegation functions */
-
-globus_result_t
-globus_io_register_init_delegation(
-    globus_io_handle_t *                handle,
-    const gss_cred_id_t                 cred_handle,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
-    OM_uint32                           time_req,
-    globus_io_delegation_callback_t	callback,
-    void *				callback_arg);
-
-globus_result_t
-globus_io_init_delegation(
-    globus_io_handle_t *                handle,
-    const gss_cred_id_t                 cred_handle,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
-    OM_uint32                           time_req);
-
-globus_result_t
-globus_io_register_accept_delegation(
-    globus_io_handle_t *                handle,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
-    OM_uint32                           time_req,
-    globus_io_delegation_callback_t	callback,
-    void *				callback_arg);
-
-globus_result_t
-globus_io_accept_delegation(
-    globus_io_handle_t *                handle,
-    gss_cred_id_t *                     delegated_cred,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
-    OM_uint32                           time_req,
-    OM_uint32 *                         time_rec);
-
-
 #endif
 
 
@@ -1321,52 +1186,6 @@ globus_io_file_posix_convert(
  * The API functions in this section deal with the setting and
  * querying of attribute values.
  */
-
-/*
- *  NETLOGGER STUFF
- */
-globus_result_t
-globus_io_attr_netlogger_set_handle(
-    globus_io_attr_t *                  attr,
-    globus_netlogger_handle_t *         nl_handle);
-
-globus_result_t
-globus_netlogger_add_attribute_string(
-    globus_netlogger_handle_t *       nl_handle,
-    const char *                      attribute_name,
-    const char *                      attribute_value);
-
-globus_result_t
-globus_netlogger_set_attribute_string(
-    globus_netlogger_handle_t *       nl_handle,
-    const char *                      attr_str);
-
-globus_result_t
-globus_netlogger_get_attribute_string(
-    globus_netlogger_handle_t *       nl_handle,
-    const char **                     attr_str);
-
-globus_result_t
-globus_netlogger_write(
-    globus_netlogger_handle_t *       nl_handle,
-    const char *                      event,
-    const char *                      tag);
-
-globus_result_t
-globus_netlogger_handle_init(
-    globus_netlogger_handle_t *       nl_handle,
-    NLhandle *                        handle);
-
-globus_result_t
-globus_netlogger_handle_destroy(
-    globus_netlogger_handle_t *       nl_handle);
-
-globus_result_t
-globus_netlogger_get_nlhandle(
-    globus_netlogger_handle_t *       nl_handle,
-    NLhandle **                       handle);
-
-/* NETLOGGER handle */
 
 #ifndef DOXYGEN
 globus_result_t
@@ -1568,16 +1387,6 @@ globus_io_attr_get_secure_delegation_mode(
     globus_io_attr_t *			attr,
     globus_io_secure_delegation_mode_t *
 					mode);
-globus_result_t
-globus_io_attr_set_secure_proxy_mode(
-    globus_io_attr_t *			attr,
-    globus_io_secure_proxy_mode_t	mode);
-
-globus_result_t
-globus_io_attr_get_secure_proxy_mode(
-    globus_io_attr_t *			attr,
-    globus_io_secure_proxy_mode_t *     mode);
-
 globus_bool_t
 globus_io_eof(
     globus_object_t *			eof);

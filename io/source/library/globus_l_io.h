@@ -48,28 +48,6 @@
 
 #include "globus_io.h"
 
-
-/*
- *  NETLOGGER
- */
-
-#define GLOBUS_IO_NL_EVENT_START_READ     "GIO_READ_START"
-#define GLOBUS_IO_NL_EVENT_END_READ       "GIO_READ_END"
-#define GLOBUS_IO_NL_EVENT_START_WRITE    "GIO_WRITE_START"
-#define GLOBUS_IO_NL_EVENT_END_WRITE      "GIO_WRITE_END"
-
-struct globus_netlogger_handle_s
-{   
-    char *                                nl_event_str;
-    NLhandle *                            nl_handle;
-};
-
-/*
- * provides a mechanism to turn netlogger on and off in a netlogger 
- * aware build.
- */
-extern globus_bool_t                      g_globus_i_io_use_netlogger;
-
 /*
  *			  Module specific prototypes
  */
@@ -180,7 +158,6 @@ typedef struct
     globus_bool_t			use_err;
     volatile globus_bool_t		done;
     globus_size_t			nbytes;
-    void *                              data;
 } globus_i_io_monitor_t;
 
 typedef void (*globus_io_destructor_t)(void *arg);

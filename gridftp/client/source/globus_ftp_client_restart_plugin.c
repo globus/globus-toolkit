@@ -158,43 +158,13 @@ globus_l_ftp_client_restart_plugin_fault(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     globus_object_t *				error);
 
 static
 void
 globus_l_ftp_client_restart_plugin_genericify(
     globus_l_ftp_client_restart_plugin_t *	d);
-
-static int globus_l_ftp_client_restart_plugin_activate(void);
-static int globus_l_ftp_client_restart_plugin_deactivate(void);
-
-/**
- * Module descriptor static initializer.
- */
-globus_module_descriptor_t globus_i_ftp_client_restart_plugin_module =
-{
-    "globus_ftp_client_restart_plugin",
-    globus_l_ftp_client_restart_plugin_activate,
-    globus_l_ftp_client_restart_plugin_deactivate,
-    GLOBUS_NULL
-};
-
-
-static
-int
-globus_l_ftp_client_restart_plugin_activate(void)
-{
-    return 0;
-}
-
-static
-int
-globus_l_ftp_client_restart_plugin_deactivate(void)
-{
-    return 0;
-}
-
 
 static
 globus_ftp_client_plugin_t *
@@ -456,7 +426,7 @@ globus_l_ftp_client_restart_plugin_fault(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     globus_object_t *				error)
 {
     globus_l_ftp_client_restart_plugin_t *	d;

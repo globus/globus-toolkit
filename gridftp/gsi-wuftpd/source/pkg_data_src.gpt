@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 <gpt_package_metadata Format_Version="0.01" Name="globus_gsi_wuftpd" >
-    <Aging_Version Age="0" Major="0" Minor="6" />
+    <Aging_Version Age="0" Major="0" Minor="1" />
 
     <Description>
 	Globus binary package for gsi-wuftpd
@@ -32,7 +32,7 @@
 
 	<With_Flavors build="yes" />
 
-	<Version_Label>0.6</Version_Label>
+	<Version_Label>3.0.3</Version_Label>
 
 	<Build_Instructions>
 	    <Build_Step>
@@ -40,11 +40,7 @@
 	    </Build_Step>
 	    <Build_Step>
 		. $GLOBUS_LOCATION/libexec/globus-build-env-FLAVOR_GPTMACRO.sh
-
-		if test "STATIC_LINK_GPTMACRO" = "yes"; then
-		    static_option=--enable-static-only
-		fi
-		./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi=globus --with-flavor=FLAVOR_GPTMACRO CONFIGOPTS_GPTMACRO $static_option --with-globus-paths
+		./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi=globus --with-flavor=FLAVOR_GPTMACRO --with-globus-paths
 	    </Build_Step>
 
 	    <Build_Step>
@@ -52,7 +48,7 @@
 	    </Build_Step>
 
 	    <Build_Step>
-		MAKE_GPTMACRO DESTDIR_GPTMACRO DESTDIR=INSTALLDIR_GPTMACRO install
+		MAKE_GPTMACRO DESTDIR_GPTMACRO install
 	    </Build_Step>
 
 	</Build_Instructions>

@@ -1391,7 +1391,6 @@ user_command(
     res = globus_ftp_control_auth_info_init(
               &auth,
 	      GLOBUS_NULL,
-	      GLOBUS_FALSE,
               username,
               passwd,
               account,
@@ -2282,11 +2281,11 @@ eget_command(
     int                                   argc;
     globus_result_t                       res;
 
-    for(ctr = 0; ctr < 4; ctr++)
+    for(ctr = 0; ctr < 3; ctr++)
     {
         arg[ctr] = globus_malloc(strlen(command_str) + 1);
     }
-    argc = parse_list_args(command_str, arg, 4);
+    argc = parse_list_args(command_str, arg, 3);
 
     if(argc < 3)
     {
@@ -2437,7 +2436,7 @@ l_get_command(
     start_transfer();
     res = globus_ftp_control_send_command(
               &g_control_handle, 
-              "%s %s %s\r\n",
+              "%s %s%s\r\n",
               get_callback,
               (void *)fd,
               server_cmd,

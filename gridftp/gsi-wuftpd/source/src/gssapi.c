@@ -48,13 +48,9 @@ char* gss_services[] = { "host", 0 };
 #if USE_GLOBUS_DATA_CODE
 #include "globus_ftp_control.h"
 extern globus_ftp_control_handle_t g_data_handle;
-extern gss_cred_id_t g_deleg_cred;
 #endif
 
 extern int debug;			/* From ftpd.c */
-
-/* Server credentials */
-static gss_cred_id_t server_creds = GSS_C_NO_CREDENTIAL;     
 
 /* GSSAPI context */
 static gss_ctx_id_t gcontext = GSS_C_NO_CONTEXT;
@@ -613,14 +609,24 @@ gssapi_can_encrypt()
 
 
 
-/* returns -1 if cannot acquire credentials (having sent an error reply)
- * if it can, or has already done so, returns 0
+/*
+ * gssapi_handle_auth_data()
+ *
+ * Handle an authentication_data packet
+ *
+ * Arguments: Data (NUL-terminated string)
+ * Returns: 1 on successful authentication
+ *          0 on continue needed
+ *         -1 on error
  */
-static
 int
-gssapi_acquire_server_credentials(void)
+gssapi_handle_auth_data(char *data, int length)
 {
+    int replied = 0;			/* Have we replied */
     int found = 0;
+    gss_cred_id_t server_creds;     
+    static gss_name_t client;
+    OM_uint32 ret_flags = 0;
     struct gss_channel_bindings_struct *pchan;
 #ifndef GSSAPI_GLOBUS
     struct gss_channel_bindings_struct chan;
@@ -630,8 +636,16 @@ gssapi_acquire_server_credentials(void)
 
     OM_uint32 acquire_maj;
     OM_uint32 acquire_min;
+    OM_uint32 accept_maj;
+    OM_uint32 accept_min;
     OM_uint32 stat_maj;
     OM_uint32 stat_min;
+    gss_ctx_id_t g_deleg_ctx = GSS_C_NO_CREDENTIAL;
+
+
+    gss_OID mechid;
+    gss_buffer_desc in_tok;
+    gss_buffer_desc out_tok;
 
     char localname[MAXHOSTNAMELEN];
     char service_name[MAXHOSTNAMELEN+10];
@@ -645,6 +659,8 @@ gssapi_acquire_server_credentials(void)
 #ifdef GSSAPI_KRB5
     extern const gss_OID gss_nt_service_name;	/* From GSSAPI library */
 #endif /* GSSAPI_KRB5 */
+
+    
 
 #ifdef GSSAPI_GLOBUS
     pchan = GSS_C_NO_CHANNEL_BINDINGS;
@@ -660,10 +676,13 @@ gssapi_acquire_server_credentials(void)
     pchan = &chan;
 #endif /* !GSSAPI_GLOBUS */
 
-    if(server_creds != GSS_C_NO_CREDENTIAL)
-    {
-	return 0;
-    }
+    in_tok.value = data;
+    in_tok.length = length;
+
+    if (debug)
+	syslog(LOG_INFO, "Input ADAT token length is %d",
+	       in_tok.length);
+
 #ifndef KRB5_MULTIHOMED_FIXES
     /* Get all default hostname */
     if (gethostname(localname, sizeof(localname))) {
@@ -695,7 +714,7 @@ gssapi_acquire_server_credentials(void)
 
     strncpy(localname, hp->h_name, sizeof(localname));
 		
-    for (service = gss_services; *service && !found; service++) {
+    for (service = gss_services; *service; service++) {
 
 	sprintf(service_name, "%s@%s", *service, localname);
 	name_type = GSS_C_NT_HOSTBASED_SERVICE;
@@ -717,14 +736,39 @@ gssapi_acquire_server_credentials(void)
 	acquire_maj = gss_acquire_cred(&acquire_min, server_name, 0,
 				       GSS_C_NULL_OID_SET, GSS_C_ACCEPT,
 				       &server_creds, NULL, NULL);
+	(void) gss_release_name(&stat_min, &server_name);
 
-	if (acquire_maj == GSS_S_COMPLETE)
-	    found++;
-	else
-	{
-	    (void) gss_release_name(&stat_min, &server_name);
-	    server_creds = GSS_C_NO_CREDENTIAL;
+	if (acquire_maj != GSS_S_COMPLETE)
+	    continue;		/* Try next service name */
+
+	found++;
+
+	if (debug)
+	    syslog(LOG_INFO, "Accepting GSS context");
+
+	accept_maj = gss_accept_sec_context(&accept_min,
+					    &gcontext, /* context_handle */
+					    server_creds, /* verifier_cred_handle */
+					    &in_tok, /* input_token */
+					    pchan, /* channel bindings */
+					    &client, /* src_name */
+					    &mechid, /* mech_type */
+					    &out_tok, /* output_token */
+					    &ret_flags,
+					    NULL, 	/* ignore time_rec */
+					    &g_deleg_ctx   /* ignore del_cred_handle */
+					    );
+
+#if USE_GLOBUS_DATA_CODE
+	/* Don't write code like this. */
+	if (accept_maj == GSS_S_COMPLETE) {
+	    g_data_handle.cc_handle.auth_info.delegated_credential_handle =
+		g_deleg_ctx;
 	}
+#endif
+	if ((accept_maj == GSS_S_COMPLETE) ||
+	    (accept_maj == GSS_S_CONTINUE_NEEDED))
+	    break;
     }
 
     if (!found) {
@@ -733,103 +777,8 @@ gssapi_acquire_server_credentials(void)
 	syslog(LOG_ERR, "gssapi error acquiring credentials");
 	return -1;
     }
-    else
-    {
-	return 0;
-    }
-}
-/* gssapi_acquire_server_credentials() */
 
-
-/*
- * gssapi_handle_auth_data()
- *
- * Handle an authentication_data packet
- *
- * Arguments: Data (NUL-terminated string)
- * Returns: 1 on successful authentication
- *          0 on continue needed
- *         -1 on error
- */
-int
-gssapi_handle_auth_data(char *data, int length)
-{
-    int replied = 0;			/* Have we replied */
-    int rc;
-    static gss_name_t client;
-    OM_uint32 ret_flags = 0;
-    struct gss_channel_bindings_struct *pchan;
-#ifndef GSSAPI_GLOBUS
-    struct gss_channel_bindings_struct chan;
-#endif /* !GSSAPI_GLOBUS */
-
-    OM_uint32 accept_maj;
-    OM_uint32 accept_min;
-    OM_uint32 stat_maj;
-    OM_uint32 stat_min;
-
-    gss_OID mechid;
-    gss_buffer_desc in_tok;
-    gss_buffer_desc out_tok;
-
-#ifdef KRB5_MULTIHOMED_FIXES
-    struct sockaddr_in saddr;
-    int slen;
-#endif /* KRB5_MULTIHOMED_FIXES */
-
-    g_deleg_cred = GSS_C_NO_CREDENTIAL;
-
-#ifdef GSSAPI_GLOBUS
-    pchan = GSS_C_NO_CHANNEL_BINDINGS;
-#else /* GSSAPI_GLOBUS */
-    chan.initiator_addrtype = GSS_C_AF_INET;
-    chan.initiator_address.length = 4;
-    chan.initiator_address.value = &his_addr.sin_addr.s_addr;
-    chan.acceptor_addrtype = GSS_C_AF_INET;
-    chan.acceptor_address.length = 4;
-    chan.acceptor_address.value = &ctrl_addr.sin_addr.s_addr;
-    chan.application_data.length = 0;
-    chan.application_data.value = 0;
-    pchan = &chan;
-#endif /* !GSSAPI_GLOBUS */
-
-    rc = gssapi_acquire_server_credentials();
-
-    if(rc == -1)
-    {
-	return -1;
-    }
-
-    in_tok.value = data;
-    in_tok.length = length;
-
-    if (debug)
-	syslog(LOG_INFO, "Input ADAT token length is %d",
-	       in_tok.length);
-    if (debug)
-	    syslog(LOG_INFO, "Accepting GSS context");
-
-    accept_maj = gss_accept_sec_context(&accept_min,
-					&gcontext, /* context_handle */
-					server_creds, /* verifier_cred_handle */
-					&in_tok, /* input_token */
-					pchan, /* channel bindings */
-					&client, /* src_name */
-					&mechid, /* mech_type */
-					&out_tok, /* output_token */
-					&ret_flags,
-					NULL, 	/* ignore time_rec */
-					&g_deleg_cred   /* don't ignore del_cred_handle */
-					);
-
-#if USE_GLOBUS_DATA_CODE
-    if (accept_maj == GSS_S_COMPLETE) 
-    {
-	extern globus_ftp_control_dcau_t                g_dcau;
-
-	globus_ftp_control_local_dcau(&g_data_handle, &g_dcau, g_deleg_cred);
-    }
-#endif
+    (void) gss_release_cred(&stat_min, &server_creds);
     
     if ((accept_maj != GSS_S_COMPLETE) &&
 	(accept_maj != GSS_S_CONTINUE_NEEDED)) {

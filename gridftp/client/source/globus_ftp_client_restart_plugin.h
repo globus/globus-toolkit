@@ -40,13 +40,6 @@
 
 #include "globus_ftp_client.h"
 
-/** Module descriptor
- * @ingroup globus_ftp_client_restart_plugin
- */
-#define GLOBUS_FTP_CLIENT_RESTART_PLUGIN_MODULE \
-        (&globus_i_ftp_client_restart_plugin_module)
-extern globus_module_descriptor_t globus_i_ftp_client_restart_plugin_module;
-
 globus_result_t
 globus_ftp_client_restart_plugin_init(
     globus_ftp_client_plugin_t *		plugin,

@@ -151,10 +151,6 @@ typedef struct globus_i_ftp_client_handleattr_t
      */
     globus_list_t *                             plugins;
 
-    /*
-     *  NETLOGGER
-     */
-    globus_netlogger_handle_t *                 nl_handle;
 }
 globus_i_ftp_client_handleattr_t;
 
@@ -448,8 +444,6 @@ typedef struct globus_i_ftp_client_target_s
 
     /** Handle to an FTP control connection. */
     globus_ftp_control_handle_t *		control_handle;
-    /** URL we are currently processing. */
-    char *					url_string;
     /** Host/port we are connected to. */
     globus_url_t				url;
     /** Information about server authentication. */
@@ -778,12 +772,12 @@ globus_i_ftp_client_plugin_notify_restart(
 void
 globus_i_ftp_client_plugin_notify_connect(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url);
+    const globus_url_t *			url);
 
 void
 globus_i_ftp_client_plugin_notify_authenticate(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     const globus_ftp_control_auth_info_t *	auth_info);
 
 void
@@ -816,7 +810,7 @@ globus_i_ftp_client_plugin_notify_data(
 void
 globus_i_ftp_client_plugin_notify_command(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     globus_ftp_client_plugin_command_mask_t	command_mask,
     const char *				command_spec,
     ...);
@@ -824,7 +818,7 @@ globus_i_ftp_client_plugin_notify_command(
 void
 globus_i_ftp_client_plugin_notify_response(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     globus_ftp_client_plugin_command_mask_t	command_mask,
     globus_object_t *				error,
     const globus_ftp_control_response_t *	ftp_response);
@@ -832,7 +826,7 @@ globus_i_ftp_client_plugin_notify_response(
 void
 globus_i_ftp_client_plugin_notify_fault(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     globus_object_t *				error);
 
 void

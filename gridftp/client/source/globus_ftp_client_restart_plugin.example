@@ -10,9 +10,6 @@ main(int argc, char *argv[])
     globus_ftp_client_handle_t handle;
     globus_abstime_t deadline;
 
-    globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
-    globus_module_activate(GLOBUS_FTP_CLIENT_RESTART_PLUGIN_MODULE);
-
     /* Set a deadline to be now + 1 hour */
     GlobusAbstimeSet(deadline, 60 * 60, 0);
 

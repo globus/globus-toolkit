@@ -557,27 +557,17 @@ globus_l_ftp_client_target_new(
 	goto free_target;
     }
     result = globus_ftp_control_handle_init(target->control_handle);
-    globus_ftp_control_set_netlogger(
-        target->control_handle,
-        handle->attr.nl_handle);
-
     
     if(result)
     {
 	goto free_control_handle;
-    }
-    target->url_string = globus_libc_strdup(url);
-
-    if(!target->url_string)
-    {
-	goto destroy_control_handle;
     }
     err = globus_l_ftp_client_url_parse(url,
 					&target->url);
     if(err)
     {
 	globus_object_free(err);
-	goto free_url_string;
+	goto destroy_control_handle;
     }
     /* Be noncommittal for now for SITE HELP and FEAT options. */
     for(i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
@@ -697,8 +687,6 @@ destroy_attr:
     globus_ftp_client_operationattr_destroy(&target->attr);
 free_url:
     globus_url_destroy(&target->url);
-free_url_string:
-    globus_libc_free(target->url_string);
 destroy_control_handle:
     globus_ftp_control_handle_destroy(target->control_handle);
 free_control_handle:
@@ -750,13 +738,7 @@ globus_l_ftp_client_target_delete(
 						target);
     }
 	
-    if(target->url_string)
-    {
-	globus_libc_free(target->url_string);
-    }
-
     globus_url_destroy(&target->url);
-
     if(target->auth_info.user)
     {
 	globus_libc_free(target->auth_info.user);
@@ -956,18 +938,6 @@ globus_i_ftp_client_target_find(
 		err = globus_error_get(result);
 		goto free_target;
 	    }
-	}
-	(*target)->url_string = globus_libc_strdup(url);
-	if(!(*target)->url_string)
-	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Out of memory at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
-
-	    goto free_target;
 	}
 	globus_url_destroy(&(*target)->url);
 	rc = globus_url_parse(url, &(*target)->url);

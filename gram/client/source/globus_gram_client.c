@@ -636,7 +636,6 @@ globus_l_gram_client_to_jobmanager(char *   job_contact,
 				   int *    failure_code )
 {
     int                           rc;
-    int                           job_failure_code;
     globus_byte_t *               query = GLOBUS_NULL; 
     globus_byte_t *               reply = GLOBUS_NULL; 
     globus_size_t                 replysize;
@@ -684,8 +683,7 @@ globus_l_gram_client_to_jobmanager(char *   job_contact,
 	          reply,
 		  replysize,
 		  job_status,
-		  failure_code,
-		  &job_failure_code);
+		  failure_code);
     }
 
     if (reply)
@@ -709,10 +707,6 @@ globus_l_gram_client_to_jobmanager_http_failed:
 	if (*failure_code != GLOBUS_SUCCESS)
 	{
 	    rc = *failure_code;
-	}
-	if (job_failure_code != 0)
-	{
-	    *failure_code = job_failure_code;
 	}
     }
 
@@ -748,6 +742,11 @@ globus_gram_client_job_cancel(char * job_contact)
 					     request,
 					     &job_state,
 					     &failure_code );
+    if (rc == GLOBUS_SUCCESS)
+    {
+	if (job_state==GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+	    rc = failure_code;
+    }
 
     return rc;
 }

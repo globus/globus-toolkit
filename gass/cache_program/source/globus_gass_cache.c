@@ -566,8 +566,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
 
     globus_libc_sprintf(
 	spec,
-	"&(executable=$(GLOBUS_LOCATION)/bin/globus-gass-cache)"
-	" (environment=(LD_LIBRARY_PATH $(GLOBUS_LOCATION)/lib))"
+	"&(executable=$(GLOBUS_TOOLS_PATH)/bin/globus-gass-cache)"
 	" (stdout=%s/dev/stdout)"
 	" (stderr=%s/dev/stdout)"
 	" (stdin=/dev/null)"

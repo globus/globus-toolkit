@@ -70,10 +70,6 @@ GSS_CALLCONV gss_accept_sec_context(
     X509_REQ *                          reqp;
     int                                 rc;
     char                                dbuf[1];
-    X509 *                              current_cert = NULL;
-    time_t                              goodtill = 0;
-    int                                 cert_count = 0;
-    
 #ifdef DEBUG
     fprintf(stderr,"accept_sec_context:\n");
 #endif /* DEBUG */
@@ -83,8 +79,7 @@ GSS_CALLCONV gss_accept_sec_context(
 
     context = *context_handle_P;
 
-    if (context == (gss_ctx_id_t) GSS_C_NO_CONTEXT ||
-        !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
+    if (context == (gss_ctx_id_t) GSS_C_NO_CONTEXT)
     {
 #if defined(DEBUG) || defined(DEBUGX)
         fprintf(stderr, 
@@ -113,13 +108,13 @@ GSS_CALLCONV gss_accept_sec_context(
         }
 #endif
 
-        major_status = gss_create_and_fill_context(&context,
+        major_status = gss_create_and_fill_context(minor_status,
+                                                   &context,
                                                    acceptor_cred_handle,
                                                    GSS_C_ACCEPT,
                                                    nreq_flags);
         if (GSS_ERROR(major_status))
         {
-            *minor_status = gsi_generate_minor_status();
             return major_status;                        
         }
 
@@ -151,10 +146,9 @@ GSS_CALLCONV gss_accept_sec_context(
      * put token data onto the SSL bio so it can be read
      */
 
-    major_status = gs_put_token(context, input_token);
+    major_status = gs_put_token(minor_status,context,input_token);
     if (major_status != GSS_S_COMPLETE)
     {
-        *minor_status = gsi_generate_minor_status();
         return major_status;
     }
 
@@ -162,7 +156,8 @@ GSS_CALLCONV gss_accept_sec_context(
     {
     case(GS_CON_ST_HANDSHAKE):
             
-        major_status = gs_handshake(context);
+        major_status = gs_handshake(minor_status,
+                                    context);
             
         if (major_status == GSS_S_CONTINUE_NEEDED)
         {
@@ -177,7 +172,8 @@ GSS_CALLCONV gss_accept_sec_context(
             break; 
         }
                         
-        major_status = gs_retrieve_peer(context,
+        major_status = gs_retrieve_peer(minor_status,
+                                        context,
                                         GSS_C_ACCEPT);
         if (major_status != GSS_S_COMPLETE)
         {
@@ -188,6 +184,7 @@ GSS_CALLCONV gss_accept_sec_context(
         if (src_name_P != NULL)
         {
             major_status = gss_copy_name_to_name(
+                minor_status,
                 (gss_name_desc **)src_name_P, 
                 context->source_name);
         }
@@ -301,7 +298,8 @@ GSS_CALLCONV gss_accept_sec_context(
 
         if (delegated_cred_handle_P != NULL)
         {
-            major_status = gss_create_and_fill_cred(delegated_cred_handle_P,
+            major_status = gss_create_and_fill_cred(minor_status,
+                                                    delegated_cred_handle_P,
                                                     GSS_C_BOTH,
                                                     context->dcert,
                                                     context->dpkey,
@@ -333,71 +331,18 @@ GSS_CALLCONV gss_accept_sec_context(
 
     } /* end of switch for gs_con_st */
 
-    /*
-     * Couple of notes about this gs_get_token() call:
-     *
-     * First don't mess with minor_status here as it may contain real info.
-     *
-     * Second, we want to go ahead and get an ouput token even if we previously
-     * encountered an error since the output token may contain information
-     * about the error (i.e. an SSL alert message) we want to send to the other
-     * side.
-     */
-    gs_get_token(context, output_token);
+    gs_get_token(minor_status,context,output_token);
 
     if (context->gs_state != GS_CON_ST_DONE)
     {
         major_status |= GSS_S_CONTINUE_NEEDED;
-    }
-    else if(major_status == GSS_S_COMPLETE)
-    {
-        current_cert = context->cred_handle->pcd->ucert;
-
-        if(context->cred_handle->pcd->cert_chain)
-        {
-            cert_count = sk_X509_num(context->cred_handle->pcd->cert_chain);
-        }
-        
-        while(current_cert)
-        {
-            goodtill = ASN1_UTCTIME_mktime(
-                X509_get_notAfter(current_cert));
-
-            if (context->goodtill == 0 || goodtill < context->goodtill)
-            {
-                context->goodtill = goodtill;
-            }
-            
-            if(context->cred_handle->pcd->cert_chain && cert_count)
-            {
-                cert_count--;
-                current_cert = sk_X509_value(
-                    context->cred_handle->pcd->cert_chain,
-                    cert_count);
-            }
-            else
-            {
-                current_cert = NULL;
-            }
-        }
-
-        if(context->goodtill > context->pvxd.goodtill)
-        {
-            context->goodtill = context->pvxd.goodtill;
-        }
-    }
-
+    } 
 
     if (ret_flags != NULL)
     {
         *ret_flags = context->ret_flags;
     }
-
-    if (GSS_ERROR(major_status))
-    {
-        *minor_status = gsi_generate_minor_status();
-    }
-        
+                 
 #if defined(DEBUG) || defined(DEBUGX)
     fprintf(stderr,
             "accept_sec_context:major_status:%08x:gs_state:%d:ret_flags=%08x\n",

@@ -15,11 +15,6 @@ tmpdir=@tmpdir@
 local_tmpdir=@local_tmpdir@
 secure_tmpdir=@secure_tmpdir@
 
-LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib
-SASL_PATH=$GLOBUS_LOCATION/lib/sasl
-export SASL_PATH
-export LD_LIBRARY_PATH
-
 globus_source () {
 
   # Check if file exists and source it

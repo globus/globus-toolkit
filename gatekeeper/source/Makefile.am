@@ -8,9 +8,7 @@ INCLUDES += $(GPT_INCLUDES)
 LDADD = $(GPT_PGM_LINKS) @LIBOBJS@ @UNICOS_LIBS@
 
 sbin_PROGRAMS= \
-	globus-gatekeeper
-
-libexec_PROGRAMS = \
+	globus-gatekeeper \
 	globus-k5
 
 globus_gatekeeper_SOURCES = \

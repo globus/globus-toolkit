@@ -92,7 +92,7 @@ g_send_data(
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
     off_t                                           offset,
-    off_t                                           logical_offset,
+    off_t                                           blksize,
     off_t                                           length,
     off_t					    size);
 #else
@@ -100,7 +100,7 @@ g_send_data(
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
     off_t                                           offset,
-    off_t                                           logical_offset,
+    off_t                                           blksize,
     off_t                                           length,
     off_t					    size);
 #endif

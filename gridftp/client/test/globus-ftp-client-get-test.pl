@@ -366,10 +366,6 @@ sub restart_plugin_test
 
     $ENV{GLOBUS_FTP_CLIENT_FAULT_MODE} = shift;
     $other_args = shift;
-    if(!defined($other_args))
-    {
-	$other_args = "";
-    }
 
     $rc = system("$test_exec -s '$test_url' -f 0,0,0,0 $other_args >'$tmpname' 2>/dev/null") / 256;
     if($rc != 0)

@@ -64,9 +64,7 @@ GSS_CALLCONV gss_import_cred(
     gss_cred_id_t *                     output_cred_handle,
     const gss_OID                       desired_mech,
     OM_uint32                           option_req,
-    const gss_buffer_t                  import_buffer,
-    OM_uint32                           time_req,
-    OM_uint32 *                         time_rec)
+    const gss_buffer_t                  import_buffer)
 {
     OM_uint32                           major_status = 0;
     BIO *                               bp = NULL;
@@ -90,16 +88,16 @@ GSS_CALLCONV gss_import_cred(
         import_buffer ==  GSS_C_NO_BUFFER ||
         import_buffer->length < 1) 
     {
-        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if (output_cred_handle == NULL )
     { 
-        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -108,11 +106,13 @@ GSS_CALLCONV gss_import_cred(
        desired_mech != (gss_OID) gss_mech_globus_gssapi_ssleay)
     {
         GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_MECH);
-        *minor_status = gsi_generate_minor_status();
+        *minor_status = GSSERR_R_BAD_MECH;
         major_status = GSS_S_BAD_MECH;
         goto err;
     }
     
+
+        
     if (import_buffer->length > 0)
     {
         if(option_req == 0)
@@ -141,8 +141,8 @@ GSS_CALLCONV gss_import_cred(
         }
         else
         {
-            GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_BAD_ARGUMENT);
-            *minor_status = gsi_generate_minor_status();
+            GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
+            *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
             major_status = GSS_S_FAILURE;
             goto err;
         }
@@ -153,31 +153,13 @@ GSS_CALLCONV gss_import_cred(
         goto err;
     }
     
-    major_status = gss_create_and_fill_cred(output_cred_handle,
+    major_status = gss_create_and_fill_cred(minor_status,
+                                            output_cred_handle,
                                             GSS_C_BOTH,
                                             NULL,
                                             NULL,
                                             NULL,
                                             bp);
-
-    /* If I understand this right, time_rec should contain the time
-     * until the cert expires */
-    
-    if (time_rec != NULL)
-    {
-        time_t                time_after;
-        time_t                time_now;
-        ASN1_UTCTIME *        asn1_time = NULL;
-
-        asn1_time = ASN1_UTCTIME_new();
-        X509_gmtime_adj(asn1_time,0);
-        time_now = ASN1_UTCTIME_mktime(asn1_time);
-        time_after = ASN1_UTCTIME_mktime(
-            X509_get_notAfter(
-                ((gss_cred_id_desc *) *output_cred_handle)->pcd->ucert));
-        *time_rec = (OM_uint32) time_after - time_now;
-        ASN1_UTCTIME_free(asn1_time);
-    }
         
 err:
     if (bp) 

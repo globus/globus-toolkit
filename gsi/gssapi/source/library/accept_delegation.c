@@ -24,13 +24,11 @@ OM_uint32
 GSS_CALLCONV gss_accept_delegation(
     OM_uint32 *                         minor_status,
     const gss_ctx_id_t                  context_handle,
+    gss_cred_id_t *                     delegated_cred_handle,
+    gss_OID *                           mech_type, 
     const gss_OID_set                   restriction_oids,
     const gss_buffer_set_t              restriction_buffers,
     const gss_buffer_t                  input_token,
-    OM_uint32                           time_req,
-    OM_uint32 *                         time_rec,
-    gss_cred_id_t *                     delegated_cred_handle,
-    gss_OID *                           mech_type, 
     gss_buffer_t                        output_token)
 {
     OM_uint32 		                major_status = 0;
@@ -46,16 +44,16 @@ GSS_CALLCONV gss_accept_delegation(
     fprintf(stderr, "accept_delegation:\n") ;
 #endif /* DEBUG */
     
+    *minor_status = 0;
+    output_token->length = 0;
+    context = (gss_ctx_id_desc *) context_handle;
+
     /* parameter checking goes here */
 
     if(minor_status == NULL)
     {
-        GSSerr(GSSERR_F_ACCEPT_DELEGATION, GSSERR_R_BAD_ARGUMENT);
-        /*
-         * Can't actually set minor_status here, but if we did, it
-         * would look like:
-         * *minor_status = GSSERR_R_BAD_ARGUMENT;
-         */
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -63,24 +61,24 @@ GSS_CALLCONV gss_accept_delegation(
 
     if(context_handle == GSS_C_NO_CONTEXT)
     {
-        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(delegated_cred_handle == NULL)
     {
-        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(mech_type == NULL)
     {
-        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -89,35 +87,32 @@ GSS_CALLCONV gss_accept_delegation(
        (restriction_buffers == GSS_C_NO_BUFFER_SET ||
         restriction_oids->count != restriction_buffers->count))
     {
-        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(output_token == GSS_C_NO_BUFFER)
     {
-        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(input_token == GSS_C_NO_BUFFER)
     {
-        major_status |= GSS_S_CONTINUE_NEEDED;
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
         goto err;
     }
-
-    *minor_status = 0;
-    output_token->length = 0;
-    context = (gss_ctx_id_desc *) context_handle;
     
-    major_status = gs_put_token(context, input_token);
+    major_status = gs_put_token(minor_status,context,input_token);
 
     if (major_status != GSS_S_COMPLETE)
     {
-        *minor_status = gsi_generate_minor_status();
         return major_status;
     }
 
@@ -144,7 +139,6 @@ GSS_CALLCONV gss_accept_delegation(
             {
                 /* can we get more error stuff here? */
                 major_status = GSS_S_FAILURE;
-                *minor_status = gsi_generate_minor_status();
                 goto err;
             }
 
@@ -159,7 +153,6 @@ GSS_CALLCONV gss_accept_delegation(
         else
         {
             major_status = GSS_S_FAILURE;
-            *minor_status = gsi_generate_minor_status();
             goto err;
         }
         
@@ -187,14 +180,15 @@ GSS_CALLCONV gss_accept_delegation(
                            sk_X509_num(cert_chain));
         }
 
-        major_status = gss_create_and_fill_cred(delegated_cred_handle,
+        major_status = gss_create_and_fill_cred(minor_status,
+                                                delegated_cred_handle,
                                                 GSS_C_BOTH,
                                                 dcert,
                                                 context->dpkey,
                                                 cert_chain,
                                                 NULL);
         sk_X509_pop_free(cert_chain, X509_free);
-        
+
         /* reset state machine */
         
         context->delegation_state = GS_DELEGATION_START;
@@ -205,39 +199,19 @@ GSS_CALLCONV gss_accept_delegation(
             EVP_PKEY_free(context->dpkey);
             goto err;
         }
-
-
-        if (time_rec != NULL)
-        {
-            time_t                time_after;
-            time_t                time_now;
-            ASN1_UTCTIME *        asn1_time = NULL;
-            
-            asn1_time = ASN1_UTCTIME_new();
-            X509_gmtime_adj(asn1_time,0);
-            time_now = ASN1_UTCTIME_mktime(asn1_time);
-            time_after = ASN1_UTCTIME_mktime(
-                X509_get_notAfter(dcert));
-            *time_rec = (OM_uint32) time_after - time_now;
-            ASN1_UTCTIME_free(asn1_time);
-        }
     }
 
     /* returns empty token when there is no output */
     
-    gs_get_token(context, output_token);
+    gs_get_token(minor_status,context,output_token);
 
     if (context->delegation_state != GS_DELEGATION_START)
     {
         major_status |= GSS_S_CONTINUE_NEEDED;
     }
 
-    return major_status;
-    
 err:
     
-    *minor_status = gsi_generate_minor_status();
-
     return major_status;
 
 }

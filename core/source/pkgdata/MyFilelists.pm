@@ -65,12 +65,6 @@ sub dev_files {
   $self->{'filelist'}->reset();
 
   $self->{'filelist'}->flavored_files();
-  $self->{'filelist'}->extract_data();
-  $list = $self->{'filelist'}->get_list();
-  push @$result, @$list;
-  $self->{'filelist'}->reset();
-
-  $self->{'filelist'}->flavored_files();
   $self->{'filelist'}->extract_libtool_libs();
   $list = $self->{'filelist'}->get_list();
   push @$result, @$list;
@@ -95,7 +89,6 @@ sub hdr_files {
 
 sub data_files {
   my $self = shift;
-  $self->{'filelist'}->noflavor_files();
   $self->{'filelist'}->extract_data();
   $self->{'filelist'}->add_package_metadata_files('data', 'noflavor');
   my $list = $self->{'filelist'}->get_list();

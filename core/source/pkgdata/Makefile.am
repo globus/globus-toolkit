@@ -1,26 +1,25 @@
 include $(top_srcdir)/aclocal/automake_targets
 
-flavordir = $(GLOBUS_LOCATION)/etc/$(PACKAGE)
-
 FILELIST_FILES = noflavor_data.filelist \
 	$(GLOBUS_FLAVOR_NAME)_dev.filelist \
 	noflavor_doc.filelist \
+	noflavor_hdr.filelist \
 	$(GLOBUS_FLAVOR_NAME)_pgm.filelist \
 	$(GLOBUS_FLAVOR_NAME)_pgm_static.filelist \
+	noflavor_hdr.filelist \
 	$(GLOBUS_FLAVOR_NAME)_rtl.filelist
 
 
-METADATA_FILES = \
+pkg_DATA = \
 	pkg_data_noflavor_data.gpt \
 	pkg_data_$(GLOBUS_FLAVOR_NAME)_dev.gpt \
 	pkg_data_noflavor_doc.gpt \
+	pkg_data_noflavor_hdr.gpt \
 	pkg_data_$(GLOBUS_FLAVOR_NAME)_pgm.gpt \
 	pkg_data_$(GLOBUS_FLAVOR_NAME)_pgm_static.gpt \
-	pkg_data_$(GLOBUS_FLAVOR_NAME)_rtl.gpt
-
-pkg_DATA = $(FILELIST_FILES) $(METADATA_FILES)
-
-flavor_DATA = flavor_$(GLOBUS_FLAVOR_NAME).gpt
+	pkg_data_noflavor_hdr.gpt \
+	pkg_data_$(GLOBUS_FLAVOR_NAME)_rtl.gpt \
+	$(FILELIST_FILES)
 
 filelist_file: $(MAKEFILE_AMS)
 	@mydir=`pwd`; \
@@ -40,22 +39,11 @@ $(FILELIST_FILES): sort_filelist
 sort_filelist: all_filelists
 	$(GPT_LOCATION)/sbin/gpt_sort_filelist  --flavor=$(GLOBUS_FLAVOR_NAME) ./master.filelist
 
-
-$(flavor_DATA): build-parameters
-	$(GPT_LOCATION)/sbin/gpt_save_flavor --flavor=$(GLOBUS_FLAVOR_NAME) build-parameters
-
-$(METADATA_FILES): pkg_data_src.gpt
-	$(GPT_LOCATION)/sbin/gpt_generate_bin_pkg_data  \
-	--flavor=$(GLOBUS_FLAVOR_NAME) pkg_data_src.gpt
-
-
 distclean-local:
 	@if test -f master.filelist; then \
 		rm *.filelist; \
 	fi; \
-	if test -f pkg_data_noflavor_data.gpt; then \
+	if test -f pkg_data_src.gpt; then \
 		rm pkg_data_*.gpt; \
-	fi; \
-	if test -f flavor_$(GLOBUS_FLAVOR_NAME).gpt; then \
-		rm flavor_$(GLOBUS_FLAVOR_NAME).gpt; \
 	fi
+

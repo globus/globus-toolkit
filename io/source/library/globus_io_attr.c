@@ -19,7 +19,6 @@ static char *rcsid = "$Header$";
  * Include header files
  */
 #include "globus_l_io.h"
-#include "globus_error_string.h"
 
 /*
  * Module Specific Prototypes
@@ -162,8 +161,6 @@ globus_i_io_attr_activate(void)
 	GLOBUS_IO_SECURE_PROTECTION_MODE_NONE;
     globus_l_io_securesocketattr_default.delegation_mode =
 	GLOBUS_IO_SECURE_DELEGATION_MODE_NONE;
-    globus_l_io_securesocketattr_default.proxy_mode =
-        GLOBUS_IO_SECURE_PROXY_MODE_NONE;
     globus_l_io_securesocketattr_default.credential =
 	GSS_C_NO_CREDENTIAL;
     globus_l_io_securesocketattr_default.authorized_identity =
@@ -191,518 +188,6 @@ globus_i_io_attr_activate(void)
     /* file options */
     globus_l_io_fileattr_default.file_type = GLOBUS_IO_FILE_TYPE_BINARY;
 }
-
-/****************************************************************
- *                      NETLOGGER
- *                      ---------
- ***************************************************************/
-
-/*
- *  Associate NetLogger handle with globus_io_attr
- */
-globus_result_t
-globus_io_attr_netlogger_set_handle(
-    globus_io_attr_t *                       attr,
-    globus_netlogger_handle_t *              nl_handle)
-{
-    static char *                            myname=
-                             "globus_io_attr_set_netlogger_handle";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-    if(attr == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attr",
-                1,
-                myname));
-    }
-
-    /*
-     *  make sure netlogger is active
-     */
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    attr->nl_handle = nl_handle;
-
-    return GLOBUS_SUCCESS;
-}
-
-/*
- *  change the current event_id string sent with the
- *  net logger messages
- */
-globus_result_t
-globus_netlogger_add_attribute_string(
-    globus_netlogger_handle_t *              nl_handle,
-    const char *                             attribute_name,
-    const char *                             attribute_value)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    char *                                   tmp_str;
-    char *                                   tmp_ptr;
-    char *                                   rm_start;
-    char *                                   rm_end;
-    int                                      size;
-    int                                      str_len;
-    int                                      offset;
-    static char *                            myname=
-                               "globus_netlogger_add_attribute_string";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-    if(attribute_name == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attribute_name",
-                2,
-                myname));
-    }
-    if(attribute_value == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attribute_value",
-                3,
-                myname));
-    }
-
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-    globus_i_io_mutex_lock();
-
-    size = strlen(attribute_name) + strlen(attribute_value) + 2;
-    if(s_nl_handle->nl_event_str != GLOBUS_NULL)
-    {
-        tmp_str = s_nl_handle->nl_event_str;
-
-        rm_start = strstr(tmp_str, attribute_name);
-        /*
-         *  if this attribute is already in string
-         */
-        if(rm_start != NULL)
-        {
-            rm_end = strchr(rm_start, ' ');
-            /*
-             *  If space not found it must be the end of the string
-             *  simply terminate at start_point.
-             */
-            if(rm_end == NULL)
-            {
-                *rm_start = '\0';
-            }
-            else
-            {
-                str_len = strlen(tmp_str) - (rm_end - rm_start);;
-                /*
-                 * If removing the entire string
-                 */
-                if(str_len < 3)
-                {
-                    s_nl_handle->nl_event_str = strdup("");
-                    free(tmp_str);
-                }
-                /*
-                 *  if only taking out this section
-                 */
-                else
-                {
-                    s_nl_handle->nl_event_str = malloc(str_len + 1);
-                    strncpy(s_nl_handle->nl_event_str, tmp_str, rm_start - tmp_str);
-                    strcpy(&s_nl_handle->nl_event_str[rm_start - tmp_str],
-                        rm_end);
-                    free(tmp_str);
-                }
-            }
-        }
-        size += (strlen(s_nl_handle->nl_event_str) + 1);
-    }
-
-    tmp_str = (char *) globus_malloc(size);
-    offset = 0;
-    if(s_nl_handle->nl_event_str != GLOBUS_NULL)
-    {
-        tmp_ptr = s_nl_handle->nl_event_str;
-        while(isspace(*tmp_ptr))
-        {
-            tmp_ptr++;
-        }
-        strcpy(tmp_str, tmp_ptr);
-        offset = strlen(tmp_str);
-        tmp_str[offset] = ' ';
-        offset++;
-        tmp_str[offset] = '\0';
-        
-        free(s_nl_handle->nl_event_str);
-    }
-    strcpy(&tmp_str[offset], attribute_name);
-    offset += strlen(&tmp_str[offset]);
-    tmp_str[offset] = '=';
-    offset++;
-    strcpy(&tmp_str[offset], attribute_value);
-
-    s_nl_handle->nl_event_str = tmp_str;
-
-    globus_i_io_mutex_unlock();
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_netlogger_set_attribute_string(
-    globus_netlogger_handle_t *              nl_handle,
-    const char *                             attr_str)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    char *                                   tmp_str;
-    char *                                   rm_start;
-    char *                                   rm_end;
-    int                                      size;
-    int                                      str_len;
-    int                                      offset;
-    static char *                            myname=
-                               "globus_netlogger_set_attribute_string";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-    if(attr_str == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attribute_name",
-                2,
-                myname));
-    }
-
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-
-    globus_i_io_mutex_lock();
-    if(s_nl_handle->nl_event_str != GLOBUS_NULL)
-    {
-        free(s_nl_handle->nl_event_str);
-    }
-    s_nl_handle->nl_event_str = strdup(tmp_str);
-    globus_i_io_mutex_unlock();
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_netlogger_get_attribute_string(
-    globus_netlogger_handle_t *              nl_handle,
-    const char **                            attr_str)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    static char *                            myname=
-                                   "globus_io_netlogger_get_attribute_string";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-    if(attr_str == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attribute_name",
-                2,
-                myname));
-    }
- 
-    *attr_str = GLOBUS_NULL;
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-    *attr_str = s_nl_handle->nl_event_str;
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_netlogger_write(
-    globus_netlogger_handle_t *              nl_handle,
-    const char *                             event,
-    const char *                             tag)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    static char *                            myname=
-                                                  "globus_netlogger_write";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-    if(event == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "event",
-                2,
-                myname));
-    }
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-    if(s_nl_handle == GLOBUS_NULL ||
-       s_nl_handle->nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] This netlogger handle has not been activated.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    /*
-     *  may want to add a netlogger vprintf type thing
-     *  to netlogger api to make this more efficient/user friendly
-     */
-#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    {
-        NetLoggerWriteString(
-            s_nl_handle->nl_handle,
-            (char *)event,
-            (char *)tag,
-            s_nl_handle->nl_event_str == NULL ? "I=I" : s_nl_handle->nl_event_str);
-    }
-#   endif
-
-    return GLOBUS_SUCCESS;
-}
-
-/*
- *  netlogger handle init
- */
-globus_result_t
-globus_netlogger_handle_init(
-    globus_netlogger_handle_t *              nl_handle,
-    NLhandle *                               handle)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    static char *                            myname=
-                                                "globus_netlogger_handle_init";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-
-    /*
-     *  make sure netlogger is active
-     */
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = globus_malloc(sizeof(struct globus_netlogger_handle_s));
-    *nl_handle = s_nl_handle;
-
-    s_nl_handle->nl_handle = GLOBUS_NULL;
-    s_nl_handle->nl_event_str = GLOBUS_NULL;
-    s_nl_handle->nl_handle = handle;
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_netlogger_get_nlhandle(
-    globus_netlogger_handle_t *              nl_handle,
-    NLhandle **                              handle)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    static char *                            myname=
-                                        "globus_netlogger_get_nlhandle";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "nl_handle",
-                1,
-                myname));
-    }
-    if(handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                2,
-                myname));
-    }
-
-    /*  
-     *  make sure netlogger is active
-     */
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-    *handle = s_nl_handle->nl_handle;
-
-    return GLOBUS_SUCCESS;
-}
-
-/*
- *  netlogger handle destroy
- */
-globus_result_t
-globus_netlogger_handle_destroy(
-    globus_netlogger_handle_t *              nl_handle)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    static char *                            myname=
-                                        "globus_netlogger_handle_destroy";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "nl_handle",
-                1,
-                myname));
-    }
-
-    /*
-     *  make sure netlogger is active
-     */
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-    globus_free(s_nl_handle);
-    *nl_handle = GLOBUS_NULL;
-
-    return GLOBUS_SUCCESS;
-}
-
-/* end NETLOGGER code */
-
 
 /*
  * Function:	globus_i_io_fileattr_construct()
@@ -3132,11 +2617,6 @@ globus_io_attr_get_tcp_interface(
  * GSSAPI security context establishment functions once a socket
  * connection is established.
  *
- * If the authentication_mode value is
- * GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE, then the channel mode,
- * delegation mode, protection mode, and authorization mode will all be reset
- * to disable all security on the socket attribute set.
- *
  * @param attr
  *        The attribute to query or modify. The attr parameter must be 
  *        initialized by globus_io_tcpattr_init().
@@ -3226,11 +2706,62 @@ globus_io_attr_set_secure_authentication_mode(
     }
     if(mode == GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
-	instance->channel_mode = GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR;
-	instance->delegation_mode = GLOBUS_IO_SECURE_DELEGATION_MODE_NONE;
-        instance->proxy_mode = GLOBUS_IO_SECURE_PROXY_MODE_NONE;
-	instance->protection_mode = GLOBUS_IO_SECURE_PROTECTION_MODE_NONE;
-	instance->authorization_mode = GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE;
+	if(instance->channel_mode !=
+	       GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR)
+	{
+	    return globus_error_put(
+		globus_io_error_construct_attribute_mismatch(
+		    GLOBUS_IO_MODULE,
+		    GLOBUS_NULL,
+		    "attr",
+		    1,
+		    myname,
+		    "authentication_mode",
+		    "channel_mode"));
+
+	}
+	if(instance->delegation_mode !=
+	   GLOBUS_IO_SECURE_DELEGATION_MODE_NONE)
+	 {
+	    return globus_error_put(
+		globus_io_error_construct_attribute_mismatch(
+		    GLOBUS_IO_MODULE,
+		    GLOBUS_NULL,
+		    "attr",
+		    1,
+		    myname,
+		    "authentication_mode",
+		    "delegation_mode"));
+
+	}
+	if(instance->authorization_mode !=
+	   GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE)
+	 {
+	    return globus_error_put(
+		globus_io_error_construct_attribute_mismatch(
+		    GLOBUS_IO_MODULE,
+		    GLOBUS_NULL,
+		    "attr",
+		    1,
+		    myname,
+		    "authentication_mode",
+		    "authorization_mode"));
+
+	}
+        if(instance->protection_mode !=
+	   GLOBUS_IO_SECURE_PROTECTION_MODE_NONE)
+	 {
+	    return globus_error_put(
+		globus_io_error_construct_attribute_mismatch(
+		    GLOBUS_IO_MODULE,
+		    GLOBUS_NULL,
+		    "attr",
+		    1,
+		    myname,
+		    "authentication_mode",
+		    "protection_mode"));
+	 }
+	
 	instance->authentication_mode = mode;
 	instance->credential = GSS_C_NO_CREDENTIAL;
     }
@@ -4494,7 +4025,7 @@ globus_io_attr_set_secure_delegation_mode(
     globus_i_io_securesocketattr_instance_t *
 					instance;
     static char *			myname=
-	                                "globus_io_attr_set_secure_delegation_mode";
+	                                "globus_io_attr_set_secure_authorizationn_mode";
     
     if(attr == GLOBUS_NULL)
     {
@@ -4655,210 +4186,6 @@ globus_io_attr_get_secure_delegation_mode(
 }
 /* globus_io_attr_get_security_delegation_mode() */
 /* @} */
-
-
-/**
- * @name Authentication using Proxy 
- */
-/* @{ */
-/** 
- * Set/Query the of the proxy-mode attribute in the specified
- * socket attribute set.
- * @ingroup attr
- *
- * This attribute is used to determine whether the process should
- * accept limited proxy certificates for authentication.
- *
- * @param attr
- *        The attribute to modify. The attr parameter must be 
- *        initialized by globus_io_tcpattr_init().
- * @param mode
- *        The new value of the proxy-mode attribute. The
- *        values for mode are described in the documentation for the
- *        globus_io_secure_proxy_mode_t type.
- *
- * @return 
- * This function returns GLOBUS_SUCCESS if successful, or a globus_result_t
- * indicating the error that occurred. 
- * @retval GLOBUS_IO_ERROR_TYPE_NULL_PARAMETER
- *         The @a attr or mode parameter was GLOBUS_NULL.
- * @retval GLOBUS_IO_ERROR_TYPE_NOT_INITIALIZED
- *         The @a attr structure was not initialized for use.
- * @retval GLOBUS_IO_ERROR_TYPE_INVALID_TYPE
- *         The @a attr structure was not a Globus I/O TCP attribute structure.
- *
- * @see globus_io_tcpattr_init(), globus_io_secure_proxy_mode_t 
- */
-globus_result_t
-globus_io_attr_set_secure_proxy_mode(
-    globus_io_attr_t *			attr,
-    globus_io_secure_proxy_mode_t	mode)
-{
-    globus_object_t *			securesocketattr;
-    globus_i_io_securesocketattr_instance_t *
-					instance;
-    static char *			myname=
-	                                "globus_io_attr_set_secure_proxy_mode";
-    
-    if(attr == GLOBUS_NULL)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_null_parameter(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		1,
-		myname));
-    }
-    if(attr->attr == GLOBUS_NULL)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_not_initialized(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		1,
-		myname));
-    }
-    
-    securesocketattr = globus_object_upcast(
-	attr->attr,
-	GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR);
-    
-    if(securesocketattr == GLOBUS_NULL)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_invalid_type(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		1,
-		myname,
-		"GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR"));
-    }
-
-    instance = (globus_i_io_securesocketattr_instance_t *)
-	globus_object_get_local_instance_data(securesocketattr);
-
-    if(instance == GLOBUS_NULL)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_bad_parameter(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		1,
-		myname));
-    }
-    
-    if(instance->authentication_mode ==
-       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_attribute_mismatch(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		1,
-		myname,
-		"authentication_mode",
-		"proxy_mode"));
-    }
-    
-    instance->proxy_mode = mode;
-    
-    return GLOBUS_SUCCESS;
-}
-/* globus_io_attr_set_secure_proxy_mode() */
-
-globus_result_t
-globus_io_attr_get_secure_proxy_mode(
-    globus_io_attr_t *			attr,
-    globus_io_secure_proxy_mode_t *     mode)
-{
-    globus_object_t *			securesocketattr;
-    globus_i_io_securesocketattr_instance_t *
-					instance;
-    static char *			myname=
-	                                "globus_io_attr_get_secure_proxy_mode";
-    
-    if(attr == GLOBUS_NULL)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_null_parameter(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		1,
-		myname));
-    }
-    if(attr->attr == GLOBUS_NULL)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_not_initialized(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		1,
-		myname));
-    }
-    if(mode == GLOBUS_NULL)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_null_parameter(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"mode",
-		2,
-		myname));
-    }
-    
-    securesocketattr = globus_object_upcast(
-	attr->attr,
-	GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR);
-    
-    if(securesocketattr == GLOBUS_NULL)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_invalid_type(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		1,
-		myname,
-		"GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR"));
-    }
-
-    instance = (globus_i_io_securesocketattr_instance_t *)
-	globus_object_get_local_instance_data(securesocketattr);
-
-    if(instance == GLOBUS_NULL)
-    {
-	return globus_error_put(
-	    globus_io_error_construct_bad_parameter(
-		GLOBUS_IO_MODULE,
-		GLOBUS_NULL,
-		"attr",
-		1,
-		myname));
-    }
-
-    if(instance->authentication_mode ==
-       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
-    {
-        *mode = GLOBUS_IO_SECURE_PROXY_MODE_NONE;
-    }
-    else
-    {
-        *mode = instance->proxy_mode;
-    }
-    
-    
-    return GLOBUS_SUCCESS;
-}
-/* globus_io_attr_get_security_proxy_mode() */
-/* @} */
-
 
 /*
  * Function:	globus_i_io_socket_copy_attr()

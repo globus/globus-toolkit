@@ -141,8 +141,6 @@ globus_ftp_control_handle_init(
     handle->cc_handle.signal_deactivate = GLOBUS_FALSE;
     globus_cond_init(&handle->cc_handle.cond, GLOBUS_NULL);
     
-    globus_io_tcpattr_init(&handle->cc_handle.io_attr);
-
     globus_ftp_control_auth_info_init(&(handle->cc_handle.auth_info),
 				      GSS_C_NO_CREDENTIAL,
 				      GLOBUS_FALSE,
@@ -255,8 +253,6 @@ globus_ftp_control_handle_destroy(
 	globus_cond_destroy(&(handle->cc_handle.cond));
 	globus_libc_free(handle->cc_handle.read_buffer);
 
-        globus_io_tcpattr_destroy(&handle->cc_handle.io_attr);
-
 	if(handle->cc_handle.close_result != GLOBUS_SUCCESS)
 	{
 	    globus_object_free(handle->cc_handle.close_result);
@@ -266,42 +262,6 @@ globus_ftp_control_handle_destroy(
 
 	return globus_i_ftp_control_data_cc_destroy(handle);
     }
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_i_ftp_control_client_set_netlogger(
-    globus_ftp_control_handle_t *               handle,
-    globus_netlogger_handle_t *                 nl_handle)
-{
-    if(handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_error_construct_string(
-                GLOBUS_FTP_CONTROL_MODULE,
-                GLOBUS_NULL,
-                "globus_ftp_control_handle_destroy: Null handle argument")
-            );
-    }
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_error_construct_string(
-                GLOBUS_FTP_CONTROL_MODULE,
-                GLOBUS_NULL,
-                "globus_ftp_control_handle_destroy: Null nl_handle argument")
-            );
-    }
-
-    globus_mutex_lock(&(handle->cc_handle.mutex));
-    {
-        globus_io_attr_netlogger_set_handle(
-                &handle->cc_handle.io_attr,
-                nl_handle);
-    }
-    globus_mutex_unlock(&(handle->cc_handle.mutex));
 
     return GLOBUS_SUCCESS;
 }
@@ -491,15 +451,17 @@ globus_ftp_control_connect(
 	    ); 
     }
 
-    globus_io_attr_set_tcp_nodelay(&handle->cc_handle.io_attr, 
+    globus_io_tcpattr_init(&attr);
+    globus_io_attr_set_tcp_nodelay(&attr, 
 				   GLOBUS_TRUE);
     rc=globus_io_tcp_register_connect(
 	host,
 	port,
-	&handle->cc_handle.io_attr,
+	&attr,
 	globus_l_ftp_control_connect_cb,
 	(void *) handle,
 	&handle->cc_handle.io_handle);
+    globus_io_tcpattr_destroy(&attr);
     
     if(rc != GLOBUS_SUCCESS)
     {

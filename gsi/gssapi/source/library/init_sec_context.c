@@ -1,4 +1,4 @@
-/**********************************************************************
+ /**********************************************************************
 
 init_sec_context.c:
 
@@ -71,13 +71,10 @@ GSS_CALLCONV gss_init_sec_context(
     OM_uint32 		                inv_major_status = 0;
     X509_REQ *                          reqp = NULL;
     X509 *                              ncert = NULL;
-    X509 *                              current_cert = NULL;
     int  			        rc;
     char 			        cbuf[1];
     X509_EXTENSION *                    ex = NULL;
     STACK_OF(X509_EXTENSION) *          extensions = NULL;
-    time_t                              goodtill = 0;
-    int                                 cert_count = 0;
 
 #ifdef DEBUG
     fprintf(stderr, "init_sec_context:\n") ;
@@ -88,9 +85,7 @@ GSS_CALLCONV gss_init_sec_context(
 
     context = *context_handle_P;
 
-    
-    if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) ||
-        !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
+    if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT))
     {
 #if defined(DEBUG) || defined(DEBUGX)
         fprintf(stderr, 
@@ -132,13 +127,13 @@ GSS_CALLCONV gss_init_sec_context(
         }
 #endif
 
-        major_status = gss_create_and_fill_context(&context,
+        major_status = gss_create_and_fill_context(minor_status,
+                                                   &context,
                                                    initiator_cred_handle,
                                                    GSS_C_INITIATE,
                                                    req_flags) ;
         if (GSS_ERROR(major_status))
         {
-            *minor_status = gsi_generate_minor_status();
             return major_status;
         }
 
@@ -166,7 +161,7 @@ GSS_CALLCONV gss_init_sec_context(
          * there will always be one
          */
 
-    	major_status = gs_put_token(context, input_token);
+    	major_status = gs_put_token(minor_status,context,input_token);
     	if (major_status != GSS_S_COMPLETE)
         {
             return major_status;
@@ -179,7 +174,8 @@ GSS_CALLCONV gss_init_sec_context(
     case(GS_CON_ST_HANDSHAKE):
         /* do the handshake work */
 
-        major_status = gs_handshake(context);
+        major_status = gs_handshake(minor_status,
+                                    context);
 
 
         if (major_status == GSS_S_CONTINUE_NEEDED)
@@ -193,7 +189,8 @@ GSS_CALLCONV gss_init_sec_context(
             break;
         } 
         /* make sure we are talking to the correct server */
-        major_status = gs_retrieve_peer(context,
+        major_status = gs_retrieve_peer(minor_status, 
+                                        context,
                                         GSS_C_INITIATE);
         if (major_status != GSS_S_COMPLETE)
         {
@@ -211,7 +208,7 @@ GSS_CALLCONV gss_init_sec_context(
             && context->pvd.limited_proxy)
         {
             GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_PROXY_VIOLATION);
-            *minor_status = gsi_generate_minor_status();
+            *minor_status = GSSERR_R_PROXY_VIOLATION;
             major_status = GSS_S_UNAUTHORIZED;
             context->gs_state = GS_CON_ST_DONE;
             break;
@@ -254,7 +251,7 @@ GSS_CALLCONV gss_init_sec_context(
                     free (s1);
                     free (s2);
                 }
-                *minor_status = gsi_generate_minor_status();
+                *minor_status = GSSERR_R_MUTUAL_AUTH;
                 major_status = GSS_S_UNAUTHORIZED;
                 context->gs_state = GS_CON_ST_DONE;
                 break;
@@ -324,7 +321,6 @@ GSS_CALLCONV gss_init_sec_context(
         if (reqp == NULL)
         {
             GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_PROXY_NOT_RECEIVED);
-            *minor_status = gsi_generate_minor_status();
             major_status=GSS_S_FAILURE;
             return major_status;
         }
@@ -335,7 +331,6 @@ GSS_CALLCONV gss_init_sec_context(
         if ((extensions = sk_X509_EXTENSION_new_null()) == NULL)
         {
             GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_CLASS_ADD_EXT);
-            *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             return major_status;
         }
@@ -352,7 +347,6 @@ GSS_CALLCONV gss_init_sec_context(
                 == NULL)
             {
                 GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_CLASS_ADD_EXT);
-                *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_FAILURE;
                 return major_status;
             }
@@ -361,21 +355,23 @@ GSS_CALLCONV gss_init_sec_context(
             if (!sk_X509_EXTENSION_push(extensions, ex))
             {
                 GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_CLASS_ADD_EXT);
-                *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_FAILURE;
                 return major_status;
             }
         }
 #endif
-        proxy_sign(context->cred_handle->pcd->ucert,
-                   context->cred_handle->pcd->upkey,
-                   reqp,
-                   &ncert,
-                   time_req,
-                   extensions,
-                   (context->req_flags &
-                    GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)? 1:0);
-
+        proxy_sign_ext(0,
+                       context->cred_handle->pcd->ucert,
+                       context->cred_handle->pcd->upkey,
+                       EVP_md5(),
+                       reqp,
+                       &ncert,
+                       time_req,
+                       (context->req_flags &
+                        GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)? 1:0,
+                       0,
+                       "proxy",
+                       extensions);
 		
         if (extensions)
         {
@@ -395,66 +391,18 @@ GSS_CALLCONV gss_init_sec_context(
     case(GS_CON_ST_CERT): ;
     case(GS_CON_ST_DONE): ;
     } /* end of switch for gs_con_st */
-
-    /*
-     * Couple of notes about this gs_get_token() call:
-     *
-     * First don't mess with minor_status here as it may contain real info.
-     *
-     * Second, we want to go ahead and get an ouput token even if we previously
-     * encountered an error since the output token may contain information
-     * about the error (i.e. an SSL alert message) we want to send to the other
-     * side.
-     */
-    gs_get_token(context, output_token);
-
-    if (context->gs_state != GS_CON_ST_DONE)
+    if (!GSS_ERROR(major_status))
     {
-        major_status |=GSS_S_CONTINUE_NEEDED;
-    }
-    else if(major_status == GSS_S_COMPLETE)
-    {
-        current_cert = context->cred_handle->pcd->ucert;
-
-        if(context->cred_handle->pcd->cert_chain)
+        gs_get_token(minor_status,context,output_token);
+        if (context->gs_state != GS_CON_ST_DONE)
         {
-            cert_count = sk_X509_num(context->cred_handle->pcd->cert_chain);
+            major_status |=GSS_S_CONTINUE_NEEDED;
         }
-        
-        while(current_cert)
+        if (ret_flags != NULL)
         {
-            goodtill = ASN1_UTCTIME_mktime(
-                X509_get_notAfter(current_cert));
-
-            if (context->goodtill == 0 || goodtill < context->goodtill)
-            {
-                context->goodtill = goodtill;
-            }
-            
-            if(context->cred_handle->pcd->cert_chain && cert_count)
-            {
-                cert_count--;
-                current_cert = sk_X509_value(
-                    context->cred_handle->pcd->cert_chain,
-                    cert_count);
-            }
-            else
-            {
-                current_cert = NULL;
-            }
-        }
-
-        if(context->goodtill > context->pvxd.goodtill)
-        {
-            context->goodtill = context->pvxd.goodtill;
+            *ret_flags = context->ret_flags;
         }
     }
-    
-    if (ret_flags != NULL)
-    {
-        *ret_flags = context->ret_flags;
-    }
-
 #if defined(DEBUG) || defined(DEBUGX)
     fprintf(stderr,"init_sec_context:major_status:%08x:gs_state:%d req_flags=%08x:ret_flags=%08x\n",
             major_status,context->gs_state,req_flags,context->ret_flags);

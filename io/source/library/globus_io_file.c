@@ -89,17 +89,6 @@ globus_io_file_open(
 
     globus_i_io_copy_fileattr_to_handle(attr,
 					handle);
-
-    /*
-     * NETLOGGER
-     */
-    handle->nl_handle = GLOBUS_NULL;
-    handle->nl_event_id = GLOBUS_NULL;
-    if(attr != GLOBUS_NULL)
-    {
-        handle->nl_handle = attr->nl_handle;
-    }
-
 #   if defined(TARGET_ARCH_CYGWIN)
     {
 	if(handle->file_attr.file_type == GLOBUS_IO_FILE_TYPE_TEXT)
@@ -339,14 +328,8 @@ globus_io_fileattr_init(
 	 
     attr->attr = globus_i_io_fileattr_construct();
 
-    /*
-     *  NETLOGGER
-     */
-    attr->nl_handle = GLOBUS_NULL;
-
     return GLOBUS_SUCCESS;
 }
-
 /* globus_io_fileattr_init() */
 
 /**

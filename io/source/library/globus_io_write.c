@@ -1493,57 +1493,29 @@ globus_i_io_try_write(
     globus_bool_t			done;
     ssize_t				n_written;
     int					save_errno;
-    char                                tag_str[256];
 
     num_written=0;
     *nbytes_written = 0;
     for (done = GLOBUS_FALSE; !done; )
     {
-        /*
-         *  NETLOGGER information
-         */
-        if(handle->nl_handle) 
-        {
-            sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=TRY_WRITE",
-                handle->fd);
-            globus_netlogger_write(
-                handle->nl_handle,
-                GLOBUS_IO_NL_EVENT_START_WRITE,
-                tag_str);
-        }
 	n_written = globus_libc_write(
 	    handle->fd,
 	    buf+num_written,
 	    max_nbytes-num_written);
-
-        /*
-         *  NETLOGGER information
-         */
-        if(handle->nl_handle) 
-        {
-            sprintf(tag_str, 
-                "SOCK=%d GLOBUS_IO_TAG=TRY_WRITE GLOBUS_IO_NBYTES=%ld",
-                handle->fd,
-                n_written);
-            globus_netlogger_write(
-                handle->nl_handle,
-                GLOBUS_IO_NL_EVENT_END_WRITE,
-                tag_str);
-        }
-
 	save_errno = errno;
-
+	
 	globus_i_io_debug_printf(
 	    5,
 	    ("globus_i_io_try_write(): write returned n_written=%d\n",
 	      (int) n_written));
-
+	
 	/*
 	 * n_written: is > 0 on success -- number of bytes written
 	 *          is < 0 on error -- need to check errno
 	 *          is 0 (SysV) or (-1 && errno==EWOULDBLOCK) (BSD)
 	 *              if the write would block without writing anything
 	 */
+
 	if (n_written > 0 || (n_written == 0 && max_nbytes == 0))
 	{
 	    (*nbytes_written) += n_written;
@@ -1719,7 +1691,6 @@ globus_i_io_try_writev(
     globus_bool_t			done;
     ssize_t				n_written;
     int					save_errno;
-    char                                tag_str[256];
 
     num_written=0;
     *nbytes_written = 0;
@@ -1729,28 +1700,10 @@ globus_i_io_try_writev(
 
 	count_used = (int) (iovcnt > IOV_MAX) ? IOV_MAX : iovcnt;
 
-        /*
-         *  NETLOGGER information
-         */
-        sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=WRITEV",
-            handle->fd);
-        globus_netlogger_write(
-            handle->nl_handle,
-            GLOBUS_IO_NL_EVENT_START_WRITE,
-            tag_str);
-
 	n_written = globus_libc_writev(
 	    handle->fd,
 	    iov,
 	    count_used);
-
-        sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=WRITEV GLOBUS_IO_NBYTES=%ld",
-            handle->fd,
-            n_written);
-        globus_netlogger_write(
-            handle->nl_handle,
-            GLOBUS_IO_NL_EVENT_END_WRITE,
-            tag_str);
 
 	save_errno = errno;
 	

@@ -6,7 +6,7 @@ AC_INIT(Makefile.am)
 GLOBUS_INIT
 
 AM_PROG_LIBTOOL
-AC_PATH_PROGS(PERL, perl5 perl)
+AC_PATH_PROG(PERL, perl5 perl)
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 

@@ -34,7 +34,6 @@
     data_conn->bytes_ready = 0;                                       \
     data_conn->eod = GLOBUS_FALSE;                                    \
     data_conn->close = GLOBUS_FALSE;                                  \
-    data_conn->free_me = GLOBUS_FALSE;                                \
                                                                       \
 }
 
@@ -48,7 +47,7 @@
     ci->data_conn = dc;                                                 \
 }
 
-#define TABLE_ENTRY_MALLOC(t_e, buf, len, off, _eof, cb, cb_a, dc_h)    \
+#define TABLE_ENTRY_MALLOC(t_e, buf, len, off, _eof, cb, cb_a, dc_h)     \
 {                                                                       \
     t_e = (globus_l_ftp_handle_table_entry_t *)                         \
           globus_malloc(sizeof(globus_l_ftp_handle_table_entry_t));     \
@@ -98,10 +97,6 @@ typedef struct globus_ftp_data_connection_s
 
     globus_bool_t                               eod;
     globus_bool_t                               close;
-
-    /* need free_me for globus_io cancel issue */
-    globus_bool_t                               free_me;
-  
 } globus_ftp_data_connection_t;
 
 /*
@@ -562,56 +557,29 @@ static globus_hashtable_t           globus_l_ftp_control_data_layout_table;
 #define GLOBUS_FTP_CONTROL_DATA_DESCRIPTOR_EOR            0x80
 
 /*
- *  NETLOGGER functions
+ *  this should be moved into globus
  */
-globus_result_t
-globus_i_ftp_control_data_set_netlogger(
-    globus_ftp_control_handle_t *               handle,
-    globus_netlogger_handle_t *                 nl_handle)
+void *
+globus_list_element_at(
+    globus_list_t *                             head,
+    int                                         ndx)
 {
-    globus_i_ftp_dc_handle_t *                  dc_handle;
-    globus_object_t *                           err;
-    static char *                               myname=
-                                      "globus_ftp_control_set_netlogger";
+    int                                         ctr;
+    globus_list_t *                             list;
 
-    /*
-     *  error checking
-     */
-    if(handle == GLOBUS_NULL)
+    ctr = 0;
+    for(list = head; 
+        !globus_list_empty(list); 
+        list = globus_list_rest(list))
     {
-        err = globus_io_error_construct_null_parameter(
-                  GLOBUS_FTP_CONTROL_MODULE,
-                  GLOBUS_NULL,
-                  "handle",
-                  1,
-                  myname);
-        return globus_error_put(err);
+        if(ndx == ctr)
+        {
+            return(void *)list->datum;
+        }
+        ctr++;
     }
 
-    dc_handle = &handle->dc_handle;
-    GlobusFTPControlDataTestMagic(dc_handle);
-    if(!dc_handle->initialized)
-    {
-        err = globus_io_error_construct_not_initialized(
-                  GLOBUS_FTP_CONTROL_MODULE,
-                  GLOBUS_NULL,
-                  "handle",
-                  1,
-                  myname);
-        return globus_error_put(err);
-    }
-
-    globus_mutex_lock(&dc_handle->mutex);
-    {
-        dc_handle->nl_handle = nl_handle;
-
-        globus_io_attr_netlogger_set_handle(
-            &dc_handle->io_attr,
-            nl_handle);
-    }
-    globus_mutex_unlock(&dc_handle->mutex);
-
-    return GLOBUS_SUCCESS;
+   return GLOBUS_NULL;
 }
 
 globus_bool_t
@@ -2915,8 +2883,7 @@ globus_ftp_control_local_tcp_buffer(
 globus_result_t
 globus_ftp_control_local_dcau(
     globus_ftp_control_handle_t *		handle,
-    const globus_ftp_control_dcau_t *           dcau, 
-    gss_cred_id_t                               delegated_credential_handle)
+    const globus_ftp_control_dcau_t *           dcau)
 {
     globus_i_ftp_dc_handle_t *                  dc_handle;
     static char *                               myname=
@@ -2936,17 +2903,6 @@ globus_ftp_control_local_dcau(
                   myname);
         return globus_error_put(err);
     }
-    else if(dcau->mode != GLOBUS_FTP_CONTROL_DCAU_NONE &&
-            dcau->mode != GLOBUS_FTP_CONTROL_DCAU_SELF &&
-            dcau->mode != GLOBUS_FTP_CONTROL_DCAU_SUBJECT)
-    {
-        err = globus_error_construct_string(
-		    GLOBUS_FTP_CONTROL_MODULE,
-		    GLOBUS_NULL,
-		    "globus_ftp_control_local_dcau: invalid dcau mode");
-        return globus_error_put(err);
-    }
-
     dc_handle = &handle->dc_handle;
     GlobusFTPControlDataTestMagic(dc_handle);
     if(!dc_handle->initialized)
@@ -2983,12 +2939,8 @@ globus_ftp_control_local_dcau(
 	    globus_io_attr_set_secure_authentication_mode(
 		&dc_handle->io_attr,
 		GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
-		delegated_credential_handle);
+		handle->cc_handle.auth_info.delegated_credential_handle);
 
-            globus_io_attr_set_secure_proxy_mode(
-                &dc_handle->io_attr,
-		GLOBUS_IO_SECURE_PROXY_MODE_MANY);
-            
 	    switch(dc_handle->dcau.mode)
 	    {
 	      case GLOBUS_FTP_CONTROL_DCAU_SELF:
@@ -3020,11 +2972,6 @@ globus_ftp_control_local_dcau(
 	    globus_io_attr_set_secure_channel_mode(
 		    &dc_handle->io_attr,
 		    GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR);
-
-	    globus_io_attr_set_secure_authorization_mode(
-		    &dc_handle->io_attr,
-		    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE,
-		    GLOBUS_NULL);
 
 	    globus_io_attr_set_secure_authentication_mode(
 		    &dc_handle->io_attr,
@@ -6034,7 +5981,6 @@ globus_l_ftp_control_stripes_destroy(
         {
             data_conn = (globus_ftp_data_connection_t *)
                 globus_list_first(stripe->all_conn_list);
-            data_conn->free_me = GLOBUS_TRUE;
 
             CALLBACK_INFO_MALLOC(
                 callback_info,
@@ -6062,14 +6008,13 @@ globus_l_ftp_control_stripes_destroy(
         {
             data_conn = (globus_ftp_data_connection_t *)
                 globus_list_first(list);
-            data_conn->free_me = GLOBUS_FALSE;
 
             CALLBACK_INFO_MALLOC(
                 callback_info,
                 dc_handle,
                 transfer_handle,
                 stripe,
-                data_conn);
+                data_conn)
 
             res = globus_io_register_cancel(
                       &data_conn->io_handle,
@@ -6077,8 +6022,6 @@ globus_l_ftp_control_stripes_destroy(
                       globus_l_ftp_io_close_callback,
                       (void *)callback_info);
         }
-
-        globus_list_free(stripe->free_cache_list);
 
         if(stripe->listening)
         {
@@ -6400,8 +6343,6 @@ globus_i_ftp_control_data_cc_init(
             dc_handle->transfer_list = GLOBUS_NULL;
             dc_handle->close_callback = GLOBUS_NULL;
             dc_handle->close_callback_arg = GLOBUS_NULL;
-
-            dc_handle->nl_handle = GLOBUS_NULL;
 
 	    globus_io_tcpattr_init(&dc_handle->io_attr);
 	    globus_io_attr_set_tcp_nodelay(&dc_handle->io_attr, 
@@ -6819,7 +6760,6 @@ globus_l_ftp_control_data_register_connect(
     stripe->total_connection_count++;
 
     DATA_CONN_MALLOC(data_conn, stripe, callback, user_arg);
-    transfer_handle->ref++;
     globus_list_insert(&stripe->outstanding_conn_list, (void*)data_conn);
 
     CALLBACK_INFO_MALLOC(
@@ -6902,6 +6842,7 @@ globus_l_ftp_io_close_callback(
         if(stripe->eof)
         {
             eof_cb_ent = transfer_handle->eof_cb_ent;
+
             /* eof ent may not exist */
             if(eof_cb_ent != GLOBUS_NULL &&
                !globus_handle_table_decrement_reference(
@@ -6946,20 +6887,8 @@ globus_l_ftp_io_close_callback(
 
     if(data_conn != GLOBUS_NULL)
     {
-        /*
-         *  we only wait if callback comes from a cancel, not a close
-         */
-        if(data_conn->free_me)
-        {
-            globus_free(data_conn);
-        }
-        else
-        {
-            data_conn->free_me = GLOBUS_TRUE;
-        }
+        globus_free(data_conn);
     }
-
-    globus_l_ftp_data_stripe_poll(dc_handle);
 }
 
 
@@ -7051,8 +6980,6 @@ globus_l_ftp_stream_write_eof_callback(
     globus_mutex_unlock(&dc_handle->mutex);
 
     globus_free(data_conn);
-
-    globus_l_ftp_data_stripe_poll(dc_handle);
 }
 
 /*
@@ -7122,13 +7049,11 @@ globus_l_ftp_stream_listen_callback(
         else
         {
             data_conn = callback_info->data_conn;
-            transfer_handle->ref++;
             globus_list_insert(
                 &stripe->outstanding_conn_list, 
                 (void *)data_conn);
             /* 
              *  inc reference count for accept
-             *  and for the connection
              */
             transfer_handle->ref++;
             stripe->outstanding_connections++;
@@ -7236,15 +7161,9 @@ globus_l_ftp_stream_accept_connect_callback(
         /* should always be in stream mode here */
         assert(dc_handle->mode == GLOBUS_FTP_CONTROL_MODE_STREAM);
 
-
         data_conn = callback_info->data_conn;
         stripe = callback_info->stripe;
         transfer_handle = stripe->whos_my_daddy;
-
-        /*
-         * since conncet came back dec ref 
-         */
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
 
         control_handle = dc_handle->whos_my_daddy;
         callback = data_conn->callback;
@@ -7280,27 +7199,9 @@ globus_l_ftp_stream_accept_connect_callback(
 		    &stripe->all_conn_list, 
 		    data_conn);
 
-                globus_l_ftp_control_stripes_destroy(dc_handle, error);
-            }
-        }
-        else if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
-        {
-            error =  globus_error_construct_string(
-                         GLOBUS_FTP_CONTROL_MODULE,
-                         GLOBUS_NULL,
-   "connection closed before a data connection request was made");
+		globus_free(data_conn);
 
-            /*
-             * since globus io makes no guarentee on order of
-             * cancel callbacks we free this structure here.
-             */
-            if(data_conn->free_me)
-            {
-                globus_free(data_conn);
-            }
-            else
-            {
-                data_conn->free_me = GLOBUS_TRUE;
+                globus_l_ftp_control_stripes_destroy(dc_handle, error);
             }
         }
         /* 
@@ -7308,9 +7209,6 @@ globus_l_ftp_stream_accept_connect_callback(
          */
         else
         {
-            assert(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_READ ||
-                   dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_WRITE);
-
             globus_list_insert(&stripe->all_conn_list, (void*)data_conn);
             stripe->total_connection_count++;
             globus_fifo_enqueue(&stripe->free_conn_q, data_conn);
@@ -7747,10 +7645,32 @@ globus_l_ftp_eb_listen_callback(
             callback = data_conn->callback;
             user_arg = data_conn->user_arg;
             stripe_ndx = stripe->stripe_ndx;
+            globus_free(data_conn);
 
             /*
-             *  TODO: ?: if a big buffer is registered kick out its callback
+             *  if a big buffer is registered kick out its callback
+            if(transfer_handle->big_buffer != GLOBUS_NULL)
+            {
+                buffer = transfer_handle->big_buffer;
+                transfer_handle->big_buffer = GLOBUS_NULL;
+                control_handle = dc_handle->whos_my_daddy;
+                cb = transfer_handle->big_buffer_cb;
+                user_arg = transfer_handle->big_buffer_cb_arg;
+
+                globus_mutex_unlock(&dc_handle->mutex);
+
+                cb(user_arg,
+                    control_handle,
+                    error,
+                    buffer,
+                    0,
+                    0,
+                    GLOBUS_TRUE);
+
+                globus_mutex_lock(&dc_handle->mutex);
+            }
              */
+
         }
         /*
          *  if all is well, do not call the callback (it will be called
@@ -7759,19 +7679,12 @@ globus_l_ftp_eb_listen_callback(
          */
         else
         {
-            assert(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_READ);
-
             /* 
              *  inc reference count for accept
              */
             transfer_handle->ref++;
-
-            /*
-             *  inc count for data_conn
-             */
-            stripe->total_connection_count++;
-            transfer_handle->ref++;
             stripe->outstanding_connections++;
+            stripe->total_connection_count++;
             globus_list_insert(
                 &stripe->outstanding_conn_list,
                 (void *)data_conn);
@@ -7860,6 +7773,7 @@ globus_l_ftp_eb_accept_callback(
     globus_byte_t *                             buffer;
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
 
+
     data_conn = (globus_ftp_data_connection_t *) callback_arg;
     stripe = data_conn->whos_my_daddy;
     transfer_handle = stripe->whos_my_daddy;
@@ -7870,7 +7784,6 @@ globus_l_ftp_eb_accept_callback(
     globus_mutex_lock(&dc_handle->mutex);
     {
         assert(dc_handle->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
-
 
         callback = data_conn->callback;
         user_arg = data_conn->user_arg;
@@ -7901,33 +7814,29 @@ globus_l_ftp_eb_accept_callback(
             }
 
             /*
-             *  TODO: ?: if a big buffer ois registered kickout its callback
+             *  if a big buffer ois registered kickout its callback
+            if(transfer_handle->big_buffer != GLOBUS_NULL)
+            {
+                buffer = transfer_handle->big_buffer;
+                transfer_handle->big_buffer = GLOBUS_NULL;
+                control_handle = dc_handle->whos_my_daddy;
+                cb = transfer_handle->big_buffer_cb;
+                user_arg = transfer_handle->big_buffer_cb_arg;
+
+                globus_mutex_unlock(&dc_handle->mutex);
+
+                cb(user_arg,
+                    control_handle,
+                    error,
+                    buffer,
+                    0,
+                    0,
+                    GLOBUS_TRUE);
+
+                globus_mutex_lock(&dc_handle->mutex);
+            }
              */
         }
-        /*
-         *  This *MUST* only happen if the callback occurs via a
-         *  call to globus_io_register_cancel()
-         */
-        else if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
-        {
-            error =  globus_error_construct_string(
-                         GLOBUS_FTP_CONTROL_MODULE,
-                         GLOBUS_NULL,
-   "connection closed before a data connection request was made");
-
-            /*
-             * since globus io makes no guarentee on order of
-             * cancel callbacks we free this structure here. 
-             */
-            if(data_conn->free_me)
-            {
-                globus_free(data_conn);
-            }
-            else
-            {
-                data_conn->free_me = GLOBUS_TRUE;
-            }
-        }  
         /*
          *  if all is well register a read of the first header
          */
@@ -7940,27 +7849,28 @@ globus_l_ftp_eb_accept_callback(
             stripe->connection_count++;
             globus_list_insert(&stripe->all_conn_list, data_conn);
 
-            assert(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_READ);
+            /*
+             *  if all is well register the read of the first header
+             */
+            {
+                assert(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_READ);
  
-            eb_header = (globus_l_ftp_eb_header_t *)
-                          globus_malloc(sizeof(globus_l_ftp_eb_header_t));
+                eb_header = (globus_l_ftp_eb_header_t *)
+                              globus_malloc(sizeof(globus_l_ftp_eb_header_t));
 
-            /* count activae connections and total connections */
-            data_conn->bytes_ready = 0;
+                /* count activae connections and total connections */
+                data_conn->bytes_ready = 0;
             
-            res = globus_io_register_read(
-                      &data_conn->io_handle,
-                      (globus_byte_t *)eb_header,
-                      sizeof(globus_l_ftp_eb_header_t),
-                      sizeof(globus_l_ftp_eb_header_t),
-                      globus_l_ftp_eb_read_header_callback,
-                      (void *)data_conn);
-            assert(res == GLOBUS_SUCCESS);
+                res = globus_io_register_read(
+                          &data_conn->io_handle,
+                          (globus_byte_t *)eb_header,
+                          sizeof(globus_l_ftp_eb_header_t),
+                          sizeof(globus_l_ftp_eb_header_t),
+                          globus_l_ftp_eb_read_header_callback,
+                          (void *)data_conn);
+                assert(res == GLOBUS_SUCCESS);
+            }   
         }
-        /*
-         *  since the accept came back, dec ref
-         */
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -8451,11 +8361,6 @@ globus_l_ftp_eb_connect_callback(
     {
         assert(dc_handle->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
 
-        /*
-         * since conncet came back dec ref 
-         */
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
-
         callback = data_conn->callback;
         control_handle = dc_handle->whos_my_daddy;
         user_arg = data_conn->user_arg;
@@ -8520,33 +8425,11 @@ globus_l_ftp_eb_connect_callback(
                 }
             }
         }
-        else if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
-        {
-            error =  globus_error_construct_string(
-                         GLOBUS_FTP_CONTROL_MODULE,
-                         GLOBUS_NULL,
-   "connection closed before a data connection request was made");
-
-            /*
-             * since globus io makes no guarentee on order of
-             * cancel callbacks we free this structure here.
-             */
-            if(data_conn->free_me)
-            {
-                globus_free(data_conn);
-            }
-            else
-            {
-                data_conn->free_me = GLOBUS_TRUE;
-            }
-        }
         /*
          *  if we connected succesfully
          */
         else
         {
-            assert(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_WRITE);
-
             stripe->connection_count++;
             globus_list_insert(&stripe->all_conn_list, data_conn);
             /* 

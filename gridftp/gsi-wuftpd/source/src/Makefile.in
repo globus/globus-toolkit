@@ -46,7 +46,6 @@ CFLAGS=$(WARNINGS)                          \
        @AFS_CFLAGS@                         \
        $(GLOBUS_DATA_CFLAGS)
 LDFLAGS=@LDFLAGS@                           \
-        @GPT_LDFLAGS@			    \
         @GSSAPI_LDFLAGS@                    \
         @AFS_LDFLAGS@                       \
         $(GLOBUS_DATA_LDFLAGS)

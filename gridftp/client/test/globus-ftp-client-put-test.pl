@@ -387,10 +387,6 @@ sub restart_plugin_test
 
     $ENV{GLOBUS_FTP_CLIENT_FAULT_MODE} = shift;
     $other_args = shift;
-    if(!defined($other_args))
-    {
-	$other_args = "";
-    }
 
     $rc = system("$test_exec -d 'gsiftp://localhost$tmpname' -f 0,0,0,0 $other_args < /etc/group >/dev/null 2>&1") / 256;
     if($rc != 0)

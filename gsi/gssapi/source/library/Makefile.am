@@ -32,9 +32,8 @@ Sources = \
 	release_buffer.c \
 	release_buffer_set.c \
 	gssapi_working.c \
-	set_sec_context_option.c \
 	gssapi.h \
-	gssapi_ssleay.h
+	gssapi_ssleay.h	
 
 include_HEADERS = \
 	gssapi.h
@@ -54,7 +53,3 @@ libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
-
-
-
-

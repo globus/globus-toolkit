@@ -142,9 +142,8 @@ globus_ftp_client_restart_marker_t;
  * @ingroup globus_ftp_client_handle
  *
  * An FTP client handle is used to associate state with a group of
- * operations. Handles can have
- * @ref globus_ftp_client_handleattr_t "attributes"
- * associated with them. All FTP @link
+ * operations. Handles can have @link globus_ftp_client_handleattr_t 
+ * attributes @endlink associated with them. All FTP @link
  * globus_ftp_client_operations operations @endlink take a handle pointer
  * as a parameter.
  *
@@ -399,11 +398,6 @@ globus_result_t
 globus_ftp_client_handleattr_get_cache_all(
     const globus_ftp_client_handleattr_t *	attr,
     globus_bool_t *				cache_all);
-
-globus_result_t
-globus_ftp_client_handleattr_set_netlogger(
-    globus_ftp_client_handleattr_t *		attr,
-    globus_netlogger_handle_t *	                nl_handle);
 
 globus_result_t
 globus_ftp_client_handleattr_remove_plugin(
@@ -764,7 +758,6 @@ globus_result_t
 globus_ftp_client_operationattr_copy(
     globus_ftp_client_operationattr_t *		dst,
     const globus_ftp_client_operationattr_t *	src);
-
 #endif
 
 /**

@@ -1,7 +1,7 @@
 #! /bin/sh -f
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
-globus_source ${libexecdir}/globus-sh-tools.sh
+globus_source ${libexecdir}globus-sh-tools.sh
 
 #  CVS Information:
 #     $Source$
@@ -169,7 +169,7 @@ case "${action}:${answer}" in
 
 	# Eeeech... ugly...
 	#
-	myrsl="&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"\$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stdout ; \$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stderr\")"
+	myrsl="&(executable=\${bindir}/globus-sh-exec)(arguments=-exec \"\$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stdout ; \$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stderr\")"
 	${bindir}/globusrun -o -r "${host}" "${myrsl}"
 
 	if [ $? -ne 0 ]; then

@@ -153,7 +153,7 @@ case ${tailopt}:${followopt} in
 esac
 
 ${bindir}/globusrun -o -r "$host" \
-    "&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"file=\`\${bindir}/globus-gass-cache -query x-gass-cache://${jobid}${stream}\`; ${command} \$file\")"
+    "&(executable=\${bindir}/globus-sh-exec)(arguments=-exec \"file=\`\$bindir/globus-gass-cache -query x-gass-cache://${jobid}${stream}\`; ${command} \$file\")"
 
 exit $?
 

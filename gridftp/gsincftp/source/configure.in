@@ -2,9 +2,6 @@ dnl Process this file with autoconf to produce a configure script.
 dnl
 AC_INIT(ncftp/main.c)
 
-
-AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr/local})
-
 AC_CONFIG_HEADER(config.h)
 nc_cv_curses=yes
 nc_cv_ncurses=yes
@@ -16,7 +13,7 @@ AC_ARG_ENABLE(ncurses,[  --disable-ncurses       do not try to find and use the 
 dnl AC_ARG_ENABLE(readline,[  --disable-readline      do not try to find and use the readline library],nc_cv_readline=$enableval)
 AC_ARG_ENABLE(signals,[  --disable-select        use alarm() for timeout handling rather than select()],[no_signals=no])
 AC_ARG_ENABLE(extra-dirs,[  --disable-extra-dirs    do not look for extra -I/include and -L/lib dirs],nc_cv_extra_dirs=$enableval)
-AC_ARG_ENABLE(gssapi,[  --disable-gssapi         don't use the GSSAPI],nc_cv_gssapi=$enableval, nc_cv_gssapi=yes)
+AC_ARG_ENABLE(gssapi,[  --enable-gssapi         use the GSSAPI],nc_cv_gssapi=$enableval)
 
 wi_OS_VAR
 

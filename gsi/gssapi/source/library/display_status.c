@@ -136,26 +136,13 @@ GSS_CALLCONV gss_display_status
             es = ERR_get_state();
 			i=(es->bottom+1)%ERR_NUM_ERRORS;
 
-            /*
-             * This error data seems to be freed by something we do below
-             * (probably the ERR_get_error_line() call), so duplicate it
-             * so that it doesn't get overwritten between here and the
-             * time we copy it into the buffer. The malloc() call below
-             * seems to do this.
-             */
 			if (es->err_data[i] == NULL) {
-				data = strdup("");
+				data = "";
 			} else {
-				data = strdup(es->err_data[i]);
+				data = es->err_data[i];
 			}
-
-            if (data == NULL)
-            {
-                return GSS_S_FAILURE;
-            }
-            
             flags =  es->err_data_flags[i];
-            
+
             /* removes error from error queue along with file and line info */
             err = ERR_get_error_line(&file,&line);
 			fs=ERR_func_error_string(err);
@@ -176,8 +163,6 @@ GSS_CALLCONV gss_display_status
 			status_string->value = 
 					(char *)malloc(status_string->length);
 			if (status_string->value == NULL) {
-                free(data);
-                data = NULL;
 				return GSS_S_FAILURE;
 			}
 			
@@ -190,9 +175,6 @@ GSS_CALLCONV gss_display_status
             else (*message_context) = 0;
 #else
 			sprintf(status_string->value, format, rs, data, fs);
-
-            free(data);
-            data = NULL;
             
             /* Check to make sure there is another error in the queue
              * to display

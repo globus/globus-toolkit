@@ -48,16 +48,16 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 
     if(minor_status == NULL)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
-        /* *minor_status = GSSERR_R_BAD_ARGUMENT; */
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
     
     if(context_handle == GSS_C_NO_CONTEXT)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -65,39 +65,39 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 
     if(desired_object == GSS_C_NO_OID)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(data_set == GSS_C_NO_BUFFER_SET)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
     }
     
+    cert_count = 0;
+    
     data_set->count = sk_X509_num(context->pvd.cert_chain);
 
-    cert_count=data_set->count;
-    
     data_set->elements = (gss_buffer_desc *) malloc(
         sizeof(gss_buffer_desc) *
         data_set->count);
 
     if(data_set->elements == NULL)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID, GSSERR_R_OUT_OF_MEMORY);
-        *minor_status = gsi_generate_minor_status();
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,ERR_R_MALLOC_FAILURE);
+        /* what is the the correct minor status ?*/
         major_status = GSS_S_FAILURE;
         goto err;
     }
     
     memset(data_set->elements,0,sizeof(gss_buffer_desc) * data_set->count);
 
-    while(cert_count-- &&
+    while(cert_count < data_set->count &&
           (cert = sk_X509_value(context->pvd.cert_chain,cert_count)))
     {
         extensions = cert->cert_info->extensions;
@@ -130,8 +130,8 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     }
                     
                     free(data_set->elements);
-                    GSSerr(GSSERR_F_INQUIRE_BY_OID, GSSERR_R_OUT_OF_MEMORY);
-                    *minor_status = gsi_generate_minor_status();
+                    GSSerr(GSSERR_F_INQUIRE_BY_OID,ERR_R_MALLOC_FAILURE);
+                    /* what is the the correct minor status ?*/
                     major_status = GSS_S_FAILURE;
                     goto err;
                 }
@@ -148,6 +148,9 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 break;
             }
         }
+
+        cert_count++;
+        
     } 
 
 err:

@@ -17,8 +17,7 @@ SUBDIRS= \
 Sources= \
 	globus_ftp_client_debug_plugin.h \
 	globus_ftp_client_restart_plugin.h \
-	globus_ftp_client_perf_plugin.h \
-	globus_ftp_client_throughput_plugin.h \
+	globus_ftp_client.h \
 	globus_ftp_client_plugin.h \
 	globus_i_ftp_client.h \
 	globus_ftp_client_attr.c \
@@ -27,8 +26,6 @@ Sources= \
 	globus_ftp_client_exists.c \
 	globus_ftp_client_debug_plugin.c \
 	globus_ftp_client_restart_plugin.c \
-	globus_ftp_client_perf_plugin.c \
-	globus_ftp_client_throughput_plugin.c \
 	globus_ftp_client_handle.c \
 	globus_ftp_client_plugin.c \
 	globus_ftp_client_restart.c \
@@ -48,8 +45,6 @@ INCLUDES += $(GPT_INCLUDES)
 include_HEADERS= \
 	globus_ftp_client_debug_plugin.h \
 	globus_ftp_client_restart_plugin.h \
-	globus_ftp_client_perf_plugin.h \
-	globus_ftp_client_throughput_plugin.h \
 	globus_ftp_client.h \
 	globus_ftp_client_plugin.h
 

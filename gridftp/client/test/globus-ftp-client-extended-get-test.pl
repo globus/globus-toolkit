@@ -49,9 +49,6 @@ sub basic_func
     }
     if(-r 'core')
     {
-        my $core_str = $test_exec."_basic_P_".$parallelism.".core";
-        system("mv core $core_str");
-
         $errors .= "\n# Core file generated.";
     }
 
@@ -91,9 +88,6 @@ sub bad_url
     }
     if(-r 'core')
     {
-        my $core_str = $test_exec."_bad_url.core";
-        system("mv core $core_str");
-
         $errors .= "\n# Core file generated.";
     }
 
@@ -125,9 +119,6 @@ sub abort_test
     $rc = system("$test_exec -P $par -a $abort_point -s gsiftp://localhost$testfile >/dev/null 2>/dev/null") / 256;
     if(-r 'core')
     {
-        my $core_str = $test_exec."_abort_".$abort_point."_P_".$par.".core";
-        system("mv core $core_str");
-
         $errors .= "\n# Core file generated.";
     }
 
@@ -171,9 +162,6 @@ sub restart_test
     }
     if(-r 'core')
     {
-        my $core_str = $test_exec."_restart_".$restart_point."_P_".$par.".core";
-        system("mv core $core_str");
-
         $errors .= "\n# Core file generated.";
     }
     if($errors eq "")

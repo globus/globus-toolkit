@@ -8,7 +8,6 @@ sub new($$)
     my $url = shift;
     my $self = {};
     my $safe = '$+-';
-    my $alpha = "[a-zA-Z]";
     my $extra = '*\(),!';
     my $userpass = '\G(?:([*\()a-zA-Z0-9$+-]*)(?::([*\()a-zA-Z0-9$+-]*))\@)?';
     my $hostport = '\G([a-zA-Z.-][a-zA-Z.0-9-]*)(?::(\d+))?';
@@ -89,7 +88,7 @@ sub new($$)
 	{
 	    return undef;
 	}
-        my $myre = "$safe|$extra|$alpha|\\d";
+        my $myre = "$safe|$extra|[:alpha:]|\\d";
         if($url =~ m,\G($myre)\?($myre)\?($myre)\?($myre),g)
 	{
             $self->{dn} = $1;
@@ -104,7 +103,7 @@ sub new($$)
     }
     elsif($self->{scheme} =~ m/^file$/)
     {
-        if($url =~ m,\G//([\da-zA-Z-]),g)
+        if($url =~ m,\G//([\d[:alpha:]-]),g)
 	{
             $self->{host} = $1;
 	}

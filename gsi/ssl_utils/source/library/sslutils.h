@@ -178,97 +178,86 @@ ERR_set_continue_needed(void);
 
 /*
  * defines for function codes our minor error codes
- * These match strings defined in gsserr.c.
+ * These match strings defined in gsserr.c
  */
-
-#define PRXYERR_F_BASE                          100
-       
-#define PRXYERR_F_PROXY_GENREQ                 PRXYERR_F_BASE + 0
-#define PRXYERR_F_PROXY_SIGN                   PRXYERR_F_BASE + 1
-#define PRXYERR_F_VERIFY_CB                    PRXYERR_F_BASE + 2
-#define PRXYERR_F_PROXY_LOAD                   PRXYERR_F_BASE + 3
-#define PRXYERR_F_PROXY_TMP                    PRXYERR_F_BASE + 4
-#define PRXYERR_F_INIT_CRED                    PRXYERR_F_BASE + 5
-#define PRXYERR_F_LOCAL_CREATE                 PRXYERR_F_BASE + 6
-#define PRXYERR_F_CB_NO_PW                     PRXYERR_F_BASE + 7
-#define PRXYERR_F_GET_CA_SIGN_PATH             PRXYERR_F_BASE + 8
-#define PRXYERR_F_PROXY_SIGN_EXT               PRXYERR_F_BASE + 9
-#define PRXYERR_F_PROXY_CHECK_SUBJECT_NAME     PRXYERR_F_BASE + 10
-#define PRXYERR_F_PROXY_CONSTRUCT_NAME         PRXYERR_F_BASE + 11
+    
+#define PRXYERR_F_PROXY_GENREQ          100
+#define PRXYERR_F_PROXY_SIGN            101      
+#define PRXYERR_F_VERIFY_CB             102         
+#define PRXYERR_F_PROXY_LOAD            103       
+#define PRXYERR_F_PROXY_TMP             104
+#define PRXYERR_F_INIT_CRED             105
+#define PRXYERR_F_LOCAL_CREATE          106
+#define PRXYERR_F_CB_NO_PW              107
+#define PRXYERR_F_GET_CA_SIGN_PATH      108
 
 /* 
  * defines for reasons 
  * The match strings defined in gsserr.c
- * These are also used for the minor_status codes.
- * We want to make sure these don't overlap with the errors in
- * gssapi_ssleay.h.
+ * These are also used for the minor_status codes 
  */
 
-#define PRXYERR_R_BASE                          1000
 
-#define PRXYERR_R_PROCESS_PROXY_KEY            PRXYERR_R_BASE + 1
-#define PRXYERR_R_PROCESS_REQ                  PRXYERR_R_BASE + 2
-#define PRXYERR_R_PROCESS_SIGN                 PRXYERR_R_BASE + 3
-#define PRXYERR_R_MALFORM_REQ                  PRXYERR_R_BASE + 4
-#define PRXYERR_R_SIG_VERIFY                   PRXYERR_R_BASE + 5
-#define PRXYERR_R_SIG_BAD                      PRXYERR_R_BASE + 6
-#define PRXYERR_R_PROCESS_PROXY                PRXYERR_R_BASE + 7
-#define PRXYERR_R_PROXY_NAME_BAD               PRXYERR_R_BASE + 8
-#define PRXYERR_R_PROCESS_SIGNC                PRXYERR_R_BASE + 9
-#define PRXYERR_R_BAD_PROXY_ISSUER             PRXYERR_R_BASE + 10
-#define PRXYERR_R_PROBLEM_PROXY_FILE           PRXYERR_R_BASE + 11
-#define PRXYERR_R_SIGN_NOT_CA                  PRXYERR_R_BASE + 12
-#define PRXYERR_R_PROCESS_KEY                  PRXYERR_R_BASE + 13
-#define PRXYERR_R_PROCESS_CERT                 PRXYERR_R_BASE + 14
-#define PRXYERR_R_PROCESS_CERTS                PRXYERR_R_BASE + 15
-#define PRXYERR_R_NO_TRUSTED_CERTS             PRXYERR_R_BASE + 16
-#define PRXYERR_R_PROBLEM_KEY_FILE             PRXYERR_R_BASE + 17
-#define PRXYERR_R_USER_ZERO_LENGTH_KEY_FILE    PRXYERR_R_BASE + 18
-#define PRXYERR_R_SERVER_ZERO_LENGTH_KEY_FILE  PRXYERR_R_BASE + 19
-#define PRXYERR_R_ZERO_LENGTH_CERT_FILE        PRXYERR_R_BASE + 20
-#define PRXYERR_R_PROBLEM_USER_NOCERT_FILE     PRXYERR_R_BASE + 21
-#define PRXYERR_R_PROBLEM_SERVER_NOCERT_FILE   PRXYERR_R_BASE + 22
-#define PRXYERR_R_PROBLEM_USER_NOKEY_FILE      PRXYERR_R_BASE + 23
-#define PRXYERR_R_PROBLEM_SERVER_NOKEY_FILE    PRXYERR_R_BASE + 24
-#define PRXYERR_R_USER_CERT_EXPIRED            PRXYERR_R_BASE + 25
-#define PRXYERR_R_SERVER_CERT_EXPIRED          PRXYERR_R_BASE + 26
-#define PRXYERR_R_CRL_SIGNATURE_FAILURE        PRXYERR_R_BASE + 27
-#define PRXYERR_R_CRL_NEXT_UPDATE_FIELD        PRXYERR_R_BASE + 28
-#define PRXYERR_R_CRL_HAS_EXPIRED              PRXYERR_R_BASE + 29
-#define PRXYERR_R_CERT_REVOKED                 PRXYERR_R_BASE + 30
-#define PRXYERR_R_NO_HOME                      PRXYERR_R_BASE + 31
-#define PRXYERR_R_LPROXY_MISSED_USED           PRXYERR_R_BASE + 32
-#define PRXYERR_R_LPROXY_REJECTED              PRXYERR_R_BASE + 33
-#define PRXYERR_R_KEY_CERT_MISMATCH            PRXYERR_R_BASE + 34
-#define PRXYERR_R_WRONG_PASSPHRASE             PRXYERR_R_BASE + 35
-#define PRXYERR_R_CA_POLICY_VIOLATION          PRXYERR_R_BASE + 36
-#define PRXYERR_R_CA_POLICY_RETRIEVE           PRXYERR_R_BASE + 37
-#define PRXYERR_R_CA_POLICY_PARSE              PRXYERR_R_BASE + 38
-#define PRXYERR_R_PROBLEM_CLIENT_CA            PRXYERR_R_BASE + 39
-#define PRXYERR_R_CB_NO_PW                     PRXYERR_R_BASE + 40
-#define PRXYERR_R_CB_CALLED_WITH_ERROR         PRXYERR_R_BASE + 41
-#define PRXYERR_R_CB_ERROR_MSG                 PRXYERR_R_BASE + 42
-#define PRXYERR_R_CLASS_ADD_OID                PRXYERR_R_BASE + 43
-#define PRXYERR_R_CLASS_ADD_EXT                PRXYERR_R_BASE + 44
-#define PRXYERR_R_DELEGATE_VERIFY              PRXYERR_R_BASE + 45
-#define PRXYERR_R_EXT_ADD                      PRXYERR_R_BASE + 46
-#define PRXYERR_R_DELEGATE_COPY                PRXYERR_R_BASE + 47
-#define PRXYERR_R_DELEGATE_CREATE              PRXYERR_R_BASE + 48
-#define PRXYERR_R_BUFFER_TOO_SMALL             PRXYERR_R_BASE + 49
-#define PRXYERR_R_PROXY_EXPIRED                PRXYERR_R_BASE + 50
-#define PRXYERR_R_NO_PROXY                     PRXYERR_R_BASE + 51
-#define PRXYERR_R_CA_UNKNOWN                   PRXYERR_R_BASE + 52
-#define PRXYERR_R_CA_NOPATH                    PRXYERR_R_BASE + 53
-#define PRXYERR_R_CA_NOFILE                    PRXYERR_R_BASE + 54
-#define PRXYERR_R_CA_POLICY_ERR                PRXYERR_R_BASE + 55
-#define PRXYERR_R_INVALID_CERT                 PRXYERR_R_BASE + 56
-#define PRXYERR_R_CERT_NOT_YET_VALID           PRXYERR_R_BASE + 57
-#define PRXYERR_R_LOCAL_CA_UNKNOWN             PRXYERR_R_BASE + 58
-#define PRXYERR_R_REMOTE_CRED_EXPIRED          PRXYERR_R_BASE + 59
-#define PRXYERR_R_OUT_OF_MEMORY                PRXYERR_R_BASE + 60
-#define PRXYERR_R_BAD_ARGUMENT                 PRXYERR_R_BASE + 61
-#define PRXYERR_R_BAD_MAGIC                    PRXYERR_R_BASE + 62
-/* NOTE: Don't go over 1500 here or will conflict with errors in scutils.h */
+#define PRXYERR_R_PROCESS_PROXY_KEY            101
+#define PRXYERR_R_PROCESS_REQ                  102
+#define PRXYERR_R_PROCESS_SIGN                 103
+#define PRXYERR_R_MALFORM_REQ                  104
+#define PRXYERR_R_SIG_VERIFY                   105
+#define PRXYERR_R_SIG_BAD                      106
+#define PRXYERR_R_PROCESS_PROXY                107
+#define PRXYERR_R_PROXY_NAME_BAD               108
+#define PRXYERR_R_PROCESS_SIGNC                109
+#define PRXYERR_R_BAD_PROXY_ISSUER             110
+#define PRXYERR_R_PROBLEM_PROXY_FILE           111
+#define PRXYERR_R_SIGN_NOT_CA                  112
+#define PRXYERR_R_PROCESS_KEY                  113
+#define PRXYERR_R_PROCESS_CERT                 114
+#define PRXYERR_R_PROCESS_CERTS                115
+#define PRXYERR_R_NO_TRUSTED_CERTS             116
+#define PRXYERR_R_PROBLEM_KEY_FILE             117
+#define PRXYERR_R_USER_ZERO_LENGTH_KEY_FILE    118
+#define PRXYERR_R_SERVER_ZERO_LENGTH_KEY_FILE  119
+#define PRXYERR_R_ZERO_LENGTH_CERT_FILE        120
+
+#define PRXYERR_R_PROBLEM_USER_NOCERT_FILE     121
+#define PRXYERR_R_PROBLEM_SERVER_NOCERT_FILE   122
+#define PRXYERR_R_PROBLEM_USER_NOKEY_FILE      123
+#define PRXYERR_R_PROBLEM_SERVER_NOKEY_FILE    124
+#define PRXYERR_R_USER_CERT_EXPIRED            125
+#define PRXYERR_R_SERVER_CERT_EXPIRED          126
+#define PRXYERR_R_CRL_SIGNATURE_FAILURE        127
+#define PRXYERR_R_CRL_NEXT_UPDATE_FIELD        128
+#define PRXYERR_R_CRL_HAS_EXPIRED              129
+#define PRXYERR_R_CERT_REVOKED                 130
+#define PRXYERR_R_NO_HOME                      131
+#define PRXYERR_R_LPROXY_MISSED_USED           132
+#define PRXYERR_R_LPROXY_REJECTED              133
+#define PRXYERR_R_KEY_CERT_MISMATCH            134
+#define PRXYERR_R_WRONG_PASSPHRASE             135
+#define PRXYERR_R_CA_POLICY_VIOLATION          136
+#define PRXYERR_R_CA_POLICY_RETRIEVE           137
+#define PRXYERR_R_CA_POLICY_PARSE              138
+#define PRXYERR_R_PROBLEM_CLIENT_CA            139
+#define PRXYERR_R_CB_NO_PW                     140
+#define PRXYERR_R_CB_CALLED_WITH_ERROR         141
+#define PRXYERR_R_CB_ERROR_MSG                 142
+#define PRXYERR_R_CLASS_ADD_OID                143
+#define PRXYERR_R_CLASS_ADD_EXT                144
+#define PRXYERR_R_DELEGATE_VERIFY              145
+#define PRXYERR_R_EXT_ADD                      146
+#define PRXYERR_R_DELEGATE_COPY                147
+#define PRXYERR_R_DELEGATE_CREATE              148
+#define PRXYERR_R_BUFFER_TOO_SMALL             149
+#define PRXYERR_R_PROXY_EXPIRED                150
+#define PRXYERR_R_NO_PROXY                     151
+#define PRXYERR_R_CA_UNKNOWN                   152
+#define PRXYERR_R_CA_NOPATH                    153
+#define PRXYERR_R_CA_NOFILE                    154
+#define PRXYERR_R_CA_POLICY_ERR                155
+#define PRXYERR_R_INVALID_CERT                 156
+#define PRXYERR_R_CERT_NOT_YET_VALID           157
+#define PRXYERR_R_LOCAL_CA_UNKNOWN             158
+#define PRXYERR_R_REMOTE_CRED_EXPIRED          159
 
 /* constants for gsi error messages 
  *  this information is kept internally by the
@@ -298,7 +287,7 @@ typedef struct proxy_cred_desc_struct
     char *                              certfile;
     int                                 num_null_enc_ciphers;
     int                      	        type;  /* for gsi error messages */
-    int                                 owner; /* for gsi error messages */
+    int              			        owner; /* for gsi error messages */
 } proxy_cred_desc;
 
 /* proxy_verify_ctx_desc - common to all verifys */
@@ -324,7 +313,6 @@ struct proxy_verify_desc_struct {
     int                                 cert_depth;
     int                                 limited_proxy;
     STACK_OF(X509) *                    cert_chain; /*  X509 */
-    int                                 multiple_limited_proxy_ok;
 };
 
 /**********************************************************************
@@ -425,37 +413,27 @@ proxy_genreq(
 
 int
 proxy_sign(
-    X509 *                              user_cert,
-    EVP_PKEY *                          user_private_key,
+    X509 *                              ucert,
+    EVP_PKEY *                          upkey,
+    EVP_MD *                            method,
     X509_REQ *                          req,
-    X509 **                             new_cert,
-    int                                 seconds,
-    STACK_OF(X509_EXTENSION) *          extensions,
-    int                                 limited_proxy);
+    X509 **                             ncertp,
+    int                                 hours,
+    int                                 limit_proxy);
 
 int
 proxy_sign_ext(
-    X509 *                              user_cert,
-    EVP_PKEY *                          user_private_key,
+    int                                 function,
+    X509 *                              ucert,
+    EVP_PKEY *                          upkey,
     EVP_MD *                            method,
     X509_REQ *                          req,
-    X509 **                             new_cert,
-    X509_NAME *                         subject_name,
-    X509_NAME *                         issuer_name,    
+    X509 **                             ncertp,
     int                                 seconds,
-    int                                 serial_num,
+    int                                 limit_proxy,
+    int                                 serial,
+    char *                              newcn,
     STACK_OF(X509_EXTENSION) *          extensions);
-
-int
-proxy_check_subject_name(
-    X509_REQ *                          req,
-    X509_NAME *                         subject_name);
-
-int
-proxy_construct_name(
-    X509 *                              cert,
-    X509_NAME **                        name,
-    char *                              newcn);
 
 int
 proxy_marshal_tmp(

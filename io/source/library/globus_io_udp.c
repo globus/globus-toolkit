@@ -306,11 +306,6 @@ globus_io_udpattr_init(
     
     attr->attr = globus_i_io_udpattr_construct();
 
-    /*
-     *  NETLOGGER
-     */
-    attr->nl_handle = GLOBUS_NULL;
-
     return GLOBUS_SUCCESS;
 }
 /* globus_udpattr_init() */

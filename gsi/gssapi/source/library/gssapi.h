@@ -37,17 +37,7 @@
 /*
  * Configure set the following
  */
-
-#ifndef SIZEOF_LONG
-#undef SIZEOF_LONG 
-#endif
-#ifndef SIZEOF_SHORT
-#undef SIZEOF_SHORT
-#endif
-/* Endian not needed by gssapi, but included here for now */
-#ifndef WORDS_BIGENDIAN
-#undef WORDS_BIGENDIAN
-#endif
+#include "globus_gssapi_config.h"
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -171,13 +161,9 @@ typedef struct gss_channel_bindings_struct {
  * input - Dont accept limited proxy for auth
  * output- Limited proxy received. 
  * 
- * GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG
- * input - Accept proxies signed by limited proxies
- *
  * Since gss_accept_sec_context does not 
  * provide a req_flag as input, we will 
  * pass in  our GSS_C_GLOBUS_LIMITED_PROXY_FLAG
- * and GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG
  * using the ret_flag
  *  
  */
@@ -185,7 +171,7 @@ typedef struct gss_channel_bindings_struct {
 #define GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG  4096
 #define GSS_C_GLOBUS_LIMITED_PROXY_FLAG        8192
 #define GSS_C_GLOBUS_SSL_COMPATABLE           16384
-#define GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG  32768
+
 /*
  * Credential usage options
  */
@@ -859,9 +845,7 @@ typedef struct gss_buffer_set_desc_struct {
                gss_cred_id_t *,    /* cred to be exported */
                const gss_OID,      /* desired mech*/
                OM_uint32,          /* option req */
-               const gss_buffer_t, /* import buffer */
-               OM_uint32,          /* time req */
-               OM_uint32 *         /* time rec */
+               const gss_buffer_t  /* import buffer */
               );
 
    GSS_MAKE_TYPEDEF
@@ -879,31 +863,28 @@ typedef struct gss_buffer_set_desc_struct {
    GSS_MAKE_TYPEDEF
    OM_uint32
    GSS_CALLCONV GSS_FUNC(gss_init_delegation)
-              (OM_uint32 *,            /* minor_status */
-               const gss_ctx_id_t,     /* context_handle */
-               const gss_cred_id_t,    /* cred_handle */
-               const gss_OID,          /* desired_mech */
-               const gss_OID_set,      /* restriction_oids */
-               const gss_buffer_set_t, /* restriction_buffers */
-               const gss_buffer_t,     /* input_token */
-               OM_uint32,              /* time_req */
-               gss_buffer_t            /* output_token */
+              (OM_uint32 *,
+               const gss_ctx_id_t,
+               const gss_cred_id_t,
+               const gss_OID,
+               const gss_OID_set,
+               const gss_buffer_set_t,
+               const gss_buffer_t,
+               gss_buffer_t
               );
 
 
    GSS_MAKE_TYPEDEF
    OM_uint32
    GSS_CALLCONV GSS_FUNC(gss_accept_delegation)
-              (OM_uint32 *,            /* minor_status */
-               const gss_ctx_id_t,     /* context_handle */
-               const gss_OID_set,      /* restriction_oids */
-               const gss_buffer_set_t, /* restriction_buffers */
-               const gss_buffer_t,     /* input_token */
-               OM_uint32,              /* time_req */
-               OM_uint32 *,            /* time_rec */
-               gss_cred_id_t *,        /* cred_handle */
-               gss_OID *,              /* desired_mech */
-               gss_buffer_t            /* output_token */
+              (OM_uint32 *,
+               const gss_ctx_id_t,
+               gss_cred_id_t *,
+               gss_OID *, 
+               const gss_OID_set,
+               const gss_buffer_set_t,
+               const gss_buffer_t,
+               gss_buffer_t
               );
 
    GSS_MAKE_TYPEDEF
@@ -915,17 +896,6 @@ typedef struct gss_buffer_set_desc_struct {
                gss_buffer_set_t
               );
 
-   GSS_MAKE_TYPEDEF
-   OM_uint32
-   GSS_CALLCONV GSS_FUNC(gss_set_sec_context_option)
-    (OM_uint32 *,                       /* minor_status */
-     gss_ctx_id_t *,                    /* context_handle */
-     const gss_OID,                     /* option */
-     const gss_buffer_t                 /* value */
-    );
-
-extern const gss_OID_desc * const GSS_DISALLOW_ENCRYPTION;
-extern const gss_OID_desc * const GSS_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION;
 
 #endif /* GSI_EXTENDED_GSSAPI */
 

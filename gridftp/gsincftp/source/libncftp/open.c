@@ -548,13 +548,6 @@ okay:
 
 	/* When a new site is opened, ASCII mode is assumed (by protocol). */
 	cip->curTransferType = 'A';
-	/* When a new site is opened, Authenticate only protection is assumed
-	 * (by protocol).
-	 */
-#if HAVE_GSSAPI
-	cip->curProtectionLevel = kProtectionLevelAuthenticated;
-#endif
-
 	PrintF(cip, "Logged in to %s as %s.\n", cip->host, cip->user);
 
 	/* Don't leave cleartext password in memory. */
@@ -943,15 +936,11 @@ FTPDecodeURL(
 		*cp = '\0';
 		cp = url + 14;
 		default_port = 2811;
-#if HAVE_GSSAPI
 		cip->doAuth = 1;
-#endif
 	} else if (strncasecmp(url, "gsiftp://", 9) == 0) {
 		cp = url + 9;
 		default_port = 2811;
-#if HAVE_GSSAPI
 		cip->doAuth = 1;
-#endif
 	} else {
 		return (-1);		/* not a RFC 1738 URL */
 	}

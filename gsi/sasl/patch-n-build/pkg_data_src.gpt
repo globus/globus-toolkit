@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
+
 <gpt_package_metadata Format_Version="0.01" Name="globus_cyrus_sasl" >
 
-  <Aging_Version Age="0" Major="0" Minor="2" />
+  <Aging_Version Age="0" Major="0" Minor="1" />
   <Description> Globus binary package for sasl </Description>
   <Functional_Group >Security</Functional_Group>
   <Version_Stability Release="alpha"/>
@@ -19,20 +20,14 @@
     <With_Flavors build="yes" />
 
     <Version_Label>1.5.27</Version_Label>
-    <Source_Dependencies Type="compile" >
-      <Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
-    </Source_Dependencies>
 
     <Build_Instructions>
 
       <Build_Step>patch -N -p1 -i ../patches/cyrus-sasl-1.5.27-patch</Build_Step>
       <Build_Step>MAKE_GPTMACRO distclean</Build_Step>
-
-      <Build_Step Macro_Args="libs='ssl crypto sasl annonymous cramm5 digestmd5 plain'">
+      <Build_Step Macro_Args="libs='ssl crypto sasl' regex='lib$$iFLAVOR.'">
         RUN_FLAVOR_MAKEFILES_GPTMACRO
       </Build_Step>
-	<Build_Step>touch aclocal.m4</Build_Step>
-	<Build_Step>find . -name "Makefile.in" -print | xargs touch</Build_Step>
       <Build_Step>./configure --prefix=INSTALLDIR_GPTMACRO --disable-gssapi</Build_Step>
       <Build_Step>MAKE_GPTMACRO</Build_Step>
       <Build_Step>MAKE_GPTMACRO DESTDIR_GPTMACRO install</Build_Step>
@@ -43,3 +38,4 @@
   </src_pkg >
 
 </gpt_package_metadata>
+

@@ -135,10 +135,7 @@ GSS_CALLCONV gss_add_oid_set_member
 	    (member_oid == NULL) ||
 	    (oid_set == NULL))
 	{
-            GSSerr(GSSERR_F_ADD_OID_SET_MEMBER,
-                   GSSERR_R_BAD_ARGUMENT);
-            *minor_status = gsi_generate_minor_status();
- 	    return GSS_S_FAILURE;
+	    return GSS_S_FAILURE;
 	}
 	
 	set = *oid_set;
@@ -148,10 +145,7 @@ GSS_CALLCONV gss_add_oid_set_member
 	
 	if (new_elements == NULL)
 	{
-            GSSerr(GSSERR_F_ADD_OID_SET_MEMBER,
-                   GSSERR_R_OUT_OF_MEMORY);
-            *minor_status = gsi_generate_minor_status();
-            return GSS_S_FAILURE;
+	    return GSS_S_FAILURE;
 	}
 	
 	if (set->count > 0)
@@ -206,20 +200,14 @@ GSS_CALLCONV gss_create_empty_oid_set
 	if ((oid_set == NULL) ||
 	    (minor_status == NULL))
 	{
-            GSSerr(GSSERR_F_CREATE_EMPTY_OID_SET,
-                   GSSERR_R_BAD_ARGUMENT);
-            *minor_status = gsi_generate_minor_status();
-            return GSS_S_FAILURE;
+		return GSS_S_FAILURE;
 	}
 
 	*minor_status = 0;
 
 	*oid_set = (gss_OID_set_desc *)malloc(sizeof(gss_OID_set_desc));
 	if (!*oid_set) {
-            GSSerr(GSSERR_F_CREATE_EMPTY_OID_SET,
-                   GSSERR_R_OUT_OF_MEMORY);
-            *minor_status = gsi_generate_minor_status();
-            return GSS_S_FAILURE;
+		return GSS_S_FAILURE;
 	}
 	
 	(*oid_set)->count = 0;
@@ -321,10 +309,7 @@ GSS_CALLCONV gss_test_oid_set_member
 	    (set == NULL) ||
 	    (present == NULL))
 	{
-            GSSerr(GSSERR_F_TEST_OID_SET_MEMBER,
-                   GSSERR_R_BAD_ARGUMENT);
-            *minor_status = gsi_generate_minor_status();
-            return GSS_S_FAILURE;
+		return GSS_S_FAILURE;
 	}
 	
 	*minor_status = 0;

@@ -64,8 +64,7 @@ GSS_CALLCONV gss_display_name
 	*minor_status = 0;
 	if (!(input_name) || !(input_name->x509n) ||
 			!(output_name)) {
-            *minor_status = gsi_generate_minor_status();
-            return GSS_S_FAILURE;
+		return GSS_S_FAILURE;
 	}
 
 	output_name->value = X509_NAME_oneline(input_name->x509n,NULL,0);

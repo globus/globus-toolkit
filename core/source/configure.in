@@ -21,7 +21,6 @@ exec_prefix='$(GLOBUS_LOCATION)'
 
 GPT_INIT
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION,0)
-AM_MAINTAINER_MODE
 AM_CONFIG_HEADER(globus_config.h)
 
 AC_ARG_WITH(
@@ -85,12 +84,6 @@ dnl Automake is using these for executables somehow
 AC_OBJEXT
 AC_EXEEXT
 
-dnl Save the flavor metadata
-CONFIG_PARAMETERS="$ac_configure_args"
-AC_SUBST(CONFIG_PARAMETERS)
-
-ISGCC=$ac_cv_prog_gcc
-AC_SUBST(ISGCC)
 
 AC_OUTPUT(Makefile
        	scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
@@ -101,7 +94,12 @@ AC_OUTPUT(Makefile
 	doxygen/Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
-	pkgdata/build-parameters
+	,
+	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data  \
+	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
+	,
+	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+	GPT_LOCATION=$GPT_LOCATION
 	)
 
 

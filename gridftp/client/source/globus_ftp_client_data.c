@@ -444,12 +444,6 @@ globus_ftp_client_register_write(
 
 	goto unlock_error;
     }
-
-    if(i_handle->partial_offset != -1)
-    {
-	offset -= i_handle->partial_offset;
-    }
-
     data = globus_l_ftp_client_data_new(buffer,
 					buffer_length,
 					offset,
@@ -678,7 +672,6 @@ globus_l_ftp_client_data_callback(
     globus_l_ftp_client_data_t *		data;
     globus_bool_t				dispatch_final = GLOBUS_FALSE;
     globus_i_ftp_client_target_t *		target;
-    globus_off_t				user_offset;
 
     client_handle = (globus_i_ftp_client_handle_t *) user_arg;
 
@@ -701,15 +694,6 @@ globus_l_ftp_client_data_callback(
     {
         offset += client_handle->base_offset;
     }
-    if(client_handle->partial_offset != -1)
-    {
-	user_offset = offset + client_handle->partial_offset;
-    }
-    else
-    {
-	user_offset = offset;
-    }
-
     /* Don't update the stream_offset on 0 length buffers; these may come in
      * with an offset of 0 when an error occurs or during restart,
      * which will clobber what we've already seen
@@ -730,13 +714,12 @@ globus_l_ftp_client_data_callback(
 	    offset+length);
     }
  
-    /* Notify plugins that this data block has been processed. The plugin
-     * gets the same (adjusted) view of the offset that the user gets. */
+    /* Notify plugins that this data block has been processed. */
     globus_i_ftp_client_plugin_notify_data(client_handle,
 					   error,
 					   buffer,
 					   length,
-					   user_offset,
+					   offset,
 					   eof);
 
     data = (globus_l_ftp_client_data_t *) 
@@ -842,7 +825,7 @@ globus_l_ftp_client_data_callback(
 		   error,
 		   buffer,
 		   length,
-		   user_offset,
+		   offset,
 		   eof);
     globus_l_ftp_client_data_delete(data);
 
@@ -895,9 +878,8 @@ globus_l_ftp_client_read_all_callback(
     globus_i_ftp_client_target_t *		target;
     globus_ftp_client_data_callback_t		read_all_callback = GLOBUS_NULL;
     void *					read_all_callback_arg = GLOBUS_NULL;
-    globus_off_t				base_offset;
-    globus_off_t				biggest_offset;
-    globus_off_t				user_offset;
+    globus_size_t				base_offset;
+    globus_size_t				biggest_offset;
 
     client_handle = (globus_i_ftp_client_handle_t *) callback_arg;
 
@@ -917,16 +899,11 @@ globus_l_ftp_client_read_all_callback(
 
     base_offset = client_handle->base_offset;
     biggest_offset = client_handle->read_all_biggest_offset;
-    user_offset = offset_read +
-	(client_handle->partial_offset == -1)
-	    ? 0
-	    : client_handle->partial_offset;
 
     /* Notify plugins that this data block has been processed. */
     globus_i_ftp_client_plugin_notify_data(client_handle,
 					   error,
-					   buffer
-					     + user_offset,
+					   buffer+offset_read,
 					   bytes_read,
 					   offset_read,
 					   eof);
@@ -1048,12 +1025,6 @@ globus_l_ftp_client_read_all_callback(
     }
 
     /* Call back to the user */
-    if(client_handle->partial_offset != -1)
-    {
-	offset_read += client_handle->partial_offset;
-	biggest_offset += client_handle->partial_offset;
-	base_offset += client_handle->partial_offset;
-    }
     globus_i_ftp_client_handle_unlock(client_handle);
 
     if(read_all_callback)
@@ -1166,15 +1137,16 @@ globus_i_ftp_client_data_dispatch_queue(
 	    {
 		globus_i_ftp_client_target_t *		target;
 
-		/* The base offset is used in stream mode to keep track of
-		 * any restart marker's influence on the offset of the data
-		 * coming on a data channel. In extended block mode, this
-		 * is explicit in the extended block headers
-		 */
 		handle->base_offset = 0;
 	
 		target = handle->source;
 
+		if((handle->partial_offset != -1 &&
+		    handle->partial_offset != -1) && 
+		   handle->partial_offset > handle->base_offset)
+		{
+		    handle->base_offset = handle->partial_offset;
+		}
 		if(handle->restart_marker.type ==
 		   GLOBUS_FTP_CLIENT_RESTART_STREAM &&
 		   handle->restart_marker.stream.offset > handle->base_offset)

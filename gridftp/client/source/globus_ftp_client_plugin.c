@@ -2068,7 +2068,7 @@ globus_i_ftp_client_plugin_notify_size(
 void
 globus_i_ftp_client_plugin_notify_connect(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url)
+    const globus_url_t *			url)
 {
     globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
@@ -2125,7 +2125,7 @@ globus_i_ftp_client_plugin_notify_connect(
 void
 globus_i_ftp_client_plugin_notify_authenticate(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     const globus_ftp_control_auth_info_t *	auth_info)
 {
     globus_i_ftp_client_plugin_t *		plugin;
@@ -2293,7 +2293,7 @@ globus_i_ftp_client_plugin_notify_write(
 void
 globus_i_ftp_client_plugin_notify_command(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     globus_ftp_client_plugin_command_mask_t	command_mask,
     const char *				command_spec,
     ...)
@@ -2362,7 +2362,7 @@ globus_i_ftp_client_plugin_notify_command(
 void
 globus_i_ftp_client_plugin_notify_response(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     globus_ftp_client_plugin_command_mask_t	command_mask,
     globus_object_t *				error,
     const globus_ftp_control_response_t *	ftp_response)
@@ -2421,7 +2421,7 @@ globus_i_ftp_client_plugin_notify_response(
 void
 globus_i_ftp_client_plugin_notify_fault(
     globus_i_ftp_client_handle_t *		handle,
-    const char *				url,
+    const globus_url_t *			url,
     globus_object_t *				error)
 {
     globus_i_ftp_client_plugin_t *		plugin;
