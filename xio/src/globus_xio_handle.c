@@ -2649,7 +2649,7 @@ globus_xio_handle_cntl(
 
     if(driver != NULL)
     {
-        res = globus_i_xio_driver_handle_cntl(context, driver, cmd, ap);
+        res = globus_i_xio_driver_handle_cntl(context, 0, driver, cmd, ap);
     }
     else
     {

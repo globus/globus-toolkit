@@ -5,6 +5,7 @@
 
 EXTERN_C_BEGIN
 
+#define GLOBUS_XIO_QUERY ((globus_xio_driver_t) 0x01)
 
 /*************************************************************************
  *    define types
@@ -85,6 +86,86 @@ typedef enum
     GLOBUS_XIO_ATTR_SET_SPACE,
     GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL
 } globus_xio_attr_cmd_t;
+
+/** doxygen varargs filter stuff
+ * GlobusVarArgDefine(
+ *      handle, globus_result_t, globus_xio_handle_cntl, handle, driver)
+ */
+
+/**
+ * Common driver handle cntls.
+ * @ingroup GLOBUS_XIO_API
+ * 
+ */
+typedef enum
+{
+    /* Make sure this enum starts at a high number */
+    
+    /**GlobusVarArgEnum(handle)
+     * Get local connection info.
+     * @ingroup GLOBUS_XIO_API
+     * 
+     * @param contact_string_out
+     *      A pointer to a contact string for the local end of a connected
+     *      handle.  Where possible, it will be in symbolic form (FQDN).
+     * 
+     *      The user must free the returned string.
+     * 
+     * @see globus_xio_server_get_contact_string()
+     */
+    /* char **                          contact_string_out */
+    GLOBUS_XIO_GET_LOCAL_CONTACT = 12345,
+    
+    /**GlobusVarArgEnum(handle)
+     * Get local connection info.
+     * @ingroup GLOBUS_XIO_API
+     * 
+     * @param contact_string_out
+     *      A pointer to a contact string for the local end of a connected
+     *      handle.  Where possible, it will be in numeric form. (IP)
+     * 
+     *      The user must free the returned string.
+     */
+    /* char **                          contact_string_out */
+    GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT,
+    
+    /**GlobusVarArgEnum(handle)
+     * Get remote connection info.
+     * @ingroup GLOBUS_XIO_API
+     * 
+     * @param contact_string_out
+     *      A pointer to a contact string for the remote end of a connected
+     *      handle.  Where possible, it will be in symbolic form (FQDN).
+     * 
+     *      The user must free the returned string.
+     */
+    /* char **                          contact_string_out */
+    GLOBUS_XIO_GET_REMOTE_CONTACT,
+    
+    /**GlobusVarArgEnum(handle)
+     * Get remote connection info.
+     * @ingroup GLOBUS_XIO_API
+     * 
+     * @param contact_string_out
+     *      A pointer to a contact string for the remote end of a connected
+     *      handle.  Where possible, it will be in numeric form. (IP)
+     * 
+     *      The user must free the returned string.
+     */
+    /* char **                          contact_string_out */
+    GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT,
+    
+    /** GlobusVarArgEnum(handle)
+     * Reposition read/write offset.
+     * @ingroup GLOBUS_XIO_API
+     * 
+     * @param offset
+     *      Specify the desired offset.
+     */
+    /* globus_off_t                     offset */
+    GLOBUS_XIO_SEEK
+    
+} globus_xio_handle_cmd_t;
 
 typedef enum
 {

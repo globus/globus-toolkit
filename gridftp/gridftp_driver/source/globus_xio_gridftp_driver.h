@@ -145,6 +145,8 @@ typedef enum
      *
      * @param seek_offset
      *      Specifies the desired offset.
+     * 
+     * @see GLOBUS_XIO_SEEK
      */
     GLOBUS_XIO_GRIDFTP_SEEK,
 

@@ -448,18 +448,6 @@ globus_xio_handle_create(
  *                      handle construction
  *****************************************************************/
 
-/**
- *  Timeout types
- */
-enum globus_xio_handle_attr_cmd_t
-{
-    GLOBUS_XIO_HANDLE_ATTR_OPEN_TIMEOUT,
-    GLOBUS_XIO_HANDLE_ATTR_READ_TIMEOUT,
-    GLOBUS_XIO_HANDLE_ATTR_WRITE_TIMEOUT,
-    GLOBUS_XIO_HANDLE_ATTR_CLOSE_TIMEOUT,
-    GLOBUS_XIO_HANDLE_ATTR_ALL_TIMEOUT
-};
-
 /******************************************************************
  *                      setting timeout values
  *****************************************************************/
@@ -597,6 +585,10 @@ typedef void (*globus_xio_iovec_callback_t)(
  *  This function allows the user to comunicate directly with a driver
  *  in association with a handle object.  The driver defines what operations
  *  can be preformed.
+ * 
+ *  pass the driver to control a specific driver
+ *  pass NULL for driver for XIO specific cntls
+ *  pass GLOBUS_XIO_QUERY for driver to try each driver in order until success
  */
 globus_result_t
 globus_xio_handle_cntl(

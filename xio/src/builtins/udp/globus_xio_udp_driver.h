@@ -414,6 +414,8 @@ typedef enum
      *      A pointer to a contact string will be stored here.  The user 
      *      should free() it when done with it.  It will be in the 
      *      format: \<hostname\>:\<port\>
+     * 
+     * @see GLOBUS_XIO_GET_LOCAL_CONTACT
      */
     /* char **                          contact_string_out */
     GLOBUS_XIO_UDP_GET_CONTACT,
@@ -430,6 +432,8 @@ typedef enum
      *      A pointer to a contact string will be stored here.  The user 
      *      should free() it when done with it.  It will be in the 
      *      format: \<ip\>:\<port\>
+     * 
+     * @see GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT
      */
     /* char **                          contact_string_out */
     GLOBUS_XIO_UDP_GET_NUMERIC_CONTACT,

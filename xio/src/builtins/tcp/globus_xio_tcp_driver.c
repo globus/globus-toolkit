@@ -918,10 +918,12 @@ globus_l_xio_tcp_contact_string(
     switch(cmd)
     {
       case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT:
         flags |= GLOBUS_LIBC_ADDR_NUMERIC;
         /* fall through */
         
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_CONTACT:
         if(getsockname(handle, (struct sockaddr *) &sock_name, &sock_len) < 0)
         {
             result = GlobusXIOErrorSystemError("getsockname", errno);
@@ -930,10 +932,12 @@ globus_l_xio_tcp_contact_string(
         break;
         
       case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT:
         flags |= GLOBUS_LIBC_ADDR_NUMERIC;
         /* fall through */
         
       case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_CONTACT:
         if(getpeername(handle, (struct sockaddr *) &sock_name, &sock_len) < 0)
         {
             result = GlobusXIOErrorSystemError("getpeername", errno);
@@ -995,6 +999,10 @@ globus_l_xio_tcp_link_cntl(
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
       case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
       case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_l_xio_tcp_contact_string(
             *accepted_handle, cmd, out_string);
@@ -1537,8 +1545,8 @@ globus_l_xio_tcp_server_cntl(
       /* char **                        contact_string_out */
       case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
-      case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
-      case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_l_xio_tcp_contact_string(
             server->listener_handle, cmd, out_string);
@@ -2506,6 +2514,10 @@ globus_l_xio_tcp_cntl(
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
       case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
       case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_l_xio_tcp_contact_string(fd, cmd, out_string);
         if(result != GLOBUS_SUCCESS)

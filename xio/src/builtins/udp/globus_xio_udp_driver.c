@@ -1298,11 +1298,13 @@ globus_l_xio_udp_cntl(
         
       /* char **                        contact_string_out */
       case GLOBUS_XIO_UDP_GET_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT:
         flags |= GLOBUS_LIBC_ADDR_NUMERIC;
         /* fall through */
       
       /* char **                        contact_string_out */
       case GLOBUS_XIO_UDP_GET_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_CONTACT:
         len = sizeof(globus_sockaddr_t);
         if(getsockname(fd, (struct sockaddr *) &sock_name, &len) < 0)
         {

@@ -1476,13 +1476,14 @@ globus_xio_driver_data_descriptor_cntl(
 globus_result_t
 globus_i_xio_driver_handle_cntl(
     globus_i_xio_context_t *            context,
+    int                                 start_ndx,
     globus_xio_driver_t                 driver,
     int                                 cmd,
     va_list                             ap)
 {
     globus_result_t                     res = GLOBUS_SUCCESS;
     int                                 ctr;
-    int                                 ndx;
+    globus_bool_t                       called;
     GlobusXIOName(globus_i_xio_driver_handle_cntl);
 
     GlobusXIODebugEnter();
@@ -1495,10 +1496,12 @@ globus_i_xio_driver_handle_cntl(
 
     if(driver != NULL)
     {
-        ndx = -1;
-        for(ctr = 0; ctr < context->stack_size && ndx == -1; ctr++)
+        for(ctr = start_ndx; ctr < context->stack_size; ctr++)
         {
-            if(driver == context->entry[ctr].driver)
+            called = GLOBUS_FALSE;
+            
+            if(driver == context->entry[ctr].driver ||
+                driver == GLOBUS_XIO_QUERY)
             {
                 if(context->entry[ctr].state == GLOBUS_XIO_CONTEXT_STATE_NONE
                     && context->entry[ctr].driver->link_cntl_func)
@@ -1510,6 +1513,7 @@ globus_i_xio_driver_handle_cntl(
                             context->entry[ctr].driver_handle,
                             cmd,
                             ap);
+                    called = GLOBUS_TRUE;
                 }
                 else if(context->entry[ctr].state != 
                     GLOBUS_XIO_CONTEXT_STATE_NONE &&
@@ -1519,28 +1523,52 @@ globus_i_xio_driver_handle_cntl(
                             context->entry[ctr].driver_handle,
                             cmd,
                             ap);
+                    called = GLOBUS_TRUE;
                 }
-                else
+                
+                if(called && res == GLOBUS_SUCCESS)
+                {
+                    break;
+                }
+                
+                if(driver == GLOBUS_XIO_QUERY)
+                {
+                    if(called && res != GLOBUS_SUCCESS &&
+                        globus_xio_error_match(res, GLOBUS_XIO_ERROR_COMMAND))
+                    {
+                        /* try again */
+                        res = GLOBUS_SUCCESS;
+                    }
+                }
+                else if(!called)
                 {
                     res = GlobusXIOErrorInvalidDriver(
                         _XIOSL("handle_cntl not supported"));
                 }
+                
                 if(res != GLOBUS_SUCCESS)
                 {
                     goto err;
                 }
-                ndx = ctr;
             }
         }
-        if(ndx == -1)
+        if(ctr == context->stack_size)
         {
-            /* throw error */
-            res = GlobusXIOErrorInvalidDriver(_XIOSL("not found"));
+            /* none found, throw error */
+            if(driver != GLOBUS_XIO_QUERY)
+            {
+                res = GlobusXIOErrorInvalidDriver(_XIOSL("not found"));
+            }
+            else
+            {
+                res = GlobusXIOErrorInvalidCommand(cmd);
+            }
             goto err;
         }
     }
     else
     {
+        /* support XIO specific cntls at driver level?? */
     }
 
     GlobusXIODebugExit();
@@ -1627,6 +1655,7 @@ globus_xio_driver_handle_cntl(
     globus_result_t                     res;
     va_list                             ap;
     globus_i_xio_context_t *            context;
+    int                                 start_ndx = 0;
     GlobusXIOName(globus_xio_driver_handle_cntl);
 
     GlobusXIODebugEnter();
@@ -1652,7 +1681,15 @@ globus_xio_driver_handle_cntl(
     }
 #   endif
 
-    res = globus_i_xio_driver_handle_cntl(context, driver, cmd, ap);
+    if(driver == GLOBUS_XIO_QUERY)
+    {
+        for(; start_ndx < context->stack_size &&
+            driver_handle != &context->entry[start_ndx]; start_ndx++)
+        {
+        }
+    }
+    
+    res = globus_i_xio_driver_handle_cntl(context, start_ndx, driver, cmd, ap);
     va_end(ap);
     if(res != GLOBUS_SUCCESS)
     {

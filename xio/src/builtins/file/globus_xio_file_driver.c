@@ -651,9 +651,11 @@ globus_l_xio_file_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_handle_t *                 handle;
     globus_xio_system_handle_t *        out_handle;
     globus_off_t *                      offset;
+    globus_off_t                        in_offset;
     int                                 whence;
     GlobusXIOName(globus_l_xio_file_cntl);
     
@@ -670,10 +672,20 @@ globus_l_xio_file_cntl(
         *offset = lseek(handle->handle, *offset, whence);
         if(*offset < 0)
         {
-            return GlobusXIOErrorSystemError("lseek", errno);
+            result = GlobusXIOErrorSystemError("lseek", errno);
         }
         break;
       
+      /* globus_off_t                   offset */
+      case GLOBUS_XIO_SEEK:
+        in_offset = va_arg(ap, globus_off_t);
+        in_offset = lseek(handle->handle, in_offset, SEEK_SET);
+        if(in_offset < 0)
+        {
+            result = GlobusXIOErrorSystemError("lseek", errno);
+        }
+        break;
+        
       /* globus_xio_system_handle_t *   handle */
       case GLOBUS_XIO_FILE_GET_HANDLE:
         out_handle = va_arg(ap, globus_xio_system_handle_t *);
@@ -681,12 +693,12 @@ globus_l_xio_file_cntl(
         break;
 
       default:
-        return GlobusXIOErrorInvalidCommand(cmd);
+        result = GlobusXIOErrorInvalidCommand(cmd);
         break;
     }
     
     GlobusXIOFileDebugExit();
-    return GLOBUS_SUCCESS;
+    return result;
 }
 
 static

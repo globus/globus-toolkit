@@ -233,6 +233,7 @@ typedef enum
      *      Specify how offset should be interpreted.
      * 
      * @see globus_xio_file_whence_t
+     * @see GLOBUS_XIO_SEEK
      */
     /* globus_off_t *                   in_out_offset,
      * globus_xio_file_whence_t         whence */

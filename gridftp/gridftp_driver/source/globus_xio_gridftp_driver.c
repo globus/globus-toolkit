@@ -1822,6 +1822,7 @@ globus_l_xio_gridftp_cntl(
     switch(cmd)
     {
         case GLOBUS_XIO_GRIDFTP_SEEK:
+        case GLOBUS_XIO_SEEK:
         {
             /* seek is always from the start of the file */
             globus_off_t seek_offset;   

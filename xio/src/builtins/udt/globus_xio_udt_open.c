@@ -1693,6 +1693,7 @@ globus_l_xio_udt_server_cntl(
         
       /* char **                        contact_string_out */
       case GLOBUS_XIO_UDT_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_xio_handle_cntl(
             server->xio_handle,
@@ -1701,25 +1702,10 @@ globus_l_xio_udt_server_cntl(
             out_string);
         break;
       case GLOBUS_XIO_UDT_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_xio_handle_cntl(
             server->xio_handle,
-            globus_l_xio_udt_server_udp_driver,
-            GLOBUS_XIO_UDP_GET_CONTACT,
-            out_string);
-        break;
-      case GLOBUS_XIO_UDT_GET_REMOTE_NUMERIC_CONTACT:
-        out_string = va_arg(ap, char **);
-        result = globus_xio_data_descriptor_cntl(
-            server->data_desc,
-            globus_l_xio_udt_server_udp_driver,
-            GLOBUS_XIO_UDP_GET_NUMERIC_CONTACT,
-            out_string);
-        break;
-      case GLOBUS_XIO_UDT_GET_REMOTE_CONTACT:
-        out_string = va_arg(ap, char **);
-        result = globus_xio_data_descriptor_cntl(
-            server->data_desc,
             globus_l_xio_udt_server_udp_driver,
             GLOBUS_XIO_UDP_GET_CONTACT,
             out_string);
@@ -1921,6 +1907,7 @@ globus_l_xio_udt_cntl(
             
       /* char **                        contact_string_out */
       case GLOBUS_XIO_UDT_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_xio_driver_handle_cntl(
             handle->driver_handle,
@@ -1934,6 +1921,7 @@ globus_l_xio_udt_cntl(
         break;
         
       case GLOBUS_XIO_UDT_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_xio_driver_handle_cntl(
             handle->driver_handle,
@@ -1947,7 +1935,9 @@ globus_l_xio_udt_cntl(
         break;
         
       case GLOBUS_XIO_UDT_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT:
       case GLOBUS_XIO_UDT_GET_REMOTE_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_CONTACT:
         out_string = va_arg(ap, char **);
         *out_string = globus_libc_strdup(handle->remote_cs);
         break;
@@ -2010,6 +2000,7 @@ globus_l_xio_udt_link_cntl(
 
       /* char **                        contact_string_out */
       case GLOBUS_XIO_UDT_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_xio_driver_handle_cntl(
             handle->driver_handle,
@@ -2018,6 +2009,7 @@ globus_l_xio_udt_link_cntl(
             out_string);
         break;
       case GLOBUS_XIO_UDT_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_xio_driver_handle_cntl(
             handle->driver_handle,
@@ -2026,7 +2018,9 @@ globus_l_xio_udt_link_cntl(
             out_string);
         break;
       case GLOBUS_XIO_UDT_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT:
       case GLOBUS_XIO_UDT_GET_REMOTE_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_CONTACT:
         out_string = va_arg(ap, char **);
         *out_string = globus_libc_strdup(handle->remote_cs);
         break;

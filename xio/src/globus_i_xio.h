@@ -832,6 +832,7 @@ globus_i_xio_driver_dd_cntl(
 globus_result_t
 globus_i_xio_driver_handle_cntl(
     globus_i_xio_context_t *            context,
+    int                                 start_ndx,
     globus_xio_driver_t                 driver,
     int                                 cmd,
     va_list                             ap);
