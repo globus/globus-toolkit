@@ -746,8 +746,6 @@ globus_gram_job_manager_state_machine(
 
             
         result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
-
-        
         
         if(result != GLOBUS_SUCCESS)
         {
@@ -777,6 +775,7 @@ globus_gram_job_manager_state_machine(
             
             if(result != GLOBUS_SUCCESS)
             {
+                free(filename);
                 request->failure_code = rc;
                 request->jobmanager_state =
                     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
@@ -784,6 +783,8 @@ globus_gram_job_manager_state_machine(
             }
             
             result = globus_callout_read_config(authz_handle, filename);
+
+            free(filename);
             
             if(result != GLOBUS_SUCCESS)
             {
@@ -800,7 +801,7 @@ globus_gram_job_manager_state_machine(
                                               request->response_context,
                                               request->uniq_id,
                                               request->rsl,
-                                              GLOBUS_GRAM_AUTHZ_ACTION_START);
+                                              "start");
             globus_callout_handle_destroy(authz_handle);
             
             if(result != GLOBUS_SUCCESS)

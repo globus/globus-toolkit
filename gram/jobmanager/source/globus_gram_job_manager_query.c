@@ -10,6 +10,10 @@
  * $Author$
  */
 #include "globus_gram_job_manager.h"
+#include "globus_callout.h"
+#include "globus_callout_constants.h"
+#include "globus_gsi_system_config.h"
+#include "globus_gsi_system_config_constants.h"
 #include <string.h>
 #endif
 
@@ -94,6 +98,10 @@ globus_gram_job_manager_query_callback(
     int					job_failure_code;
     globus_bool_t			reply		= GLOBUS_TRUE;
     globus_url_t			parsed_uri;
+    globus_callout_handle_t             authz_handle;
+    char *                              filename;
+    globus_object_t *                   error;
+    globus_result_t                     result;
 
     globus_mutex_lock(&request->mutex);
 
@@ -158,6 +166,78 @@ globus_gram_job_manager_query_callback(
 	*rest++ = '\0';
 
     /* add authz callout here */
+
+    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+            
+    result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
+        
+        
+    if(result != GLOBUS_SUCCESS)
+    {
+        error = globus_error_get(result);
+        
+        if(globus_error_match(
+               error,
+               GLOBUS_GSI_SYSCONFIG_MODULE,
+               GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME)
+           == GLOBUS_TRUE)
+        {
+            globus_object_free(error);
+        }
+        else
+        {
+            globus_object_free(error);
+            goto unpack_failed;
+        }
+    }
+    else
+    {
+        
+        result = globus_callout_handle_init(&authz_handle);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto unpack_failed;
+        }
+        
+        result = globus_callout_read_config(authz_handle, filename);
+
+        free(filename);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_callout_handle_destroy(authz_handle);
+            goto unpack_failed;
+        }
+        
+        result = globus_callout_call_type(authz_handle,
+                                          GLOBUS_GRAM_AUTHZ_CALLOUT_TYPE,
+                                          request->response_context,
+                                          request->response_context,
+                                          request->uniq_id,
+                                          request->rsl,
+                                          query);
+        globus_callout_handle_destroy(authz_handle);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_CALLOUT_MODULE,
+                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
+               == GLOBUS_TRUE)
+            {
+                globus_object_free(error);
+            }
+            else
+            {
+                globus_object_free(error);
+                goto unpack_failed;
+            }
+        }
+    }
     
     if (strcmp(query,"cancel")==0)
     {
