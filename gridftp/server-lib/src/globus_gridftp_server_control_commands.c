@@ -56,6 +56,93 @@ globus_l_gsc_cmd_noop(
 }
 
 static void
+globus_l_gsc_cmd_dcau(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    char *                                  tmp_ptr;
+    char *                                  msg;
+
+    tmp_ptr = cmd_a[1];
+    if(tmp_ptr[1] != '\0')
+    {
+        globus_gsc_959_finished_command(op, "504 Bad DCAU mode.\r\n");
+        return;
+    }
+
+    *tmp_ptr = toupper(*tmp_ptr);
+    switch(*tmp_ptr)
+    {
+        case 'S':
+        case 'N':
+        case 'A':
+            msg = globus_common_create_string("200 DCAU %c.\r\n", *tmp_ptr);
+            globus_gsc_959_finished_command(op, msg);
+            op->server_handle->dcau = *tmp_ptr;
+            globus_free(msg);
+            break;
+
+        default:
+            globus_gsc_959_finished_command(op, "504 Bad DCAU mode.\r\n");
+            break;
+    }
+}
+
+static void
+globus_l_gsc_cmd_prot(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    char *                                  tmp_ptr;
+    char *                                  msg;
+
+    tmp_ptr = cmd_a[1];
+    if(tmp_ptr[1] != '\0')
+    {
+        msg = globus_common_create_string(
+            "536 %s protection level not supported.\r\n", cmd_a[1]);
+        globus_gsc_959_finished_command(op, msg);
+        globus_free(msg);
+        return;
+    }
+
+    *tmp_ptr = toupper(*tmp_ptr);
+    switch(*tmp_ptr)
+    {
+        case 'P':
+            /* XXX: verify we can do protection */
+        case 'S':
+        case 'C':
+            if(op->server_handle->del_cred == NULL)
+            {
+                msg = globus_common_create_string(
+                    "536 %s protection level not supported.\r\n", cmd_a[1]);
+            }
+            else
+            {
+                msg = globus_common_create_string(
+                    "200 Protection level set to %c.\r\n", *tmp_ptr);
+                op->server_handle->prot = *tmp_ptr;
+            }
+            break;
+
+        default:
+            msg = globus_common_create_string(
+                "536 %s protection level not supported.\r\n", cmd_a[1]);
+            break;
+    }
+
+    globus_gsc_959_finished_command(op, msg);
+    globus_free(msg);
+}
+
+static void
 globus_l_gsc_cmd_mdtm_cb(
     globus_i_gsc_op_t *                     op,
     globus_result_t                         result,
@@ -1944,7 +2031,7 @@ globus_l_gsc_cmd_stor_retr(
         {
             if(*cmd_a[1] == 'P')
             {
-                sc = sscanf(cmd_a[2], "%*d-%*d");
+                sc = sscanf(cmd_a[2], "%*d %*d");
                 if(sc != 2)
                 {
                     globus_free(wrapper);
@@ -2085,6 +2172,16 @@ globus_i_gsc_add_commands(
         1,
         1,
         "214 Syntax: CDUP (up one directory)\r\n",
+        NULL);
+
+    globus_gsc_959_command_add(
+        server_handle,
+        "DCAU", 
+        globus_l_gsc_cmd_dcau,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: DCAU <S,N,A>\r\n",
         NULL);
 
     globus_gsc_959_command_add(
@@ -2256,6 +2353,16 @@ globus_i_gsc_add_commands(
 
     globus_gsc_959_command_add(
         server_handle,
+        "PROT", 
+        globus_l_gsc_cmd_prot,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: PROT <C|P|S>\r\n",
+        NULL);
+
+    globus_gsc_959_command_add(
+        server_handle,
         "EPRT", 
         globus_l_gsc_cmd_port,
         GLOBUS_GSC_COMMAND_POST_AUTH,
@@ -2407,4 +2514,12 @@ globus_i_gsc_add_commands(
 
     /* add features */
     globus_gridftp_server_control_add_feature(server_handle, "MDTM");
+    globus_gridftp_server_control_add_feature(server_handle, "REST STREAM");
+    globus_gridftp_server_control_add_feature(server_handle, "ESTO");
+    globus_gridftp_server_control_add_feature(server_handle, "ERET");
+    globus_gridftp_server_control_add_feature(server_handle, "MDTM");    
+    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;");    
+    globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
+    globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
+    globus_gridftp_server_control_add_feature(server_handle, "DCAU");  
 }
