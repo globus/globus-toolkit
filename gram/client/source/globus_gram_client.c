@@ -386,11 +386,15 @@ gram_job_request(char * gatekeeper_url,
 
     /* Connecting to the gatekeeper.
      */
+
+    printf("Connecting to %s:%d:%s\n",
+	   gatekeeper_host, gatekeeper_port, gatekeeper_princ);
+
     rc = nexus_fd_connect(gatekeeper_host, gatekeeper_port, &gatekeeper_fd);
     if (rc != 0)
     {
         fprintf(stderr, " nexus_fd_connect failed.  rc = %d\n", rc);
-        return (0);
+        return (GRAM_ERROR_CONNECTION_FAILED);
     }
 
     /* Do gss authentication here */
