@@ -107,14 +107,14 @@ int
 globus_l_gass_copy_deactivate(void)
 {
     int rc;
-    /*
-      rc = globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE); 
+    
+    rc = globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE); 
 
-      if (rc != GLOBUS_SUCCESS)
-      {
-      return(rc);
-      }
-      */
+    if (rc != GLOBUS_SUCCESS)
+    {
+	return(rc);
+    }
+      
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -956,7 +956,7 @@ globus_l_gass_copy_target_destroy(
 	/* once parallel reads/writes are possible, will have to potentially free the attr,
 	   if parallelism is turned off by the library */
 	  
-	globus_libc_free(&(target->url));
+	globus_libc_free((target->url));
 	   
 	globus_mutex_destroy(&(target->data.ftp.monitor.mutex));
 	globus_cond_destroy(&(target->data.ftp.monitor.cond));
@@ -964,14 +964,14 @@ globus_l_gass_copy_target_destroy(
 	break;
 
     case GLOBUS_GASS_COPY_URL_MODE_GASS:
-	globus_libc_free(&(target->url));
+	globus_libc_free((target->url));
 	break;
 	   
     case GLOBUS_GASS_COPY_URL_MODE_IO:
 	if(target->data.io.free_handle == GLOBUS_TRUE)
 	{
-	    globus_libc_free(&(target->data.io.handle));
-	    globus_libc_free(&(target->url));
+	    globus_libc_free((target->data.io.handle));
+	    globus_libc_free((target->url));
 
 	}
 	break;
@@ -2997,7 +2997,7 @@ globus_gass_copy_url_to_url(
     monitor.done = GLOBUS_FALSE;    
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
-           
+    
     result = globus_gass_copy_register_url_to_url(
 	handle,
 	source_url,
@@ -4139,7 +4139,7 @@ globus_l_gass_copy_target_cancel(
 
     switch (target->mode)
     {
-        case GLOBUS_GASS_COPY_URL_MODE_FTP:
+        case GLOBUS_GASS_COPY_URL_MODE_FTP:/*
              result = globus_ftp_client_abort(target->data.ftp.handle);
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
              if (result != GLOBUS_SUCCESS)
@@ -4149,6 +4149,7 @@ globus_l_gass_copy_target_cancel(
                  result = GLOBUS_SUCCESS;
              }
 #endif
+*/
              break;
         case GLOBUS_GASS_COPY_URL_MODE_GASS:
              rc = globus_gass_transfer_fail(
