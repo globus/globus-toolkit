@@ -138,8 +138,8 @@ EXTERN_C_BEGIN
  *  globus_xio_data_descriptor_init(&desc);
  *  globus_xio_data_descriptor_cntl(desc, 
  *      tcp_driver,
- *      GLOBUS_XIO_TCP_SEND_OOB,
- *      GLOBUS_TRUE);
+ *      GLOBUS_XIO_TCP_SET_SEND_FLAGS,
+ *      GLOBUS_XIO_TCP_SEND_OOB);
  *  \endcode
  */
 
