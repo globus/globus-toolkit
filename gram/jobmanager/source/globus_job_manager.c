@@ -23,38 +23,37 @@ CVS Information:
 #include <memory.h>
 #include <nexus.h>
 #include "gram.h"
+#include "grami_rsl.h"
 #include "grami_jm.h"
 #include "gram_client.h"
 
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
-typedef struct _monitor_t
+typedef struct _gram_job_manager_monitor_t
 {
-    nexus_mutex_t mutex;
-    nexus_cond_t cond;
-    nexus_bool_t done;
-} monitor_t;
+    nexus_mutex_t          mutex;
+    nexus_cond_t           cond;
+    volatile nexus_bool_t  done;
+} gram_job_manager_monitor_t;
 
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
 static void 
-graml_cancel_handler(nexus_endpoint_t *endpoint,
-                     nexus_buffer_t *buffer,
+graml_cancel_handler(nexus_endpoint_t * endpoint,
+                     nexus_buffer_t * buffer,
                      nexus_bool_t is_non_threaded_handler);
 
 static void 
-graml_start_time_handler(nexus_endpoint_t *endpoint,
-                         nexus_buffer_t *buffer,
+graml_start_time_handler(nexus_endpoint_t * endpoint,
+                         nexus_buffer_t * buffer,
                          nexus_bool_t is_non_threaded_handler);
 
-static void allow_attachments(unsigned short *attach_port,
-                              char *attach_url);
-
-static int attach_requested(void *arg,
-                            char *url,
-                            nexus_startpoint_t *sp);
+static int 
+attach_requested(void * arg,
+                 char * url,
+                 nexus_startpoint_t * sp);
 static void 
 tree_free();
 
@@ -67,13 +66,13 @@ static nexus_handler_t handlers[] =
     {NEXUS_HANDLER_TYPE_NON_THREADED, graml_start_time_handler},
 };
 
-static monitor_t                Monitor;
-static nexus_endpointattr_t     EpAttr;
-static nexus_endpoint_t         GlobalEndpoint;
-static char                     callback_contact[GRAM_MAX_MSG_SIZE];
-static char                     job_contact[GRAM_MAX_MSG_SIZE];
+static gram_job_manager_monitor_t  job_manager_monitor;
+static nexus_endpointattr_t        EpAttr;
+static nexus_endpoint_t            GlobalEndpoint;
+static char                        callback_contact[GRAM_MAX_MSG_SIZE];
+static char                        job_contact[GRAM_MAX_MSG_SIZE];
 
-static FILE                     *log_fp;
+static FILE *                      log_fp;
 
 /*
  * NexusExit() (required of all Nexus programs)
@@ -94,7 +93,7 @@ int NexusAcquiredAsNode(nexus_startpoint_t *startpoint)
 /*
  * NexusBoot() (required of all Nexus programs)
  */
-int NexusBoot(nexus_startpoint_t *startpoint)
+int NexusBoot(nexus_startpoint_t * startpoint)
 {
     nexus_endpointattr_init(&EpAttr);
     nexus_endpointattr_set_handler_table(&EpAttr,
@@ -118,6 +117,7 @@ int
 main(int argc,
      char **argv)
 {
+    int                    i;
     int                    size;
     int                    rc;
     int                    count;
@@ -127,7 +127,9 @@ main(int argc,
     int                    job_state_mask;
     int                    message_handled;
     char                   description[GRAM_MAX_MSG_SIZE];
+    char                   test_dat_file[GRAM_MAX_MSG_SIZE];
     char *                 tmp_ptr;
+    char *                 my_host;
     unsigned short         my_port;
     FILE *                 args_fp;
     nexus_byte_t           type;
@@ -166,22 +168,46 @@ main(int argc,
 
     nexus_start_nonblocking();
 
+    *test_dat_file = '\0';
+
+    /*
+     * Parse the command line arguments
+     */
+    for (i = 1; i < argc; i++)
+    {
+        if ((strcmp(argv[i], "-t") == 0)
+                 && (i + 1 < argc))
+        {
+            strcpy(test_dat_file, argv[i+1]);
+            i++;
+        }
+        else
+        {
+            fprintf(stderr, "Usage: %s [-t test_dat_file]\n", argv[0]);
+            exit(1);
+        }
+    }
+
+    /*
+     *  if a test_dat_file has been defined, read data from the file 
+     *  instead of from stdin.
+     */
+    if (strlen(test_dat_file) > 0)
+    {
+        if ((args_fp = fopen(test_dat_file, "r")) == NULL)
+        {
+            printf("Cannot open test file.\n");
+            exit(1);
+        }
+    }
+    else
+    {
+         args_fp = stdin;
+    }
+
     /*
      * Read the format incomming message.
      */
-#ifdef READFROMFILE
-    /*
-     * Open the test file
-     */
-    if ((args_fp = fopen("gram_job.dat", "r")) == NULL)
-    {
-        printf("Cannot open test file.\n");
-        exit(1);
-    }
-#else
-    args_fp = stdin;
-#endif
-
     if (fread(buffer, 1, 1, args_fp) <= 0)
     {
         fprintf(stderr, "fread() failed.\n");
@@ -190,8 +216,9 @@ main(int argc,
 
     /*
      * Read the size incomming message.
-     */
     if (fread(buffer, 1, 4, args_fp) <= 0)
+     */
+    if (fread(buffer, 1, nexus_dc_sizeof_remote_int(format,1), args_fp) <= 0)
     {
         fprintf(log_fp, "fread() failed.\n");
         fprintf(stderr, "fread() failed.\n");
@@ -202,7 +229,8 @@ main(int argc,
     /*
      * Read the remainder of the incomming message.
      */
-    if (fread(buffer, 1, count - 5, args_fp) <= 0)
+    if (fread(buffer, 1, count - nexus_dc_sizeof_remote_int(format,1) + 1,
+        args_fp) <= 0)
     {
         fprintf(stderr, "fread() failed.\n");
     }
@@ -222,14 +250,33 @@ main(int argc,
     fprintf(log_fp,"callback contact = %s\n", callback_contact);
 
     /* Initialize termination monitor */
-    nexus_mutex_init(&Monitor.mutex, (nexus_mutexattr_t *) NULL);
-    nexus_cond_init(&Monitor.cond, (nexus_condattr_t *) NULL);
-    Monitor.done = NEXUS_FALSE;
+    nexus_mutex_init(&job_manager_monitor.mutex, (nexus_mutexattr_t *) NULL);
+    nexus_cond_init(&job_manager_monitor.cond, (nexus_condattr_t *) NULL);
+    job_manager_monitor.done = NEXUS_FALSE;
 
-    allow_attachments(&my_port, job_contact);
-
+    /* allow other Nexus programs to attach to us */
+    my_port = 0;
+    rc = nexus_allow_attach(&my_port,      /* port            */
+                            &my_host,     /* host            */
+                            attach_requested, /* approval_func() */
+                            NULL);
+    if (rc != 0)
+    {
+       return(GRAM_ERROR_INVALID_REQUEST);
+    } 
+    else
+    {
+        sprintf(job_contact, "x-nexus://%s:%hu/%lu/%lu/", 
+                              my_host,
+                              my_port,
+                              (unsigned long) getpid(),
+                              (unsigned long) time(0));
+    }
+/*
     tmp_ptr = description;
     description_tree = gram_specification_parse(tmp_ptr);
+*/
+    description_tree = gram_specification_parse(description);
 
     /*
      * Start the job.  If successful reply with job_contact else
@@ -263,21 +310,23 @@ main(int argc,
                    NEXUS_TRUE,
                    NEXUS_FALSE);
 /*
-    nexus_mutex_lock(&Monitor.mutex);
+    nexus_mutex_lock(&job_manager_monitor.mutex);
 */
     if (job_status == 0)
     {
-        while (!Monitor.done)
+        while (!job_manager_monitor.done)
         {
             /*
-            nexus_cond_wait(&Monitor.cond, &Monitor.mutex);
+            nexus_cond_wait(&job_manager_monitor.cond, 
+                            &job_manager_monitor.mutex);
             */
 	    nexus_usleep(1000000);
-    	    nexus_fd_handle_events(NEXUS_FD_POLL_NONBLOCKING_ALL, &message_handled);
+    	    nexus_fd_handle_events(NEXUS_FD_POLL_NONBLOCKING_ALL, 
+                                   &message_handled);
 	    grami_jm_poll(); 
         } /* endwhile */
 /*
-        nexus_mutex_unlock(&Monitor.mutex);
+        nexus_mutex_unlock(&job_manager_monitor.mutex);
 */
     }
 
@@ -285,8 +334,8 @@ main(int argc,
 
     nexus_disallow_attach(my_port);
 
-    nexus_mutex_destroy(&Monitor.mutex);
-    nexus_cond_destroy(&Monitor.cond);
+    nexus_mutex_destroy(&job_manager_monitor.mutex);
+    nexus_cond_destroy(&job_manager_monitor.cond);
 
     fprintf(log_fp,"exiting gram_job_request \n");
 
@@ -296,6 +345,24 @@ main(int argc,
 
 } /* main() */
 
+/******************************************************************************
+Function:       attach_requested()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int 
+attach_requested(void * arg,
+                 char * url,
+                 nexus_startpoint_t * sp)
+{
+    fprintf(log_fp, "in attach_requested callback\n");
+
+    nexus_startpoint_bind(sp, &GlobalEndpoint);
+
+    return(0);
+} /* attach_requested() */
+
 
 /******************************************************************************
 Function:       grami_jm_callback()
@@ -304,8 +371,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 void 
-grami_jm_callback(int state,
-                  int errorcode)
+grami_jm_callback(int state, int errorcode)
 {
     int                size;
     int                count;
@@ -346,11 +412,11 @@ Parameters:
 Returns:
 ******************************************************************************/
 void 
-grami_jm_param_get(gram_specification_t *sp,
-                   char *param,
-                   char *value)
+grami_jm_param_get(gram_specification_t * sp,
+                   char * param,
+                   char * value)
 {
-    gram_specification_t *child;
+    gram_specification_t * child;
 
     if (sp)
     {
@@ -381,65 +447,11 @@ Returns:
 ******************************************************************************/
 grami_jm_terminate()
 {
-    nexus_mutex_lock(&(Monitor.mutex));
-    Monitor.done = NEXUS_TRUE;
-    nexus_cond_signal(&(Monitor.cond));
-    nexus_mutex_unlock(&(Monitor.mutex));
+    nexus_mutex_lock(&(job_manager_monitor.mutex));
+    job_manager_monitor.done = NEXUS_TRUE;
+    nexus_cond_signal(&(job_manager_monitor.cond));
+    nexus_mutex_unlock(&(job_manager_monitor.mutex));
 } /* grami_jm_terminate() */
-
-
-/******************************************************************************
-Function:       allow_attachments()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static void 
-allow_attachments(unsigned short *attach_port,
-                  char *attach_url)
-{
-    int rc;
-    char *attach_host;
-
-    fprintf(log_fp, "in allow_attachments\n");
-
-    /* allow other Nexus programs to attach to us */
-    *attach_port = 0;
-    rc = nexus_allow_attach(attach_port,      /* port            */
-                            &attach_host,     /* host            */
-                            attach_requested, /* approval_func() */
-                            NULL);
-    if (rc != 0)
-    {
-       /* must always nexus_stdio_lock/nexus_stdio_unlock when doing any I/O */
-       nexus_stdio_lock();
-       fprintf(stderr, "ERROR: nexus_allow_attach() failed: rc=%d\n", rc);
-       nexus_stdio_unlock();
-       nexus_abort();
-    } /* endif */
-
-    sprintf(attach_url, "x-nexus://%s:%hu/%lu/%lu/", attach_host, *attach_port, 
-            (unsigned long) getpid(), (unsigned long) time(0));
-
-} /* end allow_attachments() */
-
-/******************************************************************************
-Function:       attach_requested()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static int 
-attach_requested(void *arg,
-                 char *url,
-                 nexus_startpoint_t *sp)
-{
-    fprintf(log_fp, "in attach_requested callback\n");
-
-    nexus_startpoint_bind(sp, &GlobalEndpoint);
-
-    return(0);
-} /* attach_requested() */
 
 /******************************************************************************
 Function:       graml_cancel_handler()
@@ -448,8 +460,8 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-graml_cancel_handler(nexus_endpoint_t *endpoint,
-                     nexus_buffer_t *buffer,
+graml_cancel_handler(nexus_endpoint_t * endpoint,
+                     nexus_buffer_t * buffer,
                      nexus_bool_t is_non_threaded_handler)
 {
     fprintf(log_fp, "in graml_cancel_handler\n");
@@ -468,16 +480,17 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-graml_start_time_handler(nexus_endpoint_t *endpoint,
-                         nexus_buffer_t *buffer,
+graml_start_time_handler(nexus_endpoint_t * endpoint,
+                         nexus_buffer_t * buffer,
                          nexus_bool_t is_non_threaded_handler)
 {
+    int                      size;
+    int                      message_handled;
     float                    confidence;
     nexus_startpoint_t       reply_sp;
     nexus_buffer_t           reply_buffer;
-    gram_time_t               estimate, interval_size;
-    int                      size;
-    int message_handled;
+    gram_time_t              estimate;
+    gram_time_t              interval_size;
 
     fprintf(log_fp, "in graml_start_time_handler\n");
 
@@ -518,9 +531,9 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-tree_free(gram_specification_t *sp)
+tree_free(gram_specification_t * sp)
 {
-    gram_specification_t *child;
+    gram_specification_t * child;
 
     if (sp)
     {
