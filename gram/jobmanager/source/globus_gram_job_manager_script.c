@@ -482,6 +482,15 @@ globus_gram_job_manager_script_poll(
     char *				stderr_filename = "/dev/null";
     char *				script_arg_file;
 
+    /* Keep the state file's timestamp up to date so that
+     * anything scrubbing the state files of old and dead
+     * processes leaves it alone
+     */ 
+    if(request->job_state_file)
+    {
+        utime(request->job_state_file, NULL);
+    }
+
     script_arg_file = tempnam(NULL, "gram_poll");
 
     if (!request)
