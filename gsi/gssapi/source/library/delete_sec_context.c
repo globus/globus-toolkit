@@ -143,12 +143,6 @@ GSS_CALLCONV gss_delete_sec_context(
         goto exit;
     }
 
-    if ((*context_handle)->gss_ssl)
-    {
-        SSL_clear((*context_handle)->gss_ssl);
-        (*context_handle)->gss_ssl = NULL;
-    }
-        
     if ((*context_handle)->gss_sslbio)
     {
         BIO_free_all((*context_handle)->gss_sslbio);

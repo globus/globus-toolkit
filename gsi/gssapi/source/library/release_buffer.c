@@ -31,6 +31,7 @@ GSS_CALLCONV gss_release_buffer(
     OM_uint32 *                         minor_status,
     gss_buffer_t                        buffer)
 {
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     static char *                       _function_name_ =
         "gss_release_buffer";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
@@ -51,7 +52,7 @@ GSS_CALLCONV gss_release_buffer(
  exit:
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return GSS_S_COMPLETE;
+    return major_status;
 
 } 
 /* gss_release_buffer */

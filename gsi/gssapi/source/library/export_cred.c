@@ -169,6 +169,10 @@ GSS_CALLCONV gss_export_cred(
             goto exit;
         }
 
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            3, (globus_i_gsi_gssapi_debug_fstream,
+                "Writing exported cred to: %s", proxy_filename));
+
         local_result = globus_gsi_cred_write_proxy(cred_desc->cred_handle,
                                                    proxy_filename);
         if(local_result != GLOBUS_SUCCESS)
@@ -180,8 +184,11 @@ GSS_CALLCONV gss_export_cred(
             goto exit;
         }                                       
 
-        export_buffer->value = proxy_filename;
-        export_buffer->length = strlen(proxy_filename);
+        export_buffer->value = globus_gsi_cert_utils_create_string(
+            "X509_USER_PROXY=%s",
+            proxy_filename);
+        export_buffer->length = strlen((char *) export_buffer->value);
+        free(proxy_filename);
     }
     else
     {

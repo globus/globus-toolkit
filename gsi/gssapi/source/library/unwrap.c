@@ -282,7 +282,23 @@ GSS_CALLCONV gss_unwrap(
                 goto exit;
             }
         }
-                
+
+        if(GLOBUS_I_GSI_GSSAPI_DEBUG(3))
+        {
+            BIO *                       debug_bio;
+            fprintf(globus_i_gsi_gssapi_debug_fstream,
+                    "output message: length = %d\n"
+                    "                value  = \n",
+                    output_message_buffer->length);
+        
+            debug_bio = BIO_new_fp(globus_i_gsi_gssapi_debug_fstream, 
+                                   BIO_NOCLOSE);
+            BIO_dump(debug_bio, 
+                     output_message_buffer->value,
+                     output_message_buffer->length);
+            BIO_free(debug_bio);
+        }
+
         if (conf_state)
         {
             if (context->gss_ssl->session->cipher->algorithms & SSL_eNULL)

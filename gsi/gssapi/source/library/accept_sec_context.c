@@ -203,7 +203,7 @@ GSS_CALLCONV gss_accept_sec_context(
                 major_status = globus_i_gsi_gss_copy_name_to_name(
                     &local_minor_status,
                     (gss_name_desc **)src_name_P, 
-                    context->cred_handle->globusid);
+                    context->peer_cred_handle->globusid);
 
                 if(GSS_ERROR(major_status))
                 {
@@ -329,19 +329,6 @@ GSS_CALLCONV gss_accept_sec_context(
                 break;
             }
 
-            major_status = globus_i_gsi_gss_create_cred(
-                &local_minor_status,
-                GSS_C_BOTH,
-                delegated_cred_handle_P,
-                delegated_cred);
-            if(GSS_ERROR(major_status))
-            {
-                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status, local_minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
-                break;
-            }
-            
             local_result = globus_gsi_callback_get_cert_chain(
                 context->callback_data,
                 &cert_chain);
@@ -356,7 +343,7 @@ GSS_CALLCONV gss_accept_sec_context(
             }
             
             local_result = globus_gsi_cred_set_cert_chain(
-                ((gss_cred_id_desc *)(*delegated_cred_handle_P))->cred_handle,
+                delegated_cred,
                 cert_chain);
             if(local_result != GLOBUS_SUCCESS)
             {
@@ -367,6 +354,19 @@ GSS_CALLCONV gss_accept_sec_context(
                 major_status = GSS_S_FAILURE;
                 break;
             }
+
+            major_status = globus_i_gsi_gss_create_cred(
+                &local_minor_status,
+                GSS_C_BOTH,
+                delegated_cred_handle_P,
+                delegated_cred);
+            if(GSS_ERROR(major_status))
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                break;
+            }            
 
             context->gss_state = GSS_CON_ST_DONE;
 

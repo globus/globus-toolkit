@@ -188,7 +188,7 @@ gss_l_compare_group(
 
  exit:
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
     return result;
 }
 /* @} */

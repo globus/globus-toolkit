@@ -35,6 +35,7 @@ GSS_CALLCONV gss_release_name(
     OM_uint32 *                         minor_status,
     gss_name_t *                        name_P)
 {
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_name_desc** name = (gss_name_desc**) name_P ;
 
     static char *                       _function_name_ =
@@ -69,7 +70,7 @@ GSS_CALLCONV gss_release_name(
     
  exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return GSS_S_COMPLETE;
+    return major_status;
     
 } 
 /* gss_release_name */

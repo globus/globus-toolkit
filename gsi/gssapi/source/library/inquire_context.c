@@ -90,16 +90,19 @@ GSS_CALLCONV gss_inquire_context(
     if (targ_name_P)
     {
         
-        major_status = globus_i_gsi_gss_copy_name_to_name(
+        if(context->cred_handle && context->cred_handle->globusid)
+        {
+            major_status = globus_i_gsi_gss_copy_name_to_name(
                 &local_minor_status,
                 (gss_name_desc **)targ_name_P,
                 context->cred_handle->globusid);
-        if (GSS_ERROR(major_status))
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
-            goto exit;
+            if (GSS_ERROR(major_status))
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
+                goto exit;
+            }
         }
         else
         {

@@ -47,8 +47,8 @@ Sources_OPENSSL_INTERNALS = \
 	ssl_locl.h
 
 flavorinclude_HEADERS = \
-	gssapi.h \
-	globus_gsi_gss_constants.h
+	gssapi.h
+
 
 #AM_CFLAGS = -DDEBUG
 

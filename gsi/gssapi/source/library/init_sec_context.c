@@ -237,11 +237,22 @@ GSS_CALLCONV gss_init_sec_context(
             }
             else if(rc == GSS_NAMES_NOT_EQUAL)
             {
+                char *                  expected_name;
+                char *                  actual_name;
+                
+                expected_name = X509_NAME_oneline(
+                    ((gss_name_desc*)  target_name)->x509n, NULL, 0);
+                actual_name = X509_NAME_oneline(
+                    ((gss_name_desc*) context->peer_cred_handle->globusid)->x509n, NULL, 0);
+
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
-                    ("The target name in the context, and the target "
-                     "name passed to the function do not match"));
+                    ("The target name (%s) in the context, and the target "
+                     "name (%s) passed to the function do not match",
+                     actual_name,expected_name));
+                free(actual_name);
+                free(expected_name);
                 major_status = GSS_S_UNAUTHORIZED;
                 context->gss_state = GSS_CON_ST_DONE;
                 break;

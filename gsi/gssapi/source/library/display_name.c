@@ -66,7 +66,7 @@ gss_display_name(
     if(!g_OID_equal(input_name->name_oid, GSS_C_NT_ANONYMOUS))
     {
         output_name->value = X509_NAME_oneline(input_name->x509n, NULL, 0);
-        output_name->length = strlen(output_name->value);
+        output_name->length = strlen((char *) output_name->value);
     }
     else
     {

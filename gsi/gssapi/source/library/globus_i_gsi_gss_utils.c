@@ -1762,6 +1762,12 @@ globus_i_gsi_gss_SSL_write_bio(
     L2N(ssl_handle->s3->tmp.key_block_length, intbuffer);
 
     BIO_write(bp, (char *) intbuffer, 4);
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        3, (globus_i_gsi_gssapi_debug_fstream,
+            "exporting security context: BIO pending=%d\n",
+            BIO_pending(bp)));
+
     BIO_write(bp, (char *) ssl_handle->s3->tmp.key_block,
               ssl_handle->s3->tmp.key_block_length);
     BIO_write(bp, (char *) ssl_handle->s3->write_sequence, 8);
@@ -1786,6 +1792,8 @@ globus_i_gsi_gss_SSL_read_bio(
     SSL *                               ssl_handle;
     unsigned char                       int_buffer[4];
     int                                 length;
+    int                                 len = 0;
+    int                                 rc;
     int                                 ssl_result;
     static char *                       _function_name_ =
         "globus_i_gsi_gss_SSL_read_bio";
@@ -1868,9 +1876,30 @@ globus_i_gsi_gss_SSL_read_bio(
     }
                 
     ssl_handle->s3->tmp.key_block_length = length;
-    BIO_read(bp,  
-             (char *) ssl_handle->s3->tmp.key_block,
-             ssl_handle->s3->tmp.key_block_length);
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        3, (globus_i_gsi_gssapi_debug_fstream,
+            "reading in context: BIO pending = %d\n",
+            BIO_pending(bp)));
+
+    while(len < length)
+    {
+        rc = BIO_read(bp,  
+                      (char *) ssl_handle->s3->tmp.key_block + len,
+                      ssl_handle->s3->tmp.key_block_length - len);
+        if(rc > 0)
+        {
+            len += rc;
+        }
+        else
+        {
+            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_READ_BIO,
+                ("Couldn't read expected bytes of: %d from BIO",
+                 length));;
+        }
+    }
 
     /* DEBUG BLOCK */
     {
@@ -2240,7 +2269,7 @@ globus_i_gsi_gssapi_init_ssl_context(
         }
 
         if(!SSL_CTX_use_certificate(cred_handle->ssl_context, 
-                                    X509_dup(client_cert)))
+                                    client_cert))
         {
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
@@ -2457,7 +2486,7 @@ int globus_i_gsi_gss_verify_extensions_callback(
 
  exit:
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
     return return_val;
 }
 /* @} */

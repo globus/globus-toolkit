@@ -176,6 +176,21 @@ GSS_CALLCONV gss_wrap(
     
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
 
+    if(GLOBUS_I_GSI_GSSAPI_DEBUG(3))
+    {
+        BIO *                           debug_bio;
+        fprintf(globus_i_gsi_gssapi_debug_fstream,
+                "input message: length = %d\n"
+                "               value = \n",
+                input_message_buffer->length);
+
+        debug_bio = BIO_new_fp(globus_i_gsi_gssapi_debug_fstream,
+                               BIO_NOCLOSE);
+        BIO_dump(debug_bio,
+                 input_message_buffer->value,
+                 input_message_buffer->length);
+    }
+
     output_message_buffer->value = NULL;
     output_message_buffer->length = 0;
 

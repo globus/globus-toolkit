@@ -36,6 +36,7 @@ GSS_CALLCONV gss_release_cred(
     OM_uint32 *                         minor_status,
     gss_cred_id_t *                     cred_handle_P)
 {
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_cred_id_desc**                  cred_handle =
         (gss_cred_id_desc**) cred_handle_P;
     OM_uint32                           local_minor_status = GSS_S_COMPLETE;
@@ -71,7 +72,7 @@ GSS_CALLCONV gss_release_cred(
 
  exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return GSS_S_COMPLETE;
+    return major_status;
 } 
 /* gss_release_cred */
 /* @} */

@@ -305,6 +305,7 @@ GSS_CALLCONV gss_release_oid_set(
     OM_uint32 *                         minor_status,
     gss_OID_set *                       mech_set)
 {
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_OID_set                         set;
     static char *                       _function_name_ =
         "gss_release_oid_set";
@@ -326,7 +327,7 @@ GSS_CALLCONV gss_release_oid_set(
     }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return GSS_S_COMPLETE;
+    return major_status;
 }
 /* @} */
 

@@ -94,7 +94,7 @@ globus_i_gsi_gssapi_openssl_error_result(
 
     result = globus_error_put(error_object);
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
     return result;
 }
 
@@ -130,7 +130,7 @@ globus_i_gsi_gssapi_error_result(
 
     result = globus_error_put(error_object);
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
     return result;
 }
     
@@ -167,7 +167,7 @@ globus_i_gsi_gssapi_error_chain_result(
 
     result = globus_error_put(error_object);
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
     return result;
 }
 

@@ -83,7 +83,7 @@ globus_l_gsi_gssapi_activate(void)
         tmp_string = globus_module_getenv("GLOBUS_GSSAPI_DEBUG_FILE");
         if(tmp_string != GLOBUS_NULL)
         {
-            globus_i_gsi_gssapi_debug_fstream = fopen(tmp_string, "w");
+            globus_i_gsi_gssapi_debug_fstream = fopen(tmp_string, "a");
             if(!globus_i_gsi_gssapi_debug_fstream)
             {
                 result = (int) GLOBUS_FAILURE;
@@ -93,6 +93,11 @@ globus_l_gsi_gssapi_activate(void)
         else
         {
             globus_i_gsi_gssapi_debug_fstream = stderr;
+            if(!globus_i_gsi_gssapi_debug_fstream)
+            {
+                result = (int) GLOBUS_FAILURE;
+                goto exit;
+            }
         }
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
@@ -100,7 +105,7 @@ globus_l_gsi_gssapi_activate(void)
         globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
         globus_module_activate(GLOBUS_GSI_CALLBACK_MODULE);
 
-        GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+        GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
 
         active = 1;
     }
@@ -127,7 +132,7 @@ globus_l_gsi_gssapi_deactivate(void)
     globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
     active = 0;
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
 
     return GLOBUS_SUCCESS;
 }
