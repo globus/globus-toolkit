@@ -45,7 +45,7 @@ my %cvs_archives = (
      'gt2' => [ "/home/globdev/CVS/globus-packages", "gp", $cvs_prefix . "gt2-cvs", "HEAD" ],
      'gt3' => [ "/home/globdev/CVS/globus-packages", "gs", $cvs_prefix . "ogsa-cvs", "HEAD" ],
      'gt4' => [ "/home/globdev/CVS/globus-packages", "ws", $cvs_prefix . "wsrf-cvs", "HEAD" ],
-     'cbindings' => [ "/home/globdev/CVS/globus-packages", "chosting", $cvs_prefix . "cbindings", "HEAD" ],
+     'cbindings' => [ "/home/globdev/CVS/globus-packages", "wsc", $cvs_prefix . "cbindings", "HEAD" ],
      'autotools' => [ "/home/globdev/CVS/globus-packages", "autotools", $cvs_prefix . "autotools", "HEAD" ]
       );
 
