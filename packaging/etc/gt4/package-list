@@ -43,8 +43,10 @@ globus_scheduler_provider_setup_fork	ws-gram/discovery/providers/setup/fork gpt
 globus_scheduler_provider_setup_lsf	ws-gram/discovery/providers/setup/lsf gpt
 globus_scheduler_provider_setup_condor	ws-gram/discovery/providers/setup/condor gpt
 globus_wsrf_mds_index                       ws-mds/index/source
+globus_wsrf_mds_index_schema                ws-mds/index/schema
 globus_wsrf_mds_index_test                  ws-mds/index/test
 globus_wsrf_mds_aggregator                  ws-mds/aggregator/source
+globus_wsrf_mds_aggregator_schema           ws-mds/aggregator/schema
 globus_wsrf_mds_aggregator_test             ws-mds/aggregator/test
 globus_wsrf_mds_trigger                     ws-mds/trigger/source
 globus_wsrf_mds_trigger_test                ws-mds/trigger/test
