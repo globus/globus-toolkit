@@ -25,7 +25,7 @@ EXTRA_DIST = $(PRE_FILES) \
 
 globus_automake_pre: $(PRE_FILES)
 	file="globus_automake_pre"; \
-	list="$(PRE_FILES)"
+	list="$(PRE_FILES)"; \
 	if test -f $$file; then \
 		rm $$file; \
 	fi; \
@@ -36,7 +36,7 @@ globus_automake_pre: $(PRE_FILES)
 
 globus_automake_post: $(POST_FILES)
 	file="globus_automake_post"; \
-	list="$(POST_FILES)"
+	list="$(POST_FILES)" ; \
 	if test -f $$file; then \
 		rm $$file; \
 	fi; \
@@ -47,7 +47,7 @@ globus_automake_post: $(POST_FILES)
 
 globus_automake_pre_top: $(PRE_TOP_FILES)
 	file="globus_automake_pre_top"; \
-	list="$(PRE__TOP_FILES)"
+	list="$(PRE__TOP_FILES)"; \
 	if test -f $$file; then \
 		rm $$file; \
 	fi; \
@@ -58,7 +58,7 @@ globus_automake_pre_top: $(PRE_TOP_FILES)
 
 globus_automake_post_top: $(POST_TOP_FILES)
 	file="globus_automake_post_top"; \
-	list="$(POST_TOP_FILES)"
+	list="$(POST_TOP_FILES)"; \
 	if test -f $$file; then \
 		rm $$file; \
 	fi; \
