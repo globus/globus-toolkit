@@ -235,7 +235,7 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client) {
 	    __gss_get_mechanism_cred(client->creds,
 				     &(gssapi_kerberos_mech.oid));
 #else
-	krb5_cred_handle = gssapi_client_creds;
+	krb5_cred_handle = client->creds;
 #endif
 
 	if ((maj_status = gss_krb5_copy_ccache(&min_status, 
