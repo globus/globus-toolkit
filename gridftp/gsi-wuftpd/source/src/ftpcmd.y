@@ -455,6 +455,8 @@ cmd: USER SP username CRLF
 	}
     | MODE check_login SP mode_code CRLF
 	=	{
+            globus_result_t                            res;
+
 	    if (log_commands)
 		syslog(LOG_INFO, "MODE %s", modenames[$4]);
 	    if ($2)
@@ -463,6 +465,25 @@ cmd: USER SP username CRLF
 		case MODE_S:
 		    reply(200, "MODE S ok.");
 		    break;
+
+#               if defined(USE_GLOBUS_DATA_CODE)
+
+                case MODE_E:
+                    res = globus_ftp_control_local_mode(
+                              &g_data_handle,
+                              GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
+                    if(res == GLOBUS_SUCCESS)
+                    {
+		        reply(200, "MODE E ok.");
+                    }
+                    else
+                    {
+		        reply(502, "Failure setting MODE E.");
+                    }
+
+                    break;
+
+#               endif
 
 		default:
 		    reply(502, "Unimplemented MODE type.");
@@ -1295,6 +1316,10 @@ struct_code: F
 mode_code:  S
 	=	{
 	    $$ = MODE_S;
+	}
+    | E
+	=	{
+	    $$ = MODE_E;
 	}
     | B
 	=	{

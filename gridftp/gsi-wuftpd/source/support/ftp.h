@@ -79,6 +79,7 @@ char *strunames[] =
 #define	MODE_S		1	/* stream */
 #define	MODE_B		2	/* block */
 #define	MODE_C		3	/* compressed */
+#define	MODE_E		4	/* extened block */
 #ifdef FTP_NAMES
 char *modenames[] =
 {"0", "Stream", "Block", "Compressed"};

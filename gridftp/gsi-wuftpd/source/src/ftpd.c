@@ -1103,7 +1103,7 @@ fprintf(bean_bag, "start\n");
     data = -1;
     type = TYPE_A;
 
-i = 1;
+i = 0;
 while(i)
 {
     usleep(1);
@@ -1474,7 +1474,12 @@ fprintf(bean_bag, "check 1\n");
 
     for (;;)
     {
-        globus_poll();
+#       if defined(USE_GLOBUS_DATA_CODE)
+        {
+            globus_poll();
+        }
+#       endif
+
 	(void) yyparse();
     }
     /* NOTREACHED */
