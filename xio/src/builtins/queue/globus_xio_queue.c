@@ -198,7 +198,7 @@ globus_l_xio_queue_read(
     int                                 iovec_count,
     globus_xio_operation_t              op)
 {
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
     globus_xio_driver_queue_entry_t *   entry;
     globus_size_t                       wait_for;
     globus_xio_driver_queue_handle_t *  handle;
@@ -288,7 +288,7 @@ globus_l_xio_queue_write_cb(
                     entry->iovec, 
                     entry->iovec_count, 
                     entry->wait_for,
-                    globus_l_xio_queue_read_cb, 
+                    globus_l_xio_queue_write_cb, 
                     handle);
                 if(res == GLOBUS_SUCCESS)
                 {
@@ -313,7 +313,7 @@ globus_l_xio_queue_write(
     int                                 iovec_count,
     globus_xio_operation_t              op)
 {
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
     globus_xio_driver_queue_entry_t *   entry;
     globus_size_t                       wait_for;
     globus_xio_driver_queue_handle_t *  handle;
