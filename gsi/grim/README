@@ -71,6 +71,8 @@ users and groups to access to port types.  An example port type follows:
 
     <?xml version="1.0" encoding="UTF-8"?>
     <authorized_port_types>
+        <port_type username="bresnaha">http://all_port_type.html</port_type>
         <port_type username="bresnaha">http://port_type.html</port_type>
+        <port_type username="not me" access="no">http://all_port_type.html</port_type>
         <port_type group="globus">http://port_type</port_type>
     </authorized_port_types>
