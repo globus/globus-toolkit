@@ -207,8 +207,9 @@ sub determineKeys
 sub runKeyGen
 {
     my($gen_keys) = @_;
+    my $keygen = "$bindir/ssh-keygen";
 
-    if (@$gen_keys)
+    if (@$gen_keys && -x $keygen)
     {
         print "Generating ssh host keys...\n";
 
