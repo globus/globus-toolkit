@@ -18,6 +18,7 @@ typedef struct _gsi_socket GSI_SOCKET;
 #define GSI_SOCKET_SUCCESS		0
 #define GSI_SOCKET_ERROR		-1
 #define GSI_SOCKET_TRUNCATED		-2
+#define GSI_SOCKET_UNAUTHORIZED		-3
 
 /*
  * GSI_SOCKET_new()
@@ -63,26 +64,18 @@ int GSI_SOCKET_get_error_string(GSI_SOCKET *gsi_socket,
 void GSI_SOCKET_clear_error(GSI_SOCKET *gsi_socket);
 
 /*
- * GSI_SOCKET_set_expected_peer_name()
- *
- * This should be called before GSI_SOCKET_authentication_init() to
- * set the expected name of the entity we are connecting do. By default
- * an appropriate service name will be expected. This allows the
- * connector to set it to anything they desire.
- *
- * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
- */
-int GSI_SOCKET_set_expected_peer_name(GSI_SOCKET *gsi_socket,
-				      const char *name);
-
-/*
  * GSI_SOCKET_authentication_init()
  *
  * Perform the client-side authentication process.
+ * The accepted_peer_names argument must be a NULL terminated array of
+ * acceptable peer names.
  *
- * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
+ * Returns GSI_SOCKET_SUCCESS on success,
+ * GSI_SOCKET_UNAUTHORIZED if server identity doesn't match one of the
+ * acceptable peer names, and GSI_SOCKET_ERROR otherwise.
  */
-int GSI_SOCKET_authentication_init(GSI_SOCKET *gsi_socket);
+int GSI_SOCKET_authentication_init(GSI_SOCKET *gsi_socket,
+				   char *accepted_peer_names[]);
 
 /*
  * GSI_SOCKET_use_creds()
@@ -98,6 +91,15 @@ int GSI_SOCKET_use_creds(GSI_SOCKET *gsi_socket,
 			 const char *creds);
 
 /*
+ * GSI_SOCKET_check_creds()
+ *
+ * Check that valid GSI credentials are available.
+ *
+ * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
+ */
+int GSI_SOCKET_check_creds(GSI_SOCKET *gsi_socket);
+
+/*
  * GSI_SOCKET_authentication_accept()
  *
  * Perform the server-side authentication process.
@@ -107,12 +109,12 @@ int GSI_SOCKET_use_creds(GSI_SOCKET *gsi_socket,
 int GSI_SOCKET_authentication_accept(GSI_SOCKET *gsi_socket);
 
 /*
- * GSI_SOCKET_get_client_identity()
+ * GSI_SOCKET_get_peer_name()
  *
  * Fill in buffer with a string representation of the authenticated
- * identity of the client on the other side of the socket.
+ * identity of the entity on the other side of the socket.
  *
- * If the client is not identified, returns GSI_SOCKET_ERROR.
+ * If the peer is not identified, returns GSI_SOCKET_ERROR.
  *
  * If the buffer is too small and the string is truncated returns
  * GSI_SOCKET_TRUNCATED.
@@ -121,9 +123,9 @@ int GSI_SOCKET_authentication_accept(GSI_SOCKET *gsi_socket);
  * (not including the trailing NUL).
  *
  */
-int GSI_SOCKET_get_client_name(GSI_SOCKET *gsi_socket,
-			       char *buffer,
-			       int buffer_len);
+int GSI_SOCKET_get_peer_name(GSI_SOCKET *gsi_socket,
+			     char *buffer,
+			     int buffer_len);
 
 /*
  * GSI_SOCKET_write_buffer()
