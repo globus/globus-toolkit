@@ -6,6 +6,10 @@
 #ifndef __MYPROXY_SERVER_H
 #define __MYPROXY_SERVER_H
 
+#ifndef MYPROXY_SERVER_DIR
+#define MYPROXY_SERVER_DIR	"/usr/local/myproxy-server"
+#endif /* !MYPROXY_SERVER_DIR */
+
 /* Borrowed from globus_gatekeeper.c */
 static char tmpbuf[1024];
 #define message2(a,b) {sprintf(tmpbuf, a,b); message(tmpbuf);}

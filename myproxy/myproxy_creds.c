@@ -7,6 +7,7 @@
  */
 
 #include "myproxy_creds.h"
+#include "myproxy_server.h"
 
 #include "verror.h"
 
@@ -26,7 +27,7 @@
 
 /* Where to store our files */
 #ifndef CREDS_STORAGE_DIRECTORY
-#define CREDS_STORAGE_DIRECTORY		"/usr/local/myproxy/store/"
+#define CREDS_STORAGE_DIRECTORY		MYPROXY_SERVER_DIR "/store/"
 #endif /* CREDS_STORAGE_DIRECTORY */
 
 /**********************************************************************

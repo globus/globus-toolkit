@@ -124,6 +124,7 @@ main(int argc, char *argv[])
 
     /* Set context defaults */
     server_context->run_as_daemon = 1;
+    server_context->config_file = MYPROXY_SERVER_DIR "/myproxy-server.config";
     
     if (init_arguments(argc, argv, socket_attrs, server_context) < 0) {
         fprintf(stderr, usage);
@@ -160,8 +161,7 @@ main(int argc, char *argv[])
      * instead of fprintf() and ilk.
      */
 
-    myproxy_log("%s: pid=%d starting at %s", server_context->my_name,
-		getpid(), timestamp());
+    myproxy_log("starting at %s", timestamp());
 
     /* Set up signal handling to deal with zombie processes left over  */
     my_signal(SIGCHLD, sig_chld);
@@ -175,7 +175,13 @@ main(int argc, char *argv[])
 
     /* Set up concurrent server */
     while (1) {
-        socket_attrs->socket_fd = accept(listenfd, NULL, NULL);
+	struct sockaddr_in client_addr;
+	int client_addr_len = sizeof(client_addr);
+	
+        socket_attrs->socket_fd = accept(listenfd,
+					 (struct sockaddr *) &client_addr,
+					 &client_addr_len);
+
         if (socket_attrs->socket_fd < 0) {
             if (errno == EINTR) {
                 continue; 
@@ -183,6 +189,8 @@ main(int argc, char *argv[])
                 myproxy_log_perror("Error in accept()");
             }
         }
+
+	myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
 	
 	if (!debug)
 	{
@@ -651,7 +659,7 @@ sig_chld(int signo) {
 } 
 
 void sig_exit(int signo) {
-    myproxy_log("Server killed");
+    myproxy_log("Server killed by signal %d", signo);
     exit(0);
 }
 
