@@ -104,7 +104,7 @@ typedef struct
   char                          *version;
   myproxy_proto_response_type_t response_type;
   authorization_data_t		**authorization_data;
-  char				*error_str;
+  char				*error_string;
   myproxy_creds_t		*info_creds;
 } myproxy_response_t;
 
