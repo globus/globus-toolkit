@@ -3343,7 +3343,7 @@ globus_libc_addr_to_contact_string(
         
         family = (opts_mask & GLOBUS_LIBC_ADDR_IPV6)
             ? AF_INET6 : ((opts_mask & GLOBUS_LIBC_ADDR_IPV4)
-            ? AF_INET4 : AF_UNSPEC);
+            ? AF_INET : AF_UNSPEC);
         {
             
         if(globus_libc_gethostaddr_by_family(&myaddr, family) != 0)
