@@ -46,7 +46,7 @@ globus_l_xio_ftp_cmd_read_cb(
  *************************************************************************/
 #include "version.h"
 
-static globus_module_descriptor_t       globus_i_xio_ftp_cmd_module =
+globus_module_descriptor_t       globus_i_xio_ftp_cmd_module =
 {
     "globus_xio_ftp_cmd",
     globus_l_xio_ftp_cmd_activate,
