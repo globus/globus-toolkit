@@ -635,22 +635,13 @@ int
 oldgaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
                                           char                    *str)
 {
-    int  i, len = strlen(str);
+    int  i=0, j=1, len = strlen(str); /* j=1 because ignore first ' */
     int  chr, esc = 0;
 
-    for (i=0; i<len-1; i++) str[i] = str[i+1]; /* get rid of ' in the 
-                                                  begining of str */
-    if(str[i-1] == STRING_DELIMITER) 
-    {
-        str[i-1] = NUL; /* clean up the tailing ' */
-        return 0;
-    }
-
-                   
     while(i < MAX_STRING_SIZE) /* read chars from the stream 
                                   untill see STRING_DELIMITER */
     {  
-        chr = fgetc(pcontext->stream); 
+        chr = (j<len) ? str[j++] : fgetc(pcontext->stream);
 
         if(chr == EOF)  
         {     
