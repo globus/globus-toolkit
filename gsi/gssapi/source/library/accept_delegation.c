@@ -211,7 +211,7 @@ GSS_CALLCONV gss_accept_delegation(
         {
             sk_X509_insert(cert_chain,
                            d2i_X509_bio(context->gs_sslbio, NULL),
-                           sk_X509_num(cert_chain));
+                           i);
         }
 
         major_status = gss_create_and_fill_cred(delegated_cred_handle,

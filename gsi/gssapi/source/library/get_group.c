@@ -138,19 +138,8 @@ GSS_CALLCONV gss_get_group(
     {
         subgroup = sk_value(internal_name->group,i);
         
-        buffer.value = (void *) strdup(subgroup);
+        buffer.value = (void *) subgroup;
         
-        if(buffer.value == NULL)
-        {
-            gss_release_buffer_set(&tmp_minor_status, group);
-            gss_release_oid_set(&tmp_minor_status, group_types);
-            GSSerr(GSSERR_F_GET_GROUP,
-                   GSSERR_R_OUT_OF_MEMORY);
-            *minor_status = gsi_generate_minor_status();
-            major_status = GSS_S_FAILURE;
-            goto err;
-        }
-
         buffer.length = strlen(subgroup) + 1;
 
         major_status = gss_add_buffer_set_member(minor_status,

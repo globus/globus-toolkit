@@ -40,7 +40,9 @@ proxy_extension_create(
  *        The security context over which the credential is
  *        delegated. 
  * @param cred_handle
- *        The credential to be delegated.
+ *        The credential to be delegated. May be GSS_C_NO_CREDENTIAL
+ *        in which case the credential associated with the security
+ *        context is used.
  * @param desired_mech
  *        The desired security mechanism. Currently not used. May be
  *        GSS_C_NO_OID. 
@@ -307,6 +309,7 @@ GSS_CALLCONV gss_init_delegation(
         
         i2d_integer_bio(context->gs_sslbio, cert_chain_length + 1);
 
+        
         for(i=cert_chain_length-1;i>=0;i--)
         {
             cert = sk_X509_value(cred->pcd->cert_chain,i);
@@ -327,6 +330,7 @@ GSS_CALLCONV gss_init_delegation(
         /* push the cert used to sign the proxy */
         
         i2d_X509_bio(context->gs_sslbio,cred->pcd->ucert);
+
         /* reset state machine */
         context->delegation_state = GS_DELEGATION_START; 
         X509_free(ncert);

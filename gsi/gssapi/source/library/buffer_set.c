@@ -86,8 +86,7 @@ GSS_CALLCONV gss_create_empty_buffer_set(
  * Add a buffer to a buffer set.
  *
  * This function allocates a new gss_buffer_t, intializes it with the
- * values in the member_buffer parameter (<b>NOTE: this function
- * currently does not copy the contents of the input buffer</b>).
+ * values in the member_buffer parameter.
  *
  *
  * @param minor_status
@@ -149,9 +148,22 @@ GSS_CALLCONV gss_add_buffer_set_member(
     }
         
     /* And append new buffer */
-    memcpy(&new_elements[set->count],
-           member_buffer,
-           sizeof(gss_buffer_desc));
+    new_elements[set->count].value = malloc(member_buffer->length);
+
+    if(new_elements[set->count].value == NULL)
+    {
+        free(new_elements);
+        GSSerr(GSSERR_F_ADD_BUFFER_SET_MEMBER,
+               GSSERR_R_OUT_OF_MEMORY);
+        *minor_status = gsi_generate_minor_status();
+        return GSS_S_FAILURE;
+    }
+
+    memcpy(new_elements[set->count].value,
+           member_buffer->value,
+           member_buffer->length);
+
+    new_elements[set->count].length = member_buffer->length;
     
     if (set->elements != NULL)
     {

@@ -137,6 +137,7 @@ static int gss_l_compare_group(
                 return 0;
             }
         }
+        return 1;
     }
 
     if(name1->group == NULL &&
@@ -151,6 +152,7 @@ static int gss_l_compare_group(
                 return 0;
             }
         }
+        return 1;
     }
 
     /* if both certs are in groups we check that the shorter (ie the

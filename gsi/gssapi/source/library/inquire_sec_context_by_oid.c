@@ -119,25 +119,9 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 
                 asn1_oct_string = X509_EXTENSION_get_data(ex);
                 
-                data_set_buffer.value =
-                    malloc(asn1_oct_string->length);
-
-                if(data_set_buffer.value == NULL)
-                {
-                    gss_release_buffer_set(&tmp_minor_status, data_set);
-                    GSSerr(GSSERR_F_INQUIRE_BY_OID, GSSERR_R_OUT_OF_MEMORY);
-                    *minor_status = gsi_generate_minor_status();
-                    major_status = GSS_S_FAILURE;
-                    goto err;
-                }
+                data_set_buffer.value = asn1_oct_string->data;
                 
-                data_set_buffer.length =
-                    asn1_oct_string->length;
-                
-                memcpy(data_set_buffer.value,
-                       asn1_oct_string->data,
-                       asn1_oct_string->length);
-
+                data_set_buffer.length = asn1_oct_string->length;
                 
                 /* assume one extension per cert ? */
                 
