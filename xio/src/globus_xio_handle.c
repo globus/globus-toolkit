@@ -304,13 +304,15 @@ globus_l_xio_open_close_callback_kickout(
         if(op->type == GLOBUS_XIO_OPERATION_TYPE_OPEN)
         {
             target = handle->target;
-            for(ctr = 0;  ctr < target->stack_size; ctr++)
+            for(ctr = 0;  ctr < handle->context->stack_size; ctr++)
             {
-                if(target->entry[ctr].target != NULL)
+                if(target->entry[ctr].target != NULL &&
+                    handle->context->entry[ctr].driver->target_destroy_func !=
+                        NULL)
                 {
                     /* ignore result code.  user should be more interested in
                         result from callback */
-                    target->entry[ctr].driver->target_destroy_func(
+                    handle->context->entry[ctr].driver->target_destroy_func(
                             target->entry[ctr].target);
                 }
             }
@@ -1449,8 +1451,8 @@ globus_xio_register_open(
 
         if(user_attr != NULL)
         {
-            GlobusIXIOAttrGetDS(op->entry[ctr].attr,                    \
-                user_attr, target->entry[ctr].driver);
+            GlobusIXIOAttrGetDS(op->entry[ctr].attr, user_attr, 
+                target->entry[ctr].driver);
         }
         else
         {
@@ -2222,7 +2224,7 @@ globus_xio_open(
 
         if(user_attr != NULL)
         {
-            GlobusIXIOAttrGetDS(op->entry[ctr].attr,                    \
+            GlobusIXIOAttrGetDS(op->entry[ctr].attr,
                 user_attr, target->entry[ctr].driver);
         }
         else
