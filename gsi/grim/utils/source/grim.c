@@ -928,6 +928,7 @@ grim_write_proxy(
         return 1;
     }
 
+    free(tmp_s2);
 /*
     free(assertion_string);
 */
