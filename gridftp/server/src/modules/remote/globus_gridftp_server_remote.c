@@ -1,4 +1,4 @@
-#include "globus_gridftp_server_module.h"
+#include "globus_gridftp_server.h"
 #include "globus_i_gfs_ipc.h"
 
 
@@ -47,7 +47,7 @@ globus_l_gfs_ipc_stat_cb(
     globus_gridftp_server_finished_stat(
         bounce_info->op,
         reply->result,
-        reply->info.stat.stat_info, 
+        reply->info.stat.stat_array, 
         reply->info.stat.stat_count);
    
    result = globus_gfs_ipc_handle_release(ipc_handle);
@@ -75,23 +75,23 @@ globus_l_gfs_ipc_command_cb(
 
     switch(reply->info.command.command)
     {
-      case GLOBUS_I_GFS_CMD_MKD:
+      case GLOBUS_GFS_CMD_MKD:
         globus_gridftp_server_finished_command(
             bounce_info->op, 
             reply->result,     
             reply->info.command.created_dir);
         break;      
-      case GLOBUS_I_GFS_CMD_CKSM:
+      case GLOBUS_GFS_CMD_CKSM:
         globus_gridftp_server_finished_command(
             bounce_info->op, 
             reply->result,
             reply->info.command.checksum);
         break;
-      case GLOBUS_I_GFS_CMD_RMD:
-      case GLOBUS_I_GFS_CMD_DELE:
-      case GLOBUS_I_GFS_CMD_RNTO:
-      case GLOBUS_I_GFS_CMD_SITE_CHMOD:
-      case GLOBUS_I_GFS_CMD_RNFR:
+      case GLOBUS_GFS_CMD_RMD:
+      case GLOBUS_GFS_CMD_DELE:
+      case GLOBUS_GFS_CMD_RNTO:
+      case GLOBUS_GFS_CMD_SITE_CHMOD:
+      case GLOBUS_GFS_CMD_RNFR:
       default:
         globus_gridftp_server_finished_command(
             bounce_info->op, 
@@ -220,7 +220,7 @@ globus_l_gfs_remote_stat_kickout(
     result = globus_gfs_ipc_request_stat(
         ipc_handle,
         &request_id,
-        (globus_gfs_stat_state_t *) bounce_info->state,
+        (globus_gfs_stat_info_t *) bounce_info->state,
         globus_l_gfs_ipc_stat_cb,
         bounce_info); 
 
@@ -233,7 +233,7 @@ static
 globus_result_t
 globus_l_gfs_remote_stat(
     globus_gfs_operation_t              op,
-    globus_gfs_stat_state_t *           stat_state,
+    globus_gfs_stat_info_t *           stat_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -244,11 +244,11 @@ globus_l_gfs_remote_stat(
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     
     result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, stat_state, my_handle);
+        &bounce_info, op, stat_info, my_handle);
             
     result = globus_gfs_ipc_handle_get(
         "mlink",
-        stat_state->pathname,
+        stat_info->pathname,
         &globus_gfs_ipc_default_iface,
         globus_l_gfs_remote_stat_kickout,
         bounce_info,
@@ -274,7 +274,7 @@ globus_l_gfs_remote_command_kickout(
     result = globus_gfs_ipc_request_command(
         ipc_handle,
         &request_id,
-        (globus_gfs_command_state_t *) bounce_info->state,
+        (globus_gfs_command_info_t *) bounce_info->state,
         globus_l_gfs_ipc_command_cb,
         bounce_info); 
 
@@ -285,7 +285,7 @@ static
 globus_result_t
 globus_l_gfs_remote_command(
     globus_gfs_operation_t              op,
-    globus_gfs_command_state_t *        command_state,
+    globus_gfs_command_info_t *        command_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -296,11 +296,11 @@ globus_l_gfs_remote_command(
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     
     result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, command_state, my_handle);
+        &bounce_info, op, command_info, my_handle);
             
     result = globus_gfs_ipc_handle_get(
         "mlink",
-        command_state->pathname,
+        command_info->pathname,
         &globus_gfs_ipc_default_iface,
         globus_l_gfs_remote_command_kickout,
         bounce_info,
@@ -326,7 +326,7 @@ globus_l_gfs_remote_list_kickout(
     result = globus_gfs_ipc_request_list(
         ipc_handle,
         &request_id,
-        (globus_gfs_transfer_state_t *) bounce_info->state,
+        (globus_gfs_transfer_info_t *) bounce_info->state,
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
         bounce_info); 
@@ -338,7 +338,7 @@ static
 globus_result_t
 globus_l_gfs_remote_list(
     globus_gfs_operation_t              op,
-    globus_gfs_transfer_state_t *       transfer_state,
+    globus_gfs_transfer_info_t *       transfer_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -349,11 +349,11 @@ globus_l_gfs_remote_list(
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     
     result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, transfer_state, my_handle);
+        &bounce_info, op, transfer_info, my_handle);
             
     result = globus_gfs_ipc_handle_get(
         "mlink",
-        transfer_state->pathname,
+        transfer_info->pathname,
         &globus_gfs_ipc_default_iface,
         globus_l_gfs_remote_list_kickout,
         bounce_info,
@@ -379,7 +379,7 @@ globus_l_gfs_remote_recv_kickout(
     result = globus_gfs_ipc_request_recv(
         ipc_handle,
         &request_id,
-        (globus_gfs_transfer_state_t *) bounce_info->state,
+        (globus_gfs_transfer_info_t *) bounce_info->state,
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
         bounce_info); 
@@ -391,7 +391,7 @@ static
 globus_result_t
 globus_l_gfs_remote_recv(
     globus_gfs_operation_t              op,
-    globus_gfs_transfer_state_t *       transfer_state,
+    globus_gfs_transfer_info_t *       transfer_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -402,11 +402,11 @@ globus_l_gfs_remote_recv(
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     
     result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, transfer_state, my_handle);
+        &bounce_info, op, transfer_info, my_handle);
             
     result = globus_gfs_ipc_handle_get(
         "mlink",
-        transfer_state->pathname,
+        transfer_info->pathname,
         &globus_gfs_ipc_default_iface,
         globus_l_gfs_remote_recv_kickout,
         bounce_info,
@@ -432,7 +432,7 @@ globus_l_gfs_remote_send_kickout(
     result = globus_gfs_ipc_request_send(
         ipc_handle,
         &request_id,
-        (globus_gfs_transfer_state_t *) bounce_info->state,
+        (globus_gfs_transfer_info_t *) bounce_info->state,
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
         bounce_info); 
@@ -444,7 +444,7 @@ static
 globus_result_t
 globus_l_gfs_remote_send(
     globus_gfs_operation_t              op,
-    globus_gfs_transfer_state_t *       transfer_state,
+    globus_gfs_transfer_info_t *       transfer_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -455,11 +455,11 @@ globus_l_gfs_remote_send(
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     
     result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, transfer_state, my_handle);
+        &bounce_info, op, transfer_info, my_handle);
             
     result = globus_gfs_ipc_handle_get(
         "mlink",
-        transfer_state->pathname,
+        transfer_info->pathname,
         &globus_gfs_ipc_default_iface,
         globus_l_gfs_remote_send_kickout,
         bounce_info,
@@ -485,7 +485,7 @@ globus_l_gfs_remote_active_kickout(
     result = globus_gfs_ipc_request_active_data(
         ipc_handle,
         &request_id,
-        (globus_gfs_data_state_t *) bounce_info->state,
+        (globus_gfs_data_info_t *) bounce_info->state,
         globus_l_gfs_ipc_active_data_cb,
         bounce_info); 
 
@@ -496,7 +496,7 @@ static
 globus_result_t
 globus_l_gfs_remote_active(
     globus_gfs_operation_t              op,
-    globus_gfs_data_state_t *           data_state,
+    globus_gfs_data_info_t *           data_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -507,7 +507,7 @@ globus_l_gfs_remote_active(
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     
     result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, data_state, my_handle);
+        &bounce_info, op, data_info, my_handle);
             
     result = globus_gfs_ipc_handle_get(
         "mlink",
@@ -537,7 +537,7 @@ globus_l_gfs_remote_passive_kickout(
     result = globus_gfs_ipc_request_passive_data(
         ipc_handle,
         &request_id,
-        (globus_gfs_data_state_t *) bounce_info->state,
+        (globus_gfs_data_info_t *) bounce_info->state,
         globus_l_gfs_ipc_passive_data_cb,
         bounce_info); 
 
@@ -548,7 +548,7 @@ static
 globus_result_t
 globus_l_gfs_remote_passive(
     globus_gfs_operation_t              op,
-    globus_gfs_data_state_t *           data_state,
+    globus_gfs_data_info_t *           data_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -559,7 +559,7 @@ globus_l_gfs_remote_passive(
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     
     result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, data_state, my_handle);
+        &bounce_info, op, data_info, my_handle);
             
     result = globus_gfs_ipc_handle_get(
         "mlink",
@@ -703,7 +703,7 @@ globus_l_gfs_remote_destory(
 }
 
 
-globus_gridftp_server_storage_iface_t   globus_gfs_remote_dsi_iface = 
+globus_gfs_storage_iface_t              globus_gfs_remote_dsi_iface = 
 {
     globus_l_gfs_remote_init,
     globus_l_gfs_remote_destory,

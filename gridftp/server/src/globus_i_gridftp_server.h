@@ -4,14 +4,14 @@
 #include "globus_gridftp_server.h"
 #include "globus_ftp_control.h"
 
-typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
+void
+globus_i_gfs_server_closed();
 
 typedef struct
 {
     globus_xio_handle_t             xio_handle;
     char *                          remote_contact;
     char *                          rnfr_pathname;
-    globus_gfs_ipc_handle_t         ipc_handle;
     int                             transfer_id;
     globus_gridftp_server_control_op_t op;
     
@@ -55,21 +55,11 @@ typedef struct
             
 } globus_i_gfs_op_attr_t;
 
-typedef enum
-{
-    GLOBUS_I_GFS_CMD_MKD,
-    GLOBUS_I_GFS_CMD_RMD,
-    GLOBUS_I_GFS_CMD_DELE,
-    GLOBUS_I_GFS_CMD_RNTO,
-    GLOBUS_I_GFS_CMD_RNFR,
-    GLOBUS_I_GFS_CMD_CKSM,
-    GLOBUS_I_GFS_CMD_SITE_CHMOD
-} globus_i_gfs_command_t;
 
 
 typedef struct
 {
-    globus_i_gfs_command_t              command;
+    globus_gfs_command_type_t           command;
     char *                              pathname;
 
     globus_off_t                        cksm_offset;
@@ -93,27 +83,6 @@ typedef struct
     int                                 ref;
 } globus_i_gfs_data_handle_t;
 
-typedef struct
-{
-    void * nothing;    
-} globus_i_gfs_oldipc_handle_t;
-
-/* !! if this changes, code will have to corrected as all 3 types here are
- * upcasted/downcasted at will
- */
-typedef union
-{
-    globus_i_gfs_data_handle_t          data;
-    globus_i_gfs_oldipc_handle_t        ipc;
-} globus_i_gfs_ipc_data_handle_t;
-
-typedef enum
-{
-    GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN,
-    GLOBUS_I_GFS_EVENT_BYTES_RECVD,
-    GLOBUS_I_GFS_EVENT_RANGES_RECVD,
-    GLOBUS_I_GFS_EVENT_DISCONNECTED
-} globus_i_gfs_event_t;
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"
