@@ -42,7 +42,7 @@ AC_DEFUN([CHECK_NEED_LDL],
                 ],
                 [
                         AC_MSG_ERROR("Unable to find dynamic linking library")
-                ]
+                ])
             ])
         ])
     ])
