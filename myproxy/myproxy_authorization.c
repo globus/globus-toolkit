@@ -323,8 +323,7 @@ authorization_init_server(authorization_data_t ***data,
 	       if (auth_data[num_methods] == NULL) {
 		   verror_put_string("malloc() failed");
 		   verror_put_errno(errno);
-		   authorization_data_free_contents(*auth_data);
-		   free(auth_data);
+		   authorization_data_free(auth_data);
 		   return -1;
 	       }
 	       auth_data[num_methods]->server_data =
