@@ -19,6 +19,10 @@
 #endif
 #include "version.h"
 
+/* ToDo: HACK! This is undefined on the Windows side so do this for now */
+#ifdef WIN32
+#define flavor "win32dbg"
+#endif
 #define GLOBUS_I_CALLOUT_HASH_SIZE 64
 
 static void
