@@ -202,6 +202,7 @@ typedef struct FTPConnectionInfo {
 	int hasSBUFSZ;				/* Do not modify this field. */
 	int hasBUFSIZE;				/* Do not modify this field. */
 #if HAVE_GSSAPI
+	int hasDCAU;				/* Do not modify this field. */
 	int hasPROT;				/* Do not modify this field. */
 	int hasPBSZ;				/* Do not modify this field. */
 #endif
