@@ -1,6 +1,9 @@
 #ifndef GLOBUS_INCLUDE_GENERIC_ERROR_H
 #define GLOBUS_INCLUDE_GENERIC_ERROR_H
 
+#ifdef HAVE_STDARG_H
+#   include <stdarg.h>
+#endif
 
 /**
  * @defgroup globus_error_api Globus Error API
@@ -89,8 +92,16 @@ globus_error_construct_error(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
     const int                           type,
-    const char *                        short_desc,
-    const char *                        long_desc);
+    const char *                        short_desc_format,
+    ...);
+
+globus_object_t *
+globus_error_v_construct_error(
+    globus_module_descriptor_t *        base_source,
+    globus_object_t *                   base_cause,
+    const int                           type,
+    const char *                        short_desc_format,
+    va_list                             ap);
 
 globus_object_t *
 globus_error_initialize_error(
@@ -98,8 +109,8 @@ globus_error_initialize_error(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
     const int                           type,
-    const char *                        short_desc,
-    const char *                        long_desc);
+    const char *                        short_desc_format,
+    va_list                             ap);
 
 #endif
 
@@ -149,7 +160,8 @@ globus_error_get_short_desc(
 void
 globus_error_set_short_desc(
     globus_object_t *                   error,
-    const char *                        short_desc);
+    const char *                        short_desc_format,
+    ...);
 
 char *
 globus_error_get_long_desc(
@@ -158,7 +170,8 @@ globus_error_get_long_desc(
 void
 globus_error_set_long_desc(
     globus_object_t *                   error,
-    const char *                        long_desc);
+    const char *                        long_desc_format,
+    ...);
 
 #endif
 

@@ -118,8 +118,8 @@ globus_error_wrap_errno_error(
     globus_module_descriptor_t *        base_source,
     const int                           system_errno,
     const int                           type,
-    const char *                        short_desc,
-    const char *                        long_desc);
+    const char *                        short_desc_format,
+    ...);
 
 #endif
 

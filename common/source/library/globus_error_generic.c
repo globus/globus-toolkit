@@ -28,12 +28,11 @@
  *        The error type. We may reserve part of this namespace for
  *        common errors. Errors not in this space are assumed to be
  *        local to the originating module.
- * @param short_desc
- *        Short context sensitive string giving a succinct description
+ * @param short_desc_format
+ *        Short format string giving a succinct description
  *        of the error. To be passed on to the user.
- * @param long_desc
- *        Longer context sensitive string giving a more detailed
- *        explanation of the error.
+ * @param ...
+ *        Arguments for the format string.
  * @return
  *        The resulting error object. It is the user's responsibility
  *        to eventually free this object using globus_object_free(). A
@@ -45,8 +44,64 @@ globus_error_construct_error(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
     const int                           type,
-    const char *                        short_desc,
-    const char *                        long_desc)
+    const char *                        short_desc_format,
+    ...)
+{
+    globus_object_t *                   error;
+    globus_object_t *                   newerror;
+    va_list                             ap;
+
+    va_start(ap, short_desc_format);
+
+    newerror = globus_object_construct(GLOBUS_ERROR_TYPE_GLOBUS);
+    error = globus_error_initialize_error(
+        newerror,
+        base_source,
+        base_cause,
+        type,
+        short_desc_format,
+        ap);
+
+    va_end(ap);
+    if (error == NULL)
+    {
+        globus_object_free(newerror);
+    }
+
+    return error;
+}/* globus_error_construct_error() */
+
+/**
+ * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_GLOBUS
+ * @ingroup globus_generic_error_object
+ *
+ * @param base_source
+ *        Pointer to the originating module.
+ * @param base_cause
+ *        The error object causing the error. If this is the original
+ *        error this paramater may be NULL.
+ * @param type
+ *        The error type. We may reserve part of this namespace for
+ *        common errors. Errors not in this space are assumed to be
+ *        local to the originating module.
+ * @param short_desc_format
+ *        Short format string giving a succinct description
+ *        of the error. To be passed on to the user.
+ * @param ap
+ *        Arguments for the format string.
+ * @return
+ *        The resulting error object. It is the user's responsibility
+ *        to eventually free this object using globus_object_free(). A
+ *        globus_result_t may be obtained by calling
+ *        globus_error_put() on this object.        
+ */
+globus_object_t *
+globus_error_v_construct_error(
+    globus_module_descriptor_t *        base_source,
+    globus_object_t *                   base_cause,
+    const int                           type,
+    const char *                        short_desc_format,
+    va_list                             ap)
 {
     globus_object_t *                   error;
     globus_object_t *                   newerror;
@@ -57,8 +112,8 @@ globus_error_construct_error(
         base_source,
         base_cause,
         type,
-        short_desc,
-        long_desc);
+        short_desc_format,
+        ap);
 
     if (error == NULL)
     {
@@ -66,7 +121,7 @@ globus_error_construct_error(
     }
 
     return error;
-}/* globus_error_construct_error() */
+}/* globus_error_v_construct_error() */
 /*@}*/
 
 /**
@@ -89,12 +144,11 @@ globus_error_construct_error(
  *        The error type. We may reserve part of this namespace for
  *        common errors. Errors not in this space are assumed to be
  *        local to the originating module.
- * @param short_desc
- *        Short context sensitive string giving a succinct description
+ * @param short_desc_format
+ *        Short format string giving a succinct description
  *        of the error. To be passed on to the user.
- * @param long_desc
- *        Longer context sensitive string giving a more detailed
- *        explanation of the error.
+ * @param ap
+ *        Arguments for the format string.
  * @return
  *        The resulting error object. You may have to call
  *        globus_error_put() on this object before passing it on.
@@ -105,28 +159,62 @@ globus_error_initialize_error(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
     const int                           type,
-    const char *                        short_desc,
-    const char *                        long_desc)
+    const char *                        short_desc_format,
+    va_list                             ap)
 {
     globus_l_error_data_t *             instance_data;
-
+    int                                 length;
+    int                                 size = 124;
+    
     instance_data = (globus_l_error_data_t *)
         malloc(sizeof(globus_l_error_data_t));
 
+    if(instance_data == NULL)
+    {
+        return NULL;
+    }
+    
     memset((void *) instance_data,0,sizeof(globus_l_error_data_t));
 
     instance_data->type = type;
 
-    if(short_desc != NULL)
+    if(short_desc_format != NULL)
     {
-        instance_data->short_desc = globus_libc_strdup(short_desc);
+        if ((instance_data->short_desc = malloc (size)) == NULL)
+        {
+            free(instance_data);
+            return NULL;
+        }
+
+        while (1)
+        {
+            length = vsnprintf(instance_data->short_desc,
+                               size,
+                               short_desc_format,ap);
+
+            if (length > -1 && length < size)
+            {
+                break;
+            }
+
+            if (length > -1)
+            {
+                size = length + 1;
+            }
+            else
+            {
+                size *= 2;
+            }
+
+            if ((instance_data->short_desc =
+                 realloc (instance_data->short_desc, size)) == NULL)
+            {
+                free(instance_data);
+                return NULL;
+            }
+        }
     }
 
-    if(long_desc != NULL)
-    {
-        instance_data->long_desc = globus_libc_strdup(long_desc);
-    }
-    
     globus_object_set_local_instance_data(error, instance_data);
 
     return globus_error_initialize_base(error,
@@ -310,18 +398,25 @@ globus_error_get_short_desc(
  *
  * @param error
  *        The error object for which to set the description
- * @param short_desc
- *        The short error description 
+ * @param short_desc_format
+ *        Short format string giving a succinct description
+ *        of the error. To be passed on to the user.
+ * @param ...
+ *        Arguments for the format string.
  * @return
  *        void
  */
 void
 globus_error_set_short_desc(
     globus_object_t *                   error,
-    const char *                        short_desc)
+    const char *                        short_desc_format,
+    ...)
 {
     char **                             instance_short_desc;
-
+    va_list                             ap;
+    int                                 length;
+    int                                 size = 124;
+    
     instance_short_desc =
         &((globus_l_error_data_t *)
           globus_object_get_local_instance_data(error))->short_desc;
@@ -330,9 +425,48 @@ globus_error_set_short_desc(
     {
         globus_libc_free(*instance_short_desc);
     }
-    
-    *instance_short_desc = globus_libc_strdup(short_desc);
 
+    *instance_short_desc = NULL;
+
+    va_start(ap, short_desc_format);
+
+    if ((*instance_short_desc = malloc (size)) == NULL)
+    {
+        va_end(ap);
+        return;
+    }
+    
+    while (1)
+    {
+        length = vsnprintf(*instance_short_desc,
+                           size,
+                           short_desc_format,
+                           ap);
+        
+        if (length > -1 && length < size)
+        {
+            break;
+        }
+        
+        if (length > -1)
+        {
+            size = length + 1;
+        }
+        else
+        {
+            size *= 2;
+        }
+        
+        if ((*instance_short_desc =
+             realloc (*instance_short_desc, size)) == NULL)
+        {
+            va_end(ap);
+            return;
+        }
+    }
+
+    va_end(ap);
+    
     return;
 }/* globus_error_set_short_desc */
 /*@}*/
@@ -372,18 +506,23 @@ globus_error_get_long_desc(
  *
  * @param error
  *        The error object for which to set the description
- * @param long_desc
- *        The long error description 
+ * @param long_desc_format
+ *        Longer format string giving a more detailed explanation of
+ *        the error. 
  * @return
  *        void
  */
 void
 globus_error_set_long_desc(
     globus_object_t *                   error,
-    const char *                        long_desc)
+    const char *                        long_desc_format,
+    ...)
 {
     char **                             instance_long_desc;
-
+    va_list                             ap;
+    int                                 length;
+    int                                 size = 124;
+    
     instance_long_desc =
         &((globus_l_error_data_t *)
           globus_object_get_local_instance_data(error))->long_desc;
@@ -392,9 +531,48 @@ globus_error_set_long_desc(
     {
         globus_libc_free(*instance_long_desc);
     }
-    
-    *instance_long_desc = globus_libc_strdup(long_desc);
 
+    *instance_long_desc = NULL;
+
+    va_start(ap, long_desc_format);
+
+    if ((*instance_long_desc = malloc (size)) == NULL)
+    {
+        va_end(ap);
+        return;
+    }
+    
+    while (1)
+    {
+        length = vsnprintf(*instance_long_desc,
+                           size,
+                           long_desc_format,
+                           ap);
+        
+        if (length > -1 && length < size)
+        {
+            break;
+        }
+        
+        if (length > -1)
+        {
+            size = length + 1;
+        }
+        else
+        {
+            size *= 2;
+        }
+        
+        if ((*instance_long_desc =
+             realloc (*instance_long_desc, size)) == NULL)
+        {
+            va_end(ap);
+            return;
+        }
+    }
+
+    va_end(ap);
+    
     return;
 }/* globus_error_set_long_desc */
 /*@}*/
@@ -520,6 +698,13 @@ globus_error_print_chain(
     return error_string;
 }/* globus_error_print_chain */
 /*@}*/
+
+
+
+
+
+
+
 
 
 
