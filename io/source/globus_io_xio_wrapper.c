@@ -1,6 +1,8 @@
 
 #include "globus_io.h"
 #include <arpa/inet.h>
+#include <gssapi.h>
+#include <globus_error_gssapi.h>
 
 #ifdef __GNUC__
 #define GlobusIOName(func) static const char * _io_name __attribute__((__unused__)) = #func
@@ -70,6 +72,28 @@
                 GLOBUS_NULL,                                                \
                 errno))))
 
+#define GlobusLIOMallocSize(__pointer, __size)                              \
+    ((__pointer = globus_malloc(__size))                                    \
+        ? (GLOBUS_SUCCESS)                                                  \
+        : (globus_error_put(                                                \
+            globus_io_error_construct_system_failure(                       \
+                GLOBUS_IO_MODULE,                                           \
+                GLOBUS_NULL,                                                \
+                GLOBUS_NULL,                                                \
+                errno))))
+
+
+#define GlobusLIOErrorWrapGSSFailed(failed_func, major_status, minor_status) \
+    globus_error_put(                                                        \
+        globus_error_wrap_gssapi_error(                                      \
+            GLOBUS_IO_MODULE,                                                \
+            major_status,                                                    \
+            minor_status,                                                    \
+            2,                                                               \
+            "[%s:%d] %s failed.",                                            \
+            _io_name, __LINE__, (failed_func)))
+
+
 typedef enum
 {
     GLOBUS_I_IO_FILE_ATTR = 1,
@@ -82,23 +106,35 @@ typedef enum
     GLOBUS_I_IO_TCP_HANDLE  = 2
 } globus_l_io_handle_type_t;
 
+typedef struct globus_l_io_secure_authorization_data_s
+{
+    gss_name_t                                  identity;
+    globus_io_secure_authorization_callback_t   callback;
+    void *				        callback_arg;
+} globus_l_io_secure_authorization_data_t; 
+
 typedef struct globus_l_io_attr_s
 {
-    globus_l_io_attr_type_t             type;
-    globus_xio_attr_t                   attr;
-    
-    int                                 file_flags;
+    globus_l_io_attr_type_t                     type;
+    globus_xio_attr_t                           attr;
+    int                                         file_flags;
+    globus_io_secure_authentication_mode_t      authentication_mode;
+    globus_io_secure_authorization_mode_t       authorization_mode;
+    globus_io_secure_channel_mode_t             channel_mode;
+    globus_l_io_secure_authorization_data_t     authz_data;
 } globus_l_io_attr_t;
 
 typedef struct globus_l_io_handle_s
 {
-    globus_l_io_handle_type_t           type;
-    globus_io_handle_t *                io_handle;
-    globus_xio_handle_t                 xio_handle;
+    globus_l_io_handle_type_t                   type;
+    globus_io_handle_t *                        io_handle;
+    globus_xio_handle_t                         xio_handle;
     /* used only for listener */
-    globus_xio_server_t                 xio_server;
-    globus_xio_target_t                 xio_target;
-    globus_xio_attr_t                   xio_attr;
+    globus_xio_server_t                         xio_server;
+    globus_xio_target_t                         xio_target;
+    globus_xio_attr_t                           xio_attr;
+    globus_io_secure_authorization_mode_t       authorization_mode;
+    globus_io_secure_authorization_data_t       authz_data;
 } globus_l_io_handle_t;
 
 typedef struct
@@ -122,9 +158,12 @@ typedef struct
     void *                              user_arg;
 } globus_l_io_bounce_t;
 
+
+
 static globus_mutex_t                   globus_l_io_driver_lock;
 static globus_xio_driver_t              globus_l_io_file_driver;
 static globus_xio_driver_t              globus_l_io_tcp_driver;
+static globus_xio_driver_t              globus_l_io_gsi_driver;
 
 static
 int
@@ -166,12 +205,21 @@ globus_l_io_activate(void)
     {
         goto error_load_tcp;
     }
+
+    if(globus_xio_driver_load(
+        "gsi", &globus_l_io_gsi_driver) != GLOBUS_SUCCESS)
+    {
+        goto error_load_gsi;
+    }
     
     globus_mutex_init(&globus_l_io_driver_lock, GLOBUS_NULL);
     
     return GLOBUS_SUCCESS;
 
-error_load_tcp:
+error_load_gsi:
+    globus_xio_driver_unload(globus_l_io_tcp_driver);
+
+ error_load_tcp:
     globus_xio_driver_unload(globus_l_io_file_driver);
  
 error_load_file:
@@ -379,6 +427,334 @@ globus_l_io_bounce_cb(
     
     globus_free(bounce_info);
 }
+
+
+static
+void
+globus_l_io_bounce_authz_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_l_io_bounce_t *              bounce_info;
+    globus_l_io_handle_t *              ihandle;
+    gss_name_t                          authorized_identity;
+    gss_name_t                          peer_identity;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    gss_buffer_desc                     peer_name_buffer;
+    int                                 equal;
+    gss_ctx_id_t                        context;
+
+    GlobusIOName(globus_l_io_bounce_cb);
+    
+    bounce_info = (globus_l_io_bounce_t *) user_arg;
+
+    ihandle = bounce_info->handle;
+    
+    if(result == GLOBUS_SUCCESS)
+    { 
+        switch(bounce_info->handle->authorization_mode)
+        { 
+          case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF:
+            result = globus_xio_handle_cntl(
+                ihandle->xio_handle,
+                globus_l_io_gsi_driver,
+                GLOBUS_XIO_GSI_GET_LOCAL_NAME,
+                &authorized_identity);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto done;
+            }
+            result = globus_xio_handle_cntl(
+                ihandle->xio_handle,
+                globus_l_io_gsi_driver,
+                GLOBUS_XIO_GSI_GET_PEER_NAME,
+                &peer_identity);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto done;
+            }
+            major_status = gss_compare_name(&minor_status,
+                                            authorized_identity,
+                                            peer_identity,
+                                            &equal);
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusLIOErrorWrapGSSFailed("gss_compare_name",
+                                                     major_status,
+                                                     minor_status);
+                goto done;
+            }
+
+            if(!equal)
+            {
+                result = globus_error_put(
+                    globus_io_error_construct_authorization_failed(
+                        GLOBUS_IO_MODULE,
+                        GLOBUS_NULL,
+                        ihandle->io_handle,
+                        0,
+                        0,
+                        0));
+            }
+            
+            break;                            
+          case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY:
+            authorized_identity = ihandle->authz_data->identity;
+            result = globus_xio_handle_cntl(
+                ihandle->xio_handle,
+                globus_l_io_gsi_driver,
+                GLOBUS_XIO_GSI_GET_PEER_NAME,
+                &peer_identity);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto done;
+            }
+            major_status = gss_compare_name(&minor_status,
+                                            authorized_identity,
+                                            peer_identity,
+                                            &equal);
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusLIOErrorWrapGSSFailed("gss_compare_name",
+                                                     major_status,
+                                                     minor_status);
+                goto done;
+            }
+
+            if(!equal)
+            {
+                result = globus_error_put(
+                    globus_io_error_construct_authorization_failed(
+                        GLOBUS_IO_MODULE,
+                        GLOBUS_NULL,
+                        ihandle->io_handle,
+                        0,
+                        0,
+                        0));                
+            }
+            
+            break;            
+          case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST:
+            {
+                globus_sockaddr_t       peer_addr;
+                struct hostent          host;
+                struct hostent *        hp;
+                int                     herror;
+                char                    name_buf[4101];
+                int                     rc;
+                int                     save_errno;
+                gss_buffer_desc         name_buffer;
+                /* copy the io crap */
+                
+                sprintf(name_buf, "host@");
+                
+                result = globus_xio_target_cntl(
+                    ihandle->xio_target,
+                    globus_l_io_tcp_driver,
+                    GLOBUS_XIO_TCP_GET_REMOTE_ADDRESS,
+                    &peer_addr);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto done;
+                }
+                
+                if(globus_libc_addr_is_loopback(&peer_addr) == GLOBUS_TRUE)
+                {
+                    rc = globus_libc_gethostname(&name_buf[5], 4096);
+                    
+                    if(rc != 0)
+                    {
+                        save_errno = errno;
+                        result = globus_error_put(
+                            globus_io_error_construct_system_failure(
+                                GLOBUS_IO_MODULE,
+                                GLOBUS_NULL,
+                                GLOBUS_NULL,
+                                save_errno)
+                        );
+                        goto done;
+                    }
+                }
+                else
+                {
+                    hp = globus_libc_gethostbyaddr_r(
+                        (char *) &((struct sockaddr_in *) &peer_addr)->sin_addr,
+                        (int) sizeof(((struct sockaddr_in *) &peer_addr)->sin_addr),
+                        AF_INET,
+                        &host,
+                        &name_buf[5],
+                        4096, 
+                        &herror);
+                    if(hp == GLOBUS_NULL)
+                    {
+                        save_errno = errno;
+                        result = globus_error_put(
+                            globus_io_error_construct_system_failure(
+                                GLOBUS_IO_MODULE,
+                                GLOBUS_NULL,
+                                GLOBUS_NULL,
+                                save_errno)
+                        );
+                        goto done;
+                    }
+                    
+                    if(strchr(hp->h_name, '.') == GLOBUS_NULL)
+                    {
+                        int i;
+                        int found_alias = 0;
+                        
+                        for(i = 0; hp->h_aliases[i] != GLOBUS_NULL; i++)
+                        {
+                            if(strchr(hp->h_aliases[i], '.') != GLOBUS_NULL)
+                            {
+                                memmove(&name_buf[5],
+                                        hp->h_aliases[i],
+                                        strlen(hp->h_aliases[i])+1);
+                                found_alias = 1;
+                                break;
+                            }
+                        }
+                        
+                        if(!found_alias)
+                        {
+                            memmove(&name_buf[5],
+                                    hp->h_name, strlen(hp->h_name)+1);   
+                        }
+                    }
+                    else
+                    {
+                        memmove(&name_buf[5], hp->h_name,
+                                strlen(hp->h_name)+1);   
+                    }
+                }
+
+                name_buffer.value = name_buf;
+                name_buffer.length = strlen(name_buf);
+                
+                major_status = gss_import_name(&minor_status,
+                                               &name_buffer,
+                                               GSS_C_NT_HOSTBASED_SERVICE,
+                                               &authorized_identity);
+                if(GSS_ERROR(major_status))
+                {
+                    result = GlobusLIOErrorWrapGSSFailed("gss_import_name",
+                                                         major_status,
+                                                         minor_status);
+                    goto done;
+                }
+            }
+            result = globus_xio_handle_cntl(
+                ihandle->xio_handle,
+                globus_l_io_gsi_driver,
+                GLOBUS_XIO_GSI_GET_PEER_NAME,
+                &peer_identity);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto done;
+            }
+            major_status = gss_compare_name(&minor_status,
+                                            authorized_identity,
+                                            peer_identity,
+                                            &equal);
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusLIOErrorWrapGSSFailed("gss_compare_name",
+                                                     major_status,
+                                                     minor_status);
+                gss_release_name(&minor_status,
+                                 authorized_identity);
+                goto done;
+            }
+
+            gss_release_name(&minor_status,
+                             authorized_identity);
+            
+            if(!equal)
+            {
+                result = globus_error_put(
+                    globus_io_error_construct_authorization_failed(
+                        GLOBUS_IO_MODULE,
+                        GLOBUS_NULL,
+                        ihandle->io_handle,
+                        0,
+                        0,
+                        0));   
+            }
+            break;                  
+          case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK:
+            result = globus_xio_handle_cntl(
+                ihandle->xio_handle,
+                globus_l_io_gsi_driver,
+                GLOBUS_XIO_GSI_GET_PEER_NAME,
+                &peer_identity);
+
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto done;
+            }
+            
+            result = globus_xio_handle_cntl(
+                ihandle->xio_handle,
+                globus_l_io_gsi_driver,
+                GLOBUS_XIO_GSI_GET_CONTEXT,
+                &context);
+
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto done;
+            }
+
+            major_status = gss_display_name(&minor_status,
+                                            peer_identity,
+                                            &peer_name_buffer,
+                                            NULL);
+
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusLIOErrorWrapGSSFailed("gss_display_name",
+                                                     major_status,
+                                                     minor_status);
+                goto done;
+            }
+            
+            if(!ihandle->authz_data->callback(
+               ihandle->authz_data->callback_arg,
+               ihandle->io_handle,
+               GLOBUS_SUCCESS,
+               peer_name_buffer.value,
+               context))
+            {
+                result = globus_error_put(
+                    globus_io_error_construct_authorization_failed(
+                        GLOBUS_IO_MODULE,
+                        GLOBUS_NULL,
+                        ihandle->io_handle,
+                        0,
+                        0,
+                        0));   
+            }
+
+            free(peer_name_buffer.value);
+            
+            break;
+          case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE:
+          default:
+            break;
+        }
+    }
+
+ done:
+    
+    bounce_info->cb.non_io(
+        bounce_info->user_arg,
+        bounce_info->handle->io_handle,
+        result);
+    
+    globus_free(bounce_info);
+}
+
 
 static
 void
@@ -611,7 +987,10 @@ globus_io_tcpattr_init(
     
     iattr->type = GLOBUS_I_IO_TCP_ATTR;
     iattr->file_flags = 0;
-    
+    iattr->authentication_mode = GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE;
+    iattr->authorization_mode = GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE;
+    iattr->channel_mode = GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR;
+    memset(&iattr->authz_data, 0, sizeof(globus_l_io_secure_authorization_data_t));
     result = globus_xio_attr_init(&iattr->attr);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1287,6 +1666,8 @@ globus_io_tcp_register_connect(
     {
         goto error_handle;
     }
+
+    memset(ihandle, 0, sizeof(globus_l_io_handle_t));
     
     result = globus_xio_stack_init(&stack, GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
@@ -1300,19 +1681,42 @@ globus_io_tcp_register_connect(
     {
         goto error_push;
     }
+
+    result = globus_io_attr_get_secure_authorization_mode(
+        attr,
+        &ihandle->authorization_mode,
+        &ihandle->authz_data);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_push;
+    }
     
+    if((*attr)->authentication_mode !=
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+        result =  globus_xio_stack_push_driver(
+            stack, globus_l_io_gsi_driver);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_authz;
+        }
+    }
+    else
+    {
+        /* force authorization mode to none */
+        ihandle->authorization_mode = GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE;
+    }
+
     snprintf(buf, sizeof(buf), "%s:%hd", host, port);
     result = globus_xio_target_init(&target, GLOBUS_NULL, buf, stack);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_target;
     }
-    
+
     ihandle->type = GLOBUS_I_IO_TCP_HANDLE;
     ihandle->io_handle = handle;
-    ihandle->xio_server = GLOBUS_NULL;
-    ihandle->xio_target = GLOBUS_NULL;
-    ihandle->xio_attr = GLOBUS_NULL;
     bounce_info->handle = ihandle;
     bounce_info->cb.non_io = callback;
     bounce_info->user_arg = callback_arg;
@@ -1322,7 +1726,7 @@ globus_io_tcp_register_connect(
         &ihandle->xio_handle,
         attr ? (*attr)->attr : GLOBUS_NULL,
         target,
-        globus_l_io_bounce_cb,
+        globus_l_io_bounce_authz_cb,
         bounce_info);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1336,8 +1740,15 @@ globus_io_tcp_register_connect(
 
 error_open:
     /* XXX globus_xio_target_destroy(target); */
-
 error_target:
+error_authz:
+    if(ihandle->authz_data->identity != GSS_C_NO_NAME)
+    {
+        OM_uint32                       minor_status;
+
+        gss_release_name(&minor_status,
+                         ihandle->authz_data->identity);
+    }
 error_push:
     globus_xio_stack_destroy(stack);
     
@@ -1346,7 +1757,6 @@ error_stack:
     
 error_handle:
     globus_free(bounce_info);
-    
 error_bounce:
     *handle = GLOBUS_NULL;
     return result;
@@ -1401,6 +1811,8 @@ globus_io_tcp_connect(
     return GLOBUS_SUCCESS;
     
 error_register:
+    free(*handle);
+    *handle = GLOBUS_NULL;
     return result;
 }
 
@@ -1476,7 +1888,18 @@ globus_io_tcp_create_listener(
     {
         goto error_push;
     }
- 
+
+    if((*attr)->authentication_mode !=
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+        result =  globus_xio_stack_push_driver(
+            stack, globus_l_io_gsi_driver);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_push;
+        }
+    }
+    
     result = globus_xio_server_create(
         &ihandle->xio_server, iattr->attr, stack);
     if(result != GLOBUS_SUCCESS)
@@ -1591,6 +2014,8 @@ error_register:
     
 error_bounce:
 error_registered:
+    free(*handle);
+    *handle = GLOBUS_NULL;
     return result;
 }
 
@@ -1715,10 +2140,8 @@ globus_io_tcp_register_accept(
 
 error_open:
     globus_free(ihandle);
-    
 error_handle:
     globus_free(bounce_info);
-    
 error_bounce:
 error_target:
     *new_handle = GLOBUS_NULL;
@@ -2990,3 +3413,624 @@ globus_io_tcp_set_attr(
 }
 
 #endif
+
+
+globus_result_t
+globus_io_tcp_get_security_context(
+    globus_io_handle_t *                handle,
+    gss_ctx_id_t *                      context)
+{
+    GlobusIOName(globus_io_tcp_get_security_context);
+
+    return globus_xio_handle_cntl(
+        (*handle)->xio_handle,
+        globus_l_io_gsi_driver,
+        GLOBUS_XIO_GSI_GET_CONTEXT,
+        context);
+}
+
+globus_result_t
+globus_io_tcp_get_delegated_credential(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t *                     cred)
+{
+    GlobusIOName(globus_io_tcp_get_delegated_credential);
+    return globus_xio_handle_cntl(
+        (*handle)->xio_handle,
+        globus_l_io_gsi_driver,
+        GLOBUS_XIO_GSI_GET_DELEGATED_CRED,
+        cred);
+}
+
+globus_result_t
+globus_io_register_init_delegation(
+    globus_io_handle_t *                handle,
+    const gss_cred_id_t                 cred_handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    globus_io_delegation_callback_t     callback,
+    void *                              callback_arg)
+{
+    GlobusIOName(globus_io_register_init_delegation);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_init_delegation(
+    globus_io_handle_t *                handle,
+    const gss_cred_id_t                 cred_handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req)
+{
+    GlobusIOName(globus_io_init_delegation);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_register_accept_delegation(
+    globus_io_handle_t *                handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    globus_io_delegation_callback_t     callback,
+    void *                              callback_arg)
+{
+    GlobusIOName(globus_io_register_accept_delegation);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_accept_delegation(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t *                     delegated_cred,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    OM_uint32 *                         time_rec)
+{
+    GlobusIOName(globus_io_accept_delegation);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_attr_set_secure_authentication_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_authentication_mode_t
+                                        mode,
+    gss_cred_id_t                       credential)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusIOName(globus_io_attr_set_secure_authentication_mode);
+    (*attr)->authentication_mode = mode;
+
+    switch(mode)
+    {
+      case GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI:
+      case GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL:
+        if(credential != GSS_C_NO_CREDENTIAL)
+        { 
+            result = globus_xio_attr_cntl(
+                (*attr)->attr, 
+                globus_l_io_gsi_driver, 
+                GLOBUS_XIO_GSI_SET_CREDENTIAL, 
+                credential);
+        }
+        break;
+      case GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS:
+        result = globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_ANON);
+        break;
+    }
+    
+    return result;
+}
+
+globus_result_t
+globus_io_attr_get_secure_authentication_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_authentication_mode_t *
+                                        mode,
+    gss_cred_id_t *                     credential)
+{
+    GlobusIOName(globus_io_attr_get_secure_authentication_mode);
+    *mode = (*attr)->authentication_mode;
+    return GLOBUS_SUCCESS;
+}
+
+
+globus_result_t
+globus_io_attr_set_secure_authorization_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_authorization_mode_t
+                                        mode,
+    globus_io_secure_authorization_data_t *
+                                        data)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    GlobusIOName(globus_io_attr_set_secure_authorization_mode);
+    (*attr)->authorization_mode = mode;
+
+    switch((*attr)->authorization_mode)
+    {
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE:
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF:
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST:
+        if((*attr)->authz_data.identity != GSS_C_NO_NAME)
+        {
+            gss_release_name(&minor_status,
+                             (*attr)->authz_data.identity);
+            (*attr)->authz_data.identity = GSS_C_NO_NAME;
+        }
+        break;
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY:
+        if((*attr)->authz_data.identity != GSS_C_NO_NAME)
+        {
+            gss_release_name(&minor_status,
+                             (*attr)->authz_data.identity);
+        }        
+
+        major_status = gss_duplicate_name(&minor_status,
+                                          (*data)->identity,
+                                          &(*attr)->authz_data.identity);
+
+        if(GSS_ERROR(major_status))
+        {
+            result = GlobusLIOErrorWrapGSSFailed("gss_duplicate_name",
+                                                 major_status,
+                                                 minor_status);
+        }
+	break;
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK:
+	(*attr)->authz_data.callback = (*data)->callback;
+	(*attr)->authz_data.callback_arg = (*data)->callback_arg;
+	break;
+    }
+
+    return result;
+}
+
+globus_result_t
+globus_io_attr_get_secure_authorization_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_authorization_mode_t *
+                                        mode,
+    globus_io_secure_authorization_data_t *
+                                        data)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    GlobusIOName(globus_io_attr_get_secure_authorization_mode);
+
+    result = GlobusLIOMalloc(*data, globus_l_io_secure_authorization_data_t);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto done;
+    }
+    
+    *mode = (*attr)->authorization_mode;
+
+    switch((*attr)->authorization_mode)
+    {
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE:
+	break;
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF:
+	break;
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST:
+	break;
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY:
+        major_status = gss_duplicate_name(&minor_status,
+                                          (*attr)->authz_data.identity,
+                                          &(*data)->identity);
+        if(GSS_ERROR(major_status))
+        {
+            result = GlobusLIOErrorWrapGSSFailed("gss_duplicate_name",
+                                                 major_status,
+                                                 minor_status);
+        }
+	break;
+      case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK:
+	(*data)->callback = (*attr)->authz_data.callback;
+	(*data)->callback_arg = (*attr)->authz_data.callback_arg;
+	break;
+    }
+
+ done:
+    
+    return result;
+}
+
+globus_result_t
+globus_io_attr_set_secure_extension_oids(
+    globus_io_attr_t *                  attr,
+    gss_OID_set                         extension_oids)
+{
+    GlobusIOName(globus_io_attr_set_secure_extension_oids);
+    return GLOBUS_SUCCESS;    
+}
+
+globus_result_t
+globus_io_attr_get_secure_extension_oids(
+    globus_io_attr_t *                  attr,
+    gss_OID_set *                       extension_oids)
+{
+    GlobusIOName(globus_io_attr_get_secure_extension_oids);
+    return GLOBUS_SUCCESS;    
+}
+
+globus_result_t
+globus_io_secure_authorization_data_initialize(
+    globus_io_secure_authorization_data_t * data)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusIOName(globus_io_secure_authorization_data_initialize);
+
+    result = GlobusLIOMalloc(*data, globus_l_io_secure_authorization_data_t);
+
+    if(result == GLOBUS_SUCCESS)
+    {
+        memset(*data, 0, sizeof(globus_l_io_secure_authorization_data_t));
+    }
+    
+    return result;
+}
+
+globus_result_t
+globus_io_secure_authorization_data_destroy(
+    globus_io_secure_authorization_data_t *
+                                        data)
+{
+    GlobusIOName(globus_io_secure_authorization_data_destroy);
+
+    if((*data)->identity != GSS_C_NO_NAME)
+    {
+        OM_uint32                       minor_status;
+
+        gss_release_name(&minor_status,
+                         (*data)->identity);
+    }
+
+    globus_free(*data);
+    
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_secure_authorization_data_set_identity(
+    globus_io_secure_authorization_data_t *
+                                        data,
+    char *                              identity)
+{
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    gss_buffer_desc                     name_buffer;
+    gss_OID                             name_type = GSS_C_NO_OID;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusIOName(globus_io_secure_authorization_data_set_identity);
+
+
+    if(!strncmp("GSI-NO-TARGET", identity, 13))
+    {
+        (*data)->identity = GSS_C_NO_NAME;
+    }
+    else
+    {
+        name_buffer.value = identity;
+        name_buffer.length = strlen(identity);
+          
+        /* 
+         * A  GSS_C_NT_HOSTBASED_SERVICE is of the form service@FQDN
+         * At least the Globus gssapi, and the Kerberos gssapi 
+         * use the same form. We will check for 
+         * two special forms here: host@FQDN and ftp@FQDN
+         */
+
+        if (strchr(identity,'@') && 
+            !strstr(identity,"CN="))
+        { 
+            name_type = GSS_C_NT_HOSTBASED_SERVICE;
+        }
+        
+        major_status = gss_import_name(&minor_status,
+                                       &name_buffer,
+                                       name_type,
+                                       &(*data)->identity);
+        if(GSS_ERROR(major_status))
+        {
+            result = GlobusLIOErrorWrapGSSFailed("gss_import_name",
+                                                 major_status,
+                                                 minor_status);
+        }
+    }
+    
+    return result;
+}
+
+globus_result_t
+globus_io_secure_authorization_data_get_identity(
+    globus_io_secure_authorization_data_t *
+                                        data,
+    char **                             identity)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusIOName(globus_io_secure_authorization_data_get_identity);
+
+    if((*data)->identity != GSS_C_NO_NAME)
+    { 
+        OM_uint32                       major_status;
+        OM_uint32                       minor_status;
+        gss_buffer_desc                 name_buffer;
+        
+        major_status = gss_display_name(&minor_status,
+                                        (*data)->identity,
+                                        &name_buffer,
+                                        NULL);
+        if(GSS_ERROR(major_status))
+        {
+            result = GlobusLIOErrorWrapGSSFailed("gss_export_name",
+                                                 major_status,
+                                                 minor_status);
+            goto done;
+        }
+
+        /* could probably just realloc the buffer contents */
+        
+        result = GlobusLIOMallocSize(*identity, name_buffer.length + 1);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            gss_release_buffer(&minor_status,
+                               &name_buffer);
+            goto done;
+        }
+
+        memcpy(*identity, name_buffer.value, name_buffer.length);
+
+        (*identity)[name_buffer.length] = '\0';
+
+        gss_release_buffer(&minor_status,
+                           &name_buffer);
+    }
+    else
+    {
+        *identity = NULL;
+    }
+
+ done:
+    
+    return result;
+}
+
+globus_result_t
+globus_io_secure_authorization_data_set_callback(
+    globus_io_secure_authorization_data_t *
+                                        data,
+    globus_io_secure_authorization_callback_t
+                                        callback,
+    void *                              callback_arg)
+{
+    GlobusIOName(globus_io_secure_authorization_data_set_callback);
+
+    (*data)->callback = callback;
+    (*data)->callback_arg = callback_arg;
+    
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_secure_authorization_data_get_callback(
+    globus_io_secure_authorization_data_t *
+                                        data,
+    globus_io_secure_authorization_callback_t *
+                                        callback,
+    void **                             callback_arg)
+{
+    GlobusIOName(globus_io_secure_authorization_data_get_callback);
+
+    *callback = (*data)->callback;
+    *callback_arg = (*data)->callback_arg;
+    
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_attr_set_secure_channel_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_channel_mode_t     mode)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusIOName(globus_io_attr_set_secure_channel_mode);
+    (*attr)->channel_mode = mode;
+    switch(mode)
+    {
+      case GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR:
+        result = globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
+            GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE);
+        break;
+      case GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP:
+        result = globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_WRAP_MODE,
+            GLOBUS_TRUE);
+        break;
+      case GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP:
+        result = globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE);
+        break;
+    }
+    return result;
+}
+
+globus_result_t
+globus_io_attr_get_secure_channel_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_channel_mode_t *   mode)
+{
+    GlobusIOName(globus_io_attr_get_secure_channel_mode);
+    *mode = (*attr)->channel_mode;
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_attr_set_secure_protection_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_protection_mode_t  mode)
+{
+    GlobusIOName(globus_io_attr_set_secure_protection_mode);
+    
+    return globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
+            mode);
+}
+
+globus_result_t
+globus_io_attr_get_secure_protection_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_protection_mode_t *mode)
+{
+    GlobusIOName(globus_io_attr_get_secure_protection_mode);
+    return globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_GET_PROTECTION_LEVEL,
+            mode);
+}
+
+globus_result_t
+globus_io_attr_set_secure_delegation_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_delegation_mode_t  mode)
+{
+    GlobusIOName(globus_io_attr_set_secure_delegation_mode);
+    return globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_DELEGATION_MODE,
+            mode);
+}
+
+
+globus_result_t
+globus_io_attr_get_secure_delegation_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_delegation_mode_t *
+                                        mode)
+{
+    GlobusIOName(globus_io_attr_set_secure_delegation_mode);
+    return globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_GET_DELEGATION_MODE,
+            mode);
+}
+
+globus_result_t
+globus_io_attr_set_secure_proxy_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_proxy_mode_t       mode)
+{
+    GlobusIOName(globus_io_attr_set_secure_proxy_mode);
+    return globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_PROXY_MODE,
+            mode);
+}
+
+globus_result_t
+globus_io_attr_get_secure_proxy_mode(
+    globus_io_attr_t *                  attr,
+    globus_io_secure_proxy_mode_t *     mode)
+{
+    GlobusIOName(globus_io_attr_get_secure_proxy_mode);
+    return globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_GET_PROXY_MODE,
+            mode);
+}
+
+
+/* netlogger functions */
+
+globus_result_t
+globus_io_attr_netlogger_set_handle(
+    globus_io_attr_t *                  attr,
+    globus_netlogger_handle_t *         nl_handle)
+{
+    GlobusIOName(globus_io_attr_netlogger_set_handle);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_attr_netlogger_copy_handle(
+    globus_netlogger_handle_t *              src,
+    globus_netlogger_handle_t *              dst)
+{
+    GlobusIOName(globus_io_attr_netlogger_copy_handle);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_netlogger_write(
+    globus_netlogger_handle_t *       nl_handle,
+    const char *                      event,
+    const char *                      id,
+    const char *                      level,
+    const char *                      tag)
+{
+    GlobusIOName(globus_netlogger_write);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_netlogger_handle_init(
+    globus_netlogger_handle_t *       gnl_handle,
+    const char *                      hostname,
+    const char *                      progname,
+    const char *                      pid)
+{
+    GlobusIOName(globus_netlogger_handle_init);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_netlogger_handle_destroy(
+    globus_netlogger_handle_t *       nl_handle)
+{
+    GlobusIOName(globus_netlogger_handle_destroy);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_netlogger_get_nlhandle(
+    globus_netlogger_handle_t *       nl_handle,
+    void **                           handle)
+{
+    GlobusIOName(globus_netlogger_get_nlhandle);
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_netlogger_set_desc(
+    globus_netlogger_handle_t *       nl_handle,
+    char *                            desc)
+{
+    GlobusIOName(globus_netlogger_set_desc);
+    return GLOBUS_SUCCESS;
+}

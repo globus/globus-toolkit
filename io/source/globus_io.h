@@ -4,6 +4,7 @@
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_xio_file_driver.h"
+#include "globus_xio_gsi.h"
 
 EXTERN_C_BEGIN
 
@@ -454,7 +455,7 @@ globus_bool_t
 globus_io_eof(
     globus_object_t *                   eof);
 
-#if 0
+
 
 globus_result_t
 globus_io_attr_set_callback_space(
@@ -607,8 +608,7 @@ globus_io_attr_get_udp_multicast_interface(
 #include "globus_gss_ext_compat.h"
 #endif
 
-typedef globus_i_io_secure_authorization_data_s * 
-    globus_io_secure_authorization_data_t;
+typedef struct globus_l_io_secure_authorization_data_s * globus_io_secure_authorization_data_t;
 
 typedef globus_bool_t
 (*globus_io_secure_authorization_callback_t)(
@@ -628,50 +628,57 @@ typedef void
 
 typedef enum
 {
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE      = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_NONE,
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI    = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_GSSAPI,
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL    = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_MUTUAL,
-    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS = GLOBUS_XIO_GSI_AUTHENTICATION_MODE_ANONYMOUS
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE,
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
+    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS
 } globus_io_secure_authentication_mode_t;
-
 
 typedef enum
 {
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE     = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_NONE,
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF     = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_SELF,
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_IDENTITY,
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST     = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_HOST,
-    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK = GLOBUS_XIO_GSI_AUTHORIZATION_MODE_CALLBACK
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE,
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST,
+    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK
 } globus_io_secure_authorization_mode_t;
 
 typedef enum
 {
-    GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR    = GLOBUS_XIO_GSI_CHANNEL_MODE_CLEAR,
-    GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP = GLOBUS_XIO_GSI_CHANNEL_MODE_GSI_WRAP,
-    GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP = GLOBUS_XIO_GSI_CHANNEL_MODE_SSL_WRAP
-} globus_io_secure_channel_mode_t;
-
-typedef enum
-{
-    GLOBUS_IO_SECURE_PROTECTION_MODE_NONE    = GLOBUS_XIO_GSI_PROTECTION_MODE_NONE,
-    GLOBUS_IO_SECURE_PROTECTION_MODE_SAFE    = GLOBUS_XIO_GSI_PROTECTION_MODE_SAFE,
-    GLOBUS_IO_SECURE_PROTECTION_MODE_PRIVATE = GLOBUS_XIO_GSI_PROTECTION_MODE_PRIVATE
+    GLOBUS_IO_SECURE_PROTECTION_MODE_NONE =
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY,
+    GLOBUS_IO_SECURE_PROTECTION_MODE_SAFE =
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY,
+    GLOBUS_IO_SECURE_PROTECTION_MODE_PRIVATE =
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY
 } globus_io_secure_protection_mode_t;
 
 typedef enum
 {
-    GLOBUS_IO_SECURE_DELEGATION_MODE_NONE          = GLOBUS_XIO_GSI_DELEGATION_MODE_NONE,
-    GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY = GLOBUS_XIO_GSI_DELEGATION_MODE_LIMITED_PROXY,
-    GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY    = GLOBUS_XIO_GSI_DELEGATION_MODE_FULL_PROXY
+    GLOBUS_IO_SECURE_DELEGATION_MODE_NONE =
+    GLOBUS_XIO_GSI_DELEGATION_MODE_NONE,
+    GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY =
+    GLOBUS_XIO_GSI_DELEGATION_MODE_LIMITED,
+    GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY =
+    GLOBUS_XIO_GSI_DELEGATION_MODE_FULL
 } globus_io_secure_delegation_mode_t;
 
 typedef enum
 {
-    GLOBUS_IO_SECURE_PROXY_MODE_NONE    = GLOBUS_XIO_GSI_PROXY_MODE_NONE,
-    GLOBUS_IO_SECURE_PROXY_MODE_LIMITED = GLOBUS_XIO_GSI_PROXY_MODE_LIMITED,
-    GLOBUS_IO_SECURE_PROXY_MODE_MANY    = GLOBUS_XIO_GSI_PROXY_MODE_MANY
+    GLOBUS_IO_SECURE_PROXY_MODE_NONE =
+    GLOBUS_XIO_GSI_PROXY_MODE_FULL,
+    GLOBUS_IO_SECURE_PROXY_MODE_LIMITED =
+    GLOBUS_XIO_GSI_PROXY_MODE_LIMITED,
+    GLOBUS_IO_SECURE_PROXY_MODE_MANY =
+    GLOBUS_XIO_GSI_PROXY_MODE_MANY
 } globus_io_secure_proxy_mode_t;
 
+typedef enum
+{
+    GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR = 0,
+    GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP,
+    GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP
+} globus_io_secure_channel_mode_t;
 
 globus_result_t
 globus_io_tcp_get_security_context(
@@ -836,7 +843,47 @@ globus_io_attr_get_secure_proxy_mode(
     globus_io_attr_t *                  attr,
     globus_io_secure_proxy_mode_t *     mode);
 
-#endif
+
+/* netlogger crap */
+
+globus_result_t
+globus_io_attr_netlogger_set_handle(
+    globus_io_attr_t *                  attr,
+    globus_netlogger_handle_t *         nl_handle);
+
+globus_result_t
+globus_io_attr_netlogger_copy_handle(
+    globus_netlogger_handle_t *              src,
+    globus_netlogger_handle_t *              dst);
+
+globus_result_t
+globus_netlogger_write(
+    globus_netlogger_handle_t *       nl_handle,
+    const char *                      event,
+    const char *                      id,
+    const char *                      level,
+    const char *                      tag);
+
+globus_result_t
+globus_netlogger_handle_init(
+    globus_netlogger_handle_t *       gnl_handle,
+    const char *                      hostname,
+    const char *                      progname,
+    const char *                      pid);
+
+globus_result_t
+globus_netlogger_handle_destroy(
+    globus_netlogger_handle_t *       nl_handle);
+
+globus_result_t
+globus_netlogger_get_nlhandle(
+    globus_netlogger_handle_t *       nl_handle,
+    void **                           handle);
+
+globus_result_t
+globus_netlogger_set_desc(
+    globus_netlogger_handle_t *       nl_handle,
+    char *                            desc);
 
 EXTERN_C_END
 
