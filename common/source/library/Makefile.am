@@ -1,7 +1,6 @@
 include $(top_srcdir)/globus_automake_targets
 
 Sources= \
-	acconfig.h \
 	globus_args.c \
 	globus_args.h \
 	globus_callback.c \
