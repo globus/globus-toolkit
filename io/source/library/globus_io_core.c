@@ -409,7 +409,7 @@ static
 globus_bool_t
 globus_l_io_select_wakeup(void)
 {
-#if !defined(BUILD_LITE)
+#if 0
     char				byte = '\0';
     int					rc;
 

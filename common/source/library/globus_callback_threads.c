@@ -2163,7 +2163,7 @@ globus_callback_get_timeout(
         
     if(!restart_info || restart_info->own_thread)
     {
-        GlobusTimeReltimeCopy(*time_left, globus_i_reltime_infinity);
+        GlobusTimeReltimeSet(*time_left, 0, 5000);
 
         return GLOBUS_FALSE;
     }
