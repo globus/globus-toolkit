@@ -52,6 +52,7 @@ checkout_cvs() {
 		cvs_opts="";
 	else
 		cvs_opts="-r $tag";
+		echo "Using tag $tag"
 	fi
 
 	if [ -d /home/globdev/CVS/gridservices ]; then
@@ -240,7 +241,9 @@ collate_packages() {
 		tar czf package-output/$f.tar.gz $f
 	done
 
-	$GPT_LOCATION/sbin/gpt-bundle -srcdir=package-output -all -exclude=mmjfs -exclude=gt3_hostinfo -exclude=sdb
+	#This is our gt3 src bundle.
+	#Package it with the gt2 src bundle to make a distro
+	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=$release -srcdir=package-output -all -exclude=gt3_hostinfo
 
 	# cp fait_accompli/* package-output
 
@@ -248,29 +251,60 @@ collate_packages() {
 
 install_bundle() {
 	echo Installing into $dir
-	$GPT_LOCATION/sbin/gpt-build --installdir=$dir package-output/gpt_bundle_src.tar.gz gcc32dbg
+	$GPT_LOCATION/sbin/gpt-build --installdir=$dir gt3-all-src-1-src_bundle.tar.gz gcc32dbg
 
-	echo Collecting GT3 binaries from $dir
-	$GPT_LOCATION/sbin/gpt-pkg --installdir=$dir -all
+	if [ $release = 1 ]; then
+		echo Collecting GT3 binaries from $dir
+		$GPT_LOCATION/sbin/gpt-pkg --installdir=$dir -all
 
-	$GPT_LOCATION/sbin/gpt-bundle -all -bindir=binaries
+		# This is our gt3 binary bundle
+		# Package it with the gt2 binary bundle to make a distro
+		# Do this before installing GT2 to avoid getting all those
+		# packages also.
+		$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=$release -all -bindir=binaries
+	fi
 
 	echo Installing GT2 dep bundle into $dir
 	install_gt2 $dir
+
+	if [ $release = 1 ]; then
+		# This is gt3 core binary.  Distribute by itself.
+		pushd BUILD/core-0.3-src/core/impl/java/build/
+		tar czf gt3-core-alpha3.tar.gz ogsa-alpha-3/
+		popd
+		mv BUILD/core-0.3-src/core/impl/java/build/gt3-core-alpha3.tar.gz package-output
+
+		# This is gt3 core source.  Distribute by itself.
+		pushd ogsa-cvs/
+		tar czf gt3-core-src-alpha3.tar.gz ogsa
+		popd
+		mv ogsa-cvs/gt3-core-src-alpha3.tar.gz package-output
+
+		# This is the gars bundle.  Distribute by itself,
+		# but it needs core installed first.
+		mkdir gars/
+		cp $dir/gars/* gars
+		tar czf package-output/gt3-alpha3-gars.tar.gz gars
+	fi
+
 }
 
 read_args() {
 	dir=""
 	install=-1
+	onlyc=-1
+	package=""
+	release=-1
 	tag=""
 	update=1
-	package=""
-	onlyc=-1
 
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
 			export tag=$2;
 			shift; shift;
+		elif [ $1 = "-r" ]; then
+			release=1;
+			shift;
 		elif [ $1 = "-p" ]; then
 			package=$2;
 			shift; shift;
@@ -294,7 +328,7 @@ read_args() {
 		fi
 	done
 
-	export install tag update package onlyc;
+	export install tag update package onlyc release;
 }
 
 
