@@ -203,6 +203,7 @@
 #endif
 
 #ifndef HAVE_MEMMOVE
+#undef memmove
 #define memmove(a,b,c) bcopy(b,a,c)
 #define HAVE_MEMMOVE 1
 #endif

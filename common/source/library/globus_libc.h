@@ -286,6 +286,9 @@ globus_common_v_create_nstring(
 #ifdef HAVE_MEMMOVE
 #  define globus_libc_memmove(d, s, n) memmove((d), (s), (n)) 
 #else
+#undef memmove
+#  define memmove(d, s, n) bcopy ((s), (d), (n))
+#  define HAVE_MEMMOVE
 #  define globus_libc_memmove(d, s, n) bcopy ((s), (d), (n))
 #endif
 
