@@ -81,14 +81,18 @@ public class URLExpander extends Thread {
      *@return                  Description of the Return Value
      *@exception  Exception    Description of the Exception
      */
-    public Vector doMlsd( String localSourcePath )
-             throws Exception {
-        //this.sourceHost.setType(GridFTPSession.TYPE_ASCII);
-        logger.debug( "Source Path : " + localSourcePath );
-        HostPort hp = this.sourceHost.setLocalPassive();
-        this.sourceHost.setActive( hp );
-        this.sourceHost.changeDir( localSourcePath );
-        return this.sourceHost.mlsd();
+    public Vector doMlsd( String localSourcePath ) {
+        try {
+            //this.sourceHost.setType(GridFTPSession.TYPE_ASCII);
+            logger.debug( "Source Path : " + localSourcePath );
+            HostPort hp = this.sourceHost.setLocalPassive();
+            this.sourceHost.setActive( hp );
+            this.sourceHost.changeDir( localSourcePath );
+            return this.sourceHost.mlsd();
+        } catch (Exception e) {
+            logger.debug("Exception in mlsd " + e.getMessage(),e);
+        }
+        return null;
     }
 
 

@@ -437,7 +437,7 @@ public class TransferClient {
                 this.urlExpander.start();
             } else {
                 size = sourceHost.getSize( sourcePath );
-                markerListener = new MyMarkerListener( transferProgress,
+                this.markerListener = new MyMarkerListener( transferProgress,
                         serviceData,
                         transferProgressData, size,
                         restartMarkerServiceData,
@@ -446,7 +446,7 @@ public class TransferClient {
                         gridFTPRestartMarkerElement,
                         gridFTPPerfMarkerSD,
                         gridFTPPerfMarkerElement );
-                markerListener.setTransferId( transferid );
+                this.markerListener.setTransferId( transferid );
                 logger.debug( "Transfer Id in TransferClient : " + transferid );
 
             }
@@ -754,7 +754,7 @@ public class TransferClient {
             sourceHost.setTCPBufferSize( this.tcpBufferSize );
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
             sourceHost.transfer(this.sourcePath,
-            this.destinationHost,this.destinationPath,false,null);
+            this.destinationHost,this.destinationPath,false,this.markerListener);
             logger.debug( "Transfer done" );
             this.markerListener = null;
             status = 0;
@@ -778,7 +778,7 @@ public class TransferClient {
             DataSink sink = null;
             sink = new FileRandomIO( new java.io.RandomAccessFile( fullLocalFile,
                     "rw" ) );
-            sourceHost.get( sourcePath, sink, markerListener );
+            sourceHost.get( sourcePath, sink, this.markerListener );
             sourceHost.close();
             destinationHost.setOptions( new RetrieveOptions( parallelism ) );
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
@@ -787,7 +787,7 @@ public class TransferClient {
             source = new FileRandomIO( new java.io.RandomAccessFile(
                     fullLocalFile, "r" ) );
             destinationHost.put( destinationPath, source,
-                    markerListener );
+                    this.markerListener );
             destinationHost.close();
             status = 0;
         } catch ( FTPException e ) {
@@ -810,10 +810,8 @@ public class TransferClient {
             sourceHost.setOptions( new RetrieveOptions( parallelism ) );
             sourceHost.setTCPBufferSize( this.tcpBufferSize );
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
-         /*   sourceHost.extendedTransfer( this.sourcePath, this.destinationHost,
-                    this.destinationPath, markerListener );*/
-            sourceHost.transfer(this.sourcePath,
-            this.destinationHost,this.destinationPath,false,null);
+            sourceHost.extendedTransfer( this.sourcePath, this.destinationHost,
+                    this.destinationPath, this.markerListener );
             logger.debug( "Transfer done" );
             this.markerListener = null;
             status = 0;
@@ -841,7 +839,7 @@ public class TransferClient {
             DataSink sink = null;
             sink = new FileRandomIO( new java.io.RandomAccessFile( fullLocalFile,
                     "rw" ) );
-            sourceHost.extendedGet( sourcePath, size, sink, markerListener );
+            sourceHost.extendedGet( sourcePath, size, sink, this.markerListener );
             sourceHost.close();
             destinationHost.setOptions( new RetrieveOptions( parallelism ) );
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
@@ -850,7 +848,7 @@ public class TransferClient {
             source = new FileRandomIO( new java.io.RandomAccessFile(
                     fullLocalFile, "r" ) );
             destinationHost.extendedPut( destinationPath, source,
-                    markerListener );
+                    this.markerListener );
             destinationHost.close();
             status = 0;
         } catch ( FTPException e ) {
