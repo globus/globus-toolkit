@@ -1019,17 +1019,17 @@ globus_io_udp_sendvto(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
                 "iov",
-                1,
+                2,
                 myname));
     }
-    if(iovc > 0)
+    if(iovc < 0)
     {
         return globus_error_put(
             globus_io_error_construct_null_parameter(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
                 "iovc",
-                1,
+                3,
                 myname));
     }
     if(host == GLOBUS_NULL)
@@ -1039,7 +1039,7 @@ globus_io_udp_sendvto(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
                 "host",
-                1,
+                5,
                 myname));
     }
 
