@@ -167,6 +167,8 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 148 */     "a required RSL attribute was not defined in the RSL spec",
 /* 149 */     "the gass_cache attribute points to an invalid cache directory",
 /* 150 */     "the provided RSL 'save_state' parameter has an invalid value",
+/* 151 */     "the job manager could not open the RSL attribute validation file",
+/* 152 */     "the  job manager could not read the RSL attribute validation file"
 };
 
 static char *

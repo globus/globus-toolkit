@@ -328,6 +328,10 @@ rsl_check_failed:
  * parser ignores unrecognized attibutes, so a misplaced quote could
  * it to ignore large portions of the file.
  *
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_VALIDATION_FILE
+ *         The validation file could not be opened.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE
+ *         The validation file could not be read or parsed.
  */
 static
 int
@@ -351,20 +355,47 @@ globus_l_gram_job_manager_read_validation_file(
 
     fp = fopen(validation_filename, "r");
 
-    fseek(fp, 0, SEEK_END);
-    length = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+    if(fp == NULL)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_VALIDATION_FILE;
+
+	goto error_exit;
+    }
+
+    if(fseek(fp, 0, SEEK_END) == -1)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
+
+	goto close_exit;
+    }
+    if((length = ftell(fp)) == -1)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
+
+	goto close_exit;
+    }
+    if(fseek(fp, 0, SEEK_SET) == -1)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
+
+	goto close_exit;
+    }
 
     token_start = data = globus_libc_malloc((size_t) length + 1);
 
     if(token_start == NULL)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
 
-	goto error_exit;
+	goto close_exit;
     }
 
-    fread(token_start, 1, (size_t) length, fp);
+    if(fread(token_start, 1, (size_t) length, fp) != length)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
+
+	goto close_exit;
+    }
     token_start[(size_t) length] = '\0';
 
     while(*token_start)
@@ -393,7 +424,7 @@ globus_l_gram_job_manager_read_validation_file(
 	attribute = globus_libc_malloc(token_end - token_start + 1);
 	if(attribute == NULL)
 	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
 	    goto error_exit;
 	}
 	memcpy(attribute, token_start, token_end - token_start);
@@ -420,7 +451,7 @@ globus_l_gram_job_manager_read_validation_file(
 	    value = globus_libc_malloc(token_end - token_start + 1);
 	    if(value == NULL)
 	    {
-		rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
 
 		goto error_exit;
 	    }
@@ -455,7 +486,7 @@ globus_l_gram_job_manager_read_validation_file(
 		value = globus_libc_malloc(token_end - token_start + 1);
 		if(value == NULL)
 		{
-		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
 
 		    goto error_exit;
 		}
@@ -475,7 +506,7 @@ globus_l_gram_job_manager_read_validation_file(
 		    sizeof(globus_gram_job_manager_validation_record_t));
 	    if(tmp == NULL)
 	    {
-		rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+		rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
 
 		goto error_exit;
 	    }
@@ -624,6 +655,8 @@ globus_l_gram_job_manager_read_validation_file(
 	}
     }
 
+close_exit:
+    fclose(fp);
 error_exit:
     if(data)
     {
