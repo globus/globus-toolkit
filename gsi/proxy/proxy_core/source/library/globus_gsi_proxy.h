@@ -104,7 +104,7 @@ globus_module_descriptor_t		globus_i_gsi_proxy_module;
  * globus_gsi_proxy_handle_destroy(), globus_gsi_proxy_handle_attrs_t
  */
 
-typedef struct globus_l_gsi_proxy_handle_s * globus_gsi_proxy_handle_t
+typedef struct globus_l_gsi_proxy_handle_s * globus_gsi_proxy_handle_t;
 
 /**
  * Handle Attributes.
@@ -116,7 +116,7 @@ typedef struct globus_l_gsi_proxy_handle_s * globus_gsi_proxy_handle_t
  * @see globus_gsi_proxy_handle_t, @ref globus_gsi_proxy_handle_attrs
  */
 
-typedef struct globus_l_gsi_proxy_handle_attrs_s * globus_gsi_proxy_handle_attrs_t
+typedef struct globus_l_gsi_proxy_handle_attrs_s * globus_gsi_proxy_handle_attrs_t;
 
 /**
  * @defgroup globus_gsi_proxy_handle Handle Management
