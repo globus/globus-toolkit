@@ -2203,6 +2203,7 @@ globus_l_gass_transfer_http_new_listener(
     proto->destroy = globus_l_gass_transfer_http_listener_destroy;
 
     proto->listener = listener;
+    proto->destroy_called;
     if(strcmp(scheme, "http") == 0)
     {
 	proto->url_scheme = GLOBUS_URL_SCHEME_HTTP;
