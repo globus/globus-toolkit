@@ -108,7 +108,7 @@ Southern California. All Rights Reserved.
   <copy file="${ogsa.root}/${nsmap.file}" toDir="./"/>
     <echo message=" Generating stubs from ./schema/base/reliable_transfer_service.wsdl" />
     <java classname="org.globus.ogsa.tools.wsdl.GSDL2Java" dir="./schema/base/reliabletransfer" fork="yes"
-        classpathref="classpath">
+        classpathref="classpath" failonerror="true">
        <sysproperty key="java.protocol.handler.pkgs" 
                  value="org.globus.net.protocol" />
       <arg value="-o"/>  

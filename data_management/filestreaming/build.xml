@@ -107,33 +107,33 @@ Southern California. All Rights Reserved.
 
     <echo message="Generating schema for file_streaming_factory"/>
     <java classname="org.globus.ogsa.tools.wsdl.GenerateBinding" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath">
+          classpathref="classpath" failonerror="true">
       <arg value="file_streaming_factory_port_type.wsdl"/>
       <arg value="file_streaming_factory"/>
       <arg value="http"/>
     </java>
     <java classname="org.globus.ogsa.tools.wsdl.DecorateWSDL" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath">
+          classpathref="classpath" failonerror="true">
       <arg value="../../core/factory/factory_bindings.wsdl"/>
       <arg value="file_streaming_factory_service.wsdl"/>
     </java>
     <java classname="org.globus.ogsa.tools.wsdl.DecorateWSDL" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath">
+          classpathref="classpath" failonerror="true">
       <arg value="../../core/service/grid_service_bindings.wsdl"/>
       <arg value="file_streaming_factory_service.wsdl"/>
     </java>
     <java classname="org.globus.ogsa.tools.wsdl.DecorateWSDL" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath">
+          classpathref="classpath" failonerror="true">
       <arg value="../../core/notification/notification_source_bindings.wsdl"/>
       <arg value="file_streaming_factory_service.wsdl"/>
     </java>
     <java classname="org.globus.ogsa.tools.wsdl.DecorateSDD" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath">
+          classpathref="classpath" failonerror="true">
       <arg value="../../core/types/inspection.wsdl"/>
       <arg value="file_streaming_factory_service.wsdl"/>
     </java>
     <java classname="org.globus.ogsa.tools.wsdl.DecorateWSDL" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath">
+          classpathref="classpath" failonerror="true">
       <arg value="../../security/authentication/gss_secure_conversation_bindings.wsdl"/>
       <arg value="file_streaming_factory_service.wsdl"/>
     </java>
@@ -147,7 +147,7 @@ Southern California. All Rights Reserved.
  
     <echo message=" Generating stubs from ./schema/base/gram/file_streaming_factory_service.wsdl" />
     <java classname="org.globus.ogsa.tools.wsdl.GSDL2Java" dir="./schema/base/gram" fork="yes"
-        classpathref="classpath">
+        classpathref="classpath" failonerror="true">
        <sysproperty key="java.protocol.handler.pkgs" 
                  value="org.globus.net.protocol" />
       <arg value="-o"/>  
@@ -159,7 +159,7 @@ Southern California. All Rights Reserved.
 
     <echo message=" Generating stubs from ./schema/base/gram/file_streaming_service.wsdl" />
     <java classname="org.globus.ogsa.tools.wsdl.GSDL2Java" dir="./schema/base/gram" fork="yes"
-        classpathref="classpath">
+        classpathref="classpath" failonerror="true">
        <sysproperty key="java.protocol.handler.pkgs" 
                  value="org.globus.net.protocol" />
       <arg value="-o"/>  
