@@ -1235,95 +1235,97 @@ globus_l_gass_copy_read_from_queue(
     globus_byte_t * buffer;
     globus_result_t result = GLOBUS_SUCCESS;
     globus_object_t * err;
+    globus_bool_t do_the_read = GLOBUS_FALSE;
     static char * myname="globus_l_gass_copy_read_from_queue";
-    
-    globus_mutex_lock(&(state->source.mutex));
+
+    while(1)
+    {
+	do_the_read = GLOBUS_FALSE;
+	buffer_entry = GLOBUS_NULL;
+	
+	globus_mutex_lock(&(state->source.mutex));
+	{
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-    fprintf(stderr, "read_from_queue(): n_pending= %d  n_simultaneous= %d\n", state->source.n_pending, state->source.n_simultaneous);
+	    fprintf(stderr, "read_from_queue(): n_pending= %d  n_simultaneous= %d\n", state->source.n_pending, state->source.n_simultaneous);
 #endif
 
-    /* if the source is READY (and not DONE, FAILURE, or CANCELED), see if we should register a read
-     */
-    if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY)
-    {
+	    if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY)
+	    {/* the  source is ready (and not DONE, FAILURE, CANCEL) */
+		if (((state->source.n_pending <
+		      state->source.n_simultaneous) &&
+		     !state->source.cancel))
+		{ /* if there aren't too many reads outstanding, and we haven't canceled */
+		    if(!globus_fifo_empty(&(state->source.queue)))
+		    {/* there's a buffer in the queue, use it */
+			state->source.n_pending++;
+			buffer_entry = globus_fifo_dequeue(&(state->source.queue));
+			buffer = buffer_entry->bytes;
+			do_the_read = GLOBUS_TRUE;
+		    } /* there's a buffer in the queue, use it */
+		    else
+		    {
+			globus_mutex_lock(&(state->mutex));
+			if(state->n_buffers < state->max_buffers)
+			{
+			    state->n_buffers++;
+			    state->source.n_pending++;
+			    do_the_read = GLOBUS_TRUE;
+			}
+			globus_mutex_unlock(&(state->mutex));
+	     
+		    } /* else (no buffer in the queue, we'll need to create one) */
+		} /* (n_pending < n_simulatneous) && !cancel */
 	
-	/*  FIXX --
-	 *  this needs to be a while loop, so that ftp can take advantage of
-	 *  multiple channels
-	 */
-	/* if there aren't too many reads pending, register one */
-	if((state->source.n_pending < state->source.n_simultaneous) &&
-	   !state->source.cancel)
+	    } /* if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY) */
+	} /* lock state->source */
+	globus_mutex_unlock(&(state->source.mutex));
+
+    
+	if(do_the_read)
 	{
-	    if ((buffer_entry = globus_fifo_dequeue(&(state->source.queue)))
-		!= GLOBUS_NULL)
-	    {
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-		fprintf(stderr, "read_from_queue: about to register_read() with buffer from fifo\n");
-#endif
-		state->source.n_pending++;
+	    if(buffer==GLOBUS_NULL)
+	    { /* we need to create a buffer */
+		buffer = globus_libc_malloc(handle->buffer_length);
+		if(buffer == GLOBUS_NULL)
+		{
+		    /* out of memory error */
+		    err = globus_error_construct_string(
+			GLOBUS_GASS_COPY_MODULE,
+			GLOBUS_NULL,
+			"[%s]: failed to malloc buffer of size %d",
+			myname,
+			handle->buffer_length);
+		    globus_i_gass_copy_set_error(handle, err);
+		    result = globus_error_put(handle->err);
+		} /* if(buffer == GLOBUS_NULL), the create failed*/
+	    } /* if(buffer == GLOBUS_NULL), we need to create a buffer */
+
+	    if(result==GLOBUS_SUCCESS)
+	    { /* we have a valid buffer, register a read */
 		result = globus_l_gass_copy_register_read(
 		    handle,
-		    buffer_entry->bytes);
-		globus_libc_free(buffer_entry);
-
-	    }/* if (buffer_entry != GLOBUS_NULL) */
-	    else /* there are no available buffers to read into, if  there's room create one */
-	    {
-		globus_mutex_lock(&(state->mutex));
-		{ /* lock state to check/modify n_buffers and max_buffers */
-		    if(state->n_buffers < state->max_buffers)
-		    {		
-			state->n_buffers++;
-			/* allocate a buffer to read into*/
+		    buffer);
 		
-			buffer = globus_libc_malloc(handle->buffer_length);
-			if(buffer == GLOBUS_NULL)
-			{
-			    /* out of memory error */
-			    err = globus_error_construct_string(
-				GLOBUS_GASS_COPY_MODULE,
-				GLOBUS_NULL,
-				"[%s]: failed to malloc buffer of size %d",
-				myname,
-				handle->buffer_length);
-			    globus_i_gass_copy_set_error(handle, err);
-			    result = globus_error_put(handle->err);
-			}
-			else
-			{
-			    state->source.n_pending++;
-			    result = globus_l_gass_copy_register_read(
-				handle,
-				buffer);
-			}
-		    }/* if(state->n_buffers < state->max_buffers) */
-		}
-		globus_mutex_unlock(&(state->mutex));
-	    }/* else (no available buffers in fifo, create a new one, maybe*/
+		if(buffer_entry)
+		    globus_libc_free(buffer_entry);
+	    }
 
 	    if (result != GLOBUS_SUCCESS)
-	    {
+	    {/* there was an error, either mallocing a buffer, or registering the read */
 		state->source.cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-		fprintf(stderr, "read_from_queue(): there was an ERROR trying to register a read\n");
+		fprintf(stderr, "read_from_queue(): there was an ERROR trying to register a read, call cancel\n");
 #endif
+		/* FIXX -- call globus_gass_copy_cancel() */
 	    }
-	}/* if(state->source.n_pending < state->source.n_simultaneous) */
-    } /* if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY) */
-    globus_mutex_unlock(&(state->source.mutex));
 
-    if(result != GLOBUS_SUCCESS)
-    {
+	} /* if (do_the_read) */
+	else
+	    break;
+    } /* while (1)  */
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "read_from_queue():  gonna call globus_gass_copy_cancel()\n");
-#endif
-	/* FIXX -- call globus_gass_copy_cancel() */
-    }
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-    fprintf(stderr, "read_from_queue(): returning\n");
-#endif
-   
+	    fprintf(stderr, "read_from_queue(): returning\n");
+#endif  
 } /* globus_l_gass_copy_read_from_queue() */
 
 
@@ -2393,68 +2395,66 @@ globus_l_gass_copy_write_from_queue(
     globus_i_gass_copy_buffer_t *  buffer_entry;
     globus_result_t result = GLOBUS_SUCCESS;
     globus_object_t * err;
+    globus_bool_t do_the_write = GLOBUS_FALSE;
     static char * myname="globus_l_gass_copy_write_from_queue";
   
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     fprintf(stderr, "globus_l_gass_copy_write_from_queue(): called\n");
 #endif
-   
-    globus_mutex_lock(&(state->dest.mutex));
 
-    /* if the dest is READY (and not DONE), see if we should register a write
-     */
-    if(state->dest.status == GLOBUS_I_GASS_COPY_TARGET_READY)
+    while(1)
     {
+	do_the_write = GLOBUS_FALSE;
+	
+	globus_mutex_lock(&(state->dest.mutex));
+	{	    	    
+	    if(state->dest.status == GLOBUS_I_GASS_COPY_TARGET_READY)
+	    { /* if the dest is READY (and not DONE), see if we should register a write */
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "write_from_queue(): dest.status == TARGET_READY, n_pending= %d,  n_simultaneous= %d\n", state->dest.n_pending, state->dest.n_simultaneous);
+		fprintf(stderr, "write_from_queue(): dest.status == TARGET_READY, n_pending= %d,  n_simultaneous= %d\n", state->dest.n_pending, state->dest.n_simultaneous);
 #endif
   
-	/*  FIXX --
-	 *  this needs to be a while loop, so that ftp can take advantage of
-	 *  multiple channels
-	 */
-	/*
-	 * if there aren't too many writes pending.  check the write queue,
-	 * and if there is one then register the first one to write.
-	 */
-	if((state->dest.n_pending < state->dest.n_simultaneous) &&
-	   !state->dest.cancel)
-	{
-	    if ((buffer_entry = globus_fifo_dequeue(&(state->dest.queue)))
-		!= GLOBUS_NULL)
-	    {
-		state->dest.n_pending++;
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-		fprintf(stderr, "write_from_queue(): about to call register_write()\n");
-#endif
-		result = globus_l_gass_copy_register_write(
-		    handle,
-		    buffer_entry);
-	    
-	    }/* if (buffer_entry != GLOBUS_NULL) */
+		if((state->dest.n_pending <
+		    state->dest.n_simultaneous) &&
+		   !state->dest.cancel)
+		{ /* if there aren't too many writes outstanding, and we haven't canceled */
+		    if ((buffer_entry = globus_fifo_dequeue(&(state->dest.queue)))
+			!= GLOBUS_NULL)
+		    {
+			state->dest.n_pending++;
+			do_the_write = GLOBUS_TRUE;
+		    }/* if (buffer_entry != GLOBUS_NULL), there is a buffer in the write queue*/
+		} /* (n_pending < n_simulatneous) && !cancel */
+	    } /* if(state->dest.status == GLOBUS_I_GASS_COPY_TARGET_READY) */
+	} /* lock state->dest */
+	globus_mutex_unlock(&(state->dest.mutex));
 
+	if(do_the_write)
+	{
+#ifdef GLOBUS_I_GASS_COPY_DEBUG		
+	    fprintf(stderr, "write_from_queue(): about to call register_write()\n");
+#endif
+	    result = globus_l_gass_copy_register_write(
+		handle,
+		buffer_entry);
+	    
 	    if (result != GLOBUS_SUCCESS)
 	    {
 		state->dest.cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-		fprintf(stderr, "write_from_queue(): there was an ERROR trying to register a write\n");
+		fprintf(stderr, "write_from_queue(): there was an ERROR trying to register a write, call cancel\n");
 #endif
+		/* FIXX -- call globus_gass_copy_cancel() */
 	    }
-	}  /* if (dest n_pending < n_simultaneous) */ 
-    } /* if (dest _TARGET_READY) */
+	}  /* if(do_the_write) */
+	else
+	    break;
+    } /* while(1) */
 
-    if(result != GLOBUS_SUCCESS)
-    {
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "read_from_queue():  gonna call globus_gass_copy_cancel()\n");
-#endif
-	globus_mutex_unlock(&(state->dest.mutex));
-	/* FIXX -- call globus_gass_copy_cancel() */
-    }
     
 /* if there are no writes to do, and no writes pending, clean up and call user's callback */
     if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_DONE &&
-       state->dest.status == GLOBUS_I_GASS_COPY_TARGET_DONE  )
+       state->dest.status == GLOBUS_I_GASS_COPY_TARGET_DONE )
     {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	fprintf(stderr, "write_from_queue(): source and dest status == TARGET_DONE\n");
@@ -2462,34 +2462,33 @@ globus_l_gass_copy_write_from_queue(
 	if(state->dest.n_pending == 0 && state->source.n_pending == 0 )
 	{ /* our work here is done */
 	    handle->status =   GLOBUS_GASS_COPY_STATUS_DONE;	  
-	}	
-    }
 
-    globus_mutex_unlock(&(state->dest.mutex));
-    if(handle->status == GLOBUS_GASS_COPY_STATUS_DONE)
-    {
-	/* make sure we get the ftp callbacks, if any */
-	globus_l_gass_copy_wait_for_ftp_callbacks(handle);
-	/* do cleanup */
+	    /* make sure we get the ftp callbacks, if any */
+	    globus_l_gass_copy_wait_for_ftp_callbacks(handle);
+	    /* do cleanup */
 	
-	globus_l_gass_copy_state_free(handle->state);
+	    globus_l_gass_copy_state_free(handle->state);
  
-	handle->state = GLOBUS_NULL;
+	    handle->state = GLOBUS_NULL;
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	if(handle->state == GLOBUS_NULL)
-	    fprintf(stderr, "  handle->state == GLOBUS_NULL\n");
-	fprintf(stderr, "write_from_queue(): about to call user callback\n");
+	    if(handle->state == GLOBUS_NULL)
+		fprintf(stderr, "  handle->state == GLOBUS_NULL\n");
+	    fprintf(stderr, "write_from_queue(): about to call user callback\n");
 #endif
-	if(handle->user_callback != GLOBUS_NULL)
-	    handle->user_callback(
-		handle->callback_arg,
-		handle,
-		handle->err);
-	/* if an error object was created, free it */
-	if(handle->err != GLOBUS_NULL)
-	    globus_libc_free(handle->err);
-    }
+	    if(handle->user_callback != GLOBUS_NULL)
+		handle->user_callback(
+		    handle->callback_arg,
+		    handle,
+		    handle->err);
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	    fprintf(stderr, "write_from_queue(): done calling user callback\n");
+#endif
+	    /* if an error object was created, free it */
+	    if(handle->err != GLOBUS_NULL)
+		globus_libc_free(handle->err);
+	} /*  if(state->dest.n_pending == 0 && state->source.n_pending == 0 )*/
+    } /* if both source and dest are GLOBUS_I_GASS_COPY_TARGET_DONE */
 } /* globus_l_gass_copy_write_from_queue() */
 
 globus_result_t
