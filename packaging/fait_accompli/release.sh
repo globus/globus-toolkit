@@ -6,7 +6,7 @@ GPT="fait_accompli/gpt-3.0.1-src.tar.gz"
 
 mkdir $INSTALLER
 
-./make-packages.pl --bundles=gt3-all-src,globus-data-management-server,globus-resource-management-server,ogsi-cbindings,gt3-extras --version=$VERSION --installer=install-gt3
+./make-packages.pl --bundles=gt3-all-src,globus-data-management-server,globus-resource-management-server,ogsi-cbindings,gt3-extras --packages=globus_rls_client,globus_rls_server,globus_rls_server_setup --version=$VERSION --installer=install-gt3
 ./make-packages.pl -n --bundles=mmjfs,mmjfs-static,scheduler-fork --installer=install-gt3-mmjfs --version=$VERSION
 
 mkdir $INSTALLER/bundles
@@ -26,5 +26,3 @@ cp bundle-output/*.tar.gz  $INSTALLER/schedulers
 
 mkdir  $INSTALLER/schedulers/gram-reporters
 cp package-output/globus_gram_reporter*.tar.gz  $INSTALLER/schedulers/gram-reporters
-
-
