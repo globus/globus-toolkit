@@ -19,8 +19,6 @@ logging:
 
 other:
 -- error out of option parsing properly
--- send a connection denied message to connections we don't want to accept, 
-    rather than ignoring the accept.
 -- int->void*->int casting over ipc... better way?
 
 cleanup:

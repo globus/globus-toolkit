@@ -647,7 +647,7 @@ globus_l_gfs_request_stat(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    tmp_str = globus_error_print_friendly(globus_error_peek(result));
     globus_gridftp_server_control_finished_resource(
         op,
         NULL,
@@ -1284,7 +1284,7 @@ globus_l_gfs_request_send(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    tmp_str = globus_error_print_friendly(globus_error_peek(result));
     globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
@@ -1393,7 +1393,7 @@ globus_l_gfs_request_recv(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    tmp_str = globus_error_print_friendly(globus_error_peek(result));
     globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
@@ -1451,7 +1451,7 @@ globus_l_gfs_request_list(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    tmp_str = globus_error_print_friendly(globus_error_peek(result));
     globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
@@ -1666,7 +1666,7 @@ globus_l_gfs_request_passive_data(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    tmp_str = globus_error_print_friendly(globus_error_peek(result));
     globus_gridftp_server_control_finished_passive_connect(
         op,
         NULL,
@@ -1790,7 +1790,7 @@ globus_l_gfs_request_active_data(
     return;
     
 error_init:
-    tmp_str = globus_error_print_friendly(globus_error_get(result));
+    tmp_str = globus_error_print_friendly(globus_error_peek(result));
     globus_gridftp_server_control_finished_active_connect(
         op,
         NULL,
