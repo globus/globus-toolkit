@@ -123,12 +123,12 @@ globus_version_print(
     globus_bool_t                       verbose);
 
 
-int
+void
 globus_module_set_args(
     int *                               argc,
     char ***                            argv);
 
-int
+void
 globus_module_get_args(
     int **                              argc,
     char ****                           argv);

@@ -1008,7 +1008,7 @@ globus_l_module_mutex_destroy(
 /* globus_l_module_mutex_destroy() */
 #endif
 
-int
+void
 globus_module_set_args(
     int *                               argc,
     char ***                            argv)
@@ -1017,7 +1017,7 @@ globus_module_set_args(
     globus_l_module_argv = argv;
 }
 
-int
+void
 globus_module_get_args(
     int **                               argc,
     char ****                            argv)
