@@ -494,8 +494,6 @@ install_security_config() {
 
     cd ${current_dir}
 
-    LOCS="GPT_LOCATION GLOBUS_LOCATION"
-    BUILDS="gpt-build globus-build"
     if [ -f ${GPT_LOCATION}/sbin/gpt-build ]; then
 	buildcmd=${GPT_LOCATION}/sbin/gpt-build
     elif [ -f ${GPT_LOCATION}/sbin/globus-build ]; then
