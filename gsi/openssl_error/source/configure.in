@@ -1,4 +1,3 @@
-dnl
 
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
@@ -7,17 +6,18 @@ GLOBUS_INIT
 
 AM_PROG_LIBTOOL
 
-dnl config header goes here
-
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
-GLOBUS_FINALIZE
+LAC_DOXYGEN(["../library"])
+
 
 AC_OUTPUT(
-	Makefile
-	pkgdata/Makefile
-	pkgdata/pkg_data_src.gpt
+        Makefile
+        pkgdata/Makefile
+        pkgdata/pkg_data_src.gpt
+	doxygen/Makefile
+	doxygen/Doxyfile 
+	doxygen/Doxyfile-internal
+        version.h
 )
-
-
