@@ -27,6 +27,7 @@ if (!defined($gpath))
 @INC = (@INC, "$gpath/lib/perl");
 
 require Grid::GPT::V1::Package;
+require Grid::GPT::DepIndexes;
 
 use Cwd;
 
@@ -65,8 +66,7 @@ sub process_package($)
     my $new_pkgfile;
     my %doc_dependencies;
     my %dependencies;
-    my %depmap = ( 'Source_Dependencies' => 'doc_runtime',
-                   'Binary_Dependencies' => 'Runtime' );
+    my $dep = $deptype eq 'Source_Dependencies' ?  'doc_runtime' : 'Runtime';
 
     if(! -e $pkgfile)
     {
@@ -78,26 +78,24 @@ sub process_package($)
     # oop?
     if(defined($pkg->{$deptype}))
     {
-	my %hash;
+        my $depidx = $pkg->{$deptype};
+        my $query_res = $depidx->query(deptype => $dep);
 
-	%hash = %{$pkg->{$deptype}->{table}};
-
-	if(exists($hash{$depmap{$deptype}}))
-	{
-	    %doc_dependencies = %{$hash{$depmap{$deptype}}};
-	}
-    }
-    foreach (keys %doc_dependencies)
-    {
-        $_ = $doc_dependencies{$_}{ANY}{ANY}{depnode}->name;
-        print STDERR "Found dependency $_\n" if $debug;
-        $dependencies{$_} = 1;
-	$new_pkgfile =
-	    "$prefix/etc/globus_packages/$_/pkg_data_noflavor_doc.gpt";
-        foreach(process_package($new_pkgfile, $_))
-	{
-	     $dependencies{$_} = 1;
-	}
+        foreach (@{$query_res})
+        {
+            my $name;
+            if (($name = $_->{pkgname}) ne '')
+            {
+                print STDERR "Found dependency $name\n" if $debug;
+                $dependencies{$name} = 1;
+                $new_pkgfile =
+                    "$prefix/etc/globus_packages/$name/pkg_data_noflavor_doc.gpt";
+                foreach(process_package($new_pkgfile, $name))
+                {
+                     $dependencies{$_} = 1;
+                }
+            }
+        }
     }
     keys %dependencies;
 }
