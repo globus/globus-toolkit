@@ -328,8 +328,18 @@ globus_io_fileattr_init(
 	 
     attr->attr = globus_i_io_fileattr_construct();
 
+    /*
+     *  Net Logger stuff
+     */
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        attr->nl_handle = GLOBUS_NULL;
+    }
+#   endif
+
     return GLOBUS_SUCCESS;
 }
+
 /* globus_io_fileattr_init() */
 
 /**

@@ -1498,24 +1498,52 @@ globus_i_io_try_write(
     *nbytes_written = 0;
     for (done = GLOBUS_FALSE; !done; )
     {
+#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+        if(handle->nl_handle != GLOBUS_NULL)
+        {
+            NetLoggerWrite(handle->nl_handle,
+                GLOBUS_IO_NL_EVENT_START_WRITE,
+                "GLOBUS_IO_TAG=TRY_WRITE "
+                "SOCK=%d %s",
+                handle->fd,
+                handle->nl_event_id == NULL ?
+                        "" : 
+                        handle->nl_event_id);
+        }
+#       endif
+
 	n_written = globus_libc_write(
 	    handle->fd,
 	    buf+num_written,
 	    max_nbytes-num_written);
+
+#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+        if(handle->nl_handle != GLOBUS_NULL)
+        {
+            NetLoggerWrite(handle->nl_handle,
+                GLOBUS_IO_NL_EVENT_END_WRITE,
+                "GLOBUS_IO_TAG=TRY_WRITE "
+                "SOCK=%d %s",
+                handle->fd,
+                handle->nl_event_id == NULL ?
+                        "" : 
+                        handle->nl_event_id);
+        }
+#       endif
+
 	save_errno = errno;
-	
+
 	globus_i_io_debug_printf(
 	    5,
 	    ("globus_i_io_try_write(): write returned n_written=%d\n",
 	      (int) n_written));
-	
+
 	/*
 	 * n_written: is > 0 on success -- number of bytes written
 	 *          is < 0 on error -- need to check errno
 	 *          is 0 (SysV) or (-1 && errno==EWOULDBLOCK) (BSD)
 	 *              if the write would block without writing anything
 	 */
-
 	if (n_written > 0 || (n_written == 0 && max_nbytes == 0))
 	{
 	    (*nbytes_written) += n_written;
@@ -1700,10 +1728,38 @@ globus_i_io_try_writev(
 
 	count_used = (int) (iovcnt > IOV_MAX) ? IOV_MAX : iovcnt;
 
+#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+        if(handle->nl_handle != GLOBUS_NULL)
+        {
+            NetLoggerWrite(handle->nl_handle,
+                GLOBUS_IO_NL_EVENT_START_WRITE,
+                "GLOBUS_IO_TAG=WRITE "
+                "SOCK=%d, %s",
+                handle->fd,
+                handle->nl_event_id == NULL ?
+                        "" : 
+                        handle->nl_event_id);
+        }
+#       endif
+
 	n_written = globus_libc_writev(
 	    handle->fd,
 	    iov,
 	    count_used);
+
+#       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+        if(handle->nl_handle != GLOBUS_NULL)
+        {
+            NetLoggerWrite(handle->nl_handle,
+                GLOBUS_IO_NL_EVENT_END_WRITE,
+                "GLOBUS_IO_TAG=WRITE "
+                "SOCK=%d %s",
+                handle->fd,
+                handle->nl_event_id == NULL ?
+                        "" : 
+                        handle->nl_event_id);
+        }
+#       endif
 
 	save_errno = errno;
 	

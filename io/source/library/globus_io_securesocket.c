@@ -1976,6 +1976,13 @@ globus_l_io_write_auth_token(
 	}
     }
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
+
+        goto error_exit;
+    }
+
     if(init_info->output_header_offset < init_info->output_header_len)
     {
 	globus_size_t		amt_sent;

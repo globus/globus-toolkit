@@ -192,6 +192,152 @@ globus_i_io_attr_activate(void)
 }
 
 /*
+ *  If globus_io is netlogger enabled the following functions
+ *  are added to the API
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+
+/*
+ *  Associate NetLogger handle with globus_io_attr
+ */
+globus_result_t
+globus_io_attr_set_netlogger_handle(
+    globus_io_attr_t *                  attr,
+    NLhandle *                          nl_handle)
+{
+    static char *                 myname="globus_io_attr_set_netlogger_handle";
+
+    if(attr == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+
+    attr->nl_handle = nl_handle;
+
+    return GLOBUS_SUCCESS;
+}
+
+/*
+ *  change the current event_id string sent with the
+ *  net logger messages
+ */
+globus_result_t
+globus_io_set_netlogger_add_attribute_string(
+    globus_io_handle_t *              handle,
+    const char *                      attribute_name,
+    const char *                      attribute_value)
+{
+    static char *                 myname="globus_io_set_netlogger_event_id";
+    char *                        tmp_str;
+    int                           size;
+    int                           offset;
+
+    if(handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+    }
+    if(attribute_name == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attribute_name",
+                2,
+                myname));
+    }
+    if(attribute_value == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attribute_value",
+                3,
+                myname));
+    }
+
+    globus_i_io_mutex_lock();
+
+    size = strlen(attribute_name) + strlen(attribute_name) + 2;
+    if(handle->nl_event_id != GLOBUS_NULL)
+    {
+        tmp_str = strdup(handle->nl_event_id);
+        free(handle->nl_event_id);
+
+        rm_start = strstr(tmp_str, attribute_name);
+        /*
+         *  if this attribute is already in string
+         */
+        if(rm_start != NULL)
+        {
+            rm_end = strchr(tmp_ptr, ' ');
+            /*
+             *  If space not found it must be the end of the string
+             *  simply terminate at start_point.
+             */
+            if(rm_end == NULL)
+            {
+                *rm_start = '\0';
+            }
+            else
+            {
+                str_len = strlen(tmp_str) - (rm_end - rm_start);;
+                /*
+                 * If removing the entire string
+                 */
+                if(str_len < 3)
+                {
+                    handle->nl_event_id = "";
+                }
+                /*
+                 *  if only taking out this section
+                 */
+                else
+                {
+                    handle->nl_event_id = malloc(str_len + 1);
+                    strncpy(handle->nl_event_id, tmp_str, rm_start - tmp_str);
+                    strcpy(&handle->nl_event_id[rm_start - tmp_str],
+                        rm_end);
+                }
+                free(tmp_str);
+            }
+        }
+        size += (strlen(handle->nl_event_id) + 1);
+    }
+
+    tmp_str = (char *) globus_malloc(size);
+    offset = 0;
+    if(handle->nl_event_id != GLOBUS_NULL)
+    {
+        sprintf(tmp_str, "%s ", handle->nl_event_id);
+        offset = strlen(tmp_str);
+        free(handle->nl_event_id);
+    }
+    sprintf(&tmp_str[offset], "%s=%s", attribute_name, attribute_value);
+
+    handle->nl_event_id = tmp_str;
+
+    globus_i_io_mutex_unlock();
+
+    return GLOBUS_SUCCESS;
+}
+
+#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
+
+/*
  * Function:	globus_i_io_fileattr_construct()
  *
  * Description:	

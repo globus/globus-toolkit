@@ -39,10 +39,19 @@
 
 EXTERN_C_BEGIN
 
-
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #include "globus_common.h"
 #include "globus_gss_assist.h"
+#endif
+
+/*
+#define GLOBUS_BUILD_WITH_NETLOGGER 1
+*/
+/*
+ *  If this is a Netlogger aware build, include the logging headers
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+#include "logging.h"
 #endif
 
 /**
@@ -147,7 +156,14 @@ typedef struct
 {
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
     globus_object_t *			attr;
-#endif
+/*
+ *  Net Logger stuff.
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    NLhandle *                          nl_handle;
+#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 } globus_io_attr_t;
 
 typedef struct globus_io_handle_s globus_io_handle_t;
@@ -859,7 +875,16 @@ struct globus_io_handle_s
     /* some handle state information */
     volatile globus_io_handle_state_t		state;
     void *					user_pointer;
-#endif
+
+    /* 
+     *  net logger addtions 
+     */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    char *                                      nl_event_id;
+    NLhandle *                                  nl_handle;
+#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 };
 
 /* Core API Functions */
@@ -1293,6 +1318,24 @@ globus_io_file_posix_convert(
  * The API functions in this section deal with the setting and
  * querying of attribute values.
  */
+
+/*
+ *  NET LOGGER STUFF
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+
+globus_result_t
+globus_io_attr_set_netlogger_handle(
+    globus_io_attr_t *                  attr,
+    NLhandle *                          nl_handle);
+
+globus_result_t
+globus_io_set_netlogger_add_attribute_string(
+    globus_io_handle_t *              handle,
+    const char *                      attribute_name,
+    const char *                      attribute_value);
+
+#endif  /* GLOBUS_BUILD_WITH_NETLOGGER */
 
 #ifndef DOXYGEN
 globus_result_t

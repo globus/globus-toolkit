@@ -171,7 +171,18 @@ globus_io_tcp_register_connect(
     {
 	return rc;
     }
-    
+
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        handle->nl_handle = GLOBUS_NULL;
+        handle->nl_event_id = GLOBUS_NULL;
+        if(attr != GLOBUS_NULL)
+        {
+            handle->nl_handle = attr->nl_handle;
+        }
+    }
+#   endif
+
     handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
     
     hp = globus_libc_gethostbyname_r(host,
@@ -513,6 +524,18 @@ globus_io_tcp_create_listener(
     {
 	return rc;
     }
+
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        /*
+         *  For now set net logger info to null.
+         *  Only use for reads and writes, not listen
+         */
+        handle->nl_event_id = GLOBUS_NULL;
+        handle->nl_handle = GLOBUS_NULL;
+    }
+#   endif
+
     handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
 
     len = sizeof(my_addr);
@@ -784,13 +807,25 @@ globus_io_tcp_register_accept(
     /* Set state of new handle to be the same as the modified listener */
     rc = globus_i_io_copy_tcpattr_to_handle(attr,
 					    new_handle);
-    
+   
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);
 	
 	goto restore_listener_error_exit;
     }
+
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        new_handle->nl_event_id = GLOBUS_NULL;
+        new_handle->nl_handle = GLOBUS_NULL;
+        if(attr != GLOBUS_NULL)
+        {
+            new_handle->nl_handle = attr->nl_handle;
+        }
+    }
+#   endif
+ 
     addrlen = sizeof(struct sockaddr);
 
     proceed = GLOBUS_FALSE;
@@ -1199,6 +1234,12 @@ globus_io_tcp_set_attr(
     instance = (globus_i_io_tcpattr_instance_t *)
 	globus_object_get_local_instance_data(attr->attr);
 
+#   if defined(GLOBUS_BUILD_WITH_NET_LOGGER)
+    {
+        handle->nl_handle = attr->nl_handle;
+    }
+#   endif
+
     /* set local socket options */
     if(instance->nodelay != handle->tcp_attr.nodelay)
     {
@@ -1546,6 +1587,15 @@ globus_io_tcpattr_init(
     }
     
     attr->attr = globus_i_io_tcpattr_construct();
+
+    /*
+     *  Net Logger stuff
+     */
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        attr->nl_handle = GLOBUS_NULL;
+    }
+#   endif
 
     return GLOBUS_SUCCESS;
 }
