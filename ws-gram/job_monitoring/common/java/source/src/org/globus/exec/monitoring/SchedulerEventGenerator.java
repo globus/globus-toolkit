@@ -190,6 +190,8 @@ class SchedulerEventGenerator extends Thread {
     private synchronized boolean startSegProcess(java.util.Date timeStamp)
             throws java.io.IOException
     {
+        cleanProcess();
+
         proc = null;
 
         throttleRestart();
@@ -251,6 +253,14 @@ class SchedulerEventGenerator extends Thread {
         lastRestart = thisTime;
     }
 
+    private synchronized void cleanProcess() {
+        if (proc != null) {
+            try { proc.getInputStream().close(); } catch (Exception e) {}
+            try { proc.getOutputStream().close(); } catch (Exception e) {}
+            try { proc.getErrorStream().close(); } catch (Exception e) {}
+        }
+    }
+
     /**
      * Tell a SEG process to terminate.
      * 
@@ -263,9 +273,7 @@ class SchedulerEventGenerator extends Thread {
         if (shutdownCalled) {
             return;
         } else {
-            if (proc != null) {
-                proc.getInputStream().close();
-            }
+            cleanProcess();
             shutdownCalled = true;
             /* Wake up throttler if we were waiting in it */
             notify();
