@@ -1350,9 +1350,12 @@ globus_i_gsi_callback_check_critical_extensions(
     long                                path_length;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
-        "globus_i_gsi_callback_check_extensions";
+        "globus_i_gsi_callback_check_critical_extensions";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+    pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
 
     while((critical_position = 
           X509_get_ext_by_critical(x509_context->current_cert, 
@@ -1383,9 +1386,6 @@ globus_i_gsi_callback_check_critical_extensions(
         }
 
         nid = OBJ_obj2nid(extension_object);
-
-        pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-        pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
 
         if(nid == pci_NID || nid == pci_old_NID)
         {
@@ -1426,7 +1426,8 @@ globus_i_gsi_callback_check_critical_extensions(
             nid != NID_netscape_cert_type &&
             nid != NID_subject_key_identifier &&
             nid != NID_authority_key_identifier &&
-            nid != pci_NID) || (policy && policy->policy))
+            nid != pci_NID &&
+            nid != pci_old_NID) || (policy && policy->policy))
         {
             if(callback_data->extension_cb)
             {
