@@ -39,7 +39,7 @@ GSS_CALLCONV gss_accept_delegation(
     STACK_OF(X509) *                    cert_chain;
     int                                 cert_chain_length;
     int                                 i;
-    char                                dbuf;
+    char                                dbuf[1];
     
 #ifdef DEBUG
     fprintf(stderr, "accept_delegation:\n") ;
@@ -48,6 +48,13 @@ GSS_CALLCONV gss_accept_delegation(
     *minor_status = 0;
     output_token->length = 0;
     context = (gss_ctx_id_desc *) context_handle;
+
+    major_status = gs_put_token(minor_status,context,input_token);
+
+    if (major_status != GSS_S_COMPLETE)
+    {
+        return major_status;
+    }
 
     /* need to check for errors and mem leaks */
     
@@ -58,11 +65,11 @@ GSS_CALLCONV gss_accept_delegation(
 
         /* generate the proxy */
         
-        BIO_read(context->gs_sslbio,&dbuf,1);
+        BIO_read(context->gs_sslbio,dbuf,1);
 #ifdef DEBUG
         fprintf(stderr,"delegation flag:%.1s\n",&dbuf);
 #endif
-        if (dbuf == 'D')
+        if (*dbuf == 'D')
         {
             if(proxy_genreq(
                    context->gs_ssl->session->peer,
@@ -84,6 +91,12 @@ GSS_CALLCONV gss_accept_delegation(
             X509_REQ_free(reqp);
             context->delegation_state = GS_DELEGATION_COMPLETE_CRED;
         }
+        else
+        {
+            major_status = GSS_S_FAILURE;
+            break;
+        }
+        
         break;
     case GS_DELEGATION_COMPLETE_CRED:
 
