@@ -32,7 +32,18 @@ pkgdata_DATA = \
     submit024.err submit024.out submit024.rsl \
     submit025.err submit025.out submit025.rsl \
     submit026.err submit026.out submit026.rsl \
-    submit027.err submit027.out submit027.rsl
+    submit027.err submit027.out submit027.rsl \
+    submit028.err submit028.out submit028.rsl \
+    submit029.err submit029.out submit029.rsl \
+    submit030.err submit030.out submit030.rsl \
+    submit031.err submit031.out submit031.rsl \
+    submit032.err submit032.out submit032.rsl \
+    submit033.err submit033.out submit033.rsl \
+    submit034.err submit034.out submit034.rsl \
+    submit035.err submit035.out submit035.rsl \
+    submit036.err submit036.out submit036.rsl \
+    submit037.err submit037.out submit037.rsl \
+    submit038.err submit038.out submit038.rsl
 
 EXTRA_DIST = globus-gram-job-manager-submit-test.pl.in $(pkgdata_DATA)
 

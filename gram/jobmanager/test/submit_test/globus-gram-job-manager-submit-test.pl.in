@@ -17,7 +17,9 @@ my @test_cases=qw(
     submit011 submit012 submit013 submit014 submit015
     submit016 submit017 submit018 submit019 submit020
     submit021 submit022 submit023 submit024 submit025
-    submit026 submit027
+    submit026 submit027 submit028 submit029 submit030
+    submit031 submit032 submit033 submit034 submit035
+    submit036 submit037 submit038
 );
 
 my @todo_cases=qw(
@@ -60,6 +62,7 @@ foreach(@test_cases)
 {
     push(@tests, "test_rsl(\"$_\", \"\")");
     push(@tests, "test_rsl(\"$_\", \"(save_state = yes)\")");
+    push(@tests, "test_rsl(\"$_\", \"(two_phase = 10)\")");
 }
 foreach(@todo_cases)
 {
