@@ -92,11 +92,13 @@ int myproxy_init_client(myproxy_socket_attrs_t *attrs);
 /*
  * myproxy_init_server()
  *
- * Create a generic server by creating a GSI socket and a bind, listen, accept  
+ * Create a generic server socket listening on the given port, ready
+ * to accept.
  *
- * returns the file descriptor of the connected socket or -1 if an error occurred  
+ * returns 0 on success or -1 if an error occurred  
  */
-int myproxy_init_server(myproxy_socket_attrs_t *attrs);
+int myproxy_init_server(myproxy_socket_attrs_t *attrs,
+			int port_number);
 
 /*
  * myproxy_authenticate_init()
