@@ -11,6 +11,7 @@ for scheduler in $schedulers; do
     fi
     echo "generating $filename"
     cat $template | sed "s/$keyword/$scheduler/" > $filename
+    chmod +x $filename
 
     template="stress-SCHEDULER-mmjfs-test.in"
     filename="stress-$scheduler-mmjfs-test.sh"
@@ -19,6 +20,7 @@ for scheduler in $schedulers; do
     fi
     echo "generating $filename"
     cat $template | sed "s/$keyword/$scheduler/" > $filename
+    chmod +x $filename
 
     template="kill-SCHEDULER-mjfs-job.in"
     filename="kill-$scheduler-mjfs-job.sh"
@@ -27,4 +29,5 @@ for scheduler in $schedulers; do
     fi
     echo "generating $filename"
     cat $template | sed "s/$keyword/$scheduler/" > $filename
+    chmod +x $filename
 done
