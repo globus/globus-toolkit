@@ -183,6 +183,9 @@ FTP_TEST_LOCAL_FILE (/etc/group)   # used as the local source for put-like tests
 
 FTP_TEST_LOCAL_BIGFILE (/bin/sh)   # used as the local source by the extended-put test
 
+FTP_TEST_FORCE_LOCAL               # define to force local filesystem behavior when the host
+                                   # is not 'localhost' (i.e. with shared fs)
+
 =cut
 
 #my ($proto) = setup_proto();
@@ -253,21 +256,17 @@ sub setup_remote_dest()
 #bool = source_is_remote()
 sub source_is_remote()
 {
-    if(defined($ENV{'FTP_TEST_NO_SCP'}))
-    {
-        return 0;
-    }
-    return ($ENV{FTP_TEST_SOURCE_HOST} and !($ENV{FTP_TEST_SOURCE_HOST} =~ m/localhost/))
+    return ($ENV{FTP_TEST_SOURCE_HOST} and 
+        !($ENV{FTP_TEST_SOURCE_HOST} =~ m/localhost/) and
+        !defined($ENV{FTP_TEST_FORCE_LOCAL}));
 }
 
 #bool = dest_is_remote()
 sub dest_is_remote()
 {
-    if(defined($ENV{'FTP_TEST_NO_SCP'}))
-    {
-        return 0;
-    }
-    return ($ENV{FTP_TEST_DEST_HOST} and !($ENV{FTP_TEST_DEST_HOST} =~ m/localhost/))
+    return ($ENV{FTP_TEST_DEST_HOST} and 
+        !($ENV{FTP_TEST_DEST_HOST} =~ m/localhost/) and
+        !defined($ENV{FTP_TEST_FORCE_LOCAL}));
 }
 
 
@@ -277,14 +276,16 @@ sub clean_remote_file($$)
     my $host = shift;
     my $file = shift;
     
-    if($host =~ m/localhost/ || defined($ENV{'FTP_TEST_NO_SCP'}))
+    if($host =~ m/localhost/ or defined($ENV{FTP_TEST_FORCE_LOCAL}) )
     {
         unlink($file);
     }
     else
     {
         my $user;
-
+        my $_host = $host;
+        $_host =~ s/:.*//;
+               
         if($ENV{FTP_TEST_DEST_USER})
         {
             $user = "$ENV{FTP_TEST_DEST_USER}\@";
@@ -294,7 +295,7 @@ sub clean_remote_file($$)
             $user = '';
         }
         
-        system("ssh -q $user$host 'rm -f $file'") == 0 or die "ssh failed";
+        system("ssh -q $user$_host 'rm -f $file'") == 0 or die "ssh failed";
     }
 }
 
@@ -308,13 +309,15 @@ sub get_remote_file($$;$)
     
     push(@{$self->{staged_files}}, $dest);
     
-    if($host =~ m/localhost/ || defined($ENV{'FTP_TEST_NO_SCP'}))
+    if($host =~ m/localhost/ or defined($ENV{FTP_TEST_FORCE_LOCAL}))
     {
         copy($file, $dest);
     }
     else
     {
         my $user;
+        my $_host = $host;
+        $_host =~ s/:.*//;
 
         if($user)
         {
@@ -334,7 +337,7 @@ sub get_remote_file($$;$)
             $user = '';
         }
         
-        system("scp -q -B $user$host:$file $dest") == 0 or die "scp failed";
+        system("scp -q -B $user$_host:$file $dest") == 0 or die "scp failed";
     }
 
     return $dest;
