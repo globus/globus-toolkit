@@ -36,13 +36,38 @@
 use IPC::Open3;
 
 #
+# handle cmdline options
+#
+$usage = "usage: myproxy-test [-help] [-verbose] [-startserver]\n";
+$startserver = 0;
+$verbose = 0;
+while (($arg = shift @ARGV)) {
+    if ($arg eq "-h" || $arg eq "-help") {
+	print STDERR $usage;
+	exit 1;
+    } elsif ($arg eq "-v" || $arg eq "-verbose") {
+	$verbose = 1;
+    } elsif ($arg eq "-startserver") {
+	$startserver = 1;
+    } else {
+	print STDERR $usage;
+	exit 1;
+    }
+}
+
+#
 # make sure I have a valid proxy
 #
 chomp($grid_proxy_init = `which grid-proxy-init 2>/dev/null`);
 die "grid-proxy-init not found, stopped" if (!(-x $grid_proxy_init));
 chomp($grid_proxy_info = `which grid-proxy-info 2>/dev/null`);
 die "grid-proxy-info not found, stopped" if (!(-x $grid_proxy_info));
-$timeleft = `$grid_proxy_info -timeleft`;
+$timeleft = `$grid_proxy_info -timeleft 2>/dev/null`;
+if (!defined($timeleft) || $timeleft eq "" || ($timeleft < 60*60*3)) {
+    &debug("Problem with proxy.  Will try to create a new one.");
+    `$grid_proxy_init -pwstdin </dev/null >/dev/null 2>&1`;
+    $timeleft = `$grid_proxy_info -timeleft 2>/dev/null`;
+}
 die "grid-proxy-info failed, stopped"
     if (!defined($timeleft) || $timeleft eq "");
 die "proxy expired, stopped" if ($timeleft < 60);
@@ -57,15 +82,16 @@ $cert_subject = (split(/\/CN=proxy|\/CN=limited proxy|\/CN=\d+/,
 # check for the commands I want to run
 #
 chomp($myproxy_init = `which myproxy-init 2>/dev/null`);
-die "myproxy-init not in PATH" if (!(-x $myproxy_init));
+die "myproxy-init not in PATH, stopped" if (!(-x $myproxy_init));
 chomp($myproxy_info = `which myproxy-info 2>/dev/null`);
-die "myproxy-info not in PATH" if (!(-x $myproxy_info));
+die "myproxy-info not in PATH, stopped" if (!(-x $myproxy_info));
 chomp($myproxy_destroy = `which myproxy-destroy 2>/dev/null`);
-die "myproxy-destroy not in PATH" if (!(-x $myproxy_destroy));
+die "myproxy-destroy not in PATH, stopped" if (!(-x $myproxy_destroy));
 chomp($myproxy_get = `which myproxy-get-delegation 2>/dev/null`);
-die "myproxy-get-delegation not in PATH" if (!(-x $myproxy_get));
+die "myproxy-get-delegation not in PATH, stopped" if (!(-x $myproxy_get));
 chomp($myproxy_passwd = `which myproxy-change-pass-phrase 2>/dev/null`);
-die "myproxy-change-pass-phrase not in PATH" if (!(-x $myproxy_passwd));
+die "myproxy-change-pass-phrase not in PATH, stopped"
+    if (!(-x $myproxy_passwd));
 
 #
 # setup environment variables
@@ -83,6 +109,47 @@ $ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
+
+#
+# start server if requested
+#
+if ($startserver) {
+    $ENV{'MYPROXY_SERVER'} = $hostname;
+    $ENV{'MYPROXY_SERVER_PORT'} = 60000+$<;
+    $ENV{'MYPROXY_SERVER_DN'} = $cert_subject;
+    chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
+    die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
+    $serverdir = "/tmp/myproxy-test.serverdir.$$";
+    mkdir($serverdir) ||
+	die "failed to create $serverdir, stopped";
+    chmod(0700, $serverdir) ||
+	die "failed to chmod $serverdir, stopped";
+    $serverconf = "/tmp/myproxy-test.serverconf.$$";
+    open(CONF, ">$serverconf") ||
+	 die "failed to open $serverconf, stopped";
+    print CONF "accepted_credentials  \"*\"\n";
+    print CONF "authorized_retrievers \"*\"\n";
+    print CONF "default_retrievers    \"*\"\n";
+    print CONF "authorized_renewers   \"*\"\n";
+    print CONF "default_renewers      \"none\"\n";
+    close(CONF);
+    $SERVERPIDFILE = "/tmp/myproxy-test.serverpid.$$";
+    $servercmd = "$myproxy_server -s $serverdir -c $serverconf";
+    $servercmd .= " -p $ENV{MYPROXY_SERVER_PORT} -P $SERVERPIDFILE";
+    &debug("running '$servercmd'");
+    `$servercmd`;
+    sleep(1);			# give server a chance to startup
+    if (open SERVERPIDFILE) {
+	$serverpid = <SERVERPIDFILE>;
+	close SERVERPIDFILE;
+    }
+    if (!defined($serverpid) || $serverpid eq "") {
+	print STDERR "failed to start myproxy-server:\n";
+	`$servercmd -d`;	# show output on terminal
+	&docleanup();
+	exit 1;
+    }
+}
 
 #
 # BEGIN TESTS
@@ -294,7 +361,8 @@ if ($exitstatus == 0) {
 	&runtest("myproxy-get-delegation -o /tmp/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
     $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
-    if ($timeleft > 60*60*2+300 || $timeleft < 60*60*2-300) {
+    if (defined($timeleft) &&
+	$timeleft > 60*60*2+300 || $timeleft < 60*60*2-300) {
 	$output = "Credential lifetime ($timeleft) incorrect." .
 	    "It should be " . (60*60*2) . ".\n";
 	$exitstatus = 1;
@@ -336,7 +404,7 @@ if (defined($ENV{"COG_INSTALL_PATH"})) {
 # END TESTS
 #
 
-unlink("/tmp/myproxy-test.$$");
+&docleanup();
 
 print "MyProxy Tests Complete: ", $SUCCESSES, " tests passed, ";
 print $FAILURES, " tests failed\n";
@@ -368,6 +436,10 @@ sub docogtests {
 
     if (defined($ENV{"MYPROXY_SERVER_DN"})) {
 	$cogmyproxy .= " -s \"$ENV{MYPROXY_SERVER_DN}\"";
+    }
+
+    if (defined($ENV{"MYPROXY_SERVER_PORT"})) {
+	$cogmyproxy .= " -p $ENV{MYPROXY_SERVER_PORT}";
     }
 
     $ENV{"COG_OPTS"} = " -DX509_USER_PROXY=$ENV{X509_USER_PROXY}"
@@ -471,4 +543,16 @@ sub verifyproxy {
     unlink("/tmp/tmpproxy.$$");
 
     return (0, "");
+}
+
+sub debug {
+    print STDERR join('', @_), "\n" if ($verbose);
+}
+
+sub docleanup {
+    unlink("/tmp/myproxy-test.$$");
+    kill('TERM', $serverpid) if (defined($serverpid));
+    unlink($SERVERPIDFILE) if (defined($SERVERPIDFILE));
+    unlink($serverconf) if (defined($serverconf));
+    `rm -rf $serverdir` if (defined($serverdir));
 }
