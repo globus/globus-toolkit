@@ -1,9 +1,10 @@
-This is MyProxy v0.5.6 31 Jul 2003
+This is MyProxy v0.5.7 25 Aug 2003
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
-v0.5.7
+v0.5.7 25 Aug 2003 (GPT package version 1.9)
+  - fixed additional problems with handling large credentials
   - bugfix: myproxy-admin-load-credential fails to prompt for
     passphrase of source credential in versions 0.5.4-0.5.6.
 
