@@ -10,7 +10,6 @@
 
 #include "globus_ftp_client_throughput_nl_plugin.h"
 #include "globus_ftp_client_throughput_plugin.h"
-#include "NetLogger.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -49,6 +48,7 @@ typedef struct throughput_nl_plugin_info_s
     char *                                          source_url;
     char *                                          dest_url;
     NLhandle *                                      nl_handle;
+    globus_bool_t                                   destroy_handle;
 } throughput_nl_plugin_info_t;
 
 static
@@ -315,6 +315,111 @@ globus_ftp_client_throughput_nl_plugin_init(
     info->source_url = GLOBUS_NULL;
     info->dest_url = GLOBUS_NULL;
     info->nl_handle = nl_handle;
+    info->destroy_handle = GLOBUS_TRUE;
+
+    return GLOBUS_SUCCESS;
+}
+
+/**
+ * Initialize netlogger wrapped throughput plugin
+ * @ingroup globus_ftp_client_throughput_nl_plugin
+ *
+ * This will initialize a netlogger wrapped throughput plugin.  Instead
+ * of passing a NetLogger url as in the plain init func, you can pass in
+ * a previously 'Open'ed NLhandle.  This handle will not be destroyed by
+ * this plugin.
+ *
+ * @param plugin
+ *        a plugin to be initialized
+ *
+ * @param nl_handle
+ *        a previously opened NetLogger handle
+ *
+ * @param opaque_string
+ *        this is an opaque string that will be inserted into all logged
+ *        statements. (may be NULL)
+ *
+ * @return
+ *        - Error on NULL plugin or failure to init throughput plugin
+ *        - Error on NetLogger open
+ *        - GLOBUS_SUCCESS
+ */
+
+globus_result_t
+globus_ftp_client_throughput_nl_plugin_init_with_handle(
+    globus_ftp_client_plugin_t *			plugin,
+    NLhandle *                                          nl_handle,
+    const char *                                        opaque_string)
+{
+    throughput_nl_plugin_info_t *                       info;
+    globus_result_t                                     result;
+    static char *                                       myname =
+        "globus_ftp_client_throughput_nl_plugin_init_with_handle";
+
+    if(plugin == GLOBUS_NULL)
+    {
+        return globus_error_put(globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] NULL plugin at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    if(nl_handle == GLOBUS_NULL)
+    {
+        return globus_error_put(globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] NULL netlogger handle at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    info = (throughput_nl_plugin_info_t *)
+        globus_malloc(sizeof(throughput_nl_plugin_info_t));
+
+    if(info == GLOBUS_NULL)
+    {
+        return globus_error_put(globus_error_construct_string(
+                                GLOBUS_FTP_CLIENT_MODULE,
+                                GLOBUS_NULL,
+                                "[%s] Out of memory at %s\n",
+                                 GLOBUS_FTP_CLIENT_MODULE->module_name,
+                                 myname));
+    }
+
+    result = globus_ftp_client_throughput_plugin_init(
+        plugin,
+        throughput_plugin_begin_cb,
+        throughput_plugin_stripe_cb,
+        throughput_plugin_total_cb,
+        throughput_plugin_complete_cb,
+        info);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_free(info);
+        return result;
+    }
+
+    globus_ftp_client_throughput_plugin_set_copy_destroy(
+        plugin,
+        throughput_plugin_user_copy_cb,
+        throughput_plugin_user_destroy_cb);
+
+    if(opaque_string)
+    {
+        info->opaque_string = globus_libc_strdup(opaque_string);
+    }
+    else
+    {
+        info->opaque_string = GLOBUS_NULL;
+    }
+    info->source_url = GLOBUS_NULL;
+    info->dest_url = GLOBUS_NULL;
+    info->nl_handle = nl_handle;
+    info->destroy_handle = GLOBUS_FALSE;
 
     return GLOBUS_SUCCESS;
 }

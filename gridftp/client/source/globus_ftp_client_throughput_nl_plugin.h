@@ -56,6 +56,7 @@
 
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
+#include "NetLogger.h"
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -82,6 +83,12 @@ globus_ftp_client_throughput_nl_plugin_init(
     globus_ftp_client_plugin_t *			plugin,
     const char *                                        nl_url,
     const char *                                        prog_name,
+    const char *                                        opaque_string);
+
+globus_result_t
+globus_ftp_client_throughput_nl_plugin_init_with_handle(
+    globus_ftp_client_plugin_t *			plugin,
+    NLhandle *                                          nl_handle,
     const char *                                        opaque_string);
 
 globus_result_t
