@@ -5,13 +5,6 @@ AC_INIT(Makefile.am)
 
 OPENSSL_INIT
 
-# libtool hack
-
-save_LD=$LD
-LD=
-AM_PROG_LIBTOOL
-LD=$save_LD
-
 dnl config header goes here
 
 dnl Initialize the automake rules the last argument
@@ -39,6 +32,13 @@ CHECK_NEED_LNSL
 # Need to determine if we need -ldl or -ldld
 
 LAC_CHECK_DL_LIB
+
+# libtool hack
+
+save_LD=$LD
+LD=
+AM_PROG_LIBTOOL
+LD=$save_LD
 
 GPT_SET_LIBS(["$DL_LIB $EXTERNAL_LIBS"])	
 
