@@ -66,12 +66,12 @@ bin_PROGRAMS= \
 	myproxy-info \
 	myproxy-destroy \
 	myproxy-get-delegation \
-	myproxy-change-pass-phrase \
-	myproxy-acpp \
-	myproxy-alcf \
-	myproxy-arq
+	myproxy-change-pass-phrase
 
-sbin_PROGRAMS= myproxy-server
+sbin_PROGRAMS= myproxy-server \
+	myproxy-admin-change-pass-phrase \
+	myproxy-admin-load-credential \
+	myproxy-admin-query
 
 myproxy_init_SOURCES = 	myproxy_init.c
 
@@ -108,23 +108,23 @@ myproxy_change_pass_phrase_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_change_pass_phrase_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
-myproxy_acpp_SOURCES = myproxy_acpp.c myproxy_creds.c myproxy_creds.h
+myproxy_admin_change_pass_phrase_SOURCES = myproxy_acpp.c myproxy_creds.c myproxy_creds.h
 
-myproxy_acpp_LDFLAGS = $(GPT_LDFLAGS)
+myproxy_admin_change_pass_phrase_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_acpp_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+myproxy_admin_change_pass_phrase_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
-myproxy_arq_SOURCES = myproxy_arq.c myproxy_creds.c myproxy_creds.h
+myproxy_admin_query_SOURCES = myproxy_arq.c myproxy_creds.c myproxy_creds.h
 
-myproxy_arq_LDFLAGS = $(GPT_LDFLAGS)
+myproxy_admin_query_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_arq_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+myproxy_admin_query_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
-myproxy_alcf_SOURCES = myproxy_alcf.c ssl_utils.c ssl_utils.h myproxy_creds.c myproxy_creds.h
+myproxy_admin_load_credential_SOURCES = myproxy_alcf.c ssl_utils.c ssl_utils.h myproxy_creds.c myproxy_creds.h
 
-myproxy_alcf_LDFLAGS = $(GPT_LDFLAGS)
+myproxy_admin_load_credential_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_alcf_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+myproxy_admin_load_credential_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 noinst_PROGRAMS = gsi_socket_test
 
