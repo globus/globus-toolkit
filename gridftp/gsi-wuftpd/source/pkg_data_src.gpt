@@ -22,6 +22,13 @@
 		</Version>
 	    </Dependency>
 	</Source_Dependencies>
+	<Source_Dependencies Type="pgm_link" >
+	    <Dependency Name="globus_ftp_control">
+		<Version>
+		    <Simple_Version Major="1"></Simple_Version>
+		</Version>
+	    </Dependency>
+	</Source_Dependencies>
 
 	<Build_Environment >
 	    <cflags ></cflags>
@@ -44,7 +51,7 @@
 		if test "STATIC_LINK_GPTMACRO" = "yes"; then
 		    static_option=--enable-static-only
 		fi
-		CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi=globus --with-flavor=FLAVOR_GPTMACRO CONFIGOPTS_GPTMACRO $static_option --with-globus-paths --with-bufsize=65536
+		CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --with-flavor=FLAVOR_GPTMACRO CONFIGOPTS_GPTMACRO $static_option --with-globus-paths --with-bufsize=65536
 	    </Build_Step>
 
 	    <Build_Step>
