@@ -5,17 +5,24 @@ AC_INIT(Makefile.am)
 
 # libtool hack
 
+AC_ARG_WITH([cxx],
+    [AC_HELP_STRING([--with-cxx],
+        [Enable C++ tools detection])],
+    [],
+    [])
+
+if test "$with_cxx" = "yes"; then
+    AC_PROG_CXX
+    AC_PROG_CXXCPP
+fi
+
 with_tags=
 
 save_LD=$LD
 LD=
 
-save_CXXCPP=$CXXCPP
-CXXCPP=
-
 AM_PROG_LIBTOOL
 
-CXXCPP=$save_CXXCPP
 LD=$save_LD
 
 OPENSSL_INIT

@@ -23,19 +23,19 @@ AC_DEFUN([LAC_DEFINE_VAR],
 dnl LAC_CHECK_DL_LIB
 AC_DEFUN([LAC_CHECK_DL_LIB],
 [
-    AC_CHECK_LIB([dl],[dlopen],
+    AC_CHECK_FUNC([dlopen],
     [
-        DL_LIB=-ldl
+        DL_LIB=
     ],
     [
-        AC_CHECK_LIB([dld],[dlopen],
+        AC_CHECK_LIB([dl],[dlopen],
         [
-            DL_LIB=-ldld
+            DL_LIB=-ldl
         ],
         [
-            AC_CHECK_FUNC([dlopen],
+            AC_CHECK_LIB([dld],[dlopen],
             [
-	        DL_LIB=
+	        DL_LIB=-ldld
             ],
             [
                 AC_MSG_ERROR("Unable to find dynamic linking library")
