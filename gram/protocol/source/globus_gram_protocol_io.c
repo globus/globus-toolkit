@@ -21,7 +21,7 @@ globus_l_gram_protocol_authorization_callback(
 	globus_io_handle_t *		handle,
 	globus_result_t			result,
 	char *				identity,
-	gss_ctx_id_t *			context_handle);
+	gss_ctx_id_t 			context_handle);
 
 static
 void
