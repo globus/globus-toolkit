@@ -32,92 +32,92 @@ sub test_gram_remote
 
 #    $u->command("rm -rf \${HOME}/.globus/.gass_cache");
 
-    ($rc, $output) = $u->command("globusrun -a -r \"$gatekeeper_url\"",5);
+    ($rc, $output) = $u->command("globusrun -a -r \"$gatekeeper_url\"");
     $output =~ /GRAM Authentication test successful/ && $rc == 0 ?  
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-run, no arguments
 
     ($rc, $output) = 
-        $u->command("globus-job-run \"$gatekeeper_url\" /bin/date",5);
+        $u->command("globus-job-run \"$gatekeeper_url\" /bin/date");
     $output =~ /$year/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-run, with arguments
     
     ($rc, $output) = 
-        $u->command("globus-job-run \"$gatekeeper_url\" /bin/echo I ran",5);
+        $u->command("globus-job-run \"$gatekeeper_url\" /bin/echo I ran");
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-run with staging and arguments
     ($rc, $output) = 
-        $u->command("globus-job-run \"$gatekeeper_url\" -s /bin/echo I ran",5);
+        $u->command("globus-job-run \"$gatekeeper_url\" -s /bin/echo I ran");
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-submit.  Store jobid in $job_id
     ($rc, $job_id) = 
-        $u->command("globus-job-submit \"$gatekeeper_url\" /bin/echo I ran",5);
+        $u->command("globus-job-submit \"$gatekeeper_url\" /bin/echo I ran");
 
     # globus-job-get-output of stdout from gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-get-output -resource " .
-                                 "\"$gatekeeper_url\" $job_id",5);
+                                 "\"$gatekeeper_url\" $job_id");
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-clean on gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-clean -force -resource " .
-                                 "\"$gatekeeper_url\" $job_id",5);
+                                 "\"$gatekeeper_url\" $job_id");
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
 
 
     # globus-job-submit.  Store jobid in $job_id
     ($rc, $job_id) = 
         $u->command("globus-job-submit \"$gatekeeper_url\" " .
-                    "/bin/sh -c \'/bin/echo I ran 1>&2\'",5);
+                    "/bin/sh -c \'/bin/echo I ran 1>&2\'");
 
     # globus-job-get-output of stderr from gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-get-output -err -resource " .
-                                 "\"$gatekeeper_url\" $job_id",5);
+                                 "\"$gatekeeper_url\" $job_id");
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-status from gatekeeper_url of jobid $job_id.
-    ($rc, $output) = $u->command("globus-job-status $job_id",5);
+    ($rc, $output) = $u->command("globus-job-status $job_id");
     $output =~ /DONE/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
 
     # globus-job-clean on gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-clean -force -resource " .
-                                 "\"$gatekeeper_url\" $job_id",5);
+                                 "\"$gatekeeper_url\" $job_id");
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
  
     # globus-job-submit.  Store jobid in $job_id
     ($rc, $job_id) = 
         $u->command("globus-job-submit \"$gatekeeper_url\" " .
-                    "/bin/sh -c \'echo I ran;sleep 120\'",5);
+                    "/bin/sh -c \'echo I ran;sleep 120\'");
 
     # globus-job-status from gatekeeper_url of jobid $job_id.
-    ($rc, $output) = $u->command("globus-job-status $job_id",5);
+    ($rc, $output) = $u->command("globus-job-status $job_id");
     $output =~ /ACTIVE/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
     
     # globus-job-cancel on gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-cancel -force -resource " .
-                                 "\"$gatekeeper_url\" $job_id",5);
+                                 "\"$gatekeeper_url\" $job_id");
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-get-output of stdout from gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-get-output -resource " .
-                                 "\"$gatekeeper_url\" $job_id",5);
+                                 "\"$gatekeeper_url\" $job_id");
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
 
     # globus-job-clean on gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-clean -force -resource " .
-                                 "\"$gatekeeper_url\" $job_id",5);
+                                 "\"$gatekeeper_url\" $job_id");
     $rc == 0 ? $u->report("SUCCESS") : $u->report("FAILURE");
     
     # cleanup
