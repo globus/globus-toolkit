@@ -19,8 +19,8 @@ static int globus_l_gass_copy_deactivate(void);
 #define GLOBUS_I_GASS_COPY_TIMING
 
 /* uncomment this line for debug messages
-#define GLOBUS_I_GASS_COPY_DEBUG
 */
+#define GLOBUS_I_GASS_COPY_DEBUG
 
 #define globus_i_gass_copy_set_error(handle, error) \
 { \
@@ -4467,6 +4467,8 @@ globus_l_gass_copy_target_cancel(
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
                  fprintf(stderr, "_ftp_client_abort():  returned an error\n");
                  fprintf(stderr, "    resetting to SUCCESS\n");
+                 fprintf(stderr, "error = %s\n", 
+                   globus_object_printable_to_string(globus_error_get(result)));
 #endif
                  result = GLOBUS_SUCCESS;
              }
