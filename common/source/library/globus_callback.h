@@ -476,8 +476,8 @@ globus_callback_space_register_periodic(
  *
  * This function will cancel a callback and free the resources 
  * associcated with the callback handle.  If the callback was able to be 
- * canceled immediately, GLOBUS_SUCCESS is returned and it is guaranteed that
- * there are no running instances of the callback. 
+ * canceled immediately (or if it has already run), GLOBUS_SUCCESS is returned 
+ * and it is guaranteed that there are no running instances of the callback.
  *
  * If the callback is currently running (or unstoppably about to be run), then
  * the callback is prevented from being requeued, but, the 'official' cancel
