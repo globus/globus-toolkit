@@ -1,7 +1,7 @@
-use globus_ftp_control_data_set_interface to make the data interface the 
+DONEuse globus_ftp_control_data_set_interface to make the data interface the 
 same as the control channel connection
 
-send 125 instead of 150 on cached connections
+DONEsend 125 instead of 150 on cached connections 
 
 disable perf markers in mode S
 
