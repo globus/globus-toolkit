@@ -10,15 +10,17 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
-
 if [ ! -z "${GRID_SECURITY_DIR}" ]; then
     secconfdir=${GRID_SECURITY_DIR}
+    trusted_certs_dir=${secconfdir}/certificates/
 elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] && 
      [ -r "/etc/grid-security/globus-host-ssl.conf" ] ; then
     secconfdir="/etc/grid-security/"
+    trusted_certs_dir=${secconfdir}/certificates/
 elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
      [ -r "${GLOBUS_LOCATION}/etc/globus-host-ssl.conf" ] ; then
     secconfdir="${GLOBUS_LOCATION}/etc/"
+    trusted_certs_dir=${GLOBUS_LOCATION}/share/certificates/
 else
     echo "Can't find valid gsi config files.  Run setup-gsi."
     echo ""
@@ -44,17 +46,18 @@ long_usage () {
 ${short_usage}
 
   Options:
-    -cn <name>         : Common name of the user
-    -gatekeeper <name> : Create certificate for a gatekeeper named <name>
-    -host <name>       : Create certificate for a host named <name>
-    -dir <dir_name>    : User certificate directory [ '$HOME/.globus' ]
-    -cert <file>       : File name of the certificate
-    -key <file>        : File name of the user key
-    -req <file>        : File name of the certificate request
-    -nopw              : Create certificate without a passwd
-    -int[eractive]     : Prompt user for each component of the DN
-    -force             : Overwrites prexisting certifictes
-
+    -cn <name>           : Common name of the user
+    -gatekeeper <name>   : Create certificate for a gatekeeper named <name>
+    -host <name>         : Create certificate for a host named <name>
+    -dir <dir_name>      : User certificate directory [ '$HOME/.globus' ]
+    -cert <file>         : File name of the certificate
+    -key <file>          : File name of the user key
+    -req <file>          : File name of the certificate request
+    -nopw                : Create certificate without a passwd
+    -int[eractive]       : Prompt user for each component of the DN
+    -force               : Overwrites prexisting certifictes
+    -nondefaultca        : Will ask which CA is to be used (interactive)
+    -nondefaultca=<HASH> : Will use the CA with hash value <HASH>
 EOF
 }
 
@@ -92,6 +95,64 @@ INTERACTIVE=
 NO_DES=
 
 CERTREQ="${bindir}/grid-cert-request"
+
+set_nondefaultca() {
+ 
+if [ "${nondefaultca}" == "true" ]; then
+
+    INSTALLED_CERTS="`echo $trusted_certs_dir/*.0`"
+
+    if [ -z "${INSTALLED_CERTS}" ]; then
+        echo "No CA's have been installed on this host!"
+        echo "To run grid-cert-request, a CA must first"
+	echo "be installed"
+        exit 1;
+    else
+	echo
+        echo "The available CA configurations installed on this host are:"
+        echo
+    fi
+    
+    index=1
+    for cert in $trusted_certs_dir/*.0; do
+    
+        eval "CA${index}=${cert}"
+        TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
+        eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
+	eval "CA_HASH${index}=`openssl x509 -in ${cert} -noout -hash`"
+        eval "echo \"$index)  \${CA_HASH${index}} - \${CA_SUBJECT${index}}\""
+        index=$[ $index + 1 ]
+    done
+    
+    echo
+    echo -n "Enter the index number of the CA to set as the default: "
+    read CA_CHOSEN_INDEX
+    
+    if [ $[ 0 < ${CA_CHOSEN_INDEX} ] == 0 ] ||
+       [ $[ $index > ${CA_CHOSEN_INDEX} ] == 0 ]; then
+        echo "${CA_CHOSEN_INDEX} is not a valid index!"
+        exit 1
+    fi
+    
+    eval "CA_SUBJECT=\${CA_SUBJECT${CA_CHOSEN_INDEX}}"
+    eval "CA_HASH=\${CA_HASH${CA_CHOSEN_INDEX}}"
+
+elif [ ! -z "${nondefaultca}" ]; then
+    CA_HASH=${nondefaultca}
+    TEMP_SUBJECT=`openssl x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject`
+    eval "CA_SUBJECT=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
+fi
+
+echo
+echo "Using CA: ${CA_HASH} - ${CA_SUBJECT}"
+echo
+
+SSL_CONFIG=${trusted_certs_dir}/globus-user-ssl.conf.${CA_HASH}
+SSL_USER_CONFIG=${trusted_certs_dir}/globus-user-ssl.conf.${CA_HASH}
+SSL_HOST_CONFIG=${trusted_certs_dir}/globus-host-ssl.conf.${CA_HASH}
+security_conf=${trusted_certs_dir}/grid-security.conf.${CA_HASH}
+
+}
 
 
 cleanup () {
@@ -182,6 +243,17 @@ readCommandLine () {
          FORCE="TRUE"
          shift
          ;;
+     -nondefaultca)
+         nondefaultca="true"
+	 set_nondefaultca
+	 shift
+	 ;;
+     -nondefaultca=*)
+	 nondefaultca=`echo $1 | ${GLOBUS_SH_SED-sed} -e "s|-nondefaultca=\(.*\)|\1|"`
+	 if [ -z "${nondefaultca}" ]; then long_usage; exit 1; fi	    
+	 set_nondefaultca
+	 shift
+	 ;;
      *)
 	 globus_args_unrecognized_option "$1"
          ;;
