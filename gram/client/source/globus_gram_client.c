@@ -23,6 +23,11 @@ CVS Information:
 /*****************************************************************************
                              Include header files
 ******************************************************************************/
+
+#include "globus_i_gram_version.h"
+#include "globus_gram_client.h"
+#include "grami_fprintf.h"
+#include "globus_rsl.h"
 #include <assert.h>
 #include <stdio.h>
 #include <malloc.h>
@@ -30,10 +35,6 @@ CVS Information:
 #include <sys/param.h>
 #include <sys/time.h>
 #include <globus_io.h>
-#include "globus_i_gram_version.h"
-#include "globus_gram_client.h"
-#include "grami_fprintf.h"
-#include "globus_rsl.h"
 /*
 #include "globus_gram_job_manager.h"
 */

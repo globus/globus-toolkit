@@ -18,12 +18,13 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
+#include "globus_common.h"
+
 #include <assert.h>
 #include <stdlib.h>
 
 #include "globus_gram_myjob.h"
 
-#include "globus_common.h"
 #include "nexus.h"
 #include "globus_duct_runtime.h"
 
