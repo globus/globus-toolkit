@@ -284,7 +284,7 @@ test_job_id( char *    value,
 {
     int res = (strncmp(value,"https://", strlen("https://")));
     if (res)
-	*errmsg = strdup("invalid format of job ID");
+	*errmsg = globus_libc_strdup("invalid format of job ID");
     return res;
 }
 
@@ -304,7 +304,7 @@ test_hostname( char *   value,
 					   1024,
 					   &rc     );
     if (hostent == GLOBUS_NULL)
-	*errmsg = strdup("cannot resolve hostname");
+	*errmsg = globus_libc_strdup("cannot resolve hostname");
     return rc;
 }
 
@@ -315,7 +315,7 @@ test_integer( char *   value,
 {
     int  res = (atoi(value) <= 0);
     if (res)
-	*errmsg = strdup("argument is not a positive integer");
+	*errmsg = globus_libc_strdup("argument is not a positive integer");
     return res;
 }
 
@@ -452,7 +452,7 @@ static int arg_f_mode = O_RDONLY;
 	}
 
 	if (argc > 1)
-	    request_string = strdup(argv[1]);
+	    request_string = globus_libc_strdup(argv[1]);
 
 	for (list = options_found;
 	     !globus_list_empty(list);
@@ -513,7 +513,7 @@ static int arg_f_mode = O_RDONLY;
 		break;
 
 	    case arg_f:
-		request_file = strdup(instance->values[0]);
+		request_file = globus_libc_strdup(instance->values[0]);
 	    break;
 
 	case arg_k:
@@ -1026,7 +1026,7 @@ globus_l_globusrun_rsl_gass_subst(globus_rsl_t *request,
 	{
 	    globus_list_insert(
 		globus_rsl_boolean_get_operand_list_ref(request),
-		globus_rsl_parse(strdup(globusrun_gass_url_string)));
+		globus_rsl_parse(globus_libc_strdup(globusrun_gass_url_string)));
 	    level++;
 	}
     }
@@ -2224,11 +2224,11 @@ globus_l_globusrun_duroc_subjob_labels(char *request_string)
 	globus_libc_lock();
 	if(values[0] != GLOBUS_NULL)
 	{
-	    subjob_labels[i] = strdup(values[0]);
+	    subjob_labels[i] = globus_libc_strdup(values[0]);
 	}
 	else
 	{
-	    subjob_labels[i] = strdup("<no label>");
+	    subjob_labels[i] = globus_libc_strdup("<no label>");
 	}
 	globus_libc_unlock();
 
@@ -2344,7 +2344,7 @@ globus_l_globusrun_get_credential(void)
 	return GLOBUS_NULL;
     }
 
-    name = strdup((char *) tmp_buffer_desc.value);
+    name = globus_libc_strdup((char *) tmp_buffer_desc.value);
 
     gss_release_buffer(&minor_status,
 		       tmp_buffer);
