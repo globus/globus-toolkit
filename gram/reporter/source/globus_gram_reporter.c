@@ -53,6 +53,10 @@ typedef struct globus_l_gram_conf_values_s
     char *         cputype;
     char *         manufacturer;
     char *         machine_type;
+    char *         platform;
+    char *         valid_from;
+    char *         valid_to;
+    char *         keep_top;
     globus_bool_t  publish_jobs;
 } globus_l_gram_conf_values_t;
 
@@ -254,37 +258,51 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
         return(1);
 
     /* begin: write the resource manager object */    
-    fprintf(vals->cldif_fp, "dn: service=%s, %s\n",
+    fprintf(vals->cldif_fp, "dn: Mds-Software-deployment=%s, %s\n",
                 vals->rdn,
-                vals->host_dn);
-    fprintf(vals->cldif_fp, "objectclass: GlobusTop\n");
-    fprintf(vals->cldif_fp, "objectclass: GlobusDaemon\n");
-    fprintf(vals->cldif_fp, "objectclass: GlobusService\n");
-    fprintf(vals->cldif_fp, "objectclass: GlobusServiceJobManager\n");
-    fprintf(vals->cldif_fp, "objectName: service=%s, %s\n",
-                vals->rdn,
-                vals->host_dn);
-    fprintf(vals->cldif_fp, "service: %s\n", vals->rdn);
-    fprintf(vals->cldif_fp, "hn: %s\n", vals->gate_host);
-    fprintf(vals->cldif_fp, "contact: %s:%s/%s:%s\n",
+                vals->dmdn);
+                /* vals->host_dn); */
+    fprintf(vals->cldif_fp, "objectclass: Mds\n");
+    fprintf(vals->cldif_fp, "objectclass: MdsSoftware\n");
+    fprintf(vals->cldif_fp, "objectclass: MdsService\n");
+    fprintf(vals->cldif_fp, "objectclass: MdsServiceGram\n");
+    fprintf(vals->cldif_fp, "objectclass: MdsComputer\n");
+    fprintf(vals->cldif_fp, "objectclass: MdsOs\n");
+    fprintf(vals->cldif_fp, "Mds-Software-deployment: %s\n", vals->rdn);
+    fprintf(vals->cldif_fp, "Mds-Service-type: x-gram\n");
+    fprintf(vals->cldif_fp, "Mds-Service-hn: %s\n", vals->gate_host);
+    fprintf(vals->cldif_fp, "Mds-Service-port: %s\n", vals->gate_port);
+    fprintf(vals->cldif_fp, "Mds-Service-url: x-gram://%s:%s/%s:%s\n",
                 vals->gate_host,
                 vals->gate_port,
                 vals->rdn,
                 vals->gate_subject);
-    fprintf(vals->cldif_fp, "schedulerVersion: 0.1\n");
-    fprintf(vals->cldif_fp, "schedulertype: %s\n", vals->type);
-    fprintf(vals->cldif_fp, "deploydir: %s\n", vals->home_dir);
-    fprintf(vals->cldif_fp, "cputype: %s\n", vals->cputype);
-    fprintf(vals->cldif_fp, "osversion: %s\n", vals->osversion);
-    fprintf(vals->cldif_fp, "osname: %s\n", vals->osname);
-    fprintf(vals->cldif_fp, "manufacturer: %s\n", vals->manufacturer);
-    fprintf(vals->cldif_fp, "machinetype: %s\n", vals->machine_type);
-    /* fprintf(vals->cldif_fp, "gramVersion: %s\n", GRAM_VERSION); */
-    /* fprintf(vals->cldif_fp, "gramVersionDate: %s\n", GRAM_VERSION_DATE); */
-    /* fprintf(vals->cldif_fp, "gramSecurity: %s\n", GRAM_SECURITY); */
-    fprintf(vals->cldif_fp, "lastupdate: %s\n", vals->curr_gmt_time);
-    fprintf(vals->cldif_fp, "ttl: 30\n");
+    fprintf(vals->cldif_fp, "Mds-Service-protocol: 0.1\n");
+    fprintf(vals->cldif_fp, "Mds-Service-contact: https://%s:%s/%s:%s\n",
+                vals->gate_host,
+                vals->gate_port,
+                vals->rdn,
+                vals->gate_subject);
+    fprintf(vals->cldif_fp, "Mds-Computer-isa: %s\n", vals->cputype);
+    fprintf(vals->cldif_fp, "Mds-Os-release: %s\n", vals->osversion);
+    fprintf(vals->cldif_fp, "Mds-Os-name: %s\n", vals->osname);
+    fprintf(vals->cldif_fp, "Mds-Computer-manufacturer: %s\n", vals->manufacturer);
+    if (vals->platform)
+       fprintf(vals->cldif_fp, "Mds-Computer-platform: %s\n", vals->platform);
+    fprintf(vals->cldif_fp, "Mds-Service-Gram-schedulertype: %s\n", vals->type);
+/*
+ *  fprintf(vals->cldif_fp, "Mds-Service-Gram-version: %s\n", GRAM_VERSION);
+ *  fprintf(vals->cldif_fp, "Mds-Service-Gram-versionDate: %s\n", GRAM_VERSION_DATE);
+ *  fprintf(vals->cldif_fp, "Mds-Service-Gram-security: %s\n", GRAM_SECURITY);
+ */
+    if (vals->valid_from)
+    {
+        fprintf(vals->cldif_fp, "Mds-validfrom: %s\n", vals->valid_from);
+        fprintf(vals->cldif_fp, "Mds-validto: %s\n", vals->valid_to);
+        fprintf(vals->cldif_fp, "Mds-keeptop: %s\n", vals->keep_top);
+    }
     fprintf(vals->cldif_fp, "\n");
+
     /* end: write the resource manager object */    
 
     while (! globus_list_empty(q_list))
@@ -297,66 +315,79 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
         if ( ! q_node->queuename)
            q_node->queuename = (char *) globus_libc_strdup("default");
 
-        fprintf(vals->cldif_fp, "dn: queue=%s, service=%s, %s\n", 
+        fprintf(vals->cldif_fp, "dn: Mds-Job-Queue=%s, Mds-Software-deployment=%s, %s\n", 
                     q_node->queuename,
                     vals->rdn,
-                    vals->host_dn);
-        fprintf(vals->cldif_fp, "objectclass: GlobusTop\n");
-        fprintf(vals->cldif_fp, "objectclass: GlobusQueue\n");
-        fprintf(vals->cldif_fp, "queue: %s\n", q_node->queuename);
-        fprintf(vals->cldif_fp, "maxtime: %d\n", q_node->maxtime);
-        fprintf(vals->cldif_fp, "maxcputime: %d\n", q_node->maxcputime);
-        fprintf(vals->cldif_fp, "maxcount: %d\n", q_node->maxcount);
-        fprintf(vals->cldif_fp, "maxrunningjobs: %d\n", q_node->maxrunningjobs);
-        fprintf(vals->cldif_fp, "maxjobsinqueue: %d\n", q_node->maxjobsinqueue);
-        fprintf(vals->cldif_fp, "maxtotalmemory: %d\n", q_node->maxtotalmemory);
-        fprintf(vals->cldif_fp, "maxsinglememory: %d\n",
-                                                       q_node->maxsinglememory);
-        fprintf(vals->cldif_fp, "totalnodes: %d\n", q_node->totalnodes);
-        fprintf(vals->cldif_fp, "freenodes: %d\n", q_node->freenodes);
+                vals->dmdn);
+                    /* vals->host_dn); */
+        fprintf(vals->cldif_fp, "objectclass: Mds\n");
+        fprintf(vals->cldif_fp, "objectclass: MdsSoftware\n");
+        fprintf(vals->cldif_fp, "objectclass: MdsJobQueue\n");
+        fprintf(vals->cldif_fp, "objectclass: MdsComputerTotal\n");
+        fprintf(vals->cldif_fp, "objectclass: MdsComputerTotalFree\n");
+        fprintf(vals->cldif_fp, "objectclass: MdsGramJobQueue\n");
+        fprintf(vals->cldif_fp, "Mds-Job-Queue: %s\n", q_node->queuename);
+        fprintf(vals->cldif_fp, "Mds-Computer-Total-nodeCount: %d\n", q_node->totalnodes);
+        fprintf(vals->cldif_fp, "Mds-Computer-Total-Free-nodeCount: %d\n", q_node->freenodes);
+        fprintf(vals->cldif_fp, "Mds-Memory-Ram-Total-sizeMB: %d\n", q_node->maxtotalmemory);
+        fprintf(vals->cldif_fp, "Mds-Memory-Ram-sizeMB: %d\n", q_node->maxsinglememory);
+        fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-maxtime: %d\n", q_node->maxtime);
+        fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-maxcputime: %d\n", q_node->maxcputime);
+        fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-maxcount: %d\n", q_node->maxcount);
+        fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-maxrunningjobs: %d\n", q_node->maxrunningjobs);
+        fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-maxjobsinqueue: %d\n", q_node->maxjobsinqueue);
+
         if (q_node->whenactive)
-            fprintf(vals->cldif_fp, "whenactive: %s\n", q_node->whenactive);
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-whenactive: %s\n", q_node->whenactive);
         else
-            fprintf(vals->cldif_fp, "whenactive: NULL\n");
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-whenactive: NULL\n");
 
         if (q_node->status)
-            fprintf(vals->cldif_fp, "status: %s\n", q_node->status);
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-status: %s\n", q_node->status);
         else
-            fprintf(vals->cldif_fp, "status: NULL\n");
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-status: NULL\n");
 
         if (q_node->dispatchtype)
-            fprintf(vals->cldif_fp, "dispatchtype: %s\n", q_node->dispatchtype);
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-dispatchtype: %s\n", q_node->dispatchtype);
         else
-            fprintf(vals->cldif_fp, "dispatchtype: NULL\n");
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-dispatchtype: NULL\n");
 
         if (q_node->priority)
-            fprintf(vals->cldif_fp, "priority: %s\n", q_node->priority);
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-priority: %s\n", q_node->priority);
         else
-            fprintf(vals->cldif_fp, "priority: NULL\n");
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-priority: NULL\n");
 
         if (q_node->jobwait)
-            fprintf(vals->cldif_fp, "jobwait: %s\n", q_node->jobwait);
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-jobwait: %s\n", q_node->jobwait);
         else
-            fprintf(vals->cldif_fp, "jobwait: NULL\n");
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-jobwait: NULL\n");
 
         if (q_node->schedulerspecific)
-            fprintf(vals->cldif_fp, "schedulerspecific: %s\n",
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-schedulerspecific: %s\n",
                     q_node->schedulerspecific);
         else
-            fprintf(vals->cldif_fp, "schedulerspecific: NULL\n");
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-Queue-schedulerspecific: NULL\n");
 
         /* if we are not publishing the job entries then skip the rest!! */
         if (!vals->publish_jobs)
         {
-            fprintf(vals->cldif_fp, "ttl: 1\n");
-            fprintf(vals->cldif_fp, "lastupdate: %s\n", vals->curr_gmt_time);
+    if (vals->valid_from)
+    {
+            fprintf(vals->cldif_fp, "Mds-validfrom: %s\n", vals->valid_from);
+            fprintf(vals->cldif_fp, "Mds-validto: %s\n", vals->valid_to);
+            fprintf(vals->cldif_fp, "Mds-keeptop: %s\n", vals->keep_top);
+    }
             fprintf(vals->cldif_fp, "\n");
             continue;
         }
 
 
-        fprintf(vals->cldif_fp, "ttl: 1\n");
-        fprintf(vals->cldif_fp, "lastupdate: %s\n", vals->curr_gmt_time);
+    if (vals->valid_from)
+    {
+        fprintf(vals->cldif_fp, "Mds-validfrom: %s\n", vals->valid_from);
+        fprintf(vals->cldif_fp, "Mds-validto: %s\n", vals->valid_to);
+        fprintf(vals->cldif_fp, "Mds-keeptop: %s\n", vals->keep_top);
+    }
         fprintf(vals->cldif_fp, "\n");
 
         q_entry_list = q_node->entry_list;
@@ -371,61 +402,74 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
             if (!q_entry_node->local_job_id)
                continue;
 
-            fprintf(vals->cldif_fp, "dn: jobid=%s, queue=%s, service=%s, %s\n",
+            fprintf(vals->cldif_fp, "dn: Mds-Job-id=%s, Mds-Job-Queue-name=%s, Mds-Software-deployment=%s, %s\n",
                          q_entry_node->local_job_id,
                          q_node->queuename,
                          vals->rdn,
-                         vals->host_dn);
-            fprintf(vals->cldif_fp, "jobid: %s\n", q_entry_node->local_job_id);
-            fprintf(vals->cldif_fp, "objectclass: GlobusTop\n");
-            fprintf(vals->cldif_fp, "objectclass: GlobusQueueEntry\n");
+                vals->dmdn);
+                         /* vals->host_dn); */
+            fprintf(vals->cldif_fp, "objectclass: Mds\n");
+            fprintf(vals->cldif_fp, "objectclass: MdsJob\n");
+            fprintf(vals->cldif_fp, "objectclass: MdsGramJob\n");
 
-            fprintf(vals->cldif_fp, "localjobid: %s\n",
+            fprintf(vals->cldif_fp, "Mds-Job-id: %s\n", q_entry_node->local_job_id);
+
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-localId: %s\n",
                 q_entry_node->local_job_id);
 
-            if (q_entry_node->local_user_name)
-                fprintf(vals->cldif_fp, "localusername: %s\n",
-                    q_entry_node->local_user_name);
-            else
-                fprintf(vals->cldif_fp, "localusername: NULL\n");
-
-            if (q_entry_node->global_user_name)
-                fprintf(vals->cldif_fp, "globalusername: %s\n",
-                    q_entry_node->global_user_name);
-            else
-                fprintf(vals->cldif_fp, "globalusername: NULL\n");
-        
-            if (q_entry_node->specification)
-                fprintf(vals->cldif_fp, "specification: %s\n",
-                    q_entry_node->specification);
-            else
-                fprintf(vals->cldif_fp, "specification: NULL\n");
-
             if (q_entry_node->global_job_id)
-                fprintf(vals->cldif_fp, "globaljobid: %s\n",
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-globalId: %s\n",
                     q_entry_node->global_job_id);
             else
-                fprintf(vals->cldif_fp, "globaljobid: NULL\n");
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-globalId: NULL\n");
 
-            fprintf(vals->cldif_fp, "count: %d\n", q_entry_node->count);
+            if (q_entry_node->local_user_name)
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-localOwner: %s\n",
+                    q_entry_node->local_user_name);
+            else
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-localOwner: NULL\n");
+
+            if (q_entry_node->global_user_name)
+            {
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-globalOwner: %s\n",
+                    q_entry_node->global_user_name);
+                fprintf(vals->cldif_fp, "creatorsName: %s\n",
+                    q_entry_node->global_user_name);
+            }
+            else
+            {
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-globalOwner: NULL\n");
+                fprintf(vals->cldif_fp, "creatorsName: NULL\n");
+            }
+        
+            if (q_entry_node->specification)
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-specification: %s\n",
+                    q_entry_node->specification);
+            else
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-specification: NULL\n");
 
             if (q_entry_node->status)
-                fprintf(vals->cldif_fp, "status: %s\n", q_entry_node->status);
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-status: %s\n", q_entry_node->status);
             else
-                fprintf(vals->cldif_fp, "status: NULL\n");
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-status: NULL\n");
 
-            fprintf(vals->cldif_fp, "start time: %lu\n",
-                    q_entry_node->start_time);
+/*
+ *          fprintf(vals->cldif_fp, "start time: %lu\n",
+ *                  q_entry_node->start_time);
+ */
 
             if (q_entry_node->schedulerspecific)
-                fprintf(vals->cldif_fp, "schedspecific: %s\n",
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-schedulerSpecific: %s\n",
                     q_entry_node->schedulerspecific);
             else
-                fprintf(vals->cldif_fp, "schedspecific: NULL\n");
+                fprintf(vals->cldif_fp, "Mds-Gram-Job-schedulerSpecific: NULL\n");
 
-            fprintf(vals->cldif_fp, "ttl: 1\n");
-            fprintf(vals->cldif_fp, "lastupdate: %s\n", vals->curr_gmt_time);
-
+    if (vals->valid_from)
+    {
+            fprintf(vals->cldif_fp, "Mds-validfrom: %s\n", vals->valid_from);
+            fprintf(vals->cldif_fp, "Mds-validto: %s\n", vals->valid_to);
+            fprintf(vals->cldif_fp, "Mds-keeptop: %s\n", vals->keep_top);
+    }
             fprintf(vals->cldif_fp, "\n");
         }
         /* end: write the queue entry object(s) */    
@@ -788,6 +832,10 @@ globus_l_gram_conf_values_init(globus_l_gram_conf_values_t * vals)
     vals->cldif_file = GLOBUS_NULL;
     vals->machine_type = GLOBUS_NULL;
     vals->publish_jobs = GLOBUS_TRUE;
+    vals->platform = GLOBUS_NULL;
+    vals->valid_from = GLOBUS_NULL;
+    vals->valid_to = GLOBUS_NULL;
+    vals->keep_top = GLOBUS_NULL;
     return(0);
 }
 
