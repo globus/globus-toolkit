@@ -373,40 +373,6 @@ globus_l_thread_blocking_callback_destroy(void* p)
                                  (void *)GLOBUS_NULL);
 }
 
-#ifndef TARGET_ARCH_WIN32
-void thread_print(char * s, ...)
-{
-    char tmp[1023];
-    int x;
-    va_list ap;
-    pid_t   pid = getpid();
-    
-#ifdef HAVE_STDARG_H
-        va_start(ap, s);
-#else
-	va_start(ap);
-#endif
-
-#if !defined(BUILD_LITE)
-    sprintf(tmp, "p#%dt#%ld::", pid, (long)globus_thread_self());
-    x = strlen(tmp);
-    vsprintf(&tmp[x], s, ap);
-
-    globus_libc_printf(tmp);
-    globus_thread_yield();
-#else
-    sprintf(tmp, "p#%dt#main::", pid);
-    x = strlen(tmp);
-    vsprintf(&tmp[x], s, ap);
-    printf(tmp);
-#endif
-   
-    fflush(stdin);
-}
-
-#endif
-
-
 /*
  *  not found in win32
  */
