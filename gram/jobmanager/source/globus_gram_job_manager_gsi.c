@@ -143,7 +143,7 @@ globus_gram_job_manager_register_proxy_timeout(
 
 	if(major_status == GSS_S_COMPLETE)
 	{
-	    if (lifetime - 300 <= 0)
+	    if (lifetime - request->proxy_timeout <= 0)
 	    {
 		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 		request->failure_code =
@@ -156,7 +156,7 @@ globus_gram_job_manager_register_proxy_timeout(
 	    else
 	    {
 		/* set timer */
-		GlobusTimeReltimeSet(delay_time, lifetime - 300, 0);
+		GlobusTimeReltimeSet(delay_time, lifetime - request->proxy_timeout, 0);
 		globus_callback_register_oneshot(
 			&request->proxy_expiration_timer,
 			&delay_time,

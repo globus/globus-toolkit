@@ -656,6 +656,33 @@ globus_gram_job_manager_rsl_request_fill(
     globus_libc_free(tmp_param);
     tmp_param = GLOBUS_NULL;
 
+    /**********************************
+     *  GET PROXY_TIMEOUT PARAM
+     */
+    if (globus_rsl_param_get(request->rsl,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                             GLOBUS_GRAM_PROTOCOL_PROXY_TIMEOUT_PARAM,
+		             &tmp_param) != 0)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_PROXY_TIMEOUT;
+    }
+
+    if (tmp_param[0])
+    {
+        x = atoi(tmp_param[0]);
+
+        if (x < 1)
+        {
+            return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_PROXY_TIMEOUT;
+        }
+        else
+        {
+            request->proxy_timeout = x;
+        }
+    }
+    globus_libc_free(tmp_param);
+    tmp_param = GLOBUS_NULL;
+
     /* Check for files to stage in */
     rc = globus_gram_job_manager_staging_create_list(request);
     if(rc != GLOBUS_SUCCESS)

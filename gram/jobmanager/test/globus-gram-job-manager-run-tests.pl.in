@@ -1,14 +1,17 @@
 #! /usr/bin/env perl
 
+BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
+
 use strict;
 use Test::Harness;
 require 5.005;
 use vars qw(@tests);
+use Globus::Core::Paths;
+
 $|=1;
 
-my $globus_location = $ENV{GLOBUS_LOCATION};
 my $contact;
-my $startargs="-jmtype fork";
+my $startargs = '-log never ';
 
 @tests = qw(
     globus-gram-job-manager-stdio-test.pl
@@ -21,23 +24,32 @@ if(0 != system("grid-proxy-info -exists -hours 2") / 255)
     exit 1;
 }
 
-chdir "$globus_location/test/@PACKAGE@";
+chdir $Globus::Core::Paths::exec_prefix . "/test/@PACKAGE@";
+
 if(@ARGV)
 {
-    $startargs = join(' ', @ARGV);
+    $startargs .= join(' ', @ARGV);
 }
 
-system("globus-personal-gatekeeper -killall >/dev/null 2>/dev/null");
-system("globus-personal-gatekeeper -start -log never $startargs >/dev/null 2>/dev/null");
-chomp($contact = `globus-personal-gatekeeper -list`);
-if($? != 0)
+if(exists($ENV{CONTACT_STRING}))
 {
-    print "Could not start gatekeeper\n";
-    exit 1;
+    print "Using gatekeeper at " . $ENV{CONTACT_STRING} . "\n";
+}
+else
+{
+    my $personal_gatekeeper = $Globus::Core::Paths::bindir
+                            . "/globus-personal-gatekeeper";
+    system("$personal_gatekeeper -killall >/dev/null 2>/dev/null");
+    system("$personal_gatekeeper -start $startargs >/dev/null 2>/dev/null");
+    chomp($contact = `$personal_gatekeeper -list`);
+    if($? != 0)
+    {
+	print "Could not start gatekeeper\n";
+	exit 1;
+    }
+    $ENV{CONTACT_STRING} = $contact;
 }
 
-push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
-$ENV{CONTACT_STRING} = $contact;
 runtests(@tests);
 
 sub END {

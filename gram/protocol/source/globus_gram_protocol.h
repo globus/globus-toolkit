@@ -244,6 +244,7 @@ globus_gram_protocol_error_7_hack_replace_message(const char * message);
 #define GLOBUS_GRAM_PROTOCOL_FILE_CLEANUP_PARAM             "filecleanup"
 #define GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM               "scratchdir"
 #define GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM               "gasscache"
+#define GLOBUS_GRAM_PROTOCOL_PROXY_TIMEOUT_PARAM            "proxytimeout"
 
 #define GLOBUS_GRAM_PROTOCOL_DEFAULT_STDIN                  "/dev/null"
 #define GLOBUS_GRAM_PROTOCOL_DEFAULT_STDOUT                 "/dev/null"

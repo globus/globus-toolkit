@@ -23,6 +23,7 @@ pkgdata_DATA = \
     error_invalid_maxtime.rsl \
     error_invalid_max_wall_time.rsl \
     error_invalid_min_memory.rsl \
+    error_invalid_proxy_timeout.rsl \
     error_invalid_project.rsl \
     error_invalid_queue.rsl \
     error_invalid_save_state.rsl \
@@ -60,6 +61,7 @@ pkgdata_DATA = \
     error_rsl_min_memory.rsl \
     error_rsl_myjob.rsl \
     error_rsl_project.rsl \
+    error_rsl_proxy_timeout.rsl \
     error_rsl_queue.rsl \
     error_rsl_remote_io_url.rsl \
     error_rsl_restart.rsl \

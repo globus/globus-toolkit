@@ -21,6 +21,7 @@ my @test_rsls=qw(
 	error_invalid_save_state.rsl
 	error_invalid_scratch.rsl
 	error_invalid_two_phase_commit.rsl
+	error_invalid_proxy_timeout.rsl
 	error_no_state_file.rsl
 	error_opening_stderr.rsl
 	error_opening_stderr2.rsl
@@ -46,6 +47,7 @@ my @test_rsls=qw(
 	error_rsl_file_stage_out.rsl
 	error_rsl_jobtype.rsl
 	error_rsl_myjob.rsl
+	error_rsl_proxy_timeout.rsl
 	error_rsl_remote_io_url.rsl
 	error_rsl_restart.rsl
 	error_rsl_save_state.rsl

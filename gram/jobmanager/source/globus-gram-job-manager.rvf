@@ -267,3 +267,10 @@ Publish: false
 Attribute: sub_job_comms_type
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Publish: false
+
+Attribute: proxy_timeout
+Description: "Specifies how long (in seconds) before the delegated X509"
+              proxy expires the job-manager should exit."
+Default: 60
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT 
