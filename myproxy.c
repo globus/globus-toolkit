@@ -559,9 +559,9 @@ myproxy_recv(myproxy_socket_attrs_t *attrs,
 } 
 
 void
-myproxy_destroy(myproxy_socket_attrs_t *attrs, 
-		       myproxy_request_t *request, 
-		       myproxy_response_t *response)
+myproxy_free(myproxy_socket_attrs_t *attrs, 
+	     myproxy_request_t *request, 
+	     myproxy_response_t *response)
 { 
     if ((attrs == NULL) || (request == NULL) || (response == NULL)) 
       return;
