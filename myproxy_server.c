@@ -441,7 +441,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	    respond_with_error_and_die(attrs, verror_get_string());
 	}
 
-<<<<<<< myproxy_server.c
         myproxy_log(DBG_HI, debug_level,"Retriever = ", client_creds->retrievers);
 
     /*if retrievers are specified use them else use defaults for second level check*/
