@@ -393,8 +393,11 @@ globus_io_tcp_connect(
     monitor.err = GLOBUS_NULL;
 
     /* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    if(attr)
+    {
+        saved_space = attr->space;
+        attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
     
     result = globus_io_tcp_register_connect(host,
 					    port,
@@ -416,8 +419,16 @@ globus_io_tcp_connect(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
-    handle->space = saved_space;
+    
+    if(attr)
+    {
+        attr->space = saved_space;
+    }
+    
+    if(handle)
+    {
+        handle->space = saved_space;
+    }
 
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
@@ -1034,9 +1045,18 @@ globus_io_tcp_accept(
     monitor.err = GLOBUS_NULL;
     
 /* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-
+    
+    if(attr)
+    {
+        saved_space = attr->space;
+        attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
+    else if(listener_handle)
+    {
+        saved_space = listener_handle->space;
+        listener_handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
+    
     result = globus_io_tcp_register_accept(listener_handle,
 					   attr,
 					   handle,
@@ -1057,9 +1077,21 @@ globus_io_tcp_accept(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
-    handle->space = saved_space;
-
+    
+    if(attr)
+    {
+        attr->space = saved_space;
+    }
+    else if(listener_handle)
+    {
+        listener_handle->space = saved_space;
+    }
+    
+    if(handle)
+    {
+        handle->space = saved_space;
+    }
+        
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     

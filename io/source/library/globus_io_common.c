@@ -260,9 +260,12 @@ globus_io_cancel(
     monitor.use_err = GLOBUS_FALSE;
     
     /* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-
+    if(handle)
+    {
+        saved_space = handle->space;
+        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
+    
     result = globus_io_register_cancel(handle,
 				      perform_callbacks,
 				      globus_i_io_monitor_callback,
@@ -281,9 +284,12 @@ globus_io_cancel(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
-    handle->space = saved_space;
-
+    
+    if(handle)
+    {
+        handle->space = saved_space;
+    }
+    
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);
@@ -346,8 +352,11 @@ globus_io_close(
     monitor.use_err = GLOBUS_FALSE;
 
     /* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    if(handle)
+    {
+        saved_space = handle->space;
+        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
     
     result = globus_io_register_close(handle,
 				      globus_i_io_monitor_callback,
@@ -366,9 +375,12 @@ globus_io_close(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
-    handle->space = saved_space;
-
+    
+    if(handle)
+    {
+        handle->space = saved_space;
+    }
+    
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);
@@ -509,8 +521,11 @@ globus_io_listen(
     monitor.use_err = GLOBUS_FALSE;
 
     /* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    if(handle)
+    {
+        saved_space = handle->space;
+        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
     
     result = globus_io_register_listen(handle,
 				       globus_i_io_monitor_callback,
@@ -530,9 +545,12 @@ globus_io_listen(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
-    handle->space = saved_space;
-
+    
+    if(handle)
+    {
+        handle->space = saved_space;
+    }
+    
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);

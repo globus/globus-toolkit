@@ -714,9 +714,12 @@ globus_io_udp_recvfrom(
     monitor->nbytes_received = nbytes_received;
     
     /* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-  
+    if(handle)
+    {
+        saved_space = handle->space;
+        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
+    
     result = globus_io_udp_register_recvfrom(
 				    handle,
 				    buf,
@@ -742,7 +745,10 @@ globus_io_udp_recvfrom(
     }
     globus_mutex_unlock(&monitor->mutex);
     
-    handle->space = saved_space;
+    if(handle)
+    {
+        handle->space = saved_space;
+    }
     
     globus_mutex_destroy(&monitor->mutex);
     globus_cond_destroy(&monitor->cond);
