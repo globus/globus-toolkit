@@ -945,6 +945,114 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
     return return_code;
 }
 
+/* Retrieves info about all credentials. Verifies username and
+   remaining lifetime if specified.
+   If query is username or lifetime based, username should be
+   specified in creds->username
+   and remaining lifetime in creds->end_time
+*/
+int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
+{
+    struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
+    DIR *dir;
+    struct dirent *de;
+    int return_code = -1;
+    char *username = NULL;
+    time_t end_time = 0, now;
+
+    now = time(0);
+
+    if (check_storage_directory() == -1) {
+        goto error;
+    }
+
+    /*
+     * cur_cred always points to the last valid credential in the list.
+     * If cur_cred is NULL, we haven't found any credentials yet.
+     * The first cred in the list is the one passed in.  Other creds
+     *    in the list are ones we allocated and added.
+     */
+
+    if (creds == NULL) {
+        verror_put_errno(EINVAL);
+        goto error;
+    }
+
+    new_cred = creds; /* new_cred is what we're filling in */
+
+    if (creds->username) {
+	username = strdup(creds->username);
+	free(creds->username);
+	creds->username = NULL;
+    }
+
+    if (creds->end_time) {
+	end_time = creds->end_time;
+	creds->end_time = 0;
+    }
+
+    if ((dir = opendir(storage_dir)) == NULL) {
+	verror_put_string("failed to open credential storage directory");
+	goto error;
+    }
+
+    /* Credential data file names are of the form   "<username>-<credname>.data" where <credname> is "" for 
+       default credentials */
+
+    while ((de = readdir(dir)) != NULL) {
+	if (!strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
+	    char *credname = NULL, *dot, *dash;
+
+	    dash = strchr (de->d_name, '-');	/*Get a pointer to '-' */
+
+	    dot = strchr(de->d_name, '.');
+	    *dot = '\0';
+
+	    if (dash) /*Credential with a name */
+	    	credname = dash+1;
+
+	    if (new_cred->username) free(new_cred->username);
+	    if (new_cred->credname) free(new_cred->credname);
+
+	    if (dash != NULL)	/*Stash '-' and beyond in de->d_name (Gives username) */
+		*dash = '\0';
+
+	    new_cred->username = strdup(de->d_name);
+
+	    if (username)	/* use username to query if specified */
+		if (strcmp(username, new_cred->username))
+			continue;
+
+	    if (credname)
+	    	new_cred->credname = strdup(credname);
+	    else
+		new_cred->credname = NULL;
+
+	    if (myproxy_creds_retrieve(new_cred) == 0) {
+		if (end_time == 0 || end_time < new_cred->end_time) {
+			if (cur_cred) cur_cred->next = new_cred;
+			cur_cred = new_cred;
+			new_cred = malloc(sizeof(struct myproxy_creds));
+			memset(new_cred, 0, sizeof(struct myproxy_creds));
+		} else {
+			myproxy_creds_free_contents(new_cred);
+		}
+	    }
+	}
+    }
+    closedir(dir);
+
+    return_code = 0;
+
+ error:
+    if (username) free(username);
+    if (cur_cred && new_cred) {
+	myproxy_creds_free_contents(new_cred);
+	free(new_cred);
+    }
+    return return_code;
+}
+
 int
 myproxy_creds_exist(const char *username, const char *credname)
 {
@@ -1098,6 +1206,8 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     return return_code;
 }
 
+/* Server password change function - called from myproxy_server.
+   Checks existing password before changing it */ 
 int
 myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
 				const char *new_passphrase)

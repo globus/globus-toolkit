@@ -436,7 +436,7 @@ grid_proxy_init(int seconds, const char *proxyfile) {
 
     hours = seconds / SECONDS_PER_HOUR;
     
-    sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);
+    sprintf(command, "grid-proxy-init -valid %d:0 -out %s", hours, proxyfile);
     rc = system(command);
 
     return rc;
