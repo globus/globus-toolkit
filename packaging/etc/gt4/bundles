@@ -41,24 +41,29 @@ BUNDLE gt4-gram
         globus_wsrf_gram_common_java_source         
         globus_wsrf_gram_common_schema              
         globus_wsrf_gram_client_java_source         
-        globus_scheduler_event_generator_fork       
-        globus_scheduler_event_generator_fork_setup 
         globus_scheduler_event_generator            
         globus_wsrf_gram_job_monitoring_common_java_source
+        globus_wsrf_gram_service_java_setup_multi
+        globus_wsrf_gram_service_java_setup_fork
+        globus_scheduler_event_generator_fork       
+        globus_scheduler_event_generator_fork_setup         
         globus_fork_starter
-        globus_gram_job_manager_setup_fork
-        
+        globus_gram_job_manager_setup_fork        
+                
 BUNDLE gt4-gram-pbs
-        globus_gram_job_manager_setup_pbs
+        globus_wsrf_gram_service_java_setup_pbs
         globus_scheduler_event_generator_pbs
         globus_scheduler_event_generator_pbs_setup
-
+        globus_gram_job_manager_setup_pbs
+        
 BUNDLE gt4-gram-condor
-        globus_gram_job_manager_setup_condor
+        globus_wsrf_gram_service_java_setup_condor
         globus_scheduler_event_generator_condor
         globus_scheduler_event_generator_condor_setup        
+        globus_gram_job_manager_setup_condor
 
 BUNDLE gt4-gram-lsf
-        globus_gram_job_manager_setup_lsf
+        globus_wsrf_gram_service_java_setup_lsf        
         globus_scheduler_event_generator_lsf
         globus_scheduler_event_generator_lsf_setup        
+        globus_gram_job_manager_setup_lsf
