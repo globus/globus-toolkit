@@ -329,6 +329,7 @@ NEW_DEFAULT_CA_HASH=`openssl x509 -in ${CA_CERT} -noout -hash`
 GRID_SECURITY_FILE=${CA_CERT_DIR}/grid-security.conf.${NEW_DEFAULT_CA_HASH}
 CA_SSL_HOST_CONFIG_FILE=${CA_CERT_DIR}/globus-host-ssl.conf.${NEW_DEFAULT_CA_HASH}
 CA_SSL_USER_CONFIG_FILE=${CA_CERT_DIR}/globus-user-ssl.conf.${NEW_DEFAULT_CA_HASH}
+DIRECTIONS_FILE=${CA_CERT_DIR}/directions.${NEW_DEFAULT_CA_HASH}
 
 if [ -w ${GRID_SECURITY_FILE} ]; then
     
@@ -364,6 +365,18 @@ if [ -w ${CA_SSL_USER_CONFIG_FILE} ]; then
 	    	          ${secconfdir}/globus-user-ssl.conf
 else
     error CA_SSL_USER_CONFIG_FILE
+fi
+
+if [ -w ${DIRECTIONS_FILE} ]; then
+
+    echo "linking ${DIRECTIONS_FILE} to"
+    echo "        ${secconfdir}/directions"
+    echo
+    ${GLOBUS_SH_RM-rm} -f ${secconfdir}/directions
+    ${GLOBUS_SH_LN-ln} -s ${DIRECTIONS_FILE} \
+	    	          ${secconfdir}/directions
+else
+    error DIRECTIONS_FILE
 fi
 
 echo 
