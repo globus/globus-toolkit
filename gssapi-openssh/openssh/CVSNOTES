@@ -12,6 +12,7 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 
     2. Commit any locally-modified files and tag the repository before the merge.
 
+          $ cvs update
           $ cvs commit
           $ cvs tag <tagName>-premerge
 
