@@ -118,7 +118,7 @@ public class UsageMonitorPacket {
                                      int[] destPorts) 
         throws IOException {
         if (destinations.length != destPorts.length) {
-            throw new IllegalArgumentException("In sendPacketToMultiple: number of destinations and destination ports do not match");
+            throw new IllegalArgumentException("Number of destinations and destination ports do not match");
         }
         
         byte[] sendBuf = toByteArray();
@@ -218,7 +218,7 @@ public class UsageMonitorPacket {
                 InetAddress addr = InetAddress.getByName(host);
                 sendPacket(addr, port);
             } catch (IOException e) {
-                log.warn("Failed to send packet", e);
+                log.debug("Failed to send packet", e);
             }
         }
     }
