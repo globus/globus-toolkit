@@ -11,6 +11,10 @@ extern globus_ftp_control_parallelism_t		g_parallelism;
 extern globus_bool_t				g_send_restart_info;
 extern int mode;
 
+int *                                           g_restart_offset;
+int *                                           g_restart_length;
+int                                             g_restart_count = 0;
+
 typedef struct
 {
     globus_size_t		offset;
@@ -356,6 +360,44 @@ g_alarm_signal(
     globus_mutex_unlock(&g_monitor.mutex);
 }
 
+/*
+ *  if the restart marker is bad return 0 - -1
+ */
+int
+invert_restart(
+    int *                                          offset_a, 
+    int *                                          length_a) 
+{
+    int                                            ctr;
+    int                                            start = 0;
+
+    if(g_restart_count == 0)
+    {
+        offset_a[0] = 0;
+        length_a[0] = -1;
+  
+        return 1;
+    }
+
+    if(g_restart_offset[ctr] != 0)
+    {
+        offset_a[0] = 0;
+        length_a[0] = g_restart_offset[0];
+        start++;
+    }
+
+    for(ctr = 0; ctr < g_restart_count - 1; ctr++)
+    {
+        offset_a[start] = g_restart_offset[ctr]+g_restart_length[ctr];
+        length_a[ctr] = g_restart_offset[ctr + 1] - offset_a[start];
+
+        start++;
+    }
+    offset_a[start] = g_restart_offset[ctr]+g_restart_length[ctr];
+    length_a[ctr] = -1;
+
+    return start;
+}
 
 /*
  *  globusified send data routine
@@ -392,6 +434,11 @@ g_send_data(
     int                                             file_ndx;
     int                                             connection_count = 4;
     globus_bool_t                                   l_timed_out = GLOBUS_FALSE;
+
+    int *                                           offset_a;
+    int *                                           length_a;
+    int                                             count_a;
+    int                                             ctr;
 #ifdef THROUGHPUT
     int                                             bps;
     double                                          bpsmult;
@@ -459,7 +506,7 @@ g_send_data(
 
     if(l_timed_out)
     {
-        goto data_err;
+        goto connect_err;
     }
 
     transflag++;
@@ -496,68 +543,97 @@ g_send_data(
        }
 #      endif
 
-        jb_count = 0;
-        while ((jb_count < length || length == -1) && !eof)
+        if(g_restart_count > 0)
         {
-            /*
-             *  allocate a buffer for each send
-             */
-            if ((buf = (char *) globus_malloc(blksize)) == NULL)  
+            offset_a = (int *)globus_malloc(sizeof(int)*(g_restart_count + 1));
+            length_a = (int *)globus_malloc(sizeof(int)*(g_restart_count + 1));
+            count_a = invert_restart(offset_a, length_a);
+        }
+        else
+        {
+            offset_a = (int *)globus_malloc(sizeof(int));
+            length_a = (int *)globus_malloc(sizeof(int));
+            offset_a[0] = offset;
+            length_a[0] = length;
+            count_a = 1;
+        }
+
+        for(ctr = 0; ctr < count_a && !eof; ctr++)
+        {
+            lseek(filefd, offset_a[ctr], SEEK_SET);
+            offset = offset_a[ctr];
+            length = length_a[ctr];
+            jb_count = 0;
+            while ((jb_count < length || length == -1) && !eof)
             {
-                transflag = 0;
-                perror_reply(451, "Local resource failure: malloc");
-                retrieve_is_data = 1;
-                return (0);
+                /*
+                 *  allocate a buffer for each send
+                 */
+                if ((buf = (char *) globus_malloc(blksize)) == NULL)  
+                {
+                    transflag = 0;
+                    perror_reply(451, "Local resource failure: malloc");
+                    retrieve_is_data = 1;
+                    return (0);
+                }
+
+                if(length == -1 || length - jb_count >= blksize)
+                {
+                    jb_i = blksize;
+                }
+                else
+                {
+                    jb_i = length - jb_count;
+                }
+
+                cnt = read(filefd, buf, jb_i);
+
+                /*
+                 *  if file eof, or we have read the portion we want  to 
+                 *  send in a partial file transfer set eof to true
+                 */
+                if(cnt <= 0 || 
+                   (jb_count + cnt == length && length != -1))
+                {
+                    eof = GLOBUS_TRUE;
+                }
+
+                res = globus_ftp_control_data_write(
+                          handle,
+                          buf,
+                          cnt,
+                          jb_count + offset,
+                          eof,
+                          data_write_callback,
+                          &g_monitor);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto data_err;
+                }
+                cb_count++;
+
+                jb_count += cnt;
+
+                res = globus_ftp_control_data_query_channels(
+                          handle,
+                          &connection_count,
+                          0);
+                assert(res == GLOBUS_SUCCESS);
+                globus_mutex_lock(&g_monitor.mutex);
+                {   
+                    g_monitor.count++;
+                    while(g_monitor.count == connection_count && 
+                          !g_monitor.abort &&
+                          !g_monitor.timed_out)
+                    {
+                        globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
+                    }
+                }
+                globus_mutex_unlock(&g_monitor.mutex);
             }
-
-            if(length == -1 || length - jb_count >= blksize)
-            {
-                jb_i = blksize;
-            }
-            else
-            {
-                jb_i = length - jb_count;
-            }
-
-            cnt = read(filefd, buf, jb_i);
-
-            /*
-             *  if file eof, or we have read the portion we want  to 
-             *  send in a partial file transfer set eof to true
-             */
-            if(cnt <= 0 || 
-               (jb_count + cnt == length && length != -1))
-            {
-                eof = GLOBUS_TRUE;
-            }
-
-            res = globus_ftp_control_data_write(
-                      handle,
-                      buf,
-                      cnt,
-                      jb_count + offset,
-                      eof,
-                      data_write_callback,
-                      &g_monitor);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto data_err;
-            }
-            cb_count++;
-
-            jb_count += cnt;
-
-            res = globus_ftp_control_data_query_channels(
-                      handle,
-                      &connection_count,
-                      0);
-            assert(res == GLOBUS_SUCCESS);
             globus_mutex_lock(&g_monitor.mutex);
             {   
-                g_monitor.count++;
-                while(g_monitor.count == connection_count && 
-                      !g_monitor.abort &&
-                      !g_monitor.timed_out)
+                while(g_monitor.count != 0)
                 {
                     globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
                 }
@@ -607,14 +683,6 @@ g_send_data(
             }
 #           endif
         } /* end while */
-        globus_mutex_lock(&g_monitor.mutex);
-        {   
-            while(g_monitor.count > 0)
-            {
-                globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
-            }
-        }
-        globus_mutex_unlock(&g_monitor.mutex);
 
 #       ifdef THROUGHPUT
         {
@@ -631,9 +699,7 @@ g_send_data(
          */
         globus_mutex_lock(&g_monitor.mutex);
         {   
-            while(g_monitor.count > 0 && 
-                  !g_monitor.abort &&
-                  !g_monitor.timed_out)
+            while(g_monitor.count > 0)
             {
                 globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
             }
@@ -709,6 +775,12 @@ g_send_data(
 
     perror_reply(426, "Data connection");
     retrieve_is_data = 1;
+
+    return (0);
+
+  connect_err:
+    alarm(0);
+    transflag = 0;
 
     return (0);
 
