@@ -223,7 +223,9 @@ globus_gass_server_ez_shutdown(unsigned short port)
     }
     
     /* Disallow any new requests */
-    globus_gass_server_close(port);
+    rc = globus_gass_server_close(port);
+
+    globus_l_gass_server_ez_exit();
 
     /* Deactivate modules we needed */
     rc = globus_module_deactivate(GLOBUS_L_GASS_SERVER_EZ_MODULE);
@@ -231,8 +233,6 @@ globus_gass_server_ez_shutdown(unsigned short port)
     {
 	success = GLOBUS_FALSE;
     }
-
-    globus_l_gass_server_ez_exit();
     globus_free(server);
     
     return success;
