@@ -1202,7 +1202,6 @@ globus_result_t
 globus_gfs_ipc_handle_create(
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_system_handle_t          system_handle,
-    globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
@@ -1245,7 +1244,6 @@ globus_gfs_ipc_handle_create(
     }
     ipc->iface = (globus_gfs_ipc_iface_t *) user_arg;
     ipc->state = GLOBUS_GFS_IPC_STATE_SERVER_OPENING;
-    ipc->session_info = globus_l_gfs_ipc_session_info_copy(session_info);
     /* ipc->requestor = GLOBUS_FALSE; */
     /* ipc->cached_res = GLOBUS_SUCCESS; */
     /* ipc->error_cb = NULL; */

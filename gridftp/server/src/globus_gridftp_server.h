@@ -35,7 +35,6 @@ typedef enum globus_gfs_operation_type_e
     GLOBUS_GFS_OP_EVENT,    
     GLOBUS_GFS_OP_SESSION_START,
     GLOBUS_GFS_OP_SESSION_STOP,
-    GLOBUS_GFS_OP_AUTH,
     GLOBUS_GFS_OP_RECV,
     GLOBUS_GFS_OP_SEND,
     GLOBUS_GFS_OP_LIST,
@@ -45,7 +44,9 @@ typedef enum globus_gfs_operation_type_e
     GLOBUS_GFS_OP_DESTROY,
     GLOBUS_GFS_OP_TRANSFER,
     GLOBUS_GFS_OP_STAT,
-    GLOBUS_GFS_OP_USER_BUFFER
+    GLOBUS_GFS_OP_USER_BUFFER,
+    GLOBUS_GFS_OP_HANDSHAKE,
+    GLOBUS_GFS_OP_SESSION_START_REPLY
 } globus_gfs_operation_type_t;
 
 /*
@@ -177,7 +178,7 @@ typedef struct globus_gfs_finished_info_s
     /** result_t (will go away, use above two) */
     globus_result_t                     result;
 
-    int                                 session_id;
+    void *                              session_arg;
 
     union
     {
@@ -245,7 +246,7 @@ typedef struct globus_gfs_transfer_info_s
     /** total number of local stripes that will be involved */
     int                                 stripe_count;    
     /** total number of nodes that will be involved */
-    int                                 node_count;    
+    int                                 cs_count;    
     /** node index */
     int                                 node_ndx;
     /** number of parallel streams */
@@ -339,7 +340,8 @@ typedef struct globus_gfs_session_info_s
     char *                              username;
     char *                              password;
     char *                              subject;
-    char *                              ipaddr;
+    char *                              cookie;
+    char *                              host_id;
 } globus_gfs_session_info_t;
 
 
