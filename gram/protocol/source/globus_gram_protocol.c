@@ -1213,9 +1213,13 @@ globus_gram_http_frame_request(char *             uri,
 			       msgsize);
     tmp += globus_libc_sprintf(buf + tmp,
 			       CRLF);
-    memcpy(buf + tmp,
-	   msg,
-	   msgsize);
+
+    if (msgsize > 0)    /* allow for empty message body (msg==NULL) */
+    {
+	memcpy(buf + tmp,
+	       msg,
+	       msgsize);
+    }
 			
     *framedmsg = (globus_byte_t *) buf;
     *framedsize = tmp + msgsize;
@@ -1994,7 +1998,7 @@ globus_l_gram_http_parse_reply(
 	globus_libc_unlock();
 	if(rc != 1)
 	{
-	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNFRAME_FAILED;
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNFRAME_FAILED;
 	    *payload_length = 0;
 	}
 	else
