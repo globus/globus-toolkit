@@ -15,13 +15,10 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 AM_CONFIG_HEADER(config.h)
 
 # On solaris openssl needs the socket library
-case "$GLOBUS_HOST" in
-  *sunos4* | *solaris* )
-        GPT_SET_LIBS(["-lsocket"])
-  ;;
-  *)
-  ;;
-esac
+
+CHECK_NEED_LSOCKET
+
+GPT_SET_LIBS(["$EXTERNAL_LIBS"])	
 
 AC_CHECK_HEADERS(malloc.h sys/time.h unistd.h)
 
