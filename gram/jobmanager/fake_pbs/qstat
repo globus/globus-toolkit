@@ -88,10 +88,10 @@ for some_job_id in ${job_list} ; do
     if [ ${some_job_id} = ${job_id} ]; then
 
 cat <<EOF
-Job Id: ${job_id}
-Job_Name = pbs_job
-Job_Owner = ${my_username}@dg0n20.mcs.anl.gov
-job_state = R
+	Job Id: ${job_id}
+	Job_Name = pbs_job
+	Job_Owner = ${my_username}@dg0n20.mcs.anl.gov
+	job_state = R
 EOF
 
 exit 0
