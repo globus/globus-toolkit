@@ -615,6 +615,10 @@ globus_i_ftp_client_handleattr_copy(
     globus_i_ftp_client_handleattr_t *		dest,
     globus_i_ftp_client_handleattr_t *		src);
 
+int
+globus_i_ftp_client_plugin_list_search(
+    void *					datum,
+    void *					arg);
 /* globus_ftp_client.c */
 void
 globus_i_ftp_client_handle_is_active(globus_ftp_client_handle_t *handle);

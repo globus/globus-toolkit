@@ -13,13 +13,6 @@
 
 #include <string.h>
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-static
-int
-globus_l_ftp_client_plugin_list_search(void * datum,
-				       void * arg);
-#endif
-
 /**
  * @name Initialize
  */
@@ -486,7 +479,7 @@ globus_ftp_client_handleattr_add_plugin(
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
 
     node = globus_list_search_pred(i_attr->plugins,
-				   globus_l_ftp_client_plugin_list_search,
+				   globus_i_ftp_client_plugin_list_search,
 				   (*plugin)->plugin_name);
 
     if(node)
@@ -502,13 +495,22 @@ globus_ftp_client_handleattr_add_plugin(
     }
     else
     {
+	globus_list_t ** last_node_ptr;
+
 	tmp = (*plugin)->copy_func(plugin,
 		                   (*plugin)->plugin_specific);
 
 	if(tmp)
 	{
 	    (*tmp)->plugin = tmp;
-	    globus_list_insert(&i_attr->plugins, *tmp);
+
+	    /* Append this to the end of the plugin list */
+	    last_node_ptr = &i_attr->plugins;
+	    while(! globus_list_empty(*last_node_ptr))
+	    {
+		last_node_ptr = globus_list_rest_ref(*last_node_ptr);
+	    }
+	    globus_list_insert(last_node_ptr, *tmp);
 	}
 	else
 	{
@@ -573,7 +575,7 @@ globus_ftp_client_handleattr_remove_plugin(
     }
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
     node = globus_list_search_pred(i_attr->plugins,
-				   globus_l_ftp_client_plugin_list_search,
+				   globus_i_ftp_client_plugin_list_search,
 				   (*plugin)->plugin_name);
 
     if(!node)
@@ -2670,9 +2672,9 @@ globus_i_ftp_client_handleattr_copy(
     globus_list_t *				tmp;
     globus_i_ftp_client_cache_entry_t *		tmpurl;
     globus_i_ftp_client_cache_entry_t *		newurl;
-    globus_list_t *				reverser;
     globus_i_ftp_client_plugin_t *		plugin;
     globus_ftp_client_plugin_t *		new_plugin;
+    globus_list_t **				last_plugin;
     static char * myname = "globus_i_ftp_client_handleattr_copy";
     
     if(dest == GLOBUS_NULL || src == GLOBUS_NULL)
@@ -2712,7 +2714,7 @@ globus_i_ftp_client_handleattr_copy(
 	tmp = globus_list_rest(tmp);
     }
     tmp = src->plugins;
-    reverser = GLOBUS_NULL;
+    last_plugin = &dest->plugins;
     while(!globus_list_empty(tmp))
     {
 	plugin = globus_list_first(tmp);
@@ -2725,31 +2727,22 @@ globus_i_ftp_client_handleattr_copy(
 	    if(new_plugin)
 	    {
 		(*new_plugin)->plugin = new_plugin;
-		globus_list_insert(&reverser, *new_plugin);
+		globus_list_insert(last_plugin, *new_plugin);
+		last_plugin = globus_list_rest_ref(*last_plugin);
 	    }
 	    else
 	    {
-		goto free_reverser_exit;
+		goto free_plugins_exit;
 	    }
 	}
     }
-    tmp = reverser;
-
-    while(!globus_list_empty(tmp))
-    {
-	globus_list_insert(&dest->plugins,
-			   globus_list_first(tmp));
-	tmp = globus_list_rest(tmp);
-    }
     return GLOBUS_SUCCESS;
 
- free_reverser_exit:
-    tmp = reverser;
+ free_plugins_exit:
     
-    while(!globus_list_empty(tmp))
+    while(!globus_list_empty(dest->plugins))
     {
-	plugin = globus_list_first(tmp);
-	tmp = globus_list_rest(tmp);
+	plugin = globus_list_remove(&dest->plugins, dest->plugins);
 
 	plugin->destroy_func(plugin->plugin,
 		             plugin->plugin_specific);
@@ -2774,9 +2767,8 @@ globus_i_ftp_client_handleattr_copy(
 }
 /* globus_i_ftp_client_handleattr_copy() */
 
-static
 int
-globus_l_ftp_client_plugin_list_search(void * datum,
+globus_i_ftp_client_plugin_list_search(void * datum,
 				       void * arg)
 {
     globus_i_ftp_client_plugin_t *	plugin;

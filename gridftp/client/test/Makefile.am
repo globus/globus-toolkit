@@ -21,6 +21,7 @@ Scripts= \
 	globus-ftp-client-partial-get-test.pl \
 	globus-ftp-client-partial-put-test.pl \
 	globus-ftp-client-partial-transfer-test.pl \
+	globus-ftp-client-plugin-test.pl \
 	globus-ftp-client-run-tests.pl \
 	globus-ftp-client-get-test.pl \
 	globus-ftp-client-caching-get-test.pl \
@@ -72,6 +73,7 @@ test_PROGRAMS= \
 	globus-ftp-client-partial-get-test \
 	globus-ftp-client-partial-put-test \
 	globus-ftp-client-partial-transfer-test \
+	globus-ftp-client-plugin-test \
 	globus-ftp-client-read-all-test \
 	globus-ftp-client-rmdir-test \
 	globus-ftp-client-size-test \
@@ -177,6 +179,9 @@ globus_ftp_client_modification_time_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_size_test_SOURCES = globus_ftp_client_size_test.c $(LibHeaders)
 globus_ftp_client_size_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_plugin_test_SOURCES = globus_ftp_client_plugin_test.c $(LibHeaders)
+globus_ftp_client_plugin_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

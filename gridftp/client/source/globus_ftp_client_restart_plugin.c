@@ -656,13 +656,25 @@ globus_ftp_client_restart_plugin_init(
 
     d->max_retries = max_retries > 0 ? max_retries : -1;
 
-    GlobusTimeReltimeCopy(d->interval, *interval);
-    if(interval->tv_sec == 0 && interval->tv_usec == 0)
+    if(interval)
+    {
+	GlobusTimeReltimeCopy(d->interval, *interval);
+    }
+    if((!interval) || (interval->tv_sec == 0 && interval->tv_usec == 0))
     {
 	d->backoff = GLOBUS_TRUE;
 	d->interval.tv_sec = 1;
+	d->interval.tv_usec = 0;
     }
-    GlobusTimeAbstimeCopy(d->deadline, *deadline);
+    
+    if(deadline)
+    {
+	GlobusTimeAbstimeCopy(d->deadline, *deadline);
+    }
+    else
+    {
+	GlobusTimeAbstimeCopy(d->deadline, globus_i_abstime_zero);
+    }
 
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, copy);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, destroy);
