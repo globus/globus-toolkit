@@ -1,0 +1,79 @@
+libdir /nfs/asd/laura/gaa/globus1.1.3b14/globus-build/tools/sparc-sun-solaris2.7/lib
+
+mechinfo assertion {
+   cred_pull libgaa_simple.so gaasimple_assert_cred_pull
+   cred_eval libgaa_simple.so gaasimple_assert_cred_eval
+   cred_verify libgaa_simple.so gaasimple_assert_cred_verify
+   sym_params SELF users
+}
+
+mechinfo gss {
+   cred_pull libgaa_globus.so gaaglobus_gss_cred_pull
+   cred_eval libgaa_globus.so gaaglobus_gss_cred_eval
+   cred_verify libgaa_globus.so gaaglobus_gss_cred_verify
+}
+
+mechinfo globus-map {
+   cred_pull libgaa_globus.so gaaglobus_map_cred_pull
+   cred_eval libgaa_globus.so gaaglobus_map_cred_eval
+   cred_verify libgaa_globus.so gaaglobus_map_cred_verify
+   params x509
+}
+
+cond_eval cond_access_id assertion {
+   cond_eval libgaa_simple.so gaasimple_check_id_cond
+   idcred yes
+   sym_params libgaa_simple.so gaa_identity
+}
+
+cond_eval cond_access_id x509 {
+   cond_eval libgaa_simple.so gaasimple_check_id_cond
+   idcred yes
+   sym_params libgaa_simple.so gaa_identity
+}
+
+cond_eval cond_access_id globus-map {
+   cond_eval libgaa_simple.so gaasimple_check_id_cond
+   idcred yes
+   sym_params libgaa_simple.so gaa_identity
+}
+
+cond_eval cond_access_id_anyone DEFAULT {
+   cond_eval libgaa_simple.so gaasimple_check_id_cond
+   idcred yes
+   sym_params libgaa_simple.so gaa_identity
+}
+
+cond_eval cond_access_group simple {
+   cond_eval libgaa_simple.so gaasimple_check_group_cond
+   idcred yes
+   params /nfs/asd/laura/gaa/globus1.1.3b14/Security/gaa/test/groups
+}
+
+authinfo DEFAULT {
+   rvinfo {
+      copyval libgaa_simple.so gaasimple_copy_rval
+      newval libgaa_simple.so gaasimple_new_rval
+      freeval /usr/lib/libc.so.1 free
+      val2str libgaa_simple.so gaasimple_rval2str
+   }
+   pvinfo {
+      copyval libgaa_simple.so gaasimple_copy_pval
+      newval libgaa_simple.so gaasimple_new_pval
+      freeval libgaa_simple.so gaasimple_free_pval
+      val2str libgaa_simple.so gaasimple_pval2str
+   }
+   valmatch libgaa_simple.so gaasimple_valmatch
+}
+
+getpolicy {
+   getpolicy libgaa_simple.so gaasimple_read_eacl
+   params /nfs/asd/laura/gaa/globus1.1.3b14/Security/gaa/test/eacls
+   freeparam /usr/lib/libc.so.1 free
+}
+
+matchrights {
+   matchrights libgaa_simple.so gaasimple_matchrights
+   params /nfs/asd/laura/gaa/globus1.1.3b14/Security/gaa/test/eacls
+   freeparam /usr/lib/libc.so.1 free
+}
