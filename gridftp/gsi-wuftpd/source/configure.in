@@ -221,7 +221,15 @@ fi
 
 if test "$globus_authorization" = "yes"; then
 	AC_DEFINE(GLOBUS_AUTHORIZATION)
-	# XXX Need to add libraries to GSSAPI_LIBS
+	# XXX Need to check to make sure globus_auth is installed
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_auth_${GLOBUS_FLAVOR_NAME}"
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_plugin_${GLOBUS_FLAVOR_NAME}"
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_util_${GLOBUS_FLAVOR_NAME}"
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_debug_${GLOBUS_FLAVOR_NAME}"
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_core_${GLOBUS_FLAVOR_NAME}"
+	# Linktool's dynamic loader library
+	# XXX May need to specify path for this?
+	GSSAPI_LIBS="$GSSAPI_LIBS -lltdl"
 fi	
 	
 AC_SUBST(GSSAPI_LIBS)
