@@ -75,9 +75,6 @@ EXTERN_C_BEGIN
  *  Other definitions
  */
 
-#define COMMENT_LENGHT       80
-
-#define GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION     1
 
 /*
  * Structure: globus_gass_cache_t
@@ -90,59 +87,31 @@ EXTERN_C_BEGIN
 typedef struct
 {
     /* dirty hack to know if this cache has been opened/init. */
-    void*          init;   
-    char           comment[COMMENT_LENGHT];
+    void*	init;   
+
     /* version number read out of the state file */
-    int            version;  
-    char           cache_directory_path[PATH_MAX+1];
-    
-    /* just to not have to build them every time: */
-    char           state_file_path[PATH_MAX+1];
-    int            state_file_fd;
-    char           state_file_lock_path[PATH_MAX+1];   
-    char           temp_file_path[PATH_MAX+1];
-    
-    int            temp_file_fd;
-    FILE*          log_FILE;
-    int            nb_entries;    
+    char	*cache_directory_path;
+    char	*global_directory_path;
+    char	*local_directory_path;
+    char	*tmp_directory_path;
+
+    /* Current lengths */
+    int		global_dir_len;
+    int		local_dir_len;
+    int		tmp_dir_len;
+
+    /* Max lengths */
+    int		max_mangled_url;
+    int		max_mangled_tag;
+
+    /* Valid mangling options */
+    unsigned	mangling_options;
+
+    /* Logging info */
+    FILE*	log_FILE;
+    char	*log_file_name;
+
 } globus_gass_cache_t;      /* cache handle */
-
-/*
- * Structure: globus_gass_cache_tag_s
- *
- * Define an entry for the array of tag returned by  "globus_gass_cache_list()"
- */
-typedef struct globus_gass_cache_tag_s
-{
-    char *           tag;
-    int              count;
-} globus_gass_cache_tag_t;
-
-
-/*
- *  Structure: globus_gass_cache_entry_t
- *
- * Define an entry of the cache, as return by the function
- * "globus_gass_cache_list()"
- */
-typedef struct globus_gass_cache_entry_s
-{
-    char *                    url;
-    char *                    filename;
-    /* modification timestamp (seconds since the epoch) */
-    unsigned long             timestamp;
-    
-    /* new vor version 1.1 
-       The tag that has acquired this entry's lock, or GLOBUS_NULL
-       if the entry is unlocked */    
-    char                      pending;
-    char *                    lock_tag;
-    /* number of tags in the tag array */
-    unsigned long             num_tags;
-    /* array of tags for this entry    */
-    globus_gass_cache_tag_t*  tags;       
-
-} globus_gass_cache_entry_t;
 
 /*
  *
@@ -195,8 +164,8 @@ typedef struct globus_gass_cache_entry_s
  */
 extern
 int 
-globus_gass_cache_open(char*          cache_directory_path,
-		globus_gass_cache_t*  cache_handle);
+globus_gass_cache_open(const char*          cache_directory_path,
+		       globus_gass_cache_t*  cache_handle);
 
 
 /*
@@ -298,11 +267,11 @@ globus_gass_cache_close(globus_gass_cache_t *  cache_handle);
 extern
 int
 globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
-	       char*           url,
-	       char*           tag,
-	       globus_bool_t   create,
-	       unsigned long*  timestamp,
-	       char**          local_filename);
+	       const char	*url,
+	       const char	*tag,
+	       globus_bool_t	create,
+	       unsigned long	*timestamp,
+	       char		**local_filename);
 
 
 /*
@@ -330,18 +299,18 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
  */
 extern int
 globus_gass_cache_add_done(
-    globus_gass_cache_t *  cache_handle,
-    char *                 url,
-    char *                 tag,
-    unsigned long          timestamp);
+    globus_gass_cache_t *cache_handle,
+    const char		*url,
+    const char		*tag,
+    unsigned long	timestamp);
 
 extern
 int
 globus_gass_cache_delete_start(
-    globus_gass_cache_t *   cache_handle,
-    char *                  url,
-    char *                  tag,
-    unsigned long *         timestamp);
+    globus_gass_cache_t	*cache_handle,
+    const char		*url,
+    const char		*tag,
+    unsigned long	*timestamp);
 
 /*
  * globus_gass_cache_delete()
@@ -391,11 +360,11 @@ globus_gass_cache_delete_start(
 extern
 int
 globus_gass_cache_delete(
-    globus_gass_cache_t *  cache_handle,
-    char *                 url,
-    char *                 tag,
-    unsigned long          timestamp,
-    globus_bool_t          is_locked);
+    globus_gass_cache_t *cache_handle,
+    const char		*url,
+    const char		*tag,
+    unsigned long	timestamp,
+    globus_bool_t	is_locked);
 
 /*
  * globus_gass_cache_cleanup_tag()
@@ -431,89 +400,118 @@ globus_gass_cache_delete(
 extern
 int
 globus_gass_cache_cleanup_tag(
-    globus_gass_cache_t *  cache_handle,
-    char *                 url,
-    char *                 tag);
+    globus_gass_cache_t	*cache_handle,
+    const char		*url,
+    const char		*tag);
+
+extern
+int
+globus_gass_cache_cleanup_tag_all(
+    globus_gass_cache_t *cache_handle,
+    char                *tag );
 
 /*
- * Function: globus_gass_cache_cleanup_file()
- * 
- * Description:
- * Remove the cache entry and delete the associated local cache file,
- * regardless of the tags in tag list, and regardless of whether or not
- * the cache entry is locked.
- * 
- * This function does not block on a locked reference.
- *     
- * Parameters:   
+ * globus_l_gass_cache_mangle_url()
+ *
+ * Mangles the given URL into a chunk suitable for using as a file /
+ * path name.
+ *  
+ * Parameters:
  *      cache_handle - Handler to the opened cahe directory to use.
  *
- * 	url - url of the file to be cached. It is used as the main
- * 	key to the cache entries.
- *  		
+ *	url - The incoming URL to mangle (\0 terminated)
+ *
+ *	mangled_url - Pointer to the output string; a buffer for the
+ *	real string is malloc()ed for the application.  If mangled is
+ *	NULL, then no such buffer is allocated, and no mangled string
+ *	is created.  This can be useful to just get the length of the
+ *	mangled string.
+ *
+ *	Length - The length of the resulting string.  If NULL, this is
+ *	not assigned to.
+ *
  * Returns:
- *      GLOBUS_SUCCESS or error code:
- *      or any of the defined gass error code.   
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
  */
-extern
 int
-globus_gass_cache_cleanup_file(
-    globus_gass_cache_t *  cache_handle,
-    char *                 url);
-
-
-/*
- * globus_gass_cache_add_list()
- *
- * Return the entries of the cache in *entries as an array of
- * globus_gass_cache_entry_t structures, and return the number of elements in
- * this array in *size.
- *
- * The function globus_gass_cache_list_free() must be called subsequently to
- * free the entrie array allocated by globus_gass_cache_list();
- *
- * Parameters:
- *
- *     cache_handle - Handler to the opened cahe directory to use.
- *
- *     entries - array of globus_gass_cache_entry_t structure describing
- *     eache cache entry.
- *		
- *     size - size of the "entries" array, (nb of entries)
- *		
- * Returns:
- *		
- *      GLOBUS_SUCCESS 
- *	or any of the defined gass error code.      
- */
-extern
-int
-globus_gass_cache_list(
-    globus_gass_cache_t *         cache_handle,
-    globus_gass_cache_entry_t **  entry,
-    int *                         size);
+globus_gass_cache_mangle_url( const globus_gass_cache_t	*cache_handle,
+			      const char		*url,
+			      char			**mangled_url,
+			      int			*length );
 
 /*
- * globus_gass_cache_list_free()
+ * globus_l_gass_cache_mangle_tag()
  *
- * Free the cache entries previously returned by globus_gass_cache_list().
- *
+ * Mangles the given tag into a chunk suitable for using as a file /
+ * path name.
+ *  
  * Parameters:
+ *      cache_handle - Handler to the opened cahe directory to use.
  *
- *     entries - array of globus_gass_cache_entry_t structure describing
- *     eache cache entry.
+ *	tag - The incoming tag to mangle (\0 terminated)
  *
- *     size - size of the "entries" array, (nb of entries)
+ *	mangled_tag - Pointer to the output string; a buffer for the
+ *	real string is malloc()ed for the application.  If mangled is
+ *	NULL, then no such buffer is allocated, and no mangled string
+ *	is created.  This can be useful to just get the length of the
+ *	mangled string.
+ *
+ *	Length - The length of the resulting string.  If NULL, this is
+ *	not assigned to.
  *
  * Returns:
- *     GLOBUS_SUCCESS
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
  *
  */
-extern
 int
-globus_gass_cache_list_free(
-    globus_gass_cache_entry_t *  entry,
-    int                          size);
+globus_gass_cache_mangle_tag( const globus_gass_cache_t	*cache_handle,
+			      const char		*tag,
+			      char			**mangled_tag,
+			      int			*length );
+
+/*
+ * globus_gass_cache_get_dirs()
+ *
+ * Gets a bunch of directories.  This is exported for use in the
+ * globus_gass_cache program.
+ *  
+ * Parameters:
+ *      cache_handle - Handler to the opened cahe directory to use.
+ *
+ *	URL - The incoming URL
+ *
+ *	tag - The incoming tag
+ *
+ *	local_root - Pointer to the "local root" directory
+ *
+ *	global_root - Pointer to the "global root" directory
+ *
+ *	tmp_root - Pointer to the "tmp root" directory
+ *
+ *	log_root - Pointer to the root log directory
+ *
+ *	local_dir - Pointer to the related "local" directory
+ *
+ *	global_dir - Pointer to the related "global" directory
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
+ */
+int
+globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
+			    const char			*url,
+			    const char			*tag,
+			    char			**global_root,
+			    char			**local_root,
+			    char			**tmp_root,
+			    char			**log_root,
+			    char			**global_dir,
+			    char			**local_dir );
 
 /*
  * globus_gass_cache_error_string()
@@ -545,9 +543,3 @@ extern globus_module_descriptor_t globus_i_gass_cache_module;
 
 
 #endif   /* _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H */
-
-
-
-
-
-
