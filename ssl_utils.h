@@ -18,6 +18,8 @@
 
 #include <globus_gsi_callback.h>
 #include <globus_gsi_cert_utils.h>
+#include <globus_gsi_credential.h>
+#include <globus_gsi_proxy.h>
 #include <globus_gsi_system_config.h>
 #include <globus_gsi_system_config_constants.h>
 
