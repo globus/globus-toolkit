@@ -140,6 +140,30 @@ if ( ! -f "$trusted_certs_dir/42864e48.signing_policy" ) {
   }
 }
 
+#
+# Install GAA configuration file if present.
+#
+# If GAA packages are not installed then globus_gaa.conf won't be present
+# so we need to check for it.
+#
+if (   -f "$setupdir/globus_gaa.conf" &&
+       ! -f "$target_dir/globus_gaa.conf") {
+
+  print "Installing Globus Authorization configuration file into $target_dir...\n";
+
+  $result = system("cp $setupdir/globus_gaa.conf $target_dir");
+
+  if ($result != 0) {
+    die "Failed to install $target_dir/globus_gaa.conf. Aborting.";
+  }
+
+  $result = system("chmod 644 $target_dir/globus_gaa.conf");
+
+  if ($result != 0) {
+    die "Failed to set permissions on $target_dir/globus_gaa.conf. Aborting.";
+  }
+}
+
 print "$myname: Complete\n";
 
 # End
