@@ -64,7 +64,8 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs)
 }
 
 int 
-myproxy_init_server(myproxy_socket_attrs_t *attrs) 
+myproxy_init_server(myproxy_socket_attrs_t *attrs,
+		    int port_number) 
 {
     int on = 1;
     int listen_sock;
@@ -73,7 +74,8 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     /* Could do something smarter to get FQDN */
     attrs->pshost = malloc(strlen("localhost")+1);
     strcpy(attrs->pshost, "localhost");
-
+    attrs->psport = port_number;
+    
     listen_sock = socket(AF_INET, SOCK_STREAM, 0);
 
     if (listen_sock == -1) {
@@ -99,23 +101,10 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 	    return -1;
     }
 	
-    attrs->socket_fd = accept(listen_sock, NULL, NULL);
-    
-    if (attrs->socket_fd < 0) {
-        perror("accept");
-        return -1;
-    }
-    
-    close(listen_sock);
+    attrs->socket_fd = listen_sock;
 
-    attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
-    
-    if (attrs->gsi_socket == NULL) {
-        perror("GSI_SOCKET_new()\n");
-        return -1;
-    }
-
-    return attrs->socket_fd;
+    /* Success */
+    return 0;
 }
     
 int myproxy_authenticate_init(myproxy_socket_attrs_t *attrs) 
