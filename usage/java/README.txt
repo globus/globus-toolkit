@@ -3,6 +3,8 @@ A simple extensible system for remotely logging gt4 usage statistics with UDP pa
 by Jonathan DiCarlo
 Jan 28, 2005
 
+Bug reports, suggestions, flames, etc. to jdicarlo@mcs.anl.gov.
+
 *******************************************
 Compiling and running:
 *******************************************
