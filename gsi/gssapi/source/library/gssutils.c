@@ -445,7 +445,9 @@ gs_get_token(
     const gss_buffer_t                  output_token)
 {
     BIO *                               write_bio;
-
+    int                                 len = 0;
+    int                                 rc;
+    
     if(bio)
     {
         write_bio = bio;
@@ -455,34 +457,45 @@ gs_get_token(
         write_bio = context_handle->gs_wbio;
     }
     
-	/* make out token */
-	output_token->length = BIO_pending(write_bio);
-	if (output_token->length > 0)
+    /* make out token */
+    output_token->length = BIO_pending(write_bio);
+    if (output_token->length > 0)
     {
-		output_token->value = (char *) malloc(output_token->length);
-		if (output_token->value == NULL)
+        output_token->value = (char *) malloc(output_token->length);
+        if (output_token->value == NULL)
         {
-			output_token->length = 0 ;
-			GSSerr(GSSERR_F_GS_HANDSHAKE, GSSERR_R_OUT_OF_MEMORY);
-			return GSS_S_FAILURE;
-		}
-		BIO_read(write_bio,
+            output_token->length = 0 ;
+            GSSerr(GSSERR_F_GS_HANDSHAKE, GSSERR_R_OUT_OF_MEMORY);
+            return GSS_S_FAILURE;
+        }
+        while(len < output_token->length)
+        { 
+            rc = BIO_read(write_bio,
+                          output_token->value,
+                          output_token->length);
+            if(rc > 0)
+            {
+                len += rc;
+            }
+            else
+            {
+                assert(0);
+            }
+        }
+#ifdef DEBUG
+        fprintf(stderr,"output token: len=%d\n",output_token->length);
+#endif
+#ifdef DEBUG
+        BIO_dump(context_handle->cred_handle->gs_bio_err,
                  output_token->value,
                  output_token->length);
-#ifdef DEBUG
-		fprintf(stderr,"output token: len=%d\n",output_token->length);
 #endif
-#ifdef DEBUG
-		BIO_dump(context_handle->cred_handle->gs_bio_err,
-				output_token->value,
-				output_token->length);
-#endif
-	}
+    }
     else
     {
-		output_token->value = NULL;
-	}
-	return GSS_S_COMPLETE;
+        output_token->value = NULL;
+    }
+    return GSS_S_COMPLETE;
 }
 
 

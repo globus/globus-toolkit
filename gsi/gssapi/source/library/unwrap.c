@@ -194,7 +194,6 @@ GSS_CALLCONV gss_unwrap(
         /* now get the data from SSL. 
          * We don't know how big it is, so assume the max?
          */
-
         while((rc = SSL_read(context->gs_ssl, readarea, sizeof(readarea))) > 0)
         {
             void * realloc_ptr;
@@ -233,7 +232,7 @@ GSS_CALLCONV gss_unwrap(
         {
             ssl_error = SSL_get_error(context->gs_ssl, rc);
             
-            if(!ssl_error == SSL_ERROR_WANT_READ)
+            if(!(ssl_error == SSL_ERROR_WANT_READ))
             {
                 char errbuf[256];
                 
