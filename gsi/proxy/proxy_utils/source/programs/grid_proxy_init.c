@@ -156,10 +156,8 @@ main(
     globus_gsi_cred_handle_t            proxy_cred_handle = NULL;
     globus_gsi_cert_utils_proxy_type_t  proxy_type = GLOBUS_FULL_PROXY;
     BIO *                               pem_proxy_bio = NULL;
-    time_t                              time_now;
     time_t                              goodtill;
     time_t                              lifetime;
-    ASN1_UTCTIME *                      asn1_time = NULL;
     char *                              restriction_buf = NULL;
     size_t                              restriction_buf_len = 0;
     char *                              restriction_filename = NULL;
@@ -179,8 +177,6 @@ main(
             "Make sure Globus is installed correctly.\n\n");
         exit(1);
     }
-
-    EVP_set_pw_prompt("Enter GRID pass phrase:");
 
     /* get the program name */
     if (strrchr(argv[0], '/'))
@@ -343,10 +339,6 @@ main(
             args_error(arg_index, argp, "unrecognized option");
         }
     }
-
-    asn1_time = ASN1_UTCTIME_new();
-    X509_gmtime_adj(asn1_time, 0);
-    globus_gsi_cert_utils_make_time(asn1_time, &time_now);
 
     result = globus_gsi_proxy_handle_attrs_init(
         &proxy_handle_attrs);
