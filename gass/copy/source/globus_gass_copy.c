@@ -827,57 +827,8 @@ globus_gass_copy_get_performance(
 {
     globus_object_t * err;
     static char * myname="globus_gass_copy_get_performance";
-    if(handle != GLOBUS_NULL)
-    {
-	switch(handle->status)
-	{
-	case GLOBUS_GASS_COPY_STATUS_FAILURE:
-	    perf_info->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
-	    break;
-	case GLOBUS_GASS_COPY_STATUS_NONE:
-	    perf_info->status = GLOBUS_GASS_COPY_STATUS_NONE;
-	    break;
-	case GLOBUS_GASS_COPY_STATUS_INITIAL:
-	case GLOBUS_GASS_COPY_STATUS_SOURCE_READY:
-	    perf_info->status = GLOBUS_GASS_COPY_STATUS_PENDING;
-	    break;
-	case GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS:
-	case GLOBUS_GASS_COPY_STATUS_READ_COMPLETE:
-	case GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE:
-	    perf_info->status = GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS;
-	    break;
-	case GLOBUS_GASS_COPY_STATUS_DONE:
-	    perf_info->status = GLOBUS_GASS_COPY_STATUS_DONE;
-	    break;
-	case GLOBUS_GASS_COPY_STATUS_CANCEL:
-	    perf_info->status = GLOBUS_GASS_COPY_STATUS_CANCEL;
-	    break;
-	}
 
-        if(handle->state == GLOBUS_NULL)
-        {
-            perf_info->bytes_transfered=0;
-            perf_info->transfer_rate=0;
-        }
-        else
-        {
-            double current_timestamp;
-            current_timestamp = globus_libc_wallclock();
-            if ((current_timestamp - handle->state->timestamp) > 30)
-            {
-                perf_info->bytes_transfered = 0;
-            }
-            else
-            {
-                perf_info->bytes_transfered =
-                    handle->state->dest.n_bytes_transfered;
-                perf_info->transfer_rate = handle->state->transfer_rate;
-            }
-        }
-
-        return GLOBUS_SUCCESS;
-    }
-    else
+    if (handle == GLOBUS_NULL)
     {
 	err = globus_error_construct_string(
 	    GLOBUS_GASS_COPY_MODULE,
@@ -887,6 +838,68 @@ globus_gass_copy_get_performance(
 	
 	return globus_error_put(err);
     }
+
+    if (perf_info == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: BAD_PARAMETER, performance info is NULL",
+	    myname);
+	
+	return globus_error_put(err);
+    }
+
+    perf_info->bytes_transfered=0;
+    perf_info->transfer_rate=0;
+
+    switch(handle->status)
+    {
+        case GLOBUS_GASS_COPY_STATUS_FAILURE:
+            perf_info->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+            break;
+        case GLOBUS_GASS_COPY_STATUS_NONE:
+            perf_info->status = GLOBUS_GASS_COPY_STATUS_NONE;
+            break;
+        case GLOBUS_GASS_COPY_STATUS_INITIAL:
+        case GLOBUS_GASS_COPY_STATUS_SOURCE_READY:
+            perf_info->status = GLOBUS_GASS_COPY_STATUS_PENDING;
+            break;
+        case GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS:
+        case GLOBUS_GASS_COPY_STATUS_READ_COMPLETE:
+        case GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE:
+            perf_info->status = GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS;
+            break;
+        case GLOBUS_GASS_COPY_STATUS_DONE:
+            perf_info->status = GLOBUS_GASS_COPY_STATUS_DONE;
+            break;
+        case GLOBUS_GASS_COPY_STATUS_CANCEL:
+            perf_info->status = GLOBUS_GASS_COPY_STATUS_CANCEL;
+            break;
+    }
+
+    if(handle->state == GLOBUS_NULL)
+    {
+        perf_info->bytes_transfered=0;
+        perf_info->transfer_rate=0;
+    }
+    else
+    {
+        double current_timestamp;
+        current_timestamp = globus_libc_wallclock();
+        if ((current_timestamp - handle->state->timestamp) > 30)
+        {
+            perf_info->bytes_transfered = 0;
+        }
+        else
+        {
+            perf_info->bytes_transfered=handle->state->dest.n_bytes_transfered;
+            perf_info->transfer_rate=handle->state->transfer_rate;
+        }
+    }
+
+    return GLOBUS_SUCCESS;
+
 } /* globus_gass_copy_get_performance() */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
