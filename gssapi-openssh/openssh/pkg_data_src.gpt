@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="gsi_openssh" >
 
-  <Aging_Version Major="1" Minor="7" Age="0" />
+  <Aging_Version Major="1" Minor="8" Age="0" />
   <Description>GSI-Enabled OpenSSH package</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="stable" />
@@ -27,22 +27,7 @@
           <Version_Range Lower_Major="0" Lower_Minor="9" Upper_Major="0" Upper_Minor="40" />
         </Version>
       </Dependency>
-      <Dependency Name="globus_gssapi_gsi">
-        <Version>
-          <Simple_Version Major="2"></Simple_Version>
-          <Simple_Version Major="3"></Simple_Version>
-        </Version>
-      </Dependency>
       <Dependency Name="globus_gss_assist">
-        <Version>
-          <Simple_Version Major="2"></Simple_Version>
-          <Simple_Version Major="3"></Simple_Version>
-        </Version>
-      </Dependency>
-    </Source_Dependencies>
-
-    <Source_Dependencies Type="lib_link">
-      <Dependency Name="globus_gssapi_gsi">
         <Version>
           <Simple_Version Major="2"></Simple_Version>
           <Simple_Version Major="3"></Simple_Version>
@@ -72,7 +57,7 @@
       </Setup_Dependency>
       <Setup_Dependency Name="gsi_openssh_setup">
         <Version>
-          <Version_Range Upper_Major="1" Upper_Minor="7" Lower_Major="1" Lower_Minor="7" />
+          <Version_Range Upper_Major="1" Upper_Minor="8" Lower_Major="1" Lower_Minor="8" />
         </Version>
       </Setup_Dependency>
     </Source_Setup_Dependency>
