@@ -27,7 +27,7 @@ typedef struct
 typedef struct
 {
     globus_bool_t                       ipv6;
-    int                                 max;
+    int                                 nstreams;
     char                                mode;
     globus_bool_t                       ascii;
     globus_size_t                       tcp_bufsize;

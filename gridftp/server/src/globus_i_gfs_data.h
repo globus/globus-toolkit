@@ -1,6 +1,8 @@
 #ifndef GLOBUS_I_GFS_DATA_H
 #define GLOBUS_I_GFS_DATA_H
 
+extern globus_i_gfs_data_attr_t         globus_i_gfs_data_attr_defaults;
+
 typedef void
 (*globus_i_gfs_data_resource_cb_t)(
     globus_i_gfs_server_instance_t *    instance,

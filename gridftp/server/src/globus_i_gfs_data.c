@@ -28,10 +28,14 @@ typedef struct globus_l_gfs_data_operation_s
     void *                              user_arg;
 } globus_l_gfs_data_operation_t;
 
-static globus_i_gfs_data_attr_t         globus_l_gfs_data_attr_defaults = 
+globus_i_gfs_data_attr_t                globus_i_gfs_data_attr_defaults = 
 {
-    
-    
+    GLOBUS_FALSE,                       /* ipv6 */
+    1,                                  /* nstreams */
+    'S',                                /* mode */
+    GLOBUS_TRUE,                        /* ascii */
+    0,                                  /* tcp_bufsize (sysdefault) */
+    256 * 1024                          /* blocksize */
 };
 
 static
@@ -261,9 +265,9 @@ globus_l_gfs_data_handle_init(
     
     if(!attr)
     {
-        attr = &globus_l_gfs_data_attr_defaults;
+        attr = &globus_i_gfs_data_attr_defaults;
     }
-    
+
     memcpy(&handle->attr, attr, sizeof(attr));
     
     result = globus_ftp_control_handle_init(&handle->data_channel);
@@ -274,6 +278,67 @@ globus_l_gfs_data_handle_init(
         goto error_data;
     }
     
+    result = globus_ftp_control_local_mode(
+        &handle->data_channel, handle->attr.mode);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_ftp_control_local_mode", result);
+        goto error_control;
+    }
+    
+    result = globus_ftp_control_local_type(
+        &handle->data_channel,
+        handle->attr.ascii 
+            ? GLOBUS_FTP_CONTROL_TYPE_ASCII : GLOBUS_FTP_CONTROL_TYPE_IMAGE,
+        0);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_ftp_control_local_type", result);
+        goto error_control;
+    }
+    
+    if(handle->attr.tcp_bufsize)
+    {
+        globus_ftp_control_tcpbuffer_t  tcpbuffer;
+        
+        tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
+        tcpbuffer.fixed.size = handle->attr.tcp_bufsize;
+        
+        result = globus_ftp_control_local_tcp_buffer(
+            &handle->data_channel, &tcpbuffer);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_local_tcp_buffer", result);
+            goto error_control;
+        }
+    }
+    
+    if(handle->attr.mode == 'S')
+    {
+        handle->attr.nstreams = 1;
+    }
+    else
+    {
+        globus_ftp_control_parallelism_t  parallelism;
+        
+        globus_assert(handle->attr.mode == 'E');
+        
+        parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
+        parallelism.fixed.size = handle->attr.nstreams;
+        
+        result = globus_ftp_control_local_parallelism(
+            &handle->data_channel, &parallelism);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_local_parallelism", result);
+            goto error_control;
+        }
+    }
+    
     handle->ref = 1;
     handle->closed = GLOBUS_FALSE;
     globus_mutex_init(&handle->lock, GLOBUS_NULL);
@@ -281,6 +346,9 @@ globus_l_gfs_data_handle_init(
     *u_handle = handle;
     return GLOBUS_SUCCESS;
 
+error_control:
+    globus_ftp_control_handle_destroy(&handle->data_channel);
+    
 error_data:
     globus_free(handle);
     
@@ -431,7 +499,7 @@ globus_i_gfs_data_passive_request(
     {
         result = GlobusGFSErrorWrapFailed(
             "globus_ftp_control_local_pasv", result);
-        goto error_addr;
+        goto error_control;
     }
     
     GlobusLibcSockaddrSetFamily(addr, AF_INET);
@@ -442,7 +510,7 @@ globus_i_gfs_data_passive_request(
     {
         result = GlobusGFSErrorWrapFailed(
             "globus_libc_addr_to_contact_string", result);
-        goto error_addr;
+        goto error_control;
     }
     
     bounce_info = (globus_l_gfs_data_passive_bounce_t *)
@@ -480,7 +548,7 @@ error_oneshot:
 error_alloc:
     globus_free(cs);
     
-error_addr:
+error_control:
     globus_i_gfs_data_handle_destroy(handle);
     
 error_handle:
@@ -572,7 +640,7 @@ globus_i_gfs_data_active_request(
     {
         result = GlobusGFSErrorWrapFailed(
             "globus_ftp_control_local_spor", result);
-        goto error_spor;
+        goto error_control;
     }
     
     bounce_info = (globus_l_gfs_data_active_bounce_t *)
@@ -609,7 +677,7 @@ error_oneshot:
     globus_free(bounce_info);
     
 error_alloc:
-error_spor:
+error_control:
 error_format:
     globus_free(addresses);
     
@@ -1066,7 +1134,6 @@ void
 globus_gridftp_server_flush_queue(
     globus_gridftp_server_operation_t   op)
 {
-    globus_result_t                     result;
     GlobusGFSName(globus_gridftp_server_flush_queue);
     
     globus_i_gfs_data_handle_close(op->data_handle);
@@ -1082,7 +1149,6 @@ globus_gridftp_server_update_bytes_written(
     globus_gridftp_server_operation_t   op,
     globus_size_t                       nbytes)
 {
-    globus_result_t                     result;
     GlobusGFSName(globus_gridftp_server_update_bytes_written);
 }
 
@@ -1091,10 +1157,9 @@ globus_gridftp_server_optimal_concurrency(
     globus_gridftp_server_operation_t   op,
     int *                               count)
 {
-    globus_result_t                     result;
     GlobusGFSName(globus_gridftp_server_optimal_concurrency);
     
-    *count = 2;
+    *count = op->data_handle->attr.nstreams * 2;
 }
 
 void
@@ -1102,8 +1167,7 @@ globus_gridftp_server_block_size(
     globus_gridftp_server_operation_t   op,
     globus_size_t *                     block_size)
 {
-    globus_result_t                     result;
     GlobusGFSName(globus_gridftp_server_block_size);
     
-    *block_size = 256 * 1024;
+    *block_size = op->data_handle->attr.blocksize;
 }

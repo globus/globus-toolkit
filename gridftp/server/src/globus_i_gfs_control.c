@@ -256,11 +256,14 @@ globus_l_gfs_passive_data_connect(
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
+    globus_i_gfs_data_attr_t            attr;
     GlobusGFSName(globus_l_gfs_passive_data_connect);
+    
+    attr = globus_i_gfs_data_attr_defaults;
     
     result = globus_i_gfs_ipc_passive_data_request(
         instance,
-        GLOBUS_NULL,
+        &attr,
         globus_l_gfs_ipc_passive_data_cb,
         op);
     if(result != GLOBUS_SUCCESS)
@@ -309,11 +312,14 @@ globus_l_gfs_active_data_connect(
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
+    globus_i_gfs_data_attr_t            attr;
     GlobusGFSName(globus_l_gfs_active_data_connect);
+    
+    attr = globus_i_gfs_data_attr_defaults;
     
     result = globus_i_gfs_ipc_active_data_request(
         instance,
-        GLOBUS_NULL,
+        &attr,
         cs,
         cs_count,
         globus_l_gfs_ipc_active_data_cb,
