@@ -1,15 +1,10 @@
 #include "globus_ftp_client.h"
 
-#define PRINT_OKAYS 1
-
-globus_bool_t done=GLOBUS_FALSE;
-globus_bool_t error=GLOBUS_FALSE;
-globus_mutex_t mutex;
-globus_cond_t cond;
-
-static globus_result_t result=GLOBUS_SUCCESS;
-
-
+static globus_mutex_t                   lock;
+static globus_cond_t                    cond;
+static globus_bool_t                    done;
+static globus_bool_t                    error = GLOBUS_FALSE;
+static globus_result_t                  result;
 
 void quick_exit(char *stage) 
 {
@@ -21,9 +16,7 @@ void quick_exit(char *stage)
 
 void okay(char *stage) 
 {
-#ifdef PRINT_OKAYS
     globus_libc_printf( "\ncompleted: %s\n", stage);
-#endif /*PRINT_OKAYS*/
 }
 
 /* Assert result and possibly Exit
@@ -40,27 +33,32 @@ void complete_callback(
     globus_ftp_client_handle_t *   handle, 
     globus_object_t *              err)
 {
-    if (err) 
+    if(err) 
     {
-       error = GLOBUS_TRUE;
-     globus_libc_fprintf(
-			 stderr, 
-			 "callback: %s\n", 
-			 globus_object_printable_to_string(err));
+        char *                          tmp_str;
+        
+        error = GLOBUS_TRUE;
+        tmp_str = globus_object_printable_to_string(err);
+        globus_libc_fprintf(stderr, "callback: %s\n", tmp_str);
+        globus_free(tmp_str);
     }
+    
     globus_mutex_lock(&mutex);
-    done=GLOBUS_TRUE;
-    globus_cond_signal(&cond);
+    {
+        done = GLOBUS_TRUE;
+        globus_cond_signal(&cond);
+    }
     globus_mutex_unlock(&mutex);
-    printf("callback terminating...\n");
 }
 
-		   
-int main(
-    int                                 argc,
-    char **                             argv) 
+void
+print_features(
+    globus_ftp_client_features_t *      features)
 {
-    char * feature_names[20]={
+    globus_ftp_client_tristate_t        answer;
+    int                                 i;
+    
+    char * feature_names[] = {
         "GLOBUS_FTP_CLIENT_FEATURE_RETRBUFSIZE",
 	"GLOBUS_FTP_CLIENT_FEATURE_RBUFSZ",
 	"GLOBUS_FTP_CLIENT_FEATURE_RBUFSIZ",
@@ -82,32 +80,13 @@ int main(
 	"GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND",
 	"GLOBUS_FTP_CLIENT_FIRST_FEAT_FEATURE"
     };
-
-    globus_ftp_client_handle_t handle;
-    globus_ftp_client_handleattr_t attr;
-    char* url=argv[1];
-    globus_ftp_client_tristate_t answer;
-    int i;
-    globus_ftp_client_features_t  features;
-    result = globus_ftp_client_features_init(&features);
-    assert_result("features init");
-
-    printf("Initiated features");
-    printf("(before connecting):\n");
     
-    if(argc < 2)
+    for (i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
     {
-        fprintf(stderr, "missing url\n");
-	exit(-1);
-    }
-    
-    for (i=0; i<GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
-    {
-        result=globus_ftp_client_is_feature_supported(
-						      &features, 
-						      &answer, 
-						      i);
-	if (result) assert_result("is_feature_supported");
+        result = globus_ftp_client_is_feature_supported(
+            &features, &answer, i);
+	assert_result("is_feature_supported");
+	
 	printf("%d\t(%s)\t", i, feature_names[i]);
 	if (answer == GLOBUS_FTP_CLIENT_TRUE)    
 	  printf("yes\n");
@@ -115,68 +94,75 @@ int main(
 	  printf("maybe\n");
 	else printf("no\n");
     }
+}
 
-
-    result = (globus_result_t) globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
-    assert_result("module activate");
-    globus_mutex_init(&mutex, NULL);
-    globus_cond_init(&cond, NULL);
-    globus_ftp_client_handleattr_init(&attr);
-    assert_result("handleattr init");
-    result = globus_ftp_client_handle_init(&handle, &attr);
-    assert_result("handle init");
-    result = globus_ftp_client_feat(
-				    &handle,
-				    url,
-				    NULL,
-				    &features,
-				    complete_callback,
-				    NULL);
-    assert_result("feat");
-
-    globus_mutex_lock(&mutex);
-    while(!done) 
-      globus_cond_wait(&cond, &mutex);
-    globus_mutex_unlock(&mutex);
-
-    if(error) 
-    {
-        printf("Error: returned by feat\n");
-	exit(-1);
-    }
-    result = globus_ftp_client_handle_destroy(&handle);
-    assert_result("client handle destroy");
-    result = globus_ftp_client_handleattr_destroy(&attr);
-    assert_result("handleattr destroy");
-    result = (globus_result_t) globus_module_deactivate_all();
-    assert_result("module deact");
-
-
-    printf("\nFeatures supported by server:\n\n");
+int main(
+    int                                 argc,
+    char **                             argv) 
+{
+    globus_ftp_client_handle_t		handle;
+    globus_ftp_client_operationattr_t	attr;
+    globus_result_t			result;
+    globus_ftp_client_handleattr_t	handle_attr;
+    char *				src;
+    globus_ftp_client_features_t        features;
+    int                                 i;
     
-    for (i=0; i<GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
+    globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
+    globus_ftp_client_handleattr_init(&handle_attr);
+    globus_mutex_init(&lock, GLOBUS_NULL);
+    globus_cond_init(&cond, GLOBUS_NULL);
+
+    globus_ftp_client_operationattr_init(&attr);
+
+    test_parse_args(argc,
+		    argv,
+		    &handle_attr,
+		    &attr,
+		    &src,
+		    NULL);
+    
+    globus_ftp_client_handleattr_set_cache_all(&handle_attr, GLOBUS_TRUE);
+    globus_ftp_client_handle_init(&handle,  &handle_attr);
+    
+    result = globus_ftp_client_features_init(&features);
+    assert_result("features init");
+    
+    print_features(&features);
+    
+    for(i = 0; i < 2; i++)
     {
-        result=globus_ftp_client_is_feature_supported(
-						      &features, 
-						      &answer, 
-						      i);
-	if (result) assert_result("is_feature_supported");
-	printf("%d\t(%s)\t", i, feature_names[i]);
-	if (answer == GLOBUS_FTP_CLIENT_TRUE)    
-	  printf("yes\n");
-	else if (answer == GLOBUS_FTP_CLIENT_FALSE)
-	  printf("no\n");
-	else if (answer == GLOBUS_FTP_CLIENT_MAYBE)
-	  printf("maybe\n");
-	else 
-	{
-	  printf("Error: feature %d has unsupported value %d", i, answer);
-	  exit(-1);
-	}
+        done = GLOBUS_FALSE;
+        result = globus_ftp_client_feat(
+            &handle, src, &attr, &features, complete_callback, NULL);
+    				    
+        if(result != GLOBUS_SUCCESS)
+        {
+            char *                          tmpstr;
+            
+            tmpstr = globus_object_printable_to_string(
+                globus_error_peek(result));
+            fprintf(stderr, "Error: %s", tmpstr);
+            globus_libc_free(tmpstr);
+            error = GLOBUS_TRUE;
+            done = GLOBUS_TRUE;
+        }
+        
+        globus_mutex_lock(&lock);
+        while(!done)
+        {
+    	    globus_cond_wait(&cond, &lock);
+        }
+        globus_mutex_unlock(&lock);
+        
+        print_features(&features);
     }
+    
+    globus_ftp_client_features_destroy(&features);
+    globus_ftp_client_operationattr_destroy(&attr);
+    globus_ftp_client_handleattr_destroy(&handle_attr);
+    globus_ftp_client_handle_destroy(&handle);
+    globus_module_deactivate_all();
 
-    result = globus_ftp_client_features_destroy(&features);
-    assert_result("features  destroy");
-
-    return GLOBUS_SUCCESS;
+    return error;
 }
