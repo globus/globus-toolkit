@@ -1,4 +1,0 @@
-name=mjs_condor_setup
-subdir=program_execution/mjs-condor-setup
-build="custom"
-output=mjs_condor_setup-*.tar.gz
