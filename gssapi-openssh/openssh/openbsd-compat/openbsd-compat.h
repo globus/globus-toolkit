@@ -40,5 +40,7 @@
 
 /* Routines for a single OS platform */
 #include "bsd-cray.h"
+#include "port-irix.h"
+#include "port-aix.h"
 
 #endif /* _OPENBSD_H */
