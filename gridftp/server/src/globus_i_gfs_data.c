@@ -1015,6 +1015,11 @@ globus_i_gfs_data_request_recv(
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
     }
+    if(!data_handle->is_mine)
+    {
+        recv_info->data_handle_id = data_handle->remote_handle_id;
+    }
+    
     result = globus_l_gfs_data_operation_init(&op);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1074,6 +1079,11 @@ globus_i_gfs_data_request_send(
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
     }
+    if(!data_handle->is_mine)
+    {
+        send_info->data_handle_id = data_handle->remote_handle_id;
+    }
+
     result = globus_l_gfs_data_operation_init(&op);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1208,6 +1218,10 @@ globus_i_gfs_data_request_list(
     {
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
+    }
+    if(!data_handle->is_mine)
+    {
+        list_info->data_handle_id = data_handle->remote_handle_id;
     }
 
     result = globus_l_gfs_data_operation_init(&data_op);
