@@ -204,6 +204,7 @@
 
 #ifndef HAVE_MEMMOVE
 #define memmove(a,b,c) bcopy(b,a,c)
+#define HAVE_MEMMOVE 1
 #endif
 #ifndef HAVE_STRTOUL
 #define strtoul(a,b,c) (unsigned long)strtol(a,b,c)
