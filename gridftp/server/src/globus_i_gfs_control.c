@@ -1108,6 +1108,7 @@ globus_l_gfs_request_passive_data(
         data_state->prot = attr.prot;       
         data_state->subject = attr.dcau.subject.subject;
         data_state->dcau = attr.dcau.mode;
+        data_state->pathname = globus_libc_strdup(pathname);
         
     result = globus_i_gfs_data_request_passive(
         NULL,

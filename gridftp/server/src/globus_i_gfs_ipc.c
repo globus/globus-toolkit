@@ -1208,7 +1208,8 @@ globus_l_gfs_ipc_unpack_data(
     {
         GFSDecodeString(buffer, len, data_state->contact_strings[ctr]);
     }
-
+    GFSDecodeString(buffer, len, data_state->pathname);
+    
     return data_state;
 
   decode_err:
@@ -2935,7 +2936,8 @@ globus_l_gfs_ipc_pack_data(
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, data_state->contact_strings[ctr]);
     }
-
+    GFSEncodeString(buffer, ipc->buffer_size, ptr, data_state->pathname);
+    
     msg_size = ptr - buffer;
     /* now that we know size, add it in */
     ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;

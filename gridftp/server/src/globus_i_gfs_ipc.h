@@ -224,6 +224,8 @@ typedef struct globus_gfs_data_state_s
 
     int                                 cs_count;
     const char **                       contact_strings;
+    
+    char *                              pathname;
 } globus_gfs_data_state_t;
 
 typedef struct globus_gfs_stat_state_s
