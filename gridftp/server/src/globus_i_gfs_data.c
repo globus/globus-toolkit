@@ -49,6 +49,7 @@ typedef struct
     void *                              data_handle;
     globus_mutex_t                      mutex;
     int                                 ref;
+    globus_gfs_storage_iface_t *        dsi;
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -329,7 +330,7 @@ globus_i_gfs_data_request_stat(
     op->callback = cb;
     op->user_arg = user_arg;
     
-    globus_l_gfs_dsi->stat_func(op, stat_info, session_handle->session_arg);
+    session_handle->dsi->stat_func(op, stat_info, session_handle->session_arg);
     
     return;
 
@@ -408,7 +409,7 @@ globus_i_gfs_data_request_command(
     op->callback = cb;
     op->user_arg = user_arg;
     
-    globus_l_gfs_dsi->command_func(op, cmd_info, session_handle->session_arg);
+    session_handle->dsi->command_func(op, cmd_info, session_handle->session_arg);
 
     return;
     
@@ -587,11 +588,11 @@ globus_l_gfs_data_abort_kickout(
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
-    if(globus_l_gfs_dsi->trev_func != NULL &&
+    if(op->session_handle->dsi->trev_func != NULL &&
         op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT &&
         op->data_handle->is_mine)
     {
-        globus_l_gfs_dsi->trev_func(
+        op->session_handle->dsi->trev_func(
             op->transfer_id,
             GLOBUS_GFS_EVENT_TRANSFER_ABORT,
             op->session_handle->session_arg);
@@ -790,7 +791,7 @@ globus_i_gfs_data_destroy_handle(
                 session_handle->ref++;
                 data_handle->state = 
                     GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
-                if(globus_l_gfs_dsi->data_destroy_func != NULL &&
+                if(session_handle->dsi->data_destroy_func != NULL &&
                     !data_handle->is_mine)
                 {
                     pass = GLOBUS_TRUE;
@@ -844,7 +845,7 @@ globus_i_gfs_data_destroy_handle(
     globus_mutex_unlock(&session_handle->mutex);
     if(pass)
     {
-        globus_l_gfs_dsi->data_destroy_func(data_connection_id, session_arg);
+        session_handle->dsi->data_destroy_func(data_connection_id, session_arg);
         globus_free(data_handle);
     }
 }
@@ -930,7 +931,7 @@ globus_i_gfs_data_request_passive(
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
 
-    if(globus_l_gfs_dsi->passive_func != NULL)
+    if(session_handle->dsi->passive_func != NULL)
     {
         result = globus_l_gfs_data_operation_init(&op);
         if(result != GLOBUS_SUCCESS)
@@ -945,7 +946,7 @@ globus_i_gfs_data_request_passive(
         op->state = GLOBUS_L_GFS_DATA_REQUESTING;
         op->callback = cb;
         op->user_arg = user_arg;
-        globus_l_gfs_dsi->passive_func(
+        session_handle->dsi->passive_func(
             op, data_info, session_handle->session_arg);
     }
     else
@@ -1151,7 +1152,7 @@ globus_i_gfs_data_request_active(
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
 
-    if(globus_l_gfs_dsi->active_func != NULL)
+    if(session_handle->dsi->active_func != NULL)
     {
         result = globus_l_gfs_data_operation_init(&op);
         if(result != GLOBUS_SUCCESS)
@@ -1166,7 +1167,7 @@ globus_i_gfs_data_request_active(
         op->state = GLOBUS_L_GFS_DATA_REQUESTING;
         op->callback = cb;
         op->user_arg = user_arg;
-        globus_l_gfs_dsi->active_func(
+        session_handle->dsi->active_func(
             op, data_info, session_handle->session_arg);
     }
     else
@@ -1349,7 +1350,7 @@ globus_i_gfs_data_request_recv(
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
     
-    globus_l_gfs_dsi->recv_func(op, recv_info, session_handle->session_arg);
+    session_handle->dsi->recv_func(op, recv_info, session_handle->session_arg);
 
     return;
 
@@ -1422,7 +1423,7 @@ globus_i_gfs_data_request_send(
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
-    globus_l_gfs_dsi->send_func(op, send_info, session_handle->session_arg);
+    session_handle->dsi->send_func(op, send_info, session_handle->session_arg);
 
     return;
 
@@ -1568,9 +1569,9 @@ globus_i_gfs_data_request_list(
     data_op->eof_count = (int *) 
         globus_malloc(data_op->stripe_count * sizeof(int));
     
-    if(globus_l_gfs_dsi->list_func != NULL)
+    if(session_handle->dsi->list_func != NULL)
     {
-        globus_l_gfs_dsi->list_func(
+        session_handle->dsi->list_func(
             data_op, list_info, session_handle->session_arg);
     }
     else
@@ -1599,7 +1600,7 @@ globus_i_gfs_data_request_list(
         globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
         data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
     
-        globus_l_gfs_dsi->stat_func(
+        session_handle->dsi->stat_func(
             stat_op, stat_info, session_handle->session_arg);
     }
     
@@ -1704,10 +1705,10 @@ globus_l_gfs_data_begin_cb(
     else if(destroy_op)
     {
         /* pass the complete event */
-        if(globus_l_gfs_dsi->trev_func &&
+        if(op->session_handle->dsi->trev_func &&
             op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
-            globus_l_gfs_dsi->trev_func(
+            op->session_handle->dsi->trev_func(
                 op->transfer_id,
                 GLOBUS_GFS_EVENT_TRANSFER_COMPLETE,
                 op->session_handle->session_arg);
@@ -1835,10 +1836,10 @@ globus_l_gfs_data_end_transfer_kickout(
     if(destroy_op)
     {
         /* pass the complete event */
-        if(globus_l_gfs_dsi->trev_func &&
+        if(op->session_handle->dsi->trev_func &&
             op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
-            globus_l_gfs_dsi->trev_func(
+            op->session_handle->dsi->trev_func(
                 op->transfer_id,
                 GLOBUS_GFS_EVENT_TRANSFER_COMPLETE,
                 op->session_handle->session_arg);
@@ -2213,10 +2214,10 @@ globus_l_gfs_data_trev_kickout(
     if(destroy_op)
     {
         /* pass the complete event */
-        if(globus_l_gfs_dsi->trev_func &&
+        if(bounce_info->op->session_handle->dsi->trev_func &&
             bounce_info->op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
-            globus_l_gfs_dsi->trev_func(
+            bounce_info->op->session_handle->dsi->trev_func(
                 bounce_info->op->transfer_id,
                 GLOBUS_GFS_EVENT_TRANSFER_COMPLETE,
                 bounce_info->op->session_handle->session_arg);
@@ -2400,7 +2401,7 @@ globus_i_gfs_data_request_transfer_event(
                 else
                 {
                     /* if the DSI is handling these events */
-                    if(globus_l_gfs_dsi->trev_func != NULL &&
+                    if(session_handle->dsi->trev_func != NULL &&
                         event_type & op->event_mask)
                     {
                         op->ref++;
@@ -2444,7 +2445,7 @@ globus_i_gfs_data_request_transfer_event(
                 the event */
             default:
                 if(op->state != GLOBUS_L_GFS_DATA_CONNECTED ||
-                    globus_l_gfs_dsi->trev_func == NULL ||
+                    session_handle->dsi->trev_func == NULL ||
                     !(event_type & op->event_mask))
                 {
                     pass = GLOBUS_FALSE;
@@ -2469,7 +2470,7 @@ globus_i_gfs_data_request_transfer_event(
         /* if a TRANSFER_COMPLETE event we must respect the barrier */
         if(event_type != GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
-            globus_l_gfs_dsi->trev_func(
+            session_handle->dsi->trev_func(
                 op->transfer_id, event_type, session_handle->session_arg);
         }
         globus_mutex_lock(&op->session_handle->mutex);
@@ -2484,10 +2485,10 @@ globus_i_gfs_data_request_transfer_event(
         globus_mutex_unlock(&op->session_handle->mutex);
         if(destroy_op)
         {
-            if(globus_l_gfs_dsi->trev_func &&
+            if(session_handle->dsi->trev_func &&
                 op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
             {
-                globus_l_gfs_dsi->trev_func(
+                session_handle->dsi->trev_func(
                     op->transfer_id,
                     GLOBUS_GFS_EVENT_TRANSFER_COMPLETE,
                     op->session_handle->session_arg);
@@ -2628,10 +2629,11 @@ globus_i_gfs_data_session_start(
         }
         
     }
+    session_handle->dsi = globus_l_gfs_dsi;
     
-    if(globus_l_gfs_dsi->init_func != NULL)
+    if(session_handle->dsi->init_func != NULL)
     {
-        globus_l_gfs_dsi->init_func(op, user_dn, del_cred);
+        session_handle->dsi->init_func(op, user_dn, del_cred);
     }
     else
     {
@@ -2677,9 +2679,9 @@ globus_i_gfs_data_session_stop(
     session_handle = (globus_l_gfs_data_session_t *) session_id;
     if(session_handle != NULL)
     {
-        if(globus_l_gfs_dsi->destroy_func != NULL)
+        if(session_handle->dsi->destroy_func != NULL)
         {
-            globus_l_gfs_dsi->destroy_func(session_handle->session_arg);
+            session_handle->dsi->destroy_func(session_handle->session_arg);
         }
         globus_mutex_lock(&session_handle->mutex);
         {
@@ -2917,7 +2919,7 @@ globus_gridftp_server_begin_transfer(
                     op->state = GLOBUS_L_GFS_DATA_ABORTING;
                     /* if the connects fail tell the dsi to abort */
                     op->cached_res = result;
-                    if(globus_l_gfs_dsi->trev_func != NULL &&
+                    if(op->session_handle->dsi->trev_func != NULL &&
                         op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT &&
                         !op->data_handle->is_mine)
                     {
@@ -2934,7 +2936,7 @@ globus_gridftp_server_begin_transfer(
             /* if in this state we have delayed the pass to the dsi until
                 after we know they have requested events */
             case GLOBUS_L_GFS_DATA_ABORTING:
-                if(globus_l_gfs_dsi->trev_func != NULL &&
+                if(op->session_handle->dsi->trev_func != NULL &&
                     op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT &&
                     !op->data_handle->is_mine)
                 {
@@ -2985,7 +2987,7 @@ globus_gridftp_server_begin_transfer(
 
     if(pass_abort)
     {
-        globus_l_gfs_dsi->trev_func(
+        op->session_handle->dsi->trev_func(
             op->transfer_id,
             GLOBUS_GFS_EVENT_TRANSFER_ABORT,
             op->session_handle->session_arg);
@@ -3003,11 +3005,11 @@ globus_gridftp_server_begin_transfer(
 
     if(destroy_op)
     {
-        if(globus_l_gfs_dsi->trev_func &&
+        if(op->session_handle->dsi->trev_func &&
             op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
             /* XXX does this call need to be in a oneshot? */
-            globus_l_gfs_dsi->trev_func(
+            op->session_handle->dsi->trev_func(
                 op->transfer_id,
                 GLOBUS_GFS_EVENT_TRANSFER_COMPLETE,
                 op->session_handle->session_arg);
