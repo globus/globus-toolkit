@@ -9,7 +9,7 @@ typedef enum
     GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUBJECT,
     GLOBUS_XIO_GSSAPI_ATTR_TYPE_START_STATE,
     GLOBUS_XIO_GSSAPI_ATTR_TYPE_ENCRYPT,
-    GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE
+    GLOBUS_XIO_GSSAPI_ATTR_TYPE_FORCE_SERVER
 } globus_xio_gssapi_attr_type_t;
 
 typedef enum globus_xio_gssapi_handle_cntl_type_e

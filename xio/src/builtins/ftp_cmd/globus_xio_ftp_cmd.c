@@ -23,6 +23,7 @@ typedef struct globus_l_xio_ftp_cmd_handle_s
 typedef struct
 {
     globus_bool_t                       create_buffer_mode;
+    globus_bool_t                       force_server;
 } globus_l_xio_ftp_cmd_attr_t;
 /**************************************************************************
  *                    function prototypes
@@ -133,14 +134,12 @@ globus_l_xio_ftp_cmd_attr_init(
     GlobusXIOName(globus_l_xio_ftp_cmd_attr_init);
     
     attr = (globus_l_xio_ftp_cmd_attr_t *)
-        globus_malloc(sizeof(globus_l_xio_ftp_cmd_attr_t));
+        globus_calloc(sizeof(globus_l_xio_ftp_cmd_attr_t), 1);
     if(!attr)
     {
         res = GlobusXIOErrorMemory("attr");
         goto error;
     }
-    
-    attr->create_buffer_mode = GLOBUS_FALSE;
 
     *out_driver_attr = attr;
     
@@ -165,6 +164,7 @@ globus_l_xio_ftp_cmd_attr_copy(
     {
         src_attr = (globus_l_xio_ftp_cmd_attr_t *) src_driver_attr;
         dest_attr->create_buffer_mode = src_attr->create_buffer_mode;
+        dest_attr->force_server = src_attr->force_server;
         
         *out_driver_attr = dest_attr;
     }
@@ -196,6 +196,10 @@ globus_l_xio_ftp_cmd_attr_cntl(
     {
         case GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER:
             attr->create_buffer_mode = va_arg(ap, globus_bool_t);
+            break;
+
+        case GLOBUS_XIO_DRIVER_FTP_CMD_FORCE_SERVER:
+            attr->force_server = va_arg(ap, globus_bool_t);
             break;
 
         default:
@@ -273,8 +277,15 @@ globus_l_xio_ftp_cmd_open(
         res = GlobusXIOErrorMemory("handle");
         return res;
     }
-    
-    handle->client = driver_link ? GLOBUS_FALSE : GLOBUS_TRUE;
+
+    if(attr != NULL && attr->force_server)
+    {
+        handle->client = GLOBUS_FALSE;
+    }
+    else
+    {    
+        handle->client = driver_link ? GLOBUS_FALSE : GLOBUS_TRUE;
+    }
     handle->create_buffer_mode = attr 
         ? attr->create_buffer_mode : GLOBUS_FALSE;
 
@@ -545,8 +556,6 @@ globus_l_xio_ftp_cmd_load(
 
     return GLOBUS_SUCCESS;
 }
-
-
 
 static void
 globus_l_xio_ftp_cmd_unload(

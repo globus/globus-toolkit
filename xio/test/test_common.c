@@ -58,10 +58,11 @@ test_res(
 {
     if(res != GLOBUS_SUCCESS)
     {
+        /* XXX this sort of bumbs */
         if(location != GLOBUS_XIO_TEST_FAIL_NONE &&
             globus_error_match(
                 globus_error_peek(res),
-                GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE,
+                GLOBUS_XIO_MODULE,
                 location))
         {
             fprintf(stdout, "Success: failed in the correct spot.\n");
@@ -437,22 +438,6 @@ main(
     }
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
-    globus_assert(rc == GLOBUS_SUCCESS);
-    rc = globus_module_activate(GLOBUS_XIO_TEST_DRIVER_BOUNCE_MODULE);
-    globus_assert(rc == GLOBUS_SUCCESS);
-    rc = globus_module_activate(GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE);
-    globus_assert(rc == GLOBUS_SUCCESS);
-    rc = globus_module_activate(GLOBUS_XIO_DRIVER_DEBUG_MODULE);
-    globus_assert(rc == GLOBUS_SUCCESS);
-    rc = globus_module_activate(GLOBUS_XIO_DRIVER_NULL_MODULE);
-    globus_assert(rc == GLOBUS_SUCCESS);
-    rc = globus_module_activate(GLOBUS_XIO_DRIVER_NULL_PASS_MODULE);
-    globus_assert(rc == GLOBUS_SUCCESS);
-    rc = globus_module_activate(GLOBUS_XIO_DRIVER_OP_MODULE);
-    globus_assert(rc == GLOBUS_SUCCESS);
-    rc = globus_module_activate(GLOBUS_XIO_DRIVER_STACK_MODULE);
-    globus_assert(rc == GLOBUS_SUCCESS);
-    rc = globus_module_activate(GLOBUS_XIO_VERIFY_DRIVER_MODULE);
     globus_assert(rc == GLOBUS_SUCCESS);
 
     if(file)
