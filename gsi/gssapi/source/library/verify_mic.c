@@ -132,8 +132,8 @@ GSS_CALLCONV gss_verify_mic
  
 	if (memcmp(md,((unsigned char *) token_buffer->value)+12,md_size)) {
 	 	GSSerr(GSSERR_F_VERIFY_MIC,GSSERR_R_BAD_DATE);
-		*minor_status = GSSERR_R_BAD_DATE;
-		return GSS_S_BAD_SIG;
+		*minor_status = gsi_generate_minor_status();
+                return GSS_S_BAD_SIG;
 	}
 
 #ifdef DEBUG

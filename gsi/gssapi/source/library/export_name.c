@@ -62,7 +62,9 @@ GSS_CALLCONV gss_export_name
 	*minor_status = 0;
 	if (!(input_name) || !(input_name->x509n) ||
 			!(exported_name)) {
-		return GSS_S_FAILURE;
+            GSSerr(GSSERR_F_EXPORT_CRED, GSSERR_R_BAD_ARGUMENT);
+            *minor_status = gsi_generate_minor_status();
+            return GSS_S_FAILURE;
 	}
 
 	exported_name->value = X509_NAME_oneline(input_name->x509n,NULL,0);

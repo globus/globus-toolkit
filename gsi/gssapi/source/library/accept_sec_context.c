@@ -66,7 +66,6 @@ GSS_CALLCONV gss_accept_sec_context(
 {
     gss_ctx_id_desc *                   context = NULL;
     OM_uint32                           major_status = 0;
-    OM_uint32                           minor_status_tmp;
     OM_uint32                           nreq_flags = 0;
     X509_REQ *                          reqp;
     int                                 rc;
@@ -109,13 +108,13 @@ GSS_CALLCONV gss_accept_sec_context(
         }
 #endif
 
-        major_status = gss_create_and_fill_context(minor_status,
-                                                   &context,
+        major_status = gss_create_and_fill_context(&context,
                                                    acceptor_cred_handle,
                                                    GSS_C_ACCEPT,
                                                    nreq_flags);
         if (GSS_ERROR(major_status))
         {
+            *minor_status = gsi_generate_minor_status();
             return major_status;                        
         }
 
@@ -147,9 +146,10 @@ GSS_CALLCONV gss_accept_sec_context(
      * put token data onto the SSL bio so it can be read
      */
 
-    major_status = gs_put_token(minor_status,context,input_token);
+    major_status = gs_put_token(context, input_token);
     if (major_status != GSS_S_COMPLETE)
     {
+        *minor_status = gsi_generate_minor_status();
         return major_status;
     }
 
@@ -157,8 +157,7 @@ GSS_CALLCONV gss_accept_sec_context(
     {
     case(GS_CON_ST_HANDSHAKE):
             
-        major_status = gs_handshake(minor_status,
-                                    context);
+        major_status = gs_handshake(context);
             
         if (major_status == GSS_S_CONTINUE_NEEDED)
         {
@@ -173,8 +172,7 @@ GSS_CALLCONV gss_accept_sec_context(
             break; 
         }
                         
-        major_status = gs_retrieve_peer(minor_status,
-                                        context,
+        major_status = gs_retrieve_peer(context,
                                         GSS_C_ACCEPT);
         if (major_status != GSS_S_COMPLETE)
         {
@@ -185,7 +183,6 @@ GSS_CALLCONV gss_accept_sec_context(
         if (src_name_P != NULL)
         {
             major_status = gss_copy_name_to_name(
-                minor_status,
                 (gss_name_desc **)src_name_P, 
                 context->source_name);
         }
@@ -299,8 +296,7 @@ GSS_CALLCONV gss_accept_sec_context(
 
         if (delegated_cred_handle_P != NULL)
         {
-            major_status = gss_create_and_fill_cred(minor_status,
-                                                    delegated_cred_handle_P,
+            major_status = gss_create_and_fill_cred(delegated_cred_handle_P,
                                                     GSS_C_BOTH,
                                                     context->dcert,
                                                     context->dpkey,
@@ -342,7 +338,7 @@ GSS_CALLCONV gss_accept_sec_context(
      * about the error (i.e. an SSL alert message) we want to send to the other
      * side.
      */
-    gs_get_token(&minor_status_tmp, context, output_token);
+    gs_get_token(context, output_token);
 
     if (context->gs_state != GS_CON_ST_DONE)
     {
@@ -353,7 +349,12 @@ GSS_CALLCONV gss_accept_sec_context(
     {
         *ret_flags = context->ret_flags;
     }
-                 
+
+    if (GSS_ERROR(major_status))
+    {
+        *minor_status = gsi_generate_minor_status();
+    }
+        
 #if defined(DEBUG) || defined(DEBUGX)
     fprintf(stderr,
             "accept_sec_context:major_status:%08x:gs_state:%d:ret_flags=%08x\n",

@@ -91,6 +91,7 @@ GSS_CALLCONV gss_acquire_cred(
         major_status = gss_indicate_mechs(minor_status,
                                           actual_mechs);
         if (major_status != GSS_S_COMPLETE) {
+            *minor_status = gsi_generate_minor_status();
             return  major_status;
         }
     }
@@ -100,13 +101,17 @@ GSS_CALLCONV gss_acquire_cred(
     }
 
 
-    major_status = gss_create_and_fill_cred(minor_status,
-                                            output_cred_handle_P,
+    major_status = gss_create_and_fill_cred(output_cred_handle_P,
                                             cred_usage,
                                             NULL,
                                             NULL,
                                             NULL,
                                             NULL);
+    if (GSS_ERROR(major_status))
+    {
+        *minor_status = gsi_generate_minor_status();
+    }
+        
 #ifdef DEBUG
     fprintf(stderr,"acquire_cred:major_status:%08x\n",major_status);
 #endif

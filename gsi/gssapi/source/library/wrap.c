@@ -261,8 +261,9 @@ GSS_CALLCONV gss_wrap
 				(char *)malloc(5 + mic_buf->length + 
 						input_message_buffer->length);
 		if (output_message_buffer->value == NULL) {
-			GSSerr(GSSERR_F_WRAP,ERR_R_MALLOC_FAILURE);
-			gss_release_buffer(&minor_status2, mic_buf);
+			GSSerr(GSSERR_F_WRAP, GSSERR_R_OUT_OF_MEMORY);
+			*minor_status = gsi_generate_minor_status();
+                        gss_release_buffer(&minor_status2, mic_buf);
 			return GSS_S_FAILURE;
 		}
 		output_message_buffer->length = 5 + mic_buf->length + 
@@ -294,13 +295,13 @@ GSS_CALLCONV gss_wrap
             /* problem, did not take the whole buffer */
 
             GSSerr(GSSERR_F_WRAP,GSSERR_R_WRAP_BIO);
+            *minor_status = gsi_generate_minor_status();
             sprintf(errbuf,"\nSSL_write rc=%d length=%d SSLerr=%d",
                 rc,
                 input_message_buffer->length,
                 SSL_get_error(context->gs_ssl, rc));
             ERR_add_error_data(1,errbuf);
 
-            *minor_status = GSSERR_R_WRAP_BIO;
             return GSS_S_FAILURE;
         }
         if (conf_state) {
@@ -313,8 +314,7 @@ GSS_CALLCONV gss_wrap
         }
         /* get the data from the write BIO */
 
-        return gs_get_token(minor_status,
-                            context,
+        return gs_get_token(context,
                             output_message_buffer);
     }
 }

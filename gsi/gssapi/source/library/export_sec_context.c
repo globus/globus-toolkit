@@ -92,17 +92,17 @@ GSS_CALLCONV gss_export_sec_context
 
 	if (context_handle_P == NULL || 
 			context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) {
-		 GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_IMPEXP_BAD_PARMS);
-		*minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
-		major_status = GSS_S_FAILURE;
-		goto end;
+            GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_BAD_ARGUMENT);
+            *minor_status = gsi_generate_minor_status();
+            major_status = GSS_S_FAILURE;
+            goto end;
 	}
 
 	if (interprocess_token == NULL ||
 			interprocess_token ==  GSS_C_NO_BUFFER) {
-		GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_IMPEXP_BAD_PARMS);
-		*minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
-		major_status = GSS_S_FAILURE;
+		GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_BAD_ARGUMENT);
+                *minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
 		goto end;
 	}
 
@@ -114,8 +114,8 @@ GSS_CALLCONV gss_export_sec_context
 
 	if ((bp = BIO_new(BIO_s_mem())) == NULL) {
 		GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-		major_status = GSS_S_FAILURE;
+                *minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
 		goto end;
 	}
 	
@@ -151,8 +151,8 @@ GSS_CALLCONV gss_export_sec_context
 	session = SSL_get_session(s);
 	if (!session) {
 		GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-		major_status = GSS_S_FAILURE;
+                *minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
 		goto end;
 	}
 
@@ -249,14 +249,14 @@ GSS_CALLCONV gss_export_sec_context
     len = BIO_pending(bp);
 	if (len <= 0) {
 		GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-		major_status = GSS_S_FAILURE;
+                *minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
 		goto end;
 	}
     cp = (unsigned char *)malloc(len);
     if (!cp) {
-		GSSerr(GSSERR_F_EXPORT_SEC,ERR_R_MALLOC_FAILURE);
-		*minor_status = ERR_R_MALLOC_FAILURE;
+        GSSerr(GSSERR_F_EXPORT_SEC, GSSERR_R_OUT_OF_MEMORY);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_NO_CONTEXT;
         goto end;
     }
@@ -270,9 +270,13 @@ GSS_CALLCONV gss_export_sec_context
 	/* Now delete the GSS context as per RFC */
 #ifndef __CYGWIN__	 
 	major_status = gss_delete_sec_context(minor_status,
-						context_handle_P,
-						GSS_C_NO_BUFFER);
-#endif
+                                              context_handle_P,
+                                              GSS_C_NO_BUFFER);
+        if (GSS_ERROR(major_status))
+        {
+            *minor_status = gsi_generate_minor_status();
+        }
+#endif /* !__CYGWIN */
 
 end:
 	BIO_free(bp);

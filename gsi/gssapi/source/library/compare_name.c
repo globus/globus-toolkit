@@ -122,8 +122,8 @@ GSS_CALLCONV gss_compare_name
 
 	if (name1->x509n == NULL || name2->x509n == NULL) {
 		*name_equal = 0 ;
-		GSSerr(GSSERR_F_COMPARE_NAME, GSSERR_R_PASSED_NULL_PARAMETER);
-		*minor_status = GSSERR_R_PASSED_NULL_PARAMETER;
+		GSSerr(GSSERR_F_COMPARE_NAME, GSSERR_R_BAD_ARGUMENT);
+		*minor_status = gsi_generate_minor_status();
 		return GSS_S_BAD_NAME ;
 	}
 #ifdef DEBUG

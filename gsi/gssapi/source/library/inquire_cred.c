@@ -145,8 +145,8 @@ GSS_CALLCONV gss_inquire_cred
 					&filename);
 			if (rc) {
 				major_status = GSS_S_FAILURE;
-				*minor_status = rc;
-				if (filename) {
+				*minor_status = gsi_generate_minor_status();
+                                if (filename) {
 					free(filename);
 				}
 			} else {
@@ -160,6 +160,7 @@ GSS_CALLCONV gss_inquire_cred
         } else if (*minor_status == 0xdee2) {
 
             if(!(class_add_obj = OBJ_nid2obj(OBJ_txt2nid("CLASSADD")))) {
+                *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_FAILURE;
                 goto err;
             }
@@ -170,6 +171,9 @@ GSS_CALLCONV gss_inquire_cred
 #endif
                 class_add_array = malloc(sizeof(gss_buffer_desc)*(i+1));
                 if (!class_add_array) {
+                    GSSerr(GSSERR_F_INQUIRE_CONTEXT,
+                           GSSERR_R_OUT_OF_MEMORY);
+                    *minor_status = gsi_generate_minor_status();
                     major_status = GSS_S_FAILURE;
                     goto err;
                 }
@@ -189,6 +193,9 @@ GSS_CALLCONV gss_inquire_cred
                                 class_add_array_entry->value = 
                                     malloc(class_add_oct->length);
                                 if (class_add_array_entry->value == NULL) {
+                                    GSSerr(GSSERR_F_INQUIRE_CRED,
+                                           GSSERR_R_OUT_OF_MEMORY);
+                                    *minor_status = gsi_generate_minor_status();
                                     major_status = GSS_S_FAILURE;
                                     goto err;
                                 }
@@ -221,9 +228,14 @@ GSS_CALLCONV gss_inquire_cred
 #endif
 
 		} else {
-			major_status = gss_copy_name_to_name(minor_status,
-                                (gss_name_desc * * )name,
-				cred_handle->globusid);
+			major_status =
+                            gss_copy_name_to_name((gss_name_desc * * )name,
+                                                  cred_handle->globusid);
+
+                        if (GSS_ERROR(major_status))
+                        {
+                            *minor_status = gsi_generate_minor_status();
+                        }
 		}
 	  }
 	}

@@ -127,13 +127,13 @@ GSS_CALLCONV gss_init_sec_context(
         }
 #endif
 
-        major_status = gss_create_and_fill_context(minor_status,
-                                                   &context,
+        major_status = gss_create_and_fill_context(&context,
                                                    initiator_cred_handle,
                                                    GSS_C_INITIATE,
                                                    req_flags) ;
         if (GSS_ERROR(major_status))
         {
+            *minor_status = gsi_generate_minor_status();
             return major_status;
         }
 
@@ -161,7 +161,7 @@ GSS_CALLCONV gss_init_sec_context(
          * there will always be one
          */
 
-    	major_status = gs_put_token(minor_status,context,input_token);
+    	major_status = gs_put_token(context, input_token);
     	if (major_status != GSS_S_COMPLETE)
         {
             return major_status;
@@ -174,8 +174,7 @@ GSS_CALLCONV gss_init_sec_context(
     case(GS_CON_ST_HANDSHAKE):
         /* do the handshake work */
 
-        major_status = gs_handshake(minor_status,
-                                    context);
+        major_status = gs_handshake(context);
 
 
         if (major_status == GSS_S_CONTINUE_NEEDED)
@@ -189,8 +188,7 @@ GSS_CALLCONV gss_init_sec_context(
             break;
         } 
         /* make sure we are talking to the correct server */
-        major_status = gs_retrieve_peer(minor_status, 
-                                        context,
+        major_status = gs_retrieve_peer(context,
                                         GSS_C_INITIATE);
         if (major_status != GSS_S_COMPLETE)
         {
@@ -208,7 +206,7 @@ GSS_CALLCONV gss_init_sec_context(
             && context->pvd.limited_proxy)
         {
             GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_PROXY_VIOLATION);
-            *minor_status = GSSERR_R_PROXY_VIOLATION;
+            *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_UNAUTHORIZED;
             context->gs_state = GS_CON_ST_DONE;
             break;
@@ -251,7 +249,7 @@ GSS_CALLCONV gss_init_sec_context(
                     free (s1);
                     free (s2);
                 }
-                *minor_status = GSSERR_R_MUTUAL_AUTH;
+                *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_UNAUTHORIZED;
                 context->gs_state = GS_CON_ST_DONE;
                 break;
@@ -321,6 +319,7 @@ GSS_CALLCONV gss_init_sec_context(
         if (reqp == NULL)
         {
             GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_PROXY_NOT_RECEIVED);
+            *minor_status = gsi_generate_minor_status();
             major_status=GSS_S_FAILURE;
             return major_status;
         }
@@ -331,6 +330,7 @@ GSS_CALLCONV gss_init_sec_context(
         if ((extensions = sk_X509_EXTENSION_new_null()) == NULL)
         {
             GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_CLASS_ADD_EXT);
+            *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             return major_status;
         }
@@ -347,6 +347,7 @@ GSS_CALLCONV gss_init_sec_context(
                 == NULL)
             {
                 GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_CLASS_ADD_EXT);
+                *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_FAILURE;
                 return major_status;
             }
@@ -355,6 +356,7 @@ GSS_CALLCONV gss_init_sec_context(
             if (!sk_X509_EXTENSION_push(extensions, ex))
             {
                 GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_CLASS_ADD_EXT);
+                *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_FAILURE;
                 return major_status;
             }
@@ -399,7 +401,7 @@ GSS_CALLCONV gss_init_sec_context(
      * about the error (i.e. an SSL alert message) we want to send to the other
      * side.
      */
-    gs_get_token(&inv_minor_status,context,output_token);
+    gs_get_token(context, output_token);
 
     if (context->gs_state != GS_CON_ST_DONE)
     {

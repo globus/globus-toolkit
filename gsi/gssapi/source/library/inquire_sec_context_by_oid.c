@@ -48,16 +48,16 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 
     if(minor_status == NULL)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
+        /* *minor_status = GSSERR_R_BAD_ARGUMENT; */
         major_status = GSS_S_FAILURE;
         goto err;
     }
     
     if(context_handle == GSS_C_NO_CONTEXT)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -65,16 +65,16 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 
     if(desired_object == GSS_C_NO_OID)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(data_set == GSS_C_NO_BUFFER_SET)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -89,8 +89,8 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 
     if(data_set->elements == NULL)
     {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,ERR_R_MALLOC_FAILURE);
-        /* what is the the correct minor status ?*/
+        GSSerr(GSSERR_F_INQUIRE_BY_OID, GSSERR_R_OUT_OF_MEMORY);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -130,8 +130,8 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     }
                     
                     free(data_set->elements);
-                    GSSerr(GSSERR_F_INQUIRE_BY_OID,ERR_R_MALLOC_FAILURE);
-                    /* what is the the correct minor status ?*/
+                    GSSerr(GSSERR_F_INQUIRE_BY_OID, GSSERR_R_OUT_OF_MEMORY);
+                    *minor_status = gsi_generate_minor_status();
                     major_status = GSS_S_FAILURE;
                     goto err;
                 }

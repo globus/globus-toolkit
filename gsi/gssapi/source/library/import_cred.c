@@ -90,16 +90,16 @@ GSS_CALLCONV gss_import_cred(
         import_buffer ==  GSS_C_NO_BUFFER ||
         import_buffer->length < 1) 
     {
-        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if (output_cred_handle == NULL )
     { 
-        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -108,7 +108,7 @@ GSS_CALLCONV gss_import_cred(
        desired_mech != (gss_OID) gss_mech_globus_gssapi_ssleay)
     {
         GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_MECH);
-        *minor_status = GSSERR_R_BAD_MECH;
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_BAD_MECH;
         goto err;
     }
@@ -141,8 +141,8 @@ GSS_CALLCONV gss_import_cred(
         }
         else
         {
-            GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
-            *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+            GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_BAD_ARGUMENT);
+            *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             goto err;
         }
@@ -153,8 +153,7 @@ GSS_CALLCONV gss_import_cred(
         goto err;
     }
     
-    major_status = gss_create_and_fill_cred(minor_status,
-                                            output_cred_handle,
+    major_status = gss_create_and_fill_cred(output_cred_handle,
                                             GSS_C_BOTH,
                                             NULL,
                                             NULL,

@@ -117,9 +117,9 @@ GSS_CALLCONV gss_import_sec_context
 	if (interprocess_token == NULL || 
 			interprocess_token == GSS_C_NO_BUFFER || 
 			context_handle_P == NULL) {
-		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BAD_PARMS);
-		*minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
-		major_status = GSS_S_DEFECTIVE_TOKEN;
+		GSSerr(GSSERR_F_IMPORT_SEC, GSSERR_R_BAD_ARGUMENT);
+		*minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_DEFECTIVE_TOKEN;
 		goto err;
 	}
 
@@ -131,8 +131,8 @@ GSS_CALLCONV gss_import_sec_context
 
     if ((bp = BIO_new(BIO_s_mem())) == NULL) {
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-        major_status = GSS_S_FAILURE;
+                *minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
         goto err;
     }
 	
@@ -150,8 +150,8 @@ GSS_CALLCONV gss_import_sec_context
 	n2l(cp,version);
 	if (version > 1) {
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-        major_status = GSS_S_FAILURE;
+                *minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
         goto err;
     }
 
@@ -168,14 +168,15 @@ GSS_CALLCONV gss_import_sec_context
 	 * imported session. 
 	 */
 
-	major_status = gss_create_and_fill_context(minor_status,
-		&context,
-		GSS_C_NO_CREDENTIAL,
-		cred_usage,
-		0);
+	major_status =
+            gss_create_and_fill_context(&context,
+                                        GSS_C_NO_CREDENTIAL,
+                                        cred_usage,
+                                        0);
 
 	if (GSS_ERROR(major_status)) {
-		goto err;
+            *minor_status = gsi_generate_minor_status();
+            goto err;
 	}
 
 	/*
@@ -204,16 +205,15 @@ GSS_CALLCONV gss_import_sec_context
 	/* we do this here, and later, since SSLeay-0.9.0 has a problem*/
 	if (!ssl3_setup_buffers(s)) {
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
+                *minor_status = gsi_generate_minor_status();
 		major_status = GSS_S_FAILURE;
 		goto err;
 	}
 
 	if (!ssl_init_wbio_buffer(s,0)) {  /* we don't push here! */
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-		major_status = GSS_S_FAILURE;
+		*minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
 		goto err; 
 	} 
 
@@ -224,8 +224,8 @@ GSS_CALLCONV gss_import_sec_context
 
 	if (!session) {
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-		major_status = GSS_S_NO_CONTEXT;
+		*minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_NO_CONTEXT;
 		goto err;
 	}
 	
@@ -240,8 +240,8 @@ GSS_CALLCONV gss_import_sec_context
 
 		if (!peer) {
 			GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-			*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-			major_status = GSS_S_NO_CONTEXT;
+			*minor_status = gsi_generate_minor_status();
+                        major_status = GSS_S_NO_CONTEXT;
 			goto err;
 		}
 		session->peer = peer;
@@ -266,8 +266,8 @@ GSS_CALLCONV gss_import_sec_context
 	}
 	if (!(session->cipher)) {
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_NO_CIPHER);
-		*minor_status = GSSERR_R_IMPEXP_NO_CIPHER;
-		major_status = GSS_S_NO_CONTEXT;
+		*minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_NO_CONTEXT;
 		goto err;
 	}
 
@@ -279,16 +279,15 @@ GSS_CALLCONV gss_import_sec_context
 	
 	if (!ssl3_setup_buffers(s)) {
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-		*minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-		major_status = GSS_S_FAILURE;
+		*minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
 		goto err;
 	}
 
 	if (BIO_pending(bp) < 2*SSL3_RANDOM_SIZE) {
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-		*minor_status = GSSERR_R_IMPEXP_BAD_LEN;
-		major_status = GSS_S_NO_CONTEXT;
+		*minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_NO_CONTEXT;
 		goto err;
 	}
 	BIO_read(bp,(char*)&(s->s3->client_random[0]),SSL3_RANDOM_SIZE);
@@ -318,8 +317,8 @@ GSS_CALLCONV gss_import_sec_context
 	
 	if (BIO_pending(bp) < 4) {
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BAD_LEN);
-		*minor_status = GSSERR_R_IMPEXP_BAD_LEN;
-		major_status = GSS_S_NO_CONTEXT;
+		*minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_NO_CONTEXT;
 		goto err;
 	}
 
@@ -329,15 +328,15 @@ GSS_CALLCONV gss_import_sec_context
 
 	if (BIO_pending(bp) < len) {
 		GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BAD_LEN);
-		*minor_status = GSSERR_R_IMPEXP_BAD_LEN;
-		major_status = GSS_S_NO_CONTEXT;
+		*minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_NO_CONTEXT;
 		goto err;
 	}
 
 	if ((s->s3->tmp.key_block = (unsigned char *)OPENSSL_malloc (len)) == NULL) {
-		GSSerr(GSSERR_F_IMPORT_SEC,ERR_R_MALLOC_FAILURE);
-		*minor_status = ERR_R_MALLOC_FAILURE;
-		major_status = GSS_S_FAILURE;
+		GSSerr(GSSERR_F_IMPORT_SEC, GSSERR_R_OUT_OF_MEMORY);
+		*minor_status = gsi_generate_minor_status();
+                major_status = GSS_S_FAILURE;
 		goto err;
 	}
 		
@@ -444,7 +443,7 @@ GSS_CALLCONV gss_import_sec_context
 	}
 #endif
 
-	gs_retrieve_peer(minor_status, context, cred_usage);
+	gs_retrieve_peer(context, cred_usage);
 
 	s->new_session=0;
 	s->init_num=0;

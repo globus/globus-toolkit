@@ -130,7 +130,8 @@ GSS_CALLCONV gss_unwrap(
         output_message_buffer->value = (char *)malloc(data_buf->length);
         if ( output_message_buffer->value == NULL)
         {
-            GSSerr(GSSERR_F_UNWRAP,ERR_R_MALLOC_FAILURE);
+            GSSerr(GSSERR_F_UNWRAP, GSSERR_R_OUT_OF_MEMORY);
+            *minor_status = gsi_generate_minor_status();
             return GSS_S_FAILURE;
         }
         output_message_buffer->length = data_buf->length;
@@ -160,8 +161,7 @@ GSS_CALLCONV gss_unwrap(
          * stream, and read from the SSL 
          */
 
-        if (gs_put_token(minor_status, 
-                         context,
+        if (gs_put_token(context,
                          input_message_buffer) != GSS_S_COMPLETE)
         {
             return GSS_S_DEFECTIVE_TOKEN;       
@@ -184,7 +184,8 @@ GSS_CALLCONV gss_unwrap(
                     SSL_get_error(context->gs_ssl, rc));
             ERR_add_error_data(1,errbuf);
         
-            *minor_status = GSSERR_R_WRAP_BIO;
+            *minor_status = gsi_generate_minor_status();
+
             return GSS_S_FAILURE;
         }
         else if (rc == 0)

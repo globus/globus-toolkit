@@ -114,11 +114,11 @@ GSS_CALLCONV gss_inquire_context(
     {
         if (context->source_name)
         {
-            major_status = gss_copy_name_to_name(minor_status,
-                                                 (gss_name_desc **)src_name_P,
+            major_status = gss_copy_name_to_name((gss_name_desc **)src_name_P,
                                                  context->source_name);
             if (major_status != GSS_S_COMPLETE)
             {
+                *minor_status = gsi_generate_minor_status();
                 goto err;
             }
         }
@@ -137,6 +137,7 @@ GSS_CALLCONV gss_inquire_context(
             *minor_status = 0; 
             if(!(class_add_obj = OBJ_nid2obj(OBJ_txt2nid("CLASSADD"))))
             {
+                *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_FAILURE;
                 goto err;
             }
@@ -150,6 +151,8 @@ GSS_CALLCONV gss_inquire_context(
                 class_add_array = malloc(sizeof(gss_buffer_desc)*(i+1));
                 if (!class_add_array)
                 {
+                    GSSerr(GSSERR_F_INQUIRE_CONTEXT, GSS_R_OUT_OF_MEMORY);
+                    *minor_status = gsi_generate_minor_status();
                     major_status = GSS_S_FAILURE;
                     goto err;
                 }
@@ -174,6 +177,9 @@ GSS_CALLCONV gss_inquire_context(
                                     malloc(class_add_oct->length);
                                 if (class_add_array_entry->value == NULL)
                                 {
+                                    GSSerr(GSSERR_F_INQUIRE_CONTEXT,
+                                           GSSERR_R_OUT_OF_MEMORY);
+                                    *minor_status = gsi_generate_minor_status();
                                     major_status = GSS_S_FAILURE;
                                     goto err;
                                 }
@@ -213,11 +219,12 @@ GSS_CALLCONV gss_inquire_context(
 
             if (context->target_name)
             {
-                major_status = gss_copy_name_to_name(minor_status,
-                                                     (gss_name_desc **)targ_name_P,
-                                                     context->target_name);
+                major_status =
+                    gss_copy_name_to_name((gss_name_desc **)targ_name_P,
+                                          context->target_name);
                 if (major_status != GSS_S_COMPLETE)
                 {
+                    *minor_status = gsi_generate_minor_status();
                     goto err;
                 }
             }
@@ -233,6 +240,7 @@ GSS_CALLCONV gss_inquire_context(
         if (!asn1_time)
         {
             major_status = GSS_S_FAILURE;
+            *minor_status = gsi_generate_minor_status();
             goto err;
         }
         X509_gmtime_adj(asn1_time,0);

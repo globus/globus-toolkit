@@ -79,8 +79,8 @@ GSS_CALLCONV gss_export_cred(
     if (export_buffer == NULL ||
         export_buffer ==  GSS_C_NO_BUFFER)
     {
-        GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -90,8 +90,8 @@ GSS_CALLCONV gss_export_cred(
 
     if (cred_handle == NULL )
     { 
-        GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -100,7 +100,7 @@ GSS_CALLCONV gss_export_cred(
        desired_mech != (gss_OID) gss_mech_globus_gssapi_ssleay)
     {
         GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_MECH);
-        *minor_status = GSSERR_R_BAD_MECH;
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_BAD_MECH;
         goto err;
     }
@@ -117,7 +117,7 @@ GSS_CALLCONV gss_export_cred(
                              cred_desc->pcd->cert_chain))
         {
             GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_EXPORT_FAIL);
-            *minor_status = GSSERR_R_EXPORT_FAIL;
+            *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             goto err;
         }
@@ -130,7 +130,8 @@ GSS_CALLCONV gss_export_cred(
             if (export_buffer->value == NULL)
             {
                 export_buffer->length = 0 ;
-                GSSerr(GSSERR_F_EXPORT_CRED, ERR_R_MALLOC_FAILURE);
+                *minor_status = gsi_generate_minor_status();
+                GSSerr(GSSERR_F_EXPORT_CRED, GSSERR_R_OUT_OF_MEMORY);
                 return GSS_S_FAILURE;
             }
 			
@@ -154,7 +155,7 @@ GSS_CALLCONV gss_export_cred(
                               &(export_buffer->value)))
         {
             GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_EXPORT_FAIL);
-            *minor_status = GSSERR_R_EXPORT_FAIL;
+            *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             goto err;
         }
@@ -162,8 +163,8 @@ GSS_CALLCONV gss_export_cred(
     }
     else
     {
-        GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }

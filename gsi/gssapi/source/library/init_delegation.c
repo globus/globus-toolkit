@@ -72,24 +72,24 @@ GSS_CALLCONV gss_init_delegation(
     
     if(minor_status == NULL)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+        /* *minor_status = gsi_generate_minor_status(); */
         major_status = GSS_S_FAILURE;
         goto err;
     }
     
     if(context_handle == GSS_C_NO_CONTEXT)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(cred_handle == GSS_C_NO_CREDENTIAL)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -97,8 +97,8 @@ GSS_CALLCONV gss_init_delegation(
     if(desired_mech != GSS_C_NO_OID &&
        desired_mech != (gss_OID) gss_mech_globus_gssapi_ssleay)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -107,16 +107,16 @@ GSS_CALLCONV gss_init_delegation(
        (restriction_buffers == GSS_C_NO_BUFFER_SET ||
         restriction_oids->count != restriction_buffers->count))
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     if(output_token == GSS_C_NO_BUFFER)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -130,17 +130,18 @@ GSS_CALLCONV gss_init_delegation(
          * there will always be one
          */
 
-    	major_status = gs_put_token(minor_status,context,input_token);
+    	major_status = gs_put_token(context, input_token);
 
     	if (major_status != GSS_S_COMPLETE)
         {
+            *minor_status = gsi_generate_minor_status();
             return major_status;
     	}
     }
     else if(context->delegation_state != GS_DELEGATION_START)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -192,6 +193,7 @@ GSS_CALLCONV gss_init_delegation(
                 {
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                     major_status = GSS_S_FAILURE;
+                    *minor_status = gsi_generate_minor_status();
                     return major_status;
                 }
             
@@ -200,6 +202,7 @@ GSS_CALLCONV gss_init_delegation(
                 {
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                     major_status = GSS_S_FAILURE;
+                    *minor_status = gsi_generate_minor_status();
                     goto err;
                 }
             }
@@ -216,6 +219,7 @@ GSS_CALLCONV gss_init_delegation(
             /* should probably return a error related to not being
                able to sign the cert */
             GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_ADD_EXT);
+            *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             goto err;
         }
@@ -266,7 +270,7 @@ GSS_CALLCONV gss_init_delegation(
         break;
     }
     
-    gs_get_token(minor_status,context,output_token);
+    gs_get_token(context, output_token);
 
     if (context->delegation_state != GS_DELEGATION_START)
     {

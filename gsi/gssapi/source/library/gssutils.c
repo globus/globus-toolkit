@@ -54,7 +54,7 @@ Returns:
 
 OM_uint32 
 gss_copy_name_to_name
-(OM_uint32 *                    minor_status,
+(
  gss_name_desc** 				output,
  const gss_name_desc* 			input)
 {
@@ -63,7 +63,7 @@ gss_copy_name_to_name
 
 	output_name = (gss_name_desc *) malloc(sizeof(gss_name_desc));
 	if (output_name == NULL) {
-		GSSerr(GSSERR_F_NAME_TO_NAME,ERR_R_MALLOC_FAILURE);
+		GSSerr(GSSERR_F_NAME_TO_NAME, GSSERR_R_OUT_OF_MEMORY);
 		return GSS_S_FAILURE ;
 	}
  
@@ -77,7 +77,6 @@ gss_copy_name_to_name
 	output_name->x509n = x509n;
 	*output = output_name;
  
-	*minor_status = 0;
 	return  GSS_S_COMPLETE;
 }
 
@@ -96,7 +95,6 @@ Returns:
 
 OM_uint32 
 gss_create_and_fill_context(
-    OM_uint32  *                        minor_status,
     gss_ctx_id_desc **                  context_handle_P,
     gss_cred_id_desc *                  cred_handle,
     const gss_cred_usage_t              cred_usage,
@@ -110,7 +108,7 @@ gss_create_and_fill_context(
     context = (gss_ctx_id_desc*) malloc(sizeof(gss_ctx_id_desc)) ;
     if (context == NULL)
     {
-        GSSerr(GSSERR_F_CREATE_FILL,ERR_R_MALLOC_FAILURE);
+        GSSerr(GSSERR_F_CREATE_FILL, GSSERR_R_OUT_OF_MEMORY);
         return GSS_S_FAILURE;
     }
 
@@ -136,7 +134,14 @@ gss_create_and_fill_context(
 
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {
-        major_status = gss_acquire_cred(minor_status,
+        OM_uint32 minor_status;
+
+        /*
+         * Ok, go ahead and get minor_status here and throw
+         * it away. A subsequent call to gsi_generate_minor_status()
+         * should regenerate it.
+         */
+        major_status = gss_acquire_cred(&minor_status,
                                         GSS_C_NO_NAME,
                                         GSS_C_INDEFINITE,
                                         GSS_C_NO_OID_SET,
@@ -163,14 +168,12 @@ gss_create_and_fill_context(
 
     if (cred_usage == GSS_C_INITIATE)
     {
-        major_status = gss_copy_name_to_name(minor_status,
-                                             &context->source_name,
+        major_status = gss_copy_name_to_name(&context->source_name,
                                              context->cred_handle->globusid);
     }
     else
     {
-        major_status = gss_copy_name_to_name(minor_status,
-                                             &context->target_name,
+        major_status = gss_copy_name_to_name(&context->target_name,
                                              context->cred_handle->globusid);
     }
 
@@ -358,14 +361,12 @@ Returns:
 **********************************************************************/
 OM_uint32
 gs_put_token 
-(OM_uint32 *                    minor_status,
- const gss_ctx_id_desc*         context_handle,
+(const gss_ctx_id_desc*         context_handle,
  const gss_buffer_t             input_token)
 {
 
 	/* add any input data onto the input for the SSL BIO */
 
-	*minor_status = 0;
 #ifdef DEBUG
 	fprintf(stderr,"input token: len=%d\n",input_token->length);
 #endif
@@ -397,20 +398,18 @@ Parameters:
 Returns:
 **********************************************************************/
 OM_uint32
-gs_get_token 
-(OM_uint32 *                    minor_status,
- const gss_ctx_id_desc*         context_handle,
- const gss_buffer_t             output_token)
+gs_get_token(
+    const gss_ctx_id_desc*         context_handle,
+    const gss_buffer_t             output_token)
 {
 
-	*minor_status = 0;
 	/* make out token */
 	output_token->length = BIO_pending(context_handle->gs_wbio);
 	if (output_token->length > 0) {
 		output_token->value = (char *) malloc(output_token->length);
 		if (output_token->value == NULL) {
 			output_token->length = 0 ;
-			GSSerr(GSSERR_F_GS_HANDSHAKE,ERR_R_MALLOC_FAILURE);
+			GSSerr(GSSERR_F_GS_HANDSHAKE, GSSERR_R_OUT_OF_MEMORY);
 			return GSS_S_FAILURE;
 		}
 		BIO_read(context_handle->gs_wbio,
@@ -446,15 +445,13 @@ Returns:
 
 OM_uint32    
 gs_read 
-(OM_uint32 *                    minor_status,
- const gss_ctx_id_desc*         context_handle,
+(const gss_ctx_id_desc*         context_handle,
  void *data,
  int length)
 {
 	OM_uint32 major_status = 0;
 	int rc;
 
-	*minor_status = 0;
 	/*
 	 * do the BIO_do_handshake which may produce output,
 	 * and endup waiting for input
@@ -467,7 +464,6 @@ gs_read
 
 			/* problem! */
 			GSSerr(GSSERR_F_READ,GSSERR_R_READ_BIO);
-                	*minor_status = GSSERR_R_READ_BIO;
 			major_status = GSS_S_DEFECTIVE_CREDENTIAL ;
 		}
 	}
@@ -499,13 +495,11 @@ Returns:
 
 OM_uint32    
 gs_write 
-(OM_uint32 *                    minor_status,
- const gss_ctx_id_desc*         context_handle)
+(const gss_ctx_id_desc*         context_handle)
 {
 	OM_uint32 major_status = 0;
 	int rc;
 
-	*minor_status = 0;
 	/*
 	 * do the BIO_do_handshake which may produce output,
 	 * and endup waiting for input
@@ -517,7 +511,6 @@ gs_write
 			!BIO_should_read(context_handle->gs_sslbio)) {
 			/* problem! */
 			GSSerr(GSSERR_F_WRITE,GSSERR_R_WRITE_BIO);
-                	*minor_status = GSSERR_R_WRITE_BIO;
 			major_status = GSS_S_DEFECTIVE_CREDENTIAL ;
 		}
 	}
@@ -552,13 +545,11 @@ Returns:
 
 OM_uint32    
 gs_handshake 
-(OM_uint32 *                    minor_status,
- gss_ctx_id_desc*               context_handle)
+(gss_ctx_id_desc*               context_handle)
 {
 	OM_uint32 major_status = 0;
 	int rc;
 
-	*minor_status = 0;
 	/*
 	 * do the BIO_do_handshake which may produce output,
 	 * and endup waiting for input
@@ -596,9 +587,6 @@ gs_handshake
                 GSSerr(GSSERR_F_GS_HANDSHAKE,GSSERR_R_HANDSHAKE);
             }
 
-            *minor_status = convert_minor_codes(ERR_GET_LIB(ERR_peek_error()),
-                               ERR_GET_REASON(ERR_peek_error()));
-            
 			major_status = GSS_S_DEFECTIVE_CREDENTIAL;
 		}
 	}
@@ -667,15 +655,13 @@ Returns:
 
 OM_uint32
 gs_retrieve_peer
-(OM_uint32 *                    minor_status,
- gss_ctx_id_desc *              context_handle,
+(gss_ctx_id_desc *              context_handle,
  const gss_cred_usage_t         cred_usage) 
 {
 	gss_name_desc * outname;
 	X509 * peer = NULL;
 	X509_NAME * subject;
 
-	*minor_status = 0;
 	if (context_handle->gs_ssl->session) {
 		peer = context_handle->gs_ssl->session->peer;
 	}
@@ -701,7 +687,7 @@ gs_retrieve_peer
 
 	outname = ( gss_name_desc *)malloc(sizeof(gss_name_desc));
 	if (outname == NULL) {
-		GSSerr(GSSERR_F_GS_RETRIVE_PEER,ERR_R_MALLOC_FAILURE);
+		GSSerr(GSSERR_F_GS_RETRIVE_PEER, GSSERR_R_OUT_OF_MEMORY);
 		return GSS_S_FAILURE;
 	}
 	outname->name_oid =  GSS_C_NO_OID;
@@ -738,7 +724,6 @@ Returns:
 
 OM_uint32 
 gss_create_and_fill_cred(
-    OM_uint32 *                         minor_status,
     gss_cred_id_t *                     output_cred_handle_P,
     const gss_cred_usage_t              cred_usage,
     X509 *                              ucert,
@@ -756,12 +741,11 @@ gss_create_and_fill_cred(
 #ifdef DEBUG
     fprintf(stderr,"gss_create_and_fill_cred\n");
 #endif
-    *minor_status = 0;
 
     newcred = (gss_cred_id_desc*) malloc(sizeof(gss_cred_id_desc)) ;
 
     if (newcred == NULL) {
-        GSSerr(GSSERR_F_ACQUIRE_CRED,ERR_R_MALLOC_FAILURE);
+        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         return GSS_S_FAILURE ;
     }
 
@@ -770,7 +754,7 @@ gss_create_and_fill_cred(
     newcred->gs_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
     
     if (!(newcred->pcd = proxy_cred_desc_new())) {
-        GSSerr(GSSERR_F_ACQUIRE_CRED,ERR_R_MALLOC_FAILURE);
+        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         return GSS_S_FAILURE ;
     }
 
@@ -819,9 +803,6 @@ gss_create_and_fill_cred(
         {
             major_status = GSS_S_NO_CRED;
         }
-
-        *minor_status = convert_minor_codes(ERR_GET_LIB(ERR_peek_error()),
-            ERR_GET_REASON(ERR_peek_error()));
  
         goto err;
     }
@@ -912,7 +893,7 @@ gss_create_and_fill_cred(
     newcred->globusid = (gss_name_desc*) malloc(sizeof(gss_name_desc)) ;
     if (newcred->globusid == NULL)
     {
-        GSSerr(GSSERR_F_ACQUIRE_CRED,ERR_R_MALLOC_FAILURE);
+        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         goto err;
     }
     newcred->globusid->name_oid = GSS_C_NO_OID;
