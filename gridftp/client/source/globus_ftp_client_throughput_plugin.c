@@ -2,24 +2,44 @@
 #include "globus_ftp_client_perf_plugin.h"
 #include <time.h>
 
-#define GLOBUS_L_FTP_CLIENT_THROUGHPUT_PLUGIN_NAME "throughput_plugin"
+#define GLOBUS_L_FTP_CLIENT_THROUGHPUT_PLUGIN_NAME "globus_ftp_client_throughput_plugin"
 
-/* the following determines the multiple of time between a stripe's
- * markers that will be allowed to pass before NOT including the stripe
- * in total throughput calculations (it will be assumed the stripe has
- * stalled after (cur_time - prev_time) * interval_multiple seconds have
- * passed since cur_time)
- */
-#define MAX_STRIPE_REPORTING_INTERVAL_MULTIPLE 3
+static globus_bool_t globus_l_ftp_client_throughput_plugin_activate(void);
+static globus_bool_t globus_l_ftp_client_throughput_plugin_deactivate(void);
+
+globus_module_descriptor_t globus_i_ftp_client_throughput_plugin_module =
+{
+    GLOBUS_L_FTP_CLIENT_THROUGHPUT_PLUGIN_NAME,
+    globus_l_ftp_client_throughput_plugin_activate,
+    globus_l_ftp_client_throughput_plugin_deactivate,
+    GLOBUS_NULL
+};
+
+static
+int
+globus_l_ftp_client_throughput_plugin_activate(void)
+{
+    int rc;
+
+    rc = globus_module_activate(GLOBUS_FTP_CLIENT_PERF_PLUGIN_MODULE);
+    return rc;
+}
+
+static
+int
+globus_l_ftp_client_throughput_plugin_deactivate(void)
+{
+    return globus_module_deactivate(GLOBUS_FTP_CLIENT_PERF_PLUGIN_MODULE);
+}
 
 typedef struct throughput_plugin_info_s
 {
-    globus_ftp_client_throughput_plugin_begin_callback_t    begin_cb;
-    globus_ftp_client_throughput_plugin_stripe_callback_t   per_stripe_cb;
-    globus_ftp_client_throughput_plugin_total_callback_t    total_cb;
-    globus_ftp_client_throughput_plugin_complete_callback_t complete_cb;
+    globus_ftp_client_throughput_plugin_begin_cb_t      begin_cb;
+    globus_ftp_client_throughput_plugin_stripe_cb_t     per_stripe_cb;
+    globus_ftp_client_throughput_plugin_total_cb_t      total_cb;
+    globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb;
 
-    void *                                                  user_arg;
+    void *                                              user_arg;
 
     time_t *                                    prev_times;
     time_t *                                    cur_times;
@@ -49,12 +69,12 @@ throughput_plugin_begin_cb(
 
     info = (throughput_plugin_info_t *) user_specific;
 
-    info->start_time = time(NULL);
-
     if(info->begin_cb)
     {
         info->begin_cb(handle, info->user_arg);
     }
+
+    info->start_time = time(NULL);
 }
 
 /**
@@ -79,6 +99,7 @@ throughput_plugin_marker_cb(
     int                                         i;
     float                                       instantaneous_throughput;
     float                                       avg_throughput;
+    time_t                                      total_elapsed;
 
     info = (throughput_plugin_info_t *) user_specific;
 
@@ -173,37 +194,24 @@ throughput_plugin_marker_cb(
     {
         instantaneous_throughput = 0;
         avg_throughput = 0;
+        nbytes = 0;
         i = info->num_stripes;
         while(i--)
         {
-            /*
-             * XXX really shouldnt try and interpret what it means
-             * to have not received a marker in some time
-            time_t                                      max_wait;
+            nbytes += info->cur_bytes[i];
 
-            max_wait = ((info->cur_times[i] - info->prev_times[i]) *
-                MAX_STRIPE_REPORTING_INTERVAL_MULTIPLE) + info->cur_times[i];
-
-            if(time_stamp <= max_wait)
-            {
-                instantaneous_throughput += (float)
-                    (info->cur_bytes[i] - info->prev_bytes[i]) /
-                    (info->cur_times[i] - info->prev_times[i]);
-            }
-             */
-
-            /*
-             * XXX should just do this:
-             */
             instantaneous_throughput += (float)
                 (info->cur_bytes[i] - info->prev_bytes[i]) /
                 (info->cur_times[i] - info->prev_times[i]);
 
-            avg_throughput += (float)
-                info->cur_bytes[i] /
-                (info->cur_times[i] - info->start_time);
-        }
+            total_elapsed = info->cur_times[i] - info->start_time;
 
+            if(total_elapsed)
+            {
+                avg_throughput += (float)
+                    info->cur_bytes[i] / total_elapsed;
+            }
+        }
 
         info->total_cb(
             handle,
@@ -232,6 +240,11 @@ throughput_plugin_complete_cb(
 
     info = (throughput_plugin_info_t *) user_specific;
 
+    if(info->complete_cb)
+    {
+        info->complete_cb(handle, info->user_arg);
+    }
+
     if(info->prev_times)
     {
         globus_free(info->prev_times);
@@ -243,11 +256,6 @@ throughput_plugin_complete_cb(
         info->cur_times             = GLOBUS_NULL;
         info->prev_bytes            = GLOBUS_NULL;
         info->cur_bytes             = GLOBUS_NULL;
-    }
-
-    if(info->complete_cb)
-    {
-        info->complete_cb(handle, info->user_arg);
     }
 }
 
@@ -358,12 +366,12 @@ throughput_plugin_user_destroy_cb(
 
 globus_result_t
 globus_ftp_client_throughput_plugin_init(
-    globus_ftp_client_plugin_t *                            plugin,
-    globus_ftp_client_throughput_plugin_begin_callback_t    begin_cb,
-    globus_ftp_client_throughput_plugin_stripe_callback_t   per_stripe_cb,
-    globus_ftp_client_throughput_plugin_total_callback_t    total_cb,
-    globus_ftp_client_throughput_plugin_complete_callback_t complete_cb,
-    void *                                                  user_arg)
+    globus_ftp_client_plugin_t *                        plugin,
+    globus_ftp_client_throughput_plugin_begin_cb_t      begin_cb,
+    globus_ftp_client_throughput_plugin_stripe_cb_t     per_stripe_cb,
+    globus_ftp_client_throughput_plugin_total_cb_t      total_cb,
+    globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb,
+    void *                                              user_arg)
 {
     throughput_plugin_info_t *                  info;
     globus_result_t                             result;

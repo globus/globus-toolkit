@@ -16,6 +16,13 @@
 
 EXTERN_C_BEGIN
 
+/** Module descriptor
+ */
+#define GLOBUS_FTP_CLIENT_THROUGHPUT_PLUGIN_MODULE (&globus_i_ftp_client_throughput_plugin_module)
+
+extern
+globus_module_descriptor_t globus_i_ftp_client_throughput_plugin_module;
+
 /**
  * Transfer begin callback
  *
@@ -31,16 +38,15 @@ EXTERN_C_BEGIN
  *        - n/a
  */
 
-typedef void (*globus_ftp_client_throughput_plugin_begin_callback_t)(
+typedef void (*globus_ftp_client_throughput_plugin_begin_cb_t)(
     globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg);
 
 /**
  * Stripe performace throughput callback
  *
- * This callback will be called for every performance marker that is
- * received by the client (or in the case of a simple globus_ftp_client_get,
- * for every data block that is received). The first
+ * This callback will be called with every performance callback that is
+ * received by the perf plugin. The first
  * callback for each stripe_ndx will have an instantaneous_throughput
  * based from the time the command was sent.
  *
@@ -64,7 +70,7 @@ typedef void (*globus_ftp_client_throughput_plugin_begin_callback_t)(
  *
  */
 
-typedef void (*globus_ftp_client_throughput_plugin_stripe_callback_t)(
+typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
     globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
     int                                             stripe_ndx,
@@ -75,9 +81,8 @@ typedef void (*globus_ftp_client_throughput_plugin_stripe_callback_t)(
 /**
  * Total performace throughput callback
  *
- * This callback will be called with every performance marker that is
- * received by the client (or in the case of a simple
- * globus_ftp_client_get, for every data block that is received). The first
+ * This callback will be called with every performance callback that is
+ * received by the perf plugin. The first
  * callback for will have an instantaneous_throughput based from the time
  * the command was sent.  This callback will be called after the per_stripe_cb
  *
@@ -98,7 +103,7 @@ typedef void (*globus_ftp_client_throughput_plugin_stripe_callback_t)(
  *
  */
 
-typedef void (*globus_ftp_client_throughput_plugin_total_callback_t)(
+typedef void (*globus_ftp_client_throughput_plugin_total_cb_t)(
     globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
     globus_size_t                                   bytes,
@@ -121,18 +126,18 @@ typedef void (*globus_ftp_client_throughput_plugin_total_callback_t)(
  *        - n/a
  */
 
-typedef void (*globus_ftp_client_throughput_plugin_complete_callback_t)(
+typedef void (*globus_ftp_client_throughput_plugin_complete_cb_t)(
     globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg);
 
 globus_result_t
 globus_ftp_client_throughput_plugin_init(
-    globus_ftp_client_plugin_t *                            plugin,
-    globus_ftp_client_throughput_plugin_begin_callback_t    begin_cb,
-    globus_ftp_client_throughput_plugin_stripe_callback_t   per_stripe_cb,
-    globus_ftp_client_throughput_plugin_total_callback_t    total_cb,
-    globus_ftp_client_throughput_plugin_complete_callback_t complete_cb,
-    void *                                                  user_arg);
+    globus_ftp_client_plugin_t *                        plugin,
+    globus_ftp_client_throughput_plugin_begin_cb_t      begin_cb,
+    globus_ftp_client_throughput_plugin_stripe_cb_t     per_stripe_cb,
+    globus_ftp_client_throughput_plugin_total_cb_t      total_cb,
+    globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb,
+    void *                                              user_arg);
 
 globus_result_t
 globus_ftp_client_throughput_plugin_destroy(

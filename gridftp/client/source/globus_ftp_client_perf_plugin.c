@@ -1,9 +1,38 @@
 #include "globus_ftp_client_perf_plugin.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include <string.h>
 
-#define GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME "perf_plugin"
+#define GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME "globus_ftp_client_perf_plugin"
+
+static globus_bool_t globus_l_ftp_client_perf_plugin_activate(void);
+static globus_bool_t globus_l_ftp_client_perf_plugin_deactivate(void);
+
+globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module =
+{
+    GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME,
+    globus_l_ftp_client_perf_plugin_activate,
+    globus_l_ftp_client_perf_plugin_deactivate,
+    GLOBUS_NULL
+};
+
+static
+int
+globus_l_ftp_client_perf_plugin_activate(void)
+{
+    int rc;
+
+    rc = globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
+    return rc;
+}
+
+static
+int
+globus_l_ftp_client_perf_plugin_deactivate(void)
+{
+    return globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE);
+}
 
 typedef struct perf_plugin_info_s
 {
@@ -14,8 +43,9 @@ typedef struct perf_plugin_info_s
     globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb;
     globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb;
 
-    /* used for get command only */
-    globus_bool_t                                   get_command;
+    /* used for get command or put (when put not in EB mode) only */
+    globus_bool_t                                   use_data;
+    time_t                                          last_time;
     globus_size_t                                   nbytes;
     globus_mutex_t                                  lock;
 
@@ -83,48 +113,52 @@ perf_plugin_response_cb(
         buffer = (char *) ftp_response->response_buffer;
 
         /* parse out time stamp */
-        tmp_ptr = strstr(buffer, "Timestamp: ");
+        tmp_ptr = strstr(buffer, "Timestamp:");
         if(tmp_ptr == NULL)
         {
             return;
         }
-        count = scanf(tmp_ptr, "%ld", &time_stamp);
+        count = sscanf(tmp_ptr + sizeof("Timestamp:"),
+            " %ld ", &time_stamp);
         if(count != 1)
         {
             return;
         }
 
         /* parse out Stripe Index */
-        tmp_ptr = strstr(buffer, "Stripe Index: ");
+        tmp_ptr = strstr(buffer, "Stripe Index:");
         if(tmp_ptr == NULL)
         {
             return;
         }
-        count = scanf(tmp_ptr, "%d", &stripe_ndx);
+        count = sscanf(tmp_ptr + sizeof("Stripe Index:"),
+            " %d ", &stripe_ndx);
         if(count != 1)
         {
             return;
         }
 
         /* parse out total stripe count */
-        tmp_ptr = strstr(buffer, "Total Stripe Count: ");
+        tmp_ptr = strstr(buffer, "Total Stripe Count:");
         if(tmp_ptr == NULL)
         {
             return;
         }
-        count = scanf(tmp_ptr, "%d", &num_stripes);
+        count = sscanf(tmp_ptr + sizeof("Total Stripe Count:"),
+            " %d ", &num_stripes);
         if(count != 1)
         {
             return;
         }
 
         /* parse out bytes transfered */
-        tmp_ptr = strstr(buffer, "Stripe Bytes Transfererred: ");
+        tmp_ptr = strstr(buffer, "Stripe Bytes Transferred:");
         if(tmp_ptr == NULL)
         {
             return;
         }
-        count = scanf(tmp_ptr, "%ld", &nbytes);
+        count = sscanf(tmp_ptr + sizeof("Stripe Bytes Transferred:"),
+            " %d ", &nbytes);
         if(count != 1)
         {
             return;
@@ -165,7 +199,7 @@ perf_plugin_data_cb(
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    if(ps->get_command && !error)
+    if(ps->use_data && !error)
     {
         time_now = time(NULL);
 
@@ -173,8 +207,10 @@ perf_plugin_data_cb(
 
         ps->nbytes += length;
 
-        if(ps->marker_cb)
+        if(ps->marker_cb && time_now > ps->last_time)
         {
+            ps->last_time = time_now;
+
             ps->marker_cb(
                 handle,
                 ps->user_specific,
@@ -209,8 +245,9 @@ perf_plugin_get_cb(
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    ps->get_command = GLOBUS_TRUE;
+    ps->use_data = GLOBUS_TRUE;
     ps->nbytes = 0;
+    ps->last_time = 0;
 
     if(ps->begin_cb)
     {
@@ -239,11 +276,23 @@ perf_plugin_put_cb(
     globus_bool_t                               restart)
 {
     perf_plugin_info_t *                        ps;
+    globus_ftp_control_mode_t                   mode;
+    globus_result_t                             result;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    ps->get_command = GLOBUS_FALSE;
-    ps->nbytes = 0;
+    result = globus_ftp_client_operationattr_get_mode(attr, &mode);
+    if(result == GLOBUS_SUCCESS &&
+        mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+    {
+        ps->use_data = GLOBUS_FALSE;
+    }
+    else
+    {
+        ps->use_data = GLOBUS_TRUE;
+        ps->nbytes = 0;
+        ps->last_time = 0;
+    }
 
     if(ps->begin_cb)
     {
@@ -277,8 +326,7 @@ perf_plugin_transfer_cb(
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    ps->get_command = GLOBUS_FALSE;
-    ps->nbytes = 0;
+    ps->use_data = GLOBUS_FALSE;
 
     if(ps->begin_cb)
     {
