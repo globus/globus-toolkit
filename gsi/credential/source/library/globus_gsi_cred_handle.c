@@ -214,6 +214,7 @@ globus_result_t globus_gsi_cred_handle_copy(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* @} */
         
 globus_result_t globus_gsi_cred_get_handle_attrs(
     globus_gsi_cred_handle_t            handle,
@@ -259,7 +260,6 @@ globus_result_t globus_gsi_cred_get_handle_attrs(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 globus_result_t globus_gsi_cred_get_goodtill(
     globus_gsi_cred_handle_t            cred_handle,
