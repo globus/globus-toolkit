@@ -77,8 +77,8 @@ globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int));
 static
 void
 globus_l_gass_copy_performance_cb(
-    void *                                          user_arg,
     globus_gass_copy_handle_t *                     handle,
+    void *                                          user_arg,
     globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
@@ -222,15 +222,8 @@ static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
 static globus_bool_t verbose_flag = GLOBUS_FALSE;
 
 /*
- *  net logger handle
- */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-
-#include "NetLogger.h"
-
-static NLhandle   *                    g_globus_nl_handle;
-#endif
-
+#define GLOBUS_BUILD_WITH_NETLOGGER 1
+*/
 /******************************************************************************
 Function: main()
 Description:
@@ -415,11 +408,9 @@ main(int argc, char **argv)
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     sprintf(buffer, "%d", getpid());
     globus_libc_gethostname(my_hostname, MAXHOSTNAMELEN);
-    g_globus_nl_handle = NetLoggerOpen(argv[0], NULL, NL_ENV);
 
     globus_netlogger_handle_init(
         &gnl_handle,
-        g_globus_nl_handle,
         my_hostname,
         "globus-url-copy",
         buffer);
@@ -919,8 +910,8 @@ Returns:
 static
 void
 globus_l_gass_copy_performance_cb(
-    void *                                          user_arg,
     globus_gass_copy_handle_t *                     handle,
+    void *                                          user_arg,
     globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput)
