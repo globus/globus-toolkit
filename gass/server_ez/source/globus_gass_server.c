@@ -32,9 +32,15 @@ static globus_bool_t done = GLOBUS_FALSE;
 			       GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE |\
 			       GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE)
 
+globus_mutex_t mutex;
+globus_cond_t cond;
+
 void client_shutdown_callback()
 {
+    globus_mutex_lock(&mutex);
     done = GLOBUS_TRUE;
+    globus_cond_signal(&cond);
+    globus_mutex_unlock(&mutex);
 }
 
 int main(int argc, char **argv)
@@ -42,8 +48,6 @@ int main(int argc, char **argv)
     unsigned short port = 0U;
     char *url;
     globus_bool_t silent=GLOBUS_FALSE;
-    globus_mutex_t mutex;
-    globus_cond_t cond;
     unsigned long default_options=GASSD_DEFAULT_OPTIONS;
     unsigned long options=0UL;
     signed char c;
