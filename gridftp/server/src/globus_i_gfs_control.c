@@ -786,6 +786,32 @@ error:
     return;
 }
 
+static
+int
+globus_l_gfs_get_event_mask(
+    int                                 in_event_mask)
+{
+    int                                 out_event_mask = 0;
+    
+    if(in_event_mask & GLOBUS_GFS_EVENT_BYTES_RECVD)
+    {
+        out_event_mask |= GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF;
+    }
+    if(in_event_mask & GLOBUS_GFS_EVENT_RANGES_RECVD)
+    {
+        out_event_mask |= GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART;
+    }
+    if(in_event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT)
+    {
+        out_event_mask |= GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT;
+    }
+    if(in_event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+    {
+        out_event_mask |= 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_TRANSFER_COMPLETE;
+    }
+    return out_event_mask;
+}
 
 static
 void
@@ -796,6 +822,7 @@ globus_l_gfs_data_event_cb(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_gridftp_server_control_op_t  op;
     globus_l_gfs_request_info_t *       request;
+    int                                 event_mask;
     GlobusGFSName(globus_l_gfs_data_event_cb);
 
     request = (globus_l_gfs_request_info_t *) user_arg;
@@ -806,11 +833,10 @@ globus_l_gfs_data_event_cb(
             request->event_arg = reply->event_arg;
             
             request->transfer_events = GLOBUS_TRUE;
+            event_mask = globus_l_gfs_get_event_mask(reply->event_mask);
             result = globus_gridftp_server_control_events_enable(
                 op,
-                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF |
-                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART |
-                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT,
+                event_mask,
                 globus_l_gfs_request_transfer_event,
                 request);
             if(result != GLOBUS_SUCCESS)

@@ -3,15 +3,14 @@ This is the current list of things outstanding for the 4.0 release.
 XX denotes unlikely that this will be in 4.0
 
 auth:
-XX authz instrumentation
+** authz instrumentation (frontend only)
 
 protocol:
 -- correct FEAT response?
 -- reply codes - verify.
--- disable perf markers in mode S (if we must)
 -- verify that dsi api is correct wrt to errors
 -- error out usefully to server and client when cred problem in gssapi driver
--- add blocksize and stripeblocksize via client (disableable)
+** add stripe options via opts retr (disableable?)
 
 signal handling:
 -- SIGINT needs to handle data-node shutdown
@@ -29,7 +28,7 @@ logging:
 -- verify output format
 -- specify log format by configuration
 -- syslog module for globus_logging
--- produce netlogger output based on perf marker info ( -Z option in wu )
+** produce netlogger output based on perf marker info ( -Z option in wu )
 
 general:
 -- instrument any remaining configuration options and limits
@@ -41,6 +40,18 @@ threads:
 cleanup:
 -- verify test suite
 -- clean majority of memory leaks
+
+**Usability issues:
+DOC DOC DOC
+only load one config file, first found
+be chatty while parsing config
+change option names to better group together common options
+syslog module
+ipc security options - doc well, make sure it works the way we expect
+    access lists for front/backend connections? 
+network write blocksize
+need some spec compliant support for partitioned layout
+    current stripeblocksize impl is basically spec compliant RR
 
 -----------------------------------------------------------------------
 known bugs:

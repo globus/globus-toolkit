@@ -606,6 +606,7 @@ globus_l_gfs_data_authorize(
                 res = GlobusGFSErrorParameter("group ent");
                 goto pwent_error;
             }
+            gid = grent->gr_gid;
         }
         /* if not root, jsut run as is */
         else
@@ -2703,42 +2704,45 @@ globus_l_gfs_data_end_read_kickout(
     globus_result_t                     result;
     globus_bool_t                       end = GLOBUS_FALSE;
     globus_l_gfs_data_operation_t *     op;
-    globus_gfs_ipc_event_reply_t        event_reply;
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
-    memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
-    event_reply.id = op->id;
-    event_reply.recvd_bytes = op->recvd_bytes;
-    event_reply.recvd_ranges = op->recvd_ranges;
-    event_reply.node_ndx = op->node_ndx;
+    if(op->data_handle->info.mode == 'E')
+    {
+        globus_gfs_ipc_event_reply_t        event_reply;
+        memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
+        event_reply.id = op->id;
+        event_reply.recvd_bytes = op->recvd_bytes;
+        event_reply.recvd_ranges = op->recvd_ranges;
+        event_reply.node_ndx = op->node_ndx;
+        
+        event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
+        if(op->event_callback != NULL)
+        {
+            op->event_callback(
+                &event_reply,
+                op->user_arg);
+        }
+        else
+        {
+            globus_gfs_ipc_reply_event(
+                op->ipc_handle,
+                &event_reply);
+        }
     
-    event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
-    if(op->event_callback != NULL)
-    {
-        op->event_callback(
-            &event_reply,
-            op->user_arg);
-    }
-    else
-    {
-        globus_gfs_ipc_reply_event(
-            op->ipc_handle,
-            &event_reply);
-    }
-
-    event_reply.type = GLOBUS_GFS_EVENT_RANGES_RECVD;
-    if(op->event_callback != NULL)
-    {
-        op->event_callback(
-            &event_reply,
-            op->user_arg);
-    }
-    else
-    {
-        globus_gfs_ipc_reply_event(
-            op->ipc_handle,
-            &event_reply);
+        event_reply.type = GLOBUS_GFS_EVENT_RANGES_RECVD;
+        if(op->event_callback != NULL)
+        {
+            op->event_callback(
+                &event_reply,
+                op->user_arg);
+        }
+        else
+        {
+            globus_gfs_ipc_reply_event(
+                op->ipc_handle,
+                &event_reply);
+        }
     }
     
     globus_mutex_lock(&op->session_handle->mutex);
@@ -3767,6 +3771,12 @@ globus_gridftp_server_begin_transfer(
     memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
     event_reply.type = GLOBUS_GFS_EVENT_TRANSFER_BEGIN;
     event_reply.id = op->id;
+    event_reply.event_mask = 
+        GLOBUS_GFS_EVENT_TRANSFER_ABORT |
+        GLOBUS_GFS_EVENT_TRANSFER_COMPLETE |
+        ((op->data_handle->info.mode == 'E') ? 
+        GLOBUS_GFS_EVENT_BYTES_RECVD | GLOBUS_GFS_EVENT_RANGES_RECVD : 0);
+
     event_reply.event_arg = (void *) globus_handle_table_insert(
         &op->session_handle->handle_table, op, 1);
     if(op->event_callback != NULL)
