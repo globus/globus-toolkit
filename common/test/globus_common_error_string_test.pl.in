@@ -2,9 +2,9 @@
 
 =pod
 
-=head1 Tests for the globus argument parsing code
+=head1 Tests for the globus common string error object code
 
-Tests to exercise the argument parsing functionality of the globus
+Tests to exercise the string error object functionality of the globus
 common library.
 
 =cut
@@ -13,7 +13,7 @@ use strict;
 use POSIX;
 use Test;
 
-my $test_prog = 'globus_args_test';
+my $test_prog = 'globus_common_error_string_test';
 
 my $diff = 'diff'
 
@@ -47,7 +47,36 @@ sub basic_func
    {
       $errors .= "Test produced unexpected output, see $test_prog.log.stderr";
    }
+   if($errors eq "")
+   {
+      if( -e "$test_prog.log.stdout" )
+      {
+	 unlink("$test_prog.log.stdout");
+      }
+      
+      if( -e "$test_prog.log.stderr" )
+      {
+	 unlink("$test_prog.log.stderr");
+      } 
+   }
 }
+
+sub sig_handler
+{
+   if( -e "$test_prog.log.stdout" )
+   {
+      unlink("$test_prog.log.stdout");
+   }
+
+   if( -e "$test_prog.log.stderr" )
+   {
+      unlink("$test_prog.log.stderr");
+   }
+}
+
+$SIG{'INT'}  = 'sig_handler';
+$SIG{'QUIT'} = 'sig_handler';
+$SIG{'KILL'} = 'sig_handler';
 
 
 push(@tests, "basic_func();");
