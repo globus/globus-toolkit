@@ -1,0 +1,31 @@
+Input date: Sun May 01 20:27:01 1994
+ struct tm: Sun May  1 20:27:01 1994
+Input date: SunMay0120:27:011994
+ struct tm: Sun May  1 20:27:01 1994
+Input date: SunMay0120:27:011994
+ struct tm: Sun May  1 20:27:01 1994
+Input date: Sun May 01 20:27:01 1994
+ struct tm: Sun May  1 20:27:01 1994
+Input date: Sun May 01 20:27:01 19 94
+ struct tm: Sun May  1 20:27:01 1994
+Input date: Sun 5/01/94 20:27:01
+ struct tm: Sun May  1 20:27:01 1994
+Input date: Sun May 01 9:27:01 a.m. 1994
+ struct tm: Sun May  1 09:27:01 1994
+Input date: Sun May 01 9:27:01 p.m. 1994
+ struct tm: Sun May  1 21:27:01 1994
+Input date: Sun May 01 9:27:01 1994
+ struct tm: Sun May  1 09:27:01 1994
+Input date: Sun May 01 20:27 1994
+ struct tm: Sun May  1 20:27:00 1994
+Input date: Sun May 01 21:27:01 1994
+ struct tm: Sun May  1 21:27:01 1994
+Input date: Sun May 01 20:27:01  94
+ struct tm: Sun May  1 20:27:01 1994
+Input date: Sun May 01 20:27:01  2
+ struct tm: Sun May  1 20:27:01 2002
+Input date: 20:27
+ struct tm: Sun Jan  0 20:27:00 1900
+Input date: Sun May 01 02
+ struct tm: Sun May  1 00:00:00 2002
+strptime test succeeded!
