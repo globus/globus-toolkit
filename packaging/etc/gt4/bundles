@@ -24,6 +24,7 @@ BUNDLE gt4-c-ws-core
         globus_xio_buffer
 
 BUNDLE gt4-mds
+        globus_wsrf_mds_aggregator
         globus_wsrf_mds_index
         globus_wsrf_mds_ganglia
         globus_wsrf_servicegroup
