@@ -1,4 +1,11 @@
 AC_DEFUN(GLOBUS_INIT, [
+
+GPT_INIT
+
+if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
+        GLOBUS_FLAVOR_NAME="noflavor"
+fi
+
 AC_ARG_WITH(flavor,
 	[ --with-flavor=<FL>     Specify the globus build flavor or without-flavor for a flavor independent  ],
 
@@ -18,8 +25,10 @@ AC_ARG_WITH(flavor,
 	],
 
 	[ 
-	echo "Please specify a globus build flavor" >&2
-	exit 1
+        if test "x$GLOBUS_FLAVOR_NAME" = "x"; then
+	        echo "Please specify a globus build flavor" >&2
+	        exit 1
+        fi
 	]
 )
 
@@ -106,8 +115,6 @@ AC_SUBST(cross_compiling)
 AC_SUBST(OBJEXT)
 AC_SUBST(EXEEXT)
 
-GPT_INIT
-
 
 define([AM_PROG_LIBTOOL],[
 	LIBTOOL='$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)'
@@ -120,6 +127,7 @@ FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
 AC_SUBST(FILELIST_FILE)
 
+dnl END OF GLOBUS_INIT
 ])
 
 
