@@ -3,6 +3,10 @@ AC_DEFUN(CHECK_HEADERS, [
 dnl
 dnl System header files
 dnl
+AC_CHECK_HEADERS(pwd.h)
+AC_CHECK_HEADERS(io.h)
+AC_CHECK_HEADERS(netinet/in.h)
+AC_CHECK_HEADERS(sys/socket.h)
 AC_CHECK_HEADERS(libc.h)
 AC_CHECK_HEADERS(malloc.h)
 AC_CHECK_HEADERS(unistd.h)
