@@ -139,14 +139,14 @@ globus_gram_job_manager_validation_init(
     tmp = globus_libc_realloc(
 	    validation_dir,
 	    strlen(validation_dir) +
-	    strlen("/share/globus-gram-job-manager-rsl-validation/") + 1);
+	    strlen("/share/globus_gram_job_manager/") + 1);
     if(tmp == NULL)
     {
 	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 	goto realloc_validation_dir_failed;
     }
     validation_dir = tmp;
-    strcat(validation_dir, "/share/globus-gram-job-manager-rsl-validation/"); 
+    strcat(validation_dir, "/share/globus_gram_job_manager/"); 
 
     validation_filename = globus_libc_malloc(
 	    strlen(validation_dir) +

@@ -4,7 +4,7 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= pkgdata doxygen scripts
 
 # Extra directories we install files into
-validationdir = $(datadir)/globus-gram-job-manager-rsl-validation
+validationdir = $(datadir)/$(PACKAGE)
 
 # Where targets are installed
 noinst_LTLIBRARIES = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la

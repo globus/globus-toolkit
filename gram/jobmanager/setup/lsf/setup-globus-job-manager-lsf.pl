@@ -63,7 +63,7 @@ if($? != 0)
 if($validate_queues)
 {
     open(VALIDATION_FILE,
-	 ">$ENV{GLOBUS_LOCATION}/share/globus-gram-job-manager-rsl-validation/lsf.rvf");    
+	 ">$ENV{GLOBUS_LOCATION}/share/globus_gram_job_manager/lsf.rvf");    
 
     # Customize validation file with queue info
     open(BQUEUES, "bqueues -w |");

@@ -87,7 +87,7 @@ if($? != 0)
     exit 3;
 }
 
-open(VALIDATION_FILE, ">$ENV{GLOBUS_LOCATION}/share/globus-gram-job-manager-rsl-validation/pbs.rvf");    
+open(VALIDATION_FILE, ">$ENV{GLOBUS_LOCATION}/share/globus_gram_job_manager/pbs.rvf");    
 
 print VALIDATION_FILE <<EOF;
 Attribute: email_address
