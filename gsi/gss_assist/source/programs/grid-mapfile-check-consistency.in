@@ -58,6 +58,9 @@ while [ -n "$1" ]; do
         -f | -mapfile )
 	    opt=$1
 	    shift
+            if test $# -lt 1 ; then
+                globus_args_option_error "$opt" "${opt} requires a argument"
+            fi
 	    GRID_MAP_FILE=$1
 	    shift
 	    ;;
@@ -69,6 +72,49 @@ while [ -n "$1" ]; do
 
 done
 
+# check_perms
+# $1 is a filename
+# $2 is a binary representation of the permissions to be checked
+#    ie ----rwxrwx ==> 0000111111
+# returns true if none of the bits in $2 are set in $1's access mode
+check_perms() {
+
+    _file=$1
+    _mask=$2
+
+    _result=`(echo $_mask ; ${GLOBUS_SH_LS-ls} -l $_file ) | ${GLOBUS_SH_AWK-awk} '
+    BEGIN {
+        first=1;
+        mask=0;
+    }
+    {
+        if(first == 1) {
+            mask=$1;
+            first=0;
+            next;
+        }
+        mode=substr($1, 1, 10);
+        for(i = 1; i <= 10; i++) {
+           if(substr(mode, i, 1) == "-") {
+              newmode[i] = newmode[i] 0;
+           } else
+           {
+              newmode[i] = newmode[i] 1;
+           }
+        }
+        for(i = 1; i <= 10; i++) {
+            maskbit=int(substr(mask, i, 1));
+            if((maskbit == 1) && (newmode[i] == 1)) {
+                print 0;
+                exit;
+            }
+        }
+        print 1;
+    }'`
+
+    return $_result;
+}
+
 
 #DONE - 1. Legal login names
 #2. comma seprated login name list
@@ -78,7 +124,7 @@ done
 #DONE - 6. Check for minimum of C=, O=, and CN= fields
 
 
-    # Verify mapfile existance
+# Verify mapfile existance
 
 if [ ! -f $GRID_MAP_FILE ] ; then 
     globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" does not exist"
@@ -90,14 +136,19 @@ if [ ! -r $GRID_MAP_FILE ] ; then
     exit 1
 fi
 
-if [ ! -w $GRID_MAP_FILE ] ; then
+if [ -O ${GRID_MAP_FILE} -a ! -w $GRID_MAP_FILE ] ; then
     globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
+    exit 1
+fi
+
+if check_perms ${GRID_MAP_FILE} "0000010010" ; then
+    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is world writeable."
     exit 1
 fi
 
 RC=0
 
-    # Check for duplicate entries
+# Check for duplicate entries
 
 duplicates=`${GLOBUS_SH_CAT-cat} $GRID_MAP_FILE | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} -d`
 if [ -n "$duplicates" ] ; then
@@ -107,10 +158,17 @@ if [ -n "$duplicates" ] ; then
 fi
 
 
-    # Read Grid Map File for further processing
+# Read Grid Map File for further processing
 
-while read line ;
-do
+while read line || test ! -z "${line}" ; do
+    
+    line=`echo ${line} | ${GLOBUS_SH_SED-sed} -e 's/[	 ]*//'`
+
+    # skip empty lines
+
+    if test -z "${line}" ; then
+        continue
+    fi
 
     # Extract DN and LN fields
 
@@ -136,21 +194,39 @@ do
         remaining_line=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ]*[	 ]*//'`
     fi
 
-    ln_string=`echo $remaining_line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
-    remaining_line=`echo $remaining_line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ]*[	 ]*//'`
-    ln_list=`echo $ln_string | ${GLOBUS_SH_SED-sed} -e 's/,/ /g'`
-
-    if [ -n "$remaining_line" ]; then
-      echo "The following entry has extra text at the end and may be malformed"
-      echo "$line"
-      RC=1
+    if test -z "${dn}" ; then
+        echo "The following entry is missing a DN"
+        echo "$line"
+        RC=1
     fi
 
-    # Check for DN / LN pairs
-    # Not yet implemented
+    dn_entries=`${GLOBUS_SH_CAT-cat} <<EOF 
+${dn_entries}
+${dn}
+EOF
+`
+    
+    if test -z "${remaining_line}" ; then
+        echo "The following entry is missing a local user name"
+        echo "$line"
+        RC=1
+    fi
 
-    # Check for at least 1 login name
-    # Not yet implemented
+    ln_list=""
+
+    while test ! -z "${remaining_line}" ; do
+        ln_string=`echo $remaining_line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ,]*\).*/\1/'`
+
+        if test -z "${ln_string}" ; then
+            echo "The following entry has extra text at the end and may be malformed"
+            echo "$line"
+            RC=1
+            break
+        fi
+
+        remaining_line=`echo $remaining_line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ,]*[,	 ]*//'`
+        ln_list="${ln_list} ${ln_string}"
+    done
 
     # Check for existance of O=,CN= fields
 
@@ -176,6 +252,16 @@ do
     done
 
 done < $GRID_MAP_FILE
+
+# Check for duplicate DNs
+
+duplicates=`echo "${dn_entries}" | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} -d`
+if [ -n "$duplicates" ] ; then
+    echo "The following DN(s) is/are duplicated"
+    echo "$duplicates"
+    RC=1
+fi
+
 
 exit $RC
 
