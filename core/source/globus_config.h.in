@@ -68,6 +68,7 @@
 #undef HAVE_SYS_SOCKET_H
 #undef HAVE_STDARG_H
 
+#undef HAVE_SYS_UIO_H
 #undef HAVE_STRUCT_IOVEC
 #undef IOV_MAX
 
