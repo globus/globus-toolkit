@@ -400,15 +400,15 @@ main(int argc, char *argv[])
 
     if (ccname == NULL) {
 
-	  globusid = getenv("GLOBUSID");
-	  if (globusid == NULL)
-		goto done;  /* Can't do globus-to-k5 without the globusid */
-      DEEDEBUG2("GLOBUSID = %s\n",globusid);
-
 	  user = getenv("USER");
 	  if (user == NULL)
 	    goto done; 
       DEEDEBUG2("USER = %s\n",user);
+
+	  globusid = getenv("GLOBUS_ID");
+	  if (globusid == NULL)
+		goto done;  /* Can't do globus-to-k5 without the globusid */
+      DEEDEBUG2("GLOBUSID = %s\n",globusid);
 
 	  if (globus_gram_k5_kinit(globusid) == 0) {
 	   ccname = getenv("KRB5CCNAME");
