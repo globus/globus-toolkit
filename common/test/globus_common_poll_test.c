@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
+#include <string.h>
 
 globus_bool_t                         test_failed;
 int                                   basic_test_count;
@@ -122,16 +123,6 @@ generic_wakeup(
     void *                            user_args)
 {
     verbose_printf(3, "generic_wakeup() : start\n");
-}
-
-void
-generic_requeue_callback(
-    globus_reltime_t *                  period,
-    void *                              user_args)
-{
-    globus_reltime_t                    dummy_period;
-
-    verbose_printf(3, "generic_requeue_callback()\n");
 }
 
 /*
@@ -794,7 +785,7 @@ time_starve_handler_1(
     int  *count = (int *) user_arg;
     (*count)++;
 
-    verbose_printf(3, "time_starve_handler_1() : entering\n");
+    verbose_printf(10, "time_starve_handler_1() : entering\n");
 }
 
 /* END MULTIQ TEST */
@@ -856,7 +847,7 @@ cancel_handler(
         globus_callback_handle_t *   handle;
 
         handle = (globus_callback_handle_t *) user_arg;
-        globus_callback_register_cancel_periodic(handle, GLOBUS_NULL, GLOBUS_NULL);
+        globus_callback_register_cancel_periodic(*handle, GLOBUS_NULL, GLOBUS_NULL);
         globus_mutex_lock(&cancel_signal_mutex);
         {
             verbose_printf(3, "signaling cancel_signal_cond\n");
@@ -1096,8 +1087,6 @@ random_stress_test(globus_wakeup_func_t wakeup)
     int                               count = 0;
     globus_reltime_t                  delay;
     globus_reltime_t                  period;
-    globus_reltime_t                  delay1;
-    globus_reltime_t                  period3;
     globus_callback_handle_t          callback_handle;
 
     globus_module_activate(GLOBUS_CALLBACK_MODULE);
@@ -1140,7 +1129,6 @@ random_stress_test(globus_wakeup_func_t wakeup)
                 GLOBUS_NULL);
 
     globus_callback_register_oneshot(
-                GLOBUS_NULL,
                 &delay,
                 random_stress_own_thread_handler,
                 GLOBUS_NULL,
@@ -1177,7 +1165,7 @@ random_stress_test(globus_wakeup_func_t wakeup)
         }
         globus_mutex_unlock(&random_stress_mutex);
         
-        globus_callback_blocking_cancel_periodic(&callback_handle);
+        globus_callback_blocking_cancel_periodic(callback_handle);
         random_stress_registered = GLOBUS_FALSE;
     }
 
@@ -1387,8 +1375,8 @@ adjust_period_requeue_callback(
         verbose_printf(3, "adjust_period_requeue_callback() : WILL_BLOCK\n");
         GlobusTimeReltimeSet(new_period, 0, 50000);
         globus_thread_blocking_will_block();
-        if(!globus_callback_adjust_period(adjust_callback_handle_1, 
-           &new_period))
+        if(globus_callback_adjust_period(adjust_callback_handle_1, 
+           &new_period) != GLOBUS_SUCCESS)
         {
             verbose_printf(0, "**ERROR** adjust_period_requeue_callback() : couldnt adjust in a restarted thread\n");
             adjust_test_success = GLOBUS_FALSE;
@@ -1399,8 +1387,8 @@ adjust_period_requeue_callback(
         /* TODO:  check to see if period is actually 
                   getting changed to legit value */
         GlobusTimeReltimeSet(new_period, 0, 40000);
-        if(!globus_callback_adjust_period(adjust_callback_handle_1, 
-           &new_period))
+        if(globus_callback_adjust_period(adjust_callback_handle_1, 
+           &new_period) != GLOBUS_SUCCESS)
         {
             verbose_printf(0, "**ERROR** adjust_period_requeue_callback() : adjustment not made\n");
             adjust_test_success = GLOBUS_FALSE;
@@ -1425,7 +1413,7 @@ adjust_period_set_infinity_callback(
 
     (*count)++;
     GlobusTimeReltimeCopy(new_period, globus_i_reltime_infinity);
-    if(!globus_callback_adjust_period(adjust_callback_handle_2, &new_period))
+    if(globus_callback_adjust_period(adjust_callback_handle_2, &new_period) != GLOBUS_SUCCESS)
     {
         verbose_printf(0, "**ERROR** adjust_period_set_infinity_callback() : adjust failed\n");
         adjust_test_success = GLOBUS_FALSE;
