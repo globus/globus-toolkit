@@ -1,4 +1,0 @@
-name=rips_condor_provider_setup
-subdir=information_services/rips-condor-provider-setup
-build="custom"
-output=rips_condor_provider_setup-*.tar.gz
