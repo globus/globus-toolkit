@@ -81,16 +81,15 @@ sub test_rsl
     ok("$testname:$additional_rsl:$rc", "$testname:$additional_rsl:0");
 }
 
-foreach(@test_cases)
-{
-    push(@tests, "test_rsl(\"$_\", \"\")");
-}
-
 push(@tests, "test_rsl(\"" . $test_cases[0] . "\", \"\")");
 push(@tests, "test_rsl(\"" . $test_cases[0] . "\", \"(save_state = yes)\")");
 push(@tests, "test_rsl(\"" . $test_cases[0] . "\", \"(two_phase = 10)\")");
 push(@tests, "test_rsl(\"" . $test_cases[0] . "\", \"(save_state = yes)(two_phase = 10)\")");
 
+foreach(@test_cases)
+{
+    push(@tests, "test_rsl(\"$_\", \"\")");
+}
 foreach(@todo_cases)
 {
     push(@tests, "test_cases(\"$_\", \"\")");

@@ -94,15 +94,15 @@ globus_module_deactivate_all(void);
  */
 void
 globus_module_setenv(
-    const char *                        name,
-    const char *                        value);
+    char *                                  name,
+    char *                                  value);
 
 /**
  *  Get the value of an environment variable
  */
 char *
 globus_module_getenv(
-    const char *                        name);
+    char *                                  name);
 
 /**
  *  Get a module pointer

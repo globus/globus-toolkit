@@ -3028,9 +3028,6 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
     time_t		cur_time;
     time_t		dir_age = 0;
     time_t		TODOmin_age = 9999999;
-    int			global_dir_len;
-    int			cur_statpath_size = 0;
-    char		*cur_statpath;
 
     /* Default to check right away, then we'll wait before further checks */
     checktime = ( time(NULL) + 0 );
@@ -3107,56 +3104,15 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 	}
 
 	/* Stat them all, check their mtime's */
-	global_dir_len = strlen( names->global_dir );
 	uniq_num_recent = 0;
 	cur_time = time( NULL );
-	cur_statpath = GLOBUS_NULL;
 	for ( uniq_num = 0;  uniq_num < uniq_count; uniq_num++ )
 	{
 	    time_t	age;		/* Age (seconds) of the file */
-	    int		min_size;	/* Min file name buffer size */
-	    int		request_size;	/* Buffer size to request */
 
-	    /* Compute the required file name buffer size. */
-	    min_size =
-		strlen( uniq_list[uniq_num]->d_name ) + global_dir_len + 2;
-	    request_size = min_size + 50;
-
-	    /* Allocate (or reallocate if our buffer is too small) a file name
-	       buffer to use with stat() */
-	    if ( GLOBUS_NULL == cur_statpath )
-	    {
-		cur_statpath = globus_libc_malloc( request_size );
-		if ( GLOBUS_NULL == cur_statpath )
-		{
-		    globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
-		    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
-		}
-		cur_statpath_size = request_size;
-	    }
-	    else if ( min_size > cur_statpath_size )
-	    {
-		char	*new;
-		new = globus_libc_realloc( cur_statpath,
-						    request_size );
-		if ( GLOBUS_NULL == new )
-		{
-		    globus_libc_free( cur_statpath );
-		    globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
-		    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
-		}
-		cur_statpath = new;
-		cur_statpath_size = request_size;
-	    }
-
-	    /* Fill in the file name buffer */
-	    strcpy( cur_statpath, names->global_dir );
-	    strcat( cur_statpath, "/" );
-	    strcat( cur_statpath, uniq_list[uniq_num]->d_name );
-
-	    /* Now, go stat() the file and learn all about it */
-	    rc = globus_l_gass_cache_stat( cur_statpath, & statbuf);
-
+	    /* Don't need to stat my uniq; I already did that above. */
+	    rc = globus_l_gass_cache_stat( uniq_list[uniq_num]->d_name,
+					   & statbuf);
 	    /* If it's gone away, ignore it.. */
 	    if ( GLOBUS_L_ENOENT == rc )
 	    {
@@ -3184,12 +3140,6 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 	    }
 	}
 
-	/* Free our stat file name buffer */
-	if ( GLOBUS_NULL != cur_statpath )
-	{
-	    globus_libc_free( cur_statpath );
-	}
-
 	/* Done with the list! */
 	globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
 
@@ -3208,6 +3158,7 @@ globus_l_gass_cache_wait_ready( const cache_names	*names,
 	sleep( 1 );
 	continue;
     }
+
 
 } /* globus_l_gass_cache_wait_ready() */
 

@@ -66,7 +66,8 @@ va_dcl
 #else
     va_start(ap);
 #endif
-    vprintf(fmt, ap);
+/*    globus_thread_diagnostics_vprintf(fmt, ap); */
+	vprintf(fmt, ap);
     va_end(ap);
 
     GLOBUS_DUMP_STACK();
