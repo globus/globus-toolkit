@@ -14,7 +14,7 @@
 
     <Source_Dependencies Type="pgm_runtime" >
       <Dependency Name="globus_scheduler_event_generator" Package="pgm"> <Version > <Simple_Version Major="0" /> </Version> </Dependency>
-      <Dependency Name="globus_scheduler_event_generator_condor" Package="pgm"> <Version > <Simple_Version Major="0" /> </Version> </Dependency>
+      <Dependency Name="globus_scheduler_event_generator_condor" Package="rtl"> <Version > <Simple_Version Major="0" /> </Version> </Dependency>
     </Source_Dependencies>
 
     <Build_Environment >

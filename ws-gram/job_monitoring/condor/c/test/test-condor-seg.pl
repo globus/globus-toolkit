@@ -10,14 +10,38 @@ my $testtmp = &make_tmpdir();
 my @log_data;
 my $log_path = &get_log_path();
 
-@test_data = &parse_test_data();
+if (! defined($log_path))
+{
+    $skip_all = 1;
+}
+
 
 plan tests => 1;
 
-&write_test_data_to_log($log_path, @test_data);
-&run_condor_seg("$testtmp/output");
+skip($skip_all ? "Condor SEG not configured" : 0, &run_test, 0);
 
-ok(compare("$testtmp/output", "$testtmp/output.expected") == 0);
+sub run_test {
+    if (! $skip_all)
+    {
+        @test_data = &parse_test_data();
+        &write_test_data_to_log($log_path, @test_data);
+        my $rc = &run_condor_seg("$testtmp/output");
+
+        if ($rc == 0)
+        {
+            return compare("$testtmp/output", "$testtmp/output.expected");
+        }
+        else
+        {
+            return 'Unable to run SEG with condor module: is it installed?';
+        }
+    }
+    else
+    {
+        return "skip";
+    }
+}
+
 
 sub run_condor_seg
 {
@@ -43,6 +67,8 @@ sub run_condor_seg
     } while ($size < (-s $output));
 
     close(FH);
+
+    return $?;
 }
 
 sub parse_test_data 
@@ -168,7 +194,7 @@ EOF
 
 sub get_log_path {
     my $gram_condor_conf = $ENV{GLOBUS_LOCATION} . "/etc/globus-condor.conf";
-    open(CONF, "<$gram_condor_conf");
+    open(CONF, "<$gram_condor_conf") || return undef;
     my $log;
 
     while (<CONF>) {
