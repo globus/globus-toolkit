@@ -158,9 +158,18 @@ struct globus_io_authentication_info_s
     gss_OID_set                         restriction_oids;
     gss_buffer_set_t                    restriction_buffers;
     OM_uint32                           time_req;
+    OM_uint32                           time_rec;
     globus_io_delegation_callback_t     delegation_callback; 
 } ;
-    
+
+typedef
+struct globus_io_delegation_data_s
+{
+    OM_uint32                           time_rec;
+    gss_cred_id_t                       cred_handle;
+}
+globus_io_delegation_data_t;
+
 static
 globus_result_t
 globus_l_io_copy_unwrapped_data_to_buffer(
@@ -241,7 +250,8 @@ globus_l_io_delegation_cb(
     void *				arg,
     globus_io_handle_t *		handle,
     globus_result_t			result,
-    gss_cred_id_t                       delegated_cred);
+    gss_cred_id_t                       delegated_cred,
+    OM_uint32                           time_rec);
 
 /*
  * Function:    globus_i_io_setup_securesocket()
@@ -2722,7 +2732,8 @@ globus_io_init_delegation(
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
-
+    monitor.data = globus_malloc(sizeof(globus_io_delegation_data_t));
+    
     rc = globus_io_register_init_delegation(handle,
                                             cred_handle,
                                             restriction_oids,
@@ -2748,7 +2759,8 @@ globus_io_init_delegation(
 
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-
+    globus_free(monitor.data);
+    
     if(monitor.use_err)
     {
 	return globus_error_put(monitor.err);
@@ -2778,6 +2790,9 @@ globus_io_init_delegation(
  * @param restriction_buffers
  *        A sequence of restriction buffers, each of which corresponds
  *        to a OID in the restriction_oids parameter
+ * @param time_req
+ *        Parameter indicating the time the caller wants the
+ *        credential to be valid for.
  * @param callback
  *        Function to be called once the delegation is finished. The
  *        delegated credential is passed to the user through this
@@ -2797,6 +2812,7 @@ globus_io_register_accept_delegation(
     globus_io_handle_t *                handle,
     const gss_OID_set                   restriction_oids,
     const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
     globus_io_delegation_callback_t	callback,
     void *				callback_arg)
 {
@@ -2887,7 +2903,12 @@ globus_io_register_accept_delegation(
  * @param restriction_buffers
  *        A sequence of restriction buffers, each of which corresponds
  *        to a OID in the restriction_oids parameter
- *
+ * @param time_req
+ *        Parameter indicating the time the caller wants the
+ *        credential to be valid for.
+ * @param time_rec
+ *        Parameter returning the actual time in seconds the received
+ *        credential is valid for.  
  * @return 
  *        This function returns GLOBUS_SUCCESS or a result pointing
  *        to an error object.
@@ -2900,7 +2921,9 @@ globus_io_accept_delegation(
     globus_io_handle_t *                handle,
     gss_cred_id_t *                     delegated_cred,
     const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers)
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    OM_uint32 *                         time_rec)
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			rc;
@@ -2926,10 +2949,12 @@ globus_io_accept_delegation(
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
-
+    monitor.data = globus_malloc(sizeof(globus_io_delegation_data_t));
+    
     rc = globus_io_register_accept_delegation(handle,
                                               restriction_oids,
                                               restriction_buffers,
+                                              time_req,
                                               globus_l_io_delegation_cb,
                                               &monitor);
     if(rc != GLOBUS_SUCCESS)
@@ -2953,11 +2978,20 @@ globus_io_accept_delegation(
 
     if(monitor.use_err)
     {
+        globus_free(monitor.data);
 	return globus_error_put(monitor.err);
     }
     else
     {
-        *delegated_cred = (gss_cred_id_t) monitor.data;
+        *delegated_cred = ((globus_io_delegation_data_t *)
+                           monitor.data)->cred_handle;
+        if(time_rec != NULL)
+        {
+            *time_rec = ((globus_io_delegation_data_t *)
+                         monitor.data)->time_rec;
+        }
+        
+        globus_free(monitor.data);
 	return GLOBUS_SUCCESS;
     }
 }
@@ -2997,8 +3031,8 @@ globus_l_io_init_delegation(
         GSS_C_NO_OID,
         init_info->restriction_oids,
         init_info->restriction_buffers,
-        init_info->time_req,
         token_ptr,
+        init_info->time_req,
         &output_token);
 
     if(init_info->input_token.token)
@@ -3120,11 +3154,13 @@ globus_l_io_accept_delegation(
     accept_info->maj_stat = gss_accept_delegation(
         &accept_info->min_stat,
         handle->context,
-        &accept_info->cred_handle,
-        &mech_type,
         accept_info->restriction_oids,
         accept_info->restriction_buffers,
         token_ptr,
+        accept_info->time_req,
+        &accept_info->time_rec,
+        &accept_info->cred_handle,
+        &mech_type,
         &output_token);
 
     if(accept_info->input_token.token)
@@ -3223,7 +3259,8 @@ globus_l_io_delegation_cb_wrapper(
     (auth_info->delegation_callback)(arg,
                                      handle,
                                      result,
-                                     auth_info->cred_handle);
+                                     auth_info->cred_handle,
+                                     auth_info->time_rec);
     return;
 }
 
@@ -3233,7 +3270,8 @@ globus_l_io_delegation_cb(
     void *				arg,
     globus_io_handle_t *		handle,
     globus_result_t			result,
-    gss_cred_id_t                       delegated_cred)
+    gss_cred_id_t                       delegated_cred,
+    OM_uint32                           time_rec)
 {
     globus_i_io_monitor_t *		monitor;
     globus_object_t *			err;
@@ -3244,7 +3282,10 @@ globus_l_io_delegation_cb(
 
     globus_mutex_lock(&monitor->mutex);
 
-    monitor->data = (void *) delegated_cred;
+    ((globus_io_delegation_data_t *) monitor->data)->cred_handle =
+        delegated_cred;
+    ((globus_io_delegation_data_t *) monitor->data)->time_rec =
+        time_rec;
     monitor->done = GLOBUS_TRUE;
     if(result != GLOBUS_SUCCESS)
     {

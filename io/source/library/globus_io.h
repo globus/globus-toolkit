@@ -286,13 +286,17 @@ typedef globus_bool_t (*globus_io_secure_authorization_callback_t)(
  * The parameters to this function are
  *
  * @param arg
- * The callback argument set in the authorization attribute.
+ * The callback argument passed to the delegation function.
  * @param handle
- * The handle which the authorization check pertains to.
+ * The handle used in the delegation process.
  * @param result
  * The result of the authentication operation.
  * @param delegated_cred
  * The credential involved in the delegation.
+ * @param time_rec
+ * Parameter returning the actual time in seconds the received
+ * credential is valid for. This parameter will be 0 if this callback
+ * is a result of a call to init delegation.
  *
  * @return
  * This function returns GLOBUS_SUCCESS on success, or a
@@ -305,7 +309,8 @@ typedef void (* globus_io_delegation_callback_t)(
     void *				arg,
     globus_io_handle_t *		handle,
     globus_result_t			result,
-    gss_cred_id_t                       delegated_cred);
+    gss_cred_id_t                       delegated_cred,
+    OM_uint32                           time_rec);
 
 
 typedef void (*globus_io_udp_sendto_callback_t)(
@@ -1206,6 +1211,7 @@ globus_io_register_accept_delegation(
     globus_io_handle_t *                handle,
     const gss_OID_set                   restriction_oids,
     const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
     globus_io_delegation_callback_t	callback,
     void *				callback_arg);
 
@@ -1214,7 +1220,9 @@ globus_io_accept_delegation(
     globus_io_handle_t *                handle,
     gss_cred_id_t *                     delegated_cred,
     const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers);
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    OM_uint32 *                         time_rec);
 
 
 #endif
