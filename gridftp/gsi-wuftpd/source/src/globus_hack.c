@@ -5,13 +5,13 @@
 #include "../support/ftp.h"
 #include <syslog.h>
 #include <sys/file.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #define TIME_DELAY_112  5
-
 /*
 #define PROXY_BACKEND   1
 */
-
 extern int                                      TCPwindowsize;
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
@@ -2437,6 +2437,7 @@ g_write_to_log_file(
     if(buffer_size == 0)
     {
         int                            sock;
+        int                            opt_len;
 
         if(strcmp(type, "RETR") == 0 || strcmp(type, "ERET") == 0)
         {
@@ -2448,7 +2449,8 @@ g_write_to_log_file(
             opt_dir = SO_RCVBUF;
             sock = STDIN_FILENO;
         }
-        getsockopt(sock, SOL_SOCKET, opt_dir, &win_size, sizeof(win_size));
+        opt_len = sizeof(win_size);
+        getsockopt(sock, SOL_SOCKET, opt_dir, &win_size, &opt_len);
     }
     else
     {
