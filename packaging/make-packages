@@ -97,9 +97,15 @@ install_gpt() {
 
 install_gt2() {
 	export GLOBUS_LOCATION=`pwd`/gt2-installation
-	echo Installing custom GT2 bundle
-	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz
-	$GPT_LOCATION/sbin/gpt-postinstall
+	if [ -d gt2-installation ]; then
+		echo Skipping GT2 installation.
+		echo Delete gt2-installation to force rebuild
+	else
+		echo Installing custom GT2 bundle
+		$GPT_LOCATION/sbin/gpt-install fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz
+		$GPT_LOCATION/sbin/gpt-build -force fait_accompli/globus_core-2.8.tar.gz gcc32dbg
+		$GPT_LOCATION/sbin/gpt-postinstall
+	fi
 	echo
 }
 
@@ -278,6 +284,9 @@ install_gpt
 
 if [ $update = 1 ]; then
 	checkout_cvs $tag
+else
+	echo Skipping CVS update
+	echo
 fi
 
 #This is the poor man's dependency code ...
@@ -292,6 +301,6 @@ install_gt2
 
 echo Building C-dependent packages
 install_cdeps
-dir_iter package-list-cdeps
+# dir_iter package-list-cdeps
 
 collate_packages
