@@ -71,11 +71,7 @@ Returns:
 int
 globus_libc_lock(void)
 {
-    if(globus_i_module_initialized==GLOBUS_TRUE)
-    {
-        return globus_macro_libc_lock();
-    }
-    return GLOBUS_FAILURE;
+    return 0;
 } /* globus_libc_lock() */
 
 /******************************************************************************
@@ -91,11 +87,7 @@ Returns:
 int
 globus_libc_unlock(void)
 {
-    if(globus_i_module_initialized==GLOBUS_TRUE)
-    { 
-        return globus_macro_libc_unlock();
-    }
-    return GLOBUS_FAILURE;
+    return 0;
 } /* globus_libc_unlock() */
 
 #if !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE)
