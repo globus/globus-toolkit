@@ -16,7 +16,7 @@
 # (no other class defined).
 #------------------------------------------------------------------
 default_maxtime=10:00:00
-default_class=No_Class               # SDSC needs globus_32
+default_queue=No_Class               # SDSC needs globus_32
 default_notification="never"
 default_project=""
 
@@ -87,9 +87,9 @@ if [ -z "${grami_host_count}" -o "${grami_host_count}" -eq 0 ]; then
    grami_host_count=""
 fi
 
-$DEBUG_ECHO "JM_SCRIPT: testing class">> $grami_logfile
-if [ -z "${grami_class}" ] ; then
-   grami_class=${default_class}
+$DEBUG_ECHO "JM_SCRIPT: testing queue">> $grami_logfile
+if [ -z "${grami_queue}" ] ; then
+   grami_queue=${default_queue}
 fi
 
 $DEBUG_ECHO "JM_SCRIPT: testing notification">> $grami_logfile
@@ -190,7 +190,7 @@ createScript () {
    echo "# Load-Leveler script, created "`$date` 
    echo "#" 
    echo "#@ initialdir       = ${grami_directory}"
-   echo "#@ class            = ${grami_class}"
+   echo "#@ class            = ${grami_queue}"
    echo "#@ Requirements     = ${grami_requirements}"
    echo "#" 
 
