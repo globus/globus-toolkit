@@ -46,6 +46,7 @@ globus_wsrf_mds_aggregator_test             ws-mds/aggregator/test
 globus_wsrf_mds_trigger                     ws-mds/trigger/source
 globus_wsrf_mds_trigger_test                ws-mds/trigger/test
 globus_wsrf_mds_archive                     ws-mds/archive/source
+globus_wsrf_mds_archive_test                ws-mds/archive/test
 globus_wsrf_mds_ganglia                     ws-mds/ganglia/source
 globus_wsrf_mds_usefulrp                    ws-mds/usefulrp/source
 globus_wsrf_mds_usefulrp_schema             ws-mds/usefulrp/schema
