@@ -38,7 +38,6 @@ typedef enum
 typedef enum
 {
     GLOBUS_L_GFS_DATA_INFO_TYPE_COMMAND = 1,
-    GLOBUS_L_GFS_DATA_INFO_TYPE_TRANSFER,
     GLOBUS_L_GFS_DATA_INFO_TYPE_PASSIVE,
     GLOBUS_L_GFS_DATA_INFO_TYPE_ACTIVE,
     GLOBUS_L_GFS_DATA_INFO_TYPE_STAT,
@@ -604,6 +603,7 @@ globus_l_gfs_data_authorize(
                 goto pwent_error;
             }
             usr = authz_usr;
+            session_info->username = strdup(usr);
         }
         else
         {
@@ -2401,7 +2401,7 @@ globus_i_gfs_data_request_list(
 
     data_op->ipc_handle = ipc_handle;    
     data_op->session_handle = session_handle;
-    data_op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_TRANSFER;
+    data_op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_LIST;
     data_op->info_struct = list_info;
     data_op->ref = 1;
     data_op->id = id;
@@ -2435,7 +2435,7 @@ globus_i_gfs_data_request_list(
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
             "lookup",
-            data_op->pathname,
+            list_info->pathname,
             &res,
             globus_l_gfs_authorize_cb,
             data_op);
