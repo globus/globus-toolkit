@@ -548,7 +548,7 @@ globus_l_gfs_data_abort_kickout(
 
     if(globus_l_gfs_dsi->trev_func != NULL &&
         op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT &&
-        !op->data_handle_wrapper->is_mine)
+        op->data_handle_wrapper->is_mine)
     {
         globus_l_gfs_dsi->trev_func(
             op->transfer_id,
