@@ -196,7 +196,7 @@ GSS_CALLCONV gss_export_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            (_GGSL("Unrecognized option_req of: %d", option_req)));
+            (_GGSL("Unrecognized option_req of: %d"), option_req));
         goto exit;
     }
 

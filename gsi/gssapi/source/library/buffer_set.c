@@ -244,7 +244,7 @@ GSS_CALLCONV gss_release_buffer_set(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            (_GGSL("NULL parameters passed to function: %s")),
+            (_GGSL("NULL parameters passed to function: %s"),
              _function_name_));
         major_status = GSS_S_FAILURE;
         goto exit;

@@ -1528,7 +1528,7 @@ globus_i_gsi_gss_create_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL,
-            (_GGSL("NULL credential handle passed to function: %s",) 
+            (_GGSL("NULL credential handle passed to function: %s"), 
              _function_name_));
         goto error_exit;
     }
@@ -2299,7 +2299,7 @@ globus_i_gsi_gssapi_init_ssl_context(
                             minor_status,
                             GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
                             (_GGSL("Couldn't add certificate to the SSL context's "
-                             "certificate store."))));
+                             "certificate store.")));
                         major_status = GSS_S_FAILURE;
                         goto exit;
                     }

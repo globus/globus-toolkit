@@ -270,7 +270,7 @@ GSS_CALLCONV gss_unwrap(
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status, 
                     GLOBUS_GSI_GSSAPI_ERROR_WRAP_BIO,
-                    (_GGSL("SSL_read rc=%d", rc)));
+                    (_GGSL("SSL_read rc=%d"), rc));
                 major_status = GSS_S_FAILURE;
 
                 /* free allocated mem */

@@ -112,7 +112,7 @@ GSS_CALLCONV gss_accept_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            (_GGSL("Invalid context_handle passed to function")));$
+            (_GGSL("Invalid context_handle passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -124,7 +124,7 @@ GSS_CALLCONV gss_accept_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            (_GGSL("Invalid delegated_cred_handle passed to function")));$
+            (_GGSL("Invalid delegated_cred_handle passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -136,7 +136,7 @@ GSS_CALLCONV gss_accept_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            (_GGSL("Invalid restriction parameters passed to function")));$
+            (_GGSL("Invalid restriction parameters passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -146,7 +146,7 @@ GSS_CALLCONV gss_accept_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            (_GGSL("Invalid output token passed to function")));$
+            (_GGSL("Invalid output token passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
