@@ -24,8 +24,8 @@ globus_ogsi_notification	ogsa-c/impl/core/notification/source
 globus_ogsa_samples_counter_bindings ogsa-c/samples/counter/source
 globus_gt3_gram_client_test             ogsa-c/impl/base/gram/gt2_wrappers/client/test
 globus_ogsa_base_gram_mj_test           ogsa-c/impl/base/gram/managed_job/test
-globus_gt3_gram_client                  ogsa-c/impl/base/gram/gt2_wrappers/source
+globus_gt3_gram_client                  ogsa-c/impl/base/gram/gt2_wrappers/client/source
 globus_ogsa_base_gram_managed_job       ogsa-c/impl/base/gram/managed_job/source
-globus_gram_xml_rsl_test                ogsa-c/impl/base/gram/gt2_wrappers/xml_rsl/test
-globus_gram_xml_rsl                     ogsa-c/impl/base/gram/gt2_wrappers/xml_rsl/source
+globus_gram_xml_rsl_test                ogsa-c/impl/base/gram/gt2_wrappers/rsl_xml/test
+globus_gram_xml_rsl                     ogsa-c/impl/base/gram/gt2_wrappers/rsl_xml/source
 globus_ogsa_base_gram_mj_bindings       ogsa-c/base/gram/managed_job
