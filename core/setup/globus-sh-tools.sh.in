@@ -1,4 +1,5 @@
-PERL=@PERL@
+GLOBUS_PERL=@PERL@
+GLOBUS_SH=@SH@
 
 #--
 # NECESSARY section: ALL of the following commands must be defined!
