@@ -595,12 +595,22 @@ globus_gram_client_ping_parse_failed:
 
 
 /**
- * Request a job be started.
+ * Request a job be started (nonblocking).
  * @ingroup globus_gram_client_job_functions
  *
  * Request access to interactive resources at the current time. A job request
  * is atomic: either all of the requested processes are created, or none are
- * created. 
+ * created.  This is the nonblocking version of
+ * globus_gram_client_job_request(). Instead of waiting for the job manager
+ * to acknowledge that the job has been submitted or started, this function
+ * immediately returns after beginning the job submission. The
+ * @a register_callback function will be called to let the caller know whether
+ * the job request has been submitted successfully or not.
+ *
+ * If this function determines that the job request could not be processed
+ * before contacting the job manager (for example, a malformed 
+ * @a resource_manager_contact) it will return an error, and the
+ * @a register_callback function will not be called.
  *
  * @param resource_manager_contact
  *        A NULL-terminated character string containing a
@@ -614,14 +624,21 @@ globus_gram_client_ping_parse_failed:
  *         GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL.
  * @param callback_contact
  *        The URL which will receive all messages about the job.
- * @param job_contact
- *        In a successful case, this is set to a unique identifier for each job.
+ * @param register_callback
+ *        The callback function to call when the job request submission has
+ *        completed. This function will be passed a copy of the job_contact
+ *        which the user must free, and an error code (the job status 
+ *        value is undefined).
+ * @param register_callback_arg
+ *        A pointer to user data which will be passed to the callback as
+ *        it's @a user_callback_arg.
  *
  * @return
  * This function returns GLOBUS_SUCCESS if successful,
  * otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
  *
  * @see @ref globus_gram_resource_manager_contact
+ * @see globus_gram_client_job_request()
  */
 int
 globus_gram_client_register_job_request(
@@ -811,10 +828,13 @@ globus_l_gram_client_to_jobmanager(
 
     if (rc == GLOBUS_SUCCESS)
     {
-	rc = monitor.status;
 	if ( failure_code )
 	{
 	    *failure_code = monitor.job_failure_code;
+	}
+	if ( job_status )
+	{
+	    *job_status = monitor.status;
 	}
     }
 
@@ -1321,7 +1341,9 @@ globus_l_gram_client_job_request(
 		 &attr,
 		 query,
 		 querysize,
-		 globus_l_gram_client_monitor_callback,
+		 (register_callback != GLOBUS_NULL)
+		     ?  globus_l_gram_client_register_job_request_callback
+		     : globus_l_gram_client_monitor_callback,
 		 monitor);
     globus_mutex_unlock(&monitor->mutex);
 
@@ -1414,38 +1436,45 @@ globus_l_gram_client_monitor_callback(
     monitor->errorcode = errorcode;
     monitor->done = GLOBUS_TRUE;
 
-    switch(monitor->type)
+    if(!errorcode)
     {
-      case GLOBUS_GRAM_CLIENT_JOB_REQUEST:
-	rc = globus_gram_protocol_unpack_job_request_reply(
-		message,
-		msgsize,
-		&monitor->status,
-		&monitor->contact);
-	if(rc != GLOBUS_SUCCESS)
+	switch(monitor->type)
 	{
-	    monitor->errorcode = rc;
-	}
-	break;
+	  case GLOBUS_GRAM_CLIENT_JOB_REQUEST:
+	    rc = globus_gram_protocol_unpack_job_request_reply(
+		    message,
+		    msgsize,
+		    &monitor->status,
+		    &monitor->contact);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		monitor->errorcode = rc;
+	    }
+	    else
+	    {
+		monitor->errorcode = monitor->status;
+	    }
+	    break;
 
-      case GLOBUS_GRAM_CLIENT_PING:
-	break;
-      case GLOBUS_GRAM_CLIENT_STATUS:
-      case GLOBUS_GRAM_CLIENT_SIGNAL:
-      case GLOBUS_GRAM_CLIENT_CANCEL:
-      case GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER:
-      case GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER:
-	rc = globus_gram_protocol_unpack_status_reply(
-		message,
-		msgsize,
-		&monitor->status,
-		&monitor->errorcode,
-		&monitor->job_failure_code);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    monitor->errorcode = rc;
+	  case GLOBUS_GRAM_CLIENT_PING:
+	    break;
+	  case GLOBUS_GRAM_CLIENT_STATUS:
+	  case GLOBUS_GRAM_CLIENT_SIGNAL:
+	  case GLOBUS_GRAM_CLIENT_CANCEL:
+	  case GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER:
+	  case GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER:
+	    rc = globus_gram_protocol_unpack_status_reply(
+		    message,
+		    msgsize,
+		    &monitor->status,
+		    &monitor->errorcode,
+		    &monitor->job_failure_code);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		monitor->errorcode = rc;
+	    }
+	    break;
 	}
-	break;
     }
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
@@ -1471,16 +1500,24 @@ globus_l_gram_client_register_job_request_callback(
     monitor->errorcode = errorcode;
     monitor->done = GLOBUS_TRUE;
 
-    rc = globus_gram_protocol_unpack_job_request_reply(
-	    message,
-	    msgsize,
-	    &monitor->status,
-	    &monitor->contact);
-    if(rc != GLOBUS_SUCCESS)
+    if(!errorcode)
     {
-	monitor->errorcode = rc;
+	rc = globus_gram_protocol_unpack_job_request_reply(
+		message,
+		msgsize,
+		&monitor->status,
+		&monitor->contact);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    monitor->errorcode = rc;
+	}
+	else
+	{
+	    monitor->errorcode = monitor->status;
+	}
     }
-    globus_mutex_unlock(&monitor);
+
+    globus_mutex_unlock(&monitor->mutex);
 
     monitor->callback(monitor->callback_arg,
 	              monitor->contact,
