@@ -1,4 +1,4 @@
-#! perl
+#!/usr/bin/perl
 #
 # setup-openssh.pl
 #
@@ -28,6 +28,14 @@ if (!defined($gpath))
 }
 
 #
+# Include standard modules
+#
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'abs_path';
+
+#
 # modify the ld library path for when we call ssh executables
 #
 
@@ -55,6 +63,10 @@ else
 
 require Grid::GPT::Setup;
 
+#
+# script-centred variable initialization
+#
+
 my $globusdir = $gpath;
 my $myname = "setup-openssh.pl";
 
@@ -70,11 +82,33 @@ $sysconfdir = "$prefix/etc/ssh";
 $localsshdir = "/etc/ssh";
 $setupdir = "$prefix/setup/gsi_openssh_setup";
 
+#
+# standard key types and their root file name mappings
+#
+
 my $keyfiles = {
                  "dsa" => "ssh_host_dsa_key",
                  "rsa" => "ssh_host_rsa_key",
                  "rsa1" => "ssh_host_key",
                };
+
+#
+# argument specification.  we offload some processing work from later functions
+# to verify correct args by using anon subs in various places.
+#
+
+my($interactive, $force, $verbose);
+
+GetOptions(
+            'interactive!' => \$interactive,
+            'force' => \$force,
+            'verbose' => \$verbose,
+          ) or pod2usage(2);
+
+#
+# main execution.  This should find its way into a subroutine at some future
+# point.
+#
 
 print "$myname: Configuring package 'gsi_openssh'...\n";
 print "---------------------------------------------------------------------\n";
@@ -103,9 +137,8 @@ makeConfDir();
 $keyhash = determineKeys();
 runKeyGen($keyhash->{gen});
 copyKeyFiles($keyhash->{copy});
-fixpaths();
 copyConfigFiles();
-alterFiles();
+copyPRNGFile();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
@@ -137,6 +170,276 @@ exit;
 # subroutines
 #
 
+### initPRNGHash( )
+#
+# initialize the PRNG pathname hash
+#
+
+sub initPRNGHash( )
+{
+    #
+    # standard prng to executable conversion names
+    #
+
+    addPRNGCommand("\@PROG_LS\@", "ls");
+    addPRNGCommand("\@PROG_NETSTAT\@", "netstat");
+    addPRNGCommand("\@PROG_ARP\@", "arp");
+    addPRNGCommand("\@PROG_IFCONFIG\@", "ifconfig");
+    addPRNGCommand("\@PROG_PS\@", "ps");
+    addPRNGCommand("\@PROG_JSTAT\@", "jstat");
+    addPRNGCommand("\@PROG_W\@", "w");
+    addPRNGCommand("\@PROG_WHO\@", "who");
+    addPRNGCommand("\@PROG_LAST\@", "last");
+    addPRNGCommand("\@PROG_LASTLOG\@", "lastlog");
+    addPRNGCommand("\@PROG_DF\@", "df");
+    addPRNGCommand("\@PROG_SAR\@", "sar");
+    addPRNGCommand("\@PROG_VMSTAT\@", "vmstat");
+    addPRNGCommand("\@PROG_UPTIME\@", "uptime");
+    addPRNGCommand("\@PROG_IPCS\@", "ipcs");
+    addPRNGCommand("\@PROG_TAIL\@", "tail");
+
+    print "Determining paths for PRNG commands...\n";
+
+    $paths = determinePRNGPaths();
+
+    return;
+}
+
+### getDirectoryPaths( )
+#
+# return an array ref containing all of the directories in which we should search
+# for our listing of executable names.
+#
+
+sub getDirectoryPaths( )
+{
+    #
+    # read in the PATH environmental variable and prepend a set of 'safe'
+    # directories from which to test PRNG commands.
+    #
+
+    $path = $ENV{PATH};
+    $path = "/bin:/usr/bin:/sbin:/usr/sbin:/etc:" . $path;
+    @dirs = split(/:/, $path);
+
+    #
+    # sanitize each directory listed in the array.
+    #
+
+    @dirs = map {
+                  $tmp = $_;
+                  $tmp =~ s:/+:/:g;
+                  $tmp =~ s:^\s+|\s+$::g;
+                  $tmp;
+                } @dirs;
+
+    return \@dirs;
+}
+
+### addPRNGCommand( $prng_name, $exec_name )
+#
+# given a PRNG name and a corresponding executable name, add it to our list of
+# PRNG commands for which to find on the system.
+#
+
+sub addPRNGCommand
+{
+    my($prng_name, $exec_name) = @_;
+
+    prngAddNode($prng_name, $exec_name);
+}
+
+### copyPRNGFile( )
+#
+# read in ssh_prng_cmds.in, translate the program listings to the paths we have
+# found on the local system, and then write the output to ssh_prng_cmds.
+#
+
+sub copyPRNGFile
+{
+    my($fileInput, $fileOutput);
+    my($mode, $uid, $gid);
+    my($data);
+
+    if ( isPresent("/dev/random") && !isForced() )
+    {
+        printf("/dev/random found and not forced.  Not installing ssh_prng_cmds...\n");
+        return;
+    }
+
+    initPRNGHash();
+
+    print "Fixing paths in ssh_prng_cmds...\n";
+
+    $fileInput = "$setupdir/ssh_prng_cmds.in";
+    $fileOutput = "$sysconfdir/ssh_prng_cmds";
+
+    #
+    # verify that we are prepared to work with $fileInput
+    #
+
+    if ( !isReadable($fileInput) )
+    {
+        printf("Cannot read $fileInput... skipping.\n");
+        return;
+    }
+
+    #
+    # verify that we are prepared to work with $fileOuput
+    #
+
+    if ( !prepareFileWrite($fileOutput) )
+    {
+        return;
+    }
+
+    #
+    # Grab the current mode/uid/gid for use later
+    #
+
+    $mode = (stat($fileInput))[2];
+    $uid = (stat($fileInput))[4];
+    $gid = (stat($fileInput))[5];
+
+    #
+    # Open the files for reading and writing, and loop over the input's contents
+    #
+
+    $data = readFile($fileInput);
+    for my $k (keys %$prngcmds)
+    {
+        $sub = prngGetExecPath($k);
+        $data =~ s:$k:$sub:g;
+    }
+    writeFile($fileOutput, $data);
+
+    #
+    # An attempt to revert the new file back to the original file's
+    # mode/uid/gid
+    #
+
+    chmod($mode, $fileOutput);
+    chown($uid, $gid, $fileOutput);
+
+    return 0;
+}
+
+### determinePRNGPaths( )
+#
+# for every entry in the PRNG hash, seek out and find the path for the
+# corresponding executable name.
+#
+
+sub determinePRNGPaths
+{
+    my(@paths, @dirs);
+    my($exec_name, $exec_path);
+
+    $dirs = getDirectoryPaths();
+
+    for my $k (keys %$prngcmds)
+    {
+        $exec_name = prngGetExecName($k);
+        $exec_path = findExecutable($exec_name, $dirs);
+        prngSetExecPath($k, $exec_path);
+    }
+
+    return;
+}
+
+### prngAddNode( $prng_name, $exec_name )
+#
+# add a new node to the PRNG hash
+#
+
+sub prngAddNode
+{
+    my($prng_name, $exec_name) = @_;
+    my($node);
+
+    if (!defined($prngcmds))
+    {
+        $prngcmds = {};
+    }
+
+    $node = {};
+    $node->{prng} = $prng_name;
+    $node->{exec} = $exec_name;
+
+    $prngcmds->{$prng_name} = $node;
+}
+
+### prngGetExecName( $key )
+#
+# get the executable name from the prng commands hash named by $key
+#
+
+sub prngGetExecName
+{
+    my($key) = @_;
+
+    return $prngcmds->{$key}->{exec};
+}
+
+### prngGetExecPath( $key )
+#
+# get the executable path from the prng commands hash named by $key
+#
+
+sub prngGetExecPath
+{
+    my($key) = @_;
+
+    return $prngcmds->{$key}->{exec_path};
+}
+
+### prngGetNode( $key )
+#
+# return a reference to the node named by $key
+#
+
+sub prngGetNode
+{
+    my($key) = @_;
+
+    return ${$prngcmds}{$key};
+}
+
+### prngSetExecPath( $key, $path )
+#
+# given a key, set the executable path in that node to $path
+#
+
+sub prngSetExecPath
+{
+    my($key, $path) = @_;
+
+    $prngcmds->{$key}->{exec_path} = $path;
+}
+
+### findExecutable( $exec_name, $dirs )
+#
+# given an executable name, test each possible path in $dirs to see if such
+# an executable exists.
+#
+
+sub findExecutable
+{
+    my($exec_name, $dirs) = @_;
+
+    for my $d (@$dirs)
+    {
+        $test = "$d/$exec_name";
+
+        if ( isExecutable($test) )
+        {
+            return $test;
+        }
+    }
+
+    return "undef";
+}
+
 ### copyKeyFiles( $copylist )
 #
 # given an array of keys to copy, copy both the key and its public variant into
@@ -161,10 +464,27 @@ sub copyKeyFiles
                 $keyfile = "$f";
                 $pubkeyfile = "$f.pub";
 
-                action("cp $localsshdir/$keyfile $sysconfdir/$keyfile");
-                action("cp $localsshdir/$pubkeyfile $sysconfdir/$pubkeyfile");
+                copyFile("$localsshdir/$keyfile", "$sysconfdir/$keyfile");
+                copyFile("$localsshdir/$pubkeyfile", "$sysconfdir/$pubkeyfile");
             }
         }
+    }
+}
+
+### isForced( )
+#
+# return true if the user passed in the force flag.  return false otherwise.
+#
+
+sub isForced
+{
+    if ( defined($force) && $force )
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
     }
 }
 
@@ -179,6 +499,45 @@ sub isReadable
     my($file) = @_;
 
     if ( ( -e $file ) && ( -r $file ) )
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+### isExecutable( $file )
+#
+# return true if $file is executable.  return false otherwise.
+#
+
+sub isExecutable
+{
+    my($file) = @_;
+
+    if ( -x $file )
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+### isWritable( $file )
+#
+# given a file, return true if that file does not exist or is writable by the
+# effective user id.  return false otherwise.
+#
+
+sub isWritable
+{
+    my($file) = @_;
+
+    if ( ( ! -e $file ) || ( -w $file ) )
     {
         return 1;
     }
@@ -272,7 +631,18 @@ sub determineKeys
 
         if ( isPresent($gkeyfile) && isPresent($gpubkeyfile) )
         {
-            next;
+            if ( isForced() )
+            {
+                if ( isWritable("$sysconfdir/$basekeyfile") && isWritable("$sysconfdir/$basekeyfile.pub") )
+                {
+                     action("rm $sysconfdir/$basekeyfile");
+                     action("rm $sysconfdir/$basekeyfile.pub");
+                }
+                else
+                {
+                     next;
+                }
+            }
         }
 
         #
@@ -298,15 +668,6 @@ sub determineKeys
         $count++;
     }
 
-    if ($count > 0)
-    {
-        if ( ! -d $sysconfdir )
-        {
-            print "Could not find ${sysconfdir} directory... creating\n";
-            action("mkdir -p $sysconfdir");
-        }
-    }
-
     return $keyhash;
 }
 
@@ -329,21 +690,23 @@ sub runKeyGen
         {
             $keyfile = $keyfiles->{$k};
 
-            # if $sysconfdir/$keyfile doesn't exist..
-            action("$bindir/ssh-keygen -t $k -f $sysconfdir/$keyfile -N \"\"");
+            if ( !isPresent("$sysconfdir/$keyfile") )
+            {
+                action("$bindir/ssh-keygen -t $k -f $sysconfdir/$keyfile -N \"\"");
+            }
         }
     }
 
     return 0;
 }
 
-### fixpaths( )
+### copySSHDConfigFile( )
 #
 # this subroutine 'edits' the paths in sshd_config to suit them to the current environment
 # in which the setup script is being run.
 #
 
-sub fixpaths
+sub copySSHDConfigFile
 {
     my($fileInput, $fileOutput);
     my($mode, $uid, $gid);
@@ -354,16 +717,23 @@ sub fixpaths
     $fileInput = "$setupdir/sshd_config.in";
     $fileOutput = "$sysconfdir/sshd_config";
 
-    if ( ! -f "$fileInput" )
+    #
+    # verify that we are prepared to work with $fileInput
+    #
+
+    if ( !isReadable($fileInput) )
     {
-        printf("Cannot find $fileInput!\n");
-        die();
+        printf("Cannot read $fileInput... skipping.\n");
+        return;
     }
 
-    if ( -e "$fileOutput" )
+    #
+    # verify that we are prepared to work with $fileOuput
+    #
+
+    if ( !prepareFileWrite($fileOutput) )
     {
-        printf("$fileOutput already exists!\n");
-        die();
+        return;
     }
 
     #
@@ -390,20 +760,20 @@ sub fixpaths
         $line = $_;
         if ( $line =~ /^\s*Subsystem\s+sftp\s+\S+\s*$/ )
         {
-            $newline = "Subsystem\tsftp\t$gpath/libexec/sftp-server\n";
-            $newline =~ s:/+:/:g;
+            $line = "Subsystem\tsftp\t$gpath/libexec/sftp-server\n";
+            $line =~ s:/+:/:g;
         }
         elsif ( $line =~ /^\s*PidFile.*$/ )
         {
-            $newline = "PidFile\t$gpath/var/sshd.pid\n";
-            $newline =~ s:/+:/:g;
+            $line = "PidFile\t$gpath/var/sshd.pid\n";
+            $line =~ s:/+:/:g;
         }
         else
         {
-            $newline = $line;
+            # do nothing
         }
 
-        print OUT "$newline";
+        print OUT "$line";
     } # while <IN>
 
     close(OUT);
@@ -420,6 +790,43 @@ sub fixpaths
     return 0;
 }
 
+### prepareFileWrite( $file )
+#
+# test $file to prepare for writing to it.
+#
+
+sub prepareFileWrite
+{
+    my($file) = @_;
+
+    if ( isPresent($file) )
+    {
+        printf("$file already exists... ");
+
+        if ( isForced() )
+        {
+            if ( isWritable($file) )
+            {
+                printf("removing.\n");
+                action("rm $file");
+                return 1;
+            }
+            else
+            {
+                printf("not writable -- skipping.\n");
+                return 0;
+            }
+        }
+        else
+        {
+            printf("skipping.\n");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 ### copyConfigFiles( )
 #
 # subroutine that copies some extra config files to their proper location in
@@ -428,43 +835,78 @@ sub fixpaths
 
 sub copyConfigFiles
 {
-    print "Copying ssh_config and moduli to their proper location...\n";
+    #
+    # copy the sshd_config file into the ssh configuration directory and alter
+    # the paths in the file.
+    #
 
-    action("cp $setupdir/ssh_config $sysconfdir/ssh_config");
-    action("cp $setupdir/moduli $sysconfdir/moduli");
+    copySSHDConfigFile();
+
+    #
+    # do straight copies of the ssh_config and moduli files.
+    #
+
+    printf("Copying ssh_config and moduli to their proper location...\n");
+
+    copyFile("$setupdir/ssh_config", "$sysconfdir/ssh_config");
+    copyFile("$setupdir/moduli", "$sysconfdir/moduli");
+
+    #
+    # copy and alter the SXXsshd script.
+    #
+
+    copySXXScript("$setupdir/SXXsshd.in", "$sbindir/SXXsshd");
 }
 
-### alterFileGlobusLocation( $in, $out )
+### copyFile( $src, $dest )
+#
+# copy the file pointed to by $src to the location specified by $dest.  in the
+# process observe the rules regarding when the '-force' flag was passed to us.
+#
+
+sub copyFile
+{
+    my($src, $dest) = @_;
+
+    if ( !isReadable($src) )
+    {
+        printf("$src is not readable... not creating $dest.\n");
+        return;
+    }
+
+    if ( !prepareFileWrite($dest) )
+    {
+        return;
+    }
+
+    action("cp $src $dest");
+}
+
+### copySXXScript( $in, $out )
 #
 # parse the input file, substituting in place the value of GLOBUS_LOCATION, and
 # write the result to the output file.
 #
 
-sub alterFileGlobusLocation
+sub copySXXScript
 {
-    my ($in, $out) = @_;
+    my($in, $out) = @_;
 
-    if ( -r $in )
+    if ( !isReadable($in) )
     {
-        if ( ( -w $out ) || ( ! -e $out ) )
-        {
-            $data = readFile($in);
-            $data =~ s|\@GLOBUS_LOCATION\@|$gpath|g;
-            writeFile($out, $data);
-            action("chmod 755 $out");
-        }
+        printf("$in is not readable... not creating $out.\n");
+        return;
     }
-}
 
-### alterFiles( )
-#
-# the main alteration function, which doesn't do much (other than have GLOBUS_LOCATION
-# replaced in the sshd startup/shutdown script).
-#
+    if ( !prepareFileWrite($out) )
+    {
+        return;
+    }
 
-sub alterFiles
-{
-    alterFileGlobusLocation("$setupdir/SXXsshd.in", "$sbindir/SXXsshd");
+    $data = readFile($in);
+    $data =~ s|\@GLOBUS_LOCATION\@|$gpath|g;
+    writeFile($out, $data);
+    action("chmod 755 $out");
 }
 
 ### readFile( $filename )
@@ -474,10 +916,10 @@ sub alterFiles
 
 sub readFile
 {
-    my ($filename) = @_;
-    my $data;
+    my($filename) = @_;
+    my($data);
 
-    open (IN, "$filename") || die "Can't open '$filename': $!";
+    open(IN, "$filename") || die "Can't open '$filename': $!";
     $/ = undef;
     $data = <IN>;
     $/ = "\n";
@@ -494,7 +936,7 @@ sub readFile
 
 sub writeFile
 {
-    my ($filename, $fileinput) = @_;
+    my($filename, $fileinput) = @_;
 
     #
     # test for a valid $filename
@@ -505,9 +947,13 @@ sub writeFile
         die "Filename is undefined";
     }
 
-    if ( ( -e "$filename" ) && ( ! -w "$filename" ) )
+    #
+    # verify that we are prepared to work with $filename
+    #
+
+    if ( !prepareFileWrite($filename) )
     {
-        die "Cannot write to filename '$filename'";
+        return;
     }
 
     #
@@ -519,13 +965,14 @@ sub writeFile
     close(OUT);
 }
 
+### action( $command )
 #
-# Just need a minimal action() subroutine for now..
+# run $command within a proper system() command.
 #
 
 sub action
 {
-    my ($command) = @_;
+    my($command) = @_;
 
     printf "$command\n";
 
@@ -537,10 +984,16 @@ sub action
     }
 }
 
+### query_boolean( $query_text, $default )
+#
+# query the user with a string, and expect a response.  If the user hits
+# 'enter' instead of entering an input, then accept the default response.
+#
+
 sub query_boolean
 {
-    my ($query_text, $default) = @_;
-    my $nondefault, $foo, $bar;
+    my($query_text, $default) = @_;
+    my($nondefault, $foo, $bar);
 
     #
     # Set $nondefault to the boolean opposite of $default.
