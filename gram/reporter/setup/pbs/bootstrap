@@ -15,3 +15,8 @@ if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
 fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
+
+autoconf find-pbs-reporter-tools.in > find-pbs-reporter-tools
+chmod 755 find-pbs-reporter-tools
+
+exit 0
