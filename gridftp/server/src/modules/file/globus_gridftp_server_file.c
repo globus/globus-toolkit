@@ -629,9 +629,6 @@ globus_l_gfs_file_cksm(
     globus_off_t                        length)
 {
     globus_result_t                     result;
-    GlobusGFSName(globus_l_gfs_file_cksm);
-    GlobusGFSFileDebugEnter();
-    
     MD5_CTX                             mdctx;
     char *                              md5ptr;
     unsigned char                       md[MD5_DIGEST_LENGTH];
@@ -643,6 +640,9 @@ globus_l_gfs_file_cksm(
     int                                 n;
     globus_off_t                        count;
     globus_off_t                        read_left;
+    
+    GlobusGFSName(globus_l_gfs_file_cksm);
+    GlobusGFSFileDebugEnter();
     
 
     if(offset < 0)
