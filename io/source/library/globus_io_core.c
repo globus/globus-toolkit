@@ -1771,7 +1771,7 @@ globus_l_io_kickout_cancel_cb(
 {
     globus_io_cancel_info_t *           cancel_info;
     globus_object_t *                   err;
-    globus_io_handle_t                  handle;
+    globus_io_handle_t *                handle;
     globus_io_callback_t                read_callback;
     globus_io_callback_t                write_callback;
     globus_io_callback_t                except_callback;
@@ -1939,7 +1939,7 @@ globus_l_io_kickout_cancel_cb(
             
             result = globus_callback_space_register_oneshot(
                 &cancel_info->callback_handle,
-                globus_i_reltime_zero,
+                &globus_i_reltime_zero,
                 globus_l_io_kickout_cancel_cb,
                 cancel_info,
                 handle->socket_attr.space);
