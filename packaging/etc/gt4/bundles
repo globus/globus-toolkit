@@ -50,8 +50,6 @@ BUNDLE gt4-mds
         globus_wsrf_mds_usefulrp_schema
         globus_wsrf_servicegroup
         globus_wsrf_servicegroup_schema
-        globus_wsrf_mds_archive
-        globus_wsrf_mds_archive_schema
         globus_wsrf_mds_hawkeye
 
 BUNDLE gt4-mds-test
@@ -128,6 +126,11 @@ BUNDLE gt4-delegation
 
 BUNDLE gt4-delegation-test
         globus_wsrf_delegation_service_java_test
+
+BUNDLE gt4-mds-archiver
+        globus_wsrf_xindice
+        globus_wsrf_mds_archive
+        globus_wsrf_mds_archive_schema
 
 BUNDLE gt4-webmds
         globus_ws_core_schema
