@@ -375,6 +375,8 @@ Job (for level 8 messages)
 Logs are named by date. Usually, the server log is located in 
 PBS_HOME/server_logs/<date>
 
+timestamp is in the format MM/DD/YYYY HH:MM:SS
+
 LSF
 The LSF log format is defined in the lsb.events(5) manual page. The current
 log file is called lsb.events. As logs are rotated out, they are renamed
