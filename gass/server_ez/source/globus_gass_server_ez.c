@@ -164,7 +164,7 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
 	scheme=globus_malloc(6);  /* https/0 is the default */
 	if(scheme == GLOBUS_NULL)
         {
-            rc = GLOBUS_GASS_ERROR_MALLOC_FAILED;
+            rc = GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED;
             goto error_exit;
         }
 	globus_libc_lock();

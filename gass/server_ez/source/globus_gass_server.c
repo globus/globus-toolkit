@@ -225,6 +225,8 @@ int main(int argc, char **argv)
 			       &argv,
 			       arg_num,
 			       args_options,
+			       PACKAGE,
+			       VERSION,
 			       oneline_usage,
 			       long_usage,
 			       &options_found,
