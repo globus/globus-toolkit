@@ -710,7 +710,6 @@ globus_l_gfs_file_open(
     globus_result_t                     result;
     globus_xio_attr_t                   attr;
     globus_xio_stack_t                  stack;
-    globus_xio_target_t                 target;
     GlobusGFSName(globus_l_gfs_file_open);
     
     result = globus_xio_attr_init(&attr);
@@ -752,17 +751,17 @@ globus_l_gfs_file_open(
         goto error_push;
     }
 
-    result = globus_xio_target_init(&target, GLOBUS_NULL, pathname, stack);
+    result = globus_xio_handle_create(file_handle, stack);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusGFSErrorWrapFailed("globus_xio_target_init", result);
-        goto error_target;
+        result = GlobusGFSErrorWrapFailed("globus_xio_handle_create", result);
+        goto error_create;
     }
     
     result = globus_xio_register_open(
-        file_handle,
+        *file_handle,
+        pathname,
         attr,
-        target,
         create ? 
             globus_l_gfs_file_open_write_cb : 
             globus_l_gfs_file_open_read_cb,
@@ -779,7 +778,9 @@ globus_l_gfs_file_open(
     return GLOBUS_SUCCESS;
 
 error_register:
-error_target:
+    globus_xio_close(*file_handle, GLOBUS_NULL);
+    
+error_create:
 error_push:
     globus_xio_stack_destroy(stack);
     
