@@ -804,7 +804,7 @@ globus_result_t globus_gsi_cred_read(
  */
 globus_result_t globus_gsi_cred_read_proxy(
     globus_gsi_cred_handle_t            handle,
-    char *                              proxy_filename)
+    const char *                        proxy_filename)
 {
     BIO *                               proxy_bio = NULL;
     globus_result_t                     result;
