@@ -17,9 +17,9 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
 #include "globus_common.h"
 #include "version.h"
+
 
 /******************************************************************************
 			  Module activation structure
@@ -98,4 +98,6 @@ globus_l_common_deactivate(void)
     return rc;
     
 }
+
+
 

@@ -15,13 +15,19 @@ CVS Information:
 ******************************************************************************/
 
 #if !defined(GLOBUS_INCLUDE_GLOBUS_MODULE)
-#ifndef SWIG
 #define GLOBUS_INCLUDE_GLOBUS_MODULE 1
 
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "globus_common.h"
+/* Because of the nested structure of the #includes, the following
+ * #include of "globus_common.h" breaks the build, so it is commented
+ * out.
+ *
+ * Michael Lebman
+ * 5-28-02
+ */
+/* #include "globus_common.h" */
 #include <stdio.h>
  
 #ifndef EXTERN_C_BEGIN
@@ -35,9 +41,6 @@ CVS Information:
 #endif
   
 EXTERN_C_BEGIN
-
-/* endif SWIG */
-#endif
 
 /******************************************************************************
 			       Type definitions
@@ -56,6 +59,9 @@ typedef struct
     int                                 branch_id;
 } globus_version_t;
 
+/*
+ * this remains publicly exposed.  Used throughpout globus
+ */
 typedef struct
 {
     char *				module_name;
@@ -66,7 +72,6 @@ typedef struct
     globus_version_t *                  version;
 } globus_module_descriptor_t;
 
-
 /******************************************************************************
 			      Function prototypes
 ******************************************************************************/
@@ -75,26 +80,44 @@ typedef struct
  * NOTE: all functions return either GLOBUS_SUCCESS or an error code
  */
 
+/**
+ *  Activate a module
+ */
 int
 globus_module_activate(
-    globus_module_descriptor_t *	module_descriptor);
+    globus_module_descriptor_t *	        module_descriptor);
 
+/**
+ *  Deactivate a module
+ */
 int
 globus_module_deactivate(
-    globus_module_descriptor_t *	module_descriptor);
+    globus_module_descriptor_t *	        module_descriptor);
 
+/**
+ *  deactivate all active modules
+ */
 int
 globus_module_deactivate_all(void);
 
+/**
+ *  set an environment variable
+ */
 void
 globus_module_setenv(
-    char * name,
-    char * value);
+    char *                                  name,
+    char *                                  value);
 
+/**
+ *  Get the value of an environment variable
+ */
 char *
 globus_module_getenv(
-    char * name);
+    char *                                  name);
 
+/**
+ *  Get a module pointer
+ */
 void *
 globus_module_get_module_pointer(
     globus_module_descriptor_t *);
@@ -122,10 +145,16 @@ globus_version_print(
     FILE *                              stream,
     globus_bool_t                       verbose);
 
-#ifndef SWIG
+/* The following #ifndef makes no sense and prevents proper compiling,
+ * so I commented it out.
+ *
+ * Michael Lebman
+ * 5-24-02
+ */
+/* #ifndef SWIG */
+
 EXTERN_C_END
 
-/* endif SWIG */
-#endif
-
 #endif /* GLOBUS_INCLUDE_GLOBUS_MODULE */
+
+

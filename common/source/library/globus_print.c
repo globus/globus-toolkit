@@ -1,5 +1,5 @@
 /*****************************************************************************
-globus_error.c
+globus_print.c
 
 Description:
    Error- and status-reporting functions, extracted from nexus
@@ -11,18 +11,19 @@ CVS Information:
    $State$
    $Author$
 ******************************************************************************/
-#include "config.h"
-
-#include "globus_common.h"
+#include "globus_print.h"
+#include "globus_libc.h"
 
 /*****************************************************************************
 		      Module specific prototypes
 *****************************************************************************/
 
-static void globus_l_descriptor_string(char *fmt,
-					      char *s1,
-					      char *s2,
-					      char *s3);
+static void 
+globus_l_descriptor_string(
+    char *                                          fmt,
+    char *                                          s1,
+	char *                                          s2,
+	char *                                          s3);
 
 /*****************************************************************************
 		      Module specific prototypes
@@ -64,7 +65,8 @@ va_dcl
 #else
     va_start(ap);
 #endif
-    globus_thread_diagnostics_vprintf(fmt, ap);
+//    globus_thread_diagnostics_vprintf(fmt, ap);
+	vprintf(fmt, ap);
     va_end(ap);
 
     globus_silent_fatal();
@@ -80,8 +82,15 @@ static void
 globus_l_descriptor_string(char *fmt, char *s1, char *s2, char *s3)
 {
     globus_libc_sprintf(fmt, "t%lu:p%lu%s%s%s%s%s%s",
-			(unsigned long) globus_thread_self(),
-			(unsigned long) getpid(),
+/* The following line was changed to preserve the encapsulation of the 
+ *  globus_thread_t datatype.  This change was necessary because this datatype maps
+ *  to different implementations on different platforms, and the UNIX implementation 
+ *  conflicted with the Windows implementation.
+ *    Michael Lebman 2-8-02
+ */
+/*			(unsigned long) globus_thread_self(), */
+			(unsigned long) globus_thread_get_threadID_as_long(),
+			(unsigned long) globus_libc_getpid(),
 			(s1 ? ": " : ""),
 			(s1 ? s1 : ""),
 			(s2 ? ": " : ""),

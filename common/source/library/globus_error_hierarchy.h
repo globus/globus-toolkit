@@ -3,8 +3,7 @@
 #define GLOBUS_ERROR_HIERARCHY_H
 
 
-#include "globus_common.h"
-
+#include "globus_common_include.h"
 #include "globus_object.h"
 #include "globus_error.h"
 
@@ -980,4 +979,6 @@ globus_error_initialize_not_initialized (
 EXTERN_C_END
 
 #endif /* GLOBUS_ERROR_HIERARCHY_H */
+
+
 

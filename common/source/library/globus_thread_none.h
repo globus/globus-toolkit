@@ -21,7 +21,12 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "globus_common.h"
+#include "globus_common_include.h"
+#include "globus_module.h"
+#include "globus_callback.h"
+
+/* HACK!!!!!!!!!! */
+#define ETIMEDOUT 1
 
 
 /******************************************************************************
@@ -43,15 +48,6 @@ EXTERN_C_BEGIN
 /******************************************************************************
 			       Type definitions
 ******************************************************************************/
-#if defined (GLOBUS_TIMESPEC_EXISTS)
-    typedef struct timespec      globus_abstime_t;
-#else
-    typedef struct globus_abstime_s
-    {
-       long    tv_sec;
-       long    tv_nsec;
-    } globus_abstime_t;
-#endif
 typedef int globus_thread_t;
 typedef int globus_threadattr_t;
 typedef void * (*globus_thread_func_t)(void *);
@@ -139,6 +135,8 @@ typedef int globus_thread_once_t;
 
 #define globus_macro_thread_self() \
     (0)
+
+#define globus_thread_get_threadID_as_long() globus_macro_thread_self()
 
 #define globus_macro_thread_equal(T1, T2) \
     ((T1) == (T2))
@@ -240,8 +238,9 @@ globus_thread_setspecific(
 
 int
 globus_thread_key_create(
-    globus_thread_key_t *               key,
-    globus_thread_key_destructor_func_t func);
+    globus_thread_key_t *                           key,
+    globus_thread_key_destructor_func_t             func);
+
 extern void
 globus_thread_yield(void);
 
@@ -250,8 +249,8 @@ globus_thread_self(void);
 
 extern int
 globus_thread_equal(
-    globus_thread_t			thread1,
-    globus_thread_t			thread2);
+    globus_thread_t			                        thread1,
+    globus_thread_t			                        thread2);
 
 extern globus_bool_t
 globus_thread_preemptive_threads();
@@ -268,10 +267,12 @@ globus_thread_preemptive_threads();
 ******************************************************************************/
 extern int globus_i_thread_pre_activate();
 
-extern globus_module_descriptor_t	globus_i_thread_module;
+extern globus_module_descriptor_t	                globus_i_thread_module;
 
 #define GLOBUS_THREAD_MODULE (&globus_i_thread_module)
 
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_THREAD */
+
+

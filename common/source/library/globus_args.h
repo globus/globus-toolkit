@@ -1,7 +1,6 @@
 #ifndef GLOBUS_ARGS_H
 #define GLOBUS_ARGS_H
 
-
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
 #define EXTERN_C_BEGIN extern "C" {
@@ -15,7 +14,6 @@
 EXTERN_C_BEGIN
 
 #include "globus_common.h"
-
 /*  globus_args.h : a Globus-style argument option parser
 
     The API implements the following behavior:
@@ -206,3 +204,5 @@ globus_validate_filename( char *    value,
 EXTERN_C_END
 
 #endif /* ifndef GLOBUS_ARGS_H */
+
+

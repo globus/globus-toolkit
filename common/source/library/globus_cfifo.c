@@ -5,14 +5,10 @@
  *
  ********************************************************************/
 
-#include "config.h"
-#include "globus_common.h"
-
-#include <assert.h>
-#include <stdlib.h>
-
+#include "globus_common_include.h"
 #include "globus_fifo.h"
 #include "globus_cfifo.h"
+#include "globus_libc.h"
 
 
 #define GLOBUS_CFIFO_BLOCKSIZE  500
@@ -156,6 +152,8 @@ globus_cfifo_dequeue (globus_cfifo_t *fifo)
 
   return datum;
 }
+
+
 
 
 

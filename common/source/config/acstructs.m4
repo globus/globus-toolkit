@@ -152,37 +152,6 @@ AC_MSG_RESULT($ac_max_iov_result)
 
 ])
 
-AC_DEFUN(CHECK_FOR_TCPFASTACK, [
-AC_MSG_CHECKING(for TCP_FASTACK sockopt)
-    if test -n "$lac_cv_have_tcp_fastack" ; then
-	ac_cv_have_tcp_fastack="(cached) $lac_cv_have_tcp_fastack"
-    else
-	lac_cv_have_tcp_fastack="no"
-	ac_cv_have_tcp_fastack="no"
-	AC_TRY_COMPILE(
-	[
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#if HAVE_NETINET_TCP_H
-#include <netinet/tcp.h>
-#endif
-	],
-	[
-	    printf("%d\n", TCP_FASTACK);
-	],
-	lac_cv_have_tcp_fastack="yes"
-	ac_cv_have_tcp_fastack="yes"
-	)
-    fi
-    if test "$lac_cv_have_tcp_fastack" = "yes" ; then
-	AC_DEFINE(HAVE_TCP_FASTACK)
-    fi
-AC_MSG_RESULT($ac_cv_have_tcp_fastack)
-
-
-])
-
 AC_DEFUN(CHECK_FOR_ATEXIT, [
 dnl check for availablility of atexit or on_exit
 AC_MSG_CHECKING(how to execute a function on program exit)

@@ -1,12 +1,8 @@
-/* Application specific options */
-
-#undef HAVE_TCP_FASTACK
+/* Application specific options */VE_STDARG_H
 
 #undef HAVE_POLL
 
 #undef ssize_t
-#undef HAVE_STRUCT_IOVEC
-#undef IOV_MAX
 
 #undef HAVE_SEEKDIR
 #undef HAVE_TELLDIR
@@ -19,6 +15,8 @@
 
 #undef HAVE_CTIME
 #undef HAVE_CTIME_R
+
+#undef HAVE_STDARG_H
 
 #undef HAVE_MKTIME
 
@@ -56,17 +54,3 @@
 
 #undef HAVE_ATEXIT
 #undef HAVE_ONEXIT
-
-#undef HAVE_NETINET_TCP_H
-
-#undef GLOBUS_OFF_T
-#undef GLOBUS_OFF_T_FORMAT
-#undef SIZEOF_OFF_T
-
-#undef GLOBUS_TIMESPEC_EXISTS
-
-#undef GLOBUS_USE_SOLARIS_THREADS
-#undef GLOBUS_USE_PTHREADS
-#undef GLOBUS_USE_SPROC
-#undef GLOBUS_USE_NO_THREADS
-#undef GLOBUS_USE_EXTERNAL_THREADS

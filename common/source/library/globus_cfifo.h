@@ -1,4 +1,3 @@
-
 #ifndef GLOBUS_COMMON_CFIFO_H
 #define GLOBUS_COMMON_CFIFO_H
 
@@ -12,16 +11,6 @@
 #include "globus_fifo.h"
 
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
- 
 EXTERN_C_BEGIN
 
 typedef globus_fifo_t globus_cfifo_t;
@@ -55,3 +44,5 @@ globus_cfifo_dequeue (globus_cfifo_t *fifo);
 EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_CFIFO_H */
+
+

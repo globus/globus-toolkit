@@ -1,7 +1,6 @@
-#include "config.h"
-#include "globus_common.h"
 #include "globus_error_string.h"
-#include <string.h>
+#include "globus_libc.h"
+#include "globus_error.h"
 
 /**
  * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_STRING
@@ -61,7 +60,11 @@ globus_error_initialize_string(
     globus_libc_lock();
     if(f == NULL)
     {
+#ifndef TARGET_ARCH_WIN32
 	f = fopen("/dev/null", "w");
+#else
+	f = fopen("NUL", "w");
+#endif
     }
 
     len = vfprintf(f, fmt, ap) + 1;
@@ -111,4 +114,6 @@ const globus_object_type_t GLOBUS_ERROR_TYPE_STRING_DEFINITION
 	globus_l_error_string_copy,
 	globus_l_error_string_free,
 	globus_l_error_string_printable);
+
+
 
