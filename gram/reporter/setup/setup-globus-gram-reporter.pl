@@ -6,7 +6,6 @@ my @all_jm_types = ('condor', 'easymcs', 'fork', 'glunix', 'grd', 'loadleveler',
 
 
 GetOptions( 'type=s' => \$selected_jm_type,
-            'force' => \$force),
             'help' => \$help)
   or pod2usage(1);
 
@@ -16,8 +15,6 @@ sub pod2usage {
   my $ex = shift;
   print "setup-globus-gram-job-manager [ \\
                -help \\
-               -force \\
-                 currectly this is option does nothing \\
                -type=[ @all_jm_types ]\\
                      (fork is default)\\
               ]\n";
