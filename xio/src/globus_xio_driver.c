@@ -1439,7 +1439,7 @@ globus_i_xio_driver_handle_cntl(
 
 globus_result_t
 globus_xio_driver_merge_handle(
-    globus_xio_driver_handle_t              dst_driver_handle,
+    globus_xio_operation_t                  op,
     globus_xio_driver_handle_t              src_driver_handle)
 {
     int                                     ctr;
@@ -1449,9 +1449,9 @@ globus_xio_driver_merge_handle(
     GlobusXIOName(globus_xio_driver_merge_handle);
 
     GlobusXIODebugEnter();
-    if(dst_driver_handle == NULL)
+    if(op == NULL)
     {
-        res = GlobusXIOErrorParameter("dst_driver_handle");
+        res = GlobusXIOErrorParameter("op");
         goto err;
     }
     if(src_driver_handle == NULL)
@@ -1460,16 +1460,16 @@ globus_xio_driver_merge_handle(
         goto err;
     }
 
+
+    dst_context = op->_op_context;
+    src_context = src_driver_handle->whos_my_daddy;
     /*
      *  if they are the same just indicate success
      */
-    if(dst_driver_handle == src_driver_handle)
+    if(dst_context == src_context)
     {
         return GLOBUS_SUCCESS;
     }
-
-    dst_context = dst_driver_handle->whos_my_daddy;
-    src_context = src_driver_handle->whos_my_daddy;
 
     if(dst_context->stack_size != src_context->stack_size)
     {
