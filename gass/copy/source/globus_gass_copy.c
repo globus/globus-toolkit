@@ -405,6 +405,10 @@ globus_l_gass_copy_transfer_start(
 	    globus_l_gass_copy_ftp_get_done_callback,
 	    (void *) state);
 
+        globus_l_gass_copy_register_read(
+            state,
+            (globus_byte_t *) GLOBUS_NULL); /* malloc new buffer */
+
         globus_l_gass_copy_ftp_setup_callback(state);
 
 	break;
@@ -428,7 +432,7 @@ globus_l_gass_copy_transfer_start(
     }
 
     /* wait for ok from the source */
-    state->number = SOURCE_READY;
+    state->number = GLOBUS_I_GASS_COPY_STATE_SOURCE_READY;
 
     /*
      * Now get the destination side ready
@@ -612,7 +616,7 @@ globus_l_gass_copy_gass_setup_callback(
            globus_gass_transfer_request_get_referral(request, &referral);
            globus_gass_transfer_request_destroy(request);
 
-           if (state->number == INITIAL)
+           if (state->number == GLOBUS_I_GASS_COPY_STATE_INITIAL)
            {
                /* first setup the source with the register get
                 */
@@ -661,7 +665,7 @@ globus_l_gass_copy_gass_setup_callback(
 
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
 
-           if (state->number == INITIAL)
+           if (state->number == GLOBUS_I_GASS_COPY_STATE_INITIAL)
                globus_l_gass_copy_generic_setup_callback(state);
            else
                state->dest.ready = GLOBUS_TRUE;
@@ -890,6 +894,9 @@ globus_l_gass_copy_generic_write_callback(
     globus_l_gass_copy_write_from_queue(state);
 
     globus_mutex_unlock(&(state->dest.mutex));
+
+???
+    while (state->reads_pending < state->source.simultaneous_reads)
 
     /* register a new read using this buffer */
     globus_l_gass_copy_register_read(

@@ -82,11 +82,11 @@ struct globus_gass_copy_handle_s
 } globus_gass_copy_handle_t;
 
 /**
- * gass copy attribute structure
+ * GASS copy attribute structure.  Contains any/all attributes that are
+ * required to perform the supported transfer methods (ftp, gass, io).
  */
 struct globus_gass_copy_attr_s
 {
-    /* globus_gass_transfer_requestattr_t	gass; */
     globus_io_file_type                 file_type;
     globus_io_authorization_t	        io_auth;
     globus_io_secure_channel_t          secure_channel_info;
