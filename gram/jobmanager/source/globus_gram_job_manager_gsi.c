@@ -597,7 +597,6 @@ globus_l_gram_job_manager_proxy_expiration(
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
@@ -609,7 +608,6 @@ globus_l_gram_job_manager_proxy_expiration(
 	  break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
@@ -656,19 +654,6 @@ globus_l_gram_job_manager_proxy_expiration(
 	{
 	    request->jobmanager_state =
 		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE;
-	}
-	break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND:
-        if(request->save_state)
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-	}
-	else 
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND;
 	}
 	break;
 
@@ -735,7 +720,6 @@ globus_l_gram_job_manager_proxy_expiration(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
