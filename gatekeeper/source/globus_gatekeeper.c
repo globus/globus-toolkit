@@ -1190,35 +1190,14 @@ static void doit()
     }
     
 #ifdef TARGET_ARCH_CRAYT3E
-         /* Need to lookup hostname -- provide for use in udb updates. */
-          {
-            struct sockaddr_in from;
-            int fromlen;
-            struct hostent *hp;
-            char hostname[256];
-
-            /* Get IP address of client. */
-            fromlen = sizeof(from);
-            memset(&from, 0, sizeof(from));
-            if (getpeername(connection_fd, (struct sockaddr *)&from,
-                            &fromlen) < 0)
-            {
-              notice2(LOG_ERR,"getpeername failed: %.100s", strerror(errno));
-              strcpy(hostname, "UNKNOWN");
-            }
-            else
-            {
-              /* Map the IP address to a host name. */
-              hp = gethostbyaddr((char *)&from.sin_addr, 
-                                 sizeof(struct in_addr), from.sin_family);
-              if (hp)
-                strncpy(hostname, hp->h_name, sizeof(hostname));
-              else
-                strncpy(hostname, inet_ntoa(from.sin_addr), sizeof(hostname));
-            }
-
-            set_connection_hostname (hostname);
-          }
+    if (gatekeeper_uid == 0)
+    {
+        get_udbent(userid);
+	if (unicos_access_denied())
+	{
+	    failure2("UNICOS denied access to user %s.", userid);
+	}
+    }
 #endif /* TARGET_ARCH_CRAYT3E */
 
 
