@@ -1541,7 +1541,6 @@ globus_i_ftp_client_restart_info_delete(
     if(restart_info->source_attr)
     {
 	globus_ftp_client_operationattr_destroy(&restart_info->source_attr);
-	globus_libc_free(restart_info->source_attr);
 	restart_info->source_attr = GLOBUS_NULL;
     }
     if(restart_info->dest_url)
@@ -1552,7 +1551,6 @@ globus_i_ftp_client_restart_info_delete(
     if(restart_info->dest_attr)
     {
 	globus_ftp_client_operationattr_destroy(&restart_info->dest_attr);
-	globus_libc_free(restart_info->dest_attr);
 	restart_info->dest_attr = GLOBUS_NULL;
     }
     globus_libc_free(restart_info);
