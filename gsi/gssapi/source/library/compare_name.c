@@ -227,6 +227,7 @@ GSS_CALLCONV gss_compare_name(
     unsigned int                        le2;
     unsigned char *                     ce1;
     unsigned char *                     ce2;
+    int                                 found_dot = 0;
     int                                 index;
     int                                 common_name_NID;
     const gss_name_desc*                name1 = (gss_name_desc*) name1_P;
@@ -379,12 +380,18 @@ GSS_CALLCONV gss_compare_name(
                 while (le1 > 0 && le2 > 0 && 
                        toupper(*ce1) == toupper(*ce2))
                 {
+                    if(*ce1 == '.')
+                    {
+                        found_dot = 1;
+                    }
+                    
                     le1--;
                     le2--;
                     ce1++;
                     ce2++;
                 }
-                if (le1 >0 && le2 > 0)
+                
+                if (le1 >0 && le2 > 0 && !found_dot)
                 {
                     if ( *ce1 == '.' && *ce2 == '-' )
                     {
