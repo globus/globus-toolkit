@@ -272,6 +272,10 @@ globus_l_gfs_data_operation_destroy(
 {
     globus_range_list_destroy(op->recvd_ranges);
     globus_range_list_destroy(op->stripe_range_list);
+    if(op->pathname)
+    {
+        globus_free(op->pathname);
+    }
     if(op->list_type)
     {
         globus_free((char *) op->list_type);
@@ -391,7 +395,7 @@ globus_i_gfs_data_request_command(
     op->id = id;
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->command = cmd_info->command;
-    op->pathname = cmd_info->pathname;
+    op->pathname = globus_libc_strdup(cmd_info->pathname);
     op->callback = cb;
     op->user_arg = user_arg;
     
@@ -801,7 +805,6 @@ globus_i_gfs_data_request_passive(
         op->ipc_handle = ipc_handle;
         op->id = id;
         op->state = GLOBUS_L_GFS_DATA_REQUESTING;
-        op->pathname = data_info->pathname;
         op->callback = cb;
         op->user_arg = user_arg;
         globus_l_gfs_dsi->passive_func(
@@ -960,7 +963,6 @@ globus_i_gfs_data_request_active(
         op->ipc_handle = ipc_handle;
         op->id = id;
         op->state = GLOBUS_L_GFS_DATA_REQUESTING;
-        op->pathname = data_info->pathname;
         op->callback = cb;
         op->user_arg = user_arg;
         globus_l_gfs_dsi->active_func(op, data_info, session_handle->session_arg);

@@ -771,6 +771,10 @@ globus_l_gfs_request_command(
         globus_l_gfs_data_command_cb,
         request);
 
+    if(command_info.pathname)
+    {
+        globus_free(command_info.pathname);
+    }
     return;
 
 err:   
@@ -979,6 +983,8 @@ globus_l_gfs_request_send(
         globus_l_gfs_data_event_cb,
         request);
 
+    globus_free(send_info.pathname);
+
     return;
     
 error_init:
@@ -1064,6 +1070,8 @@ globus_l_gfs_request_recv(
         globus_l_gfs_data_event_cb,
         request);
 
+    globus_free(recv_info.pathname);
+
     return;
     
 error_init:
@@ -1111,6 +1119,8 @@ globus_l_gfs_request_list(
         globus_l_gfs_data_transfer_cb,
         globus_l_gfs_data_event_cb,
         request);
+
+    globus_free(list_info.pathname);
 
     return;
     
@@ -1238,7 +1248,10 @@ globus_l_gfs_request_passive_data(
 
     globus_l_gfs_get_data_info(op, &data_info, net_prt);
 
-    data_info.pathname = globus_libc_strdup(pathname);
+    if(pathname)
+    {
+        globus_l_gfs_get_full_path(instance, pathname, &data_info.pathname);
+    }
     data_info.max_cs = max;
 
     globus_i_gfs_data_request_passive(
@@ -1249,6 +1262,10 @@ globus_l_gfs_request_passive_data(
         globus_l_gfs_data_passive_data_cb,
         request);
 
+    if(data_info.pathname)
+    {
+        globus_free(data_info.pathname);
+    }
     return;
     
 error_init:
