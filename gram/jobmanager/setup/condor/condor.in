@@ -43,7 +43,7 @@ sub new
 
     $self->{condor_logfile} = "$log_dir/gram_condor_log."
 			    . $self->{JobDescription}->uniq_id();
-    
+
     bless $self, $class;
     return $self;
 }
@@ -54,7 +54,7 @@ sub submit
     my $description = $self->{JobDescription};
     my @environment;
     my $environment_string;
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $script_url;
     my $script_filename;
@@ -285,6 +285,10 @@ sub poll
     $self->log("polling job " . $description->jobid());
 
     $condor_log_file = new IO::File($self->{condor_logfile}, '<');
+    if ( ! defined $condor_log_file )
+    {
+	return $state = Globus::GRAM::JobState::DONE;
+    }
 
     @status = grep(/^[0-9]* \(0*${job_id}/, <$condor_log_file>);
 
