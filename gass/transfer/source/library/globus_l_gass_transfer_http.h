@@ -52,7 +52,11 @@ typedef enum
  */
 const globus_gass_transfer_http_line_mode_t
 globus_l_gass_transfer_http_line_mode =
+#ifndef TARGET_ARCH_WIN32
     GLOBUS_L_LINE_MODE_LF;
+#else
+    GLOBUS_L_LINE_MODE_CRLF;
+#endif
 
 /* For 8-bit Text:
 #define GLOBUS_L_TEXT_BYTE(text) (text)

@@ -125,10 +125,10 @@ globus_l_gass_server_ez_register_accept_callback(
                                         );
 
 /* utility routines */
-
 static int globus_l_gass_server_ez_tilde_expand(unsigned long options,
 						char *inpath,
 						char **outpath);
+
 static int
 globus_l_gass_server_ez_write(int fd,
                     globus_byte_t *buffer,
@@ -506,7 +506,6 @@ globus_l_gass_server_ez_register_accept_callback(
     	    rc = globus_l_gass_server_ez_tilde_expand(s->options,
                                               parsed_url.url_path,
                                               &path);
-
     	    /* Check for "special" file names, and if we will handle them */
     	    if(strcmp(path, "/dev/stdout") == 0 &&
               (s->options & GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE))
@@ -540,7 +539,11 @@ globus_l_gass_server_ez_register_accept_callback(
                 globus_url_destroy(&parsed_url);
 		goto deny;
     	    }
-
+#ifdef TARGET_ARCH_WIN32
+			// The call to open() in Windows defaults to text mode, so
+			// we to override it.
+			flags |= O_BINARY;
+#endif
             rc = globus_libc_open(path, flags, 0600);
             globus_url_destroy(&parsed_url);
             if(rc < 0)
@@ -583,7 +586,7 @@ globus_l_gass_server_ez_register_accept_callback(
             globus_url_parse(url,
                              &parsed_url);
 
-	    /* Expand ~ and ~user prefix if enaabled in options */
+			/* Expand ~ and ~user prefix if enaabled in options */
             rc = globus_l_gass_server_ez_tilde_expand(s->options,
                                               parsed_url.url_path,
                                               &path);
@@ -595,6 +598,11 @@ globus_l_gass_server_ez_register_accept_callback(
 	   
 	    if(stat(path, &statstruct)==0)
 	    {
+#ifdef TARGET_ARCH_WIN32
+				// The call to open() in Windows defaults to text mode, 
+				// so we to override it.
+				flags |= O_BINARY;
+#endif
                 rc = globus_libc_open(path, flags, 0600);
 		fstat(rc, &statstruct);
 		globus_url_destroy(&parsed_url);
@@ -753,10 +761,10 @@ globus_l_gass_server_ez_tilde_expand(unsigned long options,
 			     char *inpath,
 			     char **outpath)
 {
+#ifndef TARGET_ARCH_WIN32   
     struct passwd pwd;
     char buf[1024];
 
-    
     /*
      * If this is a relative path, the strip off the leading /./
      */
@@ -774,6 +782,7 @@ globus_l_gass_server_ez_tilde_expand(unsigned long options,
 				   GLOBUS_TRUE, /* url form /~[user][/etc]*/
 				   inpath,
 				   outpath);
+#endif /* TARGET_ARCH_WIN32*/
 
 notilde:
     *outpath = globus_malloc(strlen(inpath)+1);
@@ -795,7 +804,11 @@ globus_l_gass_server_ez_write(int fd,
                     globus_byte_t *buffer,
                     size_t length)
 {
+#ifndef TARGET_ARCH_WIN32
     ssize_t rc;
+#else
+	int rc;
+#endif
     size_t written;
 
     written = 0;
