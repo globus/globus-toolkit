@@ -11,7 +11,7 @@ cd work/
 # create the bundle
 #
 
-$GPT_LOCATION/sbin/gpt-bundle -nodeps -srcdir=sources/ -output=$NAME gsi_openssh gsi_openssh_setup
+$GPT_LOCATION/sbin/gpt-bundle -nodeps -srcdir=sources/ -output=$NAME gsi_openssh gsi_openssh_setup gsi_openssh_compat
 mv sources/gsi_openssh_bundle-$VERSION-src_src.tar.gz $NAME
 
 #
