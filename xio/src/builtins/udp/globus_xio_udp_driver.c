@@ -1039,7 +1039,7 @@ globus_result_t
 globus_l_xio_udp_open(
     void *                              driver_target,
     void *                              driver_attr,
-    globus_xio_context_t                context,
+    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
@@ -1098,7 +1098,7 @@ globus_l_xio_udp_open(
         }
     }
     
-    globus_xio_driver_finished_open(context, handle, op, GLOBUS_SUCCESS);
+    globus_xio_driver_finished_open(driver_handle, handle, op, GLOBUS_SUCCESS);
     
     return GLOBUS_SUCCESS;
 
@@ -1120,17 +1120,17 @@ globus_l_xio_udp_system_close_cb(
     void *                              user_arg)
 {
     globus_xio_operation_t              op;
-    globus_xio_context_t                context;
+    globus_xio_driver_handle_t          driver_handle;
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_udp_system_close_cb);
     
     op = (globus_xio_operation_t) user_arg;
     
-    context = GlobusXIOOperationGetContext(op);
-    handle = GlobusXIOOperationGetDriverHandle(op);
+    driver_handle = GlobusXIOOperationGetDriverHandle(op);
+    handle = GlobusXIOOperationGetDriverSpecificHandle(op);
     
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_context_close(context);
+    globus_xio_driver_handle_close(driver_handle);
     globus_l_xio_udp_handle_destroy(handle);
 }
 
@@ -1140,16 +1140,16 @@ globus_l_xio_udp_system_close_cb(
 static
 globus_result_t
 globus_l_xio_udp_close(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_context_t                context,
+    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_udp_close);
 
-    handle = (globus_l_handle_t *) driver_handle;
+    handle = (globus_l_handle_t *) driver_specific_handle;
         
     result = globus_xio_system_register_close(
         op,
@@ -1166,7 +1166,7 @@ globus_l_xio_udp_close(
     return GLOBUS_SUCCESS;
     
 error_register:
-    globus_xio_driver_context_close(context);
+    globus_xio_driver_handle_close(driver_handle);
     globus_l_xio_udp_handle_destroy(handle);
     
     return result;
@@ -1197,7 +1197,7 @@ globus_l_xio_udp_system_read_cb(
 static
 globus_result_t
 globus_l_xio_udp_read(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -1207,7 +1207,7 @@ globus_l_xio_udp_read(
     globus_sockaddr_t *                 addr;
     GlobusXIOName(globus_l_xio_udp_read);
 
-    handle = (globus_l_handle_t *) driver_handle;
+    handle = (globus_l_handle_t *) driver_specific_handle;
     
     addr = GLOBUS_NULL;
     if(!handle->connected)
@@ -1280,7 +1280,7 @@ globus_l_xio_udp_system_write_cb(
 static
 globus_result_t
 globus_l_xio_udp_write(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -1290,7 +1290,7 @@ globus_l_xio_udp_write(
     globus_sockaddr_t *                 addr;
     GlobusXIOName(globus_l_xio_udp_write);
 
-    handle = (globus_l_handle_t *) driver_handle;
+    handle = (globus_l_handle_t *) driver_specific_handle;
     
     addr = GLOBUS_NULL;
     if(!handle->connected)
@@ -1335,7 +1335,7 @@ globus_l_xio_udp_write(
 static
 globus_result_t
 globus_l_xio_udp_cntl(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     int                                 cmd,
     va_list                             ap)
 {
@@ -1351,7 +1351,7 @@ globus_l_xio_udp_cntl(
     char **                             out_string;
     GlobusXIOName(globus_l_xio_udp_cntl);
 
-    handle = (globus_l_handle_t *) driver_handle;
+    handle = (globus_l_handle_t *) driver_specific_handle;
     fd = handle->handle;
     flags = GLOBUS_LIBC_ADDR_LOCAL;
     

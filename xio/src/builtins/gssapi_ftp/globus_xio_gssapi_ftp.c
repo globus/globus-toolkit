@@ -93,7 +93,7 @@ typedef struct globus_l_xio_gssapi_ftp_handle_s
 
     globus_i_xio_gssapi_ftp_state_t         state;
 
-    globus_xio_context_t                    context;
+    globus_xio_driver_handle_t              driver_handle;
     globus_bool_t                           client;
 
     globus_fifo_t                           read_command_q;
@@ -310,7 +310,7 @@ globus_l_xio_gssapi_ftp_handle_create()
     handle->subject = NULL;
     handle->target_name = GSS_C_NO_NAME;
 
-    handle->context = NULL;
+    handle->driver_handle = NULL;
 
     /* read data members */
     globus_fifo_init(&handle->read_command_q);
@@ -385,9 +385,9 @@ globus_l_xio_gssapi_ftp_handle_destroy(
             GLOBUS_NULL);
     }
 
-    if(handle->context != NULL)
+    if(handle->driver_handle != NULL)
     {
-        globus_xio_driver_context_close(handle->context);
+        globus_xio_driver_handle_close(handle->driver_handle);
     }
 
     globus_free(handle->read_buffer);
@@ -1113,7 +1113,7 @@ globus_l_xio_gssapi_ftp_read_cb(
     }
     else
     {
-        globus_xio_driver_finished_open(handle->context, handle, op, res);
+        globus_xio_driver_finished_open(handle->driver_handle, handle, op, res);
     }
     return;
 }
@@ -1373,7 +1373,7 @@ globus_l_xio_gssapi_ftp_client_open_reply_cb(
     return;
 
   err:
-    globus_xio_driver_finished_open(handle->context, handle, op, res);
+    globus_xio_driver_finished_open(handle->driver_handle, handle, op, res);
 
     return;
 }
@@ -1611,7 +1611,7 @@ globus_l_xio_gssapi_ftp_client_open_cb(
         with success */
     if(result != GLOBUS_SUCCESS || handle->state == GSSAPI_FTP_STATE_OPEN)
     {
-        globus_xio_driver_finished_open(handle->context, handle, op, result);
+        globus_xio_driver_finished_open(handle->driver_handle, handle, op, result);
     }
 }
 
@@ -1626,7 +1626,7 @@ globus_l_xio_gssapi_ftp_server_open_cb(
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
-    globus_xio_driver_finished_open(handle->context, handle, op, result);
+    globus_xio_driver_finished_open(handle->driver_handle, handle, op, result);
 }
 
 /************************************************************************
@@ -1890,7 +1890,7 @@ globus_l_xio_gssapi_ftp_client_incoming(
                 globus_fifo_enqueue(&handle->read_command_q, handle->banner);
                 done = GLOBUS_TRUE;
                 globus_xio_driver_finished_open(
-                    handle->context, handle, op, res);
+                    handle->driver_handle, handle, op, res);
             }
             /* if we still need to send more adats, but all is well */
             else if(*cmd_a[0] == '3')
@@ -2248,7 +2248,7 @@ globus_l_xio_gssapi_ftp_open(
         handle->host = globus_libc_strdup(target->host);
         handle->state = GSSAPI_FTP_STATE_CLIENT_READING_220;
         handle->cred_handle = GSS_C_NO_CREDENTIAL;
-        res = globus_xio_driver_pass_open(&handle->context, op,
+        res = globus_xio_driver_pass_open(&handle->driver_handle, op,
                             globus_l_xio_gssapi_ftp_client_open_cb, handle);
     }
     /* do server protocol */
@@ -2267,7 +2267,7 @@ globus_l_xio_gssapi_ftp_open(
         }
 
         handle->state = GSSAPI_FTP_STATE_SERVER_READING_AUTH;
-        res = globus_xio_driver_pass_open(&handle->context, op,
+        res = globus_xio_driver_pass_open(&handle->driver_handle, op,
                             globus_l_xio_gssapi_ftp_server_open_cb, handle);
     }
     if(res != GLOBUS_SUCCESS)
@@ -2285,16 +2285,16 @@ globus_l_xio_gssapi_ftp_open(
 
 static globus_result_t
 globus_l_xio_gssapi_ftp_close(
-    void *                                  driver_handle,
+    void *                                  driver_specific_handle,
     void *                                  attr,
-    globus_xio_context_t                    context,
+    globus_xio_driver_handle_t              driver_handle,
     globus_xio_operation_t                  op)
 {
     globus_result_t                         res;
     globus_l_xio_gssapi_ftp_handle_t *      handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_close);
 
-    handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_handle;
+    handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_specific_handle;
 
     globus_l_xio_gssapi_ftp_handle_destroy(handle);
     res = globus_xio_driver_pass_close(op, NULL, NULL);
@@ -2339,7 +2339,7 @@ globus_l_xio_gssapi_ftp_write_cb(
 /* client and server are both the same except for the header */
 static globus_result_t
 globus_l_xio_gssapi_ftp_write(
-    void *                                  driver_handle,
+    void *                                  driver_specific_handle,
     const globus_xio_iovec_t *              iovec,
     int                                     iovec_count,
     globus_xio_operation_t                  op)
@@ -2355,7 +2355,7 @@ globus_l_xio_gssapi_ftp_write(
     globus_xio_driver_data_callback_t       cb;
     GlobusXIOName(globus_l_xio_gssapi_ftp_write);
 
-    handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_handle;
+    handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_specific_handle;
 
     if(handle->write_posted)
     {
@@ -2551,7 +2551,7 @@ globus_l_xio_gssapi_finshed_read(
 
 static globus_result_t
 globus_l_xio_gssapi_ftp_read(
-    void *                                  driver_handle,
+    void *                                  driver_specific_handle,
     const globus_xio_iovec_t *              iovec,
     int                                     iovec_count,
     globus_xio_operation_t                  op)
@@ -2561,7 +2561,7 @@ globus_l_xio_gssapi_ftp_read(
     GlobusXIOName(globus_l_xio_gssapi_ftp_read);
     globus_l_xio_gssapi_read_req_t *        req;
 
-    handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_handle;
+    handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_specific_handle;
 
     req = (globus_l_xio_gssapi_read_req_t *)
         globus_malloc(sizeof(globus_l_xio_gssapi_read_req_t));

@@ -148,20 +148,20 @@ globus_l_xio_http_handle_destroy_element(
 
 static globus_result_t
 globus_l_xio_http_handle_cntl(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     int                                 cmd,
     va_list                             ap)
 {
     globus_hashtable_t *user_table;
     char *user_str;
-    l_http_info_t *info = driver_handle;
+    l_http_info_t *info = driver_specific_handle;
 
     switch(cmd) {
     case GLOBUS_XIO_HTTP_GET_HEADERS:
         user_table = (globus_hashtable_t *) va_arg(ap, globus_hashtable_t *);
         globus_hashtable_lookup(user_table, "Content-Length"); 
         globus_hashtable_copy(user_table, 
-                              &((l_http_info_t *)driver_handle)->recv_headers,
+                              &((l_http_info_t *)driver_specific_handle)->recv_headers,
                               globus_l_xio_http_handle_copy_element);
         globus_hashtable_lookup(user_table, "Content-Length"); 
         break;
@@ -291,9 +291,9 @@ globus_l_xio_http_read_cb(
 
     GlobusXIOName(globus_l_xio_http_read_cb);
 
-    globus_xio_context_t                    context;
+    globus_xio_driver_handle_t          driver_handle;
     l_http_info_t *info = (l_http_info_t *)user_arg;
-    context = GlobusXIOOperationGetContext(op);
+    driver_handle = GlobusXIOOperationGetDriverHandle(op);
 
     parse_result = globus_l_xio_http_parse_header(info);
     switch(parse_result) {
@@ -305,11 +305,11 @@ globus_l_xio_http_read_cb(
         break;
     case GLOBUS_XIO_HTTP_PARSE_FAILED:  //error parsing header
         result = GlobusXIOHttpParseError();
-        globus_xio_driver_finished_open(context, info, op, result);
+        globus_xio_driver_finished_open(driver_handle, info, op, result);
         break;
     default:
         result = GLOBUS_SUCCESS;
-        globus_xio_driver_finished_open(context, info, op, result);
+        globus_xio_driver_finished_open(driver_handle, info, op, result);
     }
 
 }
@@ -317,7 +317,7 @@ globus_l_xio_http_read_cb(
 static
 globus_result_t
 globus_l_xio_http_read(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -344,10 +344,10 @@ globus_l_xio_http_open_cb(
     globus_result_t                         result,
     void *                                  user_arg)
 {
-    globus_xio_context_t                    context;
+    globus_xio_driver_handle_t              driver_handle;
     l_http_info_t                           *handle;
     int                                     nbytes=0;
-    context = GlobusXIOOperationGetContext(op);
+    driver_handle = GlobusXIOOperationGetDriverHandle(op);
 
     //Parse the recv_headers
     nbytes = 2048;
@@ -368,10 +368,10 @@ globus_l_xio_http_open(
     globus_xio_operation_t                  op)
 {
     globus_result_t                         res = GLOBUS_SUCCESS;
-    globus_xio_context_t                    context;
+    globus_xio_driver_handle_t              driver_handle;
 
     res = globus_xio_driver_pass_open(
-        &context, op, globus_l_xio_http_open_cb, NULL);
+        &driver_handle, op, globus_l_xio_http_open_cb, NULL);
 
     return GLOBUS_SUCCESS;
 }
@@ -385,11 +385,11 @@ globus_l_xio_http_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {   
-    globus_xio_context_t                context;
+    globus_xio_driver_handle_t          driver_handle;
 
-    context = GlobusXIOOperationGetContext(op);
+    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_context_close(context);
+    globus_xio_driver_handle_close(driver_handle);
 }
 
 /*
@@ -397,13 +397,13 @@ globus_l_xio_http_close_cb(
  */
 static globus_result_t
 globus_l_xio_http_close(
-    void *                                  driver_handle,
+    void *                                  driver_specific_handle,
     void *                                  attr,
-    globus_xio_context_t                    context,
+    globus_xio_driver_handle_t              driver_handle,
     globus_xio_operation_t                  op)
 {
     globus_result_t                         res;
-    l_http_destroy_info(driver_handle);
+    l_http_destroy_info(driver_specific_handle);
     res = globus_xio_driver_pass_close(op, globus_l_xio_http_close_cb, NULL);
 
     return res;
@@ -428,7 +428,7 @@ globus_l_xio_http_write_cb(
 static
 globus_result_t
 globus_l_xio_http_write(
-    void *                                  driver_handle,
+    void *                                  driver_specific_handle,
     const globus_xio_iovec_t *              iovec,
     int                                     iovec_count,
     globus_xio_operation_t                  op)
@@ -440,7 +440,7 @@ globus_l_xio_http_write(
     char *                                  buffer_to_send;
     int                                     send_size;
 
-    info = (l_http_info_t *) driver_handle;
+    info = (l_http_info_t *) driver_specific_handle;
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
@@ -483,13 +483,13 @@ globus_l_xio_http_write(
             info->iovec.iov_len = send_size;
             res = globus_xio_driver_pass_write(
                 op, (void*)&(info->iovec), 1, info->iovec.iov_len, 
-               globus_l_xio_http_write_cb, driver_handle);
+               globus_l_xio_http_write_cb, driver_specific_handle);
         }
     else
         {
             res = globus_xio_driver_pass_write(
                 op, (void*)iovec, iovec_count, wait_for,
-                                     globus_l_xio_http_write_cb, driver_handle);
+                                     globus_l_xio_http_write_cb, driver_specific_handle);
         }
 
     return res;

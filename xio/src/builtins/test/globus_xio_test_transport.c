@@ -38,7 +38,7 @@ globus_l_xio_operation_kickout(
 typedef struct globus_l_xio_test_handle_s
 {
     globus_xio_test_failure_t           failure;
-    globus_xio_context_t                context;
+    globus_xio_driver_handle_t          driver_handle;
     globus_bool_t                       inline_finish;
     globus_size_t                       read_nbytes;
     globus_size_t                       chunk_size;
@@ -360,7 +360,7 @@ globus_l_xio_operation_kickout(
         {
             case GLOBUS_XIO_OPERATION_TYPE_OPEN:
                 globus_xio_driver_finished_open(
-                    ow->dh->context, ow->dh, ow->op, ow->res);
+                    ow->dh->driver_handle, ow->dh, ow->op, ow->res);
                 if(ow->res != GLOBUS_SUCCESS)
                 {
                     globus_l_xio_test_attr_destroy(ow->dh);
@@ -369,7 +369,7 @@ globus_l_xio_operation_kickout(
 
             case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
                 globus_xio_driver_finished_close(ow->op, ow->res);
-                globus_xio_driver_context_close(ow->dh->context);
+                globus_xio_driver_handle_close(ow->dh->driver_handle);
                 globus_l_xio_test_attr_destroy(ow->dh);
                 break;
 
@@ -510,7 +510,7 @@ globus_result_t
 globus_l_xio_test_open(
     void *                              driver_target,
     void *                              driver_attr,
-    globus_xio_context_t                context,
+    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_xio_test_handle_t *        attr;
@@ -530,7 +530,7 @@ globus_l_xio_test_open(
 
     /* copy the attr to a handle */
     globus_l_xio_test_attr_copy((void **)&dh, attr);
-    dh->context = context;
+    dh->driver_handle = driver_handle;
 
     if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_OPEN)
     {
@@ -545,7 +545,7 @@ globus_l_xio_test_open(
     if(dh->inline_finish)
     {
         test_inline_blocker(&dh->delay);
-        globus_xio_driver_finished_open(context, dh, op, res);
+        globus_xio_driver_finished_open(driver_handle, dh, op, res);
         if(res != GLOBUS_SUCCESS)
         {
             globus_l_xio_test_attr_destroy(dh);
@@ -587,9 +587,9 @@ globus_l_xio_test_open(
 static
 globus_result_t
 globus_l_xio_test_close(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_context_t                context,
+    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_xio_test_handle_t *        dh;
@@ -598,7 +598,7 @@ globus_l_xio_test_close(
 
     GlobusXIODebugInternalEnter();
 
-    dh = (globus_l_xio_test_handle_t *) driver_handle;
+    dh = (globus_l_xio_test_handle_t *) driver_specific_handle;
 
     if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_CLOSE)
     {
@@ -614,7 +614,7 @@ globus_l_xio_test_close(
     {
         test_inline_blocker(&dh->delay);
         globus_xio_driver_finished_close(op, res);
-        globus_xio_driver_context_close(dh->context);
+        globus_xio_driver_handle_close(dh->driver_handle);
         globus_l_xio_test_attr_destroy(dh);
     }
     else
@@ -660,7 +660,7 @@ globus_l_xio_test_close(
 static
 globus_result_t
 globus_l_xio_test_read(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -674,7 +674,7 @@ globus_l_xio_test_read(
 
     GlobusXIODebugInternalEnter();
 
-    dh = (globus_l_xio_test_handle_t *) driver_handle;
+    dh = (globus_l_xio_test_handle_t *) driver_specific_handle;
 
     if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_READ)
     {
@@ -750,7 +750,7 @@ globus_l_xio_test_read(
 static
 globus_result_t
 globus_l_xio_test_write(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -764,7 +764,7 @@ globus_l_xio_test_write(
 
     GlobusXIODebugInternalEnter();
     
-    dh = (globus_l_xio_test_handle_t *) driver_handle;
+    dh = (globus_l_xio_test_handle_t *) driver_specific_handle;
     
     if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_WRITE)
     {
@@ -833,7 +833,7 @@ globus_l_xio_test_write(
 static
 globus_result_t
 globus_l_xio_test_cntl(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     int                                 cmd,
     va_list                             ap)
 {

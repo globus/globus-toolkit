@@ -781,8 +781,8 @@ globus_l_xio_driver_open_op_kickout(
  *                  ----------------------------
  *************************************************************************/
 globus_result_t
-globus_xio_driver_context_close(
-    globus_xio_context_t                    context)
+globus_xio_driver_handle_close(
+    globus_xio_driver_handle_t              driver_handle)
 {
     globus_i_xio_context_entry_t *          context_entry;
     globus_i_xio_context_t *                xio_context;
@@ -792,7 +792,7 @@ globus_xio_driver_context_close(
 
     GlobusXIODebugInternalEnter();
 
-    context_entry = context;
+    context_entry = driver_handle;
     xio_context = context_entry->whos_my_daddy;
 
     globus_mutex_lock(&xio_context->mutex);
@@ -948,7 +948,7 @@ globus_xio_driver_operation_destroy(
 globus_result_t
 globus_xio_driver_operation_create(
     globus_xio_operation_t *                operation,
-    globus_xio_context_t                    context)
+    globus_xio_driver_handle_t              driver_handle)
 {
     globus_i_xio_op_t *                     op;
     globus_i_xio_op_entry_t *               my_op;
@@ -962,7 +962,7 @@ globus_xio_driver_operation_create(
 
     GlobusXIODebugEnter();
 
-    my_context = context;
+    my_context = driver_handle;
     l_context = my_context->whos_my_daddy;
     for(ctr = 0; ctr < l_context->stack_size && !done; ctr++)
     {
@@ -1138,24 +1138,6 @@ globus_i_xio_driver_attr_cntl(
 
   err:
     GlobusXIODebugExitWithError();
-    return res;
-}
-
-globus_result_t
-globus_xio_driver_attr_cntl(
-    globus_xio_operation_t                  op,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
-    ...)
-{
-    globus_i_xio_attr_t *                   attr;
-    globus_result_t                         res;
-    GlobusXIOName(globus_xio_driver_attr_cntl);
-
-    return GLOBUS_SUCCESS;
-
-  err:
-
     return res;
 }
 
@@ -1336,7 +1318,7 @@ globus_i_xio_driver_handle_cntl(
 
 globus_result_t
 globus_xio_driver_handle_cntl(
-    globus_xio_operation_t                  op,
+    globus_xio_driver_handle_t              driver_handle,
     globus_xio_driver_t                     driver,
     int                                     cmd,
     ...)
@@ -1348,12 +1330,12 @@ globus_xio_driver_handle_cntl(
 
     GlobusXIODebugEnter();
 
-    if(op == NULL)
+    if(driver_handle == NULL)
     {
-        res = GlobusXIOErrorParameter("op");
+        res = GlobusXIOErrorParameter("driver_handle");
         goto err;
     }
-    context = op->_op_context;
+    context = driver_handle->whos_my_daddy;
     if(context == NULL)
     {
         res = GlobusXIOErrorParameter("op");

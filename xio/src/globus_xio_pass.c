@@ -9,7 +9,7 @@
 
 globus_result_t
 globus_xio_driver_pass_open(
-    globus_xio_context_t *                  out_context,
+    globus_xio_driver_handle_t *            out_dh,
     globus_xio_operation_t                  in_op,
     globus_xio_driver_callback_t            in_cb,
     void *                                  in_user_arg)
@@ -57,9 +57,9 @@ globus_xio_driver_pass_open(
               driver->transform_open_func == NULL);
 
         /* hold a ref for this driver */
-        if(out_context != NULL)
+        if(out_dh != NULL)
         {
-            *out_context = my_context;
+            *out_dh = my_context;
         }
         context->ref++;
 
@@ -122,7 +122,7 @@ globus_xio_driver_pass_open(
 
 void
 globus_xio_driver_finished_open(
-    globus_xio_context_t                    in_context,
+    globus_xio_driver_handle_t              in_driver_handle,
     void *                                  in_dh,
     globus_xio_operation_t                  in_op,
     globus_result_t                         in_res)

@@ -153,7 +153,7 @@ typedef struct
     globus_size_t                       bytes_returned;
     globus_bool_t                       done;
     globus_result_t                     result;
-    globus_xio_context_t                xio_context;
+    globus_xio_driver_handle_t          xio_driver_handle;
 } globus_l_handle_t;
 
 /*

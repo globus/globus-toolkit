@@ -36,7 +36,7 @@ typedef enum  test_next_op_e
 
 typedef struct bounce_handle_s
 {
-    globus_xio_context_t                context;
+    globus_xio_driver_handle_t          dh;
 } bounce_handle_t;
 
 typedef struct bounce_info_s
@@ -88,13 +88,13 @@ test_bounce_finish_op(
             break;
     
         case TEST_OPEN:
-            globus_xio_driver_finished_open(info->handle->context, 
+            globus_xio_driver_finished_open(info->handle->dh,
                 info->handle, op, info->res);
             break;
 
         case TEST_CLOSE:
             globus_xio_driver_finished_close(op, info->res);
-            globus_xio_driver_context_close(info->handle->context);
+            globus_xio_driver_handle_close(info->handle->dh);
             globus_free(info->handle);
             break;
 
@@ -278,7 +278,7 @@ globus_l_xio_bounce_open(
     info->start_op = TEST_OPEN;
     info->handle = (bounce_handle_t *) globus_malloc(sizeof(bounce_handle_t));
 
-    res = globus_xio_driver_pass_open(&info->handle->context, op, 
+    res = globus_xio_driver_pass_open(&info->handle->dh, op, 
                 bounce_cb, (void*)info);
     if(res != GLOBUS_SUCCESS)
     {
@@ -299,7 +299,7 @@ static globus_result_t
 globus_l_xio_bounce_close(
     void *                              driver_handle,
     void *                              attr,
-    globus_xio_context_t                context,
+    globus_xio_driver_handle_t          dh,
     globus_xio_operation_t              op)
 {
     bounce_info_t *                     info;

@@ -79,9 +79,9 @@ globus_l_xio_null_pass_open(
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
-    globus_xio_context_t                context;
+    globus_xio_driver_handle_t          driver_handle;
   
-    res = globus_xio_driver_pass_open(&context, op, NULL, NULL);
+    res = globus_xio_driver_pass_open(&driver_handle, op, NULL, NULL);
 
     return res;
 }
@@ -92,9 +92,9 @@ globus_l_xio_null_pass_open(
 static
 globus_result_t
 globus_l_xio_null_pass_close(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_context_t                context,
+    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
@@ -110,7 +110,7 @@ globus_l_xio_null_pass_close(
 static
 globus_result_t
 globus_l_xio_null_pass_read(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -132,7 +132,7 @@ globus_l_xio_null_pass_read(
 static
 globus_result_t
 globus_l_xio_null_pass_write(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -151,7 +151,7 @@ globus_l_xio_null_pass_write(
 static
 globus_result_t
 globus_l_xio_null_pass_cntl(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     int                                 cmd,
     va_list                             ap)
 {

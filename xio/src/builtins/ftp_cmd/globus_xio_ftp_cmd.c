@@ -23,7 +23,7 @@ typedef struct globus_l_xio_ftp_cmd_handle_s
     globus_bool_t                           client;
     globus_bool_t                           create_buffer_mode;
     globus_mutex_t                          mutex;
-    globus_xio_context_t                    context;
+    globus_xio_driver_handle_t              driver_handle;
     globus_xio_iovec_t                      iovec;
     globus_xio_iovec_t *                    out_iovec;
     globus_bool_t                           create_buffer;
@@ -236,7 +236,7 @@ globus_l_xio_ftp_cmd_open_cb(
         globus_free(handle);
     }
 
-    globus_xio_driver_finished_open(handle->context, handle, op, result);
+    globus_xio_driver_finished_open(handle->driver_handle, handle, op, result);
 }
 
 static globus_result_t
@@ -275,7 +275,7 @@ globus_l_xio_ftp_cmd_open(
     globus_fifo_init(&handle->read_q);
 
     res = globus_xio_driver_pass_open(
-        &handle->context,
+        &handle->driver_handle,
         op, 
         globus_l_xio_ftp_cmd_open_cb,
         handle);
@@ -399,7 +399,7 @@ globus_l_xio_ftp_cmd_read_cb(
 
 static globus_result_t
 globus_l_xio_ftp_cmd_read(
-    void *                                  driver_handle,
+    void *                                  driver_specific_handle,
     const globus_xio_iovec_t *              iovec,
     int                                     iovec_count,
     globus_xio_operation_t                  op)
@@ -407,7 +407,7 @@ globus_l_xio_ftp_cmd_read(
     globus_result_t                         res;
     globus_l_xio_ftp_cmd_handle_t *         handle;
 
-    handle = (globus_l_xio_ftp_cmd_handle_t *) driver_handle;
+    handle = (globus_l_xio_ftp_cmd_handle_t *) driver_specific_handle;
 
     globus_mutex_lock(&handle->mutex);
     {
@@ -439,15 +439,15 @@ globus_l_xio_ftp_cmd_close_cb(
 
 static globus_result_t
 globus_l_xio_ftp_cmd_close(
-    void *                                  driver_handle,
+    void *                                  driver_specific_handle,
     void *                                  attr,
-    globus_xio_context_t                    context,
+    globus_xio_driver_handle_t              driver_handle,
     globus_xio_operation_t                  op)
 {
     globus_result_t                         res;
     globus_l_xio_ftp_cmd_handle_t *         handle;
 
-    handle = (globus_l_xio_ftp_cmd_handle_t *) driver_handle;
+    handle = (globus_l_xio_ftp_cmd_handle_t *) driver_specific_handle;
 
     res = globus_xio_driver_pass_close(
         op, globus_l_xio_ftp_cmd_close_cb, handle);
