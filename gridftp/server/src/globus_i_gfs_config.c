@@ -77,6 +77,10 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"allow_anonymous", "allow_anonymous", NULL, "allow-anonymous", "aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow cleartext anonymous access. If server is running as root anonymous_user "
     "must also be set.  Disables ipc security."},
+ {"anonymous_names_allowed", "anonymous_names_allowed", NULL, "anonymous-names-allowed", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Comma seperated list of names to treat as anonymous users when "
+    "allowing anonymous access.  If not set, the default names of 'anonymous' "
+    "and 'ftp' will be allowed.  Use '*' to allow any username."},
  {"anonymous_user", "anonymous_user", NULL, "anonymous-user", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "User to setuid to for an anonymous connection. Only applies when running as root."},
  {"anonymous_group", "anonymous_group", NULL, "anonymous-group", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -1223,16 +1227,28 @@ globus_i_gfs_config_is_anonymous(
     const char *                        userid)
 {
     globus_bool_t                       valid = GLOBUS_FALSE;
+    char *                              anonymous_names;
     GlobusGFSName(globus_i_gfs_config_is_anonymous);
     GlobusGFSDebugEnter();
 
-    if(strcmp(userid, "ftp") == 0 ||
-        strcmp(userid, "anonymous") == 0 ||
-        strcmp(userid, ":globus-mapping:") == 0)
+    anonymous_names = globus_i_gfs_config_string("anonymous_names_allowed");
+    if(anonymous_names)
     {
-        valid = GLOBUS_TRUE;
+        if(*anonymous_names == '*' || strstr(anonymous_names, userid))
+        {
+            valid = GLOBUS_TRUE;
+        }
     }
-
+    else
+    {
+        if(strcmp(userid, "ftp") == 0 ||
+            strcmp(userid, "anonymous") == 0 ||
+            strcmp(userid, ":globus-mapping:") == 0)
+        {
+            valid = GLOBUS_TRUE;
+        }
+    }
+    
     GlobusGFSDebugExit();
     return valid;
 }

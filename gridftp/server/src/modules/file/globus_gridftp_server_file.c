@@ -247,7 +247,7 @@ globus_l_gfs_file_partition_path(
     buf[MAXPATHLEN - 1] = '\0';
     
     filepart = strrchr(buf, '/');
-    if(filepart && !*(filepart + 1) && filepart != buf)
+    while(filepart && !*(filepart + 1) && filepart != buf)
     {
         *filepart = '\0';
         filepart = strrchr(buf, '/');
@@ -262,16 +262,26 @@ globus_l_gfs_file_partition_path(
     {
         if(filepart == buf)
         {
-            basepath[0] = '/';
-            basepath[1] = '\0';
+            if(!*(filepart + 1))
+            {
+                basepath[0] = '\0';
+                filename[0] = '/';
+                filename[1] = '\0';
+            }
+            else
+            {
+                *filepart++ = '\0';
+                basepath[0] = '/';
+                basepath[1] = '\0';
+                strcpy(filename, filepart);
+            }
         }
         else
-        {
-            *filepart = '\0';
+        {                
+            *filepart++ = '\0';
             strcpy(basepath, buf);
+            strcpy(filename, filepart);
         }
-        
-        strcpy(filename, filepart + 1);
     }    
 
     GlobusGFSFileDebugExit();
