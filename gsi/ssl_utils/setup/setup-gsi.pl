@@ -53,12 +53,13 @@ if(defined($opt_nonroot))
 	$target_dir = "$opt_nonroot";
     }
 
-    $ENV{GRID_SECURITY_DIR} = "$target_dir";
 }
 else
 {
    $target_dir = "/etc/grid-security";
 }
+    
+$ENV{GRID_SECURITY_DIR} = "$target_dir";
 
 my $trusted_certs_dir;
 if($target_dir eq "/etc/grid-security/") 
