@@ -1,3 +1,8 @@
+2000-10-09  Von Welch  <vwelch@ncsa.uiuc.edu>
+
+	* verror.c (my_vsnprintf): Fixed inverted logic in checking of
+	HAVE_VSNPRINTF
+	
 2000-10-04  Von Welch  <vwelch@ncsa.uiuc.edu>
 
 	* myproxy_server.c (main): Print strerror() when failure occurs
