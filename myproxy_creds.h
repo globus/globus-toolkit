@@ -15,6 +15,8 @@ struct myproxy_creds {
     void *restrictions;
 };
 
+typedef struct myproxy_creds myproxy_creds_t;
+
 /*
  * myproxy_creds_store()
  *
