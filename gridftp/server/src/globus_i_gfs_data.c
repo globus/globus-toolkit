@@ -1876,8 +1876,11 @@ globus_l_gfs_data_trev_kickout(
         globus_l_gfs_data_operation_destroy(bounce_info->op);
     }
 
+    if(event_reply->recvd_ranges)
+    {
+        globus_range_list_destroy(event_reply->recvd_ranges);     
+    }
     globus_free(bounce_info);
-    globus_range_list_destroy(event_reply->recvd_ranges);     
     globus_free(event_reply);       
 }
 
