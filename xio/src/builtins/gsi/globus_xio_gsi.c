@@ -519,13 +519,13 @@ globus_l_xio_gsi_accept_cb(
     
     target->init = GLOBUS_FALSE;
     
-    GlobusXIODriverFinishedAccept(op, target, result);
+    globus_xio_driver_finished_accept(op, target, result);
     
     GlobusXIOGSIDebugInternalExit();
     return;
     
  error:
-    GlobusXIODriverFinishedAccept(op, NULL, result);
+    globus_xio_driver_finished_accept(op, NULL, result);
     GlobusXIOGSIDebugInternalExitWithError();
     return;
 }
@@ -546,7 +546,7 @@ globus_l_xio_gsi_accept(
     GlobusXIOName(globus_l_xio_gsi_accept);
     GlobusXIOGSIDebugEnter();
     
-    GlobusXIODriverPassAccept(result, accept_op,
+    result = globus_xio_driver_pass_accept(accept_op,
                               globus_l_xio_gsi_accept_cb, NULL);
     GlobusXIOGSIDebugExit();
     return result;
@@ -838,7 +838,7 @@ globus_l_xio_gsi_write_token_cb(
             goto error_pass_close;
         }
         
-        GlobusXIODriverFinishedOpen(context, handle, op, result);
+        globus_xio_driver_finished_open(context, handle, op, result);
         GlobusXIOGSIDebugInternalExit();
         return;
     }
@@ -851,7 +851,7 @@ globus_l_xio_gsi_write_token_cb(
         wait_for = 5;
         handle->bytes_read = 0;
 
-        GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
+        result = globus_xio_driver_pass_read(op, iovec, iovec_count, wait_for,
                                 globus_l_xio_gsi_read_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
@@ -868,13 +868,13 @@ globus_l_xio_gsi_write_token_cb(
         handle->result = result;
     }
                 
-    GlobusXIODriverPassClose(result, op,
+    result = globus_xio_driver_pass_close(op,
                              globus_l_xio_gsi_close_cb, handle);
 
     if(result != GLOBUS_SUCCESS)
     {
         globus_l_xio_gsi_handle_destroy(handle);
-        GlobusXIODriverFinishedOpen(context, NULL, op, handle->result);
+        globus_xio_driver_finished_open(context, NULL, op, handle->result);
 
     }
     GlobusXIOGSIDebugInternalExitWithError();
@@ -967,7 +967,7 @@ globus_l_xio_gsi_read_token_cb(
         iovec = &(handle->read_iovec[1]);
         iovec_count = 1;
             
-        GlobusXIODriverPassRead(result, op, iovec, iovec_count,
+        result = globus_xio_driver_pass_read(op, iovec, iovec_count,
                                 offset - handle->bytes_read,
                                 globus_l_xio_gsi_read_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
@@ -1164,7 +1164,7 @@ globus_l_xio_gsi_read_token_cb(
             wait_for = iovec[0].iov_len;
         }
         
-        GlobusXIODriverPassWrite(result, op, iovec, iovec_count, wait_for,
+        result = globus_xio_driver_pass_write(op, iovec, iovec_count, wait_for,
                                  globus_l_xio_gsi_write_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1177,7 +1177,7 @@ globus_l_xio_gsi_read_token_cb(
     else if(handle->done == GLOBUS_TRUE)
     {
         /* we're done */
-        GlobusXIODriverFinishedOpen(context, handle, op, result);
+        globus_xio_driver_finished_open(context, handle, op, result);
     }
     else
     {
@@ -1199,7 +1199,7 @@ globus_l_xio_gsi_read_token_cb(
             wait_for = 0;
         }
         
-        GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
+        result = globus_xio_driver_pass_read(op, iovec, iovec_count, wait_for,
                                 globus_l_xio_gsi_read_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1215,12 +1215,12 @@ globus_l_xio_gsi_read_token_cb(
         handle->result = result;
     }
                 
-    GlobusXIODriverPassClose(result, op,
+    result = globus_xio_driver_pass_close(op,
                              globus_l_xio_gsi_close_cb, handle);
     if(result != GLOBUS_SUCCESS)
     {
         globus_l_xio_gsi_handle_destroy(handle);
-        GlobusXIODriverFinishedOpen(context, NULL, op, handle->result);
+        globus_xio_driver_finished_open(context, NULL, op, handle->result);
 
     }
     GlobusXIOGSIDebugInternalExitWithError();
@@ -1370,7 +1370,7 @@ globus_l_xio_gsi_open_cb(
             wait_for = iovec[0].iov_len;
         }
         
-        GlobusXIODriverPassWrite(result, op, iovec, iovec_count, wait_for,
+        result = globus_xio_driver_pass_write(op, iovec, iovec_count, wait_for,
                                  globus_l_xio_gsi_write_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1388,7 +1388,7 @@ globus_l_xio_gsi_open_cb(
         /* ssl record header is 5 bytes */
         wait_for = 5;
 
-        GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
+        result = globus_xio_driver_pass_read(op, iovec, iovec_count, wait_for,
                                 globus_l_xio_gsi_read_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1404,7 +1404,7 @@ globus_l_xio_gsi_open_cb(
         handle->result = result;
     }
                 
-    GlobusXIODriverPassClose(result, op,
+    result = globus_xio_driver_pass_close(op,
                              globus_l_xio_gsi_close_cb, handle);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1417,7 +1417,7 @@ globus_l_xio_gsi_open_cb(
     }
  error_destroy_handle:
     globus_l_xio_gsi_handle_destroy(handle);
-    GlobusXIODriverFinishedOpen(context, NULL, op, result);
+    globus_xio_driver_finished_open(context, NULL, op, result);
     GlobusXIOGSIDebugInternalExitWithError();
     return;
 }   
@@ -1493,7 +1493,7 @@ globus_l_xio_gsi_open(
         handle->ret_flags = attr->req_flags;
     }
     
-    GlobusXIODriverPassOpen(result, &context, op,
+    result = globus_xio_driver_pass_open(&context, op,
                             globus_l_xio_gsi_open_cb, handle);
 
     if(result != GLOBUS_SUCCESS)
@@ -1530,7 +1530,7 @@ globus_l_xio_gsi_close_cb(
 
     handle = (globus_l_handle_t *) user_arg;
 
-    GlobusXIODriverFinishedOpen(context, NULL, op, handle->result);
+    globus_xio_driver_finished_open(context, NULL, op, handle->result);
 
     globus_l_xio_gsi_handle_destroy(handle);
     GlobusXIOGSIDebugInternalExit();
@@ -1556,7 +1556,7 @@ globus_l_xio_gsi_close(
 
     globus_l_xio_gsi_handle_destroy((globus_l_handle_t *) driver_handle);
     
-    GlobusXIODriverPassClose(result, op, NULL, NULL);
+    result = globus_xio_driver_pass_close(op, NULL, NULL);
     GlobusXIOGSIDebugExit();
     return result;
 }
@@ -1620,7 +1620,7 @@ globus_l_xio_gsi_read_cb(
         {
             handle->bytes_returned += bytes_read;
         }
-        GlobusXIODriverFinishedRead(op, result, handle->bytes_returned);
+        globus_xio_driver_finished_read(op, result, handle->bytes_returned);
         GlobusXIOGSIDebugInternalExit();
         return;
     }
@@ -1756,20 +1756,20 @@ globus_l_xio_gsi_read_cb(
             &(handle->read_buffer[handle->bytes_read]);
         handle->read_iovec[1].iov_len =
             handle->attr->buffer_size - handle->bytes_read;
-        GlobusXIODriverPassRead(result, op, &(handle->read_iovec[1]),
+        result = globus_xio_driver_pass_read(op, &(handle->read_iovec[1]),
                                 1, wait_for,
                                 globus_l_xio_gsi_read_cb, handle);
     }
     else
     {
         /* done with either error or success */
-        GlobusXIODriverFinishedRead(op, result, handle->bytes_returned);
+        globus_xio_driver_finished_read(op, result, handle->bytes_returned);
     }
     GlobusXIOGSIDebugInternalExit();
     return;
     
  error:
-    GlobusXIODriverFinishedRead(op, result, handle->bytes_returned);
+    globus_xio_driver_finished_read(op, result, handle->bytes_returned);
     GlobusXIOGSIDebugInternalExitWithError();
     return;
 }
@@ -1805,7 +1805,7 @@ globus_l_xio_gsi_read(
     /* reset read related state */
     
     handle->bytes_returned = 0;
-    handle->user_iovec = iovec;
+    handle->user_iovec = (globus_xio_iovec_t *)iovec;
     handle->user_iovec_count = iovec_count;
     handle->user_iovec_index = 0;
     handle->user_iovec_offset = 0;
@@ -1961,7 +1961,7 @@ globus_l_xio_gsi_read(
     if(wait_for == 0)
     {
         /* done */
-        GlobusXIODriverFinishedRead(op, result, handle->bytes_returned);
+        globus_xio_driver_finished_read(op, result, handle->bytes_returned);
     }
     else if(handle->attr->prot_level != GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
     {
@@ -1995,7 +1995,7 @@ globus_l_xio_gsi_read(
             &(handle->read_buffer[handle->bytes_read]);
         handle->read_iovec[1].iov_len =
             handle->attr->buffer_size - handle->bytes_read;
-        GlobusXIODriverPassRead(result, op, &(handle->read_iovec[1]),
+        result = globus_xio_driver_pass_read(op, &(handle->read_iovec[1]),
                                 1, wait_for,
                                 globus_l_xio_gsi_read_cb, handle);
     }
@@ -2016,13 +2016,14 @@ globus_l_xio_gsi_read(
             assert(handle->unwrapped_buffer_offset == 0);
             handle->read_iovec[1].iov_base = handle->unwrapped_buffer;
             handle->read_iovec[1].iov_len = wait_for;
-            GlobusXIODriverPassRead(result, op, &(handle->read_iovec[1]),
+            result = globus_xio_driver_pass_read(op, &(handle->read_iovec[1]),
                                     1, wait_for,
                                     globus_l_xio_gsi_read_cb, handle);
         }
         else
         {
-            GlobusXIODriverPassRead(result, op, iovec,
+            result = globus_xio_driver_pass_read(
+                        op, (globus_xio_iovec_t *)iovec,
                                     iovec_count, wait_for, NULL, handle);
         }
     }
@@ -2032,7 +2033,7 @@ globus_l_xio_gsi_read(
 
  error:
     GlobusXIOGSIDebugExitWithError();
-    GlobusXIODriverFinishedRead(op, result, handle->bytes_returned);
+    globus_xio_driver_finished_read(op, result, handle->bytes_returned);
     return result;
 }
 
@@ -2077,7 +2078,7 @@ globus_l_xio_gsi_write_cb(
         }
     }
 
-    GlobusXIODriverFinishedWrite(op, result, handle->bytes_written);
+    globus_xio_driver_finished_write(op, result, handle->bytes_written);
     GlobusXIOGSIDebugInternalExit();
     return;
 }
@@ -2129,7 +2130,8 @@ globus_l_xio_gsi_write(
     
     if(handle->attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
     {
-        GlobusXIODriverPassWrite(result, op, iovec, iovec_count, wait_for,
+        result = globus_xio_driver_pass_write(
+            op, (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
                                  NULL, handle);
         GlobusXIOGSIDebugExit();
         return result;
@@ -2151,8 +2153,9 @@ globus_l_xio_gsi_write(
     
     if(j == iovec_count)
     {
-        GlobusXIODriverPassWrite(result, op, iovec, iovec_count, wait_for,
-                                 NULL, handle);
+        result = globus_xio_driver_pass_write(
+                    op, (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
+                    NULL, handle);
         GlobusXIOGSIDebugExit();
         return result;
     }
@@ -2343,14 +2346,14 @@ globus_l_xio_gsi_write(
 
     /* pass the write */
     
-    GlobusXIODriverPassWrite(result, op, handle->write_iovec,
+    result = globus_xio_driver_pass_write(op, handle->write_iovec,
                              write_iovec_count, wait_for,
                              globus_l_xio_gsi_write_cb, handle);
     GlobusXIOGSIDebugExit();
     return result;
  error:
     GlobusXIOGSIDebugExitWithError();
-    GlobusXIODriverFinishedWrite(op, result, 0);
+    globus_xio_driver_finished_write(op, result, 0);
     return result;
 
 }
@@ -2416,7 +2419,7 @@ globus_l_xio_gsi_write_delegation_token_cb(
     else
     {
         handle->reading_header = GLOBUS_TRUE;
-        GlobusXIODriverPassRead(result, op, handle->iovec, 1, 4,
+        result = globus_xio_driver_pass_read(op, handle->iovec, 1, 4,
                                 globus_l_xio_gsi_read_delegation_token_cb,
                                 handle);
         if(result != GLOBUS_SUCCESS)
@@ -2491,7 +2494,7 @@ globus_l_xio_gsi_read_delegation_token_cb(
             goto error;
         }
         handle->iovec[1].iov_len = wait_for;
-        GlobusXIODriverPassRead(result, op, &handle->iovec[1], 1,
+        result = globus_xio_driver_pass_read(op, &handle->iovec[1], 1,
                                 wait_for,
                                 globus_l_xio_gsi_read_delegation_token_cb,
                                 handle);
@@ -2594,7 +2597,7 @@ globus_l_xio_gsi_read_delegation_token_cb(
             
         wait_for = 4 + output_token.length;
         
-        GlobusXIODriverPassWrite(result, op, handle->iovec, 2, wait_for,
+        result = globus_xio_driver_pass_write(op, handle->iovec, 2, wait_for,
                                  globus_l_xio_gsi_write_delegation_token_cb,
                                  handle);
         if(result != GLOBUS_SUCCESS)
@@ -2840,8 +2843,8 @@ globus_l_xio_gsi_cntl(
             GlobusLXIOGSICreateHeader(delegation_handle->iovec[0],
                                       output_token.length);
             
-            GlobusXIODriverPassWrite(
-                result, op, delegation_handle->iovec, 2,
+            result = globus_xio_driver_pass_write(
+                op, delegation_handle->iovec, 2,
                 output_token.length + 4,
                 globus_l_xio_gsi_write_delegation_token_cb,
                 delegation_handle);
@@ -2934,7 +2937,7 @@ globus_l_xio_gsi_cntl(
             goto delegation_error;
         }
         
-        GlobusXIODriverPassRead(result, op, delegation_handle->iovec, 1,
+        result = globus_xio_driver_pass_read(op, delegation_handle->iovec, 1,
                                 4,
                                 globus_l_xio_gsi_read_delegation_token_cb,
                                 delegation_handle);

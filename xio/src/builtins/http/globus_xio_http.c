@@ -300,16 +300,16 @@ globus_l_xio_http_read_cb(
     case GLOBUS_XIO_HTTP_NEED_MORE:  //header not complete, read some more
         info->iovec.iov_len = 2048;
         info->iovec.iov_base = info->buffer + info->buffer_offset;
-        GlobusXIODriverPassRead(result, op, &(info->iovec), 1, 1, \
+        result = globus_xio_driver_pass_read(op, &(info->iovec), 1, 1,
                                 globus_l_xio_http_read_cb, info);
         break;
     case GLOBUS_XIO_HTTP_PARSE_FAILED:  //error parsing header
         result = GlobusXIOHttpParseError();
-        GlobusXIODriverFinishedOpen(context, info, op, result);
+        globus_xio_driver_finished_open(context, info, op, result);
         break;
     default:
         result = GLOBUS_SUCCESS;
-        GlobusXIODriverFinishedOpen(context, info, op, result);
+        globus_xio_driver_finished_open(context, info, op, result);
     }
 
 }
@@ -327,7 +327,7 @@ globus_l_xio_http_read(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, (void*)iovec, iovec_count, wait_for, \
+    res = globus_xio_driver_pass_read(op, (void*)iovec, iovec_count, wait_for,
         NULL, NULL);
 
     return res;
@@ -356,7 +356,7 @@ globus_l_xio_http_open_cb(
     
     handle->iovec.iov_len = 2048;
     handle->iovec.iov_base = handle->buffer + handle->buffer_offset;
-    GlobusXIODriverPassRead(result, op, &(handle->iovec), 1, 5, \
+    result = globus_xio_driver_pass_read(op, &(handle->iovec), 1, 5, 
                             globus_l_xio_http_read_cb, handle);
 }
 
@@ -370,7 +370,8 @@ globus_l_xio_http_open(
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_xio_context_t                    context;
 
-    GlobusXIODriverPassOpen(res, context, op, globus_l_xio_http_open_cb, NULL);
+    res = globus_xio_driver_pass_open(
+        &context, op, globus_l_xio_http_open_cb, NULL);
 
     return GLOBUS_SUCCESS;
 }
@@ -387,7 +388,7 @@ globus_l_xio_http_close_cb(
     globus_xio_context_t                context;
 
     context = GlobusXIOOperationGetContext(op);
-    GlobusXIODriverFinishedClose(op, result);
+    globus_xio_driver_finished_close(op, result);
     globus_xio_driver_context_close(context);
 }
 
@@ -403,7 +404,7 @@ globus_l_xio_http_close(
 {
     globus_result_t                         res;
     l_http_destroy_info(driver_handle);
-    GlobusXIODriverPassClose(res, op, globus_l_xio_http_close_cb, NULL);
+    res = globus_xio_driver_pass_close(op, globus_l_xio_http_close_cb, NULL);
 
     return res;
 }
@@ -418,7 +419,7 @@ globus_l_xio_http_write_cb(
     globus_size_t                           nbytes,
     void *                                  user_arg)
 {
-    GlobusXIODriverFinishedWrite(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, nbytes);
 }
 
 /*
@@ -450,7 +451,7 @@ globus_l_xio_http_write(
             info->header_written =1;
             if(!info->exit_code && !info->exit_text)
                 {
-                    GlobusXIODriverFinishedWrite(op, 
+                    globus_xio_driver_finished_write(op, 
                                                  GLOBUS_XIO_HTTP_INSUFFICIENT_HEADER, 
                                                  0);
                 }
@@ -480,12 +481,14 @@ globus_l_xio_http_write(
                    iovec->iov_len);
             info->iovec.iov_base = buffer_to_send;
             info->iovec.iov_len = send_size;
-            GlobusXIODriverPassWrite(res, op, (void*)&(info->iovec), 1, info->iovec.iov_len, \
-                                     globus_l_xio_http_write_cb, driver_handle);
+            res = globus_xio_driver_pass_write(
+                op, (void*)&(info->iovec), 1, info->iovec.iov_len, 
+               globus_l_xio_http_write_cb, driver_handle);
         }
     else
         {
-            GlobusXIODriverPassWrite(res, op, (void*)iovec, iovec_count, wait_for, \
+            res = globus_xio_driver_pass_write(
+                op, (void*)iovec, iovec_count, wait_for,
                                      globus_l_xio_http_write_cb, driver_handle);
         }
 
@@ -529,7 +532,7 @@ globus_l_xio_http_accept_cb(
     void *                                  user_arg)
 {
 
-    GlobusXIODriverFinishedAccept(op, globus_libc_strdup(_TARGET), GLOBUS_SUCCESS);
+    globus_xio_driver_finished_accept(op, globus_libc_strdup(_TARGET), GLOBUS_SUCCESS);
     return;
 
 }
@@ -544,7 +547,7 @@ globus_l_xio_http_accept(
     globus_result_t                         res;
     GlobusXIOName(globus_l_xio_http_accept);
 
-    GlobusXIODriverPassAccept(res, accept_op, 
+    res = globus_xio_driver_pass_accept(accept_op, 
         globus_l_xio_http_accept_cb, NULL);
 
     return res;

@@ -74,7 +74,7 @@ globus_l_xio_debug_accept_cb(
     void *                              user_arg)
 {
     debug_driver_log("finished accept");
-    GlobusXIODriverFinishedAccept(op, NULL, result);
+    globus_xio_driver_finished_accept(op, NULL, result);
 }
 
 static globus_result_t
@@ -87,7 +87,7 @@ globus_l_xio_debug_accept(
 
     debug_driver_log("finished accept");
 
-    GlobusXIODriverPassAccept(res, accept_op,      \
+    res = globus_xio_driver_pass_accept(accept_op,
         globus_l_xio_debug_accept_cb, NULL);
 
     return res;
@@ -139,7 +139,7 @@ globus_l_xio_debug_open_cb(
 
     context = GlobusXIOOperationGetContext(op);
 
-    GlobusXIODriverFinishedOpen(context, NULL, op, result);
+    globus_xio_driver_finished_open(context, NULL, op, result);
 }   
 
 static
@@ -154,7 +154,7 @@ globus_l_xio_debug_open(
   
     debug_driver_log("open");
 
-    GlobusXIODriverPassOpen(res, &context, op, \
+    res = globus_xio_driver_pass_open(&context, op,
         globus_l_xio_debug_open_cb, NULL);
 
     return res;
@@ -174,7 +174,7 @@ globus_l_xio_debug_close_cb(
     debug_driver_log("finished close");
 
     context = GlobusXIOOperationGetContext(op);
-    GlobusXIODriverFinishedClose(op, result);
+    globus_xio_driver_finished_close(op, result);
     globus_xio_driver_context_close(context);
 }   
 
@@ -190,7 +190,7 @@ globus_l_xio_debug_close(
 
     debug_driver_log("close");
 
-    GlobusXIODriverPassClose(res, op,   \
+    res = globus_xio_driver_pass_close(op,
         globus_l_xio_debug_close_cb, NULL);
 
     return res;
@@ -208,7 +208,7 @@ globus_l_xio_debug_read_cb(
 {
     debug_driver_log("finished read");
 
-    GlobusXIODriverFinishedRead(op, result, nbytes);
+    globus_xio_driver_finished_read(op, result, nbytes);
 }
 
 static
@@ -226,7 +226,7 @@ globus_l_xio_debug_read(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, 
+    res = globus_xio_driver_pass_read(op, 
         (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
         globus_l_xio_debug_read_cb, NULL);
 
@@ -245,7 +245,7 @@ globus_l_xio_debug_write_cb(
 {
     debug_driver_log("finished write");
 
-    GlobusXIODriverFinishedWrite(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, nbytes);
 }
 
 static
@@ -263,7 +263,7 @@ globus_l_xio_debug_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, 
+    res = globus_xio_driver_pass_write(op, 
         (globus_xio_iovec_t *) iovec, iovec_count, wait_for,
         globus_l_xio_debug_write_cb, NULL);
 

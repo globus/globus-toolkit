@@ -132,7 +132,7 @@ globus_l_xio_verify_accept_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    GlobusXIODriverFinishedAccept(op, strdup(_TARGET), result);
+    globus_xio_driver_finished_accept(op, strdup(_TARGET), result);
 }
 
 static globus_result_t
@@ -150,7 +150,7 @@ globus_l_xio_verify_accept(
         globus_assert(!"Server string doesn't match");
     }
 
-    GlobusXIODriverPassAccept(res, accept_op,      \
+    res = globus_xio_driver_pass_accept(accept_op,
         globus_l_xio_verify_accept_cb, NULL);
 
     return res;
@@ -203,7 +203,7 @@ globus_l_xio_verify_open_cb(
 
     context = GlobusXIOOperationGetContext(op);
 
-    GlobusXIODriverFinishedOpen(context, strdup(_HANDLE), op, result);
+    globus_xio_driver_finished_open(context, strdup(_HANDLE), op, result);
 }   
 
 static
@@ -223,7 +223,7 @@ globus_l_xio_verify_open(
         globus_assert(!"Server string doesn't match");
     }
 
-    GlobusXIODriverPassOpen(res, &context, op, \
+    res = globus_xio_driver_pass_open(&context, op,
         globus_l_xio_verify_open_cb, NULL);
 
     return res;
@@ -241,7 +241,7 @@ globus_l_xio_verify_close_cb(
     globus_xio_context_t                context;
 
     context = GlobusXIOOperationGetContext(op);
-    GlobusXIODriverFinishedClose(op, result);
+    globus_xio_driver_finished_close(op, result);
     globus_xio_driver_context_close(context);
 }   
 
@@ -262,7 +262,7 @@ globus_l_xio_verify_close(
         globus_assert(!"Handle string doesn't match");
     }
 
-    GlobusXIODriverPassClose(res, op,   \
+    res = globus_xio_driver_pass_close(op,
         globus_l_xio_verify_close_cb, NULL);
 
     globus_free(tst_str);
@@ -280,7 +280,7 @@ globus_l_xio_verify_read_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    GlobusXIODriverFinishedRead(op, result, nbytes);
+    globus_xio_driver_finished_read(op, result, nbytes);
 }
 
 static
@@ -303,8 +303,8 @@ globus_l_xio_verify_read(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, (globus_xio_iovec_t *)iovec, 
-        iovec_count, wait_for, \
+    res = globus_xio_driver_pass_read(op, (globus_xio_iovec_t *)iovec, 
+        iovec_count, wait_for,
         globus_l_xio_verify_read_cb, NULL);
 
     return res;
@@ -320,7 +320,7 @@ globus_l_xio_verify_write_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    GlobusXIODriverFinishedWrite(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, nbytes);
 }
 
 static
@@ -343,8 +343,8 @@ globus_l_xio_verify_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, 
-        (globus_xio_iovec_t *) iovec, iovec_count, wait_for, 
+    res = globus_xio_driver_pass_write( 
+        op, (globus_xio_iovec_t *) iovec, iovec_count, wait_for, 
         globus_l_xio_verify_write_cb, NULL);
 
     return res;

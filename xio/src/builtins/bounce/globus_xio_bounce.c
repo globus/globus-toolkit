@@ -80,20 +80,20 @@ test_bounce_finish_op(
     switch(info->start_op)
     {
         case TEST_READ:
-            GlobusXIODriverFinishedRead(op, info->res, info->nbytes);
+            globus_xio_driver_finished_read(op, info->res, info->nbytes);
             break;
 
         case TEST_WRITE:
-            GlobusXIODriverFinishedWrite(op, info->res, info->nbytes);
+            globus_xio_driver_finished_write(op, info->res, info->nbytes);
             break;
     
         case TEST_OPEN:
-            GlobusXIODriverFinishedOpen(info->handle->context, 
+            globus_xio_driver_finished_open(info->handle->context, 
                 info->handle, op, info->res);
             break;
 
         case TEST_CLOSE:
-            GlobusXIODriverFinishedClose(op, info->res);
+            globus_xio_driver_finished_close(op, info->res);
             globus_xio_driver_context_close(info->handle->context);
             globus_free(info->handle);
             break;
@@ -138,7 +138,8 @@ test_bounce_next_op(
                     info->next_op = TEST_FINISH;
                 }
             }
-            GlobusXIODriverPassRead(res, op, info->iovec, info->iovec_count,
+            res = globus_xio_driver_pass_read(
+                op, info->iovec, info->iovec_count,
                 info->wait_for, bounce_data_cb, (void *)info);
 
             break;
@@ -161,13 +162,14 @@ test_bounce_next_op(
                 }
             }
 
-            GlobusXIODriverPassWrite(res, op, info->iovec, info->iovec_count,
+            res = globus_xio_driver_pass_write(
+                op, info->iovec, info->iovec_count,
                 info->wait_for, bounce_data_cb, (void *)info);
             break;
 
         case TEST_CLOSE:
             info->next_op = TEST_FINISH;
-            GlobusXIODriverPassClose(res, op,
+            res = globus_xio_driver_pass_close(op,
                 bounce_cb, (void*)info);
             break;
 
@@ -276,7 +278,7 @@ globus_l_xio_bounce_open(
     info->start_op = TEST_OPEN;
     info->handle = (bounce_handle_t *) globus_malloc(sizeof(bounce_handle_t));
 
-    GlobusXIODriverPassOpen(res, &info->handle->context, op, 
+    res = globus_xio_driver_pass_open(&info->handle->context, op, 
                 bounce_cb, (void*)info);
     if(res != GLOBUS_SUCCESS)
     {

@@ -1171,7 +1171,7 @@ globus_l_xio_tcp_system_accept_cb(
         accept_info->target = GLOBUS_NULL;
     }
     
-    GlobusXIODriverFinishedAccept(
+    globus_xio_driver_finished_accept(
         accept_info->op, accept_info->target, result);
     
     globus_free(accept_info);
@@ -1208,7 +1208,7 @@ globus_l_xio_tcp_server_accept(
     if(attr && attr->handle != GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
         target->handle = attr->handle;
-        GlobusXIODriverFinishedAccept(op, target, GLOBUS_SUCCESS);
+        globus_xio_driver_finished_accept(op, target, GLOBUS_SUCCESS);
     }
     else
     {
@@ -1479,7 +1479,7 @@ globus_l_xio_tcp_system_connect_cb(
         connect_info->handle = GLOBUS_NULL;
     }
     
-    GlobusXIODriverFinishedOpen(
+    globus_xio_driver_finished_open(
         GlobusXIOOperationGetContext(connect_info->op),
         connect_info->handle,
         connect_info->op,
@@ -1760,7 +1760,7 @@ globus_l_xio_tcp_open(
             goto error_attrs;
         }
         
-        GlobusXIODriverFinishedOpen(context, handle, op, GLOBUS_SUCCESS);
+        globus_xio_driver_finished_open(context, handle, op, GLOBUS_SUCCESS);
     }
 
     return GLOBUS_SUCCESS;
@@ -1789,7 +1789,7 @@ globus_l_xio_tcp_system_close_cb(
     context = GlobusXIOOperationGetContext(op);
     handle = GlobusXIOOperationGetDriverHandle(op);
     
-    GlobusXIODriverFinishedClose(op, result);
+    globus_xio_driver_finished_close(op, result);
     globus_xio_driver_context_close(context);
     globus_l_xio_tcp_handle_destroy(handle);
 }
@@ -1843,7 +1843,7 @@ globus_l_xio_tcp_system_read_cb(
     GlobusXIOName(globus_l_xio_tcp_system_read_cb);
     
     op = (globus_xio_operation_t) user_arg;
-    GlobusXIODriverFinishedRead(op, result, nbytes);
+    globus_xio_driver_finished_read(op, result, nbytes);
 }
 
 /*
@@ -1869,7 +1869,7 @@ globus_l_xio_tcp_read(
         
         result = globus_xio_system_try_read(
             handle->handle, iovec, iovec_count, &nbytes);
-        GlobusXIODriverFinishedRead(op, result, nbytes);
+        globus_xio_driver_finished_read(op, result, nbytes);
         /* dont want to return error here mainly because error could be eof, 
          * which is against our convention to return an eof error on async
          * calls.  Other than that, the choice is arbitrary
@@ -1900,7 +1900,7 @@ globus_l_xio_tcp_system_write_cb(
     GlobusXIOName(globus_l_xio_tcp_system_write_cb);
     
     op = (globus_xio_operation_t) user_arg;
-    GlobusXIODriverFinishedWrite(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, nbytes);
 }
 
 /*
@@ -1941,7 +1941,7 @@ globus_l_xio_tcp_write(
             result = globus_xio_system_try_write(
                 handle->handle, iovec, iovec_count, &nbytes);
         }
-        GlobusXIODriverFinishedWrite(op, result, nbytes);
+        globus_xio_driver_finished_write(op, result, nbytes);
         /* Since I am finishing the request in the callstack,
          * the choice to pass the result in the finish instead of below
          * is arbitrary.

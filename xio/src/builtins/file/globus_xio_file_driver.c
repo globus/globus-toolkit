@@ -425,7 +425,7 @@ globus_l_xio_file_system_open_cb(
         open_info->handle = GLOBUS_NULL;
     }
     
-    GlobusXIODriverFinishedOpen(
+    globus_xio_driver_finished_open(
         GlobusXIOOperationGetContext(open_info->op),
         open_info->handle,
         open_info->op,
@@ -499,7 +499,7 @@ globus_l_xio_file_open(
     else
     {
         handle->handle = target->handle;
-        GlobusXIODriverFinishedOpen(context, handle, op, GLOBUS_SUCCESS);
+        globus_xio_driver_finished_open(context, handle, op, GLOBUS_SUCCESS);
     }
     
     GlobusXIOFileDebugExit();
@@ -534,7 +534,7 @@ globus_l_xio_file_system_close_cb(
     context = GlobusXIOOperationGetContext(op);
     handle = GlobusXIOOperationGetDriverHandle(op);
     
-    GlobusXIODriverFinishedClose(op, result);
+    globus_xio_driver_finished_close(op, result);
     globus_xio_driver_context_close(context);
     globus_l_xio_file_handle_destroy(handle);
     
@@ -596,7 +596,7 @@ globus_l_xio_file_system_read_cb(
     GlobusXIOFileDebugEnter();
     
     op = (globus_xio_operation_t) user_arg;
-    GlobusXIODriverFinishedRead(op, result, nbytes);
+    globus_xio_driver_finished_read(op, result, nbytes);
     
     GlobusXIOFileDebugExit();
 }
@@ -626,7 +626,7 @@ globus_l_xio_file_read(
         
         result = globus_xio_system_try_read(
             handle->handle, iovec, iovec_count, &nbytes);
-        GlobusXIODriverFinishedRead(op, result, nbytes);
+        globus_xio_driver_finished_read(op, result, nbytes);
         /* dont want to return error here mainly because error could be eof, 
          * which is against our convention to return an eof error on async
          * calls.  Other than that, the choice is arbitrary
@@ -661,7 +661,7 @@ globus_l_xio_file_system_write_cb(
     GlobusXIOFileDebugEnter();
     
     op = (globus_xio_operation_t) user_arg;
-    GlobusXIODriverFinishedWrite(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, nbytes);
     
     GlobusXIOFileDebugExit();
 }
@@ -691,7 +691,7 @@ globus_l_xio_file_write(
         
         result = globus_xio_system_try_write(
             handle->handle, iovec, iovec_count, &nbytes);
-        GlobusXIODriverFinishedWrite(op, result, nbytes);
+        globus_xio_driver_finished_write(op, result, nbytes);
         /* Since I am finishing the request in the callstack,
          * the choice to pass the result in the finish instead of below
          * is arbitrary.

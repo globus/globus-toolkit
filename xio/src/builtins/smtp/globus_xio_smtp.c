@@ -180,19 +180,20 @@ next_state(
             break;
 
         case SMTP_MESSAGE:
-            GlobusXIODriverFinishedOpen(context, info, op, GLOBUS_SUCCESS);
+            globus_xio_driver_finished_open(context, info, op, GLOBUS_SUCCESS);
             return;
             break;
     }
 
     info->iovec.iov_base = info->message;
     info->iovec.iov_len = strlen(info->message);
-    GlobusXIODriverPassWrite(res, op, &info->iovec, 1, info->iovec.iov_len,
+    res = globus_xio_driver_pass_write(
+        op, &info->iovec, 1, info->iovec.iov_len,
         globus_l_xio_smtp_write_header_cb, (void *)info);
 
     if(res != GLOBUS_SUCCESS)
     {
-        GlobusXIODriverFinishedOpen(context, info, op, res);
+        globus_xio_driver_finished_open(context, info, op, res);
         globus_xio_driver_context_close(context);
     }
 }
@@ -215,7 +216,7 @@ globus_l_xio_smtp_read_header_cb(
     context = GlobusXIOOperationGetContext(op);
     if(result != GLOBUS_SUCCESS)
     {
-        GlobusXIODriverFinishedOpen(context, info, op, result);
+        globus_xio_driver_finished_open(context, info, op, result);
         globus_xio_driver_context_close(context);
     }
     else
@@ -229,11 +230,11 @@ globus_l_xio_smtp_read_header_cb(
             info->iovec.iov_base = &info->message[info->read_offset];
             info->iovec.iov_len = info->buf_len - info->read_offset;
 
-            GlobusXIODriverPassRead(res, op, &info->iovec, 1, 1,
+            res = globus_xio_driver_pass_read(op, &info->iovec, 1, 1,
                 globus_l_xio_smtp_read_header_cb, (void *)  info);
             if(res != GLOBUS_SUCCESS)
             {
-                GlobusXIODriverFinishedOpen(context, info, op, res);
+                globus_xio_driver_finished_open(context, info, op, res);
                 globus_xio_driver_context_close(context);
             }
         }
@@ -255,8 +256,7 @@ globus_l_xio_smtp_read_header_cb(
                     "SMTP Error: %s.",
                     info->message));
 
-
-                GlobusXIODriverFinishedOpen(context, info, op, res);
+                globus_xio_driver_finished_open(context, info, op, res);
             }
             /* ,ove to next state */
             else
@@ -288,7 +288,7 @@ globus_l_xio_smtp_write_header_cb(
 
         context = GlobusXIOOperationGetContext(op);
 
-        GlobusXIODriverFinishedOpen(context, info, op, result);
+        globus_xio_driver_finished_open(context, info, op, result);
         globus_xio_driver_context_close(context);
     }
     /*
@@ -296,7 +296,7 @@ globus_l_xio_smtp_write_header_cb(
      */
     else
     {
-        GlobusXIODriverPassRead(res, op, &info->iovec, 1,
+        res = globus_xio_driver_pass_read(op, &info->iovec, 1,
             1, globus_l_xio_smtp_read_header_cb, (void *)  info);
     }
 }
@@ -319,7 +319,7 @@ globus_l_xio_smtp_open_cb(
     if(result != GLOBUS_SUCCESS)
     {
         context = GlobusXIOOperationGetContext(op);
-        GlobusXIODriverFinishedOpen(context, info, op, result);
+        globus_xio_driver_finished_open(context, info, op, result);
     }
     else
     {
@@ -343,9 +343,9 @@ globus_l_xio_smtp_open(
         return globus_error_put(GLOBUS_ERROR_NO_INFO);
     }
 
-    globus_l_xio_smtp_attr_copy(&info, driver_attr);
+    globus_l_xio_smtp_attr_copy((void **)&info, driver_attr);
 
-    GlobusXIODriverPassOpen(res, &context, op, globus_l_xio_smtp_open_cb, info);
+    globus_xio_driver_pass_open(&context, op, globus_l_xio_smtp_open_cb, info);
 
     return res;
 }
@@ -362,7 +362,7 @@ globus_l_xio_smtp_close_cb(
     globus_xio_context_t                context;
 
     context = GlobusXIOOperationGetContext(op);
-    GlobusXIODriverFinishedClose(op, result);
+    globus_xio_driver_finished_close(op, result);
     globus_xio_driver_context_close(context);
 }   
 
@@ -375,7 +375,8 @@ globus_l_xio_smtp_write_close_cb(
 {
     globus_result_t                         res;
 
-    GlobusXIODriverPassClose(res, op, globus_l_xio_smtp_close_cb, user_arg);
+    res = globus_xio_driver_pass_close(
+            op, globus_l_xio_smtp_close_cb, user_arg);
 }
 
 /*
@@ -396,7 +397,7 @@ globus_l_xio_smtp_close(
     sprintf(info->message, "\r\n.\r\nQUIT\r\n");
     info->iovec.iov_base = info->message;
     info->iovec.iov_len = strlen(info->message);
-    GlobusXIODriverPassWrite(res, op, &info->iovec, 1, info->iovec.iov_len,
+    globus_xio_driver_pass_write(op, &info->iovec, 1, info->iovec.iov_len,
         globus_l_xio_smtp_write_close_cb, (void *)info);
 
     return res;
@@ -412,7 +413,7 @@ globus_l_xio_smtp_write_cb(
     globus_size_t                           nbytes,
     void *                                  user_arg)
 {
-    GlobusXIODriverFinishedWrite(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, nbytes);
 }
 
 /*
@@ -434,7 +435,7 @@ globus_l_xio_smtp_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, 
+    globus_xio_driver_pass_write(op, 
         (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
         globus_l_xio_smtp_write_cb, NULL);
 

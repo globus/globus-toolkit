@@ -79,7 +79,9 @@
         globus_assert(_op->ndx <= _context->stack_size);                    \
                                                                             \
         /* ok to do this unlocked because no one else has it yet */         \
-        _op->ref += 2; /* 1 for the pass, and one until finished */         \
+        /* 1 for the pass, and one until finished */                        \
+        GlobusXIOOpInc(_op);                                                \
+        GlobusXIOOpInc(_op);                                                \
         if(_op->ndx == _op->stack_size)                                     \
         {                                                                   \
             _res = _driver->transport_open_func(                            \
@@ -570,7 +572,9 @@
         globus_mutex_lock(&_context->mutex);                                \
         {                                                                   \
             _my_context->outstanding_operations++;                          \
-            _op->ref += 2; /* for pass and until finished */                \
+            /* for pass and until finished */                               \
+            GlobusXIOOpInc(_op);                                            \
+            GlobusXIOOpInc(_op);                                            \
         }                                                                   \
         globus_mutex_unlock(&_context->mutex);                              \
         _res = _driver->write_func(                                         \
@@ -839,7 +843,9 @@
         {                                                                   \
             _my_context->outstanding_operations++;                          \
             _my_context->read_operations++;                                 \
-            _op->ref += 2; /* 1 for pass, 1 until finished */               \
+            /* 1 for pass, 1 until finished */                              \
+            GlobusXIOOpInc(_op);                                            \
+            GlobusXIOOpInc(_op);                                            \
         }                                                                   \
         globus_mutex_unlock(&_context->mutex);                              \
         _my_op->in_register = GLOBUS_TRUE;                                  \

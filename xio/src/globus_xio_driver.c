@@ -297,12 +297,39 @@ globus_i_xio_op_destroy(
 }
 
 void
+globus_i_xio_driver_deliver_op(
+    globus_i_xio_op_t *                     op,
+    int                                     ndx,
+    globus_xio_operation_type_t             deliver_type)
+{
+    switch(deliver_type)
+    {
+        case GLOBUS_XIO_OPERATION_TYPE_OPEN:
+            globus_xio_driver_open_delivered(op, ndx, &deliver_type);
+            break;
+
+        case GLOBUS_XIO_OPERATION_TYPE_READ:
+            globus_xio_driver_read_delivered(op, ndx, &deliver_type);
+            break;
+
+        case GLOBUS_XIO_OPERATION_TYPE_WRITE:
+            globus_xio_driver_write_delivered(op, ndx, &deliver_type);
+            break;
+
+        default:
+            globus_assert(0);
+            break;
+    }
+}
+void
 globus_i_xio_will_block_cb(
     globus_thread_callback_index_t          wb_ndx,
     globus_callback_space_t                 space,
     void *                                  user_args)
 {
+    globus_xio_operation_type_t             deliver_type;
     globus_i_xio_op_t *                     op;
+    globus_i_xio_context_t *                context;
     int                                     ndx;
     GlobusXIOName(globus_i_xio_will_block_cb);
 
@@ -312,30 +339,46 @@ globus_i_xio_will_block_cb(
 
     globus_thread_blocking_callback_pop(&wb_ndx);
 
+    context = op->_op_context;
     op->restarted = GLOBUS_TRUE;
     globus_assert(op->ndx == 0);
     ndx = op->ndx;
     while(ndx != op->stack_size)
     {
-        GlobusXIOOpInc(op);
-        switch(op->entry[ndx].type)
+        globus_mutex_lock(&context->mutex);
+        {
+            if(op->entry[ndx].deliver_type != NULL)
+            {
+                GlobusXIOOpInc(op);
+                deliver_type = *op->entry[ndx].deliver_type;
+                op->entry[ndx].deliver_type = NULL;
+            }
+            else
+            {
+                deliver_type = GLOBUS_XIO_OPERATION_TYPE_NONE;
+            }
+        }
+        globus_mutex_unlock(&context->mutex);
+
+        switch(deliver_type)
         {
             case GLOBUS_XIO_OPERATION_TYPE_OPEN:
-                GlobusIXIODriverOpenDeliver(op, ndx);
+                globus_xio_driver_open_delivered(op, ndx, &deliver_type);
                 break;
 
             case GLOBUS_XIO_OPERATION_TYPE_READ:
-                GlobusIXIODriverReadDeliver(op, ndx);
+                globus_xio_driver_read_delivered(op, ndx, &deliver_type);
                 break;
 
             case GLOBUS_XIO_OPERATION_TYPE_WRITE:
-                GlobusIXIODriverWriteDeliver(op, ndx);
+                globus_xio_driver_write_delivered(op, ndx, &deliver_type);
                 break;
 
             case GLOBUS_XIO_OPERATION_TYPE_FINISHED:
                 return;
                 break;
 
+            case GLOBUS_XIO_OPERATION_TYPE_NONE:
             case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
                 break;
 
@@ -352,6 +395,8 @@ void
 globus_l_xio_driver_op_write_kickout(
     void *                                  user_arg)
 {
+    globus_xio_operation_type_t             deliver_type;
+    globus_xio_operation_type_t             op_type;
     int                                     ndx;
     int                                     wb_ndx;
     globus_i_xio_handle_t *                 handle;
@@ -371,6 +416,15 @@ globus_l_xio_driver_op_write_kickout(
     my_context = &op->_op_context->entry[ndx];
     handle = op->_op_handle;
     context = op->_op_context;
+
+    /*
+     *  before releasing the op back to the user we can safely set this 
+     *  outside of a mutex.  Once the users callbcak is called the value
+     *  on the local stack may be changed, theus the magic.
+     */
+    deliver_type = my_op->type;
+    op_type = my_op->type;
+    my_op->deliver_type = &deliver_type;
 
     if(ndx == 0)
     {
@@ -413,7 +467,89 @@ globus_l_xio_driver_op_write_kickout(
         }
     }
 
-    GlobusIXIODriverWriteDeliver(op, ndx);
+    globus_xio_driver_write_delivered(op, ndx, &deliver_type);
+
+  exit:
+    GlobusXIODebugInternalExit();
+}   
+   
+void
+globus_l_xio_driver_op_read_kickout(
+    void *                                  user_arg)
+{
+    globus_xio_operation_type_t             deliver_type;
+    globus_xio_operation_type_t             op_type;
+    int                                     ndx;
+    int                                     wb_ndx;
+    globus_i_xio_handle_t *                 handle;
+    globus_i_xio_context_entry_t *          my_context;
+    globus_i_xio_context_t *                context;
+    globus_i_xio_op_entry_t *               my_op;
+    globus_i_xio_op_t *                     op;
+    GlobusXIOName(globus_l_xio_driver_op_read_kickout);
+
+    GlobusXIODebugInternalEnter();
+    op = (globus_i_xio_op_t *) user_arg;
+
+    my_op = &op->entry[op->ndx - 1];
+    op->entry[my_op->prev_ndx].next_ndx = op->ndx;
+    op->ndx = my_op->prev_ndx;
+    ndx = op->ndx;
+    my_context = &op->_op_context->entry[ndx];
+    handle = op->_op_handle;
+    context = op->_op_context;
+
+    /*
+     *  before releasing the op back to the user we can safely set this 
+     *  outside of a mutex.  Once the users callbcak is called the value
+     *  on the local stack may be changed, theus the magic.
+     */
+    deliver_type = my_op->type;
+    op_type = my_op->type;
+    my_op->deliver_type = &deliver_type;
+
+    if(ndx == 0)
+    {
+        /* at top level the callback should never be null */
+        globus_assert(my_op->_op_ent_data_cb != NULL);
+        globus_thread_blocking_space_callback_push(
+            globus_i_xio_will_block_cb,
+            (void *) op,
+            op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: handle->space,
+            &wb_ndx);
+
+        my_op->_op_ent_data_cb(op, GlobusXIOObjToResult(op->cached_obj),
+            my_op->_op_ent_nbytes, my_op->user_arg);
+    
+        if(op->restarted)
+        {
+            globus_l_xio_op_restarted(op);
+            goto exit;
+        }
+        globus_thread_blocking_callback_pop(&wb_ndx);
+    }
+    else
+    {
+        if(my_op->_op_ent_data_cb == NULL)
+        {
+            globus_xio_driver_finished_read(op, 
+                GlobusXIOObjToResult(op->cached_obj), 
+                my_op->_op_ent_nbytes);
+        }
+        else
+        {
+            my_op->_op_ent_data_cb(op, 
+                GlobusXIOObjToResult(op->cached_obj),
+                my_op->_op_ent_nbytes, my_op->user_arg);
+        }
+        if(op->restarted)
+        {        
+            globus_l_xio_op_restarted(op);
+            goto exit;
+        }
+    }
+
+    globus_xio_driver_read_delivered(op, ndx, &deliver_type);
 
   exit:
     GlobusXIODebugInternalExit();
@@ -443,6 +579,8 @@ globus_l_xio_driver_purge_read_eof(
                     globus_list_remove(&my_context->eof_op_list,
                         my_context->eof_op_list);
 
+        globus_assert(tmp_op->entry[tmp_op->ndx - 1].type ==
+            GLOBUS_XIO_OPERATION_TYPE_READ);
         globus_i_xio_register_oneshot(
             tmp_op->_op_handle,
             globus_l_xio_driver_op_read_kickout,
@@ -450,76 +588,6 @@ globus_l_xio_driver_purge_read_eof(
             tmp_op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: 
                                 tmp_op->_op_handle->space);
     }
-    GlobusXIODebugInternalExit();
-}
-
-void
-globus_l_xio_driver_op_read_kickout(
-    void *                                  user_arg)
-{
-    globus_i_xio_handle_t *                 handle;
-    globus_i_xio_context_t *                context;
-    globus_i_xio_context_entry_t *          my_context;
-    int                                     ndx;
-    int                                     wb_ndx;
-    globus_i_xio_op_entry_t *               my_op;
-    globus_i_xio_op_t *                     op;
-    GlobusXIOName(globus_l_xio_driver_op_read_kickout);
-
-    GlobusXIODebugInternalEnter();
-
-    op = (globus_i_xio_op_t *) user_arg;
-
-    my_op = &op->entry[op->ndx - 1];
-    op->entry[my_op->prev_ndx].next_ndx = op->ndx;
-    op->ndx = my_op->prev_ndx;
-    ndx = op->ndx; /* cache this value on stack */
-    my_context = &op->_op_context->entry[ndx];
-    handle = op->_op_handle;
-    context = op->_op_context;
-
-    if(ndx == 0)
-    {
-        /* at top level the callback should never be null */
-        globus_assert(my_op->_op_ent_data_cb != NULL);
-        globus_thread_blocking_space_callback_push(
-            globus_i_xio_will_block_cb,
-            (void *) op,
-            op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: handle->space,
-            &wb_ndx);
-        my_op->_op_ent_data_cb(op, GlobusXIOObjToResult(op->cached_obj),
-            my_op->_op_ent_nbytes, my_op->user_arg);
-        if(op->restarted) 
-        {
-            globus_l_xio_op_restarted(op);
-            goto exit;
-        }
-        globus_thread_blocking_callback_pop(&wb_ndx);
-    }
-    else
-    {
-        if(my_op->_op_ent_data_cb == NULL)
-        {
-            globus_xio_driver_finished_read(op, 
-                GlobusXIOObjToResult(op->cached_obj),
-                my_op->_op_ent_nbytes);
-        }
-        else
-        {
-            my_op->_op_ent_data_cb(op, 
-                GlobusXIOObjToResult(op->cached_obj),
-                my_op->_op_ent_nbytes, my_op->user_arg);
-        }
-        if(op->restarted)
-        {
-            globus_l_xio_op_restarted(op);
-            goto exit;
-        }
-    }
-
-    GlobusIXIODriverReadDeliver(op, ndx);
-
-  exit:
     GlobusXIODebugInternalExit();
 }
 
@@ -563,7 +631,7 @@ globus_i_xio_driver_start_close(
 
     if(res != GLOBUS_SUCCESS && !can_fail)
     {
-        GlobusXIODriverFinishedClose(op, res);
+        globus_xio_driver_finished_close(op, res);
     }
 
     globus_mutex_lock(&context->mutex);
@@ -613,7 +681,8 @@ globus_l_xio_driver_op_close_kickout(
     }
     else
     {
-        GlobusXIODriverFinishedClose(op, GlobusXIOObjToResult(op->cached_obj));
+        globus_xio_driver_finished_close(
+            op, GlobusXIOObjToResult(op->cached_obj));
     }
     GlobusXIODebugInternalExit();
 }
@@ -646,8 +715,8 @@ globus_l_xio_driver_op_accept_kickout(
     }
     else
     {
-        GlobusXIODriverFinishedAccept(op, NULL, 
-            GlobusXIOObjToResult(op->cached_obj));
+        globus_xio_driver_finished_accept(
+            op, NULL, GlobusXIOObjToResult(op->cached_obj));
     }
     GlobusXIODebugInternalExit();
 }
@@ -664,6 +733,7 @@ globus_l_xio_driver_open_op_kickout(
     int                                     wb_ndx;
     globus_i_xio_op_entry_t *               my_op;
     globus_i_xio_op_t *                     op;
+    globus_xio_operation_type_t             deliver_type;
     GlobusXIOName(globus_l_xio_driver_open_op_kickout);
     
     GlobusXIODebugInternalEnter();
@@ -676,6 +746,9 @@ globus_l_xio_driver_open_op_kickout(
     my_context = &op->_op_context->entry[ndx];
     handle = op->_op_handle;
     context = op->_op_context;
+
+    deliver_type = my_op->type;
+    my_op->deliver_type =&deliver_type;
 
     if(ndx == 0)
     {
@@ -713,8 +786,7 @@ globus_l_xio_driver_open_op_kickout(
         }
     }
 
-    GlobusIXIODriverOpenDeliver(op, ndx);
-
+    globus_xio_driver_open_delivered(op, ndx, &deliver_type);
   exit:
 
     GlobusXIODebugInternalExit();
@@ -845,131 +917,6 @@ globus_i_xio_attr_get_ds(
     GlobusIXIOAttrGetDS(rc, attr, driver);
 
     return rc;
-}
-
-/*
- *  pass functions
- */
-globus_result_t
-globus_xio_driver_pass_server_accept(
-    globus_i_xio_op_t *                     op,
-    globus_xio_driver_callback_t            cb,
-    void *                                  user_arg)
-{
-    globus_result_t                         res;
-
-    GlobusXIODriverPassAccept(res, op, cb, user_arg);
-
-    return res;
-}
-
-globus_result_t
-globus_xio_driver_pass_open(
-    globus_xio_context_t *                  out_context,
-    globus_i_xio_op_t *                     op,
-    globus_xio_driver_callback_t            cb,
-    void *                                  user_arg)
-{
-    globus_result_t                         res;
-
-    GlobusXIODriverPassOpen(res, out_context, op, cb, user_arg);
-
-    return res;
-}
-
-globus_result_t
-globus_xio_driver_pass_close(
-    globus_i_xio_op_t *                     op,
-    globus_xio_driver_callback_t            cb,
-    void *                                  user_arg)
-{
-    globus_result_t                         res;
-
-    GlobusXIODriverPassClose(res, op, cb, user_arg);
-
-    return res;
-}
-
-globus_result_t
-globus_xio_driver_pass_read(
-    globus_i_xio_op_t *                     op,
-    globus_xio_iovec_t *                    iovec,
-    int                                     iovec_count,
-    globus_size_t                           waitfor,
-    globus_xio_driver_data_callback_t       cb,
-    void *                                  user_arg)
-{
-    globus_result_t                         res;
-
-    GlobusXIODriverPassRead(res, op, iovec, iovec_count,  \
-        waitfor, cb, user_arg);
-
-    return res;
-}
-
-globus_result_t
-globus_xio_driver_pass_write(
-    globus_i_xio_op_t *                     op,
-    globus_xio_iovec_t *                    iovec,
-    int                                     iovec_count,
-    globus_size_t                           waitfor,
-    globus_xio_driver_data_callback_t       cb,
-    void *                                  user_arg)
-{
-    globus_result_t                         res;
-
-    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, \
-        waitfor, cb, user_arg);
-
-    return res;
-}
-
-/*
- *  finishes function wrappers
- */
-void
-globus_xio_driver_finished_open(
-    globus_xio_context_t                    context,
-    void *                                  handle,
-    globus_xio_operation_t                  op,
-    globus_result_t                         res)
-{
-    GlobusXIODriverFinishedOpen(context, handle, op, res);
-}
-
-void
-globus_xio_driver_finished_close(
-    globus_xio_operation_t                  op,
-    globus_result_t                         res)
-{
-    GlobusXIODriverFinishedClose(op, res);
-}
-
-void
-globus_xio_driver_finished_read(
-    globus_xio_operation_t                  op,
-    globus_result_t                         res,
-    globus_size_t                           nbytes)
-{
-    GlobusXIODriverFinishedRead(op, res, nbytes);
-}
-
-void
-globus_xio_driver_finished_write(
-    globus_xio_operation_t                  op,
-    globus_result_t                         res,
-    globus_size_t                           nbytes)
-{
-    GlobusXIODriverFinishedWrite(op, res, nbytes);
-}
-
-void
-globus_xio_driver_finished_accept(
-    globus_xio_operation_t                  op,
-    void *                                  target,
-    globus_result_t                         res)
-{
-    GlobusXIODriverFinishedAccept(op, target, res);
 }
 
 /*

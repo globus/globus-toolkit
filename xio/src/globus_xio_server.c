@@ -652,7 +652,7 @@ globus_l_xio_server_register_accept(
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
     GlobusXIOOpInc(xio_op);
-    GlobusXIODriverPassAccept(res, xio_op, \
+    res = globus_xio_driver_pass_accept(xio_op,
             globus_i_xio_server_accept_callback, NULL);
 
     if(res != GLOBUS_SUCCESS)

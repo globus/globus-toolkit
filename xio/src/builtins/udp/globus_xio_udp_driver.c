@@ -1098,7 +1098,7 @@ globus_l_xio_udp_open(
         }
     }
     
-    GlobusXIODriverFinishedOpen(context, handle, op, GLOBUS_SUCCESS);
+    globus_xio_driver_finished_open(context, handle, op, GLOBUS_SUCCESS);
     
     return GLOBUS_SUCCESS;
 
@@ -1129,7 +1129,7 @@ globus_l_xio_udp_system_close_cb(
     context = GlobusXIOOperationGetContext(op);
     handle = GlobusXIOOperationGetDriverHandle(op);
     
-    GlobusXIODriverFinishedClose(op, result);
+    globus_xio_driver_finished_close(op, result);
     globus_xio_driver_context_close(context);
     globus_l_xio_udp_handle_destroy(handle);
 }
@@ -1188,7 +1188,7 @@ globus_l_xio_udp_system_read_cb(
         /* eof not possible, zero byte packets allowed */
         result = GLOBUS_SUCCESS;
     }
-    GlobusXIODriverFinishedRead(op, result, nbytes);
+    globus_xio_driver_finished_read(op, result, nbytes);
 }
 
 /*
@@ -1238,7 +1238,7 @@ globus_l_xio_udp_read(
             result = GLOBUS_SUCCESS;
         }
         
-        GlobusXIODriverFinishedRead(op, result, nbytes);
+        globus_xio_driver_finished_read(op, result, nbytes);
         /* dont want to return error here mainly because error could be eof, 
          * which is against our convention to return an eof error on async
          * calls.  Other than that, the choice is arbitrary
@@ -1271,7 +1271,7 @@ globus_l_xio_udp_system_write_cb(
     GlobusXIOName(globus_l_xio_udp_system_write_cb);
     
     op = (globus_xio_operation_t) user_arg;
-    GlobusXIODriverFinishedWrite(op, result, nbytes);
+    globus_xio_driver_finished_write(op, result, nbytes);
 }
 
 /*
@@ -1310,7 +1310,7 @@ globus_l_xio_udp_write(
         result = globus_xio_system_try_write_ex(
             handle->handle, iovec, iovec_count, 0, addr, &nbytes);
             
-        GlobusXIODriverFinishedWrite(op, result, nbytes);
+        globus_xio_driver_finished_write(op, result, nbytes);
         /* Since I am finishing the request in the callstack,
          * the choice to pass the result in the finish instead of below
          * is arbitrary.

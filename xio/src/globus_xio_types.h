@@ -30,6 +30,7 @@ typedef struct iovec                            globus_xio_iovec_t;
  */
 typedef enum globus_i_xio_op_type_e
 {
+    GLOBUS_XIO_OPERATION_TYPE_NONE,
     GLOBUS_XIO_OPERATION_TYPE_FINISHED,
     GLOBUS_XIO_OPERATION_TYPE_OPEN,
     GLOBUS_XIO_OPERATION_TYPE_CLOSE,

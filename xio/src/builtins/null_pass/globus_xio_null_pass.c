@@ -50,7 +50,7 @@ globus_l_xio_null_pass_accept(
 {
     globus_result_t                     res;
 
-    GlobusXIODriverPassAccept(res, accept_op, NULL, NULL);
+    res = globus_xio_driver_pass_accept(accept_op, NULL, NULL);
 
     return res;
 }
@@ -93,7 +93,7 @@ globus_l_xio_null_pass_open(
     globus_result_t                     res;
     globus_xio_context_t                context;
   
-    GlobusXIODriverPassOpen(res, &context, op, NULL, NULL);
+    res = globus_xio_driver_pass_open(&context, op, NULL, NULL);
 
     return res;
 }
@@ -111,7 +111,7 @@ globus_l_xio_null_pass_close(
 {
     globus_result_t                     res;
 
-    GlobusXIODriverPassClose(res, op, NULL, NULL);
+    res = globus_xio_driver_pass_close(op, NULL, NULL);
 
     return res;
 }
@@ -132,7 +132,7 @@ globus_l_xio_null_pass_read(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, 
+    res = globus_xio_driver_pass_read(op, 
         (globus_xio_iovec_t *)iovec, iovec_count, wait_for, NULL, NULL);
 
     return res;
@@ -154,7 +154,7 @@ globus_l_xio_null_pass_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, 
+    res = globus_xio_driver_pass_write(op, 
         (globus_xio_iovec_t *)iovec, iovec_count, wait_for, NULL, NULL);
 
     return res;

@@ -1174,7 +1174,7 @@ globus_l_xio_register_writev(
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
     GlobusXIOOpInc(op);
-    GlobusXIODriverPassWrite(res, op, op->_op_iovec, op->_op_iovec_count,
+    res = globus_xio_driver_pass_write(op, op->_op_iovec, op->_op_iovec_count,
         op->_op_wait_for, globus_i_xio_read_write_callback, (void *)NULL);
     if(res != GLOBUS_SUCCESS)
     {
@@ -1294,7 +1294,7 @@ globus_l_xio_register_readv(
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
     GlobusXIOOpInc(op);
-    GlobusXIODriverPassRead(res, op, op->_op_iovec, op->_op_iovec_count,
+    res = globus_xio_driver_pass_read(op, op->_op_iovec, op->_op_iovec_count,
         op->_op_wait_for, globus_i_xio_read_write_callback, (void *)NULL);
     if(res != GLOBUS_SUCCESS)
     {
@@ -1389,8 +1389,8 @@ globus_l_xio_register_open(
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
     GlobusXIOOpInc(op);
-    GlobusXIODriverPassOpen(
-        res, NULL, op, globus_i_xio_open_close_callback, NULL);
+    res = globus_xio_driver_pass_open(
+        NULL, op, globus_i_xio_open_close_callback, NULL);
     
     if(res != GLOBUS_SUCCESS)
     {
@@ -1543,7 +1543,8 @@ globus_l_xio_register_close(
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
     GlobusXIOOpInc(op);
-    GlobusXIODriverPassClose(res, op, globus_i_xio_open_close_callback, NULL);
+    res = globus_xio_driver_pass_close(
+        op, globus_i_xio_open_close_callback, NULL);
     if(res != GLOBUS_SUCCESS)
     {
         goto err;

@@ -82,7 +82,7 @@ globus_l_xio_queue_open_cb(
 
     handle = (globus_xio_driver_queue_handle_t *) user_arg;
 
-    GlobusXIODriverFinishedOpen(handle->context, handle, op, result);
+    globus_xio_driver_finished_open(handle->context, handle, op, result);
     if(result != GLOBUS_SUCCESS)
     {
         globus_l_xiod_q_handle_destroy(handle);
@@ -102,7 +102,7 @@ globus_l_xio_queue_open(
 
     handle = globus_l_xiod_q_handle_create();
 
-    GlobusXIODriverPassOpen(res, &handle->context, op, \
+    res = globus_xio_driver_pass_open(&handle->context, op, \
         globus_l_xio_queue_open_cb, handle);
 
     return res;
@@ -123,7 +123,7 @@ globus_l_xio_queue_close(
 
     globus_l_xiod_q_handle_destroy(handle);
 
-    GlobusXIODriverPassClose(res, op, NULL, NULL);
+    res = globus_xio_driver_pass_close(op, NULL, NULL);
 
     return res;
 }
@@ -155,7 +155,7 @@ globus_l_xio_queue_read_cb(
                 handle->outstanding_read = GLOBUS_FALSE;
                 done = GLOBUS_TRUE;
                 /* must be after the wempty check */
-                GlobusXIODriverFinishedRead(op, res, nbytes);
+                globus_xio_driver_finished_read(op, res, nbytes);
             }
             else
             {
@@ -164,10 +164,9 @@ globus_l_xio_queue_read_cb(
                 globus_assert(entry != NULL);
 
                 /* must be after the dequeue */
-                GlobusXIODriverFinishedRead(op, res, nbytes);
+                globus_xio_driver_finished_read(op, res, nbytes);
 
-                GlobusXIODriverPassRead(
-                    res, 
+                globus_xio_driver_pass_read(
                     entry->op, 
                     entry->iovec,
                     entry->iovec_count, 
@@ -228,8 +227,7 @@ globus_l_xio_queue_read(
         else
         {
             handle->outstanding_read = GLOBUS_TRUE;
-            GlobusXIODriverPassRead(
-                res, 
+            res = globus_xio_driver_pass_read(
                 op, 
                 (globus_xio_iovec_t *)iovec, 
                 iovec_count, 
@@ -269,7 +267,7 @@ globus_l_xio_queue_write_cb(
             {
                 handle->outstanding_write = GLOBUS_FALSE;
                 done = GLOBUS_TRUE;
-                GlobusXIODriverFinishedWrite(op, res, nbytes);
+                globus_xio_driver_finished_write(op, res, nbytes);
             }
             else
             {
@@ -277,9 +275,8 @@ globus_l_xio_queue_write_cb(
                     globus_fifo_dequeue(&handle->write_q);
                 globus_assert(entry != NULL);
 
-                GlobusXIODriverFinishedWrite(op, res, nbytes);
-                GlobusXIODriverPassWrite(
-                    res, 
+                globus_xio_driver_finished_write(op, res, nbytes);
+                res = globus_xio_driver_pass_write(
                     entry->op, 
                     entry->iovec, 
                     entry->iovec_count, 
@@ -339,8 +336,7 @@ globus_l_xio_queue_write(
         else
         {
             handle->outstanding_write = GLOBUS_TRUE;
-            GlobusXIODriverPassWrite(
-                res, 
+            res = globus_xio_driver_pass_write(
                 op, 
                 (globus_xio_iovec_t *)iovec, 
                 iovec_count, 

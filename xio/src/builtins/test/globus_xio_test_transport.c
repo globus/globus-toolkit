@@ -359,8 +359,8 @@ globus_l_xio_operation_kickout(
         switch(ow->type)
         {
             case GLOBUS_XIO_OPERATION_TYPE_OPEN:
-                GlobusXIODriverFinishedOpen(ow->dh->context, ow->dh, ow->op, \
-                    ow->res);
+                globus_xio_driver_finished_open(
+                    ow->dh->context, ow->dh, ow->op, ow->res);
                 if(ow->res != GLOBUS_SUCCESS)
                 {
                     globus_l_xio_test_attr_destroy(ow->dh);
@@ -368,21 +368,21 @@ globus_l_xio_operation_kickout(
                 break;
 
             case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
-                GlobusXIODriverFinishedClose(ow->op, ow->res);
+                globus_xio_driver_finished_close(ow->op, ow->res);
                 globus_xio_driver_context_close(ow->dh->context);
                 globus_l_xio_test_attr_destroy(ow->dh);
                 break;
 
             case GLOBUS_XIO_OPERATION_TYPE_READ:
-                GlobusXIODriverFinishedRead(ow->op, ow->res, ow->nbytes);
+                globus_xio_driver_finished_read(ow->op, ow->res, ow->nbytes);
                 break;
 
             case GLOBUS_XIO_OPERATION_TYPE_WRITE:
-                GlobusXIODriverFinishedWrite(ow->op, ow->res, ow->nbytes);
+                globus_xio_driver_finished_write(ow->op, ow->res, ow->nbytes);
                 break;
 
             case GLOBUS_XIO_OPERATION_TYPE_ACCEPT:
-                GlobusXIODriverFinishedAccept(ow->op, NULL, ow->res);
+                globus_xio_driver_finished_accept(ow->op, NULL, ow->res);
                 break;
 
             default:
@@ -447,7 +447,7 @@ globus_l_xio_test_accept(
 
     if(server->inline_finish)
     {
-        GlobusXIODriverFinishedAccept(accept_op, NULL, res);
+        globus_xio_driver_finished_accept(accept_op, NULL, res);
     }
     else
     {
@@ -545,7 +545,7 @@ globus_l_xio_test_open(
     if(dh->inline_finish)
     {
         test_inline_blocker(&dh->delay);
-        GlobusXIODriverFinishedOpen(context, dh, op, res);
+        globus_xio_driver_finished_open(context, dh, op, res);
         if(res != GLOBUS_SUCCESS)
         {
             globus_l_xio_test_attr_destroy(dh);
@@ -613,7 +613,7 @@ globus_l_xio_test_close(
     if(dh->inline_finish)
     {
         test_inline_blocker(&dh->delay);
-        GlobusXIODriverFinishedClose(op, res);
+        globus_xio_driver_finished_close(op, res);
         globus_xio_driver_context_close(dh->context);
         globus_l_xio_test_attr_destroy(dh);
     }
@@ -710,7 +710,7 @@ globus_l_xio_test_read(
     if(dh->inline_finish)
     {
         test_inline_blocker(&dh->delay);
-        GlobusXIODriverFinishedRead(op, res, nbytes);
+        globus_xio_driver_finished_read(op, res, nbytes);
     }
     else
     {
@@ -796,7 +796,7 @@ globus_l_xio_test_write(
     if(dh->inline_finish)
     {
         test_inline_blocker(&dh->delay);
-        GlobusXIODriverFinishedWrite(op, res, nbytes);
+        globus_xio_driver_finished_write(op, res, nbytes);
     }
     else
     {

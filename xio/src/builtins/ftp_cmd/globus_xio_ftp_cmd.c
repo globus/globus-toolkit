@@ -198,7 +198,7 @@ globus_l_xio_ftp_cmd_accept_cb(
     target->client = GLOBUS_FALSE;
     target->create_buffer_mode = GLOBUS_FALSE;
 
-    GlobusXIODriverFinishedAccept(op, target, result);
+    globus_xio_driver_finished_accept(op, target, result);
 }
 
 static globus_result_t
@@ -209,8 +209,8 @@ globus_l_xio_ftp_cmd_accept(
 {
     globus_result_t                         res;
 
-    GlobusXIODriverPassAccept(
-        res, accept_op, globus_l_xio_ftp_cmd_accept_cb, NULL);
+    res = globus_xio_driver_pass_accept(
+        accept_op, globus_l_xio_ftp_cmd_accept_cb, NULL);
 
     return res;
 }
@@ -236,7 +236,7 @@ globus_l_xio_ftp_cmd_open_cb(
         globus_free(handle);
     }
 
-    GlobusXIODriverFinishedOpen(handle->context, handle, op, result);
+    globus_xio_driver_finished_open(handle->context, handle, op, result);
 }
 
 static globus_result_t
@@ -274,8 +274,7 @@ globus_l_xio_ftp_cmd_open(
     globus_mutex_init(&handle->mutex, NULL);
     globus_fifo_init(&handle->read_q);
 
-    GlobusXIODriverPassOpen(
-        res,
+    res = globus_xio_driver_pass_open(
         &handle->context,
         op, 
         globus_l_xio_ftp_cmd_open_cb,
@@ -306,8 +305,7 @@ globus_l_xio_ftp_cmd_request_data(
         handle->iovec.iov_base = &handle->buffer[handle->buffer_ndx];
         handle->iovec.iov_len = 
             handle->buffer_length - handle->buffer_ndx;
-        GlobusXIODriverPassRead(
-            res,
+        res = globus_xio_driver_pass_read(
             op,
             &handle->iovec,
             1,
@@ -320,7 +318,7 @@ globus_l_xio_ftp_cmd_request_data(
         handle->out_iovec[0].iov_base = globus_fifo_dequeue(&handle->read_q);
         handle->out_iovec[0].iov_len = strlen(handle->out_iovec[0].iov_base);
 
-        GlobusXIODriverFinishedRead(
+        globus_xio_driver_finished_read(
             op, GLOBUS_SUCCESS, handle->iovec.iov_len);
     }
 
@@ -348,7 +346,7 @@ globus_l_xio_ftp_cmd_read_cb(
     {
         if(result != GLOBUS_SUCCESS || !handle->create_buffer_mode)
         {
-            GlobusXIODriverFinishedRead(op, result, nbytes);
+            globus_xio_driver_finished_read(op, result, nbytes);
         }
         else
         {
@@ -392,7 +390,7 @@ globus_l_xio_ftp_cmd_read_cb(
             res = globus_l_xio_ftp_cmd_request_data(handle, op);
             if(res != GLOBUS_SUCCESS)
             {
-                GlobusXIODriverFinishedRead(op, res, nbytes);
+                globus_xio_driver_finished_read(op, res, nbytes);
             }
         }
     }
@@ -431,7 +429,7 @@ globus_l_xio_ftp_cmd_close_cb(
 
     handle = (globus_l_xio_ftp_cmd_handle_t *) user_arg;
 
-    GlobusXIODriverFinishedClose(op, result);
+    globus_xio_driver_finished_close(op, result);
 
     globus_free(handle->buffer);
     globus_fifo_destroy(&handle->read_q);
@@ -451,7 +449,8 @@ globus_l_xio_ftp_cmd_close(
 
     handle = (globus_l_xio_ftp_cmd_handle_t *) driver_handle;
 
-    GlobusXIODriverPassClose(res, op, globus_l_xio_ftp_cmd_close_cb, handle);
+    res = globus_xio_driver_pass_close(
+        op, globus_l_xio_ftp_cmd_close_cb, handle);
 
     return res;
 }
