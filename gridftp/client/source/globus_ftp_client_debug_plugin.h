@@ -23,36 +23,23 @@
  *
  * <b>Example Usage:</b>
  *
- * @code
- * int main(int argc, char *argv[])
- * {
- *     globus_ftp_client_plugin_t restart_plugin;
- *     globus_ftp_client_handleattr_t handleattr;
- *     globus_ftp_client_handle_t handle;
- *     FILE * log;
- *     char text[256];
+ * The following example illustrates a typical use of the debug plugin.
+ * In this case, we configure a plugin instance to output log messages
+ * preceded by the process name and pid to a file named gridftp.log.
  *
- *     log = fopen("gridftp.log", "a");
- *     sprintf(text, "%s:%ld", argv[0], (long) getpid());
- *
- *     globus_ftp_client_debug_plugin_init(&debug_plugin, log, text);
- *
- *     globus_ftp_client_handleattr_init(&handleattr);
- *     globus_ftp_client_handleattr_add_plugin(&handleattr, &debug_plugin);
- *     globus_ftp_client_handle_init(&handle, &handleattr);
- *
- *     globus_ftp_client_get(&handle,
- *                           "ftp://ftp.globus.org/pub/globus/README",
- *                           GLOBUS_NULL,
- *                           GLOBUS_NULL,
- *                           callback_fn,
- *                           GLOBUS_NULL);
- * }
- * @endcode
+ * \include globus_ftp_client_debug_plugin.example
+
  *
  */
 
 #include "globus_ftp_client_plugin.h"
+
+/** Module descriptor
+ * @ingroup globus_ftp_client_debug_plugin
+ */
+#define GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_MODULE \
+        (&globus_i_ftp_client_debug_plugin_module)
+extern globus_module_descriptor_t globus_i_ftp_client_debug_plugin_module;
 
 globus_result_t
 globus_ftp_client_debug_plugin_init(

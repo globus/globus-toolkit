@@ -91,7 +91,7 @@ globus_l_ftp_client_test_restart_plugin_authenticate(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
-    const globus_url_t *				url,
+    const char *					url,
     const globus_ftp_control_auth_info_t *		auth_info)
 {
     globus_l_ftp_restart_plugin_specific_t *		d;
@@ -113,7 +113,7 @@ globus_l_ftp_client_test_restart_plugin_connect(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
-    const globus_url_t *				url)
+    const char *					url)
 {
     globus_l_ftp_restart_plugin_specific_t *		d;
 
@@ -354,7 +354,7 @@ globus_l_ftp_client_test_restart_plugin_command(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
-    const globus_url_t *				url,
+    const char *					url,
     const char *					command_name)
 {
     globus_l_ftp_restart_plugin_specific_t *		d;
@@ -523,7 +523,7 @@ globus_l_ftp_client_test_restart_plugin_response(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
-    const globus_url_t *				url,
+    const char *					url,
     globus_object_t *					err,
     const globus_ftp_control_response_t *		response)
 {
@@ -694,7 +694,7 @@ globus_l_ftp_client_test_restart_plugin_fault(
     globus_ftp_client_plugin_t *		plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     globus_object_t *				error)
 {
     fprintf(stderr,"[restart plugin]: Fault detected\n");

@@ -10,6 +10,7 @@
 #include "globus_ftp_client_test_restart_plugin.h"
 #include "globus_ftp_client_test_abort_plugin.h"
 #include "globus_ftp_client_debug_plugin.h"
+#include "globus_ftp_client_restart_plugin.h"
 #include "globus_ftp_client_test_pause_plugin.h"
 
 int test_abort_count = 0;
@@ -69,6 +70,7 @@ test_parse_args(int argc,
 	    break;
 	case 'p':
 	    plugin = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
+	    globus_module_activate(GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_MODULE);
 	    globus_ftp_client_debug_plugin_init(plugin, stderr, "[Debug Plugin]");
 
 	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
@@ -162,6 +164,7 @@ test_parse_args(int argc,
 	    }
 	    break;
 	case 'f':
+	    globus_module_activate(GLOBUS_FTP_CLIENT_RESTART_PLUGIN_MODULE);
 	    sscanf(optarg, "%d,%ld,%ld", &max_retries, &interval, &deadline);
 
 	    if(interval < 0.1)

@@ -54,7 +54,7 @@ globus_l_ftp_client_debug_plugin_connect(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url);
+    const char *				url);
 
 static
 void
@@ -62,7 +62,7 @@ globus_l_ftp_client_debug_plugin_authenticate(
     globus_ftp_client_plugin_t *		plugin,
     void * 					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     const globus_ftp_control_auth_info_t *	auth_info);
 
 static
@@ -203,7 +203,7 @@ globus_l_ftp_client_debug_plugin_command(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     const char *				command_name);
 
 static
@@ -212,7 +212,7 @@ globus_l_ftp_client_debug_plugin_response(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     globus_object_t *				error,
     const globus_ftp_control_response_t *	ftp_response);
 
@@ -222,7 +222,7 @@ globus_l_ftp_client_debug_plugin_fault(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     globus_object_t *				error);
 
 static
@@ -231,6 +231,36 @@ globus_l_ftp_client_debug_plugin_complete(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle);
+
+static int globus_l_ftp_client_debug_plugin_activate(void);
+static int globus_l_ftp_client_debug_plugin_deactivate(void);
+
+/**
+ * Module descriptor static initializer.
+ */
+globus_module_descriptor_t globus_i_ftp_client_debug_plugin_module =
+{
+    "globus_ftp_client_debug_plugin",
+    globus_l_ftp_client_debug_plugin_activate,
+    globus_l_ftp_client_debug_plugin_deactivate,
+    GLOBUS_NULL
+};
+
+
+static
+int
+globus_l_ftp_client_debug_plugin_activate(void)
+{
+    return 0;
+}
+
+static
+int
+globus_l_ftp_client_debug_plugin_deactivate(void)
+{
+    return 0;
+}
+
 
 static
 globus_ftp_client_plugin_t *
@@ -282,7 +312,7 @@ globus_l_ftp_client_debug_plugin_connect(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url)
+    const char *				url)
 {
     globus_l_ftp_client_debug_plugin_t *	d;
     char url_port[10];
@@ -294,22 +324,10 @@ globus_l_ftp_client_debug_plugin_connect(
 	return;
     }
 
-    if(url->port)
-    {
-	sprintf(url_port, "%u", url->port);
-    }
-    else
-    {
-	url_port[0] = '\0';
-    }
-
-    fprintf(d->stream, "%s%sconnecting to %s://%s%s%s\n",
+    fprintf(d->stream, "%s%sconnecting to %s\n",
 	    d->text ? d->text : "",
 	    d->text ? ": " : "",
-	    url->scheme,
-	    url->host,
-	    url->port ? ":" : "",
-	    url->port ? url_port : "");
+	    url);
 }
 /* globus_l_ftp_client_debug_plugin_connect() */
 
@@ -319,14 +337,10 @@ globus_l_ftp_client_debug_plugin_authenticate(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     const globus_ftp_control_auth_info_t *	auth_info)
 {
     globus_l_ftp_client_debug_plugin_t *	d;
-    char *					scheme_string[2] =
-                                                    { "ftp", "gsiftp" };
-    char					portstring[10];
-
     d = (globus_l_ftp_client_debug_plugin_t *) plugin_specific;
 
     if(!d->stream)
@@ -334,15 +348,10 @@ globus_l_ftp_client_debug_plugin_authenticate(
 	return;
     }
 
-    sprintf(portstring, "%d", url->port);
-
-    fprintf(d->stream, "%s%sauthenticating with %s://%s%s%s\n",
+    fprintf(d->stream, "%s%sauthenticating with %s\n",
 	    d->text ? d->text : "",
 	    d->text ? ": " : "",
-	    scheme_string[url->scheme_type == GLOBUS_URL_SCHEME_GSIFTP],
-	    url->host,
-	    url->port ? ":" : "",
-	    url->port ? portstring : "");
+	    url);
 }
 /* globus_l_ftp_client_debug_plugin_authenticate() */
 
@@ -719,7 +728,7 @@ globus_l_ftp_client_debug_plugin_command(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     const char *				command_name)
 {
     globus_l_ftp_client_debug_plugin_t *	d;
@@ -744,7 +753,7 @@ globus_l_ftp_client_debug_plugin_response(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     globus_object_t *				error,
     const globus_ftp_control_response_t *	ftp_response)
 {
@@ -763,7 +772,7 @@ globus_l_ftp_client_debug_plugin_response(
 	fprintf(d->stream, "%s%sresponse from %s: %s\n",
 		d->text ? d->text : "",
 		d->text ? ": " : "",
-		url->host,
+		url,
 		ftp_response->response_buffer);
     }
     else
@@ -773,7 +782,7 @@ globus_l_ftp_client_debug_plugin_response(
 	fprintf(d->stream, "%s%serror reading response from %s: %s\n",
 		d->text ? d->text : "",
 		d->text ? ": " : "",
-		url->host,
+		url,
 		error_str);
 
 	globus_libc_free(error_str);
@@ -787,7 +796,7 @@ globus_l_ftp_client_debug_plugin_fault(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     globus_object_t *				error)
 {
     globus_l_ftp_client_debug_plugin_t *	d;
@@ -805,7 +814,7 @@ globus_l_ftp_client_debug_plugin_fault(
 	fprintf(d->stream, "%s%sfault on connection to %s\n",
 		d->text ? d->text : "",
 		d->text ? ": " : "",
-		url->host);
+		url);
     }
     else
     {
@@ -814,7 +823,7 @@ globus_l_ftp_client_debug_plugin_fault(
 	fprintf(d->stream, "%s%sfault on connection to %s: %s\n",
 		d->text ? d->text : "",
 		d->text ? ": " : "",
-		url->host,
+		url,
 		error_str);
 
 	globus_libc_free(error_str);

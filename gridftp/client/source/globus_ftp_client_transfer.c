@@ -4553,7 +4553,7 @@ globus_i_ftp_client_target_activate(
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_CONTROL_ESTABLISHMENT;
 	globus_i_ftp_client_plugin_notify_connect(handle,
-						  &target->url);
+						  target->url_string);
 	
 	if(handle->state == desired_state)
 	{
@@ -4574,7 +4574,7 @@ globus_i_ftp_client_target_activate(
 
 		globus_i_ftp_client_plugin_notify_fault(
 		    handle,
-		    &target->url,
+		    target->url_string,
 		    err);
 
 		goto error_exit;
@@ -4610,7 +4610,7 @@ globus_i_ftp_client_target_activate(
 
 	globus_i_ftp_client_plugin_notify_command(
 	    handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "NOOP" CRLF);
 
@@ -4631,7 +4631,7 @@ globus_i_ftp_client_target_activate(
 
 		globus_i_ftp_client_plugin_notify_fault(
 		    handle,
-		    &target->url,
+		    target->url_string,
 		    err);
 
 		goto error_exit;

@@ -167,7 +167,7 @@ globus_i_ftp_client_response_callback(
     globus_i_ftp_client_handle_lock(client_handle);
     globus_i_ftp_client_plugin_notify_response(
 	client_handle,
-	&target->url,
+	target->url_string,
 	target->mask,
 	error,
 	response);
@@ -196,7 +196,7 @@ redo:
 		
 	    globus_i_ftp_client_plugin_notify_authenticate(
 		client_handle,
-		&target->url,
+		target->url_string,
 		&target->auth_info);
 		
 	    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
@@ -295,7 +295,7 @@ redo:
 
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "SITE FAULT %s" CRLF,
 	    tmpstr);
@@ -357,7 +357,7 @@ redo:
 
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "SITE HELP" CRLF);
 
@@ -408,7 +408,7 @@ redo:
 	    
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "FEAT" CRLF);
 
@@ -477,7 +477,7 @@ redo:
 
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "TYPE %c",
 	    (char) target->attr->type);
@@ -551,7 +551,7 @@ redo:
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "MODE %c" CRLF,
 	    (char) target->attr->mode);
@@ -674,7 +674,7 @@ redo:
 
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "SIZE %s" CRLF,
 	    target->url.url_path);
@@ -847,7 +847,7 @@ redo:
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "%s %lu" CRLF,
 	    buffer_cmd,
@@ -959,7 +959,7 @@ redo:
 
 	globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"OPTS RETR %s%s" CRLF,
 		layout_opt ? layout_opt : "",
@@ -1108,7 +1108,7 @@ redo:
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "DCAU %c%s%s" CRLF,
 	    (char) target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_DEFAULT
@@ -1246,7 +1246,7 @@ redo:
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "PBSZ %lu" CRLF,
 	    pbsz);
@@ -1331,7 +1331,7 @@ redo:
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "PROT %c" CRLF,
 	    (char) target->attr->data_prot);
@@ -1463,7 +1463,7 @@ redo:
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_DATA_ESTABLISHMENT;
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "%s" CRLF,
 	    tmpstr);
@@ -1567,7 +1567,7 @@ redo:
 	    target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_DATA_ESTABLISHMENT;
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"%s" CRLF,
 		tmpstr);
@@ -1764,7 +1764,7 @@ redo:
 	
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+            target->url_string,
 	    target->mask,
 	    "REST %" GLOBUS_OFF_T_FORMAT CRLF,
 	    target->type == GLOBUS_FTP_CONTROL_TYPE_ASCII
@@ -1819,7 +1819,7 @@ redo:
 	
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"REST %s" CRLF,
 		tmpstr);
@@ -1937,7 +1937,7 @@ redo:
 	
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "NLST %s" CRLF,
 	    target->url.url_path);
@@ -1989,7 +1989,7 @@ redo:
 	
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "LIST %s" CRLF,
 	    target->url.url_path);
@@ -2025,7 +2025,7 @@ redo:
 	
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "DELE %s" CRLF,
 	    target->url.url_path);
@@ -2061,7 +2061,7 @@ redo:
 	
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "RNFR %s" CRLF,
 	    target->url.url_path);
@@ -2107,7 +2107,7 @@ redo:
         
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "RNTO %s" CRLF,
 	    dest_url.url_path);
@@ -2148,7 +2148,7 @@ redo:
 	
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "MKD %s" CRLF,
 	    target->url.url_path);
@@ -2184,7 +2184,7 @@ redo:
 	
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "RMD %s" CRLF,
 	    target->url.url_path);
@@ -2220,7 +2220,7 @@ redo:
 	
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
-	    &target->url,
+	    target->url_string,
 	    target->mask,
 	    "MDTM %s" CRLF,
 	    target->url.url_path);
@@ -2274,7 +2274,7 @@ redo:
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"ERET %s %s" CRLF,
 		client_handle->eret_alg_str,
@@ -2284,7 +2284,7 @@ redo:
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"RETR %s" CRLF,
 		target->url.url_path);
@@ -2352,7 +2352,7 @@ redo:
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"ESTO %s %s" CRLF,
 		client_handle->esto_alg_str,
@@ -2362,7 +2362,7 @@ redo:
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"%s %s" CRLF,
 		target->attr->append ? "APPE" : "STOR",
@@ -2430,7 +2430,7 @@ redo:
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"ESTO %s %s" CRLF,
 		client_handle->esto_alg_str,
@@ -2440,7 +2440,7 @@ redo:
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"STOR %s" CRLF,
 		target->url.url_path);
@@ -2516,7 +2516,7 @@ redo:
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"ERET %s %s" CRLF,
 		client_handle->eret_alg_str,
@@ -2526,7 +2526,7 @@ redo:
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
-		&target->url,
+		target->url_string,
 		target->mask,
 		"RETR %s" CRLF,
 		target->url.url_path);
@@ -2611,7 +2611,7 @@ redo:
 		{
 		    globus_i_ftp_client_plugin_notify_fault(
 			client_handle,
-			&target->url,
+			target->url_string,
 			error);
 		    
 		    globus_object_free(error);
@@ -2696,7 +2696,7 @@ redo:
 	    }
 	    globus_i_ftp_client_plugin_notify_fault(
 		client_handle,
-		&target->url,
+		target->url_string,
 		client_handle->err);
 	    
 	    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
@@ -2930,7 +2930,7 @@ redo:
 		{
 		    globus_i_ftp_client_plugin_notify_fault(
 			client_handle,
-			&target->url,
+			target->url_string,
 			error);
 		    
 		    globus_l_ftp_client_connection_error(client_handle,
@@ -2955,7 +2955,7 @@ redo:
  notify_fault:
     globus_i_ftp_client_plugin_notify_fault(
 	client_handle,
-	&target->url,
+	target->url_string,
 	error);
  connection_error:
     globus_l_ftp_client_connection_error(client_handle,

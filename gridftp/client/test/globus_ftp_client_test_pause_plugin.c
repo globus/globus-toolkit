@@ -46,7 +46,7 @@ globus_l_ftp_client_test_pause_plugin_connect(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
-    const globus_url_t *				url)
+    const char *					url)
 {
     *(int *) plugin_specific = 1;
 }
@@ -156,7 +156,7 @@ globus_l_ftp_client_test_pause_plugin_command(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
-    const globus_url_t *				url,
+    const char *					url,
     const char *					command_name)
 {
 }
@@ -167,7 +167,7 @@ globus_l_ftp_client_test_pause_plugin_response(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
     globus_ftp_client_handle_t *			handle,
-    const globus_url_t *				url,
+    const char *					url,
     globus_object_t *					err,
     const globus_ftp_control_response_t *		response)
 {

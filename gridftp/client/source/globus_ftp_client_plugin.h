@@ -96,9 +96,9 @@ globus_ftp_client_plugin_command_mask_t;
  *        by the user.
  *
  * @return A pointer to a plugin. This plugin copy must remain valid
- *         until the copy's @link globus_ftp_client_plugin_destroy_t
- *         destroy @endlink function
- *         is called on the copy.
+ *         until the copy's
+ *         @ref globus_ftp_client_plugin_destroy_t "destroy"
+ *         function is called on the copy.
  *
  * @see #globus_ftp_client_plugin_destroy_t
  */
@@ -146,7 +146,7 @@ typedef void (*globus_ftp_client_plugin_connect_t)(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url);
+    const char *				url);
 
 /**
  * Plugin authentication notification callback.
@@ -172,7 +172,7 @@ typedef void (*globus_ftp_client_plugin_authenticate_t)(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     const globus_ftp_control_auth_info_t *	auth_info);
 
 /**
@@ -683,7 +683,7 @@ typedef void (*globus_ftp_client_plugin_command_t)(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     const char *				command_name);
 
 /**
@@ -714,7 +714,7 @@ typedef void (*globus_ftp_client_plugin_response_t)(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     globus_object_t *				error,
     const globus_ftp_control_response_t *	ftp_response);
 
@@ -739,7 +739,7 @@ typedef void (*globus_ftp_client_plugin_fault_t)(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
     globus_ftp_client_handle_t *		handle,
-    const globus_url_t *			url,
+    const char *				url,
     globus_object_t *				error);
 
 /**
