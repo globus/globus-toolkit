@@ -119,7 +119,9 @@ InitConnectionInfo(void)
 
 	gConn.debugLog = NULL;
 	gConn.errLog = stderr;
+#if HAVE_GSSAPI
 	gConn.protectionLevel = gProtectionLevel;
+#endif
 	SetDebug(gDebug);
 	UseTrace();
 	(void) STRNCPY(gConn.user, "anonymous");

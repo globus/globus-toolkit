@@ -880,6 +880,7 @@ FTPSetTransferType(const FTPCIPtr cip, int type)
 int
 FTPSetProtectionLevel(const FTPCIPtr cip)
 {
+#if HAVE_GSSAPI
 	int result;
 
 	if (cip == NULL)
@@ -924,6 +925,9 @@ FTPSetProtectionLevel(const FTPCIPtr cip)
 		cip->curProtectionLevel = cip->protectionLevel;
 	}
 	return (kNoErr);
+#else
+	return (kErrBadProtectionLevel);
+#endif
 }	/* FTPSetProtectionLevel */
 
 
