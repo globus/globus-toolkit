@@ -696,6 +696,7 @@ globus_l_gfs_request_transfer_event(
                 event = GLOBUS_GFS_EVENT_RANGES_RECVD;
             break;
           default:
+            goto error;
             break;
     }  
     
@@ -705,6 +706,9 @@ globus_l_gfs_request_transfer_event(
         instance->transfer_id,
         event);
     
+    return;
+
+error:
     return;
 }
 
