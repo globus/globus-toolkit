@@ -105,11 +105,16 @@ globus_l_xio_verify_target_init(
     const globus_xio_contact_t *            contact_info,
     void *                                  driver_attr)
 {
+    globus_result_t                         result;
+    
     *out_driver_target = (void *)strdup(_TARGET);
-    globus_xio_driver_client_target_pass(
-        target_op, contact_info);
-
-    return GLOBUS_SUCCESS;
+    result = globus_xio_driver_client_target_pass(target_op, contact_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_free(*out_driver_target);
+    }
+    
+    return result;
 }
 
 static globus_result_t

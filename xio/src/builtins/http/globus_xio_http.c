@@ -544,10 +544,7 @@ globus_l_xio_http_target_init(
 {
     //We don't do client work yet.  Only server
     *out_target = (void *)globus_libc_strdup(_TARGET);
-    globus_xio_driver_client_target_pass(
-        target_op, contact_info);
-
-    return GLOBUS_SUCCESS;
+    return globus_xio_driver_client_target_pass(target_op, contact_info);
 }
 
 static globus_result_t

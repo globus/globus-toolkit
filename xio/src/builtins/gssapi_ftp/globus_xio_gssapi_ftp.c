@@ -2033,6 +2033,7 @@ globus_l_xio_gssapi_ftp_target_init(
 {
     globus_l_xio_gssapi_ftp_target_t *      target;
     char *                                  tmp_ptr;
+    globus_result_t                         result;
     GlobusXIOName(globus_l_xio_gssapi_ftp_target_init);
     
     if(!contact_info->host)
@@ -2046,11 +2047,18 @@ globus_l_xio_gssapi_ftp_target_init(
     target->client = GLOBUS_TRUE;
     target->host = globus_libc_strdup(contact_info->host);
 
-    *out_target = target;
-    globus_xio_driver_client_target_pass(
-        target_op, contact_info);
-
-    return GLOBUS_SUCCESS;
+    result = globus_xio_driver_client_target_pass(target_op, contact_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_free(target->host);
+        globus_free(target);
+    }
+    else
+    {
+        *out_target = target;
+    }
+    
+    return result;
 }
 
 static globus_result_t

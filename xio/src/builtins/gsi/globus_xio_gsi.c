@@ -387,17 +387,18 @@ globus_l_xio_gsi_target_init(
     }
 
     /* initialize the target structure */
-    
     target->target_name = GSS_C_NO_NAME;
     target->init = GLOBUS_TRUE;
 
+    result = globus_xio_driver_client_target_pass(target_op, contact_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_free(target);
+        goto error_target;
+    }
+
     *out_target = target;
 
-    if(target_op != NULL)
-    {
-        globus_xio_driver_client_target_pass(
-            target_op, contact_info);
-    }
     GlobusXIOGSIDebugExit();
     return GLOBUS_SUCCESS;
     
