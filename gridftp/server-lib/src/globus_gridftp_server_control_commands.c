@@ -52,7 +52,7 @@ globus_l_gsc_cmd_noop(
     void *                                  user_arg)
 {
     op->server_handle->refresh = GLOBUS_TRUE;
-    globus_i_gsc_finished_command(op, "200 NOOP command successful.\r\n");
+    globus_gsc_959_finished_command(op, "200 NOOP command successful.\r\n");
 }
 
 static void
@@ -81,7 +81,7 @@ globus_l_gsc_cmd_mdtm_cb(
             tm->tm_hour, tm->tm_min, tm->tm_sec);
     }
 
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
     if(stat_info != NULL)
     {
         globus_free(stat_info);
@@ -107,7 +107,7 @@ globus_l_gsc_cmd_mdtm(
             NULL);
     if(res != GLOBUS_SUCCESS)
     {
-        globus_i_gsc_finished_command(op, "500 Command not supported.\r\n");
+        globus_gsc_959_finished_command(op, "500 Command not supported.\r\n");
     }
 }
 
@@ -142,7 +142,7 @@ globus_l_gsc_cmd_mode(
     }
     else
     {
-        globus_i_gsc_finished_command(op, msg);
+        globus_gsc_959_finished_command(op, msg);
         globus_free(msg);
     }
 }
@@ -179,7 +179,7 @@ globus_l_gsc_cmd_type(
     }
     else
     {
-        globus_i_gsc_finished_command(op, msg);
+        globus_gsc_959_finished_command(op, msg);
         globus_free(msg);
     }
 }
@@ -210,7 +210,7 @@ globus_l_gsc_cmd_pwd(
     }
     else
     {
-        globus_i_gsc_finished_command(op, msg);
+        globus_gsc_959_finished_command(op, msg);
         globus_free(msg);
     }
 }
@@ -282,7 +282,7 @@ globus_l_gsc_cmd_cwd_cb(
         goto err;
     }
 
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
     globus_free(msg);
     globus_free(path);
 
@@ -328,14 +328,14 @@ globus_l_gsc_cmd_cwd(
         path = globus_i_gsc_concat_path(op->server_handle, cmd_a[1]);
         if(path == NULL)
         {
-            globus_i_gsc_finished_command(op,
+            globus_gsc_959_finished_command(op,
                 "550 Could not change directory.\r\n");
             goto err;
         }
     }
     else
     {
-        globus_i_gsc_finished_command(op,
+        globus_gsc_959_finished_command(op,
             "550 Could not change directory.\r\n");
         goto err;
     }
@@ -396,7 +396,7 @@ globus_l_gsc_cmd_stat_cb(
             op->path, tmp_ptr);
     }
 
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
     if(stat_info != NULL)
     {
         globus_free(stat_info);
@@ -428,7 +428,7 @@ globus_l_gsc_cmd_stat(
             globus_i_gsc_command_panic(op);
             goto err;
         }
-        globus_i_gsc_finished_command(op, msg);
+        globus_gsc_959_finished_command(op, msg);
         globus_free(msg);
     }
     else
@@ -449,7 +449,8 @@ globus_l_gsc_cmd_stat(
                 user_arg);
         if(res != GLOBUS_SUCCESS)
         {
-            globus_i_gsc_finished_command(op, "500 Command not supported.\r\n");
+            globus_gsc_959_finished_command(
+                op, "500 Command not supported.\r\n");
         }
     }
 
@@ -488,7 +489,7 @@ globus_l_gsc_cmd_size_cb(
         globus_i_gsc_command_panic(op);
         goto err;
     }
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
     
     globus_free(msg);
     
@@ -557,7 +558,7 @@ globus_l_gsc_cmd_quit(
 
     server_handle = op->server_handle;
 
-    globus_i_gsc_finished_command(op, "221 Goodbye.\r\n");
+    globus_gsc_959_finished_command(op, "221 Goodbye.\r\n");
 
     globus_i_gsc_terminate(server_handle, 1);
 }
@@ -592,7 +593,7 @@ globus_l_gsc_cmd_user(
     {
         goto err;
     }
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
     globus_free(msg);
     return;
 
@@ -634,7 +635,7 @@ globus_l_gsc_auth_cb(
     {
         msg = globus_common_create_string("530 Login incorrect.\r\n");
     }
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
 
     globus_free(msg);
 }
@@ -664,7 +665,7 @@ globus_l_gsc_cmd_pass(
         {
             goto err;
         }
-        globus_i_gsc_finished_command(op, msg);
+        globus_gsc_959_finished_command(op, msg);
     }
     else
     {
@@ -710,7 +711,7 @@ globus_l_gsc_cmd_syst(
     {
         goto err;
     }
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
     globus_free(msg);
 
     return;
@@ -744,7 +745,7 @@ globus_l_gsc_cmd_feat(
     tmp_ptr = globus_common_create_string("%s211 End.\r\n", msg);
     globus_free(msg);
 
-    globus_i_gsc_finished_command(op, tmp_ptr);
+    globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
 }
 
@@ -788,7 +789,7 @@ globus_l_gsc_cmd_help(
         goto err;
     }
 
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
     globus_free(msg);
 
     return;
@@ -982,7 +983,7 @@ globus_l_gsc_cmd_opts(
         msg = "500 OPTS failed.\r\n";
     }
 
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
 }
 
 /*
@@ -1002,14 +1003,14 @@ globus_l_gsc_cmd_sbuf(
 
     if(argc != 2)
     {
-        globus_i_gsc_finished_command(op, "502 Invalid Parameter.\r\n");
+        globus_gsc_959_finished_command(op, "502 Invalid Parameter.\r\n");
     }
     else
     {
         sc = sscanf(cmd_a[1], "%d", &tmp_i);
         if(sc != 1)
         {
-            globus_i_gsc_finished_command(
+            globus_gsc_959_finished_command(
                 op, "502 Invalid Parameter.\r\n");
         }
         else
@@ -1017,7 +1018,7 @@ globus_l_gsc_cmd_sbuf(
             op->server_handle->send_buf = tmp_i;
             op->server_handle->receive_buf = tmp_i;
 
-            globus_i_gsc_finished_command(
+            globus_gsc_959_finished_command(
                 op, "200 SBUF Command Successful.\r\n");
         }
     }
@@ -1090,7 +1091,7 @@ globus_l_gsc_cmd_site(
     {
         goto err;
     }
-    globus_i_gsc_finished_command(op, msg);
+    globus_gsc_959_finished_command(op, msg);
     globus_free(msg);
     
     return;
@@ -1129,12 +1130,12 @@ globus_l_gsc_cmd_pasv_cb(
 
     if(res != GLOBUS_SUCCESS)
     {
-        globus_i_gsc_finished_command(op, "500 Command failed.\r\n");
+        globus_gsc_959_finished_command(op, "500 Command failed.\r\n");
         goto err;
     }
     else if(addr_count > wrapper->max && wrapper->max != -1)
     {
-        globus_i_gsc_finished_command(wrapper->op, "500 Command failed.\r\n");
+        globus_gsc_959_finished_command(wrapper->op, "500 Command failed.\r\n");
         goto err;
     }
     else
@@ -1273,7 +1274,7 @@ globus_l_gsc_cmd_pasv_cb(
     }
     else
     {
-        globus_i_gsc_finished_command(op, msg);
+        globus_gsc_959_finished_command(op, msg);
         globus_free(msg);
         globus_free(wrapper);
     }
@@ -1385,13 +1386,13 @@ globus_l_gsc_cmd_pasv(
             wrapper);
         if(res != GLOBUS_SUCCESS)
         {
-            globus_i_gsc_finished_command(op, "500 command failed.\r\n");
+            globus_gsc_959_finished_command(op, "500 command failed.\r\n");
         }
     }
     else
     {
         op->server_handle->delayed_passive = dp;
-        globus_i_gsc_finished_command(op, msg);
+        globus_gsc_959_finished_command(op, msg);
         globus_free(wrapper);
     }
 }
@@ -1408,14 +1409,14 @@ globus_l_gsc_cmd_port_cb(
 
     if(res != GLOBUS_SUCCESS)
     {
-        globus_i_gsc_finished_command(
+        globus_gsc_959_finished_command(
             op, "500 PORT Command failed.\r\n");
     }
     else
     {
         /* if port is successful we know that we are not delaying the pasv */
         op->server_handle->delayed_passive = GLOBUS_FALSE;
-        globus_i_gsc_finished_command(
+        globus_gsc_959_finished_command(
             op, "200 PORT Command successful.\r\n");
     }
 }
@@ -1675,7 +1676,7 @@ globus_l_gsc_cmd_port(
     }
     if(msg != NULL)
     {
-        globus_i_gsc_finished_command(op, msg);
+        globus_gsc_959_finished_command(op, msg);
         globus_free(wrapper);
         globus_free(contact_strings);
     }
@@ -1735,11 +1736,11 @@ globus_l_gsc_data_cb(
 
     if(res != GLOBUS_SUCCESS)
     {
-        globus_i_gsc_finished_command(wrapper->op, "500 Command failed\r\n");
+        globus_gsc_959_finished_command(wrapper->op, "500 Command failed\r\n");
     }
     else
     {
-        globus_i_gsc_finished_command(
+        globus_gsc_959_finished_command(
             wrapper->op, "226 Transfer Complete.\r\n");
     }
 
@@ -1804,7 +1805,7 @@ globus_l_gsc_cmd_transfer(
 
     if(res != GLOBUS_SUCCESS)
     {
-        globus_i_gsc_finished_command(wrapper->op, "500 Command failed\r\n");
+        globus_gsc_959_finished_command(wrapper->op, "500 Command failed\r\n");
     }
 }
 
@@ -1866,7 +1867,7 @@ globus_l_gsc_cmd_stor_retr(
         if(argc != 2)
         {
             globus_free(wrapper);
-            globus_i_gsc_finished_command(op, "500 command failed.\r\n");
+            globus_gsc_959_finished_command(op, "500 command failed.\r\n");
             return;
         }
         path = globus_libc_strdup(cmd_a[1]);
@@ -1879,7 +1880,7 @@ globus_l_gsc_cmd_stor_retr(
         if(argc != 3)
         {
             globus_free(wrapper);
-            globus_i_gsc_finished_command(op, "500 command failed.\r\n");
+            globus_gsc_959_finished_command(op, "500 command failed.\r\n");
             return;
         }
         mod_name = globus_libc_strdup(cmd_a[1]);
@@ -1895,7 +1896,7 @@ globus_l_gsc_cmd_stor_retr(
         {
             globus_free(mod_name);
             globus_free(wrapper);
-            globus_i_gsc_finished_command(op, "500 command failed.\r\n");
+            globus_gsc_959_finished_command(op, "500 command failed.\r\n");
             return;
         }
 
@@ -1936,7 +1937,7 @@ globus_l_gsc_cmd_stor_retr(
         if(res != GLOBUS_SUCCESS)
         {
             globus_free(wrapper);
-            globus_i_gsc_finished_command(op, "500 command failed.\r\n");
+            globus_gsc_959_finished_command(op, "500 command failed.\r\n");
         }
     }
     else
@@ -1959,7 +1960,7 @@ void
 globus_i_gsc_add_commands(
     globus_i_gsc_server_handle_t *          server_handle)
 {
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "CWD", 
         globus_l_gsc_cmd_cwd,
@@ -1969,7 +1970,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: CWD <sp> pathname\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "CDUP", 
         globus_l_gsc_cmd_cwd,
@@ -1979,7 +1980,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: CDUP (up one directory)\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "EPSV", 
         globus_l_gsc_cmd_pasv,
@@ -1989,7 +1990,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: EPSV [<sp> ALL]\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "ERET", 
         globus_l_gsc_cmd_stor_retr,
@@ -1999,7 +2000,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: ERET <sp> mod_name=\"mod_parms\" <sp> pathname\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "ESTO", 
         globus_l_gsc_cmd_stor_retr,
@@ -2009,7 +2010,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: ESTO <sp> mod_name=\"mod_parms\" <sp> pathname\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "FEAT", 
         globus_l_gsc_cmd_feat,
@@ -2019,7 +2020,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: FEAT\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "HELP", 
         globus_l_gsc_cmd_help,
@@ -2030,7 +2031,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: HELP [<sp> command]\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "LIST", 
         globus_l_gsc_cmd_stor_retr,
@@ -2041,7 +2042,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: LIST [<sp> <filename>]\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "MDTM", 
         globus_l_gsc_cmd_mdtm,
@@ -2052,7 +2053,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: MDTM <sp> <filename>\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "MODE", 
         globus_l_gsc_cmd_mode,
@@ -2062,7 +2063,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: MODE <sp> mode-code\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "NLST", 
         globus_l_gsc_cmd_stor_retr,
@@ -2073,7 +2074,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: NLST [<sp> <filename>]\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "MLSD",
         globus_l_gsc_cmd_stor_retr,
@@ -2084,7 +2085,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: MLSD [<sp> <filename>]\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "MLST",
         globus_l_gsc_cmd_stat,
@@ -2095,7 +2096,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: MLST [<sp> <filename>]\r\n",
         (void *)1);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "NOOP", 
         globus_l_gsc_cmd_noop,
@@ -2106,7 +2107,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: NOOP (no operation)\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "OPTS", 
         globus_l_gsc_cmd_opts,
@@ -2116,7 +2117,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: OPTS <sp> opt-type [paramters]\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "PASS", 
         globus_l_gsc_cmd_pass,
@@ -2126,7 +2127,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: PASS <sp> password\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "PASV", 
         globus_l_gsc_cmd_pasv,
@@ -2136,7 +2137,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: PASS <sp> password\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "PORT", 
         globus_l_gsc_cmd_port,
@@ -2146,7 +2147,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: PORT <port>\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "EPRT", 
         globus_l_gsc_cmd_port,
@@ -2156,7 +2157,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: EPRT <sp> <port>\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "SPOR", 
         globus_l_gsc_cmd_port,
@@ -2166,7 +2167,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: SPOR <sp> <port list>\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "PWD", 
         globus_l_gsc_cmd_pwd,
@@ -2176,7 +2177,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: PWD (returns current working directory)\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "QUIT", 
         globus_l_gsc_cmd_quit,
@@ -2187,7 +2188,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: QUIT (close control connection)\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "RETR", 
         globus_l_gsc_cmd_stor_retr,
@@ -2197,7 +2198,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: RETR [<sp> pathname]\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "SBUF", 
         globus_l_gsc_cmd_sbuf,
@@ -2207,7 +2208,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: SBUF <sp> window-size\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "SITE", 
         globus_l_gsc_cmd_site,
@@ -2217,7 +2218,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: SITE <sp> site-command [parameters]\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "SIZE", 
         globus_l_gsc_cmd_size,
@@ -2227,7 +2228,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: SIZE <sp> pathname\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "SPAS", 
         globus_l_gsc_cmd_pasv,
@@ -2237,7 +2238,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: SPAS\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "STAT", 
         globus_l_gsc_cmd_stat,
@@ -2247,7 +2248,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: STAT [<sp> pathname]\r\n",
         0);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "STOR", 
         globus_l_gsc_cmd_stor_retr,
@@ -2257,7 +2258,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: STOR [<sp> pathname]\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "SYST", 
         globus_l_gsc_cmd_syst,
@@ -2267,7 +2268,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: SYST (returns system type)\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "TYPE", 
         globus_l_gsc_cmd_type,
@@ -2277,7 +2278,7 @@ globus_i_gsc_add_commands(
         "214 Syntax: TYPE <sp> type-code\r\n",
         NULL);
 
-    globus_i_gsc_command_add(
+    globus_gsc_959_command_add(
         server_handle,
         "USER", 
         globus_l_gsc_cmd_user,

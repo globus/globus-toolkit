@@ -119,8 +119,8 @@ typedef struct globus_l_gsc_cmd_ent_s
 {
     int                                     cmd;
     char                                    cmd_name[16]; /* only 5 needed */
-    globus_gsc_command_cb_t                 cmd_cb;
-    globus_gsc_command_desc_t               desc;
+    globus_gsc_959_command_cb_t             cmd_cb;
+    globus_gsc_959_command_desc_t           desc;
     char *                                  help;
     void *                                  user_arg;
     int                                     max_argc;
@@ -970,7 +970,7 @@ globus_l_gsc_command_callout(
     globus_l_gsc_cmd_ent_t *                cmd_ent;
     globus_bool_t                           done = GLOBUS_FALSE;
     globus_i_gsc_op_t *                     op;
-    globus_gsc_command_cb_t                 cmd_cb = NULL;
+    globus_gsc_959_command_cb_t             cmd_cb = NULL;
     globus_i_gsc_server_handle_t *          server_handle;
 
     op = (globus_i_gsc_op_t *) user_arg;
@@ -1024,7 +1024,7 @@ globus_l_gsc_command_callout(
             op->command, &cmd_array, cmd_ent->max_argc);
         if(argc < cmd_ent->min_argc)
         {
-            globus_i_gsc_finished_command(op,
+            globus_gsc_959_finished_command(op,
                 "500 unrecognized command.\r\n");
         }
         else
@@ -1654,7 +1654,7 @@ globus_gridftp_server_control_stop(
 }
 
 void
-globus_i_gsc_finished_command(
+globus_gsc_959_finished_command(
     globus_i_gsc_op_t *                     op,
     char *                                  reply_msg)
 {
@@ -1718,11 +1718,11 @@ globus_i_gsc_intermediate_reply(
 }
 
 globus_result_t
-globus_i_gsc_command_add(
+globus_gsc_959_command_add(
     globus_i_gsc_server_handle_t *          server_handle,
     const char *                            command_name,
-    globus_gsc_command_cb_t                 command_cb,
-    globus_gsc_command_desc_t               desc,
+    globus_gsc_959_command_cb_t             command_cb,
+    globus_gsc_959_command_desc_t           desc,
     int                                     min_argc,
     int                                     max_argc,
     const char *                            help,

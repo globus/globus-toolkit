@@ -8,7 +8,7 @@
 typedef struct globus_i_gsc_server_handle_s * globus_gridftp_server_control_t;
 typedef struct globus_i_gsc_attr_s *     globus_gridftp_server_control_attr_t;
 typedef struct globus_i_gsc_op_s *          globus_gridftp_server_control_op_t;
-
+typedef struct globus_i_gsc_op_s *          globus_gsc_959_op_t;
 typedef time_t                              globus_time_t;
 
 /***********************************************************************
@@ -611,6 +611,38 @@ globus_result_t
 globus_gridftp_server_control_add_feature(
     globus_gridftp_server_control_t         server,
     const char *                            feature);
+
+
+/* use with care, not *external* external */
+typedef enum globus_gsc_959_command_desc_e
+{
+    GLOBUS_GSC_COMMAND_POST_AUTH = 0x01,
+    GLOBUS_GSC_COMMAND_PRE_AUTH = 0x02
+} globus_gsc_959_command_desc_t;
+
+typedef void
+(*globus_gsc_959_command_cb_t)(
+    globus_gsc_959_op_t                     op,
+    const char *                            full_command,
+    char **                                 cmd_array,
+    int                                     argc,
+    void *                                  user_arg);
+
+globus_result_t
+globus_gsc_959_command_add(
+    globus_gridftp_server_control_t         server,
+    const char *                            command_name,
+    globus_gsc_959_command_cb_t             command_cb,
+    globus_gsc_959_command_desc_t           desc,
+    int                                     min_argc,
+    int                                     max_argc,
+    const char *                            help,
+    void *                                  user_arg);
+
+void
+globus_gsc_959_finished_command(
+    globus_gsc_959_op_t                     op,
+    char *                                  reply_msg);
 
 extern globus_module_descriptor_t      globus_i_gsc_module;
 

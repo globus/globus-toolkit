@@ -162,14 +162,6 @@ typedef enum globus_i_gsc_mlsx_fact_e
 } globus_i_gsc_mlsx_fact_t;
 
 typedef void
-(*globus_gsc_command_cb_t)(
-    struct globus_i_gsc_op_s *              op,
-    const char *                            full_command,
-    char **                                 cmd_array,
-    int                                     argc,
-    void *                                  user_arg);
-
-typedef void
 (*globus_i_gsc_auth_cb_t)(
     struct globus_i_gsc_op_s *              op,
     globus_result_t                         result,
@@ -308,22 +300,9 @@ extern globus_hashtable_t               globus_i_gs_default_attr_command_hash;
  *  internal functions for adding commands.
  */
 
-typedef enum globus_gridftp_server_command_desc_e
-{
-    GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_REFRESH = 0x01,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_POST_AUTH = 0x02,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_PRE_AUTH = 0x04
-} globus_gridftp_server_command_desc_t;
-
 /*
  *   959 Structures
  */
-typedef enum globus_gsc_command_desc_e
-{
-    GLOBUS_GSC_COMMAND_POST_AUTH = 0x01,
-    GLOBUS_GSC_COMMAND_PRE_AUTH = 0x02
-} globus_gsc_command_desc_t;
-
 typedef enum globus_l_gsc_state_e
 {
     GLOBUS_L_GSC_STATE_OPEN,
@@ -437,22 +416,6 @@ globus_result_t
 globus_i_gsc_intermediate_reply(
     globus_i_gsc_op_t *                     op,
     char *                                  reply_msg);
-
-void
-globus_i_gsc_finished_command(
-    globus_i_gsc_op_t *                     op,
-    char *                                  reply_msg);
-
-globus_result_t
-globus_i_gsc_command_add(
-    globus_i_gsc_server_handle_t *          server_handle,
-    const char *                            command_name,
-    globus_gsc_command_cb_t                 command_cb,
-    globus_gsc_command_desc_t               desc,
-    int                                     min_argc,
-    int                                     max_argc,
-    const char *                            help,
-    void *                                  user_arg);
 
 globus_result_t
 globus_i_gsc_authenticate(
