@@ -61,15 +61,7 @@ RCSID("$Id$");
 /* Path to PRNG commands list (from pathnames.c) */
 extern char *SSH_PRNG_COMMAND_FILE;
 
-#ifdef HAVE___PROGNAME
 extern char *__progname;
-#else
-char *__progname;
-#endif
-
-#ifndef offsetof
-# define offsetof(type, member) ((size_t) &((type *)0)->member)
-#endif
 
 #define WHITESPACE " \t\n"
 

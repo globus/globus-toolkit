@@ -51,6 +51,22 @@ module that contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ History ]
 
+    2004/08/19
+    ----------
+      Action: Merge
+        - occurred on: GPT branch
+        - orig base: OPENSSH_3_8_1P1_GSSAPI_20040713
+        - new base: OPENSSH_3_9P1_GSSAPI_20040818
+      Conflicts: 3
+        - Makefile.in
+          Include pathnames.o in LIBSSH_OBJS.
+        - pathnames.h
+          Set _PATH_SSH_KEY_SIGN to be an extern char pointer (instead of #defined).
+        - ssh-agent.c
+          Include pathnames.h.
+        - version.h
+          Update to new package version information.
+
     2004/06/29
     ----------
       Action: Merge

@@ -48,6 +48,10 @@ char *basename(const char *path);
 int bindresvport_sa(int sd, struct sockaddr *sa);
 #endif
 
+#ifndef HAVE_CLOSEFROM
+void closefrom(int);
+#endif
+
 #ifndef HAVE_GETCWD
 char *getcwd(char *pt, size_t size);
 #endif 

@@ -23,7 +23,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: auth2.c,v 1.104 2003/11/04 08:54:09 djm Exp $");
+RCSID("$OpenBSD: auth2.c,v 1.107 2004/07/28 09:40:29 markus Exp $");
 
 #include "ssh2.h"
 #include "xmalloc.h"
@@ -147,7 +147,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	method = packet_get_string(NULL);
 
 #ifdef GSSAPI
-	if (strcmp(user, "") == 0) {
+	if (user[0] == '\0') {
 	    debug("received empty username for %s", method);
 	    if (strcmp(method, "external-keyx") == 0) {
 		char *lname = NULL;
@@ -164,7 +164,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #endif
 
 	debug("userauth-request for user %s service %s method %s",
-	      (user && user[0]) ? user : "<implicit>", service, method);
+	      user[0] ? user : "<implicit>", service, method);
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
 
 	if ((style = strchr(user, ':')) != NULL)
@@ -175,29 +175,21 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	if ((authctxt->attempt++ == 0) ||
 	    (strcmp(user, authctxt->user) != 0) ||
 	    (strcmp(user, "") == 0)) {
-		/* setup auth context */
 		if (authctxt->user) {
 		    xfree(authctxt->user);
 		    authctxt->user = NULL;
+		    authctxt->valid = 0;
 		}
-		if (authctxt->service) {
-		    xfree(authctxt->service);
-		    authctxt->service = NULL;
-		}
-		if (authctxt->style) {
-		    xfree(authctxt->style);
-		    authctxt->style = NULL;
-		}
-		authctxt->pw = NULL;
-		authctxt->valid = 0;
 #ifdef GSSAPI
 		/* If we're going to set the username based on the
 		   GSSAPI context later, then wait until then to
-		   verify it. */
-		if ((strcmp(user, "") != 0) ||
-		    ((strcmp(method, "gssapi") != 0) &&
-		     (strcmp(method, "gssapi-with-mic") != 0) &&
-		     (strcmp(method, "external-keyx") != 0))) {
+		   verify it. Just put in placeholders for now. */
+		if ((strcmp(user, "") == 0) &&
+		    ((strcmp(method, "gssapi") == 0) ||
+		     (strcmp(method, "gssapi-with-mic") == 0))) {
+			authctxt->pw = fakepw();
+			authctxt->user = xstrdup(user);
+		} else {
 #endif
 		authctxt->pw = PRIVSEP(getpwnamallow(user));
 		authctxt->user = xstrdup(user);
@@ -209,7 +201,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 				PRIVSEP(start_pam(authctxt));
 #endif
 		} else {
-			logit("input_userauth_request: illegal user %s", user);
+			logit("input_userauth_request: invalid user %s", user);
 			authctxt->pw = fakepw();
 #ifdef USE_PAM
 			if (options.use_pam)
@@ -219,13 +211,16 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #ifdef GSSAPI
 		} /* endif for setting username based on GSSAPI context */
 #endif
-		setproctitle("%s%s", authctxt->pw ? user : "unknown",
+		setproctitle("%s%s", authctxt->valid ? user : "unknown",
 		    use_privsep ? " [net]" : "");
-		authctxt->service = xstrdup(service);
-		authctxt->style = style ? xstrdup(style) : NULL;
+		if (authctxt->service == NULL) /* only set once */
+		    authctxt->service = xstrdup(service);
+		if (authctxt->style == NULL) /* only set once */
+		    authctxt->style = style ? xstrdup(style) : NULL;
 		if (use_privsep && (authctxt->attempt == 1))
 			mm_inform_authserv(service, style);
-	} else if (strcmp(service, authctxt->service) != 0) {
+	}
+	if (strcmp(service, authctxt->service) != 0) {
 		packet_disconnect("Change of service not allowed: "
 		    "(%s,%s) -> (%s,%s)",
 		    authctxt->user, authctxt->service, user, service);
@@ -295,7 +290,7 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		/* now we can break out */
 		authctxt->success = 1;
 	} else {
-		if (authctxt->failures++ > AUTH_FAIL_MAX)
+		if (authctxt->failures++ > options.max_authtries)
 			packet_disconnect(AUTH_FAIL_MSG, authctxt->user);
 		methods = authmethods_get();
 		packet_start(SSH2_MSG_USERAUTH_FAILURE);

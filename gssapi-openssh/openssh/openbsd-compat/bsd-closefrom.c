@@ -46,7 +46,7 @@
 # define OPEN_MAX	256
 #endif
 
-RCSID("$Id: bsd-closefrom.c,v 1.1 2004/08/15 08:41:00 djm Exp $");
+RCSID("$Id$");
 
 #ifndef lint
 static const char sudorcsid[] = "$Sudo: closefrom.c,v 1.6 2004/06/01 20:51:56 millert Exp $";
