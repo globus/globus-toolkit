@@ -445,6 +445,10 @@ globus_i_rsl_assist_extract_attribute(globus_rsl_t * rsl,
 return GLOBUS_SUCCESS;
 }/* globus_i_rsl_assist_extract_attribute() */
 
+
+/* XXX MEI XXX */
+#if 0
+
 /*
  * Function: globus_l_rsl_assist_query_ldap()
  *
@@ -573,6 +577,170 @@ globus_l_rsl_assist_simple_query_ldap(
     return GLOBUS_SUCCESS;
 } /* globus_l_rsl_assist_simple_query_ldap() */
 
+
+#else
+
+/*
+ * Function: globus_l_rsl_assist_query_ldap()
+ *
+ * Connect to the ldap server, and return all the value of the
+ * fields "attribute" contained in the entry maching a search string.
+ *
+ * Parameters:
+ *     attribute -     field for which we want the list of value returned.
+ *     maximum -       maximum number of string returned in the list.
+ *     search_string - Search string to use to select the entry for which
+ *                     we will return the values of the field attribute.
+ * 
+ * Returns:
+ *     a list of string containing the result.
+ *     
+ */ 
+static int retrieve_attr_values(
+    LDAP *            ldap_server,
+    LDAPMessage *     reply,
+    char *            attribute,
+    int               maximum,
+    char *            search_string,
+    globus_list_t **  value_list)
+{
+    LDAPMessage *               entry;
+    int cnt=0;
+    
+    for ( entry = ldap_first_entry(ldap_server, reply);
+	  (entry) && (maximum);
+	  entry = ldap_next_entry(ldap_server, entry) )
+    {
+	char *         attr_value;
+	char *         a;
+	BerElement *   ber;
+	int            numValues;
+	char **        values;
+	int            i;
+	
+	for (a = ldap_first_attribute(ldap_server,entry,&ber);
+	     a;
+	     a = ldap_next_attribute(ldap_server,entry,ber) )
+	{
+	    if (strcmp(a, attribute) == 0)
+	    {
+		/* got our match, so copy and return it*/
+                cnt++;
+		values = ldap_get_values(ldap_server,entry,a);
+		numValues = ldap_count_values(values);
+		for (i=0; i<numValues; i++)
+		{
+		    attr_value = strdup(values[i]);
+		    globus_list_insert(value_list,attr_value);
+		    if (--maximum==0)
+			break;
+		}
+		ldap_value_free(values);
+		
+		/* we never have 2 time the same attibute for the same entry,
+                   steveF said this is not always the case XXX */
+		break;
+	    }
+	}
+    }
+   return cnt;
+} /* retrieve_attr_values */
+
+
+static
+int
+globus_l_rsl_assist_simple_query_ldap(
+    char *            attribute,
+    int               maximum,
+    char *            search_string,
+    globus_list_t **  value_list)
+{
+    LDAP *			ldap_server;
+    int				port;
+    char *			base_dn;
+    char *			server;
+    LDAPMessage *		reply;
+    LDAPMessage *		entry;
+    char *			attrs[3];
+    int                         rc;
+    int                         match;
+    
+    * value_list = GLOBUS_NULL;
+    match=0;
+    
+    rc = globus_i_rsl_assist_get_ldap_param(&server, &port, &base_dn);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	return -1;
+    }
+
+    /* connect to the ldap server */
+    if((ldap_server = ldap_open(server, port)) == GLOBUS_NULL)
+    {
+	ldap_perror(ldap_server, "rsl_assist:ldap_open");
+	globus_libc_free(server);
+	globus_libc_free(base_dn);
+	return -1;
+    }
+    globus_libc_free(server);
+
+    set_ld_timeout(ldap_server, 0, "GRID_INFO_TIMEOUT");
+
+
+    /* bind anonymously (we can only read public records now */
+    if(ldap_simple_bind_s(ldap_server, "", "") != LDAP_SUCCESS)
+    {
+	ldap_perror(ldap_server, "rsl_assist:ldap_simple_bind_s");
+	ldap_unbind(ldap_server);
+	globus_libc_free(base_dn);
+	return -1;
+    }
+
+    
+    /* I should verify the attribute is a valid string...     */
+    /* the function allows only one attribute to be returned  */
+    attrs[0] = attribute;
+    attrs[1] = GLOBUS_NULL;
+    
+    
+    /* do a search of the entire ldap tree,
+     * and return the desired attribute
+     */
+    if ( ldap_search( ldap_server, base_dn, LDAP_SCOPE_SUBTREE,
+                          search_string, attrs, 0 ) == -1 ) {
+        ldap_perror( ldap_server, "rsl_assist:ldap_search" );
+        return( ldap_server->ld_errno );
+    }
+
+    while ( (rc = ldap_result( ldap_server, LDAP_RES_ANY, 0, NULL, &reply ))
+            == LDAP_RES_SEARCH_ENTRY || ldap_server->ld_errno==LDAP_TIMEOUT) {
+        if(ldap_server->ld_errno==LDAP_TIMEOUT) {
+           continue;
+        }
+        match += retrieve_attr_values(ldap_server,reply, attrs[0],
+                                 maximum, search_string, value_list);
+        ldap_msgfree( reply );
+        if(match) break; /* this is to follow the old globusrun code to return just 1 set */
+    }
+
+    if( rc == -1 ) {
+      ldap_perror(ldap_server, "rsl_assist:ldap_search");
+    }
+    /* to avoid a leak in ldap code */
+    ldap_msgfree(reply);
+
+    /* disconnect from the server */
+    ldap_unbind(ldap_server);
+    globus_libc_free(base_dn);
+
+    if(match)
+      return GLOBUS_SUCCESS;
+      else return rc;
+
+} /* globus_l_rsl_assist_simple_query_ldap() */
+
+
+#endif
 
 
 /*
