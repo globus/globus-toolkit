@@ -112,6 +112,17 @@ typedef enum
 } globus_gass_copy_status_t;
 
 /**
+ * valid url modes
+ */
+typedef enum
+{
+    GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED,
+    GLOBUS_GASS_COPY_URL_MODE_FTP,
+    GLOBUS_GASS_COPY_URL_MODE_GASS,
+    GLOBUS_GASS_COPY_URL_MODE_IO,
+} globus_gass_copy_url_mode_t;
+
+/**
  * gass copy handle
  */
 struct globus_gass_copy_handle_s
@@ -198,6 +209,12 @@ globus_gass_copy_set_buffer_length(
     globus_gass_copy_handle_t * handle,
     int length);
 
+/* find out what transfer mode will be used for a given url, so that the proper attributes may be passed to one of the copy function */
+globus_result_t
+globus_gass_copy_get_url_mode(
+    char * url,
+    globus_gass_copy_url_mode_t * mode);
+
 /** initialize the attr structure */
 globus_result_t
 globus_gass_copy_attr_init(
@@ -210,12 +227,12 @@ globus_gass_copy_attr_set_ftp(
     globus_ftp_client_attr_t * ftp_attr);
 
 globus_result_t
-globus_gass_copy_attr_set_file(
+globus_gass_copy_attr_set_io(
     globus_gass_copy_attr_t * attr,
     globus_io_attr_t * io_attr);
 
 globus_result_t
-globus_gass_copy_attr_set_http(
+globus_gass_copy_attr_set_gass(
     globus_gass_copy_attr_t * attr,
     globus_gass_transfer_requestattr_t * gass_attr);
 

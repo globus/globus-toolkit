@@ -22,26 +22,17 @@ EXTERN_C_BEGIN
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-/**
+/** FIXX - 
  * valid URL schemes
- */
-typedef enum
-{
-    GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED,
-    GLOBUS_I_GASS_COPY_URL_SCHEME_FTP,
-    GLOBUS_I_GASS_COPY_URL_SCHEME_HTTP,
-    GLOBUS_I_GASS_COPY_URL_SCHEME_FILE,
+ * which are no longer needed.  delete these once i'm convinced of that.
+ typedef enum
+ {
+ GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED,
+ GLOBUS_I_GASS_COPY_URL_SCHEME_FTP,
+ GLOBUS_I_GASS_COPY_URL_SCHEME_HTTP,
+ GLOBUS_I_GASS_COPY_URL_SCHEME_FILE,
 } globus_i_gass_copy_url_scheme_t;
-
-/**
- * valid target modes
- */
-typedef enum
-{
-    GLOBUS_I_GASS_COPY_TARGET_MODE_FTP,
-    GLOBUS_I_GASS_COPY_TARGET_MODE_GASS,
-    GLOBUS_I_GASS_COPY_TARGET_MODE_IO,
-} globus_i_gass_copy_target_mode_t;
+*/
 
 /**
  * target status
@@ -138,7 +129,7 @@ typedef struct globus_i_gass_copy_state_target_s
     /**
      * mode used to identify the below target union struct.
      */
-    globus_i_gass_copy_target_mode_t		mode;
+    globus_gass_copy_url_mode_t		mode;
 
     /**
      * data required to perform each type of transfer
