@@ -21,8 +21,6 @@ int matches( void * datum, void * args )
 	return 0;
 }
 
-int errorsOccurred= 0;
-
 int 
 main(
     int                         argc, 
@@ -168,17 +166,5 @@ main(
 
     printf("Success\n");
 
-    if ( errorsOccurred )
-         printOut( "list test failed" );
-    else
-         printOut( "list test succeeded!" );
-
-    return errorsOccurred;
+    return 0;
 }
-
-void printOut( char string[] )
-{
-        printf( string );
-        printf( "\n" );
-}
-
