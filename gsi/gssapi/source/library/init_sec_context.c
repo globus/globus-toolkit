@@ -126,11 +126,6 @@ GSS_CALLCONV gss_init_sec_context(
         {
             *ret_flags = 0 ;
         }
-
-        if (time_rec != NULL)
-        {
-            *time_rec = GSS_C_INDEFINITE;
-        }
     }
     else
     {
@@ -441,6 +436,34 @@ GSS_CALLCONV gss_init_sec_context(
     if (context->gss_state != GSS_CON_ST_DONE)
     {
         major_status |= GSS_S_CONTINUE_NEEDED;
+    }
+    else if(time_rec != NULL)
+    {
+        time_t                          lifetime;
+        time_t                          current_time;
+        
+        major_status = globus_i_gsi_gss_get_context_goodtill(
+            &local_minor_status,
+            context,
+            &lifetime);
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
+            goto exit;
+        }
+
+        current_time = time(NULL);
+
+        if(current_time > lifetime)
+        {
+            *time_rec = 0;
+        }
+        else
+        {
+            *time_rec = (OM_uint32) (lifetime - current_time);
+        }
     }
        
     if (ret_flags != NULL)
