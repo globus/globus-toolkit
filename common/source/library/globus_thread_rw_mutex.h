@@ -8,13 +8,13 @@
 
 typedef struct
 {
-	globus_mutex_t                      mutex;
-	globus_thread_key_t                 key;
-	struct globus_i_rw_mutex_waiter_s * waiters;
-	struct globus_i_rw_mutex_waiter_s ** tail;
-	struct globus_i_rw_mutex_waiter_s * idle;
-	globus_bool_t                       writing;
-	int                                 readers;
+    globus_mutex_t                      mutex;
+    globus_thread_key_t                 key;
+    struct globus_i_rw_mutex_waiter_s * waiters;
+    struct globus_i_rw_mutex_waiter_s ** tail;
+    struct globus_i_rw_mutex_waiter_s * idle;
+    globus_bool_t                       writing;
+    int                                 readers;
 } globus_rw_mutex_t;
 
 typedef int globus_rw_mutexattr_t;
@@ -28,11 +28,6 @@ int
 globus_rw_mutex_readlock(
     globus_rw_mutex_t *                 rw_lock);
 
-/**
- * The write lock can also be called within a readlock 'section' to promote
- * the lock to writer status.  In this case, globus_rw_mutex_writeunlock must
- * be called before globus_rw_mutex_readunlock
- */
 int
 globus_rw_mutex_writelock(
     globus_rw_mutex_t *                 rw_lock);
