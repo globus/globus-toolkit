@@ -100,3 +100,13 @@ contains the GSI-OpenSSH code.  Consider it a living document.
     ----------
       Action: Tag GPT branch as new release
         - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+
+    2003/03/07
+    ----------
+      Action: Merge
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+        - original base: OPENSSH_3_5P1_GSI_20021018
+        - new base: OPENSSH_3_5P1_GSI_20030227
+      Conflicts: 1
+        - configure.ac
+            cvs choked on my changes to the globus additions.  wasn't a "real" conflict.
