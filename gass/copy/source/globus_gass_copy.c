@@ -478,8 +478,8 @@ globus_gass_copy_set_no_third_party_transfers(
 	err = globus_error_construct_string(
 	    GLOBUS_GASS_COPY_MODULE,
 	    GLOBUS_NULL,
-	    "[%s]: Cannot change the value of no_third_party_transfers,
-                   there is a transfer currently pending on this handle",
+	    "[%s]: Cannot change the value of no_third_party_transfers,"
+                   "\tthere is a transfer currently pending on this handle",
 	    myname);
 	return globus_error_put(err);
       }
