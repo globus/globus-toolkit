@@ -1,6 +1,6 @@
-diff -u -r -P openssl-0.9.6b/Configure openssl-0.9.6b-roland/Configure
---- openssl-0.9.6b/Configure	Mon Jul  9 09:08:37 2001
-+++ openssl-0.9.6b-roland/Configure	Mon Oct 29 11:05:06 2001
+diff -u -r -P openssl-0.9.6b/Configure openssl-0.9.6b-patched/Configure
+--- openssl-0.9.6b/Configure	Mon Jul  9 07:08:37 2001
++++ openssl-0.9.6b-patched/Configure	Mon Oct 29 13:41:21 2001
 @@ -186,11 +186,11 @@
  # Only N32 and N64 ABIs are supported. If you need O32 ABI build, invoke
  # './Configure irix-[g]cc' manually.
@@ -69,9 +69,9 @@ diff -u -r -P openssl-0.9.6b/Configure openssl-0.9.6b-roland/Configure
  
  open(IN,'<crypto/opensslv.h') || die "unable to read opensslv.h:$!\n";
  while (<IN>)
-diff -u -r -P openssl-0.9.6b/Makefile openssl-0.9.6b-roland/Makefile
---- openssl-0.9.6b/Makefile	Mon Jul  9 09:59:47 2001
-+++ openssl-0.9.6b-roland/Makefile	Mon Oct 29 10:50:01 2001
+diff -u -r -P openssl-0.9.6b/Makefile openssl-0.9.6b-patched/Makefile
+--- openssl-0.9.6b/Makefile	Mon Jul  9 07:59:47 2001
++++ openssl-0.9.6b-patched/Makefile	Mon Oct 29 13:41:21 2001
 @@ -233,20 +233,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -153,9 +153,9 @@ diff -u -r -P openssl-0.9.6b/Makefile openssl-0.9.6b-roland/Makefile
  
  Makefile.ssl: Makefile.org
  	@echo "Makefile.ssl is older than Makefile.org."
-diff -u -r -P openssl-0.9.6b/Makefile.org openssl-0.9.6b-roland/Makefile.org
---- openssl-0.9.6b/Makefile.org	Mon Jul  9 09:08:41 2001
-+++ openssl-0.9.6b-roland/Makefile.org	Mon Oct 29 11:06:40 2001
+diff -u -r -P openssl-0.9.6b/Makefile.org openssl-0.9.6b-patched/Makefile.org
+--- openssl-0.9.6b/Makefile.org	Mon Jul  9 07:08:41 2001
++++ openssl-0.9.6b-patched/Makefile.org	Mon Oct 29 13:49:26 2001
 @@ -231,20 +231,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -208,7 +208,7 @@ diff -u -r -P openssl-0.9.6b/Makefile.org openssl-0.9.6b-roland/Makefile.org
  	libs="$$libs -l$$i"; \
  	done
  
-@@ -275,9 +276,33 @@
+@@ -275,10 +276,40 @@
  do_solaris-shared:
  	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
  	( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
@@ -218,7 +218,7 @@ diff -u -r -P openssl-0.9.6b/Makefile.org openssl-0.9.6b-roland/Makefile.org
 +	  set -x; ${CC}  -G -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
 +		-h lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
 +		-z allextract lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
-+	libs="$$libs -l$$i"; \
+ 	libs="$$libs -l$$i"; \
 +	done
 +
 +do_irix-shared:
@@ -236,18 +236,25 @@ diff -u -r -P openssl-0.9.6b/Makefile.org openssl-0.9.6b-roland/Makefile.org
 +	libs="$$libs -l$$i"; \
 +	done
 +
++ALLSYMSFLAG=-bnogc
++SHAREDFLAGS=-Wl,-G,-bE:lib$$i.exp,-bM:SRE
++SHAREDCMD=$(CC)
 +do_aix-shared:
 +	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
-+	( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
-+		 set -x; ${CC} -bM:SRE -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
-+		-bexpall -bnoentry ${wl}-berok \
-+		lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
- 	libs="$$libs -l$$i"; \
++	( set -x; \
++		ld -r -brtl -o lib$${i}.o $(ALLSYMSFLAG) lib$${i}.a && \
++		( nm -Pg lib$${i}.o | grep ' [BD] ' | cut -f1 -d' ' > lib$${i}.exp; \
++		$(SHAREDCMD) ${CFLAG} $(SHAREDFLAGS) -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-L. lib$${i}.o \
++		$$libs ${EX_LIBS} ) ) \
++		|| exit 1; \
++		libs="$$libs -l$${i}"; \
  	done
  
-diff -u -r -P openssl-0.9.6b/Makefile.ssl openssl-0.9.6b-roland/Makefile.ssl
---- openssl-0.9.6b/Makefile.ssl	Mon Jul  9 09:59:47 2001
-+++ openssl-0.9.6b-roland/Makefile.ssl	Mon Oct 29 10:50:01 2001
+ Makefile.ssl: Makefile.org
+diff -u -r -P openssl-0.9.6b/Makefile.ssl openssl-0.9.6b-patched/Makefile.ssl
+--- openssl-0.9.6b/Makefile.ssl	Mon Jul  9 07:59:47 2001
++++ openssl-0.9.6b-patched/Makefile.ssl	Mon Oct 29 13:41:21 2001
 @@ -233,20 +233,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -329,9 +336,9 @@ diff -u -r -P openssl-0.9.6b/Makefile.ssl openssl-0.9.6b-roland/Makefile.ssl
  
  Makefile.ssl: Makefile.org
  	@echo "Makefile.ssl is older than Makefile.org."
-diff -u -r -P openssl-0.9.6b/config openssl-0.9.6b-roland/config
---- openssl-0.9.6b/config	Fri Mar 30 09:49:08 2001
-+++ openssl-0.9.6b-roland/config	Mon Oct 29 10:50:01 2001
+diff -u -r -P openssl-0.9.6b/config openssl-0.9.6b-patched/config
+--- openssl-0.9.6b/config	Fri Mar 30 07:49:08 2001
++++ openssl-0.9.6b-patched/config	Mon Oct 29 13:41:22 2001
 @@ -318,9 +318,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -439,9 +446,9 @@ diff -u -r -P openssl-0.9.6b/config openssl-0.9.6b-roland/config
  	fi
  	OUT="solaris-sparcv9-$CC" ;;
    sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
-diff -u -r -P openssl-0.9.6b/crypto/asn1/a_d2i_fp.c openssl-0.9.6b-roland/crypto/asn1/a_d2i_fp.c
---- openssl-0.9.6b/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
-+++ openssl-0.9.6b-roland/crypto/asn1/a_d2i_fp.c	Mon Oct 29 10:50:01 2001
+diff -u -r -P openssl-0.9.6b/crypto/asn1/a_d2i_fp.c openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c
+--- openssl-0.9.6b/crypto/asn1/a_d2i_fp.c	Fri Apr 23 15:08:07 1999
++++ openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c	Mon Oct 29 13:41:22 2001
 @@ -169,13 +169,17 @@
  					ASN1err(ASN1_F_ASN1_D2I_BIO,ERR_R_MALLOC_FAILURE);
  					goto err;
@@ -467,9 +474,9 @@ diff -u -r -P openssl-0.9.6b/crypto/asn1/a_d2i_fp.c openssl-0.9.6b-roland/crypto
  				}
  			off+=(int)c.slen;
  			if (eos <= 0)
-diff -u -r -P openssl-0.9.6b/crypto/bn/Makefile openssl-0.9.6b-roland/crypto/bn/Makefile
---- openssl-0.9.6b/crypto/bn/Makefile	Fri Mar 30 09:53:06 2001
-+++ openssl-0.9.6b-roland/crypto/bn/Makefile	Mon Oct 29 10:50:01 2001
+diff -u -r -P openssl-0.9.6b/crypto/bn/Makefile openssl-0.9.6b-patched/crypto/bn/Makefile
+--- openssl-0.9.6b/crypto/bn/Makefile	Fri Mar 30 07:53:06 2001
++++ openssl-0.9.6b-patched/crypto/bn/Makefile	Mon Oct 29 13:41:22 2001
 @@ -124,6 +124,8 @@
  	$(CC) $(ASFLAGS) -E asm/sparcv8plus.S | \
  		/usr/ccs/bin/as -xarch=v8plus - -o asm/sparcv8plus-gcc27.o
@@ -479,9 +486,9 @@ diff -u -r -P openssl-0.9.6b/crypto/bn/Makefile openssl-0.9.6b-roland/crypto/bn/
  files:
  	$(PERL) $(TOP)/util/files.pl Makefile.ssl >> $(TOP)/MINFO
  
-diff -u -r -P openssl-0.9.6b/crypto/bn/Makefile.ssl openssl-0.9.6b-roland/crypto/bn/Makefile.ssl
---- openssl-0.9.6b/crypto/bn/Makefile.ssl	Fri Mar 30 09:53:06 2001
-+++ openssl-0.9.6b-roland/crypto/bn/Makefile.ssl	Mon Oct 29 10:50:01 2001
+diff -u -r -P openssl-0.9.6b/crypto/bn/Makefile.ssl openssl-0.9.6b-patched/crypto/bn/Makefile.ssl
+--- openssl-0.9.6b/crypto/bn/Makefile.ssl	Fri Mar 30 07:53:06 2001
++++ openssl-0.9.6b-patched/crypto/bn/Makefile.ssl	Mon Oct 29 13:41:22 2001
 @@ -124,6 +124,8 @@
  	$(CC) $(ASFLAGS) -E asm/sparcv8plus.S | \
  		/usr/ccs/bin/as -xarch=v8plus - -o asm/sparcv8plus-gcc27.o
@@ -491,9 +498,9 @@ diff -u -r -P openssl-0.9.6b/crypto/bn/Makefile.ssl openssl-0.9.6b-roland/crypto
  files:
  	$(PERL) $(TOP)/util/files.pl Makefile.ssl >> $(TOP)/MINFO
  
-diff -u -r -P openssl-0.9.6b/crypto/bn/asm/ia64.S openssl-0.9.6b-roland/crypto/bn/asm/ia64.S
---- openssl-0.9.6b/crypto/bn/asm/ia64.S	Wed Dec 31 18:00:00 1969
-+++ openssl-0.9.6b-roland/crypto/bn/asm/ia64.S	Mon Oct 29 10:50:01 2001
+diff -u -r -P openssl-0.9.6b/crypto/bn/asm/ia64.S openssl-0.9.6b-patched/crypto/bn/asm/ia64.S
+--- openssl-0.9.6b/crypto/bn/asm/ia64.S	Wed Dec 31 16:00:00 1969
++++ openssl-0.9.6b-patched/crypto/bn/asm/ia64.S	Mon Oct 29 13:41:22 2001
 @@ -0,0 +1,1489 @@
 +.explicit
 +.text
@@ -1984,9 +1991,9 @@ diff -u -r -P openssl-0.9.6b/crypto/bn/asm/ia64.S openssl-0.9.6b-roland/crypto/b
 +	br.ret.sptk.many	b6;;
 +.endp	bn_div_words#
 +#endif
-diff -u -r -P openssl-0.9.6b/ssl/s3_srvr.c openssl-0.9.6b-roland/ssl/s3_srvr.c
---- openssl-0.9.6b/ssl/s3_srvr.c	Mon Jul  9 09:11:06 2001
-+++ openssl-0.9.6b-roland/ssl/s3_srvr.c	Mon Oct 29 10:50:01 2001
+diff -u -r -P openssl-0.9.6b/ssl/s3_srvr.c openssl-0.9.6b-patched/ssl/s3_srvr.c
+--- openssl-0.9.6b/ssl/s3_srvr.c	Mon Jul  9 07:11:06 2001
++++ openssl-0.9.6b-patched/ssl/s3_srvr.c	Mon Oct 29 13:41:22 2001
 @@ -537,7 +537,11 @@
  		SSL3_ST_SR_CERT_A,
  		SSL3_ST_SR_CERT_B,
