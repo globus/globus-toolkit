@@ -33,6 +33,12 @@ if($condor_arch ne '')
 }
 
 print `./find-condor-tools $c_opts --cache-file=/dev/null`;
+if($? != 0)
+{
+    print STDERR "Error locating condor commands, aborting!\n";
+    exit 2;
+}
+
 chmod 0755, 'globus-condor-print-config';
 
 my $condor_jm_config = `globus-condor-print-config`;
