@@ -337,3 +337,45 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  	fi
  	OUT="solaris-sparcv9-$CC" ;;
    sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
+--- openssl-0.9.6b/ssl/s3_srvr.c	Mon Jul  9 09:11:06 2001
++++ openssl-0.9.6b-patched/ssl/s3_srvr.c	Mon Sep 24 16:33:11 2001
+@@ -537,7 +537,11 @@
+ 		SSL3_ST_SR_CERT_A,
+ 		SSL3_ST_SR_CERT_B,
+ 		-1,
+-		SSL3_RT_MAX_PLAIN_LENGTH,
++#if defined(MSDOS) && !defined(WIN32)
++                1024*30, /* 30k max cert list :-) */
++#else
++                1024*100, /* 100k max cert list :-) */
++#endif
+ 		&ok);
+ 	if (!ok) return((int)n);
+ 	s->s3->tmp.reuse_message = 1;
+--- openssl-0.9.6b/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
++++ openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c	Fri Sep 21 06:10:56 2001
+@@ -169,13 +169,17 @@
+ 					ASN1err(ASN1_F_ASN1_D2I_BIO,ERR_R_MALLOC_FAILURE);
+ 					goto err;
+ 					}
+-				i=BIO_read(in,&(b->data[len]),want);
+-				if (i <= 0)
+-					{
+-					ASN1err(ASN1_F_ASN1_D2I_BIO,ASN1_R_NOT_ENOUGH_DATA);
+-					goto err;
+-					}
+-				len+=i;
++                                while(want)
++                                        {
++                                        i=BIO_read(in,&(b->data[len]),want);
++                                        if (i <= 0)
++					        {
++					        ASN1err(ASN1_F_ASN1_D2I_BIO,ASN1_R_NOT_ENOUGH_DATA);
++					        goto err;
++					        }
++				        len+=i;
++                                        want-=i;
++                                        }
+ 				}
+ 			off+=(int)c.slen;
+ 			if (eos <= 0)
