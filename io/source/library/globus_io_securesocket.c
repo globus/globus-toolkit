@@ -121,36 +121,36 @@ typedef void (* globus_io_authentication_callback_t)(
  */
 struct globus_io_authentication_info_s
 {
-    globus_io_input_token_t     input_token;
+    globus_io_input_token_t             input_token;
+    
+    globus_byte_t *                     output_buffer;
+    globus_size_t                       output_buflen;
+    globus_size_t                       output_offset;
 
-    globus_byte_t *         output_buffer;
-    globus_size_t           output_buflen;
-    globus_size_t           output_offset;
+    globus_byte_t *                     output_buffer_header;
+    globus_size_t                       output_header_len;
+    globus_size_t                       output_header_offset;
 
-    globus_byte_t *         output_buffer_header;
-    globus_size_t           output_header_len;
-    globus_size_t           output_header_offset;
+    OM_uint32                           flags;
+    OM_uint32                           ret_flags;
 
-    OM_uint32               flags;
-    OM_uint32               ret_flags;
-
-    OM_uint32               maj_stat;
-    OM_uint32               min_stat;
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;
 
     globus_io_authentication_callback_t callback;
-    void *              callback_arg;
+    void *                              callback_arg;
 
-    globus_io_callback_t        iteration;
+    globus_io_callback_t                iteration;
 
     /* If we are initiating a connection, and we did not
      * receive any token from the server, then we should return
      * connection_refused, instead of authentication_failed.
      */
-    globus_bool_t           any_token_received;
+    globus_bool_t                       any_token_received;
 
     /* Additional for accept support */
-    char *              name;
-    globus_bool_t           user_to_user;
+    char *                              name;
+    globus_bool_t                       user_to_user;
 
     /* fields used by delegation functions */
 
@@ -3831,18 +3831,31 @@ globus_l_io_securesocket_call_auth_callback(
     globus_io_handle_t *        handle)
 {
     globus_result_t         result;
-    gss_name_t              target;
-    gss_buffer_desc         target_name_buffer;
+    gss_name_t              peer;
+    gss_buffer_desc         peer_name_buffer;
     OM_uint32               maj_stat;
     OM_uint32               min_stat;
-
-    target_name_buffer.length = (size_t) 0;
-    target_name_buffer.value = GLOBUS_NULL;
+    int                     initiator;
+    
+    peer_name_buffer.length = (size_t) 0;
+    peer_name_buffer.value = GLOBUS_NULL;
 
     maj_stat = gss_inquire_context(&min_stat,
                                    handle->context,
                                    GLOBUS_NULL,
-                                   &target,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   GLOBUS_NULL,
+                                   &initiator,
+                                   GLOBUS_NULL);
+
+    globus_assert(maj_stat == GSS_S_COMPLETE);
+
+    maj_stat = gss_inquire_context(&min_stat,
+                                   handle->context,
+                                   initiator ? GLOBUS_NULL : &peer,
+                                   initiator ? &peer : GLOBUS_NULL,
                                    GLOBUS_NULL,
                                    GLOBUS_NULL,
                                    GLOBUS_NULL,
@@ -3852,23 +3865,23 @@ globus_l_io_securesocket_call_auth_callback(
     if(maj_stat == GSS_S_COMPLETE)
     {
         maj_stat = gss_display_name(&min_stat,
-                                    target,
-                                    &target_name_buffer,
+                                    peer,
+                                    &peer_name_buffer,
                                     GLOBUS_NULL);
         if(maj_stat != GSS_S_COMPLETE)
         {
             /* Error creating name string */
-            target_name_buffer.length = (size_t) 0;
-            target_name_buffer.value = GLOBUS_NULL;
+            peer_name_buffer.length = (size_t) 0;
+            peer_name_buffer.value = GLOBUS_NULL;
         }
-        gss_release_name(&min_stat, &target);
+        gss_release_name(&min_stat, &peer);
     }
 
     if(! handle->securesocket_attr.auth_callback(
            handle->securesocket_attr.auth_callback_arg,
            handle,
            GLOBUS_SUCCESS,
-           (char *) target_name_buffer.value,
+           (char *) peer_name_buffer.value,
            handle->context))
     {
         /* not authorized */
@@ -3886,9 +3899,9 @@ globus_l_io_securesocket_call_auth_callback(
         result = GLOBUS_SUCCESS;
     }
 
-    if(target_name_buffer.value)
+    if(peer_name_buffer.value)
     {
-        gss_release_buffer(&min_stat, &target_name_buffer);
+        gss_release_buffer(&min_stat, &peer_name_buffer);
     }
 
     return result;
