@@ -294,7 +294,6 @@ globus_l_xio_operation_kickout(
                 ow->res);
             if(ow->res != GLOBUS_SUCCESS)
             {
-                globus_xio_driver_context_close(ow->dh->context);
                 globus_l_xio_test_attr_destroy(ow->dh);
             }
             break;
@@ -471,7 +470,6 @@ globus_l_xio_test_open(
         GlobusXIODriverFinishedOpen(context, dh, op, res);
         if(res != GLOBUS_SUCCESS)
         {
-            globus_xio_driver_context_close(dh->context);
             globus_l_xio_test_attr_destroy(dh);
         }
     }

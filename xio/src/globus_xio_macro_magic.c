@@ -227,7 +227,7 @@ globus_xio_driver_open_deliver_DEBUG(
     /* LOCK */
     globus_mutex_lock(&_context->mutex);
     {
-        /* remove the reference help to make sure the context is not
+        /* remove the reference held to make sure the context is not
            destroyed until all open callbacks have returned */
         _context->ref--;
         if(_context->ref == 0)

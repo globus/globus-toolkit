@@ -137,12 +137,12 @@ globus_l_xio_server_accept_kickout(
     /* lock up and do some clean up */
     globus_mutex_lock(&xio_server->mutex);
     {
-        xio_server->op = NULL;
         globus_assert(xio_op->state == GLOBUS_XIO_OP_STATE_FINISH_WAITING);
 
         switch(xio_server->state)
         {
             case GLOBUS_XIO_SERVER_STATE_COMPLETING:
+                xio_server->op = NULL;
                 xio_server->state = GLOBUS_XIO_SERVER_STATE_OPEN;
                 break;
 
@@ -154,6 +154,7 @@ globus_l_xio_server_accept_kickout(
             case GLOBUS_XIO_SERVER_STATE_CLOSED:
             case GLOBUS_XIO_SERVER_STATE_CLOSING:
             case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
+                xio_server->op = NULL;
                 break;
 
             default:
@@ -654,6 +655,7 @@ globus_xio_server_create(
     globus_bool_t                           done = GLOBUS_FALSE;
     int                                     ctr;
     int                                     ctr2;
+    int                                     tmp_size;
     int                                     stack_size;
     void *                                  ds_attr = NULL;
     GlobusXIOName(globus_xio_server_init);
@@ -679,10 +681,17 @@ globus_xio_server_create(
     globus_mutex_lock(&stack->mutex);
     {
         stack_size = globus_list_size(stack->driver_stack);
-        xio_server = (globus_i_xio_server_t *)
-                    globus_malloc(sizeof(globus_i_xio_server_t) +
-                            (sizeof(globus_i_xio_server_entry_t) *
-                                    (stack_size - 1)));
+        tmp_size = sizeof(globus_i_xio_server_t) +
+                    (sizeof(globus_i_xio_server_entry_t) * (stack_size - 1));
+        xio_server = (globus_i_xio_server_t *) globus_malloc(tmp_size);
+        if(xio_server == NULL)
+        {
+            globus_mutex_lock(&stack->mutex);
+            res = GlobusXIOErrorMemory("server");
+            goto err;
+        }
+
+        memset(xio_server, '\0', tmp_size);
         xio_server->stack_size = globus_list_size(stack->driver_stack);
         xio_server->ref = 1;
         xio_server->state = GLOBUS_XIO_SERVER_STATE_OPEN;

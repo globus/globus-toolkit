@@ -1353,7 +1353,7 @@ globus_xio_register_open(
         space =  user_attr->space;
     }
     /* initialize the context */
-    context->ref = 1; /* for the refrence the handle has */
+    context->ref++; /* for the refrence the handle has */
     handle->space = space;
     globus_callback_space_reference(space);
 
@@ -2128,7 +2128,7 @@ globus_xio_open(
         space =  user_attr->space;
     }
     /* initialize the context */
-    context->ref = 1; /* for the refrence the handle has */
+    context->ref++; /* for the refrence the handle has */
     handle->space = space;
     globus_callback_space_reference(space);
 
