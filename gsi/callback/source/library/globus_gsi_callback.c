@@ -406,14 +406,18 @@ globus_i_gsi_callback_cred_verify(
             break;
         }                       
 
-        if (result != GLOBUS_SUCCESS)
+            if (result != GLOBUS_SUCCESS)
         {
+	    char *                      subject_name =
+	      X509_NAME_oneline(X509_get_subject_name(x509_context->current_cert), 0, 0);
+
             if (x509_context->error == X509_V_ERR_CERT_NOT_YET_VALID)
             {
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CERT_NOT_YET_VALID,
-                    ("Cert not yet valid - check clock skew between hosts"));
+                    ("Cert with subject: %s is not yet valid"
+		     "- check clock skew between hosts.", subject_name));
             }
             else if (x509_context->error == 
                      X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
@@ -421,14 +425,15 @@ globus_i_gsi_callback_cred_verify(
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CANT_GET_LOCAL_CA_CERT,
-                    ("Cannot find issuer certificate for local credential"));
+                    ("Cannot find issuer certificate for "
+		     "local credential with subject: %s", subject_name));
             }
             else if (x509_context->error == X509_V_ERR_CERT_HAS_EXPIRED)
             {
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CERT_HAS_EXPIRED,
-                    ("Remote credential has expired"));
+                    ("Credential with subject: %s has expired.", subject_name));
             }
             else
             {
@@ -437,9 +442,12 @@ globus_i_gsi_callback_cred_verify(
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                     (X509_verify_cert_error_string(x509_context->error)));
             }
+	
+	    globus_libc_free(subject_name);
+
             goto exit;
         }
-        
+
         goto exit;
     }
 
