@@ -110,6 +110,8 @@ ws -a \
 	ws-rendezvous\
 	ws-mds\
 	ws-transfer\
+	ws-cas\
+	ws-delegation\
 	wsrf
 
 wsc -a \
