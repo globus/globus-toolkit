@@ -417,7 +417,7 @@ make_fqhn(char **host)
 
     if (domainname) {
 	domainname++;
-	fqhn = xmalloc(strlen(*host)+strlen(domainname)+1);
+	fqhn = xmalloc(strlen(*host)+strlen(domainname)+2);
 	sprintf(fqhn, "%s.%s", *host, domainname);
 	xfree(*host);
 	*host = fqhn;
