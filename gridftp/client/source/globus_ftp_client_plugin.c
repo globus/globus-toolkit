@@ -2301,7 +2301,13 @@ globus_i_ftp_client_plugin_notify_command(
     va_start(ap, command_spec);
 
     len = globus_libc_vprintf_length(command_spec, ap);
+
+    va_end(ap);
+    
     tmpstr = globus_libc_malloc(len + 1);
+
+    va_start(ap, command_spec);
+    
     globus_libc_vsprintf(tmpstr, command_spec, ap);
 
     va_end(ap);
