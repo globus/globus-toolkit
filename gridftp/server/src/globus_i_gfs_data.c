@@ -972,7 +972,7 @@ globus_i_gfs_data_request_passive(
         /* its ok to use AF_INET here since we are requesting the LOCAL
          * address.  we just use AF_INET to store the port
          */
-        if(globus_l_gfs_data_is_remote_node)
+        if(!globus_l_gfs_data_is_remote_node)
         {
             ipv6_addr = (strchr(handle->info.interface, ':') != NULL);
         }
