@@ -29,9 +29,6 @@ my $globusdir = $gpath;
 my $setupdir = "$globusdir/setup/globus";
 my $myname = "setup-openssh.pl";
 
-print "$myname: Configuring package 'gsi_openssh'...\n";
-print "Run this as root for the intended effect...\n";
-
 #
 # Set up path prefixes for use in the path translations
 #
@@ -48,16 +45,83 @@ $piddir = "/var/run";
 $xauth_path = "/usr/bin/X11/xauth";
 
 #
+# Backup-related variables
+#
+
+$curr_time = time();
+$backupdir = "globus_backup_${curr_time}";
+$confbackupdir = "$backupdir/s1_conf";
+$transbackupdir = "$backupdir/s2_trans";
+
+#
 # We need to make sure it's okay to copy our setup files (if some files are already
 # present).  If we do copy any files, we backup the old files so the user can (possibly)
 # reverse any damage.
 #
 
+sub test_dirs
+{
+    my $composite;
+
+    print "\nPreparatory: checking for existence of critical directories\n";
+
+    #
+    # Remember to put in check for /etc
+    #
+
+    #
+    # Test for /etc/ssh
+    #
+
+    $composite = $sysconfdir;
+    if ( ! -d "$composite" )
+    {
+        print "Could not find directory: '${composite}'.. creating.\n";
+        mkdir($composite, 16877);
+        # 16877 should be 755, or drwxr-xr-x
+    }
+
+    #
+    # Test for /etc/ssh/globus_backup_<curr>
+    #
+
+    $composite = "$sysconfdir/$backupdir";
+    if ( ! -d "${composite}" )
+    {
+        print "Could not find directory: '${composite}'.. creating.\n";
+        mkdir($composite, 16877);
+    }
+
+    #
+    # Test for /etc/ssh/globus_backup_<curr>/s1_conf
+    #
+
+    $composite = "$sysconfdir/$confbackupdir";
+    if ( ! -d "${composite}" )
+    {
+        print "Could not find directory: '${composite}'.. creating.\n";
+        mkdir($composite, 16877);
+    }
+
+    #
+    # Test for /etc/ssh/globus_backup_<curr>/s2_trans
+    #
+
+    $composite = "$sysconfdir/$transbackupdir";
+    if ( ! -d "${composite}" )
+    {
+        print "Could not find directory: '${composite}'.. creating.\n";
+        mkdir($composite, 16877);
+    }
+
+    return 0;
+}
+
 sub copy_setup_files
 {
-    my $response, $curr_time;
+    my $response;
 
-    $curr_time = time();
+    print "\nStage 1: Copying configuration files into '${sysconfdir}'.\n";
 
     $response = "y";
     if ( -e "${sysconfdir}/ssh_config" )
@@ -65,7 +129,7 @@ sub copy_setup_files
         $response = query_boolean("${sysconfdir}/ssh_config already exists.  Overwrite? ", "n");
         if ($response eq "y")
         {
-            action("cp ${sysconfdir}/ssh_config ${sysconfdir}/ssh_config.bak_${curr_time}");
+            action("cp ${sysconfdir}/ssh_config ${sysconfdir}/${confbackupdir}/ssh_config");
         }
     }
 
@@ -84,7 +148,7 @@ sub copy_setup_files
         $response = query_boolean("${sysconfdir}/sshd_config already exists.  Overwrite? ", "n");
         if ($response eq "y")
         {
-            action("cp ${sysconfdir}/sshd_config ${sysconfdir}/sshd_config.bak_${curr_time}");
+            action("cp ${sysconfdir}/sshd_config ${sysconfdir}/${confbackupdir}/sshd_config");
         }
     }
 
@@ -103,7 +167,7 @@ sub copy_setup_files
         $response = query_boolean("${sysconfdir}/moduli already exists.  Overwrite? ", "n");
         if ($response eq "y")
         {
-            action("cp ${sysconfdir}/moduli ${sysconfdir}/moduli.bak_${curr_time}");
+            action("cp ${sysconfdir}/moduli ${sysconfdir}/${confbackupdir}/moduli");
         }
     }
 
@@ -115,6 +179,8 @@ sub copy_setup_files
 
 sub runkeygen
 {
+    print "\nStage 2: Generating host keys.\n";
+
     if ( ! -d "${sysconfdir}" )
     {
         print "Could not find ${sysconfdir} directory... creating\n";
@@ -158,6 +224,8 @@ sub runkeygen
 
 sub fixpaths
 {
+    my $g, $h;
+
     #
     # Set up path translations for the installation files
     #
@@ -206,7 +274,8 @@ sub fixpaths
         "${mandir}/${mansubdir}1/sftp.1" => 0,
         );
 
-    print "Translating strings in config/man files...\n";
+    print "\nStage 3: Translating strings in config and man files...\n";
+
     for my $f (keys %files)
     {
         $f =~ /(.*\/)*(.*)$/;
@@ -219,6 +288,13 @@ sub fixpaths
         $g = "$f.tmp";
 
         #
+        # get the filename for $f and place it in $h.
+        #
+
+        $h = $f;
+        $h =~ s#^.*/##;
+
+        #
         # Grab the current mode/uid/gid for use later
         #
 
@@ -227,6 +303,11 @@ sub fixpaths
         $gid = (stat($f))[5];
 
         action("mv $f $g");
+
+        if ($file{$f} == 1)
+        {
+            action("cp $f ${sysconfdir}/${transbackupdir}/$h");
+        }
 
         open(IN, "<$g") || die ("$0: input file $g missing!\n");
         open(OUT, ">$f") || die ("$0: unable to open output file $f!\n");
@@ -243,14 +324,7 @@ sub fixpaths
         close(OUT);
         close(IN);
 
-        if ($file{$f} eq 0)
-        {
-            action("rm $g");
-        }
-        else
-        {
-            print "Left backup config file '$g'\n";
-        }
+        action("rm $g");
 
         #
         # An attempt to revert the new file back to the original file's
@@ -264,6 +338,10 @@ sub fixpaths
     return 0;
 }
 
+print "$myname: Configuring package 'gsi_openssh'..\n";
+print "NOTE: Run this as root for the intended effect.\n";
+
+test_dirs();
 copy_setup_files();
 runkeygen();
 fixpaths();
@@ -313,14 +391,16 @@ sub query_boolean
     print "${query_text} ";
     print "[$default] ";
 
-    $foo = getc(STDIN);
-    $bar = <STDIN>;
+    $foo = <STDIN>;
+    ($bar) = split //, $foo;
 
-    if ($foo ne $nondefault)
+    printf "bar = '$bar'\n";
+
+    if ($bar ne $nondefault)
     {
-        $foo = $default;
+        $bar = $default;
     }
 
-    return $foo;
+    return $bar;
 }
 
