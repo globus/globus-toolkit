@@ -88,6 +88,8 @@ globus_handler_debug                        wsrf/c/handlers/debug/source gpt
 globus_xio_buffer                           wsrf/c/transport/buffer/source gpt
 globus_c_wsrf_sample_counter_client_test    wsrf/c/samples/counter/test gpt
 globus_c_wsrf_sample_counter_bindings       wsrf/c/samples/counter/source/ tar
+globus_c_wsrf_core_test_interop_bindings    wsrf/c/core/tests/interop/source/ tar
+globus_c_wsrf_providers_test_service_bindings wsrf/c/core/providers/test_service/ tar
 globus_c_wsrf_resource                      wsrf/c/resource/source gpt
 globus_globusrun_ws                         ws-gram/client/c/source gpt
 globus_c_gram_client_bindings               ws-gram/client/c/bindings tar
