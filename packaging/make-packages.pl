@@ -389,9 +389,9 @@ sub generate_build_list()
        foreach my $pack ( @package_build_list )
        {
             print "$pack:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
             print "${pack}-thr:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
             my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
                                             $package_list{$pack}[1],
                                             $package_list{$pack}[2]);

@@ -28,8 +28,12 @@ if test "x$flavor" = "x"; then
    esac
 fi
 
+AC_ARG_WITH(flavor, AC_HELP_STRING([--with-flavor=flavor],\
+   [Use flavor as the base for GPT builds.]),
+   [flavor=$withval], [])
+
 if test "x$flavor" = "x"; then
-   echo "Unable to guess flavor. Please use --flavor to specify one"
+   echo "Unable to guess flavor. Please use --with-flavor= to specify one"
    exit 1
 fi
 thr=pthr
