@@ -2572,37 +2572,73 @@ globus_l_gass_copy_generic_read_callback(
     globus_off_t                    offset,
     globus_bool_t                   last_data)
 {
-    globus_gass_copy_state_t *    state = handle->state;
+    globus_gass_copy_state_t *     state = handle->state;
     globus_i_gass_copy_buffer_t *  buffer_entry;
-    globus_object_t * err;
+    globus_object_t *              err;
+    globus_bool_t                  push_the_write = GLOBUS_FALSE;
+    
     static char * myname="globus_l_gass_copy_generic_read_callback";
     
 #ifdef GLOBUS_I_GASS_COPY_DEBUG   
     globus_libc_fprintf(stderr,
-         "generic_read_callback(): read %d bytes\n", nbytes);
+         "generic_read_callback(): read %d bytes, offset: %"GLOBUS_OFF_T_FORMAT", last_data: %d\n",
+	  nbytes, offset, last_data);
 #endif   
-    globus_mutex_lock(&(state->source.mutex));
-    state->source.n_pending--;
-    state->source.n_bytes_transfered+=nbytes;
-    globus_mutex_unlock(&(state->source.mutex));
-
+    
     if(state->cancel == GLOBUS_I_GASS_COPY_CANCEL_TRUE)
     {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG   
 	globus_libc_fprintf(stderr,
             "generic_read_callback(): there was an error\n");
 #endif
+	globus_mutex_lock(&(state->source.mutex));
+	state->source.n_pending--;
+	state->source.n_bytes_transfered+=nbytes;
+	globus_mutex_unlock(&(state->source.mutex));
+
         globus_gass_copy_cancel(handle, NULL, NULL);
 	return;
     }
 
-    /* if this buffer has anything in it, or itwill be the last write (eof)
-     * put it in the write queue
+    /* if this buffer has anything in it, gonna put it in the write queue
+     * if it's the last_data, set TARGET_DONE 
      */
-    
-    if(nbytes >0 || last_data)
+
+    if(nbytes>0)
     {
-	buffer_entry = (globus_i_gass_copy_buffer_t *)
+      push_the_write = GLOBUS_TRUE;
+      if(last_data)
+      {
+	globus_mutex_lock(&(state->source.mutex));
+	{
+	  if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY)
+	    state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
+	}   
+	globus_mutex_unlock(&(state->source.mutex));
+      } /* if(last_data) */
+    } /* if(nbytes>0) */
+    else /* nbytes==0 */
+    {
+      /* if the buffer is empty, only push it on the write queue if it
+       * it is the first one marked as last_data
+       */
+      if(last_data)
+      {
+	globus_mutex_lock(&(state->source.mutex));
+	{
+	  if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY)
+	  {
+	    push_the_write = GLOBUS_TRUE;
+	    state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
+	  }
+	}   
+	globus_mutex_unlock(&(state->source.mutex));
+      } /* if(last_data) */
+    } /* else (nbytes==0) */
+
+    if(push_the_write)
+    {
+      buffer_entry = (globus_i_gass_copy_buffer_t *)
 	    globus_libc_malloc(sizeof(globus_i_gass_copy_buffer_t));
 
 	if(buffer_entry == GLOBUS_NULL)
@@ -2619,9 +2655,14 @@ globus_l_gass_copy_generic_read_callback(
 	    globus_libc_fprintf(stderr,
                 "generic_read_callback(): malloc failed\n");
 #endif
+	    globus_mutex_lock(&(state->source.mutex));
+	    state->source.n_pending--;
+	    state->source.n_bytes_transfered+=nbytes;
+	    globus_mutex_unlock(&(state->source.mutex));
+
             globus_gass_copy_cancel(handle, NULL, NULL);
 	    return;
-	}
+	} /* if(buffer_entry == GLOBUS_NULL) */
       
 	buffer_entry->bytes  = bytes;
 	buffer_entry->nbytes = nbytes;
@@ -2635,7 +2676,16 @@ globus_l_gass_copy_generic_read_callback(
 	}
 	globus_mutex_unlock(&(state->dest.mutex));
 
-    } /* if(nbytes >0) */
+    } /* if(push_the_write) */
+    else /* free the buffer */
+    {
+      globus_libc_free(bytes);
+    }
+
+    globus_mutex_lock(&(state->source.mutex));
+    state->source.n_pending--;
+    state->source.n_bytes_transfered+=nbytes;
+    globus_mutex_unlock(&(state->source.mutex));
     
     /* start the next write if there isn't already one outstanding */
     if(handle->state)
@@ -2676,20 +2726,29 @@ globus_l_gass_copy_ftp_read_callback(
     globus_bool_t last_data;
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-    globus_libc_fprintf(stderr, "ftp_read_callback(): has been called\n");
+    globus_libc_fprintf(stderr,
+	"ftp_read_callback(): start, n_pending: %d, nbytes: %d, offset: %"GLOBUS_OFF_T_FORMAT", eof: %d\n",
+	state->source.n_pending, nbytes, offset, eof);
 #endif
 
     if(error == GLOBUS_SUCCESS) /* no error occured */
     {
 	last_data = eof;
 	if(eof)
-	{    
+	{
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	  globus_libc_fprintf(stderr,
+	      "ftp_read_callback(): source TARGET_DONE, nbytes: %d, offset: %"GLOBUS_OFF_T_FORMAT", eof: %d\n",
+	      nbytes, offset, eof);
+#endif
+	  /*
 	    globus_mutex_lock(&(state->source.mutex));
 	    {
 		state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
 	    }
 	   
 	    globus_mutex_unlock(&(state->source.mutex));
+	  */
 	    if((copy_handle->status != GLOBUS_GASS_COPY_STATUS_FAILURE) &&
 	       (copy_handle->status < GLOBUS_GASS_COPY_STATUS_READ_COMPLETE))
 		copy_handle->status = GLOBUS_GASS_COPY_STATUS_READ_COMPLETE;
@@ -2754,12 +2813,13 @@ globus_l_gass_copy_gass_read_callback(
     { /* all is well */
 	if(last_data)
 	{ /* this was the last read.  set READ_COMPLETE and free the request */
-
+	  /*
 	    globus_mutex_lock(&(state->source.mutex));
 	    {
 		state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
 	    }
 	    globus_mutex_unlock(&(state->source.mutex));
+	  */
 	    handle->status = GLOBUS_GASS_COPY_STATUS_READ_COMPLETE;
 
          /* req_status = globus_gass_transfer_request_get_status(request); */
@@ -2856,11 +2916,13 @@ globus_l_gass_copy_io_read_callback(
 #endif
 	if(last_data)
 	{ /* this was the last read.  set READ_COMPLETE */
+	  /*
 	    globus_mutex_lock(&(state->source.mutex));
 	    {
 		state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
 	    }
 	    globus_mutex_unlock(&(state->source.mutex));
+	  */ 
 	    handle->status = GLOBUS_GASS_COPY_STATUS_READ_COMPLETE;
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    globus_libc_fprintf(stderr, "io_read_callback(): this was the last READ, source.status == GLOBUS_I_GASS_COPY_TARGET_DONE\n");
@@ -3097,6 +3159,11 @@ globus_l_gass_copy_write_from_queue(
 #ifdef GLOBUS_I_GASS_COPY_DEBUG		
 	    globus_libc_fprintf(stderr,
                 "write_from_queue(): about to call register_write()\n");
+	    globus_libc_fprintf(stderr,
+            "\t\t\t nbytes= %d, offset= %"GLOBUS_OFF_T_FORMAT", last_data= %d\n",
+                buffer_entry->nbytes,
+		buffer_entry->offset,
+		buffer_entry->last_data);
 #endif
 	    result = globus_l_gass_copy_register_write(
 		handle,
@@ -3184,7 +3251,7 @@ globus_l_gass_copy_register_write(
 	globus_libc_fprintf(stderr,
             "register_write():  calling globus_ftp_client_register_write()\n");
 	globus_libc_fprintf(stderr,
-            "\t\t\t nbytes= %d, offset= %d, last_data= %d\n",
+            "\t\t\t nbytes= %d, offset= %"GLOBUS_OFF_T_FORMAT", last_data= %d\n",
                 buffer_entry->nbytes,
 		buffer_entry->offset,
 		buffer_entry->last_data);
@@ -3280,13 +3347,19 @@ globus_l_gass_copy_ftp_write_callback(
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     globus_libc_fprintf(stderr,
-        "ftp_write_callback():  has been called, nbytes: %d\n", nbytes);
+        "ftp_write_callback():  has been called, nbytes: %d, offset= %"GLOBUS_OFF_T_FORMAT", eof= %d\n",
+	nbytes, offset, eof);
 #endif
 
     if(error == GLOBUS_SUCCESS) /* no error occured */
     {
 	if(eof)
-	{    
+	{
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	    globus_libc_fprintf(stderr,
+	        "ftp_write_callback(): about to set dest TARGET_DONE, nbytes: %d, offset= %"GLOBUS_OFF_T_FORMAT", eof= %d\n",
+	nbytes, offset, eof);
+#endif
 	    globus_mutex_lock(&(state->dest.mutex));
 	    {
 		state->dest.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
