@@ -40,7 +40,6 @@ static char usage[] = \
 "                                         credential\n"
 "       -R | --renewable_by    <dn>       Allow specified entity to renew\n"
 "                                         credential\n"
-"       -n | --no_passphrase              Disable passphrase authentication\n"
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
