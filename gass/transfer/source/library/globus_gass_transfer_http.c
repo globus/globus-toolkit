@@ -2196,7 +2196,7 @@ globus_l_gass_transfer_http_new_request(
 	globus_io_secure_authorization_data_initialize(&data);
 	result = globus_io_attr_set_secure_authentication_mode(
 	    &tcp_attr,
-	    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+	    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
 	    GLOBUS_NULL);
 
 	if(result != GLOBUS_SUCCESS)
@@ -2553,7 +2553,7 @@ globus_l_gass_transfer_http_new_listener(
     {
 	result = globus_io_attr_set_secure_authentication_mode(
 	    &tcpattr,
-	    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+	    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
 	    GLOBUS_NULL);
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -4099,7 +4099,7 @@ globus_l_gass_transfer_http_accept(
 
 	result = globus_io_attr_set_secure_authentication_mode(
 	    &tcp_attr,
-	    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+	    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
 	    GLOBUS_NULL);
 
 	if(result != GLOBUS_SUCCESS)
