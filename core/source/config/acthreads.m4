@@ -43,23 +43,27 @@ if test "$lac_cv_threads_vars_set" != "yes" ; then
     lac_cv_threads_LIBS=""
     lac_cv_threads_vars_set="yes"
 
-    if test "$lac_cv_threads_type" = "no" ; then
-        LAC_THREADS_NONE
-    else
-        LAC_THREADS_SOLARISTHREADS
-        LAC_THREADS_PTHREADS
-	LAC_THREADS_SPROC
-	LAC_THREADS_EXTERNAL
-        AC_MSG_CHECKING(for thread library)
-        if test "$lac_cv_threads_type" != "solaristhreads" \
-             -a "$lac_cv_threads_type" != "pthreads" \
-	     -a "$lac_cv_threads_type" != "sproc" \
-	     -a "$lac_cv_threads_type" != "external" ; then
-            AC_MSG_ERROR([no acceptable thread library found])
-        else
-            AC_MSG_RESULT($lac_cv_threads_type)
-        fi
-    fi
+    case $lac_cv_threads_type in
+	no)
+            LAC_THREADS_NONE
+            ;;
+        solaristhreads)
+            LAC_THREADS_SOLARISTHREADS
+            ;;
+        pthreads)
+            LAC_THREADS_PTHREADS
+            ;;
+        sproc)
+	    LAC_THREADS_SPROC
+            ;;
+        external)
+	    LAC_THREADS_EXTERNAL
+            ;;
+        *)
+            AC_MSG_ERROR([--with-threads=$lac_cv_threads_type is not a valid thread package])
+            exit 1
+            ;;
+    esac
 fi
 
 lac_threads_type=$lac_cv_threads_type
@@ -90,6 +94,9 @@ dnl LAC_THREADS_SOLARISTHREADS
 AC_DEFUN(LAC_THREADS_SOLARISTHREADS,
 [
 if test "$lac_cv_threads_type" = "solaristhreads" -o "$lac_cv_threads_type" = "yes" ; then
+
+AC_MSG_CHECKING(for solaristhreads)
+
     case "$host" in
         *solaris2* )
             found_inc="no"
@@ -112,9 +119,18 @@ if test "$lac_cv_threads_type" = "solaristhreads" -o "$lac_cv_threads_type" = "y
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
                 LAC_THREADS_ADD_DEFINE(_REENTRANT)
                 lac_cv_threads_LIBS="-lthread"
+            else
+                 AC_MSG_ERROR([solaris thread package not found!!])
+                 exit 1
+
             fi
         ;;
+	*)
+                 AC_MSG_ERROR([solaris thread package not supported on this platform])
+                 exit 1
+        ;;
     esac
+    AC_MSG_RESULT($found_lib)
 fi
 ])
 
@@ -167,6 +183,8 @@ AC_DEFUN(LAC_THREADS_SPROC,
 [
 if test "$lac_cv_threads_type" = "sproc" -o "$lac_cv_threads_type" = "yes" ; then
 
+AC_MSG_CHECKING(for sproc)
+
    case "$host" in 
 	*irix*)
 	found_inc="no"
@@ -182,16 +200,28 @@ if test "$lac_cv_threads_type" = "sproc" -o "$lac_cv_threads_type" = "yes" ; the
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
 		LAC_THREADS_ADD_DEFINE(_SGI_MP_SOURCE)
 		lac_cv_threads_LIBS="-lmutex"
+            else
+                 AC_MSG_ERROR([sproc package not found!!])
+                 exit 1
             fi
         ;;
+	*)
+                 AC_MSG_ERROR([sproc package not supported on this platform])
+                 exit 1
+        ;;
+
     esac
 fi
+    AC_MSG_RESULT($found_inc)
 ])
 
 dnl LAC_THREADS_PTHREADS
 AC_DEFUN(LAC_THREADS_PTHREADS,
 [
 if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; then
+
+AC_MSG_CHECKING(for pthreads)
+
     found_inc="no"
     found_lib="no"
     found_compat_lib="no"
@@ -238,6 +268,13 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
                  lac_thread_library_path="$ac_find_lib_dir"
                  lac_thread_library_file="$ac_find_lib_file"
                 ])
+    fi
+
+
+
+    if test "$found_lib" = "no"; then
+        AC_MSG_ERROR([posix thread package not found!!])
+        exit 1
     fi
 
     if test "$found_inc" = "yes" && test "$found_lib" = "yes"; then
@@ -328,6 +365,9 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
         esac
     fi
 fi
+
+AC_MSG_RESULT($found_lib)
+
 ])
 
 

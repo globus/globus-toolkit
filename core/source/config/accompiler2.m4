@@ -96,6 +96,10 @@ AC_ARG_WITH(mp,
 			lac_cv_mpi=${lac_cv_mpi='no'}
 			lac_cv_inx=${lac_cv_inx='no'}
 			;;
+		*)
+			AC_MSG_ERROR([--with-mp=$withval is not a valid message passing protocol])
+			exit 1
+			;;
          esac
         ],
 	[
@@ -191,32 +195,6 @@ AC_DEFUN(LAC_COMPILERS_INX,
     AC_MSG_RESULT($lac_cv_inx)
 ])
 
-dnl LAC_COMPILERS_MP_CLEANUP()
-AC_DEFUN(LAC_COMPILERS_MP_CLEANUP,
-[
-    if test "$lac_cv_mpl" = "yes" ; then
-        if test "$lac_cv_mpi" = "yes" -o "$lac_cv_inx" = "yes" ; then
-            AC_MSG_ERROR([you can only use one of --with-mpi, --with-mpl, and --with-inx])
-        fi
-        lac_mpl=$lac_cv_mpl
-    fi
-    if test "$lac_cv_mpi" = "yes" ; then
-        if test "$lac_cv_mpl" = "yes" -o "$lac_cv_inx" = "yes" ; then
-            AC_MSG_ERROR([you can only use one of --with-mpi, --with-mpl, and --with-inx])
-        fi
-        lac_mpi=$lac_cv_mpi
-    fi
-    if test "$lac_cv_inx" = "yes" ; then
-        if test "$lac_cv_mpi" = "yes" -o "$lac_cv_mpl" = "yes" ; then
-            AC_MSG_ERROR([you can only use one of --with-mpi, --with-mpl, and --with-inx])
-        fi
-        lac_inx=$lac_cv_inx
-    fi
-])
-
-
-
-
 dnl ---------------------------------------------------------------
 
 
@@ -224,7 +202,6 @@ AC_DEFUN(LAC_COMPILERS,
 [
 AC_CANONICAL_HOST
 LAC_COMPILERS_ARGS
-LAC_COMPILERS_MP_CLEANUP(yes)
 LAC_THREADS
 
 LAC_COMPILERS_SET($lac_threads_type)
