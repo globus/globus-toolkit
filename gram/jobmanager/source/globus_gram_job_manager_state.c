@@ -545,79 +545,71 @@ globus_gram_job_manager_state_machine(
 		    request,
 		    GLOBUS_GRAM_PROTOCOL_RESTART_PARAM);
 
+	    globus_gram_job_manager_reporting_file_set(request);
 	    globus_gram_job_manager_state_file_set(request);
+
+	    /* Attempt to read the job state file */
 	    rc = globus_gram_job_manager_state_file_read(request);
-	    if(rc == GLOBUS_SUCCESS)
-	    {
-		request->jobmanager_state =
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE;
-		event_registered = GLOBUS_TRUE;
-	    }
-	    else
+	    if(rc != GLOBUS_SUCCESS)
 	    {
 		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 		request->failure_code = rc;
 		request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		break;
 	    }
-	    globus_gram_job_manager_reporting_file_set(request);
-	    break;
+
+	    rc = globus_rsl_assist_attributes_canonicalize(request->rsl);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+		break;
+	    }
+
+	    original_rsl = globus_rsl_parse(request->rsl_spec);
+	    if(!original_rsl)
+	    {
+		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+		break;
+	    }
+	    restart_rsl = request->rsl;
+
+	    request->rsl = original_rsl;
+	    rc = globus_rsl_assist_attributes_canonicalize(request->rsl);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+		break;
+	    }
+	    /* Remove the two-phase commit from the original RSL; if the
+	     * new client wants it, they can put it in their RSL
+	     */
+	    globus_gram_job_manager_rsl_remove_attribute(
+			request,
+			GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
+
+	    request->rsl = globus_gram_job_manager_rsl_merge(
+			original_rsl,
+			restart_rsl);
+
+	    if(request->rsl == NULL)
+	    {
+		request->failure_code = rc;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+		break;
+	    }
 	}
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR;
-	break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE:
-	request->jobmanager_state =
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR;
-
-	rc = globus_rsl_assist_attributes_canonicalize(request->rsl);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-	    break;
-	}
-	original_rsl = globus_rsl_parse(request->rsl_spec);
-	if(!original_rsl)
-	{
-	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-	    break;
-	}
-	restart_rsl = request->rsl;
-
-	request->rsl = original_rsl;
-	rc = globus_rsl_assist_attributes_canonicalize(request->rsl);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-	    break;
-	}
-	/* Remove the two-phase commit from the original RSL; if the
-	 * new client wants it, they can put it in their RSL
-	 */
-	globus_gram_job_manager_rsl_remove_attribute(
-		request,
-		GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM);
-
-	request->rsl = globus_gram_job_manager_rsl_merge(
-		original_rsl,
-		restart_rsl);
-
-	if(request->rsl == NULL)
-	{
-	    request->failure_code = rc;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-	    break;
-	}
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
@@ -2169,7 +2161,6 @@ globus_l_gram_job_manager_state_string(
     {
 	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_START)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR)
-	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE)
 	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE)
 	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)

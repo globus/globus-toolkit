@@ -1669,6 +1669,18 @@ globus_l_gram_job_manager_script_write_description(
 		",\n    'cachetag' => [ '%s' ]",
 		request->cache_tag);
     }
+    if(request->condor_os)
+    {
+	fprintf(fp,
+		",\n    'condoros' => [ '%s' ]",
+		request->condor_os);
+    }
+    if(request->condor_arch)
+    {
+	fprintf(fp,
+		",\n    'condorarch' => [ '%s' ]",
+		request->condor_arch);
+    }
 
     globus_l_gram_job_manager_print_staging_list(
 	    request,

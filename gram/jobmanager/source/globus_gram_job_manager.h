@@ -32,7 +32,6 @@ globus_gram_job_manager_logfile_flag_t;
 typedef enum
 {
     GLOBUS_GRAM_JOB_MANAGER_STATE_START,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR,
     GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR,
     GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE,
@@ -336,8 +335,6 @@ typedef struct
     globus_symboltable_t		symbol_table;
     char *				rsl_spec;
     globus_rsl_t *			rsl;
-    int					ttl_limit;
-    int					read_ttl;
 
     char *				remote_io_url;
     char *				remote_io_url_file;
@@ -352,6 +349,8 @@ typedef struct
 
     char *				job_state_file_dir;
     char *				job_state_file;
+    char *				job_state_lock_file;
+    int					job_state_lock_fd;
 
     globus_mutex_t			mutex;
     globus_cond_t			cond;

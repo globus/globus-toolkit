@@ -2,16 +2,10 @@
 
 #include <string.h>
 
-enum
-{
-    GRAM_JOB_MANAGER_TTL_LIMIT = 60
-};
-
 static
-globus_bool_t
-globus_l_gram_job_manager_state_file_read(
-    globus_abstime_t *			time_stop,
-    void *				user_arg);
+int
+globus_l_gram_job_manager_state_file_lock(
+    int					fd);
 
 /**
  * Compute the name of the state file to use for this job request.
@@ -45,6 +39,9 @@ globus_gram_job_manager_state_file_set(
     }
 
     request->job_state_file = (char *) globus_libc_strdup (buffer);
+
+    sprintf(buffer, "%s.lock", request->job_state_file);
+    request->job_state_lock_file = (char *) globus_libc_strdup( buffer );
 }
 /* globus_gram_job_manager_state_file_set() */
 
@@ -53,9 +50,38 @@ globus_gram_job_manager_state_file_write(
     globus_gram_jobmanager_request_t *	request)
 {
     int					rc = GLOBUS_SUCCESS;
-    long				new_ttl;
     FILE *				fp;
     char				tmp_file[1024];
+
+    if ( request->job_state_lock_file != NULL &&
+	 request->job_state_lock_fd < 0 )
+    {
+	globus_gram_job_manager_request_log(request,
+				"JM: Creating and locking state lock file\n");
+
+	request->job_state_lock_fd = open( request->job_state_lock_file,
+					   O_RDWR | O_CREAT );
+	if ( request->job_state_lock_fd < 0 )
+	{
+	    globus_gram_job_manager_request_log(request,
+			"JM: Failed to open state lock file '%s', errno=%d\n",
+			request->job_state_lock_file, errno);
+
+	    return GLOBUS_FAILURE;
+	}
+
+	rc = globus_l_gram_job_manager_state_file_lock(
+						request->job_state_lock_fd );
+	if ( rc != GLOBUS_SUCCESS )
+	{
+	    globus_gram_job_manager_request_log(request,
+			"JM: Failed to lock state lock file '%s', errno=%d\n",
+			request->job_state_lock_file, errno);
+	    /* unlink here? */
+	    close( request->job_state_lock_fd );
+	    return GLOBUS_FAILURE;
+	}
+    }
 
     /*
      * We want the file update to be "atomic", so create a new temp file,
@@ -68,16 +94,14 @@ globus_gram_job_manager_state_file_write(
 
     globus_gram_job_manager_request_log(request, "JM: Writing state file\n");
 
-    new_ttl = time(NULL) + GRAM_JOB_MANAGER_TTL_LIMIT;
-    request->ttl_limit = new_ttl;
-
     fp = fopen( tmp_file, "w" );
     if ( fp == NULL )
     {
 	globus_gram_job_manager_request_log(
 		request,
-		"JM: Failed to open state file %s\n",
-		tmp_file);
+		"JM: Failed to open state file %s, errno=%d\n",
+		tmp_file,
+		errno);
 
 	return GLOBUS_FAILURE;
     }
@@ -85,7 +109,6 @@ globus_gram_job_manager_state_file_write(
     fprintf(fp, "%4d\n", (int) request->jobmanager_state);
     fprintf(fp, "%4d\n", (int) request->status);
     fprintf(fp, "%4d\n", request->failure_code);
-    fprintf(fp, "%10ld\n", new_ttl);
     fprintf(fp, "%s\n", request->job_id ? request->job_id : " ");
     fprintf(fp, "%s\n", request->rsl_spec);
     fprintf(fp, "%s\n", request->cache_tag);
@@ -113,103 +136,67 @@ int
 globus_gram_job_manager_state_file_read(
     globus_gram_jobmanager_request_t *	request)
 {
-    long				curr_time;
     FILE *				fp;
     char				buffer[8192];
     struct stat				statbuf;
     globus_reltime_t			delay;
+    int					rc;
 
     globus_gram_job_manager_request_log(
 	    request,
 	    "JM: Attempting to read state file %s\n",
 	    request->job_state_file);
 
-    curr_time = time(NULL);
-
     if (stat(request->job_state_file, &statbuf) != 0)
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
     }
 
-    fp = fopen( request->job_state_file, "r" );
-    if ( fp == NULL )
-    {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
-    }
-
-    fscanf( fp, "%[^\n]%*c", buffer );
-    request->restart_state = atoi( buffer );
-    fscanf( fp, "%[^\n]%*c", buffer );
-    request->status = atoi( buffer );
-    fscanf( fp, "%[^\n]%*c", buffer );
-    request->failure_code = atoi( buffer );
-    fscanf( fp, "%[^\n]%*c", buffer );
-    request->read_ttl = atoi( buffer );
-
-    fclose(fp);
-
-    if(request->read_ttl > curr_time)
+    /* Try to obtain a lock on the state lock file */
+    if ( request->job_state_lock_file != NULL &&
+	 request->job_state_lock_fd < 0 )
     {
 	globus_gram_job_manager_request_log(request,
-		      "JM: state file TTL hasn't expired yet. Waiting...\n");
-	GlobusTimeReltimeSet(delay, request->read_ttl - curr_time + 1, 0);
+				"JM: Locking state lock file\n");
+
+	request->job_state_lock_fd = open( request->job_state_lock_file,
+					   O_RDWR );
+	if ( request->job_state_lock_fd < 0 )
+	{
+	    globus_gram_job_manager_request_log(request,
+			"JM: Failed to open state lock file '%s', errno=%d\n",
+			request->job_state_lock_file, errno);
+
+	    return GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
+	}
+
+	rc = globus_l_gram_job_manager_state_file_lock(
+						request->job_state_lock_fd );
+	if ( rc != GLOBUS_SUCCESS )
+	{
+	    if ( rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE )
+	    {
+		globus_gram_job_manager_request_log(request,
+			"JM: State lock file is locked, old jm is still alive\n");
+	    }
+	    else
+	    {
+		globus_gram_job_manager_request_log(request,
+			"JM: Failed to lock state lock file '%s', errno=%d\n",
+			request->job_state_lock_file, errno);
+	    }
+
+	    /* unlink here? */
+	    close( request->job_state_lock_fd );
+
+	    return rc;
+	}
     }
-    else
-    {
-	GlobusTimeReltimeSet(delay, 0, 0);
-    }
-    globus_callback_register_oneshot(
-	    &request->poll_timer,
-	    &delay,
-	    globus_l_gram_job_manager_state_file_read,
-	    request,
-	    NULL,
-	    NULL);
 
-    return GLOBUS_SUCCESS;
-}
-
-static
-globus_bool_t
-globus_l_gram_job_manager_state_file_read(
-    globus_abstime_t *			time_stop,
-    void *				user_arg)
-{
-    globus_gram_jobmanager_request_t *	request;
-    FILE *				fp;
-    char				buffer[8192];
-    struct stat				statbuf;
-    long				new_ttl;
-    globus_bool_t			event_registered;
-
-    request = user_arg;
-
-    globus_mutex_lock(&request->mutex);
-
-    /* If a state change occurred before we got to read the
-     * state file, then just process state changes.
-     */
-    if(request->jobmanager_state !=
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE)
-    {
-	goto state_machine_exit;
-    }
-    if (stat(request->job_state_file, &statbuf) != 0)
-    {
-	request->jobmanager_state =
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-	request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
-	goto state_machine_exit;
-    }
     fp = fopen( request->job_state_file, "r" );
     if(!fp)
     {
-	request->jobmanager_state =
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-	request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
-	goto state_machine_exit;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_NO_STATE_FILE;
     }
     fscanf( fp, "%[^\n]%*c", buffer );
     request->restart_state = atoi( buffer );
@@ -217,22 +204,6 @@ globus_l_gram_job_manager_state_file_read(
     request->status = atoi( buffer );
     fscanf( fp, "%[^\n]%*c", buffer );
     request->failure_code = atoi( buffer );
-    fscanf( fp, "%[^\n]%*c", buffer );
-    new_ttl = atoi( buffer );
-
-    if (new_ttl != request->read_ttl)
-    {
-	globus_gram_job_manager_request_log(request,
-		      "JM: TTL was renewed! Old JM is still around.\n");
-	request->jobmanager_state =
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-	request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
-	goto close_fp_exit;
-    }
-
-    globus_gram_job_manager_request_log(request,
-		  "JM: TTL has expired. Proceeding with restart.\n");
 
     fscanf( fp, "%[^\n]%*c", buffer );
     if(strcmp(buffer, " ") != 0)
@@ -260,20 +231,10 @@ globus_l_gram_job_manager_state_file_read(
     globus_gram_job_manager_output_read_state(request, fp);
     globus_gram_job_manager_staging_read_state(request,fp);
 
-close_fp_exit:
     fclose(fp);
 
-state_machine_exit:
-    do
-    {
-	event_registered = globus_gram_job_manager_state_machine(request);
-    }
-    while(!event_registered);
-    globus_mutex_unlock(&request->mutex);
-
-    return event_registered;
+    return GLOBUS_SUCCESS;
 }
-/* globus_gram_job_manager_state_file_read() */
 
 int
 globus_gram_job_manager_state_file_update(
@@ -306,3 +267,48 @@ globus_gram_job_manager_state_file_update(
     return GLOBUS_SUCCESS;
 }
 /* globus_gram_job_manager_state_file_update() */
+
+static
+int
+globus_l_gram_job_manager_state_file_lock(
+    int					fd)
+{
+    int rc;
+#if 0
+    while( (rc = flock( fd, LOCK_EX | LOCK_NB )) < 0 )
+    {
+	if ( errno == EWOULDBLOCK )
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+	    break;
+	}
+	else if ( errno != EINTR )
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE
+	    break;
+	}
+    }
+#else
+    struct flock fl;
+    fl.l_type = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+    fl.l_start = 0;
+    fl.l_len = 0;
+
+    while( (rc = fcntl( fd, F_SETLK, &fl )) < 0 )
+    {
+	if ( errno == EACCES || errno == EAGAIN )
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE;
+	    break;
+	}
+	else if ( errno != EINTR )
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_LOCKING_STATE_LOCK_FILE;
+	    break;
+	}
+    }
+#endif
+    return rc;
+}
+/* globus_l_gram_job_manager_state_file_lock() */

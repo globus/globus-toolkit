@@ -64,6 +64,10 @@ globus_gram_job_manager_request_init(
     r->validation_records = NULL;
     r->relocated_proxy = GLOBUS_FALSE;
     r->proxy_timeout = 60;
+    r->job_state_file_dir = GLOBUS_NULL;
+    r->job_state_file = GLOBUS_NULL;
+    r->job_state_lock_file = GLOBUS_NULL;
+    r->job_state_lock_fd = -1;
     globus_fifo_init(&r->pending_queries);
     globus_gram_job_manager_output_init(r);
     globus_mutex_init(&r->mutex, GLOBUS_NULL);
