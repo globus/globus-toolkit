@@ -69,16 +69,32 @@ read_passphrase(char				*buffer,
 			      buffer_len,
 			      PROMPT,
 			      verify);
-    
-    if (return_code == 0)
+
+    switch(return_code)
     {
+      case 0:
 	/* Success */
 	return_code = strlen(buffer);
-    }
-    else
-    {
-	/* Error */
+	break;
+	
+      case 1:
+	/* Interactive use error */
 	return_code = -1;
+	verror_put_string("Error entering passphrase");
+	break;
+	
+      case -1:
+	/* System error */
+	return_code = -1;
+	verror_put_string("System error reading password");
+	break;
+	
+      default:
+	/* Unknown value */
+	verror_put_string("Unrecognized return value(%d) from des_read_pw()",
+			 return_code);
+	return_code = -1;
+	break;
     }
 
     if (verify_buffer != NULL)
@@ -98,70 +114,14 @@ read_passphrase(char				*buffer,
 int myproxy_read_passphrase(char		*buffer,
 			    int			buffer_len)
 {
-    int return_code;
-    
-    assert(buffer != NULL);
-    
-    return_code = des_read_pw(buffer,
-			      NULL /* No verify buffer */,
-			      buffer_len,
-			      PROMPT,
-			      0 /* No verify */);
-    
-    if (return_code == 0)
-    {
-	/* Success */
-	return_code = strlen(buffer);
-    }
-    else
-    {
-	/* Error */
-	return_code = -1;
-    }
-    
-    return return_code;
+    return read_passphrase(buffer, buffer_len, PROMPT, 0 /* No verify */);
 }
 
 
 int myproxy_read_verified_passphrase(char	*buffer,
 				     int	buffer_len)
 {
-    int return_code;
-    char *verify_buffer = NULL;
-    
-    assert(buffer != NULL);
-
-    /*
-     * We need to give des_read_pw() a buffer to hold the verify
-     * passphrase in.
-     */
-    verify_buffer = malloc(buffer_len);
-    
-    if (verify_buffer == NULL)
-    {
-	return -1;
-    }
-    
-    return_code = des_read_pw(buffer,
-			      verify_buffer,
-			      buffer_len,
-			      PROMPT,
-			      1 /* Verify */);
-    
-    if (return_code == 0)
-    {
-	/* Success */
-	return_code = strlen(buffer);
-    }
-    else
-    {
-	/* Error */
-	return_code = -1;
-    }
-
-    free(verify_buffer);
-    
-    return return_code;
+    return read_passphrase(buffer, buffer_len, PROMPT, 1 /* Verify */);
 }
 
 
