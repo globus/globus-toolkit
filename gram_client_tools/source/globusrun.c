@@ -2208,7 +2208,6 @@ globus_l_globusrun_duroc_subjob_labels(char *request_string)
 			     "label",
 			     &values);
 
-	globus_libc_lock();
 	if(values[0] != GLOBUS_NULL)
 	{
 	    subjob_labels[i] = globus_libc_strdup(values[0]);
@@ -2217,7 +2216,6 @@ globus_l_globusrun_duroc_subjob_labels(char *request_string)
 	{
 	    subjob_labels[i] = globus_libc_strdup("<no label>");
 	}
-	globus_libc_unlock();
 
 	globus_free(values);
 
