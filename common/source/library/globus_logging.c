@@ -113,13 +113,14 @@ globus_result_t
 globus_logging_init(
     globus_logging_handle_t *           out_handle,
     globus_reltime_t *                  flush_period,
-    int                                 buffer_length,
+    int                                 buffer_length_in,
     int                                 log_type,   
     globus_logging_module_t *           module,
     void *                              user_arg)
 {
     globus_result_t                     res;
     globus_l_logging_handle_t *         handle;
+    globus_size_t                       buffer_length;
     GlobusLoggingName(globus_logging_init);
 
     if(out_handle == NULL)
@@ -127,11 +128,18 @@ globus_logging_init(
         res = GlobusLoggingErrorParameter("out_handle");
         goto err;
     }
-    if(buffer_length < 0)
+    if(buffer_length_in < 0)
     {
         res = GlobusLoggingErrorParameter("buffer_length");
         goto err;
     }
+
+    buffer_length = buffer_length_in;
+    if(buffer_length_in < GLOBUS_L_LOGGING_MAX_MESSAGE)
+    {
+        buffer_length = GLOBUS_L_LOGGING_MAX_MESSAGE;
+    }
+    
     if(module == NULL || module->write_func == NULL)
     {
         res = GlobusLoggingErrorParameter("module");
