@@ -35,6 +35,8 @@ static globus_bool_t                            g_send_range;
     signal(SIGPIPE, lostconn);     \
 }
 
+#define BACKEND_STRIPED_SERVER 1
+
 typedef struct
 {
     globus_size_t		offset;
@@ -237,6 +239,15 @@ g_start()
               &g_data_handle,
               &host_port);
     assert(res == GLOBUS_SUCCESS);
+
+#   if defined(BACKEND_STRIPED_SERVER)
+    {
+        res = globus_ftp_control_local_send_eof(
+                  &g_data_handle,
+                  GLOBUS_FALSE);
+        assert(res == GLOBUS_SUCCESS);
+    }
+#   endif
 
     g_parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
     g_parallelism.base.size = 1;
@@ -777,6 +788,26 @@ g_send_data(
         alarm(0);
 
         G_EXIT();
+
+        /*
+         *  send 126 message
+         */
+        if(mode == MODE_E)
+        {
+            int                           data_connections;
+
+            res = globus_ftp_control_data_get_total_data_channels(
+                      handle,
+                      &data_connections,
+                      0);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto data_err;
+            }
+
+            reply(126, "%d", data_connections);
+        }
+
         reply(226, "Transfer complete.");
         G_ENTER();
 
