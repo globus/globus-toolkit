@@ -28,8 +28,7 @@ INCLUDES += $(GPT_INCLUDES)
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
 include_HEADERS= \
-	globus_gass_cache.h \
-	globus_i_gass_cache.h
+	globus_gass_cache.h 
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
@@ -53,8 +52,6 @@ libglobus_gass_cache___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 # GPT_LIB_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
 libglobus_gass_cache___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
-
-
 
 
 include $(top_srcdir)/globus_automake_post
