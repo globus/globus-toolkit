@@ -135,6 +135,7 @@ static char *timestamp(void);
 
 static char * genfilename(char * prefix, char * path, char * sufix);
 
+static int get_content_length(char * http_message, char * http_body);
 /*
  * GSSAPI - credential handle for this process
  */
@@ -1151,7 +1152,6 @@ static void doit()
     int                 service_option_stderr_log = 0;
     int                 service_option_accept_limited = 0;
     unsigned char       int_buf[4];
-    char                tmp_version[64];
     struct stat         statbuf;
     char *              service_line = NULL;
     char *              service_path;
@@ -1164,7 +1164,6 @@ static void doit()
     char *              http_message;
     size_t              http_length;
     char *              http_body;
-    size_t              http_body_length;
     FILE *              http_body_file;
     /* GSSAPI assist variables */
     OM_uint32           major_status = 0;
@@ -1176,7 +1175,6 @@ static void doit()
     gss_buffer_desc     option_token = GSS_C_EMPTY_BUFFER;
     gss_OID_set_desc    extension_oids;
     FILE *              context_tmpfile = NULL;
-    char *              delcname = NULL;
 
     /* Authorization variables */
     int                 rc;
@@ -1439,10 +1437,12 @@ static void doit()
         free(tmpbuf);
     }
 
+
     /* find body of message and forward it to the service */
     {
         char    lastchar;
         char *  end_of_header = "\015\012\015\012";
+        int     content_length;
 
         lastchar = http_message[http_length];
         http_message[http_length]='\0';
@@ -1454,6 +1454,8 @@ static void doit()
             failure(FAILED_SERVER, "Could not find http message body");
         }
 
+        content_length = get_content_length(http_message, http_body);
+
         http_body += 4;  /* CR LF CR LF */
 
         if (! got_ping_request)
@@ -1461,17 +1463,53 @@ static void doit()
             http_body_file = tmpfile();
             if (http_body_file)
             {
+                size_t body_length;
+
                 setbuf(http_body_file,NULL);
                 fcntl(fileno(http_body_file), F_SETFD, 0);
                 sprintf(buf, "%d", fileno(http_body_file));
                 setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
                 notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
 
-                fwrite(http_body,
-                       1,
-                       (size_t)(&http_message[http_length] - http_body),
-                       http_body_file);
-                
+                body_length = (size_t)(&http_message[http_length] - http_body);
+
+                do
+                {
+                    fwrite(http_body,
+                           1,
+                           body_length,
+                           http_body_file);
+
+                    if((content_length > 0) &&
+                            ((content_length -= body_length) > 0))
+                    {
+                        free(http_message);
+
+                        major_status = globus_gss_assist_get_unwrap(
+                                &minor_status,
+                                context_handle,
+                                &http_message,
+                                &http_length,
+                                &token_status,
+                                globus_gss_assist_token_get_fd,
+                                stdin,
+                                logging_usrlog?usrlog_fp:NULL);
+                        if (major_status != GSS_S_COMPLETE)
+                        {
+                            failure4(FAILED_SERVICELOOKUP,
+                                     "Reading incoming message GSS failed "
+                                     "Major:%8.8x "
+                                     "Minor:%8.8x Token:%8.8x\n",
+                                     major_status,
+                                     minor_status,
+                                     token_status);
+                        }
+                        http_body = http_message;
+                        body_length = http_length;
+                    }
+                }
+                while(content_length > 0);
+
                 lseek(fileno(http_body_file), 0, SEEK_SET);
             }    
             else
@@ -1613,6 +1651,7 @@ static void doit()
      */
     if (got_ping_request)
     {
+#if 0
         char *     proxyfile;
         int        fd, i;
         size_t     len, bufsize;
@@ -1622,7 +1661,6 @@ static void doit()
          * returned, and proxy is still in memory
          * failure will cleanup the delegated cred. 
          */
-#if 0
         if ( ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
              && ((fd = open(proxyfile, O_RDWR, 0600) >= 0))  )
         {
@@ -2323,3 +2361,30 @@ timestamp(void)
     tmp = localtime(&clock);
     return asctime(tmp);
 } /* timestamp() */
+
+static
+int
+get_content_length(char * http_message, char * http_body)
+{
+    char save = *http_body;
+    char * content_header;
+    int content_length = -1;
+    *http_body = '\0';
+
+    content_header = strstr(http_message, "\012Content-Length:");
+
+    if(content_header != NULL)
+    {
+        content_header += 16;
+        while(*content_header && isspace(*content_header))
+        {
+            content_header++;
+        }
+        if(*content_header)
+        {
+            content_length = atoi(content_header);
+        }
+    }
+    *http_body = save;
+    return content_length;
+} /* get_content_length() */
