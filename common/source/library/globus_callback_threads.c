@@ -8,7 +8,7 @@
 #define GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE 32
 
 /* any periodic with period smaller than this is going to get its own thread */
-#define GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD 500   /* 1/2 ms */
+#define GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD 5000   /* 5 ms */
 
 static
 int
@@ -1610,48 +1610,36 @@ globus_l_callback_thread_callback(
                 {
                     do
                     {
-                        globus_reltime_t        sleep_time;
-                        unsigned long           usec;
-        
-                        GlobusTimeAbstimeDiff(
-                            sleep_time, callback_info->start_time, time_now);
-                            
-                        GlobusTimeReltimeToUSec(usec, sleep_time);
-        
-                        if(usec > 0)
-                        {
-                            globus_mutex_unlock(
-                                &globus_l_callback_global_space.lock);
-                                
-                            globus_libc_usleep(usec);
-                            
-                            globus_mutex_lock(
-                                &globus_l_callback_global_space.lock);
-                        }
-                        /* 
                         globus_cond_timedwait(
                             &globus_l_callback_global_space.cond,
                             &globus_l_callback_global_space.lock,
                             &callback_info->start_time);
-                         */
                          
                         GlobusTimeAbstimeGetCurrent(time_now);
                         
                     } while(globus_abstime_cmp(
                         &time_now, &callback_info->start_time) < 0 &&
                         !globus_l_callback_shutting_down);
+                    
+                    /* lost mutex, need to make sure I wasnt unregistered */
+                    if(!globus_l_callback_shutting_down &&
+                        callback_info->is_periodic &&
+                        globus_reltime_cmp(
+                            &callback_info->period,
+                            &globus_l_callback_own_thread_period) <= 0)
+                    {
+                        run_now = GLOBUS_TRUE;
+                    }
                 }
-                else
+                else if(!globus_l_callback_shutting_down)
                 {
                     GlobusTimeAbstimeCopy(
                         callback_info->start_time, time_now);
-                }
-                
-                /*XXXXXXXXX not checking period again */
-                if(!globus_l_callback_shutting_down)
-                {
+                        
                     run_now = GLOBUS_TRUE;
                 }
+                
+                
             }
         }
         globus_mutex_unlock(&globus_l_callback_global_space.lock);
