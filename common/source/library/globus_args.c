@@ -443,8 +443,8 @@ globus_args_scan(
     if (rc==GLOBUS_SUCCESS)
     {
 	/* if successful, return number of options found */
-		*options_found = globus_fifo_convert_to_list( &fifo );
 	rc = globus_fifo_size(&fifo);
+        *options_found = globus_fifo_convert_to_list( &fifo );
 
 	/* modify argc/argv */
 	if (my_argc>1)
