@@ -28,7 +28,8 @@ static char usage[] = \
 "       -d | --dn_as_username             Use subject of the authorization\n"
 "                                         credential as the default username\n"
 "                                         instead of the LOGNAME env. var.\n"
-"        -k | --credname       <name>     Specify credential name\n"
+"       -k | --credname        <name>     Specify credential name\n"
+"       -S | --stdin_pass                 Read passphrase from stdin\n"
 "\n";
 
 struct option long_options[] =
@@ -45,10 +46,11 @@ struct option long_options[] =
     {"authorization",    required_argument, NULL, 'r'},
     {"dn_as_username",         no_argument, NULL, 'd'},
     {"credname",	 required_argument, NULL, 'k'},
+    {"stdin_pass",             no_argument, NULL, 'S'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:vVa:dk:";
+static char short_options[] = "hus:p:l:t:o:vVa:dk:S";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -68,6 +70,7 @@ init_arguments(int argc, char *argv[],
 char *outputfile = NULL;
 char *creds_to_authorization = NULL;
 static int dn_as_username = 0;
+static int read_passwd_from_stdin = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -101,12 +104,17 @@ main(int argc, char *argv[])
 
     if (creds_to_authorization == NULL) {
        /* Allow user to provide a passphrase */
-       if (myproxy_read_passphrase(client_request->passphrase,
-				   sizeof(client_request->passphrase)) == -1)
-       {
-	   fprintf(stderr, "Error reading passphrase\n");
-	   return 1;
-       }
+	int rval;
+	if (read_passwd_from_stdin) {
+	    rval = myproxy_read_passphrase_stdin(client_request->passphrase, sizeof(client_request->passphrase));
+	} else {
+	    rval = myproxy_read_passphrase(client_request->passphrase,
+					   sizeof(client_request->passphrase));
+	}
+	if (rval == -1) {
+	    fprintf(stderr, "Error reading passphrase\n");
+	    return 1;
+	}
     }
 
     if (dn_as_username && creds_to_authorization) {
@@ -190,6 +198,9 @@ init_arguments(int argc,
 	    break;
 	case 'k':   /* credential name */
 	    request->credname = strdup (gnu_optarg);
+	    break;
+	case 'S':
+	    read_passwd_from_stdin = 1;
 	    break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);

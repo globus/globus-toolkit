@@ -1,4 +1,4 @@
-.TH myproxy-init 1 "2003-2-26" "NCSA" "MyProxy"
+.TH myproxy-init 1 "2003-2-28" "NCSA" "MyProxy"
 .SH NAME
 myproxy-init \- store a credential for later retrieval
 .SH SYNOPSIS
@@ -185,6 +185,13 @@ Specifies the credential name.
 .TP
 .BI -K " description, " --creddesc " description"
 Specifies credential description.
+.TP
+.B -S, --stdin_pass
+By default, the command prompts for a passphrase and reads the
+passphrase from the active tty.  When running the command
+non-interactively, there may be no associated tty.  Specifying this
+option tells the command to read passphrases from standard input
+without prompts or confirmation.
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH FILES

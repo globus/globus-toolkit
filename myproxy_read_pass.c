@@ -61,7 +61,7 @@ read_passphrase(char				*buffer,
     return_code = des_read_pw(buffer,
 			      verify_buffer,
 			      buffer_len,
-			      PROMPT,
+			      prompt,
 			      verify);
 
     switch(return_code)
@@ -99,6 +99,25 @@ read_passphrase(char				*buffer,
     return return_code;
 }
 
+static int
+read_passphrase_stdin(char			*buffer,
+		      const int			buffer_len,
+		      const char		*prompt,
+		      int			verify)
+{
+    int		i;
+
+    if (!(fgets(buffer, buffer_len, stdin))) {
+	verror_put_string("Error reading passphrase");
+	return -1;
+    }
+    i = strlen(buffer)-1;
+    if (buffer[i] == '\n') {
+        buffer[i] = '\0';
+    }
+    return i;
+}
+
 /**********************************************************************
  *
  * API functions
@@ -118,4 +137,8 @@ int myproxy_read_verified_passphrase(char	*buffer,
     return read_passphrase(buffer, buffer_len, PROMPT, 1 /* Verify */);
 }
 
-
+int myproxy_read_passphrase_stdin(char		*buffer,
+				  int		buffer_len)
+{
+    return read_passphrase_stdin(buffer, buffer_len, PROMPT,0 /* No verify */);
+}
