@@ -166,12 +166,6 @@ globus_gram_job_manager_state_machine(
 	request->globus_id = 
 	    globus_l_gram_job_manager_getenv("GLOBUS_ID", "unknown globusid");
 
-	if(request->tcp_port_range)
-	{
-	    globus_libc_setenv("GLOBUS_TCP_PORT_RANGE",
-		               request->tcp_port_range,
-			       GLOBUS_TRUE);
-	}
 	if(!request->globus_location)
 	{
 	    result = globus_location(&request->globus_location);
