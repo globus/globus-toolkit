@@ -447,6 +447,7 @@ case ${host}--$1 in
 	lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
 	   LAC_PROG_CC_GNU($lac_cv_CC,
+	       [],
 	       [
 	    	lac_CFLAGS="-qfullpath $lac_CFLAGS"
 	    	lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
@@ -475,6 +476,7 @@ case ${host}--$1 in
 	lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
 	   LAC_PROG_CC_GNU($lac_cv_CC,
+	       [],
 	       [
 	    	lac_CFLAGS="-qfullpath $lac_CFLAGS"
 	    	lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
