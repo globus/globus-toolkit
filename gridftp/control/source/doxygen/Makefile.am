@@ -9,12 +9,22 @@ all-local: @DOXYFILE@
 install-data-local:
 	@if test ! -z "@DOXYGEN@"; then                     \
 		for dir in `find ./doc/* -type d -print|sed "s,./doc/,,"`; do \
-			$(INSTALL) -d -m 755 \
-				@prefix@/share/doc/@PACKAGE@/$${dir}; \
+			if test -z `echo $${dir}|sed -n "/^man/ p"`; then \
+				$(INSTALL) -d -m 755 \
+					@prefix@/share/doc/@PACKAGE@/$${dir}; \
+			else \
+				$(INSTALL) -d -m 755 \
+					@prefix@/$${dir}; \
+			fi \
 		done; \
 		for file in `find ./doc -type f -print|sed "s,./doc/,,"`; do \
-			$(INSTALL) -m 644 ./doc/$${file} \
-				@prefix@/share/doc/@PACKAGE@/$${file}; \
+			if test -z `echo $${file}|sed -n "/^man/ p"`; then \
+				$(INSTALL) -m 644 ./doc/$${file} \
+					@prefix@/share/doc/@PACKAGE@/$${file};\
+			else \
+				$(INSTALL) -m 644 ./doc/$${file} \
+					@prefix@/$${file};\
+			fi \
 		done \
 	fi
 
