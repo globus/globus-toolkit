@@ -1377,7 +1377,9 @@ globus_callback_space_poll(
         globus_l_callback_blocked_cb,
         &restart_info,
         &restart_index);
-        
+    
+    globus_thread_blocking_callback_disable(&restart_index);
+    
     if(!timestop)
     {
         GlobusTimeAbstimeCopy(l_timestop, globus_i_abstime_zero);
@@ -1426,10 +1428,14 @@ globus_callback_space_poll(
             restart_info.restarted = GLOBUS_FALSE;
             restart_info.callback_info = callback_info;
             
+            globus_thread_blocking_callback_enable(&restart_index);
+            
             callback_info->callback_func(
                 &time_now, restart_info.timeout, callback_info->callback_args);
             
             globus_thread_yield();
+            
+            globus_thread_blocking_callback_disable(&restart_index);
             
             unregister = GLOBUS_FALSE;
             globus_mutex_lock(&i_space->lock);
@@ -1483,15 +1489,15 @@ globus_callback_space_poll(
                      * the main threadm in which case, he shouldnt be calling
                      * for a shutdown
                      */
-                    globus_cond_wait(&i_space->cond, &i_space->lock);
+                    globus_cond_timedwait(
+                        &i_space->cond, &i_space->lock, &next_ready_time);
                 }
                 else if(globus_time_abstime_is_infinity(timestop))
                 {
                     /* we can only get here if queue is empty
                      * and we are blocking forever. 
                      */
-                     globus_cond_timedwait(
-                        &i_space->cond, &i_space->lock, &next_ready_time);
+                     globus_cond_wait(&i_space->cond, &i_space->lock);
                 }
                 else
                 {
