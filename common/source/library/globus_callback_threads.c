@@ -40,7 +40,6 @@ typedef struct
 
 typedef struct
 {
-    globus_callback_space_attr_t        handle;
     globus_callback_space_behavior_t    behavior;
 } globus_l_callback_space_attr_t;
 
@@ -171,26 +170,6 @@ globus_l_callback_space_destructor(
         &globus_l_callback_space_memory, space);
 }
 
-/* 
- * destructor for globus_handle_table.  called whenever the reference for
- * a space attr goes to zero.
- *
- * the globus_l_callback_space_lock should be locked before any accesses to
- * the space attr table
- */
-static
-void
-globus_l_callback_space_attr_destructor(
-    void *                              datum)
-{
-    globus_l_callback_space_attr_t *    attr;
-    
-    attr = (globus_l_callback_space_attr_t *) datum;
-
-    globus_memory_push_node(
-        &globus_l_callback_space_attr_memory, attr);
-}
-
 static
 void *
 globus_l_callback_thread_poll(
@@ -222,10 +201,6 @@ globus_l_callback_activate()
     globus_handle_table_init(
         &globus_l_callback_space_table,
         globus_l_callback_space_destructor);
-
-    globus_handle_table_init(
-        &globus_l_callback_space_attr_table,
-        globus_l_callback_space_attr_destructor);
 
     globus_memory_init(
         &globus_l_callback_info_memory,
@@ -331,7 +306,6 @@ globus_l_callback_deactivate()
      */
     globus_handle_table_destroy(&globus_l_callback_handle_table);
     globus_handle_table_destroy(&globus_l_callback_space_table);
-    globus_handle_table_destroy(&globus_l_callback_space_attr_table);
     
     globus_memory_destroy(&globus_l_callback_info_memory);
     globus_memory_destroy(&globus_l_callback_space_memory);
@@ -869,7 +843,6 @@ globus_callback_space_init(
     globus_callback_space_attr_t        attr)
 {
     globus_l_callback_space_t *         i_space;
-    globus_l_callback_space_attr_t *    i_attr;
     globus_callback_space_behavior_t    behavior;
 
     if(!space)
@@ -878,26 +851,9 @@ globus_callback_space_init(
             "globus_callback_space_init", "space");
     }
 
-    if(attr != GLOBUS_NULL_HANDLE)
+    if(attr)
     {
-        globus_mutex_lock(&globus_l_callback_space_lock);
-        {
-            i_attr = (globus_l_callback_space_attr_t *)
-                globus_handle_table_lookup(
-                    &globus_l_callback_space_attr_table, attr);
-            
-            if(i_attr)
-            {
-                behavior = i_attr->behavior;
-            }
-        }
-        globus_mutex_unlock(&globus_l_callback_space_lock);
-        
-        if(!i_attr)
-        {
-            return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE_ATTR(
-                "globus_callback_space_init");
-        }
+        behavior = attr->behavior;
     }
     else
     {
@@ -1029,12 +985,6 @@ globus_callback_space_attr_init(
     {
         i_attr = (globus_l_callback_space_attr_t *)
             globus_memory_pop_node(&globus_l_callback_space_attr_memory);
-        
-        if(i_attr)
-        {
-            i_attr->handle = globus_handle_table_insert(
-                &globus_l_callback_space_attr_table, i_attr, 1);
-        }
     }
     globus_mutex_unlock(&globus_l_callback_space_lock);
     
@@ -1046,7 +996,7 @@ globus_callback_space_attr_init(
     
     i_attr->behavior = GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED;
     
-    *attr = i_attr->handle;
+    *attr = i_attr;
         
     return GLOBUS_SUCCESS;
 }
@@ -1055,27 +1005,17 @@ globus_result_t
 globus_callback_space_attr_destroy(
     globus_callback_space_attr_t        attr)
 {
-    globus_l_callback_space_attr_t *    i_attr;
+    if(!attr)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_attr_destroy", "attr");
+    }
     
     globus_mutex_lock(&globus_l_callback_space_lock);
     {
-        i_attr = (globus_l_callback_space_attr_t *)
-            globus_handle_table_lookup(
-                &globus_l_callback_space_attr_table, attr);
-        
-        if(i_attr)
-        {
-            globus_handle_table_decrement_reference(
-                &globus_l_callback_space_attr_table, attr);
-        }
+        globus_memory_push_node(&globus_l_callback_space_attr_memory, attr);
     }
     globus_mutex_unlock(&globus_l_callback_space_lock);
-
-    if(!i_attr)
-    {
-        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE_ATTR(
-            "globus_callback_space_attr_destroy");
-    }
     
     return GLOBUS_SUCCESS;
 }
@@ -1085,8 +1025,12 @@ globus_callback_space_attr_set_behavior(
     globus_callback_space_attr_t        attr,
     globus_callback_space_behavior_t    behavior)
 {
-    globus_l_callback_space_attr_t *    i_attr;
-
+    if(!attr)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_attr_set_behavior", "attr");
+    }
+    
     if(behavior != GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED ||
         behavior != GLOBUS_CALLBACK_SPACE_BEHAVIOR_THREADED)
     {
@@ -1094,24 +1038,7 @@ globus_callback_space_attr_set_behavior(
             "globus_callback_space_attr_set_behavior", "behavior");
     }
     
-    globus_mutex_lock(&globus_l_callback_space_lock);
-    {
-        i_attr = (globus_l_callback_space_attr_t *)
-            globus_handle_table_lookup(
-                &globus_l_callback_space_attr_table, attr);
-    
-        if(i_attr)
-        {
-            i_attr->behavior = behavior;
-        }
-    }
-    globus_mutex_unlock(&globus_l_callback_space_lock);
-    
-    if(!i_attr)
-    {
-        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE_ATTR(
-            "globus_callback_space_attr_set_behavior");
-    }
+    attr->behavior = behavior;
     
     return GLOBUS_SUCCESS;
 }
@@ -1121,33 +1048,20 @@ globus_callback_space_attr_get_behavior(
     globus_callback_space_attr_t        attr,
     globus_callback_space_behavior_t *  behavior)
 {
-    globus_l_callback_space_attr_t *    i_attr;
-
+    if(!attr)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_attr_get_behavior", "attr");
+    }
+    
     if(!behavior)
     {
         return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
             "globus_callback_space_attr_get_behavior", "behavior");
     }
     
-    globus_mutex_lock(&globus_l_callback_space_lock);
-    {
-        i_attr = (globus_l_callback_space_attr_t *)
-            globus_handle_table_lookup(
-                &globus_l_callback_space_attr_table, attr);
+    *behavior = attr->behavior;
     
-        if(i_attr)
-        {
-            *behavior = i_attr->behavior;
-        }
-    }
-    globus_mutex_unlock(&globus_l_callback_space_lock);
-    
-    if(!i_attr)
-    {
-        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE_ATTR(
-            "globus_callback_space_attr_set_behavior");
-    }
-
     return GLOBUS_SUCCESS;
 }
 

@@ -100,10 +100,10 @@ typedef int                             globus_callback_handle_t;
 typedef int                             globus_callback_space_t;
 
 /**
- * Handle for a space attr.  This handle can be copied or compared
- * and represented as NULL with GLOBUS_NULL_HANDLE
+ * Handle for a space attr.  This handle can be copied
+ * and represented as NULL with GLOBUS_NULL
  */
-typedef int                             globus_callback_space_attr_t;
+typedef struct globus_l_callback_space_attr_t * globus_callback_space_attr_t;
 
 /* @} */
 
@@ -655,14 +655,13 @@ typedef enum
  *        with globus_callback_space_destroy()
  *
  * @param attr
- *        a space attr descibing desired behaviors.  If GLOBUS_NULL_HANDLE, 
+ *        a space attr descibing desired behaviors.  If GLOBUS_NULL, 
  *        the default behavior of GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED 
  *        is assumed.  This attr is copied into the space, so it is acceptable
  *        to destroy the attr as soon as it is no longer needed
  *
  * @return
  *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT on NULL space
- *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR
  *        - GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC
  *        - GLOBUS_SUCCESS
  *
@@ -750,7 +749,7 @@ globus_callback_space_attr_init(
  *        globus_callback_space_attr_init()
  *
  * @return
- *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT on NULL attr
  *        - GLOBUS_SUCCESS
  * 
  * @see globus_callback_space_attr_init()
@@ -769,7 +768,6 @@ globus_callback_space_attr_destroy(
  *        desired behavior
  *
  * @return
- *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR
  *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT
  *        - GLOBUS_SUCCESS
  * 
@@ -793,7 +791,7 @@ globus_callback_space_attr_set_behavior(
  *        storage for the behavior
  *
  * @return
- *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT
  *        - GLOBUS_SUCCESS
  */
 globus_result_t

@@ -44,8 +44,8 @@ typedef struct
     globus_handle_destructor_t          destructor;
 } globus_handle_table_t;
 
-#define GLOBUS_NULL_HANDLE -1
-#define GLOBUS_HANDLE_TABLE_NO_HANDLE -1
+#define GLOBUS_NULL_HANDLE 0
+#define GLOBUS_HANDLE_TABLE_NO_HANDLE 0
 
 int
 globus_handle_table_init(

@@ -54,7 +54,7 @@ globus_handle_table_init(
         return GLOBUS_FAILURE;
     }
 
-    handle_table->next_slot = 0;
+    handle_table->next_slot = GLOBUS_NULL_HANDLE + 1;
     handle_table->table_size = GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE;
     handle_table->inactive = GLOBUS_NULL;
     handle_table->destructor = destructor;
@@ -91,7 +91,7 @@ globus_handle_table_destroy(
     table = handle_table->table;
     destructor = handle_table->destructor;
     i = handle_table->next_slot;
-    while(i--)
+    while(--i > GLOBUS_NULL_HANDLE)
     {
         if(table[i])
         {
@@ -210,7 +210,7 @@ globus_handle_table_increment_reference_by(
         return GLOBUS_FALSE;
     }
 
-    if(handle >= 0 && handle < handle_table->next_slot)
+    if(handle > GLOBUS_NULL_HANDLE && handle < handle_table->next_slot)
     {
         entry = handle_table->table[handle];
     }
@@ -256,7 +256,7 @@ globus_handle_table_decrement_reference(
         return GLOBUS_FALSE;
     }
 
-    if(handle >= 0 && handle < handle_table->next_slot)
+    if(handle > GLOBUS_NULL_HANDLE && handle < handle_table->next_slot)
     {
         entry = handle_table->table[handle];
     }
@@ -314,7 +314,7 @@ globus_handle_table_increment_reference(
         return GLOBUS_FALSE;
     }
 
-    if(handle >= 0 && handle < handle_table->next_slot)
+    if(handle > GLOBUS_NULL_HANDLE && handle < handle_table->next_slot)
     {
         entry = handle_table->table[handle];
     }
@@ -360,7 +360,7 @@ globus_handle_table_lookup(
         return GLOBUS_NULL;
     }
 
-    if(handle >= 0 && handle < handle_table->next_slot)
+    if(handle > GLOBUS_NULL_HANDLE && handle < handle_table->next_slot)
     {
         entry = handle_table->table[handle];
     }
