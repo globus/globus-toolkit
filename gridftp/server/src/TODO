@@ -10,6 +10,7 @@ protocol:
 -- reply codes - verify.
 -- disable perf markers in mode S (if we must)
 ** define reply errors properly for going over ipc
+-- add blocksize and stripeblocksize via client (diableable)
 
 signal handling:
 -- SIGINT needs to handle data-node shutdown
@@ -19,7 +20,7 @@ striping:
 -- verify _get_read_range()
 -- consolidate some restart ranges instead of sending one from
     every stripe
-    
+
 ipc:
 XX connect backwards
 

@@ -28,7 +28,8 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"pw_file", "pw_file", NULL, "--password-file", "-pf", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
  {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, 0},
  {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, 0},
- {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE},
+ {"nofork", "nofork", NULL, "-nofork", "-nf", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"node_authorizes", NULL, NULL, "--node-authorizes", NULL, GLOBUS_L_GFS_CONFIG_INT, -1},
  {"detach", "detach", NULL, "-detach", "-S", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
@@ -44,6 +45,8 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"cas","cas",NULL, "-cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE},
  {"sync", "sync",NULL, "-sync", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"chdir_to", "chdir_to",NULL, "-chdir-to", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
+ {"no_chdir", "no_chdir",NULL, "-no-chdir", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
  {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
  {"login_msg", "login_msg", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
@@ -72,9 +75,6 @@ static const globus_l_gfs_config_option_t option_list[] =
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
 
 static globus_hashtable_t               option_table;
-
-
-/* XXX leak when strduping and overwriting string values... never free the old ones */
 
 static
 int
@@ -496,6 +496,16 @@ globus_l_gfs_config_misc()
     {
         globus_l_gfs_config_set("daemon", GLOBUS_TRUE, NULL);
     } 
+    if(globus_i_gfs_config_bool("nofork"))
+    {
+        globus_l_gfs_config_set("daemon", GLOBUS_FALSE, NULL);
+        globus_l_gfs_config_set("no_chdir", GLOBUS_TRUE, NULL);
+    }
+    if(globus_i_gfs_config_bool("inetd"))
+    {
+        globus_l_gfs_config_set("daemon", GLOBUS_FALSE, NULL);
+        globus_l_gfs_config_set("detach", GLOBUS_FALSE, NULL);
+    }
     
     if((value = globus_i_gfs_config_string("hostname")) != GLOBUS_NULL)
     {

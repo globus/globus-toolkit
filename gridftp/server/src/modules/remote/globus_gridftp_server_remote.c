@@ -1150,7 +1150,7 @@ globus_l_gfs_remote_data_destroy(
     while(!globus_list_empty(list))
     {
         node_info = (globus_l_gfs_remote_node_info_t *) 
-            globus_list_remove(&list, list);
+            globus_list_first(list);
                 
         result = globus_gfs_ipc_request_data_destroy(
             node_info->ipc_handle,
@@ -1161,6 +1161,7 @@ globus_l_gfs_remote_data_destroy(
         }
 
         globus_l_gfs_remote_node_release(my_handle, node_info);
+        list = globus_list_rest(list);
     }
                     
     return;
