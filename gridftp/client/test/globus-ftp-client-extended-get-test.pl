@@ -8,6 +8,7 @@ use strict;
 use POSIX;
 use Test;
 use FtpTestLib;
+use FileHandle;
 
 my $test_exec = './globus-ftp-client-extended-get-test';
 my @tests;
