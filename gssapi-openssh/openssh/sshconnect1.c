@@ -530,14 +530,14 @@ try_krb5_authentication(krb5_context *context, krb5_auth_context *auth_context)
 		goto out;
 	}
 
-#ifndef HEIMDAL	
+#ifndef HEIMDAL
 	problem = krb5_auth_con_setflags(*context, *auth_context,
 					 KRB5_AUTH_CONTEXT_RET_TIME);
 	if (problem) {
-		debug("Kerberos v5: krb5_auth_con_setflags failed");
+		debug("Keberos v5: krb5_auth_con_setflags failed");
 		ret = 0;
 		goto out;
-	}				 
+	}
 #endif
 
 	tkfile = krb5_cc_default_name(*context);
@@ -618,9 +618,9 @@ try_krb5_authentication(krb5_context *context, krb5_auth_context *auth_context)
 #ifdef HEIMDAL
 		krb5_data_free(&ap);
 #else
-		xfree(ap.data);
-#endif	
-	
+		krb5_free_data_contents(*context, &ap);
+#endif
+
 	return (ret);
 }
 
@@ -643,21 +643,17 @@ send_krb5_tgt(krb5_context context, krb5_auth_context auth_context)
 	memset(&outbuf, 0, sizeof(outbuf));
 
 	fd = packet_get_connection_in();
-	
-#ifdef HEIMDAL	
+
+#ifdef HEIMDAL
 	problem = krb5_auth_con_setaddrs_from_fd(context, auth_context, &fd);
-	if (problem)
-		goto out;
 #else
-        problem = krb5_auth_con_genaddrs(context, auth_context, fd,
+	problem = krb5_auth_con_genaddrs(context, auth_context, fd,
 			KRB5_AUTH_CONTEXT_GENERATE_REMOTE_FULL_ADDR |
 			KRB5_AUTH_CONTEXT_GENERATE_LOCAL_FULL_ADDR);
-	if (problem) {
-		debug("krb5_auth_con_genaddrs: %.100s", error_message(problem));
-                goto out;
-        }
 #endif
-	
+	if (problem)
+		goto out;
+
 	problem = krb5_cc_default(context, &ccache);
 	if (problem)
 		goto out;
@@ -665,6 +661,8 @@ send_krb5_tgt(krb5_context context, krb5_auth_context auth_context)
 	problem = krb5_cc_get_principal(context, ccache, &creds.client);
 	if (problem)
 		goto out;
+
+	remotehost = get_canonical_hostname(1);
 	
 #ifdef HEIMDAL
 	problem = krb5_build_principal(context, &creds.server,
@@ -673,37 +671,29 @@ send_krb5_tgt(krb5_context context, krb5_auth_context auth_context)
 #else
 	problem = krb5_build_principal(context, &creds.server,
 	    creds.client->realm.length, creds.client->realm.data,
-	    "krbtgt", creds.client->realm.data, NULL);
+	    "host", remotehost, NULL);
 #endif
-
 	if (problem)
 		goto out;
 
 	creds.times.endtime = 0;
-	
-#ifdef HEIMDAL	
+
+#ifdef HEIMDAL
 	flags.i = 0;
 	flags.b.forwarded = 1;
 	flags.b.forwardable = krb5_config_get_bool(context,  NULL,
 	    "libdefaults", "forwardable", NULL);
-
-	remotehost = get_canonical_hostname(1);
-
 	problem = krb5_get_forwarded_creds(context, auth_context,
 	    ccache, flags.i, remotehost, &creds, &outbuf);
-	if (problem)
-		goto out;
 #else
 	forwardable = 1;
-
-	remotehost = get_canonical_hostname(1);
-
-        problem = krb5_fwd_tgt_creds (context, auth_context, 
-            remotehost, creds.client, creds.server, ccache, forwardable,
-            &outbuf);
-        if (problem)
-        	goto out;
+	problem = krb5_fwd_tgt_creds(context, auth_context, remotehost,
+	    creds.client, creds.server, ccache, forwardable, &outbuf);
 #endif
+
+	if (problem)
+		goto out;
+
 	packet_start(SSH_CMSG_HAVE_KERBEROS_TGT);
 	packet_put_string((char *)outbuf.data, outbuf.length);
 	packet_send();

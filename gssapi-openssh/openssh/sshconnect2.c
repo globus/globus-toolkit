@@ -79,31 +79,23 @@ void
 ssh_kex2(char *host, struct sockaddr *hostaddr)
 {
 	Kex *kex;
+#ifdef GSSAPI
+	char *orig, *gss;
+	int len;
+#endif
 
 	xxx_host = host;
 	xxx_hostaddr = hostaddr;
 
 #ifdef GSSAPI
-	/* This is a bit of a nasty kludge. This adds the GSSAPI included
-	 * key exchange methods to the top of the list, allowing the GSSAPI
-	 * code to decide whether each one should be included or not.
-	 */	
-	{
-		char *orig, *gss;
-		int len;
-		orig = myproposal[PROPOSAL_KEX_ALGS];
-		gss = ssh_gssapi_mechanisms(0,host);
-		if (gss) {
-		   len = strlen(orig)+strlen(gss)+2;
-		   myproposal[PROPOSAL_KEX_ALGS]=xmalloc(len);
-		   snprintf(myproposal[PROPOSAL_KEX_ALGS],len,"%s,%s",gss,orig);
-		   /* If we've got GSSAPI algorithms, then we also support the
-		    * 'null' hostkey, as a last resort */
-		   orig=myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS];
-		   len = strlen(orig)+sizeof(",null");
-		   myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]=xmalloc(len);
-		   snprintf(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS],len,"%s,null",orig);  
-		}
+	/* Add the GSSAPI mechanisms currently supported on this client to
+	 * the key exchange algorithm proposal */
+	orig = myproposal[PROPOSAL_KEX_ALGS];
+	gss = ssh_gssapi_mechanisms(0,host);
+	if (gss) {
+	   len = strlen(orig)+strlen(gss)+2;
+	   myproposal[PROPOSAL_KEX_ALGS]=xmalloc(len);
+	   snprintf(myproposal[PROPOSAL_KEX_ALGS],len,"%s,%s",gss,orig);
 	}
 #endif
 
@@ -133,6 +125,17 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	if (options.hostkeyalgorithms != NULL)
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
 		    options.hostkeyalgorithms;
+
+#ifdef GSSAPI
+        /* If we've got GSSAPI algorithms, then we also support the
+         * 'null' hostkey, as a last resort */
+	if (gss) {
+		orig=myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS];
+		len = strlen(orig)+sizeof(",null");
+		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]=xmalloc(len);
+		snprintf(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS],len,"%s,null",orig);  
+	}
+#endif
 
 	/* start key exchange */
 	kex = kex_setup(myproposal);
@@ -215,12 +218,11 @@ int	userauth_kbdint(Authctxt *);
 int	userauth_hostbased(Authctxt *);
 
 #ifdef GSSAPI
-int     userauth_external(Authctxt *authctxt);
-int     userauth_gssapi(Authctxt *authctxt);
-void    input_gssapi_response(int, u_int32_t, void *);
-void    input_gssapi_token(int, u_int32_t, void *);
-
-int     gss_host_key_ok=0;
+int	userauth_external(Authctxt *authctxt);
+int	userauth_gssapi(Authctxt *authctxt);
+void	input_gssapi_response(int type, u_int32_t plen, void *ctxt);
+void	input_gssapi_token(int type, u_int32_t plen, void *ctxt);
+void	input_gssapi_hash(int type, u_int32_t plen, void *ctxt);
 #endif
 
 void	userauth(Authctxt *, char *);
@@ -498,6 +500,8 @@ userauth_gssapi(Authctxt *authctxt)
 	 */	
 	if (tries++>0) return 0;
 
+	if (datafellows & SSH_OLD_GSSAPI) return 0;
+	
         gssctxt=xmalloc(sizeof(Gssctxt));
 
 	/* Initialise as much of our context as we can, so failures can be

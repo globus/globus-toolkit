@@ -42,6 +42,7 @@
 #include "session.h"
 #include "dispatch.h"
 #include "servconf.h"
+#include "compat.h"
 
 #include "ssh-gss.h"
 
@@ -403,7 +404,7 @@ ssh_gssapi_do_child(char ***envp, u_int *envsizep)
 #endif
 	case GSS_LAST_ENTRY:
 		debug("No GSSAPI credentials stored");
-		
+		break;
 	default:
 		log("ssh_gssapi_do_child: Unknown mechanism");
 	}
@@ -464,6 +465,12 @@ userauth_gssapi(Authctxt *authctxt)
 	
 	if (!authctxt->valid || authctxt->user == NULL)
 		return 0;
+		
+	if (datafellows & SSH_OLD_GSSAPI) {
+		debug("Early drafts of GSSAPI userauth not supported");
+		return 0;
+	}
+	
 	mechs=packet_get_int();
 	if (mechs==0) {
 		debug("Mechanism negotiation is not supported");

@@ -402,13 +402,15 @@ char **fetch_pam_environment(void)
 int do_pam_putenv(char *name, char *value) {
 	char *compound;
 	int ret=1;
-	
+
+#ifdef HAVE_PAM_PUTENV	
 	compound=xmalloc(strlen(name)+strlen(value)+2);
 	if (compound) {
 		sprintf(compound,"%s=%s",name,value);
 		ret=pam_putenv(__pamh,compound);
 		xfree(compound);
 	}
+#endif
 	return(ret);
 }
 
