@@ -67,6 +67,7 @@ proxy credential for the user.
 
 3. Authorization
 ----------------------
+
 The myproxy-server allows both the server administrator and users who
 upload credentials to control who is authorized to retrieve the
 credentials.  The server administrator sets a server-wide policy that
