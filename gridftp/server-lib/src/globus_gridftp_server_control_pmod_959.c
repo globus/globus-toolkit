@@ -169,8 +169,7 @@ globus_i_gsc_pmod_959_add_commands(
  *  this protocmodule insists that ftp_cmd is in the stack and that
  *  it is placed in a mode that will create buffers for the user.
  */
-static globus_byte_t *                      globus_l_gsc_959_fake_buffer 
-    = (globus_byte_t *) 0x1;
+static globus_byte_t                        globus_l_gsc_959_fake_buffer[1];
 static globus_size_t                        globus_l_gsc_959_fake_buffer_len 
     = 1;
 
@@ -1118,7 +1117,6 @@ globus_l_gsc_959_final_reply_cb(
 
     globus_mutex_lock(&handle->mutex);
     {
-        globus_free(buffer);
         handle->ref--;
 
         if(result != GLOBUS_SUCCESS)
@@ -1252,7 +1250,6 @@ globus_l_gsc_959_intermediate_reply_cb(
 
     globus_mutex_lock(&handle->mutex);
     {
-        globus_free(buffer);
         handle->ref--;
 
         globus_assert(handle->ref != 0);

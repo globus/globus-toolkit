@@ -1945,6 +1945,11 @@ globus_l_gsc_pmod_959_data_cb(
         globus_gsc_pmod_959_finished_op(
             wrapper->op, "226 Transfer Complete.\r\n");
     }
+
+    globus_free(wrapper->mod_name);
+    globus_free(wrapper->mod_parms);
+    globus_free(wrapper->path);
+    globus_free(wrapper);
 }
 
 static void
@@ -2044,7 +2049,6 @@ globus_l_gsc_pmod_959_cmd_stor_retr(
         strcasecmp(wrapper->cmd, "ERET") == 0)
     {
         mod_name = globus_malloc(strlen(full_command));
-        mod_parm = globus_malloc(strlen(full_command));
         sc = sscanf(full_command, "%*s %s",
             mod_name);
         if(sc != 1)

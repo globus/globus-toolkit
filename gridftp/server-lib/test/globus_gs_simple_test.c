@@ -197,16 +197,16 @@ main(
      */
     res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
-    res = globus_xio_driver_load("queue", &q_driver);
+/*    res = globus_xio_driver_load("queue", &q_driver);
     test_res(res, __LINE__);
-    res = globus_xio_driver_load("ftp_cmd", &ftp_driver);
+*/    res = globus_xio_driver_load("ftp_cmd", &ftp_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_init(&stack, NULL);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
     test_res(res, __LINE__);
-    res = globus_xio_stack_push_driver(stack, q_driver);
+/*    res = globus_xio_stack_push_driver(stack, q_driver);
     test_res(res, __LINE__);
-    res = globus_xio_stack_push_driver(stack, ftp_driver);
+*/    res = globus_xio_stack_push_driver(stack, ftp_driver);
     test_res(res, __LINE__);
 
     res = globus_xio_server_create(&server, NULL, stack);

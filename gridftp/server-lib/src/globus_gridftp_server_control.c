@@ -264,16 +264,21 @@ globus_gridftp_server_control_start(
 
         globus_fifo_init(&i_server->data_q);
 
-        if(i_server->modes == NULL)
+        if(i_server->modes != NULL)
         {
             globus_free(i_server->modes);
         }
-        if(i_server->types == NULL)
+        if(i_server->types != NULL)
         {
             globus_free(i_server->types);
         }
         i_server->modes = globus_libc_strdup(i_attr->modes);
         i_server->types = globus_libc_strdup(i_attr->types);
+
+        if(i_server->cwd != NULL)
+        {
+            globus_free(i_server->cwd);
+        }
         i_server->cwd = globus_libc_strdup(i_attr->base_dir);
 
         /* can bypass _AUTH state ad go directly to _OPEN */
@@ -1187,6 +1192,14 @@ globus_gridftp_server_control_finished_data(
         res,
         i_op->user_arg);
 
+    if(i_op->mod_name != NULL)
+    {
+        globus_free(i_op->mod_name);
+    }
+    if(i_op->mod_parms != NULL)
+    {
+        globus_free(i_op->mod_parms);
+    }
     globus_l_gsc_op_destroy(i_op);
     globus_mutex_lock(&i_server->mutex);
     {
