@@ -883,7 +883,7 @@ globus_ftp_client_restart_plugin_init(
 		GLOBUS_FTP_CLIENT_MODULE->module_name,
 		myname));
     }
-
+        
     d =
 	globus_libc_malloc(sizeof(globus_l_ftp_client_restart_plugin_t));
 
@@ -919,6 +919,10 @@ globus_ftp_client_restart_plugin_init(
 	d->backoff = GLOBUS_TRUE;
 	d->interval.tv_sec = 1;
 	d->interval.tv_usec = 0;
+    }
+    else
+    {
+        d->backoff = GLOBUS_FALSE;
     }
 
     if(deadline)
