@@ -833,7 +833,7 @@ fi
 GLOBUS_DEBUG="$lac_cv_debug"
 AC_SUBST(GLOBUS_DEBUG)
 
-LAC_PROG_CC_GNU([$lac_cv_CC],
+LAC_PROG_CC_GNU([$lac_cv_CC $lac_CFLAGS],
 [
     lac_CFLAGS="$lac_CFLAGS -Wall"
 ],
