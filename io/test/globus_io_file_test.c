@@ -97,5 +97,7 @@ main(int argc, char **argv)
 
     globus_module_deactivate(GLOBUS_IO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
+
+    return 0;
 }
 /* main() */

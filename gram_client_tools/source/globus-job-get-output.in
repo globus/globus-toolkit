@@ -169,7 +169,7 @@ tmpfile=${local_tmpdir}/globus_job_get_output.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$
 
 # redirect stderr to file so we can see if error occurs after the fact
 ${bindir}/globusrun -o -r "$resource" 2> $tmpfile \
-    "&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"file=\`\${bindir}/globus-gass-cache -query x-gass-cache://${jobid}${stream}\`; if test -r \"\"\$file\"\" ; then ${command} \$file ; else echo Invalid job id. 1>&2; fi\")"
+    "&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"file=\`\${bindir}/globus-gass-cache -query -t anExtraTag x-gass-cache://${jobid}${stream}\`; if test -r \"\"\$file\"\" ; then ${command} \$file ; else echo Invalid job id. 1>&2; fi\")"
 
 status=$?
 

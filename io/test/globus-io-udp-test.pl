@@ -13,8 +13,8 @@ use Cwd;
 my @tests;
 my @todo;
 
-my $server_prog = 'globus_io_udp_test_server';
-my $client_prog = 'globus_io_udp_test_client';
+my $server_prog = './globus_io_udp_test_server';
+my $client_prog = './globus_io_udp_test_client';
 
 sub basic_func
 {

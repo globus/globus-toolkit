@@ -40,11 +40,9 @@ globus_l_gsi_gssapi_error_strings[GLOBUS_GSI_GSSAPI_ERROR_LAST] =
 /* 20 */  "Cannot verify message date",
 /* 21 */  "Requested mechanism not supported",
 /* 22 */  "Unable to add extension",
-/* 23 */  "remote side did not "
-          "like my creds for unknown reason\n     "
-          "check server logs for details",
+/* 23 */  "Unable to verify remote side's credentials",
 /* 24 */  "Out of memory",
-/* 25 */   "Bad GSS name",
+/* 25 */  "Bad GSS name",
 /* 26 */  "Cert chain not in signing order",
 /* 27 */  "Error with GSI credential",
 /* 28 */  "Error with openssl",
@@ -56,7 +54,8 @@ globus_l_gsi_gssapi_error_strings[GLOBUS_GSI_GSSAPI_ERROR_LAST] =
 /* 34 */  "Error could not encrypt message",
 /* 35 */  "Error with buffer",
 /* 36 */  "Error getting peer credential",
-/* 37 */  "Error unknown option"
+/* 37 */  "Error unknown option",
+/* 38 */  "Error creating error object"
 };
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -70,6 +69,7 @@ globus_i_gsi_gssapi_openssl_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -84,13 +84,18 @@ globus_i_gsi_gssapi_openssl_error_result(
         globus_error_wrap_openssl_error(
             GLOBUS_GSI_GSSAPI_MODULE,
             error_type,
-            "%s:%d: %s: %s",
+            "%s:%d: %s: %s%s%s",
             filename,
             line_number,
             function_name,
-            globus_l_gsi_gssapi_error_strings[error_type]);
+            globus_l_gsi_gssapi_error_strings[error_type],
+            short_desc ? ": " : "",
+            short_desc ? short_desc : "");
     
-    globus_error_set_long_desc(error_object, long_desc);
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
 
@@ -104,6 +109,7 @@ globus_i_gsi_gssapi_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -119,9 +125,11 @@ globus_i_gsi_gssapi_error_result(
             GLOBUS_GSI_GSSAPI_MODULE,
             NULL,
             GLOBUS_GSI_GSSAPI_ERROR_MINOR_STATUS(minor_status),
-            "%s:%d: %s: %s",
+            "%s:%d: %s: %s%s%s",
             filename, line_number, function_name,
-            globus_l_gsi_gssapi_error_strings[minor_status]);
+            globus_l_gsi_gssapi_error_strings[minor_status],
+            short_desc ? ": " : "",
+            short_desc ? short_desc : "");
 
     if(long_desc)
     {
@@ -141,6 +149,7 @@ globus_i_gsi_gssapi_error_chain_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_result_t                     result;
@@ -156,9 +165,11 @@ globus_i_gsi_gssapi_error_chain_result(
             GLOBUS_GSI_GSSAPI_MODULE,
             globus_error_get(chain_result),
             error_type,
-            "%s:%d: %s: %s",
+            "%s:%d: %s: %s%s%s",
             filename, line_number, function_name,
-            globus_l_gsi_gssapi_error_strings[error_type]);
+            globus_l_gsi_gssapi_error_strings[error_type],
+            short_desc ? ": " : "",
+            short_desc ? short_desc : "");
         
     if(long_desc)
     {    
@@ -166,6 +177,55 @@ globus_i_gsi_gssapi_error_chain_result(
     }
 
     result = globus_error_put(error_object);
+
+    GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
+    return result;
+}
+
+globus_result_t
+globus_i_gsi_gssapi_error_join_chains_result(
+    globus_result_t                     outter_error,
+    globus_result_t                     inner_error)
+{
+    globus_result_t                     result;
+    globus_object_t *                   result_error_obj = NULL;
+    globus_object_t *                   outter_error_obj = NULL;
+    globus_object_t *                   inner_error_obj = NULL;
+    globus_object_t *                   temp_error_obj = NULL;
+    static char *                       _function_name_ =
+        "globus_i_gsi_gssapi_error_join_chains";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+
+    outter_error_obj = globus_error_get(outter_error);
+    inner_error_obj = globus_error_get(inner_error);
+    if(outter_error_obj && inner_error_obj)
+    {
+        temp_error_obj = outter_error_obj;
+        while(globus_error_get_cause(temp_error_obj))
+        {
+            temp_error_obj = globus_error_get_cause(temp_error_obj);
+        }
+
+        temp_error_obj = globus_error_initialize_base(temp_error_obj,
+                                                      globus_error_get_source(temp_error_obj),
+                                                      inner_error_obj);
+        result_error_obj = outter_error_obj;
+    }
+    else if(inner_error_obj)
+    {
+        result_error_obj = inner_error_obj;
+    }
+    else
+    {
+        result_error_obj = 
+            globus_error_construct_error(
+                GLOBUS_GSI_GSSAPI_MODULE,
+                NULL,
+                GLOBUS_GSI_GSSAPI_ERROR_CREATING_ERROR_OBJ,
+                ("Couldn't join inner and outter error chains"));
+    }
+
+    result = globus_error_put(result_error_obj);
 
     GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
     return result;

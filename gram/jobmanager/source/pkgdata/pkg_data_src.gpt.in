@@ -16,9 +16,9 @@
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_core" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_gass_cache" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gram_protocol" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_gram_protocol" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
-      <Dependency Name="globus_ftp_client" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_ftp_client" > <Version > <Simple_Version Major="1" /> </Version> </Dependency>
       <Dependency Name="globus_gass_transfer" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_io" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_rsl" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
@@ -30,9 +30,9 @@
     <Source_Dependencies Type="pgm_link" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_gass_cache" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gram_protocol" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_ftp_client" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_gram_protocol" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+      <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+      <Dependency Name="globus_ftp_client" > <Version > <Simple_Version Major="1" /> </Version> </Dependency>
       <Dependency Name="globus_gass_transfer" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_io" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_rsl" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>

@@ -1216,7 +1216,7 @@ redo:
 
 	    result = globus_ftp_control_local_dcau(target->control_handle,
 						   &target->dcau,
-                          target->control_handle->cc_handle.auth_info.delegated_credential_handle);
+                          target->control_handle->cc_handle.auth_info.credential_handle);
 	    if(result != GLOBUS_SUCCESS)
 	    {
 		goto result_fault;

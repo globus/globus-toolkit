@@ -54,7 +54,7 @@ EOF
     Options:
 	-help, -usage           Displays usage
         -version                Displays version
-        -resource               Cleanup job using the specified resource
+        -resource         (-r)  Cleanup job using the specified resource
                                 manager
 	-force            (-f)  Do not ask user to confirm ${action}
 	-quiet            (-q)  Quiet ${action} (no output, implies -f)
@@ -97,7 +97,7 @@ while [ -n "$1" ]; do
 	    force=yes
 	    quiet=yes
 	    ;;
-        -resource)
+        -r | -resource)
             if [ -z "$2" ]; then
                 globus_args_option_error "$1" "need a resource contact string"
             fi
@@ -187,10 +187,12 @@ case "${action}:${answer}" in
 
 	# Eeeech... ugly...
 	#
-	myrsl="&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"\$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stdout ; \$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stderr\")"
-	${bindir}/globusrun -o -r "${resource}" "${myrsl}"
+	myrsl="&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"bad=0; \$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stdout >/dev/null 2>/dev/null; if test \$? != 0; then bad=1; fi ; \$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stderr  >/dev/null 2>/dev/null; if test \$? != 0; then bad=1; fi; echo \$bad;\")"
+	output=`${bindir}/globusrun -o -r "${resource}" "${myrsl}"`
+	status=$?
 
-	if [ $? -ne 0 ]; then
+	if [ $status -ne 0 ] || [ "$output" = "1" ]; then
+	    echo "Could not clean up job."
 	    exit 1
 	fi
 	if [ ${quiet} = no ]; then

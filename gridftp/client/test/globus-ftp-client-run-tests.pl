@@ -45,7 +45,7 @@ if(defined($runserver))
     $server_pid = setup_server();
 }
 
-if(0 != system("grid-proxy-info -exists -hours 2") / 256)
+if(0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
 {
     print "Security proxy required to run the tests.\n";
     exit 1;
@@ -59,14 +59,23 @@ my ($dest_host, $dest_file) = setup_remote_dest();
 if(0 != system("./globus-ftp-client-get-test -s gsiftp://$source_host$source_file  >/dev/null 2>&1") / 256)
 {
     print "Sanity check of source (gsiftp://$source_host$source_file) failed.\n";
-    kill(-9,getpgrp($server_pid));
+    if(defined($server_pid))
+    {
+        kill(9,$server_pid);
+    }
+    
     exit 1;
 }
 if(0 != system("./globus-ftp-client-put-test -d gsiftp://$dest_host$dest_file < $local_copy2 ") / 256)
 {
     print "Sanity check of local source ($local_copy2) to dest (gsiftp://$dest_host$dest_file) failed.\n";
     clean_remote_file($dest_host, $dest_file);
-    kill(-9,getpgrp($server_pid));
+
+    if(defined($server_pid))
+    {
+        kill(9,$server_pid);
+    }
+    
     exit 1;
 }
 clean_remote_file($dest_host, $dest_file);
@@ -91,13 +100,16 @@ sub setup_server()
     my $server_pid;
     my $server_prog = "$globus_location/sbin/in.ftpd";
     my $server_host = "localhost";
-    my $server_port = 3131;
+    my $server_port = 0;
     my $server_args = "-a -s -p $server_port";
     my $subject;
     
-    $ENV{X509_CERT_DIR} = cwd();
-    $ENV{X509_USER_PROXY} = "testcred.pem";
-    
+    if(0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
+    {
+        $ENV{X509_CERT_DIR} = cwd();
+        $ENV{X509_USER_PROXY} = "testcred.pem";
+    }
+
     system('chmod go-rw testcred.pem');
      
     $subject = `grid-proxy-info -subject`;
@@ -112,17 +124,26 @@ sub setup_server()
     }
     
     $server_pid = open(SERVER, "$server_prog $server_args |");
-    
+     
     if($server_pid == -1)
     {
         print "Unable to start server\n";
         exit 1;
     }
+
+    select((select(SERVER), $| = 1)[0]);
+    $server_port = <SERVER>;
+    $server_port =~ s/Accepting connections on port (\d+)/\1/;
+    chomp($server_port);
+
+    # sleep a second, some hosts are slow....
+
+    sleep 5;
     
     $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
     $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
     $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
-    
+
     return $server_pid;
 }
 

@@ -39,7 +39,7 @@ test1(int argc, char **argv)
     int                                 buf_size = 1024;
     char *                              host;
     globus_size_t			nbytes;
-    char                                c;
+    int                                 c;
     globus_bool_t                       mc_enabled = GLOBUS_FALSE;
     char *                              mc_interface = INADDR_ANY;
 

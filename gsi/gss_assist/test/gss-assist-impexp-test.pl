@@ -9,8 +9,8 @@ use Cwd;
 my @tests;
 my @todo;
 
-my $server_prog = 'gss-assist-impexp-accept';
-my $client_prog = 'gss-assist-impexp-init';
+my $server_prog = './gss-assist-impexp-accept';
+my $client_prog = './gss-assist-impexp-init';
 
 $ENV{X509_CERT_DIR} = cwd();
 $ENV{X509_USER_PROXY} = "testcred.pem";

@@ -2,7 +2,7 @@
 #define EXT_SIZE 16
 #include <gssapi.h>
 #include "globus_gss_assist.h"
-#include "../source/library/gssapi_openssl.h"
+#include "gssapi_openssl.h"
 
 int verify_cred(
     gss_cred_id_t                       credential);
@@ -608,4 +608,5 @@ void globus_print_error(
     globus_libc_fprintf(stderr, "%s\n", error_string);
     globus_libc_free(error_string);
     globus_object_free(error_obj);
-};
+}
+

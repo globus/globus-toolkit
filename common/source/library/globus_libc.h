@@ -301,6 +301,9 @@ globus_libc_strdup(const char * source);
 int
 globus_libc_vprintf_length(const char * fmt, va_list ap);
 
+int
+globus_libc_printf_length(const char * fmt, ...);
+
 /* not really 'libc'... but a convenient place to put it in */
 int globus_libc_gethomedir(char *result, int bufsize);
 

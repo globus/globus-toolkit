@@ -130,7 +130,7 @@ cache="${local_tmpdir}/globus-hostname2contacts.${user}.$$"
 
 cleanup ()
 {
-    ${GLOBUS_SH_RM-rm} -f ${cacheee}
+    ${GLOBUS_SH_RM-rm} -f ${cache}
 }
 
 trap cleanup 0 1 2 3 6 9 12 15 

@@ -101,13 +101,25 @@ globus_l_error_openssl_printable(
     handle = (globus_openssl_error_handle_t)
              globus_object_get_local_instance_data(error);
 
-    error_string = globus_error_openssl_create_error_string(
-        "OpenSSL Error: %s:%d: in library: %s, function %s: %s",
-        globus_openssl_error_handle_get_filename(handle),
-        globus_openssl_error_handle_get_linenumber(handle),
-        globus_openssl_error_handle_get_library(handle),
-        globus_openssl_error_handle_get_function(handle),
-        globus_openssl_error_handle_get_reason(handle));
+    if(!globus_openssl_error_handle_get_filename(handle) &&
+       !globus_openssl_error_handle_get_linenumber(handle) &&
+       !globus_openssl_error_handle_get_library(handle) &&
+       !globus_openssl_error_handle_get_function(handle) &&
+       !globus_openssl_error_handle_get_reason(handle))
+    {
+        error_string = globus_error_openssl_create_error_string(
+            "Unkown OpenSSL Error.");
+    }
+    else
+    {
+        error_string = globus_error_openssl_create_error_string(
+            "OpenSSL Error: %s:%d: in library: %s, function %s: %s",
+            globus_openssl_error_handle_get_filename(handle),
+            globus_openssl_error_handle_get_linenumber(handle),
+            globus_openssl_error_handle_get_library(handle),
+            globus_openssl_error_handle_get_function(handle),
+            globus_openssl_error_handle_get_reason(handle));
+    }
 
  done:
 
@@ -191,8 +203,7 @@ globus_error_openssl_create_error_string(
     const char *                        format,
     ...)
 {
-    int                                 len = 128;
-    int                                 length;
+    int                                 len;
     va_list                             ap;
     char *                              error_string;
     static char *                       _function_name_ =
@@ -200,41 +211,23 @@ globus_error_openssl_create_error_string(
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
-    globus_libc_lock();
-
     va_start(ap, format);
+
+    len = globus_libc_vprintf_length(format,ap);
+
+    len++;
 
     if((error_string = malloc(len)) == NULL)
     {
+        va_end(ap);
         return NULL;
     }
-
-    while(1)
-    {
-        length = globus_libc_vsnprintf(error_string, len, format, ap);
-        if(length > -1 && length < len)
-        {
-            break;
-        }
-
-        if(length > -1)
-        {
-            len = length + 1;
-        }
-        else
-        {
-            len *= 2;
-        }
-
-        if((error_string = realloc(error_string, len)) == NULL)
-        {
-            return NULL;
-        }
-    }
-
+    
+    globus_libc_vsnprintf(error_string,
+                          len,
+                          format,
+                          ap);
     va_end(ap);
-
-    globus_libc_unlock();
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error_string;

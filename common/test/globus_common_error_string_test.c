@@ -18,5 +18,5 @@ int main()
     s = globus_object_printable_to_string(err);
 
     globus_libc_printf(s);
-    globus_module_deactivate_all();
+    return globus_module_deactivate_all();
 }

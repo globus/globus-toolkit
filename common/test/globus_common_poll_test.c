@@ -1006,14 +1006,20 @@ cpu_hog_restart_block_handler(
         verbose_printf(1, "*** CPU HOG POSSIBLE ERROR ***, bad timeout\n");
 
         verbose_printf(3, "***time left|||\n");
-        GlobusTimeReltimePrintf(time_left);
+        if(verbose_print_level > 3)
+        { 
+            GlobusTimeReltimePrintf(time_left);
+        }
         verbose_printf(3, "***time ok|||\n");
-        GlobusTimeReltimePrintf(ok_time);
+        if(verbose_print_level > 3)
+        {
+            GlobusTimeReltimePrintf(ok_time);
+        }
 
         GlobusTimeReltimeSet(ok_time, 0, 40000);
         if(globus_reltime_cmp(&time_left, &ok_time) < 0)
         {
-        verbose_printf(1, "*** CPU HOG POSSIBLE ERROR ***, bad timeout\n");
+            verbose_printf(1, "*** CPU HOG POSSIBLE ERROR ***, bad timeout\n");
         }
     }
     res = globus_reltime_cmp(&time_left, 

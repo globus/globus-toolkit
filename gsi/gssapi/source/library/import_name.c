@@ -125,7 +125,7 @@ GSS_CALLCONV gss_import_name(
         
         x509_name_entry = X509_NAME_ENTRY_create_by_NID(
             &x509_name_entry,
-            OBJ_txt2nid("CN"),
+            NID_commonName,
             V_ASN1_APP_CHOOSE,
             (unsigned char *) name_buffer,
             -1);

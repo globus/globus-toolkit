@@ -94,7 +94,7 @@ int
 main(int argc, char **argv)
 {
     int					rc;
-    char                                c;
+    int                                 c;
     globus_bool_t                       listener = GLOBUS_FALSE;
     globus_bool_t                       server   = GLOBUS_FALSE;
     char *                              host = GLOBUS_NULL;

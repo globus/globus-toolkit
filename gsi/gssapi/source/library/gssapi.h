@@ -277,10 +277,6 @@ typedef struct gss_channel_bindings_struct
 #define GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_DURING_DELEGATION_FLAG 4096
 /* @} */
 
-
-/* The following are deprecated and should no longer be used.
- * Please use the above defines for setting request and return flags. */ 
-
 #define GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG  4096
 #define GSS_C_GLOBUS_LIMITED_PROXY_FLAG        8192
 #define GSS_C_GLOBUS_SSL_COMPATIBLE           16384

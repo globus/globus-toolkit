@@ -13,8 +13,8 @@ use Cwd;
 my @tests;
 my @todo;
 
-my $server_prog = 'globus_io_tcp_test_server';
-my $client_prog = 'globus_io_tcp_test_client';
+my $server_prog = './globus_io_tcp_test_server';
+my $client_prog = './globus_io_tcp_test_client';
 
 $ENV{X509_CERT_DIR} = cwd();
 $ENV{X509_USER_PROXY} = "testcred.pem";

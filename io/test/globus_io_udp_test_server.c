@@ -60,7 +60,7 @@ test1(int argc, char **argv)
     globus_bool_t                       mc_enabled = GLOBUS_FALSE;
     char *                              mc_interface;
     static char *                       myname = "test1";
-    char                                c;
+    int                                 c;
 
     setbuf(stdout, NULL);
     

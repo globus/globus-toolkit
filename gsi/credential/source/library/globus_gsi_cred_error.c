@@ -20,22 +20,30 @@ globus_l_gsi_cred_error_strings[GLOBUS_GSI_CRED_ERROR_LAST] =
 {
 
 /* 0 */   "Success",
-/* 1 */   "Error Reading Proxy Credential",
-/* 2 */   "Error Reading Host Credential",
-/* 3 */   "Error Reading Service Credential",
-/* 4 */   "Error Reading Credential",
-/* 5 */   "Error Writing Credential",
-/* 6 */   "Error Writing Proxy Credential",
-/* 7 */   "Error Checking For Proxy Credential",
-/* 8 */   "Error Verifying Credential",
-/* 9 */   "Error with Credential",
-/* 10 */  "Error with Credential's Certificate",
-/* 11 */  "Error with Credential's Private Key",
-/* 12 */  "Error with Credential's Cert Chain",
-/* 13 */  "System Error",
-/* 14 */  "Error with System Configuration",
-/* 15 */  "Error with Credential Handle Attributes",
-/* 16 */  "Error with Credential's SSL context"
+/* 1 */   "Error reading proxy credential",
+/* 2 */   "Error reading host credential",
+/* 3 */   "Error reading service credential",
+/* 4 */   "Error reading user credential",
+/* 5 */   "Error writing credential",
+/* 6 */   "Error writing proxy credential",
+/* 7 */   "Error checking for proxy credential",
+/* 8 */   "Error verifying credential",
+/* 9 */   "Error with credential",
+/* 10 */  "Error with credential's certificate",
+/* 11 */  "Error with credential's private key",
+/* 12 */  "Error with credential's cert chain",
+/* 13 */  "System error",
+/* 14 */  "Error with system configuration",
+/* 15 */  "Error with credential handle attributes",
+/* 16 */  "Error with credential's SSL context",
+/* 17 */  "Error with callback data",
+/* 18 */  "Error verifying new proxy certificate",
+/* 19 */  "Error creating two errors from one",
+/* 20 */  "Key is password protected",
+/* 21 */  "Valid credentials could not be found in any of the"
+          " possible locations specified by the credential search order.",
+/* 22 */  "Error comparing subject names.",
+/* 23 */  "Error determining service name."
 };
 
 /* ERROR FUNCTIONS */
@@ -46,6 +54,7 @@ globus_i_gsi_cred_openssl_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -60,13 +69,18 @@ globus_i_gsi_cred_openssl_error_result(
         globus_error_wrap_openssl_error(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             error_type,
-            "%s:%d: %s: %s",
+            "%s:%d: %s: %s%s%s",
             filename,
             line_number,
             function_name,
-            globus_l_gsi_cred_error_strings[error_type]);    
+            globus_l_gsi_cred_error_strings[error_type],
+            short_desc ? ": " : "",
+            short_desc ? short_desc : "");    
 
-    globus_error_set_long_desc(error_object, long_desc);
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
     
@@ -81,6 +95,7 @@ globus_i_gsi_cred_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -95,11 +110,16 @@ globus_i_gsi_cred_error_result(
         GLOBUS_GSI_CREDENTIAL_MODULE,
         NULL,
         error_type,
-        "%s:%d: %s: %s",
+        "%s:%d: %s: %s%s%s",
         filename, line_number, function_name, 
-        globus_l_gsi_cred_error_strings[error_type]);
+        globus_l_gsi_cred_error_strings[error_type],
+        short_desc ? ": " : "",
+        short_desc ? short_desc : "");
 
-    globus_error_set_long_desc(error_object, long_desc);
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
 
@@ -115,6 +135,7 @@ globus_i_gsi_cred_error_chain_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -130,9 +151,11 @@ globus_i_gsi_cred_error_chain_result(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             globus_error_get(chain_result),
             error_type,
-            "%s:%d: %s: %s",
+            "%s:%d: %s: %s%s%s",
             filename, line_number, function_name, 
-            globus_l_gsi_cred_error_strings[error_type]);
+            globus_l_gsi_cred_error_strings[error_type],
+            short_desc ? ": " : "",
+            short_desc ? short_desc : "");
 
     if(long_desc)
     {
@@ -143,6 +166,59 @@ globus_i_gsi_cred_error_chain_result(
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
 
+    return result;
+}
+
+globus_result_t
+globus_i_gsi_cred_error_join_chains_result(
+    globus_result_t                     outter_error,
+    globus_result_t                     inner_error)
+{
+    globus_result_t                     result;
+    globus_object_t *                   result_error_obj = NULL;
+    globus_object_t *                   outter_error_obj = NULL;
+    globus_object_t *                   inner_error_obj = NULL;
+    globus_object_t *                   temp_error_obj = NULL;
+    static char *                       _function_name_ =
+        "globus_i_gsi_cred_error_join_chains";
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    outter_error_obj = globus_error_get(outter_error);
+    inner_error_obj = globus_error_get(inner_error);
+    if(outter_error_obj && inner_error_obj)
+    {
+        temp_error_obj = outter_error_obj;
+        while(globus_error_get_cause(temp_error_obj))
+        {
+            temp_error_obj = globus_error_get_cause(temp_error_obj);
+        }
+
+        temp_error_obj = globus_error_initialize_base(temp_error_obj,
+                                                      globus_error_get_source(temp_error_obj),
+                                                      inner_error_obj);
+        result_error_obj = outter_error_obj;
+    }
+    else if(inner_error_obj)
+    {
+        result_error_obj = inner_error_obj;
+    }
+    else
+    {
+        result_error_obj = 
+            globus_error_construct_error(
+                GLOBUS_GSI_CREDENTIAL_MODULE,
+                NULL,
+                GLOBUS_GSI_CRED_ERROR_CREATING_ERROR_OBJ,
+                "%s:%d: %s: "
+                 "Couldn't join inner and outter error chains",
+                 __FILE__,
+                 __LINE__,
+                 _function_name_);
+    }
+
+    result = globus_error_put(result_error_obj);
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
 

@@ -26,7 +26,7 @@
     </Source_Dependencies>
 
     <Source_Dependencies Type="doc_runtime" >
-      <Dependency Name="globus_gram_protocol" Package="doc" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_gram_protocol" Package="doc" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
     </Source_Dependencies>
     
 

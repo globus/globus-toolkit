@@ -18,7 +18,8 @@ int main(int argc, char * argv[])
     gss_ctx_id_t                        init_context = GSS_C_NO_CONTEXT;
     OM_uint32                           ret_flags;
     int                                 sock;
-    FILE *                              stre;
+    FILE *                              infd;
+    FILE *                              outfd;
     char *                              print_buffer = NULL;
     char *                              recv_buffer = NULL;
     char *                              verbose_env = NULL;
@@ -57,8 +58,13 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
-    stre = fdopen(sock, "r+");
-    setbuf(stre, NULL);
+    infd = fdopen(dup(sock), "r");
+    setbuf(infd, NULL);
+
+    outfd = fdopen(dup(sock), "w");
+    setbuf(outfd, NULL);
+
+    close(sock);
 
     /* INITIATOR PROCESS */
     
@@ -85,9 +91,9 @@ int main(int argc, char * argv[])
         &ret_flags,
         &token_status,
         globus_gss_assist_token_get_fd,
-        (void *) (stre),
+        (void *) (infd),
         globus_gss_assist_token_send_fd,
-        (void *) (stre));
+        (void *) (outfd));
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
@@ -95,7 +101,7 @@ int main(int argc, char * argv[])
             "INITIATOR: Couldn't authenticate as initiator\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
     
@@ -190,7 +196,7 @@ int main(int argc, char * argv[])
             "INITIATOR: Couldn't import security context from file\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
 
@@ -216,7 +222,7 @@ int main(int argc, char * argv[])
         sizeof(INIT_MESSAGE),
         &token_status,
         globus_gss_assist_token_send_fd,
-        (void *) (stre),
+        (void *) (outfd),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -225,7 +231,7 @@ int main(int argc, char * argv[])
             "INITATOR: Couldn't wrap and send message\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
 
@@ -236,7 +242,7 @@ int main(int argc, char * argv[])
         &buffer_length,
         &token_status,
         globus_gss_assist_token_get_fd,
-        (void *) (stre),
+        (void *) (infd),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -246,7 +252,7 @@ int main(int argc, char * argv[])
             "INITIATOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         fprintf(stdout, "INITIATOR ERROR FINISHED\n");
         exit(1);
     }
@@ -271,7 +277,7 @@ int main(int argc, char * argv[])
         sizeof(INIT_MESSAGE),
         &token_status,
         globus_gss_assist_token_send_fd,
-        (void *) (stre),
+        (void *) (outfd),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -280,7 +286,7 @@ int main(int argc, char * argv[])
             "INITATOR: Couldn't wrap and send message\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
 
@@ -291,7 +297,7 @@ int main(int argc, char * argv[])
         &buffer_length,
         &token_status,
         globus_gss_assist_token_get_fd,
-        (void *) (stre),
+        (void *) (infd),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -301,7 +307,7 @@ int main(int argc, char * argv[])
             "INITIATOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         fprintf(stdout, "INITIATOR ERROR FINISHED\n");
         exit(1);
     }
@@ -346,11 +352,16 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
-    if(fclose(stre) == EOF)
+    if(fclose(infd) == EOF)
     {
         perror("closing stream socket");
         exit(1);
     }
 
+    if(fclose(outfd) == EOF)
+    {
+        perror("closing stream socket");
+        exit(1);
+    }
     exit(0);
 }

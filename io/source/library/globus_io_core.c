@@ -2357,12 +2357,24 @@ globus_l_io_handle_events(
             }
         }
             
-            
+        if(n_ready < 0)
+        {
+            if(select_errno == EINTR)
+            {
+                globus_callback_get_timeout(time_left);
+                continue;
+            }
+            else
+            {
+                goto handle_abort;
+            }
+        }
+        
         /* see if we were woken up by pipe 
          * this needs to happen immediately and cant be 'registered' like
          * the rest of the callbacks
          */
-        if(FD_ISSET(
+        if(n_ready > 0 && FD_ISSET(
             globus_l_io_wakeup_pipe_handle.fd, globus_l_io_active_read_fds))
         {
             FD_CLR(
@@ -2376,20 +2388,8 @@ globus_l_io_handle_events(
             
             n_ready--;
         }
-            
-        if(n_ready < 0)
-        {
-            if(select_errno == EINTR)
-            {
-                globus_callback_get_timeout(time_left);
-                continue;
-            }
-            else
-            {
-                goto handle_abort;
-            }
-        }
-        else if(n_ready > 0)
+        
+        if(n_ready > 0)
         {
             int fd;
             
@@ -2547,29 +2547,16 @@ globus_l_io_wakeup_pipe_callback(
     globus_io_handle_t *		handle,
     globus_result_t			result)
 {
-    char				buf;
+    char				buf[64];
     ssize_t				done = 0;
 
     globus_i_io_debug_printf(3, 
         (stderr, "globus_l_io_wakeup_pipe_callback(): entering\n"));
 
-    while (!done)
+    do
     {
-	done = globus_libc_read(handle->fd, &buf, sizeof(buf));
-	if (done == -1)
-	{
-	    const int			errno_save = errno;
-
-	    if (errno_save == EINTR)
-	    {
-		done = 0;
-	    }
-	    else if (errno_save != EAGAIN && errno_save != EWOULDBLOCK)
-	    {
-		/* XXX: badness has happened; do something about it */
-	    }
-	}
-    }
+	done = globus_libc_read(handle->fd, buf, sizeof(buf));
+    } while(done == -1 && errno == EINTR);
 
     globus_l_io_wakeup_pending = GLOBUS_FALSE;
     

@@ -13,7 +13,7 @@ use strict;
 use POSIX;
 use Test;
 
-my $test_prog = 'globus_common_error_string_test';
+my $test_prog = './globus_common_error_string_test';
 
 my $diff = 'diff';
 my @tests;

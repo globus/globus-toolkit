@@ -15,10 +15,6 @@ The user's home directory.
 @par LOGNAME
 The user's login name.
 
-@par X509_CERT_DIR
-The path to the gatekeeper's trusted certificate directory. This will not be set
-if the default certificate directory is being used. (GSI only).
-
 @par X509_USER_PROXY
 The path to the job manager's delegated credential. (GSI only).
 
@@ -30,6 +26,10 @@ The GRAM MyJob contact string for intrajob communication.
 
 @par GLOBUS_LOCATION
 The path to the Globus installation on the job manager host.
+
+@par X509_CERT_DIR*
+The path to a trusted certificate directory.  This variable will only be set if
+the -x509-cert-dir argument is given to the job manager.
 
 @par GLOBUS_GASS_CACHE_DEFAULT*
 The path to the job's GASS cache (if the gass_cache RSL attribute is present).

@@ -121,7 +121,7 @@ globus_gss_assist_accept_sec_context(
         if ((*token_status = gss_assist_get_token(
             gss_assist_get_context,
             &input_token->value,
-            &input_token->length)) < 0)
+            &input_token->length)) != 0)
         {
             major_status = 
                 GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ;
@@ -162,7 +162,7 @@ globus_gss_assist_accept_sec_context(
             if ((*token_status = gss_assist_send_token(
                 gss_assist_send_context, 
                 output_token->value,
-                output_token->length)) < 0)
+                output_token->length)) != 0)
             {
                 major_status = 
                     GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_WRITE;

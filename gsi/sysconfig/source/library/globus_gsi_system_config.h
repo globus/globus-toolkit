@@ -270,7 +270,8 @@ globus_gsi_sysconfig_set_key_permissions_unix(
 
 globus_result_t
 globus_gsi_sysconfig_get_home_dir_unix(
-    char **                             home_dir);
+    char **                             home_dir,
+    globus_gsi_statcheck_t *            status);
 
 globus_result_t
 globus_gsi_sysconfig_file_exists_unix(
@@ -367,5 +368,7 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
 globus_result_t
 globus_gsi_sysconfig_get_unique_proxy_filename(
     char **                             unique_filename);
+
+EXTERN_C_END
 
 #endif /* GLOBUS_GSI_SYSTEM_CONFIG_H */

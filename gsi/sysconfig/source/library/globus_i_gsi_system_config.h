@@ -86,39 +86,85 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
 
 /* ERROR MACROS */
 
-#define GLOBUS_GSI_SYSCONFIG_OPENSSL_ERROR_RESULT(_RESULT_,                  \
-                                                  _ERRORTYPE_,               \
-                                                  _ERRSTR_)                  \
-    {                                                                        \
-        char *                          _tmp_str_ =                          \
-            globus_gsi_cert_utils_create_string _ERRSTR_;                    \
+#define GLOBUS_GSI_SYSCONFIG_OPENSSL_ERROR_RESULT(_RESULT_,  \
+                                                  _ERRORTYPE_, \
+                                                  _ERRSTR_) \
+    { \
+        char *                          _tmp_str_ = \
+            globus_gsi_cert_utils_create_string _ERRSTR_; \
         _RESULT_ = globus_i_gsi_sysconfig_openssl_error_result(_ERRORTYPE_,  \
-                                                          __FILE__,          \
-                                                          _function_name_,   \
-                                                          __LINE__,          \
-                                                          _tmp_str_);        \
-        globus_libc_free(_tmp_str_);                                         \
+                                                          __FILE__, \
+                                                          _function_name_, \
+                                                          __LINE__, \
+                                                          _tmp_str_, \
+                                                          NULL); \
+        globus_libc_free(_tmp_str_); \
     }
 
 #define GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
-    {                                                                      \
-        char *                          _tmp_str_ =                        \
-            globus_gsi_cert_utils_create_string _ERRSTR_;                  \
-        _RESULT_ = globus_i_gsi_sysconfig_error_result(_ERRORTYPE_,        \
-                                                  __FILE__,                \
-                                                  _function_name_,         \
-                                                  __LINE__,                \
-                                                  _tmp_str_);              \
-        globus_libc_free(_tmp_str_);                                       \
+    { \
+        char *                          _tmp_str_ = \
+            globus_gsi_cert_utils_create_string _ERRSTR_; \
+        _RESULT_ = globus_i_gsi_sysconfig_error_result(_ERRORTYPE_, \
+                                                  __FILE__, \
+                                                  _function_name_, \
+                                                  __LINE__, \
+                                                  _tmp_str_, \
+                                                  NULL); \
+        globus_libc_free(_tmp_str_); \
     }
 
 #define GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(_TOP_RESULT_, _ERRORTYPE_) \
     _TOP_RESULT_ = globus_i_gsi_sysconfig_error_chain_result(_TOP_RESULT_, \
-                                                        _ERRORTYPE_,       \
-                                                        __FILE__,          \
-                                                        _function_name_,   \
-                                                        __LINE__,          \
+                                                        _ERRORTYPE_, \
+                                                        __FILE__, \
+                                                        _function_name_, \
+                                                        __LINE__, \
+                                                        NULL, \
                                                         NULL)
+
+#define GLOBUS_GSI_SYSCONFIG_OPENSSL_LONG_ERROR_RESULT(_RESULT_, \
+                                                       _ERRORTYPE_, \
+                                                       _ERRSTR_, \
+                                                       _LONG_DESC_) \
+    { \
+        char *                          _tmp_str_ = \
+            globus_gsi_cert_utils_create_string _ERRSTR_; \
+        _RESULT_ = globus_i_gsi_sysconfig_openssl_error_result(_ERRORTYPE_, \
+                                                          __FILE__, \
+                                                          _function_name_, \
+                                                          __LINE__, \
+                                                          _tmp_str_, \
+                                                          _LONG_DESC_); \
+        globus_libc_free(_tmp_str_); \
+    }
+
+#define GLOBUS_GSI_SYSCONFIG_LONG_ERROR_RESULT(_RESULT_, \
+                                               _ERRORTYPE_, \
+                                               _ERRSTR_, \
+                                               _LONG_DESC_) \
+    { \
+        char *                          _tmp_str_ = \
+            globus_gsi_cert_utils_create_string _ERRSTR_; \
+        _RESULT_ = globus_i_gsi_sysconfig_error_result(_ERRORTYPE_, \
+                                                       __FILE__, \
+                                                       _function_name_, \
+                                                       __LINE__, \
+                                                       _tmp_str_, \
+                                                       _LONG_DESC_); \
+        globus_libc_free(_tmp_str_); \
+    }
+
+#define GLOBUS_GSI_SYSCONFIG_LONG_ERROR_CHAIN_RESULT(_TOP_RESULT_, \
+                                                     _ERRORTYPE_, \
+                                                     _LONG_DESC_) \
+    _TOP_RESULT_ = globus_i_gsi_sysconfig_error_chain_result(_TOP_RESULT_, \
+                                                             _ERRORTYPE_, \
+                                                             __FILE__, \
+                                                             _function_name_, \
+                                                             __LINE__, \
+                                                             NULL, \
+                                                             _LONG_DESC_)
 
 extern char *                       globus_l_gsi_sysconfig_error_strings[];
 extern char *                       globus_l_gsi_sysconfig_status_strings[];
@@ -135,6 +181,7 @@ globus_result_t
 globus_i_gsi_sysconfig_create_cert_string(
     char **                             cert_string,
     char **                             cert_string_value,
+    globus_gsi_statcheck_t *            status,
     const char *                        format,
     ...);
 
@@ -153,6 +200,7 @@ globus_i_gsi_sysconfig_error_chain_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc);
 
 globus_result_t
@@ -161,6 +209,7 @@ globus_i_gsi_sysconfig_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc);
 
 globus_result_t
@@ -169,6 +218,7 @@ globus_i_gsi_sysconfig_openssl_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc);
 
 

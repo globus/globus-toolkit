@@ -605,6 +605,16 @@ globus_gram_job_manager_output_close(
     if(globus_list_empty(request->output->stdout_destinations) &&
        globus_list_empty(request->output->stderr_destinations))
     {
+	if(request->output->stderr_fd != -1)
+	{
+	    globus_libc_close(request->output->stderr_fd);
+	    request->output->stderr_fd  = -1;
+	}
+	if(request->output->stdout_fd != -1)
+	{
+	    globus_libc_close(request->output->stdout_fd);
+	    request->output->stdout_fd  = -1;
+	}
 	GlobusTimeReltimeSet(delay, 0, 0);
 
 	globus_callback_register_oneshot(
@@ -1449,7 +1459,7 @@ globus_l_gram_job_manager_output_destination_open(
         rc = globus_gass_cache_add(
 		&request->cache_handle,
 		destination->url,
-		request->cache_tag,
+               destination->tag ? destination->tag : request->cache_tag,
 		GLOBUS_TRUE,
 		&timestamp,
 		&local_filename);
@@ -1461,7 +1471,7 @@ globus_l_gram_job_manager_output_destination_open(
 	rc = globus_gass_cache_add_done(
 		&request->cache_handle,
 		destination->url,
-		request->cache_tag,
+               destination->tag ? destination->tag : request->cache_tag,
 		0);
 	if(rc != GLOBUS_SUCCESS)
 	{
@@ -1972,15 +1982,6 @@ globus_l_gram_job_manager_output_file_close(
 {
     globus_assert(destination->callback_count == 0);
 
-    if(destination->type == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_CACHE)
-    {
-	globus_gass_cache_delete(
-		&request->cache_handle,
-		destination->url,
-		request->cache_tag,
-		0,
-		GLOBUS_FALSE);
-    }
     destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
     globus_l_gram_job_manager_output_close_done(request, destination);
 }
@@ -2125,6 +2126,16 @@ globus_l_gram_job_manager_output_close_done(
 	    globus_list_empty(request->output->stdout_destinations) &&
 	    globus_list_empty(request->output->stderr_destinations))
 	{
+	    if(request->output->stderr_fd != -1)
+	    {
+		globus_libc_close(request->output->stderr_fd);
+		request->output->stderr_fd  = -1;
+	    }
+	    if(request->output->stdout_fd != -1)
+	    {
+		globus_libc_close(request->output->stdout_fd);
+		request->output->stdout_fd  = -1;
+	    }
 	    globus_callback_unregister(request->output->callback_handle,
 	                               NULL,
 	                               NULL,

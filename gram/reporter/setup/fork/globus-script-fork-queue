@@ -58,12 +58,13 @@ GetNodeCount () {
 
               Mds-Cpu-Free-1minX100:)
                   smp_free_1minX100="$val"
+                  # truncate fixed-precision fraction to whole integer
+                  FREENODES=`expr $smp_free_1minX100 / 100`
               ;;
           esac
       done
 
       # truncate fixed-precision fraction to whole integer
-      FREENODES=`expr $smp_free_1minX100 / 100`
       echo "${TOTALNODES} ${FREENODES}"
    }
 

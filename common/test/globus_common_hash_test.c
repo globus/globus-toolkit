@@ -27,5 +27,5 @@ int main(int argc, char **argv)
     printf("removed - %s\n",globus_hashtable_remove(&hash_table,
                                    (void *) 456));
 
-    globus_hashtable_destroy(&hash_table);
+    return globus_hashtable_destroy(&hash_table);
 }

@@ -22,14 +22,12 @@ globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 
 /* 0 */   "Success",
 /* 1 */   "Could not find a valid trusted CA certificates directory",
-/* 2 */   "Could not create the filename string "
-          "for the user's certificate filename",
-/* 3 */   "Could not create the filename string "
-          "for the user's key filename",
+/* 2 */   "Error with certificate filename",
+/* 3 */   "Error with key filename",
 /* 4 */   "Could not find a valid home directory for the current user",
 /* 5 */   "Error with system call",
 /* 6 */   "Error checking the status of a file",
-/* 7 */   "Could not find a valid user certificate file",
+/* 7 */   "Could not find a valid certificate file",
 /* 8 */   "Could not find a valid proxy certificate file location",
 /* 9 */   "Could not find a valid delegated proxy certificate file location",
 /* 10 */  "Error getting the list of trusted CA certificates",
@@ -67,6 +65,7 @@ globus_i_gsi_sysconfig_openssl_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -86,8 +85,13 @@ globus_i_gsi_sysconfig_openssl_error_result(
             line_number,
             function_name,
             globus_l_gsi_sysconfig_error_strings[error_type],
-            long_desc ? ": " : "",
-            long_desc ? long_desc : "");    
+            short_desc ? ": " : "",
+            short_desc ? short_desc : "");    
+
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
     
@@ -102,6 +106,7 @@ globus_i_gsi_sysconfig_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -119,8 +124,13 @@ globus_i_gsi_sysconfig_error_result(
         "%s:%d: %s: %s%s%s",
         filename, line_number, function_name, 
         globus_l_gsi_sysconfig_error_strings[error_type],
-        long_desc ? ": " : "",
-        long_desc ? long_desc : "");
+        short_desc ? ": " : "",
+        short_desc ? short_desc : "");
+
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
 
@@ -136,6 +146,7 @@ globus_i_gsi_sysconfig_error_chain_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -154,8 +165,13 @@ globus_i_gsi_sysconfig_error_chain_result(
             "%s:%d: %s: %s%s%s",
             filename, line_number, function_name, 
             globus_l_gsi_sysconfig_error_strings[error_type],
-            long_desc ? ": " : "",
-            long_desc ? long_desc : "");
+            short_desc ? ": " : "",
+            short_desc ? short_desc : "");
+
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
 
@@ -165,6 +181,8 @@ globus_i_gsi_sysconfig_error_chain_result(
 }
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
+
 
 
 

@@ -163,8 +163,7 @@ globus_error_initialize_error(
     va_list                             ap)
 {
     globus_l_error_data_t *             instance_data;
-    int                                 length;
-    int                                 size = 124;
+    int                                 size;
     
     instance_data = (globus_l_error_data_t *)
         malloc(sizeof(globus_l_error_data_t));
@@ -180,39 +179,20 @@ globus_error_initialize_error(
 
     if(short_desc_format != NULL)
     {
+        size = globus_libc_vprintf_length(short_desc_format,ap);
+
+        size++;
+        
         if ((instance_data->short_desc = malloc (size)) == NULL)
         {
-            free(instance_data);
-            return NULL;
+            va_end(ap);
+            return;
         }
-
-        while (1)
-        {
-            length = globus_libc_vsnprintf(instance_data->short_desc,
-					   size,
-					   short_desc_format,ap);
-
-            if (length > -1 && length < size)
-            {
-                break;
-            }
-
-            if (length > -1)
-            {
-                size = length + 1;
-            }
-            else
-            {
-                size *= 2;
-            }
-
-            if ((instance_data->short_desc =
-                 realloc (instance_data->short_desc, size)) == NULL)
-            {
-                free(instance_data);
-                return NULL;
-            }
-        }
+        
+        globus_libc_vsnprintf(instance_data->short_desc,
+                              size,
+                              short_desc_format,
+                              ap);
     }
 
     globus_object_set_local_instance_data(error, instance_data);
@@ -414,8 +394,7 @@ globus_error_set_short_desc(
 {
     char **                             instance_short_desc;
     va_list                             ap;
-    int                                 length;
-    int                                 size = 124;
+    int                                 size;
     
     instance_short_desc =
         &((globus_l_error_data_t *)
@@ -430,40 +409,20 @@ globus_error_set_short_desc(
 
     va_start(ap, short_desc_format);
 
+    size = globus_libc_vprintf_length(short_desc_format,ap);
+
+    size++;
+
     if ((*instance_short_desc = malloc (size)) == NULL)
     {
         va_end(ap);
         return;
     }
-    
-    while (1)
-    {
-        length = globus_libc_vsnprintf(*instance_short_desc,
-				       size,
-				       short_desc_format,
-				       ap);
-        
-        if (length > -1 && length < size)
-        {
-            break;
-        }
-        
-        if (length > -1)
-        {
-            size = length + 1;
-        }
-        else
-        {
-            size *= 2;
-        }
-        
-        if ((*instance_short_desc =
-             realloc (*instance_short_desc, size)) == NULL)
-        {
-            va_end(ap);
-            return;
-        }
-    }
+
+    globus_libc_vsnprintf(*instance_short_desc,
+                          size,
+                          short_desc_format,
+                          ap);
 
     va_end(ap);
     
@@ -520,8 +479,7 @@ globus_error_set_long_desc(
 {
     char **                             instance_long_desc;
     va_list                             ap;
-    int                                 length;
-    int                                 size = 124;
+    int                                 size;
     
     instance_long_desc =
         &((globus_l_error_data_t *)
@@ -536,41 +494,20 @@ globus_error_set_long_desc(
 
     va_start(ap, long_desc_format);
 
+    size = globus_libc_vprintf_length(long_desc_format,ap);
+
+    size++;
+
     if ((*instance_long_desc = malloc (size)) == NULL)
     {
         va_end(ap);
         return;
     }
-    
-    while (1)
-    {
-        length = globus_libc_vsnprintf(*instance_long_desc,
-				       size,
-				       long_desc_format,
-				       ap);
-        
-        if (length > -1 && length < size)
-        {
-            break;
-        }
-        
-        if (length > -1)
-        {
-            size = length + 1;
-        }
-        else
-        {
-            size *= 2;
-        }
-        
-        if ((*instance_long_desc =
-             realloc (*instance_long_desc, size)) == NULL)
-        {
-            va_end(ap);
-            return;
-        }
-    }
 
+    globus_libc_vsnprintf(*instance_long_desc,
+                          size,
+                          long_desc_format,
+                          ap);
     va_end(ap);
     
     return;
