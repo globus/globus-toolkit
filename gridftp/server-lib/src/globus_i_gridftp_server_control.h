@@ -174,6 +174,7 @@ typedef struct globus_i_gsc_handle_opts_s
 
 typedef struct globus_i_gsc_module_func_s
 {
+    char *                                              key;
     globus_gridftp_server_control_transfer_cb_t         func;
     void *                                              user_arg;
 } globus_i_gsc_module_func_t;

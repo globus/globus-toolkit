@@ -15,6 +15,7 @@ typedef struct
     globus_i_gfs_server_close_cb_t      close_func;
     void *                              close_arg;
 
+    globus_bool_t                       acl_handle_valid;
     globus_i_gfs_acl_handle_t           acl_handle;
     int                                 session_id;
 
@@ -164,7 +165,16 @@ globus_l_gfs_done_cb(
             "Control connection closed with error: %s\n",
              globus_object_printable_to_string(globus_error_get(result)));
     }
-
+    else
+    {
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "Control connection closed\n");
+    }
+    if(instance->acl_handle_valid)
+    {
+        globus_i_gfs_acl_destroy(&instance->acl_handle);
+    }
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
@@ -237,6 +247,8 @@ globus_l_gfs_auth_data_cb(
     {
         goto err;
     }
+
+    auth_info->instance->acl_handle_valid = GLOBUS_TRUE;
 
     result = globus_gridftp_server_control_get_data_auth(
         auth_info->control_op,
@@ -412,6 +424,7 @@ globus_l_gfs_request_auth(
     auth_info->response =
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
 
+    instance->acl_handle_valid = GLOBUS_FALSE;
     rc = globus_i_gfs_acl_init(
         &instance->acl_handle,
         context,

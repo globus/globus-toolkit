@@ -380,6 +380,28 @@ globus_i_gsc_log(
     }
 }
 
+static
+void
+globus_l_gsc_trans_table_copy(
+    void **                             dest_key,
+    void **                             dest_datum,
+    void *                              src_key,
+    void *                              src_datum)
+{
+    globus_i_gsc_module_func_t *        src_mod_func;
+    globus_i_gsc_module_func_t *        dst_mod_func;
+
+    src_mod_func = (globus_i_gsc_module_func_t *) src_datum;
+
+    dst_mod_func = globus_malloc(sizeof(globus_i_gsc_module_func_t));
+    dst_mod_func->key = strdup((char *)src_mod_func->key);
+    dst_mod_func->func = src_mod_func->func;
+    dst_mod_func->user_arg = src_mod_func->user_arg;
+
+    *dest_datum = dst_mod_func;
+    *dest_key = dst_mod_func->key;
+}
+
 /************************************************************************
  *                      state machine functions
  *                      -----------------------
@@ -1837,6 +1859,11 @@ globus_result_t
 globus_gridftp_server_control_destroy(
     globus_gridftp_server_control_t     server)
 {
+    globus_i_gsc_module_func_t *        mod_func;
+    char *                              tmp_ptr;
+    globus_l_gsc_cmd_ent_t *            cmd_ent;
+    globus_list_t *                     list;
+    globus_list_t *                     list2;
     globus_i_gsc_server_handle_t *      server_handle;
     globus_result_t                     res;
     GlobusGridFTPServerName(globus_gridftp_server_control_destroy);
@@ -1877,6 +1904,66 @@ globus_gridftp_server_control_destroy(
     if(server_handle->dcau_subject != NULL)
     {
         globus_free(server_handle->dcau_subject);
+    }
+
+    while(!globus_list_empty(server_handle->all_cmd_list))
+    {
+        cmd_ent = (globus_l_gsc_cmd_ent_t *) globus_list_remove(
+            &server_handle->all_cmd_list, server_handle->all_cmd_list);
+                                                                                
+        if(cmd_ent->cmd_name != NULL)
+        {
+            globus_free(cmd_ent->cmd_name);
+        }
+        if(cmd_ent->help != NULL)
+        {
+            globus_free(cmd_ent->help);
+        }
+        globus_free(cmd_ent);
+    }
+    globus_hashtable_to_list(&server_handle->cmd_table, &list);
+    while(!globus_list_empty(list))
+    {
+        list2 = (globus_list_t *) globus_list_remove(&list, list);
+        while(!globus_list_empty(list2))
+        {
+            cmd_ent = (globus_l_gsc_cmd_ent_t *)
+                globus_list_remove(&list2, list2);
+
+            if(cmd_ent->cmd_name != NULL)
+            {
+                globus_free(cmd_ent->cmd_name);
+            }
+            if(cmd_ent->help != NULL)
+            {
+                globus_free(cmd_ent->help);
+            }
+            globus_free(cmd_ent);
+        }
+    }
+
+    while(!globus_list_empty(server_handle->feature_list))
+    {
+        tmp_ptr = (char *) globus_list_remove(
+            &server_handle->feature_list, server_handle->feature_list);
+        globus_free(tmp_ptr);
+    }
+
+    globus_hashtable_to_list(&server_handle->funcs.send_cb_table, &list);
+    while(!globus_list_empty(list))
+    {
+        mod_func = (globus_i_gsc_module_func_t *) 
+            globus_list_remove(&list, list);
+        globus_free(mod_func->key);
+        globus_free(mod_func);
+    }
+    globus_hashtable_to_list(&server_handle->funcs.recv_cb_table, &list);
+    while(!globus_list_empty(list))
+    {
+        mod_func = (globus_i_gsc_module_func_t *) 
+            globus_list_remove(&list, list);
+        globus_free(mod_func->key);
+        globus_free(mod_func);
     }
 
     globus_mutex_destroy(&server_handle->mutex);
@@ -2055,10 +2142,10 @@ globus_gridftp_server_control_start(
 
     globus_hashtable_copy(
         &server_handle->funcs.send_cb_table, 
-        &i_attr->funcs.send_cb_table, NULL);
+        &i_attr->funcs.send_cb_table, globus_l_gsc_trans_table_copy);
     globus_hashtable_copy(
         &server_handle->funcs.recv_cb_table, 
-        &i_attr->funcs.recv_cb_table, NULL);
+        &i_attr->funcs.recv_cb_table, globus_l_gsc_trans_table_copy);
 
     if(server_handle->modes != NULL)
     {

@@ -1480,8 +1480,6 @@ globus_l_gfs_data_begin_cb(
     /* start abort process */
     globus_l_gfs_data_start_abort(op);
     globus_mutex_unlock(&op->session_handle->mutex);
-
-    globus_assert(0 && "REMOVE THIS");
 }
 
 static
