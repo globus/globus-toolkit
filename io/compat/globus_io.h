@@ -280,6 +280,16 @@ globus_io_tcp_accept(
     globus_io_handle_t *                handle);
 
 globus_result_t
+globus_io_register_select(
+    globus_io_handle_t *                handle,
+    globus_io_callback_t                read_callback_func,
+    void *                              read_callback_arg,
+    globus_io_callback_t                write_callback_func,
+    void *                              write_callback_arg,
+    globus_io_callback_t                except_callback_func,
+    void *                              except_callback_arg);
+    
+globus_result_t
 globus_io_tcp_get_local_address(
     globus_io_handle_t *                handle,
     int *                               host,

@@ -1926,7 +1926,9 @@ globus_l_xio_tcp_read(
     GlobusXIOTcpDebugEnter();
     handle = (globus_l_handle_t *) driver_specific_handle;
     
-    if(GlobusXIOOperationGetWaitFor(op) == 0)
+    /* if buflen and waitfor are both 0, we behave like register select */
+    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+        (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
         
@@ -2007,7 +2009,9 @@ globus_l_xio_tcp_write(
     attr = (globus_l_attr_t *)
         GlobusXIOOperationGetDataDescriptor(op, GLOBUS_FALSE);
     
-    if(GlobusXIOOperationGetWaitFor(op) == 0)
+    /* if buflen and waitfor are both 0, we behave like register select */
+    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+        (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
         

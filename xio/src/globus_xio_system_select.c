@@ -1003,37 +1003,41 @@ globus_l_xio_system_try_read(
     globus_size_t                       buflen,
     globus_size_t *                     nbytes)
 {
-    globus_ssize_t                      rc;
+    globus_ssize_t                      rc = 0;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_read);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
-    do
+    
+    /* calls to this with buflen == 0 are requesting select only */
+    if(buflen)
     {
-        rc = read(fd, buf, buflen);
-    } while(rc < 0 && errno == EINTR);
-
-    GlobusXIOSystemDebugPrintf(
-        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Read %d bytes (buflen = %d)\n", _xio_name, rc, buflen));
-
-    if(rc < 0)
-    {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        do
         {
-            rc = 0;
-        }
-        else
+            rc = read(fd, buf, buflen);
+        } while(rc < 0 && errno == EINTR);
+    
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+            ("[%s] Read %d bytes (buflen = %d)\n", _xio_name, rc, buflen));
+    
+        if(rc < 0)
         {
-            result = GlobusXIOErrorSystemError("read", errno);
-            goto error_errno;
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                rc = 0;
+            }
+            else
+            {
+                result = GlobusXIOErrorSystemError("read", errno);
+                goto error_errno;
+            }
         }
-    }
-    else if(rc == 0) /* what about UDP? */
-    {
-        result = GlobusXIOErrorEOF();
-        goto error_eof;
+        else if(rc == 0) /* what about UDP? */
+        {
+            result = GlobusXIOErrorEOF();
+            goto error_eof;
+        }
     }
 
     *nbytes = rc;
@@ -1279,27 +1283,31 @@ globus_l_xio_system_try_write(
     globus_size_t                       buflen,
     globus_size_t *                     nbytes)
 {
-    globus_ssize_t                      rc;
+    globus_ssize_t                      rc = 0;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_write);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
-    do
+    
+    /* calls to this with buflen == 0 are requesting select only */
+    if(buflen)
     {
-        rc = write(fd, buf, buflen);
-    } while(rc < 0 && errno == EINTR);
-
-    if(rc < 0)
-    {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        do
         {
-            rc = 0;
-        }
-        else
+            rc = write(fd, buf, buflen);
+        } while(rc < 0 && errno == EINTR);
+    
+        if(rc < 0)
         {
-            result = GlobusXIOErrorSystemError("write", errno);
-            goto error_errno;
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                rc = 0;
+            }
+            else
+            {
+                result = GlobusXIOErrorSystemError("write", errno);
+                goto error_errno;
+            }
         }
     }
 
@@ -1553,16 +1561,16 @@ globus_l_xio_system_handle_read(
 
             if(new_fd < 0)
             {
-                result = GlobusXIOErrorSystemError("accept", errno);
+                if(errno != ECONNABORTED &&
+                    errno != EAGAIN && errno != EWOULDBLOCK)
+                {
+                    result = GlobusXIOErrorSystemError("accept", errno);
+                }
             }
             else
             {
                 int                     rc;
                 
-                /* XXX it is possible to get ECONNABORTED,
-                 * need to set listener non-blocking and deal with this error
-                 * and EAGAIN
-                 */
                 GlobusIXIOSystemAddNonBlocking(new_fd, rc);
                 if(rc < 0)
                 {
@@ -1572,6 +1580,7 @@ globus_l_xio_system_handle_read(
                 else
                 {
                     *read_info->sop.non_data.out_fd = new_fd;
+                    read_info->nbytes++;
                     GlobusXIOSystemDebugPrintf(
                         GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
                         ("[%s] Accepted new connection, fd=%d\n",
@@ -2300,12 +2309,19 @@ globus_xio_system_register_accept(
     void *                              user_arg)
 {
     globus_result_t                     result;
+    int                                 rc;
     globus_l_operation_info_t *         op_info;
     GlobusXIOName(globus_xio_system_register_accept);
 
     GlobusXIOSystemDebugEnterFD(listener_fd);
     
-    /* XXX  need to set this fd non-blocking */
+    GlobusIXIOSystemAddNonBlocking(listener_fd, rc);
+    if(rc < 0)
+    {
+        result = GlobusXIOErrorSystemError("fcntl", errno);
+        goto error_nonblocking;
+    }
+    
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
     {
@@ -2320,6 +2336,7 @@ globus_xio_system_register_accept(
     op_info->user_arg = user_arg;
     op_info->sop.non_data.callback = callback;
     op_info->sop.non_data.out_fd = out_fd;
+    op_info->waitforbytes = 1;
 
     result = globus_l_xio_system_register_read(listener_fd, op_info);
 
@@ -2337,13 +2354,11 @@ error_register:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
+error_nonblocking:
     GlobusXIOSystemDebugExitWithErrorFD(listener_fd);
     return result;
 }
 
-/* XXX should modify these read calls to set the lo watermark opt 
- * (may affect timeout refresh)
- */
 globus_result_t
 globus_xio_system_register_read(
     globus_xio_operation_t              op,
@@ -2548,9 +2563,6 @@ error_op_info:
     return result;
 }
 
-/* XXX should modify these write calls to set the lo watermark opt
- * (may affect timeout refresh)
- */
 globus_result_t
 globus_xio_system_register_write(
     globus_xio_operation_t              op,

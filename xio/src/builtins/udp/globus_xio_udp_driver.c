@@ -1142,7 +1142,9 @@ globus_l_xio_udp_read(
         }
     }
     
-    if(GlobusXIOOperationGetWaitFor(op) == 0)
+    /* if buflen and waitfor are both 0, we behave like register select */
+    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+        (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
         globus_result_t                 result;

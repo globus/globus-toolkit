@@ -3,8 +3,6 @@ need clean method of getting contact string
 
 get rid of macros so we can hide types
 
-add globus_io_register_select
-
 make drivers use their own error macros
 
 --------------------

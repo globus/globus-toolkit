@@ -540,7 +540,9 @@ globus_l_xio_file_read(
     
     handle = (globus_l_handle_t *) driver_specific_handle;
     
-    if(GlobusXIOOperationGetWaitFor(op) == 0)
+    /* if buflen and waitfor are both 0, we behave like register select */
+    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+        (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
         globus_result_t                 result;
@@ -610,7 +612,9 @@ globus_l_xio_file_write(
             
     handle = (globus_l_handle_t *) driver_specific_handle;
     
-    if(GlobusXIOOperationGetWaitFor(op) == 0)
+    /* if buflen and waitfor are both 0, we behave like register select */
+    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+        (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
         globus_result_t                 result;

@@ -3577,6 +3577,93 @@ error_register:
     return result;
 }
 
+static
+void
+globus_l_io_bounce_select_cb(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes)
+{
+    globus_io_callback_t                cb;
+    
+    /* callback is buried in buffer... bad me */
+    cb = (globus_io_callback_t) buf;
+    
+    cb(arg, handle, result);
+}
+
+globus_result_t
+globus_io_register_select(
+    globus_io_handle_t *                handle,
+    globus_io_callback_t                read_callback_func,
+    void *                              read_callback_arg,
+    globus_io_callback_t                write_callback_func,
+    void *                              write_callback_arg,
+    globus_io_callback_t                except_callback_func,
+    void *                              except_callback_arg)
+{
+    globus_l_io_handle_t *              ihandle;
+    globus_result_t                     result;
+    GlobusIOName(globus_io_register_select);
+    
+    GlobusLIOCheckHandle(handle, 0);
+    ihandle = *handle;
+    
+    if(except_callback_func)
+    {
+        result = globus_error_put(
+            globus_error_construct_error(
+                GLOBUS_XIO_MODULE,
+                GLOBUS_NULL,
+                GLOBUS_XIO_ERROR_PARAMETER,
+                __FILE__,
+                _io_name,
+                __LINE__,
+                "Globus IO-XIO does not support use of the except callback"));
+        goto error_notsupported;
+    }
+    
+    if(read_callback_func)
+    {
+        result = globus_io_register_read(
+            handle,
+            (globus_byte_t *) read_callback_func,
+            0,
+            0,
+            globus_l_io_bounce_select_cb,
+            read_callback_arg);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_register;
+        }
+    }
+    
+    if(write_callback_func)
+    {
+        result = globus_io_register_write(
+            handle,
+            (globus_byte_t *) write_callback_func,
+            0,
+            globus_l_io_bounce_select_cb,
+            write_callback_arg);
+        if(result != GLOBUS_SUCCESS)
+        {
+            /* XXX if the read callback was registered, I probably need
+             * to panic, as I can't (easily) stop the read from happening
+             */
+            goto error_register;
+        }
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_register:
+error_notsupported:
+    return result;
+}
+
 globus_io_handle_type_t
 globus_io_get_handle_type(
     globus_io_handle_t *                handle)
