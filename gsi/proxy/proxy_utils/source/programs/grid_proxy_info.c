@@ -45,6 +45,8 @@ static char *  LONG_USAGE = \
 "\n" \
 "    [options to -exists]      (if none are given, H = B = 0 are assumed)\n" \
 "        -valid H:M     (-v)   time requirement for proxy to be valid\n" \
+"        -hours H       (-h)   time requirement for proxy to be valid\n" \
+"                              (deprecated, use -valid instead)\n"
 "        -bits  B       (-b)   strength requirement for proxy to be valid\n" \
 "\n";
 
@@ -56,7 +58,7 @@ static char *  LONG_USAGE = \
                  "%s-%s", \
                  PACKAGE, \
                  VERSION); \
-        fprintf(stderr, "%s", buf); \
+        fprintf(stderr, "%s\n", buf); \
         globus_module_deactivate_all(); \
         exit(0); \
     }
@@ -68,7 +70,6 @@ static char *  LONG_USAGE = \
                 "\nOption -help will display usage.\n", \
                 program); \
         globus_module_deactivate_all(); \
-        exit(0); \
     }
 
 #   define args_show_full_usage() \
@@ -565,7 +566,7 @@ main(
         }
         else if (strcmp(argp, "-path") == 0)
         {
-            printf("path     : %s\n", proxy_filename);
+            printf("%s\n", proxy_filename);
         }
     }
 
@@ -576,12 +577,14 @@ main(
                "identity : %s\n" 
                "type     : %s\n" 
                "strength : %d bits\n"
+               "path     : %s\n"
                "timeleft : ",
                subject,
                issuer,
                identity,
                cert_type_name,
-               strength);
+               strength,
+               proxy_filename);
         
         if (lifetime <= 0)
             lifetime = 0;
