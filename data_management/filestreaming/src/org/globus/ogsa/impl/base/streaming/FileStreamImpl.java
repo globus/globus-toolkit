@@ -24,20 +24,23 @@ import org.globus.io.streams.GassOutputStream;
 import org.globus.io.streams.GlobusFileOutputStream;
 import org.globus.io.streams.GridFTPOutputStream;
 import org.globus.io.streams.HTTPOutputStream;
-import org.globus.ogsa.base.streaming.FileStreamAttributes;
-import org.globus.ogsa.base.streaming.FileStreamFactoryAttributes;
+import org.globus.ogsa.ServiceProperties;
+import org.globus.ogsa.ServiceData;
+import org.globus.ogsa.base.streaming.FileStreamOptionsType;
+import org.globus.ogsa.base.streaming.FileStreamOptionsWrapperType;
 import org.globus.ogsa.base.streaming.FileStreamPortType;
 import org.globus.ogsa.GridConstants;
 import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
+import org.globus.ogsa.impl.core.service.QueryHelper;
 import org.globus.ogsa.impl.ogsi.GridServiceImpl;
 import org.globus.ogsa.impl.security.authentication.SecureServicePropertiesHelper;
 import org.globus.ogsa.impl.security.authentication.SecurityManager;
 import org.globus.ogsa.impl.security.authentication.Constants;
-import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.repository.ServiceNode;
-import org.globus.ogsa.ServiceData;
+import org.globus.ogsa.utils.AnyHelper;
 import org.globus.util.GlobusURL;
+import org.gridforum.ogsi.ExtensibilityType;
 
 import org.ietf.jgss.GSSCredential;
 
@@ -58,32 +61,6 @@ public class FileStreamImpl extends GridServiceImpl {
     public FileStreamImpl() {
         super("FileStreamImpl");
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("default constructor called");
-        }
-    }
-
-    public FileStreamImpl(String sourcePath,
-                          String destinationUrl,
-                          int offset) {
-        super("FileStreamImpl");
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("parameterized constructor called");
-        }
-
-        this.sourcePath = sourcePath;
-        this.destinationUrl = destinationUrl;
-        this.offset = offset;
-        if (logger.isDebugEnabled()) {
-            logger.debug("source path: " + this.sourcePath);
-            logger.debug("destination URL: " + this.destinationUrl);
-            logger.debug("offset: " + this.offset);
-            System.out.println("source path: " + this.sourcePath);
-            System.out.println("destination URL: " + this.destinationUrl);
-            System.out.println("offset: " + this.offset);
-        }
-
         String name = "FileStream";
         String id = String.valueOf(hashCode());
         if(id != null) {
@@ -103,6 +80,44 @@ public class FileStreamImpl extends GridServiceImpl {
         super.postCreate(context);
         SecurityManager manager = SecurityManager.getManager();
         manager.setServiceOwnerFromContext(this, context);
+
+        //get factory's source path
+        FileStreamFactoryImpl factory
+            = (FileStreamFactoryImpl) getProperty(ServiceProperties.FACTORY);
+        ServiceData factoryServiceData = factory.getServiceDataSet().get(
+                FileStreamFactoryImpl.SOURCE_PATH_SD_NAME);
+        this.sourcePath = (String) factoryServiceData.getValue();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("source path: " + this.sourcePath);
+        }
+
+        //Get creation options
+        ExtensibilityType creationExtensibility
+            = (ExtensibilityType) getProperty(
+                    ServiceProperties.CREATION_EXTENSIBILITY);
+
+        FileStreamOptionsWrapperType fileStreamOptionsWrapper = null;
+        try {
+            fileStreamOptionsWrapper
+                = (FileStreamOptionsWrapperType) AnyHelper.getAsSingleObject(
+                        creationExtensibility,
+                        FileStreamOptionsWrapperType.class);
+        } catch (ClassCastException cce) {
+            throw new GridServiceException(
+                "invalid service creation parameters type", cce);
+        }
+        FileStreamOptionsType fileStreamOptions
+            = fileStreamOptionsWrapper.getFileStreamOptions();
+        this.destinationUrl = fileStreamOptions.getDestinationUrl();
+        this.offset = fileStreamOptions.getOffset();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("destination URL: " + this.destinationUrl);
+            logger.debug("offset: " + this.offset);
+        }
+
+        addDestinationUrlServiceData();
     }
     
     protected OutputStream openUrl(String file) throws RemoteException {

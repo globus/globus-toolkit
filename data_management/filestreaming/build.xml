@@ -55,7 +55,7 @@ Southern California. All Rights Reserved.
     <pathelement location="."/>
     <pathelement location="${java.home}/../lib/tools.jar"/>
     <pathelement location="${build.dest}"/>
-    <pathelement location="${ogsa.root}/build/classes"/>
+    <pathelement location="${ogsa.root}/${build.dest}"/>
     <fileset dir="lib">
      <include name="*.jar"/>
     </fileset>
@@ -90,7 +90,9 @@ Southern California. All Rights Reserved.
 
   <target name="copySchemaDir">
     <copy toDir="${schema.dir}">
-        <fileset dir="${schema.origin}" casesensitive="yes"/>
+        <fileset dir="${schema.origin}" casesensitive="yes">
+            <exclude name="base/streaming/file_stream*"/>
+        </fileset>
     </copy>
   </target>
 
@@ -232,13 +234,14 @@ Southern California. All Rights Reserved.
   <!-- =================================================================== -->
 
   <target name="test" depends="buildTest">
+    <ant target="cleanTest"/>
     <mkdir dir="${basedir}/${test-reports.dir}" />
       
     <junit printsummary="yes" haltonfailure="yes" fork="yes">
       <classpath refid="test-classpath" />
       <formatter type="xml" />
       <batchtest todir="${test-reports.dir}">
-        <fileset dir="${build.dir}/classes">
+        <fileset dir="${build.dest}">
           <!-- Convention: each package that's being tested
                 has its own PackageTests class collecting all the tests -->
           <include name="**/test/PackageTests.class"/>
@@ -252,27 +255,30 @@ Southern California. All Rights Reserved.
   <!-- Cleans everything                                                   -->
   <!-- =================================================================== -->
   <target name="clean">
-    <delete dir="${build.dir}"/>
-    <delete file="${build.lib}/${jar.file}"/>
-    <delete file="${build.lib}/${gar.file}"/>
+    <ant target="cleanTest"/>
+    <delete includeEmptyDirs="true" dir="${build.dir}" quiet="true"/>
   </target>
 
-  <target name="cleanAll" depends="clean">
-    <delete dir="${stubs.dir}"/>
+  <target name="cleanTest">
+    <delete includeEmptyDirs="true" dir="${test-reports.dir}" quiet="true"/>
+  </target>
 
-    <delete includeEmptyDirs="true">
+  <target name="cleanStubs" depends="clean">
+    <delete includeEmptyDirs="true" quiet="true">
       <fileset dir="${schema.dir}">
         <exclude name="base/streaming/file_stream*.gwsdl"/>
       </fileset>
     </delete>
 
-    <!--clean up directory artifacts-->
-    <delete includeEmptyDirs="true">
-      <fileset dir="${src.dir}/org">
-        <include name="gridforum"/>
-        <include name="globus/ogsa/security"/>
+    <delete includeEmptyDirs="true" quiet="true">
+      <fileset dir="${src.dir}">
+        <exclude name="org/globus/ogsa/impl/base/streaming/**"/>
       </fileset>
     </delete>
+  </target>
+
+  <target name="cleanAll" depends="clean">
+    <ant target="cleanStubs"/>
   </target>
 
   <target name="deployGar" depends="gar">

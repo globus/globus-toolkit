@@ -15,10 +15,7 @@
         namespace="http://ogsa.globus.org/security/authentication"/>
 
 <types>
-    <xsd:schema targetNamespace="http://www.globus.org/namespaces/base/streaming"
-                xmlns:tns="http://www.globus.org/namespaces/base/streaming"
-                xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-                
+    <xsd:schema>
         <xsd:element name="start">
             <xsd:complexType/>
             </xsd:element>
@@ -33,31 +30,31 @@
             <xsd:complexType/>
         </xsd:element>
 
-        <xsd:complexType name="FileStreamAttributes">
+        <xsd:complexType name="FileStreamOptionsType">
             <xsd:sequence>
                 <xsd:element name="destinationUrl" type="xsd:string"/>
                 <xsd:element name="offset" type="xsd:int"/>
             </xsd:sequence>
         </xsd:complexType>
-        <xsd:element name="FileStreamAttributesWrapper">
+        <xsd:element name="FileStreamOptionsWrapperType">
             <xsd:complexType>
                 <xsd:sequence>
-                    <xsd:element name="fileStreamAttributes"
-                                 type="tns:FileStreamAttributes"/>
+                    <xsd:element name="fileStreamOptions"
+                                 type="tns:FileStreamOptionsType"/>
                 </xsd:sequence>
             </xsd:complexType>
         </xsd:element>
 
-        <xsd:complexType name="FileStreamFactoryAttributes">
+        <xsd:complexType name="FileStreamFactoryOptionsType">
             <xsd:sequence>
                 <xsd:element name="sourcePath" type="xsd:string"/>
             </xsd:sequence>
         </xsd:complexType>
-        <xsd:element name="FileStreamFactoryAttributesWrapper">
+        <xsd:element name="FileStreamFactoryOptionsWrapperType">
             <xsd:complexType>
                 <xsd:sequence>
-                    <xsd:element name="fileStreamFactoryAttributes"
-                                 type="tns:FileStreamFactoryAttributes"/>
+                    <xsd:element name="fileStreamFactoryOptions"
+                                 type="tns:FileStreamFactoryOptionsType"/>
                 </xsd:sequence>
             </xsd:complexType>
         </xsd:element>

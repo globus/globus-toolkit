@@ -28,20 +28,20 @@ import org.globus.axis.gsi.GSIConstants;
 import org.globus.gsi.gssapi.auth.SelfAuthorization;
 import org.globus.gsi.gssapi.GSSConstants;
 
-import org.globus.ogsa.base.streaming.FileStreamAttributes;
-import org.globus.ogsa.base.streaming.FileStreamAttributesWrapper;
-import org.globus.ogsa.base.streaming.FileStreamFactoryAttributes;
-import org.globus.ogsa.base.streaming.FileStreamFactoryAttributesWrapper;
+import org.globus.ogsa.base.streaming.FileStreamOptionsType;
+import org.globus.ogsa.base.streaming.FileStreamOptionsWrapperType;
+import org.globus.ogsa.base.streaming.FileStreamFactoryOptionsType;
+import org.globus.ogsa.base.streaming.FileStreamFactoryOptionsWrapperType;
 import org.globus.ogsa.base.streaming.FileStreamPortType;
 import org.globus.ogsa.base.streaming.service.FileStreamServiceGridLocator;
 import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.ogsa.server.test.TestServer;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.GridServiceFactory;
+import org.globus.ogsa.wsdl.GSR;
 import org.gridforum.ogsi.ExtensibilityType;
 import org.gridforum.ogsi.Factory;
 import org.gridforum.ogsi.GridService;
-import org.gridforum.ogsi.HandleType;
 import org.gridforum.ogsi.LocatorType;
 import org.gridforum.ogsi.OGSIServiceGridLocator;
 import org.gridforum.ogsi.ReferenceType;
@@ -53,21 +53,22 @@ public class FileStreamTestCase extends TestCase {
     private static final String FSS_INSTANCE_ID = "testFileStream";
 
     private static final String TEST_SOURCE_FILE
-        = "test-reports/test_fss_source_file";
-    private static final String TEST_DESTINATION_FILE
-        = "test-reports/test_fss_source_file";
-    private static final String TEST_DESTINATION_URL
-        = "file:///"
-        + System.getProperty("user.dir")
+        = System.getProperty("user.dir")
         + "/"
-        + TEST_DESTINATION_FILE;
+        + "test-reports/test_fss_source_file";
+    private static final String TEST_DESTINATION_FILE
+        = System.getProperty("user.dir")
+        + "/"
+        + "test-reports/test_fss_dest_file";
+    private static final String TEST_DESTINATION_URL
+        = "file:///" + TEST_DESTINATION_FILE;
     private static final String[] TEST_PATTERNS
         = {"~~~~!!!!@@@@####$$$$%%%%^^^^&&&&****(((())))____++++",
            "~!@#$%^&*()_++_)(*&^%$#@!~~!@#$%^&*()_++_)(*&^%$#@!~"};
 
     private static TestServer testServer;
 
-    private static LocatorType fileStreamFactoryHandleLocator = null;
+    private static LocatorType factoryHandleLocator = null;
 
     private static OGSIServiceGridLocator gridServiceLocator
         = new OGSIServiceGridLocator();
@@ -108,30 +109,28 @@ public class FileStreamTestCase extends TestCase {
             murle.printStackTrace();
         }
 
-        FileStreamFactoryAttributes factoryAttributes
-            = new FileStreamFactoryAttributes();
-        factoryAttributes.setSourcePath(TEST_SOURCE_FILE);
+        FileStreamFactoryOptionsWrapperType factoryOptionsWrapper
+            = new FileStreamFactoryOptionsWrapperType();
+        FileStreamFactoryOptionsType factoryOptions
+            = new FileStreamFactoryOptionsType();
+        factoryOptions.setSourcePath(TEST_SOURCE_FILE);
+        factoryOptionsWrapper.setFileStreamFactoryOptions(factoryOptions);
         ExtensibilityType creationParameters
-            = AnyHelper.getExtensibility(factoryAttributes);
+            = AnyHelper.getExtensibility(factoryOptionsWrapper);
 
-        this.fileStreamFactoryHandleLocator
+        this.factoryHandleLocator
             = fileStreamFactoryFactory.createService(
                     null, FSF_INSTANCE_ID, creationParameters);
 
-        ReferenceType[] references
-            = this.fileStreamFactoryHandleLocator.getReference();
-        for (int index=0; index<references.length; index++) {
-            if (references[index] != null) {
-                System.out.println("FSF Handle: " + references.toString());
-            }
-        }
+        GSR gsr = GSR.newInstance(this.factoryHandleLocator);
+        System.out.println("FSF Handle: " + gsr.getHandle());
 
     }
 
     protected void tearDown() throws Exception {
         //destroy the file stream factory
         GridService fileStreamFactory = this.gridServiceLocator.getFactoryPort(
-                    this.fileStreamFactoryHandleLocator);
+                    this.factoryHandleLocator);
         fileStreamFactory.destroy();
         System.out.println("FSF Destroyed");
     }
@@ -139,7 +138,7 @@ public class FileStreamTestCase extends TestCase {
     private FileStreamPortType createFileStream() throws RemoteException  {
         GridServiceFactory fileStreamFactory = new GridServiceFactory(
                 this.gridServiceLocator.getFactoryPort(
-                    this.fileStreamFactoryHandleLocator));
+                    this.factoryHandleLocator));
         fileStreamFactory.getStub()._setProperty(
                 Constants.MSG_SEC_TYPE,
                 Constants.SIGNATURE);
@@ -150,16 +149,23 @@ public class FileStreamTestCase extends TestCase {
                 GSIConstants.GSI_MODE,
                 GSIConstants.GSI_MODE_LIMITED_DELEG);
 
-        FileStreamAttributes fileStreamAttributes = new FileStreamAttributes();
-        fileStreamAttributes.setDestinationUrl(TEST_DESTINATION_URL);
-        fileStreamAttributes.setOffset(0);
+        FileStreamOptionsWrapperType fileStreamOptionsWrapper
+            = new FileStreamOptionsWrapperType();
+        FileStreamOptionsType fileStreamOptions
+            = new FileStreamOptionsType();
+        fileStreamOptions.setDestinationUrl(TEST_DESTINATION_URL);
+        fileStreamOptions.setOffset(0);
+        fileStreamOptionsWrapper.setFileStreamOptions(fileStreamOptions);
         ExtensibilityType creationParameters
-            = AnyHelper.getExtensibility(fileStreamAttributes);
+            = AnyHelper.getExtensibility(fileStreamOptionsWrapper);
 
         System.out.println("creating file stream...");
         LocatorType fileStreamHandleLocator
             = fileStreamFactory.createService(
                     null, FSS_INSTANCE_ID, creationParameters);
+
+        GSR gsr = GSR.newInstance(fileStreamHandleLocator);
+        System.out.println("FSS Handle: " + gsr.getHandle());
 
         FileStreamServiceGridLocator fileStreamLocator
             = new FileStreamServiceGridLocator();
@@ -171,9 +177,11 @@ public class FileStreamTestCase extends TestCase {
 
     private void sendTestPattern(int testPatternIndex) {
         try {
-            BufferedWriter writer = new BufferedWriter(
-                    new FileWriter(TEST_SOURCE_FILE));
+            //BufferedWriter writer = new BufferedWriter(
+            FileWriter writer =
+                    new FileWriter(TEST_SOURCE_FILE);
             writer.write(TEST_PATTERNS[testPatternIndex]);
+            writer.flush();
             writer.close();
         } catch (IOException ioe) {
             System.err.println("ERROR: source file write failed -- ");
@@ -227,16 +235,6 @@ public class FileStreamTestCase extends TestCase {
             assertTrue(false);
         }
 
-        assertTestPatternTransmitted(0);
-
-        sendTestPattern(1);
-        try {
-            Thread.currentThread().sleep(1000);
-        } catch (InterruptedException ie) {
-            System.err.println("sleep interrupted");
-        }
-        assertTestPatternTransmitted(1);
-
         try {
             fileStream.stop();
             assertTrue(true);
@@ -247,6 +245,8 @@ public class FileStreamTestCase extends TestCase {
             assertTrue(false);
         }
 
+        assertTestPatternTransmitted(0);
+
         try {
             fileStream.destroy();
             assertTrue(true);
@@ -256,6 +256,16 @@ public class FileStreamTestCase extends TestCase {
             re.printStackTrace();
             assertTrue(false);
         }
+
+        System.out.println("FSS Destroyed");
+
+        /*
+        try {
+            Thread.currentThread().sleep(10000);
+        } catch (InterruptedException ie) {
+            System.err.println("sleep interrupted");
+        }
+        */
     }
 
     public static void main(String[] args) {

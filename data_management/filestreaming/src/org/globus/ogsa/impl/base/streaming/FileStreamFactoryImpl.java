@@ -140,8 +140,10 @@ import org.apache.commons.logging.LogFactory;
 
 import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
-import org.globus.ogsa.base.streaming.FileStreamAttributes;
-import org.globus.ogsa.base.streaming.FileStreamFactoryAttributes;
+import org.globus.ogsa.base.streaming.FileStreamOptionsType;
+import org.globus.ogsa.base.streaming.FileStreamOptionsWrapperType;
+import org.globus.ogsa.base.streaming.FileStreamFactoryOptionsType;
+import org.globus.ogsa.base.streaming.FileStreamFactoryOptionsWrapperType;
 import org.globus.ogsa.base.streaming.FileStreamPortType;
 import org.globus.ogsa.impl.ogsi.PersistentGridServiceImpl;
 import org.globus.ogsa.impl.ogsi.GridServiceImpl;
@@ -158,25 +160,33 @@ public class FileStreamFactoryImpl extends GridServiceImpl
     private static Log logger
         = LogFactory.getLog(FileStreamFactoryImpl.class);
 
-    static String SOURCE_PATH_SD_NAME = "sourcePath";
+    public static String SOURCE_PATH_SD_NAME = "sourcePath";
 
     public FileStreamFactoryImpl() {
         super ("File Stream Factory Service");
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("default constructor called");
-        }
     }
 
-    public FileStreamFactoryImpl(
-            FileStreamFactoryAttributes fileStreamFactoryAttributes) {
-        super ("File Stream Factory Service");
+    public void postCreate(GridContext context) throws GridServiceException {
+        super.postCreate(context);
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("parameterized constructor called");
+        ExtensibilityType creationExtensibility
+            = (ExtensibilityType) getProperty(
+                    ServiceProperties.CREATION_EXTENSIBILITY);
+
+        FileStreamFactoryOptionsWrapperType factoryOptionsWrapper = null;
+        try {
+            factoryOptionsWrapper = (FileStreamFactoryOptionsWrapperType)
+                    AnyHelper.getAsSingleObject(
+                        creationExtensibility,
+                        FileStreamFactoryOptionsWrapperType.class);
+        } catch (ClassCastException cce) {
+            throw new GridServiceException(
+                "invalid service creation parameters type", cce);
         }
+        FileStreamFactoryOptionsType factoryOptions
+            = factoryOptionsWrapper.getFileStreamFactoryOptions();
 
-        String sourcePath = fileStreamFactoryAttributes.getSourcePath();
+        String sourcePath = factoryOptions.getSourcePath();
         if (logger.isDebugEnabled()) {
             logger.debug("saving source path as service data: " + sourcePath);
         }

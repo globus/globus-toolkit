@@ -18,11 +18,10 @@
                    value="org.globus.ogsa.impl.ogsi.FactoryProvider"/>
         <parameter name="persistent" value="true"/>
         <parameter name="factoryCallback"
-                   value="org.globus.ogsa.impl.base.streaming.FileStreamFactoryFactoryCallbackImpl"
+                   value="org.globus.ogsa.impl.ogsi.DynamicFactoryCallbackImpl"
         />
         <parameter name="handlerClass"
                    value="org.globus.ogsa.handlers.RPCURIProvider"/>
-        <parameter name="allowedMethods" value="*"/>
         <!--Factory Parameters-->
         <parameter name="instance-schemaPath"
                    value="schema/base/streaming/file_stream_factory_service.wsdl"/>
@@ -33,12 +32,11 @@
         <parameter name="instance-operationProviders"
                    value="org.globus.ogsa.impl.ogsi.FactoryProvider"/>
         <parameter name="instance-factoryCallback"
-                   value="org.globus.ogsa.impl.base.streaming.FileStreamFactoryCallbackImpl"
+                   value="org.globus.ogsa.impl.ogsi.DynamicFactoryCallbackImpl"
         />
         <parameter name="instance-lifecycle" value="persistent"/>
         <parameter name="instance-handlerClass"
                    value="org.globus.ogsa.handlers.RPCURIProvider"/>
-        <parameter name="instance-allowedMethods" value="*"/>
 
         <!--Instance Parameters-->
         <parameter name="instance-instance-schemaPath"
@@ -47,11 +45,8 @@
                    value="org.globus.ogsa.impl.base.streaming.FileStreamImpl"/>
         <parameter name="instance-instance-className"
                    value="org.globus.ogsa.base.streaming.FileStreamPortType"/>
-        <parameter name="instance-instance-operationProviders"
-                   value="org.globus.ogsa.impl.security.authentication.SecureNotificationSourceProvider"/>
         <parameter name="instance-instance-handlerClass"
                    value="org.globus.ogsa.handlers.RPCURIProvider"/>
-        <parameter name="instance-instance-allowedMethods" value="*"/>
         <parameter name="instance-instance-security" value="gsi"/>
     </service>
 </deployment>
