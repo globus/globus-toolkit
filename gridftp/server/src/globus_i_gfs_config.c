@@ -72,6 +72,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Enable CAS authorization."},
  {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Use gsi security on ipc channel."},
+ {"ipc_auth_mode", "ipc_auth_mode", NULL, "ipc-auth-mode", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Set authorization mode for the ipc connection.  Options are: none, host, self or subject:<subject>"},
  {"allow_anonymous", "allow_anonymous", NULL, "allow-anon", "aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow cleartext anonymous access. If server is running as root anonymous_user "
     "must also be set.  Disables ipc security."},
@@ -209,6 +211,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL /* hostname found by gethostname() */},
  {"loaded_config", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      NULL /* placeholder so configfile check doesn't fail */},
+ {"version_string", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+     NULL /* version string */},
  {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
     NULL /* used to store list of known backends and associated info */},
  {"module_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
@@ -934,6 +938,16 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("fqdn", 0, globus_libc_strdup(hostname));
         globus_free(hostname);
     }
+
+    data = globus_common_create_string(
+            "%d.%d (%s, %d-%d)",
+            local_version.major,
+            local_version.minor,
+            build_flavor,
+            local_version.timestamp,
+            local_version.branch_id);
+    globus_l_gfs_config_set("version_string", 0, data);
+            
 
     if((value = globus_i_gfs_config_string("hostname")) != GLOBUS_NULL)
     {

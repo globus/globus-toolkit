@@ -15,7 +15,8 @@ typedef struct
     void *                              close_arg;
 
     void *                              session_arg;
-
+    char *                              home_dir;
+    char *                              username;
     globus_gridftp_server_control_t     server_handle;
 } globus_l_gfs_server_instance_t;
 
@@ -198,6 +199,7 @@ globus_l_gfs_get_full_path(
     char                                    path[MAXPATHLEN];
     char *                                  cwd = GLOBUS_NULL;
     int                                     cwd_len;
+    char *                                  slash = "/";
     GlobusGFSName(globus_l_gfs_get_full_path);
     GlobusGFSDebugEnter();
 
@@ -209,6 +211,39 @@ globus_l_gfs_get_full_path(
     if(*in_path == '/')
     {
         strncpy(path, in_path, sizeof(path));
+    }
+    else if(*in_path == '~')
+    {
+        if(instance->home_dir == NULL)
+        {
+            result = GlobusGFSErrorGeneric(
+                "No home directory, cannot expand ~");
+            goto done;            
+        }
+        in_path++;
+        if(*in_path == '/')
+        {
+            in_path++;
+        }
+        else if(*in_path == '\0')
+        {
+            slash = "";
+        }
+        else
+        {
+            /* XXX expand other usernames here */
+            result = GlobusGFSErrorGeneric(
+                "Cannot expand ~");
+            goto done;            
+        } 
+        cwd = globus_libc_strdup(instance->home_dir);
+        cwd_len = strlen(cwd);
+        if(cwd[cwd_len - 1] == '/')
+        {
+            cwd[--cwd_len] = '\0';
+        }
+        snprintf(path, sizeof(path), "%s%s%s", cwd, slash, in_path);
+        globus_free(cwd);
     }
     else
     {
@@ -261,6 +296,15 @@ globus_l_gfs_channel_close_cb(
     if(instance->close_func)
     {
         instance->close_func(instance->close_arg);
+    }
+    
+    if(instance->home_dir)
+    {
+        globus_free(instance->home_dir);
+    }
+    if(instance->username)
+    {
+        globus_free(instance->username);
     }
     globus_free(instance->local_contact);
     globus_free(instance->remote_contact);
@@ -365,6 +409,11 @@ globus_l_gfs_auth_session_cb(
             reply->info.session.username,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             NULL);
+        
+        auth_info->instance->home_dir = 
+            globus_libc_strdup(reply->info.session.home_dir);
+        auth_info->instance->username = 
+            globus_libc_strdup(reply->info.session.username);
     }
     globus_free(auth_info->session_info->username);
     if(auth_info->session_info->password != NULL)

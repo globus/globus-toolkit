@@ -2252,13 +2252,50 @@ globus_l_gfs_ipc_handle_connect(
         if(session_info->del_cred != NULL &&
             globus_i_gfs_config_bool("secure_ipc"))
         {
+            globus_xio_gsi_authorization_mode_t      auth_mode;
+            const char *                             auth_mode_str;
             globus_xio_attr_cntl(
                 attr, globus_l_gfs_gsi_driver,
                 GLOBUS_XIO_GSI_SET_CREDENTIAL, session_info->del_cred);
+
             globus_xio_attr_cntl(
                 attr, globus_l_gfs_gsi_driver,
                 GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
                 GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY);
+
+            auth_mode_str = globus_i_gfs_config_string("ipc_auth_mode");
+            if(auth_mode_str != NULL)
+            {
+                if(strcasecmp(auth_mode_str, "none") == 0)
+                {
+                    auth_mode = GLOBUS_XIO_GSI_NO_AUTHORIZATION;
+                }
+                else if(strcasecmp(auth_mode_str, "self") == 0)
+                {
+                    auth_mode = GLOBUS_XIO_GSI_SELF_AUTHORIZATION;
+                }
+                else if(strcasecmp(auth_mode_str, "host") == 0)
+                {
+                    auth_mode = GLOBUS_XIO_GSI_HOST_AUTHORIZATION;
+                }
+                else if(strncasecmp(auth_mode_str, "subject:", 8) == 0)
+                {
+                    auth_mode = GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION;                   
+                    globus_xio_attr_cntl(
+                        attr, globus_l_gfs_gsi_driver,
+                        GLOBUS_XIO_GSI_SET_TARGET_NAME,
+                        auth_mode_str + 8);
+                }
+                else
+                {
+                    goto ipc_error;
+                }
+                  
+                globus_xio_attr_cntl(
+                    attr, globus_l_gfs_gsi_driver,
+                    GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
+                    auth_mode);
+            }
         }
         time = globus_i_gfs_config_int("ipc_connect_timeout");
         if(time > 0)

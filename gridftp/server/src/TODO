@@ -58,3 +58,27 @@ known bugs:
 
 
 ability to send 500 go away to control channel before server-lib has control
+
+
+add interface changes for cmdline/config options we want
+add -mkbasedir to globus-url-copy
+add -host -subject -none auth options to ipc
+add id to log lines to associtate messages to their connection.
+
+perf logging output/usage cleanup
+striping bugs
+error messages
+
+
+
+
+
+
+
+
+
+
+done
+~ expansion
+site rdel
+async cksm

@@ -417,6 +417,8 @@ globus_i_gfs_log_usage_stats(
     struct tm                           end_tm_time;
     long                                win_size;
     char                                start_b[256];
+    char                                end_b[256];
+    char                                ver_b[256];
     char                                block_b[256]; 
     char                                buffer_b[256];
     char                                nbytes_b[256];
@@ -482,8 +484,17 @@ globus_i_gfs_log_usage_stats(
         start_tm_time.tm_min,
         start_tm_time.tm_sec,
         (int) start_gtd_time->tv_usec);
-    sprintf(block_b, "%ld",(long) blksize);
+    sprintf(end_b, "%04d%02d%02d%02d%02d%02d.%d", 
+        end_tm_time.tm_year + 1900,
+        end_tm_time.tm_mon + 1,
+        end_tm_time.tm_mday,
+        end_tm_time.tm_hour,
+        end_tm_time.tm_min,
+        end_tm_time.tm_sec,
+        (int) end_gtd_time->tv_usec);
+    sprintf(ver_b, "%s", globus_i_gfs_config_string("version_string"));
     sprintf(buffer_b, "%ld", win_size);
+    sprintf(block_b, "%ld",(long) blksize);
     sprintf(nbytes_b, "%"GLOBUS_OFF_T_FORMAT, nbytes);
     sprintf(streams_b, "%d", stream_count);
     sprintf(stripes_b, "%d", stripe_count);
@@ -491,18 +502,17 @@ globus_i_gfs_log_usage_stats(
 
     result = globus_usage_stats_send(
         globus_l_gfs_usage_handle,
-        11,
+        10,
         /* include an end time, incase we don't actually send this til well
         after transfer finished? */
         "START", start_b,
-        "USER", username,
-        "FILE", fname,
+        "END", end_b,
+        "VER", ver_b,
         "BUFFER", buffer_b,
         "BLOCK", block_b,
         "NBYTES", nbytes_b,
         "STREAMS", streams_b,
         "STRIPES", stripes_b,
-        "DEST", dest_ip,
         "TYPE", type,
         "CODE", code_b);
     
