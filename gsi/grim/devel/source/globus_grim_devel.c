@@ -29,6 +29,7 @@ struct globus_l_grim_conf_info_s
     int                                     max_time;
     int                                     default_time;
     int                                     key_bits;
+    char *                                  log_filename;
     char *                                  ca_cert_dir;
     char *                                  cert_filename;
     char *                                  key_filename;
@@ -493,6 +494,7 @@ globus_grim_assertion_set_port_types_array(
     info->max_time = GLOBUS_GRIM_DEFAULT_MAX_TIME;                          \
     info->default_time = GLOBUS_GRIM_DEFAULT_TIME;                          \
     info->key_bits = GLOBUS_GRIM_DEFAULT_KEY_BITS;                          \
+    info->log_filename = NULL;                                              \
     info->ca_cert_dir = strdup(GLOBUS_GRIM_DEFAULT_CA_CERT_DIR);            \
     info->cert_filename = strdup(GLOBUS_GRIM_DEFAULT_CERT_FILENAME);        \
     info->key_filename = strdup(GLOBUS_GRIM_DEFAULT_KEY_FILENAME);          \
@@ -898,6 +900,53 @@ globus_grim_config_set_port_type_filename(
     GlobusLGrimSetGetConfigEnter(config, info);
     free(info->port_type_filename);
     info->port_type_filename = strdup(port_type_filename);
+
+    return GLOBUS_SUCCESS;
+}
+
+
+/*
+ *
+ */ 
+globus_result_t
+globus_grim_config_get_log_filename(
+    globus_grim_config_t                    config,
+    char **                                 log_filename)
+{
+    struct globus_l_grim_conf_info_s *      info;
+    
+    GlobusLGrimSetGetConfigEnter(config, info);
+
+    *log_filename = info->log_filename;
+    
+    return GLOBUS_SUCCESS;
+}
+ 
+/*
+ *
+ */ 
+globus_result_t
+globus_grim_config_set_log_filename(
+    globus_grim_config_t                    config,
+    char *                                  log_filename)
+{
+    struct globus_l_grim_conf_info_s *      info;
+    
+    GlobusLGrimSetGetConfigEnter(config, info);
+
+    if(info->log_filename != NULL)
+    {
+        free(info->log_filename);
+    }
+
+    if(log_filename != NULL)
+    {
+        info->log_filename = strdup(log_filename);
+    }
+    else
+    {
+        info->log_filename = NULL;
+    }
 
     return GLOBUS_SUCCESS;
 }
@@ -1341,6 +1390,10 @@ grim_conf_start(
         {
             free(info->port_type_filename);
             info->port_type_filename = strdup(attr[1]);
+        }
+        else if(strcmp(attr[0], "log_filename") == 0)
+        {
+            info->log_filename = strdup(attr[1]);
         }
     }
 }

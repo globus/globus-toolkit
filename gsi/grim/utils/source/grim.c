@@ -150,6 +150,7 @@ main(
     char *                                  ca_cert_dir;
     char *                                  port_type_filename;
     char *                                  proxy_out_filename = NULL;
+    char *                                  log_filename = NULL;
     globus_gsi_cred_handle_t                cred_handle;
     uid_t                                   user_id;
     struct passwd *                         pw_ent;
@@ -159,6 +160,18 @@ main(
     FILE *                                  port_type_fptr;
     FILE *                                  fptr;
     globus_grim_config_t                    config;
+
+
+    /*
+     *  verify that setuid bit is set
+     */
+    if(getuid() == geteuid())
+    {
+        /* log to stderr since we do not know the intended log file yet */
+        fprintf(stderr, "Not running as a setuid program.  The user may must "
+                        "simply use their own proxy.\n");
+        return 1;
+    }
 
     /***** BEGIN PRIVLEDGES *****/
     /*
@@ -243,6 +256,17 @@ main(
     globus_grim_config_get_cert_filename(config, &user_cert_filename);
     globus_grim_config_get_key_filename(config, &user_key_filename);
     globus_grim_config_get_port_type_filename(config, &port_type_filename);
+    globus_grim_config_get_port_type_filename(config, &log_filename);
+    if(log_filename != NULL)
+    {
+        FILE *                                  tmp_file;
+
+        tmp_file = fopen(log_filename, "r");
+        if(tmp_file != NULL)
+        {
+            g_logfile = tmp_file;
+        }
+    }
 
     /*
      *  open port type file will still maintaining privledges
@@ -476,17 +500,6 @@ grim_parse_input(
                 return 1;
             }
             globus_grim_config_set_key_bits(config, key_bits);
-        }
-        else if(strcmp(argv[ctr], "-log") == 0 && ctr + 1 < argc)
-        {
-            FILE * tmp_log;
-
-            ctr++;
-            tmp_log = fopen(argv[ctr], "a");
-            if(tmp_log != NULL)
-            {
-                g_logfile = tmp_log;
-            }
         }
         else if(strcmp(argv[ctr], "-q") == 0)
         {
@@ -947,7 +960,7 @@ grim_write_proxy(
     /*
      * TODO: provide command line options for formating the output
      */
-    fprintf(stdout, "%s,%d\n", proxy_out_filename, goodtill);
+    fprintf(stdout, "%s,%ld\n", proxy_out_filename, goodtill);
 
     return rc;
 }

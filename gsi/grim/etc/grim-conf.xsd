@@ -1,0 +1,28 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+    <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+            Schema for GRIM configuration file
+        </xsd:documentation>
+    </xsd:annotation>
+
+    <xsd:element name="grim_conf" type="GrimConf"/>
+
+    <xsd:complexType name="GrimConf">
+        <xsd:sequence>
+            <xsd:element name="conf" type="GrimConfType"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="GrimConfType" type="xsd:string"/>
+        <xsd:attribute name="max_time" type="xsd:integer"/>
+        <xsd:attribute name="default_time" type="xsd:integer"/>
+        <xsd:attribute name="key_bits" type="xsd:integer"/>
+        <xsd:attribute name="cert_filename" type="xsd:string"/>
+        <xsd:attribute name="key_filename" type="xsd:string"/>
+        <xsd:attribute name="gridmap_filename" type="xsd:string"/>
+        <xsd:attribute name="port_type_filename" type="xsd:string"/>
+        <xsd:attribute name="log_filename" type="xsd:string"/>
+    </xsd:complexType>
+
+</xsd:schema>
