@@ -611,7 +611,6 @@ err_alloc_unlock:
     server_handle->ref--;
     globus_i_gsc_terminate(server_handle);
     globus_l_gsc_server_ref_check(server_handle);
-    globus_mutex_unlock(&server_handle->mutex);
 
     return;
 }
@@ -921,6 +920,7 @@ globus_l_gsc_220_write_cb(
     }
     globus_mutex_lock(&server_handle->mutex);
     {
+        /* TODO: change the timeout here */
         server_handle->state = GLOBUS_L_GSC_STATE_OPEN;
         /*  post a read on the fake buffers */
         res = globus_xio_register_read(
@@ -1162,7 +1162,7 @@ globus_l_gsc_intermediate_reply_cb(
             server_handle->reply_outstanding = GLOBUS_FALSE;
         }
     }
-    globus_mutex_lock(&server_handle->mutex);
+    globus_mutex_unlock(&server_handle->mutex);
 }
 
 static void
