@@ -103,7 +103,7 @@ char *__progname;
 ServerOptions options;
 
 /* Name of the server configuration file. */
-char *config_file_name = _PATH_SERVER_CONFIG_FILE;
+char *config_file_name;
 
 /*
  * Flag indicating whether IPv4 or IPv6.  This can be set on the command line.
@@ -607,6 +607,8 @@ main(int ac, char **av)
 	int ret, key_used = 0;
 
 	__progname = get_progname(av[0]);
+	init_pathnames();
+	config_file_name = _PATH_SERVER_CONFIG_FILE;
 	init_rng();
 
 	/* Save argv. */

@@ -260,6 +260,7 @@ main(int ac, char **av)
 	extern char *optarg;
 
 	__progname = get_progname(av[0]);
+	init_pathnames();
 	init_rng();
 
 	/*

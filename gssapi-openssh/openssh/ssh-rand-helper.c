@@ -58,10 +58,8 @@ RCSID("$Id$");
 # define SSH_PRNG_SEED_FILE      _PATH_SSH_USER_DIR"/prng_seed"
 #endif
 
-/* Path to PRNG commands list */
-#ifndef SSH_PRNG_COMMAND_FILE
-# define SSH_PRNG_COMMAND_FILE   SSHDIR "/ssh_prng_cmds"
-#endif
+/* Path to PRNG commands list (from pathnames.c) */
+extern char *SSH_PRNG_COMMAND_FILE;
 
 
 #ifdef HAVE___PROGNAME
@@ -754,6 +752,7 @@ main(int argc, char **argv)
 	int ret;
 
 	__progname = get_progname(argv[0]);
+	init_pathnames();
 	/* XXX: need some debugging mode */
 	log_init(argv[0], SYSLOG_LEVEL_INFO, SYSLOG_FACILITY_USER, 1);
 

@@ -1062,10 +1062,11 @@ do_rc_files(Session *s, const char *shell)
 			fprintf(stderr, "Could not run %s\n",
 			    _PATH_SSH_USER_RC);
 	} else if (stat(_PATH_SSH_SYSTEM_RC, &st) >= 0) {
+		snprintf(cmd, sizeof cmd, "%s %s", _PATH_BSHELL,
+			 _PATH_SSH_SYSTEM_RC);
 		if (debug_flag)
-			fprintf(stderr, "Running %s %s\n", _PATH_BSHELL,
-			    _PATH_SSH_SYSTEM_RC);
-		f = popen(_PATH_BSHELL " " _PATH_SSH_SYSTEM_RC, "w");
+			fprintf(stderr, "Running %s\n", cmd);
+		f = popen(cmd, "w");
 		if (f) {
 			if (do_xauth)
 				fprintf(f, "%s %s\n", s->auth_proto,

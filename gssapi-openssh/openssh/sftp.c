@@ -110,13 +110,15 @@ main(int argc, char **argv)
 	char *host, *userhost, *cp, *file2;
 	int debug_level = 0, sshver = 2;
 	char *file1 = NULL, *sftp_server = NULL;
-	char *ssh_program = _PATH_SSH_PROGRAM, *sftp_direct = NULL;
+	char *ssh_program = NULL, *sftp_direct = NULL;
 	LogLevel ll = SYSLOG_LEVEL_INFO;
 	arglist args;
 	extern int optind;
 	extern char *optarg;
 
 	__progname = get_progname(argv[0]);
+	init_pathnames();
+	ssh_program = _PATH_SSH_PROGRAM;
 	args.list = NULL;
 	addargs(&args, "ssh");		/* overwritten with ssh_program */
 	addargs(&args, "-oFallBackToRsh no");

@@ -12,11 +12,12 @@
  * called by a name other than "ssh" or "Secure Shell".
  */
 
-#define ETCDIR				"/etc"
-
-#ifndef SSHDIR
-#define SSHDIR				ETCDIR "/ssh"
-#endif
+/*
+ * Some of these pathnames are generated at run-time to meet GPT binary
+ * relocatability requirements.  They are initialized by init_pathnames()
+ * in pathnames.c.
+ */
+void init_pathnames();
 
 #ifndef _PATH_SSH_PIDDIR
 #define _PATH_SSH_PIDDIR		"/var/run"
@@ -26,26 +27,24 @@
  * System-wide file containing host keys of known hosts.  This file should be
  * world-readable.
  */
-#define _PATH_SSH_SYSTEM_HOSTFILE	SSHDIR "/ssh_known_hosts"
+extern char *_PATH_SSH_SYSTEM_HOSTFILE;
 /* backward compat for protocol 2 */
-#define _PATH_SSH_SYSTEM_HOSTFILE2	SSHDIR "/ssh_known_hosts2"
+extern char *_PATH_SSH_SYSTEM_HOSTFILE2;
 
 /*
  * Of these, ssh_host_key must be readable only by root, whereas ssh_config
  * should be world-readable.
  */
-#define _PATH_SERVER_CONFIG_FILE	SSHDIR "/sshd_config"
-#define _PATH_HOST_CONFIG_FILE		SSHDIR "/ssh_config"
-#define _PATH_HOST_KEY_FILE		SSHDIR "/ssh_host_key"
-#define _PATH_HOST_DSA_KEY_FILE		SSHDIR "/ssh_host_dsa_key"
-#define _PATH_HOST_RSA_KEY_FILE		SSHDIR "/ssh_host_rsa_key"
-#define _PATH_DH_MODULI			SSHDIR "/moduli"
+extern char *_PATH_SERVER_CONFIG_FILE;
+extern char *_PATH_HOST_CONFIG_FILE;
+extern char *_PATH_HOST_KEY_FILE;
+extern char *_PATH_HOST_DSA_KEY_FILE;
+extern char *_PATH_HOST_RSA_KEY_FILE;
+extern char *_PATH_DH_MODULI;
 /* Backwards compatibility */
-#define _PATH_DH_PRIMES			SSHDIR "/primes"
+extern char *_PATH_DH_PRIMES;
 
-#ifndef _PATH_SSH_PROGRAM
-#define _PATH_SSH_PROGRAM		"/usr/bin/ssh"
-#endif
+extern char *_PATH_SSH_PROGRAM;
 
 /*
  * The process id of the daemon listening for connections is saved here to
@@ -104,13 +103,13 @@
  * use.  xauth will be run if neither of these exists.
  */
 #define _PATH_SSH_USER_RC		".ssh/rc"
-#define _PATH_SSH_SYSTEM_RC		SSHDIR "/sshrc"
+extern char *_PATH_SSH_SYSTEM_RC;
 
 /*
  * Ssh-only version of /etc/hosts.equiv.  Additionally, the daemon may use
  * ~/.rhosts and /etc/hosts.equiv if rhosts authentication is enabled.
  */
-#define _PATH_SSH_HOSTS_EQUIV		SSHDIR "/shosts.equiv"
+extern char *_PATH_SSH_HOSTS_EQUIV;
 #define _PATH_RHOSTS_EQUIV		"/etc/hosts.equiv"
 
 /*
@@ -136,9 +135,8 @@
 #endif
 
 /* for sftp */
-#ifndef _PATH_SFTP_SERVER
-#define _PATH_SFTP_SERVER		"/usr/libexec/sftp-server"
-#endif
+extern char *_PATH_SFTP_SERVER;
+
 #ifndef _PATH_LS
 #define _PATH_LS			"ls"
 #endif

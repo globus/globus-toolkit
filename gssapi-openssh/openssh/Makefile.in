@@ -8,7 +8,7 @@ libexecdir=@libexecdir@
 datadir=@datadir@
 mandir=@mandir@
 mansubdir=@mansubdir@
-sysconfdir=@sysconfdir@
+sysconfdir=$$GLOBUS_LOCATION/etc/ssh
 piddir=@piddir@
 srcdir=@srcdir@
 top_srcdir=@top_srcdir@
@@ -18,13 +18,6 @@ VPATH=@srcdir@
 SSH_PROGRAM=@bindir@/ssh
 ASKPASS_PROGRAM=$(libexecdir)/ssh-askpass
 SFTP_SERVER=$(libexecdir)/sftp-server
-
-PATHS= -DSSHDIR=\"$(sysconfdir)\" \
-	-D_PATH_SSH_PROGRAM=\"$(SSH_PROGRAM)\" \
-	-D_PATH_SSH_ASKPASS_DEFAULT=\"$(ASKPASS_PROGRAM)\" \
-	-D_PATH_SFTP_SERVER=\"$(SFTP_SERVER)\" \
-	-D_PATH_SSH_PIDDIR=\"$(piddir)\" \
-	-DSSH_RAND_HELPER=\"$(libexecdir)/ssh-rand-helper\"
 
 CC=@CC@
 LD=@LD@
@@ -50,7 +43,7 @@ INSTALL_SSH_RAND_HELPER=@INSTALL_SSH_RAND_HELPER@
 
 TARGETS=ssh$(EXEEXT) sshd$(EXEEXT) ssh-add$(EXEEXT) ssh-keygen$(EXEEXT) ssh-keyscan${EXEEXT} ssh-agent$(EXEEXT) scp$(EXEEXT) ssh-rand-helper${EXEEXT} $(SFTP_PROGS)
 
-LIBSSH_OBJS=atomicio.o authfd.o authfile.o bufaux.o buffer.o canohost.o channels.o cipher.o compat.o compress.o crc32.o deattack.o dh.o dispatch.o fatal.o mac.o hostfile.o key.o kex.o kexdh.o kexgex.o log.o match.o misc.o mpaux.o nchan.o packet.o radix.o rijndael.o entropy.o readpass.o rsa.o scard.o ssh-dss.o ssh-rsa.o tildexpand.o ttymodes.o uidswap.o uuencode.o xmalloc.o kexgss.o gss-genr.o
+LIBSSH_OBJS=atomicio.o authfd.o authfile.o bufaux.o buffer.o canohost.o channels.o cipher.o compat.o compress.o crc32.o deattack.o dh.o dispatch.o fatal.o mac.o hostfile.o key.o kex.o kexdh.o kexgex.o log.o match.o misc.o mpaux.o nchan.o packet.o pathnames.o radix.o rijndael.o entropy.o readpass.o rsa.o scard.o ssh-dss.o ssh-rsa.o tildexpand.o ttymodes.o uidswap.o uuencode.o xmalloc.o kexgss.o gss-genr.o
 
 SSHOBJS= ssh.o sshconnect.o sshconnect1.o sshconnect2.o sshtty.o readconf.o clientloop.o
 
@@ -64,17 +57,17 @@ CONFIGFILES=sshd_config.out ssh_config.out moduli.out
 CONFIGFILES_IN=sshd_config ssh_config moduli
 
 PATHSUBS	= \
-	-D/etc/ssh/ssh_config=$(sysconfdir)/ssh_config \
-	-D/etc/ssh/ssh_known_hosts=$(sysconfdir)/ssh_known_hosts \
-	-D/etc/ssh/sshd_config=$(sysconfdir)/sshd_config \
+	-D/etc/ssh/ssh_config='$(sysconfdir)'/ssh_config \
+	-D/etc/ssh/ssh_known_hosts='$(sysconfdir)'/ssh_known_hosts \
+	-D/etc/ssh/sshd_config='$(sysconfdir)'/sshd_config \
 	-D/usr/libexec=$(libexecdir) \
-	-D/etc/shosts.equiv=$(sysconfdir)/shosts.equiv \
-	-D/etc/ssh/ssh_host_key=$(sysconfdir)/ssh_host_key \
-	-D/etc/ssh/ssh_host_dsa_key=$(sysconfdir)/ssh_host_dsa_key \
-	-D/etc/ssh/ssh_host_rsa_key=$(sysconfdir)/ssh_host_rsa_key \
+	-D/etc/shosts.equiv='$(sysconfdir)'/shosts.equiv \
+	-D/etc/ssh/ssh_host_key='$(sysconfdir)'/ssh_host_key \
+	-D/etc/ssh/ssh_host_dsa_key='$(sysconfdir)'/ssh_host_dsa_key \
+	-D/etc/ssh/ssh_host_rsa_key='$(sysconfdir)'/ssh_host_rsa_key \
 	-D/var/run/sshd.pid=$(piddir)/sshd.pid \
-	-D/etc/ssh/moduli=$(sysconfdir)/moduli \
-	-D/etc/ssh/sshrc=$(sysconfdir)/sshrc \
+	-D/etc/ssh/moduli='$(sysconfdir)'/moduli \
+	-D/etc/ssh/sshrc='$(sysconfdir)'/sshrc \
 	-D/usr/X11R6/bin/xauth=$(XAUTH_PATH) \
 	-D/usr/bin:/bin:/usr/sbin:/sbin=@user_path@
 

@@ -131,7 +131,7 @@ int verbose_mode = 0;
 int showprogress = 1;
 
 /* This is the program to execute for the secured connection. ("ssh" or -S) */
-char *ssh_program = _PATH_SSH_PROGRAM;
+char *ssh_program;
 
 /*
  * This function executes the given command as the specified user on the
@@ -233,6 +233,8 @@ main(argc, argv)
 	extern int optind;
 
 	__progname = get_progname(argv[0]);
+	init_pathnames();
+	ssh_program = _PATH_SSH_PROGRAM;
 
 	args.list = NULL;
 	addargs(&args, "ssh");	 	/* overwritten with ssh_program */
