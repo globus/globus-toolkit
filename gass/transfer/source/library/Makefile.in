@@ -1,0 +1,93 @@
+#
+# rcsid = "$Header$
+#
+
+# This is inserted by configure
+@makefile_default_rules@
+@makefile_header@
+
+THIS_DIR        = FileAccess/gass/libraries/transfer
+LIB_BASENAME    = globus_gass_transfer
+
+SHARED_OBJS = \
+		globus_gass_transfer.$(OFILE) \
+		globus_gass_transfer_attribute.$(OFILE) \
+		globus_gass_transfer_client.$(OFILE) \
+		globus_gass_transfer_http.$(OFILE) \
+		globus_gass_transfer_keyvalue.$(OFILE) \
+		globus_gass_transfer_proto.$(OFILE) \
+		globus_gass_transfer_referral.$(OFILE) \
+		globus_gass_transfer_request.$(OFILE) \
+		globus_gass_transfer_send_recv.$(OFILE) \
+		globus_gass_transfer_server.$(OFILE) \
+		globus_gass_transfer_text.$(OFILE) 
+
+STATIC_OBJS = 
+
+OBJS = $(SHARED_OBJS) $(STATIC_OBJS)
+
+@makefile_common_vars@
+
+HDRS = \
+	$(SRC_DIR_THIS)/globus_gass_transfer.h \
+	$(SRC_DIR_THIS)/globus_i_gass_transfer.h \
+	$(SRC_DIR_THIS)/globus_i_gass_transfer_keyvalue.h \
+	$(SRC_DIR_THIS)/globus_gass_transfer_proto.h \
+	$(SRC_DIR_THIS)/../common/globus_gass_common.h
+
+
+INSTALL_HDRS = \
+	$(SRC_DIR_THIS)/globus_gass_transfer.h \
+	$(SRC_DIR_THIS)/globus_gass_transfer_proto.h
+
+CLEAN_FILES=
+
+DISTCLEAN_FILES=
+
+@makefile_common_rules@
+@makefile_link@
+
+MY_INCLUDES = -I. \
+	-I$(SRC_DIR_THIS) \
+	-I$(SRC_DIR_THIS)/../common \
+	-I$(BUILD_DIR_INC)
+MY_CFLAGS=$(MY_INCLUDES) $(CFLAGS)
+
+globus_gass_transfer.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer.c 
+
+globus_gass_transfer_attribute.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_attribute.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_attribute.c 
+
+globus_gass_transfer_client.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_client.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_client.c 
+
+globus_gass_transfer_file.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_file.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_file.c 
+
+globus_gass_transfer_http.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_http.c $(HDRS) $(SRC_DIR_THIS)/globus_l_gass_transfer_http.h
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_http.c 
+
+globus_gass_transfer_keyvalue.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_keyvalue.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_keyvalue.c 
+
+globus_gass_transfer_proto.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_proto.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_proto.c 
+
+globus_gass_transfer_referral.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_referral.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_referral.c 
+
+globus_gass_transfer_request.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_request.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_request.c 
+
+globus_gass_transfer_send_recv.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_send_recv.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_send_recv.c 
+
+globus_gass_transfer_server.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_server.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_server.c 
+
+globus_gass_transfer_text.$(OFILE): $(SRC_DIR_THIS)/globus_gass_transfer_text.c $(HDRS)
+	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/globus_gass_transfer_text.c 
+relink:
+	$(RM) -f $(EXECS)
+	$(MAKE) $(MFLAGS) executables
