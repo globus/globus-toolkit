@@ -69,15 +69,17 @@ static int parse_add_creds (char *response_str, char **strs, int *num_creds)
 
 		if (tmp == 0) // last credential name
 		{
-			strs[idx] = (char *) malloc (strlen(p+len));
-			if (strncpy (strs[idx], p+len, strlen (p+len)) == NULL)
+			size_t slen;
+			slen = strlen(p+len);
+			strs[idx] = (char *) malloc (slen+1);
+			if (strncpy (strs[idx], p+len, slen) == NULL)
 				return -1;
 
-			strs[idx++][strlen(p+len)] = '\0';
+			strs[idx++][slen] = '\0';
 		}
 		else
 		{
-			strs[idx] = (char *) malloc (tmp);
+			strs[idx] = (char *) malloc (tmp+1);
 			if (strncpy (strs[idx], p+len, tmp) == NULL)
 				return -1;
 
