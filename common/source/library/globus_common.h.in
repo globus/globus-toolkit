@@ -57,6 +57,7 @@ EXTERN_C_BEGIN
 #include "globus_tilde_expand.h"
 #include "globus_libc.h"
 #include "globus_priority_q.h"
+#include "globus_range_list.h"
 #include "globus_debug.h"
 #include "globus_args.h"
 #include "globus_strptime.h"
