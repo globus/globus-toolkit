@@ -212,6 +212,9 @@ globus_xio_load_driver(
     globus_xio_driver_t *                       driver,
     const char *                                driver_lookup_string);
 
+/**
+ *  Stack functions
+ */
 globus_result_t
 globus_xio_stack_init(
     globus_xio_stack_t *                        stack);
@@ -219,30 +222,15 @@ globus_xio_stack_init(
 globus_result_t
 globus_xio_stack_push_driver(
     globus_xio_stack_t                          stack,
-    globus_xio_driver_t                         driver,
-    globus_xio_driver_attr_t                    driver_attr);
+    globus_xio_driver_t                         driver);
 
 globus_result_t
-globus_xio_driver_attr_init(
-    globus_xio_driver_attr_t *                  driver_attr);
-
-globus_result_t
-globus_xio_driver_attr_cntl(
-    globus_xio_driver_attr_t                    driver_attr,
-    globus_xio_driver_t                         driver,
-    int                                         cmd,
-    ...);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  Initialize a globus_xio server object.
- */
-globus_result_t
-globus_xio_server_target_init(
-    globus_xio_target_t *                       server,
-    globus_xio_server_attr_t                    server_attr,
+globus_xio_stack_destroy(
     globus_xio_stack_t                          stack);
 
+/**
+ *  server attr
+ */
 globus_result_t
 globus_xio_server_attr_init(
     globus_xio_server_attr_t *                  server_attr);
@@ -255,18 +243,35 @@ globus_xio_server_attr_cntl(
     ...);
 
 globus_result_t
+globus_xio_server_attr_destroy(
+    globus_xio_server_attr_t                    server_attr);
+
+/**
+ *  server 
+ */
+globus_result_t
+globus_xio_server_init(
+    globus_xio_server_t *                       server,
+    globus_xio_server_attr_t                    server_attr,
+    globus_xio_stack_t                          stack);
+
+globus_result_t
 globus_xio_server_get_contact_string(
     globus_xio_server_t                         server,
     char *                                      out_contact_string,
     int                                         str_len);
 
 globus_result_t
-globus_xio_server_listen(
-    globus_xio_server_t                         server,
-    globus_xio_target_t *                       out_target);
-
-globus_result_t
 globus_xio_server_destroy(
+    globus_xio_server_t                         server);
+
+/**
+ *  target is destroyed when passed to open.  If not passed to
+ *  open the use should call destroy
+ */
+globus_result_t
+globus_xio_server_get_target(
+    globus_xio_target_t *                       out_target,
     globus_xio_server_t                         server);
 
 globus_result_t
@@ -274,6 +279,10 @@ globus_xio_target_init(
     globus_xio_target_t *                       target,
     const char *                                contact_string,
     globus_xio_stack_t                          stack);
+
+globus_result_t
+globus_xio_target_destroy(
+    globus_xio_target_t                         target);
 
 /******************************************************************
  *                      handle construction

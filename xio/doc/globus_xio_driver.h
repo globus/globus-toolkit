@@ -81,7 +81,7 @@
  *        Open
  *           globus_xio_driver_open_t is called.  The user calls
  *           globus_xio_driver_open() passing it the operation and 
- *           the target and a callback.  When the open callback is called 
+ *           the stack and a callback.  When the open callback is called 
  *           the driver is given a new operation as a parameter.  The driver
  *           will then call globus_xio_driver_finished_open() passing
  *           it the now initialized context and the newly received
@@ -138,9 +138,9 @@
  *
  *   Preopening handles.
  *   
- *   Once the driver has received a globus_xio_driver_target_t it can 
- *   open a context.  The globus_xio_driver_target_t comes in the
- *   call to the interface function globus_xio_driver_actory_init_t().
+ *   Once the driver has received a globus_xio_driver_stack_t it can 
+ *   open a context.  The globus_xio_driver_stack_t comes in the
+ *   call to the interface function globus_xio_server/client_init_t().
  *   The driver uses this structure in a call to globus_xio_driver_open().
  *   When this functionality completes the driver has an initialized 
  *   context and can use it to create operations as described above.
@@ -150,25 +150,6 @@
  *   glueing the pre opened context with the requested globus_xio operation.
  *
  */
-/* 
- *  Entry point interface functions
- *
- *  For all the posix like globus_xio user api functions (open/close/read
- *  /write) there is a driver interface function that the driver author 
- *  must implement.  They are implemented according to the needs of the 
- *  driver.
- *
- *  Factories and handles in the driver interface functions.
- *
- *  Just as there is a notion of facories and handles in the globus_xio
- *  user API, there is in the globus_xio driver interface functions.
- *  These structures are used to maintain state and attributes of a
- *  given handle or fuctory.  In the driver interface functions the handle
- *  and factory are both passed in as void pointers.  This is the case 
- *  because it is left up to the driver implementation to define what
- *  data members are needed in these handles.  When creating a new driver
- *  a programmer should have the feel as though they are creating a new api.
- */
 /**
  *  @defgroup driver_interface_grp Driver Interface
  *
@@ -177,14 +158,35 @@
  */
 
 /**
- * 
+ *  give a caller a reference to the driver structure
  */
 typedef globus_result_t
 (*globus_xio_driver_get_driver_t)(
     globus_xio_driver_t *                       out_driver);
 
 /**
- * 
+ *  @defgroup driver_attr_funcs Driver attribute Interface Functions
+ *
+ *  Driver attribute functions
+ *
+ *  If the driver wishes to provide driver specific attributes to the
+ *  user it must implement the following functions:
+ *
+ *  globus_xio_driver_driver_attr_init_t
+ *  globus_xio_driver_attr_copy_t
+ *  globus_xio_driver_attr_destroy_t
+ *  globus_xio_driver_attr_cntl_t
+ */
+
+/**
+ *  @ingroup driver_attr_funcs 
+ *
+ *  Create and return a driver attribute.
+ *
+ *  @param out_driver_attr
+ *         an out parameter.  Prior to returning from this function
+ *         this pointer should be intialized.  The value it is intialized
+ *         to will be threaded through to futre driver functions.
  */
 typedef globus_result_t
 (*globus_xio_driver_driver_attr_init_t)(
@@ -221,72 +223,77 @@ typedef globus_result_t
  * 
  */
 typedef globus_result_t
-(*globus_xio_driver_server_attr_init_t)(
-    void **                                     out_server_attr);
-
-/**
- * 
- */
-typedef globus_result_t
-(*globus_xio_driver_server_attr_cntl_t)(
-    void *                                      server_attr,
-    int                                         cmd,
-    ...);
-
-/**
- * 
- */
-typedef globus_result_t
-(*globus_xio_driver_server_attr_destroy_t)(
-    void *                                      server_attr);
-
-/**
- * 
- */
-typedef globus_result_t
-(*globus_xio_driver_server_attr_copy_t)(
-    void *                                      server_attr);
-
-/**
- * 
- */
-typedef globus_result_t
-(*globus_xio_driver_server_init)(
-    void **                                     out_server,
-    void *                                      server_attr,
+(*globus_xio_driver_target_server_init)(
+    void **                                     out_server_target,
+    void *                                      target_attr,
     globus_xio_driver_stack_t                   stack);
 
 typedef globus_result_t
-(*globus_xio_driver_client_init)(
-    void **                                     out_client,
+(*globus_xio_driver_target_client_init)(
+    void **                                     out_client_target,
     const char *                                contact_string,
     globus_xio_driver_stack_t                   stack);
     
- 
-/**
- * 
- */
 typedef globus_result_t
-(*globus_xio_driver_server_listen(
+(*globus_xio_driver_target_destroy)(
     void *                                      server);
 
 /**
- * 
+ *
  */
 typedef globus_result_t
-(*globus_xio_driver_server_destroy(
-    void *                                      server);
+(*globus_xio_driver_target_attr_cntl_t)(
+    void *                                      target_attr,
+    int                                         cmd,
+    ...);
+
+typedef globus_result_t
+(*globus_xio_driver_target_attr_destroy_t)(
+    void *                                      target_attr);
+
+typedef globus_result_t
+(*globus_xio_driver_target_attr_copy_t)(
+    void *                                      target_attr);
 
 
 /**
- * 
+ *  @defgroup handle_attr_funcs Handle attribute interface functions.
+ *
+ *  Driver attribute functions
+ *
+ *  If the driver wishes to provide driver specific attributes for the
+ *  handle to the user it must implement the following functions:
+ *
+ *  globus_xio_driver_handle_attr_init_t
+ *  globus_xio_driver_handle_attr_copy_t
+ *  globus_xio_driver_handle_attr_destroy_t
+ *  globus_xio_driver_handle_attr_cntl_t
+ */
+/**
+ *  @ingroup handle_attr_funcs 
+ *
+ *  Create and return a handle attribute.
+ *
+ *  @param out_handle_attr
+ *         an out parameter.  Prior to returning from this function
+ *         this pointer should be intialized.  The value it is intialized
+ *         to will be threaded through to futre handle related  functions.
  */
 typedef globus_result_t
 (*globus_xio_driver_handle_attr_init_t)(
     void **                                     out_handle_attr);
  
 /**
- * 
+ *  @ingroup handle_attr_funcs 
+ *
+ *  Copy a handle attribute
+ *
+ *  @param dst
+ *         the pointer shoudl be intialized to a copy of the attr
+ *         pointed to by src
+ *
+ *  @param src
+ *         a pointer to the handle attr that is to be copied. 
  */
 typedef globus_result_t
 (*globus_xio_driver_handle_attr_copy_t)(
@@ -294,14 +301,31 @@ typedef globus_result_t
     void *                                      src);
  
 /**
- * 
+ *  @ingroup handle_attr_funcs 
+ *
+ *  Destroy a handle attribute.
+ *
+ *  @param handle_attr
+ *         The handle attr to be destroyed. 
  */
 typedef globus_result_t
 (*globus_xio_driver_handle_attr_destroy_t)(
     void *                                      handle_attr);
  
 /**
- * 
+ *  @ingroup handle_attr_funcs 
+ *
+ *  Preforms operations on the handle attr.  This functoin will
+ *  do different things based on the value of cmd.  The driver is
+ *  responsible for defining its behavior.  See man ioctl for 
+ *  an example of similar behavior.
+ *
+ *  @param handle_attr
+ *         the handle attribute to be manipulated.
+ *
+ *  @param cmd
+ *         an integer signifing what request is being made.  The variable
+ *         arguments are deteremined by this value.
  */
 typedef globus_result_t
 (*globus_xio_driver_handle_attr_cntl_t)(
@@ -355,8 +379,7 @@ typedef globus_result_t
 (*globus_xio_driver_open_t)(
     void **                                     driver_handle,
     void *                                      driver_handle_attr,
-    void *                                      server,
-    const char *                                contact_string,
+    void *                                      client_target,
     globus_xio_driver_operation_t               op);
 
 /**
@@ -870,14 +893,36 @@ globus_xio_driver_finished_from_previous(
  */
 
 /**
- * 
+ *  @defgroup driver_dd_interface_grp Data Descriptor
+ *
+ *  The set of interface functions that the driver author must implement 
+ *  to create a driver.
+ */
+/**
+ *  @ingroup driver_dd_interface_grp
+ *
+ *  Create a driver data descriptor.
+ *
+ *  @param out_dd
+ *         Prior to returning from this function this out parameter should
+ *         be intialized.  The value will be threaded through to future
+ *         interface funstions relating to the data descriptor.
  */
 typedef globus_result_t
 (*globus_xio_driver_data_descriptor_init_t)(
     void **                                     out_dd);
 
 /**
- * 
+ *  @ingroup driver_dd_interface_grp
+ *
+ *  Copy a data descriptor
+ *
+ *  @param dst
+ *         Prior to returning this value should be inilaized to a copy 
+ *         of src.
+ *
+ *  @param src
+ *         The data descriptor to be copied. 
  */
 typedef globus_result_t
 (*globus_xio_driver_driver_data_descriptor_copy_t)(
@@ -885,14 +930,28 @@ typedef globus_result_t
     void *                                      src);
  
 /**
+ *  @ingroup driver_dd_interface_grp
  * 
+ *  Destroy a data desriptor.
+ *
+ *  @param dd
+ *         The data descriptor to be destroyed.
  */
 typedef globus_result_t
 (*globus_xio_driver_driver_data_descriptor_destroy_t)(
     void *                                      dd);
  
 /**
- * 
+ *  @ingroup driver_dd_interface_grp
+ *
+ *  Manipulate the data descriptor in a driver defined way.
+ *
+ *  @param dd
+ *         The driver specific data descriptor to be manipulated.
+ *
+ *  @param cmd
+ *         and integer describing how to modify the data descriptor.  The
+ *         var args will be determined by this value.
  */
 typedef globus_result_t
 (*globus_xio_driver_driver_data_descriptor_cntl_t)(
@@ -901,6 +960,57 @@ typedef globus_result_t
     ...);
  
 
+typedef struct globus_xio_driver_s 
+{
+    /*
+     *  main io interface functions
+     */
+    globus_xio_driver_open_t                client_open_func;
+    globus_xio_driver_open_t                server_open_func;
+    globus_xio_driver_close_t               close_func;
+    globus_xio_driver_read_t                read_func;
+    globus_xio_driver_write_t               write_func;
+
+
+    /*
+     * target init functions.  Must have client or server
+     */
+    globus_xio_driver_target_server_init    target_server_init_func;
+    globus_xio_driver_target_client_init    target_client_init_func;
+    globus_xio_driver_target_destroy        target_client_destroy_func;
+
+    /*
+     *  driver attr functions.  All or none may be NULL
+     */
+    globus_xio_driver_driver_attr_init_t    driver_attr_init_func;
+    globus_xio_driver_attr_copy_t           driver_attr_copy_func;
+    globus_xio_driver_attr_destroy_t        driver_attr_destroy_func;
+    globus_xio_driver_attr_cntl_t           driver_attr_cntl_func;
+
+    /*
+     *  data descriptor functiosn.  All or none
+     */
+    globus_xio_driver_data_descriptor_init_t
+    globus_xio_driver_driver_data_descriptor_copy_t
+    globus_xio_driver_driver_data_descriptor_destroy_t
+    globus_xio_driver_driver_data_descriptor_cntl_t
+
+    /*
+     *  handle attr functions, all or none
+     */
+    globus_xio_driver_handle_attr_init_t    handle_attr_init_func;
+    globus_xio_driver_handle_attr_copy_t    handle_attr_copy_func;
+    globus_xio_driver_handle_attr_destroy_t handle_attr_destroy_func;
+    globus_xio_driver_handle_attr_cntl_t    handle_attr_cntl_func;
+
+    /*
+     *  target attr functions, all or none
+     */
+    globus_xio_driver_target_attr_init_t    target_attr_init_func;
+    globus_xio_driver_target_attr_cntl_t    target_attr_cntl_func;
+    globus_xio_driver_target_attr_destroy_t target_attr_destroy_func;
+    globus_xio_driver_target_attr_copy_t    target_attr_copy_func;
+};
 /*******************************************************************
  *                        signal stuff
  ******************************************************************/
