@@ -75,7 +75,7 @@ GSS_CALLCONV gss_accept_delegation(
     X509_REQ *                          reqp = NULL;
     X509 *                              dcert = NULL;
     STACK_OF(X509) *                    cert_chain;
-    int                                 cert_chain_length;
+    int                                 cert_chain_length = 0;
     int                                 i;
     char                                dbuf[1];
     
@@ -158,7 +158,7 @@ GSS_CALLCONV gss_accept_delegation(
     if (major_status != GSS_S_COMPLETE)
     {
         *minor_status = gsi_generate_minor_status();
-        return major_status;
+        goto err;
     }
 
     switch(context->delegation_state)
@@ -222,15 +222,15 @@ GSS_CALLCONV gss_accept_delegation(
 #ifdef DEBUG
         X509_print_fp(stderr,dcert);
 #endif
-        d2i_integer_bio(bio, (long *) &cert_chain_length);
 
         cert_chain = sk_X509_new_null();
 
-        for(i=0;i<cert_chain_length;i++)
+        while(BIO_pending(bio))
         {
             sk_X509_insert(cert_chain,
                            d2i_X509_bio(bio, NULL),
-                           i);
+                           cert_chain_length);
+            cert_chain_length++;
         }
 
         major_status = gss_create_and_fill_cred(delegated_cred_handle,
@@ -279,11 +279,12 @@ GSS_CALLCONV gss_accept_delegation(
         major_status |= GSS_S_CONTINUE_NEEDED;
     }
 
-    return major_status;
-    
 err:
-    
-    *minor_status = gsi_generate_minor_status();
+
+    if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
+    {
+        BIO_free(bio);
+    }
 
     return major_status;
 

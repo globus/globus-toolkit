@@ -232,7 +232,7 @@ GSS_CALLCONV gss_init_delegation(
         if (major_status != GSS_S_COMPLETE)
         {
             *minor_status = gsi_generate_minor_status();
-            return major_status;
+            goto err;
         }
     }
 
@@ -257,7 +257,7 @@ GSS_CALLCONV gss_init_delegation(
         {
             GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_PROXY_NOT_RECEIVED);
             major_status=GSS_S_FAILURE;
-            return major_status;
+            goto err;
         }
         
 #ifdef DEBUG
@@ -288,7 +288,7 @@ GSS_CALLCONV gss_init_delegation(
                         GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                         major_status = GSS_S_FAILURE;
                         *minor_status = gsi_generate_minor_status();
-                        return major_status;
+                        goto err;
                     }
                     else
                     {
@@ -304,7 +304,7 @@ GSS_CALLCONV gss_init_delegation(
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                     major_status = GSS_S_FAILURE;
                     *minor_status = gsi_generate_minor_status();
-                    return major_status;
+                    goto err;
                 }
             
                 
@@ -360,11 +360,6 @@ GSS_CALLCONV gss_init_delegation(
             cert_chain_length = sk_X509_num(cred->pcd->cert_chain);
         }
         
-        /* Add one for the issuer's certificate */
-        
-        i2d_integer_bio(bio, cert_chain_length + 1);
-
-        
         for(i=cert_chain_length-1;i>=0;i--)
         {
             cert = sk_X509_value(cred->pcd->cert_chain,i);
@@ -402,6 +397,11 @@ GSS_CALLCONV gss_init_delegation(
 
 err:
 
+    if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
+    {
+        BIO_free(bio);
+    }
+        
     if (extensions)
     {
         sk_X509_EXTENSION_pop_free(extensions, 
