@@ -2120,7 +2120,6 @@ globus_xio_register_open(
 
     handle->ref++; /* for operation */
     handle->open_op = op;
-    handle->outstanding_operations = 1; /* open operation */
 
     if(attr != NULL)
     {
@@ -2924,7 +2923,6 @@ globus_xio_open(
     handle->ref++; /* for operation */
     /* this is set for the cancel */
     handle->open_op = op;
-    handle->outstanding_operations = 1; /* open operation */
 
     if(attr != NULL)
     {

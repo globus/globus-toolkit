@@ -374,8 +374,6 @@ typedef struct globus_i_xio_handle_s
     struct globus_i_xio_op_s *          close_op;
 
     void *                              timeout_arg;
-    /* counts outstanding read and write operations */
-    int                                 outstanding_operations;
 
     globus_callback_space_t             space;
     globus_xio_timeout_callback_t       open_timeout_cb;
