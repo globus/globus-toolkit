@@ -81,8 +81,12 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds);
  * a linked-list using the next field in the given myproxy_creds structure
  * If creds->username is non-NULL, only retrieve credentials for that
  * username.
- * If creds->end_time is non-zero, only retrieve credentials with
+ * If creds->credname is non-NULL, only retrieve credentials for that
+ * credential name.
+ * If creds->start_time is non-zero, only retrieve credentials with
  * end_time >= specified time.
+ * If creds->end_time is non-zero, only retrieve credentials with
+ * end_time < specified time.
  * Note: The passphrase returned in the myproxy_creds structure is crypt()'ed.
  *
  * Returns -1 on error, 0 on success.
