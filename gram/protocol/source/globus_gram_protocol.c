@@ -1789,6 +1789,8 @@ globus_gram_http_pack_status_update_message(
 			 status,
 			 failure_code );
 	     
+    *replysize = strlen(*reply);
+    
     return GLOBUS_SUCCESS;
 }
 
@@ -1807,7 +1809,7 @@ globus_gram_http_unpack_status_update_message(
     *job_contact = my_malloc(char, replysize);
 
     globus_libc_lock();
-    rc = sscanf( (char *) *reply,
+    rc = sscanf( (char *) reply,
 		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
 		 GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
 		 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
@@ -1937,6 +1939,7 @@ globus_l_gram_http_parse_request(
     if(rc != 3)
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	verbose(notice("parse_request : failed to parse %s\n", buf));
 	*payload_length = 0;
     }
     else
@@ -1961,6 +1964,7 @@ globus_l_gram_http_parse_reply(
     int code;
     int offset;
     char * reason;
+    int tmp;
 
     reason = (char *) globus_malloc(strlen((char *)buf));
 
@@ -1977,6 +1981,7 @@ globus_l_gram_http_parse_reply(
     if(rc < 2)
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNFRAME_FAILED;
+	verbose(notice("parse_reply : failed to parse %s\n", buf));
     }
     else if(code == 200)
     {
@@ -1984,7 +1989,8 @@ globus_l_gram_http_parse_reply(
 	rc = sscanf( (char *)buf + offset,
 		     GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE
 		     GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE,
-		     payload_length);
+		     &tmp);
+	*payload_length = tmp;
 	globus_libc_unlock();
 	if(rc != 1)
 	{
