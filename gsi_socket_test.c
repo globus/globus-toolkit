@@ -5,6 +5,7 @@
  */
 
 #include "gsi_socket.h"
+#include "string_funcs.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -12,6 +13,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <string.h>
 
 int port = 7563;		/* Default port, arbitrary */
 char *host = "localhost";
@@ -19,6 +21,7 @@ char *host = "localhost";
 int do_receive();
 int do_transmit();
 
+int
 main(int argc,
      char *argv[])
 {
@@ -73,7 +76,7 @@ main(int argc,
     
     if (arg_err)
     {
-	exit(1);
+	return 1;
     }
     
 
@@ -86,7 +89,7 @@ main(int argc,
 	exit_status = do_transmit();
     }
 
-    exit(exit_status);
+    return exit_status;
 }
 
 
@@ -181,7 +184,7 @@ do_receive()
 
     printf("Client message: %s\n", data);
 
-    len = my_strncpy(data, sizeof(data), "Hello from the server") + 1 /* NUL */;
+    len = my_strncpy(data, "Hello from the server",sizeof(data)) + 1 /* NUL */;
     
     if (GSI_SOCKET_write_buffer(gsi_socket, data, len) == GSI_SOCKET_ERROR)
     {
@@ -264,7 +267,7 @@ do_transmit()
 	return -1;
     }
 
-    len = my_strncpy(data, sizeof(data), "Hello server!") + 1 /* NUL */;
+    len = my_strncpy(data, "Hello server!", sizeof(data)) + 1 /* NUL */;
     
     if (GSI_SOCKET_write_buffer(gsi_socket, data, len) == GSI_SOCKET_ERROR)
     {
