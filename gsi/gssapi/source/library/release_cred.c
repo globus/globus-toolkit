@@ -1,36 +1,52 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file release_cred.c
- * @author Sam Meder, Sam Lang
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
+/**********************************************************************
 
-static char *rcsid = "$Id$";
+release_cred.c:
 
-#include "gssapi_openssl.h"
-#include "globus_i_gsi_gss_utils.h"
+Description:
+    GSSAPI routine to release the credential obtained by 
+	acquire_cred.
+	See: <draft-ietf-cat-gssv2-cbind-04.txt>
 
-/**
- * @name GSS Release Cred
- * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * Release the GSS cred handle
- *
- * @param minor_status
- *        The minor status result - this is a globus_result_t
- *        cast to a OM_uint32.  To access the globus error object
- *        use:  globus_error_get((globus_result_t) *minor_status)  
- * @param cred_handle_P
- *        The gss cred handle to be released 
- * @return
- *        The major status - GSS_S_COMPLETE or GSS_S_FAILURE
- */
+CVS Information:
+
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
+
+**********************************************************************/
+
+static char *rcsid = "$Header$";
+
+/**********************************************************************
+                             Include header files
+**********************************************************************/
+
+#include "gssapi_ssleay.h"
+
+/**********************************************************************
+                               Type definitions
+**********************************************************************/
+
+/**********************************************************************
+                          Module specific prototypes
+**********************************************************************/
+
+/**********************************************************************
+                       Define module specific variables
+**********************************************************************/
+
+/**********************************************************************
+Function: gss_release_cred
+
+Description:
+	Release the credential
+
+Parameters:
+   
+Returns:
+**********************************************************************/
+
 OM_uint32 
 GSS_CALLCONV gss_release_cred(
     OM_uint32 *                         minor_status,
@@ -38,40 +54,41 @@ GSS_CALLCONV gss_release_cred(
 {
     gss_cred_id_desc**                  cred_handle =
         (gss_cred_id_desc**) cred_handle_P;
-    OM_uint32                           local_minor_status = GSS_S_COMPLETE;
-    OM_uint32                           local_major_status = GSS_S_COMPLETE;
+    OM_uint32                           inv_minor_status = 0;
+    OM_uint32                           inv_major_status = 0;
 
-    static char *                       _function_name_ =
-        "gss_release_cred";
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
-
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+    *minor_status = 0;
+#ifdef DEBUG
+    fprintf(stderr,"release_cred:\n");
+#endif
 
     if (*cred_handle == NULL || *cred_handle == GSS_C_NO_CREDENTIAL )
     {
-        goto exit;
+        return GSS_S_COMPLETE ;
     }
 
     if ((*cred_handle)->globusid != NULL)
     {
-        local_major_status = gss_release_name(
-            &local_minor_status,
-            (void*) &((*cred_handle)->globusid));
+        inv_major_status = gss_release_name(
+            &inv_minor_status,
+            (void*) &((*cred_handle)->globusid)) ;
     }
 
-    globus_gsi_cred_handle_destroy((*cred_handle)->cred_handle);
+    proxy_cred_desc_free((*cred_handle)->pcd);
 
-    if((*cred_handle)->ssl_context)
+    if ((*cred_handle)->gs_bio_err)
     {
-        SSL_CTX_free((*cred_handle)->ssl_context);
+        BIO_free((*cred_handle)->gs_bio_err);
     }
 
-    free(*cred_handle);
+    free(*cred_handle) ;
     *cred_handle = GSS_C_NO_CREDENTIAL;
 
- exit:
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return GSS_S_COMPLETE;
-} 
-/* gss_release_cred */
-/* @} */
+    return GSS_S_COMPLETE ;
+
+} /* gss_release_cred */
+
+
+
+
+

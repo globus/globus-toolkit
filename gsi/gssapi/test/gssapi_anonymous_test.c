@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include "gssapi.h"
 #include "globus_gss_assist.h"
-#include "globus_error_openssl.h"
-
-void globus_print_error(globus_result_t              error_result);
 
 int main()
 {
@@ -39,11 +36,9 @@ int main()
     del_accept_context = GSS_C_NO_CONTEXT;
     delegated_cred = GSS_C_NO_CREDENTIAL;
     accept_maj_stat = GSS_S_CONTINUE_NEEDED;
-    req_flags = GSS_C_ANON_FLAG|GSS_C_CONF_FLAG;
     ret_flags = 0;
+    req_flags = GSS_C_ANON_FLAG|GSS_C_CONF_FLAG;
 
-    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
-    
     /* acquire the credential */
 
     maj_stat = gss_acquire_cred(&min_stat,
@@ -62,8 +57,7 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
+        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         exit(1);
     }
 
@@ -83,10 +77,10 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
+        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         exit(1);
     }
+
 
     /* set up the first security context */
     
@@ -104,6 +98,7 @@ int main()
                                          NULL,
                                          NULL);
 
+
     if(init_maj_stat != GSS_S_CONTINUE_NEEDED)
     {
         globus_gss_assist_display_status_str(&error_str,
@@ -111,13 +106,13 @@ int main()
                                              init_maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
+        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         exit(1);
     }
 
     while(1)
     {
+        
         accept_maj_stat=gss_accept_sec_context(&min_stat,
                                                &accept_context,
                                                GSS_C_NO_CREDENTIAL,
@@ -139,8 +134,7 @@ int main()
                                                  init_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-            globus_print_error((globus_result_t) min_stat);
+            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
             exit(1);
         }
         else if(accept_maj_stat == GSS_S_COMPLETE)
@@ -171,8 +165,7 @@ int main()
                                                  init_maj_stat,
                                                  min_stat,
                                                  0);
-            printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-            globus_print_error((globus_result_t) min_stat);
+            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
             exit(1);
         }
     }
@@ -194,8 +187,7 @@ int main()
                                              maj_stat,
                                              min_stat,
                                              0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
+        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
         exit(1);
     }
 
@@ -204,113 +196,11 @@ int main()
            __LINE__,
            (char*) output_name.value);
 
-    maj_stat = gss_delete_sec_context(&min_stat,
-                                      init_context,
-                                      GSS_C_NO_BUFFER);
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
-        exit(1);
-    }
-
-    maj_stat = gss_delete_sec_context(&min_stat,
-                                      accept_context,
-                                      GSS_C_NO_BUFFER);
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
-        exit(1);
-    }
-
-    maj_stat = gss_release_name(&min_stat,
-                                &target_name);
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
-        exit(1);
-    }
-
-    maj_stat = gss_release_cred(&min_stat,
-                                &cred_handle);
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
-        exit(1);
-    }
-
-    maj_stat = gss_release_buffer(&min_stat,
-                                &output_name);
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n", __LINE__, error_str);
-        globus_print_error((globus_result_t) min_stat);
-        exit(1);
-    }
-
-    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
-
     exit(0);
 }
 
-void globus_print_error(
-    globus_result_t                     error_result)
-{
-    globus_object_t *                   error_obj = NULL;
-    globus_object_t *                   base_error_obj = NULL;
-    char *                              error_string = NULL;
-    
-    error_obj = globus_error_get(error_result);
-    error_string = globus_error_print_chain(error_obj);
-    globus_libc_fprintf(stderr, "%s\n", error_string);
-    globus_libc_free(error_string);
 
-    base_error_obj = error_obj;
-    while(1)
-    {
-        if(!globus_error_get_cause(base_error_obj) ||
-           globus_object_get_type(
-               globus_error_get_cause(base_error_obj))
-           == GLOBUS_ERROR_TYPE_OPENSSL)
-        {
-            break;
-        }
-        base_error_obj = globus_error_get_cause(base_error_obj);
-    }
 
-    error_string = globus_error_get_long_desc(base_error_obj);
-    if(error_string)
-    {
-        globus_libc_fprintf(stderr, "\nBASE CAUSE: %s\n\n",
-                            globus_error_get_long_desc(base_error_obj));
-    }
-    globus_object_free(error_obj);
-};
+
+
+

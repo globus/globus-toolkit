@@ -1,32 +1,48 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file module.c
- * GSSAPI module activation code
- *
- * $RCSfile$
- * $Revision$
- * $Date $
- */
-#endif
+/******************************************************************************
+gridmap.c
 
+Description:
+	Functions for interfacing with the gridmapfile.
+
+CVS Information:
+	$Source$
+	$Date$
+	$Revision$
+	$Author$
+******************************************************************************/
+
+/******************************************************************************
+                             Include header files
+******************************************************************************/
+#include "globus_gss_assist.h"
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include "globus_i_gss_assist.h"
-#include "globus_gsi_system_config.h"
+#include <pwd.h>
 
+/******************************************************************************
+                               Type definitions
+******************************************************************************/
 
 typedef struct _gridmap_line_s {
   char *dn;
   char **user_ids;
-} globus_i_gss_assist_gridmap_line_t;
+} gridmap_line_t;
+
+/******************************************************************************
+                                Definitions
+******************************************************************************/
 
 #define WHITESPACE_CHARS		" \t\n"
+
 #define QUOTING_CHARS			"\""
+
 #define ESCAPING_CHARS			"\\"
+
 #define COMMENT_CHARS			"#"
+
 /* Characters seperating user ids in the gridmap file */
 #define USERID_SEP_CHARS		","
+
 /*
  * Characters that terminate a user id in the gridmap file. This
  * is a combination of whitespace and seperators.
@@ -43,136 +59,76 @@ typedef struct _gridmap_line_s {
  */
 #define USERID_CHUNK_SIZE		4
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/******************************************************************************
+                          Module specific prototypes
+******************************************************************************/
 
-static 
-globus_result_t
-globus_i_gss_assist_gridmap_find_dn(
-    const char * const                  dn,
-    globus_i_gss_assist_gridmap_line_t **                   
-                                        gline);
+static int gridmap_default_path(char **ppath);
 
-static 
-globus_result_t
-globus_i_gss_assist_gridmap_find_local_user(
-    const char * const                  local_user,
-    globus_i_gss_assist_gridmap_line_t **                   
-                                        gline);
+static int gridmap_find_dn(const char * const dn,
+			     gridmap_line_t **gline);
 
-static 
-globus_result_t
-globus_i_gss_assist_gridmap_parse_line(
-    char *                              line,
-    globus_i_gss_assist_gridmap_line_t **                   
-                                        gline);
+static int gridmap_find_local_user(const char * const local_user,
+				     gridmap_line_t **gline);
 
-static void 
-globus_i_gss_assist_gridmap_line_free(
-    globus_i_gss_assist_gridmap_line_t *                    
-                                        line);
+static int gridmap_parse_line(char *line,
+				gridmap_line_t **gline);
 
-static
-globus_result_t 
-globus_i_gss_assist_gridmap_parse_globusid(
-    const char *                        unparse,
-    char **                             pparsed);
+static void gridmap_free_gridmap_line(gridmap_line_t *line);
 
-static int 
-globus_i_gss_assist_xdigit_to_value(
-    char                                xdigit);
+static int gridmap_parse_globusid(const char * unparse,
+				    char **pparsed);
 
-#endif
+static int xdigit_to_value(char xdigit);
 
-/**
- * @name Gridmap
- * @ingroup globus_gsi_gss_assist
- */
-/* @{ */
-/**
- * 
- * Routines callable from globus based code to 
- * map a globusID to a local unix user
- *
- * GRIDMAP environment variable pointing at the
- * map file. Defaults to ~/.gridmap 
- *
- * A gridmap file is required if being run as root. 
- * if being run as a user,it is not required, and defaults to 
- * the current user who is running the command. 
- *
- * This is the same file used by the gssapi_cleartext
- * but will be used with other gssapi implementations which 
- * do not use the gridmap file. 
- *
- * @param globusidp
- *        the GSSAPI name from the client who requested
- *        authentication
- * @param useridp
- *        the resulting user ID name for the local system
- *
- * @return 
- *        0 on success
- *        -1 if bad arguments
- *        1 on error
- */
+/******************************************************************************
+                       Define module specific variables
+******************************************************************************/
+/******************************************************************************
+Function:   globus_gss_assist_gridmap.c
+Description:
+	Routines callable from globus based code to 
+	map a globusID to a local unix user
+
+	GRIDMAP environment variable pointing at the
+	map file. Defaults to ~/.gridmap 
+
+	A gridmap file is required if being run as root. 
+	if being run as a user,it is not required, and defaults to 
+	the current user who is running the command. 
+
+	This is the same file used by the gssapi_cleartext
+	but will be used with other gssapi implementations which 
+	do not use the gridmap file. 
+
+Parameters:
+	globus client name who requested authentication 
+	*userid returned userid name for local system. 
+
+Returns:
+
+	0 on sucess
+	!=0 on failure
+******************************************************************************/
 int 
-globus_gss_assist_gridmap(
-    char * 	                        globusidp,
-    char ** 	                        useridp) 
+globus_gss_assist_gridmap(char * 	globusidp,
+			  char ** 	useridp) 
 {
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    globus_i_gss_assist_gridmap_line_t *
-                                        gline = NULL;
+    gridmap_line_t *			gline = NULL;
 
-    static char *                       _function_name_ =
-    "globus_gss_assist_gridmap";
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
 
     /* Check arguments */
-    if ((globusidp == NULL) || (useridp == NULL))
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Params passed to function are NULL"));
-        goto exit;
-    }
+    if ((globusidp == NULL) ||
+	(useridp == NULL))
+	return(-1);
 
     *useridp = NULL;
 
-    result = globus_i_gss_assist_gridmap_find_dn(globusidp, &gline);
-    if(result != GLOBUS_SUCCESS)
+
+    if (gridmap_find_dn(globusidp, &gline) != 0)
     {
-        int                             superuser;
-        
-        result = GLOBUS_GSI_SYSCONFIG_IS_SUPERUSER(&superuser);
-        if(result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-            goto exit;
-        }
-
-        if(superuser)
-        {
-            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-            goto exit;
-        }
-        
-        result = GLOBUS_GSI_SYSCONFIG_GET_USERNAME(useridp);
-        if(result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-            goto exit;
-        }
-
-        result = GLOBUS_SUCCESS;
-        goto exit;
+        /* no gridmap file found -> fail */
+	return 1;
     }
 
     if (gline != NULL)
@@ -185,546 +141,319 @@ globus_gss_assist_gridmap(
 	     * or the gridmap file is badly formatted or, most likely,
 	     * both.
 	     */
-            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-                ("Invalid (NULL) user id values"));
-            goto exit;
+	    return 1;
 	}
 
 	/* First user id is default */
 	*useridp = strdup(gline->user_ids[0]);
 
-	globus_i_gss_assist_gridmap_line_free(gline);
+	gridmap_free_gridmap_line(gline);
 
 	if (*useridp == NULL)
 	{
-            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-                ("Duplicate string operation failed"));
-	    goto exit;
+	    /* strdup() failed */
+	    return 1;
 	}
     }
     else
     {
-        char *                          gridmap_filename = NULL;
-
-        GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME(&gridmap_filename);
-
 	/* No entry found in gridmap file for this user */
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_IN_GRIDMAP_NO_USER_ENTRY,
-            ("The DN: %s could not be mapped to a valid user in the "
-             "gridmap file: %s.",
-             globusidp,
-             gridmap_filename ? gridmap_filename : "(NULL)"));
-
-        free(gridmap_filename);
-        goto exit;
+	return 1;
     }
 
- exit:
+    /* Success */
+    return 0;
 
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
-    return (int) result;
-} 
-/* globus_gss_assist_gridmap() */
-/* @} */
+} /* globus_gss_assist_gridmap() */
 
-/**
- * @name User OK
- * @ingroup globus_gsi_gss_assist
- */
-/* @{ */
-/**
- * Check to see if a particular globusid is authorized to access
- * the given local user account.
- *
- * @param globusid
- *        the globus id in string form - this should be the user's subject
- * @param userid
- *        the local account that access is sought for
- *
- * @return
- *        0 on success (authorization allowed)
- *        -1 if bad arguments
- *        1 on error
- */
+
+
+/******************************************************************************
+Function:   globus_gss_assist_userok.c
+Description:
+	Check to see if a particular globusid is authorized to access
+	the given local user account.
+
+Parameters:
+	globusid, the globus id in string form
+
+	userid, the local account that access is sought for
+
+Returns:
+	0 on sucess (authorization allowed)
+	!=0 on failure or authorization denied
+
+******************************************************************************/
 int
 globus_gss_assist_userok(
-    char *		                globusid,
-    char *		                userid)
+    char *                              globusid,
+    char *                              userid)
 {
-    char *                              gridmap_filename = NULL;
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    globus_i_gss_assist_gridmap_line_t *			
-                                        gline = NULL;
-    char **				useridp;
-    static char *                       _function_name_ =
-        "globus_gss_assist_userok";
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
+    gridmap_line_t *            gline;
+    char **             useridp;
+    int                 authorized = 0;
+
 
     /* Check arguments */
     if ((globusid == NULL) ||
-	(userid == NULL))
+        (userid == NULL))
+        return(-1);
+
+    if (gridmap_find_dn(globusid, &gline) != 0)
     {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Arguments passed to function are NULL"));
-        goto exit;
-    }
-    
-    result = globus_i_gss_assist_gridmap_find_dn(globusid, &gline);
-    if(result != GLOBUS_SUCCESS)
-    {
-        int                             superuser;
-
-        result = GLOBUS_GSI_SYSCONFIG_IS_SUPERUSER(&superuser);
-        if(result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-            goto exit;
-        }
-
-        if(!superuser)
-        {
-            char *                      username;
-
-            result = GLOBUS_GSI_SYSCONFIG_GET_USERNAME(&username);
-            if(result != GLOBUS_SUCCESS)
-            {
-                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                    result,
-                    GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-                goto exit;
-            }
-
-            if(strcmp(username, userid) != 0)
-            {
-                /* not superuser, and the user id doesn't
-                 * match the requested user id
-                 */
-                GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_GSS_ASSIST_ERROR_USER_ID_DOESNT_MATCH,
-                    ("When not run as superuser and no gridmap file exists, "
-                     "the requested user id must match the current user id."));
-                goto exit;
-            }
-            
-        }
+        return 1;
     }
 
     if (gline == NULL)
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_IN_GRIDMAP_NO_USER_ENTRY,
-            ("The DN: %s does not map to the username: %s",
-             globusid,
-             userid));
-	goto exit;
-    }
+        return 1;       /* No entry found in gridmap file */
 
     if (gline->user_ids == NULL)
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            ("The gridmap is malformated.  No user id's could be be found."));
-        goto exit;
-    }
+        return 1;       /* Broken code or misformated gridmap file */
 
     for (useridp = gline->user_ids; *useridp != NULL; useridp++)
     {
-	if (strcmp(*useridp, userid) == 0)
-	{
-            goto exit;
-	}
+        if (strcmp(*useridp, userid) == 0)
+        {
+            authorized = 1;
+            break;
+        }
     }
 
-    GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME(&gridmap_filename);
-    GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-        result,
-        GLOBUS_GSI_GSS_ASSIST_ERROR_USER_ID_DOESNT_MATCH,
-        ("The user id: %s, doesn't match the the DN: %s, in the "
-         "gridmap file: %s",
-         globusid,
-         userid,
-         gridmap_filename));
-    free(gridmap_filename);
+    gridmap_free_gridmap_line(gline);
 
- exit:
+    return (authorized ? 0 : 1);
 
-    if(gline)
-    {
-        globus_i_gss_assist_gridmap_line_free(gline);
-    }
+} /* globus_gss_assist_userok() */
 
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
-    return (int) result;
-} 
-/* globus_gss_assist_userok() */
-/* @} */
 
-/**
- * @name Map Local User
- * @ingroup 
- */
-/* @{ */
-/**
- * Routine for returning the default globus ID associated with
- * a local user name. This is somewhat of a hack since there is
- * not a guarenteed one-to-one mapping. What we do is look for
- * the first entry in the gridmap file that has the local
- * user as the default login.
- *
- * @param local_user
- *        the local username to find the DN for
- * @param globusidp
- *        the first DN found that reverse maps from the local_user
- *
- * @return
- *        0 on success, otherwise an error object identifier is returned.
- *        use globus_error_get to get the error object from the id.  The
- *        resulting error object must be freed using globus_object_free
- *        when it is no longer needed.
- *
- * @see globus_error_get
- * @see globus_object_free
- */
+/******************************************************************************
+Function:   globus_gss_assist_map_local_user.c
+Description:
+	Routine for returning the default globus ID associated with
+        a local user name. This is somewhat of a hack since there is
+	not a guarenteed one-to-one mapping. What we do is look for
+	the first entry in the gridmap file that has the local
+	user as the default login.
+
+Parameters:
+	local_user, local username
+
+	globusidp, filled in with pointer to allocated string containing
+	globus id string.
+
+Returns:
+	0 on sucess
+	!=0 on failure
+
+******************************************************************************/
 int 
-globus_gss_assist_map_local_user(
-    char * 	                        local_user,
-    char ** 	                        globusidp) 
+globus_gss_assist_map_local_user(char * 	local_user,
+				 char ** 	globusidp) 
 {
-    char *                              gridmap_filename = NULL;
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    globus_i_gss_assist_gridmap_line_t *			
-                                        gline = NULL;
-    static char *                       _function_name_ =
-        "globus_gss_assist_map_local_user";
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
+    gridmap_line_t *			gline = NULL;
+
 
     /* Check arguments */
     if ((local_user == NULL) ||
 	(globusidp == NULL))
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Arguments passed to the function are NULL."));
-        goto exit;
-    }
+	return(-1);
 
     *globusidp = NULL;
 
-    result = globus_i_gss_assist_gridmap_find_local_user(local_user, &gline);
-    if(result != GLOBUS_SUCCESS)
+
+    if (gridmap_find_local_user(local_user, &gline) != 0)
     {
 	/*
 	 * We failed to open the gridmap file.
 	 */
-        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-        goto exit;
+	return 1;
     }
 
     if (gline != NULL)
     {
 	if (gline->dn == NULL)
 	{
-            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-                ("The gridmap file: %s is formatted incorrectly.  No "
-                 "distinguished names could be found."));
-            goto exit;
-        }
+	    /*
+	     * If we get here then something in this code is broken
+	     * or the gridmap file is badly formatted or, most likely,
+	     * both.
+	     */
+	    return 1;
+	}
 
 	/* First user id is default */
 	*globusidp = strdup(gline->dn);
 
+	gridmap_free_gridmap_line(gline);
+
 	if (*globusidp == NULL)
 	{
 	    /* strdup() failed */
-            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-                ("The string duplication operation failed."));
-            goto exit;
+	    return 1;
 	}
     }
     else
     {
-        GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME(&gridmap_filename);
 	/* No entry found in gridmap file for this user */
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_IN_GRIDMAP_NO_USER_ENTRY,
-            ("No DN entry found for user: %s in gridmap file: %s",
-             local_user,
-             gridmap_filename));
-        free(gridmap_filename);
-        goto exit;
+	return 1;
     }
 
- exit:
+    /* Success */
+    return 0;
 
-    if(gline)
-    {
-        globus_i_gss_assist_gridmap_line_free(gline);
-    }
-
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
-    return (int) result;
-} 
-/* globus_gss_assist_map_local_user() */
-/* @} */
+} /* globus_gss_assist_map_local_user() */
 
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-/**
- * @name Gridmap Find DN
- * @ingroup globus_i_gsi_gss_assist
- */
-/* @{ */
-/**
- * Locate the entry for the given DN in the default gridmap file
- *
- * @param dn
- *        the distinguished name to search for
- * @param gline
- *        gives the line information 
- *
- * @return
- *        0 on success, otherwise an error object identifier is returned.
- *        use globus_error_get to get the error object from the id.  The
- *        resulting error object must be freed using globus_object_free
- *        when it is no longer needed.
- *
- * @see globus_error_get
- * @see globus_object_free
- */
+
+/******************************************************************************
+                           Internal Functions
+******************************************************************************/
+
+/******************************************************************************
+Function:   gridmap_default_path
+Description:
+	Determine and return the path to the gridmap file.
+
+Parameters:
+	ppath, a pointer to a pointer that will be set to an allocated
+	string.
+
+Returns:
+	0 on success, non-zero on error.
+
+******************************************************************************/
+
 static
-globus_result_t
-globus_i_gss_assist_gridmap_find_dn(
-    const char * const 		        dn,
-    globus_i_gss_assist_gridmap_line_t **		        
-                                        gline)
+int
+gridmap_default_path(char **		ppath)
 {
-    char *                              gridmap_filename = NULL;
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    char *				open_mode = "r";
-    FILE *				gmap_stream = NULL;
-    int					found = 0;
-    globus_i_gss_assist_gridmap_line_t *			
-                                        gline_tmp = NULL;
-    static char *                       _function_name_ =
-        "globus_i_gss_assist_gridmap_find_dn";
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
+    char				gridmap[256];
 
-    /* Check arguments */
-    if (dn == NULL)
+
+    /* the following logic is taken from the gssapi_cleartext
+     * globusfile.c. Since it needs this same information,
+     * but other gssapi's may not, we duplicate the parsing
+     * of the gridmap file. 
+     */
+    if (getuid() == 0)
     {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("The DN passed to function is NULL."));
-	goto exit;
+	char *char_p;
+
+	if ( ((char_p = (char*) getenv("GRIDMAP")) != NULL) ||
+	     ((char_p = (char*) getenv("GLOBUSMAP")) != NULL) ||
+	     ((char_p = (char*) getenv("globusmap")) != NULL) ||
+	     ((char_p = (char*) getenv("GlobusMap")) != NULL) ) {
+
+	    strncpy(gridmap, char_p, sizeof(gridmap)) ;
+
+	} else
+	    strcpy(gridmap, "/etc/grid-security/grid-mapfile") ;
+
     }
-
-    result = GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME(&gridmap_filename);
-    if(result != GLOBUS_SUCCESS)
+    else
     {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-        goto exit;
-    }
+	char *char_p;
 
-    gmap_stream = fopen(gridmap_filename, open_mode);
+	if ( ((char_p = (char*) getenv("GRIDMAP")) != NULL) ||
+	     ((char_p = (char*) getenv("GLOBUSMAP")) != NULL) ||
+	     ((char_p = (char*) getenv("globusmap")) != NULL) ||
+	     ((char_p = (char*) getenv("GlobusMap")) != NULL) ) {
 
-    if (gmap_stream == NULL)
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            ("Couldn't open gridmap file: %s for reading.",
-             gridmap_filename));
-        goto exit;
-    }
+	    strncpy(gridmap, char_p, sizeof(gridmap)) ;
 
-    free(gridmap_filename);
-    gridmap_filename = NULL;
-
-    do
-    {
-	char 				line[1024];
-
-	if (fgets(line, sizeof(line), gmap_stream) == NULL)
-        {
-	    break;		/* EOF or error */
-        }
-
-        result = globus_i_gss_assist_gridmap_parse_line(line, &gline_tmp);
-	if (result != GLOBUS_SUCCESS)
-	{
-            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-            continue;		/* Parse error */
-        }
-
-	if ((gline_tmp != NULL) && (strcmp(dn, gline_tmp->dn) == 0))
-	{
-            found = 1;
 	}
 	else
 	{
-	    globus_i_gss_assist_gridmap_line_free(gline_tmp);
-	}
+	    if ( ((char_p = (char*) getenv("home")) != NULL) ||
+		 ((char_p = (char*) getenv("Home")) != NULL) ||
+		 ((char_p = (char*) getenv("HOME")) != NULL)) {
+	  
+		strcpy(gridmap, char_p);
+		strcat(gridmap, "/.gridmap");
 
-    } while (!found);
-
-    fclose(gmap_stream);
-    gmap_stream = NULL;
-
-    if (found)
-    {
-        *gline = gline_tmp;
-    }
-    else
-    {
-        *gline = NULL;
+	    } else {
+		strcpy(gridmap,".gridmap") ;
+	    }
+	}	
     }
 
- exit:
+    /* Make certain that no buffer overflow occurred */
+    if (strlen(gridmap) > sizeof(gridmap))
+	return -1;
 
-    if (gridmap_filename != NULL)
-    {
-	free(gridmap_filename);
-    }
+    *ppath = strdup(gridmap);
 
-    if (gmap_stream)
-    {
-        fclose(gmap_stream);
-    }
+    if (ppath == NULL)
+	return -1;
 
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
-    return result;
-} 
-/* gridmap_find_dn() */
-/* @} */
+    return 0;
 
-/**
- * @name Find Local User
- * @ingroup globus_i_gsi_gss_assist
- */
-/* @{ */
-/**
- * Locate the first entry with the given local user as the default in the
- * default gridmap file.
- *
- * @param local_user
- *        the name to search for
- * @param gline
- *        the resulting gridmap_line_t contianing the user and DN information
- *
- * @return
- *        0 on success, otherwise an error object identifier is returned.
- *        use globus_error_get to get the error object from the id.  The
- *        resulting error object must be freed using globus_object_free
- *        when it is no longer needed.
- *
- * @see globus_error_get
- * @see globus_object_free
- */
+} /* gridmap_default_path() */
+
+
+/******************************************************************************
+Function:   gridmap_find_dn
+Description:
+	Locate the entry for the given DN in the default gridmap file.
+
+Parameters:
+	dn, the name to search for.
+
+	gline, a pointer to a pointer that will be set to point at
+	the gridmap_line_t structure containing the line information.
+	Will be set to NULL if the line is not found.
+
+Returns:
+	0 on success, non-zero on error.
+
+******************************************************************************/
+
 static
-globus_result_t
-globus_i_gss_assist_gridmap_find_local_user(
-    const char * const	                local_user,
-    globus_i_gss_assist_gridmap_line_t **	                
-                                        gline)
+int
+gridmap_find_dn(const char * const 		dn,
+		  gridmap_line_t **		gline)
 {
-    char *				gridmap_filename = NULL;
+    char *				gridmap_path = NULL;
     char *				open_mode = "r";
     FILE *				gmap_stream = NULL;
     int					found = 0;
-    globus_i_gss_assist_gridmap_line_t *			
-                                        gline_tmp;
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_i_gss_assist_gridmap_find_local_user";
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
+    gridmap_line_t *			gline_tmp;
+
 
     /* Check arguments */
-    if (local_user == NULL)
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Arguments passed to function are NULL."));
-        goto exit;
-    }
+    if (dn == NULL)
+	goto failure;
 
-    result = GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME(&gridmap_filename);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-        goto exit;
-    }
-            
-    gmap_stream = fopen(gridmap_filename, open_mode);
+    if (gridmap_default_path(&gridmap_path) != 0)
+	goto failure;
+
+    gmap_stream = fopen(gridmap_path, open_mode);
 
     if (gmap_stream == NULL)
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            ("Can't open the file: %s", gridmap_filename));
-        goto exit;
-    }
+	goto failure;
+
+    free(gridmap_path);
+    gridmap_path = NULL;
 
     do
     {
 	char 				line[1024];
 
+
 	if (fgets(line, sizeof(line), gmap_stream) == NULL)
-        {
 	    break;		/* EOF or error */
-        }
 
-	result = globus_i_gss_assist_gridmap_parse_line(line, &gline_tmp);
-        if(result != GLOBUS_SUCCESS)
-        {
+	if (gridmap_parse_line(line, &gline_tmp) != 0)
 	    continue;		/* Parse error */
-        }
 
-	if (gline_tmp == NULL)
-	{
-	    /* Empty line */
-	    continue;
-	}
-
-	if((gline_tmp->user_ids != NULL) &&
-           (gline_tmp->user_ids[0] != NULL) &&
-           (strcmp(local_user, gline_tmp->user_ids[0]) == 0))
+	if ((gline_tmp != NULL) && (strcmp(dn, gline_tmp->dn) == 0))
 	{
 	    found = 1;
 	}
 	else
 	{
-	    globus_i_gss_assist_gridmap_line_free(gline_tmp);
+	    gridmap_free_gridmap_line(gline_tmp);
 	}
 
     } while (!found);
@@ -737,81 +466,168 @@ globus_i_gss_assist_gridmap_find_local_user(
     else
 	*gline = NULL;
 
- exit:
+    return 0;
 
-    if (gridmap_filename)
-    {
-	free(gridmap_filename);
-    }
+ failure:
+
+    if (gridmap_path != NULL)
+	free(gridmap_path);
 
     if (gmap_stream)
 	fclose(gmap_stream);
 
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
-    return result;
-} 
-/* gridmap_find_local_user() */
-/* @} */
+    return -1;
 
-/**
- * @name Gridmap Parse Line
- * @ingroup globus_i_gsi_gss_assist
- */
-/* @{ */
-/**
- * 
- * Given a line from the gridmap file, parse it returning
- * a gridmap_line_t structure. line is modified during parsing.
- * The format of the line is expected to be:
- * <DN> <userid>[,<userid>[,<userid>...]]
- * Leading and trailing whitespace is ignored.
- * userids must only have a comma between them, no whitespace.
- * Anything after the userids is ignored.
- * Anything after an unescaped comment character is ignored.
- *
- * @param line
- *        the line to parse
- * @param gline
- *        the resulting parsed gridmap line structure
- *
- * @return
- *        0 on success, otherwise an error object identifier is returned.
- *        use globus_error_get to get the error object from the id.  The
- *        resulting error object must be freed using globus_object_free
- *        when it is no longer needed.
- *
- * @see globus_error_get
- * @see globus_object_free
- */
+} /* gridmap_find_dn() */
+
+
+
+/******************************************************************************
+Function:   gridmap_local_user
+Description:
+	Locate the first entry with the given local user as the default
+	in the default gridmap file.
+
+Parameters:
+	local_user, the name to search for.
+
+	gline, a pointer to a pointer that will be set to point at
+	the gridmap_line_t structure containing the line information.
+	Will be set to NULL if the line is not found.
+
+Returns:
+	0 on success, non-zero on error.
+
+******************************************************************************/
+
 static
-globus_result_t
-globus_i_gss_assist_gridmap_parse_line(
-    char * 			        line,
-    globus_i_gss_assist_gridmap_line_t **	                
-                                        gline)
+int
+gridmap_find_local_user(const char * const	local_user,
+			  gridmap_line_t **	gline)
+{
+    char *				gridmap_path = NULL;
+    char *				open_mode = "r";
+    FILE *				gmap_stream = NULL;
+    int					found = 0;
+    gridmap_line_t *			gline_tmp;
+
+
+    /* Check arguments */
+    if (local_user == NULL)
+	goto failure;
+
+    if (gridmap_default_path(&gridmap_path) != 0)
+	goto failure;
+
+    gmap_stream = fopen(gridmap_path, open_mode);
+
+    if (gmap_stream == NULL)
+	goto failure;
+
+    free(gridmap_path);
+    gridmap_path = NULL;
+
+    do
+    {
+	char 				line[1024];
+
+
+	if (fgets(line, sizeof(line), gmap_stream) == NULL)
+	    break;		/* EOF or error */
+
+	if (gridmap_parse_line(line, &gline_tmp) != 0)
+	    continue;		/* Parse error */
+
+	if (gline_tmp == NULL)
+	{
+	    /* Empty line */
+	    continue;
+	}
+
+	if ((gline_tmp->user_ids != NULL) &&
+	    (gline_tmp->user_ids[0] != NULL) &&
+	    (strcmp(local_user, gline_tmp->user_ids[0]) == 0))
+	{
+	    found = 1;
+	}
+	else
+	{
+	    gridmap_free_gridmap_line(gline_tmp);
+	}
+
+    } while (!found);
+
+    fclose(gmap_stream);
+    gmap_stream = NULL;
+
+    if (found)
+	*gline = gline_tmp;
+    else
+	*gline = NULL;
+
+    return 0;
+
+ failure:
+
+    if (gridmap_path != NULL)
+	free(gridmap_path);
+
+    if (gmap_stream)
+	fclose(gmap_stream);
+
+    return -1;
+
+} /* gridmap_find_local_user() */
+
+
+  
+/******************************************************************************
+Function:   gridmap_parse_line
+Description:
+	Given a line from the gridmap file, parse it returning
+	a gridmap_line_t structure. line is modified during parsing.
+
+	The format of the line is expected to be:
+
+	<DN> <userid>[,<userid>[,<userid>...]]
+
+	Leading and trailing whitespace is ignored.
+
+	userids must only have a comma between them, no whitespace.
+
+	Anything after the userids is ignored.
+
+	Anything after an unescaped comment character is ignored.
+
+Parameters:
+	line, a pointer to the line from the file (NUL-terminated string)
+
+	gline, a pointer to a pointer that will be set to point at
+	the gridmap_line_t structure containing the line information.
+	If the line contains no content, gline will be set to NULL.
+
+Returns:
+	0 on success, non-zero on error.
+
+******************************************************************************/
+
+static
+int
+gridmap_parse_line(char * 			line,
+		     gridmap_line_t **	gline)
 {
     char *				dn_end;
     char *				parsed_dn = NULL;
     char **				userids = NULL;
     int					num_userids = 0;
     int					userid_slots = 0;
-    globus_i_gss_assist_gridmap_line_t *			
-                                        gline_tmp = NULL;
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_i_gss_assist_gridmap_parse_line";
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
+    gridmap_line_t *			gline_tmp = NULL;
     
+
     /* Check arguments */
     if ((line == NULL) ||
 	(gline == NULL))
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            ("Arguments passed to function are NULL."));
-	goto exit;
-    }
+	goto error;
 
     /* Skip over leading whitespace */
     line += strspn(line, WHITESPACE_CHARS);
@@ -821,7 +637,7 @@ globus_i_gss_assist_gridmap_parse_line(
     {
 	/* Ignore line, return NULL gline */
 	*gline = NULL;
-        goto exit;
+	return 0;
     }
 	
     /* Check for empty line */
@@ -829,7 +645,7 @@ globus_i_gss_assist_gridmap_parse_line(
     {
 	/* Empty line, return NULL gline. */
 	*gline = NULL;
-	goto exit;
+	return 0;
     }
 
     /* Is DN quoted? */
@@ -847,15 +663,7 @@ globus_i_gss_assist_gridmap_parse_line(
 	    dn_end += strcspn(dn_end, QUOTING_CHARS);
 
 	    if (*dn_end == NUL)
-            {
-                GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_GSS_ASSIST_ERROR_INVALID_GRIDMAP_FORMAT,
-                    ("A closing quote is missing in the gridmap file, "
-                     "on the line:\n%s\n",
-                     line));
-                goto exit;
-            }
+		goto error;	/* Missing closing quote */
 
 	    /* Make sure it's not escaped */
 	}
@@ -867,27 +675,14 @@ globus_i_gss_assist_gridmap_parse_line(
 	dn_end = line + strcspn(line, WHITESPACE_CHARS);
 
 	if (*dn_end == NUL)
-        {
-            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_INVALID_GRIDMAP_FORMAT,
-                ("Nothing follows the DN on the line:\n%s\n",
-                 line));
-            goto exit;
-        }
+	    goto error;	/* Nothing after DN */
     }
 
     /* NUL terminate DN and parse */
     *dn_end = NUL;
 
-    result = globus_i_gss_assist_gridmap_parse_globusid(line, &parsed_dn);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
-        goto exit;
-    }
+    if (gridmap_parse_globusid(line, &parsed_dn) != 0)
+	return -1;
 
     /* Skip over closing delim and any whitespace after DN */
     line = dn_end + 1;
@@ -906,35 +701,22 @@ globus_i_gss_assist_gridmap_parse_line(
 	if ((num_userids + 1 /* new entry */+ 1 /* for NULL */) > userid_slots)
 	{
 	    char **userids_tmp;
+
+
 	    userid_slots += USERID_CHUNK_SIZE;
+
 	    userids_tmp = realloc(userids, userid_slots * sizeof(char *));
 
-	    if (!userids_tmp)
-            {
-                result = globus_error_put(globus_error_wrap_errno_error(
-                    GLOBUS_GSI_GSS_ASSIST_MODULE,
-                    errno,
-                    GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
-                    "%s:%d: Could not allocate enough memory",
-                    __FILE__, __LINE__));
-		goto exit;
-            }
+	    if (userids_tmp == NULL)
+		goto error;
 
 	    userids = userids_tmp;
 	}
   
 	userids[num_userids] = malloc(userid_len + 1 /* for NUL */);
 
-	if (!userids[num_userids])
-        {
-            result = globus_error_put(globus_error_wrap_errno_error(
-                GLOBUS_GSI_GSS_ASSIST_MODULE,
-                errno,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
-                "%s:%d: Could not allocate enough memory",
-                __FILE__, __LINE__));
-            goto exit;
-        }
+	if (userids[num_userids] == NULL)
+	    goto error;
 
 	strncpy(userids[num_userids], line, userid_len);
 	userids[num_userids][userid_len] = NUL;
@@ -946,9 +728,7 @@ globus_i_gss_assist_gridmap_parse_line(
 
 	/* If we're on a seperator character, skip over it */
 	if (strchr(USERID_SEP_CHARS, *line) != NULL)
-        {
 	    line++;
-        }
     }
 
     /*
@@ -960,130 +740,98 @@ globus_i_gss_assist_gridmap_parse_line(
     gline_tmp = malloc(sizeof(*gline_tmp));
 
     if (gline_tmp == NULL)
-    {
-        result = globus_error_put(globus_error_wrap_errno_error(
-            GLOBUS_GSI_GSS_ASSIST_MODULE,
-            errno,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
-            "%s:%d: Could not allocate enough memory",
-            __FILE__, __LINE__));
-        goto exit;
-    }
+	goto error;
 
     gline_tmp->dn = parsed_dn;
     gline_tmp->user_ids = userids;
 
     *gline = gline_tmp;
   
- exit:
+    return 0;
 
-    if (!parsed_dn)
-    {
-        free(parsed_dn);
-    }
+ error:
+    if (parsed_dn != NULL)
+	free(parsed_dn);
 
-    if (!userids)
-    {
+    if (userids != NULL) {
 	char **userids_tmp = userids;
 
 	while (*userids_tmp != NULL)
-        {
-            free(*userids_tmp++);
-        }
+	    free(*userids_tmp++);
 
 	free(userids);
     }
 
     if (gline_tmp != NULL)
-    {
-        free(gline_tmp);
-    }
+	free(gline_tmp);
 
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
-    return result;
-} 
-/* gridmap_parse_line() */
-/* @} */
+    return -1;
 
-/**
- * @name globus_i_gsi_gss_assist
- * @ingroup globus_i_gsi_gss_assist
- */
-/* @{ */
-/**
- * Frees all memory allocated to a gridmap_line_t structure.
- *
- * @param gline
- *        pointer to structure to be freed.
- * 
- * @return
- *        void
- */
+} /* gridmap_parse_line() */
+
+
+
+/******************************************************************************
+Function:   gridmap_free_gridmap_line
+Description:
+	Frees all memory allocated to a gridmap_line_t structure.
+
+Parameters:
+	gline, pointer to structure to be freed.
+
+Returns:
+	Nothing.
+******************************************************************************/
 static
 void
-globus_i_gss_assist_gridmap_line_free(
-    globus_i_gss_assist_gridmap_line_t *                    
-                                        gline)
+gridmap_free_gridmap_line(gridmap_line_t *gline)
 {
-    static char *                       _function_name_ =
-        "globus_i_gss_assist_gridmap_line_free";
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
+  if (gline != NULL)
+  {
+    if (gline->dn != NULL)
+      free(gline->dn);
 
-    if (gline != NULL)
+    if (gline->user_ids != NULL)
     {
-        if (gline->dn != NULL)
-        {
-            free(gline->dn);
-        }
-        
-        if (gline->user_ids != NULL)
-        {
-            char **                           userids_tmp = gline->user_ids;
-            
-            while (*userids_tmp != NULL)
-            {
-                free(*userids_tmp++);
-            }
-            
-            free(gline->user_ids);
-        }
-        
-        free(gline);
-    }
-} 
-/* gridmap_free_gridmap_line() */
-/* @} */
+      char **userids_tmp = gline->user_ids;
 
-/**
- * @name Gridmap Parse Globusid
- * @ingroup globus_i_gsi_gss_assist
- */
-/* @{ */
-/**
- * Given a pointer to a string containing the globusid from the
- * gridmap file, return a pointer to a string containing the
- * parsed from of the id.
- *
- * Specifically handle backslashed characters - e.g. '\\',
- * '\x4a' or '\37'.
- *
- * @param unparsed
- *        the unparsed globusid
- * @param pparsed
- *        the resulting parsed string - this should be freed when
- *        no longer needed
- * @result
- *        0 on success, otherwise an error object identifier is returned.
- *        use globus_error_get to get the error object from the id.  The
- *        resulting error object must be freed using globus_object_free
- *        when it is no longer needed.
- *
- * @see globus_error_get
- * @see globus_object_free
- */
+      while (*userids_tmp != NULL)
+	free(*userids_tmp++);
+
+      free(gline->user_ids);
+    }
+
+    free(gline);
+  }
+
+} /* gridmap_free_gridmap_line() */
+
+
+
+/******************************************************************************
+Function:   gridmap_parse_globusid
+Description:
+	Given a pointer to a string containing the globusid from the
+	gridmap file, return a pointer to a string containing the
+	parsed from of the id.
+
+	Specifically handle backslashed characters - e.g. '\\',
+	'\x4a' or '\37'.
+
+Parameters:
+	unparsed, pointer to unparsed string
+
+	pparsed, pointer to pointer that should be set to point at
+	allocated parsed string
+
+Returns:
+	0 on success
+	non-zero on error.
+
+******************************************************************************/
 static
-globus_result_t
-globus_i_gss_assist_gridmap_parse_globusid(
+int
+gridmap_parse_globusid(
     const char *			unparsed,
     char **				pparsed)
 {
@@ -1100,43 +848,26 @@ globus_i_gss_assist_gridmap_parse_globusid(
     int					buffer_index = 0;
 
     /* Character we're currently looking at */
-    char			        unparsed_char;
+    char					unparsed_char;
 
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_i_gss_assist_gridmap_parse_globusid";
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
 
     /*
-     * Check input parameters for legality
-     */
+   * Check input parameters for legality
+   */
     if ((unparsed == NULL) ||
 	(pparsed == NULL))
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Arguments passed to function are NULL."));
-        goto exit;
-    }
+	return -1;
 
     buffer_len = strlen(unparsed);
+
     buffer = malloc(buffer_len);
 
     if (buffer == NULL)
-    {
-        globus_error_put(globus_error_wrap_errno_error( 
-            GLOBUS_GSI_GSS_ASSIST_MODULE, 
-            errno, 
-            GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO, 
-            "%s:%d: Could not allocate enough memory",
-            __FILE__, __LINE__));
-        goto exit;
-    }
+	return -1;
 
-    /*
-     * Walk through the name, parsing as we go
-     */
+  /*
+   * Walk through the name, parsing as we go
+   */
     while ((unparsed_char = *(unparsed++)) != NUL)
     {
 	/* Unescaped backslash */
@@ -1154,8 +885,8 @@ globus_i_gss_assist_gridmap_parse_globusid(
 	    {
 		/* Set unparsed_char to value represented by hex value */
 		unparsed_char =
-		    (globus_i_gss_assist_xdigit_to_value(*unparsed) << 4) +
-		    globus_i_gss_assist_xdigit_to_value(*(unparsed + 1));
+		    xdigit_to_value(*unparsed) << 4 +
+		    xdigit_to_value(*(unparsed + 1));
 	
 		unparsed += 2;
 	    }
@@ -1163,12 +894,11 @@ globus_i_gss_assist_gridmap_parse_globusid(
 	}
 
 	/*
-         * Ok, we now have the character in unparsed_char to be appended
-         * to our output string.
-         *
-         * First, make sure we have enough room in our output buffer.
-         */
-
+     * Ok, we now have the character in unparsed_char to be appended
+     * to our output string.
+     *
+     * First, make sure we have enough room in our output buffer.
+     */
 	if ((buffer_index + 1 /* for NUL */) >= buffer_len)
 	{
 	    /* Grow buffer */
@@ -1181,54 +911,46 @@ globus_i_gss_assist_gridmap_parse_globusid(
 	    if (tmp_buffer == NULL)
 	    {
 		free(buffer);
-		globus_error_put(globus_error_wrap_errno_error(
-                    GLOBUS_GSI_GSS_ASSIST_MODULE,
-                    errno,
-                    GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
-                    "%s:%d: Could not allocate enough memory",
-                    __FILE__, __LINE__));
-                goto exit;
+		return -1;
 	    }
-            
+
 	    buffer = tmp_buffer;
 	}
-        
+
 	buffer[buffer_index++] = unparsed_char;
 	buffer[buffer_index] = NUL;
 
 	escaped = 0;
     }
-    
-    /* XXX What if escaped == 1 here? */
-    /* Success */
-    
-    *pparsed = buffer;
-    
- exit:
-    
-    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
-    return result;
-} 
-/* gridmap_parse_globusid() */
-/* @} */
 
-/**
- * @name Hexadecimal Digit to Integer
- * @ingroup globus_i_gsi_gss_assist
- */
-/* @{ */
-/**
- * Convert an ascii character representing a hexadecimal digit
- * into an integer.
- *
- * @param xdigit
- *        character contianing the hexidecimal digit
- *
- * @return
- *        the value in the xdigit, or -1 if error
- */
+    /* XXX What if escaped == 1 here? */
+
+  /* Success */
+
+    *pparsed = buffer;
+
+    return 0;
+
+} /* gridmap_parse_globusid() */
+
+
+
+/******************************************************************************
+Function:   xdigit_to_value
+Description:
+	Convert a ascii character representing a hexadecimal digit
+	into a integer.
+
+Parameters:
+	xdigit, character contain the hex digit.
+
+Returns:
+	value contained in xdigit, or -1 on error.
+
+******************************************************************************/
+
 static int
-globus_i_gss_assist_xdigit_to_value(
+xdigit_to_value(
     char 				xdigit)
 {
     if ((xdigit >= '0') && (xdigit <= '9'))
@@ -1242,8 +964,7 @@ globus_i_gss_assist_xdigit_to_value(
 
     /* Illegal digit */
     return -1;
-} 
-/* xdigit_to_value() */
-/* @} */
+} /* xdigit_to_value() */
 
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
+

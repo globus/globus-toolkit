@@ -63,8 +63,8 @@ diff -u -r -P openssl-0.9.6b/Configure openssl-0.9.6b-patched/Configure
 +# Check to see if gcc's linker is actually using gnu's linker.
 +if ($cc eq 'gcc') {
 +  my $ld = `$cc -print-prog-name=ld`;
-+  my $result = `$ld -v 2>&1`;
 +  chomp($ld);
++  my $result = `$ld -v 2>&1`;
 +  if ($result =~ m!(?:GNU)|(?:with BFD)!) {
 +    $shared_target = 'gnu-shared';
 +  } else {

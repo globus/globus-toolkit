@@ -1,53 +1,60 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file gss_verify_mic
- * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
+/*********************************************************************
 
-static char *rcsid = "$Id$";
+verify_mic.c:
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+Description:
+    GSSAPI routine check a buffer against its MIC. 
 
-/* borrowed from OpenSSL's s3_enc.c
- */
-static unsigned char ssl3_pad_1[48]={
-	0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
-	0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
-	0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
-	0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
-	0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
-	0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36 };
+CVS Information:
 
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
+
+**********************************************************************/
+
+static char *rcsid = "$Header$";
+
+/**********************************************************************
+                             Include header files
+**********************************************************************/
 
 #include "gssapi.h"
-#include "globus_i_gsi_gss_utils.h"
-#include "gssapi_openssl.h"
+#include "gssutils.h"
+#include "gssapi_ssleay.h"
 #include <string.h>
 
-#include <time.h>
+/**********************************************************************
+                               Type definitions
+**********************************************************************/
 
-/**
- * @name Verify MIC
- * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * Check a MIC of the data
- *
- * @param minor_status
- * @param context_handle
- * @param message_buffer
- * @param token_buffer
- * @param qop_state
- * 
- * @return
- */
+/**********************************************************************
+                          Module specific prototypes
+**********************************************************************/
+
+/**********************************************************************
+                       Define module specific variables
+**********************************************************************/
+
+static unsigned char ssl3_pad_1[48]={
+    0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
+    0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
+    0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
+    0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
+    0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36,
+    0x36,0x36,0x36,0x36,0x36,0x36,0x36,0x36 };
+
+/**********************************************************************
+Function:   gss_verify_mic
+
+Description:
+        Check a MIC of the date
+Parameters:
+
+Returns:
+**********************************************************************/
+
 OM_uint32 
 GSS_CALLCONV gss_verify_mic(
     OM_uint32 *                         minor_status,
@@ -59,180 +66,117 @@ GSS_CALLCONV gss_verify_mic(
     gss_ctx_id_desc *                   context = context_handle;
     unsigned char *                     mac_sec;
     unsigned char *                     seq;
-    unsigned char *                     token_value;
+    unsigned char *                     p;
     EVP_MD_CTX                          md_ctx;
     const EVP_MD *                      hash;
     unsigned int                        md_size;
+    size_t                              len;
     int                                 npad;
-    int                                 index;
-    int                                 buffer_len;
+    int                                 i;
     int                                 seqtest;
-    time_t                              context_goodtill;
     unsigned char                       md[EVP_MAX_MD_SIZE];
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    OM_uint32                           local_minor_status;
 
-    static char *                       _function_name_ = 
-        "gss_verify_mic";
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
-
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+    *minor_status = 0;
 
     if (context_handle == GSS_C_NO_CONTEXT)
     {
-        major_status =  GSS_S_NO_CONTEXT;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context handle (GSS_C_NO_CONTEXT) passed to function"));
-        goto exit;
+        return GSS_S_NO_CONTEXT;
     }
 
     if (token_buffer == NULL)
     {
-        major_status = GSS_S_DEFECTIVE_TOKEN;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid token_buffer (NULL) passed to function"));
-        goto exit;
+        return GSS_S_DEFECTIVE_TOKEN;
     }
 
     if (token_buffer->value == NULL)
     {
-        major_status = GSS_S_DEFECTIVE_TOKEN;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid token_buffer (value param is NULL) passed to function"));
-        goto exit;
+        return GSS_S_DEFECTIVE_TOKEN;
     }
 
-    /* lock the context mutex */    
+    /* lock the context mutex */
+    
     globus_mutex_lock(&context->mutex);
+
     
     if(context->ctx_flags & GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION)
     {
         time_t                          current_time;
-
+        
         current_time = time(NULL);
         
-        major_status = globus_i_gsi_gss_get_context_goodtill(
-            &local_minor_status,
-            context,
-            &context_goodtill);
-
-        if(GSS_ERROR(major_status))
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
-            goto exit;
-        }
-
-        if(current_time > context_goodtill)
+        if(current_time > context->goodtill)
         {
             major_status = GSS_S_CONTEXT_EXPIRED;
-            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_EXPIRED_CREDENTIAL,
-                ("Credential expired: %s < %s",
-                 ctime(&context_goodtill), ctime(&current_time)));
-            goto exit;
+            goto err;
         }
     }
+        
 
-    /* DEBUG BLOCK */
+#ifdef DEBUG
     {
-        int                             debug_index;
-        unsigned char *                 debug_token_value;
-
-        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-            2, (globus_i_gsi_gssapi_debug_fstream,
-                "verify_mic: len=%d mic:",
-                token_buffer->length));
-        debug_token_value = token_buffer->value;
-
-        for (debug_index = 0; 
-             debug_index < token_buffer->length; 
-             debug_index++)
+        unsigned int i;
+        unsigned char *p;
+        fprintf(stderr,"verify_mic: len=%d mic:",
+                token_buffer->length);
+        p = token_buffer->value;
+        for (i=0; i<token_buffer->length;i++)
         {
-            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-                2, (globus_i_gsi_gssapi_debug_fstream,
-                    "%2.2X", *(debug_token_value++)));
+            fprintf(stderr,"%2.2X",*p++);
         }
-
-        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\n");
+        fprintf(stderr,"\n");
     }
-
-    mac_sec = context->gss_ssl->s3->read_mac_secret;
-    seq = context->gss_ssl->s3->read_sequence;
-    hash = context->gss_ssl->read_hash;
-
-    md_size = EVP_MD_size(hash);
-    if (token_buffer->length != (GSS_SSL_MESSAGE_DIGEST_PADDING + md_size))
+#endif
+    mac_sec= &(context->gs_ssl->s3->read_mac_secret[0]);
+    seq = &(context->gs_ssl->s3->read_sequence[0]);
+    hash=context->gs_ssl->read_hash;
+    md_size=EVP_MD_size(hash);
+    if (token_buffer->length != (md_size + 12))
     {
         major_status = GSS_S_DEFECTIVE_TOKEN;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("Token length of %d does not match "
-             "size of message digest %d",
-             token_buffer->length, 
-             (GSS_SSL_MESSAGE_DIGEST_PADDING + md_size)));
-        goto exit;
+        goto err;
     }
     
-    token_value = ((unsigned char *) token_buffer->value) + 
-                  GSS_SSL3_WRITE_SEQUENCE_SIZE;
+    p = ((unsigned char *) token_buffer->value) + 8;
     
-    N2L(token_value, buffer_len);
-    token_value += 4;
-
-    if (message_buffer->length != buffer_len)
+    n2l(p,len);
+    if (message_buffer->length != len)
     {
         major_status = GSS_S_DEFECTIVE_TOKEN;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("Message buffer length of %d does not match "
-             "expected length of %d in token",
-             message_buffer->length,
-             buffer_len));
-        goto exit;
+        goto err;
     }
 
-    npad = (48 / md_size) * md_size;
+    npad=(48/md_size)*md_size;
     
-    EVP_DigestInit(&md_ctx, (EVP_MD *) hash);
-    EVP_DigestUpdate(&md_ctx, mac_sec, md_size);
-    EVP_DigestUpdate(&md_ctx, ssl3_pad_1, npad);
-    EVP_DigestUpdate(&md_ctx, token_buffer->value, 
-                     GSS_SSL_MESSAGE_DIGEST_PADDING);
-    EVP_DigestUpdate(&md_ctx, message_buffer->value, 
+    EVP_DigestInit(  &md_ctx, (EVP_MD *) hash);
+    EVP_DigestUpdate(&md_ctx,mac_sec,md_size);
+    EVP_DigestUpdate(&md_ctx,ssl3_pad_1,npad);
+    EVP_DigestUpdate(&md_ctx,token_buffer->value,12);
+    EVP_DigestUpdate(&md_ctx, message_buffer->value,
                      message_buffer->length);
-    EVP_DigestFinal(&md_ctx, md, NULL);
+    EVP_DigestFinal( &md_ctx,md,NULL);
     
-    if (memcmp(md, ((unsigned char *) token_buffer->value) + 
-               GSS_SSL_MESSAGE_DIGEST_PADDING, md_size))
+    if (memcmp(md,((unsigned char *) token_buffer->value)+12,md_size))
     {
+        GSSerr(GSSERR_F_VERIFY_MIC,GSSERR_R_BAD_DATE);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_BAD_SIG;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_DATE,
-            ("Message digest and token's contents are not equal"));
-        goto exit;
+        goto err;
     }
 
+#ifdef DEBUG
+    fprintf(stderr,"verify_mic: mic match\n");
+#endif
     /*
      * Now test for consistance with the MIC
-     */    
-    token_value = token_buffer->value;
+     */
+    
+    p = token_buffer->value;
     
     seqtest = 0;
-    for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; index++)
+    for (i=0; i<8; i++)
     {   
-        if ((seqtest = *token_value++ - seq[index]))
+        if ((seqtest = *p++ - seq[i]))
         {
             break;      
         }
@@ -241,64 +185,48 @@ GSS_CALLCONV gss_verify_mic(
     if (seqtest > 0)
     {
         /* missed a token, reset the sequence number */
-        token_value = token_buffer->value;
-        for (index = 0; index < GSS_SSL3_WRITE_SEQUENCE_SIZE; index++)
+        p = token_buffer->value;
+        for (i=0; i< 8; i++)
         {
-            seq[index] = *token_value++;
+            seq[i] = *p++;
         }
         major_status = GSS_S_GAP_TOKEN;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("Missing write sequence at index: %d in the token",
-             index));
-        goto exit;
+        goto err;
     }
     
     if (seqtest < 0)
     {
         /* old token, may be replay too. */
-        major_status = GSS_S_OLD_TOKEN;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("Token is too old"));
-        goto exit;
+        return GSS_S_OLD_TOKEN;
     }
 
-    /* got the correct seq number, increment the sequence */
-    for (index = (GSS_SSL3_WRITE_SEQUENCE_SIZE - 1); index >= 0; index--)
+    /* got the correct seq number, inc the sequence */
+
+    for (i=7; i>=0; i--)
     {
-        if (++seq[index]) break;
+        if (++seq[i]) break;
     }
-
-exit:
-
+err:
     /* unlock the context mutex */
+    
     globus_mutex_unlock(&context->mutex);
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 } 
-/* @} */
 
-/**
- * @name Verify
- * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * Obsolete variant of gss_verify for V1 compatability 
- * Check a MIC of the date
- *
- * @param minor_status
- * @param context_handle
- * @param massage_buffer
- * @param token_buffer
- * @param qop_state
- * 
- * @return
- */
+/**********************************************************************
+Function:   gss_verify
+
+Description:
+        Obsolete variant of gss_verify for V1 compatability 
+
+        Check a MIC of the date
+Parameters:
+
+Returns:
+**********************************************************************/
+
+
 OM_uint32 
 GSS_CALLCONV gss_verify(
     OM_uint32 *                         minor_status,
@@ -307,27 +235,26 @@ GSS_CALLCONV gss_verify(
     gss_buffer_t                        token_buffer,
     int *                               qop_state)
 {
-    OM_uint32                           major_status = GSS_S_COMPLETE;
-    OM_uint32                           local_minor_status;
-    static char *                       _function_name_ =
-        "gss_verify";
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+    
+    OM_uint32                           major_status;
+    gss_qop_t                           tmp_qop_state;
+    gss_qop_t *                         ptmp_qop_state = NULL;
 
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+    if (qop_state)
+    {
+        ptmp_qop_state = &tmp_qop_state;
+        tmp_qop_state = *qop_state;
+    }
 
-    major_status = gss_verify_mic(&local_minor_status,
+    major_status = gss_verify_mic(minor_status,
                                   context_handle,
                                   message_buffer,
                                   token_buffer,
-                                  (gss_qop_t *) qop_state);
-    if(GSS_ERROR(major_status))
+                                  ptmp_qop_state);
+    if (qop_state)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_MIC);
+        *qop_state = tmp_qop_state;
     }
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-/* @} */

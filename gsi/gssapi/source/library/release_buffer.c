@@ -1,58 +1,71 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file release_buffer.c
- * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
+/**********************************************************************
 
-static char *rcsid = "$Id$";
+release_buffer.c:
 
-#include "gssapi_openssl.h"
-#include "globus_i_gsi_gss_utils.h"
+Description:
+    GSSAPI routine to release the contents of a buffer
+	See: <draft-ietf-cat-gssv2-cbind-04.txt>
 
-/**
- * @name Release Buffer
- * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * 
- * @param minor_status
- * @param buffer
- *
- * @return
- */
+CVS Information:
+
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
+
+**********************************************************************/
+
+static char *rcsid = "$Header$";
+
+/**********************************************************************
+                             Include header files
+**********************************************************************/
+
+#include "gssapi_ssleay.h"
+
+/**********************************************************************
+                               Type definitions
+**********************************************************************/
+
+/**********************************************************************
+                          Module specific prototypes
+**********************************************************************/
+
+/**********************************************************************
+                       Define module specific variables
+**********************************************************************/
+
+/**********************************************************************
+Function:  gss_release_buffer
+
+Description:
+	Release the contents of a buffer
+
+Parameters:
+
+Returns:
+**********************************************************************/
+
 OM_uint32 
-GSS_CALLCONV gss_release_buffer(
-    OM_uint32 *                         minor_status,
-    gss_buffer_t                        buffer)
+GSS_CALLCONV gss_release_buffer
+(OM_uint32 *          minor_status,
+ gss_buffer_t         buffer
+)
 {
-    static char *                       _function_name_ =
-        "gss_release_buffer";
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+	*minor_status = 0;
+	if (buffer == NULL || buffer == GSS_C_NO_BUFFER) {
+		return GSS_S_COMPLETE ;
+	}
 
-    if (buffer == NULL || buffer == GSS_C_NO_BUFFER) {
-        goto exit;
-    }
+	if (buffer->value && buffer->length) {
+		free(buffer->value);
+	}
 
-    if (buffer->value && buffer->length) {
-        free(buffer->value);
-    }
+	buffer->length = (size_t) 0 ;
+	buffer->value = NULL;
 
-    buffer->length = (size_t) 0 ;
-    buffer->value = NULL;
+	return GSS_S_COMPLETE ;
 
- exit:
+} /* gss_release_buffer */
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return GSS_S_COMPLETE;
-
-} 
-/* gss_release_buffer */
-/* @} */

@@ -1,29 +1,82 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file compare_name.c
- * Globus GSI GSS-API gss_compare_name
- * @author Sam Meder, Sam Lang
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
+/**********************************************************************
 
-static char *rcsid = "$Id$";
+compare_name.c:
+Description:
+        GSSAPI routine to compare names
+        See: <draft-ietf-cat-gssv2-cbind-04.txt>
 
-#include "gssapi_openssl.h"
-#include "globus_i_gsi_gss_utils.h"
+CVS Information:
 
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
+
+**********************************************************************/
+
+static char *rcsid = "$Header$";
+
+/**********************************************************************
+                             Include header files
+**********************************************************************/
+
+#include "gssapi_ssleay.h"
+#include "gssutils.h"
 #include <ctype.h>
 #include <string.h>
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**********************************************************************
+                               Type definitions
+**********************************************************************/
 
-/**
- * @name Local Compare Group
- * @ingroup globus_l_gsi_gssapi
- */
+/**********************************************************************
+                          Module specific prototypes
+**********************************************************************/
+
+/**********************************************************************
+                       Define module specific variables
+**********************************************************************/
+
+/**********************************************************************
+Function:   my_memccmp
+
+Description:
+    Compare two bytes arrays with case insensitive 
+
+Parameters:
+        two strings and a length
+
+Returns:
+        0 if equal
+        not 0 if not equal  
+        
+**********************************************************************/
+
+static int
+my_memccmp(unsigned char *              s1, 
+           unsigned char *              s2,
+           unsigned int                 n)
+{
+    unsigned int                        i;
+    unsigned char *                     c1;
+    unsigned char *                     c2;
+    
+    c1 = s1;
+    c2 = s2;
+    i = 0;
+    while (i<n)
+    {
+        if (toupper(*c1) != toupper(*c2))
+        {
+            return 1;
+        }
+        c1++;
+        c2++;
+        i++;
+    }
+    return 0;
+}
+
 /**
  * Compare the proxy group information in two gss_name_t structures.
  *
@@ -47,21 +100,17 @@ static char *rcsid = "$Id$";
  *       1 if comparison was favorable
  *       0 if it wasn't
  */
+ 
 static int
 gss_l_compare_group(
     const gss_name_desc *               name1,
     const gss_name_desc *               name2)
 {
-    int                                 index;
-    int                                 jindex;
-    int                                 result;
+    int                                 i;
+    int                                 j;
     int                                 num_group_elements1;
     int                                 num_group_elements2;
 
-    static char *                       _function_name_ =
-        "gss_l_compare_group";
-
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     /* if there are no groups we compare favorably */
     
@@ -70,8 +119,7 @@ gss_l_compare_group(
        name2->group == NULL &&
        name2->group_types == NULL)
     {
-        result = 1;
-        goto exit;
+        return 1;
     }
 
     /* if only one cert is in a group we check that it is in a trusted
@@ -83,16 +131,14 @@ gss_l_compare_group(
        name2->group == NULL &&
        name2->group_types == NULL)
     {
-        for(index = 0; index < sk_num(name1->group); index++)
+        for(i=0;i<sk_num(name1->group);i++)
         {
-            if(ASN1_BIT_STRING_get_bit(name1->group_types, index))
+            if(ASN1_BIT_STRING_get_bit(name1->group_types,i))
             {
-                result = 0;
-                goto exit;
+                return 0;
             }
         }
-        result = 1;
-        goto exit;
+        return 1;
     }
 
     if(name1->group == NULL &&
@@ -100,16 +146,14 @@ gss_l_compare_group(
        name2->group != NULL &&
        name2->group_types != NULL)
     {
-        for(index = 0; index < sk_num(name2->group); index++)
+        for(i=0;i<sk_num(name2->group);i++)
         {
-            if(ASN1_BIT_STRING_get_bit(name2->group_types, index))
+            if(ASN1_BIT_STRING_get_bit(name2->group_types,i))
             {
-                result = 0;
-                goto exit;
+                return 0;
             }
         }
-        result = 1;
-        goto exit;
+        return 1;
     }
 
     /* if both certs are in groups we check that the shorter (ie the
@@ -128,92 +172,73 @@ gss_l_compare_group(
 
         if(num_group_elements1 < num_group_elements2)
         {
-            jindex = num_group_elements2;
+            j = num_group_elements2;
             
-            for(index = num_group_elements1 - 1; index >= 0; index--)
+            for(i=num_group_elements1-1;i>=0;i--)
             {
-                jindex--;
-                if(ASN1_BIT_STRING_get_bit(name1->group_types, index) !=
-                   ASN1_BIT_STRING_get_bit(name2->group_types, jindex) ||
-                   strcmp(sk_value(name1->group, index),
-                          sk_value(name2->group, jindex)))
+                j--;
+                if(ASN1_BIT_STRING_get_bit(name1->group_types,i) !=
+                   ASN1_BIT_STRING_get_bit(name2->group_types,j) ||
+                   strcmp(sk_value(name1->group,i),
+                          sk_value(name2->group,j)))
                 {
-                    result = 0;
-                    goto exit;
+                    return 0;
                 }
             }
 
-            for(index = 0; index < num_group_elements2 - num_group_elements1;
-                index ++)
+            for(i=0;i<num_group_elements2-num_group_elements1;i++)
             {
-                if(ASN1_BIT_STRING_get_bit(name2->group_types, index))
+                if(ASN1_BIT_STRING_get_bit(name2->group_types,i))
                 {
-                    result = 0;
-                    goto exit;
+                    return 0;
                 }
             }
         }
         else
         {
-            jindex = num_group_elements1;
-            for(index = num_group_elements2 - 1; index >= 0; index--)
+            j = num_group_elements1;
+            for(i=num_group_elements2-1;i>=0;i--)
             {
-                jindex--;
-                if(ASN1_BIT_STRING_get_bit(name1->group_types, jindex) !=
-                   ASN1_BIT_STRING_get_bit(name2->group_types, index) ||
-                   strcmp(sk_value(name1->group, jindex),
-                          sk_value(name2->group, index)))
+                j--;
+                if(ASN1_BIT_STRING_get_bit(name1->group_types,j) !=
+                   ASN1_BIT_STRING_get_bit(name2->group_types,i) ||
+                   strcmp(sk_value(name1->group,j),
+                          sk_value(name2->group,i)))
                 {
-                    result = 0;
-                    goto exit;
+                    return 0;
                 }
             }
             
-            for(index = 0; index < num_group_elements1 - num_group_elements2;
-                index++)
+            for(i=0;i<num_group_elements1-num_group_elements2;i++)
             {
-                if(ASN1_BIT_STRING_get_bit(name1->group_types, index))
+                if(ASN1_BIT_STRING_get_bit(name1->group_types,i))
                 {
-                    result = 0;
-                    goto exit;
+                    return 0;
                 }
             }
             
         }
-        result = 1;
-        goto exit;
+        return 1;
     }
 
-    result = 0;
-
- exit:
-
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return result;
+    return 0;
 }
-/* @} */
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 
-/**
- * @name Compare Name
- * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * Compare two names. GSSAPI names in this implementation
- * are pointers to x509 names. 
- *
- * @param minor_status
- *        currently is always set to GLOBUS_SUCCESS
- * @param name1_P
- * @param name2_P
- * @param name_equal
- *
- * @return
- *        currently always returns GSS_S_COMPLETE
- */
+
+
+/**********************************************************************
+Function:   gss_compare_name
+
+Description:
+        Compare two names. GSSAPI names in this implementation
+        are pointers to x509 names. 
+
+Parameters:
+
+Returns:
+**********************************************************************/
+
 OM_uint32 
 GSS_CALLCONV gss_compare_name(
     OM_uint32 *                         minor_status,
@@ -227,70 +252,61 @@ GSS_CALLCONV gss_compare_name(
     unsigned int                        le2;
     unsigned char *                     ce1;
     unsigned char *                     ce2;
-    int                                 index;
-    int                                 common_name_NID;
+    int                                 i;
+    int                                 j;
     const gss_name_desc*                name1 = (gss_name_desc*) name1_P;
     const gss_name_desc*                name2 = (gss_name_desc*) name2_P;
-    OM_uint32                           major_status;
-    static char *                       _function_name_ =
-        "gss_compare_name";
-
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
-
-    *minor_status = (OM_uint32) GLOBUS_FAILURE;
-    major_status = GSS_S_COMPLETE;
-    *name_equal = GSS_NAMES_NOT_EQUAL;
+    
+    *minor_status = 0;
+    *name_equal = 0; /* set not equal */
 
     if ((name1 == NULL && name2 == NULL) ||
         (name1 == GSS_C_NO_NAME && name2 == GSS_C_NO_NAME))
     {
-        *name_equal = GSS_NAMES_EQUAL;
-        goto exit;
+        *name_equal = 1;
+        return GSS_S_COMPLETE;
     }
     
     if (name1 == NULL || name2 == NULL ||
         (name1 == GSS_C_NO_NAME || name2 == GSS_C_NO_NAME))
     {
-        *name_equal = GSS_NAMES_NOT_EQUAL;
-        major_status = GSS_S_COMPLETE;
-        goto exit;
+        *name_equal = 0;
+        return GSS_S_COMPLETE;
     }
 
     if(name1->x509n == NULL && name2->x509n == NULL &&
        g_OID_equal(name1->name_oid,GSS_C_NT_ANONYMOUS) &&
        g_OID_equal(name2->name_oid,GSS_C_NT_ANONYMOUS))
     {
-        *name_equal = GSS_NAMES_EQUAL;
-        goto exit;
+        *name_equal = 1;
+        return GSS_S_COMPLETE;
     }
         
     if (name1->x509n == NULL || name2->x509n == NULL)
     {
-        *name_equal = GSS_NAMES_NOT_EQUAL;
-        goto exit;
+        *name_equal = 0;
+        return GSS_S_COMPLETE;
     }
-
-    /* debug block */
+#ifdef DEBUG
     {
-        char *                          subject;
+        char *s;
 
-        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "Comparing names:\n");
-        subject = X509_NAME_oneline(name1->x509n, NULL, 0);
-        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-            2, (globus_i_gsi_gssapi_debug_fstream, "%s\n", subject));
-        globus_libc_free(subject);
-        subject = X509_NAME_oneline(name2->x509n, NULL, 0);
-        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-            2, (globus_i_gsi_gssapi_debug_fstream, "%s\n", subject));
-        globus_libc_free(subject);
+        fprintf(stderr,"Comparing names:\n");
+        s = X509_NAME_oneline(name1->x509n,NULL,0);
+        fprintf(stderr,"%s\n",s);
+        free(s);
+        s = X509_NAME_oneline(name2->x509n,NULL,0);
+        fprintf(stderr,"%s\n",s);
+        free(s);
     }
+#endif
 
     /* compare group membership */
 
     if(!gss_l_compare_group(name1,name2))
     {
-        *name_equal = GSS_NAMES_NOT_EQUAL;
-        major_status = GSS_S_COMPLETE;
+        *name_equal = 0;
+        return GSS_S_COMPLETE;
     }
     
     /* 
@@ -316,27 +332,25 @@ GSS_CALLCONV gss_compare_name(
     if (g_OID_equal(name1->name_oid, GSS_C_NT_HOSTBASED_SERVICE)
         || g_OID_equal(name2->name_oid, GSS_C_NT_HOSTBASED_SERVICE))
     {
-
-        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
-            2, "Comparing GSS_C_NT_HOSTBASED_SERVICE names\n");
-
+#ifdef DEBUG
+        fprintf(stderr,"Comparing GSS_C_NT_HOSTBASED_SERVICE names\n");
+#endif
         ne1 = NULL;
         ne2 = NULL;
-        common_name_NID = OBJ_txt2nid("CN");
-        for (index = 0; index < X509_NAME_entry_count(name1->x509n); index++)
+        j = OBJ_txt2nid("CN");
+        for (i=0;i<sk_X509_NAME_ENTRY_num(name1->x509n->entries); i++)
         {
-            ne1 = X509_NAME_get_entry(name1->x509n, index);
-            if (OBJ_obj2nid(ne1->object) == common_name_NID)
+            ne1 = sk_X509_NAME_ENTRY_value(name1->x509n->entries,i);
+            if (OBJ_obj2nid(ne1->object) == j)
             {
                 le1 = ne1->value->length;
                 ce1 = ne1->value->data;
-                if ( le1 > 5 && !strncasecmp(ce1,(unsigned char*)"host/",5))
+                if ( le1 > 5 && !my_memccmp(ce1,(unsigned char*)"host/",5))
                 {
                     le1 -= 5;
                     ce1 += 5;
                 }
-                else if ( le1 > 4 && 
-                          !strncasecmp(ce1,(unsigned char*)"ftp/",4))
+                else if ( le1 > 4 && !my_memccmp(ce1,(unsigned char*)"ftp/",4))
                 {
                     le1 -= 4;
                     ce1 += 4;
@@ -345,20 +359,19 @@ GSS_CALLCONV gss_compare_name(
             }
             ne1 = NULL;
         }
-        for (index = 0; index < X509_NAME_entry_count(name2->x509n); index++)
+        for (i=0;i<sk_X509_NAME_ENTRY_num(name2->x509n->entries); i++)
         {
-            ne2 = X509_NAME_get_entry(name2->x509n, index);
-            if (OBJ_obj2nid(ne2->object) == common_name_NID)
+            ne2 = sk_X509_NAME_ENTRY_value(name2->x509n->entries,i);
+            if (OBJ_obj2nid(ne2->object) == j)
             {
                 le2 = ne2->value->length;
                 ce2 = ne2->value->data;
-                if ( le2 > 5 && !strncasecmp(ce2, (unsigned char*)"host/", 5))
+                if ( le2 > 5 && !my_memccmp(ce2,(unsigned char*)"host/",5))
                 {
                     le2 -= 5;
                     ce2 += 5;
                 } 
-                else if ( le2 > 4 
-                          && !strncasecmp(ce2, (unsigned char*)"ftp/", 4))
+                else if ( le2 > 4 && !my_memccmp(ce2,(unsigned char*)"ftp/",4))
                 {
                     le2 -= 4;
                     ce2 += 4;
@@ -370,9 +383,9 @@ GSS_CALLCONV gss_compare_name(
 
         if (ne1 && ne2)
         {
-            if (le1 == le2 && !strncasecmp(ce1,ce2,le1))
+            if (le1 == le2 && !my_memccmp(ce1,ce2,le1))
             {
-                *name_equal = GSS_NAMES_EQUAL;
+                *name_equal = 1;
             }
             else
             {
@@ -393,9 +406,9 @@ GSS_CALLCONV gss_compare_name(
                             le2--;
                             ce2++;
                         }
-                        if (le1 == le2 && !strncasecmp(ce1, ce2, le1))
+                        if (le1 == le2 && !my_memccmp(ce1,ce2,le1))
                         {
-                            *name_equal = GSS_NAMES_EQUAL;
+                            *name_equal = 1;
                         }
                                                 
                     }
@@ -408,32 +421,30 @@ GSS_CALLCONV gss_compare_name(
                                 le1--;
                                 ce1++; 
                             }
-                            if (le1 == le2 && !strncasecmp(ce1, ce2, le1))
+                            if (le1 == le2 && !my_memccmp(ce1,ce2,le1))
                             {
-                                *name_equal = GSS_NAMES_EQUAL;
+                                *name_equal = 1;
                             }
                         }
                     }
                 }
             }
         }
+        
     }
     else
     {    
         if (!X509_NAME_cmp(name1->x509n, name2->x509n))
         {
-            *name_equal = GSS_NAMES_EQUAL;
+            *name_equal = 1 ;
         }
     }
+#ifdef DEBUG
+    fprintf(stderr,"Compared %d \n", *name_equal);
+#endif
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-        2, (globus_i_gsi_gssapi_debug_fstream, "Compared %d \n", *name_equal));
+    return GSS_S_COMPLETE ;
 
- exit:
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return major_status;
+} /* gss_compare_name */
 
-} 
-/* gss_compare_name */
-/* @} */
 

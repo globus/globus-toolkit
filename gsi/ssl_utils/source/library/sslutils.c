@@ -91,6 +91,8 @@ static char *rcsid = "$Header$";
 
 int fix_add_entry_asn1_set_param = 0;
 
+extern globus_mutex_t                   globus_l_gsi_ssl_utils_mutex;
+
 /**********************************************************************
                                Type definitions
 **********************************************************************/
@@ -850,11 +852,15 @@ proxy_genreq(
         
         if (upkey->type != EVP_PKEY_RSA)
         {
+            EVP_PKEY_free(upkey);
             PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_PROXY_KEY);
             goto err;
         }
         
         rbits = 8 * EVP_PKEY_size(upkey);
+
+        EVP_PKEY_free(upkey);
+
     }
     else
     {
@@ -1151,6 +1157,8 @@ proxy_sign_ext(
 
     i = X509_REQ_verify(req,new_public_key);
 
+    EVP_PKEY_free(new_public_key);
+
     if (i < 0)
     {
         PRXYerr(PRXYERR_F_PROXY_SIGN_EXT,PRXYERR_R_SIG_VERIFY);
@@ -1319,6 +1327,9 @@ proxy_sign_ext(
     {
         EVP_PKEY_copy_parameters(tmp_public_key,user_private_key);
     }
+
+    EVP_PKEY_free(tmp_public_key);
+    
 #endif
 
     if (!X509_sign(*new_cert,user_private_key,method))
@@ -2009,6 +2020,7 @@ proxy_verify_callback(
     STACK_OF(X509_EXTENSION) *          extensions;
     X509_EXTENSION *                    ex;
     ASN1_OBJECT *                       extension_obj;
+    EVP_PKEY *                          tmp_public_key;
     int                                 nid;
     char *                              s = NULL;
     SSL *                               ssl = NULL;
@@ -2250,9 +2262,23 @@ proxy_verify_callback(
 #endif
             /* verify the signature on this CRL */
 
-            if (X509_CRL_verify(crl,
-                                X509_get_pubkey(ctx->current_cert)) <= 0)
+            if((tmp_public_key = X509_get_pubkey(ctx->current_cert))
+               == NULL)
             {
+                X509_OBJECT_free_contents(&obj);
+                PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_SIGNATURE_FAILURE);
+                ERR_set_continue_needed();
+                ctx->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+                goto fail_verify;
+            }
+
+            i = X509_CRL_verify(crl,tmp_public_key);
+
+            EVP_PKEY_free(tmp_public_key);
+
+            if (i <= 0)
+            {
+                X509_OBJECT_free_contents(&obj);                
                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_SIGNATURE_FAILURE);
                 ERR_set_continue_needed();
                 ctx->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
@@ -2264,6 +2290,7 @@ proxy_verify_callback(
             i = X509_cmp_current_time(crl_info->nextUpdate);
             if (i == 0)
             {
+                X509_OBJECT_free_contents(&obj);
                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_NEXT_UPDATE_FIELD);
                 ERR_set_continue_needed();                
                 ctx->error = X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
@@ -2273,11 +2300,14 @@ proxy_verify_callback(
 
             if (i < 0)
             {
+                X509_OBJECT_free_contents(&obj);
                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_HAS_EXPIRED);
                 ERR_set_continue_needed();
                 ctx->error = X509_V_ERR_CRL_HAS_EXPIRED;
                 goto fail_verify;
             }
+
+            X509_OBJECT_free_contents(&obj);
         }
 
         /* now check if the issuer has a CRL, and we are revoked */
@@ -2321,11 +2351,13 @@ proxy_verify_callback(
                             ASN1_INTEGER_get(revoked->serialNumber));
                                                 
 #endif
+                    X509_OBJECT_free_contents(&obj);
                     free(s);
                     s = NULL;
                     goto fail_verify;
                 }
             }
+            X509_OBJECT_free_contents(&obj);
         }
 #endif /* X509_V_ERR_CERT_REVOKED */
 
@@ -2394,7 +2426,9 @@ proxy_verify_callback(
                     0);
 
 #ifndef NO_OLDGAA_API
- 
+
+                globus_mutex_lock(&globus_l_gsi_ssl_utils_mutex);
+                
                 if(oldgaa_globus_initialize(&oldgaa_sc,
                                             &rights,
                                             &options,
@@ -2412,6 +2446,7 @@ proxy_verify_callback(
                                        policy_db->error_str);
                     ctx->error=X509_V_ERR_APPLICATION_VERIFICATION;
                     ERR_set_continue_needed();
+                    globus_mutex_unlock(&globus_l_gsi_ssl_utils_mutex);
                     goto fail_verify;
                 }
 
@@ -2430,6 +2465,7 @@ proxy_verify_callback(
                                        policy_db->error_str);
                     ctx->error =  X509_V_ERR_APPLICATION_VERIFICATION;
                     ERR_set_continue_needed(); 
+                    globus_mutex_unlock(&globus_l_gsi_ssl_utils_mutex);
                     goto fail_verify;
                 }
 
@@ -2454,6 +2490,7 @@ proxy_verify_callback(
                                           &detailed_answer,  
                                           policy_db,
                                           NULL);
+                    globus_mutex_unlock(&globus_l_gsi_ssl_utils_mutex);
                     goto fail_verify;
                 }
 #ifdef DEBUG
@@ -2485,7 +2522,8 @@ proxy_verify_callback(
                                       policy_db,
                                       NULL);
 
-                
+                globus_mutex_unlock(&globus_l_gsi_ssl_utils_mutex);
+                    
 #else /* Von's code */
 
                 result = ca_policy_file_check_signature(issuer_name,
@@ -2494,7 +2532,6 @@ proxy_verify_callback(
                                                         pvd->certdir);
 
 #endif /* #ifndef NO_OLDGAA_API */
-
 
                 free(subject_name);
                 free(issuer_name);
@@ -3635,7 +3672,7 @@ proxy_load_user_key(
     int                                 mismatch = 0;
     int                                 status = -1;
     FILE *                              fp;
-    EVP_PKEY *                          ucertpkey;
+    EVP_PKEY *                          ucertpkey = NULL;
     int                                 (*xpw_cb)();
 
     xpw_cb = pw_cb;
@@ -3878,6 +3915,11 @@ proxy_load_user_key(
         else
         {
             mismatch=1;
+        }
+
+        if(ucertpkey != NULL)
+        {
+            EVP_PKEY_free(ucertpkey);
         }
         
         if (mismatch)

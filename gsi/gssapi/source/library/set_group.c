@@ -15,8 +15,8 @@ CVS Information:
 
 static char *rcsid = "$Header$";
 
-#include "gssapi_openssl.h"
-#include "globus_i_gsi_gss_utils.h"
+#include "gssapi_ssleay.h"
+#include "gssutils.h"
 #include <string.h>
 
 /**
