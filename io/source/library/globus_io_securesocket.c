@@ -416,7 +416,8 @@ globus_i_io_securesocket_register_accept(
 
     accept_info->iteration = globus_l_io_accept_sec_context;
     accept_info->any_token_received = GLOBUS_FALSE;
-        
+    accept_info->delegation_callback = GLOBUS_NULL;
+    
     handle->state = GLOBUS_IO_HANDLE_STATE_AUTHENTICATING;
 
     /* I need a token before I can start the iterations, so:
@@ -780,7 +781,8 @@ globus_i_io_securesocket_register_connect_callback(
 
     init_info->iteration = globus_l_io_init_sec_context;
     init_info->any_token_received = GLOBUS_FALSE;
-        
+    init_info->delegation_callback = GLOBUS_NULL;
+    
     handle->state = GLOBUS_IO_HANDLE_STATE_AUTHENTICATING;
 
     globus_i_io_mutex_unlock();
