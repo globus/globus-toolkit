@@ -55,6 +55,7 @@ EXEEXT=@EXEEXT@
 
 INSTALL_SSH_PRNG_CMDS=@INSTALL_SSH_PRNG_CMDS@
 INSTALL_SSH_RAND_HELPER=@INSTALL_SSH_RAND_HELPER@
+INSTALL_GSISSH=@INSTALL_GSISSH@
 
 @NO_SFTP@SFTP_PROGS=sftp-server$(EXEEXT) sftp$(EXEEXT)
 
@@ -251,14 +252,16 @@ install-files: scard-install
 	ln -s ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
 	ln -s ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
-	-rm -f $(DESTDIR)$(bindir)/gsissh
-	ln -s ssh$(EXEEXT) $(DESTDIR)$(bindir)/gsissh
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1
-	ln -s ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1
-	-rm -f $(DESTDIR)$(bindir)/gsiscp
-	ln -s scp$(EXEEXT) $(DESTDIR)$(bindir)/gsiscp
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1
-	ln -s scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1
+	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
+		rm -f $(DESTDIR)$(bindir)/gsissh; \
+		ln -s ssh$(EXEEXT) $(DESTDIR)$(bindir)/gsissh; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
+		ln -s ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
+		rm -f $(DESTDIR)$(bindir)/gsiscp; \
+		ln -s scp$(EXEEXT) $(DESTDIR)$(bindir)/gsiscp; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
+		ln -s scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
+	fi
 	if [ ! -d $(DESTDIR)$(sysconfdir) ]; then \
 		$(srcdir)/mkinstalldirs $(DESTDIR)$(sysconfdir); \
 	fi
@@ -329,8 +332,10 @@ uninstallall:	uninstall
 
 uninstall: 
 	-rm -f $(DESTDIR)$(bindir)/slogin
-	-rm -f $(DESTDIR)$(bindir)/gsiscp
-	-rm -f $(DESTDIR)$(bindir)/gsissh
+	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
+		rm -f $(DESTDIR)$(bindir)/gsiscp; \
+		rm -f $(DESTDIR)$(bindir)/gsissh; \
+	fi
 	-rm -f $(DESTDIR)$(bindir)/ssh$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/scp$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/ssh-add$(EXEEXT)
@@ -344,8 +349,10 @@ uninstall:
 	-rm -f $(DESTDIR)$(RAND_HELPER)$(EXEEXT)
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1
+	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
+	fi
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1

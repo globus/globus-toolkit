@@ -575,8 +575,12 @@ if test "x$gsi_path" != "xno" ; then
 	LIBS="$LIBS $GSI_LIBS"
 	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
 	CFLAGS="$CFLAGS $GSI_CFLAGS"
-# End Globus/GSI section
+	INSTALL_GSISSH="yes"
+else
+	INSTALL_GSISSH=""
 fi
+AC_SUBST(INSTALL_GSISSH)
+# End Globus/GSI section
 
 # Check whether user wants S/Key support
 SKEY_MSG="no" 
