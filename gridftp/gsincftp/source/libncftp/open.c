@@ -732,7 +732,7 @@ FTPQueryFeatures(const FTPCIPtr cip)
 				} else if (ISTRNCMP(cp, "CLNT", 4) == 0) {
 					cip->hasCLNT = kCommandAvailable;
 #if HAVE_GSSAPI
-				} else if(ISTRNCMP, cp, "DCAU", 4) {
+				} else if(ISTRNCMP( cp, "DCAU", 4) == 0) {
 					cip->hasDCAU = kCommandAvailable;
 					cip->hasPROT = kCommandAvailable;
 					cip->hasPBSZ = kCommandAvailable;
