@@ -647,7 +647,6 @@ globus_l_gfs_remote_list(
     globus_result_t                     result;
     globus_l_gfs_remote_handle_t *      my_handle;
     globus_l_gfs_remote_node_info_t * node_info;
-    int                                 node_count;
     GlobusGFSName(globus_l_gfs_remote_list);
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
@@ -656,22 +655,17 @@ globus_l_gfs_remote_list(
         &bounce_info, op, transfer_info, my_handle);
             
     bounce_info->node_list = (globus_list_t *) transfer_info->data_handle_id;
-    
-    node_count = globus_list_size(bounce_info->node_list);
-    bounce_info->nodes_requesting = node_count;
-        
+            
     node_info = (globus_l_gfs_remote_node_info_t *) 
         globus_list_first(bounce_info->node_list);
         
     transfer_info->data_handle_id = node_info->data_handle_id;
-    transfer_info->stripe_count = node_count;
+    transfer_info->stripe_count = 1;
     transfer_info->node_ndx = 0;
     transfer_info->node_count = 1;
     bounce_info->event_pending = 1;
     bounce_info->begin_event_pending = 1;
     bounce_info->nodes_pending = 1;
-
-    bounce_info->nodes_requesting--;
     
     result = globus_gfs_ipc_request_list(
         node_info->ipc_handle,

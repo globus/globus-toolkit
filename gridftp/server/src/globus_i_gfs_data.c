@@ -71,6 +71,7 @@ typedef struct
     globus_gfs_storage_iface_t *        dsi;
     globus_extension_handle_t           dsi_handle;
     globus_handle_table_t               data_table;
+    int                                 node_ndx;
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -1932,6 +1933,7 @@ globus_i_gfs_data_request_recv(
     op->event_callback = event_cb;
     op->user_arg = user_arg;
     op->node_ndx = recv_info->node_ndx;
+    session_handle->node_ndx = recv_info->node_ndx;
     op->node_count = recv_info->node_count;    
     op->stripe_count = recv_info->stripe_count;
     /* events and disconnects cannot happen while i am in this
@@ -2016,6 +2018,7 @@ globus_i_gfs_data_request_send(
     op->event_callback = event_cb;
     op->user_arg = user_arg;
     op->node_ndx = send_info->node_ndx;
+    session_handle->node_ndx = send_info->node_ndx;
     op->write_stripe = 0;
     op->stripe_chunk = send_info->node_ndx;
     op->node_count = send_info->node_count;
@@ -3365,7 +3368,7 @@ globus_i_gfs_data_session_stop(
         }
         globus_mutex_unlock(&session_handle->mutex);
 
-        if(free_session && 0)
+        if(free_session)
         {
             if(session_handle->dsi != globus_l_gfs_dsi)
             {
