@@ -1076,6 +1076,7 @@ globus_l_gfs_request_passive_data(
     globus_gridftp_server_control_op_t  op,
     globus_gridftp_server_control_network_protocol_t net_prt,
     int                                 max,
+    const char *                        pathname,
     void *                              user_arg)
 {
     globus_result_t                     result;
