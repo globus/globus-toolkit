@@ -1878,7 +1878,7 @@ globus_l_xio_gssapi_ftp_attr_init(
     GlobusXIOGssapiftpDebugEnter();
 
     attr = (globus_l_xio_gssapi_attr_t *) 
-        globus_calloc(sizeof(globus_l_xio_gssapi_attr_t), 1);
+        globus_calloc(1, sizeof(globus_l_xio_gssapi_attr_t));
     if(attr == NULL)
     {
 	    goto err;

@@ -140,7 +140,7 @@ globus_i_gsc_event_start(
     {
         event->stripe_count = op->server_handle->stripe_count;
         event->stripe_total_bytes = (globus_off_t *)
-            globus_calloc(sizeof(globus_off_t) * event->stripe_count, 1);
+            globus_calloc(1, sizeof(globus_off_t) * event->stripe_count);
 
         /* send out the first one */
         globus_l_gsc_send_perf_marker(op);
@@ -242,7 +242,7 @@ globus_i_gsc_restart_create()
     globus_i_gsc_restart_t *                restart;
 
     restart = (globus_i_gsc_restart_t *)
-        globus_calloc(sizeof(globus_i_gsc_restart_t), 1);
+        globus_calloc(1, sizeof(globus_i_gsc_restart_t));
     if(restart == NULL)
     {
         return NULL;

@@ -263,7 +263,7 @@ globus_l_gsc_op_create(
 {
     globus_i_gsc_op_t *                     op;
 
-    op = (globus_i_gsc_op_t *) globus_calloc(sizeof(globus_i_gsc_op_t), 1);
+    op = (globus_i_gsc_op_t *) globus_calloc(1, sizeof(globus_i_gsc_op_t));
     if(op == NULL)
     {
         return NULL;
@@ -1179,7 +1179,7 @@ globus_l_gsc_parse_command(
         return -1;
     }
 
-    cmd_a = (char **) globus_calloc(sizeof(char *) * (argc+1), 1);
+    cmd_a = (char **) globus_calloc(1, sizeof(char *) * (argc+1));
     if(cmd_a == NULL)
     {
         return -1;
@@ -1655,7 +1655,7 @@ globus_gridftp_server_control_init(
     }
 
     server_handle = (globus_i_gsc_server_handle_t *) globus_calloc(
-        sizeof(globus_i_gsc_server_handle_t), 1);
+        1, sizeof(globus_i_gsc_server_handle_t));
     if(server_handle == NULL)
     {
         res = GlobusGridFTPServerControlErrorSytem();

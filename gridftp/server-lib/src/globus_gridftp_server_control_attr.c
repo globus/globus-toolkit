@@ -19,7 +19,7 @@ globus_gridftp_server_control_attr_init(
     }
 
     attr = (globus_i_gsc_attr_t *) globus_calloc(
-                sizeof(globus_i_gsc_attr_t), 1);
+                1, sizeof(globus_i_gsc_attr_t));
     if(attr == NULL)
     {
         res = GlobusGridFTPServerControlErrorSytem();

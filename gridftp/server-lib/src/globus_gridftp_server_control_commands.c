@@ -1538,7 +1538,7 @@ globus_l_gsc_cmd_pasv(
     GlobusGridFTPServerName(globus_l_gsc_cmd_pasv);
 
     wrapper = (globus_l_gsc_cmd_wrapper_t *)
-        globus_calloc(sizeof(globus_l_gsc_cmd_wrapper_t), 1);
+        globus_calloc(1, sizeof(globus_l_gsc_cmd_wrapper_t));
 
     dp = op->server_handle->opts.delayed_passive;
     reply_flag = op->server_handle->opts.delayed_passive;
@@ -1678,7 +1678,7 @@ globus_l_gsc_cmd_port(
     GlobusGridFTPServerName(globus_l_gsc_cmd_port);
 
     wrapper = (globus_l_gsc_cmd_wrapper_t *) globus_calloc(
-        sizeof(globus_l_gsc_cmd_wrapper_t), 1);
+        1, sizeof(globus_l_gsc_cmd_wrapper_t));
     if(wrapper == NULL)
     {
         goto err;
