@@ -32,8 +32,8 @@ ${short_usage}
 
   Options:
     -cn <name>         : Common name of the user
-    -gatekeeper <name> : Create certificate for a gatekeeper named <name>
-    -host <name>       : Create certificate for a host named <name>
+    -gatekeeper <FQDN> : Create certificate for a gatekeeper named <FQDN>
+    -host <FQDN>       : Create certificate for a host named <FQDN>
     -dir <dir_name>    : User certificate directory [ '$HOME/.globus' ]
     -cert <file>       : File name of the certificate
     -key <file>        : File name of the user key
@@ -59,6 +59,7 @@ SSL_HOST_CONFIG="${secconfdir}/globus-host-ssl.conf"
 REQ_HEAD=${secure_tmpdir}/$PROGRAM_NAME.$$.head
 REQ_INPUT=${secure_tmpdir}/$PROGRAM_NAME.$$.input
 REQ_OUTPUT=${secure_tmpdir}/$PROGRAM_NAME.$$.output
+RAND_TEMP=${secure_tmpdir}/$PROGRAM_NAME.$$.random
 
 
 # DEFault Generated Files
@@ -84,6 +85,7 @@ CERTREQ="${bindir}/grid-cert-request"
 cleanup () {
   : 
   # ${GLOBUS_SH_RM-rm} -f ${REQ_HEAD} ${REQ_INPUT} ${REQ_OUTPUT}
+  ${GLOBUS_SH_RM-rm} -f ${RAND_TEMP}
 }
 
 trap cleanup 0
@@ -361,7 +363,7 @@ check4Certs () {
       echo
       echo
     else 
-      ${GLOBUS_SH_PRINTF-printf} "\nPlease remove this (these) file(s) and run the script\n" 1>&2
+      ${GLOBUS_SH_PRINTF-printf} "\n\nIf you wish to overwrite, run the script again with -force.\n" 1>&2
       exit 1
     fi
   fi
@@ -482,6 +484,18 @@ createCerts () {
   ${GLOBUS_SH_TOUCH-touch} ${CERT_FILE}
 
 
+  #------------------------
+  # Create some semi random data for key generation 
+  umask 066
+  ${GLOBUS_SH_TOUCH-touch} ${RAND_TEMP}
+  if [ -r /dev/urandom ] ; then
+	head -c 1000 /dev/urandom >> ${RAND_TEMP} 2>&1
+  fi
+  date >> ${RAND_TEMP} 2>&1
+  netstat -in >> ${RAND_TEMP} 2>&1
+  ps -ef >> ${RAND_TEMP} 2>&1
+  ls -ln ${HOME} >> ${RAND_TEMP} 2>&1
+  ls -ln /tmp >> ${RAND_TEMP} 2>&1
 
   umask 266
   #------------------------
@@ -489,8 +503,10 @@ createCerts () {
 
   if [ -n "${INTERACTIVE}" ] ; then
     ${SSL_EXEC} req -new -keyout ${KEY_FILE} -out ${REQ_OUTPUT} \
+              -rand ${RAND_TEMP}:/var/adm/wtmp:/var/log/messages \
               -config ${SSL_USER_CONFIG} ${NO_DES}
     RET=$?
+    ${GLOBUS_SH_RM-rm} -f ${REQ_TEMP}
   else
     if [ -z "${SERVICE}" ]; then
         used_config="${SSL_USER_CONFIG}"
@@ -500,9 +516,11 @@ createCerts () {
     createInputFile "${COMMON_NAME}" "${used_config}" >${REQ_INPUT}
 
     ${SSL_EXEC} req -new -keyout ${KEY_FILE} \
+              -rand ${RAND_TEMP}:/var/adm/wtmp:/var/log/messages \
               -out ${REQ_OUTPUT} -config ${used_config} \
               ${NO_DES} < ${REQ_INPUT} 
     RET=$?
+    ${GLOBUS_SH_RM-rm} -f ${REQ_TEMP}
 
     # You can't separate the SSL output, it all goes to stderr
     # including the prompts.
@@ -584,28 +602,31 @@ emitDirections () {
 
   if [ -z "${SERVICE}" ] ; then
     echo 
-    echo "A private key and a certificate request has been generated"
-    echo "with the subject:" 
+    echo "A private key and a certificate request has been generated with the subject:" 
+ 
     echo 
     echo "${SUBJECT}"
     echo
     echo "If the CN=${COMMON_NAME} is not appropriate, rerun this"
-    echo "script with the -cn \"Common Name\" option."
-    echo
-    echo "----------------------------------------------------------"
+    echo "script with the -force -cn \"Common Name\" options."
     echo
     echo "Your private key is stored in ${KEY_FILE}"
     echo "Your request is stored in ${REQUEST_FILE}"
     echo
-    echo "Please e-mail the certificate request to the ${GSI_CA_NAME}"
+    echo "Please e-mail the request to the ${GSI_CA_NAME} ${GSI_CA_EMAIL_ADDR}"
+    echo "You may use a command similar to the following:" 
     echo
-    echo "cat ${REQUEST_FILE} | mail ${GSI_CA_EMAIL_ADDR}"
+    echo "  cat ${REQUEST_FILE} | mail ${GSI_CA_EMAIL_ADDR}"
+    echo
+    echo "Only use the above if this machine can send AND receive e-mail. if not, please"
+    echo "mail using some other method."
     echo
     echo "Your certificate will be mailed to you within two working days."
+	echo "If you receive no response, contact ${GSI_CA_NAME} ${GSI_CA_EMAIL_ADDR}"
 
-  elif [ "${SERVICE}" = "host" ]; then
+  else 
     echo 
-    echo "A private host key and a certificate request has been generated"
+    echo "A private ${SERVICE} key and a certificate request has been generated"
     echo "with the subject:" 
     echo 
     echo "${SUBJECT}"
@@ -615,11 +636,16 @@ emitDirections () {
     echo "The private key is stored in ${KEY_FILE}"
     echo "The request is stored in ${REQUEST_FILE}"
     echo
-    echo "Please e-mail the certificate request to the ${GSI_CA_NAME}"
+    echo "Please e-mail the request to the ${GSI_CA_NAME} ${GSI_CA_EMAIL_ADDR}"
+    echo "You may use a command similar to the following:"
     echo
-    echo "cat ${REQUEST_FILE} | mail ${GSI_CA_EMAIL_ADDR}"
+    echo " cat ${REQUEST_FILE} | mail ${GSI_CA_EMAIL_ADDR}"
+    echo
+    echo "Only use the above if this machine can send AND receive e-mail. if not, please"
+    echo "mail using some other method."
     echo
     echo "Your certificate will be mailed to you within two working days."
+    echo "If you receive no response, contact ${GSI_CA_NAME} ${GSI_CA_EMAIL_ADDR}"
   
   fi
 
