@@ -4,7 +4,6 @@
 #include <openssl/asn1.h>
 #include <openssl/asn1_mac.h>
 
-#include "proxy_ssl_internal.h"
 #include "proxycertinfo.h"
 
 /**

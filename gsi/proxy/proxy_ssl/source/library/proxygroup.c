@@ -3,8 +3,6 @@
 #include <openssl/err.h>
 #include <openssl/asn1_mac.h>
 
-
-#include "proxy_ssl_internal.h"
 #include "proxygroup.h"
 
 /**

@@ -3,7 +3,6 @@
 #include <openssl/err.h>
 #include <openssl/asn1_mac.h>
 
-#include "proxy_ssl_internal.h"
 #include "proxyrestriction.h"
 
 ASN1_METHOD * PROXYRESTRICTION_asn1_meth()
