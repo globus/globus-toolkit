@@ -11,6 +11,7 @@ SUBDIRS= \
 Scripts= \
 	TESTS.pl \
 	Utilities.pm \
+	test-toolkit \
 	globus-test-check-for-commands.pl \
 	globus-test-check-proxy.pl \
 	globus-test-gram-local.pl \
