@@ -714,7 +714,10 @@ globus_l_gfs_ipc_close_cb(
     list = (globus_list_t *) globus_hashtable_remove(
         &globus_l_ipc_handle_table, ipc->hash_str);
     search = globus_list_search(list, ipc);
-    globus_list_remove(&list, search);
+    if(!globus_list_empty(search))
+    {
+        globus_list_remove(&list, search);
+    }
     if(!globus_list_empty(list))
     {
         globus_hashtable_insert(
