@@ -17,6 +17,9 @@ int
 globus_i_xio_load_init(void)
 {
     globus_xio_driver_hook_t **         builtin;
+    GlobusXIOName(globus_i_xio_load_init);
+    
+    GlobusXIODebugInternalEnter();
     
     globus_rmutex_init(&globus_l_xio_load_lock, GLOBUS_NULL);
     
@@ -40,6 +43,7 @@ globus_i_xio_load_init(void)
         builtin++;
     }
     
+    GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
 }
 
@@ -58,10 +62,16 @@ globus_l_xio_load_destroy_cb(
 int
 globus_i_xio_load_destroy(void)
 {
+    GlobusXIOName(globus_i_xio_load_destroy);
+    
+    GlobusXIODebugInternalEnter();
+    
     globus_rmutex_destroy(&globus_l_xio_load_lock);
     globus_hashtable_destroy_all(
         &globus_l_xio_load_drivers, globus_l_xio_load_destroy_cb);
 
+    GlobusXIODebugInternalExit();
+    
     return GLOBUS_SUCCESS;
 }
 
@@ -75,6 +85,8 @@ globus_xio_driver_load(
     globus_result_t                     result;
     va_list                             ap;
     GlobusXIOName(globus_xio_driver_load);
+    
+    GlobusXIODebugEnter();
     
     result = GLOBUS_SUCCESS;
     globus_rmutex_lock(&globus_l_xio_load_lock);
@@ -122,6 +134,7 @@ globus_xio_driver_load(
     }
     globus_rmutex_unlock(&globus_l_xio_load_lock);
     
+    GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
 error_init:
@@ -136,6 +149,7 @@ error_find:
     globus_rmutex_unlock(&globus_l_xio_load_lock);
     
     *out_driver = GLOBUS_NULL;
+    GlobusXIODebugExitWithError();
     return result;
 }
 
@@ -147,6 +161,7 @@ globus_xio_driver_unload(
     globus_result_t                     result;
     GlobusXIOName(globus_xio_driver_unload);
     
+    GlobusXIODebugEnter();
     /** 
      * XXX need to remove entry after last driver unloaded for dll entries
      * 
@@ -176,11 +191,13 @@ globus_xio_driver_unload(
     }
     globus_rmutex_unlock(&globus_l_xio_load_lock);
     
+    GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
 error_hook:
     globus_rmutex_unlock(&globus_l_xio_load_lock);
     
+    GlobusXIODebugExitWithError();
     return result;
 }
 
