@@ -468,13 +468,20 @@ globus_l_gass_server_ez_register_accept_callback(
         globus_url_destroy(&parsed_url);
         goto reregister;
     }
-
+    if(globus_gass_transfer_request_get_type(request) ==
+       GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND)
+    {
+        flags = O_CREAT | O_WRONLY | O_APPEND;
+    }
+    else if(globus_gass_transfer_request_get_type(request) ==
+            GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT)
+    {
+        flags = O_CREAT | O_WRONLY | O_TRUNC;
+    }
     switch(globus_gass_transfer_request_get_type(request))
         {
           case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND:
-            flags = O_CREAT | O_APPEND;
           case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT:
-            flags |= (O_CREAT | O_WRONLY);
 
 	    /* Check to see if this is a request we are allowed to handle */
 
