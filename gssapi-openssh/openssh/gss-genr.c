@@ -393,7 +393,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 
 /* Create a service name for the given host */
 OM_uint32
-ssh_gssapi_import_name(Gssctxt *ctx,char *host) {
+ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 	gss_buffer_desc gssbuf;
 	OM_uint32 maj_status, min_status;
 	struct hostent *hostinfo = NULL;
@@ -412,13 +412,14 @@ ssh_gssapi_import_name(Gssctxt *ctx,char *host) {
 		debug("Unable to get FQDN for \"%s\"", xhost);
 	} else {
 		xfree(xhost);
-		xhost = hostinfo->h_name;
+		xhost = xstrdup(hostinfo->h_name);
 	}
 		
         gssbuf.length = sizeof("host@")+strlen(xhost);
 
         gssbuf.value = xmalloc(gssbuf.length);
         if (gssbuf.value == NULL) {
+		xfree(xhost);
 		return(-1);
         }
         snprintf(gssbuf.value,gssbuf.length,"host@%s",xhost);
@@ -429,6 +430,7 @@ ssh_gssapi_import_name(Gssctxt *ctx,char *host) {
 		ssh_gssapi_error(maj_status,min_status);
 	}
 	
+	xfree(xhost);
 	xfree(gssbuf.value);
 	return(maj_status);
 }
