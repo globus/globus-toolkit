@@ -6,7 +6,7 @@
     <Aging_Version Major="0" Minor="1" Age="0"/>
     <Description> Globus GSI Cert Utils Library</Description>
     <Functional_Group >Security</Functional_Group>
-    <Version_Stability Release=="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
+    <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
     <src_pkg>
 
