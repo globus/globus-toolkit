@@ -1272,8 +1272,9 @@ globus_i_ftp_client_target_find(
 	    goto free_target;
 	}
 	globus_url_destroy(&(*target)->url);
-	rc = globus_url_parse(url, &(*target)->url);
-	if(rc)
+	err = globus_l_ftp_client_url_parse(url,
+					    &(*target)->url);
+	if(err)
 	{
 	    err = globus_error_construct_string(
 		GLOBUS_FTP_CLIENT_MODULE,
