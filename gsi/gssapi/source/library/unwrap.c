@@ -229,8 +229,9 @@ GSS_CALLCONV gss_unwrap(
         rc = SSL_read(context->gss_ssl, readarea, sizeof(readarea));
         if (rc < 0)
         {
-            if(BIO_should_retry(context->gss_rbio) &&
-               !BIO_pending(context->gss_rbio))
+            ssl_error = SSL_get_error(context->gs_ssl, rc);
+            
+            if(ssl_error == SSL_ERROR_WANT_READ)
             {
                 output_message_buffer->value = NULL;
                 output_message_buffer->length = 0;
