@@ -1,6 +1,5 @@
 
 include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS = oldgaa
 
@@ -27,4 +26,3 @@ libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
 
 include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
