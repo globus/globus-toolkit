@@ -504,7 +504,7 @@ error_xio_copy:
     {
         OM_uint32                       minor_status;
 
-        gss_release_name(&minor_status, dest_iattr->authz_data.identity);
+        gss_release_name(&minor_status, &dest_iattr->authz_data.identity);
     }
     
 error_auth_copy:
@@ -931,12 +931,12 @@ globus_l_io_bounce_authz_cb(
                                                      major_status,
                                                      minor_status);
                 gss_release_name(&minor_status,
-                                 authorized_identity);
+                                 &authorized_identity);
                 goto done;
             }
 
             gss_release_name(&minor_status,
-                             authorized_identity);
+                             &authorized_identity);
             
             if(!equal)
             {
@@ -1284,7 +1284,7 @@ globus_io_tcpattr_destroy(
     {
         OM_uint32                       minor_status;
 
-        gss_release_name(&minor_status, iattr->authz_data.identity);
+        gss_release_name(&minor_status, &iattr->authz_data.identity);
     }
     
     globus_xio_attr_destroy(iattr->attr);
@@ -3954,7 +3954,7 @@ globus_io_attr_set_secure_authorization_mode(
         if((*attr)->authz_data.identity != GSS_C_NO_NAME)
         {
             gss_release_name(&minor_status,
-                             (*attr)->authz_data.identity);
+                             &(*attr)->authz_data.identity);
             (*attr)->authz_data.identity = GSS_C_NO_NAME;
         }
         break;
@@ -3963,7 +3963,7 @@ globus_io_attr_set_secure_authorization_mode(
         if((*attr)->authz_data.identity != GSS_C_NO_NAME)
         {
             gss_release_name(&minor_status,
-                             (*attr)->authz_data.identity);
+                             &(*attr)->authz_data.identity);
         }        
 
         major_status = gss_duplicate_name(&minor_status,
@@ -4093,7 +4093,7 @@ globus_io_secure_authorization_data_destroy(
         OM_uint32                       minor_status;
 
         gss_release_name(&minor_status,
-                         (*data)->identity);
+                         &(*data)->identity);
     }
 
     globus_free(*data);

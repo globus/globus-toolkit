@@ -565,7 +565,7 @@ globus_l_xio_gsi_target_cntl(
         if(target->target_name != GSS_C_NO_NAME)
         {
             gss_release_name(&minor_status,
-                             target->target_name);
+                             &target->target_name);
             target->target_name = GSS_C_NO_NAME;
         }
 
@@ -624,7 +624,7 @@ globus_l_xio_gsi_target_destroy(
     if(target->target_name != GSS_C_NO_NAME)
     {
         gss_release_name(&minor_status,
-                         target->target_name);
+                         &target->target_name);
     }
 
     if(target->attr)
