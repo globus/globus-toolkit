@@ -2627,6 +2627,7 @@ globus_l_gfs_data_begin_cb(
     globus_bool_t                       reused,
     globus_object_t *                   error)
 {
+    int                                 i;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_bool_t                       connect_event = GLOBUS_FALSE;
     globus_bool_t                       finish = GLOBUS_FALSE;
@@ -2732,7 +2733,26 @@ globus_l_gfs_data_begin_cb(
         {
             globus_gfs_ipc_reply_event(op->ipc_handle, &event_reply);
         }
+
+        if(!op->writing)
+        {
+            event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
+
+            for(i = 0; i < op->stripe_count; i++)
+            {
+                event_reply.node_ndx = i;
+                if(op->event_callback != NULL)
+                {
+                    op->event_callback(&event_reply, op->user_arg);
+                }
+                else
+                {
+                    globus_gfs_ipc_reply_event(op->ipc_handle, &event_reply);
+                }
+            }
+        }
     }
+
     if(finish)
     {
         globus_l_gfs_data_finish_connected(op);
@@ -2767,8 +2787,33 @@ globus_l_gfs_data_begin_kickout(
     void *                              callback_arg)
 {
     globus_l_gfs_data_operation_t *     op;
+    globus_gfs_ipc_event_reply_t        event_reply;
+    int                                 i;
 
     op = (globus_l_gfs_data_operation_t *) callback_arg;
+
+    if(!op->writing)
+    {
+        memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
+        /*    event_reply->recvd_bytes = 0;
+            op->recvd_bytes = 0; */
+        event_reply.id = op->id;
+        event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
+
+        for(i = 0; i < op->stripe_count; i++)
+        {
+            event_reply.node_ndx = i;
+            if(op->event_callback != NULL)
+            {
+                op->event_callback(&event_reply, op->user_arg);
+            }
+            else
+            {
+                globus_gfs_ipc_reply_event(op->ipc_handle, &event_reply);
+            }
+        }
+    }
+
     globus_l_gfs_data_begin_cb(
         callback_arg,
         &op->data_handle->data_channel,
