@@ -55,42 +55,6 @@ GlobusDebugDeclare(GLOBUS_XIO);
         ("[%s] Registering one shot due to in_register.\n", _xio_name))
 
 
-#define GlobusXIOHandleDestroy(_in_h)                                       \
-do                                                                          \
-{                                                                           \
-    globus_i_xio_handle_t *                 _h;                             \
-    globus_bool_t                           _c_destroy = GLOBUS_FALSE;      \
-                                                                            \
-    _h = (_in_h);                                                           \
-                                                                            \
-    if(_h->context != NULL)                                                 \
-    {                                                                       \
-        globus_mutex_lock(&_h->context->mutex);                             \
-        {                                                                   \
-            _h->context->ref--;                                             \
-            if(_h->context->ref == 0)                                       \
-            {                                                               \
-                _c_destroy = GLOBUS_TRUE;                                   \
-            }                                                               \
-        }                                                                   \
-        globus_mutex_unlock(&_h->context->mutex);                           \
-    }                                                                       \
-    if(_c_destroy)                                                          \
-    {                                                                       \
-        globus_i_xio_context_destroy(_h->context);                          \
-    }                                                                       \
-                                                                            \
-    globus_mutex_lock(&globus_l_mutex);                                     \
-    {                                                                       \
-        globus_list_remove(&globus_l_outstanding_handles_list,              \
-            globus_list_search(globus_l_outstanding_handles_list, _h));     \
-        globus_cond_signal(&globus_l_cond);                                 \
-    }                                                                       \
-    globus_mutex_unlock(&globus_l_mutex);                                   \
-    globus_assert(_h->ref == 0);                                            \
-    globus_free(_h);                                                        \
-} while(0)
-
 #define GlobusXIOOperationCreate(_out_op, _in_c)                            \
 do                                                                          \
 {                                                                           \
@@ -111,54 +75,29 @@ do                                                                          \
     _out_op = _X_op;                                                        \
 } while(0)
 
-#define GlobusXIOOperationDestroy(_in_op)                                   \
-do                                                                          \
-{                                                                           \
-    globus_i_xio_op_t *                     _X_op;                          \
-                                                                            \
-    _X_op = (_in_op);                                                       \
-    globus_assert(_X_op->ref == 0);                                         \
-    globus_memory_push_node(&_X_op->_op_context->op_memory, _X_op);         \
-} while(0)
-
-#define GlobusIXIOHandleDec(_out_free, _in_h)                               \
-do                                                                          \
-{                                                                           \
-    globus_i_xio_handle_t *                 _X_h;                           \
-                                                                            \
-    _X_h = (_in_h);                                                         \
-    _X_h->ref--;                                                            \
-    if(_X_h->ref == 0)                                                      \
-    {                                                                       \
-        /* if the handle ref gets down to zero we must be in one            \
-         * of the followninf staes.  The statement is that the handle       \
-         * only goes away when it is closed or a open fails                 \
-         */                                                                 \
-        globus_assert(                                                      \
-            _X_h->state == GLOBUS_XIO_HANDLE_STATE_CLOSED);                 \
-        _out_free = GLOBUS_TRUE;                                            \
-    }                                                                       \
-    else                                                                    \
-    {                                                                       \
-        _out_free = GLOBUS_FALSE;                                           \
-    }                                                                       \
-} while(0)
-
-
-
 /***************************************************************************
  *                 state and type enumerations
  *                 ---------------------------
  **************************************************************************/
 
+typedef enum globus_i_xio_context_state_e
+{
+    GLOBUS_XIO_CONTEXT_STATE_OPENING,
+    GLOBUS_XIO_CONTEXT_STATE_OPEN,
+    GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED,
+    GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED,
+    GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED,
+    GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING,
+    GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING,
+    GLOBUS_XIO_CONTEXT_STATE_CLOSING,
+    GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING,
+    GLOBUS_XIO_CONTEXT_STATE_CLOSED,
+} globus_i_xio_context_state_t;
+
 typedef enum globus_i_xio_handle_state_e
 {
     GLOBUS_XIO_HANDLE_STATE_OPENING,
     GLOBUS_XIO_HANDLE_STATE_OPEN,
-    GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED,
-    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED,
-    GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED_AND_CLOSING,
-    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING,
     GLOBUS_XIO_HANDLE_STATE_CLOSING,
     GLOBUS_XIO_HANDLE_STATE_CLOSED,
 } globus_i_xio_handle_state_t;
@@ -312,7 +251,7 @@ typedef struct globus_i_xio_context_entry_s
     void *                                  driver_handle;
 
     /* each level must implement the entire state machine */
-    globus_i_xio_handle_state_t             state;
+    globus_i_xio_context_state_t            state;
     int                                     outstanding_operations;
     int                                     read_operations;
 
@@ -645,6 +584,34 @@ globus_i_xio_will_block_cb(
     globus_thread_callback_index_t          ndx,
     void *                                  user_args);
 
+void
+globus_i_xio_pass_failed(
+    globus_i_xio_op_t *                     op,
+    globus_i_xio_context_entry_t *          my_context,
+    globus_bool_t *                         close,
+    globus_bool_t *                         destroy_handle,
+    globus_bool_t *                         destroy_context);
+
+void
+globus_i_xio_handle_destroy(
+    globus_i_xio_handle_t *                 handle);
+
+void
+globus_i_xio_handle_dec(
+    globus_i_xio_handle_t *                 handle,
+    globus_bool_t *                         destroy_handle,
+    globus_bool_t *                         destroy_context);
+
+void
+globus_i_xio_op_destroy(
+    globus_i_xio_op_t *                     op,
+    globus_bool_t *                         destroy_handle,
+    globus_bool_t *                         destroy_context);
+
+globus_result_t
+globus_i_xio_repass(
+    globus_i_xio_op_t *                     op);
+
 
 extern globus_i_xio_timer_t                 globus_l_xio_timeout_timer;
 extern globus_list_t *                      globus_l_outstanding_handles_list;
@@ -690,7 +657,8 @@ extern globus_cond_t                        globus_l_cond;
 
     void
     globus_xio_driver_open_deliver_DEBUG(
-        globus_xio_operation_t              op);
+        globus_xio_operation_t              op,
+        int                                 ndx);
 
 
     void
@@ -723,7 +691,8 @@ extern globus_cond_t                        globus_l_cond;
 
     void
     globus_xio_driver_write_deliver_DEBUG(
-        globus_xio_operation_t              op);
+        globus_xio_operation_t              op,
+        int                                 ndx);
 
 
     void
@@ -744,7 +713,8 @@ extern globus_cond_t                        globus_l_cond;
 
     void
     globus_xio_driver_read_deliver_DEBUG(
-        globus_xio_operation_t              op);
+        globus_xio_operation_t              op,
+        int                                 ndx);
 
 #   define GlobusXIODriverFinishedAccept(_in_op, _in_target, _in_res)         \
             globus_xio_driver_finished_accept_DEBUG(_in_op, _in_target, _in_res)
@@ -764,8 +734,8 @@ extern globus_cond_t                        globus_l_cond;
         globus_xio_driver_finished_open_DEBUG(                              \
             _in_context, _in_dh, _in_op, _in_res)
 
-#   define GlobusIXIODriverOpenDeliver(op)                                  \
-        globus_xio_driver_open_deliver_DEBUG(op)
+#   define GlobusIXIODriverOpenDeliver(op, ndx)                             \
+        globus_xio_driver_open_deliver_DEBUG(op, ndx)
 
 #   define GlobusXIODriverPassClose(                                        \
             _out_res, _in_op, _in_cb, _in_ua)                               \
@@ -786,8 +756,8 @@ extern globus_cond_t                        globus_l_cond;
 #   define GlobusXIODriverFinishedWrite(op, res, nbytes)                    \
             globus_xio_driver_finished_write_DEBUG(op, res, nbytes)
 
-#   define GlobusIXIODriverWriteDeliver(op)                                 \
-            globus_xio_driver_write_deliver_DEBUG(op)
+#   define GlobusIXIODriverWriteDeliver(op, ndx)                            \
+            globus_xio_driver_write_deliver_DEBUG(op, ndx)
 
 
 #   define GlobusXIODriverPassRead(                                         \
@@ -800,8 +770,8 @@ extern globus_cond_t                        globus_l_cond;
 #   define GlobusXIODriverFinishedRead(op, res, nbytes)                     \
             globus_xio_driver_finished_read_DEBUG(op, res, nbytes)
 
-#   define GlobusIXIODriverReadDeliver(op) \
-            globus_xio_driver_read_deliver_DEBUG(op)
+#   define GlobusIXIODriverReadDeliver(op, ndx) \
+            globus_xio_driver_read_deliver_DEBUG(op, ndx)
 
 #else /* BUILD_DEBUG */
 #   define GlobusXIODebugSetOut(_dst, _src) (_dst) = (_src)

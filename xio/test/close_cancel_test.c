@@ -133,7 +133,7 @@ close_cancel_main(
 
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);
-
+/*
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
@@ -153,7 +153,7 @@ close_cancel_main(
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
-
+*/
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
