@@ -1919,6 +1919,9 @@ redo:
 	case GLOBUS_FTP_CLIENT_IDLE:
 	    globus_assert(client_handle->op != GLOBUS_FTP_CLIENT_IDLE);
 	    goto finish;
+
+	default:/* No other states should occur */
+	  globus_assert(0 && "Unexpected state");
 	}
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_NLST:

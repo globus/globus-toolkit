@@ -1194,6 +1194,8 @@ globus_i_ftp_client_data_dispatch_queue(
 		handle);
 
 	    break;
+	default: /* No other states should occur */
+	  globus_assert(0 && "Unexpected state");
 	}
 
 	if(result == GLOBUS_SUCCESS)

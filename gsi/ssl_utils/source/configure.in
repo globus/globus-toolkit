@@ -70,6 +70,7 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile
+        version.h
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	library/Makefile
