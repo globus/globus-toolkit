@@ -257,13 +257,13 @@ main(int argc, char **argv)
 	}
 	else if ( strcmp(argv[arg],"-mdsbasedn") == 0 )
 	{
-	    err = globus_libc_setenv("GLOBUS_MDS_BASE_DN",
+	    err = globus_libc_setenv("GLOBUS_MDS_BASEDN",
 				     (char *) argv[++arg],1);
 	    if (err != GLOBUS_SUCCESS)
 	    {
 		globus_libc_fprintf(
 		    stderr,
-		    "Error setting environment variable GLOBUS_MDS_BASE_DN\n");
+		    "Error setting environment variable GLOBUS_MDS_BASEDN\n");
 		globus_module_deactivate(GLOBUS_COMMON_MODULE);
 		return -1;
 	    }
