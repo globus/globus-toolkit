@@ -2172,8 +2172,9 @@ globus_l_xio_gssapi_ftp_write(
         /* serialize into the write buffer */
         /* TODO: make this not needed */
         GlobusXIOUtilIovTotalLength(length, iovec, iovec_count);
-        handle->write_buffer = globus_malloc(length);
+        handle->write_buffer = globus_malloc(length + 1);
         GlobusXIOUtilIovSerialize(handle->write_buffer, iovec, iovec_count);
+        handle->write_buffer[length] = '\0';
 
         /* for now insist that they use it correctly */
         if(handle->write_buffer[length-1] != '\n' ||
