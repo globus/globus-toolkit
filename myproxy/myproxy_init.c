@@ -20,7 +20,7 @@
 
 static char usage[] = \
 "\n"\
-"Syntax: myproxy-init [-c #hours] [-t #hours] [-l username] ...\n"\
+"Syntax: myproxy-init [-c #hours] [-t #hours] [-l username] [-r retrievers] [-w renewers] ...\n"\
 "        myproxy-init [-usage|-help] [-v|-version]\n"\
 "\n"\
 "   Options\n"\
@@ -35,6 +35,12 @@ static char usage[] = \
 "                                         server (default 2 hours)\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "					  Can also set MYPROXY_SERVER env. var.\n"
+"	-a | --allow_anonymous_retrievers Allow anonymous users to retrieve credentials\n"
+"	-A | --allow_anonymous_renewers   Allow anonymous users to renew credentials\n"
+"	-r | --retrievable_by      <dn>   Distinguished name list of allowed retrievers\n"
+"	-R | --renewable_by       <dn>    Distinguished name list of allowed renewers\n"
+"	-x | --regex_dn_match		  Set expression type to regular expression\n"
+"	-X | --match_cn_only		  Set expression type to common name\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -n | --no_passphrase              Disable passphrase authentication\n"
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
@@ -54,10 +60,16 @@ struct option long_options[] =
   {"version",               no_argument, NULL, 'v'},
   {"no_passphrase",         no_argument, NULL, 'n'},
   {"dn_as_username",        no_argument, NULL, 'd'},
+  {"allow_anonymous_retrievers", no_argument, NULL, 'a'},
+  {"allow_anonymous_renewers", no_argument, NULL, 'A'},
+  {"retrievable_by",  required_argument, NULL, 'r'},
+  {"renewable_by",    required_argument, NULL, 'R'},
+  {"regex_dn_match",        no_argument, NULL, 'x'},
+  {"match_cn_only", 	    no_argument, NULL, 'X'},
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhs:p:t:c:l:vnd";
+static char short_options[] = "uhs:p:t:c:l:vndr:R:xXaA";  //colon following an option indicates option takes an argument
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -103,6 +115,8 @@ main(int argc, char *argv[])
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_PUT_PROXY;
+    client_request->retriever_expr_type = NON_REGULAR_EXP;
+    client_request->renewer_expr_type = NON_REGULAR_EXP;
 
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
@@ -193,6 +207,8 @@ main(int argc, char *argv[])
     }
 
     /* Send request to the myproxy-server */
+    printf ("Request buffer = %s Requestlen = %d", request_buffer,requestlen);
+
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "error in myproxy_send_request(): %s\n", 
 		verror_get_string());
@@ -252,6 +268,7 @@ init_arguments(int argc,
 	       int *cred_lifetime) 
 {   
     extern char *gnu_optarg;
+    int expr_type = NON_REGULAR_EXP;  //default
 
     int arg;
 
@@ -294,6 +311,30 @@ init_arguments(int argc,
 	case 'd':   /* use the certificate subject (DN) as the default
 		       username instead of LOGNAME */
 	    dn_as_username = 1;
+	    break;
+	case 'r':   /* retrievers list */
+	    request->retrievers = strdup (gnu_optarg);
+	    request->retriever_expr_type = expr_type;
+	    break;
+	case 'R':   /* renewers list */
+	    request->renewers = strdup (gnu_optarg);
+	    request->renewer_expr_type = expr_type;
+	    break;
+	case 'x':   /*set expression type to regex*/
+	    expr_type = REGULAR_EXP;
+	    printf ("expr-type = %d\n", expr_type);
+	    break;
+	case 'X':   /*set expression type to common name*/
+	    expr_type = NON_REGULAR_EXP;
+	    printf ("expr-type = %d\n", expr_type);
+	    break;
+	case 'a':  /*allow anonymous retrievers*/
+	    request->retrievers = strdup ("*");
+	    request->retriever_expr_type = REGULAR_EXP;
+	    break;
+	case 'A':  /*allow anonymous renewers*/
+	    request->renewers = strdup ("*");
+	    request->renewer_expr_type = REGULAR_EXP;
 	    break;
         default:  
 	    fprintf(stderr, usage);
@@ -354,3 +395,4 @@ grid_proxy_destroy(const char *proxyfile) {
 
     return rc;
 }
+

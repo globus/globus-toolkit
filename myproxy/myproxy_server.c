@@ -120,7 +120,7 @@ static int become_daemon(myproxy_server_context_t *server_context);
 static int myproxy_authorize_accept(myproxy_server_context_t *context,
                                     myproxy_socket_attrs_t *attrs,
 				    myproxy_request_t *client_request,
-				    char *client_name);
+				    char *client_name, int comp_type);
 
 static int get_client_authdata(myproxy_socket_attrs_t *attrs,
                                myproxy_request_t *client_request,
@@ -148,13 +148,13 @@ main(int argc, char *argv[])
 
     /* Set context defaults */
     server_context->run_as_daemon = 1;
-    
+
     if (init_arguments(argc, argv, socket_attrs, server_context) < 0) {
         fprintf(stderr, usage);
         exit(1);
     }
 
-    if (server_context->config_file == NULL)
+   if (server_context->config_file == NULL)
     {
         server_context->config_file = strdup(default_config_file);
 
@@ -284,6 +284,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     char  client_name[1024];
     char  client_buffer[4096];
     int   requestlen;
+    myproxy_server_context_t *client_context;
+    int num_strings;
 
     authorization_data_t *client_auth_data = NULL;
     authorization_data_t auth_data;
@@ -301,6 +303,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
+
+    client_context = malloc(sizeof(*client_context));
+    memset(client_context, 0, sizeof(*client_context));
 
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
@@ -334,7 +339,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     
     /* Receive client request */
     requestlen = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
-    if (requestlen <= 0) {
+    if (requestlen < 0) {
         myproxy_log_verror();
 	respond_with_error_and_die(attrs, "Error in myproxy_recv()");
     }
@@ -347,6 +352,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 				   "error in myproxy_deserialize_request()");
     }
 
+    printf ("Client_request++++ = %d\n", client_request->retriever_expr_type);
     /* Check client version */
     if (strcmp(client_request->version, MYPROXY_VERSION) != 0) {
 	myproxy_log("client %s Invalid version number (%s) received",
@@ -377,21 +383,47 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 				   "Pass phrase too short.\n");
     }
 
+    myproxy_log ("Retriever = %s",client_request->retrievers);
+    myproxy_log ("Renewer = %s",client_request->renewers);
+
     /* Fill in credential structure = owner, user, passphrase, proxy location */
     client_creds->owner_name  = strdup(client_name);
     client_creds->user_name   = strdup(client_request->username);
     client_creds->pass_phrase = strdup(client_request->passphrase);
+    
+    /*copy renewers and retrievers if they are present*/
+    if (client_request->retrievers != NULL)
+    {
+       client_creds->retrievers = strdup(client_request->retrievers);
+       client_creds->retriever_expr_type = client_request->retriever_expr_type;
+    }
+    else
+    {
+       client_creds->retrievers = NULL;
+       client_creds->retriever_expr_type = NON_REGULAR_EXP; //default
+    } 
 
-    /* All authorization checking happens here. */
+    if (client_request->renewers != NULL)
+    {
+       client_creds->renewers = strdup(client_request->renewers);
+       client_creds->renewer_expr_type = client_request->renewer_expr_type;
+    }
+    else
+    {
+       client_creds->renewers = NULL;
+       client_creds->renewer_expr_type = NON_REGULAR_EXP;  //default
+    }
+    
+    /* First level authorization checking happens here. */
     if (myproxy_authorize_accept(context, attrs, 
-	                         client_request, client_name) < 0) {
-       myproxy_log("authorization failed");
+	                         client_request, client_name, REGULAR_EXP) < 0) {
+       myproxy_log("authorization failed - server-wide policy failure");
        respond_with_error_and_die(attrs, verror_get_string());
     }
     
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
-       
+      
     /* Handle client request */
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY: 
@@ -402,6 +434,36 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	    respond_with_error_and_die(attrs, verror_get_string());
 	}
 
+        myproxy_log("Retriever = ", client_creds->retrievers);
+
+
+    if (client_creds->retrievers != NULL)  /* retrievers specified*/
+    {
+	/* Check if dns is present in per-user regular expression*/
+	memcpy (client_context, context, sizeof (context));
+	num_strings = parse_string (&(client_context->authorized_retriever_dns),client_creds->retrievers)  ;  
+
+        if (num_strings < 0){
+	    respond_with_error_and_die(attrs, verror_get_string());
+	}
+	
+  	client_context->authorized_retriever_dns[num_strings] = NULL; // end of sequence indicator
+
+    /* Second level (per-user) authorization checking happens here. */
+
+    if (client_creds->retriever_expr_type == REGULAR_EXP || client_creds->retriever_expr_type == NON_REGULAR_EXP) {
+      if (myproxy_authorize_accept(client_context, attrs, 
+	                         client_request, client_name, client_creds->retriever_expr_type) < 0) {
+       myproxy_log("authorization failed - per-user policy failure");
+       respond_with_error_and_die(attrs, verror_get_string());
+      }
+    } 
+    else  {
+      myproxy_log ("authorization failed : invalid retriever expression type");
+      respond_with_error_and_die(attrs, verror_get_string());
+    }
+   }
+    
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 	myproxy_debug("  Location is %s", client_creds->location);
 	myproxy_debug("  Lifetime is %d seconds", client_request->proxy_lifetime);
@@ -411,6 +473,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	
         get_proxy(attrs, client_creds, client_request, server_response);
         break;
+
+
     case MYPROXY_PUT_PROXY:
 	/* log request type */
         myproxy_log("Received PUT request from %s", client_name);
@@ -424,6 +488,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	send_response(attrs, server_response, client_name);
         put_proxy(attrs, client_creds, server_response);
         break;
+
     case MYPROXY_INFO_PROXY:
 	/* log request type */
         myproxy_log("Received client %s command: INFO", client_name);
@@ -563,6 +628,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     int on = 1;
     int listen_sock;
     struct sockaddr_in sin;
+    struct linger lin ={0,0}; 
     
     listen_sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -572,6 +638,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 
     /* Allow reuse of socket */
     setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on, sizeof(on));
+    setsockopt(listen_sock, SOL_SOCKET, SO_LINGER, (char *) &lin, sizeof (lin));
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
@@ -679,7 +746,8 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     myproxy_debug("Storing credentials for username \"%s\"", creds->user_name);
     myproxy_debug("  Owner is \"%s\"", creds->owner_name);
     myproxy_debug("  Delegation lifetime is %d seconds", creds->lifetime);
-    
+    myproxy_debug (" Retrievers = %s Renewers = %s", creds->retrievers, creds->renewers); 
+    myproxy_debug (" Retriever expr type  = %d", creds->retriever_expr_type); 
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
 	myproxy_log_verror();
@@ -888,12 +956,13 @@ become_daemon(myproxy_server_context_t *context)
  * PUT and DESTROY:
  *   Client DN must match accepted_credentials.
  *   If credentials already exist for the username, the client must own them.
+ *   
  */
 static int
 myproxy_authorize_accept(myproxy_server_context_t *context,
                          myproxy_socket_attrs_t *attrs,
 			 myproxy_request_t *client_request,
-			 char *client_name)
+			 char *client_name, int comp_type)
 {
    int   credentials_exist = 0;
    int   client_owns_credentials = 0;
@@ -918,13 +987,13 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        case AUTHORIZETYPE_PASSWD:
 	   /* Is the client authorized to retrieve creds with a passphrase? */
 	   authorization_ok = myproxy_server_check_retriever(context,
-							     client_name);
+							     client_name, comp_type);
 	   
 	   break;
        case AUTHORIZETYPE_CERT:
 	   /* Is the client authorized to renew existing credentials? */
 	   authorization_ok = myproxy_server_check_renewer(context,
-							   client_name);
+							   client_name, comp_type);
 	   break;
        }
        if (!(authorization_ok == 1)) break;
@@ -1029,7 +1098,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
       contain a specification of the method that the client chose to
       authorization. */
    client_length = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
-   if (client_length <= 0)
+   if (client_length < 0)
       goto end;
 
    client_auth_method = (*client_buffer);
@@ -1061,3 +1130,66 @@ end:
 
    return return_status;
 }
+
+#define MAX_REGEX_LEN 256
+
+/*
+
+   int parse_string (char ***, char *)
+
+   Function to convert a comma separated sequence of strings into array of strings.
+
+   Accepts:  Address to a pointer to a char pointer
+	     String
+
+   Returns: Number of strings separated
+	    -1 on Error. errno is set
+
+*/
+
+int parse_string (char ***dest, char *src)
+{
+ int i;
+ int index1 = 0, index2 = 0, len;
+ char tmp[MAX_REGEX_LEN];
+
+ if (src == NULL )
+ {
+   verror_put_errno (EINVAL);
+   return -1;
+ }
+
+ *dest = (char **) malloc (sizeof (char **) );
+ **dest = (char *) malloc (sizeof (char *) );
+
+ len = strlen (src);
+ memset (tmp, 0, MAX_REGEX_LEN);
+
+ for (i = 0; i < len; i ++) {
+  	if (*(src+i) == ',')  { // end of reg-ex   
+	  	*dest = (char **) realloc (*dest, sizeof (char **) *(index1+1));
+
+		if ( ((*dest)[index1++] = strdup (tmp)) == NULL)
+		{
+		  verror_put_errno (ENOMEM);
+		  return -1;
+		}  
+   		index2 = 0;
+   		memset (tmp, 0, MAX_REGEX_LEN);
+		continue;
+  	}
+	tmp[index2++] = *(src+i);
+ }
+
+if ( ((*dest)[index1++] = strdup (tmp)) == NULL)
+{
+  verror_put_errno (ENOMEM);
+  return -1;
+}  
+
+ return index1;
+}
+
+
+
+  

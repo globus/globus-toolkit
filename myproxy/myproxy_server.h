@@ -64,7 +64,7 @@ int myproxy_server_check_cred(myproxy_server_context_t *context,
  * -1 on error, setting verror.
  */
 int myproxy_server_check_retriever(myproxy_server_context_t *context,
-				   const char *service_name);
+				   const char *service_name, int comp_type);
 
 /*
  * myproxy_server_check_renewer()
@@ -76,7 +76,7 @@ int myproxy_server_check_retriever(myproxy_server_context_t *context,
  * -1 on error, setting verror.
  */
 int myproxy_server_check_renewer(myproxy_server_context_t *context,
-				 const char *service_name);
+				 const char *service_name, int comp_type);
 
 
 

@@ -6,11 +6,18 @@
 #ifndef __MYPROXY_CREDS_H
 #define __MYPROXY_CREDS_H
 
+#define REGULAR_EXP 1
+#define NON_REGULAR_EXP 0
+
 struct myproxy_creds {
     char *user_name;
     char *pass_phrase;
     char *owner_name;
     char *location;
+    char *retrievers;
+    int retriever_expr_type;
+    char *renewers;
+    int renewer_expr_type;
     int lifetime;
     void *restrictions;
 };

@@ -28,6 +28,9 @@
 
 #endif
 
+#define REGULAR_EXP 1
+#define NON_REGULAR_EXP 0
+
 /**********************************************************************
  *
  * Internal Functions
@@ -329,7 +332,7 @@ regex_compare(const char *regex,
  */
 static int
 is_name_in_list(const char **list,
-		const char *name)
+		const char *name, int comp_type)
 {
     int return_code = -1;
 
@@ -345,8 +348,11 @@ is_name_in_list(const char **list,
     while (*list != NULL)
     {
 	int rc;
-	
-	rc = regex_compare(*list, name);
+
+	if (comp_type == REGULAR_EXP)	
+	  rc = regex_compare(*list, name);
+	else
+	  rc = !strcmp (*list, name);   //strcmp returns 0 on success
 	
 	if (rc != 0)
 	{
@@ -459,15 +465,16 @@ myproxy_server_check_cred(myproxy_server_context_t *context,
 
     /* Why is this cast needed? */
     return_code = is_name_in_list((const char **) context->accepted_credential_dns,
-				  client_name);
+				  client_name, REGULAR_EXP);
 
   error:
     return return_code;
 }
 
+
 int
 myproxy_server_check_retriever(myproxy_server_context_t *context,
-			       const char *service_name)
+			       const char *service_name, int comp_type)
 {
     int return_code = -1;
     
@@ -480,7 +487,7 @@ myproxy_server_check_retriever(myproxy_server_context_t *context,
 
     /* Why is this cast needed? */
     return_code = is_name_in_list((const char **) context->authorized_retriever_dns,
-				  service_name);
+				  service_name, comp_type);
 
   error:
     return return_code;
@@ -488,7 +495,7 @@ myproxy_server_check_retriever(myproxy_server_context_t *context,
 
 int
 myproxy_server_check_renewer(myproxy_server_context_t *context,
-			     const char *service_name)
+			   const char *service_name, int comp_type)
 {
     int return_code = -1;
     
@@ -501,7 +508,7 @@ myproxy_server_check_renewer(myproxy_server_context_t *context,
 
     /* Why is this cast needed? */
     return_code = is_name_in_list((const char **) context->authorized_renewer_dns,
-				  service_name);
+				  service_name, comp_type);
 
   error:
     return return_code;

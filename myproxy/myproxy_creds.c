@@ -12,8 +12,6 @@
 #include "verror.h"
 #include "string_funcs.h"
 
-#include "sslutil.h"
-
 #include <stdio.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -26,6 +24,8 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <md5global.h>
+#include <md5.h>
 
 /*
  * Doesn't always seem to be define in <unistd.h>
@@ -452,6 +452,21 @@ write_data_file(const struct myproxy_creds *creds,
     fprintf(data_stream, "OWNER=%s\n", creds->owner_name);
     fprintf(data_stream, "PASSPHRASE=%s\n", tmp1);
     fprintf(data_stream, "LIFETIME=%d\n", creds->lifetime);
+
+    printf ("Creds->retrievers = %s\n", creds->retrievers);
+    printf ("Creds->renewers = %s\n", creds->renewers);
+    if (creds->retrievers != NULL)
+    {
+        fprintf(data_stream, "RETRIEVERS=%s\n", creds->retrievers);
+	fprintf(data_stream, "RETRIEVER_EXPR_TYPE=%d\n", creds->retriever_expr_type);
+    }
+
+    if (creds->renewers != NULL)
+    {	
+        fprintf(data_stream, "RENEWERS=%s\n", creds->renewers);
+	fprintf(data_stream, "RENEWER_EXPR_TYPE=%d\n", creds->renewer_expr_type);
+    }
+
     fprintf(data_stream, "END_OPTIONS\n");
 
     fflush(data_stream);
@@ -589,6 +604,40 @@ read_data_file(struct myproxy_creds *creds,
             {
                 goto error;
             }
+            continue;
+        }
+        
+        if (strcmp(variable, "RETRIEVERS") == 0)
+        {
+            creds->retrievers = mystrdup(value);
+            
+            if (creds->retrievers == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
+        
+        if (strcmp(variable, "RENEWERS") == 0)
+        {
+            creds->renewers = mystrdup(value);
+            
+            if (creds->renewers == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
+        
+        if (strcmp(variable, "RETRIEVER_EXPR_TYPE") == 0)
+        {
+            creds->retriever_expr_type = (int) strtol (value,NULL, 10);
+            continue;
+        }
+        
+        if (strcmp(variable, "RENEWER_EXPR_TYPE") == 0)
+        {
+            creds->renewer_expr_type = (int) strtol (value,NULL, 10);
             continue;
         }
         
@@ -754,7 +803,29 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     {
         goto error;
     }
-    
+   
+    if (retrieved_creds.retrievers != NULL)
+    {
+       creds->retrievers = retrieved_creds.retrievers;
+       creds->retriever_expr_type = retrieved_creds.retriever_expr_type;
+    }
+    else
+    {
+       creds->retrievers = NULL;
+       creds->retriever_expr_type = NON_REGULAR_EXP;
+    }
+
+    if (retrieved_creds.renewers != NULL)
+    {
+       creds->renewers = retrieved_creds.renewers;
+       creds->renewer_expr_type = retrieved_creds.renewer_expr_type;
+    }
+    else
+    {
+       creds->renewers = NULL;
+       creds->renewer_expr_type = NON_REGULAR_EXP;
+    }
+ 
     /* Success */
     return_code = 0;
     
