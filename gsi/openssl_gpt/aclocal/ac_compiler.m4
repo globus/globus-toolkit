@@ -20,11 +20,9 @@ AC_DEFUN(LAC_COMPILER,
     AC_REQUIRE([AC_CANONICAL_HOST])
     AC_REQUIRE([LAC_CPU])
     AC_REQUIRE([AC_PROG_CC])
-    AC_REQUIRE([AC_PROG_LD])
     LAC_COMPILER_ARGS
     LAC_COMPILER_SET
     LAC_SUBSTITUTE_VAR(CFLAGS)
-    LAC_SUBSTITUTE_VAR(LDFLAGS)
     LAC_DEFINE_VAR(DSO_DLFCN)
     LAC_DEFINE_VAR(HAVE_DLFCN_H)
     LAC_DEFINE_VAR(THREADS)
@@ -37,7 +35,6 @@ AC_DEFUN(LAC_COMPILER_SET,
     # defaults:
 
     lac_CFLAGS="$CFLAGS -DDSO_DLFCN -DHAVE_DLFCN_H"
-    lac_LDFLAGS="$LDFLAGS"
     lac_DSO_DLFCN="1"
     lac_HAVE_DLFCN_H="1"
     lac_THREADS=""
@@ -128,12 +125,8 @@ AC_DEFUN(LAC_COMPILER_SET,
         *-ibm-aix*)
             if test "$GCC" = "yes"; then
                     lac_CFLAGS="$lac_CFLAGS -O3 -DAIX -DB_ENDIAN"
-                    if test "$with_gnu_ld" = "no"; then
-                            lac_LDFLAGS="$lac_LDFLAGS -Wl,-brtl"
-                    fi
             else
                     lac_CFLAGS="$lac_CFLAGS -O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath"
-                    lac_LDFLAGS="$lac_LDFLAGS -brtl"
             fi
         ;;
         *-dec-osf*)

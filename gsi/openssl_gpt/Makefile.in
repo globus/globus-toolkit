@@ -199,7 +199,8 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
 DIST_COMMON = README $(opensslinclude_HEADERS) INSTALL Makefile.am \
 	Makefile.in NEWS aclocal.m4 config.guess config.sub configure \
-	configure.in install-sh ltmain.sh missing mkinstalldirs
+	configure.in install-sh ltconfig ltmain.sh missing \
+	mkinstalldirs
 DIST_SUBDIRS = $(SUBDIRS)
 all: all-recursive
 

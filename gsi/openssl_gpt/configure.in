@@ -3,6 +3,21 @@ dnl
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
+# libtool hack
+
+with_tags=
+
+save_LD=$LD
+LD=
+
+save_CXXCPP=$CXXCPP
+CXXCPP=
+
+AM_PROG_LIBTOOL
+
+CXXCPP=$save_CXXCPP
+LD=$save_LD
+
 OPENSSL_INIT
 
 dnl config header goes here
@@ -32,17 +47,6 @@ CHECK_NEED_LNSL
 # Need to determine if we need -ldl or -ldld
 
 LAC_CHECK_DL_LIB
-
-# libtool hack
-
-with_tags=" "
-
-save_CXXCPP=$CXXCPP
-CXXCPP=
-
-AM_PROG_LIBTOOL
-
-CXXCPP=$save_CXXCPP
 
 GPT_SET_LIBS(["$DL_LIB $EXTERNAL_LIBS"])	
 
