@@ -56,7 +56,8 @@ enum kex_modes {
 
 enum kex_exchange {
 	DH_GRP1_SHA1,
-	DH_GEX_SHA1
+	DH_GEX_SHA1,
+	GSS_GRP1_SHA1
 };
 
 #define KEX_INIT_SENT	0x0001
@@ -92,6 +93,11 @@ struct Newkeys {
 	Mac	mac;
 	Comp	comp;
 };
+
+struct KexOptions {
+	int	gss_deleg_creds;
+};
+
 struct Kex {
 	u_char	*session_id;
 	int	session_id_len;
@@ -105,10 +111,12 @@ struct Kex {
 	Buffer	peer;
 	int	done;
 	int	flags;
+	char	*host;
 	char	*client_version_string;
 	char	*server_version_string;
 	int	(*verify_host_key)(Key *);
 	Key	*(*load_host_key)(int);
+	struct  KexOptions options;
 };
 
 Kex	*kex_setup(char *[PROPOSAL_MAX]);
