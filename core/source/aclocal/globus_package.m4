@@ -64,7 +64,7 @@ AC_SUBST(EXEEXT)
 
 # These files are not used outside of automake.  But the makefile still
 # has them as dependent targets.
-if test ! -L globus_automake_targets; then
+if test ! -h globus_automake_targets; then
     echo "installing extra automake files"
     ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_targets \
     globus_automake_targets

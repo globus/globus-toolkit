@@ -62,10 +62,10 @@ GLOBUS_INIT
 GLOBUS_SET_BUILD_DEPS([foo fum])
 
 dnl some code to test the existance of X library.
-GLOBUS_ADD_XTRA_LIBS([ -L/usr/lib/X11 -lX ])
+GLOBUS_ADD_XTRA_LIBS([ -h/usr/lib/X11 -lX ])
 
 dnl some code to test the existance of Xpm library.
-GLOBUS_ADD_XTRA_LIBS([ -L/opt/xpm/lib -lXpm ])
+GLOBUS_ADD_XTRA_LIBS([ -h/opt/xpm/lib -lXpm ])
 
 GLOBUS_GENERATE
 

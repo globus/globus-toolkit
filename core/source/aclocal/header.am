@@ -31,7 +31,7 @@ link-@DIR@HEADERS: $(@DIR@_HEADERS)
 			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
 			mv $$target_p $$target_p.$(LINK_BAK); \
 		fi; \
-		if test ! -L $$target_p; then \
+		if test ! -h $$target_p; then \
 			echo "ln -s $$d$$p $$target_p"; \
 			ln -s $$d$$p $$target_p; \
 		fi; \
@@ -41,7 +41,7 @@ unlink-@DIR@HEADERS:
 	@$(NORMAL_UNINSTALL)
 	@list='$(@DIR@_HEADERS)'; for p in $$list; do \
 		target_p="$(DESTDIR)$(@DIR@dir)/$$p"; \
-		if test -L $$target_p; then \
+		if test -h $$target_p; then \
 			echo "rm $$target_p"; \
 			rm $$target_p; \
 		fi; \

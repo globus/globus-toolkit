@@ -27,7 +27,7 @@ link-@DIR@LTLIBRARIES: $(@DIR@_LTLIBRARIES)
 		target_dir="$(DESTDIR)$(@DIR@dir)/"; \
 		root_p=`echo $$p | sed "s,.la,,"`; \
 		liblist=`ls $$mydir/.libs/$$root_p.so*`; for so in $$liblist; do \
-			if test ! -L $$so; then \
+			if test ! -h $$so; then \
 				so_name=`echo $$so | sed "s,$$mydir/.libs/,,"`; \
 				so_list="$$so_list $$so_name"; \
 			fi; \
@@ -40,7 +40,7 @@ link-@DIR@LTLIBRARIES: $(@DIR@_LTLIBRARIES)
 				mv $$target_dir/$$so $$target_dir/$$so.$(LINK_BAK); \
 			done; \
 		fi; \
-		if test ! -L $$target_p; then \
+		if test ! -h $$target_p; then \
 			echo "ln -s $$mydir/$$p $$target_p"; \
 			ln -s $$mydir/$$p $$target_p; \
 			for so in $$so_list; do \
@@ -58,7 +58,7 @@ unlink-@DIR@LTLIBRARIES:
 		target_dir="$(DESTDIR)$(@DIR@dir)/"; \
 		root_p=`echo $$p | sed "s,.la,,"`; \
 		so_list=`ls $$target_dir/$$root_p.so*.$(LINK_BAK)`; \
-		if test -L $$target_p; then \
+		if test -h $$target_p; then \
 			echo "rm $$target_p"; \
 			rm $$target_p; \
 			for so in $$so_list; do \

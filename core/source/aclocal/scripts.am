@@ -28,7 +28,7 @@ link-@DIR@SCRIPTS: $(@DIR@_SCRIPTS)
 			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
 			mv $$target_p $$target_p.$(LINK_BAK); \
 		fi; \
-		if test ! -L $$target_p; then \
+		if test ! -h $$target_p; then \
 			echo "ln -s $$mydir/$$p $$target_p"; \
 			ln -s $$mydir/$$p $$target_p; \
 		fi; \
@@ -40,7 +40,7 @@ link-@DIR@SCRIPTS: $(@DIR@_SCRIPTS)
 			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
 			mv $$target_p $$target_p.$(LINK_BAK); \
 		fi; \
-		if test ! -L $$target_p; then \
+		if test ! -h $$target_p; then \
 			echo "ln -s $$fullsrcdir/$$p $$target_p"; \
 			ln -s $$fullsrcdir/$$p $$target_p; \
 		fi; \
@@ -51,7 +51,7 @@ unlink-@DIR@SCRIPTS:
 	@$(NORMAL_UNINSTALL)
 	@list='$(@DIR@_SCRIPTS)'; for p in $$list; do \
 	    	target_p=$(DESTDIR)$(@DIR@dir)/`echo $$p|sed '$(transform)'`; \
-		if test -L $$target_p; then \
+		if test -h $$target_p; then \
 			echo "rm $$target_p"; \
 			rm $$target_p; \
 		fi; \
