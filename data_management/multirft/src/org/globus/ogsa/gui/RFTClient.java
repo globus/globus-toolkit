@@ -1,4 +1,6 @@
-/*This file is licensed under the terms of the Globus Toolkit Public|License, found at http://www.globus.org/toolkit/download/license.html.*/
+/*
+ *  This file is licensed under the terms of the Globus Toolkit Public|License, found at http://www.globus.org/toolkit/download/license.html.
+ */
 package org.globus.ogsa.gui;
 
 import java.io.BufferedReader;
@@ -16,6 +18,7 @@ import org.apache.axis.message.MessageElement;
 import org.apache.axis.utils.XMLUtils;
 
 import org.globus.axis.gsi.GSIConstants;
+import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.base.multirft.MultiFileRFTDefinitionServiceGridLocator;
@@ -46,43 +49,48 @@ import org.gridforum.ogsi.WSDLReferenceType;
 import org.gridforum.ogsi.holders.ExtensibilityTypeHolder;
 import org.gridforum.ogsi.holders.LocatorTypeHolder;
 import org.gridforum.ogsi.holders.TerminationTimeTypeHolder;
-import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 
+/**
+ *  Description of the Class
+ *
+ *@author     madduri
+ *@created    October 19, 2003
+ */
 public class RFTClient {
 
     /**
-     * DOCUMENT ME!
-     * 
-     * @param args DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  args  DOCUMENT ME!
      */
-    public static void main(String[] args) {
-        System.out.println("Multifile RFT command line client");
+    public static void main( String[] args ) {
+        System.out.println( "Multifile RFT command line client" );
 
         GetOpts opts = new GetOpts(
-                               "Usage: RFTClient <factory handle> [id] <path to transfer>", 
-                               1);
-        String error = opts.parse(args);
+                "Usage: RFTClient <factory handle> [id] <path to transfer>",
+                1 );
+        String error = opts.parse( args );
 
-        if (error != null) {
-            System.err.println(error);
+        if ( error != null ) {
+            System.err.println( error );
 
             return;
         }
 
-        String handle = opts.getArg(0);
+        String handle = opts.getArg( 0 );
 
         try {
 
-            File requestFile = new File(opts.getArg(1));
+            File requestFile = new File( opts.getArg( 1 ) );
             BufferedReader reader = null;
 
             try {
-                reader = new BufferedReader(new FileReader(requestFile));
-            } catch (java.io.FileNotFoundException fnfe) {
+                reader = new BufferedReader( new FileReader( requestFile ) );
+            } catch ( java.io.FileNotFoundException fnfe ) {
             }
 
             Vector requestData = new Vector();
@@ -91,90 +99,92 @@ public class RFTClient {
 
                 String line = reader.readLine();
 
-                while (line != null) {
-                    requestData.add(line);
+                while ( line != null ) {
+                    requestData.add( line );
                     line = reader.readLine();
                 }
 
                 reader.close();
-            } catch (java.io.IOException ioe) {
+            } catch ( java.io.IOException ioe ) {
             }
 
-            int transferCount = (requestData.size() - 7) / 2;
+            int transferCount = ( requestData.size() - 7 ) / 2;
             TransferType[] transfers1 = new TransferType[transferCount];
             RFTOptionsType multirftOptions = new RFTOptionsType();
-            multirftOptions.setBinary(Boolean.valueOf(
-                                              (String)requestData.elementAt(0)).booleanValue());
-            multirftOptions.setBlockSize(Integer.valueOf(
-                                                 (String)requestData.elementAt(
-                                                         1)).intValue());
-            multirftOptions.setTcpBufferSize(Integer.valueOf(
-                                                     (String)requestData.elementAt(
-                                                             2)).intValue());
-            multirftOptions.setNotpt(Boolean.valueOf(
-                                             (String)requestData.elementAt(3)).booleanValue());
-            multirftOptions.setParallelStreams(Integer.valueOf(
-                                                       (String)requestData.elementAt(
-                                                               4)).intValue());
-            multirftOptions.setDcau(Boolean.valueOf(
-                                            (String)requestData.elementAt(5)).booleanValue());
+            multirftOptions.setBinary( Boolean.valueOf(
+                    (String) requestData.elementAt( 0 ) ).booleanValue() );
+            multirftOptions.setBlockSize( Integer.valueOf(
+                    (String) requestData.elementAt(
+                    1 ) ).intValue() );
+            multirftOptions.setTcpBufferSize( Integer.valueOf(
+                    (String) requestData.elementAt(
+                    2 ) ).intValue() );
+            multirftOptions.setNotpt( Boolean.valueOf(
+                    (String) requestData.elementAt( 3 ) ).booleanValue() );
+            multirftOptions.setParallelStreams( Integer.valueOf(
+                    (String) requestData.elementAt(
+                    4 ) ).intValue() );
+            multirftOptions.setDcau( Boolean.valueOf(
+                    (String) requestData.elementAt( 5 ) ).booleanValue() );
             System.out.println(
-                    "Request Data Size " + requestData.size() + " " + 
-                    transferCount);
+                    "Request Data Size " + requestData.size() + " " +
+                    transferCount );
 
             int i = 7;
 
-            for (int j = 0; j < transfers1.length; j++) {
+            for ( int j = 0; j < transfers1.length; j++ ) {
                 transfers1[j] = new TransferType();
-                transfers1[j].setSourceUrl((String)requestData.elementAt(i++));
+                transfers1[j].setSourceUrl( (String) requestData.elementAt( i++ ) );
                 transfers1[j].setDestinationUrl(
-                        (String)requestData.elementAt(i++));
+                        (String) requestData.elementAt( i++ ) );
             }
 
             TransferRequestType transferRequest = new TransferRequestType();
-            transferRequest.setTransferArray(transfers1);
+            transferRequest.setTransferArray( transfers1 );
             int concurrency = Integer.valueOf(
-                (String)requestData.elementAt(6)).intValue();
-            if(concurrency>transfers1.length) {
-                System.out.println("Concurrency should be less than the number of transfers in the request");
-                System.exit(0);
+                    (String) requestData.elementAt( 6 ) ).intValue();
+            if ( concurrency > transfers1.length ) {
+                System.out.println( "Concurrency should be less than the number of transfers in the request" );
+                System.exit( 0 );
             }
 
-            transferRequest.setRftOptions(multirftOptions);
-            transferRequest.setConcurrency(concurrency);
+            transferRequest.setRftOptions( multirftOptions );
+            transferRequest.setConcurrency( concurrency );
 
             TransferRequestElement requestElement = new TransferRequestElement();
-            requestElement.setTransferRequest(transferRequest);
+            requestElement.setTransferRequest( transferRequest );
 
             ExtensibilityType extension = new ExtensibilityType();
-            extension = AnyHelper.getExtensibility(requestElement);
+            extension = AnyHelper.getExtensibility( requestElement );
 
             OGSIServiceGridLocator factoryService = new OGSIServiceGridLocator();
-            Factory factory = factoryService.getFactoryPort(new URL(handle));
-            GridServiceFactory gridFactory = new GridServiceFactory(factory);
+            Factory factory = factoryService.getFactoryPort( new URL( handle ) );
+            GridServiceFactory gridFactory = new GridServiceFactory( factory );
             org.apache.axis.client.Stub s = (org.apache.axis.client.Stub) factory;
-            s.setTimeout(100000000);
-            LocatorType locator = gridFactory.createService(extension);
-            System.out.println("Created an instance of Multi-RFT");
+            s.setTimeout( 100000000 );
+            LocatorType locator = gridFactory.createService( extension );
+            System.out.println( "Created an instance of Multi-RFT" );
 
             MultiFileRFTDefinitionServiceGridLocator loc = new MultiFileRFTDefinitionServiceGridLocator();
-            RFTPortType rftPort = loc.getMultiFileRFTDefinitionPort(locator);
-            ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
-                                         NoAuthorization.getInstance());
-            ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE, 
-                                         GSIConstants.GSI_MODE_FULL_DELEG);
-            ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV, 
-                                         Constants.SIGNATURE);
-            ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                                          new IgnoreProxyPolicyHandler());
+            RFTPortType rftPort = loc.getMultiFileRFTDefinitionPort( locator );
+            //TODO Why do we have NoAuth here ??
+            ( (Stub) rftPort )._setProperty( Constants.AUTHORIZATION,
+                    NoAuthorization.getInstance() );
+            ( (Stub) rftPort )._setProperty( GSIConstants.GSI_MODE,
+                    GSIConstants.GSI_MODE_FULL_DELEG );
+            ( (Stub) rftPort )._setProperty( Constants.GSI_SEC_CONV,
+                    Constants.SIGNATURE );
+            ( (Stub) rftPort )._setProperty( Constants.GRIM_POLICY_HANDLER,
+                    new IgnoreProxyPolicyHandler() );
 
             org.apache.axis.client.Stub s2 = (org.apache.axis.client.Stub) rftPort;
-            s2.setTimeout(100000000);
+            s2.setTimeout( 100000000 );
             int requestid = rftPort.start();
-            System.out.println("Request id: " + requestid);
+            System.out.println( "Request id: " + requestid );
 
-        } catch (Exception e) {
-            System.err.println(MessageUtils.toString(e));
+        } catch ( Exception e ) {
+            System.err.println( MessageUtils.toString( e ) );
         }
     }
 }
+

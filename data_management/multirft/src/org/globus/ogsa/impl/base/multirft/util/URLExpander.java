@@ -36,6 +36,7 @@ public class URLExpander extends Thread {
     Vector sourceUrlsEx;
     GlobusURL sourceGlobusUrl, destinationGlobusUrl;
     TransferDbAdapter dbAdapter;
+    boolean done = false;
     // This transferJob should include directory in source and dest
     private static Logger logger = Logger.getLogger( URLExpander.class.getName() );
 
@@ -92,6 +93,16 @@ public class URLExpander extends Thread {
 
 
     /**
+     *  Gets the status attribute of the URLExpander object
+     *
+     *@return    The status value
+     */
+    public boolean getStatus() {
+        return this.done;
+    }
+
+
+    /**
      *  this invokes the MLST command from GridFTPClient on the source hands it
      *  over to parser utility which gives set of directories that need to be
      *  made at the destination.Recursive directory traversal or Iterative?
@@ -121,8 +132,12 @@ public class URLExpander extends Thread {
                                  + this.sourceGlobusUrl.getHost()
                                  + currentUrl + File.separator
                                  + f.getFileName();
-                        String mkdir = currentUrl.substring
-                                ( currentUrl.lastIndexOf( "//" ) + 2 );
+                        int temp = currentUrl.lastIndexOf( "//" );
+                        String mkdir = "";
+                        if ( temp != -1 ) {
+                            mkdir = currentUrl.substring
+                                    ( currentUrl.lastIndexOf( "//" ) + 2 );
+                        }
                         String newDestinationUrl = "gsiftp://"
                                  + this.destinationGlobusUrl.getHost()
                                  + this.destinationPath
@@ -151,6 +166,10 @@ public class URLExpander extends Thread {
             }
         } catch ( Exception e ) {
             logger.error( e.getMessage() );
+        }
+        if ( this.sourceUrlsEx.size() == 0 ) {
+            logger.debug( "UrlExpander is done" );
+            this.done = true;
         }
     }
 }

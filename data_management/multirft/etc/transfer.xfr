@@ -5,5 +5,5 @@ false
 1
 true
 1
-gsiftp://wiggum.mcs.anl.gov/sandbox/madduri/smalltest
-gsiftp://wiggum.mcs.anl.gov/sandbox/madduri/tmp/
+gsiftp://wiggum.mcs.anl.gov:8800/sandbox/madduri/
+gsiftp://wiggum.mcs.anl.gov:8800/sandbox/madduri/tmp/
