@@ -2667,7 +2667,6 @@ globus_i_gsc_send(
         if(op->restart_marker == NULL)
         {
             op->restart_marker = globus_i_gsc_restart_create();
-            globus_i_gsc_restart_add(op->restart_marker, 0, -1);
         }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
@@ -2749,7 +2748,6 @@ globus_i_gsc_recv(
         if(op->restart_marker == NULL)
         {
             op->restart_marker = globus_i_gsc_restart_create();
-            globus_i_gsc_restart_add(op->restart_marker, 0, -1);
         }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
@@ -3282,7 +3280,7 @@ globus_i_gsc_restart_add(
     ent = (globus_l_gsc_restart_ent_t *)
         globus_malloc(sizeof(globus_l_gsc_restart_ent_t));
     ent->offset = offset;
-    ent->offset = offset;
+    ent->length = length;
 
     globus_priority_q_enqueue(&restart->q, ent, ent);
 }
