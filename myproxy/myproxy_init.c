@@ -19,25 +19,29 @@
 
 static char usage[] = \
 "\n"\
-"Syntax: myproxy-init [-h hours] [-t hours] [-l username] ...\n"\
-"        myproxy-init [--usage|--help] [-v|--version]\n"\
+"Syntax: myproxy-init [-c #hours] [-t #hours] [-l username] ...\n"\
+"        myproxy-init [-usage|-help] [-v|-version]\n"\
 "\n"\
-"    Options\n"\
-"    --help | --usage                     Displays usage\n"\
-"    -v | -version                        Displays version\n"\
-"    -l | -username            <username> Specifies the username for the delegated proxy\n"\
-"    -h | -cred_lifetime       <hours>    Specifies the lifetime of the delegated proxy (default 1 week)\n"\
-"    -t | -portal_lifetime     <hours>    Specifies the lifetime of the delegated proxy on the portal (default 2 hours)\n"\
-"    -s | -pshost              <hostname> Specifies the hostname of the myproxy-server\n"\
-"    -p | -psport              <port #>   Specifies the port of the myproxy-server\n"\
+"   Options\n"\
+"       -h | -help                       Displays usage\n"\
+"       -u | -usage                                    \n"\
+"                                                      \n"\
+"       -v | -version                    Displays version\n"\
+"       -l | -username        <username> Username for the delegated proxy\n"\
+"       -c | -cred_lifetime   <hours>    Lifetime of delegated proxy 
+                                         (default 1 week)\n"\
+"       -t | -portal_lifetime <hours>    Lifetime of delegated proxy on 
+                                         the portal (default 2 hours)\n"\
+"       -s | -pshost          <hostname> Hostname of the myproxy-server\n"\
+"       -p | -psport          <port #>   Port of the myproxy-server\n"\
 "\n";
 
 struct option long_options[] =
 {
-  {"help",                  no_argument, NULL, 'u'},
+  {"help",                  no_argument, NULL, 'h'},
   {"pshost",   	      required_argument, NULL, 's'},
   {"psport",          required_argument, NULL, 'p'},
-  {"cred_lifetime",   required_argument, NULL, 'h'},
+  {"cred_lifetime",   required_argument, NULL, 'c'},
   {"portal_lifetime", required_argument, NULL, 't'},
   {"usage",                 no_argument, NULL, 'u'},
   {"username",        required_argument, NULL, 'l'},
@@ -45,7 +49,7 @@ struct option long_options[] =
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "us:p:t:h:t:v";
+static char short_options[] = "uhs:p:t:c:t:v";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -206,8 +210,11 @@ init_arguments(int argc,
     {
 	switch(arg) 
 	{
-	    
-	case 'h': 	/* Specify cred lifetime in seconds */
+	case 'h':       /* print help and exit */
+	    fprintf(stderr, usage);
+	    exit(1);
+	    break;
+	case 'c': 	/* Specify cred lifetime in seconds */
 	    *cred_lifetime  = 60*60*atoi(gnu_optarg);
 	    break;    
 	case 't': 	/* Specify portal lifetime in seconds */
