@@ -1012,6 +1012,7 @@ main(int ac, char **av)
 	if (test_flag)
 		exit(0);
 
+#ifndef HAVE_CYGWIN
 	/*
 	 * Clear out any supplemental groups we may have inherited.  This
 	 * prevents inadvertent creation of files with bad modes (in the
@@ -1021,6 +1022,7 @@ main(int ac, char **av)
 	 */
 	if (setgroups(0, NULL) < 0)
 		debug("setgroups() failed: %.200s", strerror(errno));
+#endif /* !HAVE_CYGWIN */
 
 	/* Initialize the log (it is reinitialized below in case we forked). */
 	if (debug_flag && !inetd_flag)
@@ -1343,8 +1345,11 @@ main(int ac, char **av)
 	 * setlogin() affects the entire process group.  We don't
 	 * want the child to be able to affect the parent.
 	 */
+#if 0
+	/* XXX: this breaks Solaris */
 	if (setsid() < 0)
 		error("setsid: %.100s", strerror(errno));
+#endif
 
 	/*
 	 * Disable the key regeneration alarm.  We will not regenerate the

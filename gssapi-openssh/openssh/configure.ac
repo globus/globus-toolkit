@@ -1947,7 +1947,7 @@ AC_ARG_WITH(rsh,
 
 PRIVSEP_PATH=/var/empty
 AC_ARG_WITH(privsep-path,
-	[  --with-privsep-path=xxx Path for privilege seperation chroot ],
+	[  --with-privsep-path=xxx Path for privilege separation chroot ],
 	[
 		if test "x$withval" != "$no" ; then
 			PRIVSEP_PATH=$withval

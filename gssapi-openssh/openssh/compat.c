@@ -79,6 +79,9 @@ compat_datafellows(const char *version)
 					SSH_BUG_EXTEOF},
 		{ "OpenSSH_2.5.3*",	SSH_BUG_NOREKEY|SSH_BUG_EXTEOF},
 		{ "OpenSSH_2.9p*",	SSH_OLD_GSSAPI },
+		{ "OpenSSH_2.*,"
+		  "OpenSSH_3.0*,"
+		  "OpenSSH_3.1*",	SSH_BUG_EXTEOF},
 		{ "Sun_SSH_1.0*",	SSH_BUG_NOREKEY|SSH_BUG_EXTEOF},
 		{ "OpenSSH*",		0 },
 		{ "*MindTerm*",		0 },
