@@ -100,15 +100,16 @@ userauth_gssapi(Authctxt *authctxt)
 		present = 0;
 		doid = packet_get_string(&len);
 
-		if (doid[0] != SSH_GSS_OIDTYPE || doid[1] != len-2) {
-			logit("Mechanism OID received using the old encoding form");
-			goid.elements = doid;
-			goid.length = len;
-		} else {
+		if (len > 2 &&
+		   doid[0] == SSH_GSS_OIDTYPE &&
+		   doid[1] == len - 2) {
 			goid.elements = doid + 2;
 			goid.length   = len - 2;
+			gss_test_oid_set_member(&ms, &goid, supported,
+			    &present);
+		} else {
+			logit("Badly formed OID received");
 		}
-		gss_test_oid_set_member(&ms, &goid, supported, &present);
 	} while (mechs > 0 && !present);
 
 	gss_release_oid_set(&ms, &supported);
