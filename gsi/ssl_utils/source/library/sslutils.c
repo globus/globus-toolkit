@@ -527,6 +527,8 @@ proxy_cred_desc_new()
 	pcd->certdir = NULL;
 	pcd->certfile = NULL;
 	pcd->num_null_enc_ciphers = 0;
+	pcd->type = CRED_TYPE_PERMANENT;
+	pcd->owner = CRED_OWNER_USER;
     }
     return pcd;
 }
