@@ -37,30 +37,29 @@
  *  @page factory_setup Setting up a factory
  *
  *  The driver stack that is used for a given xio handle is constructed
- *  using a globus_xio_factory_t.  Each driver provides its own means
- *  of initializing a globus_xio_driver_t, as well as its own means
- *  of setting driver specific attributes on that adt.
+ *  using a globus_xio_factory_t.  Each driver provides a global
+ *  globus_xio_driver_t (synonymous to the globus_module_descriptor_t), 
+ *  as well as its own means of setting driver specific factory attributes
  *
- *  Once a globus_xio_driver_t has been intialized it can be pushed
- *  ont a globus_xio_factory_attr_t.  The order that the drivers
- *  are pushed on determines the order that the are entered for ever
+ *  Once you have a driver module and any factory attrs you need, you can 
+ *  push the driver onto a globus_xio_factory_attr_t.  The order that the 
+ *  drivers are pushed on determines the order that the are entered for ever
  *  give xio operation.
  *
  *  factory setup example:
  *
  *    // the tcp functions are driver specific (not part of the xio framework
  *    // interface).
- *    globus_xio_tcp_driver_init(&tcp_driver);
- *    globus_xio_tcp_driver_set_listener_port(tcp_driver, 2811);
- *
- *    // more driver specific functions
- *    globus_xio_gsi_driver_init(&gsi_driver);
+ *    globus_xio_tcp_factory_attr_init(&tcp_factory_attr);
+ *    globus_xio_tcp_factory_attr_set_listener_port(tcp_factory_attr, 2811);
  *
  *    // build the stack
- *    globus_xio_factory_attr_init(&attr);
- *    globus_xio_factory_push_driver(attr, tcp_driver);
- *    globus_xio_factory_push_driver(attr, gsi_driver);
- *    globus_xio_factory_init(&factory, attr);
+ *    globus_xio_factory_attr_init(&factory_attr);
+ *    globus_xio_factory_push_driver(
+ *        factory_attr, GLOBUS_XIO_TCP_DRIVER, tcp_factory_attr);
+ *    globus_xio_factory_push_driver(
+ *        factory_attr, GLOBUS_XIO_GSI_DRIVER, GLOBUS_NULL);
+ *    globus_xio_factory_init(&factory, factory_attr);
  */
 
 /**
@@ -93,7 +92,7 @@
  *  // set driver sepcific attr on xio attr via a driver devel api call
  *  globus_xio_attr_add_driver_attr(attr, tcp_attr);
  *  // open the handle
- *  globus_xio_handle_open(&handle, attr);
+ *  globus_xio_handle_open(..&handle, attr..);
  *
  *  The driver should implement a convience function for setting attributes
  *  that would initialize the driver specific attr, set the value, and
@@ -109,7 +108,7 @@
  *  @page muttable_attrs Mutable Attributes
  *
  *  Mutable attributes are those that can be changed at any time during 
- *  the lifespan of a handle.  The function globus_xio_handle_fcnt() is 
+ *  the lifespan of a handle.  The function globus_xio_handle_fcntl() is 
  *  used to both change mutable attributes and query the handle for
  *  values.
  *
@@ -117,7 +116,7 @@
  * 
  *  globus_xio_attr_init(&attr);
  *  globus_xio_attr_set_optimal_buffer_size(attr, 65536);
- *  globus_xio_handle_fcnt(handle, GLOBUS_XIO_SET_BUFFER_SIZE, attr);
+ *  globus_xio_handle_fcntl(handle, GLOBUS_XIO_SET_BUFFER_SIZE, attr);
  *
  *  Example of getting a muttable value:
  *
@@ -132,16 +131,18 @@
  *
  *   globus_xio_tcp_attr_init(&tcp_attr);
  *   globus_xio_tcp_attr_set_window_size(tcp_attr, 65536);
- *   globus_xio_handle_driver_fcnt(
+ *   globus_xio_handle_driver_fcntl(
  *       handle, 
+ *       GLOBUS_XIO_TCP_DRIVER,
  *       GLOBUS_XIO_TCP_SET_WINDOW_SIZE,
  *       tcp_attr);
  *
  *  and getting driver specific mutable attrs:
  *    
  *   globus_xio_tcp_attr_init(&tcp_attr);
- *   globus_xio_handle_driver_fcnt(
+ *   globus_xio_handle_driver_fcntl(
  *       handle, 
+ *       GLOBUS_XIO_TCP_DRIVER,
  *       GLOBUS_XIO_TCP_GET_WINDOW_SIZE,
  *       tcp_attr);
  *   globus_xio_tcp_attr_get_window_size(tcp_attr, &window_size);
@@ -265,12 +266,13 @@ globus_xio_factory_attr_destroy(
 
 /**
  *  @ingroup GLOBUS_XIO_API
- *  push a driver to the bottom of the stack
+ *  push a driver to the top of the stack
  */
 globus_result_t
 globus_xio_factory_push_driver(
     globus_xio_factory_attr_t                   factory_attr,
-    globus_xio_driver_t                         driver);
+    globus_xio_driver_t                         driver,
+    globus_xio_driver_factory_attr_t            driver_factory_attr);
 
 /******************************************************************
  *                      handle construction
@@ -359,7 +361,7 @@ globus_xio_handle_attr_get_optimal_poseted_buffers(
  *  finctions the driver will provide.
  */
 globus_result_t
-globus_xio_attr_add_driver_attr(
+globus_xio_handle_attr_add_driver_attr(
     globus_xio_handle_attr_t                    attr,
     globus_xio_driver_handle_attr_t             driver_attr);
 
@@ -372,20 +374,21 @@ globus_xio_attr_add_driver_attr(
  *  set and get mutable attributes on a handle
  */
 globus_result_t 
-globus_xio_handle_fcnt(
+globus_xio_handle_fcntl(
     globus_xio_handle_t                         handle,
     int                                         command,
-    globus_xio_handle_attr_t                    attr);
+    ...);
 
 /**
  *  @ingroup GLOBUS_XIO_API
  *  set and get driver specific mutable attributes on a handle
  */
 globus_result_t 
-globus_xio_handle_driver_fcnt(
+globus_xio_handle_driver_fcntl(
     globus_xio_handle_t                         handle,
+    globus_xio_driver_t                         driver,
     int                                         command,
-    globus_xio_driver_handle_attr_t             attr);
+    ...);
 
 /******************************************************************
  *                      setting timeout values
