@@ -384,11 +384,16 @@ globus_i_xio_close_handles(
                            handle->state 
                             != GLOBUS_XIO_HANDLE_STATE_CLOSED)
                         {
+                            /* i suspect that res will always be true here */
                             res = globus_l_xio_hande_pre_close(
                                 handle, NULL, NULL, NULL);
-                            globus_assert(res == GLOBUS_SUCCESS);
-
-                            if(handle->state
+                            if(res != GLOBUS_SUCCESS)
+                            {
+                                /* if pree close fails we will not wait on 
+                                    this handle */
+                                monitor.count--;
+                            }
+                            else if(handle->state
                                 != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
                             {
                                 globus_list_insert(&c_handles, handle);
@@ -414,7 +419,15 @@ globus_i_xio_close_handles(
         handle = (globus_xio_handle_t) globus_list_first(list);
 
         res = globus_l_xio_register_close(handle->close_op);
-        globus_assert(res == GLOBUS_SUCCESS);
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_mutex_lock(&globus_l_mutex);
+            {
+                /* since callbak will not be called we dec here */
+                monitor.count--;
+            }
+            globus_mutex_unlock(&globus_l_mutex);
+        }
     }
 
     globus_mutex_lock(&globus_l_mutex);
@@ -782,12 +795,13 @@ globus_l_xio_open_close_callback_kickout(
     }
     globus_mutex_unlock(&handle->context->mutex);
 
+    /* only gets here if coming from the operning and closing state */
     if(start_close)
     {
         res = globus_l_xio_register_close(close_op);
         if(res != GLOBUS_SUCCESS)
         {
-            /* kickout close callback with error */
+            globus_l_xio_open_close_callback(close_op, res, NULL);
         }
         globus_assert(!destroy_handle);
     }

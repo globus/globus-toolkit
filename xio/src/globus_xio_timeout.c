@@ -77,6 +77,7 @@ globus_i_xio_timer_destroy(
                 globus_l_xio_timer_unregister_cb,
                 (void *)timer,
                 NULL);
+        /* logic of this code should prevent this from ever failing */
         globus_assert(res == GLOBUS_SUCCESS);
         while(timer->running)
         {
@@ -124,8 +125,16 @@ globus_i_xio_timer_register_timeout(
                     timer->periodic_handle,
                     &timer->minimal_delay);
 
-            /* parms are good so should never fail */
-            assert(res == GLOBUS_SUCCESS);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_panic(GLOBUS_XIO_MODULE, res, 
+                    "globus_callback_adjust_period should always return success"
+                    " in this case\n"
+                    "timer @ 0x%x\n"
+                    " globus_callback_adjust_period(%d, 0x%x);\n",
+                    timer->periodic_handle,
+                    &timer->minimal_delay);
+            }
             timer->running = GLOBUS_TRUE;
         }
         globus_list_insert(&timer->op_list, entry);
