@@ -155,23 +155,23 @@
 #endif
 #endif
 
-#ifdef GLOBUS_USE_PTHREADS
+#ifdef HAVE_PTHREAD
 #   define GLOBUS_THREAD_INCLUDE "globus_thread_pthreads.h"
 #endif
 
-#ifdef GLOBUS_USE_SOLARIS_THREADS
+#ifdef HAVE_SOLARISTHREADS
 #   define GLOBUS_THREAD_INCLUDE "globus_thread_solaristhreads.h"
 #endif
 
-#ifdef GLOBUS_USE_EXTERNAL_THREADS
+#ifdef HAVE_EXTERNALTHREADS
 #   define GLOBUS_THREAD_INCLUDE "globus_thread_external.h"
 #endif
 
-#ifdef GLOBUS_USE_SPROC
+#ifdef HAVE_SPROC
 #   define GLOBUS_THREAD_INCLUDE "globus_thread_sproc.h"
 #endif
 
-#ifdef GLOBUS_USE_NO_THREADS
+#ifdef BUILD_LITE
 #   define GLOBUS_THREAD_INCLUDE "globus_thread_none.h"
 #endif
 

@@ -13,13 +13,13 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
-AM_CONFIG_HEADER(config.h library/globus_common_config.h:library/globus_common_config.h.in)
+AM_CONFIG_HEADER(config.h)
 
 dnl Determine thread library flags
-if test "x$NO_FLAVOR" = "x"; then
-LAC_THREADS
+dnl if test "x$NO_FLAVOR" = "x"; then
+dnl LAC_THREADS
+dnl fi
 
-fi
 dnl Check for large file support before doing any other probes, it may
 dnl change prototypes for some functions.
 AC_SYS_LARGEFILE
@@ -48,7 +48,7 @@ CHECK_NEED_LNSL
 
 GPT_SET_LIBS(["$THREAD_LIB_FLAGS $EXTERNAL_LIBS"])
 
-AC_SUBST(GLOBUS_THREADS)
+dnl AC_SUBST(GLOBUS_THREADS)
 
 LAC_DOXYGEN("../library")
 
