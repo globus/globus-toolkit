@@ -71,6 +71,7 @@
 #undef HAVE_SYS_UIO_H
 #undef HAVE_STRUCT_IOVEC
 #undef IOV_MAX
+#undef RETSIGTYPE
 
 #undef GLOBUS_OFF_T
 #undef GLOBUS_OFF_T_FORMAT 
