@@ -26,12 +26,44 @@
  * 
  * An XIO handle with the gsi driver can be created with either
  * @ref globus_xio_handle_create() or @ref globus_xio_server_register_accept().
+ *
+ * If the handle is created with
+ * @ref globus_xio_server_register_accept(), the
+ * @ref globus_xio_register_open() call will proceed to accept a GSSAPI
+ * security context. Upon successful completion of the open, ie after
+ * the open callback has been called, the application may
+ * proceed to read or write data associated with the GSI session.
+ *
+ * If the handle is created with @ref globus_xio_handle_create(), then
+ * the XIO handle will implement the client-side (init) of the GSSAPI call
+ * sequence and establish a security context with the accepting side indicated
+ * by the contact_string passed to @ref globus_xio_register_open().
  */
  
 /**
  * @defgroup gsi_driver_io Reading/Writing
  * @ingroup gsi_driver
- * 
+ * The GSI driver behaves similar to the underlying transport driver with
+ * respect to reads and writes.
+ */
+
+/**
+ * @defgroup gsi_driver_server Server
+ * @ingroup gsi_driver
+ *
+ * @ref globus_xio_server_create() causes a new transport-specific
+ * listener socket to be created to handle new GSI connections.
+ * @ref globus_xio_server_register_accept() will accept a new
+ * connection for processing. @ref globus_xio_server_register_close()
+ * cleans up the internal resources associated with the http server
+ * and calls close on the listener.
+ *
+ * All accepted handles inherit all gsi specific attributes set in the attr to
+ * @ref globus_xio_server_create(), but can be overridden with the attr to 
+ * @ref globus_xio_register_open(). Furthermore, accepted handles will use the
+ * GSSAPI accept security context call unless explicitly overriden during the
+ * @ref globus_xio_register_open() call (@ref
+ * GLOBUS_XIO_GSI_FORCE_SERVER_MODE).
  */
 
 /**
@@ -43,6 +75,10 @@
  * - X509_USER_CERT
  * - X509_USER_KEY
  * - X509_CERT_DIR
+ *
+ * For details see
+ * <a href="http://www.globus.org/security/v2.0/env_variables.html">
+ * Globus: GSI Environment Variables</a>
  */
 
 /**
@@ -99,7 +135,7 @@ typedef enum
  */
 typedef enum
 {
-    /** GlobusVarArgEnum(attr)
+    /** GlobusVarArgEnum(attr, handle)
      * Set the credential to be used 
      * @ingroup gsi_driver_cntls
      *
@@ -113,7 +149,7 @@ typedef enum
     /* gss_cred_id_t                    credential */
     GLOBUS_XIO_GSI_SET_CREDENTIAL,
 
-    /** GlobusVarArgEnum(attr)
+    /** GlobusVarArgEnum(attr, handle)
      * Get the credential to be used 
      * @ingroup gsi_driver_cntls
      *
@@ -461,7 +497,7 @@ typedef enum
     GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE,
     /** Messages are signed */
     GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY,
-    /** Messages are encrypted */
+    /** Messages are signed and encrypted */
     GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY
 } globus_xio_gsi_protection_level_t;
 
