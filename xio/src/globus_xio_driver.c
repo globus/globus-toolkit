@@ -2,6 +2,64 @@
 #include "globus_i_xio.h"
 
 void
+globus_l_xio_will_block_kickout(
+    void *                                  user_args)
+{
+    globus_i_xio_op_t *                     op;
+
+    op = (globus_i_xio_op_t *) user_args;
+
+    switch(op->type)
+    {
+        case GLOBUS_XIO_OPERATION_TYPE_OPEN:
+            GlobusIXIODriverOpenDeliver(op);
+            break;
+
+        case GLOBUS_XIO_OPERATION_TYPE_READ:
+            GlobusIXIODriverReadDeliver(op);
+            break;
+
+        case GLOBUS_XIO_OPERATION_TYPE_WRITE:
+            GlobusIXIODriverWriteDeliver(op);
+            break;
+
+        /* no other state is possible */
+        default:
+            globus_assert(0);
+    }
+}
+
+void
+globus_i_xio_will_block_cb(
+    int                                     space,
+    globus_thread_callback_index_t          ndx,
+    void *                                  user_args)
+{
+    globus_i_xio_restart_t *                restart;
+    globus_i_xio_op_t *                     op;
+
+    restart = (globus_i_xio_restart_t *) user_args;
+    restart->restarted = GLOBUS_TRUE;
+    op = restart->op;
+
+    globus_thread_blocking_callback_pop(&ndx);
+
+    globus_mutex_lock(&op->_op_context->mutex);
+    {
+        op->ref++;
+    }
+    globus_mutex_unlock(&op->_op_context->mutex);
+
+
+    globus_callback_space_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_xio_will_block_kickout,
+        (void *)op,
+        space);
+}
+
+void
 globus_l_xio_driver_op_read_kickout(
     void *                                  user_arg)
 {

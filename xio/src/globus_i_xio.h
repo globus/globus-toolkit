@@ -73,8 +73,8 @@ do                                                                          \
                 _c_destroy = GLOBUS_TRUE;                                   \
             }                                                               \
         }                                                                   \
+        globus_mutex_unlock(&_h->context->mutex);                           \
     }                                                                       \
-    globus_mutex_unlock(&_h->context->mutex);                               \
     if(_c_destroy)                                                          \
     {                                                                       \
         globus_i_xio_context_destroy(_h->context);                          \
@@ -472,6 +472,7 @@ typedef struct globus_i_xio_op_s
     globus_bool_t                           canceled;
     globus_bool_t                           block_timeout;
 
+    globus_bool_t                           restarted;
     globus_bool_t                           blocking;
     /* result code saved in op for kickouts */
     globus_result_t                         cached_res;
@@ -550,6 +551,11 @@ typedef struct globus_i_xio_blocking_s
     globus_result_t                         res;
 } globus_i_xio_blocking_t;
 
+typedef struct globus_i_xio_restart_s
+{
+    globus_i_xio_op_t *                     op;
+    globus_bool_t                           restarted;
+} globus_i_xio_restart_t;
 
 globus_i_xio_blocking_t *
 globus_i_xio_blocking_alloc();
@@ -632,6 +638,13 @@ globus_i_xio_context_create(
 void
 globus_i_xio_context_destroy(
     globus_i_xio_context_t *                xio_context);
+
+void
+globus_i_xio_will_block_cb(
+    int                                     space,
+    globus_thread_callback_index_t          ndx,
+    void *                                  user_args);
+
 
 extern globus_i_xio_timer_t                 globus_l_xio_timeout_timer;
 extern globus_list_t *                      globus_l_outstanding_handles_list;

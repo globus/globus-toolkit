@@ -97,6 +97,11 @@ server2_main(
     int                                     argc,
     char **                                 argv);
 
+int
+close_barrier_block_main(
+    int                                     argc,
+    char **                                 argv);
+
 void
 test_common_end();
 

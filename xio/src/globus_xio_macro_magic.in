@@ -212,15 +212,19 @@
 2 #define GlobusIXIODriverOpenDeliver(op)                                   \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_result_t                                 _res;                   \
-    globus_i_xio_op_t *                             _close_op;              \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_i_xio_context_t *                        _context;               \
-    globus_bool_t                                   _close = GLOBUS_FALSE;  \
-    globus_bool_t                                   _destroy_context =      \
-                                                        GLOBUS_FALSE;       \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_result_t                         _res;                           \
+    globus_i_xio_op_t *                     _close_op;                      \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_i_xio_context_t *                _context;                       \
+    globus_bool_t                           _close = GLOBUS_FALSE;          \
+    globus_bool_t                           _destroy_context = GLOBUS_FALSE;\
+    globus_i_xio_restart_t                  _restart;                       \
+    int                                     _ndx;                           \
+    globus_bool_t                           _destroy_handle = GLOBUS_FALSE; \
+    globus_i_xio_handle_t *                 _handle;                        \
+    globus_bool_t                           _dec = GLOBUS_FALSE;            \
     globus_callback_space_t                 _space =                        \
                             GLOBUS_CALLBACK_GLOBAL_SPACE;                   \
     GlobusXIOName(GlobusIXIODriverOpenDeliver);                             \
@@ -229,14 +233,52 @@
     _context = _op->_op_context;                                            \
     _my_op = &_op->entry[_op->ndx - 1];                                     \
     _my_context = &_context->entry[_my_op->caller_ndx];                     \
+    _handle = _op->_op_handle;                                              \
                                                                             \
     _res = _op->cached_res;                                                 \
-    _op->ndx = _my_op->caller_ndx;                                          \
-    _my_op->cb(_op, _res, _my_op->user_arg);                                \
+    if(!_op->restarted)                                                     \
+    {                                                                       \
+        if(_op->ndx == 0) /* if at the top */                               \
+        {                                                                   \
+            _restart.op = op;                                               \
+            _restart.restarted = GLOBUS_FALSE;                              \
+            globus_thread_blocking_callback_push(                           \
+                globus_i_xio_will_block_cb, &_restart, &_ndx);              \
                                                                             \
+            _op->ndx = _my_op->caller_ndx;                                  \
+            _my_op->cb(_op, _res, _my_op->user_arg);                        \
+                                                                            \
+            /* if the user op restarted, we return because everything below \
+               will be called in willblock */                               \
+            if(_restart.restarted)                                          \
+            {                                                               \
+                return;                                                     \
+            }                                                               \
+            globus_thread_blocking_callback_pop(&_ndx);                     \
+        }                                                                   \
+        else                                                                \
+        {                                                                   \
+            _op->ndx = _my_op->caller_ndx;                                  \
+            _my_op->cb(_op, _res, _my_op->user_arg);                        \
+        }                                                                   \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        _dec = GLOBUS_TRUE;                                                 \
+    }                                                                       \
     /* LOCK */                                                              \
     globus_mutex_lock(&_context->mutex);                                    \
     {                                                                       \
+        if(_dec)                                                            \
+        {                                                                   \
+            _op->ref--;                                                     \
+            if(_op->ref == 0)                                               \
+            {                                                               \
+                GlobusXIOOperationDestroy(_op);                             \
+                GlobusIXIOHandleDec(_destroy_handle, _handle);              \
+            }                                                               \
+        }                                                                   \
+                                                                            \
         /* remove the reference held to make sure the context is not        \
            destroyed until all open callbacks have returned */              \
         _context->ref--;                                                    \
@@ -259,9 +301,15 @@
     }                                                                       \
     globus_mutex_unlock(&_context->mutex);                                  \
                                                                             \
+    if(_destroy_handle)                                                     \
+    {                                                                       \
+        GlobusXIOHandleDestroy(_handle);                                    \
+        globus_assert(!_destroy_context);                                   \
+    }                                                                       \
     if(_destroy_context)                                                    \
     {                                                                       \
         globus_i_xio_context_destroy(_context);                             \
+        globus_assert(!_destroy_handle);                                    \
     }                                                                       \
     if(_close)                                                              \
     {                                                                       \
@@ -683,25 +731,70 @@
 2 #define GlobusIXIODriverWriteDeliver(op)                                  \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_i_xio_op_t *                             _close_op;              \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_i_xio_context_t *                        _context;               \
-    globus_bool_t                                   _close = GLOBUS_FALSE;  \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_i_xio_op_t *                     _close_op;                      \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_i_xio_context_t *                _context;                       \
+    globus_bool_t                           _close = GLOBUS_FALSE;          \
+    globus_i_xio_restart_t                  _restart;                       \
+    globus_bool_t                           _destroy_handle = GLOBUS_FALSE; \
+    globus_bool_t                           _dec = GLOBUS_FALSE;            \
+    globus_i_xio_handle_t *                 _handle;                        \
+    int                                     _ndx;                           \
                                                                             \
     _op = (op);                                                             \
     _context = _op->_op_context;                                            \
     _my_op = &_op->entry[_op->ndx - 1];                                     \
     _my_context = &_context->entry[_my_op->caller_ndx];                     \
+    _handle = _op->_op_handle;                                              \
                                                                             \
-    _op->ndx = _my_op->caller_ndx;                                          \
-    _my_op->_op_ent_data_cb(_op, _op->cached_res, _my_op->_op_ent_nbytes,   \
-                _my_op->user_arg);                                          \
+    if(!_op->restarted)                                                     \
+    {                                                                       \
+        if(_op->ndx == 0) /* if at the top */                               \
+        {                                                                   \
+            _restart.op = op;                                               \
+            _restart.restarted = GLOBUS_FALSE;                              \
+            globus_thread_blocking_callback_push(                           \
+                globus_i_xio_will_block_cb, &_restart, &_ndx);              \
+                                                                            \
+            _op->ndx = _my_op->caller_ndx;                                  \
+            _my_op->_op_ent_data_cb(_op, _op->cached_res,                   \
+                _my_op->_op_ent_nbytes, _my_op->user_arg);                  \
+                                                                            \
+            /* if the user op restarted, we return because everything below \
+               will be called in willblock */                               \
+            if(_restart.restarted)                                          \
+            {                                                               \
+                return;                                                     \
+            }                                                               \
+            globus_thread_blocking_callback_pop(&_ndx);                     \
+        }                                                                   \
+        else                                                                \
+        {                                                                   \
+            _op->ndx = _my_op->caller_ndx;                                  \
+            _my_op->_op_ent_data_cb(_op, _op->cached_res,                   \
+                _my_op->_op_ent_nbytes, _my_op->user_arg);                  \
+        }                                                                   \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        _dec = GLOBUS_TRUE;                                                 \
+    }                                                                       \
                                                                             \
     /* LOCK */                                                              \
     globus_mutex_lock(&_context->mutex);                                    \
     {                                                                       \
+        if(_dec)                                                            \
+        {                                                                   \
+            _op->ref--;                                                     \
+            if(_op->ref == 0)                                               \
+            {                                                               \
+                GlobusXIOOperationDestroy(_op);                             \
+                GlobusIXIOHandleDec(_destroy_handle, _handle);              \
+            }                                                               \
+        }                                                                   \
+                                                                            \
         _my_context->outstanding_operations--;                              \
                                                                             \
         /* if we have a close delayed */                                    \
@@ -717,6 +810,10 @@
     }                                                                       \
     globus_mutex_unlock(&_context->mutex);                                  \
                                                                             \
+    if(_destroy_handle)                                                     \
+    {                                                                       \
+        GlobusXIOHandleDestroy(_handle);                                    \
+    }                                                                       \
     if(_close)                                                              \
     {                                                                       \
         globus_i_xio_driver_start_close(_close_op, GLOBUS_FALSE);           \
@@ -1005,12 +1102,17 @@
 2 #define GlobusIXIODriverReadDeliver(op)                                   \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_bool_t                                   _purge;                 \
-    globus_bool_t                                   _close = GLOBUS_FALSE;  \
-    globus_i_xio_context_t *                        _context;               \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_bool_t                           _purge;                         \
+    globus_bool_t                           _close = GLOBUS_FALSE;          \
+    globus_i_xio_context_t *                _context;                       \
+    globus_i_xio_restart_t                  _restart;                       \
+    globus_bool_t                           _destroy_handle = GLOBUS_FALSE; \
+    globus_bool_t                           _dec = GLOBUS_FALSE;            \
+    globus_i_xio_handle_t *                 _handle;                        \
+    int                                     _ndx;                           \
     GlobusXIOName(GlobusIXIODriverReadDeliver);                             \
                                                                             \
     GlobusXIODebugInternalEnter();                                          \
@@ -1019,15 +1121,54 @@
     _context = _op->_op_context;                                            \
     _my_op = &_op->entry[_op->ndx - 1];                                     \
     _my_context = &_context->entry[_my_op->caller_ndx];                     \
+    _handle = _op->_op_handle;                                              \
                                                                             \
     /* call the callback */                                                 \
-    _op->ndx = _my_op->caller_ndx;                                          \
-    _my_op->_op_ent_data_cb(_op, _op->cached_res, _my_op->_op_ent_nbytes,   \
-                _my_op->user_arg);                                          \
+    if(!_op->restarted)                                                     \
+    {                                                                       \
+        if(_op->ndx == 0) /* if at the top */                               \
+        {                                                                   \
+            _restart.op = op;                                               \
+            _restart.restarted = GLOBUS_FALSE;                              \
+            globus_thread_blocking_callback_push(                           \
+                globus_i_xio_will_block_cb, &_restart, &_ndx);              \
                                                                             \
+            _op->ndx = _my_op->caller_ndx;                                  \
+            _my_op->_op_ent_data_cb(_op, _op->cached_res,                   \
+                _my_op->_op_ent_nbytes, _my_op->user_arg);                  \
+                                                                            \
+            /* if the user op restarted, we return because everything below \
+               will be called in willblock */                               \
+            if(_restart.restarted)                                          \
+            {                                                               \
+                return;                                                     \
+            }                                                               \
+            globus_thread_blocking_callback_pop(&_ndx);                     \
+        }                                                                   \
+        else                                                                \
+        {                                                                   \
+            _op->ndx = _my_op->caller_ndx;                                  \
+            _my_op->_op_ent_data_cb(_op, _op->cached_res,                   \
+                _my_op->_op_ent_nbytes, _my_op->user_arg);                  \
+        }                                                                   \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        _dec = GLOBUS_TRUE;                                                 \
+    }                                                                       \
                                                                             \
     globus_mutex_lock(&_context->mutex);                                    \
     {                                                                       \
+        if(_dec)                                                            \
+        {                                                                   \
+            _op->ref--;                                                     \
+            if(_op->ref == 0)                                               \
+            {                                                               \
+                GlobusXIOOperationDestroy(_op);                             \
+                GlobusIXIOHandleDec(_destroy_handle, _handle);              \
+            }                                                               \
+        }                                                                   \
+                                                                            \
         _purge = GLOBUS_FALSE;                                              \
         if(_my_context->read_eof)                                           \
         {                                                                   \
@@ -1088,6 +1229,10 @@
     }                                                                       \
     globus_mutex_unlock(&_context->mutex);                                  \
                                                                             \
+    if(_destroy_handle)                                                     \
+    {                                                                       \
+        GlobusXIOHandleDestroy(_handle);                                    \
+    }                                                                       \
     if(_close)                                                              \
     {                                                                       \
         globus_i_xio_driver_start_close(_my_context->close_op,              \
