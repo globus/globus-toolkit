@@ -60,8 +60,10 @@ Include header files
 #include <pwd.h>
 #include <string.h>
 #include <malloc.h>
+#include <unistd.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include "globus_gatekeeper_utils.h"
 /* #include "grami_ggg.h" */
 
 /******************************************************************************
@@ -93,195 +95,11 @@ FILE *stderrX;
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
-static int
-globus_gram_k5_globuskmap( char * globusid, char ** params);
 
-static int
-globus_gram_k5_tokenize(char * command, char ** args, int n);
-
-static int
-globus_gram_k5_exec(char *args[]);
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
 
-/******************************************************************************
-Function:   globus_gram_k5_globuskmap()
-Description:
-	Given a globusID, find the command to be issued.
-
-Parameters:
-	globusID
-	A pointer to a char*. will strduped with command
-Returns:
-******************************************************************************/
-static int
-globus_gram_k5_globuskmap( char * globusid, char ** command)
-{
-
-	FILE * fd;
-	char   line[BUFSIZ];
-	char   globuskmap[256] ;
-	char   f_globusid[256]; 
-	int    rc;
-	int	   i;
-    int    offset;
-
-	*command = NULL;
-
-  /* the following logic is taken from the gssapi_cleartext
-   * globusfile.c. Since it is almost the same logic.
-   * of the globusmap file. 
-   */
-  {
-    char *char_p, filename[256];
-    if ( ((char_p = (char*) getenv("GLOBUSKMAP")) != NULL) ) {
-	  if (strlen(char_p) > 255) {
-		fprintf(stderr,"GLOBUSKMAP file name to long\n");
-		return (-1);
-	  }
-      strcpy(filename, char_p) ;
-      strcpy(globuskmap, filename) ;
-    } else 
-    if ( getuid() && ((char_p = (char*) getenv("HOME")) != NULL) ) {
-      if (strlen(char_p) > 255-12) {
-	    fprintf(stderr,"HOME to long for globuskmap\n");
-		return (-1);
-	  }
-      strcpy(filename, char_p) ;
-      strcat(filename, "/") ;
-      strcat(filename, ".globuskmap") ;
-      strcpy(globuskmap, filename) ;
-	} else
-	if (getuid == 0) {
-	  strcpy(globuskmap, "/etc/globuskmap");
-	} else {
-	  return(-1);   /* no file return */
-    }
-  }
-
-     DEEDEBUG2("Globuskmap = %s\n", globuskmap);
-
-  /* the following is not similiar to the globusfile.c
-   */
-
-  if ((fd = fopen(globuskmap, "r")) != NULL) {
-
-    while(fgets(line, sizeof(line), fd)) {
-      i = strlen(line);
-	  if (line[0] != '#') {   /* comment line */
-	    if (line[i - 1] == '\n') {
-			line[i - 1] = '\0';
-		}
-		rc = sscanf(line, " \"%255[^\"]%*c%n %n", 
-						f_globusid, &offset, &offset);
-		if (rc != 1) {
-        	rc = sscanf(line, "%255s%n %n",
-					 f_globusid, &offset, &offset);
-		}
-        if (rc == 1) {
-	      if (!strcmp(globusid, f_globusid)) {
-		    *command = strdup(&line[offset]);
-            DEEDEBUG2("Globus command= %s\n",*command);
-            fclose(fd);
-		    return(0);
- 
-	      }
-	    }
-	  }
-	}
-	fclose(fd);
-	return(-1); /* not found */	
-  }
-  return(-2);   /* open failed */
-}
-/******************************************************************************
-Function:   globus_gram_k5_tokenize()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-
-static int
-globus_gram_k5_tokenize(char * command, char ** args, int n)
-{
-  int i,j,k;
-  char * cp;
-  char * next;
-  char ** arg;
-
-  arg = args;
-  i = n - 1;
-  
-  for (cp = strtok(command, " \t\n"); cp != 0; cp = next) {
-    *arg = cp;
-	i--;
-    if (i == 0)
-	  return(-1); /* to many args */
-    arg++;
-	next = strtok(NULL, " \t\n");
-  }
-  *arg = (char *) 0;
-  return(0);
-}
-
-/******************************************************************************
-Function:   globus_gram_k5_exec()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static int
-globus_gram_k5_exec(char *args[])
-{
-
-  int i,j;
-  int pid;
-  int err; 
-  char *path;
-  char * cp;
-
-#define WAIT_USES_INT
-#ifdef  WAIT_USES_INT
-  int wait_status;
-#else   /* WAIT_USES_INT */
-  union wait wait_status;
-#endif  /* WAIT_USES_INT */
-
-
-
-  pid = fork();
-  if (pid <0) 
-   return(-1);
-
-  if (pid == 0) {  /* child process */
-
-    path = strdup(args[0]);
-    cp = strrchr(path, '/');
-    if (cp)
-      cp++;
-    else
-      cp = path;
- 
-    args[0] = cp;
-
-    execv(path, args);
-
-    exit(127);      /* in case execl fails */
-  } 
-
-  /* parent, wait for child to finish */
-
-  wait_status = 0;
-#ifdef  HAVE_WAITPID
-  err = waitpid((pid_t) pid, &wait_status, 0);
-#else   /* HAVE_WAITPID */
-  err = wait4(pid, &wait_status, 0, (struct rusage *) NULL);
-#endif  /* HAVE_WAITPID */
-
-  /* if it worked or failed, continue on. */
-  return(wait_status);
-}
 
 /******************************************************************************
 Function:   globus_gram_k5_kinit()
@@ -290,7 +108,10 @@ Parameters:
 Returns:
 ******************************************************************************/
 int
-globus_gram_k5_kinit(char * globus_client)
+globus_gram_k5_kinit(char * globus_client, 
+				struct passwd *pw, 
+				char * user, 
+				char ** errmsgp)
 {
 
   int rc;
@@ -298,16 +119,18 @@ globus_gram_k5_kinit(char * globus_client)
   char ccname[100];
   char * command;
   char * args[100];
-  struct passwd *pw;
   struct stat stx;
+  char * userid = NULL;
 
-  if ((rc = globus_gram_k5_globuskmap(globus_client, &command)))
+  if ((rc = globus_gatekeeper_util_globusxmap(getenv("GLOBUSKMAP"),
+			globus_client, &command)))
     return(rc); /* not found, or nothing to do */
  
   if (!command)
     return(0); /* no command */
   
-  if ((rc = globus_gram_k5_tokenize( command, args, 100)))
+  i = 100;
+  if ((rc = globus_gatekeeper_util_tokenize( command, args, &i," \t\n")))
 	return(rc);
 
   if (args[0] == NULL)
@@ -315,21 +138,24 @@ globus_gram_k5_kinit(char * globus_client)
 
   i = 0;
   do {
-   sprintf(ccname,"FILE:/tmp/krb5cc_p%d%d",getpid(),i++);
+   sprintf(ccname,"FILE:/tmp/krb5cc_p%d.%d",getpid(),i++);
   }
   while(stat(ccname+5,&stx) == 0);
 
   grami_setenv("KRB5CCNAME", ccname, 1);
 
-  rc = globus_gram_k5_exec(args);
+DEEDEBUG2("calling UTIL_exec: user: %s ",user);
+DEEDEBUG2("and uid %d\n",pw?pw->pw_uid:-111111);
+	
+  rc = globus_gatekeeper_util_exec(args, pw, user, errmsgp);
 
   /*
    * Make sure the creds cache is owned by the user. 
-   * If we ran kinit as root, root will own it. 
    */
 
   if (rc == 0 && getuid() == 0) {
-	if ((pw = getpwnam(getenv("USER"))) != NULL) {
+	userid = getenv("USER");
+	if ((pw = getpwnam(userid)) != NULL) {
 	  (void) chown(ccname+5,pw->pw_uid, pw->pw_gid);
     }
   }
@@ -344,9 +170,11 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
+int
 main(int argc, char *argv[])
 {
     int i;
+	int rc;
     char *ccname;
 	char *globusid;
 	char *user;
@@ -361,6 +189,7 @@ main(int argc, char *argv[])
 	uid_t	 myuid;
 	uid_t    luid;
 	struct passwd *pw;
+	char *errmsg = NULL;
 
 #ifdef DEBUG
 	stderrX = stderr;
@@ -368,7 +197,21 @@ main(int argc, char *argv[])
 #endif
 
 	myuid = getuid();  /* get our uid, to see if we are root. */
-    DEEDEBUG2("k5gram uid = %d\n", myuid);
+    DEEDEBUG2("k5gram uid = %lu\n", myuid);
+
+	user = getenv("USER");
+	if (user == NULL)
+	  exit(6); 
+    DEEDEBUG2("USER = %s\n",user);
+
+	pw = getpwnam(user);
+	if (pw == NULL) 
+	  exit(7);
+	DEEDEBUG2("USERID = %lu\n",pw->pw_uid);
+
+	/* if not root, must run as your self */
+	if (myuid && (myuid != pw->pw_uid))
+		exit(8);
 
 	/* we will need to copy the args, and may add the k5declogin 
 	 * and k5afslogin before. So get three extra. 
@@ -397,23 +240,19 @@ main(int argc, char *argv[])
     ccname = getenv("KRB5CCNAME");
 
     /* If there is a cache, then the user must have 
-	 * started the gatekeeper on thier own. So
+	 * started the gatekeeper on thier own.
+	 * Or they were running the K5 GSSAPI. So
 	 * don't try and get a K5 cache for them.  
      */
 
     if (ccname == NULL) {
-
-	  user = getenv("USER");
-	  if (user == NULL)
-	    goto done; 
-      DEEDEBUG2("USER = %s\n",user);
 
 	  globusid = getenv("GLOBUS_ID");
 	  if (globusid == NULL)
 		goto done;  /* Can't do globus-to-k5 without the globusid */
       DEEDEBUG2("GLOBUSID = %s\n",globusid);
 
-	  if (globus_gram_k5_kinit(globusid) == 0) {
+	  if (globus_gram_k5_kinit(globusid, pw, user, &errmsg) == 0) {
 	   ccname = getenv("KRB5CCNAME");
 	  }
 
@@ -453,16 +292,15 @@ main(int argc, char *argv[])
     grami_unsetenv("GLOBUSKMAP"); /* dont pass on */
 
 	/* before continuing on, if we were run as root, 
-	 * we will seteuid
+	 * we will get to user state.
 	 */
 
-	if (!myuid) {
-	  if ((pw = getpwnam(user)) == NULL)
-		exit(2); /* have to fail, since cant run as root */
+	if(globus_gatekeeper_util_trans_to_user(pw, user, &errmsg) != 0) {
 
-	  setuid(pw->pw_uid);
-
-    }
+		fprintf(stderr,"Failed to run %d as the user %s %s\n",
+					rc, user, errmsg );
+		exit(3); /* have to fail, since cant run as root */
+	}
 
     /* copy over the rest of the argument list.
      * gram_gatekeeper will have placed the path to the job_manager
