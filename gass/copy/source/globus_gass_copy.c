@@ -3000,30 +3000,30 @@ globus_l_gass_copy_generic_read_callback(
     }
     globus_mutex_unlock(&(state->source.mutex));
     
+    /* push the write */
+    buffer_entry = (globus_i_gass_copy_buffer_t *)
+        globus_libc_malloc(sizeof(globus_i_gass_copy_buffer_t));
+    
+    if(buffer_entry == GLOBUS_NULL)
+    {
+        /* out of memory error */
+        err = globus_error_construct_string(
+    	GLOBUS_GASS_COPY_MODULE,
+    	GLOBUS_NULL,
+    	"[%s]: failed to malloc a buffer structure successfully",
+    	myname);
+        globus_i_gass_copy_set_error(handle, err);
+    
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+        globus_libc_fprintf(stderr,
+                "generic_read_callback(): malloc failed\n");
+#endif
+        globus_gass_copy_cancel(handle, NULL, NULL);
+        return;
+    } /* if(buffer_entry == GLOBUS_NULL) */
+        
     if(push_write)
     {
-        /* push the write */
-        buffer_entry = (globus_i_gass_copy_buffer_t *)
-            globus_libc_malloc(sizeof(globus_i_gass_copy_buffer_t));
-        
-        if(buffer_entry == GLOBUS_NULL)
-        {
-            /* out of memory error */
-            err = globus_error_construct_string(
-        	GLOBUS_GASS_COPY_MODULE,
-        	GLOBUS_NULL,
-        	"[%s]: failed to malloc a buffer structure successfully",
-        	myname);
-            globus_i_gass_copy_set_error(handle, err);
-        
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-            globus_libc_fprintf(stderr,
-                    "generic_read_callback(): malloc failed\n");
-#endif
-            globus_gass_copy_cancel(handle, NULL, NULL);
-            return;
-        } /* if(buffer_entry == GLOBUS_NULL) */
-        
         buffer_entry->bytes  = bytes;
         buffer_entry->nbytes = nbytes;
         buffer_entry->offset = offset;
@@ -3035,6 +3035,15 @@ globus_l_gass_copy_generic_read_callback(
             globus_fifo_enqueue( &(state->dest.queue), buffer_entry);
         }
         globus_mutex_unlock(&(state->dest.mutex));
+    }
+    else
+    {
+        buffer_entry->bytes  = bytes;
+        globus_mutex_lock(&(state->source.mutex));
+        {
+            globus_fifo_enqueue(&state->source.queue, buffer_entry);
+        }
+        globus_mutex_unlock(&(state->source.mutex));
     }
     
     /* start the next write if there isn't already one outstanding */
