@@ -48,5 +48,5 @@ if [ "$#" -ne 1 ]; then
     globus_args_option_error "" "GASS URL must be provided"
 fi
 
-${bindir}/globus-url-copy file:/dev/null "$1"/dev/globus_gass_client_shutdown > /dev/null 2>&1
+${bindir}/globus-url-copy file:/etc/group "$1"/dev/globus_gass_client_shutdown > /dev/null 2>&1
 
