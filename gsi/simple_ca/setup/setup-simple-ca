@@ -597,7 +597,7 @@ cd ${tmp_ca_setup_dir}
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
-./bootstrap
+#./bootstrap
 ./configure
 make dist
 
@@ -613,7 +613,7 @@ fi
 # versions of this generated package should not be changed ever
 ${GLOBUS_SH_CP-cp} ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE} ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
-#${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
+${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
 
 echo "done."
 echo
@@ -634,7 +634,7 @@ do_trap() {
     echo "to setup the simple CA."
     echo ""
 
-#    ${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
+    ${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
 
     cd ${current_dir}
     

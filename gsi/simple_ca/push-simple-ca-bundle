@@ -14,7 +14,7 @@ cp globus_simple_ca_setup-0.9.tar.gz ../packages/
 
 cd ../
 
-$GLOBUS_LOCATION/sbin/gpt-bundle -srcdir=packages -output=globus_simple_ca_bundle-beta-r6.tar.gz -config=packaging_list `cat packaging_list | xargs`
+$GLOBUS_LOCATION/sbin/gpt-bundle -nodeps -srcdir=packages -output=globus_simple_ca_bundle-0.7.tar.gz -config=packaging_list `cat packaging_list | xargs`
 
-scp globus_simple_ca_bundle-beta-r6.tar.gz slang@ept.mcs.anl.gov:/mcs/ftp.globus.org/pub/gsi/2.0/globus_simple_ca_bundle-beta-r6.tar.gz
+#scp globus_simple_ca_bundle-beta-r6.tar.gz slang@ept.mcs.anl.gov:/mcs/ftp.globus.org/pub/gsi/2.0/globus_simple_ca_bundle-beta-r6.tar.gz
 
