@@ -371,7 +371,7 @@ int globus_condattr_getspace(
     globus_callback_space_t *           space)
 {
     int rc;
-    rc = globus_macro_condattr_getspace(attr);
+    rc = globus_macro_condattr_getspace(attr, space);
     return (rc);
 }
 
