@@ -40,7 +40,11 @@ globus_automake_pre: $(PRE_FILES)
 	fi; \
 	touch $$file; \
 	for p in $$list; do \
+	    if test -f $$p; then \
 		cat $$p >> $$file; \
+	    elif test -f $(srcdir)/$$p ; then \
+		cat $(srcdir)/$$p >> $$file; \
+	    fi ; \
 	done
 
 globus_automake_post: $(POST_FILES)
@@ -51,18 +55,26 @@ globus_automake_post: $(POST_FILES)
 	fi; \
 	touch $$file; \
 	for p in $$list; do \
+	    if test -f $$p; then \
 		cat $$p >> $$file; \
+	    elif test -f $(srcdir)/$$p ; then \
+		cat $(srcdir)/$$p >> $$file; \
+	    fi ; \
 	done
 
 globus_automake_pre_top: $(PRE_TOP_FILES)
 	file="globus_automake_pre_top"; \
-	list="$(PRE__TOP_FILES)"; \
+	list="$(PRE_TOP_FILES)"; \
 	if test -f $$file; then \
 		rm $$file; \
 	fi; \
 	touch $$file; \
 	for p in $$list; do \
+	    if test -f $$p; then \
 		cat $$p >> $$file; \
+	    elif test -f $(srcdir)/$$p ; then \
+		cat $(srcdir)/$$p >> $$file; \
+	    fi ; \
 	done
 
 globus_automake_post_top: $(POST_TOP_FILES)
@@ -73,5 +85,9 @@ globus_automake_post_top: $(POST_TOP_FILES)
 	fi; \
 	touch $$file; \
 	for p in $$list; do \
+	    if test -f $$p; then \
 		cat $$p >> $$file; \
+	    elif test -f $(srcdir)/$$p ; then \
+		cat $(srcdir)/$$p >> $$file; \
+	    fi ; \
 	done
