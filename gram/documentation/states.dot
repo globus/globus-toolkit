@@ -1,5 +1,7 @@
 digraph d 
 { 
+    graph [ rankdir=LR ];
+    node [ fillcolor=violetred style=filled ];
     Unsubmitted -> StageIn ;
     Unsubmitted -> Pending;
     Unsubmitted -> Active;

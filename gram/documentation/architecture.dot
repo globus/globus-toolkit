@@ -1,5 +1,6 @@
 digraph d
 {
+    node [ fillcolor=violetred style=filled  ];
     client [shape="record" label="{Client | <0> Client API}"];
 
     gatekeeper [ label="Gatekeeper\n(root)" ];
