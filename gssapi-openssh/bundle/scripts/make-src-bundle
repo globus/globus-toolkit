@@ -7,7 +7,7 @@
 #        ./make-src-bundle
 #
 
-source version.sh
+source ./scripts/version.sh
 
 NAME="gsi_openssh_bundle-$VERSION-src.tar.gz"
 XML="gsi_openssh_bundle-src.xml"
@@ -20,7 +20,7 @@ if [ ! -e output/$NAME ]; then
     if [ ! -e work/ ]; then
         WORK_SCRIPTCREATED="1"
         mkdir -p work/
-        cp $XML work/
+        cp scripts/$XML work/
     fi
 
     if [ ! -e work/sources/ ]; then
@@ -29,7 +29,7 @@ if [ ! -e output/$NAME ]; then
 
     cd work/
     $GPT_LOCATION/sbin/gpt-bundle -nodeps -nosetups -srcdir=sources/ -output=$NAME -bv=$VERSION -xml=$XML
-    mv $NAME ../output/
+    mv $NAME ../
     cd ../
 
     if [ "x$WORK_SCRIPTCREATED" != "x" ]; then
