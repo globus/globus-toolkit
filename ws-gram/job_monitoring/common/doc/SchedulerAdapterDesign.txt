@@ -144,30 +144,63 @@ JobStateMonitor
  * decsription?
  * Is the seg executable name passing a good way to start things up?
  */
+
+package org.globus.exec.monitoring;
+
 public class JobStateMonitor {
     /**
-     * Construct a new JobStateMonitor and begin the underlying SEG process.
+     * Construct a new JobStateMonitor.
+     *
+     * The new JobStateMonitor will not begin the Scheduler Event Generator
+     * automatically.  Services which create a JobStateMonitor may register
+     * any number of job ID mappings before calling start() to start
+     * the SEG.
      *
      * @param segPath
      *     Path to the SEG executable.
-     * @param userId
-     *     User ID that the SEG should run as (via sudo(1))
-     * @param schedulerName
-     *     Name of the scheduler this JobStateMonitor is expecting
-     *     notifications about. 
-     * @param listener
-     *     Reference to the JobMonitorListener which will be notified
-     *     when notifications relating to Job ID which has a mapping
-     *     registered to it.
+     * @param userName
+     *     User ID that the SEG should run as (via sudo(8)). (Currently
+     *     ignored)
+     * @param schedulerPath
+     *     Path to the scheduler-specific SEG module.
+     * @param jobStateListener
+     *     Reference to the JobStateListener which will be notified
+     *     when job state changes occur for registered Job IDs.
+     * @param jobStateRecoveryListener
+     *     Reference to a JobStateRecoveryListener which will be notified
+     *     periodically when the JobStateMonitor wants to update its recovery
+     *     checkpoint timestamp.
      *
      * @throws java.io.IOException
      *     Error starting the SEG process.
      */
-    public void JobStateMonitor(java.io.File segPath,
-                                String userId,
+    public JobStateMonitor(java.io.File segPath,
                                 String schedulerName,
-                                JobStateMonitorListener listener)
+                                String userName,
+                                JobStateListener jobStateListener,
+                                JobStateRecoveryListener
+                                        jobStateRecoveryListener)
+
+    /**
+     * Start the Scheduler Event Generator process and begin generating
+     * jobStateChanged callbacks on registered Job IDs.
+     *
+     * @param timeStamp
+     *     Time to start monitoring from. If null, then the JobStateMonitor
+     *     will not generate callbacks for any events which happened before
+     *     the Scheduler Event Generator was started.
+     */
+    public void start(java.util.Date timeStamp)
             throws java.io.IOException;
+
+    /**
+     * Stop the Scheduler Event Generator process.
+     *
+     * When this method returns, the scheduler event generator will
+     * have stopped generating events and no further job state change
+     * callbacks will be called until start() is called again.
+     */
+    public void stop();
 
     /**
      * Register a mapping from local scheduler job ID to a resource key.
@@ -222,6 +255,29 @@ public interface JobStateMonitorListener {
      */
     public void jobStateChange(Object resourceKey, java.util.Date timestamp,
             int state, int exitCode);
+}
+
+/**
+ * Job State Monitor Recovery Data Listener.
+ *
+ * The Job State Monitor needs to store a replay timestamp for efficient
+ * restart. This timestamp allows the Job State Monitor to avoid replaying
+ * historical job state change events which have already been delivered to
+ * a resource instance.
+ */
+public interface JobStateMonitorRecoveryListener {
+    /**
+     * Callback method used when the JobStateMonitor decides to update
+     * its recovery timestamp.
+     *
+     * A service which uses a JobStateMonitor should store this timestamp in
+     * some persistent store.
+     
+     * If this timestamp is passed to the JobStateMonitor's constructor upon
+     * recovery, then the JobStateMonitor will ignore all events which
+     * occurred before this timestamp (to avoid replaying old events).
+     */
+    public void recoveryTimestampUpdate(java.util.Date timestamp);
 }
 
 SEG API
