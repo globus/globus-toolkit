@@ -24,3 +24,5 @@
 #DEFAULT (echo ""; id; echo %s; date; cat) >> $CVSROOT/CVSROOT/commitlog
 # or
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
+ALL perl /homes/globdev/CVS/globus-packages/cvs_scripts/log_accum.pl -d -m mbletzin@ncsa.uiuc.edu -m smartin@mcs.anl.gov -w -s %s
+#myproxy perl /afs/ncsa/projects/globus/mbletzin/CVSROOT/log_accum.pl -d -m novotny@ncsa.uiuc.edu -m vwelch@ncsa.uiuc.edu -w -s %s
