@@ -636,6 +636,11 @@ int main(int argc,
         {
             conf.install_path = globus_libc_strdup(argv[i+1]); i++;
         }
+        else if ((strcmp(argv[i], "-machine-type") == 0)
+                 && (i + 1 < argc))
+        {
+	    i++;  /* ignore */
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -1903,14 +1908,14 @@ int main(int argc,
         grami_fprintf( request->jobmanager_log_fp,
              "JM: exiting globus_gram_job_manager.\n");
     }
-    else
+    else if (strcmp(request->jobmanager_logfile, "/dev/null") != 0)
     {
         /*
          * Check to see if the jm log file exists.  If so, then delete it.
          */
         if (stat(request->jobmanager_logfile, &statbuf) == 0)
         {
-            if (remove(request->jobmanager_logfile) != 0)
+	    if (remove(request->jobmanager_logfile) != 0)
             {
 	        fprintf(stderr, "failed to remove job manager log file = %s\n",
                         request->jobmanager_logfile);
