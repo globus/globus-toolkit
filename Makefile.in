@@ -117,7 +117,8 @@ clean:
 	rm -f $(SERVER_PROGS) $(CLIENT_PROGS) $(TOOL_PROGS) $(TEST_PROGS) $(MYPROXY_LIB)
 
 distclean:	clean
-	rm -f Makefile config.cache config.log config.status myproxy.cron
+	rm -f Makefile config.cache config.log config.status myproxy.cron \
+	      globus_makefile_header
 
 install:	server-install client-install tools-install library-install
 
