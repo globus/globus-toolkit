@@ -302,6 +302,8 @@ typedef struct globus_gass_transfer_http_request_proto_s
     char *					uri;
     char *					method;
     globus_bool_t				proxy_connect;
+    globus_bool_t				got_response;
+    globus_bool_t				waiting_for_response;
 } globus_gass_transfer_http_request_proto_t;
 
 /******************************************************************************

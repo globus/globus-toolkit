@@ -455,12 +455,39 @@ globus_l_gass_transfer_http_write_callback(
 	   proto->type == GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND) &&
 	   (!proto->failure_occurred && !proto->parse_error))
 	{
-	    /* the callback to read the response is registered at
-	     * the beginning of the send, so we do nothing here,
-	     * and wait for the response
-	     */
-	    globus_l_gass_transfer_http_unlock();
-	    return;
+	    if(proto->got_response)
+	    {
+		globus_byte_t * buffer;
+		globus_size_t offset;
+		globus_gass_transfer_request_t request = proto->request;
+
+		int failed = proto->failure_occurred;
+
+		proto->failure_occurred = GLOBUS_TRUE;
+		buffer = proto->user_buffer;
+		offset = proto->user_offset;
+
+		globus_l_gass_transfer_http_register_close(proto);
+
+		globus_l_gass_transfer_http_unlock();
+		globus_gass_transfer_proto_send_complete(request,
+							 buffer,
+							 offset,
+							 failed,
+							 GLOBUS_TRUE);
+		return;
+	    }
+	    else
+	    {
+		/* the callback to read the response is registered at
+		 * the beginning of the send, so we do nothing here,
+		 * and wait for the response
+		 */
+		proto->waiting_for_response = GLOBUS_TRUE;
+		globus_l_gass_transfer_http_unlock();
+
+		return;
+	    }
 	}
 	else
 	{
@@ -545,13 +572,37 @@ globus_l_gass_transfer_http_writev_callback(
 	   proto->type == GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND) &&
 	   (!proto->failure_occurred && !proto->parse_error))
 	{
-	    /* the callback to read the response is registered at
-	     * the beginning of the send, so we do nothing here,
-	     * and wait for the response
-	     */
-	    globus_l_gass_transfer_http_unlock();
+	    if(proto->got_response)
+	    {
+		globus_byte_t * buffer;
+		globus_size_t offset;
+		int failed = proto->failure_occurred;
+		globus_gass_transfer_request_t request = proto->request;
 
-	    return;
+		buffer = proto->user_buffer;
+		offset = proto->user_offset;
+
+		globus_l_gass_transfer_http_register_close(proto);
+
+		globus_l_gass_transfer_http_unlock();
+		globus_gass_transfer_proto_send_complete(request,
+							 buffer,
+							 offset,
+							 failed,
+							 GLOBUS_TRUE);
+		return;
+	    }
+	    else
+	    {
+		/* the callback to read the response is registered at
+		 * the beginning of the send, so we do nothing here,
+		 * and wait for the response
+		 */
+		proto->waiting_for_response = GLOBUS_TRUE;
+		globus_l_gass_transfer_http_unlock();
+
+		return;
+	    }
 	}
 	else
 	{
@@ -2098,6 +2149,8 @@ globus_l_gass_transfer_http_new_request(
     proto->client_side	= GLOBUS_TRUE;
     proto->connected_subject	= GLOBUS_NULL;
     proto->proxy_connect = proxy ? GLOBUS_TRUE : GLOBUS_FALSE;
+    proto->got_response = GLOBUS_FALSE;
+    proto->waiting_for_response = GLOBUS_FALSE;
 
     /* Open the handle */
     if(proxy)
@@ -3242,18 +3295,15 @@ globus_l_gass_transfer_http_response_callback(
      * request failed after a put or append operation. We
      * need to signal the failure to the GASS system
      */
-    if(proto->state == GLOBUS_GASS_TRANSFER_HTTP_STATE_IDLE)
-    {
-        proto->failure_occurred = GLOBUS_TRUE;
-	globus_l_gass_transfer_http_unlock();
+    proto->got_response = GLOBUS_TRUE;
+    proto->failure_occurred = GLOBUS_TRUE;
 
-	return;
-    }
-    else if(proto->state != GLOBUS_GASS_TRANSFER_HTTP_STATE_CLOSING)
+    if(proto->waiting_for_response)
     {
 	globus_byte_t * buffer;
 	globus_size_t offset;
-        proto->failure_occurred = GLOBUS_TRUE;
+	int failed = proto->failure_occurred;
+	
 
 	buffer = proto->user_buffer;
 	offset = proto->user_offset;
@@ -3264,15 +3314,15 @@ globus_l_gass_transfer_http_response_callback(
 	globus_gass_transfer_proto_send_complete(request,
 						 buffer,
 						 offset,
-						 GLOBUS_TRUE,
+						 failed,
 						 GLOBUS_TRUE);
-
 	return;
+
     }
     else
     {
+	proto->failure_occurred = GLOBUS_TRUE;
 	globus_l_gass_transfer_http_unlock();
-	return;
     }
 }
 /* globus_l_gass_transfer_http_response_callback() */
