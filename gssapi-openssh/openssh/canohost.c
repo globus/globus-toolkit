@@ -382,6 +382,6 @@ resolve_hostname(char **host)
 	    hostinfo = gethostbyname(buf);
 	}
     }
-    free(*host);
-    *host = strdup(hostinfo->h_name);
+    xfree(*host);
+    *host = xstrdup(hostinfo->h_name);
 }
