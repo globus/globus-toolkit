@@ -1,5 +1,4 @@
 #include "globus_gass_copy.h"
-#define TARGET_ARCH_WIN32
 #ifndef TARGET_ARCH_WIN32
 
 #include <glob.h>
