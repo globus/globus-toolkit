@@ -26,7 +26,22 @@ if (!defined($gpath))
 
 require Grid::GPT::Setup;
 
-&GetOptions("grid-security-dir|d=s") || die "Error processing options";
+if( ! &GetOptions("grid-security-dir|d=s") ) { 
+
+    print <<EOF
+
+setup-gsi [-d <security config dir>]
+
+The setup-gsi script takes an optional argument -d, 
+and the directory that the security configuration 
+files will be placed.  If no argument is given, the 
+directory defaults to /etc/grid-security/.
+
+EOF
+    ;
+
+    exit 1;
+}
 
 my $setupdir = "$globusdir/setup/globus/";
 
