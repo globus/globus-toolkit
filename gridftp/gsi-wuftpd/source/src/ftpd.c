@@ -1473,7 +1473,10 @@ fprintf(bean_bag, "check 1\n");
     (void) setjmp(errcatch);
 
     for (;;)
+    {
+        globus_poll();
 	(void) yyparse();
+    }
     /* NOTREACHED */
 }
 

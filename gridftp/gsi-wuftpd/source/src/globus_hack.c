@@ -55,7 +55,7 @@ extern int xfer_count_total;
 extern int xfer_count_in;
 extern int xfer_count_out;
 extern FILE * bean_bag;
-
+extern struct sockaddr_in ctrl_addr;
 /**********************************************************n
  * local function prototypes
  ************************************************************/
@@ -124,6 +124,7 @@ g_passive()
     globus_ftp_control_host_port_t              host_port;
     int                                         hi;
     int                                         low;
+    char *                                      a;
 
     if (!logged_in)   
     {
@@ -138,6 +139,12 @@ g_passive()
     {
         perror_reply(425, "Can't open passive connection");
     }
+
+    a = (char *)&ctrl_addr.sin_addr;
+    host_port.host[0] = (int) a[0];
+    host_port.host[1] = (int) a[1];
+    host_port.host[2] = (int) a[2];
+    host_port.host[3] = (int) a[3];
 
     hi = host_port.port / 256;
     low = host_port.port % 256;
@@ -263,6 +270,7 @@ fprintf(bean_bag, "using globus send\n");
 
         jb_count = 0;
         buffer_ndx = 0;
+        file_ndx = 0;
         while ((jb_count < length || length == -1) &&
                ((c = getc(instr)) != EOF) &&
                !eof)
@@ -297,7 +305,6 @@ fprintf(bean_bag, "using globus send\n");
             {
                 eof = GLOBUS_TRUE;
             }
-            file_ndx++;
             buf[buffer_ndx] = c;
             buffer_ndx++;
 #           ifdef TRANSFER_COUNT
@@ -325,7 +332,7 @@ fprintf(bean_bag, "using globus send\n");
                           buf,
                           buffer_ndx,
                           file_ndx,
-                          eof,
+                          GLOBUS_FALSE,
                           data_write_callback,
                           &monitor);
                 if(res != GLOBUS_SUCCESS)
@@ -343,6 +350,7 @@ fprintf(bean_bag, "using globus send\n");
                     goto clean_exit;
                 }
 
+                file_ndx = buffer_ndx;
                 buffer_ndx = 0;
             }
         }
@@ -670,10 +678,27 @@ fprintf(bean_bag, "using globus send\n");
     perror_reply(551, "Error on input file");
     retrieve_is_data = 1;
 
-  clean_exit:
     wu_monitor_destroy(&monitor);
-
     return (0);
+
+  clean_exit:
+
+    monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              handle,
+              data_close_callback,
+              (void*)&monitor);
+    globus_mutex_lock(&monitor.mutex);
+    {   
+        while(!monitor.done)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);
+        }
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
+    wu_monitor_destroy(&monitor);
+    return (1);
 }
 
 void 
