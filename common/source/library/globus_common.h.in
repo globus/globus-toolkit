@@ -94,7 +94,7 @@ typedef GLOBUS_OFF_T globus_off_t;
 #include "globus_thread_sproc.h"
 #endif
 
-#ifdef GLOBUS_USE_NONE
+#ifdef GLOBUS_USE_NO_THREADS
 #include "globus_thread_none.h"
 #endif
 
