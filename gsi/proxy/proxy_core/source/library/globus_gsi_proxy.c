@@ -104,7 +104,7 @@ globus_gsi_proxy_create_req(
     BIO *                               stdout_bio = NULL;
     globus_result_t                     result;
 
-    char *                              _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_create_req";
 
     /* create a stdout bio for sending key generation 
@@ -288,7 +288,7 @@ globus_gsi_proxy_inquire_req(
     ASN1_OCTET_STRING *                 ext_data = NULL;
     globus_result_t                     result;
 
-    char *                              _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_inquire_req";
 
     if(d2i_X509_REQ_bio(input_bio, & request) == NULL)
@@ -409,7 +409,7 @@ globus_gsi_proxy_sign_req(
     int                                 ext_index;
     int                                 res;
     
-    char *                              _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_sign_req";
     
     if(handle == NULL || issuer_credential == NULL)
@@ -450,7 +450,7 @@ globus_gsi_proxy_sign_req(
         result = globus_i_gsi_proxy_error_chain_result(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CREDENTIAL,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error getting certificate from credential");
         goto free_new_pc;
     }
@@ -463,7 +463,7 @@ globus_gsi_proxy_sign_req(
         result = globus_i_gsi_proxy_error_chain_result(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error setting subject of new proxy cert");
         goto free_new_pc;
     }
@@ -488,7 +488,7 @@ globus_gsi_proxy_sign_req(
         result = globus_i_gsi_proxy_error_chain_result(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error setting valid times of new proxy cert");
         goto free_new_pc;
     }
@@ -536,7 +536,7 @@ globus_gsi_proxy_sign_req(
         result = globus_i_gsi_proxy_error_chain_result(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CREDENTIAL,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error getting private key of credential");
         goto free_req_extensions;
     }
@@ -548,7 +548,7 @@ globus_gsi_proxy_sign_req(
     {
         result = globus_i_gsi_proxy_openssl_error_result(
             GLOBUS_GSI_PROXY_ERROR_WITH_CREDENTIAL,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "The signing algorithm: %s is not currently allowed."
             "\nUse MD5 to sign certificate requests",
             OBJ_nid2sn(EVP_MD_type(handle->signing_algorithm)));
@@ -624,7 +624,7 @@ globus_gsi_proxy_assemble_cred(
     globus_gsi_cred_handle_attrs_t      cred_handle_attrs = NULL;
     globus_result_t                     result;
 
-    char *                              _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_assemble_cred";
 
     /* check to make sure params are ok */
@@ -680,7 +680,7 @@ globus_gsi_proxy_assemble_cred(
         result = globus_i_gsi_proxy_error_chain_result(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE_ATTRS,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error creating credential handle attributes for proxy");
         
         goto free_signed_cert;
@@ -693,7 +693,7 @@ globus_gsi_proxy_assemble_cred(
         result = globus_i_gsi_proxy_error_chain_result(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error creating credential handle for proxy");
         goto free_signed_cert;
     }
@@ -704,7 +704,7 @@ globus_gsi_proxy_assemble_cred(
         result = globus_i_gsi_proxy_error_chain_result(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error setting cert in credential");
         goto free_signed_cert;
     }
@@ -715,7 +715,7 @@ globus_gsi_proxy_assemble_cred(
         result = globus_i_gsi_proxy_error_chain_result(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error setting key in credential");
         goto free_signed_cert;
     }
@@ -727,7 +727,7 @@ globus_gsi_proxy_assemble_cred(
         result = globus_i_gsi_proxy_error_chain_result(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE,
-            __FILE__, _FUNCTION_NAME_, __LINE__,
+            __FILE__, _function_name_, __LINE__,
             "Error setting cert chain in credential");
         goto free_signed_cert;
     }
@@ -842,7 +842,7 @@ globus_l_gsi_proxy_check_proxy_name(
     X509_NAME *                         name = NULL;
     X509_NAME_ENTRY *                   ne = NULL;
     ASN1_STRING *                       data;
-    char *                              _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_l_gsi_proxy_check_proxy_name";
 
     *type = 0;
@@ -959,7 +959,7 @@ globus_i_gsi_proxy_set_pc_times(
     ASN1_UTCTIME *                      pc_notAfter = NULL;
     time_t                              tmp_time;
 
-    char *                              _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_i_gsi_proxy_set_pc_times";
 
     /* adjust for the allowable skew */
@@ -1018,7 +1018,7 @@ globus_i_gsi_proxy_set_subject(
     X509_NAME_ENTRY *                   pc_name_entry = NULL;
     globus_result_t                     result;
 
-    char *                              _FUNCTION_NAME_ = 
+    static char *                       _function_name_ = 
         "globus_i_gsi_proxy_set_subject";
 
     if((pc_name = X509_NAME_dup(X509_get_subject_name(issuer_cert))) == NULL)

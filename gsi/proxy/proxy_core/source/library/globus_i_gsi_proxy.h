@@ -31,7 +31,7 @@ EXTERN_C_BEGIN
     globus_i_gsi_proxy_openssl_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
-        _FUNCTION_NAME_, \
+        _function_name_, \
         __LINE__, \
         NULL)
 
@@ -39,7 +39,7 @@ EXTERN_C_BEGIN
     globus_i_gsi_proxy_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
-        _FUNCTION_NAME_, \
+        _function_name_, \
         __LINE__, \
         NULL)
 
@@ -48,7 +48,7 @@ EXTERN_C_BEGIN
         _TOP_RESULT_, \
         _ERRORTYPE_, \
         __FILE__, \
-        _FUNCTION_NAME_, \
+        _function_name_, \
         __LINE__, \
         NULL)
 

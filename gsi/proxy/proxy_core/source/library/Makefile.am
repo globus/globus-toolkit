@@ -9,21 +9,11 @@ Sources= \
 	globus_gsi_proxy_handle.c \
 	globus_gsi_proxy_handle_attrs.c \
 	globus_gsi_proxy_constants.h \
-	globus_gsi_proxy_error.c \
-	globus_gsi_credential.h \
-	globus_gsi_credential.c \
-	globus_i_gsi_credential.h \
-	globus_gsi_cred_handle.c \
-	globus_gsi_cred_handle_attrs.c \
-	globus_gsi_cred_error.c \
-	globus_gsi_cred_system_config.h \
-	globus_gsi_cred_system_config.c
+	globus_gsi_proxy_error.c 
 
 flavorinclude_HEADERS= \
 	globus_gsi_proxy.h \
-	globus_gsi_proxy_constants.h \
-	globus_gsi_credential.h \
-	globus_gsi_cred_system_config.h
+	globus_gsi_proxy_constants.h 
 
 lib_LTLIBRARIES = libglobus_gsi_proxy_core_$(GLOBUS_FLAVOR_NAME).la
 

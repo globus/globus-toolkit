@@ -46,7 +46,7 @@ globus_gsi_proxy_handle_init(
 {
     globus_gsi_proxy_handle_t           hand;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_init";
 
     /* setup the handle */
@@ -164,7 +164,7 @@ globus_gsi_proxy_handle_copy(
     unsigned char *                     der_encoded;
     globus_gsi_proxy_handle_attrs_t     b_attrs;
     globus_result_t                     result;
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_copy";
 
     if(a == NULL)
@@ -257,7 +257,7 @@ globus_gsi_proxy_handle_set_policy(
     int                                 policy_NID)
 {
     PROXYRESTRICTION *                  restriction;
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_set_policy";
     
     if(handle == NULL)
@@ -312,7 +312,7 @@ globus_gsi_proxy_handle_get_policy(
     int *                               policy_length,
     int *                               policy_NID)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_get_policy";
 
     if(handle == NULL)
@@ -365,7 +365,7 @@ globus_gsi_proxy_handle_set_group(
 {
     PROXYGROUP *                        proxygroup;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_set_group";
     
     if(handle == NULL)
@@ -419,7 +419,7 @@ globus_gsi_proxy_handle_get_group(
     long *                              group_length,
     int *                               attached)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_get_group";
 
     if(handle == NULL)
@@ -465,7 +465,7 @@ globus_gsi_proxy_handle_set_pathlen(
     globus_gsi_proxy_handle_t           handle,
     long                                pathlen)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_set_pathlen";
 
     if(handle == NULL)
@@ -510,7 +510,7 @@ globus_gsi_proxy_handle_get_pathlen(
     globus_gsi_proxy_handle_t           handle,
     int *                               pathlen)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_get_pathlen";
 
     if(handle == NULL)
@@ -548,7 +548,7 @@ globus_result_t
 globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_clear_cert_info";
 
     if(handle == NULL)
@@ -593,7 +593,7 @@ globus_gsi_proxy_handle_set_signing_algorithm(
     globus_gsi_proxy_handle_t           handle,
     EVP_MD *                            algorithm)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_set_signing_algorithm";
 
     if(handle == NULL)
@@ -601,7 +601,7 @@ globus_gsi_proxy_handle_set_signing_algorithm(
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
-    handle->signing_algorithm = EVP_MD_dup(algorithm);
+    handle->signing_algorithm = algorithm;
     return GLOBUS_SUCCESS;
 };
 /* @} */
@@ -632,7 +632,7 @@ globus_gsi_proxy_handle_get_signing_algorithm(
     globus_gsi_proxy_handle_t           handle,
     EVP_MD **                           algorithm)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_get_signing_algorithm";
 
     if(handle == NULL)
@@ -641,7 +641,7 @@ globus_gsi_proxy_handle_get_signing_algorithm(
             GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
 
-    *algorithm = EVP_MD_dup(handle->signing_algorithm);
+    *algorithm = handle->signing_algorithm;
     return GLOBUS_SUCCESS;
 };
 /* @} */
@@ -670,7 +670,7 @@ globus_gsi_proxy_handle_set_time_valid(
     globus_gsi_proxy_handle_t           handle,
     int                                 time_valid)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_set_time_valid";
 
     if(handle == NULL)
@@ -708,7 +708,7 @@ globus_gsi_proxy_handle_get_time_valid(
     globus_gsi_proxy_handle_t           handle,
     int *                               time_valid)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_get_time_valid";
 
     if(handle == NULL)
@@ -745,7 +745,7 @@ globus_gsi_proxy_handle_set_clock_skew_allowable(
     globus_gsi_proxy_handle_t           handle,
     int                                 skew)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_set_clock_skew_allowable";
 
     if(handle == NULL)
@@ -783,7 +783,7 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
     globus_gsi_proxy_handle_t           handle,
     int *                               skew)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_get_clock_skew_allowable";
 
     if(handle == NULL)

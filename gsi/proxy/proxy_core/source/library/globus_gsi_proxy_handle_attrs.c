@@ -39,7 +39,7 @@ globus_result_t
 globus_gsi_proxy_handle_attrs_init(
     globus_gsi_proxy_handle_attrs_t *   handle_attrs)
 {
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_attrs_init";
 
     globus_gsi_proxy_handle_attrs_t     attrs;
@@ -236,7 +236,7 @@ globus_gsi_proxy_handle_attrs_copy(
 {
     globus_result_t                     result;
 
-    const char *                        _FUNCTION_NAME_ =
+    static char *                       _function_name_ =
         "globus_gsi_proxy_handle_attrs_copy";
     
     if(a == NULL)
