@@ -64,49 +64,9 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs)
 
     return attrs->socket_fd;
 }
-
+    
 int 
-myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number) 
-{
-    int on = 1;
-    int listen_sock;
-    struct sockaddr_in sin;
-
-    /* Could do something smarter to get FQDN */
-    attrs->pshost = malloc(strlen("localhost")+1);
-    strcpy(attrs->pshost, "localhost");
-    attrs->psport = port_number;
-    
-    listen_sock = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (listen_sock == -1) {
-        perror("socket");
-        return -1;
-    } 
-
-     /* Allow reuse of socket */
-    setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on, sizeof(on));
-
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = htons(attrs->psport);
-
-    if (bind(listen_sock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-	    perror("Error in bind\n");
-        return -1;
-    }
-
-    if (listen(listen_sock, 5) < 0) {
-	    perror("Error in listen\n");
-	    return -1;
-    }
-
-    return listen_sock;
-
-}
-    
-int myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile) 
+myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile) 
 {
    char error_string[1024];
 
