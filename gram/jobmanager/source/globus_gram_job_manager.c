@@ -37,10 +37,6 @@ CVS Information:
                           Module specific prototypes
 ******************************************************************************/
 static int 
-globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
-                           int processes_requested);
-
-static int 
 globus_l_gram_environment_get(char *** env,
                               FILE * log_fp);
 
@@ -63,13 +59,6 @@ globus_l_gram_script_run(char * cmd,
 
 static int
 globus_l_gram_request_validate(globus_gram_jobmanager_request_t * request);
-
-static int 
-globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request);
-static int 
-globus_l_gram_check_fork(globus_gram_jobmanager_request_t * request);
-static int 
-globus_l_gram_cancel_fork(globus_gram_jobmanager_request_t * request);
 
 static int 
 globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request);
@@ -248,7 +237,15 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->two_phase_commit = GLOBUS_FALSE;
     r->save_state = GLOBUS_FALSE;
     r->jm_restart = NULL;
-    r->scheduler_specific = GLOBUS_NULL;
+    r->scratchdir = GLOBUS_NULL;
+
+    if ( (graml_script_arg_file = tempnam(NULL, "grami")) == NULL )
+    {
+        r->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+        r->failure_code =
+              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        return(GLOBUS_FAILURE);
+    }
 
     return(GLOBUS_SUCCESS);
 
@@ -310,15 +307,7 @@ globus_jobmanager_request(globus_gram_jobmanager_request_t * request)
     if (globus_l_gram_request_validate(request) != GLOBUS_SUCCESS)
         return(GLOBUS_FAILURE);
 
-    if ((strncmp(request->jobmanager_type, "fork", 4) == 0) ||
-        (strncmp(request->jobmanager_type, "poe", 3) == 0))
-    {
-         return(globus_l_gram_request_fork(request));
-    }
-    else
-    {
-         return(globus_l_gram_request_shell(request));
-    }
+    return(globus_l_gram_request_shell(request));
 } /* globus_jobmanager_request() */
 
 /******************************************************************************
@@ -333,15 +322,7 @@ globus_jobmanager_request_cancel(globus_gram_jobmanager_request_t * request)
     if (!request)
         return(GLOBUS_FAILURE);
 
-    if ((strncmp(request->jobmanager_type, "fork", 4) == 0) ||
-        (strncmp(request->jobmanager_type, "poe", 3) == 0))
-    {
-         return(globus_l_gram_cancel_fork(request));
-    }
-    else
-    {
-         return(globus_l_gram_cancel_shell(request));
-    }
+    return(globus_l_gram_cancel_shell(request));
 } /* globus_jobmanager_request_cancel() */
 
 /******************************************************************************
@@ -356,15 +337,7 @@ globus_jobmanager_request_signal(globus_gram_jobmanager_request_t * request)
     if (!request)
         return(GLOBUS_FAILURE);
 
-    if ((strncmp(request->jobmanager_type, "fork", 4) == 0) ||
-        (strncmp(request->jobmanager_type, "poe", 3) == 0))
-    {
-         return(globus_l_gram_signal_fork(request));
-    }
-    else
-    {
-         return(globus_l_gram_signal_shell(request));
-    }
+    return(globus_l_gram_signal_shell(request));
 } /* globus_jobmanager_request_signal() */
 
 /******************************************************************************
@@ -379,15 +352,7 @@ globus_jobmanager_request_check(globus_gram_jobmanager_request_t * request)
     if (!request)
         return(GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED);
 
-    if ((strncmp(request->jobmanager_type, "fork", 4) == 0) ||
-        (strncmp(request->jobmanager_type, "poe", 3) == 0))
-    {
-         return(globus_l_gram_check_fork(request));
-    }
-    else
-    {
-         return(globus_l_gram_check_shell(request));
-    }
+    return(globus_l_gram_check_shell(request));
 } /* globus_job_manager_request_check() */
 
 /******************************************************************************
@@ -434,290 +399,6 @@ globus_jobmanager_log( FILE *log_fp, const char *format, ... )
     return rc;
 } /* globus_jobmanager_log() */
 
-/******************************************************************************
-Function:       globus_l_gram_request_fork()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
-{
-    unsigned int  i;
-    int  rc;
-    unsigned int  processes_requested;
-    char ** new_args;
-    char tmp_arg[1024];
-    char * tmp_hostfilename = NULL;
-
-    globus_jobmanager_log(request->jobmanager_log_fp,
-	    "JMI: in globus_l_gram_request_fork()\n");
-
-    if (strncmp(request->jobmanager_type, "poe", 3) == 0)
-    {
-        tmp_hostfilename = tempnam(NULL, "grami_poe");
-    }
-
-    if (strncmp(request->jobmanager_type, "poe", 3) == 0)
-    {
-        processes_requested = 1;
-    }
-    else
-    {
-        if (request->job_type == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE)
-        {
-            processes_requested = request->count;
-        }
-        else
-        {
-	    /* single or mpi */
-	    processes_requested = 1;
-        }
-    }
-
-    if (processes_requested > 30)
-    {
-        request->poll_frequency = 30;
-    }
-    else
-    {
-        request->poll_frequency = processes_requested;
-    }
-
-    if ((rc = globus_l_gram_environment_get(&(request->environment),
-                                            request->jobmanager_log_fp)) != 0)
-    {
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = rc;
-        return(GLOBUS_FAILURE);
-    }
-
-    globus_jobmanager_log(request->jobmanager_log_fp,
-	    "JMI: after globus_l_gram_environment_get()\n");
-
-    graml_child_pid_ptr = (int *) calloc (processes_requested, sizeof(int));
-    graml_child_pid_head = graml_child_pid_ptr;
-
-    if (strncmp(request->jobmanager_type, "poe", 3) == 0)
-    {   /* GRAMI_POE_MANAGER */
-
-	if (!graml_poe_executable)
-	{
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-			  "JMI: poe not found!\n");
-	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
-	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_POE_NOT_FOUND;
-	    return(GLOBUS_FAILURE);
-	}
-
-        if (request->job_type == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE)
-	{
-	    char hostname[MAXHOSTNAMELEN];
-	    FILE *tmp_hostfile;
-	    
-	    globus_libc_gethostname(hostname, MAXHOSTNAMELEN);
-	    
-	    tmp_hostfile = fopen(tmp_hostfilename, "w");
-	    
-	    for(i = 0; i < request->count; i++)
-	    {
-		fprintf(tmp_hostfile, "%s\n", hostname);
-	    }
-	    fclose(tmp_hostfile);
-	    
-	    
-            /* total up the number of arguments
-             */
-            for (i = 0; (request->arguments)[i]; i++)
-                ;
-	    
-            /* make new args big enough to handle all the poe arguments 
-             * plus the old ones.
-             */
-            new_args = (char **)globus_libc_malloc(sizeof(char *) * (i + 8));
-
-	    /* poe searches path for executable, if no '/' is present */
-	    if(!strchr(request->executable, '/'))
-	    {
-		(new_args)[0] = (char *) globus_libc_malloc (sizeof(char *) *
-					strlen(request->executable) + 3);
-		globus_libc_sprintf(new_args[0], "./%s", request->executable);
-	    }
-	    else
-	    {
-		(new_args)[0]=(char *) globus_libc_malloc (sizeof(char *) *
-				        strlen(request->executable) +1);
-		strcpy((new_args)[0], request->executable);
-	    }
-	    
-            /* Tack on the user defined arguments to the list
-             */
-            for (i = 0; (request->arguments)[i]; i++)
-            {
-                (new_args)[i+1] = (char *) globus_libc_malloc (sizeof(char *) *
-                                     strlen((request->arguments)[i]) +1);
-                strcpy((new_args)[i+1], (request->arguments)[i]);
-            }
-	    
-	    /* tack on required poe arguments */
-	    ++i;
-            (new_args)[i] = (char *) globus_libc_malloc (sizeof(char *) * 10);
-            strcpy((new_args)[i], "-hostfile");
-	    
-	    ++i;
-            (new_args)[i] = (char *) globus_libc_malloc (sizeof(char *) *
-				    strlen(tmp_hostfilename) +1);
-            strcpy((new_args)[i], tmp_hostfilename);
-	    
-	    ++i;
-            (new_args)[i] = (char *) globus_libc_malloc (sizeof(char *) * 8);
-            strcpy((new_args)[i], "-euilib");
-	    
-	    ++i;
-            (new_args)[i] = (char *) globus_libc_malloc (sizeof(char *) * 3);
-            strcpy((new_args)[i], "ip");
-
-	    ++i;
-            (new_args)[i] = (char *) globus_libc_malloc (sizeof(char *) * 7);
-            strcpy((new_args)[i], "-procs");
-
-	    ++i;
-            sprintf(tmp_arg,"%u", request->count);
-            (new_args)[i] = (char *) globus_libc_malloc (sizeof(char *) * 
-                                                 strlen(tmp_arg) +1);
-            strcpy((new_args)[i], tmp_arg);
-
-            ++i;
-            (new_args)[i] = GLOBUS_NULL;
-
-            request->executable = globus_libc_strdup(graml_poe_executable);
-            globus_libc_free(request->arguments);
-            request->arguments = new_args;
-        }
-    }
-    else
-    {
-	if (request->job_type == GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI)
-	{
-	    if (!graml_mpirun_executable)
-	    {
-		globus_jobmanager_log(request->jobmanager_log_fp,
-			      "JMI: mpirun not found!\n");
-		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
-		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_MPIRUN_NOT_FOUND;
-		return(GLOBUS_FAILURE);
-	    }
-
-	    /* total up the number of arguments
-	     */
-	    for (i = 0; (request->arguments)[i]; i++)
-		;
-	    
-	    /* make new args big enough to handle all the mpirun arguments 
-	     * plus the old ones.
-			 */
-	    new_args = (char **)globus_libc_malloc(sizeof(char *) * (i + 4));
-	    
-	    (new_args)[0] = (char *) globus_libc_malloc (sizeof(char *) * 4);
-	    strcpy((new_args)[0], "-np");
-	    
-	    sprintf(tmp_arg,"%u", request->count);
-	    (new_args)[1] = (char *) globus_libc_malloc 
-		(sizeof(char *) * strlen(tmp_arg) +1);
-	    strcpy((new_args)[1], tmp_arg);
-
-	    (new_args)[2]=(char *) globus_libc_malloc
-		(sizeof(char *) * strlen(request->executable) +1);
-	    strcpy((new_args)[2], request->executable);
-	    
-	    /* Tack on the user defined arguments to the list
-	     */
-	    for (i = 0; (request->arguments)[i]; i++)
-	    {
-		(new_args)[i+3] = (char *) globus_libc_malloc (sizeof(char *) *
-				  strlen((request->arguments)[i]) +1);
-		strcpy((new_args)[i+3], (request->arguments)[i]);
-	    }
-	    
-	    (new_args)[i+3] = NULL;
-	    
-	    request->executable = globus_libc_strdup(graml_mpirun_executable);
-	    globus_libc_free(request->arguments);
-	    request->arguments = new_args;
-        }
-    }
-
-    /* used to test job manager functionality without actually submitting
-     * job
-     */
-    if (request->dry_run)
-    {
-	globus_jobmanager_log(request->jobmanager_log_fp,
-		"JMI: This is a dry run!!\n");
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
-        request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN;
-        return(GLOBUS_FAILURE);
-    }
-
-    if (request->jm_restart != GLOBUS_NULL)
-    {
-	char *job_pids = strdup(request->job_id);
-	char *new_pid;
-
-	graml_child_pid_ptr = graml_child_pid_head;
-	new_pid = strtok( job_pids, " " );
-	while ( new_pid != NULL )
-	{
-	    *graml_child_pid_ptr = atoi(new_pid);
-	    graml_child_pid_ptr++;
-	    graml_processes_started++;
-	    new_pid = strtok( NULL, " " );
-	}
-
-	globus_l_gram_check_fork(request);
-
-	free(job_pids);
-    }
-    else
-    {
-	if (globus_l_gram_fork_execute(request, processes_requested) != 0)
-	{
-	    if (strncmp(request->jobmanager_type, "poe", 3) == 0)
-	    {
-		unlink(tmp_hostfilename);
-	    }
-
-	    return(GLOBUS_FAILURE);
-	}
-
-	if (strncmp(request->jobmanager_type, "poe", 3) == 0)
-	{
-	    unlink(tmp_hostfilename);
-	}
-
-	graml_child_pid_ptr = graml_child_pid_head;
-	tmp_arg[0] = '\0';
-	for (i = 0; i < graml_processes_started; i++, graml_child_pid_ptr++)
-	{
-	    char buf[10];
-	    if (graml_child_pid_ptr != graml_child_pid_head)
-	    {
-		sprintf(buf, " %lu", *graml_child_pid_ptr);
-	    } else {
-		sprintf(buf, "%lu", *graml_child_pid_ptr);
-	    }
-	    strcat(tmp_arg, buf);
-	}
-	request->job_id = (char *) globus_libc_malloc (sizeof(char *) *
-						       strlen(tmp_arg) + 1);
-	strcpy(request->job_id, tmp_arg);
-	globus_jobmanager_log(request->jobmanager_log_fp,
-		       "JMI: job id = %s\n", request->job_id );
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE;
-    }
-    return(GLOBUS_SUCCESS);
-
-} /* globus_l_gram_request_fork() */
 
 /******************************************************************************
 Function:       globus_l_gram_request_shell()
@@ -744,16 +425,6 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
      * create a file that will be used to pass all parameters to and 
      * amongst the globus_gram_script_<scheduler>_* scripts.
      */
-    if ( (graml_script_arg_file = tempnam(NULL, "grami")) == NULL )
-    {
-	globus_jobmanager_log(request->jobmanager_log_fp,
-              "JMI: Failed to create gram script argument file name\n");
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code =
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
-    }
-
     if (request->filename_callback_func == GLOBUS_NULL ||
         request->jm_restart != GLOBUS_NULL)
     {
@@ -845,22 +516,6 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     fprintf(script_arg_fp,"grami_env='%s'\n", new_param);
     fprintf(script_arg_fp,"grami_count='%u'\n", request->count);
 
-    if(request->scheduler_specific != GLOBUS_NULL)
-    {
-	int i = 0;
-
-	for(i = 0; request->scheduler_specific[i].option_name; i++)
-	{
-	    globus_l_gram_param_list_prepare(
-		    request->scheduler_specific[i].option_string,
-		    new_param,
-		    &num_in_list);
-
-	    fprintf(script_arg_fp,"grami_scheduler_specific_%s='%s'\n",
-		    request->scheduler_specific[i].option_name,
-		    new_param);
-	}
-    }
     globus_l_gram_param_prepare(request->my_stdin, new_param);
     fprintf(script_arg_fp,"grami_stdin='%s'\n", new_param);
     fprintf(script_arg_fp,"grami_stdout='%s'\n", stdout_filename);
@@ -983,56 +638,6 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
 
 
 /******************************************************************************
-Function:       globus_l_gram_cancel_fork()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_l_gram_cancel_fork(globus_gram_jobmanager_request_t * request)
-{
-    int x;
-
-    globus_jobmanager_log(request->jobmanager_log_fp,
-        "JMI: in globus_l_gram_cancel_fork()\n");
-
-    graml_child_pid_ptr = graml_child_pid_head;
-
-    for (x=0; x<graml_processes_started; x++)
-    {
-	if ( *graml_child_pid_ptr > 0 )
-	{
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-			   "JMI: killing child %d with SIGTERM\n",
-			   *graml_child_pid_ptr);
-	    kill(*graml_child_pid_ptr, SIGTERM);
-	    graml_child_pid_ptr++;
-	}
-    }
-
-    /* TODO: This should become a loop with waitpid() */
-    sleep(10);
-    
-    graml_child_pid_ptr = graml_child_pid_head;
-    for (x=0; x<graml_processes_started; x++)
-    {
-	if ( *graml_child_pid_ptr > 0 )
-	{
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-			   "JMI: killing child %d with SIGKILL\n",
-			   *graml_child_pid_ptr);
-	    kill(*graml_child_pid_ptr, SIGKILL);
-	    graml_child_pid_ptr++;
-	}
-    }
-
-    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-
-    return(GLOBUS_SUCCESS);
-
-} /* globus_l_gram_cancel_fork() */
-
-/******************************************************************************
 Function:       globus_l_gram_cancel_shell()
 Description:
 Parameters:
@@ -1076,64 +681,6 @@ globus_l_gram_cancel_shell(globus_gram_jobmanager_request_t * request)
 
 } /* globus_l_gram_cancel_shell() */
 
-
-/******************************************************************************
-Function:       globus_l_gram_signal_fork()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_l_gram_signal_fork(globus_gram_jobmanager_request_t * request)
-{
-    int x;
-
-    globus_jobmanager_log(request->jobmanager_log_fp,
-        "JMI: in globus_l_gram_signal_fork()\n");
-
-    /* not sure what we should do with anything except for cancel,
-     * so for now just return.
-     */
-    if (request->signal != GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_CANCEL)
-    {
-        return(GLOBUS_GRAM_PROTOCOL_ERROR_UNKNOWN_SIGNAL_TYPE);
-    }
-
-    graml_child_pid_ptr = graml_child_pid_head;
-
-    for (x=0; x<graml_processes_started; x++)
-    {
-	if ( *graml_child_pid_ptr > 0 )
-	{
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-			   "JMI: killing child %d with SIGTERM\n",
-			   *graml_child_pid_ptr);
-	    kill(*graml_child_pid_ptr, SIGTERM);
-	    graml_child_pid_ptr++;
-	}
-    }
-
-    /* TODO: This should become a loop with waitpid() */
-    sleep(10);
-    
-    graml_child_pid_ptr = graml_child_pid_head;
-    for (x=0; x<graml_processes_started; x++)
-    {
-	if ( *graml_child_pid_ptr > 0 )
-	{
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-			   "JMI: killing child %d with SIGKILL\n",
-			   *graml_child_pid_ptr);
-	    kill(*graml_child_pid_ptr, SIGKILL);
-	    graml_child_pid_ptr++;
-	}
-    }
-
-    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-
-    return(GLOBUS_SUCCESS);
-
-} /* globus_l_gram_signal_fork() */
 
 /******************************************************************************
 Function:       globus_l_gram_signal_shell()
@@ -1202,67 +749,6 @@ globus_l_gram_signal_shell(globus_gram_jobmanager_request_t * request)
 
 } /* globus_l_gram_signal_shell() */
 
-/******************************************************************************
-Function:       globus_l_gram_check_fork()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_l_gram_check_fork(globus_gram_jobmanager_request_t * request)
-{
-    int i;
-    int pid = 99999;
-    int new_job_status;
-# ifdef HAS_WAIT_UNION_WAIT
-    union wait status;
-# else
-    int status;
-# endif 
-
-    new_job_status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE;
-
-    while (pid > 0)
-    {
-#       ifdef HAS_WAIT3
-            pid = wait3(&status, WNOHANG, NULL);
-#       else
-            pid = waitpid(-1, &status, WNOHANG);
-#       endif /* HAS_WAIT */
-
-/*
-        if (pid > 0)
-            graml_processes_completed++;
-*/
-    }
-
-    graml_child_pid_ptr = graml_child_pid_head;
-
-    for (i = 0; i < graml_processes_started; i++, graml_child_pid_ptr++)
-    {
-	if ( *graml_child_pid_ptr > 0 && kill( *graml_child_pid_ptr, 0 ) < 0 )
-	{
-	    graml_processes_completed++;
-	    *graml_child_pid_ptr = -(*graml_child_pid_ptr);
-	}
-    }
-
-    if (graml_processes_completed >= graml_processes_started)
-    {
-        new_job_status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
-    }
-
-    if (request->status == new_job_status)
-    {
-        return(GLOBUS_GRAM_JOBMANAGER_STATUS_UNCHANGED);
-    }
-    else
-    {
-        request->status = new_job_status;
-        return(GLOBUS_GRAM_JOBMANAGER_STATUS_CHANGED);
-    }
-
-} /* globus_l_gram_check_fork() */
 
 /******************************************************************************
 Function:       globus_l_gram_check_shell()
@@ -1322,242 +808,6 @@ globus_l_gram_check_shell(globus_gram_jobmanager_request_t * request)
     }
 
 } /* globus_l_gram_check_shell() */
-
-/******************************************************************************
-Function:       globus_l_gram_fork_execute()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static int 
-globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
-                           int processes_requested)
-{
-    int n, i, x;
-    int p[2];
-    int rd;
-    int wr;
-    int pid;
-    char * s;
-    char buf[1024];
-    char tmpbuf[256];
-    char * stdout_filename = GLOBUS_NULL;
-    char * stderr_filename = GLOBUS_NULL;
-    int stdin_fd, stdout_fd, stderr_fd;
-    
-    globus_jobmanager_log(request->jobmanager_log_fp,
-          "JMI: in globus_l_gram_fork_execute\n");
-
-    for (i = 0; (request->environment)[i]; i++)
-    {
-	globus_jobmanager_log(request->jobmanager_log_fp,
-              "JMI: env[%d] is \"%s\"\n", i, (request->environment)[i]);
-    }
-
-    /* create the processes */
-    for (x=0;x<processes_requested; x++)
-    {
-
-        if (pipe(p) != 0)
-        {
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-                  "JMI: Cannot create pipe: %s\n", sys_errlist[errno] );
-            request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-            request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_CREATING_PIPE;
-            return(GLOBUS_FAILURE);
-        }
-
-        rd = p[0];
-        wr = p[1];
-
-        if (fcntl(wr, F_SETFD, 1) != 0)
-        {
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-                  "JMI: fcntl F_SETFD failed: %s\n", sys_errlist[errno] );
-            request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-            request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_FCNTL_FAILED;
-            return(GLOBUS_FAILURE);
-        }
-
-        if (request->filename_callback_func == GLOBUS_NULL)
-        {
-            if (request->my_stdout != GLOBUS_NULL)
-                stdout_filename = request->my_stdout;
-
-            if (request->my_stderr != GLOBUS_NULL)
-                stderr_filename = request->my_stderr;
-        }
-        else
-        {
-            if (strcmp(request->my_stdout, "/dev/null") == 0)
-            {
-                stdout_filename = "/dev/null";
-            }
-            else
-            {
-                /* get stdout and stderr files from callback function */
-                /* set the argument to 1 to indicate requesting a stdout file */
-                stdout_filename = (*request->filename_callback_func)(1);
-                if (stdout_filename == GLOBUS_NULL)
-                {
-                    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-                    request->failure_code = 
-                          GLOBUS_GRAM_PROTOCOL_ERROR_STDOUT_FILENAME_FAILED;
-                    return(GLOBUS_FAILURE);
-                }
-            }
-
-            if (strcmp(request->my_stderr, "/dev/null") == 0)
-            {
-                stderr_filename = "/dev/null";
-            }
-            else
-            {
-                /* set the argument to 0 to indicate requesting a stderr file */
-                stderr_filename = (*request->filename_callback_func)(0);
-                if (stderr_filename == GLOBUS_NULL)
-                {
-                    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-                    request->failure_code = 
-                          GLOBUS_GRAM_PROTOCOL_ERROR_STDERR_FILENAME_FAILED;
-                    return(GLOBUS_FAILURE);
-                }
-            }
-        }
-
-	globus_jobmanager_log(request->jobmanager_log_fp,
-              "JMI: local stdout filename = %s.\n", stdout_filename);
-	globus_jobmanager_log(request->jobmanager_log_fp,
-              "JMI: local stderr filename = %s.\n", stderr_filename);
-		
-        pid = globus_libc_fork();
-
-        if (pid < 0)
-        {
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-                  "JMI: fork failed: %s\n", sys_errlist[errno]);
-            request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_FORKING_EXECUTABLE;
-            return(GLOBUS_FAILURE);
-        }
-
-        if (pid == 0)
-        {
-            close(rd);
-
-	    stdin_fd = open(request->my_stdin, O_RDONLY);
-            stdout_fd = globus_libc_open(stdout_filename,
-                                     O_APPEND | O_WRONLY | O_CREAT,
-                                     0600);
-            if(stdout_fd < 0)
-            {
-                stdout_fd = globus_libc_open("/dev/null", O_WRONLY);
-            }
-
-            stderr_fd = globus_libc_open(stderr_filename,
-                                         O_APPEND | O_WRONLY | O_CREAT,
-                                         0600);
-            if(stderr_fd < 0)
-            {
-                stderr_fd = globus_libc_open("/dev/null", O_WRONLY);
-            }
-
-            /* close stdin stdout stderr */
-            close(0);
-            close(1);
-            close(2);
-
-            /* dup stdin stdout stderr with the fd's just created */
-            dup2(stdin_fd, 0);
-            dup2(stdout_fd, 1);
-            dup2(stderr_fd, 2);
-
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-                  "JMI: executing program - '%s'\n", request->executable );
-	    /* add the pgm name as argv[0] for the execv call */
-	    {
-		char **new_pgm_args;
-		int pgm_argc;
-
-		for(pgm_argc = 0; (request->arguments)[pgm_argc]; pgm_argc++)
-		    ;
-		
-		new_pgm_args = (char **)
-		    globus_libc_malloc((pgm_argc+2) * sizeof(char *));
-
-		new_pgm_args[0] = request->executable;
-		for(i=1; i <= pgm_argc; i++)
-		{
-		    new_pgm_args[i] = request->arguments[i-1];
-		}
-		new_pgm_args[i] = GLOBUS_NULL;
-    
-                /*
-                 * loop thru args printing them out for debug purposes
-                 */
-		for(pgm_argc = 0; new_pgm_args[pgm_argc]; pgm_argc++)
-		{
-		    globus_jobmanager_log(request->jobmanager_log_fp,
-		          "new_pgm_args[%i]=%s\n",
-			   pgm_argc,
-			   new_pgm_args[pgm_argc]);
-			   
-		}
-
-		if ((request->environment)[0])
-		{
-		    /* some environment vars exist */
-		    i = execve(request->executable,
-                               new_pgm_args,
-                               request->environment);
-		}
-		else
-		{
-		    i = execv(request->executable, new_pgm_args);
-		}
-		globus_libc_free(new_pgm_args);
-	    }
-            if (i != 0)
-            {
-                fprintf(stderr, "Exec failed: %s\n", sys_errlist[errno]);
-                sprintf(tmpbuf, "Exec failed: %s\n", sys_errlist[errno]);
-                write(wr, tmpbuf, strlen(tmpbuf));
-                _exit(1);/*return(1);*/
-            }
-        }
-
-        close(wr);
-
-        if ((n = read(rd, buf, sizeof(buf))) > 0)
-        {
-            buf[n] = 0;
-            s = index(buf, '\n');
-            if (s)
-                *s = 0;
-
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-                  "JMI: child failed: %s\n", buf );
-
-            /* kill off processes that were started successfully
-             * either all processes start or terminate everything!
-             */
-            graml_child_pid_ptr = graml_child_pid_head;
-
-	    close(rd);
-            request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-            request->failure_code =
-                GLOBUS_GRAM_PROTOCOL_ERROR_JOB_EXECUTION_FAILED;
-            return(GLOBUS_FAILURE);
-        }
-	globus_jobmanager_log(request->jobmanager_log_fp,
-              "JMI: Child %d started\n", pid );
-	close(rd);
-        *graml_child_pid_ptr++ = pid;
-        graml_processes_started += 1;
-    } /* end for */
-
-    return(GLOBUS_SUCCESS);
-
-} /* globus_l_gram_fork_execute() */
 
 /******************************************************************************
 Function:       globus_l_gram_environment_get()
@@ -2055,80 +1305,76 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * request)
         return(GLOBUS_FAILURE);
     }
 
-    if ((strncmp(request->jobmanager_type, "fork", 4) != 0) &&
-        (strncmp(request->jobmanager_type, "poe", 3) != 0))
-    {
-       /*
-        * test that the scheduler script files exist and
-        * that the user has permission to execute then.
-        */
-	globus_jobmanager_log(request->jobmanager_log_fp,
-            "JMI: testing job manager scripts for type %s exist and "
-            "permissions are ok.\n", request->jobmanager_type);
+   /*
+    * test that the scheduler script files exist and
+    * that the user has permission to execute then.
+    */
+    globus_jobmanager_log(request->jobmanager_log_fp,
+	"JMI: testing job manager scripts for type %s exist and "
+	"permissions are ok.\n", request->jobmanager_type);
 
-       /*---------------- submit script -----------------*/
-       sprintf(script_path, "%s/globus-script-%s-submit",
-                            request->jobmanager_libexecdir,
-                            request->jobmanager_type);
+   /*---------------- submit script -----------------*/
+   sprintf(script_path, "%s/globus-script-%s-submit",
+			request->jobmanager_libexecdir,
+			request->jobmanager_type);
 
-       if (stat(script_path, &statbuf) != 0)
-       {
-	   globus_jobmanager_log(request->jobmanager_log_fp,
-              "JMI: ERROR: script %s was not found.\n", script_path);
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-          return(GLOBUS_FAILURE);
-       }
+   if (stat(script_path, &statbuf) != 0)
+   {
+       globus_jobmanager_log(request->jobmanager_log_fp,
+	  "JMI: ERROR: script %s was not found.\n", script_path);
+      request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
+      return(GLOBUS_FAILURE);
+   }
 
-       if (!(statbuf.st_mode & 0111))
-       {
-	   globus_jobmanager_log(request->jobmanager_log_fp,
-             "JMI: ERROR: Not permitted to execute script %s.\n", script_path);
-           request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
-           return(GLOBUS_FAILURE);
-       }
+   if (!(statbuf.st_mode & 0111))
+   {
+       globus_jobmanager_log(request->jobmanager_log_fp,
+	 "JMI: ERROR: Not permitted to execute script %s.\n", script_path);
+       request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
+       return(GLOBUS_FAILURE);
+   }
 
-       /*---------------- poll script -----------------*/
-       sprintf(script_path, "%s/globus-script-%s-poll",
-                            request->jobmanager_libexecdir,
-                            request->jobmanager_type);
+   /*---------------- poll script -----------------*/
+   sprintf(script_path, "%s/globus-script-%s-poll",
+			request->jobmanager_libexecdir,
+			request->jobmanager_type);
 
-       if (stat(script_path, &statbuf) != 0)
-       {
-	   globus_jobmanager_log(request->jobmanager_log_fp,
-              "JMI: ERROR: script %s was not found.\n", script_path);
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-          return(GLOBUS_FAILURE);
-       }
+   if (stat(script_path, &statbuf) != 0)
+   {
+       globus_jobmanager_log(request->jobmanager_log_fp,
+	  "JMI: ERROR: script %s was not found.\n", script_path);
+      request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
+      return(GLOBUS_FAILURE);
+   }
 
-       if (!(statbuf.st_mode & 0111))
-       {
-	   globus_jobmanager_log(request->jobmanager_log_fp,
-             "JMI: ERROR: Not permitted to execute script %s.\n", script_path);
-           request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
-           return(GLOBUS_FAILURE);
-       }
+   if (!(statbuf.st_mode & 0111))
+   {
+       globus_jobmanager_log(request->jobmanager_log_fp,
+	 "JMI: ERROR: Not permitted to execute script %s.\n", script_path);
+       request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
+       return(GLOBUS_FAILURE);
+   }
 
-       /*---------------- rm script -----------------*/
-       sprintf(script_path, "%s/globus-script-%s-rm",
-                            request->jobmanager_libexecdir,
-                            request->jobmanager_type);
+   /*---------------- rm script -----------------*/
+   sprintf(script_path, "%s/globus-script-%s-rm",
+			request->jobmanager_libexecdir,
+			request->jobmanager_type);
 
-       if (stat(script_path, &statbuf) != 0)
-       {
-	   globus_jobmanager_log(request->jobmanager_log_fp,
-              "JMI: ERROR: script %s was not found.\n", script_path);
-          request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
-          return(GLOBUS_FAILURE);
-       }
+   if (stat(script_path, &statbuf) != 0)
+   {
+       globus_jobmanager_log(request->jobmanager_log_fp,
+	  "JMI: ERROR: script %s was not found.\n", script_path);
+      request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_NOT_FOUND;
+      return(GLOBUS_FAILURE);
+   }
 
-       if (!(statbuf.st_mode & 0111))
-       {
-	   globus_jobmanager_log(request->jobmanager_log_fp,
-             "JMI: ERROR: Not permitted to execute script %s.\n", script_path);
-           request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
-           return(GLOBUS_FAILURE);
-       }
-    }
+   if (!(statbuf.st_mode & 0111))
+   {
+       globus_jobmanager_log(request->jobmanager_log_fp,
+	 "JMI: ERROR: Not permitted to execute script %s.\n", script_path);
+       request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_SCRIPT_PERMISSIONS;
+       return(GLOBUS_FAILURE);
+   }
 
     globus_jobmanager_log(request->jobmanager_log_fp,
         "JMI: job manager type is %s.\n", request->jobmanager_type);
@@ -2137,3 +1383,142 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * request)
 
 }
 /* globus_l_gram_request_validate() */
+
+int 
+globus_jobmanager_request_scratchdir(
+	globus_gram_jobmanager_request_t * request)
+{
+    char script_cmd[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+    int rc;
+    FILE * script_arg_fp;
+    long pos, end;
+
+    if (!request)
+        return(GLOBUS_FAILURE);
+
+    if ((script_arg_fp = fopen(graml_script_arg_file, "w")) == NULL)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: Failed to open gram script argument file. %s\n",
+              graml_script_arg_file );
+        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+        request->failure_code = 
+              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        return(GLOBUS_FAILURE);
+    }
+
+    fprintf(script_arg_fp, "grami_scratchdir='%s'\n", request->scratchdir);
+
+    fclose(script_arg_fp);
+
+    globus_jobmanager_log(request->jobmanager_log_fp,
+          "JMI: in globus_jobmanager_request_scratchdir()\n" );
+
+    sprintf(script_cmd, "%s/globus-script-%s-scratchdir %s\n",
+                         request->jobmanager_libexecdir,
+                         request->jobmanager_type,
+                         graml_script_arg_file);
+
+    rc = globus_l_gram_script_run(script_cmd, request);
+
+    if(rc == GLOBUS_SUCCESS)
+    {
+	script_arg_fp = fopen(graml_script_arg_file, "r");
+
+	if(script_arg_fp != GLOBUS_NULL)
+	{
+	    fscanf(script_arg_fp, "grami_scratchdir='%*[^\n]\n");
+	    fscanf(script_arg_fp, "grami_scratch_directory='");
+	    pos = ftell(script_arg_fp);
+	    fscanf(script_arg_fp, "%*[^']'");
+	    end = ftell(script_arg_fp);
+	    fseek(script_arg_fp, pos, SEEK_SET);
+
+	    request->scratchdir = globus_libc_malloc(end-pos + 2);
+	    fscanf(script_arg_fp, "%[^']'", request->scratchdir);
+	}
+	fclose(script_arg_fp);
+    }
+
+    if (remove(graml_script_arg_file) != 0)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+                     "JM: Cannot remove argument file --> %s\n",
+                     graml_script_arg_file);
+    }
+
+    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+
+    if (rc == GLOBUS_FAILURE)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: received error from script: %d\n", rc );
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: returning job state failed.\n" );
+        return(GLOBUS_FAILURE);
+    }
+
+    return(GLOBUS_SUCCESS);
+
+    return(globus_l_gram_cancel_shell(request));
+} /* globus_jobmanager_request_cancel() */
+
+int 
+globus_jobmanager_request_rm_scratchdir(
+	globus_gram_jobmanager_request_t * request)
+{
+    char script_cmd[GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE];
+    int rc;
+    FILE * script_arg_fp;
+    long pos, end;
+
+    if (!request)
+        return(GLOBUS_FAILURE);
+
+    if ((script_arg_fp = fopen(graml_script_arg_file, "w")) == NULL)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: Failed to open gram script argument file. %s\n",
+              graml_script_arg_file );
+        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+        request->failure_code = 
+              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        return(GLOBUS_FAILURE);
+    }
+
+    fprintf(script_arg_fp, "grami_scratchdir='%s'\n", request->scratchdir);
+
+    fclose(script_arg_fp);
+
+    globus_jobmanager_log(request->jobmanager_log_fp,
+          "JMI: in globus_jobmanager_request_scratchdir()\n" );
+
+    sprintf(script_cmd, "%s/globus-script-%s-rm-scratchdir %s\n",
+                         request->jobmanager_libexecdir,
+                         request->jobmanager_type,
+                         graml_script_arg_file);
+
+    rc = globus_l_gram_script_run(script_cmd, request);
+
+    if (remove(graml_script_arg_file) != 0)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+                     "JM: Cannot remove argument file --> %s\n",
+                     graml_script_arg_file);
+    }
+
+    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+
+    if (rc == GLOBUS_FAILURE)
+    {
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: received error from script: %d\n", rc );
+	globus_jobmanager_log(request->jobmanager_log_fp,
+              "JMI: returning job state failed.\n" );
+        return(GLOBUS_FAILURE);
+    }
+
+    return(GLOBUS_SUCCESS);
+
+    return(globus_l_gram_cancel_shell(request));
+} /* globus_jobmanager_request_cancel() */

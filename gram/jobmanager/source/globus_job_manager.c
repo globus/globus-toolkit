@@ -261,7 +261,6 @@ globus_l_jm_handle_stdio_update(
 
 void
 globus_l_gram_set_state_file(
-    char *                              hostname,
     char *                              uniq_id);
 
 int
@@ -298,6 +297,13 @@ static
 int
 globus_l_jobmanager_fault_callback(void *user_arg, int fault_code);
 
+static
+int
+globus_l_gram_job_manager_create_scratchdir(
+    globus_gram_jobmanager_request_t *	req,
+    globus_symboltable_t *		symbol_table,
+    globus_rsl_t *			rsl_tree);
+
 /******************************************************************************
                        Define variables for external use
 ******************************************************************************/
@@ -312,11 +318,8 @@ extern int errno;
  *                                                --------------
  */
 static char * graml_env_x509_user_proxy = NULL;   /* security */
-static char * graml_env_krb5ccname = NULL;        /* security */
-static char * graml_env_nlspath = NULL;           /* poe fork */
 static char * graml_env_logname = NULL;           /* all */
 static char * graml_env_home = NULL;              /* all */
-static char * graml_env_tz = NULL;                /* all */
 
 
 /*
@@ -464,7 +467,6 @@ int main(int argc,
     gss_ctx_id_t	                context_handle = GSS_C_NO_CONTEXT;
     size_t				jrbuf_size;
     int					args_fd=0;
-    char 				my_host[MAXHOSTNAMELEN];
 
     /*
      * Stdin and stdout point at socket to client
@@ -480,7 +482,6 @@ int main(int argc,
 	fprintf(stderr, "common module activation failed with rc=%d\n", rc);
 	exit(1);
     }
-    globus_libc_gethostname(my_host, sizeof(my_host));
 
     rc = globus_module_activate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -900,9 +901,6 @@ int main(int argc,
      * LOGNAME and HOME will be added as well
      */
     conf.x509_cert_dir    = globus_l_gram_getenv_var("X509_CERT_DIR", NULL);
-    graml_env_krb5ccname  = globus_l_gram_getenv_var("KRB5CCNAME", NULL);
-    graml_env_nlspath     = globus_l_gram_getenv_var("NLSPATH", NULL);
-    graml_env_tz          = globus_l_gram_getenv_var("TZ", NULL);
 
     if (conf.x509_cert_dir)
     {
@@ -1106,11 +1104,6 @@ int main(int argc,
     }
     else
     {
-
-        /* printf("\n------------  after parse  ---------------\n\n");
-         * globus_rsl_print_recursive(rsl_tree);
-         */
-
         /*
          * build symbol table for RSL evaluation.
          * variable found in the RSL will be replaced with these values.
@@ -1198,28 +1191,47 @@ int main(int argc,
                                 (void *) "GLOBUS_LOCATION",
                                 (void *) conf.globus_location);
 	}
-
-        if (globus_rsl_eval(rsl_tree, symbol_table) != 0)
-        {
-            rc = GLOBUS_FAILURE;
+	globus_jobmanager_log( request->jobmanager_log_fp,
+		              "JM: before canonicalization: %s\n",
+		              globus_rsl_unparse(rsl_tree));
+	if (globus_rsl_assist_attributes_canonicalize(rsl_tree) != 0)
+	{
+	    /* Can't canonicalize the tree, bail! */
+	    rc = GLOBUS_FAILURE;
 	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-            request->failure_code =
-                 GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-        }
+	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	}
+	else
+	{
+	    rc = globus_l_gram_job_manager_create_scratchdir(
+		    request,
+		    symbol_table,
+		    rsl_tree);
+	}
 
-        if (request->jobmanager_log_fp != NULL)
-        {
-            if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) != GLOBUS_NULL)
-            {
-                globus_jobmanager_log( request->jobmanager_log_fp,
-                  "JM: final rsl specification >>>>\n");
-                globus_jobmanager_log( request->jobmanager_log_fp,
-                  "%s\n", final_rsl_spec);
-                globus_jobmanager_log( request->jobmanager_log_fp,
-                  "JM: <<<< final rsl specification\n");
-            }
-        }
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    if (globus_rsl_eval(rsl_tree, symbol_table) != 0)
+	    {
+		rc = GLOBUS_FAILURE;
+		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		request->failure_code =
+		     GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+	    }
 
+	    if (request->jobmanager_log_fp != NULL)
+	    {
+		if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) != GLOBUS_NULL)
+		{
+		    globus_jobmanager_log( request->jobmanager_log_fp,
+		      "JM: final rsl specification >>>>\n");
+		    globus_jobmanager_log( request->jobmanager_log_fp,
+		      "%s\n", final_rsl_spec);
+		    globus_jobmanager_log( request->jobmanager_log_fp,
+		      "JM: <<<< final rsl specification\n");
+		}
+	    }
+        }
     }
 
     if (rc == GLOBUS_SUCCESS)
@@ -1255,7 +1267,7 @@ int main(int argc,
 	sprintf(tmp_buffer, "%lu.%lu", my_pid, my_time);
 	request->uniq_id = (char *)globus_libc_strdup (tmp_buffer);
 
-	globus_l_gram_set_state_file(my_host, request->uniq_id);
+	globus_l_gram_set_state_file(request->uniq_id);
 
 	rc = globus_l_gram_read_state_file(request, &orig_rsl);
 
@@ -1874,7 +1886,7 @@ int main(int argc,
 	globus_reltime_t          period_time;
 
 	if ( graml_job_state_file == NULL )
-	    globus_l_gram_set_state_file( my_host, request->uniq_id );
+	    globus_l_gram_set_state_file( request->uniq_id );
 
 	if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) == GLOBUS_NULL)
 	    final_rsl_spec = (char *) globus_libc_strdup("RSL UNKNOWN");
@@ -2528,6 +2540,9 @@ int main(int argc,
 	!(request->two_phase_commit != 0 && !graml_jm_commit_end &&
 	  request->save_state != 0))
     {
+	/* Remove the scratch directory */
+	globus_jobmanager_request_rm_scratchdir(request);
+
 	/* clear any other cache entries which contain the gram job id as
 	 * the tag
 	 */
@@ -3708,109 +3723,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     {
         req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_ENVIRONMENT;
         return(GLOBUS_FAILURE);
-    }
-
-
-    {
-	char *newvar;
-	char *newval;
-	int i;
-	int rc;
-
-	/* add duct environment string to environment */
-	rc = globus_l_gram_duct_environment(req->count,
-					    gram_myjob,
-					    &newvar,
-					    &newval);
-	if(rc == GLOBUS_SUCCESS)
-	{
-	    for(i = 0; req->environment[i] != GLOBUS_NULL; i++)
-	    {
-		;
-	    }
-
-	    req->environment = (char **)
-		globus_libc_realloc(req->environment,
-				    (i+3) * sizeof(char *));
-	    req->environment[i] = newvar;
-	    ++i;
-	    req->environment[i] = newval;
-	    ++i;
-	    req->environment[i] = GLOBUS_NULL;
-
-            if (globus_l_gram_rsl_env_add(rsl_tree, newvar, newval) != 0)
-            {
-                globus_jobmanager_log( req->jobmanager_log_fp,
-                        "JM: ERROR adding %s to the environment= parameter "
-                        "of the RSL.\n", newvar);
-            }
-	}
-    }
-
-    /**********************************
-     *  GET SCHEDULER_SPECIFIC PARAM
-     */
-    globus_jobmanager_log( req->jobmanager_log_fp,
-	    "JM: Getting scheduler specific parameters\n");
-    scheduler_specific_list = globus_rsl_param_get_values(
-	    rsl_tree,
-	    GLOBUS_GRAM_PROTOCOL_SCHEDULER_SPECIFIC_PARAM);
-    if(scheduler_specific_list)
-    {
-	int i;
-	int j;
-
-	globus_jobmanager_log( req->jobmanager_log_fp,
-		"JM: Checking scheduler specific parameters\n");
-	count = globus_list_size(scheduler_specific_list);
-
-	req->scheduler_specific = globus_libc_malloc(
-		sizeof(globus_gram_job_manager_scheduler_specific_t) *
-		(globus_list_size(scheduler_specific_list) + 1));
-	i = 0;
-	while(!globus_list_empty(scheduler_specific_list))
-	{
-	    globus_rsl_value_t * value;
-	    globus_list_t * valuelist;
-
-	    value = globus_list_first(scheduler_specific_list);
-	    scheduler_specific_list = globus_list_rest(scheduler_specific_list);
-	    if(! globus_rsl_value_is_sequence(value))
-	    {
-		req->failure_code =
-		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCHEDULER_SPECIFIC;
-		globus_libc_free(req->scheduler_specific);
-		req->scheduler_specific = GLOBUS_NULL;
-
-		return(GLOBUS_FAILURE);
-	    }
-	    valuelist = globus_rsl_value_sequence_get_value_list(
-		    value);
-	    req->scheduler_specific[i].option_name =
-			globus_rsl_value_literal_get_string(
-			    globus_list_first(valuelist));
-
-	    globus_rsl_assist_string_canonicalize(
-		    req->scheduler_specific[i].option_name);
-
-	    valuelist = globus_list_rest(valuelist);
-	    req->scheduler_specific[i].option_string =
-		globus_libc_malloc(sizeof(char *) *
-			           globus_list_size(valuelist) + 1);
-	    j = 0;
-	    while(!globus_list_empty(valuelist))
-	    {
-		req->scheduler_specific[i].option_string[j] =
-		    globus_libc_strdup(globus_rsl_value_literal_get_string(
-				globus_list_first(valuelist)));
-		j++;
-		valuelist = globus_list_rest(valuelist);
-	    }
-	    req->scheduler_specific[i].option_string[j] = GLOBUS_NULL;
-	    i++;
-	}
-	req->scheduler_specific[i].option_name = GLOBUS_NULL;
-	req->scheduler_specific[i].option_string = GLOBUS_NULL;
     }
 
 
@@ -5762,18 +5674,21 @@ globus_l_gram_proxy_expiration(
 }
 
 void
-globus_l_gram_set_state_file(char *hostname, char *uniq_id)
+globus_l_gram_set_state_file(char *uniq_id)
 {
-    char buffer[1024];
+    char				buffer[1024];
+    char 				my_host[MAXHOSTNAMELEN];
+
+    globus_libc_gethostname(my_host, sizeof(my_host));
 
     if (graml_job_state_file_dir == GLOBUS_NULL)
     {
-	sprintf(buffer, "%s/.globus/job.%s.%s", graml_env_home, hostname,
+	sprintf(buffer, "%s/.globus/job.%s.%s", graml_env_home, my_host,
 		uniq_id);
     }
     else
     {
-	sprintf(buffer, "%s/job.%s.%s", graml_job_state_file_dir, hostname,
+	sprintf(buffer, "%s/job.%s.%s", graml_job_state_file_dir, my_host,
 		uniq_id);
     }
 
@@ -6238,3 +6153,54 @@ globus_l_jobmanager_fault_callback(void *user_arg, int fault_code)
     return 0;
 } /* globus_l_jobmanager_fault_callback() */
 
+static
+int
+globus_l_gram_job_manager_create_scratchdir(
+    globus_gram_jobmanager_request_t *	req,
+    globus_symboltable_t *		symbol_table,
+    globus_rsl_t *			rsl_tree)
+{
+    globus_rsl_t *			scratchdir_rsl = GLOBUS_NULL;
+    globus_list_t *			operands;
+    int					rc;
+
+    if(globus_rsl_is_boolean_and(rsl_tree))
+    {
+	operands = globus_rsl_boolean_get_operand_list(rsl_tree);
+
+	while(!globus_list_empty(operands))
+	{
+	    rsl_tree = globus_list_first(operands);
+
+	    if(globus_rsl_is_relation_eq(rsl_tree))
+	    {
+		if(globus_rsl_is_relation_attribute_equal(
+			    rsl_tree,
+			    "scratchdir"))
+		{
+		    scratchdir_rsl = rsl_tree;
+		    break;
+		}
+	    }
+	    operands = globus_list_rest(operands);
+	}
+    }
+
+    if(scratchdir_rsl)
+    {
+	globus_rsl_eval(scratchdir_rsl, symbol_table);
+	req->scratchdir =
+	    globus_rsl_value_literal_get_string(
+		    globus_rsl_relation_get_single_value(
+			scratchdir_rsl));
+
+	/* This will overwrite req->scratchdir */
+	rc = globus_jobmanager_request_scratchdir(req);
+	globus_symboltable_insert(symbol_table,
+		                  "SCRATCH_DIRECTORY",
+				  req->scratchdir);
+	return rc;
+    }
+    return 0;
+}
+/* globus_l_gram_job_manager_create_scratchdir() */

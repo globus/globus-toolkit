@@ -1,0 +1,5 @@
+#! /bin/sh
+
+. $1
+
+rm -rf $grami_scratchdir

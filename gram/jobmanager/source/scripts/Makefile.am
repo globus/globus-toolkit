@@ -7,6 +7,11 @@ globus_gram_job_manager_scripts = \
 	globus-script-easymcs-poll \
 	globus-script-easymcs-rm \
 	globus-script-easymcs-submit \
+	globus-script-fork-poll \
+	globus-script-fork-rm \
+	globus-script-fork-submit \
+	globus-script-fork-scratchdir \
+	globus-script-fork-rm-scratchdir \
 	globus-script-glunix-poll \
 	globus-script-glunix-rm \
 	globus-script-glunix-submit \

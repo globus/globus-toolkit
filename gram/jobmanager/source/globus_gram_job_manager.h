@@ -45,13 +45,6 @@ typedef enum
    GLOBUS_GRAM_JOBMANAGER_JOBTYPE_CONDOR   = 3
 } globus_gram_jobmanager_jobtype_t;
 
-typedef struct
-{
-    char *				option_name;
-    char **				option_string; /* NULL terminated */
-}
-globus_gram_job_manager_scheduler_specific_t;
-
 typedef char * (* globus_gram_job_manager_callback_func_t) (int stdout_flag);
 
 typedef struct
@@ -388,13 +381,7 @@ typedef struct
       */
     int					stderr_position;
 
-    /**
-     * Array of Scheduler Specific Options
-     *
-     * A NULL-terminated set of scheduler specific options and their values.
-     */
-    globus_gram_job_manager_scheduler_specific_t *
-     					scheduler_specific;
+    char *				scratchdir;
 
     globus_gram_job_manager_callback_func_t
 					filename_callback_func;
@@ -454,6 +441,14 @@ globus_jobmanager_request_check(
  */
 extern int 
 globus_jobmanager_request_signal(
+	globus_gram_jobmanager_request_t * request);
+
+extern int
+globus_jobmanager_request_scratchdir(
+	globus_gram_jobmanager_request_t * request);
+
+extern int
+globus_jobmanager_request_rm_scratchdir(
 	globus_gram_jobmanager_request_t * request);
 
 extern int

@@ -1,0 +1,9 @@
+#! /bin/sh
+
+. $1
+
+mkdir -p $grami_scratchdir/gram.$$
+
+echo $grami_scratchdir/gram.$$ >> $1
+
+echo GRAM_SCRIPT_SUCCESS:0
