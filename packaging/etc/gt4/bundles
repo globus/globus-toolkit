@@ -123,6 +123,29 @@ BUNDLE gt4-gram
         globus_xio
         globus_xio_buffer
 
+BUNDLE gt4-gram-no-c
+        globus_fork_starter
+        globus_gram_job_manager_setup_fork
+        globus_gram_local_proxy_tool
+        globus_gridmap_and_execute
+        globus_scheduler_event_generator
+        globus_scheduler_event_generator_fork
+        globus_scheduler_event_generator_fork_setup
+        globus_scheduler_provider_setup_fork
+        globus_user_env
+        globus_wsrf_gram_client_java
+        globus_wsrf_gram_common_java
+        globus_wsrf_gram_common_schema
+        globus_wsrf_gram_job_monitoring_common_java
+        globus_wsrf_gram_service_java
+        globus_wsrf_gram_service_java_setup_common
+        globus_wsrf_gram_service_java_setup_fork
+        globus_wsrf_gram_service_java_setup_multi
+        globus_wsrf_gram_utils_java
+        globus_wsrf_rendezvous_common_java
+        globus_wsrf_rendezvous_common_schema
+        globus_wsrf_rendezvous_service_java
+
 BUNDLE gt4-gram-pbs
         globus_wsrf_gram_service_java_setup_pbs
         globus_scheduler_event_generator_pbs
@@ -146,7 +169,9 @@ BUNDLE gt4-gram-lsf
         globus_scheduler_provider_setup_lsf
 
 BUNDLE gt4-gram-test
-       globus_wsrf_gram_scheduler_test
+        globus_wsrf_gram_scheduler_test
+        globus_wsrf_gram_service_test_unit
+        globus_wsrf_gram_service_test_throughput
 
 BUNDLE gt4-cas
         globus_wsrf_cas_client_java
