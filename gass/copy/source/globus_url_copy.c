@@ -68,6 +68,7 @@ main(int argc, char **argv)
     int                              err;
     char *                           sourceURL;
     char *                           destURL;
+    globus_url_t		     test_url;
 
     int                              fd_source =-1;
     int                              fd_dest   =-1;
@@ -155,6 +156,23 @@ main(int argc, char **argv)
 	}
     }
     */
+
+    /* Verify that the source and destination are valid URLs */
+    rc = globus_url_parse(sourceURL, &test_url);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "can not parse sourceURL \"%s\"\n", sourceURL);
+	exit(GLOBUS_SUCCESS);
+    }
+    globus_url_destroy(&test_url);
+
+    rc = globus_url_parse(destURL, &test_url);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "can not parse destURL \"%s\"\n", destURL);
+	exit(GLOBUS_SUCCESS);
+    }
+    globus_url_destroy(&test_url);
     
     /* end of argument parsing */
 
