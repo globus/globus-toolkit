@@ -4,10 +4,41 @@
 # the hostname command.  But is returns the FQN
 # in all cases.
 
+PROGRAM_NAME=`@ECHO@ $0 | sed -e 's|.*/||g'`
+PROGRAM_VERSION=`@ECHO@ '$Revision$' | @CUT@ -d' ' -f2`
+
+
+# Configure directory locations
 prefix=@prefix@
-exec_prefix=@exec_prefix@
-libexecdir=@libexecdir@
- 
+deploy_prefix=@deploy_prefix@    # This line is overwritten during deployment
+deployed='FALSE'                 # This line is overwritten during deployment
+  
+
+
+if [ "X${deployed}" = "XFALSE" ] ; then
+   # User level code
+   exec_prefix=@exec_prefix@
+   sbindir=@sbindir@
+   bindir=@bindir@
+   libdir=@libdir@
+   libexecdir=@libexecdir@
+   datadir=@datadir@
+   sysconfdir=@sysconfdir@
+   localstatedir=@localstatedir@
+   tmpdir=@tmpdir@
+else
+   # Globus System code
+   exec_prefix="${deploy_prefix}"
+   sbindir=${deploy_prefix}/sbin
+   bindir=${deploy_prefix}/bin
+   libexecdir=${deploy_prefix}/libexec
+   datadir=${deploy_prefix}/share
+   sysconfdir=${deploy_prefix}/etc
+   localstatedir=${deploy_prefix}/var
+   tmpdir=${deploy_prefix}/tmp
+fi
+
+
 LOCALDOMAIN=@LOCALDOMAIN@
  
 if [ -x ${libexecdir}/globus-libc-hostname ]; then
