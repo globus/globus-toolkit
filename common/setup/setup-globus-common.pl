@@ -1,9 +1,11 @@
 my $gpath = $ENV{GPT_LOCATION};
+
 if (!defined($gpath))
 {
   $gpath = $ENV{GLOBUS_LOCATION};
 
 }
+
 if (!defined($gpath))
 {
    die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
@@ -16,24 +18,36 @@ require Grid::GPT::Setup;
 my $metadata = new Grid::GPT::Setup(package_name => "globus_common_setup");
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
+
+if((!defined($globusdir)))
+{
+    die "GLOBUS_LOCATION needs to be set before running this script"
+}
+
 my $setupdir = "$globusdir/setup/globus/";
 
-print "Creating globus-hostname\n";
-print "Creating globus-domainname\n";
-my $result = `$setupdir/setup-common-sh-scripts`;
-$result = system("chmod 0755 $setupdir/globus-hostname");
+print "creating globus-sh-tools-vars.sh\n";
+my $result = `$setupdir/findshelltools`;
 
-if (!(-d "$globusdir/bin")){
-	$result = system("mkdir $globusdir/bin");
+print "creating globus-script-initializer\n";
+print "creating Globus::Core::Paths\n";
+
+$result = `$setupdir/setup-tmpdirs`;
+
+for my $setupfile ('globus-script-initializer', 'globus-sh-tools-vars.sh')
+{
+    $result = system("cp $setupdir/$setupfile $globusdir/libexec");
+    $result = system("chmod 0755 $globusdir/libexec/$setupfile");
+
 }
-	
-$result = system("cp globus-hostname $globusdir/bin");
-$result = system("cp globus-hostname $globusdir/bin/globus-domainname");
 
-$result = system("chmod 0755 $globusdir/bin/globus-hostname");
-$result = system("chmod 0755 $globusdir/bin/globus-domainname");
+system("mkdir -p $globusdir/lib/perl/Globus/Core");
+system("cp $setupdir/Paths.pm $globusdir/lib/perl/Globus/Core/");
+system("chmod 0644 $globusdir/lib/perl/Globus/Core/Paths.pm");
 
-my $hostname = `$setupdir/globus-hostname`;
+print "checking globus-hostname\n";
+
+my $hostname = `$globusdir/bin/globus-hostname`;
 
 $hostname =~ s/\w//g; #strip whitespace
 

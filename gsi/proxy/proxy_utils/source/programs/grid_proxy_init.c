@@ -22,7 +22,7 @@
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_LN  "Generic Policy Object"
 
 #define SHORT_USAGE_FORMAT \
-"\nSyntax: %s [-help][-pwstdin][-limited][-hours H] ...\n"
+"\nSyntax: %s [-help][-pwstdin][-limited][-valid H:M] ...\n"
 
 static int quiet = 0;
 static int debug = 0;
@@ -39,6 +39,7 @@ static char *  LONG_USAGE = \
 "    -limited                  Creates a limited proxy\n" \
 "    -valid H:M                Proxy is valid for H hours and M " \
                                "minutes (default:12:00)\n" \
+"    -hours H                  Deprecated support of hours option\n" \
 "    -bits  B                  Number of bits in key {512|1024|2048|4096}\n" \
 "\n" \
 "    -cert     <certfile>      Non-standard location of user certificate\n" \
@@ -271,7 +272,14 @@ main(
                     "be in the range 0-60");
             }
             valid = (hours * 60) + minutes;
-
+        }
+        else if(strcmp(argp, "-hours") == 0)
+        {
+            int                           hours;
+            args_verify_next(arg_index, argp, "integer argument missing");
+            hours = atoi(argv[arg_index + 1]);
+            valid = hours * 60;
+            arg_index++;
         }
         else if(strcmp(argp, "-bits") == 0)
         {
@@ -509,6 +517,11 @@ main(
                 proxy_out_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
+
+        if(proxy_out_filename)
+        {
+            free(proxy_out_filename);
+        }
         
         proxy_out_filename = proxy_absolute_path;
 
@@ -531,13 +544,7 @@ main(
             }
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
-        
-        if(proxy_absolute_path)
-        {
-            free(proxy_absolute_path);
-            proxy_absolute_path = NULL;
-        }
-        
+                
         result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(temp_dir, &file_status);
         if(result != GLOBUS_SUCCESS ||
            file_status != GLOBUS_FILE_DIR)

@@ -26,7 +26,7 @@
 	  <Simple_Version Major="3" />
 	</Version>
       </Setup_Dependency>
-      <Setup_Dependency Name="globus_core_setup" >
+      <Setup_Dependency Name="globus_common_setup" >
 	<Version >
 	  <Simple_Version Major="2" />
 	</Version>

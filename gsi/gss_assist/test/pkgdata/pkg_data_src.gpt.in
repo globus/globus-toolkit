@@ -71,6 +71,14 @@
             </Dependency>
         </Source_Dependencies>
 
+        <Source_Dependencies Type="pgm_runtime">
+            <Dependency Name="globus_gss_assist_test" Package="data">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
+
         <With_Flavors build="yes"/>
 
         <Build_Environment>

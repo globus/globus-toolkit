@@ -4,8 +4,6 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= \
 	pkgdata
 
-pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
-
 Scripts = \
 	TESTS.pl \
 	globus-gram-client-activate-test.pl \
@@ -26,11 +24,11 @@ Data = \
 	dc31a685.signing_policy \
 	testcred.pem
 
-pkgtest_DATA=$(Data)
+test_DATA=$(Data)
 
-pkgtest_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl
+test_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl
 
-pkgtest_PROGRAMS= \
+test_PROGRAMS= \
 	globus-gram-client-activate-test \
 	globus-gram-client-callback-contact-test \
 	globus-gram-client-test \

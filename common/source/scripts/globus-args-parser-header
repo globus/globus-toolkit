@@ -1,0 +1,92 @@
+
+# Suggested format for version variables:
+# 
+# PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
+# 
+# PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
+# 
+# VERSION="@VERSION@"
+# 
+# PACKAGE="@PACKAGE@"
+# 
+# DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
+# DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
+
+	globus_args_short_usage()
+	{
+	    ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
+
+Syntax : ${short_usage}
+
+Use -help to display full usage.
+
+EOF
+	}
+
+	globus_args_option_error()
+	{
+	    ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
+
+Error, argument $1 : $2
+EOF
+	    globus_args_short_usage
+	    exit 1
+	}
+
+	
+	globus_args_unrecognized_option()
+	{
+	    globus_args_option_error $1 "unrecognized option"
+	    exit 1
+	}	
+
+	_done=no
+	_n=1
+	while [ "$_done" = no -a "$_n" -le "$#" ] ; do
+	    _tmp="echo \"\$${_n}\""
+	    _arg="`eval ${_tmp}`"
+	    case "${_arg}" in
+		-help | -usage)
+		    long_usage
+		    exit 0
+		    ;;
+		-version)
+		    if [ "X${PROGRAM_NAME}" != "X" -a \
+			  "X${PROGRAM_VERSION}" != "X" ]; then
+		        echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+		    elif [ "X${PACKAGE}" != "X" -a \
+		           "X${VERSION}" != "X" ]; then
+			echo "${PACKAGE}: ${VERSION}"
+		    else
+			echo "No version information available."
+		    fi
+		    exit 0
+		    ;;
+		-versions)
+		    if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+			 -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+			 "X${DIRT_TIMESTAMP}" != "X@DIRT_TIMESTAMP@" -a \
+			 "X${DIRT_BRANCH_ID}" != "X@DIRT_BRANCH_ID@" ];
+		    then
+			echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+		    else
+			echo "No DiRT information available."
+		    fi
+		    exit 0;
+		    ;;
+	        --)
+		    _done=yes
+		    ;;
+		--*)
+		    globus_args_option_error $1 "double-dashed option syntax is not allowed"
+		    ;;
+		*)
+		    _n=`${GLOBUS_SH_EXPR-expr} $_n + 1`
+		    ;;
+	    esac
+	done
+	_n=
+	_tmp=
+	_arg=
+	_done=
+

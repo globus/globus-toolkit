@@ -1,6 +1,6 @@
 diff -u -r -P cyrus-sasl-1.5.27/Makefile.in cyrus-sasl-1.5.27-patched/Makefile.in
 --- cyrus-sasl-1.5.27/Makefile.in	2001-03-23 19:48:13.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/Makefile.in	2002-09-20 08:32:47.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -124,6 +124,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -60,7 +60,7 @@ diff -u -r -P cyrus-sasl-1.5.27/Makefile.in cyrus-sasl-1.5.27-patched/Makefile.i
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/aclocal.m4 cyrus-sasl-1.5.27-patched/aclocal.m4
 --- cyrus-sasl-1.5.27/aclocal.m4	2001-03-23 19:48:12.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/aclocal.m4	2002-09-20 08:32:42.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/aclocal.m4	2002-09-27 00:17:34.000000000 -0500
 @@ -133,6 +133,39 @@
  	ACLOCAL="$ACLOCAL -I \$(top_srcdir)/cmulocal"
  	])
@@ -137,7 +137,7 @@ diff -u -r -P cyrus-sasl-1.5.27/aclocal.m4 cyrus-sasl-1.5.27-patched/aclocal.m4
  dnl from Zephyr
 diff -u -r -P cyrus-sasl-1.5.27/config/config.guess cyrus-sasl-1.5.27-patched/config/config.guess
 --- cyrus-sasl-1.5.27/config/config.guess	1999-12-30 12:16:24.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/config/config.guess	2002-09-20 08:32:45.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/config/config.guess	2002-09-27 00:17:34.000000000 -0500
 @@ -1,6 +1,6 @@
  #! /bin/sh
  # Attempt to guess a canonical system name.
@@ -599,7 +599,7 @@ diff -u -r -P cyrus-sasl-1.5.27/config/config.guess cyrus-sasl-1.5.27-patched/co
  
 diff -u -r -P cyrus-sasl-1.5.27/config/config.sub cyrus-sasl-1.5.27-patched/config/config.sub
 --- cyrus-sasl-1.5.27/config/config.sub	1999-12-30 12:16:24.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/config/config.sub	2002-09-20 08:32:45.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/config/config.sub	2002-09-27 00:17:34.000000000 -0500
 @@ -1,6 +1,8 @@
  #! /bin/sh
  # Configuration validation subroutine script, version 1.1.
@@ -779,7 +779,7 @@ diff -u -r -P cyrus-sasl-1.5.27/config/config.sub cyrus-sasl-1.5.27-patched/conf
  		;;
 diff -u -r -P cyrus-sasl-1.5.27/config/ltconfig cyrus-sasl-1.5.27-patched/config/ltconfig
 --- cyrus-sasl-1.5.27/config/ltconfig	1999-12-30 12:16:25.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/config/ltconfig	2002-09-20 08:32:45.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/config/ltconfig	2002-09-27 00:20:23.000000000 -0500
 @@ -1,7 +1,8 @@
  #! /bin/sh
  
@@ -1135,7 +1135,7 @@ diff -u -r -P cyrus-sasl-1.5.27/config/ltconfig cyrus-sasl-1.5.27-patched/config
      shlibpath_overrides_runpath=no
      ;;
    esac
-@@ -1919,14 +1971,22 @@
+@@ -1919,6 +1971,14 @@
    soname_spec='${libname}${release}.sl$major'
    # HP-UX runs *really* slowly unless shared libraries are mode 555.
    postinstall_cmds='chmod 555 $lib'
@@ -1150,16 +1150,6 @@ diff -u -r -P cyrus-sasl-1.5.27/config/ltconfig cyrus-sasl-1.5.27-patched/config
    ;;
  
  irix5* | irix6*)
-   version_type=irix
-   need_lib_prefix=no
-   need_version=no
--  soname_spec='${libname}${release}.so.$major'
--  library_names_spec='${libname}${release}.so.$versuffix ${libname}${release}.so.$major ${libname}${release}.so $libname.so'
-+  soname_spec='${libname}${release}.so$major'
-+  library_names_spec='${libname}${release}.so$versuffix ${libname}${release}.so$major ${libname}${release}.so $libname.so'
-   case "$host_os" in
-   irix5*)
-     libsuff= shlibsuff=
 @@ -1966,19 +2026,15 @@
    finish_cmds='PATH="\$PATH:/sbin" ldconfig -n $libdir'
    shlibpath_var=LD_LIBRARY_PATH
@@ -1524,7 +1514,7 @@ diff -u -r -P cyrus-sasl-1.5.27/config/ltconfig cyrus-sasl-1.5.27-patched/config
  
 diff -u -r -P cyrus-sasl-1.5.27/config/ltmain.sh cyrus-sasl-1.5.27-patched/config/ltmain.sh
 --- cyrus-sasl-1.5.27/config/ltmain.sh	1999-12-30 12:16:25.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/config/ltmain.sh	2002-09-20 08:32:45.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/config/ltmain.sh	2002-09-27 00:17:34.000000000 -0500
 @@ -54,8 +54,8 @@
  # Constants.
  PROGRAM=ltmain.sh
@@ -1572,7 +1562,7 @@ diff -u -r -P cyrus-sasl-1.5.27/config/ltmain.sh cyrus-sasl-1.5.27-patched/confi
        # Export the path to the program.
 diff -u -r -P cyrus-sasl-1.5.27/configure cyrus-sasl-1.5.27-patched/configure
 --- cyrus-sasl-1.5.27/configure	2001-03-23 19:48:12.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/configure	2002-09-20 08:32:51.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/configure	2002-09-27 00:17:34.000000000 -0500
 @@ -12,6 +12,9 @@
  ac_default_prefix=/usr/local
  # Any additions from configure.in:
@@ -3735,7 +3725,7 @@ diff -u -r -P cyrus-sasl-1.5.27/configure cyrus-sasl-1.5.27-patched/configure
  s%@build@%$build%g
 diff -u -r -P cyrus-sasl-1.5.27/configure.in cyrus-sasl-1.5.27-patched/configure.in
 --- cyrus-sasl-1.5.27/configure.in	2001-03-23 19:47:27.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/configure.in	2002-09-20 08:31:33.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/configure.in	2002-09-27 00:17:34.000000000 -0500
 @@ -51,6 +51,7 @@
  dnl
  AM_INIT_AUTOMAKE(cyrus-sasl, 1.5.27)
@@ -3765,7 +3755,7 @@ diff -u -r -P cyrus-sasl-1.5.27/configure.in cyrus-sasl-1.5.27-patched/configure
       CPPFLAGS="$CPPFLAGS -I$gssapi/include"
 diff -u -r -P cyrus-sasl-1.5.27/doc/Makefile.in cyrus-sasl-1.5.27-patched/doc/Makefile.in
 --- cyrus-sasl-1.5.27/doc/Makefile.in	2001-03-23 19:48:13.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/doc/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/doc/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -125,6 +125,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -3801,7 +3791,7 @@ diff -u -r -P cyrus-sasl-1.5.27/doc/Makefile.in cyrus-sasl-1.5.27-patched/doc/Ma
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/include/Makefile.in cyrus-sasl-1.5.27-patched/include/Makefile.in
 --- cyrus-sasl-1.5.27/include/Makefile.in	2001-03-23 19:48:13.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/include/Makefile.in	2002-09-20 08:32:47.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/include/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -124,6 +124,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -3841,7 +3831,7 @@ diff -u -r -P cyrus-sasl-1.5.27/include/Makefile.in cyrus-sasl-1.5.27-patched/in
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/include/saslplug.h cyrus-sasl-1.5.27-patched/include/saslplug.h
 --- cyrus-sasl-1.5.27/include/saslplug.h	2000-02-27 14:39:50.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/include/saslplug.h	2002-09-20 08:31:15.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/include/saslplug.h	2002-09-27 00:17:34.000000000 -0500
 @@ -46,14 +46,6 @@
  			       int (**pproc)(),
  			       void **pcontext);
@@ -3868,7 +3858,7 @@ diff -u -r -P cyrus-sasl-1.5.27/include/saslplug.h cyrus-sasl-1.5.27-patched/inc
  } sasl_utils_t;
 diff -u -r -P cyrus-sasl-1.5.27/java/CyrusSasl/Makefile.in cyrus-sasl-1.5.27-patched/java/CyrusSasl/Makefile.in
 --- cyrus-sasl-1.5.27/java/CyrusSasl/Makefile.in	2001-03-23 19:48:14.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/java/CyrusSasl/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/java/CyrusSasl/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -105,6 +105,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -3908,7 +3898,7 @@ diff -u -r -P cyrus-sasl-1.5.27/java/CyrusSasl/Makefile.in cyrus-sasl-1.5.27-pat
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/java/Makefile.in cyrus-sasl-1.5.27-patched/java/Makefile.in
 --- cyrus-sasl-1.5.27/java/Makefile.in	2001-03-23 19:48:14.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/java/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/java/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -105,6 +105,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -3944,7 +3934,7 @@ diff -u -r -P cyrus-sasl-1.5.27/java/Makefile.in cyrus-sasl-1.5.27-patched/java/
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/java/javax/Makefile.in cyrus-sasl-1.5.27-patched/java/javax/Makefile.in
 --- cyrus-sasl-1.5.27/java/javax/Makefile.in	2001-03-23 19:48:14.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/java/javax/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/java/javax/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -121,6 +121,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -3980,7 +3970,7 @@ diff -u -r -P cyrus-sasl-1.5.27/java/javax/Makefile.in cyrus-sasl-1.5.27-patched
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/java/javax/security/Makefile.in cyrus-sasl-1.5.27-patched/java/javax/security/Makefile.in
 --- cyrus-sasl-1.5.27/java/javax/security/Makefile.in	2001-03-23 19:48:14.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/java/javax/security/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/java/javax/security/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -121,6 +121,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4016,7 +4006,7 @@ diff -u -r -P cyrus-sasl-1.5.27/java/javax/security/Makefile.in cyrus-sasl-1.5.2
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/java/javax/security/auth/Makefile.in cyrus-sasl-1.5.27-patched/java/javax/security/auth/Makefile.in
 --- cyrus-sasl-1.5.27/java/javax/security/auth/Makefile.in	2001-03-23 19:48:14.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/java/javax/security/auth/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/java/javax/security/auth/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -121,6 +121,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4052,7 +4042,7 @@ diff -u -r -P cyrus-sasl-1.5.27/java/javax/security/auth/Makefile.in cyrus-sasl-
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/java/javax/security/auth/callback/Makefile.in cyrus-sasl-1.5.27-patched/java/javax/security/auth/callback/Makefile.in
 --- cyrus-sasl-1.5.27/java/javax/security/auth/callback/Makefile.in	2001-03-23 19:48:14.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/java/javax/security/auth/callback/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/java/javax/security/auth/callback/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -121,6 +121,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4088,7 +4078,7 @@ diff -u -r -P cyrus-sasl-1.5.27/java/javax/security/auth/callback/Makefile.in cy
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/lib/Makefile.in cyrus-sasl-1.5.27-patched/lib/Makefile.in
 --- cyrus-sasl-1.5.27/lib/Makefile.in	2001-03-23 19:48:13.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/lib/Makefile.in	2002-09-20 08:32:47.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/lib/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -124,6 +124,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4128,7 +4118,7 @@ diff -u -r -P cyrus-sasl-1.5.27/lib/Makefile.in cyrus-sasl-1.5.27-patched/lib/Ma
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/lib/client.c cyrus-sasl-1.5.27-patched/lib/client.c
 --- cyrus-sasl-1.5.27/lib/client.c	2000-03-28 00:47:55.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/lib/client.c	2002-09-20 08:31:15.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/lib/client.c	2002-09-27 00:17:34.000000000 -0500
 @@ -579,7 +579,8 @@
  	    name[place]=list[pos];
  	    pos++;
@@ -4141,7 +4131,7 @@ diff -u -r -P cyrus-sasl-1.5.27/lib/client.c cyrus-sasl-1.5.27-patched/lib/clien
  				       || list[pos] == '_'
 diff -u -r -P cyrus-sasl-1.5.27/lib/common.c cyrus-sasl-1.5.27-patched/lib/common.c
 --- cyrus-sasl-1.5.27/lib/common.c	2000-11-21 23:55:31.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/lib/common.c	2002-09-20 08:31:15.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/lib/common.c	2002-09-27 00:17:34.000000000 -0500
 @@ -53,13 +53,6 @@
  #include <saslutil.h>
  #include <saslplug.h>
@@ -4176,7 +4166,7 @@ diff -u -r -P cyrus-sasl-1.5.27/lib/common.c cyrus-sasl-1.5.27-patched/lib/commo
  	    done=1;
 diff -u -r -P cyrus-sasl-1.5.27/lib/dlopen.c cyrus-sasl-1.5.27-patched/lib/dlopen.c
 --- cyrus-sasl-1.5.27/lib/dlopen.c	2000-08-13 20:44:02.000000000 -0500
-+++ cyrus-sasl-1.5.27-patched/lib/dlopen.c	2002-09-20 08:31:15.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/lib/dlopen.c	2002-09-27 00:17:34.000000000 -0500
 @@ -174,6 +174,7 @@
      flag = 0;
  #endif
@@ -4195,7 +4185,7 @@ diff -u -r -P cyrus-sasl-1.5.27/lib/dlopen.c cyrus-sasl-1.5.27-patched/lib/dlope
  
 diff -u -r -P cyrus-sasl-1.5.27/man/Makefile.in cyrus-sasl-1.5.27-patched/man/Makefile.in
 --- cyrus-sasl-1.5.27/man/Makefile.in	2001-03-23 19:48:14.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/man/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/man/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -124,6 +124,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4231,7 +4221,7 @@ diff -u -r -P cyrus-sasl-1.5.27/man/Makefile.in cyrus-sasl-1.5.27-patched/man/Ma
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/plugins/Makefile.in cyrus-sasl-1.5.27-patched/plugins/Makefile.in
 --- cyrus-sasl-1.5.27/plugins/Makefile.in	2001-03-23 19:48:13.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/plugins/Makefile.in	2002-09-20 08:32:47.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/plugins/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -128,6 +128,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4271,7 +4261,7 @@ diff -u -r -P cyrus-sasl-1.5.27/plugins/Makefile.in cyrus-sasl-1.5.27-patched/pl
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/pwcheck/Makefile.in cyrus-sasl-1.5.27-patched/pwcheck/Makefile.in
 --- cyrus-sasl-1.5.27/pwcheck/Makefile.in	2001-03-23 19:48:14.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/pwcheck/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/pwcheck/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -104,6 +104,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4311,7 +4301,7 @@ diff -u -r -P cyrus-sasl-1.5.27/pwcheck/Makefile.in cyrus-sasl-1.5.27-patched/pw
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/sample/Makefile.in cyrus-sasl-1.5.27-patched/sample/Makefile.in
 --- cyrus-sasl-1.5.27/sample/Makefile.in	2001-03-23 19:48:13.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/sample/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/sample/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -124,6 +124,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4351,7 +4341,7 @@ diff -u -r -P cyrus-sasl-1.5.27/sample/Makefile.in cyrus-sasl-1.5.27-patched/sam
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/saslauthd/Makefile.in cyrus-sasl-1.5.27-patched/saslauthd/Makefile.in
 --- cyrus-sasl-1.5.27/saslauthd/Makefile.in	2001-03-23 19:48:14.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/saslauthd/Makefile.in	2002-09-20 08:32:48.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/saslauthd/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -80,6 +80,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4391,7 +4381,7 @@ diff -u -r -P cyrus-sasl-1.5.27/saslauthd/Makefile.in cyrus-sasl-1.5.27-patched/
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/utils/Makefile.in cyrus-sasl-1.5.27-patched/utils/Makefile.in
 --- cyrus-sasl-1.5.27/utils/Makefile.in	2001-03-23 19:48:13.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/utils/Makefile.in	2002-09-20 08:32:47.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/utils/Makefile.in	2002-09-27 00:17:34.000000000 -0500
 @@ -124,6 +124,7 @@
  LIB_SOCKET = @LIB_SOCKET@
  LN_S = @LN_S@
@@ -4431,7 +4421,7 @@ diff -u -r -P cyrus-sasl-1.5.27/utils/Makefile.in cyrus-sasl-1.5.27-patched/util
  	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 diff -u -r -P cyrus-sasl-1.5.27/utils/sasldblistusers.c cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c
 --- cyrus-sasl-1.5.27/utils/sasldblistusers.c	2001-03-11 13:33:10.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c	2002-09-20 08:31:15.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c	2002-09-27 00:17:34.000000000 -0500
 @@ -136,7 +136,8 @@
  
      while (dkey.dptr != NULL) {

@@ -16,8 +16,13 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
 
-echo "generating setup-common-sh-scripts"
-autoconf setup-common-sh-scripts.in > setup-common-sh-scripts || error
-chmod 755 setup-common-sh-scripts
+echo "generating findshelltools"
+autoconf findshelltools.in > findshelltools || error
+chmod 755 findshelltools
+
+echo "generating setup-tmpdirs"
+autoconf setup-tmpdirs.in > setup-tmpdirs || error
+chmod 755 setup-tmpdirs
+
 
 exit 0

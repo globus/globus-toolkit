@@ -243,7 +243,7 @@ GSS_CALLCONV gss_init_sec_context(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_PROXY_VIOLATION,
-                ("Expected limited proxy"));
+                ("Function set to not accept limited proxies"));
             context->gss_state = GSS_CON_ST_DONE;
             break;
         }
@@ -276,7 +276,7 @@ GSS_CALLCONV gss_init_sec_context(
 
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
+                    GLOBUS_GSI_GSSAPI_ERROR_MUTUAL_AUTH,
                     ("The target name (%s) in the context, and the target "
                      "name (%s) passed to the function do not match",
                      actual_name,expected_name));
