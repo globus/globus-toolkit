@@ -119,7 +119,7 @@ gsiftp          2811/tcp
 
 Then add the following line to your /etc/inetd.conf file:
 @code
-gsiftp  stream  tcp     nowait  root    /usr/sbin/in.ftpd in.ftpd -l
+gsiftp  stream  tcp     nowait  root    /usr/sbin/in.ftpd in.ftpd -l -G <GLOBUS_LOCATION>
 @endcode
 
 Note that you may need to change the path to in.ftpd if you specified
@@ -127,6 +127,9 @@ a different prefix for installation.
 
 The '-l' option indicates that wuftpd should log all connections (this
 is a standard wuftpd feature).
+
+The '-G' option indicates what GLOBUS_LOCATION should be used to locate
+ftp configuration files.
 
 Then restart inetd however you normally do so (typically 'kill -1
 <inetd's pid>').
