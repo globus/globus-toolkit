@@ -73,13 +73,12 @@
  * @ingroup gridftp_driver
  *
  * The errors reported by the GRIDFTP driver include GLOBUS_XIO_ERROR_EOF, 
- * GLOBUS_XIO_ERROR_CANCELED, @ref GLOBUS_XIO_GRIDFTP_IO_ERROR, 
- * @ref GLOBUS_XIO_GRIDFTP_OUTSTANDING_READ_ERROR, 
- * @ref GLOBUS_XIO_GRIDFTP_SEEK_ERROR, 
- * @ref GLOBUS_XIO_GRIDFTP_OUTSTANDING_WRITE_ERROR,
- * @ref GLOBUS_XIO_GRIDFTP_PENDING_READ_ERROR, 
- * @ref GLOBUS_XIO_GRIDFTP_PENDING_WRITE_ERROR,
- * @ref GLOBUS_XIO_GRIDFTP_OUTSTANDING_PARTIAL_XFER_ERROR
+ * GLOBUS_XIO_ERROR_CANCELED, @ref GLOBUS_XIO_GRIDFTP_ERROR_OUTSTANDING_READ, 
+ * @ref GLOBUS_XIO_GRIDFTP_ERROR_SEEK, 
+ * @ref GLOBUS_XIO_GRIDFTP_ERROR_OUTSTANDING_WRITE,
+ * @ref GLOBUS_XIO_GRIDFTP_ERROR_PENDING_READ, 
+ * @ref GLOBUS_XIO_GRIDFTP_ERROR_PENDING_WRITE,
+ * @ref GLOBUS_XIO_GRIDFTP_ERROR_OUTSTANDING_PARTIAL_XFER
  *
  * @see globus_xio_driver_error_match()
  * @see globus_error_errno_match()
@@ -92,36 +91,32 @@
 typedef enum
 {
     /**
-     * Indicates that an error occured while reading/writing data
-     */
-    GLOBUS_XIO_GRIDFTP_IO_ERROR,
-    /**
      * Indicates that a seek has been called while there is an outstanding io
      */
-    GLOBUS_XIO_GRIDFTP_SEEK_ERROR,
+    GLOBUS_XIO_GRIDFTP_ERROR_SEEK,
     /**
      * Indicates that a write has been called while there is an outstanding 
      * read
      */
-    GLOBUS_XIO_GRIDFTP_OUTSTANDING_READ_ERROR,
+    GLOBUS_XIO_GRIDFTP_ERROR_OUTSTANDING_READ,
     /**
      * Indicates that a read has been called while there is an outstanding 
      * write
      */
-    GLOBUS_XIO_GRIDFTP_OUTSTANDING_WRITE_ERROR,
+    GLOBUS_XIO_GRIDFTP_ERROR_OUTSTANDING_WRITE,
     /**
      * Indicates that a write has been called while there is a read pending 
      */
-    GLOBUS_XIO_GRIDFTP_PENDING_READ_ERROR,
+    GLOBUS_XIO_GRIDFTP_ERROR_PENDING_READ,
     /**
      * Indicates that a read has been called while there is a write pending 
      */
-    GLOBUS_XIO_GRIDFTP_PENDING_WRITE_ERROR,
+    GLOBUS_XIO_GRIDFTP_ERROR_PENDING_WRITE,
     /**
      * Indicates that a second partial xfer has been initiated while the first
      * one is still outstanding
      */
-    GLOBUS_XIO_GRIDFTP_OUTSTANDING_PARTIAL_XFER_ERROR
+    GLOBUS_XIO_GRIDFTP_ERROR_OUTSTANDING_PARTIAL_XFER
 
 } globus_xio_gridftp_error_type_t;
 

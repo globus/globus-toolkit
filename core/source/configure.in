@@ -17,6 +17,12 @@ fi
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
 
+# save CC and CFLAGS, so AC_PROG_CC can detect and use a compiler
+# up to the point where we want to pick a compiler based on the
+# flavor  (see config/accompiler.m4)
+SAVED_CC="$CC"
+SAVED_CFLAGS="$CFLAGS"
+
 # Call init macros
 
 GPT_INIT

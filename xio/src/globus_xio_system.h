@@ -54,16 +54,6 @@ typedef void
     void *                              user_arg);
 
 globus_result_t
-globus_xio_system_register_open(
-    globus_xio_operation_t              op,
-    const char *                        pathname,
-    int                                 flags,
-    int                                 mode,
-    globus_xio_system_handle_t *        out_handle,
-    globus_xio_system_callback_t        callback,
-    void *                              user_arg);
-
-globus_result_t
 globus_xio_system_register_connect(
     globus_xio_operation_t              op,
     globus_xio_system_handle_t          handle,

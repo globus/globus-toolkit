@@ -45,6 +45,7 @@ compare.
 
 =cut
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 my ($dest_host, $dest_file) = setup_remote_dest();
 
@@ -60,7 +61,7 @@ sub basic_func
         $ENV{'X509_USER_PROXY'} = "/dev/null";
     }
     
-    my $command = "$test_exec -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, $use_proxy ? 0 : -1);
     if($use_proxy && $errors eq "")
     {
@@ -89,7 +90,7 @@ sub basic_func
     
     clean_remote_file($dest_host, $dest_file);
 }
-push(@tests, "basic_func" . "(0);"); #Use invalid proxy
+push(@tests, "basic_func" . "(0);") unless $proto ne "gsiftp://"; #Use invalid proxy
 push(@tests, "basic_func" . "(1);"); #Use proxy
 
 =head2 I<bad_url_src> (3-4)
@@ -115,7 +116,7 @@ sub bad_url_src
     my ($errors,$rc) = ("",0);
     my $src = shift;
 
-    my $command = "$test_exec -s '$src' -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -s '$src' -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -129,8 +130,8 @@ sub bad_url_src
     
     clean_remote_file($dest_host, $dest_file);
 }
-push(@tests, "bad_url_src('gsiftp://$source_host/no-such-file-here');");
-push(@tests, "bad_url_src('gsiftp://$source_host:4/no-such-file-here');");
+push(@tests, "bad_url_src('$proto$source_host/no-such-file-here');");
+push(@tests, "bad_url_src('$proto$source_host:4/no-such-file-here');");
 
 =head2
 
@@ -150,7 +151,7 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s gsiftp://$source_host$source_file -d gsiftp://$dest_host/no-such-file-here >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/no-such-file-here >/dev/null 2>&1";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -179,7 +180,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -a $abort_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -210,7 +211,7 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    my $command = "$test_exec -r $restart_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -r $restart_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -267,7 +268,7 @@ sub dcau_test
     my ($errors,$rc) = ("",0);
     my ($dcau, $desired_rc) = @_;
 
-    my $command = "$test_exec -c $dcau -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -c $dcau -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, $desired_rc);
     if($errors eq "" && $desired_rc == 0)
     {
@@ -304,7 +305,7 @@ else
 push(@tests, "dcau_test('none', 0);");
 push(@tests, "dcau_test('self', 0);");
 push(@tests, "dcau_test(\"'$subject'\", 0);");
-push(@tests, "dcau_test(\"'/O=Grid/O=Globus/CN=bogus'\", 1);");
+push(@tests, "dcau_test(\"'/O=Grid/O=Globus/CN=bogus'\", 1);") unless $proto ne "gsiftp://";
 
 =head2 I<prot_test> (Test 93-95)
 
@@ -333,7 +334,7 @@ sub prot_test
     my ($errors,$rc) = ("",0);
     my ($prot, $desired_rc) = @_;
 
-    my $command = "$test_exec -c self -t $prot -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -c self -t $prot -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, $desired_rc);
     if($errors eq "" && $desired_rc == 0)
     {

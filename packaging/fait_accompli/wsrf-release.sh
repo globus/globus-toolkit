@@ -7,7 +7,7 @@ GPT="fait_accompli/gpt-3.2autotools2004-src.tar.gz"
 
 mkdir $INSTALLER
 
-./make-packages.pl $TAGOPTS --bundles=gt2-threaded,gt2-unthreaded,globus-rls-server,gt4-java-ws-core,gt4-mds,gt4-rft,gt4-gram,gt4-c-ws-core --faster --version=$VERSION --installer=install-wsrf $@
+./make-packages.pl $TAGOPTS --bundles=gt2-threaded,gt2-unthreaded,globus-rls-server,gt4-java-ws-core,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-cas,gt4-delegation,gt4-c-ws-core --version=$VERSION --installer=install-wsrf $@
 
 if [ $? -ne 0 ]; then
    echo "ERROR"

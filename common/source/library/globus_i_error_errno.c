@@ -14,6 +14,7 @@
 #include "globus_object.h"
 #include "globus_error.h"
 #include "globus_error_generic.h"
+#include "globus_common.h"
 
 /**
  * @name Copy Error Data
@@ -86,7 +87,7 @@ globus_l_error_errno_printable(
 {
     globus_module_descriptor_t *        base_source;
     char *                              sys_failed =
-        "A system call failed:";
+        _GCSL("A system call failed:");
     char *                              sys_error;
     int                                 length = 4 + strlen(sys_failed);
     char *                              printable;

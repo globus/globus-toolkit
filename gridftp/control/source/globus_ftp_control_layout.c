@@ -111,7 +111,6 @@ globus_ftp_control_layout_blocked(
     int                                         chunk;
     int                                         stripe_ndx;
     globus_off_t                                offset;
-    int                                         connections;
     globus_size_t                               size;
     globus_result_t                             res;
 
@@ -211,7 +210,6 @@ globus_ftp_control_layout_partitioned(
     int                                         chunk;
     int                                         stripe_ndx;
     globus_off_t                                offset;
-    int                                         connections;
     globus_size_t                               size;
     globus_size_t                               filesize;
     globus_result_t                             res;

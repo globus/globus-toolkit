@@ -211,8 +211,18 @@ typedef union globus_ftp_control_parallelism_u
 
 typedef struct globus_ftp_control_host_port_s
 {
-    int                                         host[4];
+    int                                         host[16];
     unsigned short                              port;
+    
+    /*
+     * if ipv6 is not enabled, the following param will be assumed to be 4
+     * when passed as an in-paramater. otherwise it must indicate the correct
+     * len.
+     * 
+     * for out-parameters, the following will _always_ be 4 unless ipv6 is
+     * allowed. then it will be either 4 or 16
+     */
+    int                                         hostlen;
 } globus_ftp_control_host_port_t;
 
 /** Module descriptor
@@ -411,7 +421,6 @@ typedef struct globus_ftp_control_auth_info_s
     gss_cred_id_t                               credential_handle;
     globus_bool_t                               locally_acquired_credential;
     gss_name_t                                  target_name;
-    struct gss_channel_bindings_struct          chan_bindings;
     OM_uint32                                   req_flags;
     char *                                      user;
     char *                                      password;
@@ -600,9 +609,7 @@ typedef struct globus_ftp_cc_handle_s
     globus_bool_t                                    use_auth;
     globus_io_handle_t                               io_handle;
     globus_ftp_cc_state_t                            cc_state;
-    struct hostent                                   client;
-    char                                             client_buffer[
-	GLOBUS_FTP_CONTROL_HOSTENT_BUFFER_SIZE];
+    char                                             serverhost[MAXHOSTNAMELEN];
     struct hostent                                   server;
     char                                             server_buffer[
 	GLOBUS_FTP_CONTROL_HOSTENT_BUFFER_SIZE];
@@ -1573,6 +1580,14 @@ globus_ftp_control_data_read_all(
     globus_ftp_control_data_callback_t          callback,
     void *                                      callback_arg);
 
+/* this has only been tested enough for the client library and gridftp server
+ * it is very likely to not work for general usage
+ */
+globus_result_t
+globus_ftp_control_ipv6_allow(
+    globus_ftp_control_handle_t *               handle,
+    globus_bool_t                               allow);
+    
 #endif /* GLOBUS_SEPARATE_DOCS */
 
 /*
@@ -1619,13 +1634,21 @@ globus_ftp_control_host_port_copy(
     globus_ftp_control_host_port_t *              dest,
     globus_ftp_control_host_port_t *              src);
 
+#define globus_i_ftp_control_client_get_connection_info \
+     globus_ftp_control_client_get_connection_info
 globus_result_t
-globus_i_ftp_control_client_get_connection_info(
+globus_ftp_control_client_get_connection_info(
     globus_ftp_control_handle_t *         handle,
     int                                   localhost[4],
     unsigned short *                      localport,
     int                                   remotehost[4],
     unsigned short *                      remoteport);
+
+globus_result_t
+globus_ftp_control_client_get_connection_info_ex(
+    globus_ftp_control_handle_t *         handle,
+    globus_ftp_control_host_port_t *      local_info,
+    globus_ftp_control_host_port_t *      remote_info);
 
 EXTERN_C_END
 

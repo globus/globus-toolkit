@@ -7,6 +7,7 @@
 #include "globus_libc.h"
 #include "globus_fifo.h"
 #include GLOBUS_THREAD_INCLUDE
+#include "globus_common.h"
 
 #define globus_l_args_malloc(type,n)  (type *) globus_malloc(n * sizeof(type))
 
@@ -49,10 +50,10 @@ globus_l_args_create_error_msg( char **        error_msg,
     int         len;
 
 
-#define error_format    "\nError, argument #%d (%s) : %s\n\nSyntax : "
-#define error_epilogue  "\n\nUse -help to display full usage.\n"
+#define error_format    _GCSL("\nError, argument #%d (%s) : %s\n\nSyntax : ")
+#define error_epilogue  _GCSL("\n\nUse -help to display full usage.\n")
 
-    my_error_string = (error_string) ? error_string : "(no error message)";
+    my_error_string = (error_string) ? error_string : _GCSL("(no error message)");
 
     len = strlen(error_format)
         + strlen(current_argv)
@@ -206,8 +207,8 @@ globus_l_args_check_options(
     globus_args_option_descriptor_t *   options     ,
     char **                             error_msg   )
 {
-#  define ERROR7   "Error : flags -help, -usage, -version,and -versions are reserved.\n"
-#  define ERRORID0 "Error : id_number 0 is reserved for unflagged arguments.\n"
+#  define ERROR7   _GCSL("Error : flags -help, -usage, -version,and -versions are reserved.\n")
+#  define ERRORID0 _GCSL("Error : id_number 0 is reserved for unflagged arguments.\n")
 
     char **     alias;
     int         i;
@@ -335,7 +336,7 @@ globus_args_scan(
 		    error_msg,
 		    my_argc,
 		    my_arg,
-		    "double-dashed option syntax is not allowed",
+		    _GCSL("double-dashed option syntax is not allowed"),
 		    oneline_usage                               );
             }
             done = GLOBUS_TRUE;
@@ -396,7 +397,7 @@ globus_args_scan(
 				error_msg,
 				my_argc,
 				my_arg,
-				"not enough arguments",
+				_GCSL("not enough arguments"),
 				oneline_usage  );
 
                             rc = GLOBUS_FAILURE;
@@ -429,7 +430,7 @@ globus_args_scan(
 	    globus_l_args_create_error_msg( error_msg,
 					    my_argc,
 					    my_arg,
-					    "unknown option",
+					    _GCSL("unknown option"),
 					    oneline_usage  );
 	}
         if (rc!=GLOBUS_SUCCESS)
@@ -527,7 +528,7 @@ globus_validate_int( char *         value,
 
     if (!parms)
     {
-	*error_msg = globus_l_validate_error_null_parms;
+	*error_msg = _GCSL(globus_l_validate_error_null_parms);
 	return GLOBUS_FAILURE;
     }
 
@@ -545,7 +546,7 @@ globus_validate_int( char *         value,
 
     if ( !sscanf(value, format, &val ) )
     {
-        *error_msg = globus_l_validate_error_not_an_int;
+        *error_msg = _GCSL(globus_l_validate_error_not_an_int);
         return GLOBUS_FAILURE;
     }
 
@@ -554,14 +555,14 @@ globus_validate_int( char *         value,
 
     if (!(range->range_type & GLOBUS_VALIDATE_INT_MINMAX))
     {
-        *error_msg = globus_l_validate_error_range_type;
+        *error_msg = _GCSL(globus_l_validate_error_range_type);
         return GLOBUS_FAILURE;
     }
     if ((range->range_type & GLOBUS_VALIDATE_INT_MIN) &&
         (range->range_min > val))
     {
 	globus_libc_sprintf(globus_l_validate_error_buf,
-			    "value is smaller than allowed min=%d",
+			    _GCSL("value is smaller than allowed min=%d"),
 			    range->range_min);
 	*error_msg = globus_l_validate_error_buf;
         return GLOBUS_FAILURE;
@@ -570,7 +571,7 @@ globus_validate_int( char *         value,
         (range->range_max < val))
     {
 	globus_libc_sprintf(globus_l_validate_error_buf,
-			    "value is larger than allowed max=%d",
+			    _GCSL("value is larger than allowed max=%d"),
 			    range->range_max);
         *error_msg = globus_l_validate_error_buf;
         return GLOBUS_FAILURE;
@@ -599,7 +600,7 @@ globus_validate_filename( char *    value,
 
     if (!parms)
     {
-	*error_msg = globus_l_validate_error_null_parms;
+	*error_msg = _GCSL(globus_l_validate_error_null_parms);
 	return GLOBUS_FAILURE;
     }
 

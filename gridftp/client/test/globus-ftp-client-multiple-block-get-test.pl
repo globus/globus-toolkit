@@ -22,6 +22,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 # Test #1-2. Basic functionality: Do a get of /etc/group from
@@ -43,7 +44,7 @@ sub basic_func
     {
         $ENV{'X509_USER_PROXY'} = "/dev/null";
     }
-    my $command = "$test_exec -s 'gsiftp://$source_host$source_file' >$tmpname 2>/dev/null";
+    my $command = "$test_exec -s '$proto$source_host$source_file' >$tmpname 2>/dev/null";
     $errors = run_command($command, $use_proxy ? 0 : -1);
     if($errors eq "" && $use_proxy)
     {
@@ -69,7 +70,7 @@ sub basic_func
         delete $ENV{'X509_USER_PROXY'};
     }
 }
-push(@tests, "basic_func" . "(0);"); #Use invalid proxy
+push(@tests, "basic_func" . "(0);") unless $proto ne "gsiftp://"; #Use invalid proxy
 push(@tests, "basic_func" . "(1);"); #Use proxy
 
 # Test #3: Bad URL: Do a get of a non-existent file from localhost.
@@ -78,7 +79,7 @@ sub bad_url
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s 'gsiftp://$source_host/no-such-file-here' >/dev/null 2>/dev/null";
+    my $command = "$test_exec -s '$proto$source_host/no-such-file-here' >/dev/null 2>/dev/null";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -101,7 +102,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
     
-    my $command = "$test_exec -a $abort_point -s 'gsiftp://$source_host$source_file' >/dev/null 2>/dev/null";
+    my $command = "$test_exec -a $abort_point -s '$proto$source_host$source_file' >/dev/null 2>/dev/null";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -131,7 +132,7 @@ sub restart_test
 
     unlink($tmpname);
 
-    my $command = "$test_exec -r $restart_point -s 'gsiftp://$source_host$source_file' >$tmpname 2>/dev/null";
+    my $command = "$test_exec -r $restart_point -s '$proto$source_host$source_file' >$tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {

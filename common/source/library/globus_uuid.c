@@ -92,7 +92,7 @@ globus_l_uuid_get_mac(
         return GLOBUS_FAILURE
     }
     
-    memcpy(mac, ar.arp_ha.sa_data, 6);
+    memcpy(mac, req.arp_ha.sa_data, 6);
     close(sock);
     return GLOBUS_SUCCESS;
 
@@ -114,7 +114,7 @@ globus_l_uuid_get_mac(
         {
             struct sockaddr_dl *        sdl;
         
-            sdl = (struct sockaddr_dl *)ifap->ifa_addr;
+            sdl = (struct sockaddr_dl *)interface->ifa_addr;
             if(sdl->sdl_alen == 6)
             {
                 memcpy(mac, sdl->sdl_data + sdl->sdl_nlen, 6);
@@ -217,7 +217,6 @@ globus_uuid_create(
     timestamp += 0x13814000;
     upper = timestamp >> 32;
     
-    memset(uuid, 0, sizeof(*uuid));
     fields = &uuid->binary.fields;
     fields->time_low = timestamp;
     fields->time_mid = upper;
@@ -277,7 +276,6 @@ globus_uuid_import(
         }
     }
     
-    memset(uuid, 0, sizeof(*uuid));
     memcpy(uuid->text, str, GLOBUS_UUID_TEXTLEN);
     uuid->text[GLOBUS_UUID_TEXTLEN] = 0;
     
@@ -297,6 +295,24 @@ globus_uuid_import(
         buf[1] = *str++;
         fields->node[i] = strtoul(buf, NULL, 16);
     }
+    
+    return GLOBUS_SUCCESS;
+}
+
+int
+globus_uuid_fields(
+    globus_uuid_t *                     uuid,
+    globus_uuid_fields_t *              uuid_fields)
+{
+    globus_uuid_fields_t *              fields;
+    
+    fields = &uuid->binary.fields;
+    uuid_fields->time_low = ntohl(fields->time_low);
+    uuid_fields->time_mid = ntohs(fields->time_mid);
+    uuid_fields->time_hi_and_version = ntohs(fields->time_hi_and_version);
+    uuid_fields->clock_seq_low = fields->clock_seq_low;
+    uuid_fields->clock_seq_hi_and_reserved = fields->clock_seq_hi_and_reserved;
+    memcpy(uuid_fields->node, fields->node, 6);
     
     return GLOBUS_SUCCESS;
 }

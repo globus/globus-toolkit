@@ -95,15 +95,15 @@ globus_l_common_env_path( char** bufp, char* name )
     p = globus_libc_getenv(name);
     if (!p || strlen(p)==0)
     {
-	globus_libc_fprintf(stderr,"ERROR: %s not defined\n", name);
-	globus_libc_sprintf(errmsg,"Environment variable %s is not set", name);
+	globus_libc_fprintf(stderr,_GCSL("ERROR: %s not defined\n"), name);
+	globus_libc_sprintf(errmsg,_GCSL("Environment variable %s is not set"), name);
 	return GLOBUS_COMMON_PATH_ERROR_INSTANCE(errmsg);
     }
 
     *bufp = globus_libc_strdup(p);
     if (! *bufp)
     {
-	return GLOBUS_COMMON_PATH_ERROR_INSTANCE("malloc error");
+	return GLOBUS_COMMON_PATH_ERROR_INSTANCE(_GCSL("malloc error"));
     }
     
     return GLOBUS_SUCCESS;
@@ -187,7 +187,7 @@ globus_common_get_attribute_from_config_file( char *   deploy_path,
     filename = globus_malloc(strlen(deploy) +
 			     strlen(file_location) + 1 + 1 );
     if (!filename)
-	return GLOBUS_COMMON_PATH_ERROR_INSTANCE("malloc error");
+	return GLOBUS_COMMON_PATH_ERROR_INSTANCE(_GCSL("malloc error"));
     
     globus_libc_sprintf(filename,
 			"%s/%s",
@@ -201,7 +201,7 @@ globus_common_get_attribute_from_config_file( char *   deploy_path,
     if (!fp)
     {
 	globus_libc_sprintf(buf,
-			    "failed to open %s",
+			    _GCSL("failed to open %s"),
 			    filename);
 	return GLOBUS_COMMON_PATH_ERROR_INSTANCE( buf );
     }
@@ -242,14 +242,14 @@ globus_common_get_attribute_from_config_file( char *   deploy_path,
     if (!p || strlen(p)==0)
     {
 	globus_libc_sprintf(buf,
-			    "could not resolve %s from config file",
+			    _GCSL("could not resolve %s from config file"),
 			    attribute);
 	return GLOBUS_COMMON_PATH_ERROR_INSTANCE( buf );
     }
 
     *value = globus_libc_strdup(p);
     if (! *value)
-	return GLOBUS_COMMON_PATH_ERROR_INSTANCE("malloc error");
+	return GLOBUS_COMMON_PATH_ERROR_INSTANCE(_GCSL("malloc error"));
 
     return GLOBUS_SUCCESS;
 }

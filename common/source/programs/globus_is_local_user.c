@@ -41,8 +41,8 @@ int main(int argc, char * argv[])
 			   GLOBUS_NULL,
                            "globus-is-local-user",
                            &local_version,
-			   oneline_usage,
-			   long_usage,
+			   _GCSL(oneline_usage),
+			   _GCSL(long_usage),
 			   &dummy_list,
 			   GLOBUS_NULL );
 			   
@@ -53,9 +53,9 @@ int main(int argc, char * argv[])
     else if (argc < 2)
     {
 	globus_libc_fprintf(stderr,
-			    "ERROR: provide a username\n\nSyntax: %s\n\n"
-			    "Use -help to display full usage\n",
-			    oneline_usage);
+			   _GCSL("ERROR: provide a username\n\nSyntax: %s\n\n"
+			   "Use -help to display full usage\n"),
+			   oneline_usage);
 	exit_code = 1;
     }
     else
@@ -70,7 +70,7 @@ int main(int argc, char * argv[])
 				     &result );
 	#else
 	globus_libc_fprintf(stderr,
-			    "NOTE: globus_libc_getpwnam_r not supported on Windows\n");
+			    _GCSL("NOTE: globus_libc_getpwnam_r not supported on Windows\n"));
 	/* leave return code as undisturbed from previous tests */
 	#endif
 	/* ~ToDo */

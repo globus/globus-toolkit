@@ -20,6 +20,14 @@ globus_i_gfs_log_open(void)
     if(logfilename != NULL)
     {
         log_file = fopen(logfilename, "a");
+        if(globus_i_gfs_config_bool("log_public"))
+        {
+            chmod(logfilename, 0644);
+        }
+        else
+        {
+            chmod(logfilename, 0600);
+        }            
     }
     if(log_file == NULL)
     {
@@ -32,13 +40,6 @@ globus_i_gfs_log_open(void)
         globus_i_gfs_config_int("debug_level"), 
         &globus_logging_stdio_module,
         log_file);
-    
-    /* XXX put this somewhere else */
-    if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("detach"))
-    {
-        freopen("/dev/null", "w", stderr);
-        freopen("/dev/null", "w", stdout);
-    }
 }
 
 void

@@ -349,6 +349,7 @@ globus_range_list_remove(
             {
                 globus_assert(0);
             }
+            new_ent->next = NULL;
             new_ent->offset = end_offset;
             if(ent_end == GLOBUS_RANGE_LIST_MAX)
             {

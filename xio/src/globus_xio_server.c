@@ -535,7 +535,11 @@ globus_l_xio_accept_timeout_callback(
             xio_op->canceled = 1;
             if(xio_op->cancel_cb)
             {
+                globus_i_xio_op_entry_t * my_op;
+                my_op = &xio_op->entry[xio_op->ndx - 1];
+		my_op->in_register = GLOBUS_TRUE;
                 xio_op->cancel_cb(xio_op, xio_op->cancel_arg);
+		my_op->in_register = GLOBUS_FALSE;
             }            
         }
 
@@ -1165,8 +1169,12 @@ globus_xio_server_cancel_accept(
             xio_server->op->canceled = 1;
             if(xio_server->op->cancel_cb)
             {
+                globus_i_xio_op_entry_t * my_op;
+                my_op = &xio_server->op->entry[xio_server->op->ndx - 1];
+		my_op->in_register = GLOBUS_TRUE;
                 xio_server->op->cancel_cb(xio_server->op,
                     xio_server->op->cancel_arg);
+		my_op->in_register = GLOBUS_FALSE;
             }            
         }
     }
@@ -1306,8 +1314,12 @@ globus_i_xio_server_close(
             xio_server->op->canceled = 1;
             if(xio_server->op->cancel_cb)
             {
+                globus_i_xio_op_entry_t * my_op;
+                my_op = &xio_server->op->entry[xio_server->op->ndx - 1];
+		my_op->in_register = GLOBUS_TRUE;
                 xio_server->op->cancel_cb(xio_server->op,
                     xio_server->op->cancel_arg);
+		my_op->in_register = GLOBUS_FALSE;
             }
         }
 
@@ -2045,7 +2057,7 @@ globus_xio_contact_info_to_url(
     globus_xio_contact_t                encode_chars;
     
     memset(&encode_chars, 0, sizeof(encode_chars));
-    encode_chars.resource = "<> \"'#";
+    encode_chars.resource = " \"#$&+,:;<=>?@[\\]^`{|}~!*";
     encode_chars.user = "<> @:/\"'#";
     encode_chars.pass = "<> @:/\"'#";
     encode_chars.subject = "<> \"'#";

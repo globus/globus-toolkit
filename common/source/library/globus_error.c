@@ -1,4 +1,5 @@
 #include "globus_common_include.h"
+#include "globus_common.h"
 #include "globus_object_cache.h"
 #include "globus_error.h"
 #include "globus_error_generic.h"
@@ -51,140 +52,140 @@ globus_error_generic_string_func (globus_object_t * error)
 
   if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_NO_CREDENTIALS) 
        == GLOBUS_TRUE ) {
-    string = "no credentials were available";
+    string = _GCSL("no credentials were available");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_NO_TRUST) 
        == GLOBUS_TRUE ) {
-    string = "no trust relationship exists";
+    string = _GCSL("no trust relationship exists");
   }
   else if ( globus_object_type_match (type, 
 				      GLOBUS_ERROR_TYPE_INVALID_CREDENTIALS) 
        == GLOBUS_TRUE ) {
-    string = "the credentials were invalid";
+    string = _GCSL("the credentials were invalid");
   }
   else if ( globus_object_type_match (type, 
 				      GLOBUS_ERROR_TYPE_NO_AUTHENTICATION) 
        == GLOBUS_TRUE ) {
-    string = "authentication failed";
+    string = _GCSL("authentication failed");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_NO_AUTHORIZATION) 
        == GLOBUS_TRUE ) {
-    string = "the operation was not authorized";
+    string = _GCSL("the operation was not authorized");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_OFFLINE) 
        == GLOBUS_TRUE ) {
-    string = "the resource was offline";
+    string = _GCSL("the resource was offline");
   }
   else if ( globus_object_type_match (type, 
 				      GLOBUS_ERROR_TYPE_QUOTA_DEPLETED) 
        == GLOBUS_TRUE ) {
-    string = "the resource quota was depleted";
+    string = _GCSL("the resource quota was depleted");
   }
   else if ( globus_object_type_match (type, 
 				      GLOBUS_ERROR_TYPE_DEPLETED) 
        == GLOBUS_TRUE ) {
-    string = "the resource was depleted";
+    string = _GCSL("the resource was depleted");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_NOT_AVAILABLE) 
        == GLOBUS_TRUE ) {
-    string = "the resource was not available";
+    string = _GCSL("the resource was not available");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_ACCESS_FAILED) 
        == GLOBUS_TRUE ) {
-    string = "access failed";
+    string = _GCSL("access failed");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_USER_CANCELLED) 
 	    == GLOBUS_TRUE ) {
-    string = "the operation was cancelled by the user";
+    string = _GCSL("the operation was cancelled by the user");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_INTERNAL_ERROR) 
 	    == GLOBUS_TRUE ) {
-    string = "the operation was aborted due to an internal error";
+    string = _GCSL("the operation was aborted due to an internal error");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_SYSTEM_ABORTED) 
 	    == GLOBUS_TRUE ) {
-    string = "the operation was aborted by the system";
+    string = _GCSL("the operation was aborted by the system");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_ABORTED) 
 	    == GLOBUS_TRUE ) {
-    string = "the operation was aborted";
+    string = _GCSL("the operation was aborted");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_NULL_REFERENCE)
 	    == GLOBUS_TRUE ) {
-    string = "a NULL reference was encountered";
+    string = _GCSL("a NULL reference was encountered");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_TYPE_MISMATCH)
 	    == GLOBUS_TRUE ) {
-    string = "the data was not of the required type";
+    string = _GCSL("the data was not of the required type");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_NAME_UNKNOWN) 
        == GLOBUS_TRUE ) {
-    string = "an unknown resource was encountered";
+    string = _GCSL("an unknown resource was encountered");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_BAD_FORMAT)
 	    == GLOBUS_TRUE ) {
-    string = "badly formatted data was encountered";
+    string = _GCSL("badly formatted data was encountered");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_TOO_LARGE)
 	    == GLOBUS_TRUE ) {
-    string = "the data was too large";
+    string = _GCSL("the data was too large");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_TOO_SMALL)
 	    == GLOBUS_TRUE ) {
-    string = "the data was too small";
+    string = _GCSL("the data was too small");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_OUT_OF_RANGE)
 	    == GLOBUS_TRUE ) {
-    string = "out-of-range data was encountered";
+    string = _GCSL("out-of-range data was encountered");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_BAD_DATA)
 	    == GLOBUS_TRUE ) {
-    string = "bad data was encountered";
+    string = _GCSL("bad data was encountered");
   }
   else if ( globus_object_type_match (type, 
 				      GLOBUS_ERROR_TYPE_UNREACHABLE)
 	    == GLOBUS_TRUE ) {
-    string = "the destination was unreachable";
+    string = _GCSL("the destination was unreachable");
   }
   else if ( globus_object_type_match (type, 
 				      GLOBUS_ERROR_TYPE_PROTOCOL_MISMATCH)
 	    == GLOBUS_TRUE ) {
-    string = "no common protocol could be negotiated";
+    string = _GCSL("no common protocol could be negotiated");
   }
   else if ( globus_object_type_match (type, 
 				      GLOBUS_ERROR_TYPE_PROTOCOL_VIOLATED)
 	    == GLOBUS_TRUE ) {
-    string = "the protocol was violated";
+    string = _GCSL("the protocol was violated");
   }
   else if ( globus_object_type_match (type, 
 				      GLOBUS_ERROR_TYPE_COMMUNICATION_FAILED)
 	    == GLOBUS_TRUE ) {
-    string = "communication failed";
+    string = _GCSL("communication failed");
   }
   else if ( globus_object_type_match (type, 
 				      GLOBUS_ERROR_TYPE_ALREADY_REGISTERED)
 	    == GLOBUS_TRUE ) {
-    string = "the resource is already registered";
+    string = _GCSL("the resource is already registered");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_ALREADY_CANCELLED)
 	    == GLOBUS_TRUE ) {
-    string = "a cancel was already issued";
+    string = _GCSL("a cancel was already issued");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_ALREADY_DONE)
 	    == GLOBUS_TRUE ) {
-    string = "the operation was already performed";
+    string = _GCSL("the operation was already performed");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_NOT_INITIALIZED)
 	    == GLOBUS_TRUE ) {
-    string = "the mechanism was not initialized";
+    string = _GCSL("the mechanism was not initialized");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_INVALID_USE)
 	    == GLOBUS_TRUE ) {
-    string = "the use was invalid";
+    string = _GCSL("the use was invalid");
   }
   else if ( globus_object_type_match (type, GLOBUS_ERROR_TYPE_BASE)
 	    == GLOBUS_TRUE ) {
-    string = "an unknown error occurred";
+    string = _GCSL("an unknown error occurred");
   }
   else {
     string = NULL;
@@ -377,13 +378,13 @@ globus_error_peek(
   {
     globus_object_t *                   cached;
     
+    globus_object_reference(error);
     cached = (globus_object_t *) globus_thread_getspecific(s_peek_key);
     if(cached)
     {
         globus_object_free(cached);
     }
     
-    globus_object_reference(error);
     globus_thread_setspecific(s_peek_key, error);
   }
   

@@ -1,6 +1,7 @@
 #include "globus_debug.h"
 #include "globus_libc.h"
 #include "globus_module.h"
+#include "globus_common.h"
 
 #ifdef BUILD_DEBUG
 
@@ -87,7 +88,7 @@ globus_l_debug_get_level(
             else
             {
                 fprintf(stderr,
-                    "Invalid level name (%s) in %s env variable... ignoring\n",
+                    _GCSL("Invalid level name (%s) in %s env variable... ignoring\n"),
                     levels,
                     env_name);
             }
@@ -174,8 +175,8 @@ globus_debug_init(
                 {
                     *out_file = stderr;
                     fprintf(stderr,
-                        "%s: Could not open %s, "
-                        "using stderr for debug messages\n",
+                        _GCSL("%s: Could not open %s, "
+                        "using stderr for debug messages\n"),
                         env_name,
                         filename);
                 }

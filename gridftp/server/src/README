@@ -41,7 +41,7 @@ Under xinetd/inetd:
 
 here is a sample gridftp xinetd config entry:
 -------------------------------
-service gridftp2
+service gridftp
 {
 instances               = 100
 socket_type             = stream
@@ -49,7 +49,6 @@ wait                    = no
 user                    = root
 env                     += GLOBUS_LOCATION=<globus_location>
 env                     += LD_LIBRARY_PATH=<globus_location>/lib
-env                     += PATH=<globus_location>/sbin:<globus_location>/bin
 server                  = <globus_location>/sbin/globus-gridftp-server
 server_args             = -i
 port                    = 5555
@@ -59,7 +58,7 @@ nice                    = 10
 disable                 = no
 }
 -------------------------------
-note that the service name used (gridftp2 in this case) should be defined in 
+note that the service name used (gridftp in this case) should be defined in 
 /etc/services with the desired port.
 
 
@@ -89,7 +88,6 @@ The client then would of course only connect to machineA:5000.
 
 -- globus-url-copy now includes a -stripe option that should be used when
 striped transfers are desired.
-
 
 
 

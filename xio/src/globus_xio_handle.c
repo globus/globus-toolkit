@@ -1193,7 +1193,6 @@ globus_i_xio_operation_cancel(
     globus_i_xio_op_t *                 op,
     int                                 source_ndx)
 {
-    globus_bool_t                       tmp_rc;
     GlobusXIOName(globus_i_xio_operation_cancel);
 
     GlobusXIODebugInternalEnter();
@@ -1217,8 +1216,11 @@ globus_i_xio_operation_cancel(
          * if the user oks the cancel then remove the timeout from 
          * the poller
          */
-        tmp_rc = globus_i_xio_timer_unregister_timeout(
-                &globus_i_xio_timeout_timer, op);
+        if(globus_i_xio_timer_unregister_timeout(
+                &globus_i_xio_timeout_timer, op))
+        {
+            GlobusXIOOpDec(op);
+        }
     }
     /* since in callback this will always be true */
 
@@ -1240,10 +1242,14 @@ globus_i_xio_operation_cancel(
     {
         if(op->cancel_cb != NULL)
         {
+	    globus_i_xio_op_entry_t * my_op;
+	    my_op = &op->entry[op->ndx - 1];
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
                 ("[%s] : op @ 0x%x calling cancel\n",
                         _xio_name, op));
+	    my_op->in_register = GLOBUS_TRUE;
             op->cancel_cb(op, op->cancel_arg);
+	    my_op->in_register = GLOBUS_FALSE;
         }
     }
     else
@@ -1365,7 +1371,11 @@ globus_l_xio_timeout_callback(
             op->canceled = 1;
             if(op->cancel_cb)
             {
+		globus_i_xio_op_entry_t * my_op;
+		my_op = &op->entry[op->ndx - 1];
+		my_op->in_register = GLOBUS_TRUE;
                 op->cancel_cb(op, op->cancel_arg);
+		my_op->in_register = GLOBUS_FALSE;
             }
         }
         globus_mutex_unlock(&handle->context->cancel_mutex);

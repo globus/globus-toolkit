@@ -61,6 +61,8 @@ globus_result_t
 globus_gridftp_server_control_attr_destroy(
     globus_gridftp_server_control_attr_t    in_attr)
 {
+    globus_i_gsc_module_func_t *            mod_func;
+    globus_list_t *                         list;
     globus_i_gsc_attr_t *                   attr;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_gridftp_server_control_attr_destroy);
@@ -79,6 +81,33 @@ globus_gridftp_server_control_attr_destroy(
     {
         res = GlobusGridFTPServerErrorParameter("in_attr");
         goto err;
+    }
+
+    if(attr->pre_auth_banner != NULL)
+    {
+        globus_free(attr->pre_auth_banner);
+    }
+    if(attr->post_auth_banner != NULL)
+    {
+        globus_free(attr->post_auth_banner);
+    }
+
+    globus_hashtable_to_list(&attr->funcs.recv_cb_table, &list);
+    while(!globus_list_empty(list))
+    {
+        mod_func = (globus_i_gsc_module_func_t *)
+            globus_list_remove(&list, list);
+        globus_free(mod_func->key);
+        globus_free(mod_func);
+    }
+
+    globus_hashtable_to_list(&attr->funcs.send_cb_table, &list);
+    while(!globus_list_empty(list))
+    {
+        mod_func = (globus_i_gsc_module_func_t *)
+            globus_list_remove(&list, list);
+        globus_free(mod_func->key);
+        globus_free(mod_func);
     }
 
     globus_hashtable_destroy(&attr->funcs.send_cb_table);
@@ -297,6 +326,7 @@ globus_gridftp_server_control_attr_add_recv(
         }
         mod_func->func = recv_cb;
         mod_func->user_arg = user_arg;
+        mod_func->key = globus_libc_strdup(module_name);
         globus_hashtable_insert(
             &attr->funcs.recv_cb_table,
             (void *)module_name,
@@ -362,6 +392,7 @@ globus_gridftp_server_control_attr_add_send(
         }
         mod_func->func = send_cb;
         mod_func->user_arg = user_arg;
+        mod_func->key = globus_libc_strdup(module_name);
         globus_hashtable_insert(
             &attr->funcs.send_cb_table,
             (void *)module_name,

@@ -147,7 +147,7 @@ globus_i_thread_pre_activate( void )
 
     rc = globus_mutex_init(&globus_libc_mutex,
 			   (globus_mutexattr_t *) GLOBUS_NULL);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: globus_mutex_init() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: globus_mutex_init() failed\n"));
 
     return globus_i_thread_ignore_sigpipe();
 } /* globus_i_thread_pre_activate() */
@@ -195,7 +195,7 @@ globus_l_thread_activate()
      * Set the default attributes for mutex and condition
      */
     rc = pthread_mutexattr_create(&(globus_i_thread_all_global_vars.mutexattr));
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_mutexattr_create() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: pthread_mutexattr_create() failed\n"));
 
 #ifndef HAVE_NO_PTHREAD_SETKIND
 #ifdef BUILD_DEBUG    
@@ -205,12 +205,12 @@ globus_l_thread_activate()
     rc = pthread_mutexattr_setkind_np(&(globus_i_thread_all_global_vars.mutexattr),
 				      MUTEX_FAST_NP );
 #endif /* BUILD_DEBUG */    
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_mutexattr_setkind() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: pthread_mutexattr_setkind() failed\n"));
 #endif /* HAVE_NO_PTHREAD_SETKIND */
     
 #ifdef HAVE_NO_CONDATTR_DEFAULT
     rc = pthread_condattr_create(&(globus_i_thread_all_global_vars.condattr.condattr));
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_condattr_create() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: pthread_condattr_create() failed\n"));
 #else  /* HAVE_NO_CONDATTR_DEFAULT */
     globus_i_thread_all_global_vars.condattr.condattr = pthread_condattr_default;
 #endif /* HAVE_NO_CONDATTR_DEFAULT */
@@ -271,32 +271,32 @@ globus_l_thread_activate()
      */
 #ifdef HAVE_PTHREAD_DRAFT_4
     rc = pthread_attr_create(&(globus_i_thread_all_global_vars.threadattr));
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_attr_create() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_attr_create() failed\n" ));
 #else
     rc = pthread_attr_init(&(globus_thread_all_global_vars.threadattr));
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_attr_init() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_attr_init() failed\n" ));
 #endif
 
 #ifdef HAVE_PTHREAD_SCHED
 #if defined(HAVE_PTHREAD_DRAFT_4) || defined(HAVE_PTHREAD_DRAFT_6)
     rc = pthread_attr_setinheritsched(&(globus_thread_all_global_vars.threadattr),
 				      PTHREAD_DEFAULT_SCHED);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_attr_setinheritsched() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_attr_setinheritsched() failed\n" ));
     rc = pthread_attr_setsched(&(globus_thread_all_global_vars.threadattr),
 			       scheduler);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_attr_setsched() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_attr_setsched() failed\n" ));
     rc = pthread_attr_setprio(&(globus_thread_all_global_vars.threadattr),
 			      priority_mid);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_attr_setprio() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_attr_setprio() failed\n" ));
 #else
     rc = pthread_attr_setinheritsched(&(globus_thread_all_global_vars.threadattr),
 				      PTHREAD_EXPLICIT_SCHED);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_attr_setinheritsched() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_attr_setinheritsched() failed\n" ));
     my_sched_param.sched_policy = scheduler;
     my_sched_param.sched_priority = priority_mid;
     rc = pthread_attr_setschedparam(&(globus_thread_all_global_vars.threadattr),
 				    &my_sched_param);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_attr_setschedparam() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_attr_setschedparam() failed\n" ));
 #endif
 #endif /* HAVE_PTHREAD_SCHED */
 
@@ -305,7 +305,7 @@ globus_l_thread_activate()
     {
 	rc = pthread_attr_setstacksize(&(globus_thread_all_global_vars.threadattr),
 				       stack_size);
-	globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_attr_setstacksize() failed\n" );
+	globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_attr_setstacksize() failed\n" ));
     }
 #endif /* ! TARGET_ARCH_LINUX */
     
@@ -322,12 +322,12 @@ globus_l_thread_activate()
 #elif defined(HAVE_PTHREAD_DRAFT_6)
     rc = pthread_setschedattr(pthread_self(),
 			      globus_thread_all_global_vars.threadattr);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_setschedattr() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: pthread_setschedattr() failed\n"));
 #else
     rc = pthread_setschedparam(pthread_self(),
 			       my_sched_param.sched_policy,
 			       &my_sched_param);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_setschedparam() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: pthread_setschedparam() failed\n"));
 #endif
 #endif /* HAVE_PTHREAD_SCHED */
 
@@ -338,7 +338,7 @@ globus_l_thread_activate()
     rc = globus_thread_key_create(
 			     &(globus_thread_all_global_vars.globus_thread_t_pointer),
 			     NULL);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_key_create() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: pthread_key_create() failed\n"));
     
     globus_mutex_init(&(thread_mem_mutex),
 		      (globus_mutexattr_t *) NULL);
@@ -524,7 +524,7 @@ globus_thread_create(globus_thread_t *user_thread,
   
 #if defined(HAVE_PTHREAD_DRAFT_8) || defined(HAVE_PTHREAD_DRAFT_10)
     rc = pthread_attr_setdetachstate(attr ? attr : &(globus_thread_all_global_vars.threadattr), PTHREAD_CREATE_DETACHED);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD:pthread_attr_setdetachstate() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD:pthread_attr_setdetachstate() failed\n"));
 #endif
 
     /* Note: With HP's Convex during port testing we experienced a
@@ -551,7 +551,7 @@ globus_thread_create(globus_thread_t *user_thread,
 #endif
 			thread_starter,
 			thread);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_create() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_create() failed\n") );
 
     /*
      * Note: With AIX 3.1.x DCE threads, the pthread_detach(&thread_id)
@@ -570,7 +570,7 @@ globus_thread_create(globus_thread_t *user_thread,
     rc = pthread_detach(&thread_id);
 #endif /* PORTS0_ARCH_MIT_PTHREADS */
 #endif /* !HAVE_PTHREAD_DRAFT_8 && !HAVE_PTHREAD_DRAFT_10 */
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_detach() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_detach() failed\n") );
 
     return (0);
 } /* globus_thread_create() */
@@ -639,7 +639,7 @@ int globus_thread_key_create(globus_thread_key_t *key,
     rc = globus_macro_thread_key_create(key, destructor_func);
     if (rc != 0 && rc != EAGAIN)
     {
-	globus_i_thread_test_rc(rc, "GLOBUSTHREAD: globus_thread_key_create() failed\n");
+	globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: globus_thread_key_create() failed\n"));
     }
     return(rc);
 } /* globus_thread_key_create() */
@@ -653,7 +653,7 @@ int globus_thread_key_delete(globus_thread_key_t key)
 {
     int rc;
     rc = globus_macro_thread_key_delete(key);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: globus_thread_key_delete() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: globus_thread_key_delete() failed\n"));
     return(rc);
 } /* globus_thread_key_delete() */
 
@@ -667,7 +667,7 @@ int globus_thread_setspecific(globus_thread_key_t key,
 {
     int rc;
     rc = globus_macro_thread_setspecific(key, value);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: globus_thread_setspecific() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: globus_thread_setspecific() failed\n"));
     return(rc);
 } /* globus_thread_setspecific() */
 
@@ -759,7 +759,7 @@ int globus_mutexattr_init(globus_mutexattr_t *attr)
 {
     int rc;
     rc = globus_macro_mutexattr_init(attr);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_mutexattr_init() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: pthread_mutexattr_init() failed\n"));
     return (rc);
 }
 
@@ -771,7 +771,7 @@ int globus_mutexattr_destroy(globus_mutexattr_t *attr)
 {
     int rc;
     rc = globus_macro_mutexattr_destroy(attr);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_mutexattr_destroy() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUSTHREAD: pthread_mutexattr_destroy() failed\n"));
     return (rc);
 }
 
@@ -783,7 +783,7 @@ int globus_mutex_init(globus_mutex_t *mut, globus_mutexattr_t *attr)
 {
     int rc;
     rc = globus_macro_mutex_init(mut, attr);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_mutex_init() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_mutex_init() failed\n" ));
     return(rc);
 } /* globus_mutex_init() */
 
@@ -796,7 +796,7 @@ int globus_mutex_destroy(globus_mutex_t *mut)
 {
     int rc; 
     rc = globus_macro_mutex_destroy(mut);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_mutex_destroy() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_mutex_destroy() failed\n" ));
     return(rc);
 } /* globus_mutex_destroy() */
 
@@ -809,7 +809,7 @@ int globus_mutex_lock(globus_mutex_t *mut)
 {
     int rc;
     rc = globus_macro_mutex_lock(mut);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_mutex_lock() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_mutex_lock() failed\n" ));
     return(rc);
 } /* globus_mutex_lock() */
 
@@ -824,7 +824,7 @@ int globus_mutex_trylock(globus_mutex_t *mut)
     rc = globus_macro_mutex_trylock(mut);
     if (rc != EBUSY)
     {
-	globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_mutex_trylock() failed\n" );
+	globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_mutex_trylock() failed\n" ));
     }
     return(rc);
 } /* globus_mutex_trylock() */
@@ -838,7 +838,7 @@ int globus_mutex_unlock(globus_mutex_t *mut)
 {
     int rc;
     rc = globus_macro_mutex_unlock(mut);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_mutex_unlock() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_mutex_unlock() failed\n" ));
     return(rc);
 } /* globus_mutex_unlock() */
 
@@ -899,7 +899,7 @@ int globus_cond_init(globus_cond_t *cv, globus_condattr_t *attr)
 {
     int rc;
     rc = globus_macro_cond_space_init(cv, attr);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_init() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_cond_init() failed\n" ));
     return(rc);
 } /* globus_cond_init() */
 
@@ -912,7 +912,7 @@ int globus_cond_destroy(globus_cond_t *cv)
 {
     int rc; 
     rc = globus_macro_cond_space_destroy(cv);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_destroy() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_cond_destroy() failed\n" ));
     return(rc);
 } /* globus_cond_destroy() */
 
@@ -926,7 +926,7 @@ int globus_cond_wait(globus_cond_t *cv, globus_mutex_t *mut)
     int rc;
 
     rc = globus_macro_cond_space_wait(cv, mut);
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_wait() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_cond_wait() failed\n" ));
     return(rc);
 } /* globus_cond_wait() */
 
@@ -948,7 +948,7 @@ globus_cond_timedwait(globus_cond_t *cv,
 #endif
 	)
     {
-	globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_timedwait() failed\n" );
+	globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_cond_timedwait() failed\n" ));
     }
 #if defined(ETIME)
     if(rc == ETIME)
@@ -968,7 +968,7 @@ int globus_cond_signal(globus_cond_t *cv)
 {
     int rc; 
     rc = globus_macro_cond_space_signal(cv); 
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_signal() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_cond_signal() failed\n" ));
     return(rc);
 } /* globus_cond_signal () */
 
@@ -981,7 +981,7 @@ int globus_cond_broadcast(globus_cond_t *cv)
 {
     int rc; 
     rc = globus_macro_cond_space_broadcast(cv); 
-    globus_i_thread_test_rc( rc, "GLOBUSTHREAD: pthread_cond_broadcast() failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUSTHREAD: pthread_cond_broadcast() failed\n" ));
     return(rc);
 } /* globus_cond_broadcast() */
 

@@ -6,6 +6,7 @@ SUBDIRS = pkgdata doxygen
 setup_SCRIPTS = \
     setup-globus-gaa-authz-callout \
     setup-globus-gaa-authz-callout-message \
+    setup-globus-gaa-authz-callout-message.pl \
     setup-globus-gaa-authz-callout.pl \
     gsi-gaa.conf.tmpl
 

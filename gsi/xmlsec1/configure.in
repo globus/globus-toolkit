@@ -39,7 +39,7 @@ dnl AC_PROG_CC
 echo="echo"
 AM_PROG_LIBTOOL
 AC_PROG_INSTALL
-AC_ARG_PROGRAM
+dnl AC_ARG_PROGRAM
 AC_STDC_HEADERS
 AC_PATH_PROG(RM, rm, /bin/rm)
 AC_PATH_PROG(MV, mv, /bin/mv)
@@ -1060,7 +1060,7 @@ pkgdata/pkg_data_src.gpt
 
 
 dnl COPYING should be in "srcdir" not in "builddir"
-(cd $srcdir && rm -f COPYING.LIB COPYING && $LN_S Copyright COPYING)
+dnl (cd $srcdir && rm -f COPYING.LIB COPYING && $LN_S Copyright COPYING)
 
 dnl we are always linking with the globus openssl package
 dnl if test "z$XMLSEC_NO_OPENSSL" != "z1" ; then

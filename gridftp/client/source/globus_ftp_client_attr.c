@@ -659,6 +659,7 @@ globus_ftp_client_operationattr_init(
     i_attr->read_all_intermediate_callback= GLOBUS_NULL;
     i_attr->read_all_intermediate_callback_arg
 					= GLOBUS_NULL;
+    i_attr->allow_ipv6                  = GLOBUS_FALSE;
     i_attr->resume_third_party		= GLOBUS_FALSE;
     i_attr->force_striped		= GLOBUS_FALSE;
 
@@ -2160,6 +2161,77 @@ error_exit:
 /* globus_ftp_client_operationattr_get_append() */
 /* @} */
 
+/* @} */
+/**
+ * @name IPv6
+ */
+/* @{ */
+/**
+ * Set/Get the allow ipv6 attribute for an ftp client attribute set.
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * This attribute allows client library to make use of ipv6 when possible.
+ *
+ * Use of this is currently very experimental.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param allow_ipv6
+ *        GLOBUS_TRUE to allow ipv6 or GLOBUS_FALSE to disallow(default)
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_allow_ipv6(
+    globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t				allow_ipv6)
+{
+    globus_object_t *				err;
+    globus_i_ftp_client_operationattr_t *	i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_set_allow_ipv6);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+	
+	goto error_exit;
+    }
+
+    i_attr = *attr;
+    i_attr->allow_ipv6 = allow_ipv6;
+    
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_set_allow_ipv6() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_allow_ipv6(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t *				allow_ipv6)
+{
+    globus_object_t *				err;
+    const globus_i_ftp_client_operationattr_t *	i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_get_allow_ipv6);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+
+    i_attr = *attr;
+    (*allow_ipv6) = i_attr->allow_ipv6;
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_get_allow_ipv6() */
+/* @} */
+
 /**
  * @name Read into a Single Buffer
  */
@@ -2390,6 +2462,13 @@ globus_ftp_client_operationattr_copy(
     result =
 	globus_ftp_client_operationattr_set_append(dst,
 						   i_src->append);
+    if(result)
+    {
+	goto destroy_exit;
+    }
+    
+    result =
+	globus_ftp_client_operationattr_set_allow_ipv6(dst, i_src->allow_ipv6);
     if(result)
     {
 	goto destroy_exit;

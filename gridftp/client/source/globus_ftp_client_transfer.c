@@ -4996,6 +4996,19 @@ globus_i_ftp_client_transfer_complete(
 }
 /* globus_i_ftp_client_transfer_complete() */
 
+static
+void
+globus_i_ftp_client_faked_response_callback(
+    void *                              user_arg)
+{
+    globus_i_ftp_client_target_t *      target;
+    
+    target = (globus_i_ftp_client_target_t *) user_arg;
+    
+    globus_i_ftp_client_response_callback(
+        user_arg, target->control_handle, NULL, NULL);
+}
+
 /**
  * Cause the target to be eligible for callbacks.
  *
@@ -5077,6 +5090,9 @@ globus_i_ftp_client_target_activate(
     }
     else if(target->state == GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION)
     {
+        globus_abstime_t                expire_time;
+        globus_bool_t                   do_noop = GLOBUS_FALSE;
+        
 	/* Old control structure, send a NOOP to make sure it's still good. */
 	if(handle->source == target)
 	{
@@ -5090,20 +5106,39 @@ globus_i_ftp_client_target_activate(
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NOOP;
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_MISC;
-
-	globus_i_ftp_client_plugin_notify_command(
-	    handle,
-	    target->url_string,
-	    target->mask,
-	    "NOOP" CRLF);
+        
+        GlobusTimeAbstimeGetCurrent(expire_time);
+        GlobusTimeAbstimeDec(expire_time, globus_i_ftp_client_noop_idle);
+        if(globus_abstime_cmp(&target->last_access, &expire_time) < 0)
+        {
+            do_noop = GLOBUS_TRUE;
+            
+            globus_i_ftp_client_plugin_notify_command(
+                handle,
+                target->url_string,
+                target->mask,
+                "NOOP" CRLF);
+        }
 
 	if(handle->state == desired_state)
 	{
-	    result =
-		globus_ftp_control_send_command(target->control_handle,
-						"NOOP" CRLF,
-						globus_i_ftp_client_response_callback,
-						target);
+	    if(do_noop)
+	    {
+                result = globus_ftp_control_send_command(
+                    target->control_handle,
+                    "NOOP" CRLF,
+                    globus_i_ftp_client_response_callback,
+                    target);
+            }
+            else
+            {
+                result = globus_callback_register_oneshot(
+                    NULL,
+                    NULL,
+                    globus_i_ftp_client_faked_response_callback,
+                    target);
+            }
+             
 	    if (result != GLOBUS_SUCCESS)
 	    {
 		err = globus_error_get(result);

@@ -611,7 +611,7 @@ globus_xio_driver_pass_write(
     globus_xio_operation_type_t         deliver_type = 
         GLOBUS_XIO_OPERATION_TYPE_FINISHED;
     globus_bool_t                       destroy_handle = GLOBUS_FALSE;
-    GlobusXIOName(GlobusXIODriverPassWrite);
+    GlobusXIOName(globus_xio_driver_pass_write);
 
     GlobusXIODebugInternalEnter();
     op = (in_op);

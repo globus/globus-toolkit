@@ -20,6 +20,7 @@ CVS Information:
 #include "globus_thread_windows.h"
 #include "globus_i_thread.h"
 #include "globus_libc.h"
+#include "globus_common.h"
 //#include "globus_time.h"
 
 
@@ -593,7 +594,7 @@ int globus_mutex_lock(globus_mutex_t *mut)
 	if ( rc == WAIT_FAILED )
 	{
 		int error= GetLastError();
-		fprintf( stderr, "globus_mutex_lock() failed; errno is %d\n", error );
+		fprintf( stderr, _GCSL("globus_mutex_lock() failed; errno is %d\n"), error );
 		return GLOBUS_FAILURE;
 	}
 
