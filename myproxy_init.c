@@ -55,18 +55,19 @@ static char version[] =
 /* Function declarations */
 int  init_arguments(int argc, char *argv[], 
 		    myproxy_socket_attrs_t *attrs, myproxy_request_t *request);
-int  grid_proxy_init(int hours, const char *proxyfile);
-int  grid_proxy_destroy(const char *proxyfile);
-int  read_passphrase(char *passphrase, const int passlen);
 
+int  grid_proxy_init(int hours, const char *proxyfile);
+
+int  grid_proxy_destroy(const char *proxyfile);
+
+int  read_passphrase(char *passphrase, const int passlen, 
+                     const int min, const int max);
 
 int
 main(int argc, char *argv[]) 
 {    
     int rc;
-    int is_err = 0;
     char *username; 
-    char error_string[1024];
     char proxyfile[64];
     char request_buffer[1024], response_buffer[1024];
     int requestlen, responselen;
@@ -109,7 +110,8 @@ main(int argc, char *argv[])
     }
 
     /* Allow user to provide a passphrase */
-    if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1) < 0) {
+    if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1, 
+                                       MIN_PASS_LEN, MAX_PASS_LEN) < 0) {
         fprintf(stderr, "error in myproxy_read_passphrase()\n");
         exit(1);
     }
@@ -123,18 +125,6 @@ main(int argc, char *argv[])
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
         fprintf(stderr, "error in myproxy_authenticate_init()\n");
-        exit(1);
-    }
-
-    /* Delegate credentials to server  */
-    if (myproxy_init_delegation(socket_attrs, proxyfile) < 0) {
-        fprintf(stderr, "error in myproxy_delegate_proxy()\n");
-        exit(1);
-    }
-
-    /* Delete proxy file */
-    if (grid_proxy_destroy(proxyfile) != 0) {
-        fprintf(stderr, "Program grid_proxy_destroy failed\n");
         exit(1);
     }
 
@@ -169,26 +159,32 @@ main(int argc, char *argv[])
 
     /* Check version */
     if (strcmp(server_response->version, MYPROXY_VERSION) != 0) {
-      fprintf(stderr, "Invalid version number received from server\n");
-      is_err = 1;
+      fprintf(stderr, "Received invalid version number from server\n");
     } 
 
     /* Check response */
     switch(server_response->response_type) {
         case MYPROXY_ERROR_RESPONSE:
-            strcat(error_string, server_response->error_string);
-            is_err = 1;
+            fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_string);
             break;
         case MYPROXY_OK_RESPONSE:
+           /* Delegate credentials to server  */
+          if (myproxy_init_delegation(socket_attrs, proxyfile) < 0) {
+            fprintf(stderr, "error in myproxy_delegate_proxy()\n");
+            exit(1);
+          }
+          printf("A proxy valid for %d hours for user %s now exists on %s.\n", 
+                 client_request->hours, client_request->username, socket_attrs->pshost); 
             break;
         default:
-            strcat(error_string, "Invalid response type received.\n");
-            is_err = 1;
+            fprintf(stderr, "Received unknown response type\n");
             break;
     }
-
-    if (is_err) {
-        fprintf(stderr, "%s", error_string);
+    
+      /* Delete proxy file */
+    if (grid_proxy_destroy(proxyfile) != 0) {
+        fprintf(stderr, "Program grid_proxy_destroy failed\n");
+        exit(1);
     }
     
     /* free memory allocated */
@@ -243,30 +239,80 @@ init_arguments(int argc,
         }
     }
 
-    printf("Your username to access the myproxy-server is: %s\n", request->username);
-
     return arg_error;
+
+
 }
 
+
+/* read_passphrase()
+ * 
+ * Reads a passphrase from stdin. The passphrase must be allocated and
+ * be less than min and greater than max characters
+ */
+int
+read_passphrase(char *passphrase, const int passlen, const int min, const int max) 
+{
+    int i;
+    char pass[passlen];
+    int done = 0;
+
+    assert(passphrase != NULL);
+
+    /* Get user's passphrase */    
+    do {
+        printf("Enter password to protect proxy on  myproxy-server:\n");
+        
+        if (!(fgets(pass, passlen, stdin))) {
+            fprintf(stderr,"Failed to read password from stdin\n");   
+            return -1;
+        }	
+        i = strlen(pass);
+        if ((i < min) || (i > max)) {
+            printf("Password must be between %d and %d characters\n, min, max");
+        } else {
+            done = 1;
+        }
+    } while (!done);
+    
+    if (pass[i-1] == '\n') {
+        pass[i-1] = '\0';
+    }
+    strncpy(passphrase, pass, passlen);
+    return 0;
+}
+
+/* grid_proxy_init()
+ *
+ * Uses the system() call to run grid-proxy-init to create a user proxy
+ *
+ * returns grid-proxy-init status 0 if OK, -1 on error
+ */
 int
 grid_proxy_init(int hours, const char *proxyfile) {
 
-  int rc;
-  char command[128];
+    int rc;
+    char command[128];
   
-  assert(proxyfile != NULL);
+    assert(proxyfile != NULL);
+    
+    sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);
+    rc = system(command);
 
-  sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);
-  rc = system(command);
-
-  return rc;
+    return rc;
 }
 
+/* grid_proxy_destroy()
+ *
+ * Uses the system() call to run grid-proxy-destroy to create a user proxy
+ *
+ * returns grid-proxy-destroy status 0 if OK, -1 on error
+ */
 int
 grid_proxy_destroy(const char *proxyfile) {
   
     int rc;
-    char command[128], file[128];
+    char command[128];
 
     assert(proxyfile != NULL);
 
@@ -275,37 +321,6 @@ grid_proxy_destroy(const char *proxyfile) {
 
     return rc;
 }
-
-int
-read_passphrase(char *passphrase, const int passlen) 
-{
-    int i;
-    char pass[MAX_PASS_LEN+1];
-    int done = 0;
-
-
-    /* Get user's passphrase */    
-    do {
-	printf("Enter password to access myproxy-server:\n");
-	if (!(fgets(pass, sizeof(pass), stdin))) {
-	  fprintf(stderr,"Failed to read password from stdin\n");   
-	  return -1;
-	}	
-	i = strlen(pass);
-	if ((i < MIN_PASS_LEN) || (i > MAX_PASS_LEN)) {
-	  printf("Password must be between 5 and 10 characters\n");
-	} else {
-	  done = 1;
-	}
-    } while (!done);
-    
-    if (pass[i-1] == '\n') {
-      pass[i-1] = '\0';
-    }
-    strncpy(passphrase, pass, passlen);
-    return 0;
-}
-    
 
 
 

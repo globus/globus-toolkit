@@ -53,8 +53,8 @@ static char version[] =
 /* Function declarations */
 int  init_arguments(int argc, char *argv[], 
                     myproxy_socket_attrs_t *attrs, myproxy_request_t *request);
-int  read_passphrase(char *passphrase, const int passlen);
-
+int  read_passphrase(char *passphrase, const int passlen,
+                     const int min, const int max);
 
 int
 main(int argc, char *argv[]) 
@@ -96,15 +96,9 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    /* Create a proxy by running [grid-proxy-init] */
-    sprintf(proxyfile, "%s.%s", MYPROXY_DEFAULT_PROXY, client_request->username);
-    if (myproxy_extras_grid_proxy_init(client_request->hours, proxyfile) != 0) {
-        fprintf(stderr, "Program grid_proxy_init failed\n");
-        exit(1);
-    }
-
     /* Allow user to provide a passphrase */
-    if (myproxy_extras_read_passphrase(client_request->passphrase, MAX_PASS_LEN+1) < 0) {
+    if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1, 
+                        MIN_PASS_LEN, MAX_PASS_LEN) < 0) {
         fprintf(stderr, "error in myproxy_read_passphrase()\n");
         exit(1);
     }
@@ -118,12 +112,6 @@ main(int argc, char *argv[])
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
         fprintf(stderr, "error in myproxy_authenticate_init()\n");
-        exit(1);
-    }
-
-    /* Delete proxy file */
-    if (myproxy_extras_grid_proxy_destroy(proxyfile) != 0) {
-        fprintf(stderr, "Program grid_proxy_destroy failed\n");
         exit(1);
     }
 
@@ -225,3 +213,39 @@ init_arguments(int argc,
     return arg_error;
 }
 
+/* read_passphrase()
+ * 
+ * Reads a passphrase from stdin. The passphrase must be allocated and
+ * be less than min and greater than max characters
+ */
+int
+read_passphrase(char *passphrase, const int passlen, const int min, const int max) 
+{
+    int i;
+    char pass[passlen];
+    int done = 0;
+
+    assert(passphrase != NULL);
+
+    /* Get user's passphrase */    
+    do {
+        printf("Enter password to protect proxy on  myproxy-server:\n");
+        
+        if (!(fgets(pass, passlen, stdin))) {
+            fprintf(stderr,"Failed to read password from stdin\n");   
+            return -1;
+        }	
+        i = strlen(pass);
+        if ((i < min) || (i > max)) {
+            printf("Password must be between %d and %d characters\n, min, max");
+        } else {
+            done = 1;
+        }
+    } while (!done);
+    
+    if (pass[i-1] == '\n') {
+        pass[i-1] = '\0';
+    }
+    strncpy(passphrase, pass, passlen);
+    return 0;
+}
