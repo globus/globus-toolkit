@@ -138,19 +138,23 @@ Returns:
 static int
 grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep)
 {
-	long 	length;
+	unsigned char int_buf[4];
 	int    	size;
 	void * 	cp;
 	int *  	fd = (int *)arg;
 	
-	if (_nx_read_blocking(*fd, (char *) &length, 4))
+	if (_nx_read_blocking(*fd, int_buf, 4))
 	{
 		fprintf(stderr,
 			"grami_ggg_get_token_nexus(): reading token length\n");
 		return -1;
 	}
 
-    size = ntohl(length);
+    size = (  ( ((unsigned int) int_buf[0]) << 24)
+			| ( ((unsigned int) int_buf[1]) << 16)
+			| ( ((unsigned int) int_buf[2]) << 8)
+			|   ((unsigned int) int_buf[3]) );
+
 	cp = (char *) malloc(size);
 	if (!cp) 
 	{
@@ -178,11 +182,15 @@ Returns:
 static int
 grami_ggg_send_token_nexus( void *arg,  void *buf, int size)
 {
-	long  	length;
+	unsigned char int_buf[4];
 	int * 	fd = (int *) arg;
 
-	length = htonl(size);
-	if (_nx_write_blocking(*fd, (char*) &length, 4)) 
+	int_buf[0] =  size >> 24;
+    int_buf[1] =  size >> 16;
+	int_buf[2] =  size >>  8;
+	int_buf[3] =  size;
+
+	if (_nx_write_blocking(*fd, int_buf, 4)) 
 	{
 		fprintf(stderr,
 			"grami_ggg_send_token_nexus(): sending token length");
