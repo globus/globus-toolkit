@@ -1097,13 +1097,13 @@ globus_l_wu_insert_range(
     globus_fifo_t				tmp;
     globus_l_wu_range_t *			range;
     globus_l_wu_range_t *			newrange;
-	    
+
     globus_fifo_move(&tmp, ranges);
 
     while(!globus_fifo_empty(&tmp))
     {
 	range = globus_fifo_dequeue(&tmp);
-	if(offset < range->offset)
+	if(offset <= range->offset)
 	{
 	    if(offset + length < range->offset)
 	    {
@@ -1117,10 +1117,8 @@ globus_l_wu_insert_range(
 	    }
 	    else if(offset+length == range->offset)
 	    {
-		range->offset = offset;
-		range->length += length;
-		globus_fifo_enqueue(ranges, range);
-		goto copy_rest;
+		length += range->length;
+		globus_libc_free(range);
 	    }
 	    else
 	    {
@@ -1132,11 +1130,8 @@ globus_l_wu_insert_range(
 		{
 		    newlength = length;
 		}
-		range->offset = offset;
-		range->length = newlength;
-
-		globus_fifo_enqueue(ranges, range);
-		goto copy_rest;
+		length = newlength;
+		globus_libc_free(range);
 	    }
 	}
 	else
@@ -1147,22 +1142,13 @@ globus_l_wu_insert_range(
 	    }
 	    else if(range->offset + range->length == offset)
 	    {
-		range->length += length;
-		globus_fifo_enqueue(ranges, range);
-		goto copy_rest;
+		offset = range->offset;
+		length += range->length;
+		globus_libc_free(range);
 	    }
 	    else
 	    {
-		int newlength;
-
-		newlength = offset + length - range->offset;
-		if(newlength < range->length)
-		{
-		    newlength = range->length;
-		}
-		range->length = newlength;
 		globus_fifo_enqueue(ranges, range);
-		goto copy_rest;
 	    }
 	}
     }
