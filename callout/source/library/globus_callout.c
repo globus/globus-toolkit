@@ -369,8 +369,6 @@ globus_callout_read_config(
 
         memset(datum,'\0',sizeof(globus_i_callout_data_t));
 
-        datum->next = datum;
-
         /* check if library is flavored already */
 
         if((flavor_start = strrchr(library,'_')) &&
@@ -420,7 +418,10 @@ globus_callout_read_config(
         {
             existing_datum = globus_hashtable_lookup(&handle->symbol_htable,
                                                      datum->type);
-            datum->next = existing_datum->next;
+            while(existing_datum->next)
+            {
+                existing_datum = existing_datum->next;
+            }
             existing_datum->next = datum;
         }
         else if(rc < 0)
@@ -556,7 +557,6 @@ globus_callout_register(
         {
             existing_datum = existing_datum->next;
         }
-        datum->next = existing_datum->next;
         existing_datum->next = datum;
     }
     else if(rc < 0)
