@@ -55,6 +55,13 @@ CVS Information:
 #include "globus_i_gass_cache.h"
 #include "globus_gass_cache.h"
 
+/* T3E has three quota errno values: EQUSR, EQGRP, EQACT */
+/* #define EQUSR           60      /* User file/inode quota limit reached  */
+/* #define EQGRP           61      /* Group file/inode quota limit reached */
+/* #define EQACT           62      /* Account file/inode quota limit reached */
+#if !defined(EDQUOT) && defined(EQUSR)
+#  define EDQUOT EQUSR
+#endif
 
 globus_module_descriptor_t globus_i_gass_cache_module =
 {
