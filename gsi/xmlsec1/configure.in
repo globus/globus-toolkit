@@ -1,6 +1,11 @@
+
+
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.2)
 AC_INIT(src/xmlsec.c)
+
+GLOBUS_INIT
+
 AM_CONFIG_HEADER(config.h)
 AC_CANONICAL_HOST
 
@@ -13,7 +18,6 @@ XMLSEC_VERSION="$XMLSEC_VERSION_MAJOR.$XMLSEC_VERSION_MINOR.$XMLSEC_VERSION_SUBM
 XMLSEC_VERSION_INFO=`echo $XMLSEC_VERSION | awk -F. '{ printf "%d:%d:%d", $1+$2, $3, $2 }'`
 XMLSEC_VERSION_SAFE=`echo $XMLSEC_VERSION | sed 's/\./_/g'`
 
-PACKAGE=$XMLSEC_PACKAGE
 VERSION=$XMLSEC_VERSION
 
 AC_SUBST(XMLSEC_VERSION)
@@ -24,14 +28,16 @@ AC_SUBST(XMLSEC_VERSION_MINOR)
 AC_SUBST(XMLSEC_VERSION_SUBMINOR)
 AC_SUBST(XMLSEC_VERSION_INFO)
 
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION, no-define)
+dnl PACKAGE=$XMLSEC_PACKAGE
 AM_MAINTAINER_MODE
 
 dnl
 dnl Check the environment
 dnl
-AC_PROG_CC
-AC_PROG_LIBTOOL
+dnl AC_PROG_CC
+echo="echo"
+AM_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_ARG_PROGRAM
 AC_STDC_HEADERS
@@ -131,90 +137,93 @@ LIBXML_CONFIG="xml2-config"
 LIBXML_PREFIX=""
 LIBXML_CFLAG=""
 LIBXML_LIBS=""
-AC_MSG_CHECKING(for libxml2 libraries >= $LIBXML_MIN_VERSION) 
-AC_ARG_WITH(libxml, [  --with-libxml=[PFX]       libxml2 location])
-if test "z$with_libxml" = "zno" ; then 
-    AC_MSG_ERROR(libxml2 is required for $PACKAGE)
-else
-    if test "z$with_libxml" != "z" ; then
-	LIBXML_PREFIX=$with_libxml
-	LIBXML_CONFIG=$LIBXML_PREFIX/bin/$LIBXML_CONFIG
-    fi
+dnl AC_MSG_CHECKING(for libxml2 libraries >= $LIBXML_MIN_VERSION) 
+dnl AC_ARG_WITH(libxml, [  --with-libxml=[PFX]       libxml2 location])
+dnl if test "z$with_libxml" = "zno" ; then 
+dnl    AC_MSG_ERROR(libxml2 is required for $PACKAGE)
+dnl else
+dnl     if test "z$with_libxml" != "z" ; then
+dnl 	LIBXML_PREFIX=$with_libxml
+dnl 	LIBXML_CONFIG=$LIBXML_PREFIX/bin/$LIBXML_CONFIG
+dnl    fi
 
-    if ! $LIBXML_CONFIG --version > /dev/null 2>&1 ; then
-	AC_MSG_ERROR(Could not find libxml2 anywhere (see config.log for details).)
-    fi
-    vers=`$LIBXML_CONFIG --version | awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-    minvers=`echo $LIBXML_MIN_VERSION | awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-    if test "$vers" -ge "$minvers" ; then
-        LIBXML_LIBS="`$LIBXML_CONFIG --libs`"
-        LIBXML_CFLAGS="`$LIBXML_CONFIG --cflags`"
-	LIBXML_VERSION="`$LIBXML_CONFIG --version`"
-	XMLSEC_NO_LIBXML="0"
-        AC_MSG_RESULT(yes ('$LIBXML_VERSION'))
-    else
-        AC_MSG_ERROR(You need at least libxml2 $LIBXML_MIN_VERSION for this version of $PACKAGE)
-    fi
-fi
-AM_CONDITIONAL(XMLSEC_NO_LIBXML, test "z$XMLSEC_NO_LIBXML" == "z1")
-AC_SUBST(XMLSEC_NO_LIBXML)
-AC_SUBST(LIBXML_MIN_VERSION)
-AC_SUBST(LIBXML_CONFIG)	
-AC_SUBST(LIBXML_PREFIX)
-AC_SUBST(LIBXML_CFLAGS)
-AC_SUBST(LIBXML_LIBS)
+dnl    if ! $LIBXML_CONFIG --version > /dev/null 2>&1 ; then
+dnl	AC_MSG_ERROR(Could not find libxml2 anywhere (see config.log for details).)
+dnl    fi
+dnl    vers=`$LIBXML_CONFIG --version | awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+dnl    minvers=`echo $LIBXML_MIN_VERSION | awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+dnl    if test "$vers" -ge "$minvers" ; then
+dnl        LIBXML_LIBS="`$LIBXML_CONFIG --libs`"
+dnl        LIBXML_CFLAGS="`$LIBXML_CONFIG --cflags`"
+dnl	LIBXML_VERSION="`$LIBXML_CONFIG --version`"
+dnl	XMLSEC_NO_LIBXML="0"
+dnl        AC_MSG_RESULT(yes ('$LIBXML_VERSION'))
+dnl    else
+dnl        AC_MSG_ERROR(You need at least libxml2 $LIBXML_MIN_VERSION for this version of $PACKAGE)
+dnl    fi
+dnl fi
+dnl AM_CONDITIONAL(XMLSEC_NO_LIBXML, test "z$XMLSEC_NO_LIBXML" == "z1")
+dnl AC_SUBST(XMLSEC_NO_LIBXML)
+dnl AC_SUBST(LIBXML_MIN_VERSION)
+dnl AC_SUBST(LIBXML_CONFIG)	
+dnl AC_SUBST(LIBXML_PREFIX)
+dnl AC_SUBST(LIBXML_CFLAGS)
+dnl AC_SUBST(LIBXML_LIBS)
 
 dnl ==========================================================================
 dnl find libxslt
 dnl ==========================================================================
-XMLSEC_NO_LIBXSLT="1"
-LIBXSLT_MIN_VERSION=1.0.20
-LIBXSLT_CONFIG="xslt-config"
-LIBXSLT_PREFIX=""
-LIBXSLT_CFLAGS=""
-LIBXSLT_LIBS=""
-AC_MSG_CHECKING(for libxslt libraries >= $LIBXSLT_MIN_VERSION) 
-AC_ARG_WITH(libxslt, [  --with-libxslt=[PFX]      libxslt location])
-if test "z$with_libxslt" = "zno" ; then
+ XMLSEC_NO_LIBXSLT="1"
+dnl LIBXSLT_MIN_VERSION=1.0.20
+dnl LIBXSLT_CONFIG="xslt-config"
+dnl LIBXSLT_PREFIX=""
+dnl LIBXSLT_CFLAGS=""
+dnl LIBXSLT_LIBS=""
+dnl AC_MSG_CHECKING(for libxslt libraries >= $LIBXSLT_MIN_VERSION) 
+dnl AC_ARG_WITH(libxslt, [  --with-libxslt=[PFX]      libxslt location])
+dnl if test "z$with_libxslt" = "zno" ; then
     XMLSEC_DEFINES="$XMLSEC_DEFINES -DXMLSEC_NO_XSLT=1"
-    AC_MSG_RESULT(no)
-else
-    if test "z$with_libxslt" != "z" ; then
-	LIBXSLT_PREFIX=$with_libxslt
-	LIBXSLT_CONFIG=$LIBXSLT_PREFIX/bin/$LIBXSLT_CONFIG
-    fi
-    if ! $LIBXSLT_CONFIG --version > /dev/null 2>&1 ; then
-	if test "z$with_libxslt" != "z" ; then
-	    AC_MSG_ERROR(Unable to find libxslt at '$with_libxslt')
-	else 
-	    XMLSEC_DEFINES="$XMLSEC_DEFINES -DXMLSEC_NO_XSLT=1"
-	    AC_MSG_RESULT(no)
-	fi
-    else
-        vers=`$LIBXSLT_CONFIG --version | awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-	minvers=`echo $LIBXSLT_MIN_VERSION | awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-	if test "$vers" -ge "$minvers" ; then
-    	    LIBXSLT_LIBS="`$LIBXSLT_CONFIG --libs`"
-	    LIBXSLT_CFLAGS="`$LIBXSLT_CONFIG --cflags`"
-	    LIBXSLT_VERSION="`$LIBXSLT_CONFIG --version`"
-	    XMLSEC_NO_LIBXSLT="0"
-    	    AC_MSG_RESULT(yes ('$LIBXSLT_VERSION'))
-	else
-    	    AC_MSG_ERROR(You need at least libxslt $LIBXSLT_MIN_VERSION for this version of $PACKAGE)
-	fi	
-    fi
-fi
+dnl    AC_MSG_RESULT(no)
+dnl else
+dnl    if test "z$with_libxslt" != "z" ; then
+dnl 	LIBXSLT_PREFIX=$with_libxslt
+dnl	LIBXSLT_CONFIG=$LIBXSLT_PREFIX/bin/$LIBXSLT_CONFIG
+dnl    fi
+dnl    if ! $LIBXSLT_CONFIG --version > /dev/null 2>&1 ; then
+dnl	if test "z$with_libxslt" != "z" ; then
+dnl	    AC_MSG_ERROR(Unable to find libxslt at '$with_libxslt')
+dnl	else 
+dnl	    XMLSEC_DEFINES="$XMLSEC_DEFINES -DXMLSEC_NO_XSLT=1"
+dnl	    AC_MSG_RESULT(no)
+dnl	fi
+dnl    else
+dnl        vers=`$LIBXSLT_CONFIG --version | awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+dnl	minvers=`echo $LIBXSLT_MIN_VERSION | awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+dnl	if test "$vers" -ge "$minvers" ; then
+dnl    	    LIBXSLT_LIBS="`$LIBXSLT_CONFIG --libs`"
+dnl	    LIBXSLT_CFLAGS="`$LIBXSLT_CONFIG --cflags`"
+dnl	    LIBXSLT_VERSION="`$LIBXSLT_CONFIG --version`"
+dnl	    XMLSEC_NO_LIBXSLT="0"
+dnl    	    AC_MSG_RESULT(yes ('$LIBXSLT_VERSION'))
+dnl	else
+dnl    	    AC_MSG_ERROR(You need at least libxslt $LIBXSLT_MIN_VERSION for this version of $PACKAGE)
+dnl	fi	
+dnl    fi
+dnl fi
 AC_SUBST(XMLSEC_NO_LIBXSLT)
-AC_SUBST(LIBXSLT_MIN_VERSION)
-AC_SUBST(LIBXSLT_PREFIX)
-AC_SUBST(LIBXSLT_CONFIG)	
-AC_SUBST(LIBXSLT_CFLAGS)
-AC_SUBST(LIBXSLT_LIBS)
+dnl AC_SUBST(LIBXSLT_MIN_VERSION)
+dnl AC_SUBST(LIBXSLT_PREFIX)
+dnl AC_SUBST(LIBXSLT_CONFIG)	
+dnl AC_SUBST(LIBXSLT_CFLAGS)
+dnl AC_SUBST(LIBXSLT_LIBS)
 
 dnl ==========================================================================
 dnl See if we can find a crypto library
 dnl ==========================================================================
 XMLSEC_CRYPTO=""
+dnl we don't actually need to discover openssl--we are link dependent on 
+dnl the package
+XMLSEC_CRYPTO="openssl"
 XMLSEC_CRYPTO_LIST=""
 XMLSEC_CRYPTO_DISABLED_LIST=""
 XMLSEC_CRYPTO_LIB=""
@@ -229,103 +238,104 @@ dnl ==========================================================================
 ac_openssl_lib_dir="/usr/local/lib /usr/lib /usr/local /usr/local/ssl /usr/local/ssl/lib /usr/pkg"
 ac_openssl_inc_dir="/usr/local/include /usr/include /usr/local /usr/local/ssl /usr/pkg /usr/local/ssl/include"
 
-XMLSEC_NO_OPENSSL="1"
+XMLSEC_NO_OPENSSL="0"
 OPENSSL_MIN_VERSION="0.9.6"
-OPENSSL_VERSION=""
+OPENSSL_VERSION="0.9.7"
 OPENSSL_PREFIX=""
 OPENSSL_CFLAGS="-DXMLSEC_CRYPTO_OPENSSL=1"
 OPENSSL_LIBS=""
 OPENSSL_LDADDS=""
-OPENSSL_CRYPTO_LIB="$PACKAGE-openssl"
+OPENSSL_CRYPTO_LIB="$XMLSEC_PACKAGE-openssl"
 AC_MSG_CHECKING(for openssl libraries >= $OPENSSL_MIN_VERSION) 
-AC_ARG_WITH(openssl, [  --with-openssl=[PFX]      openssl location])
-if test "z$with_openssl" = "zno" ; then
-    XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST openssl"
-    AC_MSG_RESULT(no)
-else
-    if test "z$with_openssl" != "z" ; then
-	OPENSSL_PREFIX=$with_openssl
-	OPENSSL_CFLAGS="$OPENSSL_CFLAGS -I$OPENSSL_PREFIX/include"
-	OPENSSL_LIBS="-L$OPENSSL_PREFIX/lib -lcrypto"
-	OPENSSL_LDADDS="$OPENSSL_PREFIX/lib/libcrypto.a"
+#AC_ARG_WITH(openssl, [  --with-openssl=[PFX]      openssl location])
+#if test "z$with_openssl" = "zno" ; then
+#    XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST openssl"
+#    AC_MSG_RESULT(no)
+#else
+#    if test "z$with_openssl" != "z" ; then
+#	OPENSSL_PREFIX=$with_openssl
+#	OPENSSL_CFLAGS="$OPENSSL_CFLAGS -I$OPENSSL_PREFIX/include/$GLOBUS_FLAVOR_NAME"
+#	OPENSSL_LIBS="-L$OPENSSL_PREFIX/lib -lcrypto_$GLOBUS_FLAVOR_NAME"
+#	OPENSSL_LDADDS="$OPENSSL_PREFIX/lib/libcrypto_$GLOBUS_FLAVOR_NAME.a"
 	OPENSSL_INCLUDES_FOUND="yes"
 	OPENSSL_LIBS_FOUND="yes"
-    else
-	OPENSSL_INCLUDES_FOUND="no"
-	OPENSSL_LIBS_FOUND="no"
-	for dir in $ac_openssl_inc_dir ; do
-	    if test -f $dir/openssl/ssl.h ; then
-		dnl do not add -I/usr/include because compiler does it anyway
-		if test "z$dir" = "z/usr/include" ; then
-		    OPENSSL_CFLAGS="$OPENSSL_CFLAGS "
-		else
-		    OPENSSL_CFLAGS="$OPENSSL_CFLAGS -I$dir"
-		fi
-		OPENSSL_INCLUDES_FOUND="yes"
-		break
-	    fi
-	done
+#    else
+#	OPENSSL_INCLUDES_FOUND="no"
+#	OPENSSL_LIBS_FOUND="no"
+#	for dir in $ac_openssl_inc_dir ; do
+#	    if test -f $dir/openssl/ssl.h ; then
+#		dnl do not add -I/usr/include because compiler does it anyway
+#		if test "z$dir" = "z/usr/include" ; then
+#		    OPENSSL_CFLAGS="$OPENSSL_CFLAGS "
+#		else
+#		    OPENSSL_CFLAGS="$OPENSSL_CFLAGS -I$dir"
+#		fi
+#		OPENSSL_INCLUDES_FOUND="yes"
+#		break
+#	    fi
+#	done
+#
+#	for dir in $ac_openssl_lib_dir ; do
+#	    if test -f $dir/libcrypto.a ; then
+#		dnl do not add -L/usr/lib because compiler does it anyway
+#		if test "z$dir" = "z/usr/lib" ; then
+#		    OPENSSL_LIBS="-lcrypto"
+#		else
+#		    OPENSSL_LIBS="-L$dir -lcrypto"
+#		fi
+#		OPENSSL_LIBS_FOUND="yes"
+#		OPENSSL_LDADDS="$dir/libcrypto.a"
+#		ac_found_openssl_lib_dir=$dir
+#		break;
+#	    fi
+#	done
+#    fi
+#    if test "z$OPENSSL_INCLUDES_FOUND" = "zyes" -a "z$OPENSSL_LIBS_FOUND" = "zyes" ; then
+#	dnl Check the OpenSSL version    
+#	OLD_CPPFLAGS=$CPPFLAGS
+#	CPPFLAGS="$OPENSSL_CFLAGS"
+#	AC_EGREP_CPP(yes,[
+#	    #include <openssl/opensslv.h>
+#	    #if OPENSSL_VERSION_NUMBER >= 0x00906000L
+#		yes
+#	    #endif
+#	],[
+#	    OPENSSL_VERSION="0.9.6"
+#	],[
+#   	    AC_MSG_ERROR(You need at least OpenSSL 0.9.6 for this version of $PACKAGE)
+#	]) 
+#	AC_EGREP_CPP(yes,[
+#	    #include <openssl/opensslv.h>
+#	    #if OPENSSL_VERSION_NUMBER >= 0x00907000L
+#		yes
+#	    #endif
+#	],[
+#	    OPENSSL_VERSION="0.9.7"
+#	],[
+#	    OPENSSL_VERSION="0.9.6"
+#	    dnl OPENSSL_CFLAGS="$OPENSSL_CFLAGS -DXMLSEC_OPENSSL_096=1"
+#	])    
+#	CPPFLAGS=$OLD_CPPFLAGS
+#	XMLSEC_NO_OPENSSL="0"
+#	
+#	dnl first crypto library is default one
+#	if test "z$XMLSEC_CRYPTO" = "z" ; then
+#	    XMLSEC_CRYPTO="openssl"
+#    	    XMLSEC_CRYPTO_LIB="$OPENSSL_CRYPTO_LIB"
+#	    XMLSEC_CRYPTO_CFLAGS="$OPENSSL_CFLAGS"
+#	    XMLSEC_CRYPTO_LIBS="$OPENSSL_LIBS"
+#	    XMLSEC_CRYPTO_LDADDS="$OPENSSL_LDADDS"
+#	fi	
+#	XMLSEC_CRYPTO_LIST="$XMLSEC_CRYPTO_LIST openssl"
+#        AC_MSG_RESULT(yes ('$OPENSSL_VERSION'))
+#    else
+#	XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST openssl"
+#        AC_MSG_RESULT(no)
+#    fi
+#fi
 
-	for dir in $ac_openssl_lib_dir ; do
-	    if test -f $dir/libcrypto.a ; then
-		dnl do not add -L/usr/lib because compiler does it anyway
-		if test "z$dir" = "z/usr/lib" ; then
-		    OPENSSL_LIBS="-lcrypto"
-		else
-		    OPENSSL_LIBS="-L$dir -lcrypto"
-		fi
-		OPENSSL_LIBS_FOUND="yes"
-		OPENSSL_LDADDS="$dir/libcrypto.a"
-		ac_found_openssl_lib_dir=$dir
-		break;
-	    fi
-	done
-    fi
-    
-    if test "z$OPENSSL_INCLUDES_FOUND" = "zyes" -a "z$OPENSSL_LIBS_FOUND" = "zyes" ; then
-	dnl Check the OpenSSL version    
-	OLD_CPPFLAGS=$CPPFLAGS
-	CPPFLAGS="$OPENSSL_CFLAGS"
-	AC_EGREP_CPP(yes,[
-	    #include <openssl/opensslv.h>
-	    #if OPENSSL_VERSION_NUMBER >= 0x00906000L
-		yes
-	    #endif
-	],[
-	    OPENSSL_VERSION="0.9.6"
-	],[
-    	    AC_MSG_ERROR(You need at least OpenSSL 0.9.6 for this version of $PACKAGE)
-	]) 
-	AC_EGREP_CPP(yes,[
-	    #include <openssl/opensslv.h>
-	    #if OPENSSL_VERSION_NUMBER >= 0x00907000L
-		yes
-	    #endif
-	],[
-	    OPENSSL_VERSION="0.9.7"
-	],[
-	    OPENSSL_VERSION="0.9.6"
-	    OPENSSL_CFLAGS="$OPENSSL_CFLAGS -DXMLSEC_OPENSSL_096=1"
-	])    
-	CPPFLAGS=$OLD_CPPFLAGS
-	XMLSEC_NO_OPENSSL="0"
-	
-	dnl first crypto library is default one
-	if test "z$XMLSEC_CRYPTO" = "z" ; then
-	    XMLSEC_CRYPTO="openssl"
-    	    XMLSEC_CRYPTO_LIB="$OPENSSL_CRYPTO_LIB"
-	    XMLSEC_CRYPTO_CFLAGS="$OPENSSL_CFLAGS"
-	    XMLSEC_CRYPTO_LIBS="$OPENSSL_LIBS"
-	    XMLSEC_CRYPTO_LDADDS="$OPENSSL_LDADDS"
-	fi	
-	XMLSEC_CRYPTO_LIST="$XMLSEC_CRYPTO_LIST openssl"
-        AC_MSG_RESULT(yes ('$OPENSSL_VERSION'))
-    else
-	XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST openssl"
-        AC_MSG_RESULT(no)
-    fi
-fi
-AM_CONDITIONAL(XMLSEC_NO_OPENSSL, test "z$XMLSEC_NO_OPENSSL" == "z1")
+#AM_CONDITIONAL(XMLSEC_NO_OPENSSL, test "z$XMLSEC_NO_OPENSSL" == "z1")
+XMLSEC_NO_OPENSSL=0
 AC_SUBST(XMLSEC_NO_OPENSSL)
 AC_SUBST(OPENSSL_MIN_VERSION)
 AC_SUBST(OPENSSL_VERSION)
@@ -347,11 +357,13 @@ GNUTLS_PREFIX=""
 GNUTLS_CFLAGS="-DXMLSEC_CRYPTO_GNUTLS=1"
 GNUTLS_LIBS=""
 GNUTLS_LDADDS=""
-GNUTLS_CRYPTO_LIB="$PACKAGE-gnutls"
+GNUTLS_CRYPTO_LIB="$XMLSEC_PACKAGE-gnutls"
 
 AC_MSG_CHECKING(for gnutls libraries >= $GNUTLS_MIN_VERSION) 
 AC_ARG_WITH(gnutls, [  --with-gnutls=[PFX]       gnutls location])
-if test "z$with_gnutls" = "zno" ; then
+dnl disable this always
+dnl if test "z$with_gnutls" = "zno" ; then
+if true ; then
     XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST gnutls"
     AC_MSG_RESULT(no)
 else
@@ -434,13 +446,16 @@ NSS_PREFIX=""
 NSPR_PREFIX=""
 NSS_LIBS_LIST="-lnss3 -lsmime3"
 NSPR_LIBS_LIST="-lnspr4 -lplds4 -lplc4"
-NSS_CRYPTO_LIB="$PACKAGE-nss"
+NSS_CRYPTO_LIB="$XMLSEC_PACKAGE-nss"
 
 dnl if nss is disabled, bail out early
 AC_ARG_WITH(nss, [  --with-nss=[PFX]          nss location])
 AC_ARG_WITH(nspr, [  --with-nspr=[PFX]         nspr location (needed for NSS)])
 AC_ARG_WITH(mozilla, [  --with-mozilla-ver=[VER]  mozilla version (alt to --with-nss, --with-nspr)])
-if test "z$with_nss" = "zno" ; then
+
+dnl disable this always
+dnl if test "z$with_nss" = "zno" ; then
+if true ; then
     XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST nss"
 else
     MOZILLA_VERSION="1.4"
@@ -1005,6 +1020,8 @@ AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
 AC_SUBST(XMLSEC_CRYPTO)
+dnl for glubus we need only openssl
+XMLSEC_CRYPTO_LIST="openssl"
 AC_SUBST(XMLSEC_CRYPTO_LIST)
 AC_SUBST(XMLSEC_CRYPTO_DISABLED_LIST)
 AC_SUBST(XMLSEC_CRYPTO_LIB)
@@ -1014,7 +1031,7 @@ AC_SUBST(XMLSEC_CRYPTO_LDADDS)
 
 XMLSEC_CRYPTO_PC_FILES_LIST=""
 for i in $XMLSEC_CRYPTO_LIST ; do
-    XMLSEC_CRYPTO_PC_FILES_LIST="$XMLSEC_CRYPTO_PC_FILES_LIST $PACKAGE-$i.pc"
+    XMLSEC_CRYPTO_PC_FILES_LIST="$XMLSEC_CRYPTO_PC_FILES_LIST $XMLSEC_PACKAGE-$i.pc"
 done
 AC_SUBST(XMLSEC_CRYPTO_PC_FILES_LIST)
 
@@ -1027,10 +1044,11 @@ Makefile
 include/Makefile
 include/xmlsec/Makefile
 src/Makefile
-apps/Makefile
 docs/Makefile
 docs/api/Makefile
 man/Makefile
+pkgdata/Makefile
+pkgdata/pkg_data_src.gpt
 ]
 [xmlsec1Conf.sh:xmlsecConf.sh.in]
 [xmlsec1-config:xmlsec-config.in]
@@ -1044,9 +1062,10 @@ man/Makefile
 dnl COPYING should be in "srcdir" not in "builddir"
 (cd $srcdir && rm -f COPYING.LIB COPYING && $LN_S Copyright COPYING)
 
-if test "z$XMLSEC_NO_OPENSSL" != "z1" ; then
+dnl we are always linking with the globus openssl package
+dnl if test "z$XMLSEC_NO_OPENSSL" != "z1" ; then
 AC_OUTPUT([include/xmlsec/openssl/Makefile src/openssl/Makefile])
-fi
+dnl fi
 
 if test "z$XMLSEC_NO_GNUTLS" != "z1" ; then
 AC_OUTPUT([include/xmlsec/gnutls/Makefile src/gnutls/Makefile])
@@ -1061,3 +1080,5 @@ if test "z$XMLSEC_NO_CRYPTO_DYNAMIC_LOADING" = "z1" ; then
 else
 AC_OUTPUT([xmlsec1.pc:xmlsec.pc.in])
 fi
+
+GLOBUS_FINALIZE

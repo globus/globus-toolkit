@@ -222,14 +222,14 @@ xmlSecCryptoDLLibraryDuplicate(xmlSecCryptoDLLibraryPtr lib) {
 
 static xmlChar*	
 xmlSecCryptoDLLibraryConstructFilename(const xmlChar* name) {
-    static xmlChar tmpl[] = "lib%s-%s" LTDL_SHLIB_EXT;
+    static xmlChar tmpl[] = "lib%s_%s_%s" LTDL_SHLIB_EXT;
     xmlChar* res;
     int len;
     
     xmlSecAssert2(name != NULL, NULL);
     
     /* TODO */
-    len = xmlStrlen(BAD_CAST PACKAGE) + xmlStrlen(name) + xmlStrlen(tmpl) + 1;
+    len = xmlStrlen(BAD_CAST PACKAGE) + xmlStrlen(name) + 1 + xmlStrlen(BAD_CAST GLOBUS_FLAVOR_NAME) + xmlStrlen(tmpl) + 1;
     res = (xmlChar*)xmlMalloc(len + 1);
     if(res == NULL) {
 	xmlSecError(XMLSEC_ERRORS_HERE,
@@ -239,7 +239,7 @@ xmlSecCryptoDLLibraryConstructFilename(const xmlChar* name) {
 		    "size=%d", len + 1); 
 	return(NULL);
     }
-    snprintf(BAD_CAST res, len, BAD_CAST tmpl, PACKAGE, name);
+    snprintf(BAD_CAST res, len, BAD_CAST tmpl, "xmlsec1" , name , GLOBUS_FLAVOR_NAME);
     
     return(res);
 }

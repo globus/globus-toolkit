@@ -9,17 +9,17 @@ INCLUDES = \
 	-DPACKAGE=\"@PACKAGE@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
+        -I$(GLOBUS_LOCATION)/include/libxml25 \
 	$(XMLSEC_DEFINES) \
-	$(OPENSSL_CFLAGS) \
 	$(LIBXSLT_CFLAGS) \
-	$(LIBXML_CFLAGS) \
+        $(LIBXML_CFLAGS) \
 	$(NULL)
 
 lib_LTLIBRARIES = \
-	libxmlsec1-openssl.la \
+	libxmlsec1_openssl_$(GLOBUS_FLAVOR_NAME).la \
 	$(NULL)
 
-libxmlsec1_openssl_la_SOURCES =\
+libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_SOURCES =\
 	app.c \
 	bn.c \
 	ciphers.c \
@@ -36,13 +36,15 @@ libxmlsec1_openssl_la_SOURCES =\
 	x509vfy.c \
 	$(NULL)
 
-libxmlsec1_openssl_la_LIBADD = \
-	../libxmlsec1.la \
+libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+	@GPT_LIB_LINKS@ \
 	$(OPENSSL_LIBS) \
 	$(LIBXSLT_LIBS) \
-	$(LIBXML_LIBS) \
+#	$(LIBXML_LIBS) \
 	$(NULL)
-        
-libxmlsec1_openssl_la_LDFLAGS = \
+
+
+libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	-version-info @XMLSEC_VERSION_INFO@ \
+	$(GPT_LDFLAGS) \
 	$(NULL)

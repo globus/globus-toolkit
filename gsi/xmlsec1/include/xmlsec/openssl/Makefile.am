@@ -1,6 +1,6 @@
 NULL =
 
-xmlsecopensslincdir = $(includedir)/xmlsec1/xmlsec/openssl
+xmlsecopensslincdir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/xmlsec1/xmlsec/openssl
 
 xmlsecopensslinc_HEADERS = \
 app.h \

@@ -1,11 +1,16 @@
+include $(top_srcdir)/globus_automake_pre
+
 NULL =
 
 SUBDIRS = . $(XMLSEC_CRYPTO_LIST)
 
+
 INCLUDES = \
 	-DPACKAGE=\"@PACKAGE@\" \
+	-DGLOBUS_FLAVOR_NAME=\"@GLOBUS_FLAVOR_NAME@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
+	-I$(GLOBUS_LOCATION)/include/libxml25 \
 	$(XMLSEC_DEFINES) \
 	$(LIBXSLT_CFLAGS) \
 	$(LIBXML_CFLAGS) \
@@ -21,10 +26,10 @@ EXTRA_DIST = \
 	$(NULL)
 
 lib_LTLIBRARIES = \
-	libxmlsec1.la \
+	libxmlsec1_$(GLOBUS_FLAVOR_NAME).la \
 	$(NULL)
 
-libxmlsec1_la_SOURCES = \
+libxmlsec1___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	$(LTDL_SOURCE_FILES) \
 	app.c \
 	base64.c \
@@ -56,13 +61,15 @@ libxmlsec1_la_SOURCES = \
 	xslt.c \
 	$(NULL)
 
-libxmlsec1_la_LIBADD = \
+libxmlsec1___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+	@GPT_LIB_LINKS@ \
 	$(LIBXSLT_LIBS) \
-	$(LIBXML_LIBS) \
+#	$(LIBXML_LIBS) \
 	$(XMLSEC_DL_LIBS) \
 	$(NULL)
         
-libxmlsec1_la_LDFLAGS = \
+libxmlsec1___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+	@GPT_LDFLAGS@
 	-version-info @XMLSEC_VERSION_INFO@ \
 	$(NULL)
 
@@ -88,3 +95,6 @@ xmlsec-ltdl.h: ltdl.c ltdl.h xmlsec-ltdl.patch
 	  patch -p0 < xmlsec-ltdl.patch)
 
 endif
+
+
+include $(top_srcdir)/globus_automake_post

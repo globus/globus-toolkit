@@ -6,8 +6,8 @@ bin_PROGRAMS = xmlsec1
 if XMLSEC_NO_APPS_CRYPTO_DYNAMIC_LOADING
 
 CRYPTO_DEPS = \
-	$(top_builddir)/src/$(XMLSEC_CRYPTO)/lib$(XMLSEC_CRYPTO_LIB).la \
-	$(top_builddir)/src/libxmlsec1.la \
+	$(top_builddir)/src/$(XMLSEC_CRYPTO)/lib$(XMLSEC_CRYPTO_LIB)_$(GLOBUS_FLAVOR_NAME).la \
+	$(top_builddir)/src/libxmlsec1_$(GLOBUS_FLAVOR_NAME).la  \
 	$(NULL)    
 
 CRYPTO_INCLUDES = \
@@ -25,7 +25,7 @@ CRYPTO_LD_ADD = \
 else
 
 CRYPTO_DEPS =  \
-	$(top_builddir)/src/libxmlsec1.la \
+	$(top_builddir)/src/libxmlsec1_$(GLOBUS_FLAVOR_NAME).la \
 	$(NULL)
 
 CRYPTO_INCLUDES = \
@@ -63,11 +63,13 @@ xmlsec1_SOURCES = \
 
 
 xmlsec1_LDFLAGS = \
+	@GPT_LDFLAGS@ \
 	$(CRYPTO_LD_FLAGS) \
 	@XMLSEC_STATIC_BINARIES@ \
 	$(NULL)
 
 xmlsec1_LDADD = \
+        @GPT_PGM_LINKS@ \
 	$(CRYPTO_LD_ADD) \
 	$(LIBXSLT_LIBS) \
 	$(LIBXML_LIBS) \
