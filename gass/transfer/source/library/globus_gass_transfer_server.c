@@ -454,7 +454,7 @@ globus_gass_transfer_refer(
 			    request);
 
 	/* Destroy our reference to the request */
-	globus_gass_transfer_request_destroy(request);
+	globus_i_gass_transfer_request_destroy(request);
 	break;
 
       case GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL2:
@@ -614,7 +614,7 @@ globus_gass_transfer_deny(
 			    request);
 
 	/* Destroy our reference to the request */
-	globus_gass_transfer_request_destroy(request);
+	globus_i_gass_transfer_request_destroy(request);
 	break;
 
       case GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL2:
@@ -713,7 +713,7 @@ globus_i_gass_transfer_listener_destroy(
     {
 	globus_list_t *				tmp;
 
-	tmp = globus_list_search(globus_i_gass_transfer_requests,
+	tmp = globus_list_search(globus_i_gass_transfer_listeners,
 				 (void *) listener);
 
 	globus_list_remove(&globus_i_gass_transfer_listeners,
