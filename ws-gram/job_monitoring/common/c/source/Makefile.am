@@ -34,7 +34,7 @@ globus_scheduler_event_generator_SOURCES = main.c
 globus_scheduler_event_generator_LDFLAGS = $(GPT_LDFLAGS)
 globus_scheduler_event_generator_LDADD = $(GPT_LIB_LINKS) libglobus_scheduler_event_generator_$(GLOBUS_FLAVOR_NAME).la
 
-EXTRA_DIST= version.h.in
+EXTRA_DIST= version.h.in protocol.dox
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

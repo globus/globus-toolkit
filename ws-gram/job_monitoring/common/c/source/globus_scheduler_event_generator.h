@@ -119,6 +119,21 @@ extern globus_module_descriptor_t globus_i_scheduler_event_generator_module;
 
 /**
  * @defgroup seg_api Scheduler Implementation API
+ * 
+ * Scheduler-specific SEG module implementations use this API to issue events
+ * to the Job State Monitor. Events occur whenever a job is placed in the 
+ * scheduler's queue (PENDING), begins execution (ACTIVE), terminates
+ * successfully (DONE), or ends abnormally (FAILED).
+ *
+ * A SEG module should register an event with the Globus event driver 
+ * (most likely using either the Globus Callback or Globus XIO interfaces)
+ * in its activation function and then return. All events should be triggered
+ * from callbacks. When the SEG detects that it should terminate, it will
+ * deactivate the SEG module it started. The SEG module should wait for any
+ * outstanding callbacks to subside and before returning from its deactivation
+ * function to ensure that all events will be properly dispatched. After
+ * deactivation is complete, the SEG will unload the shared module and
+ * terminate.
  */
 globus_result_t
 globus_scheduler_event(
