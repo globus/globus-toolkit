@@ -76,8 +76,8 @@ AC_OUTPUT(Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	,
-	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data --src="./pkgdata/pkg_data_src.gpt" \
-	--flavor=$GLOBUS_FLAVOR_NAME
+	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data  \
+	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
 	,
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
 
