@@ -248,7 +248,7 @@ sub rewrite_urls
 	    chomp($filename = `$cache_pgm -query $url`);
 	    if($filename ne '')
 	    {
-		$description->add('stdin', $filename);
+		$description->add($_, $filename);
 	    }
 	}
     }
@@ -266,6 +266,7 @@ sub stage_in
 
     if($description->executable() =~ m|^[a-zA-Z]+://|)
     {
+	$remote = $description->executable();
 	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") != 0)
 	{
 	    return Globus::GRAM::Error::STAGE_IN_FAILED;
@@ -273,6 +274,7 @@ sub stage_in
     }
     if($description->stdin() =~ m|^[a-zA-Z]+://|)
     {
+	$remote = $description->stdin();
 	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") != 0)
 	{
 	    return Globus::GRAM::Error::STAGE_IN_FAILED;

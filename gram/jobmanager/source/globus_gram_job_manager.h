@@ -27,9 +27,12 @@ EXTERN_C_BEGIN
                                Type definitions
 ******************************************************************************/
 
-#define GLOBUS_GRAM_JOBMANAGER_STATUS_UNCHANGED   0
-#define GLOBUS_GRAM_JOBMANAGER_STATUS_CHANGED     1
-#define GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED      2
+enum
+{
+    GLOBUS_GRAM_JOBMANAGER_STATUS_UNCHANGED = 0,
+    GLOBUS_GRAM_JOBMANAGER_STATUS_CHANGED = 1,
+    GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED = 2
+};
 
 /**
  * Job Manager Request
@@ -272,7 +275,6 @@ typedef struct
     globus_list_t *			validation_records;
 }
 globus_gram_jobmanager_request_t;
-
 
 /**
  * RSL Validation Record

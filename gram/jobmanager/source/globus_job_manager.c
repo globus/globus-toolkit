@@ -249,10 +249,13 @@ globus_l_gram_job_manager_merge_rsl(
     globus_rsl_t *			base_rsl,
     globus_rsl_t *			override_rsl);
 
-/******************************************************************************
-                       Define variables for external use
-******************************************************************************/
+static
+int
+globus_l_gram_job_manager_activate(void);
 
+/*
+ * Define variables for external use
+ */
 extern int errno;
 
 /******************************************************************************
@@ -309,6 +312,13 @@ static char *                graml_remote_io_url_file = GLOBUS_NULL;
          } \
      } \
 }
+typedef enum
+{
+    GLOBUS_GRAM_JOB_MANAGER_DONT_SAVE,
+    GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS,
+    GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR
+}
+globus_l_gram_job_manager_logfile_flag_t;
 
 /******************************************************************************
 Function:       main()
@@ -324,8 +334,6 @@ int main(int argc,
     int                    rc;
     int                    length;
     int                    job_state_mask;
-    int                    save_logfile_always_flag = 0;
-    int                    save_logfile_on_errors_flag = 0;
     int                    krbflag = 0;
     int                    tmp_status;
     int                    publish_jobs_flag = 0;
@@ -372,6 +380,10 @@ int main(int argc,
     char *				globus_loc = NULL;
     char *				tcp_port_range = NULL;
     char *				scratch_dir_base = NULL;
+    globus_l_gram_job_manager_logfile_flag_t
+					logfile_flag;
+
+    logfile_flag = GLOBUS_GRAM_JOB_MANAGER_DONT_SAVE;
 
     /*
      * Stdin and stdout point at socket to client
@@ -380,55 +392,10 @@ int main(int argc,
      */
     setbuf(stdout,NULL);
 
-    /* Initialize modules that I use */
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
-    if (rc != GLOBUS_SUCCESS)
+    rc = globus_l_gram_job_manager_activate();
+    if(rc != GLOBUS_SUCCESS)
     {
-	fprintf(stderr, "common module activation failed with rc=%d\n", rc);
-	exit(1);
-    }
-
-    rc = globus_module_activate(GLOBUS_IO_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "io activation failed with rc=%d\n", rc);
-	exit(1);
-    }
-
-    rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "gram protocol activation failed with rc=%d\n", rc);
-	exit(1);
-    }
-
-    rc = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "gass_copy activation failed with rc=%d\n", rc);
-	exit(1);
-    }
-
-    rc = globus_module_activate(GLOBUS_GASS_CACHE_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "gass_cache activation failed with rc=%d\n", rc);
-	exit(1);
-    }
-
-    rc = globus_module_activate(GLOBUS_GASS_FILE_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "gass_file activation failed with rc=%d\n", rc);
-	exit(1);
-    }
-
-    rc = globus_module_activate(GLOBUS_DUCT_CONTROL_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "%s activation failed with rc=%d\n",
-		GLOBUS_DUCT_CONTROL_MODULE->module_name, rc);
-	exit(1);
+        exit(1);
     }
 
     globus_nexus_enable_fault_tolerance(
@@ -506,13 +473,11 @@ int main(int argc,
         {
             if (strcmp(argv[i+1], "always") == 0)
             {
-                save_logfile_always_flag    = 1;
-                save_logfile_on_errors_flag = 0;
+		logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS;
             }
             else
             {
-                save_logfile_always_flag    = 0;
-                save_logfile_on_errors_flag = 1;
+		logfile_flag = GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR;
             }
             i++;
         }
@@ -692,7 +657,7 @@ int main(int argc,
 	globus_libc_usleep(sleeptime * 1000 * 1000);
     }
 
-    if (save_logfile_always_flag || save_logfile_on_errors_flag)
+    if (logfile_flag != GLOBUS_GRAM_JOB_MANAGER_DONT_SAVE)
     {
         /*
          * Open the gram logfile just for testing!
@@ -1589,8 +1554,11 @@ int main(int argc,
 		    request->job_id,
 		    final_rsl_spec);
 	}
-
-        rc = globus_jobmanager_request(request);
+	rc = globus_jobmanager_request_stage_in(request);
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    rc = globus_jobmanager_request(request);
+	}
 
 	if ( rc == GLOBUS_SUCCESS )
 	{
@@ -2088,31 +2056,38 @@ int main(int argc,
 	    request->jobmanager_log_fp,
 	    "JM: exiting globus_gram_job_manager.\n");
 
-    if ( save_logfile_always_flag ||
-         (save_logfile_on_errors_flag &&
-          graml_jm_request_failed &&
-          !request->dry_run)
-       )
+    switch(logfile_flag)
     {
-	;
-    }
-    else if (strcmp(request->jobmanager_logfile, "/dev/null") != 0)
-    {
-        /*
-         * Check to see if the jm log file exists.  If so, then delete it.
-         */
-        if (stat(request->jobmanager_logfile, &statbuf) == 0)
-        {
-	    if (remove(request->jobmanager_logfile) != 0)
-            {
-	        fprintf(stderr, "failed to remove job manager log file = %s\n",
-                        request->jobmanager_logfile);
-            }
-        }
+      case GLOBUS_GRAM_JOB_MANAGER_DONT_SAVE:
+        break;
+      case GLOBUS_GRAM_JOB_MANAGER_SAVE_ON_ERROR:
+	if((!graml_jm_request_failed) || request->dry_run)
+	{
+	    break;
+	}
+	/* FALLSTHROUGH */
+      case GLOBUS_GRAM_JOB_MANAGER_SAVE_ALWAYS:
+	if (strcmp(request->jobmanager_logfile, "/dev/null") != 0)
+	{
+	    /*
+	     * Check to see if the jm log file exists.  If so, then
+	     * delete it.
+	     */
+	    if (stat(request->jobmanager_logfile, &statbuf) == 0)
+	    {
+		if (remove(request->jobmanager_logfile) != 0)
+		{
+		    fprintf(stderr,
+			    "failed to remove job manager log file = %s\n",
+			    request->jobmanager_logfile);
+		}
+	    }
+	}
     }
 
     return(0);
-} /* main() */
+}
+/* main() */
 
 
 /******************************************************************************
@@ -4382,3 +4357,74 @@ globus_l_gram_job_manager_register_proxy_timout(
     return rc;
 }
 /* globus_l_gram_job_manager_register_proxy_timout() */
+
+static
+int
+globus_l_gram_job_manager_activate(void)
+{
+    int rc;
+
+    /* Initialize modules that I use */
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "common module activation failed with rc=%d\n", rc);
+	goto common_failed;
+    }
+
+    rc = globus_module_activate(GLOBUS_IO_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "io activation failed with rc=%d\n", rc);
+	goto io_failed;
+    }
+
+    rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gram protocol activation failed with rc=%d\n", rc);
+	goto gram_protocol_failed;
+    }
+
+    rc = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass_copy activation failed with rc=%d\n", rc);
+	goto gass_copy_failed;
+    }
+
+    rc = globus_module_activate(GLOBUS_GASS_CACHE_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass_cache activation failed with rc=%d\n", rc);
+	goto gass_cache_failed;
+    }
+
+    rc = globus_module_activate(GLOBUS_GASS_FILE_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "gass_file activation failed with rc=%d\n", rc);
+	goto gass_file_failed;
+    }
+
+    rc = globus_module_activate(GLOBUS_DUCT_CONTROL_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "%s activation failed with rc=%d\n",
+		GLOBUS_DUCT_CONTROL_MODULE->module_name, rc);
+	goto duct_control_failed;
+    }
+duct_control_failed:
+gass_file_failed:
+gass_cache_failed:
+gass_copy_failed:
+gram_protocol_failed:
+io_failed:
+    if(rc)
+    {
+	globus_module_deactivate_all();
+    }
+common_failed:
+    return rc;
+}
+/* globus_l_gram_job_manager_activate() */
