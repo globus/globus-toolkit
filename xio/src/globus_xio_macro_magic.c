@@ -31,7 +31,7 @@ globus_xio_driver_pass_open_DEBUG(
     _op = (_in_op);
     globus_assert(_op->ndx < _op->stack_size);
     _handle = _op->_op_handle;
-    _context = _handle->context;
+    _context = _op->_op_context;
     _op->progress = GLOBUS_TRUE;
     _op->block_timeout = GLOBUS_FALSE;
 
@@ -174,7 +174,7 @@ globus_xio_driver_finished_open_DEBUG(
             globus_assert(0);
     }
 
-    if(_my_op->prev_ndx == 0 && !_op->blocking)
+    if(_my_op->prev_ndx == 0 && !_op->blocking && _op->_op_handle)
     {
         _space = _op->_op_handle->space;
     }
@@ -284,7 +284,8 @@ globus_xio_driver_open_deliver_DEBUG(
         {
             _close_op->cached_res = GLOBUS_SUCCESS;
             if(_close_op->entry[_close_op->ndx - 1].prev_ndx == 0 &&
-                    !_close_op->blocking)
+                    !_close_op->blocking &&
+                _op->_op_handle != NULL)
             {
                 _space = _close_op->_op_handle->space;
             }
@@ -326,7 +327,7 @@ globus_xio_driver_pass_close_DEBUG(
     _op = (_in_op);
     globus_assert(_op->ndx < _op->stack_size);
     _handle = _op->_op_handle;
-    _context = _handle->context;
+    _context = _op->_op_context;
     _op->progress = GLOBUS_TRUE;
     _op->block_timeout = GLOBUS_FALSE;
 
@@ -441,7 +442,7 @@ globus_xio_driver_finished_close_DEBUG(
 
     globus_assert(_op->ndx >= 0); /* otherwise we are not in bad memory */
     _op->cached_res = _res;
-    if(_my_op->prev_ndx == 0 && !_op->blocking)
+    if(_my_op->prev_ndx == 0 && !_op->blocking && _op->_op_handle)
     {
         _space = _op->_op_handle->space;
     }
@@ -630,7 +631,7 @@ globus_xio_driver_finished_write_DEBUG(
             globus_free(_my_op->_op_ent_fake_iovec);
             _my_op->_op_ent_fake_iovec = NULL;
         }
-        if(_my_op->prev_ndx == 0 && !_op->blocking)
+        if(_my_op->prev_ndx == 0 && !_op->blocking && _op->_op_handle)
         {
             _space = _op->_op_handle->space;
         }
@@ -931,7 +932,7 @@ globus_xio_driver_finished_read_DEBUG(
             _my_op->_op_ent_fake_iovec = NULL;
         }
 
-        if(_my_op->prev_ndx == 0 && !_op->blocking)
+        if(_my_op->prev_ndx == 0 && !_op->blocking && _op->_op_handle)
         {
             _space = _op->_op_handle->space;
         }

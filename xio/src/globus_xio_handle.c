@@ -15,7 +15,7 @@
 /********************************************************************
  *                   data structure macros
  *******************************************************************/
-#define GlobusXIOHandleCreate(h, s, a)                                      \
+#define GlobusXIOHandleCreate(h, a)                                         \
 do                                                                          \
 {                                                                           \
     globus_i_xio_handle_t *                         _h;                     \
@@ -34,8 +34,6 @@ do                                                                          \
          *  The operation is a stretchy array.  The size of the             \
          *  operation structure plus the size of the entry array            \
          */                                                                 \
-        _h->stack_size = (s);                                               \
-                                                                            \
         if(_a != NULL)                                                      \
         {                                                                   \
             _h->open_timeout_cb = _a->open_timeout_cb;                      \
@@ -475,15 +473,15 @@ globus_l_xio_open_close_callback_kickout(
         if(op->type == GLOBUS_XIO_OPERATION_TYPE_OPEN)
         {
             target = handle->target;
-            for(ctr = 0;  ctr < handle->context->stack_size; ctr++)
+            for(ctr = 0;  ctr < target->stack_size; ctr++)
             {
                 if(target->entry[ctr].target != NULL &&
-                    handle->context->entry[ctr].driver->target_destroy_func !=
+                    target->entry[ctr].driver->target_destroy_func !=
                         NULL)
                 {
                     /* ignore result code.  user should be more interested in
                         result from callback */
-                    handle->context->entry[ctr].driver->target_destroy_func(
+                    target->entry[ctr].driver->target_destroy_func(
                             target->entry[ctr].target);
                 }
             }
@@ -1568,7 +1566,7 @@ globus_xio_register_open(
     }
 
     /* allocate and intialize the handle structure */
-    GlobusXIOHandleCreate(handle, target->stack_size, user_attr);
+    GlobusXIOHandleCreate(handle, user_attr);
     if(handle == NULL)
     {
         res = GlobusXIOErrorMemory("handle");
@@ -1614,7 +1612,7 @@ globus_xio_register_open(
 
     handle->target = target;
     /* set entries in structures */
-    for(ctr = 0; ctr < handle->stack_size; ctr++)
+    for(ctr = 0; ctr < context->stack_size; ctr++)
     {
         context->entry[ctr].driver = target->entry[ctr].driver;
 
@@ -2054,7 +2052,7 @@ globus_xio_register_close(
     op->entry[0].prev_ndx = -1;/*for first pass there is no return*/
 
     /* set up op */
-    for(ctr = 0; ctr < handle->stack_size; ctr++)
+    for(ctr = 0; ctr < handle->context->stack_size; ctr++)
     {
         if(attr != NULL)
         {
@@ -2339,7 +2337,7 @@ globus_xio_open(
     }
 
     /* allocate and intialize the handle structure */
-    GlobusXIOHandleCreate(handle, target->stack_size, user_attr);
+    GlobusXIOHandleCreate(handle, user_attr);
     if(handle == NULL)
     {
         res = GlobusXIOErrorMemory("handle");
@@ -2394,7 +2392,7 @@ globus_xio_open(
 
     handle->target = target;
     /* set entries in structures */
-    for(ctr = 0; ctr < handle->stack_size; ctr++)
+    for(ctr = 0; ctr < context->stack_size; ctr++)
     {
         context->entry[ctr].driver = target->entry[ctr].driver;
 
@@ -3022,7 +3020,7 @@ globus_xio_close(
     info->op = op;
 
     /* set up op */
-    for(ctr = 0; ctr < handle->stack_size; ctr++)
+    for(ctr = 0; ctr < handle->context->stack_size; ctr++)
     {
         if(attr != NULL)
         {

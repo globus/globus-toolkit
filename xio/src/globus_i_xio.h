@@ -216,7 +216,6 @@ typedef struct globus_i_xio_handle_s
     globus_list_t *                         cb_list;
     globus_mutex_t                          cancel_mutex;
     int                                     ref;
-    int                                     stack_size;
     struct globus_i_xio_context_s *         context;
 
     globus_i_xio_handle_state_t             state;
