@@ -10,6 +10,7 @@ globus_cond_t				globus_i_gram_protocol_cond;
 
 globus_list_t *				globus_i_gram_protocol_listeners;
 globus_list_t *				globus_i_gram_protocol_connections;
+globus_list_t *				globus_i_gram_protocol_old_creds;
 globus_bool_t 				globus_i_gram_protocol_shutdown_called;
 globus_io_attr_t			globus_i_gram_protocol_default_attr;
 int					globus_i_gram_protocol_num_connects;
@@ -74,6 +75,7 @@ globus_l_gram_protocol_activate(void)
 
     globus_i_gram_protocol_listeners = GLOBUS_NULL;
     globus_i_gram_protocol_connections = GLOBUS_NULL;
+    globus_i_gram_protocol_old_creds = GLOBUS_NULL;
     globus_i_gram_protocol_shutdown_called = GLOBUS_FALSE;
     globus_i_gram_protocol_num_connects = 0;
     globus_mutex_init(&globus_i_gram_protocol_mutex, GLOBUS_NULL);

@@ -11,6 +11,8 @@ use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::Core::Paths;
 
+use Config;
+
 package Globus::GRAM::JobManager::condor;
 
 @ISA = qw(Globus::GRAM::JobManager);
@@ -54,6 +56,7 @@ sub submit
     my $rank = "";
     my @arguments;
     my $argument_string;
+    my %library_vars;
 
     if($description->jobtype() eq 'single' ||
        $description->jobtype() eq 'multiple')
@@ -110,12 +113,30 @@ sub submit
 	}
     }
 
+    $library_vars{LD_LIBRARY_PATH} = 0;
+    if($Config{osname} eq 'irix')
+    {
+	$library_vars{LD_LIBRARYN32_PATH} = 0;
+	$library_vars{LD_LIBRARY64_PATH} = 0;
+    }
     @environment = $description->environment();
-    foreach $tuple ($description->environment())
+    foreach $tuple (@environment)
     {
 	if(!ref($tuple) || scalar(@$tuple) != 2)
 	{
 	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
+	}
+	if(exists($library_vars{$tuple->[0]}))
+	{
+	    $tuple->[1] .= ":$library_string";
+	    $library_vars{$tuple->[0]} = 1;
+	}
+    }
+    foreach (keys %library_vars)
+    {
+	if($library_vars{$_} == 0)
+	{
+	    push(@environment, [$_, $library_path]);
 	}
     }
     $environment_string = join(';',

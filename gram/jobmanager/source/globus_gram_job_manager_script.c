@@ -1168,6 +1168,64 @@ globus_gram_job_manager_script_proxy_relocate(
 }
 /* globus_gram_job_manager_script_proxy_relocate() */
 
+int 
+globus_gram_job_manager_script_proxy_update(
+    globus_gram_jobmanager_request_t *	request)
+{
+    char *				script_cmd = "proxy_update";
+    int					rc;
+    FILE *				script_arg_fp;
+    char *				script_arg_file;
+
+    script_arg_file = tempnam(NULL, "gram_proxy_update");
+
+    if (!request)
+        return(GLOBUS_FAILURE);
+
+    if ((script_arg_fp = fopen(script_arg_file, "w")) == NULL)
+    {
+	globus_gram_job_manager_request_log(request,
+              "JMI: Failed to open gram script argument file. %s\n",
+              script_arg_file );
+        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+        request->failure_code = 
+              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
+        return(GLOBUS_FAILURE);
+    }
+
+    globus_l_gram_job_manager_script_write_description(
+	    script_arg_fp,
+	    request,
+	    NULL);
+
+    fclose(script_arg_fp);
+
+    globus_gram_job_manager_request_log(request,
+          "JMI: in globus_gram_job_manager_script_proxy_update()\n" );
+
+    rc = globus_l_gram_job_manager_script_run(
+                request,
+                script_cmd,
+		script_arg_file,
+		GLOBUS_HANDLE_TABLE_NO_HANDLE,
+		globus_l_gram_job_manager_default_done,
+		NULL);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_gram_job_manager_request_log(request,
+              "JMI: returning with error: %d\n", rc);
+
+	request->failure_code = rc;
+	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+
+        return rc;
+    }
+
+    return(GLOBUS_SUCCESS);
+}
+/* globus_gram_job_manager_script_proxy_update() */
+
 /**
  * Completion callback for done and poll scripts.
  *

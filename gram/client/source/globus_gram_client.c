@@ -49,7 +49,8 @@ enum
     GLOBUS_GRAM_CLIENT_SIGNAL,
     GLOBUS_GRAM_CLIENT_CANCEL,
     GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER,
-    GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER
+    GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER,
+    GLOBUS_GRAM_CLIENT_RENEW
 }
 globus_l_gram_client_callback_type_t;
 
@@ -508,6 +509,16 @@ globus_gram_client_version(void)
     return(GLOBUS_GRAM_PROTOCOL_VERSION);
 
 } /* globus_gram_client_version() */
+
+
+/*
+ * globus_gram_client_set_credentials()
+ */
+int
+globus_gram_client_set_credentials(gss_cred_id_t new_credentials)
+{
+    return globus_gram_protocol_set_credentials(new_credentials);
+}
 
 
 /**
@@ -1466,6 +1477,89 @@ error_exit:
 /* globus_gram_client_job_callback_unregister() */
 
 /**
+ * Delegate new credentials to a job manager.
+ * @ingroup globus_gram_client_job_functions
+ *
+ * @param job_contact
+ *        The job contact string of the job manager to contact. This is the
+ *        same value returned from globus_gram_client_job_request().
+ * @param creds
+ *        A credential which should be used to contact the job manager. This
+ *        may be GSS_C_NO_CREDENTIAL to use the process's default
+ *        credential.
+ *
+ * @return This function returns GLOBUS_SUCCESS if the delegation
+ * was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values
+ * will be returned, indicating why the client could not unregister the
+ * callback contact.
+ */
+int
+globus_gram_client_job_refresh_credentials(
+    char *				job_contact,
+    gss_cred_id_t			creds)
+{
+    globus_l_gram_client_monitor_t	monitor;
+    int					rc;
+    globus_byte_t *			query = GLOBUS_NULL;
+    globus_size_t			querysize;
+
+    globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
+    globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
+    monitor.done = GLOBUS_FALSE;
+    monitor.handle = 0;
+
+    globus_mutex_lock(&monitor.mutex);
+    monitor.type = GLOBUS_GRAM_CLIENT_RENEW;
+
+    rc = globus_gram_protocol_pack_status_request(
+	 "renew",
+	 &query,
+	 &querysize);
+
+    if (rc!=GLOBUS_SUCCESS)
+      goto end;
+
+    /* Send the request to the job manager, if successful, delegate a
+     * credential to the job manager. call back when all is done.
+     */
+    rc = globus_gram_protocol_post_delegation(
+	 job_contact,
+	 &monitor.handle,
+	 GLOBUS_NULL,
+	 query,
+	 querysize,
+	 creds,
+	 GSS_C_NO_OID_SET,
+	 GSS_C_NO_BUFFER_SET,
+	 GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG | GSS_C_GLOBUS_SSL_COMPATIBLE,
+	 0,
+	 globus_l_gram_client_monitor_callback,
+	 &monitor);
+
+    if (rc!=GLOBUS_SUCCESS)
+    {
+        goto end;
+    }
+
+    while (!monitor.done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+    rc = monitor.errorcode;
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+      goto end;
+    }
+
+  end:
+    globus_mutex_unlock(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
+    return rc;
+}
+/* globus_gram_client_job_refresh_credentials() */
+
+/**
  * Nonblocking register a callback contact for job state changes.
  * @ingroup globus_gram_client_job_functions
  *
@@ -1923,6 +2017,7 @@ globus_l_gram_client_monitor_callback(
 	    break;
 
 	  case GLOBUS_GRAM_CLIENT_PING:
+	  case GLOBUS_GRAM_CLIENT_RENEW:
 	    break;
 	  case GLOBUS_GRAM_CLIENT_STATUS:
 	  case GLOBUS_GRAM_CLIENT_SIGNAL:
@@ -1986,6 +2081,7 @@ globus_l_gram_client_register_callback(
 	    break;
 
 	  case GLOBUS_GRAM_CLIENT_PING:
+	  case GLOBUS_GRAM_CLIENT_RENEW:
 	    break;
 	  case GLOBUS_GRAM_CLIENT_STATUS:
 	  case GLOBUS_GRAM_CLIENT_SIGNAL:

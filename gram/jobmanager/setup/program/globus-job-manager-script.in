@@ -3,6 +3,7 @@
 BEGIN
 {
     use Config;
+    my $path = $ENV{GLOBUS_LOCATION} . '/lib';
 
     push(@INC, "@GLOBUS_LOCATION@/lib/perl");
     $ENV{GLOBUS_LOCATION} =
@@ -10,31 +11,11 @@ BEGIN
 
     if($Config{osname} eq 'irix')
     {
-	if(exists($ENV{LD_LIBRARY64_PATH}))
-	{
-	    $ENV{LD_LIBRARY64_PATH}  .= ':' . $ENV{GLOBUS_LOCATION} . '/lib';
-	}
-	else
-	{
-	    $ENV{LD_LIBRARY64_PATH}   = $ENV{GLOBUS_LOCATION} . '/lib';
-	}
-	if(exists($ENV{LD_LIBRARYN32_PATH}))
-	{
-	    $ENV{LD_LIBRARYN32_PATH} .= ':' . $ENV{GLOBUS_LOCATION} . '/lib';
-	}
-	else
-	{
-	    $ENV{LD_LIBRARYN32_PATH} = $ENV{GLOBUS_LOCATION} . '/lib';
-	}
+
+	&append_path(\%ENV, 'LD_LIBRARY64_PATH', $path);
+	&append_path(\%ENV, 'LD_LIBRARYN32PATH', $path);
     }
-    if(exists($ENV{LD_LIBRARY_PATH}))
-    {
-	$ENV{LD_LIBRARY_PATH} .= ':' . $ENV{GLOBUS_LOCATION} . '/lib';
-    }
-    else
-    {
-	$ENV{LD_LIBRARY_PATH} = $ENV{GLOBUS_LOCATION} . '/lib';
-    }
+    &append_path(\%ENV, 'LD_LIBRARY_PATH', $path);
 }
 
 use Getopt::Long;
@@ -86,4 +67,20 @@ sub fail
 
     print "GRAM_SCRIPT_ERROR:" . $error->value() . "\n";
     exit 1;
+}
+
+sub append_path
+{
+    my $ref = shift;
+    my $var = shift;
+    my $path = shift;
+
+    if(exists($ref->{$var}))
+    {
+	$ref->{$var} .= ":$path";
+    }
+    else
+    {
+	$ref->{$var} = $path;
+    }
 }

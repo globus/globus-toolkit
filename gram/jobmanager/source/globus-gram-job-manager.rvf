@@ -274,3 +274,8 @@ Description: "Specifies how long (in seconds) before the delegated X509"
 Default: 60
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT 
+
+Attribute: library_path
+Description: "Specifies a list of paths to be appended to the system-specific
+              library path environment variables."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT

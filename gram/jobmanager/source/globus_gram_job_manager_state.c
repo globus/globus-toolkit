@@ -865,8 +865,9 @@ globus_gram_job_manager_state_machine(
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE;
 
         if((!request->kerberos) &&
-	    request->response_context != GSS_C_NO_CONTEXT &&
-	    globus_gram_job_manager_gsi_used(request))
+	    globus_gram_job_manager_gsi_used(request) &&
+	    (request->response_context != GSS_C_NO_CONTEXT ||
+	     globus_libc_getenv("X509_USER_PROXY") != NULL))
 	{
 	    globus_gram_job_manager_request_log(request,
 				  "JM: GSSAPI type is GSI\n");
@@ -888,7 +889,8 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
 	if((!request->kerberos) && globus_gram_job_manager_gsi_used(request))
 	{
-	    if(!request->x509_user_proxy)
+	    if((!request->x509_user_proxy) &&
+		    request->response_context != GSS_C_NO_CONTEXT)
 	    {
 		/* failed to relocated proxy! */
 		request->jobmanager_state = 
@@ -898,25 +900,29 @@ globus_gram_job_manager_state_machine(
 		break;
 	    }
 
-	    /*
-	     * The proxy timeout callback is registered to happen shortly
-	     * (5 minutes) before the job manager's proxy will expire. We
-	     * do this to save state and exit the job manager so another
-	     * can be restarted in it's place.
-	     */
-	    globus_gram_job_manager_request_log(request,
-	                          "JM: Relocated Proxy to %s\n",
-				  request->x509_user_proxy);
-	    globus_libc_setenv("X509_USER_PROXY",
-	                       request->x509_user_proxy,
-			       GLOBUS_TRUE);
+	    if(request->x509_user_proxy)
+	    {
+		/*
+		 * The proxy timeout callback is registered to happen
+		 * shortly (5 minutes) before the job manager's proxy will
+		 * expire. We do this to save state and exit the job manager
+		 * so another can be restarted in it's place.
+		 */
+		globus_gram_job_manager_request_log(request,
+				      "JM: Relocated Proxy to %s\n",
+				      request->x509_user_proxy);
+		globus_libc_setenv("X509_USER_PROXY",
+				   request->x509_user_proxy,
+				   GLOBUS_TRUE);
 
-	    globus_gram_job_manager_rsl_env_add(
-	        request->rsl,
-		"X509_USER_PROXY",
-		request->x509_user_proxy);
-	    rc = globus_gram_job_manager_register_proxy_timeout(request);
-	    request->relocated_proxy = GLOBUS_TRUE;
+		globus_gram_job_manager_rsl_env_add(
+		    request->rsl,
+		    "X509_USER_PROXY",
+		    request->x509_user_proxy);
+		rc = globus_gram_job_manager_gsi_register_proxy_timeout(
+			request);
+		request->relocated_proxy = GLOBUS_TRUE;
+	    }
 	}
 
 	if(request->save_state)
@@ -1272,12 +1278,31 @@ globus_gram_job_manager_state_machine(
 		    request,
 		    query);
 	}
-	else 
+	else if(query->type == GLOBUS_GRAM_JOB_MANAGER_CANCEL)
 	{
-	    globus_assert(query->type == GLOBUS_GRAM_JOB_MANAGER_CANCEL);
 	    rc = globus_gram_job_manager_script_cancel(
 		    request,
 		    query);
+	}
+	else if(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH;
+	    rc = globus_gram_protocol_accept_delegation(
+		    query->handle,
+		    GSS_C_NO_OID_SET,
+		    GSS_C_NO_BUFFER_SET,
+		    GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
+		        GSS_C_GLOBUS_SSL_COMPATIBLE,
+		    0,
+		    globus_gram_job_manager_query_delegation_callback,
+		    request);
+
+	    if(rc == GLOBUS_SUCCESS)
+	    {
+		event_registered = GLOBUS_TRUE;
+	    }
+	    break;
 	}
 	if(rc == GLOBUS_SUCCESS)
 	{
@@ -1304,6 +1329,7 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
 	query = globus_fifo_dequeue(&request->pending_queries);
 
+	/* Frees the query */
 	globus_gram_job_manager_query_reply(
 		request,
 		query);
@@ -1326,6 +1352,54 @@ globus_gram_job_manager_state_machine(
 	}
 	break;
     
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
+	query = globus_fifo_peek(&request->pending_queries);
+
+	globus_assert(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH);
+
+	request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+
+	if(query->delegated_credential != GSS_C_NO_CREDENTIAL)
+	{
+	    /*
+	     * We got a new credential... update our listener and
+	     * store it on disk
+	     */
+	    rc = globus_gram_job_manager_gsi_update_credential(
+		    request,
+		    query->delegated_credential);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		break;
+	    }
+
+	    rc = globus_gram_job_manager_gsi_update_proxy_timeout(
+		    request,
+		    query->delegated_credential);
+
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		break;
+	    }
+
+	    /* Relocate the new proxy to the cache (potentially moving
+	     * to a job execution host(s))
+	     */
+	    rc = globus_gram_job_manager_script_proxy_update(
+		    request);
+	    if(rc == GLOBUS_SUCCESS)
+	    {
+		event_registered = GLOBUS_TRUE;
+	    }
+	}
+	else
+	{
+	    query->failure_code =
+		GLOBUS_GRAM_PROTOCOL_ERROR_DELEGATION_FAILED;
+	}
+	break;
+
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN;
@@ -2124,6 +2198,7 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN)
 

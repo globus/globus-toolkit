@@ -18,6 +18,7 @@ CVS Information:
 
 /* Include header files */
 #include "globus_common.h"
+#include "globus_io.h"
 #include "globus_gram_protocol_constants.h"
 
 #ifndef EXTERN_C_BEGIN
@@ -162,6 +163,12 @@ globus_gram_client_register_job_status(
     void *				register_callback_arg);
 
 int
+globus_gram_client_job_refresh_credentials(
+    char *                              job_contact,
+    gss_cred_id_t                       creds);
+
+
+int
 globus_gram_client_job_status(
     const char *			job_contact,
     int *				job_status,
@@ -234,6 +241,9 @@ globus_gram_client_error_string(
 
 int
 globus_gram_client_version(void);
+
+int
+globus_gram_client_set_credentials(gss_cred_id_t new_credentials);
 
 int 
 globus_gram_client_ping(

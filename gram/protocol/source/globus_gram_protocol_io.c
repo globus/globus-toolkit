@@ -87,6 +87,74 @@ globus_l_gram_protocol_parse_reply_header(
     const globus_byte_t *		buf,
     globus_size_t *			payload_length);
 
+static
+int
+globus_l_gram_protocol_reply(
+    globus_gram_protocol_handle_t	handle,
+    int					code,
+    globus_byte_t *			message,
+    globus_size_t			message_size,
+    gss_OID_set				restriction_oids,
+    gss_buffer_set_t			restriction_bufers,
+    OM_uint32				req_flags,
+    OM_uint32				time_req,
+    globus_gram_protocol_delegation_callback_t
+    					callback,
+    void *				arg);
+
+static
+int
+globus_l_gram_protocol_post(
+    const char *			url,
+    globus_gram_protocol_handle_t *	handle,
+    globus_io_attr_t *			attr,
+    globus_byte_t *			message,
+    globus_size_t			message_size,
+    globus_bool_t			keep_open,
+    gss_cred_id_t			cred_handle,
+    gss_OID_set				restriction_oids,
+    gss_buffer_set_t			restriction_buffers,
+    OM_uint32				req_flags,
+    OM_uint32				time_req,
+    globus_gram_protocol_callback_t	callback,
+    void *				callback_arg);
+
+static
+void
+globus_l_gram_protocol_delegation_read_callback(
+    void *				callback_arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    globus_byte_t *			buf,
+    globus_size_t			nbytes);
+
+static
+void
+globus_l_gram_protocol_delegation_write_callback(
+    void *				callback_arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    globus_byte_t *			buf,
+    globus_size_t			nbytes);
+
+static
+void
+globus_l_gram_protocol_accept_delegation(
+    globus_i_gram_protocol_connection_t *
+    					connection,
+    gss_buffer_t			input_token);
+
+static
+void
+globus_l_gram_protocol_init_delegation(
+    globus_i_gram_protocol_connection_t *
+    					connection,
+    gss_buffer_t			input_token);
+
+static
+void
+globus_l_gram_protocol_free_old_credentials();
+
 #endif
 
 /**
@@ -386,120 +454,62 @@ globus_gram_protocol_callback_disallow(
  */
 int
 globus_gram_protocol_post(
+    const char *                        url,
+    globus_gram_protocol_handle_t *     handle,
+    globus_io_attr_t *                  attr,
+    globus_byte_t *                     message,
+    globus_size_t                       message_size,
+    globus_gram_protocol_callback_t     callback,
+    void *                              callback_arg)
+{
+    return globus_l_gram_protocol_post(
+	url,
+	handle,
+	attr,
+	message,
+	message_size,
+	GLOBUS_FALSE,
+	GSS_C_NO_CREDENTIAL,
+	GSS_C_NO_OID_SET,
+	GSS_C_NO_BUFFER_SET,
+	0,
+	0,
+	callback,
+	callback_arg);
+}
+/* globus_gram_protocol_post() */
+
+int
+globus_gram_protocol_post_delegation(
     const char *			url,
     globus_gram_protocol_handle_t *	handle,
     globus_io_attr_t *			attr,
     globus_byte_t *			message,
     globus_size_t			message_size,
+    gss_cred_id_t			cred_handle,
+    gss_OID_set				restriction_oids,
+    gss_buffer_set_t			restriction_buffers,
+    OM_uint32				req_flags,
+    OM_uint32				time_req,
     globus_gram_protocol_callback_t	callback,
     void *				callback_arg)
 {
-    int					rc;
-    globus_i_gram_protocol_connection_t *
-    					connection;
-    globus_byte_t *			framed;
-    globus_size_t			framedsize;
-    globus_result_t			res;
-    globus_url_t			parsed_url;
-    globus_io_attr_t *			attr_to_use;
-    globus_list_t *			node;
-
-    rc = globus_url_parse(url, &parsed_url);
-
-    if(rc != GLOBUS_SUCCESS)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT;
-    }
-
-    if(attr)
-    {
-	attr_to_use = attr;
-    }
-    else
-    {
-	attr_to_use = &globus_i_gram_protocol_default_attr;
-    }
-    rc = globus_gram_protocol_frame_request(url,
-					    message,
-					    message_size,
-					    &framed,
-					    &framedsize);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto error_exit;
-    }
-					    
-    connection = globus_libc_calloc(
-                     1,
-		     sizeof(globus_i_gram_protocol_connection_t));
-    
-    if(connection == GLOBUS_NULL)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-	goto free_framed_exit;
-    }
-    connection->callback = callback;
-    connection->callback_arg = callback_arg;
-    connection->buf = framed;
-    connection->bufsize = framedsize;
-
-    globus_mutex_lock(&globus_i_gram_protocol_mutex);
-    if(globus_i_gram_protocol_shutdown_called)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
-	
-	goto free_connection_exit;
-    }
-    connection->handle = ++globus_i_gram_protocol_handle;
-    connection->io_handle = globus_libc_malloc(sizeof(globus_io_handle_t));
-    if(connection->io_handle == GLOBUS_NULL)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-	goto free_connection_exit;
-    }
-    globus_i_gram_protocol_num_connects++;
-    globus_list_insert(&globus_i_gram_protocol_connections,
-		       connection);
-    
-    res = globus_io_tcp_register_connect(
-           parsed_url.host,
-	   parsed_url.port,
-	   attr_to_use,
-	   globus_l_gram_protocol_connect_callback,
-	   connection,
-	   connection->io_handle);
-    
-    if(res != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
-	goto remove_connection_exit;
-    }
-    
-    globus_mutex_unlock(&globus_i_gram_protocol_mutex);
-
-    globus_url_destroy(&parsed_url);
-    
-    return GLOBUS_SUCCESS;
-    
- remove_connection_exit:
-    globus_i_gram_protocol_num_connects--;
-    node = globus_list_search(globus_i_gram_protocol_connections, connection);
-    if(node)
-    {
-	globus_list_remove(&globus_i_gram_protocol_connections, node);
-    }
-    globus_libc_free(connection->io_handle);
- free_connection_exit:
-    globus_libc_free(connection);
- free_framed_exit:
-    globus_libc_free(framed);
- error_exit:
-    *handle = 0;
-    globus_url_destroy(&parsed_url);
-
-    return rc;
+    return globus_l_gram_protocol_post(
+	url,
+	handle,
+	attr,
+	message,
+	message_size,
+	GLOBUS_TRUE,
+	cred_handle,
+	restriction_oids,
+	restriction_buffers,
+	req_flags,
+	time_req,
+	callback,
+	callback_arg);
 }
-/* globus_gram_protocol_post() */
+/* globus_gram_protocol_post_delegation() */
 
 /**
  * Frame and send a GRAM protocol reply.
@@ -542,88 +552,60 @@ globus_gram_protocol_post(
  */
 int
 globus_gram_protocol_reply(
-    globus_gram_protocol_handle_t 	handle,
+    globus_gram_protocol_handle_t       handle,
     int					code,
     globus_byte_t *			message,
     globus_size_t			message_size)
 {
-    globus_i_gram_protocol_connection_t *
-    					connection;
-    globus_list_t *			list;
-    int					rc;
-    globus_result_t			result;
-
-    /* lookup up connection using handle as key */
-    globus_mutex_lock(&globus_i_gram_protocol_mutex);
-    if(globus_i_gram_protocol_shutdown_called)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
-
-	goto error_exit;
-    }
-    list = globus_i_gram_protocol_connections;
-    while(list != GLOBUS_NULL)
-    {
-        connection = globus_list_first(list);
-	if(connection->handle == handle)
-	{
-	    break;
-	}
-	list = globus_list_rest(list);
-    }
-
-    if(list == GLOBUS_NULL)
-    {
-	/* No match */
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
-
-	goto error_exit;
-    }
-    if(connection->read_type != GLOBUS_GRAM_PROTOCOL_REQUEST ||
-       connection->replybuf != GLOBUS_NULL)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
-
-	goto error_exit;
-    }
-
-    /* frame reply */
-    rc = globus_gram_protocol_frame_reply(code,
-                                          message,
-					  message_size,
-					  &connection->replybuf,
-					  &connection->replybufsize);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto error_exit;
-    }
-    result = globus_io_register_write(
-	         connection->io_handle,
-		 connection->replybuf,
-		 connection->replybufsize,
-		 globus_l_gram_protocol_write_reply_callback,
-		 connection);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
-
-	goto free_reply_exit;
-    }
-
-    globus_mutex_unlock(&globus_i_gram_protocol_mutex);
-    return GLOBUS_SUCCESS;
-
-  free_reply_exit:
-    globus_libc_free(connection->replybuf);
-    connection->replybuf = GLOBUS_NULL;
-    connection->replybufsize = 0;
-  error_exit:
-    globus_mutex_unlock(&globus_i_gram_protocol_mutex);
-
-    return rc;
+    return globus_l_gram_protocol_reply(handle,
+	  				code,
+					message,
+					message_size,
+					GSS_C_NO_OID_SET,
+					GSS_C_NO_BUFFER_SET,
+					0,
+					0,
+					NULL,
+					NULL);
 }
 /* globus_gram_protocol_reply() */
+
+int
+globus_gram_protocol_accept_delegation(
+    globus_gram_protocol_handle_t       handle,
+    gss_OID_set				restriction_oids,
+    gss_buffer_set_t			restriction_buffers,
+    OM_uint32				req_flags,
+    OM_uint32				time_req,
+    globus_gram_protocol_delegation_callback_t
+    					callback,
+    void *				arg)
+{
+    int					rc;
+    globus_byte_t * 			reply;
+    globus_size_t			replysize;
+
+    rc = globus_gram_protocol_pack_status_reply(
+	    0,
+	    0,
+	    0,
+	    &reply,
+	    &replysize);
+
+    rc = globus_l_gram_protocol_reply(handle,
+	  				200,
+					reply,
+					replysize,
+					restriction_oids,
+					restriction_buffers,
+					req_flags,
+					time_req,
+					callback,
+					arg);
+    globus_libc_free(reply);
+    return rc;
+}
+/* globus_gram_protocol_accept_delegation() */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
@@ -1196,10 +1178,12 @@ globus_l_gram_protocol_write_request_callback(
 /**
  * Complete replying to a GRAM Protocol request.
  *
- * After Globus I/O has completed writing the GRAM reply, register
- * a close of the connection handle. If an error occurs,
- * then the connection will be closed. There is no user callback
- * associated with a reply.
+ * After Globus I/O has completed writing a normal GRAM reply, register
+ * a close of the connection handle. In the case of a proxy refresh reply,
+ * we will start accepting the delegated credential.
+ *
+ * If an error occurs, then the connection will be closed. There is no user
+ * callback associated with a normal reply.
  *
  * @param callback_arg
  *        A pointer to the
@@ -1224,6 +1208,43 @@ globus_l_gram_protocol_write_reply_callback(
     globus_byte_t *			buf,
     globus_size_t			nbytes)
 {
+    globus_i_gram_protocol_connection_t *
+       					connection;
+    connection = callback_arg;
+
+    if(connection->keep_open)
+    {
+	if(result == GLOBUS_SUCCESS)
+	{
+	    if(connection->replybuf == NULL)
+	    {
+		connection->replybuf = globus_libc_malloc(4096);
+		connection->replybufsize = 4096;
+	    }
+	    result = globus_io_register_read(
+		    handle,
+		    connection->replybuf,
+		    4,
+		    4,
+		    globus_l_gram_protocol_delegation_read_callback,
+		    connection);
+
+	    if(result == GLOBUS_SUCCESS)
+	    {
+		return;
+	    }
+	}
+	if(result != GLOBUS_SUCCESS)
+	{
+	    /* Error occurred. Call callback with error. */
+	    connection->delegation_callback(
+		    connection->delegation_arg,
+		    connection->handle,
+		    GSS_C_NO_CREDENTIAL,
+		    GLOBUS_GRAM_PROTOCOL_ERROR_DELEGATION_FAILED);
+	}
+    }
+     
     result = globus_io_register_close(
 	    handle,
 	    globus_l_gram_protocol_connection_close_callback,
@@ -1365,7 +1386,7 @@ globus_l_gram_protocol_read_reply_callback(
      * just means the caller of globus_gram_protocol_post() doesn't
      * care about the response----the job manager is like that.
      */
-    if(connection->callback)
+    if(connection->callback && (connection->rc || !connection->keep_open))
     {
 	connection->callback(connection->callback_arg,
 			     connection->handle,
@@ -1373,6 +1394,18 @@ globus_l_gram_protocol_read_reply_callback(
 			     connection->payload_length,
 			     connection->rc,
 			     GLOBUS_NULL);
+    }
+    if ((!connection->rc) && connection->keep_open)
+    {
+	/* In the post  delegation case, we get a reply containing no body.
+	 * We then start doing delegation.
+	 */
+	connection->got_header = 0;
+	connection->n_read = 0;
+
+	globus_l_gram_protocol_init_delegation(connection, GSS_C_NO_BUFFER);
+	
+	return;
     }
     /* For reply handling, we just need to close up the connection
      * after we've dispatched the callback.
@@ -1466,6 +1499,7 @@ globus_l_gram_protocol_connection_close_callback(
 	    globus_libc_free(connection->uri);
 	}
 	globus_libc_free(connection);
+	globus_l_gram_protocol_free_old_credentials();
     }
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
 }
@@ -1519,6 +1553,91 @@ globus_i_gram_protocol_callback_disallow(
     return GLOBUS_SUCCESS;
 }
 /* globus_i_gram_protocol_callback_disallow() */
+
+/********************** replace credentials ******************************/
+
+void
+globus_l_gram_protocol_free_old_credentials()
+{
+    globus_list_t *cred_list;
+    globus_list_t *conn_list;
+    gss_cred_id_t cred;
+    globus_i_gram_protocol_connection_t *conn;
+
+    cred_list = globus_i_gram_protocol_old_creds;
+    while(!globus_list_empty(cred_list))
+    {
+	globus_list_t *dead_cred = cred_list;
+	cred = (gss_cred_id_t) globus_list_first(cred_list);
+
+	conn_list = globus_i_gram_protocol_connections;
+	while(!globus_list_empty(conn_list))
+	{
+	    conn = (globus_i_gram_protocol_connection_t *) globus_list_first(conn_list);
+
+	    if (conn->io_handle != GLOBUS_NULL &&
+		conn->io_handle->securesocket_attr.credential == cred)
+	    {
+		dead_cred = GLOBUS_NULL;
+		break;
+	    }
+
+	    conn_list = globus_list_rest(conn_list);
+	}
+
+	cred_list = globus_list_rest(cred_list);
+
+	if (dead_cred != GLOBUS_NULL)
+	{
+	    globus_list_remove(&globus_i_gram_protocol_old_creds,
+			       dead_cred);
+
+	    if (cred != GSS_C_NO_CREDENTIAL)
+	    {
+		OM_uint32 minor_status;
+		gss_release_cred(&minor_status, &cred);
+	    }
+	}
+
+    }
+
+}
+
+int
+globus_gram_protocol_set_credentials(gss_cred_id_t new_credentials)
+{
+    globus_list_t *tmp_list;
+    globus_i_gram_protocol_listener_t *listener;
+    gss_cred_id_t old_cred;
+
+    globus_mutex_lock( &globus_i_gram_protocol_mutex );
+
+    old_cred = globus_i_gram_protocol_credential;
+
+    globus_i_gram_protocol_credential = new_credentials;
+
+    globus_io_attr_set_secure_authentication_mode(
+			&globus_i_gram_protocol_default_attr,
+			GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+			globus_i_gram_protocol_credential);
+
+    tmp_list = globus_i_gram_protocol_listeners;
+    while(!globus_list_empty(tmp_list))
+    {
+	listener = (globus_i_gram_protocol_listener_t *) globus_list_first(tmp_list);
+	listener->handle->securesocket_attr.credential = new_credentials;
+
+	tmp_list = globus_list_rest(tmp_list);
+    }
+
+    globus_list_insert(&globus_i_gram_protocol_old_creds, old_cred);
+    globus_l_gram_protocol_free_old_credentials();
+
+    globus_mutex_unlock( &globus_i_gram_protocol_mutex );
+
+    return GLOBUS_SUCCESS;
+}
+
 
 /* Parsing Functions */
 
@@ -1651,5 +1770,606 @@ globus_l_gram_protocol_parse_reply_header(
     return rc; 
 }
 /* globus_l_gram_protocol_parse_reply_header() */
+
+static
+int
+globus_l_gram_protocol_reply(
+    globus_gram_protocol_handle_t 	handle,
+    int					code,
+    globus_byte_t *			message,
+    globus_size_t			message_size,
+    gss_OID_set				restriction_oids,
+    gss_buffer_set_t			restriction_buffers,
+    OM_uint32				req_flags,
+    OM_uint32				time_req,
+    globus_gram_protocol_delegation_callback_t
+    					callback,
+    void *				arg)
+{
+    globus_i_gram_protocol_connection_t *
+    					connection;
+    globus_list_t *			list;
+    int					rc;
+    globus_result_t			result;
+
+    /* lookup up connection using handle as key */
+    globus_mutex_lock(&globus_i_gram_protocol_mutex);
+    if(globus_i_gram_protocol_shutdown_called)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
+
+	goto error_exit;
+    }
+    list = globus_i_gram_protocol_connections;
+    while(list != GLOBUS_NULL)
+    {
+        connection = globus_list_first(list);
+	if(connection->handle == handle)
+	{
+	    break;
+	}
+	list = globus_list_rest(list);
+    }
+
+    if(list == GLOBUS_NULL)
+    {
+	/* No match */
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
+
+	goto error_exit;
+    }
+    if(connection->read_type != GLOBUS_GRAM_PROTOCOL_REQUEST ||
+       connection->replybuf != GLOBUS_NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
+
+	goto error_exit;
+    }
+
+    /* frame reply */
+    rc = globus_gram_protocol_frame_reply(code,
+                                          message,
+					  message_size,
+					  &connection->replybuf,
+					  &connection->replybufsize);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+
+    if(callback)
+    {
+	connection->keep_open = GLOBUS_TRUE;
+    }
+    connection->delegation_callback = callback;
+    connection->delegation_arg = arg;
+    connection->delegation_restriction_oids = restriction_oids;
+    connection->delegation_restriction_buffers = restriction_buffers;
+    connection->delegation_req_flags = req_flags;
+    connection->delegation_time_req = time_req;
+    connection->delegation_major_status = GSS_S_CONTINUE_NEEDED;
+    connection->delegation_minor_status = 0;
+
+    result = globus_io_register_write(
+	         connection->io_handle,
+		 connection->replybuf,
+		 connection->replybufsize,
+		 globus_l_gram_protocol_write_reply_callback,
+		 connection);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+
+	goto free_reply_exit;
+    }
+
+    globus_mutex_unlock(&globus_i_gram_protocol_mutex);
+    return GLOBUS_SUCCESS;
+
+  free_reply_exit:
+    globus_libc_free(connection->replybuf);
+    connection->replybuf = GLOBUS_NULL;
+    connection->replybufsize = 0;
+  error_exit:
+    globus_mutex_unlock(&globus_i_gram_protocol_mutex);
+
+    return rc;
+}
+/* globus_l_gram_protocol_reply() */
+
+static
+int
+globus_l_gram_protocol_post(
+    const char *			url,
+    globus_gram_protocol_handle_t *	handle,
+    globus_io_attr_t *			attr,
+    globus_byte_t *			message,
+    globus_size_t			message_size,
+    globus_bool_t			keep_open,
+    gss_cred_id_t			cred_handle,
+    gss_OID_set				restriction_oids,
+    gss_buffer_set_t			restriction_buffers,
+    OM_uint32				req_flags,
+    OM_uint32				time_req,
+    globus_gram_protocol_callback_t	callback,
+    void *				callback_arg)
+{
+    int					rc;
+    globus_i_gram_protocol_connection_t *
+    					connection;
+    globus_byte_t *			framed;
+    globus_size_t			framedsize;
+    globus_result_t			res;
+    globus_url_t			parsed_url;
+    globus_io_attr_t *			attr_to_use;
+    globus_list_t *			node;
+
+    rc = globus_url_parse(url, &parsed_url);
+
+    if(rc != GLOBUS_SUCCESS)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT;
+    }
+
+    if(attr)
+    {
+	attr_to_use = attr;
+    }
+    else
+    {
+	attr_to_use = &globus_i_gram_protocol_default_attr;
+    }
+    rc = globus_gram_protocol_frame_request(url,
+					    message,
+					    message_size,
+					    &framed,
+					    &framedsize);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+					    
+    connection = globus_libc_calloc(
+                     1,
+		     sizeof(globus_i_gram_protocol_connection_t));
+    
+    if(connection == GLOBUS_NULL)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+	goto free_framed_exit;
+    }
+    connection->callback = callback;
+    connection->callback_arg = callback_arg;
+    connection->buf = framed;
+    connection->bufsize = framedsize;
+    if(keep_open)
+    {
+	connection->keep_open = keep_open;
+    }
+    connection->delegation_major_status = GSS_S_CONTINUE_NEEDED;
+    connection->delegation_minor_status = 0;
+    connection->delegation_cred = cred_handle;
+    connection->delegation_restriction_oids = restriction_oids;
+    connection->delegation_restriction_buffers = restriction_buffers;
+    connection->delegation_req_flags = req_flags;
+    connection->delegation_time_req = time_req;
+    connection->read_type = GLOBUS_GRAM_PROTOCOL_REPLY;
+
+    globus_mutex_lock(&globus_i_gram_protocol_mutex);
+    if(globus_i_gram_protocol_shutdown_called)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
+	
+	goto free_connection_exit;
+    }
+    connection->handle = ++globus_i_gram_protocol_handle;
+    if(handle)
+    {
+	*handle = connection->handle;
+    }
+    connection->io_handle = globus_libc_malloc(sizeof(globus_io_handle_t));
+    if(connection->io_handle == GLOBUS_NULL)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+	goto free_connection_exit;
+    }
+    globus_i_gram_protocol_num_connects++;
+    globus_list_insert(&globus_i_gram_protocol_connections,
+		       connection);
+    
+    res = globus_io_tcp_register_connect(
+           parsed_url.host,
+	   parsed_url.port,
+	   attr_to_use,
+	   globus_l_gram_protocol_connect_callback,
+	   connection,
+	   connection->io_handle);
+    
+    if(res != GLOBUS_SUCCESS)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+	goto remove_connection_exit;
+    }
+    
+    globus_mutex_unlock(&globus_i_gram_protocol_mutex);
+
+    globus_url_destroy(&parsed_url);
+    
+    return GLOBUS_SUCCESS;
+    
+ remove_connection_exit:
+    globus_i_gram_protocol_num_connects--;
+    node = globus_list_search(globus_i_gram_protocol_connections, connection);
+    if(node)
+    {
+	globus_list_remove(&globus_i_gram_protocol_connections, node);
+    }
+    globus_libc_free(connection->io_handle);
+ free_connection_exit:
+    globus_libc_free(connection);
+ free_framed_exit:
+    globus_libc_free(framed);
+ error_exit:
+    *handle = 0;
+    globus_url_destroy(&parsed_url);
+
+    return rc;
+}
+/* globus_l_gram_protocol_post() */
+
+static
+void
+globus_l_gram_protocol_delegation_read_callback(
+    void *				callback_arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    globus_byte_t *			buf,
+    globus_size_t			nbytes)
+{
+    gss_buffer_desc			input_token;
+    globus_i_gram_protocol_connection_t *
+					connection;
+
+    connection = callback_arg;
+    
+    if(connection->token_length == 0)
+    {
+	connection->token_length  = buf[0] << 24;
+	connection->token_length |= buf[1] << 16;
+	connection->token_length |= buf[2] <<  8;
+	connection->token_length |= buf[3]      ;
+
+	if(connection->replybufsize < connection->token_length)
+	{
+	    globus_libc_free(connection->replybuf);
+	    connection->replybuf =
+		globus_libc_malloc(connection->token_length);
+	    connection->replybufsize = connection->token_length;
+	}
+
+	result = globus_io_register_read(
+		connection->io_handle,
+		connection->replybuf,
+		connection->token_length,
+		connection->token_length,
+		globus_l_gram_protocol_delegation_read_callback,
+		connection);
+
+	if(result == GLOBUS_SUCCESS)
+	{
+	    return;
+	}
+	nbytes = 0;
+    }
+
+    input_token.value = buf;
+    input_token.length = nbytes;
+    connection->token_length = 0;
+
+    connection = callback_arg;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+	connection->delegation_major_status =
+	    GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ;
+    }
+
+    if(connection->read_type == GLOBUS_GRAM_PROTOCOL_REQUEST)
+    {
+	globus_l_gram_protocol_accept_delegation(
+		connection,
+		&input_token);
+    }
+    else
+    {
+	globus_assert(connection->read_type == GLOBUS_GRAM_PROTOCOL_REPLY);
+	globus_l_gram_protocol_init_delegation(
+		connection,
+		&input_token);
+    }
+}
+/* globus_l_gram_protocol_delegation_read_callback() */
+
+static
+void
+globus_l_gram_protocol_delegation_write_callback(
+    void *				callback_arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    globus_byte_t *			buf,
+    globus_size_t			nbytes)
+{
+    gss_buffer_desc			input_token;
+    globus_i_gram_protocol_connection_t *
+					connection;
+
+    input_token.value = NULL;
+    input_token.length = 0;
+
+
+    globus_libc_free(buf);
+
+    connection = callback_arg;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+	connection->delegation_major_status =
+	    GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ;
+    }
+    if(connection->read_type == GLOBUS_GRAM_PROTOCOL_REQUEST)
+    {
+	globus_l_gram_protocol_accept_delegation(
+		connection,
+		&input_token);
+    }
+    else
+    {
+	globus_assert(connection->read_type == GLOBUS_GRAM_PROTOCOL_REPLY);
+	globus_l_gram_protocol_init_delegation(
+		connection,
+		&input_token);
+    }
+}
+/* globus_l_gram_protocol_delegation_write_callback() */
+
+static
+void
+globus_l_gram_protocol_accept_delegation(
+    globus_i_gram_protocol_connection_t *
+    					connection,
+    gss_buffer_t			input_token)
+{
+    globus_result_t			result;
+    gss_buffer_desc			output_token;
+    unsigned char *			output_buffer;
+
+    output_token.value = NULL;
+    output_token.length = 0;
+
+    if(input_token->length != 0)
+    {
+	connection->delegation_major_status = gss_accept_delegation(
+		&connection->delegation_minor_status,
+		connection->io_handle->context,
+		connection->delegation_restriction_oids,
+		connection->delegation_restriction_buffers,
+		input_token,
+		connection->delegation_req_flags,
+		connection->delegation_time_req,
+		NULL,
+		&connection->delegation_cred,
+		NULL,
+		&output_token);
+
+
+	if(output_token.length > 0)
+	{
+	    output_buffer = globus_libc_malloc(output_token.length+4);
+	    output_buffer[0] = (output_token.length >> 24) & 0xff;
+	    output_buffer[1] = (output_token.length >> 16) & 0xff;
+	    output_buffer[2] = (output_token.length >>  8) & 0xff;
+	    output_buffer[3] = (output_token.length      ) & 0xff;
+	    memcpy(output_buffer+4, output_token.value, output_token.length);
+
+	    result = globus_io_register_write(
+		    connection->io_handle,
+		    output_buffer,
+		    output_token.length+4,
+		    globus_l_gram_protocol_delegation_write_callback,
+		    connection);
+	    globus_libc_free(output_token.value);
+
+	    if(result == GLOBUS_SUCCESS)
+	    {
+		return;
+	    }
+	    else
+	    {
+		connection->delegation_major_status =
+		    GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ;
+	    }
+	}
+    }
+    if(connection->delegation_major_status & GSS_S_CONTINUE_NEEDED)
+    {
+	result = globus_io_register_read(
+		connection->io_handle,
+		connection->replybuf,
+		4,
+		4,
+		globus_l_gram_protocol_delegation_read_callback,
+		connection);
+	if(result == GLOBUS_SUCCESS)
+	{
+	    return;
+	}
+	else
+	{
+	    connection->delegation_major_status =
+		GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ;
+	}
+    }
+    if(GSS_ERROR(connection->delegation_major_status))
+    {
+	/* TODO: error 7 hack */
+    }
+
+    /* Finished with delegation... callback */
+    if(connection->replybuf)
+    {
+	globus_libc_free(connection->replybuf);
+	connection->replybuf=NULL;
+	connection->replybufsize=0;
+    }
+    connection->keep_open = GLOBUS_FALSE;
+    connection->delegation_callback(
+	    connection->delegation_arg,
+	    connection->handle,
+	    connection->delegation_cred,
+	    GSS_ERROR(connection->delegation_major_status) 
+		? GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION
+		: GLOBUS_SUCCESS);
+}
+/* globus_l_gram_protocol_accept_delegation() */
+
+static
+void
+globus_l_gram_protocol_init_delegation(
+    globus_i_gram_protocol_connection_t *
+    					connection,
+    gss_buffer_t			input_token)
+{
+    globus_result_t			result;
+    gss_buffer_desc			output_token;
+    unsigned char *			output_buffer;
+
+    output_token.value = NULL;
+    output_token.length = 0;
+
+    if(connection->delegation_major_status & GSS_S_CONTINUE_NEEDED)
+    {
+	if((input_token != GSS_C_NO_BUFFER  && input_token->length != 0) ||
+	   input_token == GSS_C_NO_BUFFER)
+	{
+	    connection->delegation_major_status = gss_init_delegation(
+		    &connection->delegation_minor_status,
+		    connection->io_handle->context,
+		    connection->delegation_cred,
+		    GSS_C_NO_OID,
+		    connection->delegation_restriction_oids,
+		    connection->delegation_restriction_buffers,
+		    input_token,
+		    connection->delegation_req_flags,
+		    connection->delegation_time_req,
+		    &output_token);
+	}
+
+
+	if(output_token.length > 0)
+	{
+	    output_buffer = globus_libc_malloc(output_token.length+4);
+	    output_buffer[0] = (output_token.length >> 24) & 0xff;
+	    output_buffer[1] = (output_token.length >> 16) & 0xff;
+	    output_buffer[2] = (output_token.length >>  8) & 0xff;
+	    output_buffer[3] = (output_token.length      ) & 0xff;
+	    memcpy(output_buffer+4, output_token.value, output_token.length);
+		
+	    result = globus_io_register_write(
+		    connection->io_handle,
+		    output_buffer,
+		    output_token.length+4,
+		    globus_l_gram_protocol_delegation_write_callback,
+		    connection);
+	    globus_libc_free(output_token.value);
+
+	    if(result == GLOBUS_SUCCESS)
+	    {
+		return;
+	    }
+	    else
+	    {
+		connection->delegation_major_status =
+		    GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ;
+	    }
+	}
+
+	result = globus_io_register_read(
+		connection->io_handle,
+		connection->replybuf,
+		4,
+		4,
+		globus_l_gram_protocol_delegation_read_callback,
+		connection);
+	if(result == GLOBUS_SUCCESS)
+	{
+	    return;
+	}
+	else
+	{
+	    connection->delegation_major_status =
+		GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ;
+	}
+    }
+    if(GSS_ERROR(connection->delegation_major_status))
+    {
+	/* TODO: error 7 hack */
+    }
+
+    /* Finished with delegation... register read of delegation status */
+    connection->keep_open = GLOBUS_FALSE;
+
+    if(connection->replybufsize < GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE)
+    {
+	globus_libc_free(connection->replybuf);
+	connection->replybuf =
+	    globus_libc_malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
+	connection->replybufsize = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE;
+    }
+    result = globus_io_register_read(
+	    connection->io_handle,
+	    connection->replybuf,
+	    connection->replybufsize,
+	    1,
+	    globus_l_gram_protocol_read_reply_callback,
+	    connection);
+
+    if(result == GLOBUS_SUCCESS)
+    {
+	return;
+    }
+    else
+    {
+	connection->rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+    }
+    if(connection->callback && connection->rc)
+    {
+	connection->callback(connection->callback_arg,
+			     connection->handle,
+			     connection->replybuf,
+			     connection->payload_length,
+			     connection->rc,
+			     GLOBUS_NULL);
+    }
+    /* For reply handling, we just need to close up the connection
+     * after we've dispatched the callback.
+     */
+    result = globus_io_register_close(
+                 connection->io_handle,
+		 globus_l_gram_protocol_connection_close_callback,
+		 connection);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        /* If we can't close the handle, we'd still like to clean up
+	 * our memory.
+	 */
+	globus_l_gram_protocol_connection_close_callback(
+	    connection,
+	    connection->io_handle,
+	    result);
+    }
+}
+/* globus_l_gram_protocol_init_delegation() */
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -41,6 +41,8 @@ Globus::GRAM::JobManager - Base class for all Job Manager scripts
  $hashref = $manager->cache_cleanup();
  $hashref = $manager->remote_io_file_create();
  $hashref = $manager->proxy_relocate();
+ $hashref = $manager->proxy_update();
+ $manager->append_path($hash, $variable, $path);
 
 =head1 DESCRIPTION
 
@@ -406,7 +408,7 @@ sub rewrite_urls
 	    }
 	}
     }
-    return 0;
+    return {};
 }
 
 
@@ -663,6 +665,39 @@ sub proxy_relocate
     chmod $mode, $local_name;
 
     return { X509_USER_PROXY => $local_name };
+}
+
+=item $hashref = $manager->proxy_update();
+
+=cut
+
+sub proxy_update
+{
+    return {};
+}
+
+=item $manager->append_path($ref, $var, $path)
+
+Append $path to the value of $ref->{$var}, dealing with the case where
+$ref->{$var} is not yet defined.
+
+=cut
+
+sub append_path
+{
+    my $self = shift;
+    my $ref = shift;
+    my $var = shift;
+    my $path = shift;
+
+    if(exists($ref->{$var}))
+    {
+	$ref->{$var} .= ":$path";
+    }
+    else
+    {
+	$ref->{$var} = "$path";
+    }
 }
 
 1;

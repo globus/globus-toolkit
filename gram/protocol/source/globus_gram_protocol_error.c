@@ -18,7 +18,7 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 
 /*   0 */     "Success",
 /*   1 */     "one of the RSL parameters is not supported",
-/*   2 */     "the RSL lentgh is greater than the maximum allowed",
+/*   2 */     "the RSL length is greater than the maximum allowed",
 /*   3 */     "of an unused NO_RESOURCES",  /* NEEDS EDITING */
 /*   4 */     "jobmanager unable to set default to the directory requested",
 /*   5 */     "the executable does not exist",
@@ -172,7 +172,8 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 153 */     "the provided RSL 'proxy_timeout' is invalid",
 /* 154 */     "the RSL 'proxy_timeout' value is not greater than zero",
 /* 155 */     "the job manager could not stage out a file",
-/* 156 */     "the job contact string does not match any which the job manager is handling"
+/* 156 */     "the job contact string does not match any which the job manager is handling",
+/* 157 */     "proxy delegation failed"
 };
 
 static char *

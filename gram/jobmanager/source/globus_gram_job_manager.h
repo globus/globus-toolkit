@@ -75,6 +75,7 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN
 }
@@ -91,7 +92,8 @@ globus_gram_job_manager_staging_type_t;
 typedef enum
 {
     GLOBUS_GRAM_JOB_MANAGER_SIGNAL,
-    GLOBUS_GRAM_JOB_MANAGER_CANCEL
+    GLOBUS_GRAM_JOB_MANAGER_CANCEL,
+    GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH
 }
 globus_gram_job_manager_query_type_t;
 
@@ -144,6 +146,9 @@ typedef struct
     globus_rsl_t *			rsl;
 
     globus_gram_protocol_error_t	failure_code;
+
+    /* When doing a proxy refresh, the newly delegated credential */
+    gss_cred_id_t			delegated_credential;
 }
 globus_gram_job_manager_query_t;
 /**
@@ -529,8 +534,18 @@ globus_gram_job_manager_gsi_used(
     globus_gram_jobmanager_request_t *	request);
 
 int
-globus_gram_job_manager_register_proxy_timeout(
+globus_gram_job_manager_gsi_register_proxy_timeout(
     globus_gram_jobmanager_request_t *	request);
+
+int
+globus_gram_job_manager_gsi_update_credential(
+    globus_gram_jobmanager_request_t *  request,
+    gss_cred_id_t                       credential);
+
+int
+globus_gram_job_manager_gsi_update_proxy_timeout(
+    globus_gram_jobmanager_request_t *	request,
+    gss_cred_id_t			cred);
 
 /* globus_gram_job_manager_query.c */
 void
@@ -541,6 +556,13 @@ globus_gram_job_manager_query_callback(
     globus_size_t			nbytes,
     int					errorcode,
     char *				uri);
+
+void
+globus_gram_job_manager_query_delegation_callback(
+    void *				arg,
+    globus_gram_protocol_handle_t	handle,
+    gss_cred_id_t			credential,
+    int					error_code);
 
 void
 globus_gram_job_manager_query_reply(
@@ -699,6 +721,10 @@ globus_gram_job_manager_script_remote_io_file_create(
 
 int 
 globus_gram_job_manager_script_proxy_relocate(
+    globus_gram_jobmanager_request_t *	request);
+
+int 
+globus_gram_job_manager_script_proxy_update(
     globus_gram_jobmanager_request_t *	request);
 
 EXTERN_C_END

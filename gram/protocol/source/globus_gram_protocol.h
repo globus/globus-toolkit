@@ -46,6 +46,11 @@ typedef void (*globus_gram_protocol_callback_t)(
     int					errorcode,
     char *				uri);
 
+typedef void (*globus_gram_protocol_delegation_callback_t)(
+    void  *				arg,
+    globus_gram_protocol_handle_t	handle,
+    gss_cred_id_t			credential,
+    int					errorcode);
 #define GLOBUS_GRAM_PROTOCOL_MODULE	(&globus_i_gram_protocol_module)
 
 extern globus_module_descriptor_t	globus_i_gram_protocol_module;
@@ -59,6 +64,13 @@ extern gss_cred_id_t			globus_i_gram_protocol_credential;
 int
 globus_gram_protocol_setup_attr(
     globus_io_attr_t *			attr);
+
+
+/*
+ * replaces all credentials used in this module with the given ones
+ */
+int
+globus_gram_protocol_set_credentials(gss_cred_id_t new_credentials);
 
 
 /* 
@@ -90,6 +102,24 @@ globus_gram_protocol_post(
     globus_gram_protocol_callback_t	callback,
     void *				callback_arg);
 
+/* Frame and send a GRAM protocol message, following up an ok reply with
+ * a GSSAPI delegation handshake.
+ */
+int
+globus_gram_protocol_post_delegation(
+    const char *                        url,
+    globus_gram_protocol_handle_t *     handle,
+    globus_io_attr_t *                  attr,
+    globus_byte_t *                     message,
+    globus_size_t                       message_size,
+    gss_cred_id_t			cred_handle,
+    gss_OID_set				restriction_oids,
+    gss_buffer_set_t			restriction_buffers,
+    OM_uint32				req_flags,
+    OM_uint32				time_req,
+    globus_gram_protocol_callback_t     callback,
+    void *                              callback_arg);
+
 /* Frame and send a GRAM protocol reply. */
 int
 globus_gram_protocol_reply(
@@ -98,6 +128,23 @@ globus_gram_protocol_reply(
     globus_byte_t *			message,
     globus_size_t			message_size);
 
+/* Frame and send a GRAM protocol reply indicating that we will 
+ * accept a delegated credential now. Call back when the delegation
+ * is completed.
+ *
+ * After delegation is complete, the user must call
+ * globus_gram_protocol_reply to indicate the status after the delegation.
+ */
+int
+globus_gram_protocol_accept_delegation(
+    globus_gram_protocol_handle_t       handle,
+    gss_OID_set				restriction_oids,
+    gss_buffer_set_t			restriction_bufers,
+    OM_uint32				req_flags,
+    OM_uint32				time_req,
+    globus_gram_protocol_delegation_callback_t
+    					callback,
+    void *				arg);
 /* Frame a GRAM protocol message */
 int
 globus_gram_protocol_frame_request(
