@@ -26,6 +26,7 @@ struct myproxy_creds {
     int force_credential_overwrite;
     time_t start_time;
     time_t end_time;
+    struct myproxy_creds *next;
 };
 
 typedef struct myproxy_creds myproxy_creds_t;
@@ -41,20 +42,28 @@ typedef struct myproxy_creds myproxy_creds_t;
 int myproxy_creds_store(const struct myproxy_creds *creds);
 
 /*
- * myproxy_creds_fetch_entry ()
- */
-int myproxy_creds_fetch_entry (char *username, char *credname, struct myproxy_creds *creds);
-
-/*
  * myproxy_creds_retrieve()
  *
- * Retrieve the credentials associated with the given username and credential name in the
- * given myproxy_creds structure. The passphrase field in the structure
- * should also be filled in and will be checked.
+ * Retrieve the credentials associated with the username and
+ * credential namein the given myproxy_creds structure.
+ * Note: No checking on the passphrase or owner name is done.
+ *
+ * Returns -1 on error, 0 on success.  */
+int myproxy_creds_retrieve(struct myproxy_creds *creds);
+
+/*
+ * myproxy_creds_retrieve_all()
+ *
+ * Retrieve all credentials associated with the username and owner
+ * name in the given myproxy_creds structure.  If multiple credentials
+ * are stored under the given username, they'll be chained together in
+ * a linked-list using the next field in the given myproxy_creds
+ * structure.  The default credential (i.e., with no credname) will be
+ * first in the list, if one exists.
  *
  * Returns -1 on error, 0 on success.
  */
-int myproxy_creds_retrieve(struct myproxy_creds *creds);
+int myproxy_creds_retrieve_all(struct myproxy_creds *creds);
 
 /*
  * myproxy_creds_delete()
