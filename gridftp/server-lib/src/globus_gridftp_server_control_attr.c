@@ -456,3 +456,109 @@ globus_gridftp_server_control_attr_set_list(
 
     return GLOBUS_SUCCESS;
 }
+
+globus_result_t
+globus_gridftp_server_control_attr_set_banner(
+    globus_gridftp_server_control_attr_t    in_attr,
+    char *                                  banner)
+{
+    globus_i_gsc_attr_t *                   attr;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
+
+    if(in_attr == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("server_attr");
+    }
+    if(banner == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("banner");
+    }
+    attr = (globus_i_gsc_attr_t *) in_attr;
+
+    attr->pre_auth_banner = globus_i_gsc_string_to_959(banner);
+
+    return GLOBUS_SUCCESS;
+}
+                                                                                
+globus_result_t
+globus_gridftp_server_control_attr_set_message(
+    globus_gridftp_server_control_attr_t    in_attr,
+    char *                                  message)
+{
+    globus_i_gsc_attr_t *                   attr;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
+
+    if(in_attr == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("server_attr");
+    }
+    if(message == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("message");
+    }
+    attr = (globus_i_gsc_attr_t *) in_attr;
+
+    attr->post_auth_banner = globus_i_gsc_string_to_959(message);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_l_gsc_attr_file_set(
+    globus_gridftp_server_control_attr_t    in_attr,
+    const char *                            filename,
+    char **                                 out_string)
+{
+    globus_i_gsc_attr_t *                   attr;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
+
+    if(in_attr == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("server_attr");
+    }
+    if(filename == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("banner");
+    }
+    attr = (globus_i_gsc_attr_t *) in_attr;
+
+    /* TODO: read from file */
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_gridftp_server_control_attr_file_set_banner(
+    globus_gridftp_server_control_attr_t    in_attr,
+    const char *                            filename)
+{
+    char *                                  tmp_s;
+    globus_result_t                         res;
+
+    res = globus_l_gsc_attr_file_set(in_attr, filename, &tmp_s);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
+    in_attr->pre_auth_banner = tmp_s;
+
+    return GLOBUS_SUCCESS;
+}
+                                                                                
+globus_result_t
+globus_gridftp_server_control_attr_file_set_message(
+    globus_gridftp_server_control_attr_t    in_attr,
+    const char *                            filename)
+{
+    char *                                  tmp_s;
+    globus_result_t                         res;
+
+    res = globus_l_gsc_attr_file_set(in_attr, filename, &tmp_s);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
+    in_attr->post_auth_banner = tmp_s;
+
+    return GLOBUS_SUCCESS;
+}

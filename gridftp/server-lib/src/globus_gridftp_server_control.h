@@ -254,11 +254,13 @@ typedef void
     const char *                            path,
     globus_gridftp_server_control_resource_mask_t   mask);
 
-globus_byte_t *
-globus_gridftp_server_control_list_buffer_malloc(
+globus_result_t
+globus_gridftp_server_control_list_buffer_alloc(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_stat_t *  stat_info_array,
-    int                                     stat_count);
+    int                                     stat_count,
+    globus_byte_t **                        out_buf,
+    globus_size_t *                         out_size);
 
 void
 globus_gridftp_server_control_list_buffer_free(
@@ -370,6 +372,16 @@ globus_result_t
 globus_gridftp_server_control_attr_set_list(
     globus_gridftp_server_control_attr_t    in_attr,
     globus_gridftp_server_control_list_cb_t list_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_banner(
+    globus_gridftp_server_control_attr_t    in_attr,
+    char *                                  banner);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_message(
+    globus_gridftp_server_control_attr_t    in_attr,
+    char *                                  message);
 
 /*
  *  if module name is NULL then it is the default handler
@@ -488,6 +500,11 @@ globus_result_t
 globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t         server,
     char **                                 cwd_string);
+
+globus_result_t
+globus_gridftp_server_control_get_dcau(
+    globus_gridftp_server_control_t         server,
+    char *                                  dcau);
 
 globus_bool_t
 globus_gridftp_server_control_authenticated(

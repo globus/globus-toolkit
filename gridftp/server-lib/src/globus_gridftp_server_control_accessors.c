@@ -116,3 +116,21 @@ globus_gridftp_server_control_get_cwd(
     return GLOBUS_SUCCESS;
 }
 
+globus_result_t
+globus_gridftp_server_control_get_dcau(
+    globus_gridftp_server_control_t         server,
+    char *                                  dcau)
+{
+    if(server == NULL)
+    {
+    }
+
+    globus_mutex_lock(&server->mutex);
+    {
+        *dcau = server->dcau;
+    }
+    globus_mutex_unlock(&server->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+

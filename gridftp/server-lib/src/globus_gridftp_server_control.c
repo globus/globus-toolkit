@@ -3034,49 +3034,61 @@ globus_gridftp_server_control_send_event(
     return res;
 }
 
-globus_byte_t *
-globus_gridftp_server_control_list_buffer_malloc(
+globus_result_t
+globus_gridftp_server_control_list_buffer_alloc(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_stat_t *  stat_info_array,
-    int                                     stat_count)
+    int                                     stat_count,
+    globus_byte_t **                        out_buf,
+    globus_size_t *                         out_size)
 {
     GlobusGridFTPServerName(globus_gridftp_server_control_list_buffer_malloc);
 
     if(op == NULL)
     {
-        return NULL;
+        return GlobusGridFTPServerErrorParameter("op");
     }
     if(stat_info_array == NULL)
     {
-        return NULL;
+        return GlobusGridFTPServerErrorParameter("stat_info_array");
     }
     if(stat_count < 1)
     {
-        return NULL;
+        return GlobusGridFTPServerErrorParameter("stat_count");
+    }
+    if(out_buf == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("out_buf");
+    }
+    if(out_size == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("out_size");
     }
 
     switch(op->type)
     { 
         case GLOBUS_L_GSC_OP_TYPE_LIST:
-            return globus_i_gsc_list_line(stat_info_array, stat_count);
+            *out_buf = globus_i_gsc_list_line(stat_info_array, stat_count);
             break;
 
         case GLOBUS_L_GSC_OP_TYPE_NLST:
-            return globus_i_gsc_nlst_line(stat_info_array, stat_count);
+            *out_buf = globus_i_gsc_nlst_line(stat_info_array, stat_count);
             break;
 
         case GLOBUS_L_GSC_OP_TYPE_MLSD:
-            return globus_i_gsc_mlsx_line(op->server_handle,
-                        stat_info_array, stat_count);
+            *out_buf = globus_i_gsc_mlsx_line(op->server_handle,
+                stat_info_array, stat_count);
             break;
 
         default:
-            return NULL;
+            return GlobusGridFTPServerErrorParameter("op");
             break;
 
     }
 
-    return NULL;
+    *out_size = strlen(*out_buf);
+
+    return GLOBUS_SUCCESS;
 }
 
 void

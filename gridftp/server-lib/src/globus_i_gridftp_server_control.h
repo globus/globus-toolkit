@@ -374,6 +374,7 @@ typedef struct globus_i_gsc_server_handle_s
     globus_gridftp_server_control_network_protocol_t     port_prt;
     globus_gridftp_server_control_network_protocol_t     port_max;
 
+    char                                    dcau;
     globus_bool_t                           authenticated;
     /*
      *  user function pointers
@@ -545,5 +546,9 @@ globus_i_gsc_mlsx_line(
     globus_i_gsc_server_handle_t *          server_handle,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count);
+
+char *
+globus_i_gsc_string_to_959(
+    const char *                            in_str);
 
 #endif

@@ -1,74 +1,15 @@
-send control channel connection ip with pasv op so pasv response ip will match
-ip that client connected to.
+banners
 
-
- At a very high level it needs to support login, security, basic
-info/configuration, data movement, channel caching, restart functionality,
-performance markers, files system ops, and the one new thing, IPV6
-support.  I have people who can provide us platforms for basic IPV6 testing \
-and they will do the majority of the testing for us on IPV6.
-
-Ok, so now the details:
-
-Login:
-USER?, PASS? (Not sure if we need these, I think we fill them with bogus
-values.  Also need to decide if we want to honor anonymous logins)
-DCAU N,Y, PROT P,S,C
-  -- server library takes care of control channel security
-  -- data channel security?
-     -- how do we can the certificate
-Banners
-  -- pre authentication
-  -- post auth
-  -- terse
-  
-(ala tcpd)
-
-Security:
 PBSZ
 -- find out what the server should do (joe)
 
 Info/Configuration:
-FEAT, DCAU
-
-Data Movement:
-ESTO, ERET
--- check these, verify partial
+DCAU
 
 REST
 TREV
 
-CKSM, ABOR
-
-IPV6:
-EPRT, EPSV
+CKSM
 
 Timeouts
 -- configuarable
-
-Server config
-Heirarchy should be Master config, local config, env variable.
-Should some things be unable to be over-ridden YES, NO, RANGE
-Restrict port range from a configuration file.
-accept KB, MB, GB as specifiers for buffer sizes, etc.
-
-disable connections; important if run from inetd.  also for benchmarking
-purposes.
-
-Logging
-
-Sudharshan equivilent
-
-netlogger instrumentation
-
-Anon support
-
-read from /dev/zero write to /dev/null
---or equalvalent
-
-server version command (query the server for its version)
--- post authentication version command?
--- how is this different than a post auth banner?
-
-For module select commands (ERET, ESTO) how to get list of installed
-modules.  FEAT and HELP responses.
