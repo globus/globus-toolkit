@@ -12,11 +12,13 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
       <p>      The following topics contain high level descriptions of what's new in 
       the following technology areas:      </p>
       <blockquote>
-        <p class="small"><strong>Core</strong> </p>
+        <p class="small"><strong>Core Components</strong> </p>
       </blockquote>
 <UL>
         <LI><A 
         href="#Core">Core</A>         
+        <LI><A 
+        href="#Common">Common</A>         
 </UL>
       <blockquote>
         <p class="small"><strong>        Security</strong> </p>
@@ -89,6 +91,12 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
       <A href="core_notes.html">Core 
       release notes</A>. </p>
 
+      <h2><A name=Common>Common</A></h2>
+      <p>Error message reporting has been cleaned up.  Messages are much more
+      concise and clear.  If a user is still uncertain about a message, they can
+      obtain more information by setting the GLOBUS_ERROR_VERBOSE environment
+      variable.
+      </p>
       <h2><A name=Security>Security (GSI)</A></h2>
       <p>The GSI  component shipped in the 3.2  release contains a slew
       of bug fixes and various improvements. Improvements of note are updated
