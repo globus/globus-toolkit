@@ -348,6 +348,12 @@ typedef struct
     globus_bool_t                       user_close;
 
     /**
+     * Flag indicating whether the client has received the data descriptor
+     * with the response yet.
+     */
+    globus_bool_t                       read_response;
+
+    /**
      * Lock for thread-safety
      */
     globus_mutex_t                      mutex;

@@ -542,11 +542,13 @@ globus_l_xio_http_server_write_response_callback(
                 http_handle);
         }
     }
+    else
+    {
+        http_handle->parse_state = GLOBUS_XIO_HTTP_PRE_REQUEST_LINE;
+    }
     globus_mutex_unlock(&http_handle->mutex);
     return;
 
-error_exit:
-    globus_mutex_unlock(&http_handle->mutex);
 }
 /* globus_l_xio_http_server_write_response_callback() */
 
@@ -592,7 +594,7 @@ globus_l_xio_http_server_parse_request(
     int                                 http_minor;
     GlobusXIOName(globus_l_xio_http_server_parse_request);
 
-    if (http_handle->request_info.http_version == GLOBUS_XIO_HTTP_VERSION_UNSET)
+    if (http_handle->parse_state == GLOBUS_XIO_HTTP_REQUEST_LINE)
     {
         /* Parse the request line:
          *
@@ -673,6 +675,7 @@ globus_l_xio_http_server_parse_request(
                 + http_handle->read_buffer_offset);
         http_handle->read_buffer_valid -= parsed;
         http_handle->read_buffer_offset += parsed;
+        http_handle->parse_state = GLOBUS_XIO_HTTP_HEADERS;
     }
     return globus_i_xio_http_header_parse(http_handle, done);
 
@@ -750,6 +753,8 @@ globus_i_xio_http_server_read_request_callback(
         http_handle->response_info.headers.flags |=
                 GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE;
     }
+
+    http_handle->send_state = GLOBUS_XIO_HTTP_STATUS_LINE;
 
     descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
     if (descriptor == NULL)

@@ -103,6 +103,7 @@ globus_i_xio_http_handle_init(
     http_handle->write_operation.operation = NULL;
     http_handle->write_operation.nbytes = 0;
     http_handle->user_close = GLOBUS_FALSE;
+    http_handle->read_response = GLOBUS_FALSE;
 
     return GLOBUS_SUCCESS;
 
@@ -184,6 +185,7 @@ globus_i_xio_http_handle_reinit(
     http_handle->write_operation.operation = NULL;
     http_handle->write_operation.nbytes = 0;
     http_handle->user_close = GLOBUS_FALSE;
+    http_handle->read_response = GLOBUS_FALSE;
 
     return GLOBUS_SUCCESS;
 

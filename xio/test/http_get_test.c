@@ -151,9 +151,7 @@ client_main(
             "GET",
             http_version,
             headers,
-            header_cnt,
-            NULL,
-            NULL);
+            header_cnt);
 
     if (result != GLOBUS_SUCCESS)
     {

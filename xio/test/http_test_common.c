@@ -598,10 +598,7 @@ http_test_client_request(
     const char *                        method,
     globus_xio_http_version_t           http_version,
     globus_xio_http_header_t *          header_array,
-    size_t                              header_array_length,
-    globus_xio_http_response_ready_callback_t
-                                        callback,
-    void *                              callback_arg)
+    size_t                              header_array_length)
 {
     char *                              url;
     char *                              fmt = "http://%s/%s";
@@ -656,31 +653,6 @@ http_test_client_request(
             goto destroy_attr_exit;
         }
     }
-
-    /*
-    result = globus_xio_attr_cntl(
-            attr,
-            http_driver,
-            GLOBUS_XIO_HTTP_ATTR_SET_RESPONSE_CALLBACK,
-            callback,
-            callback_arg);
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_attr_exit;
-    }
-
-    result = globus_xio_attr_cntl(
-            attr,
-            tcp_driver,
-            GLOBUS_XIO_TCP_SET_LINGER,
-            GLOBUS_TRUE,
-            1200);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_attr_exit;
-    }
-    */
 
     for (i = 0; i < header_array_length; i++)
     {

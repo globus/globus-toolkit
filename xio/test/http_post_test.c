@@ -66,16 +66,6 @@ globus_l_xio_test_server_request_callback(
     globus_xio_http_version_t           http_version,
     globus_hashtable_t                  headers);
 
-static 
-void
-globus_l_xio_test_client_response_callback(
-    void *                              user_arg,
-    globus_result_t                     result,
-    int                                 status_code,
-    const char *                        reason_phrase,
-    globus_xio_http_version_t           version,
-    globus_hashtable_t                  headers);
-
 static
 int
 globus_l_xio_test_read_file(
@@ -125,6 +115,10 @@ client_main(
     globus_xio_http_header_t            headers[2];
     globus_xio_handle_t                 handle;
     int                                 i;
+    globus_xio_data_descriptor_t        descriptor;
+    char                                buffer[0];
+    int                                 status_code;
+    char *                              reason_phrase;
 
     rc = globus_l_xio_test_read_file(filename);
     if (rc != 0)
@@ -171,9 +165,7 @@ client_main(
                 "POST",
                 http_version,
                 headers,
-                header_cnt,
-                globus_l_xio_test_client_response_callback,
-                NULL);
+                header_cnt);
 
         if (result != GLOBUS_SUCCESS)
         {
@@ -196,30 +188,52 @@ client_main(
             break;
         }
 
-        globus_mutex_lock(&mutex);
-        while (done == 0)
+        /* READ RESPONSE */
+        result = globus_xio_data_descriptor_init(&descriptor, handle);
+        if (result != GLOBUS_SUCCESS)
         {
-            globus_cond_wait(&cond, &mutex);
+            rc = 51;
+            goto close_exit;
+        }
+        result = globus_xio_read(
+                handle,
+                buffer,
+                0,
+                0,
+                NULL,
+                descriptor);
+        if (result != GLOBUS_SUCCESS)
+        {
+            rc = 51;
+            goto close_exit;
+        }
+        result = globus_xio_data_descriptor_cntl(
+                descriptor,
+                http_driver,
+                GLOBUS_XIO_HTTP_GET_RESPONSE,
+                &status_code,
+                &reason_phrase,
+                NULL,
+                NULL);
+        if (result != GLOBUS_SUCCESS || status_code < 200 || status_code > 299)
+        {
+            fprintf(stderr, "Get failed with \"%03d %s\"\n",
+                    status_code,
+                    reason_phrase);
+            rc = 51;
+            goto close_exit;
         }
 
-        if (done == 1)
-        {
-            result = globus_l_xio_test_read_buffer(
-                    handle,
-                    message_body,
-                    file_size,
-                    buffer_size);
-        }
-        else
-        {
-            rc = 53;
-        }
+        result = globus_l_xio_test_read_buffer(
+                handle,
+                message_body,
+                file_size,
+                buffer_size);
 
         if (result != GLOBUS_SUCCESS)
         {
             rc = 52;
         }
-        done = 0;
 
         if (rc != 0)
         {
@@ -228,6 +242,7 @@ client_main(
         globus_mutex_unlock(&mutex);
     }
 
+close_exit:
     globus_xio_close(handle, NULL);
 error_exit:
     if (rc == 0)
@@ -409,32 +424,6 @@ error_exit:
 }
 /* globus_l_xio_test_server_request_callback() */
 
-static 
-void
-globus_l_xio_test_client_response_callback(
-    void *                              user_arg,
-    globus_result_t                     result,
-    int                                 status_code,
-    const char *                        reason_phrase,
-    globus_xio_http_version_t           version,
-    globus_hashtable_t                  headers)
-{
-    globus_mutex_lock(&mutex);
-    if (status_code == 200)
-    {
-        done = 1;
-    }
-    else
-    {
-        fprintf(stderr, "Invalid response: %d %s\n",
-                status_code, reason_phrase);
-
-        done = -1;
-    }
-    globus_cond_signal(&cond);
-    globus_mutex_unlock(&mutex);
-}
-/* globus_l_xio_test_client_response_callback() */
 
 static
 int

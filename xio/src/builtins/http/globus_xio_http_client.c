@@ -528,11 +528,12 @@ globus_l_xio_http_client_write_request_callback(
         goto free_read_buffer_exit;
     }
 
-    globus_mutex_unlock(&http_handle->mutex);
-
     if(http_handle->delay_write_header)
     {
         http_handle->delay_write_header = 0;
+
+        globus_mutex_unlock(&http_handle->mutex);
+
         globus_i_xio_http_write(
             http_handle,
             http_handle->first_write_iovec,
@@ -541,6 +542,8 @@ globus_l_xio_http_client_write_request_callback(
     }
     else
     {
+        globus_mutex_unlock(&http_handle->mutex);
+
         globus_xio_driver_finished_open(
             http_handle,
             op,
@@ -557,10 +560,10 @@ free_read_buffer_exit:
     globus_libc_free(http_handle->read_buffer.iov_base);
     http_handle->read_buffer.iov_len = 0;
 error_exit:
-    globus_mutex_unlock(&http_handle->mutex);
 
     if(http_handle->delay_write_header)
     {
+        globus_mutex_unlock(&http_handle->mutex);
         globus_xio_driver_finished_write(
             op,
             result,
@@ -568,6 +571,7 @@ error_exit:
     }
     else
     {
+        globus_mutex_unlock(&http_handle->mutex);
         globus_xio_driver_finished_open(
             http_handle,
             op,
@@ -638,35 +642,35 @@ globus_l_xio_http_client_read_response_callback(
         goto reregister_read;
     }
 
-    /* Set metadata on this read to contain the response info */
-    descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
-    if (descriptor == NULL)
-    {
-        result = GlobusXIOErrorMemory("descriptor");
-
-        goto error_exit;
-    }
-    globus_i_xio_http_response_destroy(&descriptor->response);
-    result = globus_i_xio_http_response_copy(
-            &descriptor->response,
-            &http_handle->response_info);
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_exit;
-    }
-
     /* If user registered a read before we finished parsing, we'll
-     * have to handle it after we call the ready callback
+     * have to handle it now.
      */
     if (http_handle->read_operation.operation != NULL)
     {
-        if (result == GLOBUS_SUCCESS)
+        /* Set metadata on this read to contain the response info */
+        descriptor = globus_xio_operation_get_data_descriptor(
+                http_handle->read_operation.operation,
+                GLOBUS_TRUE);
+        if (descriptor == NULL)
         {
-            result = globus_i_xio_http_parse_residue(
-                    http_handle,
-                    &registered_again);
+            result = GlobusXIOErrorMemory("descriptor");
+
+            goto error_exit;
         }
+        globus_i_xio_http_response_destroy(&descriptor->response);
+        result = globus_i_xio_http_response_copy(
+                &descriptor->response,
+                &http_handle->response_info);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+        http_handle->read_response = GLOBUS_TRUE;
+
+        result = globus_i_xio_http_parse_residue(
+                http_handle,
+                &registered_again);
 
         if ((http_handle->read_operation.wait_for <= 0 && !registered_again)
                 || result != GLOBUS_SUCCESS)

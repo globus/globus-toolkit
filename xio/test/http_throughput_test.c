@@ -46,32 +46,6 @@ globus_l_xio_test_server_request_callback(
     globus_xio_http_version_t           http_version,
     globus_hashtable_t                  headers);
 
-static 
-void
-globus_l_xio_test_client_response_callback(
-    void *                              user_arg,
-    globus_result_t                     result,
-    int                                 status_code,
-    const char *                        reason_phrase,
-    globus_xio_http_version_t           version,
-    globus_hashtable_t                  headers);
-
-
-static
-globus_result_t
-globus_l_xio_test_write_buffer(
-    globus_xio_handle_t                 handle,
-    globus_byte_t *                     msg,
-    globus_size_t                       msg_size,
-    globus_xio_driver_t			http_driver);
-
-static
-globus_result_t
-globus_l_xio_test_read_buffer(
-    globus_xio_handle_t                 handle,
-    globus_byte_t *                     msg,
-    globus_size_t                       msg_size);
-
 void
 globus_l_xio_test_server_handle_request(
     void *                              ignored);
@@ -100,6 +74,10 @@ client_test(
     globus_xio_handle_t                 handle;
     int                                 i;
     int                                 nbytes;
+    globus_xio_data_descriptor_t        descriptor;
+    int                                 status_code;
+    char *                              reason_phrase;
+
 
     globus_utp_start_timer(timer);
     if (info->transfer_encoding != NULL)
@@ -135,9 +113,7 @@ client_test(
 	    "POST",
 	    info->version,
 	    headers,
-	    header_cnt,
-	    globus_l_xio_test_client_response_callback,
-	    info);
+	    header_cnt);
 
     if (result != GLOBUS_SUCCESS)
     {
@@ -175,51 +151,63 @@ client_test(
 	    handle,
 	    info->http_driver,
 	    GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY);
-    globus_mutex_lock(&info->mutex);
-    while (info->done == 0)
+    /* READ RESPONSE */
+    result = globus_xio_data_descriptor_init(&descriptor, handle);
+    if (result != GLOBUS_SUCCESS)
     {
-	globus_cond_wait(&info->cond, &info->mutex);
+	rc = 51;
+
+        goto close_exit;
     }
-    if (info->done == 1)
+    result = globus_xio_read(
+            handle,
+            info->buffer,
+            1,
+            1,
+            NULL,
+            descriptor);
+    if (result != GLOBUS_SUCCESS)
     {
-	result = globus_xio_read(
-		handle,
-		info->buffer,
-		1,
-		1,
-		&nbytes,
-		NULL);
-	if (result != GLOBUS_SUCCESS)
-	{
-	    fprintf(stderr, "Error reading data: %s\n",
-		globus_object_printable_to_string(globus_error_peek(result)));
-	}
-	result = globus_xio_read(
-		handle,
-		info->buffer,
-		info->size,
-		1,
-		&nbytes,
-		NULL);
-	if (!http_is_eof(result))
-	{       
-	    fprintf(stderr, "Error reading eof from http\n");
-	}
+        rc = 51;
+        goto close_exit;
     }
-    info->done = 0;
+
+    result = globus_xio_data_descriptor_cntl(
+            descriptor,
+            info->http_driver,
+            GLOBUS_XIO_HTTP_GET_RESPONSE,
+            &status_code,
+            &reason_phrase,
+            NULL,
+            NULL);
+    if (result != GLOBUS_SUCCESS || status_code < 200 || status_code > 299)
+    {
+        fprintf(stderr, "Get failed with \"%03d %s\"\n",
+                status_code,
+                reason_phrase);
+
+        rc = 51;
+        goto close_exit;
+    }
+
+    result = globus_xio_read(
+            handle,
+            info->buffer,
+            info->size,
+            1,
+            &nbytes,
+            NULL);
+    if (!http_is_eof(result))
+    {       
+        fprintf(stderr, "Error reading eof from http\n");
+    }
+
     globus_mutex_unlock(&info->mutex);
+close_exit:
     globus_xio_close(handle, NULL);
     globus_utp_stop_timer(timer);
 
 error_exit:
-/*    if (rc == 0)
-    {
-        printf("Success\n");
-    }
-    else
-    {
-        printf("Error\n");
-    } */
 
     return rc;
 }
@@ -406,126 +394,6 @@ error_exit:
 }
 /* globus_l_xio_test_server_request_callback() */
 
-static 
-void
-globus_l_xio_test_client_response_callback(
-    void *                              user_arg,
-    globus_result_t                     result,
-    int                                 status_code,
-    const char *                        reason_phrase,
-    globus_xio_http_version_t           version,
-    globus_hashtable_t                  headers)
-{
-    http_test_info_t *			info;
-    info = (http_test_info_t *) user_arg;
-    globus_mutex_lock(&info->mutex);
-    if (status_code == 200)
-    {
-        info->done = 1;
-    }
-    else
-    {
-        fprintf(stderr, "Invalid response: %d %s\n",
-                status_code, reason_phrase);
-
-        info->done = -1;
-    }
-    globus_cond_signal(&info->cond);
-    globus_mutex_unlock(&info->mutex);
-}
-/* globus_l_xio_test_client_response_callback() */
-
-
-static
-globus_result_t
-globus_l_xio_test_write_buffer(
-    globus_xio_handle_t                 handle,
-    globus_byte_t *                     msg,
-    globus_size_t                       msg_size,
-    globus_xio_driver_t			http_driver)
-{
-    globus_size_t                       nbytes;
-    globus_result_t                     result;
-    GlobusXIOName(globus_l_xio_test_write_buffer);
-
-    result = globus_xio_write(
-	    handle,
-	    msg,
-	    msg_size,
-	    msg_size,
-	    &nbytes,
-	    NULL);
-
-    if (result == GLOBUS_SUCCESS)
-    {
-	if (nbytes != msg_size)
-	{
-	    fprintf(stderr, "Didn't write all I expected.\n");
-	    result = GlobusXIOErrorEOF();
-	}
-    }
-    else
-    {
-	fprintf(stderr, "Error writing data: %s\n",
-		globus_object_printable_to_string(globus_error_peek(result)));
-    }
-
-    globus_xio_handle_cntl(
-            handle,
-            http_driver,
-            GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY);
-
-    return result;
-}
-/* globus_l_xio_test_write_buffer() */
-
-static
-globus_result_t
-globus_l_xio_test_read_buffer(
-    globus_xio_handle_t                 handle,
-    globus_byte_t *                     msg,
-    globus_size_t                       msg_size)
-{
-    globus_size_t                       nbytes;
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    globus_byte_t *			temp;
-    int					i;
-    GlobusXIOName(globus_l_xio_test_read_buffer);
-   
-    temp = globus_libc_malloc(msg_size+1);
-    for (i=0; i<=msg_size; i++)
-	temp[i] = '\0';
-    result = globus_xio_read(
-	    handle,
-	    temp,
-	    msg_size,
-	    msg_size,
-	    &nbytes,
-	    NULL);
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "Error reading from http: %s\n",
-                globus_object_printable_to_string(globus_error_peek(result)));
-    }
-
-    result = globus_xio_read(
-	    handle,
-	    msg,
-	    msg_size,
-	    1,
-	    &nbytes,
-	    NULL);
-    
-    if (http_is_eof(result))
-    {
-        result = GLOBUS_SUCCESS;
-    }
-
-    return result;
-}
-/* globus_l_xio_test_read_buffer() */
-
 void
 globus_l_xio_test_server_handle_request(
     void *                              ignored)
@@ -545,7 +413,6 @@ main(
     performance_t                       perf;
 
     info = (http_test_info_t *) globus_malloc(sizeof(http_test_info_t));
-    info->done = 0;
     info->version = GLOBUS_XIO_HTTP_VERSION_UNSET;
     info->transfer_encoding = NULL;
     info->iterations = 100;

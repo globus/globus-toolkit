@@ -169,7 +169,7 @@ globus_l_xio_http_reopen(
     }
     globus_assert(http_target->is_client);
 
-    http_handle->send_state = GLOBUS_XIO_HTTP_PRE_REQUEST_LINE;
+    http_handle->send_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
     http_handle->parse_state = GLOBUS_XIO_HTTP_STATUS_LINE;
 
     result = globus_i_xio_http_client_write_request(op, http_handle);
@@ -367,6 +367,7 @@ globus_i_xio_http_read(
     globus_size_t                       nbytes;
     globus_bool_t                       registered_again = GLOBUS_FALSE;
     int                                 i;
+    globus_i_xio_http_attr_t *          descriptor;
     GlobusXIOName(globus_i_xio_http_read);
 
     if (http_handle->target_info.is_client)
@@ -435,6 +436,16 @@ globus_i_xio_http_read(
                 goto error_exit;
             }
         }
+        else
+        {
+            result = globus_i_xio_http_clean_read_buffer(http_handle);
+
+            if (result != GLOBUS_SUCCESS)
+            {
+                goto error_exit;
+            }
+            http_handle->parse_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
+        }
     
         result = globus_xio_driver_pass_read(
                 op,
@@ -486,6 +497,29 @@ globus_i_xio_http_read(
         http_handle->read_operation.operation = NULL;
         http_handle->read_operation.nbytes = 0;
 
+        if (http_handle->target_info.is_client && !http_handle->read_response)
+        {
+            /* Set metadata on this read to contain the response info */
+            descriptor = globus_xio_operation_get_data_descriptor(
+                    op,
+                    GLOBUS_TRUE);
+            if (descriptor == NULL)
+            {
+                result = GlobusXIOErrorMemory("descriptor");
+
+                goto error_exit;
+            }
+            globus_i_xio_http_response_destroy(&descriptor->response);
+            result = globus_i_xio_http_response_copy(
+                    &descriptor->response,
+                    &http_handle->response_info);
+
+            if (result != GLOBUS_SUCCESS)
+            {
+                goto error_exit;
+            }
+            http_handle->read_response = GLOBUS_TRUE;
+        }
         globus_mutex_unlock(&http_handle->mutex);
         globus_xio_driver_finished_read(op, result, nbytes);
 
