@@ -11,6 +11,7 @@
 #include "globus_auth_error.h"
 #include "gssapi.h"
 #include "gaa_simple.h"
+#include "gaa_gss_generic.h"
 
 #ifndef _HAVE_GSI_EXTENDED_GSSAPI
 #include "globus_gss_ext_compat.h"
@@ -29,7 +30,7 @@ struct globus_authorization_struct
     /* GAA security context */
     gaa_sc_ptr                          gaa_sc; 
     /* GSS security context. Used as raw credentials for gaa_new_cred */
-    gss_ctx_id_t                        gss_context;
+    gaa_gss_generic_param_t		gss_param;
     /* The config file from which policy info is parsed: */
     gaa_policy_ptr                      policy;         
     gaa_string_data                     policy_source;
