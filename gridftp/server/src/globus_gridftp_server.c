@@ -51,7 +51,7 @@ globus_l_gfs_bad_signal_handler(
 {
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_ERR, 
-        "an unexpected signal occured: %d\n", 
+        _GSSL("an unexpected signal occured: %d\n")), 
         signum);
     if(!globus_l_gfs_exit)
     {
@@ -282,7 +282,7 @@ globus_l_gfs_spawn_child(
     if(result != GLOBUS_SUCCESS)
     {
         globus_i_gfs_log_result(
-            "Could not get handle from daemon process", result);
+            _GSSL("Could not get handle from daemon process"), result);
         goto error;
     }
 
@@ -300,7 +300,7 @@ globus_l_gfs_spawn_child(
         {
             result = GlobusGFSErrorSystemError("dup2", errno);
             globus_i_gfs_log_result(
-                "Could not open new handle for child process", result);
+                _GSSL("Could not open new handle for child process"), result);
             goto child_error;
         }
         close(socket_handle);
@@ -338,7 +338,7 @@ globus_l_gfs_spawn_child(
         {
             result = GlobusGFSErrorSystemError("execv", errno);
             globus_i_gfs_log_result(
-                "Could not exec child process", result);
+                _GSSL("Could not exec child process"), result);
             goto child_error;
         }
     } 
@@ -665,7 +665,8 @@ globus_l_gfs_server_accept_cb(
             result = globus_l_gfs_open_new_server(handle);
             if(result != GLOBUS_SUCCESS)
             {
-                globus_i_gfs_log_result("Could not open new handle", result);
+                globus_i_gfs_log_result(_GSSL("Could not open new handle"),
+			       	result);
                 result = GLOBUS_SUCCESS;
             }
         }
@@ -780,7 +781,7 @@ globus_l_gfs_be_daemon(void)
             goto server_error;
         }
 
-        globus_libc_printf("Server listening at %s\n", contact_string);
+        globus_libc_printf(_GSSL("Server listening at %s\n"), contact_string);
         globus_free(contact_string);
     }
     
@@ -963,7 +964,7 @@ main(
 
     return 0;
 error_lock:
-    globus_i_gfs_log_result("Could not start server", result);
+    globus_i_gfs_log_result(_GSSL("Could not start server"), result);
     globus_mutex_unlock(&globus_l_gfs_mutex);
 
     globus_l_gfs_be_clean_up();

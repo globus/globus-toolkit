@@ -2095,7 +2095,7 @@ globus_i_gfs_data_request_send(
         &session_handle->data_table, send_info->data_handle_id);
     if(data_handle == NULL)
     {
-        result = GlobusGFSErrorData("Data handle not found");
+        result = GlobusGFSErrorData(_FSSL("Data handle not found"));
         goto error_handle;
     }
     if(!data_handle->is_mine)
@@ -2270,7 +2270,7 @@ globus_i_gfs_data_request_list(
         &session_handle->data_table, list_info->data_handle_id);
     if(data_handle == NULL)
     {
-        result = GlobusGFSErrorData("Data handle not found");
+        result = GlobusGFSErrorData(_FSSL("Data handle not found"));
         goto error_handle;
     }
     if(!data_handle->is_mine)
