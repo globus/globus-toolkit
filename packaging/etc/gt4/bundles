@@ -23,6 +23,7 @@ BUNDLE gt4-c-ws-core
         globus_c_wsrf_sample_counter_client_test
         globus_handler_ws_addressing
         globus_c_ws_messaging
+	globus_handler_debug
         globus_c_wsrf_resource
         globus_js
         globus_xio_buffer

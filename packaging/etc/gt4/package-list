@@ -79,6 +79,7 @@ globus_notification_consumer                wsrf/c/core/notification/source gpt
 globus_c_wsrf_providers                     wsrf/c/core/providers/source gpt
 globus_c_ws_messaging                       wsrf/c/message/source gpt
 globus_handler_ws_addressing                wsrf/c/handlers/addressing/source gpt
+globus_handler_debug                        wsrf/c/handlers/debug/source gpt
 globus_xio_buffer                           wsrf/c/transport/buffer/source gpt
 globus_c_wsrf_sample_counter_client_test    wsrf/c/samples/counter/test gpt
 globus_c_wsrf_sample_counter_bindings       wsrf/c/samples/counter/source/ tar
