@@ -472,7 +472,7 @@ globus_l_gfs_new_server_cb(
             &local_contact);
         if(result != GLOBUS_SUCCESS)
         {
-            goto error;
+            goto error2;
         }
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_INFO,
@@ -511,12 +511,14 @@ globus_l_gfs_new_server_cb(
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
 
+    globus_free(local_contact);
     globus_free(remote_contact);
     return;
 
 error_start:
-    globus_free(remote_contact);
-    
+    globus_free(remote_contact);   
+error2:
+    globus_free(local_contact);
 error:
     result = globus_xio_register_close(
         handle,

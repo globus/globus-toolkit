@@ -211,7 +211,7 @@ globus_l_gfs_done_cb(
     {
         char *                          tmp_str;
 
-        tmp_str = globus_object_printable_to_string(globus_error_get(result));
+        tmp_str = globus_error_print_friendly(globus_error_peek(result));
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_INFO,
             "Control connection closed with error: %s\n",
