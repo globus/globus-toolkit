@@ -769,7 +769,16 @@ public class TransferClient {
         }
     }
 
-
+    private boolean checkSize() 
+    throws IOException,ServerException {
+        long destSize = this.destinationHost.getSize(this.destinationPath);
+        if ( this.size == destSize ) {
+            return true;
+        } else { 
+            return false;
+        }
+    }
+    
     /**
      *  Description of the Method
      */
@@ -782,9 +791,15 @@ public class TransferClient {
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
             sourceHost.transfer( this.sourcePath,
                     this.destinationHost, this.destinationPath, false, this.markerListener );
-            logger.debug( "Transfer done" );
-            this.markerListener = null;
-            setStatus( TransferJob.STATUS_FINISHED );
+            if(checkSize()) {
+                logger.debug( "Transfer done" );
+                this.markerListener = null;
+                setStatus( TransferJob.STATUS_FINISHED );
+            } else {
+                System.out.println("Transfer Not done");
+                setStatus( TransferJob.STATUS_ACTIVE);
+                wait();
+            }
         } catch ( Exception e ) {
             logger.debug( "Exception in transfer", e );
 

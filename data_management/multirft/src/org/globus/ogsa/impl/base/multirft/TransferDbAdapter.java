@@ -359,7 +359,7 @@ public class TransferDbAdapter {
      *@return                     The transferCount value
      *@exception  RftDBException  Description of the Exception
      */
-    public int getTransferCount() throws RftDBException {
+    public int getTransferCount(int requestid) throws RftDBException {
         Connection c = getDBConnection();
         int transferCount = 0;
 
@@ -367,11 +367,13 @@ public class TransferDbAdapter {
 
             Statement st = c.createStatement();
             ResultSet rs = st.executeQuery(
-                    "select count(*) from transfer" );
+                    "select count(*) from transfer where request_id=" 
+                    + requestid);
 
             while ( rs != null && rs.next() ) {
                 transferCount = rs.getInt( 1 );
             }
+            System.out.println("transferCount: " +transferCount);
         } catch ( SQLException e ) {
             logger.error( "error in retrieving transferCount" + e.toString(), e );
             returnDBConnection( c );
@@ -783,8 +785,26 @@ public class TransferDbAdapter {
                     "Getting TransferJob from Database:" + query.toString() );
 
             ResultSet rs = st.executeQuery( query.toString() );
-            transferJob = getTransferJobFromRS( rs );
-            transferJobs.add( transferJob );
+            while ( rs != null && rs.next() ) {
+                TransferType transfer = new TransferType();
+                transfer.setTransferId( rs.getInt( 1 ) );
+                //TransferID
+                transfer.setSourceUrl( rs.getString( 3 ) );
+                transfer.setDestinationUrl( rs.getString( 4 ) );
+
+                int status = rs.getInt( 5 );
+                int attempts = rs.getInt( 6 );
+                RFTOptionsType rftOptions = new RFTOptionsType();
+                rftOptions.setDcau( rs.getBoolean( 7 ) );
+                rftOptions.setParallelStreams( rs.getInt( 8 ) );
+                rftOptions.setTcpBufferSize( rs.getInt( 9 ) );
+                rftOptions.setBlockSize( rs.getInt( 10 ) );
+                rftOptions.setNotpt( rs.getBoolean( 11 ) );
+                rftOptions.setBinary( rs.getBoolean( 12 ) );
+                transfer.setRftOptions( rftOptions );
+                transferJob = new TransferJob( transfer, status, attempts );
+                transferJobs.add( transferJob );
+            }
         } catch ( SQLException e ) {
             logger.error(
                     "Unable to retrieve transfers for requestid:" +

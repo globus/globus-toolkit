@@ -63,7 +63,7 @@ extends GridServiceImpl {
     String configPath;
     TransferRequestType transferRequest;
     TransferRequestElement transferRequestElement;
-    TransferType[] transfers;
+   // TransferType[] transfers;
     private Map notifyProps;
     int concurrency;
     int maxAttempts = 10;
@@ -101,6 +101,7 @@ extends GridServiceImpl {
     TransfersCancelled cancelledTransfers = new TransfersCancelled();
     int numberActive,numberFailed,numberPending,
         numberFinished,numberRestarted,numberCancelled;
+    int transferCount = 0;
     
     /**
      *  Constructor for the RftImpl object
@@ -153,11 +154,11 @@ extends GridServiceImpl {
             Util.setFilePermissions( path, 600 );
             dbAdapter.storeProxyLocation( requestId, path );
             this.proxyLocation = path;
-            int transferCount = dbAdapter.getTransferCount();
-            
+            System.out.println("transfercount : " + this.transferCount);
             int temp = 0;
             Vector initialTransfers = dbAdapter.getTransferJob( requestId,
                 concurrency );
+            System.out.println("size : " + initialTransfers.size());
             if (initialTransfers.size() > 0 ) {
                 for(int i=0;i<initialTransfers.size();i++) {
                     TransferJob transferJob = (TransferJob) 
@@ -345,9 +346,9 @@ extends GridServiceImpl {
         Vector recoveredTransferJobs = dbAdapter.getActiveTransfers(
         persistentRequestId );
         int tempSize = recoveredTransferJobs.size();
-        transfers = new TransferType[tempSize];
+        //transfers = new TransferType[tempSize];
         
-        for ( int i = 0; i < tempSize; i++ ) {
+       /* for ( int i = 0; i < tempSize; i++ ) {
             
             TransferJob transferJob = (TransferJob) recoveredTransferJobs.elementAt(
             i );
@@ -357,7 +358,7 @@ extends GridServiceImpl {
             transfers[i].setSourceUrl( transferJob.getSourceUrl() );
             transfers[i].setDestinationUrl( transferJob.getDestinationUrl() );
             transfers[i].setRftOptions( transferJob.getRftOptions() );
-        }
+        }*/
         
         int concurrency_ = dbAdapter.getConcurrency(
         this.persistentRequestId );
@@ -430,7 +431,7 @@ extends GridServiceImpl {
                 
                 GSSCredential cred = SecureServicePropertiesHelper.getCredential(
                 this );
-                transfers = this.transferRequest.getTransferArray();
+                //transfers = this.transferRequest.getTransferArray();
                 this.concurrency = transferRequest.getConcurrency();
                 requestId = dbAdapter.storeTransferRequest(
                 this.transferRequest );
@@ -443,7 +444,8 @@ extends GridServiceImpl {
                 logger.debug(
                 "setting transferid in statusTypes to : " +
                 transferJobId_ );
-                this.numberPending = transfers.length;
+                this.transferCount = dbAdapter.getTransferCount( requestId );
+                this.numberPending = this.transferCount;
                 this.numberActive=0;
                 this.numberFailed=0;
                 this.numberRestarted=0;
@@ -571,8 +573,9 @@ extends GridServiceImpl {
      *@param  destinationURL            
      *@exception  MalformedURLException  
      */
-    public TransferClient getTransferClient( String sourceURL, String destinationURL )
-    throws MalformedURLException {
+    public TransferClient 
+        getTransferClient( String sourceURL, String destinationURL )
+        throws MalformedURLException {
         TransferClient transferClient = null;
         boolean flag = false;
         for ( int i = 0; i < this.transferClients.size(); i++ ) {
@@ -583,12 +586,13 @@ extends GridServiceImpl {
             int status = tempTransferClient.getStatus();
             GlobusURL tempSource = new GlobusURL( sourceURL );
             GlobusURL tempDest = new GlobusURL( destinationURL );
-            if ( status != TransferJob.STATUS_ACTIVE ) {
+            if ( (status != TransferJob.STATUS_ACTIVE)) { 
                 flag = true;
             }
             if ( ( source.getHost().equals( tempSource.getHost() ) ) && 
                 ( destination.getHost().equals( tempDest.getHost() ) ) && 
                 flag ) {
+                tempTransferClient.setStatus(TransferJob.STATUS_ACTIVE);
                 transferClient = tempTransferClient;
                 transferClient.setSourcePath( tempSource.getPath() );
                 transferClient.setDestinationPath( tempDest.getPath() );
@@ -682,7 +686,7 @@ extends GridServiceImpl {
                         transferJob.setStatus( TransferJob.STATUS_ACTIVE );
                         dbAdapter.update( transferJob );
                     } else {
-                        logger.debug( "Reusing TransferClient from the pool" );
+                        System.out.println( "Reusing TransferClient from the pool" );
                         transferClient.setSourceURL( transferJob.getSourceUrl() );
                         transferClient.setDestinationURL
                             ( transferJob.getDestinationUrl() );
@@ -784,7 +788,7 @@ extends GridServiceImpl {
                             statusChanged( transferJob );
                             transferClient
                                 .setStatus( TransferJob.STATUS_FAILED );
-                            transferClients.add( transferClient );
+                            //transferClients.add( transferClient );
                         } else {
                             transferJob
                                 .setStatus( TransferJob.STATUS_RETRYING );
@@ -799,7 +803,7 @@ extends GridServiceImpl {
                     this.status = TransferJob.STATUS_FAILED;
                     statusChanged( transferJob );
                     transferClient.setStatus( TransferJob.STATUS_FAILED );
-                    transferClients.add( transferClient );
+                    //transferClients.add( transferClient );
                 }
                 
                 dbAdapter.update( transferJob );
