@@ -114,7 +114,7 @@ $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 # start server if requested
 #
 if ($startserver) {
-    $ENV{'MYPROXY_SERVER'} = $hostname;
+    $ENV{'MYPROXY_SERVER'} = "localhost";
     $ENV{'MYPROXY_SERVER_PORT'} = 60000+$<;
     $ENV{'MYPROXY_SERVER_DN'} = $cert_subject;
     chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
