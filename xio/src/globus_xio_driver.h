@@ -213,6 +213,16 @@ do                                                                          \
  *
  *  The set of interface functions that the driver author must implement 
  *  to create a driver and the functions to assist in the creation.
+ *
+ *  Driver attribute functions
+ *
+ *  If the driver wishes to provide driver specific attributes to the
+ *  user it must implement the following functions:
+ *
+ *  globus_xio_driver_attr_init_t
+ *  globus_xio_driver_attr_copy_t
+ *  globus_xio_driver_attr_cntl_t
+ *  globus_xio_driver_attr_destroy_t
  */
 
 /*******************************************************************
@@ -311,19 +321,6 @@ globus_xio_driver_server_cntl(
 typedef globus_result_t
 (*globus_xio_driver_get_driver_t)(
     globus_xio_driver_t *               out_driver);
-
-/**
- *  @ingroup driver_pgm
- *  Driver attribute functions
- *
- *  If the driver wishes to provide driver specific attributes to the
- *  user it must implement the following functions:
- *
- *  globus_xio_driver_attr_init_t
- *  globus_xio_driver_attr_copy_t
- *  globus_xio_driver_attr_cntl_t
- *  globus_xio_driver_attr_destroy_t
- */
 /**
  *  @ingroup driver_pgm
  *  Create a driver specific attribute.
@@ -674,7 +671,7 @@ globus_xio_driver_pass_open(
  *          The driver specific handle pointer that will be passed to 
  *          future interface funstion calls.
  *
- *  @param open_op
+ *  @param op
  *          The requested open operation that has completed.
  *
  *  @param result
@@ -881,7 +878,7 @@ typedef globus_result_t
  *  @param iovec_count
  *         The number of iovecs in the array.
  *
- *  @param waitforbtyes
+ *  @param wait_for
  *         The minimum number of bytes to read before returning... if a driver
  *         has no specifc requirement, he should use the user's request...
  *         available via GlobusXIOOperationMinimumRead(op)
@@ -977,7 +974,7 @@ typedef globus_result_t
  *  @param iovec_count
  *         The number of iovecs in the array.
  *
- *  @param waitforbtyes
+ *  @param wait_for
  *         The minimum number of bytes to write before returning... if a driver
  *         has no specifc requirement, he should use the user's request...
  *         available via GlobusXIOOperationMinimumWrite(op)
