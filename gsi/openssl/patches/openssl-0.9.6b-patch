@@ -1,6 +1,6 @@
 diff -r -u openssl-0.9.6b/Configure openssl-0.9.6b-patched/Configure
---- openssl-0.9.6b/Configure	Mon Jul  9 07:08:37 2001
-+++ openssl-0.9.6b-patched/Configure	Wed Oct 24 13:25:18 2001
+--- openssl-0.9.6b/Configure	Mon Jul  9 09:08:37 2001
++++ openssl-0.9.6b-patched/Configure	Thu Oct 25 10:08:26 2001
 @@ -186,11 +186,11 @@
  # Only N32 and N64 ABIs are supported. If you need O32 ABI build, invoke
  # './Configure irix-[g]cc' manually.
@@ -61,8 +61,8 @@ diff -r -u openssl-0.9.6b/Configure openssl-0.9.6b-patched/Configure
  open(IN,'<crypto/opensslv.h') || die "unable to read opensslv.h:$!\n";
  while (<IN>)
 diff -r -u openssl-0.9.6b/Makefile openssl-0.9.6b-patched/Makefile
---- openssl-0.9.6b/Makefile	Mon Jul  9 07:59:47 2001
-+++ openssl-0.9.6b-patched/Makefile	Tue Oct 23 15:50:46 2001
+--- openssl-0.9.6b/Makefile	Mon Jul  9 09:59:47 2001
++++ openssl-0.9.6b-patched/Makefile	Thu Oct 25 10:08:26 2001
 @@ -233,20 +233,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -145,8 +145,8 @@ diff -r -u openssl-0.9.6b/Makefile openssl-0.9.6b-patched/Makefile
  Makefile.ssl: Makefile.org
  	@echo "Makefile.ssl is older than Makefile.org."
 diff -r -u openssl-0.9.6b/Makefile.org openssl-0.9.6b-patched/Makefile.org
---- openssl-0.9.6b/Makefile.org	Mon Jul  9 07:08:41 2001
-+++ openssl-0.9.6b-patched/Makefile.org	Wed Oct 24 13:22:44 2001
+--- openssl-0.9.6b/Makefile.org	Mon Jul  9 09:08:41 2001
++++ openssl-0.9.6b-patched/Makefile.org	Thu Oct 25 10:14:33 2001
 @@ -231,20 +231,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -215,30 +215,31 @@ diff -r -u openssl-0.9.6b/Makefile.org openssl-0.9.6b-patched/Makefile.org
 +do_irix-shared:
 +	set -x; libs="-L. ${SHLIBDEPS}" ; \
 +	for i in ${SHLIBDIRS}; do \
-+		lib=lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} ; \
-+		${CC} $(CFLAG) -all -o $$lib lib$$i.a $$libs ${EXLIBS} -lc ; \
++		lib=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} ; \
++		${CC} $(CFLAG) -all -o $$lib lib$${i}.a $$libs ${EXLIBS} -lc ; \
 +	libs="$$libs -l$$i"; \
 +	done
 +do_aix-gcc-shared:
 +	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
-+	( set -x; ${CC}  -shared -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
-+		-Wl,-soname=lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR},-G \
-+		lib$$i.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	( set -x; ${CC}  -shared -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,-soname=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR},-G \
++		lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
 +	libs="$$libs -l$$i"; \
 +	done
 +
 +do_aix-shared:
 +	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
 +	( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
-+		 set -x; ${CC} -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
-+		-Wl,-G,-soname=lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
-+		lib$$i.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++		 set -x; ${CC} -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,-G,-soname=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
  	libs="$$libs -l$$i"; \
  	done
  
+Only in openssl-0.9.6b-patched/: Makefile.org~
 diff -r -u openssl-0.9.6b/Makefile.ssl openssl-0.9.6b-patched/Makefile.ssl
---- openssl-0.9.6b/Makefile.ssl	Mon Jul  9 07:59:47 2001
-+++ openssl-0.9.6b-patched/Makefile.ssl	Tue Oct 23 15:50:46 2001
+--- openssl-0.9.6b/Makefile.ssl	Mon Jul  9 09:59:47 2001
++++ openssl-0.9.6b-patched/Makefile.ssl	Thu Oct 25 10:08:26 2001
 @@ -233,20 +233,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -321,8 +322,8 @@ diff -r -u openssl-0.9.6b/Makefile.ssl openssl-0.9.6b-patched/Makefile.ssl
  Makefile.ssl: Makefile.org
  	@echo "Makefile.ssl is older than Makefile.org."
 diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
---- openssl-0.9.6b/config	Fri Mar 30 07:49:08 2001
-+++ openssl-0.9.6b-patched/config	Tue Oct 23 15:50:46 2001
+--- openssl-0.9.6b/config	Fri Mar 30 09:49:08 2001
++++ openssl-0.9.6b-patched/config	Thu Oct 25 10:08:26 2001
 @@ -318,9 +318,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -431,8 +432,8 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  	OUT="solaris-sparcv9-$CC" ;;
    sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
 diff -r -u openssl-0.9.6b/crypto/asn1/a_d2i_fp.c openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c
---- openssl-0.9.6b/crypto/asn1/a_d2i_fp.c	Fri Apr 23 15:08:07 1999
-+++ openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c	Tue Oct 23 15:50:46 2001
+--- openssl-0.9.6b/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
++++ openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c	Thu Oct 25 10:08:27 2001
 @@ -169,13 +169,17 @@
  					ASN1err(ASN1_F_ASN1_D2I_BIO,ERR_R_MALLOC_FAILURE);
  					goto err;
@@ -459,8 +460,8 @@ diff -r -u openssl-0.9.6b/crypto/asn1/a_d2i_fp.c openssl-0.9.6b-patched/crypto/a
  			off+=(int)c.slen;
  			if (eos <= 0)
 diff -r -u openssl-0.9.6b/ssl/s3_srvr.c openssl-0.9.6b-patched/ssl/s3_srvr.c
---- openssl-0.9.6b/ssl/s3_srvr.c	Mon Jul  9 07:11:06 2001
-+++ openssl-0.9.6b-patched/ssl/s3_srvr.c	Tue Oct 23 15:50:46 2001
+--- openssl-0.9.6b/ssl/s3_srvr.c	Mon Jul  9 09:11:06 2001
++++ openssl-0.9.6b-patched/ssl/s3_srvr.c	Thu Oct 25 10:08:27 2001
 @@ -537,7 +537,11 @@
  		SSL3_ST_SR_CERT_A,
  		SSL3_ST_SR_CERT_B,
