@@ -3,7 +3,7 @@ include $(top_srcdir)/globus_automake_pre
 Sources= \
 	globus_args.c \
 	globus_args.h \
-	globus_callback_$(GLOBUS_CALLBACK_BUILD).c \
+	globus_callback.c \
 	globus_callback.h \
 	globus_common_paths.c \
 	globus_cfifo.c \
@@ -66,6 +66,8 @@ Sources= \
 	globus_time.c \
 	globus_tilde_expand.h \
 	globus_time.h \
+	globus_timeq.c \
+	globus_timeq.h \
 	globus_url.c \
 	globus_url.h \
 	globus_error_string.c \
@@ -91,6 +93,7 @@ flavorinclude_HEADERS = \
 	globus_thread_pool.h \
 	globus_handle_table.h \
 	globus_callback.h \
+	globus_timeq.h \
 	globus_memory.h \
 	globus_print.h \
 	globus_priority_q.h \
@@ -113,8 +116,6 @@ libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
 
 EXTRA_DIST = \
-    globus_callback_nothreads.c \
-    globus_callback_threads.c \
 	globus_thread_none.c \
 	globus_thread_none.h \
 	globus_thread_pthreads.c \

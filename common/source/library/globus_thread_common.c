@@ -311,8 +311,7 @@ globus_thread_blocking_callback_disable(
  *
  */
 globus_thread_result_t
-globus_thread_blocking_space_will_block(
-    int                                 blocking_space)
+globus_thread_blocking_will_block()
 {
     int                                       ctr;
     globus_thread_blocking_func_t             func;
@@ -340,7 +339,7 @@ globus_thread_blocking_space_will_block(
        if(manager->stack[ctr].enabled)
        {
            func =  (manager->stack[ctr].func);
-	   func(blocking_space, ctr, manager->stack[ctr].user_args);
+	   func(ctr, manager->stack[ctr].user_args);
        }
     }
 

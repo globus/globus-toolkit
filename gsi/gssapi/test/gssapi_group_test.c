@@ -266,6 +266,8 @@ int main()
                    __FILE__,__LINE__,(char *) set_subgroups->elements[i].value);
         }   
     }
+
+    exit(0);
 }
 
 

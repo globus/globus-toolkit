@@ -115,8 +115,8 @@ extern globus_bool_t                      g_globus_i_io_use_netlogger;
 
 extern globus_mutex_t			globus_i_io_mutex;
 extern globus_cond_t			globus_l_io_cond;
-extern int			        globus_i_io_mutex_cnt;
-extern int			        globus_l_io_cond_cnt;
+extern volatile int			globus_i_io_mutex_cnt;
+extern volatile int			globus_l_io_cond_cnt;
 
 extern globus_bool_t *                  globus_i_io_tcp_used_port_table;
 extern unsigned short                   globus_i_io_tcp_used_port_min;
@@ -126,6 +126,14 @@ extern unsigned short                   globus_i_io_udp_used_port_min;
 extern unsigned short                   globus_i_io_udp_used_port_max;
 
 extern int                              globus_i_io_skip_poll_frequency;
+
+#if defined(BUILD_LITE)
+#   define globus_i_io_mutex_lock()
+#   define globus_i_io_mutex_unlock()
+#   define globus_l_io_mutex_acquired() (GLOBUS_TRUE)
+#   define globus_l_io_cond_signal()
+#   define globus_l_io_cond_wait()
+#else  /* defined(BUILD_LITE) */
 
 #   define globus_l_io_mutex_acquired() ((globus_i_io_mutex_cnt > 0)	\
 				       ? GLOBUS_TRUE			\
@@ -162,7 +170,7 @@ extern int                              globus_i_io_skip_poll_frequency;
         globus_i_io_cond_cnt--;					\
         globus_i_io_mutex_cnt++;				\
     }
-
+#endif /* (else) defined(BUILD_LITE) */
 extern int globus_i_io_debug_level;
 
 #ifdef BUILD_DEBUG
@@ -174,7 +182,7 @@ extern int globus_i_io_debug_level;
 do { \
     if (globus_i_io_debug(level)) \
     { \
-	globus_libc_fprintf message; \
+	globus_libc_printf message; \
     } \
 } while (0)
 #else
@@ -187,7 +195,7 @@ typedef struct
     globus_cond_t			cond;
     globus_object_t *			err;
     globus_bool_t			use_err;
-    globus_bool_t		        done;
+    volatile globus_bool_t		done;
     globus_size_t			nbytes;
     void *                              data;
 } globus_i_io_monitor_t;
@@ -199,11 +207,6 @@ globus_i_common_get_env_pair(
     char * env_name,
     int * min,
     int * max);
-
-globus_result_t
-globus_i_io_copy_fileattr_to_handle(
-    globus_io_attr_t *			attr,
-    globus_io_handle_t *		handle);
 
 void
 globus_i_io_securesocket_copy_attr(
@@ -415,6 +418,20 @@ globus_i_io_securesocket_register_read(
     globus_size_t                       wait_for_nbytes,
     globus_io_read_callback_t           callback,
     void *                              callback_arg);
+
+globus_result_t
+globus_i_io_unregister_read(
+    globus_io_handle_t *		handle,
+    globus_bool_t			call_destructor);
+
+globus_result_t
+globus_i_io_unregister_write(
+    globus_io_handle_t *		handle,
+    globus_bool_t			call_destructor);
+
+globus_result_t
+globus_i_io_unregister_except(
+    globus_io_handle_t *		handle);
 
 void
 globus_i_io_default_destructor(

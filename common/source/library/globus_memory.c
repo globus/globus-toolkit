@@ -74,6 +74,7 @@ globus_memory_create_list(
     int                          ctr;
     globus_l_memory_header_t *   header;
     globus_byte_t *              buf;
+    globus_byte_t *              tmp_buf;
     int                          tmp_size;
     
     mem_info->first = globus_malloc(
@@ -108,7 +109,7 @@ globus_memory_create_list(
     return GLOBUS_TRUE;
 }
 
-void *
+globus_byte_t *
 globus_memory_pop_node(
     globus_memory_t * mem_info)
 {
@@ -145,12 +146,9 @@ globus_memory_pop_node(
 globus_bool_t
 globus_memory_push_node(
     globus_memory_t *          mem_info,
-    void *                      buffer)
+    globus_byte_t *              buf)
 {
     globus_l_memory_header_t *   header;
-    globus_byte_t *              buf;
-    
-    buf = (globus_byte_t *) buffer;
     
     globus_mutex_lock(&mem_info->lock);
     { 
@@ -174,10 +172,15 @@ globus_bool_t
 globus_memory_destroy(
     globus_memory_t * mem_info)
 {
+/* TODO: fail if memory not freed correctly */
+    globus_byte_t *     tmp_byte;
     int                 ctr;
 
     globus_mutex_lock(&mem_info->lock);
     {
+        if(mem_info->nodes_used > 0)
+        {
+        }
         for(ctr = 0; ctr <= mem_info->free_ptrs_offset; ctr++)
         {
             free(mem_info->free_ptrs[ctr]);

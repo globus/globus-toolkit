@@ -321,7 +321,6 @@ typedef enum globus_ftp_data_connection_state_e
 typedef enum
 {
     GLOBUS_FTP_CONTROL_UNCONNECTED,
-    GLOBUS_FTP_CONTROL_CONNECTING,
     GLOBUS_FTP_CONTROL_CONNECTED,
     GLOBUS_FTP_CONTROL_CLOSING
 }

@@ -172,6 +172,7 @@ globus_common_get_attribute_from_config_file( char *   deploy_path,
     char *            q;
     char *            deploy;
     char *            filename;
+    char *            format;
     char              attr[200];    /* assumes a name won't be longer... */
     char              buf[2000];    /* assumes a line won't be longer... */
     int               attr_len;

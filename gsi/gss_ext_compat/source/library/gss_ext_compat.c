@@ -94,6 +94,7 @@ GSS_CALLCONV gss_init_delegation(
     const gss_OID_set                   extension_oids,
     const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
+    OM_uint32                           req_flags,
     OM_uint32                           time_req,
     gss_buffer_t                        output_token)
 { 
@@ -111,6 +112,7 @@ GSS_CALLCONV gss_accept_delegation(
     const gss_OID_set                   extension_oids,
     const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
+    OM_uint32                           req_flags,    
     OM_uint32                           time_req,
     OM_uint32 *                         time_rec,
     gss_cred_id_t *                     cred_handle,

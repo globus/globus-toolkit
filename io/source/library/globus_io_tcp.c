@@ -227,7 +227,7 @@ globus_io_tcp_register_connect(
 	err = globus_error_get(rc);
 	
 	globus_i_io_debug_printf(2,
-				 (stderr, "%s(): "
+				 ("%s(): "
 				  "globus_i_io_setup_nonblocking() failed\n",
 				  myname));
 	globus_libc_close(handle->fd);
@@ -384,17 +384,12 @@ globus_io_tcp_connect(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
-    globus_callback_space_t             saved_space;
-
+    
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.use_err = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
-
-    /* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     
     result = globus_io_tcp_register_connect(host,
 					    port,
@@ -416,8 +411,6 @@ globus_io_tcp_connect(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
-    handle->space = saved_space;
 
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
@@ -522,7 +515,7 @@ globus_io_tcp_create_listener(
 	return rc;
     }
     globus_i_io_debug_printf(3,
-			     (stderr, "%s(): entering\n", myname));
+			     ("%s(): entering\n", myname));
 
     rc = globus_i_io_copy_tcpattr_to_handle(attr,
 					    handle);
@@ -554,7 +547,7 @@ globus_io_tcp_create_listener(
 	err = globus_error_get(rc);
 	
 	globus_i_io_debug_printf(2,
-				 (stderr, "%s(): "
+				 ("%s(): "
 				  "globus_i_io_setup_nonblocking() failed\n",
 				  myname));
 
@@ -604,7 +597,7 @@ globus_io_tcp_create_listener(
     handle->state = GLOBUS_IO_HANDLE_STATE_LISTENING;
     
     globus_i_io_debug_printf(3,
-			     (stderr, "%s(): exiting\n", myname));
+			     ("%s(): exiting\n", myname));
     return GLOBUS_SUCCESS;
     
   error_exit:
@@ -708,7 +701,7 @@ globus_io_tcp_register_accept(
     
     globus_i_io_debug_printf(
 	1,
-	(stderr, "%s(): enter, listener fd=%d",
+	("%s(): enter, listener fd=%d",
 	 myname,
 	 listener_handle->fd));
     
@@ -851,7 +844,7 @@ globus_io_tcp_register_accept(
 	    else
 	    {
 		globus_i_io_debug_printf(2,
-					 (stderr, "globus_io_tcp_accept(): "
+					 ("globus_io_tcp_accept(): "
 					  "accept() failed\n"));
 
                 err = globus_io_error_construct_system_failure(
@@ -900,7 +893,7 @@ globus_io_tcp_register_accept(
 	err = globus_error_get(rc);
 	
 	globus_i_io_debug_printf(2,
-				 (stderr, "%s(): "
+				 ("%s(): "
 				  "globus_i_io_setup_nonblocking() failed\n",
 				  myname));
 	globus_libc_close(new_handle->fd);
@@ -939,7 +932,7 @@ globus_io_tcp_register_accept(
 	}
     }
     
-    globus_i_io_debug_printf(1, (stderr, "%s(): exit\n",
+    globus_i_io_debug_printf(1, ("%s(): exit\n",
 				 myname));
 
     globus_i_io_mutex_unlock();
@@ -1025,7 +1018,6 @@ globus_io_tcp_accept(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
-    globus_callback_space_t             saved_space;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -1033,10 +1025,6 @@ globus_io_tcp_accept(
     monitor.use_err = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
     
-/* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-
     result = globus_io_tcp_register_accept(listener_handle,
 					   attr,
 					   handle,
@@ -1057,8 +1045,6 @@ globus_io_tcp_accept(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
-    handle->space = saved_space;
 
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
@@ -1150,8 +1136,6 @@ globus_io_tcp_get_attr(
     globus_i_io_tcp_copy_attr(
 	instance,
 	&handle->tcp_attr);
-    
-    attr->space = handle->space;
     
     return GLOBUS_SUCCESS;
 
@@ -1246,8 +1230,10 @@ globus_io_tcp_set_attr(
     instance = (globus_i_io_tcpattr_instance_t *)
 	globus_object_get_local_instance_data(attr->attr);
 
-    handle->nl_handle = attr->nl_handle;
-    handle->space = attr->space;
+    if(attr)
+    {
+        handle->nl_handle = attr->nl_handle;
+    }
 
     /* set local socket options */
     if(instance->nodelay != handle->tcp_attr.nodelay)
@@ -1601,7 +1587,6 @@ globus_io_tcpattr_init(
      *  NETLOGGER
      */
     attr->nl_handle = GLOBUS_NULL;
-    attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
 
     return GLOBUS_SUCCESS;
 }
@@ -1694,11 +1679,7 @@ globus_io_tcp_posix_convert(
                                   GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED);
     handle->fd = socket;
     handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
-    if(attributes)
-    {
-        handle->space = attributes->space;
-    }
-    
+
     return GLOBUS_SUCCESS;
 }
 /* globus_io_tcp_posix_convert() */
@@ -1750,11 +1731,7 @@ globus_io_tcp_posix_convert_listener(
                                   GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED);
     handle->fd = socket;
     handle->state = GLOBUS_IO_HANDLE_STATE_LISTENING;
-    if(attributes)
-    {
-        handle->space = attributes->space;
-    }
-    
+
     return GLOBUS_SUCCESS;
 }
 /* globus_io_tcp_posix_convert_listener() */
@@ -2093,7 +2070,7 @@ globus_l_io_tcp_create_socket(
     static char *			myname="globus_i_io_tcp_create_socket";
     
     globus_i_io_debug_printf(3,
-			     (stderr, "%s(): entering\n",
+			     ("%s(): entering\n",
 			      myname));
 
     globus_assert(handle != GLOBUS_NULL);
@@ -2253,6 +2230,8 @@ globus_l_io_tcp_bind_socket(
     globus_bool_t                       bind_error = GLOBUS_FALSE;
     struct sockaddr_in			my_addr;
     int					save_errno;
+    globus_result_t			rc;
+    globus_object_t *			err;
     globus_i_io_tcpattr_instance_t *    instance;
     globus_netlen_t			len = sizeof(my_addr);
 

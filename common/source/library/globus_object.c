@@ -1,7 +1,7 @@
 
 #include "config.h"
 #include "globus_common.h"
-#include <string.h>
+
 #include <assert.h>
 
 

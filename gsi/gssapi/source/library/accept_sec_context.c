@@ -151,7 +151,7 @@ GSS_CALLCONV gss_accept_sec_context(
      * put token data onto the SSL bio so it can be read
      */
 
-    major_status = gs_put_token(context, input_token);
+    major_status = gs_put_token(context, NULL, input_token);
     if (major_status != GSS_S_COMPLETE)
     {
         *minor_status = gsi_generate_minor_status();
@@ -230,7 +230,7 @@ GSS_CALLCONV gss_accept_sec_context(
          * we dont want to do delegation, so we are done
          */
 
-        if (context->req_flags & GSS_C_GLOBUS_SSL_COMPATABLE)
+        if (context->req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
         {
             context->gs_state = GS_CON_ST_DONE;
             break;
@@ -349,7 +349,7 @@ GSS_CALLCONV gss_accept_sec_context(
      * about the error (i.e. an SSL alert message) we want to send to the other
      * side.
      */
-    gs_get_token(context, output_token);
+    gs_get_token(context, NULL, output_token);
 
     if (context->gs_state != GS_CON_ST_DONE)
     {

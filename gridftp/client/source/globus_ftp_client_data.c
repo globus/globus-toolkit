@@ -77,10 +77,9 @@ globus_l_ftp_client_data_delete(
 
 
 static
-void
+globus_bool_t
 globus_l_ftp_client_complete_kickout(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
+    globus_abstime_t *				time_stop,
     void *					user_arg);
 
 static
@@ -525,8 +524,8 @@ globus_i_ftp_client_data_cmp(
     globus_off_t *				offset1;
     globus_off_t *				offset2;
 
-    offset1 = (globus_off_t *) priority_1;
-    offset2 = (globus_off_t *) priority_2;
+    offset1 = * ((globus_off_t **) priority_1);
+    offset2 = * ((globus_off_t **) priority_2);
 
     return ((*offset1) > (*offset2));
 }
@@ -1334,10 +1333,9 @@ globus_i_ftp_client_data_flush(
 /* globus_i_ftp_client_data_flush() */
 
 static
-void
+globus_bool_t
 globus_l_ftp_client_complete_kickout(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
+    globus_abstime_t *				time_stop,
     void *					user_arg)
 {
     globus_i_ftp_client_handle_t *		handle;
@@ -1354,6 +1352,8 @@ globus_l_ftp_client_complete_kickout(
 
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_complete_kickout() exiting\n"));
+
+    return GLOBUS_TRUE; /* Event was handled */
 }
 /* globus_l_ftp_client_complete_kickout() */
 

@@ -585,6 +585,12 @@ else
     fi
 fi
 
+LAC_PROG_CC_GNU([$lac_cv_CC],
+[
+    lac_CFLAGS="$lac_CFLAGS -Wall"
+],
+[])
+
 AC_CACHE_CHECK("C flags", lac_cv_CFLAGS, lac_cv_CFLAGS=$lac_CFLAGS)
 AC_CACHE_CHECK("C++ flags", lac_cv_CXXFLAGS, lac_cv_CXXFLAGS=$lac_CXXFLAGS)
 AC_CACHE_CHECK("linker flags", lac_cv_LDFLAGS, lac_cv_LDFLAGS=$lac_LDFLAGS)

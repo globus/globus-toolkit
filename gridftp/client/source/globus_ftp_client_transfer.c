@@ -21,10 +21,9 @@
 
 /* Module-specific prototypes */
 static
-void
+globus_bool_t
 globus_l_ftp_client_abort_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
+    globus_abstime_t *				time_stop,
     void *					user_arg);
 #endif
 
@@ -3764,6 +3763,7 @@ globus_ftp_client_abort(
     globus_object_t *				err;
     globus_result_t				result;
     globus_i_ftp_client_handle_t *		handle;
+    int						rc;
     static char * myname = "globus_ftp_client_abort";
     
     globus_i_ftp_client_debug_printf(1, 
@@ -3908,12 +3908,12 @@ globus_ftp_client_abort(
 	goto unlock_error;
 
     case GLOBUS_FTP_CLIENT_HANDLE_RESTART:
-	result = globus_callback_unregister(
-	    handle->restart_info->callback_handle,
+	rc = globus_i_callback_register_cancel(
+	    &handle->restart_info->callback_handle,
 	    GLOBUS_NULL,
 	    GLOBUS_NULL);
 
-	if(result != GLOBUS_SUCCESS)
+	if(rc != GLOBUS_SUCCESS)
 	{
 	    /* 
 	     * The callback is about to start, but needs the lock. We will just
@@ -3940,15 +3940,15 @@ globus_ftp_client_abort(
 	    }
 	    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
 
-	    result = globus_callback_register_oneshot(
+	    rc = globus_callback_register_oneshot(
 		GLOBUS_NULL,
-		&globus_i_reltime_zero,
+		GLOBUS_NULL,
 		globus_l_ftp_client_abort_callback,
 		handle,
 		GLOBUS_NULL,
 		GLOBUS_NULL);
 
-	    if(result != GLOBUS_SUCCESS)
+	    if(rc != GLOBUS_SUCCESS)
 	    {
 		goto unlock_error;
 	    }
@@ -4425,10 +4425,9 @@ globus_i_ftp_client_force_close_callback(
  * complete the abort, and let the user know that the transfer is done.
  */
 static
-void
+globus_bool_t
 globus_l_ftp_client_abort_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
+    globus_abstime_t *				time_stop,
     void *					user_arg)
 {
     globus_i_ftp_client_handle_t *		handle;
@@ -4451,6 +4450,9 @@ globus_l_ftp_client_abort_callback(
 
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_abort_callback() exiting\n"));
+
+    /* Dispatched an event */
+    return GLOBUS_TRUE;
 }
 /* globus_l_ftp_client_abort_callback() */
 

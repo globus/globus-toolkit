@@ -202,7 +202,6 @@ globus_i_io_socket_get_attr(
 	   instance,
 	   &handle->socket_attr);
     
-    attr->space = handle->space;
     
     return GLOBUS_SUCCESS;
 }
@@ -416,9 +415,6 @@ globus_i_io_socket_set_attr(
     {
 	handle->socket_attr.rcvbuf = rcvbuf;
     }
-    
-    handle->space = attr->space;
-    
     return GLOBUS_SUCCESS;
     
     /* undo any changes, then return an error */

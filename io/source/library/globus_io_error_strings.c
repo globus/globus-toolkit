@@ -1,6 +1,5 @@
 #include "globus_common.h"
 #include "globus_io.h"
-#include <string.h>
 
 char *
 globus_i_io_error_string_func ( globus_object_t * error )
