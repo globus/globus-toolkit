@@ -1,13 +1,10 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 # myproxy admin adduser script
 # generates a certificate request using grid-cert-request
 # signs the request using grid-ca-sign
 # and stores the credential in the repository using
 #   myproxy-admin-load-credential
-
-use Env;  #module to access environment variables
-Env::import(); #tie environment vars to local vars with same name
 
 # check for program dependencies
 
@@ -35,114 +32,56 @@ if (!(-x $mpauc)) {
     exit 1;
 }
 
-# read defaults from myproxy-adduser.config file
+# handle arguments
 
-if (!stat("${GLOBUS_LOCATION}/etc/myproxy-adduser.config")) {
-    print STDERR "${GLOBUS_LOCATION}/etc/myproxy-adduser.config ";
-    print STDERR "doesn't exist.\nRunning myproxy-admin-adduser-config ";
-    print STDERR "to set general options.\n";
-    print STDERR "----------------------------------------\n";
-    if (system("${GLOBUS_LOCATION}/sbin/myproxy-admin-adduser-config")) {
-	print STDERR "${GLOBUS_LOCATION}/sbin/myproxy-admin-adduser-config ";
-	print STDERR "failed.\nAborting.\n";
-	&cleanup();
-	exit 1;
-    }
-    print STDERR "----------------------------------------\n";
-}
+require "getopts.pl";
 
-unless (open(CONFIG, '<', "${GLOBUS_LOCATION}/etc/myproxy-adduser.config")) {
-    print STDERR "Can't open ${GLOBUS_LOCATION}/etc/myproxy-adduser.config.\n";
-    print STDERR "Aborting.\n";
-    &cleanup();
-    exit 1;
-}
-
-@fileinfo = stat(CONFIG);  
-
-if (!@fileinfo) {
-    print STDERR "Unable to stat config file ";
-    print STDERR "${GLOBUS_LOCATION}/etc/myproxy-adduser.config.\n";
-    print STDERR "Aborting.\n";
-    &cleanup();
-    exit 1;
-}
-sysread (CONFIG, $FILE_CONT, $fileinfo[7]);
-
-# filter out comments
-$flag = 0;
-$xx = "";
-for ($i = 0; $i < $fileinfo[7]; $i++) {
-        $c  = substr ($FILE_CONT, $i, 1);
-	$flag = 1 if ($c eq '#');
-	$xx = $xx . $c if ($flag == 0);
-	$flag = 0 if ($c eq "\n"); #reset
-}
-$FILE_CONT = $xx;
-
-#search for various parameters
-
-$tmp_dir_name = &getparam("tmp_dir_name");
-$cred_store   = &getparam("cred_store");
-$ret_regex    = &getparam("ret_regex");
-$ren_regex    = &getparam("ren_regex");
-$credname     = &getparam("credname");
-$creddesc     = &getparam("creddesc");
-
-$tmp_dir_name = "/tmp" if ($tmp_dir_name eq "");
-
-if ($cred_store ne "") {
-    $cred_store_switch = "-s";
-} else {
-    $cred_store_switch = "";
-}
-
-if ($ret_regex ne "") {
-    $ret_regex_switch  = "-r";
-} else {
-    $ret_regex_switch  = "";
-}
-
-if ($ren_regex ne "") {
-    $ren_regex_switch  = "-R";
-} else {
-    $ren_regex_switch  = "";
-}
-
-if ($ret_regex ne "" && $ren_regex ne "") {
-    print STDERR "Error: Both ret_regex and ren_regex specified but a\n";
-    print STDERR "credential may not be used for both retrieval and ";
-    print STDERR "renewal.\n";
-    &cleanup();
-    exit 1;
-}
-
-if ($credname ne "") {
-    $credname_switch  = "-k";
-} else {
-    $credname_switch  = "";
-}
-
-if ($creddesc ne "") {
-    $creddesc_switch  = "-K";
-} else {
-    $creddesc_switch  = "";
+if (!&Getopts('huc:s:l:t:aAxXr:R:ndk:K:') || $opt_h || $opt_u) {
+    print STDERR <<"EOF";
+Syntax: $0 [-c cn] [-l username] ...
+        $0 [-usage|-help]
+   Options
+       -h                Displays usage
+       -u
+       -c <cn>           Common Name for new credential
+       -s <directory>    Credential storage directory
+       -l <username>     Credential username
+       -t <hours>        Max. lifetime of delegated proxies
+       -a                Allow credentials to be retrieved with
+                         just username/passphrase
+       -A                Allow credentials to be renewed by
+                         any client (not recommended)
+       -x                Set regular expression matching mode
+                         for following policy options
+       -X                Set CN matching mode (default)
+                         for following policy options
+       -r <dn>           Allow specified entity to retrieve credential
+       -R <dn>           Allow specified entity to renew credential
+       -n                Disable passphrase authentication
+       -d                Use the proxy certificate subject as username
+       -k <name>         Specifies credential name
+       -K <desc>         Specifies credential description
+EOF
+    exit(1);
 }
 
 #grid-cert-request
 
-print "Enter common name for the certificate: ";
-chop($common_name = <STDIN>);
+if (!$opt_c) {
+    print "Enter common name for the certificate: ";
+    chop($opt_c = <STDIN>);
+}
 
+$tmp_dir_name = "/tmp";
 $prefix="myproxy_adduser_";
 $certfile = "${tmp_dir_name}/${prefix}cert.pem";
 $reqfile = "${tmp_dir_name}/${prefix}cert_request.pem";
 $keyfile = "${tmp_dir_name}/${prefix}key.pem";
 
-@args = ("grid-cert-request", "-cn", $common_name, "-prefix", $prefix, "-dir",
+@args = ("grid-cert-request", "-cn", $opt_c, "-prefix", $prefix, "-dir",
 	 $tmp_dir_name,  "-force", "-nopassphrase");
 
-if (system (@args)) {
+if (system(@args)) {
     print STDERR "grid-cert-request failed.\n";
     &cleanup();
     exit 1;
@@ -152,7 +91,7 @@ if (system (@args)) {
 
 @args = ("grid-ca-sign", "-in", $reqfile, "-out", $certfile, "-force");
 
-if (system (@args)) {
+if (system(@args)) {
     print STDERR "grid-ca-sign failed.\n";
     &cleanup();
     exit 1;
@@ -160,19 +99,44 @@ if (system (@args)) {
 
 #myproxy-alcf
 
-print "Enter username [use DN by default]: ";
-chop ($username = <STDIN>);
-if (length $username > 0) {
-    $username_switch = "-l";
-    $dn_as_user = ""
-} else {
-    $username_switch = "";
-    $dn_as_user = "-d";
+if (!$opt_l && !$opt_d) {
+    print "Enter username [use DN by default]: ";
+    chop ($opt_l = <STDIN>);
+    if (length $opt_l == 0) {
+	$opt_d = 1;
+    }
 }
 
-$args = "myproxy-admin-load-credential $cred_store_switch $cred_store -c $certfile -y $keyfile $username_switch $username -x $ret_regex_switch $ret_regex $ren_regex_switch $ren_regex $dn_as_user $credname_switch $credname $creddesc_switch $creddesc";
+@args = ("myproxy-admin-load-credential", "-c", $certfile, "-y", $keyfile);
+if ($opt_s) {
+    push(@args, "-s"); push(@args, $opt_s);
+}
+if ($opt_l) {
+    push(@args, "-l"); push(@args, $opt_l);
+}
+if ($opt_t) {
+    push(@args, "-t"); push(@args, $opt_t);
+}
+push(@args, "-a") if ($opt_a);
+push(@args, "-A") if ($opt_A);
+push(@args, "-x") if ($opt_x);
+push(@args, "-X") if ($opt_X);
+if ($opt_r) {
+    push(@args, "-r"); push(@args, $opt_r);
+}
+if ($opt_R) {
+    push(@args, "-R"); push(@args, $opt_R);
+}
+push(@args, "-n") if ($opt_n);
+push(@args, "-d") if ($opt_d);
+if ($opt_k) {
+    push(@args, "-k"); push(@args, $opt_k);
+}
+if ($opt_K) {
+    push(@args, "-K"); push(@args, $opt_K);
+}
 
-if (system($args)) {
+if (system(@args)) {
     print STDERR "myproxy-admin-load-credential failed.\n";
     &cleanup();
     exit 1;
@@ -180,18 +144,6 @@ if (system($args)) {
 
 &cleanup();
 exit 0;
-
-sub getparam {
-    local($str) = @_;
-    local($i) = index ($FILE_CONT, $str);
-    $str .= "=";
-    if ($i != -1) {
-	local($end) = index ($FILE_CONT, "\n", $i);
-	$pos = $i+length($str);
-	return substr($FILE_CONT, $pos, $end-$pos);
-    }
-    return "";
-}
 
 sub cleanup {
     unlink($certfile) if (defined($certfile));
