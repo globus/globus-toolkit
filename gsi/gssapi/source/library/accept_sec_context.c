@@ -396,7 +396,7 @@ GSS_CALLCONV gss_accept_sec_context(
                 &local_minor_status,
                 GSS_C_BOTH,
                 delegated_cred_handle_P,
-                delegated_cred);
+                &delegated_cred);
             if(GSS_ERROR(major_status))
             {
                 globus_gsi_cred_handle_destroy(delegated_cred);
