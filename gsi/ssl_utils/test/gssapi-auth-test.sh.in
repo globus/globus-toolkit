@@ -30,7 +30,7 @@ GRID_PROXY_INIT=grid-proxy-init
 # Defaults for execution
 #
 PORT=8787
-GSS_SERVER_ARGS=""
+GSS_SERVER_ARGS="-once"
 MESSAGE="This is a test. ABC123"
 GSS_SERVER_LOG="server.log"
 GSS_CLIENT_PROXY_INIT_LOG="proxy_init.log"
