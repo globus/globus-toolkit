@@ -55,6 +55,7 @@ static char *  LONG_USAGE = \
 		 PACKAGE, \
 		 VERSION); \
 	fprintf(stderr, "%s", buf); \
+        globus_module_deactivate_all(); \
 	exit(0); \
     }
 
@@ -64,6 +65,7 @@ static char *  LONG_USAGE = \
 		SHORT_USAGE_FORMAT \
 		"\nOption -help will display usage.\n", \
 		program); \
+        globus_module_deactivate_all(); \
 	exit(0); \
     }
 
@@ -73,6 +75,7 @@ static char *  LONG_USAGE = \
 		"%s", \
 		program, \
 		LONG_USAGE); \
+        globus_module_deactivate_all(); \
 	exit(0); \
     }
 
@@ -80,6 +83,7 @@ static char *  LONG_USAGE = \
     { \
 	fprintf(stderr, "ERROR: %s\n", errmsg); \
         args_show_short_help(); \
+        globus_module_deactivate_all(); \
 	exit(1); \
     }
 
@@ -310,6 +314,7 @@ main(
             globus_libc_fprintf(
                 stderr,
                 "\n\nERROR: Couldn't find a valid proxy.\n");
+            globus_module_deactivate_all();
             exit(1);
         }
     }
@@ -360,6 +365,7 @@ main(
 	globus_libc_fprintf(
             stderr,
             "\n\nERROR: unable to load public key from proxy\n");
+        globus_module_deactivate_all();
         exit(1);
     }
 
@@ -438,6 +444,7 @@ main(
         globus_libc_fprintf(
             stderr,
             "\n\nERROR: Invalid proxy type\n\n");
+        globus_module_deactivate_all();
         exit(1);
     }
     
@@ -570,5 +577,6 @@ globus_i_gsi_proxy_utils_print_error(
                             "Use -debug for further information.\n\n");
     }
     globus_object_free(error_obj);
+    globus_module_deactivate_all();
     exit(1);
 }

@@ -65,6 +65,7 @@ static char *  LONG_USAGE = \
                  PACKAGE, \
                  VERSION); \
         fprintf(stderr, "%s", buf); \
+        globus_module_deactivate_all(); \
         exit(0); \
     }
 
@@ -74,6 +75,7 @@ static char *  LONG_USAGE = \
                 SHORT_USAGE_FORMAT \
                 "\nOption -help will display usage.\n", \
                 program); \
+        globus_module_deactivate_all(); \
         exit(0); \
     }
 
@@ -83,6 +85,7 @@ static char *  LONG_USAGE = \
                 "%s", \
                 program, \
                 LONG_USAGE); \
+        globus_module_deactivate_all(); \
         exit(0); \
     }
 
@@ -90,6 +93,7 @@ static char *  LONG_USAGE = \
     { \
         fprintf(stderr, "ERROR: %s\n", errmsg); \
         args_show_short_help(); \
+        globus_module_deactivate_all(); \
         exit(1); \
     }
 
@@ -189,6 +193,7 @@ main(
             stderr,
             "\n\nERROR: Couldn't load module: GLOBUS_GSI_CALLBACK_MODULE.\n"
             "Make sure Globus is installed correctly.\n\n");
+        globus_module_deactivate_all();
         exit(1);
     }
 
@@ -579,6 +584,7 @@ main(
             }
             else
             {
+                globus_module_deactivate_all();             
                 exit(1);
             }
         }
@@ -940,6 +946,7 @@ main(
             stderr,
             "\n\nERROR: Your certificate has expired: %s\n\n", 
             asctime(localtime(&goodtill)));
+        globus_module_deactivate_all();
         exit(2);
     }
     else if(lifetime < (valid * 60))
@@ -976,9 +983,7 @@ main(
         free(tmp_user_key_filename);
     }
 
-    globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
-    globus_module_deactivate(GLOBUS_GSI_CALLBACK_MODULE);
-
+    globus_module_deactivate_all();
     exit(return_value);
 }
 
