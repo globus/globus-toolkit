@@ -358,6 +358,35 @@ The values of the emphasized text items are as below:
     <dd>The job contact of the job which has changed states.</dd>
 </dl>
 
+@anchor globus_gram_protocol_delegation
+<h3>Proxy Delegation</h3>
+
+A proxy delegation message is sent by the client to the job manager to
+initiate a delegation handshake to generate a new proxy credential for the
+job manager. This credential is used by the job manager or the job when making
+further secured connections. The format of the delegation message is as
+follows:
+<pre>
+    POST <em>callback-contact</em> HTTP/1.1
+    Host: <em>host-name</em>
+    Content-Type: application/x-globus-gram
+    Content-Length: <em>message-size</em>
+
+    protocol-version: <em>version</em>
+    "renew"
+</pre>
+
+If a successful (200) reply is sent in response to this message, then the
+client will procede with a GSI delegation handshake. The tokens in this
+handshake will be framed with a 4 byte big-endian token length header. The
+framed tokens will then be wrapped using the
+GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP wrapping mode. The job manager will
+frame response tokens in the same manner. After the job manager receives
+its final delegation token, it will respond with another response message
+that indicates whether the delegation was processed or not. This response
+message is a standard GRAM response message.
+
+
 <h4>Note on Security Attributes</h4>
 The following security attributes are needed to communicate with the
 Gatekeeper:
