@@ -27,6 +27,7 @@ Scripts= \
 	globus-job-run \
 	globus-job-status \
 	globus-job-clean \
+	globus-job-cancel \
 	globus-job-get-output
 
 # bin_SCRIPTS is an autmake macro that contains
@@ -53,10 +54,13 @@ globusrun_SOURCES = globusrun.c
 globusrun_LDFLAGS = $(GPT_LDFLAGS)
 globusrun_LDADD = $(GPT_PGM_LINKS)
 
+globus-job-cancel: globus-job-clean
+	cp globus-job-clean globus-job-cancel
+
 globus-job-submit: globus-job-run
 	cp globus-job-run globus-job-submit
 
-CLEANFILES=globus-job-submit
+CLEANFILES=globus-job-submit globus-job-cancel
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
