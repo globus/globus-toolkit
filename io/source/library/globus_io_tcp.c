@@ -423,12 +423,10 @@ globus_io_tcp_connect(
     if(attr)
     {
         /* by resetting the attr with this call, i end up with an extra ref,
-         * so, I destroy one ref 
+         * this will be 'aoplied' to the new handle
          */
         globus_io_attr_set_callback_space(attr, saved_space);
         globus_i_io_set_callback_space(handle, saved_space);
-        
-        globus_callback_space_destroy(saved_space);
     }
 
     globus_mutex_destroy(&monitor.mutex);
