@@ -483,7 +483,7 @@ main(
         cert_type_name = "limited legacy globus proxy";
         break;
       case GLOBUS_GSI_CERT_UTILS_TYPE_EEC:
-        cert_type_name = "NOT A PROXY - Looks like a end entity credential";
+        cert_type_name = "end entity credential";
         break;        
       default:
         globus_libc_fprintf(
