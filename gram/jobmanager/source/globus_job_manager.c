@@ -1188,11 +1188,12 @@ main(int argc,
                 }
             } /* for each tags */
         } /* for each cache entries */
+        globus_gass_cache_list_free(cache_entries, cache_size);
     }
 
-    fflush(request->jobmanager_log_fp);
-    globus_gass_cache_list_free(cache_entries, cache_size);
     globus_gass_cache_close(&globus_l_cache_handle);
+
+    fflush(request->jobmanager_log_fp);
 
     grami_fprintf( request->jobmanager_log_fp, "JM: freeing RSL.\n");
 
