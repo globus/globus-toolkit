@@ -95,7 +95,7 @@ gram_myjob_done()
     }
 
     MP_COMMUNICATOR_FREE(graml_myjob_communicator);
-    MP_NODE_EXIT();
+    MP_NODE_SHUTDOWN();
 
     return(GRAM_MYJOB_SUCCESS);
 }
@@ -271,6 +271,6 @@ Returns:	this will never return
 int
 gram_myjob_kill()
 {
-    MP_NODE_ABORT();
+    MP_ABORT();
     abort();
 }
