@@ -140,7 +140,7 @@ fi
 command_stub="${SSL_EXEC} x509 -noout -in ${certfile}"
 
 # Will probably need this...
-subject=`eval "${command_stub}" -subject | ${GLOBUS_SH_SED-sed} 's%^subject=%%'`
+subject=`eval "${command_stub}" -subject | ${GLOBUS_SH_SED-sed} 's%^subject= %%'`
 
 eval set -- "$toprint"
 for i in "$@"; do
