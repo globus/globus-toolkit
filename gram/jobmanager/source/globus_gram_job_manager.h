@@ -330,6 +330,7 @@ typedef struct
     int					read_ttl;
 
     char *				remote_io_url;
+    char *				remote_io_url_file;
 
     globus_bool_t			kerberos;
     char *				x509_user_proxy;
@@ -355,12 +356,14 @@ typedef struct
     globus_callback_handle_t		two_phase_commit_timer;
     globus_callback_handle_t		poll_timer;
     globus_callback_handle_t		proxy_expiration_timer;
+    globus_callback_handle_t		reporting_file_cleanup_timer;
     char *				url_base;
     char *				job_contact;
     gss_ctx_id_t			response_context;
     globus_fifo_t			pending_queries;
     globus_bool_t			publish_jobs;
-    char *				job_status_file;
+    char *				job_reporting_dir;
+    char *				job_reporting_file;
 }
 globus_gram_jobmanager_request_t;
 
@@ -383,6 +386,33 @@ globus_gram_job_manager_request_log(
     globus_gram_jobmanager_request_t *	request,
     const char *			format,
     ...);
+
+/* globus_gram_job_manager_remote_io_file.c */
+
+int
+globus_gram_job_manager_remote_io_file_create(
+    globus_gram_jobmanager_request_t *	request);
+
+/* globus_gram_job_manager_reporting_file.c */
+int
+globus_gram_job_manager_reporting_file_set(
+    globus_gram_jobmanager_request_t *	request);
+
+int
+globus_gram_job_manager_reporting_file_create(
+    globus_gram_jobmanager_request_t *	request);
+
+int
+globus_gram_job_manager_reporting_file_remove(
+    globus_gram_jobmanager_request_t *	request);
+
+int
+globus_gram_job_manager_reporting_file_start_cleaner(
+    globus_gram_jobmanager_request_t *	request);
+
+int
+globus_gram_job_manager_reporting_file_stop_cleaner(
+    globus_gram_jobmanager_request_t *	request);
 
 /* globus_gram_job_manager_validate.c */
 
@@ -586,6 +616,18 @@ int
 globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
     globus_gram_jobmanager_request_t *	request);
 
+int
+globus_gram_job_manager_rsl_parse_value(
+    globus_gram_jobmanager_request_t *	request,
+    char *				value_string,
+    globus_rsl_value_t **		rsl_value);
+
+int
+globus_gram_job_manager_rsl_evaluate_value(
+    globus_gram_jobmanager_request_t *	request,
+    globus_rsl_value_t *		value,
+    char **				value_string);
+
 /* globus_gram_job_manager_state_file.c */
 void
 globus_gram_job_manager_state_file_set(
@@ -608,7 +650,8 @@ globus_gram_job_manager_state_file_register_update(
 /* globus_gram_job_manager_script.c */
 int 
 globus_gram_job_manager_script_make_scratchdir(
-    globus_gram_jobmanager_request_t *	request);
+    globus_gram_jobmanager_request_t *	request,
+    const char *			scratch_dir);
 int 
 globus_gram_job_manager_script_stage_in(
     globus_gram_jobmanager_request_t *	request);

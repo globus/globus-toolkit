@@ -85,8 +85,6 @@ main(
         globus_l_jobmanager_fault_callback,
         GLOBUS_NULL);
 
-    request->job_status_file_path[0] = '\0';
-
     /* if -conf is passed then get the arguments from the file
      * specified
      */
@@ -146,6 +144,7 @@ main(
     }
 
     globus_mutex_lock(&request->mutex);
+
     globus_symboltable_init(&request->symbol_table,
                             globus_hashtable_string_hash,
                             globus_hashtable_string_keyeq);
@@ -196,9 +195,14 @@ main(
         {
             request->jobmanager_type = globus_libc_strdup(argv[++i]);
         }
+	else if((strcmp(argv[i], "-job-reporting-dir") == 0)
+		&& (i + 1 < argc))
+	{
+	    request->job_reporting_dir = globus_libc_strdup(argv[++i]);
+	}
         else if (strcmp(argv[i], "-publish-jobs") == 0)
         {
-            request->publish_jobs_flag = GLOBUS_TRUE;
+            request->publish_jobs = GLOBUS_TRUE;
         }
         else if (strcmp(argv[i], "-publish-users") == 0)
         {

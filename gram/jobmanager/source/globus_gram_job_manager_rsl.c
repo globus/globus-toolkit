@@ -748,6 +748,66 @@ globus_gram_job_manager_rsl_eval_one_attribute(
 }
 /* globus_gram_job_manager_eval_one_attribute() */
 
+int
+globus_gram_job_manager_rsl_parse_value(
+    globus_gram_jobmanager_request_t *	request,
+    char *				value_string,
+    globus_rsl_value_t **		rsl_value)
+{
+    char *				rsl_spec = NULL;
+    char *				format = "x = %s\n";
+    globus_rsl_t *			rsl;
+    globus_rsl_value_t *		values;
+
+    globus_gram_job_manager_request_log(
+	    request,
+	    "JM: Parsing value string %s to rsl_value_t *\n",
+	    value_string);
+
+    rsl_spec = globus_libc_malloc(strlen(format) + strlen(value_string) + 1);
+    sprintf(rsl_spec, format, value_string);
+    rsl = globus_rsl_parse(rsl_spec);
+
+    values = globus_list_first(
+	    globus_rsl_value_sequence_get_value_list(
+		globus_rsl_relation_get_value_sequence(rsl)));
+    *rsl_value = globus_rsl_value_copy_recursive(values);
+    globus_rsl_free_recursive(rsl);
+    globus_libc_free(rsl_spec);
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_gram_job_manager_rsl_parse_value() */
+
+int
+globus_gram_job_manager_rsl_evaluate_value(
+    globus_gram_jobmanager_request_t *	request,
+    globus_rsl_value_t *		value,
+    char **				value_string)
+{
+    globus_rsl_value_t *		copy;
+
+    *value_string = NULL;
+
+    globus_gram_job_manager_request_log(
+	    request,
+	    "JM: Evaluating RSL Value");
+
+    copy = globus_rsl_value_copy_recursive(value);
+
+    globus_rsl_value_eval(copy, &request->symbol_table, value_string, 0);
+
+    globus_rsl_value_free_recursive(copy);
+
+    globus_gram_job_manager_request_log(
+	    request,
+	    "JM: Evaluated RSL Value to %s",
+	    *value_string);
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_gram_job_manager_rsl_evaluate_value() */
+
 /**
  * Create duct control handler.
  *

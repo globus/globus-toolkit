@@ -40,6 +40,11 @@ globus_l_gram_job_manager_set_restart_state(
 
 static
 int
+globus_l_gram_job_manager_state_eval_scratch_dir_base(
+    globus_gram_jobmanager_request_t *	request);
+
+static
+int
 globus_l_gram_job_manager_reply(
     globus_gram_jobmanager_request_t *	request);
 
@@ -238,12 +243,6 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
 	    }
 	}
-	if(! request->scratch_dir_base)
-	{
-	    request->scratch_dir_base = globus_libc_strdup(request->home);
-	}
-
-
 	if(!request->rsl_spec)
 	{
 	    rc = globus_gram_job_manager_import_sec_context(request);
@@ -342,6 +341,15 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+	if(request->scratch_dir_base)
+	{
+	    globus_l_gram_job_manager_state_eval_scratch_dir_base(request);
+	}
+	else
+	{
+	    request->scratch_dir_base = globus_libc_strdup(request->home);
+	}
+
 	rc = globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
 		request);
 	if(rc != GLOBUS_SUCCESS)
@@ -376,6 +384,9 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+
+	globus_gram_job_manager_reporting_file_set(request);
+
 	globus_libc_setenv("GLOBUS_GRAM_JOB_CONTACT",
 		           request->job_contact,
 			   1);
@@ -459,6 +470,7 @@ globus_gram_job_manager_state_machine(
 		request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    }
+	    globus_gram_job_manager_reporting_file_set(request);
 	    break;
 	}
 	request->jobmanager_state =
@@ -522,10 +534,28 @@ globus_gram_job_manager_state_machine(
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR;
 
+	globus_gram_job_manager_reporting_file_start_cleaner(request);
+
 	if(globus_gram_job_manager_rsl_need_scratchdir(request) &&
 		!request->scratchdir)
 	{
-	    rc = globus_gram_job_manager_script_make_scratchdir(request);
+	    rc = globus_gram_job_manager_rsl_eval_one_attribute(
+		    request,
+		    GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM,
+		    &tmp_str);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		request->failure_code = rc;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		break;
+	    }
+
+	    rc = globus_gram_job_manager_script_make_scratchdir(
+		    request,
+		    tmp_str);
+
+	    globus_libc_free(tmp_str);
 
 	    if(rc != GLOBUS_SUCCESS)
 	    {
@@ -547,6 +577,12 @@ globus_gram_job_manager_state_machine(
 		&request->symbol_table,
 		"SCRATCH_DIRECTORY",
 		request->scratchdir);
+	}
+	else if(globus_gram_job_manager_rsl_need_scratchdir(request))
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    break;
 	}
 
 	rc = globus_rsl_eval(request->rsl, &request->symbol_table);
@@ -592,15 +628,19 @@ globus_gram_job_manager_state_machine(
 	    break;
 	}
 	
-	/*
 	if(request->remote_io_url)
 	{
-	    rc = globus_l_gram_job_manager_create_remote_io_file(
-	    	request,
-		request->remote_io_url,
-		request->cache_tag);
+	    rc = globus_gram_job_manager_remote_io_file_create(request);
+
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		request->failure_code = rc;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		break;
+	    }
+		
 	}
-	*/
 
 	/*
 	 * Append some values from the configuration file to the
@@ -638,6 +678,13 @@ globus_gram_job_manager_state_machine(
 		request->rsl,
 		"GLOBUS_TCP_PORT_RANGE",
 		request->tcp_port_range);
+	}
+	if(request->remote_io_url_file)
+	{
+	    globus_gram_job_manager_rsl_env_add(
+		request->rsl,
+		"GLOBUS_REMOTE_IO_URL",
+		request->remote_io_url_file);
 	}
 
 	/* Determine local cache file names */
@@ -708,11 +755,6 @@ globus_gram_job_manager_state_machine(
 	     */
 	    rc = globus_gram_job_manager_register_proxy_timeout(request);
 	}
-#if 0
-	/* Save the final RSL specification in the request */
-	globus_libc_free(request->rsl_spec);
-	request->rsl_spec = globus_rsl_unparse(request->rsl);
-#endif
 
 	if(request->save_state)
 	{
@@ -856,6 +898,8 @@ globus_gram_job_manager_state_machine(
 	}
 	else
 	{
+	    globus_gram_job_manager_reporting_file_create(request);
+
 	    if(request->save_state)
 	    {
 		globus_gram_job_manager_state_file_write(request);
@@ -869,6 +913,7 @@ globus_gram_job_manager_state_machine(
 	if(request->unsent_status_change && request->save_state)
 	{
 	    globus_gram_job_manager_state_file_write(request);
+	    globus_gram_job_manager_reporting_file_create(request);
 	}
 	if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
 	{
@@ -1177,6 +1222,7 @@ globus_gram_job_manager_state_machine(
 	    request->jobmanager_state = 
 		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
 	    globus_cond_signal(&request->cond);
+	    globus_gram_job_manager_reporting_file_stop_cleaner(request);
 	    event_registered = GLOBUS_TRUE;
 	}
 	else
@@ -1291,6 +1337,7 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE)
 	{
 	    globus_cond_signal(&request->cond);
+	    globus_gram_job_manager_reporting_file_stop_cleaner(request);
 	    event_registered = GLOBUS_TRUE;
 	}
 
@@ -1312,6 +1359,7 @@ globus_gram_job_manager_state_machine(
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
 
 	globus_cond_signal(&request->cond);
+	globus_gram_job_manager_reporting_file_stop_cleaner(request);
 	event_registered = GLOBUS_TRUE;
 	break;
 
@@ -1321,6 +1369,7 @@ globus_gram_job_manager_state_machine(
 	    remove(request->job_state_file);
 	}
 	globus_cond_signal(&request->cond);
+	globus_gram_job_manager_reporting_file_stop_cleaner(request);
 	event_registered = GLOBUS_TRUE;
 	break;
 
@@ -1332,6 +1381,7 @@ globus_gram_job_manager_state_machine(
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
 	globus_l_gram_job_manager_reply(request);
 	globus_cond_signal(&request->cond);
+	globus_gram_job_manager_reporting_file_stop_cleaner(request);
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
@@ -1753,6 +1803,45 @@ globus_l_gram_job_manager_set_restart_state(
     return changed;
 }
 /* globus_l_gram_job_manager_set_restart_state() */
+
+static
+int
+globus_l_gram_job_manager_state_eval_scratch_dir_base(
+    globus_gram_jobmanager_request_t *	request)
+{
+    globus_rsl_value_t *		value;
+    char *				value_string;
+    int					rc;
+
+    rc = globus_gram_job_manager_rsl_parse_value(
+	    request,
+	    request->scratch_dir_base,
+	    &value);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	goto parse_failed;
+    }
+
+    rc = globus_gram_job_manager_rsl_evaluate_value(
+	    request,
+	    value,
+	    &value_string);
+    if(rc != GLOBUS_SUCCESS || value_string == NULL)
+    {
+	goto eval_failed;
+    }
+
+    globus_libc_free(request->scratch_dir_base);
+
+    request->scratch_dir_base = value_string;
+
+eval_failed:
+    globus_rsl_value_free_recursive(value);
+parse_failed:
+
+    return rc;
+}
+/* globus_l_gram_job_manager_state_eval_scratch_dir_base() */
 
 #ifdef BUILD_DEBUG
 static

@@ -219,7 +219,7 @@ docleanup=false
 startnew=false
 host=`${bindir}/globus-hostname`
 file_location="$HOME/.globus"
-file_prefix=".personal-gatekeeper.$host"
+file_prefix="personal-gatekeeper.$host"
 
 while [ -n "$1" ]; do
     case "$1" in

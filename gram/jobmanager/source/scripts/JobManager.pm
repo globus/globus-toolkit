@@ -179,6 +179,8 @@ sub make_scratchdir
     my $created = 0;
     my $tmpnam;
     my $dirname;
+    my $scratch_prefix;
+    my $scratch_suffix;
     my @acceptable=split(//, "abcdefghijklmnopqrstuvwxyz".
                              "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
 			     "0123456789");
@@ -189,6 +191,20 @@ sub make_scratchdir
         "Entering Job Manager default implementation of make_scratchdir");
 
     $scratch_prefix = $description->scratch_dir_base();
+    $scratch_suffix = $description->scratch_dir();
+
+    if($scratch_suffix =~ m,^/,,)
+    {
+	$scratch_prefix = $scratch_suffix;
+    }
+    elsif ($scratch_suffix !~ m,/$,,)
+    {
+	$scratch_prefix .= "/$scratch_suffix";
+    }
+    else
+    {
+	$scratch_prefix .= $scratch_suffix;
+    }
 
     if(! -w $scratch_prefix)
     {

@@ -745,7 +745,8 @@ globus_gram_job_manager_script_signal(
 
 int 
 globus_gram_job_manager_script_make_scratchdir(
-    globus_gram_jobmanager_request_t *	request)
+    globus_gram_jobmanager_request_t *	request,
+    const char *			scratch_dir)
 {
     char *				script_cmd = "make_scratchdir";
     int					rc;
@@ -773,8 +774,12 @@ globus_gram_job_manager_script_make_scratchdir(
 	    request->scratch_dir_base);
 
     fprintf(script_arg_fp,
-	    "$description = { scratchdirbase => [ '%s' ] };\n",
-	    scratch_dir_base);
+	    "$description = { "
+	    "    scratchdirbase => [ '%s' ],"
+	    "    scratchdir => [ '%s' ]"
+	    "};\n",
+	    scratch_dir_base,
+	    scratch_dir);
 
     globus_libc_free(scratch_dir_base);
 
@@ -819,7 +824,7 @@ globus_gram_job_manager_script_rm_scratchdir(
         return(GLOBUS_FAILURE);
 
     if (!request->scratchdir)
-	return(GLOBUS_SUCCESS);
+	return(GLOBUS_FAILURE);
 
     if ((script_arg_fp = fopen(script_arg_file, "w")) == NULL)
     {
@@ -1140,7 +1145,6 @@ globus_l_gram_job_manager_default_done(
 	    {
 		request->failure_code = script_status;
 	    }
-	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
 	    request->unsent_status_change = GLOBUS_TRUE;
 	}
     }

@@ -32,17 +32,6 @@ globus_l_gram_job_manager_staging_match(
     void *				arg);
 
 static
-char *
-globus_l_gram_job_manager_staging_evaluate_url(
-    globus_gram_jobmanager_request_t *	request,
-    globus_rsl_value_t *		url);
-
-static
-globus_rsl_value_t *
-globus_l_gram_job_manager_staging_parse_value(
-    char *				buffer);
-
-static
 void
 globus_l_gram_job_manager_staging_free_all(
     globus_gram_jobmanager_request_t *	request);
@@ -267,19 +256,19 @@ globus_gram_job_manager_staging_read_state(
         info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN;
 
 	fscanf(fp, "%[^\n]%*c", buffer);
-	info->from = globus_l_gram_job_manager_staging_parse_value(buffer);
+	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
 
 	fscanf(fp, "%[^\n]%*c", buffer);
-	info->to = globus_l_gram_job_manager_staging_parse_value(buffer);
+	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
 
-	info->evaled_from = 
-	    globus_l_gram_job_manager_staging_evaluate_url(
-		    request,
-		    info->from);
-	info->evaled_to = 
-	    globus_l_gram_job_manager_staging_evaluate_url(
-		    request,
-		    info->to);
+	globus_gram_job_manager_rsl_evaluate_value(
+		request,
+		info->from,
+		&info->evaled_from);
+	globus_gram_job_manager_rsl_evaluate_value(
+		request,
+		info->to,
+		&info->evaled_to);
 
         globus_list_insert(&request->stage_in_todo, info);
     }
@@ -294,19 +283,19 @@ globus_gram_job_manager_staging_read_state(
         info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED;
 
 	fscanf(fp, "%[^\n]%*c", buffer);
-	info->from = globus_l_gram_job_manager_staging_parse_value(buffer);
+	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
 
 	fscanf(fp, "%[^\n]%*c", buffer);
-	info->to = globus_l_gram_job_manager_staging_parse_value(buffer);
+	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
 
-	info->evaled_from = 
-	    globus_l_gram_job_manager_staging_evaluate_url(
-		    request,
-		    info->from);
-	info->evaled_to = 
-	    globus_l_gram_job_manager_staging_evaluate_url(
-		    request,
-		    info->to);
+	globus_gram_job_manager_rsl_evaluate_value(
+		request,
+		info->from,
+		&info->evaled_from);
+	globus_gram_job_manager_rsl_evaluate_value(
+		request,
+		info->to,
+		&info->evaled_to);
 
         globus_list_insert(&request->stage_in_shared_todo, info);
     }
@@ -321,19 +310,19 @@ globus_gram_job_manager_staging_read_state(
 	info->type = GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT;
 
 	fscanf(fp, "%[^\n]%*c", buffer);
-	info->from = globus_l_gram_job_manager_staging_parse_value(buffer);
+	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->from);
 
 	fscanf(fp, "%[^\n]%*c", buffer);
-	info->to = globus_l_gram_job_manager_staging_parse_value(buffer);
+	globus_gram_job_manager_rsl_parse_value(request, buffer, &info->to);
 
-	info->evaled_from = 
-	    globus_l_gram_job_manager_staging_evaluate_url(
-		    request,
-		    info->from);
-	info->evaled_to = 
-	    globus_l_gram_job_manager_staging_evaluate_url(
-		    request,
-		    info->to);
+	globus_gram_job_manager_rsl_evaluate_value(
+		request,
+		info->from,
+		&info->evaled_from);
+	globus_gram_job_manager_rsl_evaluate_value(
+		request,
+		info->to,
+		&info->evaled_to);
 
         globus_list_insert(&request->stage_out_todo, info);
     }
@@ -362,15 +351,20 @@ globus_l_gram_job_manager_staging_add_pair(
 	goto info_calloc_failed;
     }
 
-    info->evaled_from = 
-	globus_l_gram_job_manager_staging_evaluate_url(request, from);
+    globus_gram_job_manager_rsl_evaluate_value(
+	    request,
+	    info->from,
+	    &info->evaled_from);
+
     if(!info->evaled_from)
     {
 	rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
 	goto eval_from_failed;
     }
-    info->evaled_to = 
-	globus_l_gram_job_manager_staging_evaluate_url(request, to);
+    globus_gram_job_manager_rsl_evaluate_value(
+	    request,
+	    info->to,
+	    &info->evaled_to);
 
     if(!info->evaled_to)
     {
@@ -440,63 +434,6 @@ globus_l_gram_job_manager_staging_match(
 /* globus_l_gram_job_manager_staging_match() */
 
 static
-char *
-globus_l_gram_job_manager_staging_evaluate_url(
-    globus_gram_jobmanager_request_t *	request,
-    globus_rsl_value_t *		url)
-{
-    char *				value = NULL;
-    globus_rsl_value_t *		copy;
-
-    globus_gram_job_manager_request_log(
-	    request,
-	    "JM: Evaluating URL %s\n",
-	    globus_rsl_value_unparse(url));
-
-    copy = globus_rsl_value_copy_recursive(url);
-
-    globus_rsl_value_eval(copy, &request->symbol_table, &value, 0);
-
-    globus_rsl_value_free_recursive(copy);
-
-    globus_gram_job_manager_request_log(
-	    request,
-	    "JM: Evaluated URL %s to %s\n",
-	    globus_rsl_value_unparse(url),
-	    value);
-
-    return value;
-}
-/* globus_l_gram_job_manager_staging_evaluate_url() */
-
-static
-globus_rsl_value_t *
-globus_l_gram_job_manager_staging_parse_value(
-    char *				buffer)
-{
-    char *				rsl_spec = NULL;
-    char *				format = "x = %s\n";
-    globus_rsl_t *			rsl = NULL;
-    globus_rsl_value_t *		values = NULL;
-    globus_rsl_value_t *		return_value = NULL;
-
-    rsl_spec = globus_libc_malloc(strlen(format) + strlen(buffer) + 1);
-
-    sprintf(rsl_spec, format, buffer);
-    rsl = globus_rsl_parse(rsl_spec);
-
-    values = globus_list_first(
-	    globus_rsl_value_sequence_get_value_list(
-		globus_rsl_relation_get_value_sequence(rsl)));
-    return_value = globus_rsl_value_copy_recursive(values);
-
-    globus_rsl_free_recursive(rsl);
-    globus_libc_free(rsl_spec);
-
-    return return_value;
-}
-/* globus_l_gram_job_manager_staging_parse_value() */
-
 static
 void
 globus_l_gram_job_manager_staging_free_all(
