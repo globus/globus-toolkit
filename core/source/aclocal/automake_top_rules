@@ -1,6 +1,5 @@
 EXTRA_DIST = bootstrap \
-        globus_automake_targets \
-        globus_automake_rules \
-        globus_automake_config \
-        globus_automake_doxygen_rules \
-        globus_automake_top_rules \
+        globus_automake_pre \
+        globus_automake_post \
+        globus_automake_top_pre \
+        globus_automake_top_post
