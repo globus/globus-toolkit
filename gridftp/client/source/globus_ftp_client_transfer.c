@@ -1932,15 +1932,15 @@ globus_ftp_client_partial_get(
     {
         if(restart)
         {
-            globus_ftp_client_restart_marker_copy(restart, &tmp_restart);
+            globus_ftp_client_restart_marker_copy(&tmp_restart, restart);
         }
         else
         {
-            result = globus_ftp_client_restart_marker_init(&tmp_restart);
+            globus_ftp_client_restart_marker_init(&tmp_restart);
         }
         
         if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK ||
-            ((*attr) && 
+            (attr && *attr &&  
             (*attr)->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK))
         {
             globus_ftp_client_restart_marker_insert_range(
@@ -1952,7 +1952,7 @@ globus_ftp_client_partial_get(
             (tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_STREAM && 
             tmp_restart.stream.offset < partial_offset))
         {
-            result = globus_ftp_client_restart_marker_set_offset(
+            globus_ftp_client_restart_marker_set_offset(
                 &tmp_restart,
                 partial_offset);
         }
@@ -3004,15 +3004,15 @@ globus_ftp_client_partial_third_party_transfer(
     {
         if(restart)
         {
-            globus_ftp_client_restart_marker_copy(restart, &tmp_restart);
+            globus_ftp_client_restart_marker_copy(&tmp_restart, restart);
         }
         else
         {
-            result = globus_ftp_client_restart_marker_init(&tmp_restart);
+            globus_ftp_client_restart_marker_init(&tmp_restart);
         }
         
         if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK ||
-            ((*source_attr) && 
+            (source_attr && *source_attr && 
             (*source_attr)->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK))
         {
             globus_ftp_client_restart_marker_insert_range(
@@ -3024,7 +3024,7 @@ globus_ftp_client_partial_third_party_transfer(
             (tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_STREAM && 
             tmp_restart.stream.offset < partial_offset))
         {
-            result = globus_ftp_client_restart_marker_set_offset(
+            globus_ftp_client_restart_marker_set_offset(
                 &tmp_restart,
                 partial_offset);
         }
