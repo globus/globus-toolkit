@@ -196,6 +196,10 @@ globus_l_xio_gsi_attr_cntl(
     OM_uint32 *                         out_flags;
     globus_bool_t *                     out_bool;
     globus_xio_gsi_protection_level_t * out_prot_level;
+    globus_xio_gsi_proxy_mode_t *       out_proxy_mode;
+    globus_xio_gsi_proxy_mode_t         proxy_mode;
+    globus_xio_gsi_delegation_mode_t *  out_delegation_mode;
+    globus_xio_gsi_delegation_mode_t    delegation_mode;
     globus_result_t                     result;
     globus_size_t *                     out_size;
     GlobusXIOName(globus_l_xio_gsi_attr_cntl);
@@ -225,23 +229,76 @@ globus_l_xio_gsi_attr_cntl(
         *out_flags = attr->req_flags;
         break;
         /* allow setting of flags one by one */
-      case GLOBUS_XIO_GSI_SET_ALLOW_LIMITED_PROXY:
-        attr->req_flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
+      case GLOBUS_XIO_GSI_SET_PROXY_MODE:
+        proxy_mode = va_arg(ap, globus_xio_gsi_proxy_mode_t);
+        if(proxy_mode == GLOBUS_XIO_GSI_PROXY_MODE_FULL)
+        {
+            attr->req_flags &= (~GSS_C_GLOBUS_LIMITED_PROXY_FLAG &
+                                ~GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG);
+        }
+        else if(proxy_mode == GLOBUS_XIO_GSI_PROXY_MODE_LIMITED)
+        {
+            attr->req_flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
+            attr->req_flags &= ~GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;
+        }
+        else if(proxy_mode == GLOBUS_XIO_GSI_PROXY_MODE_MANY)
+        {
+            attr->req_flags &= ~GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
+            attr->req_flags |= GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;
+        }
         break;
-      case GLOBUS_XIO_GSI_SET_ALLOW_LIMITED_PROXY_MANY:
-        attr->req_flags |= GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;
+      case GLOBUS_XIO_GSI_GET_PROXY_MODE:
+        out_proxy_mode = va_arg(ap, globus_xio_gsi_proxy_mode_t *);
+        if(attr->req_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG)
+        {
+            *out_proxy_mode = GLOBUS_XIO_GSI_PROXY_MODE_LIMITED;
+        }
+        else if(attr->req_flags & GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG)
+        {
+            *out_proxy_mode = GLOBUS_XIO_GSI_PROXY_MODE_MANY;
+        }
+        else
+        { 
+             *out_proxy_mode = GLOBUS_XIO_GSI_PROXY_MODE_FULL;
+        }
         break;
-      case GLOBUS_XIO_GSI_SET_DELEGATE_LIMITED_PROXY:
-        attr->req_flags |= (GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
-                            GSS_C_DELEG_FLAG);
-        attr->req_flags &= ~GSS_C_GLOBUS_SSL_COMPATIBLE;
-        attr->wrap_tokens = GLOBUS_TRUE;
+      case GLOBUS_XIO_GSI_SET_DELEGATION_MODE:
+        delegation_mode = va_arg(ap, globus_xio_gsi_delegation_mode_t);
+        if(delegation_mode == GLOBUS_XIO_GSI_DELEGATION_MODE_NONE)
+        {
+            attr->req_flags &= (~GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG &
+                                ~GSS_C_DELEG_FLAG);
+        }
+        else if(delegation_mode == GLOBUS_XIO_GSI_DELEGATION_MODE_FULL)
+        { 
+            attr->req_flags |= GSS_C_DELEG_FLAG;
+            attr->req_flags &= ~GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG;
+            attr->req_flags &= ~GSS_C_GLOBUS_SSL_COMPATIBLE;
+            attr->wrap_tokens = GLOBUS_TRUE;
+        }
+        else if(delegation_mode == GLOBUS_XIO_GSI_DELEGATION_MODE_LIMITED)
+        {
+            attr->req_flags |= GSS_C_DELEG_FLAG;
+            attr->req_flags |= GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG;
+            attr->req_flags &= ~GSS_C_GLOBUS_SSL_COMPATIBLE;
+            attr->wrap_tokens = GLOBUS_TRUE;            
+        }
         break;
-      case GLOBUS_XIO_GSI_SET_DELEGATE_FULL_PROXY:
-        attr->req_flags |= GSS_C_DELEG_FLAG;
-        attr->req_flags &= ~(GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
-                             GSS_C_GLOBUS_SSL_COMPATIBLE);
-        attr->wrap_tokens = GLOBUS_TRUE;
+      case GLOBUS_XIO_GSI_GET_DELEGATION_MODE:
+        out_delegation_mode = va_arg(ap, globus_xio_gsi_delegation_mode_t *);
+
+        if(attr->req_flags & GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)
+        {
+            *out_delegation_mode = GLOBUS_XIO_GSI_DELEGATION_MODE_LIMITED;
+        }
+        else if(attr->req_flags & GSS_C_DELEG_FLAG)
+        {
+            *out_delegation_mode = GLOBUS_XIO_GSI_DELEGATION_MODE_FULL;
+        }
+        else
+        {
+            *out_delegation_mode = GLOBUS_XIO_GSI_DELEGATION_MODE_NONE;
+        }
         break;
       case GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE:
         attr->req_flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
