@@ -1,4 +1,4 @@
-/*	$OpenBSD: auth.h,v 1.37 2002/05/13 20:44:58 markus Exp $	*/
+/*	$OpenBSD: auth.h,v 1.39 2002/05/31 11:35:15 markus Exp $	*/
 
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
@@ -43,6 +43,7 @@
 #endif
 
 typedef struct Authctxt Authctxt;
+typedef struct Authmethod Authmethod;
 typedef struct KbdintDevice KbdintDevice;
 
 struct Authctxt {
@@ -70,6 +71,12 @@ struct Authctxt {
 	char		*krb5_ticket_file;
 #endif
 	void *methoddata;
+};
+
+struct Authmethod {
+	char	*name;
+	int	(*userauth)(Authctxt *authctxt);
+	int	*enabled;
 };
 
 /*

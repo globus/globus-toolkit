@@ -74,6 +74,18 @@ static char *delegation_env[] = {
   NULL
 };
 
+Authmethod method_external = {
+	"external-keyx",
+	userauth_external,
+	&options.gss_authentication
+};
+
+Authmethod method_gssapi = {
+	"gssapi",
+	userauth_gssapi,
+	&options.gss_authentication
+};
+
 #ifdef KRB5
 
 #ifdef HEIMDAL

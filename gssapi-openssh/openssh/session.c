@@ -33,7 +33,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: session.c,v 1.134 2002/03/29 18:59:31 markus Exp $");
+RCSID("$OpenBSD: session.c,v 1.138 2002/06/20 23:05:55 markus Exp $");
 
 #include "ssh.h"
 #include "ssh1.h"
@@ -115,6 +115,93 @@ char *aixloginmsg;
 login_cap_t *lc;
 #endif
 
+/* Name and directory of socket for authentication agent forwarding. */
+static char *auth_sock_name = NULL;
+static char *auth_sock_dir = NULL;
+
+/* removes the agent forwarding socket */
+
+static void
+auth_sock_cleanup_proc(void *_pw)
+{
+	struct passwd *pw = _pw;
+
+	if (auth_sock_name != NULL) {
+		temporarily_use_uid(pw);
+		unlink(auth_sock_name);
+		rmdir(auth_sock_dir);
+		auth_sock_name = NULL;
+		restore_uid();
+	}
+}
+
+static int
+auth_input_request_forwarding(struct passwd * pw)
+{
+	Channel *nc;
+	int sock;
+	struct sockaddr_un sunaddr;
+
+	if (auth_sock_name != NULL) {
+		error("authentication forwarding requested twice.");
+		return 0;
+	}
+
+	/* Temporarily drop privileged uid for mkdir/bind. */
+	temporarily_use_uid(pw);
+
+	/* Allocate a buffer for the socket name, and format the name. */
+	auth_sock_name = xmalloc(MAXPATHLEN);
+	auth_sock_dir = xmalloc(MAXPATHLEN);
+	strlcpy(auth_sock_dir, "/tmp/ssh-XXXXXXXX", MAXPATHLEN);
+
+	/* Create private directory for socket */
+	if (mkdtemp(auth_sock_dir) == NULL) {
+		packet_send_debug("Agent forwarding disabled: "
+		    "mkdtemp() failed: %.100s", strerror(errno));
+		restore_uid();
+		xfree(auth_sock_name);
+		xfree(auth_sock_dir);
+		auth_sock_name = NULL;
+		auth_sock_dir = NULL;
+		return 0;
+	}
+	snprintf(auth_sock_name, MAXPATHLEN, "%s/agent.%ld",
+		 auth_sock_dir, (long) getpid());
+
+	/* delete agent socket on fatal() */
+	fatal_add_cleanup(auth_sock_cleanup_proc, pw);
+
+	/* Create the socket. */
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (sock < 0)
+		packet_disconnect("socket: %.100s", strerror(errno));
+
+	/* Bind it to the name. */
+	memset(&sunaddr, 0, sizeof(sunaddr));
+	sunaddr.sun_family = AF_UNIX;
+	strlcpy(sunaddr.sun_path, auth_sock_name, sizeof(sunaddr.sun_path));
+
+	if (bind(sock, (struct sockaddr *) & sunaddr, sizeof(sunaddr)) < 0)
+		packet_disconnect("bind: %.100s", strerror(errno));
+
+	/* Restore the privileged uid. */
+	restore_uid();
+
+	/* Start listening on the socket. */
+	if (listen(sock, 5) < 0)
+		packet_disconnect("listen: %.100s", strerror(errno));
+
+	/* Allocate a channel for the authentication agent socket. */
+	nc = channel_new("auth socket",
+	    SSH_CHANNEL_AUTH_SOCKET, sock, sock, -1,
+	    CHAN_X11_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT,
+	    0, xstrdup("auth socket"), 1);
+	strlcpy(nc->path, auth_sock_name, sizeof(nc->path));
+	return 1;
+}
+
+
 void
 do_authenticated(Authctxt *authctxt)
 {
@@ -145,7 +232,7 @@ do_authenticated(Authctxt *authctxt)
 		do_authenticated1(authctxt);
 
 	/* remove agent socket */
-	if (auth_get_socket_name())
+	if (auth_sock_name != NULL)
 		auth_sock_cleanup_proc(authctxt->pw);
 #ifdef KRB4
 	if (options.kerberos_ticket_cleanup)
@@ -194,6 +281,10 @@ do_authenticated1(Authctxt *authctxt)
 			if (compression_level < 1 || compression_level > 9) {
 				packet_send_debug("Received illegal compression level %d.",
 				    compression_level);
+				break;
+			}
+			if (!options.compression) {
+				debug2("compression disabled");
 				break;
 			}
 			/* Enable compression after we have responded with SUCCESS. */
@@ -352,7 +443,7 @@ do_authenticated1(Authctxt *authctxt)
 void
 do_exec_no_pty(Session *s, const char *command)
 {
-	int pid;
+	pid_t pid;
 
 #ifdef USE_PIPES
 	int pin[2], pout[2], perr[2];
@@ -971,9 +1062,9 @@ do_setup_env(Session *s, const char *shell)
 	copy_environment(fetch_pam_environment(), &env, &envsize);
 #endif /* USE_PAM */
 
-	if (auth_get_socket_name() != NULL)
+	if (auth_sock_name != NULL)
 		child_set_env(&env, &envsize, SSH_AUTHSOCKET_ENV_NAME,
-		    auth_get_socket_name());
+		    auth_sock_name);
 
 	/* read $HOME/.ssh/environment. */
 	if (!options.use_login) {
@@ -1037,7 +1128,7 @@ do_rc_files(Session *s, const char *shell)
 		/* Add authority data to .Xauthority if appropriate. */
 		if (debug_flag) {
 			fprintf(stderr,
-			    "Running %.100s add "
+			    "Running %.500s add "
 			    "%.100s %.100s %.100s\n",
 			    options.xauth_location, s->auth_display,
 			    s->auth_proto, s->auth_data);
@@ -1089,9 +1180,9 @@ do_setusercontext(struct passwd *pw)
 #else /* HAVE_CYGWIN */
 	if (getuid() == 0 || geteuid() == 0) {
 #endif /* HAVE_CYGWIN */
-#ifdef HAVE_GETUSERATTR
-		set_limits_from_userattr(pw->pw_name);
-#endif /* HAVE_GETUSERATTR */
+#ifdef HAVE_SETPCRED
+		setpcred(pw->pw_name);
+#endif /* HAVE_SETPCRED */
 #ifdef HAVE_LOGIN_CAP
 		if (setusercontext(lc, pw, pw->pw_uid,
 		    (LOGIN_SETALL & ~LOGIN_SETPATH)) < 0) {
@@ -1141,9 +1232,9 @@ launch_login(struct passwd *pw, const char *hostname)
 {
 	/* Launch login(1). */
 
-	execl("/usr/bin/login", "login", "-h", hostname,
+	execl(LOGIN_PROGRAM, "login", "-h", hostname,
 #ifdef xxxLOGIN_NEEDS_TERM
-                    (s->term ? s->term : "unknown"),
+		    (s->term ? s->term : "unknown"),
 #endif /* LOGIN_NEEDS_TERM */
 #ifdef LOGIN_NO_ENDOPT
 	    "-p", "-f", pw->pw_name, (char *)NULL);
@@ -1366,12 +1457,12 @@ session_dump(void)
 	int i;
 	for (i = 0; i < MAX_SESSIONS; i++) {
 		Session *s = &sessions[i];
-		debug("dump: used %d session %d %p channel %d pid %d",
+		debug("dump: used %d session %d %p channel %d pid %ld",
 		    s->used,
 		    s->self,
 		    s,
 		    s->chanid,
-		    s->pid);
+		    (long)s->pid);
 	}
 }
 
@@ -1429,13 +1520,13 @@ static Session *
 session_by_pid(pid_t pid)
 {
 	int i;
-	debug("session_by_pid: pid %d", pid);
+	debug("session_by_pid: pid %ld", (long)pid);
 	for (i = 0; i < MAX_SESSIONS; i++) {
 		Session *s = &sessions[i];
 		if (s->used && s->pid == pid)
 			return s;
 	}
-	error("session_by_pid: unknown pid %d", pid);
+	error("session_by_pid: unknown pid %ld", (long)pid);
 	session_dump();
 	return NULL;
 }
@@ -1725,8 +1816,8 @@ session_exit_message(Session *s, int status)
 	if ((c = channel_lookup(s->chanid)) == NULL)
 		fatal("session_exit_message: session %d: no channel %d",
 		    s->self, s->chanid);
-	debug("session_exit_message: session %d channel %d pid %d",
-	    s->self, s->chanid, s->pid);
+	debug("session_exit_message: session %d channel %d pid %ld",
+	    s->self, s->chanid, (long)s->pid);
 
 	if (WIFEXITED(status)) {
 		channel_request_start(s->chanid, "exit-status", 0);
@@ -1765,7 +1856,7 @@ session_exit_message(Session *s, int status)
 void
 session_close(Session *s)
 {
-	debug("session_close: session %d pid %d", s->self, s->pid);
+	debug("session_close: session %d pid %ld", s->self, (long)s->pid);
 	if (s->ttyfd != -1) {
 		fatal_remove_cleanup(session_pty_cleanup, (void *)s);
 		session_pty_cleanup(s);
@@ -1789,7 +1880,8 @@ session_close_by_pid(pid_t pid, int status)
 {
 	Session *s = session_by_pid(pid);
 	if (s == NULL) {
-		debug("session_close_by_pid: no session for pid %d", pid);
+		debug("session_close_by_pid: no session for pid %ld",
+		    (long)pid);
 		return;
 	}
 	if (s->chanid != -1)
@@ -1809,7 +1901,8 @@ session_close_by_channel(int id, void *arg)
 		debug("session_close_by_channel: no session for id %d", id);
 		return;
 	}
-	debug("session_close_by_channel: channel %d child %d", id, s->pid);
+	debug("session_close_by_channel: channel %d child %ld",
+	    id, (long)s->pid);
 	if (s->pid != 0) {
 		debug("session_close_by_channel: channel %d: has child", id);
 		/*
