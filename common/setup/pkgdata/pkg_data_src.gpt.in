@@ -19,11 +19,11 @@
     </Build_Environment>
 
     <Post_Install_Message >
-      You need to run setup_globus_common
+      You need to run setup-globus-common
     </Post_Install_Message>
 
     <Post_Install_Program >
-      globus/setup_globus_common
+      globus/setup-globus-common
     </Post_Install_Program>
 
     <Setup Name="common_setup" >
