@@ -13,6 +13,7 @@
 #include "version.h"
 
 #include <sys/wait.h>
+#include <signal.h>
 
 static globus_cond_t                    globus_l_gfs_cond;
 static globus_mutex_t                   globus_l_gfs_mutex;
