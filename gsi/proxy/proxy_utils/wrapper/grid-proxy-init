@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if echo $@ | grep new >/dev/null 2>&1 ; then
+    ARGS=`echo $@ | sed s/-new//`
+    grid-proxy-init-bin $ARGS
+else
+    grid-proxy-init-bin -old $@
+fi
+
+exit $?
