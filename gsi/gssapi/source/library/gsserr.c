@@ -83,13 +83,18 @@ static ERR_STRING_DATA gsserr_str_reasons[]=
  {GSSERR_R_CLASS_ADD_EXT, "Unable to add Class Add extension"},
  {GSSERR_R_EXPORT_FAIL, "Unable to marshal credential for export"},
  {GSSERR_R_IMPORT_FAIL, "Unable to read credential for import"},
- {GSSERR_R_READ_BIO, "Cannot read from BIO"},
- {GSSERR_R_WRITE_BIO, "Cannot write to BIO"},
+ {GSSERR_R_READ_BIO, "Input Error"},
+ {GSSERR_R_WRITE_BIO, "Output Error"},
  {GSSERR_R_PASSED_NULL_PARAMETER, "NULL was passed as a parameter"},
  {GSSERR_R_UNEXPECTED_FORMAT, "Not in expected Format"},
  {GSSERR_R_BAD_DATE, "Cannot verify message date"},
  {0,NULL},
 };
+
+/* GSSERR_R_PROXY_EXPIRED and PRXYERR_R_CERT_EXPIRE reason strings are
+   defined under PRXYERR_R_PROXY_EXPIRE and PRXYERR_R_CERT_EXPIRE in
+   sslutils.c
+*/
 
 static int ERR_user_lib_gsserr_number;
 

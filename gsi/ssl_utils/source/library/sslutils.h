@@ -161,16 +161,16 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
  * defines for function codes our minor error codes
  * These match strings defined in gsserr.c
  */
-
-#define PRXYERR_F_PROXY_GENREQ		100
-#define PRXYERR_F_PROXY_SIGN 		101      
-#define PRXYERR_F_VERIFY_CB		102         
-#define PRXYERR_F_PROXY_LOAD		103       
-#define PRXYERR_F_PROXY_TMP 		104
-#define PRXYERR_F_INIT_CRED		105
-#define PRXYERR_F_LOCAL_CREATE		106
-#define PRXYERR_F_CB_NO_PW		107
-#define PRXYERR_F_GET_CA_SIGN_PATH	108
+    
+#define PRXYERR_F_PROXY_GENREQ          100
+#define PRXYERR_F_PROXY_SIGN            101      
+#define PRXYERR_F_VERIFY_CB             102         
+#define PRXYERR_F_PROXY_LOAD            103       
+#define PRXYERR_F_PROXY_TMP             104
+#define PRXYERR_F_INIT_CRED             105
+#define PRXYERR_F_LOCAL_CREATE          106
+#define PRXYERR_F_CB_NO_PW              107
+#define PRXYERR_F_GET_CA_SIGN_PATH      108
 
 /* 
  * defines for reasons 
@@ -179,18 +179,18 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
  */
 
 
-#define PRXYERR_R_PROCESS_PROXY_KEY 	101
-#define PRXYERR_R_PROCESS_REQ       	102
-#define PRXYERR_R_PROCESS_SIGN      	103
-#define PRXYERR_R_MALFORM_REQ       	104
-#define PRXYERR_R_SIG_VERIFY        	105
-#define PRXYERR_R_SIG_BAD           	106
-#define PRXYERR_R_PROCESS_PROXY     	107
-#define PRXYERR_R_PROXY_NAME_BAD    	108
-#define PRXYERR_R_PROCESS_SIGNC     	109
-#define PRXYERR_R_BAD_PROXY_ISSUER  	110
+#define PRXYERR_R_PROCESS_PROXY_KEY     101
+#define PRXYERR_R_PROCESS_REQ           102
+#define PRXYERR_R_PROCESS_SIGN          103
+#define PRXYERR_R_MALFORM_REQ           104
+#define PRXYERR_R_SIG_VERIFY            105
+#define PRXYERR_R_SIG_BAD               106
+#define PRXYERR_R_PROCESS_PROXY         107
+#define PRXYERR_R_PROXY_NAME_BAD        108
+#define PRXYERR_R_PROCESS_SIGNC         109
+#define PRXYERR_R_BAD_PROXY_ISSUER      110
 #define PRXYERR_R_PROBLEM_PROXY_FILE    111
-#define PRXYERR_R_SIGN_NOT_CA       	112
+#define PRXYERR_R_SIGN_NOT_CA           112
 #define PRXYERR_R_PROCESS_KEY           113
 #define PRXYERR_R_PROCESS_CERT          114
 #define PRXYERR_R_PROCESS_CERTS         115
@@ -201,26 +201,26 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 #define PRXYERR_R_CERT_EXPIRED          120
 #define PRXYERR_R_CRL_SIGNATURE_FAILURE 121
 #define PRXYERR_R_CRL_NEXT_UPDATE_FIELD 122
-#define PRXYERR_R_CRL_HAS_EXPIRED	123
-#define PRXYERR_R_CERT_REVOKED		124
-#define PRXYERR_R_NO_HOME		125
-#define PRXYERR_R_LPROXY_MISSED_USED	126
-#define PRXYERR_R_LPROXY_REJECTED	127
-#define PRXYERR_R_KEY_CERT_MISMATCH	128
-#define PRXYERR_R_WRONG_PASSPHRASE	129
-#define PRXYERR_R_CA_POLICY	        130
-#define PRXYERR_R_CA_POLICY_RETRIEVE  	131
-#define PRXYERR_R_CA_POLICY_PARSE	132
-#define PRXYERR_R_PROBLEM_CLIENT_CA	133
-#define PRXYERR_R_CB_NO_PW		134
-#define PRXYERR_R_CB_CALLED_WITH_ERROR	135
-#define PRXYERR_R_CLASS_ADD_OID		136
-#define PRXYERR_R_CLASS_ADD_EXT		137
-#define PRXYERR_R_DELEGATE_VERIFY	138
-#define PRXYERR_R_EXT_ADD		139
-#define PRXYERR_R_DELEGATE_COPY		140
-#define PRXYERR_R_DELEGATE_CREATE	141
-#define PRXYERR_R_BUFFER_TOO_SMALL	142
+#define PRXYERR_R_CRL_HAS_EXPIRED       123
+#define PRXYERR_R_CERT_REVOKED          124
+#define PRXYERR_R_NO_HOME               125
+#define PRXYERR_R_LPROXY_MISSED_USED    126
+#define PRXYERR_R_LPROXY_REJECTED       127
+#define PRXYERR_R_KEY_CERT_MISMATCH     128
+#define PRXYERR_R_WRONG_PASSPHRASE      129
+#define PRXYERR_R_CA_POLICY             130
+#define PRXYERR_R_CA_POLICY_RETRIEVE    131
+#define PRXYERR_R_CA_POLICY_PARSE       132
+#define PRXYERR_R_PROBLEM_CLIENT_CA     133
+#define PRXYERR_R_CB_NO_PW              134
+#define PRXYERR_R_CB_CALLED_WITH_ERROR  135
+#define PRXYERR_R_CLASS_ADD_OID         136
+#define PRXYERR_R_CLASS_ADD_EXT         137
+#define PRXYERR_R_DELEGATE_VERIFY       138
+#define PRXYERR_R_EXT_ADD               139
+#define PRXYERR_R_DELEGATE_COPY         140
+#define PRXYERR_R_DELEGATE_CREATE       141
+#define PRXYERR_R_BUFFER_TOO_SMALL      142
 #define PRXYERR_R_PROXY_EXPIRED         143
 
 /* constants for gsi error messages 
@@ -228,10 +228,10 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
  *  proxy_cred_desc structure
  */
 
-#define CRED_TYPE_PERMANENT                     0
-#define CRED_TYPE_PROXY                         1
-#define CRED_OWNER_USER                         0  
-#define CRED_OWNER_SERVER                       1 
+#define CRED_TYPE_PERMANENT             0
+#define CRED_TYPE_PROXY                 1
+#define CRED_OWNER_USER                 0  
+#define CRED_OWNER_SERVER               1 
 
 
 

@@ -50,35 +50,35 @@ CVS Information:
  * These match strings defined in gsserr.c
  */
 
-#define GSSERR_F_ACCEPT_SEC			100
-#define GSSERR_F_ACQUIRE_CRED		101
-#define GSSERR_F_COMPARE_NAME		102
-#define GSSERR_F_DELETE_SEC			103
-#define GSSERR_F_EXPORT_NAME		104
-#define GSSERR_F_GLOBUSFILE			105
-#define GSSERR_F_IMPORT_NAME		106
-#define GSSERR_F_INIT_SEC			107
-#define GSSERR_F_RELEASE_BUFFER		108
-#define GSSERR_F_RELEASE_CRED		109
-#define GSSERR_F_RELEASE_NAME		110
+#define GSSERR_F_ACCEPT_SEC            100
+#define GSSERR_F_ACQUIRE_CRED          101
+#define GSSERR_F_COMPARE_NAME          102
+#define GSSERR_F_DELETE_SEC            103
+#define GSSERR_F_EXPORT_NAME           104
+#define GSSERR_F_GLOBUSFILE            105
+#define GSSERR_F_IMPORT_NAME           106
+#define GSSERR_F_INIT_SEC              107
+#define GSSERR_F_RELEASE_BUFFER        108
+#define GSSERR_F_RELEASE_CRED          109
+#define GSSERR_F_RELEASE_NAME          110
  /* In gssutil.c: */
-#define GSSERR_F_NAME_TO_NAME		111
-#define GSSERR_F_CREATE_FILL		112
-#define GSSERR_F_GS_HANDSHAKE		113
-#define GSSERR_F_GS_RETRIVE_PEER	114	
+#define GSSERR_F_NAME_TO_NAME          111
+#define GSSERR_F_CREATE_FILL           112
+#define GSSERR_F_GS_HANDSHAKE          113
+#define GSSERR_F_GS_RETRIVE_PEER       114    
 
-#define GSSERR_F_WRAP				115
-#define GSSERR_F_UNWRAP				116
-#define GSSERR_F_GET_MIC			117
-#define GSSERR_F_VERIFY_MIC			118
+#define GSSERR_F_WRAP                  115
+#define GSSERR_F_UNWRAP                116
+#define GSSERR_F_GET_MIC               117
+#define GSSERR_F_VERIFY_MIC            118
 
-#define GSSERR_F_IMPORT_SEC			119
-#define GSSERR_F_EXPORT_SEC			120
+#define GSSERR_F_IMPORT_SEC            119
+#define GSSERR_F_EXPORT_SEC            120
 
-#define GSSERR_F_IMPORT_CRED		121
-#define GSSERR_F_EXPORT_CRED		122
-#define GSSERR_F_READ			123
-#define GSSERR_F_WRITE			124
+#define GSSERR_F_IMPORT_CRED           121
+#define GSSERR_F_EXPORT_CRED           122
+#define GSSERR_F_READ                  123
+#define GSSERR_F_WRITE                 124
 
 /* 
  * defines for reasons 
@@ -86,27 +86,27 @@ CVS Information:
  * These are also used for the minor_status codes 
  */
 
-#define GSSERR_R_HANDSHAKE			100
-#define GSSERR_R_NO_GLOBUSID       	 	101
-#define GSSERR_R_PROCESS_CERT      	 	102
-#define GSSERR_R_MUTUAL_AUTH			103
-#define GSSERR_R_WRAP_BIO			104
-#define GSSERR_R_PROXY_VIOLATION		105
-#define GSSERR_R_PROXY_NOT_RECEIVED		106
-#define GSSERR_R_IMPEXP_BAD_PARMS  		107
-#define GSSERR_R_IMPEXP_BIO_SSL	  		108
-#define GSSERR_R_IMPEXP_NO_CIPHER 		109
-#define GSSERR_R_IMPEXP_BAD_LEN			110
-#define GSSERR_R_CLASS_ADD_EXT			111
-#define GSSERR_R_EXPORT_FAIL 			112
-#define GSSERR_R_IMPORT_FAIL			113
-#define GSSERR_R_READ_BIO			114
-#define GSSERR_R_WRITE_BIO			115
-#define GSSERR_R_PASSED_NULL_PARAMETER		116
-#define GSSERR_R_UNEXPECTED_FORMAT		117
-#define GSSERR_R_PROXY_EXPIRED                  118  /* No reason string defined see PRXYERR_R_PROXY_EXPIRE*/
-#define GSSERR_R_CERT_EXPIRED                   119  /* No reason string defined see PRXYERR_R_CERT_EXPIRE*/
-#define GSSERR_R_BAD_DATE			120
+#define GSSERR_R_HANDSHAKE             100
+#define GSSERR_R_NO_GLOBUSID           101
+#define GSSERR_R_PROCESS_CERT          102
+#define GSSERR_R_MUTUAL_AUTH           103
+#define GSSERR_R_WRAP_BIO              104
+#define GSSERR_R_PROXY_VIOLATION       105
+#define GSSERR_R_PROXY_NOT_RECEIVED    106
+#define GSSERR_R_IMPEXP_BAD_PARMS      107
+#define GSSERR_R_IMPEXP_BIO_SSL        108
+#define GSSERR_R_IMPEXP_NO_CIPHER      109
+#define GSSERR_R_IMPEXP_BAD_LEN        110
+#define GSSERR_R_CLASS_ADD_EXT         111
+#define GSSERR_R_EXPORT_FAIL           112
+#define GSSERR_R_IMPORT_FAIL           113
+#define GSSERR_R_READ_BIO              114
+#define GSSERR_R_WRITE_BIO             115
+#define GSSERR_R_PASSED_NULL_PARAMETER 116
+#define GSSERR_R_UNEXPECTED_FORMAT     117
+#define GSSERR_R_PROXY_EXPIRED         118  
+#define GSSERR_R_CERT_EXPIRED          119  
+#define GSSERR_R_BAD_DATE              120
 /*
  * we need to distinguish between a token
  * created by us using get_mic vs one using
