@@ -509,6 +509,11 @@ main(
                 proxy_out_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
+
+        if(proxy_out_filename)
+        {
+            free(proxy_out_filename);
+        }
         
         proxy_out_filename = proxy_absolute_path;
 
@@ -531,13 +536,7 @@ main(
             }
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
-        
-        if(proxy_absolute_path)
-        {
-            free(proxy_absolute_path);
-            proxy_absolute_path = NULL;
-        }
-        
+                
         result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(temp_dir, &file_status);
         if(result != GLOBUS_SUCCESS ||
            file_status != GLOBUS_FILE_DIR)
