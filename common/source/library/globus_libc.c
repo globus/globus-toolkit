@@ -2264,11 +2264,19 @@ globus_libc_readdir_r(DIR *dirp,
 
 #       if defined(GLOBUS_HAVE_READDIR_R_3)
 	{
+	    int rc = 0;
 	    struct dirent *entry = globus_malloc(sizeof(struct dirent)
 						 + MAXPATHLEN
 						 + 1);
 	    
-	    return readdir_r(dirp, entry, result);
+	    rc = readdir_r(dirp, entry, result);
+
+            if(rc != 0)
+            { 
+		globus_free(entry);
+		*result = GLOBUS_NULL;
+		return rc;
+            }
 	}
 #       elif defined(GLOBUS_HAVE_READDIR_R_2)
 	{
