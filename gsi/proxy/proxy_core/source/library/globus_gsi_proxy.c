@@ -240,7 +240,6 @@ globus_gsi_proxy_create_req(
 
  free_extensions:
     sk_X509_EXTENSION_pop_free(extensions, X509_EXTENSION_free);
-    sk_X509_EXTENSION_free(extensions);
  free_pci_ext:
     X509_EXTENSION_free(pci_ext);
  free_pci_string:
@@ -360,7 +359,6 @@ globus_gsi_proxy_inquire_req(
     X509_EXTENSION_free(tmp_ext);
  free_extensions:
     sk_X509_EXTENSION_pop_free(extensions, X509_EXTENSION_free);
-    sk_X509_EXTENSION_free(extensions); 
  free_request:
     X509_REQ_free(request);
  done:
@@ -529,7 +527,6 @@ globus_gsi_proxy_sign_req(
         tmp_ext = NULL;
     }
     sk_X509_EXTENSION_pop_free(pc_req_extensions, X509_EXTENSION_free);
-    sk_X509_EXTENSION_free(pc_req_extensions);
     pc_req_extensions = NULL;
 
     /* sign the new certificate */
@@ -577,7 +574,6 @@ globus_gsi_proxy_sign_req(
     
  free_req_extensions:
     sk_X509_EXTENSION_pop_free(pc_req_extensions, X509_EXTENSION_free);
-    sk_X509_EXTENSION_free(pc_req_extensions);
  free_new_pc:
     X509_free(new_pc); 
  done:  
@@ -744,7 +740,6 @@ globus_gsi_proxy_assemble_cred(
     X509_free(signed_cert);
  free_issuer_certs:
     sk_X509_pop_free(issuer_certs, X509_free);
-    sk_X509_free(issuer_certs); 
  done:
     return result;
 }

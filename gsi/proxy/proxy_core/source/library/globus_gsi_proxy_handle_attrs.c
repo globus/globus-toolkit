@@ -49,11 +49,6 @@ globus_gsi_proxy_handle_attrs_init(
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE_ATTRS);
     }
-    if(*handle_attrs != NULL)
-    {
-        return GLOBUS_GSI_PROXY_ERROR_RESULT(
-            GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE_ATTRS);
-    }
 
     if((*handle_attrs = (globus_gsi_proxy_handle_attrs_t)
        globus_malloc(sizeof(globus_i_gsi_proxy_handle_attrs_t))) == NULL)
@@ -249,7 +244,7 @@ globus_gsi_proxy_handle_attrs_copy(
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE_ATTRS);
     }
-    if(b != NULL)
+    if(b == NULL)
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE_ATTRS);

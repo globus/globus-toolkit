@@ -55,11 +55,6 @@ globus_gsi_proxy_handle_init(
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
-    if(*handle != NULL)
-    {
-        return GLOBUS_GSI_PROXY_ERROR_RESULT(
-            GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE);
-    }
 
     *handle = (globus_gsi_proxy_handle_t) 
         globus_malloc(sizeof(globus_i_gsi_proxy_handle_t));
@@ -81,7 +76,12 @@ globus_gsi_proxy_handle_init(
     }
 
     /* initialize the handle attributes */
-    hand->attrs = handle_attrs;
+    if(globus_gsi_proxy_handle_attrs_copy(handle_attrs, & hand->attrs)
+       != GLOBUS_SUCCESS)
+    {
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
+    }
 
     if((hand->proxy_cert_info = PROXYCERTINFO_new()) == NULL)
     {        
@@ -172,10 +172,10 @@ globus_gsi_proxy_handle_copy(
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
-    if(b != NULL)
+    if(b == NULL)
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
-            GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE);
+            GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
     
     if((result = globus_gsi_proxy_handle_attrs_copy(a->attrs, & b_attrs)) 
@@ -601,7 +601,7 @@ globus_gsi_proxy_handle_set_signing_algorithm(
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
-    handle->signing_algorithm = algorithm;
+    handle->signing_algorithm = EVP_MD_dup(algorithm);
     return GLOBUS_SUCCESS;
 };
 /* @} */
@@ -641,7 +641,7 @@ globus_gsi_proxy_handle_get_signing_algorithm(
             GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
 
-    *algorithm = handle->signing_algorithm;
+    *algorithm = EVP_MD_dup(handle->signing_algorithm);
     return GLOBUS_SUCCESS;
 };
 /* @} */
