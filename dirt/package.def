@@ -50,6 +50,7 @@ globus_gram_job_manager_scripts_setup   gram/jobmanager/setup/scripts   dirt.sh
 globus_gram_myjob               gram/myjob/source               dirt.sh
 globus_gram_protocol            gram/protocol/source            dirt.sh
 globus_gram_protocol_test       gram/protocol/test              dirt.sh
+globus_gram_documentation       gram/documentation              dirt.sh
 globus_gatekeeper               gatekeeper/source               dirt.sh
 globus_gatekeeper_setup         gatekeeper/setup                dirt.sh
 globus_gsi_wuftpd               gridftp/gsi-wuftpd/source       dirt.sh
