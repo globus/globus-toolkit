@@ -73,6 +73,7 @@
 #undef IOV_MAX
 #undef RETSIGTYPE
 #undef HAVE_ATEXIT
+#undef TIME_WITH_SYS_TIME
 
 #undef GLOBUS_OFF_T
 #undef GLOBUS_OFF_T_FORMAT 
