@@ -196,8 +196,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		   verify it. */
 		if ((strcmp(user, "") != 0) ||
 		    ((strcmp(method, "gssapi") != 0) &&
-		     (strcmp(method, "gssapi-with-mic") != 0) &&
-		     (strcmp(method, "external-keyx") != 0))) {
+		     (strcmp(method, "gssapi-with-mic") != 0))) {
 #endif
 		authctxt->pw = PRIVSEP(getpwnamallow(user));
 		authctxt->user = xstrdup(user);
