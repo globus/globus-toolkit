@@ -2,14 +2,14 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
 <gpt_package_metadata Name="myproxy" Format_Version="0.02">
-<Aging_Version Major="1" Minor="10" Age="0"/>
+<Aging_Version Major="1" Minor="11" Age="0"/>
 <VersionLabel>
-0.5.8
+0.5.9 28 Jan 2004
 </VersionLabel>
 <Description>
 MyProxy Online Credential Repository
 </Description>
-<Version_Stability Release="experimental"/>
+<Version_Stability Release="stable"/>
 
 <src_pkg>
 

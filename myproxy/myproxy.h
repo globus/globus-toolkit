@@ -13,8 +13,8 @@
 /* software version constants */
 #define MYPROXY_VERSION_MAJOR 0
 #define MYPROXY_VERSION_MINOR 5
-#define MYPROXY_VERSION_MICRO 8
-#define MYPROXY_VERSION_DATE "v0.5.8 23 Sep 2003"
+#define MYPROXY_VERSION_MICRO 9
+#define MYPROXY_VERSION_DATE "v0.5.9 28 Jan 2004"
 
 #include "myproxy_constants.h"
 #include "myproxy_authorization.h"
