@@ -80,8 +80,17 @@ file2buf(const char   filename[],
          char       **buf);
 
 int
-buffer2file( const char *path,
-             const char *buffer );
+buffer2file( const char *buffer,
+             int         size,
+             int         fd );
+
+int
+write_cert( const char *path,
+            const char *buffer );
+
+int
+write_key( const char *path,
+            const char *buffer );
 
 /*
  * Use setvbuf() instead of setlinebuf() since cygwin doesn't support
@@ -139,8 +148,6 @@ main(int argc, char *argv[])
     } else {
         socket_attrs->psport = MYPROXY_SERVER_PORT;
     }
-
-//    myproxy_set_delegation_defaults(socket_attrs,client_request);
 
     certfile = strdup(MYPROXY_DEFAULT_USERCERT);
     keyfile = strdup(MYPROXY_DEFAULT_USERKEY);
@@ -246,6 +253,25 @@ main(int argc, char *argv[])
     if (myproxy_accept_credentials(socket_attrs, delegfile, sizeof(delegfile),
                                   NULL) < 0) {
         fprintf(stderr, "Error in (myproxy_accept_credentials(): %s\n",
+                verror_get_string());
+        return(1);
+    }
+
+    /* Let the server know the client is done. */
+    client_request->command_type = MYPROXY_CONTINUE;
+
+    /* Serialize client request MYPROXY_CONTINUE */
+    requestlen = myproxy_serialize_request(client_request, request_buffer,
+                                           sizeof(request_buffer));
+    if (requestlen < 0) {
+        fprintf(stderr, "Error in myproxy_serialize_request():\n");
+        return(1);
+    }
+
+    /* Send request to the myproxy-server */
+    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
+        fprintf(stderr, 
+                "Error in sending: MYPROXY_CONTINUE: %s\n",
                 verror_get_string());
         return(1);
     }
@@ -360,11 +386,7 @@ store_credential( char *delegfile,
     char               *input_buffer       = NULL;
     char               *certificate;
     char               *key;
-    char               *certstart, 
-                       *certend, 
-                       *keystart, 
-                       *keyend;
-    int                 size;
+    int                 retval              = -1;
 
 
     certificate = malloc( strlen(creddir) + 1 + strlen(certfile) + 1 );
@@ -379,54 +401,23 @@ store_credential( char *delegfile,
       goto error;
     }
 
-    static char BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
-    static char ENDCERT[] = "-----END CERTIFICATE-----";
-    static char BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
-    static char ENDKEY[] = "-----END RSA PRIVATE KEY-----";
-
-    if ((certstart = strstr(input_buffer, BEGINCERT)) == NULL)
+    if (write_cert(certificate, input_buffer) < 0)
     {
-      fprintf(stderr, "CRED doesn't contain '%s'.\n",  BEGINCERT);
+      fprintf(stderr, "open(%s) failed: %s\n", certificate, strerror(errno));
       goto error;
     }
 
-    if ((certend = strstr(certstart, ENDCERT)) == NULL)
+    if (write_key(key, input_buffer) < 0)
     {
-      fprintf(stderr, "CRED doesn't contain '%s'.\n", ENDCERT);
-      goto error;
-    }
-    certend += strlen(ENDCERT);
-    size = certend-certstart;
-
-    char *newcert = malloc( size+1 );
-    strncpy( newcert, certstart, size );
-    newcert[size] = '\0';
-
-    buffer2file( certificate, newcert );
-
-//     Write the key.
-    if ((keystart = strstr(input_buffer, BEGINKEY)) == NULL)
-    {
-      fprintf(stderr, "CREDKEY doesn't contain '%s'.\n", BEGINKEY);
+      fprintf(stderr, "open(%s) failed: %s\n", key, strerror(errno));
       goto error;
     }
 
-    if ((keyend = strstr(keystart, ENDKEY)) == NULL)
-    {
-      fprintf(stderr, "CREDKEY doesn't contain '%s'.\n", ENDKEY);
-      goto error;
-    }
-    keyend += strlen(ENDKEY);
-    size = keyend-keystart;
-
-    char *newkey = malloc( size+1 );
-    strncpy( newkey, keystart, size );
-    newkey[size] = '\0';
-
-    buffer2file( key, newkey );
-
+    retval = 0;
 error:
-    return(0);
+    if( certificate ) free(certificate);
+    if( key ) free(key);
+    return(retval);
 }
 
 int
@@ -472,10 +463,17 @@ file2buf(const char   filename[],
 }
 
 int
-buffer2file( const char *path,
-             const char *buffer )
+write_cert( const char *path, 
+            const char *buffer )
 {
-    int rval, size, fd = 0;
+    int          fd;
+    static char  BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
+    static char  ENDCERT[]   = "-----END CERTIFICATE-----";
+    char        *certstart,
+                *certend;
+    int          retval      = -1;
+    int          size;
+
 
     /* Open the output file. */
     if ((fd = open(path, O_CREAT | O_EXCL | O_WRONLY,
@@ -485,9 +483,114 @@ buffer2file( const char *path,
       goto error;
     }
 
-    size = strlen( buffer );
+    if ((certstart = strstr(buffer, BEGINCERT)) == NULL)
+    {
+      fprintf(stderr, "CRED doesn't contain '%s'.\n",  BEGINCERT);
+      goto error;
+    }
 
+    if ((certend = strstr(certstart, ENDCERT)) == NULL)
+    {
+      fprintf(stderr, "CRED doesn't contain '%s'.\n", ENDCERT);
+      goto error;
+    }
+    certend += strlen(ENDCERT);
+    size = certend-certstart;
+
+    if( buffer2file( certstart, size, fd ) != 0 )
+    {
+      fprintf(stderr, "Could not write cert to: '%s'.\n", path);
+      goto error;
+    }
+
+    certstart += size;
+
+    while ((certstart = strstr(certstart, BEGINCERT)) != NULL) {
+
+        if ((certend = strstr(certstart, ENDCERT)) == NULL) {
+            fprintf(stderr, "Can't find matching '%s' in %s.\n", ENDCERT,
+                    certfile);
+            goto error;
+        }
+        certend += strlen(ENDCERT);
+        size = certend-certstart;
+
+        buffer2file( certstart, size, fd );
+        certstart += size;
+    }
+
+    retval = 0;
+
+error:
+    if( fd )
+    {
+      close( fd );
+    }
+
+    return( retval );
+}
+
+int
+write_key( const char *path, 
+           const char *buffer )
+{
+    int          fd;
+    static char  BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
+    static char  ENDKEY[]   = "-----END RSA PRIVATE KEY-----";
+    char        *keystart,
+                *keyend;
+    int          retval     = -1;
+    int          size;
+
+
+    /* Open the output file. */
+    if ((fd = open(path, O_CREAT | O_EXCL | O_WRONLY,
+                 S_IRUSR | S_IWUSR)) < 0)
+    {
+      fprintf(stderr, "open(%s) failed: %s\n", path, strerror(errno));
+      goto error;
+    }
+
+//     Write the key.
+    if ((keystart = strstr(buffer, BEGINKEY)) == NULL)
+    {
+      fprintf(stderr, "CREDKEY doesn't contain '%s'.\n", BEGINKEY);
+      goto error;
+    }
+
+    if ((keyend = strstr(keystart, ENDKEY)) == NULL)
+    {
+      fprintf(stderr, "CREDKEY doesn't contain '%s'.\n", ENDKEY);
+      goto error;
+    }
+    keyend += strlen(ENDKEY);
+    size = keyend-keystart;
+
+    if( buffer2file( keystart, size, fd ) != 0 )
+    {
+      fprintf(stderr, "Could not write key to: '%s'.\n", path);
+      goto error;
+    }
+
+    retval = 0;
+
+error:
+    if( fd )
+    {
+      close( fd );
+    }
+
+    return( retval );
+}
+
+int
+buffer2file( const char *buffer,
+             int         size,
+             int         fd )
+{
+    int   rval;
     char *certstart;
+
     certstart = buffer;
 
     while (size)
@@ -495,7 +598,7 @@ buffer2file( const char *path,
       if ((rval = write(fd, certstart, size)) < 0)
       {
           perror("write");
-          goto error;
+          return( -1 );
       }
       size -= rval;
       certstart += rval;
@@ -504,13 +607,7 @@ buffer2file( const char *path,
     if (write(fd, "\n", 1) < 0)
     {
       perror("write");
-      goto error;
-    }
-
-error:
-    if( fd )
-    {
-      close( fd );
+      return(-1);
     }
 
     return( 0 );

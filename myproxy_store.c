@@ -76,7 +76,7 @@ struct option long_options[] = {
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhl:vVdr:R:xXaAk:K:t:c:y:s:";
+static char short_options[] = "uhl:vVd:r:R:xXaAk:K:t:c:y:s:";
 
 static char version[] =
     "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "
@@ -108,7 +108,7 @@ int
 makecertfile(      const char               certfile[],
 	           const char               keyfile[],
 	           const char               creddir[], 
-                   char                   **credbuf);
+                   char                   **credfile);
 
 int 
 grid_proxy_init(   int                      hours, 
@@ -128,9 +128,11 @@ main(int   argc,
     char                    proxyfile[64];
     char                    request_buffer[1024];
     char                   *credkeybuf         = NULL;
+    char                   *tmpfile            = NULL;
     int                     requestlen;
     int                     cred_lifetime;
     int                     cleanup_user_proxy = 0;
+    int                     cleanup_temp_file  = 0;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -172,6 +174,7 @@ main(int   argc,
     sprintf(creddir, "%s/%s", getenv("HOME"), MYPROXY_DEFAULT_DIRECTORY);
 
     /* Initialize client arguments and create client request object */
+
     if (init_arguments(argc, argv, socket_attrs, client_request) != 0) {
         goto cleanup;
     }
@@ -179,7 +182,12 @@ main(int   argc,
     /*
      ** Read Credential and Key files
      */
-    makecertfile(certfile, keyfile, creddir, &credkeybuf);
+    cleanup_temp_file = 1; 
+    if( makecertfile(certfile, keyfile, creddir, &tmpfile) < 0 )
+    {
+      fprintf( stderr, "makecertfile failed\n" );
+      goto cleanup;
+    }
 
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
@@ -284,6 +292,8 @@ main(int   argc,
         goto cleanup;
     }
 
+    file2buf( tmpfile, &credkeybuf );
+
     /* Send end-entity credentials to server. */
     if (myproxy_init_credentials(socket_attrs,
 				 credkeybuf,
@@ -309,15 +319,26 @@ main(int   argc,
         goto cleanup;
     }
     cleanup_user_proxy = 0;
+    /* Delete proxy file */
+    if (grid_proxy_destroy(tmpfile) != 0) {
+        fprintf(stderr, "Failed to remove temporary credential file.\n");
+        goto cleanup;
+    }
+    cleanup_temp_file = 0;
 /*
 **
 */
+
+    printf( "Credentials saved to myproxy server\n" );
 
     return 0;
 
  cleanup:
     if (cleanup_user_proxy) {
         grid_proxy_destroy(proxyfile);
+    }
+    if (cleanup_temp_file) {
+        grid_proxy_destroy(tmpfile);
     }
     return 1;
 }
@@ -346,7 +367,8 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'd':		/* set the credential storage directory */
-	    myproxy_set_storage_dir(gnu_optarg);
+//	    myproxy_set_storage_dir(gnu_optarg);
+            creddir = strdup(gnu_optarg);
 	    break;
 
 	case 'c':		/* credential file name */
@@ -562,19 +584,37 @@ int
 makecertfile(const char   certfile[],
              const char   keyfile[],
 	     const char   creddir[], 
-             char       **credbuf)
+             char       **credfile)
 {
     char *certbuf = NULL;
     char *keybuf  = NULL;
     char *cert    = NULL;
     char *key     = NULL;
     int   retval  = -1;
+    int   fd;
+    int   rval;
 
     cert = malloc(strlen(certfile) + 1 + strlen(creddir) + 1);
     key  = malloc(strlen(keyfile)  + 1 + strlen(creddir) + 1);
 
     sprintf(cert, "%s/%s", creddir, certfile);
     sprintf(key, "%s/%s", creddir, keyfile);
+
+    /* Now store the credentials */
+    char tmpfile[L_tmpnam];
+    if (tmpnam(tmpfile) == NULL)
+    {
+      fprintf(stderr, "tmpnam() failed: %d\n", errno);
+      goto cleanup;
+    }
+
+    /* Open the output file. */
+    if ((fd = open(tmpfile, O_CREAT | O_EXCL | O_WRONLY,
+                   S_IRUSR | S_IWUSR)) < 0) {
+        fprintf(stderr, "open(%s) failed: %s\n", *credfile, strerror(errno));
+        goto cleanup;
+    }
+
 
     /* Read the certificate(s) into a buffer. */
     if (file2buf(cert, &certbuf) < 0) {
@@ -602,8 +642,43 @@ makecertfile(const char   certfile[],
     certend += strlen(ENDCERT);
     size = certend-certstart;
 
-    char *newcert = malloc( size );
-    strncpy( newcert, certstart, size );
+    while (size) {
+        if ((rval = write(fd, certstart, size)) < 0) {
+            perror("write");
+            goto cleanup;
+        }
+        size -= rval;
+        certstart += rval;
+    }
+    if (write(fd, "\n", 1) < 0) {
+        perror("write");
+        goto cleanup;
+    }
+
+    /* Write any remaining certificates. */
+    while ((certstart = strstr(certstart, BEGINCERT)) != NULL) {
+
+        if ((certend = strstr(certstart, ENDCERT)) == NULL) {
+            fprintf(stderr, "Can't find matching '%s' in %s.\n", ENDCERT,
+                    certfile);
+            goto cleanup;
+        }
+        certend += strlen(ENDCERT);
+        size = certend-certstart;
+
+        while (size) {
+            if ((rval = write(fd, certstart, size)) < 0) {
+                perror("write");
+                goto cleanup;
+            }
+            size -= rval;
+            certstart += rval;
+        }
+        if (write(fd, "\n", 1) < 0) {
+            perror("write");
+            goto cleanup;
+        }
+    }
 
     /* Read the key into a buffer. */
     if (file2buf(key, &keybuf) < 0) {
@@ -611,20 +686,32 @@ makecertfile(const char   certfile[],
 	goto cleanup;
     }
 
-    *credbuf = malloc(size + strlen(keybuf) + 1);
-    sprintf(*credbuf, "%s\n%s", newcert, keybuf);
+    char *tmpkey = keybuf;
+    size = strlen(keybuf);
+
+    while (size) {
+        if ((rval = write(fd, tmpkey, size)) < 0) {
+            perror("write");
+            goto cleanup;
+        }
+        size -= rval;
+        tmpkey += rval;
+    }
+    if (write(fd, "\n", 1) < 0) {
+        perror("write");
+        goto cleanup;
+    }
+
+    *credfile = strdup( tmpfile );
 
     retval = 0;
 
   cleanup:
-    if (certbuf)
-	free(certbuf);
-    if (keybuf)
-	free(keybuf);
-    if (cert)
-	free(cert);
-    if (key)
-	free(key);
+    if (certbuf) free(certbuf);
+    if (keybuf) free(keybuf);
+    if (cert) free(cert);
+    if (key) free(key);
+    if (fd) close(fd);
 
     return (retval);
 }

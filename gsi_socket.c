@@ -1410,17 +1410,6 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
       goto error;
     }
 
-    /*
-     * Load proxy we are going to use to sign delegation
-     */
-    creds = ssl_credentials_new();
-
-    if (creds == NULL)
-    {
-      GSI_SOCKET_set_error_from_verror(self);
-      goto error;
-    }
-
     if (passphrase && passphrase[0] == '\0') {
       passphrase = NULL;
     }
@@ -1432,6 +1421,7 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
     {
         goto error;
     }
+    myproxy_debug( "Read credentials" );
 
     /* MAJOR HACK:
        We don't have application-level framing in our protocol.
@@ -1531,6 +1521,7 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
     SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
     unsigned char             *input_buffer       = NULL;
     unsigned char             *output_buffer      = NULL;
+    int                        output_buffer_length;
 
     if (self == NULL)
     {
@@ -1600,12 +1591,13 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
                      int         lifetime,
                      const char *passphrase)
 {
-    int                        return_value       = GSI_SOCKET_ERROR;
-    SSL_CREDENTIALS           *creds              = NULL;
-    SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
-    unsigned char             *input_buffer       = NULL;
-    unsigned char             *output_buffer      = NULL;
-    int                        output_buffer_length;
+    int                          return_value       = GSI_SOCKET_ERROR;
+    SSL_CREDENTIALS             *creds              = NULL;
+    SSL_PROXY_RESTRICTIONS      *proxy_restrictions = NULL;
+    unsigned char               *input_buffer       = NULL;
+    unsigned char               *output_buffer      = NULL;
+    int                          input_buffer_length;
+    int                          output_buffer_length;
 
 
     if (self == NULL)
@@ -1654,12 +1646,27 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
     /*
      * Write the proxy certificate back to user
      */
+    myproxy_debug( "Sending credential" );
     if (GSI_SOCKET_write_buffer(self,
-                              (const char *)output_buffer,
-                              output_buffer_length) == GSI_SOCKET_ERROR)
+                  (const char *)output_buffer,
+                                output_buffer_length) == GSI_SOCKET_ERROR)
     {
       goto error;
     }
+
+    /*
+    ** HACK.  There was a timing problem on some systems with the socket
+    ** closing to fast.  This forces the server to wait until the client
+    ** has read the credential.  This read waits for MYPROXY_CONTINUE -
+    ** which does nothing and means nothing...
+    */ 
+    if (GSI_SOCKET_read_token(self,
+                              &input_buffer,
+                              &input_buffer_length) == GSI_SOCKET_ERROR)
+    {
+        goto error;
+    }
+    myproxy_debug( "Read MYPROXY_CONTINUE" );
 
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;
