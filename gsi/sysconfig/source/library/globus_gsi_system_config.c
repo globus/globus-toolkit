@@ -4901,6 +4901,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
     int                                 file_length;
     char *                              full_filename_path = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_gsi_statcheck_t              status;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_ca_cert_file_unix";
 
@@ -4949,12 +4950,24 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
          * - 9th character is '.'
          * - characters after the '.' are numeric
          */
+
+        if((result = globus_gsi_sysconfig_file_exists_unix(
+                tmp_entry->d_name,
+                &status)) != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES);
+            goto exit;
+        }
+        
         if(file_length >= (X509_HASH_LENGTH + 2) &&
            (*(tmp_entry->d_name + X509_HASH_LENGTH) == '.') &&
            (strspn(tmp_entry->d_name, "0123456789abcdefABCDEF") 
             == X509_HASH_LENGTH) &&
            (strspn((tmp_entry->d_name + (X509_HASH_LENGTH + 1)), 
-                   "0123456789") == (file_length - 9)))
+                   "0123456789") == (file_length - 9)) &&
+           (status == GLOBUS_FILE_VALID))
         {
             full_filename_path = 
                 globus_gsi_cert_utils_create_string(
