@@ -399,11 +399,12 @@ globus_xio_data_descriptor_init(
     globus_mutex_lock(&context->mutex);
     {
         GlobusXIOOperationCreate(op, context);
-        op->ref = 1;
         if(op != NULL)
         {
             op->type = GLOBUS_XIO_OPERATION_TYPE_DD;
             handle->ref++;
+            op->ref = 1;
+            op->user_dd = GLOBUS_TRUE;
         }
         else
         {

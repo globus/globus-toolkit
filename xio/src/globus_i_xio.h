@@ -360,6 +360,8 @@ typedef struct globus_i_xio_op_s
     globus_xio_operation_type_t             type;
     globus_i_xio_op_state_t                 state;
 
+    globus_bool_t                           user_dd;
+
     /*
      * user callbacks.  only 1 will be used per operation
      */
