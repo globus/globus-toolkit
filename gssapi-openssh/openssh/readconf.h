@@ -86,7 +86,8 @@ typedef struct {
 	char   *host_key_alias;	/* hostname alias for .ssh/known_hosts */
 	char   *proxy_command;	/* Proxy command for connecting the host. */
 	char   *user;		/* User to log in as. */
-        int    implicit;
+	int    implicit;	/* Login user was not specified.
+				   Server may choose based on authctxt. */
 	int     escape_char;	/* Escape character; -2 = none */
 
 	char   *system_hostfile;/* Path for /etc/ssh/ssh_known_hosts. */
