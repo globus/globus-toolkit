@@ -24,7 +24,7 @@
     <Build_Instructions>
 
 	    <Build_Step> ant -f impl/java/build.xml dist </Build_Step>
-	    <Build_Step> cp -Rp impl/java/build/ogsa-3.0.2/* $GLOBUS_LOCATION </Build_Step>
+	    <Build_Step> cp -Rp impl/java/build/ogsa-*/* $GLOBUS_LOCATION </Build_Step>
 
     </Build_Instructions>
 
