@@ -2446,6 +2446,10 @@ globus_l_ftp_control_read_command_cb(
             cc_handle->cb_count--;
             call_close_cb = GLOBUS_TRUE; 
         }
+	else if(code == GLOBUS_FTP_CONTROL_COMMAND_QUIT)
+	{
+            cc_handle->cb_count--;
+	}
     }
     globus_mutex_unlock(&(cc_handle->mutex));
     
