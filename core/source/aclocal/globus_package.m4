@@ -74,6 +74,12 @@ if test "x$GLOBUS_FLAVOR_NAME" != "xnoflavor" ; then
 	. $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 fi
 
+if test "x$GPT_LINKTYPE" = "xstatic"; then
+	if test -z $STATIC_LDFLAGS; then 
+		STATIC_LDFLAGS=" -all-static "
+	fi
+	LDFLAGS="$STATIC_LDFLAGS $LDFLAGS "	
+fi
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
 
@@ -83,6 +89,7 @@ AC_SUBST(CFLAGS)
 AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
 AC_SUBST(LIBS)
+AC_SUBST(STATIC_LDFLAGS)
 AC_SUBST(CXX)
 AC_SUBST(CXXCPP)
 AC_SUBST(CXXFLAGS)
