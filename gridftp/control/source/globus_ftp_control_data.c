@@ -7068,7 +7068,7 @@ globus_ftp_control_data_force_close(
             err = globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
                       GLOBUS_NULL,
-          _FCSL("Data connection has be close due to a call to globus_ftp_control_data_force_close(), or by deactiviting the module."));
+          _FCSL("Data connection has been closed due to a call to globus_ftp_control_data_force_close(), or by deactiviting the module."));
 
             res = globus_i_ftp_control_data_force_close(
                       dc_handle,
