@@ -152,7 +152,9 @@ globus_l_xio_activate()
     globus_cond_init(&globus_l_cond, NULL);
     globus_i_xio_timer_init(&globus_l_xio_timeout_timer);
     globus_l_outstanding_handles_list = NULL;
-
+    
+    globus_i_xio_load_init();
+    
     return GLOBUS_SUCCESS;
 }
 
@@ -172,7 +174,8 @@ globus_l_xio_deactivate()
     globus_mutex_destroy(&globus_l_mutex);
     globus_cond_destroy(&globus_l_cond);
     globus_i_xio_timer_destroy(&globus_l_xio_timeout_timer);
-
+    globus_i_xio_load_destroy();
+    
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 
