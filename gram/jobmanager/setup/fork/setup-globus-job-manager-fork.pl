@@ -13,7 +13,7 @@ GetOptions('service-name|s=s' => \$name,
 &usage if $help;
 
 my $metadata =
-    new Grid::GPT::Setup(package_name => "globus_fork_job_manager_setup");
+    new Grid::GPT::Setup(package_name => "globus_job_manager_setup_fork");
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
@@ -29,7 +29,7 @@ else
 
 print `./find-fork-tools`;
 
-$cmd = "$libexecdir/globus-add-job-manager-service -m fork -s \"$name\" $force";
+$cmd = "$libexecdir/globus-job-manager-service-add -m fork -s \"$name\" $force";
 system("$cmd >/dev/null 2>/dev/null");
 
 if($? == 0)
