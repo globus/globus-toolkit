@@ -528,7 +528,10 @@ main(int xargc,
         {
             if(!run_from_inetd)
 	    {
-		fprintf(stderr, "Gatekeeper running as daemon, ignoring -inetd!\n");
+		if(!gatekeeper_test)
+		{
+		    fprintf(stderr, "Gatekeeper running as daemon, ignoring -inetd!\n");
+		}
 	    }
 	    else
 	    {
