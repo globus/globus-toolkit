@@ -388,11 +388,11 @@ globus_l_gass_cache_write_comment(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -447,11 +447,11 @@ globus_l_gass_cache_write_one_str(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -467,11 +467,11 @@ globus_l_gass_cache_write_one_str(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -486,11 +486,11 @@ globus_l_gass_cache_write_one_str(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -664,11 +664,11 @@ globus_l_gass_cache_write_nb_entries(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -689,11 +689,11 @@ globus_l_gass_cache_write_nb_entries(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -752,11 +752,11 @@ globus_l_gass_cache_write_one_entry(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -790,11 +790,11 @@ globus_l_gass_cache_write_one_entry(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -814,11 +814,11 @@ globus_l_gass_cache_write_one_entry(
 	{
 	    if (errno != EINTR)
 	    {
-	        if (errno = ENOSPC)
+	        if (errno == ENOSPC)
                 {
                     return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
                 }
-                else if (errno = EDQUOT)
+                else if (errno == EDQUOT)
                 {
                     return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
                 }
@@ -843,11 +843,11 @@ globus_l_gass_cache_write_one_entry(
 	{
 	    if (errno != EINTR)
 	    {
-	        if (errno = ENOSPC)
+	        if (errno == ENOSPC)
                 {
                     return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
                 }
-                else if (errno = EDQUOT)
+                else if (errno == EDQUOT)
                 {
                     return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
                 }
@@ -883,11 +883,11 @@ globus_l_gass_cache_write_one_entry(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -925,11 +925,11 @@ globus_l_gass_cache_write_one_entry(
 	    {
 		if (errno != EINTR)
 		{
-	            if (errno = ENOSPC)
+	            if (errno == ENOSPC)
                     {
                         return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
                     }
-                    else if (errno = EDQUOT)
+                    else if (errno == EDQUOT)
                     {
                         return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
                     }
@@ -1379,11 +1379,11 @@ globus_l_gass_cache_lock_file(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -1403,11 +1403,11 @@ globus_l_gass_cache_lock_file(
     {
 	if (errno != EINTR)
 	{
-	    if (errno = ENOSPC)
+	    if (errno == ENOSPC)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (errno = EDQUOT)
+            else if (errno == EDQUOT)
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -1486,11 +1486,11 @@ globus_l_gass_cache_lock_file(
 					 GLOBUS_L_GASS_CACHE_STATE_MODE))
 				   == -1)
 			    {
-	                        if (errno = ENOSPC)
+	                        if (errno == ENOSPC)
                                 {
                                     return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
                                 }
-                                else if (errno = EDQUOT)
+                                else if (errno == EDQUOT)
                                 {
                                     return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
                                 }
