@@ -116,7 +116,7 @@ sub data_files {
                   "/lib/perl/Globus/GRAM/JobManager.pm",
                   "/etc/globus_packages/globus_gram_job_manager/noflavor_data.filelist",
                   "/etc/globus_packages/globus_gram_job_manager/pkg_data_noflavor_data.gpt",
-                  "/share/globus-gram-job-manager.rvf");
+                  "/share/globus-gram-job-manager-rsl-validation/globus-gram-job-manager.rvf");
   return $result;
 
 }
