@@ -15,8 +15,8 @@
     <P>
     <h3><a name="Introduction">Introduction</a></h3>
 This Guide explains how to use the Globus XIO API for IO operations within 
-C programs.  Since Globus XIO is a posix lookalike api it is pretty straight 
-forward.  The best way to become familar with it is by looking at an example.
+C programs.  Since Globus XIO is a POSIX look alike API it is pretty straight 
+forward.  The best way to become familiar with it is by looking at an example.
 See <A HREF="globus_xio_example.c">globus_xio_example.c</A>
 
     <h3><a name="ActivateGlobus">Activate Globus</a></h3>
@@ -52,7 +52,7 @@ If upon completion of the above function call res == GLOBUS_SUCCESS then
 the driver was successfully loaded and can be referenced with the variable
 "driver".  
 <BR>
-<I>Note:</I>The string identiafing the driver follows a naming convention.
+<I>Note:</I>The string identifying the driver follows a naming convention.
 With the above string the file globus_xio_file_driver&lt;flavor&gt;.so should be in the
 users LD_LIBRARY_PATH at runtime.
 <BR>
@@ -73,11 +73,11 @@ above code snips):
 <P>
 Now that the stack is created we can open a handle to the file.  There are two
 ways that a handle can be opened.  The first is a passive open.  An example
-of this is a tcp listener.  The open is prefromed passivly by waiting
+of this is a TCP listener.  The open is performed passively by waiting
 for some other entity to act upon it.  The second is an active open.  An 
-active open is the oppisitte of a passive open.  The tcp conter example for
+active open is the opposite of a passive open.  The TCP counter example for
 this is a connect.  The users initiates the open.  In our example we shall
-be preforming an active open.
+be performing an active open.
 <BR>
 To open a handle a target object must first be established. The target object
 tells globus_xio what it wants to open by associating it with a contact string.
@@ -100,14 +100,14 @@ about this see <A HREF=""></A>.
 <BR>
 Now that we have an open handle to a file we can read or write data to it
 with either globus_xio_read() or globus_xio_write().  Once we are finished
-preforming IO operations on the handle globus_xio_close(handle) should be
+performing IO operations on the handle globus_xio_close(handle) should be
 called.
 <BR>
 <h3><a name="PayOff">Pay Off</a></h3>
 This May seem like quite a bit of effort for simple reading a file, and it is.
-However the advatages become clear when exploring the swapping of other 
-drivers.  In the above example it would be trival to change the io operations
-from file IO to tcp, or http, or ftp.  All the the user would need to do is 
+However the advantages become clear when exploring the swapping of other 
+drivers.  In the above example it would be trivial to change the io operations
+from file IO to TCP, or HTTP, or ftp.  All the the user would need to do is 
 change the driver name string passed to globus_xio_load_driver() and the 
 contact string passed to globus_xio_target_init().  This can easily be done
 at runtime as the program <A HREF="globus_xio_example.c">globus_xio_example.c
@@ -131,7 +131,7 @@ the target would be setup with the following code:
 </PRE>
 <P>
 So the little program <A HREF="globus_xio_example.c">globus_xio_example.c</A>
-has the ability to be any reading client, or server, (http, ftp, tcp, file, 
+has the ability to be any reading client, or server, (HTTP, ftp, TCP, file, 
 etc) as long as the proper drivers are in the LD_LIBRARY_PATH.  Not bad eh?
 </P>
 </BODY>

@@ -14,7 +14,7 @@
     <H2>Globus XIO Driver Quick Start Guide</H2>
 
     <h3><a name="Contents">Contents</a></h3>
-    <a href="#DataStructures">DataStructures</a><br>
+    <a href="#DataStructures">Data Structures</a><br>
     <a href="#Attributes">Attributes</a><br>
     <a href="#Target">Target</a><br>
     <a href="#Handle">Handle</a><br>
@@ -85,7 +85,7 @@ typedef globus_result_t
 <P>
 We shall now take our first look at the file driver example.  The file driver
 needs a way to provide the user level programmer with a means of setting
-the mode and flags when a file is open (akin to the posix function open()).
+the mode and flags when a file is open (akin to the POSIX function open()).
 The first step in creating this ability is to define the attribute structure
 and implement the globus_xio_driver_attr_init_t function which will initialize
 it.
@@ -266,7 +266,7 @@ performed.  The handle is the initialized form of the target and an attr.  The
 driver developer should use this ADT to keep track of any state information
 they will need in order to perform reads and writes.  In the example case
 the driver handle is fairly simple as the driver is merely a wrapper around
-posix calls.
+POSIX calls.
 
 <PRE>
 struct globus_l_xio_file_handle_s
@@ -287,14 +287,14 @@ The read and write interface functions are called in response to a user read or
 write request.  Both functions are provided with a vector that, at the least, has the
 same members as the 'struct iovec' and a vector length.  As of now, the iovec
 elements may contain extra members, so if you wish to use readv() or writev(), you
-will have to transfer the iov_base and iov_len members to the posix iovec.
+will have to transfer the iov_base and iov_len members to the POSIX iovec.
 </p>
 <p>
 As with the open and close interface functions, if an error occurs before any
 real processing has occurred, the interface function may simply return the error
 (in a result_t), effectively canceling the operation.  However, once bytes have
 been read or written, you must not return the error.  You have to report the 
-num bytes read/written along with the result.
+number of bytes read/written along with the result.
 </p>
 <p>
 When an operation is done, either by error or successful completion, the operation
@@ -324,8 +324,8 @@ GlobusXIODriverOperationIsBlocking(
 <p>
 However the call was made, the driver developer can call 
 globus_xio_driver_finished_{open, read, write, close} either while in the 
-original interface call, in a separate thread, or in a separate callback kickout
-via the globus_callback api.
+original interface call, in a separate thread, or in a separate callback kick out
+via the globus_callback API.
 </p>
     <h3><a name="The_Glue">The Glue</a></h3>
 <p>
