@@ -1,15 +1,20 @@
-banners
-
 PBSZ
 -- find out what the server should do (joe)
 
-Info/Configuration:
-DCAU
-
-REST
 TREV
-
-CKSM
 
 Timeouts
 -- configuarable
+
+clear text attr for gssapi
+-- currently it will automatically allow clear text commands until AUTH
+   is received.  need to add an attr to allow users to disable this.
+
+merge _init() with _start() and _destroy() with _stop()
+
+data object destroy
+-- need a function that commands can call to destroy data channel on
+   prot dcau pasv and port.
+
+logging
+-- will come from a seprate module.

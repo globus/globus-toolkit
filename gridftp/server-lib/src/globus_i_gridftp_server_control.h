@@ -8,7 +8,6 @@
 #include "globus_xio_ftp_cmd.h"
 #include "globus_xio_gssapi_ftp.h"
 
-#define GLOBUS_GRIDFTP_SERVER_HASHTABLE_SIZE    256
 #define GLOBUS_GRIDFTP_VERSION_CTL              1
 
 GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
@@ -45,91 +44,6 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
     GlobusGSDebugPrintf(                                                    \
         GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INTERNAL_TRACE,                 \
         ("[%s] I Exiting with error\n", _gridftp_server_name))
-
-
-#define GlobusGridFTPServerErrorParameter(param_name)                       \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PARAMETER,                  \
-            __FILE__,                                                       \
-            _gridftp_server_name,                                           \
-            __LINE__,                                                       \
-            "Bad parameter, %s",                                            \
-            (param_name)))
-
-#define GlobusGridFTPServerErrorMemory(mem_name)                            \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_MEMORY,                     \
-            __FILE__,                                                       \
-            _gridftp_server_name,                                           \
-            __LINE__,                                                       \
-            "Memory allocation failed on %s",                               \
-            (mem_name)))
-
-#define GlobusGridFTPServerErrorState(state)                                \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_STATE,                      \
-            __FILE__,                                                       \
-            _gridftp_server_name,                                           \
-            __LINE__,                                                       \
-            "Invalid state: %d",                                            \
-            (state)))
-
-#define GlobusGridFTPServerNotAuthenticated()                               \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_NO_AUTH,                          \
-            __FILE__,                                                       \
-            _gridftp_server_name,                                           \
-            __LINE__,                                                       \
-            "Not yet authenticated."))
-
-#define GlobusGridFTPServerPostAuthenticated()                              \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_POST_AUTH,                        \
-            __FILE__,                                                       \
-            _gridftp_server_name,                                           \
-            __LINE__,                                                       \
-            "Not yet authenticated."))
-
-#define GlobusGridFTPServerNotACommand()                                    \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_GRIDFTP_SERVER_CONTROL_NO_COMMAND,                       \
-            __FILE__,                                                       \
-            _gridftp_server_name,                                           \
-            __LINE__,                                                       \
-            "Command not implemented."))
-
-#define GlobusGridFTPServerOpSetUserArg(_in_op, _in_arg)                    \
-    (_in_op)->user_arg = (_in_arg);                                         \
-
-#define GlobusGridFTPServerOpGetUserArg(_in_op)                             \
-    ((_in_op)->user_arg)
-
-#define GlobusGridFTPServerOpGetServer(_in_op)                              \
-    ((_in_op)->server)
-
-#define GlobusGridFTPServerOpGetPModArg(_in_op)                             \
-    ((_in_op)->pmod_arg)
-
-#define GlobusGridFTPServerOpSetPModArg(_in_op, _in_arg)                    \
-    (_in_op)->pmod_arg = (_in_arg);                                         \
 
 struct globus_i_gs_attr_s;
 

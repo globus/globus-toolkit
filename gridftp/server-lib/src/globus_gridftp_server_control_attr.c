@@ -1,5 +1,7 @@
 #include "globus_i_gridftp_server_control.h"
 
+#define GLOBUS_GRIDFTP_SERVER_HASHTABLE_SIZE    256
+
 globus_result_t
 globus_gridftp_server_control_attr_init(
     globus_gridftp_server_control_attr_t *  in_attr)
@@ -20,7 +22,7 @@ globus_gridftp_server_control_attr_init(
                 sizeof(globus_i_gsc_attr_t), 1);
     if(attr == NULL)
     {
-        res = GlobusGridFTPServerErrorMemory("attr");
+        res = GlobusGridFTPServerControlErrorSytem();
         goto err;
     }
 
@@ -127,7 +129,7 @@ globus_gridftp_server_control_attr_copy(
                 sizeof(globus_i_gsc_attr_t));
     if(attr == NULL)
     {
-        res = GlobusGridFTPServerErrorMemory("attr");
+        res = GlobusGridFTPServerControlErrorSytem();
         goto err;
     }
     attr->version_ctl = src->version_ctl;

@@ -17,9 +17,9 @@
 
 #define USER_DATA_HANDLE    ((void *) 0xFF)
 
-char *  CONTACT_STRINGS[]     = {"127.0.0.1:2", "192.168.0.1:5566", NULL};
+char *  CONTACT_STRINGS[]     = {"127.0.0.1:2", NULL};
 
-#define CONTACT_STRINGS_COUNT   2
+#define CONTACT_STRINGS_COUNT   1
 
 
 static globus_mutex_t                       globus_l_mutex;
@@ -157,8 +157,20 @@ transfer(
     const char *                            mod_parms,
     globus_gridftp_server_control_restart_t restart)
 {
-    globus_gridftp_server_control_begin_transfer(op, 0);
-    globus_gridftp_server_control_finished_transfer(op, globus_error_put(GLOBUS_ERROR_NO_INFO));
+    int                                     ctr;
+    globus_size_t                           off = 0;
+    globus_size_t                           len = 256;
+
+    globus_gridftp_server_control_begin_transfer(op, 255);
+
+    for(ctr = 0; ctr < 500; ctr++)
+    {
+        globus_poll();
+        usleep(50000);
+        globus_gridftp_server_control_update_bytes(op, 0, off, len);
+        off += len;
+    }
+    globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
 }
 
 
@@ -264,6 +276,10 @@ main(
         ftp_attr, active_connect, passive_connect, data_destroy_cb);
 
     res = globus_gridftp_server_control_attr_add_send(
+        ftp_attr, NULL, transfer);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_add_recv(
         ftp_attr, NULL, transfer);
     test_res(res, __LINE__);
 

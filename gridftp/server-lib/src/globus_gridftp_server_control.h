@@ -27,18 +27,23 @@ typedef enum globus_gsc_error_type_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX
 } globus_gridftp_server_control_error_type_t;
 
-typedef enum globus_gsc_security_type_e
-{
-    GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE,
-    GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI
-} globus_gridftp_server_control_security_type_t;
-
 #ifdef __GNUC__
 #define GlobusGridFTPServerName(func) static const char * _gridftp_server_name __attribute__((__unused__)) = #func
 #else
 #define GlobusGridFTPServerName(func) static const char * _gridftp_server_name = #func
 #endif
 
+#define GlobusGridFTPServerErrorParameter(param_name)                       \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PARAMETER,                  \
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Bad parameter, %s",                                            \
+            (param_name)))
 
 #define GlobusGridFTPServerControlErrorSyntax()                             \
     globus_error_put(                                                       \
@@ -105,6 +110,17 @@ typedef enum globus_gsc_security_type_e
             _gridftp_server_name,                                           \
             __LINE__,                                                       \
             "path error"))
+
+/*
+ *  globus_gridftp_server_control_security_type_t
+ *  ---------------------------------------------
+ *  The allowed security modes.  Can be a mask of more than 1 selection.
+ */
+typedef enum globus_gsc_security_type_e
+{
+    GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE = 0x01,
+    GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI = 0x02
+} globus_gridftp_server_control_security_type_t;
 
 /**
  *  stat structure
@@ -420,21 +436,6 @@ globus_gridftp_server_control_attr_data_functions(
     globus_gridftp_server_control_active_connect_cb_t   active_func,
     globus_gridftp_server_control_passive_connect_cb_t  passive_func,
     globus_gridftp_server_control_data_destroy_cb_t     destroy_func);
-
-/***************************************************************************
- *                      start up
- *                      --------
- *  First the user must open a valid xio handle.  See the xio documentation 
- *  for how to do this.  The xio_handle is then used to initialize a server
- *  object, with an attr.  Callbacks are set on this attr as explained in
- *  the section on attr functions.
- *
- *  Once the server handle starts the user can expect to receive the 
- *  callbacks it registered on the attr.  The user 
- *  stops the callbacks by calling globus_gridftp_server_stop().   Once
- *  the callback passed into that function returns, no more callbacks will
- *  be dispatched in relation to the given handle.
- **************************************************************************/
 
 /**
  *  initialize the server
