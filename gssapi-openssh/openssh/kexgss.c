@@ -371,18 +371,18 @@ kexgss_server(Kex *kex)
 	} while (maj_status & GSS_S_CONTINUE_NEEDED);
 
 	if (GSS_ERROR(maj_status)) {
-		ssh_gssapi_send_error(maj_status,min_status);
+		ssh_gssapi_send_error(ctxt->oid,maj_status,min_status);
 		packet_disconnect("gssapi key exchange handshake failed");
 	}
 
 	debug("gss_complete");
 	if (!(ret_flags & GSS_C_MUTUAL_FLAG)) {
-		ssh_gssapi_send_error(maj_status,min_status);
+		ssh_gssapi_send_error(ctxt->oid,maj_status,min_status);
 		packet_disconnect("gssapi mutual authentication failed");
 	}
 		
 	if (!(ret_flags & GSS_C_INTEG_FLAG)) {
-		ssh_gssapi_send_error(maj_status,min_status);
+		ssh_gssapi_send_error(ctxt->oid,maj_status,min_status);
 		packet_disconnect("gssapi channel integrity not established");
 	}		
 	
@@ -423,7 +423,7 @@ kexgss_server(Kex *kex)
 	gssbuf.length = 20; /* Hashlen appears to always be 20 */
 	
 	if (GSS_ERROR(PRIVSEP(ssh_gssapi_sign(ctxt,&gssbuf,&msg_tok)))) {
-		ssh_gssapi_send_error(maj_status,min_status);
+		ssh_gssapi_send_error(ctxt->oid,maj_status,min_status);
 		packet_disconnect("Couldn't get MIC");
 	}
 	
