@@ -81,6 +81,8 @@
 #define VA_END		va_end(ap)
 
 
+FILE * bean_bag;
+
 /**** added by JB **********/
 #if defined(THROUGHPUT)
 #   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
@@ -620,6 +622,7 @@ static void socket_flush_wait(FILE *file)
 
 int main(int argc, char **argv, char **envp)
 {
+int i = 0;
 #if defined(UNIXWARE) || defined(AIX)
     size_t addrlen;
 #else
@@ -1079,6 +1082,9 @@ int main(int argc, char **argv, char **envp)
     }
 #endif
 
+bean_bag = fopen("my_ass", "w");
+fprintf(bean_bag, "start\n");
+
     if (RootDirectory != NULL) {
 	if ((chroot(RootDirectory) < 0)
 	    || (chdir("/") < 0)) {
@@ -1097,17 +1103,25 @@ int main(int argc, char **argv, char **envp)
     data = -1;
     type = TYPE_A;
 
+i = 1;
+while(i)
+{
+    usleep(1);
+}
     /*
      *  globus hack added by JB
      *  initialize handle and put it into ascii mode
      */
+fprintf(bean_bag, "check 1\n");
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
         char *                            a;
         globus_ftp_control_host_port_t    host_port;
         globus_result_t                   res;
 
-        a = (char *)his_addr;
+        globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
+
+        a = (char *)&his_addr;
         host_port.host[0] = (int)a[0];
         host_port.host[1] = (int)a[1];
         host_port.host[2] = (int)a[2];
@@ -1118,7 +1132,7 @@ int main(int argc, char **argv, char **envp)
         res = globus_ftp_control_local_port(
                   &g_data_handle,
                   &host_port);
-        assert(res != GLOBUS_SUCCESS);
+        assert(res == GLOBUS_SUCCESS);
     }
 #   endif
 
@@ -4438,11 +4452,11 @@ void retrieve(char *cmd, char *name, int offset, int length)
                                    g_control_channel, BUFFER_SIZE, length);
 #       else
 #           ifdef HAVE_ST_BLKSIZE
-                TransferComplete = SEND_DATA(name, fin, g_control_handle, 
+                TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
                                        st.st_blksize * 2, length);
 #           else
-                TransferComplete = SEND_DATA(name, fin, 
-                                       g_control_handle, BUFSIZ);
+                TransferComplete = G_SEND_DATA(name, fin, 
+                                       &g_data_handle, BUFSIZ);
 #           endif
 #       endif
     }
@@ -4463,10 +4477,10 @@ void retrieve(char *cmd, char *name, int offset, int length)
                 TransferComplete = SEND_DATA(name, fin, dout, BUFSIZ);
 #           endif
 #       endif
+       (void) fclose(dout);
     }
 #   endif
 
-    (void) fclose(dout);
 
   logresults:
     if (ThisRetrieveIsData)
@@ -4921,7 +4935,7 @@ store(
  */
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        TransferIncomplete = receive_data(&g_control_handle, fout);
+        TransferIncomplete = g_receive_data(&g_data_handle, fout);
     }
 #   else
     {
@@ -5347,6 +5361,7 @@ int
     throughput_calc(name, &bps, &bpsmult);
 #endif
 
+fprintf(bean_bag, "using non globus send\n");
     buf = NULL;
     if (wu_setjmp(urgcatch)) {
 	draconian_FILE = NULL;

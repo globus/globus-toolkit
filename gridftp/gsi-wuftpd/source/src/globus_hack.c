@@ -1,10 +1,62 @@
 #define OUTSTANDING_READ_COUNT                      4
 
+#include <setjmp.h>
 #include "config.h"
+#include "proto.h"
+#include "../support/ftp.h"
 
 #if defined(USE_GLOBUS_DATA_CODE)
 
-/************************************************************
+
+#if defined(USE_LONGJMP)
+#define wu_longjmp(x, y)        longjmp((x), (y))
+#define wu_setjmp(x)            setjmp(x)
+#ifndef JMP_BUF
+#define JMP_BUF                 jmp_buf
+#endif
+#else
+#define wu_longjmp(x, y)        siglongjmp((x), (y))
+#define wu_setjmp(x)            sigsetjmp((x), 1)
+#ifndef JMP_BUF
+#define JMP_BUF                 sigjmp_buf
+#endif
+#endif
+
+typedef struct globus_i_wu_montor_s
+{
+    globus_mutex_t             mutex;
+    globus_cond_t              cond;
+    globus_bool_t              done;
+    int                        count;
+    int                        fd;
+} globus_i_wu_montor_t;
+
+/*
+ *  global varials from ftpd.c
+ */
+extern int logged_in;
+extern JMP_BUF urgcatch;
+extern int transflag;
+extern int retrieve_is_data;
+extern int type;
+extern unsigned int timeout_data;
+extern int data_count_total;
+extern int data_count_in;
+extern int data_count_out;
+extern int byte_count_total;
+extern int byte_count_in;
+extern int byte_count_out;
+extern off_t file_size;
+extern off_t byte_count;
+extern int file_count_total;
+extern int file_count_in;
+extern int file_count_out;
+extern int xfer_count_total;
+extern int xfer_count_in;
+extern int xfer_count_out;
+extern FILE * bean_bag;
+
+/**********************************************************n
  * local function prototypes
  ************************************************************/
 void
@@ -34,12 +86,36 @@ data_write_callback(
     globus_size_t                               offset,
     globus_bool_t                               eof);
 
+void 
+data_close_callback(
+    void *                                      callback_arg,
+    struct globus_ftp_control_handle_s *        handle,
+    globus_object_t *                           error);
+
 /*************************************************************
  *   global vairables 
  ************************************************************/
 static globus_bool_t                            g_timeout_occured;
 globus_ftp_control_handle_t                     g_data_handle;
 
+
+void
+wu_monitor_init(
+    globus_i_wu_montor_t *                      mon)
+{
+    globus_mutex_init(&mon->mutex, GLOBUS_NULL);
+    globus_cond_init(&mon->cond, GLOBUS_NULL);
+    mon->done = GLOBUS_FALSE;
+    mon->count = 0;
+}
+
+void
+wu_monitor_destroy(
+    globus_i_wu_montor_t *                      mon)
+{
+    globus_mutex_destroy(&mon->mutex);
+    globus_cond_destroy(&mon->cond);
+}
 
 void
 g_passive()
@@ -55,7 +131,7 @@ g_passive()
         return;
     }
 
-    res = globus_ftp_control_data_local_pasv(
+    res = globus_ftp_control_local_pasv(
               &g_data_handle,
               &host_port);
     if(res != GLOBUS_SUCCESS)
@@ -117,6 +193,9 @@ g_send_data(
     globus_bool_t                                   eof = GLOBUS_FALSE;
     globus_i_wu_montor_t                            monitor;
     int                                             cb_count = 0;
+    globus_result_t                                 res;
+    int                                             buffer_ndx;
+    int                                             file_ndx;
 #ifdef THROUGHPUT
     int                                             bps;
     double                                          bpsmult;
@@ -128,10 +207,13 @@ g_send_data(
     throughput_calc(name, &bps, &bpsmult);
 #endif
 
+fprintf(bean_bag, "using globus send\n");
+    wu_monitor_init(&monitor);
+
     res = globus_ftp_control_data_connect_write(
               handle,
-              connect_read_callback,
-              (void *)monitor);
+              connect_callback,
+              (void *)&monitor);
     if(res != GLOBUS_SUCCESS)
     {
     }
@@ -155,7 +237,8 @@ g_send_data(
         alarm(0);
         transflag = 0;
         retrieve_is_data = 1;
-        return (0);
+
+        goto clean_exit;
     }
     transflag++;
     switch (type) 
@@ -174,7 +257,8 @@ g_send_data(
             transflag = 0;
             perror_reply(451, "Local resource failure: malloc");
             retrieve_is_data = 1;
-            return (0);
+
+            goto clean_exit;
         }
 
         jb_count = 0;
@@ -239,7 +323,7 @@ g_send_data(
                 res = globus_ftp_control_data_write(
                           handle,
                           buf,
-                          bufer_ndx,
+                          buffer_ndx,
                           file_ndx,
                           eof,
                           data_write_callback,
@@ -255,7 +339,8 @@ g_send_data(
                     transflag = 0;
                     perror_reply(451, "Local resource failure: malloc");
                     retrieve_is_data = 1;
-                    return (0);
+            
+                    goto clean_exit;
                 }
 
                 buffer_ndx = 0;
@@ -271,7 +356,7 @@ g_send_data(
         res = globus_ftp_control_data_write(
                   handle,
                   buf,
-                  bufer_ndx,
+                  buffer_ndx,
                   file_ndx,
                   GLOBUS_TRUE,
                   data_write_callback,
@@ -330,7 +415,7 @@ g_send_data(
         /*
          * EXIT POINT
          */
-        return (1);
+        goto clean_exit;
 
     case TYPE_I:
     case TYPE_L:
@@ -528,14 +613,15 @@ g_send_data(
         /*
          *  EXIT POINT 
          */
-        return (1);
+        goto clean_exit;
 
 
     default:
         transflag = 0;
         reply(550, "Unimplemented TYPE %d in send_data", type);
         retrieve_is_data = 1;
-        return (0);
+
+        goto clean_exit;
     }
 
   /* 
@@ -583,6 +669,10 @@ g_send_data(
     transflag = 0;
     perror_reply(551, "Error on input file");
     retrieve_is_data = 1;
+
+  clean_exit:
+    wu_monitor_destroy(&monitor);
+
     return (0);
 }
 
@@ -645,16 +735,22 @@ g_receive_data(
     int                                      netfd;
     int                                      filefd;
     globus_bool_t                            eof = GLOBUS_FALSE;
+    globus_i_wu_montor_t                     monitor;
+    globus_result_t                          res;
+    int                                      ctr;
+    int                                      cb_count = 0;
 #ifdef BUFFER_SIZE
     size_t                                   buffer_size = BUFFER_SIZE;
 #else
     size_t                                   buffer_size = BUFSIZ;
 #endif
 
+    wu_monitor_init(&monitor);
+
     res = globus_ftp_control_data_connect_read(
               handle,
-              connect_read_callback,
-              (void *)monitor);
+              connect_callback,
+              (void *)&monitor);
     if(res != GLOBUS_SUCCESS)
     {
     }
@@ -682,18 +778,18 @@ g_receive_data(
     switch (type) 
     {
 
-    /* the globus code should handle ascii mode */
     case TYPE_I:
     case TYPE_L:
     case TYPE_A:
 
+    /* the globus code should handle ascii mode */
+
         filefd = fileno(outstr);
 
-        (void) signal(SIGALRM, draconian_alarm_signal);
+        (void) signal(SIGALRM, g_alarm_signal);
         alarm(timeout_data);
 
-        monitor.cb_count = 0;
-        monitor.outstr = outstr;
+        monitor.count = 0;
         monitor.fd = filefd;
         /* TODO: serval outstanding reads at once */
         for(ctr = 0; ctr < OUTSTANDING_READ_COUNT; ctr++)
@@ -708,7 +804,7 @@ g_receive_data(
                       handle,
                       buf,
                       buffer_size,
-                      read_data_callback,
+                      data_read_callback,
                       (void *)&monitor);
             if(res != GLOBUS_SUCCESS)
             {
@@ -797,7 +893,7 @@ connect_callback(
     void *                                      callback_arg,
     struct globus_ftp_control_handle_s *        handle,
     unsigned int                                stripe_ndx,
-    globus_object_t *                           error);
+    globus_object_t *                           error)
 {
     globus_i_wu_montor_t *                      monitor;
 
@@ -805,8 +901,8 @@ connect_callback(
 
     globus_mutex_lock(&monitor->mutex);
     {
-         reply(150, "Opening %s mode data connection for %s%s.",
-               type == TYPE_A ? "ASCII" : "BINARY", name, sizebuf);
+         reply(150, "Opening %s mode data connection.",
+               type == TYPE_A ? "ASCII" : "BINARY");
 
          monitor->done = GLOBUS_TRUE;
          globus_cond_signal(&monitor->cond);
@@ -825,6 +921,12 @@ data_read_callback(
     globus_bool_t                               eof)
 {
     globus_i_wu_montor_t *                      monitor;
+    globus_result_t                             res;
+#ifdef BUFFER_SIZE
+    size_t                                      buffer_size = BUFFER_SIZE;
+#else
+    size_t                                      buffer_size = BUFSIZ;
+#endif
 
     monitor = (globus_i_wu_montor_t *)callback_arg;
 
@@ -833,7 +935,7 @@ data_read_callback(
         if(error != GLOBUS_NULL)
         {
             monitor->done = GLOBUS_TRUE;
-            globus_cond_signal(&monitor->cond, &monitor->mutex);
+            globus_cond_signal(&monitor->cond);
             globus_mutex_unlock(&monitor->mutex);
 
             return;
@@ -841,7 +943,7 @@ data_read_callback(
 
         if(length > 0)
         {
-            fseek(monitor->fd, offset, SEEK_SET);
+            lseek(monitor->fd, offset, SEEK_SET);
             write(monitor->fd, buffer, length);
             byte_count += length;
 #           ifdef TRANSFER_COUNT
@@ -857,7 +959,7 @@ data_read_callback(
         if(eof)
         {
             monitor->count++;
-            globus_cond_signal(&monitor->cond, &monitor->mutex);
+            globus_cond_signal(&monitor->cond);
             globus_free(buffer);
         }
         else
@@ -866,13 +968,13 @@ data_read_callback(
                       handle,
                       buffer,
                       buffer_size,
-                      read_data_callback,
+                      data_read_callback,
                       (void *)&monitor);
             if(res != GLOBUS_SUCCESS)
             {
                 globus_free(buffer);
                 monitor->done = GLOBUS_TRUE;
-                globus_cond_signal(&monitor->cond, &monitor->mutex);
+                globus_cond_signal(&monitor->cond);
             
                 globus_mutex_unlock(&monitor->mutex);
 

@@ -284,12 +284,12 @@ cmd: USER SP username CRLF
                         globus_ftp_control_host_port_t    host_port;
                         char *                            a;
 
-                        a = (char *)cliaddr;
+                        a = (char *)&cliaddr;
                         host_port.host[0] = (int)a[0];
                         host_port.host[1] = (int)a[1];
                         host_port.host[2] = (int)a[2];
                         host_port.host[3] = (int)a[3];
-                        host_port.port = inet_ntohs(cliport);
+                        host_port.port = ntohs(cliport);
 
                         res = globus_ftp_control_local_port(
                                   &g_data_handle,

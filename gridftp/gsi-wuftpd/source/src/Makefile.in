@@ -91,19 +91,19 @@ ftpcmd.c: config.h ../config.h pathnames.h $(srcdir)/ftpcmd.y
 	mv -f y.tab.c ftpcmd.c
 
 ftpcount: ${UTIL_OBJS} ftpcount.o 
-	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpcount.o -L../support $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpcount.o -L../support $(LDFLAGS) $(LIBS)
 
 ftpshut: ${UTIL_OBJS} ftpshut.o rdservers.o 
-	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpshut.o rdservers.o -L../support $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpshut.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
 
 ftprestart: ${UTIL_OBJS} ftprestart.o rdservers.o 
-	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ftprestart.o rdservers.o -L../support $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ftprestart.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
 
 ckconfig: ${UTIL_OBJS} ckconfig.o rdservers.o
-	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ckconfig.o rdservers.o -L../support $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ckconfig.o rdservers.o -L../support $(LDFLAGS)  $(LIBS)
 
 ftpd: ${OBJS}
-	$(CC) $(CFLAGS) -o $@ ${OBJS} -L../support $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${OBJS} -L../support $(LDFLAGS) $(LIBS)
 
 vers.c: ftpcmd.c
 	sh $(srcdir)/newvers.sh
