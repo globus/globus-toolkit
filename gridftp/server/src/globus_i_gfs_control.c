@@ -201,10 +201,14 @@ globus_l_gfs_done_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
+        char *                          tmp_str;
+
+        tmp_str = globus_object_printable_to_string(globus_error_get(result));
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_INFO,
             "Control connection closed with error: %s\n",
-             globus_object_printable_to_string(globus_error_get(result)));
+             tmp_str);
+        globus_free(tmp_str);
     }
     else
     {
@@ -354,7 +358,7 @@ globus_l_gfs_request_auth(
     auth_info.control_op = op;
     auth_info.instance = instance;
     auth_info.subject = globus_libc_strdup(subject);
-    auth_info.password = globus_libc_strdup(pw);
+    auth_info.password = pw;
 
     remote_cs = globus_i_gfs_config_string("remote");
 
@@ -503,6 +507,7 @@ globus_l_gfs_data_stat_cb(
     globus_gfs_data_reply_t *           reply,
     void *                              user_arg)
 {
+    char *                              tmp_str;
     globus_gridftp_server_control_op_t  op;
     globus_l_gfs_request_info_t *       request;
     request = (globus_l_gfs_request_info_t *) user_arg;
@@ -511,13 +516,15 @@ globus_l_gfs_data_stat_cb(
     globus_assert(op != NULL);
     if(reply->result != GLOBUS_SUCCESS)
     {
+        tmp_str = globus_error_print_friendly(globus_error_peek(reply->result));
         globus_gridftp_server_control_finished_resource(
             op,
             reply->info.stat.stat_array,
             reply->info.stat.stat_count,
             reply->info.stat.uid,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
-            globus_error_print_friendly(globus_error_peek(reply->result)));
+            tmp_str);
+        globus_free(tmp_str);
     }
     else
     {
@@ -570,6 +577,8 @@ globus_l_gfs_request_stat(
         &stat_info,
         globus_l_gfs_data_stat_cb,
         request);
+
+    globus_free(stat_info.pathname);
 
     return;
     

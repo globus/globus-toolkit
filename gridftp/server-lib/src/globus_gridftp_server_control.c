@@ -357,6 +357,7 @@ globus_i_gsc_op_destroy(
             }
             globus_free(op->cs);
         }
+        globus_list_free(op->cmd_list);
         globus_free(op->command);
         if(op->response_msg != NULL)
         {
@@ -1980,6 +1981,7 @@ globus_gridftp_server_control_destroy(
 
     globus_mutex_destroy(&server_handle->mutex);
     globus_hashtable_destroy(&server_handle->cmd_table);
+    globus_hashtable_destroy(&server_handle->site_cmd_table);
     globus_hashtable_destroy(&server_handle->funcs.send_cb_table);
     globus_hashtable_destroy(&server_handle->funcs.recv_cb_table);
     globus_fifo_destroy(&server_handle->read_q);
