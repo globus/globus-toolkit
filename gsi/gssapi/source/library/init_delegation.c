@@ -425,7 +425,7 @@ Description:
             create a X509_EXTENSION based on an OID and a buffer
         
 Parameters:
-                A buffer and length. The date is added as
+                A buffer and length. The data is added as
                 ANS1_OCTET_STRING to an extension with the 
                 class_add  OID.
 
@@ -470,14 +470,13 @@ proxy_extension_create(
     ASN1_OCTET_STRING_set(asn1_oct_string,
                           (unsigned char *) extension_data->value,
                           extension_data->length);
-
+    
     if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
                                             crit, asn1_oct_string)))
     {
         /* set some sort of error */
         goto err;
     }
-
 
 err:
     if (asn1_oct_string)
@@ -489,6 +488,6 @@ err:
     {
         ASN1_OBJECT_free(asn1_obj);
     }
-
+    
     return ex;
 }

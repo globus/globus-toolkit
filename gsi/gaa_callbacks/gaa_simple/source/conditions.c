@@ -567,3 +567,58 @@ gaa_simple_check_local_access (gaa_ptr		gaa,
     
     return (GAA_S_SUCCESS);
 }
+
+gaa_status
+gaa_simple_check_notbefore(gaa_ptr		gaa,
+			   gaa_sc_ptr		sc,
+			   gaa_condition *	cond,
+			   gaa_time_period *	valid_time,
+			   gaa_list_ptr		req_options,
+			   gaa_status *    	output_flags,
+			   void *		params)
+{
+    time_t cond_time = 0;
+    time_t now = 0;
+
+    cond_time = atol(cond->value);
+    now = time(0);
+
+    *output_flags = GAA_COND_FLG_EVALUATED;
+    if (valid_time)
+    {
+	valid_time->start_time = cond_time;
+	valid_time->end_time = 0;
+    }
+    if (now >= cond_time)
+	*output_flags |= GAA_COND_FLG_MET;
+
+    return(GAA_S_SUCCESS);
+}
+
+gaa_status
+gaa_simple_check_notafter(gaa_ptr		gaa,
+			  gaa_sc_ptr		sc,
+			  gaa_condition *	cond,
+			  gaa_time_period *	valid_time,
+			  gaa_list_ptr		req_options,
+			  gaa_status *    	output_flags,
+			  void *		params)
+{
+    time_t cond_time = 0;
+    time_t now = 0;
+
+    cond_time = atol(cond->value);
+    now = time(0);
+
+    *output_flags = GAA_COND_FLG_EVALUATED;
+    if (valid_time)
+    {
+	valid_time->start_time = 0;
+	valid_time->end_time = cond_time;
+    }
+    if (now <= cond_time)
+	*output_flags |= GAA_COND_FLG_MET;
+
+    return(GAA_S_SUCCESS);
+
+}

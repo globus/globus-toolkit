@@ -3,6 +3,9 @@
 #include "gaa_util.h"
 
 #define MAX_WORD_LEN        200
+#define NOTBEFORE "cond_notbefore"
+#define NOTAFTER "cond_notafter"
+#define UNIXTIME "unixtime"
 
 
 static gaa_status
@@ -12,6 +15,8 @@ gaa_simple_l_add_policy_right(
     gaa_right_type                      right_type,
     char *                              authority,
     char *                              val,
+    char *				start_time,
+    char *				end_time,
     gaa_policy *                        policy);
 
 
@@ -130,6 +135,8 @@ gaa_simple_parse_restrictions(
                 gaa_pos_access_right,
                 cb_arg->service_type,
                 cb_arg->actions[i],
+		cb_arg->start_time,
+		cb_arg->end_time,
                 *policy);
             
             if (status != GAA_S_SUCCESS)
@@ -149,6 +156,7 @@ gaa_simple_parse_restrictions(
 
     open = 0;
     
+    linecount = 0;
     while(*restrictions != '\0')
     {
         linecount++;
@@ -306,6 +314,7 @@ gaa_simple_parse_restrictions(
 		    gaa_set_callback_err(ebuf);
 		    return(GAA_STATUS(GAA_S_POLICY_PARSING_FAILURE, 0));
 		}
+
 #ifdef DEBUG
                 fprintf(stderr, "Object \"%s\" %s match\n",
                         clean_obj_name,
@@ -342,6 +351,8 @@ gaa_simple_parse_restrictions(
                                                       gaa_pos_access_right,
                                                       clean_service_type,
                                                       clean_service_action,
+						      cb_arg->start_time,
+						      cb_arg->end_time,
                                                       *policy);
 
                     if (status != GAA_S_SUCCESS)
@@ -385,11 +396,14 @@ gaa_simple_l_add_policy_right(
     gaa_right_type                      right_type,
     char *                              authority,
     char *                              val,
+    char *				start_time,
+    char *				end_time,
     gaa_policy *                        policy)
 {
     int			                pri = 0;
     static int			        num = 0;
     char		                ebuf[2048];
+    gaa_condition			*cond = 0;
 
     gaa_status status = GAA_S_SUCCESS;
 
@@ -407,6 +421,54 @@ gaa_simple_l_add_policy_right(
 		 gaa_x_majstat_str(status));
 	gaa_set_callback_err(ebuf);
 	return(status);
+    }
+
+    if (start_time)
+    {
+	if ((status = gaa_new_condition(&cond,
+					NOTBEFORE,
+					UNIXTIME,
+					start_time)) != GAA_S_SUCCESS)
+	{
+	    snprintf(ebuf, sizeof(ebuf),
+		     "gaasimple_parse_restrictions: failed to create time condition: %s\n",
+		     gaa_x_majstat_str(status));
+	    gaa_set_callback_err(ebuf);
+	    return(status);
+	}
+	if ((status = gaa_add_condition(*right, cond)) != GAA_S_SUCCESS)
+	{
+	    snprintf(ebuf, sizeof(ebuf),
+		     "gaasimple_parse_restrictions: failed to add %s condition: %s\n",
+		     NOTBEFORE,
+		     gaa_x_majstat_str(status));
+	    gaa_set_callback_err(ebuf);
+	    return(status);
+	}
+    }
+
+    if (end_time)
+    {
+	if ((status = gaa_new_condition(&cond,
+					NOTAFTER,
+					UNIXTIME,
+					end_time)) != GAA_S_SUCCESS)
+	{
+	    snprintf(ebuf, sizeof(ebuf),
+		     "gaasimple_parse_restrictions: failed to create time condition: %s\n",
+		     gaa_x_majstat_str(status));
+	    gaa_set_callback_err(ebuf);
+	    return(status);
+	}
+	if ((status = gaa_add_condition(*right, cond)) != GAA_S_SUCCESS)
+	{
+	    snprintf(ebuf, sizeof(ebuf),
+		     "gaasimple_parse_restrictions: failed to add %s condition: %s\n",
+		     NOTAFTER,
+		     gaa_x_majstat_str(status));
+	    gaa_set_callback_err(ebuf);
+	    return(status);
+	}
     }
 	    
     if ((status = gaa_add_policy_entry(policy, (*right), 

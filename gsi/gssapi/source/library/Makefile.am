@@ -39,6 +39,9 @@ Sources_GSS_EXTENSIONS = \
 	inquire_cred_by_oid.c \
 	inquire_sec_context_by_oid.c \
 	buffer_set.c \
+	policy_sign.c \
+	policy_verify.c \
+	create_proxy.c \
 	set_sec_context_option.c \
 	set_group.c \
 	get_group.c

@@ -92,7 +92,6 @@ gss_OID gss_nt_service_name = 	  &GSS_C_NT_HOSTBASED_SERVICE_desc;
 
 static const gss_OID_desc gss_mech_oid_globus_gssapi_ssleay = 
 	{9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
-
 const gss_OID_desc * const gss_mech_globus_gssapi_ssleay = 
 		&gss_mech_oid_globus_gssapi_ssleay;
 
@@ -111,6 +110,10 @@ static const gss_OID_desc gss_untrusted_group_oid =
 const gss_OID_desc * const gss_untrusted_group = 
                 &gss_untrusted_group_oid;
 
+static const gss_OID_desc gss_cas_policy_extension_oid =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x06"}; 
+const gss_OID_desc * const gss_cas_policy_extension = 
+                &gss_cas_policy_extension_oid;
 
 
 /**********************************************************************
