@@ -249,6 +249,32 @@ globus_l_gfs_ipc_passive_data_cb(
 
 static
 void
+globus_l_gfs_op_to_attr(
+    globus_gridftp_server_control_operation_t       op,
+    globus_i_gfs_data_attr_t *                      attr,
+    globus_gridftp_server_control_network_protocol_t net_prt)
+{
+    globus_result_t                     result;
+    
+    *attr = globus_i_gfs_data_attr_defaults;
+    if(net_prt == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
+    {
+        attr->ipv6 = GLOBUS_TRUE;
+    }
+    else
+    {
+        attr->ipv6 = GLOBUS_FALSE;
+    }
+    
+    result = globus_gridftp_server_control_get_mode(op, &attr->mode);
+    globus_assert(result == GLOBUS_SUCCESS);
+    
+    result = globus_gridftp_server_control_get_type(op, &attr->type);
+    globus_assert(result == GLOBUS_SUCCESS);
+}
+
+static
+void
 globus_l_gfs_passive_data_connect(
     globus_gridftp_server_control_operation_t       op,
     globus_gridftp_server_control_network_protocol_t net_prt,
@@ -259,7 +285,8 @@ globus_l_gfs_passive_data_connect(
     globus_i_gfs_data_attr_t            attr;
     GlobusGFSName(globus_l_gfs_passive_data_connect);
     
-    attr = globus_i_gfs_data_attr_defaults;
+    globus_l_gfs_op_to_attr(op, &attr, net_prt);
+    attr.nstreams = max;
     
     result = globus_i_gfs_ipc_passive_data_request(
         instance,
@@ -315,7 +342,7 @@ globus_l_gfs_active_data_connect(
     globus_i_gfs_data_attr_t            attr;
     GlobusGFSName(globus_l_gfs_active_data_connect);
     
-    attr = globus_i_gfs_data_attr_defaults;
+    globus_l_gfs_op_to_attr(op, &attr, net_prt);
     
     result = globus_i_gfs_ipc_active_data_request(
         instance,

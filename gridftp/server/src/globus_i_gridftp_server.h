@@ -29,7 +29,7 @@ typedef struct
     globus_bool_t                       ipv6;
     int                                 nstreams;
     char                                mode;
-    globus_bool_t                       ascii;
+    char                                type;
     globus_size_t                       tcp_bufsize;
     globus_size_t                       blocksize;
 } globus_i_gfs_data_attr_t;

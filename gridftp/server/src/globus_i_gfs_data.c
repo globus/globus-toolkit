@@ -33,7 +33,7 @@ globus_i_gfs_data_attr_t                globus_i_gfs_data_attr_defaults =
     GLOBUS_FALSE,                       /* ipv6 */
     1,                                  /* nstreams */
     'S',                                /* mode */
-    GLOBUS_TRUE,                        /* ascii */
+    'A',                                /* type */
     0,                                  /* tcp_bufsize (sysdefault) */
     256 * 1024                          /* blocksize */
 };
@@ -288,10 +288,7 @@ globus_l_gfs_data_handle_init(
     }
     
     result = globus_ftp_control_local_type(
-        &handle->data_channel,
-        handle->attr.ascii 
-            ? GLOBUS_FTP_CONTROL_TYPE_ASCII : GLOBUS_FTP_CONTROL_TYPE_IMAGE,
-        0);
+        &handle->data_channel, handle->attr.type, 0);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
