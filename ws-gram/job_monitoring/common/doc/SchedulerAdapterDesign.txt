@@ -430,24 +430,38 @@ Condor
 Condor logs jobs on a per submission configuration level. We can control
 whether we want condor clusters to be in separate logs or in one large log.
 
-Log file format is either xml (classads) or text. Probably we should opt for
-text mode for easier/quicker parsing.
+Log file format is either xml or text. Originally, I thought we'd opt for
+text mode for easier/quicker parsing, but that file format is missing part
+of the timestamp (the year), so it's a bit more fragile than the XML
+format. 
 
-Log entries begin with 3 digit event type. They end with a line consisting
-of "...". within parentheses after the event type is the job id
-(cluster.process.000 -- to clarify terminology the cluster is the globus
-concept of the job id. for a job with count > 1, the "process" will be in
-the range of [0, count-1].
+The XML format consists of a number of <c> elements, which contain a log
+message. These contain a nested sequence of <a> elements which are 
+attributes of the log message. The important attributes for our purposes are:
+- EventTypeNumber
+  The type of event being logged. These are identical to those in the 
+  non-xml log file format. These are:
+    000 - SubmitEvent - PENDING
+    001 - ExecuteEvent - ACTIVE
+    005 - JobTerminatedEvent - DONE or FAILED
+    009 - JobAbortedEvent - FAILED
 
-000 - submitted
-001 - job executing
-002 - job not executable
-004 - job evicted (suspended?)
-005 - terminated
-006 - image size updated???
-009 - aborted by user
-
-(Don't know what others there are)
+    002 - job not executable - ?
+    004 - job evicted  - (suspended?)
+    006 - image size updated ?
+- EventTime
+  Timestamp for the log message in format yyyy-mm-ddThh:mm:ss
+- Cluster
+  Job cluster ID (main part of the job id)
+- Proc
+  Job proc ID (0 .. count-1 processes per job)
+- Subproc
+  (always 0?)
+- TerminatedNormally
+  Boolean attribute visible in JobTerminatedEvent messages indicating whether
+  the job terminated normally or due to a signal.
+- ReturnValue
+  Exit code returned by the main of a particular process.
 
 Fork
 This is the trickier case. If we want to have this to work with job completion
