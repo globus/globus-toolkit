@@ -1578,7 +1578,6 @@ globus_l_gsc_command_callout(
         if(server_handle->state != GLOBUS_L_GSC_STATE_PROCESSING)
         {
             globus_i_gsc_op_destroy(op);
-            globus_l_gsc_server_ref_check(server_handle);
             globus_mutex_unlock(&server_handle->mutex);
             return;
         }
