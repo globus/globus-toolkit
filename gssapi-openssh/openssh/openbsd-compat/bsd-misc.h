@@ -89,6 +89,10 @@ pid_t tcgetpgrp(int);
 int tcsendbreak(int, int);
 #endif
 
+#ifndef HAVE_UNSETENV
+void unsetenv(const char *);
+#endif
+
 /* wrapper for signal interface */
 typedef void (*mysig_t)(int);
 mysig_t mysignal(int sig, mysig_t act);
