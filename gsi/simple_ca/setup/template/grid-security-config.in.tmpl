@@ -136,56 +136,7 @@ warning () {
 # main
 #
 
-help
+save_settings
+${exec_prefix}/setup/globus_simple_ca___CACERT_HASH___setup/grid-cert-request-config
 
-${GLOBUS_SH_PRINTF-printf}  "Do you wish to continue (y/n) [y] : "
-read ans
-
-if [ "X$ans" = "Xn" ] ; then
-   exit
-fi  
-
-
-
-while [ 1 ]
-do 
-echo "========================================================================"
-echo
-echo "(1) Base DN for user certificates"
-echo "         [ $_GSI_USER_BASE_DN ] "
-echo "(2) Base DN for host certificates"
-echo "         [ $_GSI_HOST_BASE_DN ] "
-echo 
-echo "========================================================================"
-echo "(q) save, configure the GSI and Quit"
-echo "(c) Cancel (exit without saving or configuring)"
-echo "(h) Help"
-echo "========================================================================"
-echo
-read selection
-
-case $selection in
-  1)
-	get_user_dn
-	;;
-  2)
-  	get_host_dn
-	;;
-  c)
-	echo cancel
-	exit
-	;;
-
-  q)
-        save_settings
-        ${exec_prefix}/setup/globus_simple_ca___CACERT_HASH___setup/grid-cert-request-config
-	exit
-	;;
-  h)
-	help
-	${GLOBUS_SH_PRINTF-printf}  "Press enter to return to the menu"
-	read temp
-	;; 
-esac
-
-done
+exit
