@@ -53,7 +53,15 @@ all -a \
 	bundles\
         utp\
         xio \
-        callout
+        callout \
+        data_management\
+        information_services\
+        ogsa\
+        cas\
+        ogsa_client\
+        ogsa-c\
+        ogsa_messaging\
+        program_execution
 
 gp -a \
         archive_compress\
