@@ -183,7 +183,8 @@ main(int argc, char *argv[])
     /* Check response */
     switch(server_response->response_type) {
     case MYPROXY_ERROR_RESPONSE:
-        fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_str);
+        fprintf(stderr, "Received ERROR_RESPONSE: %s\n",
+		server_response->error_string);
         break;
     case MYPROXY_OK_RESPONSE:
 	if (client_request->credname) {
