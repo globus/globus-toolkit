@@ -2,20 +2,6 @@
 #include "globus_xio.h"
 
 /*******************************************************************
- *                     internal structures
- ******************************************************************/
-struct globus_l_xio_dd_s
-{
-
-    /* matching length arrays */
-    void **                                     drivers;
-    void **                                     drivers_data;
-
-    /* contains the length of the above 2 arrays */
-    int                                         stack_size;
-};
-
-/*******************************************************************
  *                         api functions
  ******************************************************************/
 /*

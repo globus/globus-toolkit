@@ -4,22 +4,6 @@
 #define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE         16
 
 /*******************************************************************
- *                     internal structures
- ******************************************************************/
-struct globus_l_xio_attr_ds_s
-{
-    void *                                      driver;
-    void *                                      driver_attr;
-}
-
-struct globus_l_xio_attr_s
-{
-    struct globus_l_xio_attr_ds_s *             ds_array;
-    int                                         max;
-    int                                         ndx;
-};
-
-/*******************************************************************
  *                     internal functions
  ******************************************************************/
 void *
