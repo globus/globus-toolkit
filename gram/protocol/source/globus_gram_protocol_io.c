@@ -2556,8 +2556,9 @@ globus_l_gram_protocol_setup_accept_attr(
     globus_io_attr_t *                          attr,
     globus_i_gram_protocol_connection_t *       connection)
 {
-    globus_result_t                        res;
+    globus_result_t                     res;
     globus_io_secure_authorization_data_t  auth_data;
+    globus_object_t *                   err;
 
     res = globus_io_secure_authorization_data_initialize(&auth_data);
 
@@ -2591,7 +2592,7 @@ globus_l_gram_protocol_setup_accept_attr(
 destroy_auth_data:
     globus_io_secure_authorization_data_destroy(&auth_data);
 error_exit:
-    globus_object_t *  err = globus_error_get(res);
+    err = globus_error_get(res);
     globus_object_free(err);
 
     return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
