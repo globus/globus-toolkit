@@ -341,7 +341,7 @@ GSS_CALLCONV gss_accept_sec_context(
                 }                    
                 context->gss_state = GSS_CON_ST_CERT;
             }
-            else if((*dbuf != '0') || BIO_pending(context->gss_sslbio))
+            else if(*dbuf != '0')
             {
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(minor_status,
                                                GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION,
