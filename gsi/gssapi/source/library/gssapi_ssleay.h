@@ -342,8 +342,6 @@ typedef struct gss_ctx_id_desc_struct{
     globus_mutex_t                          mutex;
     globus_gsi_credential_callback_data_t   callback_data;
     gss_cred_id_desc *                      peer_cred_handle;
-    gss_name_desc *                         source_name;                 
-    gss_name_desc *                         target_name;                 
     gss_cred_id_desc *                      cred_handle;
     OM_uint32                               ret_flags;
     OM_uint32                               req_flags;

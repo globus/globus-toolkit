@@ -170,6 +170,24 @@ gss_create_and_fill_context(
     context->ctx_flags |= GSS_I_CTX_INITIALIZED;
     globus_mutex_init(&context->mutex, NULL);
 
+    if((context->peer_cred_handle = globus_malloc(sizeof(gss_cred_id_desc)))
+       == NULL)
+    {
+#error some error here
+    }
+    
+    if((globus_gsi_cred_handle_init(context->peer_cred_handle->cred_handle,
+                                    NULL)) != GLOBUS_SUCCESS)
+    {
+#error blah
+    }
+
+    if((context->peer_cred_handle->globusid = 
+        globus_malloc(sizeof(gss_name_desc))) == NULL)
+    {
+#error blah
+    }
+
     /* 
      * set if its OK to accept proxies signed by limited proxies
      */
@@ -217,17 +235,6 @@ gss_create_and_fill_context(
         context->cred_obtained = 0;
     }
 
-    if (cred_usage == GSS_C_INITIATE)
-    {
-        major_status = gss_copy_name_to_name(&context->source_name,
-                                             context->cred_handle->globusid);
-    }
-    else
-    {
-        major_status = gss_copy_name_to_name(&context->target_name,
-                                             context->cred_handle->globusid);
-    }
-    
     globus_gsi_cred_handle_get_handle_attrs(
         context->cred_handle->cred_handle, & handle_attrs);
     globus_gsi_cred_handle_attrs_get_ca_cert_dir(handle_attrs, certdir);
@@ -636,15 +643,13 @@ gss_retrieve_peer(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_name_desc *                     outname;
-    X509 *                              peer = NULL;
+    X509 *                              peer_cert = NULL;
+    STACK_OF(X509) *                    peer_cert_chain = NULL;
     STACK_OF(X509_EXTENSION) *          extensions;
     X509_EXTENSION *                    ex;
     X509 *                              cert;
     ASN1_OBJECT *                       asn1_obj;
     ASN1_OCTET_STRING *                 asn1_oct_string;
-    X509_NAME *                         subject = NULL;
-    STACK *                             group = NULL;
-    ASN1_BIT_STRING *                   group_types = NULL;
     int                                 i;
     int                                 j = 0;
     int                                 k;
@@ -658,196 +663,91 @@ gss_retrieve_peer(
     
     if (context_handle->gss_ssl->session)
     {
-        peer = context_handle->gss_ssl->session->peer;
+        peer_cert = context_handle->gss_ssl->session->peer;
     }
     
-    outname = ( gss_name_desc *)malloc(sizeof(gss_name_desc));
-    
-    if (outname == NULL)
+    result = globus_gsi_cred_set_cert(
+        context_handle->peer_cred_handle->cred_handle, 
+        peer_cert);
+
+    if(result != GLOBUS_SUCCESS)
     {
-#error /* add error object thingy */
-        GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
+#error add error object
+    }
+
+    result = globus_gsi_cred_callback_get_peer_cert_chain(
+        context_handle->callback_data,
+        & peer_cert_chain);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+#error do error here
+    }
+
+    result = globus_gsi_cred_set_cert_chain(
+        context->peer_cred_handle->cred_handle, 
+        peer_cert_chain);
+
+    sk_X509_pop_free(peer_cert_chain);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+#error do error here
+    }
+
+    result = globus_gsi_cred_get_subject_name(
+        context->peer_cred_handle->cred_handle,
+        & context->peer_cred_handle->globusid->x509n);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+#error do error here
+    }
+
+    if(result = context->peer_cred_handle->globusid->x509n == NULL)
+    {
+#error add error object
+        GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_PROCESS_CERT);
         major_status = GSS_S_FAILURE;
         goto err;
     }
-       
-    if (peer == NULL)
+
+    result = globus_gsi_cred_get_base_name(
+        context->peer_cred_handle->globusid->x509n);
+
+    if(result != GLOBUS_SUCCESS)
     {
-        outname->name_oid =  GSS_C_NT_ANONYMOUS;
-    }
-    else
-    {
-        subject = X509_NAME_dup(X509_get_subject_name(peer));
-        
-        if(subject == NULL)
-        {
 #error add error object
-            GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_PROCESS_CERT);
-            major_status = GSS_S_FAILURE;
-            goto err;
-        }
-
-        { 
-            char * s;
-            s = X509_NAME_oneline(subject,NULL,0);
-            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-                2, (stderr, "X509 subject after proxy : %s\n", s));
-            free(s);
-        }
-
-        /*
-         * Figure out the group name
-         */
-
-        cert_count = context_handle->callback_data.cert_depth;
-        
-        
-
-        group = sk_new_null();
-
-        if(group == NULL)
-        {
-            GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
-            major_status = GSS_S_FAILURE;
-            goto err;
-        }
-        
-        group_types = ASN1_BIT_STRING_new();
-
-        if(group_types == NULL)
-        {
-            GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
-            major_status = GSS_S_FAILURE;
-            goto err;
-        }
-    
-        for(k=0;k<cert_count;k++)
-        {
-            cert = sk_X509_value(context_handle->pvd.cert_chain,k);
-
-            extensions = cert->cert_info->extensions;
-
-            for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
-            {
-                ex = (X509_EXTENSION *) sk_X509_EXTENSION_value(extensions,i);
-                asn1_obj = X509_EXTENSION_get_object(ex);
-
-                /* if statement is kind of ugly, but I couldn't find a
-                 * better way
-                 */
-            
-                if((asn1_obj->length == gss_trusted_group->length) &&
-                   !memcmp(asn1_obj->data,
-                           gss_trusted_group->elements,
-                           asn1_obj->length))
-                {
-                    /* found a trusted group match */
-                    asn1_oct_string = X509_EXTENSION_get_data(ex);
-                
-                    subgroup = malloc(asn1_oct_string->length + 1);
-
-                    if(subgroup == NULL)
-                    {
-                        GSSerr(GSSERR_F_GSS_RETRIEVE_PEER,
-                               GSSERR_R_OUT_OF_MEMORY);
-                        major_status = GSS_S_FAILURE;
-                        goto err;
-                    }
-                    
-                    memcpy((void *) subgroup,
-                           asn1_oct_string->data,
-                           asn1_oct_string->length);
-
-                    /* terminate string */
-
-                    subgroup[asn1_oct_string->length] = '\0';
-
-                    sk_push(group,subgroup);
-                    j++;
-                    
-                    /* assume one extension per cert */
-                
-                    break;
-                }
-                else if((asn1_obj->length == gss_untrusted_group->length) &&
-                        !memcmp(asn1_obj->data,
-                                gss_untrusted_group->elements,
-                                asn1_obj->length))
-                {
-                    /* found a untrusted group match */
-                    asn1_oct_string = X509_EXTENSION_get_data(ex);
-                
-                    subgroup = malloc(asn1_oct_string->length + 1);
-
-                    if(subgroup == NULL)
-                    {
-                        GSSerr(GSSERR_F_GSS_RETRIEVE_PEER,
-                               GSSERR_R_OUT_OF_MEMORY);
-                        major_status = GSS_S_FAILURE;
-                        goto err;
-                    }
-                    
-                    memcpy((void *) subgroup,
-                           asn1_oct_string->data,
-                           asn1_oct_string->length);
-
-                    /* terminate string */
-
-                    subgroup[asn1_oct_string->length] = '\0';
-
-                    sk_push(group,subgroup);
-                    ASN1_BIT_STRING_set_bit(group_types,j,1);
-                    j++;
-
-                    /* assume one extension per cert */
-                
-                    break;
-                }
-            }
-        }
     }
+
+    /* debug statement */
+    { 
+        char * s;
+        s = X509_NAME_oneline(context->peer_cred_handle->globusid->x509n,
+                              NULL,
+                              0);
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            2, (stderr, "X509 subject after proxy : %s\n", s));
+        free(s);
+    }
+
+    cert_count = context_handle->callback_data.cert_depth;
+
+    result = globus_gsi_cred_get_group_name(
+        context_handle->peer_cred_handle->cred_handle,
+        & context->peer_cred_handle->globusid->group,
+        & context->peer_cred_handle->globusid->group_types);
     
-    outname->x509n = subject;
-    outname->group = group;
-    outname->group_types = group_types;
-    
-    if (cred_usage == GSS_C_INITIATE)
+    if(result != GLOBUS_SUCCESS)
     {
-        context_handle->target_name = outname;
+#error add error here
     }
-    else
-    {
-        context_handle->source_name = outname;
-    }
+    
+    major_status = GSS_S_COMPLETE;
+
+ err:
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    
-    return GSS_S_COMPLETE;
-
-err:
-
-    if(outname != NULL)
-    {
-        free(outname);
-    }
-
-    if(subject != NULL)
-    {
-        X509_NAME_free(subject);
-    }
-
-    if(group != NULL)
-    {
-        sk_pop_free(group,free);
-    }
-
-    if(group_types != NULL)
-    {
-        ASN1_BIT_STRING_free(group_types);
-    }
-
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-
     return major_status;
 }
 
