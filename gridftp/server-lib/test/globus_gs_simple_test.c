@@ -304,6 +304,7 @@ main(
     }
     globus_mutex_unlock(&globus_l_mutex);
 
+    globus_xio_close(xio_handle, NULL);
     fprintf(stdout, "Ending...\n");
     res = globus_gridftp_server_control_attr_destroy(ftp_attr);
     test_res(res, __LINE__);
