@@ -5,6 +5,7 @@
     */
 #include "config.h"
 #include "proto.h"
+#include "mlsx.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -16,21 +17,6 @@
 #include <ctype.h>
 
 char *mapping_getcwd(char *path, size_t size);
-
-static
-void
-make_date(
-    char *                              work_str,
-    int                                 size,
-    const char *                        tag,
-    time_t *                            work_tm)
-{
-    char                                buf[64];
-    
-    strftime(buf, sizeof(buf), "%Y%m%d%H%M%S", gmtime(work_tm));
-    snprintf(work_str, size, "%s=%s;", tag, buf);
-    work_str[size - 1] = '\0';
-}
 
 static char * options = NULL;
 

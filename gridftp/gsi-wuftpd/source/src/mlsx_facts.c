@@ -9,6 +9,21 @@
 #include <string.h>
 #include <ctype.h>
 
+static
+void
+make_date(
+    char *                              work_str,
+    int                                 size,
+    const char *                        tag,
+    time_t *                            work_tm)
+{
+    char                                buf[64];
+    
+    strftime(buf, sizeof(buf), "%Y%m%d%H%M%S", gmtime(work_tm));
+    snprintf(work_str, size, "%s=%s;", tag, buf);
+    work_str[size - 1] = '\0';
+}
+
 /* This is the method that produces a result line about an arbitrary file
    it is used by the parent mlsd and mlst routines to produce their output. */
 int
