@@ -13,6 +13,7 @@ dnl The variables that are set and substituted (AC_SUBST) by the
 dnl LAC_COMPILERS macro are:
 dnl   CC
 dnl   CPP
+dnl   CPPFLAGS
 dnl   CFLAGS
 dnl   CXX
 dnl   CXXCPP
@@ -42,6 +43,7 @@ dnl
 dnl   lac_cv_CC
 dnl   lac_cv_CPP
 dnl   lac_cv_CFLAGS
+dnl   lac_cv_CPPFLAGS
 dnl   lac_cv_CXX
 dnl   lac_cv_CXXCPP
 dnl   lac_cv_CXXFLAGS
@@ -108,6 +110,7 @@ LAC_COMPILERS_SET($lac_threads_type)
 LAC_SUBSTITUTE_COMPILER_VAR(CC)
 LAC_SUBSTITUTE_COMPILER_VAR(CPP)
 LAC_SUBSTITUTE_COMPILER_VAR(CFLAGS)
+LAC_SUBSTITUTE_COMPILER_VAR(CPPFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(CXX)
 LAC_SUBSTITUTE_COMPILER_VAR(CXXCPP)
 LAC_SUBSTITUTE_COMPILER_VAR(CXXFLAGS)
@@ -146,6 +149,7 @@ dnl LAC_COMPILERS_SET_ALL_VARS(THREAD-TYPE)
 AC_DEFUN(LAC_COMPILERS_SET_ALL_VARS,
 [
 lac_CFLAGS="$CFLAGS "
+lac_CPPFLAGS="$CPPFLAGS -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/$globus_cv_flavor"
 lac_CXXFLAGS="$CXXFLAGS "
 lac_LDFLAGS="$LDFLAGS "
 lac_LIBS="$LIBS "
@@ -416,7 +420,8 @@ case ${host}--$1 in
 	if test "$1" = "pthreads" ; then
             LAC_PROG_CC_GNU($lac_cv_CC,
 			[ ],
-			[lac_CFLAGS="-pthread $lac_CFLAGS"])
+			[lac_CFLAGS="-pthread $lac_CFLAGS"
+                         lac_CPPFLAGS="-pthread $lac_CPPFLAGS"])
 	    LAC_PROG_CC_GNU($lac_cv_CXX,
 			[ ],
 			[lac_CXXFLAGS="-pthread $lac_CXXFLAGS"])
@@ -497,6 +502,7 @@ AC_CACHE_CHECK("C++ flags", lac_cv_CXXFLAGS, lac_cv_CXXFLAGS=$lac_CXXFLAGS)
 AC_CACHE_CHECK("linker flags", lac_cv_LDFLAGS, lac_cv_LDFLAGS=$lac_LDFLAGS)
 AC_CACHE_CHECK("required libraries", lac_cv_LIBS, lac_cv_LIBS=$lac_LIBS)
 AC_CACHE_CHECK("C Preprocessor", lac_cv_CPP, lac_cv_CPP="$lac_cv_CC -E")
+AC_CACHE_CHECK("C Preprocessor flags", lac_cv_CPPFLAGS,lac_cv_CPPFLAGS=$lac_CPPFLAGS)
 AC_CACHE_CHECK("C++ Preprocessor", lac_cv_CXXCPP, lac_cv_CXXCPP="$lac_cv_CXX -E")
 AC_CACHE_CHECK("F77 flags", lac_cv_F77FLAGS, lac_cv_F77FLAGS="$lac_F77FLAGS")
 AC_CACHE_CHECK("F90 flags", lac_cv_F90FLAGS, lac_cv_F90FLAGS="$lac_F90FLAGS")
