@@ -1072,6 +1072,8 @@ globus_l_xio_gssapi_ftp_server_read_cb(
     globus_bool_t                       complete;
     globus_bool_t                       reply = GLOBUS_TRUE;
     char **                             cmd_a = NULL;
+    globus_byte_t *                     in_buffer;
+    globus_size_t                       in_buffer_len;
     GlobusXIOName(globus_l_xio_gssapi_ftp_server_read_cb);
 
     GlobusXIOGssapiftpDebugEnter();
@@ -1090,12 +1092,13 @@ globus_l_xio_gssapi_ftp_server_read_cb(
 
         handle->read_posted = GLOBUS_FALSE;
 
+        in_buffer = handle->auth_read_iov.iov_base;
+        in_buffer_len = handle->auth_read_iov.iov_len;
         globus_l_xio_gssapi_ftp_parse_command(
-                handle->auth_read_iov.iov_base,
-                handle->auth_read_iov.iov_len,
+                in_buffer,
+                in_buffer_len,
                 GLOBUS_FALSE,
                 &cmd_a);
-        globus_free(handle->auth_read_iov.iov_base);
         if(cmd_a == NULL)
         {
             res = GlobusXIOGssapiFTPAllocError();
@@ -1108,7 +1111,13 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                 /* if command is not expected, stay in this state. */
                 if(globus_libc_strcmp(cmd_a[0], "AUTH") != 0)
                 {
-                    msg = globus_libc_strdup(REPLY_530_BAD_MESSAGE);
+                    reply = GLOBUS_FALSE;
+
+                    handle->read_iov[0].iov_base = in_buffer;
+                    handle->read_iov[0].iov_len = in_buffer_len;
+                    globus_xio_driver_finished_read(
+                        op, GLOBUS_SUCCESS, in_buffer_len);
+                    in_buffer = NULL;
                 }
                 /* only accepting gssapi for now. may want to get 
                    cleaver later */
@@ -1202,6 +1211,11 @@ globus_l_xio_gssapi_ftp_server_read_cb(
         
     }
     globus_mutex_unlock(&handle->mutex);
+
+    if(in_buffer != NULL)
+    {
+        globus_free(in_buffer);
+    }
 
     GlobusXIOGssapiftpDebugExit();
     return;
