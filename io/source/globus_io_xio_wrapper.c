@@ -381,6 +381,7 @@ globus_l_io_iattr_copy(
 {
     globus_l_io_attr_t *                source_iattr;
     globus_l_io_attr_t *                dest_iattr;
+    globus_io_secure_authorization_data_t data;
     globus_result_t                     result;
     GlobusIOName(globus_l_io_iattr_copy);
     
@@ -407,11 +408,16 @@ globus_l_io_iattr_copy(
         result = globus_io_attr_get_secure_authorization_mode(
             &dest_iattr,
             &dest_iattr->authorization_mode,
-            &dest_iattr->authz_data);
+            &data);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_auth_copy;
         }
+        
+        dest_iattr->authz_data.identity = data->identity;
+        dest_iattr->authz_data.callback = data->callback;
+        dest_iattr->authz_data.callback_arg = data->callback_arg;
+        globus_free(data);
     }
     else
     {
