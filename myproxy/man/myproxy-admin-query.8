@@ -59,9 +59,11 @@ For example,
 .I myproxy-admin-query -e 0 -r
 will remove all expired credentials from the repository.
 .TP
-.BI -L " msg, " --lock " msg"
+.BI -L " 'msg', " --lock " 'msg'"
 Places the credentials matching the query under an administrative
 lock and specifies a message to be returned on access attempts.
+Be sure to put the message in quotes so it is captured as one argument
+to the command.
 .TP
 .B -U, --unlock
 Removes any administrative locks for the credentials matching the query.
