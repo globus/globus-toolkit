@@ -1041,6 +1041,11 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       verror_put_string("invalid credential for renewal");
 	       goto end;
 	   }
+	   /* Sanity check: Renewal credentials should not have a passphrase */
+	   if (creds.passphrase && creds.passphrase[0]) {
+	       verror_put_string("credential configured for retrieval, not renewal");
+	       goto end;
+	   }
 	   break;
 
        default:
