@@ -13,8 +13,7 @@ use Globus::GRAM::JobManager;
 use Globus::GRAM::StdioMerger;
 use Globus::Core::Paths;
 
-use IO::Pipe;
-use Fcntl;
+#use Fcntl;
 use Config;
 
 package Globus::GRAM::JobManager::fork;
@@ -26,7 +25,6 @@ my %signo;
 
 BEGIN
 {
-    my $name;
     my $i = 0;
     
     foreach (split(' ', $Config::Config{sig_name})) 
@@ -181,13 +179,17 @@ sub submit
 	    $job_stderr = $description->stderr();
 	}
 
-        # should close on exec
-        $pipe = new IO::Pipe;
-	$pid = fork();
+	# obtain plain old pipe into temporary variables
+	local $^F = 2;		# assure close-on-exec for pipe FDs
+	local(*READER,*WRITER);	# always use local on perl FDs
+	pipe( READER, WRITER );
 
-	if($pid == 0)
+	# turn off perl buffering WITHOUT requiring 10000+ IO::Handle
+	select((select(WRITER),$|=1)[$[]);
+
+	if( ($pid=fork()) == 0)
 	{
-	    $pipe->writer();
+	    close(READER);
 
             # forked child
 	    %ENV = %CHILD_ENV;
@@ -196,7 +198,7 @@ sub submit
 	    close(STDOUT);
 	    close(STDERR);
 
-	    open(STDIN, "<" . $description->stdin());
+	    open(STDIN, '<' . $description->stdin());
 	    open(STDOUT, ">>$job_stdout");
 	    open(STDERR, ">>$job_stderr");
 	    
@@ -204,15 +206,17 @@ sub submit
             setpgrp(0,$$);
 
 	    exec (@cmdline);
-	    $pipe->print('X');
-	    $pipe->close();
+	    $SIG{PIPE} = 'IGNORE';
+	    print WRITER 'X';
+	    close(WRITER);
 	    exit(1);
 	}
 	else
 	{
-	    $pipe->reader();
-	    $_ = <$pipe>;
-	    $pipe->close();
+	    close(WRITER);
+	    
+	    $_ = <READER>;
+	    close(READER);
 
 	    if($_ eq 'X')
 	    {
