@@ -204,7 +204,7 @@ globus_i_gsc_event_end(
     {
         event->restart_running = GLOBUS_FALSE;
         globus_callback_unregister(
-            op->event.periodic_handle,
+            op->event.restart_handle,
             globus_l_gsc_unreg_restart_marker,
             op,
             NULL);

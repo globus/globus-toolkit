@@ -388,7 +388,6 @@ globus_l_gsc_read_cb(
     globus_list_t *                         cmd_list;
     globus_i_gsc_op_t *                     op;
     char *                                  command_name = NULL;
-    int                                     sc;
     int                                     ctr;
     GlobusGridFTPServerName(globus_l_gsc_read_cb);
 
