@@ -13,6 +13,11 @@ if [ -z "${GLOBUS_LOCATION}" ]; then
     return 1
 fi
 
+if [ -z "${LIBPATH}" ]; then
+	LIBPATH="/usr/lib:/lib"
+	export LIBPATH
+fi
+
 if [ -n "${GLOBUS_PATH}" ]; then
     PATH=`echo "${PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     LD_LIBRARY_PATH=`echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
