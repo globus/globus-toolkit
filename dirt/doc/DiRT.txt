@@ -132,19 +132,21 @@ If you remove version.sh later (ie, you do a cvs remove on it), DiRT will not pu
 -------------------------------------------------
 What is an example use of the what DiRT provides?
 -------------------------------------------------
+(DiRT has been put into use throughout globus module code.  see http://www.mcs.anl.gov/~link/versions.txt for more info)
+
 To continue from the example above, lets make use of the version.sh file.  Let's say we have a script that gets installed by my_package.  Currently, there is no way to identify the exact revision of this script.
 
 Let's assume that this script is already processed by the configure script (ie, it was named 'script.in', after configure we have 'script').  Within this script we can now add a '--version' flag that will be able to not only print out the package revision, but also the timestamp and branch-id.
 
 A line like the following would exist in script.in:
 
-VERSION_STRING="@VERSION@.@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"
+PROGRAM_VERSION="@GPT_MAJOR_VERSION@.@GPT_MINOR_VERSION@ (@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@)"
 
 The configure script would source the contents of version.sh and use those values to process script.in (assume VERSION is the package version and already known to the configure process).  If we use the example version.sh file above, we might have a line like the following in script:
 
-VERSION_STRING="2.1.1013552864-5"
+PROGRAM_VERSION="2.1 (1013552864-5)"
 
-(If this would be confusing to users, we could have a version flag and a verbose version flag.  The first would show only '2.1', while the other would show '2.1.1013552864-5')
+(If this would be confusing to users, we could have a version flag and a verbose version flag.  The first would show only '2.1', while the other would show '2.1 (1013552864-5)')
 
 Now, if a user has a problem with this script, we can request the version string from them and either use it to identify whether the problem has already been fixed since (by using cvs log) or we can check out the exact version of the script they have with:
 
