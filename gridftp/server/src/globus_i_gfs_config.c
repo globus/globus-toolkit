@@ -19,6 +19,7 @@ typedef struct
     char *                              long_cmdline_option;
     char *                              short_cmdline_option;
     globus_l_gfs_config_type_t          type;
+    /* add int_value to avoid casting int to pointer */
     void *                              value;
 } globus_l_gfs_config_option_t;
 

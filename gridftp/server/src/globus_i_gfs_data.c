@@ -1976,7 +1976,6 @@ globus_gridftp_server_register_write(
             {
                 op->write_stripe %= op->stripe_count;
             }    
-            printf("%d->%d: %d:%d\n", op->node_ndx, op->write_stripe, length, offset); 
             result = globus_ftp_control_data_write_stripe(
                 &op->data_handle->data_channel,
                 buffer,

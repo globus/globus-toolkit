@@ -3,6 +3,7 @@ file not trunc on striped puts, since they all look like partials, also
     data coming before the 150 response
 
 make get_range work for striping (write range_list_remove)
+***range_lists don't know that -1 is max length?***
 
 fix up error in data.c and dsi, or make use result_t over ipc temporarily
 
