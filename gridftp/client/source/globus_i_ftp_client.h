@@ -101,6 +101,8 @@ do { \
 #define globus_i_ftp_client_debug_states(level, handle)
 #endif
 
+/* send NOOP if idle for more than 15 seconds */
+#define GLOBUS_I_FTP_CLIENT_NOOP_IDLE 15 
 /*
  * Attributes
  */
@@ -615,7 +617,9 @@ typedef struct globus_i_ftp_client_target_s
     
     /** Plugin mask associated with the currently pending command. */
     globus_ftp_client_plugin_command_mask_t	mask;
-
+    
+    /* used for determining need for NOOP */
+    globus_abstime_t                            last_access;
 } globus_i_ftp_client_target_t;
 
 /**
@@ -795,6 +799,7 @@ globus_i_ftp_client_count_digits(
     globus_off_t				num);
 
 extern globus_ftp_control_auth_info_t globus_i_ftp_client_default_auth_info;
+extern globus_reltime_t                 globus_i_ftp_client_noop_idle;
 
 /* globus_ftp_client_handle.c */
 globus_object_t *

@@ -67,6 +67,12 @@ static
 globus_list_t *
 globus_l_ftp_client_active_control_list;
 
+globus_reltime_t                        globus_i_ftp_client_noop_idle =
+{
+    GLOBUS_I_FTP_CLIENT_NOOP_IDLE,
+    0
+};
+
 /**
  * Module descriptor static initializer.
  */
