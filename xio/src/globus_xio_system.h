@@ -5,6 +5,10 @@
 
 EXTERN_C_BEGIN
 
+#define GLOBUS_XIO_SYSTEM_MODULE (&globus_i_xio_system_module)
+
+extern globus_module_descriptor_t       globus_i_xio_system_module;
+
 typedef enum
 {
     /** Open file with create  */
@@ -31,18 +35,18 @@ typedef enum
     GLOBUS_XIO_SYSTEM_ERROR_OPERATION_CANCELED,
     GLOBUS_XIO_SYSTEM_ERROR_NOT_REGISTERED,
     GLOBUS_XIO_SYSTEM_ERROR_MEMORY_ALLOC
-    
+
 } globus_xio_system_error_type_t;
 
 typedef int globus_xio_system_handle_t;   /* for posix, same as fd */
 
-typedef void 
+typedef void
 (*globus_xio_system_callback_t)(
     globus_xio_system_handle_t          handle,
     globus_result_t                     result,
     void *                              user_arg);
 
-typedef void 
+typedef void
 (*globus_xio_system_data_callback_t)(
     globus_xio_system_handle_t          handle,
     globus_result_t                     result,
@@ -106,7 +110,7 @@ globus_xio_system_read_ex(
     int                                 flags,
     const globus_sockaddr_t *           from,
     globus_ssize_t *                    nread);
-    
+
 globus_result_t
 globus_xio_system_register_read(
     globus_xio_system_handle_t          handle,
@@ -140,7 +144,7 @@ globus_xio_system_write_ex(
     int                                 flags,
     const globus_sockaddr_t *           to,
     globus_ssize_t *                    nwritten);
-    
+
 globus_result_t
 globus_xio_system_register_write(
     globus_xio_system_handle_t          handle,
