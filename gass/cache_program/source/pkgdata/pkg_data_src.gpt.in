@@ -6,7 +6,7 @@
   <Aging_Version Age="0" Major="2" Minor="0" />
   <Description >Tools to manipulate local and remote GASS caches.</Description>
   <Functional_Group >FileAccess</Functional_Group>
-  <Version_Stability Release="Beta2" />
+  <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
 
   <src_pkg >
 

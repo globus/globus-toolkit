@@ -6,7 +6,7 @@
   <Aging_Version Age="0" Major="0" Minor="1" />
   <Description> Globus binary package for gdbm </Description>
   <Functional_Group >GSI</Functional_Group>
-  <Version_Stability Release="Beta2" />
+  <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
 
   <src_pkg >
 
