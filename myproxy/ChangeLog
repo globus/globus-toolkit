@@ -1,5 +1,15 @@
 2000-10-10  Von Welch  <vwelch@ncsa.uiuc.edu>
 
+	* gsi_socket.c, gsi_socket_test.c, myproxy.c, myproxy_creds.c,
+	myproxy_server.c, myproxy_server_config.c: Replaced snprintf()
+	calles with functions from string_func.c because of snprintf()
+	being non-existant on Solaris 2.5.1 boxes and behavioral
+	differences in return value between gnu libc and solaris
+	implementations.
+
+	* myproxy.c: Added encode_command(), encode_response() and
+	encode_lifetime() functions.
+	
 	* myproxy_log.c: Removed my_vsnprintf() as it is now in
 	string_funcs.c
 

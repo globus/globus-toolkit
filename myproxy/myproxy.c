@@ -9,6 +9,7 @@
 #include "gsi_socket.h"
 #include "version.h"
 #include "verror.h"
+#include "string_funcs.h"
 
 #include <errno.h> 
 #include <stdarg.h>
@@ -46,14 +47,24 @@ static int convert_message(const char		*buffer,
 static int parse_command(const char			*command_str,
 			 myproxy_proto_request_type_t	*command_value);
 
+static const char *
+encode_command(const myproxy_proto_request_type_t	command_value);
 
 static int
 parse_lifetime(const char			*lifetime_str,
 	       int				*lifetime_value);
 
 static int
+encode_lifetime(int				lifetime,
+		char				*string,
+		int				string_len);
+		
+static int
 parse_response_type(const char				*type_str,
 		    myproxy_proto_response_type_t	*type_value);
+
+static const char *
+encode_response(myproxy_proto_response_type_t	response_value);
 
 static int
 string_to_int(const char			*string,
@@ -240,38 +251,61 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 {
     int len;
     int totlen = 0;
+    char lifetime_string[64];
+    const char *command_string;
 
     assert(data != NULL);
-
-    len = snprintf(data, datalen, "%s%s\n", MYPROXY_VERSION_STRING, request->version);
+    assert(datalen > 0);
+    
+    data[0] = '\0';
+    
+    len = concatenate_strings(data, datalen, MYPROXY_VERSION_STRING,
+			      request->version, "\n", NULL);
     if (len < 0) 
       return -1;
     
     totlen += len;
-    len = snprintf(&data[totlen], datalen - totlen, "%s%d\n", MYPROXY_COMMAND_STRING, 
-                   (myproxy_proto_request_type_t)request->command_type);
+
+    command_string = encode_command((myproxy_proto_request_type_t)request->command_type);
+    
+    if (command_string == NULL)
+    {
+	return -1;
+    }
+    
+    len = concatenate_strings(data, datalen, MYPROXY_COMMAND_STRING, 
+			      command_string, "\n", NULL);
+    
     if (len < 0)
       return -1;
     
     totlen += len;
-    len = snprintf(&data[totlen], datalen - totlen, "%s%s\n", 
-                   MYPROXY_USERNAME_STRING, request->username); 
+    len = concatenate_strings(data, datalen, MYPROXY_USERNAME_STRING,
+			      request->username, "\n", NULL); 
     if (len < 0)
       return -1;
 
     totlen += len;
-    len = snprintf(&data[totlen], datalen - totlen, 
-                 "%s%s\n", MYPROXY_PASSPHRASE_STRING, request->passphrase);
+    len = concatenate_strings(data, datalen, MYPROXY_PASSPHRASE_STRING,
+			       request->passphrase, "\n", NULL);
+    if (len < 0)
+      return -1;
+
+    if (encode_lifetime(request->portal_lifetime,
+			lifetime_string,
+			sizeof(lifetime_string)) == -1)
+    {
+	return -1;
+    }
+			
+    totlen += len;
+    len = concatenate_strings(data, datalen, MYPROXY_LIFETIME_STRING,
+			      lifetime_string, "\n", NULL);
     if (len < 0)
       return -1;
 
     totlen += len;
-    len = snprintf(&data[totlen], datalen - totlen, 
-                 "%s%d\n", MYPROXY_LIFETIME_STRING, request->portal_lifetime);
-    if (len < 0)
-      return -1;
-    totlen += len;
-    data[totlen] = '\0';
+
     return totlen+1;
 }
 
@@ -383,18 +417,29 @@ myproxy_serialize_response(const myproxy_response_t *response,
 {
     int len;
     int totlen = 0;
-
+    const char *response_string;
+    
     assert(data != NULL);
     assert(response != NULL);
 
-    len = snprintf(data, datalen, "%s%s\n", MYPROXY_VERSION_STRING, response->version);
+    data[0] = '\0';
+    
+    len = concatenate_strings(data, datalen, MYPROXY_VERSION_STRING,
+			      response->version, "\n", NULL);
     if (len < 0)
         return -1;
     
     totlen += len;
-    len = snprintf(&data[totlen], datalen - totlen,
-                 "%s%d\n", MYPROXY_RESPONSE_STRING, 
-                 (myproxy_proto_response_type_t)response->response_type);
+
+    response_string = encode_response((myproxy_proto_response_type_t) response->response_type);
+
+    if (response_string == NULL)
+    {
+	return -1;
+    }
+    
+    len = concatenate_strings(data, datalen, MYPROXY_RESPONSE_STRING, 
+			      response_string, "\n", NULL);
     if (len < 0)
         return -1;
     
@@ -402,14 +447,13 @@ myproxy_serialize_response(const myproxy_response_t *response,
 
     /* Only add error string if necessary */
     if (strcmp(response->error_string, "") != 0) {
-        len = snprintf(&data[totlen], datalen - totlen, 
-                       "%s%s\n", MYPROXY_ERROR_STRING, response->error_string);
+        len = concatenate_strings(data, datalen, MYPROXY_ERROR_STRING,
+				  response->error_string, "\n", NULL);
         if (len < 0)
 	  return -1;
 
         totlen += len;
     }
-    data[totlen] = '\0';
 
     return totlen+1;
 }
@@ -730,6 +774,50 @@ parse_command(const char			*command_str,
 
 
 /*
+ * encode_command()
+ *
+ * Return a string encoding of the command in command_value.
+ * Returns NULL on error, setting verror.
+ */
+static const char *
+encode_command(const myproxy_proto_request_type_t	command_value)
+{
+    const char *string;
+    
+    /*
+     * XXX Should return actual string description.
+     */
+    switch(command_value)
+    {
+      case MYPROXY_GET_PROXY:
+	string = "0";
+	break;
+	
+      case MYPROXY_PUT_PROXY:
+	string = "1";
+	break;
+	
+      case MYPROXY_INFO_PROXY:
+	string = "2";
+	break;
+	
+      case MYPROXY_DESTROY_PROXY:
+	string = "3";
+	break;
+	
+      default:
+	/* Should never get here */
+	string = NULL;
+	verror_put_string("Internal error: Bad command type(%d)",
+			  command_value);
+	break;
+    }
+
+    return string;
+}
+
+
+/*
  * parse_lifetime()
  *
  * Given a string representation of a proxy lifetime, fill in the given
@@ -768,6 +856,35 @@ parse_lifetime(const char			*lifetime_str,
     }
     
     return return_value;
+}
+
+
+/*
+ * encode_lifetime()
+ *
+ * Encode the given lifetime as a string into the given buffer with
+ * length of buffer_len.
+ *
+ * Returns 0 on success, -1 on error setting verror.
+ */
+static int
+encode_lifetime(int				lifetime,
+		char				*string,
+		int				string_len)
+{
+    /* Buffer large enough to hold string representation of lifetime */
+    char buffer[20];
+    
+    assert(string != NULL);
+
+    sprintf(buffer, "%d", lifetime);
+    
+    if (my_strncpy(string, buffer, string_len) == -1)
+    {
+	return -1;
+    }
+    
+    return 0;
 }
 
 
@@ -812,6 +929,40 @@ parse_response_type(const char				*type_str,
     return return_value;
 }
 
+/*
+ * encode_response()
+ *
+ * Return a string encoding of the response_type in response_value.
+ * Returns NULL on error.
+ */
+static const char *
+encode_response(const myproxy_proto_response_type_t	response_value)
+{
+    const char *string;
+    
+    /*
+     * XXX Should return actual string description.
+     */
+    switch(response_value)
+    {
+      case MYPROXY_OK_RESPONSE:
+	string = "0";
+	break;
+	
+      case MYPROXY_ERROR_RESPONSE:
+	string = "1";
+	break;
+	
+      default:
+	/* Should never get here */
+	string = NULL;
+	verror_put_string("Internal error: Bad reponse type (%d)",
+			  response_value);
+	break;
+    }
+
+    return string;
+}
 
 /*
  * string_to_int()
@@ -868,3 +1019,4 @@ string_to_int(const char			*string,
   error:
     return return_value;
 }
+

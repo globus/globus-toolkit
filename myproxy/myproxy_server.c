@@ -11,6 +11,7 @@
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
+#include "string_funcs.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -180,7 +181,6 @@ main(int argc, char *argv[])
      * Logging initialized: For here on use myproxy_log functions
      * instead of fprintf() and ilk.
      */
-
     myproxy_log("starting at %s", timestamp());
 
     /* Set up signal handling to deal with zombie processes left over  */
@@ -645,8 +645,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 
     response.version = strdup(MYPROXY_VERSION);
     response.response_type = MYPROXY_ERROR_RESPONSE;
-    snprintf(response.error_string, sizeof(response.error_string),
-	     "%s", error);
+    my_strncpy(response.error_string, error, sizeof(response.error_string));
     
     responselen = myproxy_serialize_response(&response,
 					     response_buffer,

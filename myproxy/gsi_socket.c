@@ -7,6 +7,7 @@
 #include "gsi_socket.h"
 #include "ssl_utils.h"
 #include "verror.h"
+#include "string_funcs.h"
 
 #include <globus_gss_assist.h>
 
@@ -79,7 +80,7 @@ append_gss_status(char *buffer,
 	if ((error_string.value != NULL) &&
 	    (error_string.length > 0))
 	{
-	    chars = snprintf(buffer, bufferlen, error_string.value);
+	    chars = my_strncpy(buffer, error_string.value, bufferlen);
 	    
 	    if (chars == -1)
 	    {
@@ -561,12 +562,12 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
     
     if (self == NULL)
     {
-	return snprintf(buffer, bufferlen, "GSI_SOCKET is NULL");
+	return my_strncpy(buffer, "GSI_SOCKET is NULL", bufferlen);
     }
 
     if (self->error_string != NULL)
     {
-	chars = snprintf(buffer, bufferlen, self->error_string);
+	chars = my_strncpy(buffer, self->error_string, bufferlen);
 	
 	if (chars == -1)
 	{
@@ -580,7 +581,7 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
     
     if (self->error_number != 0)
     {
-	chars = snprintf(buffer, bufferlen, strerror(self->error_number));
+	chars = my_strncpy(buffer, strerror(self->error_number), bufferlen);
 
 	if (chars == -1)
 	{
@@ -626,11 +627,11 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 	switch(self->major_status) 
 	{
 	  case GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ:
-	    chars = snprintf(buffer, bufferlen, "Error reading token");
+	    chars = my_strncpy(buffer, "Error reading token", bufferlen);
 	    break;
 	    
 	  case GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_WRITE:
-	    chars = snprintf(buffer, bufferlen, "Error writing token");
+	    chars = my_strncpy(buffer, "Error writing token", bufferlen);
 	    break;
 	}
 
@@ -955,7 +956,7 @@ GSI_SOCKET_get_client_name(GSI_SOCKET *self,
 	goto error;
     }
     
-    return_value = snprintf(buffer, buffer_len, self->peer_name);
+    return_value = my_strncpy(buffer, self->peer_name, buffer_len);
 
     if (return_value == -1)
     {

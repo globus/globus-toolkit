@@ -181,7 +181,7 @@ do_receive()
 
     printf("Client message: %s\n", data);
 
-    len = snprintf(data, sizeof(data), "Hello from the server") + 1 /* NUL */;
+    len = my_strncpy(data, sizeof(data), "Hello from the server") + 1 /* NUL */;
     
     if (GSI_SOCKET_write_buffer(gsi_socket, data, len) == GSI_SOCKET_ERROR)
     {
@@ -264,7 +264,7 @@ do_transmit()
 	return -1;
     }
 
-    len = snprintf(data, sizeof(data), "Hello server!") + 1 /* NUL */;
+    len = my_strncpy(data, sizeof(data), "Hello server!") + 1 /* NUL */;
     
     if (GSI_SOCKET_write_buffer(gsi_socket, data, len) == GSI_SOCKET_ERROR)
     {
