@@ -1125,6 +1125,16 @@ globus_i_gsi_callback_check_critical_extensions(
                 goto exit;
             }
 
+            if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    ("Failed to copy extension data."));
+                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                goto exit;                
+            }
+
             if((d2i_PROXYCERTINFO(
                     &proxycertinfo,
                     &ext_data->data,
@@ -1196,6 +1206,11 @@ globus_i_gsi_callback_check_critical_extensions(
     if(proxycertinfo != NULL)
     {
         PROXYCERTINFO_free(proxycertinfo);
+    }
+
+    if(ext_data != NULL)
+    {
+        ASN1_OCTET_STRING_free(ext_data);
     }
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
