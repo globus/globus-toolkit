@@ -22,6 +22,9 @@
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
+    <Source_Dependencies Type="compile" >
+      <Dependency Name="globus_libtool"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+    </Source_Dependencies>
 
     <Build_Instructions>
 
