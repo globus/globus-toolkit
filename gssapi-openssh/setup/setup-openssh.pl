@@ -236,7 +236,7 @@ sub fixpaths
 
     if ( ! -f "$f" )
     {
-        printf("Cannot find $f!");
+        printf("Cannot find $f!\n");
         return;
     }
 
