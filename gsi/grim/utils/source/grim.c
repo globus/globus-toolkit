@@ -256,7 +256,7 @@ main(
     globus_grim_config_get_cert_filename(config, &user_cert_filename);
     globus_grim_config_get_key_filename(config, &user_key_filename);
     globus_grim_config_get_port_type_filename(config, &port_type_filename);
-    globus_grim_config_get_port_type_filename(config, &log_filename);
+    globus_grim_config_get_log_filename(config, &log_filename);
     if(log_filename != NULL)
     {
         FILE *                                  tmp_file;
