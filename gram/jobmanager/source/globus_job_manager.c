@@ -99,6 +99,7 @@ globus_l_job_manager_duct_environment(int count,
 char * grami_jm_libexecdir = GLOBUS_LIBEXECDIR;
 char * grami_user_proxy_path = NULL;
 char * grami_script_arg_file = NULL;
+char * grami_jm_type = NULL;
 char * grami_logfile = NULL;
 FILE * grami_log_fp = NULL;
 
@@ -126,6 +127,7 @@ static char graml_callback_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
 static char * graml_job_contact = NULL;
 static char * graml_my_globusid = NULL;
 static char * graml_job_status  = NULL;
+static char * graml_nickname  = NULL;
 static globus_rsl_t * graml_rsl_tree;
 
 static char *                      graml_jm_status_dir = NULL;
@@ -272,6 +274,18 @@ main(int argc,
             jm_home_dir = argv[i+1];
             i++;
         }
+        else if ((strcmp(argv[i], "-nickname") == 0)
+                 && (i + 1 < argc))
+        {
+            graml_nickname = argv[i+1];
+            i++;
+        }
+        else if ((strcmp(argv[i], "-jm_type") == 0)
+                 && (i + 1 < argc))
+        {
+            grami_jm_type = argv[i+1];
+            i++;
+        }
         else if ((strcmp(argv[i], "-e") == 0)
                  && (i + 1 < argc))
         {
@@ -332,6 +346,11 @@ main(int argc,
 
     grami_fprintf( grami_log_fp, "-----------------------------------------\n");
     grami_fprintf( grami_log_fp, "JM: Entering gram_job_manager main()\n");
+
+    if (graml_nickname)
+    {
+        grami_fprintf( grami_log_fp, "JM: nickname = %s\n", graml_nickname);
+    }
 
     grami_fprintf( grami_log_fp, "JM: HOME = %s\n", graml_env_home);
 
@@ -859,10 +878,21 @@ graml_status_file_gen(int job_status)
 
     grami_fprintf( grami_log_fp, "JM: in graml_status_file_gen\n");
 
-    sprintf(status_file, "%s/%s_%lu",
-            graml_jm_status_dir,
-            STATUS_FILE_PREFIX,
-            (unsigned long) getpid() );
+    if (graml_nickname)
+    {
+        sprintf(status_file, "%s/%s_%s.%lu",
+                graml_jm_status_dir,
+                STATUS_FILE_PREFIX,
+                graml_nickname,
+                (unsigned long) getpid() );
+    }
+    else
+    {
+        sprintf(status_file, "%s/%s_no_nickname.%lu",
+                graml_jm_status_dir,
+                STATUS_FILE_PREFIX,
+                (unsigned long) getpid() );
+    }
 
     /*
      * Check to see if the status file exists.  If so, then delete it.
