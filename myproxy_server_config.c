@@ -505,8 +505,7 @@ myproxy_server_check_policy_list(const char **dn_list, const char *client_name)
     int return_code = -1;
     
     if ((dn_list == NULL) || (client_name == NULL)) {
-	verror_put_errno(EINVAL);
-	goto error;
+	return 0;
     }
 
     return_code = is_name_in_list(dn_list, client_name);
@@ -521,8 +520,7 @@ myproxy_server_check_policy(const char *dn_regex, const char *client_name)
     int return_code = -1;
     
     if ((dn_regex == NULL) || (client_name == NULL)) {
-	verror_put_errno(EINVAL);
-	goto error;
+	return 0;
     }
 
     return_code = regex_compare(dn_regex, client_name);
