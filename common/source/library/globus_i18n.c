@@ -6,8 +6,7 @@
 #include "unicode/ustring.h"
 
 
-/*what is the dealy o fuck*/
-char * globus_getstringbykey(globus_resource_bundle_t resource,
+char * globus_get_string_by_key( char * locale,
 	         	  char * resource_name,
 			  char * key)
 {
@@ -21,9 +20,11 @@ char * globus_getstringbykey(globus_resource_bundle_t resource,
 
     currdir = getcwd(NULL, 0);
     resource_path = globus_common_create_string(
-	            "%s/share", globus_libc_getenv("GLOBUS_LOCATION"));
+	            "%s/share/%s", 
+		    globus_libc_getenv("GLOBUS_LOCATION"), 
+		    resource_name);
 
-    myResources = ures_open(resource_path, "resource_name", &uerr);
+    myResources = ures_open(resource_path, locale, &uerr);
 
     globus_free(resource_path);
 
@@ -55,8 +56,63 @@ char * globus_getstringbykey(globus_resource_bundle_t resource,
     return utf8string;
 }
 
-globus_result_t globus_set_default_locale(char * locale)
+
+
+char * globus_get_string_by_index(char * locale,
+	         	  char * resource_name,
+			  int32_t index)
 {
-	return GLOBUS_SUCCESS;
+    UErrorCode	uerr	=U_ZERO_ERROR;
+    char * resource_path;
+    static char * currdir = NULL;
+    char * utf8string;
+    const UChar * string;
+    int32_t	len;
+    UResourceBundle * myResources;
+
+    currdir = getcwd(NULL, 0);
+    resource_path = globus_common_create_string(
+	            "%s/share/%s", 
+		    globus_libc_getenv("GLOBUS_LOCATION"), 
+		    resource_name);
+
+    myResources = ures_open(resource_path, locale, &uerr);
+
+    globus_free(resource_path);
+
+    if (U_FAILURE(uerr)) 
+    {
+        fprintf(stderr,
+		"%s: ures_open failed with error \"%s\"\n", 
+		resource_name, 
+		u_errorName(uerr));
+       	exit(-1);
     }
 
+    string = ures_getStringByIndex(myResources, index, &len, &uerr);
+
+    if (U_FAILURE(uerr)) 
+    { 
+	fprintf(stderr, 
+		"%s: ures_open failed with error \"%s\"\n", 
+		resource_name, 
+		u_errorName(uerr)); 
+	exit(-1);
+    }
+
+    
+    u_strToUTF8(NULL, 0, &len, string, -1, &uerr);
+    utf8string=(char *)malloc(sizeof(char *)*len); 
+    uerr=U_ZERO_ERROR; 
+    utf8string=u_strToUTF8(utf8string, len, NULL, string, -1, &uerr);
+
+    return utf8string;
+}
+
+
+char * globus_get_error_def(char * resource_name,
+		            char * key)
+{
+	return globus_get_string_by_key(GLOBUS_NULL, resource_name, key);
+}
+	

@@ -2,13 +2,16 @@
 #include "unicode/ures.h"      /* ICU API for resource loading */
 #include "unicode/ustring.h"
 
-typedef UResourceBundle* globus_resource_bundle_t;
+
+char * globus_get_string_by_key(char * locale,
+		                char * resource_name,
+				char * key);
 
 
+char * globus_get_string_by_index(char * locale,
+		                  char * resource_name,
+				  int32_t index);
 
-char * globus_getstringbykey(globus_resource_bundle_t  resource,
-		                          char * resource_name,
-					  char * key);
+char * globus_get_error_def(char * resource_name,
+			    char * key);
 
-
-globus_result_t globus_set_default_locale(char * locale);
