@@ -141,6 +141,8 @@ globus_l_xio_ftp_cmd_attr_init(
     }
     
     attr->create_buffer_mode = GLOBUS_FALSE;
+
+    *out_driver_attr = attr;
     
     return GLOBUS_SUCCESS;
 
