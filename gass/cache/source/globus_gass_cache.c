@@ -998,9 +998,9 @@ Returns:
 static int
 globus_l_gass_cache_lock_file(char* file_to_be_locked)
 {
-    char   lock_file[MAXPATHLEN+1];
+    char   lock_file[FILENAME_MAX+1];
     int    lock_file_fd;
-    char   uniq_lock_file[MAXPATHLEN+1];
+    char   uniq_lock_file[FILENAME_MAX+1];
     int    uniq_lock_file_fd;
     struct stat uniq_file_stat;
     char   hname[MAXHOSTNAMELEN];
@@ -1095,10 +1095,10 @@ Returns:
 static int
 globus_l_gass_cache_unlock_file(char* file_to_be_locked)
 {
-    char   lock_file[MAXPATHLEN+1];
+    char   lock_file[FILENAME_MAX+1];
     int    lock_file_fd;
 
-    char   uniq_lock_file[MAXPATHLEN+1];
+    char   uniq_lock_file[FILENAME_MAX+1];
     int    uniq_lock_file_fd;
     char   hname[MAXHOSTNAMELEN];
  
@@ -1424,9 +1424,9 @@ globus_gass_cache_open(char                *cache_directory_path,
     char *      pt;		/* general purpose returned pointer        */
 
     int         f_name_lenght;	/* too verify the lenght of the file names */
-    char        f_name[MAXPATHLEN+1];/* path name of the 3 files we */
+    char        f_name[FILENAME_MAX+1];/* path name of the 3 files we */
 				     /* will open */
-    char        log_f_name[MAXPATHLEN+1]; /* log file file name           */
+    char        log_f_name[FILENAME_MAX+1]; /* log file file name           */
     int         state_f_fd;	/* to open/create the state file          */
     struct stat cache_dir_stat;   
 
@@ -1483,7 +1483,7 @@ globus_gass_cache_open(char                *cache_directory_path,
 		return ( GLOBUS_GASS_CACHE_ERROR_NO_HOME );
 	    }
 	    if ((f_name_lenght +
-		 sizeof(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME))>=MAXPATHLEN)
+		 sizeof(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME))>=FILENAME_MAX)
 	    {
 		CACHE_TRACE("ENAMETOOLONG");
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
@@ -1496,7 +1496,7 @@ globus_gass_cache_open(char                *cache_directory_path,
 	}
 	else /* *pt is not null or empty */
 	{
-	    if (f_name_lenght >= MAXPATHLEN)
+	    if (f_name_lenght >= FILENAME_MAX)
 	    {
 		CACHE_TRACE("ENAMETOOLONG");
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
@@ -1511,7 +1511,7 @@ globus_gass_cache_open(char                *cache_directory_path,
 	CACHE_TRACE("Parrameter cache_directory_path must be NULL when calling globus_gass_cache_open() in this version of GLOBUS_GASS_CACHE\n");
 	return (GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER);*/
 	/* for the version which will accept a cache directory not null  */
-	if (f_name_lenght >= MAXPATHLEN)
+	if (f_name_lenght >= FILENAME_MAX)
 	{
 	    CACHE_TRACE("ENAMETOOLONG");
 	    return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
@@ -1555,7 +1555,7 @@ globus_gass_cache_open(char                *cache_directory_path,
     }
 
     /* here I suppose cache_directory_path existe and is a directory */
-    if ((f_name_lenght + LONGER_NAME_USED )>=MAXPATHLEN)
+    if ((f_name_lenght + LONGER_NAME_USED )>=FILENAME_MAX)
     {
 	CACHE_TRACE("ENAMETOOLONG");
 	return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
@@ -1735,7 +1735,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
     globus_gass_cache_entry_t *entry_found_pt;
     globus_gass_cache_entry_t *new_entry_pt;
     globus_gass_cache_tag_t   *tag_pt; /* to scan thrue the tag arrays */
-    char                       notready_file_path[MAXPATHLEN+1];
+    char                       notready_file_path[FILENAME_MAX+1];
     struct stat                file_stat;
     int                        tmp_fd;
     
@@ -1785,7 +1785,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   cache_handle->nb_entries++;
 	   
 	   /* create a new file name */
-	   *local_filename=globus_malloc(MAXPATHLEN+1);
+	   *local_filename=globus_malloc(FILENAME_MAX+1);
 	   GLOBUS_L_GASS_CACHE_FILENAME(*local_filename);
 	   globus_libc_lock();
 	   while (stat(*local_filename,&file_stat) != -1)
@@ -2000,7 +2000,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   
 	       /* return the file name and the timestamp */
 	       /* create a new file name */
-	       *local_filename=globus_malloc(MAXPATHLEN+1);
+	       *local_filename=globus_malloc(FILENAME_MAX+1);
 	       strcpy(*local_filename,
 		      entry_found_pt->filename);
 	       *timestamp = entry_found_pt->timestamp;
@@ -2135,7 +2135,7 @@ globus_gass_cache_add_done(globus_gass_cache_t *cache_handle,
 			   unsigned long        timestamp)
 {
     int                        rc;   /* general purpose return code */
-    char                       notready_file_path[MAXPATHLEN+1];
+    char                       notready_file_path[FILENAME_MAX+1];
     struct stat                file_stat;
     globus_gass_cache_entry_t *entry_found_pt;
 
@@ -2262,7 +2262,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 {
     int                        rc; /* general purpose return code */
     globus_gass_cache_entry_t *entry_found_pt;
-    char                       notready_file_path[MAXPATHLEN+1];
+    char                       notready_file_path[FILENAME_MAX+1];
     struct stat                file_stat;
     globus_gass_cache_tag_t   *tag_pt;
     int                        tmp_fd;
@@ -2495,7 +2495,7 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
 { 
     int                        rc; /* general purpose return code */
     globus_gass_cache_entry_t *entry_found_pt;
-    char                       notready_file_path[MAXPATHLEN+1];
+    char                       notready_file_path[FILENAME_MAX+1];
     struct stat                file_stat;
     globus_gass_cache_tag_t   *tag_pt;
     int                        same_tag;
@@ -2742,7 +2742,7 @@ globus_gass_cache_cleanup_tag(globus_gass_cache_t *cache_handle,
 {
     int                        rc; /* general purpose return code */
     globus_gass_cache_entry_t *entry_found_pt;
-    char                       notready_file_path[MAXPATHLEN+1];
+    char                       notready_file_path[FILENAME_MAX+1];
     struct stat                file_stat;
     globus_gass_cache_tag_t   *tag_pt;
     int                        same_tag;
@@ -2882,7 +2882,7 @@ globus_gass_cache_cleanup_file(globus_gass_cache_t *cache_handle,
 {
     int                        rc; /* general purpose return code */
     globus_gass_cache_entry_t *entry_found_pt;
-    char                       notready_file_path[MAXPATHLEN+1];
+    char                       notready_file_path[FILENAME_MAX+1];
 
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
