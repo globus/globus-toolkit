@@ -3,6 +3,8 @@
 
 #include "globus_common.h"
 
+EXTERN_C_BEGIN
+
 
 /*************************************************************************
  *    define types
@@ -111,4 +113,7 @@ typedef struct
     char *                              subject;
 } globus_xio_contact_t;
 
+EXTERN_C_END
+
 #endif
+

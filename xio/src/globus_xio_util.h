@@ -3,6 +3,8 @@
 
 #include "globus_xio.h"
 
+EXTERN_C_BEGIN
+
 globus_bool_t
 globus_xio_error_is_eof(
     globus_result_t                     res);
@@ -353,5 +355,7 @@ globus_xio_contact_info_to_string(
             _ndx += (iov)[_i].iov_len;                                      \
         }                                                                   \
     } while(0)
+
+EXTERN_C_END
 
 #endif

@@ -6,6 +6,8 @@
 #include "globus_xio_util.h"
 #include "globus_xio_load.h"
 
+EXTERN_C_BEGIN
+
 /**
  * @mainpage Globus XIO
  *
@@ -946,5 +948,7 @@ globus_xio_server_register_signal_handler(
 
 extern globus_module_descriptor_t       globus_i_xio_module;
 #define GLOBUS_XIO_MODULE &globus_i_xio_module
+
+EXTERN_C_END
 
 #endif

@@ -3,6 +3,13 @@
 
 #include "globus_common.h"
 #include "globus_xio_load.h"
+#include "globus_common.h"
+#include "globus_xio_types.h"
+#include "globus_xio.h"
+#include "globus_xio_util.h"
+#include <stdarg.h>
+
+EXTERN_C_BEGIN
 
 /************************************************************************
  *                      attribute macros
@@ -207,12 +214,6 @@ do                                                                          \
  *  The set of interface functions that the driver author must implement 
  *  to create a driver and the functions to assist in the creation.
  */
-
-#include <stdarg.h>
-#include "globus_common.h"
-#include "globus_xio_types.h"
-#include "globus_xio.h"
-#include "globus_xio_util.h"
 
 /*******************************************************************
  *                        callbacks
@@ -1221,5 +1222,7 @@ void *
 globus_xio_operation_get_data_descriptor(
     globus_xio_operation_t              op,
     globus_bool_t                       force_create);
+
+EXTERN_C_END
 
 #endif /* GLOBUS_XIO_DRIVER_H */
