@@ -4,10 +4,21 @@
 #   performing actions that originally occurred during the package's
 #   'make install' phase.
 #
-# Large parts adapted from 'fixpath', a tool found in openssh-3.0.2p1.
+# Parts adapted from 'fixpath', a tool found in openssh-3.0.2p1.
 #
 # Send comments/fixes/suggestions to:
 # Chase Phillips <cphillip@ncsa.uiuc.edu>
+#
+
+#
+# Get user's GPT_LOCATION since we may be installing this using a new(er)
+# version of GPT.
+#
+
+$gptpath = $ENV{GPT_LOCATION};
+
+#
+# And the old standby..
 #
 
 $gpath = $ENV{GLOBUS_LOCATION};
@@ -21,7 +32,14 @@ if (!defined($gpath))
 # do so
 #
 
-@INC = (@INC, "$gpath/lib/perl");
+if (defined($gptpath))
+{
+    @INC = (@INC, "$gptpath/lib/perl", "$gpath/lib/perl");
+}
+else
+{
+    @INC = (@INC, "$gpath/lib/perl");
+}
 
 require Grid::GPT::Setup;
 
@@ -190,7 +208,7 @@ sub runkeygen
 
 sub fixpaths
 {
-    my $g;
+    my $g, $h;
 
     print "\nStage 4: Translating strings in config and man files..\n";
 
@@ -245,6 +263,13 @@ sub fixpaths
         $g = "$f.tmp";
 
         #
+        # What is $f's filename? (taken from the qualified path)
+        #
+
+        $h = $f;
+        $h =~ s#^.*/##;
+
+        #
         # Grab the current mode/uid/gid for use later
         #
 
@@ -295,6 +320,8 @@ sub fixpaths
 
         chmod($mode, $f);
         chown($uid, $gid, $f);
+
+        print "$h\n";
     } # for $f
 
     return 0;
@@ -310,8 +337,10 @@ print "for this machine (if it doesn't already have them).\n";
 print "\n";
 print "I like to install my config-related files in:\n";
 print "  ${sysconfdir}/\n";
-print "and, if you choose to continue, you will find a backup of the\n";
-print "original files in:\n";
+print "\n";
+print "These files may overwrite your previously existing configuration\n";
+print "files.  If you choose to continue, you will find a backup of\n";
+print "those original files in:\n";
 print "  ${backupdir}/\n";
 print "\n";
 print "Your host keys will remain untouched if they are already present.\n";
