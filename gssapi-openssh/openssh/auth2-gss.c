@@ -56,8 +56,7 @@ userauth_external(Authctxt *authctxt)
 {
         packet_check_eom();
 
-	if (authctxt->valid && authctxt->user &&
-	    strcmp(authctxt->user, "") != 0) {
+	if (authctxt->valid && authctxt->user && authctxt->user[0]) {
 		return(PRIVSEP(ssh_gssapi_userok(authctxt->user)));
 	}
 	return 0;
