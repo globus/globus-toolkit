@@ -11,7 +11,7 @@ static globus_xio_handle_t              globus_l_usage_stats_xio_handle;
 static globus_mutex_t                   globus_l_usage_stats_mutex;
 static unsigned char                    globus_l_usage_stats_data[1472];
 
-#define GLOBUS_L_USAGE_STATS_DEFAULT_TARGETS "wiggum.mcs.anl.gov:45678"
+#define GLOBUS_L_USAGE_STATS_DEFAULT_TARGETS "wiggum.mcs.anl.gov:4810"
 
 enum
 {
