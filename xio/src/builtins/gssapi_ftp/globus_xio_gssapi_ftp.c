@@ -1756,10 +1756,10 @@ globus_l_xio_gssapi_ftp_attr_init(
     GlobusXIOGssapiftpDebugEnter();
 
     attr = (globus_l_xio_gssapi_attr_t *) 
-        globus_malloc(sizeof(globus_l_xio_gssapi_attr_t));
+        globus_calloc(sizeof(globus_l_xio_gssapi_attr_t), 1);
     if(attr == NULL)
     {
-	goto err;
+	    goto err;
     }
     attr->subject = NULL;
     attr->start_state = GSSAPI_FTP_STATE_NONE;
@@ -2055,8 +2055,6 @@ globus_l_xio_gssapi_ftp_write(
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
-    char *                              tmp_ptr;
-    globus_byte_t *                     buf;
     char *                              encoded_buf;
     globus_size_t                       length;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
@@ -2112,7 +2110,7 @@ globus_l_xio_gssapi_ftp_write(
         else
         {
             res = globus_l_xio_gssapi_ftp_wrap(
-                    handle, handle->write_buffer, (globus_byte_t *)tmp_ptr - buf, 
+                    handle, handle->write_buffer, length, 
                     &encoded_buf, handle->client);
             if(res != GLOBUS_SUCCESS)
             {
