@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="Old_GAA">
+	Name="grid-proxy-info">
 	<Build>
 		<Settings>
 			<Platform
@@ -11,14 +11,14 @@
 				Name="Debug|Win32"
 				IntermediateDirectory="Build"
 				OutputDirectory="Build"
-				ConfigurationType="4"
+				ConfigurationType="1"
 				CharacterSet="2">
 				<Tool
 					Name="VCBscMakeTool"/>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					IncludePaths="$(GLOBUS_LOCATION)/include;..\"
+					IncludePaths="$(GLOBUS_LOCATION)/include; ../library/"
 					Defines="WIN32;_DEBUG;_WINDOWS"
 					MinimalRebuild="TRUE"
 					FullRuntimeChecks="TRUE"
@@ -30,8 +30,8 @@
 				<Tool
 					Name="VCCustomBuildTool"/>
 				<Tool
-					Name="VCLibrarianTool"
-					OutputFile="$(OutDir)\globus_oldgaa.lib"/>
+					Name="VCLinkerTool"
+					AdditionalInputs="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib $(GLOBUS_LOCATION)/lib/libeay32.lib $(GLOBUS_LOCATION)/lib/ssleay32.lib $(OutDir)/globus_oldgaa.lib $(OutDir)/globus_sslutils.lib"/>
 				<Tool
 					Name="VCMIDLTool"
 					TargetEnvironment="1"/>
@@ -43,6 +43,8 @@
 					Name="VCPreLinkEventTool"/>
 				<Tool
 					Name="VCResourceCompilerTool"/>
+				<Tool
+					Name="VCSDLTool"/>
 			</Configuration>
 			<Configuration
 				Name="Release|Win32"
@@ -70,7 +72,7 @@
 				<Tool
 					Name="VCLinkerTool"
 					AdditionalInputs="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib"
-					OutputFile="$(OutDir)/globus_oldgaa.lib"
+					OutputFile="$(OutDir)/grid-proxy-info.exe"
 					LinkIncremental="1"
 					SuppressStartupMessage="TRUE"
 					GenerateDebug="FALSE"
@@ -97,47 +99,7 @@
 			Name="Source Files"
 			Filter="c">
 			<File
-				RelativePath="..\library\oldgaa\oldgaa_alloc.c">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\oldgaa_api.c">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\oldgaa_gl_internal_err.c">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\oldgaa_policy_evaluator.c">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\oldgaa_release.c">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\oldgaa_utils.c">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\oldglobus_gaa_utils.c">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\rfc1779.c">
-			</File>
-		</Filter>
-		<Filter
-			Name="Header Files"
-			Filter="h">
-			<File
-				RelativePath="..\library\oldgaa\globus_oldgaa.h">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\globus_oldgaa_utils.h">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\oldgaa_gl_internal_err.h">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\oldgaa_policy_evaluator.h">
-			</File>
-			<File
-				RelativePath="..\library\oldgaa\oldgaa_utils.h">
+				RelativePath="..\programs\grid_proxy_info.c">
 			</File>
 		</Filter>
 	</Files>

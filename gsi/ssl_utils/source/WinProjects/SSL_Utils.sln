@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 7.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SSL_Utils", "SSL_Utils.vcproj", "{9C1399E4-4EA4-427A-AB8D-5691DB1F1769}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssl_utils", "ssl_utils.vcproj", "{9C1399E4-4EA4-427A-AB8D-5691DB1F1769}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 	ProjectSection(SolutionConfiguration) = postProject
@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SSL_Utils", "SSL_Utils.vcpr
 		Debug.Build.0 = Debug|Win32
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Old_GAA", "Old_GAA.vcproj", "{C117B0CD-48F5-48BD-BAC4-CB1CACA260CD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "old_gaa", "old_gaa.vcproj", "{C68F8ABE-FB94-4E91-AD70-85DC08307B1C}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 	ProjectSection(SolutionConfiguration) = postProject
@@ -19,7 +19,27 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Old_GAA", "Old_GAA.vcproj",
 		Debug.Build.0 = Debug|Win32
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GridProxyInit", "GridProxyInit.vcproj", "{D217440A-80E5-4E90-957C-1FFE4ADD3010}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "grid-proxy-init", "grid_proxy_init.vcproj", "{AC3E3064-E5B7-4ADA-93B0-A5C7BE8974FF}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+	ProjectSection(SolutionConfiguration) = postProject
+		Release.ActiveCfg = Release|Win32
+		Release.Build.0 = Release|Win32
+		Debug.ActiveCfg = Debug|Win32
+		Debug.Build.0 = Debug|Win32
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "grid-proxy-destroy", "grid_proxy_destroy.vcproj", "{17E4E8A9-72B8-4132-B145-844AB74D680C}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+	ProjectSection(SolutionConfiguration) = postProject
+		Release.ActiveCfg = Release|Win32
+		Release.Build.0 = Release|Win32
+		Debug.ActiveCfg = Debug|Win32
+		Debug.Build.0 = Debug|Win32
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "grid-proxy-info", "grid_proxy_info.vcproj", "{885579C6-2A4E-4CEB-97A4-20F49A28109B}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 	ProjectSection(SolutionConfiguration) = postProject

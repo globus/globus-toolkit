@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="ssl_utils">
+	Name="grid-proxy-init">
 	<Build>
 		<Settings>
 			<Platform
@@ -11,19 +11,18 @@
 				Name="Debug|Win32"
 				IntermediateDirectory="Build"
 				OutputDirectory="Build"
-				ConfigurationType="4"
+				ConfigurationType="1"
 				CharacterSet="2">
 				<Tool
 					Name="VCBscMakeTool"/>
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					IncludePaths="$(GLOBUS_LOCATION)\include;$(ProjFileName)\oldgaa"
-					Defines="WIN32;_DEBUG;_CONSOLE"
+					IncludePaths="$(GLOBUS_LOCATION)/include; ../library/"
+					Defines="WIN32;_DEBUG;_WINDOWS"
 					MinimalRebuild="TRUE"
 					FullRuntimeChecks="TRUE"
 					RuntimeLibrary="5"
-					TreatWChar_tAsBuiltInType="TRUE"
 					UsePrecompiledHeader="0"
 					WarnLevel="3"
 					SuppressStartupMessage="TRUE"
@@ -31,8 +30,8 @@
 				<Tool
 					Name="VCCustomBuildTool"/>
 				<Tool
-					Name="VCLibrarianTool"
-					OutputFile="$(OutDir)\globus_sslutils.lib"/>
+					Name="VCLinkerTool"
+					AdditionalInputs="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib $(GLOBUS_LOCATION)/lib/libeay32.lib $(GLOBUS_LOCATION)/lib/ssleay32.lib $(OutDir)/globus_oldgaa.lib $(OutDir)/globus_sslutils.lib"/>
 				<Tool
 					Name="VCMIDLTool"
 					TargetEnvironment="1"/>
@@ -44,12 +43,14 @@
 					Name="VCPreLinkEventTool"/>
 				<Tool
 					Name="VCResourceCompilerTool"/>
+				<Tool
+					Name="VCSDLTool"/>
 			</Configuration>
 			<Configuration
 				Name="Release|Win32"
 				IntermediateDirectory="Release"
 				OutputDirectory="Release"
-				ConfigurationType="4"
+				ConfigurationType="1"
 				CharacterSet="2">
 				<Tool
 					Name="VCBscMakeTool"/>
@@ -58,18 +59,25 @@
 					Optimization="2"
 					InlineFunctionExpansion="1"
 					FramePointerOmission="TRUE"
-					Defines="WIN32;NDEBUG;_CONSOLE"
+					Defines="WIN32;NDEBUG;_WINDOWS"
 					StringPooling="TRUE"
 					RuntimeLibrary="4"
 					PackageFunctions="TRUE"
-					UsePrecompiledHeader="0"
+					UsePrecompiledHeader="3"
 					WarnLevel="3"
 					SuppressStartupMessage="TRUE"
 					DebugInformation="3"/>
 				<Tool
 					Name="VCCustomBuildTool"/>
 				<Tool
-					Name="VCLibrarianTool"/>
+					Name="VCLinkerTool"
+					AdditionalInputs="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib"
+					OutputFile="$(OutDir)/grid-proxy-init.exe"
+					LinkIncremental="1"
+					SuppressStartupMessage="TRUE"
+					GenerateDebug="FALSE"
+					SubSystem="2"
+					TargetMachine="1"/>
 				<Tool
 					Name="VCMIDLTool"
 					TargetEnvironment="1"/>
@@ -81,37 +89,17 @@
 					Name="VCPreLinkEventTool"/>
 				<Tool
 					Name="VCResourceCompilerTool"/>
+				<Tool
+					Name="VCSDLTool"/>
 			</Configuration>
 		</Settings>
 	</Build>
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="c;def;odl;idl;">
+			Filter="c">
 			<File
-				RelativePath="..\library\scutils.c">
-			</File>
-			<File
-				RelativePath="..\library\sslutils.c">
-			</File>
-			<File
-				RelativePath="..\library\winglue.c">
-			</File>
-		</Filter>
-		<Filter
-			Name="Header Files"
-			Filter="h">
-			<File
-				RelativePath="..\library\config.h">
-			</File>
-			<File
-				RelativePath="..\library\scutils.h">
-			</File>
-			<File
-				RelativePath="..\library\sslutils.h">
-			</File>
-			<File
-				RelativePath="..\library\winglue.h">
+				RelativePath="..\programs\grid_proxy_init.c">
 			</File>
 		</Filter>
 	</Files>

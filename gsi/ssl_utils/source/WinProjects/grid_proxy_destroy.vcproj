@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="grid-proxy-init">
+	Name="grid-proxy-destroy">
 	<Build>
 		<Settings>
 			<Platform
@@ -18,7 +18,7 @@
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					IncludePaths="$(GLOBUS_LOCATION)/include"
+					IncludePaths="$(GLOBUS_LOCATION)/include; ../library/"
 					Defines="WIN32;_DEBUG;_WINDOWS"
 					MinimalRebuild="TRUE"
 					FullRuntimeChecks="TRUE"
@@ -31,7 +31,7 @@
 					Name="VCCustomBuildTool"/>
 				<Tool
 					Name="VCLinkerTool"
-					AdditionalInputs="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib $(GLOBUS_LOCATION)/lib/libeay32.lib $(GLOBUS_LOCATION)/lib/ssleay32.lib $(GLOBUS_LOCATION)/lib/globus_oldgaa.lib $(GLOBUS_LOCATION)/lib/globus_sslutils.lib"/>
+					AdditionalInputs="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib $(GLOBUS_LOCATION)/lib/libeay32.lib $(GLOBUS_LOCATION)/lib/ssleay32.lib $(OutDir)/globus_oldgaa.lib $(OutDir)/globus_sslutils.lib"/>
 				<Tool
 					Name="VCMIDLTool"
 					TargetEnvironment="1"/>
@@ -72,7 +72,7 @@
 				<Tool
 					Name="VCLinkerTool"
 					AdditionalInputs="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib"
-					OutputFile="$(OutDir)/grid-proxy-init.exe"
+					OutputFile="$(OutDir)/grid-proxy-destroy.exe"
 					LinkIncremental="1"
 					SuppressStartupMessage="TRUE"
 					GenerateDebug="FALSE"
@@ -99,12 +99,8 @@
 			Name="Source Files"
 			Filter="c">
 			<File
-				RelativePath="..\programs\grid_proxy_init.c">
+				RelativePath="..\programs\grid_proxy_destroy.c">
 			</File>
-		</Filter>
-		<Filter
-			Name="Header Files"
-			Filter="h">
 		</Filter>
 	</Files>
 	<Globals>
