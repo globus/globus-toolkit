@@ -675,7 +675,8 @@ public class TransferClient {
                         DataChannelAuthentication.SELF );
                 host.setProtectionBufferSize( 16384 );
             } else {
-                host.setLocalNoDataChannelAuthentication();
+                host.setDataChannelAuthentication(
+                        DataChannelAuthentication.NONE );
             }
         } catch ( Exception e ) {
             logger.debug( "Error in setting Params", e );
