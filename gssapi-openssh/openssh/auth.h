@@ -41,6 +41,9 @@
 #ifdef KRB5
 #include <krb5.h>
 #endif
+#ifdef AFS_KRB5
+#include <krbafs.h>
+#endif
 
 typedef struct Authctxt Authctxt;
 typedef struct Authmethod Authmethod;
@@ -67,6 +70,9 @@ struct Authctxt {
 	krb5_principal	 krb5_user;
 	char		*krb5_ticket_file;
 	char		*krb5_ccname;
+#endif
+#ifdef SESSION_HOOKS
+        char            *session_env_file;
 #endif
 	void		*methoddata;
 };
