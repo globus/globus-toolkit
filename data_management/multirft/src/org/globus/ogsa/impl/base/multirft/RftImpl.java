@@ -81,6 +81,7 @@ public class RftImpl
     extends GridServiceImpl {
 
     static Log logger = LogFactory.getLog(RftImpl.class.getName());
+    boolean connectionPoolingEnabled = false; //no connection pooling
     String configPath;
     TransferRequestType transferRequest;
     TransferRequestElement transferRequestElement;
@@ -236,6 +237,15 @@ public class RftImpl
 
             ServiceProperties factoryProperties = (ServiceProperties)getProperty(
                                                           ServiceProperties.FACTORY);
+
+            //turn on connection pooling if requested
+            String connectionPoolingValue
+                = (String) factoryProperties.getProperty("connection.pooling");
+            if (   (connectionPoolingValue != null)
+                && connectionPoolingValue.equalsIgnoreCase("true")) {
+                this.connectionPoolingEnabled = true;
+            }
+
             transferProgress = new FileTransferProgressType();
             restartMarkerDataType = new FileTransferRestartMarker();
             fileTransferStatusElement = new FileTransferStatusElement();
@@ -243,18 +253,19 @@ public class RftImpl
             gridFTPPerfMarkerSDE = new GridFTPPerfMarkerElement();
             version = new Version();
             this.requestStatusData = this.serviceData.create(
-                                             "FileTransferStatus");
+                new QName("FileTransferStatus"));
             this.transferProgressData = this.serviceData.create(
-                                                "FileTransferProgress");
+                new QName("FileTransferProgress"));
             this.singleFileTransferStatusSDE = this.serviceData.create(
-                                                       "SingleFileTransferStatus");
+                new QName("SingleFileTransferStatus"));
             this.restartMarkerServiceData = this.serviceData.create(
-                                                    "FileTransferRestartMarker");
+                new QName("FileTransferRestartMarker"));
             this.gridFTPRestartMarkerSD = this.serviceData.create(
-                                                  "GridFTPRestartMarker");
+                new QName("GridFTPRestartMarker"));
             this.gridFTPPerfMarkerSD = this.serviceData.create(
-                                               "GridFTPPerfMarker");
-            this.versionSD = this.serviceData.create("MultiRFTVersion");
+                new QName("GridFTPPerfMarker"));
+            this.versionSD = this.serviceData.create(
+                new QName("MultiRFTVersion"));
             this.version.setVersion("1.0");
             this.versionSD.setValue(this.version);
             this.serviceData.add(this.versionSD);
@@ -497,7 +508,7 @@ public class RftImpl
         this.fileTransferStatusElement.setRequestStatus(statusType);
         this.singleFileTransferStatusSDE.setValue(fileTransferStatusElement);
         this.serviceData.add(singleFileTransferStatusSDE);
-        singleFileTransferStatusSDE.notifyChange();
+        singleFileTransferStatusSDE.notifyChangeWithAck();
 
         for (int i = 0; i < transfers.length; i++) {
 
@@ -582,7 +593,8 @@ public class RftImpl
                     transferClient = getTransferClient(transferJob.getSourceUrl(),
                     transferJob.getDestinationUrl());
                     
-                    if(transferClient==null) {
+                    if(   (transferClient==null)
+                       || !connectionPoolingEnabled) {
                     logger.debug("No transferClient in the pool");
                     transferClient = new TransferClient(tempId, 
                                                         transferJob.getSourceUrl(), 

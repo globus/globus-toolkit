@@ -8,8 +8,10 @@ import java.io.FileReader;
 import java.net.URL;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Vector;
 
+import javax.xml.namespace.QName;
 import javax.xml.rpc.Stub;
 
 import org.apache.axis.message.MessageElement;
@@ -17,6 +19,7 @@ import org.apache.axis.utils.XMLUtils;
 
 import org.globus.axis.gsi.GSIConstants;
 
+import org.globus.ogsa.NotificationSinkCallback;
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.base.multirft.MultiFileRFTServiceGridLocator;
 import org.globus.ogsa.base.multirft.RFTOptionsType;
@@ -24,6 +27,8 @@ import org.globus.ogsa.base.multirft.RFTPortType;
 import org.globus.ogsa.base.multirft.TransferRequestElement;
 import org.globus.ogsa.base.multirft.TransferRequestType;
 import org.globus.ogsa.base.multirft.TransferType;
+import org.globus.ogsa.client.managers.NotificationSinkManager;
+import org.globus.ogsa.impl.core.service.ServicePropertiesImpl;
 import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.ogsa.impl.security.authorization.NoAuthorization;
 import org.globus.ogsa.utils.AnyHelper;
@@ -52,7 +57,20 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 
-public class RFTClient {
+public class RFTClient extends ServicePropertiesImpl
+                    implements NotificationSinkCallback {
+
+    public Boolean monitor = new Boolean(false);
+
+    public RFTClient() {
+    }
+
+    public void deliverNotification(ExtensibilityType message) {
+        System.out.println("received notification");
+        synchronized (this) {
+            this.notifyAll();
+        }
+    }
 
     /**
      * DOCUMENT ME!
@@ -100,29 +118,37 @@ public class RFTClient {
             } catch (java.io.IOException ioe) {
             }
 
-            int transferCount = (requestData.size() - 7) / 2;
+            int transferCount = (requestData.size() - 9) / 2;
             TransferType[] transfers1 = new TransferType[transferCount];
             RFTOptionsType multirftOptions = new RFTOptionsType();
+            int i=0;
             multirftOptions.setBinary(Boolean.valueOf(
-                                              (String)requestData.elementAt(0)).booleanValue());
+                (String)requestData.elementAt(i++)).booleanValue());
             multirftOptions.setBlockSize(Integer.valueOf(
-                                                 (String)requestData.elementAt(
-                                                         1)).intValue());
+                (String)requestData.elementAt(i++)).intValue());
             multirftOptions.setTcpBufferSize(Integer.valueOf(
-                                                     (String)requestData.elementAt(
-                                                             2)).intValue());
+                (String)requestData.elementAt(i++)).intValue());
             multirftOptions.setNotpt(Boolean.valueOf(
-                                             (String)requestData.elementAt(3)).booleanValue());
+                (String)requestData.elementAt(i++)).booleanValue());
             multirftOptions.setParallelStreams(Integer.valueOf(
-                                                       (String)requestData.elementAt(
-                                                               4)).intValue());
+                (String)requestData.elementAt(i++)).intValue());
             multirftOptions.setDcau(Boolean.valueOf(
-                                            (String)requestData.elementAt(5)).booleanValue());
+                (String)requestData.elementAt(i++)).booleanValue());
+            int concurrency = Integer.valueOf(
+                (String)requestData.elementAt(i++)).intValue();
+            String destinationSubjectName = (String)requestData.elementAt(i++);
+            if (destinationSubjectName != null) {
+                multirftOptions.setDestinationSubjectName(
+                    destinationSubjectName);
+            }
+            String sourceSubjectName = (String)requestData.elementAt(i++);
+            if (sourceSubjectName != null) {
+                multirftOptions.setSourceSubjectName(
+                    sourceSubjectName);
+            }
             System.out.println(
                     "Request Data Size " + requestData.size() + " " + 
                     transferCount);
-
-            int i = 7;
 
             for (int j = 0; j < transfers1.length; j++) {
                 transfers1[j] = new TransferType();
@@ -135,8 +161,6 @@ public class RFTClient {
 
             TransferRequestType transferRequest = new TransferRequestType();
             transferRequest.setTransferArray(transfers1);
-            int concurrency = Integer.valueOf(
-                (String)requestData.elementAt(6)).intValue();
             if(concurrency>transfers1.length) {
                 System.out.println("Concurrency should be less than the number of transfers in the request");
                 System.exit(0);
@@ -169,7 +193,37 @@ public class RFTClient {
             ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV, 
                                          Constants.SIGNATURE);
             ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                                          new IgnoreProxyPolicyHandler());
+                                         new IgnoreProxyPolicyHandler());
+
+            NotificationSinkManager notificationSinkManager
+                = NotificationSinkManager.getInstance("Secure");
+            HashMap notificationSinkProperties = new HashMap();
+            notificationSinkProperties.put(
+                Constants.GSI_SEC_CONV,
+                Constants.SIGNATURE);
+            notificationSinkProperties.put(
+                Constants.AUTHORIZATION,
+                NoAuthorization.getInstance());
+            notificationSinkProperties.put(
+                GSIConstants.GSI_MODE, 
+                GSIConstants.GSI_MODE_LIMITED_DELEG);
+            notificationSinkProperties.put(
+                Constants.GRIM_POLICY_HANDLER,
+                new IgnoreProxyPolicyHandler());
+            notificationSinkManager.init(notificationSinkProperties);
+            notificationSinkManager.setService(loc);
+            notificationSinkManager.startListening();
+            RFTClient client = new RFTClient();
+            try {
+                String notificationSinkId = notificationSinkManager.addListener(
+                    new QName("SingleFileTransferStatus"),
+                    null,
+                    loc.getGSR().getHandle(),
+                    client);
+            } catch (Exception e) {
+                System.out.println("Oh shit! " + e.getMessage());
+            }
+
 
             /* WSDLReferenceType ref = (WSDLReferenceType) locator.getReference()[0];
              opts.setOptions( ((Stub)factory));
@@ -180,6 +234,13 @@ public class RFTClient {
             System.out.println("Request id: " + requestid);
 
             //multirftPortType.cancel(requestid,3,4);
+
+            /*
+            synchronized (client) {
+                client.wait();
+            }
+            */
+
         } catch (Exception e) {
             System.err.println(MessageUtils.toString(e));
         }
