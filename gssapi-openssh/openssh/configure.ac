@@ -707,8 +707,17 @@ if test "x$gsi_path" != "xno" ; then
 		GSSAPI="GSI"
 	fi
 
-	if test "x$globus_install_dir" = "xyes" ; then
-                AC_MSG_ERROR(--with-globus=PATH must specify a path)
+	if test "x$gsi_path" = "xyes" ; then
+		if test -z "$GLOBUS_LOCATION" ; then
+			AC_MSG_ERROR(--with-globus=PATH must specify a path)
+		else
+			gsi_path="$GLOBUS_LOCATION"
+		fi
+	fi
+
+	if test -z "$GLOBUS_LOCATION" ; then
+		GLOBUS_LOCATION="$gsi_path"
+		export GLOBUS_LOCATION
 	fi
 
         if test "x$globus_flavor_type" = "xno" ; then
