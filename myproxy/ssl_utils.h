@@ -53,8 +53,8 @@ int ssl_proxy_file_destroy(const char *path);
 /*
  * ssl_certificate_load_from_file()
  *
- * Load a certificate from the given file into the given set of
- * credentials. Any existing certificate will be erased.
+ * Load certificate(s) from the given file into the given set of credentials.
+ * Any existing certificates in the creds structure will be erased.
  *
  * Returns SSL_SUCCESS or SSL_ERROR, setting verror.
  */
@@ -64,15 +64,21 @@ int ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
 /*
  * ssl_load_private_key()
  *
- * Load a key from the given file, using pass_phrase if needed,
- * and storing it in the given credentials structure. pass_phrase
- * may be null. Any existing key will be erased.
+ * Load a key from the given file and store it in the given credentials
+ * structure.
+ * If pass_phrase_prompt is non-NULL, prompt for the
+ * passphrase to be entered on the tty if needed.
+ * Otherwise, if pass_phrase is non-NULL, use that passphrase
+ * to decrypt the key.
+ * Otherwise, assume the key is unencrypted.
+ * Any existing key in the creds structure will be erased.
  *
  * Returns SSL_SUCCESS or SSL_ERROR, setting verror.
  */
 int ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
 				   const char		*path,
-				   const char		*pass_phrase);
+				   const char		*pass_phrase,
+				   const char		*pass_phrase_prompt);
 
 /*
  * ssl_proxy_from_pem()

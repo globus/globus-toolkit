@@ -1362,6 +1362,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
     FILE		*cert_file = NULL;
     X509		*cert = NULL;
     int			return_status = SSL_ERROR;
+    STACK		*cert_chain = NULL;
     
     assert(creds != NULL);
     assert(path != NULL);
@@ -1391,6 +1392,45 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
     
     creds->certificate = cert;
 
+    /* Ok, now read the certificate chain */
+
+    /* Create empty stack */
+    cert_chain = sk_new_null();
+    
+    while (1)
+    {
+	cert = NULL;
+	
+	if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL)
+	{
+	    /*
+	     * If we just can't find a start line then we've reached EOF.
+	     */
+	    if (ERR_GET_REASON(ERR_peek_error()) == PEM_R_NO_START_LINE)
+	    {
+		/* Just EOF, clear error and break out of loop */
+		ERR_clear_error();
+		break;
+	    }
+
+	    /* Actual error */
+	    verror_put_string("Error parsing certificate chain");
+	    ssl_error_to_verror();
+	    goto error;
+	}
+
+	/* Add to chain */
+	if (sk_insert(cert_chain, (char *) cert,
+		      sk_num(cert_chain)) == SSL_ERROR)
+	{
+	    verror_put_string("Error parsing certificate chain");
+	    ssl_error_to_verror();
+	    goto error;
+	}
+    } /* while(1) */
+
+    creds->certificate_chain = cert_chain;
+    
     /* Success */
     return_status = SSL_SUCCESS;
     
@@ -1406,7 +1446,8 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
 int
 ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
 			       const char	*path,
-			       const char	*pass_phrase)
+			       const char	*pass_phrase,
+			       const char	*pass_phrase_prompt)
 {
     FILE		*key_file = NULL;
     EVP_PKEY		*key = NULL;
@@ -1421,7 +1462,9 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
      * Put pass phrase where the callback function can find it.
      */
     _ssl_pass_phrase = pass_phrase;
-    
+
+    if (pass_phrase_prompt) EVP_set_pw_prompt((char *)pass_phrase_prompt);
+
     key_file = fopen(path, "r");
     
     if (key_file == NULL)
@@ -1431,8 +1474,8 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
 	goto error;
     }
 
-    if (PEM_read_PrivateKey(key_file, &(key),
-			    PEM_CALLBACK(my_pass_phrase_callback)) == NULL)
+    if (PEM_read_PrivateKey(key_file, &(key), (pass_phrase_prompt) ? 
+			    my_pass_phrase_callback : NULL, NULL) == NULL)
     {
 	unsigned long error;
 	
