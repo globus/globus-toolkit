@@ -1047,13 +1047,8 @@ int try_gssapi_authentication(char *host, Options *options)
   unsigned int slen;
   Gssctxt *ctx = NULL;
 
-  /* Make a copy of the host name, in case it was returned by a
-   * previous call to gethostbyname(). */	
-  xhost = xstrdup(host);
-
-  /* Make sure we have the FQHN. Some GSSAPI implementations don't do
-   * this for us themselves */
-  resolve_hostname(&xhost);
+  xhost = xstrdup(get_canonical_hostname(1));
+  resolve_localhost(&xhost);
 
   /*
    * Default flags
@@ -1672,8 +1667,13 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
   if ((supported_authentications & (1 << SSH_AUTH_GSSAPI)) &&
       options.gss_authentication)
     {
+      char *canonhost;
       debug("Trying GSSAPI authentication...");
-      try_gssapi_authentication(host, &options);
+      canonhost = xstrdup(get_canonical_hostname(1));
+      resolve_localhost(&canonhost);
+      try_gssapi_authentication(canonhost, &options);
+      xfree(canonhost);
+      canonhost=NULL;
 
       /*
        * XXX Hmmm. Kerberos authentication only reads a packet if it thinks

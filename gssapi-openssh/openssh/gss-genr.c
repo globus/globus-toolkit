@@ -455,7 +455,7 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 
 	/* Make sure we have the FQHN. Some GSSAPI implementations don't do
 	 * this for us themselves */
-	resolve_hostname(&xhost);
+	resolve_localhost(&xhost);
 
         gssbuf.length = sizeof("host@")+strlen(xhost);
 

@@ -39,6 +39,7 @@
 #include "ssh2.h"
 #include "ssh-gss.h"
 #include "monitor_wrap.h"
+#include "canohost.h"
 
 /* This is now the same as the DH hash ... */
 
@@ -112,7 +113,7 @@ kexgss_client(Kex *kex)
 	if (ssh_gssapi_id_kex(ctxt,kex->name)==NULL) {
 		fatal("Couldn't identify host exchange");
 	}
-	if (ssh_gssapi_import_name(ctxt,kex->host)) {
+	if (ssh_gssapi_import_name(ctxt,get_canonical_hostname(1))) {
 		fatal("Couldn't import hostname ");
 	}
 	
