@@ -27,6 +27,18 @@ CVS Information:
 #include "globus_common.h"
 
 
+#ifndef EXTERN_C_BEGIN
+#ifdef __cplusplus
+#define EXTERN_C_BEGIN extern "C" {
+#define EXTERN_C_END }
+#else
+#define EXTERN_C_BEGIN
+#define EXTERN_C_END
+#endif
+#endif
+
+EXTERN_C_BEGIN
+
 /******************************************************************************
 			       Define constants
 ******************************************************************************/
@@ -225,4 +237,6 @@ globus_gram_myjob_kill(void);
 #define gram_myjob_kill() \
     globus_gram_myjob_Kill()
     
+EXTERN_C_END
+
 #endif /* GLOBUS_I_GRAM_MYJOB_INCLUDE */

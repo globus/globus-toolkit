@@ -192,7 +192,12 @@ globus_gass_open(char *url, int oflag, ...)
     globus_l_gass_file_t *file;
     int mode=0777;
     int rc;
+    int checkflag;
     
+    if(url == GLOBUS_NULL)
+    {
+        return -1;
+    }
     if(oflag & O_CREAT)
     {
 	va_start(ap, oflag);
@@ -224,12 +229,16 @@ globus_gass_open(char *url, int oflag, ...)
 	return fd;
     }
 
+    /* check for invalid combos on GASS urls, note that
+     *  O_RDONLY is defined as 0 on most systems, so we have
+     *  to be careful on what we check for
+     */
+    checkflag = oflag & (O_RDONLY|O_RDWR|O_WRONLY|O_APPEND|O_TRUNC);
 
-    /* check for invalid combos on GASS urls */
-    if((O_RDONLY != 0 &&
-       ((oflag & (O_RDONLY|O_APPEND)) == (O_RDONLY|O_APPEND))) ||
-       ((oflag & (O_RDWR|O_APPEND))   == (O_RDWR|O_APPEND)) ||
-       ((oflag & (O_RDONLY|O_TRUNC))  == (O_RDONLY|O_TRUNC)))
+    if((checkflag == (O_RDONLY|O_APPEND)) ||
+       (checkflag == (O_RDWR|O_APPEND)) ||
+       (checkflag == (O_RDONLY|O_TRUNC)) ||
+       (checkflag == (O_RDWR|O_WRONLY)))
     {
 	globus_gass_file_exit();
 	globus_url_destroy(&globus_url);
@@ -371,6 +380,13 @@ globus_gass_fopen(char *filename,
 		  char *type)
 {
     int fd = -1;
+
+    if(filename == GLOBUS_NULL ||
+       type == GLOBUS_NULL)
+    {
+       return GLOBUS_NULL;
+    }
+
     if(strcmp(type, "r") == 0 ||
        strcmp(type, "rb") == 0)
     {
@@ -379,12 +395,12 @@ globus_gass_fopen(char *filename,
     else if(strcmp(type, "w") == 0 ||
 	    strcmp(type, "wb") == 0)
     {
-	fd = globus_gass_open(filename, O_WRONLY|O_CREAT|O_TRUNC);
+	fd = globus_gass_open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0777);
     }
     else if(strcmp(type, "a") == 0 ||
 	    strcmp(type, "ab") == 0)
     {
-	fd = globus_gass_open(filename, O_WRONLY|O_APPEND|O_CREAT);
+	fd = globus_gass_open(filename, O_WRONLY|O_APPEND|O_CREAT, 0777);
     }
     else if(strcmp(type, "r+") == 0 ||
 	    strcmp(type, "r+b") == 0 ||
@@ -396,13 +412,13 @@ globus_gass_fopen(char *filename,
 	    strcmp(type, "w+b") == 0 ||
 	    strcmp(type, "wb+") == 0)
     {
-	fd = globus_gass_open(filename, O_RDWR|O_TRUNC|O_CREAT);
+	fd = globus_gass_open(filename, O_RDWR|O_TRUNC|O_CREAT, 0777);
     }
     else if(strcmp(type, "a+") == 0 ||
 	    strcmp(type, "a+b") == 0 ||
 	    strcmp(type, "ab+") == 0)
     {
-	fd = globus_gass_open(filename, O_APPEND|O_CREAT|O_RDWR);
+	fd = globus_gass_open(filename, O_APPEND|O_CREAT|O_RDWR, 0777);
     }
     else
     {
@@ -538,6 +554,10 @@ Returns:
 int
 globus_gass_fclose(FILE *f)
 {
+    if(f == GLOBUS_NULL)
+    {
+        return -1;
+    }
     fflush(f);
     return globus_gass_close(fileno(f));
 } /* globus_gass_fclose() */

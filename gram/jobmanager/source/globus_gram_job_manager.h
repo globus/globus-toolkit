@@ -18,6 +18,18 @@ CVS Information:
 #include "globus_rsl.h"
 #include "globus_gram_client.h"
 
+#ifndef EXTERN_C_BEGIN
+#ifdef __cplusplus
+#define EXTERN_C_BEGIN extern "C" {
+#define EXTERN_C_END }
+#else
+#define EXTERN_C_BEGIN
+#define EXTERN_C_END
+#endif
+#endif
+
+EXTERN_C_BEGIN
+
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
@@ -195,5 +207,7 @@ globus_i_gram_jobmanager_deactivate(void);
 
 #define GLOBUS_GRAM_JOBMANAGER_MODULE (&globus_i_gram_jobmanager_module)
 extern globus_module_descriptor_t globus_i_gram_jobmanager_module;
+
+EXTERN_C_END
 
 #endif /* GLOBUS_GRAM_JOB_MANAGER_INCLUDE */

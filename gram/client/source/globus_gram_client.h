@@ -22,6 +22,18 @@ CVS Information:
 
 #include "globus_common.h"
 
+#ifndef EXTERN_C_BEGIN
+#ifdef __cplusplus
+#define EXTERN_C_BEGIN extern "C" {
+#define EXTERN_C_END }
+#else
+#define EXTERN_C_BEGIN
+#define EXTERN_C_END
+#endif
+#endif
+ 
+EXTERN_C_BEGIN
+
 /******************************************************************************
                                Define constants
 ******************************************************************************/
@@ -243,6 +255,7 @@ CVS Information:
                                Type definitions
 ******************************************************************************/
 
+
 typedef void (* globus_gram_client_callback_func_t)(void * user_callback_arg,
 						    char * job_contact,
 						    int state,
@@ -417,4 +430,5 @@ extern globus_module_descriptor_t	globus_gram_client_module;
 	GLOBUS_GRAM_CLIENT_ERROR_LAST
 
 
+EXTERN_C_END
 #endif /* GLOBUS_I_GRAM_CLIENT_INCLUDE */

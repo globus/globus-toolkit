@@ -297,6 +297,7 @@ main(int argc,
     char *                 jm_globus_host_osversion = NULL;
     globus_gram_jobmanager_request_t * request;
     char * tmp_unparse_str = NULL;
+    globus_bool_t          jm_request_failed = GLOBUS_FALSE;
 
     /* Initialize modules that I use */
     rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
@@ -1029,12 +1030,13 @@ main(int argc,
                        NEXUS_FALSE);
 
         nexus_startpoint_destroy(&reply_sp);
+	jm_request_failed = GLOBUS_TRUE;
 
     }
  
     GRAM_UNLOCK;
 
-    if (rc == GLOBUS_SUCCESS)
+    if (!jm_request_failed)
     {
         if (request->poll_frequency == 0)
         {
@@ -1151,8 +1153,9 @@ main(int argc,
         globus_gass_close(globus_l_gram_stderr_fd);
     }
 
-    if ((request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) || 
-        (request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
+    if(!jm_request_failed &&
+       ((request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) || 
+        (request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED)))
     {
         grami_fprintf( request->jobmanager_log_fp,
               "JM: sending final callback.\n");
@@ -1984,7 +1987,7 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
            globus_libc_realloc(req->environment,
                    (x+3) * sizeof(char *));
 
-    req->environment[x] = "GRAM_JOB_CONTACT";
+    req->environment[x] = "GLOBUS_GRAM_JOB_CONTACT";
     ++x;
     req->environment[x] = graml_job_contact;
     ++x;

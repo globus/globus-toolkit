@@ -25,6 +25,7 @@ bqueues=@BQUEUES@
 awk=@AWK@
 mpirun=@MPIRUN@
 rm=@RM@
+SH=@SH@
 
 #        Site-specific settings
 #        Temporary directory in which job script will be built
@@ -135,7 +136,7 @@ $DEBUG_ECHO testing for queue attribute specification >> $grami_logfile
 
 if [ ! -z "${grami_queue}" ]; then
     $DEBUG_ECHO testing for existance of LSF queue [$grami_queue] >> $grami_logfile
-    status=`bqueues $grami_queue`
+    status=`$bqueues $grami_queue`
     if (test "$?" -eq "0") then
         $DEBUG_ECHO LSF queue [$grami_queue] found >> $grami_logfile
     else
@@ -179,7 +180,7 @@ if [ $grami_maxtime -eq 0 ] ; then
     cpu_time=0
     $DEBUG_ECHO No cpu time specified, using [unlimited] cpu time >> $grami_logfile
 else
-    cpu_time="$grami_maxtime"
+    cpu_time=`"$grami_maxtime" \* "$grami_count"`
     $DEBUG_ECHO using [$cpu_time] minutes for max cpu time >> $grami_logfile
 fi
 
@@ -188,11 +189,12 @@ fi
 
 $DEBUG_ECHO starting to build LSF job script >> $grami_logfile
 
+echo "#! ${SH}" >> $LSF_JOB_SCRIPT
 # echo "#BSUB -q queue_name" >> $LSF_JOB_SCRIPT
 
 # where "queue_name" is the name of the targetted queue 
 
-echo "# LSF batch job script built by Globus job manager\n" > $LSF_JOB_SCRIPT
+echo "# LSF batch job script built by Globus job manager\n" >> $LSF_JOB_SCRIPT
 
 if [ ! -z "${grami_queue}" ] ; then
     echo "#BSUB -q $grami_queue" >> $LSF_JOB_SCRIPT
@@ -234,7 +236,7 @@ $DEBUG_ECHO "JM_SCRIPT: checking environment">> $grami_logfile
 new_grami_env=""
  
 if [ ! -z "${grami_env}" ] ; then
-   eval set ${grami_env}
+   eval set -- ${grami_env}
    x=0
    while [ "$#" -ne 0 ]; do
       if [ $x = 0 ] ; then
@@ -251,7 +253,7 @@ fi
 
 new_grami_args=""
 if [ ! -z "${grami_args}" ] ; then
-   eval set ${grami_args}
+   eval set -- ${grami_args}
    new_grami_args="$*"
 fi
 
@@ -269,7 +271,7 @@ elif [ $lsf_jobtype = "multiple" ] ; then
 	counter=0
 	while (test "$counter" -lt "$grami_count")
 	    do
-            echo "$grami_program $new_grami_args &" >> $LSF_JOB_SCRIPT
+            echo "$grami_program $new_grami_args < ${grami_stdin} &" >> $LSF_JOB_SCRIPT
 	    counter=`expr $counter + 1`
 	    done
         echo "wait" >> $LSF_JOB_SCRIPT;

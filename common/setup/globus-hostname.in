@@ -12,6 +12,7 @@ PROGRAM_VERSION=`@ECHO@ '$Revision$' | @CUT@ -d' ' -f2`
 prefix=@prefix@
 deploy_prefix=@deploy_prefix@    # This line is overwritten during deployment
 deployed='FALSE'                 # This line is overwritten during deployment
+globus_hostname=''               # This line is overwritten during deployment
   
 
 
@@ -36,24 +37,29 @@ else
    sysconfdir=${deploy_prefix}/etc
    localstatedir=${deploy_prefix}/var
    tmpdir=${deploy_prefix}/tmp
+   if [ -n "${globus_hostname}" ]; then
+       GLOBUS_HOSTNAME="${globus_hostname}"
+       export GLOBUS_HOSTNAME
+   fi
 fi
 
 
 LOCALDOMAIN=@LOCALDOMAIN@
  
 if [ -x ${libexecdir}/globus-libc-hostname ]; then
-    GLOBUS_HOSTNAME="`${libexecdir}/globus-libc-hostname`"
+    FULLNAME="`${libexecdir}/globus-libc-hostname`"
 else
     FULLNAME=`@SYS_HOSTNAME@`
+fi
     BASENAME=`@SYS_HOSTNAME@ | @CUT@ -d. -f1`
  
-    if [ $FULLNAME = $BASENAME ] ; then
-    # Its not fully qualified
-        GLOBUS_HOSTNAME="$BASENAME.${LOCALDOMAIN}"
-    else
-        GLOBUS_HOSTNAME="$FULLNAME"
-   fi
+if [ $FULLNAME = $BASENAME ] ; then
+# Its not fully qualified
+    GLOBUS_HOSTNAME="$BASENAME.${LOCALDOMAIN}"
+else
+    GLOBUS_HOSTNAME="$FULLNAME"
 fi
 
+GLOBUS_HOSTNAME="`@ECHO@ $GLOBUS_HOSTNAME | @TR@ 'A-Z' 'a-z'`"
 echo $GLOBUS_HOSTNAME
 export GLOBUS_HOSTNAME

@@ -256,8 +256,11 @@ globus_l_gass_server_ez_get_fd_done(globus_gass_server_get_request_t *request,
     globus_l_gass_server_ez_t *server;
     
     r = (globus_gass_server_ez_request_t *) request->user_pointer;
+    close(r->fd);
     
     globus_free(r);
+
+    globus_gass_server_get_request_done(request);
 } /* globus_l_gass_server_ez_get_fd_done() */
 
 /******************************************************************************

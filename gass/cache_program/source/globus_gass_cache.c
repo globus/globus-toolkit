@@ -52,13 +52,16 @@ static char *globus_l_cache_get_rm_contact(char *resource);
 static void globus_l_cache_remote_op(globus_l_cache_op_t op,
 			             char *tag,
 			             char *url,
+				     char *name,
 			             char *rm_contact);
 static void globus_l_cache_local_op(globus_l_cache_op_t op,
 			            char *tag,
-			            char *url);
+			            char *url,
+				    char *name);
 static void globus_l_cache_print_url(globus_gass_cache_entry_t *entry,
 		                     char *tag);
 static char *globus_l_cache_tag_arg(char *tag);
+static char *globus_l_cache_name_arg(char *name);
 static char *globus_l_cache_url_arg(char *url);
 /******************************************************************************
 			     Module specific variables
@@ -68,7 +71,7 @@ static globus_cond_t  globus_l_cache_monitor_cond;
 static globus_bool_t  globus_l_cache_monitor_done = GLOBUS_FALSE;
 
 #define GLOBUS_CACHE_USAGE \
-"usage: globus-gass-cache operation [-r resource] [-t tag] [URL]\n"\
+"usage: globus-gass-cache operation [-r resource] [-n new_name ] [-t tag] [URL]\n"\
 "       globus-gass-cache -v\n"\
 "valid values for \"operation\" are:\n"\
 "    add            - add an URL to the cache\n"\
@@ -99,6 +102,8 @@ static globus_bool_t  globus_l_cache_monitor_done = GLOBUS_FALSE;
 "    -v             - Display the program version and exit\n"\
 "    -t tag         - The string passed as the tag argument will be used\n"\
 "                     as described above\n"\
+"    -n new_name    - Store the URL in the cache as new_name (argument to add\n"\
+"                     only)\n"\
 "    -r resource    - The resource argument specifies that the cache\n"\
 "                     operation will be performed on a remote cache. The\n"\
 "                     resource string can be either a resource manager name\n"\
@@ -122,6 +127,7 @@ main(int argc, char **argv)
     int arg = 1;
     char *resource    = GLOBUS_NULL,
 	 *url         = GLOBUS_NULL,
+	 *name        = GLOBUS_NULL,
 	 *rm_contact  = GLOBUS_NULL,
 	 *tag         = GLOBUS_NULL;
 
@@ -207,6 +213,15 @@ main(int argc, char **argv)
 	    }
 	    tag = argv[arg++];
 	}
+	else if(strcmp("-n", argv[arg]) == 0)
+	{
+	    arg++;
+	    if(arg == argc)
+	    {
+		return globus_l_cache_usage();
+	    }
+	    name = argv[arg++];
+	}
 	else if(strcmp("-r", argv[arg]) == 0)
 	{
 	    arg++;
@@ -238,6 +253,11 @@ main(int argc, char **argv)
 	}
     }
     
+    if(name != GLOBUS_NULL &&
+       op != GASSL_ADD)
+    {
+	return globus_l_cache_usage();
+    }
     if(resource != GLOBUS_NULL)
     {
 	rm_contact = globus_l_cache_get_rm_contact(resource);
@@ -250,11 +270,11 @@ main(int argc, char **argv)
 
     if(rm_contact != GLOBUS_NULL)
     {
-	globus_l_cache_remote_op(op, tag, url, rm_contact);
+	globus_l_cache_remote_op(op, tag, url, name, rm_contact);
     }
     else
     {
-	globus_l_cache_local_op(op, tag, url);
+	globus_l_cache_local_op(op, tag, url, name);
     }
     return 0;
 } /* main() */
@@ -495,6 +515,32 @@ globus_l_cache_url_arg(char *url)
 } /* globus_l_cache_url_arg() */
 
 /******************************************************************************
+Function: globus_l_cache_name_arg()
+
+Description:
+
+Parameters: 
+
+Returns: 
+******************************************************************************/
+static char *
+globus_l_cache_name_arg(char *name)
+{
+    static char arg[1024];
+
+    if(name != GLOBUS_NULL)
+    {
+	sprintf(arg,
+		"-n \"%s\"",
+		name);
+    }
+    else
+    {
+	arg[0]='\0';
+    }
+} /* globus_l_cache_name_arg() */
+
+/******************************************************************************
 Function: globus_l_cache_tag_arg()
 
 Description:
@@ -562,9 +608,9 @@ Returns:
 ******************************************************************************/
 static void
 globus_l_cache_callback_func(void *arg,
-	      char *job_contact,
-	      int state,
-	      int errorcode)
+			     char *job_contact,
+			     int state,
+			     int errorcode)
 {
     if(state == GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED ||
        state == GLOBUS_GRAM_CLIENT_JOB_STATE_DONE)
@@ -587,9 +633,10 @@ Returns:
 ******************************************************************************/
 static void
 globus_l_cache_remote_op(globus_l_cache_op_t op,
-	     char *tag,
-	     char *url,
-	     char *rm_contact)
+			 char *tag,
+			 char *url,
+			 char *name,
+			 char *rm_contact)
 {
     char spec[1024];
     char *server_url;
@@ -636,11 +683,12 @@ globus_l_cache_remote_op(globus_l_cache_op_t op,
 	    " (stdout=%s/dev/stdout)"
 	    " (stderr=%s/dev/stdout)"
 	    " (stdin=/dev/null)"
-	    " (arguments=%s %s %s)",
+	    " (arguments=%s %s %s %s)",
 	    server_url,
 	    server_url,
 	    globus_l_cache_op_string(op),
 	    globus_l_cache_tag_arg(tag),
+	    globus_l_cache_name_arg(name),
 	    globus_l_cache_url_arg(url));
     globus_libc_unlock();
 
@@ -681,7 +729,8 @@ Returns:
 static void
 globus_l_cache_local_op(globus_l_cache_op_t op,
 	                char *tag,
-	                char *url)
+	                char *url,
+			char *name)
 {
     globus_gass_cache_t cache_handle;
     unsigned long timestamp;
@@ -711,8 +760,12 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
     switch(op)
     {
     case GASSL_ADD:
+	if(name == GLOBUS_NULL)
+	{
+	    name = url;
+	}
 	rc = globus_gass_cache_add(&cache_handle,
-			           url,
+			           name,
 			           tag,
 			           GLOBUS_TRUE,
 			           &timestamp,
@@ -720,7 +773,7 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 	if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
 	{
 	    globus_gass_cache_add_done(&cache_handle,
-				       url,
+				       name,
 				       tag,
 				       timestamp);
 	}
@@ -737,7 +790,7 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 			              GLOBUS_NULL);
 	    close(fd);
 	    rc = globus_gass_cache_add_done(&cache_handle,
-				            url,
+				            name,
 				            tag,
 				            timestamp);
 	    if(rc != GLOBUS_SUCCESS)
@@ -870,12 +923,10 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 	
 	if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
 	{
-	    /*
-	      globus_gass_cache_add_done(&cache_handle,
-				       url,
-				       tag,
-				       timestamp);
-	    */
+	    /*globus_gass_cache_add_done(&cache_handle,
+				url,
+				tag,
+				timestamp);*/    
 	    globus_gass_cache_delete(&cache_handle,
 				     url,
 				     tag,

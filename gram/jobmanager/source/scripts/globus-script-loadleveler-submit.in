@@ -173,13 +173,13 @@ if [ -z "${grami_requirements}" ] ; then
     # All other settings will default to ip over switch.
 
     grami_requirements=${default_ip_requirements}
-    if [ ! -z ${euilib} ]; then
-	if [ ${euilib} = "us" ]; then
+    if [ ! -z "${euilib}" ]; then
+	if [ "${euilib}" = "us" ]; then
 	    grami_requirements=${default_us_requirements}
 	fi
     fi
-    if [ ! -z ${euidev} ]; then
-	if [ ${euidev} = "en0" ]; then
+    if [ ! -z "${euidev}" ]; then
+	if [ "${euidev}" = "en0" ]; then
 	    grami_requirements=${default_eth_requirements}
         fi
     fi
