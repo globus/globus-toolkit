@@ -846,7 +846,7 @@ globus_l_gsc_cmd_pass(
         res = globus_i_gsc_authenticate(
             op,
             op->server_handle->username,
-            cmd_a[1],
+            (argc == 2) ? cmd_a[1] : "",
             globus_l_gsc_auth_cb,
             NULL);
         if(res != GLOBUS_SUCCESS)
@@ -2410,7 +2410,7 @@ globus_i_gsc_add_commands(
         "PASS", 
         globus_l_gsc_cmd_pass,
         GLOBUS_GSC_COMMAND_PRE_AUTH,
-        2,
+        1,
         2,
         "214 Syntax: PASS <sp> password\r\n",
         NULL);

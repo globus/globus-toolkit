@@ -1196,19 +1196,13 @@ globus_l_gsc_parse_command(
     }
 
     start_ptr = command;
-    for(ctr = 0; ctr < argc && !done; ctr++)
+    for(ctr = 0; ctr <= argc && !done; ctr++)
     {
         /* skip past all leading spaces */
         while(isspace(*start_ptr) && *start_ptr != '\r')
         {
             start_ptr++;
         }
-        if(*start_ptr == '\r')
-        {
-            cmd_a[ctr] = NULL;
-        }
-        else
-        {
             for(ndx = 0; 
                 !isspace(start_ptr[ndx]) && start_ptr[ndx] != '\r' && 
                     start_ptr[ndx] != '\0'; 
@@ -1235,7 +1229,6 @@ globus_l_gsc_parse_command(
                 cmd_a[ctr] = globus_libc_strndup(start_ptr, ndx);
             }
             start_ptr += ndx;
-        }
     }
     if(ctr > 0)
     {
