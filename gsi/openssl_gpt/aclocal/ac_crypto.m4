@@ -150,6 +150,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
                     lac_BF_PTR2="1"
                     lac_DES_UNROLL="1"
                     lac_DES_LONG="unsigned int"
+                ;;
                 *x86*)
                     # gcc
                     lac_BN_LLONG="1"
