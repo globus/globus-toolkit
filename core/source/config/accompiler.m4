@@ -108,6 +108,10 @@ AC_BEFORE([$0], [AC_PROG_CC])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
+LAC_COMPILERS_ARGS
+LAC_THREADS
+LAC_MP
+
 dnl Restore and reset the flags from AC_PROG_CC so we can do our
 dnl own compiler config. Saved flags are from ../configure.in
 CC="$SAVED_CC"
@@ -117,10 +121,6 @@ unset ac_cv_prog_ac_ct_CC
 unset ac_cv_prog_cc_g
 unset ac_cv_prog_cc_stdc
 unset am_cv_CC_dependencies_compiler_type
-
-LAC_COMPILERS_ARGS
-LAC_THREADS
-LAC_MP
 
 LAC_COMPILERS_SET($lac_threads_type)
 
