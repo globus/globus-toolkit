@@ -503,12 +503,11 @@ globus_ftp_control_command_init(
         rc=globus_i_ftp_control_decode_command(command->noop.raw_command,
                                                &decoded_cmd,
                                                auth_info);
-    }
-    
-    if(rc != GLOBUS_SUCCESS)
-    {
-        globus_libc_free(command->noop.raw_command);
-        return rc;
+        if(rc != GLOBUS_SUCCESS)
+        {
+            globus_libc_free(command->noop.raw_command);
+            return rc;
+        }
     }
     
     if(decoded_cmd != GLOBUS_NULL)
@@ -691,6 +690,9 @@ globus_ftp_control_command_copy(
     case GLOBUS_FTP_CONTROL_COMMAND_APPE:
     case GLOBUS_FTP_CONTROL_COMMAND_RNFR:
     case GLOBUS_FTP_CONTROL_COMMAND_RNTO:
+
+        dest->noop.string_arg = GLOBUS_NULL;
+        
         if(src->noop.string_arg != GLOBUS_NULL)
         {
             dest->noop.string_arg=
