@@ -133,7 +133,6 @@ do_trap() {
 
 do_cleanup() {
 
-    ${GLOBUS_SH_RM-rm} -f ${tmp_input_file}
     ${GLOBUS_SH_RM-rm} -f ${tmp_output}
 
     ${GLOBUS_SH_RM-rm} -f ${TMP_REQ_FILE} ${TMP_CERT_FILE}
@@ -161,23 +160,29 @@ TMP_CERT_FILE=/tmp/tmp_cert.pem.$$
 
 ${GLOBUS_SH_CP-cp} ${INPUT_REQ_FILE} ${TMP_REQ_FILE}
 
-echo ""
-recho "Enter password for the CA key: "
-${GLOBUS_SH_STTY-stty} -echo
-read password 0<&2
-${GLOBUS_SH_STTY-stty} echo
-echo ""
-tmp_input_file=/tmp/tmp_input.$$
-echo "y
-y
-" > $tmp_input_file
+echo ${openssl_options} | grep "\-passin"
+res1=$?
+if test ! $res1 = 0; then
+    echo ${openssl_options} | grep "\-key"
+    res1=$?
+fi
+
+if test ! $res1 = 0; then
+	echo ""
+	recho "Enter password for the CA key: "
+	${GLOBUS_SH_STTY-stty} -echo
+	read password 0<&2
+	${GLOBUS_SH_STTY-stty} echo
+	echo ""
+        openssl_options="$openssl_options -key ${password}"
+fi
 
 do_sign() {
  
 tmp_output=/tmp/tmp_output.$$
-${openssl_cmd} ca $openssl_options -config ${grid_ca_conf} -key "${password}" \
+${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
                   -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} \
-                  < $tmp_input_file 2> $tmp_output 
+                  2> $tmp_output 
 
 openssl_result=$?
 
@@ -238,9 +243,9 @@ if test "${openssl_result}" = "1"; then
 
             tmp_revoke_output=/tmp/tmp_revoke_out.$$
 
-            ${openssl_cmd} ca $openssl_options -config ${grid_ca_conf} -key "${password}" \
+            ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
                     -revoke ${GRID_CA_DIR}/newcerts/${SIGNED_SERIAL}.pem \
-                          < $tmp_input_file 2> ${tmp_revoke_output}
+                    2> ${tmp_revoke_output}
         
             ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
 
@@ -258,7 +263,6 @@ if test "${openssl_result}" = "1"; then
             echo "this certificate and create a new one."
             echo ""
 
-            ${GLOBUS_SH_RM-rm} -f ${tmp_input_file}
             ${GLOBUS_SH_RM-rm} -f ${tmp_output}
 
             do_cleanup
