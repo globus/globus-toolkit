@@ -147,3 +147,6 @@ globus_xsd_type                 chosting/schema/xsd/source      dirt.sh
 globus_gridftp_driver		gridftp/gridftp_driver/source	dirt.sh
 globus_gridftp_driver_test	gridftp/gridftp_driver/test	dirt.sh
 globus_scheduler_event_generator ws-gram/job_monitoring/common/c/source dirt.sh
+globus_scheduler_event_generator_condor ws-gram/job_monitoring/condor/c/source dirt.sh
+globus_scheduler_event_generator_fork ws-gram/job_monitoring/fork/c/source dirt.sh
+globus_scheduler_event_generator_pbs ws-gram/job_monitoring/pbs/c/source dirt.sh
