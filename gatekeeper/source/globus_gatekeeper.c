@@ -786,7 +786,7 @@ main(int xargc,
 
 	if (gatekeeperhome)
 	{
-		setenv("GLOBUS_DEPLOY_PATH",gatekeeperhome,1);
+		setenv("GLOBUS_LOCATION",gatekeeperhome,1);
 	}
 	
     setenv("GRIDMAP", genfilename(gatekeeperhome,gridmap,NULL),1);
