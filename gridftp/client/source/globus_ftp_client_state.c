@@ -1680,6 +1680,35 @@ redo:
 
 	    result = globus_ftp_control_local_pasv(target->control_handle,
 					           client_handle->pasv_address);
+            if(result == GLOBUS_SUCCESS && !target->attr->allow_ipv6 &&
+                client_handle->pasv_address[0].hostlen == 16)
+            {
+                char *                  cs;
+                globus_sockaddr_t       addr;
+                
+                /* control channel was made with ipv6, but we must have
+                 * disabled ipv6 since and need an ipv4 address now.
+                 * just use localhost
+                 */
+                GlobusLibcSockaddrSetFamily(addr, AF_INET);
+                GlobusLibcSockaddrSetPort(addr,
+                    client_handle->pasv_address[0].port);
+                
+                result = globus_libc_addr_to_contact_string(
+                    &addr,
+                    GLOBUS_LIBC_ADDR_LOCAL | GLOBUS_LIBC_ADDR_NUMERIC |
+                        GLOBUS_LIBC_ADDR_IPV4,
+                    &cs);
+                if(result == GLOBUS_SUCCESS)
+                {
+                    globus_libc_contact_string_to_ints(
+                        cs,
+                        client_handle->pasv_address[0].host,
+                        &client_handle->pasv_address[0].hostlen,
+                        &client_handle->pasv_address[0].port);
+                }
+            }
+            
 	    if(result != GLOBUS_SUCCESS)
 	    {
 		goto result_fault;
@@ -1896,6 +1925,7 @@ redo:
 	    {
 	        /* lets try without ipv6 */
 	        target->attr->allow_ipv6 = GLOBUS_FALSE;
+	        globus_ftp_control_ipv6_allow(handle, GLOBUS_FALSE);
 	        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV;
 	    }
 	    else if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER &&
@@ -1967,6 +1997,7 @@ redo:
 	    client_handle->op == GLOBUS_FTP_CLIENT_GET)
 	{
 	    target->attr->allow_ipv6 = GLOBUS_FALSE;
+	    globus_ftp_control_ipv6_allow(handle, GLOBUS_FALSE);
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PORT;
 	}
 	else
