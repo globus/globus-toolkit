@@ -253,7 +253,8 @@ globus_i_xio_will_block_cb(
             case GLOBUS_XIO_OPERATION_TYPE_WRITE:
                 GlobusIXIODriverWriteDeliver(op, ndx);
                 break;
-            
+
+            case GLOBUS_XIO_OPERATION_TYPE_FINISHED:
             case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
                 break;
 
