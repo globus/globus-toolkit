@@ -282,7 +282,7 @@ globus_i_gsi_gss_create_and_fill_context(
             goto free_callback_data;
         }
     }
-    
+
     /* get the local credential */
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {
@@ -318,8 +318,8 @@ globus_i_gsi_gss_create_and_fill_context(
     }
     else
     {
-        context->cred_handle = cred_handle;
         context->cred_obtained = 0;
+        context->cred_handle = cred_handle;
     }
 
     /* set the cert_dir in the callback data */
@@ -531,7 +531,7 @@ globus_i_gsi_gss_create_and_fill_context(
         globus_libc_free(certdir);
     }
 
-    if(context->cred_handle)
+    if(context->cred_handle && context->cred_obtained)
     {
         gss_release_cred(&local_minor_status, 
                          (gss_cred_id_t *) &context->cred_handle);
