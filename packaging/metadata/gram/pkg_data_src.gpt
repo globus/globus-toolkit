@@ -29,6 +29,7 @@
 
 	    <Build_Step> ant stubs -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
 	    <Build_Step> ant deployGram -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
+	    <Build_Step> chmod a+x $GT3_LOCATION/etc/globus-gram-* </Build_Step>
 
     </Build_Instructions>
 

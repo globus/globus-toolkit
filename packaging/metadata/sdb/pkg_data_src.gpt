@@ -28,7 +28,7 @@
     <Build_Instructions>
 
 	    <Build_Step> ant -f $GT3_LOCATION/build.xml deployClient -Dgar.name=`pwd`/sdb.gar</Build_Step>
-	    <Build_Step> cp globus.gif servicedatabrowser.visualizers $GT3_LOCATION/etc </Build_Step>
+	    <Build_Step> cp globus.gif globus-sdb.visualizers $GT3_LOCATION/etc </Build_Step>
 
     </Build_Instructions>
 

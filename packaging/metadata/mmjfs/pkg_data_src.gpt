@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
-<gpt_package_metadata Format_Version="0.01" Name="gram">
+<gpt_package_metadata Format_Version="0.01" Name="mmjfs">
 
   <Aging_Version Age="0" Major="0" Minor="2" />
   <Description> GT3 GRAM </Description>
@@ -27,8 +27,9 @@
 
     <Build_Instructions>
 
+	    <Build_Step> ant generateMmjfsConfig -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
 	    <Build_Step> ant mirrorConfig -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
-	    <Build_Step> ant deployMjmfs -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
+	    <Build_Step> ant deployMmjfs -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
 
     </Build_Instructions>
 
