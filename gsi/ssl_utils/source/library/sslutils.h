@@ -547,7 +547,7 @@ d2i_integer_bio(
 
 
 int
-ssl_utils_setup_ssl_ctx(
+globus_ssl_utils_setup_ssl_ctx(
     SSL_CTX **                          context,
     char *                              ca_cert_file,
     char *                              ca_cert_dir,

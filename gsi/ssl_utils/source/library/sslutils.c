@@ -4820,7 +4820,7 @@ err:
 }
 
 int
-ssl_utils_setup_ssl_ctx(
+globus_ssl_utils_setup_ssl_ctx(
     SSL_CTX **                          context,
     char *                              ca_cert_file,
     char *                              ca_cert_dir,
@@ -5101,3 +5101,125 @@ err:
 
     return status;
 }
+
+/* Thought I'd need the below, but didn't. Might come in handy some
+ * day -Sam
+ */
+
+#if 0
+
+int
+globus_ssl_utils_get_verified_cert_chain(
+    X509 *                              ucert,
+    STACK_OF(X509) *                    cert_chain,
+    char *                              ca_cert_dir,
+    STACK_OF(X509) **                   verified_cert_chain)
+{
+    int                                 i;
+    int                                 j;
+    int                                 retval = 0;
+    X509_STORE *                        cert_store = NULL;
+    X509_LOOKUP *                       lookup = NULL;
+    X509_STORE_CTX *                    store_context = NULL;
+    X509 *                              chain_cert = NULL;
+    X509 *                              user_cert = NULL;
+    STACK_OF(X509) *                    store_chain;
+    
+#ifdef DEBUG
+    fprintf(stderr,"globus_ssl_utils_get_verified_cert_chain\n");
+#endif
+    user_cert = ucert;
+    cert_store = X509_STORE_new();
+    store_context = X509_STORE_CTX_new();
+
+    if (cert_chain != NULL)
+    {
+        for (i=0;i<sk_X509_num(cert_chain);i++)
+        {
+            chain_cert = sk_X509_value(cert_chain,i);
+
+            if (user_cert == NULL)
+            {
+                user_cert = chain_cert;
+            }
+            else
+            {
+#ifdef DEBUG
+                {
+                    char * s;
+                    s = X509_NAME_oneline(X509_get_subject_name(chain_cert),
+                                          NULL,0);
+                    fprintf(stderr,"Adding %d %p %s\n",i,chain_cert,s);
+                    free(s);
+                }
+#endif
+                j = X509_STORE_add_cert(cert_store, X509_dup(chain_cert));
+                if (!j)
+                {
+                    if ((ERR_GET_REASON(ERR_peek_error()) ==
+                         X509_R_CERT_ALREADY_IN_HASH_TABLE))
+                    {
+                        ERR_clear_error();
+                        break;
+                    }
+                    else
+                    {
+                        /*DEE need errprhere */
+                        goto err;
+                    }
+                }
+            }
+        }
+    }
+    
+    if (ca_cert_dir != NULL &&
+        (lookup = X509_STORE_add_lookup(cert_store,
+                                        X509_LOOKUP_hash_dir())))
+    {
+        X509_LOOKUP_add_dir(lookup,ca_cert_dir,X509_FILETYPE_PEM);
+    }
+
+    X509_STORE_CTX_init(store_context,cert_store,user_cert,NULL);
+
+#if SSLEAY_VERSION_NUMBER >=  0x0090600fL
+    /* override the check_issued with our version */
+    store_context->check_issued = proxy_check_issued;
+#endif
+
+    if(!X509_verify_cert(store_context))
+    {
+        goto err;
+    }
+
+    *verified_cert_chain = sk_X509_new_null();
+
+    store_chain = X509_STORE_CTX_get_chain(store_context);
+    
+    for(i=0;i<sk_X509_num(store_chain);i++)
+    {
+        sk_X509_insert(*verified_cert_chain,
+                  X509_dup(sk_X509_value(store_chain,i)),i);
+    }
+    
+    retval = 1;
+
+err:
+    if(store_context)
+    {
+        X509_STORE_CTX_free(store_context);
+    }
+
+    if(cert_store)
+    {
+        X509_STORE_free(cert_store);
+    }
+    
+    return retval;
+}
+
+#endif
+
+
+
+
+
