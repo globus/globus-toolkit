@@ -62,6 +62,9 @@ AC_SUBST(cross_compiling)
 AC_SUBST(OBJEXT)
 AC_SUBST(EXEEXT)
 
+GPT_INIT
+
+
 # These files are not used outside of automake.  But the makefile still
 # has them as dependent targets.
 if test ! -h globus_automake_targets; then
@@ -90,36 +93,4 @@ AC_SUBST(FILELIST_FILE)
 
 ])
 
-dnl GLOBUS_BUILD_DEPS(<list of package names seperated by spaces>)
-AC_DEFUN(GLOBUS_SET_BUILD_DEPS, [
 
-	for pkg in $1; do
-		bfile="$GLOBUS_INSTALL_PATH/etc/globus_packages/$pkg/build_parameters_$GLOBUS_FLAVOR_NAME"
-		if ! test -f $bfile; then
-
-			AC_MSG_ERROR(["Package $pkg is not installed for flavor $GLOBUS_FLAVOR_NAME"])
-		fi 
-	done
-
-	GLOBUS_BUILD_DEPS="$1";
-
-])
-
-dnl GLOBUS_SET_XTRA_LIBS("External libraries the package needs to link with")
-AC_DEFUN(GLOBUS_ADD_XTRA_LIBS, [
-
-	GLOBUS_XTRA_LIBS="$GLOBUS_XTRA_LIBS $1"
-
-])
-
-dnl GLOBUS_GENERATE
-AC_DEFUN(GLOBUS_GENERATE, [
-
-	AC_SUBST(GLOBUS_XTRA_LIBS)
-	AC_SUBST(GLOBUS_BUILD_DEPS)
-
-	GLOBUS_LINKLINE=`$GLOBUS_INSTALL_PATH/bin/globus_build_config.pl --flavor=$GLOBUS_FLAVOR_NAME --ldflags="$GLOBUS_XTRA_LIBS" $GLOBUS_BUILD_DEPS`
-
-	AC_SUBST(GLOBUS_LINKLINE)
-	
-])
