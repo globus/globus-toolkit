@@ -1244,6 +1244,8 @@ globus_l_gfs_remote_trev(
 
     if(bounce_info->node_handle->node_list == NULL)
     {
+        /* will have to do some ref counting on the node_handle if server-lib
+        can't prevent this */
         globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_ERR, 
             "data_destroy before transfer_complete\n");
     }
