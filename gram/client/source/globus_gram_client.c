@@ -202,6 +202,9 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
     char *                port = GLOBUS_NULL;
     char *                dn = GLOBUS_NULL;
     char *                service;
+    int                   got_port = 0;
+    int                   got_service = 0;
+    char *                ptr;
     unsigned short        iport;
     globus_url_t          some_struct;
 
@@ -209,40 +212,61 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
      *  the gatekeeper contact format: [https://]<host>:<port>[/<service>]:<dn>
      */    
 
-    service = "/jobmanager";
+    service = "jobmanager";
     iport = 1754;
 
     if ((duplicate = globus_libc_strdup(contact_string)))
     {
-	host = duplicate;
+        host = duplicate;
 
-	if (strncmp(duplicate,"https://", strlen("https://")) == 0)
-	    host += strlen("https://");
+        if (strncmp(duplicate,"https://", strlen("https://")) == 0)
+            host += strlen("https://");
 
-	dn = host;
-	if ((port = strchr(host,':')))
-	{
-	    *port++ = '\0';
+        dn = host;
 
-	    if ((dn = strchr(port, ':'))) 
+        for (ptr = duplicate; *ptr != '\0'; ptr++)
+        {
+            if ( *ptr == ':' )
+            {
+                got_port = 1;
+                *ptr++ = '\0';
+                port = ptr;
+                break;
+            }
+            if ( *ptr == '/' )
+            {
+                got_service = 1;
+                *ptr++ = '\0';
+                service = ptr;
+                break;
+            }
+        }
+
+        if (got_port || got_service) 
+        {
+	    if ((dn = strchr(ptr, ':')))
 	    {
 		*dn++ = '\0';
 	    }
-    
-	    if (service = strchr(port,'/'))
+
+            if (got_port)
             {
-                if ((service - port) > 1)
+	        if (service = strchr(port,'/'))
                 {
-	            iport = (unsigned short) atoi(port);
+                    if ((service - port) > 1)
+                    {
+	                iport = (unsigned short) atoi(port);
+                    }
+                    *service++ = '\0';
+                }
+                else
+                {
+                    service = "jobmanager";
+	            if (strlen(port) > 0)
+	               iport = (unsigned short) atoi(port);
                 }
             }
-            else
-            {
-                service = "/jobmanager";
-	        if (strlen(port) > 0)
-	           iport = (unsigned short) atoi(port);
-            }
-	}
+        }
         else
         {
             dn = GLOBUS_NULL;
@@ -280,7 +304,9 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
     /* 
      * done with the port, can now put the slash back
      */
-    *gatekeeper_service = globus_libc_strdup(service);
+    *gatekeeper_service = globus_libc_malloc(strlen(service) + 2);
+
+    globus_libc_sprintf(*gatekeeper_service, "/%s", service);
 
     if ((dn) && (*dn))
     {
