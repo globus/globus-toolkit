@@ -181,88 +181,106 @@ globus_gss_assist_display_status_str(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
 
     if (!str)
+    { 
 	return GSS_S_FAILURE;
+    }
 
     msg = globus_gss_assist_strcatr(msg,
                                     comment ? comment : "GSS failure: ",
                                     NULL,0,
                                     "\n");
-    if (major_status) {
+    if(token_status == 0)
+    { 
         message_context = 0;
         do {
-
             if (gss_display_status(&minor_status2,
                                    major_status,
                                    GSS_C_GSS_CODE,
                                    GSS_C_NO_OID,
-                                   &minor_status,
-                                   status_string) == GSS_S_COMPLETE) {
-                if (status_string->length) {
+                                   &message_context,
+                                   status_string) == GSS_S_COMPLETE)
+            {
+                if (status_string->length)
+                {
                     msg = globus_gss_assist_strcatr(msg,
                                                     "",
                                                     (char *) status_string->value,
                                                     status_string->length,
-                                                    "\n");
+                                                    "");
                 }
             }
             gss_release_buffer(&minor_status2, status_string);
-        } while (message_context != 0);
-    }
-
-    /* make no assumptions about minor status */
-
-    message_context = 0;
-    do {
-
-        if (gss_display_status(&minor_status2,
-                               minor_status,
-                               GSS_C_MECH_CODE,
-                               GSS_C_NO_OID,
-                               &message_context,
-                               status_string) == GSS_S_COMPLETE) {
-            if (status_string->length) {
-                msg = globus_gss_assist_strcatr(msg,
-						"",
-						(char *) status_string->value,
-						status_string->length,
-						"\n");
-            }
         }
-        gss_release_buffer(&minor_status2, status_string);
-    } while (message_context != 0);
+        while (message_context != 0);
 
-    if (token_status != 0) {
+        /* make no assumptions about minor status */
+
+        message_context = 0;
+        do {
+            if (gss_display_status(&minor_status2,
+                                   minor_status,
+                                   GSS_C_MECH_CODE,
+                                   GSS_C_NO_OID,
+                                   &message_context,
+                                   status_string) == GSS_S_COMPLETE)
+            {
+                if (status_string->length)
+                {
+                    msg = globus_gss_assist_strcatr(msg,
+                                                    "",
+                                                    (char *) status_string->value,
+                                                    status_string->length,
+                                                    "");
+                }
+            }
+            gss_release_buffer(&minor_status2, status_string);
+        }
+        while (message_context != 0);
+    }
+    else
+    {
         if (GSS_CALLING_ERROR(major_status) ==
-            GSS_S_CALL_INACCESSIBLE_READ) {
+            GSS_S_CALL_INACCESSIBLE_READ)
+        {
             reason1 = "read failure:";
-        } else if (GSS_CALLING_ERROR(major_status) ==
-                   GSS_S_CALL_INACCESSIBLE_WRITE) {
+        }
+        else if (GSS_CALLING_ERROR(major_status) ==
+                   GSS_S_CALL_INACCESSIBLE_WRITE)
+        {
             reason1 = "write failure:";
-        } else {
+        }
+        else
+        {
             reason1 = "failure:";
         }
-        if (token_status > 0) {
-            switch (token_status) {
-            case GLOBUS_GSS_ASSIST_TOKEN_ERR_MALLOC:
+
+        if (token_status > 0)
+        {
+            switch (token_status)
+            {
+              case GLOBUS_GSS_ASSIST_TOKEN_ERR_MALLOC:
                 reason2 = "malloc failed";
                 break;
-            case GLOBUS_GSS_ASSIST_TOKEN_ERR_BAD_SIZE:
+              case GLOBUS_GSS_ASSIST_TOKEN_ERR_BAD_SIZE:
                 reason2 = "token length invalid";
                 break;
-            case GLOBUS_GSS_ASSIST_TOKEN_EOF:
+              case GLOBUS_GSS_ASSIST_TOKEN_EOF:
                 reason2 = "Connection closed";
                 break;
-            default:
+              default:
                 reason2 = "unknown";
                 break;
             }
-        } else {
+        }
+        else
+        {
 #ifdef HAVE_STRERROR
             {
                 reason2 = strerror(-token_status);
             }
 #endif
-            if (reason2 == NULL) {
+            if (reason2 == NULL)
+            {
                 reason2 = "unknown";
             }
         }
@@ -274,14 +292,7 @@ globus_gss_assist_display_status_str(
                                         NULL);
 
     }
-
-    sprintf(buf,
-            "    GSS status: major:%8.8x minor: %8.8x token: %8.8x\n",
-            (unsigned int) major_status, 
-            (unsigned int) minor_status, 
-            (unsigned int) token_status);
-    msg = globus_gss_assist_strcatr(msg, buf, NULL, 0, NULL);
-
+    
     *str = msg;
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;

@@ -52,8 +52,7 @@ GSS_CALLCONV gss_display_status(
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
  
-    if (status_type == GSS_C_GSS_CODE ||
-        status_type == GSS_C_MECH_CODE) 
+    if (status_type == GSS_C_GSS_CODE)
     {
         if (!GSS_ERROR(status_value)) 
         {
@@ -100,14 +99,21 @@ GSS_CALLCONV gss_display_status(
             break;
         } 
 
-        error_obj = globus_error_get((globus_result_t) *message_context);
+        status_string->value = globus_gsi_cert_utils_create_string(
+            "GSS Major Status: %s\n",reason);
+
+        status_string->length = strlen(status_string->value);
+        major_status = GSS_S_COMPLETE;
+        goto exit;
+    }
+    else if(status_type == GSS_C_MECH_CODE)
+    {
+        error_obj = globus_error_get((globus_result_t) status_value);
         error_chain_string = globus_error_print_chain(error_obj);
 
         status_string->value = globus_gsi_cert_utils_create_string(
-            "GSS Major Status: %s\nGSS Minor Status Error Chain:\n%s",
-            reason, 
-            error_chain_string);
-
+            "GSS Minor Status Error Chain:\n%s", error_chain_string);
+        
         globus_libc_free(error_chain_string);
         globus_object_free(error_obj);
 
