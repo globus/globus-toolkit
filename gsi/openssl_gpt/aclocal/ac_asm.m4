@@ -9,7 +9,7 @@ dnl
 
 dnl LAC_ASM_ARGS()
 
-AC_DEFUN(LAC_ASM_ARGS,
+AC_DEFUN([LAC_ASM_ARGS],
 [
     AC_ARG_ENABLE(asm,
         [  --disable-asm                disable use of handcoded assembler],
@@ -19,7 +19,7 @@ AC_DEFUN(LAC_ASM_ARGS,
 
 dnl LAC_ASM()
 
-AC_DEFUN(LAC_ASM,
+AC_DEFUN([LAC_ASM],
 [
     AC_REQUIRE([AC_CANONICAL_HOST])
     AC_REQUIRE([LAC_CPU])
@@ -49,7 +49,7 @@ AC_DEFUN(LAC_ASM,
 ])
 
 dnl LAC_ASM_SET
-AC_DEFUN(LAC_ASM_SET,
+AC_DEFUN([LAC_ASM_SET],
 [
     lac_CFLAGS="$CFLAGS "
     lac_BN_OBJ="bn_asm.lo"
