@@ -1157,7 +1157,16 @@ globus_l_ftp_control_end_of_reply(
         }
         else
         {
+            out_buf = globus_libc_realloc(response->response_buffer,response->response_length + 1);
             
+            if( out_buf == GLOBUS_NULL)
+            {
+                return -1;
+            }
+
+            memmove(&response->response_buffer[found + 1],
+                    &response->response_buffer[found],
+                    response->response_length-found);
         }
 
         /* get the ftp response code */
