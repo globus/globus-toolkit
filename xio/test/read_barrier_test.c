@@ -1,3 +1,25 @@
+/*
+ *  read barrier test
+ *  -----------------
+ *
+ *  verifies that all successful callback are devilvered before
+ *  any eof callbacks.
+ *
+ *  working options
+ *  -i          call finish inline
+ *  -r <int>    number of outstanding reads that can be out at oncea
+ *  -R <int>    total number of bytes to "read"
+ *  -c <int>    chuck size to finish at once
+ *  -b <int>    buffer size to post
+ *
+ *  test suite
+ *  ----------
+ *  should be called w/ and w/o -i 
+ *  called with -r (1..8)
+ *  called with -c < -b and with numbers that do not end in nice math
+ *
+ */
+
 #include "globus_xio.h"
 #include "globus_common.h"
 #include "test_common.h"
@@ -144,7 +166,6 @@ main(
     int                                     rc;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     handle;
-    globus_xio_driver_t                     driver;
     globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_abstime_t                        end_time;
@@ -153,21 +174,16 @@ main(
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 
-    globus_xio_driver_load("test", &driver);
-
     res = globus_xio_attr_init(&attr);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     
-    parse_parameters(argc, argv, driver, attr);
-
-    globus_mutex_init(&globus_l_mutex, NULL);
-    globus_cond_init(&globus_l_cond, NULL);
-
     res = globus_xio_stack_init(&stack, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
-    res = globus_xio_stack_push_driver(stack, driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    parse_parameters(argc, argv, stack, attr);
+
+    globus_mutex_init(&globus_l_mutex, NULL);
+    globus_cond_init(&globus_l_cond, NULL);
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
@@ -190,8 +206,6 @@ main(
         globus_cond_timedwait(&globus_l_cond, &globus_l_mutex, &end_time);
     }
     globus_mutex_unlock(&globus_l_mutex);
-    
-    globus_xio_driver_unload("test", driver);
     
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);

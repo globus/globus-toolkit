@@ -246,19 +246,14 @@ main(
 
     globus_mutex_init(&globus_l_mutex, NULL);    
     globus_cond_init(&globus_l_cond, NULL);    
-    
-    globus_xio_driver_load("test", &driver);
 
     res = globus_xio_attr_init(&attr);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
-    parse_parameters(argc, argv, driver, attr);
-
     res = globus_xio_stack_init(&stack, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
-    res = globus_xio_stack_push_driver(stack, driver);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    parse_parameters(argc, argv, stack, attr);
 
     if(globus_l_test_info.server)
     {

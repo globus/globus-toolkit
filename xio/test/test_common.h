@@ -43,12 +43,11 @@ test_res(
     globus_result_t                         res,
     int                                     line);
 
-void
+int
 parse_parameters(
     int                                     argc,
     char **                                 argv,
-    globus_xio_driver_t                     driver,
+    globus_xio_stack_t                      stack,
     globus_xio_attr_t                       attr);
-
 
 #endif

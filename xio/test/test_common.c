@@ -64,11 +64,11 @@ test_res(
     }
 }
 
-void
+int
 parse_parameters(
     int                                     argc,
     char **                                 argv,
-    globus_xio_driver_t                     driver,
+    globus_xio_stack_t                      stack,
     globus_xio_attr_t                       attr)
 {   
     int                                     failure = 
@@ -84,18 +84,34 @@ parse_parameters(
     int                                     write_count = 0;
     int                                     total_write_bytes = 2048 * 10;
     int                                     total_read_bytes = 2048 * 10;
-    
+    globus_xio_driver_t                     driver;
+
+
     globus_l_argc = argc;
     globus_l_argv = argv;
+
+    /* get the transport driver, and put it on the stack */
+    res = globus_xio_driver_load("test", &driver);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    res = globus_xio_stack_push_driver(stack, driver);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
     
     /* parse the parameters */
     globus_l_test_info.server = GLOBUS_FALSE;
-    while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:")) != -1)
+    while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:D:")) != -1)
     {
         switch(c)
         {
             case 'F':
                 failure = atoi(optarg);
+                break;
+
+            case 'D':
+                res = globus_xio_driver_load(optarg, &driver);
+                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                res = globus_xio_stack_push_driver(stack, driver);
+                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
                 break;
 
             case 'i':
@@ -191,5 +207,7 @@ parse_parameters(
             GLOBUS_XIO_TEST_READ_EOF_BYTES,
             eof_bytes);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+    return optind;
 }
 
