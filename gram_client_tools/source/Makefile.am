@@ -38,7 +38,8 @@ Scripts= \
 # libexec is $prefix/libexec
 # You can also use any directory defined by a macro of the form
 # <directory_name>dir
-bin_SCRIPTS = $(Scripts)
+bin_SCRIPTS = $(Scripts) globus-job-submit
+
 # EXTRA_DIST is used to include files in
 # a source distribution that automake fails to detect.
 EXTRA_DIST = $(Scripts)
@@ -49,6 +50,11 @@ globusrun_SOURCES = globusrun.c
 
 globusrun_LDFLAGS = $(GPT_LDFLAGS)
 globusrun_LDADD = $(GPT_PGM_LINKS)
+
+globus-job-submit: globus-job-run
+	cp globus-job-run globus-job-submit
+
+CLEANFILES=globus-job-submit
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
