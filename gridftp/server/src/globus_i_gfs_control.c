@@ -59,6 +59,13 @@ globus_i_gsc_string_to_959(
     const char *                        in_str, 
     const char *                        preline);
 
+static
+void
+globus_l_gfs_control_log(
+    globus_gridftp_server_control_t     server_handle,
+    const char *                        message,
+    int                                 type,
+    void *                              user_arg);
 
 static int
 globus_l_gfs_activate()
