@@ -62,6 +62,7 @@ typedef struct
 typedef struct
 {
     gram_callback_func_t callback_func;
+    void * user_callback_arg;
     nexus_endpoint_t endpoint;
 } callback_s;
 
@@ -518,6 +519,7 @@ Returns:
 ******************************************************************************/
 int 
 gram_callback_allow(gram_callback_func_t callback_func,
+                    void * user_callback_arg,
                     char ** callback_contact)
 {
     int			  rc;
@@ -530,6 +532,7 @@ gram_callback_allow(gram_callback_func_t callback_func,
 
     callback = (callback_s *) malloc(sizeof(callback_s));
     callback->callback_func = (gram_callback_func_t) callback_func;
+    callback->user_callback_arg = user_callback_arg;
     nexus_endpointattr_init(&epattr);
     nexus_endpointattr_set_handler_table(&epattr, callback_handler_table, 1);
     nexus_endpoint_init(&(callback->endpoint), &epattr);
@@ -603,8 +606,38 @@ graml_callback_handler(nexus_endpoint_t * endpoint,
     nexus_get_int(buffer, &state, 1);
     nexus_get_int(buffer, &errorcode, 1);
     
-    (*callback->callback_func)(job_contact, state, errorcode);
+    (*callback->callback_func)(callback->user_callback_arg, job_contact, state, errorcode);
 } /* graml_callback_handler() */
+
+/******************************************************************************
+Function:	gram_callback_disallow()
+Description:	
+Parameters:
+Returns:
+******************************************************************************/
+int 
+gram_callback_disallow(char * callback_contact)
+{
+    int			  rc;
+    unsigned short 	  port = 0;
+    char * 		  host;
+
+    printf("in gram_callback_disallow()\n");
+
+    if (nexus_split_nexus_url(callback_contact,
+                              &host,
+                              &port,
+                              NULL) != 0)
+    {
+        printf(" invalid url.\n");
+        return (1);
+    }
+
+    nexus_disallow_attach(port);
+       
+    return(0);
+
+} /* gram_callback_allow() */
 
 /******************************************************************************
 Function:	gram_job_start_time()
