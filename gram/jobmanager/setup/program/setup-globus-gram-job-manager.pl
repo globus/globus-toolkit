@@ -93,16 +93,21 @@ chomp($host_cert_line);
 $host_cert_file =~ s/^\s+//; #strip leading whitespace
 if ( ! -r "$host_cert_file" )
 {
-   die "Host cert file not found.  $host_cert_file required";
+   print STDERR "Warning: Host cert file: $host_cert_file not found.\n";
+   print STDERR "         rerun setup-globus-gram-job-manager after installing host cert file.\n";
+   $subject="unavailable at time of install";
 }
 else
 {
    $subject=`${globusdir}/bin/grid-cert-info -subject -file ${host_cert_file}`;
-   chomp($subject);
-   $subject =~ s/^\s+//; #strip leading whitespace
    if ( $? != 0 )
    {
-      die "Failed getting subject from host certificate.";
+      die "Failed getting subject from host certificate: ${host_cert_file}.";
+   }
+   else
+   {
+      chomp($subject);
+      $subject =~ s/^\s+//; #strip leading whitespace
    }
 }
 
