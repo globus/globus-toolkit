@@ -207,6 +207,9 @@
 /* Define this is you want GSSAPI support in the version 2 protocol */
 #undef GSSAPI
 
+/* Define this if GSSAPI supports gss_export_cred() */
+#undef HAVE_GSSAPI_EXT
+
 /* Define if you want Kerberos 5 support */
 #undef KRB5
 
