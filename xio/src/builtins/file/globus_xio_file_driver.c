@@ -464,15 +464,32 @@ globus_l_xio_file_read(
     globus_l_handle_t *                 handle;
 
     handle = (globus_l_handle_t *) driver_handle;
-
-    return globus_xio_system_register_read(
-        op,
-        handle->handle,
-        iovec,
-        iovec_count,
-        GlobusXIOOperationMinimumRead(op),
-        globus_l_xio_file_system_read_cb,
-        op);
+    
+    if(GlobusXIOOperationMinimumRead(op) == 0)
+    {
+        globus_size_t                       nbytes;
+        globus_result_t                     result;
+        
+        result = globus_xio_system_try_read(
+            handle->handle, iovec, iovec_count, &nbytes);
+        globus_xio_driver_finished_read(op, result, nbytes);
+        /* dont want to return error here mainly because error could be eof, 
+         * which is against our convention to return an eof error on async
+         * calls.  Other than that, the choice is arbitrary
+         */
+        return GLOBUS_SUCCESS;
+    }
+    else
+    {
+        return globus_xio_system_register_read(
+            op,
+            handle->handle,
+            iovec,
+            iovec_count,
+            GlobusXIOOperationMinimumRead(op),
+            globus_l_xio_file_system_read_cb,
+            op);
+    }
 }
 
 static
@@ -502,14 +519,32 @@ globus_l_xio_file_write(
     globus_l_handle_t *                 handle;
 
     handle = (globus_l_handle_t *) driver_handle;
-
-    return globus_xio_system_register_write(
-        op,
-        handle->handle,
-        iovec,
-        iovec_count,
-        globus_l_xio_file_system_write_cb,
-        op);
+    
+    if(GlobusXIOOperationMinimumWrite(op) == 0)
+    {
+        globus_size_t                       nbytes;
+        globus_result_t                     result;
+        
+        result = globus_xio_system_try_write(
+            handle->handle, iovec, iovec_count, &nbytes);
+        globus_xio_driver_finished_write(op, result, nbytes);
+        /* Since I am finishing the request in the callstack,
+         * the choice to pass the result in the finish instead of below
+         * is arbitrary.
+         */
+        return GLOBUS_SUCCESS;
+    }
+    else
+    {
+        return globus_xio_system_register_write(
+            op,
+            handle->handle,
+            iovec,
+            iovec_count,
+            GlobusXIOOperationMinimumWrite(op),
+            globus_l_xio_file_system_write_cb,
+            op);
+    }
 }
 
 static

@@ -631,7 +631,24 @@ globus_l_xio_tcp_apply_handle_attrs(
             "globus_l_xio_tcp_apply_handle_attrs", errno);
         goto error_sockopt;
     }
-    
+
+#ifdef TCP_RFC1323
+    if(attr->sndbuf ||attr->rcvbuf)
+    {
+        /* On AIX, RFC 1323 extensions can be set system-wide,
+         * using the 'no' network options command. But we can also set them
+         * per-socket, so let's try just in case. 
+         */
+        if(setsockopt(
+            fd, IPPROTO_TCP, TCP_RFC1323, &int_one, sizeof(int_one)) < 0)
+        {
+            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
+                "globus_l_xio_tcp_apply_handle_attrs", errno);
+            goto error_sockopt;
+        }
+    }
+#endif
+
     if(attr->sndbuf &&
         setsockopt(
            fd, SOL_SOCKET, SO_SNDBUF, &attr->sndbuf, sizeof(attr->sndbuf)) < 0)
@@ -1587,15 +1604,32 @@ globus_l_xio_tcp_read(
     globus_l_handle_t *                 handle;
 
     handle = (globus_l_handle_t *) driver_handle;
-
-    return globus_xio_system_register_read(
-        op,
-        handle->handle,
-        iovec,
-        iovec_count,
-        GlobusXIOOperationMinimumRead(op),
-        globus_l_xio_tcp_system_read_cb,
-        op);
+    
+    if(GlobusXIOOperationMinimumRead(op) == 0)
+    {
+        globus_size_t                       nbytes;
+        globus_result_t                     result;
+        
+        result = globus_xio_system_try_read(
+            handle->handle, iovec, iovec_count, &nbytes);
+        globus_xio_driver_finished_read(op, result, nbytes);
+        /* dont want to return error here mainly because error could be eof, 
+         * which is against our convention to return an eof error on async
+         * calls.  Other than that, the choice is arbitrary
+         */
+        return GLOBUS_SUCCESS;
+    }
+    else
+    {
+        return globus_xio_system_register_read(
+            op,
+            handle->handle,
+            iovec,
+            iovec_count,
+            GlobusXIOOperationMinimumRead(op),
+            globus_l_xio_tcp_system_read_cb,
+            op);
+    }
 }
 
 static
@@ -1625,14 +1659,32 @@ globus_l_xio_tcp_write(
     globus_l_handle_t *                 handle;
 
     handle = (globus_l_handle_t *) driver_handle;
-
-    return globus_xio_system_register_write(
-        op,
-        handle->handle,
-        iovec,
-        iovec_count,
-        globus_l_xio_tcp_system_write_cb,
-        op);
+    
+    if(GlobusXIOOperationMinimumWrite(op) == 0)
+    {
+        globus_size_t                       nbytes;
+        globus_result_t                     result;
+        
+        result = globus_xio_system_try_write(
+            handle->handle, iovec, iovec_count, &nbytes);
+        globus_xio_driver_finished_write(op, result, nbytes);
+        /* Since I am finishing the request in the callstack,
+         * the choice to pass the result in the finish instead of below
+         * is arbitrary.
+         */
+        return GLOBUS_SUCCESS;
+    }
+    else
+    {
+        return globus_xio_system_register_write(
+            op,
+            handle->handle,
+            iovec,
+            iovec_count,
+            GlobusXIOOperationMinimumWrite(op),
+            globus_l_xio_tcp_system_write_cb,
+            op);
+    }
 }
 
 static

@@ -942,6 +942,11 @@ typedef globus_result_t
  *  @param iovec_count
  *         The number of iovecs in the array.
  *
+ *  @param waitforbtyes
+ *         The minimum number of bytes to write before returning... if a driver
+ *         has no specifc requirement, he should use the user's request...
+ *         available via GlobusXIOOperationMinimumWrite(op)
+ * 
  *  @param cb
  *         The function to be called when the operation request is 
  *         completed.
@@ -954,6 +959,7 @@ globus_xio_driver_write(
     globus_xio_driver_operation_t               op,
     globus_xio_iovec_t                          iovec,
     int                                         iovec_count,
+    globus_size_t                               waitforbtyes,
     globus_xio_driver_data_callback_t           cb,
     void *                                      user_arg);
 

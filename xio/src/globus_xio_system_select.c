@@ -58,7 +58,6 @@ typedef enum
     GLOBUS_L_OPERATION_CANCELED
 } globus_l_operation_state_t;
 
-#define _op_nbytes          op.data.nbytes
 #define _op_single          op.data.buf.single
 #define _op_iovecCom        op.data.buf.iovec
 #define _op_iovec           op.data.buf.iovec.cont.plain
@@ -73,6 +72,9 @@ typedef struct
     int                                         fd;
     globus_result_t                             result;
     void *                                      user_arg;
+    /* used for reads/writes, 0 for others. here to simplify some things */
+    globus_size_t                               nbytes;
+    globus_size_t                               waitforbytes;
 
     union
     {
@@ -87,9 +89,6 @@ typedef struct
         struct
         {
             globus_xio_system_data_callback_t   callback;
-            globus_size_t                       nbytes;
-            /* used for reads only, 0 for all others */
-            globus_size_t                       waitforbytes;
 
             union
             {
@@ -337,695 +336,6 @@ globus_l_xio_system_deactivate(void)
     globus_cond_destroy(&globus_l_xio_system_cond);
     
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
-}
-
-globus_result_t
-globus_xio_system_register_open(
-    globus_xio_driver_operation_t       op,
-    const char *                        pathname,
-    int                                 flags,
-    int                                 mode,
-    globus_xio_system_handle_t *        out_fd,
-    globus_xio_system_callback_t        callback,
-    void *                              user_arg)
-{
-    int                                 fd;
-    globus_result_t                     result;
-    globus_l_operation_info_t *         op_info;
-
-    do
-    {
-        fd = open(pathname, flags | O_NONBLOCK, mode);
-    } while(fd < 0 && errno == EINTR);
-
-    if(fd < 0)
-    {
-        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
-            "globus_xio_system_register_open", errno);
-        goto error_close;
-    }
-
-    GlobusIXIOSystemAllocOperation(op_info);
-    if(!op_info)
-    {
-        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-            "globus_xio_system_register_open", "op_info");
-        goto error_op_info;
-    }
-
-    op_info->type = GLOBUS_L_OPERATION_OPEN;
-    op_info->state = GLOBUS_L_OPERATION_NEW;
-    op_info->op = op;
-    op_info->fd = fd;
-    op_info->user_arg = user_arg;
-    op_info->op.non_data.callback = callback;
-
-    if(flags & GLOBUS_XIO_SYSTEM_RDONLY)
-    {
-        result = globus_l_xio_system_register_read(fd, op_info);
-    }
-    else
-    {
-        result = globus_l_xio_system_register_write(fd, op_info);
-    }
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_register;
-        
-    }
-
-    *out_fd = fd;
-    return GLOBUS_SUCCESS;
-
-error_register:
-    GlobusIXIOSystemFreeOperation(op_info);
-    
-error_op_info:
-    GlobusIXIOSystemCloseFd(fd);
-    
-error_close:
-    return result;
-}
-
-globus_result_t
-globus_xio_system_register_connect(
-    globus_xio_driver_operation_t       op,
-    globus_xio_system_handle_t          fd,
-    const globus_sockaddr_t *           addr,
-    globus_xio_system_callback_t        callback,
-    void *                              user_arg)
-{
-    globus_bool_t                       done;
-    int                                 rc;
-    globus_result_t                     result;
-    globus_l_operation_info_t *         op_info;
-
-    GlobusIXIOSystemAddNonBlocking(fd, rc);
-    if(rc < 0)
-    {
-        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
-            "globus_xio_system_register_connect", errno);
-        goto error_nonblocking;
-    }
-    
-    done = GLOBUS_FALSE;
-    while(!done && connect(
-        fd, (const struct sockaddr *) addr, sizeof(globus_sockaddr_t)) < 0)
-    {
-        switch(errno)
-        {
-          case EINPROGRESS:
-            done = GLOBUS_TRUE;
-            break;
-
-          case EINTR:
-            /* retry */
-            break;
-
-          case ETIMEDOUT: /* this was in globus io.. not sure why */
-            globus_thread_yield();
-            break;
-
-          default:
-            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
-                "globus_xio_system_register_connect", errno);
-            goto error_connect;
-        }
-    }
-    
-    GlobusIXIOSystemAllocOperation(op_info);
-    if(!op_info)
-    {
-        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-            "globus_xio_system_register_connect", "op_info");
-        goto error_op_info;
-    }
-
-    op_info->type = GLOBUS_L_OPERATION_CONNECT;
-    op_info->state = GLOBUS_L_OPERATION_NEW;
-    op_info->op = op;
-    op_info->fd = fd;
-    op_info->user_arg = user_arg;
-    op_info->op.non_data.callback = callback;
-
-    result = globus_l_xio_system_register_write(fd, op_info);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_register;
-        
-    }
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-    GlobusIXIOSystemFreeOperation(op_info);
-    
-error_op_info:
-error_connect:
-error_nonblocking:
-    GlobusIXIOSystemCloseFd(fd);
-    return result;
-}
-
-globus_result_t
-globus_xio_system_register_accept(
-    globus_xio_driver_operation_t       op,
-    globus_xio_system_handle_t          listener_fd,
-    globus_xio_system_handle_t *        out_fd,
-    globus_xio_system_callback_t        callback,
-    void *                              user_arg)
-{
-    globus_result_t                     result;
-    globus_l_operation_info_t *         op_info;
-    
-    GlobusIXIOSystemAllocOperation(op_info);
-    if(!op_info)
-    {
-        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-            "globus_xio_system_register_accept", "op_info");
-        goto error_op_info;
-    }
-
-    op_info->type = GLOBUS_L_OPERATION_ACCEPT;
-    op_info->state = GLOBUS_L_OPERATION_NEW;
-    op_info->op = op;
-    op_info->fd = listener_fd;
-    op_info->user_arg = user_arg;
-    op_info->op.non_data.callback = callback;
-    op_info->op.non_data.out_fd = out_fd;
-
-    result = globus_l_xio_system_register_read(listener_fd, op_info);
-    
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_register;
-    }
-    
-    return GLOBUS_SUCCESS;
-
-error_register:
-    GlobusIXIOSystemFreeOperation(op_info);
-    
-error_op_info:
-    return result;
-}
-
-globus_result_t
-globus_xio_system_register_read(
-    globus_xio_driver_operation_t       op,
-    globus_xio_system_handle_t          fd,
-    const globus_xio_iovec_t *          u_iov,
-    int                                 u_iovc,
-    globus_size_t                       waitforbytes,
-    globus_xio_system_data_callback_t   callback,
-    void *                              user_arg)
-{
-    globus_result_t                     result;
-    globus_l_operation_info_t *         op_info;
-    struct iovec *                      iov;
-
-    GlobusIXIOSystemAllocOperation(op_info);
-    if(!op_info)
-    {
-        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-            "globus_xio_system_register_read", "op_info");
-        goto error_op_info;
-    }
-
-    if(u_iovc == 1)
-    {
-        op_info->type = GLOBUS_L_OPERATION_READ;
-        op_info->_op_single.buf = u_iov->iov_base;
-        op_info->_op_single.bufsize = u_iov->iov_len;
-    }
-    else
-    {
-        GlobusIXIOSystemAllocIovec(u_iovc, iov);
-        if(!iov)
-        {
-            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-                "globus_xio_system_register_read", "iov");
-            goto error_iovec;
-        }
-        
-        GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
-
-        op_info->type = GLOBUS_L_OPERATION_READV;
-        op_info->_op_iovecCom.start_iov = iov;
-        op_info->_op_iovec.iov = iov;
-        op_info->_op_iovecCom.start_iovc = u_iovc;
-        op_info->_op_iovec.iovc = u_iovc;
-    }
-    
-    op_info->state = GLOBUS_L_OPERATION_NEW;
-    op_info->op = op;
-    op_info->fd = fd;
-    op_info->user_arg = user_arg;
-    op_info->op.data.callback = callback;
-    op_info->op.data.waitforbytes = waitforbytes;
-
-    result = globus_l_xio_system_register_read(fd, op_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_register;
-    }
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-    if(u_iovc != 1)
-    {
-        GlobusIXIOSystemFreeIovec(u_iovc, iov);
-    }
-    
-error_iovec:
-    GlobusIXIOSystemFreeOperation(op_info);
-    
-error_op_info:
-    return result;
-}
-
-globus_result_t
-globus_xio_system_register_read_ex(
-    globus_xio_driver_operation_t       op,
-    globus_xio_system_handle_t          fd,
-    const globus_xio_iovec_t *          u_iov,
-    int                                 u_iovc,
-    globus_size_t                       waitforbytes,
-    int                                 flags,
-    const globus_sockaddr_t *           u_from,
-    globus_xio_system_data_callback_t   callback,
-    void *                              user_arg)
-{
-    globus_result_t                     result;
-    globus_l_operation_info_t *         op_info;
-    struct iovec *                      iov;
-    struct msghdr *                     msghdr;
-    globus_sockaddr_t *                 from;
-    
-    if(!flags && !from)
-    {
-        return globus_xio_system_register_read(
-            fd, u_iov, u_iovc, waitforbytes, callback, user_arg);
-    }
-
-    GlobusIXIOSystemAllocOperation(op_info);
-    if(!op_info)
-    {
-        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-            "globus_xio_system_register_read_ex", "op_info");
-        goto error_op_info;
-    }
-    
-    if(u_from)
-    {
-        from = (globus_sockaddr_t *) globus_malloc(sizeof(globus_sockaddr_t));
-        if(!from)
-        {
-            GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-                "globus_xio_system_register_read_ex", "from");
-            goto error_from;
-        }
-        GlobusLibcSockaddrCopy(*from, *u_from, sizeof(globus_sockaddr_t));
-    }
-    else
-    {
-        from = GLOBUS_NULL;
-    }
-
-    if(u_iovc == 1)
-    {
-        if(from)
-        {
-            op_info->type = GLOBUS_L_OPERATION_READFROM;
-            op_info->_op_single.ex.addr = from;
-        }
-        else
-        {
-            op_info->type = GLOBUS_L_OPERATION_RECV;
-        }
-
-        op_info->_op_single.buf = u_iov->iov_base;
-        op_info->_op_single.bufsize = u_iov->iov_len;
-        op_info->_op_single.ex.flags = flags;
-    }
-    else
-    {
-        GlobusIXIOSystemAllocIovec(u_iovc, iov);
-        if(!iov)
-        {
-            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-                "globus_xio_system_register_read_ex", "iov");
-            goto error_iovec;
-        }
-
-        GlobusIXIOSystemAllocMsghdr(msghdr);
-        if(!msghdr)
-        {
-            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-                "globus_xio_system_register_read_ex", "msghdr");
-            goto error_msghdr;
-        }
-
-        GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
-        
-        if(from)
-        {
-            msghdr->msg_name = from;
-            msghdr->msg_namelen = sizeof(globus_sockaddr_t);
-        }
-        
-        msghdr->msg_iov = iov;
-        msghdr->msg_iovlen = u_iovc;
-
-        op_info->type = GLOBUS_L_OPERATION_READMSG;
-        op_info->_op_iovecCom.start_iov = iov;
-        op_info->_op_iovecCom.start_iovc = u_iovc;
-        op_info->_op_msg.msghdr = msghdr;
-        op_info->_op_msg.flags = flags;
-    }
-    
-    op_info->state = GLOBUS_L_OPERATION_NEW;
-    op_info->op = op;
-    op_info->fd = fd;
-    op_info->user_arg = user_arg;
-    op_info->op.data.callback = callback;
-    op_info->op.data.waitforbytes = waitforbytes;
-
-    result = globus_l_xio_system_register_read(fd, op_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_register;
-    }
-    
-    return GLOBUS_SUCCESS;
-
-error_register:
-    if(u_iovc != 1)
-    {
-        GlobusIXIOSystemFreeMsghdr(msghdr);
-
-error_msghdr:
-        GlobusIXIOSystemFreeIovec(u_iovc, iov);
-    }
-
-error_iovec:
-    if(from)
-    {
-        globus_free(from);
-    }
-    
-error_from:
-    GlobusIXIOSystemFreeOperation(op_info);
-    
-error_op_info:
-    return result;
-}
-
-globus_result_t
-globus_xio_system_register_write(
-    globus_xio_driver_operation_t       op,
-    globus_xio_system_handle_t          fd,
-    const globus_xio_iovec_t *          u_iov,
-    int                                 u_iovc,
-    globus_xio_system_data_callback_t   callback,
-    void *                              user_arg)
-{
-    globus_result_t                     result;
-    globus_l_operation_info_t *         op_info;
-    struct iovec *                      iov;
-
-    GlobusIXIOSystemAllocOperation(op_info);
-    if(!op_info)
-    {
-        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-            "globus_xio_system_register_write", "op_info");
-        goto error_op_info;
-    }
-
-    if(u_iovc == 1)
-    {
-        op_info->type = GLOBUS_L_OPERATION_WRITE;
-        op_info->_op_single.buf = u_iov->iov_base;
-        op_info->_op_single.bufsize = u_iov->iov_len;
-    }
-    else
-    {
-        GlobusIXIOSystemAllocIovec(u_iovc, iov);
-        if(!iov)
-        {
-            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-                "globus_xio_system_register_write", "iov");
-            goto error_iovec;
-        }
-
-        GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
-
-        op_info->type = GLOBUS_L_OPERATION_WRITEV;
-        op_info->_op_iovecCom.start_iov = iov;
-        op_info->_op_iovec.iov = iov;
-        op_info->_op_iovecCom.start_iovc = u_iovc;
-        op_info->_op_iovec.iovc = u_iovc;
-    }
-    
-    op_info->state = GLOBUS_L_OPERATION_NEW;
-    op_info->op = op;
-    op_info->fd = fd;
-    op_info->user_arg = user_arg;
-    op_info->op.data.callback = callback;
-
-    result = globus_l_xio_system_register_write(fd, op_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_register;
-    }
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-    if(u_iovc != 1)
-    {
-        GlobusIXIOSystemFreeIovec(u_iovc, iov);
-    }
-
-error_iovec:
-    GlobusIXIOSystemFreeOperation(op_info);
-    
-error_op_info:
-    return result;
-}
-
-globus_result_t
-globus_xio_system_register_write_ex(
-    globus_xio_driver_operation_t       op,
-    globus_xio_system_handle_t          fd,
-    const globus_xio_iovec_t *          u_iov,
-    int                                 u_iovc,
-    int                                 flags,
-    const globus_sockaddr_t *           u_to,
-    globus_xio_system_data_callback_t   callback,
-    void *                              user_arg)
-{
-    globus_result_t                     result;
-    globus_l_operation_info_t *         op_info;
-    struct iovec *                      iov;
-    struct msghdr *                     msghdr;
-    globus_sockaddr_t *                 to;
-    
-    if(!flags && !to)
-    {
-        return globus_xio_system_register_write(
-            fd, u_iov, u_iovc, callback, user_arg);
-    }
-
-    GlobusIXIOSystemAllocOperation(op_info);
-    if(!op_info)
-    {
-        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-            "globus_xio_system_register_write_ex", "op_info");
-        goto error_op_info;
-    }
-    
-    if(u_to)
-    {
-        to = (globus_sockaddr_t *) globus_malloc(sizeof(globus_sockaddr_t));
-        if(!to)
-        {
-            GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-                "globus_xio_system_register_read_ex", "to");
-            goto error_to;
-        }
-        GlobusLibcSockaddrCopy(*to, *u_to, sizeof(globus_sockaddr_t));
-    }
-    else
-    {
-        to = GLOBUS_NULL;
-    }
-
-    if(u_iovc == 1)
-    {
-        if(to)
-        {
-            op_info->type = GLOBUS_L_OPERATION_SENDTO;
-            op_info->_op_single.ex.addr = to;
-        }
-        else
-        {
-            op_info->type = GLOBUS_L_OPERATION_SEND;
-        }
-
-        op_info->_op_single.buf = u_iov->iov_base;
-        op_info->_op_single.bufsize = u_iov->iov_len;
-        op_info->_op_single.ex.flags = flags;
-    }
-    else
-    {
-        GlobusIXIOSystemAllocIovec(u_iovc, iov);
-        if(!iov)
-        {
-            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-                "globus_xio_system_register_write_ex", "iov");
-            goto error_iovec;
-        }
-
-        GlobusIXIOSystemAllocMsghdr(msghdr);
-        if(!msghdr)
-        {
-            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-                "globus_xio_system_register_write_ex", "msghdr");
-            goto error_msghdr;            
-        }
-
-        GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
-        
-        if(to)
-        {
-            msghdr->msg_name = to;
-            msghdr->msg_namelen = sizeof(globus_sockaddr_t);
-        }
-
-        msghdr->msg_iov = iov;
-        msghdr->msg_iovlen = u_iovc;
-
-        op_info->type = GLOBUS_L_OPERATION_SENDMSG;
-        op_info->_op_iovecCom.start_iov = iov;
-        op_info->_op_iovecCom.start_iovc = u_iovc;
-        op_info->_op_msg.msghdr = msghdr;
-        op_info->_op_msg.flags = flags;
-    }
-    
-    op_info->state = GLOBUS_L_OPERATION_NEW;
-    op_info->op = op;
-    op_info->fd = fd;
-    op_info->user_arg = user_arg;
-    op_info->op.data.callback = callback;
-
-    result = globus_l_xio_system_register_write(fd, op_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_register;
-    }
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-    if(u_iovc != 1)
-    {
-        GlobusIXIOSystemFreeMsghdr(msghdr);
-        
-error_msghdr:
-        GlobusIXIOSystemFreeIovec(u_iovc, iov);
-    }
-
-error_iovec:    
-    if(to)
-    {
-        globus_free(to);
-    }
-    
-error_to:
-    GlobusIXIOSystemFreeOperation(op_info);
-    
-error_op_info:
-    return result;
-}
-
-typedef struct
-{
-    int                                 fd;
-    globus_xio_system_callback_t        callback;
-    void *                              user_arg;
-} globus_l_xio_system_close_info_t;
-
-static
-void
-globus_l_xio_system_close_kickout(
-    void *                              user_arg)
-{
-    globus_l_xio_system_close_info_t *             close_info;
-
-    close_info = (globus_l_xio_system_close_info_t *) user_arg;
-
-    close_info->callback(GLOBUS_SUCCESS, close_info->user_arg);
-
-    globus_free(close_info);
-}
-
-globus_result_t
-globus_xio_system_register_close(
-    globus_xio_driver_operation_t       op,
-    globus_xio_system_handle_t          fd,
-    globus_xio_system_callback_t        callback,
-    void *                              user_arg)
-{
-    globus_l_xio_system_close_info_t *  close_info;
-    globus_result_t                     result;
-    int                                 rc;
-
-    do
-    {
-        rc = close(fd);
-    } while(rc < 0 && errno == EINTR);
-
-    if(rc < 0)
-    {
-        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
-            "globus_xio_system_register_close", errno);
-        goto error_close;
-    }
-    
-    close_info = (globus_l_xio_system_close_info_t *)
-        globus_malloc(sizeof(globus_l_xio_system_close_info_t));
-    if(!close_info)
-    {
-        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
-            "globus_xio_system_register_close", "close_info");
-        goto error_close_info;
-    }
-    
-    close_info->callback = callback;
-    close_info->user_arg = user_arg;
-
-    result = globus_callback_register_oneshot(
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        globus_l_xio_system_close_kickout,
-        close_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_register;
-    }
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-    globus_free(close_info);
-    
-error_close_info:
-error_close:
-    return result;
 }
 
 static
@@ -1305,7 +615,7 @@ globus_l_xio_system_kickout(
       default:
         op_info->op.data.callback(
             op_info->result,
-            op_info->_op_nbytes,
+            op_info->nbytes,
             op_info->user_arg);
 
         switch(op_info->type)
@@ -1376,6 +686,419 @@ globus_l_xio_system_handle_wakeup()
     globus_l_xio_system_wakeup_pending = GLOBUS_FALSE;
 }
 
+globus_result_t
+globus_l_xio_system_try_read(
+    int                                 fd,
+    void *                              buf,
+    globus_size_t                       buflen,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = read(fd, buf, buflen);
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_read", errno);
+            goto error_errno;
+        }
+    }
+    else if(rc == 0)
+    {
+        result = globus_xio_driver_construct_eof();
+        goto error_eof;
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
+globus_result_t
+globus_l_xio_system_try_readv(
+    int                                 fd,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = readv(fd, iov, iovc);
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_readv", errno);
+            goto error_errno;
+        }
+    }
+    else if(rc == 0)
+    {
+        result = globus_xio_driver_construct_eof();
+        goto error_eof;
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
+globus_result_t
+globus_l_xio_system_try_recv(
+    int                                 fd,
+    void *                              buf,
+    globus_size_t                       buflen,
+    int                                 flags,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = recv(fd, buf, buflen, flags);
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_recv", errno);
+            goto error_errno;
+        }
+    }
+    else if(rc == 0)
+    {
+        result = globus_xio_driver_construct_eof();
+        goto error_eof;
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
+globus_result_t
+globus_l_xio_system_try_recvfrom(
+    int                                 fd,
+    void *                              buf,
+    globus_size_t                       buflen,
+    int                                 flags,
+    const globus_sockaddr_t *           from,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = recvfrom(
+            fd,
+            buf,
+            buflen,
+            flags,
+            (const struct sockaddr *) from,
+            sizeof(globus_sockaddr_t));
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_recvfrom", errno);
+            goto error_errno;
+        }
+    }
+    else if(rc == 0)
+    {
+        result = globus_xio_driver_construct_eof();
+        goto error_eof;
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
+globus_result_t
+globus_l_xio_system_try_recvmsg(
+    int                                 fd,
+    struct msghdr *                     msghdr,
+    int                                 flags,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = recvmsg(fd, msghdr, flags);
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_recvmsg", errno);
+            goto error_errno;
+        }
+    }
+    else if(rc == 0)
+    {
+        result = globus_xio_driver_construct_eof();
+        goto error_eof;
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
+globus_result_t
+globus_l_xio_system_try_write(
+    int                                 fd,
+    void *                              buf,
+    globus_size_t                       buflen,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = write(fd, buf, buflen);
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_write", errno);
+            goto error_errno;
+        }
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
+globus_result_t
+globus_l_xio_system_try_writev(
+    int                                 fd,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = writev(fd, iov, iovc);
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_writev", errno);
+            goto error_errno;
+        }
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
+globus_result_t
+globus_l_xio_system_try_send(
+    int                                 fd,
+    void *                              buf,
+    globus_size_t                       buflen,
+    int                                 flags,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = send(fd, buf, buflen, flags);
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_send", errno);
+            goto error_errno;
+        }
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
+globus_result_t
+globus_l_xio_system_try_sendto(
+    int                                 fd,
+    void *                              buf,
+    globus_size_t                       buflen,
+    int                                 flags,
+    const globus_sockaddr_t *           to,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = sendto(
+            fd,
+            buf,
+            buflen,
+            flags,
+            (const struct sockaddr *) to,
+            sizeof(globus_sockaddr_t));
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_sendto", errno);
+            goto error_errno;
+        }
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
+globus_result_t
+globus_l_xio_system_try_sendmsg(
+    int                                 fd,
+    struct msghdr *                     msghdr,
+    int                                 flags,
+    globus_size_t *                     nbytes)
+{
+    int                                 rc;
+    
+    do
+    {
+        rc = sendmsg(fd, msghdr, flags);
+    } while(rc < 0 && errno == EINTR);
+    
+    if(rc < 0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            rc = 0;
+        }
+        else
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_l_xio_system_try_sendmsg", errno);
+            goto error_errno;
+        }
+    }
+    
+    *nbytes = rc;
+    return GLOBUS_SUCCESS;
+
+error_errno:
+error_eof:
+    *nbytes = 0;
+    return result;
+}
+
 static
 globus_bool_t
 globus_l_xio_system_handle_read(
@@ -1383,10 +1106,9 @@ globus_l_xio_system_handle_read(
 {
     globus_bool_t                       handled_it;
     globus_l_operation_info_t *         read_info;
-    globus_ssize_t                      nbytes;
+    globus_size_t                       nbytes;
     globus_result_t                     result;
 
-    nbytes = 0;
     handled_it = GLOBUS_FALSE;
     read_info = globus_l_xio_system_read_operations[fd];
     result = GLOBUS_SUCCESS;
@@ -1403,95 +1125,81 @@ globus_l_xio_system_handle_read(
     switch(read_info->type)
     {
       case GLOBUS_L_OPERATION_OPEN:
-        nbytes = 1;
-        /* just so eof code doesnt trip -- nothing else to do here */
+        /* nothing else to do here */
         break;
 
       case GLOBUS_L_OPERATION_READ:
-        do
-        {
-            nbytes = read(
-                fd,
-                read_info->_op_single.buf,
-                read_info->_op_single.buf.bufsize);
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_read(
+            fd,
+            read_info->_op_single.buf,
+            read_info->_op_single.buf.bufsize,
+            &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
             read_info->_op_single.buf = (char *)
                 read_info->_op_single.buf + nbytes;
             read_info->_op_single.bufsize -= nbytes;
-            read_info->_op_nbytes += nbytes;
+            read_info->nbytes += nbytes;
         }
         break;
 
       case GLOBUS_L_OPERATION_READV:
-        do
-        {
-            nbytes = readv(
-                fd, read_info->_op_iovec.iov, read_info->_op_iovec.iovc);
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_readv(
+            fd, read_info->_op_iovec.iov, read_info->_op_iovec.iovc, &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
-            read_info->_op_nbytes += nbytes;
+            read_info->nbytes += nbytes;
             GlobusIXIOSystemAdjustIovec(
                 read_info->_op_iovec.iov, read_info->_op_iovec.iovc, nbytes);
         }
         break;
 
       case GLOBUS_L_OPERATION_RECV:
-        do
-        {
-            nbytes = recv(
-                fd,
-                read_info->_op_single.buf,
-                read_info->_op_single.bufsize,
-                read_info->_op_single.ex.flags);
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_recv(
+            fd,
+            read_info->_op_single.buf,
+            read_info->_op_single.bufsize,
+            read_info->_op_single.ex.flags,
+            &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
             read_info->_op_single.buf = (char *)
                 read_info->_op_single.buf + nbytes;
             read_info->_op_single.bufsize -= nbytes;
-            read_info->_op_nbytes += nbytes;
+            read_info->nbytes += nbytes;
         }
         break;
 
       case GLOBUS_L_OPERATION_RECVFROM:
-        do
-        {
-            nbytes = recvfrom(
-                fd,
-                read_info->_op_single.buf,
-                read_info->_op_single.bufsize,
-                read_info->_op_single.ex.flags,
-                (const struct sockaddr *) read_info->_op_single.ex.addr,
-                sizeof(globus_sockaddr_t));
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_recvfrom(
+            fd,
+            read_info->_op_single.buf,
+            read_info->_op_single.bufsize,
+            read_info->_op_single.ex.flags,
+            read_info->_op_single.ex.addr,
+            &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
             read_info->_op_single.buf = (char *)
                 read_info->_op_single.buf + nbytes;
             read_info->_op_single.bufsize -= nbytes;
-            read_info->_op_nbytes += nbytes;
+            read_info->nbytes += nbytes;
         }
         break;
 
       case GLOBUS_L_OPERATION_RECVMSG:
-        do
-        {
-            nbytes = recvmsg(
-                fd, read_info->_op_msg.msghdr, read_info->_op_msg.flags);
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_recvmsg(
+            fd, read_info->_op_msg.msghdr, read_info->_op_msg.flags, &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
             struct msghdr *             msghdr;
 
-            read_info->_op_nbytes += nbytes;
+            read_info->nbytes += nbytes;
             msghdr = read_info->_op_msg.msghdr;
             GlobusIXIOSystemAdjustIovec(
                 msghdr->msg_iov, msghdr->msg_iovlen, nbytes);
@@ -1510,18 +1218,9 @@ globus_l_xio_system_handle_read(
         return GLOBUS_FALSE;
         break;
     }
-
-    if(nbytes < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-    {
-        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
-            "globus_l_xio_system_handle_read", errno);
-    }
-    else if(nbytes == 0)
-    {
-        result = globus_xio_driver_construct_eof();
-    }
-
-    if(read_info->_op_nbytes >= read_info->waitforbytes ||
+    
+    /* always true for open operations */
+    if(read_info->nbytes >= read_info->waitforbytes ||
         result != GLOBUS_SUCCESS)
     {
 error_canceled:
@@ -1551,12 +1250,9 @@ globus_l_xio_system_handle_write(
 {
     globus_bool_t                       handled_it;
     globus_l_operation_info_t *         write_info;
-    globus_ssize_t                      nbytes;
+    globus_size_t                       nbytes;
     globus_result_t                     result;
-    int                                 work_remaining;
 
-    nbytes = 0;
-    work_remaining = 1;
     handled_it = GLOBUS_FALSE;
     result = GLOBUS_SUCCESS;
     write_info = globus_l_xio_system_write_operations[fd];
@@ -1574,7 +1270,6 @@ globus_l_xio_system_handle_write(
     {
       case GLOBUS_L_OPERATION_OPEN:
         /* nothing to do here */
-        work_remaining = 0;
         break;
 
       case GLOBUS_L_OPERATION_CONNECT:
@@ -1594,7 +1289,6 @@ globus_l_xio_system_handle_write(
                     "globus_l_xio_system_handle_write", err);
                 GlobusIXIOSystemCloseFd(fd);
             }
-            work_remaining = 0;
         }
         break;
 
@@ -1604,17 +1298,16 @@ globus_l_xio_system_handle_write(
             int                         addrlen;
             int                         new_fd;
 
-            addrlen = sizeof(globus_sockaddr_t);
-
             do
             {
+                addrlen = sizeof(globus_sockaddr_t);
                 new_fd = accept(fd, (struct sockaddr *) &addr, &addrlen);
             } while(new_fd < 0 && errno == EINTR);
 
             if(new_fd < 0)
             {
-                /* so the error is handled below */
-                nbytes = new_fd;
+                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                    "globus_l_xio_system_handle_write", errno);
             }
             else
             {
@@ -1631,110 +1324,91 @@ globus_l_xio_system_handle_write(
                 {
                     *op_info->op.non_data.out_fd = new_fd;
                 }
-                
-                work_remaining = 0;
             }
         }
         break;
 
       case GLOBUS_L_OPERATION_WRITE:
-        do
-        {
-            nbytes = write(
-                fd,
-                write_info->_op_single.buf,
-                write_info->_op_single.bufsize);
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_write(
+            fd,
+            write_info->_op_single.buf,
+            write_info->_op_single.buf.bufsize,
+            &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
             write_info->_op_single.buf = (char *)
                 write_info->_op_single.buf + nbytes;
             write_info->_op_single.bufsize -= nbytes;
-            write_info->_op_nbytes += nbytes;
-            
-            work_remaining = write_info->_op_single.bufsize;
+            write_info->nbytes += nbytes;
         }
         break;
 
       case GLOBUS_L_OPERATION_WRITEV:
-        do
-        {
-            nbytes = writev(
-                fd, write_info->_op_iovec.iov, write_info->_op_iovec.iovc);
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_writev(
+            fd,
+            write_info->_op_iovec.iov,
+            write_info->_op_iovec.iovc,
+            &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
-            write_info->_op_nbytes += nbytes;
+            write_info->nbytes += nbytes;
             GlobusIXIOSystemAdjustIovec(
                 write_info->_op_iovec.iov, write_info->_op_iovec.iovc, nbytes);
-            
-            work_remaining = write_info->_op_iovec.iovc;
         }
         break;
 
       case GLOBUS_L_OPERATION_SEND:
-        do
-        {
-            nbytes = send(
-                fd,
-                write_info->_op_single.buf,
-                write_info->_op_single.bufsize,
-                write_info->_op_single.ex.flags);
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_send(
+            fd,
+            write_info->_op_single.buf,
+            write_info->_op_single.bufsize,
+            write_info->_op_single.ex.flags,
+            &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
             write_info->_op_single.buf = (char *)
                 write_info->_op_single.buf + nbytes;
             write_info->_op_single.bufsize -= nbytes;
-            write_info->_op_nbytes += nbytes;
-            
-            work_remaining = write_info->_op_single.bufsize;
+            write_info->nbytes += nbytes;
         }
         break;
 
       case GLOBUS_L_OPERATION_SENDTO:
-        do
-        {
-            nbytes = sendto(
-                fd,
-                write_info->_op_single.buf,
-                write_info->_op_single.bufsize,
-                write_info->_op_single.ex.flags,
-                (const struct sockaddr *) write_info->_op_single.ex.addr,
-                sizeof(globus_sockaddr_t));
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_sendto(
+            fd,
+            write_info->_op_single.buf,
+            write_info->_op_single.bufsize,
+            write_info->_op_single.ex.flags,
+            write_info->_op_single.ex.addr,
+            &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
             write_info->_op_single.buf = (char *)
                 write_info->_op_single.buf + nbytes;
             write_info->_op_single.bufsize -= nbytes;
-            write_info->_op_nbytes += nbytes;
-            
-            work_remaining = write_info->_op_single.bufsize;
+            write_info->nbytes += nbytes;
         }
         break;
 
       case GLOBUS_L_OPERATION_SENDMSG:
-        do
-        {
-            nbytes = sendmsg(
-                fd, write_info->_op_msg.msghdr, write_info->_op_msg.flags);
-        } while(nbytes < 0 && errno == EINTR);
+        result = globus_l_xio_system_try_recvmsg(
+            fd,
+            write_info->_op_msg.msghdr,
+            write_info->_op_msg.flags,
+            &nbytes);
 
-        if(nbytes > 0)
+        if(result == GLOBUS_SUCCESS)
         {
             struct msghdr *             msghdr;
 
-            write_info->_op_nbytes += nbytes;
+            write_info->nbytes += nbytes;
             msghdr = write_info->_op_msg.msghdr;
             GlobusIXIOSystemAdjustIovec(
                 msghdr->msg_iov, msghdr->msg_iovlen, nbytes);
-                
-            work_remaining = msghdr->msg_iovlen;
         }
         break;
 
@@ -1748,14 +1422,10 @@ globus_l_xio_system_handle_write(
         return GLOBUS_FALSE;
         break;
     }
-
-    if(nbytes < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-    {
-        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
-            "globus_l_xio_system_handle_write", errno);
-    }
-
-    if(!work_remaining || result != GLOBUS_SUCCESS)
+    
+    /* always true for open, connect, and accept operations */
+    if(write_info->nbytes >= write_info->waitforbytes || 
+        result != GLOBUS_SUCCESS)
     {
 error_canceled:
         handled_it = GLOBUS_TRUE;
@@ -1910,4 +1580,821 @@ globus_l_xio_system_poll(
     } while(!handled_something &&
         !time_left_is_zero &&
         !globus_l_xio_system_shutdown_called);
+}
+
+globus_result_t
+globus_xio_system_register_open(
+    globus_xio_driver_operation_t       op,
+    const char *                        pathname,
+    int                                 flags,
+    int                                 mode,
+    globus_xio_system_handle_t *        out_fd,
+    globus_xio_system_callback_t        callback,
+    void *                              user_arg)
+{
+    int                                 fd;
+    globus_result_t                     result;
+    globus_l_operation_info_t *         op_info;
+
+    do
+    {
+        fd = open(pathname, flags | O_NONBLOCK, mode);
+    } while(fd < 0 && errno == EINTR);
+
+    if(fd < 0)
+    {
+        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+            "globus_xio_system_register_open", errno);
+        goto error_close;
+    }
+
+    GlobusIXIOSystemAllocOperation(op_info);
+    if(!op_info)
+    {
+        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+            "globus_xio_system_register_open", "op_info");
+        goto error_op_info;
+    }
+
+    op_info->type = GLOBUS_L_OPERATION_OPEN;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
+    op_info->op = op;
+    op_info->fd = fd;
+    op_info->user_arg = user_arg;
+    op_info->op.non_data.callback = callback;
+
+    if(flags & GLOBUS_XIO_SYSTEM_RDONLY)
+    {
+        result = globus_l_xio_system_register_read(fd, op_info);
+    }
+    else
+    {
+        result = globus_l_xio_system_register_write(fd, op_info);
+    }
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_register;
+        
+    }
+
+    *out_fd = fd;
+    return GLOBUS_SUCCESS;
+
+error_register:
+    GlobusIXIOSystemFreeOperation(op_info);
+    
+error_op_info:
+    GlobusIXIOSystemCloseFd(fd);
+    
+error_close:
+    return result;
+}
+
+globus_result_t
+globus_xio_system_register_connect(
+    globus_xio_driver_operation_t       op,
+    globus_xio_system_handle_t          fd,
+    const globus_sockaddr_t *           addr,
+    globus_xio_system_callback_t        callback,
+    void *                              user_arg)
+{
+    globus_bool_t                       done;
+    int                                 rc;
+    globus_result_t                     result;
+    globus_l_operation_info_t *         op_info;
+
+    GlobusIXIOSystemAddNonBlocking(fd, rc);
+    if(rc < 0)
+    {
+        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+            "globus_xio_system_register_connect", errno);
+        goto error_nonblocking;
+    }
+    
+    done = GLOBUS_FALSE;
+    while(!done && connect(
+        fd, (const struct sockaddr *) addr, sizeof(globus_sockaddr_t)) < 0)
+    {
+        switch(errno)
+        {
+          case EINPROGRESS:
+            done = GLOBUS_TRUE;
+            break;
+
+          case EINTR:
+            /* retry */
+            break;
+
+          case ETIMEDOUT: /* this was in globus io.. not sure why */
+            globus_thread_yield();
+            break;
+
+          default:
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+                "globus_xio_system_register_connect", errno);
+            goto error_connect;
+        }
+    }
+    
+    GlobusIXIOSystemAllocOperation(op_info);
+    if(!op_info)
+    {
+        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+            "globus_xio_system_register_connect", "op_info");
+        goto error_op_info;
+    }
+
+    op_info->type = GLOBUS_L_OPERATION_CONNECT;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
+    op_info->op = op;
+    op_info->fd = fd;
+    op_info->user_arg = user_arg;
+    op_info->op.non_data.callback = callback;
+
+    result = globus_l_xio_system_register_write(fd, op_info);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_register;
+        
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_register:
+    GlobusIXIOSystemFreeOperation(op_info);
+    
+error_op_info:
+error_connect:
+error_nonblocking:
+    GlobusIXIOSystemCloseFd(fd);
+    return result;
+}
+
+globus_result_t
+globus_xio_system_register_accept(
+    globus_xio_driver_operation_t       op,
+    globus_xio_system_handle_t          listener_fd,
+    globus_xio_system_handle_t *        out_fd,
+    globus_xio_system_callback_t        callback,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_l_operation_info_t *         op_info;
+    
+    GlobusIXIOSystemAllocOperation(op_info);
+    if(!op_info)
+    {
+        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+            "globus_xio_system_register_accept", "op_info");
+        goto error_op_info;
+    }
+
+    op_info->type = GLOBUS_L_OPERATION_ACCEPT;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
+    op_info->op = op;
+    op_info->fd = listener_fd;
+    op_info->user_arg = user_arg;
+    op_info->op.non_data.callback = callback;
+    op_info->op.non_data.out_fd = out_fd;
+
+    result = globus_l_xio_system_register_read(listener_fd, op_info);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_register;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_register:
+    GlobusIXIOSystemFreeOperation(op_info);
+    
+error_op_info:
+    return result;
+}
+
+globus_result_t
+globus_xio_system_register_read(
+    globus_xio_driver_operation_t       op,
+    globus_xio_system_handle_t          fd,
+    const globus_xio_iovec_t *          u_iov,
+    int                                 u_iovc,
+    globus_size_t                       waitforbytes,
+    globus_xio_system_data_callback_t   callback,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_l_operation_info_t *         op_info;
+    struct iovec *                      iov;
+
+    GlobusIXIOSystemAllocOperation(op_info);
+    if(!op_info)
+    {
+        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+            "globus_xio_system_register_read", "op_info");
+        goto error_op_info;
+    }
+
+    if(u_iovc == 1)
+    {
+        op_info->type = GLOBUS_L_OPERATION_READ;
+        op_info->_op_single.buf = u_iov->iov_base;
+        op_info->_op_single.bufsize = u_iov->iov_len;
+    }
+    else
+    {
+        GlobusIXIOSystemAllocIovec(u_iovc, iov);
+        if(!iov)
+        {
+            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_read", "iov");
+            goto error_iovec;
+        }
+        
+        GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
+
+        op_info->type = GLOBUS_L_OPERATION_READV;
+        op_info->_op_iovecCom.start_iov = iov;
+        op_info->_op_iovec.iov = iov;
+        op_info->_op_iovecCom.start_iovc = u_iovc;
+        op_info->_op_iovec.iovc = u_iovc;
+    }
+    
+    op_info->state = GLOBUS_L_OPERATION_NEW;
+    op_info->op = op;
+    op_info->fd = fd;
+    op_info->user_arg = user_arg;
+    op_info->op.data.callback = callback;
+    op_info->waitforbytes = waitforbytes;
+
+    result = globus_l_xio_system_register_read(fd, op_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_register;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_register:
+    if(u_iovc != 1)
+    {
+        GlobusIXIOSystemFreeIovec(u_iovc, iov);
+    }
+    
+error_iovec:
+    GlobusIXIOSystemFreeOperation(op_info);
+    
+error_op_info:
+    return result;
+}
+
+globus_result_t
+globus_xio_system_register_read_ex(
+    globus_xio_driver_operation_t       op,
+    globus_xio_system_handle_t          fd,
+    const globus_xio_iovec_t *          u_iov,
+    int                                 u_iovc,
+    globus_size_t                       waitforbytes,
+    int                                 flags,
+    const globus_sockaddr_t *           u_from,
+    globus_xio_system_data_callback_t   callback,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_l_operation_info_t *         op_info;
+    struct iovec *                      iov;
+    struct msghdr *                     msghdr;
+    globus_sockaddr_t *                 from;
+    
+    if(!flags && !from)
+    {
+        return globus_xio_system_register_read(
+            fd, u_iov, u_iovc, waitforbytes, callback, user_arg);
+    }
+
+    GlobusIXIOSystemAllocOperation(op_info);
+    if(!op_info)
+    {
+        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+            "globus_xio_system_register_read_ex", "op_info");
+        goto error_op_info;
+    }
+    
+    if(u_from)
+    {
+        from = (globus_sockaddr_t *) globus_malloc(sizeof(globus_sockaddr_t));
+        if(!from)
+        {
+            GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_read_ex", "from");
+            goto error_from;
+        }
+        GlobusLibcSockaddrCopy(*from, *u_from, sizeof(globus_sockaddr_t));
+    }
+    else
+    {
+        from = GLOBUS_NULL;
+    }
+
+    if(u_iovc == 1)
+    {
+        if(from)
+        {
+            op_info->type = GLOBUS_L_OPERATION_RECVFROM;
+            op_info->_op_single.ex.addr = from;
+        }
+        else
+        {
+            op_info->type = GLOBUS_L_OPERATION_RECV;
+        }
+
+        op_info->_op_single.buf = u_iov->iov_base;
+        op_info->_op_single.bufsize = u_iov->iov_len;
+        op_info->_op_single.ex.flags = flags;
+    }
+    else
+    {
+        GlobusIXIOSystemAllocIovec(u_iovc, iov);
+        if(!iov)
+        {
+            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_read_ex", "iov");
+            goto error_iovec;
+        }
+
+        GlobusIXIOSystemAllocMsghdr(msghdr);
+        if(!msghdr)
+        {
+            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_read_ex", "msghdr");
+            goto error_msghdr;
+        }
+
+        GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
+        
+        if(from)
+        {
+            msghdr->msg_name = from;
+            msghdr->msg_namelen = sizeof(globus_sockaddr_t);
+        }
+        
+        msghdr->msg_iov = iov;
+        msghdr->msg_iovlen = u_iovc;
+
+        op_info->type = GLOBUS_L_OPERATION_RECVMSG;
+        op_info->_op_iovecCom.start_iov = iov;
+        op_info->_op_iovecCom.start_iovc = u_iovc;
+        op_info->_op_msg.msghdr = msghdr;
+        op_info->_op_msg.flags = flags;
+    }
+    
+    op_info->state = GLOBUS_L_OPERATION_NEW;
+    op_info->op = op;
+    op_info->fd = fd;
+    op_info->user_arg = user_arg;
+    op_info->op.data.callback = callback;
+    op_info->waitforbytes = waitforbytes;
+
+    result = globus_l_xio_system_register_read(fd, op_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_register;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_register:
+    if(u_iovc != 1)
+    {
+        GlobusIXIOSystemFreeMsghdr(msghdr);
+
+error_msghdr:
+        GlobusIXIOSystemFreeIovec(u_iovc, iov);
+    }
+
+error_iovec:
+    if(from)
+    {
+        globus_free(from);
+    }
+    
+error_from:
+    GlobusIXIOSystemFreeOperation(op_info);
+    
+error_op_info:
+    return result;
+}
+
+globus_result_t
+globus_xio_system_register_write(
+    globus_xio_driver_operation_t       op,
+    globus_xio_system_handle_t          fd,
+    const globus_xio_iovec_t *          u_iov,
+    int                                 u_iovc,
+    globus_size_t                       waitforbytes,
+    globus_xio_system_data_callback_t   callback,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_l_operation_info_t *         op_info;
+    struct iovec *                      iov;
+
+    GlobusIXIOSystemAllocOperation(op_info);
+    if(!op_info)
+    {
+        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+            "globus_xio_system_register_write", "op_info");
+        goto error_op_info;
+    }
+
+    if(u_iovc == 1)
+    {
+        op_info->type = GLOBUS_L_OPERATION_WRITE;
+        op_info->_op_single.buf = u_iov->iov_base;
+        op_info->_op_single.bufsize = u_iov->iov_len;
+    }
+    else
+    {
+        GlobusIXIOSystemAllocIovec(u_iovc, iov);
+        if(!iov)
+        {
+            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_write", "iov");
+            goto error_iovec;
+        }
+
+        GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
+
+        op_info->type = GLOBUS_L_OPERATION_WRITEV;
+        op_info->_op_iovecCom.start_iov = iov;
+        op_info->_op_iovec.iov = iov;
+        op_info->_op_iovecCom.start_iovc = u_iovc;
+        op_info->_op_iovec.iovc = u_iovc;
+    }
+    
+    op_info->state = GLOBUS_L_OPERATION_NEW;
+    op_info->op = op;
+    op_info->fd = fd;
+    op_info->user_arg = user_arg;
+    op_info->op.data.callback = callback;
+    op_info->waitforbytes = waitforbytes;
+
+    result = globus_l_xio_system_register_write(fd, op_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_register;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_register:
+    if(u_iovc != 1)
+    {
+        GlobusIXIOSystemFreeIovec(u_iovc, iov);
+    }
+
+error_iovec:
+    GlobusIXIOSystemFreeOperation(op_info);
+    
+error_op_info:
+    return result;
+}
+
+globus_result_t
+globus_xio_system_register_write_ex(
+    globus_xio_driver_operation_t       op,
+    globus_xio_system_handle_t          fd,
+    const globus_xio_iovec_t *          u_iov,
+    int                                 u_iovc,
+    globus_size_t                       waitforbytes,
+    int                                 flags,
+    const globus_sockaddr_t *           u_to,
+    globus_xio_system_data_callback_t   callback,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_l_operation_info_t *         op_info;
+    struct iovec *                      iov;
+    struct msghdr *                     msghdr;
+    globus_sockaddr_t *                 to;
+    
+    if(!flags && !to)
+    {
+        return globus_xio_system_register_write(
+            fd, u_iov, u_iovc, waitforbytes, callback, user_arg);
+    }
+
+    GlobusIXIOSystemAllocOperation(op_info);
+    if(!op_info)
+    {
+        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+            "globus_xio_system_register_write_ex", "op_info");
+        goto error_op_info;
+    }
+    
+    if(u_to)
+    {
+        to = (globus_sockaddr_t *) globus_malloc(sizeof(globus_sockaddr_t));
+        if(!to)
+        {
+            GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_read_ex", "to");
+            goto error_to;
+        }
+        GlobusLibcSockaddrCopy(*to, *u_to, sizeof(globus_sockaddr_t));
+    }
+    else
+    {
+        to = GLOBUS_NULL;
+    }
+
+    if(u_iovc == 1)
+    {
+        if(to)
+        {
+            op_info->type = GLOBUS_L_OPERATION_SENDTO;
+            op_info->_op_single.ex.addr = to;
+        }
+        else
+        {
+            op_info->type = GLOBUS_L_OPERATION_SEND;
+        }
+
+        op_info->_op_single.buf = u_iov->iov_base;
+        op_info->_op_single.bufsize = u_iov->iov_len;
+        op_info->_op_single.ex.flags = flags;
+    }
+    else
+    {
+        GlobusIXIOSystemAllocIovec(u_iovc, iov);
+        if(!iov)
+        {
+            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_write_ex", "iov");
+            goto error_iovec;
+        }
+
+        GlobusIXIOSystemAllocMsghdr(msghdr);
+        if(!msghdr)
+        {
+            result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_write_ex", "msghdr");
+            goto error_msghdr;            
+        }
+
+        GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
+        
+        if(to)
+        {
+            msghdr->msg_name = to;
+            msghdr->msg_namelen = sizeof(globus_sockaddr_t);
+        }
+
+        msghdr->msg_iov = iov;
+        msghdr->msg_iovlen = u_iovc;
+
+        op_info->type = GLOBUS_L_OPERATION_SENDMSG;
+        op_info->_op_iovecCom.start_iov = iov;
+        op_info->_op_iovecCom.start_iovc = u_iovc;
+        op_info->_op_msg.msghdr = msghdr;
+        op_info->_op_msg.flags = flags;
+    }
+    
+    op_info->state = GLOBUS_L_OPERATION_NEW;
+    op_info->op = op;
+    op_info->fd = fd;
+    op_info->user_arg = user_arg;
+    op_info->op.data.callback = callback;
+    op_info->waitforbytes = waitforbytes;
+
+    result = globus_l_xio_system_register_write(fd, op_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_register;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_register:
+    if(u_iovc != 1)
+    {
+        GlobusIXIOSystemFreeMsghdr(msghdr);
+        
+error_msghdr:
+        GlobusIXIOSystemFreeIovec(u_iovc, iov);
+    }
+
+error_iovec:    
+    if(to)
+    {
+        globus_free(to);
+    }
+    
+error_to:
+    GlobusIXIOSystemFreeOperation(op_info);
+    
+error_op_info:
+    return result;
+}
+
+typedef struct
+{
+    int                                 fd;
+    globus_xio_system_callback_t        callback;
+    void *                              user_arg;
+} globus_l_xio_system_close_info_t;
+
+static
+void
+globus_l_xio_system_close_kickout(
+    void *                              user_arg)
+{
+    globus_l_xio_system_close_info_t *             close_info;
+
+    close_info = (globus_l_xio_system_close_info_t *) user_arg;
+
+    close_info->callback(GLOBUS_SUCCESS, close_info->user_arg);
+
+    globus_free(close_info);
+}
+
+globus_result_t
+globus_xio_system_register_close(
+    globus_xio_driver_operation_t       op,
+    globus_xio_system_handle_t          fd,
+    globus_xio_system_callback_t        callback,
+    void *                              user_arg)
+{
+    globus_l_xio_system_close_info_t *  close_info;
+    globus_result_t                     result;
+    int                                 rc;
+
+    do
+    {
+        rc = close(fd);
+    } while(rc < 0 && errno == EINTR);
+
+    if(rc < 0)
+    {
+        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_SYSTEM_ERROR(
+            "globus_xio_system_register_close", errno);
+        goto error_close;
+    }
+    
+    close_info = (globus_l_xio_system_close_info_t *)
+        globus_malloc(sizeof(globus_l_xio_system_close_info_t));
+    if(!close_info)
+    {
+        result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+            "globus_xio_system_register_close", "close_info");
+        goto error_close_info;
+    }
+    
+    close_info->callback = callback;
+    close_info->user_arg = user_arg;
+
+    result = globus_callback_register_oneshot(
+        GLOBUS_NULL,
+        GLOBUS_NULL,
+        globus_l_xio_system_close_kickout,
+        close_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_register;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_register:
+    globus_free(close_info);
+    
+error_close_info:
+error_close:
+    return result;
+}
+
+globus_result_t
+globus_xio_system_try_read(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes)
+{
+    if(iovc == 1)
+    { 
+        return globus_l_xio_system_try_read(
+            handle, iov->iov_base, iov->iov_len, nybtes);
+    }
+    else
+    {
+        return globus_l_xio_system_try_readv(handle, iov, iovc, nybtes);
+    }
+}
+
+globus_result_t
+globus_xio_system_try_read_ex(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    int                                 flags,
+    const globus_sockaddr_t *           from,
+    globus_size_t *                     nbytes)
+{
+    if(!flags && !from)
+    {
+        return globus_xio_system_try_read(handle, iov, iovc, nybtes);
+    }
+    
+    if(iovc == 1)
+    {
+        if(from)
+        {
+            return globus_l_xio_system_try_recvfrom(
+                handle, iov->iov_base, iov->iov_len, flags, from, nybtes);
+        }
+        else
+        {
+            return globus_l_xio_system_try_recv(
+                handle, iov->iov_base, iov->iov_len, flags, nybtes);
+        }
+    }
+    else
+    {
+        struct msghdr                   msghdr;
+        
+        memset(&msghdr, 0, sizeof(msghdr));
+        msghdr->msg_iov = iov;
+        msghdr->msg_iovlen = iovc;
+        if(from)
+        {
+            msghdr->msg_name = from;
+            msghdr->msg_namelen = sizeof(globus_sockaddr_t);
+        }
+        
+        return globus_l_xio_system_try_recvmsg(handle, &msghdr, flags, nybtes);
+    }
+}
+
+globus_result_t
+globus_xio_system_try_write(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes)
+{
+    if(iovc == 1)
+    { 
+        return globus_l_xio_system_try_write(
+            handle, iov->iov_base, iov->iov_len, nybtes);
+    }
+    else
+    {
+        return globus_l_xio_system_try_writev(handle, iov, iovc, nybtes);
+    }
+}
+
+globus_result_t
+globus_xio_system_try_write_ex(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    int                                 flags,
+    const globus_sockaddr_t *           to,
+    globus_size_t *                     nbytes)
+{
+    if(!flags && !to)
+    {
+        return globus_xio_system_try_write(handle, iov, iovc, nybtes);
+    }
+    
+    if(iovc == 1)
+    {
+        if(to)
+        {
+            return globus_l_xio_system_try_sendto(
+                handle, iov->iov_base, iov->iov_len, flags, to, nybtes);
+        }
+        else
+        {
+            return globus_l_xio_system_try_send(
+                handle, iov->iov_base, iov->iov_len, flags, nybtes);
+        }
+    }
+    else
+    {
+        struct msghdr                   msghdr;
+        
+        memset(&msghdr, 0, sizeof(msghdr));
+        msghdr->msg_iov = iov;
+        msghdr->msg_iovlen = iovc;
+        if(to)
+        {
+            msghdr->msg_name = to;
+            msghdr->msg_namelen = sizeof(globus_sockaddr_t);
+        }
+        
+        return globus_l_xio_system_try_sendmsg(handle, &msghdr, flags, nybtes);
+    }
 }

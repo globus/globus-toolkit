@@ -107,6 +107,7 @@ globus_xio_system_register_write(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
+    globus_size_t                       waitforbytes,
     globus_xio_system_data_callback_t   callback,
     void *                              user_arg);
 
@@ -116,6 +117,7 @@ globus_xio_system_register_write_ex(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
+    globus_size_t                       waitforbytes,
     int                                 flags,
     const globus_sockaddr_t *           to,
     globus_xio_system_data_callback_t   callback,
@@ -127,6 +129,38 @@ globus_xio_system_register_close(
     globus_xio_system_handle_t          handle,
     globus_xio_system_callback_t        callback,
     void *                              user_arg);
+
+globus_result_t
+globus_xio_system_try_read(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes);
+
+globus_result_t
+globus_xio_system_try_read_ex(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    int                                 flags,
+    const globus_sockaddr_t *           from,
+    globus_size_t *                     nbytes);
+
+globus_result_t
+globus_xio_system_try_write(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes);
+
+globus_result_t
+globus_xio_system_try_write_ex(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    int                                 flags,
+    const globus_sockaddr_t *           to,
+    globus_size_t *                     nbytes);
 
 EXTERN_C_END
 
