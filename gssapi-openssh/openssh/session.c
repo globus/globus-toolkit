@@ -58,6 +58,10 @@ RCSID("$OpenBSD: session.c,v 1.134 2002/03/29 18:59:31 markus Exp $");
 #include "session.h"
 #include "monitor_wrap.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 #ifdef HAVE_CYGWIN
 #include <windows.h>
 #include <sys/cygwin.h>
@@ -369,6 +373,12 @@ do_exec_no_pty(Session *s, const char *command)
 
 	session_proctitle(s);
 
+#if defined(GSSAPI)
+	temporarily_use_uid(s->pw);
+	ssh_gssapi_storecreds();
+	restore_uid();
+#endif
+
 #if defined(USE_PAM)
 	do_pam_session(s->pw->pw_name, NULL);
 	do_pam_setcred(1);
@@ -486,6 +496,12 @@ do_exec_pty(Session *s, const char *command)
 		fatal("do_exec_pty: no session");
 	ptyfd = s->ptyfd;
 	ttyfd = s->ttyfd;
+
+#if defined(GSSAPI)
+	temporarily_use_uid(s->pw);
+	ssh_gssapi_storecreds();
+	restore_uid();
+#endif
 
 #if defined(USE_PAM)
 	do_pam_session(s->pw->pw_name, s->tty);
@@ -735,7 +751,7 @@ check_quietlogin(Session *s, const char *command)
  * Sets the value of the given variable in the environment.  If the variable
  * already exists, its value is overriden.
  */
-static void
+void
 child_set_env(char ***envp, u_int *envsizep, const char *name,
 	const char *value)
 {
@@ -853,6 +869,13 @@ do_setup_env(Session *s, const char *shell)
 	 * important for a running system. They must not be dropped.
 	 */
 	copy_environment(environ, &env, &envsize);
+#endif
+
+#ifdef GSSAPI
+	/* Allow any GSSAPI methods that we've used to alter 
+	 * the childs environment as they see fit
+	 */
+	ssh_gssapi_do_child(&env,&envsize);
 #endif
 
 	if (!options.use_login) {
@@ -1928,4 +1951,7 @@ static void
 do_authenticated2(Authctxt *authctxt)
 {
 	server_loop2(authctxt);
+#if defined(GSSAPI)
+	ssh_gssapi_cleanup_creds(NULL);
+#endif
 }

@@ -36,6 +36,7 @@
 #include "cipher.h"
 #include "kex.h"
 #include "log.h"
+#include "compat.h"
 
 #include <netdb.h>
 
@@ -103,7 +104,8 @@ ssh_gssapi_mechanisms(int server,char *host) {
 	Gssctxt		ctx;	
 	gss_buffer_desc	token;		
 
-
+	if (datafellows & SSH_OLD_GSSAPI) return NULL;
+	
 	gss_indicate_mechs(&min_status, &supported);
 	
 	buffer_init(&buf);	
@@ -239,8 +241,9 @@ int ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
 
 
 /* All this effort to report an error ... */
-void
-ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status) {
+static void
+ssh_gssapi_error_ex(OM_uint32 major_status,OM_uint32 minor_status,
+		    int send_packet) {
 	OM_uint32 lmaj, lmin;
         gss_buffer_desc msg;
         OM_uint32 ctx;
@@ -254,6 +257,7 @@ ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status) {
         				  &ctx, &msg);
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
+			if (send_packet) packet_send_debug((char *)msg.value);
         	    	(void) gss_release_buffer(&lmin, &msg);
         	}
         } while (ctx!=0);	   
@@ -266,10 +270,24 @@ ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status) {
         				  &ctx, &msg);
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
+			if (send_packet) packet_send_debug((char *)msg.value);
         	    	(void) gss_release_buffer(&lmin, &msg);
         	}
         } while (ctx!=0);
 }
+
+void
+ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status) {
+    ssh_gssapi_error_ex(major_status, minor_status, 0);
+}
+
+void
+ssh_gssapi_send_error(OM_uint32 major_status,OM_uint32 minor_status) {
+    ssh_gssapi_error_ex(major_status, minor_status, 1);
+}
+
+
+
 
 /* Initialise our GSSAPI context. We use this opaque structure to contain all
  * of the data which both the client and server need to persist across
@@ -372,7 +390,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 					  NULL,
 					  &ctx->client_creds);
 	if (GSS_ERROR(maj_status)) {
-		ssh_gssapi_error(maj_status,min_status);
+		ssh_gssapi_send_error(maj_status,min_status);
 	}
 	
 	if (ctx->client_creds) {
@@ -391,7 +409,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 
 /* Create a service name for the given host */
 OM_uint32
-ssh_gssapi_import_name(Gssctxt *ctx,char *host) {
+ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 	gss_buffer_desc gssbuf;
 	OM_uint32 maj_status, min_status;
 	struct hostent *hostinfo = NULL;
@@ -409,17 +427,18 @@ ssh_gssapi_import_name(Gssctxt *ctx,char *host) {
 	if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
 		debug("Unable to get FQDN for \"%s\"", xhost);
 	} else {
-		host = hostinfo->h_name;
+		xfree(xhost);
+		xhost = xstrdup(hostinfo->h_name);
 	}
-	xfree(xhost);
 		
-        gssbuf.length = sizeof("host@")+strlen(host);
+        gssbuf.length = sizeof("host@")+strlen(xhost);
 
         gssbuf.value = xmalloc(gssbuf.length);
         if (gssbuf.value == NULL) {
+		xfree(xhost);
 		return(-1);
         }
-        snprintf(gssbuf.value,gssbuf.length,"host@%s",host);
+        snprintf(gssbuf.value,gssbuf.length,"host@%s",xhost);
         if ((maj_status=gss_import_name(&min_status,
                                    	&gssbuf,
                                         GSS_C_NT_HOSTBASED_SERVICE,
@@ -427,6 +446,7 @@ ssh_gssapi_import_name(Gssctxt *ctx,char *host) {
 		ssh_gssapi_error(maj_status,min_status);
 	}
 	
+	xfree(xhost);
 	xfree(gssbuf.value);
 	return(maj_status);
 }
