@@ -570,6 +570,77 @@ gaa_simple_check_local_access (gaa_ptr		gaa,
 
 
 
+
+
+
+/** gaasimple_subject_cond()
+ *
+ * @ingroup gaa_simple
+ *
+ * Handle Subject Condition
+ * This function is intended to be used as a gaa cond_eval callback
+ * function.
+ *
+ * @param gaa
+ *        input gaa pointer
+ * @param sc
+ *        input security context
+ * @param cond
+ *        input/output condition to check.
+ * @param valid_time
+ *        output valid time period
+ * @param req_options
+ *        input request options (passed on to any condition-evaluation
+ *        callbacks used by credential conditions)
+ * @param output_flags
+ *        output status pointer.  On success, *output_flags will be set to
+ *        the appropriate combination of GAA_COND_FLG_EVALUATED,
+ *        GAA_COND_FLG_MET, GAA_COND_FLG_ENFORCE.
+ * @param params
+ *        input, should be a (gaa_cred_type *) pointer to a credential
+ *        type (identity, group, etc.).
+ *
+ * @retval GAA_S_SUCCESS
+ *         success
+ * @retval standard gaa error returns
+ */
+gaa_status
+gaasimple_subject_cond(gaa_ptr	    	  gaa,
+                       gaa_sc_ptr	      sc,
+                       gaa_condition    *cond,                          
+                       gaa_time_period  *valid_time,
+                       gaa_request_right_ptr   right,      
+                       gaa_status              rstatus, 
+                       gaa_string_data         estatus,
+                       gaa_status       *output_flags,
+                       void             *params)
+{
+  gaa_request_option *option = NULL;
+  gaa_list_entry_ptr ent;
+
+  if (params == 0)
+    return(GAA_STATUS(GAA_S_CONFIG_ERR, 0));
+
+  if (cond == 0 || cond->authority == 0 || cond->value == 0)
+    return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
+
+  *output_flags = GAA_COND_FLG_EVALUATED;
+  
+  for (ent = gaa_list_first(right->options); ent; ent = gaa_list_next(ent))
+    if (option = (gaa_request_option *)gaa_list_entry_value(ent)) {
+      if(!strcmp(option->type, "subject") && !strcmp(option->authority, cond->authority)) {
+        if (!strcmp (option->value, cond->value)) {
+          *output_flags = (GAA_COND_FLG_EVALUATED | GAA_COND_FLG_MET); 
+        }
+        break;
+		  }              
+    }
+    
+  return(GAA_S_SUCCESS);
+}
+
+
+
 /** gaasimple_utc_time_notbefore_cond()
  * @ingroup gaa_simple
  *
@@ -607,7 +678,9 @@ gaasimple_utc_time_notbefore_cond(gaa_ptr            gaa,
                                   gaa_sc_ptr         sc,
                                   gaa_condition     *cond,
                                   gaa_time_period   *valid_time,
-				  gaa_list_ptr	req_options,
+                                  gaa_request_right_ptr	right,        
+                                  gaa_status         rstatus, 
+                                  gaa_string_data    estatus,
                                   gaa_status        *output_flags,
                                   void              *params)
 {
@@ -625,12 +698,15 @@ gaasimple_utc_time_notbefore_cond(gaa_ptr            gaa,
   
   current_time= malloc(sizeof(struct tm));
  
-  /* Get system time in UT or GMT */
+  //printf("gaasimple_check_time_cond\n");
+
+ 
+  // Get system time in UT or GMT
  
   t1.start_time = time(NULL);
   current_time = gmtime_r(&t1.start_time, current_time);   
                          
-  /* Read the valid time period, from the "condition" */
+  // Read the valid time period, from the "condition"
                          
   if((temp = strtok((char *) inputTime,"-")) == 0)
     return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
@@ -657,7 +733,7 @@ gaasimple_utc_time_notbefore_cond(gaa_ptr            gaa,
   valid_sec =atoi(temp);
 
   
-  /* Validate time */
+  // Validate time
   
   if((valid_year > current_time->tm_year + 1900))
     return(GAA_S_SUCCESS);
@@ -696,6 +772,7 @@ gaasimple_utc_time_notbefore_cond(gaa_ptr            gaa,
   
   valid:
   *output_flags = (GAA_COND_FLG_EVALUATED | GAA_COND_FLG_MET);
+  //printf("Time is valid\n");
   
   return(GAA_S_SUCCESS);
   }
@@ -739,7 +816,9 @@ gaasimple_utc_time_notonorafter_cond(gaa_ptr            gaa,
                                      gaa_sc_ptr         sc,
                                      gaa_condition     *cond,
                                      gaa_time_period   *valid_time,
-				     gaa_list_ptr	req_options,
+                                     gaa_request_right_ptr	right,        
+                                     gaa_status         rstatus, 
+                                     gaa_string_data    estatus,
                                      gaa_status        *output_flags,
                                      void              *params)
 {
@@ -757,12 +836,15 @@ gaasimple_utc_time_notonorafter_cond(gaa_ptr            gaa,
   
   current_time= malloc(sizeof(struct tm));
  
-  /* Get system time in UT or GMT */
+  //printf("gaasimple_check_time_cond\n");
+
+ 
+  // Get system time in UT or GMT
  
   t1.start_time = time(NULL);
   current_time = gmtime_r(&t1.start_time, current_time);   
                          
-  /* Read the valid time period, from the "condition" */
+  // Read the valid time period, from the "condition"
                          
   if((temp = strtok((char *) inputTime,"-")) == 0)
     return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
@@ -789,7 +871,7 @@ gaasimple_utc_time_notonorafter_cond(gaa_ptr            gaa,
   valid_sec =atoi(temp);
 
   
-  /* Validate time */
+  // Validate time
   
   if((valid_year < current_time->tm_year + 1900))
     return(GAA_S_SUCCESS);
@@ -828,6 +910,7 @@ gaasimple_utc_time_notonorafter_cond(gaa_ptr            gaa,
   
   valid:
   *output_flags = (GAA_COND_FLG_EVALUATED | GAA_COND_FLG_MET);
+  //printf("Time is valid\n");
   
   return(GAA_S_SUCCESS);
   }

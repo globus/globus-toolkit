@@ -19,7 +19,7 @@ typedef struct
         
         struct
         {
-             void * nothing;  
+            
         } data;
     } u;
 } globus_i_gfs_server_instance_t;
@@ -45,7 +45,7 @@ typedef struct
 
 typedef struct
 {
-    void * nothing;    
+    
 } globus_i_gfs_ipc_handle_t;
 
 /* !! if this changes, code will have to corrected as all 3 types here are

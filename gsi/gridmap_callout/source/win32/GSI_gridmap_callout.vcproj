@@ -19,17 +19,15 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include;\include\threaded;\include\openssl"
+				AdditionalIncludeDirectories="\gsi\gssapi\source\WinProjects;\gsi\proxy\proxy_ssl\source\library;\gsi\credential\source\library;\gsi\proxy\proxy_core\source\library;\gsi\openssl_error\source\library;\gsi\cert_utils\source\library;\gsi\callback\source\library;\core\source\win32\nonthreaded;\gsi\gssapi\source\WinProjects;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;..\..\..\gssapi\source\win32;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;;..\..\..\ssl_utils\source\library;..\..\..\openssl_module\source\library;\gsi\sysconfig\source\library;\Include\OpenSSL;\gsi\callback\source\library\oldgaa;\gsi\callback\source\library\Win32\;\gsi\sysconfig\source\library\Win32;\gsi\gridmap_callout\error;\gsi\gssapi_error\source\library"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
-				DebugInformationFormat="1"/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool

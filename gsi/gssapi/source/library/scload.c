@@ -489,7 +489,7 @@ bad:
 				char *s;
 				s = X509_NAME_oneline(ucert->cert_info->subject,NULL,0);
 				fprintf(fdlog,"CERT:%s\n",s);
-				OPENSSL_free(s);
+				free(s);
 			}
 		/* now write it */
 			rc = sc_create_cert_obj(sessionHandle, mylabel, ucert);

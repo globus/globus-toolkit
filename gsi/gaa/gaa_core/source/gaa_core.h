@@ -64,10 +64,10 @@ gaacore_tsdata_set(gaacore_tsdata *tsdata, void *data);
 extern void *
 gaacore_tsdata_get(gaacore_tsdata *tsdata);
 
-extern int
+extern
 gaacore_has_matchrights_callback(gaa_ptr gaa);
 
-extern int
+extern
 gaacore_has_default_authinfo_callback(gaa_ptr gaa);
 
 #endif /* GAA_CORE_H */

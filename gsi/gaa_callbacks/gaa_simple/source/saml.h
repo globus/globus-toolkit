@@ -5,6 +5,7 @@
 /*****************************************************************/
 #define DEBUG(x) printf(x)
 
+//#define debug
 
 #define SAML_NS_URN "urn:oasis:names:tc:SAML:1.0:assertion"
 #define ADS      "AuthorizationDecisionStatement"
@@ -42,6 +43,10 @@ typedef struct action {
 } action, *actionPtr;
 
 assertionPtr
+getConditions(xmlNodePtr cur, assertionPtr Assertion);
+
+
+assertionPtr
 getADSattributes(xmlDocPtr doc, xmlNodePtr cur, assertionPtr Assertion);
 
 
@@ -55,7 +60,7 @@ assertionPtr
 parseADS(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, assertionPtr Assertion);
 
 assertionPtr
-parseSAMLassertion(char *filename, int check_signature);
+parseSAMLassertion(char *filename);
 
 void
 printSAMLassertion(assertionPtr as);

@@ -88,7 +88,7 @@ typedef enum globus_l_gsc_959_state_e
     GLOBUS_L_GSP_959_STATE_STOPPING,
     GLOBUS_L_GSP_959_STATE_STOPPED,
     GLOBUS_L_GSP_959_STATE_PANIC,
-    GLOBUS_L_GSP_959_STATE_PANIC_STOPPING
+    GLOBUS_L_GSP_959_STATE_PANIC_STOPPING,
 } globus_l_gsc_state_t;
 
 typedef struct globus_l_gsc_959_handle_s 

@@ -16,13 +16,7 @@ globus_debug_init(
     FILE **                             out_file,
     globus_bool_t *                     using_file,
     globus_bool_t *                     show_tids);
-
-#ifdef BUILD_LITE
-#define GlobusDebugThreadId() getpid()
-#else
-#define GlobusDebugThreadId() globus_thread_self()
-#endif
-
+    
 /* call in same file as module_activate func (before (de)activate funcs) */
 #define GlobusDebugDefine(module_name)                                      \
     static FILE * globus_i_##module_name##_debug_file;                      \
@@ -40,7 +34,7 @@ globus_debug_init(
         {                                                                   \
             char buf[4096]; /* XXX better not use a fmt bigger than this */ \
             sprintf(                                                        \
-                buf, "%lu::%s", (unsigned long) GlobusDebugThreadId(), fmt);\
+                buf, "%lu::%s", (unsigned long) globus_thread_self(), fmt); \
             vfprintf(globus_i_##module_name##_debug_file, buf, ap);         \
         }                                                                   \
         else                                                                \
@@ -92,24 +86,6 @@ globus_debug_init(
         globus_i_##module_name##_debug_file = GLOBUS_NULL;                  \
     } while(0)
 
-/* use this to print a message unconditionally (message must be enclosed in
- * parenthesis and contains a format and possibly var args
- */
-#define GlobusDebugMyPrintf(module_name, message)                           \
-    globus_i_##module_name##_debug_printf message
-
-/* use this in an if() to debug enable blocks of code 
- * for example
- * 
- * if(GlobusDebugTrue(MY_MODULE, VERIFICATION))
- * {
- *    compute stats
- *    GlobusDebugMyPrintf(MY_MODULE, "Stats = %d\n", stats);
- * }
- */
-#define GlobusDebugTrue(module_name, level)                                 \
-    (globus_i_##module_name##_debug_level & (level))
-
 /* most likely wrap this with your own macro,
  * so you dont need to pass module_name all the time
  * 'message' needs to be wrapped with parens and contains a format and
@@ -118,22 +94,19 @@ globus_debug_init(
 #define GlobusDebugPrintf(module_name, level, message)                      \
     do                                                                      \
     {                                                                       \
-        if(GlobusDebugTrue(module_name, level))                             \
+        if(globus_i_##module_name##_debug_level & (level))                  \
         {                                                                   \
-            GlobusDebugMyPrintf(module_name, message);                      \
+            globus_i_##module_name##_debug_printf message;                  \
         }                                                                   \
     } while(0)
 
 #else
 
-#define GlobusDebugThreadId()
 #define GlobusDebugDeclare(module_name)
 #define GlobusDebugDefine(module_name)
 #define GlobusDebugInit(module_name, levels)
 #define GlobusDebugDestroy(module_name)
 #define GlobusDebugPrintf(module_name, level, message)
-#define GlobusDebugMyPrintf(module_name, message)
-#define GlobusDebugTrue(module_name, level) 0
 
 #endif
 

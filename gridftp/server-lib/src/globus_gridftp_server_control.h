@@ -25,7 +25,7 @@ typedef enum globus_gsc_error_type_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYSTEM_RESOURCE,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_AUTHENTICATION,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PATH,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX,
 } globus_gridftp_server_control_error_type_t;
 
 #ifdef __GNUC__
@@ -120,7 +120,7 @@ typedef struct globus_gridftp_server_control_stat_s
 typedef enum globus_gridftp_server_control_network_protocol_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4 = 1,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6
+    GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6,
 } globus_gridftp_server_control_network_protocol_t;
 
 /**
@@ -137,7 +137,7 @@ typedef enum globus_i_gsc_data_dir_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_STOR = 0x01,
     GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RETR = 0x02,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI = 0x03
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI = 0x03,
 } globus_gridftp_server_control_data_dir_t;
 
 /**
@@ -150,7 +150,7 @@ typedef enum globus_i_gsc_data_dir_e
 typedef enum globus_gridftp_server_control_event_type_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF_MARKER,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_BEGIN_TRANSFER = 150
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_BEGIN_TRANSFER = 150,
 } globus_gridftp_server_control_event_type_t;
 
 /**

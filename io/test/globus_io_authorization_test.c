@@ -23,7 +23,7 @@ globus_l_io_authorization_test_callback(
 	globus_io_handle_t *		handle,
 	globus_result_t			result,
 	char *				identity,
-	gss_ctx_id_t 			context_handle);
+	gss_ctx_id_t *			context_handle);
 
 static
 void
@@ -261,7 +261,7 @@ globus_l_io_authorization_test_callback(
 	globus_io_handle_t *		handle,
 	globus_result_t			result,
 	char *				identity,
-	gss_ctx_id_t  			context_handle)
+	gss_ctx_id_t *			context_handle)
 {
     if(arg) return GLOBUS_FALSE;
     else    return GLOBUS_TRUE;

@@ -7,7 +7,7 @@ SUBDIRS= \
 
 Sources = \
 	globus_gsi_authz_null_callout.c \
-	globus_i_gsi_authz_null_callout.h
+	globus_gsi_authz_null_callout.h
 
 
 EXTRA_DIST = version.h.in

@@ -49,10 +49,6 @@ GSS_CALLCONV gss_export_name(
         goto exit;
     }
 
-    /* ToDo: Memory returned by X509_NAME_oneline() must be freed using
-             OPENSSL_free() not free() and caller won't know that. So
-             an new string should be malloc'd and that one returned
-             instead so the SSL one can be freed here.              */
     exported_name->value = X509_NAME_oneline(input_name->x509n, NULL, 0);
     if(exported_name->value == NULL)
     {

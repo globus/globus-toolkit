@@ -839,9 +839,8 @@ g_passive(globus_bool_t spas)
 {
 	if( g_delayed_passive)
 	{
-	/*		must wait until later to alloc the port
-			XXX must find out what code to really return here!
-	*/
+		//must wait until later to alloc the port
+		//XXX must find out what code to really return here!
         reply(000, "Delayed passive mode on, will return port later");
 	}
 	else 

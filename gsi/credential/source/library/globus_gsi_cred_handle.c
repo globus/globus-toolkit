@@ -1046,9 +1046,6 @@ globus_result_t globus_gsi_cred_get_subject_name(
         goto error_exit;
     }
 
-    /* ToDo: This logic needs fixing. The subject_name is passed up and is
-             freed by the caller - but it must be freed with OPENSSL_free(), 
-             not free() and the caller cant be expected to know that */
     if((*subject_name = X509_NAME_oneline(x509_subject, NULL, 0)) == NULL)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
@@ -1395,9 +1392,6 @@ globus_result_t globus_gsi_cred_get_issuer_name(
         goto error_exit;
     }
     
-    /* ToDo: This logic needs fixing. The issuer_name is passed up and is
-             freed by the caller - but it must be freed with OPENSSL_free(), 
-             not free() and the caller cant be expected to know that */
     if((*issuer_name = X509_NAME_oneline(
         X509_get_issuer_name(handle->cert), NULL, 0)) == NULL)
     {
@@ -1474,9 +1468,6 @@ globus_result_t globus_gsi_cred_get_identity_name(
         goto error_exit;
     }
 
-    /* ToDo: This logic needs fixing. The identity_name is passed up and is
-             freed by the caller - but it must be freed with OPENSSL_free(), 
-             not free() and the caller cant be expected to know that */
     *identity_name = X509_NAME_oneline(identity, NULL, 0);
 
     if(*identity_name == NULL)

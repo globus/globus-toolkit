@@ -24,8 +24,6 @@ sub basic_func
    my $expect_failure = shift;
    
    unlink('core');
-   my $command = "$test_prog $args";
-   #print "Running: $command\n";
    chomp($result = `$test_prog $args`);
 
    if($rc != 0 && !$expect_failure)

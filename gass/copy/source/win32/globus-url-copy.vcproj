@@ -19,26 +19,25 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include\nonthreaded;\include"
+				AdditionalIncludeDirectories="..\..\..\..\core\source\win32\nonthreaded;..\..\..\..\gsi\gssapi\source\WinProjects;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
-				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
-				DebugInformationFormat="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="1"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib mswsock.lib libeay32.lib ssleay32.lib libglobus_common_win32dbgthr.lib libglobus_io_win32dbg.lib libglobus_gss_assist_win32dbg.lib libglobus_gssapi_gsi_win32dbg.lib libglobus_gsi_sysconfig_win32dbg.lib libglobus_callout_win32dbg.lib libglobus_gsi_cert_utils_win32dbg.lib libglobus_gsi_credential_win32dbg.lib libglobus_gsi_proxy_core_win32dbg.lib libglobus_gsi_callback_win32dbg.lib libglobus_openssl_win32dbg.lib libglobus_openssl_error_win32dbg.lib libglobus_proxy_ssl_win32dbg.lib libglobus_oldgaa_win32dbg.lib libglobus_gass_copy_win32dbg.lib libglobus_gass_transfer_win32dbg.lib libglobus_ftp_control_win32dbg.lib libglobus_ftp_client_win32dbg.lib"
+				AdditionalOptions="/VERBOSE"
+				AdditionalDependencies="ws2_32.lib libeay32.lib ssleay32.lib libglobus_common_win32dbg.lib libglobus_gass_copy_win32dbg.lib libglobus_gass_transfer_win32dbg.lib libglobus_io_win32dbg.lib libglobus_gssapi_gsi_win32dbg.lib libglobus_gss_assist_win32dbg.lib libglobus_gsi_cert_utils_win32dbg.lib libglobus_gsi_credential_win32dbg.lib libglobus_gsi_proxy_core_win32dbg.lib libglobus_gsi_callback_win32dbg.lib libglobus_gsi_sysconfig_win32dbg.lib libglobus_openssl_win32dbg.lib libglobus_openssl_error_Win32dbg.lib libglobus_sslutils.lib libglobus_gridftp_control_win32dbg.lib libglobus_gridftp_client_win32dbg.lib"
 				OutputFile="$(OutDir)/globus-url-copy.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="\lib"
+				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib"
 				IgnoreAllDefaultLibraries="FALSE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/globus-url-copy.pdb"
@@ -47,9 +46,7 @@
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-				CommandLine="copy $(OutDir)\$(TargetName).exe \bin\*.*
-copy $(OutDir)\$(TargetName).pdb \bin\*.*"/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

@@ -305,7 +305,7 @@ globus_result_t globus_gsi_cred_read(
                      subject,
                      (-lifetime)/60));
                 
-                OPENSSL_free(subject);
+                free(subject);
                 goto exit;
             }
 
@@ -428,7 +428,7 @@ globus_result_t globus_gsi_cred_read(
                      subject,
                      (-lifetime)/60));
                 
-                OPENSSL_free(subject);
+                free(subject);
                 goto exit;
             }
 
@@ -551,7 +551,7 @@ globus_result_t globus_gsi_cred_read(
                      subject,
                      (-lifetime)/60));
                 
-                OPENSSL_free(subject);
+                free(subject);
                 goto exit;
             }
 
@@ -689,7 +689,7 @@ globus_result_t globus_gsi_cred_read(
                          subject,
                          (-lifetime)/60));
                     
-                    OPENSSL_free(subject);
+                    free(subject);
                     goto exit;
                 }
 
@@ -1196,7 +1196,6 @@ globus_result_t globus_gsi_cred_read_cert(
         if(!sk_X509_insert(handle->cert_chain, tmp_cert, i))
         {
             X509_free(tmp_cert);
-            /* ToDo: Fix memory leak from X509_NAME_online call below */
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_READING_CRED,
@@ -2030,12 +2029,12 @@ globus_l_gsi_cred_subject_cmp(
     
     if(actual_str)
     {
-        OPENSSL_free(actual_str);
+        free(actual_str);
     }
 
     if(desired_str)
     {
-        OPENSSL_free(desired_str);
+        free(desired_str);
     }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
@@ -2144,7 +2143,7 @@ globus_l_gsi_cred_get_service(
 
     if(subject_str)
     {
-        OPENSSL_free(subject_str);
+        free(subject_str);
     }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;

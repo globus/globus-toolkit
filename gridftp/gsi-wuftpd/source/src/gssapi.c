@@ -354,7 +354,7 @@ gssapi_check_authorization(char *gssapi_name, char *account)
 
 #if defined(GSSAPI_GLOBUS) || defined(GRIDMAP_WITH_KRB5)
 	int retval = -1;	/* 0 == authorized */
-        char identity_buffer[256];
+        char * identity_buffer[256];
         globus_result_t result;
         globus_object_t * error;
         char * error_string;
@@ -1099,7 +1099,7 @@ gssapi_reply_error(code, maj_stat, min_stat, s)
 char *globus_local_name(globus_id)
      char *globus_id;
 {
-    char identity_buffer[256];
+    char * identity_buffer[256];
     globus_result_t result;
 
     if (globus_id == NULL)

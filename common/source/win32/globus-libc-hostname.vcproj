@@ -43,9 +43,7 @@
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-				CommandLine="copy $(OutDir)\$(TargetName).exe \bin\*.*
-copy $(OutDir)\$(TargetName).pdb \bin\*.*"/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

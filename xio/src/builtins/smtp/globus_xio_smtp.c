@@ -19,7 +19,7 @@ typedef enum
     SMTP_FROM,
     SMTP_TO,
     SMTP_DATA,
-    SMTP_MESSAGE
+    SMTP_MESSAGE,
 } l_smtp_state_t;
 
 typedef struct l_smtp_info_s

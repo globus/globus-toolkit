@@ -19,16 +19,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include\threaded;\include"
+				AdditionalIncludeDirectories="\core\source\win32\threaded;\gsi\gssapi\source\WinProjects"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="1"
 				CompileAs="0"/>
 			<Tool
@@ -40,8 +38,8 @@
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="copy $(OutDir)\$(TargetName).lib \lib\*.*"
-				CommandLine="copy $(OutDir)\$(TargetName).lib \lib\*.*"/>
+				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
+				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

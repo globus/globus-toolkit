@@ -864,8 +864,7 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
         {
             *bytes_read += handle->unwrapped_buffer_length -
                 handle->unwrapped_buffer_offset;
-            memcpy((globus_byte_t *) 
-                   handle->user_iovec[handle->user_iovec_index].iov_base +
+            memcpy(handle->user_iovec[handle->user_iovec_index].iov_base +
                    handle->user_iovec_offset,
                    &handle->unwrapped_buffer[handle->unwrapped_buffer_offset],
                    handle->unwrapped_buffer_length -
@@ -882,18 +881,15 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
         /* else fill it and continue */
         else
         {
-            memcpy((globus_byte_t *)
-                   handle->user_iovec[handle->user_iovec_index].iov_base +
+            memcpy(handle->user_iovec[handle->user_iovec_index].iov_base +
                    handle->user_iovec_offset,
                    &handle->unwrapped_buffer[handle->unwrapped_buffer_offset],
                    handle->user_iovec[handle->user_iovec_index].iov_len -
                    handle->user_iovec_offset);
             *bytes_read +=
-                (handle->user_iovec[handle->user_iovec_index].iov_len -
-                 handle->user_iovec_offset);
+                handle->user_iovec[handle->user_iovec_index].iov_len;
             handle->unwrapped_buffer_offset +=
-                (handle->user_iovec[handle->user_iovec_index].iov_len -
-                 handle->user_iovec_offset);
+                handle->user_iovec[handle->user_iovec_index].iov_len;
             handle->user_iovec_offset = 0; 
         }
     }
@@ -1099,7 +1095,6 @@ globus_l_xio_gsi_read_token_cb(
     int                                 iovec_count;
     globus_size_t                       wait_for = 0;
     globus_size_t                       offset = 0;
-    globus_size_t                       prev_offset = 0;
     int                                 header;
     
     GlobusXIOName(globus_l_xio_gsi_read_token_cb);
@@ -1140,7 +1135,6 @@ globus_l_xio_gsi_read_token_cb(
             header = 0;
         }
 
-        prev_offset = offset;
         offset = offset + wait_for + header;
     
         GlobusXIOGSIDebugPrintf(
@@ -1156,13 +1150,6 @@ globus_l_xio_gsi_read_token_cb(
         {
             if(handle->eof == GLOBUS_FALSE)
             { 
-                handle->bytes_read -= prev_offset;
-                memmove(handle->read_buffer,
-                        &handle->read_buffer[prev_offset],
-                        handle->bytes_read);
-
-                offset -= prev_offset;
-                
                 /* grow read buffer so we can read a full token */
                 
                 if(offset > handle->attr->buffer_size)
@@ -1285,8 +1272,7 @@ globus_l_xio_gsi_read_token_cb(
         }
     }
     while(major_status == GSS_S_CONTINUE_NEEDED &&
-          output_token.length == 0 &&
-          handle->bytes_read > offset + 5);
+          output_token.length == 0);
         
     if(major_status == GSS_S_COMPLETE)
     {
@@ -1950,7 +1936,7 @@ globus_l_xio_gsi_read_cb(
     
     while(frame_length + offset + header <= handle->bytes_read &&
           (wait_for > 0 || bytes_read > 0) && no_header == GLOBUS_FALSE &&
-          result == GLOBUS_SUCCESS && handle->unwrapped_buffer == NULL)
+          result == GLOBUS_SUCCESS)
     {
         offset += header;
         
@@ -2223,7 +2209,6 @@ globus_l_xio_gsi_read(
             
             while(frame_length + offset + header <= handle->bytes_read &&
                   (wait_for > 0 || bytes_read > 0) &&
-                  handle->unwrapped_buffer == NULL &&
                   no_header == GLOBUS_FALSE)
             {
                 offset += header;
@@ -2274,10 +2259,9 @@ globus_l_xio_gsi_read(
                 }
             }
 
-            handle->bytes_read -= offset;                
-            
-            if(handle->bytes_read > 0)
+            if(handle->bytes_read > offset)
             {
+                handle->bytes_read -= offset;                
                 memmove(handle->read_buffer, &handle->read_buffer[offset],
                        handle->bytes_read);
             }
@@ -2680,8 +2664,7 @@ globus_l_xio_gsi_write(
         
         do
         { 
-            plaintext_buffer.value = (globus_byte_t *) 
-                iovec[i].iov_base + iovec_offset;
+            plaintext_buffer.value = iovec[i].iov_base + iovec_offset;
             
             if(iovec[i].iov_len - iovec_offset > handle->max_wrap_size)
             {

@@ -19,16 +19,15 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include\nonthreaded;\include"
+				AdditionalIncludeDirectories="\core\source\win32\threaded;\gsi\gssapi\source\WinProjects;\core\source\win32\nonthreaded;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="FALSE"
+				BufferSecurityCheck="TRUE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="1"
 				CompileAs="0"/>
 			<Tool
@@ -40,8 +39,8 @@
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="copy $(OutDir)\$(TargetName).lib \lib\*.*"
-				CommandLine="copy $(OutDir)\$(TargetName).lib \lib\*.*"/>
+				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
+				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -98,12 +97,6 @@
 			</File>
 			<File
 				RelativePath="..\library\globus_io_common.c">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\library\globus_io_core.c">

@@ -54,7 +54,7 @@ typedef void
 typedef enum globus_gsc_959_command_desc_e
 {
     GLOBUS_GSC_959_COMMAND_POST_AUTH = 0x01,
-    GLOBUS_GSC_959_COMMAND_PRE_AUTH = 0x02
+    GLOBUS_GSC_959_COMMAND_PRE_AUTH = 0x02,
 } globus_gsc_959_command_desc_t;
 
 globus_result_t

@@ -126,34 +126,35 @@ do                                                                          \
 #define GlobusXIOOperationGetDriverHandle(_in_op)                           \
     &((_in_op)->_op_context->entry[(_in_op)->ndx])
 
-/* this is obfuscated, but necessary to be able to 'return' dd instead of
- * passing it back, which has its own problems.
- * 
- * so, what it does is this:
- * 
- *  if(dd is NULL)
- *      if(this is a user_dd OR force_create is true)
- *          -- we create one --
- *          if(attr_init_func(&dd) != SUCCESS)
- *              dd = NULL -- to clean up after failed attempt
- *          endif
- *      endif
- *  endif
- *  return dd
- * 
- * 
- * we will get rid of this before beta as we convert everything from macros to
- * functions
- */
-#define GlobusXIOOperationGetDataDescriptor(_in_op, _force_create)          \
-(                                                                           \
- ((_in_op)->entry[(_in_op)->ndx - 1].dd == NULL &&                          \
-    ((_in_op)->is_user_dd || _force_create) &&                              \
-    (((_in_op)->_op_context->entry[(_in_op)->ndx - 1].driver->attr_init_func( \
-        &(_in_op)->entry[(_in_op)->ndx - 1].dd) == GLOBUS_SUCCESS) ||       \
-            ((_in_op)->entry[(_in_op)->ndx - 1].dd = NULL))),               \
- (_in_op)->entry[(_in_op)->ndx - 1].dd                                      \
-)
+#define GlobusXIOOperationGetDataDescriptor(_out_dd, _in_op, _force_create) \
+{                                                                           \
+    if((_in_op)->entry[(_in_op)->ndx - 1].dd != NULL)                       \
+    {                                                                       \
+        (void *) _out_dd = (_in_op)->entry[(_in_op)->ndx - 1].dd;           \
+    }                                                                       \
+    else if((_in_op)->is_user_dd || _force_create)                          \
+    {                                                                       \
+        globus_i_xio_driver_t *                     _dd_driver;             \
+        globus_result_t                             _res;                   \
+                                                                            \
+        _dd_driver =                                                        \
+            (_in_op)->_op_context->entry[(_in_op)->ndx - 1].driver;         \
+                                                                            \
+        _res = _dd_driver->attr_init_func((void **)&(_out_dd));             \
+        if(_res != GLOBUS_SUCCESS)                                          \
+        {                                                                   \
+            _out_dd = NULL;                                                 \
+        }                                                                   \
+        else                                                                \
+        {                                                                   \
+            (_in_op)->entry[(_in_op)->ndx - 1].dd = (_out_dd);              \
+        }                                                                   \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        _out_dd = NULL;                                                     \
+    }                                                                       \
+}
 
 #define GlobusXIOOperationSetDataDescriptor(_in_op, _in_dd)                 \
     ((_in_op)->entry[(_in_op)->ndx - 1].dd) = (_in_dd)

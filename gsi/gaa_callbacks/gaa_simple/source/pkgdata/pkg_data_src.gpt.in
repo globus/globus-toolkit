@@ -18,11 +18,6 @@
 <Simple_Version Major="3" />
 </Version>
 </Dependency>
-<Dependency Name="globus_gsi_sysconfig" >
-<Version >
-<Simple_Version Major="1" />
-</Version>
-</Dependency>
 </Source_Dependencies>
 <Source_Dependencies Type="lib_link" >
 <Dependency Name="gaa_core" >
@@ -31,23 +26,6 @@
 </Version>
 </Dependency>
 </Source_Dependencies>
-        <Source_Dependencies Type="pgm_link" >
-            <Dependency Name="gaa_core" >
-               <Version >
-                  <Simple_Version Major="1" />
-               </Version>
-            </Dependency>
-            <Dependency Name="gaa_plugin" >
-               <Version >
-                  <Simple_Version Major="1" />
-               </Version>
-            </Dependency>
-            <Dependency Name="globus_xmlsec1" >
-               <Version >
-                  <Simple_Version Major="1" />
-               </Version>
-            </Dependency>
-         </Source_Dependencies>
 <Build_Environment >
 <cflags >@GPT_PKG_CFLAGS@</cflags>
 <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>

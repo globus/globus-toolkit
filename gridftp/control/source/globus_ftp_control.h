@@ -674,8 +674,7 @@ typedef struct globus_i_ftp_dc_handle_s
 
     globus_netlogger_handle_t                   nl_ftp_handle;
     globus_bool_t                               nl_ftp_handle_set;
-    
-    globus_object_t *                           connect_error;
+
     struct globus_ftp_control_handle_s *        whos_my_daddy;
 } globus_i_ftp_dc_handle_t;
 

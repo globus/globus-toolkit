@@ -1812,17 +1812,7 @@ globus_l_io_tcp_register_connect(
             goto error_gsi;
         }
     }
-    
-    result = globus_xio_attr_cntl(
-        ihandle->attr->attr,
-        globus_l_io_tcp_driver,
-        GLOBUS_XIO_TCP_SET_NO_IPV6,
-        GLOBUS_TRUE);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_target;
-    }
-    
+
     if(host)
     {
         snprintf(buf, sizeof(buf), "%s:%hd", host, port);
@@ -1868,7 +1858,7 @@ globus_l_io_tcp_register_connect(
     {
         result = globus_xio_register_open(
             &ihandle->xio_handle,
-            ihandle->attr->attr,
+            attr ? (*attr)->attr : GLOBUS_NULL,
             target,
             globus_l_io_bounce_authz_cb,
             bounce_info);
@@ -2051,16 +2041,6 @@ globus_l_io_tcp_create_listener(
             GLOBUS_XIO_TCP_SET_HANDLE,
             socket);
     }
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_cntl;
-    }
-    
-    result = globus_xio_attr_cntl(
-        iattr->attr,
-        globus_l_io_tcp_driver,
-        GLOBUS_XIO_TCP_SET_NO_IPV6,
-        GLOBUS_TRUE);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_cntl;
@@ -3384,6 +3364,7 @@ error_register:
     globus_free(bounce_info);
     
 error_alloc:
+    globus_l_io_handle_destroy(ihandle);
     *handle = GLOBUS_NULL;
     return result;
 }

@@ -124,7 +124,7 @@ typedef enum globus_gridftp_server_debug_levels_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_TRACE = 4,
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INTERNAL_TRACE = 8,
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INFO = 16,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INFO_VERBOSE = 32
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INFO_VERBOSE = 32,
 } globus_gridftp_server_debug_levels_t;
 
 typedef enum globus_i_gs_state_e
@@ -134,7 +134,7 @@ typedef enum globus_i_gs_state_e
     GLOBUS_L_GS_STATE_AUTH,
     GLOBUS_L_GS_STATE_STOPPED,
     GLOBUS_L_GS_STATE_STOPPING,
-    GLOBUS_L_GS_STATE_ERROR
+    GLOBUS_L_GS_STATE_ERROR,
 } globus_i_gs_state_t;
 
 typedef enum globus_gridftp_server_error_type_e
@@ -145,13 +145,13 @@ typedef enum globus_gridftp_server_error_type_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_NO_AUTH,
     GLOBUS_GRIDFTP_SERVER_CONTROL_POST_AUTH,
     GLOBUS_GRIDFTP_SERVER_CONTROL_NO_COMMAND,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_MALFORMED_COMMAND
+    GLOBUS_GRIDFTP_SERVER_CONTROL_MALFORMED_COMMAND,
 } globus_gridftp_server_error_type_t;
 
 typedef enum globus_i_gsc_conn_dir_e
 {
     GLOBUS_I_GSC_CONN_DIR_PASV,
-    GLOBUS_I_GSC_CONN_DIR_PORT
+    GLOBUS_I_GSC_CONN_DIR_PORT,
 } globus_i_gsc_conn_dir_t;
 
 typedef struct globus_i_gsc_data_s
@@ -232,7 +232,7 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_CREATE_PASV,
     GLOBUS_L_GSC_OP_TYPE_CREATE_PORT,
     GLOBUS_L_GSC_OP_TYPE_DESTROY,
-    GLOBUS_L_GSC_OP_TYPE_DATA
+    GLOBUS_L_GSC_OP_TYPE_DATA,
 } globus_i_gsc_op_type_t;
 
 typedef struct globus_i_gsc_op_s
@@ -304,7 +304,7 @@ typedef enum globus_gridftp_server_command_desc_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_REFRESH = 0x01,
     GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_POST_AUTH = 0x02,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_PRE_AUTH = 0x04
+    GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_PRE_AUTH = 0x04,
 } globus_gridftp_server_command_desc_t;
 
 globus_result_t

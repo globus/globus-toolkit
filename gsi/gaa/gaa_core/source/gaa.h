@@ -409,19 +409,4 @@ gaa_get_callback_err();
 
 extern char *
 gaa_x_majstat_str(gaa_status status);
-
-typedef gaa_status(*gaa_x_get_authorization_identity_func)(gaa_ptr *gaa,
-							   char **identity_ptr,
-							   void *param);
-
-extern gaa_status
-gaa_x_get_authorization_identity(gaa_ptr gaa, char **identity_ptr);
-
-extern gaa_status
-gaa_x_set_get_authorization_identity_callback(
-    gaa_ptr gaa,
-    gaa_x_get_authorization_identity_func func,
-    void *param,
-    gaa_freefunc freefunc);
-
 #endif /* _GAA_H_ */

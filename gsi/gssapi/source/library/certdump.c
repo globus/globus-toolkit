@@ -234,7 +234,7 @@ bad:
 		}
 		
 		fprintf(fpout,"%s\n",ss);
-		OPENSSL_free(ss);
+		free(ss);
 
 		if (fpout != stdout) {
 			fclose(fpout);

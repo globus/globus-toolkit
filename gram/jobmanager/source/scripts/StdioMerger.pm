@@ -204,7 +204,7 @@ sub load_state
 
 sub pipe_out_cmd
 {
-    my @result;
+    my $result;
     local(*READ);
 
     my $pid = open( READ, "-|" );
@@ -213,7 +213,7 @@ sub pipe_out_cmd
     if ( $pid )
     {
         # parent
-        chomp(@result = <READ>);
+        chomp($result = scalar <READ>);
         close(READ);
     } else {
         # child
@@ -225,7 +225,7 @@ sub pipe_out_cmd
             exit(127);
         }
     }
-    wantarray ? @result : $result[0];
+    $result;
 }
 
 sub fork_and_exec_cmd

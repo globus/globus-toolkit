@@ -3269,12 +3269,6 @@ globus_libc_addr_is_loopback(
             result = GLOBUS_TRUE;
         }
         break;
-      case AF_INET6:
-        if(IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6 *) _addr)->sin6_addr))
-        {
-            result = GLOBUS_TRUE;
-        }
-        break;
       default:
         globus_assert(0 &&
                       "Unknown family in globus_libc_addr_is_loopback");
@@ -3296,13 +3290,6 @@ globus_libc_addr_is_wildcard(
       case AF_INET:
         if(ntohl(((struct sockaddr_in *) _addr)->sin_addr.s_addr) ==
            INADDR_ANY)
-        {
-            result = GLOBUS_TRUE;
-        }
-        break;
-      case AF_INET6:
-        if(IN6_IS_ADDR_UNSPECIFIED(
-            &((struct sockaddr_in6 *) _addr)->sin6_addr))
         {
             result = GLOBUS_TRUE;
         }
