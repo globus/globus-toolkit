@@ -138,6 +138,12 @@ AC_ARG_ENABLE(i18n, AC_HELP_STRING([--enable-i18n],\
    [if test $enableval = "yes"; then i18n="i18n"; fi],
    [])
 AC_SUBST(i18n, $i18n)
+drs=" "
+AC_ARG_ENABLE(drs, AC_HELP_STRING([--enable-drs],\
+   [Enable Data Replication Service.  Default is disabled.]),
+   [if test $enableval = "yes"; then drs="gt4-replicator"; fi],
+   [])
+AC_SUBST(drs, $drs)
 
 wscas="gt4-cas"
 AC_ARG_ENABLE(wscas, AC_HELP_STRING([--disable-wscas],\
