@@ -21,6 +21,9 @@ piddir=$$GLOBUS_LOCATION/var
 srcdir=@srcdir@
 top_srcdir=@top_srcdir@
 
+globusbindir=@bindir@
+globusmandir=@mandir@
+
 DESTDIR=
 VPATH=@srcdir@
 SSH_PROGRAM=$(bindir)/ssh
@@ -335,10 +338,12 @@ install-files: scard-install
 
 gpt-install-files: gpt-install-docs
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(bindir)
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(globusbindir)
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(sbindir)
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(datadir)
 	docdir=man; \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir); \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(globusmandir); \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1; \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5; \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8
@@ -361,10 +366,12 @@ gpt-install-files: gpt-install-docs
 	$(INSTALL) -m 0755 sftp-server $(DESTDIR)$(SFTP_SERVER)
 	-rm -f $(DESTDIR)$(bindir)/slogin
 	ln -s ./ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
-	-rm -f $(DESTDIR)$(bindir)/gsissh
-	ln -s ./ssh$(EXEEXT) $(DESTDIR)$(bindir)/gsissh
-	-rm -f $(DESTDIR)$(bindir)/gsiscp
-	ln -s ./scp$(EXEEXT) $(DESTDIR)$(bindir)/gsiscp
+	-rm -f $(DESTDIR)$(globusbindir)/gsissh
+	ln -s ./ssh.d/ssh$(EXEEXT) $(DESTDIR)$(globusbindir)/gsissh
+	-rm -f $(DESTDIR)$(globusbindir)/gsiscp
+	ln -s ./ssh.d/scp$(EXEEXT) $(DESTDIR)$(globusbindir)/gsiscp
+	-rm -f $(DESTDIR)$(globusbindir)/gsisftp
+	ln -s ./ssh.d/sftp$(EXEEXT) $(DESTDIR)$(globusbindir)/gsisftp
 	# start man
 	docdir=man; \
 	$(INSTALL) -m 644 $${docdir}/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.1; \
@@ -381,11 +388,13 @@ gpt-install-files: gpt-install-docs
 	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/sftp-server.8; \
 	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-keysign.8; \
 	rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
-	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
-	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
-	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
-	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
-	ln -s ./scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1;
+	ln -s ./slogin.1 $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
+	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsissh.1; \
+	ln -s ../$(mandir)/$${docdir}1/ssh.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsissh.1; \
+	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsiscp.1; \
+	ln -s ../$(mandir)/$${docdir}1/scp.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsiscp.1; \
+	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsisftp.1; \
+	ln -s ../$(mandir)/$${docdir}1/sftp.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsisftp.1;
 	# end man
 	# start cat
 	docdir=cat; \
@@ -404,10 +413,12 @@ gpt-install-files: gpt-install-docs
 	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-keysign.8; \
 	rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
 	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
-	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
-	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
-	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
-	ln -s ./scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1;
+	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsissh.1; \
+	ln -s ../$(mandir)/$${docdir}1/ssh.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsissh.1; \
+	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsiscp.1; \
+	ln -s ../$(mandir)/$${docdir}1/scp.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsiscp.1; \
+	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsisftp.1; \
+	ln -s ../$(mandir)/$${docdir}1/sftp.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsisftp.1;
 	# end cat
 
 gpt-install-docs:
