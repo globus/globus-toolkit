@@ -2,6 +2,33 @@
 #include "globus_i_gfs_ipc.h"
 
 
+typedef struct globus_l_gfs_remote_handle_s
+{
+    const char *                        user_id;
+} globus_l_gfs_remote_handle_t;
+
+
+typedef struct globus_l_gfs_remote_ipc_bounce_s
+{
+    globus_gfs_operation_t              op;
+    void *                              state;
+    globus_l_gfs_remote_handle_t *      my_handle;
+} globus_l_gfs_remote_ipc_bounce_t;
+
+static
+void
+globus_l_gfs_remotel_ipc_error_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_i_gfs_log_result(
+        "IPC ERROR", result);
+            
+    return;
+}
+
+
 static
 void
 globus_l_gfs_ipc_stat_cb(
@@ -10,13 +37,18 @@ globus_l_gfs_ipc_stat_cb(
     globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg)
 {
-/*
-    globus_gridftp_server_control_finished_stat(
-        op,
+    globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
+    GlobusGFSName(globus_l_gfs_ipc_stat_cb);
+    
+    bounce_info = (globus_l_gfs_remote_ipc_bounce_t *)  user_arg;
+
+    globus_gridftp_server_finished_stat(
+        bounce_info->op,
         reply->result,
         reply->info.stat.stat_info, 
         reply->info.stat.stat_count);
-*/
+   
+   return;
 }
 
 static
@@ -76,21 +108,13 @@ globus_l_gfs_ipc_active_data_cb(
 }
 
 
-typedef struct globus_l_gfs_remote_ipc_bounce_s
-{
-    globus_gridftp_server_operation_t   op;
-    void *                              state;
-    void *                              user_arg;
-} globus_l_gfs_remote_ipc_bounce_t;
-
-
 static
 globus_result_t
 globus_l_gfs_remote_init_bounce_info(
     globus_l_gfs_remote_ipc_bounce_t ** bounce,
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t              op,
     void *                              state,
-    void *                              user_arg)
+    globus_l_gfs_remote_handle_t *      my_handle)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     globus_result_t                     result;
@@ -106,7 +130,7 @@ globus_l_gfs_remote_init_bounce_info(
     
     bounce_info->op = op;
     bounce_info->state = state;
-    bounce_info->user_arg = user_arg;
+    bounce_info->my_handle = my_handle;
 
     *bounce = bounce_info;
     
@@ -135,7 +159,7 @@ globus_l_gfs_remote_stat_kickout(
         &request_id,
         (globus_gfs_stat_state_t *) bounce_info->state,
         globus_l_gfs_ipc_stat_cb,
-        bounce_info->user_arg); 
+        bounce_info); 
 
     return;
 }
@@ -145,25 +169,28 @@ globus_l_gfs_remote_stat_kickout(
 static
 globus_result_t
 globus_l_gfs_remote_stat(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_gfs_stat_state_t *           stat_state,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     globus_result_t                     result;
+    globus_l_gfs_remote_handle_t *      my_handle;
     GlobusGFSName(globus_l_gfs_remote_stat);
     
+    my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
+    
     result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, stat_state, user_arg);
+        &bounce_info, op, stat_state, my_handle);
             
     result = globus_gfs_ipc_handle_get(
-        NULL,
+        "mlink",
         stat_state->pathname,
         &globus_gfs_ipc_default_iface,
         globus_l_gfs_remote_stat_kickout,
         bounce_info,
-        NULL, /* err cb */
-        user_arg);        
+        globus_l_gfs_remotel_ipc_error_cb,
+        bounce_info);        
                     
     return result;
 }
@@ -172,7 +199,7 @@ globus_l_gfs_remote_stat(
 static
 globus_result_t
 globus_l_gfs_remote_command(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_gfs_command_state_t *        command_state,
     void *                              user_arg)
 {
@@ -194,7 +221,7 @@ globus_l_gfs_remote_command(
 static
 globus_result_t
 globus_l_gfs_remote_list(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_gfs_transfer_state_t *       transfer_state,
     void *                              user_arg)
 {
@@ -217,7 +244,7 @@ globus_l_gfs_remote_list(
 static
 globus_result_t
 globus_l_gfs_remote_recv(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_gfs_transfer_state_t *       transfer_state,
     void *                              user_arg)
 {
@@ -240,7 +267,7 @@ globus_l_gfs_remote_recv(
 static
 globus_result_t
 globus_l_gfs_remote_send(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_gfs_transfer_state_t *       transfer_state,
     void *                              user_arg)
 {
@@ -263,7 +290,7 @@ globus_l_gfs_remote_send(
 static
 globus_result_t
 globus_l_gfs_remote_active(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_gfs_data_state_t *           data_state,
     void *                              user_arg)
 {
@@ -285,7 +312,7 @@ globus_l_gfs_remote_active(
 static
 globus_result_t
 globus_l_gfs_remote_passive(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_gfs_data_state_t *           data_state,
     void *                              user_arg)
 {
@@ -339,12 +366,13 @@ globus_l_gfs_remote_trev(
 static
 void
 globus_l_gfs_remote_set_cred(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t              op,
     gss_cred_id_t                       cred_thing,
     void *                              user_arg)
 {
     GlobusGFSName(globus_l_gfs_remote_set_cred);
 }
+
 
 
 globus_result_t

@@ -7,41 +7,41 @@
 
 typedef globus_gfs_ipc_reply_t          globus_gridftp_server_finished_t;
 typedef globus_gfs_ipc_event_reply_t    globus_gridftp_server_event_t;
-typedef struct globus_l_gfs_data_operation_s * globus_gridftp_server_operation_t;
+typedef struct globus_l_gfs_data_operation_s * globus_gfs_operation_t;
 
 
 /* notification funcs */
 
 void
 globus_gridftp_server_operation_finished(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     globus_gridftp_server_finished_t    finished_state);
 
 void
 globus_gridftp_server_operation_event(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     globus_gridftp_server_event_t       event_state);
 
 void
 globus_gridftp_server_begin_transfer(
-    globus_gridftp_server_operation_t   op);
+    globus_gfs_operation_t   op);
 
 void
 globus_gridftp_server_finished_transfer(
-    globus_gridftp_server_operation_t   op, 
+    globus_gfs_operation_t   op, 
     globus_result_t                     result);
 
 void
 globus_gridftp_server_finished_command(
-    globus_gridftp_server_operation_t   op, 
+    globus_gfs_operation_t   op, 
     globus_result_t                     result,
     char *                              command_response);
     
 void
 globus_gridftp_server_finished_stat(
-    globus_gridftp_server_operation_t   op, 
+    globus_gfs_operation_t   op, 
     globus_result_t                     result,
     globus_gridftp_server_stat_t *      stat_info,
     int                                 stat_count);
@@ -52,7 +52,7 @@ globus_gridftp_server_finished_stat(
 
 typedef void
 (*globus_gridftp_server_write_cb_t)(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
     globus_size_t                       nbytes,
@@ -60,7 +60,7 @@ typedef void
     
 globus_result_t
 globus_gridftp_server_register_write(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_byte_t *                     buffer,  
     globus_size_t                       length,  
     globus_off_t                        offset,  
@@ -70,7 +70,7 @@ globus_gridftp_server_register_write(
 
 typedef void
 (*globus_gridftp_server_read_cb_t)(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
     globus_size_t                       nbytes,
@@ -80,7 +80,7 @@ typedef void
  
 globus_result_t
 globus_gridftp_server_register_read(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_byte_t *                     buffer,
     globus_size_t                       length,
     globus_gridftp_server_read_cb_t     callback,  
@@ -91,35 +91,35 @@ globus_gridftp_server_register_read(
 
 void
 globus_gridftp_server_flush_queue(
-    globus_gridftp_server_operation_t   op);
+    globus_gfs_operation_t   op);
     
 void
 globus_gridftp_server_update_bytes_written(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     int                                 stripe_ndx,
     globus_off_t                        offset,
     globus_off_t                        length);
 
 void
 globus_gridftp_server_get_optimal_concurrency(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     int *                               count);
 
 void
 globus_gridftp_server_get_block_size(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_size_t *                     block_size);
 
 void
 globus_gridftp_server_get_read_range(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_off_t *                      offset,
     globus_off_t *                      length,
     globus_off_t *                      write_delta);
 
 void
 globus_gridftp_server_get_write_range(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_off_t *                      offset,
     globus_off_t *                      length,
     globus_off_t *                      write_delta,
@@ -131,25 +131,25 @@ globus_gridftp_server_get_write_range(
 
 typedef globus_result_t
 (*globus_gridftp_server_storage_transfer_t)(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_gfs_transfer_state_t *       transfer_state,
     void *                              user_arg);
 
 typedef globus_result_t
 (*globus_gridftp_server_storage_command_t)(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_gfs_command_state_t *        command_state,
     void *                              user_arg);
 
 typedef globus_result_t
 (*globus_gridftp_server_storage_stat_t)(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_gfs_stat_state_t *           stat_state,
     void *                              user_arg);
 
 typedef globus_result_t
 (*globus_gridftp_server_storage_data_t)(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_gfs_data_state_t *           data_state,
     void *                              user_arg);
 
@@ -166,7 +166,7 @@ typedef void
 
 typedef void
 (*globus_gridftp_server_storage_set_cred_t)(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     gss_cred_id_t                       cred_thing,
     void *                              user_arg);
 
@@ -207,6 +207,7 @@ typedef struct globus_gridftp_server_storage_iface_s
 
 
 extern globus_gridftp_server_storage_iface_t   globus_gfs_file_dsi_iface;
+extern globus_gridftp_server_storage_iface_t   globus_gfs_remote_dsi_iface;
 
 
 

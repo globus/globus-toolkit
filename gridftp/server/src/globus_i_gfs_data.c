@@ -2,7 +2,20 @@
 #include "globus_i_gridftp_server.h"
 #include "globus_gridftp_server_module.h"
 
-static globus_gridftp_server_storage_iface_t * dsi = &globus_gfs_file_dsi_iface;
+static globus_gridftp_server_storage_iface_t * dsi;
+
+void
+globus_i_gfs_data_init()
+{
+    if(globus_i_gfs_config_string("remote"))
+    {
+        dsi = &globus_gfs_remote_dsi_iface;
+    }
+    else
+    {
+        dsi = &globus_gfs_file_dsi_iface;
+    }
+}
 
 typedef enum
 {
@@ -15,7 +28,7 @@ typedef enum
 
 typedef struct
 {
-    globus_gridftp_server_operation_t   op;
+    globus_gfs_operation_t   op;
     
     union
     {
@@ -220,7 +233,7 @@ globus_l_gfs_data_stat_kickout(
 
 void
 globus_gridftp_server_finished_command(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     char *                              command_data)
 {
@@ -286,7 +299,7 @@ globus_gridftp_server_finished_command(
 
 void
 globus_gridftp_server_finished_stat(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     globus_gridftp_server_stat_t *      stat_info_array,
     int                                 stat_count)
@@ -1144,7 +1157,7 @@ error_handle:
 static
 void
 globus_l_gfs_data_list_write_cb(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
     globus_size_t                       nbytes,
@@ -1163,13 +1176,13 @@ globus_l_gfs_data_list_stat_cb(
     void *                              user_arg)
 {
     GlobusGFSName(globus_l_gfs_data_list_stat_cb);
-    globus_gridftp_server_operation_t   op;
+    globus_gfs_operation_t   op;
     globus_byte_t *                     list_buffer;
     globus_size_t                       buffer_len;
     globus_l_gfs_data_bounce_t *        bounce_info;
     globus_result_t                     result;
  
-    op = (globus_gridftp_server_operation_t) user_arg;
+    op = (globus_gfs_operation_t) user_arg;
     bounce_info = (globus_l_gfs_data_bounce_t *) op->user_arg;
 
     result = globus_gridftp_server_control_list_buffer_alloc(
@@ -1312,7 +1325,7 @@ error_handle:
 
 void
 globus_gridftp_server_begin_transfer(
-    globus_gridftp_server_operation_t   op)
+    globus_gfs_operation_t   op)
 {
     globus_result_t                     result;
     GlobusGFSName(globus_gridftp_server_begin_transfer);
@@ -1380,7 +1393,7 @@ globus_l_gfs_data_write_eof_cb(
     globus_off_t                        offset,
     globus_bool_t                       eof)
 {
-    globus_gridftp_server_operation_t   op;
+    globus_gfs_operation_t   op;
     
     /* XXX mode s only */
     /* racey shit here */
@@ -1388,7 +1401,7 @@ globus_l_gfs_data_write_eof_cb(
     globus_gfs_ipc_event_reply_t *            event_reply;   
     GlobusGFSName(globus_l_gfs_data_write_eof_cb);
     
-    op = (globus_gridftp_server_operation_t) user_arg;
+    op = (globus_gfs_operation_t) user_arg;
     reply = (globus_gfs_ipc_reply_t *) 
         globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
     event_reply = (globus_gfs_ipc_event_reply_t *) 
@@ -1446,7 +1459,7 @@ globus_l_gfs_data_write_eof_cb(
 
 void
 globus_gridftp_server_finished_transfer(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result)
 {
     GlobusGFSName(globus_gridftp_server_finished_transfer);
@@ -1664,7 +1677,7 @@ globus_l_gfs_data_write_cb(
 
 globus_result_t
 globus_gridftp_server_register_write(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_byte_t *                     buffer,  
     globus_size_t                       length,  
     globus_off_t                        offset,  
@@ -1742,7 +1755,7 @@ globus_l_gfs_data_read_cb(
     
 globus_result_t
 globus_gridftp_server_register_read(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_byte_t *                     buffer,
     globus_size_t                       length,
     globus_gridftp_server_read_cb_t     callback,  
@@ -1789,7 +1802,7 @@ error_alloc:
 /* aborts all pending operations and calls callbacks */
 void
 globus_gridftp_server_flush_queue(
-    globus_gridftp_server_operation_t   op)
+    globus_gfs_operation_t   op)
 {
     GlobusGFSName(globus_gridftp_server_flush_queue);
     
@@ -1826,7 +1839,7 @@ globus_gridftp_server_flush_queue(
 
 void
 globus_gridftp_server_update_bytes_written(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     int                                 stripe_ndx,
     globus_off_t                        offset,
     globus_off_t                        length)
@@ -1841,7 +1854,7 @@ globus_gridftp_server_update_bytes_written(
 
 void
 globus_gridftp_server_get_optimal_concurrency(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     int *                               count)
 {
     GlobusGFSName(globus_gridftp_server_get_optimal_concurrency);
@@ -1851,7 +1864,7 @@ globus_gridftp_server_get_optimal_concurrency(
 
 void
 globus_gridftp_server_get_block_size(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_size_t *                     block_size)
 {
     GlobusGFSName(globus_gridftp_server_get_block_size);
@@ -1869,7 +1882,7 @@ globus_gridftp_server_get_block_size(
 */
 void
 globus_gridftp_server_get_write_range(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_off_t *                      offset,
     globus_off_t *                      length,
     globus_off_t *                      write_delta,
@@ -1921,7 +1934,7 @@ globus_gridftp_server_get_write_range(
 
 void
 globus_gridftp_server_get_read_range(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_off_t *                      offset,
     globus_off_t *                      length,
     globus_off_t *                      write_delta)

@@ -19,13 +19,14 @@ typedef void
     globus_gfs_data_event_reply_t *     reply,
     void *                              user_arg);
 
-
+void
+globus_i_gfs_data_init();
 
 globus_result_t
 globus_i_gfs_data_request_stat(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_stat_state_t *       stat_state,
+    globus_gfs_stat_state_t *           stat_state,
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg);
 

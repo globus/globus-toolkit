@@ -8,7 +8,7 @@ typedef struct
 {
     globus_mutex_t                      lock;
     globus_list_t *                     buffer_list;
-    globus_gridftp_server_operation_t   op;
+    globus_gfs_operation_t   op;
     globus_xio_handle_t                 file_handle;
     globus_off_t                        file_offset;
     globus_off_t                        read_offset;
@@ -28,7 +28,7 @@ typedef struct
 {
     globus_mutex_t                      lock;
     globus_priority_q_t                 queue;
-    globus_gridftp_server_operation_t   op;
+    globus_gfs_operation_t   op;
     globus_xio_handle_t                 file_handle;
     int                                 pending_reads;
     int                                 pending_write;
@@ -156,7 +156,7 @@ globus_l_gfs_file_copy_stat(
 /* XXX static */
 globus_result_t
 globus_l_gfs_file_stat(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_gfs_stat_state_t *           stat_state,
     void *                              user_arg)
 {
@@ -278,7 +278,7 @@ error_stat1:
 /* XXX static */
 globus_result_t
 globus_l_gfs_file_mkdir(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     const char *                        pathname)
 {
     int                                 rc;
@@ -302,7 +302,7 @@ error:
 
 globus_result_t
 globus_l_gfs_file_rmdir(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     const char *                        pathname)
 {
     int                                 rc;
@@ -326,7 +326,7 @@ error:
 
 globus_result_t
 globus_l_gfs_file_delete(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     const char *                        pathname)
 {
     int                                 rc;
@@ -350,7 +350,7 @@ error:
 
 globus_result_t
 globus_l_gfs_file_rename(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     const char *                        from_pathname,
     const char *                        to_pathname)
 {
@@ -375,7 +375,7 @@ error:
 
 globus_result_t
 globus_l_gfs_file_chmod(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     const char *                        pathname,
     mode_t                              mode)
 {
@@ -402,7 +402,7 @@ error:
 
 globus_result_t
 globus_l_gfs_file_cksm(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     const char *                        pathname,
     const char *                        algorithm,
     globus_off_t                        offset,
@@ -495,7 +495,7 @@ param_error:
 
 globus_result_t
 globus_l_gfs_file_command(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_gfs_command_state_t *        cmd_state,
     void *                              user_arg)
 {
@@ -644,7 +644,7 @@ globus_l_gfs_recv_monitor_destroy(
 static
 void
 globus_l_gfs_file_server_read_cb(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
     globus_size_t                       nbytes,
@@ -816,7 +816,7 @@ error_register:
 static
 void
 globus_l_gfs_file_server_read_cb(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
     globus_size_t                       nbytes,
@@ -1076,7 +1076,7 @@ error_attr:
 /* XXX static */
 globus_result_t
 globus_l_gfs_file_recv(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_gfs_transfer_state_t *       transfer_state,
     void *                              user_arg)
 {
@@ -1312,7 +1312,7 @@ error_register:
 static
 void
 globus_l_gfs_file_server_write_cb(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_result_t                     result,
     globus_byte_t *                     buffer,
     globus_size_t                       nbytes,
@@ -1529,7 +1529,7 @@ error_open:
 /* XXX static */
 globus_result_t
 globus_l_gfs_file_send(
-    globus_gridftp_server_operation_t   op,
+    globus_gfs_operation_t   op,
     globus_gfs_transfer_state_t *       transfer_state,
     void *                              user_arg)
 {
