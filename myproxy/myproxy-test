@@ -111,7 +111,11 @@ if ($exitstatus == 0 && $output =~ /username/) {
     &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
 	     $passphrase . "\n");
 print "MyProxy Test 3 (retrieve stored credential): ";
-if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -143,7 +147,11 @@ if ($exitstatus == 0 && $output =~ /Pass phrase changed/) {
     &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
 	     $passphrase . "\n");
 print "MyProxy Test 6 (verify new passphrase): ";
-if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -205,7 +213,11 @@ if ($exitstatus == 0) {
     &runtest("myproxy-get-delegation -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v",
 	     $passphrase . "\n");
 print "MyProxy Test 12 (verify retrieval policies): ";
-if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
     ($exitstatus, $output) =
 	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v",
 		 $passphrase . "\n");
@@ -249,7 +261,11 @@ if ($exitstatus == 0 && $output =~ /username/) {
     &runtest("myproxy-get-delegation -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
 	     undef);
 print "MyProxy Test 15 (verify renewal policies): ";
-if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
     ($exitstatus, $output) =
 	&runtest("myproxy-get-delegation -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
 		 undef);
@@ -283,6 +299,10 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
 	&runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
 		 $passphrase . "\n");
     $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
@@ -291,6 +311,10 @@ if ($exitstatus == 0) {
 	    "It should be " . (60*60) . ".\n";
 	$exitstatus = 1;
     }
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
