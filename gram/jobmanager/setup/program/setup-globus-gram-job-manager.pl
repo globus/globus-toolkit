@@ -124,7 +124,7 @@ sub setup_job_manager_conf
 	-globus-host-manufacturer $manufacturer
 	-globus-host-osname $os_name
 	-globus-host-osversion $os_version
-	-save-logfile on_errors
+	-save-logfile on_error
 	-state-file-dir $state_dir
 	-machine-type unknown
 EOF
