@@ -819,8 +819,8 @@ globus_i_gsi_callback_check_proxy(
         }
 
         if(GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(callback_data->cert_type) &&
-           (!GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type) ||
-            cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY))
+           !(GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type) ||
+            cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY))
         {
             GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                 result,
