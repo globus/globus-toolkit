@@ -15,11 +15,13 @@ LAC_DOXYGEN_EXAMPLE_DIR("../")
 
 GLOBUS_FINALIZE
 
+
+dnl 	scripts/Makefile
+
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
-	scripts/Makefile
         doxygen/Makefile
         doxygen/Doxyfile
         doxygen/Doxyfile-internal
