@@ -61,7 +61,7 @@ main(
         return 1;
     }
 
-    for(ctr = 1; ctr < argc - 2; ctr++)
+    for(ctr = 1; ctr < argc - 1; ctr++)
     {
         if(strcmp(argv[ctr], "-h") == 0)
         {
@@ -70,17 +70,19 @@ main(
         }
         else if(strcmp(argv[ctr], "-D") == 0)
         {
-            res = globus_xio_driver_load(argv[ctr], &driver);
+            res = globus_xio_driver_load(argv[ctr + 1], &driver);
             globus_xio_stack_push_driver(stack, driver);
         }
     }
 
-    cs = argv[1];
+    cs = argv[argc - 1];
 
     res = globus_xio_target_init(&target, NULL, cs, stack);
     test_res(res);
     res = globus_xio_open(&xio_handle, NULL, target);
     test_res(res);
+
+    fprintf(stderr, "SUccessfully opened.\n");
 
     while(!done)
     {

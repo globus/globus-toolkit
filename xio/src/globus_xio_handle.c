@@ -2436,6 +2436,7 @@ globus_xio_open(
      */
   register_err:
     globus_i_xio_blocking_destroy(info);
+    return res;
 
   info_alloc_error:
     {
