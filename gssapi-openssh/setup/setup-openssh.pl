@@ -10,8 +10,6 @@
 # Chase Phillips <cphillip@ncsa.uiuc.edu>
 #
 
-use Data::Dumper;
-
 printf("setup-openssh.pl: Configuring gsi-openssh package\n");
 
 #
@@ -94,10 +92,6 @@ sub copyKeyFiles
             $keyfile = "$f";
             $pubkeyfile = "$f.pub";
 
-#            printf("cp $localsshdir/$keyfile $sysconfdir/$keyfile");
-#            printf("\n");
-#            printf("cp $localsshdir/$pubkeyfile $sysconfdir/$pubkeyfile");
-#            printf("\n");
             action("cp $localsshdir/$keyfile $sysconfdir/$keyfile");
             action("cp $localsshdir/$pubkeyfile $sysconfdir/$pubkeyfile");
         }
@@ -176,9 +170,7 @@ sub runKeyGen
     {
         $keyfile = $keyfiles->{$k};
 
-        # if $sysconfdir/ssh_host_key doesn't exist..
-#        printf("$bindir/ssh-keygen -t $k -f $sysconfdir/$keyfile -N \"\"");
-#        printf("\n");
+        # if $sysconfdir/$keyfile doesn't exist..
         action("$bindir/ssh-keygen -t $k -f $sysconfdir/$keyfile -N \"\"");
     }
 
