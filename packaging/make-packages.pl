@@ -81,13 +81,13 @@ my $thread = "pthr";
 my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
-    $binary, $deporder, $inplace, $restart_package, $gt2dir, $gt3dir, $doxygen,
+    $binary, $deporder, $inplace, $restart_package, $gt3dir, $doxygen,
     $deps, $graph, $listpack, $listbun, $cvsuser,
     $autotools, $gpt, $core, $enable_64bit ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
-    0, 0, "no", 0, "", "", 0,
+    0, 0, "no", 0, "", 0,
     0, 0, 0, 0, "",
     1, 1, 1, "");
 
@@ -101,12 +101,13 @@ GetOptions( 'i|install=s' => \$install,
             'n|no-updates!' => \$noupdates,
             'faster!' => \$faster,
             'flavor=s' => \$flavor,
-            'd2|gt2-dir=s' => \$gt2dir,
+            'd2|gt2-dir=s' => \$cvs_archives{gt2}[2],
             't2|gt2-tag=s' => \$cvs_archives{gt2}[3],
             'd3|gt3-dir=s' => \$gt3dir,
             't3|gt3-tag=s' => \$cvs_archives{gt3}[3],
             'd4|gt4-dir=s' => \$cvs_archives{gt4}[2],
             't4|gt4-tag=s' => \$cvs_archives{gt4}[3],
+            'autotools-dir=s' => \$cvs_archives{autotools}[2],
             'v|verbose!' => \$verbose,
             'skippackage!' => \$skippackage,
             'skipbundle!' => \$skipbundle,
@@ -169,12 +170,6 @@ else
 if($inplace && !$install)
 {
     $install = cwd() . "/INSTALL";
-}
-
-if ( $gt2dir )
-{
-    $cvs_archives{gt2}[2] = $gt2dir;
-    $cvs_archives{autotools}[2] = $gt2dir;
 }
 
 if ( $gt3dir )
@@ -1836,9 +1831,10 @@ Options:
     --gt2-tag (-t2)        Set GT2 and autotools tags.  Default HEAD
     --gt3-tag (-t3)        Set GT3 and cbindings tags.  Default HEAD
     --gt4-tag (-t4)        Set GT4 tags.  Default HEAD
-    --gt2-dir (-d2)        Set GT2 and autotools CVS directory.
+    --gt2-dir (-d2)        Set GT2 CVS directory.
     --gt3-dir (-d3)        Set GT3 and cbindings CVS directory.
     --gt4-dir (-d4)        Set GT4 CVS directory.
+    --autotools-dir        Set autotools CVS directory.
     --verbose              Be verbose.  Also sends logs to screen.
     --bundles="b1,b2,..."  Create bundles b1,b2,...
     --packages="p1,p2,..." Create packages p1,p2,...
