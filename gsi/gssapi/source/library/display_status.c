@@ -131,7 +131,7 @@ GSS_CALLCONV gss_display_status
 		{
 			int i;
 			ERR_STATE *es;
-			es = ERR_get_state();
+            es = ERR_get_state();
 			i=(es->bottom+1)%ERR_NUM_ERRORS;
 
 			if (es->err_data[i] == NULL) {
@@ -139,7 +139,7 @@ GSS_CALLCONV gss_display_status
 			} else {
 				data = es->err_data[i];
 			}
-            
+                        
             /* removes error from error queue along with file and line info */
             err = ERR_get_error_line(&file,&line);
 			fs=ERR_func_error_string(err);
@@ -166,11 +166,26 @@ GSS_CALLCONV gss_display_status
 #ifdef DEBUG
 			sprintf(status_string->value, format, rs, data, fs,
 								 file, line);
+            
+		    if (ERR_peek_error())	
+                (*message_context) = 1;
+            else (*message_context) = 0;
 #else
 			sprintf(status_string->value, format, rs, data, fs);
-#endif
+            
+            /* check to make sure there is another error and that the current
+             * error code is not a final error code */
 
-			*message_context = 1;
+            if (ERR_peek_error() && !((unsigned long)GSS_FINAL_ERROR_CODE &
+                   convert_minor_codes(ERR_GET_LIB(err), ERR_GET_REASON(err))))
+            {
+                (*message_context) = 1;
+            }
+            else 
+            {
+                (*message_context) = 0;
+            }
+#endif
 		} else {
 			status_string->value = strdup("");
 			*message_context = 0;
