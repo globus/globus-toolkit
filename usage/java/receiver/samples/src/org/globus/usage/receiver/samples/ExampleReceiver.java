@@ -67,7 +67,8 @@ public class ExampleReceiver {
               database, and the database table where default packets will be
 	      written if no other handler takes them:*/
 	    System.out.println("Starting receiver on port "+port+"; will write to database at "+databaseURL+"; Ringbuffer size is "+ringBufferSize);
-            receiver = new Receiver(port, databaseURL, defaultTable,
+            receiver = new Receiver(port, databaseDriverClass,
+				    databaseURL, defaultTable,
 				    ringBufferSize);
             
             /*gftpHandler is an example of a PacketHandler subclass.  I create

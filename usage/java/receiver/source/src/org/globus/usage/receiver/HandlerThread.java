@@ -40,7 +40,7 @@ public class HandlerThread extends Thread {
 
     private int packetsLogged, errorCount;
 
-    public HandlerThread(LinkedList list, String dburl, String table, RingBuffer ring) {
+    public HandlerThread(LinkedList list, String driverClass, String dburl, String table, RingBuffer ring) {
         super("UDPHandlerThread");
 
 	this.packetsLogged = 0;
@@ -49,6 +49,7 @@ public class HandlerThread extends Thread {
         this.theRing = ring;
 
 	try {
+	    Class.forName(driverClass);
 	    setUpDatabaseConnectionPool(dburl);
 	    theDefaultHandler = new DefaultPacketHandler(dburl, table);
 	}

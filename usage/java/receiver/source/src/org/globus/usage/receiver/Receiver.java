@@ -31,7 +31,7 @@ public class Receiver {
 
     /*Creates a receiver which will listen on the given port and write
       packets to the given database.*/
-    public Receiver(int port, String dburl,
+    public Receiver(int port, String driverClass, String dburl,
                     String table, int ringBufferSize) throws IOException {
 
         theRing = new RingBuffer(ringBufferSize);
@@ -42,15 +42,16 @@ public class Receiver {
           pass them through all registered handlers...*/
         theRecvThread = new ReceiverThread(port, theRing);
         theRecvThread.start();
-        theHandleThread = new HandlerThread(handlerList, dburl, table, theRing);
+        theHandleThread = new HandlerThread(handlerList, driverClass, 
+					    dburl, table, theRing);
         theHandleThread.start();
     }
 
     /*Constructor with no specified ringBuffer size uses default*/
-    public Receiver(int port, String db, String table)
+    public Receiver(int port, String driverClass, String db, String table)
         throws IOException {
 
-        this(port, db, table, RING_BUFFER_SIZE);
+        this(port, driverClass, db, table, RING_BUFFER_SIZE);
     }
 
 
