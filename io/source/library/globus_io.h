@@ -45,8 +45,9 @@ EXTERN_C_BEGIN
 #endif
 
 
+#if 0
 #define GLOBUS_BUILD_WITH_NETLOGGER 1
-
+#endif
 
 /*
  *  If this is a Netlogger aware build, include the logging headers
