@@ -438,6 +438,8 @@ globus_l_xio_system_activate(void)
     {
         goto error_pipe;
     }
+    fcntl(globus_l_xio_system_wakeup_pipe[0], F_SETFD, FD_CLOEXEC);
+    fcntl(globus_l_xio_system_wakeup_pipe[1], F_SETFD, FD_CLOEXEC);
     
     globus_l_xio_system_highest_fd = globus_l_xio_system_wakeup_pipe[0];
     FD_SET(globus_l_xio_system_wakeup_pipe[0], globus_l_xio_system_read_fds);
@@ -485,13 +487,15 @@ void
 globus_l_xio_system_unregister_periodic_cb(
     void *                              user_args)
 {
+    globus_bool_t *                     signaled;
     GlobusXIOName(globus_l_xio_system_unregister_periodic_cb);
-
+    
     GlobusXIOSystemDebugEnter();
-
+    
+    signaled = (globus_bool_t *) user_args;
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
-        globus_l_xio_system_shutdown_called = GLOBUS_FALSE;
+        *signaled = GLOBUS_TRUE;
         globus_cond_signal(&globus_l_xio_system_cond);
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
@@ -509,15 +513,18 @@ globus_l_xio_system_deactivate(void)
 
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        globus_bool_t                   signaled;
+        
         globus_l_xio_system_shutdown_called = GLOBUS_TRUE;
+        signaled = GLOBUS_FALSE;
         globus_callback_unregister(
             globus_l_xio_system_poll_handle,
             globus_l_xio_system_unregister_periodic_cb,
-            GLOBUS_NULL,
+            &signaled,
             GLOBUS_NULL);
         globus_l_xio_system_select_wakeup();
 
-        while(globus_l_xio_system_shutdown_called == GLOBUS_TRUE)
+        while(!signaled)
         {
             globus_cond_wait(
                 &globus_l_xio_system_cond, &globus_l_xio_system_fdset_mutex);
@@ -695,6 +702,12 @@ globus_l_xio_system_register_read(
 
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        if(globus_l_xio_system_shutdown_called)
+        {
+            result = GlobusXIOErrorNotActivated();
+            goto error_deactivated;
+        }
+        
         /* this really shouldnt be possible, but to be thorough ... */
         if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
         {
@@ -735,9 +748,10 @@ globus_l_xio_system_register_read(
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
-error_canceled:
 error_already_registered:
 error_too_many_fds:
+error_canceled:
+error_deactivated:
     read_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     GlobusXIODriverDisableCancel(read_info->op);
@@ -770,6 +784,12 @@ globus_l_xio_system_register_write(
 
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        if(globus_l_xio_system_shutdown_called)
+        {
+            result = GlobusXIOErrorNotActivated();
+            goto error_deactivated;
+        }
+        
         /* this really shouldnt be possible, but to be thorough ... */
         if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
         {
@@ -810,9 +830,10 @@ globus_l_xio_system_register_write(
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
-error_canceled:
 error_already_registered:
 error_too_many_fds:
+error_canceled:
+error_deactivated:
     write_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     GlobusXIODriverDisableCancel(write_info->op);

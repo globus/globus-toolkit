@@ -1208,20 +1208,24 @@ globus_l_xio_udp_read(
     GlobusXIOName(globus_l_xio_udp_read);
 
     handle = (globus_l_handle_t *) driver_handle;
-    attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
-    
-    /* XXXX temporary */
-    if(!attr)
-    {
-        globus_l_xio_udp_attr_init(&attr);
-        GlobusXIOOperationSetDataDescriptor(op, attr);
-    }
     
     addr = GLOBUS_NULL;
-    if(attr && !handle->connected)
+    if(!handle->connected)
     {
-        addr = &attr->addr;
-        attr->use_addr = GLOBUS_TRUE;
+        attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
+    
+        /* XXXX temporary */
+        if(!attr)
+        {
+            globus_l_xio_udp_attr_init(&attr);
+            GlobusXIOOperationSetDataDescriptor(op, attr);
+        }
+    
+        if(attr && attr->use_addr)
+        {
+            addr = &attr->addr;
+            attr->use_addr = GLOBUS_TRUE;
+        }
     }
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
@@ -1295,12 +1299,15 @@ globus_l_xio_udp_write(
     GlobusXIOName(globus_l_xio_udp_write);
 
     handle = (globus_l_handle_t *) driver_handle;
-    attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
     
     addr = GLOBUS_NULL;
-    if(attr && attr->use_addr && !handle->connected)
+    if(!handle->connected)
     {
-        addr = &attr->addr;
+        attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
+        if(attr && attr->use_addr)
+        {
+            addr = &attr->addr;
+        }
     }
 
     if(GlobusXIOOperationGetWaitFor(op) == 0)

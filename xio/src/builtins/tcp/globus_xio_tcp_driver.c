@@ -864,11 +864,18 @@ globus_l_xio_tcp_target_cntl(
     globus_l_target_t *                 target;
     globus_result_t                     result;
     char **                             out_string;
+    globus_xio_system_handle_t *        out_handle;
     GlobusXIOName(globus_l_xio_tcp_target_cntl);
 
     target = (globus_l_target_t *) driver_target;
     switch(cmd)
     {
+      /* globus_xio_system_handle_t *   handle_out */
+      case GLOBUS_XIO_TCP_GET_HANDLE:
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        *out_handle = target->handle;
+        break;
+        
       /* char **                        contact_string_out */
       case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
@@ -1283,12 +1290,19 @@ globus_l_xio_tcp_server_cntl(
     globus_l_server_t *                 server;
     globus_result_t                     result;
     char **                             out_string;
+    globus_xio_system_handle_t *        out_handle;
     GlobusXIOName(globus_l_xio_tcp_server_cntl);
     
     server = (globus_l_server_t *) driver_server;
     
     switch(cmd)
     {
+      /* globus_xio_system_handle_t *   handle_out */
+      case GLOBUS_XIO_TCP_GET_HANDLE:
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        *out_handle = server->listener_handle;
+        break;
+      
       /* char **                        contact_string_out */
       case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
@@ -2009,12 +2023,19 @@ globus_l_xio_tcp_cntl(
     int                                 fd;
     globus_size_t                       len;
     char **                             out_string;
+    globus_xio_system_handle_t *        out_handle;
     GlobusXIOName(globus_l_xio_tcp_cntl);
 
     handle = (globus_l_handle_t *) driver_handle;
     fd = handle->handle;
     switch(cmd)
     {
+      /* globus_xio_system_handle_t *   handle_out */
+      case GLOBUS_XIO_TCP_GET_HANDLE:
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        *out_handle = fd;
+        break;
+        
       /* globus_bool_t                  keepalive */
       case GLOBUS_XIO_TCP_SET_KEEPALIVE:
         in_bool = va_arg(ap, globus_bool_t);
