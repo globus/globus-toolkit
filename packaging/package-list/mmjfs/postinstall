@@ -1,0 +1,2 @@
+ant mirrorConfig -Dogsacore.javadir=$GT3_LOCATION
+ant deployMmjfs -Dogsacore.javadir=$GT3_LOCATION

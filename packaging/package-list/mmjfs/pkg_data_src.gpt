@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+
+<gpt_package_metadata Format_Version="0.01" Name="mmjfs">
+
+  <Aging_Version Age="0" Major="0" Minor="2" />
+  <Description> GT3 GRAM </Description>
+  <Functional_Group >Execution</Functional_Group>
+  <Version_Stability Release="alpha" />
+
+  <src_pkg >
+
+    <Build_Environment >
+      <cflags ></cflags>
+      <external_includes ></external_includes>
+      <pkg_libs ></pkg_libs>
+      <external_libs ></external_libs>
+    </Build_Environment>
+
+    <With_Flavors build="no" />
+
+    <Version_Label>0.0.2</Version_Label>
+
+    <Source_Dependencies Type="compile" >
+      <Dependency Name="ogsa_core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+    </Source_Dependencies>
+
+    <Build_Instructions>
+
+	    <Build_Step> ant generateMmjfsConfig -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
+	    <Build_Step> ant mmjfsGar -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
+	    <Build_Step> cp mmjfsLib/mmjfs.gar $GT3_LOCATION/gars</Build_Step>
+	    <Build_Step> cp setperms.sh $GT3_LOCATION</Build_Step>
+	    <Build_Step> cp src/org/globus/ogsa/impl/base/gram/setuid/launch_uhe.sh $GT3_LOCATION</Build_Step>
+	    <Build_Step> cp src/org/globus/ogsa/impl/base/gram/setuid/setuidCSrc/launch_uhe_setuid $GT3_LOCATION</Build_Step>
+
+    </Build_Instructions>
+
+  </src_pkg >
+
+</gpt_package_metadata>

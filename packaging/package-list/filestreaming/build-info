@@ -1,0 +1,4 @@
+name=filestreaming
+subdir=data_management/filestreaming
+build="ant -Dogsacore.javadir=\$OGSA_HOME"
+gar="lib/filestreaming.gar"
