@@ -1425,7 +1425,7 @@ globus_l_globusrun_gramrun(char * request_string,
      * signal if the job is DONE
      */
     err = GLOBUS_SUCCESS;
-    if (monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
+    if (monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ||
         monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
     {
         if(send_commit == GLOBUS_TRUE)
