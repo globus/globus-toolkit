@@ -515,6 +515,10 @@ globus_libc_addr_is_wildcard(
 #define GLOBUS_LIBC_ADDR_NUMERIC        1
 /* use this if this is a local addr; will use GLOBUS_HOSTNAME if avail */
 #define GLOBUS_LIBC_ADDR_LOCAL          2
+/* force IPV6 host addresses */
+#define GLOBUS_LIBC_ADDR_IPV6           4
+/* force IPV4 host addresses */
+#define GLOBUS_LIBC_ADDR_IPV4           8
 
 /* creates a contact string of the form <host>:<port>
  * user needs to free contact string
@@ -546,7 +550,12 @@ globus_libc_ints_to_contact_string(
 int
 globus_libc_gethostaddr(
     globus_sockaddr_t *                 addr);
-    
+
+int
+globus_libc_gethostaddr_by_family(
+    globus_sockaddr_t *                 addr,
+    int                                 family);
+
 EXTERN_C_END
 
 #endif
