@@ -589,6 +589,7 @@ globus_ftp_client_operationattr_init(
     i_attr->read_all_intermediate_callback_arg
 					= GLOBUS_NULL;
     i_attr->resume_third_party		= GLOBUS_FALSE;
+    i_attr->force_striped		= GLOBUS_FALSE;
 
     tmp_name = globus_libc_strdup("anonymous");
     if(tmp_name == GLOBUS_NULL)
@@ -833,6 +834,114 @@ error_exit:
     return globus_error_put(err);
 }
 /* globus_ftp_client_operationattr_get_parallelism() */
+/* @} */
+
+/* @{ */
+/**
+ * @name Striped Data Movement
+ */
+
+/**
+ * Set/Get the striped attribute for an ftp client attribute set.
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * This attribute allows the user to force the client library to used
+ * the FTP commands to do a striped data transfer, even when the user
+ * has not requested a specific file layout via the layout attribute.
+ * This is useful when transferring files between servers which use
+ * the server side processing commands ERET or ESTO to transform data
+ * and send it to particular stripes on the destination server.
+ *
+ * The layout attribute is used only when the data is
+ * being stored the server (on a put or 3rd party transfer). This
+ * attribute is ignored for stream mode data transfers.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param striped
+ *        The value of striped attribute. 
+ *
+ * @see globus_ftp_client_operationattr_set_parallelism(),
+ *      globus_ftp_client_operationattr_set_layout()
+ *      globus_ftp_client_operationattr_set_mode()
+ *
+ * @note This is a Grid-FTP extension, and may not be supported on all FTP
+ *       servers.
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_striped(
+    globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t 				striped)
+{
+    globus_object_t *				err;
+    globus_i_ftp_client_operationattr_t *	i_attr;
+    static char * myname = "globus_ftp_client_operationattr_set_striped";
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Cannot set values on a NULL attribute at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+
+	goto error_exit;
+    }
+    i_attr = *attr;
+
+    i_attr->force_striped = striped;
+    
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+
+}
+/* globus_ftp_client_operationattr_set_striped() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_striped(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t *				striped)
+{
+    globus_object_t *				err;
+    const globus_i_ftp_client_operationattr_t * i_attr; 
+    static char * myname = "globus_ftp_client_operationattr_get_striped";
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Cannot get values from a NULL attribute at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+
+	goto error_exit;
+    }
+    if(striped == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] NULL striped parameter at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+
+	goto error_exit;
+    }
+    i_attr = *attr;
+
+    (*striped) = i_attr->force_striped;
+    
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_get_striped() */
+
 /* @} */
 
 /**
@@ -2220,6 +2329,14 @@ globus_ftp_client_operationattr_copy(
     result =
 	globus_ftp_client_operationattr_set_layout(dst,
 					           &i_src->layout);
+    if(result)
+    {
+	goto destroy_exit;
+    }
+
+    result = 
+	globus_ftp_client_operationattr_set_striped(dst,
+						    i_src->force_striped);
     if(result)
     {
 	goto destroy_exit;

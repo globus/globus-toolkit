@@ -790,6 +790,7 @@ globus_l_ftp_client_data_callback(
 	    if(client_handle->num_active_blocks == 0)
 	    {
 		dispatch_final = GLOBUS_TRUE;
+		target->state = GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
 	    }
 	    else
 	    {
@@ -891,7 +892,7 @@ globus_l_ftp_client_read_all_callback(
     globus_assert(client_handle->op == GLOBUS_FTP_CLIENT_GET);
 
     if(bytes_read > 0 &&
-       bytes_read > client_handle->read_all_biggest_offset)
+       offset_read + bytes_read > client_handle->read_all_biggest_offset)
     {
 	client_handle->read_all_biggest_offset = offset_read + bytes_read;
     }
@@ -980,6 +981,7 @@ globus_l_ftp_client_read_all_callback(
 	    if(client_handle->num_active_blocks == 0)
 	    {
 		dispatch_final = GLOBUS_TRUE;
+		target->state = GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION;
 	    }
 	    else
 	    {

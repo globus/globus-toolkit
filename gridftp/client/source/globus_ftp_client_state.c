@@ -1286,7 +1286,8 @@ redo:
 
 	if((client_handle->op == GLOBUS_FTP_CLIENT_PUT ||
 	   client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER) &&
-	   target->attr->layout.mode != GLOBUS_FTP_CONTROL_STRIPING_NONE)
+	   (target->attr->layout.mode != GLOBUS_FTP_CONTROL_STRIPING_NONE ||
+	    target->attr->force_striped))
 	{
 	    tmpstr = "SPAS";
 	}

@@ -79,6 +79,7 @@ EXTERN_C_BEGIN
 typedef struct globus_i_ftp_client_operationattr_t
 {
     globus_ftp_control_parallelism_t            parallelism;
+    globus_bool_t				force_striped;
     globus_ftp_control_layout_t                 layout;
     globus_ftp_control_tcpbuffer_t              buffer;
     globus_bool_t                               using_default_auth;
