@@ -140,6 +140,15 @@ input_userauth_info_response_pam(int type, u_int32_t seqnr, void *ctxt)
 	nresp = packet_get_int();	/* Number of responses. */
 	debug("got %d responses", nresp);
 
+
+	if (nresp != context_pam2.num_expected)
+		fatal("%s: Received incorrect number of responses "
+		    "(expected %u, received %u)", __func__, nresp,
+		    context_pam2.num_expected);
+
+	if (nresp > 100)
+		fatal("%s: too many replies", __func__);
+
 	for (i = 0; i < nresp; i++) {
 		int j = context_pam2.prompts[i];
 

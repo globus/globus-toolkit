@@ -35,7 +35,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: serverloop.c,v 1.101 2002/03/30 18:51:15 markus Exp $");
+RCSID("$OpenBSD: serverloop.c,v 1.103 2002/06/24 14:33:27 markus Exp $");
 
 #include "xmalloc.h"
 #include "packet.h"
@@ -674,8 +674,8 @@ server_loop(pid_t pid, int fdin_arg, int fdout_arg, int fderr_arg)
 		if (errno != EINTR)
 			packet_disconnect("wait: %.100s", strerror(errno));
 	if (wait_pid != pid)
-		error("Strange, wait returned pid %d, expected %d",
-		    wait_pid, pid);
+		error("Strange, wait returned pid %ld, expected %ld",
+		    (long)wait_pid, (long)pid);
 
 	/* Check if it exited normally. */
 	if (WIFEXITED(wait_status)) {
@@ -902,10 +902,8 @@ server_input_channel_open(int type, u_int32_t seq, void *ctxt)
 {
 	Channel *c = NULL;
 	char *ctype;
-	u_int len;
 	int rchan;
-	int rmaxpack;
-	int rwindow;
+	u_int rmaxpack, rwindow, len;
 
 	ctype = packet_get_string(&len);
 	rchan = packet_get_int();

@@ -76,6 +76,7 @@ case "$host" in
 	AC_DEFINE(BROKEN_REALPATH)
 	dnl AIX handles lastlog as part of its login message
 	AC_DEFINE(DISABLE_LASTLOG)
+	AC_DEFINE(LOGIN_NEEDS_UTMPX)
 	;;
 *-*-cygwin*)
 	LIBS="$LIBS /usr/lib/textmode.o"
@@ -85,6 +86,8 @@ case "$host" in
 	AC_DEFINE(IPV4_DEFAULT)
 	AC_DEFINE(IP_TOS_IS_BROKEN)
 	AC_DEFINE(NO_X11_UNIX_SOCKETS)
+	AC_DEFINE(BROKEN_FD_PASSING)
+	AC_DEFINE(SETGROUPS_NOOP)
 	;;
 *-*-dgux*)
 	AC_DEFINE(IP_TOS_IS_BROKEN)
@@ -230,13 +233,11 @@ mips-sony-bsd|mips-sony-newsos4)
 *-*-sysv4.2*)
 	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
-#	enable_suid_ssh=no
 	AC_DEFINE(USE_PIPES)
 	;;
 *-*-sysv5*)
 	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
-#	enable_suid_ssh=no
 	AC_DEFINE(USE_PIPES)
 	;;
 *-*-sysv*)
@@ -247,7 +248,6 @@ mips-sony-bsd|mips-sony-newsos4)
 	CPPFLAGS="$CPPFLAGS -Dftruncate=chsize -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
 	LIBS="$LIBS -los -lprot -lx -ltinfo -lm"
-	rsh_path="/usr/bin/rcmd"
 	RANLIB=true
 	no_dev_ptmx=1
 	AC_DEFINE(BROKEN_SYS_TERMIO_H)
@@ -264,10 +264,10 @@ mips-sony-bsd|mips-sony-newsos4)
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
 	LIBS="$LIBS -lprot -lx -ltinfo -lm"
 	no_dev_ptmx=1
-	rsh_path="/usr/bin/rcmd"
 	AC_DEFINE(USE_PIPES)
 	AC_DEFINE(HAVE_SECUREWARE)
 	AC_DEFINE(DISABLE_SHADOW)
+	AC_DEFINE(BROKEN_FD_PASSING)
 	AC_CHECK_FUNCS(getluid setluid)
 	MANTYPE=man
 	;;
@@ -275,6 +275,7 @@ mips-sony-bsd|mips-sony-newsos4)
 	no_libsocket=1
 	no_libnsl=1
 	AC_DEFINE(USE_PIPES)
+	AC_DEFINE(BROKEN_FD_PASSING)
 	LDFLAGS="$LDFLAGS -Wl,-Dmsglevel=334:fatal,-L/usr/local/lib"
 	LIBS="$LIBS -lgen -lrsc"
 	;;
@@ -641,10 +642,34 @@ AC_CHECK_FUNCS(arc4random b64_ntop bcopy bindresvport_sa \
 	inet_ntop innetgr login_getcapbool md5_crypt memmove \
 	mkdtemp mmap ngetaddrinfo openpty ogetaddrinfo readpassphrase \
 	realpath recvmsg rresvport_af sendmsg setdtablesize setegid \
-	setenv seteuid setlogin setproctitle setresgid setreuid setrlimit \
-	setsid setvbuf sigaction sigvec snprintf socketpair strerror \
-	strlcat strlcpy strmode strsep sysconf tcgetpgrp truncate utimes \
-	vhangup vsnprintf waitpid __b64_ntop _getpty)
+	setenv seteuid setgroups setlogin setproctitle setresgid setreuid \
+	setrlimit setsid setpcred setvbuf sigaction sigvec snprintf \
+	socketpair strerror strlcat strlcpy strmode strsep sysconf tcgetpgrp \
+	truncate utimes vhangup vsnprintf waitpid __b64_ntop _getpty)
+
+if test $ac_cv_func_mmap = yes ; then
+AC_MSG_CHECKING([for mmap anon shared])
+AC_TRY_RUN(
+	[
+#include <stdio.h>
+#include <sys/mman.h>
+#if !defined(MAP_ANON) && defined(MAP_ANONYMOUS)
+#define MAP_ANON MAP_ANONYMOUS
+#endif
+main() { char *p;
+p = (char *) mmap(NULL, 10, PROT_WRITE|PROT_READ, MAP_ANON|MAP_SHARED, -1, 0);
+if (p == (char *)-1)
+	exit(1);
+exit(0);
+}
+	],
+	[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_MMAP_ANON_SHARED)
+	],
+	[ AC_MSG_RESULT(no) ] 
+)
+fi
 
 dnl IRIX and Solaris 2.5.1 have dirname() in libgen
 AC_CHECK_FUNCS(dirname, [AC_CHECK_HEADERS(libgen.h)] ,[
@@ -691,11 +716,6 @@ AC_CHECK_FUNCS(utmpname)
 dnl    Checks for utmpx functions
 AC_CHECK_FUNCS(endutxent getutxent getutxid getutxline pututxline )
 AC_CHECK_FUNCS(setutxent utmpxname)
-
-AC_CHECK_FUNC(getuserattr, 
-	[AC_DEFINE(HAVE_GETUSERATTR)],
-	[AC_CHECK_LIB(s, getuserattr, [LIBS="$LIBS -ls"; AC_DEFINE(HAVE_GETUSERATTR)])]
-)
 
 AC_CHECK_FUNC(daemon, 
 	[AC_DEFINE(HAVE_DAEMON)],
@@ -998,16 +1018,17 @@ AC_ARG_WITH(entropy-timeout,
 )
 AC_DEFINE_UNQUOTED(ENTROPY_TIMEOUT_MSEC, $entropy_timeout)
 
-ssh_privsep_user=sshd
+SSH_PRIVSEP_USER=sshd
 AC_ARG_WITH(privsep-user,
 	[  --with-privsep-user=user Specify non-privileged user for privilege separation],
 	[
 		if test -n "$withval"; then
-			ssh_privsep_user=$withval
+			SSH_PRIVSEP_USER=$withval
 		fi
 	]	
 )
-AC_DEFINE_UNQUOTED(SSH_PRIVSEP_USER, "$ssh_privsep_user")
+AC_DEFINE_UNQUOTED(SSH_PRIVSEP_USER, "$SSH_PRIVSEP_USER")
+AC_SUBST(SSH_PRIVSEP_USER)
 
 # We do this little dance with the search path to insure
 # that programs that we select for use by installed programs
@@ -1905,17 +1926,6 @@ AC_ARG_WITH(afs,
 LIBS="$LIBS $KLIBS $K5LIBS"
 
 # Looking for programs, paths and files
-AC_ARG_WITH(rsh,
-	[  --with-rsh=PATH         Specify path to remote shell program ],
-	[
-		if test "x$withval" != "$no" ; then
-			rsh_path=$withval
-		fi
-	],
-	[
-		AC_PATH_PROG(rsh_path, rsh)
-	]
-)
 
 PRIVSEP_PATH=/var/empty
 AC_ARG_WITH(privsep-path,
@@ -1950,9 +1960,6 @@ else
 	AC_DEFINE_UNQUOTED(XAUTH_PATH, "$xauth_path")
 	XAUTH_PATH=$xauth_path
 	AC_SUBST(XAUTH_PATH)
-fi
-if test ! -z "$rsh_path" ; then
-	AC_DEFINE_UNQUOTED(RSH_PATH, "$rsh_path")
 fi
 
 # Check for mail directory (last resort if we cannot get it from headers)
@@ -2189,24 +2196,6 @@ AC_ARG_WITH(bsd-auth,
 		fi
 	]
 )
-
-AC_MSG_CHECKING(whether to install ssh as suid root)
-AC_ARG_ENABLE(suid-ssh,
-[  --enable-suid-ssh       Install ssh as suid root (default)
-  --disable-suid-ssh      Install ssh without suid bit],
-[ case "$enableval" in
-  no)
-       AC_MSG_RESULT(no)
-       SSHMODE=0755
-       ;;
-  *)   AC_MSG_RESULT(yes)
-       SSHMODE=4755
-       ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-  SSHMODE=4711
-)
-AC_SUBST(SSHMODE)
 
 # Where to place sshd.pid
 piddir=/var/run

@@ -10,7 +10,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: auth1.c,v 1.40 2002/04/10 08:21:47 markus Exp $");
+RCSID("$OpenBSD: auth1.c,v 1.41 2002/06/19 00:27:55 deraadt Exp $");
 
 #include "xmalloc.h"
 #include "rsa.h"
@@ -30,6 +30,9 @@ RCSID("$OpenBSD: auth1.c,v 1.40 2002/04/10 08:21:47 markus Exp $");
 
 /* import */
 extern ServerOptions options;
+extern Authmethod method_gssapi;
+
+
 
 #ifdef GSSAPI
 #ifdef GSI
@@ -54,6 +57,12 @@ auth1_gss_protocol_error(int type, u_int32_t plen, void *ctxt)
   log("auth1: protocol error: type %d plen %d", type, plen);
   packet_disconnect("Protocol error during GSSAPI authentication: "
           "Unknown packet type %d", type);
+}
+
+int
+gsi_gridmap(char *subject_name, char **mapped_name)
+{
+    return(globus_gss_assist_gridmap(subject_name, mapped_name) == 0);
 }
 
 /*
@@ -119,8 +128,8 @@ ssh1_gssapi_parse_userstring(char *userstring)
       /* gridmap check */
       debug("implicit name given. gridmapping '%s'", ssl_subject_name);
 
-      if(globus_gss_assist_gridmap(ssl_subject_name,
-				     &gridmapped_name) == 0) {
+      PRIVSEP(gsi_gridmap(ssl_subject_name, &gridmapped_name));
+      if (gridmapped_name && gridmapped_name[0] != '\0') {
 	userstring = gridmapped_name;
 	debug("I gridmapped and got %s", userstring);
 
@@ -288,15 +297,13 @@ do_authloop(Authctxt *authctxt)
 			packet_disconnect("Authentication rejected for invalid user");
 			}
 			dispatch_init(&auth1_gss_protocol_error);
-			userauth_gssapi(authctxt);
+			method_gssapi.userauth(authctxt);
 			dispatch_run(DISPATCH_BLOCK, &authctxt->success, authctxt);
 			if (authctxt->postponed) { /* failed, try other methods */
 				authctxt->success = 0;
 				authctxt->postponed = 0;
 				break;
 			}
-			do_authenticated(authctxt);
-			/* will only return if authenticated */
 			authenticated = 1;
 			break;
 #endif /* GSSAPI */
@@ -354,7 +361,7 @@ do_authloop(Authctxt *authctxt)
 			if (bits != BN_num_bits(client_host_key->rsa->n))
 				verbose("Warning: keysize mismatch for client_host_key: "
 				    "actual %d, announced %d",
-				     BN_num_bits(client_host_key->rsa->n), bits);
+				    BN_num_bits(client_host_key->rsa->n), bits);
 			packet_check_eom();
 
 			authenticated = auth_rhosts_rsa(pw, client_user,
@@ -475,6 +482,7 @@ do_authloop(Authctxt *authctxt)
 
 		if (authctxt->failures++ > AUTH_FAIL_MAX) {
 #ifdef WITH_AIXAUTHENTICATE
+			/* XXX: privsep */
 			loginfailed(authctxt->user,
 			    get_canonical_hostname(options.verify_reverse_mapping),
 			    "ssh");

@@ -12,6 +12,9 @@
 /* supported by bsd-setproctitle.c */
 #undef SPT_TYPE
 
+/* setgroups() NOOP allowed */
+#undef SETGROUPS_NOOP
+
 /* SCO workaround */
 #undef BROKEN_SYS_TERMIO_H
 
@@ -231,9 +234,6 @@
 /* Define if xauth is found in your path */
 #undef XAUTH_PATH
 
-/* Define if rsh is found in your path */
-#undef RSH_PATH
-
 /* Define if you want to allow MD5 passwords */
 #undef HAVE_MD5_PASSWORDS
 
@@ -360,6 +360,12 @@
 
 /* Path that unprivileged child will chroot() to in privep mode */
 #undef PRIVSEP_PATH
+
+/* Define if you have the `mmap' function that supports MAP_ANON|SHARED */
+#undef HAVE_MMAP_ANON_SHARED
+
+/* Define if sendmsg()/recvmsg() has problems passing file descriptors */
+#undef BROKEN_FD_PASSING
 
 @BOTTOM@
 

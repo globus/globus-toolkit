@@ -42,7 +42,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: sshd.c,v 1.242 2002/05/15 15:47:49 mouring Exp $");
+RCSID("$OpenBSD: sshd.c,v 1.251 2002/06/25 18:51:04 markus Exp $");
 
 #include <openssl/dh.h>
 #include <openssl/bn.h>
@@ -228,6 +228,7 @@ static void
 close_listen_socks(void)
 {
 	int i;
+
 	for (i = 0; i < num_listen_socks; i++)
 		close(listen_socks[i]);
 	num_listen_socks = -1;
@@ -237,6 +238,7 @@ static void
 close_startup_pipes(void)
 {
 	int i;
+
 	if (startup_pipes)
 		for (i = 0; i < options.max_startups; i++)
 			if (startup_pipes[i] != -1)
@@ -269,7 +271,8 @@ sighup_restart(void)
 	close_listen_socks();
 	close_startup_pipes();
 	execv(saved_argv[0], saved_argv);
-	log("RESTART FAILED: av[0]='%.100s', error: %.100s.", saved_argv[0], strerror(errno));
+	log("RESTART FAILED: av[0]='%.100s', error: %.100s.", saved_argv[0],
+	    strerror(errno));
 	exit(1);
 }
 
@@ -289,8 +292,8 @@ sigterm_handler(int sig)
 static void
 main_sigchld_handler(int sig)
 {
-	pid_t pid;
 	int save_errno = errno;
+	pid_t pid;
 	int status;
 
 	while ((pid = waitpid(-1, &status, WNOHANG)) > 0 ||
@@ -350,6 +353,7 @@ static void
 key_regeneration_alarm(int sig)
 {
 	int save_errno = errno;
+
 	signal(SIGALRM, SIG_DFL);
 	errno = save_errno;
 	key_do_regen = 1;
@@ -381,13 +385,14 @@ sshd_exchange_identification(int sock_in, int sock_out)
 
 	if (client_version_string == NULL) {
 		/* Send our protocol version identification. */
-		if (atomicio(write, sock_out, server_version_string, strlen(server_version_string))
+		if (atomicio(write, sock_out, server_version_string,
+		    strlen(server_version_string))
 		    != strlen(server_version_string)) {
 			log("Could not write ident string to %s", get_remote_ipaddr());
 			fatal_cleanup();
 		}
 
-		/* Read other side's version identification. */
+		/* Read other sides version identification. */
 		memset(buf, 0, sizeof(buf));
 		for (i = 0; i < sizeof(buf) - 1; i++) {
 			if (atomicio(read, sock_in, &buf[i], 1) != 1) {
@@ -484,7 +489,6 @@ sshd_exchange_identification(int sock_in, int sock_out)
 	}
 }
 
-
 /* Destroy the host and server keys.  They will no longer be needed. */
 void
 destroy_sensitive_data(void)
@@ -535,8 +539,9 @@ static void
 privsep_preauth_child(void)
 {
 	u_int32_t rand[256];
-	int i;
+	gid_t gidset[2];
 	struct passwd *pw;
+	int i;
 
 	/* Enable challenge-response authentication for privilege separation */
 	privsep_challenge_enable();
@@ -564,7 +569,17 @@ privsep_preauth_child(void)
 	/* Drop our privileges */
 	debug3("privsep user:group %u:%u", (u_int)pw->pw_uid,
 	    (u_int)pw->pw_gid);
+#if 0
+	/* XXX not ready, to heavy after chroot */
 	do_setusercontext(pw);
+#else
+	gidset[0] = pw->pw_gid;
+	if (setgid(pw->pw_gid) < 0)
+		fatal("setgid failed for %u", pw->pw_gid );
+	if (setgroups(1, gidset) < 0)
+		fatal("setgroups: %.100s", strerror(errno));
+	permanently_set_uid(pw);
+#endif
 }
 
 static Authctxt*
@@ -583,7 +598,7 @@ privsep_preauth(void)
 	if (pid == -1) {
 		fatal("fork of unprivileged child failed");
 	} else if (pid != 0) {
-		debug2("Network child is on pid %d", pid);
+		debug2("Network child is on pid %ld", (long)pid);
 
 		close(pmonitor->m_recvfd);
 		authctxt = monitor_child_preauth(pmonitor);
@@ -618,7 +633,11 @@ privsep_postauth(Authctxt *authctxt)
 	/* XXX - Remote port forwarding */
 	x_authctxt = authctxt;
 
+#ifdef BROKEN_FD_PASSING
+	if (1) {
+#else
 	if (authctxt->pw->pw_uid == 0 || options.use_login) {
+#endif
 		/* File descriptor passing is broken or root login */
 		monitor_apply_keystate(pmonitor);
 		use_privsep = 0;
@@ -639,7 +658,7 @@ privsep_postauth(Authctxt *authctxt)
 	if (pmonitor->m_pid == -1)
 		fatal("fork of unprivileged child failed");
 	else if (pmonitor->m_pid != 0) {
-		debug2("User child is on pid %d", pmonitor->m_pid);
+		debug2("User child is on pid %ld", (long)pmonitor->m_pid);
 		close(pmonitor->m_recvfd);
 		monitor_child_postauth(pmonitor);
 
@@ -692,6 +711,7 @@ Key *
 get_hostkey_by_type(int type)
 {
 	int i;
+
 	for (i = 0; i < options.num_host_key_files; i++) {
 		Key *key = sensitive_data.host_keys[i];
 		if (key != NULL && key->type == type)
@@ -712,6 +732,7 @@ int
 get_hostkey_index(Key *key)
 {
 	int i;
+
 	for (i = 0; i < options.num_host_key_files; i++) {
 		if (key == sensitive_data.host_keys[i])
 			return (i);
@@ -1005,14 +1026,32 @@ main(int ac, char **av)
 		 * hate software patents. I dont know if this can go? Niels
 		 */
 		if (options.server_key_bits >
-		    BN_num_bits(sensitive_data.ssh1_host_key->rsa->n) - SSH_KEY_BITS_RESERVED &&
-		    options.server_key_bits <
-		    BN_num_bits(sensitive_data.ssh1_host_key->rsa->n) + SSH_KEY_BITS_RESERVED) {
+		    BN_num_bits(sensitive_data.ssh1_host_key->rsa->n) -
+		    SSH_KEY_BITS_RESERVED && options.server_key_bits <
+		    BN_num_bits(sensitive_data.ssh1_host_key->rsa->n) +
+		    SSH_KEY_BITS_RESERVED) {
 			options.server_key_bits =
-			    BN_num_bits(sensitive_data.ssh1_host_key->rsa->n) + SSH_KEY_BITS_RESERVED;
+			    BN_num_bits(sensitive_data.ssh1_host_key->rsa->n) +
+			    SSH_KEY_BITS_RESERVED;
 			debug("Forcing server key to %d bits to make it differ from host key.",
 			    options.server_key_bits);
 		}
+	}
+
+	if (use_privsep) {
+		struct passwd *pw;
+		struct stat st;
+
+		if ((pw = getpwnam(SSH_PRIVSEP_USER)) == NULL)
+			fatal("Privilege separation user %s does not exist",
+			    SSH_PRIVSEP_USER);
+		if ((stat(_PATH_PRIVSEP_CHROOT_DIR, &st) == -1) ||
+		    (S_ISDIR(st.st_mode) == 0))
+			fatal("Missing privilege separation directory: %s",
+			    _PATH_PRIVSEP_CHROOT_DIR);
+		if (st.st_uid != 0 || (st.st_mode & (S_IWGRP|S_IWOTH)) != 0)
+			fatal("Bad owner or mode for %s",
+			    _PATH_PRIVSEP_CHROOT_DIR);
 	}
 
 	/* Configuration looks good, so exit if in test mode. */
@@ -1023,7 +1062,6 @@ main(int ac, char **av)
 	ssh_gssapi_clean_env();
 #endif /* GSSAPI */
 
-#ifndef HAVE_CYGWIN
 	/*
 	 * Clear out any supplemental groups we may have inherited.  This
 	 * prevents inadvertent creation of files with bad modes (in the
@@ -1033,7 +1071,6 @@ main(int ac, char **av)
 	 */
 	if (setgroups(0, NULL) < 0)
 		debug("setgroups() failed: %.200s", strerror(errno));
-#endif /* !HAVE_CYGWIN */
 
 	/* Initialize the log (it is reinitialized below in case we forked). */
 	if (debug_flag && !inetd_flag)
@@ -1178,7 +1215,7 @@ main(int ac, char **av)
 			 */
 			f = fopen(options.pid_file, "wb");
 			if (f) {
-				fprintf(f, "%u\n", (u_int) getpid());
+				fprintf(f, "%ld\n", (long) getpid());
 				fclose(f);
 			}
 		}
@@ -1325,7 +1362,7 @@ main(int ac, char **av)
 				if (pid < 0)
 					error("fork: %.100s", strerror(errno));
 				else
-					debug("Forked child %d.", pid);
+					debug("Forked child %ld.", (long)pid);
 
 				close(startup_p[1]);
 
@@ -1358,7 +1395,7 @@ main(int ac, char **av)
 	 */
 #if 0
 	/* XXX: this breaks Solaris */
-	if (setsid() < 0)
+	if (!debug_flag && !inetd_flag && setsid() < 0)
 		error("setsid: %.100s", strerror(errno));
 #endif
 
@@ -1435,7 +1472,7 @@ main(int ac, char **av)
 	sshd_exchange_identification(sock_in, sock_out);
 	/*
 	 * Check that the connection comes from a privileged port.
-	 * Rhosts-Authentication only makes sense from priviledged
+	 * Rhosts-Authentication only makes sense from privileged
 	 * programs.  Of course, if the intruder has root access on his local
 	 * machine, he can connect from any port.  So do not use these
 	 * authentication methods from machines that you do not trust.
@@ -1635,14 +1672,12 @@ do_ssh1_kex(void)
 	if (options.afs_token_passing)
 		auth_mask |= 1 << SSH_PASS_AFS_TOKEN;
 #endif
+#ifdef GSSAPI
+	if (options.gss_authentication)
+		auth_mask |= 1 << SSH_AUTH_GSSAPI;
+#endif
 	if (options.challenge_response_authentication == 1)
 		auth_mask |= 1 << SSH_AUTH_TIS;
-
-#ifdef GSSAPI
-  	if (options.gss_authentication)
-    		auth_mask |= 1 << SSH_AUTH_GSSAPI;
-#endif
-
 	if (options.password_authentication)
 		auth_mask |= 1 << SSH_AUTH_PASSWORD;
 	packet_put_int(auth_mask);
@@ -1746,7 +1781,7 @@ do_ssh1_kex(void)
     Buffer buf;
     unsigned char *data;
     unsigned int data_len;
-    extern unsigned char ssh1_key_digest[];      /* in gss-serv.c */
+    extern unsigned char ssh1_key_digest[16];   /* in gss-genr.c */
 
 
     debug("Calculating MD5 hash of server and host keys...");
@@ -1794,7 +1829,7 @@ do_ssh1_kex(void)
 
 	debug("Received session key; encryption turned on.");
 
-	/* Send an acknowledgement packet.  Note that this packet is sent encrypted. */
+	/* Send an acknowledgment packet.  Note that this packet is sent encrypted. */
 	packet_start(SSH_SMSG_SUCCESS);
 	packet_send();
 	packet_write_wait();
@@ -1820,6 +1855,10 @@ do_ssh2_kex(void)
 	if (options.macs != NULL) {
 		myproposal[PROPOSAL_MAC_ALGS_CTOS] =
 		myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
+	}
+	if (!options.compression) {
+		myproposal[PROPOSAL_COMP_ALGS_CTOS] =
+		myproposal[PROPOSAL_COMP_ALGS_STOC] = "none";
 	}
 	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = list_hostkey_types();
 

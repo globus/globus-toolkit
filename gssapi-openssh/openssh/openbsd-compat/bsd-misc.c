@@ -118,3 +118,14 @@ int truncate (const char *path, off_t length)
 }
 #endif /* HAVE_TRUNCATE */
 
+#if !defined(HAVE_SETGROUPS) && defined(SETGROUPS_NOOP)
+/*
+ * Cygwin setgroups should be a noop.
+ */
+int
+setgroups(size_t size, const gid_t *list)
+{
+	return 0;
+}
+#endif 
+

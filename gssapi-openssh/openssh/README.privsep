@@ -1,27 +1,31 @@
-Privilege separation, or privsep, is an experimental feature in
-OpenSSH in which operations that require root privilege are performed
-by a separate privileged monitor process.  Its purpose is to prevent
-privilege escalation by containing corruption to an unprivileged
-process.  More information is available at:
+Privilege separation, or privsep, is method in OpenSSH by which
+operations that require root privilege are performed by a separate
+privileged monitor process.  Its purpose is to prevent privilege
+escalation by containing corruption to an unprivileged process.  
+More information is available at:
 	http://www.citi.umich.edu/u/provos/ssh/privsep.html
 
-Privilege separation is not enabled by default, and may be enabled by
-specifying "UsePrivilegeSeparation yes" in sshd_config; see the
-UsePrivilegeSeparation option in sshd(8).
+Privilege separation is now enabled by default; see the
+UsePrivilegeSeparation option in sshd_config(5).
 
-When privsep is enabled, the pre-authentication sshd process will
+On systems which lack mmap or anonymous (MAP_ANON) memory mapping, 
+compression must be disabled in order for privilege separation to 
+function.
+
+When privsep is enabled, during the pre-authentication phase sshd will
 chroot(2) to "/var/empty" and change its privileges to the "sshd" user
-and its primary group.  You should do something like the following to
-prepare the privsep preauth environment:
+and its primary group.  sshd is a pseudo-account that should not be
+used by other daemons, and must be locked and should contain a
+"nologin" or invalid shell.
+
+You should do something like the following to prepare the privsep
+preauth environment:
 
 	# mkdir /var/empty
 	# chown root:sys /var/empty
 	# chmod 755 /var/empty
 	# groupadd sshd
-	# useradd -g sshd sshd
-
-If you are on UnixWare 7 or OpenUNIX 8 do this additional step.
-	# ln /usr/lib/.ns.so /usr/lib/ns.so.1
+	# useradd -g sshd -c 'sshd privsep' -d /var/empty -s /bin/false sshd
 
 /var/empty should not contain any files.
 
@@ -31,11 +35,11 @@ privsep user and chroot directory:
   --with-privsep-path=xxx Path for privilege separation chroot
   --with-privsep-user=user Specify non-privileged user for privilege separation
 
-Privsep requires operating system support for file descriptor passing
-and mmap(MAP_ANON).
+Privsep requires operating system support for file descriptor passing.
+Compression will be disabled on systems without a working mmap MAP_ANON.
 
-PAM-enabled OpenSSH is known to function with privsep on Linux and
-Solaris 8.  It does not function on HP-UX with a trusted system
+PAM-enabled OpenSSH is known to function with privsep on Linux.  
+It does not function on HP-UX with a trusted system
 configuration.  PAMAuthenticationViaKbdInt does not function with
 privsep.
 
