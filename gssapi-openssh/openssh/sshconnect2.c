@@ -23,26 +23,18 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: sshconnect2.c,v 1.85 2001/11/07 16:03:17 markus Exp $");
-
-#include <openssl/bn.h>
-#include <openssl/md5.h>
-#include <openssl/dh.h>
-#include <openssl/hmac.h>
+RCSID("$OpenBSD: sshconnect2.c,v 1.97 2002/02/25 16:33:27 markus Exp $");
 
 #include "ssh.h"
 #include "ssh2.h"
 #include "xmalloc.h"
-#include "rsa.h"
 #include "buffer.h"
 #include "packet.h"
-#include "uidswap.h"
 #include "compat.h"
 #include "bufaux.h"
 #include "cipher.h"
 #include "kex.h"
 #include "myproposal.h"
-#include "key.h"
 #include "sshconnect.h"
 #include "authfile.h"
 #include "dh.h"
@@ -87,31 +79,23 @@ void
 ssh_kex2(char *host, struct sockaddr *hostaddr)
 {
 	Kex *kex;
+#ifdef GSSAPI
+	char *orig, *gss;
+	int len;
+#endif
 
 	xxx_host = host;
 	xxx_hostaddr = hostaddr;
 
 #ifdef GSSAPI
-	/* This is a bit of a nasty kludge. This adds the GSSAPI included
-	 * key exchange methods to the top of the list, allowing the GSSAPI
-	 * code to decide whether each one should be included or not.
-	 */	
-	{
-		char *orig, *gss;
-		int len;
-		orig = myproposal[PROPOSAL_KEX_ALGS];
-		gss = ssh_gssapi_mechanisms(0,host);
-		if (gss) {
-		   len = strlen(orig)+strlen(gss)+2;
-		   myproposal[PROPOSAL_KEX_ALGS]=xmalloc(len);
-		   snprintf(myproposal[PROPOSAL_KEX_ALGS],len,"%s,%s",gss,orig);
-		   /* If we've got GSSAPI algorithms, then we also support the
-		    * 'null' hostkey, as a last resort */
-		   orig=myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS];
-		   len = strlen(orig)+sizeof(",null");
-		   myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]=xmalloc(len);
-		   snprintf(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS],len,"%s,null",orig);  
-		}
+	/* Add the GSSAPI mechanisms currently supported on this client to
+	 * the key exchange algorithm proposal */
+	orig = myproposal[PROPOSAL_KEX_ALGS];
+	gss = ssh_gssapi_mechanisms(0,host);
+	if (gss) {
+	   len = strlen(orig)+strlen(gss)+2;
+	   myproposal[PROPOSAL_KEX_ALGS]=xmalloc(len);
+	   snprintf(myproposal[PROPOSAL_KEX_ALGS],len,"%s,%s",gss,orig);
 	}
 #endif
 
@@ -139,8 +123,19 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 		myproposal[PROPOSAL_MAC_ALGS_STOC] = options.macs;
 	}
 	if (options.hostkeyalgorithms != NULL)
-	        myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
+		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
 		    options.hostkeyalgorithms;
+
+#ifdef GSSAPI
+        /* If we've got GSSAPI algorithms, then we also support the
+         * 'null' hostkey, as a last resort */
+	if (gss) {
+		orig=myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS];
+		len = strlen(orig)+sizeof(",null");
+		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]=xmalloc(len);
+		snprintf(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS],len,"%s,null",orig);  
+	}
+#endif
 
 	/* start key exchange */
 	kex = kex_setup(myproposal);
@@ -179,7 +174,7 @@ typedef struct Authmethod Authmethod;
 
 typedef int sign_cb_fn(
     Authctxt *authctxt, Key *key,
-    u_char **sigp, int *lenp, u_char *data, int datalen);
+    u_char **sigp, u_int *lenp, u_char *data, u_int datalen);
 
 struct Authctxt {
 	const char *server_user;
@@ -209,30 +204,28 @@ struct Authmethod {
 	int	*batch_flag;	/* flag in option struct that disables method */
 };
 
-void	input_userauth_success(int type, int plen, void *ctxt);
-void	input_userauth_failure(int type, int plen, void *ctxt);
-void	input_userauth_banner(int type, int plen, void *ctxt);
-void	input_userauth_error(int type, int plen, void *ctxt);
-void	input_userauth_info_req(int type, int plen, void *ctxt);
-void	input_userauth_pk_ok(int type, int plen, void *ctxt);
+void	input_userauth_success(int, u_int32_t, void *);
+void	input_userauth_failure(int, u_int32_t, void *);
+void	input_userauth_banner(int, u_int32_t, void *);
+void	input_userauth_error(int, u_int32_t, void *);
+void	input_userauth_info_req(int, u_int32_t, void *);
+void	input_userauth_pk_ok(int, u_int32_t, void *);
 
-int	userauth_none(Authctxt *authctxt);
-int	userauth_pubkey(Authctxt *authctxt);
-int	userauth_passwd(Authctxt *authctxt);
-int	userauth_kbdint(Authctxt *authctxt);
-int	userauth_hostbased(Authctxt *authctxt);
+int	userauth_none(Authctxt *);
+int	userauth_pubkey(Authctxt *);
+int	userauth_passwd(Authctxt *);
+int	userauth_kbdint(Authctxt *);
+int	userauth_hostbased(Authctxt *);
 
 #ifdef GSSAPI
-int     userauth_external(Authctxt *authctxt);
-int     userauth_gssapi(Authctxt *authctxt);
-void    input_gssapi_response(int type, int plen, void *ctxt);
-void    input_gssapi_token(int type, int plen, void *ctxt);
-void    input_gssapi_hash(int type, int plen, void *ctxt);
-
-int     gss_host_key_ok=0;
+int	userauth_external(Authctxt *authctxt);
+int	userauth_gssapi(Authctxt *authctxt);
+void	input_gssapi_response(int type, u_int32_t plen, void *ctxt);
+void	input_gssapi_token(int type, u_int32_t plen, void *ctxt);
+void	input_gssapi_hash(int type, u_int32_t plen, void *ctxt);
 #endif
 
-void	userauth(Authctxt *authctxt, char *authlist);
+void	userauth(Authctxt *, char *);
 
 static int sign_and_send_pubkey(Authctxt *, Key *, sign_cb_fn *);
 static void clear_auth_state(Authctxt *);
@@ -281,7 +274,6 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 {
 	Authctxt authctxt;
 	int type;
-	int plen;
 
 	if (options.challenge_response_authentication)
 		options.kbd_interactive_authentication = 1;
@@ -291,18 +283,18 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 	packet_put_cstring("ssh-userauth");
 	packet_send();
 	packet_write_wait();
-	type = packet_read(&plen);
+	type = packet_read();
 	if (type != SSH2_MSG_SERVICE_ACCEPT) {
 		fatal("denied SSH2_MSG_SERVICE_ACCEPT: %d", type);
 	}
 	if (packet_remaining() > 0) {
-		char *reply = packet_get_string(&plen);
+		char *reply = packet_get_string(NULL);
 		debug("service_accept: %s", reply);
 		xfree(reply);
 	} else {
 		debug("buggy server: service_accept w/o service");
 	}
-	packet_done();
+	packet_check_eom();
 	debug("got SSH2_MSG_SERVICE_ACCEPT");
 
 	if (options.preferred_authentications == NULL)
@@ -369,13 +361,13 @@ userauth(Authctxt *authctxt, char *authlist)
 	}
 }
 void
-input_userauth_error(int type, int plen, void *ctxt)
+input_userauth_error(int type, u_int32_t seq, void *ctxt)
 {
 	fatal("input_userauth_error: bad message during authentication: "
 	   "type %d", type);
 }
 void
-input_userauth_banner(int type, int plen, void *ctxt)
+input_userauth_banner(int type, u_int32_t seq, void *ctxt)
 {
 	char *msg, *lang;
 	debug3("input_userauth_banner");
@@ -386,7 +378,7 @@ input_userauth_banner(int type, int plen, void *ctxt)
 	xfree(lang);
 }
 void
-input_userauth_success(int type, int plen, void *ctxt)
+input_userauth_success(int type, u_int32_t seq, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	if (authctxt == NULL)
@@ -399,7 +391,7 @@ input_userauth_success(int type, int plen, void *ctxt)
 	authctxt->success = 1;			/* break out */
 }
 void
-input_userauth_failure(int type, int plen, void *ctxt)
+input_userauth_failure(int type, u_int32_t seq, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	char *authlist = NULL;
@@ -410,7 +402,7 @@ input_userauth_failure(int type, int plen, void *ctxt)
 
 	authlist = packet_get_string(NULL);
 	partial = packet_get_char();
-	packet_done();
+	packet_check_eom();
 
 	if (partial != 0)
 		log("Authenticated with partial success.");
@@ -420,13 +412,15 @@ input_userauth_failure(int type, int plen, void *ctxt)
 	userauth(authctxt, authlist);
 }
 void
-input_userauth_pk_ok(int type, int plen, void *ctxt)
+input_userauth_pk_ok(int type, u_int32_t seq, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	Key *key = NULL;
 	Buffer b;
-	int alen, blen, sent = 0;
-	char *pkalg, *pkblob, *fp;
+	int pktype, sent = 0;
+	u_int alen, blen;
+	char *pkalg, *fp;
+	u_char *pkblob;
 
 	if (authctxt == NULL)
 		fatal("input_userauth_pk_ok: no authentication context");
@@ -442,7 +436,7 @@ input_userauth_pk_ok(int type, int plen, void *ctxt)
 		pkalg = packet_get_string(&alen);
 		pkblob = packet_get_string(&blen);
 	}
-	packet_done();
+	packet_check_eom();
 
 	debug("input_userauth_pk_ok: pkalg %s blen %d lastkey %p hint %d",
 	    pkalg, blen, authctxt->last_key, authctxt->last_key_hint);
@@ -453,12 +447,18 @@ input_userauth_pk_ok(int type, int plen, void *ctxt)
 			debug("no last key or no sign cb");
 			break;
 		}
-		if (key_type_from_name(pkalg) == KEY_UNSPEC) {
+		if ((pktype = key_type_from_name(pkalg)) == KEY_UNSPEC) {
 			debug("unknown pkalg %s", pkalg);
 			break;
 		}
 		if ((key = key_from_blob(pkblob, blen)) == NULL) {
 			debug("no key from blob. pkalg %s", pkalg);
+			break;
+		}
+		if (key->type != pktype) { 
+			error("input_userauth_pk_ok: type mismatch "
+			    "for decoded key (received %d, expected %d)",
+			     key->type, pktype);
 			break;
 		}
 		fp = key_fingerprint(key, SSH_FP_MD5, SSH_FP_HEX);
@@ -470,7 +470,7 @@ input_userauth_pk_ok(int type, int plen, void *ctxt)
 		}
 		sent = sign_and_send_pubkey(authctxt, key,
 		   authctxt->last_key_sign);
-	} while(0);
+	} while (0);
 
 	if (key != NULL)
 		key_free(key);
@@ -500,6 +500,8 @@ userauth_gssapi(Authctxt *authctxt)
 	 */	
 	if (tries++>0) return 0;
 
+	if (datafellows & SSH_OLD_GSSAPI) return 0;
+	
         gssctxt=xmalloc(sizeof(Gssctxt));
 
 	/* Initialise as much of our context as we can, so failures can be
@@ -536,7 +538,7 @@ userauth_gssapi(Authctxt *authctxt)
 }
 
 void
-input_gssapi_response(int type, int plen, void *ctxt) 
+input_gssapi_response(int type, u_int32_t plen, void *ctxt) 
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
@@ -553,7 +555,7 @@ input_gssapi_response(int type, int plen, void *ctxt)
 	oidv=packet_get_string(&oidlen);
 	ssh_gssapi_set_oid_data(gssctxt,oidv,oidlen);
 	
-	packet_done();
+	packet_check_eom();
 	
 	status = ssh_gssapi_init_ctx(gssctxt, options.gss_deleg_creds,
 				     GSS_C_NO_BUFFER, &send_tok, 
@@ -574,7 +576,7 @@ input_gssapi_response(int type, int plen, void *ctxt)
 }
 
 void
-input_gssapi_token(int type, int plen, void *ctxt)
+input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
@@ -590,7 +592,7 @@ input_gssapi_token(int type, int plen, void *ctxt)
 	status=ssh_gssapi_init_ctx(gssctxt, options.gss_deleg_creds,
 				   &recv_tok, &send_tok, NULL);
 
-	packet_done();
+	packet_check_eom();
 	
 	if (GSS_ERROR(status)) {
 		/* Start again with the next method in the list */
@@ -655,7 +657,7 @@ userauth_passwd(Authctxt *authctxt)
 	if (attempt++ >= options.number_of_password_prompts)
 		return 0;
 
-	if(attempt != 1)
+	if (attempt != 1)
 		error("Permission denied, please try again.");
 
 	snprintf(prompt, sizeof(prompt), "%.30s@%.128s's password: ",
@@ -692,7 +694,7 @@ sign_and_send_pubkey(Authctxt *authctxt, Key *k, sign_cb_fn *sign_callback)
 {
 	Buffer b;
 	u_char *blob, *signature;
-	int bloblen, slen;
+	u_int bloblen, slen;
 	int skip = 0;
 	int ret = -1;
 	int have_sig = 1;
@@ -777,7 +779,7 @@ send_pubkey_test(Authctxt *authctxt, Key *k, sign_cb_fn *sign_callback,
     int hint)
 {
 	u_char *blob;
-	int bloblen, have_sig = 0;
+	u_int bloblen, have_sig = 0;
 
 	debug3("send_pubkey_test");
 
@@ -822,7 +824,7 @@ load_identity_file(char *filename)
 		if (options.batch_mode)
 			return NULL;
 		snprintf(prompt, sizeof prompt,
-		     "Enter passphrase for key '%.100s': ", filename);
+		    "Enter passphrase for key '%.100s': ", filename);
 		for (i = 0; i < options.number_of_password_prompts; i++) {
 			passphrase = read_passphrase(prompt, 0);
 			if (strcmp(passphrase, "") != 0) {
@@ -844,8 +846,8 @@ load_identity_file(char *filename)
 }
 
 static int
-identity_sign_cb(Authctxt *authctxt, Key *key, u_char **sigp, int *lenp,
-    u_char *data, int datalen)
+identity_sign_cb(Authctxt *authctxt, Key *key, u_char **sigp, u_int *lenp,
+    u_char *data, u_int datalen)
 {
 	Key *private;
 	int idx, ret;
@@ -855,7 +857,7 @@ identity_sign_cb(Authctxt *authctxt, Key *key, u_char **sigp, int *lenp,
 		return -1;
 
 	/* private key is stored in external hardware */
-	if (options.identity_keys[idx]->flags & KEY_FLAG_EXT) 
+	if (options.identity_keys[idx]->flags & KEY_FLAG_EXT)
 		return key_sign(options.identity_keys[idx], sigp, lenp, data, datalen);
 
 	private = load_identity_file(options.identity_files[idx]);
@@ -867,15 +869,15 @@ identity_sign_cb(Authctxt *authctxt, Key *key, u_char **sigp, int *lenp,
 }
 
 static int
-agent_sign_cb(Authctxt *authctxt, Key *key, u_char **sigp, int *lenp,
-    u_char *data, int datalen)
+agent_sign_cb(Authctxt *authctxt, Key *key, u_char **sigp, u_int *lenp,
+    u_char *data, u_int datalen)
 {
 	return ssh_agent_sign(authctxt->agent, key, sigp, lenp, data, datalen);
 }
 
 static int
-key_sign_cb(Authctxt *authctxt, Key *key, u_char **sigp, int *lenp,
-    u_char *data, int datalen)
+key_sign_cb(Authctxt *authctxt, Key *key, u_char **sigp, u_int *lenp,
+    u_char *data, u_int datalen)
 {
 	return key_sign(key, sigp, lenp, data, datalen);
 }
@@ -919,7 +921,7 @@ userauth_pubkey(Authctxt *authctxt)
 	if (authctxt->agent != NULL) {
 		do {
 			sent = userauth_pubkey_agent(authctxt);
-		} while(!sent && authctxt->agent->howmany > 0);
+		} while (!sent && authctxt->agent->howmany > 0);
 	}
 	while (!sent && idx < options.num_identity_files) {
 		key = options.identity_keys[idx];
@@ -977,7 +979,7 @@ userauth_kbdint(Authctxt *authctxt)
  * parse INFO_REQUEST, prompt user and send INFO_RESPONSE
  */
 void
-input_userauth_info_req(int type, int plen, void *ctxt)
+input_userauth_info_req(int type, u_int32_t seq, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	char *name, *inst, *lang, *prompt, *response;
@@ -1024,7 +1026,7 @@ input_userauth_info_req(int type, int plen, void *ctxt)
 		xfree(response);
 		xfree(prompt);
 	}
-	packet_done(); /* done with parsing incoming message. */
+	packet_check_eom(); /* done with parsing incoming message. */
 
 	packet_add_padding(64);
 	packet_send();
@@ -1166,7 +1168,7 @@ authmethod_get(char *authlist)
 {
 
 	char *name = NULL;
-	int next;
+	u_int next;
 
 	/* Use a suitable default if we're passed a nil list.  */
 	if (authlist == NULL || strlen(authlist) == 0)
@@ -1201,22 +1203,23 @@ authmethod_get(char *authlist)
 	}
 }
 
-
-#define	DELIM	","
-
 static char *
 authmethods_get(void)
 {
 	Authmethod *method = NULL;
-	char buf[1024];
+	Buffer b;
+	char *list;
 
-	buf[0] = '\0';
+	buffer_init(&b);
 	for (method = authmethods; method->name != NULL; method++) {
 		if (authmethod_is_enabled(method)) {
-			if (buf[0] != '\0')
-				strlcat(buf, DELIM, sizeof buf);
-			strlcat(buf, method->name, sizeof buf);
+			if (buffer_len(&b) > 0)
+				buffer_append(&b, ",", 1);
+			buffer_append(&b, method->name, strlen(method->name));
 		}
 	}
-	return xstrdup(buf);
+	buffer_append(&b, "\0", 1);
+	list = xstrdup(buffer_ptr(&b));
+	buffer_free(&b);
+	return list;
 }

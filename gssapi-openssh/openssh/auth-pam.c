@@ -360,7 +360,7 @@ void start_pam(const char *user)
 		fatal("PAM initialisation failed[%d]: %.200s",
 		    pam_retval, PAM_STRERROR(__pamh, pam_retval));
 
-	rhost = get_remote_name_or_ip(utmp_len, options.reverse_mapping_check);
+	rhost = get_remote_name_or_ip(utmp_len, options.verify_reverse_mapping);
 	debug("PAM setting rhost to \"%.200s\"", rhost);
 
 	pam_retval = pam_set_item(__pamh, PAM_RHOST, rhost);
@@ -402,13 +402,15 @@ char **fetch_pam_environment(void)
 int do_pam_putenv(char *name, char *value) {
 	char *compound;
 	int ret=1;
-	
+
+#ifdef HAVE_PAM_PUTENV	
 	compound=xmalloc(strlen(name)+strlen(value)+2);
 	if (compound) {
 		sprintf(compound,"%s=%s",name,value);
 		ret=pam_putenv(__pamh,compound);
 		xfree(compound);
 	}
+#endif
 	return(ret);
 }
 

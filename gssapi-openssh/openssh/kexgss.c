@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001,2002 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -95,7 +95,6 @@ kexgss_client(Kex *kex)
 	gss_buffer_desc gssbuf,send_tok,recv_tok, msg_tok, *token_ptr;
 	Gssctxt ctxt;
 	OM_uint32 maj_status, min_status, ret_flags;
-	int plen,dlen;
 	unsigned int klen, kout;
 	DH *dh; 
 	BIGNUM *dh_server_pub = 0;
@@ -179,7 +178,7 @@ kexgss_client(Kex *kex)
 			/* If we've sent them data, they'd better be polite
 			 * and reply. */
 		
-			type = packet_read(&plen);
+			type = packet_read();
 			switch (type) {
 			case SSH2_MSG_KEXGSS_HOSTKEY:
 				debug("Received KEXGSS_HOSTKEY");
@@ -193,7 +192,7 @@ kexgss_client(Kex *kex)
 				break;
 			case SSH2_MSG_KEXGSS_COMPLETE:
 				debug("Received GSSAPI_COMPLETE");
-			        packet_get_bignum2(dh_server_pub, &dlen);
+			        packet_get_bignum2(dh_server_pub);
 			    	msg_tok.value=
 			    	    packet_get_string(&msg_tok.length);
 
@@ -294,14 +293,12 @@ kexgss_server(Kex *kex)
 	OM_uint32 ret_flags = 0;
 	gss_buffer_desc gssbuf,send_tok,recv_tok,msg_tok;
 	Gssctxt ctxt;
-        int plen;
-        int dlen=0;
         unsigned int klen, kout;
         unsigned char *kbuf;
         unsigned char *hash;
         DH *dh;
-        BIGNUM *shared_secret = 0;
-        BIGNUM *dh_client_pub = 0;
+        BIGNUM *shared_secret = NULL;
+        BIGNUM *dh_client_pub = NULL;
 	int type =0;
 	
 	/* Initialise GSSAPI */
@@ -312,24 +309,25 @@ kexgss_server(Kex *kex)
         if (ssh_gssapi_acquire_cred(&ctxt))
         	fatal("Unable to acquire credentials for the server");
                                                                                                                                 
-	/* Initialise some bignums */
-        dh_client_pub = BN_new();
-        if (dh_client_pub == NULL)
-        	fatal("dh_client_pub == NULL");
-
 	do {
 		debug("Wait SSH2_MSG_GSSAPI_INIT");
-		type = packet_read(&plen);
+		type = packet_read();
 		switch(type) {
 		case SSH2_MSG_KEXGSS_INIT:
-			if (dlen!=0) 
+			if (dh_client_pub!=NULL) 
 				fatal("Received KEXGSS_INIT after initialising");
 			recv_tok.value=packet_get_string(&recv_tok.length);
-		  	packet_get_bignum2(dh_client_pub, &dlen);
+
+		        dh_client_pub = BN_new();
+		        
+		        if (dh_client_pub == NULL)
+        			fatal("dh_client_pub == NULL");
+		  	packet_get_bignum2(dh_client_pub);
+		  	
 		  	/* Send SSH_MSG_KEXGSS_HOSTKEY here, if we want */
 			break;
 		case SSH2_MSG_KEXGSS_CONTINUE:
-			if (dlen==0)
+			if (dh_client_pub == NULL)
 				fatal("Received KEXGSS_CONTINUE without initialising");
 			recv_tok.value=packet_get_string(&recv_tok.length);
 			break;

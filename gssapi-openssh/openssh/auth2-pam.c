@@ -16,7 +16,7 @@ RCSID("$Id$");
 static int do_pam_conversation_kbd_int(int num_msg, 
     const struct pam_message **msg, struct pam_response **resp, 
     void *appdata_ptr);
-void input_userauth_info_response_pam(int type, int plen, void *ctxt);
+void input_userauth_info_response_pam(int type, u_int32_t seqnr, void *ctxt);
 
 struct {
 	int finished, num_received, num_expected;
@@ -128,7 +128,7 @@ do_pam_conversation_kbd_int(int num_msg, const struct pam_message **msg,
 }
 
 void
-input_userauth_info_response_pam(int type, int plen, void *ctxt)
+input_userauth_info_response_pam(int type, u_int32_t seqnr, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	unsigned int nresp = 0, rlen = 0, i = 0;
@@ -152,7 +152,7 @@ input_userauth_info_response_pam(int type, int plen, void *ctxt)
 
 	context_pam2.finished = 1;
 
-	packet_done();
+	packet_check_eom();
 }
 
 #endif

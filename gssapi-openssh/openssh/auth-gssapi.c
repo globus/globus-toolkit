@@ -53,6 +53,10 @@ extern const gss_OID gss_nt_service_name;
 
 #endif /* GSSAPI_KRB5 */
 
+#ifdef GSI
+#include "globus_gss_assist.h"
+#endif
+
 /*
  * String describing our authentication type
  */
@@ -71,15 +75,6 @@ extern const gss_OID gss_nt_service_name;
 static char *delegation_env[] = {
   "X509_USER_PROXY",		/* GSSAPI/SSLeay */
   "KRB5CCNAME",			/* Krb5 and possibly SSLeay */
-  NULL
-};
-
-/*
- * Other GSSAPI environment variables that should be passed to the
- * child process
- */
-static char *pass_to_child_env[] = {
-  "X509_CERT_DIR",		/* GSSAPI/SSLeay */
   NULL
 };
 
@@ -177,7 +172,6 @@ int auth_gssapi(const char *target_account,
   char local_hostname[256];	/* Arbitrary size */
   char *gssapi_auth_type = GSSAPI_AUTH_TYPE;
   char *gssapi_identity = NULL;
-  int payload_len;
 
 
   debug("Attempting %s GSSAPI authentication (%s). Reading mech oid from client",
@@ -333,7 +327,7 @@ int auth_gssapi(const char *target_account,
   do {
     debug("Reading token from client...");
 
-    type = packet_read(&payload_len);
+    type = packet_read();
 
     switch(type) {
 
@@ -440,7 +434,7 @@ int auth_gssapi(const char *target_account,
   /* Successful authentication */
 
   debug("%s authentication of %s successful",
-	gssapi_auth_type, client_name->value);
+	gssapi_auth_type, (char *)client_name->value);
 
   {
     /*
@@ -549,7 +543,9 @@ int auth_gssapi(const char *target_account,
 
 #if defined(GSI)
   {
-    if (globus_gss_assist_userok(gssapi_identity, target_account) != 0) {
+    /* NB: cast of target_account should not be necessary; it's a read-only
+           argument; should be a const char * */
+    if (globus_gss_assist_userok(gssapi_identity, (char*)target_account) != 0) {
       debug("globus_gss_assist_userok() failed");
 
     } else {
@@ -606,7 +602,7 @@ gssapi_parse_userstring(char *userstring)
   char *gridmapped_name = NULL;
 
   debug("Looking at username '%s' for gssapi-ssleay type name", userstring);
-  if(delim = strchr(userstring, ':')) {
+  if((delim = strchr(userstring, ':')) != NULL) {
       /* Parse and split into components */
       ssl_subject_name = strchr(delim + 1, ':');
 
@@ -872,52 +868,6 @@ gssapi_chown_delegation(uid_t uid, gid_t gid)
   }
 
   return status;
-}
-
-
-/*
- * Pass all the GSSAPI environment variables down to the child
- */
-void
-gssapi_child_set_env(char ***p_env,
-		     unsigned int *p_envsize)
-{
-  char *envstr;
-  int envstr_index;
-  char *env_value;
-
-
-  /* First all the pointers to credentials caches */
-  for (envstr_index = 0;
-       (envstr = delegation_env[envstr_index]) != NULL;
-       envstr_index++) {
-
-    env_value = getenv(envstr);
-
-    if (env_value == NULL)
-      continue;
-
-    debug("Setting %s for child process to '%s'",
-	  envstr, env_value);
-
-    child_set_env(p_env, p_envsize, envstr, env_value);
-  }
-
-  /* And other environment variables */
-  for (envstr_index = 0;
-       (envstr = pass_to_child_env[envstr_index]) != NULL;
-       envstr_index++) {
-
-    env_value = getenv(envstr);
-
-    if (env_value == NULL)
-      continue;
-
-    debug("Setting %s for child process to '%s'",
-	  envstr, env_value);
-
-    child_set_env(p_env, p_envsize, envstr, env_value);
-  }
 }
 
 
