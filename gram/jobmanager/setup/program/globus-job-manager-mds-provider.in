@@ -82,83 +82,6 @@ if ( ! -f "$ldif_conf" )
 
 my $hostname = `${bindir}/globus-hostname`;
 
-system("grep $gram_reporter_schema $slapd_conf >/dev/null");
-if ( ! $? )
-{
-   # entry was found in file
-   if ( $add )
-   {
-       print "gram reporter schema entries are already in $slapd_conf.  skipping...\n";
-   }
-   else
-   {
-       print "removing gram reporter schema entries from $slapd_conf\n";
-       open(TMPFILE, ">$tmpfile");
-       open(FILE, "<$slapd_conf");
-       while($line = <FILE>)
-       {
-           # remove include lines for the 2 gram schemas.
-           if(($line !~ "include.*$gram_reporter_schema") &&
-              ($line !~ "include.*$gram_reporter_rsl_schema"))
-           {
-               print TMPFILE $line;
-           }
-       }
-       close FILE;
-       close TMPFILE;
-       system("mv $tmpfile $slapd_conf");
-   }
-}
-else
-{
-   # entry was not found in file
-   if ( $add )
-   {
-      # insert line in the slapd_conf file
-
-      open(INFO, "<$slapd_conf");
-      open(TMPFILE, ">$tmpfile");
-
-      while ($line = <INFO>)
-      {
-        chomp($line);
-        $line =~ s/^\s+//g;  # remove leading whitespace
-
-        $first7 = substr($line,0,7);
-
-        if ($line_added==0)
-        {
-           if ($first7 eq "include")
-           {
-              $includes_started=1;
-           }
-
-           # find the first line after the include lines that is not just a newline
-           if (($first7 ne "include") &&
-               ($first7 ne "") &&
-               ($includes_started==1))
-           {
-              $line_added=1;
-              print "adding gram reporter entry in $slapd_conf\n";
-              print TMPFILE "include  ${globusdir}/etc/grid-info-gram-reporter.schema\n";
-              print TMPFILE "include  ${globusdir}/etc/grid-info-gram-rsl-reporter.schema\n";
-           }
-        }
-
-        print TMPFILE "$line\n";
-      }
-      close(TMPFILE);
-      close(INFO);
-
-      system("mv $tmpfile $slapd_conf");
-   }
-   else
-   {
-       print "gram reporter schema entries not found for removal in $slapd_conf, skipping...\n";
-   }
-}
-
-
 system("grep \"BEGIN $manager_type\" $ldif_conf >/dev/null");
 if ( ! $? )
 {
@@ -221,6 +144,91 @@ else
        close(LDIFFILE);
    }
 }
+
+
+system("grep $gram_reporter_schema $slapd_conf >/dev/null");
+if ( ! $? )
+{
+   # entry was found in file
+   if ( $add )
+   {
+       print "gram reporter schema entries are already in $slapd_conf.  skipping...\n";
+   }
+   else
+   {
+       #check to see if there is another reporter entry in the ldif file
+       #if so then we don't want to remove the schema includes.
+       system("grep \"the following lines added by globus-gram-mds-provider\" $ldif_conf >/dev/null");
+       if ( $? )
+       {
+          print "removing gram reporter schema entries from $slapd_conf\n";
+          open(TMPFILE, ">$tmpfile");
+          open(FILE, "<$slapd_conf");
+          while($line = <FILE>)
+          {
+              # remove include lines for the 2 gram schemas.
+              if(($line !~ "include.*$gram_reporter_schema") &&
+                 ($line !~ "include.*$gram_reporter_rsl_schema"))
+              {
+                  print TMPFILE $line;
+              }
+          }
+          close FILE;
+          close TMPFILE;
+          system("mv $tmpfile $slapd_conf");
+       }
+   }
+}
+else
+{
+   # entry was not found in file
+   if ( $add )
+   {
+      # insert line in the slapd_conf file
+
+      open(INFO, "<$slapd_conf");
+      open(TMPFILE, ">$tmpfile");
+
+      while ($line = <INFO>)
+      {
+        chomp($line);
+        $line =~ s/^\s+//g;  # remove leading whitespace
+
+        $first7 = substr($line,0,7);
+
+        if ($line_added==0)
+        {
+           if ($first7 eq "include")
+           {
+              $includes_started=1;
+           }
+
+           # find the first line after the include lines that is not just a newline
+           if (($first7 ne "include") &&
+               ($first7 ne "") &&
+               ($includes_started==1))
+           {
+              $line_added=1;
+              print "adding gram reporter entry in $slapd_conf\n";
+              print TMPFILE "include  ${globusdir}/etc/grid-info-gram-reporter.schema\n";
+              print TMPFILE "include  ${globusdir}/etc/grid-info-gram-rsl-reporter.schema\n";
+              print TMPFILE "\n";
+           }
+        }
+
+        print TMPFILE "$line\n";
+      }
+      close(TMPFILE);
+      close(INFO);
+
+      system("mv $tmpfile $slapd_conf");
+   }
+   else
+   {
+       print "gram reporter schema entries not found for removal in $slapd_conf, skipping...\n";
+   }
+}
+
 
 print "Done\n";
 
