@@ -31,7 +31,7 @@ Usage()
 clean_one()
 {
 
-TARGET_MACH_FORK="${1}"
+TARGET_MACH="${1}"
 
 TMPSCRIPT="${local_tmpdir}/cdscript$$"
 ${GLOBUS_SH_RM-rm} -rf $TMPSCRIPT > /dev/null 2>&1
@@ -44,7 +44,7 @@ exit 0
  
 MYEND
 
-RESULT=`echo "" |${bindir}/globusrun -s -r "${TARGET_MACH_FORK}"  "&(executable=\$(GLOBUS_TOOLS_PREFIX)/bin/globus-sh-exec)(arguments=\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
+RESULT=`echo "" |${bindir}/globusrun -s -r "${TARGET_MACH}"  "&(executable=\$(GLOBUS_TOOLS_PREFIX)/bin/globus-sh-exec)(arguments=\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
 
 THIS_STATUS=$?
 if [ $THIS_STATUS -ne 0 ]
@@ -106,10 +106,7 @@ done
 #eval $CAT_TARGETS  | ${GLOBUS_SH_EGREP-egrep} '(fork|poe)' | ${GLOBUS_SH_AWK-awk} -F: '{print $1}' | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} | while read TARGET; do
 eval $CAT_TARGETS  | ${GLOBUS_SH_SED-sed} '/fork/ p;/poe/ p; d' | ${GLOBUS_SH_AWK-awk} -F: '{print $1}' | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} | while read TARGET; do
 
-
-TARGET_FORK=`${bindir}/globus-hostname2contacts -t fork,poe ${TARGET}`
-
-clean_one "${TARGET_FORK}"
+clean_one "${TARGET}
 
 done
 
