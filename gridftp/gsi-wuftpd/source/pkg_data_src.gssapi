@@ -18,12 +18,12 @@
 	    </Dependency>
 	    <Dependency Name="globus_gss_assist">
 		<Version>
-		    <Simple_Version Major="2"></Simple_Version>
+		    <Simple_Version Major="3"></Simple_Version>
 		</Version>
 	    </Dependency>
 	    <Dependency Name="globus_gssapi_gsi">
 		<Version>
-		    <Simple_Version Major="2"></Simple_Version>
+		    <Simple_Version Major="3"></Simple_Version>
 		</Version>
 	    </Dependency>
 	</Source_Dependencies>
