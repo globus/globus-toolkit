@@ -2617,6 +2617,11 @@ globus_io_attr_get_tcp_interface(
  * GSSAPI security context establishment functions once a socket
  * connection is established.
  *
+ * If the authentication_mode value is
+ * GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE, then the channel mode,
+ * delegation mode, protection mode, and authorization mode will all be reset
+ * to disable all security on the socket attribute set.
+ *
  * @param attr
  *        The attribute to query or modify. The attr parameter must be 
  *        initialized by globus_io_tcpattr_init().
@@ -2706,62 +2711,10 @@ globus_io_attr_set_secure_authentication_mode(
     }
     if(mode == GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
-	if(instance->channel_mode !=
-	       GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR)
-	{
-	    return globus_error_put(
-		globus_io_error_construct_attribute_mismatch(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    "attr",
-		    1,
-		    myname,
-		    "authentication_mode",
-		    "channel_mode"));
-
-	}
-	if(instance->delegation_mode !=
-	   GLOBUS_IO_SECURE_DELEGATION_MODE_NONE)
-	 {
-	    return globus_error_put(
-		globus_io_error_construct_attribute_mismatch(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    "attr",
-		    1,
-		    myname,
-		    "authentication_mode",
-		    "delegation_mode"));
-
-	}
-	if(instance->authorization_mode !=
-	   GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE)
-	 {
-	    return globus_error_put(
-		globus_io_error_construct_attribute_mismatch(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    "attr",
-		    1,
-		    myname,
-		    "authentication_mode",
-		    "authorization_mode"));
-
-	}
-        if(instance->protection_mode !=
-	   GLOBUS_IO_SECURE_PROTECTION_MODE_NONE)
-	 {
-	    return globus_error_put(
-		globus_io_error_construct_attribute_mismatch(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    "attr",
-		    1,
-		    myname,
-		    "authentication_mode",
-		    "protection_mode"));
-	 }
-	
+	instance->channel_mode = GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR;
+	instance->delegation_mode = GLOBUS_IO_SECURE_DELEGATION_MODE_NONE;
+	instance->protection_mode = GLOBUS_IO_SECURE_PROTECTION_MODE_NONE;
+	instance->authorization_mode = GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE;
 	instance->authentication_mode = mode;
 	instance->credential = GSS_C_NO_CREDENTIAL;
     }
