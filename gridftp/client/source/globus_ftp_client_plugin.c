@@ -493,6 +493,13 @@ globus_ftp_client_plugin_restart_move(
  *        may be useful when the plugin wishes to send restart markers 
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
+ * @param restart_marker
+ *        Plugin-provided restart marker for resuming at a non-default
+ *        restart point. This may be used to implement a persistent
+ *        restart across process invocations. The default behavior if
+ *        this is NULL is to use any restart information which has
+ *        been received by the ftp client library while processing this
+ *        operation when restarted.
  * @param when
  *        Absolute time for when to restart the get. The current
  *        control and data connections will be stopped
@@ -566,6 +573,14 @@ globus_ftp_client_plugin_restart_get(
  *        may be useful when the plugin wishes to send restart markers 
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
+ * @param restart_marker
+ *        Plugin-provided restart marker for resuming at a non-default
+ *        restart point. This may be used to implement a persistent
+ *        restart across process invocations. The default behavior if
+ *        this is NULL is to use any restart information which has
+ *        been received by the ftp client library while processing this
+ *        operation when restarted.
+
  * @param when
  *        Absolute time for when to restart the put. The current
  *        control and data connections will be stopped
@@ -646,6 +661,14 @@ globus_ftp_client_plugin_restart_put(
  *        may be useful when the plugin wishes to send restart markers 
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
+ * @param restart_marker
+ *        Plugin-provided restart marker for resuming at a non-default
+ *        restart point. This may be used to implement a persistent
+ *        restart across process invocations. The default behavior if
+ *        this is NULL is to use any restart information which has
+ *        been received by the ftp client library while processing this
+ *        operation when restarted.
+
  * @param when
  *        Absolute time for when to restart the transfer. The current
  *        control and data connections will be stopped
@@ -1247,6 +1270,14 @@ GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(complete)
  *        may be useful when the plugin wishes to send restart markers 
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
+ * @param restart_marker
+ *        Plugin-provided restart marker for resuming at a non-default
+ *        restart point. This may be used to implement a persistent
+ *        restart across process invocations. The default behavior if
+ *        this is NULL is to use any restart information which has
+ *        been received by the ftp client library while processing this
+ *        operation when restarted.
+
  * @param when
  *        Absolute time for when to restart the operation. The current
  *        control and data connections will be stopped
