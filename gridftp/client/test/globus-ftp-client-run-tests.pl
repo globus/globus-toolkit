@@ -115,13 +115,17 @@ sub setup_server()
     }
     
     $server_pid = open(SERVER, "$server_prog $server_args |");
-    
+     
     if($server_pid == -1)
     {
         print "Unable to start server\n";
         exit 1;
     }
 
+    # sleep a second, some hosts are slow....
+
+    sleep 1;
+    
     $_ = `ps -p $server_pid -o args`;
     s/ftpd: accepting connections on port (\d+)/\1/;
     $server_port = $1;
@@ -131,10 +135,6 @@ sub setup_server()
     $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
     $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
 
-    # sleep 5 seconds, some hosts are slow....
-
-    sleep 5;
-    
     return $server_pid;
 }
 
