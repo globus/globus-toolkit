@@ -40,4 +40,4 @@ $ $GPT_LOCATION/sbin/gpt-bundle -srcdir=src-packages myproxy globus_core_setup g
 To build a binary bundle, first setup a subdirectory named bin-packages
 with all the needed binary packages (Globus and MyProxy).
 Then, build a binary bundle in the current working directory with:
-$ $GPT_LOCATION/sbin/gpt-bundle -bindir=bin-packages myproxy-noflavor_data myproxy-gcc32_dev myproxy-gcc32_pgm myproxy-gcc32_rtl globus_core_setup-noflavor_pgm globus_ssl_utils_setup-noflavor_pgm globus_user_env-noflavor_data -output=myproxy_bundle-1.0-i686-pc-linux-gnu-gcc32.tar.gz
+$ $GPT_LOCATION/sbin/gpt-bundle -bindir=bin-packages myproxy-noflavor_data myproxy-gcc32_dev myproxy-gcc32_pgm myproxy-gcc32_rtl globus_ssl_utils-gcc32_pgm globus_core_setup-noflavor_pgm globus_ssl_utils_setup-noflavor_pgm globus_user_env-noflavor_data -output=myproxy_bundle-1.0-i686-pc-linux-gnu-gcc32.tar.gz
