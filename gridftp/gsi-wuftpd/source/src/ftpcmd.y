@@ -2097,19 +2097,23 @@ pathname: pathstring
 			strcpy(t + 1, $1);
 		    globlist = ftpglob(t);
 		    if (globerr) {
-			reply(550, globerr);
+			reply(550, "%s", globerr);
 			$$ = NULL;
 			if (globlist) {
 			    blkfree(globlist);
 			    free((char *) globlist);
 			}
 		    }
-		    else if (globlist) {
+		    else if (globlist && *globlist) {
 			$$ = *globlist;
 			blkfree(&globlist[1]);
 			free((char *) globlist);
 		    }
 		    else {
+			if (globlist) {
+			    blkfree(globlist);
+			    free((char *) globlist);
+			}
 			errno = ENOENT;
 			perror_reply(550, $1);
 			$$ = NULL;
@@ -2123,19 +2127,23 @@ pathname: pathstring
 
 		globlist = ftpglob($1);
 		if (globerr) {
-		    reply(550, globerr);
+		    reply(550, "%s", globerr);
 		    $$ = NULL;
 		    if (globlist) {
 			blkfree(globlist);
 			free((char *) globlist);
 		    }
 		}
-		else if (globlist) {
+		else if (globlist && *globlist) {
 		    $$ = *globlist;
 		    blkfree(&globlist[1]);
 		    free((char *) globlist);
 		}
 		else {
+		    if (globlist) {
+			blkfree(globlist);
+			free((char *) globlist);
+		    }
 		    errno = ENOENT;
 		    perror_reply(550, $1);
 		    $$ = NULL;

@@ -25,7 +25,7 @@
 #
 if [ ! -r edit ]; then echo 0 > edit; fi
 touch edit
-awk '	{	edit = $1 + 1; }\
+awk '	{	edit = $1 + 2; }\
 END	{	printf "char version[] = \"Version wu-2.6.1(%d) ", edit > "vers.c";\
 #LANG=
 #LC_TIME=

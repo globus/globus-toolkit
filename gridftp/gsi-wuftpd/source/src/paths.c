@@ -117,6 +117,7 @@ void setup_paths(void)
 {
 #ifdef VIRTUAL
     char *sp;
+    char _path_ftpservers[MAXPATHLEN];
     char configdir[MAXPATHLEN];
     char filepath[MAXPATHLEN];
     char hostaddress[32];
@@ -124,6 +125,7 @@ void setup_paths(void)
     FILE *svrfp;
     struct hostent *shp;
     struct stat st;
+    char *                              slash = "/";
 #if defined(UNIXWARE) || defined(AIX)
     size_t virtual_len;
 #else
@@ -135,9 +137,13 @@ void setup_paths(void)
 
 #if defined(USE_GLOBUS_PATHS)
     /* For Globus packages, we put all configuration in the GLOBUS_LOCATION */
-    char * globus_loc;
+    char * globus_loc = NULL;
 
     globus_location(&globus_loc);
+    if(globus_loc == NULL)
+    {
+        globus_loc = slash;
+    }
 
     strcpy(_path_ftpaccess, globus_loc);
     strcat(_path_ftpaccess, _PATH_FTPACCESS);
@@ -146,23 +152,35 @@ void setup_paths(void)
     strcat(_path_ftpusers, _PATH_FTPUSERS);
 
     strcpy(_path_private, globus_loc);
-    strcpy(_path_private, _PATH_PRIVATE);
+    strcat(_path_private, _PATH_PRIVATE);
 
     strcpy(_path_cvt, globus_loc);
-    strcpy(_path_cvt, _PATH_CVT);
+    strcat(_path_cvt, _PATH_CVT);
 
     strcpy(logfile, globus_loc);
-    strcpy(logfile, _PATH_XFERLOG);
+    strcat(logfile, _PATH_XFERLOG);
+
+#ifdef  HOST_ACCESS
+    strcpy(_path_ftphosts, globus_loc);
+    strcat(_path_ftphosts, _PATH_FTPHOSTS);
+#endif
+
+#ifdef VIRTUAL
+    strcpy(_path_ftpservers, globus_loc);
+    strcat(_path_ftpservers, _PATH_FTPSERVERS);
+#endif
 #else
     strcpy(_path_ftpaccess, _PATH_FTPACCESS);
     strcpy(_path_ftpusers, _PATH_FTPUSERS);
     strcpy(_path_private, _PATH_PRIVATE);
     strcpy(_path_cvt, _PATH_CVT);
     strcpy(logfile, _PATH_XFERLOG);
-#endif
-
 #ifdef  HOST_ACCESS
     strcpy(_path_ftphosts, _PATH_FTPHOSTS);
+#endif
+#ifdef VIRTUAL
+    strcpy(_path_ftpservers, _PATH_FTPSERVERS);
+#endif
 #endif
 
 #ifdef VIRTUAL
@@ -171,7 +189,7 @@ void setup_paths(void)
        ** exist then revert to using the standard _PATH_* path defines.
      */
 
-    if ((svrfp = fopen(_PATH_FTPSERVERS, "r")) != NULL) {
+    if ((svrfp = fopen(_path_ftpservers, "r")) != NULL) {
 	/*
 	   ** OK.  The ftpservers file exists and is open.
 	   ** 

@@ -80,6 +80,7 @@
 #define VA_START(f)	va_start(ap, f)
 #define VA_END		va_end(ap)
 
+#include "globus_common.h"
 
 /**** added by JB **********/
 #if defined(THROUGHPUT)
@@ -719,9 +720,9 @@ int i = 0;
 #endif /* DAEMON */
 
 #ifndef DAEMON
-    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1c:")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1Gc:")) != -1) {
 #else /* DAEMON */
-    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1c:")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1Gc:")) != -1) {
 #endif /* DAEMON */
 	switch (c) {
 
@@ -867,6 +868,10 @@ int i = 0;
 #endif /* !GLOBUS_AUTHORIZATION */
  	    break;
             
+	case 'G':
+	    globus_libc_setenv("GLOBUS_LOCATION", optarg, 1);
+	    break;
+
 	default:
 	    syslog(LOG_ERR, "unknown option -%c ignored", optopt);
 	    break;

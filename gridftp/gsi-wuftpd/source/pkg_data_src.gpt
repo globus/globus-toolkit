@@ -44,7 +44,7 @@
 		if test "STATIC_LINK_GPTMACRO" = "yes"; then
 		    static_option=--enable-static-only
 		fi
-		./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi=globus --with-flavor=FLAVOR_GPTMACRO CONFIGOPTS_GPTMACRO $static_option --with-globus-paths
+		CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --enable-gssapi=globus --with-flavor=FLAVOR_GPTMACRO CONFIGOPTS_GPTMACRO $static_option --with-globus-paths --with-bufsize=65536
 	    </Build_Step>
 
 	    <Build_Step>
@@ -52,7 +52,7 @@
 	    </Build_Step>
 
 	    <Build_Step>
-		MAKE_GPTMACRO DESTDIR_GPTMACRO DESTDIR=INSTALLDIR_GPTMACRO install
+		MAKE_GPTMACRO install
 	    </Build_Step>
 
 	</Build_Instructions>
