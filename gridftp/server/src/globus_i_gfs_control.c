@@ -65,6 +65,8 @@ globus_l_gfs_channel_close_cb(
     
     globus_free(instance->remote_contact);
     globus_free(instance);
+    
+    globus_i_gfs_server_closed();
 }
 
 static
@@ -79,11 +81,18 @@ globus_l_gfs_done_cb(
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
     globus_gridftp_server_control_destroy(instance->u.control.server);
-    globus_xio_register_close(
+    result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
         globus_l_gfs_channel_close_cb,
         instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_l_gfs_channel_close_cb(
+            instance->xio_handle, 
+            GLOBUS_SUCCESS, 
+            instance);
+    }
 }
 
 static
@@ -92,26 +101,38 @@ globus_l_gfs_auth_request(
     globus_gridftp_server_control_op_t  op,
     const char *                        user_name,
     const char *                        pw,
-    gss_cred_id_t                       cred,
-    gss_cred_id_t                       del_cred)
+    const char *                        subject)
 {
 
-    char                                username[1024];
     globus_result_t                     result; 
+    int                                 rc;
+    char *                              local_name;
     struct passwd *                     pwent;
-    uid_t                               uid;
-                         
-    uid = globus_i_gfs_config_int("uid");
-    
-    if(uid == 0)
+
+/* XXX add error responses */
+    rc = globus_gss_assist_gridmap((char *) subject, &local_name);
+    if(rc != 0)
     {
-        uid = getuid();
+        goto error_gridmap;
     }
     
-    result = GLOBUS_SUCCESS;
-    
+    pwent = getpwnam(local_name);
+    if(pwent == NULL)
+    {
+        goto error_getpwnam;
+    }
+    globus_free(local_name);
+                      
     globus_gridftp_server_control_finished_auth(
-        op, result, uid);
+        op, GLOBUS_SUCCESS, pwent->pw_uid);
+
+    return;
+   
+error_getpwnam:
+    globus_free(local_name);
+error_gridmap:
+    globus_gridftp_server_control_finished_auth(
+        op, result, 0);
 }
 
 static
@@ -549,6 +570,7 @@ globus_l_gfs_data_destroy(
 globus_result_t
 globus_i_gfs_control_start(
     globus_xio_handle_t                 handle,
+    globus_xio_system_handle_t          system_handle,
     const char *                        remote_contact)
 {
     globus_result_t                     result;
