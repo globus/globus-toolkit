@@ -26,7 +26,6 @@
 #include "globus_config.h"
 #include "globus_gram_client.h"
 #include "globus_gram_protocol.h"
-#include "globus_rsl.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -39,6 +38,7 @@
 #if defined(TARGET_ARCH_SOLARIS)
 #include <netdb.h>
 #endif
+#include "version.h"
 
 typedef
 enum
@@ -164,7 +164,9 @@ globus_module_descriptor_t globus_gram_client_module =
     "globus_gram_client",
     globus_i_gram_client_activate,
     globus_i_gram_client_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 FILE *					globus_l_print_fp;

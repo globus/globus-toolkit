@@ -1,4 +1,5 @@
 #include "globus_i_gram_protocol.h"
+#include "version.h"
 
 gss_cred_id_t				globus_i_gram_protocol_credential;
 globus_mutex_t				globus_i_gram_protocol_mutex;
@@ -19,7 +20,9 @@ globus_module_descriptor_t globus_i_gram_protocol_module =
     "globus_gram_protocol",
     globus_l_gram_protocol_activate,
     globus_l_gram_protocol_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 
