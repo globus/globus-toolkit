@@ -169,9 +169,9 @@ int main(int argc, char **argv)
     char *                             url;
     int                                rc;
     globus_gass_transfer_listener_t    listener;
-    globus_gass_transfer_listenerattr_t * attr;
+    globus_gass_transfer_listenerattr_t * attr = GLOBUS_NULL;
     char *                             scheme = GLOBUS_NULL;
-    globus_gass_transfer_requestattr_t * reqattr;
+    globus_gass_transfer_requestattr_t * reqattr = GLOBUS_NULL;
 
     
     globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
