@@ -961,6 +961,84 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
     return return_code;
 }
 
+/* Retrieves info about all credentials. Does not verify username */
+int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
+{
+    struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
+    DIR *dir;
+    struct dirent *de;
+    int return_code = -1;
+
+    /*
+     * cur_cred always points to the last valid credential in the list.
+     * If cur_cred is NULL, we haven't found any credentials yet.
+     * The first cred in the list is the one passed in.  Other creds
+     *    in the list are ones we allocated and added.
+     */
+
+    if (creds == NULL) {
+        verror_put_errno(EINVAL);
+        goto error;
+    }
+
+    new_cred = creds; /* new_cred is what we're filling in */
+
+    if ((dir = opendir(storage_dir)) == NULL) {
+	verror_put_string("failed to open credential storage directory");
+	goto error;
+    }
+
+    /* Credential data file names are of the form   "<username>-<credname>.data" where <credname> is "" for 
+       default credentials */
+
+    while ((de = readdir(dir)) != NULL) {
+	    if (!strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
+	    char *credname = NULL, *dot, *dash;
+
+	    dash = strchr (de->d_name, '-');	/*Get a pointer to '-' */
+
+	    dot = strchr(de->d_name, '.');
+	    *dot = '\0';
+
+	    if (dash) /*Credential with a name */
+	    	credname = strdup(dash+1);  /* copy things beyond '-' */
+
+	    if (new_cred->username) free(new_cred->username);
+	    if (new_cred->credname) free(new_cred->credname);
+
+	    if (dash != NULL)	/*Stash '-' and beyond in de->d_name (Gives username) */
+		*dash = '\0';
+
+	    new_cred->username = strdup(de->d_name);
+
+	    if (credname)
+	    	new_cred->credname = strdup(credname);
+	    else
+		new_cred->credname = NULL;
+
+	    if (myproxy_creds_retrieve(new_cred) == 0) {
+		    if (dash == NULL)	// Default credential
+			new_cred->credname = strdup ("(Default Credential)");
+		
+		    if (cur_cred) cur_cred->next = new_cred;
+		    cur_cred = new_cred;
+		    new_cred = malloc(sizeof(struct myproxy_creds));
+		    memset(new_cred, 0, sizeof(struct myproxy_creds));
+		}
+	    }
+	}
+    closedir(dir);
+
+    return_code = 0;
+
+ error:
+    if (cur_cred && new_cred) {
+	myproxy_creds_free_contents(new_cred);
+	free(new_cred);
+    }
+    return return_code;
+}
+
 int
 myproxy_creds_exist(const char *username, const char *credname)
 {
@@ -1114,6 +1192,89 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     return return_code;
 }
 
+/* Administrator password change function - called from change password tool. 
+   Does not check existing password (isn't available) */
+int myproxy_admin_change_passphrase (const struct myproxy_creds *creds)
+{
+    char creds_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN];
+    mode_t data_file_mode = FILE_MODE;
+    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
+    int return_code = -1;
+    SSL_CREDENTIALS *ssl_creds;
+    
+    if ((creds == NULL) || (creds->username == NULL) ||
+	(creds->passphrase == NULL)) {
+	verror_put_errno(EINVAL);
+	goto error;
+    }
+    
+    if (get_storage_locations(creds->username,
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path),
+			      creds->credname) == -1) {
+        goto error;
+    }
+
+#ifdef ASK_JIM
+    if ((ssl_creds = ssl_credentials_new()) == NULL) {
+	goto error;
+    }
+
+    if (ssl_proxy_load_from_file(ssl_creds, creds_path, creds->passphrase) !=
+	SSL_SUCCESS) {
+	goto error;
+    }
+#endif
+
+    if (read_data_file(&tmp_creds, data_path) == -1) {
+        goto error;
+    }
+   
+    /* Remove and rewrite with modified password.  Crude but works */ 
+    if (unlink(data_path) == -1) {
+        verror_put_errno(errno);
+        verror_put_string("deleting credentials data file %s", data_path);
+        goto error;
+    }
+
+#ifdef ASK_JIM
+    if (ssl_proxy_file_destroy(creds_path) == SSL_ERROR) {
+        verror_put_string("deleting credentials data file %s", creds_path);
+        goto error;
+    }
+#endif
+
+    /* overwrite old passphrase with new */
+    strcpy(tmp_creds.passphrase, creds->passphrase);
+
+	printf ("%s\n", creds->passphrase);
+
+    if (write_data_file(&tmp_creds, data_path, data_file_mode) == -1) {
+	verror_put_string ("Error writing data file");
+       	goto error;
+    }
+
+#ifdef ASK_JIM
+    if (ssl_proxy_store_to_file(ssl_creds, creds_path, new_passphrase) !=
+	SSL_SUCCESS) {
+	goto error;
+    }
+#endif
+
+    /* Success */
+    return_code = 0;
+    
+  error:
+    myproxy_creds_free_contents(&tmp_creds);
+    ssl_credentials_destroy(ssl_creds);
+
+    return return_code;
+}
+
+
+/* Server password change function - called from myproxy_server.
+   Checks existing password before changing it */ 
 int
 myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
 				const char *new_passphrase)

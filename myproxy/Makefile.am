@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-
+#
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
@@ -66,7 +66,9 @@ bin_PROGRAMS= \
 	myproxy-info \
 	myproxy-destroy \
 	myproxy-get-delegation \
-	myproxy-change-pass-phrase
+	myproxy-change-pass-phrase \
+	myproxy-acpp \
+	myproxy-arq
 
 sbin_PROGRAMS= myproxy-server
 
@@ -105,6 +107,17 @@ myproxy_change_pass_phrase_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_change_pass_phrase_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
+myproxy_acpp_SOURCES = myproxy_acpp.c myproxy_creds.c myproxy_creds.h
+
+myproxy_acpp_LDFLAGS = $(GPT_LDFLAGS)
+
+myproxy_acpp_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+
+myproxy_arq_SOURCES = myproxy_arq.c myproxy_creds.c myproxy_creds.h
+
+myproxy_arq_LDFLAGS = $(GPT_LDFLAGS)
+
+myproxy_arq_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 noinst_PROGRAMS = gsi_socket_test
 

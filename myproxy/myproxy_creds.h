@@ -72,6 +72,19 @@ int myproxy_creds_retrieve(struct myproxy_creds *creds);
  */
 int myproxy_creds_retrieve_all(struct myproxy_creds *creds);
 
+ /* myproxy_admin_retrieve_all()
+ *
+ * Used by the repository query tool on the server side for admin purposes.
+ *
+ * Retrieve all credentials stored in the credential storage directory
+ * in the given myproxy_creds structure.  Credentials are chained together in 
+ * a linked-list using the next field in the given myproxy_creds structure
+ * Note: The passphrase returned in the myproxy_creds structure is crypt()'ed.
+ *
+ * Returns -1 on error, 0 on success.
+ */
+int myproxy_admin_retrieve_all(struct myproxy_creds *creds);
+
 /*
  * myproxy_creds_delete()
  *
