@@ -10,11 +10,6 @@
 #define MYPROXY_SERVER_DIR	"/usr/local/myproxy-server"
 #endif /* !MYPROXY_SERVER_DIR */ 
 
-/* Define default myproxy-server -- should probably be put in config file */
-#define MYPROXY_SERVER_PORT            7512
-#define MYPROXY_SERVER_MAX_CRED_HOURS   168 /* lifetime on myproxy-server */   
-#define MYPROXY_SERVER_MAX_DELEG_HOURS    1 /* lifetime on webserver */
-
 extern int errno;
 
 typedef struct 

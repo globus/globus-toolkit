@@ -30,6 +30,8 @@
 #include <string.h>
 #include <time.h>
 
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+
 static char usage[] = \
 "\n"\
 "Syntax: myproxy-server [-d|--debug] [-p|--port #] [-c config-file] ...\n"\
@@ -250,9 +252,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     client_creds    = malloc(sizeof(*client_creds));
     memset(client_creds, 0, sizeof(*client_creds));
 
-    /* Set default lifetime of credentials on myproxy-server */
-    client_creds->lifetime = 60*60*MYPROXY_SERVER_MAX_CRED_HOURS;
-
     client_request  = malloc(sizeof(*client_request));
     memset(client_request, 0, sizeof(*client_request));
 
@@ -355,12 +354,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	/* log request type */
         myproxy_log("Received GET request from %s", client_name);
 
-	/* double check that request->lifetime < creds->lifetime */
-	if (client_request->lifetime_seconds > 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS) {
-	  myproxy_log("client %s Lifetime (sec.) specified %d greater than allowed maximum %d", client_name, client_request->lifetime_seconds, 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS);
-	  respond_with_error_and_die(attrs, "Lifetime specified greater than allowed maximum.\n");
-	}
-
 	/* Check that passphrase matches and that creds. can be retrieved */
 	if (myproxy_creds_retrieve(client_creds) < 0) {
 	    myproxy_log_verror();
@@ -381,11 +374,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
         myproxy_log("Received PUT request from %s", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 	myproxy_debug("  Lifetime is %d seconds", client_request->lifetime_seconds);
-	/* double check that request->lifetime < creds->lifetime */
-	if (client_request->lifetime_seconds > client_creds->lifetime) {
-	  myproxy_log("client %s Lifetime specified %d greater than allowed maximum %d", client_request->lifetime_seconds, client_creds->lifetime);
-	  respond_with_error_and_die(attrs, "Lifetime specified greater than allowed maximum.\n");
-	}
+
+	/* Set lifetime of credentials on myproxy-server */ 
+	client_creds->lifetime = client_request->lifetime_seconds;
 
 	/* return server response */
 	send_response(attrs, server_response, client_name);
@@ -416,7 +407,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     myproxy_destroy(attrs, client_request, server_response);
 
     /* Log request */
-    numclients--;
     myproxy_log("Client %s disconnected total clients=%d", client_name, numclients);
     if (context->config_file != NULL) {
         free(context->config_file);
@@ -598,14 +588,17 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 	       myproxy_request_t *request,
 	       myproxy_response_t *response) 
 {
-    
+    int min_lifetime;
+  
     /* Delegate credentials to client */
-    if (myproxy_init_delegation(attrs, creds->location, request->lifetime_seconds) < 0) {
+    min_lifetime = MIN(creds->lifetime, request->lifetime_seconds);
+
+    if (myproxy_init_delegation(attrs, creds->location, min_lifetime) < 0) {
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	strcat(response->error_string, "Unable to delegate credentials.\n");
     } else {
-        myproxy_log("Delegating credentials for %s", creds->owner_name);
+        myproxy_log("Delegating credentials for %s lifetime=%d", creds->owner_name, min_lifetime);
 	response->response_type = MYPROXY_OK_RESPONSE;
     } 
 }
@@ -711,6 +704,7 @@ sig_chld(int signo) {
 
     while ( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
         myproxy_debug("child %d terminated", pid);
+    numclients--;
     return;
 } 
 

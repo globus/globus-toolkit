@@ -5,7 +5,6 @@
  */
 
 #include "myproxy.h"
-#include "myproxy_server.h"
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
@@ -14,6 +13,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+#define MYPROXY_DEFAULT_HOURS   84 /* lifetime on myproxy-server */  
 
 static char usage[] = \
 "\n"\
@@ -89,7 +90,7 @@ main(int argc, char *argv[])
 	strcpy(socket_attrs->pshost, pshost);
     }
 
-    client_request->lifetime_seconds = 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS; 
+    client_request->lifetime_seconds = 60*60*MYPROXY_DEFAULT_HOURS;
  
     socket_attrs->psport = MYPROXY_SERVER_PORT;
 
@@ -206,12 +207,6 @@ init_arguments(int argc,
 	fprintf(stderr, "Please specify a username!\n");
 	exit(1);
     }
-
-    /* Check to see that lifetime is < MYPROXY_SERVER_MAX_DELEG_HOURS */
-    if (request->lifetime_seconds > 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS) {
-        fprintf(stderr, "The delegated credential lifetime cannot be greater than %d.\n", MYPROXY_SERVER_MAX_DELEG_HOURS);
-        exit(1);
-    } 
 
     return;
 }
