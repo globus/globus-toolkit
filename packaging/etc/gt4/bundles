@@ -38,6 +38,7 @@ BUNDLE gt4-c-ws-core
         globus_js
         globus_xio
         globus_xio_buffer
+        globus_notification_producer
         globus_c_wsrf_providers
         globus_notification_consumer
         globus_c_ws_security
