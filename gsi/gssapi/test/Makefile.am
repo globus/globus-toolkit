@@ -13,6 +13,7 @@ Sources= \
 	gssapi_test_utils.h \
 	gssapi_thread_test.c \
 	gssapi_context_test.c \
+	gssapi_acquire_test.c \
 	gssapi_openssl.h \
 	globus_gsi_gss_constants.h
 #	gssapi_group_test.c \
@@ -29,6 +30,7 @@ Scripts= \
 	gssapi-delegation-compat-test.pl \
 	gssapi-thread-test.pl \
 	gssapi-context-test.pl \
+	gssapi-acquire-test.pl \
 	run-gssapi-tests.pl
 #	gssapi-group-test.pl \
 
@@ -59,7 +61,8 @@ test_PROGRAMS= \
 	gssapi-limited-delegation-test \
 	gssapi-delegation-compat-test \
 	gssapi-thread-test \
-	gssapi-context-test 
+	gssapi-context-test \
+	gssapi-acquire-test 
 #	gssapi-group-test \
 
 gssapi_anonymous_test_SOURCES = gssapi_anonymous_test.c
@@ -123,6 +126,12 @@ gssapi_context_test_SOURCES =	gssapi_context_test.c \
 gssapi_context_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gssapi_context_test_LDADD = $(GPT_PGM_LINKS)
+
+gssapi_acquire_test_SOURCES =	gssapi_acquire_test.c
+
+gssapi_acquire_test_LDFLAGS = $(GPT_LDFLAGS)
+
+gssapi_acquire_test_LDADD = $(GPT_PGM_LINKS)
 
 
 include $(top_srcdir)/globus_automake_post
