@@ -127,7 +127,7 @@
 #include "globus_config.h"
 
 #include "globus_gram_protocol.h" 
-#include "globus_gram_error.h"       /* GRAM error codes */
+#include "globus_gram_protocol_error.h"       /* GRAM error codes */
 
 #include "globus_io.h"
 
@@ -403,7 +403,7 @@ globus_gram_protocol_initialize_connection_t( globus_gram_protocol_connection_t 
 		     		        globus_gram_protocol_close_callback, \
 				        status ); \
 	monitor_signal_done(status->monitor, \
-			    GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED); \
+			    GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED); \
 	my_free(status); \
     } \
 }
@@ -481,7 +481,7 @@ globus_l_gram_protocol_activate(void)
                 minor_status,
                 0);
 
-        return GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION; /* need better return code */
+        return GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION; /* need better return code */
     }
     
     globus_l_gram_protocol_listeners = GLOBUS_NULL;
@@ -729,7 +729,7 @@ globus_l_gram_protocol_read_callback( void *                 read_t,
     globus_size_t                chunk  = 1;
     char *			 p;
     globus_size_t		 payload_length;
-    int				 rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+    int				 rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 
     globus_object_t *		 err;
 /*
@@ -944,7 +944,7 @@ globus_l_gram_protocol_get_callback( void *                read_t,
 	if (errorcode != GLOBUS_SUCCESS)
 	    rc = errorcode;
 	else if (res != GLOBUS_SUCCESS)
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 	else
 	    rc = GLOBUS_SUCCESS;
 	monitor_signal_done(status->monitor, rc);
@@ -979,7 +979,7 @@ globus_gram_protocol_post_and_get( char *                         url,
 
     if(rc != GLOBUS_SUCCESS)
     {
-	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
     }
 
     if (monitor)
@@ -1032,7 +1032,7 @@ globus_gram_protocol_post_and_get( char *                         url,
 	my_free(sendbuf);
 	my_free(handle);
 	my_free(status);
-	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
     }
     return GLOBUS_SUCCESS;
 }
@@ -1067,7 +1067,7 @@ globus_gram_protocol_setup_attr(globus_io_attr_t *  attr)
 	globus_object_t *  err = globus_error_get(res);
 	globus_object_free(err);
 	/* release mutex */
-	return GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
     }
 
     /* release mutex */
@@ -1097,7 +1097,7 @@ globus_gram_protocol_allow_attach( unsigned short *             port,
 	{
 	    globus_mutex_unlock( &globus_l_gram_protocol_mutex );
 				/* need a better error here */
-	    return GLOBUS_GRAM_CLIENT_ERROR_INVALID_REQUEST;
+	    return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
 	}
 	
 	handle = my_malloc(globus_io_handle_t,1);
@@ -1119,7 +1119,7 @@ globus_gram_protocol_allow_attach( unsigned short *             port,
 
 	    globus_mutex_unlock( &globus_l_gram_protocol_mutex );
 
-	    return GLOBUS_GRAM_CLIENT_ERROR_NO_RESOURCES;
+	    return GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
 	}
 
 	new_listener = my_malloc(globus_i_gram_protocol_listener_t,1);
@@ -1159,7 +1159,7 @@ globus_gram_protocol_allow_attach( unsigned short *             port,
 	    *port = 0;
 	    my_free(new_listener);
 	    
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_NO_RESOURCES;
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
 	}
     }
     globus_mutex_unlock(&globus_l_gram_protocol_mutex);
@@ -1235,7 +1235,7 @@ globus_gram_protocol_callback_disallow(char *   httpsurl)
 	port = url.port;
     globus_url_destroy(&url);
     if (rc != GLOBUS_SUCCESS)
-	return GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT;
  
     /*
      * find listener with help of port and close it
@@ -1265,7 +1265,7 @@ globus_gram_protocol_callback_disallow(char *   httpsurl)
 
     if(!handle)
     {
-	return GLOBUS_GRAM_CLIENT_ERROR_CALLBACK_NOT_FOUND;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_CALLBACK_NOT_FOUND;
     }
     return GLOBUS_SUCCESS;
 }
@@ -1295,7 +1295,7 @@ globus_gram_protocol_attach( char *                job_contact,
     {
 	globus_url_destroy(&url);
 	/* release mutex */
-	return GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT;
     }
 
     if (user_attr)
@@ -1311,7 +1311,7 @@ globus_gram_protocol_attach( char *                job_contact,
 	{
 	    globus_mutex_unlock( &globus_l_gram_protocol_mutex);
 				/* need a better error here */
-	    return GLOBUS_GRAM_CLIENT_ERROR_INVALID_REQUEST;
+	    return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
 	}
 	globus_gram_protocol_initialize_connection_t(
 		&connection,
@@ -1350,7 +1350,7 @@ globus_gram_protocol_attach( char *                job_contact,
 	    char * errstring;
 
 	    errstring = globus_object_printable_to_string(err);
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION;
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
 	    globus_gram_protocol_error_7_hack_replace_message(
 		errstring);
 
@@ -1358,7 +1358,7 @@ globus_gram_protocol_attach( char *                job_contact,
         }
         else
         {
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED;
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
         }
 	globus_object_free(err);
 
@@ -1646,7 +1646,7 @@ globus_l_gram_protocol_unquote_string(
 	        if (*(++in) != '\n')
 		{
 		    /* Malformed line */
-		    return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+		    return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 		}
 	    }
 	    /* TODO: Recognize % HEX HEX here. */
@@ -1656,7 +1656,7 @@ globus_l_gram_protocol_unquote_string(
     }   /* while */
 
     if (in_quote)
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 
     *out  = '\0';
     return GLOBUS_SUCCESS;
@@ -1717,7 +1717,7 @@ globus_gram_protocol_unpack_job_request(
 
     p = strstr(q, CRLF"rsl: ");
     if (!p)
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;	
+	return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;	
 
     p+=strlen(CRLF"rsl: ");
     rsl_count = querysize - (globus_size_t)(p-q);
@@ -1736,12 +1736,12 @@ globus_gram_protocol_unpack_job_request(
     globus_libc_unlock();
     if (rc != 3)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 	goto globus_gram_protocol_unpack_job_request_done;
     }
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
 	goto globus_gram_protocol_unpack_job_request_done;
     }	
     if (strcmp(*callback_url, "\"\"")==0)
@@ -1831,12 +1831,12 @@ globus_gram_protocol_unpack_job_request_reply(
     globus_libc_unlock();
     if (rc != 2 )
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 	goto globus_gram_protocol_unpack_job_request_done;
     }
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
 	goto globus_gram_protocol_unpack_job_request_done;
     }	
     rc = GLOBUS_SUCCESS;
@@ -1848,7 +1848,7 @@ globus_gram_protocol_unpack_job_request_reply(
 		     *job_contact );
 	globus_libc_unlock();
 	if (rc != 1)
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 	else
 	    rc = GLOBUS_SUCCESS;
     }
@@ -1907,7 +1907,7 @@ globus_gram_protocol_unpack_status_request(
     p = strstr((char *) query, CRLF);
     if (!p)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 	goto error_exit;
     }
 
@@ -1923,12 +1923,12 @@ globus_gram_protocol_unpack_status_request(
     globus_libc_unlock();
     if (rc != 1)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 	goto error_exit;
     }
     else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
 	goto error_exit;
     }	
 
@@ -1996,11 +1996,11 @@ globus_gram_protocol_unpack_status_reply(
     globus_libc_unlock();
     if (rc != 3)
     {
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
     }
     else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-	return GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+	return GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
     }		
 
     return GLOBUS_SUCCESS;
@@ -2066,11 +2066,11 @@ globus_gram_protocol_unpack_status_update_message(
     globus_libc_unlock();
     if (rc != 4)
     {
-        return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
     }
     else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
     {
-        return GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+        return GLOBUS_GRAM_PROTOCOL_ERROR_VERSION_MISMATCH;
     }
 
     return GLOBUS_SUCCESS;
@@ -2185,7 +2185,7 @@ globus_l_gram_protocol_parse_request(
     globus_libc_unlock();
     if(rc != 3)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 	verbose(notice("parse_request : failed to parse %s\n", buf));
 	*payload_length = 0;
     }
@@ -2228,7 +2228,7 @@ globus_l_gram_protocol_parse_reply(
 		       
     if(rc < 2)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNFRAME_FAILED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNFRAME_FAILED;
 	verbose(notice("parse_reply : failed to parse %s\n", buf));
     }
     else if(code == 200)
@@ -2241,7 +2241,7 @@ globus_l_gram_protocol_parse_reply(
 	globus_libc_unlock();
 	if(rc != 1)
 	{
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNFRAME_FAILED;
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNFRAME_FAILED;
 	    *payload_length = 0;
 	}
 	else
@@ -2252,23 +2252,23 @@ globus_l_gram_protocol_parse_reply(
     }
     else if(code==400)  /* JM failed to frame reply */
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
     }
     else if(code==403)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
     }
     else if(code==404)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_SERVICE_NOT_FOUND;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_SERVICE_NOT_FOUND;
     }
     else if(code==500)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED;
     }
     else
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNFRAME_FAILED;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNFRAME_FAILED;
     }
 
     globus_free(reason);
