@@ -9,9 +9,16 @@ Sources= \
 	import_sec_context.c \
 	init.c \
 	tokens_f.c \
-	tokens_n.c \
 	unwrap.c \
 	wrap.c
+
+include_HEADERS= \
+	globus_gss_assist.h
+
+
+INCLUDES = -I $(GLOBUS_INSTALL_PATH)/include/ \
+        -I $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME)  \
+        -I @SSLPATH@/include     
 
 lib_LTLIBRARIES = libglobus_gss_assist.la
 libglobus_gss_assist_la_SOURCES = $(Sources)

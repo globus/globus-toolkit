@@ -11,18 +11,17 @@ GLOBUS_INIT
 AM_PROG_LIBTOOL
 
 # add any packages names that you depend on here
-GLOBUS_SET_BUILD_DEPS()
+GLOBUS_SET_BUILD_DEPS(gssapi-ssleay)
 
 # Add any ldflags ie. system  libraries that are need to link with your
 # libraries here.
-GLOBUS_ADD_XTRA_LIBS()
+GLOBUS_ADD_XTRA_LIBS(-L$SSLPATH/lib -lssl -lcrypto])
 
 
 GLOBUS_GENERATE
 
 AC_OUTPUT(
-	assist_config.h.in
-	build_parameters.in
+	assist_config.h
 	Makefile
 	build_parameters_$GLOBUS_FLAVOR_NAME:build_parameters.in
 )
