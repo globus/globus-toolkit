@@ -114,11 +114,24 @@ globus_xio_driver_file_target_destroy(
 }
 
 globus_result_t
+globus_xio_driver_file_cntl(
+     void *                                      driver_handle,
+     int                                         cmd,
+     ...)
+{
+
+    /* get eof */
+    return GLOBUS_SUCCESS;
+}
+
+
+globus_result_t
 globus_xio_driver_file_open(
     void **                                     driver_handle,
     void *                                      driver_handle_attr,
     void *                                      target,
-    globus_xio_driver_operation_t               op)
+    globus_xio_driver_context_t                 context,
+    globus_xio_driver_operation_t               op);
 {
     struct globus_l_xio_file_target_s *         file_target;
     struct globus_l_xio_file_handle_s *         file_handle;
@@ -156,7 +169,8 @@ globus_xio_driver_file_close(
     fclose(file_handle->fptr);
     globus_free(file_handle);
 
-    globus_xio_driver_finished_close(op, context);
+    globus_xio_driver_finished_close(op);
+    globus_xio_driver_close_context(op);
     
     return GLOBUS_SUCCESS;
 }
@@ -220,15 +234,15 @@ typedef struct globus_xio_driver_s
     /*
      *  main io interface functions
      */
-    globus_xio_driver_open_t                            open_func;
-    globus_xio_driver_close_t                           close_func;
-    globus_xio_driver_read_t                            read_func;
-    globus_xio_driver_write_t                           write_func;
+    globus_xio_driver_file_open,
+    globus_xio_driver_file_close,
+    globus_xio_driver_file_read,
+    globus_xio_driver_file_write,     
     globus_xio_driver_handle_cntl_t                     handle_cntl_func;
     int                                                 max_handle_cntl_cmd;
 
-    globus_xio_driver_target_init_t                     target_init_func;
-    globus_xio_driver_target_destroy_t                  target_destroy_finc;
+    globus_xio_driver_file_target_init,
+    globus_xio_driver_file_target_destory,
 
     /*
      *  No server functions.
@@ -242,10 +256,10 @@ typedef struct globus_xio_driver_s
     /*
      *  driver attr functions.  All or none may be NULL
      */
-    globus_xio_driver_attr_init_t                       attr_init_func;
-    globus_xio_driver_attr_copy_t                       attr_copy_func;
-    globus_xio_driver_attr_cntl_t                       attr_cntl_func;
-    globus_xio_driver_attr_destroy_t                    attr_destroy_func;
+    globus_xio_driver_file_attr_init,
+    globus_xio_driver_file_attr_copy,
+    globus_xio_driver_file_attr_cntl,
+    globus_xio_driver_file_attr_destroy,
     GLOBUS_XIO_FILE_MAX_CMD,
     
     /*

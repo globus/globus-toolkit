@@ -429,7 +429,7 @@ typedef globus_result_t
  *         
  */
 typedef globus_result_t
-(*globus_xio_driver_open_t)(
+(*globus_xio_driver_transform_open_t)(
     void **                                     driver_handle,
     void *                                      driver_handle_attr,
     void *                                      target,
@@ -439,7 +439,7 @@ typedef globus_result_t
  *  transport open
  */
 typedef globus_result_t
-(*globus_xio_driver_open_t)(
+(*globus_xio_driver_transport_open_t)(
     void **                                     driver_handle,
     void *                                      driver_handle_attr,
     void *                                      target,
@@ -613,6 +613,12 @@ globus_xio_driver_get_handle_attr(
     globus_xio_driver_operation_t               operation);
 
 
+typedef globus_result_t
+(*globus_xio_driver_handle_cntl_t)(
+    void *                                      driver_handle,
+    int                                         cmd,
+    ...);
+
 /**********************************************************************
  *                          Close
  *********************************************************************/
@@ -677,13 +683,13 @@ globus_xio_driver_close(
  *
  *  @param op
  *         The close operation that has completed.
- *
- *  @param context
- *         The context to be closed.
  */
 globus_result_t
 globus_xio_driver_finished_close(
-    globus_xio_operation_t                      op,
+    globus_xio_operation_t                      op);
+
+globus_result_t
+globus_xio_driver_context_destroy(
     globus_xio_driver_context_t                 context);
 
 /*******************************************************************
