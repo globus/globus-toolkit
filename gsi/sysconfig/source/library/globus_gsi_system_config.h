@@ -151,6 +151,8 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_remove_all_owned_files_unix
 #    define GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME \
             globus_gsi_sysconfig_get_gridmap_filename_unix
+#    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME \
+            globus_gsi_sysconfig_get_authz_conf_filename_unix
 #    define GLOBUS_GSI_SYSCONFIG_IS_SUPERUSER \
             globus_gsi_sysconfig_is_superuser_unix
 #    define GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING \
@@ -361,6 +363,10 @@ globus_gsi_sysconfig_get_proc_id_string_unix(
 
 globus_result_t
 globus_gsi_sysconfig_get_gridmap_filename_unix(
+    char **                             filename);
+
+globus_result_t
+globus_gsi_sysconfig_get_authz_conf_filename_unix(
     char **                             filename);
 
 #endif /* WIN32 */
