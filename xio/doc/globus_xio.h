@@ -329,7 +329,7 @@ globus_xio_server_init(
  */
 globus_result_t
 globus_xio_server_cntl(
-    globus_xio_server_t                         server_attr,
+    globus_xio_server_t                         server,
     globus_xio_driver_t                         driver,
     int                                         cmd,
     ...);

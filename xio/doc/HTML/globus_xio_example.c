@@ -30,24 +30,38 @@ main(
             driver_name);
     assert(res != GLOBUS_SUCCESS);
     
-    globus_xio_stack_init(&stack);
-    globus_xio_stack_push_driver(stack, driver);
+    globus_xio_stack_init(&stack, NULL);
+    globus_xio_stack_push_driver(stack, driver, NULL);
 
     if(contact_string == NULL)
     {
-        globus_xio_server_init(&server, stack);
-        globus_xio_server_get_contact_string(server, &buf, sizeof(buf));
+        globus_xio_server_init(&server, NULL, stack);
+        globus_xio_server_cntl(
+            server, 
+            NULL, 
+            GLOBUS_XIO_CNTL_GET_CONTACT_STRING,
+            &buf, 
+            sizeof(buf));
+        res = globus_xio_server_target_aquire(
+                &target,
+                NULL,
+                server);
+        assert(res != GLOBUS_SUCCESS);
         globus_libc_fprintf(stdout, "serving at: %s.\n", buf);
     }
     else
     {
-        globus_xio_target_init(&target, contact_string, stack, NULL);
+        globus_xio_target_init(
+            &target, 
+            NULL,
+            contact_string, 
+            stack);
     }
 
     res = globus_xio_open(
             &handle,
-            target,
-            NULL);
+            NULL,
+            target);
     assert(res != GLOBUS_SUCCESS);
 
     res = globus_xio_read(handle, buf, sizeof(buf), NULL, &nbytes);
