@@ -41,6 +41,13 @@ static char *rcsid = "$Header$";
 #endif
 
 /*
+ *  Net logger stuff
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+globus_bool_t                      g_globus_i_io_use_netlogger = GLOBUS_FALSE;
+#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
+
+/*
  * Type definitions
  */
 
@@ -2125,7 +2132,20 @@ globus_l_io_activate(void)
 	    globus_i_io_debug_level = 0;
 	}
     }
-    
+
+    /*
+     *  Determine if netlogger is on or off
+     */
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        tmp_string = globus_module_getenv("GLOBUS_NETLOGGER");
+        if(tmp_string != GLOBUS_NULL)
+        {
+            g_globus_i_io_use_netlogger = GLOBUS_TRUE;
+        }
+    }
+#   endif
+
     globus_i_io_debug_printf(3, ("globus_l_io_activate(): entering\n"));
 
     globus_l_io_core_wakeup_func_ptr = GLOBUS_NULL;

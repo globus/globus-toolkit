@@ -1325,15 +1325,25 @@ globus_io_file_posix_convert(
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
 
 globus_result_t
-globus_io_attr_set_netlogger_handle(
+globus_io_attr_netlogger_set_handle(
     globus_io_attr_t *                  attr,
     NLhandle *                          nl_handle);
 
 globus_result_t
-globus_io_set_netlogger_add_attribute_string(
+globus_io_netlogger_add_attribute_string(
     globus_io_handle_t *              handle,
     const char *                      attribute_name,
     const char *                      attribute_value);
+
+globus_result_t
+globus_io_netlogger_set_attribute_string(
+    globus_io_handle_t *              handle,
+    const char *                      attr_str);
+
+globus_result_t
+globus_io_netlogger_get_attribute_string(
+    globus_io_handle_t *              handle,
+    const char **                     attr_str);
 
 #endif  /* GLOBUS_BUILD_WITH_NETLOGGER */
 

@@ -557,7 +557,8 @@ globus_i_io_try_read(
     for (done = GLOBUS_FALSE; !done; )
     {
 #       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(handle->nl_handle != GLOBUS_NULL)
+        if(g_globus_i_io_use_netlogger && 
+           handle->nl_handle != GLOBUS_NULL)
         {
             NetLoggerWrite(handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_START_READ, 
@@ -577,7 +578,8 @@ globus_i_io_try_read(
 		max_nbytes - num_read);
 
 #       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(handle->nl_handle != GLOBUS_NULL)
+        if(g_globus_i_io_use_netlogger &&
+           handle->nl_handle != GLOBUS_NULL)
         {
             NetLoggerWrite(handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_END_READ,
@@ -777,7 +779,8 @@ globus_l_io_read_callback(
                   (read_info->max_nbytes - read_info->nbytes_read)));
 
 #       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(handle->nl_handle != GLOBUS_NULL)
+        if(g_globus_i_io_use_netlogger &&
+           handle->nl_handle != GLOBUS_NULL)
         {
             NetLoggerWrite(handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_START_READ, 
@@ -797,7 +800,8 @@ globus_l_io_read_callback(
 		(read_info->max_nbytes - read_info->nbytes_read));
 
 #       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(handle->nl_handle != GLOBUS_NULL)
+        if(g_globus_i_io_use_netlogger && 
+           handle->nl_handle != GLOBUS_NULL)
         {
             NetLoggerWrite(handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_END_READ, 

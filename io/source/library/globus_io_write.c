@@ -1499,7 +1499,8 @@ globus_i_io_try_write(
     for (done = GLOBUS_FALSE; !done; )
     {
 #       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(handle->nl_handle != GLOBUS_NULL)
+        if(g_globus_i_io_use_netlogger &&
+           handle->nl_handle != GLOBUS_NULL)
         {
             NetLoggerWrite(handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_START_WRITE,
@@ -1518,7 +1519,8 @@ globus_i_io_try_write(
 	    max_nbytes-num_written);
 
 #       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(handle->nl_handle != GLOBUS_NULL)
+        if(g_globus_i_io_use_netlogger &&
+           handle->nl_handle != GLOBUS_NULL)
         {
             NetLoggerWrite(handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_END_WRITE,
@@ -1729,7 +1731,8 @@ globus_i_io_try_writev(
 	count_used = (int) (iovcnt > IOV_MAX) ? IOV_MAX : iovcnt;
 
 #       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(handle->nl_handle != GLOBUS_NULL)
+        if(g_globus_i_io_use_netlogger &&
+           handle->nl_handle != GLOBUS_NULL)
         {
             NetLoggerWrite(handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_START_WRITE,
@@ -1748,7 +1751,8 @@ globus_i_io_try_writev(
 	    count_used);
 
 #       if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-        if(handle->nl_handle != GLOBUS_NULL)
+        if(g_globus_i_io_use_netlogger &&
+           handle->nl_handle != GLOBUS_NULL)
         {
             NetLoggerWrite(handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_END_WRITE,

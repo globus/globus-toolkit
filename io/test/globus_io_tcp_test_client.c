@@ -105,6 +105,9 @@ test1(int argc, char **argv)
     char *				host=GLOBUS_NULL;
     unsigned short			port=0;
     char *			        errstring=GLOBUS_NULL;
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    NLhandle *                          nl_handle;
+#endif
 
     globus_io_tcpattr_init(&attr);
     globus_io_secure_authorization_data_initialize(&auth_data);
@@ -193,11 +196,40 @@ test1(int argc, char **argv)
 	return;
     }
 
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        nl_handle = NetLoggerOpen(argv[0], NULL, NL_ENV);
+
+        result = globus_io_attr_netlogger_set_handle(
+                     &attr,
+                     nl_handle);
+
+
+        err = globus_error_get(result);
+        errstring = globus_object_printable_to_string(err);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_printf("net logger set handle failed: %s\n", errstring);
+            goto exit;
+        }
+    }
+#   endif
+
     result = globus_io_tcp_connect(
 	host,
 	(unsigned short) port,
 	&attr,
 	&handle);
+
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+       globus_io_netlogger_add_attribute_string(&handle, "name", "john");
+       globus_io_netlogger_add_attribute_string(&handle, "name", "bill");
+       globus_io_netlogger_add_attribute_string(&handle, "sex", "male");
+       globus_io_netlogger_add_attribute_string(&handle, "name", "angie");
+    }
+#   endif
 
     err = globus_error_get(result);
     errstring = globus_object_printable_to_string(err);

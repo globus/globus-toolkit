@@ -201,7 +201,7 @@ globus_i_io_attr_activate(void)
  *  Associate NetLogger handle with globus_io_attr
  */
 globus_result_t
-globus_io_attr_set_netlogger_handle(
+globus_io_attr_netlogger_set_handle(
     globus_io_attr_t *                  attr,
     NLhandle *                          nl_handle)
 {
@@ -218,6 +218,11 @@ globus_io_attr_set_netlogger_handle(
                 myname));
     }
 
+    if(!g_globus_i_io_use_netlogger)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
     attr->nl_handle = nl_handle;
 
     return GLOBUS_SUCCESS;
@@ -228,15 +233,19 @@ globus_io_attr_set_netlogger_handle(
  *  net logger messages
  */
 globus_result_t
-globus_io_set_netlogger_add_attribute_string(
+globus_io_netlogger_add_attribute_string(
     globus_io_handle_t *              handle,
     const char *                      attribute_name,
     const char *                      attribute_value)
 {
     static char *                 myname="globus_io_set_netlogger_event_id";
-    char *                        tmp_str;
-    int                           size;
-    int                           offset;
+    char *                            tmp_str;
+    char *                            tmp_ptr;
+    char *                            rm_start;
+    char *                            rm_end;
+    int                               size;
+    int                               str_len;
+    int                               offset;
 
     if(handle == GLOBUS_NULL)
     {
@@ -269,13 +278,17 @@ globus_io_set_netlogger_add_attribute_string(
                 myname));
     }
 
+    if(!g_globus_i_io_use_netlogger)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
     globus_i_io_mutex_lock();
 
     size = strlen(attribute_name) + strlen(attribute_name) + 2;
     if(handle->nl_event_id != GLOBUS_NULL)
     {
-        tmp_str = strdup(handle->nl_event_id);
-        free(handle->nl_event_id);
+        tmp_str = handle->nl_event_id;
 
         rm_start = strstr(tmp_str, attribute_name);
         /*
@@ -283,7 +296,7 @@ globus_io_set_netlogger_add_attribute_string(
          */
         if(rm_start != NULL)
         {
-            rm_end = strchr(tmp_ptr, ' ');
+            rm_end = strchr(rm_start, ' ');
             /*
              *  If space not found it must be the end of the string
              *  simply terminate at start_point.
@@ -300,7 +313,8 @@ globus_io_set_netlogger_add_attribute_string(
                  */
                 if(str_len < 3)
                 {
-                    handle->nl_event_id = "";
+                    handle->nl_event_id = strdup("");
+                    free(tmp_str);
                 }
                 /*
                  *  if only taking out this section
@@ -311,8 +325,8 @@ globus_io_set_netlogger_add_attribute_string(
                     strncpy(handle->nl_event_id, tmp_str, rm_start - tmp_str);
                     strcpy(&handle->nl_event_id[rm_start - tmp_str],
                         rm_end);
+                    free(tmp_str);
                 }
-                free(tmp_str);
             }
         }
         size += (strlen(handle->nl_event_id) + 1);
@@ -322,7 +336,12 @@ globus_io_set_netlogger_add_attribute_string(
     offset = 0;
     if(handle->nl_event_id != GLOBUS_NULL)
     {
-        sprintf(tmp_str, "%s ", handle->nl_event_id);
+        tmp_ptr = handle->nl_event_id;
+        while(isspace(*tmp_ptr))
+        {
+            tmp_ptr++;
+        }
+        sprintf(tmp_str, "%s ", tmp_ptr);
         offset = strlen(tmp_str);
         free(handle->nl_event_id);
     }
@@ -331,6 +350,95 @@ globus_io_set_netlogger_add_attribute_string(
     handle->nl_event_id = tmp_str;
 
     globus_i_io_mutex_unlock();
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_netlogger_set_attribute_string(
+    globus_io_handle_t *              handle,
+    const char *                      attr_str)
+{
+    static char *            myname="globus_io_netlogger_set_attribute_string";
+    char *                            tmp_str;
+    char *                            rm_start;
+    char *                            rm_end;
+    int                               size;
+    int                               str_len;
+    int                               offset;
+
+    if(handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+    }
+    if(attr_str == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attribute_name",
+                2,
+                myname));
+    }
+
+    if(!g_globus_i_io_use_netlogger)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
+    globus_i_io_mutex_lock();
+    if(handle->nl_event_id != GLOBUS_NULL)
+    {
+        free(handle->nl_event_id);
+    }
+    handle->nl_event_id = strdup(tmp_str);
+    globus_i_io_mutex_unlock();
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_netlogger_get_attribute_string(
+    globus_io_handle_t *              handle,
+    const char **                     attr_str)
+{
+    static char *           myname="globus_io_netlogger_get_attribute_string";
+
+    if(handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+    }
+    if(attr_str == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attribute_name",
+                2,
+                myname));
+    }
+
+    *attr_str = GLOBUS_NULL;
+    if(!g_globus_i_io_use_netlogger)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
+    *attr_str = handle->nl_event_id;
 
     return GLOBUS_SUCCESS;
 }
