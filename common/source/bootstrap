@@ -8,4 +8,3 @@ if test "x$GLOBUS_LOCATION" = "x"; then
 fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
-. ${GLOBUS_LOCATION}/libexec/gpt-bootstrap.sh
