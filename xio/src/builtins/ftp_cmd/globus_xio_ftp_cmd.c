@@ -198,7 +198,7 @@ globus_l_xio_ftp_cmd_accept_cb(
     target->client = GLOBUS_FALSE;
     target->create_buffer_mode = GLOBUS_FALSE;
 
-    GlobusXIODriverFinishedAccept(op, target, GLOBUS_SUCCESS);
+    GlobusXIODriverFinishedAccept(op, target, result);
 }
 
 static globus_result_t

@@ -292,7 +292,7 @@ globus_i_xio_close_handles(
         /* recursive mutex */
         globus_mutex_lock(&handle->context->mutex);
         {
-            if(!handle->sd_monitor != NULL)
+            if(handle->sd_monitor != NULL)
             {
                 found = GLOBUS_FALSE;
                 for(ctr = 0; 
