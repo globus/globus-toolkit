@@ -92,6 +92,7 @@ exec_prefix='$(GLOBUS_LOCATION)'
 AC_SUBST(CC)
 AC_SUBST(CPP)
 AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
 AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
 AC_SUBST(LIBS)
@@ -107,6 +108,7 @@ AC_SUBST(F90FLAGS)
 AC_SUBST(AR)
 AC_SUBST(ARFLAGS)
 AC_SUBST(RANLIB)
+AC_SUBST(PERL)
 AC_SUBST(CROSS)
 AC_SUBST(cross_compiling)
 AC_SUBST(OBJEXT)
@@ -123,6 +125,23 @@ dnl define FILELIST_FILE variable
 FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
 AC_SUBST(FILELIST_FILE)
+
+dnl export version information
+dnl branch id 99999 means that timestamp refers to build time
+if test -f $srcdir/dirt.sh ; then
+    . $srcdir/dirt.sh
+else
+    DIRT_TIMESTAMP=`perl -e 'print time'`
+    DIRT_BRANCH_ID=99999
+fi
+
+dnl GPT_MAJOR_VERSION and GPT_MINOR_VERSION provided by GPT_INIT
+AC_SUBST(GPT_MAJOR_VERSION)
+AC_SUBST(GPT_MINOR_VERSION)
+AC_SUBST(DIRT_TIMESTAMP)
+AC_SUBST(DIRT_BRANCH_ID)
+
+
 
 dnl END OF GLOBUS_INIT
 ])

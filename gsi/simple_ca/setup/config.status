@@ -42,7 +42,7 @@ s%@CFLAGS@%%g
 s%@CPPFLAGS@%%g
 s%@CXXFLAGS@%%g
 s%@FFLAGS@%%g
-s%@DEFS@% -DPACKAGE=\"globus_simple_ca_setup\" -DVERSION=\"2.0\" %g
+s%@DEFS@% -DPACKAGE=\"globus_simple_ca_setup\" -DVERSION=\"0.1\" %g
 s%@LDFLAGS@%%g
 s%@LIBS@%%g
 s%@exec_prefix@%$(GLOBUS_LOCATION)%g
@@ -95,18 +95,23 @@ s%@F90FLAGS@%%g
 s%@AR@%%g
 s%@ARFLAGS@%%g
 s%@RANLIB@%%g
+s%@PERL@%%g
 s%@CROSS@%%g
 s%@cross_compiling@%%g
 s%@OBJEXT@%%g
 s%@EXEEXT@%%g
 s%@FILELIST_FILE@%/home/globdev/devel/globus-cvs/campaign-branches/simple_ca-branch/gsi/simple_ca/setup/pkgdata/master.filelist%g
+s%@GPT_MAJOR_VERSION@%0%g
+s%@GPT_MINOR_VERSION@%1%g
+s%@DIRT_TIMESTAMP@%1015829959%g
+s%@DIRT_BRANCH_ID@%7%g
 s%@LIBTOOL@%$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)%g
 s%@LN_S@%%g
 s%@INSTALL_PROGRAM@%${INSTALL}%g
 s%@INSTALL_SCRIPT@%${INSTALL_PROGRAM}%g
 s%@INSTALL_DATA@%${INSTALL} -m 644%g
 s%@PACKAGE@%globus_simple_ca_setup%g
-s%@VERSION@%2.0%g
+s%@VERSION@%0.1%g
 s%@ACLOCAL@%aclocal%g
 s%@AUTOCONF@%autoconf%g
 s%@AUTOMAKE@%automake%g

@@ -39,11 +39,11 @@ sed 's/%@/@@/; s/@%/@@/; s/%g$/@g/; /@g$/s/[\\&%]/\\&/g;
 
 s%@SHELL@%/bin/sh%g
 s%@CFLAGS@%-g  %g
-s%@CPPFLAGS@%%g
+s%@CPPFLAGS@% -I/home/globdev/INSTALL-beta2/include -I/home/globdev/INSTALL-beta2/include/gcc32dbg%g
 s%@CXXFLAGS@%-g  %g
 s%@FFLAGS@%%g
-s%@DEFS@% -DPACKAGE=\"globus_simple_ca\" -DVERSION=\"2.0\" %g
-s%@LDFLAGS@%-L/home/globdev/INSTALL-beta-mixed/lib %g
+s%@DEFS@% -DPACKAGE=\"globus_simple_ca\" -DVERSION=\"0.1\" %g
+s%@LDFLAGS@%-L/home/globdev/INSTALL-beta2/lib %g
 s%@LIBS@% %g
 s%@exec_prefix@%$(GLOBUS_LOCATION)%g
 s%@prefix@%$(GLOBUS_LOCATION)%g
@@ -63,13 +63,13 @@ s%@mandir@%${prefix}/man%g
 s%@MAINTAINER_MODE_TRUE@%#%g
 s%@MAINTAINER_MODE_FALSE@%%g
 s%@MAINT@%#%g
-s%@GPT_LOCATION@%/home/globdev/INSTALL-beta-mixed%g
+s%@GPT_LOCATION@%/home/globdev/INSTALL-simple_ca-over-beta2%g
 s%@GPT_CFLAGS@%%g
-s%@GPT_INCLUDES@%-I/home/globdev/INSTALL-beta-mixed/include/gcc32dbg %g
+s%@GPT_INCLUDES@%-I/home/globdev/INSTALL-simple_ca-over-beta2/include/gcc32dbg %g
 s%@GPT_EXTERNAL_INCLUDES@%%g
 s%@GPT_EXTERNAL_LIBS@%%g
 s%@GPT_LIBS@% %g
-s%@GPT_LDFLAGS@% -L/home/globdev/INSTALL-beta-mixed/lib %g
+s%@GPT_LDFLAGS@% -L/home/globdev/INSTALL-simple_ca-over-beta2/lib %g
 s%@GPT_CONFIG_CFLAGS@%%g
 s%@GPT_CONFIG_INCLUDES@%%g
 s%@GPT_CONFIG_LIBS@%%g
@@ -77,7 +77,7 @@ s%@GPT_CONFIG_PKG_LIBS@%%g
 s%@GPT_PGM_LINKS@% %g
 s%@GPT_LIB_LINKS@% %g
 s%@GPT_LINKTYPE@%shared%g
-s%@builddir@%/home/globdev/devel/globus-cvs/beta-mixed/gsi/simple_ca/source%g
+s%@builddir@%/home/globdev/devel/globus-cvs/campaign-branches/simple_ca-branch/gsi/simple_ca/source%g
 s%@WITHOUT_FLAVORS_TRUE@%#%g
 s%@WITHOUT_FLAVORS_FALSE@%%g
 s%@GLOBUS_FLAVOR_NAME@%gcc32dbg%g
@@ -95,18 +95,23 @@ s%@F90FLAGS@%%g
 s%@AR@%/usr/bin/ar%g
 s%@ARFLAGS@%ruv%g
 s%@RANLIB@%/usr/bin/ranlib%g
+s%@PERL@%/usr/bin/perl%g
 s%@CROSS@%no%g
 s%@cross_compiling@%no%g
 s%@OBJEXT@%o%g
 s%@EXEEXT@%%g
-s%@FILELIST_FILE@%/home/globdev/devel/globus-cvs/beta-mixed/gsi/simple_ca/source/pkgdata/master.filelist%g
+s%@FILELIST_FILE@%/home/globdev/devel/globus-cvs/campaign-branches/simple_ca-branch/gsi/simple_ca/source/pkgdata/master.filelist%g
+s%@GPT_MAJOR_VERSION@%0%g
+s%@GPT_MINOR_VERSION@%1%g
+s%@DIRT_TIMESTAMP@%1015875676%g
+s%@DIRT_BRANCH_ID@%99999%g
 s%@LIBTOOL@%$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)%g
 s%@LN_S@%%g
 s%@INSTALL_PROGRAM@%${INSTALL}%g
 s%@INSTALL_SCRIPT@%${INSTALL_PROGRAM}%g
 s%@INSTALL_DATA@%${INSTALL} -m 644%g
 s%@PACKAGE@%globus_simple_ca%g
-s%@VERSION@%2.0%g
+s%@VERSION@%0.1%g
 s%@ACLOCAL@%aclocal%g
 s%@AUTOCONF@%autoconf%g
 s%@AUTOMAKE@%automake%g

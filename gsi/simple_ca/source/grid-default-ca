@@ -15,7 +15,7 @@ interactive() {
     fi
     
     index=1
-    for cert in $secconfdir/certificates/*.0; do
+    for cert in $trusted_certs_dir/*.0; do
     
         eval "CA${index}=${cert}"
         TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`

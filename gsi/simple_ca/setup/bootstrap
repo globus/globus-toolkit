@@ -18,7 +18,7 @@ fi
 
 # this is only for development - doesn't need to be run
 # for every install
-#tar cvf - -C template `cat template_list` | gzip -c > globus_simple_ca_setup_template.tar.gz
+tar cvf - -C template `cat template_list` | gzip -c > globus_simple_ca_setup_template.tar.gz
 
 chmod 755 setup-simple-ca
 

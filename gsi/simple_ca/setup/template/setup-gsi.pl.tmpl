@@ -207,58 +207,9 @@ if ($result != 0)
   die "Failed to set permissions on $trusted_certs_dir/$ca_install_hash.signing_policy. Aborting.";
 }
 
-if(! -l "$target_dir/grid-security.conf") 
-{
-    #
-    # if the security config files aren't symbolic links, then move them
-    # to the trusted certs directory and rename them with the hash of the
-    # associated CA certificate
-    #
-    my @trusted_ca_certs = glob("*.0");
-    my $ca_hash = undef;
-    foreach my $ca_cert (@trusted_ca_certs) 
-    {
-        my $tmp_subject = `$globusdir/bin/openssl x509 -in $ca_cert -noout -subject`;
-        my ($tmp_ca_cn) = $tmp_subject =~ /CN=(.*)$/;
-        my $tmp_grid_sec_file = `cat $target_dir/grid-security.conf`;
-        if($tmp_grid_sec_file =~ m/SETUP_GSI_CA_NAME\s*=\s*\"$tmp_ca_cn\"/)
-        {
-            # CA name matches the grid-security.conf file, so
-            # we've found the correct hash to use
-            $ca_hash = `$globusdir/bin/openssl x509 -in $ca_cert -noout -hash`;
-            chomp($ca_hash);
-            system("mv $target_dir/grid-security.conf $trusted_certs_dir/grid-security.conf.$ca_hash");
-            system("mv $target_dir/globus-user-ssl.conf $trusted_certs_dir/globus-user-ssl.conf.$ca_hash");
-            system("mv $target_dir/globus-host-ssl.conf $trusted_certs_dir/globus-host-ssl.conf.$ca_hash");
-            last;
-        }
-    }
-
-    if((! defined($opt_default)) && defined($ca_hash))
-    {
-        my $ret_value  = symlink("$trusted_certs_dir/grid-security.conf.$ca_hash",   "$target_dir/grid-security.conf");
-           $ret_value += symlink("$trusted_certs_dir/globus-user-ssl.conf.$ca_hash", "$target_dir/globus-user-ssl.conf");
-           $ret_value += symlink("$trusted_certs_dir/globus-host-ssl.conf.$ca_hash", "$target_dir/globus-host-ssl.conf");
-        if($ret_value < 3) { die "Can't create symlinks for security config files\n"; }
-    }
-}
-
-if(defined($opt_default)) 
-{
-
-    system "rm -f $target_dir/grid-security.conf";
-    system "rm -f $target_dir/globus-user-ssl.conf";
-    system "rm -f $target_dir/globus-host-ssl.conf";
-
-    my $ret_value  = symlink("$trusted_certs_dir/grid-security.conf.$ca_install_hash",   "$target_dir/grid-security.conf");
-       $ret_value += symlink("$trusted_certs_dir/globus-user-ssl.conf.$ca_install_hash", "$target_dir/globus-user-ssl.conf");
-       $ret_value += symlink("$trusted_certs_dir/globus-host-ssl.conf.$ca_install_hash", "$target_dir/globus-host-ssl.conf");
-    if($ret_value < 3) { die "Can't create symlinks for security config files\n"; }
-}
-
+setup_config_files();
 
 print "$myname: Complete\n";
-
 
 my @statres = stat "$globusdir/etc/globus_packages/globus_simple_ca_$ca_install_hash_setup/pkg_data_noflavor_data.gpt";
 
@@ -295,6 +246,124 @@ sub pod2usage
           ]\n";
 
   exit $ex;
+}
+
+
+sub setup_config_files {
+
+if(! -l "$target_dir/grid-security.conf") 
+{
+    #
+    # if the security config files aren't symbolic links, then move them
+    # to the trusted certs directory and rename them with the hash of the
+    # associated CA certificate
+    #
+    my @trusted_ca_certs = glob("$trusted_certs_dir/*.0");
+    my $ca_hash = undef;
+    my $ca_install_index = -1;
+    foreach my $ca_cert_index (0 .. $#trusted_ca_certs) 
+    {
+        my $ca_cert = $trusted_ca_certs[$ca_cert_index];
+        $ca_cert =~ /([^\/]*)\.0/;
+        if($1 eq $ca_install_hash) 
+        {
+            $ca_install_index = $ca_cert_index;
+            next;
+        }
+
+        my $tmp_subject = `$globusdir/bin/openssl x509 -in $ca_cert -noout -subject`;
+        my ($tmp_ca_cn) = $tmp_subject =~ /CN=(.*)$/;
+        my $tmp_grid_sec_file = `cat $target_dir/grid-security.conf`;
+        if($tmp_grid_sec_file =~ m/SETUP_GSI_CA_NAME\s*=\s*\"$tmp_ca_cn\"/)
+        {
+            # CA name matches the grid-security.conf file, so
+            # we've found the correct hash to use
+            $ca_hash = `$globusdir/bin/openssl x509 -in $ca_cert -noout -hash`;
+            chomp($ca_hash);
+            last;
+        }
+    }
+    
+    if($ca_install_index != -1)
+    {
+        delete $trusted_ca_certs[$ca_install_index];
+    }
+
+    # if no correct hash was found, but there's only one
+    # ca cert anyway, its assumed that that's the one
+    if((! defined($ca_hash)) && (scalar(@trusted_ca_certs) == 1))
+    {
+        my $ca_cert = shift @trusted_ca_certs;
+        $ca_hash = `$globusdir/bin/openssl x509 -in $ca_cert -noout -hash`;
+        chomp($ca_hash);
+    }
+
+    # now the config files get moved and renamed based on the hash
+    # if the correct one was found
+    if(defined($ca_hash))
+    {
+        system("mv $target_dir/grid-security.conf $trusted_certs_dir/grid-security.conf.$ca_hash");
+        my $ret_value = ($? >> 8);
+        system("mv $target_dir/globus-user-ssl.conf $trusted_certs_dir/globus-user-ssl.conf.$ca_hash");
+        $ret_value += ($? >> 8);
+        system("mv $target_dir/globus-host-ssl.conf $trusted_certs_dir/globus-host-ssl.conf.$ca_hash");
+        $ret_value += ($? >> 8);
+
+        die "\nERROR: Can't move config files from $target_dir to $trusted_certs_dir\n\n" if ($ret_value != 0);
+
+        # if we found the correct hash, and the -default is not
+        # specified, then the previously used config files
+        # need to be symlinked
+        if(! defined($opt_default))
+        {
+            my $ret_value  = symlink("$trusted_certs_dir/grid-security.conf.$ca_hash",   "$target_dir/grid-security.conf");
+            $ret_value += symlink("$trusted_certs_dir/globus-user-ssl.conf.$ca_hash", "$target_dir/globus-user-ssl.conf");
+            $ret_value += symlink("$trusted_certs_dir/globus-host-ssl.conf.$ca_hash", "$target_dir/globus-host-ssl.conf");
+            if($ret_value < 3) { die "\nERROR: Can't create symlinks for security config files from $trusted_certs_dir to $target_dir\n"; }
+        }
+    }
+
+    # if no correct hash was found, then the
+    # current config files get copied to the
+    # certificates directory, with the suffixes
+    # PREV_DEFAULT added.  symlinks are then
+    # made to point to those config files
+    else
+    {
+        system("mv -f $target_dir/grid-security.conf $trusted_certs_dir/grid-security.conf.PREV_DEFAULT");
+        my $ret_value = ($? >> 8);
+        system("mv -f $target_dir/globus-user-ssl.conf $trusted_certs_dir/globus-user-ssl.conf.PREV_DEFAULT");
+        $ret_value += ($? >> 8);
+        system("mv -f $target_dir/globus-host-ssl.conf $trusted_certs_dir/globus-host-ssl.conf.PREV_DEFAULT");
+        $ret_value += ($? >> 8);
+
+        die "\nERROR: Can't move config files form $target_dir to $trusted_certs_dir\n\n" if($ret_value != 0);
+
+        $ret_value = symlink("$trusted_certs_dir/grid-security.conf.PREV_DEFAULT", "$target_dir/grid-security.conf");
+        $ret_value += symlink("$trusted_certs_dir/globus-user-ssl.conf.PREV_DEFAULT", "$target_dir/globus-host-ssl.conf");
+        $ret_value += symlink("$trusted_certs_dir/globus-host-ssl.conf.PREV_DEFAULT", "$target_dir/globus-user-ssl.conf");
+        
+        die "\nERROR: Can't create symlinks of config files from $trusted_certs_dir to $target_dir\n\n" if ($ret_value < 3);
+    }
+}
+
+if(defined($opt_default)) 
+{
+
+    system "rm -f $target_dir/grid-security.conf";
+    my $ret_value = ($? >> 8);
+    system "rm -f $target_dir/globus-user-ssl.conf";
+    $ret_value += ($? >> 8);
+    system "rm -f $target_dir/globus-host-ssl.conf";
+    $ret_value += ($ >> 8);
+    die "\nERROR: Can't remove config files (symlinks) in $target_dir\n\n" if ($ret_value != 0);
+
+    my $ret_value  = symlink("$trusted_certs_dir/grid-security.conf.$ca_install_hash",   "$target_dir/grid-security.conf");
+       $ret_value += symlink("$trusted_certs_dir/globus-user-ssl.conf.$ca_install_hash", "$target_dir/globus-user-ssl.conf");
+       $ret_value += symlink("$trusted_certs_dir/globus-host-ssl.conf.$ca_install_hash", "$target_dir/globus-host-ssl.conf");
+    if($ret_value < 3) { die "\nERROR: Can't create symlinks for security config files from $trusted_certs_dir to $target_dir\n\n"; }
+}
+
 }
 
 # End
