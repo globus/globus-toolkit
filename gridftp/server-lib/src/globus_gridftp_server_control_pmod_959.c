@@ -370,24 +370,58 @@ globus_l_gsc_959_command_kickout(
 {
     globus_l_gsc_959_read_ent_t *           read_ent;
     globus_l_gsc_959_cmd_ent_t *            cmd_ent;
+    globus_bool_t                           auth;
+    globus_bool_t                           done = GLOBUS_FALSE;
+    char *                                  msg;
+    globus_result_t                         res = GLOBUS_SUCCESS;
 
     read_ent = (globus_l_gsc_959_read_ent_t *) user_arg;
     
-    globus_assert(read_ent->cmd_list != NULL);
+    msg = "500 Command not implemented.\r\n";
+    auth = globus_gridftp_server_control_authenticated(
+        read_ent->handle->server);
+    while(!done)
+    {
+        /* if we ran out of commands before finishing tell the client
+            the command does not exist */
+        if(read_ent->cmd_list == NULL)
+        {
+            /* user already assignied ref for reply */
+            res = globus_l_gsc_959_reply(read_ent->handle, msg);
+            done = GLOBUS_TRUE;
+            globus_free(read_ent);
+        }
+        else
+        {
+            cmd_ent = (globus_l_gsc_959_cmd_ent_t *)
+                globus_list_first(read_ent->cmd_list);
 
-    cmd_ent = (globus_l_gsc_959_cmd_ent_t *)
-        globus_list_first(read_ent->cmd_list);
+            /* must advance before calling the user callback */
+            read_ent->cmd_list = globus_list_rest(read_ent->cmd_list);
+            if(!auth && !(cmd_ent->desc & GLOBUS_GSC_959_COMMAND_PRE_AUTH))
+            {
+                msg = "530 Please login with USER and PASS.\r\n";
+            }
+            else if(auth && !(cmd_ent->desc & GLOBUS_GSC_959_COMMAND_POST_AUTH))
+            {
+                msg = "503 You are already logged in!\r\n";
+            }
+            else
+            {
+                /*
+                 *  call out to the users command
+                 */
+                cmd_ent->cmd_func(
+                    read_ent,
+                    read_ent->handle->server,
+                    cmd_ent->cmd_name,
+                    read_ent->command,
+                    cmd_ent->user_arg);
 
-    read_ent->cmd_list = globus_list_rest(read_ent->cmd_list);
-    /*
-     *  call out to the users command
-     */
-    cmd_ent->cmd_func(
-        read_ent,
-        read_ent->handle->server,
-        read_ent->cmd_ent->cmd_name,
-        read_ent->command,
-        read_ent->cmd_ent->user_arg);
+                done = GLOBUS_TRUE;
+            }
+        }
+    }
 }
 
 /*
@@ -415,33 +449,19 @@ globus_l_gsc_959_process_next_cmd(
         /* increment the reference, will be deced in reply_cb */
         handle->ref++; 
 
-        if(read_ent->cmd_list == NULL)
-        {
-            res = globus_l_gsc_959_reply(
-                    handle,
-                    "500 Command not implemented.\r\n");
-            if(res != GLOBUS_SUCCESS)
-            {
-                handle->ref--;
-            }
-            globus_free(read_ent);
-        }
-        else
-        {
-            handle->outstanding_op = read_ent;
-            res = globus_callback_register_oneshot(
-                NULL,
-                NULL,
-                globus_l_gsc_959_command_kickout,
-                (void *) read_ent);
+        handle->outstanding_op = read_ent;
+        res = globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gsc_959_command_kickout,
+            (void *) read_ent);
 
-            /* this will never happen ever, but why not account 
-                for it anyway? */
-            if(res != GLOBUS_SUCCESS)
-            {
-                globus_l_gsc_959_panic(read_ent->handle, res);
-                globus_free(read_ent);
-            }
+        /* this will never happen ever, but why not account 
+            for it anyway? */
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_l_gsc_959_panic(read_ent->handle, res);
+            globus_free(read_ent);
         }
     }
 }

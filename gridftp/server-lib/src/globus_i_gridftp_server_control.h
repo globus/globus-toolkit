@@ -207,20 +207,25 @@ typedef struct globus_i_gsc_server_s
     globus_gridftp_server_control_callback_t        done_func;
 } globus_i_gsc_server_t;
 
+typedef enum globus_i_gsc_op_type_e
+{
+    GLOBUS_L_GSC_OP_TYPE_AUTH,
+} globus_i_gsc_op_type_t;
+
 typedef struct globus_i_gsc_op_s
 {
-    globus_i_gsc_server_t *                          server;
+    globus_i_gsc_op_type_t                          type;
+
+    globus_i_gsc_server_t *                         server;
     globus_result_t                                 res;
 
+    char *                                          username;
+    char *                                          password;
+    gss_cred_id_t                                   cred;
+    gss_cred_id_t                                   del_cred;
+    globus_gridftp_server_control_pmod_auth_callback_t auth_cb;
+
     void *                                          user_arg;
-    void *                                          pmod_arg;
-
-    char *                                          str_arg;
-
-    void *                                          argv[32];
-    int                                             argc;
-
-    int                                             mask;
 } globus_i_gsc_op_t;
 
 typedef struct globus_i_gsc_attr_s
@@ -241,11 +246,6 @@ typedef struct globus_i_gsc_data_s
 } globus_i_gsc_data_t;
 
 extern globus_hashtable_t               globus_i_gs_default_attr_command_hash;
-
-
-globus_result_t
-globus_i_gs_cmd_add_builtins(
-    globus_gridftp_server_control_attr_t            attr);
 
 /*
  *  internal functions for adding commands.

@@ -2,7 +2,7 @@
 #include "globus_gridftp_server_control_pmod_959.h"
 
 globus_result_t
-globus_gridftp_server_control_control_attr_init(
+globus_gridftp_server_control_attr_init(
     globus_gridftp_server_control_attr_t *          in_attr)
 {
     globus_i_gsc_attr_t *                           attr;
@@ -44,8 +44,6 @@ globus_gridftp_server_control_control_attr_init(
     attr->version_ctl = GLOBUS_GRIDFTP_VERSION_CTL;
     attr->pmod = &globus_i_gsc_959_proto_mod;
     attr->start_state = GLOBUS_L_GS_STATE_AUTH;
-
-    globus_i_gs_cmd_add_builtins(attr);
 
     *in_attr = attr;
 
