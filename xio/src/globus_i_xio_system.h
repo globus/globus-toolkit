@@ -231,7 +231,6 @@
         struct iovec *                  _new_iov;                           \
         int                             _i;                                 \
         int                             _j;                                 \
-        int                             _k;                                 \
                                                                             \
         _iov = (iov);                                                       \
         _iovc = (iovc);                                                     \
@@ -242,15 +241,19 @@
             _i < _iovc &&  _n >= _iov[_i].iov_len;                          \
             _n -= _iov[_i].iov_len, _i++);                                  \
                                                                             \
-        /* copy remaining */                                                \
-        for(_k = 0, _j = _i; _j < _iovc; _k++, _j++)                        \
+        if(_i < _iovc)                                                      \
         {                                                                   \
-            _new_iov[_k].iov_base = _iov[_j].iov_base;                      \
-            _new_iov[_k].iov_len = _iov[_j].iov_len;                        \
+            _new_iov[0].iov_base = (char *) _iov[_i].iov_base + _n;         \
+            _new_iov[0].iov_len = _iov[_i].iov_len - _n;                    \
+                                                                            \
+            /* copy remaining */                                            \
+            for(_j = 1, _i++; _i < _iovc; _j++, _i++)                       \
+            {                                                               \
+                _new_iov[_j].iov_base = _iov[_i].iov_base;                  \
+                _new_iov[_j].iov_len = _iov[_i].iov_len;                    \
+            }                                                               \
         }                                                                   \
                                                                             \
-        _new_iov[0].iov_base = (char *) _iov[_i].iov_base + _n;             \
-        _new_iov[0].iov_len -= _n;                                          \
         (new_iovc) = _iovc - _i;                                            \
     } while(0)
 
