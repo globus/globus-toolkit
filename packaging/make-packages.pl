@@ -42,6 +42,7 @@ my %prereq_archives = (
 my %cvs_archives = (
      'gt2' => [ "/home/globdev/CVS/globus-packages", "all", "gt2-cvs", "HEAD" ],
      'gt3' => [ "/home/globdev/CVS/gridservices", "all", "ogsa-cvs", "HEAD" ],
+     'setup' => [ "/home/globdev/CVS/gridservices", "all", "setup-pkgs", "HEAD" ],
      'cbindings' => [ "/home/globdev/CVS/gridservices", "ogsa-c", "cbindings", "HEAD" ],
      'autotools' => [ "/home/globdev/CVS/globus-packages", "side_tools", "autotools", "HEAD" ]
       );
@@ -63,11 +64,11 @@ my %cvs_build_hash;
 my $flavor = "gcc32dbg";
 my $thread = "pthr";
 
-my ($install, $installer, $anonymous,
+my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $inplace) =
-   (0, 0, 0,
+   (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 0, "1.0", 0, 
     0, 0);
@@ -78,6 +79,7 @@ my @user_packages;
 GetOptions( 'i|install=s' => \$install,
 	    'installer=s' => \$installer,
 	    'a|anonymous!' => \$anonymous,
+	    'force' => \$force,
 	    'n|no-updates!' => \$noupdates,
 	    'faster!' => \$faster,
 	    'flavor=s' => \$flavor,
@@ -216,6 +218,13 @@ sub setup_environment()
 	$verbose = "-verbose";
     } else {
 	$verbose = "";
+    }
+
+    if ( $force )
+    {
+	$force = "-force";
+    } else {
+	$force = "";
     }
 
     mkdir $log_dir;
@@ -1126,13 +1135,11 @@ if ($cvs_build_hash{'gt3'} eq 1)
 type ant
 if [ \$? -ne 0 ]; then
    echo You need a working version of ant.
-   ant -h
    exit
 fi
 type java
 if [ \$? -ne 0 ]; then
    echo You need a working version of java.
-   ant -h
    exit
 fi
 EOF
@@ -1148,7 +1155,7 @@ print INS "echo\n\n";
 print INS << "EOF";
 MYDIR=`pwd`
 
-cd $1
+cd \$1
 
 INSDIR=`pwd`
 GPT_LOCATION="\$INSDIR"
@@ -1182,7 +1189,7 @@ esac
 
 THREAD=pthr
 
-if [ ! -d gpt-3.0.1/ ]; then
+if [ ! -e gpt-3.0.1/sbin/gpt-build ]; then
     echo Building GPT ...
     gzip -dc gpt-3.0.1-src.tar.gz | tar xf -
     cd gpt-3.0.1
@@ -1217,8 +1224,8 @@ for my $bundle ( @bundle_build_list )
     } else {
 	$flavorstring = "\$FLAVOR";
     }
-	
-   print INS "\$GPT_BUILD $flags ${bundle}-*-src_bundle.tar.gz $flavorstring\n";
+
+   print INS "\$GPT_BUILD $flags bundles/${bundle}-*-src_bundle.tar.gz $flavorstring\n";
 
    print INS "if [ \$? -ne 0 ]; then\n";
    print INS "    echo Error building $bundle\n";
@@ -1246,7 +1253,7 @@ sub install_bundles
 	my ($flava, $flags, @packages) = @{$bundle_list{$bundle}};
 	
 	print "Installing $bundle to $install using flavor $flava, flags $flags.\n";
-	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $verbose $flags ${bundle}-*.tar.gz $flava");
+	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose $flags ${bundle}-*.tar.gz $flava");
 	paranoia("Building of $bundle failed.\n");
     }
 
@@ -1261,7 +1268,7 @@ sub install_packages
     for my $pkg ( @user_packages )
     {
 	print "Installing user requested package $pkg to $install using flavor $flavor.\n";
-	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $verbose ${pkg}-*.tar.gz $flavor");
+	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose ${pkg}-*.tar.gz $flavor");
 	paranoia("Building of $pkg failed.\n");
     }
 
