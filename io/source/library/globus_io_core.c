@@ -1649,7 +1649,7 @@ globus_l_io_kickout_read_cb(
     {
 exit:    
         globus_l_io_pending_count--;
-        if(globus_l_io_pending_count == 0)
+        if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
         {
             globus_l_io_cond_signal();
         }
@@ -1702,7 +1702,7 @@ globus_l_io_kickout_write_cb(
     {
 exit:    
         globus_l_io_pending_count--;
-        if(globus_l_io_pending_count == 0)
+        if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
         {
             globus_l_io_cond_signal();
         }
@@ -1754,7 +1754,7 @@ globus_l_io_kickout_except_cb(
     {
 exit:    
         globus_l_io_pending_count--;
-        if(globus_l_io_pending_count == 0)
+        if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
         {
             globus_l_io_cond_signal();
         }
@@ -1857,7 +1857,7 @@ globus_l_io_kickout_cancel_cb(
 
 exit:
         globus_l_io_pending_count--;
-        if(globus_l_io_pending_count == 0)
+        if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
         {
             globus_l_io_cond_signal();
         }

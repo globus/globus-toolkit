@@ -421,7 +421,7 @@ globus_i_io_setup_cond_space_from_handle(
 {
     globus_condattr_t                   condattr;
     
-    if(handle)
+    if(handle && handle->socket_attr.space != GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
         globus_condattr_init(&condattr);
         globus_condattr_setspace(&condattr, handle->socket_attr.space);
@@ -446,10 +446,17 @@ globus_i_io_setup_cond_space_from_attr(
     {
         globus_io_attr_get_callback_space(attr, &user_space);
         
-        globus_condattr_init(&condattr);
-        globus_condattr_setspace(&condattr, user_space);
-        globus_cond_init(cond, &condattr);
-        globus_condattr_destroy(&condattr);
+        if(user_space != GLOBUS_CALLBACK_GLOBAL_SPACE)
+        {
+            globus_condattr_init(&condattr);
+            globus_condattr_setspace(&condattr, user_space);
+            globus_cond_init(cond, &condattr);
+            globus_condattr_destroy(&condattr);
+        }
+        else
+        {
+            globus_cond_init(cond, GLOBUS_NULL);
+        }
     }
     else
     {
