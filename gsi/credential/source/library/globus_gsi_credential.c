@@ -164,7 +164,7 @@ globus_result_t globus_gsi_cred_read(
 {
     int                                 index = 0;
     globus_result_t                     result;
-    char *                              found_subject;
+    char *                              found_subject = NULL;
     char *                              cert;
     char *                              key;
     char *                              proxy;
@@ -500,6 +500,7 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
     if(handle->cert != NULL)
     {
         X509_free(handle->cert);
+        handle->cert = NULL;
     }
     
     if(!PEM_read_bio_X509(bio, & handle->cert, NULL, NULL))
@@ -516,6 +517,7 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
     if(handle->key != NULL)
     {
         EVP_PKEY_free(handle->key);
+        handle->key = NULL;
     }
 
     if((handle->key = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL))
@@ -533,6 +535,7 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
     if(handle->cert_chain != NULL)
     {
         sk_X509_pop_free(handle->cert_chain, X509_free);
+        handle->cert_chain = NULL
     }
 
     if((handle->cert_chain = sk_X509_new_null()) == NULL)
@@ -640,6 +643,7 @@ globus_result_t globus_gsi_cred_read_key(
     if(handle->key != NULL)
     {
         EVP_PKEY_free(handle->key);
+        handle->key = NULL;
     }
 
     if(!PEM_read_bio_PrivateKey(key_bio, & handle->key, pw_cb, NULL))
@@ -723,6 +727,7 @@ globus_result_t globus_gsi_cred_read_cert(
     if(handle->cert != NULL)
     {
         X509_free(handle->cert);
+        handle->cert = NULL;
     }
 
     if(!PEM_read_bio_X509(cert_bio, & handle->cert, NULL, NULL))

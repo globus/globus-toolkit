@@ -1042,18 +1042,18 @@ globus_result_t globus_gsi_cred_get_group_names(
     int                                 index = 0;
     PROXYCERTINFO *                     pci = NULL;
     PROXYGROUP *                        pgroup = NULL;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_cred_get_group_names";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
-    if(handle == NULL || handle->cert_chain == NULL)
+    if(handle == NULL)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("NULL handle or cert chain passed to function: %s", 
+            ("NULL handle passed to function: %s", 
              _function_name_));
         goto exit;
     }
@@ -1185,90 +1185,94 @@ globus_result_t globus_gsi_cred_get_group_names(
 
     PROXYCERTINFO_free(pci);
 
-    /* The first group name (at index 0 of the stack)
+    if(handle->cert_chain)
+    {
+
+        /* The first group name (at index 0 of the stack)
      * will be from the certificate in this
      * credential, and the following group names in the stack will
      * be from the cert chain.
      */
 #warning SLANG: not sure these are being added in the right order.  will have to check this later
-    for(index = 0; index < sk_X509_num(handle->cert_chain); ++index)
-    {
-        if((result = globus_i_gsi_cred_get_proxycertinfo(
-            sk_X509_value(handle->cert_chain, index), 
-            &pci)) 
-           != GLOBUS_SUCCESS)
+        for(index = 0; index < sk_X509_num(handle->cert_chain); ++index)
         {
-            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN);
-            goto error_exit;
-        }
+            if((result = globus_i_gsi_cred_get_proxycertinfo(
+                sk_X509_value(handle->cert_chain, index), 
+                &pci)) 
+               != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN);
+                goto error_exit;
+            }
 
-        if(pci == NULL || (pgroup = PROXYCERTINFO_get_group(pci)) == NULL)
-        {
-            /* no proxycertinfo extension - so no group name for this cert */
-            group_name = GLOBUS_NULL_GROUP;
-            group_name_length = strlen(GLOBUS_NULL_GROUP);
-            attached = 0;
-        }
-        else
-        {
-            group_name = PROXYGROUP_get_name(pgroup, &group_name_length);
-            attached   = *PROXYGROUP_get_attached(pgroup);
-        }
+            if(pci == NULL || (pgroup = PROXYCERTINFO_get_group(pci)) == NULL)
+            {
+                /* no proxycertinfo extension - so no group name for this cert */
+                group_name = GLOBUS_NULL_GROUP;
+                group_name_length = strlen(GLOBUS_NULL_GROUP);
+                attached = 0;
+            }
+            else
+            {
+                group_name = PROXYGROUP_get_name(pgroup, &group_name_length);
+                attached   = *PROXYGROUP_get_attached(pgroup);
+            }
 
-        if((final_group_name = malloc(group_name_length + 1)) == NULL)
-        {
-            result = globus_error_put(
-                globus_error_wrap_errno_error(
-                    GLOBUS_GSI_CREDENTIAL_MODULE,
-                    errno,
-                    GLOBUS_GSI_CRED_ERROR_ERRNO,
-                    "Couldn't allocate space"
-                    "for the group name"));
-            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN);
-            goto error_exit;
-        }
+            if((final_group_name = malloc(group_name_length + 1)) == NULL)
+            {
+                result = globus_error_put(
+                    globus_error_wrap_errno_error(
+                        GLOBUS_GSI_CREDENTIAL_MODULE,
+                        errno,
+                        GLOBUS_GSI_CRED_ERROR_ERRNO,
+                        "Couldn't allocate space"
+                        "for the group name"));
+                GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN);
+                goto error_exit;
+            }
 
-        /* adding null-terminator to group name */
-        if(snprintf(final_group_name, (group_name_length + 1),
-                    "%s", group_name) < 0)
-        {
-            GLOBUS_GSI_CRED_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
-                ("Couldn't create group name string for cert"));
-            goto error_exit;
-        }
+            /* adding null-terminator to group name */
+            if(snprintf(final_group_name, (group_name_length + 1),
+                        "%s", group_name) < 0)
+            {
+                GLOBUS_GSI_CRED_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
+                    ("Couldn't create group name string for cert"));
+                goto error_exit;
+            }
 
-        if(sk_insert(*sub_groups, final_group_name, index + 1) == 0)
-        {
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
-                ("Couldn't add group name string to stack of group names"));
-            goto error_exit;
-        }
+            if(sk_insert(*sub_groups, final_group_name, index + 1) == 0)
+            {
+                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
+                    ("Couldn't add group name string to stack of group names"));
+                goto error_exit;
+            }
 
-        if(!ASN1_BIT_STRING_set_bit(
-            *sub_group_types, 
-            index + 1,
-            attached))
-        {
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
-                ("Couldn't add group type bit to bit string of group types"));
-            goto error_exit;
-        }
+            if(!ASN1_BIT_STRING_set_bit(
+                *sub_group_types, 
+                index + 1,
+                attached))
+            {
+                GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
+                    ("Couldn't add group type bit to bit string of group types"));
+                goto error_exit;
+            }
 
-        if(pci)
-        {
-            PROXYCERTINFO_free(pci);
+            if(pci)
+            {
+                PROXYCERTINFO_free(pci);
+            }
         }
-    }
+    }    
     
     result = GLOBUS_SUCCESS;
     goto exit;
