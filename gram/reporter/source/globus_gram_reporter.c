@@ -31,6 +31,11 @@ CVS Information:
                        Define module specific variables
 ******************************************************************************/
 
+#define GRAM_JOB_MANAGER_STATUS_FILE_SECONDS 600
+#define MY_MAX_GENTIME_LEN 16   
+
+static int verbose=0;
+
 typedef struct globus_l_gram_conf_values_s
 {
     char *         curr_gmt_time;
@@ -54,15 +59,12 @@ typedef struct globus_l_gram_conf_values_s
     char *         manufacturer;
     char *         machine_type;
     char *         platform;
-    char *         valid_from;
-    char *         valid_to;
-    char *         keep_top;
+    int            keep_to_seconds;
+    char           valid_from[MY_MAX_GENTIME_LEN];
+    char           valid_to[MY_MAX_GENTIME_LEN];
+    char           keep_to[MY_MAX_GENTIME_LEN];
     globus_bool_t  publish_jobs;
 } globus_l_gram_conf_values_t;
-
-static int verbose=0;
-
-#define GRAM_JOB_MANAGER_STATUS_FILE_SECONDS 600
 
 /******************************************************************************
                           Module specific prototypes
@@ -105,6 +107,12 @@ static int
 globus_l_gram_gridmap_file_has_changed(globus_l_gram_conf_values_t * vals,
                                          char * lastupdate_map_file);
 
+static int
+globus_l_gram_generalized_time (char * buffer,
+                         int    max_len,
+                         time_t current_utc_sec,
+                         int    offset_seconds);
+
 /******************************************************************************
 Function:       print_usage()
 Description:
@@ -115,13 +123,14 @@ static void
 print_usage()
 {
     fprintf(stderr, "\n");
-    fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s\n",
+    fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s\n",
             "globus-gram-scheduler",
             "[-condor-arch archetecture] [-condor-os operating system]",
             "[-conf job manager configuration file]",
             "[-cldif cldif file to append information]",
             "[-rdn service part of the gram contact]",
             "[-dmdn directory manager DN]",
+            "[-keep-to seconds]",
             "[-type the type of the gram]",
             "[-dont-publish-jobs] [-verbose]"
            );
@@ -238,6 +247,30 @@ globus_l_gram_show_conf_data(globus_l_gram_conf_values_t * vals)
 
 } /* globus_l_gram_show_conf_data() */
 
+                         
+/******************************************************************************
+Function:       globus_l_gram_generalized_time()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+/* this function leaves off the suffix "Z" because some buggy
+ * strftime() functions seem to misinterpret it as an escape */
+static int
+globus_l_gram_generalized_time (char * buffer,
+                                int    max_len,
+                                time_t current_utc_sec,
+                                int    offset_seconds)
+{ 
+  struct tm * component_time;
+  time_t utc_seconds;
+
+  utc_seconds = current_utc_sec + offset_seconds;
+
+  component_time = gmtime (&utc_seconds);
+
+  return strftime (buffer, max_len, "%Y%m%d%H%M.%S", component_time);
+}
 
 
 /******************************************************************************
@@ -297,9 +330,9 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
  */
     if (vals->valid_from)
     {
-        fprintf(vals->cldif_fp, "Mds-validfrom: %s\n", vals->valid_from);
-        fprintf(vals->cldif_fp, "Mds-validto: %s\n", vals->valid_to);
-        fprintf(vals->cldif_fp, "Mds-keeptop: %s\n", vals->keep_top);
+        fprintf(vals->cldif_fp, "Mds-validfrom: %sZ\n", vals->valid_from);
+        fprintf(vals->cldif_fp, "Mds-validto: %sZ\n", vals->valid_to);
+        fprintf(vals->cldif_fp, "Mds-keepto: %sZ\n", vals->keep_to);
     }
     fprintf(vals->cldif_fp, "\n");
 
@@ -373,9 +406,9 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
         {
     if (vals->valid_from)
     {
-            fprintf(vals->cldif_fp, "Mds-validfrom: %s\n", vals->valid_from);
-            fprintf(vals->cldif_fp, "Mds-validto: %s\n", vals->valid_to);
-            fprintf(vals->cldif_fp, "Mds-keeptop: %s\n", vals->keep_top);
+            fprintf(vals->cldif_fp, "Mds-validfrom: %sZ\n", vals->valid_from);
+            fprintf(vals->cldif_fp, "Mds-validto: %sZ\n", vals->valid_to);
+            fprintf(vals->cldif_fp, "Mds-keepto: %sZ\n", vals->keep_to);
     }
             fprintf(vals->cldif_fp, "\n");
             continue;
@@ -384,9 +417,9 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
 
     if (vals->valid_from)
     {
-        fprintf(vals->cldif_fp, "Mds-validfrom: %s\n", vals->valid_from);
-        fprintf(vals->cldif_fp, "Mds-validto: %s\n", vals->valid_to);
-        fprintf(vals->cldif_fp, "Mds-keeptop: %s\n", vals->keep_top);
+        fprintf(vals->cldif_fp, "Mds-validfrom: %sZ\n", vals->valid_from);
+        fprintf(vals->cldif_fp, "Mds-validto: %sZ\n", vals->valid_to);
+        fprintf(vals->cldif_fp, "Mds-keepto: %sZ\n", vals->keep_to);
     }
         fprintf(vals->cldif_fp, "\n");
 
@@ -466,9 +499,9 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
 
     if (vals->valid_from)
     {
-            fprintf(vals->cldif_fp, "Mds-validfrom: %s\n", vals->valid_from);
-            fprintf(vals->cldif_fp, "Mds-validto: %s\n", vals->valid_to);
-            fprintf(vals->cldif_fp, "Mds-keeptop: %s\n", vals->keep_top);
+            fprintf(vals->cldif_fp, "Mds-validfrom: %sZ\n", vals->valid_from);
+            fprintf(vals->cldif_fp, "Mds-validto: %sZ\n", vals->valid_to);
+            fprintf(vals->cldif_fp, "Mds-keepto: %sZ\n", vals->keep_to);
     }
             fprintf(vals->cldif_fp, "\n");
         }
@@ -833,11 +866,42 @@ globus_l_gram_conf_values_init(globus_l_gram_conf_values_t * vals)
     vals->machine_type = GLOBUS_NULL;
     vals->publish_jobs = GLOBUS_TRUE;
     vals->platform = GLOBUS_NULL;
-    vals->valid_from = GLOBUS_NULL;
-    vals->valid_to = GLOBUS_NULL;
-    vals->keep_top = GLOBUS_NULL;
+    vals->valid_from[0] = '\0';
+    vals->valid_to[0] = '\0';
+    vals->keep_to[0] = '\0';
+    vals->keep_to_seconds = 30;
+
     return(0);
 }
+
+/******************************************************************************
+Function:       globus_l_gram_set_timestamp()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int
+globus_l_gram_set_timestamp(globus_l_gram_conf_values_t * vals)
+{
+    time_t current_utc_sec;
+
+    if (vals == GLOBUS_NULL)
+        return(1);
+
+    current_utc_sec = time (NULL);
+    globus_l_gram_generalized_time (vals->valid_from,
+                   MY_MAX_GENTIME_LEN,
+                   current_utc_sec,
+                   0);
+    globus_l_gram_generalized_time (vals->valid_to,
+                   MY_MAX_GENTIME_LEN,
+                   current_utc_sec,
+                   vals->keep_to_seconds);
+    strcpy(vals->keep_to, vals->valid_to);
+
+    return(0);
+}
+
 
 /******************************************************************************
 Function:       globus_l_gram_conf_values_free()
@@ -1136,6 +1200,12 @@ int main (int argc, char **argv)
             conf_values.dmdn = argv[i+1];
             i++;
         }
+        else if ((strcasecmp(argv[i], "-keep-to") == 0)
+                 && (i + 1 < argc))
+        {
+            conf_values.keep_to_seconds = atoi(argv[i+1]);
+            i++;
+        }
         else if ((strcasecmp(argv[i], "-conf") == 0)
                  && (i + 1 < argc))
         {
@@ -1206,6 +1276,13 @@ int main (int argc, char **argv)
         exit(1);
     }
         
+    if (conf_values.keep_to_seconds < 0)
+    {
+        fprintf(stderr, "Error: -keep-to parameter is invalid.\n");
+        print_usage();
+        exit(1);
+    }
+
     if (verbose)
         fprintf(stdout, "reading configuration file...............\n");
 
@@ -1243,6 +1320,8 @@ int main (int argc, char **argv)
                              conf_values.home_dir,
                              conf_values.type);
     }
+
+    globus_l_gram_set_timestamp(&conf_values);
 
     /* open cldif file or use stdout as default */
     if ( conf_values.cldif_file == NULL )
