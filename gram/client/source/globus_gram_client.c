@@ -331,7 +331,7 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-int 
+static int 
 globus_l_gram_client_authenticate(char * gatekeeper_url,
                                   int gss_flags,
                                   int * gatekeeper_fd)
