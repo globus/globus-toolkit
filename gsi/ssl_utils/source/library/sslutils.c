@@ -182,6 +182,7 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_OUT_OF_MEMORY,"out of memory"},
     {PRXYERR_R_BAD_ARGUMENT,"bad argument"},
     {PRXYERR_R_BAD_MAGIC,"bad magic number"},
+    {PRXYERR_R_UNKNOWN_CRIT_EXT,"unable to handle critical extension"},
     {0,NULL},
 };
 
@@ -1630,7 +1631,6 @@ proxy_verify_init(
     proxy_verify_desc *                 pvd,
     proxy_verify_ctx_desc *             pvxd)
 {
-
     pvd->magicnum = PVD_MAGIC_NUMBER; /* used for debuging */
     pvd->flags = 0;
     pvd->previous = NULL;
@@ -1662,6 +1662,7 @@ proxy_verify_ctx_init(
     pvxd->goodtill = 0;
 
 }
+
 /**********************************************************************
 Function: proxy_verify_release()
 
@@ -1937,6 +1938,10 @@ proxy_verify_callback(
     X509_CRL *                          crl;
     X509_CRL_INFO *                     crl_info;
     X509_REVOKED *                      revoked;
+    STACK_OF(X509_EXTENSION) *          extensions;
+    X509_EXTENSION *                    ex;
+    ASN1_OBJECT *                       extension_obj;
+    int                                 nid;
     char *                              s = NULL;
     SSL *                               ssl = NULL;
     proxy_verify_desc *                 pvd;
@@ -1948,7 +1953,8 @@ proxy_verify_callback(
     char *                              ca_policy_file_path = NULL;
     char *                              cert_dir            = NULL;
     char *                              ca_policy_filename  = "ca-signing-policy.conf";
-
+    
+    
     /*
      * If we are being called recursivly to check delegate
      * cert chains, or being called by the grid-proxy-init,
@@ -2482,13 +2488,54 @@ proxy_verify_callback(
     sk_X509_push(pvd->cert_chain, X509_dup(ctx->current_cert));
 
     pvd->cert_depth++;
-#ifdef DEBUG 
-    fprintf(stderr,"proxy_verify_callback:returning:%d\n\n", ok);
-#endif
+
     if (ca_policy_file_path != NULL)
     {
         free(ca_policy_file_path);
     }
+    
+    extensions = ctx->current_cert->cert_info->extensions;
+
+    for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
+    {
+        ex = (X509_EXTENSION *) sk_X509_EXTENSION_value(extensions,i);
+
+        if(X509_EXTENSION_get_critical(ex))
+        {
+            extension_obj = X509_EXTENSION_get_object(ex);
+
+            nid = OBJ_obj2nid(extension_obj);
+            
+            if(nid != NID_basic_constraints &&
+               nid != NID_key_usage &&
+               nid != NID_ext_key_usage &&
+               nid != NID_netscape_cert_type &&
+               nid != NID_subject_key_identifier &&
+               nid != NID_authority_key_identifier)
+            {
+                if(pvd->extension_cb)
+                {
+                    if(!pvd->extension_cb(pvd,ex))
+                    {
+                        PRXYerr(PRXYERR_F_VERIFY_CB,
+                                PRXYERR_R_UNKNOWN_CRIT_EXT);
+                        ctx->error = X509_V_ERR_CERT_REJECTED;
+                        goto fail_verify;
+                    }
+                }
+                else
+                {
+                    PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_UNKNOWN_CRIT_EXT);
+                    ctx->error = X509_V_ERR_CERT_REJECTED;
+                    goto fail_verify;
+                }
+            }
+        }
+    }
+
+#ifdef DEBUG 
+    fprintf(stderr,"proxy_verify_callback:returning:%d\n\n", ok);
+#endif
         
     return(ok);
 

@@ -271,6 +271,7 @@ ERR_set_continue_needed(void);
 #define PRXYERR_R_OUT_OF_MEMORY                PRXYERR_R_BASE + 60
 #define PRXYERR_R_BAD_ARGUMENT                 PRXYERR_R_BASE + 61
 #define PRXYERR_R_BAD_MAGIC                    PRXYERR_R_BASE + 62
+#define PRXYERR_R_UNKNOWN_CRIT_EXT             PRXYERR_R_BASE + 63
 /* NOTE: Don't go over 1500 here or will conflict with errors in scutils.h */
 
 /* constants for gsi error messages 
@@ -316,6 +317,10 @@ typedef struct proxy_verify_ctx_desc_struct {
 
 typedef struct proxy_verify_desc_struct proxy_verify_desc;
 
+typedef int (*proxy_verify_extension_callback_t)(
+    proxy_verify_desc *                 pvd,
+    X509_EXTENSION *                    extension);
+
 struct proxy_verify_desc_struct {
     int                                 magicnum;
     proxy_verify_desc *                 previous;
@@ -328,6 +333,8 @@ struct proxy_verify_desc_struct {
     int                                 limited_proxy;
     STACK_OF(X509) *                    cert_chain; /*  X509 */
     int                                 multiple_limited_proxy_ok;
+    proxy_verify_extension_callback_t   extension_cb;
+    void *                              extension_oids;
 };
 
 /**********************************************************************
