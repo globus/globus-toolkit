@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# Usage:
+#
+#   1) Run the src-bundle creation script:
+#
+#        ./make-src-bundle
+#
+
+source version.sh
+
+NAME="gsi_openssh_bundle-$VERSION-src.tar.gz"
+XML="gsi_openssh_bundle-src.xml"
+
+if [ ! -e output/$NAME ]; then
+    if [ ! -e output/ ]; then
+        mkdir -p output/
+    fi
+
+    if [ ! -e work/ ]; then
+        WORK_SCRIPTCREATED="1"
+        mkdir -p work/
+        cp $XML work/
+    fi
+
+    if [ ! -e work/sources/ ]; then
+        cp -a sources work/sources
+    fi
+
+    cd work/
+    $GPT_LOCATION/sbin/gpt-bundle -srcdir=sources/ -output=$NAME -bv=$VERSION -xml=$XML
+    mv $NAME ../output/
+    cd ../
+
+    if [ "x$WORK_SCRIPTCREATED" != "x" ]; then
+        rm -rf work/
+    fi
+else
+    echo "Please remove output/$NAME before running this script."
+    exit;
+fi
