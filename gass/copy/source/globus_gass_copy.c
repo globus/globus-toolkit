@@ -5009,6 +5009,7 @@ globus_l_gass_copy_target_cancel(
     globus_object_t * err;
     static char * myname="globus_l_gass_copy_target_cancel";
     int rc;
+    int req_status;
 
 /* should check for these errors
     if (cancel_info == GLOBUS_NULL)
@@ -5055,12 +5056,28 @@ globus_l_gass_copy_target_cancel(
 
              break;
         case GLOBUS_GASS_COPY_URL_MODE_GASS:
-             rc = globus_gass_transfer_fail(
+
+	    req_status =
+		globus_gass_transfer_request_get_status(target->data.gass.request);
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	    globus_libc_fprintf(stderr,
+                   "target_cancel: gass_request_status = %d\n", req_status);
+#endif
+	    if(req_status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED)
+            {
+		rc = globus_gass_transfer_fail(
                       target->data.gass.request,
                       globus_l_gass_copy_gass_transfer_cancel_callback,
                       cancel_info);
-             if (rc != GLOBUS_SUCCESS)
-             {
+	    }
+	    else
+	    {
+		globus_gass_transfer_request_destroy(target->data.gass.request);
+		globus_l_gass_copy_generic_cancel(cancel_info);
+	    }
+	    
+	    if (rc != GLOBUS_SUCCESS)
+	    {
                  err = globus_error_construct_string(
 		 GLOBUS_GASS_COPY_MODULE,
 		 GLOBUS_NULL,
@@ -5071,7 +5088,7 @@ globus_l_gass_copy_target_cancel(
 	         globus_i_gass_copy_set_error(cancel_info->handle, err);
 	    
 	         result = globus_error_put(cancel_info->handle->err);
-             }
+	    }
 
              break;
         case GLOBUS_GASS_COPY_URL_MODE_IO:
