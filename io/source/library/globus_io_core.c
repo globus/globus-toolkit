@@ -1343,6 +1343,7 @@ globus_i_io_register_cancel(
     globus_bool_t                       cancel_read;
     globus_bool_t                       cancel_write;
     globus_bool_t                       cancel_except;
+    globus_result_t                     result;
     
     globus_l_io_table_add(handle);
 
@@ -1387,10 +1388,15 @@ globus_i_io_register_cancel(
     else if(select_info->read_callback)
     {
         /* cancel pending callback */
-        globus_callback_unregister(
+        result = globus_callback_unregister(
             select_info->read_callback_handle,
             GLOBUS_NULL,
             GLOBUS_NULL);
+        
+        if(result == GLOBUS_SUCCESS)
+        {
+            globus_l_io_pending_count--;
+        }
         
         cancel_read = GLOBUS_TRUE;
     }
@@ -1421,11 +1427,16 @@ globus_i_io_register_cancel(
     else if(select_info->write_callback)
     {
         /* cancel pending callback */
-        globus_callback_unregister(
+        result = globus_callback_unregister(
             select_info->write_callback_handle,
             GLOBUS_NULL,
             GLOBUS_NULL);
-                
+        
+        if(result == GLOBUS_SUCCESS)
+        {
+            globus_l_io_pending_count--;
+        }
+               
         cancel_write = GLOBUS_TRUE;
     }
     
@@ -1453,11 +1464,16 @@ globus_i_io_register_cancel(
     else if(select_info->except_callback)
     {
         /* cancel pending callback */
-        globus_callback_unregister(
+        result = globus_callback_unregister(
             select_info->except_callback_handle,
             GLOBUS_NULL,
             GLOBUS_NULL);
-                
+        
+        if(result == GLOBUS_SUCCESS)
+        {
+            globus_l_io_pending_count--;
+        }
+             
         cancel_except = GLOBUS_TRUE;
     }
     

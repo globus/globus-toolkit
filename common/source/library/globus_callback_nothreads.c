@@ -41,6 +41,7 @@ typedef struct
     globus_abstime_t                    start_time;
     globus_reltime_t                    period;
     globus_bool_t                       is_periodic;
+    globus_bool_t                       in_queue;
 
     int                                 running_count;
 
@@ -170,6 +171,8 @@ globus_l_callback_requeue(
         &callback_info->my_space->queue,
         callback_info,
         &callback_info->start_time);
+    
+    callback_info->in_queue = GLOBUS_TRUE;
 }
 
 /**
@@ -401,6 +404,7 @@ globus_l_callback_register(
     callback_info->callback_args = callback_user_args;
     callback_info->running_count = 0;
     callback_info->unregister_callback = GLOBUS_NULL;
+    callback_info->in_queue = GLOBUS_TRUE;
 
     GlobusTimeAbstimeCopy(callback_info->start_time, *start_time);
     if(period)
@@ -436,10 +440,9 @@ globus_l_callback_register(
         &callback_info->my_space->queue,
         callback_info,
         &callback_info->start_time);
-
+    
     return GLOBUS_SUCCESS;
 }
-
 
 /**
  * globus_callback_space_register_oneshot
@@ -644,8 +647,13 @@ globus_callback_unregister(
         if(callback_info->is_periodic)
         {
             /* would only be in queue if it was restarted */
-            globus_priority_q_remove(
-                &callback_info->my_space->queue, callback_info);
+            if(callback_info->in_queue)
+            {
+                globus_priority_q_remove(
+                    &callback_info->my_space->queue, callback_info);
+                    
+                callback_info->in_queue = GLOBUS_FALSE;
+            }
 
             callback_info->is_periodic = GLOBUS_FALSE;
         }
@@ -669,10 +677,12 @@ globus_callback_unregister(
          * have already decremented the ref once.  I'll let the
          * globus_l_callback_cancel_kickout_cb decr the last ref
          */
-        if(globus_priority_q_remove(
-            &callback_info->my_space->queue, callback_info) ||
-            !unregister_callback)
+        if(callback_info->in_queue)
         {
+            globus_priority_q_remove(
+                &callback_info->my_space->queue, callback_info)
+            
+            callback_info->in_queue = GLOBUS_FALSE;
             globus_l_callback_info_dec_ref(callback_info);
         }
 
@@ -686,6 +696,11 @@ globus_callback_unregister(
                 GLOBUS_NULL,
                 GLOBUS_NULL,
                 callback_info->my_space->handle);
+        }
+        else
+        {
+            /* not kicking one out, so decr last ref */
+            globus_l_callback_info_dec_ref(callback_info);
         }
         
         return GLOBUS_SUCCESS;
@@ -734,9 +749,13 @@ globus_callback_blocking_unregister(
          * that it has been suspended (by adjust_period). In this case,
          * I would have already decremented the ref once.
          */
-        if(globus_priority_q_remove(
-            &callback_info->my_space->queue, callback_info))
+        if(callback_info->in_queue)
         {
+            globus_priority_q_remove(
+                &callback_info->my_space->queue, callback_info))
+            
+            callback_info->in_queue = GLOBUS_FALSE;
+            
             /* this decr my reference */
             globus_l_callback_info_dec_ref(callback_info);
         }
@@ -791,10 +810,14 @@ globus_callback_adjust_period(
          * been restarted.  if its not in queue, no problem... it wont get
          * queued again
          */
-        if(globus_priority_q_remove(
-            &callback_info->my_space->queue,
-            callback_info))
+        if(callback_info->in_queue)
         {
+            globus_priority_q_remove(
+                &callback_info->my_space->queue,
+                callback_info);
+            
+            callback_info->in_queue = GLOBUS_FALSE;
+            
             /* decr my reference to this */
             globus_l_callback_info_dec_ref(callback_info);
         }
@@ -819,11 +842,14 @@ globus_callback_adjust_period(
          * been restarted.  if its not in queue and its running, no problem...
          * when it gets requeued it will be with the new priority
          */
-        if(!globus_priority_q_modify(
-            &callback_info->my_space->queue,
-            callback_info,
-            &callback_info->start_time) &&
-            callback_info->running_count == 0)
+        if(callback_info->in_queue)
+        {
+            globus_priority_q_modify(
+                &callback_info->my_space->queue,
+                callback_info,
+                &callback_info->start_time);
+        }
+        else if(callback_info->running_count == 0)
         {
             /* it wasnt in the queue and its not running...  we must have
              * previously set this non-periodic... I need to requeue it
@@ -832,7 +858,13 @@ globus_callback_adjust_period(
             GlobusTimeAbstimeGetCurrent(callback_info->start_time);
             GlobusTimeAbstimeInc(callback_info->start_time, *new_period);
 
-            globus_l_callback_requeue(callback_info);
+            globus_priority_q_enqueue(
+                &callback_info->my_space->queue,
+                callback_info,
+                &callback_info->start_time);
+    
+            callback_info->in_queue = GLOBUS_TRUE;
+            
             globus_handle_table_increment_reference(
                 &globus_l_callback_handle_table, callback_handle);
         }
@@ -1015,7 +1047,9 @@ globus_l_callback_get_next(
             /* we got one */
             callback_info = (globus_l_callback_info_t *)
                 globus_priority_q_dequeue(queue);
-
+            
+            callback_info->in_queue = GLOBUS_FALSE;
+            
             /* get the next ready time */
             tmp_time = (globus_abstime_t *)
                 globus_priority_q_first_priority(queue);
