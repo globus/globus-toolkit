@@ -211,7 +211,7 @@ static char *         graml_env_globus_id = NULL;
 static char *         graml_job_status  = NULL;
 static char *         graml_nickname  = NULL;
 static char *         graml_job_id  = NULL;
-static globus_rsl_t * graml_rsl_tree;
+static globus_rsl_t * graml_rsl_tree = NULL;
 
 /* structures to manage line-buffered stdout and stderr */
 static globus_list_t *  globus_l_gram_stdout_files = GLOBUS_NULL;
@@ -1049,7 +1049,8 @@ main(int argc,
     }
 
     grami_fprintf( request->jobmanager_log_fp, "JM: freeing RSL.\n");
-    globus_rsl_free_recursive(graml_rsl_tree);
+    if (graml_rsl_tree)
+        globus_rsl_free_recursive(graml_rsl_tree);
 
     nexus_disallow_attach(my_port);
 
