@@ -331,11 +331,22 @@ sub fixpaths
     return 0;
 }
 
-sub fixGlobusLocation
+sub alterFileGlobusLocation
 {
-    $data = readFile($initfile);
-    $data =~ s|@GLOBUS_LOCATION@|$gpath|g;
-    writeFile($data);
+    my ($file) = @_;
+
+    $data = readFile($file);
+    $data =~ s|@GSI_OPENSSH_GLOBUS_LOCATION@|$gpath|g;
+    writeFile($file, $data);
+}
+
+sub alterFiles
+{
+    my (@files);
+
+    @files = (
+        "$gosharedir/contrib/caldera/sshd.init",
+             );
 }
 
 ### readFile( $filename )
