@@ -44,21 +44,29 @@ if(!defined($gpath))
 #  }
 #}
 
-#uncomment when we've got a better directory layout
+printf("moving files into source directory...\n");
+system("mkdir ../gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
+system("cp -rf * ../gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
+system("mv ../gpt-gsi-openssh ./gpt-gsi-openssh")==0 or die "Unable to move directory: $?";
+
+chdir("./gpt-gsi-openssh");
+
 printf("running autoheader...\n");
 system("autoheader")==0 or die "Could not run autoheader: $?";
 
 printf("running autoconf...\n");
 system("autoconf")==0 or die "Could not run autoheader: $?";
 
-printf("moving files into source directory...\n");
-system("mkdir ../gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
-system("cp -rf * ../gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
-system("mv ../gpt-gsi-openssh ./gpt-gsi-openssh")==0 or die "Unable to move directory: $?";
-
 #system("tar -cf gpt-$version.tar gpt-$version")==0 or die "Unable to create gpt_bundle.tar: $?";
 #system("gzip -f gpt-$version.tar")==0 or die "Unable to gzip gpt_bundle.tar: $?";
 #system("rm -rf gpt-$version")==0 or die "Unable to create gpt_bundle.tar: $?";
+
+printf("pruning source directory of extraneous files...\n");
+system("rm -rf `find . -name CVS -print`")==0 or die "Unable to remove cvs directories: $?";
+system("rm -f ./make_gpt_dist")==0 or die "Unable to remove gpt script: $?";
+system("rm -rf ./gpt")==0 or die "Unable to remove gpt directory: $?";
+
+chdir("../");
 
 printf("creating source tarball... gsi-openssh.\n");
 system("tar -cf gsi-openssh.tar ./gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
