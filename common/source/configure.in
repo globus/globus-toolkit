@@ -64,8 +64,6 @@ esac
 
 AC_SUBST(GLOBUS_THREADS)
 
-AM_CONDITIONAL(ENABLE_DOXYGEN, test ! -z $DOXYGEN)
-
 LAC_DOXYGEN(["Globus Common"],
 	    ["../library"])
 
