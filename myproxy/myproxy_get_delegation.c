@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <fcntl.h> 
 #include <assert.h>
+#include <errno.h>
 
 static char usage[] = \
 "\n"
@@ -68,6 +69,12 @@ static int copy_file(const char *source,
 		     const char *dest,
 		     const mode_t mode);
 
+/*
+ * Use setvbuf() instead of setlinebuf() since cygwin doesn't support
+ * setlinebuf().
+ */
+#define my_setlinebuf(stream)	setvbuf((stream), (char *) NULL, _IOLBF, 0)
+
 /* location of delegated proxy */
 char *outputfile = NULL;
 
@@ -85,8 +92,8 @@ main(int argc, char *argv[])
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
 
-    setlinebuf(stdout);
-    setlinebuf(stderr);
+    my_setlinebuf(stdout);
+    my_setlinebuf(stderr);
     
     socket_attrs = malloc(sizeof(*socket_attrs));
     memset(socket_attrs, 0, sizeof(*socket_attrs));
