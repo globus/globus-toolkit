@@ -158,8 +158,7 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-   if (server_context->config_file == NULL)
-    {
+    if (server_context->config_file == NULL) {
 	if (access(default_config_file, R_OK) == 0) {
 	    server_context->config_file = strdup(default_config_file);
 	    if (server_context->config_file == NULL) {
@@ -184,8 +183,7 @@ main(int argc, char *argv[])
     }
 
     /* Read my configuration */
-    if (myproxy_server_config_read(server_context) == -1)
-    {
+    if (myproxy_server_config_read(server_context) == -1) {
 	fprintf(stderr, "%s %s\n", verror_get_string(), verror_strerror());
 	exit(1);
     }
@@ -196,20 +194,15 @@ main(int argc, char *argv[])
      * If so, then stdin will be connected to a socket,
      * so getpeername() will succeed.
      */
-    if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) 
-    {
+    if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) {
        server_context->run_as_daemon = 1;
-       if (!debug) 
-       {
-	  if (become_daemon(server_context) < 0) 
-	  {
+       if (!debug) {
+	  if (become_daemon(server_context) < 0) {
 	     fprintf(stderr, "Error starting daemon\n");
 	     exit(1);
 	  }
        }
-    } 
-    else 
-    { 
+    } else { 
        server_context->run_as_daemon = 0;
        close(1);
        (void) open("/dev/null",O_WRONLY);
@@ -218,9 +211,7 @@ main(int argc, char *argv[])
     if (debug) {
 	myproxy_debug_set_level(1);
         myproxy_log_use_stream(stderr);
-    }
-    else
-    {
+    } else {
 	myproxy_log_use_syslog(LOG_DAEMON, server_context->my_name);
     }
 
@@ -237,17 +228,14 @@ main(int argc, char *argv[])
     my_signal(SIGTERM, sig_exit); 
     my_signal(SIGINT,  sig_exit); 
     
-    if (!server_context->run_as_daemon) 
-    {
+    if (!server_context->run_as_daemon) {
        myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
        socket_attrs->socket_fd = fileno(stdin);
        if (handle_client(socket_attrs, server_context) < 0) {
 	  my_failure("error in handle_client()");
        } 
        exit(0);
-    }
-    else
-    {    
+    } else {    
        /* Run as a daemon */
        listenfd = myproxy_init_server(socket_attrs);
        /* Set up concurrent server */
@@ -263,20 +251,17 @@ main(int argc, char *argv[])
 		myproxy_log_perror("Error in accept()");
 	     }
 	  }
-	  if (!debug)
-	  {
+	  if (!debug) {
 	     childpid = fork();
 	     
 	     if (childpid < 0) {              /* check for error */
 		myproxy_log_perror("Error in fork");
 		close(socket_attrs->socket_fd);
-	  }
-	     else if (childpid != 0)
-	     {
+	     } else if (childpid != 0) {
 		/* Parent */
 		/* parent closes connected socket */
 		close(socket_attrs->socket_fd);	     
-	     continue;	/* while(1) */
+		continue;	/* while(1) */
 	     }
 	     
 	     /* child process */
@@ -297,15 +282,15 @@ main(int argc, char *argv[])
 }   
 
 int
-handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context) 
+handle_client(myproxy_socket_attrs_t *attrs,
+	      myproxy_server_context_t *context) 
 {
     char  error_string[1024];
     char  client_name[1024];
     char  client_buffer[4096];
     int   requestlen;
-    myproxy_server_context_t *client_context;
 
-    myproxy_creds_t *client_creds;          
+    myproxy_creds_t *client_creds;
     myproxy_request_t *client_request;
     myproxy_response_t *server_response;
 
@@ -318,10 +303,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
-    client_context = malloc(sizeof(*client_context));
-    memset(client_context, 0, sizeof(*client_context));
-
-    //server_response->response_string = strdup ("");  //REMOVE
     /* Create a new gsi socket */
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
     if (attrs->gsi_socket == NULL) {
@@ -329,8 +310,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
         return -1;
     }
 
-    if (GSI_SOCKET_set_encryption(attrs->gsi_socket, 1) == GSI_SOCKET_ERROR)
-    {
+    if (GSI_SOCKET_set_encryption(attrs->gsi_socket, 1) == GSI_SOCKET_ERROR) {
 	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
 	myproxy_log("Error enabling encryption: %s", error_string);
@@ -338,7 +318,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     }
 
     /* Authenticate server to client and get DN of client */
-    if (myproxy_authenticate_accept(attrs, client_name, sizeof(client_name)) < 0) {
+    if (myproxy_authenticate_accept(attrs, client_name,
+				    sizeof(client_name)) < 0) {
 	/* Client_name may not be set on error so don't use it. */
 	myproxy_log_verror();
 	respond_with_error_and_die(attrs, "authentication failed");
@@ -358,8 +339,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
 	myproxy_log_verror();
-        respond_with_error_and_die(attrs,
-				   "error");
+        respond_with_error_and_die(attrs, "error");
     }
 
     /* Check client version */
@@ -383,35 +363,12 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     }
 
     /* XXX Put real pass word policy here */
-    if (client_request->passphrase && strlen(client_request->passphrase) // this allows credentials with no passwords to be stored but not retrieved
-	&& strlen(client_request->passphrase) < MIN_PASS_PHRASE_LEN)
-    {
+    /* Allow credentials with no passwords to be stored by not retrieved. */
+    if (client_request->passphrase && strlen(client_request->passphrase) &&
+	strlen(client_request->passphrase) < MIN_PASS_PHRASE_LEN) {
 	myproxy_log("client %s Pass phrase too short", client_name);
-	respond_with_error_and_die(attrs,
-				   "Pass phrase too short.\n");
+	respond_with_error_and_die(attrs, "Pass phrase too short.\n");
     }
-
-    /* Fill in credential structure = owner, user, passphrase, proxy location */
-    client_creds->owner_name  = strdup(client_name);
-    client_creds->username   = strdup(client_request->username);
-    client_creds->passphrase = strdup(client_request->passphrase);
-    
-    if (client_request->retrievers != NULL) {
-	client_creds->retrievers = strdup(client_request->retrievers);
-    }
-
-    if (client_request->renewers != NULL) {
-	client_creds->renewers = strdup(client_request->renewers);
-    }
-
-    /* Copy credential name and description, if present */
-    if (client_request->credname != NULL)
-	client_creds->credname = strdup (client_request->credname);
-  
-    if (client_request->creddesc != NULL)
-	client_creds->creddesc = strdup (client_request->creddesc);
-
-    client_creds->force_credential_overwrite = client_request->force_credential_overwrite;
 
     /* All authorization policies are enforced in this function. */
     if (myproxy_authorize_accept(context, attrs, 
@@ -420,61 +377,82 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
        respond_with_error_and_die(attrs, verror_get_string());
     }
     
+    /* Fill in client_creds with info from the request that describes
+       the credentials the request applies to. */
+    client_creds->owner_name     = strdup(client_name);
+    client_creds->username       = strdup(client_request->username);
+    client_creds->passphrase     = strdup(client_request->passphrase);
+    client_creds->lifetime 	 = client_request->proxy_lifetime;
+    if (client_request->retrievers != NULL)
+	client_creds->retrievers = strdup(client_request->retrievers);
+    if (client_request->renewers != NULL)
+	client_creds->renewers   = strdup(client_request->renewers);
+    if (client_request->credname != NULL)
+	client_creds->credname   = strdup (client_request->credname);
+    if (client_request->creddesc != NULL)
+	client_creds->creddesc   = strdup (client_request->creddesc);
+    client_creds->force_credential_overwrite =
+	client_request->force_credential_overwrite;
+
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
       
     /* Handle client request */
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY: 
-	/* log request type */
         myproxy_log("Received GET request from %s", client_name);
 
+	/* Retrieve the credentials from the repository */
 	if (myproxy_creds_retrieve(client_creds) < 0) {
 	    respond_with_error_and_die(attrs, verror_get_string());
 	}
 
-	myproxy_debug("  Username is \"%s\"", client_request->username);
-	myproxy_debug("  Location is %s", client_creds->location);
-	myproxy_debug("  Lifetime is %d seconds",
+	myproxy_debug("  Owner: %s", client_creds->username);
+	myproxy_debug("  Username: %s", client_creds->username);
+	myproxy_debug("  Location: %s", client_creds->location);
+	myproxy_debug("  Requested lifetime: %d seconds",
 		      client_request->proxy_lifetime);
+	myproxy_debug("  Max. delegation lifetime: %d seconds",
+		      client_creds->lifetime);
 
-	/* return server response */
+	/* Send initial OK response */
 	send_response(attrs, server_response, client_name);
 	
+	/* Delegate the credential and set final server_response */
         get_proxy(attrs, client_creds, client_request, server_response);
         break;
 
 
     case MYPROXY_PUT_PROXY:
-	/* log request type */
         myproxy_log("Received PUT request from %s", client_name);
-	myproxy_debug("  Username is \"%s\"", client_request->username);
-	myproxy_debug("  Lifetime is %d seconds", client_request->proxy_lifetime);
+	myproxy_debug("  Username: %s", client_creds->username);
+	myproxy_debug("  Max. delegation lifetime: %d seconds",
+		      client_creds->lifetime);
+	if (client_creds->retrievers != NULL)
+	    myproxy_debug("  Retriever policy: %s", client_creds->retrievers);
+	if (client_creds->renewers != NULL)
+    	    myproxy_debug("  Renewer policy: %s", client_creds->renewers); 
 
-	/* Set lifetime of credentials delegated by server */ 
-	client_creds->lifetime = client_request->proxy_lifetime;
-
-	/* return server response */
+	/* Send initial OK response */
 	send_response(attrs, server_response, client_name);
+
+	/* Store the credentials in the repository and
+	   set final server_response */
         put_proxy(attrs, client_creds, server_response);
         break;
 
     case MYPROXY_INFO_PROXY:
-	/* log request type */
         myproxy_log("Received client %s command: INFO", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
         info_proxy(client_creds, server_response);
         break;
     case MYPROXY_DESTROY_PROXY:
-	/* log request type */
         myproxy_log("Received client %s command: DESTROY", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
-
         destroy_proxy(client_creds, server_response);
         break;
     default:
-	/* log request type */
-        (server_response->data).error_str = strdup("Invalid client request command.\n");
+        (server_response->data).error_str = strdup("Unknown command.\n");
         break;
     }
     
@@ -486,21 +464,16 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
    
     /* free stuff up */
     if (client_creds != NULL) {
-	if (client_creds->owner_name != NULL) {
+	if (client_creds->owner_name != NULL)
 	    free(client_creds->owner_name);
-	}
-	if (client_creds->username != NULL) {
+	if (client_creds->username != NULL)
 	    free(client_creds->username);
-	}
-	if (client_creds->passphrase != NULL) {
+	if (client_creds->passphrase != NULL)
 	    free(client_creds->passphrase);
-	}
-	if (client_creds->location != NULL) {
+	if (client_creds->location != NULL)
 	    free(client_creds->location);
-	}
 	free(client_creds);
     }
-
     myproxy_free(attrs, client_request, server_response);
     if (context->config_file != NULL) {
         free(context->config_file);
@@ -639,7 +612,6 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
     response.version = strdup(MYPROXY_VERSION);
     response.response_type = MYPROXY_ERROR_RESPONSE;
     response.authorization_data = NULL;
-    //response.response_string = strdup ("");  REMOVE
     response.data.error_str = (char *) malloc (strlen(error));
     my_strncpy(response.data.error_str, error, sizeof(response.data.error_str));
     
@@ -660,7 +632,9 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
     exit(1);
 }
 
-void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, char *client_name) {
+void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
+		   char *client_name)
+{
     char server_buffer[10240];
     int responselen;
     assert(response != NULL);
@@ -692,6 +666,13 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, 
     return;
 }
 
+/**********************************************************************
+ *
+ * Routines to handle client requests to the server.
+ *
+ */
+
+/* Delegate requested credentials to the client */
 void get_proxy(myproxy_socket_attrs_t *attrs, 
 	       myproxy_creds_t *creds,
 	       myproxy_request_t *request,
@@ -699,12 +680,10 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 {
     int min_lifetime;
   
-    /* Delegate credentials to client */
     min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
 
     if (myproxy_init_delegation(attrs, creds->location, min_lifetime,
 				creds->passphrase) < 0) {
-
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	(response->data).error_str = strdup("Unable to delegate credentials.\n");
@@ -712,28 +691,22 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
         myproxy_log("Delegating credentials for %s lifetime=%d",
 		    creds->owner_name, min_lifetime);
 	response->response_type = MYPROXY_OK_RESPONSE;
-	//response->response_string = strdup ("OK");  //REMOVE
     } 
 }
 
+/* Accept delegated credentials from client */
 void put_proxy(myproxy_socket_attrs_t *attrs, 
-	      myproxy_creds_t *creds, 
-	      myproxy_response_t *response) 
+	       myproxy_creds_t *creds, 
+	       myproxy_response_t *response) 
 {
     char delegfile[64];
 
-    myproxy_debug("Storing credentials for username \"%s\"", creds->username);
-    myproxy_debug("  Owner is \"%s\"", creds->owner_name);
-    myproxy_debug("  Delegation lifetime is %d seconds", creds->lifetime);
-    if (creds->retrievers != NULL)
-	    myproxy_debug("  Retrievers = %s", creds->retrievers);
-    if (creds->renewers != NULL)
-    	    myproxy_debug("  Renewers = %s", creds->renewers); 
-    /* Accept delegated credentials from client */
-    if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile), creds->passphrase) < 0) {
+    if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile),
+				  creds->passphrase) < 0) {
 	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        (response->data).error_str = strdup("Failed to accept credentials.\n"); 
+        (response->data).error_str =
+	    strdup("Failed to accept credentials.\n"); 
 	return;
     }
 
@@ -747,12 +720,10 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
         (response->data).error_str = strdup("Unable to store credentials.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
-	//response->response_string = strdup ("OK");
     }
 
     /* Clean up temporary delegation */
-    if (unlink(delegfile) != 0)
-    {
+    if (unlink(delegfile) != 0) {
 	myproxy_log_perror("Removal of temporary credentials file %s failed",
 			   delegfile);
     }
@@ -781,7 +752,6 @@ void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
         (response->data).error_str = strdup("Unable to delete credential.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
-	//response->response_string = strdup ("Credential successfully deleted");   REMOVE
     }
  
 }
@@ -978,7 +948,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
 	// get information about credential
        if (myproxy_creds_fetch_entry(client_request->username, client_request->credname, &creds) < 0) {
-	   verror_put_string("%s", "Unable to retrieve credential information");
+	   verror_put_string("Unable to retrieve credential information");
 	   goto end;
        }
 
@@ -988,7 +958,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   authorization_ok =
 	       myproxy_server_check_policy_list((const char **)context->authorized_retriever_dns, client_name);
 	   if (authorization_ok != 1) {
-	       verror_put_string("failed server's authorized_retriever policy");
+	       verror_put_string("\"%s\" not authorized by server's authorized_retriever policy", client_name);
 	       goto end;
 	   }
 	   /* check per-credential policy */
@@ -996,14 +966,14 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       authorization_ok =
 		   myproxy_server_check_policy(creds.retrievers, client_name);
 	       if (authorization_ok != 1) {
-		   verror_put_string("failed credential's retriever policy");
+		   verror_put_string("\"%s\" not authorized by credential's retriever policy", client_name);
 		   goto end;
 	       }
 	   } else if (context->default_retriever_dns) {
 	       authorization_ok =
 		   myproxy_server_check_policy_list((const char **)context->default_retriever_dns, client_name);
 	       if (authorization_ok != 1) {
-		   verror_put_string("failed server's default retriever policy");
+		   verror_put_string("\"%s\" not authorized by server's default retriever policy", client_name);
 		   goto end;
 	       }
 	   }
@@ -1026,14 +996,14 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       authorization_ok =
 		   myproxy_server_check_policy(creds.renewers, client_name);
 	       if (authorization_ok != 1) {
-		   verror_put_string("failed credential's renewer policy");
+		   verror_put_string("\"%s\" not authorized by credential's renewer policy", client_name);
 		   goto end;
 	       }
 	   } else if (context->default_renewer_dns) {
 	       authorization_ok =
 		   myproxy_server_check_policy_list((const char **)context->default_renewer_dns, client_name);
 	       if (authorization_ok != 1) {
-		   verror_put_string("failed server's default renewer policy");
+		   verror_put_string("\"%s\" not authorized by server's default renewer policy");
 		   goto end;
 	       }
 	   }
@@ -1058,7 +1028,10 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        /* Is this client authorized to store credentials here? */
        authorization_ok =
 	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
-       if (!(authorization_ok == 1)) break;
+       if (authorization_ok != 1) {
+	   verror_put_string("\"%s\" not authorized to store credentials on this server", client_name);
+	   goto end;
+       }
 
        credentials_exist = myproxy_creds_exist(client_request->username, client_request->credname);
        if (credentials_exist == -1) {
@@ -1077,10 +1050,10 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   if (!client_owns_credentials) {
 	       if (client_request->command_type == MYPROXY_PUT_PROXY) {
 		   myproxy_log("Username and credential name in use by another client.");
-		   verror_put_string("%s","Username and credential name in use by someone else.");
+		   verror_put_string("Username and credential name in use by someone else.");
 	       } else {
 		   myproxy_log("Failed credential owner check.");
-		   verror_put_string("%s","Credentials owned by someone else.");
+		   verror_put_string("Credentials owned by someone else.");
 	       }
 	       goto end;
 	   }
@@ -1091,8 +1064,8 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        /* Is this client authorized to store credentials here? */
        authorization_ok =
 	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
-       if (!(authorization_ok == 1)) {
-	   verror_put_string("failed server's accepted_credentials policy");
+       if (authorization_ok != 1) {
+	   verror_put_string("\"%s\" not authorized to query credentials on this server", client_name);
 	   goto end;
        }
 
@@ -1103,12 +1076,12 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        break;
    }
    if (authorization_ok == -1) {
-      verror_put_string("%s","Error checking authorization");
+      verror_put_string("Error checking authorization");
       goto end;
    }
 
    if (authorization_ok != 1) {
-      verror_put_string("%s", "Authorization failed");
+      verror_put_string("Authorization failed");
       goto end;
    }
 
@@ -1153,7 +1126,6 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
 
    authorization_init_server(&server_response.authorization_data);
    server_response.response_type = MYPROXY_AUTHORIZATION_RESPONSE;
-   //server_response.response_string = strdup ("");  REMOVE
    send_response(attrs, &server_response, client_name);
 
    /* Wait for client's response. Its first four bytes are supposed to
@@ -1192,66 +1164,3 @@ end:
 
    return return_status;
 }
-
-#define MAX_REGEX_LEN 256
-
-/*
-
-   int parse_string (char ***, char *)
-
-   Function to convert a comma separated sequence of strings into array of strings.
-
-   Accepts:  Address to a pointer to a char pointer
-	     String
-
-   Returns: Number of strings separated
-	    -1 on Error. errno is set
-
-*/
-
-int parse_string (char ***dest, char *src)
-{
- int i;
- int index1 = 0, index2 = 0, len;
- char tmp[MAX_REGEX_LEN];
-
- if (src == NULL )
- {
-   verror_put_errno (EINVAL);
-   return -1;
- }
-
- *dest = (char **) malloc (sizeof (char **) );
- **dest = (char *) malloc (sizeof (char *) );
-
- len = strlen (src);
- memset (tmp, 0, MAX_REGEX_LEN);
-
- for (i = 0; i < len; i ++) {
-  	if (*(src+i) == ',')  { // end of reg-ex   
-	  	*dest = (char **) realloc (*dest, sizeof (char **) *(index1+1));
-
-		if ( ((*dest)[index1++] = strdup (tmp)) == NULL)
-		{
-		  verror_put_errno (ENOMEM);
-		  return -1;
-		}  
-   		index2 = 0;
-   		memset (tmp, 0, MAX_REGEX_LEN);
-		continue;
-  	}
-	tmp[index2++] = *(src+i);
- }
-
-if ( ((*dest)[index1++] = strdup (tmp)) == NULL)
-{
-  verror_put_errno (ENOMEM);
-  return -1;
-}  
-
- return index1;
-}
-
-
-
-  
