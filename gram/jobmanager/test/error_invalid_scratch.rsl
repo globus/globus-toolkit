@@ -1,0 +1,3 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRATCH *)
+&(executable=/bin/echo)
+ (scratch_dir=/etc)

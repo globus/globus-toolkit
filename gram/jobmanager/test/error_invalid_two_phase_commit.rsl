@@ -1,0 +1,3 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_TWO_PHASE_COMMIT *)
+&(executable=/bin/echo)
+ (two_phase = bogus)
