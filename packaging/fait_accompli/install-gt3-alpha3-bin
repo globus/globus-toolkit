@@ -22,7 +22,17 @@ $GPT_LOCATION/sbin/gpt-install gt3_alpha2_bin_bundle-r1_bin.tar.gz
 $GPT_LOCATION/sbin/gpt-install gt3-all-bin-1-i686-pc-linux-gnu-bin.tar.gz
 $GPT_LOCATION/sbin/gpt-install globus-rls-server-1.1-i686-pc-linux-gnu-bin.tar.gz
 mkdir -p $1/contrib
-(cp OGSI.NET.zip $1/contrib; cd $1; unzip OGSI.NET.zip)
+cp OGSI.NET.zip $1/contrib
+cd $1/contrib
+unzip OGSI.NET.zip
+cd ../gars
 
+for f in *; do
+	ant -f ../build.xml deploy -Dgar.name=`pwd`/$f
+	if [ $f = "mmjfs.gar" ]; then
+		ant -f build-setuid.xml deploy
+		ant -f build-setuid.xml mirrorConfig
+	fi
+done
 
 $GPT_LOCATION/sbin/gpt-postinstall
