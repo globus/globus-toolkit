@@ -3364,7 +3364,6 @@ error_register:
     globus_free(bounce_info);
     
 error_alloc:
-    globus_l_io_handle_destroy(ihandle);
     *handle = GLOBUS_NULL;
     return result;
 }
