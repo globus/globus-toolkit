@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gass_copy">
 
-    <Aging_Version Age="0" Major="2" Minor="10"/>
+    <Aging_Version Age="0" Major="3" Minor="0"/>
     <Description>Globus Gass Copy</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -18,12 +18,12 @@
             </Dependency>
             <Dependency Name="globus_common"> 
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_client">
                 <Version>
-                    <Simple_Version Major="1"/>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_control">
@@ -46,12 +46,12 @@
         <Source_Dependencies Type="lib_link">
             <Dependency Name="globus_common"> 
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_client">
                 <Version>
-                    <Simple_Version Major="1"/>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_control">
@@ -74,12 +74,12 @@
         <Source_Dependencies Type="pgm_link">
             <Dependency Name="globus_common"> 
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_client">
                 <Version>
-                    <Simple_Version Major="1"/>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_ftp_control">
