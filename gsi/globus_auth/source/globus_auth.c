@@ -38,6 +38,12 @@ globus_authorization_handle_init(
                 ));
        
     /*configfile contains callback routines*/
+    if (configfile == NULL)
+    {
+        /* Use default */
+        configfile = GLOBUS_AUTH_DEFAULT_CONFIG_FILE;
+    }
+    
     if((status = gaa_initialize(&((*handle)->gaa),configfile)) != GAA_S_SUCCESS)
     return(globus_result_set(
         GLOBUS_AUTH_INTERNAL_GAA_ERROR,
