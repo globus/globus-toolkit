@@ -12,7 +12,10 @@ v0.5.0 15 Nov 2002 (GPT package version 1.2)
   for storing multiple credentials per username, stores private keys
   encrypted with the credential's passphrase (if set), and adds the
   myproxy-change-pass-phrase command.  It is also the first version to
-  be released unter the NCSA Open Source license.
+  be released unter the NCSA Open Source license.  Note that due to
+  version incompatibilities with Globus Toolkit 2.2 libraries and the
+  Java CoG (not specific to MyProxy), this and future versions of
+  MyProxy are not compatible with Java CoG versions before 1.0.
 
 v0.4.6 3 Sep 2002 (GPT package version 1.1)
   This version adds sample init.d and xinetd entries in the GPT
