@@ -1039,6 +1039,9 @@ static void doit()
     size_t	        length;
     char *              http_message;
     size_t	        http_length;
+    char *              http_body;
+    size_t              http_body_length;
+    FILE *              http_body_file;
     
 #ifdef GSS_AUTHENTICATION
     /* GSSAPI assist variables */
@@ -1281,7 +1284,6 @@ static void doit()
 
     }
 
-    http_message[length] = '\0';
     service_name = (char *) malloc(length);
     if (1 != sscanf(http_message, "POST /%s", service_name))
     {
@@ -1289,6 +1291,44 @@ static void doit()
 		 "Unable to extract service name from incoming message\n");
     }
 
+    http_body_file = tmpfile();
+    if (http_body_file)
+    {
+	setbuf(http_body_file,NULL);
+	fcntl(fileno(http_body_file), F_SETFD, 0);
+	sprintf(buf, "%d", fileno(http_body_file));
+	grami_setenv("GRID_HTTP_BODY_FD", buf, 1);
+	notice2(0,"GRID_HTTP_BODY_FD=%s",buf);
+    }    
+    else
+    {
+	failure(FAILED_SERVER, "Unable to create http body tmpfile");
+    }
+
+    /* find body of message */
+    {
+	char    lastchar;
+	char *  end_of_header = "\015\012\015\012";
+
+	lastchar = http_message[http_length];
+	http_message[http_length]='\0';
+	http_body = strstr(http_message, end_of_header);
+	http_message[http_length]=lastchar;
+	
+	if (!http_body)
+	{
+	    failure(FAILED_SERVER, "Could not find http message body");
+	}
+
+	http_body += 4;  /* CR LF CR LF */
+	fwrite(http_body,
+	       1,
+	       (size_t)(&http_message[http_length] - http_body),
+	       http_body_file);
+
+	lseek(fileno(http_body_file), 0, SEEK_SET);
+    }
+    
     free(http_message);
     length = strlen(service_name);
     
@@ -1622,8 +1662,8 @@ static void doit()
 	}
 
 	major_status = gss_export_sec_context(&minor_status,
-								&context_handle, 
-								&context_token);
+					      &context_handle, 
+					      &context_token);
 
 	if (major_status != GSS_S_COMPLETE) 
 	{
@@ -1636,16 +1676,18 @@ static void doit()
 	}
 	
   	int_buf[0] = (unsigned char)(((context_token.length)>>24)&0xff);
-    int_buf[1] = (unsigned char)(((context_token.length)>>16)&0xff);
-    int_buf[2] = (unsigned char)(((context_token.length)>> 8)&0xff);
-    int_buf[3] = (unsigned char)(((context_token.length)    )&0xff);
-
+	int_buf[1] = (unsigned char)(((context_token.length)>>16)&0xff);
+	int_buf[2] = (unsigned char)(((context_token.length)>> 8)&0xff);
+	int_buf[3] = (unsigned char)(((context_token.length)    )&0xff);
+    
 	if (fwrite(int_buf,4,1,context_tmpfile) != 1)
 	{
 		failure(FAILED_SERVER, "Failure writing context length");
 	}
-	if (fwrite(context_token.value,context_token.length,1,
-					context_tmpfile) != 1)
+	if (fwrite(context_token.value,
+		   context_token.length,
+		   1,
+		   context_tmpfile) != 1)
 	{
 		 failure(FAILED_SERVER, "Failure writing context token");
 	}
