@@ -337,7 +337,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
                                   int * gatekeeper_fd)
 {
     int                          rc;
-    int                          tmp_version;
+    globus_byte_t                tmp_version;
     char *                       gatekeeper_host;
     char *                       gatekeeper_princ;
     unsigned short               gatekeeper_port = 0;
@@ -483,7 +483,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     }
     else
     {
-        tmp_version = atoi(auth_msg_buf);
+        tmp_version =  *auth_msg_buf;
         if (tmp_version != GLOBUS_GRAM_PROTOCOL_VERSION)
         {
             return (GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
