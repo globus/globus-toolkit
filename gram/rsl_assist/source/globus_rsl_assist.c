@@ -191,8 +191,6 @@ globus_rsl_assist_replace_manager_name(
 			   
 			if (resource_contact == GLOBUS_NULL)
 			{
-	globus_libc_printf("FAILED TO GET contact\n");
-			    
 			    return GLOBUS_NULL;			    
 			}
 
@@ -287,9 +285,7 @@ globus_rsl_assist_replace_manager_name(
 		
 		if (resource_contact == GLOBUS_NULL)
 		{
-		    
-		globus_libc_printf("FAILED TO GET contact 2\n");
-	    return GLOBUS_NULL;
+		    return GLOBUS_NULL;
 		}
 		
 		/* make that into a sequence of a single literal
