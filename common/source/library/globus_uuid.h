@@ -37,6 +37,10 @@ typedef struct
     char                                text[GLOBUS_UUID_TEXTLEN + 1];
 } globus_uuid_t;
 
+/**
+ * creates a time based, Leach-Salz variant uuid, using the mac address when
+ * available.
+ */
 int
 globus_uuid_create(
     globus_uuid_t *                     uuid);
