@@ -43,5 +43,8 @@ nametest_LDADD = $(GPT_PGM_LINKS)
 
 test_PROGRAMS=xml_sig_test nametest
 
+EXTRA_DIST = \
+	LICENSE
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
