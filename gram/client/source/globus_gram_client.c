@@ -98,6 +98,7 @@ typedef struct
     globus_mutex_t mutex;
     globus_cond_t cond;
     volatile globus_bool_t done;
+    int job_status;
     int unregister_status;
 } globus_l_unregister_monitor_t;
 
@@ -1474,6 +1475,7 @@ Returns:
 int 
 globus_gram_client_job_callback_unregister(char * job_contact,
                                            const char * callback_contact,
+                                           int * job_status,
                                            int * failure_code)
 {
     int                             rc;
@@ -1513,6 +1515,8 @@ globus_gram_client_job_callback_unregister(char * job_contact,
 	       "globus_nexus_attach returned %d\n", rc);
 
 	GLOBUS_L_UNLOCK;
+
+        *job_status = 0;
 
         if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
             rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
@@ -1554,7 +1558,10 @@ globus_gram_client_job_callback_unregister(char * job_contact,
     {
         grami_fprintf(globus_l_print_fp,
 	       "globus_nexus_send_rsr returned %d\n", rc);
+
 	GLOBUS_L_UNLOCK;
+
+        *job_status = 0;
 
         if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
             rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
@@ -1584,11 +1591,13 @@ globus_gram_client_job_callback_unregister(char * job_contact,
     GLOBUS_L_UNLOCK;
     if (unregister_monitor.unregister_status == GLOBUS_SUCCESS)
     {
+        *job_status = unregister_monitor.job_status;
         *failure_code = 0;
         return (GLOBUS_SUCCESS);
     }
     else
     {
+        *job_status = 0;
         *failure_code = unregister_monitor.unregister_status;
         return (GLOBUS_FAILURE);
     }
@@ -1625,6 +1634,7 @@ globus_l_job_callback_unregister_handler(globus_nexus_endpoint_t * endpoint,
     }
     else
     {
+        globus_nexus_get_int(buffer, &unregister_monitor->job_status, 1);
         globus_nexus_get_int(buffer, &unregister_monitor->unregister_status, 1);
     }
 

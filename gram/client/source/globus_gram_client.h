@@ -283,30 +283,17 @@ typedef struct
                               Function prototypes
 ******************************************************************************/
 extern int 
+globus_gram_client_callback_allow(
+                          globus_gram_client_callback_func_t callback_func,
+			  void * user_callback_arg,
+			  char ** callback_contact);
+
+extern int 
 globus_gram_client_job_request(char * resource_manager_contact,
 			       const char * description,
 			       const int job_state_mask,
 			       const char * callback_contact,
 			       char ** job_contact);
-
-extern int
-globus_gram_client_version(void);
-
-extern int 
-globus_gram_client_ping(char * resource_manager_contact);
-
-extern int 
-globus_gram_client_job_check(char * resource_manager_contact,
-			     const char * description,
-			     float required_confidence,
-			     globus_gram_client_time_t * estimate,
-			     globus_gram_client_time_t * interval_size);
-
-extern int 
-globus_gram_client_job_start_time(char * job_contact,
-				  float required_confidence,
-				  globus_gram_client_time_t * estimate,
-				  globus_gram_client_time_t * interval_size);
 
 extern int 
 globus_gram_client_job_cancel(char * job_contact);
@@ -326,13 +313,8 @@ globus_gram_client_job_callback_register(char * job_contact,
 extern int
 globus_gram_client_job_callback_unregister(char * job_contact,
                                            const char * callback_contact,
+                                           int * job_status,
                                            int * failure_code);
-
-extern int 
-globus_gram_client_callback_allow(
-                          globus_gram_client_callback_func_t callback_func,
-			  void * user_callback_arg,
-			  char ** callback_contact);
 
 extern int 
 globus_gram_client_callback_disallow(char * callback_contact);
@@ -346,9 +328,29 @@ globus_gram_client_job_contact_free(char * job_contact);
 extern const char *
 globus_gram_client_error_string(int error_code);
 
+extern int
+globus_gram_client_version(void);
+
+extern int 
+globus_gram_client_ping(char * resource_manager_contact);
+
 extern void
 globus_gram_client_debug(void);
 
+/*** unimplemented ***
+extern int 
+globus_gram_client_job_check(char * resource_manager_contact,
+			     const char * description,
+			     float required_confidence,
+			     globus_gram_client_time_t * estimate,
+			     globus_gram_client_time_t * interval_size);
+
+extern int 
+globus_gram_client_job_start_time(char * job_contact,
+				  float required_confidence,
+				  globus_gram_client_time_t * estimate,
+				  globus_gram_client_time_t * interval_size);
+*** unimplemented ***/
 
 /******************************************************************************
  *			       Module definition
