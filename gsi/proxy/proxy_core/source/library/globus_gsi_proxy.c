@@ -319,6 +319,95 @@ globus_gsi_proxy_create_req(
     X509_NAME_free(req_name);
     req_name = NULL;
 
+    if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+    {
+        ASN1_OCTET_STRING *             ext_data;
+        int                             length;
+        unsigned char *                 data;
+        unsigned char *                 der_data;
+        X509_EXTENSION *                pci_ext;
+        STACK_OF(X509_EXTENSION) *      extensions;
+        
+        length = i2d_PROXYCERTINFO(handle->proxy_cert_info, 
+                                   NULL);
+        if(length < 0)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                ("Couldn't convert PROXYCERTINFO struct from internal"
+                 " to DER encoded form"));
+            goto error_exit;
+        }
+        
+        data = malloc(length);
+
+        if(!data)
+        {
+            GLOBUS_GSI_PROXY_MALLOC_ERROR(length);
+            goto error_exit;
+        }
+
+        der_data = data;
+        
+        length = i2d_PROXYCERTINFO(handle->proxy_cert_info, &der_data);
+        
+        if(length < 0)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                ("Couldn't convert PROXYCERTINFO struct from internal"
+                 " to DER encoded form"));
+            free(data);
+            goto error_exit;
+        }
+
+        ext_data = ASN1_OCTET_STRING_new();
+        
+        if(!ASN1_OCTET_STRING_set(ext_data, data, length))
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                ("Couldn't convert PROXYCERTINFO struct from internal"
+                 " to DER encoded form"));
+            ASN1_OCTET_STRING_free(ext_data);
+            free(data);
+            goto error_exit;            
+        }
+
+        free(data);
+        
+        pci_ext = X509_EXTENSION_create_by_NID(NULL,
+                                               OBJ_sn2nid(PROXYCERTINFO_SN),
+                                               1,
+                                               ext_data);
+        if(pci_ext == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                ("Couldn't create PROXYCERTINFO extension"));
+            ASN1_OCTET_STRING_free(ext_data);
+            goto error_exit;
+        }
+
+        extensions = sk_X509_EXTENSION_new_null();
+
+        sk_X509_EXTENSION_push(extensions, pci_ext);
+
+        X509_REQ_add_extensions(handle->req, extensions);
+
+        sk_X509_EXTENSION_pop_free(extensions, X509_EXTENSION_free);
+
+        GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START PROXYCERTINFO ******\n");
+        GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, 
+                                              PROXYCERTINFO, 
+                                              handle->proxy_cert_info);
+        GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END PROXYCERTINFO  ******\n");
+    }
+
     if (!X509_REQ_sign(handle->req, handle->proxy_key, EVP_md5()))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -342,26 +431,6 @@ globus_gsi_proxy_create_req(
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START X509_REQ ******\n");
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, X509_REQ, handle->req);
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END X509_REQ  ******\n");
-
-    if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
-    {
-        /* write the PCI to the BIO */
-        if(i2d_PROXYCERTINFO_bio(output_bio, handle->proxy_cert_info) == 0)
-        {
-            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                ("Couldn't convert PROXYCERTINFO object from internal "
-                 " to DER encoded form"));
-            goto error_exit;
-        }
-    }
-
-    GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START PROXYCERTINFO ******\n");
-    GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, 
-                                          PROXYCERTINFO, 
-                                          handle->proxy_cert_info);
-    GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END PROXYCERTINFO  ******\n");
 
     result = GLOBUS_SUCCESS;
     goto exit;
@@ -418,8 +487,13 @@ globus_gsi_proxy_inquire_req(
     globus_result_t                     result;
     PROXYPOLICY *                       policy = NULL;
     ASN1_OBJECT *                       policy_lang = NULL;
+    ASN1_OBJECT *                       extension_oid = NULL;
+    ASN1_OCTET_STRING *                 ext_data = NULL;
     int                                 policy_nid;
-
+    int                                 pci_NID;
+    int                                 i;
+    STACK_OF(X509_EXTENSION) *          req_extensions = NULL;
+    X509_EXTENSION *                    extension;
     
     static char *                       _function_name_ =
         "globus_gsi_proxy_inquire_req";
@@ -460,24 +534,60 @@ globus_gsi_proxy_inquire_req(
         goto done;
     }
 
-    if(handle->proxy_cert_info)
-    {
-        PROXYCERTINFO_free(handle->proxy_cert_info);
-        handle->proxy_cert_info = NULL;
-    }
+    req_extensions = X509_REQ_get_extensions(handle->req);
 
-    if(BIO_pending(input_bio) > 0)
+    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+    
+    for(i=0;i<sk_X509_EXTENSION_num(req_extensions);i++)
     {
-        if(d2i_PROXYCERTINFO_bio(input_bio, &handle->proxy_cert_info) == NULL)
+        extension = sk_X509_EXTENSION_value(req_extensions,i);
+        extension_oid = X509_EXTENSION_get_object(extension);
+
+        if(OBJ_obj2nid(extension_oid) == pci_NID)
         {
-            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                ("Couldn't convert PROXYCERTINFO object from DER encoded "
-                 "to internal form"));
-            goto done;
-        }
+            if((ext_data = X509_EXTENSION_get_data(extension)) == NULL)
+            {
+                GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                    ("Can't get DER encoded extension "
+                     "data from X509 extension object"));
+                goto done;
+            }
 
+            if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
+            {
+                GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                    ("Failed to copy extension data."));
+                goto done;                
+            }
+
+            if(handle->proxy_cert_info)
+            {
+                PROXYCERTINFO_free(handle->proxy_cert_info);
+                handle->proxy_cert_info = NULL;
+            }    
+
+            if((d2i_PROXYCERTINFO(
+                    &handle->proxy_cert_info,
+                    &ext_data->data,
+                    ext_data->length)) == NULL)
+            {
+                GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+                    ("Can't convert DER encoded PROXYCERTINFO "
+                     "extension to internal form"));
+                goto done;
+            }
+            break;
+        }
+    }
+    
+    if(handle->proxy_cert_info != NULL)
+    {
         if((policy = PROXYCERTINFO_get_policy(handle->proxy_cert_info))
            == NULL)
         {

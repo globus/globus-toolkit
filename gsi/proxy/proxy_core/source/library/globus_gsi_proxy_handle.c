@@ -49,7 +49,7 @@ globus_gsi_proxy_handle_init(
     globus_gsi_proxy_handle_attrs_t     handle_attrs)
 {
     globus_gsi_proxy_handle_t           handle_i;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 len;
     static char *                       _function_name_ =
         "globus_gsi_proxy_handle_init";
@@ -127,7 +127,6 @@ globus_gsi_proxy_handle_init(
 
     handle_i->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
 
-    result = GLOBUS_SUCCESS;
     goto exit;
 
  free_handle:

@@ -12,19 +12,18 @@ globus_l_gsi_proxy_error_strings[GLOBUS_GSI_PROXY_ERROR_LAST] =
 /* 1 */   "Error with the proxy handle",
 /* 2 */   "Error with the proxy handle attributes",
 /* 3 */   "Error with ASN1 proxycertinfo structure",
-/* 4 */   "Error with ASN1 proxyrestriction structure",
-/* 5 */   "Error with ASN1 proxygroup structure",
-/* 6 */   "Error with pathlength of proxyrestriction",
-/* 7 */   "Error with X509 request structure",
-/* 8 */   "Error with X509 structure",
-/* 9 */   "Error with X509 extensions",
-/* 10 */  "Error with private key",
-/* 11 */  "Error with openssl's BIO handle",
-/* 12 */  "Error with credential",
-/* 13 */  "Error with credential handle",
-/* 14 */  "Error with credential handle attributes",
-/* 15 */  "System error"
-
+/* 4 */   "Error with ASN1 proxypolicy structure",
+/* 5 */   "Error with proxy path length",
+/* 6 */   "Error with X509 request structure",
+/* 7 */   "Error with X509 structure",
+/* 8 */   "Error with X509 extensions",
+/* 9 */   "Error with private key",
+/* 10 */  "Error with openssl's BIO handle",
+/* 11 */  "Error with credential",
+/* 12 */  "Error with credential handle",
+/* 13 */  "Error with credential handle attributes",
+/* 14 */  "System error",
+/* 15 */  "Unable to set proxy type"
 };
 
 globus_result_t
