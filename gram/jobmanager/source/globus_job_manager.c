@@ -22,6 +22,7 @@ CVS Information:
 #include <string.h> /* for strdup() */
 #include <memory.h>
 #include <nexus.h>
+#include <fcntl.h>
 #include "gram_client.h"
 #include "grami_client.h"
 #include "gram_rsl.h"
