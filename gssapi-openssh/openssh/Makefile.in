@@ -22,7 +22,6 @@ srcdir=@srcdir@
 top_srcdir=@top_srcdir@
 
 globusbindir=@bindir@
-globusmandir=@mandir@
 
 DESTDIR=
 VPATH=@srcdir@
@@ -343,15 +342,20 @@ gpt-install-files: gpt-install-docs
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(datadir)
 	docdir=man; \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir); \
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(globusmandir); \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1; \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5; \
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1/ssh.d; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5/ssh.d; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8/ssh.d
 	docdir=cat; \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir); \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1; \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5; \
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1/ssh.d; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5/ssh.d; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8/ssh.d
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(libexecdir)
 	$(INSTALL) -m 0755 ssh $(DESTDIR)$(bindir)/ssh
 	$(INSTALL) -m 0755 scp $(DESTDIR)$(bindir)/scp
@@ -374,51 +378,51 @@ gpt-install-files: gpt-install-docs
 	ln -s ./ssh.d/sftp$(EXEEXT) $(DESTDIR)$(globusbindir)/gsisftp
 	# start man
 	docdir=man; \
-	$(INSTALL) -m 644 $${docdir}/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.1; \
-	$(INSTALL) -m 644 $${docdir}/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/scp.1; \
-	$(INSTALL) -m 644 $${docdir}/ssh-add.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-add.1; \
-	$(INSTALL) -m 644 $${docdir}/ssh-agent.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-agent.1; \
-	$(INSTALL) -m 644 $${docdir}/ssh-keygen.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-keygen.1; \
-	$(INSTALL) -m 644 $${docdir}/ssh-keyscan.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-keyscan.1; \
-	$(INSTALL) -m 644 $${docdir}/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
-	$(INSTALL) -m 644 $${docdir}/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
-	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/sshd.8; \
-	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-rand-helper.8; \
-	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/sftp.1; \
-	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/sftp-server.8; \
-	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-keysign.8; \
-	rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
-	ln -s ./slogin.1 $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
-	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsissh.1; \
-	ln -s ../$(mandir)/$${docdir}1/ssh.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsissh.1; \
-	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsiscp.1; \
-	ln -s ../$(mandir)/$${docdir}1/scp.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsiscp.1; \
-	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsisftp.1; \
-	ln -s ../$(mandir)/$${docdir}1/sftp.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsisftp.1;
+	$(INSTALL) -m 644 $${docdir}/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh.1; \
+	$(INSTALL) -m 644 $${docdir}/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/scp.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-add.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-add.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-agent.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-agent.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keygen.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keygen.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keyscan.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keyscan.1; \
+	$(INSTALL) -m 644 $${docdir}/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/sshd_config.5; \
+	$(INSTALL) -m 644 $${docdir}/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/ssh_config.5; \
+	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8; \
+	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8; \
+	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1; \
+	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sftp-server.8; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-keysign.8; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1; \
+	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	ln -s ./ssh.d/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	ln -s ./ssh.d/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
+	ln -s ./ssh.d/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1;
 	# end man
 	# start cat
 	docdir=cat; \
-	$(INSTALL) -m 644 $${docdir}/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.1; \
-	$(INSTALL) -m 644 $${docdir}/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/scp.1; \
-	$(INSTALL) -m 644 $${docdir}/ssh-add.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-add.1; \
-	$(INSTALL) -m 644 $${docdir}/ssh-agent.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-agent.1; \
-	$(INSTALL) -m 644 $${docdir}/ssh-keygen.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-keygen.1; \
-	$(INSTALL) -m 644 $${docdir}/ssh-keyscan.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-keyscan.1; \
-	$(INSTALL) -m 644 $${docdir}/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
-	$(INSTALL) -m 644 $${docdir}/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
-	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/sshd.8; \
-	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-rand-helper.8; \
-	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/sftp.1; \
-	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/sftp-server.8; \
-	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-keysign.8; \
-	rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
-	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
-	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsissh.1; \
-	ln -s ../$(mandir)/$${docdir}1/ssh.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsissh.1; \
-	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsiscp.1; \
-	ln -s ../$(mandir)/$${docdir}1/scp.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsiscp.1; \
-	rm -f $(DESTDIR)$(globusmandir)/$${docdir}1/gsisftp.1; \
-	ln -s ../$(mandir)/$${docdir}1/sftp.1 $(DESTDIR)$(globusmandir)/$${docdir}1/gsisftp.1;
+	$(INSTALL) -m 644 $${docdir}/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh.1; \
+	$(INSTALL) -m 644 $${docdir}/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/scp.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-add.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-add.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-agent.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-agent.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keygen.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keygen.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keyscan.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/ssh-keyscan.1; \
+	$(INSTALL) -m 644 $${docdir}/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/sshd_config.5; \
+	$(INSTALL) -m 644 $${docdir}/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh.d/ssh_config.5; \
+	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sshd.8; \
+	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-rand-helper.8; \
+	$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/sftp.1; \
+	$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/sftp-server.8; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh.d/ssh-keysign.8; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1; \
+	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.d/slogin.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	ln -s ./ssh.d/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	ln -s ./ssh.d/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1; \
+	ln -s ./ssh.d/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsisftp.1;
 	# end cat
 
 gpt-install-docs:
