@@ -170,10 +170,8 @@ globus_l_gfs_remote_node_request(
     {
         while(nodes--)
         {
-            node_info = (globus_l_gfs_remote_node_info_t *)
-                globus_list_first(my_handle->cached_node_list);
-            my_handle->cached_node_list = 
-                globus_list_rest(my_handle->cached_node_list);
+            node_info = (globus_l_gfs_remote_node_info_t *) globus_list_remove(
+                &my_handle->cached_node_list, my_handle->cached_node_list);
     
             callback(
                 node_info,
