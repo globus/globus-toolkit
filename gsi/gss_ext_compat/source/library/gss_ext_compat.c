@@ -16,11 +16,34 @@ static const gss_OID_desc GSS_APPLICATION_WILL_HANDLE_EXTENSIONS_OID =
 const gss_OID_desc * const GSS_APPLICATION_WILL_HANDLE_EXTENSIONS =
    &GSS_APPLICATION_WILL_HANDLE_EXTENSIONS_OID;
 
+OM_uint32 
+GSS_CALLCONV gss_create_empty_buffer_set(
+    OM_uint32 *                         minor_status,
+    gss_buffer_set_t *                  buffer_set)
+{ 
+#ifdef DEBUG
+    fprintf(stderr,"GSS_COMPATABILITY_EXTENSIONS: create_empty_buffer_set:\n");
+#endif /* DEBUG */
+    return GSS_S_EXT_COMPAT; 
+}
+
+OM_uint32
+GSS_CALLCONV gss_add_buffer_set_member(
+    OM_uint32 *                         minor_status,
+    const gss_buffer_t                  member_buffer,
+    gss_buffer_set_t *                  buffer_set)
+{
+#ifdef DEBUG
+    fprintf(stderr,"GSS_COMPATABILITY_EXTENSIONS: add_buffer_set_member:\n");
+#endif /* DEBUG */
+    return GSS_S_EXT_COMPAT; 
+}
+
 
 OM_uint32
 GSS_CALLCONV gss_release_buffer_set(
     OM_uint32 *                         minor_status,
-    gss_buffer_set_t                    restriction_buffers)
+    gss_buffer_set_t *                  buffer_set)
 { 
 #ifdef DEBUG
     fprintf(stderr, "GSS_COMPATABILITY_EXTENSIONS: release_buffer_set:\n") ;
@@ -68,8 +91,8 @@ GSS_CALLCONV gss_init_delegation(
     const gss_ctx_id_t                  context_handle,
     const gss_cred_id_t                 cred_handle,
     const gss_OID                       desired_mech,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
+    const gss_OID_set                   extension_oids,
+    const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
     OM_uint32                           time_req,
     gss_buffer_t                        output_token)
@@ -85,8 +108,8 @@ OM_uint32
 GSS_CALLCONV gss_accept_delegation(
     OM_uint32 *                         minor_status,
     const gss_ctx_id_t                  context_handle,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
+    const gss_OID_set                   extension_oids,
+    const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
     OM_uint32                           time_req,
     OM_uint32 *                         time_rec,
@@ -107,7 +130,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     OM_uint32 *                         minor_status,
     const gss_ctx_id_t                  context_handle,
     const gss_OID                       oid,
-    const gss_buffer_set_t              buf_set)
+    gss_buffer_set_t *                  buf_set)
 { 
 #ifdef DEBUG
     fprintf(stderr, "GSS_COMPATABILITY_EXTENSIONS: inquire_sec_context_by_oid:\n") ;
@@ -120,9 +143,9 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 OM_uint32
 GSS_CALLCONV gss_inquire_cred_by_oid(
     OM_uint32 *                         minor_status,
-    const gss_ctx_id_t                  context_handle,
+    const gss_cred_id_t                 cred_handle,
     const gss_OID                       oid,
-    const gss_buffer_set_t              buf)
+    gss_buffer_set_t *                  buf_set)
 { 
 #ifdef DEBUG
     fprintf(stderr, "GSS_COMPATABILITY_EXTENSIONS: inquire_cred_by_oid:\n") ;
@@ -141,6 +164,34 @@ GSS_CALLCONV gss_set_sec_context_option(
 { 
 #ifdef DEBUG
     fprintf(stderr, "GSS_COMPATABILITY_EXTENSIONS: set_sec_context_option:\n") ;
+#endif /* DEBUG */
+
+    return GSS_S_EXT_COMPAT; 
+}
+
+OM_uint32 
+GSS_CALLCONV gss_set_group(
+    OM_uint32 *                         minor_status,
+    gss_name_t                          name,
+    const gss_buffer_set_t              group,
+    const gss_OID_set                   group_types)
+{
+#ifdef DEBUG
+    fprintf(stderr,"GSS_COMPATABILITY_EXTENSIONS: set_group:\n");
+#endif /* DEBUG */
+
+    return GSS_S_EXT_COMPAT; 
+}
+
+OM_uint32 
+GSS_CALLCONV gss_get_group(
+    OM_uint32 *                         minor_status,
+    const gss_name_t                    name,
+    gss_buffer_set_t *                  group,
+    gss_OID_set *                       group_types)
+{
+#ifdef DEBUG
+    fprintf(stderr,"GSS_COMPATABILITY_EXTENSIONS: get_group:\n");
 #endif /* DEBUG */
 
     return GSS_S_EXT_COMPAT; 
