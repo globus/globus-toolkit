@@ -1177,16 +1177,22 @@ sub topol_sort
     my $pkg = new Grid::GPT::V1::Package;
 
     $pkg->read_metadata_file("$metadatafile");
-    for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}})
+    my @deptypes = (keys %{$pkg->{'Source_Dependencies'}->{'deptype-list'}});
+    for my $deptype (@deptypes)
     {
-        if(exists $package_build_hash{$dep})
+        next unless ( ($deptype eq "compile") or ($deptype eq "pgm_link")
+                       or ($deptype eq "lib_link") );
+        for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})
         {
-            $in_call_stack->{$node} = $node;
-            topol_sort($dep, $sorted_nodes_ref, $sorted_nodes_hashref, $in_call_stack);
-            delete $in_call_stack->{$node};
+            if(exists $package_build_hash{$dep})
+            {
+                $in_call_stack->{$node} = $node;
+                topol_sort($dep, $sorted_nodes_ref, $sorted_nodes_hashref, $in_call_stack);
+                delete $in_call_stack->{$node};
+            }
         }
     }
-    
+
     push @{$sorted_nodes_ref}, $node;   
     $sorted_nodes_hashref->{$node} = $node;
 }
