@@ -68,6 +68,7 @@ typedef struct globus_gfs_ipc_resource_reply_s
 {
     globus_gridftp_server_stat_t *      stat_info;
     int                                 stat_count;
+    uid_t                               uid;
 } globus_gfs_ipc_resource_reply_t;
 
 typedef struct globus_i_gfs_ipc_reply_s
@@ -157,6 +158,7 @@ typedef struct globus_gfs_transfer_state_s
     char *                              pathname;    
     char *                              module_name;
     char *                              module_args;
+    const char *                        list_type;
     
     globus_off_t                        partial_offset;
     globus_off_t                        partial_length;

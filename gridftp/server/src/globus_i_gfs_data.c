@@ -35,10 +35,12 @@ typedef struct globus_l_gfs_data_operation_s
     int                                 id;
     globus_gfs_ipc_handle_t             ipc_handle;
     
+    uid_t                               uid;
     /* transfer stuff */
     globus_range_list_t                 range_list;
     globus_off_t                        partial_offset;
     globus_off_t                        partial_length;
+    const char *                        list_type;
 
     globus_off_t                        max_offset;
     globus_off_t                        recvd_bytes[1];
@@ -366,7 +368,8 @@ globus_gridftp_server_finished_resource(
             reply->result = result;
             reply->info.resource.stat_info = stat_info_array;
             reply->info.resource.stat_count = stat_count;
-        
+            reply->info.resource.uid = op->uid;
+            
             globus_gfs_ipc_reply_finished(
                 op->ipc_handle,
                 reply);
@@ -1240,16 +1243,15 @@ globus_l_gfs_data_list_resource_cb(
     globus_gridftp_server_operation_t   op;
     globus_byte_t *                     list_buffer;
     globus_size_t                       buffer_len;
-    globus_gridftp_server_control_op_t  control_op;
     globus_l_gfs_data_bounce_t *        bounce_info;
     
  
     op = (globus_gridftp_server_operation_t) user_arg;
     bounce_info = (globus_l_gfs_data_bounce_t *) op->user_arg;
-    control_op = (globus_gridftp_server_control_op_t) bounce_info->user_arg;
 
     result = globus_gridftp_server_control_list_buffer_alloc(
-            control_op, 
+            op->list_type,
+            op->uid,
             stat_info, 
             stat_count,
             &list_buffer,
@@ -1335,6 +1337,9 @@ globus_i_gfs_data_list_request(
     data_op->state = GLOBUS_L_GFS_DATA_PENDING;
     data_op->data_handle = data_handle;
     data_op->sending = GLOBUS_TRUE;
+    data_op->list_type = list_state->list_type;
+    data_op->uid = getuid();
+    /* XXX */
 //    data_op->transfer_callback = callback;
 //    data_op->event_callback = event_callback;
 //    data_op->user_arg = user_arg;

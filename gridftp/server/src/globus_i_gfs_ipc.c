@@ -171,6 +171,7 @@ typedef struct
 
 typedef struct globus_i_gfs_ipc_handle_s
 {
+    uid_t                               uid;
     char *                              contact_string;
     globus_xio_handle_t                 xio_handle;
     globus_bool_t                       local;

@@ -230,7 +230,7 @@ globus_l_gfs_request_auth(
         {
             globus_gridftp_server_control_finished_auth(
                 op, 
-                current_uid, 
+                NULL, 
                 GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
                 GLOBUS_NULL);
             return;    
@@ -299,7 +299,7 @@ globus_l_gfs_request_auth(
                       
     globus_gridftp_server_control_finished_auth(
         op, 
-        pwent->pw_uid, 
+        globus_libc_strdup(pwent->pw_name), 
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
         GLOBUS_NULL);
 
@@ -308,7 +308,7 @@ globus_l_gfs_request_auth(
 error:
     globus_gridftp_server_control_finished_auth(
         op, 
-        0, 
+        NULL, 
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         err_msg);
 }
@@ -338,6 +338,7 @@ globus_l_gfs_ipc_resource_cb(
             op,
             reply->info.resource.stat_info, 
             reply->info.resource.stat_count, 
+            reply->info.resource.uid,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
             globus_error_print_friendly(globus_error_peek(reply->result)));
     }
@@ -346,7 +347,8 @@ globus_l_gfs_ipc_resource_cb(
         globus_gridftp_server_control_finished_resource(
             op,
             reply->info.resource.stat_info, 
-            reply->info.resource.stat_count, 
+            reply->info.resource.stat_count,
+            reply->info.resource.uid,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
             GLOBUS_NULL);
     }    
@@ -411,8 +413,9 @@ error_ipc:
     globus_gridftp_server_control_finished_resource(
         op, 
         GLOBUS_NULL, 
-        0, 
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
+        0,
+        0,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
         globus_error_print_friendly(globus_error_peek(result)));
 }
 
@@ -932,6 +935,7 @@ globus_l_gfs_request_list(
     globus_gridftp_server_control_op_t  op,
     void *                              data_handle,
     const char *                        path,
+    const char *                        list_type,
     void *                              user_arg)
 {
     globus_result_t                     result;
@@ -962,6 +966,7 @@ globus_l_gfs_request_list(
         globus_calloc(1, sizeof(globus_gfs_transfer_state_t));
     
     list_state->pathname = fullpath;
+    list_state->list_type = globus_libc_strdup(list_type);
     
     result = globus_gfs_ipc_request_list(
         instance->ipc_handle,
