@@ -6,9 +6,6 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
-/* Location of default proxy */
-#define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
-
 static char usage[] = \
 "\n"\
 "Syntax: myproxy-destroy [-l username] ...\n"\
