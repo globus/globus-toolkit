@@ -65,6 +65,9 @@ globus_module_descriptor_t		globus_i_common_module =
 globus_extension_registry_t      i18n_registry;
 get_string_by_key_t              globus_common_i18n_get_string_by_key;
 
+static
+globus_extension_handle_t           i18n_handle;
+
 /******************************************************************************
 		   globus_common module activation functions
 ******************************************************************************/
@@ -72,7 +75,7 @@ get_string_by_key_t              globus_common_i18n_get_string_by_key;
 static int
 globus_l_common_activate(void)
 {
-	globus_extension_handle_t           handle;
+	char * 		env;
 #ifdef TARGET_ARCH_WIN32
 	int rc;
 	WORD wVersionRequested;
@@ -105,6 +108,17 @@ globus_l_common_activate(void)
 	goto error_extension;
     }
 
+    /*Check for GLOBUS_I18N==NO to see if we should load i18n lib*/
+    env = globus_libc_getenv("GLOBUS_I18N");
+    if(env != GLOBUS_NULL)
+    {
+       if (strncmp(env, "NO", 2)==GLOBUS_SUCCESS);
+       {
+	   globus_common_i18n_get_string_by_key = globus_l_common_i18n_echo_string;
+	   return GLOBUS_SUCCESS;
+       }
+    }
+	       
     if(globus_extension_activate("globus_i18n") != GLOBUS_SUCCESS)
     {
 	globus_common_i18n_get_string_by_key = globus_l_common_i18n_echo_string;
@@ -112,7 +126,7 @@ globus_l_common_activate(void)
     else
     {
         globus_common_i18n_get_string_by_key = globus_extension_lookup(
-		    		&handle, &i18n_registry, "get_string_by_key");
+		    	&i18n_handle, &i18n_registry, "get_string_by_key");
         if(!globus_common_i18n_get_string_by_key)
         {
             /* too lazy to check the rc from globus_extension_activate */
@@ -120,7 +134,6 @@ globus_l_common_activate(void)
             "Set the GLOBUS_EXTENSION_DEBUG env for more info\n");
             return 0;
 	}
-        globus_extension_release(handle);
     }
 
     return GLOBUS_SUCCESS;
@@ -139,6 +152,7 @@ error_error:
 static int
 globus_l_common_deactivate(void)
 {
+    globus_extension_release(i18n_handle);
     globus_module_deactivate(GLOBUS_EXTENSION_MODULE);
     globus_module_deactivate(GLOBUS_THREAD_MODULE);
     globus_module_deactivate(GLOBUS_CALLBACK_MODULE);
