@@ -18,6 +18,8 @@
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_core"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
+      <Dependency Name="globus_common"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
+      <Dependency Name="globus_common_setup"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
     </Source_Dependencies>
 
     <Build_Environment >
