@@ -753,6 +753,12 @@ g_send_data(
     return (1);
 }
 
+void
+g_abort_called(
+    globus_ftp_control_handle_t *               handle)
+{
+}
+
 void 
 data_close_callback(
     void *                                      callback_arg,
@@ -850,6 +856,7 @@ monitor = globus_malloc(sizeof(globus_i_wu_montor_t));
  
         goto data_err;
     }
+
     transflag++;
     switch (type) 
     {
