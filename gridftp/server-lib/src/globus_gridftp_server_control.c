@@ -2143,14 +2143,16 @@ globus_i_gsc_list_single_line(
 {
     char *                                  username;
     char *                                  grpname;
+    char                                    user[16];
+    char                                    grp[16];
     struct passwd *                         pw;
     struct group *                          gr;
     struct tm *                             tm;
     char                                    perms[11];
     char *                                  tmp_ptr;
     char *                                  month_lookup[12] =
-        {"Jan", "Feb", "Mar", "April", "May", "June", "July", "Aug",
-        "Sept", "Oct", "Nov", "Dec" };
+        {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
+        "Sep", "Oct", "Nov", "Dec" };
 
     strcpy(perms, "----------");
 
@@ -2232,12 +2234,20 @@ globus_i_gsc_list_single_line(
         perms[9] = 'x';
     }
 
+    sprintf(user, "        ");
+    tmp_ptr = user + (8 - strlen(username));
+    sprintf(tmp_ptr, "%s", username);
+    
+    sprintf(grp, "        ");
+    tmp_ptr = grp + (8 - strlen(grpname));
+    sprintf(tmp_ptr, "%s", grpname);
+
     tmp_ptr = globus_common_create_string(
-        "%s %d %s %s %ld %s %2d %02d:%02d %s",
+        "%s %3d %s %s %8ld %s %2d %02d:%02d %s",
         perms,
         stat_info->nlink,
-        username,
-        grpname,
+        user,
+        grp,
         stat_info->size,
         month_lookup[tm->tm_mon],
         tm->tm_mday,
