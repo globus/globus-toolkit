@@ -55,13 +55,20 @@ CVS Information:
 #include "globus_i_gass_cache.h"
 #include "globus_gass_cache.h"
 
-/* T3E has three quota errno values: EQUSR, EQGRP, EQACT */
-#ifdef TARGET_ARCH_CRAYT3E
-#define QUOTCHECK (errno == EQUSR || \
-                   errno == EQGRP || \
-                   errno == EQACT )
+/* UNICOS has four quota errno values: EQUSR, EQGRP, EQACT, EOFQUOTA */
+/* #define EQUSR           60      /* User file/inode quota limit reached  */
+/* #define EQGRP           61      /* Group file/inode quota limit reached */
+/* #define EQACT           62      /* Account file/inode quota limit reached */
+/* #define EOFQUOTA        363     /* File offline, retrieval would 
+                                    exceed disk space quota */
+
+#ifdef EDQUOT
+#define IS_QUOTA_ERROR(err) ((err) == EDQUOT)
 #else
-#define QUOTCHECK (errno == EDQUOT)
+#define IS_QUOTA_ERROR(err) ((err) == EQUSR || \
+                             (err) == EQGRP || \
+                             (err) == EQACT || \
+                             (err) == EOFQUOTA)
 #endif
 
 globus_module_descriptor_t globus_i_gass_cache_module =
@@ -400,7 +407,7 @@ globus_l_gass_cache_write_comment(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -459,7 +466,7 @@ globus_l_gass_cache_write_one_str(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -479,7 +486,7 @@ globus_l_gass_cache_write_one_str(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -498,7 +505,7 @@ globus_l_gass_cache_write_one_str(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -676,7 +683,7 @@ globus_l_gass_cache_write_nb_entries(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -701,7 +708,7 @@ globus_l_gass_cache_write_nb_entries(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -763,7 +770,7 @@ globus_l_gass_cache_write_one_entry(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -801,7 +808,7 @@ globus_l_gass_cache_write_one_entry(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -825,7 +832,7 @@ globus_l_gass_cache_write_one_entry(
                 {
                     return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
                 }
-                else if (QUOTCHECK)
+                else if (IS_QUOTA_ERROR(errno))
                 {
                     return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
                 }
@@ -854,7 +861,7 @@ globus_l_gass_cache_write_one_entry(
                 {
                     return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
                 }
-                else if (QUOTCHECK)
+                else if (IS_QUOTA_ERROR(errno))
                 {
                     return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
                 }
@@ -894,7 +901,7 @@ globus_l_gass_cache_write_one_entry(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -936,7 +943,7 @@ globus_l_gass_cache_write_one_entry(
                     {
                         return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
                     }
-                    else if (QUOTCHECK)
+                    else if (IS_QUOTA_ERROR(errno))
                     {
                         return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
                     }
@@ -1390,7 +1397,7 @@ globus_l_gass_cache_lock_file(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -1414,7 +1421,7 @@ globus_l_gass_cache_lock_file(
             {
                 return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
             }
-            else if (QUOTCHECK)
+            else if (IS_QUOTA_ERROR(errno))
             {
                 return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
             }
@@ -1497,7 +1504,7 @@ globus_l_gass_cache_lock_file(
                                 {
                                     return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
                                 }
-                                else if (QUOTCHECK)
+                                else if (IS_QUOTA_ERROR(errno))
                                 {
                                     return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
                                 }
