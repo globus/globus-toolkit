@@ -4,8 +4,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#define MAX_POLICY_BUF_LENGTH 8192
-
 struct cas_policy {
     char *			target_subject;
     char *			start_time;
@@ -367,15 +365,6 @@ globus_authorization_handle_set_gss_ctx(
     if ((policy_extension->count > 0) &&
 	(policy_extension->elements->length > 0))
     {
-	policy_buf.length = MAX_POLICY_BUF_LENGTH;
-	if ((policy_buf.value = malloc(policy_buf.length)) == 0)
-	{
-	    result = globus_result_set(
-                GLOBUS_AUTH_MEMORY_ALLOCATION_ERROR,
-                "failed to get allocate space for policy buffer");
-	    goto end;
-	}
-	    
 	if ((maj_stat = gss_policy_verify(&min_stat, context,
 					 (gss_buffer_t)policy_extension->elements,
 					 &policy_buf,
@@ -397,25 +386,16 @@ globus_authorization_handle_set_gss_ctx(
 	    goto end;
 	}
 
-	if (policy_buf.length < MAX_POLICY_BUF_LENGTH)
-	{
-	    ((char *)policy_buf.value)[policy_buf.length] = '\0';
-	    if ((handle->policy_display_string =
-		 strdup((char *)policy_buf.value)) == 0)
-	    {
-		result = globus_result_set(
-		    GLOBUS_AUTH_MEMORY_ALLOCATION_ERROR,
-		    "failed to copy policy buffer");
-		goto end;
-	    }
-	}
-	else
-	{
+
+	((char *)policy_buf.value)[policy_buf.length] = '\0';
+	if ((handle->policy_display_string =
+	     strdup((char *)policy_buf.value)) == 0)
+	  {
 	    result = globus_result_set(
-                GLOBUS_AUTH_INTERNAL_GSS_ERROR,
-                "policy too long");
+				       GLOBUS_AUTH_MEMORY_ALLOCATION_ERROR,
+				       "failed to copy policy buffer");
 	    goto end;
-	}
+	  }
 	
 	if ((caspolicy =
 	     globus_l_authorization_parse_policy_header(policy_buf.value)) == 0)
