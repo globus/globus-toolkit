@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <dirent.h>
 
 /*
  * Doesn't always seem to be define in <unistd.h>
@@ -1084,9 +1085,6 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
   error:
     return return_code;
 }
-
-#define MAXPATHLEN 512
-extern int alphasort();
 
 char *username;
 int file_select (const struct direct *entry)
