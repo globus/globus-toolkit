@@ -6,6 +6,7 @@
 typedef enum
 {
     GLOBUS_XIO_HTTP_GET_HEADERS,
+    GLOBUS_XIO_HTTP_SET_HEADERS,
     GLOBUS_XIO_HTTP_GET_CONTACT,
     GLOBUS_XIO_HTTP_SET_EXIT_CODE,
     GLOBUS_XIO_HTTP_SET_EXIT_TEXT
@@ -13,6 +14,7 @@ typedef enum
 
 typedef enum
     {
+        GLOBUS_XIO_HTTP_SUCCESS,
         GLOBUS_XIO_HTTP_PARSE_FAILED,
         GLOBUS_XIO_HTTP_NEED_MORE
     } globus_xio_http_parse_state_t;
