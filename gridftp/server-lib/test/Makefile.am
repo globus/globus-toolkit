@@ -14,7 +14,7 @@ test_PROGRAMS= \
 
 globus_gs_simple_test_SOURCES = $(Sources)
 globus_gs_simple_test_LDFLAGS = $(GPT_LDFLAGS) -L .
-globus_gs_simple_test_LDADD = $(GPT_PGM_LINKS) -lefence
+globus_gs_simple_test_LDADD = $(GPT_PGM_LINKS) 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
