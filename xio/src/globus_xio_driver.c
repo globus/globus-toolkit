@@ -207,18 +207,6 @@ globus_i_xio_attr_get_ds(
     return rc;
 }
 
-void *
-globus_i_xio_dd_get_ds(
-    globus_i_xio_dd_t *                         dd,
-    globus_xio_driver_t                         driver)
-{
-    void *                                      rc;
-
-    GlobusIXIODDGetDS(rc, dd, driver);
-
-    return rc;    
-}
-
 /*
  *  pass functions
  */

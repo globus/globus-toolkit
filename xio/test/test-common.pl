@@ -17,6 +17,8 @@ sub run_test
     unlink("$output_dir/$test_str.out");
     unlink("$output_dir/$test_str.err");
 
+    $ENV{"INSURE_REPORT_FILE_NAME"} = "$test_str";
+
     my $command = "$cmd > $output_dir/$test_str.out 2> $output_dir/$test_str.err";
     $rc = system($command);
     if($rc != 0)
@@ -39,8 +41,8 @@ sub run_test
     }
     else
     {
-        my $filename="test_results.txt";
-        open(FAIL, ">>$filename");
+        my $filename="$output_dir/$test_str.fail";
+        open(FAIL, ">$filename");
         print FAIL "\n";
         print FAIL "Test :$test_str: failed\n";
         print FAIL "stdout :$output_dir/$test_str.out:\n";

@@ -325,8 +325,8 @@ globus_xio_data_descriptor_init(
     globus_xio_data_descriptor_t *              data_desc,
     globus_xio_handle_t                         handle)
 {
-    globus_i_xio_dd_t *                         xio_dd;
-    int                                         ctr;
+    globus_i_xio_op_t *                         op;
+    globus_i_xio_context_t *                    context;
     GlobusXIOName(globus_xio_data_descriptor_init);
 
     if(data_desc == NULL)
@@ -338,22 +338,22 @@ globus_xio_data_descriptor_init(
         return GlobusXIOErrorParameter("handle");
     }
 
-    xio_dd = (globus_i_xio_dd_t *) globus_malloc(
-                sizeof(globus_i_xio_dd_t) + (sizeof(globus_i_xio_attr_ent_t) *
-                    (handle->stack_size - 1)));
+    context = handle->context;
+    op = (globus_i_xio_op_t *) globus_memory_pop_node(&context->op_memory);
+
     /* check for memory alloc failure */
-    if(xio_dd == NULL)
+    if(op == NULL)
     {
         return GlobusXIOErrorMemory("xio_dd");
     }
 
-    xio_dd->stack_size = handle->stack_size;
+    memset(op, '\0', sizeof(globus_i_xio_op_t) + 
+        (sizeof(globus_i_xio_op_entry_t) * (context->stack_size - 1)));
+    op->stack_size = handle->stack_size;
+    op->progress = GLOBUS_TRUE;
+    op->_op_context = context;
 
-    for(ctr = 0; ctr < xio_dd->stack_size; ctr++)
-    {
-        xio_dd->entry[ctr].driver = handle->context->entry[ctr].driver;
-        xio_dd->entry[ctr].driver_data = NULL;
-    }
+    *data_desc = op;
 
     return GLOBUS_SUCCESS;
 }
@@ -365,7 +365,7 @@ globus_xio_data_descriptor_destroy(
     int                                         ctr;
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_result_t                             tmp_res;
-    globus_i_xio_dd_t *                         dd;
+    globus_i_xio_op_t *                         op;
     GlobusXIOName(globus_xio_data_descriptor_destroy);
 
     if(data_desc == NULL)
@@ -373,14 +373,14 @@ globus_xio_data_descriptor_destroy(
         return GlobusXIOErrorParameter("data_desc");
     }
 
-    dd = (globus_i_xio_dd_t *) data_desc;
+    op = (globus_i_xio_op_t *) data_desc;
 
-    for(ctr = 0; ctr < dd->stack_size; ctr++)
+    for(ctr = 0; ctr < op->stack_size; ctr++)
     {
-        if(dd->entry[ctr].driver_data != NULL)
+        if(op->entry[ctr].dd != NULL)
         {
-            tmp_res = dd->entry[ctr].driver->attr_destroy_func(
-                        dd->entry[ctr].driver_data);
+            tmp_res = op->_op_context->entry[ctr].driver->attr_destroy_func(
+                        op->entry[ctr].dd);
             if(tmp_res != GLOBUS_SUCCESS)
             {
                 res = tmp_res;
@@ -388,7 +388,7 @@ globus_xio_data_descriptor_destroy(
         }
     }
 
-    globus_free(dd);
+    globus_free(op);
 
     return res;
 }
@@ -403,6 +403,7 @@ globus_xio_data_descriptor_cntl(
     globus_result_t                             res;
     int                                         ndx;
     int                                         ctr;
+    globus_i_xio_op_t *                         op;
     va_list                                     ap;
     GlobusXIOName(globus_xio_data_descriptor_cntl);
 
@@ -411,17 +412,19 @@ globus_xio_data_descriptor_cntl(
         return GlobusXIOErrorParameter("data_desc");
     }
 
+    op = (globus_i_xio_op_t *) data_desc;
+
     if(driver != NULL)
     {
         ndx = -1;
-        for(ctr = 0; ctr < data_desc->stack_size && ndx == -1; ctr++)
+        for(ctr = 0; ctr < op->stack_size && ndx == -1; ctr++)
         {
-            if(driver == data_desc->entry[ctr].driver)
+            if(driver == op->_op_context->entry[ctr].driver)
             {
-                if(data_desc->entry[ctr].driver_data == NULL)
+                if(op->entry[ctr].dd == NULL)
                 {
-                    res = data_desc->entry[ctr].driver->attr_init_func(
-                            &data_desc->entry[ctr].driver_data);
+                    res = op->_op_context->entry[ctr].driver->attr_init_func(
+                            &op->entry[ctr].dd);
                     if(res != GLOBUS_SUCCESS)
                     {
                         return res;
@@ -445,8 +448,8 @@ globus_xio_data_descriptor_cntl(
         }
 #       endif
 
-        res = data_desc->entry[ndx].driver->attr_cntl_func(
-                data_desc->entry[ndx].driver_data,
+        res = op->_op_context->entry[ndx].driver->attr_cntl_func(
+                op->entry[ndx].dd,
                 cmd,
                 ap);
         if(res != GLOBUS_SUCCESS)
@@ -468,8 +471,8 @@ globus_xio_data_descriptor_copy(
     globus_xio_data_descriptor_t *              dst,
     globus_xio_data_descriptor_t                src)
 {
-    globus_i_xio_dd_t *                         xio_dd_src;
-    globus_i_xio_dd_t *                         xio_dd_dst;
+    globus_i_xio_op_t *                         op_src;
+    globus_i_xio_op_t *                         op_dst;
     globus_result_t                             res;
     int                                         ctr;
     int                                         ctr2;
@@ -486,44 +489,34 @@ globus_xio_data_descriptor_copy(
         return GlobusXIOErrorParameter("src");
     }
 
-    xio_dd_src = src;
+    op_src = src;
 
-    tmp_size = sizeof(globus_i_xio_dd_t) + 
-        (sizeof(globus_i_xio_attr_ent_t) * (xio_dd_src->stack_size - 1));
-    xio_dd_dst = (globus_i_xio_dd_t *)globus_malloc(tmp_size);
-    /* check for memory alloc failure */
-    if(xio_dd_dst == NULL)
+    res = globus_xio_data_descriptor_init(&op_dst, op_src->_op_handle);
+    if(res != GLOBUS_SUCCESS)
     {
-        return GlobusXIOErrorMemory("xio_dd_dst");
+        return res;
     }
 
-    memset(xio_dd_dst, 0, tmp_size);
-
-    /* copy all general attrs */
-    xio_dd_dst->stack_size = xio_dd_src->stack_size;
- 
-    for(ctr = 0; ctr < xio_dd_dst->stack_size; ctr++)
+    for(ctr = 0; ctr < op_src->stack_size; ctr++)
     {
-        xio_dd_dst->entry[ctr].driver = xio_dd_src->entry[ctr].driver;
-
-        res = xio_dd_dst->entry[ctr].driver->attr_copy_func(
-                &xio_dd_dst->entry[ctr].driver_data,
-                xio_dd_src->entry[ctr].driver_data);
+        res = op_dst->_op_context->entry[ctr].driver->attr_copy_func(
+                &op_dst->entry[ctr].dd,
+                op_src->entry[ctr].dd);
         if(res != GLOBUS_SUCCESS)
         {
             for(ctr2 = 0; ctr2 < ctr; ctr2++)
             {
                 /* ignore result here */
-                xio_dd_dst->entry[ctr].driver->attr_destroy_func(
-                    xio_dd_dst->entry[ctr].driver_data);
+                op_dst->_op_context->entry[ctr].driver->attr_destroy_func(
+                    op_dst->entry[ctr].dd);
             }
-            globus_free(xio_dd_dst);
+            globus_memory_push_node(&op_dst->_op_context->op_memory, op_dst);
 
             return res;
         }
     }
 
-    *dst = xio_dd_dst;
+    *dst = op_dst;
 
     return GLOBUS_SUCCESS;
 }

@@ -216,7 +216,14 @@ read_barrier_main(
         globus_cond_timedwait(&globus_l_cond, &globus_l_mutex, &end_time);
     }
     globus_mutex_unlock(&globus_l_mutex);
-    
+
+    res = globus_xio_attr_destroy(attr);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    res = globus_xio_stack_destroy(stack);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+   
+    test_common_end();
+ 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == GLOBUS_SUCCESS);
 

@@ -57,6 +57,7 @@ typedef enum globus_xio_target_type_e
 
 struct globus_i_xio_context_s;
 struct globus_i_xio_op_s;
+struct globus_i_xio_target_s;
 
 typedef struct globus_i_xio_attr_ent_s
 {
@@ -89,12 +90,6 @@ typedef struct globus_i_xio_attr_s
     int                                         ndx;
     globus_i_xio_attr_ent_t *                   entry;
 } globus_i_xio_attr_t;
-
-typedef struct globus_i_xio_dd_s
-{
-    int                                         stack_size;
-    globus_i_xio_attr_ent_t                     entry[1];
-} globus_i_xio_dd_t;
 
 typedef struct globus_i_xio_stack_s
 {
@@ -145,6 +140,8 @@ typedef struct globus_i_xio_handle_s
     globus_list_t *                             read_op_list;
     struct globus_i_xio_op_s *                  open_op;
     struct globus_i_xio_op_s *                  close_op;
+
+    struct globus_i_xio_target_s *              target;
 
     /* counts outstanding read and write operations */
     int                                         outstanding_operations;
@@ -209,7 +206,6 @@ typedef struct globus_i_xio_context_s
 
 #define _op_ent_driver              type_u.target_s.driver;
 
-#define _op_ent_target              type_u.target_s.target
 #define _op_ent_accept_attr         type_u.target_s.accept_attr
 /*
  *  represents a entry in an array of operations.  each entry
@@ -242,6 +238,7 @@ typedef struct globus_i_xio_op_entry_s
     globus_bool_t                               in_register;
     globus_bool_t                               is_limited;
 
+    void *                                      dd;
     void *                                      target;
     void *                                      attr;
     int                                         caller_ndx;
@@ -263,7 +260,6 @@ typedef struct globus_i_xio_op_entry_s
 #define _op_handle_timeout_cb                   type_u.handle_s.timeout_cb
 
 #define _op_server                              type_u.target_s.server
-#define _op_target                              type_u.target_s.target
 #define _op_in_register                         type_u.target_s.in_register
 #define _op_server_timeout_cb                   type_u.target_s.timeout_cb
 
@@ -307,7 +303,6 @@ typedef struct globus_i_xio_op_s
             /* convience pointer, really owned by handle */
             globus_i_xio_context_t *            context;
             /* data descriptor */
-            globus_i_xio_dd_t *                 data_desc;
             globus_size_t                       wait_for;
             globus_xio_timeout_callback_t       timeout_cb;
         } handle_s;
@@ -612,61 +607,8 @@ extern globus_i_xio_timer_t                    globus_l_xio_timeout_timer;
 #   define GlobusIXIODriverReadDeliver(op) \
             globus_xio_driver_read_deliver_DEBUG(op)
 
-
-
 #else /* BUILD_DEBUG */
-
 #   include "globus_xio_macro_magic.h"
-
-#   define GlobusXIODebugSetOut(_dst, _src) _dst = (_src)
-
-#   define GlobusXIODriverFinishedAccept(_in_op, _in_target, _in_res)       \
-            GlobusXIODriverFinishedAccept_DEBUG(_in_op, _in_target, _in_res)
-
-#   define GlobusXIODriverPassAccept(_out_res, _in_op, _in_cb, _in_user_arg)\
-            GlobusXIODriverPassAccept_DEBUG(                                \
-                _out_res, _in_op, _in_cb, _in_user_arg)
-            
-#   define GlobusXIODriverPassOpen(                                         \
-            _out_res, _out_context, _in_op, _in_cb, _in_user_arg)           \
-            GlobusXIODriverPassOpen_DEDUG(                                  \
-                _out_res, _out_context, _in_op, _in_cb, _in_user_arg)
-
-#   define GlobusXIODriverPassClose(                                        \
-            _out_res, _in_op, _in_cb, _in_ua)                               \
-        GlobusXIODriverPassClose_DEBUG(                                     \
-            _out_res, _in_op, _in_cb, _in_ua)
-
-#   define GlobusXIODriverFinishedClose(op, res)                            \
-            GlobusXIODriverFinishedClose_DEBUG(op, res)
-
-#   define GlobusXIODriverPassWrite(                                        \
-            _out_res, _in_op, _in_iovec, _in_iovec_count,                   \
-            _in_wait_for, _in_cb, _in_user_arg)                             \
-        GlobusXIODriverPassWrite_DEBUG(                                     \
-            _out_res, _in_op, _in_iovec, _in_iovec_count,                   \
-            _in_wait_for, _in_cb, _in_user_arg)
-
-#   define GlobusXIODriverFinishedWrite(op, res, nbytes)                    \
-            GlobusXIODriverFinishedWrite_DEBUG(op, res, nbytes)
-
-#   define GlobusIXIODriverWriteDeliver(op) \
-            GlobusXIODriverWriteDeliver_DEBUG(op)
-
-
-#   define GlobusXIODriverPassRead(                                         \
-            _out_res, _in_op, _in_iovec, _in_iovec_count,                   \
-            _in_wait_for, _in_cb, _in_user_arg)                             \
-        GlobusXIODriverPassRead_DEBUG(                                      \
-            _out_res, _in_op, _in_iovec, _in_iovec_count,                   \
-            _in_wait_for, _in_cb, _in_user_arg)
-
-#   define GlobusXIODriverFinishedRead(op, res, nbytes)                     \
-            GlobusXIODriverFinishedRead_DEBUG(op, res, nbytes)
-
-#   define GlobusIXIODriverReadDeliver(op) \
-            GlobusXIODriverReadDeliver_DEBUG(op)
-
 #endif /* BUILD_DEBUG */
 
 #define GlobusXIODebugPrintf(level, message) GlobusDebugPrintf(GLOBUS_XIO, level, message)

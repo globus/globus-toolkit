@@ -72,5 +72,8 @@ timeout_main(
     int                                     argc,
     char **                                 argv);
 
+void
+test_common_end();
+
 
 #endif

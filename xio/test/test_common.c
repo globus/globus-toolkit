@@ -6,6 +6,7 @@ typedef  int
     int                                     argc,
     char **                                 argv);
 
+static globus_list_t *                      globus_l_driver_list = NULL;
 static int                                  globus_l_argc;
 static char **                              globus_l_argv;
 static char *                               globus_l_program_name;
@@ -99,7 +100,9 @@ parse_parameters(
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     res = globus_xio_stack_push_driver(stack, base_driver);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-    
+
+    globus_list_insert(&globus_l_driver_list, base_driver);
+
     /* parse the parameters */
     globus_l_test_info.server = GLOBUS_FALSE;
     while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:D:X:")) != -1)
@@ -115,6 +118,8 @@ parse_parameters(
                 test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
                 res = globus_xio_stack_push_driver(stack, driver);
                 test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    
+                globus_list_insert(&globus_l_driver_list, driver);
                 break;
 
             case 'i':
@@ -252,6 +257,21 @@ call_test(
     return rc;
 }
 
+
+void
+test_common_end()
+{
+    while(!globus_list_empty(globus_l_driver_list))
+    {
+        globus_xio_driver_t                         tmp_driver;
+
+        tmp_driver = (globus_xio_driver_t)
+            globus_list_remove(&globus_l_driver_list, globus_l_driver_list);
+
+        globus_xio_driver_unload(tmp_driver);
+    }
+}
+
 int
 main(
     int                                         argc,
@@ -265,6 +285,8 @@ main(
     char *                                      name = NULL;
 
     globus_l_program_name = argv[0];
+
+    globus_module_activate(GLOBUS_COMMON_MODULE);
 
     /* add all the known tests to hash table */
     globus_hashtable_init(
@@ -340,7 +362,13 @@ main(
         globus_module_deactivate(GLOBUS_XIO_MODULE);
     }
 
+    globus_hashtable_remove(&globus_l_test_hash, "read_barrier");
+    globus_hashtable_remove(&globus_l_test_hash, "close_barrier");
+    globus_hashtable_remove(&globus_l_test_hash, "framework");
+    globus_hashtable_remove(&globus_l_test_hash, "timeout");
     globus_hashtable_destroy(&globus_l_test_hash);
+
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     return rc;
 }

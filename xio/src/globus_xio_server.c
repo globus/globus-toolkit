@@ -214,8 +214,7 @@ globus_i_xio_server_accept_callback(
     /* we may be delaying the callback until cancel returns */
     if(accept)
     {
-        if(xio_server->space != GLOBUS_CALLBACK_GLOBAL_SPACE ||
-           xio_op->_op_in_register)
+        if(xio_server->space != GLOBUS_CALLBACK_GLOBAL_SPACE)
         {
             /* register a oneshot callback */
             globus_callback_space_register_oneshot(
@@ -455,6 +454,7 @@ globus_xio_server_init(
                     xio_server->entry[ctr].driver);
             }
             /* call the driver init function */
+            xio_server->entry[ctr].server_handle = NULL;
             res = xio_server->entry[ctr].driver->server_init_func(
                     &xio_server->entry[ctr].server_handle,
                     ds_attr);
@@ -592,7 +592,6 @@ globus_xio_server_register_accept(
         xio_op->cancel_cb = NULL;
         xio_op->canceled = GLOBUS_FALSE;
         xio_op->_op_server_timeout_cb = xio_server->accept_timeout;
-        xio_op->progress = GLOBUS_TRUE;
         xio_op->ndx = 0;
         xio_op->stack_size = xio_server->stack_size;
         xio_op->_op_accept_cb = cb;

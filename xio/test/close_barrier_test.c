@@ -199,6 +199,8 @@ close_barrier_main(
     res = globus_xio_stack_destroy(stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
+    test_common_end();
+
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 

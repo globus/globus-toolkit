@@ -169,9 +169,13 @@ globus_l_xio_debug_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {   
+    globus_xio_context_t                context;
+
     debug_driver_log("finished close");
 
+    context = GlobusXIOOperationGetContext(op);
     GlobusXIODriverFinishedClose(op, result);
+    globus_xio_driver_context_close(context);
 }   
 
 static

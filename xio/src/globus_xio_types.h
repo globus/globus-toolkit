@@ -15,7 +15,7 @@ typedef struct globus_i_xio_driver_s *          globus_xio_driver_t;
 typedef struct globus_i_xio_attr_s *            globus_xio_attr_t;
 typedef struct globus_i_xio_stack_s *           globus_xio_stack_t;
 typedef struct globus_i_xio_server_s *          globus_xio_server_t;
-typedef struct globus_i_xio_dd_s *              globus_xio_data_descriptor_t;
+typedef struct globus_i_xio_op_s *              globus_xio_data_descriptor_t;
 
 typedef struct iovec                            globus_xio_iovec_t;
 

@@ -318,6 +318,8 @@ framework_main(
     globus_xio_attr_destroy(attr);
     globus_xio_stack_destroy(stack);
 
+    test_common_end();
+
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 

@@ -36,29 +36,6 @@ do                                                                          \
     }                                                                       \
 } while(0)
     
-#define GlobusIXIODDGetDS(_out_ds, _in_dd, _in_driver)                      \
-do                                                                          \
-{                                                                           \
-    int                                         _ctr;                       \
-    globus_i_xio_dd_t *                         _dd;                        \
-    globus_xio_driver_t                         _driver;                    \
-    globus_i_xio_attr_ent_t *                   _entry;                     \
-    void *                                      _ds = NULL;                 \
-                                                                            \
-    _dd = (_in_dd);                                                         \
-    _driver = (_in_driver);                                                 \
-                                                                            \
-    _entry = _dd->entry;                                                    \
-    for(_ctr = 0; _ctr < _dd->stack_size && _ds == NULL; _ctr++)            \
-    {                                                                       \
-        if(_entry[_ctr].driver == _driver)                                  \
-        {                                                                   \
-            _ds = _entry[_ctr].driver_data;                                 \
-        }                                                                   \
-    }                                                                       \
-    _out_ds = _ds;                                                          \
-} while(0)
-
 /*
  *  cancel and timeout functions 
  */
@@ -148,7 +125,8 @@ do                                                                          \
 #define GlobusXIOOperationGetContext(_in_op)                                \
     &((_in_op)->_op_context->entry[_in_op->ndx - 1])
 
-#define GlobusXIOOperationGetDataDescriptor(op) NULL
+#define GlobusXIOOperationGetDataDescriptor(op)                             \
+    ((_in_op)->_op_context->entry[_in_op->ndx - 1].dd)
 
 
 /*******************************************************************
