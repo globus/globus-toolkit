@@ -896,11 +896,13 @@ globus_l_gfs_data_transfer_cb(
     globus_gridftp_server_control_op_t  op;
     globus_l_gfs_request_info_t *       request;
     char *                              tmp_str;
+    globus_bool_t                       destroy_req;
     GlobusGFSName(globus_l_gfs_data_transfer_cb);
 
     request = (globus_l_gfs_request_info_t *) user_arg;
     op = request->control_op;
 
+    destroy_req = !request->transfer_events;
     if(reply->result != GLOBUS_SUCCESS)
     {
         tmp_str = globus_error_print_friendly(
@@ -918,7 +920,7 @@ globus_l_gfs_data_transfer_cb(
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             GLOBUS_NULL);
     }
-    if(!request->transfer_events)
+    if(destroy_req)
     {
         globus_gfs_transfer_info_t *    info;
         info = (globus_gfs_transfer_info_t *) request->info;

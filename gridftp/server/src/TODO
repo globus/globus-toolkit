@@ -8,9 +8,6 @@ protocol:
 -- verify that dsi api is correct wrt to errors
 -- error out usefully to server and client when cred problem in gssapi driver
 
-signal handling:
--- SIGINT needs to handle data-node shutdown
-
 striping:
 -- verify eofc handling, should move out of remote into data.c
 -- verify _get_read_range()
