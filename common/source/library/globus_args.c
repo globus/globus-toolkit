@@ -45,7 +45,6 @@ globus_l_args_create_error_msg( char **        error_msg,
 {
     char *      my_error_string;
     char *      p;
-    char *      q;
     int         usage_len;
     int         len;
 
@@ -70,12 +69,7 @@ globus_l_args_create_error_msg( char **        error_msg,
 			 current_argv,
 			 my_error_string  );
 
-    /* enforce one-line usage */
-    q = strchr( oneline_usage, '\n' );
-    if (q)
-	usage_len = (int)(q - oneline_usage);
-    else
-	usage_len = strlen( oneline_usage );
+    usage_len = strlen( oneline_usage );
 
     len = strlen(p);
     strncpy( &p[len], oneline_usage, usage_len );
@@ -343,10 +337,18 @@ globus_args_scan(
         }
 
         /* four specials : -help, -usage, -version, -versions */
-        if (!strcmp("-help",my_arg) || !strcmp("-usage",my_arg))
+        if (!strcmp("-help",my_arg))
         {
             globus_l_args_create_msg( error_msg ,
 				      (char *) long_usage );
+	    rc = GLOBUS_ARGS_HELP;
+            done = GLOBUS_TRUE;
+            continue;
+        }
+        if(!strcmp("-usage",my_arg))
+        {
+            globus_l_args_create_msg( error_msg ,
+				      (char *) oneline_usage );
 	    rc = GLOBUS_ARGS_HELP;
             done = GLOBUS_TRUE;
             continue;
