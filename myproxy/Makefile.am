@@ -28,6 +28,10 @@ LibSources= \
 	myproxy_read_pass.h \
 	myproxy_log.c \
 	myproxy_log.h \
+	myproxy_sasl_client.c \
+	myproxy_sasl_client.h \
+	myproxy_sasl_server.h \
+	myproxy_sasl_server.c \
 	myproxy_server.h \
 	myproxy_server_config.c \
 	ssl_utils.c \
@@ -56,6 +60,8 @@ flavorinclude_HEADERS= \
 	myproxy_delegation.h \
 	myproxy_log.h \
 	myproxy_read_pass.h \
+	myproxy_sasl_client.h \
+	myproxy_sasl_server.h \
 	myproxy_server.h \
 	verror.h
 
