@@ -2275,8 +2275,8 @@ globus_libc_readdir_r(DIR *dirp,
             { 
 		globus_free(entry);
 		*result = GLOBUS_NULL;
-		return rc;
             }
+            return rc;
 	}
 #       elif defined(GLOBUS_HAVE_READDIR_R_2)
 	{
