@@ -169,12 +169,6 @@ globus_gss_assist_display_status_str
 						comment ? comment : "GSS failure: ",
 						NULL,0,
 						"\n");
-
-	sprintf(buf,
-			"    GSS status: major:%8.8x minor: %8.8x token: %8.8x\n",
-			major_status, minor_status, token_status);
-	msg = globus_gss_assist_strcatr(msg,buf,NULL,0,NULL);
-
 	if (major_status) {
 		message_context = 0;
 		do {
@@ -263,6 +257,11 @@ globus_gss_assist_display_status_str
 
 	}
 
+	sprintf(buf,
+			"    GSS status: major:%8.8x minor: %8.8x token: %8.8x\n",
+			major_status, minor_status, token_status);
+	msg = globus_gss_assist_strcatr(msg,buf,NULL,0,NULL);
+    
 	*str = msg;
 	return 0;
 }
