@@ -63,7 +63,6 @@ add_token(char **tokens,
     int current_length = 0;
     char **new_tokens;
     char *my_token;
-    int new_size;
 
     assert(token != NULL);
     
@@ -81,11 +80,8 @@ add_token(char **tokens,
 	    current_length++;
 	}
     }
-
-    /* Add enough for new pointer and NULL */
-    new_size = sizeof(char *) * (current_length + 2);
     
-    new_tokens = realloc(tokens, new_size);
+    new_tokens = realloc(tokens, current_length + 2 /* New pointer and NULL */);
     
     if (new_tokens == NULL)
     {
