@@ -13,8 +13,6 @@ in globus_common_include.h.win
 globus_thread_diagnostics_vprintf (globus_print.c)
   what is it and where did it come form
 ---------------------------------------------------------  
-  libc.h is ugly inregard to open/close/read/write/opendir/etc..
----------------------------------------------------------
 
 ---------------------------------------------------------
 int globus_libc_usleep(long usec) is really millisecs on windows
@@ -55,10 +53,15 @@ globus_tilde_expand(
     char *inpath,
     char **outpath);
 
-GetUserName
+int
+globus_libc_gethomedir(char *result, int bufsize)
+
 
 int
 globus_libc_fork(void)
+
+functions marked as depricated
+==============================
 
 int
 globus_libc_getpwnam_r(char *name,
@@ -78,9 +81,6 @@ static void
 globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
 				      char *buffer,
 				      size_t buflen)
-
-int
-globus_libc_gethomedir(char *result, int bufsize)
 
 int
 globus_libc_lseek(int fd,
