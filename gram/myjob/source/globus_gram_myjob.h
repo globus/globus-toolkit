@@ -25,16 +25,6 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 
-/* determine whether to use MP or DUCT */
-#include "globus_mp_mpi.h"
-
-#ifdef GLOBUS_MP_HAS_MPI_PROTO
-#define GLOBUS_GRAM_MYJOB_USES_MP
-#else
-#define GLOBUS_GRAM_MYJOB_USES_DUCT
-#include "globus_duct_runtime.h"
-#endif
-
 #include "globus_common.h"
 
 #ifndef EXTERN_C_BEGIN

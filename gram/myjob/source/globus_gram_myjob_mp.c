@@ -21,7 +21,10 @@ CVS Information:
 
 #include "globus_gram_myjob.h"
 
-#ifdef GLOBUS_GRAM_MYJOB_USES_MP
+/* determine whether to use MP or DUCT */
+#include "globus_mp_mpi.h"
+
+#ifdef GLOBUS_MP_HAS_MPI_PROTO
 
 #include "globus_common.h"
 
@@ -267,4 +270,4 @@ globus_gram_myjob_kill()
     return GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE;
 }
 
-#endif /* GLOBUS_GRAM_MYJOB_USES_MP */
+#endif /* GLOBUS_MP_HAS_MPI_PROTO */
