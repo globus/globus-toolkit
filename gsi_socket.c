@@ -749,7 +749,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     struct sockaddr_in		server_addr;
     int				server_addr_len = sizeof(server_addr);
     struct hostent		*server_info;
-    OM_uint32			req_flags = 0;
+    OM_uint32			req_flags = 0, ret_flags = 0;
     int				return_value = GSI_SOCKET_ERROR;
     
     if (self == NULL)
@@ -826,6 +826,9 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	
     req_flags |= GSS_C_REPLAY_FLAG;
     req_flags |= GSS_C_MUTUAL_FLAG;
+    if (self->encryption) {
+      req_flags |= GSS_C_CONF_FLAG;
+    }
 
     self->major_status =
 	globus_gss_assist_init_sec_context(&self->minor_status,
@@ -833,7 +836,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 					   &self->gss_context,
 					   server_name,
 					   req_flags,
-					   NULL, /* ret_flags */
+					   &ret_flags,
 					   &token_status,
 					   assist_read_token,
 					   &self->sock,
@@ -843,6 +846,13 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     if (self->major_status != GSS_S_COMPLETE)
     {
 	goto error;
+    }
+
+    /* Verify that all service requests were honored. */
+    if ((req_flags & ret_flags) != req_flags) {
+      self->error_string =
+	strdup("GSI_SOCKET requested service not supported");
+      goto error;
     }
 
     /* Success */
@@ -1021,6 +1031,11 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	if (self->major_status != GSS_S_COMPLETE)
 	{
 	    goto error;
+	}
+	
+	if (self->encryption && !conf_state) {
+	  self->error_string = strdup("GSI_SOCKET failed to encrypt");
+	  goto error;
 	}
 	
 	return_value = write_token(self->sock, wrapped_buffer.value,
