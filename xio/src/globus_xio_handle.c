@@ -65,6 +65,7 @@ do                                                                          \
 #include "globus_i_xio.h"
 #include "globus_xio.h"
 
+globus_bool_t                               globus_l_xio_shutdown;
 
 globus_i_xio_timer_t                        globus_l_xio_timeout_timer;
 
@@ -73,6 +74,204 @@ globus_mutex_t                              globus_l_mutex;
 globus_cond_t                               globus_l_cond;
 
 GlobusDebugDefine(GLOBUS_XIO);
+
+void
+globus_l_xio_deactivate_close_cb(
+    globus_xio_handle_t                     handle,
+    globus_result_t                         result,
+    void *                                  user_arg)
+{
+    int *                                   close_cnt;
+
+    close_cnt = (int *) user_arg;
+    globus_mutex_lock(&globus_l_mutex);
+    {
+        *close_cnt--;
+        globus_cond_signal(&globus_l_cond);
+    }
+    globus_mutex_unlock(&globus_l_mutex);
+}
+
+void
+globus_l_xio_oneshot_wrapper_cb(
+    void *                                  user_arg)
+{
+    globus_i_xio_space_info_t *             space_info;
+    globus_i_xio_handle_t *                 handle;
+    globus_result_t                         res;
+
+    space_info = (globus_i_xio_space_info_t *) user_arg;
+
+    handle = space_info->handle;
+
+    if(space_info->unregister)
+    {
+        /* remove my reference to the handle */
+        res = globus_callback_unregister(space_info->ch, NULL, NULL, NULL);
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_panic(GLOBUS_XIO_MODULE,res,"failed to unregister oneshot");
+        }
+        globus_mutex_lock(&handle->cancel_mutex);
+        {
+            globus_list_remove(&handle->cb_list,
+                globus_list_search(handle->cb_list, space_info));
+        }   
+        globus_mutex_unlock(&handle->cancel_mutex);
+    
+    }
+    space_info->func(space_info->user_arg);
+    globus_free(space_info);
+}
+
+void
+globus_i_xio_close_handles(
+    globus_xio_driver_t                     driver)
+{
+    globus_list_t *                         list;
+    globus_list_t *                         tmp_list;
+    globus_result_t                         res;
+    globus_xio_handle_t                     handle;
+    globus_bool_t                           found;
+    globus_bool_t                           active;
+    int                                     ctr;
+    int                                     close_cnt = 0;
+    globus_i_xio_space_info_t *             space_info;
+
+    globus_mutex_lock(&globus_l_mutex);
+    {
+        tmp_list = globus_list_copy(globus_l_outstanding_handles_list);
+        for(list = tmp_list;
+            !globus_list_empty(list);
+            list = globus_list_rest(list))
+        {
+            handle = (globus_xio_handle_t) globus_list_first(list);
+            found = GLOBUS_FALSE;
+
+            for(ctr = 0; ctr < handle->context->stack_size && !found; ctr++)
+            {
+                if(driver == NULL || 
+                    handle->context->entry[ctr]. driver == driver)
+                {
+                    found = GLOBUS_TRUE;
+                }
+            }
+
+            if(found)
+            {
+                /* walk through the list of callbacks registered in a space
+                   and unregister, the call callback */
+                handle->shutting_down = GLOBUS_TRUE;
+                globus_mutex_lock(&handle->cancel_mutex);
+                {
+                    for(list = handle->cb_list;
+                        !globus_list_empty(list);
+                        list = globus_list_rest(list))
+                    {
+                        space_info = (globus_i_xio_space_info_t *)
+                            globus_list_first(list);
+                        res = globus_callback_unregister(
+                                space_info->ch,
+                                NULL,
+                                NULL,
+                                &active);
+                        if(res != GLOBUS_SUCCESS)
+                        {
+                            globus_panic(
+                                GLOBUS_XIO_MODULE, res, 
+                                "failed to unregister oneshot");
+                        }
+                        if(!active)
+                        {
+                            /* can't call this directly */
+                            space_info->unregister = GLOBUS_FALSE;
+                            res = globus_callback_space_register_oneshot(
+                                NULL,
+                                NULL,
+                                globus_l_xio_oneshot_wrapper_cb,
+                                (void *)space_info,
+                                GLOBUS_CALLBACK_GLOBAL_SPACE);
+                            if(res != GLOBUS_SUCCESS)
+                            {
+                                globus_panic(GLOBUS_XIO_MODULE, 
+                                    res, "failed to register oneshot");
+                            }
+                        }
+                    }
+                }
+                globus_mutex_unlock(&handle->cancel_mutex);
+
+                close_cnt++;
+                res = globus_xio_register_close(
+                    handle,
+                    NULL,
+                    globus_l_xio_deactivate_close_cb,
+                    &close_cnt);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
+                        ("in deactivate, close register failed")); 
+                    /* wairn if interested */
+                }
+            }
+        }
+        while(close_cnt > 0)
+        {
+            globus_cond_wait(&globus_l_cond, &globus_l_mutex);
+        }
+        globus_list_free(tmp_list);
+    }
+    globus_mutex_unlock(&globus_l_mutex);
+
+}
+
+void
+globus_i_xio_register_oneshot(
+    globus_i_xio_handle_t *                 handle,
+    globus_callback_func_t                  cb,
+    void *                                  user_arg,
+    globus_callback_space_t                 space)
+{
+    globus_result_t                         res;
+    globus_i_xio_space_info_t *             space_info;
+    globus_callback_handle_t *              ch = NULL;
+    GlobusXIOName(globus_i_xio_register_oneshot);
+
+    GlobusXIODebugInternalEnter();
+
+    if(handle != NULL && space != GLOBUS_CALLBACK_GLOBAL_SPACE)
+    {
+        space_info = (globus_i_xio_space_info_t *)
+            globus_malloc(sizeof(globus_i_xio_space_info_t));
+        ch = &space_info->ch;
+        space_info->func = cb;
+        space_info->unregister = GLOBUS_TRUE;
+        space_info->handle = handle;
+        cb = globus_l_xio_oneshot_wrapper_cb;
+        space_info->user_arg = user_arg;
+        user_arg = space_info;
+        globus_mutex_lock(&handle->cancel_mutex);
+        {
+            globus_list_insert(&handle->cb_list, space_info);
+        }
+        globus_mutex_unlock(&handle->cancel_mutex);
+    }
+
+    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO, 
+        ("registering to space %d, user_arg = 0x%x\n", 
+        space, user_arg));
+    res = globus_callback_space_register_oneshot(
+                ch,
+                NULL,
+                cb,
+                user_arg,
+                space);
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_panic(GLOBUS_XIO_MODULE, res, "failed to register oneshot");
+    }
+    GlobusXIODebugInternalExit();
+}
 
 static int
 globus_l_xio_activate()
@@ -87,6 +286,8 @@ globus_l_xio_activate()
     {
         return rc;
     }
+
+    globus_l_xio_shutdown = GLOBUS_FALSE;
 
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);
@@ -105,46 +306,15 @@ globus_l_xio_activate()
 }
 
 
-void
-globus_l_xio_deactivate_close_cb(
-    globus_xio_handle_t                     handle,
-    globus_result_t                         result,
-    void *                                  user_arg)
-{
-}
 
 static int
 globus_l_xio_deactivate()
 {
-    globus_list_t *                         list;
-    globus_result_t                         res;
-    globus_xio_handle_t                     handle;
     GlobusXIOName(globus_l_xio_deactivate);
 
     GlobusXIODebugInternalEnter();
-    /* is this good enough for user callback spaces and deadlock ?? */
+    globus_l_xio_shutdown = GLOBUS_TRUE;
 
-/* NOTHING FOR NOW 
-    globus_mutex_lock(&globus_l_mutex);
-    {
-        for(list = globus_l_outstanding_handles_list;
-            !globus_list_empty(list);
-            list = globus_list_rest(list))
-        {
-            handle = (globus_xio_handle_t) globus_list_first(list);
-            res = globus_xio_register_close(
-                    handle,
-                    NULL,
-                    globus_l_xio_deactivate_close_cb,
-                    NULL);
-        }
-        while(!globus_list_empty(globus_l_outstanding_handles_list))
-        {
-            globus_cond_wait(&globus_l_cond, &globus_l_mutex);
-        }
-    }
-    globus_mutex_unlock(&globus_l_mutex);
-*/
     globus_mutex_destroy(&globus_l_mutex);
     globus_cond_destroy(&globus_l_cond);
     globus_i_xio_timer_destroy(&globus_l_xio_timeout_timer);
@@ -153,6 +323,7 @@ globus_l_xio_deactivate()
     GlobusDebugDestroy(GLOBUS_XIO);
     
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    GlobusXIODebugInternalExit();
 }
 
 globus_module_descriptor_t                  globus_i_xio_module =
@@ -737,9 +908,8 @@ globus_l_xio_timeout_callback(
         if(space != GLOBUS_CALLBACK_GLOBAL_SPACE)
         {
             /* register a oneshot callback */
-            globus_callback_space_register_oneshot(
-                NULL,
-                NULL,
+            globus_i_xio_register_oneshot(
+                handle,
                 delayed_cb,
                 (void *)op,
                 space);

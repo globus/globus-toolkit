@@ -80,13 +80,18 @@ globus_i_xio_handle_destroy(
     globus_free(handle);
 }
 
+/* 
+ *  called in the context lock
+ */
 void
 globus_i_xio_handle_dec(
     globus_i_xio_handle_t *                 handle,
     globus_bool_t *                         destroy_handle,
     globus_bool_t *                         destroy_context)
 {
+    globus_result_t                         res;
     globus_i_xio_context_t *                context;
+    globus_i_xio_space_info_t *             space_info;
 
     context = handle->context;
 
@@ -102,6 +107,21 @@ globus_i_xio_handle_dec(
         if(context->ref == 0)
         {
             *destroy_context = GLOBUS_TRUE;
+        }
+        /* purge the ch list */
+        while(!globus_list_empty(handle->cb_list))
+        {
+            space_info = (globus_i_xio_space_info_t *)
+                globus_list_remove(&handle->cb_list, handle->cb_list);
+            res = globus_callback_unregister(
+                    space_info->ch,
+                    NULL,
+                    NULL,
+                    NULL);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_panic(GLOBUS_XIO_MODULE, res, "failed to unregister");
+            }
         }
     }
 }
@@ -278,12 +298,12 @@ globus_l_xio_driver_purge_read_eof(
                     globus_list_remove(&my_context->eof_op_list,
                         my_context->eof_op_list);
 
-        globus_callback_space_register_oneshot(
-            NULL,
-            NULL,
+        globus_i_xio_register_oneshot(
+            tmp_op->_op_handle,
             globus_l_xio_driver_op_read_kickout,
            (void *)tmp_op,
-            tmp_op->_op_handle->space);
+            tmp_op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: 
+                                tmp_op->_op_handle->space);
     }
     GlobusXIODebugInternalExit();
 }

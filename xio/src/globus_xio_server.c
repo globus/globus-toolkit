@@ -457,8 +457,7 @@ globus_l_xio_accept_timeout_callback(
         if(space != GLOBUS_CALLBACK_GLOBAL_SPACE)
         {
             /* register a oneshot callback */
-            globus_callback_space_register_oneshot(
-                NULL,
+            globus_i_xio_register_oneshot(
                 NULL,
                 globus_l_xio_server_accept_kickout,
                 (void *)xio_op,
@@ -536,8 +535,7 @@ globus_l_xio_close_server(
     {
         space = xio_server->space;
     }
-    globus_callback_space_register_oneshot(
-        NULL,
+    globus_i_xio_register_oneshot(
         NULL,
         globus_l_xio_server_close_kickout,
         (void *)xio_server,

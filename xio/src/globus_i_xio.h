@@ -212,6 +212,8 @@ typedef struct globus_i_xio_server_s
 
 typedef struct globus_i_xio_handle_s
 {
+    globus_bool_t                           shutting_down;
+    globus_list_t *                         cb_list;
     globus_mutex_t                          cancel_mutex;
     int                                     ref;
     int                                     stack_size;
@@ -615,6 +617,27 @@ globus_i_xio_op_destroy(
 globus_result_t
 globus_i_xio_repass(
     globus_i_xio_op_t *                     op);
+
+void
+globus_i_xio_register_oneshot(
+    globus_i_xio_handle_t *                 handle,
+    globus_callback_func_t                  cb,
+    void *                                  user_arg,
+    globus_callback_space_t                 space);
+
+
+typedef struct globus_i_xio_space_info_s
+{
+    globus_bool_t                           unregister;
+    globus_i_xio_handle_t *                 handle;
+    globus_callback_handle_t                ch;
+    globus_callback_func_t                  func;
+    void *                                  user_arg;
+} globus_i_xio_space_info_t;
+
+void
+globus_i_xio_close_handles(
+    globus_xio_driver_t                     driver);
 
 
 extern globus_i_xio_timer_t                 globus_l_xio_timeout_timer;

@@ -284,6 +284,8 @@ globus_l_xio_operation_kickout(
 
     ow = (globus_l_xio_test_op_wrapper_t *) user_arg;
 
+    globus_assert(ow != GLOBUS_SUCCESS);
+
     GlobusXIODriverDisableCancel(ow->op);
 
     GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("finishing with=%d\n", ow->res));
