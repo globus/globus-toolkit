@@ -45,6 +45,10 @@
 
 #include <config.h>
 
+#include <stdlib.h>
+#include <string.h>
+#include <dlfcn.h>
+
 #ifdef HAVE_GSSAPI_H
 #include <gssapi.h>
 #else
@@ -129,8 +133,6 @@ typedef struct context {
     gss_name_t   client_name;
     gss_name_t   server_name;
     gss_cred_id_t server_creds;
-    gss_cred_id_t client_creds;
-
     sasl_ssf_t limitssf, requiressf; /* application defined bounds, for the
 					server */
     const sasl_utils_t *utils;
@@ -206,6 +208,8 @@ static OM_uint32 (*p_krb5_gss_unwrap)
 static OM_uint32 (*p_krb5_gss_wrap)
     (OM_uint32 FAR *, gss_ctx_id_t, int, gss_qop_t, gss_buffer_t, int FAR *,
      gss_buffer_t);
+static OM_uint32 (*p_krb5_gss_wrap_size_limit)
+    (OM_uint32 FAR *, gss_ctx_id_t, int, gss_qop_t, OM_uint32, OM_uint32 *);
 
 
 
@@ -242,6 +246,7 @@ sasl_gss_lib_init(const sasl_utils_t *utils)
     SASL_GSS_DLSYM(gss_release_name);
     SASL_GSS_DLSYM(gss_unwrap);
     SASL_GSS_DLSYM(gss_wrap);
+    SASL_GSS_DLSYM(gss_wrap_size_limit);
 
     return SASL_OK;
 
@@ -251,7 +256,7 @@ sasl_gss_lib_init(const sasl_utils_t *utils)
 	char *saslerr;
 	saslerr = malloc(strlen(errmsg)+strlen(dlerr)+3);
 	sprintf(saslerr, "%s: %s", errmsg, dlerr);
-	SETERROR(utils, saslerror);
+	SETERROR(utils, saslerr);
 	free(saslerr);
     } else {
 	SETERROR(utils, errmsg);
@@ -394,7 +399,7 @@ sasl_gss_encode(void *context, const struct iovec *invec, unsigned numiov,
     
     if(!output) return SASL_BADPARAM;
     
-    if (sasl_gss_lib_init(utils) != SASL_OK) return;
+    if (sasl_gss_lib_init(text->utils) != SASL_OK) return;
     
     if(numiov > 1) {
 	ret = _plug_iovec_to_buf(text->utils, invec, numiov, &text->enc_in_buf);
@@ -485,7 +490,7 @@ static int gssapi_decode_packet(void *context,
     gss_buffer_desc real_input_token, real_output_token;
     int result;
     
-    if (sasl_gss_lib_init(utils) != SASL_OK) return;
+    if (sasl_gss_lib_init(text->utils) != SASL_OK) return;
     
     if (text->state != SASL_GSSAPI_STATE_AUTHENTICATED) {
 	SETERROR(text->utils, "GSSAPI Failure");
@@ -571,7 +576,7 @@ static void sasl_gss_free_context_contents(context_t *text)
     
     if (!text) return;
     
-    if (sasl_gss_lib_init(utils) != SASL_OK) return;
+    if (sasl_gss_lib_init(text->utils) != SASL_OK) return;
     
     if (text->gss_ctx != GSS_C_NO_CONTEXT) {
 	maj_stat = (*p_krb5_gss_delete_sec_context)(&min_stat,&text->gss_ctx,GSS_C_NO_BUFFER);
@@ -593,11 +598,6 @@ static void sasl_gss_free_context_contents(context_t *text)
 	text->server_creds = GSS_C_NO_CREDENTIAL;
     }
 
-    if ( text->client_creds != GSS_C_NO_CREDENTIAL) {
-	maj_stat = (*p_krb5_gss_release_cred)(&min_stat, &text->client_creds);
-	text->client_creds = GSS_C_NO_CREDENTIAL;
-    }
-    
     if (text->out_buf) {
 	text->utils->free(text->out_buf);
 	text->out_buf = NULL;
@@ -660,7 +660,6 @@ gssapi_server_mech_new(void *glob_context __attribute__((unused)),
     text->client_name = GSS_C_NO_NAME;
     text->server_name = GSS_C_NO_NAME;
     text->server_creds = GSS_C_NO_CREDENTIAL;
-    text->client_creds = GSS_C_NO_CREDENTIAL;
     text->state = SASL_GSSAPI_STATE_AUTHNEG;
     
     *conn_context = text;
@@ -683,7 +682,7 @@ gssapi_server_mech_step(void *conn_context,
     OM_uint32 maj_stat = 0, min_stat = 0;
     OM_uint32 max_input;
     gss_buffer_desc name_token;
-    int ret, out_flags = 0 ;
+    int ret;
     
     input_token = &real_input_token;
     output_token = &real_output_token;
@@ -698,7 +697,7 @@ gssapi_server_mech_step(void *conn_context,
     *serverout = NULL;
     *serveroutlen = 0;	
 	    
-    if (sasl_gss_lib_init(utils) != SASL_OK) return;
+    if (sasl_gss_lib_init(text->utils) != SASL_OK) return;
     
     switch (text->state) {
 
@@ -763,9 +762,9 @@ gssapi_server_mech_step(void *conn_context,
 				   &text->client_name,
 				   NULL,
 				   output_token,
-				   &out_flags,
 				   NULL,
-				   &(text->client_creds));
+				   NULL,
+				   NULL);
 	
 	if (GSS_ERROR(maj_stat)) {
 	    sasl_gss_log(text->utils, maj_stat, min_stat);
@@ -778,14 +777,6 @@ gssapi_server_mech_step(void *conn_context,
 	}
 	    
 
-	if ((params->props.security_flags & SASL_SEC_PASS_CREDENTIALS) &&
-	    (!(out_flags & GSS_C_DELEG_FLAG) ||
-	     text->client_creds == GSS_C_NO_CREDENTIAL) ) 
-	{
-	    text->utils->seterror(text->utils->conn, SASL_LOG_WARN, "GSSAPI warning: no credentials were passed");
-	    /* continue with authentication */
-	}
-	    
 	if (serveroutlen)
 	    *serveroutlen = output_token->length;
 	if (output_token->value) {
@@ -1106,20 +1097,13 @@ gssapi_server_mech_step(void *conn_context,
 	
 	/* No matter what, set the rest of the oparams */
 	
-	if (text->client_creds != GSS_C_NO_CREDENTIAL)	{
-	    oparams->client_creds =  &text->client_creds;
-	}
-	else {
-	    oparams->client_creds = NULL;
-	}
-
         oparams->maxoutbuf =
 	    (((unsigned char *) output_token->value)[1] << 16) |
             (((unsigned char *) output_token->value)[2] << 8) |
             (((unsigned char *) output_token->value)[3] << 0);
 
 	if (oparams->mech_ssf) {
- 	    maj_stat = gss_wrap_size_limit( &min_stat,
+ 	    maj_stat = (*p_krb5_gss_wrap_size_limit)(&min_stat,
 					    text->gss_ctx,
 					    1,
 					    GSS_C_QOP_DEFAULT,
@@ -1166,8 +1150,7 @@ static sasl_server_plug_t gssapi_server_plugins[] =
 	SASL_SEC_NOPLAINTEXT
 	| SASL_SEC_NOACTIVE
 	| SASL_SEC_NOANONYMOUS
-	| SASL_SEC_MUTUAL_AUTH		/* security_flags */
-	| SASL_SEC_PASS_CREDENTIALS,
+	| SASL_SEC_MUTUAL_AUTH,		/* security_flags */
 	SASL_FEAT_WANT_CLIENT_FIRST
 	| SASL_FEAT_ALLOWS_PROXY,	/* features */
 	NULL,				/* glob_context */
@@ -1257,7 +1240,6 @@ static int gssapi_client_mech_new(void *glob_context __attribute__((unused)),
     text->gss_ctx = GSS_C_NO_CONTEXT;
     text->client_name = GSS_C_NO_NAME;
     text->server_creds = GSS_C_NO_CREDENTIAL;
-    text->client_creds  = GSS_C_NO_CREDENTIAL;
 
     *conn_context = text;
     
@@ -1290,7 +1272,7 @@ static int gssapi_client_mech_step(void *conn_context,
     *clientout = NULL;
     *clientoutlen = 0;
     
-    if (sasl_gss_lib_init(utils) != SASL_OK) return;
+    if (sasl_gss_lib_init(text->utils) != SASL_OK) return;
     
     switch (text->state) {
 
@@ -1390,9 +1372,6 @@ static int gssapi_client_mech_step(void *conn_context,
 	    }
 	}
 	
-	if (params->props.security_flags & SASL_SEC_PASS_CREDENTIALS)
-	    req_flags = req_flags |  GSS_C_DELEG_FLAG;
-
 	maj_stat = (*p_krb5_gss_init_sec_context)(&min_stat,
 					GSS_C_NO_CREDENTIAL,
 					&text->gss_ctx,
@@ -1415,11 +1394,6 @@ static int gssapi_client_mech_step(void *conn_context,
 	    return SASL_FAIL;
 	}
 
-	if ((out_req_flags & GSS_C_DELEG_FLAG) != (req_flags & GSS_C_DELEG_FLAG)) {
-	    text->utils->seterror(text->utils->conn, SASL_LOG_WARN, "GSSAPI warning: no credentials were passed");
-	    /* not a fatal error */
-	}
-  	    
 	*clientoutlen = output_token->length;
 	    
 	if (output_token->value) {
@@ -1572,7 +1546,7 @@ static int gssapi_client_mech_step(void *conn_context,
             (((unsigned char *) output_token->value)[3] << 0);
 
 	if(oparams->mech_ssf) {
-            maj_stat = gss_wrap_size_limit( &min_stat,
+            maj_stat = (*p_krb5_gss_wrap_size_limit)(&min_stat,
                                             text->gss_ctx,
                                             1,
                                             GSS_C_QOP_DEFAULT,
@@ -1696,8 +1670,7 @@ static sasl_client_plug_t gssapi_client_plugins[] =
 	SASL_SEC_NOPLAINTEXT
 	| SASL_SEC_NOACTIVE
 	| SASL_SEC_NOANONYMOUS
-	| SASL_SEC_MUTUAL_AUTH 
-	| SASL_SEC_PASS_CREDENTIALS,    /* security_flags */
+	| SASL_SEC_MUTUAL_AUTH,         /* security_flags */
 	SASL_FEAT_NEEDSERVERFQDN
 	| SASL_FEAT_WANT_CLIENT_FIRST
 	| SASL_FEAT_ALLOWS_PROXY,	/* features */
