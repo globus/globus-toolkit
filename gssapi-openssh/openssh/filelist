@@ -21,8 +21,8 @@ man/man1/ssh-add.1
 man/man1/ssh-agent.1
 man/man1/ssh-keygen.1
 man/man1/ssh-keyscan.1
+man/man8/sftp-server.8
 man/man8/ssh-keysign.8
 man/man8/ssh-rand-helper.8
-man/man8/sftp-server.8
 man/man8/sshd.8
 sbin/sshd
