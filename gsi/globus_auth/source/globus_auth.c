@@ -244,7 +244,7 @@ globus_authorization_handle_set_gss_ctx(
     gaa_status              status;
     OM_uint32               maj_stat, 
                             min_stat;
-    gss_buffer_set_desc     restrictions;
+    gss_buffer_set_t        restrictions;
     int                     ii,len_so_far, old_len;
          
     if (!handle) 
@@ -313,7 +313,7 @@ globus_authorization_handle_set_gss_ctx(
     maj_stat = gss_inquire_sec_context_by_oid( 
         &min_stat,
         context,
-        gss_restrictions_extension,
+        (gss_OID) gss_restrictions_extension,
         &restrictions);
                             
     if(maj_stat != GSS_S_COMPLETE)
@@ -328,23 +328,22 @@ globus_authorization_handle_set_gss_ctx(
     old_len = 0;
     
     /*go through the cert chain and pull out all restrictions*/
-    for(ii = 0; ii < restrictions.count; ii++)
+    for(ii = 0; ii < restrictions->count; ii++)
     {
-        if(restrictions.elements[ii].length > 0)
+        if(restrictions->elements[ii].length > 0)
         {
             /*the cert at this level contains restrictions*/
             old_len = len_so_far;
-            len_so_far += restrictions.elements[ii].length;
+            len_so_far += restrictions->elements[ii].length;
             if(!handle->gaa_cb_arg.restrictions)
             {
                 handle->gaa_cb_arg.restrictions =
                     (char *)malloc(len_so_far+1);
                 memcpy(handle->gaa_cb_arg.restrictions,
-                       (char *)restrictions.elements[ii].value,
+                       (char *)restrictions->elements[ii].value,
                        len_so_far);
             
                 handle->gaa_cb_arg.restrictions[len_so_far] = 0;
-                gss_release_buffer(&min_stat, &restrictions.elements[ii]);
             }
             else
             {
@@ -353,14 +352,15 @@ globus_authorization_handle_set_gss_ctx(
                                     len_so_far+1);
                 /*don't overwrite prreviously extracted restrictions*/
                 memcpy(handle->gaa_cb_arg.restrictions+old_len, 
-                       (char *)restrictions.elements[ii].value,
-                       restrictions.elements[ii].length);
+                       (char *)restrictions->elements[ii].value,
+                       restrictions->elements[ii].length);
                 handle->gaa_cb_arg.restrictions[len_so_far] = 0;
-                gss_release_buffer(&min_stat, &restrictions.elements[ii]);
+
            }
-        }/*end if restrictions.elements[i].length*/
+        }/*end if restrictions->elements[i].length*/
     }/*end for ii*/
 
+    gss_release_buffer_set(&min_stat, &restrictions);
     
     /*establish the getpolicy callback*/
     status = gaa_set_getpolicy_callback(
