@@ -610,7 +610,7 @@ cd ${tmp_ca_setup_dir}
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
-CA_UTILS_PACKAGE_DIR=globus_simple_ca_${CA_CERT_HASH}_setup-0.13
+CA_UTILS_PACKAGE_DIR=globus_simple_ca_${CA_CERT_HASH}_setup-0.15
 CA_UTILS_PACKAGE=$CA_UTILS_PACKAGE_DIR.tar.gz
 
 #./bootstrap
