@@ -344,7 +344,7 @@ globus_thread_blocking_space_will_block(
             manager->stack[ctr].space == blocking_space))
        {
            func =  (manager->stack[ctr].func);
-	   func(blocking_space, ctr, manager->stack[ctr].user_args);
+	   func(ctr, blocking_space, manager->stack[ctr].user_args);
        }
     }
 
