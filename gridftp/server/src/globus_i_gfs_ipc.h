@@ -299,7 +299,6 @@ typedef void
 (*globus_gfs_ipc_iface_session_start_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     const gss_ctx_id_t                  context,
-    int                                 id,
     globus_gfs_session_info_t *         session_info,
     globus_i_gfs_ipc_data_callback_t    cb,
     void *                              user_arg);
@@ -307,7 +306,6 @@ typedef void
 globus_result_t
 globus_gfs_ipc_start_session(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int *                               id,
     globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
@@ -316,36 +314,34 @@ globus_gfs_ipc_start_session(
 typedef void
 (*globus_gfs_ipc_iface_session_stop_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id);
+    void *                              session_handle);
 
 globus_result_t
 globus_gfs_ipc_iface_session_stop(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id);
+    void *                              session_handle);
 
 typedef void
 (*globus_gfs_ipc_iface_set_cred_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     gss_cred_id_t                       del_cred);
 
 globus_result_t
 globus_gfs_ipc_set_cred(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
     gss_cred_id_t                       del_cred);
 
 typedef void
 (*globus_gfs_ipc_iface_set_user_buffer_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     globus_byte_t *                     buffer,
     globus_size_t                       buffer_len);
 
 globus_result_t
 globus_gfs_ipc_set_user_buffer(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
     globus_byte_t *                     buffer,
     globus_size_t                       buffer_len);
 
@@ -357,7 +353,7 @@ globus_gfs_ipc_set_user_buffer(
 typedef void
 (*globus_gfs_ipc_iface_recv_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     int                                 id,
     globus_gfs_transfer_info_t *        recv_info,
     globus_i_gfs_ipc_data_callback_t          cb,
@@ -367,8 +363,6 @@ typedef void
 globus_result_t
 globus_gfs_ipc_request_recv(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
-    int *                               id,
     globus_gfs_transfer_info_t *        recv_info,
     globus_gfs_ipc_callback_t           cb,
     globus_gfs_ipc_event_callback_t     event_cb,
@@ -382,7 +376,7 @@ globus_gfs_ipc_request_recv(
 typedef void
 (*globus_gfs_ipc_iface_send_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     int                                 id,
     globus_gfs_transfer_info_t *        send_info,
     globus_i_gfs_ipc_data_callback_t          cb,
@@ -392,18 +386,15 @@ typedef void
 globus_result_t
 globus_gfs_ipc_request_send(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
-    int *                               id,
     globus_gfs_transfer_info_t *        send_info,
     globus_gfs_ipc_callback_t           cb,
     globus_gfs_ipc_event_callback_t     event_cb,
     void *                              user_arg);
 
-
 typedef void
 (*globus_gfs_ipc_iface_list_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     int                                 id,
     globus_gfs_transfer_info_t *        list_info,
     globus_i_gfs_ipc_data_callback_t    cb,
@@ -413,13 +404,10 @@ typedef void
 globus_result_t
 globus_gfs_ipc_request_list(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
-    int *                               id,
-    globus_gfs_transfer_info_t *        list_info,
+    globus_gfs_transfer_info_t *        data_info,
     globus_gfs_ipc_callback_t           cb,
     globus_gfs_ipc_event_callback_t     event_cb,
     void *                              user_arg);
-
 
 /*
  *  command
@@ -429,7 +417,7 @@ globus_gfs_ipc_request_list(
 typedef void
 (*globus_gfs_ipc_iface_command_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     int                                 id,
     globus_gfs_command_info_t *         cmd_info,
     globus_i_gfs_ipc_data_callback_t    cb,
@@ -438,8 +426,6 @@ typedef void
 globus_result_t
 globus_gfs_ipc_request_command(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
-    int *                               id,
     globus_gfs_command_info_t *         cmd_info,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
@@ -452,7 +438,7 @@ globus_gfs_ipc_request_command(
 typedef void
 (*globus_gfs_ipc_iface_active_data_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     int                                 id,
     globus_gfs_data_info_t *            data_info,
     globus_i_gfs_ipc_data_callback_t    cb,
@@ -461,8 +447,6 @@ typedef void
 globus_result_t
 globus_gfs_ipc_request_active_data(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
-    int *                               id,
     globus_gfs_data_info_t *            data_info,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
@@ -475,7 +459,7 @@ globus_gfs_ipc_request_active_data(
 typedef void
 (*globus_gfs_ipc_iface_passive_data_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     int                                 id,
     globus_gfs_data_info_t *            data_info,
     globus_i_gfs_ipc_data_callback_t    cb,
@@ -484,8 +468,6 @@ typedef void
 globus_result_t
 globus_gfs_ipc_request_passive_data(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
-    int *                               id,
     globus_gfs_data_info_t *            data_info,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
@@ -496,7 +478,7 @@ globus_gfs_ipc_request_passive_data(
 typedef void
 (*globus_gfs_ipc_iface_stat_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     int                                 id,
     globus_gfs_stat_info_t *            stat_info,
     globus_i_gfs_ipc_data_callback_t    cb,
@@ -505,12 +487,15 @@ typedef void
 globus_result_t
 globus_gfs_ipc_request_stat(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
-    int *                               id,
     globus_gfs_stat_info_t *            stat_info,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
 
+void
+globus_gfs_ipc_reply_session(
+    globus_gfs_ipc_handle_t             ipc,
+    globus_result_t                     result,
+    void *                              user_arg);
 
 /*
  * poke transfer event request
@@ -518,7 +503,7 @@ globus_gfs_ipc_request_stat(
 typedef void
 (*globus_gfs_ipc_iface_transfer_event_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     int                                 transfer_id,
     int                                 event_type);
 
@@ -526,7 +511,6 @@ typedef void
 globus_result_t
 globus_gfs_ipc_request_transfer_event(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
     int                                 transfer_id,
     int                                 event_type);
 
@@ -537,13 +521,12 @@ globus_gfs_ipc_request_transfer_event(
 typedef void
 (*globus_gfs_ipc_iface_data_destroy_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
+    void *                              session_handle,
     int                                 data_connection_id);
 
 globus_result_t
 globus_gfs_ipc_request_data_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 session_id,
     int                                 data_connection_id);
 
 typedef struct globus_i_gfs_ipc_iface_s
@@ -575,6 +558,7 @@ globus_result_t
 globus_gfs_ipc_handle_create(
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_system_handle_t          system_handle,
+    globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
@@ -591,6 +575,10 @@ globus_gfs_ipc_close(
 
 globus_result_t
 globus_gfs_ipc_handle_release(
+    globus_gfs_ipc_handle_t             ipc_handle);
+
+globus_result_t
+globus_gfs_ipc_session_stop(
     globus_gfs_ipc_handle_t             ipc_handle);
 
 globus_result_t
@@ -620,8 +608,51 @@ globus_gfs_ipc_handle_get_by_contact(
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
 
+globus_result_t
+globus_gfs_ipc_init(
+    globus_bool_t                       requester,
+    char **                             in_out_listener);
+
+/*
+ *
+ */
 void
-globus_gfs_ipc_init();
+globus_gfs_ipc_add_server(
+    globus_xio_server_t                 server_handle);
+
+globus_result_t
+globus_gfs_ipc_handle_obtain(
+    int *                               handle_count,
+    globus_gfs_session_info_t *         session_info,
+    globus_gfs_ipc_iface_t *            iface,
+    globus_gfs_ipc_open_close_callback_t cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg);
+
+globus_result_t
+globus_gfs_ipc_close(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_ipc_open_close_callback_t cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_handle_release(
+    globus_gfs_ipc_handle_t             ipc_handle);
+
+globus_result_t
+globus_gfs_ipc_handle_create(
+    globus_gfs_ipc_iface_t *            iface,
+    globus_xio_system_handle_t          system_handle,
+    globus_gfs_session_info_t *         session_info,
+    globus_gfs_ipc_open_close_callback_t cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_arg);
+
+/* 
+ *
+ */
 
 /* 
  *   community functions
