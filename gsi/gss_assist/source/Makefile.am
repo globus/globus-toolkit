@@ -2,7 +2,10 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS = pkgdata programs
+SUBDIRS = \
+	pkgdata \
+	programs \
+	doxygen
 
 Sources= \
 	accept.c \
