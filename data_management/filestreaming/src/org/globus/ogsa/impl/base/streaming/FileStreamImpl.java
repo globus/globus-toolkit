@@ -83,6 +83,7 @@ public class FileStreamImpl extends GridServiceImpl {
     private OutputStream outputStream;
     private Vector fileStreamStateListeners = new Vector();
     private ServiceData doneServiceData;
+    private boolean isStopped = false;
 
     public FileStreamImpl() {
         super("FileStreamImpl");
@@ -348,13 +349,17 @@ public class FileStreamImpl extends GridServiceImpl {
 
     public void preDestroy(GridContext context) 
     throws GridServiceException {
-        try {
-            outputStream.close();
-            if (logger.isDebugEnabled()) {
-                logger.debug("File Stream instance is destroyed");
+        if(!isStopped) {
+            try {
+                outputStream.close();
+                if (logger.isDebugEnabled()) {
+                    logger.debug("File Stream instance is destroyed");
+                }
+            }catch(java.io.IOException ioe) {
+                logger.error("Error in destroying the File Stream Instance",ioe);
             }
-        }catch(java.io.IOException ioe) {
-            logger.error("Error in destroying the File Stream Instance",ioe);
+        } else {
+            logger.debug("FileStream already closed");
         }
         super.preDestroy(context);
     }
@@ -450,6 +455,7 @@ public class FileStreamImpl extends GridServiceImpl {
             doneServiceData.notifyChange();
 
             fireFileStreamStopped();
+            isStopped = true;
         } catch (GridServiceException gse) {
             logger.error("problem stopping source file tailing", gse);
         }
