@@ -582,23 +582,17 @@ if test "x$gsi_path" != "xno" ; then
 	fi
 
 	# Find GLOBUS/GSI installation Directory
-	AC_MSG_CHECKING(for Globus/GSI installation directory)
 
-	globus_install_dir=$gsi_path
-
-	if test "x$globus_install_dir" = "xyes" ; then
-                AC_MSG_ERROR(Cannot find Globus/GSI installation directory -- a path must be specified!)
+	AC_MSG_CHECKING(for Globus installation)
+	globus_dev_dir=$gsi_path
+	if test "x$globus_dev_dir" = "xyes" ; then
+                AC_MSG_ERROR(Cannot find Globus installation -- a path must be specified!)
 	fi
-	AC_MSG_RESULT($globus_install_dir)
-
-	# Find GLOBUS/GSI development directory
-	AC_MSG_CHECKING(for Globus/GSI development directory)
-        globus_dev_dir=$globus_install_dir
 	AC_MSG_RESULT($globus_dev_dir)
 
 	# Find GLOBUS/GSI flavor Directory
 
-	AC_MSG_CHECKING(for Globus flavor type)
+	AC_MSG_CHECKING(for Globus flavor)
         if test "x$globus_flavor_type" = "xno" ; then
                 AC_MSG_ERROR(No Globus flavor type specified)
         elif test "x$globus_flavor_type" = "xyes" ; then
@@ -622,8 +616,20 @@ if test "x$gsi_path" != "xno" ; then
 	if test -r ${libglobus_gss_assist} ; then
 		LIBS="$LIBS ${libglobus_gss_assist}"
 	else
-		AC_MSG_ERROR(All of the required Globus Toolkit libraries are not present/configured correctly)
+		AC_MSG_ERROR([*** libglobus_gss_assist missing])
 	fi
+
+	AC_MSG_CHECKING(for libglobus_gss_assist)
+	AC_TRY_LINK(
+		[],
+		[],
+		[
+			AC_MSG_RESULT(yes)
+		],
+		[
+			AC_MSG_ERROR([*** libglobus_gss_assist missing])
+		]
+	)
 
 	# If we aren't using mechglue, test that gssapi_gsi is present
 
@@ -631,12 +637,22 @@ if test "x$gsi_path" != "xno" ; then
 		if test -r ${libglobus_gssapi_gsi} ; then
 			LIBS="$LIBS ${libglobus_gssapi_gsi}"
 		else
-			AC_MSG_ERROR(All of the required Globus Toolkit libraries are not present/configured correctly)
+			AC_MSG_ERROR([*** libglobus_gssapi_gsi missing])
 		fi
 	fi
 
-	LIBS="$LIBS $GSI_LIBS"
-	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
+	AC_MSG_CHECKING(for libglobus_gssapi_gsi)
+	AC_TRY_LINK(
+		[],
+		[],
+		[
+			AC_MSG_RESULT(yes)
+		],
+		[
+			AC_MSG_ERROR([*** libglobus_gssapi_gsi missing])
+		]
+	)
+
 	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
 	INSTALL_GSISSH="yes"
 else
@@ -949,8 +965,20 @@ if test "x$globus_flavor_type" != "xno" ; then
 	elif test -r ${libssl_utils}; then
 		LIBS="$LIBS ${libssl_utils}"
 	else
-		AC_MSG_ERROR(All of the required Globus Toolkit libraries are not present/configured correctly)
+		AC_MSG_ERROR([*** missing one or more Globus GSI libraries])
 	fi
+
+	AC_MSG_CHECKING(for Globus GSI libraries)
+	AC_TRY_LINK(
+		[],
+		[],
+		[
+			AC_MSG_RESULT(yes)
+		],
+		[
+			AC_MSG_ERROR([*** missing one or more Globus GSI libraries])
+		]
+	)
 
 	#
 	# Standard openssl libraries.  They need to appear near the end of the link line.
@@ -959,6 +987,18 @@ if test "x$globus_flavor_type" != "xno" ; then
 	LIBS="$LIBS ${gsi_path}/lib/libssl_${globus_flavor_type}.a"
 	LIBS="$LIBS ${gsi_path}/lib/libcrypto_${globus_flavor_type}.a"
 
+	AC_MSG_CHECKING(for Globus OpenSSL libraries)
+	AC_TRY_LINK(
+		[],
+		[],
+		[
+			AC_MSG_RESULT(yes)
+		],
+		[
+			AC_MSG_ERROR([*** missing one or more Globus OpenSSL libraries])
+		]
+	)
+
 	#
 	# Another "GT 2.1.3+"ism.
 	#
@@ -966,6 +1006,17 @@ if test "x$globus_flavor_type" != "xno" ; then
 	libcommon_path="${gsi_path}/lib/libglobus_common_${globus_flavor_type}.a"
 	if test -r ${libcommon_path}; then
 		LIBS="$LIBS ${libcommon_path}"
+		AC_MSG_CHECKING(for libglobus_common)
+		AC_TRY_LINK(
+			[],
+			[],
+			[
+				AC_MSG_RESULT(yes)
+			],
+			[
+				AC_MSG_ERROR([*** libglobus_common missing])
+			]
+		)
 	fi
 else
 	if test "x$gsi_path" != "xno" ; then
