@@ -1363,7 +1363,7 @@ globus_l_io_securesocket_unwrap_data(
 	    {
 		err = globus_io_error_construct_bad_protection(
 		    GLOBUS_IO_MODULE,
-		    err,
+		    GLOBUS_NULL,
 		    handle,
 		    maj_stat,
 		    min_stat,
