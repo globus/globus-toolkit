@@ -347,13 +347,6 @@ again:
 			break;
 		case 'a':
 			options.forward_agent = 0;
-/*modified by binhe*/
-#ifdef GSSAPI
-#ifdef GSI
-          options.forward_gssapi_globus_proxy = 0;
-#endif /* GSI */
-#endif /* GSSAPI */
-/*end of modification*/
 			break;
 		case 'A':
 			options.forward_agent = 1;

@@ -1169,20 +1169,20 @@ int try_gssapi_authentication(char *host, Options *options)
   }
 #endif /* GSSAPI_KRB5 */
 
-#ifdef GSI
-  if(options->forward_gssapi_globus_proxy) {
+#ifdef GSSAPI
+  if(options->gss_deleg_creds) {
     debug("Forwarding X509 proxy certificate");
     req_flags |= GSS_C_DELEG_FLAG;
   }
 #ifdef GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG
-  /* Forward limited credentials, overrides forward_gssapi_globus_proxy */
-  if(options->forward_gssapi_globus_limited_proxy) {
+  /* Forward limited credentials, overrides gss_deleg_creds */
+  if(options->gss_globus_deleg_limited_proxy) {
     debug("Forwarding limited X509 proxy certificate");
     req_flags |= (GSS_C_DELEG_FLAG | GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG);
   }
 #endif /* GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG */
 
-#endif /* GSI */
+#endif /* GSSAPI */
 
   debug("req_flags = %lu", req_flags);
 
