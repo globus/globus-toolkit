@@ -24,16 +24,6 @@ fi
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
 
-GRID_CA_DIR=${HOME}/.globus/simpleCA/
-
-if [ ! -f ${GRID_CA_DIR}/cacert.pem ]; then
-    recho ""
-    recho "No simple CA directory found.  Run setup-simple-ca before"
-    recho "signing certificates."
-    recho ""
-    exit 1
-fi
-
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
 
 short_usage="$PROGRAM_NAME [-help] [ options ...]"
@@ -49,6 +39,8 @@ ${short_usage}
   Options:
     -force           : Sign a certificate request with subject that
 		       matches an already signed certificate.
+    -dir <cadir>     : Set the configure directory of the CA
+
 EOF
 }
 
@@ -67,15 +59,33 @@ readCommandLine() {
 		force_sign="true"
 	        shift;
 		;;
+            -dir)
+                shift;
+                GRID_CA_DIR=$1;
+                shift;
+                ;;
             *)
 		globus_args_unrecognized_options "$1"
+                exit;
 		;;
 	esac
     done
 }
 
 readCommandLine "$@"
-	    
+
+if [ -z "$GRID_CA_DIR" ]; then
+    GRID_CA_DIR=${HOME}/.globus/simpleCA/
+fi
+
+if [ ! -f ${GRID_CA_DIR}/cacert.pem ]; then
+    recho ""
+    recho "No simple CA directory found.  Run setup-simple-ca before"
+    recho "signing certificates."
+    recho ""
+    exit 1
+fi
+
 grid_ca_conf=${GRID_CA_DIR}/grid-ca-ssl.conf
 openssl_cmd=${GLOBUS_LOCATION}/bin/openssl
 
