@@ -2,6 +2,7 @@
 
 factory=$1
 rsl_file=$2
+gass_option=$3
 
 if [ -z $factory ]; then
     echo "ERROR: No factory GSH specified"
@@ -16,12 +17,11 @@ if [ ! -d ./schema ]; then
     /bin/cp -rf $GLOBUS_LOCATION/schema .
 fi
 
-cat date.xml.in | sed -e "s#GLOBUS_LOCATION#$GLOBUS_LOCATION#" > date.xml
+cat ${rsl_file}.in | sed -e "s#GLOBUS_LOCATION#$GLOBUS_LOCATION#" > $rsl_file 
 
 
 begin_time=0
 end_time=0
-gass_option=-o
 
 begin_time=`date +%s`
 rm -f $logfile

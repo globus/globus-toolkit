@@ -11,6 +11,6 @@ if [ -z $port ]; then
     port=8080
 fi
 
-factory="$host:$port/ogsa/services/base/gram/MasterLsfManagedJobFactoryService"
+factory="$host:$port/ogsa/services/base/gram/MasterForkManagedJobFactoryService"
 
-./submit-test.sh $factory ./date.xml -o
+./submit-test.sh $factory ./sleep60.xml

@@ -13,4 +13,4 @@ fi
 
 factory="$host:$port/ogsa/services/base/gram/MasterCondorIntelLinuxManagedJobFactoryService"
 
-./submit-test.sh $factory ./date.xml
+./submit-test.sh $factory ./date.xml -o
