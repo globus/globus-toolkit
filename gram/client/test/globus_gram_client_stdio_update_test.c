@@ -88,8 +88,8 @@ int main(int argc, char *argv[])
 	rc = globus_gram_client_job_signal(
 		job_contact,
 		GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE,
-		"&(stdout=updated_output)
-		  (stderr=updated_err)",
+		"&(stdout=updated_output)"
+		" (stderr=updated_err)",
 		  NULL,
 		  NULL);
 	if(rc != GLOBUS_SUCCESS)
