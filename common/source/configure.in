@@ -67,7 +67,8 @@ esac
 AC_SUBST(GLOBUS_THREADS)
 
 LAC_DOXYGEN(["Globus Common"],
-	    ["../library"])
+	    ["../library"],
+	    ["./doc/doxygen"])
 
 GLOBUS_FINALIZE
 
