@@ -199,5 +199,14 @@ int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const i
  */
 void myproxy_free(myproxy_socket_attrs_t *attrs, myproxy_request_t *request, myproxy_response_t *response);
 
+/*
+ * myproxy_recv_response()
+ *
+ * Helper function that combines myproxy_recv() and
+ * myproxy_deserialize_response() with some error checking.
+ *
+ */
+int myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response); 
+
 
 #endif /* __MYPROXY_H */

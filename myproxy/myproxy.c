@@ -1023,3 +1023,43 @@ string_to_int(const char			*string,
     return return_value;
 }
 
+int
+myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
+    int responselen;
+    char response_buffer[1024];
+
+    /* Receive a response from the server */
+    responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
+    if (responselen < 0) {
+        verror_put_string("Error in myproxy_recv()");
+        return(-1);
+    }
+
+    /* Make a response object from the response buffer */
+    if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
+      verror_put_string("Error in myproxy_deserialize_response()");
+      return(-1);
+    }
+
+    /* Check version */
+    if (strcmp(response->version, MYPROXY_VERSION) != 0) {
+      verror_put_string("Error: Received invalid version number from server");
+      return(-1);
+    } 
+
+    /* Check response */
+    switch(response->response_type) {
+        case MYPROXY_ERROR_RESPONSE:
+            verror_put_string("ERROR from server: %s", response->error_string);
+	    return(-1);
+            break;
+        case MYPROXY_OK_RESPONSE:
+            break;
+        default:
+            verror_put_string("Received unknown response type");
+	    return(-1);
+            break;
+    }
+    return 0;
+}
+
