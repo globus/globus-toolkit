@@ -167,13 +167,12 @@ globus_l_xio_oneshot_wrapper_cb(
         {
             globus_panic(GLOBUS_XIO_MODULE,res,"failed to unregister oneshot");
         }
-        globus_mutex_lock(&handle->cancel_mutex);
+        globus_mutex_lock(&handle->context->cancel_mutex);
         {
             globus_list_remove(&handle->cb_list,
                 globus_list_search(handle->cb_list, space_info));
         }   
-        globus_mutex_unlock(&handle->cancel_mutex);
-    
+        globus_mutex_unlock(&handle->context->cancel_mutex);
     }
     space_info->func(space_info->user_arg);
     globus_free(space_info);
@@ -200,7 +199,7 @@ globus_l_xio_hande_pre_close(
      *  if they didn't the close will not happen until all ops finish 
      */
     /* all canceling is done with cancel op locked */
-    globus_mutex_lock(&handle->cancel_mutex);
+    globus_mutex_lock(&handle->context->cancel_mutex);
     {
         /* if open is outstanding there cannot be a read or write */
         if(handle->open_op != NULL)
@@ -246,7 +245,7 @@ globus_l_xio_hande_pre_close(
             }
         }
     }
-    globus_mutex_unlock(&handle->cancel_mutex);
+    globus_mutex_unlock(&handle->context->cancel_mutex);
 
     GlobusXIOOperationCreate(op, handle->context);
     if(op == NULL)
@@ -456,11 +455,11 @@ globus_i_xio_register_oneshot(
         cb = globus_l_xio_oneshot_wrapper_cb;
         space_info->user_arg = user_arg;
         user_arg = space_info;
-        globus_mutex_lock(&handle->cancel_mutex);
+        globus_mutex_lock(&handle->context->cancel_mutex);
         {
             globus_list_insert(&handle->cb_list, space_info);
         }
-        globus_mutex_unlock(&handle->cancel_mutex);
+        globus_mutex_unlock(&handle->context->cancel_mutex);
     }
 
     GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO, 
@@ -1624,7 +1623,7 @@ globus_l_xio_handle_cancel_operations(
 
     GlobusXIODebugInternalEnter();
 
-    globus_mutex_lock(&xio_handle->cancel_mutex);
+    globus_mutex_lock(&xio_handle->context->cancel_mutex);
     {
         if(mask & GLOBUS_XIO_CANCEL_OPEN && xio_handle->open_op != NULL)
         {
@@ -1656,7 +1655,7 @@ globus_l_xio_handle_cancel_operations(
             }
         }
     }
-    globus_mutex_unlock(&xio_handle->cancel_mutex);
+    globus_mutex_unlock(&xio_handle->context->cancel_mutex);
 
     GlobusXIODebugInternalExit();
 

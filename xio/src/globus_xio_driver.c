@@ -913,6 +913,7 @@ globus_i_xio_context_create(
         memset(xio_context, '\0', size);
 
         globus_mutex_init(&xio_context->mutex, NULL);
+        globus_mutex_init(&xio_context->cancel_mutex, NULL);
         xio_context->stack_size = xio_target->stack_size;
         globus_memory_init(&xio_context->op_memory,
             sizeof(globus_i_xio_op_t) +
@@ -1502,7 +1503,7 @@ globus_xio_driver_operation_cancel(
     globus_xio_operation_t                  operation)
 {
     globus_result_t                         res;
-    globus_i_xio_handle_t *                 handle;
+    globus_i_xio_context_t *                context;
     globus_i_xio_op_t *                     op;
     GlobusXIOName(globus_xio_driver_operation_cancel);
 
@@ -1515,13 +1516,13 @@ globus_xio_driver_operation_cancel(
         goto err;
     }
 
-    handle = op->_op_handle;
+    context = op->_op_context;
 
-    globus_mutex_lock(&handle->cancel_mutex);
+    globus_mutex_lock(&context->cancel_mutex);
     {
         res = globus_i_xio_operation_cancel(op);
     }
-    globus_mutex_unlock(&handle->cancel_mutex);
+    globus_mutex_unlock(&context->cancel_mutex);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;

@@ -328,7 +328,6 @@ typedef struct globus_i_xio_handle_s
     globus_i_xio_monitor_t *                sd_monitor;
 
     globus_list_t *                         cb_list;
-    globus_mutex_t                          cancel_mutex;
     int                                     ref;
     struct globus_i_xio_context_s *         context;
 
@@ -396,6 +395,7 @@ typedef struct globus_i_xio_context_s
 
     globus_memory_t                         op_memory;
     globus_mutex_t                          mutex;
+    globus_mutex_t                          cancel_mutex;
     globus_i_xio_context_entry_t            entry[1];
 } globus_i_xio_context_t;
 
