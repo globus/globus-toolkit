@@ -92,12 +92,12 @@ $DEBUG_ECHO ""                                            >> $grami_logfile
 
 #        Check for existance of directory
 
-#$DEBUG_ECHO testing for existance of directory [$grami_directory] >> $grami_logfile
+#$DEBUG_ECHO "JM_SCRIPT: testing for existance of directory $grami_directory" >> $grami_logfile
 #if [ -d $grami_directory ]; then
-#   $DEBUG_ECHO directory [$grami_directory] found >> $grami_logfile
+#   $DEBUG_ECHO "JM_SCRIPT: directory $grami_directory found" >> $grami_logfile
 #    cd $grami_directory
 #else
-#   $DEBUG_ECHO directory [$grami_directory] DOES NOT exist; exiting with exit code 1 >> $grami_logfile
+#   $DEBUG_ECHO "JM_SCRIPT: directory $grami_directory DOES NOT exist; exiting with exit code 1" >> $grami_logfile
 #   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_BAD_DIRECTORY@
 #   exit 1
 #fi
@@ -105,11 +105,11 @@ $DEBUG_ECHO ""                                            >> $grami_logfile
 #         Check for existance of stdin file if not /dev/null
 #
 #if [ $grami_stdin != "/dev/null" ]; then
-#    $DEBUG_ECHO testing for existance of stdin file [$grami_stdin] >> $grami_logfile
+#    $DEBUG_ECHO "JM_SCRIPT: testing for existance of stdin file $grami_stdin" >> $grami_logfile
 #    if [ -r $grami_stdin ]; then
-#        $DEBUG_ECHO stdin file [$grami_stdin] found and is readable >> $grami_logfile
+#        $DEBUG_ECHO "JM_SCRIPT: stdin file $grami_stdin found and is readable" >> $grami_logfile
 #    else
-#        $DEBUG_ECHO stdin file [$grami_stdin] DOES NOT exist or is not readable; exiting with exit code 1 >> $grami_logfile
+#        $DEBUG_ECHO "JM_SCRIPT: stdin file $grami_stdin DOES NOT exist or is not readable; exiting with exit code 1" >> $grami_logfile
 #        echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_STDIN_NOT_FOUND@
 #        exit 1
 #    fi
@@ -121,24 +121,24 @@ $DEBUG_ECHO ""                                            >> $grami_logfile
 #	Currently all RSL attributes are supported by LSF
 
 # if (unsupported parameters found)
-#     $DEBUG_ECHO unsupported parameters found. Exiting with error. >> $grami_logfile
+#     $DEBUG_ECHO "JM_SCRIPT: unsupported parameters found. Exiting with error." >> $grami_logfile
 # else
-#     $DEBUG_ECHO No unsupported parameters found. >> $grami_logfile
+#     $DEBUG_ECHO "JM_SCRIPT: No unsupported parameters found" >> $grami_logfile
 # fi
 #
 
-$DEBUG_ECHO testing for unsupported parameters >> $grami_logfile
-$DEBUG_ECHO No unsupported parameters found. >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: testing for unsupported parameters" >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: No unsupported parameters found" >> $grami_logfile
 
         # Verify existance of queue if queue parameter is not NULL
 
-$DEBUG_ECHO testing for queue attribute specification >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: testing for queue attribute specification" >> $grami_logfile
 
 if [ ! -z "${grami_queue}" ]; then
-    $DEBUG_ECHO testing for existance of LSF queue [$grami_queue] >> $grami_logfile
+    $DEBUG_ECHO "JM_SCRIPT: testing for existance of LSF queue $grami_queue" >> $grami_logfile
     status=`$bqueues $grami_queue`
     if (test "$?" -eq "0") then
-        $DEBUG_ECHO LSF queue [$grami_queue] found >> $grami_logfile
+        $DEBUG_ECHO "JM_SCRIPT: LSF queue $grami_queue found" >> $grami_logfile
     else
         $DEBUG_ECHO LSF queue [$grami_queue] DOES NOT exist; exiting with exit code 1 >> $grami_lo
 gfile
@@ -146,7 +146,7 @@ gfile
         exit 1
     fi
 else
-    $DEBUG_ECHO no queue attribute specified >> $grami_logfile
+    $DEBUG_ECHO "JM_SCRIPT: no queue attribute specified" >> $grami_logfile
 fi
 
 # 4 jobtypes exist               LSF result
@@ -163,7 +163,7 @@ elif [ $grami_jobtype = "1" ] ; then
 elif [ $grami_jobtype = "2" ] ; then
     lsf_jobtype="multiple"
 elif [ $grami_jobtype = "3" ] ; then
-   $DEBUG_ECHO "JM_SCRIPT: ERROR: jobtype parameter not supported "
+   $DEBUG_ECHO "JM_SCRIPT: ERROR: jobtype parameter not supported"
                >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED@"
    exit 1
@@ -175,26 +175,24 @@ fi
 
 #         Determining cpu time limit
 
-$DEBUG_ECHO testing for cpu time limit >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: testing for cpu time limit" >> $grami_logfile
 if [ $grami_maxtime -eq 0 ] ; then
     cpu_time=0
-    $DEBUG_ECHO No cpu time specified, using [unlimited] cpu time >> $grami_logfile
+    $DEBUG_ECHO "JM_SCRIPT: No cpu time specified, using [unlimited] cpu time" >> $grami_logfile
 else
-    cpu_time=`"$grami_maxtime" \* "$grami_count"`
-    $DEBUG_ECHO using [$cpu_time] minutes for max cpu time >> $grami_logfile
+    cpu_time=`expr "$grami_maxtime" \* "$grami_count"`
+    $DEBUG_ECHO "JM_SCRIPT: using $cpu_time minutes for max cpu time" >> $grami_logfile
 fi
 
 
 #         Start building job script
 
-$DEBUG_ECHO starting to build LSF job script >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: starting to build LSF job script" >> $grami_logfile
+
+echo "# LSF batch job script built by Globus job manager\n\n" >> $LSF_JOB_SCRIPT
 
 echo "#! ${SH}" >> $LSF_JOB_SCRIPT
-# echo "#BSUB -q queue_name" >> $LSF_JOB_SCRIPT
 
-# where "queue_name" is the name of the targetted queue 
-
-echo "# LSF batch job script built by Globus job manager\n" >> $LSF_JOB_SCRIPT
 
 if [ ! -z "${grami_queue}" ] ; then
     echo "#BSUB -q $grami_queue" >> $LSF_JOB_SCRIPT
@@ -227,7 +225,7 @@ echo "#BSUB -n $grami_count" >> $LSF_JOB_SCRIPT
 # env_variable is the name of the environment variable
 # env_value is the value of the environment variable
 
-$DEBUG_ECHO "JM_SCRIPT: checking environment">> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: checking environment" >> $grami_logfile
 #
 #loop through all the environment variables.  Variables and values are seperate
 #arguments.  While assembling var/value pairs add the specific syntax
@@ -279,8 +277,8 @@ else
     echo "$grami_program $new_grami_args" >> $LSF_JOB_SCRIPT
 fi
 
-$DEBUG_ECHO LSF job script successfully built >> $grami_logfile
-$DEBUG_ECHO submitting LSF job script >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: LSF job script successfully built" >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: submitting LSF job script" >> $grami_logfile
 
 # Execute bsub command
 
@@ -289,12 +287,12 @@ status=`${bsub} < $LSF_JOB_SCRIPT`
 if (test "$?" -eq "0") then
    job_id=`echo $status | ${awk} '{sub(/</,"",$2);sub(/>/,"",$2);print $2}'`
    echo "grami_job_id=${job_id}" >> $arg_file
-   $DEBUG_ECHO "job submitted successfully!" >> $grami_logfile
-   $DEBUG_ECHO "returning job state: @GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@" >> $grami_logfile
+   $DEBUG_ECHO "JM_SCRIPT: job submitted successfully!" >> $grami_logfile
+   $DEBUG_ECHO "JM_SCRIPT: returning job state: @GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@" >> $grami_logfile
    echo "GRAM_SCRIPT_JOB_ID:$job_id"
    echo "GRAM_SCRIPT_SUCCESS:@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@"
 else
-   $DEBUG_ECHO "job *NOT* submitted successfully!" >> $grami_logfile
+   $DEBUG_ECHO "JM_SCRIPT: job *NOT* submitted successfully!" >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED@"
 fi
 
@@ -302,6 +300,6 @@ fi
 
 ${rm} $LSF_JOB_SCRIPT
 
-$DEBUG_ECHO "exiting gram_script_lsf_submit\n\n" >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: exiting gram_script_lsf_submit\n\n" >> $grami_logfile
 
 exit
