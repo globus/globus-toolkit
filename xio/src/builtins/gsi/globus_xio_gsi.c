@@ -687,11 +687,6 @@ globus_l_xio_gsi_handle_destroy(
         globus_object_free(handle->result_obj);
     }
 
-    if(handle->host != NULL)
-    {
-        free(handle->host);
-    }
-    
     free(handle);
 
     GlobusXIOGSIDebugInternalExit();
@@ -1459,6 +1454,12 @@ globus_l_xio_gsi_open_cb(
         goto error_destroy_handle;
     }
     
+    result = globus_l_xio_gsi_setup_target_name(handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_pass_close;
+    }
+    
     if(handle->attr->init == GLOBUS_TRUE)
     {
         OM_uint32                       major_status;
@@ -1633,7 +1634,6 @@ globus_l_xio_gsi_open(
 {
     globus_result_t                     result;
     globus_l_handle_t *                 handle;
-    globus_xio_contact_t                new_contact_info;
     
     GlobusXIOName(globus_l_xio_gsi_open);
     GlobusXIOGSIDebugEnter();
@@ -1709,24 +1709,9 @@ globus_l_xio_gsi_open(
         handle->ret_flags = handle->attr->req_flags;
     }
     
-    if(contact_info->host != NULL)
-    {
-        handle->host = strdup(contact_info->host);
-    }
-
-    result = globus_l_xio_gsi_setup_target_name(handle);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_l_xio_gsi_handle_destroy(handle);
-        goto error;
-    }
-    
     handle->xio_driver_handle = globus_xio_operation_get_driver_handle(op);
-    new_contact_info = *contact_info;
-    new_contact_info.host = handle->host;
     result = globus_xio_driver_pass_open(
-        op, &new_contact_info, globus_l_xio_gsi_open_cb, handle);
+        op, contact_info, globus_l_xio_gsi_open_cb, handle);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -3540,82 +3525,6 @@ globus_l_xio_gsi_deactivate(void)
     return rc;
 }
 
-static
-globus_result_t
-globus_l_xio_gsi_authorized_host_name(
-    char **                             host)
-{
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    int                                 i;    
-    globus_addrinfo_t                   hints;
-    globus_addrinfo_t *                 addrinfo;
-    char *                              realhostname;
-
-    GlobusXIOName(globus_l_xio_authorized_host_name);
-    GlobusXIOGSIDebugInternalEnter();
-
-    realhostname = (char *) malloc(128 * sizeof(char));
-    
-    if(realhostname == NULL)
-    {
-        result = GlobusXIOErrorMemory("realhostname");        
-    }    
-    memset(&hints, 0, sizeof(globus_addrinfo_t));
-    hints.ai_flags = GLOBUS_AI_CANONNAME;
-    hints.ai_family = PF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = 0;
-
-    result = globus_libc_getaddrinfo(*host, NULL, &hints, &addrinfo);
-
-    if(result != GLOBUS_SUCCESS ||
-       addrinfo == NULL ||
-       addrinfo->ai_canonname == NULL)
-    {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_libc_getaddrinfo", result); 
-        goto error;
-    }    
-
-    /* 
-     * For connections to localhost, check for certificate
-     * matching our real hostname, not "localhost"
-     */
-
-    if(globus_libc_addr_is_loopback(addrinfo->ai_addr) == GLOBUS_TRUE)
-    {
-        globus_libc_gethostname(realhostname, 128);
-    }
-    else
-    {
-        strncpy(realhostname, addrinfo->ai_canonname, 127);
-        realhostname[127] = '\0';
-    }
-
-    globus_libc_freeaddrinfo(addrinfo);
-    
-    /*
-     * To work around the GSI GSSAPI library being case sensitive
-     * convert the hostname to lower case as noone seems to
-     * request uppercase name certificates.
-     */
-	    
-    for (i = 0; realhostname[i] && (i < 128); i++)
-    {
-        realhostname[i] = tolower(realhostname[i]);
-    }
-
-    free(*host);
-    *host = realhostname;
-
-    GlobusXIOGSIDebugInternalExit();
-    return result;
-    
- error:
-    GlobusXIOGSIDebugInternalExitWithError();    
-    return result;
-}
-
 /*
  * Set up the target name based on the authorization mode
  */
@@ -3627,16 +3536,23 @@ globus_l_xio_gsi_setup_target_name(
     globus_result_t                     result = GLOBUS_SUCCESS;
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
-    gss_buffer_desc                     name_tok;
+    char *                              contact_string;
     GlobusXIOName(globus_l_xio_gsi_setup_target_name);
     GlobusXIOGSIDebugInternalEnter();
 
     switch(handle->attr->authz_mode)
     {
       case GLOBUS_XIO_GSI_HOST_AUTHORIZATION:
-        if(handle->host == NULL)
+        result = globus_xio_driver_handle_cntl(
+            handle->xio_driver_handle,
+            GLOBUS_XIO_QUERY,
+            GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT,
+            &contact_string);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXioGSIErrorEmptyHostName();
+            result = GlobusXIOErrorWrapFailed(
+                "globus_xio_driver_handle_cntl failed to query remote contact",
+                result);
             goto error;
         }
         
@@ -3647,25 +3563,14 @@ globus_l_xio_gsi_setup_target_name(
             handle->attr->target_name = GSS_C_NO_NAME;
         }
         
-        result = globus_l_xio_gsi_authorized_host_name(&handle->host);
+        result = globus_gss_assist_authorization_host_name(
+            contact_string,
+            &handle->attr->target_name);
+        globus_free(contact_string);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
-                "globus_l_xio_gsi_authorized_host_name", result); 
-            goto error;
-        }
-
-        name_tok.value = handle->host;
-        name_tok.length = strlen(handle->host) + 1;
-        major_status = gss_import_name(&minor_status, 
-                                       &name_tok, 
-                                       GSS_C_NT_HOSTBASED_SERVICE, 
-                                       &handle->attr->target_name);
-        if(GSS_ERROR(major_status))
-        {
-            result = GlobusXIOErrorWrapGSSFailed("gss_import_name",
-                                                 major_status,
-                                                 minor_status);
+                "globus_gss_assist_authorization_host_name", result); 
             goto error;
         }
         break;

@@ -172,7 +172,6 @@ typedef struct
     gss_ctx_id_t                        context;
     gss_cred_id_t                       delegated_cred;
     gss_cred_id_t                       credential;
-    char *                              host;
     gss_OID                             mech_used;
     gss_name_t                          peer_name;
     gss_name_t                          local_name;
