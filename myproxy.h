@@ -14,16 +14,6 @@
 #define MAX_PASS_LEN  10
 #define MIN_PASS_LEN  5
 
-/* Define default myproxy-server */
-#define MYPROXYSERVER_PORT        7512
-#define MYPROXYSERVER_HOST        "localhost"
-#define MYPROXYSERVER_CONFIG_FILE "/usr/local/myproxy/myproxyserver.config"
-#define MYPROXY_SERVER_LOG_FILE   "/usr/local/myproxy/myproxyserver.log"
-
-/* Default proxy lifetime */
-#define MYPROXY_DEFAULT_HOURS        84      /* lifetime on myproxy-server */
-#define MYPROXY_DEFAULT_PROXY_HOURS  1       /* lifetime on webserver      */
-
 /* Location of default proxy */
 #define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
 
@@ -74,7 +64,7 @@ typedef struct
     char                         *username;
     char                         passphrase[MAX_PASS_LEN+1];
     myproxy_proto_request_type_t command_type;
-    int                          hours;
+    int                          lifetime_seconds;
 } myproxy_request_t;
 
 /* A server response object */
@@ -184,11 +174,11 @@ int  myproxy_recv(myproxy_socket_attrs_t *attrs,
  * myproxy_init_delegation()
  *
  * Delegates a proxy based on the credentials found in file 
- * location delegfile good for lifetime seconds
+ * location delegfile good for lifetime_seconds
  *
  * returns 0 on success, -1 on error 
  */
-int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime);
+int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime_seconds);
 
 /*
  * myproxy_accept_delegation()
