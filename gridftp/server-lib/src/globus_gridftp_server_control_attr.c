@@ -1,5 +1,4 @@
 #include "globus_i_gridftp_server_control.h"
-#include "globus_gridftp_server_control_pmod_959.h"
 
 globus_result_t
 globus_gridftp_server_control_attr_init(
@@ -42,8 +41,6 @@ globus_gridftp_server_control_attr_init(
 
     attr->resource_func = NULL;
     attr->version_ctl = GLOBUS_GRIDFTP_VERSION_CTL;
-    attr->pmod = &globus_i_gsc_959_proto_mod; /* for now default is only */
-    attr->start_state = GLOBUS_L_GS_STATE_AUTH;
     attr->modes = globus_libc_strdup("ES");
     attr->types = globus_libc_strdup("AI");
     attr->base_dir = globus_libc_strdup("/");

@@ -2,6 +2,7 @@
 #define GLOBUS_I_GRIDFTP_SERVER_CONTROL_H 1
 
 #include "globus_gridftp_server_control.h"
+#include "globus_xio.h"
 
 #define GLOBUS_GRIDFTP_SERVER_HASHTABLE_SIZE    256
 #define GLOBUS_GRIDFTP_VERSION_CTL              1
@@ -345,6 +346,13 @@ typedef struct globus_i_gsc_server_handle_s
     globus_size_t                           send_buf;
     globus_size_t                           receive_buf;
     globus_bool_t                           refresh;
+    globus_size_t                           packet_size;
+    globus_bool_t                           opts_delayed_passive;
+    int                                     opts_pasv_prt;
+    int                                     opts_pasv_max;
+    int                                     opts_dc_parsing_alg;
+    int                                     opts_port_prt;
+    int                                     opts_port_max;
 
     /*
      *  user function pointers
@@ -427,7 +435,7 @@ globus_i_gsc_intermediate_reply(
     char *                                  reply_msg);
 
 void
-globus_i_gsc_finished_op(
+globus_i_gsc_finished_command(
     globus_i_gsc_op_t *                     op,
     char *                                  reply_msg);
 
@@ -452,6 +460,14 @@ globus_i_gsc_authenticate(
     void *                                  user_arg);
 
 globus_result_t
+globus_i_gsc_resource_query(
+    globus_i_gsc_op_t *                     op,
+    const char *                            path,
+    int                                     mask,
+    globus_i_gsc_resource_callback_t        cb,
+    void *                                  user_arg);
+
+globus_result_t
 globus_i_gsc_passive(
     globus_i_gsc_op_t *                     op,
     int                                     max,
@@ -462,5 +478,14 @@ globus_i_gsc_passive(
 void
 globus_i_gsc_add_commands(
     globus_i_gsc_server_handle_t *          server_handle);
+
+globus_result_t
+globus_i_gsc_command_panic(
+    globus_i_gsc_op_t *                     op);
+
+char *
+globus_i_gsc_concat_path(
+    globus_i_gsc_server_handle_t *                  i_server,
+    const char *                                    in_path);
 
 #endif

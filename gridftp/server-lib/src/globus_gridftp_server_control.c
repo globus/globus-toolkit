@@ -1,6 +1,8 @@
 #include "globus_i_gridftp_server_control.h"
 #include <version.h>
 
+#define GLOBUS_XIO_CLOSE_NO_CANCEL 1
+
 /*
  *  This File
  *  ---------
@@ -57,7 +59,10 @@ do                                                                      \
                 GLOBUS_CALLBACK_GLOBAL_SPACE);                          \
     if(_res != GLOBUS_SUCCESS)                                          \
     {                                                                   \
-        globus_panic();                                                 \
+        globus_panic(                                                   \
+            &globus_i_gridftp_server_control_module,                    \
+            res,                                                        \
+            "one shot failed.");                                        \
     }                                                                   \
 } while(0)
 
@@ -423,6 +428,7 @@ globus_l_gsc_final_reply_cb(
     globus_xio_data_descriptor_t            data_desc,
     void *                                  user_arg)
 {
+    globus_xio_attr_t                       close_attr;
     globus_result_t                         res;
     globus_i_gsc_server_handle_t *          server_handle;
     GlobusGridFTPServerName(globus_l_final_reply_cb);
@@ -477,20 +483,21 @@ globus_l_gsc_final_reply_cb(
 
             case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
             case GLOBUS_L_GSC_STATE_STOPPING:
-/*
+
                 globus_xio_attr_init(&close_attr);
                 globus_xio_attr_cntl(
-                    &close_attr, NULL, GLOBUS_XIO_CLOSE_NO_CANCEL);
+                    close_attr, NULL, GLOBUS_XIO_CLOSE_NO_CANCEL);
                 res = globus_xio_register_close(
                     server_handle->xio_handle,
+                    close_attr,
                     globus_l_gsc_close_cb,
                     server_handle);
-                globus_xio_attr_destroy(&close_attr);
+                globus_xio_attr_destroy(close_attr);
                 if(res != GLOBUS_SUCCESS)
                 {
                     GlobusLRegisterDone(server_handle);
                 }
-*/
+
                 break;
 
             /* in open state if intermediate message has been sent */
@@ -944,6 +951,7 @@ globus_l_gsc_finished_op(
     globus_i_gsc_op_t *                     op,
     char *                                  reply_msg)
 {
+    globus_xio_attr_t                       close_attr;
     globus_i_gsc_server_handle_t *          server_handle;
     globus_result_t                         res;
     globus_bool_t                           stopping = GLOBUS_FALSE;
@@ -1032,17 +1040,20 @@ globus_l_gsc_finished_op(
 
     if(stopping)
     {
-/*
-        GLOBUS_XIO_CLOSE_NO_CANCEL
+        globus_xio_attr_init(&close_attr);
+        globus_xio_attr_cntl(
+            close_attr, NULL, GLOBUS_XIO_CLOSE_NO_CANCEL);
         res = globus_xio_register_close(
             server_handle->xio_handle,
+            close_attr,
             globus_l_gsc_close_cb,
             server_handle);
+        globus_xio_attr_destroy(close_attr);
         if(res != GLOBUS_SUCCESS)
         {
             GlobusLRegisterDone(server_handle);
         }
-*/
+
     }
 
     globus_free(op->command);
@@ -1357,6 +1368,7 @@ void
 globus_i_gsc_terminate(
     globus_i_gsc_server_handle_t *          server_handle)
 {
+    globus_xio_attr_t                       close_attr;
     globus_bool_t                           close = GLOBUS_TRUE;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_i_gsc_terminate);
@@ -1422,17 +1434,19 @@ globus_i_gsc_terminate(
 
     if(close)
     {
-/*
-        GLOBUS_XIO_CLOSE_NO_CANCEL
+        globus_xio_attr_init(&close_attr);
+        globus_xio_attr_cntl(
+            close_attr, NULL, GLOBUS_XIO_CLOSE_NO_CANCEL);
         res = globus_xio_register_close(
             server_handle->xio_handle,
+            close_attr,
             globus_l_gsc_close_cb,
             server_handle);
+        globus_xio_attr_destroy(close_attr);
         if(res != GLOBUS_SUCCESS)
         {
             GlobusLRegisterDone(server_handle);
         }
-*/
     }
 }
 
@@ -1472,7 +1486,7 @@ globus_gridftp_server_control_stop(
 }
 
 void
-globus_i_gsc_finished_op(
+globus_i_gsc_finished_command(
     globus_i_gsc_op_t *                     op,
     char *                                  reply_msg)
 {
