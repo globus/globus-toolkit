@@ -29,7 +29,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.globus.axis.gsi.GSIConstants;
 import org.globus.ogsa.impl.security.authorization.SelfAuthorization;
-import org.globus.gsi.gssapi.GSSConstants;
 
 import org.globus.ogsa.base.streaming.FileStreamOptionsType;
 import org.globus.ogsa.base.streaming.FileStreamOptionsWrapperType;
