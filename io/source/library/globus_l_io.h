@@ -265,6 +265,10 @@ globus_i_io_setup_nonblocking(
     globus_io_handle_t *		handle);
 
 globus_result_t
+globus_i_io_setup_blocking(
+    globus_io_handle_t *		handle);
+
+globus_result_t
 globus_i_io_start_operation(
     globus_io_handle_t *                handle,
     globus_i_io_operation_type_t        ops);

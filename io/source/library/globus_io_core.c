@@ -409,7 +409,7 @@ static
 globus_bool_t
 globus_l_io_select_wakeup(void)
 {
-#if 0
+#if !defined(BUILD_LITE)
     char				byte = '\0';
     int					rc;
 
@@ -3228,6 +3228,64 @@ globus_i_io_setup_nonblocking(
     return rc;
 }
 /* globus_i_io_setup_nonblocking() */
+
+globus_result_t
+globus_i_io_setup_blocking(
+    globus_io_handle_t *		handle)
+{
+    int					save_errno=0;
+    int					flags;
+    globus_result_t			rc = GLOBUS_SUCCESS;
+    globus_object_t *			err;
+    static char *			myname="globus_i_io_setup_nonblocking";
+    
+
+    while ((flags = fcntl(handle->fd,
+		       F_GETFL,
+		       0)) < 0)
+    {
+	save_errno = errno;
+	if(save_errno != EINTR)
+	{
+	    goto error_exit;
+	}
+    }
+
+#   if defined(TARGET_ARCH_HPUX)
+    {
+	flags &= ~O_NONBLOCK;
+    }
+#   else
+    {
+	flags &= ~O_NDELAY;
+    }
+#   endif
+    
+    while (fcntl(handle->fd,
+		 F_SETFL,
+		 flags) < 0)
+    {
+	save_errno = errno;
+	if(save_errno != EINTR)
+	{
+	    goto error_exit;
+	}
+    }
+
+    return GLOBUS_SUCCESS;
+    
+  error_exit:
+    if(save_errno != 0)
+    {
+	err = globus_io_error_construct_internal_error(
+	    GLOBUS_IO_MODULE,
+	    GLOBUS_NULL,
+	    myname);
+	rc = globus_error_put(err);
+    }
+    return rc;
+}
+/* globus_i_io_setup_blocking() */
 
 
 globus_bool_t

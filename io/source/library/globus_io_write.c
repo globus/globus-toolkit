@@ -1553,6 +1553,7 @@ globus_i_io_try_write(
 
     num_written=0;
     *nbytes_written = 0;
+    globus_thread_blocking_will_block();
     for (done = GLOBUS_FALSE; !done; )
     {
         /*
@@ -1569,11 +1570,13 @@ globus_i_io_try_write(
                 "Important",
                 tag_str);
         }
+    globus_i_io_setup_blocking(handle);
 	n_written = globus_libc_write(
 	    handle->fd,
 	    buf+num_written,
 	    max_nbytes-num_written);
-
+	save_errno = errno;
+    globus_i_io_setup_nonblocking(handle);
         /*
          *  NETLOGGER information
          */
@@ -1590,8 +1593,6 @@ globus_i_io_try_write(
                 "Important",
                 tag_str);
         }
-
-	save_errno = errno;
 
 	globus_i_io_debug_printf(
 	    5,
