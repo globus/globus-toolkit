@@ -22,6 +22,7 @@
       <Dependency Name="globus_gsi_callback"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gsi_proxy_ssl"><Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
       <Dependency Name="globus_gsi_proxy_core"><Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
+      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="3"></Simple_Version></Version> </Dependency>
         
     </Source_Dependencies>
 
@@ -37,6 +38,7 @@
       <Dependency Name="globus_gsi_callback" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gsi_proxy_ssl" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
       <Dependency Name="globus_gsi_proxy_core" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
+      <Dependency Name="globus_gss_assist" Package="pgm"><Version><Simple_Version Major="3"></Simple_Version></Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="pgm_link" > 
@@ -49,7 +51,7 @@
       <Dependency Name="globus_gsi_credential"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gsi_callback"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gsi_proxy_ssl"><Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
-      <Dependency Name="globus_gsi_proxy_core"><Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
+      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="3"></Simple_Version></Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="lib_link" >
@@ -64,6 +66,7 @@
       <Dependency Name="globus_gsi_callback"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gsi_proxy_ssl"><Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
       <Dependency Name="globus_gsi_proxy_core"><Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
+      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="3"></Simple_Version></Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Setup_Dependency PkgType="rtl">
