@@ -174,7 +174,7 @@ GSS_CALLCONV gss_import_cred(
         time_now = ASN1_UTCTIME_mktime(asn1_time);
         time_after = ASN1_UTCTIME_mktime(
             X509_get_notAfter(
-                ((gss_cred_id_desc *) output_cred_handle)->pcd->ucert));
+                ((gss_cred_id_desc *) *output_cred_handle)->pcd->ucert));
         *time_rec = (OM_uint32) time_after - time_now;
         ASN1_UTCTIME_free(asn1_time);
     }
