@@ -767,9 +767,6 @@ globus_l_gsc_user_close_kickout(
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
-    globus_assert(
-        server_handle->state == GLOBUS_L_GSC_STATE_ABORTING_STOPPING ||
-        server_handle->state == GLOBUS_L_GSC_STATE_STOPPING);
     globus_assert(server_handle->ref > 0);
 
     globus_mutex_lock(&server_handle->mutex);
@@ -777,6 +774,9 @@ globus_l_gsc_user_close_kickout(
         server_handle->ref--;
         if(server_handle->ref == 0)
         {
+            globus_assert(
+                server_handle->state == GLOBUS_L_GSC_STATE_ABORTING_STOPPING ||
+                server_handle->state == GLOBUS_L_GSC_STATE_STOPPING);
             done_cb = server_handle->funcs.done_cb;
         }
     }
