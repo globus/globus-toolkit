@@ -2091,7 +2091,23 @@ globus_l_io_handle_events(
 	{
 	    globus_i_io_mutex_lock();
 	    globus_l_io_select_active = GLOBUS_FALSE;
+            
+            /* see if we were woken up by pipe 
+	     * this needs to happen immediately and cant be 'registered' like
+	     * the rest of the callbacks
+	     */
+	    if(globus_l_io_wakeup_pending)
+	    {
+	        FD_CLR(
+	            globus_l_io_wakeup_pipe_handle.fd,
+	            globus_l_io_active_read_fds);
 
+	        globus_l_io_wakeup_pipe_callback(
+	            GLOBUS_NULL,
+	            &globus_l_io_wakeup_pipe_handle,
+	            GLOBUS_SUCCESS);
+	    }
+	    
 	    /*
 	     * Increase the select() counter and signal any waiting threads
 	     * that the current select has completed.  The select() counter is
@@ -2121,22 +2137,6 @@ globus_l_io_handle_events(
 	    if (globus_l_io_shutdown_called)
 	    {
 		break;
-	    }
-	    
-	    /* see if we were woken up by pipe 
-	     * this needs to happen immediately and cant be 'registered' like
-	     * the rest of the callbacks
-	     */
-	    if(globus_l_io_wakeup_pending)
-	    {
-	        FD_CLR(
-	            globus_l_io_wakeup_pipe_handle.fd,
-	            globus_l_io_active_read_fds);
-
-	        globus_l_io_wakeup_pipe_callback(
-	            GLOBUS_NULL,
-	            &globus_l_io_wakeup_pipe_handle,
-	            GLOBUS_SUCCESS);
 	    }
 	}
 
@@ -2295,6 +2295,9 @@ globus_l_io_wakeup_pipe_callback(
     char				buf;
     ssize_t				done = 0;
 
+    globus_i_io_debug_printf(3, 
+        (stderr, "globus_l_io_wakeup_pipe_callback(): entering\n"));
+
     while (!done)
     {
 	done = globus_libc_read(handle->fd, &buf, sizeof(buf));
@@ -2314,6 +2317,10 @@ globus_l_io_wakeup_pipe_callback(
     }
 
     globus_l_io_wakeup_pending = GLOBUS_FALSE;
+    
+    globus_i_io_debug_printf(3, 
+        (stderr, "globus_l_io_wakeup_pipe_callback(): exiting\n"));
+
 }
 /* globus_l_io_wakeup_pipe_callback() */
 
@@ -2345,7 +2352,6 @@ globus_l_io_poll(
             globus_l_io_handle_events(&time_left);
     }
     while(events_handled == 0 &&
-        globus_l_io_fd_num_set > 0 &&
 	  !globus_l_io_shutdown_called &&
           !globus_callback_get_timeout(&time_left));
 
