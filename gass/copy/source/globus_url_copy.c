@@ -1248,12 +1248,16 @@ globus_l_guc_parse_arguments(
 
     /* determine the program name */
     
-    program = strrchr(argv[0],'/') + 1;
+    program = strrchr(argv[0],'/');
     if (!program)
     {
         program = argv[0];
     }
-    
+    else
+    {
+	program++;
+    }
+
     globus_url_copy_i_args_init();
 
     if (globus_args_scan(
