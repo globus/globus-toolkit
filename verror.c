@@ -4,14 +4,7 @@
  * Simple error-handling interface. See verror.h for documentation.
  */
 
-#include "verror.h"
-#include "string_funcs.h"
-
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 /**********************************************************************
  *

@@ -4,19 +4,7 @@
  * See myproxy_log.h for documentation.
  */
 
-#include "myproxy_log.h"
-
-#include "verror.h"
-#include "string_funcs.h"
-
-#include <stdio.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <syslog.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 /**********************************************************************
  *

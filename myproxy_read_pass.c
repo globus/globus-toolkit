@@ -4,13 +4,7 @@
  * See myproxy_read_pass.h for documentation
  */
 
-#include "myproxy_read_pass.h"
-#include "verror.h"
-#include "ssl_utils.h"
-
-#include <string.h>
-#include <assert.h>
-#include <stdlib.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 /**********************************************************************
  *

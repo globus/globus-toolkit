@@ -4,19 +4,7 @@
  * Client program to delegate a credential to a myproxy-server
  */
 
-#include "myproxy.h"
-#include "myproxy_log.h"
-#include "gnu_getopt.h"
-#include "verror.h"
-#include "myproxy_read_pass.h"
-#include "ssl_utils.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 /* Location of default proxy */
 #define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"

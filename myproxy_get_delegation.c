@@ -4,24 +4,7 @@
  * Webserver program to retrieve a delegated credential from a myproxy-server
  */
 
-#include "myproxy.h"
-#include "myproxy_log.h"
-#include "ssl_utils.h"
-#include "gnu_getopt.h"
-#include "verror.h"
-#include "myproxy_read_pass.h"
-#include "myproxy_delegation.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/param.h>
-#include <fcntl.h> 
-#include <assert.h>
-#include <errno.h>
-#include <unistd.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 static char usage[] = \
 "\n"

@@ -4,16 +4,7 @@
  * Code to test the gsi_socket.c code.
  */
 
-#include "gsi_socket.h"
-#include "string_funcs.h"
-
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <string.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 int port = 7563;		/* Default port, arbitrary */
 char *host = "localhost";
