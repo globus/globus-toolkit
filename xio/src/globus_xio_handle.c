@@ -195,6 +195,7 @@ globus_l_xio_hande_pre_close(
     globus_i_xio_op_t *                     tmp_op;
     GlobusXIOName(globus_l_xio_hande_pre_close);
 
+    GlobusXIODebugInternalEnter();
     /* 
      *  if the user requests a cancel kill all open ops
      *  if they didn't the close will not happen until all ops finish 
@@ -311,12 +312,14 @@ globus_l_xio_hande_pre_close(
     op->user_arg = user_arg;
     op->entry[0].prev_ndx = -1;/*for first pass there is no return*/
 
+    GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
 
   err:
     op->_op_handle = NULL; /* null this out for next call */
     globus_i_xio_op_destroy(op, &destroy_handle);
 
+    GlobusXIODebugInternalExitWithError();
     return res;
 }
 
@@ -3144,6 +3147,7 @@ globus_xio_close(
                 pass = GLOBUS_FALSE;
             }
         }
+        handle->close_op->blocking = GLOBUS_TRUE;
     }
     globus_mutex_unlock(&handle->context->mutex);
 
@@ -3152,7 +3156,6 @@ globus_xio_close(
         goto alloc_error;
     }
     
-    handle->close_op->blocking = GLOBUS_TRUE;
     globus_mutex_lock(&info->mutex);
     {
         if(pass)

@@ -266,6 +266,7 @@ globus_xio_driver_open_delivered(
                     GLOBUS_XIO_CONTEXT_STATE_CLOSING);
                 close_kickout = GLOBUS_TRUE;
                 if(!my_context->close_started &&
+                    my_context->outstanding_operations == 0 &&
                     my_context->close_op != NULL)
                 {
                     my_context->close_started = GLOBUS_TRUE;
