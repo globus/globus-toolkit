@@ -185,7 +185,10 @@ INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include
 
 libssl___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libssl___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS) 
+libssl___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+	$(GPT_LIB_LINKS) \
+	../crypto/libcrypto_$(GLOBUS_FLAVOR_NAME).la
+
 
 libssl___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
@@ -196,7 +199,8 @@ CONFIG_HEADER = $(top_builddir)/crypto/opensslconf.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(lib_LTLIBRARIES)
 
-libssl___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES =
+libssl___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = \
+	../crypto/libcrypto_$(GLOBUS_FLAVOR_NAME).la
 am_libssl___GLOBUS_FLAVOR_NAME__la_OBJECTS = s2_meth.lo s2_srvr.lo \
 	s2_clnt.lo s2_lib.lo s2_enc.lo s2_pkt.lo s3_meth.lo s3_srvr.lo \
 	s3_clnt.lo s3_lib.lo s3_enc.lo s3_pkt.lo s3_both.lo s23_meth.lo \

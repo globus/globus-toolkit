@@ -30,7 +30,9 @@ INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include
 
 libssl___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libssl___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS) 
+libssl___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+	$(GPT_LIB_LINKS) \
+	../crypto/libcrypto_$(GLOBUS_FLAVOR_NAME).la
 
 libssl___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 

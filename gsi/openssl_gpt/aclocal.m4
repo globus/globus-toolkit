@@ -5578,6 +5578,64 @@ AC_DEFUN(GPT_SET_LDFLAGS, [
 	 GPT_LDFLAGS=" $GPT_LDFLAGS_TMP $GPT_LDFLAGS"
 ])
 
+
+dnl LAC_SUBSTITUTE_VAR
+
+AC_DEFUN([LAC_SUBSTITUTE_VAR],
+[
+    if test -n "[$]lac_$1"; then
+        $1=[$]lac_$1
+        AC_SUBST($1)
+    fi
+])
+
+
+dnl LAC_DEFINE_VAR
+
+AC_DEFUN([LAC_DEFINE_VAR],
+[
+    if test -n "[$]lac_$1"; then
+        $1=[$]lac_$1
+        AC_DEFINE_UNQUOTED($1,[$]lac_$1)
+    fi
+])
+
+dnl LAC_CHECK_DL_LIB
+AC_DEFUN([LAC_CHECK_DL_LIB],
+[
+    AC_CHECK_FUNC([dlopen],
+    [
+        DL_LIB=
+    ],
+    [
+        AC_CHECK_LIB([dl],[dlopen],
+        [
+            DL_LIB=-ldl
+        ],
+        [
+            AC_CHECK_LIB([dld],[dlopen],
+            [
+	        DL_LIB=-ldld
+            ],
+            [
+                AC_MSG_ERROR("Unable to find dynamic linking library")
+            ])
+        ])
+    ])
+])
+
+# Figure out how to run the assembler.
+
+# LAC_PROG_AS
+AC_DEFUN([LAC_PROG_AS],
+[# By default we simply use the C compiler to build assembly code.
+AC_REQUIRE([AC_PROG_CC])
+: ${AS="$CC"}
+# Set ASFLAGS if not already set.
+: ${ASFLAGS="$CFLAGS"}
+AC_SUBST(AS)
+AC_SUBST(ASFLAGS)])
+
 # Do all the work for Automake.  This macro actually does too much --
 # some checks are only needed if your package does certain things.
 # But this isn't really a big deal.
@@ -6276,64 +6334,6 @@ AC_DEFUN(LAC_CPU,
 
 
 
-
-dnl LAC_SUBSTITUTE_VAR
-
-AC_DEFUN([LAC_SUBSTITUTE_VAR],
-[
-    if test -n "[$]lac_$1"; then
-        $1=[$]lac_$1
-        AC_SUBST($1)
-    fi
-])
-
-
-dnl LAC_DEFINE_VAR
-
-AC_DEFUN([LAC_DEFINE_VAR],
-[
-    if test -n "[$]lac_$1"; then
-        $1=[$]lac_$1
-        AC_DEFINE_UNQUOTED($1,[$]lac_$1)
-    fi
-])
-
-dnl LAC_CHECK_DL_LIB
-AC_DEFUN([LAC_CHECK_DL_LIB],
-[
-    AC_CHECK_FUNC([dlopen],
-    [
-        DL_LIB=
-    ],
-    [
-        AC_CHECK_LIB([dl],[dlopen],
-        [
-            DL_LIB=-ldl
-        ],
-        [
-            AC_CHECK_LIB([dld],[dlopen],
-            [
-	        DL_LIB=-ldld
-            ],
-            [
-                AC_MSG_ERROR("Unable to find dynamic linking library")
-            ])
-        ])
-    ])
-])
-
-# Figure out how to run the assembler.
-
-# LAC_PROG_AS
-AC_DEFUN([LAC_PROG_AS],
-[# By default we simply use the C compiler to build assembly code.
-AC_REQUIRE([AC_PROG_CC])
-: ${AS="$CC"}
-# Set ASFLAGS if not already set.
-: ${ASFLAGS="$CFLAGS"}
-AC_SUBST(AS)
-AC_SUBST(ASFLAGS)])
-
 dnl
 dnl ac_crypto.m4
 dnl
@@ -6604,6 +6604,11 @@ dnl LAC_COMPILER_ARGS()
 
 AC_DEFUN(LAC_COMPILER_ARGS,
 [
+    AC_ARG_WITH([dso],
+        [AC_HELP_STRING([--with-dso],
+        [Enable DSO module])],
+        [],
+        [])
 ])
 
 dnl LAC_COMPILER()
@@ -6627,10 +6632,17 @@ AC_DEFUN(LAC_COMPILER_SET,
 [
     # defaults:
 
-    lac_CFLAGS="$CFLAGS -DDSO_DLFCN -DHAVE_DLFCN_H"
-    lac_DSO_DLFCN="1"
-    lac_HAVE_DLFCN_H="1"
+    lac_CFLAGS="$CFLAGS"
+    lac_DSO_DLFCN=""
+    lac_HAVE_DLFCN_H=""
     lac_THREADS=""
+
+    if test "$with_dso" = "yes"; then
+        lac_CFLAGS="$CFLAGS -DDSO_DLFCN -DHAVE_DLFCN_H"
+        lac_DSO_DLFCN="1"
+        lac_HAVE_DLFCN_H="1"
+    fi
+
 
     if test ! "$GLOBUS_THREADS" = "none"; then
         lac_CFLAGS="$lac_CFLAGS -DTHREADS"
