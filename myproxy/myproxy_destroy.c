@@ -186,7 +186,13 @@ main(int argc, char *argv[])
         fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_str);
         break;
     case MYPROXY_OK_RESPONSE:
-        printf("proxy was succesfully destroyed for user %s.\n", client_request->username); 
+	if (client_request->credname) {
+	    printf("MyProxy credential '%s' for user %s was succesfully removed.\n",
+		   client_request->credname, client_request->username); 
+	} else {
+	    printf("Default MyProxy credential for user %s was succesfully removed.\n",
+		   client_request->username); 
+	}
         break;
     default:
         fprintf(stderr, "Invalid response type received.\n");
