@@ -18,6 +18,15 @@ globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
 
+PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} 's|\$Revision$|\1|'`
+
+VERSION="@VERSION@"
+
+PACKAGE="@PACKAGE@"
+
+DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
+DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
+
 short_usage="$PROGRAM_NAME [-help] [-file certfile] [-all] [-subject] [...]"
 
 long_usage () {
@@ -40,24 +49,24 @@ ${short_usage}
     Options
       -help, -usage                Display usage
       -version                     Display version
-      -file certfile               Use 'certfile' at non-default location
+      -file certfile     |-f       Use 'certfile' at non-default location
 
     Options determining what to print from certificate
 
       -all                        Whole certificate
-      -subject                    Subject string of the cert
+      -subject           |-s      Subject string of the cert
       -organization      |-o      O  of the subject
       -organizationunit  |-ou     OU of the subject
       -organizationunit2 |-ou2    2nd OU of subject (if applicable)
       -commonname        |-cn     CN of the subject
-      -issuer                     Issuer
-      -startdate                  Validity of cert: start date
-      -enddate                    Validity of cert: end date
+      -issuer            |-i      Issuer
+      -startdate         |-sd     Validity of cert: start date
+      -enddate           |-ed     Validity of cert: end date
 
 EOF
 }
 
-globus_source $libexecdir/globus-args-parser-header
+globus_source $libexecdir/globus-args-parser-header $@
 
 
 #SSL related needs
@@ -70,10 +79,6 @@ DEF_GLOBUS_DIR="${HOME}/.globus"
 DEF_CERT_FILE="${DEF_GLOBUS_DIR}/usercert.pem"
 
 toprint=""
-
-if [ $# -eq 0 ]; then
-    toprint="$toprint -text"
-fi
 
 # set default location of certificate (may be overridden by --file)
 #
@@ -96,7 +101,7 @@ while [ "X$1" != "X" ]; do
     -all)
 	toprint="$toprint -text"
 	;;
-    -subject|-subject)
+    -subject|-s)
 	toprint="$toprint SUBJECT"
 	;;
     -organization|-o)
@@ -111,13 +116,13 @@ while [ "X$1" != "X" ]; do
     -commonname|-cn)
 	toprint="$toprint CN"
 	;;
-    -issuer|-issuer)
+    -issuer|-i)
 	toprint="$toprint -issuer"
 	;;
-    -startdate|-startdate)
+    -startdate|-sd)
 	toprint="$toprint -startdate"
 	;;
-    -enddate|-enddate)
+    -enddate|-ed)
 	toprint="$toprint -enddate"
 	;;
     *)
@@ -128,8 +133,7 @@ while [ "X$1" != "X" ]; do
 done
 
 if [ "X$toprint" = "X" ]; then
-    echo "ERROR: What should I print?" >&2
-    exit 1
+    toprint="-text"
 fi
 
 if [ ! \( -f "${certfile}" -a -r "${certfile}" \) ]; then
