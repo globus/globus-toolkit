@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+
+<project default="all" basedir=".">
+
+    <target name="all" depends="deploy"/>
+
+    <target name="deploy">
+        <ant dir="packets/common" target="deploy"/>
+        <ant dir="packets/source" target="deploy"/>
+        <ant dir="packets/samples" target="deploy"/>
+        <ant dir="receiver/source" target="deploy"/>
+        <ant dir="receiver/samples" target="deploy"/>
+    </target>
+
+    <target name="clean">
+        <ant dir="packets/common" target="clean"/>
+        <ant dir="packets/source" target="clean"/>
+        <ant dir="packets/samples" target="clean"/>
+        <ant dir="receiver/source" target="clean"/>
+        <ant dir="receiver/samples" target="clean"/>
+    </target>
+        
+</project>
