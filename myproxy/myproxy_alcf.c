@@ -35,15 +35,16 @@ static int dn_as_username = 0;
 static char usage[] = \
 "\n"\
 "Syntax: myproxy-alcf [-l username] [-r retrievers] [-R renewers] ...\n"\
-"        myproxy-init [-usage|-help] [-version]\n"\
+"        myproxy-alcf [-usage|-help] [-version]\n"\
 "\n"\
 "   Options\n"\
 "       -h | --help                       Displays usage\n"
 "       -u | --usage                                    \n"
 "                                                      \n"
-"       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
+"       -s | --storage         <directory> Specifies the credential storage directory\n"
 "	-C | --credfile	       <filename> Credential file name\n"
 "                                         Can also set MYPROXY_SERVER env. var.\n"
+"	-y | --keyfile		<filename> Key file name\n"
 "       -v | --verbose                    Display debugging messages\n"
 "       -V | --version                    Displays version\n"
 "       -l | --username        <username> Username for the delegated proxy\n"
@@ -72,7 +73,8 @@ struct option long_options[] =
   {"help",                  no_argument, NULL, 'h'},
   {"usage",                 no_argument, NULL, 'u'},
   {"credfile",	      required_argument, NULL, 'C'},
-  {"pshost",   	      required_argument, NULL, 's'},
+  {"keyfile",	      required_argument, NULL, 'y'},
+  {"storage",         required_argument, NULL, 's'},
   {"username",        required_argument, NULL, 'l'},
   {"verbose",               no_argument, NULL, 'v'},
   {"version",               no_argument, NULL, 'V'},
@@ -91,9 +93,10 @@ struct option long_options[] =
 
 /*colon following an option indicates option takes an argument */
 
-static char short_options[] = "uhl:vVndr:R:xXaAk:K:C:s:";
+static char short_options[] = "uhl:vVndr:R:xXaAk:K:C:y:s:";
 
 static char *credfile;  /* credential file name */
+static char *keyfile;  /* key file name */
 
 static char version[] =
 "myproxy-alcf version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -105,15 +108,22 @@ int main(int argc, char *argv[])
 	SSL_CREDENTIALS *creds;
 	myproxy_creds_t *my_creds;
 
+	printf ("Entered myproxy-alcf !!\n");
 	my_creds = (myproxy_creds_t *) malloc(sizeof(*my_creds));
 	memset (my_creds, 0, sizeof(*my_creds));
-	
+
 	creds = ssl_credentials_new();
 	init_arguments (argc, argv, my_creds);
 
 	if (credfile == NULL)
 	{
 		fprintf (stderr, "Specify credential file with -C option\n");
+		goto cleanup;
+	}
+
+	if (keyfile == NULL)
+	{
+		fprintf (stderr, "Specify key file with -y option\n");
 		goto cleanup;
 	}
 
@@ -133,7 +143,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* Read private key */
-		if (ssl_private_key_load_from_file (creds, credfile, passphrase) == SSL_ERROR)
+		if (ssl_private_key_load_from_file (creds, keyfile, passphrase) == SSL_ERROR)
 		{
 			perror ("Error");
 			fprintf (stderr, "Error reading private key: %s\n",verror_get_string());
@@ -186,6 +196,13 @@ int main(int argc, char *argv[])
 				fprintf (stdout, "Credential stored successfully\n");
 			}
 	}
+	else
+	{
+		myproxy_log_verror();
+		fprintf (stderr, "Unable to load certificate. %s\n", verror_get_string()); 
+		goto cleanup;
+	}
+
 	cleanup:
 	free (my_creds);
 	exit(0);
@@ -201,6 +218,7 @@ init_arguments(int argc,
     int expr_type = MATCH_CN_ONLY;  /*default */
 
     credfile = NULL;
+    keyfile = NULL;
     while((arg = gnu_getopt_long(argc, argv, short_options, 
                              long_options, NULL)) != EOF) 
     {
@@ -217,7 +235,9 @@ init_arguments(int argc,
 	case 'C': /* credential file name*/
 	    credfile = strdup (gnu_optarg);
 	    break;
-
+	case 'y': /* key file name */
+	    keyfile = strdup (gnu_optarg);
+	    break;
         case 'u': 	/* print help and exit */
             fprintf(stderr, usage);
             exit(1);
