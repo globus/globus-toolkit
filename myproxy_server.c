@@ -424,7 +424,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
 		      client_creds->lifetime);
 
 	/* Are credentials expired? */
-	if (client_creds->start_time > now || client_creds->end_time < now) {
+	if (client_creds->start_time > now) {
+	    myproxy_debug("  warning: credentials not yet valid! "
+			  "(problem with local clock?)");
+	} else if (client_creds->end_time < now) {
 	    respond_with_error_and_die(attrs,
 				       "requested credentials have expired");
 	}
