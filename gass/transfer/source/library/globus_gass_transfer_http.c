@@ -5794,6 +5794,7 @@ globus_l_gass_transfer_http_extract_referral(
 }
 /* globus_l_gass_transfer_http_extract_referral() */
 
+#if !defined(GLOBUS_GASS_TRANSFER_HTTP_PARSER_TEST)
 static
 globus_bool_t
 globus_l_gass_transfer_http_callback_denied(
@@ -5811,3 +5812,4 @@ globus_l_gass_transfer_http_callback_denied(
 
     return GLOBUS_TRUE;
 }
+#endif
