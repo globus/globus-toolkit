@@ -18,7 +18,7 @@ error()
 
 # check for autotools
 
-for program in automake aclocal autoconf autoheader
+for program in automake aclocal autoconf 
     do
     ($program --version ) > /dev/null 2>&1 || { 
     echo "ERROR: $program not found" >&2
@@ -59,11 +59,6 @@ fi
 
 echo "running aclocal $config"
 aclocal $config || error
-
-if test -f acconfig.h ; then
-echo "running autoheader"
-    autoheader || error
-fi
 
 echo "running libtoolize --copy --force"
 libtoolize --copy --force || \
