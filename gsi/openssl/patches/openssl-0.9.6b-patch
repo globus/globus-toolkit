@@ -2074,7 +2074,7 @@ diff -u -r -P openssl-0.9.6b/Makefile.ssl openssl-0.9.6b-patched/Makefile.ssl
  	@echo "Makefile.ssl is older than Makefile.org."
 diff -u -r -P openssl-0.9.6b/config openssl-0.9.6b-patched/config
 --- openssl-0.9.6b/config	Fri Mar 30 09:49:08 2001
-+++ openssl-0.9.6b-patched/config	Thu Nov  1 19:34:34 2001
++++ openssl-0.9.6b-patched/config	Thu Nov  1 22:58:52 2001
 @@ -318,9 +318,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -2115,7 +2115,7 @@ diff -u -r -P openssl-0.9.6b/config openssl-0.9.6b-patched/config
 +
 +    # Older vesions of AIX return the man page for unknown options
 +    # We check this with a word count.
-+    AIXChk=`($CC --version) | wc -c`
++    AIXChk=`($CC --version | wc -c) 2>/dev/null`
 +
 +    GCCVER=`($CC --version) 2>/dev/null`
 +    if [ "$GCCVER" != ""  -a $AIXChk -lt 100 ]; then
@@ -2196,8 +2196,8 @@ diff -u -r -P openssl-0.9.6b/config openssl-0.9.6b-patched/config
    sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
 diff -u -r -P openssl-0.9.6b/config~ openssl-0.9.6b-patched/config~
 --- openssl-0.9.6b/config~	Wed Dec 31 18:00:00 1969
-+++ openssl-0.9.6b-patched/config~	Tue Oct 30 12:12:05 2001
-@@ -0,0 +1,633 @@
++++ openssl-0.9.6b-patched/config~	Thu Nov  1 19:34:34 2001
+@@ -0,0 +1,635 @@
 +#!/bin/sh
 +#
 +# OpenSSL config: determine the operating system and run ./Configure
@@ -2588,31 +2588,33 @@ diff -u -r -P openssl-0.9.6b/config~ openssl-0.9.6b-patched/config~
 +CCVER=${CCVER:-0}
 +
 +else
-+# CC has been specified need to figure out gcc version
++    # CC has been specified need to figure out gcc version
 +
-+GCCVER=`($CC --version) 2>/dev/null`
-+if [ "$GCCVER" != "" ]; then
-+    CC=gcc
-+  # then strip off whatever prefix Cygnus prepends the number with...
-+  GCCVER=`echo $GCCVER | sed 's/^[a-z]*\-//'`
-+  # peak single digit before and after first dot, e.g. 2.95.1 gives 29
-+  GCCVER=`echo $GCCVER | sed 's/\([0-9]\)\.\([0-9]\).*/\1\2/'`
++    # Older vesions of AIX return the man page for unknown options
++    # We check this with a word count.
++    AIXChk=`($CC --version) | wc -c`
 +
-+else
-+    CCNAME=`echo $CC | sed 's,\(.*\)/\([^/]*\)$,\2,'`
-+    if [ "x$CCNAME" = "x" ]; then
-+        echo "ERROR: compiler $CC not recognized" >&2
-+        exit 1
++    GCCVER=`($CC --version) 2>/dev/null`
++    if [ "$GCCVER" != ""  -a $AIXChk -lt 100 ]; then
++        CC=gcc
++        # then strip off whatever prefix Cygnus prepends the number with...
++        GCCVER=`echo $GCCVER | sed 's/^[a-z]*\-//'`
++        # peak single digit before and after first dot, e.g. 2.95.1 gives 29
++        GCCVER=`echo $GCCVER | sed 's/\([0-9]\)\.\([0-9]\).*/\1\2/'`
 +    else
-+        CC=$CCNAME
++        CCNAME=`echo $CC | sed 's,\(.*\)/\([^/]*\)$,\2,'`
++        if [ "x$CCNAME" = "x" ]; then
++            echo "ERROR: compiler $CC not recognized" >&2
++            exit 1
++        else
++            CC=$CCNAME
++        fi
++
++        GCCVER=0
++
 +    fi
 +
-+GCCVER=${GCCVER:-0}
-+
-+fi
-+
-+CCVER=${CCVER:-0}
-+
++    CCVER=${CCVER:-0}
 +
 +fi
 +
@@ -2636,7 +2638,7 @@ diff -u -r -P openssl-0.9.6b/config~ openssl-0.9.6b-patched/config~
 +	OUT="irix-$CC"
 +	;;
 +  mips3-sgi-irix)
-+	CPU=`(hinv -t cpu) 2>/dev/null | sed 's/^CPU:[^R]*R\([0-9]*\).*/\1/'`
++	CPU=`(hinv -t cpu) 2>/dev/null | head -1 | sed 's/^CPU:[^R]*R\([0-9]*\).*/\1/'`
 +	CPU=${CPU:-0}
 +	if [ $CPU -ge 5000 ]; then
 +		options="$options -mips4"
@@ -2646,7 +2648,7 @@ diff -u -r -P openssl-0.9.6b/config~ openssl-0.9.6b-patched/config~
 +	OUT="irix-mips3-$CC"
 +	;;
 +  mips4-sgi-irix64)
-+        CPU=`(hinv -t cpu) 2>/dev/null | sed 's/^CPU:[^R]*R\([0-9]*\).*/\1/'`
++        CPU=`(hinv -t cpu) 2>/dev/null | head -1 | sed 's/^CPU:[^R]*R\([0-9]*\).*/\1/'`
 +        CPU=${CPU:-0}
 +        if [ $CPU -ge 5000 ]; then
 +                options="$options -mips4"
@@ -2656,7 +2658,7 @@ diff -u -r -P openssl-0.9.6b/config~ openssl-0.9.6b-patched/config~
 +        if [ "x$BIT64" = "xtrue" ]; then
 +            OUT="irix64-mips4-$CC"
 +        else
-+            OUT="irix-mips3-$CC"
++            OUT="irix-mips4-$CC"
 +        fi
 +	;;
 +  alpha-*-linux2)
