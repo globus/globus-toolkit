@@ -2,9 +2,9 @@ include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS=\
-    pkgdata                                     \
-    $(XIO_BUILTIN_DIRS)                         \
-    doxygen
+	pkgdata                                     \
+	builtins                                    \
+	doxygen
 
 Sources= \
 	globus_xio_handle.c                         \
@@ -35,7 +35,8 @@ libglobus_xio___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	$(XIO_BUILTIN_LIBS)
 
 EXTRA_DIST = \
-	version.h.in
+	version.h.in \
+	configure.in.in
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
