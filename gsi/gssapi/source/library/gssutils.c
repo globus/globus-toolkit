@@ -416,29 +416,44 @@ Parameters:
 Returns:
 **********************************************************************/
 OM_uint32
-gs_put_token 
-(const gss_ctx_id_desc*         context_handle,
- const gss_buffer_t             input_token)
+gs_put_token(
+    const gss_ctx_id_desc*              context_handle,
+    BIO *                               bio,
+    const gss_buffer_t                  input_token)
 {
+    BIO *                               read_bio;
+
+    if(bio)
+    {
+        read_bio = bio;
+    }
+    else
+    {
+        read_bio = context_handle->gs_rbio;
+    }
 
 	/* add any input data onto the input for the SSL BIO */
 
 #ifdef DEBUG
 	fprintf(stderr,"input token: len=%d\n",input_token->length);
 #endif
-	if (input_token->length > 0) {
-		BIO_write(context_handle->gs_rbio,
-		input_token->value,
-		input_token->length);
+	if (input_token->length > 0)
+    {
+		BIO_write(read_bio,
+                  input_token->value,
+                  input_token->length);
 #ifdef DEBUG
 		BIO_dump(context_handle->cred_handle->gs_bio_err,
-		input_token->value,
-		input_token->length);
+                 input_token->value,
+                 input_token->length);
 #endif
-	} else {
+	}
+    else
+    {
 		return GSS_S_DEFECTIVE_TOKEN;
 	}
-	return GSS_S_COMPLETE;
+
+    return GSS_S_COMPLETE;
 }
 
 
@@ -455,22 +470,35 @@ Returns:
 **********************************************************************/
 OM_uint32
 gs_get_token(
-    const gss_ctx_id_desc*         context_handle,
-    const gss_buffer_t             output_token)
+    const gss_ctx_id_desc*              context_handle,
+    BIO *                               bio,
+    const gss_buffer_t                  output_token)
 {
+    BIO *                               write_bio;
 
+    if(bio)
+    {
+        write_bio = bio;
+    }
+    else
+    {
+        write_bio = context_handle->gs_wbio;
+    }
+    
 	/* make out token */
-	output_token->length = BIO_pending(context_handle->gs_wbio);
-	if (output_token->length > 0) {
+	output_token->length = BIO_pending(write_bio);
+	if (output_token->length > 0)
+    {
 		output_token->value = (char *) malloc(output_token->length);
-		if (output_token->value == NULL) {
+		if (output_token->value == NULL)
+        {
 			output_token->length = 0 ;
 			GSSerr(GSSERR_F_GS_HANDSHAKE, GSSERR_R_OUT_OF_MEMORY);
 			return GSS_S_FAILURE;
 		}
-		BIO_read(context_handle->gs_wbio,
-		output_token->value,
-		output_token->length);
+		BIO_read(write_bio,
+                 output_token->value,
+                 output_token->length);
 #ifdef DEBUG
 		fprintf(stderr,"output token: len=%d\n",output_token->length);
 #endif
@@ -479,7 +507,9 @@ gs_get_token(
 				output_token->value,
 				output_token->length);
 #endif
-	} else {
+	}
+    else
+    {
 		output_token->value = NULL;
 	}
 	return GSS_S_COMPLETE;

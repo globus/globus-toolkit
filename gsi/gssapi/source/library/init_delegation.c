@@ -81,10 +81,14 @@ GSS_CALLCONV gss_init_delegation(
     const gss_OID_set                   extension_oids,
     const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
+    OM_uint32                           req_flags,
     OM_uint32                           time_req,
     gss_buffer_t                        output_token)
 {
-    OM_uint32 		                major_status = GSS_S_COMPLETE;
+    BIO *                               bio = NULL;
+    BIO *                               read_bio = NULL;
+    BIO *                               write_bio = NULL;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_ctx_id_desc *                   context;
     gss_cred_id_desc *                  cred;
     X509_REQ *                          reqp = NULL;
@@ -115,7 +119,7 @@ GSS_CALLCONV gss_init_delegation(
     
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {
-	cred = (gss_cred_id_desc *) context->cred_handle;
+        cred = (gss_cred_id_desc *) context->cred_handle;
     }
     
     if(minor_status == NULL)
@@ -169,7 +173,18 @@ GSS_CALLCONV gss_init_delegation(
         goto err;
     }
     
-    /* pass the input to the read BIO in the context */
+    if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
+    {
+        bio = BIO_new(BIO_s_mem());
+        read_bio = bio;
+        write_bio = bio;
+    }
+    else
+    {
+        bio = context->gs_sslbio;
+    }
+    
+    /* pass the input to the BIO */
     
     if(context->delegation_state != GS_DELEGATION_START)
     {
@@ -185,23 +200,24 @@ GSS_CALLCONV gss_init_delegation(
             major_status = GSS_S_FAILURE;
             goto err;
         }
-        
-    	major_status = gs_put_token(context, input_token);
 
-    	if (major_status != GSS_S_COMPLETE)
+        major_status = gs_put_token(context, read_bio, input_token);
+
+        if (major_status != GSS_S_COMPLETE)
         {
             *minor_status = gsi_generate_minor_status();
             return major_status;
-    	}
+        }
     }
 
+    
     /* delegation state machine */
     
     switch (context->delegation_state)
     {
     case GS_DELEGATION_START:
         /* start delegation by sending a "D" */
-        BIO_write(context->gs_sslbio,"D",1); 
+        BIO_write(bio,"D",1); 
         context->delegation_state=GS_DELEGATION_SIGN_CERT;
         break;
     case GS_DELEGATION_SIGN_CERT:
@@ -209,7 +225,7 @@ GSS_CALLCONV gss_init_delegation(
          * correct and then sign it and place it in the output_token
          */
 
-        reqp = d2i_X509_REQ_bio(context->gs_sslbio,NULL);
+        reqp = d2i_X509_REQ_bio(bio,NULL);
 
         if (reqp == NULL)
         {
@@ -302,14 +318,14 @@ GSS_CALLCONV gss_init_delegation(
             major_status = GSS_S_FAILURE;
             goto err;
         }
-		
+        
 #ifdef DEBUG
         X509_print_fp(stderr,ncert);
 #endif
 
         /* push the proxy cert */
         
-        i2d_X509_bio(context->gs_sslbio,ncert);
+        i2d_X509_bio(bio,ncert);
 
         /* push the number of certs in the cert chain */
 
@@ -320,7 +336,7 @@ GSS_CALLCONV gss_init_delegation(
         
         /* Add one for the issuer's certificate */
         
-        i2d_integer_bio(context->gs_sslbio, cert_chain_length + 1);
+        i2d_integer_bio(bio, cert_chain_length + 1);
 
         
         for(i=cert_chain_length-1;i>=0;i--)
@@ -337,12 +353,12 @@ GSS_CALLCONV gss_init_delegation(
                 free(s);
             }
 #endif
-            i2d_X509_bio(context->gs_sslbio,cert);
+            i2d_X509_bio(bio,cert);
         }
 
         /* push the cert used to sign the proxy */
         
-        i2d_X509_bio(context->gs_sslbio,cred->pcd->ucert);
+        i2d_X509_bio(bio,cred->pcd->ucert);
 
         /* reset state machine */
         context->delegation_state = GS_DELEGATION_START; 
@@ -351,7 +367,7 @@ GSS_CALLCONV gss_init_delegation(
         break;
     }
     
-    gs_get_token(context, output_token);
+    gs_get_token(context, write_bio, output_token);
 
     if (context->delegation_state != GS_DELEGATION_START)
     {

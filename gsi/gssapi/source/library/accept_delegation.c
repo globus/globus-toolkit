@@ -56,13 +56,17 @@ GSS_CALLCONV gss_accept_delegation(
     const gss_OID_set                   extension_oids,
     const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
+    OM_uint32                           req_flags,
     OM_uint32                           time_req,
     OM_uint32 *                         time_rec,
     gss_cred_id_t *                     delegated_cred_handle,
     gss_OID *                           mech_type, 
     gss_buffer_t                        output_token)
 {
-    OM_uint32 		                major_status = 0;
+    BIO *                               bio = NULL;
+    BIO *                               read_bio = NULL;
+    BIO *                               write_bio = NULL;
+    OM_uint32                           major_status = 0;
     gss_ctx_id_desc *                   context;
     X509_REQ *                          reqp = NULL;
     X509 *                              dcert = NULL;
@@ -133,8 +137,19 @@ GSS_CALLCONV gss_accept_delegation(
     *minor_status = 0;
     output_token->length = 0;
     context = (gss_ctx_id_desc *) context_handle;
+
+    if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
+    {
+        bio = BIO_new(BIO_s_mem());
+        read_bio = bio;
+        write_bio = bio;
+    }
+    else
+    {
+        bio = context->gs_sslbio;
+    }
     
-    major_status = gs_put_token(context, input_token);
+    major_status = gs_put_token(context, read_bio, input_token);
 
     if (major_status != GSS_S_COMPLETE)
     {
@@ -149,7 +164,7 @@ GSS_CALLCONV gss_accept_delegation(
 
         /* generate the proxy */
 
-        BIO_read(context->gs_sslbio,dbuf,1);
+        BIO_read(bio,dbuf,1);
 #ifdef DEBUG
         fprintf(stderr,"delegation flag:%.1s\n",dbuf);
 #endif
@@ -173,7 +188,7 @@ GSS_CALLCONV gss_accept_delegation(
 #ifdef DEBUG
             X509_REQ_print_fp(stderr,reqp);
 #endif
-            i2d_X509_REQ_bio(context->gs_sslbio,reqp);
+            i2d_X509_REQ_bio(bio,reqp);
             X509_REQ_free(reqp);
             context->delegation_state = GS_DELEGATION_COMPLETE_CRED;
         }
@@ -191,7 +206,7 @@ GSS_CALLCONV gss_accept_delegation(
          * the cred structure
          */
 
-        dcert = d2i_X509_bio(context->gs_sslbio, NULL);
+        dcert = d2i_X509_bio(bio, NULL);
 
         if(dcert == NULL)
         {
@@ -203,14 +218,14 @@ GSS_CALLCONV gss_accept_delegation(
 #ifdef DEBUG
         X509_print_fp(stderr,dcert);
 #endif
-        d2i_integer_bio(context->gs_sslbio, (long *) &cert_chain_length);
+        d2i_integer_bio(bio, (long *) &cert_chain_length);
 
         cert_chain = sk_X509_new_null();
 
         for(i=0;i<cert_chain_length;i++)
         {
             sk_X509_insert(cert_chain,
-                           d2i_X509_bio(context->gs_sslbio, NULL),
+                           d2i_X509_bio(bio, NULL),
                            i);
         }
 
@@ -253,7 +268,7 @@ GSS_CALLCONV gss_accept_delegation(
 
     /* returns empty token when there is no output */
     
-    gs_get_token(context, output_token);
+    gs_get_token(context, write_bio, output_token);
 
     if (context->delegation_state != GS_DELEGATION_START)
     {

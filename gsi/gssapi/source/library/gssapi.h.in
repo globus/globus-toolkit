@@ -164,7 +164,7 @@ typedef struct gss_channel_bindings_struct
  * For the Globus gssapi_ssleay we add three
  * flags. These may have to be changed in the
  * future, if they are defined in the RFCs. 
- * GSS_C_GLOBUS_SSL_COMPATABLE
+ * GSS_C_GLOBUS_SSL_COMPATIBLE
  * input - The other is not using GSSAPI, but 
  * 		 real SSL, so no delegation, etc. 
  * GSS_C_GLOBUS_LIMIED_DELEG_PROXY_FLAG
@@ -187,7 +187,7 @@ typedef struct gss_channel_bindings_struct
 
 #define GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG  4096
 #define GSS_C_GLOBUS_LIMITED_PROXY_FLAG        8192
-#define GSS_C_GLOBUS_SSL_COMPATABLE           16384
+#define GSS_C_GLOBUS_SSL_COMPATIBLE           16384
 #define GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG  32768
 /*
  * Credential usage options
@@ -860,6 +860,7 @@ GSS_CALLCONV GSS_FUNC(gss_init_delegation)
      const gss_OID_set,        /* extension_oids */
      const gss_buffer_set_t,   /* extension_buffers */
      const gss_buffer_t,       /* input_token */
+     OM_uint32,                /* req_flags */
      OM_uint32,                /* time_req */
      gss_buffer_t);            /* output_token */
 
@@ -871,6 +872,7 @@ GSS_CALLCONV GSS_FUNC(gss_accept_delegation)
      const gss_OID_set,      /* extension_oids */
      const gss_buffer_set_t, /* extension_buffers */
      const gss_buffer_t,     /* input_token */
+     OM_uint32,              /* req_flags */
      OM_uint32,              /* time_req */
      OM_uint32 *,            /* time_rec */
      gss_cred_id_t *,        /* delegated_cred_handle */
