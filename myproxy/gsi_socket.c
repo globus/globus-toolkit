@@ -844,6 +844,8 @@ my_ssl_init(int verify, int peer_has_proxy)
 }
 #endif
 
+static int debug_level = DBG_IN;
+
 int
 GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 {
@@ -862,7 +864,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     
     if (self == NULL)
     {
-	printf ("GSI-here - 1\n");
 	return GSI_SOCKET_ERROR;
     }
 
@@ -871,7 +872,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 
     if (self->cred_handle == NULL || self->cred_handle->gs_ctx == NULL)
     {
-	printf ("GSI-here - 2\n");
 	return GSI_SOCKET_ERROR;
     }
 
@@ -879,7 +879,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     self->ssl = SSL_new(self->ssl_context);
     if (self->ssl == NULL)
     {
-	printf ("GSI-here - 3\n");
 	return GSI_SOCKET_ERROR;
     }
 
@@ -889,7 +888,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     SSL_set_fd(self->ssl, self->sock);
     if (SSL_connect(self->ssl) <= 0)
     {
-	printf ("GSI-here - 4\n");
 	return GSI_SOCKET_ERROR;
     }
 
@@ -898,7 +896,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
      * want to perform delegation.
      */
     if (SSL_write(self->ssl, "0", 1) != 1) {
-	printf ("GSI-here - 5\n");
 	return GSI_SOCKET_ERROR;
     }
 #else
@@ -984,7 +981,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	subject = X509_get_subject_name(peer);
 	if (X509_NAME_get_text_by_NID(subject, NID_commonName, cn, sizeof(cn))<= 0) {
 	   self->error_string = strdup("Cannot find CN field in server's certificate");
-	printf ("GSI-here - 6\n");
 	   return GSI_SOCKET_ERROR;
 	}
 
@@ -994,13 +990,11 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 			    "Expected target subject name=\"%s\"\n"
 			    "Target returned subject name=\"%s\"",
 			    server_name, cn);
-	printf ("GSI-here - 7\n");
 	    return GSI_SOCKET_ERROR;
 	}
 
     } else {
 	self->error_string = strdup("Server authentication failed");
-	printf ("GSI-here - 8\n");
 	return GSI_SOCKET_ERROR;
     }
 #else
@@ -1057,7 +1051,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     }
 #endif
     
-	printf ("GSI-here - 9\n");
     return return_value;
 }
 

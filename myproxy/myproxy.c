@@ -89,7 +89,7 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data);
 #define STRING_TO_INT_ERROR		-1
 #define STRING_TO_INT_NONNUMERIC	0
 
-
+static int debug_level = DBG_IN;   //debugging level
 /**********************************************************************
  *
  * Exported functions
@@ -180,7 +180,7 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile)
                                    sizeof(error_string));
        verror_put_string("Error setting credentials to use: %s\n", error_string);
 
-	printf ("Here - 1\n");  //C
+//	myproxy_log (DBG_HI, debug_level, "myproxy_authenticate_init - 1\n");  //C
        return -1;
    }
 
@@ -188,7 +188,7 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile)
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
        verror_put_string("Error authenticating: %s\n", error_string);
-	printf ("Here - 2\n");  //C
+	//myproxy_log (DBG_HI, debug_level, "myproxy_authenticate_init - 2\n");  //C
        return -1;
    }
    return 0;
@@ -347,7 +347,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
-    printf ("ok");
+    //myproxy_log (DBG_HI, debug_level, "OK\n");
     for (authorized_services = request->authorized_service_dns;
 	 authorized_services; authorized_services++) {
 	len = concatenate_strings(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
@@ -381,7 +381,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     assert(request != NULL);
     assert(data != NULL);
 
-    printf ("Data = %s\n\n", data);
+    //myproxy_log(DBG_HI, debug_level, "myproxy_deserialize_request: Data = %s\n\n", data);
     
     len = convert_message(data, datalen,
 			  MYPROXY_VERSION_STRING,

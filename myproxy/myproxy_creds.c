@@ -453,8 +453,6 @@ write_data_file(const struct myproxy_creds *creds,
     fprintf(data_stream, "PASSPHRASE=%s\n", tmp1);
     fprintf(data_stream, "LIFETIME=%d\n", creds->lifetime);
 
-    printf ("Creds->retrievers = %s\n", creds->retrievers);
-    printf ("Creds->renewers = %s\n", creds->renewers);
     if (creds->retrievers != NULL)
     {
         fprintf(data_stream, "RETRIEVERS=%s\n", creds->retrievers);

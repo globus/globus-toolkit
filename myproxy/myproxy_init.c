@@ -5,6 +5,7 @@
  */
 
 #include "myproxy.h"
+#include "myproxy_log.h"
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
@@ -27,6 +28,7 @@ static char usage[] = \
 "       -h | --help                       Displays usage\n"
 "       -u | --usage                                    \n"
 "                                                      \n"
+"	-D | --debug_level	<level>	  Sets debug level (0,1,2)\n"
 "       -v | --version                    Displays version\n"
 "       -l | --username        <username> Username for the delegated proxy\n"
 "       -c | --cred_lifetime   <hours>    Lifetime of delegated proxy on\n" 
@@ -51,6 +53,7 @@ static char usage[] = \
 struct option long_options[] =
 {
   {"help",                  no_argument, NULL, 'h'},
+  {"debug_level",     required_argument, NULL, 'D'},
   {"pshost",   	      required_argument, NULL, 's'},
   {"psport",          required_argument, NULL, 'p'},
   {"cred_lifetime",   required_argument, NULL, 'c'},
@@ -69,7 +72,7 @@ struct option long_options[] =
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhs:p:t:c:l:vndr:R:xXaA";  //colon following an option indicates option takes an argument
+static char short_options[] = "uhD:s:p:t:c:l:vndr:R:xXaA";  //colon following an option indicates option takes an argument
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -87,6 +90,8 @@ int grid_proxy_destroy(const char *proxyfile);
 
 #define		SECONDS_PER_HOUR			(60 * 60)
 
+static int debug_level = DBG_IN;  //define debugging level
+
 int
 main(int argc, char *argv[]) 
 {    
@@ -101,7 +106,11 @@ main(int argc, char *argv[])
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
-    
+
+    myproxy_debug_set_level (1);
+    myproxy_log_use_stream (stderr);
+
+    myproxy_log (0,5, "WELCOME");    
     socket_attrs = malloc(sizeof(*socket_attrs));
     memset(socket_attrs, 0, sizeof(*socket_attrs));
 
@@ -205,7 +214,7 @@ main(int argc, char *argv[])
     }
 
     /* Send request to the myproxy-server */
-    printf ("Request buffer = %s Requestlen = %d", request_buffer,requestlen);
+    myproxy_log(DBG_HI, debug_level, "Request buffer = %s \nRequestlen = %d\n", request_buffer,requestlen);
 
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "error in myproxy_send_request(): %s\n", 
@@ -279,6 +288,9 @@ init_arguments(int argc,
 	    fprintf(stderr, usage);
 	    return -1;
 	    break;
+	case 'D':	/* Set debug levle */
+	    debug_level = atoi (gnu_optarg);
+	    break;
 	case 'c': 	/* Specify cred lifetime in hours */
 	    *cred_lifetime  = SECONDS_PER_HOUR * atoi(gnu_optarg);
 	    break;    
@@ -317,7 +329,7 @@ init_arguments(int argc,
 	    {
 		request->retrievers = (char *) malloc (strlen (gnu_optarg) + 5);
 		strcpy (request->retrievers, "*/CN=");
-		printf ("gnu-optarg  %s\n", gnu_optarg);
+		myproxy_log (DBG_HI, debug_level, "gnu-optarg  %s\n", gnu_optarg);
 		request->retrievers = strcat (request->retrievers,gnu_optarg);
 	    }
 	    break;
@@ -328,17 +340,17 @@ init_arguments(int argc,
 	    {
 		request->renewers = (char *) malloc (strlen (gnu_optarg) + 5);
 		strcpy (request->renewers, "*/CN=");
-		printf ("gnu-optarg  %s\n", gnu_optarg);
+		myproxy_log (DBG_HI, debug_level,"gnu-optarg  %s\n", gnu_optarg);
 		request->renewers = strcat (request->renewers,gnu_optarg);
 	    }
 	    break;
 	case 'x':   /*set expression type to regex*/
 	    expr_type = REGULAR_EXP;
-	    printf ("expr-type = %d\n", expr_type);
+	    myproxy_log(DBG_HI, debug_level,"expr-type = %d\n", expr_type);
 	    break;
 	case 'X':   /*set expression type to common name*/
 	    expr_type = MATCH_CN_ONLY;
-	    printf ("expr-type = %d\n", expr_type);
+	    myproxy_log(DBG_HI, debug_level, "expr-type = %d\n", expr_type);
 	    break;
 	case 'a':  /*allow anonymous retrievers*/
 	    request->retrievers = strdup ("*");

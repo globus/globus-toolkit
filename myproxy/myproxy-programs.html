@@ -46,13 +46,13 @@ Programs</h3>
 Creates and sends a delegated proxy to myproxy-server for later retrieval.
 <h3>
 SYNOPSIS</h3>
-<b>myproxy-init</b> [{-h, -u}| {--help, --usage}] [-v | --version] [-l
-| --username <i>username</i>] [-c | --cred_lifetime <i>hours</i>] [-t |
---proxy_lifetime <i>hours</i>] [-s | --pshost <i>proxy server hostname</i>]
+<b>myproxy-init</b> [{-h, -u}| {--help, --usage}] [-D | --debug_level <i>level</i>][-v
+| --version] [-l | --username <i>username</i>] [-c | --cred_lifetime <i>hours</i>]
+[-t | --proxy_lifetime <i>hours</i>] [-s | --pshost <i>proxy server hostname</i>]
 [-p | --psport <i>proxy server port #</i>] [-n | --no_passphrase] [-d |
 --dn_as_username ] [-x | --regex_dn_match] [-X | --match_cn_only] [-a |&nbsp;
---allow_anonymous_retrievers] [-A&nbsp;| --allow_anonymous_renewers]&nbsp;
-[-r | --retrievable_by <i>dn </i>] [-R | --renewable_by <i>dn</i>]
+--allow_anonymous_retrievers] [-A | --allow_anonymous_renewers]&nbsp; [-r
+| --retrievable_by <i>dn </i>] [-R | --renewable_by <i>dn</i>]
 <h3>
 DESCRIPTION</h3>
 A user will first enter the passphrase necessary to create a proxy certificate.
@@ -70,6 +70,13 @@ OPTIONS</h3>
 <dl>
 <dt>
 -h | --help</dt>
+
+<dt>
+-D | --debug_level</dt>
+
+<dt>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Sets debug level. Valid values are 0,1,2</dt>
 
 <dt>
 -u | --usage</dt>
@@ -149,7 +156,7 @@ only Common Name (CN).</dd>
 Allow anonymous retrievers to access credential for retrieval.</dd>
 
 <dt>
--A&nbsp;| --allow_anonymous_renewers</dt>
+-A | --allow_anonymous_renewers</dt>
 
 <dd>
 Allow anonymous renewers to access credential for renewal.</dd>
@@ -352,6 +359,13 @@ OPTIONS</h3>
 <dl>
 <dt>
 -h | --help</dt>
+
+<dt>
+-D| --debug_level</dt>
+
+<dt>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Sets debug level. Valid values are 0,1,2</dt>
 
 <dt>
 -u | --usage</dt>
