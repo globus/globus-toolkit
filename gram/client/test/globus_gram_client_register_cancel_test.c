@@ -83,7 +83,11 @@ int main(int argc, char *argv[])
 
     if(monitor.state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE)
     {
-	rc = globus_gram_client_job_cancel(job_contact);
+	rc = globus_gram_client_register_job_cancel(
+		job_contact,
+		gram_state_callback,
+		&monitor);
+
 	if(rc != GLOBUS_SUCCESS)
 	{
 	    fprintf(stderr,

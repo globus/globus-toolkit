@@ -60,7 +60,9 @@ int main(int argc, char *argv[])
     globus_mutex_lock(&monitor.mutex);
     rc = globus_gram_client_job_request(
 	    argv[1],
-	    "&(executable=/bin/sleep)(arguments=300)",
+	    "&(executable=random_sleeper)(arguments=5)"
+	    "(stdout=$(GLOBUS_CACHED_STDOUT))"
+	    "(stderr=$(GLOBUS_CACHED_STDERR))",
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
 	    callback_contact,
 	    &job_contact);
@@ -83,7 +85,13 @@ int main(int argc, char *argv[])
 
     if(monitor.state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE)
     {
-	rc = globus_gram_client_job_cancel(job_contact);
+	rc = globus_gram_client_job_signal(
+		job_contact,
+		GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE,
+		"&(stdout=updated_output)
+		  (stderr=updated_err)",
+		  NULL,
+		  NULL);
 	if(rc != GLOBUS_SUCCESS)
 	{
 	    fprintf(stderr,
@@ -100,10 +108,6 @@ int main(int argc, char *argv[])
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
-    if(rc == GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED)
-    {
-	rc = GLOBUS_SUCCESS;
-    }
 destroy_callback_contact:
     globus_gram_client_callback_disallow(callback_contact);
     globus_libc_free(callback_contact);

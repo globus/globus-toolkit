@@ -110,7 +110,7 @@ callback_func(void * user_callback_arg,
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
         globus_mutex_lock(&Monitor->mutex);
         Monitor->done = GLOBUS_TRUE;
-	Monitor->errorcode = state;
+	Monitor->errorcode = errorcode;
         globus_cond_signal(&Monitor->cond);
         globus_mutex_unlock(&Monitor->mutex);
 	break;
