@@ -257,7 +257,7 @@ globus_l_xio_open_close_callback_kickout(
                     /* ignore result code.  user should be more interested in
                         result from callback */
                     target->entry[ctr].driver->target_destroy_func(
-                            op->entry[ctr].target);
+                            target->entry[ctr].target);
                 }
             }
             globus_free(target);
