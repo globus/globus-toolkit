@@ -371,7 +371,7 @@ globus_l_gsp_959_panic(
             break;
     }
 
-    globus_gridftp_server_pmod_error(handle->server, res);
+    globus_gridftp_server_pmod_done(handle->server, res);
 }
 
 void
@@ -562,7 +562,7 @@ globus_l_gsp_959_read_callback(
                          *  cancel the outstanding command.  In its callback
                          *  we flush the q and respond to the ABOR
                          */
-                        res = globus_gridftp_server_command_cancel(
+                        res = globus_gridftp_server_pmod_command_cancel(
                                 handle->server);
                     }
                     if(res != GLOBUS_SUCCESS)
@@ -782,7 +782,7 @@ globus_l_gsp_959_stop(
     return GLOBUS_SUCCESS;
 }
 
-globus_result_t
+void
 globus_gs_pmod_959_finished_op(
     globus_gs_pmod_959_op_t                 op,
     globus_result_t                         result)

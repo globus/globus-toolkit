@@ -340,3 +340,28 @@ globus_gridftp_server_attr_command_add(
 
     return res;
 }
+
+globus_result_t
+globus_gridftp_server_attr_set_done(
+    globus_gridftp_server_attr_t            server_attr,
+    globus_gridftp_server_callback_t        done_cb)
+{
+    globus_i_gs_attr_t *                    attr;
+    globus_result_t                         res;
+    GlobusGridFTPServerName(globus_gridftp_server_attr_set_done);
+
+    if(server_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server_attr");
+        goto err;
+    }
+    attr = (globus_i_gs_attr_t *) server_attr;
+
+    attr->done_func = done_cb;
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
+}

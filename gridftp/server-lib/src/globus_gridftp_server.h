@@ -18,11 +18,18 @@ typedef struct globus_i_gs_attr_s *         globus_gridftp_server_attr_t;
 typedef struct globus_i_gs_data_s *         globus_gridftp_server_data_t;
 typedef struct globus_i_gs_op_s *           globus_gridftp_server_operation_t;
 
+typedef time_t                              globus_time_t;
 
 typedef struct globus_gridftp_server_stat_s
 {
-    globus_size_t                           size;
-    int                                     type;
+    int                                     st_mode;
+    uid_t                                   st_uid;
+    gid_t                                   st_gid;
+    dev_t                                   st_rdev;
+    globus_size_t                           st_size;
+    globus_time_t                           mtime;
+    globus_time_t                           atime;
+    globus_time_t                           ctime;
 } globus_gridftp_server_stat_t;
 
 /*
@@ -33,7 +40,7 @@ typedef enum globus_gridftp_server_protocol_e
 {
     GLOBUS_GRIDFTP_SERVER_PROTOCOL_FTP,
     GLOBUS_GRIDFTP_SERVER_PROTOCOL_GSIFTP,
-    GLOBUS_GRIDFTP_SERVER_PROTOCOL_SOAP, /* doesn't exist */
+    GLOBUS_GRIDFTP_SERVER_PROTOCOL_SOAP,
 } globus_gridftp_server_protocol_t;
 
 typedef enum globus_gridftp_server_session_command_e
@@ -74,11 +81,6 @@ typedef globus_result_t
     int                                     mask);
 
 typedef globus_result_t
-(*globus_gridftp_server_error_func_t)(
-    globus_gridftp_server_t                 server,
-    globus_result_t                         res);
-
-typedef globus_result_t
 (*globus_gridftp_server_cmd_func_t)(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
@@ -103,6 +105,15 @@ typedef globus_result_t
  *  the callback passed into that function returns, no more callbacks will
  *  be dispatched.
  **************************************************************************/
+
+/**
+ *  generic server callback
+ */
+typedef void
+(*globus_gridftp_server_callback_t)(
+    globus_gridftp_server_t                 server,
+    globus_result_t                         res,
+    void *                                  user_arg);
 
 /*
  *  attrs
@@ -150,6 +161,16 @@ globus_gridftp_server_attr_command_add(
     void *                                  user_arg,
     globus_bool_t                           auth_required,
     globus_bool_t                           refresh);
+
+globus_result_t
+globus_gridftp_server_attr_set_error(
+    globus_gridftp_server_attr_t            server_attr,
+    globus_gridftp_server_callback_t        error_cb);
+
+globus_result_t
+globus_gridftp_server_attr_set_done(
+    globus_gridftp_server_attr_t            server_attr,
+    globus_gridftp_server_callback_t        done_cb);
 
 /*
  *  globus_gridftp_server_init
@@ -217,15 +238,6 @@ globus_gridftp_server_start(
     globus_gridftp_server_t                 server,
     globus_gridftp_server_attr_t            attr,
     globus_xio_handle_t                     xio_handle,
-    void *                                  user_arg);
-
-/**
- *  generic server callback
- */
-typedef void
-(*globus_gridftp_server_callback_t)(
-    globus_gridftp_server_t                 server,
-    globus_result_t                         res,
     void *                                  user_arg);
 
 /**
@@ -337,10 +349,6 @@ globus_result_t
 globus_gridftp_server_get_auth_cb(
     globus_gridftp_server_t                 server,
     globus_gridftp_server_auth_callback_t * auth_cb);
-
-globus_result_t
-globus_gridftp_server_command_cancel(
-    globus_gridftp_server_t                 server);
 
 /***************************************************************************
  *                      user callbacks
@@ -557,6 +565,8 @@ globus_gridftp_server_pmod_command(
 
 /*
  *  cancel all outstanding commands
+ * 
+ *  TODO:  implement this
  */
 globus_result_t
 globus_gridftp_server_pmod_command_cancel(
@@ -568,7 +578,7 @@ globus_gridftp_server_pmod_command_cancel(
  *  function.
  */
 globus_result_t
-globus_gridftp_server_pmod_error(
+globus_gridftp_server_pmod_done(
     globus_gridftp_server_t                 server,
     globus_result_t                         res);
 

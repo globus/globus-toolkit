@@ -261,7 +261,7 @@ globus_gridftp_server_finished_resource(
                 out_string = (char **) va_arg(ap, char **);
                 /* allow the user to get away with pushing in multiple
                     stats by only looking at the first one */
-                if(!IS_DIR(stat_info_array[0].type))
+                if(!S_ISDIR(stat_info_array[0].st_rdev))
                 {
                     *out_string = NULL;
                     res = GlobusGridFTPServerErrorParameter("out_string");

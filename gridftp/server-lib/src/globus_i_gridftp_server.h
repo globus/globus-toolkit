@@ -194,7 +194,7 @@ typedef struct globus_i_gs_server_s
 
     globus_gridftp_server_callback_t        user_stop_func;
     globus_gridftp_server_resource_func_t   resource_func;
-    globus_gridftp_server_error_func_t      user_error_func;
+    globus_gridftp_server_callback_t        done_func;
 } globus_i_gs_server_t;
 
 typedef struct globus_i_gs_command_entry_s
@@ -242,7 +242,7 @@ typedef struct globus_i_gs_attr_s
     globus_hashtable_t                      recv_func_table;
     globus_hashtable_t                      command_func_table;
     globus_gridftp_server_resource_func_t   resource_func;
-    globus_gridftp_server_error_func_t      error_func;
+    globus_gridftp_server_callback_t        done_func;
     globus_i_gridftp_server_pmod_t *        pmod;
     globus_i_gs_state_t                     start_state;
 } globus_i_gs_attr_t;

@@ -8,7 +8,7 @@ struct globus_l_gsp_959_read_ent_s;
 typedef struct globus_l_gsp_959_handle_s *  globus_gs_pmod_959_handle_t;
 typedef struct globus_l_gsp_959_read_ent_s * globus_gs_pmod_959_op_t;
 
-globus_result_t
+void
 globus_gs_pmod_959_finished_op(
     globus_gs_pmod_959_op_t                 op,
     globus_result_t                         result);

@@ -16,18 +16,18 @@ do                                                                      \
     globus_assert(_res == GLOBUS_SUCCESS); /* don't do this */          \
 } while(0)
 
-#define GlobusGSUserErrorKickout(_in_server)                            \
+#define GlobusGSUserDoneKickout(_in_server)                             \
 do                                                                      \
 {                                                                       \
     globus_result_t                         _res;                       \
                                                                         \
-    if(_in_server->user_error_func != NULL)                             \
+    if(_in_server->done_func != NULL)                                   \
     {                                                                   \
         _in_server->ref++;                                              \
         _res = globus_callback_space_register_oneshot(                  \
                     NULL,                                               \
                     NULL,                                               \
-                    globus_l_gs_user_error_kickout,                     \
+                    globus_l_gs_user_done_kickout,                      \
                     (void *)_in_server,                                 \
                     GLOBUS_CALLBACK_GLOBAL_SPACE);                      \
         globus_assert(_res == GLOBUS_SUCCESS); /* don't do this */      \
@@ -71,7 +71,7 @@ globus_l_gs_user_stop_kickout(
     void *                                  user_arg);
 
 static void
-globus_l_gs_user_error_kickout(
+globus_l_gs_user_done_kickout(
     void *                                  user_arg);
 
 void
@@ -104,6 +104,8 @@ globus_module_descriptor_t      globus_i_gridftp_server_module =
  */
 globus_hashtable_t                      globus_i_gs_default_attr_command_hash;
 globus_gridftp_server_attr_t            globus_l_gs_default_attr;
+
+GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER);
 
 static int
 globus_l_gs_activate()
@@ -254,7 +256,7 @@ globus_gridftp_server_start(
         globus_hashtable_copy(
             &i_server->recv_table, &i_attr->recv_func_table, NULL);
         i_server->resource_func = i_attr->resource_func;
-        i_server->user_error_func = i_attr->error_func;
+        i_server->done_func = i_attr->done_func;
 
         /* can bypass _AUTH state ad go directly to _OPEN */
         i_server->state = i_attr->start_state;
@@ -474,7 +476,7 @@ globus_l_gs_operation_destroy(
 }
 
 void
-globus_gridftp_server_operation_finished_cmd(
+globus_gridftp_server_finished_cmd(
     globus_gridftp_server_operation_t       op,
     globus_result_t                         result,
     globus_bool_t                           complete)
@@ -495,6 +497,13 @@ globus_gridftp_server_operation_finished_cmd(
     {
         globus_l_gs_next_command(i_op);
     }
+}
+
+globus_result_t
+globus_gridftp_server_pmod_command_cancel(
+    globus_gridftp_server_t                 server)
+{
+    return GLOBUS_SUCCESS;
 }
 
 /*************************************************************************
@@ -929,19 +938,20 @@ globus_l_gs_protocol_stop_callback(
 }
 
 void
-globus_l_gs_user_error_kickout(
+globus_l_gs_user_done_kickout(
     void *                                  user_arg)
 {
     globus_i_gs_server_t *                  i_server;
 
     i_server = (globus_i_gs_server_t *) user_arg;
 
-    globus_assert(i_server->user_error_func != NULL &&
+    globus_assert(i_server->done_func != NULL &&
         "should not have been registered if null");
     /* call the users callback.  They will call back in when done stoping */
-    i_server->user_error_func(
+    i_server->done_func(
         i_server,
-        i_server->cached_res);
+        i_server->cached_res,
+        i_server->user_arg);
 
     globus_l_gs_callback_return(i_server);
 }
@@ -1059,7 +1069,7 @@ globus_gridftp_server_pmod_command(
  *  called by the protocol module when an error occurs
  */
 globus_result_t
-globus_gridftp_server_pmod_error(
+globus_gridftp_server_pmod_done(
     globus_gridftp_server_t                 server,
     globus_result_t                         result)
 {
@@ -1076,9 +1086,10 @@ globus_gridftp_server_pmod_error(
             case GLOBUS_L_GS_STATE_OPEN:
             case GLOBUS_L_GS_STATE_USER_AUTH:
             case GLOBUS_L_GS_STATE_AUTH:
+                i_server->cached_res = result;
                 i_server->state = GLOBUS_L_GS_STATE_ERROR;
                 /* start the stop process for protocol module */
-                GlobusGSUserErrorKickout(i_server);
+                GlobusGSUserDoneKickout(i_server);
                 res = GLOBUS_SUCCESS;
                 break;
 
