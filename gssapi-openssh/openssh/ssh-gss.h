@@ -32,6 +32,7 @@
 
 #include <gssapi.h>
 
+#ifndef MECHGLUE
 #ifdef KRB5
 #ifndef HEIMDAL
 #include <gssapi_generic.h>
@@ -43,6 +44,7 @@
 #endif /* GSS_C_NT_... */
 #endif /* !HEIMDAL */
 #endif /* KRB5 */
+#endif /* !MECHGLUE */
 
 /* draft-ietf-secsh-gsskeyex-03 */
 #define SSH2_MSG_KEXGSS_INIT				30
