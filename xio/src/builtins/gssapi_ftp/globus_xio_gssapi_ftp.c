@@ -1,4 +1,5 @@
 #include "globus_xio_driver.h"
+#include "globus_xio_ftp_cmd.h"
 #include "globus_xio_load.h"
 #include "globus_common.h"
 #include "globus_error_string.h"
@@ -49,6 +50,7 @@ enum globus_l_xio_error_levels
 
 #define GSSAPI_FTP_DEFAULT_BUFSIZE 1024
 
+static globus_xio_driver_t              globus_l_gssapi_ftp_cmd_driver = NULL;
 static char                             globus_l_xio_gssapi_ftp_pad = '=';
 static char *                           globus_l_xio_gssapi_ftp_radix_n =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -108,30 +110,25 @@ typedef struct globus_l_xio_gssapi_ftp_handle_s
     char *                              host;
     char *                              subject;
 
-    char **                             banner;
+    char *                              banner;
+    int                                 banner_length;
 
     globus_i_xio_gssapi_ftp_state_t     state;
 
     globus_bool_t                       client;
 
-    globus_fifo_t                       read_command_q;
     globus_bool_t                       read_posted;
 
-    globus_bool_t                       super_mode;
-    globus_xio_iovec_t                  read_iov;
-    globus_byte_t *                     read_buffer;
-    globus_size_t                       read_buffer_length;
-    globus_size_t                       read_buffer_ndx;
-    globus_fifo_t                       read_req_q;
-    globus_fifo_t                       unwrapped_q;
- 
+    globus_mutex_t                      mutex;
+
+    globus_xio_iovec_t                  auth_read_iov;
+    globus_xio_iovec_t                  auth_write_iov;
+    globus_xio_iovec_t *                read_iov;
     globus_xio_iovec_t *                write_iov;
-    globus_size_t                       write_iov_count;
     globus_size_t                       write_iov_size;
+
     globus_byte_t *                     write_buffer;
     globus_size_t                       write_buffer_length;
-    globus_size_t                       write_buffer_ndx;
-    globus_size_t                       write_sent_length;
     globus_bool_t                       write_posted;
 } globus_l_xio_gssapi_ftp_handle_t;
 
@@ -143,21 +140,7 @@ typedef struct globus_l_xio_gssapi_attr_s
     globus_bool_t                       encrypt;
     char *                              subject;
     globus_i_xio_gssapi_ftp_state_t     start_state;
-    globus_bool_t                       super_mode;
 } globus_l_xio_gssapi_attr_t;
-
-typedef struct globus_l_xio_gssapi_read_req_s
-{
-    globus_xio_iovec_t *                iov;
-    int                                 iovc;
-} globus_l_xio_gssapi_read_req_t;
-
-typedef struct globus_l_xio_gssapi_buffer_s
-{
-    globus_size_t                       length;
-    globus_size_t                       ndx;
-    globus_byte_t *                     buf;
-} globus_l_xio_gssapi_buffer_t;
 
 /**************************************************************************
  *                    function prototypes
@@ -170,27 +153,21 @@ static int
 globus_l_xio_gssapi_ftp_deactivate();
 
 static void
-globus_l_xio_gssapi_ftp_server_open_reply_cb(
+globus_l_xio_gssapi_ftp_preauth_client_read_cb(
     globus_xio_operation_t              op,
     globus_result_t                     result,
     globus_size_t                       nbytes,
     void *                              user_arg);
 
 static void
-globus_l_xio_gssapi_ftp_read_cb(
+globus_l_xio_gssapi_ftp_auth_server_write_cb(
     globus_xio_operation_t              op,
     globus_result_t                     result,
     globus_size_t                       nbytes,
     void *                              user_arg);
 
-static globus_result_t
-globus_l_xio_gssapi_ftp_server_incoming(
-    globus_l_xio_gssapi_ftp_handle_t *  handle,
-    globus_xio_operation_t              op,
-    char **                             cmd_a);
-
 static void
-globus_l_xio_gssapi_ftp_client_open_reply_cb(
+globus_l_xio_gssapi_ftp_user_server_write_cb(
     globus_xio_operation_t              op,
     globus_result_t                     result,
     globus_size_t                       nbytes,
@@ -207,15 +184,6 @@ globus_result_t
 globus_l_xio_gssapi_ftp_client_incoming(
     globus_l_xio_gssapi_ftp_handle_t *  handle,
     globus_xio_operation_t              op,
-    char **                             cmd_a);
-
-globus_result_t
-globus_l_xio_gssapi_finshed_read(
-    globus_l_xio_gssapi_ftp_handle_t *  handle,
-    globus_xio_operation_t              op);
-
-char **
-globus_l_xio_gssapi_ftp_command_array_copy(
     char **                             cmd_a);
 
 /**************************************************************************
@@ -240,77 +208,25 @@ static globus_module_descriptor_t       globus_i_xio_gssapi_ftp_module =
  *
  *  A variety of operations use these function.
  ***********************************************************************/
-/*
- *  given a buffer this function will tell you if it contains a 
- *  complete command.
- */
-globus_bool_t
-globus_l_xio_gssapi_ftp_complete_command(
-    globus_byte_t *                     buffer,
-    globus_size_t                       length,
-    globus_bool_t                       client,
-    globus_size_t *                     end_offset)
+static globus_result_t
+globus_l_xio_gssapi_ftp_push_driver(
+    globus_xio_driver_t                 driver,
+    globus_xio_stack_t                  stack)
 {
-    globus_byte_t *                     tmp_ptr;
-    globus_size_t                       end_off;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_complete_command);
+    globus_result_t                     res;
 
-    GlobusXIOGssapiftpDebugEnter();
-
-    /* all a 0 length to be passed */
-    if(length == 0)
+    res = globus_xio_stack_push_driver(stack, globus_l_gssapi_ftp_cmd_driver);
+    if(res != GLOBUS_SUCCESS)
     {
-        GlobusXIOGssapiftpDebugExit();
-        return GLOBUS_FALSE;
+        return res;
+    }
+    res = globus_xio_stack_push_driver(stack, driver);
+    {
+        return res;
     }
 
-    tmp_ptr = globus_libc_memrchr(buffer, '\r', length);
-    /* IF There is no '\r' */
-    if(tmp_ptr == NULL)
-    {
-        GlobusXIOGssapiftpDebugExit();
-        return GLOBUS_FALSE;
-    }
-    end_off = tmp_ptr - buffer;
-
-    /* if the '\r' is the last character, or the next isn't '\n' */
-    if(end_off == length - 1 || tmp_ptr[1] != '\n')
-    {
-        GlobusXIOGssapiftpDebugExit();
-        return GLOBUS_FALSE;
-    }
-
-    /* if server we are done as soon as we get \r\n */
-    if(!client)
-    {
-        *end_offset = end_off;
-        GlobusXIOGssapiftpDebugExit();
-        return GLOBUS_TRUE;
-    }
-
-    /* server must check for continuation commands */
-    tmp_ptr = globus_libc_memrchr(buffer, '\r', end_off - 1);
-    /* if not found just check from start */
-    if(tmp_ptr == NULL)
-    {
-        tmp_ptr = buffer;
-    }
-    else
-    {
-        tmp_ptr += 2; /* move beyound \r\n */
-    }
-    /* if 4th colums is a space and first is a number we are done */
-    if(tmp_ptr[3] == ' ' && isdigit(tmp_ptr[0]))
-    {
-        *end_offset = end_off;
-        GlobusXIOGssapiftpDebugExit();
-        return GLOBUS_TRUE;
-    }
-
-    GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_FALSE;
+    return GLOBUS_SUCCESS;
 }
-
 
 /*
  *  allocate the memory for and initialize an internal handle
@@ -330,53 +246,28 @@ globus_l_xio_gssapi_ftp_handle_create()
                 globus_libc_malloc(sizeof(globus_l_xio_gssapi_ftp_handle_t));
     if(handle == NULL)
     {
-	goto err; 	
+        goto err;
     }
+    handle->auth_read_iov.iov_base = (void *) 0x10;
+    handle->auth_read_iov.iov_len = 1;
     handle->gssapi_context = GSS_C_NO_CONTEXT;
     handle->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
     handle->encrypt = GLOBUS_FALSE;
     handle->host = NULL;
-    handle->super_mode = GLOBUS_FALSE;
     handle->subject = NULL;
     handle->target_name = GSS_C_NO_NAME;
+    globus_mutex_init(&handle->mutex, NULL);
 
     /* read data members */
-    globus_fifo_init(&handle->read_command_q);
     handle->read_posted = GLOBUS_FALSE;
     handle->write_posted = GLOBUS_FALSE;
 
-    /* allocate a static buffer for reading in commands.  Since only
-       one read is passed down at a  time. */
-    handle->read_buffer = globus_malloc(GSSAPI_FTP_DEFAULT_BUFSIZE);
-    if(handle->read_buffer == NULL)
-    {
-        globus_free(handle);
-	goto err;
-    }
-    handle->read_buffer_length = GSSAPI_FTP_DEFAULT_BUFSIZE;
-    handle->read_buffer_ndx = 0;
-    globus_fifo_init(&handle->read_req_q);
-    globus_fifo_init(&handle->unwrapped_q);
-
-    /* write data members */
-    handle->write_iov_size = 2;
-    handle->write_iov = (globus_xio_iovec_t *) 
-        globus_malloc(sizeof(globus_xio_iovec_t) * handle->write_iov_size);
-    if(handle->write_iov == NULL)
-    {
-        globus_free(handle->read_buffer);
-        globus_free(handle);
-	goto err;
-    }
-    handle->write_buffer_ndx = 0;
     handle->write_buffer_length = GSSAPI_FTP_DEFAULT_BUFSIZE;
     handle->write_buffer = globus_malloc(GSSAPI_FTP_DEFAULT_BUFSIZE);
     if(handle->write_buffer == NULL)
     {
-        globus_free(handle->read_buffer);
-        globus_free(handle->write_iov);
         globus_free(handle);
-	goto err;
+        goto err;
     }
 
     GlobusXIOGssapiftpDebugExit();
@@ -421,12 +312,7 @@ globus_l_xio_gssapi_ftp_handle_destroy(
             GLOBUS_NULL);
     }
 
-    globus_free(handle->read_buffer);
     globus_free(handle->write_buffer);
-    globus_free(handle->write_iov);
-    globus_fifo_destroy(&handle->read_req_q);
-    globus_fifo_destroy(&handle->unwrapped_q);
-    globus_fifo_destroy(&handle->read_command_q);
 
     globus_free(handle);
     GlobusXIOGssapiftpDebugExit();
@@ -438,7 +324,7 @@ globus_l_xio_gssapi_ftp_handle_destroy(
  *
  *  TODO: move this to globus common
  */
-globus_result_t
+static globus_result_t
 globus_l_xio_gssapi_ftp_radix_decode(
     const unsigned char  *              inbuf,
     globus_byte_t *                     outbuf,
@@ -586,7 +472,7 @@ globus_l_xio_gssapi_ftp_radix_encode(
  *  tokenze a bufer based on the globus ftp protocol.  White space will
  *  seperate tokens and DRLF will be removed from them.
  */
-globus_byte_t *
+static globus_byte_t *
 globus_l_xio_gssapi_ftp_token(
     globus_byte_t *                     in_str,
     globus_size_t                       length,
@@ -623,858 +509,6 @@ globus_l_xio_gssapi_ftp_token(
     GlobusXIOGssapiftpDebugExit();
     return start_ptr;
 }
-
-/*
- *  tokenize a command into a null teminated array of strings.  If the
- *  command being tokenized is a reply from the server this code will
- *  remove all continuation headers (631-) and the first element in the
- *  finally tokenized reply array will be the reply number.
- */
-globus_result_t
-globus_l_xio_gssapi_ftp_parse_command(
-    globus_byte_t *                     command,
-    globus_size_t                       length,
-    globus_bool_t                       client,
-    char ***                            out_cmd_a)
-{
-    char *                              tmp_ptr;
-    char **                             cmd_a = NULL;
-    int                                 cmd_len = 16;
-    int                                 ctr;
-    globus_size_t                       start_ndx;
-    globus_result_t                     res;
-    globus_size_t                       len;
-    globus_size_t                       sub_len;
-    globus_bool_t                       multi = GLOBUS_FALSE;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_parse_command);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    *out_cmd_a = NULL;
-    /* validate the entire command */
-    for(len = 0; len < length; len++)
-    {
-        if(!isalnum(command[len]) && !isspace(command[len]) && 
-            command[len] != '\r' && command[len] != '\n')
-        {
-            /* TODO: deal with this */
-        }
-    }
-
-    cmd_a = (char **) globus_malloc(sizeof(char *) * cmd_len);
-    if(cmd_a == NULL)
-    {
-        res = GlobusXIOGssapiFTPAllocError();
-	goto err;
-    }
-
-    len = length;
-    ctr = 0;
-    tmp_ptr = globus_l_xio_gssapi_ftp_token(
-        command, len, &start_ndx, &sub_len);
-    while(tmp_ptr != NULL)
-    {
-        len -= start_ndx; /* start ndx is removed from the front */
-        /* special handling for multiplart commands */
-        if(client)
-        {
-            /* if this will be a multipart command */
-            if(ctr == 0 && tmp_ptr[3] == '-')
-            {
-                cmd_a[ctr] = globus_libc_strndup(tmp_ptr, 3);
-                multi = GLOBUS_TRUE;
-                len -= 4;
-                tmp_ptr += 4;
-                sub_len -= 4;
-                ctr++;
-            }
-            /* if a continuation line move past the start */
-            else if(multi && sub_len >= 3 &&
-                    strncmp(cmd_a[0], tmp_ptr, 3) == 0)
-            {
-                if(tmp_ptr[3] == ' ')
-                {
-                    len -= 4;
-                    tmp_ptr = globus_l_xio_gssapi_ftp_token(
-                        &tmp_ptr[4], len, &start_ndx, &sub_len);
-                }
-                else if(tmp_ptr[3] == '-')
-                {
-                    len -= 4;
-                    tmp_ptr += 4;
-                    sub_len -= 4;
-                }
-                /* feat is returning continuation commands that look strabge
-                   this allows it to work, but TODO: verifiy server is 
-                   correct */
-                else
-                {
-                    len -= 4;
-                    tmp_ptr += 4;
-                    sub_len -= 4;
-                }
-            }
-        }
-        cmd_a[ctr] = globus_libc_strndup(
-            tmp_ptr, sub_len);
-        len -= sub_len;
-        tmp_ptr += sub_len;
-        tmp_ptr = globus_l_xio_gssapi_ftp_token(
-            tmp_ptr, len, &start_ndx, &sub_len);
-        ctr++;
-        if(ctr == cmd_len)
-        {
-            cmd_len *= 2;
-            cmd_a = (char **) globus_libc_realloc(cmd_a,
-                                sizeof(char *) * cmd_len);
-        }
-    }
-    cmd_a[ctr] = NULL;
-
-    *out_cmd_a = cmd_a;
-
-    GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_SUCCESS;
-
-err:
-    GlobusXIOGssapiftpDebugExitWithError();
-    return res;
-}
-
-/*
- *  turn a command array back into a sericalized buffer
- */
-globus_result_t
-globus_l_xio_gssapi_ftp_serialize_command_array(
-    char **                             cmd_a,
-    globus_byte_t *                     out_buffer,
-    globus_size_t                       buffer_length)
-{
-    int                                 ctr;
-    globus_size_t                       len = 0;
-    globus_size_t                       ndx = 0;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_serialize_command_array);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    for(ctr = 0; cmd_a[ctr] != NULL; ctr++)
-    {
-        len = strlen(cmd_a[ctr]);
-        if(len + ndx + 1 > buffer_length)
-        {
-	    goto err;
-        }
-        memcpy(&out_buffer[ndx], cmd_a[ctr], len); 
-        ndx += len;
-        out_buffer[ndx] = ' ';
-        ndx++;
-    }
-    out_buffer[ndx - 1] = '\r';
-    out_buffer[ndx] = '\n';
-    out_buffer[ndx + 1] = '\0';
-
-    GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_SUCCESS;
-
-err:
-
-    GlobusXIOGssapiftpDebugExitWithError();
-    return GlobusXIOGssapiFTPAllocError();
-}
-
-/*
- *  return he buffer length needed to serialize a command array
- */
-globus_size_t
-globus_l_xio_gssapi_ftp_command_array_size(
-    char **                             cmd_a)
-{
-    int                                 ctr;
-    globus_size_t                       len = 0;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_command_array_size);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    for(ctr = 0; cmd_a[ctr] != NULL; ctr++)
-    {
-        len += strlen(cmd_a[ctr]);
-        len++; /* for a space */
-    }
-    len += 2; /* for CRLF */
-
-    GlobusXIOGssapiftpDebugExit();
-    return len;
-}
-
-/*
- *  return he buffer length needed to serialize a command array
- */
-char **
-globus_l_xio_gssapi_ftp_command_array_copy(
-    char **                             cmd_a)
-{
-    char **                             out_cmd_a;
-    int                                 ctr;
-    globus_size_t                       size;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_command_array_copy);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    size = globus_l_xio_gssapi_ftp_command_array_size(cmd_a);
-
-
-    for(ctr = 0; cmd_a[ctr] != NULL; ctr++)
-    {
-    }
-    size = ctr + 1;
-    out_cmd_a = (char **) globus_malloc(sizeof(char **) * size);
-
-    for(ctr = 0; cmd_a[ctr] != NULL; ctr++)
-    {
-        out_cmd_a[ctr] = globus_libc_strdup(cmd_a[ctr]);
-    }
-    out_cmd_a[ctr] = NULL;
-
-    GlobusXIOGssapiftpDebugExit();
-    return out_cmd_a;
-}
-
-
-/*
- *  take a wrapped buffer and decode and unwrap it.  The caller is 
- *  responsible for freeing the out buffer if the function returns 
- *  successfully.
- */
-globus_result_t
-globus_l_xio_gssapi_ftp_unwrap(
-    globus_l_xio_gssapi_ftp_handle_t *  handle,
-    const char  *                       in_buf,
-    globus_size_t                       in_length,
-    char **                             out_buffer)
-{
-    globus_result_t                     res;
-    gss_buffer_desc                     wrapped_token;
-    gss_buffer_desc                     unwrapped_token;
-    OM_uint32                           maj_stat;
-    OM_uint32                           min_stat;
-    globus_byte_t *                     buf;
-    globus_size_t                       len;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_unwrap);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    /* allocate out buffer same size as in, assuming unwrap will be samller */
-    buf =  globus_malloc(in_length);
-    if(buf == NULL)
-    {
-        goto err;
-    }
-    len = in_length;
-
-    res = globus_l_xio_gssapi_ftp_radix_decode(in_buf, buf, &len);
-    if(res != GLOBUS_SUCCESS)
-    {
-        res = GlobusXIOGssapiFTPAllocError();
-        globus_free(buf);
-        goto err;
-    }
-
-    wrapped_token.value = buf;
-    wrapped_token.length = len;
-
-    maj_stat = gss_unwrap(
-                    &min_stat,
-                    handle->gssapi_context,
-                    &wrapped_token,
-                    &unwrapped_token,
-                    NULL,
-                    NULL);
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
-        globus_free(buf);
-        goto err;
-    }
-
-    /* copy the unwrapped token in */
-    memcpy(buf, unwrapped_token.value, unwrapped_token.length);
-    len = unwrapped_token.length;
-
-    /* get rid of terminating NULL */
-    if(buf[len - 1] == '\0')
-    {
-        len--;
-    }
-    buf[len] = '\0';
-
-    *out_buffer = (char *) buf;
-
-    gss_release_buffer(&min_stat, &unwrapped_token);
-
-    GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_SUCCESS;
-
-  err:
-
-    GlobusXIOGssapiftpDebugExitWithError();
-    return res;
-}
-
-/*
- *  wrap a command with gssapi encoding then base 64 encode it.  If the
- *  function returns successfully the caller is responsible for freeing
- *  the out_buffer.  The out buffer is formed into a ftp buffer based on
- *  values in the handle.  ex: if client starts with MIC or ENC. if server
- *  starts with 631 or 632
- */
-globus_result_t
-globus_l_xio_gssapi_ftp_wrap(
-    globus_l_xio_gssapi_ftp_handle_t *  handle,
-    globus_byte_t  *                    in_buf, 
-    globus_size_t                       length,
-    char **                             out_buffer,
-    globus_bool_t                       client)
-{
-    char *                              encoded_buf;
-    int                                 conf_state;
-    gss_buffer_desc                     gss_in_buf;
-    gss_buffer_desc                     gss_out_buf;
-    OM_uint32                           maj_stat;
-    OM_uint32                           min_stat;
-    globus_result_t                     res;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_wrap);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    gss_in_buf.value = in_buf;
-    gss_in_buf.length = length;
-                                                                                
-    maj_stat = gss_wrap(&min_stat,
-                        handle->gssapi_context,
-                        0,
-                        GSS_C_QOP_DEFAULT,
-                        &gss_in_buf,
-                        &conf_state,
-                        &gss_out_buf);
-    if(maj_stat  != GSS_S_COMPLETE)
-    {
-        res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
-        goto err;
-    }
-
-    encoded_buf = (char *) 
-        globus_libc_malloc((gss_out_buf.length + 3) * 8 / 6 + 9);
-    if(encoded_buf == NULL)
-    {
-        gss_release_buffer(&min_stat, &gss_out_buf);
-        res = GlobusXIOGssapiFTPAllocError();
-        goto err;
-    }
-
-    if(client)
-    {
-        if(conf_state == 0)
-        {
-            memcpy(encoded_buf, "MIC ", 4);
-        }
-        else
-        {
-            memcpy(encoded_buf, "ENC ", 4);
-        }
-    }
-    else
-    {
-        if(conf_state == 0)
-        {
-            memcpy(encoded_buf, "631 ", 4);
-        }
-        else
-        {
-            memcpy(encoded_buf, "632 ", 4);
-        }
-    }
-
-    globus_l_xio_gssapi_ftp_radix_encode(
-        gss_out_buf.value,
-        gss_out_buf.length,
-        &encoded_buf[4],
-        &gss_out_buf.length);
-
-    encoded_buf[gss_out_buf.length+4]='\r';
-    encoded_buf[gss_out_buf.length+5]='\n';
-    encoded_buf[gss_out_buf.length+6]='\0';
-    *out_buffer = encoded_buf;
-
-    gss_release_buffer(&min_stat, &gss_out_buf);
-
-    GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_SUCCESS;
-
-  err:
-
-    GlobusXIOGssapiftpDebugExitWithError();
-    return res;
-}
-
-/*
- *  post a request for more data.  Data comes in via a call to 
- *  globus_l_xio_gssapi_ftp_client_incoming or 
- *  globus_l_xio_gssapi_ftp_server_incoming.  If the returns successfully
- *  the operation has been consumend by either a Pass or a Finsihed.
- *  This function should be called locked.
- */
-globus_result_t
-globus_l_xio_gssapi_get_data(
-    globus_l_xio_gssapi_ftp_handle_t *  handle,
-    globus_xio_operation_t              op)
-{
-    int                                 ctr;
-    char **                             cmd_a;
-    globus_result_t                     res;
-    GlobusXIOName(globus_l_xio_gssapi_get_data);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    /* if data is already available hand it off */
-    if(!globus_fifo_empty(&handle->read_command_q))
-    {
-        cmd_a = (char **) globus_fifo_dequeue(&handle->read_command_q);
-        if(handle->client)
-        {
-            res = globus_l_xio_gssapi_ftp_client_incoming(handle, op, cmd_a);
-        }
-        else
-        {
-            res = globus_l_xio_gssapi_ftp_server_incoming(handle, op, cmd_a);
-        }
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
-
-        for(ctr = 0; cmd_a[ctr] != NULL; ctr++)
-        {
-            globus_free(cmd_a[ctr]);
-        }
-        globus_free(cmd_a);
-    }
-    /* if no data is ready and we are not already waiting for it
-       post another read */
-    else if(!handle->read_posted)
-    {
-        /* if buffer is too small double it */
-        if(handle->read_buffer_ndx + 1 >= handle->read_buffer_length)
-        {
-            handle->read_buffer_length =
-                (handle->read_buffer_length + 1) * 2;
-            handle->read_buffer = globus_libc_realloc(
-                    handle->read_buffer,
-                    handle->read_buffer_length);
-        }
-        handle->read_iov.iov_base =
-            &handle->read_buffer[handle->read_buffer_ndx];
-        handle->read_iov.iov_len =
-            handle->read_buffer_length - handle->read_buffer_ndx;
-        res = globus_xio_driver_pass_read(
-            op,
-            &handle->read_iov,
-            1,
-            1,
-            globus_l_xio_gssapi_ftp_read_cb,
-            handle);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
-        handle->read_posted = GLOBUS_TRUE;
-    }
-
-    GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_SUCCESS;
-
-  err:
-
-    GlobusXIOGssapiftpDebugExitWithError();
-    return res;
-}
-
-/*
- *  continue to post more reads until a complete command is received.
- *  Once receive action will be based on current state.
- */
-static void
-globus_l_xio_gssapi_ftp_read_cb(
-    globus_xio_operation_t              op,
-    globus_result_t                     result,
-    globus_size_t                       nbytes,
-    void *                              user_arg)
-{
-    globus_l_xio_gssapi_ftp_handle_t *  handle;
-    globus_size_t                       end_off;
-    globus_bool_t                       complete = GLOBUS_TRUE;
-    globus_result_t                     res;
-    char **                             cmd_a;
-    globus_size_t                       remain;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_read_cb);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        res = result;
-        goto err;
-    }
-
-    /* read_posted flag makes sure that only 1 read is outstanding
-        at a time */
-    handle->read_posted = GLOBUS_FALSE;
-    handle->read_buffer_ndx += nbytes;
-    complete = globus_l_xio_gssapi_ftp_complete_command(
-                    handle->read_buffer,
-                    handle->read_buffer_ndx,
-                    handle->client,
-                    &end_off);
-    /*
-     *  go through every complete command in the buffer.  Most often
-     *  this will be only 1
-     */
-    while(complete)
-    {
-        /* null terminate teh command, overwritting the '\r' */
-        handle->read_buffer[end_off] = '\0';
-        /* tokenize the command */
-        globus_l_xio_gssapi_ftp_parse_command(
-                handle->read_buffer,
-                end_off,
-                handle->client,
-                &cmd_a);
-        if(cmd_a == NULL)
-        {
-            res = GlobusXIOGssapiFTPAllocError();
-            goto err;
-        }
-        globus_fifo_enqueue(&handle->read_command_q, cmd_a);
-
-        /* if we read beyound a command, move everything to the front */
-        remain = handle->read_buffer_ndx - end_off - 2;
-        /* reset the read pointer and move everything after the CRLF to
-            the begining of the buffer */
-        if(remain > 0)
-        {
-            memmove(
-                handle->read_buffer, 
-                &handle->read_buffer[end_off + 2],   
-                remain);
-        }
-        handle->read_buffer_ndx = remain;
-
-        /* see if there is another complate command in the buffer */
-        complete = globus_l_xio_gssapi_ftp_complete_command(
-                    handle->read_buffer,
-                    handle->read_buffer_ndx,
-                    handle->client,
-                    &end_off);
-    } /* end while */
-    /* either an event occured to process or we need to post again for 
-       the incomplete event */
-    res = globus_l_xio_gssapi_get_data(handle, op);
-
-    /* check error code of call to next command */
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
-
-    GlobusXIOGssapiftpDebugExit();
-    return;
-
-  err:
-
-    /* determine if this was part of a read operation or part of a open */
-    if(handle->state == GSSAPI_FTP_STATE_OPEN)
-    {
-        globus_xio_driver_finished_read(op, res, 0);
-    }
-    else
-    {
-        globus_xio_driver_finished_open(handle, op, res);
-    }
-    GlobusXIOGssapiftpDebugExitWithError();
-    return;
-}
-
-/************************************************************************
- *                  server open
- *                  -----------
- *
- *  This section contains the functions used by a server in openning 
- *  a handle.
- ***********************************************************************/
-/*
- *  when a full command comes in for the server this is called.
- */
-globus_result_t
-globus_l_xio_gssapi_ftp_server_incoming(
-    globus_l_xio_gssapi_ftp_handle_t *  handle,
-    globus_xio_operation_t              op,
-    char **                             cmd_a)
-{
-    char *                              out_buf;
-    char *                              msg;
-    globus_result_t                     res;
-    globus_bool_t                       complete;
-    globus_bool_t                       reply = GLOBUS_TRUE;
-    globus_l_xio_gssapi_buffer_t *      w_buf = NULL;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_server_incoming);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    if(globus_libc_strcmp(cmd_a[0], "QUIT") == 0)
-    {
-        msg = globus_libc_strdup(REPLY_221_QUIT);
-        handle->state = GSSAPI_FTP_STATE_SERVER_QUITING;
-    }
-    else
-    {
-        switch(handle->state)
-        {
-            /* verifiy that we can handle this auth type */
-            case GSSAPI_FTP_STATE_SERVER_READING_AUTH:
-                /* if command is not expected, stay in this state. */
-                if(globus_libc_strcmp(cmd_a[0], "AUTH") != 0)
-                {
-                    msg = globus_libc_strdup(REPLY_530_BAD_MESSAGE);
-                }
-                /* only accepting gssapi for now. may want to get 
-                   cleaver later */
-                else if(globus_libc_strcmp(cmd_a[1], "GSSAPI") != 0)
-                {
-                    msg = globus_libc_strdup(REPLY_504_BAD_AUTH_TYPE);
-                }
-                else
-                {
-                    handle->state = GSSAPI_FTP_STATE_SERVER_GSSAPI_READ;
-                    msg = globus_libc_strdup(REPLY_334_GOOD_AUTH_TYPE);
-                }
-
-            break;
-
-            /* on errors we stay in this state */
-            case GSSAPI_FTP_STATE_SERVER_READING_ADAT:
-                if(globus_libc_strcmp(cmd_a[0], "ADAT") != 0)
-                {
-                    msg = globus_libc_strdup(REPLY_530_EXPECTING_ADAT);
-                }
-                else if(cmd_a[1] == NULL)
-                {
-                    msg = globus_libc_strdup(REPLY_530_EXPECTING_ADAT);
-                }
-                /* do all the work to figure out adat reply */
-                else
-                {
-                    res = globus_l_xio_gssapi_ftp_decode_adat(
-                            handle,
-                            cmd_a[1],
-                            &msg,
-                            &complete);
-                    if(res != GLOBUS_SUCCESS)
-                    {
-                        goto err;
-                    }
-
-                    /* if compete change to the next state */
-                    if(complete)
-                    {
-                        handle->state = GSSAPI_FTP_STATE_SERVER_ADAT_REPLY;
-                    }
-                }
-                break;
-
-            case GSSAPI_FTP_STATE_OPEN:
-                reply = GLOBUS_FALSE;
-                w_buf = (globus_l_xio_gssapi_buffer_t *)
-                    globus_malloc(sizeof(globus_l_xio_gssapi_buffer_t));
-                if(w_buf == NULL)
-                {
-                    res = GlobusXIOGssapiFTPAllocError();
-                    goto err;
-                }
-                res = globus_l_xio_gssapi_ftp_unwrap(
-                        handle,
-                        cmd_a[1],
-                        strlen(cmd_a[1]),
-                        &out_buf);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto err;
-                }
-                w_buf->length = strlen(out_buf);
-                w_buf->buf = out_buf;
-                w_buf->ndx = 0;
-                globus_fifo_enqueue(&handle->unwrapped_q, w_buf);
-                res = globus_l_xio_gssapi_finshed_read(handle, op);
-
-                break;
-
-            default:
-                globus_assert(0 && "Handle should be in reading state");
-                break;
-        }
-    }
-
-    if(reply)
-    {
-        /* send the entire reply */
-        handle->write_iov[0].iov_base = msg;
-        handle->write_iov[0].iov_len = globus_libc_strlen(msg);
-        res = globus_xio_driver_pass_write(
-            op, 
-            handle->write_iov,
-            1, 
-            handle->write_iov[0].iov_len,
-            globus_l_xio_gssapi_ftp_server_open_reply_cb,
-            handle);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
-    }
-
-    GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_SUCCESS;
-
-  err:
-    GlobusXIOGssapiftpDebugExitWithError();
-    return res;
-}
-
-/*
- *  while in the open authentication process, this callback is used for
- *  all of the writes.  
- */ 
-static void
-globus_l_xio_gssapi_ftp_server_open_reply_cb(
-    globus_xio_operation_t              op,
-    globus_result_t                     result,
-    globus_size_t                       nbytes,
-    void *                              user_arg)
-{
-    globus_l_xio_gssapi_ftp_handle_t *  handle;
-    globus_result_t                     res = GLOBUS_SUCCESS;
-    globus_bool_t                       done = GLOBUS_FALSE;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_server_open_reply_cb);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
-
-    /* if there was an error, finish the open with an error */
-    if(result != GLOBUS_SUCCESS)
-    {
-        res = result;
-        goto err;
-    }
-
-    handle->write_posted = GLOBUS_FALSE;
-    globus_free(handle->write_iov[0].iov_base);
-    switch(handle->state)
-    {
-        /* this case occurs when a bad command wasread when an auth
-            was expected.  Remain in this state and pass another read */
-        case GSSAPI_FTP_STATE_SERVER_READING_AUTH:
-            break;
-
-        /* occurs after AUTH GSSAPI successfuly read, move to the
-            ADAT state */
-        case GSSAPI_FTP_STATE_SERVER_GSSAPI_READ:
-            handle->state = GSSAPI_FTP_STATE_SERVER_READING_ADAT;
-            break;
-
-        /* occurs when unexpected command happens when adat is expected,
-            remain in this state, and post another read */
-        case GSSAPI_FTP_STATE_SERVER_READING_ADAT:
-            break;
-
-        case GSSAPI_FTP_STATE_SERVER_ADAT_REPLY:
-            handle->state = GSSAPI_FTP_STATE_OPEN;
-            done = GLOBUS_TRUE;
-            break;
-
-        case GSSAPI_FTP_STATE_SERVER_QUITING:
-            done = GLOBUS_TRUE;
-            res = GlobusXIOGssapiFTPAuthenticationFailure("received QUIT");
-            break;
-
-        default:
-            break;
-    }
-
-    if(!done)
-    {
-        /* start processing the next command */
-        res = globus_l_xio_gssapi_get_data(handle, op);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
-    }
-    else
-    {
-        globus_xio_driver_finished_write(op, res, nbytes);
-    }
-
-    GlobusXIOGssapiftpDebugExit();
-    return;
-
-  err:
-    globus_xio_driver_finished_write(op, res, nbytes);
-    GlobusXIOGssapiftpDebugExitWithError();
-    return;
-}
-/*
- *  while in the open authentication process, this callback is used for
- *  all of the writes.  
- */ 
-static void
-globus_l_xio_gssapi_ftp_client_open_reply_cb(
-    globus_xio_operation_t              op,
-    globus_result_t                     result,
-    globus_size_t                       nbytes,
-    void *                              user_arg)
-{
-    globus_l_xio_gssapi_ftp_handle_t *  handle;
-    globus_result_t                     res = GLOBUS_SUCCESS;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_client_open_reply_cb);
-
-    GlobusXIOGssapiftpDebugEnter();
-
-    handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
-
-    globus_free(handle->write_iov[0].iov_base);
-    /* if there was an error, finish the open with an error */
-    if(result != GLOBUS_SUCCESS)
-    {
-        res = result;
-        goto err;
-    }
-
-    res = globus_l_xio_gssapi_get_data(handle, op);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
-
-    GlobusXIOGssapiftpDebugExit();
-    return;
-
-  err:
-    globus_xio_driver_finished_open(handle, op, res);
-    GlobusXIOGssapiftpDebugExitWithError();
-    return;
-}
-
 
 /*
  *  decode a command
@@ -1595,7 +629,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
                     gss_release_buffer(&min_stat, &send_tok);
                     goto err;
                 }
-		memcpy(&reply[strlen(REPLY_235_ADAT_DATA)+length], "\r\n\0", 3);
+                memcpy(&reply[strlen(REPLY_235_ADAT_DATA)+length], "\r\n\0", 3);
             }
             *out_complete = GLOBUS_TRUE;
             break;
@@ -1645,6 +679,595 @@ globus_l_xio_gssapi_ftp_decode_adat(
     GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
+
+/*
+ *  tokenize a command into a null teminated array of strings.  If the
+ *  command being tokenized is a reply from the server this code will
+ *  remove all continuation headers (631-) and the first element in the
+ *  finally tokenized reply array will be the reply number.
+ */
+static globus_result_t
+globus_l_xio_gssapi_ftp_parse_command(
+    globus_byte_t *                     command,
+    globus_size_t                       length,
+    globus_bool_t                       client,
+    char ***                            out_cmd_a)
+{
+    char *                              tmp_ptr;
+    char **                             cmd_a = NULL;
+    int                                 cmd_len = 16;
+    int                                 ctr;
+    globus_size_t                       start_ndx;
+    globus_result_t                     res;
+    globus_size_t                       len;
+    globus_size_t                       sub_len;
+    globus_bool_t                       multi = GLOBUS_FALSE;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_parse_command);
+
+    GlobusXIOGssapiftpDebugEnter();
+
+    *out_cmd_a = NULL;
+
+    cmd_a = (char **) globus_malloc(sizeof(char *) * cmd_len);
+    if(cmd_a == NULL)
+    {
+        res = GlobusXIOGssapiFTPAllocError();
+        goto err;
+    }
+
+    len = length;
+    ctr = 0;
+    tmp_ptr = globus_l_xio_gssapi_ftp_token(
+        command, len, &start_ndx, &sub_len);
+    while(tmp_ptr != NULL)
+    {
+        len -= start_ndx; /* start ndx is removed from the front */
+        /* special handling for multiplart commands */
+        if(client)
+        {
+            /* if this will be a multipart command */
+            if(ctr == 0 && tmp_ptr[3] == '-')
+            {
+                cmd_a[ctr] = globus_libc_strndup(tmp_ptr, 3);
+                multi = GLOBUS_TRUE;
+                len -= 4;
+                tmp_ptr += 4;
+                sub_len -= 4;
+                ctr++;
+            }
+            /* if a continuation line move past the start */
+            else if(multi && sub_len >= 3 &&
+                    strncmp(cmd_a[0], tmp_ptr, 3) == 0)
+            {
+                if(tmp_ptr[3] == ' ')
+                {
+                    len -= 4;
+                    tmp_ptr = globus_l_xio_gssapi_ftp_token(
+                        &tmp_ptr[4], len, &start_ndx, &sub_len);
+                }
+                else if(tmp_ptr[3] == '-')
+                {
+                    len -= 4;
+                    tmp_ptr += 4;
+                    sub_len -= 4;
+                }
+                /* feat is returning continuation commands that look strabge
+                   this allows it to work, but TODO: verifiy server is 
+                   correct */
+                else
+                {
+                    len -= 4;
+                    tmp_ptr += 4;
+                    sub_len -= 4;
+                }
+            }
+        }
+        cmd_a[ctr] = globus_libc_strndup(
+            tmp_ptr, sub_len);
+        len -= sub_len;
+        tmp_ptr += sub_len;
+        tmp_ptr = globus_l_xio_gssapi_ftp_token(
+            tmp_ptr, len, &start_ndx, &sub_len);
+        ctr++;
+        if(ctr == cmd_len)
+        {
+            cmd_len *= 2;
+            cmd_a = (char **) globus_libc_realloc(cmd_a,
+                                sizeof(char *) * cmd_len);
+        }
+    }
+    cmd_a[ctr] = NULL;
+
+    *out_cmd_a = cmd_a;
+
+    GlobusXIOGssapiftpDebugExit();
+    return GLOBUS_SUCCESS;
+
+err:
+    GlobusXIOGssapiftpDebugExitWithError();
+    return res;
+}
+
+/*
+ *  take a wrapped buffer and decode and unwrap it.  The caller is 
+ *  responsible for freeing the out buffer if the function returns 
+ *  successfully.
+ */
+static globus_result_t
+globus_l_xio_gssapi_ftp_unwrap(
+    globus_l_xio_gssapi_ftp_handle_t *  handle,
+    const char  *                       in_buf,
+    globus_size_t                       in_length,
+    char **                             out_buffer)
+{
+    globus_result_t                     res;
+    gss_buffer_desc                     wrapped_token;
+    gss_buffer_desc                     unwrapped_token;
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;
+    globus_byte_t *                     buf;
+    globus_size_t                       len;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_unwrap);
+
+    GlobusXIOGssapiftpDebugEnter();
+
+    /* allocate out buffer same size as in, assuming unwrap will be samller */
+    buf =  globus_malloc(in_length);
+    if(buf == NULL)
+    {
+        goto err;
+    }
+    len = in_length;
+
+    res = globus_l_xio_gssapi_ftp_radix_decode(in_buf, buf, &len);
+    if(res != GLOBUS_SUCCESS)
+    {
+        res = GlobusXIOGssapiFTPAllocError();
+        globus_free(buf);
+        goto err;
+    }
+
+    wrapped_token.value = buf;
+    wrapped_token.length = len;
+
+    maj_stat = gss_unwrap(
+                    &min_stat,
+                    handle->gssapi_context,
+                    &wrapped_token,
+                    &unwrapped_token,
+                    NULL,
+                    NULL);
+    if(maj_stat != GSS_S_COMPLETE)
+    {
+        res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
+        globus_free(buf);
+        goto err;
+    }
+
+    /* copy the unwrapped token in */
+    memcpy(buf, unwrapped_token.value, unwrapped_token.length);
+    len = unwrapped_token.length;
+
+    /* get rid of terminating NULL */
+    if(buf[len - 1] == '\0')
+    {
+        len--;
+    }
+    buf[len] = '\0';
+
+    *out_buffer = (char *) buf;
+
+    gss_release_buffer(&min_stat, &unwrapped_token);
+
+    GlobusXIOGssapiftpDebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIOGssapiftpDebugExitWithError();
+    return res;
+}
+
+/*
+ *  wrap a command with gssapi encoding then base 64 encode it.  If the
+ *  function returns successfully the caller is responsible for freeing
+ *  the out_buffer.  The out buffer is formed into a ftp buffer based on
+ *  values in the handle.  ex: if client starts with MIC or ENC. if server
+ *  starts with 631 or 632
+ */
+static globus_result_t
+globus_l_xio_gssapi_ftp_wrap(
+    globus_l_xio_gssapi_ftp_handle_t *  handle,
+    globus_byte_t  *                    in_buf, 
+    globus_size_t                       length,
+    char **                             out_buffer,
+    globus_bool_t                       client)
+{
+    char *                              encoded_buf;
+    int                                 conf_state;
+    gss_buffer_desc                     gss_in_buf;
+    gss_buffer_desc                     gss_out_buf;
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;
+    globus_result_t                     res;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_wrap);
+
+    GlobusXIOGssapiftpDebugEnter();
+
+    gss_in_buf.value = in_buf;
+    gss_in_buf.length = length;
+                                                                                
+    maj_stat = gss_wrap(&min_stat,
+                        handle->gssapi_context,
+                        0,
+                        GSS_C_QOP_DEFAULT,
+                        &gss_in_buf,
+                        &conf_state,
+                        &gss_out_buf);
+    if(maj_stat  != GSS_S_COMPLETE)
+    {
+        res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
+        goto err;
+    }
+
+    encoded_buf = (char *) 
+        globus_libc_malloc((gss_out_buf.length + 3) * 8 / 6 + 9);
+    if(encoded_buf == NULL)
+    {
+        gss_release_buffer(&min_stat, &gss_out_buf);
+        res = GlobusXIOGssapiFTPAllocError();
+        goto err;
+    }
+
+    if(client)
+    {
+        if(conf_state == 0)
+        {
+            memcpy(encoded_buf, "MIC ", 4);
+        }
+        else
+        {
+            memcpy(encoded_buf, "ENC ", 4);
+        }
+    }
+    else
+    {
+        if(conf_state == 0)
+        {
+            memcpy(encoded_buf, "631 ", 4);
+        }
+        else
+        {
+            memcpy(encoded_buf, "632 ", 4);
+        }
+    }
+
+    globus_l_xio_gssapi_ftp_radix_encode(
+        gss_out_buf.value,
+        gss_out_buf.length,
+        &encoded_buf[4],
+        &gss_out_buf.length);
+
+    encoded_buf[gss_out_buf.length+4]='\r';
+    encoded_buf[gss_out_buf.length+5]='\n';
+    encoded_buf[gss_out_buf.length+6]='\0';
+    *out_buffer = encoded_buf;
+
+    gss_release_buffer(&min_stat, &gss_out_buf);
+
+    GlobusXIOGssapiftpDebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIOGssapiftpDebugExitWithError();
+    return res;
+}
+
+/************************************************************************
+ *                  server open
+ *                  -----------
+ *
+ *  This section contains the functions used by a server in openning 
+ *  a handle.
+ ***********************************************************************/
+/*
+ *  when a full command comes in for the server this is called.
+ */
+static void
+globus_l_xio_gssapi_ftp_server_read_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    globus_l_xio_gssapi_ftp_handle_t *  handle;
+    char *                              out_buf;
+    char *                              msg;
+    globus_result_t                     res;
+    globus_bool_t                       complete;
+    globus_bool_t                       reply = GLOBUS_TRUE;
+    char **                             cmd_a;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_server_read_cb);
+
+    GlobusXIOGssapiftpDebugEnter();
+
+    handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
+
+    globus_mutex_lock(&handle->mutex);
+    {
+        globus_assert(!handle->client);
+
+        globus_l_xio_gssapi_ftp_parse_command(
+                handle->auth_read_iov.iov_base,
+                handle->auth_read_iov.iov_len,
+                GLOBUS_FALSE,
+                &cmd_a);
+        if(cmd_a == NULL)
+        {
+            res = GlobusXIOGssapiFTPAllocError();
+            goto err;
+        }
+        if(globus_libc_strcmp(cmd_a[0], "QUIT") == 0)
+        {
+            msg = globus_libc_strdup(REPLY_221_QUIT);
+            handle->state = GSSAPI_FTP_STATE_SERVER_QUITING;
+        }
+        else
+        {
+            switch(handle->state)
+            {
+                /* verifiy that we can handle this auth type */
+                case GSSAPI_FTP_STATE_SERVER_READING_AUTH:
+                    /* if command is not expected, stay in this state. */
+                    if(globus_libc_strcmp(cmd_a[0], "AUTH") != 0)
+                    {
+                        msg = globus_libc_strdup(REPLY_530_BAD_MESSAGE);
+                    }
+                    /* only accepting gssapi for now. may want to get 
+                       cleaver later */
+                    else if(globus_libc_strcmp(cmd_a[1], "GSSAPI") != 0)
+                    {
+                        msg = globus_libc_strdup(REPLY_504_BAD_AUTH_TYPE);
+                    }
+                    else
+                    {
+                        handle->state = GSSAPI_FTP_STATE_SERVER_GSSAPI_READ;
+                        msg = globus_libc_strdup(REPLY_334_GOOD_AUTH_TYPE);
+                    }
+                    break;
+
+                /* on errors we stay in this state */
+                case GSSAPI_FTP_STATE_SERVER_READING_ADAT:
+                    if(globus_libc_strcmp(cmd_a[0], "ADAT") != 0)
+                    {
+                        msg = globus_libc_strdup(REPLY_530_EXPECTING_ADAT);
+                    }
+                    else if(cmd_a[1] == NULL)
+                    {
+                        msg = globus_libc_strdup(REPLY_530_EXPECTING_ADAT);
+                    }
+                    /* do all the work to figure out adat reply */
+                    else
+                    {
+                        res = globus_l_xio_gssapi_ftp_decode_adat(
+                            handle,
+                            cmd_a[1],
+                            &msg,
+                            &complete);
+                        if(res != GLOBUS_SUCCESS)
+                        {
+                            goto err;
+                        }
+
+                        /* if compete change to the next state */
+                        if(complete)
+                        {
+                            handle->state = GSSAPI_FTP_STATE_SERVER_ADAT_REPLY;
+                        }
+                    }
+                    break;
+
+                case GSSAPI_FTP_STATE_OPEN:
+                    reply = GLOBUS_FALSE;
+                    res = globus_l_xio_gssapi_ftp_unwrap(
+                        handle,
+                        cmd_a[1],
+                        strlen(cmd_a[1]),
+                        &out_buf);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        goto err;
+                    }
+                    handle->read_iov[0].iov_base = 
+                        handle->auth_read_iov.iov_base;
+                    handle->read_iov[0].iov_len = 
+                        handle->auth_read_iov.iov_len;
+                    globus_xio_driver_finished_read(
+                        op, GLOBUS_SUCCESS, strlen(out_buf));
+
+                    break;
+
+                default:
+                    globus_assert(0 && "Handle should be in reading state");
+                    break;
+            }
+        }
+        if(reply)
+        {
+            /* send the entire reply */
+            handle->write_iov[0].iov_base = msg;
+            handle->write_iov[0].iov_len = globus_libc_strlen(msg);
+            res = globus_xio_driver_pass_write(
+                op, 
+                handle->write_iov,
+                1, 
+                handle->write_iov[0].iov_len,
+                globus_l_xio_gssapi_ftp_auth_server_write_cb,
+                handle);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+    }
+    globus_mutex_unlock(&handle->mutex);
+
+    GlobusXIOGssapiftpDebugExit();
+    return;
+
+  err:
+    globus_mutex_unlock(&handle->mutex);
+    globus_xio_driver_finished_read(op, res, strlen(out_buf));
+    GlobusXIOGssapiftpDebugExitWithError();
+}
+
+/*
+ *  while in the open authentication process, this callback is used for
+ *  all of the writes.  
+ */ 
+static void
+globus_l_xio_gssapi_ftp_auth_server_write_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    /* this is used to alter where we read, while doing auth we use
+       an internal iov. once auth is complete we switch to the user
+       iov and pass a final read */
+    globus_xio_iovec_t *                iov;
+    globus_l_xio_gssapi_ftp_handle_t *  handle;
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_auth_server_write_cb);
+
+    GlobusXIOGssapiftpDebugEnter();
+
+    handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
+
+    globus_mutex_lock(&handle->mutex);
+    {
+        /* if there was an error, finish the open with an error */
+        if(result != GLOBUS_SUCCESS)
+        {
+            res = result;
+            goto err;
+        }
+
+        handle->write_posted = GLOBUS_FALSE;
+        globus_free(handle->write_iov[0].iov_base);
+        switch(handle->state)
+        {
+            /* this case occurs when a bad command wasread when an auth
+                was expected.  Remain in this state and pass another read */
+            case GSSAPI_FTP_STATE_SERVER_READING_AUTH:
+                break;
+
+            /* occurs after AUTH GSSAPI successfuly read, move to the
+                ADAT state */
+            case GSSAPI_FTP_STATE_SERVER_GSSAPI_READ:
+                handle->state = GSSAPI_FTP_STATE_SERVER_READING_ADAT;
+                break;
+
+            /* occurs when unexpected command happens when adat is expected,
+                remain in this state, and post another read */
+            case GSSAPI_FTP_STATE_SERVER_READING_ADAT:
+                break;
+
+           case GSSAPI_FTP_STATE_SERVER_ADAT_REPLY:
+                handle->state = GSSAPI_FTP_STATE_OPEN;
+                iov = handle->read_iov;
+                break;
+
+            case GSSAPI_FTP_STATE_SERVER_QUITING:
+    /* TODO quit properly */
+                res = GlobusXIOGssapiFTPAuthenticationFailure("received QUIT");
+                break;
+
+            default:
+                break;
+        }
+
+        res = globus_xio_driver_pass_read(
+            op,
+            &handle->auth_read_iov,
+            1,
+            1,
+            globus_l_xio_gssapi_ftp_server_read_cb,
+            handle);
+        /* start processing the next command */
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+    }
+    globus_mutex_unlock(&handle->mutex);
+
+    GlobusXIOGssapiftpDebugExit();
+    return;
+
+  err:
+    /* XXX TODO odds are this did not come from a write */
+    globus_xio_driver_finished_write(op, res, nbytes);
+    globus_mutex_unlock(&handle->mutex);
+    GlobusXIOGssapiftpDebugExitWithError();
+    return;
+}
+/*
+ *  while in the open authentication process, this callback is used for
+ *  all of the writes.  
+ */ 
+static void
+globus_l_xio_gssapi_ftp_client_preauth_client_write_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    globus_l_xio_gssapi_ftp_handle_t *  handle;
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_client_preauth_client_write_cb);
+
+    GlobusXIOGssapiftpDebugEnter();
+
+    handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
+
+    globus_mutex_lock(&handle->mutex);
+    {
+        globus_free(handle->auth_write_iov.iov_base);
+        /* if there was an error, finish the open with an error */
+        if(result != GLOBUS_SUCCESS)
+        {
+            res = result;
+            goto err;
+        }
+
+        /* bogus read iov */
+        res = globus_xio_driver_pass_read(
+            op,
+            &handle->auth_read_iov,
+            1,
+            1,
+            globus_l_xio_gssapi_ftp_preauth_client_read_cb,
+            handle);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+    }
+    globus_mutex_unlock(&handle->mutex);
+
+    GlobusXIOGssapiftpDebugExit();
+    return;
+
+  err:
+    globus_xio_driver_finished_open(handle, op, res);
+    globus_mutex_unlock(&handle->mutex);
+    GlobusXIOGssapiftpDebugExitWithError();
+
+    return;
+}
+
 
 /*
  *   accepting
@@ -1698,19 +1321,29 @@ globus_l_xio_gssapi_ftp_client_open_cb(
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
-    globus_assert(handle->client);
+    globus_mutex_lock(&handle->mutex);
+    {
+        globus_assert(handle->client);
 
-    if(handle->state != GSSAPI_FTP_STATE_OPEN && result == GLOBUS_SUCCESS)
-    {
-        result = globus_l_xio_gssapi_get_data(handle, op);
+        if(handle->state != GSSAPI_FTP_STATE_OPEN && result == GLOBUS_SUCCESS)
+        {
+            result = globus_xio_driver_pass_read(
+                op,
+                &handle->auth_read_iov,
+                1,
+                1,
+                globus_l_xio_gssapi_ftp_preauth_client_read_cb,
+                handle);
+        }
+        /* if error occured on the way in or due to read, finish the open
+            with an error, or we started in the open state, then finish
+            with success */
+        if(result != GLOBUS_SUCCESS || handle->state == GSSAPI_FTP_STATE_OPEN)
+        {
+            globus_xio_driver_finished_open(handle, op, result);
+        }
     }
-    /* if error occured on the way in or due to read, finish the open
-        with an error, or we started in the open state, then finish
-        with success */
-    if(result != GLOBUS_SUCCESS || handle->state == GSSAPI_FTP_STATE_OPEN)
-    {
-        globus_xio_driver_finished_open(handle, op, result);
-    }
+    globus_mutex_unlock(&handle->mutex);
 
     GlobusXIOGssapiftpDebugExit();
 }
@@ -1740,7 +1373,7 @@ globus_l_xio_gssapi_ftp_server_open_cb(
  *   This section has functions that open a handle for a client
  ***********************************************************************/
 
-globus_result_t
+static globus_result_t
 globus_l_xio_gssapi_ftp_client_adat(
     globus_l_xio_gssapi_ftp_handle_t *  handle,
     const char *                        buffer,
@@ -1903,232 +1536,193 @@ globus_l_xio_gssapi_ftp_client_adat(
     return res;
 }
 
-globus_result_t
-globus_l_xio_gssapi_ftp_client_incoming(
-    globus_l_xio_gssapi_ftp_handle_t *  handle,
+static void
+globus_l_xio_gssapi_ftp_preauth_client_read_cb(
     globus_xio_operation_t              op,
-    char **                             cmd_a)
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
-    globus_size_t                       len;
     globus_bool_t                       done = GLOBUS_FALSE;
     globus_bool_t                       complete;
     globus_result_t                     res = GLOBUS_SUCCESS;
     char *                              send_buffer;
     char *                              tmp_buf;
-    int                                 ctr;
-    globus_l_xio_gssapi_buffer_t *      w_buf;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_client_incoming);
+    globus_l_xio_gssapi_ftp_handle_t *  handle;
+    char **                             cmd_a;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_preauth_client_read_cb);
 
     GlobusXIOGssapiftpDebugEnter();
 
-    switch(handle->state)
+    handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
+
+    globus_mutex_lock(&handle->mutex);
     {
-        case GSSAPI_FTP_STATE_CLIENT_READING_220:
-            /* if we did not get a 220 from the server finsh the open
-                with an error */
-            if(strcmp(cmd_a[0], "220") != 0)
-            {
-                res = GlobusXIOGssapiFTPAuthenticationFailure("Expected 220");
-                goto err;
-            }
-            else
-            {
-                handle->state = GSSAPI_FTP_STATE_CLIENT_SENDING_AUTH;
-                send_buffer = globus_libc_strdup(CLIENT_AUTH_GSSAPI_COMMAND);
+        globus_assert(handle->client);
 
-                handle->banner = globus_l_xio_gssapi_ftp_command_array_copy(
-                    cmd_a);
-            }
-            break;
+        globus_l_xio_gssapi_ftp_parse_command(
+                handle->auth_read_iov.iov_base,
+                handle->auth_read_iov.iov_len,
+                GLOBUS_TRUE,
+                &cmd_a);
+        if(cmd_a == NULL)
+        {
+            globus_mutex_unlock(&handle->mutex);
+            res = GlobusXIOGssapiFTPAllocError();
+            goto err;
+        }
 
-        case GSSAPI_FTP_STATE_CLIENT_SENDING_AUTH:
-            if(strcmp(cmd_a[0], "334") != 0)
-            {
-                res = GlobusXIOGssapiFTPAuthenticationFailure("Expected 334");
-                goto err;
-            }
-            else
-            {
-               handle->state = GSSAPI_FTP_STATE_CLIENT_ADAT_INIT;
-               res = globus_l_xio_gssapi_ftp_client_adat(
+        switch(handle->state)
+        {
+            case GSSAPI_FTP_STATE_CLIENT_READING_220:
+                /* if we did not get a 220 from the server finsh the open
+                    with an error */
+                if(strcmp(cmd_a[0], "220") != 0)
+                {
+                    globus_mutex_unlock(&handle->mutex);
+                    res = GlobusXIOGssapiFTPAuthenticationFailure(
+                        "Expected 220");
+                    goto err;
+                }
+                else
+                {
+                    handle->state = GSSAPI_FTP_STATE_CLIENT_SENDING_AUTH;
+                    send_buffer = 
+                        globus_libc_strdup(CLIENT_AUTH_GSSAPI_COMMAND);
+                    handle->banner = handle->auth_read_iov.iov_base;
+                    handle->banner_length = handle->auth_read_iov.iov_len;
+                }
+                break;
+
+            case GSSAPI_FTP_STATE_CLIENT_SENDING_AUTH:
+                if(strcmp(cmd_a[0], "334") != 0)
+                {
+                    globus_mutex_unlock(&handle->mutex);
+                    res = GlobusXIOGssapiFTPAuthenticationFailure(
+                        "Expected 334");
+                    goto err;
+                }
+                else
+                {
+                    handle->state = GSSAPI_FTP_STATE_CLIENT_ADAT_INIT;
+                    res = globus_l_xio_gssapi_ftp_client_adat(
                         handle,
                         NULL,
                         &send_buffer,
                         &complete);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto err;
+                    globus_assert(complete == GLOBUS_FALSE);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        globus_mutex_unlock(&handle->mutex);
+                        goto err;
+                    }
+                    if(send_buffer == NULL)
+                    {
+                        globus_mutex_unlock(&handle->mutex);
+                        res = GlobusXIOGssapiFTPAuthenticationFailure(
+                            "Client should have adat buffer to send");
+                        goto err;
+                    }
                 }
-                if(send_buffer == NULL)
+                break;
+
+            /* change state and fall through */
+            case GSSAPI_FTP_STATE_CLIENT_ADAT_INIT:
+                handle->state = GSSAPI_FTP_STATE_CLIENT_SENDING_ADAT;
+
+            case GSSAPI_FTP_STATE_CLIENT_SENDING_ADAT:
+                /* if completed successfully */
+                if(*cmd_a[0] == '2')
                 {
-                    res = GlobusXIOGssapiFTPAuthenticationFailure(
-                        "Client should have adat buffer to send");
-                    goto err;
-                }
-            }
-
-            break;
-
-        /* change state and fall through */
-        case GSSAPI_FTP_STATE_CLIENT_ADAT_INIT:
-            handle->state = GSSAPI_FTP_STATE_CLIENT_SENDING_ADAT;
-
-        case GSSAPI_FTP_STATE_CLIENT_SENDING_ADAT:
-            /* if completed successfully */
-            if(*cmd_a[0] == '2')
-            {
-                if(strncmp(cmd_a[1], "ADAT=", 5) == 0)
-                {
-                    tmp_buf = cmd_a[1] + strlen("ADAT=");
-                    res = globus_l_xio_gssapi_ftp_client_adat(
+                    if(strncmp(cmd_a[1], "ADAT=", 5) == 0)
+                    {
+                        tmp_buf = cmd_a[1] + sizeof("ADAT=") - 1;
+                        res = globus_l_xio_gssapi_ftp_client_adat(
                             handle,
                             tmp_buf,
                             &send_buffer,
                             &complete);
-                    if(res != GLOBUS_SUCCESS)
-                    {
-                        goto err;
+                        if(res != GLOBUS_SUCCESS)
+                        {
+                            globus_mutex_unlock(&handle->mutex);
+                            goto err;
+                        }
+                        if(!complete || send_buffer != NULL)
+                        {
+                            globus_mutex_unlock(&handle->mutex);
+                            res = GlobusXIOGssapiFTPAuthenticationFailure(
+                                "Client should have adat buffer to send");
+                            goto err;
+                        }
                     }
-                    if(!complete || send_buffer != NULL)
-                    {
-                        res = GlobusXIOGssapiFTPAuthenticationFailure(
-                        "Client should have adat buffer to send");
-                        goto err;
-                    }
+                    handle->state = GSSAPI_FTP_STATE_OPEN;
+                    done = GLOBUS_TRUE;
+                    globus_xio_driver_finished_open(handle, op, res);
                 }
-                handle->state = GSSAPI_FTP_STATE_OPEN;
-                globus_fifo_enqueue(&handle->read_command_q, handle->banner);
-                done = GLOBUS_TRUE;
-                globus_xio_driver_finished_open(handle, op, res);
-            }
-            /* if we still need to send more adats, but all is well */
-            else if(*cmd_a[0] == '3')
-            {
-                tmp_buf = cmd_a[1] + strlen("ADAT=");
-                res = globus_l_xio_gssapi_ftp_client_adat(
+                /* if we still need to send more adats, but all is well */
+                else if(*cmd_a[0] == '3')
+                {
+                    tmp_buf = cmd_a[1] + sizeof("ADAT=") - 1;
+                    res = globus_l_xio_gssapi_ftp_client_adat(
                         handle,
                         tmp_buf,
                         &send_buffer,
                         &complete);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto err;
-                }
-                if(send_buffer == NULL)
-                {
-                    globus_byte_t *     e_buf;
-                    globus_size_t       e_len;
-
-                    e_len = globus_l_xio_gssapi_ftp_command_array_size(cmd_a);
-                    e_buf = globus_malloc(e_len + 1);
-                    globus_l_xio_gssapi_ftp_serialize_command_array(
-                        cmd_a,
-                        e_buf,
-                        e_len);
-                    e_buf[e_len] = '\0';
-                    res = GlobusXIOGssapiFTPAuthenticationFailure(e_buf);
-                    goto err;
-                }
-            }
-            /* if an error occurred */
-            else
-            {
-                res = GlobusXIOGssapiFTPAuthenticationFailure(cmd_a[0]);
-                goto err;
-            }
-            break;
-
-        /* if open, we are reading.  unwrap and leave queue until reads are
-            posted */
-        case GSSAPI_FTP_STATE_OPEN:
-            w_buf = (globus_l_xio_gssapi_buffer_t *)
-                globus_malloc(sizeof(globus_l_xio_gssapi_buffer_t));
-            if(w_buf == NULL)
-            {
-                res = GlobusXIOGssapiFTPAllocError();
-                goto err;
-            }
-            w_buf->buf = NULL;
-            w_buf->length = 0;
-            w_buf->ndx = 0;
-
-            /* TODO: test for 631 or 632 */
-            if(*cmd_a[0] == '6')
-            {
-                for(ctr = 1; cmd_a[ctr] != NULL; ctr++)
-                {
-                    res = globus_l_xio_gssapi_ftp_unwrap(
-                            handle,
-                            cmd_a[ctr],
-                            strlen(cmd_a[ctr]),
-                            &send_buffer);
                     if(res != GLOBUS_SUCCESS)
                     {
+                        globus_mutex_unlock(&handle->mutex);
                         goto err;
                     }
-                    w_buf->length += strlen(send_buffer);
-                    w_buf->buf = globus_libc_realloc(
-                        w_buf->buf, w_buf->length + 1);
-                    memcpy(&w_buf->buf[w_buf->ndx], 
-                        send_buffer, strlen(send_buffer) + 1);
-                    w_buf->ndx += strlen(send_buffer);
-                    globus_free(send_buffer);
+                    if(send_buffer == NULL)
+                    {
+                        globus_mutex_unlock(&handle->mutex);
+                        res = GlobusXIOGssapiFTPAuthenticationFailure(
+                            handle->read_iov[0].iov_base);
+                        goto err;
+                    }
                 }
-                w_buf->ndx = 0;
-                globus_fifo_enqueue(&handle->unwrapped_q, w_buf);
-                res = globus_l_xio_gssapi_finshed_read(handle, op);
-                done = GLOBUS_TRUE;
-            }
-            /* TODO: this should possible be an error */
-            else
-            {
-                len = globus_l_xio_gssapi_ftp_command_array_size(cmd_a);
-                w_buf->buf = globus_malloc(len+1);
-                res = globus_l_xio_gssapi_ftp_serialize_command_array(
-                    cmd_a,
-                    w_buf->buf,
-                    len);
-                if(res != GLOBUS_SUCCESS)
+                /* if an error occurred */
+                else
                 {
-                    globus_free(w_buf);
+                    globus_mutex_unlock(&handle->mutex);
+                    ((char *)handle->auth_read_iov.iov_base)[handle->auth_read_iov.iov_len-1] = '\0';
+                    res = GlobusXIOGssapiFTPAuthenticationFailure(
+                        handle->auth_read_iov.iov_base);
                     goto err;
                 }
-                w_buf->length = strlen(w_buf->buf);
-                w_buf->ndx = 0;
-                globus_fifo_enqueue(&handle->unwrapped_q, w_buf);
-                res = globus_l_xio_gssapi_finshed_read(handle, op);
-                done = GLOBUS_TRUE;
-            }
-            break;
+                break;
 
-        default:
-            break;
-    }
+            default:
+                globus_assert(0 && "Client read in a bad state");
+                break;
+        }
 
-    if(!done)
-    {
-        handle->write_iov[0].iov_base = send_buffer;
-        handle->write_iov[0].iov_len = globus_libc_strlen(send_buffer);
-        res = globus_xio_driver_pass_write(
-            op,
-            handle->write_iov,
-            1,
-            handle->write_iov[0].iov_len,
-            globus_l_xio_gssapi_ftp_client_open_reply_cb,
-            handle);
-        if(res != GLOBUS_SUCCESS)
+        if(!done)
         {
-            goto err;
+            handle->auth_write_iov.iov_base = send_buffer;
+            handle->auth_write_iov.iov_len = globus_libc_strlen(send_buffer);
+            res = globus_xio_driver_pass_write(
+                op,
+                &handle->auth_write_iov,
+                1,
+                handle->auth_write_iov.iov_len,
+                globus_l_xio_gssapi_ftp_client_preauth_client_write_cb,
+                handle);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
         }
     }
+    globus_mutex_lock(&handle->mutex);
 
     GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_SUCCESS;
+    return;
 
   err:
 
+    globus_xio_driver_finished_open(handle, op, res);
     GlobusXIOGssapiftpDebugExitWithError();
-    return res;
 }
 
 static globus_result_t
@@ -2169,7 +1763,6 @@ globus_l_xio_gssapi_ftp_attr_init(
     }
     attr->subject = NULL;
     attr->start_state = GSSAPI_FTP_STATE_NONE;
-    attr->super_mode = GLOBUS_FALSE;
 
     *out_attr = attr;
 
@@ -2216,10 +1809,6 @@ globus_l_xio_gssapi_ftp_attr_cntl(
 
         case GLOBUS_XIO_GSSAPI_ATTR_TYPE_ENCRYPT:
             attr->encrypt = va_arg(ap, int);
-            break;
-
-        case GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE:
-            attr->super_mode = va_arg(ap, globus_bool_t);
             break;
 
         default:
@@ -2312,7 +1901,11 @@ globus_l_xio_gssapi_ftp_open(
         res = GlobusXIOErrorContactString("missing host");
         goto err;
     }
-    
+
+    globus_xio_driver_attr_cntl(
+        op, globus_l_gssapi_ftp_cmd_driver, 
+        GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER, GLOBUS_TRUE);
+
     /*
      *  create a new handle and initialize it 
      */
@@ -2331,7 +1924,6 @@ globus_l_xio_gssapi_ftp_open(
             handle->subject = strdup(attr->subject);
         }
         handle->encrypt = attr->encrypt;
-        handle->super_mode = attr->super_mode;
     }
 
     /* do client protocol */
@@ -2405,14 +1997,13 @@ globus_l_xio_gssapi_ftp_close(
  *  This section has function that handle writes
  ***********************************************************************/
 
-void
+static void
 globus_l_xio_gssapi_ftp_write_cb(
     globus_xio_operation_t              op,
     globus_result_t                     result,
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    int                                 ctr;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_write_cb);
 
@@ -2422,19 +2013,37 @@ globus_l_xio_gssapi_ftp_write_cb(
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
-    /* set back to writable */
-    handle->write_posted = GLOBUS_FALSE;
-    handle->write_buffer_ndx = 0;
-
-    globus_xio_driver_finished_write(
-        op, GLOBUS_SUCCESS, handle->write_sent_length);
-
-    for(ctr = 0; ctr < handle->write_iov_count; ctr++)
+    globus_mutex_lock(&handle->mutex);
     {
-        globus_free(handle->write_iov[ctr].iov_base);
+        handle->write_posted = GLOBUS_FALSE;
+
+        globus_xio_driver_finished_write(op, result, nbytes);
+
+        globus_free(handle->write_iov[0].iov_base);
     }
+    globus_mutex_unlock(&handle->mutex);
 
     GlobusXIOGssapiftpDebugExit();
+}
+
+static void
+globus_l_xio_gssapi_ftp_user_server_write_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    globus_l_xio_gssapi_ftp_handle_t *  handle;
+
+    handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
+
+    globus_mutex_lock(&handle->mutex);
+    {
+        handle->write_posted = GLOBUS_FALSE;
+
+        globus_xio_driver_finished_write(op, result, nbytes);
+    }
+    globus_mutex_unlock(&handle->mutex);
 }
 
 /* client and server are both the same except for the header */
@@ -2449,8 +2058,6 @@ globus_l_xio_gssapi_ftp_write(
     char *                              tmp_ptr;
     globus_byte_t *                     buf;
     char *                              encoded_buf;
-    int                                 ctr;
-    globus_size_t                       end_off;
     globus_size_t                       length;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_xio_driver_data_callback_t   cb;
@@ -2460,111 +2067,79 @@ globus_l_xio_gssapi_ftp_write(
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_specific_handle;
 
-    if(handle->write_posted)
+    globus_mutex_lock(&handle->mutex);
     {
-        res = GlobusXIOGssapiFTPOutstandingOp();
-        goto err;
-    }
+        if(handle->write_posted)
+        {
+            globus_mutex_unlock(&handle->mutex);
+            res = GlobusXIOGssapiFTPOutstandingOp();
+            goto err;
+        }
 
-    /* verify there is enough room in the write buffer */
-    GlobusXIOUtilIovTotalLength(length, iovec, iovec_count);
-    if(length + handle->write_buffer_ndx >= handle->write_buffer_length)
-    {
-        handle->write_buffer_length = (handle->write_buffer_length+length)*2;
-        handle->write_buffer = globus_libc_realloc(
-            handle->write_buffer, handle->write_buffer_length);
-    }
-    GlobusXIOUtilIovSerialize(
-        &handle->write_buffer[handle->write_buffer_ndx], iovec, iovec_count);
+        /* serialize into the write buffer */
+        /* TODO: make this not needed */
+        GlobusXIOUtilIovTotalLength(length, iovec, iovec_count);
+        if(length >= handle->write_buffer_length)
+        {
+            handle->write_buffer_length = 
+                (handle->write_buffer_length+length)*2;
+            handle->write_buffer = globus_libc_realloc(
+                handle->write_buffer, handle->write_buffer_length);
+            globus_assert(handle->write_buffer != NULL);
+        }
+        GlobusXIOUtilIovSerialize(handle->write_buffer, iovec, iovec_count);
 
-    handle->write_buffer_ndx += length;
-    tmp_ptr = globus_libc_memmem(handle->write_buffer, length, "\r\n", 2);
-    /* if this is not a complete command we simply cache it and say we 
-        are finished */
-    if(tmp_ptr == NULL)
-    {
-        globus_xio_driver_finished_write(op, GLOBUS_SUCCESS, length);
-    }
-    else
-    {
-        ctr = 0;
-        buf = handle->write_buffer;
-        handle->write_sent_length = 0;
+        /* for now insist that they use it correctly */
+        if(handle->write_buffer[length-1] != '\n' ||
+            handle->write_buffer[length-2] != '\r')
+        {
+            globus_mutex_unlock(&handle->mutex);
+            res = GlobusXIOGssapiFTPOutstandingOp();
+            goto err;
+        }
 
+        /* deconstipation */
+        handle->write_iov = (globus_xio_iovec_t *) iovec;
+        /* if the server is not yet open
+            really just a special case for 220 message */
         if(handle->state != GSSAPI_FTP_STATE_OPEN && !handle->client)
         {
-            handle->write_iov[ctr].iov_len = 
-                ((globus_byte_t *)tmp_ptr - buf) + 2;
-            handle->write_iov[ctr].iov_base = globus_malloc(
-                handle->write_iov[ctr].iov_len);
-            memcpy(handle->write_iov[ctr].iov_base, buf,
-                handle->write_iov[ctr].iov_len);
+            handle->write_iov[0].iov_len = length;
+            handle->write_iov[0].iov_base = handle->write_buffer;
 
-            cb = globus_l_xio_gssapi_ftp_server_open_reply_cb;
-            ctr = 1;
+            cb = globus_l_xio_gssapi_ftp_user_server_write_cb;
         }
         else
         {
-            /* find all complete commands and set each one as an entry in the
-                iovec */
-            while(tmp_ptr != NULL)
+            res = globus_l_xio_gssapi_ftp_wrap(
+                    handle, handle->write_buffer, (globus_byte_t *)tmp_ptr - buf, 
+                    &encoded_buf, handle->client);
+            if(res != GLOBUS_SUCCESS)
             {
-                res = globus_l_xio_gssapi_ftp_wrap(
-                        handle, buf, (globus_byte_t *)tmp_ptr - buf, 
-                        &encoded_buf, handle->client);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto err;
-                }
-            
-                handle->write_iov[ctr].iov_base = encoded_buf;
-                handle->write_iov[ctr].iov_len = 
-                    globus_libc_strlen(encoded_buf);
-                handle->write_sent_length += handle->write_iov[ctr].iov_len;
-                buf = tmp_ptr + 2;
-                tmp_ptr = globus_libc_memmem(buf, 
-                        length - (buf - handle->write_buffer), "\r\n", 2);
-                ctr++;
-                if(ctr >= handle->write_iov_size)
-                {
-                    handle->write_iov_size *= 2;
-                    handle->write_iov = globus_libc_realloc(
-                        handle->write_iov, 
-                        handle->write_iov_size * (sizeof(globus_xio_iovec_t)));
-                }
+                globus_mutex_unlock(&handle->mutex);
+                goto err;
             }
+            
+            handle->write_iov[0].iov_base = encoded_buf;
+            handle->write_iov[0].iov_len = globus_libc_strlen(encoded_buf);
             cb = globus_l_xio_gssapi_ftp_write_cb;
-        }
-        handle->write_iov_count = ctr;
-        /* if we received more than a complete command shift remainer to the
-            begining of the buffer. */
-        end_off = buf - handle->write_buffer;
-        handle->write_buffer_ndx = handle->write_buffer_ndx - end_off;
-        if(handle->write_buffer_ndx != 0)
-        {
-            memmove(
-                handle->write_buffer, 
-                &handle->write_buffer[end_off], 
-                handle->write_buffer_ndx);
         }
 
         res = globus_xio_driver_pass_write(
             op, 
             handle->write_iov, 
-            handle->write_iov_count,
+            1,
             length,
             cb,
             handle);
         if(res != GLOBUS_SUCCESS)
         {
+            globus_mutex_unlock(&handle->mutex);
             goto err;
         }
-        /* try and stop the user from registering multiple at once.  This
-           if really the job of the framwork a queuing driver or the user
-           themself so little effort is made here. */
         handle->write_posted = GLOBUS_TRUE;
-        handle->write_buffer_ndx = 0;
     }
+    globus_mutex_unlock(&handle->mutex);
 
     GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
@@ -2573,6 +2148,7 @@ globus_l_xio_gssapi_ftp_write(
     GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
+
 /************************************************************************
  *                  read functions
  *                  --------------
@@ -2580,82 +2156,79 @@ globus_l_xio_gssapi_ftp_write(
  *  This section has function that handle writes
  ***********************************************************************/
 
-/*
- *  called to kick out a read operation.
- */
-globus_result_t
-globus_l_xio_gssapi_finshed_read(
-    globus_l_xio_gssapi_ftp_handle_t *  handle,
-    globus_xio_operation_t              op)
+static void
+globus_l_xio_gssapi_ftp_client_read_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
-    globus_l_xio_gssapi_read_req_t *    req;
-    globus_size_t                       ncopied;
-    globus_size_t                       ndx;
+    char **                             cmd_a;
     int                                 ctr;
-    globus_l_xio_gssapi_buffer_t *      w_buf;
-    GlobusXIOName(globus_l_xio_gssapi_finshed_read);
+    int                                 ndx;
+    int                                 tmp_i;
+    globus_byte_t *                     out_buffer;
+    globus_size_t                       out_length;
+    char *                              send_buffer;
+    globus_l_xio_gssapi_ftp_handle_t *  handle;
+    globus_result_t                     res;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_client_read_cb);
 
     GlobusXIOGssapiftpDebugEnter();
 
-    /* if there is a request */
-    if(!globus_fifo_empty(&handle->read_req_q))
-    {
-       req = (globus_l_xio_gssapi_read_req_t *)
-                globus_fifo_dequeue(&handle->read_req_q);
-        globus_assert(req != NULL);
-        w_buf = (globus_l_xio_gssapi_buffer_t *)
-            globus_fifo_peek(&handle->unwrapped_q);
-        ndx = w_buf->ndx;
+    handle = (globus_l_xio_gssapi_ftp_handle_t *) user_arg;
 
-        /* if super mode the user breaks the semantics and says
-           they will free whatever buffer i give them.  This makes
-           it so i can garentuee them exactly 1 command per buffer */
-        if(handle->super_mode)
+    globus_mutex_lock(&handle->mutex);
+    {
+        globus_assert(handle->state == GSSAPI_FTP_STATE_OPEN);
+
+        send_buffer = (char *) handle->read_iov[0].iov_base;
+        if(send_buffer[0] == '6')
         {
-            req->iov[0].iov_base = globus_malloc(w_buf->length);
-            req->iov[0].iov_len = w_buf->length;
-            memcpy(req->iov[0].iov_base, w_buf->buf, w_buf->length);
-            ndx = w_buf->length;
+           globus_l_xio_gssapi_ftp_parse_command(
+                handle->read_iov[0].iov_base,
+                nbytes,
+                GLOBUS_TRUE,
+                &cmd_a);
+            if(cmd_a == NULL)
+            {
+                res = GlobusXIOGssapiFTPAllocError();
+                globus_mutex_unlock(&handle->mutex);
+                goto err;
+            }
+            ndx = 0;
+            for(ctr = 1; cmd_a[ctr] != NULL; ctr++)
+            {
+                res = globus_l_xio_gssapi_ftp_unwrap(
+                        handle,
+                        cmd_a[ctr],
+                        strlen(cmd_a[ctr]),
+                        &send_buffer);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto err;
+                }
+                tmp_i = strlen(send_buffer);
+                out_length += tmp_i;
+                out_buffer = globus_libc_realloc(out_buffer, out_length + 1);
+                memcpy(&out_buffer[ndx], send_buffer, tmp_i);
+                ndx += tmp_i;
+                globus_free(send_buffer);
+            }
+            globus_free(handle->read_iov->iov_base);
+            handle->read_iov->iov_base = out_buffer;
         }
+        /* XXX: should this be an error */
         else
         {
-            for(ctr = 0; 
-                ctr < req->iovc && ndx < w_buf->length;
-                ctr++)
-            {
-                /* copy as much as we can up to the length of
-                    the suers buffer */
-                ncopied = w_buf->length - ndx;
-                if(ncopied > req->iov[ctr].iov_len)
-                {
-                    ncopied = req->iov[ctr].iov_len;
-                }
-                memcpy(req->iov[ctr].iov_base,
-                    &w_buf->buf[ndx],
-                    ncopied);
-                ndx += ncopied;
-            }
-            if(ndx != w_buf->length)
-            {
-                w_buf->ndx = ndx;
-            }
-            else
-            {
-                void * x = globus_fifo_dequeue(&handle->unwrapped_q);
-                globus_assert(x = w_buf);
-                globus_free(w_buf->buf);
-                globus_free(w_buf);
-            }
+            out_length = nbytes;
         }
-        /* finish the read */
-        globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, ndx);
-        globus_free(req);
+        globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, out_length);
     }
 
-    GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_SUCCESS;
+   err:
+    return;
 }
-
 
 static globus_result_t
 globus_l_xio_gssapi_ftp_read(
@@ -2664,38 +2237,78 @@ globus_l_xio_gssapi_ftp_read(
     int                                 iovec_count,
     globus_xio_operation_t              op)
 {
+    globus_size_t                       out_length;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_result_t                     res;
-    globus_l_xio_gssapi_read_req_t *    req;
     GlobusXIOName(globus_l_xio_gssapi_ftp_read);
 
     GlobusXIOGssapiftpDebugEnter();
 
-
     handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_specific_handle;
 
-    req = (globus_l_xio_gssapi_read_req_t *)
-        globus_malloc(sizeof(globus_l_xio_gssapi_read_req_t));
-    req->iov = (globus_xio_iovec_t *)iovec;
-    req->iovc = iovec_count;
-
-    globus_fifo_enqueue(&handle->read_req_q, req);
-
-    res = globus_l_xio_gssapi_get_data(handle, op);
-
-    if (res != GLOBUS_SUCCESS)
+    globus_mutex_lock(&handle->mutex);
     {
-	goto err;
+        if(handle->read_posted)
+        {
+            res = GlobusXIOGssapiFTPOutstandingOp();
+            goto err;
+        }
+
+        /* completely de const'ipating here */
+        handle->read_iov = (globus_xio_iovec_t *) iovec; 
+        if(handle->client)
+        {
+            if(handle->banner != NULL)
+            {
+                globus_xio_driver_finished_read(
+                    op, GLOBUS_SUCCESS, out_length);
+            }
+            else
+            {
+                res = globus_xio_driver_pass_read(
+                    op,
+                    handle->read_iov,
+                    1,
+                    1,
+                    globus_l_xio_gssapi_ftp_client_read_cb,
+                    handle);
+                handle->read_posted = GLOBUS_TRUE;
+            }
+        }
+        else
+        {
+            res = globus_xio_driver_pass_read(
+                op,
+                &handle->auth_read_iov,
+                1,
+                1,
+                globus_l_xio_gssapi_ftp_server_read_cb, 
+                handle);
+            handle->read_posted = GLOBUS_TRUE;
+        }
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
     }	
+    globus_mutex_unlock(&handle->mutex);
+
     GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
 err:
 
+    globus_mutex_unlock(&handle->mutex);
     GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
 
+/************************************************************************
+ *                  load and activate
+ *                  -----------------
+ *  
+ *  This section has function that handle writes
+ ***********************************************************************/
 static globus_result_t
 globus_l_xio_gssapi_ftp_load(
     globus_xio_driver_t *               out_driver,
@@ -2707,10 +2320,16 @@ globus_l_xio_gssapi_ftp_load(
 
     GlobusXIOGssapiftpDebugEnter();
 
+    res = globus_xio_driver_load("ftp_cmd", &globus_l_gssapi_ftp_cmd_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
+
     res = globus_xio_driver_init(&driver, "gssapi_ftp", NULL);
     if(res != GLOBUS_SUCCESS)
     {
-	goto err;
+        goto err;
     }
 
     globus_xio_driver_set_transform(
@@ -2720,7 +2339,7 @@ globus_l_xio_gssapi_ftp_load(
         globus_l_xio_gssapi_ftp_read,
         globus_l_xio_gssapi_ftp_write,
         NULL,
-        NULL);
+        globus_l_xio_gssapi_ftp_push_driver);
 
     globus_xio_driver_set_attr(
         driver,
@@ -2760,6 +2379,7 @@ globus_l_xio_gssapi_ftp_unload(
     GlobusXIOGssapiftpDebugEnter();
 
     globus_xio_driver_destroy(driver);
+    globus_xio_driver_unload(globus_l_gssapi_ftp_cmd_driver);
 
     GlobusXIOGssapiftpDebugExit();
 }
@@ -2777,6 +2397,7 @@ globus_l_xio_gssapi_ftp_activate(void)
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_FTP_CMD);
 
     GlobusXIOGssapiftpDebugExit();
     return rc;
@@ -2791,6 +2412,7 @@ globus_l_xio_gssapi_ftp_deactivate(void)
 
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+    globus_module_deactivate(GLOBUS_XIO_DRIVER_FTP_CMD);
 
     GlobusXIOGssapiftpDebugExit();
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
