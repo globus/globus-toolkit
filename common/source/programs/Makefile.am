@@ -1,6 +1,6 @@
 include $(top_srcdir)/globus_automake_pre
 
-bin_PROGRAMS = globus-libc-hostname
+libexec_PROGRAMS = globus-libc-hostname
 
 INCLUDES = -I $(top_srcdir)/library $(GPT_INCLUDES) 
 
