@@ -5,10 +5,10 @@ SUBDIRS = \
 	pkgdata \
 	doxygen
 
-# Extra directories we install files into
-confdir = $(datadir)/$(PACKAGE)
-
 INCLUDES += $(GPT_INCLUDES)
+
+flavorinclude_HEADERS= \
+	globus_gram_jobmanager_callout_error.h
 
 lib_LTLIBRARIES = libglobus_gram_jobmanager_callout_error_$(GLOBUS_FLAVOR_NAME).la
 

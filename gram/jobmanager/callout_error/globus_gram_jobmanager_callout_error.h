@@ -95,10 +95,10 @@ globus_gram_jobmanager_callout_error_t;
 {                                                                        \
     char *                          _tmp_str_ =                          \
         globus_common_create_string __ERRSTR;                            \
-    __RESULT = globus_error_put(                                         \
+    (__RESULT) = globus_error_put(                                       \
         globus_error_construct_error(                                    \
             GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,                 \
-            __RESULT ? globus_error_get(__RESULT) : NULL,                \
+            (__RESULT) ? globus_error_get(__RESULT) : NULL,              \
             __TYPE,                                                      \
             "%s:%d: %s: %s%s%s",                                         \
             __FILE__, __LINE__, "GRAM Authorization Callout",            \
