@@ -120,6 +120,9 @@ if test "$gssapi_type" = "globus" ; then
 	CHECK_GLOBUS_DEVELOPMENT_PATH()
 	AC_MSG_CHECKING(Globus GSSAPI dependencies)
 
+	if test -z "$GPT_LOCATION" ; then
+	    GPT_LOCATION=$GLOBUS_LOCATION
+	fi
 	${GPT_LOCATION}/sbin/gpt_build_config -src=pkg_data_src-gssapi.gpt \
 	                 -flavor=${globus_flavor} \
 			 -link $GPT_LINKTYPE > /dev/null

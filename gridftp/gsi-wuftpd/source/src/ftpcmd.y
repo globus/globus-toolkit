@@ -80,9 +80,9 @@ globus_ftp_control_parallelism_t		g_parallelism;
 globus_ftp_control_dcau_t			g_dcau;
 globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
 globus_fifo_t					g_restarts;
-#endif
 
 extern gss_cred_id_t                            g_deleg_cred;
+#endif
 
 extern int dolreplies;
 #ifndef INTERNAL_LS

@@ -48,6 +48,7 @@ char* gss_services[] = { "host", 0 };
 #if USE_GLOBUS_DATA_CODE
 #include "globus_ftp_control.h"
 extern globus_ftp_control_handle_t g_data_handle;
+extern gss_cred_id_t g_deleg_cred;
 #endif
 
 extern int debug;			/* From ftpd.c */
@@ -60,8 +61,6 @@ static gss_ctx_id_t gcontext = GSS_C_NO_CONTEXT;
 
 /* Identity of authenticated client */
 static gss_buffer_desc client_name = { 0, NULL };
-
-gss_cred_id_t g_deleg_cred = GSS_C_NO_CREDENTIAL;
 
 #ifndef NUL
 #define	NUL	'\0'

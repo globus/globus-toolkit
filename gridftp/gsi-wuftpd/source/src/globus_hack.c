@@ -11,7 +11,7 @@ extern globus_ftp_control_parallelism_t		g_parallelism;
 extern globus_bool_t				g_send_restart_info;
 extern int mode;
 extern globus_size_t                            g_striped_file_size;
-extern gss_cred_id_t                            g_deleg_cred;
+gss_cred_id_t                            	g_deleg_cred = GSS_C_NO_CREDENTIAL;
 
 extern SIGNAL_TYPE         
 lostconn(int sig);
