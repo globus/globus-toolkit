@@ -123,3 +123,4 @@ globus_utp                      utp/source                      dirt.sh
 globus_callout                  callout/source                  dirt.sh
 globus_callout_test             callout/test                    dirt.sh
 globus_gram_jobmanager_callout  gram/jobmanager/callout         dirt.sh
+globus_gram_jobmanager_callout_error  gram/jobmanager/callout_error dirt.sh
