@@ -40,6 +40,7 @@ AC_CHECK_HEADERS(netinet/tcp.h)
 AC_CHECK_HEADERS(sys/select.h)
 AC_CHECK_HEADERS(string.h)
 AC_CHECK_HEADERS(dce/cma_ux.h)
+AC_CHECK_FUNCS(sysconf)
 
 GLOBUS_FINALIZE
 
