@@ -1,5 +1,5 @@
 
-use Getopt::Long:
+use Getopt::Long;
 use English;
 
 my $gpath = $ENV{GPT_LOCATION};
@@ -18,22 +18,15 @@ if (!defined($gpath))
 
 $setup_gsi_options = join(" ", @ARGV);
 
-if( ! &GetOptions("nonroot|d:s") ) {
-
-    print <<EOF
-
-setup-ssl-utils [ options ...]
-
-  Options:
-    --nonroot=DIR, -d DIR      flag used to setup the grid security directory
-	                       in a non-default location (/etc/grid-security/)
-
-EOF
-    ;
-
-    exit 1;
+if( ! &GetOptions("nonroot|d:s","help!") ) 
+{
+   pod2usage(1);
 }
 
+if(defined($opt_help))
+{
+   pod2usage(0);
+}
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus";
@@ -82,9 +75,11 @@ Running: $setupdir/setup-gsi $setup_gsi_options
 done with setup-ssl-utils.
 ";
 
-} else {
+} 
+else 
+{
 
-print "
+   print "
 ***************************************************************************
 
 Note: To complete setup of the GSI software you need to run the
@@ -100,7 +95,26 @@ $myname: Complete
 Press return to continue.
 ";
 
-$foo=<STDIN>;
-
+   $foo=<STDIN>;
+   
 }
+
+sub pod2usage 
+{
+  my $ex = shift;
+
+  print "setup-ssl-utils [
+              -help
+              -nonroot[=path] 
+                 sets the directory that the security configuration
+	         files will be placed in.  If no argument is given,
+	         the config files will be placed in \$GLOBUS_LOCATION/etc/
+                 and the CA files will be placed in  
+                 \$GLOBUS_LOCATION/share/certificates.
+                ]\n";
+
+  exit $ex;
+}
+
+
 # End
