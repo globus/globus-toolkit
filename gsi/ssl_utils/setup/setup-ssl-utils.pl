@@ -49,6 +49,23 @@ if ($result != 0) {
 
 $metadata->finish();
 
-print "$myname: Complete\n";
+
+print "
+***************************************************************************
+
+Note: To complete setup of the GSI software you need to run the
+following script as root to configure your /etc/grid-security/
+directory:
+
+$setupdir/setup-gsi
+
+***************************************************************************
+
+$myname: Complete
+
+Press return to continue.
+";
+
+$foo=<STDIN>;
 
 # End
