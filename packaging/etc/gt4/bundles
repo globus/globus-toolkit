@@ -162,6 +162,7 @@ BUNDLE gt4-gram-no-c
         globus_wsrf_gram_common_java
         globus_wsrf_gram_common_schema
         globus_wsrf_gram_job_monitoring_common_java
+        globus_wsrf_gram_service_java_usage
         globus_wsrf_gram_service_java
         globus_wsrf_gram_service_java_setup_common
         globus_wsrf_gram_service_java_setup_fork
@@ -204,6 +205,17 @@ BUNDLE gt4-gram-test
         globus_scheduler_event_generator_condor_test
         globus_gridmap_and_execute_test
         globus_c_wsrf_rendezvous_test
+
+BUNDLE gt4-gram-test-no-c
+        globus_wsrf_gram_scheduler_test
+        globus_wsrf_gram_service_test_unit
+        globus_wsrf_gram_service_test_throughput
+        globus_scheduler_event_generator_test
+        globus_scheduler_event_generator_fork_test
+        globus_scheduler_event_generator_pbs_test
+        globus_scheduler_event_generator_lsf_test
+        globus_scheduler_event_generator_condor_test
+        globus_gridmap_and_execute_test
 
 BUNDLE gt4-cas
         globus_wsrf_cas_client_java
