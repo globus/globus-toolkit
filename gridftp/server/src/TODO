@@ -28,45 +28,23 @@ EOFC
 
 -- add symlink_target to stat buffer, server-lib stuff to display it in mlsx
 
-IPC security
+IPC 
+-- security
+-- connect backwards
 
 Portability issues
 -- stop int<->void* conversions
 
+Protocol
+-- verify messages
 
+multiple dsi
+striping
+remote
+eret loads modiule
+netlogger output
 
-
-
-
-BuzzTroll whispers to you, "connect backwards"
-You whisper to BuzzTroll, "mo leaks"
-BuzzTroll whispers to you, "threads"
-BuzzTroll whispers to you, "security"
-BuzzTroll whispers to you, "connect utta way"
-BuzzTroll whispers to you, "verify da ass"
-BuzzTroll whispers to you, "da protocol messages and shit"
-You whisper to BuzzTroll, "symlink target in mlsx"
-BuzzTroll whispers to you, "fix remote"
-BuzzTroll whispers to you, "fix stripes"
-You whisper to BuzzTroll, "multiple dsi?"
-You whisper to BuzzTroll, "eret module=blah should load dsi bla"
-You whisper to BuzzTroll, "else uses default innna"
-You whisper to BuzzTroll, "errors"
-You whisper to BuzzTroll, "-- stop int<->void* conversions"
-You whisper to BuzzTroll, "id lookup shit"
-You whisper to BuzzTroll, "errors everywhere yea"
-You whisper to BuzzTroll, "not using resultt at all onna return path i think"
-You whisper to BuzzTroll, "except maybe to print the system error for internal logging"
-You whisper to BuzzTroll, "but then i think we send back a string anyways"
-You whisper to BuzzTroll, "produce netlogger output"
-You whisper to BuzzTroll, "-sync(2) before each transfer stat update (by option only, unless it 
-    doesn't affect perf)"
-You whisper to BuzzTroll, "i think remote can handle it"
-You whisper to BuzzTroll, "send out first stor to truncing stripe"
-You whisper to BuzzTroll, "wait for its begin"
-You whisper to BuzzTroll, "then send out rest of stripes with no trunc"
-
-
+sync(2)
 
 Other Stuff
 ------------
