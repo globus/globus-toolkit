@@ -57,7 +57,7 @@ $metadata->finish();
 sub usage
 {
     print "Usage: $0 [options]\n".
-          "Options:  [--path|-p path to PBS server log]\n".
+          "Options:  [--path|-p path to place condor log]\n".
 	  "          [--help|-h]\n".
           " default path is $ENV{GLOBUS_LOCATION}/var/globus-condor.log\n";
     exit 1;
