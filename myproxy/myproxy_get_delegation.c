@@ -5,12 +5,13 @@
  */
 
 #include "myproxy.h"
+#include "myproxy_log.h"
+#include "ssl_utils.h"
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
 #include "myproxy_read_pass.h"
 #include "myproxy_delegation.h"
-#include "sslutil.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -120,7 +121,8 @@ main(int argc, char *argv[])
     init_arguments(argc, argv, socket_attrs, client_request);
 
     if (!outputfile) {
-	myproxy_get_filenames(NULL, 0, NULL, NULL, &outputfile, NULL, NULL);
+	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
+						GLOBUS_PROXY_FILE_OUTPUT);
     }
 
     if (creds_to_authorization == NULL) {
