@@ -4,13 +4,13 @@
 #include "globus_common.h"
 
 typedef enum
-{
-    GLOBUS_XIO_HTTP_GET_HEADERS,
-    GLOBUS_XIO_HTTP_SET_HEADERS,
-    GLOBUS_XIO_HTTP_GET_CONTACT,
-    GLOBUS_XIO_HTTP_SET_EXIT_CODE,
-    GLOBUS_XIO_HTTP_SET_EXIT_TEXT
-} globus_xio_http_handle_cmd_t;
+    {
+        GLOBUS_XIO_HTTP_GET_HEADERS,
+        GLOBUS_XIO_HTTP_SET_HEADERS,
+        GLOBUS_XIO_HTTP_GET_CONTACT,
+        GLOBUS_XIO_HTTP_SET_EXIT_CODE,
+        GLOBUS_XIO_HTTP_SET_EXIT_TEXT
+    } globus_xio_http_handle_cmd_t;
 
 typedef enum
     {
@@ -23,4 +23,11 @@ typedef enum
     {
         GLOBUS_XIO_HTTP_INSUFFICIENT_HEADER
     } globus_xio_http_errors_t;
+
+typedef struct globus_xio_http_string_pair_s
+{
+    char *key;
+    char *value;
+} globus_xio_http_string_pair_t;
+
 #endif
