@@ -139,6 +139,9 @@ ssh_gssapi_krb5_localname(char **user)
 {
     krb5_principal princ;
 
+    if (ssh_gssapi_krb5_init() == 0)
+	return 0;
+
     if (krb5_parse_name(krb_context, gssapi_client_name.value, &princ)) {
 	return(0);
     }
@@ -151,7 +154,6 @@ ssh_gssapi_krb5_localname(char **user)
     return(1);
 }
 	
-#ifndef HAVE_GSSAPI_EXT
 /* Make sure that this is called _after_ we've setuid to the user */
 
 /* This writes out any forwarded credentials. Its specific to the Kerberos
@@ -163,7 +165,7 @@ ssh_gssapi_krb5_localname(char **user)
  */
 
 OM_uint32
-ssh_gssapi_krb5_storecreds() {
+ssh_gssapi_krb5_storecreds(gss_buffer_t export_buffer) {
 	krb5_ccache ccache;
 	krb5_error_code problem;
 	krb5_principal princ;
@@ -171,6 +173,7 @@ ssh_gssapi_krb5_storecreds() {
 	static char name[40];
 	int tmpfd;
 	OM_uint32 maj_status,min_status;
+	gss_cred_id_t krb5_cred_handle;
 
 
 	if (gssapi_client_creds==NULL) {
@@ -229,8 +232,16 @@ ssh_gssapi_krb5_storecreds() {
 	
 	krb5_free_principal(krb_context,princ);
 
+#ifdef MECHGLUE
+	krb5_cred_handle =
+	    __gss_get_mechanism_cred(gssapi_client_creds,
+				     &(supported_mechs[GSS_KERBEROS].oid));
+#else
+	krb5_cred_handle = gssapi_client_creds;
+#endif
+
 	if ((maj_status = gss_krb5_copy_ccache(&min_status, 
-					       gssapi_client_creds, 
+					       krb5_cred_handle, 
 					       ccache))) {
 		log("gss_krb5_copy_ccache() failed");
 		ssh_gssapi_error(maj_status,min_status);
@@ -240,18 +251,12 @@ ssh_gssapi_krb5_storecreds() {
 	
 	krb5_cc_close(krb_context,ccache);
 
-
-#ifdef USE_PAM
-	do_pam_putenv("KRB5CCNAME",name);
-#endif
-
-	gssapi_cred_store.filename=strdup(ccname);
-	gssapi_cred_store.envvar="KRB5CCNAME";
-	gssapi_cred_store.envval=strdup(name);
+	export_buffer->length = strlen("KRB5CCNAME")+strlen(name)+1;
+	export_buffer->value = xmalloc(export_buffer->length+1);
+	sprintf(export_buffer->value, "%s=%s", "KRB5CCNAME", name);
 
 	return GSS_S_COMPLETE;
 }
-#endif /* HAVE_GSSAPI_EXT */
 
 #endif /* KRB5 */
 
@@ -289,14 +294,13 @@ ssh_gssapi_gsi_localname(char **user)
     return(globus_gss_assist_gridmap(gssapi_client_name.value, user) == 0);
 }
 
-#ifndef HAVE_GSSAPI_EXT
 /*
  * Handle setting up child environment for GSI.
  *
  * Make sure that this is called _after_ we've setuid to the user.
  */
 OM_uint32
-ssh_gssapi_gsi_storecreds()
+ssh_gssapi_gsi_storecreds(gss_buffer_t export_buffer)
 {
 	OM_uint32	major_status;
 	OM_uint32	minor_status;
@@ -340,13 +344,13 @@ ssh_gssapi_gsi_storecreds()
 			{
 				*value = '\0';
 				value++;
-#ifdef USE_PAM
-				do_pam_putenv("X509_USER_PROXY",value);
-#endif
-			 	gssapi_cred_store.filename=strdup(value);
-				gssapi_cred_store.envvar="X509_USER_PROXY";
-				gssapi_cred_store.envval=strdup(value);
-
+				export_buffer->length=
+				    strlen("X509_USER_PROXY")+strlen(value)+1;
+				export_buffer->value =
+				    xmalloc(export_buffer->length+1);
+				sprintf(export_buffer->value, "%s=%s",
+					"X509_USER_PROXY", value);
+				
 				return GSS_S_COMPLETE;
 			}
 			else
@@ -363,7 +367,6 @@ ssh_gssapi_gsi_storecreds()
 	}
 	return 0;
 }
-#endif /* HAVE_GSSAPI_EXT */
 
 #endif /* GSI */
 
@@ -383,25 +386,27 @@ ssh_gssapi_cleanup_creds(void *ignored)
 	*/
 }
 
-#ifndef HAVE_GSSAPI_EXT
 OM_uint32
-gss_export_cred(OM_uint32 *            minor_status,
-                const gss_cred_id_t    cred_handle,
-		const gss_OID          desired_mech,
-  		OM_uint32              option_req,
-		gss_buffer_t           export_buffer)
+ssh_gssapi_export_cred(OM_uint32 *            minor_status,
+		       const gss_cred_id_t    cred_handle,
+		       const gss_OID          desired_mech,
+		       OM_uint32              option_req,
+		       gss_buffer_t           export_buffer)
 {
 	OM_uint32 maj_stat = GSS_S_FAILURE;
+
+	if (option_req != 1) return GSS_S_UNAVAILABLE;
+	if (desired_mech != NULL) return GSS_S_BAD_MECH;
 
 	switch (gssapi_client_type) {
 #ifdef KRB5
 	case GSS_KERBEROS:
-		maj_stat = ssh_gssapi_krb5_storecreds();
+		maj_stat = ssh_gssapi_krb5_storecreds(export_buffer);
 		break;
 #endif
 #ifdef GSI
 	case GSS_GSI:
-		maj_stat = ssh_gssapi_gsi_storecreds();
+		maj_stat = ssh_gssapi_gsi_storecreds(export_buffer);
 		break;
 #endif /* GSI */
 	case GSS_LAST_ENTRY:
@@ -415,11 +420,9 @@ gss_export_cred(OM_uint32 *            minor_status,
 
 	if (GSS_ERROR(maj_stat)) {
 		*minor_status = GSS_S_FAILURE;
-		return maj_stat;
 	}
-	return 0;
+	return maj_stat;
 }
-#endif /* HAVE_GSSAPI_EXT */
 
 void 
 ssh_gssapi_storecreds()
@@ -431,11 +434,22 @@ ssh_gssapi_storecreds()
 	if (gssapi_client_creds == GSS_C_NO_CREDENTIAL)
 		return;
 
+#ifdef HAVE_GSSAPI_EXT
 	maj_stat = gss_export_cred(&min_stat, gssapi_client_creds,
 				   GSS_C_NO_OID, 1, &export_cred);
-	if (GSS_ERROR(maj_stat)) {
+	if (GSS_ERROR(maj_stat) && maj_stat != GSS_S_UNAVAILABLE) {
 		ssh_gssapi_error(maj_stat, min_stat);
 		return;
+	}
+#endif
+
+	/* If gss_export_cred() is not available, use old methods */
+	if (export_cred.length == 0) {
+	    ssh_gssapi_export_cred(&min_stat, gssapi_client_creds,
+				   GSS_C_NO_OID, 1, &export_cred);
+	    if (GSS_ERROR(maj_stat)) {
+		ssh_gssapi_error(maj_stat, min_stat);
+	    }
 	}
 
 	p = strchr((char *) export_cred.value, '=');
@@ -448,6 +462,15 @@ ssh_gssapi_storecreds()
 	*p++ = '\0';
 	gssapi_cred_store.envvar = strdup((char *)export_cred.value);
 	gssapi_cred_store.envval = strdup(p);
+#ifdef USE_PAM
+	do_pam_putenv(gssapi_cred_store.envvar, gssapi_cred_store.envval);
+#endif
+	if (strncmp(p, "FILE:", 5) == 0) {
+	    p += 5;
+	}
+	if (access(p, R_OK)) {
+	    gssapi_cred_store.filename = strdup(p);
+	}
 	gss_release_buffer(&min_stat, &export_cred);
 
 	if (options.gss_cleanup_creds) {
