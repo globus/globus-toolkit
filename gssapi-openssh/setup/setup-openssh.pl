@@ -330,8 +330,6 @@ sub fixpaths
 }
 
 print "---------------------------------------------------------------\n";
-print "$myname: Configuring package gsi_openssh..\n";
-print "\n";
 print "Hi, I'm the setup script for the gsi_openssh package!  There\n";
 print "are some last minute details that I've got to set straight\n";
 print "in the config and man files, along with generating the ssh keys\n";
