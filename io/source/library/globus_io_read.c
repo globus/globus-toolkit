@@ -567,7 +567,7 @@ globus_i_io_try_read(
                 handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_START_READ,
                 "GIOTR",
-                3,
+                "Important",
                 tag_str);
         }
 	n_read =
@@ -589,7 +589,7 @@ globus_i_io_try_read(
                 handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_END_READ,
                 "GIOTR",
-                3,
+                "Important",
                 tag_str);
         }
 	save_errno = errno;
@@ -790,7 +790,7 @@ globus_l_io_read_callback(
                 handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_START_READ,
                 "GIOR",
-                3,
+				"Important",
                 tag_str);
         }
 	n_read =
@@ -811,7 +811,7 @@ globus_l_io_read_callback(
                 handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_END_READ,
                 "GIOR",
-                3,
+				"Important",
                 tag_str);
 	}
  

@@ -1510,7 +1510,7 @@ globus_i_io_try_write(
                 handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_START_WRITE,
                 "GIOTW",
-                3,
+                "Important",
                 tag_str);
         }
 	n_written = globus_libc_write(
@@ -1531,7 +1531,7 @@ globus_i_io_try_write(
                 handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_END_WRITE,
                 "GIOTW",
-                3,
+                "Important",
                 tag_str);
         }
 
@@ -1742,7 +1742,7 @@ globus_i_io_try_writev(
             handle->nl_handle,
             GLOBUS_IO_NL_EVENT_START_WRITE,
             "GIOTWV",
-            3,
+            "Important",
             tag_str);
 
 	n_written = globus_libc_writev(
@@ -1757,7 +1757,7 @@ globus_i_io_try_writev(
             handle->nl_handle,
             GLOBUS_IO_NL_EVENT_END_WRITE,
             "GIOTWV",
-            3,
+            "Important",
             tag_str);
 
 	save_errno = errno;
