@@ -537,6 +537,11 @@ myproxy_creds_store(const struct myproxy_creds *creds)
 	goto error;
     }
 
+    /*
+     * If credentials already exist for this username then we need
+     * to check to make sure new credentials have the same owner.
+     */
+
     if (write_data_file(creds, data_path, data_file_mode) == -1)
     {
 	goto error;
@@ -551,46 +556,72 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     return_code = 0;
     
   error:
+    /* XXX */
     /* Remove files on error */
     if (return_code == -1)
     {
-	myproxy_creds_delete(creds->user_name);
+	unlink(data_path);
+	unlink(creds_path);
     }
 
     return return_code;
 }
 
 int
-myproxy_creds_retrieve(const char *user_name,
-		       struct myproxy_creds *creds)
+myproxy_creds_retrieve(struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
+    struct myproxy_creds retrieved_creds;
     int return_code = -1;
-
+    int authorization_ok = 0;
     
     if ((creds == NULL) ||
-	(user_name == NULL))
+	(creds->user_name == NULL) ||
+	(creds->pass_phrase == NULL))
     {
 	verror_put_errno(EINVAL);
 	return -1;
     }
-  
-    if (get_storage_locations(user_name,
+
+    memset(&retrieved_creds, 0, sizeof(retrieved_creds));
+    
+    if (get_storage_locations(creds->user_name,
 			      creds_path, sizeof(creds_path),
 			      data_path, sizeof(data_path)) == -1)
     {
 	goto error;
     }
 
-    if (read_data_file(creds, data_path) == -1)
+    if (read_data_file(&retrieved_creds, data_path) == -1)
     {
 	goto error;
     }
 
-    creds->location = mystrdup(creds_path);
+    /*
+     * Check pass phrase
+     */
+    if ((retrieved_creds.pass_phrase != NULL) &&
+	(creds->pass_phrase != NULL) &&
+	(strcmp(retrieved_creds.pass_phrase, creds->pass_phrase) == 0))
+    {
+	authorization_ok = 1;
+    }
     
-    if (creds->location == NULL)
+    if (authorization_ok == 0)
+    {
+	verror_put_string("bad pass phrase");
+	goto error;
+    }
+    
+    /* Copy creds */
+    creds->owner_name = mystrdup(retrieved_creds.owner_name);
+    creds->location = mystrdup(creds_path);
+    creds->lifetime = retrieved_creds.lifetime;
+    creds->restrictions = NULL;
+    
+    if ((creds->owner_name == NULL) ||
+	(creds->location == NULL))
     {
 	goto error;
     }
@@ -599,28 +630,102 @@ myproxy_creds_retrieve(const char *user_name,
     return_code = 0;
     
   error:
-    myproxy_creds_free_contents(creds);
+    if (return_code == -1)
+    {
+	/*
+	 * Don't want to free user_name or pass_phrase as caller supplied
+	 * these.
+	 */
+	if (creds->owner_name != NULL)
+	{
+	    free(creds->owner_name);
+	    creds->owner_name = NULL;
+	}
+	if (creds->location != NULL)
+	{
+	    free(creds->location);
+	    creds->location = NULL;
+	}
+	creds->lifetime = 0;
+    }
+
+    myproxy_creds_free_contents(&retrieved_creds);
     
     return return_code;
 }
 
 
-void
-myproxy_creds_delete(const char *user_name)
+int
+myproxy_creds_delete(const struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
-  
-    if (get_storage_locations(user_name,
+    struct myproxy_creds tmp_creds;
+    int return_code = -1;
+    int authorization_ok = 0;
+    
+    if ((creds == NULL) ||
+	(creds->user_name == NULL))
+    {
+	verror_put_errno(EINVAL);
+	return -1;
+    }
+    
+    if (get_storage_locations(creds->user_name,
 			      creds_path, sizeof(creds_path),
 			      data_path, sizeof(data_path)) == -1)
     {
-	/* Punt */
-	return;
+	goto error;
     }
 
-    unlink(creds_path);
-    unlink(data_path);
+    if (read_data_file(&tmp_creds, data_path) == -1)
+    {
+	goto error;
+    }
+    
+    /*
+     * Either the pass phrase needs to match or the
+     * owner name needs to match.
+     */
+    if ((tmp_creds.pass_phrase != NULL) &&
+	(creds->pass_phrase != NULL) &&
+	(strcmp(tmp_creds.pass_phrase, creds->pass_phrase) == 0))
+    {
+	authorization_ok = 1;
+    }
+    
+    if ((tmp_creds.owner_name != NULL) &&
+	(creds->owner_name != NULL) &&
+	(strcmp(tmp_creds.owner_name, creds->owner_name) == 0))
+    {
+	authorization_ok = 1;
+    }
+
+    if (authorization_ok == 0)
+    {
+	verror_put_string("authorization failed");
+	goto error;
+    }
+
+    if (unlink(creds_path) == -1)
+    {
+	verror_put_errno(errno);
+	verror_put_string("deleting credentials file %s", creds_path);
+	goto error;
+    }
+    
+    if (unlink(data_path) == -1)
+    {
+	verror_put_errno(errno);
+	verror_put_string("deleting credentials data file %s", creds_path);
+	goto error;
+    }
+
+    /* Success */
+    return_code = 0;
+    
+  error:
+    return return_code;
 }
 
 void myproxy_creds_free_contents(struct myproxy_creds *creds)
