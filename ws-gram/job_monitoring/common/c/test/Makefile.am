@@ -51,9 +51,9 @@ seg_api_test_SOURCES = seg_api_test.c
 seg_api_test_LDFLAGS = $(GPT_LDFLAGS)
 seg_api_test_LDADD = $(GPT_PGM_LINKS)
 
-EXTRA_DIST= version.h.in seg_test.dox seg_api_test_data.txt
+EXTRA_DIST= version.h.in seg_test.dox seg_api_test_data.txt test-data.txt
 
-TEST_data = seg_api_test_data.txt
+TEST_data = seg_api_test_data.txt test-data.txt
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
