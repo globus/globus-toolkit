@@ -1,4 +1,0 @@
-name=globus_grim_devel
-subdir=program_execution/globus_grim/source
-build="custom"
-output=globus_grim_devel-*.tar.gz
