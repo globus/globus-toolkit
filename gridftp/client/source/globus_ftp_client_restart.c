@@ -62,7 +62,7 @@ globus_i_ftp_client_restart_register_oneshot(
     globus_abstime_t				now;
     globus_reltime_t				when;
     globus_reltime_t				zero;
-    int						rc;
+    int						rc = 0;
     static char * myname = "globus_l_ftp_client_restart_register_oneshot";
 
     /* Update the restart marker in the handle */
@@ -128,12 +128,7 @@ globus_i_ftp_client_restart_register_oneshot(
 
     if(rc != GLOBUS_SUCCESS)
     {
-	return globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Couldn't register callback %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	return GLOBUS_I_FTP_CLIENT_ERROR_INTERNAL_ERROR(GLOBUS_NULL);
     }
     else
     {
@@ -841,12 +836,7 @@ globus_i_ftp_client_restart(
     case GLOBUS_FTP_CLIENT_HANDLE_ABORT:
     case GLOBUS_FTP_CLIENT_HANDLE_FAILURE:
     case GLOBUS_FTP_CLIENT_HANDLE_RESTART:
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot abort because operation has already completed at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_NOT_IN_USE("handle");
 	break;
     }
     return err;

@@ -126,46 +126,26 @@ globus_ftp_client_register_read(
 
     if(handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register read on NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error;
     }
     if(buffer == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register read of NULL buffer at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("buffer");
 
 	goto error;
     }
     if(callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register read with NULL callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("callback");
 
 	goto error;
     }
 
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register read on invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error;
     }
@@ -177,13 +157,7 @@ globus_ftp_client_register_read(
        i_handle->op != GLOBUS_FTP_CLIENT_LIST &&
        i_handle->op != GLOBUS_FTP_CLIENT_NLST )
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register read for a %s operation at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(i_handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_OPERATION(i_handle->op);
 
 	goto unlock_error;
     }
@@ -198,12 +172,7 @@ globus_ftp_client_register_read(
 	 * return that information to the user.
 	 */
 
-        err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register read because EOF was already reached at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_EOF();
 
 	goto unlock_error;
     }
@@ -216,12 +185,7 @@ globus_ftp_client_register_read(
 					callback_arg);
     if(data == GLOBUS_NULL)
     {
-        err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto unlock_error;
     }
@@ -292,12 +256,7 @@ globus_ftp_client_register_read(
 		    GLOBUS_NULL);
 
 	    }
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		err,
-		"[%s] Cannot register read with control library at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_INTERNAL_ERROR(err);
 
 	    goto unlock_error;
 	}
@@ -367,46 +326,26 @@ globus_ftp_client_register_write(
 
     if(handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register write on NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error;
     }
     if(buffer == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register write of NULL buffer at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("buffer");
 
 	goto error;
     }
     if(callback == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register write with NULL callback at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("callback");
 
 	goto error;
     }
 
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register write on invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 	
 	goto error;
     }
@@ -416,13 +355,7 @@ globus_ftp_client_register_write(
 
     if(i_handle->op != GLOBUS_FTP_CLIENT_PUT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register write for a %s operation at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(i_handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_OPERATION(i_handle->op);
 
 	goto unlock_error;
     }
@@ -435,12 +368,7 @@ globus_ftp_client_register_write(
 	 * to the user. 
 	 */
 
-        err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot register read because EOF was already sent at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_EOF();
 
 	goto unlock_error;
     }
@@ -458,12 +386,7 @@ globus_ftp_client_register_write(
 					callback_arg);
     if(data == GLOBUS_NULL)
     {
-        err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto unlock_error;
     }
@@ -534,12 +457,7 @@ globus_ftp_client_register_write(
 		    GLOBUS_NULL);
 
 	    }
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		err,
-		"[%s] Cannot register write with control library at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_INTERNAL_ERROR(err);
 
 	    goto unlock_error;
     	}
@@ -818,7 +736,9 @@ globus_l_ftp_client_data_callback(
 
     if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
     {
-	if(client_handle->op == GLOBUS_FTP_CLIENT_GET)
+	if(client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
+	   client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+	   client_handle->op == GLOBUS_FTP_CLIENT_NLST )
 	{
 	    eof = GLOBUS_FALSE;
 	    dispatch_final = GLOBUS_FALSE;
@@ -907,7 +827,9 @@ globus_l_ftp_client_read_all_callback(
 
     target = client_handle->source;
 
-    globus_assert(client_handle->op == GLOBUS_FTP_CLIENT_GET);
+    globus_assert(client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
+	          client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+	          client_handle->op == GLOBUS_FTP_CLIENT_NLST );
 
     if(bytes_read > 0 &&
        offset_read + bytes_read > client_handle->read_all_biggest_offset)
@@ -1025,6 +947,8 @@ globus_l_ftp_client_read_all_callback(
     globus_assert(
 	client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET
 	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO 
+	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST
+	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST
 	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE
 	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT 
 	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART);

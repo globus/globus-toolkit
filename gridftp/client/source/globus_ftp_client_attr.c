@@ -39,25 +39,19 @@ globus_ftp_client_handleattr_init(
 
     if(attr == GLOBUS_NULL)
     {
-	return globus_error_put(globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot initialize NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+	return globus_error_put(
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr"));
     }
     i_attr = globus_libc_calloc(1, sizeof(globus_i_ftp_client_handleattr_t));
 
     if(i_attr == GLOBUS_NULL)
     {
-	return globus_error_put(globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Out of memory at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+	return globus_error_put(
+		GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("attr"));
     }
     i_attr->nl_handle = GLOBUS_NULL;
+    i_attr->nl_ftp = GLOBUS_FALSE;
+    i_attr->nl_io = GLOBUS_FALSE;
     *attr = i_attr;
     
     return GLOBUS_SUCCESS;
@@ -92,12 +86,8 @@ globus_ftp_client_handleattr_destroy(
 
     if(attr == GLOBUS_NULL)
     {
-	return globus_error_put(globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot destroy NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+	return globus_error_put(
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr"));
     }
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
 
@@ -144,25 +134,21 @@ globus_ftp_client_handleattr_copy(
     globus_result_t				result;
     static char * myname = "globus_i_ftp_client_handleattr_copy";
     
-    if(dest == GLOBUS_NULL || src == GLOBUS_NULL)
+    if(src == GLOBUS_NULL)
     {
-	return globus_error_put(globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot copy NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+	return globus_error_put(
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("src"));
+    }
+    else if(dest == GLOBUS_NULL)
+    {
+	return globus_error_put(
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dest"));
     }
     result = globus_ftp_client_handleattr_init(dest);
 
     if(result != GLOBUS_SUCCESS)
     {
-	return globus_error_put(globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		globus_error_get(result),
-		"[%s] Cannot initialize attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+	return result;
     }
 
     return globus_i_ftp_client_handleattr_copy(
@@ -213,12 +199,8 @@ globus_ftp_client_handleattr_set_cache_all(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot modify NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
 	goto error_exit;
     }
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
@@ -243,22 +225,13 @@ globus_ftp_client_handleattr_get_cache_all(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot modify NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
 	goto error_exit;
     }
     if(cache_all == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL cache_all parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("cache_all");
 
 	goto error_exit;
     }
@@ -301,12 +274,7 @@ globus_ftp_client_handleattr_add_cached_url(
     if(attr == GLOBUS_NULL)
     {
 	return globus_error_put(
-		globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] Cannot modify NULL attribute at %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    myname));
+	    GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr"));
     }
 
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
@@ -329,12 +297,7 @@ globus_ftp_client_handleattr_remove_cached_url(
     if(attr == GLOBUS_NULL)
     {
 	return globus_error_put(
-		globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] Cannot modify NULL attribute at %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    myname));
+	    GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr"));
     }
 
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
@@ -367,32 +330,37 @@ globus_ftp_client_handleattr_set_netlogger(
     globus_ftp_client_handleattr_t *            attr,
     globus_netlogger_handle_t *                 nl_handle)
 {
+    return globus_ftp_client_handleattr_set_netlogger_ftp_io(
+               attr, nl_handle, GLOBUS_TRUE, GLOBUS_TRUE);
+}
+
+globus_result_t
+globus_ftp_client_handleattr_set_netlogger_ftp_io(
+    globus_ftp_client_handleattr_t *            attr,
+    globus_netlogger_handle_t *                 nl_handle,
+    globus_bool_t                               ftp,
+    globus_bool_t                               io)
+{
     globus_object_t *                           err = GLOBUS_SUCCESS;
     globus_i_ftp_client_handleattr_t *          i_attr;
     static char * myname = "globus_ftp_client_handleattr_set_netlogger";
 
     if(attr == GLOBUS_NULL)
     {
-        err = globus_error_construct_string(
-                GLOBUS_FTP_CLIENT_MODULE,
-                GLOBUS_NULL,
-                "[%s] Cannot modify NULL attribute at %s\n",
-                GLOBUS_FTP_CLIENT_MODULE->module_name,
-                myname);
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
         return globus_error_put(err);
     }
     if(nl_handle == GLOBUS_NULL)
     {
-        err = globus_error_construct_string(
-                GLOBUS_FTP_CLIENT_MODULE,
-                GLOBUS_NULL,
-                "[%s] Cannot set NULL netlogger handle at %s\n",
-                GLOBUS_FTP_CLIENT_MODULE->module_name,
-                myname);
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("nl_handle");
+
         return globus_error_put(err);
     }
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
 
+    i_attr->nl_ftp = ftp;
+    i_attr->nl_io = io;
     i_attr->nl_handle = nl_handle;
 
     return GLOBUS_SUCCESS;
@@ -436,44 +404,28 @@ globus_ftp_client_handleattr_add_plugin(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot modify NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
 	goto error_exit;
     }
     if(plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot add NULL plugin at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin");
+
 	goto error_exit;
     }
     if(*plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot add invalid plugin at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+        err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("plugin");
+
 	goto error_exit;
     }
     if((*plugin)->plugin_name == GLOBUS_NULL ||
        (*plugin)->copy_func == GLOBUS_NULL ||
        (*plugin)->destroy_func == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot add invali plugin at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+        err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("attr");
+
 	goto error_exit;
     }
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
@@ -484,13 +436,8 @@ globus_ftp_client_handleattr_add_plugin(
 
     if(node)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Plugin %s already associated with attribute set at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		(*plugin)->plugin_name,
-		myname);
+        err = GLOBUS_I_FTP_CLIENT_ERROR_ALREADY_DONE();
+
 	goto error_exit;
     }
     else
@@ -514,13 +461,8 @@ globus_ftp_client_handleattr_add_plugin(
 	}
 	else
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Plugin %s already associated with attribute set at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		(*plugin)->plugin_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_ALREADY_DONE();
+
 	    goto error_exit;
 	}
     }
@@ -544,33 +486,20 @@ globus_ftp_client_handleattr_remove_plugin(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot modify NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     else if(plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot add NULL plugin at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin");
+
 	goto error_exit;
     }
     else if((*plugin)->plugin_name == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot remove invalid plugin at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("attr");
+
 	goto error_exit;
     }
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
@@ -580,13 +509,7 @@ globus_ftp_client_handleattr_remove_plugin(
 
     if(!node)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Plugin %s not associated with attribute set at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    (*plugin)->plugin_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_ALREADY_DONE();
 
 	goto error_exit;
     }
@@ -624,25 +547,15 @@ globus_ftp_client_operationattr_init(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot initialize NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
-	goto error_exit;
+	return globus_error_put(
+		    GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr"));
     }
 
     i_attr = globus_libc_calloc(1, sizeof(globus_i_ftp_client_operationattr_t));
 
     if(i_attr == GLOBUS_NULL)
     {
-	return globus_error_put(globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Out of memory at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+	return globus_error_put(GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY());
     }
     *attr = i_attr;
 
@@ -666,24 +579,14 @@ globus_ftp_client_operationattr_init(
     tmp_name = globus_libc_strdup("anonymous");
     if(tmp_name == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 	
 	goto error_exit;
     }
     tmp_pass = globus_libc_strdup("globus@");
     if(tmp_pass == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 	
 	goto free_name;
     }
@@ -732,23 +635,13 @@ globus_ftp_client_operationattr_destroy(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot destoy NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(*attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot destoy invalid attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("attr");
 
 	goto error_exit;
     }
@@ -825,23 +718,13 @@ globus_ftp_client_operationattr_set_parallelism(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot set values on a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(parallelism == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL parallelism parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("parallelism");
 
 	goto error_exit;
     }
@@ -858,13 +741,7 @@ globus_ftp_client_operationattr_set_parallelism(
     }
     else
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Unsupported parallelism mode %d %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    (int) parallelism->mode,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("parallelism");
 
 	goto error_exit;
     }
@@ -885,23 +762,13 @@ globus_ftp_client_operationattr_get_parallelism(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(parallelism == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL parallelism parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("parallelism");
 
 	goto error_exit;
     }
@@ -963,12 +830,7 @@ globus_ftp_client_operationattr_set_striped(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot set values on a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
@@ -995,23 +857,13 @@ globus_ftp_client_operationattr_get_striped(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(striped == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL striped parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("striped");
 
 	goto error_exit;
     }
@@ -1068,34 +920,21 @@ globus_ftp_client_operationattr_set_layout(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
 	goto error_exit;
     }
     if(layout == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL layout parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("layout");
+
 	goto error_exit;
     }
 
     if(layout->mode == GLOBUS_FTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN &&
 	    layout->round_robin.block_size == 0)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot set round robin layout with 0 byte block size at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("layout");
 
 	goto error_exit;
     }
@@ -1122,23 +961,13 @@ globus_ftp_client_operationattr_get_layout(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(layout == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL layout at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("layout");
 
 	goto error_exit;
     }
@@ -1204,22 +1033,14 @@ globus_ftp_client_operationattr_set_tcp_buffer(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
 	goto error_exit;
     }
     if(tcp_buffer == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL tcp_buffer parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("tcp_buffer");
+
 	goto error_exit;
     }
     i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
@@ -1246,23 +1067,13 @@ globus_ftp_client_operationattr_get_tcp_buffer(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(tcp_buffer == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL tcp_buffer parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("tcp_buffer");
 
 	goto error_exit;
     }
@@ -1320,12 +1131,7 @@ globus_ftp_client_operationattr_set_type(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot set values on a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
@@ -1333,13 +1139,9 @@ globus_ftp_client_operationattr_set_type(
        type == GLOBUS_FTP_CONTROL_TYPE_EBCDIC ||
        type == GLOBUS_FTP_CONTROL_TYPE_LOCAL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid type parameter %d at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    type,
-	    myname);	    
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("type");
+
+	goto error_exit;
     }
     i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
     i_attr->type = type;
@@ -1362,23 +1164,13 @@ globus_ftp_client_operationattr_get_type(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(type == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL type parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("type");
 
 	goto error_exit;
     }
@@ -1440,25 +1232,16 @@ globus_ftp_client_operationattr_set_mode(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
 	goto error_exit;
     }
     if(mode == GLOBUS_FTP_CONTROL_MODE_NONE ||
        mode == GLOBUS_FTP_CONTROL_MODE_BLOCK ||
        mode == GLOBUS_FTP_CONTROL_MODE_COMPRESSED)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Invalid mode parameter %d at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		mode,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("mode");
+
 	goto error_exit;
     }
 
@@ -1467,24 +1250,14 @@ globus_ftp_client_operationattr_set_mode(
     if(i_attr->append == GLOBUS_TRUE &&
        mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set extended block mode on append at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("mode");
 
 	goto error_exit;
     }
     if(i_attr->type == GLOBUS_FTP_CONTROL_TYPE_ASCII && 
        mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set extended block mode for an ASCII file at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("mode");
 
 	goto error_exit;
     }
@@ -1508,23 +1281,13 @@ globus_ftp_client_operationattr_get_mode(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(mode == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL mode parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("mode");
 
 	goto error_exit;
     }
@@ -1574,12 +1337,7 @@ globus_ftp_client_operationattr_set_resume_third_party_transfer(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot set values on a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
@@ -1605,23 +1363,13 @@ globus_ftp_client_operationattr_get_resume_third_party_transfer(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(resume == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL resume parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("resume");
 
 	goto error_exit;
     }
@@ -1695,12 +1443,7 @@ globus_ftp_client_operationattr_set_authorization(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot set values on a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
@@ -1801,12 +1544,7 @@ reset_pass:
 reset_user:
     i_attr->auth_info.user = tmp_user;
 
-    err = globus_error_construct_string(
-	GLOBUS_FTP_CLIENT_MODULE,
-	GLOBUS_NULL,
-	"[%s] Unable to allocate internal data at %s\n",
-	GLOBUS_FTP_CLIENT_MODULE->module_name,
-	myname);
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 error_exit:
     return globus_error_put(err);
 }
@@ -1832,12 +1570,7 @@ globus_ftp_client_operationattr_get_authorization(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
@@ -1892,12 +1625,7 @@ free_pass:
 free_user:
     globus_libc_free(tmp_user);
 memory_error_exit:
-    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		err,
-		"[%s] Unable to allocate internal data at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 error_exit:
     return globus_error_put(err);
 }
@@ -1935,34 +1663,21 @@ globus_ftp_client_operationattr_set_dcau(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 	
 	goto error_exit;
     }
     if(dcau == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL dcau parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dcau");
+
 	goto error_exit;
     }
     if(dcau->mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT &&
        dcau->subject.subject == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Invalid dcau subject at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("dcau");
+
 	goto error_exit;
     }
     i_attr = *attr;
@@ -1972,12 +1687,7 @@ globus_ftp_client_operationattr_set_dcau(
 	tmp_subject = globus_libc_strdup(dcau->subject.subject);
 	if(! tmp_subject)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Unable to allocate internal data at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	    goto error_exit;
 	}
@@ -2003,23 +1713,14 @@ globus_ftp_client_operationattr_get_dcau(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(dcau == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL dcau parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dcau");
+
 	goto error_exit;
     }
     i_attr = *attr;
@@ -2028,12 +1729,7 @@ globus_ftp_client_operationattr_get_dcau(
 	dcau->subject.subject = globus_libc_strdup(i_attr->dcau.subject.subject);
 	if(dcau->subject.subject == GLOBUS_NULL)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL dcau parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("dcau");
 
 	    goto error_exit;
 	}
@@ -2075,12 +1771,7 @@ globus_ftp_client_operationattr_set_data_protection(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 	
 	goto error_exit;
     }
@@ -2106,23 +1797,13 @@ globus_ftp_client_operationattr_get_data_protection(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 	
 	goto error_exit;
     }
     if(protection == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL protection parameter at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("protection");
 	
 	goto error_exit;
     }
@@ -2173,12 +1854,7 @@ globus_ftp_client_operationattr_set_control_protection(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 	
 	goto error_exit;
     }
@@ -2214,23 +1890,13 @@ globus_ftp_client_operationattr_get_control_protection(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 	
 	goto error_exit;
     }
     if(protection == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL protection parameter at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("protection");
 	
 	goto error_exit;
     }
@@ -2284,12 +1950,7 @@ globus_ftp_client_operationattr_set_append(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 	
 	goto error_exit;
     }
@@ -2298,12 +1959,7 @@ globus_ftp_client_operationattr_set_append(
 
     if(append && i_attr->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set append mode in extended block mode\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("append");
 	
 	goto error_exit;	
     }
@@ -2327,23 +1983,13 @@ globus_ftp_client_operationattr_get_append(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(append == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL append parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("append");
 
 	goto error_exit;
     }
@@ -2409,12 +2055,7 @@ globus_ftp_client_operationattr_set_read_all(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot set values on a NULL attribute at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 	
 	goto error_exit;
     }
@@ -2444,23 +2085,13 @@ globus_ftp_client_operationattr_get_read_all(
 
     if(attr == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot get values from a NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
 
 	goto error_exit;
     }
     if(read_all == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL read_all parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("read_all");
 
 	goto error_exit;
     }
@@ -2469,23 +2100,15 @@ globus_ftp_client_operationattr_get_read_all(
     {
 	if(intermediate_callback == GLOBUS_NULL)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL intermediate_callback parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER(
+		    "intermediate_callback");
 	    
 	    goto error_exit;
 	}
 	else if(intermediate_callback_arg == GLOBUS_NULL)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL intermediate_callback_arg parameter at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER(
+		    "intermediate_callback_arg");
 	    
 	    goto error_exit;
 	}
@@ -2677,18 +2300,21 @@ globus_i_ftp_client_handleattr_copy(
     globus_list_t **				last_plugin;
     static char * myname = "globus_i_ftp_client_handleattr_copy";
     
-    if(dest == GLOBUS_NULL || src == GLOBUS_NULL)
+    if(src == GLOBUS_NULL)
     {
-	return globus_error_put(globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot copy NULL attribute at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+	return globus_error_put(
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("src"));
+    }
+    else if(dest == GLOBUS_NULL)
+    {
+	return globus_error_put(
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dest"));
     }
     
     dest->cache_all = src->cache_all;
     dest->nl_handle = src->nl_handle;
+    dest->nl_ftp = src->nl_ftp;
+    dest->nl_io = src->nl_io;
     dest->url_cache = GLOBUS_NULL;
     dest->plugins = GLOBUS_NULL;
     
@@ -2758,12 +2384,7 @@ globus_i_ftp_client_handleattr_copy(
 	globus_url_destroy(&tmpurl->url);
 	globus_libc_free(tmpurl);
     }
-    return globus_error_put(globus_error_construct_string(
-	GLOBUS_FTP_CLIENT_MODULE,
-	GLOBUS_NULL,
-	"[%s] Unable to allocate internal data at %s\n",
-	GLOBUS_FTP_CLIENT_MODULE->module_name,
-	myname));
+    return globus_error_put(GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY());
 }
 /* globus_i_ftp_client_handleattr_copy() */
 

@@ -244,12 +244,8 @@ globus_l_ftp_client_existence_info_init(
 
     if(*existence_info == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] Out of memory at %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+
 	goto error_exit;
     }
 
@@ -257,12 +253,7 @@ globus_l_ftp_client_existence_info_init(
 
     if(rc != GLOBUS_SUCCESS)
     {
-	err = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] Could not parse URL \"%s\"\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    url);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("url");
 
 	goto free_info_exit;
     }
@@ -271,12 +262,7 @@ globus_l_ftp_client_existence_info_init(
 
     if((*existence_info)->url_string == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] Out of memory at %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto free_parsed_url_exit;
     }
@@ -300,12 +286,7 @@ globus_l_ftp_client_existence_info_init(
 
     if((*existence_info)->buffer == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] Out of memory at %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto free_attr_exit;
     }
@@ -474,12 +455,8 @@ globus_l_ftp_client_exist_callback(
     {
 	if(error == GLOBUS_SUCCESS && !info->exists)
 	{
-	    error = globus_error_construct_string(
-		    GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] %s does not exist\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    info->url_string);
+	    error = GLOBUS_I_FTP_CLIENT_ERROR_NO_SUCH_FILE(info->url_string);
+
 	    myerr = GLOBUS_TRUE;
 	}
 	info->callback(info->callback_arg, handle, error);

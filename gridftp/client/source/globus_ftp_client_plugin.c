@@ -79,7 +79,7 @@ globus_ftp_client_plugin_restart_list(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -87,12 +87,7 @@ globus_ftp_client_plugin_restart_list(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	return globus_error_put(err);
     }
@@ -146,7 +141,7 @@ globus_ftp_client_plugin_restart_verbose_list(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -154,12 +149,7 @@ globus_ftp_client_plugin_restart_verbose_list(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	return globus_error_put(err);
     }
@@ -213,7 +203,7 @@ globus_ftp_client_plugin_restart_delete(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -221,12 +211,7 @@ globus_ftp_client_plugin_restart_delete(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	return globus_error_put(err);
     }
@@ -280,7 +265,7 @@ globus_ftp_client_plugin_restart_mkdir(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -288,12 +273,7 @@ globus_ftp_client_plugin_restart_mkdir(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	return globus_error_put(err);
     }
@@ -347,7 +327,7 @@ globus_ftp_client_plugin_restart_rmdir(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -355,12 +335,7 @@ globus_ftp_client_plugin_restart_rmdir(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	return globus_error_put(err);
     }
@@ -423,7 +398,7 @@ globus_ftp_client_plugin_restart_move(
     const char *				source_url,
     const char *				dest_url,
     const globus_ftp_client_operationattr_t *	attr,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -431,24 +406,14 @@ globus_ftp_client_plugin_restart_move(
 
     if(source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL source url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("source_url");
 
 	return globus_error_put(err);
     }
 
     if(dest_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL destination url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dest_url");
 
 	return globus_error_put(err);
     }
@@ -493,6 +458,13 @@ globus_ftp_client_plugin_restart_move(
  *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
+ * @param restart_marker
+ *        Plugin-provided restart marker for resuming at a non-default
+ *        restart point. This may be used to implement a persistent
+ *        restart across process invocations. The default behavior if
+ *        this is NULL is to use any restart information which has
+ *        been received by the ftp client library while processing this
+ *        operation when restarted.
  * @param when
  *        Absolute time for when to restart the get. The current
  *        control and data connections will be stopped
@@ -506,7 +478,7 @@ globus_ftp_client_plugin_restart_get(
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
     globus_ftp_client_restart_marker_t *	restart_marker,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -514,12 +486,7 @@ globus_ftp_client_plugin_restart_get(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	return globus_error_put(err);
     }
@@ -566,6 +533,14 @@ globus_ftp_client_plugin_restart_get(
  *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
+ * @param restart_marker
+ *        Plugin-provided restart marker for resuming at a non-default
+ *        restart point. This may be used to implement a persistent
+ *        restart across process invocations. The default behavior if
+ *        this is NULL is to use any restart information which has
+ *        been received by the ftp client library while processing this
+ *        operation when restarted.
+
  * @param when
  *        Absolute time for when to restart the put. The current
  *        control and data connections will be stopped
@@ -579,7 +554,7 @@ globus_ftp_client_plugin_restart_put(
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
     globus_ftp_client_restart_marker_t *	restart_marker,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -587,12 +562,7 @@ globus_ftp_client_plugin_restart_put(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	return globus_error_put(err);
     }
@@ -646,6 +616,14 @@ globus_ftp_client_plugin_restart_put(
  *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
+ * @param restart_marker
+ *        Plugin-provided restart marker for resuming at a non-default
+ *        restart point. This may be used to implement a persistent
+ *        restart across process invocations. The default behavior if
+ *        this is NULL is to use any restart information which has
+ *        been received by the ftp client library while processing this
+ *        operation when restarted.
+
  * @param when
  *        Absolute time for when to restart the transfer. The current
  *        control and data connections will be stopped
@@ -661,21 +639,21 @@ globus_ftp_client_plugin_restart_third_party_transfer(
     const char *				dest_url,
     const globus_ftp_client_operationattr_t *	dest_attr,
     globus_ftp_client_restart_marker_t *	restart_marker,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
     static char * myname = "globus_ftp_client_plugin_restart_transfer";
 
-    if(source_url == GLOBUS_NULL ||
-       dest_url == GLOBUS_NULL)
+    if(source_url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("source_url");
+
+	return globus_error_put(err);
+    }
+    else if(dest_url == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("dest_url");
 
 	return globus_error_put(err);
     }
@@ -727,7 +705,7 @@ globus_ftp_client_plugin_restart_size(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -735,12 +713,7 @@ globus_ftp_client_plugin_restart_size(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	return globus_error_put(err);
     }
@@ -791,7 +764,7 @@ globus_ftp_client_plugin_restart_modification_time(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    const globus_abstime_t *			when)
+    const globus_abstime_t *            	when)
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
@@ -799,12 +772,7 @@ globus_ftp_client_plugin_restart_modification_time(
 
     if(url == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL url at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("url");
 
 	return globus_error_put(err);
     }
@@ -820,6 +788,111 @@ globus_ftp_client_plugin_restart_modification_time(
 							when);
 }
 /* globus_ftp_client_plugin_restart_modification_time() */
+
+
+/**
+ * Get restart marker
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will allow this user to get the restart marker
+ * associated with a restarted file transfer.  This function may only be
+ * called within the get, put, or third party transfer callback in which
+ * the 'restart' argument is GLOBUS_TRUE
+ *
+ * @param handle
+ *        The handle which is associated with the transfer.
+ *
+ * @param marker
+ *        Pointer to an uninitialized restart marker type
+ *
+ * @return
+ *        - Error on NULL handle or marker
+ *        - Error on invalid use of function
+ *        - GLOBUS_SUCCESS (marker will be populated)
+ */
+
+globus_result_t
+globus_ftp_client_plugin_restart_get_marker(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_restart_marker_t *	marker)
+{
+    globus_result_t				result;
+    globus_i_ftp_client_handle_t *		i_handle;
+    static char * myname = "globus_ftp_client_plugin_restart_get_marker";
+
+    if(handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+	    GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle"));
+    }
+
+    if(marker == GLOBUS_NULL)
+    {
+        return globus_error_put(
+	    GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
+    }
+
+    i_handle = *handle;
+
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
+    {
+	return globus_error_put(
+	    GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("marker"));
+    }
+
+    globus_i_ftp_client_handle_lock(i_handle);
+
+    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+    {
+        if(i_handle->op == GLOBUS_FTP_CLIENT_GET ||
+            i_handle->op == GLOBUS_FTP_CLIENT_PUT ||
+            i_handle->op == GLOBUS_FTP_CLIENT_TRANSFER)
+        {
+            if(i_handle->restart_info)
+            {
+                result = globus_ftp_client_restart_marker_copy(
+                    marker,
+                    &i_handle->restart_info->marker);
+            }
+            else
+            {
+                result = globus_error_put(
+                    globus_error_construct_string(
+                        GLOBUS_FTP_CLIENT_MODULE,
+                        GLOBUS_NULL,
+                        "[%s] Could not find restart info %s\n",
+                        GLOBUS_FTP_CLIENT_MODULE->module_name,
+                        myname));
+            }
+        }
+        else
+        {
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_FTP_CLIENT_MODULE,
+                    GLOBUS_NULL,
+                    "[%s] No restart marker for restarted operation at %s\n",
+                    GLOBUS_FTP_CLIENT_MODULE->module_name,
+                    myname));
+        }
+    }
+    else
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] Handle not in restart state %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    globus_i_ftp_client_handle_unlock(i_handle);
+
+
+    return result;
+}
+
 /**
  * Abort a transfer operation.
  * @ingroup globus_ftp_client_plugins
@@ -879,24 +952,15 @@ globus_ftp_client_plugin_add_data_channels(
        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle not transferring data\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_NOT_IN_USE("handle");
 
 	goto err_exit;
     }
 
     if(i_handle->op != GLOBUS_FTP_CLIENT_PUT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot add data channels for 3rd party transfer\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_OPERATION(i_handle->op);
+
 	goto err_exit;
     }
     else
@@ -946,30 +1010,22 @@ globus_ftp_client_plugin_remove_data_channels(
     globus_i_ftp_client_handle_t *		i_handle;
     static char *				myname = "globus_ftp_client_plugin_remove_data_channels";
 
+    i_handle = *handle;
     globus_i_ftp_client_handle_lock(i_handle);
 
     if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
        i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle not transferring data\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_NOT_IN_USE("handle");
 
 	goto err_exit;
     }
 
     if(i_handle->op != GLOBUS_FTP_CLIENT_PUT)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot remove data channels for 3rd party transfer\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_OPERATION(i_handle->op);
+
 	goto err_exit;
     }
     else
@@ -1005,23 +1061,13 @@ globus_ftp_client_plugin_init(
 
     if(plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL plugin at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin");
 
 	goto error_exit;
     }
     if(plugin_name == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL plugin_name at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin_name");
 
 	goto nullify_exit;
     }
@@ -1030,17 +1076,15 @@ globus_ftp_client_plugin_init(
 
     if(i_plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Could not allocate internal data structure at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("plugin");
+
 	goto free_exit;
     }
     i_plugin->plugin_name = globus_libc_strdup(plugin_name);
     if(i_plugin->plugin_name == GLOBUS_NULL)
     {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("plugin");
+
 	goto free_exit;
     }
     i_plugin->command_mask = command_mask;
@@ -1070,12 +1114,7 @@ globus_ftp_client_plugin_destroy(
 
     if(plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL plugin at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin");
 
 	goto error_exit;
     }
@@ -1108,24 +1147,14 @@ globus_ftp_client_plugin_get_plugin_specific(
 
     if(plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] NULL plugin at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin");
 
 	goto error_exit;
     }
     i_plugin = *plugin;
     if(i_plugin == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Invalid plugin at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("plugin");
 
 	goto error_exit;
     }
@@ -1150,24 +1179,14 @@ globus_ftp_client_plugin_set_##type##_func(\
     static char * myname = "globus_ftp_client_plugin_set_" #type "_func"; \
     if(plugin == GLOBUS_NULL) \
     { \
-	err = globus_error_construct_string( \
-	    GLOBUS_FTP_CLIENT_MODULE, \
-	    GLOBUS_NULL, \
-	    "[%s] NULL plugin at %s\n", \
-	    GLOBUS_FTP_CLIENT_MODULE->module_name, \
-	    myname); \
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin"); \
  \
 	goto error_exit; \
     } \
     i_plugin = *plugin; \
     if(i_plugin == GLOBUS_NULL) \
     { \
-	err = globus_error_construct_string( \
-	    GLOBUS_FTP_CLIENT_MODULE, \
-	    GLOBUS_NULL, \
-	    "[%s] Invalid plugin at %s\n", \
-	    GLOBUS_FTP_CLIENT_MODULE->module_name, \
-	    myname); \
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("plugin"); \
  \
 	goto error_exit; \
     } \
@@ -1247,6 +1266,13 @@ GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(complete)
  *        may be useful when the plugin wishes to send restart markers
  *        to the FTP server to prevent re-sending the data which has
  *        already been sent.
+ * @param restart_marker
+ *        Plugin-provided restart marker for resuming at a non-default
+ *        restart point. This may be used to implement a persistent
+ *        restart across process invocations. The default behavior if
+ *        this is NULL is to use any restart information which has
+ *        been received by the ftp client library while processing this
+ *        operation when restarted.
  * @param when
  *        Absolute time for when to restart the operation. The current
  *        control and data connections will be stopped
@@ -1272,24 +1298,14 @@ globus_l_ftp_client_plugin_restart_operation(
 
     if(handle == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot restart a NULL handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
 
 	goto error_exit;
     }
     /* Check handle state */
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle->handle))
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot restart with an invalid handle at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("handle");
 
 	goto error_exit;
     }
@@ -1298,12 +1314,7 @@ globus_l_ftp_client_plugin_restart_operation(
 
     if(restart_info == GLOBUS_NULL)
     {
-        err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	goto error_exit;
     }
@@ -1313,12 +1324,7 @@ globus_l_ftp_client_plugin_restart_operation(
 	restart_info->dest_url = globus_libc_strdup(dest_url);
 	if(restart_info->dest_url == GLOBUS_NULL)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Could not allocate internal data structure at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	    goto free_restart_exit;
 	}
@@ -1350,12 +1356,7 @@ globus_l_ftp_client_plugin_restart_operation(
 	restart_info->source_url = globus_libc_strdup(source_url);
 	if(restart_info->source_url == GLOBUS_NULL)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Could not allocate internal data structure at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	    goto destroy_dest_attr_exit;
 	}
@@ -1408,13 +1409,7 @@ globus_l_ftp_client_plugin_restart_operation(
 
     if(handle->op == GLOBUS_FTP_CLIENT_IDLE)
     {
-        err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot restart transfer for a %s operation at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    globus_i_ftp_op_to_string(handle->op),
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_OPERATION(handle->op);
 
 	goto unlock_error;
     }
@@ -1442,7 +1437,6 @@ free_source_attr_exit:
     {
 	globus_libc_free(restart_info->source_attr);
     }
-free_source_url_exit:
     globus_libc_free(restart_info->source_url);
 destroy_dest_attr_exit:
     if(restart_info->dest_attr)
@@ -1454,7 +1448,6 @@ free_dest_attr_exit:
     {
 	globus_libc_free(restart_info->dest_attr);
     }
-free_dest_url_exit:
     globus_libc_free(restart_info->dest_url);
 free_restart_exit:
     globus_libc_free(restart_info);

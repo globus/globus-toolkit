@@ -54,7 +54,10 @@ globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module;
  * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback is called when a get, put, or third party transfer is
- * started.
+ * started. Note that it is possible for this callback to be made multiple
+ * times before ever receiving the complete callback... this would be the case
+ * if a transfer was restarted.  The 'restart' will indicate whether or not we
+ * have been restarted.
  *
  * @param handle
  *        this the client handle that this transfer will be occurring on
@@ -64,13 +67,25 @@ globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module;
  *        or, if a copy method was not specified, the value passed to
  *        init
  *
+ * @param source_url
+ *        source of the transfer (GLOBUS_NULL if 'put')
+ *
+ * @param dest_url
+ *        dest of the transfer (GLOBUS_NULL if 'get')
+ *
+ * @param restart
+ *        boolean indicating whether this callback is result of a restart
+ *
  * @return
  *        - n/a
  */
 
 typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
+    void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific);
+    const char *                                    source_url,
+    const char *                                    dest_url,
+    globus_bool_t                                   restart);
 
 /**
  * Performance marker received callback
@@ -109,12 +124,13 @@ typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
  */
 
 typedef void (*globus_ftp_client_perf_plugin_marker_cb_t)(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_specific,
-    time_t                                          time_stamp,
+    globus_ftp_client_handle_t *                    handle,
+    long                                            time_stamp_int,
+    char                                            time_stamp_tength,
     int                                             stripe_ndx,
     int                                             num_stripes,
-    globus_size_t                                   nbytes);
+    globus_off_t                                    nbytes);
 
 /**
  * Transfer complete callback
@@ -131,13 +147,18 @@ typedef void (*globus_ftp_client_perf_plugin_marker_cb_t)(
  *        or, if a copy method was not specified, the value passed to
  *        init
  *
+ * @param success
+ *        indicates whether this transfer completed successfully or was
+ *        interrupted (by error or abort)
+ *
  * @return
  *        - n/a
  */
 
 typedef void (*globus_ftp_client_perf_plugin_complete_cb_t)(
+    void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific);
+    globus_bool_t                                   success);
 
 /**
  * Copy constructor
@@ -182,9 +203,13 @@ globus_ftp_client_perf_plugin_init(
     globus_ftp_client_perf_plugin_begin_cb_t        begin_cb,
     globus_ftp_client_perf_plugin_marker_cb_t       marker_cb,
     globus_ftp_client_perf_plugin_complete_cb_t     complete_cb,
-    globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb,
-    globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb,
     void *                                          user_specific);
+
+globus_result_t
+globus_ftp_client_perf_plugin_set_copy_destroy(
+    globus_ftp_client_plugin_t *                    plugin,
+    globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb,
+    globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb);
 
 globus_result_t
 globus_ftp_client_perf_plugin_destroy(

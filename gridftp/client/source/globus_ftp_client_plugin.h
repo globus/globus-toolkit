@@ -38,6 +38,8 @@
 
 #include "globus_ftp_client.h"
 
+EXTERN_C_BEGIN
+
 /**
  * Command Mask.
  * @ingroup globus_ftp_client_plugins
@@ -860,7 +862,7 @@ globus_ftp_client_plugin_restart_get(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    globus_ftp_client_restart_marker_t *	restart,
+    globus_ftp_client_restart_marker_t *	restart_marker,
     const globus_abstime_t *            	when);
 
 globus_result_t
@@ -868,7 +870,7 @@ globus_ftp_client_plugin_restart_put(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    globus_ftp_client_restart_marker_t *	restart,
+    globus_ftp_client_restart_marker_t *	restart_marker,
     const globus_abstime_t *            	when);
 
 globus_result_t
@@ -878,7 +880,7 @@ globus_ftp_client_plugin_restart_third_party_transfer(
     const globus_ftp_client_operationattr_t *	source_attr,
     const char *				dest_url,
     const globus_ftp_client_operationattr_t *	dest_attr,
-    globus_ftp_client_restart_marker_t *	restart,
+    globus_ftp_client_restart_marker_t *	restart_marker,
     const globus_abstime_t *            	when);
 
 globus_result_t
@@ -894,6 +896,11 @@ globus_ftp_client_plugin_restart_modification_time(
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
     const globus_abstime_t *            	when);
+
+globus_result_t
+globus_ftp_client_plugin_restart_get_marker(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_restart_marker_t *	marker);
 
 globus_result_t
 globus_ftp_client_plugin_abort(
@@ -1042,5 +1049,7 @@ globus_result_t
 globus_ftp_client_plugin_set_complete_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_complete_t		complete_func);
+
+EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_FTP_CLIENT_PLUGIN_H */

@@ -154,6 +154,8 @@ typedef struct globus_i_ftp_client_handleattr_t
     /*
      *  NETLOGGER
      */
+    globus_bool_t                               nl_ftp;
+    globus_bool_t                               nl_io;
     globus_netlogger_handle_t *                 nl_handle;
 }
 globus_i_ftp_client_handleattr_t;
@@ -922,6 +924,85 @@ globus_i_ftp_client_response_callback(
     globus_ftp_control_handle_t *		handle,
     globus_object_t *				error,
     globus_ftp_control_response_t *		response);
+
+/* Errors */
+
+#define GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER(param) \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"a NULL value for %s was used", param)
+#define GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER(param) \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"an invalid value for %s was used", param)
+#define GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY() \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"a memory allocation failed")
+#define GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED() \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"the operation was aborted")
+#define GLOBUS_I_FTP_CLIENT_ERROR_INTERNAL_ERROR(err) \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		err,\
+		"an internal error occurred")
+#define GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE(obj) \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"%s was already in use", obj)
+#define GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_NOT_IN_USE(obj) \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"%s was not in use", obj)
+#define GLOBUS_I_FTP_CLIENT_ERROR_ALREADY_DONE() \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"already done")
+#define GLOBUS_I_FTP_CLIENT_ERROR_INVALID_OPERATION(op) \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"is not compatible with %s",\
+		globus_i_ftp_op_to_string(op))
+#define GLOBUS_I_FTP_CLIENT_ERROR_EOF() \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"EOF has been reached")
+#define GLOBUS_I_FTP_CLIENT_ERROR_NO_SUCH_FILE(file) \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"%s does not exist", file)
+#define GLOBUS_I_FTP_CLIENT_ERROR_PROTOCOL_ERROR() \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"a protocol error occurred")
+#define GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response) \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"the server sent an error response: %d %s",\
+		response->code,\
+		response->response_buffer)
+#define GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE(feature) \
+	globus_error_construct_string(\
+		GLOBUS_FTP_CLIENT_MODULE,\
+		GLOBUS_NULL,\
+		"the server doesn't support the %s feature",\
+		feature)
+
+
 #endif
 
 EXTERN_C_END
