@@ -1438,6 +1438,10 @@ globus_l_globusrun_gramrun(char * request_string,
 	err = monitor.failure_code;
     }
 
+    globus_libc_fprintf(stderr,
+                        "GRAM Job failed because %s (error code %d)\n",
+                        globus_gram_protocol_error_string(err),
+                        err);
 hard_exit:
 
     if(job_contact != GLOBUS_NULL)
