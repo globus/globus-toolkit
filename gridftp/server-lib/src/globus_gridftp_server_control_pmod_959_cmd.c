@@ -1245,6 +1245,16 @@ globus_l_gsc_pmod_959_cmd_site(
             strcmp(site_type, "RBUFSZ") == 0 ||
             strcmp(site_type, "RBUFSIZ") == 0)
     {
+        cmd_handle->send_window = tmp_i;
+        globus_gridftp_server_control_set_buffer_size(
+            server,
+            0,
+            cmd_handle->send_window);
+    }
+    else if(strcmp(site_type, "STORBUFSIZE") == 0 ||
+            strcmp(site_type, "SBUFSZ") == 0 ||
+            strcmp(site_type, "SBUFSIZ") == 0)
+    {
         cmd_handle->receive_window = tmp_i;
         globus_gridftp_server_control_set_buffer_size(
             server,
@@ -1313,10 +1323,12 @@ globus_l_gsc_pmod_959_cmd_pasv_cb(
     if(res != GLOBUS_SUCCESS)
     {
         globus_gsc_pmod_959_finished_op(wrapper->op, "500 Command failed.\r\n");
+        goto err;
     }
     else if(addr_count > wrapper->max && wrapper->max != -1)
     {
         globus_gsc_pmod_959_finished_op(wrapper->op, "500 Command failed.\r\n");
+        goto err;
     }
     else
     {
