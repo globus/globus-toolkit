@@ -835,7 +835,6 @@ globus_l_gfs_ipc_unpack_reply(
             break;
 
         case GLOBUS_GFS_OP_SESSION_START:
-            GFSDecodeUInt32(buffer, len, reply->session_id);
             break;
 
         case GLOBUS_GFS_OP_STAT:
@@ -1314,6 +1313,7 @@ globus_l_gfs_ipc_read_body_cb(
                 goto err;
             }
             reply->id = request->id;
+            reply->session_id = request->session_id;
             if(request == NULL)
             {
                 goto err;
