@@ -43,6 +43,7 @@ typedef struct
     globus_mutex_t                      lock;
     globus_cond_t                       cond;
     globus_bool_t                       shutdown;
+    int                                 idle_count;
     /* only used for serialized space shutdowns */
     int                                 thread_count; 
 } globus_l_callback_space_t;
@@ -282,6 +283,7 @@ globus_l_callback_activate()
         (globus_priority_q_cmp_func_t) globus_abstime_cmp);
     globus_mutex_init(&globus_l_callback_global_space.lock, GLOBUS_NULL);
     globus_cond_init(&globus_l_callback_global_space.cond, GLOBUS_NULL);
+    globus_l_callback_global_space.idle_count = 0;
     globus_l_callback_global_space.shutdown = GLOBUS_FALSE;
     
     globus_list_insert(
@@ -517,11 +519,16 @@ globus_l_callback_register(
             &i_space->queue,
             callback_info,
             &callback_info->start_time);
-            
-        globus_cond_signal(&i_space->cond);
+        
+        if(i_space->idle_count > 0)
+        {
+            globus_cond_signal(&i_space->cond);
+        }
     }
     globus_mutex_unlock(&i_space->lock);
     
+    globus_thread_yield();
+ 
     return GLOBUS_SUCCESS;
 }
 
@@ -913,9 +920,9 @@ globus_callback_adjust_period(
         }
         
         /* spaces with threaded behavior use the global queue.  I need to
-         * wake up any sleeping threads to let them know about knew work 
+         * wake up any sleeping threads to let them know about new work 
          */
-        if(callback_info->in_queue)
+        if(callback_info->in_queue && callback_info->my_space->idle_count > 0)
         {
             globus_cond_signal(&callback_info->my_space->cond);
         }
@@ -988,6 +995,7 @@ globus_callback_space_init(
         globus_cond_init(&i_space->cond, GLOBUS_NULL);
         i_space->behavior = behavior;
         i_space->shutdown = GLOBUS_FALSE;
+        i_space->idle_count = 0;
         
         /* this is only tracked for serialized spaces */
         i_space->thread_count = 1;
@@ -1286,7 +1294,10 @@ globus_l_callback_requeue(
     
     callback_info->in_queue = GLOBUS_TRUE;
     
-    globus_cond_signal(&callback_info->my_space->cond);
+    if(callback_info->my_space->idle_count > 0)
+    {
+        globus_cond_signal(&callback_info->my_space->cond);
+    }
 }
 
 /**
@@ -1531,15 +1542,19 @@ globus_callback_space_poll(
                  * the main threadm in which case, he shouldnt be calling
                  * for a shutdown
                  */
+                i_space->idle_count++;
                 globus_cond_timedwait(
                     &i_space->cond, &i_space->lock, &next_ready_time);
+                i_space->idle_count--;
             }
             else if(globus_time_abstime_is_infinity(timestop))
             {
                 /* we can only get here if queue is empty
                  * and we are blocking forever. 
                  */
-                 globus_cond_wait(&i_space->cond, &i_space->lock);
+                i_space->idle_count++;
+                globus_cond_wait(&i_space->cond, &i_space->lock);
+                i_space->idle_count--;
             }
             else
             {
@@ -1659,11 +1674,13 @@ globus_l_callback_thread_callback(
                     {
                         do
                         {
+                            i_space->idle_count++;
                             globus_cond_timedwait(
                                 &i_space->cond,
                                 &i_space->lock,
                                 &callback_info->start_time);
-                             
+                            i_space->idle_count--;
+                            
                             GlobusTimeAbstimeGetCurrent(time_now);
                             
                         } while(globus_abstime_cmp(
@@ -1759,7 +1776,9 @@ globus_l_callback_thread_poll(
             {
                 if(globus_priority_q_empty(&i_space->queue))
                 {
+                    i_space->idle_count++;
                     globus_cond_wait(&i_space->cond, &i_space->lock);
+                    i_space->idle_count--;
                 }
                 else
                 {
@@ -1770,8 +1789,10 @@ globus_l_callback_thread_poll(
                         
                     if(!callback_info)
                     {
+                        i_space->idle_count++;
                         globus_cond_timedwait(
                             &i_space->cond, &i_space->lock, &next_ready_time);
+                        i_space->idle_count--;
                     }
                     else
                     {
