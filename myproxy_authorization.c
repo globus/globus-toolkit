@@ -83,15 +83,6 @@ char * auth_cert_create_server_data(void)
    char *challenge; 
    int i;
    
-#if 0
-   /* XXX */
-   if (RAND_load_file("/dev/urandom", 128) == 0) {
-      verror_put_string("RAND_load_file(\"/dev/urandom\") failed");
-      ssl_error_to_verror();
-      return NULL;
-   }
-#endif
-
    /* RAND_bytes() will fail if the PRNG has not been seeded with
       enough randomness to ensure an unpredictable byte sequence. */
    if (RAND_bytes(random, sizeof(random)) == 0) {
