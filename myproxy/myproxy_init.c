@@ -1,7 +1,7 @@
 /*
  * myproxy-init
  *
- * Client program to delegate a credential to a my-proxy-server
+ * Client program to delegate a credential to a myproxy-server
  */
 
 #include "myproxy.h"
@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 
 /*
@@ -120,7 +121,7 @@ main(int argc, char *argv[])
     }
 
     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs) < 0) {
+    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
         fprintf(stderr, "error in myproxy_authenticate_init()\n");
         exit(1);
     }
@@ -187,9 +188,10 @@ main(int argc, char *argv[])
     }
 
     if (is_err) {
-      fprintf(stderr, "%s", error_string);
+        fprintf(stderr, "%s", error_string);
     }
     
+    /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
 
     exit(0);
@@ -248,11 +250,13 @@ init_arguments(int argc,
 
 int
 grid_proxy_init(int hours, const char *proxyfile) {
-  
+
   int rc;
   char command[128];
-  sprintf(command, "grid-proxy-init -hours %d", hours, proxyfile);
-  /*sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);*/
+  
+  assert(proxyfile != NULL);
+
+  sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);
   rc = system(command);
 
   return rc;
@@ -264,8 +268,9 @@ grid_proxy_destroy(const char *proxyfile) {
     int rc;
     char command[128], file[128];
 
-    sprintf(command, "grid-proxy-destroy", proxyfile);
-    /*sprintf(command, "grid-proxy-destroy %s", proxyfile);*/
+    assert(proxyfile != NULL);
+
+    sprintf(command, "grid-proxy-destroy %s", proxyfile);
     rc = system(command);
 
     return rc;
