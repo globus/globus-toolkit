@@ -11,19 +11,19 @@ install-data-local:
 		for dir in `find ./doc/* -type d -print|sed "s,./doc/,,"`; do \
 			if test -z `echo $${dir}|sed -n "/^man/ p"`; then \
 				$(INSTALL) -d -m 755 \
-					@prefix@/share/doc/@PACKAGE@/$${dir}; \
+					$(DESTDIR)$(docdir)/@PACKAGE@/$${dir}; \
 			else \
 				$(INSTALL) -d -m 755 \
-					@prefix@/$${dir}; \
+					$(DESTDIR)$(prefix)/$${dir}; \
 			fi \
 		done; \
 		for file in `find ./doc -type f -print|sed "s,./doc/,,"`; do \
 			if test -z `echo $${file}|sed -n "/^man/ p"`; then \
 				$(INSTALL) -m 644 ./doc/$${file} \
-					@prefix@/share/doc/@PACKAGE@/$${file};\
+					$(DESTDIR)$(docdir)/@PACKAGE@/$${file}; \
 			else \
 				$(INSTALL) -m 644 ./doc/$${file} \
-					@prefix@/$${file};\
+					$(DESTDIR)$(prefix)/$${file};\
 			fi \
 		done \
 	fi
@@ -36,7 +36,8 @@ clean-data-local:
 filelist:
 	@if test ! -z "@DOXYGEN@"; then \
 		find ./doc -type f -print| \
-		sed "s,./doc,@prefix@/share/doc/@PACKAGE@," \
+		sed "s,./doc/man,$(prefix)/man,"| \
+		sed "s,./doc,$(docdir)/@PACKAGE@," \
 		>> $(FILELIST_FILE); \
 	fi
 
