@@ -261,7 +261,7 @@ globus_ftp_control_handle_destroy(
         }
     
         /* control_data.c specific destroy */
-
+        globus_io_tcpattr_destroy(&handle->cc_handle.io_attr);
         return globus_i_ftp_control_data_cc_destroy(handle);
     }
 

@@ -466,6 +466,7 @@ globus_ftp_control_command_init(
 
     command->noop.raw_command=
         (char *) globus_libc_malloc(length+1);
+    command->noop.string_arg = NULL;
 
     if(command->noop.raw_command == GLOBUS_NULL)
     {
@@ -593,7 +594,10 @@ globus_ftp_control_command_destroy(
     case GLOBUS_FTP_CONTROL_COMMAND_RNFR:
     case GLOBUS_FTP_CONTROL_COMMAND_RNTO:
     {
-        globus_libc_free(command->noop.string_arg);
+        if(command->noop.string_arg != NULL)
+        {
+            globus_libc_free(command->noop.string_arg);
+        }
         break;
     }
     case GLOBUS_FTP_CONTROL_COMMAND_SPOR:
