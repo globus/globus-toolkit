@@ -37,6 +37,30 @@
 
 #include <globus_gss_assist.h>
 
+static int ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name);
+static int ssh_gssapi_gsi_localname(ssh_gssapi_client *client, char **user);
+static void ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client);
+
+ssh_gssapi_mech gssapi_gsi_mech_old = {
+	"N3+k7/4wGxHyuP8Yxi4RhA==",
+	"GSI",
+	{9, "\x2B\x06\x01\x04\x01\x9B\x50\x01\x01"},
+	NULL,
+	&ssh_gssapi_gsi_userok,
+	&ssh_gssapi_gsi_localname,
+	&ssh_gssapi_gsi_storecreds
+};
+
+ssh_gssapi_mech gssapi_gsi_mech = {
+	"dZuIebMjgUqaxvbF7hDbAw==",
+	"GSI",
+	{9, "\x2B\x06\x01\x04\x01\x9B\x50\x01\x01"},
+	NULL,
+	&ssh_gssapi_gsi_userok,
+	&ssh_gssapi_gsi_localname,
+	&ssh_gssapi_gsi_storecreds
+};
+
 /*
  * Check if this user is OK to login under GSI. User has been authenticated
  * as identity in global 'client_name.value' and is trying to log in as passed
@@ -49,111 +73,92 @@ ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name)
 {
     int authorized = 0;
     
+#ifdef GLOBUS_GSI_GSS_ASSIST_MODULE
+    if (globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE) != 0) {
+	return 0;
+    }
+#endif
+
     /* This returns 0 on success */
     authorized = (globus_gss_assist_userok(client->name.value,
 					   name) == 0);
     
-    debug("GSI user %s is%s authorized as target user %s",
-	  (char *) client->name.value,
-	  (authorized ? "" : " not"),
-	  name);
+    log("GSI user %s is%s authorized as target user %s",
+	(char *) client->name.value, (authorized ? "" : " not"), name);
     
     return authorized;
 }
 
 /*
- * Handle setting up child environment for GSI.
- *
- * Make sure that this is called _after_ we've setuid to the user.
+ * Return the local username associated with the GSI credentials.
+ */
+int
+ssh_gssapi_gsi_localname(ssh_gssapi_client *client, char **user)
+{
+#ifdef GLOBUS_GSI_GSS_ASSIST_MODULE
+    if (globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE) != 0) {
+	return 0;
+    }
+#endif
+    return(globus_gss_assist_gridmap(client->name.value, user) == 0);
+}
+
+/*
+ * Export GSI credentials to disk.
  */
 static void
 ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 {
 	OM_uint32	major_status;
 	OM_uint32	minor_status;
+	gss_buffer_desc	export_cred = GSS_C_EMPTY_BUFFER;
+	char *		p;
 	
+	if (!client || !client->creds) {
+	    return;
+	}
+
+	major_status = gss_export_cred(&minor_status,
+				       client->creds,
+				       GSS_C_NO_OID,
+				       1,
+				       &export_cred);
+	if (GSS_ERROR(major_status) && major_status != GSS_S_UNAVAILABLE) {
+	    Gssctxt *ctx;
+	    ssh_gssapi_build_ctx(&ctx);
+	    ctx->major = major_status;
+	    ctx->minor = minor_status;
+	    ssh_gssapi_set_oid(ctx, &gssapi_gsi_mech.oid);
+	    ssh_gssapi_error(ctx);
+	    ssh_gssapi_delete_ctx(&ctx);
+	    return;
+	}
 	
-	if (client->creds != NULL)
-	{
-		char *creds_env = NULL;
-
-		/*
- 		* This is the current hack with the GSI gssapi library to
-		* export credentials to disk.
-		*/
-
-		debug("Exporting delegated credentials");
-		
-		minor_status = 0xdee0;	/* Magic value */
-		major_status =
-			gss_inquire_cred(&minor_status,
-					client->creds,
-					(gss_name_t *) &creds_env,
-					NULL,
-					NULL,
-					NULL);
-
-		if ((major_status == GSS_S_COMPLETE) &&
-		    (minor_status == 0xdee1) &&
-		    (creds_env != NULL))
-		{
-			char		*value;
-				
-			/*
-			* String is of the form:
-			* X509_USER_DELEG_PROXY=filename
-			* so we parse out the filename
-			* and then set X509_USER_PROXY
-			* to point at it.
-			*/
-			value = strchr(creds_env, '=');
-			
-			if (value != NULL)
-			{
-				*value = '\0';
-				value++;
+	p = strchr((char *) export_cred.value, '=');
+	if (p == NULL) {
+	    log("Failed to parse exported credentials string '%.100s'",
+		(char *)export_cred.value);
+	    gss_release_buffer(&minor_status, &export_cred);
+	    return;
+	}
+	*p++ = '\0';
+	if (strcmp((char *)export_cred.value,"X509_USER_DELEG_PROXY") == 0) {
+	    client->store.envvar = strdup("X509_USER_PROXY");
+	} else {
+	    client->store.envvar = strdup((char *)export_cred.value);
+	}
+	client->store.envval = strdup(p);
 #ifdef USE_PAM
-				do_pam_putenv("X509_USER_PROXY",value);
+	do_pam_putenv(client->store.envvar, client->store.envval);
 #endif
-				client->store.filename=NULL;
-				client->store.envvar="X509_USER_PROXY";
-				client->store.envval=strdup(value);
-
-				return;
-			}
-			else
-			{
-				log("Failed to parse delegated credentials string '%s'",
-				    creds_env);
-			}
-		}
-		else
-		{
-			log("Failed to export delegated credentials (error %ld)",
-			    major_status);
-		}
-	}	
+	if (strncmp(p, "FILE:", 5) == 0) {
+	    p += 5;
+	}
+	if (access(p, R_OK) == 0) {
+	    client->store.filename = strdup(p);
+	}
+	gss_release_buffer(&minor_status, &export_cred);
 }
-
-ssh_gssapi_mech gssapi_gsi_mech_old = {
-	"N3+k7/4wGxHyuP8Yxi4RhA==",
-	"GSI",
-	{9, "\x2B\x06\x01\x04\x01\x9B\x50\x01\x01"}
-	NULL,
-	&ssh_gssapi_gsi_userok,
-	NULL,
-	&ssh_gssapi_gsi_storecreds
-};
-
-ssh_gssapi_mech gssapi_gsi_mech = {
-	"dZuIebMjgUqaxvbF7hDbAw==",
-	"GSI",
-	{9, "\x2B\x06\x01\x04\x01\x9B\x50\x01\x01"}
-	NULL,
-	&ssh_gssapi_gsi_userok,
-	NULL,
-	&ssh_gssapi_gsi_storecreds
-};
 
 #endif /* GSI */
 #endif /* GSSAPI */
