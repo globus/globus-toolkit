@@ -1153,7 +1153,6 @@ sub package_sources()
 {
     my $build_default;
 
-    print "IN: package_sources\n\n";
     mkdir $pkglog;
     mkdir $source_output;
     mkdir $package_output;
@@ -1190,8 +1189,6 @@ sub package_sources()
     {
         @package_list = keys %package_build_hash;
     }
-
-    print "PL: " . join(":", @package_list) . "\n\n";
 
     for my $package ( @package_list )
     {
