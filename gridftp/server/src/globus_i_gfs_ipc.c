@@ -130,6 +130,11 @@ globus_l_gfs_ipc_close_cb(
     void *                              user_arg);
 
 static void
+globus_l_gfs_ipc_error_kickout(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_result_t                     res);
+
+static void
 globus_l_gfs_ipc_request_destroy(
     globus_gfs_ipc_request_t *          request)
 {
@@ -701,8 +706,22 @@ globus_l_gfs_ipc_close_cb(
     globus_gfs_ipc_request_t *          request;
     globus_gfs_ipc_reply_t              reply;
     globus_list_t *                     list;
+    globus_list_t *                     search;
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+
+    /* remove this handle from the cache */
+    list = (globus_list_t *) globus_hashtable_remove(
+        &globus_l_ipc_handle_table, ipc->hash_str);
+    search = globus_list_search(list, ipc);
+    globus_list_remove(&list, search);
+    if(!globus_list_empty(list))
+    {
+        globus_hashtable_insert(
+            &globus_l_ipc_handle_table,
+            ipc->hash_str,
+            list);
+    }
 
     /* should not need to lock since xio will call this after all callbacks
         have returned from user */
@@ -722,6 +741,7 @@ globus_l_gfs_ipc_close_cb(
     {
         ipc->close_cb(ipc, result, ipc->close_arg);
     }
+   
     /* clean it up */
     globus_hashtable_destroy(&ipc->call_table);
     globus_mutex_destroy(&ipc->mutex);
