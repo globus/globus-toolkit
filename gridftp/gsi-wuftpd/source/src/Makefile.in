@@ -100,8 +100,8 @@ ftpcount: ${UTIL_OBJS} ftpcount.o
 ftpshut: ${UTIL_OBJS} ftpshut.o rdservers.o 
 	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpshut.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
 
-ftpmlsd: ${UTIL_OBJS} ftpmlsd.o mlsx_facts.o
-	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} mlsx_facts.o ftpmlsd.o -L../support $(LDFLAGS) $(LIBS)
+ftpmlsd: ${UTIL_OBJS} ftpmlsd.o mlsx_facts.o realpath.o sigfix.o
+	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} mlsx_facts.o ftpmlsd.o realpath.o sigfix.o -L../support $(LDFLAGS) $(LIBS)
 
 ftprestart: ${UTIL_OBJS} ftprestart.o rdservers.o 
 	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftprestart.o rdservers.o -L../support $(LDFLAGS) $(LIBS)

@@ -1,4 +1,5 @@
-
+#include "config.h"
+#include "globus_common.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -8,6 +9,46 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "proto.h"
+
+#define NEEDS_ENCODING(c) \
+    (!isgraph(c) || (c) == '%' || (c) == '=' || (c) == ';')
+
+static const char *hex_chars = "0123456789ABCDEF";
+
+/** Encode string using URL encoding from rfc1738 (sec 2.2). */
+static
+void
+url_encode(
+    const char *                        in_string,
+    char **                             out_string)
+{
+    int                                 len;
+    char *                              in_ptr;
+    char *                              out_ptr;
+    char                                out_buf[MAXPATHLEN * 3];
+
+    in_ptr = (char *) in_string;
+    out_ptr = out_buf;
+    len = strlen(in_string);
+
+    while(in_ptr < in_string + len)
+    {
+        if(NEEDS_ENCODING(*in_ptr))
+        {
+            *out_ptr++ = '%';
+            *out_ptr++ = hex_chars[(*in_ptr >> 4) & 0xF];
+            *out_ptr++ = hex_chars[*in_ptr & 0xF];
+        } 
+        else
+        {
+            *out_ptr++ = *in_ptr;
+        }
+        in_ptr++;
+    }
+    *out_ptr = '\0';
+    *out_string = strdup(out_buf);    
+}
 
 static
 void
@@ -44,6 +85,9 @@ get_fact_string(
     char                                perm_buf[100];
     char                                mode_buf[100];
     char                                unique_buf[100];
+    char                                slink_buf[MAXPATHLEN * 4];
+    char                                target[MAXPATHLEN];
+    char *                              encoded_target;
     
     mutable_facts = strdup(facts);
     if(!mutable_facts)
@@ -51,7 +95,7 @@ get_fact_string(
         return 1;
     }
 
-    if(stat(path, &stat_buf) != 0)
+    if(lstat(path, &stat_buf) != 0)
     {
         /* File doesn't exist, or is not readable by user */
         free(mutable_facts);
@@ -62,6 +106,37 @@ get_fact_string(
     {
         *ptr = tolower(*ptr);
     }
+    
+    ptr = slink_buf;
+    if(strstr(mutable_facts, "unix.slink"))
+    {        
+        if(S_ISLNK(stat_buf.st_mode))
+        {
+            if(stat(path, &stat_buf) != 0)
+            {
+                /* File doesn't exist, or is not readable by user */
+                free(mutable_facts);
+                return 2;
+            }
+            /* Get target of symlink. */
+            if(wu_realpath(path, target, NULL) == NULL)
+            {
+                free(mutable_facts);
+                return 3;         /* problem reading link */
+            }
+            url_encode(target, &encoded_target);
+
+            strcpy(ptr, "UNIX.slink=");
+            ptr += 11;
+            strcpy(ptr, encoded_target);
+            ptr += strlen(encoded_target);
+            *(ptr++) = ';';
+            
+            free(encoded_target);
+        }
+    }
+    *ptr = '\0';
+    
     
     unqualified_path = strrchr(path, '/');
     if(unqualified_path)
@@ -116,8 +191,7 @@ get_fact_string(
         {
             strcpy(ptr, "OS.unix=blk");
             ptr += 11;
-        }
-        
+        }        
         *(ptr++) = ';';
     }
     *ptr = '\0';
@@ -308,21 +382,23 @@ get_fact_string(
             "Unique=%lx-%lx;",
             (unsigned long) stat_buf.st_dev, (unsigned long) stat_buf.st_ino);
     }
-
     snprintf(
         ret_val,
         size,
-        "%s%s%s%s%s%s%s %s",
+        "%s%s%s%s%s%s%s%s %s",
         type_buf,
-        modify_buf,
-        charset_buf,
         size_buf,
+        modify_buf,
         perm_buf,
+        charset_buf,
         mode_buf,
+        slink_buf,
         unique_buf,
         unqualified_path);
+        
     ret_val[size - 1] = '\0';
 
     free(mutable_facts);
     return 0;
+
 }

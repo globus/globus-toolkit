@@ -1,3 +1,8 @@
+ /** 
+ * @file
+ *  Header file for the gass copy library 
+ */
+ 
  /**
  * @mainpage
  *
@@ -112,29 +117,12 @@ typedef struct globus_gass_copy_perf_info_s globus_gass_copy_perf_info_t;
  * @return
  *        - n/a
  */
-
 typedef void (*globus_gass_copy_performance_cb_t)(
     void *                                          user_arg,
     globus_gass_copy_handle_t *                     handle,
     globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
-
-
-typedef enum {
-    GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN,
-    GLOBUS_GASS_COPY_GLOB_ENTRY_FILE,
-    GLOBUS_GASS_COPY_GLOB_ENTRY_DIR,
-    GLOBUS_GASS_COPY_GLOB_ENTRY_OTHER
-} globus_gass_copy_glob_entry_t;
-
-
-typedef void (*globus_gass_copy_glob_entry_cb_t)(
-    const char *                        url,
-    globus_gass_copy_glob_entry_t       type,
-    const char *                        unique_id,      
-    void *                              user_arg);
-
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -326,14 +314,14 @@ globus_gass_copy_get_no_third_party_transfers(
     globus_gass_copy_handle_t * handle,
     globus_bool_t * no_third_party_transfers);
     
-/** set offsets for partial file transfer */
+/** get offsets for partial file transfer */
 globus_result_t
 globus_gass_copy_get_partial_offsets(
     globus_gass_copy_handle_t * handle,
     globus_off_t * offset,
     globus_off_t * end_offset);
     
-/** get offsets for partial file transfer */
+/** set offsets for partial file transfer */
 globus_result_t
 globus_gass_copy_set_partial_offsets(
     globus_gass_copy_handle_t * handle,
@@ -518,11 +506,116 @@ globus_gass_copy_attr_set_secure_channel(
     globus_gass_copy_attr_t * attr,
     globus_io_secure_channel_t * secure_channel_info);
 #endif
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 /**
- * Get Attribute functions
+ * globbed entry types
+ */ 
+typedef enum {
+    GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN,
+    GLOBUS_GASS_COPY_GLOB_ENTRY_FILE,
+    GLOBUS_GASS_COPY_GLOB_ENTRY_DIR,
+    GLOBUS_GASS_COPY_GLOB_ENTRY_OTHER
+} globus_gass_copy_glob_entry_t;
+
+/**
+ * Glob expanded entry information
  */
+typedef struct 
+{
+    /** The file type of the entry
+     */
+    globus_gass_copy_glob_entry_t       type;
+    
+    /** A string that uniquely identifies the data that the entry 
+     *  refers to.  A file and a symlink to that file will have the 
+     *  same unique_id.  
+     *  It is NULL for when not available.
+     */
+    char *                              unique_id;
 
+    /** This points to the full path of the target of a symlink.  
+     *  It is NULL for non-symlinks or when not available.
+     *  *NOTE* This is currently not implemented and will be NULL.
+     */
+    char *                              symlink_target;
+    
+    /** An integer specifying the mode of the file.  
+     *  It is set to -1 when not available.
+     *  *NOTE* This is currently not implemented and will be -1.
+     */
+    int                                 mode;
+     
+    /** An integer specifying the modification time of the file.
+     *  It is set to -1 when not available.
+     *  *NOTE* This is currently not implemented and will be -1.
+     */
+    int                                 mdtm;
+     
+    /** A globus_off_t specifying the size of the file.  
+     *  It is set to -1 when not available.
+     *  *NOTE* This is currently not implemented and will be -1.
+     */
+    globus_off_t                        size;
+} globus_gass_copy_glob_stat_t;
 
+/**
+ * Gass copy glob entry callback
+ *
+ * This callback is passed as a parameter to globus_gass_copy_glob_expand_url().
+ * It is called once for each entry that the original expands to.
+ * 
+ * @param url
+ *        The full url to the expanded entry.  A directory entry will end
+ *        in a forward slash '/'.
+ * 
+ * @param stat
+ *        A pointer to a globus_gass_copy_glob_stat_t containing information
+ *        about the entry. 
+ *
+ * @param user_arg
+ *        The user_arg passed to globus_gass_copy_glob_expand()
+ * 
+ * @see globus_gass_copy_glob_stat_t,
+ *      globus_gass_copy_glob_expand_url
+ */
+typedef void (*globus_gass_copy_glob_entry_cb_t)(
+    const char *                         url,
+    const globus_gass_copy_glob_stat_t * info_stat,
+    void *                               user_arg);
+    
+/**
+ * Expand globbed url
+ *
+ * This function expands wildcards in a globbed url, and calls
+ * entry_cb() on each one.
+ * 
+ * @param handle
+ *        A gass copy handle to use for the operation.
+ * 
+ * @param url
+ *	  The URL to expand. The URL may be an ftp, gsiftp or file URL.
+ *        Wildcard characters supported are '?' '*' '[ ]' in the filename
+ *        portion of the url.
+ * 
+ * @param attr
+ *	  Gass copy attributes for this operation.
+ * 
+ * @param entry_cb
+ *        Function to call with information about each entry
+ * 
+ * @param user_arg
+ *        An argument to pass to entry_cb()
+ *
+ * @return
+ *        This function returns an error when any of these conditions are
+ *        true:
+ *        - handle is GLOBUS_NULL
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp, gsiftp or file url
+ */     
 globus_result_t 
 globus_gass_copy_glob_expand_url( 
      globus_gass_copy_handle_t *        handle, 
@@ -531,6 +624,28 @@ globus_gass_copy_glob_expand_url(
      globus_gass_copy_glob_entry_cb_t   entry_cb,
      void *                             user_arg);
      
+/**
+ * Make directory
+ *
+ * This function creates a directory given a ftp or file url.
+ * 
+ * @param handle
+ *        A gass copy handle to use for the mkdir operation.
+ * @param url
+ *	  The URL for the directory to create. The URL may be an ftp,
+ *        gsiftp or file URL.
+ * @param attr
+ *	  Gass copy attributes for this operation.
+ *
+ * @return
+ *        This function returns an error when any of these conditions are
+ *        true:
+ *        - handle is GLOBUS_NULL
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp, gsiftp or file url
+ *        - the directory could not be created
+ */     
 globus_result_t
 globus_gass_copy_mkdir(
     globus_gass_copy_handle_t *         handle,
@@ -538,7 +653,6 @@ globus_gass_copy_mkdir(
     globus_gass_copy_attr_t *           attr);
 
 
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 EXTERN_C_END
 

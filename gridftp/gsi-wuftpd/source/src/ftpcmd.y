@@ -1605,44 +1605,6 @@ cmd: USER SP username CRLF
         /*
          * CKSM*
          */
-    | CKSM check_login SP STRING SP pathname CRLF
-        {
-            if(exit_at == CKSM)
-            {   
-                dologout(0);
-            }
-            if (log_commands)
-                syslog(LOG_INFO, "CKSM %s", CHECKNULL($6)); 
-            if (!restrict_check($6))
-            {
-                cksmcmd($6,$4,0,-1);
-            }
-            else
-            {
-                reply(550, "Cannot access %s", $6);
-            }            
-            if ($6 != NULL)
-                free($6);
-        }
-    | CKSM check_login SP STRING SP OFFSET SP pathname CRLF
-        {
-            if(exit_at == CKSM)
-            {   
-                dologout(0);
-            }
-            if (log_commands)
-                syslog(LOG_INFO, "CKSM %s", CHECKNULL($8)); 
-            if (!restrict_check($8))
-            {
-                cksmcmd($8,$4,$6,-1);
-            }
-            else
-            {
-                reply(550, "Cannot access %s", $8);
-            }
-            if ($8 != NULL)
-                free($8);
-        }
     | CKSM check_login SP STRING SP OFFSET SP LENGTH SP pathname CRLF
         {
             if(exit_at == CKSM)
@@ -1993,8 +1955,6 @@ opts:
         mlsx_options(NULL);
     }
     |
-    SP LIST SP list_option_list
-    |
     SP RETR SP retr_option_list 
     ;
 
@@ -2012,29 +1972,6 @@ byte_range:
 				     (globus_size_t) ($3-$1));
 	}
 #       endif
-    }
-    ;
-
-list_option_list: 
-    list_option list_option_list
-    | list_option
-    ;
-
-list_option:
-    USE_DATA_MODE EQUALS STRING SEMICOLON
-    {
-        if(strcasecmp($3, "yes") == 0)
-        {
-            /* we don't enforce this right now */
-        }
-        else if(strcasecmp($3, "no") == 0)
-        {
-            /* we don't enforce this right now */
-        }
-        else
-        {
-            reply(500,"'%s': invalid LIST MODE", $3);
-        }
     }
     ;
 
@@ -2501,7 +2438,7 @@ struct tab cmdtab[] =
     {"XCUP", CDUP, ARGS, 1, "(change to parent directory)"},
     {"STOU", STOU, STR1, 1, "<sp> file-name"},
     {"SIZE", SIZE, OSTR, 1, "<sp> path-name"},
-    {"CKSM", CKSM, CKSMARGS, 1, "<sp> cksm-alg [ <sp> offset [ <sp> length ]] <sp> path-name"},
+    {"CKSM", CKSM, CKSMARGS, 1, "<sp> cksm-alg <sp> offset <sp> length <sp> path-name"},
 #ifdef FTP_SECURITY_EXTENSIONS
     { "AUTH", AUTH, STR1, 1,	"<sp> auth-type" },
     { "ADAT", ADAT, STR1, 1,	"<sp> auth-data" },
@@ -2559,7 +2496,7 @@ char * feattab[] =
     "ESTO",
     "ERET",
     "MDTM",
-    "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;", 
+    "MLST Type*;Size*;Modify*;Perm*;Charset*;UNIX.mode*;UNIX.slink*;Unique*;", 
     "SIZE",
     "CKSM",
 #ifdef USE_GLOBUS_DATA_CODE

@@ -53,10 +53,11 @@ globus_i_ftp_client_features_destroy(
 
 
 /**
- * @name features_init
+ * @name Features
  */
 /*@{*/
 /**
+ * @ingroup globus_ftp_client_operations
  * Initialize the feature set, to be later used by 
  * globus_ftp_client_feat(). Each feature gets initial
  * value GLOBUS_FTP_CLIENT_MAYBE.
@@ -79,15 +80,9 @@ globus_ftp_client_features_init(
     
     return GLOBUS_SUCCESS;  
 }
-/**/
-/*@}*/
-
 
 /**
- * @name features_destroy
- */
-/*@{*/
-/**
+ * @ingroup globus_ftp_client_operations
  * Destroy the feature set.
  * @note Structure passed to this function must have been previously
  * initialized by globus_ftp_client_features_init().
@@ -99,14 +94,9 @@ globus_ftp_client_features_destroy(
 {
     return globus_i_ftp_client_features_destroy(*u_features);
 }
-/**/
-/*@}*/
 
 /**
- * @name Feat
- */
-/*@{*/
-/**
+ * @ingroup globus_ftp_client_operations
  * Check the features supported by  the server (FTP FEAT command).  After
  * this  procedure  completes, the  features  set (parameter  u_features)
  * represents the features supported by the server. Prior to calling this
@@ -120,7 +110,7 @@ globus_ftp_client_features_destroy(
  * has not  been performed. This is not necessarily caused by error; 
  * there might have been no reason to check for this particular feature.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the list operation.
  * @param url
  *        The URL to list. The URL may be an ftp or gsiftp URL.
@@ -137,7 +127,7 @@ globus_ftp_client_features_destroy(
  * @return
  *        This function returns an error when any of these conditions are
  *        true:
- *        - handle is GLOBUS_NULL
+ *        - u_handle is GLOBUS_NULL
  *        - source_url is GLOBUS_NULL
  *        - source_url cannot be parsed
  *        - source_url is not a ftp or gsiftp url
@@ -325,15 +315,9 @@ error_param:
     return globus_error_put(error);
 }
 /* globus_ftp_client_feat() */
-/*@}*/
-
-
 
 /**
- * @name is_feature_supported
- */
-/*@{*/
-/**
+ * @ingroup globus_ftp_client_operations
  * Check if the feature is supported by the server.
  * After the function completes, parameter answer contains
  * the state of the server support of the given function.

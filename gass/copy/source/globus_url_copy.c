@@ -139,10 +139,9 @@ globus_l_gass_copy_performance_cb(
 static
 void
 globus_l_guc_entry_cb(
-    const char *                        url,
-    globus_gass_copy_glob_entry_t       type,
-    const char *                        unique_id,      
-    void *                              user_arg);
+    const char *                         url,
+    const globus_gass_copy_glob_stat_t * info_stat,
+    void *                               user_arg);
     
 static
 int
@@ -234,11 +233,19 @@ const char * long_usage =
 "\nglobus-url-copy [options] <sourceURL> <destURL>\n"
 "globus-url-copy [options] -f <filename>\n\n"
 
-"<sourceURL> may contain wildcard characters * ? and [ ] character ranges.\n"
-"If <sourceURL> is a directory, all files within that directory will be copied.\n"
-"<destURL> must be a directory if multiple files are being copied.\n"
-"Any url specifying a directory must end with a /\n\n"
-
+"<sourceURL> may contain wildcard characters * ? and [ ] character ranges\n"
+"in the filename only.\n"
+"Any url specifying a directory must end with a forward slash '/'\n\n"
+"If <sourceURL> is a directory, all files within that directory will\n"
+"be copied.\n"
+"<destURL> must be a directory if multiple files are being copied.\n\n"
+"Note:  If the ftp server from the source url does not support the MLSD\n"
+"       command, this client will attempt to transfer subdirectories as\n"
+"       files, resulting in an error.  Recursion is not possible in this\n"
+"       case, but you can use the -c (continue on errors) option in order\n"
+"       to transfer the regular files from the top level directory.\n"
+"       **GridFTP servers prior to version 1.17 (Globus Toolkit 3.2)\n"
+"         do not support MLSD.\n\n"
 "OPTIONS\n"
 "  -help | -usage\n"
 "       Print help\n"
@@ -268,9 +275,11 @@ const char * long_usage =
    
 "  -q | -quiet \n"
 "       Suppress all output for successful operation\n"
-"  -vb | -verbose \n"
+"  -v | -verbose \n"
+"       Display urls being transferred\n"
+"  -vb | -verbose-perf \n"
 "       During the transfer, display the number of bytes transferred\n"
-"       and the transfer rate per second\n"
+"       and the transfer rate per second.  Show urls being transferred\n"
 "  -dbg | -debugftp \n"
 "       Debug ftp connections.  Prints control channel communication\n"
 "       to stderr\n"
@@ -318,7 +327,7 @@ const char * long_usage =
 "       set data channel protection mode to PRIVATE\n"
    
 "  -off | -partial-offset\n"
-"       offset for partial ftp file transfers\n"
+"       offset for partial ftp file transfers, defaults to 0\n"
 "  -len | -partial-length\n"
 "       length for partial ftp file transfers, used only for the source url,\n"
 "       defaults the full file.\n"
@@ -379,6 +388,7 @@ enum
     arg_f, 
     arg_vb,
     arg_q, 
+    arg_v, 
     arg_debugftp, 
     arg_restart,
     arg_rst_retries, 
@@ -423,7 +433,8 @@ flagdef(arg_a, "-a", "-ascii");
 flagdef(arg_b, "-b", "-binary");
 flagdef(arg_c, "-c", "-continue-on-error");
 flagdef(arg_q, "-q", "-quiet");
-flagdef(arg_vb, "-vb", "-verbose");
+flagdef(arg_v, "-v", "-verbose");
+flagdef(arg_vb, "-vb", "-verbose-perf");
 flagdef(arg_debugftp, "-dbg", "-debugftp");
 flagdef(arg_restart, "-rst", "-restart");
 flagdef(arg_notpt, "-notpt", "-no-third-party-transfers");
@@ -460,6 +471,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_b);                    \
     setupopt(arg_s);                    \
     setupopt(arg_q);                    \
+    setupopt(arg_v);                    \
     setupopt(arg_vb);                   \
     setupopt(arg_debugftp);             \
     setupopt(arg_restart);              \
@@ -485,10 +497,11 @@ static globus_args_option_descriptor_t args_options[arg_num];
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
 static globus_bool_t g_verbose_flag = GLOBUS_FALSE;
-static globus_bool_t g_quiet_flag = GLOBUS_FALSE;
+static globus_bool_t g_quiet_flag = GLOBUS_TRUE;
 static globus_bool_t g_use_debug = GLOBUS_FALSE;
 static globus_bool_t g_use_restart = GLOBUS_FALSE;
 static globus_bool_t g_continue = GLOBUS_FALSE;
+static char *        g_err_msg;
 
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     globus_netlogger_handle_t                       gnl_handle;
@@ -611,11 +624,10 @@ main(int argc, char **argv)
                  &gass_copy_handle);
     if(result != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "error: %s\n",
-            globus_error_print_friendly(globus_error_get(result)));
-        
-        fprintf(stderr, 
-            "There was an error with one or more file transfers.\n");        
+        g_err_msg = globus_error_print_friendly(
+            globus_error_peek(result));
+        fprintf(stderr, "\nerror: %s", g_err_msg);
+        globus_free(g_err_msg);        
         ret_val = 1;
     }
     
@@ -652,10 +664,6 @@ globus_l_url_copy_monitor_callback(void * callback_arg,
 
     if (error != GLOBUS_SUCCESS)
     {
-/*
-        fprintf(stderr, " url copy error: %s\n",
-                globus_error_print_chain(error));
-*/
         use_err = GLOBUS_TRUE;
     }
 
@@ -793,10 +801,9 @@ globus_l_gass_copy_performance_cb(
 static
 void
 globus_l_guc_entry_cb(
-    const char *                        url,
-    globus_gass_copy_glob_entry_t       type,
-    const char *                        unique_id,      
-    void *                              user_arg)
+    const char *                         url,
+    const globus_gass_copy_glob_stat_t * info_stat,
+    void *                               user_arg)
 {
     globus_l_guc_info_t *               guc_info;
     char *                              tmp_unique;
@@ -805,10 +812,11 @@ globus_l_guc_entry_cb(
     
     guc_info = (globus_l_guc_info_t *) user_arg;
     
-    if(guc_info->recurse && 
-        type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR)
+    if(guc_info->recurse && info_stat &&
+        info_stat->type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR &&
+        info_stat->unique_id && *info_stat->unique_id)
     {
-        tmp_unique = globus_libc_strdup(unique_id);
+        tmp_unique = globus_libc_strdup(info_stat->unique_id);
 
         retval = globus_hashtable_insert(
             &guc_info->recurse_hash,
@@ -962,7 +970,7 @@ globus_l_guc_parse_file(
         {
             if(stdin_used)
             {
-                fprintf(stderr, "Only 1 stdin can be used.\n");
+                fprintf(stderr, "stdin can only be used once.\n");
                 goto error_parse;
             }
             stdin_used = GLOBUS_TRUE;
@@ -1010,8 +1018,8 @@ globus_l_guc_transfer_files(
     globus_result_t                              result;
     globus_bool_t                                new_url;
     globus_bool_t                                dst_is_dir;
-    globus_result_t                              first_error = GLOBUS_SUCCESS;
-        
+    globus_bool_t                                was_error = GLOBUS_FALSE;
+
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -1199,7 +1207,20 @@ globus_l_guc_transfer_files(
                      gass_copy_handle);
                 if(result != GLOBUS_SUCCESS)
                 {
-                    goto error_dirlist;
+                    was_error = GLOBUS_TRUE;
+                    if(!g_continue)
+                    {
+                        goto error_dirlist;
+                    }
+                    else
+                    {
+                        monitor.done = GLOBUS_TRUE;
+                        g_err_msg = globus_error_print_friendly(
+                            globus_error_peek(result));
+                        fprintf(stderr, "\nerror listing %s:\n%s",
+                            src_url, g_err_msg);
+                        globus_free(g_err_msg);
+                    }
                 }
                 
                 result = globus_gass_copy_mkdir(
@@ -1229,17 +1250,20 @@ globus_l_guc_transfer_files(
 
         if (result != GLOBUS_SUCCESS)
         {
-            monitor.done = GLOBUS_TRUE;
+            was_error = GLOBUS_TRUE;
             if(!g_continue)
             {
                 goto error_transfer;
             }
-            
-            if(first_error == GLOBUS_SUCCESS)
+            else
             {
-                first_error = result;
+                monitor.done = GLOBUS_TRUE;
+                g_err_msg = globus_error_print_friendly(
+                    globus_error_peek(result));
+                fprintf(stderr, "\nerror transferring %s:\n%s",
+                    src_url, g_err_msg);
+                globus_free(g_err_msg);
             }
-
         }
 
         globus_mutex_lock(&monitor.mutex);
@@ -1251,7 +1275,7 @@ globus_l_guc_transfer_files(
             if(globus_l_globus_url_copy_ctrlc &&
                !globus_l_globus_url_copy_ctrlc_handled)
             {
-                printf("\nCancelling copy...\n");
+                fprintf(stderr, "\nCancelling copy...\n");
                 guc_info->cancelled = GLOBUS_TRUE;
                 globus_l_globus_url_copy_remove_cancel_poll();
                 globus_gass_copy_cancel(
@@ -1270,21 +1294,26 @@ globus_l_guc_transfer_files(
 	
         if (monitor.use_err)
         {
-            fprintf(stderr, "failed to transfer %s to %s.\n",
-                src_url,
-                dst_url);
             result = globus_error_put(monitor.err);
-            if(!g_continue)
+            was_error = GLOBUS_TRUE;
+            if(!g_continue || globus_l_globus_url_copy_ctrlc_handled)
             {
                 goto error_transfer;
             }
-            if(first_error == GLOBUS_SUCCESS)
+            else
             {
-                first_error = result;
+                monitor.done = GLOBUS_TRUE;
+                g_err_msg = globus_error_print_friendly(
+                    globus_error_peek(result));
+                fprintf(stderr, "\nerror transferring %s:\n%s",
+                    src_url, g_err_msg);
+                globus_free(g_err_msg);
             }
-
         }
-	
+	else if(globus_l_globus_url_copy_ctrlc_handled)
+	{
+	    goto error_transfer;
+	}
 	
         if(source_io_handle)
         {
@@ -1314,14 +1343,45 @@ globus_l_guc_transfer_files(
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
 
+    if(was_error)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_NULL,
+                GLOBUS_NULL,
+                "There was an error with one or more transfers.\n"));
+    }
 
-    return first_error;
+    return result;
 
 error_transfer:
 error_dirlist:
+    if(source_io_handle)
+    {
+        globus_free(source_io_handle);
+    }
+
+    if(dest_io_handle)
+    {
+        globus_free(dest_io_handle);
+    }
+    globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
+    globus_ftp_client_operationattr_destroy(&guc_info->dest_ftp_attr);
+    
+    globus_free(url_pair->src_url);
+    globus_free(url_pair->dst_url);
+    globus_free(url_pair);
+
+    if(src_url_base)
+    {
+        globus_free(src_url_base);
+    }
+    if(dst_url_base)
+    {
+        globus_free(dst_url_base);
+    }
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
-
 
     return result;
 
@@ -1413,7 +1473,11 @@ globus_l_guc_parse_arguments(
         case arg_q:
             g_quiet_flag = GLOBUS_TRUE;
             break;
+        case arg_v:
+            g_quiet_flag = GLOBUS_FALSE;
+            break;
         case arg_vb:
+            g_quiet_flag = GLOBUS_FALSE;
             g_verbose_flag = GLOBUS_TRUE;
             break;
         case arg_bs:
@@ -1488,6 +1552,10 @@ globus_l_guc_parse_arguments(
                 instance->values[0],
                 &guc_info->partial_length,
                 GLOBUS_NULL);
+            if(guc_info->partial_offset == -1)
+            {
+                guc_info->partial_offset = 0;
+            }
 	    break;
 	case arg_fast:
 	    guc_info->list_uses_data_mode = GLOBUS_TRUE;
@@ -1580,13 +1648,14 @@ globus_l_guc_parse_arguments(
        (guc_info->options & GLOBUS_URL_COPY_ARG_BINARY) )
     {
         globus_url_copy_l_args_error(
-            "option -ascii and -binary are exclusive");
+            "option -ascii and -binary are mutually exclusive");
         return -1;
     }
     if(guc_info->data_safe & guc_info->data_private)
     {
         globus_url_copy_l_args_error(
-            "option -data-channel-safe and -data-channel-private are exclusive");
+            "option -data-channel-safe and -data-channel-private "
+            "are mutually exclusive");
         return -1;
     }
     return 0;
@@ -1604,10 +1673,10 @@ globus_l_guc_expand_urls(
     char *                                       dst_url;
     globus_l_guc_src_dst_pair_t *                user_url_pair;
     globus_result_t                              result;
-    globus_io_handle_t *                         source_io_handle;
     globus_bool_t                                no_matches = GLOBUS_TRUE;
     globus_bool_t                                was_error = GLOBUS_FALSE;
-        
+    globus_bool_t                                stdin_used = GLOBUS_FALSE;
+            
     while(!globus_fifo_empty(&guc_info->user_url_list))
     {
         user_url_pair = (globus_l_guc_src_dst_pair_t *)
@@ -1615,26 +1684,22 @@ globus_l_guc_expand_urls(
 
         src_url = user_url_pair->src_url;
         dst_url = user_url_pair->dst_url;
-
-        source_io_handle = 
-            globus_l_guc_get_io_handle(src_url, fileno(stdin));
-
-        if(source_io_handle != NULL)
+        
+        stdin_used = GLOBUS_FALSE;
+        if(strcmp("-", src_url) == 0)
         {
             globus_fifo_enqueue(
                 &guc_info->expanded_url_list, 
                 user_url_pair);
-
-            continue;
+            stdin_used = GLOBUS_TRUE;
         }
 
-        
         globus_hashtable_init(
             &guc_info->recurse_hash,
-            4096,
+            256,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
-                   
+                           
         globus_ftp_client_operationattr_init(&guc_info->source_ftp_attr);
 
         globus_l_guc_gass_attr_init(
@@ -1645,18 +1710,22 @@ globus_l_guc_expand_urls(
             src_url,
             guc_info->source_subject);
 
-        result = globus_l_guc_expand_single_url(
-            user_url_pair,
-            guc_info,
-            gass_copy_attr,       
-            gass_copy_handle);
-                     
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_expand;
+        if(!stdin_used)
+        {                    
+            result = globus_l_guc_expand_single_url(
+                user_url_pair,
+                guc_info,
+                gass_copy_attr,       
+                gass_copy_handle);
+                         
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_expand;
+            }
         }
-        
-        if(globus_fifo_size(&guc_info->expanded_url_list))
+        globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
+
+        if(!globus_fifo_empty(&guc_info->expanded_url_list))
         {
             no_matches = GLOBUS_FALSE;
             
@@ -1666,13 +1735,13 @@ globus_l_guc_expand_urls(
                 dest_gass_copy_attr,
                 gass_copy_handle);
             
+            if(globus_l_globus_url_copy_ctrlc_handled)
+            {
+                goto error_transfer;
+            }
             if(result != GLOBUS_SUCCESS)
             {
                 was_error = GLOBUS_TRUE;
-
-                fprintf(stderr, "error: %s\n",
-                    globus_error_print_friendly(globus_error_peek(result)));
-
                 if (!g_continue)
                 {
                     goto error_transfer;
@@ -1682,33 +1751,34 @@ globus_l_guc_expand_urls(
         
         globus_hashtable_destroy_all(&guc_info->recurse_hash,
             globus_l_guc_hashtable_element_free);
-        globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
         
         globus_free(user_url_pair->src_url);
         globus_free(user_url_pair->dst_url);
         globus_free(user_url_pair);
-        
     }
     
-    if(no_matches)
+    if(no_matches && result == GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "No files matched the source url.\n");
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_NULL,
+                GLOBUS_NULL,
+                "No files matched the source url.\n"));                    
     }
-    if(was_error)
+    if(was_error && result == GLOBUS_SUCCESS)
     {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_NULL,
+                GLOBUS_NULL,
+                "There was an error with one or more transfers.\n"));
     }
     
     return result;
 
-error_transfer:            
 error_expand:
-    if(was_error)
-    {
-        fprintf(stderr, 
-            "There was an error with one or more file transfers.\n");
-    }
-
     globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
+error_transfer:            
     globus_hashtable_destroy_all(&guc_info->recurse_hash,
         globus_l_guc_hashtable_element_free);
     
@@ -1774,21 +1844,29 @@ globus_l_guc_expand_single_url(
                                  
     while(!globus_fifo_empty(&guc_info->matched_url_list))
     {
-        matched_src_url = (char *) globus_fifo_dequeue(&guc_info->matched_url_list);
+        matched_src_url = (char *) 
+            globus_fifo_dequeue(&guc_info->matched_url_list);
     
         matched_file = matched_src_url + base_url_len;
     
-        if(matched_src_url[strlen(matched_src_url) - 1] == '/' && 
-            !guc_info->recurse)
+        if(matched_src_url[strlen(matched_src_url) - 1] == '/')
         {
-	    globus_free(matched_src_url);
-            continue;
+            if(!guc_info->recurse)
+            {
+                globus_free(matched_src_url);
+                continue;
+            }
+            else if(dst_is_file)
+            {
+                globus_free(matched_src_url);
+                goto error_too_many_matches;
+            }
         }
             
         if(dst_is_file && ++files_matched > 1)
         {
-            	globus_free(matched_src_url);
-		goto error_too_many_matches;
+            globus_free(matched_src_url);
+            goto error_too_many_matches;
         }
 
         if(dst_is_file)
@@ -1817,18 +1895,17 @@ globus_l_guc_expand_single_url(
     
     globus_fifo_destroy(&guc_info->matched_url_list);
     
-        
-
-
     return GLOBUS_SUCCESS;
+    
 error_too_many_matches:
-    globus_libc_fprintf(stderr, 
-        "Multiple source urls cannot be copied "
-        "to the same destination url:\n\t%s\n",
-        dst_url);        
-            
+    result = globus_error_put(
+        globus_error_construct_string(
+            GLOBUS_NULL,
+            GLOBUS_NULL,
+            "Multiple source urls must be transferred to a directory "
+            "destination url:\n%s\n",
+            dst_url));                    
 error_expand:
-
     globus_fifo_destroy(&guc_info->matched_url_list);
      
     return result;                
@@ -1857,7 +1934,7 @@ globus_l_guc_init_gass_copy_handle(
     if(result != GLOBUS_SUCCESS)
     {
         fprintf(stderr, "Error: Unable to init ftp handle attr %s\n",
-            globus_error_print_friendly(globus_error_get(result)));
+            globus_error_print_friendly(globus_error_peek(result)));
 
         return -1;
     }
@@ -1873,7 +1950,7 @@ globus_l_guc_init_gass_copy_handle(
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to init debug plugin %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
+                globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
         }
@@ -1884,7 +1961,7 @@ globus_l_guc_init_gass_copy_handle(
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to register debug plugin %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
+                globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
         }
@@ -1908,7 +1985,7 @@ globus_l_guc_init_gass_copy_handle(
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to init debug plugin %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
+                globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
         }
@@ -1919,7 +1996,7 @@ globus_l_guc_init_gass_copy_handle(
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to register restart plugin %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
+                globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
         }
@@ -1955,7 +2032,7 @@ globus_l_guc_init_gass_copy_handle(
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to set rfc1738 support %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
+                globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
         }
@@ -1963,7 +2040,6 @@ globus_l_guc_init_gass_copy_handle(
     
     globus_gass_copy_handleattr_set_ftp_attr(
         &gass_copy_handleattr, &ftp_handleattr);
-
     globus_gass_copy_handle_init(gass_copy_handle, &gass_copy_handleattr);
 
     if(guc_info->block_size > 0)
@@ -1998,7 +2074,7 @@ globus_l_guc_init_gass_copy_handle(
         {
             fprintf(stderr, 
                 "Error: Unable to register performance handler %s\n",
-                globus_error_print_friendly(globus_error_get(result)));
+                globus_error_print_friendly(globus_error_peek(result)));
 
             fprintf(stderr, "Continuing without performance info\n");
         }
@@ -2010,6 +2086,24 @@ globus_l_guc_init_gass_copy_handle(
                               globus_l_globus_url_copy_sigint_handler);
     }
 #   endif
+
+
+    if(g_use_restart)
+    {
+        globus_ftp_client_handleattr_remove_plugin(
+            &ftp_handleattr,
+            &restart_plugin);
+        globus_ftp_client_restart_plugin_destroy(&restart_plugin);
+    }
+    if(g_use_debug)
+    {
+        globus_ftp_client_handleattr_remove_plugin(
+            &ftp_handleattr,
+            &debug_plugin);
+        globus_ftp_client_debug_plugin_destroy(&debug_plugin);
+    }
+    globus_gass_copy_handleattr_destroy(&gass_copy_handleattr);
+    globus_ftp_client_handleattr_destroy(&ftp_handleattr);
 
     return 0;
 }

@@ -109,7 +109,7 @@ globus_l_ftp_client_transfer_normalize_attrs(
  * complete_callback will be invoked with the result of the mkdir
  * operation. 
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the mkdir operation.
  * @param url
  *	  The URL for the directory to create. The URL may be an ftp or
@@ -124,10 +124,10 @@ globus_l_ftp_client_transfer_normalize_attrs(
  * @return
  *        This function returns an error when any of these conditions are
  *        true:
- *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - u_handle is GLOBUS_NULL
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  */
@@ -340,7 +340,7 @@ abort:
  * complete_callback will be invoked with the result of the rmdir
  * operation. 
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the rmdir operation.
  * @param url
  *	  The URL for the directory to create. The URL may be an ftp or
@@ -355,10 +355,10 @@ abort:
  * @return
  *        This function returns an error when any of these conditions are
  *        true:
- *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - u_handle is GLOBUS_NULL
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  */
@@ -572,7 +572,7 @@ abort:
  * complete_callback will be invoked with the result of the delete
  * operation. 
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the delete operation.
  * @param url
  *	  The URL for the file to delete. The URL may be an ftp or
@@ -587,10 +587,10 @@ abort:
  * @return
  *        This function returns an error when any of these conditions are
  *        true:
- *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - u_handle is GLOBUS_NULL
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  */
@@ -807,7 +807,7 @@ abort:
  * aborted, the complete_callback will be invoked with the final
  * status of the list.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the list operation.
  * @param url
  *	  The URL to list. The URL may be an ftp or gsiftp URL.
@@ -822,9 +822,9 @@ abort:
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  *
@@ -865,7 +865,7 @@ globus_ftp_client_list(
  * aborted, the complete_callback will be invoked with the final
  * status of the list.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the list operation.
  * @param url
  *	  The URL to list. The URL may be an ftp or gsiftp URL.
@@ -880,9 +880,9 @@ globus_ftp_client_list(
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  *
@@ -923,7 +923,7 @@ globus_ftp_client_verbose_list(
  * aborted, the complete_callback will be invoked with the final
  * status of the list.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the list operation.
  * @param url
  *	  The URL to list. The URL may be an ftp or gsiftp URL.
@@ -938,9 +938,9 @@ globus_ftp_client_verbose_list(
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  *
@@ -969,7 +969,7 @@ globus_ftp_client_machine_list(
 
 
 /**
- * @name Size
+ * @name MLST
  */
 /*@{*/
 /**
@@ -982,10 +982,10 @@ globus_ftp_client_machine_list(
  * When the MLST request is completed or aborted, the complete_callback will 
  * be invoked with the final status of the operation.
  * If the callback is returns without an error, the MLST fact string will
- * be stored in the char * value pointed to by the fact_string parameter 
+ * be stored in the globus_byte_t * pointed to by the mlst_buffer parameter 
  * to this function.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the list operation.
  * @param url
  *	  The URL of a file or directory to list. The URL may be an ftp or 
@@ -1009,9 +1009,9 @@ globus_ftp_client_machine_list(
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - mlst_buffer is GLOBUS_NULL
  *        - mlst_buffer_length is GLOBUS_NULL
  *        - complete_callback is GLOBUS_NULL
@@ -1251,7 +1251,7 @@ abort:
  * complete_callback will be invoked with the result of the move
  * operation. 
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the move operation.
  * @param source_url
  *	  The URL for the file to move.
@@ -1541,7 +1541,7 @@ abort:
  * complete_callback will be invoked with the result of the
  * operation. 
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the move operation.
  * @param url
  *	  The URL of the file to modify permissions.
@@ -1780,7 +1780,7 @@ abort:
  * aborted, the complete_callback will be invoked with the final
  * status of the get.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the get operation.
  * @param url
  *	  The URL to download. The URL may be an ftp or gsiftp URL.
@@ -1797,9 +1797,9 @@ abort:
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  *
@@ -1870,9 +1870,9 @@ globus_ftp_client_get(
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  */
@@ -2021,9 +2021,9 @@ error_param:
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  *
@@ -3522,7 +3522,7 @@ abort:
  * be stored in the globus_abstime_t value pointed to by the modification_time
  * parameter to this function.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the list operation.
  * @param url
  *	  The URL to list. The URL may be an ftp or gsiftp URL.
@@ -3541,9 +3541,9 @@ abort:
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - modification time is GLOBUS_NULL
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
@@ -3772,7 +3772,7 @@ abort:
  * to ASCII mode. The actual amount of data which is returned in the data
  * callbacks may be less than this amount.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the list operation.
  * @param url
  *	  The URL to list. The URL may be an ftp or gsiftp URL.
@@ -3791,9 +3791,9 @@ abort:
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - size is GLOBUS_NULL
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
@@ -4002,7 +4002,8 @@ abort:
 /* globus_ftp_client_size() */
 /*@}*/
 
- /* @name Cksm 
+/**
+ * @name Cksm
  */
 /*@{*/
 /**
@@ -4021,7 +4022,7 @@ abort:
  * to ASCII mode. The actual amount of data which is returned in the data
  * callbacks may be less than this amount.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the list operation.
  * @param url
  *	  The URL to list. The URL may be an ftp or gsiftp URL.
@@ -4047,9 +4048,9 @@ abort:
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - size is GLOBUS_NULL
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
@@ -4280,7 +4281,7 @@ abort:
  * Abort the operation currently in progress.
  * @ingroup globus_ftp_client_operations
  *
- * @param handle 
+ * @param u_handle 
  *        Handle which to abort.
  */
 globus_result_t
@@ -4565,7 +4566,7 @@ error:
  * aborted, the complete_callback will be invoked with the final
  * status of the list.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the list operation.
  * @param url
  *	  The URL to list. The URL may be an ftp or gsiftp URL.
@@ -4582,9 +4583,9 @@ error:
  *        This function returns an error when any of these conditions are
  *        true:
  *        - handle is GLOBUS_NULL
- *        - source_url is GLOBUS_NULL
- *        - source_url cannot be parsed
- *        - source_url is not a ftp or gsiftp url
+ *        - url is GLOBUS_NULL
+ *        - url cannot be parsed
+ *        - url is not a ftp or gsiftp url
  *        - complete_callback is GLOBUS_NULL
  *        - handle already has an operation in progress
  *

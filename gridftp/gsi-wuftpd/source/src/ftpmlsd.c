@@ -17,7 +17,7 @@ main(
     struct dirent *                     dirp;
     int                                 cwd = 0;
     char *                              facts = 
-        "Type;Size;Modify;UNIX.mode;Perm;";
+        "Type;Size;Modify;Perm;Charset;UNIX.mode;UNIX.slink;Unique;";
 
     if(argc >= 2)
     {
@@ -43,7 +43,7 @@ main(
     
     while((dirp = readdir(dir)))
     {
-        char                            fact_str[2048];
+        char                            fact_str[MAXPATHLEN * 5];
         char                            path[MAXPATHLEN];
         
         if(cwd)
@@ -56,7 +56,10 @@ main(
         }
         
         path[sizeof(path) - 1] = 0;
-        get_fact_string(fact_str, sizeof(fact_str), path, facts);
+        if(get_fact_string(fact_str, sizeof(fact_str), path, facts) != 0)
+        {
+            continue;
+        }
         printf("%s\n", fact_str);
     }
     

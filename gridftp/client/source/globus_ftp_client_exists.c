@@ -138,7 +138,7 @@ globus_l_ftp_client_exist_data_callback(
  * with the result of the existence check passed as a globus error object,
  * or GLOBUS_SUCCESS.
  *
- * @param handle
+ * @param u_handle
  *        An FTP Client handle to use for the existence check operation.
  * @param url
  *        The URL of the directory or file to check. The URL may be an
@@ -152,7 +152,7 @@ globus_l_ftp_client_exist_data_callback(
  * @return
  *        This function returns an error when any of these conditions are
  *        true:
- *        - handle is GLOBUS_NULL
+ *        - u_handle is GLOBUS_NULL
  *        - url is GLOBUS_NULL
  *        - url cannot be parsed
  *        - url is not a ftp or gsiftp url

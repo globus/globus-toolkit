@@ -969,8 +969,14 @@ globus_ftp_client_register_write(
     globus_bool_t				eof,
     globus_ftp_client_data_callback_t		callback,
     void *					callback_arg);
+#endif
 
-
+/**
+ * Types for feature existence
+ * @ingroup globus_ftp_client_operations
+ * FALSE and TRUE are known to be fact that a feature does or does not exist
+ * MAYBE means that the feature may exist
+ */ 
 typedef enum
 {
     GLOBUS_FTP_CLIENT_FALSE = GLOBUS_FALSE,
@@ -979,6 +985,10 @@ typedef enum
 }
 globus_ftp_client_tristate_t;
 
+/**
+ * Types of features
+ * @ingroup globus_ftp_client_operations
+ */ 
 typedef enum
 {
     /* Buffer-size setting commands; keep these at the beginning of
@@ -1009,8 +1019,16 @@ typedef enum
     GLOBUS_FTP_CLIENT_LAST_FEAT_FEATURE = GLOBUS_FTP_CLIENT_FEATURE_MLST
 }
 globus_ftp_client_probed_feature_t;
-
+/**
+ * Feature Handle
+ * @ingroup globus_ftp_client_operations
+ * Handle used to associate state with feature operations.
+ * @see globus_ftp_client_feat,
+ *      globus_ftp_client_features_init,
+ *      globus_ftp_client_features_destroy
+ */
 typedef struct globus_i_ftp_client_features_s * globus_ftp_client_features_t;
+#ifndef DOXYGEN
 
 globus_result_t
 globus_ftp_client_feat(

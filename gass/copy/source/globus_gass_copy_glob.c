@@ -29,7 +29,7 @@ typedef struct
 {
     globus_mutex_t                     mutex;
     globus_cond_t                      cond;
-    globus_result_t                    result;
+    globus_object_t *                  err;
     int                                callbacks_left;
     globus_size_t                      buffer_length;
     char *                             url;
@@ -115,6 +115,7 @@ globus_gass_copy_glob_expand_url(
     globus_url_scheme_t                 scheme_type;
     int                                 url_len;
     globus_bool_t                       glob = GLOBUS_TRUE;
+    globus_gass_copy_glob_stat_t        info_stat;  
 
 
     info = (globus_l_gass_copy_glob_info_t *)
@@ -159,12 +160,18 @@ globus_gass_copy_glob_expand_url(
         else
 #endif
         {    
+            info_stat.type = GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN;
+            info_stat.unique_id = GLOBUS_NULL;
+            info_stat.symlink_target = GLOBUS_NULL;
+            info_stat.mode = -1;
+            info_stat.mdtm = -1;
+            info_stat.size = -1;
+            
             info->entry_cb(
                 info->url,
-                GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN,
-                GLOBUS_NULL,
+                &info_stat,
                 info->entry_user_arg);
-                
+                 
             glob = GLOBUS_FALSE;
             result = GLOBUS_SUCCESS;
         }
@@ -238,6 +245,7 @@ globus_l_gass_copy_glob_expand_file_url(
     struct stat                         stat_buf;
     char                                unique_id[32];
     globus_gass_copy_glob_entry_t       type;
+    globus_gass_copy_glob_stat_t        info_stat;  
     char                                matched_url[4096];
     
     retval = globus_url_parse_loose(info->url, &parsed_url);
@@ -266,7 +274,11 @@ globus_l_gass_copy_glob_expand_file_url(
         NULL,
         &file_list);
 
+#ifdef GLOB_NOMATCH
     if(retval != 0 && retval != GLOB_NOMATCH)
+#else /* GLOB_NOMATCH */
+    if(retval != 0 && file_list.gl_pathc != 0)
+#endif /* GLOB_NOMATCH */
     {
         result = globus_error_put(
             globus_error_construct_string(
@@ -282,6 +294,7 @@ globus_l_gass_copy_glob_expand_file_url(
     for(i = 0; i < file_list.gl_pathc; i++)
     {
         file_len = strlen(file_list.gl_pathv[i]);
+        *unique_id = '\0';
 
         retval = stat(file_list.gl_pathv[i], &stat_buf);
         if(retval != 0)
@@ -309,12 +322,18 @@ globus_l_gass_copy_glob_expand_file_url(
             "%s%s", 
             base_url, 
             file_list.gl_pathv[i]);
-        
-        info->entry_cb(
-            matched_url,
-            type,
-            unique_id,
-            info->entry_user_arg);
+
+            info_stat.type = type;
+            info_stat.unique_id = unique_id;
+            info_stat.symlink_target = GLOBUS_NULL;
+            info_stat.mode = -1;
+            info_stat.mdtm = -1;
+            info_stat.size = -1;
+            
+            info->entry_cb(
+                matched_url,
+                &info_stat,
+                info->entry_user_arg);
     }
         
     globfree(&file_list);
@@ -371,7 +390,7 @@ globus_l_gass_copy_glob_expand_ftp_url(
     info->base_url_len = strlen(info->base_url);
     info->list_buffer = GLOBUS_NULL;
     info->buffer_length = 0;
-    info->result = GLOBUS_SUCCESS;
+    info->err = GLOBUS_NULL;
             
     globus_mutex_init(&info->mutex, GLOBUS_NULL);
     globus_cond_init(&info->cond, GLOBUS_NULL);
@@ -402,7 +421,11 @@ globus_l_gass_copy_glob_expand_ftp_url(
     {
         globus_cond_wait(&info->cond, &info->mutex);
     }
-    result = info->result;
+    if(info->err)
+    {
+        result = globus_error_put(info->err);
+        info->err = GLOBUS_NULL;
+    }
     globus_mutex_unlock(&info->mutex);
   
     if(result == GLOBUS_SUCCESS)
@@ -551,8 +574,13 @@ globus_l_gass_copy_glob_ftp_list(
     {
         globus_cond_wait(&info->cond, &info->mutex);
     }
-    result = info->result;
     globus_mutex_unlock(&info->mutex);
+
+    if(info->err)
+    {
+        result = globus_error_put(info->err);
+        info->err = GLOBUS_NULL;
+    }
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -576,12 +604,14 @@ error_list:
     {        
         globus_free(read_buffer);
     }
-
+    if(info->err)
+    {
+        globus_object_free(info->err);
+        info->err = GLOBUS_NULL;
+    }
 
 error_malloc:
     return result;
-
-
 }
 
 
@@ -592,16 +622,14 @@ globus_l_gass_copy_ftp_client_op_done_callback(
     globus_ftp_client_handle_t *       handle,
     globus_object_t *                  err)
 {
-    static char *   myname = "globus_l_gass_copy_ftp_client_op_done_callback";    
     globus_l_gass_copy_glob_info_t * info;
 
     info = (globus_l_gass_copy_glob_info_t *) user_arg;
            
     globus_mutex_lock(&info->mutex);
-    if (err != GLOBUS_SUCCESS && info->result == GLOBUS_SUCCESS)
+    if (err && !info->err)
     {
-        info->result = globus_error_put(
-            globus_object_copy(err));
+        info->err = globus_object_copy(err);
     }
     info->callbacks_left--;
     globus_cond_signal(&info->cond);
@@ -632,13 +660,14 @@ globus_l_gass_copy_glob_parse_ftp_list(
     char                                matched_url[4096];
     char *                              unique_id;
     globus_gass_copy_glob_entry_t       type;
-       
+    globus_gass_copy_glob_stat_t        info_stat;  
        
     startline = info->list_buffer;
     
     while(startline < (info->list_buffer + info->buffer_length))
     {
         type = GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN;
+        unique_id = GLOBUS_NULL;
         
         while(*startline == '\r' || 
               *startline == '\n')
@@ -648,14 +677,12 @@ globus_l_gass_copy_glob_parse_ftp_list(
         }
         
         endline = startline;
-        while(*endline != '\r' &&
-              *endline != '\n')
+        while(endline < info->list_buffer + info->buffer_length && 
+            *endline != '\r' && *endline != '\n')
         {
             endline++;
         } 
         *endline = '\0';
-    
-        space = strchr(startline, ' ');
     
         if (info->list_op == GLOBUS_GASS_COPY_FTP_OP_NLST)
         {
@@ -663,6 +690,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
         }
         else 
         {
+            space = strchr(startline, ' ');
             if (space == GLOBUS_NULL)
             {
                 result = globus_error_put(
@@ -686,12 +714,11 @@ globus_l_gass_copy_glob_parse_ftp_list(
                     *endfact = '\0';
                 }
                 else
-                {
-                    endfact = space - 1;   
-                                     
-/*               older MLST-draft spec says ending fact can be missing
+                {                                     
+/*
+                 older MLST-draft spec says ending fact can be missing
                  the final semicolon... not a problem to support this,
-                 no need to die.   
+                 no need to die.  (ncftpd does this) 
                     
                     result = globus_error_put(
                         globus_error_construct_string(
@@ -702,6 +729,8 @@ globus_l_gass_copy_glob_parse_ftp_list(
                           
                     goto error_invalid_mlsd;
 */
+
+                    endfact = space - 1;   
                 }
                 
                 for(i = 0; startfact[i] != '\0'; i++)
@@ -784,10 +813,16 @@ globus_l_gass_copy_glob_parse_ftp_list(
 #endif        
         if(*matched_url)
         {
+            info_stat.type = type;
+            info_stat.unique_id = unique_id;
+            info_stat.symlink_target = GLOBUS_NULL;
+            info_stat.mode = -1;
+            info_stat.mdtm = -1;
+            info_stat.size = -1;
+            
             info->entry_cb(
                 matched_url,
-                type,
-                unique_id,
+                &info_stat,
                 info->entry_user_arg);
         }
                 
@@ -828,7 +863,7 @@ globus_l_gass_copy_ftp_client_list_read_callback(
     
     info = (globus_l_gass_copy_glob_info_t *) user_arg;
 
-    if(err != GLOBUS_SUCCESS)
+    if(err)
     {
         goto error_before_callback;
     }
@@ -899,17 +934,9 @@ error_malloc:
 error_before_callback:
 
     globus_mutex_lock(&info->mutex);
-    if (info->result == GLOBUS_SUCCESS)
+    if (err && !info->err)
     {
-        if (err != GLOBUS_SUCCESS)
-        { 
-            info->result = globus_error_put(
-                globus_object_copy(err));
-        }
-        else
-        {
-            info->result = result;
-        }
+        info->err = globus_object_copy(err);
     }
     info->callbacks_left--;
     globus_cond_signal(&info->cond);
@@ -984,17 +1011,14 @@ globus_l_gass_copy_mkdir_ftp(
     char *                              url,
     globus_gass_copy_attr_t *           attr)
 {
-    static char *   myname = "globus_l_gass_copy_mkdir_ftp";    
-
     globus_result_t                     result;
     globus_l_gass_copy_glob_info_t      info;
     
     info.callbacks_left = 1;
-    info.result = GLOBUS_SUCCESS;
+    info.err = GLOBUS_NULL;
     globus_cond_init(&info.cond, GLOBUS_NULL);
     globus_mutex_init(&info.mutex, GLOBUS_NULL);
    
- 
     result = globus_ftp_client_mkdir(
         &handle->ftp_handle,
         url,
@@ -1011,8 +1035,13 @@ globus_l_gass_copy_mkdir_ftp(
     {
         globus_cond_wait(&info.cond, &info.mutex);
     }
-    result = info.result;
     globus_mutex_unlock(&info.mutex);
+
+    if(info.err)
+    {
+        result = globus_error_put(info.err);
+        info.err = GLOBUS_NULL;
+    }
     
     if(result != GLOBUS_SUCCESS)
     {
@@ -1025,13 +1054,10 @@ globus_l_gass_copy_mkdir_ftp(
     return GLOBUS_SUCCESS;
 
 error_mkdir:
-
     globus_cond_destroy(&info.cond);
     globus_mutex_destroy(&info.mutex);
 
-
     return result;
-
 }
 
 

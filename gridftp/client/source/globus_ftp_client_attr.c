@@ -254,6 +254,21 @@ globus_ftp_client_handleattr_get_cache_all(
 /* globus_ftp_client_handleattr_get_cache_all() */
 /*@}*/
 
+/**
+ * @name Non-root relative URLs
+ */
+/*@{*/
+/**
+ * Enable/Disable rfc1738 support for non-root relative URLs.
+ * @ingroup globus_ftp_client_handleattr
+ *
+ *
+ * @param attr
+ *        Attribute to modify
+ * @param rfc1738_url
+ *        Set to GLOBUS_TRUE to enable non-root relative URLs.
+ *        Default of GLOBUS_FALSE specifies root-relative URLs.
+ */
 globus_result_t
 globus_ftp_client_handleattr_set_rfc1738_url(
     globus_ftp_client_handleattr_t *		attr,
@@ -310,6 +325,7 @@ globus_ftp_client_handleattr_get_rfc1738_url(
 }
 /* globus_ftp_client_handleattr_get_rfc1738_url() */
 /*@}*/
+
 /**
  * @name URL Caching
  */

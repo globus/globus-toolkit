@@ -1162,7 +1162,7 @@ g_send_data(
             offset = offset_a[ctr];
             length = length_a[ctr];
             jb_count = 0;
-            while ((jb_count < length || length == -1) && !eof)
+            while ((jb_count <= length || length == -1) && !eof)
             {
                 /*
                  *  allocate a buffer for each send
@@ -1451,6 +1451,7 @@ g_send_data(
   clean_exit:
 
     G_File_Close(&g_monitor.io_handle, 0);
+    globus_i_wu_free_ranges(&g_restarts);
 
     G_EXIT();
 

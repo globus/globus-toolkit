@@ -46,7 +46,7 @@ get_mlsx_options()
 {
     if(!options) 
     {
-        return "Type;Size;Modify;UNIX.mode;Perm;Unique;";
+        return "Type;Size;Modify;Perm;Charset;UNIX.mode;UNIX.slink;Unique;";
     }
     
     return options;
