@@ -64,6 +64,7 @@ static ERR_STRING_DATA gsserr_str_functs[]=
  {ERR_PACK(0,GSSERR_F_EXPORT_CRED,0),"gss_export_cred"},
  {ERR_PACK(0,GSSERR_F_INIT_DELEGATION,0),"gss_init_delegation"},
  {ERR_PACK(0,GSSERR_F_ACCEPT_DELEGATION,0),"gss_accept_delegation"},
+ {ERR_PACK(0,GSSERR_F_INQUIRE_BY_OID,0),"gss_inquire_sec_context_by_oid"},
  {ERR_PACK(0,GSSERR_F_READ,0),"gs_read"},
  {ERR_PACK(0,GSSERR_F_WRITE,0),"gs_write"},
  {0,NULL},

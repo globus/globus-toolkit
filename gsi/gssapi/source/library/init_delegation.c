@@ -20,6 +20,11 @@ static char *rcsid = "$Header$";
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
 
+static X509_EXTENSION *
+proxy_extension_create(
+    const gss_OID                       extension_oid,
+    const gss_buffer_t                  extension_data);
+
 OM_uint32
 GSS_CALLCONV gss_init_delegation(
     OM_uint32 *                         minor_status,
@@ -51,8 +56,8 @@ GSS_CALLCONV gss_init_delegation(
     output_token->length = 0;
     time_req = GSS_C_INDEFINITE;
     context = (gss_ctx_id_desc *) context_handle;
-    cred = (gss_cred_id_desc *) cred_handle;
-
+    cred = (gss_cred_id_desc *) cred_handle; 
+        
     /* input parameter checking needs to go here */
 
     /* pass the input to the read BIO in the context */
@@ -106,27 +111,32 @@ GSS_CALLCONV gss_init_delegation(
             return major_status;
         }
 
-        /* TODO add the restrictions here */
-/*
-        if ()
+        /* add the restrictions here */
+
+        if(restriction_oids != GSS_C_NO_OID_SET)
         {
-            if ((ex = proxy_extension_restriction_create()) 
-                == NULL)
+            for(i = 0;i < restriction_oids->count;i++)
             {
-                GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
-                major_status = GSS_S_FAILURE;
-                return major_status;
-            }
+                if ((ex = proxy_extension_create(
+                         (gss_OID) &restriction_oids->elements[i],
+                         (gss_buffer_t) &restriction_buffers->elements[i]))
+                    == NULL)
+                {
+                    GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
+                    major_status = GSS_S_FAILURE;
+                    return major_status;
+                }
             
-            
-            if (!sk_X509_EXTENSION_push(extensions, ex))
-            {
-                GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
-                major_status = GSS_S_FAILURE;
-                return major_status;
+                
+                if (!sk_X509_EXTENSION_push(extensions, ex))
+                {
+                    GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
+                    major_status = GSS_S_FAILURE;
+                    return major_status;
+                }
             }
         }
-*/        
+
         proxy_sign_ext(0,
                        cred->pcd->ucert,
                        cred->pcd->upkey,
@@ -201,3 +211,70 @@ GSS_CALLCONV gss_init_delegation(
 }
 
 
+/**********************************************************************
+Function: proxy_extension_create()
+
+Description:
+            create a X509_EXTENSION based on an OID and a buffer
+        
+Parameters:
+                A buffer and length. The date is added as
+                ANS1_OCTET_STRING to an extension with the 
+                class_add  OID.
+
+Returns:
+
+**********************************************************************/
+
+static X509_EXTENSION *
+proxy_extension_create(
+    const gss_OID                       extension_oid,
+    const gss_buffer_t                  extension_data)
+
+{
+    X509_EXTENSION *                    ex = NULL;
+    ASN1_OBJECT *                       asn1_obj = NULL;
+    ASN1_OCTET_STRING *                 asn1_oct_string = NULL;
+    int                                 crit = 0;
+
+    if(g_OID_equal(extension_oid, gss_restrictions_extension))
+    {
+        asn1_obj = OBJ_txt2obj("RESTRICEDRIGHTS",0);   
+    }
+    else
+    {
+        return ex;
+    }
+    
+    if(!(asn1_oct_string = ASN1_OCTET_STRING_new()))
+    {
+        /* set some sort of error */
+        goto err;
+    }
+
+    asn1_oct_string->data = extension_data->value;
+    asn1_oct_string->length = extension_data->length;
+
+    if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
+                                            crit, asn1_oct_string)))
+    {
+        /* set some sort of error */
+        goto err;
+    }
+    asn1_oct_string = NULL;
+
+    return ex;
+
+err:
+    if (asn1_oct_string)
+    {
+        ASN1_OCTET_STRING_free(asn1_oct_string);
+    }
+    
+    if (asn1_obj)
+    {
+        ASN1_OBJECT_free(asn1_obj);
+    }
+    
+    return NULL;
+}

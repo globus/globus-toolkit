@@ -29,7 +29,6 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 {
     OM_uint32                           major_status;
     gss_ctx_id_desc *                   context;
-    gss_oid_desc *                      oid;
     int                                 i;
     int                                 j;
     int                                 cert_count;
@@ -37,34 +36,41 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     X509_EXTENSION *                    ex;
     X509 *                              cert;
     ASN1_OBJECT *                       asn1_obj;
-    gss_buffer_set_desc *               extension_data;
     ASN1_OCTET_STRING *                 asn1_oct_string;
 
     
     *minor_status = 0;
 
     major_status = GSS_S_COMPLETE;
-    
-    output_token->length = 0;
+
     context = (gss_ctx_id_desc *) context_handle;
-    oid = (gss_oid_desc *) desired_object;
 
-    extension_data = (gss_buffer_set_desc *) data_set;
+    /* need to check for GSS_C_NO_BUFFER_SET */
 
-    cert_count = 1 + sk_X509_num(context->pcd->cert_chain);
+    if(data_set == GSS_C_NO_BUFFER_SET)
+    {
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
     
-    extension_data->count = cert_count;
+    cert_count = 1 + sk_X509_num(context->cred_handle->pcd->cert_chain);
+    
+    data_set->count = cert_count;
 
-    extension_data->elements = (gss_buffer_desc *) malloc(sizeof(gss_buffer_desc) *
-                                                          extension_data->count);
+    data_set->elements = (gss_buffer_desc *) malloc(
+        sizeof(gss_buffer_desc) *
+        data_set->count);
 
-    cert = context->pcd->ucert;
+    cert = context->cred_handle->pcd->ucert;
     
     do
     {
+        extensions = cert->cert_info->extensions;
+
         for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
         {
-            extensions = cert->cert_info->extensions;
             ex = (X509_EXTENSION *) sk_X509_EXTENSION_value(extensions,i);
             asn1_obj = X509_EXTENSION_get_object(ex);
 
@@ -72,20 +78,20 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
              * better way
              */
             
-            if((asn1_obj->length == oid->length) &&
-               !memcmp(asn1_obj->data, oid->elements,asn1_obj->length))
+            if((asn1_obj->length == desired_object->length) &&
+               !memcmp(asn1_obj->data, desired_object->elements, asn1_obj->length))
             {
                 /* found a match */
                 
                 asn1_oct_string = X509_EXTENSION_get_data(ex);
                 
-                extension_data->elements[cert_count].value =
+                data_set->elements[cert_count].value =
                     malloc(asn1_oct_string->length);
                 
-                extension_data->elements[cert_count].length =
+                data_set->elements[cert_count].length =
                     asn1_oct_string->length;
                 
-                memcpy(extension_data->elements[1].value,
+                memcpy(data_set->elements[1].value,
                        asn1_oct_string->data,
                        asn1_oct_string->length);
                 
@@ -98,9 +104,13 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         cert_count--;
         
     } while(cert_count &&
-            cert = (X509 *) sk_value(cred->pvd.cert_chain,cert_count - 1));
+            (cert = sk_X509_value(context->cred_handle->pcd->cert_chain,
+                                 cert_count - 1)));
 
+err:
     return major_status;
+
+    
 }
 
 

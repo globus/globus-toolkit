@@ -67,7 +67,7 @@ GSS_CALLCONV gss_accept_delegation(
             if(proxy_genreq(
                    context->gs_ssl->session->peer,
                    &reqp,
-                   &dpkey,
+                   &(context->dpkey),
                    0,
                    NULL,
                    context->cred_handle->pcd))
@@ -75,6 +75,8 @@ GSS_CALLCONV gss_accept_delegation(
                 major_status = GSS_S_FAILURE;
                 break;
             }
+
+            
 #ifdef DEBUG
             X509_REQ_print_fp(stderr,reqp);
 #endif
@@ -118,6 +120,8 @@ GSS_CALLCONV gss_accept_delegation(
         context->delegation_state = GS_DELEGATION_START;
     }
 
+    /* returns empty token when there is no output */
+    
     gs_get_token(minor_status,context,output_token);
 
     if (context->delegation_state != GS_DELEGATION_START)

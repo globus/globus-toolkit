@@ -217,12 +217,14 @@ typedef struct gss_channel_bindings_struct {
  */
 #define GSS_C_NO_NAME ((gss_name_t) 0)
 #define GSS_C_NO_BUFFER ((gss_buffer_t) 0)
+#define GSS_C_NO_BUFFER_SET ((gss_buffer_set_t) 0)
 #define GSS_C_NO_OID ((gss_OID) 0)
 #define GSS_C_NO_OID_SET ((gss_OID_set) 0)
 #define GSS_C_NO_CONTEXT ((gss_ctx_id_t) 0)
 #define GSS_C_NO_CREDENTIAL ((gss_cred_id_t) 0)
 #define GSS_C_NO_CHANNEL_BINDINGS ((gss_channel_bindings_t) 0)
 #define GSS_C_EMPTY_BUFFER {0, NULL}
+
 
 /*
  * Some alternate names for a couple of the above
@@ -826,7 +828,7 @@ GSS_CALLCONV GSS_FUNC(gss_duplicate_name)
 
 typedef struct gss_buffer_set_desc_struct {
     size_t                              count;
-    gss_buffer_desc *                   elements;
+    gss_buffer_t                        elements;
 } gss_buffer_set_desc, *gss_buffer_set_t;
 
 
@@ -882,10 +884,10 @@ typedef struct gss_buffer_set_desc_struct {
    GSS_MAKE_TYPEDEF
    OM_uint32
    GSS_CALLCONV GSS_FUNC(gss_inquire_sec_context_by_oid)
-              (OM_uint32 *                         minor_status,
-               const gss_ctx_id_t                  context_handle,
-               const gss_OID                       desired_object,
-               gss_buffer_set_t                    data_set
+              (OM_uint32 *,
+               const gss_ctx_id_t,
+               const gss_OID,
+               gss_buffer_set_t
               );
 
 

@@ -83,6 +83,7 @@ CVS Information:
 #define GSSERR_F_WRITE                 124
 #define GSSERR_F_INIT_DELEGATION       125
 #define GSSERR_F_ACCEPT_DELEGATION     126
+#define GSSERR_F_INQUIRE_BY_OID        127
 
 /* 
  * defines for reasons 
@@ -280,6 +281,9 @@ typedef struct gss_ctx_id_desc_struct{
 
 extern
 const gss_OID_desc * const gss_mech_globus_gssapi_ssleay;
+
+extern
+const gss_OID_desc * const gss_restrictions_extension;;
 
 /**********************************************************************
                                Function prototypes
