@@ -194,6 +194,8 @@ int main(int argc, char **argv)
 	exit(1);
     }
 
+    globus_gass_transfer_listenerattr_init(&attr,
+					   scheme);
     for (list = options_found; 
 	 !globus_list_empty(list); 
 	 list = globus_list_rest(list))
@@ -231,13 +233,11 @@ int main(int argc, char **argv)
 	    break;
 	case arg_p:
 	    port = (unsigned short) atoi(instance->values[0]);	    
-	    globus_gass_transfer_listenerattr_init(&attr,
-						   scheme);
 	    rc=globus_gass_transfer_listenerattr_set_port(&attr,
 						       port);
 	    if(rc!=GLOBUS_SUCCESS)
 	    {
-		exit;
+		exit(1);
 	    }
 	    break;
 	case arg_n:
