@@ -10,7 +10,8 @@ typedef struct globus_l_gsp_959_read_ent_s * globus_gs_pmod_959_op_t;
 
 globus_result_t
 globus_gs_pmod_959_finished_op(
-    globus_gs_pmod_959_op_t                 op);
+    globus_gs_pmod_959_op_t                 op,
+    globus_result_t                         result);
 
 typedef globus_result_t
 (*globus_gs_pmod_959_command_func_t)(
@@ -24,7 +25,7 @@ typedef globus_result_t
  */
 typedef void
 (*globus_gs_pmod_959_reply_format_func_t)(
-    globus_l_gsp_959_handle_t               handle,
+    globus_gs_pmod_959_handle_t             handle,
     globus_result_t                         result,
     void *                                  user_arg,
     int *                                   out_reply_code,
@@ -32,7 +33,7 @@ typedef void
 
 globus_result_t
 globus_gs_pmod_959_command_add(
-    globus_l_gsp_959_handle_t               handle,
+    globus_gs_pmod_959_handle_t             handle,
     const char *                            command_name,
     globus_gs_pmod_959_command_func_t       command_func,
     globus_gs_pmod_959_reply_format_func_t  reply_format_func,

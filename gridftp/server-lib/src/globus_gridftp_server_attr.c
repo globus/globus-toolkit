@@ -130,9 +130,11 @@ globus_gridftp_server_attr_copy(
     }
     attr->version_ctl = src->version_ctl;
     attr->resource_func = src->resource_func;
-    globus_hashtable_copy(&src->send_func_table, &src->send_func_table);
-    globus_hashtable_copy(&src->recv_func_table, &src->recv_func_table);
-    globus_hashtable_copy(&src->command_func_table, &src->command_func_table);
+    globus_hashtable_copy(
+	&src->send_func_table, &src->send_func_table, NULL);
+    globus_hashtable_copy(&src->recv_func_table, &src->recv_func_table, NULL);
+    globus_hashtable_copy(
+        &src->command_func_table, &src->command_func_table, NULL);
 
     *dst = attr;
 

@@ -152,25 +152,10 @@ typedef struct globus_l_gsp_959_cmd_ent_s
 {
     int                                     cmd;
     char                                    cmd_name[16]; /* only 5 needed */
-    globus_l_gsp_959_parse_func_t           parse_func;
-    globus_l_gsp_959_reply_format_func_t    format_func;
+    globus_gs_pmod_959_command_func_t       cmd_func;
+    globus_gs_pmod_959_reply_format_func_t  format_func;
     void *                                  user_arg;
 } globus_l_gsp_959_cmd_ent_t;
-
-typedef globus_result_t
-(*globus_l_gsp_959_parse_func_t)(
-    globus_l_gsp_959_handle_t *             handle,
-    const char *                            full_command,
-    1
-    void *                                  user_arg);
-
-typedef globus_result_t
-(*globus_l_gsp_959_reply_format_func_t)(
-    globus_l_gsp_959_handle_t *             handle,
-    globus_l_gsp_959_cmd_ent_t *            cmd_ent,
-    globus_result_t                         result,
-    int *                                   out_reply_code,
-    char **                                 out_reply_msg);
 
 typedef struct globus_l_gsp_959_read_ent_s
 {
@@ -246,7 +231,7 @@ globus_l_gsp_959_handle_destroy(
 globus_l_gsp_959_read_ent_t *
 globus_l_gsp_959_read_ent_create(
     globus_l_gsp_959_cmd_ent_t *            cmt_ent,
-    const char *                            buffer,
+    char *                            	    buffer,
     globus_l_gsp_959_handle_t *             handle)
 {
     globus_l_gsp_959_read_ent_t *           read_ent;
@@ -413,19 +398,19 @@ globus_l_gsp_959_command_kickout(
         globus_mutex_lock(&read_ent->handle->mutex);
         {
             read_ent->cmd_ent->format_func(
-                handle,
+                read_ent->handle,
                 res,
                 read_ent->cmd_ent->user_arg,
                 &reply_code,
                 &reply_msg);
             res = globus_l_gsp_959_reply(
-                    handle,
+                    read_ent->handle,
                     reply_code,
                     reply_msg);
             if(res != GLOBUS_SUCCESS)
             {
-                handle->ref--; /* if failed we will have no callback */
-                globus_l_gsp_959_panic(handle, res);
+                read_ent->handle->ref--; /* CALLBACK RETURN ?? */
+                globus_l_gsp_959_panic(read_ent->handle, res);
             }
             /* not much error checking here, we trust user to return a
                 globus_free()able string */
@@ -444,6 +429,9 @@ void
 globus_l_gsp_959_process_next_cmd(
     globus_l_gsp_959_handle_t *             handle)
 {
+    int                                     reply_code;
+    char *                                  reply_msg;
+    globus_result_t                         res;
     globus_l_gsp_959_read_ent_t *           read_ent;
     GlobusGridFTPServerName(globus_l_gsp_959_process_next_cmd);
 
@@ -461,8 +449,7 @@ globus_l_gsp_959_process_next_cmd(
             NULL,
             NULL,
             globus_l_gsp_959_command_kickout,
-            (void *) read_ent,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
+            (void *) read_ent);
 
         /* this will never happen ever, but why not account for it anyway? */
         if(res != GLOBUS_SUCCESS)
@@ -588,7 +575,7 @@ globus_l_gsp_959_read_callback(
                 else
                 {
                     read_ent = globus_l_gsp_959_read_ent_create(
-                        cmd_ent, buffer, len);
+                        cmd_ent, buffer, handle);
                     if(read_ent == NULL)
                     {
                         globus_l_gsp_959_panic(handle, res);
@@ -797,7 +784,8 @@ globus_l_gsp_959_stop(
 
 globus_result_t
 globus_gs_pmod_959_finished_op(
-    globus_gs_pmod_959_op_t                 op)
+    globus_gs_pmod_959_op_t                 op,
+    globus_result_t                         result)
 {
     int                                     reply_code;
     char *                                  reply_msg;
@@ -815,7 +803,7 @@ globus_gs_pmod_959_finished_op(
     read_ent = (globus_l_gsp_959_read_ent_t *) op;
     handle = read_ent->handle;
 
-    read_ent->reply_format_func(
+    read_ent->cmd_ent->format_func(
         handle, result, read_ent->cmd_ent->user_arg, &reply_code, &reply_msg);
 
     globus_mutex_lock(&handle->mutex);

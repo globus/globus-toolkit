@@ -248,11 +248,11 @@ globus_gridftp_server_start(
         i_server->pmod = i_attr->pmod;
         i_server->xio_handle = xio_handle;
         globus_hashtable_copy(
-            &i_server->command_table, &i_attr->command_func_table);
+            &i_server->command_table, &i_attr->command_func_table, NULL);
         globus_hashtable_copy(
-            &i_server->send_table, &i_attr->send_func_table);
+            &i_server->send_table, &i_attr->send_func_table, NULL);
         globus_hashtable_copy(
-            &i_server->recv_table, &i_attr->recv_func_table);
+            &i_server->recv_table, &i_attr->recv_func_table, NULL);
         i_server->resource_func = i_attr->resource_func;
         i_server->user_error_func = i_attr->error_func;
 
