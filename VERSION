@@ -3,6 +3,10 @@ This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.5.7
+  - bugfix: myproxy-admin-load-credential fails to prompt for
+    passphrase of source credential in versions 0.5.4-0.5.6.
+
 v0.5.6 31 Jul 2003 (GPT package version 1.8)
   - added support for Globus Toolkit 3.0 libraries
   - added support for new GSI proxy certificate format
