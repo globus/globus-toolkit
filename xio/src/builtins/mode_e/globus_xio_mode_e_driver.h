@@ -92,8 +92,9 @@
  * @ingroup mode_e_driver
  *
  * The errors reported by MODE_E driver include
- * are GLOBUS_XIO_ERROR_EOF, @ref GLOBUS_XIO_MODE_E_OPEN_ERROR, 
- * @ref GLOBUS_XIO_MODE_E_READ_ERROR, @ref GLOBUS_XIO_MODE_E_WRITE_ERROR
+ * GLOBUS_XIO_ERROR_COMMAND, GLOBUS_XIO_ERROR_MEMORY, GLOBUS_XIO_ERROR_STATE, 
+ * GLOBUS_XIO_ERROR_PARAMETER, GLOBUS_XIO_ERROR_EOF, 
+ * GLOBUS_XIO_ERROR_CANCELED, @ref GLOBUS_XIO_MODE_E_HEADER_ERROR
  * 
  * @see globus_xio_driver_error_match()
  * @see globus_error_errno_match()
@@ -116,6 +117,10 @@ typedef enum
 /** doxygen varargs filter stuff
  * GlobusVarArgDefine(
  *      attr, globus_result_t, globus_xio_attr_cntl, attr, driver)
+ * GlobusVarArgDefine(
+ *      handle, globus_result_t, globus_xio_handle_cntl, handle, driver)
+ * GlobusVarArgDefine(
+ *      dd, globus_result_t, globus_xio_data_descriptor_cntl, dd, driver)
  */
 
 /**
@@ -177,12 +182,31 @@ typedef enum
      *      Specifies the function pointer.
      */
     GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS,
+    /** GlobusVarArgEnum(attr)
+     * Set flag to indicate whether the data read from user would always be 
+     * preceded by an offset read or not. The user can do a read with 
+     * wait_for_bytes set to zero, to find the offset of the data that he is 
+     * going to get in his next read operation
+     * @ingroup mode_e_driver_cntls
+     *
+     * @param offset_reads
+     *      GLOBUS_TRUE to enable offset reads, GLOBUS_FALSE to disable 
+     * offset reads (default).
+     */
     GLOBUS_XIO_MODE_E_SET_OFFSET_READS,
+
+    /** GlobusVarArgEnum(attr)
+     * Get OFFSET_READS flag on the attr.
+     * @ingroup mode_e_driver_cntls
+     *
+     * @param offset_reads_out
+     *      The OFFSET_READS flag will be stored here.
+     */
     GLOBUS_XIO_MODE_E_GET_OFFSET_READS,
 
-    /** ??? change this explanation ??? GlobusVarArgEnum(attr)
-     * Set EOF on the stripe. If there are multiple stripes, only of them 
-     * should send EOF (EOD count). 
+    /** GlobusVarArgEnum(attr)
+     * Set flag to indicate whether EODC will be set manually by the user on 
+     * a data_desc or the driver has to calculate the EODC
      * @ingroup mode_e_driver_cntls
      *
      * @param eof
@@ -192,16 +216,43 @@ typedef enum
      */
     GLOBUS_XIO_MODE_E_SET_MANUAL_EODC,
 
-    /** ??? change this explanation ??? GlobusVarArgEnum(attr)
-     * Get the EOF flag on the attr.
+    /** GlobusVarArgEnum(attr)
+     * Get MANUAL_EODC flag on the attr.
      * @ingroup mode_e_driver_cntls
      *
      * @param eof_out
-     *      The EOF flag will be stored here.
+     *      The MANUAL_EODC flag will be stored here.
      */
     GLOBUS_XIO_MODE_E_GET_MANUAL_EODC,
+
+    /** GlobusVarArgEnum(dd)
+     * Set SEND_EOD flag
+     * @ingroup mode_e_driver_cntls
+     * Used only for data descriptors to write calls.
+     *
+     * @param send_eod
+     *	    GLOBUS_TRUE to send EOD, GLOBUS_FALSE to not send EOD (default).
+     */
     GLOBUS_XIO_MODE_E_SEND_EOD,
+
+    /** GlobusVarArgEnum(handle)
+     * Set EOD count
+     * @ingroup mode_e_driver_cntls
+     * Used only if MANUAL_EODC flag is set to GLOBUS_TRUE.
+     *
+     * @param eod_count
+     *      specifies the eod count 
+     */
     GLOBUS_XIO_MODE_E_SET_EODC,
+
+    /** GlobusVarArgEnum(dd)
+     * Get offset of the next available data 
+     * @ingroup mode_e_driver_cntls
+     * Used only if OFFSET_READS is enabled.
+     *
+     * @param offset_out
+     *      offset will be stored here
+     */
     GLOBUS_XIO_MODE_E_DD_GET_OFFSET
 
 } globus_xio_mode_e_cmd_t;	
