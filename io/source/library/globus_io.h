@@ -44,9 +44,9 @@ EXTERN_C_BEGIN
 #include "globus_gss_assist.h"
 #endif
 
-/*
+
 #define GLOBUS_BUILD_WITH_NETLOGGER 1
-*/
+
 
 /*
  *  If this is a Netlogger aware build, include the logging headers
@@ -1329,6 +1329,16 @@ globus_result_t
 globus_io_attr_netlogger_set_handle(
     globus_io_attr_t *                  attr,
     globus_netlogger_handle_t *         nl_handle);
+
+globus_result_t
+globus_netlogger_set_desc(
+    globus_netlogger_handle_t *       nl_handle,
+    const char *                      desc);
+
+globus_result_t
+globus_io_attr_netlogger_copy_handle(
+    globus_netlogger_handle_t *              src,
+    globus_netlogger_handle_t *              dst);
 
 globus_result_t
 globus_netlogger_add_attribute_string(

@@ -412,6 +412,9 @@ main(int argc, char **argv)
     globus_netlogger_handle_init(
         &gnl_handle,
         g_globus_nl_handle);
+    globus_netlogger_set_desc(
+        &gnl_handle,
+        "DISK");
 
     globus_ftp_client_handleattr_init(&ftp_handleattr);
 

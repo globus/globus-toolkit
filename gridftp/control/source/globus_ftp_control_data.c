@@ -603,11 +603,16 @@ globus_i_ftp_control_data_set_netlogger(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
-        dc_handle->nl_handle = nl_handle;
+        globus_io_attr_netlogger_copy_handle(nl_handle, &dc_handle->nl_handle);
 
         globus_io_attr_netlogger_set_handle(
             &dc_handle->io_attr,
-            nl_handle);
+            &dc_handle->nl_handle);
+        globus_netlogger_set_desc(
+            &dc_handle->nl_handle,
+            "FTP_DATA");
+        
+        dc_handle->nl_handle_set = GLOBUS_TRUE;
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -1951,6 +1956,131 @@ globus_ftp_control_data_get_total_data_channels(
             stripe = &transfer_handle->stripes[stripe_ndx];
             *num_channels = stripe->total_connection_count;
         }
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+
+    return res;
+}
+
+globus_result_t
+globus_ftp_control_data_get_remote_hosts(
+    globus_ftp_control_handle_t *		handle,
+    globus_ftp_control_host_port_t *            address,
+    int *                                       addr_count)
+{
+    globus_object_t *                           err;
+    globus_result_t                             res = GLOBUS_SUCCESS;
+    globus_list_t *                             list;
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+    globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
+    globus_ftp_data_stripe_t *                  stripe;
+    globus_ftp_data_connection_t *              data_conn;
+    int                                         ctr;
+    int                                         ndx;
+    int                                         count;
+    static char *                               myname=
+                          "globus_ftp_control_data_get_remote_hosts";
+
+    /*
+     *  error checking
+     */
+    if(handle == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+    if(address == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "address",
+                  2,
+                  myname);
+        return globus_error_put(err);
+    }
+    if(addr_count == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "addr_count",
+                  3,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+    if(!dc_handle->initialized)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        transfer_handle = dc_handle->transfer_handle;
+
+        if(transfer_handle == GLOBUS_NULL)
+        {
+            res = globus_error_put(globus_error_construct_string(
+                      GLOBUS_FTP_CONTROL_MODULE,
+                      GLOBUS_NULL,
+                      "handle not in proper state."));
+            globus_mutex_unlock(&dc_handle->mutex);
+            return res;
+        }
+
+        /* count the total # of connections */
+        count = 0;
+        for(ctr = 0; ctr < transfer_handle->stripe_count; ctr++)
+        {
+            count += globus_list_size(transfer_handle->stripes[ctr].all_conn_list);
+        }
+ 
+        if(*addr_count < count)
+        {
+            res = globus_error_put(globus_error_construct_string(
+                      GLOBUS_FTP_CONTROL_MODULE,
+                      GLOBUS_NULL,
+                      "Invalid Stripe index."));
+            globus_mutex_unlock(&dc_handle->mutex);
+            return res;
+        }
+        ndx = 0;
+        for(ctr = 0; ctr < transfer_handle->stripe_count; ctr++)
+        {
+            stripe = &transfer_handle->stripes[ctr];
+            for(list = stripe->all_conn_list;
+                !globus_list_empty(list);
+                list = globus_list_rest(list))
+            {
+                data_conn = (globus_ftp_data_connection_t *)
+                                 globus_list_first(list);
+                res = globus_io_tcp_get_remote_address(
+                          &data_conn->io_handle,
+                          address[ndx].host,
+                          &address[ndx].port);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    globus_mutex_unlock(&dc_handle->mutex);
+                    return res;
+                }
+                ndx++;
+            }
+        }
+        *addr_count = count;
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -6401,7 +6531,7 @@ globus_i_ftp_control_data_cc_init(
             dc_handle->close_callback = GLOBUS_NULL;
             dc_handle->close_callback_arg = GLOBUS_NULL;
 
-            dc_handle->nl_handle = GLOBUS_NULL;
+            dc_handle->nl_handle_set = GLOBUS_FALSE;
 
 	    globus_io_tcpattr_init(&dc_handle->io_attr);
 	    globus_io_attr_set_tcp_nodelay(&dc_handle->io_attr, 
@@ -6575,6 +6705,10 @@ globus_i_ftp_control_data_cc_destroy(
             destroy_it = GLOBUS_TRUE;
             res = GLOBUS_SUCCESS;
 	    globus_io_tcpattr_destroy(&dc_handle->io_attr);
+            if(dc_handle->nl_handle_set)
+            {
+                globus_netlogger_handle_destroy(&dc_handle->nl_handle);
+            }
         }
         else
         {
