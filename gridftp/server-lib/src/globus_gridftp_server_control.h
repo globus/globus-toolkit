@@ -459,14 +459,15 @@ globus_gridftp_server_control_get_banner(
 globus_result_t
 globus_gridftp_server_control_set_buffer_size(
     globus_gridftp_server_control_t                 server,
-    globus_size_t                                   recv_bs,
-    globus_size_t                                   send_bs);
+    int                                             recv_bs,
+    int                                             send_bs);
 
+/* -1 == system defaults */
 globus_result_t
 globus_gridftp_server_control_get_buffer_size(
     globus_gridftp_server_control_operation_t       op,
-    globus_size_t *                                 out_recv_bs,
-    globus_size_t *                                 out_send_bs);
+    int *                                           out_recv_bs,
+    int *                                           out_send_bs);
 
 globus_result_t
 globus_gridftp_server_control_get_parallelism(

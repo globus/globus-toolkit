@@ -283,9 +283,10 @@ globus_gridftp_server_control_start(
         }
         i_server->modes = globus_libc_strdup(i_attr->modes);
         i_server->types = globus_libc_strdup(i_attr->types);
-        i_server->send_buf = 65536;
-        i_server->receive_buf = 65536;
-
+        i_server->send_buf = -1; /* system default */
+        i_server->receive_buf = -1;
+        i_server->parallelism = 1;
+        
         if(i_server->cwd != NULL)
         {
             globus_free(i_server->cwd);
@@ -592,8 +593,8 @@ globus_gridftp_server_control_get_banner(
 globus_result_t
 globus_gridftp_server_control_get_buffer_size(
     globus_gridftp_server_control_operation_t       op,
-    globus_size_t *                                 out_recv_bs,
-    globus_size_t *                                 out_send_bs)
+    int *                                           out_recv_bs,
+    int *                                           out_send_bs)
 {
     globus_result_t                                 res;
     globus_i_gsc_server_t *                         i_server;
@@ -645,8 +646,8 @@ globus_gridftp_server_control_get_buffer_size(
 globus_result_t
 globus_gridftp_server_control_set_buffer_size(
     globus_gridftp_server_control_t                 server,
-    globus_size_t                                   recv_bs,
-    globus_size_t                                   send_bs)
+    int                                             recv_bs,
+    int                                             send_bs)
 {
     globus_result_t                                 res;
     globus_i_gsc_server_t *                         i_server;
@@ -672,11 +673,11 @@ globus_gridftp_server_control_set_buffer_size(
                 break;
             /* all others are ok */
             default:
-                if(send_bs > 0)
+                if(send_bs != 0)
                 {
                     i_server->send_buf = send_bs;
                 }
-                if(recv_bs > 0)
+                if(recv_bs != 0)
                 {
                     i_server->receive_buf = recv_bs;
                 }

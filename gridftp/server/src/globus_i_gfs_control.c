@@ -256,6 +256,7 @@ globus_l_gfs_op_to_attr(
     globus_gridftp_server_control_network_protocol_t net_prt)
 {
     globus_result_t                     result;
+    int                                 buf_size;
     
     *attr = globus_i_gfs_data_attr_defaults;
     if(net_prt == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
@@ -272,6 +273,19 @@ globus_l_gfs_op_to_attr(
     
     result = globus_gridftp_server_control_get_type(op, &attr->type);
     globus_assert(result == GLOBUS_SUCCESS);
+    
+    result = globus_gridftp_server_control_get_buffer_size(
+        op, &attr->tcp_bufsize, &buf_size);
+    globus_assert(result == GLOBUS_SUCCESS);
+    
+    if(buf_size > attr->tcp_bufsize)
+    {
+        attr->tcp_bufsize = buf_size;
+    }
+
+    result = globus_gridftp_server_control_get_parallelism(
+        op, &attr->nstreams);
+    globus_assert(result == GLOBUS_SUCCESS);
 }
 
 static
@@ -287,7 +301,10 @@ globus_l_gfs_passive_data_connect(
     GlobusGFSName(globus_l_gfs_passive_data_connect);
     
     globus_l_gfs_op_to_attr(op, &attr, net_prt);
-    attr.nstreams = max;
+    /* attr.nstreams = max; */
+    /* XXX how do I know how many streams to 
+     * optimize for when receiving data in mode E? 
+     */
     
     result = globus_i_gfs_ipc_passive_data_request(
         instance,

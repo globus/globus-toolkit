@@ -128,6 +128,10 @@ globus_l_xio_server_accept_kickout(
         {
             xio_op->cached_obj = GlobusXIOErrorObjMemory("target");
         }
+    }
+    
+    if(xio_op->cached_obj == NULL)
+    {
         xio_target->type = GLOBUS_XIO_TARGET_TYPE_SERVER;
         /* initialize the target structure */
         xio_target->stack_size = xio_op->stack_size;

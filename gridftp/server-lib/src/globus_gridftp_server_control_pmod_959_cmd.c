@@ -14,8 +14,8 @@ typedef struct globus_l_gsc_pmod_959_cmd_handle_s
 {
     char *                                          username;
     globus_gsc_pmod_959_handle_t                    handle_959;
-    globus_size_t                                   send_window;
-    globus_size_t                                   receive_window;
+    int                                             send_window;
+    int                                             receive_window;
     globus_size_t                                   packet_size;
     int                                             parallelism;
 
@@ -2281,8 +2281,8 @@ globus_i_gsc_pmod_959_add_commands(
     memset(cmd_handle, '\0', sizeof(globus_l_gsc_pmod_959_cmd_handle_t));
 
     cmd_handle->handle_959 = handle;
-    cmd_handle->send_window = 65536;
-    cmd_handle->receive_window = 65536;
+    cmd_handle->send_window = -1; /* system default */
+    cmd_handle->receive_window = -1;
     res = globus_gridftp_server_control_set_buffer_size(
         server,
         cmd_handle->receive_window,

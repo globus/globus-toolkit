@@ -296,7 +296,7 @@ globus_l_gfs_data_handle_init(
         goto error_control;
     }
     
-    if(handle->attr.tcp_bufsize)
+    if(handle->attr.tcp_bufsize > 0)
     {
         globus_ftp_control_tcpbuffer_t  tcpbuffer;
         

@@ -301,6 +301,14 @@ static int s_error_cache_init (void)
 
 static int s_error_cache_destroy (void)
 {
+  globus_object_t *                   cached;
+    
+  cached = (globus_object_t *) globus_thread_getspecific(s_peek_key);
+  if(cached)
+  {
+      globus_object_free(cached);
+  }
+    
   globus_thread_key_delete(s_peek_key);
     
   globus_object_cache_destroy (&s_result_to_object_mapper);

@@ -7336,6 +7336,10 @@ globus_l_ftp_stream_write_eof_callback(
     globus_free(data_conn);
 
     globus_l_ftp_data_stripe_poll(dc_handle);
+    if(error)
+    {
+        globus_object_free(error);
+    }
 }
 
 /*
@@ -7349,7 +7353,7 @@ globus_l_ftp_stream_listen_callback(
 {
     globus_ftp_data_stripe_t *                  stripe;
     globus_ftp_data_connection_t *              data_conn;
-    globus_object_t *                           error;
+    globus_object_t *                           error = GLOBUS_NULL;
     globus_l_ftp_data_callback_info_t *         callback_info;
     globus_l_ftp_data_callback_info_t *         cb_info;
     globus_i_ftp_dc_handle_t *                  dc_handle;
@@ -7457,7 +7461,7 @@ globus_l_ftp_stream_listen_callback(
     if(callback != GLOBUS_NULL)
     {
         callback(user_arg, control_handle, stripe_ndx, GLOBUS_FALSE, error);
-
+        
         /*
          *  if the user wanted a callback we must dec the reference
          *  it had after we call it.
@@ -7470,6 +7474,10 @@ globus_l_ftp_stream_listen_callback(
     }
 
     globus_l_ftp_data_stripe_poll(dc_handle);
+    if(error)
+    {
+        globus_object_free(error);
+    }
 }
 
 
@@ -7606,7 +7614,12 @@ globus_l_ftp_stream_accept_connect_callback(
     {
         callback(user_arg, control_handle, stripe_ndx, GLOBUS_FALSE, error);
     }
-
+    
+    if(error)
+    {
+        globus_object_free(error);
+    }
+    
     globus_mutex_lock(&dc_handle->mutex);
     {
         if(callback != GLOBUS_NULL)
@@ -7758,9 +7771,9 @@ globus_l_ftp_stream_write_callback(
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    if(result != GLOBUS_NULL)
+    if(error != GLOBUS_NULL)
     {
-        result = globus_error_put(error);
+        globus_object_free(error);
     }
     /*
      *  poll the command_q on all stripes
@@ -7839,7 +7852,7 @@ globus_l_ftp_stream_read_callback(
             /* if it is eof do not pas the user back an error */
             if(globus_io_eof(error))
             {
-                globus_error_put(error);
+                globus_object_free(error);
                 result = GLOBUS_SUCCESS;
                 error = GLOBUS_NULL;
                 eof = GLOBUS_TRUE;
@@ -7958,7 +7971,7 @@ globus_l_ftp_stream_read_callback(
 
     if(error != GLOBUS_NULL)
     {
-        result = globus_error_put(error);
+        globus_object_free(error);
     }
     /*
      *  poll the command_q on all stripes
@@ -8020,7 +8033,7 @@ globus_l_ftp_eb_listen_callback(
         {
             const globus_object_type_t *               type;
 
-            type = globus_object_get_type(globus_error_get(result));
+            type = globus_object_get_type(globus_error_peek(result));
 
             if(globus_object_type_match(
                    type,
@@ -8275,7 +8288,6 @@ globus_l_ftp_eb_accept_callback(
     if(callback != GLOBUS_NULL)
     {
         callback(user_arg, control_handle, stripe_ndx, GLOBUS_FALSE, error);
-        globus_object_free(error);
 
         /*
          *  lock and decrement the reference the callback had
@@ -8285,6 +8297,11 @@ globus_l_ftp_eb_accept_callback(
             globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
         globus_mutex_unlock(&dc_handle->mutex);
+    }
+    
+    if(error)
+    {
+        globus_object_free(error);
     }
 }
 
@@ -8548,6 +8565,11 @@ globus_l_ftp_eb_read_header_callback(
     globus_free(eb_header);
 
     globus_l_ftp_data_stripe_poll(dc_handle);
+    
+    if(error != GLOBUS_NULL)
+    {
+        globus_object_free(error);
+    }
 }
 
 
@@ -8735,7 +8757,7 @@ globus_l_ftp_eb_read_callback(
     
     if(error != GLOBUS_NULL)
     {
-        res = globus_error_put(error);
+        globus_object_free(error);
     }
     
     /*
@@ -8917,7 +8939,12 @@ globus_l_ftp_eb_connect_callback(
             GLOBUS_TRUE);
         globus_free(eof_cb_ent);
     }
-
+    
+    if(error)
+    {
+        globus_object_free(error);
+    }
+    
     globus_mutex_lock(&dc_handle->mutex);
     {
         /*
@@ -9368,6 +9395,10 @@ globus_l_ftp_eb_send_eof_callback(
     globus_free(eof_ent->count);
     globus_free(eof_ent);
     globus_free(buf);
+    if(error)
+    {
+        globus_object_free(error);
+    }
     globus_l_ftp_data_stripe_poll(dc_handle);
 }
 
@@ -9537,6 +9568,10 @@ globus_l_ftp_eb_eof_eod_callback(
 
     globus_free(callback_info);
     globus_free(eb_header);
+    if(error)
+    {
+        globus_object_free(error);
+    }
 }
 
 

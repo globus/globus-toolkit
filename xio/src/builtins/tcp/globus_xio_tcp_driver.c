@@ -1319,6 +1319,7 @@ globus_l_xio_tcp_server_accept(
     
     if(attr && attr->handle != GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
+        /* XXX cant imagine anyone ever intending to do this */
         target->handle = attr->handle;
         globus_xio_driver_finished_accept(op, target, GLOBUS_SUCCESS);
     }
