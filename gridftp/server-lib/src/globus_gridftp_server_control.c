@@ -846,16 +846,7 @@ globus_l_gsc_220_write_cb(
 
     globus_xio_attr_init(&close_attr);
     server_handle->ref--;
-    res = globus_xio_register_close(
-        server_handle->xio_handle,
-        close_attr,
-        globus_l_gsc_close_cb,
-        server_handle);
-    globus_xio_attr_destroy(close_attr);
-    if(res != GLOBUS_SUCCESS)
-    {
-        GlobusLRegisterDone(server_handle);
-    }
+    globus_l_gsc_server_ref_check(server_handle);
     globus_mutex_unlock(&server_handle->mutex);
 }
 
