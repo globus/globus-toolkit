@@ -36,7 +36,7 @@ sub new
     my $description = $self->{JobDescription};
     my $stdout = $description->stdout();
     my $stderr = $description->stderr();
-    my $globus_condor_conf = "$ENV{GLOBUS_LOCATION}/globus-condor.conf";
+    my $globus_condor_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-condor.conf";
 
     if (-r $globus_condor_conf)
     {
@@ -46,15 +46,15 @@ sub new
         {
             while(<FH>) {
                 chomp;
-                if (m/log_dir=(.*)$/) {
-                    $log_dir = $1;
+                if (m/log_path=(.*)$/) {
+                    $self->{condor_logfile} = $1;
                     break;
                 }
             }
             close(FH);
         }
     }
-    if (! defined($log_dir))
+    if (! exists($self->{condor_logfile}))
     {
         if(! exists($ENV{GLOBUS_SPOOL_DIR}))
         {
@@ -64,6 +64,7 @@ sub new
         {
             $log_dir = $ENV{GLOBUS_SPOOL_DIR};
         }
+        $self->{condor_logfile} = "$log_dir/gram_condor_log";
     }
 
     if($description->jobtype() eq 'multiple' && $description->count > 1)
@@ -77,7 +78,6 @@ sub new
     }
 
 
-    $self->{condor_logfile} = "$log_dir/gram_condor_log";
 
     bless $self, $class;
     return $self;
