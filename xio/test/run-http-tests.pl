@@ -18,6 +18,8 @@ unlink("test_results.txt");
             http-post-test.pl
             http-put-test.pl
             http-get-test.pl
+	    http-pingpong-test.pl
+	    http-throughput-test.pl
             );
 
 my $runserver;
