@@ -61,7 +61,6 @@ do                                                                      \
     _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
     if(_ndx + 8 > _len)                                                 \
     {                                                                   \
-        globus_byte_t *                 _newstart;                      \
         _len *= 2;                                                      \
         _start = globus_libc_realloc(_start, _len);                     \
         _buf = _start + _ndx;                                           \
@@ -267,6 +266,10 @@ globus_l_gfs_ipc_read_header_cb(
     globus_size_t                       len,
     globus_size_t                       nbytes,
     globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg);
+
+static void
+globus_l_gfs_ipc_finished_reply_kickout(
     void *                              user_arg);
 
 /************************************************************************
@@ -566,6 +569,122 @@ globus_l_gfs_ipc_close_cb(
 /*
  *  decode functions
  */
+
+static globus_gfs_ipc_reply_t *
+globus_l_gfs_ipc_unpack_reply(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    int                                 ctr;
+    char                                ch;
+    globus_gfs_ipc_reply_t *            reply;
+
+    reply = (globus_gfs_ipc_reply_t *)
+        globus_calloc(sizeof(globus_gfs_ipc_reply_t), 1);
+    if(reply == NULL)
+    {
+        return NULL;
+    }
+
+    /* pack the body--this part is like a reply header */
+    GFSDecodeChar(buffer, len, reply->type);
+    GFSDecodeUInt32(buffer, len, reply->code);
+    GFSDecodeString(buffer, len, reply->msg);
+
+    /* encode the specific types */
+    switch(reply->type)
+    {
+        case GLOBUS_GFS_IPC_TYPE_AUTH:
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_RECV:
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_SEND:
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_LIST:
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_RESOURCE:
+            GFSDecodeUInt32(buffer, len, reply->info.resource.stat_count);
+            for(ctr = 0; ctr < reply->info.resource.stat_count; ctr++)
+            {
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].mode);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].nlink);
+                //GFSDecodeString(
+                //    buffer, len, reply->info.resource.stat_info[ctr].name);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].uid);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].gid);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].size);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].atime);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].ctime);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].mtime);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].dev);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.resource.stat_info[ctr].ino);
+            }
+            GFSDecodeUInt32(
+                buffer, len, reply->info.resource.uid);
+
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_COMMAND:
+            GFSDecodeChar(
+                buffer, len, reply->info.command.command);
+            GFSDecodeString(
+                buffer, len, reply->info.command.checksum);
+            GFSDecodeString(
+                buffer, len, reply->info.command.created_dir);
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_PASSIVE:
+            GFSDecodeUInt32(
+                buffer, len, reply->info.data.data_handle_id);
+            GFSDecodeUInt32(
+                buffer, len, reply->info.data.cs_count);
+            for(ctr = 0; ctr < reply->info.data.cs_count; ctr++)
+            {
+                GFSDecodeString(
+                    buffer, len, reply->info.data.contact_strings[ctr]);
+            }
+            GFSDecodeChar(buffer, len, ch);
+            reply->info.data.data_handle_id = (int)ch;
+            GFSDecodeChar(buffer, len, ch);
+            reply->info.data.net_prt = (int)ch;
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_ACTIVE:
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_DESTROY:
+            break;
+
+        default:
+            break;
+    }
+
+    return reply;
+
+  decode_err:
+    globus_free(reply);
+                                                                                
+    return NULL;
+}
+
+/*
+ *  register callback in oneshot to avoid reenter woes.
+ */
 static globus_gfs_command_state_t *
 globus_l_gfs_ipc_unpack_command(
     globus_i_gfs_ipc_handle_t *         ipc,
@@ -791,6 +910,7 @@ globus_l_gfs_ipc_read_body_cb(
     globus_gfs_transfer_state_t *       trans_state;
     globus_gfs_data_state_t *           data_state;
     globus_gfs_resource_state_t *       resource_state;
+    globus_gfs_ipc_reply_t *            reply;
     int                                 rc;
     int                                 data_connection_id;
     gss_buffer_desc                     gsi_buffer;
@@ -812,6 +932,22 @@ globus_l_gfs_ipc_read_body_cb(
     switch(request->type)
     {
         case GLOBUS_GFS_IPC_TYPE_FINAL_REPLY:
+            reply = globus_l_gfs_ipc_unpack_reply(ipc, buffer, len);
+            if(reply == NULL)
+            {
+                res = GlobusGFSErrorIPC();
+                goto err;
+            }
+            request = (globus_gfs_ipc_request_t *) 
+                globus_hashtable_remove(
+                &ipc->call_table,
+                (void *)reply->id);
+            if(request == NULL)
+            {
+                goto err;
+            }
+            request->reply = reply;
+            globus_l_gfs_ipc_finished_reply_kickout(request);
             break;
 
         case GLOBUS_GFS_IPC_TYPE_INTERMEDIATE_REPLY:
