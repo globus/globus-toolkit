@@ -37,7 +37,7 @@
       <cflags>@GPT_CFLAGS@</cflags>
       <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
       <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
-      <pkg_libs>-lglobus_gsi_callback -lglobus_gsi_oldgaa</pkg_libs>
+      <pkg_libs>-lglobus_gsi_callback -lglobus_oldgaa</pkg_libs>
     </Build_Environment>
 
   </src_pkg>
