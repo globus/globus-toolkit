@@ -33,14 +33,14 @@ static char usage[] = \
 "                                         with just username/passphrase\n"
 "       -A | --allow_anonymous_renewers   Allow credentials to be renewed by\n"
 "                                         any client (not recommended)\n"
-"       -r | --retrievable_by <dn>        Allow specified entity to retrieve\n"
-"                                         credential\n"
-"       -R | --renewable_by   <dn>        Allow specified entity to renew\n"
-"                                         credential\n"
 "       -x | --regex_dn_match             Set regular expression matching mode\n"
 "                                         for following policy options\n"
 "       -X | --match_cn_only              Set CN matching mode (default)\n"
 "                                         for following policy options\n"
+"       -r | --retrievable_by <dn>        Allow specified entity to retrieve\n"
+"                                         credential\n"
+"       -R | --renewable_by   <dn>        Allow specified entity to renew\n"
+"                                         credential\n"
 "       -n | --no_passphrase              Disable passphrase authentication\n"
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
 	SSL_CREDENTIALS *creds;
 	myproxy_creds_t *my_creds;
 	char proxyfile[64] = "";
+	int rval=1;
 
 	my_creds = (myproxy_creds_t *) malloc(sizeof(*my_creds));
 	memset (my_creds, 0, sizeof(*my_creds));
@@ -183,10 +184,11 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
+	rval = 0;
 	cleanup:
 	if (proxyfile[0]) ssl_proxy_file_destroy(proxyfile);
 	free (my_creds);
-	exit(0);
+	return rval;
 }
 
 
