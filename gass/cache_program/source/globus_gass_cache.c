@@ -115,9 +115,8 @@ static char * long_usage =
 "                     default settings for contacting the MDS LDAP server.\n"
 "    -r resource    - The resource argument specifies that the cache\n"
 "                     operation will be performed on a remote cache. The\n"
-"                     resource string can be either a resource manager name\n"
-"                     located in the MDS, or a resource manager contact\n"
-"                     string.\n\n" ;
+"                     resource manager contact takes the form:\n"
+"                          host:port/service:subject\n\n";
 
 int
 test_hostname( char *  value, void *  ignored,  char **  errmsg )
@@ -311,9 +310,7 @@ main(int argc, char **argv)
 	    break;
 
 	case arg_r:
-	    resource = globus_i_rsl_assist_get_rm_contact(instance->values[0]);
-	    if (!resource)
-		globus_l_args_error("cannot resolve contact string");
+	    resource = globus_libc_strdup(instance->values[0]);
 	    if (rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE))
 	    {
 		globus_libc_fprintf(stderr,
