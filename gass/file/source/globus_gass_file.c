@@ -28,7 +28,7 @@ CVS Information:
 #include "globus_gass_cache.h"
 #include "globus_gass_client.h"
 
-#if (defined TARGET_ARCH_FREEBSD)
+#if (defined TARGET_ARCH_BSD)
   #ifndef O_SYNC
     #define O_SYNC O_FSYNC
   #endif
