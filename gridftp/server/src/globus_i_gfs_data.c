@@ -988,7 +988,7 @@ globus_i_gfs_data_request_passive(
         }
         else
         {
-            if(strchr(handle->info.interface, ':')
+            if(strchr(handle->info.interface, ':'))
             {
                 cs = globus_common_create_string(
                     "[%s]:%d", handle->info.interface, (int) address.port);
