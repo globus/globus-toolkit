@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# Wrapper script to ensure that the correct files are used.
+#
+
+# $GLOBUS_LOCATION/bin/scp.real -S $GLOBUS_LOCATION/bin/ssh -F /etc/ssh/ssh_config $*
+
+$GLOBUS_LOCATION/bin/scp.real -S $GLOBUS_LOCATION/bin/ssh $*

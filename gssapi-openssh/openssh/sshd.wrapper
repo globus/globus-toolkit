@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# Wrapper script to ensure that the correct config file is used.
+#
+# This should be compiled into the executable as /etc/ssh/sshd_config,
+# but if for some reason it's not, feel free to uncomment the first
+# line and comment out the second line.
+#
+
+# $GLOBUS_LOCATION/sbin/sshd.real -f /etc/ssh/sshd_config $*
+
+$GLOBUS_LOCATION/sbin/sshd.real $*
