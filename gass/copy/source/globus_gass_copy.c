@@ -1642,7 +1642,18 @@ globus_l_gass_copy_io_target_populate(
 
     target->data.io.free_handle = GLOBUS_FALSE;
     if(globus_io_get_handle_type(io_handle) == GLOBUS_IO_HANDLE_TYPE_FILE)
-	target->data.io.seekable = GLOBUS_TRUE;
+    {
+        /* test file handle for seekable as it may be a pipe */
+        if(globus_io_file_seek(io_handle, 0, GLOBUS_IO_SEEK_CUR) 
+            == GLOBUS_SUCCESS)
+        {
+	    target->data.io.seekable = GLOBUS_TRUE;
+	}
+	else
+	{
+	    target->data.io.seekable = GLOBUS_FALSE;
+	}
+    }
     else
 	target->data.io.seekable = GLOBUS_FALSE;
     target->n_simultaneous = 1;

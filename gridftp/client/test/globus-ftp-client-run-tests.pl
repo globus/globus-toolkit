@@ -114,6 +114,7 @@ sub setup_server()
      
     $subject = `grid-proxy-info -subject`;
     chomp($subject);
+    $subject =~ s|/CN=proxy||g;
     
     $ENV{GRIDMAP}="gridmap";
     

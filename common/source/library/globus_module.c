@@ -25,6 +25,13 @@ CVS Information:
 #define UNNECESSARY 0
 
 /*
+ * global vars
+ */
+
+static int *                            globus_l_module_argc = NULL;
+static char ***                         globus_l_module_argv = NULL;
+
+/*
  * data structure needed to implement a recursive mutex
  */
 typedef struct
@@ -1000,3 +1007,22 @@ globus_l_module_mutex_destroy(
 }
 /* globus_l_module_mutex_destroy() */
 #endif
+
+void
+globus_module_set_args(
+    int *                               argc,
+    char ***                            argv)
+{
+    globus_l_module_argc = argc;
+    globus_l_module_argv = argv;
+}
+
+void
+globus_module_get_args(
+    int **                               argc,
+    char ****                            argv)
+{
+    *argc = globus_l_module_argc;
+    *argv = globus_l_module_argv;
+}
+

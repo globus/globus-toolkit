@@ -797,7 +797,7 @@ configured to log only when it notices a job failure. However, if your
 problem is that your script is not returning a failure code when you expect,
 you might want to enable logging always. To do this, modify the job manager
 configuration file to contain "-save-logfile&nbsp;always" in place of
-"-save-log&nbsp;on_errors".
+"-save-log&nbsp;on_error".
 
 Adding logging messages to your script: the JobManager object implements
 a <code>log</code> method, which allows you to write messages to the 

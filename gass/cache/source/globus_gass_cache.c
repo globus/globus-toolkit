@@ -193,13 +193,14 @@ static cache_mangling_option cache_mangling_list [] =
 /* Structures for listing URLs */
 typedef struct url_list_elem_s
 {
-    struct url_list_elem_s	*next;
-    char			*mangled;
+    struct url_list_elem_s	*next;		/* Next in the linked list */
+    char			*mangled;	/* Full path to the dir */
+    int				data_count;	/* How many data files */
 } url_list_elem;
 typedef struct
 {
-    url_list_elem	*first;
-    int			count;
+    url_list_elem	*head;		/* Head of the list */
+    int			count;		/* Size of the list */
 } url_list_head;
 
 static globus_bool_t globus_l_gass_cache_link_works = GLOBUS_TRUE;
@@ -3737,17 +3738,50 @@ globus_l_gass_cache_unlink_local( cache_names	*names )
  */
 static
 int
-globus_l_gass_cache_unlink_global( const cache_names	*names )
+globus_l_gass_cache_unlink_global( cache_names		*names,
+				   globus_bool_t	is_locked )
 {
     struct stat	statbuf;
+    const char	*global_file;
     int		rc = GLOBUS_SUCCESS;
 
-    /* How many links does the global file have? */
-    rc = globus_l_gass_cache_stat( names->global_data_file, &statbuf );
+    /* Stat the global file (or uniq file if _we_ have it locked) */
+    if ( is_locked )
+    {
+	/* Make sure that the uniq file name is valid */
+	rc = globus_l_gass_cache_build_filename( 
+	    names->global_dir,
+	    UDATA_FILE,
+	    names->uniq,
+	    GLOBUS_FALSE,
+	    &names->global_uniq_file );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+	global_file = names->global_uniq_file;
+    }
+    else
+    {
+	global_file = names->global_data_file;
+    }
+    rc = globus_l_gass_cache_stat( global_file, &statbuf );
+
+    /* ENOENT here means that it was killed by another process, ok */
     if ( GLOBUS_L_ENOENT == rc )
     {
-	return GLOBUS_SUCCESS;
+	/* Other proc's shoulded kill _our_ uniq file!! */
+	if ( is_locked )
+	{
+	    RET_ERROR( GLOBUS_L_ENOENT );
+	}
+	/* But, it's ok to kill the _global_ (shared) data file */
+	else
+	{
+	    return GLOBUS_SUCCESS;
+	}
     }
+    /* Something else went wrong! */
     else if ( GLOBUS_SUCCESS != rc )
     {
 	RET_ERROR( rc );
@@ -3761,7 +3795,7 @@ globus_l_gass_cache_unlink_global( const cache_names	*names )
 
     /* Kill it */
     (void) globus_l_gass_cache_unlink( names->global_url_file );
-    rc = globus_l_gass_cache_unlink( names->global_data_file );
+    rc = globus_l_gass_cache_unlink( global_file );
     if ( ( GLOBUS_SUCCESS != rc ) && ( GLOBUS_L_ENOENT != rc ) )
     {
 	RET_ERROR( rc );
@@ -3806,7 +3840,7 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
     int			dirent_num;
     struct dirent 	**dirent_list = NULL;
     struct stat		statbuf;
-    int			file_count = 0;
+    int			data_count = 0;
 
     /* Scan the directory; we're looking at *all* of the "uniq" files */
     rc = globus_l_gass_cache_scandir( 
@@ -3859,7 +3893,12 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
 	/* If it's a file, this must be a URL; mark it & go on */
 	if ( ! S_ISDIR( statbuf.st_mode ) )
 	{
-	    file_count++;
+	    /* If it's a "uniq" data file ("data.*"), count it */
+	    if ( ! strncmp( name, UDATA_FILE_PAT, UDATA_FILE_PAT_LEN ) )
+	    {
+		data_count++;
+	    }
+	    /* Otherwise, ignore it (probably a URL or tag file) */
 	}
 	/* Ignore "." and "..", but process all other dirs */
 	else if (  ( strcmp ( name, "." ) ) && ( strcmp( name, ".." ) )  )
@@ -3882,7 +3921,7 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
     globus_l_gass_cache_scandir_free( dirent_list, dirent_count );
 
     /* Add myself to the list */
-    if ( file_count )
+    if ( data_count )
     {
 	url_list_elem	*new_url_elem = 
 	    globus_malloc( sizeof( url_list_elem ) );
@@ -3894,8 +3933,9 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
 	else
 	{
 	    new_url_elem->mangled = strdup( base_mangled );
-	    new_url_elem->next = url_list->first;
-	    url_list->first = new_url_elem;
+	    new_url_elem->data_count = data_count;
+	    new_url_elem->next = url_list->head;
+	    url_list->head = new_url_elem;
 	    url_list->count++;
 	}
     }
@@ -3922,12 +3962,12 @@ static
 int
 globus_l_gass_cache_delete( cache_names		*names,
 			    const unsigned long	*timestamp,
-			    int			lock )
+			    globus_bool_t	is_locked )
 {
     int		rc = GLOBUS_SUCCESS;		/* Temp return code */
 
     /* Wait for the file to become "ready" */
-    if ( lock )
+    if ( ! is_locked )
     {
 	rc = globus_l_gass_cache_wait_ready( names, GLOBUS_NULL );
 
@@ -3946,7 +3986,7 @@ globus_l_gass_cache_delete( cache_names		*names,
     rc = globus_l_gass_cache_unlink_local( names );
     if ( GLOBUS_L_UNLINK_LAST == rc )
     {
-	rc = globus_l_gass_cache_unlink_global( names );
+	rc = globus_l_gass_cache_unlink_global( names, is_locked );
 	if ( GLOBUS_L_UNLINK_LAST == rc )
 	{
 	    /* Do nothing */
@@ -3966,7 +4006,7 @@ globus_l_gass_cache_delete( cache_names		*names,
 	    RET_ERROR( rc );
 	}
     }
-    /* Log erros from unlink_local */
+    /* Log errors from unlink_local */
     else if ( GLOBUS_SUCCESS != rc )
     {
 	RET_ERROR( rc );
@@ -3976,7 +4016,6 @@ globus_l_gass_cache_delete( cache_names		*names,
     return GLOBUS_SUCCESS;
 
 } /* globus_l_gass_cache_delete() */
-
 
 
 /******************************************************************************
@@ -4979,7 +5018,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t	*cache_handle,
 
     /* Wait for the file to become "ready" */
     rc = globus_l_gass_cache_wait_ready( &names, timestamp );
-    if ( ( GLOBUS_L_ENODATA == rc ) || ( GLOBUS_L_ETIMEOUT ) )
+    if ( ( GLOBUS_L_ENODATA == rc ) || ( GLOBUS_L_ETIMEOUT == rc ) )
     {
 	globus_l_gass_cache_names_free( &names );
 	LOG_ERROR( rc );
@@ -5091,7 +5130,7 @@ globus_gass_cache_delete(
 
     /* Do the actual delete... */
     rc = globus_l_gass_cache_delete( 
-	&names, &timestamp, ( is_locked ? GLOBUS_FALSE : GLOBUS_TRUE ) );
+	&names, &timestamp, is_locked );
 
     /* Free up name buffers */
     globus_l_gass_cache_names_free( &names );
@@ -5173,7 +5212,7 @@ globus_gass_cache_cleanup_tag(
     }
 
     /* It's got a mangled name; kill it! */
-    rc = globus_l_gass_cache_delete( &names, GLOBUS_NULL, GLOBUS_TRUE );
+    rc = globus_l_gass_cache_delete( &names, GLOBUS_NULL, GLOBUS_FALSE );
 
     /* Free up the name strings */
     globus_l_gass_cache_names_free( &names );
@@ -5240,6 +5279,7 @@ globus_gass_cache_cleanup_tag_all(
     double		TODOstime = TODOGetTime();
     url_list_head	url_list;
     url_list_elem	*url_elem, *url_next;
+    int			data_num;
     
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT(cache_handle);
@@ -5258,7 +5298,7 @@ globus_gass_cache_cleanup_tag_all(
     }
 
     /* Scan for URLs */
-    url_list.first = GLOBUS_NULL;
+    url_list.head = GLOBUS_NULL;
     url_list.count = 0;
     rc = globus_l_gass_cache_list_all_urls( base_local_dir,
 					    "",
@@ -5267,13 +5307,15 @@ globus_gass_cache_cleanup_tag_all(
 		  base_local_dir, tag, url_list.count );
 
     /* Walk through 'em all */
-    url_elem = url_list.first;
+    url_elem = url_list.head;
     while ( GLOBUS_NULL != url_elem )
     {
 	/* It's got a mangled name; kill it! */
 	if ( ( GLOBUS_NULL != url_elem->mangled ) &&
 	     ( strlen( url_elem->mangled ) > 0 )  )
 	{
+
+	    /* Put the new mangled URL into the name structure */
 	    rc = globus_l_gass_cache_names_new_murl(
 		url_elem->mangled, &names );
 	    if ( GLOBUS_SUCCESS != rc )
@@ -5283,16 +5325,22 @@ globus_gass_cache_cleanup_tag_all(
 		retval = rc;
 		continue;
 	    }
-	    rc = globus_l_gass_cache_delete( &names, GLOBUS_NULL, GLOBUS_TRUE);
-	    if ( GLOBUS_SUCCESS != rc )
-	    {
-		char	buff[1024];
-		sprintf(buff,"MURL=\"%s\"", url_elem->mangled);
-		MARK_ERRORMSG( rc, buff );
-		LOG_ERROR( rc );
-		retval = rc;
-	    }
 
+	    /* Loop through all of the "data" links found */
+	    for( data_num = 0;  data_num < url_elem->data_count;  data_num++ )
+	    {
+		rc = globus_l_gass_cache_delete( &names, GLOBUS_NULL, 
+						 GLOBUS_FALSE);
+		if ( GLOBUS_SUCCESS != rc )
+		{
+		    char	buff[1024];
+		    sprintf(buff,"MURL=\"%s\"", url_elem->mangled);
+		    MARK_ERRORMSG( rc, buff );
+		    LOG_ERROR( rc );
+		    retval = rc;
+		    break;
+		}
+	    }
 	}
 
 	/* Free up the mangled URL buffer */

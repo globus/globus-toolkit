@@ -170,7 +170,10 @@ globus_ftp_client_register_read(
 	i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST || 
 	i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE) &&
        !(i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA ||
-        i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK)) ||
+        i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK) &&
+        !(i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_RETR ||
+         i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_LIST ||
+         i_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_NLST)) ||
         i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FINALIZE)
     {
 	/* We've already hit EOF on the data channel. We'll just
@@ -378,7 +381,8 @@ globus_ftp_client_register_write(
 
     if((i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO &&
        !(i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA ||
-        i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK)) ||
+        i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK) &&
+        i_handle->dest->state != GLOBUS_FTP_CLIENT_TARGET_STOR) ||
         i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FINALIZE)
     {
 	/* We've already sent EOF. We'll just return that information

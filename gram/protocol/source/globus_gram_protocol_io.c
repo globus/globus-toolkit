@@ -995,7 +995,7 @@ globus_l_gram_protocol_connect_callback(
     globus_result_t			result)
 {
     globus_object_t *			err;
-    int					rc;
+    int					rc = 0;
     char *				errstring;
     globus_i_gram_protocol_connection_t *
     					connection;
@@ -1017,7 +1017,7 @@ globus_l_gram_protocol_connect_callback(
 	{
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
 	}
-	globus_object_free(err);
+	result = globus_error_put(err);
         goto error_exit;
     }
 
@@ -1053,11 +1053,19 @@ globus_l_gram_protocol_connect_callback(
 			     rc,
 			     GLOBUS_NULL);
     }
-    result = globus_io_register_close(
+    
+    /* rc only set on connection error.  It is an error to close a handle on
+     * a failed connect
+     */
+    if(rc == 0)
+    {
+        result = globus_io_register_close(
 	    handle,
 	    globus_l_gram_protocol_connection_close_callback,
 	    callback_arg);
-
+    
+    }
+    
     if(result != GLOBUS_SUCCESS)
     {
         /* If we can't close the handle, we'd still like to clean up

@@ -981,8 +981,19 @@ globus_gram_job_manager_state_machine(
 		request,
 		GLOBUS_GRAM_PROTOCOL_STDERR_PARAM);
 
-        /* Open output destinations */
-	rc = globus_gram_job_manager_output_open(request);
+	if (request->local_stdout == GLOBUS_NULL)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDOUT_FILENAME_FAILED;
+	}
+	else if (request->local_stderr == GLOBUS_NULL)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDERR_FILENAME_FAILED;
+	}
+	else
+	{
+	    /* Open output destinations */
+	    rc = globus_gram_job_manager_output_open(request);
+	}
 	if(rc == GLOBUS_SUCCESS)
 	{
 	    request->jobmanager_state =

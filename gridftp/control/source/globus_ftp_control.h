@@ -643,6 +643,7 @@ typedef struct globus_i_ftp_dc_handle_s
     globus_ftp_control_parallelism_t            parallel;
 
     globus_io_attr_t                            io_attr;
+    char *                                      interface;
 
     struct globus_i_ftp_dc_transfer_handle_s *  transfer_handle;
     globus_list_t *                             transfer_list;
@@ -763,6 +764,11 @@ globus_ftp_control_set_netlogger(
     globus_netlogger_handle_t *                 nl_handle,
     globus_bool_t                               nl_ftp_control,
     globus_bool_t                               nl_globus_io);
+
+globus_result_t
+globus_ftp_control_data_set_interface(
+    globus_ftp_control_handle_t *               handle,
+    const char *                                interface);
 
 /*****************************************************************
  *  standard layout functions 

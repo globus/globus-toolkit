@@ -104,14 +104,21 @@ int main(int argc, char **argv)
     }
     else
     {
-	globus_ftp_client_register_read(
+	result = globus_ftp_client_register_read(
 	    &handle,
 	    (globus_byte_t *) 0x1,
 	    buffer_length,
 	    data_cb,
 	    0);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            error=1;
+            done = GLOBUS_TRUE;
+        }
     }
     globus_mutex_lock(&lock);
+    
     while(!done)
     {
 	globus_cond_wait(&cond, &lock);

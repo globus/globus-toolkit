@@ -7,6 +7,8 @@ GLOBUS_INIT
 
 AM_PROG_LIBTOOL
 
+LAC_DOXYGEN("../", "*.dox")
+
 dnl config header goes here
 
 dnl Initialize the automake rules the last argument
@@ -18,6 +20,9 @@ AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
+	doxygen/Doxyfile
+	doxygen/Doxyfile-internal
+	doxygen/Makefile
 )
 
 

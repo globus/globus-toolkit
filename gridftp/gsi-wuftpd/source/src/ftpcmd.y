@@ -241,7 +241,7 @@ extern int port_allowed(const char *remoteaddr);
 	struct in_addr addr;
 	unsigned short port;
     } address;
-    long long Bignum;
+    off_t Bignum;
 }
 
 %type <String>  STRING password pathname pathstring username method
@@ -3102,13 +3102,13 @@ void sizecmd(char *filename)
 		    if(fd < 0 || size < 0)
 			reply(550, "%s: not a plain file.", filename);
 		    else
-			reply(213, "%"L_FORMAT, size);
+			reply(213, "%"GLOBUS_OFF_T_FORMAT, size);
 		}
 #               else
 		    reply(550, "%s: not a plain file.", filename);
 #               endif
 	    else
-		reply(213, "%" L_FORMAT, stbuf.st_size);
+		reply(213, "%" GLOBUS_OFF_T_FORMAT, stbuf.st_size);
 	    break;
 	}
     case TYPE_A:{
@@ -3145,7 +3145,7 @@ void sizecmd(char *filename)
 	    }
 	    (void) fclose(fin);
 
-	    reply(213, "%"L_FORMAT, count);
+	    reply(213, "%"GLOBUS_OFF_T_FORMAT, count);
 	    break;
 	}
     default:

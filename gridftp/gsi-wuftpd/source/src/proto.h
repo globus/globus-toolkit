@@ -381,4 +381,4 @@ void endusershell(void);
 /*
    ** support/strcasestr.c
  */
-char *strcasestr(register char *s, register char *find);
+char *strcasestr(const char *s, const char *find);

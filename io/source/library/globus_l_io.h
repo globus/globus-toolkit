@@ -63,6 +63,14 @@
 typedef void NLhandle;
 #endif
 
+/*
+ * Tru64 defines except when including pthreads with _OSF_SOURCE defined.
+ * Nasty namespace pollution...
+ */
+
+#ifdef _OSF_SOURCE
+#    undef except
+#endif
 
 #define GLOBUS_IO_NL_EVENT_START_READ     "GIO_READ_START"
 #define GLOBUS_IO_NL_EVENT_END_READ       "GIO_READ_END"

@@ -64,9 +64,6 @@ This is required when the job manager type is @a condor.
 Set the condor operating system name for this job manager to be the specified
 OSNAME.  This is required when the job manager type is @a condor.
 
-@par -globus-org-dn DN
-FILL THIS IN
-
 @par -globus-gatekeeper-host HOST
 Set the name of the gatekeeper host. This will be made available in the
 GLOBUS_GATEKEEPER_HOST RSL substitution.
@@ -80,10 +77,15 @@ Set the GSI subject name of the gatekeeper. This will be made available in the
 GLOBUS_GATEKEEPER_SUBJECT RSL substitution.
 
 @par -rdn RDN
-FILL THIS IN
+LDAP relative distinguished name used for reporting jobs into the MDS.
+
+@par -globus-org-dn DN
+LDAP distinguished for the organization which manages this GRAM resource.
+
 
 @par -globus-host-dn DN
-FILL THIS IN
+LDAP distinguished name used for the host on which the job manager is
+running.
 
 @par -globus-host-manufacturer MANUFACTURER
 Set the manufacturer name of the host machine. This will be made available in
@@ -107,12 +109,13 @@ also be made available in the GLOBUS_TCP_PORT_RANGE environment variable and
 RSL substitution.
 
 @par -machine-type
-FILL THIS IN
+Type of machine which is managed by this job manager. This is used by the
+GRAM reporter only.
 
 @par -state-file-dir PATH
 Set the path to store job manager state files (used for restarting a job
 manager which fails). If this is not set, then job state files will be
-stored in the <code>$HOME/.globus</code> directory.
+stored in the <code>$GLOBUS_LOCATION/tmp/gram_job_state</code> directory.
 
 @par -x509-cert-dir
 Set the path to the X.509 trusted certificate directory on the job execution
