@@ -1848,6 +1848,14 @@ globus_l_io_kickout_cancel_cb(
                     clean_up = GLOBUS_FALSE;
                 }
             }
+            
+            /* since the cancel callback might call the internal close callback
+             * I need to save a ref to the space for the two phase cancel
+             */
+            if(!clean_up)
+            {
+                globus_callback_space_reference(handle->socket_attr.space);
+            }
         }
         else
         {
@@ -1952,6 +1960,12 @@ globus_l_io_kickout_cancel_cb(
              */
             cancel_info->next = globus_l_io_cancel_list;
             globus_l_io_cancel_list = cancel_info;
+        }
+        
+        /* destroy the extra reference now */
+        if(!clean_up)
+        {
+            globus_callback_space_destroy(handle->socket_attr.space);
         }
 exit:
         globus_l_io_pending_count--;
