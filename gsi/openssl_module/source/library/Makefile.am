@@ -11,6 +11,8 @@ lib_LTLIBRARIES = libglobus_openssl_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = -I.. @GPT_INCLUDES@ 
 
+libglobus_openssl___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
+
 libglobus_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 
 libglobus_openssl___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
