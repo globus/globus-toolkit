@@ -1003,7 +1003,8 @@ globus_l_xio_gsi_read_token_cb(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("Generated output token of length %d\n", output_token.length));
+            ("[%s] Generated output token of length %d\n", _xio_name,
+             output_token.length));
         
         if(GSS_ERROR(major_status))
         {
@@ -1077,7 +1078,8 @@ globus_l_xio_gsi_read_token_cb(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("Generated output token of length %d\n", output_token.length));
+            ("[%s] Generated output token of length %d\n", _xio_name, 
+             output_token.length));
         
         if(GSS_ERROR(major_status))
         {
@@ -1287,7 +1289,8 @@ globus_l_xio_gsi_open_cb(
                                             &handle->time_rec);
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("Generated output token of length %d\n", output_token.length));
+            ("[%s] Generated output token of length %d\n", _xio_name,
+             output_token.length));
 
         if(GSS_ERROR(major_status))
         {
