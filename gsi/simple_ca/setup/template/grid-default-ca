@@ -217,11 +217,11 @@ fi
 
 if [ -w ${CA_SSL_HOST_CONFIG_FILE} ]; then
 
-    echo "linking ${CA_SSL_USER_CONFIG_FILE} to"
+    echo "linking ${CA_SSL_HOST_CONFIG_FILE} to"
     echo "        ${secconfdir}/globus-host-ssl.conf"
     echo
     ${GLOBUS_SH_RM-rm} -f ${secconfdir}/globus-host-ssl.conf
-    ${GLOBUS_SH_LN-ln} -s ${CA_SSL_USER_CONFIG_FILE} \
+    ${GLOBUS_SH_LN-ln} -s ${CA_SSL_HOST_CONFIG_FILE} \
 		          ${secconfdir}/globus-host-ssl.conf
 else
     error CA_SSL_HOST_CONFIG_FILE
@@ -229,11 +229,11 @@ fi
 
 if [ -w ${CA_SSL_USER_CONFIG_FILE} ]; then
 
-    echo "linking ${CA_SSL_HOST_CONFIG_FILE} to"
+    echo "linking ${CA_SSL_USER_CONFIG_FILE} to"
     echo "        ${secconfdir}/globus-user-ssl.conf"
     echo
     ${GLOBUS_SH_RM-rm} -f ${secconfdir}/globus-user-ssl.conf
-    ${GLOBUS_SH_LN-ln} -s ${CA_SSL_HOST_CONFIG_FILE} \
+    ${GLOBUS_SH_LN-ln} -s ${CA_SSL_USER_CONFIG_FILE} \
 	    	          ${secconfdir}/globus-user-ssl.conf
 else
     error CA_SSL_USER_CONFIG_FILE

@@ -510,7 +510,7 @@ ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 ./configure
 make dist
 
-CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.3.tar.gz
+CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.5.tar.gz
 
 if test ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE}; then
     echo ""
