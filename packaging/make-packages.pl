@@ -841,7 +841,7 @@ sub package_source_gpt()
 	     $package eq "globus_ogsa_security_authentication_bindings" or
 #	     $package eq "globus_ogsa_security_authentication" or
 	     $package eq "globus_ogsa_samples_counter_bindings" or
-	     $package eq "gram_mj_bindings")
+	     $package eq "globus_ogsa_base_gram_mj_bindings")
 	{
 	    print "\tUsing openssl_tools version of autotools.\n";
 	    my $OPATH = $ENV{PATH};
