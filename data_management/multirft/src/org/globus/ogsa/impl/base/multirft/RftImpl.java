@@ -123,8 +123,6 @@ public class RftImpl
 
         String name = "MultifileRFTService";
 
-        //  String id = String.valueOf( hashCode() );
-        //  setProperty( ServiceProperties.NAME, name);
         this.transferRequest = transferRequest;
 
         if (transferRequest == null) {

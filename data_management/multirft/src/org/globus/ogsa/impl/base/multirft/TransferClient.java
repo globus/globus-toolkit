@@ -39,6 +39,7 @@ import org.globus.ogsa.base.multirft.GridFTPRestartMarkerElement;
 import org.globus.ogsa.base.multirft.RFTOptionsType;
 import org.globus.ogsa.impl.base.multirft.MyMarkerListener;
 import org.globus.ogsa.impl.base.multirft.TransferDbOptions;
+import org.globus.ogsa.impl.base.multirft.util.FileSystemUtil;
 import org.globus.ogsa.utils.MessageUtils;
 
 import org.globus.util.GlobusURL;
@@ -77,6 +78,7 @@ public class TransferClient {
     String destinationSubjectName;
     String subjectName;
     TransferDbOptions dbOptions;
+    FileSystemUtil fileSystemUtil;
     private static Logger logger = Logger.getLogger(TransferClient.class.getName());
 
     public TransferClient() {
@@ -225,6 +227,8 @@ public class TransferClient {
                                            sourceGlobusURL.getPort());
             destinationHost = new GridFTPClient(destinationGlobusURL.getHost(), 
                                                 destinationGlobusURL.getPort());
+            this.fileSystemUtil = new FileSystemUtil();
+            this.fileSystemUtil.setGridFTPClient(destinationHost);
             this.credential = loadCredential(proxyPath);
             this.rftOptions = rftOptions;
             subjectName = this.rftOptions.getSubjectName();
@@ -251,6 +255,7 @@ public class TransferClient {
             setTransferParams(destinationHost, this.credential);
             setTransferParams(sourceHost, this.credential);
             size = sourceHost.getSize(sourcePath);
+            //this.fileSystemUtil.makeDirectory("/sandbox/madduri/tmp");
             markerListener = new MyMarkerListener(dbOptions, transferProgress, 
                                                   serviceData, 
                                                   transferProgressData, size, 
