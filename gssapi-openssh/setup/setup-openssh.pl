@@ -1,6 +1,10 @@
 #!/usr/bin/perl -w
 #
-# fixpaths  - substitute makefile variables into text files
+# setup-openssh.pl - substitutes variables into text files and runs
+#                     ssh key gen programs
+#
+# adapted from 'fixpath', located in the openssh-3.0.2p1 package
+#
 
 #
 # Set up path prefixes for use in the path translations
@@ -36,12 +40,6 @@ sub fixpaths
         "/usr/bin:/bin:/usr/sbin:/sbin" => "/usr/bin:/bin:/usr/sbin:/sbin:${bindir}",
         );
 
-    print "dumping list of path translations..\n";
-    for $s (keys(%def))
-    {
-        print "$s = " . $def{$s} . "\n";
-    }
-
     #
     # Files on which to perform path translations
     #
@@ -61,7 +59,7 @@ sub fixpaths
         "sftp.1",
         );
 
-    print "\ntranslating files..\n";
+    print "\nTranslating strings in config/man files..\n";
     for $f (@files)
     {
         $f =~ /(.*\/)*(.*)$/;
@@ -97,7 +95,7 @@ sub fixpaths
 
 sub runkeygen
 {
-    print "\nkey gen routine starting..\n";
+    print "\nGenerating ssh keys (if necessary)..\n";
     if ( -e "${sysconfdir}/ssh_host_key" )
     {
         print "${sysconfdir}/ssh_host_key already exists, skipping.\n";
