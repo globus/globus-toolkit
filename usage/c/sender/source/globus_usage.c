@@ -23,19 +23,19 @@ GlobusDebugDefine(GLOBUS_USAGE);
 #define GlobusUsageStatsDebugPrintf(LEVEL, MESSAGE) \
     GlobusDebugPrintf(GLOBUS_USAGE, LEVEL, MESSAGE)
 
-#define GlobusUsageStatsConvertToPrintable(CHARVALUE)                          \
-    (((((unsigned int)CHARVALUE) > 31) &&                                      \
+#define GlobusUsageStatsConvertToPrintable(CHARVALUE)           \
+    (((((unsigned int)CHARVALUE) > 31) &&                       \
       ((((unsigned int)CHARVALUE) < 127)) ? CHARVALUE : '.'))
 
-#define GlobusUsageStatsDebugDump(LEVEL, DATA, LENGTH)                         \
-    {                                                                          \
-        int i = 0;                                                             \
-        for(; i < LENGTH; ++i)                                                 \
-        {                                                                      \
-            char cv = GlobusUsageStatsConvertToPrintable(DATA[i]);             \
-            GlobusUsageStatsDebugPrintf(                                       \
-                LEVEL, ("%c", cv));                                            \
-        }                                                                      \
+#define GlobusUsageStatsDebugDump(LEVEL, DATA, LENGTH)                  \
+    {                                                                   \
+        int i = 0;                                                      \
+        for(; i < LENGTH; ++i)                                          \
+        {                                                               \
+            char cv = GlobusUsageStatsConvertToPrintable(DATA[i]);      \
+            GlobusUsageStatsDebugPrintf(                                \
+                LEVEL, ("%c", cv));                                     \
+        }                                                               \
     }
 
 static int
@@ -179,7 +179,7 @@ globus_l_usage_stats_split_targets(
         tmpstr, strlen(tmpstr), &start_token, &end_token, "\n\t ");
     tmpstr += end_token;
         
-    while(token)
+    while(token && (end_token != -1))
     {
         globus_list_insert(targets, token);
 
