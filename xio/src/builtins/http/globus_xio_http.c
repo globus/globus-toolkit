@@ -165,7 +165,7 @@ globus_l_xio_http_handle_cntl(
     va_list                             ap)
 {
     globus_hashtable_t *user_table;
-    char *user_str;
+    globus_xio_iovec_t *user_str;
     l_http_info_t *info = driver_specific_handle;
 
     switch(cmd) {
@@ -182,8 +182,12 @@ globus_l_xio_http_handle_cntl(
                               globus_l_xio_http_handle_copy_element);
         break;
     case GLOBUS_XIO_HTTP_GET_CONTACT:
-        user_str = (char *)va_arg(ap, char *);
-        strcpy(user_str, info->uri);
+        user_str = (globus_xio_iovec_t *)va_arg(ap, globus_xio_iovec_t *);
+        strncpy(user_str->iov_base, info->uri, user_str->iov_len);
+        break;
+    case GLOBUS_XIO_HTTP_GET_REQUEST_TYPE:
+        user_str = (globus_xio_iovec_t *)va_arg(ap, globus_xio_iovec_t *);
+        strncpy(user_str->iov_base, info->request_type, user_str->iov_len);
         break;
     case GLOBUS_XIO_HTTP_SET_EXIT_CODE:
         user_str = (char *)va_arg(ap, char *);
