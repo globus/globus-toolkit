@@ -157,3 +157,6 @@ extern char *_PATH_SFTP_SERVER;
 
 /* Path to rand helper */
 extern char *SSH_RAND_HELPER;
+
+/* Default user path that includes location of scp. */
+extern char *_PATH_STDPATH_WITH_SCP;
