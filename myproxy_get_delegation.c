@@ -10,6 +10,7 @@
 #include "verror.h"
 #include "myproxy_read_pass.h"
 #include "myproxy_delegation.h"
+#include "sslutil.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -102,7 +103,7 @@ main(int argc, char *argv[])
     init_arguments(argc, argv, socket_attrs, client_request);
 
     if (!outputfile) {
-	proxy_get_filenames(0, NULL, NULL, &outputfile, NULL, NULL);
+	myproxy_get_filenames(NULL, 0, NULL, NULL, &outputfile, NULL, NULL);
     }
 
     if (creds_to_authorization == NULL) {
