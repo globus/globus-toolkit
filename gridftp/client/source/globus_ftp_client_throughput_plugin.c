@@ -49,8 +49,10 @@ typedef struct throughput_plugin_info_s
     globus_ftp_client_throughput_plugin_stripe_cb_t     per_stripe_cb;
     globus_ftp_client_throughput_plugin_total_cb_t      total_cb;
     globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb;
+    globus_ftp_client_throughput_plugin_user_copy_cb_t    copy_cb;
+    globus_ftp_client_throughput_plugin_user_destroy_cb_t destroy_cb;
 
-    void *                                              user_arg;
+    void *                                              user_specific;
 
     double *                                    prev_times;
     double *                                    cur_times;
@@ -89,7 +91,7 @@ throughput_plugin_begin_cb(
     if(info->begin_cb)
     {
         info->begin_cb(
-            info->user_arg,
+            info->user_specific,
             handle,
             source_url,
             dest_url);
@@ -242,7 +244,7 @@ throughput_plugin_marker_cb(
             (info->cur_times[stripe_ndx] - info->start_time);
 
         info->per_stripe_cb(
-            info->user_arg,
+            info->user_specific,
             handle,
             stripe_ndx,
             nbytes,
@@ -279,7 +281,7 @@ throughput_plugin_marker_cb(
         }
 
         info->total_cb(
-            info->user_arg,
+            info->user_specific,
             handle,
             nbytes,
             instantaneous_throughput,
@@ -310,7 +312,7 @@ throughput_plugin_complete_cb(
     if(info->complete_cb)
     {
         info->complete_cb(
-            info->user_arg,
+            info->user_specific,
             handle,
             success);
     }
@@ -360,8 +362,6 @@ throughput_plugin_user_copy_cb(
     new_info->total_cb          = old_info->total_cb;
     new_info->complete_cb       = old_info->complete_cb;
 
-    new_info->user_arg          = old_info->user_arg;
-
     new_info->prev_times        = GLOBUS_NULL;
     new_info->cur_times         = GLOBUS_NULL;
     new_info->prev_bytes        = GLOBUS_NULL;
@@ -369,6 +369,15 @@ throughput_plugin_user_copy_cb(
 
     new_info->start_time        = 0;
     new_info->num_stripes       = 0;
+
+    if(old_info->copy_cb)
+    {
+        new_info->user_specific = old_info->copy_cb(old_info->user_specific);
+    }
+    else
+    {
+        new_info->user_specific = old_info->user_specific;
+    }
 
     return new_info;
 }
@@ -390,6 +399,11 @@ throughput_plugin_user_destroy_cb(
     throughput_plugin_info_t *                  info;
 
     info = (throughput_plugin_info_t *) user_specific;
+
+    if(info->destroy_cb)
+    {
+        info->destroy_cb(info->user_specific);
+    }
 
     if(info->prev_times)
     {
@@ -429,7 +443,7 @@ throughput_plugin_user_destroy_cb(
  * @param complete_cb
  *        the callback to be called to indicate transfer completion
  *
- * @param user_arg
+ * @param user_specific
  *        a pointer to some user specific data that will be provided to
  *        all callbacks
  *
@@ -446,7 +460,7 @@ globus_ftp_client_throughput_plugin_init(
     globus_ftp_client_throughput_plugin_stripe_cb_t     per_stripe_cb,
     globus_ftp_client_throughput_plugin_total_cb_t      total_cb,
     globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb,
-    void *                                              user_arg)
+    void *                                              user_specific)
 {
     throughput_plugin_info_t *                  info;
     globus_result_t                             result;
@@ -483,8 +497,9 @@ globus_ftp_client_throughput_plugin_init(
     info->per_stripe_cb         = per_stripe_cb;
     info->total_cb              = total_cb;
     info->complete_cb           = complete_cb;
-
-    info->user_arg              = user_arg;
+    info->copy_cb               = GLOBUS_NULL;
+    info->destroy_cb            = GLOBUS_NULL;
+    info->user_specific         = user_specific;
 
     info->prev_times            = GLOBUS_NULL;
     info->cur_times             = GLOBUS_NULL;
@@ -499,8 +514,6 @@ globus_ftp_client_throughput_plugin_init(
         throughput_plugin_begin_cb,
         throughput_plugin_marker_cb,
         throughput_plugin_complete_cb,
-        throughput_plugin_user_copy_cb,
-        throughput_plugin_user_destroy_cb,
         info);
 
     if(result != GLOBUS_SUCCESS)
@@ -509,6 +522,73 @@ globus_ftp_client_throughput_plugin_init(
 
         return result;
     }
+    else
+    {
+        globus_ftp_client_perf_plugin_set_copy_destroy(
+            plugin,
+            throughput_plugin_user_copy_cb,
+            throughput_plugin_user_destroy_cb);
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+/**
+ * Set user copy and destroy callbacks
+ * @ingroup globus_ftp_client_throughput_plugin
+ *
+ * Use this to have the plugin make callbacks any time a copy of this
+ * plugin is being made.  This will allow the user to keep state for
+ * different handles.
+ *
+ * @param plugin
+ *        plugin previously initialized with init (above)
+ *
+ * @param copy_cb
+ *        func to be called when a copy is needed
+ *
+ * @param destroy_cb
+ *        func to be called when a copy is to be destroyed
+ *
+ * @return
+ *        - Error on NULL arguments
+ *        - GLOBUS_SUCCESS
+ */
+
+globus_result_t
+globus_ftp_client_throughput_plugin_set_copy_destroy(
+    globus_ftp_client_plugin_t *                          plugin,
+    globus_ftp_client_throughput_plugin_user_copy_cb_t    copy_cb,
+    globus_ftp_client_throughput_plugin_user_destroy_cb_t destroy_cb)
+{
+    globus_result_t                             result;
+    throughput_plugin_info_t *                  info;
+    static char *                               myname =
+        "globus_ftp_client_throughput_plugin_set_copy_destroy";
+
+    if(plugin == GLOBUS_NULL ||
+        copy_cb == GLOBUS_NULL ||
+        destroy_cb == GLOBUS_NULL)
+    {
+        return globus_error_put(globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] NULL arg at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    result = globus_ftp_client_perf_plugin_get_user_specific(
+              plugin,
+              (void **) &info);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    info->copy_cb = copy_cb;
+    info->destroy_cb = destroy_cb;
 
     return GLOBUS_SUCCESS;
 }
@@ -566,4 +646,64 @@ globus_ftp_client_throughput_plugin_destroy(
     globus_free(info);
 
     return globus_ftp_client_perf_plugin_destroy(plugin);
+}
+
+/**
+ * Retrieve user specific pointer
+ * @ingroup globus_ftp_client_throughput_plugin
+ *
+ * @param plugin
+ *        plugin previously initialized with init (above)
+ *
+ * @param user_specific
+ *        pointer to storage for user_specific pointer
+ *
+ * @return
+ *        - GLOBUS_SUCCESS
+ *        - Error on NULL plugin
+ *        - Error on NULL user_specific
+ */
+
+globus_result_t
+globus_ftp_client_throughput_plugin_get_user_specific(
+    globus_ftp_client_plugin_t *                    plugin,
+    void **                                         user_specific)
+{
+    globus_result_t                                 result;
+    throughput_plugin_info_t *                      info;
+    static char *                                   myname =
+        "globus_ftp_client_throughput_plugin_get_user_specific";
+
+    if(plugin == GLOBUS_NULL)
+    {
+        return globus_error_put(globus_error_construct_string(
+            GLOBUS_FTP_CLIENT_MODULE,
+            GLOBUS_NULL,
+            "[%s] NULL plugin at %s\n",
+            GLOBUS_FTP_CLIENT_MODULE->module_name,
+            myname));
+    }
+
+    if(user_specific == GLOBUS_NULL)
+    {
+        return globus_error_put(globus_error_construct_string(
+            GLOBUS_FTP_CLIENT_MODULE,
+            GLOBUS_NULL,
+            "[%s] NULL user_specific at %s\n",
+            GLOBUS_FTP_CLIENT_MODULE->module_name,
+            myname));
+    }
+
+    result = globus_ftp_client_perf_plugin_get_user_specific(
+        plugin,
+        (void **) &info);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    *user_specific = info->user_specific;
+
+    return GLOBUS_SUCCESS;
 }

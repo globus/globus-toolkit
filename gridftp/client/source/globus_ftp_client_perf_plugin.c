@@ -500,20 +500,23 @@ perf_plugin_copy_cb(
         old_ps->begin_cb,
         old_ps->marker_cb,
         old_ps->complete_cb,
-        old_ps->copy_cb,
-        old_ps->destroy_cb,
         new_user_specific);
 
     if(result != GLOBUS_SUCCESS)
     {
         globus_free(new_plugin);
-        if(old_ps->copy_cb && old_ps->destroy_cb)
+        if(old_ps->destroy_cb)
         {
             old_ps->destroy_cb(new_user_specific);
         }
 
         return GLOBUS_NULL;
     }
+
+    globus_ftp_client_perf_plugin_set_copy_destroy(
+        new_plugin,
+        old_ps->copy_cb,
+        old_ps->destroy_cb);
 
     return new_plugin;
 }
@@ -524,7 +527,6 @@ perf_plugin_copy_cb(
  *
  * This callback is called to destroy a copy of a plugin made with the
  * copy callback above.  It will also call the user's 'destroy' callback
- * iff the user has registered a 'copy' callback
  */
 
 static
@@ -537,7 +539,7 @@ perf_plugin_destroy_cb(
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    if(ps->copy_cb && ps->destroy_cb)
+    if(ps->destroy_cb)
     {
         ps->destroy_cb(ps->user_specific);
     }
@@ -571,16 +573,6 @@ perf_plugin_destroy_cb(
  * @param complete_cb
  *        the callback to be called to indicate transfer completion
  *
- * @param copy_cb
- *        a copy of this plugin is automatically made for every handle
- *        that uses it.  This callback will be called to allow
- *        a user to create new state data to accompany this copy of the
- *        plugin
- *
- * @param destroy_cb
- *        the callback to be called upon destruction of a copy of the plugin
- *        (Note: will only be called if a copy_cb is also registered)
- *
  * @return
  *        - GLOBUS_SUCCESS
  *        - Error on NULL plugin
@@ -593,8 +585,6 @@ globus_ftp_client_perf_plugin_init(
     globus_ftp_client_perf_plugin_begin_cb_t        begin_cb,
     globus_ftp_client_perf_plugin_marker_cb_t       marker_cb,
     globus_ftp_client_perf_plugin_complete_cb_t     complete_cb,
-    globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb,
-    globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb,
     void *                                          user_specific)
 {
     perf_plugin_info_t *                            ps;
@@ -632,8 +622,8 @@ globus_ftp_client_perf_plugin_init(
     ps->begin_cb            = begin_cb;
     ps->marker_cb           = marker_cb;
     ps->complete_cb         = complete_cb;
-    ps->copy_cb             = copy_cb;
-    ps->destroy_cb          = destroy_cb;
+    ps->copy_cb             = GLOBUS_NULL;
+    ps->destroy_cb          = GLOBUS_NULL;
 
     globus_mutex_init(&ps->lock, GLOBUS_NULL);
 
@@ -671,6 +661,66 @@ globus_ftp_client_perf_plugin_init(
         perf_plugin_fault_cb);
     globus_ftp_client_plugin_set_abort_func(plugin,
         perf_plugin_abort_cb);
+
+    return GLOBUS_SUCCESS;
+}
+
+/**
+ * Set user copy and destroy callbacks
+ * @ingroup globus_ftp_client_perf_plugin
+ *
+ * Use this to have the plugin make callbacks any time a copy of this
+ * plugin is being made.  This will allow the user to keep state for
+ * different handles.
+ *
+ * @param plugin
+ *        plugin previously initialized with init (above)
+ *
+ * @param copy_cb
+ *        func to be called when a copy is needed
+ *
+ * @param destroy_cb
+ *        func to be called when a copy is to be destroyed
+ *
+ * @return
+ *        - Error on NULL arguments
+ *        - GLOBUS_SUCCESS
+ */
+
+globus_result_t
+globus_ftp_client_perf_plugin_set_copy_destroy(
+    globus_ftp_client_plugin_t *                    plugin,
+    globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb,
+    globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb)
+{
+    globus_result_t                             result;
+    perf_plugin_info_t *                        ps;
+    static char *                               myname =
+        "globus_ftp_client_perf_plugin_set_copy_destroy";
+
+    if(plugin == GLOBUS_NULL ||
+        copy_cb == GLOBUS_NULL ||
+        destroy_cb == GLOBUS_NULL)
+    {
+        return globus_error_put(globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] NULL arg at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    result = globus_ftp_client_perf_plugin_get_user_specific(
+              plugin,
+              (void **) &ps);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    ps->copy_cb = copy_cb;
+    ps->destroy_cb = destroy_cb;
 
     return GLOBUS_SUCCESS;
 }

@@ -196,9 +196,13 @@ globus_ftp_client_perf_plugin_init(
     globus_ftp_client_perf_plugin_begin_cb_t        begin_cb,
     globus_ftp_client_perf_plugin_marker_cb_t       marker_cb,
     globus_ftp_client_perf_plugin_complete_cb_t     complete_cb,
-    globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb,
-    globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb,
     void *                                          user_specific);
+
+globus_result_t
+globus_ftp_client_perf_plugin_set_copy_destroy(
+    globus_ftp_client_plugin_t *                    plugin,
+    globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb,
+    globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb);
 
 globus_result_t
 globus_ftp_client_perf_plugin_destroy(

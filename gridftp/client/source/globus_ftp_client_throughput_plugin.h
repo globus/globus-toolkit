@@ -55,7 +55,7 @@ globus_module_descriptor_t globus_i_ftp_client_throughput_plugin_module;
  * @param handle
  *        The client handle associated with this transfer
  *
- * @param user_arg
+ * @param user_specific
  *        User argument passed to globus_ftp_client_throughput_plugin_init
  *
  * @param source_url
@@ -69,7 +69,7 @@ globus_module_descriptor_t globus_i_ftp_client_throughput_plugin_module;
  */
 
 typedef void (*globus_ftp_client_throughput_plugin_begin_cb_t)(
-    void *                                          user_arg,
+    void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
     const char *                                    source_url,
     const char *                                    dest_url);
@@ -86,7 +86,7 @@ typedef void (*globus_ftp_client_throughput_plugin_begin_cb_t)(
  * @param handle
  *        The client handle associated with this transfer
  *
- * @param user_arg
+ * @param user_specific
  *        User argument passed to globus_ftp_client_throughput_plugin_init
  *
  * @param bytes
@@ -104,7 +104,7 @@ typedef void (*globus_ftp_client_throughput_plugin_begin_cb_t)(
  */
 
 typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
-    void *                                          user_arg,
+    void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
     int                                             stripe_ndx,
     globus_off_t                                    bytes,
@@ -123,7 +123,7 @@ typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
  * @param handle
  *        The client handle associated with this transfer
  *
- * @param user_arg
+ * @param user_specific
  *        User argument passed to globus_ftp_client_throughput_plugin_init
  *
  * @param bytes
@@ -138,7 +138,7 @@ typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
  */
 
 typedef void (*globus_ftp_client_throughput_plugin_total_cb_t)(
-    void *                                          user_arg,
+    void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
     globus_off_t                                    bytes,
     float                                           instantaneous_throughput,
@@ -154,7 +154,7 @@ typedef void (*globus_ftp_client_throughput_plugin_total_cb_t)(
  * @param handle
  *        The client handle associated with this transfer
  *
- * @param user_arg
+ * @param user_specific
  *        User argument passed to globus_ftp_client_throughput_plugin_init
  *
  * @param success
@@ -166,9 +166,47 @@ typedef void (*globus_ftp_client_throughput_plugin_total_cb_t)(
  */
 
 typedef void (*globus_ftp_client_throughput_plugin_complete_cb_t)(
-    void *                                          user_arg,
+    void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
     globus_bool_t                                   success);
+
+
+/**
+ * Copy constructor
+ * @ingroup globus_ftp_client_throughput_plugin
+ *
+ * This callback will be called when a copy of this plugin is made,
+ * it is intended to allow initialization of a new user_specific data
+ *
+ * @param user_specific
+ *        this is user specific data either created by this copy
+ *        method, or the value passed to init
+ *
+ * @return
+ *        - a pointer to a user specific piece of data
+ *        - GLOBUS_NULL (does not indicate error)
+ */
+
+typedef void * (*globus_ftp_client_throughput_plugin_user_copy_cb_t)(
+    void *                                          user_specific);
+
+/**
+ * Destructor
+ * @ingroup globus_ftp_client_throughput_plugin
+ *
+ * This callback will be called when a copy of this plugin is destroyed,
+ * it is intended to allow the user to free up any memory associated with
+ * the user specific data
+ *
+ * @param user_specific
+ *        this is user specific data created by the copy method
+ *
+ * @return
+ *        - n/a
+ */
+
+typedef void (*globus_ftp_client_throughput_plugin_user_destroy_cb_t)(
+    void *                                          user_specific);
 
 globus_result_t
 globus_ftp_client_throughput_plugin_init(
@@ -177,11 +215,22 @@ globus_ftp_client_throughput_plugin_init(
     globus_ftp_client_throughput_plugin_stripe_cb_t     per_stripe_cb,
     globus_ftp_client_throughput_plugin_total_cb_t      total_cb,
     globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb,
-    void *                                              user_arg);
+    void *                                              user_specific);
+
+globus_result_t
+globus_ftp_client_throughput_plugin_set_copy_destroy(
+    globus_ftp_client_plugin_t *                          plugin,
+    globus_ftp_client_throughput_plugin_user_copy_cb_t    copy_cb,
+    globus_ftp_client_throughput_plugin_user_destroy_cb_t destroy_cb);
 
 globus_result_t
 globus_ftp_client_throughput_plugin_destroy(
-    globus_ftp_client_plugin_t *                            plugin);
+    globus_ftp_client_plugin_t *                        plugin);
+
+globus_result_t
+globus_ftp_client_throughput_plugin_get_user_specific(
+    globus_ftp_client_plugin_t *                        plugin,
+    void **                                             user_specific);
 
 EXTERN_C_END
 
