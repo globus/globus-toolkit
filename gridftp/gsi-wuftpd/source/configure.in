@@ -215,6 +215,17 @@ else
 fi
 AC_SUBST(GSSAPI_SRC)
 
+dnl
+dnl Check for post authentication process
+AC_MSG_CHECKING([for post authentication process])
+AC_ARG_WITH([post-auth-process],
+[  --with-post-auth-process=<process>  Specify process to run after authentication],
+[	AC_MSG_RESULT($withval)
+	AC_DEFINE_UNQUOTED(POST_AUTH_PROCESS, "${withval}")
+],
+AC_MSG_RESULT(no)
+)
+
 dnl ===========================================================================
 dnl Checks for some system calls/headers...
 dnl ============================================================================

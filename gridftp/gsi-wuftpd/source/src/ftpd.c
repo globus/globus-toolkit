@@ -3193,7 +3193,7 @@ void pass(char *passwd)
 #endif
     if (!anonymous && !guest) {
 #ifdef POST_AUTH_PROCESS
-	run_post_auth_process();
+	run_post_auth_process(pw);
 #endif /* POST_AUTH_PROCESS */	
 	if (chdir(pw->pw_dir) < 0) {
 #ifdef PARANOID
@@ -7440,6 +7440,7 @@ run_post_auth_process(struct passwd *pw)
     char *program = POST_AUTH_PROCESS;
 
 
+    /* XXX Need to add some sanity checks here on the process */
     if (stat(program, &st) == 0) {
 	int pid;
 	int testpid;
@@ -7458,12 +7459,17 @@ run_post_auth_process(struct passwd *pw)
 	pid = fork();
 
 	if (pid == 0) {			/* CHILD */
+	    int rc;
+	    
 	    seteuid(0);
 	    setuid(pw->pw_uid);
 	    if (pw->pw_dir) {
 		setenv("HOME", pw->pw_dir, 1);
 	    }
-	    system(program);
+	    rc = system(program);
+	    if (debug)
+		syslog(LOG_DEBUG, "PostAuthProcess returned %d", rc);
+	    
 	    exit(0);
 	}
 
@@ -7475,8 +7481,8 @@ run_post_auth_process(struct passwd *pw)
 
     } else {
 	syslog(LOG_ERR,
-	       "Error accessing post authentication program \"%s\"",
-	       program);
+	       "Error accessing post authentication program \"%s\" (errno=%d)",
+	       program, errno);
     }
     return(0);
 }
