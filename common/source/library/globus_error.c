@@ -350,8 +350,6 @@ globus_error_peek(
 
   error = globus_object_cache_lookup (&s_result_to_object_mapper,
 				      result);
-
-  globus_mutex_unlock (&s_result_to_object_mutex);
   
   if (error!=NULL) 
   {
@@ -365,9 +363,12 @@ globus_error_peek(
     
     globus_object_reference(error);
     globus_thread_setspecific(s_peek_key, error);
-
-    return error;
   }
+  
+  globus_mutex_unlock (&s_result_to_object_mutex);
+  
+  if (error!=NULL) 
+    return error;
   else
     return GLOBUS_ERROR_NO_INFO;
 }
