@@ -72,7 +72,7 @@ char *mm_ssh_gssapi_last_error(Gssctxt *ctxt, OM_uint32 *maj, OM_uint32 *min);
 #endif
 
 #ifdef USE_PAM
-void mm_start_pam(char *);
+void mm_start_pam(struct Authctxt *);
 u_int mm_do_pam_account(void);
 void *mm_sshpam_init_ctx(struct Authctxt *);
 int mm_sshpam_query(void *, char **, char **, u_int *, char ***, u_int **);
