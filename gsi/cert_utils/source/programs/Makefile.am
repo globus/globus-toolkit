@@ -3,7 +3,8 @@ include $(top_srcdir)/globus_automake_pre
 User_Scripts = \
 	grid-cert-info \
 	grid-change-pass-phrase \
-	grid-cert-request
+	grid-cert-request \
+	grid-default-ca
 
 Dist_Scripts = \
         grid-cert-info.in \
