@@ -63,7 +63,7 @@ globus_i_gfs_log_open()
     globus_logging_module_t *           log_mod;
     void *                              log_arg;
     char *                              logfilename;
-    int                                 log_filemode;
+    char *                              log_filemode;
     char *                              logunique;
     char *                              log_level;
     int                                 log_mask = 0;
@@ -141,9 +141,11 @@ globus_i_gfs_log_open()
         if(logfilename != NULL)
         {            
             globus_l_gfs_log_file = fopen(logfilename, "a"); 
-            if((log_filemode = globus_i_gfs_config_int("log_filemode")) != 0)
+            if((log_filemode = globus_i_gfs_config_string("log_filemode")) != NULL)
             {
-                chmod(logfilename, log_filemode);
+                int                     mode = 0;
+                mode = strtoul(log_filemode, NULL, 0);
+                chmod(logfilename, mode);
             }
             globus_free(logfilename);
         }
@@ -167,9 +169,11 @@ globus_i_gfs_log_open()
     {
         globus_l_gfs_transfer_log_file = fopen(logfilename, "a"); 
         setvbuf(globus_l_gfs_transfer_log_file, NULL, _IOLBF, 0);
-        if((log_filemode = globus_i_gfs_config_int("log_filemode")) != 0)
+        if((log_filemode = globus_i_gfs_config_string("log_filemode")) != 0)
         {
-            chmod(logfilename, log_filemode);
+            int                     mode = 0;
+            mode = strtoul(log_filemode, NULL, 0);
+            chmod(logfilename, mode);
         }
         globus_free(logfilename);
     }

@@ -130,7 +130,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "in which case logging will be disabled.", NULL, NULL},
  {"log_transfer", "log_transfer", NULL, "log-transfer", "Z", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Log netlogger style info for each transfer into this file.", NULL, NULL},
- {"log_filemode", "log_filemode", NULL, "log-filemode", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+ {"log_filemode", "log_filemode", NULL, "log-filemode", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "File access permissions of log files. Should be an octal number such as "
     "0644 (the leading 0 is required).", NULL, NULL},
  {"disable_usage_stats", "disable_usage_stats", "GLOBUS_USAGE_OPTOUT", "disable-usage-stats", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,

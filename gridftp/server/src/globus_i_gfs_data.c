@@ -4714,7 +4714,17 @@ globus_gridftp_server_operation_finished(
             op->session_handle->session_arg =
                 (void *) finished_info->info.session.session_arg;
             finished_info->info.session.session_arg = op->session_handle;
-            /* XXX should set username and homedir to this process if null? */
+            if(finished_info->info.session.username == NULL)
+            {
+                finished_info->info.session.username = 
+                    op->session_handle->username;
+            }
+            if(finished_info->info.session.home_dir == NULL)
+            {
+                finished_info->info.session.home_dir = 
+                    op->session_handle->home_dir;
+            }
+
             break;
 
         case GLOBUS_GFS_OP_PASSIVE:
