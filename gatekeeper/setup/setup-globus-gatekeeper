@@ -13,7 +13,7 @@ if test ! -f ${sysconfdir}/globus-gatekeeper.conf; then
 	-home $GLOBUS_LOCATION
 	-e libexec
 	-logfile var/globus-gatekeeper.log
-	-port 2911
+	-port 2119
 	-grid_services etc/grid-services
 	-inetd
 EOF
