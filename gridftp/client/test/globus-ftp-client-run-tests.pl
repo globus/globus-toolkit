@@ -122,7 +122,7 @@ sub setup_server()
         $server_nosec = "-aa";
     }
 
-    my $server_args = "-nofork -no-chdir -d 0 -p $server_port $server_nosec";
+    my $server_args = "-no-fork -no-chdir -d 0 -p $server_port $server_nosec";
     
     if(!defined($nogsi))
     {
