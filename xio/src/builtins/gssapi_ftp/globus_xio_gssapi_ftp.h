@@ -8,10 +8,12 @@ typedef enum  globus_i_xio_gssapi_ftp_state_s
     /* starting state for both client and server */
     GSSAPI_FTP_STATE_NONE,
     /* server auhenticating states */
+    GSSAPI_FTP_STATE_SERVER_SENDING_220,
     GSSAPI_FTP_STATE_SERVER_READING_AUTH,
     GSSAPI_FTP_STATE_SERVER_GSSAPI_READ,
     GSSAPI_FTP_STATE_SERVER_READING_ADAT,
     GSSAPI_FTP_STATE_SERVER_ADAT_REPLY,
+    GSSAPI_FTP_STATE_SERVER_QUITING,
                                                                                 
     /* client authenticating states */
     GSSAPI_FTP_STATE_CLIENT_READING_220,
@@ -88,7 +90,7 @@ while(0)
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_GSSAPI_FTP_ERROR_ALLOC,                              \
             "[%s:%d] Authentication Error: %s",                             \
-            _xio_name, __LINE__))
+            _xio_name, __LINE__, str))
 
 
 
