@@ -188,6 +188,28 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	if (authctxt == NULL || (authctxt->methoddata == NULL && !use_privsep))
                 fatal("No authentication or GSSAPI context");
                 
+	if ((strcmp(authctxt->user, "") == 0) && (authctxt->pw == NULL)) {
+	    char *lname = NULL;
+	    PRIVSEP(ssh_gssapi_localname(&lname));
+	    if (lname && lname[0] != '\0') {
+		xfree(authctxt->user);
+		authctxt->user = lname;
+		debug("set username to %s from gssapi context", lname);
+		authctxt->pw = PRIVSEP(getpwnamallow(authctxt->user));
+	    } else {
+		debug("failed to set username from gssapi context");
+	    }
+	}
+	if (authctxt->pw) {
+#ifdef USE_PAM
+	    PRIVSEP(start_pam(authctxt->pw->pw_name));
+#endif
+	} else {
+	    authctxt->valid = 0;
+	    authenticated = 0;
+	    goto finish;
+	}
+
         gssctxt=authctxt->methoddata;
 
 	/* ssh1 needs to exchange the hash of the keys */
@@ -219,6 +241,7 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 
         authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
 
+finish:
         authctxt->postponed = 0;
         dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
         dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, NULL);
