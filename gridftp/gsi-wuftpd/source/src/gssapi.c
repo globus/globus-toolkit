@@ -62,6 +62,8 @@ static gss_ctx_id_t gcontext = GSS_C_NO_CONTEXT;
 /* Identity of authenticated client */
 static gss_buffer_desc client_name = { 0, NULL };
 
+static char * group_info = NULL;
+
 #ifndef NUL
 #define	NUL	'\0'
 #endif /* NUL */
@@ -756,11 +758,15 @@ gssapi_handle_auth_data(char *data, int length)
 {
     int replied = 0;			/* Have we replied */
     int rc;
+    int i;
     static gss_name_t client;
     OM_uint32 ret_flags = 0;
     struct gss_channel_bindings_struct *pchan;
 #ifndef GSSAPI_GLOBUS
     struct gss_channel_bindings_struct chan;
+#else
+    gss_buffer_set_t client_group = GSS_C_NO_BUFFER_SET;
+    gss_OID_set subgroup_types = GSS_C_NO_OID_SET;
 #endif /* !GSSAPI_GLOBUS */
 
     OM_uint32 accept_maj;
@@ -901,10 +907,47 @@ gssapi_handle_auth_data(char *data, int length)
 	    syslog(LOG_ERR, "gssapi error extracting identity");
 	    return -1;
 	}
-
+        
 	if (debug)
 	    syslog(LOG_INFO, "Client identity is: %s", client_name.value);
 
+#ifdef GSSAPI_GLOBUS
+        stat_maj = gss_get_group(&stat_min, client,
+                                 &client_group, &subgroup_types);
+
+	if (stat_maj != GSS_S_COMPLETE) {
+	    gssapi_reply_error(535, stat_maj, stat_min,
+			       "extracting GSSAPI group");
+	    syslog(LOG_ERR, "gssapi error extracting group");
+	    return -1;
+	}
+        
+        if(client_group != NULL)
+        {
+            syslog(LOG_INFO,
+                   "Client identity %s is in the following group:",
+                   client_name.value);
+
+            for(i=0;i<client_group->count;i++)
+            {
+                if(g_OID_equal((gss_OID) &subgroup_types->elements[i],
+                               gss_untrusted_group))
+                {
+                    syslog(LOG_INFO,
+                           "\tUntrusted subgroup %s\n",
+                           (char *) client_group->elements[i].value);
+                }
+                else
+                {
+                    syslog(LOG_INFO,
+                           "\tTrusted subgroup %s\n",
+                           (char *) client_group->elements[i].value);
+                }   
+            }
+
+        }
+#endif
+        
 	/* If the server accepts the security data, but does
 	   not require any additional data (i.e., the security
 	   data exchange has completed successfully), it must
