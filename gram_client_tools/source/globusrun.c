@@ -446,6 +446,29 @@ static int arg_f_mode = O_RDONLY;
 	    globus_libc_fprintf(stderr, "Error initializing globus\n");
 	    return 1;
 	}
+        
+	if (strrchr(argv[0],'/'))
+	    program = strrchr(argv[0],'/') + 1;
+	else
+	    program = argv[0];
+
+	globusrun_i_args_init();
+
+	if ( 0 > globus_args_scan( &argc,
+				   &argv,
+				   arg_num,
+				   args_options,
+				   "globusrun",
+				   &local_version,
+				   oneline_usage,
+				   long_usage,
+				   &options_found,
+				   GLOBUS_NULL   ) )  /* error on argument line */
+	{
+	    globus_module_deactivate_all();
+	    exit(-1);
+	}
+
         err = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
         if ( err != GLOBUS_SUCCESS )
         {
@@ -482,29 +505,6 @@ static int arg_f_mode = O_RDONLY;
             globus_module_deactivate_all();
             return 1;
         }
-        
-	if (strrchr(argv[0],'/'))
-	    program = strrchr(argv[0],'/') + 1;
-	else
-	    program = argv[0];
-
-	globusrun_i_args_init();
-
-	if ( 0 > globus_args_scan( &argc,
-				   &argv,
-				   arg_num,
-				   args_options,
-				   "globusrun",
-				   &local_version,
-				   oneline_usage,
-				   long_usage,
-				   &options_found,
-				   GLOBUS_NULL   ) )  /* error on argument line */
-	{
-	    globus_module_deactivate_all();
-	    exit(-1);
-	}
-
 	/* maximum one unflagged argument should remain: the RSL string */
 	if (argc > 2)
 	{
