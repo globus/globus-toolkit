@@ -482,7 +482,7 @@ globus_l_gsc_cmd_cwd(
     void *                                  user_arg)
 {
     globus_result_t                         res;
-    int                                     mask = 0;
+    int                                     mask = GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY;
     char *                                  path = NULL;
     GlobusGridFTPServerName(globus_l_gsc_cmd_cwd);
 
@@ -587,7 +587,7 @@ globus_l_gsc_cmd_stat(
     void *                                  user_arg)
 {
     /* these are really just place holders in the list */
-    int                                     mask = 0;
+    int                                     mask = GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY;
     char *                                  msg = NULL;
     char *                                  path;
     globus_result_t                         res;
@@ -685,7 +685,7 @@ globus_l_gsc_cmd_size(
 {
     /* these are really just place holders in the list */
     char *                                  path = NULL;
-    int                                     mask = 0;
+    int                                     mask = GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_l_gsc_cmd_size);
 

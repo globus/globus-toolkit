@@ -236,7 +236,10 @@ globus_l_gfs_file_resource(
             {
                 result = GlobusGFSErrorSystemError("stat", errno);
                 globus_free(dir_entry);
-                goto error_stat2;
+                /* just skip invalid entries */
+                stat_count--;
+                i--;
+                continue;
             }
             
             globus_l_gfs_file_copy_stat(
