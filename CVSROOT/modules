@@ -113,7 +113,8 @@ ws -a \
 	ws-transfer\
 	ws-cas\
 	ws-delegation\
-	wsrf
+	wsrf\
+	database
 
 wsc -a \
 	ogsa-c\
