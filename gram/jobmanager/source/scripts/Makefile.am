@@ -32,6 +32,13 @@ install-data-local:
 	    $(INSTALL_DATA) $$manpage $(DESTDIR)$(MAN_DIR)/Globus::GRAM::$$manpage; \
 	done
 
+filelist-noinstDATA: filelist-man
+
+filelist-man:
+	@list='$(noinst_DATA)'; for p in $$list; do \
+		echo "$(DESTDIR)$(MAN_DIR)/$$p" >> $(FILELIST_FILE); \
+	done
+
 MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)
 
 include $(top_srcdir)/globus_automake_post
