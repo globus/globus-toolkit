@@ -61,7 +61,6 @@ CVS Information:
 #define GLOBUS_L_GASS_CACHE_L_LENGHT        40    
 
 #define GLOBUS_L_GASS_CACHE_NULL_TAG "null"
-#define COMMENT_LENGHT       80
 
 #define GLOBUS_L_GASS_CACHE_COMMIT    0
 #define GLOBUS_L_GASS_CACHE_ABORT     -1

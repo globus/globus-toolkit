@@ -60,14 +60,20 @@ Codes returned by globus_gass_cache module
 #define GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED       -17
 #define GLOBUS_GASS_CACHE_ERROR_CACHE_ALREADY_OPENED   -18
 #define GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER     -19
+#define GLOBUS_GASS_CACHE_ERROR_INVALID_VERSION        -20
 
 
 #if !defined(FILENAME_MAX) && defined(MAXPATHLEN)
 #   define FILENAME_MAX MAXPATHLEN
 #endif
 /******************************************************************************
-Types
+Other definitions
 ******************************************************************************/
+
+#define COMMENT_LENGHT       80
+
+#define GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION     1
+
 
 /******************************************************************************
 globus_gass_cache_t:
@@ -78,7 +84,11 @@ globus_gass_cache_t:
 
 typedef struct
 {
-    void*          init;   /* to know if this cache has been opened/init.    */
+    void*          init;   /* dirty hack to know if this cache has
+			      been opened/init.    */
+    char           comment[COMMENT_LENGHT];
+    int            version;  /* version number read out of the state file */
+    
     char           cache_directory_path[FILENAME_MAX+1];
     
     /* just to not have to biuld them every time: */

@@ -50,8 +50,8 @@ CVS Information:
 #include <stdlib.h>
 #include <fcntl.h>
 
-#include "globus_gass_cache.h"
 #include "globus_i_gass_cache.h"
+#include "globus_gass_cache.h"
 
 /*
  * If compilled with LOCK_TOUT defined, the lock will timeout after
@@ -105,7 +105,8 @@ globus_gass_cache_error_strings[] =
     "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DELETE_DATA_F",
     "GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENEDED",
     "GLOBUS_GASS_CACHE_ERROR_CACHE_ALREADY_OPENED",
-    "GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER"
+    "GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER",
+    "GLOBUS_GASS_CACHE_ERROR_INVALID_VERSION"
 };
 
 
@@ -251,6 +252,52 @@ globus_l_gass_cache_trace(char* source_file,
     
 } /* globus_l_gass_cache_trace */
 
+/******************************************************************************
+Function: globus_l_gass_cache_write_comment()
+
+Description: Write the first line of the file containning the version of
+             the format of the stat file and a comment.
+   
+Parameters: input:
+               cache_handle : handler to the chache directory to use.
+	           cache_handle->comment  and
+
+	    output:
+	       none
+Returns: 
+            GLOBUS_SUCCESS or
+	    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen.     
+******************************************************************************/
+
+static int
+globus_l_gass_cache_write_comment(globus_gass_cache_t*  cache_handle,
+				  int fd)
+{
+    /* In future version, We should take care of backward compatibility,
+     * and eventually write an other version number, but for now
+     * we do not care
+     */
+    globus_libc_sprintf(
+	cache_handle->comment,
+	"%s%5u%-65s",
+	"-Version ",
+	GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION,
+	" # Gass_cache state file - DO NOT MODIFY ! ");
+    cache_handle->comment[sizeof(cache_handle->comment)-1] = '\n';
+    
+    while (write(fd,
+		 cache_handle->comment,sizeof(cache_handle->comment))
+	   != sizeof(cache_handle->comment))
+    {
+	if (errno != EINTR)
+	{
+	    CACHE_TRACE("Error writing state file");
+	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	}
+    }
+    return(GLOBUS_SUCCESS);
+
+}   /* globus_l_gass_cache_write_comment */
 
 /******************************************************************************
 Function: globus_l_gass_cache_write_one_str()
@@ -919,21 +966,13 @@ globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
     char entry_separator[2];	/* eache entry is preceded by   */
 				/* a line containing #\n        */
-    char comment[COMMENT_LENGHT];
   
     /* Write the  comment */
-    globus_libc_sprintf(comment,
-			"%-79s","# Gass_cache state file. Do not modify ! ");
-    comment[sizeof(comment)-1] = '\n';
-
-    while (write(cache_handle->temp_file_fd,comment,sizeof(comment))
-	   != sizeof(comment))
+    rc = globus_l_gass_cache_write_comment(cache_handle,
+					   cache_handle->temp_file_fd);
+    if (rc != GLOBUS_SUCCESS)
     {
-	if (errno != EINTR)
-	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-	}
+	return(rc);
     }
     
     *return_entry = NULL;   /* initialised to "not found" */
@@ -1107,6 +1146,8 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked)
 			    CACHE_TRACE2("Could not remove lock file %s",lock_file);
 			    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 			}
+			if (errno == ENOENT )
+			    break;
 		    }
 		    return_code=GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT;
 		}
@@ -1202,20 +1243,24 @@ globus_l_gass_cache_unlock_file(char* file_to_be_locked)
     /* remove the lock */
     while (unlink(lock_file) != 0 )
     {
-	if (errno != EINTR)
+	if (errno != EINTR && errno != ENOENT )
 	{
 	    CACHE_TRACE("Could not remove lock file");
 	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 	}
+	if (errno == ENOENT )
+	    break;
     }
     while ( unlink(uniq_lock_file) != 0 )
     {
-	if (errno != EINTR)
+	if (errno != EINTR && errno != ENOENT)
 	{
 	    /* it strangely happens that the file is not here any more */
 	    /* well, all my  test seems to show it work like this......*/
 	    break;
 	}
+	if (errno == ENOENT )
+	    break;
     }
     
     return(GLOBUS_SUCCESS); 
@@ -1246,9 +1291,11 @@ Parameters: input:
 	       cache_handle->temp_file_fd : file descriptor of an open
 		    temporary cache state file into which every modification
 		    made to the cache state file is stored. Used to prevent
-		    cache state file corruption in case of proglobus_gramm crash.
+		    cache state file corruption in case of proglobus_gramm
+		    crash.
 		    the temporary file will "atomically" overwrite the
-		    cache state file by the function globus_l_gass_cache_unlock_close()
+		    cache state file by the function
+		    globus_l_gass_cache_unlock_close()
 		   
 	       cache_handle->nb_entries  : If the cache state file was empty,
 	            this variable is initialised to 0 (zero).
@@ -1262,7 +1309,6 @@ Returns: GLOBUS_SUCCESS or error code:
 static int
 globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
 {
-    char comment[COMMENT_LENGHT]; /* to read the header-comment line */
     int rc;
 
     rc =globus_l_gass_cache_lock_file(cache_handle->state_file_path);
@@ -1288,10 +1334,10 @@ globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
     do
     {
 	rc = read( cache_handle->state_file_fd,
-		    comment,
-		    sizeof(comment));
+		    cache_handle->comment,
+		    sizeof(cache_handle->comment));
     
-        if (rc!=sizeof(comment))
+        if (rc!=sizeof(cache_handle->comment))
 	{
 	    
 	    if (rc == -1 &&errno == EINTR)
@@ -1304,31 +1350,30 @@ globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
 		/* initialise the number of entries */
 		cache_handle->nb_entries=0;
 		/* Write the  comment */
-		globus_libc_sprintf(
-		    comment,
-		    "%-79s","# Gass_cache state file. Do not modify ! ");
-		comment[sizeof(comment)-1] = '\n';
-
-		while (write(cache_handle->state_file_fd,
-			     comment,sizeof(comment))
-		       != sizeof(comment))
-		{
-		    if (errno != EINTR)
-		    {
-			CACHE_TRACE("Error writing state file");
-			return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-		    }
-		}
-		
-		rc = globus_l_gass_cache_write_nb_entries(cache_handle->state_file_fd,
-						  0);
+		rc = globus_l_gass_cache_write_comment(
+		    cache_handle,
+		    cache_handle->state_file_fd);
 		if (rc != GLOBUS_SUCCESS)
 		{
+		    globus_l_gass_cache_unlock_close(
+			cache_handle,
+			GLOBUS_L_GASS_CACHE_ABORT);
+		    return(rc);
+		}
+		/* write the number of entry, 0 */
+		rc = globus_l_gass_cache_write_nb_entries(
+		    cache_handle->state_file_fd,
+		    0);
+		if (rc != GLOBUS_SUCCESS)
+		{
+		    globus_l_gass_cache_unlock_close(
+			cache_handle,
+			GLOBUS_L_GASS_CACHE_ABORT);
 		    return(rc);
 		}
 		lseek(cache_handle->state_file_fd, 0,SEEK_SET);
 		/*
-		rc=sizeof(comment);
+		rc=sizeof(cache_handle->comment);
 		*/
 		continue;
 		
@@ -1336,15 +1381,50 @@ globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
 	    else
 	    {
 		CACHE_TRACE("Error reading  state file");
+		globus_l_gass_cache_unlock_close(
+		    cache_handle,
+		    GLOBUS_L_GASS_CACHE_ABORT);
 		return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_READ);
 	    }
 	}
 	else
 	{
 	    /* comment read correctly */
-	    comment[sizeof(comment)-1]='\0';
+	    cache_handle->comment[sizeof(cache_handle->comment)-1]='\0';
+	    /* verify the version number */
+	    if (strncmp(cache_handle->comment,"# Gass_cache state file",23))
+	    {
+		int nbfield_scanned;
+
+		nbfield_scanned = sscanf(cache_handle->comment,
+					 "-Version %5u",
+					 &cache_handle->version);
+		if (nbfield_scanned != 1)
+		{
+		    globus_l_gass_cache_unlock_close(
+			cache_handle,
+			GLOBUS_L_GASS_CACHE_ABORT);
+		    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
+		}
+		
+		if (cache_handle->version >
+		    GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION)
+		{
+		    globus_l_gass_cache_unlock_close(
+			cache_handle,
+			GLOBUS_L_GASS_CACHE_ABORT);
+		    return(GLOBUS_GASS_CACHE_ERROR_INVALID_VERSION);
+		}
+		
+	    }
+	    else /* version beta has no version number and is equivalent to */
+		 /* version 1 */               
+	    {
+		cache_handle->version = 1;
+	    }
+	    
 	}
-    } while (rc!=sizeof(comment));
+    } while (rc!=sizeof(cache_handle->comment)); /* just to handle the EINTR */
     
     GLOBUS_L_GASS_CACHE_LG("State file opened");
     cache_handle->temp_file_fd = open(cache_handle->temp_file_path,
@@ -1354,8 +1434,9 @@ globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
     {
 	GLOBUS_L_GASS_CACHE_LG(
 	    "Could not open/create the temporary state file");
-	close(cache_handle->state_file_fd);
-	globus_l_gass_cache_unlock_file(cache_handle->state_file_path);
+	globus_l_gass_cache_unlock_close(
+	    cache_handle,
+	    GLOBUS_L_GASS_CACHE_ABORT);
 	return(GLOBUS_GASS_CACHE_ERROR_OPEN_STATE);
     }
 
@@ -1419,18 +1500,24 @@ globus_l_gass_cache_unlock_close(globus_gass_cache_t*  cache_handle,
 		return(rc);
 	    }
     }
-    if (close(cache_handle->state_file_fd) <0)
+    if (cache_handle->state_file_fd >0 )
     {
-	GLOBUS_L_GASS_CACHE_LG("Error closing the state file");
-	/* do not return: we want to [try to] unlock it any way */
+	if (close(cache_handle->state_file_fd) <0)
+	{
+	    GLOBUS_L_GASS_CACHE_LG("Error closing the state file");
+	    /* do not return: we want to [try to] unlock it any way */
+	}
+	cache_handle->state_file_fd = -1;
     }
-    
-    if (close(cache_handle->temp_file_fd) <0)
+    if (cache_handle->temp_file_fd>0 )
     {
-	GLOBUS_L_GASS_CACHE_LG("Error closing the temporary state file");
-	/* do not return: we want to [try to] unlock it any way */
+	if (close(cache_handle->temp_file_fd) <0)
+	{
+	    GLOBUS_L_GASS_CACHE_LG("Error closing the temporary state file");
+	    /* do not return: we want to [try to] unlock it any way */
+	}
+	cache_handle->temp_file_fd = -1;
     }
-
     if (!abort)                    /* if (abort=GLOBUS_SUCCESS) */
     {
 	if (rename(cache_handle->temp_file_path,cache_handle->state_file_path))
@@ -1515,7 +1602,14 @@ globus_gass_cache_open(char                *cache_directory_path,
     int         state_f_fd;	/* to open/create the state file          */
     struct stat cache_dir_stat;   
 
+    struct passwd pwd;          /* to get the user home dir.              */
+    struct passwd *pw;          /* to get the user home dir.              */
+    char buf[1024];             /* to get the user home dir.              */
+
     CHECK_CACHE_IS_NOT_INIT();
+
+    cache_handle->state_file_fd = -1;
+    cache_handle->temp_file_fd = -1;
     
     /* look for the correct directory path */
 
@@ -1561,13 +1655,33 @@ globus_gass_cache_open(char                *cache_directory_path,
 		    pt = GLOBUS_NULL;
 		}
 	    }
-    
+	    if (pt == GLOBUS_NULL)
+	    {
+		/* ok, we can also try to look in the passwd file */
+		struct passwd pwd;
+		struct passwd *pw;
+		char buf[1024];
+		
+		globus_libc_getpwuid_r(getuid(),
+				       &pwd,
+				       buf,
+				       1024,
+				       &pw);
+		pt = pw->pw_dir;
+		f_name_lenght=strlen(pt);
+		if ( f_name_lenght == 0)
+		{
+		    pt = GLOBUS_NULL;
+		}
+	    }
+	    
 	    if (pt == GLOBUS_NULL)
 	    {
 		/* $HOME not defined or null ! this should not happen */
 		CACHE_TRACE("HOME not defined or empty");
 		return ( GLOBUS_GASS_CACHE_ERROR_NO_HOME );
 	    }
+	    
 	    if ((f_name_lenght +
 		 sizeof(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME))>=FILENAME_MAX)
 	    {
@@ -1727,9 +1841,22 @@ globus_gass_cache_open(char                *cache_directory_path,
     GLOBUS_L_GASS_CACHE_LG("Cache Opened");
     /* to simply check if the cache has been open, in any other function */
     cache_handle->init = &globus_l_gass_cache_is_init;
+
+    /* just to check the version number */
+       rc = globus_l_gass_cache_lock_open(cache_handle);
+       if (rc != GLOBUS_SUCCESS)
+       {
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT);
+	   /* marque this handle as not opened */
+	   cache_handle->init=&globus_l_gass_cache_is_not_init;
+	   
+	   return(rc);
+       }
+       return(globus_l_gass_cache_unlock_close(cache_handle,
+					GLOBUS_L_GASS_CACHE_ABORT));
     
-    return(GLOBUS_SUCCESS);
-} /*  globus_gass_cache_open() */
+    } /*  globus_gass_cache_open() */
 
 
 
@@ -3120,6 +3247,8 @@ globus_gass_cache_list(globus_gass_cache_t        *cache_handle,
 	if (errno != EINTR)
 	{
 	    CACHE_TRACE("Error reading state file");
+	    globus_l_gass_cache_unlock_close(cache_handle,
+					     GLOBUS_L_GASS_CACHE_ABORT);
 	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 	}
     }
@@ -3179,6 +3308,8 @@ globus_gass_cache_list(globus_gass_cache_t        *cache_handle,
 						&entry_pt);
 	if (rc != GLOBUS_SUCCESS)
 	{
+	    globus_l_gass_cache_unlock_close(cache_handle,
+					     GLOBUS_L_GASS_CACHE_ABORT);
 	    return (rc);
 	}
     }
