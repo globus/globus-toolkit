@@ -43,12 +43,12 @@ typedef enum {
 /******************************************************************************
                              Module specific prototypes
 ******************************************************************************/
-static void globus_l_cache_remote_op(globus_l_cache_op_t op,
+static int globus_l_cache_remote_op(globus_l_cache_op_t op,
 			             char *tag,
 			             char *url,
 				     char *name,
 			             char *rm_contact);
-static void globus_l_cache_local_op(globus_l_cache_op_t op,
+static int globus_l_cache_local_op(globus_l_cache_op_t op,
 			            char *tag,
 			            char *url,
 				    char *name);
@@ -63,6 +63,7 @@ static char *globus_l_cache_url_arg(char *url);
 static globus_mutex_t globus_l_cache_monitor_mutex;
 static globus_cond_t  globus_l_cache_monitor_cond;
 static globus_bool_t  globus_l_cache_monitor_done = GLOBUS_FALSE;
+static globus_bool_t  globus_l_cache_status = 0;
 
 
 static char * oneline_usage = 
@@ -367,14 +368,18 @@ main(int argc, char **argv)
 
     if (resource)
     {
-	globus_l_cache_remote_op(op, tag, url, name, resource);
+	rc = globus_l_cache_remote_op(op, tag, url, name, resource);
     }
     else
     {
-	globus_l_cache_local_op(op, tag, url, name);
+	rc = globus_l_cache_local_op(op, tag, url, name);
     }
-    return 0;
-} /* main() */
+
+    globus_module_deactivate_all();
+
+    return rc;
+}
+/* main() */
 
 
 /******************************************************************************
@@ -512,6 +517,7 @@ globus_l_cache_callback_func(void *arg,
     {
 	globus_mutex_lock(&globus_l_cache_monitor_mutex);
 	globus_l_cache_monitor_done = GLOBUS_TRUE;
+	globus_l_cache_status = errorcode;
 	globus_cond_signal(&globus_l_cache_monitor_cond);
 	globus_mutex_unlock(&globus_l_cache_monitor_mutex);
     }
@@ -526,7 +532,8 @@ Parameters:
 
 Returns: 
 ******************************************************************************/
-static void
+static
+int
 globus_l_cache_remote_op( globus_l_cache_op_t op,
 			  char *              tag,
 			  char *              url,
@@ -543,6 +550,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     globus_gass_transfer_listener_t           listener;
     globus_gass_transfer_listenerattr_t *     attr              = GLOBUS_NULL;
     globus_gass_transfer_requestattr_t *      reqattr           = GLOBUS_NULL;
+    int					return_code = GLOBUS_SUCCESS;
     
     
 
@@ -605,7 +613,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     if(rc != GLOBUS_SUCCESS)
     {
 	globus_libc_printf("Error submitting remote cache request\n");
-	return ;
+	return GLOBUS_FAILURE;
     }
     while(!globus_l_cache_monitor_done)
     {
@@ -625,19 +633,22 @@ Parameters:
 
 Returns: 
 ******************************************************************************/
-static void
-globus_l_cache_local_op( globus_l_cache_op_t op,
-	                 char *              tag,
-	                 char *              url,
-			 char *              name)
+static
+int
+globus_l_cache_local_op(
+    globus_l_cache_op_t			op,
+    char *				tag,
+    char *				url,
+    char *				name)
 {
-    globus_gass_cache_entry_t *  entries;
-    globus_gass_cache_t          cache_handle;
-    unsigned long                timestamp;
-    char *                       local_filename;
-    int                          rc;
-    int                          i;
-    int                          size             = 0;
+    globus_gass_cache_entry_t *		entries;
+    globus_gass_cache_t			cache_handle;
+    unsigned long			timestamp;
+    char *				local_filename;
+    int					rc;
+    int					i;
+    int					size = 0;
+    int					return_value = GLOBUS_SUCCESS;
     
     rc = globus_gass_cache_open(GLOBUS_NULL, &cache_handle);
     if(rc != GLOBUS_SUCCESS)
@@ -645,7 +656,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 	globus_libc_fprintf(stderr,
 			    "ERROR: Could not open GASS cache because %s\n",
 			    globus_gass_cache_error_string(rc));
-	return;
+	return GLOBUS_FAILURE;
     }
     
     switch(op)
@@ -697,6 +708,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 					      tag,
 					      timestamp,
 					      GLOBUS_TRUE);
+		return_value = GLOBUS_FAILURE;
 	    }
 	    else
 	    {
@@ -709,7 +721,8 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
             {
                 globus_libc_printf("Could not unlock cache entry because %s\n",
                                    globus_gass_cache_error_string(rc));
-            }
+		return_value = GLOBUS_FAILURE;
+	    }
 	}
 	else
 	{
@@ -731,6 +744,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 	    globus_libc_fprintf(stderr,
 				"Could not delete cache entry because %s\n",
 				globus_gass_cache_error_string(rc));
+	    return_value = GLOBUS_FAILURE;
 	}
 	rc = globus_gass_cache_delete(&cache_handle,
 			              url,
@@ -742,6 +756,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 	    globus_libc_fprintf(stderr,
 				"Could not unlock cache entry because %s\n",
 				globus_gass_cache_error_string(rc));
+	    return_value = GLOBUS_FAILURE;
 	}
 	break;
 
@@ -758,6 +773,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 				    "Listing cache entries failed because "
 				    "%s, cannot clean up tag\n",
 				    globus_gass_cache_error_string(rc));
+		return_value = GLOBUS_FAILURE;
 		break;
 	    }
             for(i = 0; i < size; i++)
@@ -780,6 +796,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 					"URL %s because %s\n",
 					entries[i].url,
 					globus_gass_cache_error_string(rc));
+		    return_value = GLOBUS_FAILURE;
 		}
 	    }
 	    globus_gass_cache_list_free(entries, size);
@@ -794,6 +811,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 		globus_libc_fprintf(stderr,
 				    "Could not clean up tag because %s\n",
 				    globus_gass_cache_error_string(rc));
+		return_value = GLOBUS_FAILURE;
 	    }
 	}
 	break;
@@ -806,6 +824,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 	    globus_libc_fprintf(stderr,
 				"Could not clean up file because %s\n",
 				globus_gass_cache_error_string(rc));
+	    return_value = GLOBUS_FAILURE;
 	}
 	break;
 
@@ -818,6 +837,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 	    globus_libc_fprintf(stderr,
 				"Could not list cache entries because %s\n",
 				globus_gass_cache_error_string(rc));
+	    return_value = GLOBUS_FAILURE;
 	    break;
 	}
 
@@ -860,7 +880,8 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 	    globus_libc_fprintf(stderr,
 				"Could not query cache because %s\n",
 				globus_gass_cache_error_string(rc));
-	    return;
+	    return_value = GLOBUS_FAILURE;
+	    break;
 	}
 	globus_free(local_filename);
 	break;
@@ -869,7 +890,9 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
     }
     globus_gass_cache_close(&cache_handle);
 
-} /* globus_l_cache_local_op() */
+    return return_value;
+}
+/* globus_l_cache_local_op() */
 
 /******************************************************************************
 Function: globus_l_cache_print_url()
@@ -886,12 +909,26 @@ globus_l_cache_print_url(globus_gass_cache_entry_t *entry,
 {
     unsigned long j;
     globus_bool_t print_all_tags=GLOBUS_FALSE;
+    globus_bool_t found_tag = GLOBUS_FALSE;
 
     if(tag == GLOBUS_NULL)
     {
 	print_all_tags = GLOBUS_TRUE;
     }
-
+    else
+    {
+	for(j = 0; j < entry->num_tags; j++)
+	{
+	    if(strcmp(tag, entry->tags[j].tag) == 0)
+	    {
+		found_tag = GLOBUS_TRUE;
+	    }
+	}
+	if(!found_tag)
+	{
+	    return;
+	}
+    }
     printf("%s\n", entry->url);
     for(j = 0; j < entry->num_tags; j++)
     {
