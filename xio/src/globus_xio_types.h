@@ -73,6 +73,7 @@ typedef enum
 } globus_xio_error_type_t;
 
 
+/* ALL is all but ACCEPT */
 typedef enum
 {
     GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL,
