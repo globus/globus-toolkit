@@ -68,12 +68,12 @@ my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $inplace, $gt2dir, $gt3dir, $doxygen,
-    $deps ) =
+    $deps, $graph ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
     0, 0, "", "", 0,
-    0);
+    0, 0);
 
 my @user_bundles;
 my @user_packages;
@@ -102,6 +102,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'inplace!' => \$inplace,
 	    'doxygen!' => \$doxygen,
 	    'd|deps!' => \$deps,
+	    'graph!' => \$graph,
 	    'help|?' => \$help,
 	    'man' => \$man,
 ) or pod2usage(2);
@@ -239,7 +240,17 @@ sub generate_dependency_tree()
     if ( $deps )
     {
 	install_gpt();
+	if ( $graph )
+	{
+	    open(GRAPH, ">$top_dir/dotty.out");
+	    print GRAPH "digraph G {\n";
+        }
 	import_package_dependencies(%package_build_hash);
+	if ( $graph )
+	{
+	    print GRAPH "}";
+	    close GRAPH;
+        }
     }
 }
 
@@ -263,7 +274,7 @@ sub import_package_dependencies
 	    if ( ! -e "$cvs_dir/tarfiles/$tarfile" )
 	    {
 		print "checking out $cvs_dir/tarfiles/$tarfile\n";
-		cvs_checkout_subdir( $cvs_dir, "tarfiles/$tarfile" );
+		cvs_checkout_subdir( $cvs_dir, "tarfiles/$tarfile") unless $noupdates;
 	    }
 	}
 
@@ -272,17 +283,27 @@ sub import_package_dependencies
 	{
 	    $metadatafile = package_subdir($pack) . "/pkg_data_src.gpt";
 	}
+	if ( ! -e $metadatafile )
+	{
+	    $metadatafile = package_subdir($pack) . "/pkgdata/pkg_data_src.gpt";
+	}
 
 	require Grid::GPT::V1::Package;
 	my $pkg = new Grid::GPT::V1::Package;
 	
+	print "Reading in metadata for $pack.\n";
 	$pkg->read_metadata_file("$metadatafile");
 	for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}})
 	{
+ 	    print GRAPH "$pack -> $dep;\n" if $graph;
+	    next if $graph and ($dep =~ /setup/ or $dep =~ /rips/);
+
 	    # if we don't have $dep in our hash, add it and iterate
 	    if ( ($package_build_hash{$dep} ne 1) and 
 		 ( $dep ne "trusted_ca_setup") and
-		 ( $dep ne "globus_gram_job_manager_service_setup") )
+		 ( $dep ne "globus_gram_job_manager_service_setup") and
+		 ( $dep ne "mmjfs_service_setup") and
+		 ( $dep ne "mjs_service_setup") )
 	    {
 		$package_build_hash{$dep} = 1;
 		$new_hash{$dep} = 1;
