@@ -191,12 +191,14 @@ fi
 
 if [ ! -d "${secconfdir}" ] || [ ! -d "${trusted_certs_dir}" ]; then
     echo 
-    echo "There does not appear to be a valid grid security onfiguration"
+    echo "There does not appear to be a valid grid security configuration"
     echo "located at ${secconfdir}."
     echo "To specify a different location where the grid security"
     echo "configuration files where installed, use the -dir option or"
     echo "set the GRID_SECURITY_DIR environment variable."
-    echo
+    echo ""
+    echo "X509_CERT_DIR may also need to be set as well."
+    echo ""
     exit 1
 fi
 
