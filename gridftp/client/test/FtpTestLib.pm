@@ -188,7 +188,7 @@ sub setup_proto()
 {
     my $proto = "gsiftp://";
     
-    if($ENV{FTP_TEST_NO_GSI})
+    if(defined($ENV{FTP_TEST_NO_GSI}))
     {
         $proto = "ftp://";
     }
