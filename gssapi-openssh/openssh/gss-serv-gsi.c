@@ -149,7 +149,8 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 	}
 	client->store.envval = strdup(p);
 #ifdef USE_PAM
-	do_pam_putenv(client->store.envvar, client->store.envval);
+	if (options.use_pam)
+	    do_pam_putenv(client->store.envvar, client->store.envval);
 #endif
 	if (strncmp(p, "FILE:", 5) == 0) {
 	    p += 5;
