@@ -2147,10 +2147,10 @@ globus_l_xio_gsi_write_cb(
     { 
         for(i = 0;i < handle->write_iovec_count;i++)
         {
-            /* include the headers for framed writes */
             if(handle->write_iovec[i].iov_base != NULL)
             {
                 free(handle->write_iovec[i].iov_base);
+                handle->write_iovec[i].iov_base = NULL;
             }
         }
     }
@@ -2158,9 +2158,12 @@ globus_l_xio_gsi_write_cb(
     {
         for(i = 1;i < handle->write_iovec_count;i += 2)
         {
+            /* exclude the headers for framed writes */
             if(handle->write_iovec[i].iov_base != NULL)
             {
                 free(handle->write_iovec[i].iov_base);
+                handle->write_iovec[i].iov_base = NULL;
+                handle->write_iovec[i - 1].iov_base = NULL;
             }
         }
     }
