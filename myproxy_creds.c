@@ -69,7 +69,6 @@ mystrdup(const char *string)
     if (dup == NULL)
     {
         verror_put_errno(errno);
-        //verror_put_string("strdup() failed");
     }
     
     return dup;
@@ -773,16 +772,16 @@ myproxy_creds_store(const struct myproxy_creds *creds)
         goto error;
     }
 
-    if (stat (data_path, &buf) == -1 || creds->force_credential_overwrite)  // file is not present or 
-									    // force_credential_overwrite enabled
+    if (stat (data_path, &buf) == -1 || creds->force_credential_overwrite)  /* file is not present or  */
+	/* force_credential_overwrite enabled */
     {
-    	if (write_data_file(creds, data_path, data_file_mode) == -1) // info about credential
+    	if (write_data_file(creds, data_path, data_file_mode) == -1) /* info about credential */
     	{
 		verror_put_string ("Error writing data file");
         	goto clean_up;
     	}
 
-    	if (copy_file(creds->location, creds_path, creds_file_mode) == -1) // credential
+    	if (copy_file(creds->location, creds_path, creds_file_mode) == -1) /* credential */
     	{
 		verror_put_string ("Error writing credential file");
     	   	goto clean_up;
@@ -1094,7 +1093,7 @@ int file_select (const struct direct *entry)
 {
 	char *str = strstr (entry->d_name, ".data");
 
-	// first part ensures the filename begins with username and the second part ensures the filename ends with ".data"
+	/* first part ensures the filename begins with username and the second part ensures the filename ends with ".data" */
 	return (!strncmp (entry->d_name, username, strlen(username)) & ((entry->d_name[strlen(username)] == '-')||(entry->d_name[strlen(username)] == '.')) & (str == (entry->d_name)+strlen(entry->d_name)-strlen(".data"))); 
 }
 
@@ -1114,8 +1113,6 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
     	ret_str = strdup("");
     else
     {
-	//ret_str = (char *) malloc (1);
-	//memset (ret_str, 0, 1);
 	ret_str = NULL;
    }
 
@@ -1146,7 +1143,7 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
 		continue;
 	
 	p = strstr (files[i]->d_name, ".data");
-	*p = '\0';   // knock out .data
+	*p = '\0';   /* knock out .data */
 
 	fullpath[0] = '\0';
 	if (concatenate_strings (fullpath, sizeof(fullpath), storage_dir, "/", files[i]->d_name, ".creds", NULL) == -1)
@@ -1172,7 +1169,7 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
 	strcpy (info_ptr[index-1].cred_owner, tmp_creds.owner_name);
 	info_ptr[index-1].cred_start_time = tmp_time;
 	info_ptr[index-1].cred_end_time = end_time;
-	// Add retriever and renewer strings
+	/* Add retriever and renewer strings */
 	if (tmp_creds.retrievers)
 		info_ptr[index-1].retriever_str = tmp_creds.retrievers;
 	else

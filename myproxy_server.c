@@ -944,7 +944,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   goto end;
        }
 
-	// get information about credential
+       /* get information about credential */
        if (myproxy_creds_fetch_entry(client_request->username, client_request->credname, &creds) < 0) {
 	   verror_put_string("Unable to retrieve credential information");
 	   goto end;

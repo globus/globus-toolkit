@@ -87,7 +87,7 @@ struct option long_options[] =
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhD:s:p:t:c:l:vVndr:R:xXaAk:K:f";  //colon following an option indicates option takes an argument
+static char short_options[] = "uhD:s:p:t:c:l:vVndr:R:xXaAk:K:f";  /*colon following an option indicates option takes an argument */
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -279,7 +279,7 @@ init_arguments(int argc,
 	       int *cred_lifetime) 
 {   
     extern char *gnu_optarg;
-    int expr_type = MATCH_CN_ONLY;  //default
+    int expr_type = MATCH_CN_ONLY;  /*default */
 
     int arg;
 
@@ -328,9 +328,9 @@ init_arguments(int argc,
 	    dn_as_username = 1;
 	    break;
 	case 'r':   /* retrievers list */
-	    if (expr_type == REGULAR_EXP)  //copy as is
+	    if (expr_type == REGULAR_EXP)  /*copy as is */
 	      request->retrievers = strdup (gnu_optarg);
-	    else   //prepend a "*/CN=" string
+	    else
 	    {
 		request->retrievers = (char *) malloc (strlen (gnu_optarg) + 5);
 		strcpy (request->retrievers, "*/CN=");
@@ -340,9 +340,9 @@ init_arguments(int argc,
 	    }
 	    break;
 	case 'R':   /* renewers list */
-	    if (expr_type == REGULAR_EXP)  //copy as is
+	    if (expr_type == REGULAR_EXP)  /*copy as is */
 	      request->renewers = strdup (gnu_optarg);
-	    else   //prepend a "*/CN=" string
+	    else
 	    {
 		request->renewers = (char *) malloc (strlen (gnu_optarg) + 6);
 		strcpy (request->renewers, "*/CN=");

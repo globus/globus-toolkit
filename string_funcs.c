@@ -72,7 +72,7 @@ void strip_char (char *buf, char ch)
    int len,i, k = 0;
    char *tmp;
 
-   tmp = strdup (buf); // creates a storage
+   tmp = strdup (buf); /* creates a storage */
 
    len = strlen (buf);
 
@@ -84,7 +84,7 @@ void strip_char (char *buf, char ch)
       tmp[k++] = buf[i];
    }
 
-  for (i = 0; i < k; i ++) //copy back
+   for (i = 0; i < k; i ++) /*copy back */
   	buf[i] = tmp[i];
 
   buf[i] = '\0';
