@@ -470,8 +470,6 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 	globus_nexus_fd_close(*gatekeeper_fd);
 	GLOBUS_L_UNLOCK;
 
-        fprintf(stdout, "auth buf = %s\n", auth_msg_buf);
-
         if (strncmp(auth_msg_buf, "ERROR: gatekeeper misconfigured", 31) == 0)
         {
 	    return (GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
