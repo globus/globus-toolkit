@@ -5,11 +5,28 @@
 
 # Assumes myproxy-server running as root on the local machine if
 # MYPROXY_SERVER not set.
-# Requires a valid proxy credential.
+# Requires a valid proxy credential with lifetime of atleast 3 hours.
 # Assumes myproxy-server.config has:
 #   1. accepted_credentials, authorized_retrievers, and
 #      authorized_renewers matching the proxy credential
 #   2. default_renewers "none"
+#
+# Test cases are:
+#   1. Store a credential (myproxy-init).
+#   2. Get info on the stored credential (myproxy-info).
+#   3. Retrieve stored credential (myproxy-get-delegation).
+#   4. Verify myproxy-get-delegation fails on bad passphrase.
+#   5. Change passphrase (myproxy-change-pass-phrase).
+#   6. Retrieve with new passphrase.
+#   7. Verify old passphrase no longer accepted.
+#   8. Verify renewal fails by default.
+#   9. Remove credential from repository (myproxy-destroy).
+#  10. Verify credential is removed (myproxy_info).
+#  11. Store credentials with retrieval policies.
+#  12. Verify retrieval policies (one accept, one deny).
+#  13. Store renewable credentials.
+#  14. Verify renewal policies (one accept, one deny).
+#  15. Verify correct lifetime of retrieved credentials.
 
 use Expect; # if missing, install with: perl -MCPAN -e 'install Expect'
 $Expect::Log_Stdout=0; # suppress output to STDOUT
@@ -23,10 +40,12 @@ $timeleft = `$grid_proxy_info -timeleft`;
 die "grid-proxy-info failed, stopped"
     if (!defined($timeleft) || $timeleft eq "");
 die "proxy expired, stopped" if ($timeleft < 60);
+die "proxy lifetime too short, stopped" if ($timeleft < 60*60*3);
 $cert_subject = `$grid_proxy_info -subject`;
 die "grid-proxy-info -subject failed, stopped"
     if (!defined($cert_subject) || $cert_subject eq "");
-$cert_subject = (split(/\/CN=proxy|\/CN=limited proxy/, $cert_subject))[0];
+$cert_subject = (split(/\/CN=proxy|\/CN=limited proxy|\/CN=\d+/,
+		       $cert_subject))[0];
 
 #
 # check for the commands I want to run
@@ -127,19 +146,19 @@ if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
-print "MyProxy Test 7 (verify default renewal policy): ";
-if ($exitstatus != 0 && $output =~ /not authorized/) {
+    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
+	     $old_passphrase . "\n");
+print "MyProxy Test 7 (verify old passphrase fails): ";
+if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
-	     $old_passphrase . "\n");
-print "MyProxy Test 8 (verify old passphrase fails): ";
-if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
+    &runtest("myproxy-get-delegation -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+print "MyProxy Test 8 (verify default renewal policy): ";
+if ($exitstatus != 0 && $output =~ /not authorized/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -186,20 +205,93 @@ if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
     ($exitstatus, $output) =
 	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v",
 		 $passphrase . "\n");
-} else {
-    print "FAILED\n"; $FAILURES++; print STDERR $output;
-}
-if ($exitstatus != 0) {
-    print "SUCCEEDED\n"; $SUCCESSES++;
+    if ($exitstatus != 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++;
+	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR $output;
+    }
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 &runtest("myproxy-destroy -v -k 'mine'", undef);
 &runtest("myproxy-destroy -v -k 'nobody'", undef);
 
+($exitstatus, $output) =
+    &runtest("myproxy-init -v -R 'nobody' -k 'nobody' -c 1 -t 1",
+	     $passphrase . "\n" . $passphrase . "\n");
+print "MyProxy Test 13 (store credentials with renewal policies): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-init -v -x -R '$cert_subject' -k 'mine' -c 1 -t 1",
+		 $passphrase . "\n" . $passphrase . "\n");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+($exitstatus, $output) =
+    &runtest("myproxy-get-delegation -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v",
+	     undef);
+print "MyProxy Test 14 (verify renewal policies): ";
+if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-get-delegation -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v",
+		 undef);
+    if ($exitstatus != 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++;
+	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR $output;
+    }
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+&runtest("myproxy-destroy -v -k 'mine'", undef);
+&runtest("myproxy-destroy -v -k 'nobody'", undef);
+
+($exitstatus, $output) =
+    &runtest("myproxy-init -v -a -c 3 -t 2",
+	     $passphrase . "\n" . $passphrase . "\n");
+print "MyProxy Test 15 (verify lifetime of retrieved credentials): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-get-delegation -o /tmp/myproxy-test.$$ -v",
+		 $passphrase . "\n");
+    $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
+    if ($timeleft > 60*60*2+60 || $timeleft < 60*60*2-60) {
+	$output = "Credential lifetime ($timeleft) incorrect." .
+	    "It should be " . (60*6*2) . ".\n";
+	$exitstatus = 1;
+    }
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
+		 $passphrase . "\n");
+    $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
+    if ($timeleft > 60*61 || $timeleft < 60*59) {
+	$output = "Credential lifetime ($timeleft) incorrect." .
+	    "It should be " . (60*6*2) . ".\n";
+	$exitstatus = 1;
+    }
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+&runtest("myproxy-destroy -v", undef);
+
 #
 # END TESTS
 #
+
+unlink("/tmp/myproxy-test.$$");
 
 print "MyProxy Tests Complete: ", $SUCCESSES, " tests passed, ";
 print $FAILURES, " tests failed\n";
