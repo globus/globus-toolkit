@@ -39,7 +39,7 @@ typedef enum
     GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED = 6,
     /** The callout itself returned a error */
     GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR = 7,
-    /** Last marker - nver used */
+    /** Last marker - never used */
     GLOBUS_CALLOUT_ERROR_LAST = 8
 } globus_callout_error_t;
 

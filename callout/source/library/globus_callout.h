@@ -23,7 +23,8 @@
 #    endif
 #endif
 
-#include <globus_common.h>
+#include "globus_common.h"
+#include "globus_callout_constants.h"
 
 EXTERN_C_BEGIN
 
