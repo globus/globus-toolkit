@@ -23,11 +23,11 @@ CVS Information:
 
 #include "gram_myjob_mp.h"
 
-
 /******************************************************************************
 		       Define module specific constants
 ******************************************************************************/
 
+#define MY_COMMUNICATOR_DIFFERENTIATOR 0
 
 /******************************************************************************
 			       Type definitions
@@ -67,7 +67,8 @@ gram_myjob_init(
     {
 	MP_INITIALIZE(argc, argv);
 	MP_INIT_NODE_INFO(graml_myjob_rank, graml_myjob_size);
-	MP_COMMUNICATOR_ALLOC(graml_myjob_communicator);
+	MP_COMMUNICATOR_ALLOC(graml_myjob_communicator,
+			      MY_COMMUNICATOR_DIFFERENTIATOR);
 
 	graml_myjob_initialized = GRAM_TRUE;
     }
