@@ -20,6 +20,8 @@ static char *rcsid = "$Header$";
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
 
+
+
 OM_uint32
 GSS_CALLCONV gss_accept_delegation(
     OM_uint32 *                         minor_status,
@@ -33,6 +35,11 @@ GSS_CALLCONV gss_accept_delegation(
     gss_OID *                           mech_type, 
     gss_buffer_t                        output_token)
 {
+
+    return GSS_S_COMPLETE;
+    
+#if 0
+    
     OM_uint32 		                major_status = 0;
     gss_ctx_id_desc *                   context;
     X509_REQ *                          reqp = NULL;
@@ -240,4 +247,15 @@ err:
 
     return major_status;
 
+#endif
 }
+
+
+
+
+
+
+
+
+
+

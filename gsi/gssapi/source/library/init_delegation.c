@@ -21,6 +21,8 @@ static char *rcsid = "$Header$";
 #include "gssutils.h"
 #include <string.h>
 
+
+
 static X509_EXTENSION *
 proxy_extension_create(
     const gss_OID                       extension_oid,
@@ -38,6 +40,11 @@ GSS_CALLCONV gss_init_delegation(
     OM_uint32                           time_req,
     gss_buffer_t                        output_token)
 {
+
+    return GSS_S_COMPLETE;
+    
+#if 0
+
     OM_uint32 		                major_status = GSS_S_COMPLETE;
     gss_ctx_id_desc *                   context;
     gss_cred_id_desc *                  cred;
@@ -286,6 +293,8 @@ err:
     }
     
     return major_status;
+
+#endif
 }
 
 
