@@ -793,6 +793,33 @@ gssapi_handle_auth_data(char *data, int length)
     pchan = &chan;
 #endif /* !GSSAPI_GLOBUS */
 
+#ifdef GLOBUS_AUTHORIZATION
+    /*
+     * Need to set option in context before first call to inform
+     * GSSAPI libraries we wil handle any restrictions in GSI
+     * credentials used to authenticate.
+     */
+    if (gcontext == GSS_C_NO_CONTEXT)
+    {
+        stat_maj = globus_gss_assist_will_handle_restrictions(&stat_min,
+                                                          &gcontext);
+    
+        if (stat_maj != GSS_S_COMPLETE) 
+        {
+            /*
+             * Don't need to fail here, since if there are no restrictions
+             * in the credentials used to authenticate, we're fine. And if
+             * there are we'll fail later anyways. But we should make a note
+             * of this error to help someone figure out what's going on.
+             */
+            syslog(LOG_NOTICE,
+                   "Warning: globus_gss_assist_will_handle_restrictions() failed"
+                   " (major status = %x minor_status = %x)",
+                   stat_maj, stat_min);
+        }
+    }
+#endif /* GLOBUS_AUTHORIZATION */
+
     rc = gssapi_acquire_server_credentials();
 
     if(rc == -1)
