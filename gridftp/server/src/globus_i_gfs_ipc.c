@@ -16,17 +16,15 @@ static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
 #define GFSEncodeUInt32(_start, _len, _buf, _w)                         \
 do                                                                      \
 {                                                                       \
+    globus_size_t                       _ndx;                           \
     uint32_t                            _cw;                            \
+    _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
     /* verify buffer size */                                            \
-    if((globus_byte_t *)_buf - (globus_byte_t *)_start + 4 > _len)      \
+    if(_ndx + 4 > _len)                                                 \
     {                                                                   \
-        globus_byte_t *                 _newstart;                      \
         _len *= 2;                                                      \
-        _newstart = (globus_byte_t *) globus_libc_realloc(_start, _len);\
-        if(_newstart != _start)                                         \
-        {                                                               \
-            fprintf(stderr, "screwed on the realloc\n");                \
-        }                                                               \
+        _start = globus_libc_realloc(_start, _len);                     \
+        _buf = _start + _ndx;                                           \
     }                                                                   \
     _cw = htonl((uint32_t)_w);                                          \
     memcpy(_buf, &_cw, 4);                                              \
@@ -59,15 +57,14 @@ do                                                                      \
 #define GFSEncodeUInt64(_start, _len, _buf, _w)                         \
 do                                                                      \
 {                                                                       \
-    if((globus_byte_t *)_buf - (globus_byte_t *)_start + 8 > _len)      \
+    globus_size_t                       _ndx;                           \
+    _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
+    if(_ndx + 8 > _len)                                                 \
     {                                                                   \
         globus_byte_t *                 _newstart;                      \
         _len *= 2;                                                      \
-        _newstart = (globus_byte_t *) globus_libc_realloc(_start, _len);\
-        if(_newstart != _start)                                         \
-        {                                                               \
-            fprintf(stderr, "screwed on the realloc\n");                \
-        }                                                               \
+        _start = globus_libc_realloc(_start, _len);                     \
+        _buf = _start + _ndx;                                           \
     }                                                                   \
     memcpy(_buf, &_w, 8);                                               \
     _buf += 8;                                                          \
@@ -91,19 +88,17 @@ do                                                                      \
 #define GFSEncodeUInt64(_start, _len, _buf, _w)                         \
 do                                                                      \
 {                                                                       \
+    globus_size_t                       _ndx;                           \
     uint64_t                            _cw;                            \
     uint32_t                            _lo = _w & 0xffffffff;          \
     uint32_t                            _hi = _w >> 32U;                \
                                                                         \
-    if((globus_byte_t *)_buf - (globus_byte_t *)_start + 8 > _len)      \
+    _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
+    if(_ndx + 8 > _len)                                                 \
     {                                                                   \
-        globus_byte_t *                 _newstart;                      \
         _len *= 2;                                                      \
-        _newstart = (globus_byte_t *) globus_libc_realloc(_start, _len);\
-        if(_newstart != _start)                                         \
-        {                                                               \
-            fprintf(stderr, "screwed on the realloc\n");                \
-        }                                                               \
+        _start = globus_libc_realloc(_start, _len);                     \
+        _buf = _start + _ndx;                                           \
     }                                                                   \
                                                                         \
     _lo = ntohl(_lo);                                                   \
@@ -139,15 +134,13 @@ do                                                                      \
 #define GFSEncodeChar(_start, _len, _buf, _w)                           \
 do                                                                      \
 {                                                                       \
-    if((globus_byte_t *)_buf - (globus_byte_t *)_start >= _len)         \
+    globus_size_t                       _ndx;                           \
+    _ndx = (globus_byte_t *)_buf - (globus_byte_t *)_start;             \
+    if(_ndx >= _len)                                                    \
     {                                                                   \
-        globus_byte_t *                 _newstart;                      \
         _len *= 2;                                                      \
-        _newstart = (globus_byte_t *) globus_libc_realloc(_start, _len);\
-        if(_newstart != _start)                                         \
-        {                                                               \
-            fprintf(stderr, "screwed on the realloc\n");                \
-        }                                                               \
+        _start = globus_libc_realloc(_start, _len);                     \
+        _buf = _start + _ndx;                                           \
     }                                                                   \
     *_buf = (char)_w;                                                   \
     _buf++;                                                             \
@@ -819,6 +812,8 @@ globus_l_gfs_ipc_read_body_cb(
     switch(request->type)
     {
         case GLOBUS_GFS_IPC_TYPE_FINAL_REPLY:
+            break;
+
         case GLOBUS_GFS_IPC_TYPE_INTERMEDIATE_REPLY:
             break;
 
@@ -1218,12 +1213,14 @@ globus_gfs_ipc_reply_finished(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_reply_t *            reply)
 {
+    int                                 ctr;
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_size_t                       msg_size;
     globus_byte_t *                     buffer;
     globus_byte_t *                     ptr;
     globus_byte_t *                     size_ptr;
     globus_gfs_ipc_request_t *          request;
+    char                                ch;
     globus_result_t                     res;
     GlobusGFSName(globus_gfs_ipc_reply_finished);
 
@@ -1285,10 +1282,81 @@ globus_gfs_ipc_reply_finished(
                 case GLOBUS_GFS_IPC_TYPE_LIST:
                     break;
 
+                case GLOBUS_GFS_IPC_TYPE_RESOURCE:
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->info.resource.stat_count);
+                    for(ctr = 0; ctr < reply->info.resource.stat_count; ctr++)
+                    {
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].mode);
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].nlink);
+                        GFSEncodeString(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].name);
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].uid);
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].gid);
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].size);
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].atime);
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].ctime);
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].mtime);
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].dev);
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.resource.stat_info[ctr].ino);
+                    }
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->info.resource.uid);
+
+                    break;
+
                 case GLOBUS_GFS_IPC_TYPE_COMMAND:
+                    GFSEncodeChar(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->info.command.command);
+                    GFSEncodeString(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->info.command.checksum);
+                    GFSEncodeString(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->info.command.created_dir);
                     break;
 
                 case GLOBUS_GFS_IPC_TYPE_PASSIVE:
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->info.data.data_handle_id);
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->info.data.cs_count);
+                    for(ctr = 0; ctr < reply->info.data.cs_count; ctr++)
+                    {
+                        GFSEncodeString(
+                            buffer, ipc->buffer_size, ptr, 
+                            reply->info.data.contact_strings[ctr]);
+                    }
+                    ch = (char) reply->info.data.data_handle_id;
+                    GFSEncodeChar(buffer, ipc->buffer_size, ptr, ch);
+                    ch = (char) reply->info.data.net_prt;
+                    GFSEncodeChar(buffer, ipc->buffer_size, ptr, ch);
                     break;
 
                 case GLOBUS_GFS_IPC_TYPE_ACTIVE:

@@ -47,8 +47,8 @@ typedef enum
 typedef struct globus_gfs_ipc_data_reply_s
 {
     int                                 data_handle_id;
-    const char **                       contact_strings;
     int                                 cs_count;
+    const char **                       contact_strings;
     globus_bool_t                       bi_directional;
     globus_gridftp_server_control_network_protocol_t net_prt; /* gag */
 } globus_gfs_ipc_data_reply_t;
