@@ -79,7 +79,7 @@ typedef struct {
 	OM_uint32	status; /* both */
 	gss_ctx_id_t	context; /* both */
 	gss_name_t	name; /* both */
-	gss_OID		oid; /* client */
+	gss_OID		oid; /* both */
 	gss_cred_id_t	creds; /* server */
 	gss_name_t	client; /* server */
 	gss_cred_id_t	client_creds; /* server */
@@ -110,8 +110,10 @@ OM_uint32 ssh_gssapi_getclient(Gssctxt *ctx,
 				enum ssh_gss_id *type,
 				gss_buffer_desc *name,
 				gss_cred_id_t *creds);
-void ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status);
-void ssh_gssapi_send_error(OM_uint32 major_status,OM_uint32 minor_status);
+void ssh_gssapi_error(gss_OID mech,
+		      OM_uint32 major_status, OM_uint32 minor_status);
+void ssh_gssapi_send_error(gss_OID mech,
+			   OM_uint32 major_status,OM_uint32 minor_status);
 void ssh_gssapi_build_ctx(Gssctxt **ctx);
 void ssh_gssapi_delete_ctx(Gssctxt **ctx);
 OM_uint32 ssh_gssapi_client_ctx(Gssctxt **ctx,gss_OID oid,char *host);
