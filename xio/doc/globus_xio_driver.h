@@ -70,22 +70,22 @@
  *        driver then has a context.  The context allows the user to do some
  *        complex things that will be described later.
  *
- *    globus_xio_driver_factory_t
- *        This structure provides the driver with information about the 
- *        driver stack.  It is mainly only used for creating context
- *        as a parameter to globus_xio_driver_open().
- *
+ *    globus_xio_target_t
+ *        This structure provides the driver with information about the
+ *        driver stack  It is mainly used for creating context as a
+ *        parameter to lobus_xio_driver_open()..
+ * 
  *  Here is a typcial sequence of events for a globus_xio transform
  *  driver:
  *
  *        Open
- *           globus_xio_driver_open_t is called.  This is passed a factory
- *           a operation.  The user calls globus_xio_driver_open() passing
- *           it the operation and the factory and a callback.  When the 
- *           open callback is called the driver is given a new operation
- *           as a parameter.  The driver will then call 
- *           globus_xio_driver_finished_open() passing it the now 
- *           initialized context and the newly received operation.
+ *           globus_xio_driver_open_t is called.  The user calls
+ *           globus_xio_driver_open() passing it the operation and 
+ *           the target and a callback.  When the open callback is called 
+ *           the driver is given a new operation as a parameter.  The driver
+ *           will then call globus_xio_driver_finished_open() passing
+ *           it the now initialized context and the newly received
+ *           operation.
  *           The call to globus_xio_driver_finished_open() does two things:
  *           1) it tells globus_xio that this driver has finished its open
  *           operation, and 2) it gives xio the context (which contains
@@ -138,9 +138,9 @@
  *
  *   Preopening handles.
  *   
- *   Once the driver has received a globus_xio_driver_factory_t it can 
- *   open a context.  The globus_xio_driver_factory_t comes in the
- *   call to the interface function globus_xio_driver_factory_init_t().
+ *   Once the driver has received a globus_xio_driver_target_t it can 
+ *   open a context.  The globus_xio_driver_target_t comes in the
+ *   call to the interface function globus_xio_driver_actory_init_t().
  *   The driver uses this structure in a call to globus_xio_driver_open().
  *   When this functionality completes the driver has an initialized 
  *   context and can use it to create operations as described above.
@@ -169,102 +169,194 @@
  *  data members are needed in these handles.  When creating a new driver
  *  a programmer should have the feel as though they are creating a new api.
  */
-/***********************************************************************
- *                     Factories
- **********************************************************************/
-/**
- *  @defgroup driver_api_grp Driver API
- *
- *  These function are avauliable to the driver author to assist in implementation.
- */
 /**
  *  @defgroup driver_interface_grp Driver Interface
  *
- *  The set of interface functions that the driver author must implement to create
- *  a driver.
+ *  The set of interface functions that the driver author must implement 
+ *  to create a driver.
  */
-/**
- *  factory init
- *  @ingroup driver_interface_grp
- *
- *  A factory is the data structure from which all handles are created.
- *  The factor contains information regarding the driver stack from which
- *  the user wishes to create a handle.  The driver may also provide a means
- *  for a user to pass driver specific attributes.
- *
- *  This function is called via the user function globus_xio_factory_init().
- *  A driver should allocate and initilaize all storage associated with 
- *  a factory in this function.
- *
- *  @param out_driver_factory
- *         The factory handle for this driver.  The driver implementor
- *         should create and initiliaze memory to maintain the state of
- *         a facotry and then set this pointer to that memory.  All 
- *         subciquent call relating to this factory will pass in this
- *         pointer.
- *
- *  @param driver_factory_attr
- *         The driver specific factory attribute.  This void pointer 
- *         directs the driver to memory containing driver specific 
- *         initialization attribute.  This may be a NULL value.  If it 
- *         is the driver should assume default values.
- *
- *  @param user_factory
- *         The globus_xio user level factory pointer.  This parameter is
- *         a pointer to the user level factory handle.  The driver may 
- *         require this for quering about generic inialization paremeters.
- */
-typedef globus_result_t
-(*globus_xio_driver_factory_init_t)(
-    void **                                     out_driver_factory,
-    void *                                      driver_factory_attr,
-    globus_xio_driver_factory_t                 user_factory);
 
-/*
- *  factory destroy
- *  @ingroup driver_interface_grp
- *
- *  The driver should clean up all memory associated with a factory here.
+/**
+ * 
  */
 typedef globus_result_t
-(*globus_xio_driver_factory_destroy_t)(
-    void *                                      driver_factory);
+(*globus_xio_driver_get_driver_t)(
+    globus_xio_driver_t *                       out_driver);
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_driver_attr_init_t)(
+    void **                                     out_driver_attr);
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_attr_copy_t)(
+    void **                                     dst,
+    void *                                      src);
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_attr_destroy_t)(
+    void **                                     dst,
+    void *                                      src);
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_attr_cntl_t)(
+    void *                                      driver_attr,
+    int                                         cmd,
+    ...);
+
+
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_server_attr_init_t)(
+    void **                                     out_server_attr);
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_server_attr_cntl_t)(
+    void *                                      server_attr,
+    int                                         cmd,
+    ...);
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_server_attr_destroy_t)(
+    void *                                      server_attr);
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_server_attr_copy_t)(
+    void *                                      server_attr);
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_server_init)(
+    void **                                     out_server,
+    void *                                      server_attr,
+    globus_xio_driver_stack_t                   stack);
+
+typedef globus_result_t
+(*globus_xio_driver_client_init)(
+    void **                                     out_client,
+    const char *                                contact_string,
+    globus_xio_driver_stack_t                   stack);
+    
+ 
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_server_listen(
+    void *                                      server);
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_server_destroy(
+    void *                                      server);
+
+
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_handle_attr_init_t)(
+    void **                                     out_handle_attr);
+ 
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_handle_attr_copy_t)(
+    void **                                     dst,
+    void *                                      src);
+ 
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_handle_attr_destroy_t)(
+    void *                                      handle_attr);
+ 
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_handle_attr_cntl_t)(
+    void *                                      handle_attr,
+    int                                         cmd,
+    ...);
 
 /**********************************************************************
  *                          Open
  *********************************************************************/
+
 /**
- *  Interface Function Open
+ *  Open a handle
  *  @ingroup driver_interface_grp
  *
- *  Called when the user wished to open a handle from a factory.
+ *  This is called when a user requests to close a handle.  The driver 
+ *  implemntor should clean up all resources connected to there driver handle
+ *  when this function is called.
  *
  *  @param driver_handle
- *         This is an out parameter.  The driver implementor should
- *         populate it with a pointer to a piece of memory containing
- *         enough information to maintain state for there driver.  This
- *         pointer will be passed into all subsequent calls relating to
- *         this transfer.
+ *          An unitialized pointer is passed in.  The driver will assign 
+ *          this pointwe to some memory and then reference pass in back.
+ *          Futrue interface funstion calls will be passed this value.
  *
- *  @param driver_factory
- *         The driver factory from which the user is opening the handle.
+ *  @param driver_handle_attr
+ *         A attribute describing how to open.  This points to a piece of 
+ *         memory created by the globus_xio_driver_driver_attr_init_t
+ *         interface funstion.
  *
- *  @param driver_handle_attr,
- *         A void pointer to the driver specific attribute that may be 
- *         passed into this function.  This may be NULL, if it is the driver
- *         should assume default values.
+ *  @param target
+ *         Hold stack information.
+ * 
+ *  @param server
+ *         If a passive open is requested this will be the value passed 
+ *         back by the drivers globus_xio_driver_server_init() function.
+ *         If an active open has been requested this will be NULL.
  *
+ *  @param contact_string
+ *         This value will be NULL if a passive open is taking place.
+ *         If it is not NULL an active open is requested and the this 
+ *         parameter points to the contact string.
+ *    
  *  @param op
- *         The requested operation.  When the driver has finished dealing
- *         with the operation it should call globus_xio_driver_finished_open()
- *         passing it this operation structure.
- *  
+ *         The reuqested operation.  When the driver is finished opening
+ *         the handle it uses this structure to signal globus_xio that it
+ *         has completed the operation requested.  It does this by calling
+ *         globus_xio_driver_finished_open()
+ *         
  */
 typedef globus_result_t
 (*globus_xio_driver_open_t)(
     void **                                     driver_handle,
-    void *                                      driver_factory,
     void *                                      driver_handle_attr,
+    void *                                      server,
+    const char *                                contact_string,
     globus_xio_driver_operation_t               op);
 
 /**
@@ -280,8 +372,8 @@ typedef globus_result_t
  *         Structure represening the state of the driver stack for this
  *         driver handle.
  *
- *  @param factory
- *         The factory from which the context will be established.  This
+ *  @param stack
+ *         The stack from which the context will be established.  This
  *         parameter is used to determine what drivers are in the stack and
  *         other such information.
  *
@@ -294,7 +386,7 @@ typedef globus_result_t
 globus_result_t
 globus_xio_driver_open(
     globus_xio_driver_context_t *               context,
-    globus_xio_driver_factory_t                 factory,
+    globus_xio_stack_t                          stack,
     globus_xio_driver_callback_t                cb,
     void *                                      user_arg);
 
@@ -778,75 +870,36 @@ globus_xio_driver_finished_from_previous(
  */
 
 /**
- *  Data Decriptor Copy
- *  @ingroup driver_interface_grp
- *
- *  This function is called when the system requires a copy of a driver
- *  specific data descriptor that was created by this driver.
+ * 
  */
 typedef globus_result_t
-(*globus_xio_driver_data_descriptor_copy_t)(
-    void **                                     dst_dd,
-    void *                                      src_dd);
+(*globus_xio_driver_data_descriptor_init_t)(
+    void **                                     out_dd);
+
 /**
- *  Data Decriptor Free
- *  @ingroup driver_interface_grp
- *
- *  This function is called when a driver specific data desciptor needs
- *  to be freed.
+ * 
  */
 typedef globus_result_t
-(*globus_xio_driver_data_descriptor_free_t)(
+(*globus_xio_driver_driver_data_descriptor_copy_t)(
+    void **                                     dst,
+    void *                                      src);
+ 
+/**
+ * 
+ */
+typedef globus_result_t
+(*globus_xio_driver_driver_data_descriptor_destroy_t)(
     void *                                      dd);
-
+ 
 /**
- *  Data Decriptor Getspecific
- *  @ingroup driver_api_grp
- *
- *  This function will return a pointer to this drivers specific data
- *  decriptor.  This value may be NULL.  In which case the user driver
- *  should assume default values.
+ * 
  */
-globus_result_t
-globus_xio_driver_data_descriptor_get_specific(
-    void **                                     driver_data_desc,
-    globus_xio_driver_data_descriptor_t         data_desc);
-
-/**
- *  Get data Descriptor from an operation
- *  @ingroup driver_api_grp
- *
- *  Returns the data descriptor associated with the given operation.
- *  If NULL is returned the driver assumes default values for both the
- *  general xio data descriptor values and the driver specific ones.
- */
-globus_result_t
-globus_xio_driver_operation_get_data_descriptor(
-    globus_xio_driver_data_descriptor_t *       data_desc,
-    globus_xio_driver_operation_t               op);
-
-/**
- *  Set a driver specific data structure on an operation.
- *  @ingroup driver_api_grp
- *
- *  This will attach a driver specific data descriptor to an operation
- *  structure.  If the non specifc data structure for this operation is 
- *  NULL this function will result in the creation of one with default 
- *  values set.
- */
-globus_result_t
-globus_xio_driver_operation_set_specific_data_descriptor(
-    globus_xio_driver_operation_t               op,
-    void *                                      driver_data_desc);
-
-/**
- *  @ingroup driver_api_grp
- *  This function results in a new data descriptor with default values
- *  attached to the given operation.
- */
-globus_result_t
-globus_xio_driver_operation_create_data_descriptor(
-    globus_xio_driver_operation_t               op);
+typedef globus_result_t
+(*globus_xio_driver_driver_data_descriptor_cntl_t)(
+    void *                                      dd,
+    int                                         cmd,
+    ...);
+ 
 
 /*******************************************************************
  *                        signal stuff
@@ -874,9 +927,10 @@ globus_xio_driver_signal_register_callback(
  *  @ingroup driver_api_grp
  */
 globus_result_t
-globus_xio_driver_context_get_optimal_buffer_size(
+globus_xio_driver_context_cntl(
      globus_xio_driver_context_t                context,
-     globus_size_t *                            buffer_size);
+     int                                        cmd,
+     ...);
 
 /**
  *  @ingroup driver_api_grp
@@ -885,22 +939,3 @@ globus_result_t
 globus_xio_driver_fire_signal(
      globus_xio_driver_context_t                context,
      int                                        signal_mask);
-
-/**********************************************************************
- *                init
- *********************************************************************/
-
-/**
- *  @ingroup driver_api_grp
- */
-globus_result_t
-globus_xi_driver_init(
-    globus_xio_driver_t *                       driver,
-    globus_xio_driver_factory_init_t            factory_init,
-    globus_xio_driver_factory_destroy_t         factory_destroy,
-    globus_xio_driver_open_t                    open,
-    globus_xio_driver_close_t                   close,
-    globus_xio_driver_read_t                    read,
-    globus_xio_driver_write_t                   write,
-    globus_xio_driver_data_descriptor_copy_t    dd_copy,
-    globus_xio_driver_data_descriptor_free_t    dd_free);

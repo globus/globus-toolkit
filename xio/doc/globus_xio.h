@@ -208,7 +208,7 @@
  */
 
 globus_result_t
-globus_xio_lookup_driver(
+globus_xio_load_driver(
     globus_xio_driver_t *                       driver,
     const char *                                driver_lookup_string);
 
@@ -238,8 +238,8 @@ globus_xio_driver_attr_cntl(
  *  Initialize a globus_xio server object.
  */
 globus_result_t
-globus_xio_server_init(
-    globus_xio_server_t *                       server,
+globus_xio_server_target_init(
+    globus_xio_target_t *                       server,
     globus_xio_server_attr_t                    server_attr,
     globus_xio_stack_t                          stack);
 
@@ -264,6 +264,10 @@ globus_result_t
 globus_xio_server_listen(
     globus_xio_server_t                         server,
     globus_xio_target_t *                       out_target);
+
+globus_result_t
+globus_xio_server_destroy(
+    globus_xio_server_t                         server);
 
 globus_result_t
 globus_xio_target_init(
@@ -449,9 +453,9 @@ typedef void (*globus_xio_data_callback_t)(
  */ 
 globus_result_t
 globus_xio_register_open(
-    globus_xio_target_t                         target,
     globus_xio_handle_t *                       handle,
     globus_xio_handle_attr_t                    attr,
+    globus_xio_target_t                         target,
     globus_xio_callback_t                       cb,
     void *                                      user_arg);
 

@@ -25,7 +25,7 @@ main(
     driver_name = argv[ctr];
 
     globus_module_activate(GLOBUS_XIO_MODULE);
-    res = globus_xio_lookup_driver(
+    res = globus_xio_load_driver(
             &driver,
             driver_name);
     assert(res != GLOBUS_SUCCESS);
@@ -38,7 +38,6 @@ main(
         globus_xio_server_init(&server, stack);
         globus_xio_server_get_contact_string(server, &buf, sizeof(buf));
         globus_libc_fprintf(stdout, "serving at: %s.\n", buf);
-        globus_xio_server_listen(server, &target);
     }
     else
     {
@@ -46,8 +45,8 @@ main(
     }
 
     res = globus_xio_open(
-            target,
             &handle,
+            target,
             NULL);
     assert(res != GLOBUS_SUCCESS);
 
@@ -70,4 +69,4 @@ main(
     globus_module_deactivate(GLOBUS_XIO_MODULE);
 
     return 0;
-}   
+}
