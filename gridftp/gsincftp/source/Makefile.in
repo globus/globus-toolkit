@@ -46,7 +46,7 @@ install:
 #
 # The visual programs are only built if a working Curses was found.
 #
-	test -f bin/ncftpbookmarks@EXEEXT@ && $(INSTALL_PROGRAM) bin/ncftpbookmarks@EXEEXT@ "$(BINDIR)/ncftpbookmarks@EXEEXT@"
+	test -f bin/gsincftpbookmarks@EXEEXT@ && $(INSTALL_PROGRAM) bin/gsincftpbookmarks@EXEEXT@ "$(BINDIR)/gsincftpbookmarks@EXEEXT@"
 	-@echo '..... Installing the manual pages .....'
 	$(INSTALL_DATA) doc/man/gsincftp.1 "$(mandir)/man1/gsincftp.1"
 	$(INSTALL_DATA) doc/man/gsincftpget.1 "$(mandir)/man1/gsincftpget.1"
@@ -95,8 +95,8 @@ dtar:
 		chmod 755 $(TMPDIR)/TAR/$(TARDIR)/bin/$$f ; \
 		: ; \
 	done
-	-@cp bin/ncftpbookmarks $(TMPDIR)/TAR/$(TARDIR)/bin/ncftpbookmarks 2>/dev/null
-	-@chmod 755 $(TMPDIR)/TAR/$(TARDIR)/bin/ncftpbookmarks 2>/dev/null
+	-@cp bin/gsincftpbookmarks $(TMPDIR)/TAR/$(TARDIR)/bin/gsincftpbookmarks 2>/dev/null
+	-@chmod 755 $(TMPDIR)/TAR/$(TARDIR)/bin/gsincftpbookmarks 2>/dev/null
 	-@mkdir $(TMPDIR)/TAR/$(TARDIR)/doc
 	-@mkdir $(TMPDIR)/TAR/$(TARDIR)/doc/man
 	for f in ncftp.1 ncftpget.1 ncftpput.1 ncftpbatch.1 ncftpls.1 ; do \

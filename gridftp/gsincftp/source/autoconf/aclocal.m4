@@ -2394,12 +2394,19 @@ dnl
 dnl
 dnl
 AC_DEFUN(wi_LIB_GSSAPI, [
-	AC_ARG_WITH(gssapi-dir, [  --with-gssapi-dir=<DIR>  Specify install directory for GSSAPI package],
+	AC_ARG_WITH(gssapi-dir,
+      [  --with-gssapi-dir=<DIR>  Specify install directory for GSSAPI package],
 			globus_install_dir=$withval, globus_install_dir="none")
-	echo "here2"
 	AC_MSG_CHECKING(for Globus/GSI installation directory)
 	if test "$globus_install_dir" = "none" -o -z "$globus_install_dir"; then
-		if test -n "$GLOBUS_INSTALL_PATH" ; then
+	        if test -n "$GLOBUS_LOCATION" ; then
+		        globus_install_dir=$GLOBUS_LOCATION
+			AC_ARG_WITH(
+			  flavor,
+			  [  --with-flavor            Specify flavor of Globus to use],
+			  globus_cv_flavor=$withval,
+			  AC_MSG_ERROR("Must specify Globus flavor with --with-flavor=FLAVOR"))
+		elif test -n "$GLOBUS_INSTALL_PATH" ; then
 			globus_install_dir=$GLOBUS_INSTALL_PATH
 		elif test -d /usr/local/globus ; then
 			globus_install_dir="/usr/local/globus"
@@ -2445,11 +2452,16 @@ dnl Find the GLOBUS/GSI development directory
         fi
 	AC_MSG_RESULT($globus_dev_dir)
 
-	incdir="${globus_dev_dir}/include";
+	incdirs="${globus_dev_dir}/include";
+	if test -n "$globus_cv_flavor"; then
+	    incdirs="${incdirs} ${globus_dev_dir}/include/${globus_cv_flavor}"
+	    globus_flavor_suffix="_${globus_cv_flavor}"
+	fi
 
 	AC_MSG_CHECKING([for gssapi directories])
 	echo "";
-	if test -r $incdir ; then
+	for incdir in $incdirs; do
+	    if test -r $incdir ; then
 		case "$CPPFLAGS" in
 			*${incdir}*)
 			# echo "   + already had $incdir" 1>&6
@@ -2463,7 +2475,8 @@ dnl Find the GLOBUS/GSI development directory
 			echo "   + found $incdir" 1>&6
 			;;
 		esac
-	fi
+	    fi
+	done
 
 	libdir="${globus_dev_dir}/lib"
 
@@ -2482,10 +2495,17 @@ dnl Find the GLOBUS/GSI development directory
 				;;
 		esac
 	fi
-	LIBS="$LIBS -lglobus_gss_assist -lglobus_gss -lglobus_gaa"
+	LIBS="$LIBS -lglobus_gss_assist${globus_flavor_suffix} "
+	if test -n "$GLOBUS_LOCATION"; then
+	    LIBS="$LIBS -lglobus_gssapi_gsi${globus_flavor_suffix} "
+	else
+	    LIBS="$LIBS -lglobus_gss "
+	    LIBS="$LIBS -lglobus_gaa "
+	fi
 ])
 
 AC_DEFUN(wi_LIB_SSL, [
+    if test -z "$GLOBUS_LOCATION"; then
 	AC_ARG_WITH(ssl-dir, [  --with-ssl-dir=<DIR>     Specify install directory for the SSL package],
 			ssl_dir=$withval, ssl_dir="none")
 	AC_MSG_CHECKING(for SSL installation directory)
@@ -2543,5 +2563,9 @@ AC_DEFUN(wi_LIB_SSL, [
 				;;
 		esac
 	fi
-	LIBS="$LIBS -lssl -lcrypto"
+    fi
+    if test -n "$globus_cv_flavor"; then
+        globus_flavor_suffix="_${globus_cv_flavor}"
+    fi
+    LIBS="$LIBS -lssl${globus_flavor_suffix} -lcrypto${globus_flavor_suffix}"
 ])

@@ -32,7 +32,7 @@ all: $(DPROGS)
 ../bin/gsincftp@EXEEXT@: $(OBJS) ../libncftp/libncftp.a
 @Z30@
 	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(OBJS) -o ../bin/gsincftp@EXEEXT@ $(LDFLAGS) -lncftp -lStrn -lsio $(LIBS)
-	-@$(STRIP) ../bin/ncftp@EXEEXT@
+	-@$(STRIP) ../bin/gsincftp@EXEEXT@
 
 clean:
 	/bin/rm -f $(DPROGS) $(OBJS)
