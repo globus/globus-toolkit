@@ -37,6 +37,9 @@ flavorinclude_HEADERS= \
 
 lib_LTLIBRARIES = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
 libexec_PROGRAMS = globus-job-manager
+bin_SCRIPTS = globus-personal-gatekeeper
+
+EXTRA_DIST = globus-personal-gatekeeper
 
 libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = $(LibSources)
 libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
