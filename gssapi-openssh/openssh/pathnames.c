@@ -76,7 +76,7 @@ init_pathnames()
     _PATH_HOST_RSA_KEY_FILE	= compose3(gl, SSHDIR, "/ssh_host_rsa_key");
     _PATH_DH_MODULI		= compose3(gl, SSHDIR, "/moduli");
     _PATH_DH_PRIMES		= compose3(gl, SSHDIR, "/primes");
-    _PATH_SSH_PROGRAM		= compose3(gl, BINDIR, "/ssh");
+    _PATH_SSH_PROGRAM		= compose3(gl, BINDIR, "/gsissh");
     _PATH_SSH_DAEMON_PID_FILE	= compose3(gl, VARDIR, "/sshd.pid");
     _PATH_SSH_SYSTEM_RC		= compose3(gl, SSHDIR, "/sshrc");
     _PATH_SSH_HOSTS_EQUIV	= compose3(gl, SSHDIR, "/shosts.equiv");
