@@ -40,6 +40,7 @@
 #  include <sslutils.h>
 #  include <openssl/x509.h>
 #  include <openssl/x509v3.h>
+#  include <openssl/md5.h>
 
 /* Backwards compatibility with Globus 1.x.  See below. */
 #  define myproxy_get_filenames(pcd, a, b, c, d, e, f) \
@@ -56,6 +57,7 @@
 #  if SSLEAY_VERSION_NUMBER >= 0x0090581fL
 #    include <x509v3.h>
 #  endif
+#  include <md5.h>
 
 /* 
  * The globus v 2.0 API adds a new parametr to proxy_get_filenames(), which is 
