@@ -18,6 +18,9 @@ if test "$globus_cv_flavor" = "notset" \
     AC_MSG_ERROR([A flavor description string must be specified!])
 fi
 
+GLOBUS_FLAVOR_NAME=$globus_cv_flavor
+AC_SUBST(GLOBUS_FLAVOR_NAME)
+
 dnl
 dnl Gather information about our build environment
 dnl
