@@ -38,5 +38,5 @@ if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 256)
 
 foreach (@tests)
 {
-    system("$_");
+    system("./$_");
 }
