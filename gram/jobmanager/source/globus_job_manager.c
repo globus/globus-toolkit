@@ -988,6 +988,24 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     }
 
     /********************************** 
+     *  GET MPITASKS PARAM
+     */
+    globus_rsl_param_get(description_tree,
+		       GLOBUS_GRAM_CLIENT_MPITASKS_PARAM,
+		       &tmp_param);
+    if (tmp_param[0])
+    {
+        params->mpitasks = atoi(tmp_param[0]);
+
+        if (params->mpitasks < 1)
+            return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_MPITASKS);
+    }
+    else
+    {
+        params->mpitasks = 0;
+    }
+
+    /********************************** 
      *  GET PARADYN PARAM
      */
     globus_rsl_param_get(description_tree,
