@@ -781,7 +781,6 @@ AC_ARG_WITH(pam,
 			else
 				LIBPAM="-lpam"
 			fi
-
 			AC_SUBST(LIBPAM)
 		fi
 	]
