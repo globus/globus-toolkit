@@ -1,6 +1,7 @@
 
 
 #include "globus_callout.h"
+#include "globus_common.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -10,16 +11,52 @@ int main()
     globus_callout_handle_t     authz_handle;
     char *                      filename = "test.conf";
     globus_result_t             result;
-            
-    globus_callout_handle_init(&authz_handle);
+
+    globus_module_activate(GLOBUS_COMMON_MODULE);
+    globus_module_activate(GLOBUS_CALLOUT_MODULE);
     
-    globus_callout_read_config(authz_handle, filename);
+    result = globus_callout_handle_init(&authz_handle);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
     
-    result = globus_callout_call_type(handle,
+    result = globus_callout_read_config(authz_handle, filename);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+    
+    result = globus_callout_call_type(authz_handle,
                                       "TEST",
-                                      NULL);
+                                      "foo",
+                                      "bar");
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
     
-    globus_callout_handle_destroy(authz_handle);
+    result = globus_callout_handle_destroy(authz_handle);
+
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+
+    globus_module_deactivate_all();
     
     return 0;
+
+ error_exit:
+
+    fprintf(stderr,"ERROR: %s",
+            globus_error_print_chain(globus_error_get(result)));
+    
+    globus_module_deactivate_all();
+
+    return 1;
 }

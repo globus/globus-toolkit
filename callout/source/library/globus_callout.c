@@ -261,7 +261,10 @@ globus_callout_read_config(
 
         pound = strchr(buffer, '#');
 
-        *pound = '\0';
+        if(pound != NULL)
+        { 
+            *pound = '\0';
+        }
 
         /* strip white space from start */
         
@@ -274,7 +277,7 @@ globus_callout_read_config(
 
         /* if blank line continue */
         
-        if(buffer[index] == '\0')
+        if(buffer[index] == '\0' || buffer[index] == '\n')
         { 
             continue;
         }
@@ -452,6 +455,7 @@ globus_callout_call_type(
     va_list                             ap;
     int                                 rc;
     lt_dlhandle *                       dlhandle;
+    char *                              dlerror;
     static char *                       _function_name_ =
         "globus_callout_handle_call_type";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
@@ -500,14 +504,16 @@ globus_callout_call_type(
         /* first time a symbol is referenced in this library -> need to open it
          */
 
-        *dlhandle = lt_dlopen(datum->file);
+        *dlhandle = lt_dlopenext(datum->file);
 
         if(*dlhandle == NULL)
         {
             GLOBUS_CALLOUT_ERROR_RESULT(
                 result,
                 GLOBUS_CALLOUT_ERROR_WITH_DL,
-                ("couldn't dlopen: %s", datum->file));
+                ("couldn't dlopen %s: %s\n",
+                 datum->file,
+                 (dlerror = lt_dlerror()) ? dlerror : "(null)"));
             goto exit;
         }
 
@@ -520,9 +526,10 @@ globus_callout_call_type(
         GLOBUS_CALLOUT_ERROR_RESULT(
             result,
             GLOBUS_CALLOUT_ERROR_WITH_DL,
-            ("symbol %s could not be found in %s",
+            ("symbol %s could not be found in %s: %s\n",
              datum->symbol,
-             datum->file));
+             datum->file,
+             (dlerror = lt_dlerror()) ? dlerror : "(null)"));
         goto exit;
     }
 
