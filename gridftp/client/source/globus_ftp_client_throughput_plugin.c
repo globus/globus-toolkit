@@ -163,6 +163,11 @@ throughput_plugin_marker_cb(
                 globus_free(info->cur_bytes);
             }
 
+            info->prev_times            = GLOBUS_NULL;
+            info->cur_times             = GLOBUS_NULL;
+            info->prev_bytes            = GLOBUS_NULL;
+            info->cur_bytes             = GLOBUS_NULL;
+
             return;
         }
 
