@@ -231,7 +231,7 @@ typedef struct
     globus_l_operation_state_t                  state;
     globus_xio_operation_t                      op;
     int                                         fd;
-    globus_result_t                             result;
+    globus_object_t *                           error;
     void *                                      user_arg;
     /* used for reads/writes, 0 for others. here to simplify some things */
     globus_size_t                               nbytes;
@@ -613,7 +613,7 @@ globus_l_xio_system_cancel_cb(
                                 _xio_name, op_info->fd));
                                 
                         /* unregister and kickout now */
-                        op_info->result = GlobusXIOErrorCanceled();
+                        op_info->error = GlobusXIOErrorObjCanceled();
 
                         result = globus_callback_register_oneshot(
                             GLOBUS_NULL,
@@ -896,13 +896,13 @@ globus_l_xio_system_kickout(
       case GLOBUS_L_OPERATION_CONNECT:
       case GLOBUS_L_OPERATION_ACCEPT:
         op_info->sop.non_data.callback(
-            op_info->result,
+            globus_error_put(op_info->error),
             op_info->user_arg);
         break;
 
       default:
         op_info->sop.data.callback(
-            op_info->result,
+            globus_error_put(op_info->error),
             op_info->nbytes,
             op_info->user_arg);
 
@@ -1673,7 +1673,7 @@ globus_l_xio_system_handle_read(
     {
 error_canceled:
         handled_it = GLOBUS_TRUE;
-        read_info->result = result;
+        read_info->error = globus_error_get(result);
         read_info->state = GLOBUS_L_OPERATION_COMPLETE;
 
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
@@ -1848,7 +1848,7 @@ globus_l_xio_system_handle_write(
     {
 error_canceled:
         handled_it = GLOBUS_TRUE;
-        write_info->result = result;
+        write_info->error = globus_error_get(result);
         write_info->state = GLOBUS_L_OPERATION_COMPLETE;
 
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);

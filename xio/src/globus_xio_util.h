@@ -13,13 +13,15 @@
 #endif
 
 #define GlobusXIOErrorCanceled()                                            \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_XIO_MODULE,                                              \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_ERROR_CANCELED,                                      \
-            "[%s:%d] Operation was canceled",                               \
-            _xio_name, __LINE__))                                           
+    globus_error_put(GlobusXIOErrorObjCanceled())                                           
+
+#define GlobusXIOErrorObjCanceled()                                         \
+    globus_error_construct_error(                                           \
+        GLOBUS_XIO_MODULE,                                                  \
+        GLOBUS_NULL,                                                        \
+        GLOBUS_XIO_ERROR_CANCELED,                                          \
+        "[%s:%d] Operation was canceled",                                   \
+        _xio_name, __LINE__)                                          
                                                                             
 #define GlobusXIOErrorTimedout()                                            \
     globus_error_put(                                                       \
