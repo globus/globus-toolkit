@@ -463,6 +463,7 @@ globus_gsi_proxy_handle_set_private_key(
 {
     int                                 length;
     unsigned char *                     der_encoded = NULL;
+    unsigned char *                     tmp;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ = 
         "globus_gsi_proxy_handle_set_private_key";
@@ -486,10 +487,46 @@ globus_gsi_proxy_handle_set_private_key(
     if(proxy_key)
     {
 
-        length = i2d_PrivateKey(proxy_key, &der_encoded);
+        length = i2d_PrivateKey(proxy_key, NULL);
+        
+        if(length < 0)
+        {
+            GLOBUS_GSI_PROXY_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
+                ("Couldn't convert private key from internal"
+                 "to DER encoded form"));
+            goto exit;
+            
+        }
+        
+        der_encoded = malloc(length);
+        
+        if(!der_encoded)
+        {
+            GLOBUS_GSI_PROXY_MALLOC_ERROR(length);
+            goto exit;
+        }
+        
+        tmp = der_encoded;
+        
+        length = i2d_PrivateKey(handle->proxy_key, &tmp);
+        
+        if(length < 0)
+        {
+            GLOBUS_GSI_PROXY_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
+                ("Couldn't convert private key from internal"
+                 "to DER encoded form"));
+            goto exit;
+            
+        }
+
+        tmp = der_encoded;
         
         if(!d2i_PrivateKey(proxy_key->type, &handle->proxy_key, 
-                           &der_encoded, length))
+                           &tmp, length))
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
@@ -500,6 +537,11 @@ globus_gsi_proxy_handle_set_private_key(
     }
 
  exit:
+
+    if(der_encoded)
+    {
+        free(der_encoded);
+    }
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
