@@ -99,11 +99,8 @@ system("rm -rf ./gpt")==0 or die "Unable to remove gpt directory: $?";
 # run the standard development tools to get the necessary derived files.
 #
 
-printf("running autoheader...\n");
-system("autoheader")==0 or die "Could not run autoheader: $?";
-
-printf("running autoconf...\n");
-system("autoconf")==0 or die "Could not run autoheader: $?";
+printf("running make distprep...\n");
+system("make -f Makefile.in distprep > /dev/null")==0 or die "Could not run make distprep: $?";
 
 chdir("../");
 
