@@ -291,6 +291,7 @@ globus_io_register_select(
     globus_io_callback_t                except_callback_func,
     void *                              except_callback_arg);
     
+/* host must have room for 4 ints. will fail if ip is ipv6 */
 globus_result_t
 globus_io_tcp_get_local_address(
     globus_io_handle_t *                handle,
@@ -301,6 +302,23 @@ globus_result_t
 globus_io_tcp_get_remote_address(
     globus_io_handle_t *                handle,
     int *                               host,
+    unsigned short *                    port);
+
+/* host must have room for 16 ints,
+ * count will be passed back: 4 for ipv4, 16 for ipv6
+ */
+globus_result_t
+globus_io_tcp_get_local_address_ex(
+    globus_io_handle_t *                handle,
+    int *                               host,
+    int *                               count,
+    unsigned short *                    port);
+
+globus_result_t
+globus_io_tcp_get_remote_address_ex(
+    globus_io_handle_t *                handle,
+    int *                               host,
+    int *                               count,
     unsigned short *                    port);
 
 globus_result_t
@@ -457,6 +475,11 @@ globus_result_t
 globus_io_attr_get_tcp_interface(
     globus_io_attr_t *                  attr,
     char **                             interface_addr);
+
+globus_result_t
+globus_io_attr_set_tcp_allow_ipv6(
+    globus_io_attr_t *                  attr,
+    globus_bool_t                       allow);
 
 globus_bool_t
 globus_io_eof(

@@ -1249,24 +1249,40 @@ globusl_url_get_host_port(const char **stringp,
     }
 
     *port = 0;
-
-    while(isalnum((*stringp)[pos]) ||
-	  (*stringp)[pos] == '-' ||
-	  (*stringp)[pos] == '.')
+    
+    if((*stringp)[pos] == '[')
     {
-	pos++;
-    } 
-
+        (*stringp)++;
+        while(isxdigit((*stringp)[pos]) ||
+          (*stringp)[pos] == ':' ||
+          (*stringp)[pos] == '.')
+        {
+            pos++;
+        } 
+    }
+    else
+    {
+        while(isalnum((*stringp)[pos]) ||
+          (*stringp)[pos] == '-' ||
+          (*stringp)[pos] == '.')
+        {
+            pos++;
+        } 
+    }
+    
     if(pos == startpos)
     {
 	return GLOBUS_URL_ERROR_BAD_HOST;
     }
     
     if((*stringp)[pos] == ':' ||
-       (*stringp)[pos] == '/')
+       (*stringp)[pos] == '/' ||
+       ((*stringp)[pos] == ']' && 
+        ((*stringp)[pos + 1] == ':' || (*stringp)[pos + 1] == '/')))
     {
 	char *tmp;
 	rc = globusl_url_get_substring(*stringp, host, pos);
+	if((*stringp)[pos] == ']') pos++;
 	(*stringp) += pos;
 	if(rc != GLOBUS_SUCCESS)
 	{
@@ -1305,9 +1321,11 @@ globusl_url_get_host_port(const char **stringp,
 	    return GLOBUS_SUCCESS;
 	}
     }
-    else if((*stringp)[pos] == '\0')
+    else if((*stringp)[pos] == '\0' ||
+        ((*stringp)[pos] == ']' && (*stringp)[pos + 1] == '\0'))
     {
 	rc = globusl_url_get_substring(*stringp, host, pos);
+	if((*stringp)[pos] == ']') pos++;
 	(*stringp) += pos;
 	return rc;
     }

@@ -2,6 +2,7 @@
 #include "globus_xio_tcp_driver.h"
 #include "version.h"
 #include <netinet/tcp.h>
+#include <fcntl.h>
 
 GlobusDebugDefine(GLOBUS_XIO_TCP);
 
@@ -142,6 +143,9 @@ static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
     GLOBUS_FALSE                        /* global */
 };
 
+static int                              globus_l_xio_tcp_port_range_state_file;
+static globus_mutex_t                   globus_l_xio_tcp_port_range_state_lock;
+
 /*
  *  server structure
  */
@@ -178,6 +182,177 @@ globus_l_xio_tcp_get_env_pair(
     }
 
     return GLOBUS_FALSE;
+}
+
+static
+void
+globus_l_xio_tcp_file_close(void)
+{
+    int                                 rc;
+    
+    if(globus_l_xio_tcp_port_range_state_file < 0)
+    {
+        return;
+    }
+    
+    do
+    {
+        close(globus_l_xio_tcp_port_range_state_file);
+    } while(rc < 0 && errno == EINTR);
+    
+    globus_l_xio_tcp_port_range_state_file = -1;
+}
+
+static
+void
+globus_l_xio_tcp_file_lock(void)
+{
+    int                                 rc;
+    struct flock                        fl;
+    
+    globus_mutex_lock(&globus_l_xio_tcp_port_range_state_lock);
+    
+    if(globus_l_xio_tcp_port_range_state_file >= 0)
+    {
+        memset(&fl, 0, sizeof (fl));
+        fl.l_whence = SEEK_SET;
+        fl.l_type = F_WRLCK;
+        do
+        {
+            rc = fcntl(globus_l_xio_tcp_port_range_state_file, F_SETLKW, &fl);
+        } while(rc < 0 && errno == EINTR);
+        
+        if(rc < 0)
+        {
+            fprintf(stderr, "Unable to lock state file: %s\n",
+                strerror(errno));
+            globus_l_xio_tcp_file_close();
+        }
+    }
+}
+
+static
+void
+globus_l_xio_tcp_file_unlock()
+{
+    int                                 rc;
+    struct flock                        fl;
+    
+    if(globus_l_xio_tcp_port_range_state_file >= 0)
+    {
+        memset(&fl, 0, sizeof (fl));
+        fl.l_whence = SEEK_SET;
+        fl.l_type = F_UNLCK;
+        do
+        {
+            rc = fcntl(globus_l_xio_tcp_port_range_state_file, F_SETLK, &fl);
+        } while(rc < 0 && errno == EINTR);
+        
+        if(rc < 0)
+        {
+            fprintf(stderr, "Unable to unlock state file: %s\n",
+                strerror(errno));
+            globus_l_xio_tcp_file_close();
+        }
+    }
+    
+    globus_mutex_unlock(&globus_l_xio_tcp_port_range_state_lock);
+}
+
+static
+void
+globus_l_xio_tcp_file_open(
+    const char *                        pathname)
+{
+    do
+    {
+        globus_l_xio_tcp_port_range_state_file = 
+            open(pathname, O_CREAT | O_RDWR,
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+    } while(globus_l_xio_tcp_port_range_state_file < 0 && errno == EINTR);
+    
+    if(globus_l_xio_tcp_port_range_state_file < 0)
+    {
+        fprintf(stderr, "Could not open lock file %s: %s\n", 
+            pathname, strerror(errno));
+    }
+    else
+    {
+        /* test locking -- if they fail, they will close the fd */
+        globus_l_xio_tcp_file_lock();
+        globus_l_xio_tcp_file_unlock();
+    }
+}
+
+static
+int
+globus_l_xio_tcp_file_read_port(void)
+{
+    char                                buf[6];
+    int                                 rc;
+    int                                 nbytes = 0;
+    int                                 port = -1;
+    
+    if(globus_l_xio_tcp_port_range_state_file < 0)
+    {
+        return -1;
+    }
+    
+    if(lseek(globus_l_xio_tcp_port_range_state_file, 0, SEEK_SET) == 0)
+    {
+        do
+        {
+            if((rc = read(
+                globus_l_xio_tcp_port_range_state_file,
+                buf + nbytes, 5 - nbytes)) > 0)
+            {
+                nbytes += rc;
+            }
+        } while((rc > 0 && nbytes < 5) || (rc < 0 && errno == EINTR));
+        
+        if(nbytes == 5)
+        {
+            buf[5] = 0;
+            port = atoi(buf);
+        }
+    }
+    
+    return port;
+}
+
+static
+void
+globus_l_xio_tcp_file_write_port(
+    int                                 port)
+{
+    char                                buf[6];
+    int                                 rc = -1;
+    int                                 nbytes = 0;
+    
+    if(globus_l_xio_tcp_port_range_state_file < 0)
+    {
+        return;
+    }
+    
+    snprintf(buf, 6, "%.5d", port);
+    if(lseek(globus_l_xio_tcp_port_range_state_file, 0, SEEK_SET) == 0)
+    {
+        do
+        {
+            if((rc = write(
+                globus_l_xio_tcp_port_range_state_file,
+                buf + nbytes, 6 - nbytes)) > 0)
+            {
+                nbytes += rc;
+            }
+        } while((rc >= 0 && nbytes < 6) || (rc < 0 && errno == EINTR));
+    }
+    
+    if(rc < 0)
+    {
+        fprintf(stderr, "Unable to update state file: %s\n", strerror(errno));
+        globus_l_xio_tcp_file_close();
+    }
 }
 
 /*
@@ -747,7 +922,6 @@ globus_l_xio_tcp_contact_string(
         /* fall through */
         
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
-        flags |= GLOBUS_LIBC_ADDR_LOCAL;
         if(getsockname(handle, (struct sockaddr *) &sock_name, &sock_len) < 0)
         {
             result = GlobusXIOErrorSystemError("getsockname", errno);
@@ -879,12 +1053,15 @@ globus_l_xio_tcp_bind(
     const struct sockaddr *             addr,
     int                                 addr_len,
     int                                 min_port,
-    int                                 max_port)
+    int                                 max_port,
+    globus_bool_t                       listener)
 {
     int                                 port;
     globus_bool_t                       done;
     globus_sockaddr_t                   myaddr;
     globus_result_t                     result;
+    int                                 stop_port;
+    globus_bool_t                       unlock = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_tcp_bind);
     
     GlobusXIOTcpDebugEnter();
@@ -893,10 +1070,28 @@ globus_l_xio_tcp_bind(
     if(port == 0)
     {
         port = min_port;
+        stop_port = max_port;
+                    
+        if(listener &&
+            min_port == globus_l_xio_tcp_attr_default.listener_min_port &&
+            max_port == globus_l_xio_tcp_attr_default.listener_max_port &&
+            globus_l_xio_tcp_port_range_state_file >= 0)
+        {
+            int                         tmpport;
+            
+            unlock = GLOBUS_TRUE;
+            globus_l_xio_tcp_file_lock();
+            tmpport = globus_l_xio_tcp_file_read_port();
+            if(tmpport < max_port && tmpport >= min_port)
+            {
+                port = tmpport + 1;
+                stop_port = tmpport;
+            }
+        }
     }
     else
     {
-        max_port = port;
+        stop_port = port;
     }
     
     done = GLOBUS_FALSE;
@@ -910,10 +1105,14 @@ globus_l_xio_tcp_bind(
             (struct sockaddr *) &myaddr,
             GlobusLibcSockaddrLen(&myaddr)) < 0)
         {
-            if(++port > max_port)
+            if(port++ == stop_port)
             {
                 result = GlobusXIOErrorSystemError("bind", errno);
                 goto error_bind;
+            }
+            else if(port > max_port)
+            {
+                port = min_port;
             }
         }
         else
@@ -922,10 +1121,20 @@ globus_l_xio_tcp_bind(
         }
     } while(!done);
     
+    if(unlock)
+    {
+        globus_l_xio_tcp_file_write_port(port);
+        globus_l_xio_tcp_file_unlock();
+    }
+    
     GlobusXIOTcpDebugExit();
     return GLOBUS_SUCCESS;
     
 error_bind:
+    if(unlock)
+    {
+        globus_l_xio_tcp_file_unlock();
+    }
     GlobusXIOTcpDebugExitWithError();
     return result;
 }
@@ -1023,7 +1232,8 @@ globus_l_xio_tcp_create_listener(
                     addrinfo->ai_addr,
                     addrinfo->ai_addrlen,
                     attr->restrict_port ? attr->listener_min_port : 0,
-                    attr->restrict_port ? attr->listener_max_port : 0);
+                    attr->restrict_port ? attr->listener_max_port : 0,
+                    GLOBUS_TRUE);
                 if(result != GLOBUS_SUCCESS)
                 {
                     result = GlobusXIOErrorWrapFailed(
@@ -1472,7 +1682,8 @@ globus_l_xio_tcp_bind_local(
                 addrinfo->ai_addr,
                 addrinfo->ai_addrlen,
                 attr->restrict_port ? attr->connector_min_port : 0,
-                attr->restrict_port ? attr->connector_max_port : 0);
+                attr->restrict_port ? attr->connector_max_port : 0,
+                GLOBUS_FALSE);
             if(result != GLOBUS_SUCCESS)
             {
                 result = GlobusXIOErrorWrapFailed(
@@ -2389,11 +2600,22 @@ globus_l_xio_tcp_activate(void)
     
     GlobusXIOTcpDebugEnter();
     
+    globus_l_xio_tcp_port_range_state_file = -1;
+    globus_mutex_init(&globus_l_xio_tcp_port_range_state_lock, NULL);
+    
     if(globus_l_xio_tcp_get_env_pair(
         "GLOBUS_TCP_PORT_RANGE", &min, &max) && min <= max)
     {
+        char *                          tmp;
+        
         globus_l_xio_tcp_attr_default.listener_min_port = min;
         globus_l_xio_tcp_attr_default.listener_max_port = max;
+        
+        if((tmp = globus_module_getenv("GLOBUS_TCP_PORT_RANGE_STATE_FILE")) &&
+            *tmp)
+        {
+            globus_l_xio_tcp_file_open(tmp);
+        }
     }
     
     if(globus_l_xio_tcp_get_env_pair(
@@ -2415,6 +2637,8 @@ globus_l_xio_tcp_activate(void)
     return GLOBUS_SUCCESS;
     
 error_activate:
+    globus_l_xio_tcp_file_close();
+    globus_mutex_destroy(&globus_l_xio_tcp_port_range_state_lock);
     GlobusXIOTcpDebugExitWithError();
     GlobusDebugDestroy(GLOBUS_XIO_TCP);
     return rc;
@@ -2432,7 +2656,10 @@ globus_l_xio_tcp_deactivate(void)
     globus_l_xio_tcp_attr_default.listener_max_port = 0;
     globus_l_xio_tcp_attr_default.connector_min_port = 0;
     globus_l_xio_tcp_attr_default.connector_max_port = 0;
-        
+    
+    globus_l_xio_tcp_file_close();
+    globus_mutex_destroy(&globus_l_xio_tcp_port_range_state_lock);
+    
     GlobusXIOUnRegisterDriver(tcp);
     globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
     

@@ -76,6 +76,7 @@ typedef struct
     globus_off_t			partial_offset;
     globus_off_t			partial_length;
     globus_bool_t                       list_uses_data_mode;
+    globus_bool_t                       ipv6;
 
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
@@ -303,6 +304,8 @@ const char * long_usage =
 "       defaults the full file.\n"
 "  -stripe\n"
 "       enable striped transfers on supported servers\n"
+"  -ipv6\n"
+"       use ipv6 when available (EXPERIMENTAL)\n"
 "\n";
 
 /***********
@@ -379,6 +382,7 @@ enum
     arg_partial_length,
     arg_rfc1738,
     arg_fast,
+    arg_ipv6,
     arg_striped,
     arg_num = arg_striped
 };
@@ -417,6 +421,7 @@ flagdef(arg_recurse, "-r", "-recurse");
 flagdef(arg_striped, "-stripe", "-striped");
 flagdef(arg_rfc1738, "-rp", "-relative-paths");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
+flagdef(arg_ipv6, "-ipv6","-IPv6");
 
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
@@ -462,8 +467,9 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_recurse);		\
     setupopt(arg_partial_offset);	\
     setupopt(arg_partial_length);	\
-    setupopt(arg_rfc1738);	\
-    setupopt(arg_fast);	\
+    setupopt(arg_rfc1738);      	\
+    setupopt(arg_fast);	                \
+    setupopt(arg_ipv6);         	\
     setupopt(arg_striped);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
@@ -1320,6 +1326,7 @@ globus_l_guc_parse_arguments(
     guc_info->partial_length = -1;
     guc_info->rfc1738 = GLOBUS_FALSE;
     guc_info->list_uses_data_mode = GLOBUS_FALSE;
+    guc_info->ipv6 = GLOBUS_FALSE;
 
     /* determine the program name */
     
@@ -1437,6 +1444,9 @@ globus_l_guc_parse_arguments(
             break;
 	case arg_striped:
 	    guc_info->striped = GLOBUS_TRUE;
+	    break;
+	case arg_ipv6:
+	    guc_info->ipv6 = GLOBUS_TRUE;
 	    break;
 	case arg_partial_offset:
             globus_libc_scan_off_t(
@@ -2066,6 +2076,12 @@ globus_l_guc_gass_attr_init(
 
         globus_ftp_client_operationattr_set_striped(ftp_attr, GLOBUS_TRUE);    
                 globus_ftp_client_operationattr_set_layout(ftp_attr, &layout);
+	}
+
+	if (guc_info->ipv6)
+	{
+            globus_ftp_client_operationattr_set_allow_ipv6(
+                ftp_attr, GLOBUS_TRUE);    
 	}
 
         if (subject  ||

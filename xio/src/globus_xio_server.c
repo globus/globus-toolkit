@@ -2057,7 +2057,7 @@ globus_xio_contact_info_to_url(
     globus_xio_contact_t                encode_chars;
     
     memset(&encode_chars, 0, sizeof(encode_chars));
-    encode_chars.resource = "<> \"'#";
+    encode_chars.resource = " \"#$&+,:;<=>?@[\\]^`{|}~!*";
     encode_chars.user = "<> @:/\"'#";
     encode_chars.pass = "<> @:/\"'#";
     encode_chars.subject = "<> \"'#";

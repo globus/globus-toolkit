@@ -916,6 +916,16 @@ globus_ftp_client_operationattr_get_read_all(
     void **					intermediate_callback_arg);
 
 globus_result_t
+globus_ftp_client_operationattr_set_allow_ipv6(
+    globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t				allow);
+
+globus_result_t
+globus_ftp_client_operationattr_get_allow_ipv6(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t *				allow);
+
+globus_result_t
 globus_ftp_client_operationattr_copy(
     globus_ftp_client_operationattr_t *		dst,
     const globus_ftp_client_operationattr_t *	src);

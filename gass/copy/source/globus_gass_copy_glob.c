@@ -114,9 +114,10 @@ globus_gass_copy_glob_expand_url(
     int                                 retval;
     globus_url_scheme_t                 scheme_type;
     int                                 url_len;
+    int                                 path_len;
     globus_bool_t                       glob = GLOBUS_TRUE;
     globus_gass_copy_glob_stat_t        info_stat;  
-
+    char *                              path;
 
     info = (globus_l_gass_copy_glob_info_t *)
         globus_malloc(sizeof(globus_l_gass_copy_glob_info_t));
@@ -140,14 +141,28 @@ globus_gass_copy_glob_expand_url(
                 myname));
         goto error;
     }
-
+    
+    /* find start of path so we ignore potential globbing chars in host/port */
     url_len = strlen(info->url);
+    if(scheme_type != GLOBUS_URL_SCHEME_FILE &&
+        (path = strchr(info->url, '/')) &&
+        (path = strchr(path + 1, '/')) &&
+        (path = strchr(path + 1, '/')))
+    {
+        path_len = strlen(path);
+    }
+    else
+    {
+        path = info->url;
+        path_len = url_len;
+    }
     
     /* check if url contains glob characters,
        and append * if it is a directory */
        
-    if(strcspn(info->url, "[]*?") == url_len)
+    if(strcspn(path, "[]*?") == path_len)
     {        
+        /* no globbing chars in path */
 #ifndef TARGET_ARCH_WIN32
         if(info->url[url_len - 1] == '/')
         {   

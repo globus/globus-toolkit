@@ -25,6 +25,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 open($fh, "<$local_copy");
@@ -48,7 +49,7 @@ sub basic_func
 
     unlink($tmpname);
 
-    my $command = "$test_exec -R $range -s gsiftp://$source_host$source_file  >$tmpname 2>/dev/null";
+    my $command = "$test_exec -R $range -s $proto$source_host$source_file  >$tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -80,7 +81,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -R $range -s gsiftp://$source_host$source_file  >/dev/null 2>/dev/null";
+    my $command = "$test_exec -a $abort_point -R $range -s $proto$source_host$source_file  >/dev/null 2>/dev/null";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -110,7 +111,7 @@ sub restart_test
 
     unlink($tmpname);
 
-    my $command = "$test_exec -r $restart_point -R $range -s gsiftp://$source_host$source_file  >$tmpname 2>/dev/null";
+    my $command = "$test_exec -r $restart_point -R $range -s $proto$source_host$source_file  >$tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
