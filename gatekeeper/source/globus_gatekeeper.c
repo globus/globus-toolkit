@@ -517,7 +517,8 @@ main(int xargc,
 
     for (i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "-d") == 0)
+        if ((strcmp(argv[i], "-d") == 0) ||
+            (strcmp(argv[i], "-debug") == 0 ))
         {
             debug = 1;
             foreground = 1;   /* Run in the forground */
@@ -535,13 +536,15 @@ main(int xargc,
 	    }
 	    
         }
-        else if ((strcmp(argv[i], "-p") == 0)
+        else if (((strcmp(argv[i], "-p") == 0) ||
+                  (strcmp(argv[i], "-port") == 0))
                  && (i + 1 < argc))
         {
             daemon_port = atoi(argv[i+1]);
             i++;
         }
-        else if ((strcmp(argv[i], "-l") == 0)
+        else if (((strcmp(argv[i], "-l") == 0) ||
+                  (strcmp(argv[i], "-logfile") == 0))
                 && (i + 1 < argc))
         {
             logfile =  argv[i+1];
@@ -668,7 +671,8 @@ main(int xargc,
         {
             krb5flag = 1;
         }
-        else if (strcmp(argv[i], "-f") == 0)
+        else if ((strcmp(argv[i], "-f") == 0) ||
+                 (strcmp(argv[i], "-foreground") == 0))
         {
 	    if(!run_from_inetd)
 	    {
@@ -684,8 +688,8 @@ main(int xargc,
             fprintf(stderr, "Unknown argument %s\n", argv[i]);
             fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s\n ",
                     argv[0], 
-                    "{-conf parmfile [-test]} | {[-d] [-inetd | -f] [-p port] ",
-                    "[-home path] [-l logfile] [-e path] ",
+                    "{-conf parmfile [-test]} | {[-d[ebug] [-inetd | -f] [-p[ort] port] ",
+                    "[-home path] [-l[ogfile] logfile] [-e path] ",
 					"[-grid_services file] ",
                     "[-globusid globusid] [-gridmap file] [-globuspwd file]",
                     "[-x509_cert_dir path] [-x509_cert_file file]",
