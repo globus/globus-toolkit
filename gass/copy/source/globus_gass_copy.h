@@ -5,15 +5,15 @@
  * uniform interface to transfer files specified by different protocols.
  *
  * The goals in doing this are to:
- 
+
  *   - Provide a robust way to describe and apply file transfer properties
- * for a variety of protocols. These include the standard HTTP, FTP and 
+ * for a variety of protocols. These include the standard HTTP, FTP and
  * GSIFTP options.  Some of the new file transfer capabilities in GSIFTP are
  * parallel, striping, authentication and TCP buffer sizing.
  *   - Provide a service to support nonblocking file transfer and handle
  * asynchronous file and network events.
  *   - Provide a simple and portable way to implement file transfers.
- * 
+ *
  * Any program that uses Globus GASS Copy functions must include
  * "globus_gass_copy.h".
  *
@@ -78,10 +78,48 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t        globus_i_gass_copy_module;
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
 typedef struct globus_gass_copy_state_s globus_gass_copy_state_t;
 typedef struct globus_gass_copy_handle_s globus_gass_copy_handle_t;
+typedef struct globus_gass_copy_perf_info_s globus_gass_copy_perf_info_t;
+
+/**
+ * Gass copy transfer performance callback
+ *
+ * This callback is registered with 'globus_gass_copy_register_performance_cb'
+ * It will be called during a transfer to supply performance information on
+ * current transfer.  Its frequency will be at most one per second, but
+ * it is possible to receive no callbacks. This is possible in very short
+ * transfers and in ftp transfers in which the server does not provide
+ * performance information.
+ *
+ * @param handle
+ *        the gass copy handle this transfer is occurring on
+ *
+ * @param user_arg
+ *        a user pointer registered with
+ *        'globus_gass_copy_register_performance_cb'
+ *
+ * @param total_bytes
+ *        the total number of bytes transfer so far
+ *
+ * @param instantaneous_throughput
+ *        instantaneous rate of transfer (since last callback or start)
+ *
+ * @param avg_throughput
+ *        the avg thoughput calculated since the start of the transfer
+ *
+ * @return
+ *        - n/a
+ */
+
+typedef void (*globus_gass_copy_performance_cb_t)(
+    globus_gass_copy_handle_t *                     handle,
+    void *                                          user_arg,
+    globus_size_t                                   total_bytes,
+    float                                           instantaneous_throughput,
+    float                                           avg_throughput);
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
  * Signature of a callback from globus_gass_copy_register_*() functions.
@@ -92,7 +130,7 @@ typedef void (*globus_gass_copy_callback_t)(
     globus_gass_copy_handle_t * handle,
     globus_object_t * error);
 
-/** 
+/**
  * valid state status (aka states)
  */
 typedef enum
@@ -111,18 +149,6 @@ typedef enum
     GLOBUS_GASS_COPY_STATUS_DONE_FAILURE,
     GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED
 } globus_gass_copy_status_t;
-
-/**
- * tranfer performance info
- */
-typedef struct globus_gass_copy_performance_s
-{
-    globus_gass_copy_status_t status;
-    globus_off_t    bytes_transfered;
-    int             transfer_rate;
-    char            source_url[256];
-    char            dest_url[256];
-} globus_gass_copy_performance_t;
 
 /**
  * valid url modes
@@ -150,11 +176,16 @@ struct globus_gass_copy_handle_s
    * transfer
    */
   globus_gass_copy_state_t * state;
-  
+
   /*
    * pointer to user data
    */
   void *		     user_pointer;
+
+  /* pointer to perf_info structure used to provide the user transfer
+   * performance information
+   */
+  globus_gass_copy_perf_info_t * performance;
 
   /*
    * indicates if the 3rd party transfer is done by this library or externally
@@ -199,7 +230,7 @@ struct globus_gass_copy_handle_s
    * TRUE, gass_copy will manage the transfer
    */
   globus_bool_t                       no_third_party_transfers;
-  
+
   globus_ftp_client_handle_t	      ftp_source_handle;
   globus_ftp_client_handle_t	      ftp_dest_handle;
 };
@@ -357,7 +388,7 @@ globus_gass_copy_register_handle_to_url(
     void * callback_arg);
 
 /**
- * get the status code of the current transfer 
+ * get the status code of the current transfer
  */
 globus_result_t
 globus_gass_copy_get_status(
@@ -371,15 +402,6 @@ globus_gass_copy_get_status(
 const char *
 globus_gass_copy_get_status_string(
     globus_gass_copy_handle_t * handle);
-
-
-/**
- * get the performance info of the current transfer
- */
-globus_result_t
-globus_gass_copy_get_performance(
-    globus_gass_copy_handle_t * handle,
-    globus_gass_copy_performance_t * perf_info);
 
 /**
  * cancel the current transfer
@@ -418,6 +440,11 @@ globus_gass_copy_get_user_pointer(
     globus_gass_copy_handle_t * handle,
     void * user_data);
 
+globus_result_t
+globus_gass_copy_register_performance_cb(
+    globus_gass_copy_handle_t *         handle,
+    globus_gass_copy_performance_cb_t   callback,
+    void *                              user_arg);
 
 /**
  * Set Attribute functions
