@@ -1298,14 +1298,16 @@ static void doit()
 
     if (rc != 0)
     {
-        failure2(FAILED_AUTHORIZATION,
 
 #ifdef GAA_GATEKEEPER
-                 "gatekeeper_gaa_check_policy_assist() failed authorization."
+		failure3(FAILED_AUTHORIZATION,
+				"gatekeeper_gaa_check_policy_assist() failed authorization.",
+				" rc = %d", rc);
 #else
-		 "globus_gss_assist_gridmap() failed authorization."
+		failure3(FAILED_AUTHORIZATION,
+				"globus_gss_assist_gridmap() failed authorization.",
+                " rc = %d", rc);
 #endif
-                 " rc = %d", rc);
  
     }
     
