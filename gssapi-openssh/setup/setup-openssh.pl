@@ -24,7 +24,7 @@ $gptpath = $ENV{GPT_LOCATION};
 $gpath = $ENV{GLOBUS_LOCATION};
 if (!defined($gpath))
 {
-    exitDie "GLOBUS_LOCATION needs to be set before running this script"
+    exitDie("ERROR: GLOBUS_LOCATION needs to be set before running this script!\n");
 }
 
 #
@@ -1047,7 +1047,7 @@ sub readFile
     my($filename) = @_;
     my($data);
 
-    open(IN, "$filename") || exitDie "Can't open '$filename': $!";
+    open(IN, "$filename") || exitDie("ERROR: Can't open '$filename': $!\n");
     $/ = undef;
     $data = <IN>;
     $/ = "\n";
@@ -1072,7 +1072,7 @@ sub writeFile
 
     if ( !defined($filename) || (length($filename) lt 1) )
     {
-        exitDie "Filename is undefined";
+        exitDie("ERROR: Filename is undefined!\n");
     }
 
     #
@@ -1108,7 +1108,7 @@ sub action
 
     if (($result or $?) and $command !~ m!patch!)
     {
-        exitDie "ERROR: Unable to execute command: $!\n";
+        exitDie("ERROR: Unable to execute command: $!\n");
     }
 }
 
