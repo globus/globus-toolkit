@@ -183,7 +183,7 @@ globus_l_xio_http_open_cb(
         {
             res = globus_xio_driver_operation_create(
                                                      &driver_op, context);
-            read_iovec.iov_len = 20;
+            read_iovec.iov_len = 2048;
             read_iovec.iov_base = buffer;
             GlobusXIODriverPassRead(result, driver_op, &read_iovec, 1, 1, \
                                     globus_l_xio_http_read_cb, handle);
