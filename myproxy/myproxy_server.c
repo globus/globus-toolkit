@@ -292,7 +292,6 @@ int
 handle_client(myproxy_socket_attrs_t *attrs,
 	      myproxy_server_context_t *context) 
 {
-    char  error_string[1024];
     char  client_name[1024];
     char  client_buffer[4096];
     int   requestlen;
