@@ -154,3 +154,6 @@ extern char *_PATH_SFTP_SERVER;
 #ifndef ASKPASS_PROGRAM
 #define ASKPASS_PROGRAM         "/usr/lib/ssh/ssh-askpass"
 #endif /* ASKPASS_PROGRAM */
+
+/* Path to rand helper */
+extern char *SSH_RAND_HELPER;

@@ -20,6 +20,7 @@ char *_PATH_SSH_PROGRAM;
 char *_PATH_SSH_SYSTEM_RC;
 char *_PATH_SSH_HOSTS_EQUIV;
 char *_PATH_SFTP_SERVER;
+char *SSH_RAND_HELPER;
 
 static char *
 compose(const char str1[], const char str2[], const char str3[])
@@ -58,4 +59,5 @@ init_pathnames()
     _PATH_SSH_SYSTEM_RC		= compose(gl, SSHDIR, "/sshrc");
     _PATH_SSH_HOSTS_EQUIV	= compose(gl, SSHDIR, "/shosts.equiv");
     _PATH_SFTP_SERVER		= compose(gl, LIBEXEC, "/sftp-server");
+    SSH_RAND_HELPER		= compose(gl, LIBEXEC, "/ssh-rand-helper");
 }
