@@ -751,7 +751,7 @@ void
 respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 			   const char *error)
 {
-    myproxy_response_t		response = {}; /* initialize with 0s */
+    myproxy_response_t		response = {0}; /* initialize with 0s */
     int				responselen;
     char			response_buffer[2048];
     
