@@ -3084,7 +3084,7 @@ globus_l_io_bounce_close_cb(
     
     bounce_info = (globus_l_io_bounce_t *) user_arg;
     
-    if(bounce_info->u_handle)
+    if(*bounce_info->u_handle)
     {
         *bounce_info->u_handle = GLOBUS_NULL;
         if(bounce_info->handle->authz_data)
