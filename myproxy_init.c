@@ -171,6 +171,8 @@ main(int argc, char *argv[])
 
     /* Continue unless the response is not OK */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
+        fprintf(stderr, "error in myproxy_recv_response(): %s\n", 
+		verror_get_string());
         goto cleanup;
     }
     
@@ -190,12 +192,14 @@ main(int argc, char *argv[])
     
     /* Get final response from server */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
+        fprintf(stderr, "error in myproxy_recv_response(): %s\n", 
+		verror_get_string());
         goto cleanup;
     }
 
     hours = (int)(cred_lifetime/SECONDS_PER_HOUR);
     days = (float)(hours/24.0);
-    printf("A proxy valid for %d hours (%5.1f days  ) for user %s now exists on %s.\n", 
+    printf("A proxy valid for %d hours (%.1f days) for user %s now exists on %s.\n", 
 	   hours, days, client_request->username, socket_attrs->pshost); 
     
     /* free memory allocated */
