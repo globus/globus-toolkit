@@ -13,7 +13,7 @@
  */
 
 /******************************************************************
- *                       factory construction
+ *                       target construction
  *****************************************************************/
 /**
  *  @defgroup GLOBUS_XIO_API The globus_xio user api
@@ -24,7 +24,8 @@
  *  Help understanding the globus_xio api.
  *
  *  These pages should provide insight into the globus_xio user api.
- *  - @ref factory_setup
+ *  - @ref stack_setup
+ *  - @ref target_setup
  *  - @ref handle_setup
  *  - @ref muttable_attrs
  *  - @ref timeouts
@@ -34,39 +35,59 @@
  */
 
 /**
- *  @page factory_setup Setting up a factory
- *
+ * @page stack_setup Setting up a stack
+ * 
  *  The driver stack that is used for a given xio handle is constructed
- *  using a globus_xio_factory_t.  Each driver provides a global
- *  globus_xio_driver_t (synonymous to the globus_module_descriptor_t), 
- *  as well as its own means of setting driver specific factory attributes
+ *  using a globus_xio_stack_t.  Each driver is loaded by name or by library
+ *  and pushed onto a stack.
+ * 
+ *  stack setup example:
+ * 
+ *  // First load the drivers
+ *  globus_xio_driver_load("tcp", &tcp_driver);
+ *  globus_xio_driver_load("gsi", &gsi_driver);
+ * 
+ *  //build the stack
+ *  globus_xio_stack_init(&stack);
+ *  globus_xio_stack_push_driver(stack, tcp_driver);
+ *  globus_xio_stack_push_driver(stack, gsi_driver);
+ */
+
+/**
+ *  @page target_setup Setting up a target
  *
- *  Once you have a driver module and any factory attrs you need, you can 
- *  push the driver onto a globus_xio_factory_attr_t.  The order that the 
- *  drivers are pushed on determines the order that the are entered for ever
- *  give xio operation.
+ *  A target can be created for active or passive connections.  An active
+ *  target is created with a contact string and a driver stack.  The contact
+ *  string is intended for the transport layer (???  should have a generic form
+ *  and maybe a method for communicating to multple layers?? should targets
+ *  have target attrs?).  A passive target is given to the user by a server.
+ *  examples of both follow:
+ * 
+ *  active target setup example:
  *
- *  factory setup example:
+ *  globus_xio_target_init(&target, "localhost:80", GLOBUS_NULL, stack);
  *
- *    // the tcp functions are driver specific (not part of the xio framework
- *    // interface).
- *    globus_xio_tcp_factory_attr_init(&tcp_factory_attr);
- *    globus_xio_tcp_factory_attr_set_listener_port(tcp_factory_attr, 2811);
- *
+ *  passive target setup example:
+ * 
+ *  globus_xio_server_init(&server, "http", GLOBUS_NULL, stack);
+ *  globus_xio_server_get_contact_string(server, &buf);
+ *  globus_libc_fprintf(stdout, "serving at: %s.\n", buf);
+ *  globus_xio_server_listen(server, &target);
+
  *    // build the stack
- *    globus_xio_factory_attr_init(&factory_attr);
- *    globus_xio_factory_push_driver(
- *        factory_attr, GLOBUS_XIO_TCP_DRIVER, tcp_factory_attr);
- *    globus_xio_factory_push_driver(
- *        factory_attr, GLOBUS_XIO_GSI_DRIVER, GLOBUS_NULL);
- *    globus_xio_factory_init(&factory, factory_attr);
+ *    globus_xio_target_attr_init(&target_attr);
+ *    globus_xio_target_push_driver(
+ *        target_attr, GLOBUS_XIO_TCP_DRIVER, tcp_target_attr);
+ *    globus_xio_target_push_driver(
+ *        target_attr, GLOBUS_XIO_GSI_DRIVER, GLOBUS_NULL);
+ *    globus_xio_target_init(&target, target_attr);
  */
 
 /**
  *  @page handle_setup Handle Construction
  *
  *  Handles are constructed from factories.  Many handles can be created
- *  from a single factory.  The state of the factory at the time of
+ *  from a single target.  The state of the target at the time of
  *  handle constructions partially determines the initial state of the
  *  handle.  The initial state is also deteremined of the attribute 
  *  it is created with.
@@ -233,46 +254,46 @@
 
 /**
  *  @ingroup GLOBUS_XIO_API
- *  Initialize a handle factory with a given attribute set.
+ *  Initialize a handle target with a given attribute set.
  */
 globus_result_t
-globus_xio_factory_init(
-    globus_xio_factory_t *                      factory,
-    globus_xio_factory_attr_t                   attr);
+globus_xio_target_init(
+    globus_xio_target_t *                      target,
+    globus_xio_target_attr_t                   attr);
 
 /**
  *  @ingroup GLOBUS_XIO_API
- *  clean up a factory
+ *  clean up a target
  */
 globus_result_t
-globus_xio_factory_destroy(
-    globus_xio_factory_t                        factory);
+globus_xio_target_destroy(
+    globus_xio_target_t                        target);
 
 /**
  *  @ingroup GLOBUS_XIO_API
- *  factory attribute init
+ *  target attribute init
  */
 globus_result_t
-globus_xio_factory_attr_init(
-    globus_xio_factory_attr_t *                 attr);
+globus_xio_target_attr_init(
+    globus_xio_target_attr_t *                 attr);
 
 /**
  *  @ingroup GLOBUS_XIO_API
  *  clean up an attr
  */
 globus_result_t
-globus_xio_factory_attr_destroy(
-    globus_xio_factory_attr_t                   attr);
+globus_xio_target_attr_destroy(
+    globus_xio_target_attr_t                   attr);
 
 /**
  *  @ingroup GLOBUS_XIO_API
  *  push a driver to the top of the stack
  */
 globus_result_t
-globus_xio_factory_push_driver(
-    globus_xio_factory_attr_t                   factory_attr,
+globus_xio_target_push_driver(
+    globus_xio_target_attr_t                   target_attr,
     globus_xio_driver_t                         driver,
-    globus_xio_driver_factory_attr_t            driver_factory_attr);
+    globus_xio_driver_target_attr_t            driver_target_attr);
 
 /******************************************************************
  *                      handle construction
@@ -553,7 +574,7 @@ typedef void (*globus_xio_data_callback_t)(
  *  @ingroup GLOBUS_XIO_API
  *
  * Creates an open handle based on the state contained in the given
- * factory.
+ * target.
  * 
  * No operation can be preformed on a handle until it is opened.  If 
  * an already open handle used the information contaned in that handle
@@ -561,7 +582,7 @@ typedef void (*globus_xio_data_callback_t)(
  */ 
 globus_result_t
 globus_xio_register_open(
-    globus_xio_factory_t                        factory,
+    globus_xio_target_t                        target,
     globus_xio_handle_t *                       handle,
     globus_xio_handle_attr_t                    attr,
     globus_xio_callback_t                       cb,
@@ -718,10 +739,10 @@ globus_xio_handle_register_signal_handler(
  *  @ingroup GLOBUS_XIO_API
  *
  *  Reqest notification when event change in the system relating
- *  to a given factory.
+ *  to a given target.
  *
- *  @param factory
- *         The factory on which the user would like to receive 
+ *  @param target
+ *         The target on which the user would like to receive 
  *         notifications of events.
  *
  *  @param signal_mask
@@ -739,15 +760,15 @@ globus_xio_handle_register_signal_handler(
  *         A user pointed threaded through to the callback.
  */
 globus_result_t
-globus_xio_factory_register_signal_handler(
-    globus_xio_factory_t                        factory,
+globus_xio_target_register_signal_handler(
+    globus_xio_target_t                        target,
     int                                         signal_mask,
     globus_xio_driver_t                         driver,
     globus_xio_callback_t                       callback,
     void *                                      user_arg);
 
 /***************************************************************
- *                  factory serialization
+ *                  target serialization
  *                  ---------------------
  *  The idea here is to provide a way tell a remote application
  *  the protocol stack to use.  So a program could be written 
@@ -760,22 +781,22 @@ globus_xio_factory_register_signal_handler(
  *  to table this issue in the interest of progress.
  **************************************************************/
 /*
- *  Create a serialized string from an initialized factory.
+ *  Create a serialized string from an initialized target.
  *
  *  This function will be used to serialized protocol stack 
  *  information.
  */
 globus_result_t
-globus_xio_factory_serialize(
-    globus_xio_factory_t                        factory,
+globus_xio_target_serialize(
+    globus_xio_target_t                        target,
     char *                                      cs);
 
 /*
- *  Take a serialized string and create an initialized factory from 
+ *  Take a serialized string and create an initialized target from 
  *  it.  
  */
 globus_result_t
-globus_xio_factory_unserialize(
-    globus_xio_factory_t *                      factory,
+globus_xio_target_unserialize(
+    globus_xio_target_t *                      target,
     const char *                                cs);
 

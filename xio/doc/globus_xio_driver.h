@@ -9,7 +9,7 @@
  *  handle.  Associated with each handle is a stack of drivers.
  *  A driver is a module piece of code that implements the globus_xio
  *  driver interface.  The purpose of a driver is manipulate data passed
- *  in by the user in someway.  Each driver in a stack will server its own 
+ *  in by the user in someway.  Each driver in a stack will serve its own 
  *  unique purpose.
  *
  *  IO operations pass from driver to driver, starting at the top of the 
