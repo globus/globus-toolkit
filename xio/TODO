@@ -1,10 +1,12 @@
-driver ops
+unload/deactivate
+--on unload, before deactivating a driver, all handles with 
+  that driver should be destroyed enough that a driver can unload but user
+  can still call close
+--tests for this
+
 doc updates
-better driver detection and per driver config
+
 contact string details
 
-finish deactivation
-deactivation tests
-
-start thinking about finishing with a different context
-cache driver
+reexamine build process
+caching

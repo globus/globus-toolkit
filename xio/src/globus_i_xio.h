@@ -767,7 +767,7 @@ extern globus_cond_t                        globus_l_cond;
 #   define GlobusXIODriverPassOpen(                                         \
             _out_res, _out_context, _in_op, _in_cb, _in_user_arg)           \
         globus_xio_driver_pass_open_DEBUG(                                  \
-            &_out_res, _out_context == NULL ? NULL : &_out_context,         \
+            &_out_res, &_out_context,         \
             _in_op, _in_cb, _in_user_arg)
 
 #   define GlobusXIODriverFinishedOpen(                                     \
