@@ -1,0 +1,7 @@
+## Special globus installation directories
+
+scriptsysconfdir = $(GLOBUS_INSTALL_PATH)/etc
+flavorincludedir = $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME)
+pkgdir = $(GLOBUS_INSTALL_PATH)/etc/globus_packages/$(NAME)
+aclocaldir = $(GLOBUS_INSTALL_PATH)/share/globus_aclocal
+docdir = $(GLOBUS_INSTALL_PATH)/share/doc
