@@ -1,0 +1,130 @@
+#-----------------------------------------------------------------------------
+#
+# NcFTP makefile for the platform @OS@, on the host @host@.
+#
+#-----------------------------------------------------------------------------
+
+VER=3.0beta21
+BETA=-DBETA=21
+CC=@CC@
+CFLAGS=@CFLAGS@
+#CC=gcc
+#CFLAGS=-O2 -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wbad-function-cast -Wwrite-strings -Wconversion
+STRIPFLAG=@SFLAG@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+BINDIR=@bindir@
+mandir=@mandir@
+INSTALL=@INSTALL@
+INSTALL_PROGRAM=@INSTALL_PROGRAM@
+INSTALL_DATA=@INSTALL_DATA@
+SHELL=/bin/sh
+
+all:
+	( cd Strn ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" )
+	( cd libncftp ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" )
+	-mkdir bin 2>/dev/null
+	( cd ncftp ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" "STRIPFLAG=$(STRIPFLAG)" "BETA=$(BETA)" )
+	( cd sh_util ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" "STRIPFLAG=$(STRIPFLAG)" )
+	( cd vis ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" "STRIPFLAG=$(STRIPFLAG)" )
+	-@echo 'Done.'
+	-@echo
+	-@echo '** This is a beta version of NcFTP **'
+	-@echo '** Please report any problems to ncftp@ncftp.com **'
+
+install:
+	( cd ncftp ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" )
+	( cd sh_util ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" )
+	( cd vis ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" )
+	-mkdir "$(prefix)" "$(BINDIR)" "$(mandir)" "$(mandir)/man1" 2>/dev/null
+	-@echo '..... Installing the manual pages .....'
+	$(INSTALL_DATA) doc/man/ncftp.1 "$(mandir)/man1/ncftp.1"
+	$(INSTALL_DATA) doc/man/ncftpget.1 "$(mandir)/man1/ncftpget.1"
+	$(INSTALL_DATA) doc/man/ncftpput.1 "$(mandir)/man1/ncftpput.1"
+	$(INSTALL_DATA) doc/man/ncftpbatch.1 "$(mandir)/man1/ncftpbatch.1"
+	$(INSTALL_DATA) doc/man/ncftpls.1 "$(mandir)/man1/ncftpls.1"
+	-@/bin/ls -l "$(mandir)/man1/ncftp.1" "$(mandir)/man1/ncftpget.1" "$(mandir)/man1/ncftpput.1" "$(mandir)/man1/ncftpbatch.1" "$(mandir)/man1/ncftpls.1"
+	-@echo '..... Installing the programs .....'
+	$(INSTALL_PROGRAM) bin/ncftp@EXEEXT@ "$(BINDIR)/ncftp@EXEEXT@"
+	$(INSTALL_PROGRAM) bin/ncftpget@EXEEXT@ "$(BINDIR)/ncftpget@EXEEXT@"
+	$(INSTALL_PROGRAM) bin/ncftpput@EXEEXT@ "$(BINDIR)/ncftpput@EXEEXT@"
+	$(INSTALL_PROGRAM) bin/ncftpls@EXEEXT@ "$(BINDIR)/ncftpls@EXEEXT@"
+	$(INSTALL_PROGRAM) bin/ncftpbatch@EXEEXT@ "$(BINDIR)/ncftpbatch@EXEEXT@"
+	-@/bin/ls -l "$(BINDIR)/ncftp@EXEEXT@" "$(BINDIR)/ncftpget@EXEEXT@" "$(BINDIR)/ncftpput@EXEEXT@" "$(BINDIR)/ncftpls@EXEEXT@" "$(BINDIR)/ncftpbatch@EXEEXT@"
+	-@echo "(The following will fail if you didn't build the curses-based programs.)"
+	$(INSTALL_PROGRAM) bin/ncftpbookmarks "$(BINDIR)/ncftpbookmarks"
+	-@/bin/ls -l "$(BINDIR)/ncftpbookmarks"
+	-@echo 'Done installing NcFTP.'
+
+clean:
+	( cd Strn ; $(MAKE) clean )
+	( cd libncftp ; $(MAKE) clean )
+	( cd ncftp ; $(MAKE) clean )
+	( cd sh_util ; $(MAKE) clean )
+	( cd vis ; $(MAKE) clean )
+
+distclean: clean
+	/bin/rm -f Makefile config.cache config.h config.log config.status libncftp/Makefile ncftp/Makefile sh_util/Makefile vis/Makefile
+
+TMPDIR=/tmp
+TARDIR=ncftp-$(VER)
+STARFILE=$(TARDIR)-src.tar
+STGZFILE=$(TARDIR)-src.tar.gz
+DTARFILE=$(TARDIR)-@OS@-export.tar
+DTGZFILE=$(TARDIR)-@OS@-export.tar.gz
+DREADME=@DREADME@
+
+dtar:
+	-@mkdir $(TMPDIR)/TAR
+	-@mkdir $(TMPDIR)/TAR/$(TARDIR)
+	cp Makefile.bin $(TMPDIR)/TAR/$(TARDIR)/Makefile
+	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/Makefile
+	cp WHATSNEW-3.0 $(TMPDIR)/TAR/$(TARDIR)/WHATSNEW-3.0
+	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/WHATSNEW-3.0
+	cp BETA-README $(TMPDIR)/TAR/$(TARDIR)/BETA-README
+	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/BETA-README
+	cp FIREWALL-PROXY-README $(TMPDIR)/TAR/$(TARDIR)/FIREWALL-PROXY-README
+	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/FIREWALL-PROXY-README
+	cp READLINE-README $(TMPDIR)/TAR/$(TARDIR)/READLINE-README
+	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/READLINE-README
+	cp install-sh $(TMPDIR)/TAR/$(TARDIR)/install-sh
+	chmod 755 $(TMPDIR)/TAR/$(TARDIR)/install-sh
+	-@mkdir $(TMPDIR)/TAR/$(TARDIR)/bin
+	for f in ncftp ncftpget ncftpput ncftpbatch ncftpls ; do \
+		cp bin/$$f $(TMPDIR)/TAR/$(TARDIR)/bin/$$f ; \
+		chmod 755 $(TMPDIR)/TAR/$(TARDIR)/bin/$$f ; \
+		: ; \
+	done
+	-@cp bin/ncftpbookmarks $(TMPDIR)/TAR/$(TARDIR)/bin/ncftpbookmarks 2>/dev/null
+	-@chmod 755 $(TMPDIR)/TAR/$(TARDIR)/bin/ncftpbookmarks 2>/dev/null
+	-@mkdir $(TMPDIR)/TAR/$(TARDIR)/doc
+	-@mkdir $(TMPDIR)/TAR/$(TARDIR)/doc/man
+	for f in ncftp.1 ncftpget.1 ncftpput.1 ncftpbatch.1 ncftpls.1 ; do \
+		cp doc/man/$$f $(TMPDIR)/TAR/$(TARDIR)/doc/man/$$f ; \
+		chmod 644 $(TMPDIR)/TAR/$(TARDIR)/doc/man/$$f ; \
+		: ; \
+	done
+	find $(TMPDIR)/TAR/$(TARDIR) -type d -exec chmod 755 {} \;
+	-../ncftp_extra/tar.sh $(TMPDIR)/TAR/$(TARDIR)
+	( cd $(TMPDIR)/TAR ; tar cvf $(TMPDIR)/TAR/$(DTARFILE) $(TARDIR) )
+	-@cp $(TMPDIR)/TAR/$(DTARFILE) .
+	-@chmod 644 $(DTARFILE)
+	-@rm -rf $(TMPDIR)/TAR
+	-@/bin/ls -l $(DTARFILE)
+
+dgz: dtar
+	gzip -c $(DTARFILE) > $(DTGZFILE)
+	-@rm $(DTARFILE)
+	-@chmod 644 $(DTGZFILE)
+	-@/bin/ls -l $(DTGZFILE)
+
+udgz: dgz
+	./sh/upload.sh 'ncftp/3.0BETA/binaries' $(DTGZFILE)
+	-rm $(DTGZFILE)
+
+sgz:
+	./sh/mksrctar.sh $(TARDIR) $(STGZFILE)
+
+usgz: sgz
+	./sh/upload.sh 'ncftp/3.0BETA' $(STGZFILE)
+	-rm $(STGZFILE)

@@ -1,0 +1,192 @@
+<HTML>
+<HEAD>
+<TITLE>ncftpget(1) manual page</TITLE>
+</HEAD>
+<BODY bgcolor=white>
+
+<H2>Name</H2>
+<blockquote>
+  <b>
+ncftpget</b> - Internet file transfer program for scripts
+</blockquote>
+<H2>Synopsis</H2>
+<blockquote>
+<P>
+<B>ncftpget</B>
+[<I>options</I>]<I></I> <I>remote-host</I>  <i>local-directory</i> <i>remote-files...</i> <P>
+<B>ncftpget</B> -f login.cfg
+[<I>options</I>]<I></I> <I>local-directory</I>  <i>remote-files...</i> <P>
+<B>ncftpget</B> [<I>options</I>]<I></I> <I>ftp://url.style/host/path/name</I>
+ 
+</blockquote>
+ 
+<H2>Options</H2>
+ Command line flags:
+<blockquote>
+<DL>
+
+<DT><B>-u </B><I>XX</I> </DT>
+<DD>Use username <I>XX</I> instead of anonymous.
+</DD>
+
+<DT><B>-p </B><I>XX</I> </DT>
+<DD>Use password <I>XX</I> with the username. </DD>
+
+<DT><B>-P </B><I>XX</I> </DT>
+<DD>Use port number <I>XX</I> instead
+of the default FTP service port (21). </DD>
+
+<DT><B>-j </B><I>XX</I> </DT>
+<DD>Use account <I>XX</I> in supplement
+to the username and password (deprecated). </DD>
+
+<DT><B>-d </B><I>XX</I> </DT>
+<DD>Use the file <I>XX</I> for debug
+logging. </DD>
+
+<DT><B>-a</B> </DT>
+<DD>Use ASCII transfer type instead of binary. </DD>
+
+<DT><B>-t </B><I>XX</I> </DT>
+<DD>Timeout after
+<I>XX</I> seconds. </DD>
+
+<DT><B>-v</B>/<B>-V</B> </DT>
+<DD>Do (do not) use progress meters. The default is to use progress
+meters if the output stream is a TTY. </DD>
+
+<DT><B>-f </B><I>XX</I> </DT>
+<DD>Read the file <I>XX</I> for host, user,
+and password information. </DD>
+
+<DT><B>-A</B> </DT>
+<DD>Append to local files, instead of overwriting
+them. </DD>
+
+<DT><B>-z</B>/<B>-Z</B> </DT>
+<DD>Do (do not) try to resume transfers. The default is to try to resume
+(-z). </DD>
+
+<DT><B>-F</B> </DT>
+<DD>Use passive (PASV) data connections. </DD>
+
+<DT><B>-DD</B> </DT>
+<DD>Delete remote file after successfully
+downloading it. </DD>
+
+<DT><B>-R</B> </DT>
+<DD>Recursive mode; copy whole directory trees. </DD>
+
+<DT><B>-r </B><I>XX</I> </DT>
+<DD>Redial
+a maximum of  <I>XX</I> times until connected to the remote FTP server. </DD>
+
+<DT><B>-b</B> </DT>
+<DD>Run in
+background (by submitting a job to <I>ncftpbatch</I>). </DD>
+
+<DT><B>-B </B><I>XX</I> </DT>
+<DD>Try setting the TCP/IP
+socket buffer size to <I>XX</I> bytes.  </DD>
+</DL>
+
+</blockquote>
+
+<H2>Description</H2>
+ <P>
+The purpose of <I>ncftpget</I> is
+to do file transfers from the command-line without entering an interactive
+shell. This lets you write shell scripts or other unattended processes that
+can do FTP. It is also useful for advanced users who want to retrieve files
+from the shell command line without entering an interactive FTP program
+such as <I>ncftp</I>. <P>
+One particularly useful feature of this program is that you
+can give it a <I>uniform</I> resource locator as the only argument and the program
+will download that file. You can then copy and paste from your web browser
+or newsreader and use that URL. Example: <blockquote><pre>$ cd /tmp
+$ ncftpget ftp://ftp.probe.net/pub/ncftp/ncftp.tar.Z
+$ zcat ncftp.tar.Z | tar xf -</pre>
+</blockquote>
+<P>
+By default the program tries to open the remote host and login anonymously,
+but you can specify a username and password information. The <B>-u</B> option is
+used to specify the username to login as, and the <B>-p</B> option is used to specify
+the password. If you are running the program from the shell, you may omit
+the <B>-p</B> option and the program will prompt you for the password. <P>
+Using the
+ <B>-u</B> and <B>-p</B> options are not recommended, because your account information
+is exposed to anyone who can see your shell script or your process information.
+ For example, someone using the <I>ps</I> program could see your password while
+the program runs. <P>
+You may use the <B>-f</B> option instead to specify a file with
+the account information. However, this is still not secure because anyone
+who has read access to the information file can see the account information.
+Nevertheless, if you choose to use the <B>-f</B> option the file should look something
+like this: <blockquote><pre>host Bozo.probe.net
+user gleason
+pass mypasswd</pre>
+</blockquote>
+<p>
+Don't forget to change the permissions on this file so no one else can read
+them.</p>
+ <P>
+The <B>-d</B> option is very useful when you are trying to diagnose why a
+file transfer is failing. It prints out the entire FTP conversation to the
+file you specify, so you can get an idea of what went wrong.   If you specify
+the special name <I>stdout</I> as the name of the debugging output file, the output
+will instead print to the screen.  Example: <blockquote><pre>$ ncftpget -d stdout ftp.probe.net . /pub/ncftp/README
+220: ftp.probe.net FTP server ready.
+Connected to ftp.probe.net.
+Cmd: USER anonymous
+331: Guest login ok, send your complete e-mail address as password.
+Cmd: PASS xxxxxxxx
+230: Welcome!
+Logged in to ftp.probe.net as anonymous.
+Cmd: TYPE I
+200: Type set to I.
+Cmd: SIZE /pub/ncftp/README
+550: /pub/ncftp/README: not a plain file.
+Cmd: MDTM /pub/ncftp/README
+550: /pub/ncftp/README: No such file or directory.
+Cmd: PORT 192,168,1,17,6,76
+200: PORT command successful.
+Cmd: RETR /pub/ncftp/README
+550: /pub/ncftp/README: No such file OR directory.
+ncftpget: file retrieval error: could not start data transfer.
+Cmd: QUIT
+221: Goodbye.</pre>
+</blockquote>
+<P>
+Using ASCII mode is helpful when the text format of your host differs from
+that of the remote host. For example, if you are retrieving a .TXT file from
+a Windows-based host to a UNIX system, you could use the <B>-a</B> flag which would
+use ASCII transfer mode so that the file created on the UNIX system would
+be in the UNIX text format instead of the MS-DOS text format. <P>
+You can retrieve
+an entire directory tree of files by using the <B>-R</B> flag. However, this will
+work only if the remote FTP server is a UNIX server, or emulates UNIX's
+list output. Example: <blockquote><pre>$ ncftpget -R ftp.probe.net /tmp /pub/ncftp</pre>
+</blockquote>
+<p>This would create a /tmp/ncftp hierarchy.</p>
+<H2>Diagnostics</H2>
+ <P>
+<I>ncftpget</I> returns
+the following exit values: 
+<OL>
+<LI>Success. </LI><LI>Could not connect to remote host. </LI><LI>Could
+not connect to remote host - timed out. </LI><LI>Transfer failed. </LI><LI>Transfer failed -
+timed out. </LI><LI>Directory change failed. </LI><LI>Directory change failed - timed out. </LI><LI>Malformed
+URL. </LI><LI>Usage error. </LI><LI>Error in login configuration file. </LI><LI>Library initialization
+failed. </LI><LI>Session initialization failed.  </LI>
+</OL>
+
+<H2>Author</H2>
+ <P>
+Mike
+Gleason, NcFTP Software (<a href="mailto:mgleason@ncftp.com">mgleason@ncftp.com</a>).  
+<H2>See Also</H2>
+ <P>
+<I>ncftpput(1)</I>, <I>ncftpget(1),</I>
+<I>ncftp(1)</I>, <I>ftp(1)</I>, <I>rcp(1)</I>, <I>tftp(1)</I>. <P>
+<I>LibNcFTP</I>  (<a href="http://www.ncftp.com/libncftp/">http://www.ncftp.com/libncftp/</a>).
+</BODY></HTML>
