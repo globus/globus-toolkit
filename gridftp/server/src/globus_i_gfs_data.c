@@ -329,7 +329,7 @@ void
 globus_l_gfs_data_stat_kickout(
     void *                              user_arg)
 {
-    globus_l_gfs_data_stat_bounce_t * bounce_info;
+    globus_l_gfs_data_stat_bounce_t *   bounce_info;
     globus_gfs_ipc_reply_t              reply;   
 
     bounce_info = (globus_l_gfs_data_stat_bounce_t *) user_arg;
@@ -357,6 +357,10 @@ globus_l_gfs_data_stat_kickout(
     }
                 
     globus_l_gfs_data_operation_destroy(bounce_info->op);
+    if(bounce_info->stat_array)
+    {
+        globus_free(bounce_info->stat_array);
+    }
     globus_free(bounce_info);
 }
 
@@ -704,7 +708,7 @@ globus_i_gfs_data_destroy_handle(
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_INVALID:
-                globus_free(data_handle);
+                //globus_free(data_handle);
                 break;
 
             default:
@@ -2358,8 +2362,8 @@ globus_gridftp_server_finished_stat(
     globus_gfs_stat_t *                 stat_array,
     int                                 stat_count)
 {
-    globus_l_gfs_data_stat_bounce_t * bounce_info;
-    globus_gfs_stat_t *      stat_copy;
+    globus_l_gfs_data_stat_bounce_t *   bounce_info;
+    globus_gfs_stat_t *                 stat_copy;
     GlobusGFSName(globus_gridftp_server_finished_stat);
 
     if(result == GLOBUS_SUCCESS)
@@ -2368,6 +2372,8 @@ globus_gridftp_server_finished_stat(
             globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
         if(stat_copy == NULL)
         {
+            result = GlobusGFSErrorMemory("stat_copy");
+            goto error_alloc;
         }
         memcpy(
             stat_copy,
@@ -2376,7 +2382,7 @@ globus_gridftp_server_finished_stat(
     }
     else
     {
-        stat_array = NULL;
+        stat_copy = NULL;
         stat_count = 0;
     }
 
