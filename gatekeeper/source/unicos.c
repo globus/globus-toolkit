@@ -146,15 +146,6 @@
  *  Modification $Author$
  *
  *  Maintenance and modification 
- *	$Log$
- *	Revision 1.2  1999/03/25 19:47:51  bester
- *	included globus_config.h so that TARGET_ARCH_CRAYT3E would be defined
- *	
- *	Revision 1.1  1998/12/07 17:05:48  bester
- *	added Cray MLS security code from NERSC
- *
- *	Revision 1.1  1998/12/07 17:03:30  bester
- *	added unicos MLS security code from NERSC
  *
  *	Revision 1.13  1998-07-14 11:12:30-06  rrb
  *	Add a call to setshares to establish the resource group of the session.
@@ -221,11 +212,11 @@
  *
  *-------------------------*/
 
+#include "globus_config.h"
 #ifdef	TARGET_ARCH_CRAYT3E		/* the whole module is conditional */
 
 #define DEBUG
 
-#include "globus_config.h"
 #include "unicos.h"
 
 
