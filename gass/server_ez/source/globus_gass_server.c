@@ -269,13 +269,7 @@ int main(int argc, char **argv)
 	    options |= GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE;
 	    break;
 	case arg_p:
-	    port = (unsigned short) atoi(instance->values[0]);	    
-	    rc=globus_gass_transfer_listenerattr_set_port(&attr,
-						       port);
-	    if(rc!=GLOBUS_SUCCESS)
-	    {
-		exit(1);
-	    }
+	    port = (unsigned short) atoi(instance->values[0]);
 	    break;
 	case arg_i:
 	    insecure = GLOBUS_TRUE;
@@ -329,6 +323,15 @@ int main(int argc, char **argv)
 
     globus_gass_transfer_listenerattr_init(&attr,
 					   scheme);
+    if(port != 0)
+    {
+        rc=globus_gass_transfer_listenerattr_set_port(&attr,
+						      port);
+	if(rc!=GLOBUS_SUCCESS)
+	{
+	    exit(1);
+	}
+    }
     globus_args_option_instance_list_free( &options_found );
 
     if(options == 0)
