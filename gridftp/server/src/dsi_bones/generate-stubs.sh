@@ -20,7 +20,7 @@ flavor=$2
 
 date=`date +%s`
 
-$GLOBUS_LOCATION/bin/globus-makefile-header -flavor=$flavor globus_gridftp_server2 > makefile_header
+$GLOBUS_LOCATION/bin/globus-makefile-header -flavor=$flavor globus_gridftp_server > makefile_header
 
 sed -e "s/@DSI@/$name/g" -e "s/@DATE@/$date/g" globus_gridftp_server_dsi.c.in > globus_gridftp_server_$name.c
 sed -e "s/@DSI@/$name/g" -e "s/@FLAVOR@/$flavor/g" Makefile.in > Makefile

@@ -1498,9 +1498,9 @@ sub package_source_gpt()
         }
 
         #TODO: make function out of "NB" part of PNB, call it here.
-        if ( $package eq "globus_gridftp_server" or $package eq "gsincftp") 
+        if ( $package eq "globus_wuftpd_gridftp_server" or $package eq "gsincftp") 
         {
-            print "\tSpecial love for gridftp_server and gsincftp\n";
+            print "\tSpecial love for wuftpd_gridftp_server and gsincftp\n";
             my $version = gpt_get_version("pkg_data_src.gpt");
 
             my $tarfile = "$package-$version";
