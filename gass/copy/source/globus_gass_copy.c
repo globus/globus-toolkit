@@ -5271,14 +5271,14 @@ globus_gass_copy_set_user_pointer(
 globus_result_t
 globus_gass_copy_get_user_pointer(
     globus_gass_copy_handle_t * handle,
-    void * user_data)
+    void ** user_data)
 {
     globus_object_t *err;
     static char * myname="globus_gass_copy_get_user_pointer";
 
     if (handle)
     {
-	user_data = handle->user_pointer;
+	*user_data = handle->user_pointer;
 	return GLOBUS_SUCCESS;
     }
     else
