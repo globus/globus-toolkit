@@ -364,11 +364,6 @@ globus_l_callback_register(
  *
  * external function that registers a one shot some delay from now.
  *
- * @param wakeup_func
- *        ignored for non-threaded build
- *
- * @param wakeup_user_args
- *        ignored for non-threaded build
  */
 
 globus_result_t
@@ -377,8 +372,6 @@ globus_callback_space_register_oneshot(
     const globus_reltime_t *            delay_time,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_callback_wakeup_func_t       wakeup_func,
-    void *                              wakeup_user_args,
     globus_callback_space_t             space)
 {
     globus_abstime_t                    start_time;
@@ -406,11 +399,6 @@ globus_callback_space_register_oneshot(
  *
  * external function that registers a periodic to start some delay from now.
  *
- * @param wakeup_func
- *        ignored for non-threaded build
- *
- * @param wakeup_user_args
- *        ignored for non-threaded build
  */
 
 globus_result_t
@@ -420,8 +408,6 @@ globus_callback_space_register_periodic(
     const globus_reltime_t *            period,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_callback_wakeup_func_t       wakeup_func,
-    void *                              wakeup_user_args,
     globus_callback_space_t             space)
 {
     globus_abstime_t                    start_time;
@@ -459,11 +445,6 @@ globus_callback_space_register_periodic(
  * then to call globus_callback_register_oneshot many times.  The latter would
  * have to make repeated, expensive, gettimeofday calls.
  *
- * @param wakeup_func
- *        ignored for non-threaded build
- *
- * @param wakeup_user_args
- *        ignored for non-threaded build
  */
 
 globus_result_t
@@ -472,8 +453,6 @@ globus_callback_space_register_abstime_oneshot(
     const globus_abstime_t *            start_time,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_callback_wakeup_func_t       wakeup_func,
-    void *                              wakeup_user_args,
     globus_callback_space_t             space)
 {
     if(!start_time)
