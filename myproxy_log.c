@@ -14,6 +14,7 @@
 #include <syslog.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 /**********************************************************************
  *
@@ -182,6 +183,43 @@ void
 myproxy_log_verror()
 {
     do_log(verror_get_string(), LOG_ERR);
+
+    if (verror_get_errno() != 0)
+    {
+	do_log(verror_strerror(), LOG_ERR);
+    }
+
+    verror_clear();
+    
+    return;
+}
+
+void
+myproxy_log_perror(const char *format, ...)
+{
+    char *string = NULL;
+    va_list ap;
+    
+    va_start(ap, format);
+    
+    string = my_vsnprintf(format, ap);
+    
+    va_end(ap);
+    
+    if (string == NULL)
+    {
+	/* Punt */
+	goto error;
+    }
+    
+    do_log(string, LOG_ERR);
+    do_log(strerror(errno), LOG_ERR);
+    
+  error:
+    if (string != NULL)
+    {
+	free(string);
+    }
     
     return;
 }
