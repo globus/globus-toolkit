@@ -1,6 +1,6 @@
+#include "globus_common.h"
+#include "globus_thread_common.h"
 #include <stdio.h>
-#include <globus_common.h>
-#include <globus_thread_common.h>
 #include <unistd.h>
 #include <assert.h>
 
