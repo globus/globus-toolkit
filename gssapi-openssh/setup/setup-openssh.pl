@@ -340,6 +340,13 @@ $metadata->finish();
 
 print "\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
+print "\n";
+print "I see that you have your GLOBUS_LOCATION environmental variable\n";
+print "set to:\n";
+print "  $gpath\n";
+print "\n";
+print "Remember to keep this variable set (correctly) when you want\n";
+print "to use the executables that came with this package.\n";
 print "---------------------------------------------------------------\n";
 
 #
