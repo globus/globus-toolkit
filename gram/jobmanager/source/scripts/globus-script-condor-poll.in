@@ -1,0 +1,108 @@
+#!/bin/sh -f
+#
+# Extract the ST (status) column from the condor_q output
+# for our specific jobID.
+#
+# The Status field can contain one of the following strings:
+#
+# string  stands for				Globus context meaning
+# --------------------------------------------------------------------
+# U       Unexpanded (never been run)		PENDING
+# R       Running				ACTIVE
+# I       Idle (waiting for a machine to	ACTIVE? (need SUSPENDED)
+#               execute on)
+# C       Completed				DONE
+# X       Removed				FAILED
+
+condor_q=@CONDOR_Q@
+awk=@AWK@
+grep=@GREP@
+
+arg_file=$1
+# check for the argument file if it does not exist
+# then return with an error immediately.
+if [ ! -f $arg_file ] ; then
+   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE@
+   exit 1
+fi
+
+# use the argument file to define all the arguments.
+# Of special interest here is the grami_job_id parameter.
+. $arg_file
+
+# if a logfile has been passed in then assume debug mode.
+if [ $grami_logfile = "/dev/null" ] ; then
+    DEBUG_ECHO=:
+else
+    DEBUG_ECHO=echo
+fi
+
+$DEBUG_ECHO "JM_SCRIPT: in gram_script_condor_poll" >> $grami_logfile
+
+$DEBUG_ECHO "JM_SCRIPT: executing condor_q with job id "\
+            "${grami_job_id}" >> $grami_logfile
+
+status=`${condor_q} ${grami_job_id} | ${grep} ${grami_job_id} | ${awk} '{print $6}'`
+
+got_pending_job=0
+got_active_job=0
+got_failed_job=0
+got_done_job=0
+
+if [ -z "$status" ]; then
+    got_done_job=1
+else
+
+  for val in $status
+  do
+
+    if [ 0 -lt `echo " C " | grep -c " $val "` ]; then
+       got_done_job=1
+    else
+       if [ 0 -lt `echo " R I " | grep -c " $val "` ]; then
+          got_active_job=1
+       else
+          if [ 0 -lt `echo " U " | grep -c " $val "` ]; then
+             got_pending_job=1
+          else
+             if [ 0 -lt `echo " X " | grep -c " $val "` ]; then
+                got_failed_job=1
+             fi
+          fi
+       fi
+    fi
+  done
+
+fi
+
+if [ $got_failed_job -eq 1 ] ; then
+   gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED@
+else
+   if [ $got_active_job -eq 1 ] ; then
+      gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE@
+   else
+      if [ $got_pending_job -eq 1 ] ; then
+#
+#        note: required to handle multiple job submission
+#              where some jobs are done and some are pending.
+#              we don't want to fluxuate from running back to pending.
+#              treat a multi-job request as 1 request.
+#              So if we only have pending and dones jobs then return active
+#
+         if [ $got_done_job -eq 1 ] ; then
+            gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE@
+         else
+            gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@
+         fi
+      else
+         gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_DONE@
+      fi
+   fi
+fi
+
+$DEBUG_ECHO "JM_SCRIPT: returning success, job state: "\
+            "${gram_job_state}" >> $grami_logfile
+
+echo "GRAM_SCRIPT_SUCCESS:${gram_job_state}"
+
+$DEBUG_ECHO "JM_SCRIPT: exiting gram_script_condor_poll" >> $grami_logfile
