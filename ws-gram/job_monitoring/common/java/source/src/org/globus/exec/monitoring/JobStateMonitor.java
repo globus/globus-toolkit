@@ -410,8 +410,13 @@ public class JobStateMonitor {
         ResourceKey mapping = getMapping(localId);
 
         if (mapping != null) {
+            logger.debug("Dispatching event " + e.getLocalId()
+                        + " to job " + mapping.getValue());
+
             dispatchEvent(mapping, e);
         } else {
+            logger.debug("Caching event " + e.getLocalId());
+
             cacheEvent(e);
         }
     }
