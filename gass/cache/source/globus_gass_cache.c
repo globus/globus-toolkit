@@ -1833,9 +1833,7 @@ globus_gass_cache_open(char                *cache_directory_path,
     int         state_f_fd;	/* to open/create the state file          */
     struct stat cache_dir_stat;   
 
-    struct passwd pwd;          /* to get the user home dir.              */
-    struct passwd *pw;          /* to get the user home dir.              */
-    char buf[1024];             /* to get the user home dir.              */
+    char        homedir[PATH_MAX];
 
     CHECK_CACHE_IS_NOT_INIT();
 
@@ -1871,39 +1869,18 @@ globus_gass_cache_open(char                *cache_directory_path,
 		pt = GLOBUS_NULL;
 	    }
 	}
-	GLOBUS_L_GASS_CACHE_LG("GLOBUS_GASS_CACHE_DEFAULT_DIR_ENV_VAR is empty");
 
 	if ( pt == GLOBUS_NULL )
 	{
+	    GLOBUS_L_GASS_CACHE_LG("GLOBUS_GASS_CACHE_DEFAULT_DIR_ENV_VAR is empty");
 	    /* cache directory still not defined; use the defaults */
 	    /*   "$HOME/.globus_gass_cache" */
-	    pt = getenv("HOME");
-	    if ( pt != GLOBUS_NULL)
+
+	    if ( globus_libc_gethomedir(homedir,PATH_MAX) == GLOBUS_SUCCESS)
 	    {
-		f_name_lenght=strlen(pt);
-		if ( f_name_lenght == 0)
-		{
-		    pt = GLOBUS_NULL;
-		}
-	    }
-	    if (pt == GLOBUS_NULL)
-	    {
-		/* ok, we can also try to look in the passwd file */
-		struct passwd pwd;
-		struct passwd *pw;
-		char buf[1024];
-		
-		globus_libc_getpwuid_r(getuid(),
-				       &pwd,
-				       buf,
-				       1024,
-				       &pw);
-		pt = pw->pw_dir;
-		f_name_lenght=strlen(pt);
-		if ( f_name_lenght == 0)
-		{
-		    pt = GLOBUS_NULL;
-		}
+		f_name_lenght=strlen(homedir);
+		if ( f_name_lenght > 0)
+		    pt = homedir;
 	    }
 	    
 	    if (pt == GLOBUS_NULL)
@@ -1925,6 +1902,7 @@ globus_gass_cache_open(char                *cache_directory_path,
 	    }
 	    strcpy(cache_handle->cache_directory_path,
 		   pt);
+
 	    /* before going on, verify the .globus directory exist 
                and create it if not */ 
 	    strcat(cache_handle->cache_directory_path,
