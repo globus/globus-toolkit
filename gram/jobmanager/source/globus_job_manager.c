@@ -2488,7 +2488,7 @@ int main(int argc,
 	    int start_time = time(GLOBUS_NULL);
 	    int save_errno;
 
-	    if (request->save_state == GLOBUS_TRUE &&
+	    if (request->save_state == GLOBUS_TRUE && !graml_jm_ttl_expired &&
 		request->failure_code != GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT)
 	    {
 		globus_l_gram_update_state_file( request->status,
@@ -5769,10 +5769,27 @@ globus_l_gram_write_state_file(int status, int failure_code, char *job_id,
 			       char *rsl)
 {
     int rc = GLOBUS_SUCCESS;
-    long new_ttl;
+    long curr_time;
     FILE *fp;
     globus_list_t *tmp_list;
     char tmp_file[1024];
+
+    curr_time = time(NULL);
+    if ( graml_jm_ttl == 0 || graml_jm_ttl >= curr_time )
+    {
+	graml_jm_ttl = curr_time + GRAM_JOB_MANAGER_TTL_LIMIT;
+    }
+    else
+    {
+	globus_jobmanager_log(graml_log_fp,
+		      "JM: TTL expired! Abort, but leave job running!\n");
+	GRAM_LOCK;
+	graml_jm_ttl_expired = GLOBUS_TRUE;
+	graml_jm_done = GLOBUS_TRUE;
+	globus_cond_signal(&graml_api_cond);
+	GRAM_UNLOCK;
+	return GLOBUS_FAILURE;
+    }
 
     /*
      * We want the file update to be "atomic", so create a new temp file,
@@ -5783,10 +5800,9 @@ globus_l_gram_write_state_file(int status, int failure_code, char *job_id,
     strcpy( tmp_file, graml_job_state_file );
     strcat( tmp_file, ".tmp" );
 
-    globus_jobmanager_log(graml_log_fp, "JM: Writing state file\n");
-
-    new_ttl = time(NULL) + GRAM_JOB_MANAGER_TTL_LIMIT;
-    graml_jm_ttl = new_ttl;
+    globus_jobmanager_log(graml_log_fp,
+			  "JM: Writing state file (new TTL = %d)\n",
+			  graml_jm_ttl);
 
     fp = fopen( tmp_file, "w" );
     if ( fp == NULL )
@@ -5798,7 +5814,7 @@ globus_l_gram_write_state_file(int status, int failure_code, char *job_id,
 
     fprintf( fp, "%4d\n", status );
     fprintf( fp, "%4d\n", failure_code );
-    fprintf( fp, "%10d\n", new_ttl );
+    fprintf( fp, "%10d\n", graml_jm_ttl );
     fprintf( fp, "%s\n", job_id ? job_id : " " );
     fprintf( fp, "%s\n", rsl );
     fprintf( fp, "%s\n", graml_gass_cache_tag );
