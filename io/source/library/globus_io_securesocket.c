@@ -2462,8 +2462,9 @@ globus_l_io_write_auth_token(
            GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP ||
            (handle->securesocket_attr.channel_mode ==
             GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR &&
-            handle->securesocket_attr.delegation_mode !=
-            GLOBUS_IO_SECURE_DELEGATION_MODE_NONE)||
+            (handle->securesocket_attr.delegation_mode !=
+             GLOBUS_IO_SECURE_DELEGATION_MODE_NONE ||
+             init_info->delegation_callback != NULL))||
            ! globus_l_io_is_ssl_packet(init_info->output_buffer) )
         {
             init_info->output_buffer_header = globus_malloc(4);
