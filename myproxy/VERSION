@@ -1,14 +1,8 @@
-This is myproxy v0.4.2 4 Feb 2002.
+This is myproxy v0.4.1 4 Dec 2001.
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
-v0.4.2 4 Feb 2002
-  This version includes the GSI distinguished name matching logic that
-  was removed in v0.4.0, so for example host/fqhn will now match fqhn
-  again.  It also adds support for restricting the TCP port ranges of
-  the clients.
-
 v0.4.1 4 Dec 2001
   This version adds support for Globus 2.0 and optionally using the
   distinguished name from the proxy certificate as the default myproxy
