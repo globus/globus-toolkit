@@ -572,6 +572,7 @@ globus_l_gfs_data_abort_kickout(
                 break;
 
             case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
+                op->state = GLOBUS_L_GFS_DATA_ABORTING;
                 break;
 
             case GLOBUS_L_GFS_DATA_CONNECTING:
@@ -584,7 +585,6 @@ globus_l_gfs_data_abort_kickout(
                 globus_assert(0 && "bad state, possible memory corruption");
                 break;
         }
-        op->state = GLOBUS_L_GFS_DATA_ABORTING;
 
         op->ref--;
         globus_assert(op->ref > 0);
@@ -2579,18 +2579,15 @@ globus_gridftp_server_finished_transfer(
         /* move the data_handle state to VALID.  at first error if will
             be moved to invalid */
         op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
-        if(result != GLOBUS_SUCCESS)
-        {
-            /* this is the dsi telling us something went wrong, we should
-                force close here */
-            op->state = GLOBUS_L_GFS_DATA_FINISH;
-            op->cached_res = result;
-            goto err_lock;
-        }
         switch(op->state)
         {
             /* this is the normal case */
             case GLOBUS_L_GFS_DATA_CONNECTED:
+                if(result != GLOBUS_SUCCESS)
+                {
+                    op->cached_res = result;
+                    goto err_lock;
+                }
                 if(op->writing)
                 {
                     result = globus_ftp_control_data_write(
@@ -2603,8 +2600,6 @@ globus_gridftp_server_finished_transfer(
                         op);
                     if(result != GLOBUS_SUCCESS)
                     {
-                        /* if a write fails we need to close everything
-                            up nice */
                         op->cached_res = result;
                         goto err_lock;
                     }
@@ -2621,6 +2616,11 @@ globus_gridftp_server_finished_transfer(
 
             case GLOBUS_L_GFS_DATA_REQUESTING:
             case GLOBUS_L_GFS_DATA_ABORTING:
+                if(result != GLOBUS_SUCCESS)
+                {
+                    op->cached_res = result;
+                    goto err_lock;
+                }
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INVALID;
                 globus_callback_register_oneshot(
                     NULL,
@@ -2636,6 +2636,10 @@ globus_gridftp_server_finished_transfer(
                 break;
 
             case GLOBUS_L_GFS_DATA_CONNECTING:
+                if(result != GLOBUS_SUCCESS)
+                {
+                    op->cached_res = result;
+                }
                 goto err_lock; 
                 break;
 
