@@ -2,8 +2,7 @@
 #define GLOBUS_XIO_SYSTEM_INCLUDE
 
 #include "globus_common.h"
-#include "globus_i_xio.h"
-#include "globus_xio_driver.h"
+#include "globus_xio_types.h"
 
 EXTERN_C_BEGIN
 

@@ -55,6 +55,7 @@ typedef enum
     GLOBUS_XIO_FILE_IXGRP               = S_IXGRP
 } globus_xio_file_mode_t;
 
+/*** XXX need to modify this to pass back current position ***/
 typedef enum
 {
     GLOBUS_XIO_FILE_SEEK
@@ -62,9 +63,9 @@ typedef enum
 
 typedef enum
 {
-    GLOBUS_XIO_SEEK_SET                 = SEEK_SET,
-    GLOBUS_XIO_SEEK_CUR                 = SEEK_CUR,
-    GLOBUS_XIO_SEEK_END                 = SEEK_END
+    GLOBUS_XIO_FILE_SEEK_SET            = SEEK_SET,
+    GLOBUS_XIO_FILE_SEEK_CUR            = SEEK_CUR,
+    GLOBUS_XIO_FILE_SEEK_END            = SEEK_END
 } globus_xio_file_whence_t;
 
 #endif

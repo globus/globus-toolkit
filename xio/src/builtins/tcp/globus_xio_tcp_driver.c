@@ -1,8 +1,8 @@
+#include "globus_i_xio.h"
 #include "globus_xio_driver.h"
 #include "globus_xio_tcp_driver.h"
-#include <netinet/tcp.h>
 #include "version.h"
-
+#include <netinet/tcp.h>
 
 static
 int

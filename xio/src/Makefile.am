@@ -21,7 +21,8 @@ flavorinclude_HEADERS = \
     globus_xio_types.h                          \
     globus_xio_util.h                          \
     globus_xio_load.h                         \
-    globus_xio.h
+    globus_xio.h                              \
+    globus_xio_system.h 
 
 lib_LTLIBRARIES = libglobus_xio_$(GLOBUS_FLAVOR_NAME).la
 

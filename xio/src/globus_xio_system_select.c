@@ -1,7 +1,8 @@
 
 #include "globus_common.h"
+#include "globus_i_xio.h"
 #include "globus_xio_system.h"
-#include "globus_xio_util.h"
+#include "globus_xio_driver.h"
 
 #ifdef HAVE_SYSCONF
 #define GLOBUS_L_OPEN_MAX sysconf(_SC_OPEN_MAX)
