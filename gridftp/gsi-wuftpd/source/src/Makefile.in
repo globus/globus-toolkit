@@ -100,7 +100,7 @@ ftpshut: ${UTIL_OBJS} ftpshut.o rdservers.o
 	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpshut.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
 
 ftpmlsd: ${UTIL_OBJS} ftpmlsd.o mlsx.o ftpd.o
-	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpd.o mlsx.o mlsd.o -L../support $(LDFLAGS) $(LIBS)
+	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} mlsx.o ftpmlsd.o -L../support $(LDFLAGS) $(LIBS)
 
 ftprestart: ${UTIL_OBJS} ftprestart.o rdservers.o 
 	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftprestart.o rdservers.o -L../support $(LDFLAGS) $(LIBS)

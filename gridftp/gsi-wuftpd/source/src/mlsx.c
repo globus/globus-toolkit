@@ -3,7 +3,7 @@
       in a manner that is standard across platforms and therefore parsable
       by clients.
     */
-
+#include "config.h"
 #include "proto.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -15,10 +15,6 @@
 #include <string.h>
 #include <ctype.h>
 
-/* XXX this is from ftpd.c which has no header and declares it within it's
- * scope.  Should be moved to a header if refactoring is ever done*/
-char *mapping_getcwd(char *path, size_t size);
-
 static
 void
 make_date(
@@ -27,7 +23,7 @@ make_date(
     const char *                        tag,
     time_t *                            work_tm)
 {
-    char *                              buf[64];
+    char                                buf[64];
     
     strftime(buf, sizeof(buf), "%Y%m%d%H%M%S", gmtime(work_tm));
     snprintf(work_str, size, "%s=%s;", tag, buf);
@@ -245,7 +241,7 @@ get_fact_string(
            that the RMD command may be used to remove the directory named
            itself, the "d" permission indicator indicates that.
          */
-        if(is_writable && is_exectuable && S_ISDIR(stat_buf.st_mode))
+        if(is_writable && is_executable && S_ISDIR(stat_buf.st_mode))
         {
             *(ptr++) = 'c';
             *(ptr++) = 'f';
@@ -302,11 +298,21 @@ get_fact_string(
     *mode_buf = '\0';
     if(strstr(mutable_facts, "unix.mode")) 
     {
-        
+        sprintf(mode_buf, "UNIX.mode=%4o;", (unsigned) stat_buf.st_mode);
     }
 
-
-copy to facts
+    snprintf(
+        ret_val,
+        size,
+        "%s%s%s%s%s%s %s",
+        type_buf,
+        modify_buf,
+        charset_buf,
+        size_buf,
+        perm_buf,
+        mode_buf,
+        unqualified_path);
+    ret_val[size - 1] = '\0';
 
     free(mutable_facts);
     return 0;
@@ -349,14 +355,17 @@ static
 void
 get_abs_path(
     const char *                        path,
-    char *                              abs_path.
+    char *                              abs_path,
     int                                 size)
 {
     char *                              slash;
     
     if(!path)
     {
-        mapping_getcwd(abs_path, sizeof(abs_path));
+        /* XXX might need to use mapping_getcwd for virtual path stuff,
+         * but thats more complex than its worth at the moment.
+         */
+        getcwd(abs_path, sizeof(abs_path));
     }
     else if(*path == '/')
     {
@@ -390,7 +399,7 @@ mlst(
     char                                full_path[1024];
     char                                fact_str[2048];
     
-    get_abs_path(path, full_path. sizeof(full_path));
+    get_abs_path(path, full_path, sizeof(full_path));
     
     if(get_fact_string(
         fact_str, sizeof(fact_str), full_path, get_mlsx_options())) 
@@ -412,7 +421,7 @@ mlsd(
     char                                abs_path[1024];
     DIR *                               dir;
     
-    get_abs_path(path, abs_path. sizeof(abs_path));
+    get_abs_path(path, abs_path, sizeof(abs_path));
     
     dir = opendir(abs_path);
     if(!dir)

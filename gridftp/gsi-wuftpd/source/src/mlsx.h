@@ -14,7 +14,7 @@ mlsx_options(
     const char *                        options);
 
 int
-get_fact_list(
+get_fact_string(
     char *                              ret_val,
     int                                 size,
     const char *                        path,
