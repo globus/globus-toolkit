@@ -1146,7 +1146,7 @@ globus_l_xio_handle_cancel_operations(
 
     globus_mutex_lock(&xio_handle->cancel_mutex);
     {
-        if(mask | GLOBUS_XIO_ATTR_SET_CANCEL_OPEN)
+        if(mask | GLOBUS_XIO_CANCEL_OPEN)
         {
             if(xio_handle->open_op == NULL)
             {
@@ -1157,7 +1157,7 @@ globus_l_xio_handle_cancel_operations(
                 res = globus_l_xio_operation_cancel(xio_handle->open_op);
             }
         }
-        if(maks | GLOBUS_XIO_ATTR_SET_CANCEL_CLOSE)
+        if(mask | GLOBUS_XIO_CANCEL_CLOSE)
         {
             if(xio_handle->close_op == NULL)
             {
@@ -1168,7 +1168,7 @@ globus_l_xio_handle_cancel_operations(
                 res = globus_l_xio_operation_cancel(xio_handle->close_op);
             }
         }
-        if(mask | GLOBUS_XIO_ATTR_SET_CANCEL_READ)
+        if(mask | GLOBUS_XIO_CANCEL_READ)
         {
             if(globus_list_empty(xio_handle->read_op_list))
             {
@@ -1187,7 +1187,7 @@ globus_l_xio_handle_cancel_operations(
                 }
             }
         }
-        if(mask | GLOBUS_XIO_ATTR_SET_CANCEL_WRITE)
+        if(mask | GLOBUS_XIO_CANCEL_WRITE)
         {
             if(globus_list_empty(xio_handle->write_op_list))
             {
@@ -2183,7 +2183,7 @@ globus_xio_read(
     globus_i_xio_handle_t *                 handle;
     int                                     ref = 0;
     globus_l_xio_blocking_t *               info;
-    GlobusXIOName(globus_xio_writev);
+    GlobusXIOName(globus_xio_read);
 
     GlobusXIODebugEnter();
 
@@ -2299,7 +2299,7 @@ globus_xio_readv(
     globus_i_xio_handle_t *                 handle;
     int                                     ref = 0;
     globus_l_xio_blocking_t *               info;
-    GlobusXIOName(globus_xio_writev);
+    GlobusXIOName(globus_xio_readv);
 
     GlobusXIODebugEnter();
 
@@ -2415,7 +2415,7 @@ globus_xio_write(
     globus_i_xio_handle_t *                 handle;
     int                                     ref = 0;
     globus_l_xio_blocking_t *               info;
-    GlobusXIOName(globus_xio_writev);
+    GlobusXIOName(globus_xio_write);
 
     GlobusXIODebugEnter();
 
