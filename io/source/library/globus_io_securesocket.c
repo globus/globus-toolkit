@@ -2209,7 +2209,7 @@ globus_l_io_write_auth_token(
          * SLANG: COMPATABILITY MODIFICATION TO
          * WORK WITH COG
          */
-#ifndef NOT_COG_COMPAT
+#ifdef NOT_COG_COMPAT
         if(handle->securesocket_attr.channel_mode !=
            GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP ||
 #else
