@@ -53,7 +53,6 @@ typedef struct
 typedef struct globus_l_extension_handle_s
 {
     globus_l_extension_module_t *       owner;
-    globus_hashtable_t *                table;
     char *                              symbol;
     void *                              datum;
     long                                ref;
@@ -419,7 +418,6 @@ globus_extension_registry_add(
     }
     
     entry->owner = owner;
-    entry->table = &registry->table;
     entry->datum = data;
     entry->ref = 1;
     entry->symbol = globus_libc_strdup(symbol);
