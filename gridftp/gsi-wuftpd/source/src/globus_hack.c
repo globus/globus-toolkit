@@ -6,6 +6,10 @@
 #include <syslog.h>
 #include <sys/file.h>
 
+#define TIME_DELAY_112  5
+
+#define PROXY_BACKEND   1
+
 extern int                                      TCPwindowsize;
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
@@ -103,7 +107,6 @@ debug_printf(char * fmt, ...)
 #endif
 }
 
-
 /*
  *  The enter and exit macros need to be around any code that will
  *  cause globus to poll, ex: globus_cond_wait(), globus_poll().
@@ -157,6 +160,9 @@ typedef struct globus_i_wu_monitor_s
 
     char *                     fname;
 
+#if defined(JB_LOG_HERE)
+    globus_off_t	       proxy_nbytes;
+#endif
 } globus_i_wu_monitor_t;
 
 /*
@@ -343,6 +349,121 @@ globus_write(
     return (res == GLOBUS_SUCCESS) ? bytes_written : -1;
 }
 
+/*
+ *  PROXY_BACKEND
+ */
+#if defined(PROXY_BACKEND)
+
+#include "globus_time.h"
+#include "NetLogger.h"
+
+static NLhandle *                       g_log_nl_handle;
+static globus_netlogger_handle_t        g_log_globus_nl_handle;
+
+static globus_off_t                     g_log_total_nbytes;
+static globus_abstime_t                 g_log_last_time;
+
+static long                             g_log_min_msec = 1000;
+static int                              g_log_stripe_ndx = 0;
+
+void
+create_netlogger_connection(
+    char *                              progname)
+{
+    char                                buf[32];
+
+    g_log_nl_handle = NetLoggerOpen(g_perf_progname, NULL, NL_ENV);
+    sprintf(buf, "%d", getpid());
+    globus_netlogger_handle_init(
+        &g_log_globus_nl_handle,
+        g_log_nl_handle,
+        g_perf_hostname,
+        g_perf_progname,
+        "BACKEND");
+}
+
+void
+log_start_transfer()
+{
+    int i = 0;
+    while(i)
+    {
+        usleep(1);
+    }
+
+    g_log_total_nbytes = 0;
+    GlobusTimeAbstimeGetCurrent(g_log_last_time);
+}
+
+/*
+ *
+ */
+void
+log_throughput(
+    globus_off_t                        nbytes,
+    globus_bool_t                       last)
+{
+    globus_abstime_t                    time_now;
+    globus_reltime_t                    time_diff;
+    double                              throughput;
+    long                                usec;
+    long                                msec;
+    long                                sec;
+    char                                id[32];
+    char                                buf[128];
+    char *                              event_str;
+    char *                              last_str = "GPFTPD_LAST";
+    char *                              data_str = "GPFTPD_DATA";
+
+    GlobusTimeAbstimeGetCurrent(time_now);
+    GlobusTimeAbstimeDiff(time_diff, time_now, g_log_last_time);
+
+    GlobusTimeReltimeGet(time_diff, sec, usec);
+    g_log_total_nbytes += nbytes;
+    /*
+     * if enough time has expired
+     */
+    msec = (usec / 1000) + (sec * 1000);
+    if(msec < g_log_min_msec || last)
+    {
+        return;
+    }
+    if(last)
+    {
+        event_str = last_str;
+    }
+    else
+    {
+        event_str = data_str;
+    }
+
+    throughput = (float)g_log_total_nbytes / (float)sec;
+    sprintf(id, "GPFTPD%d", g_log_stripe_ndx);
+    sprintf(buf, "GSID=BackendProxy-%d THROUGPUT=%d BE.ID=%d", 
+        g_log_stripe_ndx, 
+        (long)throughput,
+        getpid());
+    globus_netlogger_write(
+        &g_log_globus_nl_handle,
+        event_str,
+        id,
+        1,
+        buf);
+
+    /* update values for next call */
+    g_log_total_nbytes = 0;
+    GlobusTimeAbstimeCopy(g_log_last_time, time_now);
+}
+
+#else /* PROXYBACKEND */
+
+#define create_netlogger_connection(p)
+#define log_throughput(n, l)
+#define log_start_transfer()
+
+#endif /* PROXYBACKEND */
+
+
 
 int
 std_read(    
@@ -447,6 +568,7 @@ g_start(
 DEBUG_OPEN();
 G_ENTER();
 
+
     g_perf_progname = "wuftpd";
     if(gethostname(g_perf_hostname, 256) != 0)
     {
@@ -468,6 +590,9 @@ G_ENTER();
     g_monitor.handle = &g_data_handle;
 
     globus_ftp_control_handle_init(&g_data_handle);
+
+    /* added for SC01 ProxyServer demo */
+    create_netlogger_connection(argv[0]);
 
     g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
     res = globus_ftp_control_local_dcau(
@@ -1261,6 +1386,9 @@ data_write_callback(
 
     monitor = (globus_i_wu_monitor_t *)callback_arg;
 
+    /* added for SC01 ProxyServer demo */
+    log_throughput(length, eof);
+
     globus_mutex_lock(&monitor->mutex);
     {
         monitor->count--;
@@ -1432,7 +1560,7 @@ g_receive_data(
             data_connection_count = 2;
         }
 
-	GlobusTimeReltimeSet(five_seconds, 5, 0);
+	GlobusTimeReltimeSet(five_seconds, TIME_DELAY_112, 0);
 
         g_send_range = GLOBUS_FALSE;
         g_send_perf_update = GLOBUS_FALSE;
@@ -1444,7 +1572,11 @@ g_receive_data(
 	    &g_monitor,
 	    GLOBUS_NULL,
 	    GLOBUS_NULL);
-					 
+
+	/* added for SC01 proxy server demo */				 
+        log_start_transfer();
+
+        globus_l_wu_perf_update(&g_monitor);
         g_monitor.callback_count = 0; 
         for(ctr = 0; ctr < data_connection_count; ctr++)
         {
@@ -1467,7 +1599,8 @@ g_receive_data(
             if(res != GLOBUS_SUCCESS)
             {
                 globus_free(buf);
-             sprintf(error_buf, "data_read() failed");
+                sprintf(error_buf, "data_read() failed: %s", 
+                    globus_object_printable_to_string(globus_error_get(res)));
                 goto data_err;
             }
             g_monitor.callback_count++;
@@ -1667,6 +1800,9 @@ data_read_callback(
 
     globus_mutex_lock(&monitor->mutex);
     {
+        /* added for SC01 ProxyServer demo */
+        log_throughput(length, eof);
+
         if(error != GLOBUS_NULL)
         {
             monitor->count++;
