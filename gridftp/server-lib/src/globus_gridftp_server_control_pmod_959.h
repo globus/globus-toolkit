@@ -53,6 +53,7 @@ globus_gsc_pmod_959_command_add(
     const char *                            command_name,
     globus_gsc_pmod_959_command_func_t      command_func,
     globus_gsc_959_command_desc_t           desc,
+    const char *                            help,
     void *                                  user_arg);
 
 globus_result_t
@@ -61,6 +62,10 @@ globus_gsc_pmod_959_get_cred(
     gss_cred_id_t *                         out_cred,
     gss_cred_id_t *                         out_del_cred);
 
+char *
+globus_gsc_pmod_959_get_help(
+    globus_gsc_pmod_959_handle_t            handle,
+    const char *                            command_name);
 
 extern globus_i_gridftp_server_control_pmod_t       globus_i_gsc_959_proto_mod;
 

@@ -172,16 +172,17 @@ typedef struct globus_i_gsc_server_s
     gss_cred_id_t                                   del_cred;
     globus_gridftp_server_control_auth_callback_t   auth_cb;
 
+    uid_t                                           uid;
+
     /*
      *  
      */
-    char *                                          pwd;
+    char *                                          cwd;
     char                                            type;
     char                                            mode;
     char *                                          modes;
     char *                                          types;
 
-    globus_hashtable_t                              command_table;
     globus_hashtable_t                              send_table;
     globus_hashtable_t                              recv_table;
 
@@ -244,6 +245,7 @@ typedef struct globus_i_gsc_attr_s
     globus_i_gs_state_t                             start_state;
     char *                                          modes;
     char *                                          types;
+    char *                                          base_dir;
     globus_gridftp_server_control_auth_callback_t   auth_func;
 } globus_i_gsc_attr_t;
 
@@ -264,14 +266,6 @@ typedef enum globus_gridftp_server_command_desc_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_POST_AUTH = 0x02,
     GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_PRE_AUTH = 0x04,
 } globus_gridftp_server_command_desc_t;
-
-globus_result_t
-globus_i_gridftp_server_control_attr_command_add(
-    globus_gridftp_server_control_attr_t            server_attr,
-    const char *                                    command_name,
-    globus_gridftp_server_control_cmd_func_t        func,
-    void *                                          user_arg,
-    globus_gridftp_server_command_desc_t            cmd_descriptor);
 
 globus_result_t
 globus_i_gridftp_server_control_get_auth_cb(

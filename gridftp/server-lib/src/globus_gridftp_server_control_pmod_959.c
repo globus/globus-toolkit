@@ -26,24 +26,14 @@
  *  ----------------
  *
  *  This protocol module insists that the xio stack used has a driver
- *  that can be put into "super mode" (gssapi_ftp driveri or _______).
+ *  that can be put into "super mode" (gssapi_ftp driveri or ftp_cmd).
  *  This mode gaurentees that each read callback will contain a 
  *  complete command.
  *
  *  On activate a table of commands is built.  This table can be index
  *  by the command name string.  Each entry in the table contains an
  *  integer representation of the command type (for faster decisions)
- *  and a parse function.  Typically each parse function services multiple
- *  command types, they check the command to verify that all needed 
- *  parameters were sent (and not too many) then it uses the integer
- *  command code to decide what to do with this command.
- *
- *  In most cases when a command is received it maps directly to a single
- *  server library function call.  The server functions take a callback
- *  to be executed upon completion.  When that callback is called this 
- *  protocol module replys to the command and processes the next command
- *  in the read queue, if no command is present processing suspends until
- *  one comes in.
+ *  and a parse function.  
  */
 /*
  *  close
@@ -60,10 +50,9 @@
  *  and may post no more operations.  Once the _stop() function returns
  *  the protocol module may not make any more calls to the server lib
  *  in reference to this handle.
- * 
- *  A situation may occur where the protocol module needs to initiate
- *  a close.  This typically happens in the case of an error.  The
- *  protocol module can then call  globus_i_gsc_error_occured().  This
+ *
+ *  If the sittuation occurs where the protocol module needs to initiate
+ *  a close.  the pmod calls _done().  This
  *  will tell the lib that the procotol module can no longer continue
  *  and will result in the lib calling _stop().  From there the process
  *  continues as described above.
@@ -124,16 +113,14 @@ typedef struct globus_l_gsc_959_cmd_ent_s
     char                                    cmd_name[16]; /* only 5 needed */
     globus_gsc_pmod_959_command_func_t      cmd_func;
     globus_gsc_959_command_desc_t           desc;
+    char *                                  help;
     void *                                  user_arg;
 } globus_l_gsc_959_cmd_ent_t;
 
 typedef struct globus_l_gsc_959_read_ent_s
 {
     globus_l_gsc_959_handle_t *             handle;
-    globus_l_gsc_959_cmd_ent_t *            cmd_ent;
-
     globus_list_t *                         cmd_list;
-
     char *                                  command;
 } globus_l_gsc_959_read_ent_t;
 
@@ -189,13 +176,12 @@ globus_l_gsc_959_handle_create()
     {
         return NULL;
     }
+    memset(handle, '\0', sizeof(globus_l_gsc_959_handle_t));
+
     globus_mutex_init(&handle->mutex, NULL);
     handle->ref = 1; /* i for start call and 1 for read about to post */
     handle->state = GLOBUS_L_GSP_959_STATE_OPEN;
     globus_fifo_init(&handle->read_q);
-    handle->stop_cb = NULL;
-    handle->abort_func = NULL;
-    handle->abort_arg = NULL;
 
     globus_hashtable_init(
         &handle->cmd_table,
@@ -217,6 +203,7 @@ globus_l_gsc_959_handle_destroy(
     globus_assert(handle->ref == 0);
     globus_mutex_destroy(&handle->mutex);
     globus_fifo_destroy(&handle->read_q);
+    globus_hashtable_destroy(&handle->cmd_table);
     globus_free(handle);
 }
 
@@ -280,6 +267,8 @@ globus_l_gsc_959_stop_kickout(
 
     handle = (globus_l_gsc_959_handle_t *) user_arg;
 
+    /* call the servers stop callback.  at this point everything should
+        be finished */
     handle->stop_cb(handle->server);
 
     globus_assert(handle->state == GLOBUS_L_GSP_959_STATE_STOPPED);
@@ -1132,6 +1121,7 @@ globus_gsc_pmod_959_command_add(
     const char *                            command_name,
     globus_gsc_pmod_959_command_func_t      command_func,
     globus_gsc_959_command_desc_t           desc,
+    const char *                            help,
     void *                                  user_arg)
 {
     globus_list_t *                         list;
@@ -1167,6 +1157,7 @@ globus_gsc_pmod_959_command_add(
     cmd_ent->cmd_func = command_func;
     cmd_ent->desc = desc;
     cmd_ent->user_arg = user_arg;
+    cmd_ent->help = globus_libc_strdup(help);
 
     list = (globus_list_t *) globus_hashtable_lookup(
         &handle->cmd_table, (char *)command_name);
@@ -1206,6 +1197,89 @@ globus_gsc_pmod_959_get_cred(
     }
 
     return GLOBUS_SUCCESS;
+}
+
+char *
+globus_gsc_pmod_959_get_help(
+    globus_gsc_pmod_959_handle_t            handle,
+    const char *                            command_name)
+{
+    globus_list_t *                         list;
+    globus_l_gsc_959_cmd_ent_t *            cmd_ent;
+    char *                                  help_str;
+    char *                                  tmp_ptr;
+    int                                     cmd_ctr;
+    int                                     sc;
+    char                                    cmd_name[5];
+
+    if(command_name == NULL)
+    {
+        help_str = globus_libc_strdup(
+            "214-The following commands are recognized:");
+        tmp_ptr = help_str;
+        globus_hashtable_to_list(&handle->cmd_table, &list);
+        cmd_ctr = 0;
+        while(!globus_list_empty(list))
+        {
+            if(cmd_ctr == 0)
+            {
+                help_str = globus_common_create_string(
+                    "%s\r\n", help_str);
+                globus_free(tmp_ptr);
+                tmp_ptr = help_str;
+            }
+            cmd_ent = (globus_l_gsc_959_cmd_ent_t *)
+                globus_list_first(globus_list_first(list));
+            sc = sprintf(cmd_name, "%s", cmd_ent->cmd_name);
+            if(sc < 4)
+            {
+                cmd_name[3] = ' ';
+                cmd_name[4] = '\0';
+            }
+            help_str = globus_common_create_string(
+                "%s    %s", help_str, cmd_name);
+            globus_free(tmp_ptr);
+            tmp_ptr = help_str;
+
+            cmd_ctr++;
+            if(cmd_ctr == 8)
+            {
+                cmd_ctr = 0;
+            }
+            list = globus_list_rest(list);
+        }
+        help_str = globus_common_create_string(
+            "%s\r\n214 End\r\n", help_str);
+        globus_free(tmp_ptr);
+
+        return help_str;
+    }
+    else
+    {
+        list = (globus_list_t *) globus_hashtable_lookup(
+                        &handle->cmd_table, (char *)command_name);
+        if(list == NULL)
+        {
+            return globus_common_create_string("502 Unknown command '%s'.\r\n",
+                command_name);
+        }
+
+        while(!globus_list_empty(list))
+        {
+            cmd_ent = (globus_l_gsc_959_cmd_ent_t *)
+                globus_list_first(list);
+            if(cmd_ent->help != NULL)
+            {
+                return globus_libc_strdup(cmd_ent->help);
+            }
+            list = globus_list_rest(list);
+        }
+        return globus_common_create_string(
+            "502 No help available for '%s'.\r\n",
+            command_name);
+    }
+
+    return NULL;
 }
 
 globus_result_t

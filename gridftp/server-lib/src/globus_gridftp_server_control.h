@@ -56,10 +56,11 @@ typedef void
  *  Once the user decides if the accept the client or not they call this 
  *  function.  The value of result determines if the user is accepted or not.
  */
-void 
+globus_result_t
 globus_gridftp_server_control_finished_auth(
     globus_gridftp_server_control_operation_t       op,
-    globus_result_t                                 res);
+    globus_result_t                                 res,
+    uid_t                                           uid);
 
 /*
  *  mask type.
@@ -114,23 +115,12 @@ typedef void
  *  function.  If result is passed != GLOBUS_SUCCESS the user is telling
  *  the library that the resource could not be queried.
  */
-void
+globus_result_t
 globus_gridftp_server_control_finished_resource(
     globus_gridftp_server_control_operation_t       op,
     globus_result_t                                 result,
     globus_gridftp_server_control_stat_t *          stat_info_array,
     int                                             stat_count);
-
-/*
- *  to be used with care.  its future is uncertain
- */
-typedef globus_result_t
-(*globus_gridftp_server_control_cmd_func_t)(
-    globus_gridftp_server_control_t                 server,
-    const char *                                    command_name,
-    globus_gridftp_server_control_operation_t       op,
-    void **                                         argv,
-    int                                             argc);
 
 /**************************************************************************
  *  attr functions.
@@ -277,6 +267,11 @@ globus_gridftp_server_control_set_type(
     char                                            mode);
 
 globus_result_t
+globus_gridftp_server_control_get_client_id(
+    globus_gridftp_server_control_t                 server,
+    uid_t *                                         uid);
+
+globus_result_t
 globus_gridftp_server_control_get_banner(
     globus_gridftp_server_control_t                 server,
     char **                                         banner);
@@ -292,9 +287,14 @@ globus_gridftp_server_control_get_type(
     char *                                          ou_type);
 
 globus_result_t
-globus_gridftp_server_control_get_pwd(
+globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t                 server,
-    char **                                         pwd_string);
+    char **                                         cwd_string);
+
+globus_result_t
+globus_gridftp_server_control_set_cwd(
+    globus_gridftp_server_control_t                 server,
+    char *                                          cwd_string);
 
 globus_result_t
 globus_gridftp_server_control_get_system(
@@ -310,12 +310,6 @@ globus_result_t
 globus_gridftp_server_control_get_features(
     globus_gridftp_server_control_t                 server,
     globus_list_t **                                feature_string_list);
-
-globus_result_t
-globus_gridftp_server_control_get_help(
-    globus_gridftp_server_control_t                 server,
-    const char *                                    command_name,
-    char **                                         help_string);
 
 globus_bool_t
 globus_gridftp_server_control_authenticated(

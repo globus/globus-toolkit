@@ -57,15 +57,16 @@ auth_func(
 
     if(strcmp(user_name, "failme") == 0)
     {
-        globus_gridftp_server_control_finished_auth(op, (void *)1);
+        globus_gridftp_server_control_finished_auth(op, (void *)1, 0);
     }
     else
     {
-        globus_gridftp_server_control_finished_auth(op, GLOBUS_SUCCESS);
+        globus_gridftp_server_control_finished_auth(
+            op, GLOBUS_SUCCESS, getuid());
     }
 }
 
-globus_result_t
+void
 resource_func(
     globus_gridftp_server_control_operation_t       op,
     const char *                                    path,
@@ -90,16 +91,14 @@ resource_func(
         gs_stat_buf->st_size = stat_buf.st_size;
         gs_stat_buf->st_nlink = stat_buf.st_nlink;
 
-//        globus_gridftp_server_control_finished_resource(
-//            op, GLOBUS_SUCCESS, gs_stat_buf, 1);
+        globus_gridftp_server_control_finished_resource(
+            op, GLOBUS_SUCCESS, gs_stat_buf, 1);
     }
     else
     {
-//        globus_gridftp_server_control_finished_resource(
-//            op, (void *)1, NULL, 0);
+        globus_gridftp_server_control_finished_resource(
+            op, (void *)1, NULL, 0);
     }
-
-    return GLOBUS_SUCCESS;
 }
 
 int

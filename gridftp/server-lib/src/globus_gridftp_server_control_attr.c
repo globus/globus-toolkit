@@ -46,6 +46,7 @@ globus_gridftp_server_control_attr_init(
     attr->start_state = GLOBUS_L_GS_STATE_AUTH;
     attr->modes = globus_libc_strdup("ES");
     attr->types = globus_libc_strdup("AI");
+    attr->base_dir = globus_libc_strdup("/");
 
     *in_attr = attr;
 
