@@ -16,7 +16,9 @@ use Cwd;
 use Pod::Usage;
 
 # Where do things go?
-my $top_dir = cwd();
+chomp(my $top_dir = `dirname $0`);
+chdir $top_dir or die "Can't cd to $top_dir: $!\n";
+$top_dir = cwd();
 my $cvs_prefix = $top_dir . "/source-trees/";
 my $log_dir = $top_dir . "/log-output";
 my $pkglog = $log_dir . "/package-logs";
@@ -755,7 +757,7 @@ sub install_gpt()
 	# Newer GPTs will unset LANG automatically in build_gpt.
 	my $OLANG = $ENV{'LANG'};
 	$ENV{'LANG'} = "";
-	system("./build_gpt > $log_dir/$gpt_ver.log 2>&1");
+	system("./build_gpt $verbose > $log_dir/$gpt_ver.log 2>&1");
 	$ENV{'LANG'} = $OLANG;
 
 	paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
@@ -833,7 +835,13 @@ sub install_gt2_autotools()
 sub install_globus_core()
 # --------------------------------------------------------------------
 {
-    system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $flavor");
+    if ( $inplace ) {
+        my $dir = $cvs_archives{gt2}[2];
+        system("pushd ${dir}/core/source; ./bootstrap; popd");
+        system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose -coresrc=${dir}/core/source -nosrc $flavor");
+    } else {
+        system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor");
+    }
 
     if ( $? ne 0 )
     {
@@ -1118,7 +1126,7 @@ sub inplace_build()
     my ($package, $subdir, $tree) = @_;
 
     chdir $subdir;
-    log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-build --srcdir=. $flavor", "$pkglog/$package");
+    log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $doxygen $verbose $force --srcdir=. $flavor", "$pkglog/$package");
     paranoia("Inplace build of $package failed!");
 
 }
