@@ -727,9 +727,13 @@ globus_l_xio_driver_op_accept_kickout(
                                                                                 
     my_op = &op->entry[op->ndx - 1];
     op->ndx = my_op->prev_ndx;
-                                                                                
+                      
+    /* driver's can't cancel accept ops yet, dont need this
+     * this call only works for regular ops, anyway
+     *                                                                            
     GlobusIXIOClearCancel(op);
-
+     */
+     
     if(my_op->cb != NULL)
     {
         my_op->cb(
