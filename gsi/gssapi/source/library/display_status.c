@@ -173,11 +173,17 @@ GSS_CALLCONV gss_display_status
 #else
 			sprintf(status_string->value, format, rs, data, fs);
             
-            /* check to make sure there is another error and that the current
-             * error code is not a final error code */
-
-            if (ERR_peek_error() && !((unsigned long)GSS_FINAL_ERROR_CODE &
-                   convert_minor_codes(ERR_GET_LIB(err), ERR_GET_REASON(err))))
+            /* Check to make sure there is another error in the queue
+             * to display
+             *
+             * If this error is from the user space we already caught it and
+             * presumably produced a good error message, so we stop
+             * displaying further errors.  If we did not catch it 
+             * it will be from the SSL libraries and we'll let it 
+             * print all of its error information until one of our errors
+             * is printed.
+             */
+            if (ERR_peek_error() && ERR_GET_LIB(err) <  ERR_LIB_USER)
             {
                 (*message_context) = 1;
             }

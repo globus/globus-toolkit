@@ -85,16 +85,6 @@ CVS Information:
 #define GSSERR_F_ACCEPT_DELEGATION     126
 #define GSSERR_F_INQUIRE_BY_OID        127
 
-
-/* Minor errors with numbers that have the 10th bit set (specified by 
- * GSS_FINAL_ERROR_CODE) are considered final errors.
- * When gss_display_status is looping through the SSL
- * error queue it will exit the loop AFTER the final error is displayed
- * or there are further errors in the queue.
- */
- 
-#define GSS_FINAL_ERROR_CODE                512
-
 /* 
  * defines for reasons 
  * The match strings defined in gsserr.c
@@ -124,63 +114,19 @@ CVS Information:
 #define GSSERR_R_ADD_EXT                    122
 #define GSSERR_R_REMOTE_CERT_VERIFY_FAILED  123
 
-/* gss versions of ssl minor errors */
-#define GSSERR_PRXY_R_FATAL                 512
-#define GSSERR_PRXY_R_BAD_PROXY_ISSUER      513
-#define GSSERR_PRXY_R_LPROXY_MISSED_USED    514
-#define GSSERR_PRXY_R_CRL_SIGNATURE_FAILURE 515
-#define GSSERR_PRXY_R_CRL_NEXT_UPDATE_FIELD 516
-#define GSSERR_PRXY_R_CRL_HAS_EXPIRED       517
-#define GSSERR_PRXY_R_CERT_REVOKED          518
-#define GSSERR_PRXY_R_CA_NOPATH             519
-#define GSSERR_PRXY_R_CA_NOFILE             520
-#define GSSERR_PRXY_R_CA_POLICY_RETRIEVE    521
-#define GSSERR_PRXY_R_CA_POLICY_PARSE       522
-#define GSSERR_PRXY_R_CA_POLICY_ERR         523
-#define GSSERR_PRXY_R_CA_POLICY_VIOLATION   524
-#define GSSERR_PRXY_R_CA_UNKNOWN            525
-#define GSSERR_PRXY_R_CB_CALLED_WITH_ERROR  526
-#define GSSERR_PRXY_R_USER_CERT_EXPIRED     527
-#define GSSERR_PRXY_R_SERVER_CERT_EXPIRED   528
-#define GSSERR_PRXY_R_PROXY_EXPIRED         529
-#define GSSERR_PRXY_R_NO_PROXY              530
-#define GSSERR_PRXY_R_MALLOC_FAILURE        531
+/* gss minor errors are defined with the top
+ * 2 bytes being the library code and the 
+ * bottom 2 bytes for the reason code.
+ *
+ * Any error with a gss error code of greater than or equal to
+ * ERR_LIB_USER (in current (7/30/01) openssl implementations number 128)
+ * is a globus defined error. */
 
-#define GSSERR_PRXY_R_PROCESS_PROXY_KEY     532
-#define GSSERR_PRXY_R_PROCESS_REQ           533
-#define GSSERR_PRXY_R_PROCESS_SIGN          534
-#define GSSERR_PRXY_R_MALFORM_REQ           535
-#define GSSERR_PRXY_R_SIG_VERIFY            536
-#define GSSERR_PRXY_R_SIG_BAD               537
-#define GSSERR_PRXY_R_PROCESS_PROXY         538
-#define GSSERR_PRXY_R_PROXY_NAME_BAD        539
-#define GSSERR_PRXY_R_PROCESS_SIGNC         540
-#define GSSERR_PRXY_R_PROBLEM_PROXY_FILE    541
-#define GSSERR_PRXY_R_SIGN_NOT_CA           542
-#define GSSERR_PRXY_R_PROCESS_KEY           543
-#define GSSERR_PRXY_R_PROCESS_CERT          544
-#define GSSERR_PRXY_R_PROCESS_CERTS         545
-#define GSSERR_PRXY_R_NO_TRUSTED_CERTS      546
-#define GSSERR_PRXY_R_PROBLEM_KEY_FILE      547
-#define GSSERR_PRXY_R_PROBLEM_NOCERT_FILE   548
-#define GSSERR_PRXY_R_PROBLEM_NOKEY_FILE    549
-#define GSSERR_PRXY_R_ZERO_LENGTH_KEY_FILE  550
-#define GSSERR_PRXY_R_NO_HOME               552
-#define GSSERR_PRXY_R_LPROXY_REJECTED       553
-#define GSSERR_PRXY_R_KEY_CERT_MISMATCH     554
-#define GSSERR_PRXY_R_WRONG_PASSPHRASE      555
-#define GSSERR_PRXY_R_PROBLEM_CLIENT_CA     556
-#define GSSERR_PRXY_R_CB_NO_PW              557
-#define GSSERR_PRXY_R_CLASS_ADD_OID         558
-#define GSSERR_PRXY_R_CLASS_ADD_EXT         559
-#define GSSERR_PRXY_R_DELEGATE_VERIFY       560
-#define GSSERR_PRXY_R_EXT_ADD               561
-#define GSSERR_PRXY_R_DELEGATE_COPY         562
-#define GSSERR_PRXY_R_DELEGATE_CREATE       563
-#define GSSERR_PRXY_R_BUFFER_TOO_SMALL      564
-#define GSSERR_PRXY_R_INVALID_CERT          565
-#define GSSERR_PRXY_R_CERT_NOT_YET_VALID    566
-
+/*
+ *   ERR_LIB_USER : GSSerr
+ *   ERR_LIB_
+ * 
+ * /
 
 
 /*
