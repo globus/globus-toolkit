@@ -61,7 +61,7 @@ EXTERN_C_END
 #endif
 
 #include "globus_config.h"
-#include "config.h"
+/** stu 3/8/01 commenting out for now #include "config.h" **/
 
 typedef GLOBUS_OFF_T globus_off_t;
 
