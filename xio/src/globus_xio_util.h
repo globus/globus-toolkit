@@ -1,6 +1,8 @@
 #ifndef GLOBUS_XIO_UTIL_INCLUDE
 #define GLOBUS_XIO_UTIL_INCLUDE
 
+#include "globus_xio.h"
+
 /* all macros in this file require each function to 'declare' their name with
  * this
  */
@@ -144,7 +146,7 @@
 #define GlobusIXIOUtilTransferIovec(iovec, xiovec, iovc)                    \
     do                                                                      \
     {                                                                       \
-        int                             _i;                                 \
+        globus_ssize_t                  _i;                                 \
         globus_xio_iovec_t *            _xiovec;                            \
         struct iovec *                  _iov;                               \
         int                             _iovc;                              \
