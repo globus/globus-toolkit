@@ -15,7 +15,7 @@ BUNDLE gt4-java-ws-core
 BUNDLE gt4-c-ws-core
 	globus_c_wsdl_parser
         globus_c_wsrf_cgen
-        globus_c_wsrf_core
+        globus_c_wsrf_bindings
         globus_c_wsrf_sample_counter_client_bindings
         globus_c_wsrf_sample_counter_test
         globus_handler_ws_addressing
