@@ -106,17 +106,9 @@
 typedef enum
 {   
     /**
-     * Indicates that an error occured while opening the handle
+     * Indicates that the mode_e header is erroneous
      */
-    GLOBUS_XIO_MODE_E_OPEN_ERROR,       
-    /**
-     * Indicates that an error occured while reading data
-     */
-    GLOBUS_XIO_MODE_E_READ_ERROR,       
-    /**
-     * Indicates that an error occured while writing data
-     */
-    GLOBUS_XIO_MODE_E_WRITE_ERROR,      
+    GLOBUS_XIO_MODE_E_HEADER_ERROR
     
 } globus_xio_mode_e_error_type_t;
 

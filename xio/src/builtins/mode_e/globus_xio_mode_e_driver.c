@@ -237,38 +237,16 @@ GlobusXIODefineModule(mode_e) =
 };
 
 
-#define GlobusXIOModeEOpenError(reason)                                     \
+#define GlobusXIOModeEHeaderError(reason)                                   \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GlobusXIOMyModule(mode_e),                                      \
             GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_MODE_E_OPEN_ERROR,                                   \
+            GLOBUS_XIO_MODE_E_HEADER_ERROR,                                 \
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Open failed: %s", (reason)))
-
-#define GlobusXIOModeEReadError(reason)                                     \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(mode_e),                                      \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_MODE_E_READ_ERROR,                                   \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Read failed: %s", (reason)))
-
-#define GlobusXIOModeEWriteError(reason)                                    \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(mode_e),                                      \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_MODE_E_WRITE_ERROR,                                  \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Write failed: %s", (reason)))
+            "Header error: %s", (reason)))
 
 
 static
@@ -473,7 +451,7 @@ globus_i_xio_mode_e_header_decode(
          */ 
         if (buf[GLOBUS_XIO_MODE_E_MAX_OFFSET_SIZE - i] != 0)
         {
-            result = GlobusXIOModeEReadError("Error decoding header");
+            result = GlobusXIOModeEHeaderError("offset overflow");
             goto overflow;
         }
     }
@@ -901,8 +879,6 @@ globus_l_xio_mode_e_server_accept(
     GlobusXIOModeEDebugEnter();
     handle = (globus_l_xio_mode_e_handle_t*)driver_server;
     handle->outstanding_op = op;
-
-    /* no race for requestor_memory as accept is not finished yet */
     requestor = (globus_i_xio_mode_e_requestor_t *)
                     globus_memory_pop_node(&handle->requestor_memory);
     requestor->handle = handle;
@@ -936,13 +912,7 @@ error_operation_canceled:
     globus_mutex_unlock(&handle->mutex);
     globus_xio_operation_disable_cancel(op);
 error_cancel_enable:
-    /*
-     * xio calls the cancel_cb with cancel lock held and disable_cancel waits
-     * for that. so cancel_cb can not be active after i call disable_cancel
-     * and thus i can safely push the requestor memory. As the accept is not 
-     * finished yet, no other code that uses requestor_memory can be active. 
-     * So i dont lock before pushing the node
-     */
+    /* globus memory has its own lock and i can use it like malloc and free */
     globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
     GlobusXIOModeEDebugExitWithError();
     return result;
@@ -1369,7 +1339,7 @@ globus_l_xio_mode_e_open_cb(
                                     globus_l_xio_mode_e_connection_handle_t));
         if (!connection_handle)
         {
-            result = GlobusXIOModeEOpenError("Memory error");
+	    result = GlobusXIOErrorMemory("connection_handle");
             goto error_connection_handle;
         }
         handle->state = GLOBUS_XIO_MODE_E_OPEN;
@@ -1549,7 +1519,7 @@ globus_l_xio_mode_e_server_open_cb(
     {
         if (handle->state == GLOBUS_XIO_MODE_E_ERROR)
         {
-            result = GlobusXIOModeEOpenError("Invalid state");
+	    result = GlobusXIOErrorInvalidState(handle->state);
             goto error;
         }
         else
@@ -1663,13 +1633,6 @@ error_operation_canceled:
 	globus_xio_operation_disable_cancel(op);
     }
 error_cancel_enable:
-    /*
-     * xio calls the cancel_cb with cancel lock held and disable_cancel waits
-     * for that. so cancel_cb can not be active after i call disable_cancel
-     * and thus i can safely push the requestor memory and call handle_destroy
-     * As the open is not finished yet, no other code that uses
-     * requestor_memory can be active. So i dont lock before pushing the node
-     */
     if (handle->state == GLOBUS_XIO_MODE_E_OPENING)
     {
 	globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
@@ -1763,13 +1726,6 @@ error_operation_canceled:
     globus_mutex_unlock(&handle->mutex);
     globus_xio_operation_disable_cancel(op);
 error_cancel_enable:
-    /*
-     * xio calls the cancel_cb with cancel lock held and disable_cancel waits
-     * for that. so cancel_cb can not be active after i call disable_cancel
-     * and thus i can safely push the requestor memory and call handle_destroy
-     * As the open is not finished yet, no other code that uses
-     * requestor_memory can be active. So i dont lock before pushing the node
-     */
     globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
 error_hashtable_init:
     if (destroy)
@@ -1817,7 +1773,8 @@ globus_l_xio_mode_e_open(
 				handle, globus_l_xio_mode_e_open_cb);
         if (result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOModeEOpenError("Error opening a stream");
+	    result = GlobusXIOErrorWrapFailed(
+			    "globus_l_xio_mode_e_open_new_stream", result);
             goto error_open_new_stream;
         }
     }
@@ -2085,13 +2042,13 @@ globus_l_xio_mode_e_read(
     wait_for = globus_xio_operation_get_wait_for(op);
     if (wait_for > 1)
     {
-        result = GlobusXIOModeEReadError("Waitforbytes > 1");
+        result = GlobusXIOErrorParameter("Waitforbytes");
         goto error_wait_for;
     }
     else if (wait_for == 0 && !handle->attr->offset_reads)
     {
-        result = GlobusXIOModeEReadError(
-		"Offset reads not set on attr. So waitforbytes cant be zero");
+        result = GlobusXIOErrorParameter(
+		"Waitforbytes cant be zero. Offset reads not set on attr");
         goto error_wait_for;
     }
     if (handle->attr->offset_reads)
@@ -2100,11 +2057,10 @@ globus_l_xio_mode_e_read(
 		globus_xio_operation_get_data_descriptor(op, GLOBUS_FALSE);
 	if (!dd)
 	{
-	    result = GlobusXIOModeEReadError("dd expected");
+	    result = GlobusXIOErrorParameter("data_descriptor");
 	    goto error_dd;
 	}
     }
-    globus_mutex_lock(&handle->mutex);
     requestor = (globus_i_xio_mode_e_requestor_t *)
                 globus_memory_pop_node(&handle->requestor_memory);
     requestor->op = op;
@@ -2113,7 +2069,6 @@ globus_l_xio_mode_e_read(
     requestor->dd = dd;
     requestor->handle = handle;
     requestor->xio_handle = GLOBUS_NULL;
-    globus_mutex_unlock(&handle->mutex);
     if (globus_xio_operation_enable_cancel(
         op, globus_l_xio_mode_e_cancel_cb, requestor))
     {
@@ -2182,7 +2137,7 @@ globus_l_xio_mode_e_read(
 					    &handle->offset_ht, &dd->offset);
 			if (!connection_handle)
 			{
-			    result = GlobusXIOModeEReadError("Invalid offset");
+			    result = GlobusXIOErrorParameter("Invalid offset");
 			    goto error_offset;
 			}
 		    }
@@ -2199,7 +2154,7 @@ globus_l_xio_mode_e_read(
             }
             break;
         default:
-            result = GlobusXIOModeEReadError("Invalid state");
+	    result = GlobusXIOErrorInvalidState(handle->state);
             goto error_invalid_state;
     }
     globus_mutex_unlock(&handle->mutex);
@@ -2217,9 +2172,7 @@ error_operation_canceled:
     globus_mutex_unlock(&handle->mutex);
     globus_xio_operation_disable_cancel(op);
 error_cancel_enable:
-    globus_mutex_lock(&handle->mutex);
     globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
-    globus_mutex_unlock(&handle->mutex);
 error_dd:
 error_wait_for:
     GlobusXIOModeEDebugExitWithError();
@@ -2592,7 +2545,6 @@ globus_l_xio_mode_e_write(
      * Mode E is unidirectional. Server can only read and client can only write
      */
     globus_assert(handle->server == GLOBUS_NULL); 
-    globus_mutex_lock(&handle->mutex);
     dd = (globus_l_xio_mode_e_attr_t *)
 	    globus_xio_operation_get_data_descriptor(op, GLOBUS_FALSE);
     requestor = (globus_i_xio_mode_e_requestor_t *)
@@ -2602,7 +2554,6 @@ globus_l_xio_mode_e_write(
     requestor->iovec_count = iovec_count;
     requestor->handle = handle;
     requestor->xio_handle = GLOBUS_NULL;
-/*    globus_mutex_unlock(&handle->mutex);
     if (globus_xio_operation_enable_cancel(
 	op, globus_l_xio_mode_e_cancel_cb, requestor))
     {
@@ -2615,7 +2566,6 @@ globus_l_xio_mode_e_write(
 	result = GlobusXIOErrorCanceled();
 	goto error_operation_canceled;
     }
-*/
     switch (handle->state)
     {
 	case GLOBUS_XIO_MODE_E_OPEN:
@@ -2681,8 +2631,8 @@ globus_l_xio_mode_e_write(
 				handle, globus_i_xio_mode_e_open_cb);
 		    if (result != GLOBUS_SUCCESS)
 		    {
-			result = GlobusXIOModeEWriteError(
-					"Error opening a new stream");
+			result = GlobusXIOErrorWrapFailed(
+			    "globus_l_xio_mode_e_open_new_stream", result);
 			goto error_open_new_stream;
 		    }
 		}
@@ -2690,7 +2640,7 @@ globus_l_xio_mode_e_write(
 	    }
 	    break;
 	default:
-	    result = GlobusXIOModeEWriteError("Invalid State");
+	    result = GlobusXIOErrorInvalidState(handle->state);
 	    goto error_invalid_state;
     }
     globus_mutex_unlock(&handle->mutex);
@@ -2700,15 +2650,11 @@ globus_l_xio_mode_e_write(
 error_invalid_state:
 error_open_new_stream:
 error_register_write:
-/*
 error_operation_canceled:
     globus_mutex_unlock(&handle->mutex);
     globus_xio_operation_disable_cancel(op);
 error_cancel_enable:
-    globus_mutex_lock(&handle->mutex);
-*/
     globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
-    globus_mutex_unlock(&handle->mutex);
     GlobusXIOModeEDebugExitWithError();
     return result;
 }
