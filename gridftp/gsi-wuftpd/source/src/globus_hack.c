@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 
 #define TIME_DELAY_112  5
+
 /*
 #define PROXY_BACKEND   1
 */
@@ -361,8 +362,10 @@ static globus_netlogger_handle_t        g_log_globus_nl_handle;
 static globus_off_t                     g_log_total_nbytes = 0;
 static globus_abstime_t                 g_log_last_time;
 
-static long                             g_log_min_msec = 2000;
+static long                             g_log_min_msec = 800;
 static int                              g_log_stripe_ndx = 0;
+static int                              g_my_uid;
+
 
 void
 create_netlogger_connection()
@@ -420,7 +423,7 @@ log_start_transfer()
     sprintf(id, "BackendProxy-%d", g_log_stripe_ndx);
     sprintf(buf, 
         "BE.ID=%d",
-        (int)getpid());
+        g_my_uid);
     res = globus_netlogger_write(
               &g_log_globus_nl_handle,
               "GPFTPD_START",
@@ -453,6 +456,7 @@ log_throughput(
     char *                              last_str = "GPFTPD_LAST";
     char *                              data_str = "GPFTPD_DATA";
     globus_result_t                     res;
+    int                                 mypid;
 
     if(!g_log_active)
     {
@@ -482,10 +486,11 @@ log_throughput(
 
     sprintf(id, "BackendProxy-%d", g_log_stripe_ndx);
     sprintf(buf, 
-        "FTP_NBYTES=%ld"
-        " BE.ID=%d FTP_MS=%ld", 
+        "FTP_NBYTES=%"GLOBUS_OFF_T_FORMAT
+        " BE.ID=%d "
+        "FTP_MS=%ld", 
         g_log_total_nbytes,
-        (int)getpid(),
+        g_my_uid,
         (long)msec);
     res = globus_netlogger_write(
               &g_log_globus_nl_handle,
@@ -620,11 +625,6 @@ g_start(
     globus_reltime_t                  delay_time;
     globus_reltime_t                  period_time;
     globus_result_t		      res;
-int i = 0;
-while(i)
-{
-usleep(1);
-}
 DEBUG_OPEN();
 G_ENTER();
 
@@ -647,7 +647,9 @@ G_ENTER();
 
     /* added for SC01 ProxyServer demo */
     create_netlogger_connection();
-
+#if defined(PROXY_BACKEND)
+    g_my_uid = getpid() + time(NULL) + g_log_stripe_ndx;
+#endif
     wu_monitor_init(&g_monitor);
     g_monitor.handle = &g_data_handle;
 
