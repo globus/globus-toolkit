@@ -2498,6 +2498,7 @@ dnl Find the GLOBUS/GSI development directory
 	LIBS="$LIBS -lglobus_gss_assist${globus_flavor_suffix} "
 	if test -n "$GLOBUS_LOCATION"; then
 	    LIBS="$LIBS -lglobus_gssapi_gsi${globus_flavor_suffix} "
+	    LIBS="$LIBS -lglobus_ssl_utils${globus_flavor_suffix} "
 	else
 	    LIBS="$LIBS -lglobus_gss "
 	    LIBS="$LIBS -lglobus_gaa "
