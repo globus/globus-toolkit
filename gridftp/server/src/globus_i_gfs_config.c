@@ -1119,9 +1119,10 @@ globus_l_gfs_config_misc()
         !globus_i_gfs_config_bool("daemon"))
     {
         globus_l_gfs_config_set("daemon", GLOBUS_TRUE, NULL);
-    } 
+    }
     if(!globus_i_gfs_config_bool("fork"))
     {
+        globus_l_gfs_config_set("detach", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("daemon", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("chdir", GLOBUS_FALSE, NULL);
     }

@@ -1145,15 +1145,8 @@ main(
     globus_result_t                     result;
     GlobusGFSName(main);
 
-    globus_module_activate(GLOBUS_COMMON_MODULE);
-    globus_i_gfs_config_init(argc, argv);
-
-    if(globus_i_gfs_config_bool("detach"))
-    {
-        globus_l_gfs_server_detached();
-    }
-
     /* activte globus stuff */    
+    globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE);
     globus_module_activate(GLOBUS_USAGE_MODULE);
@@ -1207,6 +1200,13 @@ main(
         goto error_ver;
     }
 
+    /* detach from the terminal if we need to */
+    if(globus_i_gfs_config_bool("detach"))
+    {
+        globus_l_gfs_server_detached();
+    }
+    
+    /* XXX we're missing this */
     if(globus_i_gfs_config_bool("detach"))
     {
         if(globus_i_gfs_config_bool("chdir"))
