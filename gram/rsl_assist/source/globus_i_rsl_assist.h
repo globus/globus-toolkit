@@ -28,49 +28,6 @@
 #endif
 
 /*
- * globus_i_rsl_assist_get_rm_contact()
- *
- *     Return the resourceManagerContact corresponding to 
- *     the resourceManagerName given as argument, by querying the MDS. 
- *
- * Parameters:
- *    resourceManagerName- String containing the name of the Resource Manager.
- *                         The string is on the format <hostname>[/<service>]
- *
- * Returns:
- *    Pointer to a newly allocated string containing the Resource
- *    Manager Contact. This string MUST be freed by the user.
- *    OR
- *    GLOBUS_NULL in case of failure.
- */
-char*
-globus_i_rsl_assist_get_rm_contact(char* resourceManagerName);
-
-/*
- * Function: globus_i_rsl_assist_extract_attribute()
- *
- * Parse the RSL rsl and return a string corresponding to the 
- * first attribute "attribute" found in the rsl.
- * Because this function returns only the first string of the first attribute
- * found in the RSL, it is meant to be used with -not-compound-RSLs
- * (e.g.: the RSLs stored in the MDS entries "scheduledjobs",
- * and for attribute with single literal values.
- *
- * Parameters:
- *     rsl -            rsl to parse
- *     attribute -      Attribute to search
- *     value -          the string (char *) corresponding to the values
- *                      of the attribute. (GOBUSS_NULL if none)
- * 
- * Returns:
- *     GLOBUS_SUCCESS or 
- *     error code
- */ 
-int
-globus_i_rsl_assist_extract_attribute(globus_rsl_t * rsl,
-				   char * attribute,
-				   char ** value);
-/*
  * Function:globus_i_rsl_assist_get_ldap_param()
  *
  * This function return the correct values to use when contacting/searching
