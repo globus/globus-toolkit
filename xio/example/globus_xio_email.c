@@ -28,7 +28,6 @@ main(
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     smtp_handle;
     globus_xio_attr_t                       smtp_attr;
-    globus_xio_target_t                     target;
     char *                                  to_addr;
     char *                                  cs;
     globus_result_t                         res;
@@ -61,9 +60,9 @@ main(
             1, to_addr);
     test_res(res);
 
-    res = globus_xio_target_init(&target, NULL, cs, stack);
+    res = globus_xio_handle_create(&smtp_handle, stack);
     test_res(res);
-    res = globus_xio_open(&smtp_handle, smtp_attr, target);
+    res = globus_xio_open(smtp_handle, cs, smtp_attr);
     test_res(res);
 
     while(fgets(line, LINE_LEN, stdin) != NULL)

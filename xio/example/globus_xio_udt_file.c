@@ -46,7 +46,6 @@ main(
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
     globus_xio_server_t			    server;	
-    globus_xio_target_t                     target;
     globus_xio_attr_t                       attr = NULL;
     char *                                  cs = NULL;
     globus_result_t                         res;
@@ -113,9 +112,9 @@ main(
 	int i, x;
 	res = globus_xio_server_create(&server, attr, stack);
     	test_res(res);
-	res = globus_xio_server_accept(&target, server, attr);
+	res = globus_xio_server_accept(&xio_handle, server);
     	test_res(res);
-	res = globus_xio_open(&xio_handle, attr, target);
+	res = globus_xio_open(xio_handle, NULL, attr);
 	test_res(res);
         fp = fopen(filename, "r");
         while(!feof(fp))
@@ -141,11 +140,11 @@ main(
         char                            buffer[CHUNK_SIZE];
         int	                        nbytes;
         int				i;
-        res = globus_xio_target_init(&target, NULL, cs, stack);
+        res = globus_xio_handle_create(&xio_handle, stack);
         test_res(res);
         res = globus_xio_stack_destroy(stack);
         test_res(res);
-   	res = globus_xio_open(&xio_handle, attr, target);
+   	res = globus_xio_open(xio_handle, cs, attr);
    	test_res(res);
  	fp = fopen(filename, "w");
         while(1)

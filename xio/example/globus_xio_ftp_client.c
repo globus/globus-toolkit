@@ -29,7 +29,6 @@ main(
     globus_xio_driver_t                     ftp_driver;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
-    globus_xio_target_t                     target;
     char *                                  cs;
     char *                                  subject;
     globus_result_t                         res;
@@ -59,7 +58,7 @@ main(
 
     cs = argv[argc - 1];
     subject = argv[argc - 2];
-    res = globus_xio_target_init(&target, NULL, cs, stack);
+    res = globus_xio_handle_create(&xio_handle, stack);
     test_res(res, __LINE__);
     res = globus_xio_attr_init(&attr);
     test_res(res, __LINE__);
@@ -68,7 +67,7 @@ main(
         subject);
     test_res(res, __LINE__);
 
-    res = globus_xio_open(&xio_handle, attr, target);
+    res = globus_xio_open(xio_handle, cs, attr);
     test_res(res, __LINE__);
 
     while(!done)

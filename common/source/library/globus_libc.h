@@ -393,6 +393,7 @@ typedef struct addrinfo                 globus_addrinfo_t;
         }                                                                   \
     } while(0)
 
+/* only use this on systems with the sin_len field (AIX) */
 #define GlobusLibcSockaddrSetLen(addr, len)                                 \
     do                                                                      \
     {                                                                       \

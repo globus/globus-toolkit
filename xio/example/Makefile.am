@@ -1,0 +1,44 @@
+include $(top_srcdir)/globus_automake_pre
+include $(top_srcdir)/globus_automake_pre_top
+
+SUBDIRS=\
+	pkgdata
+
+test_PROGRAMS= \
+	globus-xio-client \
+	globus-xio-email \
+	globus-xio-example \
+	globus-xio-ftp-client \
+	globus-xio-ftp-server \
+	globus-xio-server \
+	globus-xio-telnet \
+	globus-xio-udp-echo \
+	globus-xio-udt-bw \
+	globus-xio-udt-file
+
+INCLUDES += $(GPT_INCLUDES)
+LDADD = $(GPT_PGM_LINKS)
+
+globus_xio_client_SOURCES = globus_xio_client.c
+globus_xio_client_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_email_SOURCES = globus_xio_email.c
+globus_xio_email_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_example_SOURCES = globus_xio_example.c
+globus_xio_example_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_ftp_client_SOURCES = globus_xio_ftp_client.c
+globus_xio_ftp_client_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_ftp_server_SOURCES = globus_xio_ftp_server.c
+globus_xio_ftp_server_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_server_SOURCES = globus_xio_server.c
+globus_xio_server_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_telnet_SOURCES = globus_xio_telnet.c
+globus_xio_telnet_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_udp_echo_SOURCES = globus_xio_udp_echo.c
+globus_xio_udp_echo_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_udt_bw_SOURCES = globus_xio_udt_bw.c
+globus_xio_udt_bw_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_udt_file_SOURCES = globus_xio_udt_file.c
+globus_xio_udt_file_LDFLAGS = $(GPT_LDFLAGS)
+
+include $(top_srcdir)/globus_automake_post
+include $(top_srcdir)/globus_automake_post_top

@@ -49,7 +49,6 @@ main(
     globus_xio_driver_t                     driver;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
-    globus_xio_target_t                     target;
     globus_xio_attr_t                       attr = NULL;
     char *                                  cs = NULL;
     globus_result_t                         res;
@@ -108,11 +107,11 @@ main(
         exit(1);
     }
     
-    res = globus_xio_target_init(&target, NULL, cs, stack);
+    res = globus_xio_handle_create(&xio_handle, stack);
     test_res(res);
     res = globus_xio_stack_destroy(stack);
     test_res(res);
-    res = globus_xio_open(&xio_handle, attr, target);
+    res = globus_xio_open(xio_handle, cs, attr);
     test_res(res);
     
     res = globus_xio_handle_cntl(

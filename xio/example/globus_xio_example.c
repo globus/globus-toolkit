@@ -11,7 +11,6 @@ main(
     globus_xio_stack_t              stack;
     globus_xio_handle_t             handle;
     globus_size_t                   nbytes;
-    globus_xio_target_t             target;
     char *                          contact_string = NULL;
     char                            buf[256];
 
@@ -29,17 +28,10 @@ main(
     res = globus_xio_stack_push_driver(stack, driver);
     assert(res == GLOBUS_SUCCESS);
 
-    res = globus_xio_target_init(
-        &target, 
-        NULL,
-        contact_string, 
-        stack);
+    res = globus_xio_handle_create(&handle, stack);
     assert(res == GLOBUS_SUCCESS);
 
-    res = globus_xio_open(
-            &handle,
-            NULL,
-            target);
+    res = globus_xio_open(handle, contact_string, NULL);
     assert(res == GLOBUS_SUCCESS);
 
     do

@@ -28,7 +28,6 @@ main(
     globus_xio_driver_t                     ftp_driver;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
-    globus_xio_target_t                     target;
     char *                                  cs;
     globus_result_t                         res;
     char                                    line[LINE_LEN];
@@ -50,14 +49,12 @@ main(
 
     globus_xio_server_create(&server_handle, NULL, stack);
 
-    globus_xio_server_cntl(
-        server_handle, tcp_driver, GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
-        &cs);
+    globus_xio_server_get_contact_string(server_handle, &cs);
     fprintf(stdout, "Contact: %s\n", cs);
 
-    globus_xio_server_accept(&target, server_handle, NULL);
+    globus_xio_server_accept(&xio_handle, server_handle);
 
-    res = globus_xio_open(&xio_handle, NULL, target);
+    res = globus_xio_open(xio_handle, NULL, NULL);
     test_res(res, __LINE__);
     res = globus_xio_write(xio_handle, "220 hello\r\n", strlen("220 hello\r\n"),
         strlen("220 hello\r\n"), &nbytes, NULL);
