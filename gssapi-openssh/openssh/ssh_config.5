@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh_config.5,v 1.1 2002/06/20 19:56:07 stevesk Exp $
+.\" $OpenBSD: ssh_config.5,v 1.5 2002/08/29 22:54:10 stevesk Exp $
 .Dd September 25, 1999
 .Dt SSH_CONFIG 5
 .Os
@@ -50,29 +50,24 @@
 .Nm ssh
 obtains configuration data from the following sources in
 the following order:
-command line options, 
-feature-specific user configuration file(s) (see below),
+.Bl -enum -offset indent -compact
+.It
+command-line options
+.It
 user's configuration file
-.Pq Pa $HOME/.ssh/config ,
-and system-wide configuration file
-.Pq Pa /etc/ssh/ssh_config .
-For compatibility with other
-.Nm
-versions, the following feature-specific user configuration files
-will be processed after the command line options but before the user's 
-main configuration file, so options that other
-.Nm
-versions may not support don't need to go in the main configuration file:
-.Bl -tag -width Ds
-.It Pa $HOME/.ssh/config.gssapi
-Read if GSSAPI authentication is supported.  This is a good place for
-the GssapiAuthentication and GssapiDelegateCredentials options.
-.It Pa $HOME/.ssh/config.krb
-Read if Kerberos authentication is supported.  This is a good place
-for the KerberosAuthentication and KerberosTgtPassing options.
-.It Pa $HOME/.ssh/config.afs
-Read if AFS token passing is supported.  This is a good place for the
-AfsTokenPassing option.
+.Pq Pa $HOME/.ssh/config
+.It
+GSSAPI configuration file (GssapiAuthentication, GssapiDelegateCredentials)
+.Pq Pa $HOME/.ssh/config.gssapi
+.It
+Kerberos configuration file (KerberosAuthentication, KerberosTgtPassing)
+.Pq Pa $HOME/.ssh/config.krb
+.It
+AFS configuration file (AfsTokenPassing)
+.Pq Pa $HOME/.ssh/config.afs
+.It
+system-wide configuration file
+.Pq Pa /etc/ssh/ssh_config
 .El
 .Pp
 For each parameter, the first obtained value
@@ -272,6 +267,13 @@ or
 .Dq no .
 The default is
 .Dq no .
+.Pp
+Agent forwarding should be enabled with caution.  Users with the
+ability to bypass file permissions on the remote host (for the agent's
+Unix-domain socket) can access the local agent through the forwarded
+connection.  An attacker cannot obtain key material from the agent,
+however they can perform operations on the keys that enable them to
+authenticate using the identities loaded into the agent.
 .It Cm ForwardX11
 Specifies whether X11 connections will be automatically redirected
 over the secure channel and
@@ -283,6 +285,12 @@ or
 .Dq no .
 The default is
 .Dq no .
+.Pp
+X11 forwarding should be enabled with caution.  Users with the ability
+to bypass file permissions on the remote host (for the user's X
+authorization database) can access the local X11 display through the
+forwarded connection.  An attacker may then be able to perform
+activities such as keystroke monitoring.
 .It Cm GatewayPorts
 Specifies whether remote hosts are allowed to connect to local
 forwarded ports.
@@ -528,7 +536,12 @@ or
 .Dq no .
 The default is
 .Dq no .
-This option applies to protocol version 1 only.
+This option applies to protocol version 1 only and requires
+.Nm ssh
+to be setuid root and
+.Cm UsePrivilegedPort
+to be set to
+.Dq yes .
 .It Cm RhostsRSAAuthentication
 Specifies whether to try rhosts based authentication with RSA host
 authentication.
@@ -603,6 +616,10 @@ or
 .Dq no .
 The default is
 .Dq no .
+If set to
+.Dq yes
+.Nm ssh
+must be setuid root.
 Note that this option must be set to
 .Dq yes
 if
@@ -620,7 +637,7 @@ Specifies a file to use for the user
 host key database instead of
 .Pa $HOME/.ssh/known_hosts .
 .It Cm XAuthLocation
-Specifies the location of the
+Specifies the full pathname of the
 .Xr xauth 1
 program.
 The default is
