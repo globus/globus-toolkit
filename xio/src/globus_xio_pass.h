@@ -224,6 +224,12 @@ do                                                                          \
 
 #define GlobusXIOOperationGetWaitFor(_in_op)                                \
     ((_in_op)->entry[_in_op->ndx - 1]._op_ent_wait_for)
+
+#define GlobusXIOOperationGetDriverHandle(_in_op)                           \
+    ((_in_op)->_context->entry[_in_op->ndx - 1].driver_handle)
+
+#define GlobusXIOOperationGetContext(_in_op)                                \
+    ((_in_op)->_context)
 /*********************************************************************
  *              function signatures used by the macros
  ********************************************************************/
