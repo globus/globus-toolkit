@@ -915,11 +915,11 @@ main(int xargc,
       /* ajr,vs --changed printf to sprintf, and added grami_setenv
        * This is considered to be a temporary change */
       if ((contact_string = (char *)malloc(strlen(fqdn) 
-                + strlen(globusid) + 8 ))) 
+                + strlen(globusid) + 40))) 
       {
 	
-          sprintf(contact_string, "%s:%.*d:%s",
-                  fqdn, 5, daemon_port, globusid);
+          sprintf(contact_string, "%s:%d:%s",
+                  fqdn, daemon_port, globusid);
           if (!run_from_inetd)
               printf("GRAM contact: %s\n", contact_string);
           grami_setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
