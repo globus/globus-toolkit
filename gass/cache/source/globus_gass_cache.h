@@ -13,6 +13,7 @@ Description:
 
 ******************************************************************************/
 #ifndef _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H_
+#ifndef SWIG
 #define _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H_
 
 #ifndef EXTERN_C_BEGIN
@@ -75,9 +76,15 @@ Other definitions
 
 #define GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION     1
 
+#endif
+
+#ifdef SWIG
+%subsection "Structures", before, pre, chop_left=0,chop_top=2,chop_bottom=1
+#endif
 
 /******************************************************************************
-globus_gass_cache_t:
+   Structure: globus_gass_cache_t
+
    Data structure used to store informations concerning an open cache
    directory. This structure MUST NOT be modified directly, but passed to
    the globus_gass_cache functions
@@ -85,6 +92,7 @@ globus_gass_cache_t:
 
 typedef struct
 {
+#ifndef SWIG
     void*          init;   /* dirty hack to know if this cache has
 			      been opened/init.    */
     char           comment[COMMENT_LENGHT];
@@ -100,27 +108,37 @@ typedef struct
     int            temp_file_fd;
     FILE*          log_FILE;
     int            nb_entries;
+/* endif SWIG */
+#endif
 } globus_gass_cache_t;      /* cache handle */
 
 /******************************************************************************
-Structure: globus_gass_cache_tag_t
+   Structure: globus_gass_cache_tag_t
 
-Description:
-  Define an entry for the array of tag returned by  "globus_gass_cache_list()"
+   Define an entry for the array of tag returned by  "globus_gass_cache_list()"
 ******************************************************************************/
 typedef struct
 {
+#ifdef SWIG
+    globus_gass_cache_tag_t();
+    ~globus_gass_cache_tag_t();
+/* endif SWIG */
+#endif
     char *           tag;
     int              count;
 } globus_gass_cache_tag_t;
 /******************************************************************************
-Structure: globus_gass_cache_entry_t
+   Structure: globus_gass_cache_entry_t
 
-Description:
   Define an entry of the cache, as return by the function "globus_gass_cache_list()"
 ******************************************************************************/
 typedef struct
 {
+#ifdef SWIG
+    globus_gass_cache_entry_t();
+    ~globus_gass_cache_entry_t();
+/* endif SWIG */
+#endif
     char *                    url;
     char *                    filename;
     unsigned long             timestamp;  /* modification timestamp          */
@@ -138,11 +156,14 @@ typedef struct
 
 ******************************************************************************/
 
-  
-/******************************************************************************
-Function: globus_gass_cache_open()
+#ifdef SWIG
+%subsection "Functions", before, pre, chop_left=0,chop_top=2,chop_bottom=1
+#endif
 
-Description:
+/******************************************************************************
+   Function: globus_gass_cache_open()
+
+   Description:
     Open the cache specified by the cache_directory_path argument, and return
     a cache handle that can be used in subsequent cache calls. 
 
@@ -156,7 +177,7 @@ Description:
     If the specified directory does not exist, then this call will create the
     directory.
 
-Parameters: input:    
+   Parameters: input:    
                 cache_directory_path: Path to the cache directory to open.
 		    Can be NULL (see above)
 		cache_handle->is_init: checked and return an error if 
@@ -169,7 +190,8 @@ Parameters: input:
 		globus_gass_cache_close() must be called subsequently to close those
 		files.
 		
-Returns:    BLOBUS_SUCCESS or error code:	
+   Returns:    
+            BLOBUS_SUCCESS or error code:	
             GLOBUS_GASS_CACHE_ERROR_CACHE_ALREADY_OPENED
             GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG if the cache directory path is
 	        too long
@@ -180,7 +202,7 @@ Returns:    BLOBUS_SUCCESS or error code:
 	         necessary file can not be created.
 	 
 ******************************************************************************/
-int 
+extern int 
 globus_gass_cache_open(char*          cache_directory_path,
 		globus_gass_cache_t*  cache_handle);
 
@@ -207,7 +229,7 @@ Returns:    GLOBUS_SUCCESS or error code:
             GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED
 	 
 ******************************************************************************/
-int
+extern int
 globus_gass_cache_close(globus_gass_cache_t *  cache_handle);
 
 /******************************************************************************
@@ -278,7 +300,7 @@ Returns:
 	    or any of the defined gass error code.
 	    
 ******************************************************************************/
-int
+extern int
 globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	       char*           url,
 	       char*           tag,
@@ -312,7 +334,7 @@ Returns:    GLOBUS_SUCCESS or error code:
 	    or any of the defined gass error code.
 
 ******************************************************************************/
-int
+extern int
 globus_gass_cache_add_done(globus_gass_cache_t *  cache_handle,
 		    char *          url,
 		    char *          tag,
@@ -342,7 +364,7 @@ Returns:    GLOBUS_SUCCESS or error code:
 	    or any of the defined gass error code.
 
 ******************************************************************************/
-int
+extern int
 globus_gass_cache_delete_start(globus_gass_cache_t *  cache_handle,
 			char *          url,
 			char *          tag,
@@ -390,7 +412,7 @@ Returns:    GLOBUS_SUCCESS or error code:
 	    or any of the defined gass error code.   
 
 ******************************************************************************/
-int
+extern int
 globus_gass_cache_delete(globus_gass_cache_t *  cache_handle,
 		  char *          url,
 		  char *          tag,
@@ -429,7 +451,7 @@ Returns:    GLOBUS_SUCCESS or error code:
 	    or any of the defined gass error code.   
 
 ******************************************************************************/
-int
+extern int
 globus_gass_cache_cleanup_tag(globus_gass_cache_t *  cache_handle,
 		   char *          url,
 		   char *          tag);
@@ -455,7 +477,7 @@ Parameters: input:
 Returns:    GLOBUS_SUCCESS or error code:
 	    or any of the defined gass error code.   
 ******************************************************************************/
-int
+extern int
 globus_gass_cache_cleanup_file(globus_gass_cache_t *  cache_handle,
 			char *          url);
 
@@ -482,7 +504,7 @@ Returns:    GLOBUS_SUCCESS or error code:
 	    or any of the defined gass error code.      
 
 ******************************************************************************/
-int
+extern int
 globus_gass_cache_list(globus_gass_cache_t *         cache_handle,
 		globus_gass_cache_entry_t **  entry,
 		int *                  size);
@@ -501,7 +523,7 @@ Parameters: input:
 Returns:    GLOBUS_SUCCESS
 
 ******************************************************************************/
-int
+extern int
 globus_gass_cache_list_free(globus_gass_cache_entry_t *  entry,
 		     int                   size);
 
@@ -519,14 +541,16 @@ Parameters: input:
 Returns:   Pointer to an error message, or NULL if invalide error code.
 
 ******************************************************************************/
-const char *
+extern const char *
 globus_gass_cache_error_string(int error_code);
 
+#ifndef SWIG
 EXTERN_C_END
 
 /******************************************************************************
  *                    Module Definition
  *****************************************************************************/
+
 #define GLOBUS_GASS_CACHE_MODULE (&globus_gass_cache_module)
 
 static globus_module_descriptor_t globus_gass_cache_module =
@@ -537,7 +561,7 @@ static globus_module_descriptor_t globus_gass_cache_module =
     GLOBUS_NULL
 };
 
+
+#endif
+
 #endif   /* _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H */
-
-
-
