@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
 
-exit system('./run-openssl-error-tests.pl');
+exit ( 0 != system('./run-openssl-error-tests.pl'));
 
 
