@@ -1,4 +1,4 @@
-#! /bin/sh -x
+#! /bin/sh
 
 # catch the kill signal (ctrl-c) and do cleanup
 trap do_trap 1 2 3 6 9 13 15
