@@ -26,7 +26,6 @@
 #include "globus_config.h"
 #include "globus_gram_client.h"
 #include "globus_gram_protocol.h"
-#include "globus_rsl.h"
 
 #include <assert.h>
 #include <stdio.h>
