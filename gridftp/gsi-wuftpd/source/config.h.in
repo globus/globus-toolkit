@@ -189,6 +189,7 @@
 
 #undef MAPPING_CHDIR
 
+#undef USE_GLOBUS_DATA_CODE
 /*
  * THROUGHPUT
  * Keep track of total throughput for the user and limit if required.

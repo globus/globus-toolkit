@@ -36,10 +36,26 @@ CC=@CC@
 #WNOERROR=-Werror
 #WARNINGS=$(WNOERROR) -Wall -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wmissing-prototypes 
 
-CFLAGS=$(WARNINGS) @CFLAGS@ @GSSAPI_CFLAGS@ @AFS_CFLAGS@
-LDFLAGS=@LDFLAGS@ @GSSAPI_LDFLAGS@ @AFS_LDFLAGS@
+GLOBUS_CONTROL_FTP_DATA_CFLAGS=@GLOBUS_CONTROL_FTP_DATA_CFLAGS@
+GLOBUS_CONTROL_FTP_DATA_LDFLAGS=@GLOBUS_CONTROL_FTP_DATA_LDFLAGS@
+GLOBUS_CONTROL_FTP_DATA_LIBS=@GLOBUS_CONTROL_FTP_DATA_LIBS@
+
+CFLAGS=$(WARNINGS)                          \
+       @CFLAGS@                             \
+       $(GLOBUS_CONTROL_FTP_DATA_CFLAGS)    \
+       @GSSAPI_CFLAGS@                      \
+       @AFS_CFLAGS@
+LDFLAGS=@LDFLAGS@                           \
+        $(GLOBUS_CONTROL_FTP_DATA_LDFLAGS)  \
+        @GSSAPI_LDFLAGS@                    \
+        @AFS_LDFLAGS@
 YACC=@YACC@
-LIBS=@LIBS@ @GSSAPI_LDFLAGS@ @GSSAPI_LIBS@ @AFS_LDFLAGS@ @AFS_LIBS@
+LIBS=@LIBS@                                 \
+     $(GLOBUS_CONTROL_FTP_DATA_LIBS)        \
+     @GSSAPI_LDFLAGS@                       \
+     @GSSAPI_LIBS@                          \
+     @AFS_LDFLAGS@                          \
+     @AFS_LIBS@
 
 UTIL_SRC  = COPYRIGHT.c vers.c
 UTIL_OBJS = COPYRIGHT.o vers.o

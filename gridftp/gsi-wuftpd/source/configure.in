@@ -144,6 +144,9 @@ then
   fi
 fi
 
+AC_ARG_ENABLE(globus-data,[  --disable-globus-data    don't use globus data code],
+	[ globus_data=$enableval ], [ globus_data=no ])
+
 AC_ARG_ENABLE(new-cd,    [  --disable-new-cd        new-cd causes \"cd ~\" to return to chroot-relative dir],
 	[ newcd=$enableval ], [ newcd=yes ])
 AC_ARG_ENABLE(chmod,	 [  --enable-chmod          allow ftp users to set SETUID/SETGID/STICKY bits],
@@ -911,6 +914,11 @@ if test $ac_cv_header_opie_h = no; then
     opie=no
   fi
 fi
+
+if test $globus_data = yes; then
+	AC_DEFINE(USE_GLOBUS_DATA_CODE)
+fi
+
 if test $opie = yes; then
 	AC_DEFINE(OPIE)
 	LIBS="$LIBS -lopie"

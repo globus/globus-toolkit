@@ -1,5 +1,6 @@
 #define OUTSTANDING_READ_COUNT                      4
 
+#include "config.h"
 
 #if defined(USE_GLOBUS_DATA_CODE)
 
