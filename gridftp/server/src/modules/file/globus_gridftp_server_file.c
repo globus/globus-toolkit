@@ -131,6 +131,8 @@ void
 globus_l_gfs_file_monitor_destroy(
     globus_l_file_monitor_t *           monitor)
 {
+    globus_l_buffer_info_t *            buf_info;
+    
     if(monitor->file_handle)
     {
         globus_xio_register_close(
@@ -140,7 +142,15 @@ globus_l_gfs_file_monitor_destroy(
             GLOBUS_NULL);
     }
             
-    /* maybe dequeue all and free buf infos */
+    while(!globus_priority_q_empty(&monitor->queue))
+    {
+        buf_info = (globus_l_buffer_info_t *)
+            globus_priority_q_dequeue(&monitor->queue);
+        if(buf_info)
+        {
+            globus_free(buf_info);
+        }
+    }
     globus_priority_q_destroy(&monitor->queue);
     globus_list_free(monitor->buffer_list);
     globus_mutex_destroy(&monitor->lock);

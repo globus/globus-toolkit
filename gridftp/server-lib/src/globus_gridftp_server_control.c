@@ -2012,7 +2012,7 @@ globus_gridftp_server_control_destroy(
         &server_handle->cmd_table, globus_l_gsc_hash_cmd_destroy);
     globus_hashtable_destroy_all(
         &server_handle->site_cmd_table, globus_l_gsc_hash_cmd_destroy);
-
+    globus_hashtable_destroy(&server_handle->data_object_table);
     globus_hashtable_destroy_all(
         &server_handle->funcs.recv_cb_table, globus_l_gsc_hash_func_destroy);
     globus_hashtable_destroy_all(
@@ -2744,7 +2744,9 @@ globus_i_gsc_mlsx_line_single(
     int                                 is_writable = 0;
     int                                 is_executable = 0;
 
-    buf_len = 256; /* this could be suspect */
+    buf_len = MAXPATHLEN * 2 + 256; /* this could be suspect
+                                    256 is way too small, could have
+                                    2 paths in the line */
     out_buf = globus_malloc(buf_len);
 
     tmp_ptr = out_buf;
@@ -2920,17 +2922,19 @@ globus_i_gsc_mlsx_line(
 {
     int                                 ctr;
     char *                              buf;
+    char *                              line;
     char *                              tmp_ptr;
 
     buf = globus_libc_strdup("");
     for(ctr = 0; ctr < stat_count; ctr++)
     {
-        tmp_ptr = globus_common_create_string("%s%s\r\n",
-            buf,
-            globus_i_gsc_mlsx_line_single(
+        line = globus_i_gsc_mlsx_line_single(
                 mlsx_fact_str,
                 uid,
-                &stat_info[ctr]));
+                &stat_info[ctr]);
+        tmp_ptr = globus_common_create_string(
+            "%s%s\r\n", buf, line);
+        globus_free(line);
         globus_free(buf);
         buf = tmp_ptr;
     }
