@@ -1012,7 +1012,7 @@ globus_l_gfs_config_misc()
 
     /* make sure root running process that does not fork can only run
         once */
-    if(globus_i_gfs_config_bool("daemon") && getuid() == 0)
+    if(!globus_i_gfs_config_bool("daemon") && getuid() == 0)
     {
         globus_l_gfs_config_set("connections_max", 1, NULL);
         globus_l_gfs_config_set("single", 1, NULL);
