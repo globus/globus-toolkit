@@ -12,6 +12,16 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION, 0)
 
+AC_ARG_ENABLE(globus-authorization,
+[  --enable-globus-authorization	Enable experimental cas authorization],
+[
+	GPT_PKG_CFLAGS="-DGLOBUS_AUTHORIZATION -D_HAVE_GSI_EXTENDED_GSSAPI"
+],
+[
+	GPT_PKG_CFLAGS=""
+])
+AC_SUBST(GPT_PKG_CFLAGS)
+
 GLOBUS_FINALIZE
 
 LAC_DOXYGEN(["../library"])

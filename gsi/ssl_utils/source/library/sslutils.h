@@ -49,7 +49,6 @@ EXTERN_C_BEGIN
 #include "openssl/x509.h"
 #include "openssl/stack.h"
 
-
 /**
  * @defgroup globus_gsi_ssl_utils_activation Activation
  *
@@ -321,15 +320,6 @@ struct proxy_verify_desc_struct {
 
 };
 
-typedef enum
-{
-  GLOBUS_NOT_PROXY        = 0,
-  GLOBUS_FULL_PROXY       = 1,
-  GLOBUS_LIMITED_PROXY    = 2,
-  GLOBUS_RESTRICTED_PROXY = 3
-} 
-globus_proxy_type_t;
-
 /**********************************************************************
                                Global variables
 **********************************************************************/
@@ -375,17 +365,6 @@ pkcs12_load_credential(
     proxy_cred_desc *                   pcd, 
     const char *                        user_cred,
     char *                              password);
-
-int
-proxy_create_local(
-    proxy_cred_desc *                   pcd,
-    const char *                        outfile,
-    int                                 hours,
-    int                                 bits,
-    globus_proxy_type_t                 proxy_type,
-    int                                 (*kpcallback)(),
-    STACK_OF(X509_EXTENSION) *          extensions);
-
 
 int
 proxy_init_cred(
@@ -439,15 +418,6 @@ proxy_genreq(
     int                                 (*callback)(),
     proxy_cred_desc *                   pcd);
 
-int
-proxy_sign(
-    X509 *                              user_cert,
-    EVP_PKEY *                          user_private_key,
-    X509_REQ *                          req,
-    X509 **                             new_cert,
-    int                                 seconds,
-    STACK_OF(X509_EXTENSION) *          extensions,
-    globus_proxy_type_t                 proxy_type);
 
 int
 proxy_sign_ext(

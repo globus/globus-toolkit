@@ -30,8 +30,10 @@ Sources = \
         globus_i_gsi_gss_utils.c \
         globus_gsi_gss_constants.h \
         globus_gsi_gss_error.c \
+	cas_hack.c \
 	$(Sources_GSS_EXTENSIONS) \
 	$(Sources_OPENSSL_INTERNALS)
+	
 
 Sources_GSS_EXTENSIONS = \
 	accept_delegation.c \
@@ -51,6 +53,8 @@ flavorinclude_HEADERS = \
 
 
 #AM_CFLAGS = -DDEBUG
+
+CFLAGS += $(GPT_PKG_CFLAGS)
 
 lib_LTLIBRARIES = libglobus_gssapi_gsi_$(GLOBUS_FLAVOR_NAME).la
 

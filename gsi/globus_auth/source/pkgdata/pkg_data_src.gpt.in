@@ -70,6 +70,11 @@
 <Simple_Version Major="2" />
 </Version>
 </Dependency>
+<Dependency Name="globus_ssl_utils">
+<Version>
+<Simple_Version Major="2"></Simple_Version>
+</Version>
+</Dependency>
 </Source_Dependencies>
 <Build_Environment >
 <cflags >@GPT_CFLAGS@</cflags>

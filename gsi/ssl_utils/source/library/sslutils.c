@@ -91,6 +91,16 @@ static char *rcsid = "$Header$";
 
 int fix_add_entry_asn1_set_param = 0;
 
+typedef enum
+{
+  GLOBUS_NOT_PROXY        = 0,
+  GLOBUS_FULL_PROXY       = 1,
+  GLOBUS_LIMITED_PROXY    = 2,
+  GLOBUS_RESTRICTED_PROXY = 3
+} 
+globus_proxy_type_t;
+
+
 extern globus_mutex_t                   globus_l_gsi_ssl_utils_mutex;
 
 /**********************************************************************
