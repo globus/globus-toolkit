@@ -129,6 +129,9 @@
 #undef HAVE_UT_UT_HOST
 #undef HAVE_UT_UT_EXIT_E_TERMINATION
 
+#undef HAVE_SETENV
+#undef HAVE_UNSETENV
+
 /* Here instead of everywhere: */
 #include <stdio.h>
 #include <stdlib.h>

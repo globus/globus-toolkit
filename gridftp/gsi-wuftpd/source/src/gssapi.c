@@ -61,6 +61,8 @@ extern int h_errno;
 #endif /* !h_errno */
 
 static int gssapi_reply_error();
+static int gssapi_setenv();
+static void gssapi_unsetenv();
 
 /*
  * Environment variables pointing to delegated credentials
@@ -100,7 +102,7 @@ gssapi_setup_environment()
 	sprintf(ccname, "FILE:/tmp/krb5cc_gsiftpd_p%d.%d", getpid(), index++);
     }
     
-    setenv("KRB5CCNAME", ccname, 1);
+    gssapi_setenv("KRB5CCNAME", ccname, 1);
     if (debug)
 	syslog(LOG_DEBUG, "Setting KRB5CCNAME to %s", ccname);
     
@@ -130,7 +132,7 @@ gssapi_fix_env(void)
 	  syslog(LOG_DEBUG, "Setting X509_USER_PROXY to '%s'",
 		 getenv("X509_USER_DELEG_PROXY"));
       
-      if (setenv("X509_USER_PROXY", getenv("X509_USER_DELEG_PROXY"), 1)) {
+      if (gssapi_setenv("X509_USER_PROXY", getenv("X509_USER_DELEG_PROXY"), 1)) {
 	  syslog(LOG_ERR, "Failed to set X509_USER_PROXY environment variable");
 	  status = 1;
       }
@@ -141,8 +143,8 @@ gssapi_fix_env(void)
    * at the host key and certificate for authentication.
    * This isn't a security problem, just possibly confusing.
    */
-  unsetenv("X509_USER_KEY");
-  unsetenv("X509_USER_CERT");
+  gssapi_unsetenv("X509_USER_KEY");
+  gssapi_unsetenv("X509_USER_CERT");
 
 #endif /* GSSAPI_GLOBUS */
 
@@ -912,5 +914,87 @@ char *globus_local_name(globus_id)
     return mapped_name;
 }
 #endif /* GSSAPI_GLOBUS */
+
+
+
+/*
+ * Set an environment variable.
+ *
+ * If override != 0 override an existing value.
+ */
+static int
+gssapi_setenv(const char *var,
+	      const char *value,
+	      const int override)
+{
+#ifdef HAVE_SETENV
+  return setenv(var, value, override);
+#else /* !HAVE_SETENV */
+
+  char *envstr = NULL;
+  int status;
+
+
+  /* If we're not overriding and it's already set, then return */
+  if (!override && getenv(var))
+      return 0;
+
+  envstr = malloc(strlen(var) + strlen(value) + 2 /* '=' and NUL */);
+  
+  if (!envstr)
+      return -1;
+  
+  sprintf(envstr, "%s=%s", var, value);
+
+  status = putenv(envstr);
+
+  /* Don't free envstr as it may still be in use */
+  
+  return status;
+#endif /* !HAVE_SETENV */
+}
+
+
+/*
+ * Wrapper around unsetenv.
+ */
+static void
+gssapi_unsetenv(const char *var)
+{
+#ifdef HAVE_UNSETENV
+    unsetenv(var);
+#else /* !HAVE_UNSETENV */
+
+    extern char **environ;
+    char **p1 = environ;	/* New array list */
+    char **p2 = environ;	/* Current array list */
+    int len = strlen(var);
+
+    /*
+     * Walk through current environ array (p2) copying each pointer
+     * to new environ array (p1) unless the pointer is to the item
+     * we want to delete. Copy happens in place.
+     */
+    while (*p2) {
+	if ((strncmp(*p2, var, len) == 0) &&
+	    ((*p2)[len] == '=')) {
+	    /*
+	     * *p2 points at item to be deleted, just skip over it
+	     */
+	    p2++;
+	} else {
+	    /*
+	     * *p2 points at item we want to save, so copy it
+	     */
+	    *p1 = *p2;
+	    p1++;
+	    p2++;
+	}
+    }
+
+    /* And make sure new array is NULL terminated */
+    *p1 = NULL;
+#endif /* HAVE_UNSETENV */
+}
 
 #endif /* GSSAPI */

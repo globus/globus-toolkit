@@ -7464,7 +7464,20 @@ run_post_auth_process(struct passwd *pw)
 	    seteuid(0);
 	    setuid(pw->pw_uid);
 	    if (pw->pw_dir) {
-		setenv("HOME", pw->pw_dir, 1);
+		/*
+		 * Don't use setenv() here as not all systems (e.g. solaris)
+		 * have it.
+		 */
+		char *envstr;
+		
+		envstr = malloc(strlen(pw->pw_dir) + 6 /* 'HOME=' + NUL */);
+		
+		if (envstr) {
+		    sprintf(envstr, "HOME=%s", pw->pw_dir);
+		    putenv(envstr);
+		} else {
+		    syslog(LOG_ERR, "malloc() failed");
+		}
 	    }
 	    rc = system(program);
 	    if (debug)

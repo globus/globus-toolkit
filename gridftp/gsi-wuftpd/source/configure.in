@@ -210,6 +210,8 @@ AC_SUBST(GSSAPI_CFLAGS)
 if test "$with_gssapi" != "no"; then
 	AC_DEFINE(FTP_SECURITY_EXTENSIONS)
 	GSSAPI_SRC="gssapi.c radix.c secure_ext.c"
+	AC_CHECK_FUNCS(setenv)
+	AC_CHECK_FUNCS(unsetenv)
 else
 	GSSAPI_SRC=""
 fi
