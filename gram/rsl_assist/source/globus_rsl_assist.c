@@ -77,6 +77,7 @@ globus_rsl_assist_replace_manager_name(
 {
     
     globus_list_t *		lists=GLOBUS_NULL;
+    globus_list_t *		tmp_lists=GLOBUS_NULL;
     globus_rsl_t *              an_rsl;
     globus_rsl_t *              new_rsl;
     
@@ -215,6 +216,8 @@ globus_rsl_assist_replace_manager_name(
 			 * to the boolean
 		         */
 			
+	                tmp_lists = globus_list_rest(lists);
+
 			globus_list_remove(
 			    globus_rsl_boolean_get_operand_list_ref(rsl),
 			    lists);
@@ -224,6 +227,9 @@ globus_rsl_assist_replace_manager_name(
 			globus_list_insert(
 			    globus_rsl_boolean_get_operand_list_ref(rsl),
 					   (void *)resource_contact_relation);
+	                lists = tmp_lists;
+                        continue;
+
 		    }
 		}
 	    }
