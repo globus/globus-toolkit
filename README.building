@@ -1,19 +1,29 @@
-First, setup your GPT 1.0 environment.  You'll need to use a specific
-version of the GNU autotools.  See
-<http://www.ncsa.uiuc.edu/Divisions/NSM/GST/GPT/SettingUp_GPT.html>.
-Using GPT 1.0 to create packages ensures that the packages will be
-compatible with all later versions of GPT.  GPT 1.0 currently has
-problems with bundles created with GPT 2.1.1.
+Install GPT and the Globus Toolkit from
+<http://www.globus.org/toolkit/download/>.  Install the latest GPT
+version available.  MyProxy needs the GSI libraries from the Globus
+Toolkit.  They're available from the GSI bundle or the Resource
+Management bundles (both client and SDK are required).  You can use
+binary bundles but if you do, you must run
 
-Before anything else:
+  $GPT_LOCATION/sbin/gpt-build gcc32dbg -nosrc
+
+after you complete the installation, as documented in the Globus
+Toolkit installation instructions.
+
+Install the tools at
+<ftp://ftp.ncsa.uiuc.edu/aces/gpt/releases/gpt-2.1/support/>.  GPT
+requires these modified versions of the GNU autotools.  They must be
+in your PATH when you run the commands below.
+
+To build in a CVS workspace:
 $ ./bootstrap
-$ ./configure --with-flavor=gcc32
-
-To build in CVS workspace:
+$ ./configure --with-flavor=gcc32dbg
 $ make
 
-To install from CVS workspace to $GLOBUS_LOCATION:
+To install from a CVS workspace to $GLOBUS_LOCATION:
 $ make install
+
+The rest of these instructions need to be updated for GT 2.2...
 
 To build binary packages from CVS workspace, after installing in
 $GLOBUS_LOCATION:
