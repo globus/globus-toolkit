@@ -3,6 +3,27 @@ dnl
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
+OPENSSL_INIT
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+AM_CONFIG_HEADER(crypto/opensslconf.h:crypto/opensslconf.h.in)
+
+dnl static linking hack
+
+if test $GPT_LINKTYPE = "static"; then
+    with_dso="no"
+    GPT_LDFLAGS="-static -L/sandbox/meder/globus/lib"
+    AC_SUBST(GPT_LDFLAGS)
+    AC_ENABLE_SHARED([no])
+else
+    with_dso="yes"
+    # Need to determine if we need -ldl or -ldld
+    # maybe should be replaced with the libtool dl library
+    LAC_CHECK_DL_LIB
+fi
+
 dnl libtool hack
 
 with_tags=
@@ -18,27 +39,8 @@ AM_PROG_LIBTOOL
 LD=$save_LD
 CXXCPP=$save_CXXCPP
 
-OPENSSL_INIT
-
-dnl static linking hack
-
-if test $GPT_LINKTYPE = "static"; then
-    with_dso="no"
-    GPT_LDFLAGS="-static -L/sandbox/meder/globus/lib"
-    AC_SUBST(GPT_LDFLAGS)
-else
-    with_dso="yes"
-    # Need to determine if we need -ldl or -ldld
-    # maybe should be replaced with the libtool dl library
-    LAC_CHECK_DL_LIB
-fi
 
 dnl config header goes here
-
-dnl Initialize the automake rules the last argument
-AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
-
-AM_CONFIG_HEADER(crypto/opensslconf.h:crypto/opensslconf.h.in)
 
 # Decide if we should use assembly code
 
