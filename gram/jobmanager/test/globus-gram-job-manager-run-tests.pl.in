@@ -17,6 +17,7 @@ my $startargs = '-log never ';
     globus-gram-job-manager-stdio-test.pl
     globus-gram-job-manager-submit-test.pl
     globus-gram-job-manager-failure-test.pl
+    globus-gram-job-manager-proxy-expire-test.pl
 );
 if(0 != system("grid-proxy-info -exists -hours 2") / 255)
 {
