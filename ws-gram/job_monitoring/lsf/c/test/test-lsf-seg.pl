@@ -8,17 +8,44 @@ use Test;
 
 my $start = time();
 my $testtmp = &make_tmpdir();
+my $gram_lsf_conf = $ENV{GLOBUS_LOCATION} . "/etc/globus-lsf.conf";
+my $gram_lsf_conf_save = $gram_lsf_conf. ".save";
+my $skip_all = 0;
 my @log_data;
 my $log_path = &get_log_path();
 
-@test_data = &parse_test_data();
+if (! defined($log_path))
+{
+    $skip_all = 1;
+}
 
 plan tests => 1;
 
-&write_test_data_to_log($log_path, @test_data);
-&run_lsf_seg("$testtmp/output");
+skip($skip_all ? "LSF SEG not configured" : 0, &run_test, 0);
 
-ok(compare("$testtmp/output", "$testtmp/output.expected") == 0);
+sub run_test
+{
+    if (! $skip_all)
+    {
+        @test_data = &parse_test_data();
+
+        &write_test_data_to_log($log_path, @test_data);
+        my $rc = &run_lsf_seg("$testtmp/output");
+
+        if ($rc == 0)
+        {
+            return compare("$testtmp/output", "$testtmp/output.expected");
+        }
+        else
+        {
+            return 'Unable to run SEG with LSF module: is it installed?';
+        }
+    }
+    else
+    {
+        return 'skip';
+    }
+}
 
 sub run_lsf_seg
 {
@@ -43,6 +70,8 @@ sub run_lsf_seg
     } while ($size < (-s $output));
 
     close(FH);
+
+    return $?;
 }
 
 sub parse_test_data 
@@ -86,10 +115,9 @@ sub write_test_data_to_log {
 
         $datestring = $start + $sleep;
         $user = (getpwuid($<))[0];
-        $host = (POSIX::uname)[1];
         if ($type =~ m/pending/) {
             $state = 1;
-            $event = "\"JOB_NEW\" \"6.0\" $datestring $jobid 292 0 1 $start 0 0 0 0 0 $me 0 0 0 0 0 0 0 0 0 0 0 \"\" 1.0 0 \"normal\" \"\" localhost \"/\" \"/\" \"\" \"\" \"\" \"/home/me\" \"\" 1 \"\" \"\" \"\" $datestring \"jobmane.$jobid\" \"/bin/true\" 0 \"\" \"me\@localhost\" \"project\" 0 1 \"\" \"\" \"\" 0 0 \"\" \"\" \"\" 0 \"\" \"\" \"\" \"\" \"\" 0\n"
+            $event = "\"JOB_NEW\" \"6.0\" $datestring $jobid 292 0 1 $start 0 0 0 0 0 me 0 0 0 0 0 0 0 0 0 0 0 \"\" 1.0 0 \"normal\" \"\" localhost \"/\" \"/\" \"\" \"\" \"\" \"/home/me\" \"\" 1 \"\" \"\" \"\" $datestring \"jobname.$jobid\" \"/bin/true\" 0 \"\" \"me\@localhost\" \"project\" 0 1 \"\" \"\" \"\" 0 0 \"\" \"\" \"\" 0 \"\" \"\" \"\" \"\" \"\" 0\n"
         } elsif ($type =~ m/active/) {
             $state = 2;
             $event = "\"JOB_START\" \"6.0\" $datestring $jobid 4 $$ $$ 1.0 1 \"localhost\" \"\" \"\" 0 \"\" 0 \"\"\n";
@@ -113,18 +141,26 @@ sub write_test_data_to_log {
 }
 
 sub get_log_path {
-    my $gram_lsf_conf = $ENV{GLOBUS_LOCATION} . "/etc/globus-lsf.conf";
-    open(CONF, "<$gram_lsf_conf");
-    my $log;
+    rename($gram_lsf_conf, $gram_lsf_conf_save);
+
+    open(CONF, "<$gram_lsf_conf_save") || return undef;
+    open(TMP_CONF, ">$gram_lsf_conf") || return undef;
+
+    my $log = $testtmp;
 
     while (<CONF>) {
         chomp;
         my ($var, $val) = split(/\s*=\s*/, $_);
         if ($var =~ m/^log_path$/) {
-            $log = $val;
+            print TMP_CONF "log_path=$testtmp\n";
+        }
+        else
+        {   
+            print TMP_CONF "$_\n";
         }
     }
     close(CONF);
+    close(TMP_CONF);
 
     $log .= '/lsb.events';
 
@@ -173,7 +209,11 @@ END
 {
     if(-d $testtmp and -o $testtmp)
     {
-        #File::Path::rmtree($testtmp);
+        File::Path::rmtree($testtmp);
+    }
+
+    if (-f $gram_lsf_conf_save)
+    {
+        rename($gram_lsf_conf_save, $gram_lsf_conf);
     }
 }
-
