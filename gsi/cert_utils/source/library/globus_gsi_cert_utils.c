@@ -202,6 +202,7 @@ globus_gsi_cert_utils_check_proxy_name(
     X509_NAME *                         subject = NULL;
     X509_NAME *                         name = NULL;
     X509_NAME_ENTRY *                   ne = NULL;
+    X509_NAME_ENTRY *                   new_ne = NULL;
     ASN1_STRING *                       data = NULL;
     globus_result_t                     result;
     static char *                       _function_name_ =
@@ -260,9 +261,9 @@ globus_gsi_cert_utils_check_proxy_name(
                 goto exit;
             }
             
-            if((ne = X509_NAME_ENTRY_create_by_NID(NULL, NID_commonName,
-                                                   V_ASN1_APP_CHOOSE,
-                                                   data->data, -1)) == NULL)
+            if((new_ne = X509_NAME_ENTRY_create_by_NID(NULL, NID_commonName,
+                                                       V_ASN1_APP_CHOOSE,
+                                                       data->data, -1)) == NULL)
             {
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
@@ -271,9 +272,10 @@ globus_gsi_cert_utils_check_proxy_name(
                 goto exit;
             }
             
-            if(!X509_NAME_add_entry(name, ne, X509_NAME_entry_count(name),0))
+            if(!X509_NAME_add_entry(name, new_ne, X509_NAME_entry_count(name),0))
             {
-                ne = NULL;
+                X509_NAME_ENTRY_free(new_ne);
+                new_ne = NULL;
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_ADDING_CN_TO_SUBJECT,
@@ -281,7 +283,13 @@ globus_gsi_cert_utils_check_proxy_name(
                      data->data));
                 goto exit;
             }
-            
+ 
+            if(new_ne)
+            {
+                X509_NAME_ENTRY_free(new_ne);
+                new_ne = NULL;
+            }
+           
             if (X509_NAME_cmp(name,subject))
             {
                 /*
@@ -290,12 +298,28 @@ globus_gsi_cert_utils_check_proxy_name(
                  */
                 *type = GLOBUS_ERROR_PROXY;
             }
+
+            if(name)
+            {
+                X509_NAME_free(name);
+                name = NULL;
+            }
         }
     }
 
     result = GLOBUS_SUCCESS;
 
  exit:
+
+    if(new_ne)
+    {
+        X509_NAME_ENTRY_free(new_ne);
+    }
+
+    if(name)
+    {
+        X509_NAME_free(name);
+    }
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return result;
