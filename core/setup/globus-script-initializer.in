@@ -47,8 +47,8 @@ GLOBUS_DEPLOYED='FALSE'            # This line is overwritten during deployment
     sharedstatedir=${prefix}/com
     localstatedir=${prefix}/var
     tmpdir=@tmpdir@
-    secure_tmpdir=@secure_tmpdir@
     local_tmpdir=@local_tmpdir@
+    secure_tmpdir=@secure_tmpdir@
 
     if [ -z "${GLOBUS_SSL_PATH}" ]; then
 	if [ ! -r "${exec_prefix}/etc/globus-ssl-path.sh" ]; then
