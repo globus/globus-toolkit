@@ -16,144 +16,123 @@
 /********************************************************************
  *                   data structure macros
  *******************************************************************/
-#define GlobusXIOHandleDestroy(h)                                       \
-{                                                                       \
-    globus_i_xio_handle_t *                         _h;                 \
-                                                                        \
-    _h = (h);                                                           \
-    globus_assert(_h->ref == 0);                                        \
-    globus_mutex_destroy(_h->mutex);                                    \
-    globus_memory_destroy(_h->op_memory);                               \
-    /* TODO what about context array */                                 \
-    globus_mutex_lock(&_h->context->mutex);                             \
-    {                                                                   \
-                                                                        \
-    }                                                                   \
-    globus_mutex_unlock(&_h->context->mutex);                           \
-                                                                        \
-    globus_free(_h);                                                    \
-    h = NULL;                                                           \
+#define GlobusXIOHandleDestroy(h)                                           \
+{                                                                           \
+    globus_i_xio_handle_t *                         _h;                     \
+                                                                            \
+    _h = (h);                                                               \
+    globus_assert(_h->ref == 0);                                            \
+    globus_mutex_destroy(_h->mutex);                                        \
+    globus_memory_destroy(_h->op_memory);                                   \
+    globus_free(_h);                                                        \
+    h = NULL;                                                               \
 }
 
-#define GlobusXIOHandleCreate(h, t, c)                                  \
-{                                                                       \
-    globus_i_xio_target_t *                         _t;                 \
-    globus_i_xio_handle_t *                         _h;                 \
-    globus_i_xio_context_t *                        _c;                 \
-                                                                        \
-    _t = (t);                                                           \
-    _c = (c);                                                           \
-                                                                        \
-    /* allocate and intialize the handle structure */                   \
-    _h = (struct globus_i_xio_handle_s *) globus_malloc(                \
-                    sizeof(struct globus_i_xio_handle_s));              \
-    if(_h != NULL)                                                      \
-    {                                                                   \
-        globus_mutex_init(&_h->mutex, NULL);                            \
-        /*                                                              \
-         *  initialize memory for the operation structure               \
-         *  The operation is a stretchy array.  The size of the         \
-         *  operation structure plus the size of the entry array        \
-         */                                                             \
-        globus_memory_init(                                             \
-            &_h->op_memory,                                             \
-            sizeof(globus_i_xio_operation_t) +                          \
-                (sizeof(globus_i_xio_op_entry_s) *                      \
-                    _t->stack_size - 1),                                \
-        GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT);                     \
-        _h->stack_size = _t->stack_size;                                \
-        /* context should up ref count for this assignment */           \
-        _h->context = _c;                                               \
-        _h->ref = 1; /* set count for its own reference */              \
-        _h->outstanding_operations = 0;                                 \
-        _h->read_op_list = NULL;                                        \
-        _h->write_op_list = NULL;                                       \
-        _h->open_close_op = NULL;                                       \
-        _h->open_timeout = NULL;                                        \
-        _h->close_timeout = NULL;                                       \
-        _h->read_timeout = NULL;                                        \
-        _h->write_timeout = NULL;                                       \
-    }                                                                   \
-    h = _h;                                                             \
+#define GlobusXIOHandleCreate(h, t)                                         \
+{                                                                           \
+    globus_i_xio_target_t *                         _t;                     \
+    globus_i_xio_handle_t *                         _h;                     \
+    globus_i_xio_context_t *                        _c;                     \
+                                                                            \
+    _t = (t);                                                               \
+    _c = (c);                                                               \
+                                                                            \
+    /* allocate and intialize the handle structure */                       \
+    _h = (struct globus_i_xio_handle_s *) globus_malloc(                    \
+                    sizeof(globus_i_xio_handle_t));                         \
+    if(_h != NULL)                                                          \
+    {                                                                       \
+        memset(_h, '\0', sizeof(globus_i_xio_handle_t));                    \
+        globus_mutex_init(&_h->mutex, NULL);                                \
+        /*                                                                  \
+         *  initialize memory for the operation structure                   \
+         *  The operation is a stretchy array.  The size of the             \
+         *  operation structure plus the size of the entry array            \
+         */                                                                 \
+        globus_memory_init(                                                 \
+            &_h->op_memory,                                                 \
+            sizeof(globus_i_xio_op_t) +                                     \
+                (sizeof(globus_i_xio_op_entry_t) *                          \
+                    (_t->stack_size - 1)),                                  \
+            GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT);                     \
+        _h->stack_size = _t->stack_size;                                    \
+    }                                                                       \
+    h = _h;                                                                 \
 }
 
-#define GlobusXIOContextCreate(c, t, a)                                 \
-{                                                                       \
-    globus_i_xio_context_t *                        _c;                 \
-    globus_i_xio_target_t *                         _t;                 \
-    globus_i_xio_attr_t *                           _a;                 \
-                                                                        \
-    _t = (t);                                                           \
-    _a = (a);                                                           \
-                                                                        \
-    /* allocate and initialize context */                               \
-    _c = (globus_i_xio_context_t *)                                     \
-        globus_malloc(sizeof(globus_i_xio_context_t) +                  \
-            (sizeof(globus_i_xio_context_entry_t)                       \
-                * _t->stack_size - 1));                                 \
-    _c->size = _t->stack_size;                                          \
-    globus_mutex_init(&_c->mutex, NULL);                                \
-    /* set reference count to 1 for this structure */                   \
-    _c->ref = 1;                                                        \
-                                                                        \
-    for(ctr = 0; ctr < _c->size; ctr++)                                 \
-    {                                                                   \
-        _c->entry_array[ctr].driver = _t->target_stack[ctr].driver;     \
-        _c->entry_array[ctr].target = t->target_stack[ctr].target;      \
-        _c->entry_array[ctr].driver_handle = NULL;                      \
-        _c->entry_array[ctr].driver_attr =                              \
-            globus_l_xio_attr_find_driver(_a,                           \
-                t->target_stack[ctr].driver);                           \
-        _c->entry_array[ctr].is_limited = GLOBUS_FALSE;                 \
-    }                                                                   \
-}
-
-#define GlobusXIOContextDestroy(c)                                      \
-{                                                                       \
-    _c = (c);                                                           \
-    globus_free(_c);                                                    \
-}
-
-#define GlobusXIOOperationCreate(op, type, h, s)                        \
-do                                                                      \
-{                                                                       \
-    globus_i_xio_operation_t *                      _op;                \
-    globus_i_xio_handle_t *                         _h;                 \
-                                                                        \
-    _h = (h);                                                           \
-    /* create operation for the open */                                 \
-    _h->ref++;                                                          \
-    _op = (globus_i_xio_operation_t * )                                 \
-            globus_memory_pop_node(&_h->op_memory);                     \
-                                                                        \
-    _op->op_type = (type);                                              \
-    _op->state = GLOBUS_XIO_OP_STATE_OPERATING;                         \
-    _op->data_cb = NULL;                                                \
-    _op->iovec_cb = NULL;                                               \
-    _op->cb = NULL;                                                     \
-    _op->progress = GLOBUS_TRUE;                                        \
-    _op->timeout_cb = NULL;                                             \
-    _op->ref = 1;                                                       \
-    _op->xio_handle = _h;                                               \
-    _op->space = (s);                                                   \
-    _op->cached_res = GLOBUS_SUCCESS;                                   \
-    _op->stack_size = _h->stack_size;                                   \
-    _op->context = _h->context;                                         \
-    _op->data_desc = _h->data_desc;                                     \
-    _op->ndx = 0;                                                       \
-    globus_callback_space_reference(_op->space);                        \
-    op = _op;                                                           \
+#define GlobusXIOContextDestroy(c)                                          \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_context_t                              _c;                 \
+                                                                            \
+    _c = (c);                                                               \
+    globus_mutex_destroy(_c->mutex);                                        \
+    globus_free(_c);                                                        \
 } while(0)
 
-#define GlobusXIOOperationDestroy(op)                                   \
-do                                                                      \
-{                                                                       \
-    globus_i_xio_operation_t *                      _op;                \
-                                                                        \
-    _op = (op);                                                         \
-    globus_assert(_op->ref == 0);                                       \
-    globus_callback_space_destroy(_op->space);                          \
-    globus_memory_push_node(&_op->xio_handle->op_memory, _op);          \
+#define GlobusXIOContextCreate(c, t)                                        \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_context_t                              _c;                 \
+    globus_i_xio_target_t *                             _t;                 \
+    int                                                 _size;              \
+                                                                            \
+    _t = (t);                                                               \
+                                                                            \
+    _size = sizeof(globus_i_xio_context_t) +                                \
+        (sizeof(globus_i_xio_context_entry_t) * (_t->stack_size - 1));      \
+                                                                            \
+    _c = (globus_i_xio_context_t *) globus_malloc(_size);                   \
+    if(_c != NULL)                                                          \
+    {                                                                       \
+        memset(_c, '\0', size);                                             \
+        globus_mutex_init(&_c->mutex, NULL);                                \
+        _c->stack_size = _t->stack_size;                                    \
+    }                                                                       \
+    c = _c;                                                                 \
+} while(0)
+
+#define GlobusXIOOperationCreate(op, type, h, s)                            \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_op_t *                                 _op;                \
+    globus_i_xio_handle_t *                             _h;                 \
+                                                                            \
+    _h = (h);                                                               \
+    /* create operation for the open */                                     \
+    _h->ref++;                                                              \
+    _op = (globus_i_xio_operation_t * )                                     \
+            globus_memory_pop_node(&_h->op_memory);                         \
+    memset(_op, '\0', sizeof(globus_i_xio_op_t));                           \
+                                                                            \
+    _op->op_type = (type);                                                  \
+    _op->state = GLOBUS_XIO_OP_STATE_OPERATING;                             \
+/*  _op->data_cb = NULL;    */                                              \
+/*  _op->iovec_cb = NULL;   */                                              \
+/*  _op->cb = NULL;                   */                                    \
+/*  _op->progress = GLOBUS_TRUE;      */                                    \
+/*  _op->timeout_cb = NULL;           */                                    \
+/*  _op->ref = 0;                     */                                    \
+    _op->xio_handle = _h;                                                   \
+    _op->space = (s);                                                       \
+/*  _op->cached_res = GLOBUS_SUCCESS; */                                    \
+    _op->stack_size = _h->stack_size;                                       \
+    _op->context = _h->context;                                             \
+    _op->data_desc = _h->data_desc;                                         \
+/*  _op->ndx = 0;                    */                                     \
+    globus_callback_space_reference(_op->space);                            \
+    op = _op;                                                               \
+} while(0)
+
+#define GlobusXIOOperationDestroy(op)                                       \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_operation_t *                      _op;                    \
+                                                                            \
+    _op = (op);                                                             \
+    globus_assert(_op->ref == 0);                                           \
+    globus_callback_space_destroy(_op->space);                              \
+    globus_memory_push_node(&_op->xio_handle->op_memory, _op);              \
 } while(0)
 
 #define GlobusIXIOHandleDec(free, h)                                    \
@@ -1096,66 +1075,71 @@ globus_l_xio_timeout_callback(
 globus_result_t
 globus_l_xio_register_open(
     globus_i_xio_handle_t *                     xio_handle,
-    globus_i_xio_attr_t *                       attr,
-    globus_xio_callback_t                       cb,
-    void *                                      user_arg)
+    globus_i_xio_context_t *                    xio_context,
+    globus_i_xio_target_t *                     xio_target,
+    globus_i_xio_op_t *                         xio_op,
+    globus_i_xio_attr_t *                       xio_attr)
 {
-    globus_i_xio_operation_t *                  op;
     globus_i_xio_context_t *                    tmp_context;
     globus_bool_t                               destroy_handle;
+    int                                         ctr;
+    globus_bool_t                               destroy_handle;
 
+    xio_handle->ref = 2; /* itself, operation */
+    xio_handle->context = xio_context;
     xio_handle->state = GLOBUS_XIO_HANDLE_STATE_OPENING;
-
+    /* this is set for the cancel */
+    xio_handle->open_op = xio_op;
+    xio_handle->outstanding_operations = 1; /* open operation */
     /* set timeout values */
-    l_handle->open_timeout = attr->open_timeout;
-    GlobusTimeReltimeCopy(l_handle->open_timeout_period,                \
-        attr->open_timeout_period);
-    l_handle->read_timeout = attr->read_timeout;
-    GlobusTimeReltimeCopy(l_handle->read_timeout_period,                \
-        attr->read_timeout_period);
-    l_handle->write_timeout = attr->write_timeout;
-    GlobusTimeReltimeCopy(l_handle->write_timeout_period,               \
-        attr->write_timeout_period);
-    l_handle->close_timeout = attr->close_timeout;
-    GlobusTimeReltimeCopy(l_handle->close_timeout_period,               \
-        attr->close_timeout_period);
+    xio_handle->open_timeout = xio_attr->open_timeout;
+    GlobusTimeReltimeCopy(xio_handle->open_timeout_period,                \
+        xio_attr->open_timeout_period);
+    xio_handle->read_timeout = xio_attr->read_timeout;
+    GlobusTimeReltimeCopy(xio_handle->read_timeout_period,                \
+        xio_attr->read_timeout_period);
+    xio_handle->write_timeout = xio_attr->write_timeout;
+    GlobusTimeReltimeCopy(xio_handle->write_timeout_period,               \
+        xio_attr->write_timeout_period);
+    xio_handle->close_timeout = xio_attr->close_timeout;
+    GlobusTimeReltimeCopy(xio_handle->close_timeout_period,               \
+        xio_attr->close_timeout_period);
 
-    /* 
-     * create operation for open.  this will add operation to the handles
-     * op list and increase the reference count
-     */
-    GlobusXIOOperationCreate(op, GLOBUS_XIO_OPERATION_TYPE_OPEN, \
-        xio_handle, attr->space);
-    if(op == NULL)
+    xio_context->ref = 2; /* 1 for handle one for itself */
+
+    xio_op->_op_handle = xio_handle;
+    xio_op->ref = 1;
+
+    /* set entries in structures */
+    for(ctr = 0; ctr < xio_handle->stack_size; ctr++)
     {
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
-        return res;
+        xio_context->entry[ctr].driver = xio_target->entry[ctr].driver;
+
+        xio_op->entry[ctr].driver = xio_target->entry[ctr].driver;
+        xio_op->entry[ctr].target = xio_target->entry[ctr].target;
+        GlobusIXIOAttrGetDS(xio_op->entry[ctr].attr,                    \
+            xio_attr, xio_target->entry[ctr].driver);
     }
 
     /* register timeout */
     if(l_handle->open_timeout_cb != NULL)
     {
         /* op the operatin reference count for this */
-        op->ref++;
-        op->timeout_cb = l_handle->open_timeout_cb;
+        xio_op->ref++;
+        xio_op->timeout_cb = l_handle->open_timeout_cb;
         globus_i_xio_timer_register_timeout(
             g_globus_l_xio_timeout_timer,
-            op,
-            &op->progress,
+            xio_op,
+            &xio_op->progress,
             globus_l_xio_timeout_callback,
             &l_handle->open_timeout_period);
     }
 
-    /* this is set for the cancel */
-    xio_handle->open_op = op;
-    /* increase outstanding operation count */
-    xio_handle->outstanding_operations++;
-
     /* wrap pass with in_register flag for same stack call backs */
-    op->in_register = GLOBUS_TRUE;
+    xio_op->in_register = GLOBUS_TRUE;
     GlobusXIODriverPassOpen(res, tmp_context, \
         globus_i_xio_open_close_callback, cb, user_arg);
-    op->in_register = GLOBUS_FALSE;
+    xio_op->in_register = GLOBUS_FALSE;
 
     if(res != GLOBUS_SUCCESS)
     {
@@ -1168,18 +1152,26 @@ globus_l_xio_register_open(
      * error handling 
      */
   err:
-    if(op != NULL)
+
+    if(globus_i_xio_timer_unregister_timeout(xio_op))
     {
-        op->ref--;
-        if(op->ref == 0)
-        {
-            GlobusXIOOperationDestroy(op);
-            /* remove the operations reference to the handle */
-            GlobusIXIOHandleDec(destroy_handle, xio_handle);
-            /* handle should always have a reference left at this point */
-            globus_assert(!destroy_handle);
-        }
+        xio_op->ref--;
     }
+    op->ref--;
+    if(xio_op->ref == 0)
+    {
+        GlobusXIOOperationDestroy(xio_op);
+        /* remove the operations reference to the handle */
+        GlobusIXIOHandleDec(destroy_handle, xio_handle);
+        /* handle should always have a reference left at this point */
+        globus_assert(!destroy_handle);
+    }
+    GlobusIXIOHandleDec(destroy_handle, xio_handle);
+    if(destroy_handle)
+    {
+        GlobusXIOHandleDestroy(xio_handle);
+    }
+    GlobusXIOContextDestroy(xio_context);
 
     return res;
 }
@@ -1411,6 +1403,13 @@ globus_l_xio_register_close(
         return GlobusXIOErrorMemoryAlloc("globus_xio_register_close");
     }
 
+    /* set up op */
+    for(ctr = 0; ctr < xio_handle->stack_size; ctr++)
+    {
+        GlobusIXIOAttrGetDS(xio_op->entry[ctr].attr,     \
+            attr, xio_handle->context->entry[ctr].driver);
+    }
+
     switch(xio_handle->state)
     {
         case GLOBUS_XIO_HANDLE_STATE_OPEN:
@@ -1591,67 +1590,83 @@ globus_xio_register_open(
     void *                                      user_arg)
 {
     globus_i_xio_handle_t *                     xio_handle = NULL;
-    globus_i_xio_target_t *                     l_target;
-    globus_i_xio_context_t *                    l_context = NULL;
+    globus_i_xio_target_t *                     xio_target;
+    globus_i_xio_context_t *                    xio_context = NULL;
     globus_result_t                             res = GLOBUS_SUCCESS;
 
     if(handle == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_open");
+        res = GlobusXIOErrorBadParameter("globus_xio_register_open");
+        goto err;
     }
     if(target == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_open");
+        res = GlobusXIOErrorBadParameter("globus_xio_register_open");
+        goto err;
     }
 
     *handle = NULL; /* initialze to be nice touser */
-    l_target = (struct globus_i_xio_target_s *) target;
+    xio_target = (globus_i_xio_target_t *) target;
 
     /* this is gaurenteed to be greater than zero */
-    globus_assert(l_target->stack_size > 0);
+    globus_assert(xio_target->stack_size > 0);
 
     /* allocate and initialize context */
-    GlobusXIOContextCreate(l_context, l_target, attr);
-    if(l_context == NULL)
+    GlobusXIOContextCreate(xio_context, xio_target);
+    if(xio_context == NULL)
     {
-        return GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
+        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
+        goto err;
     }
 
-    /* 
-     *  up reference count on the context to account for the handles
-     *  association with it 
-     */
-    l_context->ref++;
     /* allocate and intialize the handle structure */
-    GlobusXIOHandleCreate(xio_handle, l_target, l_context);
+    GlobusXIOHandleCreate(xio_handle, xio_target);
     if(xio_handle == NULL)
     {
         res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
         goto err;
     }
 
+    GlobusXIOOperationCreate(xio_op, GLOBUS_XIO_OPERATION_TYPE_OPEN, \
+        xio_handle, attr->space);
+    if(op == NULL)
+    {
+        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
+        goto err;
+    }
+
+    xio_op._op_cb = cb;
+    xio_op.user_arg = user_arg;
+
     res = globus_l_xio_register_open(
             xio_handle,
-            attr,
-            cb,
-            user_arg);
+            xio_context,
+            xio_target,
+            xio_op,
+            attr);
     if(res != GLOBUS_SUCCESS)
     {
+        /* if function fails it will deal with clean up of the structures */
+        xio_op = NULL;
+        xio_handle = NULL;
+        xio_context = NULL;
         goto err;
     }
 
     return GLOBUS_SUCCESS;
 
   err:
+    if(xio_op != NULL)
+    {
+        GlobusXIOOperationDestroy(xio_op);
+    }
     if(xio_handle != NULL)
     {
-        GlobusIXIOHandleDec(destroy_handle, xio_handle);
-
-        /* at this point all references must be gone */
-        globus_assert(destroy_handle);
-
-        /* free the handle.  will destroy context if possilbe */
         GlobusXIOHandleDestroy(xio_handle);
+    }
+    if(xio_context != NULL)
+    {
+        GlobusXIOContextDestroy(xio_context);
     }
 
     return res;

@@ -78,6 +78,7 @@ do                                                                          \
     else                                                                    \
     {                                                                       \
         _op->progress = GLOBUS_TRUE;                                        \
+        _op->timeout_blocked = GLOBUS_FALSE;                                \
         _my_entry = &_op->entry[_op->ndx];                                  \
         _my_entry->cb = (cb);                                               \
         _my_entry->user_arg = (user_arg);                                   \
@@ -107,6 +108,7 @@ do                                                                          \
     _op = (globus_i_xio_op_t *)(op);                                        \
     globus_assert(_op->ndx > 0);                                            \
     _op->progress = GLOBUS_TRUE;                                            \
+    _op->timeout_blocked = GLOBUS_FALSE;                                    \
                                                                             \
     _op->entry[_op->ndx].target = (target);                                 \
                                                                             \
@@ -157,6 +159,7 @@ do                                                                          \
     else                                                                    \
     {                                                                       \
         _op->progress = GLOBUS_TRUE;                                        \
+        _op->timeout_blocked = GLOBUS_FALSE;                                \
         _my_entry = &_op->entry[_op->ndx];                                  \
         _my_entry->cb = (cb);                                               \
         _my_entry->user_arg = (user_arg);                                   \
@@ -174,16 +177,16 @@ do                                                                          \
         if(_op->ndx == _op->stack_size)                                     \
         {                                                                   \
             out_res = _context->entry[_op->ndx].driver->transport_open(     \
-                        _context->entry[_op->ndx].target,                   \
-                        attr, /* TODO: this in not corrent */               \
+                        _op->entry[_op->ndx].target,                        \
+                        _op->entry[_op->ndx].attr,                          \
                         _context,                                           \
                         _op);                                               \
         }                                                                   \
         else                                                                \
         {                                                                   \
             out_res = _context->entry[_op->ndx].driver->transform_open(     \
-                        _context->entry[_op->ndx].target,                   \
-                        attr, /* TODO: this in not corrent */               \
+                        _op->entry[_op->ndx].target,                        \
+                        _op->entry[_op->ndx].attr,                          \
                         _op);                                               \
         }                                                                   \
         _my_entry->in_register = GLOBUS_FALSE;                              \
@@ -200,6 +203,7 @@ do                                                                          \
     _op = (globus_i_xio_op_t *)(op);                                        \
     globus_assert(_op->ndx > 0);                                            \
     _op->progress = GLOBUS_TRUE;                                            \
+    _op->timeout_blocked = GLOBUS_FALSE;                                    \
                                                                             \
     /*                                                                      \
      * this means that we are finishing with a different context            \
@@ -214,11 +218,9 @@ do                                                                          \
         }                                                                   \
     }                                                                       \
                                                                             \
-    _op->context->entry[_op->ndx] = (dh);                                   \
+    _op->context->entry[_op->ndx].driver_handle = (dh);                     \
                                                                             \
-    /*                                                                      \
-     * if limited we will do nothing here                                   \
-     */                                                                     \
+    /* TODO: driver op limited pass */                                      \
     if(!_op->entry_array[_op->ndx]->is_limited)                             \
     {                                                                       \
         do                                                                  \
@@ -269,7 +271,9 @@ do                                                                          \
     }                                                                       \
     else                                                                    \
     {                                                                       \
+        /* TODO: add driver_op barrier for close */                         \
         _op->progress = GLOBUS_TRUE;                                        \
+        _op->timeout_blocked = GLOBUS_FALSE;                                \
         _my_entry = &_op->entry[_op->ndx];                                  \
         _my_entry->cb = (cb);                                               \
         _my_entry->user_arg = (user_arg);                                   \
@@ -279,14 +283,13 @@ do                                                                          \
             _op->ndx++;                                                     \
             _next_entry = &_op->entry[_op->ndx];                            \
         }                                                                   \
-        while(_next_entry->driver->transport_open == NULL &&                \
-              _next_entry->driver->transform_open == NULL)                  \
+        while(_next_entry->driver->close_func)                              \
                                                                             \
         /* at time that stack is built this will be varified */             \
         globus_assert(_op->ndx <= _server->stack_size);                     \
-        out_res = _context->entry[_op->ndx].driver->transport_open(         \
-                    _context->entry[_op->ndx].target,                       \
-                    attr, /* TODO: this in not corrent */                   \
+        out_res = _context->entry[_op->ndx].driver->close_func(             \
+                    _op->context->entry[_op->ndx].driver_handle,            \
+                    _op->entry[_op->ndx].attr,                              \
                     _context,                                               \
                     _op);                                                   \
         _my_entry->in_register = GLOBUS_FALSE;                              \
@@ -294,6 +297,44 @@ do                                                                          \
     }                                                                       \
 } while(0)
 
+
+#define GlobusXIODriverFinishedClose(op, res)                               \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_op_t *                             _op;                    \
+                                                                            \
+    _op = (globus_i_xio_op_t *)(op);                                        \
+    globus_assert(_op->ndx > 0);                                            \
+    _op->progress = GLOBUS_TRUE;                                            \
+    _op->timeout_blocked = GLOBUS_FALSE;                                    \
+                                                                            \
+    _op->context->entry[_op->ndx].driver_handle = (dh);                     \
+                                                                            \
+     /* TODO: driver_op stuff */                                            \
+        do                                                                  \
+        {                                                                   \
+            _op->ndx--;                                                     \
+        }                                                                   \
+        while(_op->entry[_op->ndx].cb == NULL &&                            \
+                _op->ndx != 0)                                              \
+                                                                            \
+        globus_assert(_op->entry[_op->ndx].cb != NULL);                     \
+        if(_op->entry[_op->ndx].in_register)                                \
+        {                                                                   \
+            _op->cached_res = (result);                                     \
+            globus_callback_space_register_oneshot(                         \
+                NULL,                                                       \
+                NULL,                                                       \
+                globus_l_xio_driver_op_kickout,                             \
+                (void *)_op,                                                \
+                GLOBUS_CALLBACK_GLOBAL_SPACE);                              \
+        }                                                                   \
+        else                                                                \
+        {                                                                   \
+            _op->entry[_op->ndx].cb(_op, result,                            \
+                _op->entry[_op->ndx].user_arg);                             \
+        }                                                                   \
+} while(0)
 
 
 
@@ -321,6 +362,7 @@ do                                                                          \
     {                                                                       \
         globus_assert(_op->ndx < _op->stack_size);                          \
         _op->progress = GLOBUS_TRUE;                                        \
+        _op->timeout_blocked = GLOBUS_FALSE;                                \
         _my_entry = &_op->entry[_op->ndx];                                  \
         _my_entry->data_cb = (cb);                                          \
         _my_entry->user_arg = (user_arg);                                   \
@@ -455,6 +497,11 @@ do                                                                          \
         }                                                                   \
     }                                                                       \
 } while(0)
+
+/*
+ *  read
+ */
+
 
 /*
  *  cancel and timeout functions 

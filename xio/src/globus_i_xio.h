@@ -66,12 +66,58 @@
             GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
             "[%s] The handle is not in the open state.",                    \
             (func)))
-/***************************************************************************
- *                    Internally exposed data structures
- **************************************************************************/
 
 #define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE         16
 
+/***************************************************************************
+ *                 state and type enumerations
+ *                 ---------------------------
+ **************************************************************************/
+
+typedef enum globus_i_xio_handle_state_e
+{
+    GLOBUS_XIO_HANDLE_STATE_OPENING,
+    GLOBUS_XIO_HANDLE_STATE_OPEN,
+    GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED,
+    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED,
+    GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED_AND_CLOSING,
+    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING,
+    GLOBUS_XIO_HANDLE_STATE_CLOSING,
+    GLOBUS_XIO_HANDLE_STATE_CLOSED,
+} globus_i_xio_handle_state_t;
+
+typedef enum globus_i_xio_op_type_e
+{
+    GLOBUS_XIO_OPERATION_TYPE_FINISHED,
+    GLOBUS_XIO_OPERATION_TYPE_OPEN,
+    GLOBUS_XIO_OPERATION_TYPE_CLOSE,
+    GLOBUS_XIO_OPERATION_TYPE_READ,
+    GLOBUS_XIO_OPERATION_TYPE_WRITE,
+    GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
+    GLOBUS_XIO_OPERATION_TYPE_EOF,
+} globus_i_xio_op_type_t;
+
+typedef enum globus_i_xio_op_state_e
+{
+    GLOBUS_XIO_OP_STATE_OPERATING,
+    GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING,
+    GLOBUS_XIO_OP_STATE_FINISH_WAITING,
+    GLOBUS_XIO_OP_STATE_FINISHED,
+} globus_i_xio_op_state_t;
+
+typedef enum globus_xio_server_state_e
+{
+    GLOBUS_XIO_SERVER_STATE_OPEN,
+    GLOBUS_XIO_SERVER_STATE_ACCEPTING,
+    GLOBUS_XIO_SERVER_STATE_COMPLETEING,
+    GLOBUS_XIO_SERVER_STATE_CLOSED,
+} globus_xio_server_state_t;
+
+
+/***************************************************************************
+ *                  Internally exposed data structures
+ *                  ----------------------------------
+ **************************************************************************/
 
 typedef struct globus_i_xio_attr_ent_s
 {
@@ -128,7 +174,7 @@ typedef struct globus_i_xio_handle_s
     globus_memory_t                             op_memory;
     int                                         ref;
     int                                         stack_size;
-    globus_i_xio_context_t *                    context_array;
+    globus_i_xio_context_t *                    context;
 
     globus_i_xio_handle_state_t                 state;
 
@@ -161,7 +207,6 @@ typedef struct globus_i_xio_context_entry_s
 {
     globus_xio_driver_t *                       driver;
     void *                                      driver_handle;
-    void *                                      driver_attr;
 } globus_i_xio_context_entry_t;
 
 /* 
@@ -171,7 +216,7 @@ typedef struct globus_i_xio_context_s
 {
     globus_mutex_t                              mutex;
     int                                         ref;
-    int                                         size;
+    int                                         stack_size;
     globus_i_xio_context_entry_t                entry[1];
 } globus_i_xio_context_t;
 
@@ -211,14 +256,13 @@ typedef struct globus_i_xio_op_entry_s
         /* target op entries */
         struct
         {
-            void *                              target;
-            void *                              accept_attr;
         } target_s;
     } type_u;
     globus_bool_t                               in_register;
     globus_bool_t                               is_limited;
 
     void *                                      target;
+    void *                                      attr;
 } globus_i_xio_op_entry_t;
 
 
@@ -322,43 +366,5 @@ typedef struct globus_i_xio_target_s
     globus_i_xio_target_entry_t                 entry[1];
 } globus_i_xio_target_t; 
 
-
-typedef enum globus_i_xio_handle_state_e
-{
-    GLOBUS_XIO_HANDLE_STATE_OPENING,
-    GLOBUS_XIO_HANDLE_STATE_OPEN,
-    GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED,
-    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED,
-    GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED_AND_CLOSING,
-    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING,
-    GLOBUS_XIO_HANDLE_STATE_CLOSING,
-    GLOBUS_XIO_HANDLE_STATE_CLOSED,
-} globus_i_xio_handle_state_t;
-
-typedef enum globus_i_xio_op_type_e
-{
-    GLOBUS_XIO_OPERATION_TYPE_FINISHED,
-    GLOBUS_XIO_OPERATION_TYPE_OPEN,
-    GLOBUS_XIO_OPERATION_TYPE_CLOSE,
-    GLOBUS_XIO_OPERATION_TYPE_READ,
-    GLOBUS_XIO_OPERATION_TYPE_WRITE,
-    GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
-    GLOBUS_XIO_OPERATION_TYPE_EOF,
-} globus_i_xio_op_type_t;
-
-typedef enum globus_i_xio_op_state_e
-{
-    GLOBUS_XIO_OP_STATE_OPERATING,
-    GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING,
-    GLOBUS_XIO_OP_STATE_FINISH_WAITING,
-    GLOBUS_XIO_OP_STATE_FINISHED,
-} globus_i_xio_op_state_t;
-
-typedef enum globus_xio_server_state_e
-{
-    GLOBUS_XIO_SERVER_STATE_OPEN,
-    GLOBUS_XIO_SERVER_STATE_ACCEPTING,
-    GLOBUS_XIO_SERVER_STATE_CLOSED,
-} globus_xio_server_state_t;
 
 #endif

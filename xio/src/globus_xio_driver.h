@@ -690,6 +690,7 @@ typedef globus_result_t
 typedef globus_result_t
 (*globus_xio_driver_close_t)(
     void *                                      driver_handle,
+    void *                                      attr,
     globus_xio_driver_context_t                 context,
     globus_xio_driver_operation_t               op);
 
