@@ -1,3 +1,13 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_ftp_client_perf_plugin.c GridFTP Performance Marker Plugin Implementation
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ * $Id$
+ */
+
 #include "globus_ftp_client_perf_plugin.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -54,6 +64,7 @@ typedef struct perf_plugin_info_s
 
 /**
  * Plugin complete callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback will be called when one of the transfer commands
  * is completed. Will also call user's 'complete' callback
@@ -80,6 +91,7 @@ perf_plugin_complete_cb(
 
 /**
  * Plugin response callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * Parses out performance markers and calls user's 'marker' callback.
  */
@@ -177,6 +189,7 @@ perf_plugin_response_cb(
 
 /**
  * Plugin data callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This plugin is used to create performance marker callbacks in the case
  * of a 'get' command.  (no performance markers are received in the 'get'
@@ -226,6 +239,7 @@ perf_plugin_data_cb(
 
 /**
  * Plugin get command callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback signifies the start of a 'get' command. It will
  * call the user's 'begin' callback
@@ -260,6 +274,7 @@ perf_plugin_get_cb(
 
 /**
  * Plugin put command callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback signifies the start of a 'put' command. It will
  * call the user's 'begin' callback
@@ -305,6 +320,7 @@ perf_plugin_put_cb(
 
 /**
  * Plugin thrid party transfer command callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback signifies the start of a 'transfer' command. It will
  * call the user's 'begin' callback
@@ -338,6 +354,7 @@ perf_plugin_transfer_cb(
 
 /**
  * Plugin copy callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback is called to create a new copy of this plugin. It will also
  * call the user's 'copy' callback
@@ -398,6 +415,7 @@ perf_plugin_copy_cb(
 
 /**
  * Plugin destroy callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback is called to destroy a copy of a plugin made with the
  * copy callback above.  It will also call the user's 'destroy' callback
@@ -423,8 +441,11 @@ perf_plugin_destroy_cb(
     globus_free(plugin);
 }
 
+#endif  /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 /**
  * Initialize a perf plugin
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This function initializes a performance marker plugin. Any params
  * except for the plugin may be GLOBUS_NULL
@@ -547,6 +568,7 @@ globus_ftp_client_perf_plugin_init(
 
 /**
  * Destroy performance marker plugin
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * Frees up memory associated with plugin
  *
@@ -594,6 +616,7 @@ globus_ftp_client_perf_plugin_destroy(
 
 /**
  * Retrieve user specific pointer
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * @param plugin
  *        plugin previously initialized with init (above)
