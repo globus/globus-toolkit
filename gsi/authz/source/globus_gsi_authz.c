@@ -169,7 +169,7 @@ static int globus_l_gsi_authz_activate(void)
             else
             {
                 result = globus_error_put(error);
-                GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
+                result = GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
                 rc = (int) result;
                 goto free_handle;
             }
@@ -338,7 +338,7 @@ globus_gsi_authz_handle_init(
             callback_wrapper_arg = malloc(sizeof(globus_l_gsi_authz_cb_arg_t));
             if(!callback_wrapper_arg)
             {
-                GLOBUS_GSI_AUTH_HANDLE_MALLOC_ERROR(
+                result = GLOBUS_GSI_AUTH_HANDLE_MALLOC_ERROR(
                     sizeof(globus_l_gsi_authz_cb_arg_t));
             }
             else
@@ -359,7 +359,7 @@ globus_gsi_authz_handle_init(
         else
         {
             result = globus_error_put(error);
-            GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
+            result = GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
         }
     }
     
@@ -450,7 +450,7 @@ globus_gsi_authorize(
             callback_wrapper_arg = malloc(sizeof(globus_l_gsi_authz_cb_arg_t));
             if(!callback_wrapper_arg)
             {
-                GLOBUS_GSI_AUTH_HANDLE_MALLOC_ERROR(
+                result = GLOBUS_GSI_AUTH_HANDLE_MALLOC_ERROR(
                     sizeof(globus_l_gsi_authz_cb_arg_t));
             }
             else
@@ -470,7 +470,7 @@ globus_gsi_authorize(
         else
         {
             result = globus_error_put(error);
-            GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
+            result = GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
         }
     }
     
@@ -568,7 +568,7 @@ globus_gsi_authz_handle_destroy(
             callback_wrapper_arg = malloc(sizeof(globus_l_gsi_authz_cb_arg_t));
             if(!callback_wrapper_arg)
             {
-                GLOBUS_GSI_AUTH_HANDLE_MALLOC_ERROR(
+                result = GLOBUS_GSI_AUTH_HANDLE_MALLOC_ERROR(
                     sizeof(globus_l_gsi_authz_cb_arg_t));
             }
             else
@@ -588,7 +588,7 @@ globus_gsi_authz_handle_destroy(
         else
         {
             result = globus_error_put(error);
-            GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
+            result = GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
         }
     }
     
@@ -676,7 +676,7 @@ globus_gsi_authz_get_authorization_identity(
             callback_wrapper_arg = malloc(sizeof(globus_l_gsi_authz_cb_arg_t));
             if(!callback_wrapper_arg)
             {
-                GLOBUS_GSI_AUTH_HANDLE_MALLOC_ERROR(
+                result = GLOBUS_GSI_AUTH_HANDLE_MALLOC_ERROR(
                     sizeof(globus_l_gsi_authz_cb_arg_t));
             }
             else
@@ -696,7 +696,7 @@ globus_gsi_authz_get_authorization_identity(
         else
         {
             result = globus_error_put(error);
-            GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
+            result = GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
         }
     }
     
