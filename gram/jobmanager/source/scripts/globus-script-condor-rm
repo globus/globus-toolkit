@@ -42,9 +42,10 @@ $DEBUG_ECHO "JM_SCRIPT: in gram_script_condor_rm" >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: executing condor_rm command with job id "\
             "${_job_id}" >> $grami_logfile
 
-status=`${condor_rm} ${grami_job_id} | ${awk} -F. '{print $1}'`
+${condor_rm} ${grami_job_id} | ${awk} -F. '{print $1}' >> $grami_logfile
+status=$?
 
-if [ "${status}" = "Deleted ${grami_job_id}" ] ; then
+if [ "${status}" = 0 ] ; then
 #   the job manager only cares about GRAM_SCRIPT_SUCCESS or
 #   GRAM_SCRIPT_ERROR from this script.  The value is inconsiquencial.
     echo GRAM_SCRIPT_SUCCESS:999

@@ -31,9 +31,7 @@ VPATH = @srcdir@
 # Generic Makefile for autoconf'ed build
 #
 
-CC=@GLOBUS_LIBTOOL@ --mode=compile @CC@
-COMPILE = @GLOBUS_LIBTOOL@ --mode=compile @CC@
-LINK = @GLOBUS_LIBTOOL@ --mode=link @CC@
+CC=@GLOBUS_LIBTOOL@ @CC@
 
 GLOBUS_DATA_CFLAGS=@GLOBUS_DATA_CFLAGS@
 GLOBUS_DATA_LDFLAGS=@GLOBUS_DATA_LDFLAGS@
@@ -83,7 +81,7 @@ OBJS   = ${UTIL_OBJS} ftpd.o ftpcmd.o glob.o logwtmp.o popen.o access.o \
 	$(GSSAPI_OBJS) $(AFS_OBJS)
 
 .c.o:
-	$(COMPILE) $(CFLAGS) -I. -I.. -I$(srcdir) -I$(srcdir)/.. -I../support -c -o $@ $<
+	$(CC) $(CFLAGS) -I. -I.. -I$(srcdir) -I$(srcdir)/.. -I../support -c -o $@ $<
 
 all: ftpd ftpcount ftpshut ftprestart ckconfig
 
@@ -94,19 +92,19 @@ ftpcmd.c: config.h ../config.h pathnames.h $(srcdir)/ftpcmd.y
 	mv -f y.tab.c ftpcmd.c
 
 ftpcount: ${UTIL_OBJS} ftpcount.o 
-	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpcount.o -L../support $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpcount.o -L../support $(LDFLAGS) $(LIBS)
 
 ftpshut: ${UTIL_OBJS} ftpshut.o rdservers.o 
-	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpshut.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpshut.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
 
 ftprestart: ${UTIL_OBJS} ftprestart.o rdservers.o 
-	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftprestart.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ftprestart.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
 
 ckconfig: ${UTIL_OBJS} ckconfig.o rdservers.o
-	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ckconfig.o rdservers.o -L../support $(LDFLAGS)  $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${UTIL_OBJS} ckconfig.o rdservers.o -L../support $(LDFLAGS)  $(LIBS)
 
 ftpd: ${OBJS}
-	$(LINK) $(CFLAGS) -o $@ ${OBJS} -L../support $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ ${OBJS} -L../support $(LDFLAGS) $(LIBS)
 
 vers.c: ftpcmd.c
 	sh $(srcdir)/newvers.sh

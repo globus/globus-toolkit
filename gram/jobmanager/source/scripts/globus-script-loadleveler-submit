@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
@@ -197,7 +197,7 @@ createScript () {
    #
    # creates a load-leveler script.
    #
-   echo "#! $sh -f
+   echo "#! $sh
    echo "#" 
    echo "# Load-Leveler script, created "`$date` 
    echo "#" 

@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 #
 # Extract the Status column from the spq output
 # for our specific jobID.

@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 
 # Globus Job Manager PBS interface script for deleting a job
 # Author:               Doru Marcusiu (NCSA)

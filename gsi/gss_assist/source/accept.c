@@ -22,6 +22,10 @@ CVS Information:
 #include "globus_gss_assist.h"
 #include <gssapi.h>
 
+#ifndef _HAVE_GSI_EXTENDED_GSSAPI
+#include "globus_gss_ext_compat.h"
+#endif
+
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
