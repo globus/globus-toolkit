@@ -238,6 +238,9 @@
 /* Define if compiler implements __func__ */
 #undef HAVE___func__
 
+/* Define this if you're building with GSSAPI MechGlue */
+#undef MECHGLUE
+
 /* Define this is you want GSSAPI support in the version 2 protocol */
 #undef GSSAPI
 
@@ -246,6 +249,16 @@
 
 /* Define this if you are using the Heimdal version of Kerberos V5 */
 #undef HEIMDAL
+
+/* Define this if you want to use AFS/Kerberos 5 option, which runs aklog. */
+#undef AFS_KRB5
+#undef AKLOG_PATH
+
+/* Define if you want GSI/Globus authentication support */
+#undef GSI
+
+/* Define this if you want support for startup/shutdown hooks */
+#undef SESSION_HOOKS
 
 /* Define if you want S/Key support */
 #undef SKEY
