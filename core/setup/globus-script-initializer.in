@@ -41,6 +41,8 @@ if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
     export GLOBUS_DEPLOY_PATH
     prefix=${GLOBUS_DEPLOY_PATH}
     exec_prefix=${GLOBUS_DEPLOY_PATH}
+    arch="`${prefix}/sbin/config.guess`"
+    arch_sysconfdir="${prefix}/etc/${arch}"
 else
     prefix="${GLOBUS_INSTALL_PATH}"
     exec_prefix=@installed_exec_prefix@
