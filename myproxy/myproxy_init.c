@@ -217,7 +217,7 @@ main(int argc, char *argv[])
     }
 
     /* Send request to the myproxy-server */
-    myproxy_debug("Request buffer = %s\n", request_buffer);
+    myproxy_debug("Request buffer = %s", request_buffer);
 
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "error in myproxy_send_request(): %s\n", 
@@ -332,7 +332,7 @@ init_arguments(int argc,
 	    {
 		request->retrievers = (char *) malloc (strlen (gnu_optarg) + 5);
 		strcpy (request->retrievers, "*/CN=");
-		myproxy_debug("authorized retriever %s\n",
+		myproxy_debug("authorized retriever %s",
 			      request->retrievers);
 		request->retrievers = strcat (request->retrievers,gnu_optarg);
 	    }
@@ -344,26 +344,26 @@ init_arguments(int argc,
 	    {
 		request->renewers = (char *) malloc (strlen (gnu_optarg) + 6);
 		strcpy (request->renewers, "*/CN=");
-		myproxy_debug("authorized renewer %s\n",
+		myproxy_debug("authorized renewer %s",
 			      request->renewers);
 		request->renewers = strcat (request->renewers,gnu_optarg);
 	    }
 	    break;
 	case 'x':   /*set expression type to regex*/
 	    expr_type = REGULAR_EXP;
-	    myproxy_debug("expr-type = regex\n");
+	    myproxy_debug("expr-type = regex");
 	    break;
 	case 'X':   /*set expression type to common name*/
 	    expr_type = MATCH_CN_ONLY;
-	    myproxy_debug("expr-type = CN\n");
+	    myproxy_debug("expr-type = CN");
 	    break;
 	case 'a':  /*allow anonymous retrievers*/
 	    request->retrievers = strdup ("*");
-	    myproxy_debug("anonymous retrievers allowed\n");
+	    myproxy_debug("anonymous retrievers allowed");
 	    break;
 	case 'A':  /*allow anonymous renewers*/
 	    request->renewers = strdup ("*");
-	    myproxy_debug("anonymous renewers allowed\n");
+	    myproxy_debug("anonymous renewers allowed");
 	    break;
         default:  
 	    fprintf(stderr, usage);

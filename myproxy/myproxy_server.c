@@ -331,7 +331,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     {
 	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
-	myproxy_log("Error enabling encryption: %s\n", error_string);
+	myproxy_log("Error enabling encryption: %s", error_string);
 	return -1;
     }
 #endif
