@@ -107,24 +107,27 @@ CVS Information:
  * defines for reasons 
  */
 
-#define SCERR_R_PKCS11_ERROR			101
-#define SCERR_R_SIGNINIT				102
-#define SCERR_R_SIGN					103
-#define SCERR_R_SIGNRECINIT				104
-#define SCERR_R_SIGNREC					105
-#define SCERR_R_INITIALIZE				106
-#define SCERR_R_GETSLOTLIST				107
-#define SCERR_R_OPENSESSION				108
-#define SCERR_R_LOGIN					109
-#define SCERR_R_CREATEOBJ				110
-#define SCERR_R_UNSUPPORTED				111
-#define SCERR_R_GETATTRVAL				112
-#define SCERR_R_FINDOBJINIT				113
-#define SCERR_R_FINDOBJ					114
-#define SCERR_R_FOUNDMANY				115
-#define SCERR_R_BAD_CERT_OBJ			116
-#define SCERR_R_FIND_FAILED				117
-#define SCERR_R_NO_PKCS11_DLL			118
+#define SCERR_R_BASE                            1500
+
+#define SCERR_R_PKCS11_ERROR            SCERR_R_BASE + 1
+#define SCERR_R_SIGNINIT                SCERR_R_BASE + 2
+#define SCERR_R_SIGN                    SCERR_R_BASE + 3
+#define SCERR_R_SIGNRECINIT             SCERR_R_BASE + 4
+#define SCERR_R_SIGNREC                 SCERR_R_BASE + 5
+#define SCERR_R_INITIALIZE              SCERR_R_BASE + 6
+#define SCERR_R_GETSLOTLIST             SCERR_R_BASE + 7
+#define SCERR_R_OPENSESSION             SCERR_R_BASE + 8
+#define SCERR_R_LOGIN                   SCERR_R_BASE + 9
+#define SCERR_R_CREATEOBJ               SCERR_R_BASE + 10
+#define SCERR_R_UNSUPPORTED             SCERR_R_BASE + 11
+#define SCERR_R_GETATTRVAL              SCERR_R_BASE + 12
+#define SCERR_R_FINDOBJINIT             SCERR_R_BASE + 13
+#define SCERR_R_FINDOBJ                 SCERR_R_BASE + 14
+#define SCERR_R_FOUNDMANY               SCERR_R_BASE + 15
+#define SCERR_R_BAD_CERT_OBJ            SCERR_R_BASE + 16
+#define SCERR_R_FIND_FAILED             SCERR_R_BASE + 17
+#define SCERR_R_NO_PKCS11_DLL           SCERR_R_BASE + 18
+/* NOTE: Reason codes are limited to <4096 by openssl error handler */
 
 /**********************************************************************
                                Type definitions

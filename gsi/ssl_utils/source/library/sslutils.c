@@ -179,6 +179,9 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_BUFFER_TOO_SMALL,"buffer too small"},
     {PRXYERR_R_CERT_NOT_YET_VALID,"remote certificate not yet valid"},
     {PRXYERR_R_LOCAL_CA_UNKNOWN,"cannot find CA certificate for local credential"},
+    {PRXYERR_R_OUT_OF_MEMORY,"out of memory"},
+    {PRXYERR_R_BAD_ARGUMENT,"bad argument"},
+    {PRXYERR_R_BAD_MAGIC,"bad magic number"},
     {0,NULL},
 };
 
@@ -319,7 +322,7 @@ get_ca_signing_policy_path(
     if ((cert_dir == NULL) ||
         (ca_name == NULL)) 
     {
-        PRXYerr(PRXYERR_F_GET_CA_SIGN_PATH, ERR_R_PASSED_NULL_PARAMETER);
+        PRXYerr(PRXYERR_F_GET_CA_SIGN_PATH, PRXYERR_R_BAD_ARGUMENT);
         return NULL;
     }
     
@@ -333,7 +336,7 @@ get_ca_signing_policy_path(
     
     if (buffer == NULL) 
     {
-        PRXYerr(PRXYERR_F_GET_CA_SIGN_PATH, ERR_R_MALLOC_FAILURE);
+        PRXYerr(PRXYERR_F_GET_CA_SIGN_PATH, PRXYERR_R_OUT_OF_MEMORY);
         return NULL;
     }
 
@@ -676,7 +679,7 @@ proxy_load_user_proxy(
 
     if ((in == NULL) || (!bp && BIO_read_filename(in,file) <= 0))
     {
-        X509err(PRXYERR_F_PROXY_LOAD,ERR_R_SYS_LIB);
+        X509err(PRXYERR_F_PROXY_LOAD, PRXYERR_R_PROCESS_PROXY);
         goto err;
     }
 
@@ -693,8 +696,7 @@ proxy_load_user_proxy(
             }
             else
             {
-                X509err(PRXYERR_F_PROXY_LOAD,
-                        ERR_R_PEM_LIB);
+                X509err(PRXYERR_F_PROXY_LOAD, PRXYERR_R_PROCESS_PROXY);
                 goto err;
             }
         }
@@ -1454,7 +1456,7 @@ proxy_marshal_tmp(
     if ((envstr = (char *)malloc(strlen(X509_USER_DELEG_PROXY) +
                                  strlen(filename) + 2)) == NULL)
     {
-        PRXYerr(PRXYERR_F_PROXY_TMP,ERR_R_MALLOC_FAILURE);
+        PRXYerr(PRXYERR_F_PROXY_TMP, PRXYERR_R_OUT_OF_MEMORY);
         return 1;
     }
     strcpy(envstr,X509_USER_DELEG_PROXY);
@@ -1983,7 +1985,7 @@ proxy_verify_callback(
 
     if(pvd->magicnum != PVD_MAGIC_NUMBER)
     {
-        PRXYerr(PRXYERR_F_VERIFY_CB,ERR_R_FATAL);
+        PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_BAD_MAGIC);
         return(0);
     }
 
@@ -2895,7 +2897,7 @@ proxy_get_filenames(
             default_cert_dir = (char *)malloc(len);
             if (!default_cert_dir)
             {
-                PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
+                PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_OUT_OF_MEMORY);
                 goto err;
             }
             sprintf(default_cert_dir, "%s%s%s",
@@ -2974,8 +2976,7 @@ proxy_get_filenames(
                 installed_cert_dir = (char *) malloc(len);
                 if  (!installed_cert_dir)
                 {
-                    PRXYerr(PRXYERR_F_INIT_CRED,
-                            ERR_R_MALLOC_FAILURE);
+                    PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_OUT_OF_MEMORY);
                     goto err;
                 }
                 sprintf(installed_cert_dir,
@@ -3062,7 +3063,7 @@ proxy_get_filenames(
         default_user_proxy = (char *) malloc(len);
         if (!default_user_proxy)
         {
-            PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
+            PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_OUT_OF_MEMORY);
             goto err;
         }
         sprintf(default_user_proxy,"%s%s%s%lu",
@@ -3185,7 +3186,7 @@ proxy_get_filenames(
 
                 if (!default_user_cert)
                 {
-                    PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
+                    PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_OUT_OF_MEMORY);
                     goto err;
                 } 
 
@@ -3195,7 +3196,7 @@ proxy_get_filenames(
                 default_user_key = (char *)malloc(len);
                 if (!default_user_key)
                 {
-                    PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
+                    PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_OUT_OF_MEMORY);
                     goto err;
                 }
                 sprintf(default_user_key, "%s%s%s",
@@ -3894,8 +3895,8 @@ proxy_init_cred(
                                        strlen(direntp->d_name) + 2);
                 if (!fname)
                 {
-                    PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
-                    status = ERR_R_MALLOC_FAILURE;
+                    PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_OUT_OF_MEMORY);
+                    status = PRXYERR_R_OUT_OF_MEMORY;
                     goto err;
                 }
                 sprintf(fname,"%s%s%s", cert_dir,
@@ -4437,7 +4438,7 @@ proxy_password_callback_no_prompt(
     int                                 size,
     int                                 w)
 {
-    PRXYerr(PRXYERR_F_CB_NO_PW,PRXYERR_R_CB_NO_PW);
+    PRXYerr(PRXYERR_F_CB_NO_PW, PRXYERR_R_NO_PROXY);
 
     return(-1);
 }
