@@ -18,6 +18,7 @@ globus_axiscpp_client,\
 globus_client_CounterService,\
 globus_service_CounterService,\
 globus_client_CounterService_test,\
+globus_service_container,\
 globus_core,\
 globus_common,\
 globus_common_setup,\
