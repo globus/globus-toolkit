@@ -45,6 +45,9 @@
            <flavor_label conf="no-shared" label="static"/>
            <flavor_label conf="shared" label="dynamic"/>
         </flavor_choice>
+        <flavor_choice>
+           <flavor_label conf="-64" label="64"/>
+        </flavor_choice>
        
         </flavors>
     </Build_Instructions>
