@@ -50,6 +50,14 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ History ]
 
+    2003/03/17
+    ----------
+      Action: Merge
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+	- original base: OPENSSH_3_5P1_GSI_20030227
+	- new base: OPENSSH_3_5P1_GSI_20030317
+      Conflicts: 0
+
     2002/09/23
     ----------
       Action: Merge
