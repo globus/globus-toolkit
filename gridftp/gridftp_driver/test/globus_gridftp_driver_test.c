@@ -67,7 +67,6 @@ main(
     test_res(res);
     res = globus_xio_stack_push_driver(stack, gridftp_driver);
     test_res(res);
-    globus_ftp_client_handle_init(&ftp_handle, GLOBUS_NULL);    
 
     if (argc < 3)
     {
@@ -118,6 +117,8 @@ main(
         else if(strcmp(argv[ctr], "-u") == 0)
         {
             user_handle = GLOBUS_TRUE;
+	    res = globus_ftp_client_handle_init(&ftp_handle, GLOBUS_NULL);    
+	    test_res(res);
         }
         else if(strcmp(argv[ctr], "-p") == 0)
         {
@@ -144,7 +145,7 @@ main(
     if (user_handle)
     {
         res = globus_xio_attr_cntl(attr, gridftp_driver,
-            GLOBUS_XIO_GRIDFTP_SET_HANDLE, ftp_handle);
+            GLOBUS_XIO_GRIDFTP_SET_HANDLE, &ftp_handle);
         test_res(res);
     }
     if (partial_xfer)
@@ -211,7 +212,7 @@ main(
                 xio_handle,
                 buffer,
                 sizeof(buffer),
-		1,
+                1,
                 &nbytes,
                 NULL);
             fputs(buffer, fp);
@@ -236,14 +237,14 @@ main(
     res = globus_xio_close(xio_handle, NULL);
     test_res(res);
 
+    if (user_handle)
+    {
+        globus_ftp_client_handle_destroy(&ftp_handle);  
+    }
     res = globus_xio_driver_unload(gridftp_driver);
     test_res(res);
  
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == GLOBUS_SUCCESS);
-    if (user_handle)
-    {
-        globus_ftp_client_handle_destroy(&ftp_handle);  
-    }
     return 0;
 }
