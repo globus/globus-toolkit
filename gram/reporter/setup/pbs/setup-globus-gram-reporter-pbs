@@ -1,3 +1,0 @@
-#! /bin/sh
-
-perl $GLOBUS_LOCATION/setup/globus/setup-globus-gram-reporter-pbs.pl "$@"
