@@ -738,47 +738,13 @@ create_minimal_context(char *certdir)
 {
    SSL_CTX *ctx;
 
-   ctx = SSL_CTX_new(SSLv3_method());
+   ctx = SSL_CTX_new(SSLv3_method()); /* same as gssapi_ssleay */
    if (ctx != NULL) {
-      SSL_CTX_set_options(ctx, 0);
-      SSL_CTX_sess_set_cache_size(ctx, 5);
+      SSL_CTX_set_options(ctx, 0); /* no options */
+      SSL_CTX_sess_set_cache_size(ctx, 5); /* set small session-id cache */
       SSL_CTX_load_verify_locations(ctx, NULL, certdir);
    }
    return ctx;
-}
-
-static unsigned char dh512_p[]={
-        0xDA,0x58,0x3C,0x16,0xD9,0x85,0x22,0x89,0xD0,0xE4,0xAF,0x75,
-        0x6F,0x4C,0xCA,0x92,0xDD,0x4B,0xE5,0x33,0xB8,0x04,0xFB,0x0F,
-        0xED,0x94,0xEF,0x9C,0x8A,0x44,0x03,0xED,0x57,0x46,0x50,0xD3,
-        0x69,0x99,0xDB,0x29,0xD7,0x76,0x27,0x6B,0xA2,0xD3,0xD4,0x12,
-        0xE2,0x18,0xF4,0xDD,0x1E,0x08,0x4C,0xF6,0xD8,0x00,0x3E,0x7C,
-        0x47,0x74,0xE8,0x33,
-        };
-static unsigned char dh512_g[]={
-        0x02,
-        };
-
-static DH *get_dh512(void)
-        {
-        DH *dh=NULL;
-
-        if ((dh=DH_new()) == NULL) return(NULL);
-        dh->p=BN_bin2bn(dh512_p,sizeof(dh512_p),NULL);
-        dh->g=BN_bin2bn(dh512_g,sizeof(dh512_g),NULL);
-        if ((dh->p == NULL) || (dh->g == NULL))
-                return(NULL);
-        return(dh);
-        }
-
-static void ssl_set_noauth(void* cred_handle)
-{ DH *dh=NULL;
-
-  SSL_CTX_set_cipher_list(((proxy_cred_desc *)cred_handle)->gs_ctx, 
-     "ADH:RSA:HIGH:MEDIUM:LOW:EXP:+eNULL:+aNULL");
-  dh=get_dh512();
-  SSL_CTX_set_tmp_dh(((proxy_cred_desc *)cred_handle)->gs_ctx,dh);
-  DH_free(dh);
 }
 
 static void *
@@ -850,7 +816,6 @@ my_ssl_init(int verify, int peer_has_proxy)
 	    SSL_CTX_free(cred_handle->gs_ctx);
      
 	cred_handle->gs_ctx = create_minimal_context(certdir);
-	ssl_set_noauth(cred_handle);
     }
 
     if (cred_handle->gs_ctx != NULL) {
@@ -908,7 +873,9 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	return GSI_SOCKET_ERROR;
     }
 
+    /* Set method same as gssapi_ssleay. */
     SSL_set_ssl_method(self->ssl,SSLv3_method());
+
     SSL_set_fd(self->ssl, self->sock);
     if (SSL_connect(self->ssl) <= 0)
     {
@@ -1100,6 +1067,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	return GSI_SOCKET_ERROR;
     }
 
+    /* Set method & options same as gssapi_ssleay */
     SSL_set_ssl_method(self->ssl,SSLv23_method());
     SSL_set_options(self->ssl,SSL_OP_NO_SSLv2|SSL_OP_NO_TLSv1);
     
