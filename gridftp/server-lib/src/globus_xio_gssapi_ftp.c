@@ -774,7 +774,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
             if(send_tok.length == 0)
             {
                 reply = globus_libc_strdup(
-                            "235 GSSAPI Authentication succeeded\r\n");
+                            "235 GSSAPI Authentication successful.\r\n");
                 if(reply == NULL)
                 {
                     gss_release_buffer(&min_stat, &send_tok);
@@ -1366,8 +1366,7 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                     if(maj_stat != GSS_S_COMPLETE)
                     {
                         char *          tmp_msg;
-                        /* XXX decide if this should fail and return to
-                           server or just reply and keep CC open */
+                        /* XXX need to propagate this error to server */
                         res = GlobusXIOGssapiFTPGSIFailure(
                             maj_stat, min_stat,
                             "Server side credential failure");
@@ -1417,7 +1416,13 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                     if(res != GLOBUS_SUCCESS)
                     {
                         /* XXX send reply but restsart to READING_AUTH */
-                        msg = strdup(REPLY_530_BAD_ADAT);
+                        char *          tmp_msg;
+                        tmp_msg = globus_error_print_friendly(
+                            globus_error_peek(res));
+                        msg = globus_l_xio_gssapi_ftp_string_to_959(
+                            530, tmp_msg, NULL);
+                        globus_free(tmp_msg);
+                        /* msg = strdup(REPLY_530_BAD_ADAT); */
                     }
                     else
                     {
