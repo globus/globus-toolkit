@@ -50,9 +50,14 @@ sub submit
 	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
 	}
     }
+
     if( $description->directory eq '')
     {
 	return Globus::GRAM::Error::RSL_DIRECTORY;
+    }
+    if ($description->directory =~ m|^[^/]|) {
+        $description->add('directory',
+                (getpwuid($<))[7] . '/' . $description->directory);
     }
     if((! -d $description->directory) || (! -r $description->directory))
     {
@@ -65,6 +70,10 @@ sub submit
     $self->nfssync( $description->stdin() )
 	unless $description->stdin() eq '';
 
+    if ($description->executable =~ m|^[^/]|) {
+        $description->add('executable',
+                $description->directory . '/' . $description->executable);
+    }
     if( $description->executable eq '')
     {
 	return Globus::GRAM::Error::RSL_EXECUTABLE();
