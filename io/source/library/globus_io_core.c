@@ -38,7 +38,11 @@ static char *rcsid = "$Header$";
 #ifdef HAVE_SYSCONF
 #   define GLOBUS_L_IO_NUM_FDS sysconf(_SC_OPEN_MAX)
 #else
+#ifdef TARGET_ARCH_WIN32
+#   define GLOBUS_L_IO_NUM_FDS 2048
+#else /* TARGET_ARCH_WIN32 */
 #   define GLOBUS_L_IO_NUM_FDS 256
+#endif /* TARGET_ARCH_WIN32 */
 #endif
 
 /*
@@ -580,8 +584,14 @@ globus_l_io_table_add(
 	if ( index != -1 ) // found it!
 		handle->fd= index;
 	else // not in the table yet- get the first available slot
+	{
 		handle->fd= globus_l_io_get_first_available_table_slot();
-		// TODO: We should check this return value- it could be invalid!
+		if (handle->fd < 0)
+		{
+		    printf("Globus error: File table overflow.\n");
+		    exit(0);
+		}
+	}
 #endif
 
     if (globus_l_io_fd_table[handle->fd])
@@ -3395,6 +3405,17 @@ globus_l_io_activate(void)
     globus_l_io_fd_tablesize = GLOBUS_L_IO_NUM_FDS;
     globus_l_io_highest_fd = 0;
     globus_l_io_pending_count = 0;
+
+    /*
+     * Make windows use the max num of fds with stdio too.
+     */
+    #ifdef TARGET_ARCH_WIN32
+    if (_setmaxstdio(GLOBUS_L_IO_NUM_FDS) < 0)
+    {
+    globus_i_io_debug_printf(3, 
+        (stderr, "Warning: _setmaxstdio(%d) failed\n"),GLOBUS_L_IO_NUM_FDS);
+    }
+    #endif /* TARGET_ARCH_WIN32 */
     
     globus_l_io_fd_table = (globus_io_select_info_t **)
         globus_malloc(sizeof(globus_io_select_info_t *) *
