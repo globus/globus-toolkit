@@ -1,17 +1,21 @@
+
+
+/**
+ */
 struct globus_l_proxy_req_handle_s;
 
-typedef struct globus_l_proxy_req_handle_s * globus_proxy_req_handle_t
+typedef struct globus_l_proxy_req_handle_s * globus_proxy_req_handle_t;
 
 typedef struct globus_l_proxy_req_handle_s
 {
     EVP_KEY *                           proxy_key;
     globus_l_proxy_req_handle_attrs_t * attrs;
-}
+} 
 globus_l_proxy_req_handle_t;
 
 struct globus_l_proxy_req_handle_attrs_s;
 
-typedef struct globus_l_proxy_req_handle_attrs_s * globus_proxy_req_handle_attrs_t
+typedef struct globus_l_proxy_req_handle_attrs_s * globus_proxy_req_handle_attrs_t;
 
 typedef struct globus_l_proxy_req_handle_attrs_s
 {
