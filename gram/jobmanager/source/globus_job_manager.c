@@ -1198,6 +1198,18 @@ int main(int argc,
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_LOCATION",
                                 (void *) conf.globus_location);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_TOOLS_PATH",
+                                (void *) conf.globus_location);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_DEVELOPMENT_PATH",
+                                (void *) conf.globus_location);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_SERVICES_PATH",
+                                (void *) conf.globus_location);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_INSTALL_PATH",
+                                (void *) conf.globus_location);
 	}
 
         if (globus_rsl_eval(rsl_tree, symbol_table) != 0)
