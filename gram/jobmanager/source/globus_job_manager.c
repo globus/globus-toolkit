@@ -16,8 +16,9 @@ CVS Information:
                              Include header files
 ******************************************************************************/
 #include "globus_common.h"
-#include "grami_ggg.h"
-
+#include "grami_ggg.h"		/* for grami_setenv() prototype.
+				   TODO: Move that prototype to a
+				   better include file.  --Steve A */ 
 #if HAVE_UTIME_H
 #include <utime.h>
 #endif
