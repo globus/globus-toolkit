@@ -120,6 +120,238 @@ globus_gsi_gssapi_test_cleanup(
     }
 }
 
+globus_bool_t
+globus_gsi_gssapi_test_export_context(
+    char *                              filename,
+    gss_ctx_id_t *                      context)
+{
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    globus_bool_t                       result = GLOBUS_TRUE;
+    gss_buffer_desc                     export_token = GSS_C_EMPTY_BUFFER;
+    FILE *                              context_file;
+
+    context_file = fopen(filename,"w");
+
+    if(context_file == NULL)
+    {
+        fprintf(stderr,"\nLINE %d ERROR: Couldn't open %s\n\n",
+                __LINE__, filename);
+        result = GLOBUS_FALSE;
+        goto exit;
+    }
+    
+    major_status = gss_export_sec_context(
+        &minor_status,
+        context,
+        (gss_buffer_t) & export_token);
+
+    if(GSS_ERROR(major_status))
+    {
+        char *                          error_str;
+        globus_gss_assist_display_status_str(&error_str,
+                                             NULL,
+                                             major_status,
+                                             minor_status,
+                                             0);
+        fprintf(stderr,"\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        result = GLOBUS_FALSE;
+        goto exit;
+    }
+
+    if(fwrite(export_token.value, export_token.length, 1, context_file) < 1)
+    {
+        fprintf(stderr,"\nLINE %d ERROR: Couldn't write context to file\n\n",
+                __LINE__);
+        gss_release_buffer(&minor_status, &export_token);
+        result = GLOBUS_FALSE;
+        goto exit;        
+    }
+
+    gss_release_buffer(&minor_status, &export_token);
+    
+ exit:
+    if(context_file)
+    {
+        fclose(context_file);
+    }
+    
+    return result;
+}
+
+globus_bool_t
+globus_gsi_gssapi_test_import_context(
+    char *                              filename,
+    gss_ctx_id_t *                      context)
+{
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    globus_bool_t                       result = GLOBUS_TRUE;
+    gss_buffer_desc                     import_token = GSS_C_EMPTY_BUFFER;
+    FILE *                              context_file;
+
+    context_file = fopen(filename,"r");
+
+    if(context_file == NULL)
+    {
+        fprintf(stderr,"\nLINE %d ERROR: Couldn't open %s\n\n",
+                __LINE__, filename);
+        result = GLOBUS_FALSE;
+        goto exit;
+    }
+
+    fseek(context_file, 0, SEEK_END);
+    import_token.length = ftell(context_file);
+    fseek(context_file, 0, SEEK_SET);
+    import_token.value = malloc(import_token.length);
+
+    fread(import_token.value, import_token.length, 1, context_file);
+    
+    major_status = gss_import_sec_context(
+        &minor_status,
+        (gss_buffer_t) & import_token,
+        context);
+
+    if(GSS_ERROR(major_status))
+    {
+        char *                          error_str;
+        globus_gss_assist_display_status_str(&error_str,
+                                             NULL,
+                                             major_status,
+                                             minor_status,
+                                             0);
+        fprintf(stderr,"\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        gss_release_buffer(&minor_status, &import_token);
+        result = GLOBUS_FALSE;
+        goto exit;
+    }
+    
+    gss_release_buffer(&minor_status, &import_token);
+    
+ exit:
+    if(context_file)
+    {
+        fclose(context_file);
+        unlink(filename);
+    }
+    
+    return result;
+}
+
+globus_bool_t
+globus_gsi_gssapi_test_send_hello(
+    int                                 fd,
+    gss_ctx_id_t                        context)
+{
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    globus_bool_t                       result = GLOBUS_TRUE;
+    static char *                       hello = "Hello";
+    gss_buffer_desc                     send_token = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc                     input_token;
+    long                                rc;
+    long                                written = 0;
+    
+    input_token.length = 6;
+    input_token.value = hello;
+    
+    major_status = gss_wrap(&minor_status,
+                            context,
+                            0,
+                            GSS_C_QOP_DEFAULT,
+                            (gss_buffer_t) &input_token,
+                            NULL,
+                            (gss_buffer_t) &send_token);
+    
+    if(GSS_ERROR(major_status))
+    {
+        char *                          error_str;
+        globus_gss_assist_display_status_str(&error_str,
+                                             NULL,
+                                             major_status,
+                                             minor_status,
+                                             0);
+        fprintf(stderr,"\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        result = GLOBUS_FALSE;
+        goto exit;
+    }
+
+    while(send_token.length - written &&
+          (rc = write(fd, &((char *) send_token.value)[written],
+                      send_token.length - written)) > 0 &&
+          (written += rc));
+
+    if(rc < 0)
+    {
+        result = GLOBUS_FALSE;
+    }
+
+    /* printf("Wrote %d out of %d bytes\n", written, send_token.length); */
+    
+    gss_release_buffer(&minor_status, &send_token);
+
+    
+ exit:
+    return result;
+}
+
+globus_bool_t
+globus_gsi_gssapi_test_receive_hello(
+    int                                 fd,
+    gss_ctx_id_t                        context)
+{
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    globus_bool_t                       result = GLOBUS_TRUE;
+    char                                buffer[128];
+    long                                rc;
+    gss_buffer_desc                     recv_token = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc                     output_token = GSS_C_EMPTY_BUFFER;
+    
+    while((rc = read(fd,&buffer[recv_token.length],128)) > 0 &&
+          (recv_token.length += rc));
+
+    if(rc < 0)
+    {
+        fprintf(stderr, "System error: %s\n", strerror(errno));
+        result = GLOBUS_FALSE;
+        goto exit;
+    }
+
+    /* printf("Read %d bytes\n", recv_token.length); */
+    
+    recv_token.value = buffer;
+
+    major_status = gss_unwrap(&minor_status,
+                              context,
+                              (gss_buffer_t) &recv_token,
+                              (gss_buffer_t) &output_token,
+                              NULL,
+                              NULL);
+    if(GSS_ERROR(major_status))
+    {
+        char *                          error_str;
+        globus_gss_assist_display_status_str(&error_str,
+                                             NULL,
+                                             major_status,
+                                             minor_status,
+                                             0);
+        fprintf(stderr,"\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        result = GLOBUS_FALSE;
+        goto exit;
+    }
+
+    if(memcmp(output_token.value, "Hello", 6))
+    {
+        result = GLOBUS_FALSE;
+    }
+
+    gss_release_buffer(&minor_status, &output_token);    
+
+ exit:
+    return result;
+}
+
 
 static int
 get_token(
@@ -524,3 +756,4 @@ init_sec_context(
 
     return major_status;
 }
+

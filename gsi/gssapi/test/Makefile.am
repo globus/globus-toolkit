@@ -30,6 +30,7 @@ Scripts= \
 	gssapi-delegation-compat-test.pl \
 	gssapi-thread-test.pl \
 	gssapi-context-test.pl \
+	gssapi-expimp-test.pl \
 	gssapi-acquire-test.pl \
 	run-gssapi-tests.pl
 #	gssapi-group-test.pl \
@@ -62,6 +63,7 @@ test_PROGRAMS= \
 	gssapi-delegation-compat-test \
 	gssapi-thread-test \
 	gssapi-context-test \
+	gssapi-expimp-test \
 	gssapi-acquire-test 
 #	gssapi-group-test \
 
@@ -133,6 +135,13 @@ gssapi_acquire_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gssapi_acquire_test_LDADD = $(GPT_PGM_LINKS)
 
+gssapi_expimp_test_SOURCES =	gssapi_expimp_test.c \
+				gssapi_test_utils.c \
+				gssapi_test_utils.h
+
+gssapi_expimp_test_LDFLAGS = $(GPT_LDFLAGS)
+
+gssapi_expimp_test_LDADD = $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -24,3 +24,25 @@ globus_gsi_gssapi_test_cleanup(
     gss_ctx_id_t *                      context_handle,
     char *                              userid,
     gss_cred_id_t *                     delegated_cred);
+
+globus_bool_t
+globus_gsi_gssapi_test_export_context(
+    char *                              filename,
+    gss_ctx_id_t *                      context);
+
+
+globus_bool_t
+globus_gsi_gssapi_test_import_context(
+    char *                              filename,
+    gss_ctx_id_t *                      context);
+
+globus_bool_t
+globus_gsi_gssapi_test_send_hello(
+    int                                 fd,
+    gss_ctx_id_t                        context);
+
+globus_bool_t
+globus_gsi_gssapi_test_receive_hello(
+    int                                 fd,
+    gss_ctx_id_t                        context);
+
