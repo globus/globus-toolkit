@@ -502,7 +502,7 @@ globus_l_xio_gridftp_handle_create(
     }	
 
     globus_i_xio_gridftp_contact_info_setup(&contact_info_local, contact_info);
-    result = globus_xio_contact_info_to_string(
+    result = globus_xio_contact_info_to_url(
 		&contact_info_local, 
 		&handle->url);
     if (result != GLOBUS_SUCCESS)
@@ -659,40 +659,45 @@ globus_l_xio_gridftp_open(
 	op, globus_l_xio_gridftp_cancel_cb, requestor))
     {
 	result = GlobusXIOErrorCanceled();
-	goto error_operation_canceled;
+	goto error_cancel_enable;
     }
     globus_mutex_lock(&handle->mutex);	
-    if (handle->state == GLOBUS_XIO_GRIDFTP_NONE)
-    {	
-	result = globus_ftp_client_size(
-	    &handle->attr->ftp_handle, 
-	    handle->url, 
-	    &handle->attr->ftp_operation_attr, 
-	    &handle->size,
-	    globus_l_xio_gridftp_open_cb, 
-	    requestor);
-    }
-    globus_mutex_unlock(&handle->mutex);	
-
+    if (globus_xio_operation_is_canceled(op))
+    {
+        result = GlobusXIOErrorCanceled();
+        goto error_operation_canceled;
+    }	
+    result = globus_ftp_client_size(
+	&handle->attr->ftp_handle, 
+	handle->url, 
+	&handle->attr->ftp_operation_attr, 
+	&handle->size,
+	globus_l_xio_gridftp_open_cb, 
+	requestor);
     if (result != GLOBUS_SUCCESS)	
     {
 	goto error_size;
     }
+    handle->state = GLOBUS_XIO_GRIDFTP_OPENING;
+    globus_mutex_unlock(&handle->mutex);	
 
     GlobusXIOGridftpDebugExit();
     return GLOBUS_SUCCESS;
 
 error_size:
 error_operation_canceled:
+    globus_mutex_unlock(&handle->mutex);
     globus_xio_operation_disable_cancel(op);
+error_cancel_enable:
     /* 
      * xio calls the cancel_cb with cancel lock held and disable_cancel waits 
      * for that. so cancel_cb can not be active after i call disable_cancel
-     * and thus i can safely call handle_destroy
+     * and thus i can safely push the requestor memory and call handle_destroy
      */	
+    globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+error_auth:
     res = globus_l_xio_gridftp_handle_destroy(handle);	
     globus_assert (res == GLOBUS_SUCCESS);	
-error_auth:
 error_handle:
 error_contact_info:
     GlobusXIOGridftpDebugExitWithError();
@@ -1046,13 +1051,16 @@ globus_l_xio_gridftp_cancel_cb(
     switch (handle->state)
     {
 	case GLOBUS_XIO_GRIDFTP_NONE:
-	    handle->state = GLOBUS_XIO_GRIDFTP_ABORT_PENDING;
+	    break;
+	case GLOBUS_XIO_GRIDFTP_OPENING:
 	    globus_ftp_client_abort(&handle->attr->ftp_handle);
 	    break;
 	case GLOBUS_XIO_GRIDFTP_IO_PENDING:
 	    handle->state = GLOBUS_XIO_GRIDFTP_ABORT_PENDING;
 	    globus_i_xio_gridftp_abort_io(handle);
-	    break;	
+	    break;
+	case GLOBUS_XIO_GRIDFTP_IO_DONE:
+	    break;
         case GLOBUS_XIO_GRIDFTP_ABORT_PENDING:
 	    break;
         case GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING:
@@ -1120,17 +1128,18 @@ globus_l_xio_gridftp_read(
 	op, globus_l_xio_gridftp_cancel_cb, requestor))
     {
 	result = GlobusXIOErrorCanceled();
-	goto error_operation_canceled;
+	goto error_cancel_enable;
     }
     /* 
-     * There is an issue here with the user calling cancel (and thus my 
-     * cancel_cb being called) before I acquire the lock below. I can not
-     * call enable_cancel with lock being held coz of lock inversion issues.
-     * Basically, I need to find if cancel is called on my op and if so, 
-     * I should finish with error_cancelled. As this is highly unlikely to
-     * be trigerred, I'm skipping this for now
+     * I can not call enable_cancel with lock being held coz of lock
+     * inversion issues 
      */
     globus_mutex_lock(&handle->mutex);
+    if (globus_xio_operation_is_canceled(op))
+    {
+        result = GlobusXIOErrorCanceled();
+        goto error_operation_canceled;
+    }	
     if (handle->attr->partial_xfer && handle->state != GLOBUS_XIO_GRIDFTP_OPEN)
     {
 	result = GlobusXIOGridftpOutstandingPartialXferError();
@@ -1156,8 +1165,9 @@ globus_l_xio_gridftp_read(
 	    {   
 		goto error_get;
 	    }   
+	    /* fall through */	
 	case GLOBUS_XIO_GRIDFTP_IO_DONE:
-	    handle->state = GLOBUS_XIO_GRIDFTP_IO_PENDING;
+	    /* fall through */
 	case GLOBUS_XIO_GRIDFTP_IO_PENDING:
 	{
 	    /* simultaneous read and write not allowed */	
@@ -1177,11 +1187,13 @@ globus_l_xio_gridftp_read(
 		goto error_register_read;
 	    }
 	    ++handle->outstanding_io_count;			
+	    handle->state = GLOBUS_XIO_GRIDFTP_IO_PENDING;
 	    break;
 	}
 	case GLOBUS_XIO_GRIDFTP_ABORT_PENDING:
 	    handle->pending_ops_direction = GLOBUS_TRUE;	
 	    handle->state = GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING;
+	    /* fall through */	
 	case GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING:
 	{
 	    /* simultaneous read and write not allowed */	
@@ -1208,10 +1220,13 @@ error_outstanding_write:
 error_get:
 error_eof_received:
 error_outstanding_partial_xfer:
-    globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+error_operation_canceled:
     globus_mutex_unlock(&handle->mutex);
     globus_xio_operation_disable_cancel(op);
-error_operation_canceled:
+error_cancel_enable:
+    globus_mutex_lock(&handle->mutex);
+    globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+    globus_mutex_unlock(&handle->mutex);
     GlobusXIOGridftpDebugExitWithError();
     return result;
 	
@@ -1289,17 +1304,18 @@ globus_l_xio_gridftp_write(
         op, globus_l_xio_gridftp_cancel_cb, requestor))
     {
         result = GlobusXIOErrorCanceled();
-        goto error_operation_canceled;
+        goto error_cancel_enable;
     }
     /* 
-     * There is an issue here with the user calling cancel (and thus my 
-     * cancel_cb being called) before I acquire the lock below. I can not
-     * call enable_cancel with lock being held coz of lock inversion issues.
-     * Basically, I need to find if cancel is called on my op and if so, 
-     * I should finish with error_cancelled. As this is highly unlikely to
-     * be trigerred, I'm skipping this for now
+     * I can not call enable_cancel with lock being held coz of lock
+     * inversion issues 
      */
     globus_mutex_lock(&handle->mutex);
+    if (globus_xio_operation_is_canceled(op))
+    {
+        result = GlobusXIOErrorCanceled();
+        goto error_operation_canceled;
+    }	
     if (handle->attr->partial_xfer && handle->state != GLOBUS_XIO_GRIDFTP_OPEN)
     {
 	result = GlobusXIOGridftpOutstandingPartialXferError();
@@ -1319,8 +1335,9 @@ globus_l_xio_gridftp_write(
             {   
                 goto error_put;
             }
+	    /* fall through */	
         case GLOBUS_XIO_GRIDFTP_IO_DONE:
-	    handle->state = GLOBUS_XIO_GRIDFTP_IO_PENDING;
+	    /* fall through */
         case GLOBUS_XIO_GRIDFTP_IO_PENDING:
         {
 	    globus_off_t offset;
@@ -1353,20 +1370,19 @@ globus_l_xio_gridftp_write(
 		GLOBUS_FALSE, /* eof */
                 globus_l_xio_gridftp_io_cb,
                 requestor);
-            if (result == GLOBUS_SUCCESS)
+            if (result != GLOBUS_SUCCESS)
             {
-		++handle->outstanding_io_count;			
-		handle->offset = offset + iovec[0].iov_len;
-            }
-	    else
-	    {                   
                 goto error_register_write;
-	    }
+            }
+	    ++handle->outstanding_io_count;			
+	    handle->state = GLOBUS_XIO_GRIDFTP_IO_PENDING;
+	    handle->offset = offset + iovec[0].iov_len;
             break;
         }
         case GLOBUS_XIO_GRIDFTP_ABORT_PENDING:
             handle->pending_ops_direction = GLOBUS_FALSE;
             handle->state = GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING;
+	    /* fall through */	
         case GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING:
         {
 	    /* simultaneous read and write not allowed */	
@@ -1392,10 +1408,13 @@ error_register_write:
 error_outstanding_read:
 error_put:
 error_outstanding_partial_xfer:
-    globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+error_operation_canceled:
     globus_mutex_unlock(&handle->mutex);
     globus_xio_operation_disable_cancel(op);
-error_operation_canceled:
+error_cancel_enable:
+    globus_mutex_lock(&handle->mutex);
+    globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+    globus_mutex_unlock(&handle->mutex);
     GlobusXIOGridftpDebugExitWithError();
     return result;
 	
@@ -1454,6 +1473,7 @@ globus_l_xio_gridftp_close(
 	    break;
 	case GLOBUS_XIO_GRIDFTP_IO_DONE:
 	    globus_i_xio_gridftp_abort_io(handle);
+	    /* fall through */	
 	case GLOBUS_XIO_GRIDFTP_ABORT_PENDING:
 	{
 	    globus_i_xio_gridftp_requestor_t * requestor;
@@ -1521,8 +1541,11 @@ globus_l_xio_gridftp_cntl(
 			/* put this in a function */
 	    		globus_i_xio_gridftp_abort_io(handle);
 			handle->state = GLOBUS_XIO_GRIDFTP_ABORT_PENDING;
+			/* fall through */	
 		    case GLOBUS_XIO_GRIDFTP_OPEN:
+			/* fall through */	
 		    case GLOBUS_XIO_GRIDFTP_ABORT_PENDING:
+			/* fall through */	
 		    case GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING:
 			handle->offset = seek_offset;
 			break;
