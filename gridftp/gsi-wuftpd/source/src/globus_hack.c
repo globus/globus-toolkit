@@ -23,7 +23,35 @@ static globus_bool_t                            g_send_range;
 #include "bmap_file.h"
 #endif 
 
+#define G_DEBUG 1
+
+#if defined(G_DEBUG)
 FILE * g_out;
+
+#define DEBUG_OPEN() \
+g_out = fopen("/home/bresnaha/wuftpd_out", "w")
+
+#define DEBUG_CLOSE() \
+fclose(g_out)
+
+void
+debug_printf(char * fmt, ...)
+{
+    va_list          ap;
+
+    va_start(ap, fmt);
+    vfprintf(g_out, fmt, ap);
+
+    va_end(ap);
+}
+
+#else
+
+#define DEBUG_OPEN()
+#define DEBUG_CLOSE()
+#define debug_printf()
+
+#endif
 
 /*
  *  The enter and exit macros need to be around any code that will
@@ -279,6 +307,12 @@ g_timeout_wakeup(
     globus_abstime_t *                           time_stop,
     void *                                       user_args)
 {
+    globus_mutex_lock(&g_monitor.mutex);
+    {   
+        globus_cond_signal(&g_monitor.cond);
+    }
+    globus_mutex_unlock(&g_monitor.mutex);
+
     return GLOBUS_TRUE;
 }
 
@@ -292,6 +326,8 @@ g_start()
     globus_reltime_t                  period_time;
     globus_result_t		      res;
 
+DEBUG_OPEN();
+G_ENTER();
     rc = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
     assert(rc == GLOBUS_SUCCESS);
 
@@ -328,18 +364,22 @@ g_start()
               &g_data_handle,
               &g_parallelism);
 
-    GlobusTimeReltimeSet(delay_time, 0, 0);
-    GlobusTimeReltimeSet(period_time, 0, timeout_connect / 2);
+    GlobusTimeReltimeSet(delay_time, timeout_connect / 2, 0);
+    GlobusTimeReltimeSet(period_time, timeout_connect / 2, 0);
     globus_fifo_init(&g_restarts);
 
-    globus_callback_register_periodic(
-        GLOBUS_NULL,
-        &delay_time,
-        &period_time,
-        g_timeout_wakeup,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        GLOBUS_NULL);
+debug_printf("registering wakeup at %d secs\n", timeout_connect / 2);
+    res = globus_callback_register_periodic(
+             GLOBUS_NULL,
+             &delay_time,
+             &period_time,
+             g_timeout_wakeup,
+             GLOBUS_NULL,
+             GLOBUS_NULL,
+             GLOBUS_NULL);
+    assert(res == GLOBUS_SUCCESS);
+
+G_EXIT();
 }
 
 void
@@ -376,6 +416,7 @@ g_end()
     globus_ftp_control_handle_destroy(&g_data_handle);
     globus_module_deactivate(GLOBUS_FTP_CONTROL_MODULE);
 
+DEBUG_CLOSE();
     G_EXIT();
 }
 
@@ -772,7 +813,7 @@ g_send_data(
                           handle,
                           buf,
                           cnt,
-                          offset, /* + jb_count,*/
+                          offset,
                           eof,
                           data_write_callback,
                           &g_monitor);
