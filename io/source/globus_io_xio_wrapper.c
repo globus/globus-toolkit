@@ -393,7 +393,7 @@ globus_l_io_iattr_copy(
         goto error_alloc;
     }
     
-    memset(&dest_iattr, 0, sizeof(globus_l_io_attr_t));
+    memset(dest_iattr, 0, sizeof(globus_l_io_attr_t));
     
     dest_iattr->type = source_iattr->type;
     if(dest_iattr->type == GLOBUS_I_IO_TCP_ATTR)
