@@ -95,3 +95,8 @@ contains the GSI-OpenSSH code.  Consider it a living document.
       Conflicts: 1
         - Makefile.in
             resolved by removing check-user and adding check-config.
+
+    2003/02/06
+    ----------
+      Action: Tag GPT branch as new release
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
