@@ -633,11 +633,8 @@ globus_l_gfs_data_destroy_cb(
     GlobusGFSName(globus_i_gfs_data_handle_destroy);
 
     data_handle = (globus_l_gfs_data_handle_t *) callback_arg;
-    if(data_handle->is_mine)
-    {
-        globus_ftp_control_handle_destroy(&data_handle->data_channel);
-    }
 
+    globus_ftp_control_handle_destroy(&data_handle->data_channel);
     globus_free(data_handle);
 }
 
@@ -692,6 +689,8 @@ globus_i_gfs_data_destroy_handle(
                         data_handle);
                     if(result != GLOBUS_SUCCESS)
                     {
+                        globus_ftp_control_handle_destroy(
+                            &data_handle->data_channel);
                         globus_free(data_handle);
                     }
                 }
