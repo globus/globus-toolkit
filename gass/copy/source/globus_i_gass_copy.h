@@ -22,6 +22,17 @@ enum
     GLOBUS_I_GASS_COPY_TARGET_MODE_IO,
 } globus_i_gass_copy_target_mode_t;
 
+/**
+ * target status
+ */
+enum
+{
+    GLOBUS_I_GASS_COPY_TARGET_INITIAL,
+    GLOBUS_I_GASS_COPY_TARGET_READY,
+    GLOBUS_I_GASS_COPY_TARGET_DONE,
+} globus_i_gass_copy_target_status_t;
+
+
 /** 
  * valid state numbers (aka states)
  */
@@ -29,6 +40,9 @@ enum
 {
     GLOBUS_I_GASS_COPY_STATE_INITIAL,
     GLOBUS_I_GASS_COPY_STATE_SOURCE_READY,
+    GLOBUS_I_GASS_COPY_STATE_TRANSFER_IN_PROGRESS,
+    GLOBUS_I_GASS_COPY_STATE_READ_COMPLETE,
+    GLOBUS_I_GASS_COPY_STATE_WRITE_COMPLETE
 } globus_i_gass_copy_state_number_t;
 
 /**
@@ -52,24 +66,24 @@ struct globus_i_gass_copy_target_s
     globus_mutex_t                              mutex;
 
     /**
-     * a queue to manage the writing of data buffers
+     * a queue to manage the reading/writing of data buffers
      */
     globus_fifo_t                               queue;
 
     /**
-     * Used for keeping track of the writes in the write queue
+     * Used for keeping track of  reads/writes in the read/write queue
      */
     int                                 n_pending;
 
     /**
-     * Used to limit the number of writes_pending
+     * Used to limit the number of n_pending
      */
     int                                 n_simultaneous;
 
     /**
      * signifies the target has been successfully setup
      */
-    globus_bool_t                               ready;
+    globus_i_gass_copy_target_status_t         status;
 
     /**
      * mode used to identify the below target union struct.
@@ -153,26 +167,55 @@ typedef struct globus_i_gass_copy_state_s
     globus_i_gass_copy_state_number_t	number;
 
     /**
-     * Used for signalling when the source and destination url's have
-     * been successfully setup.
-     */
-    globus_i_gass_copy_monitor_t        setup_monitor;
-
-    /**
      * Used for signalling from the various callback functions
      */
     globus_i_gass_copy_monitor_t        monitor;
 
+    /*
+     * total number of read/write buffers that can be used at a time
+     */
+    int                                 max_buffers;
+    /*
+     * number of buffers that have been allocated for reading/writing
+     */
+    int                                 n_buffers;
+    /*
+     * size of the buffers
+     */
+    int                                 buffer_length;
+
+    /*
+     * pointer to user callback function
+     */
+    globus_gass_copy_callback_t         user_callback;
+    /*
+     * pointer to user argument to user callback function
+     */
+    void *                              callback_arg;
+
+    /*
+     * the result of the data transfer, error or otherwise
+     */
+    globus_result_t                     result;
+
+    int                                 err;
+
+    /**
+     * coordinates the modifying of the state,  aside from the target structures
+     */
+    globus_mutex_t                      mutex;
+    
 } globus_i_gass_copy_state_t;
 
 /**
- * The buffer structure used for write queue entries
+ * The buffer structure used for read/write queue entries
  */
 typedef struct
 {
     globus_byte_t *                     bytes;
     globus_size_t                       nbytes;
     globus_size_t                       offset;
+    globus_bool_t                       last_data;
 } globus_i_gass_copy_buffer_t;
 
 /**

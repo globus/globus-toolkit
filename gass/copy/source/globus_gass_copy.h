@@ -30,7 +30,15 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
 #define GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
 
-EXTERN_C_BEGIN
+#ifndef EXTERN_C_BEGIN
+#ifdef __cplusplus
+#define EXTERN_C_BEGIN extern "C" {
+#define EXTERN_C_END }
+#else
+#define EXTERN_C_BEGIN
+#define EXTERN_C_END
+#endif
+#endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #include "globus_common.h"
@@ -38,6 +46,8 @@ EXTERN_C_BEGIN
 #include "globus_ftp.h"
 #include "globus_io.h"
 #endif
+
+EXTERN_C_BEGIN
 
 /** Module descriptor
  *
@@ -93,6 +103,7 @@ struct globus_gass_copy_attr_s
     globus_ftp_control_striping_t       stripe_info;
     globus_ftp_control_parallel_t       parallel_info;
     globus_ftp_control_tcpbuffer_t      tcpbuffer_info;
+    globus_gass_transfer_requestattr_t  gass_requestattr;
 } globus_gass_copy_attr_t;
 
 /*  ????
