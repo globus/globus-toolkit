@@ -6,6 +6,10 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ Generic Tag Merging ]
 
+    <newBase> refers to the new tag that lives in the repository.  Supposedly, you
+    are undergoing a cvs merge because a new GSI patch has been created (along with
+    a new corresponding tag).  Let <tagName> be the string "<newBase>_GPT".
+
     1. Set up your environment to point to the correct CVS repository.
 
           $ export CVSROOT="/afs/ncsa/projects/globus/Repository"
@@ -19,7 +23,7 @@ contains the GSI-OpenSSH code.  Consider it a living document.
     2. Merge the changes from your original base merge point to your new base merge
        point.
 
-          $ cvs update -kk -j<originalBase> -j<newBase>
+          $ cvs update -kk -jOPENSSH_GSI_GPT_BASE -j<newBase>
 
     3. Retrieve a list of any conflicts that were discovered as a result of the
        merge.
@@ -32,7 +36,12 @@ contains the GSI-OpenSSH code.  Consider it a living document.
        the repository.
 
           $ cvs commit
+          $ cvs rtag -F -r <newBase> OPENSSH_GSI_GPT_BASE openssh
           $ cvs tag <tagName>-merged
+
+    6. Add an entry to the History section detailing your merge action, along with
+       noting conflicts that occurred and any interesting changes you had to make to
+       resolve them.
 
   [ History ]
 
