@@ -79,17 +79,17 @@ globus_gsi_gssapi_test_authenticate(
     
     if (server == GLOBUS_TRUE) 
     {
-        major_status = accept_sec_context (fd, 
-                                           user_id,
-                                           context_handle, 
-                                           delegated_cred, 
-                                           credential);
+        major_status = accept_sec_context(fd, 
+					  user_id,
+					  context_handle, 
+					  delegated_cred, 
+					  credential);
     }
     else 
     {
-        major_status = init_sec_context (fd,
-                                         credential,
-                                         context_handle);
+        major_status = init_sec_context(fd,
+					credential,
+					context_handle);
     }
 
     return major_status == GSS_S_COMPLETE ? GLOBUS_TRUE : GLOBUS_FALSE;

@@ -81,12 +81,12 @@ main()
     while(1)
     {
 	accept_fd = accept(listen_fd,NULL,0);
-
+	
 	if(accept_fd < 0)
 	{
 	    abort();
 	}
-	
+
 	arg = malloc(sizeof(struct thread_arg));
 
 	arg->fd = accept_fd;
@@ -122,30 +122,40 @@ server_func(
     gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
     char *                              user_id = NULL;
     gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
+    gss_cred_id_t                       credential;
     
     thread_args = (struct thread_arg *) arg;
 
-    authenticated = globus_gsi_gssapi_test_authenticate(
-	thread_args->fd,
-	GLOBUS_TRUE, 
-	thread_args->credential, 
-	&context_handle, 
-	&user_id, 
-	&delegated_cred);
+    /*    credential = globus_gsi_gssapi_test_acquire_credential(); */
     
-    if(authenticated == GLOBUS_FALSE)
-    {
-	fprintf(stderr, "SERVER: Authentication failed\n");
+    while(1)
+    { 
+	authenticated = globus_gsi_gssapi_test_authenticate(
+	    thread_args->fd,
+	    GLOBUS_TRUE, 
+	    thread_args->credential, 
+	    &context_handle, 
+	    &user_id, 
+	    &delegated_cred);
+    
+
+	if(authenticated == GLOBUS_FALSE)
+	{
+	    fprintf(stderr, "SERVER: Authentication failed\n");
+	}
+
+
+	globus_gsi_gssapi_test_cleanup(&context_handle,
+				       user_id,
+				       &delegated_cred);
     }
+    
+    /*    globus_gsi_gssapi_test_release_credential(&credential); */
 
     close(thread_args->fd);
     
     free(thread_args);
     
-    globus_gsi_gssapi_test_cleanup(&context_handle,
-				   user_id,
-				   &delegated_cred);
-
     globus_thread_exit(NULL);
 
     return NULL;
@@ -162,32 +172,32 @@ client_func(
     char *                              user_id = NULL;
     gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
     int                                 connect_fd;
-    int                                 result;
+    gss_cred_id_t                       credential;
+    int                                 result = 0;
     
     thread_args = (struct thread_arg *) arg;
 
+    /*    credential = globus_gsi_gssapi_test_acquire_credential(); */
+    
+    connect_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
+
+    result = connect(connect_fd,
+		     (struct sockaddr *) thread_args->address,
+		     sizeof(struct sockaddr_un));
+    
+    if(result != 0)
+    {
+	abort();
+    }
 
     while(1)
     {
-	connect_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
-
-	result = connect(connect_fd,
-			 (struct sockaddr *) thread_args->address,
-			 sizeof(struct sockaddr_un));
-
-	if(result != 0)
-	{
-	    abort();
-	}
-
-
-	authenticated = globus_gsi_gssapi_test_authenticate(
-	    connect_fd,
-	    GLOBUS_FALSE, 
-	    thread_args->credential, 
-	    &context_handle, 
-	    &user_id, 
-	    &delegated_cred);
+	authenticated = globus_gsi_gssapi_test_authenticate(connect_fd,
+							    GLOBUS_FALSE, 
+							    thread_args->credential, 
+							    &context_handle, 
+							    &user_id, 
+							    &delegated_cred);
 
 	if(authenticated == GLOBUS_FALSE)
 	{
@@ -201,10 +211,13 @@ client_func(
 				       &delegated_cred);
 	user_id = NULL;
 
-	close(connect_fd);
     }
 
+    
+    /*    globus_gsi_gssapi_test_release_credential(&credential); */
 
+    close(connect_fd);
+    
     free(thread_args);
     
     globus_thread_exit(NULL);
