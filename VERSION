@@ -1,8 +1,11 @@
-This is myproxy v0.5.2 10 Mar 2003
+This is myproxy v0.5.3 19 Mar 2003
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.5.3 19 Mar 2003 (GPT package version 1.5)
+  This version fixes a build problem on AIX.
+
 v0.5.2 10 Mar 2003 (GPT package version 1.4)
   This version adds the myproxy-admin-query and
   myproxy-admin-load-credential commands and adds support for running
