@@ -35,7 +35,7 @@ AC_ARG_WITH(name,
                 exit 1
                 ;;
         *)
-                $srcdir/mkgssname gssplugin > $srcdir/gssname.c
+                $srcdir/mkgssname -n $withval gssplugin > $srcdir/gssname.c
                 ;;
         esac
         ]
