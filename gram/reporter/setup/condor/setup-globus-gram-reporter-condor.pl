@@ -36,7 +36,7 @@ if (!defined($gpath))
 
 require Grid::GPT::Setup;
 
-my $metadata = new Grid::GPT::Setup(package_name => "globus_gram_reporter_${type}_setup");
+my $metadata = new Grid::GPT::Setup(package_name => "globus_gram_reporter_setup_${type}");
 
 my $globusdir   = $ENV{GLOBUS_LOCATION};
 my $libexecdir  = "$globusdir/libexec";
