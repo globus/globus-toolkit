@@ -58,8 +58,8 @@ mystrdup(const char *string)
 static int
 file_exists(const char *path)
 {
-    struct stat					statbuf;
-    int						return_value = -1;
+    struct stat			statbuf = {0}; /* initialize with 0s */
+    int				return_value = -1;
 
     if (path == NULL)
     {
@@ -103,7 +103,7 @@ file_exists(const char *path)
 static int
 check_storage_directory()
 {
-    struct stat statbuf;
+    struct stat statbuf = {0}; /* initialize with 0s */
     int return_code = -1;
     char *gl_storage_dir = NULL;
 
@@ -767,7 +767,7 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     char data_path[MAXPATHLEN] = "";
     char lock_path[MAXPATHLEN] = "";
     char *username = NULL;
-    FILE *lockfile;
+    FILE *lockfile = NULL;
     
     
     if ((creds == NULL) || (creds->username == NULL)) {
@@ -866,10 +866,10 @@ myproxy_check_endentity( const char *username,
 int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 {
     char *username = NULL, *h_username = NULL, *owner_name = NULL;
-    size_t h_username_len;
+    size_t h_username_len = 0;
     struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
-    DIR *dir;
-    struct dirent *de;
+    DIR *dir = NULL;
+    struct dirent *de = NULL;
     int return_code = -1;
 
     /*
@@ -970,8 +970,8 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 {
     struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
-    DIR *dir;
-    struct dirent *de;
+    DIR *dir = NULL;
+    struct dirent *de = NULL;
     int return_code = -1, numcreds=0;
     char *username = NULL, *credname = NULL;
     time_t end_time = 0, start_time = 0;
@@ -1252,7 +1252,7 @@ myproxy_creds_lock(const struct myproxy_creds *creds, const char *reason)
     char data_path[MAXPATHLEN];
     char lock_path[MAXPATHLEN];
     int return_code = -1;
-    FILE *lockfile;
+    FILE *lockfile = NULL;
     
     if ((creds == NULL) || (creds->username == NULL) || (reason == NULL)) {
         verror_put_errno(EINVAL);
@@ -1325,7 +1325,7 @@ myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
     mode_t data_file_mode = FILE_MODE;
     struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
     int return_code = -1;
-    SSL_CREDENTIALS *ssl_creds;
+    SSL_CREDENTIALS *ssl_creds = NULL;
     
     if ((creds == NULL) || (creds->username == NULL)) {
 	verror_put_errno(EINVAL);
@@ -1394,7 +1394,7 @@ myproxy_creds_verify_passphrase(const struct myproxy_creds *creds,
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
     char lock_path[MAXPATHLEN];
-    char *tmp;
+    char *tmp = NULL;
     int return_code = -1;
     SSL_CREDENTIALS *ssl_creds = NULL;
     
