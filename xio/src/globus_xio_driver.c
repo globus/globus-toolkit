@@ -1477,7 +1477,7 @@ globus_xio_driver_merge_handle(
         goto err;
     }
 
-    for(ctr = 0; ctr < dst_context->stack_size; ctr++)
+    for(ctr = op->ndx; ctr < dst_context->stack_size; ctr++)
     {
         /* verify that the drivers are compatible */
         if(dst_context->entry[ctr].driver != src_context->entry[ctr].driver)
@@ -1488,6 +1488,7 @@ globus_xio_driver_merge_handle(
         dst_context->entry[ctr].whos_my_daddy = dst_context;
         dst_context->entry[ctr].driver_handle = 
             src_context->entry[ctr].driver_handle;
+
         GlobusXIOContextStateChange(&dst_context->entry[ctr],
             GLOBUS_XIO_CONTEXT_STATE_OPEN);
     }
