@@ -20,13 +20,11 @@
 
 static void
 globus_l_callout_library_table_element_free(
-    void *                              key,
-    void *                              data);
+    void *                              element);
 
 static void
 globus_l_callout_symbol_table_element_free(
-    void *                              key,
-    void *                              data);
+    void *                              element);
 
 static globus_result_t
 globus_l_callout_data_free(
@@ -181,7 +179,7 @@ globus_callout_handle_init(
                                    globus_hashtable_string_hash,
                                    globus_hashtable_string_keyeq)) < 0)
     {
-        globus_hashtable_destroy(&((*handle)->library_htable));
+        globus_hashtable_destroy(&((*handle)->symbol_htable));
         free(*handle);
         GLOBUS_CALLOUT_ERROR_RESULT(
             result,
@@ -579,15 +577,17 @@ globus_l_callout_data_free(
 
 static void
 globus_l_callout_symbol_table_element_free(
-    void *                              key,
-    void *                              data)
+    void *                              element)
 {
+    globus_hashtable_entry_t *          entry;
     static char *                       _function_name_ =
         "globus_l_callout_symbol_table_element_free";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
-    globus_l_callout_data_free(data);
-    free(key);
+    entry = element;
+    
+    globus_l_callout_data_free(entry->datum);
+    free(entry->key);
     
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
     return;
@@ -596,16 +596,18 @@ globus_l_callout_symbol_table_element_free(
 
 static void
 globus_l_callout_library_table_element_free(
-    void *                              key,
-    void *                              data)
+    void *                              element)
 {
+    globus_hashtable_entry_t *          entry;
     lt_dlhandle *                       dlhandle;
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_l_callout_library_table_element_free";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
-    dlhandle = data;
+    entry = element;
+    
+    dlhandle = entry->datum;
 
     if(dlhandle != NULL)
     { 
@@ -616,7 +618,7 @@ globus_l_callout_library_table_element_free(
                 GLOBUS_CALLOUT_ERROR_RESULT(
                     result,
                     GLOBUS_CALLOUT_ERROR_WITH_DL,
-                    ("failed to close library: %s", key));
+                    ("failed to close library: %s", entry->key));
             }
         }
 
