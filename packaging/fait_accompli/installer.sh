@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=3.9.4
+VERSION=3.9.5
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autotools/autoconf-2.59/config
 GPT=gpt-3.2autotools2004-src.tar.gz
@@ -33,4 +33,13 @@ tar -C $INSTALLER -xzf fait_accompli/$GPT
 # Symlink over the bootstrapped CVS dirs.
 # Must use -h in tar command to dereference them
 mkdir $INSTALLER/source-trees
-cp -Rpds `pwd`/source-trees/gt2-cvs/* `pwd`/source-trees/wsrf-cvs/* $INSTALLER/source-trees
+for f in `pwd`/source-trees/gt2-cvs/*; do
+   g=$INSTALLER/source-trees/`basename $f`
+   mkdir $g;
+   lndir -silent $f $g;
+done
+for f in `pwd`/source-trees/wsrf-cvs/*; do
+   g=$INSTALLER/source-trees/`basename $f`
+   mkdir $g;
+   lndir -silent $f $g;
+done
