@@ -138,3 +138,202 @@ ERR_user_lib_gsserr_num()
 {
 	return ERR_user_lib_gsserr_number;
 }
+
+/**********************************************************************
+Function: convert_minor_codes()
+
+Description:
+    converts error codes created in various libraries into gss minor codes
+    currently it is only implemented to convert SSL minor codes from
+    sslutils.h
+
+Parameters:
+    lib -  The number of the error library that
+    the error code was defined under it can be obtained using
+    ERR_GET_LIB(ERR_peek_error()) or passed a constant if the library 
+    the error is under is known.
+
+    reason - The number of the error reason, it can be obtained using
+    ERR_GET_REASON(ERR_peek_error())
+
+Returns:
+    an unsigned long suitable for use as a GSS minor code
+**********************************************************************/
+
+
+OM_uint32
+convert_minor_codes(const int lib, const int reason)
+{
+    unsigned long retval = 0;
+
+#ifdef DEBUG
+    fprintf(stderr,"lib: %i, reason: %i, ssl_lib: %i\n",
+            lib,reason,ERR_user_lib_prxyerr_num());
+#endif
+
+    if (lib == ERR_user_lib_prxyerr_num()) 
+    {
+        switch (reason)
+        {
+            case PRXYERR_R_USER_CERT_EXPIRED:            
+                 retval =  GSSERR_PRXY_R_USER_CERT_EXPIRED;
+            break;
+            case PRXYERR_R_SERVER_CERT_EXPIRED:            
+                 retval =  GSSERR_PRXY_R_SERVER_CERT_EXPIRED;
+            break;
+            case PRXYERR_R_NO_PROXY:
+                 retval = GSSERR_PRXY_R_NO_PROXY;
+            break;
+            case PRXYERR_R_PROXY_EXPIRED:
+                 retval = GSSERR_PRXY_R_PROXY_EXPIRED;
+            break;
+            case PRXYERR_R_BAD_PROXY_ISSUER:
+                 retval = GSSERR_PRXY_R_BAD_PROXY_ISSUER;
+            break;
+            case PRXYERR_R_LPROXY_MISSED_USED:
+                 retval = GSSERR_PRXY_R_LPROXY_MISSED_USED;
+            break;
+            case PRXYERR_R_CRL_SIGNATURE_FAILURE:
+                 retval = GSSERR_PRXY_R_CRL_SIGNATURE_FAILURE;
+            break;
+            case PRXYERR_R_CRL_NEXT_UPDATE_FIELD:
+                 retval = GSSERR_PRXY_R_CRL_NEXT_UPDATE_FIELD;
+            break;
+            case PRXYERR_R_CRL_HAS_EXPIRED:
+                 retval = GSSERR_PRXY_R_CRL_HAS_EXPIRED;
+            break;
+            case PRXYERR_R_CERT_REVOKED:
+                 retval = GSSERR_PRXY_R_CERT_REVOKED;
+            break;
+            case PRXYERR_R_CA_NOPATH:
+                 retval = GSSERR_PRXY_R_CA_NOPATH;
+            break;
+            case PRXYERR_R_CA_NOFILE:
+                 retval = GSSERR_PRXY_R_CA_NOFILE;
+            break;
+            case PRXYERR_R_CA_POLICY_RETRIEVE:
+                 retval = GSSERR_PRXY_R_CA_POLICY_RETRIEVE;
+            break;
+            case PRXYERR_R_CA_POLICY_PARSE:
+                 retval = GSSERR_PRXY_R_CA_POLICY_PARSE;
+            break;
+            case PRXYERR_R_CA_POLICY_ERR:
+                 retval = GSSERR_PRXY_R_CA_POLICY_ERR;
+            break;
+            case PRXYERR_R_CA_POLICY_VIOLATION:
+                 retval = GSSERR_PRXY_R_CA_POLICY_VIOLATION;
+            break;
+            case PRXYERR_R_CA_UNKNOWN:
+                 retval = GSSERR_PRXY_R_CA_UNKNOWN;
+            break;
+            case PRXYERR_R_CB_CALLED_WITH_ERROR:
+                 retval = GSSERR_PRXY_R_CB_CALLED_WITH_ERROR;
+            break;
+
+            case PRXYERR_R_PROCESS_PROXY_KEY:
+                 retval = GSSERR_PRXY_R_PROCESS_PROXY_KEY;
+            break;
+            case PRXYERR_R_PROCESS_REQ:
+                 retval = GSSERR_PRXY_R_PROCESS_REQ;
+            break;
+            case PRXYERR_R_PROCESS_SIGN:
+                retval = GSSERR_PRXY_R_PROCESS_SIGN;
+            break; 
+            case PRXYERR_R_MALFORM_REQ:
+                 retval = GSSERR_PRXY_R_MALFORM_REQ;
+            break;
+            case PRXYERR_R_SIG_VERIFY:
+                 retval = GSSERR_PRXY_R_SIG_VERIFY;
+            break;
+            case PRXYERR_R_SIG_BAD:
+                 retval = GSSERR_PRXY_R_SIG_BAD;
+            break;
+            case PRXYERR_R_PROCESS_PROXY:
+                 retval = GSSERR_PRXY_R_PROCESS_PROXY;
+            break;
+            case PRXYERR_R_PROXY_NAME_BAD:
+                 retval = GSSERR_PRXY_R_PROXY_NAME_BAD;
+            break;
+            case PRXYERR_R_PROCESS_SIGNC:
+                 retval = GSSERR_PRXY_R_PROCESS_SIGNC;
+            break;
+            case PRXYERR_R_PROBLEM_PROXY_FILE:
+                 retval = GSSERR_PRXY_R_PROBLEM_PROXY_FILE;
+            break;
+            case PRXYERR_R_SIGN_NOT_CA:
+                 retval = GSSERR_PRXY_R_SIGN_NOT_CA;
+            break;
+            case PRXYERR_R_PROCESS_KEY:
+                 retval = GSSERR_PRXY_R_PROCESS_KEY;
+            break;
+            case PRXYERR_R_PROCESS_CERT:
+                 retval = GSSERR_PRXY_R_PROCESS_CERT;
+            break;
+            case PRXYERR_R_PROCESS_CERTS:
+                 retval = GSSERR_PRXY_R_PROCESS_CERTS;
+            break;
+            case PRXYERR_R_NO_TRUSTED_CERTS:
+                 retval = GSSERR_PRXY_R_NO_TRUSTED_CERTS;
+            break;
+            case PRXYERR_R_PROBLEM_KEY_FILE:
+                 retval = GSSERR_PRXY_R_PROBLEM_KEY_FILE;
+            break;
+            case PRXYERR_R_PROBLEM_NOCERT_FILE:
+                 retval = GSSERR_PRXY_R_PROBLEM_NOCERT_FILE;
+            break;
+            case PRXYERR_R_PROBLEM_NOKEY_FILE:
+                 retval = GSSERR_PRXY_R_PROBLEM_NOKEY_FILE;
+            break;
+            case PRXYERR_R_ZERO_LENGTH_KEY_FILE:
+                 retval = GSSERR_PRXY_R_ZERO_LENGTH_KEY_FILE;
+            break;
+            case PRXYERR_R_ZERO_LENGTH_CERT_FILE:
+                 retval = GSSERR_PRXY_R_ZERO_LENGTH_CERT_FILE;
+            break;
+            case PRXYERR_R_NO_HOME:
+                 retval = GSSERR_PRXY_R_NO_HOME;
+            break;
+            case PRXYERR_R_LPROXY_REJECTED:
+                 retval = GSSERR_PRXY_R_LPROXY_REJECTED;
+            break;
+            case PRXYERR_R_KEY_CERT_MISMATCH:
+                 retval = GSSERR_PRXY_R_KEY_CERT_MISMATCH;
+            break;
+            case PRXYERR_R_WRONG_PASSPHRASE:
+                 retval = GSSERR_PRXY_R_WRONG_PASSPHRASE;
+            break;
+            case PRXYERR_R_PROBLEM_CLIENT_CA:
+                 retval = GSSERR_PRXY_R_PROBLEM_CLIENT_CA;
+            break;
+            case PRXYERR_R_CB_NO_PW:
+                 retval = GSSERR_PRXY_R_CB_NO_PW;
+            break;
+            case PRXYERR_R_CLASS_ADD_OID:
+                 retval = GSSERR_PRXY_R_CLASS_ADD_OID;
+            break;
+            case PRXYERR_R_CLASS_ADD_EXT:
+                 retval = GSSERR_PRXY_R_CLASS_ADD_EXT;
+            break;
+            case PRXYERR_R_DELEGATE_VERIFY:
+                 retval = GSSERR_PRXY_R_DELEGATE_VERIFY;
+            break;
+            case PRXYERR_R_EXT_ADD:
+                 retval = GSSERR_PRXY_R_EXT_ADD;
+            break;
+            case PRXYERR_R_DELEGATE_COPY:
+                 retval = GSSERR_PRXY_R_DELEGATE_COPY;
+            break;
+            case PRXYERR_R_DELEGATE_CREATE:
+                 retval = GSSERR_PRXY_R_DELEGATE_CREATE;
+            break;
+            case PRXYERR_R_BUFFER_TOO_SMALL:
+                 retval = GSSERR_PRXY_R_BUFFER_TOO_SMALL;
+            break;
+        }
+    }
+    else if (lib ==  ERR_user_lib_gsserr_number)
+             retval = (unsigned long) reason;
+    else if (reason == ERR_R_MALLOC_FAILURE)
+             retval = (unsigned long) GSSERR_PRXY_R_MALLOC_FAILURE;
+            return retval;
+}
