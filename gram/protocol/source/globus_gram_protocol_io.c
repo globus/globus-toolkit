@@ -3,6 +3,26 @@
 #include <string.h>
 
 #ifndef DOXYGEN
+
+static int
+globus_l_gram_protocol_setup_accept_attr(
+    globus_io_attr_t *                          attr,
+    globus_i_gram_protocol_connection_t *       connection);
+
+static int
+globus_l_gram_protocol_setup_connect_attr(
+    globus_io_attr_t *                     attr,
+    char *                                 identity);
+
+static
+globus_bool_t
+globus_l_gram_protocol_authorization_callback(
+	void *				arg,
+	globus_io_handle_t *		handle,
+	globus_result_t			result,
+	char *				identity,
+	gss_ctx_id_t 			context_handle);
+
 static
 void
 globus_l_gram_protocol_listen_callback(
@@ -607,6 +627,71 @@ globus_gram_protocol_accept_delegation(
 }
 /* globus_gram_protocol_accept_delegation() */
 
+/**
+ * Extract the GSS Context from a GRAM Connection
+ * @ingroup globus_gram_protocol_io
+ *
+ * Extract the GSS Context from a existing, connected handle
+ *
+ * This function should only be called after the GRAM protocol connection has
+ * been established.
+ *
+ * @param handle
+ *        The GRAM Protocol handle created when a connection arrives on
+ *        a listener created by globus_gram_protocol_allow_attach(). 
+ * @param context
+ *        The GSS Context associated with the connection.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The reply was successfully framed and is being sent.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST
+ *         The GRAM Protocol module was not properly activated.
+ *
+ */
+int
+globus_gram_protocol_get_sec_context(
+    globus_gram_protocol_handle_t       handle,
+    gss_ctx_id_t *                      context)
+{
+    globus_i_gram_protocol_connection_t *
+    					connection;
+    globus_list_t *			list;
+    int					rc;
+
+    list = globus_i_gram_protocol_connections;
+    while(list != GLOBUS_NULL)
+    {
+        connection = globus_list_first(list);
+	if(connection->handle == handle)
+	{
+	    break;
+	}
+	list = globus_list_rest(list);
+    }
+
+    if(list == GLOBUS_NULL)
+    {
+	/* No match */
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
+	goto error_exit;
+    }
+
+    *context = connection->context;
+
+    if(*context == GSS_C_NO_CONTEXT)
+    {
+	/* No context */
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
+	goto error_exit;        
+    }
+
+    return GLOBUS_SUCCESS;
+    
+ error_exit:
+    return rc;
+}
+/* globus_gram_protocol_get_sec_context() */
+  
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * Listen callback.
@@ -637,7 +722,8 @@ globus_l_gram_protocol_listen_callback(
     globus_i_gram_protocol_connection_t *
     					connection;
     globus_list_t *			node;
-
+    globus_io_attr_t                    accept_attrs;
+    
     listener = callback_arg;
 
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
@@ -670,15 +756,28 @@ globus_l_gram_protocol_listen_callback(
     globus_list_insert(&globus_i_gram_protocol_connections, connection);
     listener->connection_count++;
 
+    result = globus_io_tcp_get_attr(listener->handle,
+                                    &accept_attrs);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto free_io_handle_exit;
+    }    
+
+    if(globus_l_gram_protocol_setup_accept_attr(&accept_attrs, connection))
+    {
+        goto free_attrs_exit;
+    }
+    
     result = globus_io_tcp_register_accept(
                     listener->handle,
-		    GLOBUS_NULL,
+		    &accept_attrs,
 		    connection->io_handle,
 		    globus_l_gram_protocol_accept_callback,
 		    connection);
     if(result != GLOBUS_SUCCESS)
     {
-        goto free_io_handle_exit;
+        goto free_attrs_exit;
     }
     /* If this fails, not much we can do. Disallow attach will
      * be called eventually to clean this listener up.
@@ -690,6 +789,9 @@ globus_l_gram_protocol_listen_callback(
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
     return;
 
+  free_attrs_exit:
+    globus_io_tcpattr_destroy(&accept_attrs);
+    
   free_io_handle_exit:
     listener->connection_count--;
     node = globus_list_search(globus_i_gram_protocol_connections, connection);
@@ -1910,9 +2012,11 @@ globus_l_gram_protocol_post(
     globus_size_t			framedsize;
     globus_result_t			res;
     globus_url_t			parsed_url;
-    globus_io_attr_t *			attr_to_use;
+    globus_io_attr_t 			local_attr;
     globus_list_t *			node;
-
+    char *                              local_url = NULL;
+    char *                              subject = NULL;
+    
     rc = globus_url_parse(url, &parsed_url);
 
     if(rc != GLOBUS_SUCCESS)
@@ -1920,15 +2024,24 @@ globus_l_gram_protocol_post(
         return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT;
     }
 
-    if(attr)
+
+    if(parsed_url.url_path &&
+       (subject = strrchr(parsed_url.url_path,':')))
     {
-	attr_to_use = attr;
+        local_url = strdup(url);
+
+        if(!local_url)
+        {
+            goto error_exit;
+        }
+
+        subject = strrchr(local_url,':');
+
+        *subject = '\0';
+        subject++;
     }
-    else
-    {
-	attr_to_use = &globus_i_gram_protocol_default_attr;
-    }
-    rc = globus_gram_protocol_frame_request(url,
+
+    rc = globus_gram_protocol_frame_request(local_url ? local_url : url,
 					    message,
 					    message_size,
 					    &framed,
@@ -1985,15 +2098,32 @@ globus_l_gram_protocol_post(
     globus_i_gram_protocol_num_connects++;
     globus_list_insert(&globus_i_gram_protocol_connections,
 		       connection);
-    
-    res = globus_io_tcp_register_connect(
-           parsed_url.host,
-	   parsed_url.port,
-	   attr_to_use,
-	   globus_l_gram_protocol_connect_callback,
-	   connection,
-	   connection->io_handle);
-    
+
+    if(!attr && subject)
+    {   
+	globus_l_gram_protocol_setup_connect_attr(&local_attr, subject);
+
+        res = globus_io_tcp_register_connect(
+            parsed_url.host,
+            parsed_url.port,
+            &local_attr,
+            globus_l_gram_protocol_connect_callback,
+            connection,
+            connection->io_handle);
+
+        globus_io_tcpattr_destroy(&local_attr);
+    }
+    else
+    {
+        res = globus_io_tcp_register_connect(
+            parsed_url.host,
+            parsed_url.port,
+            attr ? attr : &globus_i_gram_protocol_default_attr,
+            globus_l_gram_protocol_connect_callback,
+            connection,
+            connection->io_handle);
+    }
+
     if(res != GLOBUS_SUCCESS)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
@@ -2024,6 +2154,12 @@ globus_l_gram_protocol_post(
     {
         *handle = 0;
     }
+
+    if(local_url)
+    {
+        free(local_url);
+    }
+
     globus_url_destroy(&parsed_url);
 
     return rc;
@@ -2384,4 +2520,93 @@ globus_l_gram_protocol_init_delegation(
 }
 /* globus_l_gram_protocol_init_delegation() */
 
+
+static
+globus_bool_t
+globus_l_gram_protocol_authorization_callback(
+	void *				arg,
+	globus_io_handle_t *		handle,
+	globus_result_t			result,
+	char *				identity,
+	gss_ctx_id_t 			context_handle)
+{
+    globus_i_gram_protocol_connection_t *
+    					connection;
+    
+    connection = (globus_i_gram_protocol_connection_t *) arg;
+
+    connection->context = context_handle;
+    
+    return GLOBUS_TRUE;
+}
+
+static int
+globus_l_gram_protocol_setup_accept_attr(
+    globus_io_attr_t *                          attr,
+    globus_i_gram_protocol_connection_t *       connection)
+{
+    globus_result_t                        res;
+    globus_io_secure_authorization_data_t  auth_data;
+
+    /* acquire mutex */
+    if ((res = globus_io_secure_authorization_data_initialize(&auth_data))
+        || (res = globus_io_secure_authorization_data_set_callback(
+                &auth_data,
+                globus_l_gram_protocol_authorization_callback,
+                (void *) connection))
+        || (res = globus_io_attr_set_secure_authorization_mode(
+                attr,
+                GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
+                &auth_data)))
+    {
+	globus_object_t *  err = globus_error_get(res);
+	globus_object_free(err);
+	/* release mutex */
+	return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+    }
+
+    /* release mutex */
+    return GLOBUS_SUCCESS;
+}
+
+static int
+globus_l_gram_protocol_setup_connect_attr(
+    globus_io_attr_t *                     attr,
+    char *                                 identity)
+{
+    globus_result_t                        res;
+    globus_io_secure_authorization_data_t  auth_data;
+
+    /* acquire mutex */
+    if ( (res = globus_io_tcpattr_init(attr))
+	 || (res = globus_io_secure_authorization_data_initialize(
+	                &auth_data))
+	 || (res = globus_io_secure_authorization_data_set_identity(
+	                &auth_data,
+                        identity))
+	 || (res = globus_io_attr_set_secure_authentication_mode(
+	                attr,
+			GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
+			globus_i_gram_protocol_credential))
+	 || (res = globus_io_attr_set_secure_authorization_mode(
+	                attr,
+			GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
+			&auth_data))
+	 || (res = globus_io_attr_set_secure_channel_mode(
+	                attr,
+			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
+    {
+	globus_object_t *  err = globus_error_get(res);
+	globus_object_free(err);
+	/* release mutex */
+	return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+    }
+
+    /* release mutex */
+    return GLOBUS_SUCCESS;
+}
+
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
+

@@ -178,6 +178,10 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 159 */     "an invalid globus_io_clientattr_t was used.",
 /* 160 */     "an null parameter was passed to the gram library",
 /* 161 */     "the job manager is still streaming output"
+/* 162 */     "the authorization system denied the request",
+/* 163 */     "the authorization system reported a failure",
+/* 164 */     "the authorization system denied the request - invalid job id",
+/* 165 */     "the authorization system denied the request - not authorized to run the specified executable"
 };
 
 static char *
