@@ -34,6 +34,26 @@
  *  
  */
 
+#define GlobusIXIOServerDec(free, s)                                    \
+{                                                                       \
+    globus_i_xio_server_t *                         _s;                 \
+                                                                        \
+    _s = (s);                                                           \
+    _s->ref--;                                                          \
+    if(_s->ref == 0)                                                    \
+    {                                                                   \
+        /* if the handle ref gets down to zero we must be in one        \
+         * of the followninf staes.  The statement is that the handle   \
+         * only goes away when it is closed or a open fails             \
+         */                                                             \
+        globus_assert(_s->state == GLOBUS_XIO_SERVER_STATE_CLOSED);     \
+        free = GLOBUS_TRUE;                                             \
+    }                                                                   \
+    else                                                                \
+    {                                                                   \
+        free = GLOBUS_FALSE;                                            \
+    }                                                                   \
+}
 /**************************************************************************
  *                       Internal functions
  *                       ------------------
@@ -65,6 +85,7 @@ globus_l_xio_server_accept_kickout(
     globus_i_xio_op_t *                         xio_op)
 {
     globus_i_xio_target_t                       xio_target = NULL;
+    globus_bool_t                               destroy_server = GLOBUS_FALSE;
 
     /* create the structure if successful, otherwise the target is null */
     if(xio_op->cached_res == GLOBUS_SUCCESS)
@@ -123,13 +144,16 @@ globus_l_xio_server_accept_kickout(
             globus_free(xio_op);
             if(xio_server->ref == 0)
             {
-                globus_assert(
-                    xio_server->state == GLOBUS_XIO_SERVER_STATE_CLOSED);
-                globus_free(xio_server);
+                GlobusIXIOServerDec(destroy_server, xio_server);
             }
         }
     }
     globus_mutex_unlock(&xio_server->mutex);
+
+    if(destroy_server)
+    {
+        globus_free(xio_server);
+    }
 }
 
 /*
@@ -154,10 +178,10 @@ globus_i_xio_server_accept_callback(
            get a cancel callback.  we must delay the delivery of this
            callback until that returns */
         xio_op->cached_res = result;
+        xio_op->state = GLOBUS_XIO_OP_STATE_FINISH_WAITING;
         if(xio_op->state == GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING)
         {
             accept = GLOBUS_FALSE;
-            xio_op->state = GLOBUS_XIO_OP_STATE_ACCEPT_WAITING;
         }
         else
         {
@@ -196,6 +220,7 @@ globus_l_xio_accept_timeout_callback(
     globus_bool_t                               rc;
     globus_bool_t                               accept;
     globus_bool_t                               timeout = GLOBUS_FALSE;
+    globus_bool_t                               destroy_server = GLOBUS_FALSE;
 
     xio_op = (globus_i_xio_op_t *) user_arg;
     xio_server = xio_op->xio_server;
@@ -210,6 +235,7 @@ globus_l_xio_accept_timeout_callback(
              * pass fails and we are unable to cancel the timeout callback
              */
             case GLOBUS_XIO_OP_STATE_FINISHED:
+            case GLOBUS_XIO_OP_STATE_FINISH_WAITING:
 
                 /* decerement the reference for the timeout callback */
                 xio_op->ref--;
@@ -219,10 +245,7 @@ globus_l_xio_accept_timeout_callback(
                     xio_server->ref--;
                     if(xio_server->ref == 0)
                     {
-                        /* if reference count is 0 we must be in CLOSED state */
-                        globus_assert(
-                          xio_server->state == GLOBUS_XIO_SERVER_STATE_CLOSED);
-                        globus_free(xio_server);
+                        GlobusIXIOServerDec(destroy_server, xio_server);
                     }
                 }
 
@@ -263,6 +286,10 @@ globus_l_xio_accept_timeout_callback(
     /* all non time out casses can just return */
     else
     {
+        if(destroy_server)
+        {
+            globus_free(xio_server);
+        }
         return rc;
     }
 
@@ -307,7 +334,22 @@ globus_l_xio_accept_timeout_callback(
     /* if the accpet was pending we must call it */
     if(accept)
     {
-        globus_l_xio_server_accept_kickout(xio_op);
+        if(xio_op->space != GLOBUS_CALLBACK_GLOBAL_SPACE ||
+           xio_op->in_register)
+        {
+            /* register a oneshot callback */
+            globus_callback_space_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_xio_server_accept_kickout,
+                (void *)xio_op,
+                xio_op->space);
+        }
+        /* in all other cases we can just call callback */
+        else
+        {
+            globus_l_xio_server_accept_kickout((void *)xio_op);
+        }
     }
 
     return rc;
@@ -670,6 +712,7 @@ globus_xio_server_destroy(
     globus_i_xio_server_t *                     xio_server;
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_result_t                             tmp_res;
+    globus_bool_t                               destroy_server = GLOBUS_FALSE;
 
     if(server == NULL)
     {
@@ -703,12 +746,16 @@ globus_xio_server_destroy(
             xio_server->ref--;
             if(xio_server->ref == 0)
             {
-                globus_free(xio_server);
+                GlobusIXIOServerDec(destroy_server, xio_server);
             }
         }
     }
     globus_mutex_unlock(&xio_server->mutex);
 
+    if(destroy_server)
+    {
+        globus_free(xio_server);
+    }
     return res;
 }
 
