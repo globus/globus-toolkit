@@ -91,7 +91,7 @@ grami_paradyn_rewrite_params(gram_request_param_t * params)
      *  Set the argument parameter
      */
 
-    sprintf(tmp_string,"-p %s -m %s -l0 -v1 -z%s -runme %s %s"
+    sprintf(tmp_string,"-p%s -m%s -l0 -v1 -z%s -runme %s %s"
                       ,paradyn_port
                       ,paradyn_host
                       ,paradynd_type
