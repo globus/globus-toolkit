@@ -312,10 +312,10 @@ gram_job_request(char * gatekeeper_url,
     nexus_user_put_char(&tmp_buffer, callback_url, strlen(callback_url));
     nexus_user_put_startpoint_transfer(&tmp_buffer, &reply_sp, 1);
   
-    if (nexus_split_nexus_url(gatekeeper_url,
-                              &gatekeeper_host,
-                              &gatekeeper_port,
-                              NULL) != 0)
+    if (nexus_split_url(gatekeeper_url,
+                        &gatekeeper_host,
+                        &gatekeeper_port,
+                        NULL) != 0)
     {
         fprintf(stderr, " invalid url.\n");
         return (1);
@@ -643,10 +643,10 @@ gram_callback_disallow(char * callback_contact)
 
     printf("in gram_callback_disallow()\n");
 
-    if (nexus_split_nexus_url(callback_contact,
-                              &host,
-                              &port,
-                              NULL) != 0)
+    if (nexus_split_url(callback_contact,
+                        &host,
+                        &port,
+                        NULL) != 0)
     {
         printf(" invalid url.\n");
         return (1);
