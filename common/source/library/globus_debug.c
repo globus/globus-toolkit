@@ -142,13 +142,11 @@ globus_debug_init(
             {
                 if(*filename == '#')
                 {
-                    *out_file = fopen(filename + 1, "w");
-                }
-                else
-                {
-                    *out_file = fopen(filename, "a");
+                    filename += 1;
+                    truncate(filename, 0);
                 }
                 
+                *out_file = fopen(filename, "a");
                 if(*out_file)
                 {
                     *using_file = GLOBUS_TRUE;
