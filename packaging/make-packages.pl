@@ -1092,24 +1092,14 @@ sub package_source_gpt()
 
 	print "Following GPT packaging for $package.\n";
 
-	if ( $package eq "globus_openssl" ) 
+	if ( -e 'Makefile' )
 	{
-	    print "\tUsing openssl_tools version of autotools.\n";
-	    my $OPATH = $ENV{PATH};
-	    $ENV{PATH} = cvs_subdir('autotools') . "/autotools/openssl_tools/bin" . ":$OPATH";
-	    log_system("./bootstrap", "$pkglog/$package");
-	    paranoia("$package bootstrap failed.");
-	    $ENV{PATH} = $OPATH;
-	} else {
-	    if ( -e 'Makefile' )
-	    {
-		log_system("make distclean", "$pkglog/$package");
-		paranoia("make distclean failed for $package");
-	    }
-
-	    log_system("./bootstrap", "$pkglog/$package");
-	    paranoia("$package bootstrap failed.");
+	   log_system("make distclean", "$pkglog/$package");
+	   paranoia("make distclean failed for $package");
 	}
+
+	log_system("./bootstrap", "$pkglog/$package");
+	paranoia("$package bootstrap failed.");
 
 	#TODO: make function out of "NB" part of PNB, call it here.
 	if ( $package eq "globus_gridftp_server" or $package eq "gsincftp") 
