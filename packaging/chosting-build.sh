@@ -69,12 +69,11 @@ fi
 
 CVSCHECK=`echo $CVSROOT | sed -e "s|.*\(:\).*|\1|"`
 if test -z "$CVSCHECK"; then
-	CVSBASE=""
+        CVSBASE=:pserver:anonymous@cvs.globus.org
 else
 	CVSBASE=`echo $CVSROOT | sed -e "s|\(.*\):.*|\1|"`
 fi
 
-CVSBASE=:pserver:anonymous@cvs.globus.org
 GT2CVS=$CVSBASE:/home/globdev/CVS/globus-packages
 GT3CVS=$CVSBASE:/home/globdev/CVS/gridservices
 
