@@ -4,6 +4,7 @@
              xmlns:tns="http://www.globus.org/namespaces/base/streaming"
              xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
              xmlns:ogsi="http://www.gridforum.org/namespaces/2003/03/OGSI"
+             xmlns:gsi="http://ogsa.globus.org/security/authentication"
              xmlns:sd="http://www.gridforum.org/namespaces/2003/03/serviceData"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
              xmlns="http://schemas.xmlsoap.org/wsdl/">
@@ -11,29 +12,27 @@
 <import location="../../ogsi/ogsi.gwsdl"
         namespace="http://www.gridforum.org/namespaces/2003/03/OGSI"/>
 
+<!--
+<import location="../../security/authentication/gss_secure_conversation_port_type.gwsdl"
+        namespace="http://ogsa.globus.org/security/authentication"/>
+
+<gwsdl:portType name="FileStreamFactoryPortType"
+                extends="ogsi:Factory gsi:SecureContextEstablishmentPortType">
+-->
 <gwsdl:portType name="FileStreamFactoryPortType" extends="ogsi:Factory">
 
-    <sd:serviceData name="fileStreamHandles"
-                    type="ogsi:HandleType"
-                    minOccurs="0"
-                    maxOccurs="unbounded"
-                    mutability="mutable"
+    <sd:serviceData name="sourcePath"
+                    type="xsd:string"
+                    minOccurs="1"
+                    maxOccurs="1"
+                    mutability="static"
                     modifiable="false"
-                    nillable="true">
+                    nillable="false">
         <documentation>
-            A list of this factory's instance handles.
+            the local file path from which the stream begins
         </documentation>
     </sd:serviceData>
 
-    <!--
-    <sd:serviceData name="destinationURLs"
-                    type="xsd:string"
-                    minOccurs="0"
-                    maxOccurs="unbounded"
-                    mutability="mutable">
-    </sd:serviceData>
-    -->
-
-</portType>
+</gwsdl:portType>
 
 </definitions>

@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.rmi.RemoteException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Vector;
 
 import javax.xml.namespace.QName;
 
@@ -25,14 +27,13 @@ import org.globus.io.streams.HTTPOutputStream;
 import org.globus.ogsa.base.streaming.FileStreamAttributes;
 import org.globus.ogsa.base.streaming.FileStreamFactoryAttributes;
 import org.globus.ogsa.base.streaming.FileStreamPortType;
-import org.globus.ogsa.base.streaming.DestinationURLElement;
 import org.globus.ogsa.GridConstants;
 import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
-import org.globus.ogsa.impl.core.notification.NotificationSourceDelegationSkeleton;
-import org.globus.ogsa.impl.core.notification.SecureNotificationServiceSkeleton;
+import org.globus.ogsa.impl.ogsi.GridServiceImpl;
+import org.globus.ogsa.impl.security.authentication.SecureServicePropertiesHelper;
+import org.globus.ogsa.impl.security.authentication.SecurityManager;
 import org.globus.ogsa.impl.security.authentication.Constants;
-import org.globus.ogsa.impl.security.authentication.SecContext;
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.repository.ServiceNode;
 import org.globus.ogsa.ServiceData;
@@ -40,17 +41,16 @@ import org.globus.util.GlobusURL;
 
 import org.ietf.jgss.GSSCredential;
 
-public class FileStreamImpl extends SecureNotificationServiceSkeleton
-    implements FileStreamPortType {
+public class FileStreamImpl extends GridServiceImpl {
     
     static Log logger = LogFactory.getLog (FileStreamImpl.class.getName());
 
-    private static final String DEST_URL_SDE_NAME = "destinationURL";
+    private static final String DEST_URL_SDE_NAME = "destinationUrl";
     protected Tail outputFollower;
     protected boolean appendStdout = true;
-    protected GSSCredential this.proxy = null;
-    private String localPath;
-    private String destinationURL;
+    protected GSSCredential proxy = null;
+    private String sourcePath;
+    private String destinationUrl;
     private int offset;
     private OutputStream outputStream;
     private Vector fileStreamStateListeners = new Vector();
@@ -59,52 +59,31 @@ public class FileStreamImpl extends SecureNotificationServiceSkeleton
                           FileStreamAttributes streamAttributes) {
         super("FileStreamImpl");
 
-        //Equivalent of SecureRPCURIProvider.setExcludedMethods(this, "");
+        //equivalent of SecureRPCURIProvider.setExcludedMethods(this, "");
 
         String name = "FileStream";
-        String id = String.valueOf (hashCode ());
+        String id = String.valueOf(hashCode());
         if(id != null) {
             name = name + "(" + id + ")";
         }
 
         setProperty (ServiceProperties.NAME, name);
 
-        this.localPath = factoryAttributes.getPath();
+        this.sourcePath = factoryAttributes.getSourcePath();
         this.offset = streamAttributes.getOffset();
-        this.destinationURL = streamAttributes.getDestinationURL();
+        this.destinationUrl = streamAttributes.getDestinationUrl();
     }
 
-    private void addDestinationURLServiceData() throws GridServiceException {
-       // ServiceDataContainer serviceDataContainer = getServiceDataContainer();
-        ServiceData destinationURLServiceData =
+    private void addDestinationUrlServiceData() throws GridServiceException {
+        ServiceData destinationUrlServiceData =
             this.serviceData.create(DEST_URL_SDE_NAME);
-        DestinationURLElement destURLElement = new DestinationURLElement();
-        destURLElement.setDestinationURL(this.destinationURL);
-        destinationURLServiceData.setValue(destURLElement);
-        this.serviceData.add(destinationURLServiceData);
+        destinationUrlServiceData.setValue(this.destinationUrl);
+        this.serviceData.add(destinationUrlServiceData);
     }
     
     public void postCreate(GridContext context) throws GridServiceException {
-        super.postCreate(context);
-        MessageContext ctx = (MessageContext)context.getMessageContext();
-        GSSCredential credential
-            = (GSSCredential)ctx.getProperty(GSIConstants.GSI_CREDENTIALS);
-        if (credential == null) {
-            throw new GridServiceException("No credentials");
-        }
-        setServiceCredential(credential);
-        setServiceOwner(credential);
-
-        setNotifyProps(credential, ctx.getProperty(Constants.MSG_SEC_TYPE));
-    }
-
-    private void setNotifyProps(GSSCredential credential, Object msgProt) {
-        this.notifyProps = new HashMap();
-        this.notifyProps.put (GSIConstants.GSI_MODE,
-                              GSIConstants.GSI_MODE_NO_DELEG);
-        this.notifyProps.put(Constants.MSG_SEC_TYPE,msgProt);
-        this.notifyProps.put(GSIConstants.GSI_AUTHORIZATION, SelfAuthorization.getInstance());
-        this.notifyProps.put(GSIConstants.GSI_CREDENTIALS,credential);
+        SecurityManager manager = SecurityManager.getManager();
+        manager.setServiceOwnerFromContext(this, context);
     }
     
     protected OutputStream openUrl(String file) throws RemoteException {
@@ -166,11 +145,13 @@ public class FileStreamImpl extends SecureNotificationServiceSkeleton
         }
     }
 
-    public void addFileStreamStateListener(FileStreamListener listener) {
+    public void addFileStreamStateListener(
+            FileStreamStateListener                 listener) {
         this.fileStreamStateListeners.add(listener);
     }
 
-    public void removeFileStreamStateListener(FileStreamListener listener) {
+    public void removeFileStreamStateListener(
+            FileStreamStateListener                 listener) {
         this.fileStreamStateListeners.remove(listener);
     }
 
@@ -192,11 +173,21 @@ public class FileStreamImpl extends SecureNotificationServiceSkeleton
         }
     }
 
-    private void start(GSSCredential credential)
-            throws RemoteException {
-        File outputFile = new File(localPath);
+    private void assertSecurity() throws RemoteException {
+        MessageContext messageContext = MessageContext.getCurrentContext();
+        if (messageContext.getProperty(Constants.CONTEXT) == null) {
+            throw new RemoteException("service requires secure access");
+        }
+    }
+
+    public void start() throws RemoteException {
+        assertSecurity();
+
+        GSSCredential credential
+            = SecureServicePropertiesHelper.getCredential(this);
+        File outputFile = new File(this.sourcePath);
         this.proxy = credential;
-        outputStream = openUrl(destinationURL);
+        outputStream = openUrl(destinationUrl);
 
         if(this.outputFollower == null) {
             this.outputFollower = new Tail();
@@ -214,34 +205,12 @@ public class FileStreamImpl extends SecureNotificationServiceSkeleton
         fireFileStreamStarted();
     }
 
-    public void start() throws RemoteException {
-        MessageContext ctx = MessageContext.getCurrentContext ();
-        SecContext secContext = (SecContext)ctx.getProperty (
-        org.globus.ogsa.impl.security.authentication.Constants.CONTEXT);
-        if (secContext == null) {
-            throw new RemoteException("Service must be accessed securely.");
-        }
-        GSSCredential cred = this.secContextSkeleton.getCredential();
-        if (cred == null) {
-            // this should never happen since an instance cannot be created
-            // without delegation.
-            throw new RemoteException("Delegation not performed.");
-        }
-
-        start(cred);
-    }
-
     public void stop() throws RemoteException {
-        MessageContext ctx = MessageContext.getCurrentContext ();
-        SecContext secContext = (SecContext)ctx.getProperty (
-        org.globus.ogsa.impl.security.authentication.Constants.CONTEXT);
-        if (secContext == null) {
-            throw new RemoteException("Service must be accessed securely.");
-        }
+        assertSecurity();
 
         logger.debug("stopping stream");
         try {
-            addDestinationURLServiceData();
+            addDestinationUrlServiceData();
             this.outputFollower.stop();
             boolean joined = false;
 

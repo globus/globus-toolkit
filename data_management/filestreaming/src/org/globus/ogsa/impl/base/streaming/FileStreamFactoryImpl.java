@@ -123,264 +123,96 @@ Southern California. All Rights Reserved.
     RESULTING FROM EXERCISE OF THIS LICENSE AGREEMENT OR THE USE OF
     THE SOFTWARE.
 */
-package org.globus.ogsa.impl.base.filestreaming;
+package org.globus.ogsa.impl.base.streaming;
+
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Vector;
+
+import javax.xml.namespace.QName;
+
+import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.rmi.RemoteException;
-
-import javax.xml.namespace.QName;
-
-import org.globus.ogsa.base.filestreaming.DestinationURLElement;
-import org.globus.ogsa.base.filestreaming.FileStreamAttributes;
-import org.globus.ogsa.base.filestreaming.FileStreamFactoryAttributes;
-import org.globus.ogsa.base.filestreaming.FileStreamPortType;
-import org.globus.ogsa.impl.core.factory.SecureFactoryServiceSkeleton;
-import org.globus.ogsa.impl.core.service.ServiceSkeleton;
-import org.globus.ogsa.impl.core.service.QueryHelper;
-import org.globus.ogsa.repository.ServiceNode;
 import org.globus.ogsa.GridServiceException;
+import org.globus.ogsa.base.streaming.FileStreamAttributes;
+import org.globus.ogsa.base.streaming.FileStreamFactoryAttributes;
+import org.globus.ogsa.base.streaming.FileStreamPortType;
+import org.globus.ogsa.impl.ogsi.PersistentGridServiceImpl;
 import org.globus.ogsa.ServiceData;
 import org.globus.ogsa.ServiceDataValueCallback;
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.ServicePropertiesException;
 import org.globus.ogsa.utils.AnyHelper;
-import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
-import org.gridforum.ogsa.CreationType;
-import org.gridforum.ogsa.ExtensibilityType;
-import org.gridforum.ogsa.GridServiceFault;
-import org.gridforum.ogsa.HandleType;
-import org.gridforum.ogsa.ServiceAlreadyExistsFault;
-import org.gridforum.ogsa.ServiceDataType;
-import org.gridforum.ogsa.ServiceHandleElementType;
-import org.gridforum.ogsa.ServiceTerminationReferenceType;
+import org.gridforum.ogsi.ExtensibilityType;
 
-import java.util.Vector;
-
-public class FileStreamFactoryImpl extends SecureFactoryServiceSkeleton
+public class FileStreamFactoryImpl extends PersistentGridServiceImpl
                                    implements ServiceDataValueCallback {
     private static Log logger
         = LogFactory.getLog(FileStreamFactoryImpl.class);
 
     private FileStreamFactoryAttributes fileStreamFactoryAttributes;
-    /*
-    private static final String DEST_URLS_SDE_NAME = "destinationURLs";
-    private ServiceData fileStreamHandles;
-    */
-    private static final String FILE_STREAM_HANDLES_SDE_NAME
-            = "fileStreamHandles";
+    private static String SOURCE_PATH_SD_NAME = "sourcePath";
 
     public FileStreamFactoryImpl() {
         super ("File Stream Factory Service");
 
+        /*
         this.secContextSkeleton.setGrimPolicyHandler(
                 new IgnoreProxyPolicyHandler());
+                */
     }
 
     public FileStreamFactoryImpl(
             FileStreamFactoryAttributes fileStreamFactoryAttributes)
             throws RemoteException {
         super ("File Stream Factory Service");
+
+        /*
         this.secContextSkeleton.setGrimPolicyHandler(
                 new IgnoreProxyPolicyHandler());
+                */
 
-        this.fileStreamFactoryAttributes = fileStreamFactoryAttributes;
-        fileStreamHandles = this.serviceData.create(
-                FILE_STREAM_HANDLES_SDE_NAME);
-        fileStreamHandles.setCallback(this);
-        this.serviceData.add(fileStreamHandles);
-
-        try {
-            String factoryAttributes
-                = this.fileStreamFactoryAttributes.getPath();
-            flush();
-        } catch (ServicePropertiesException spe) {
-            throw new RemoteException("problem storing persistent properties",
-                    spe);
-        }
+        String sourcePath
+            = this.fileStreamFactoryAttributes.getSourcePath();
+        ServiceData sourcePathSd = this.serviceData.create("sourcePath");
+        sourcePathSd.setValue(sourcePath);
+        this.serviceData.add(sourcePathSd);
     }
 
-    private String[] getDestinationURLs() throws GridServiceException,
-                                                 RemoteException {
-
-        ExtensibilityType queryResult
-            = this.findServiceData(
-                QueryHelper.getNameQuery(DEST_URLS_SDE_NAME));
-
-        ServiceDataType serviceDataTypes
-            = (ServiceDataType)AnyHelper.getAny(queryResult);
-
-        Object[] destURLObjects = AnyHelper.getAny(serviceDataTypes);
-        String[] destURLs = new String[destURLObjects.length];
-        for (int i = 0; i < destURLObjects.length; i++) {
-           destURLs[i] = (String) destURLObjects[i];
-        }
-
-        return destURLs;
-    }
-
-    /*
-    private void updateDestinationURLs(String[] destURLs)
+    public Object createServiceObject(ExtensibilityType creationParameters)
             throws GridServiceException {
-
-        ServiceData destinationURLsServiceData =
-            this.serviceData.create(DEST_URLS_SDE_NAME);
-        for (int index=0; index<destURLs.length; index++) {
-            destinationURLsServiceData.addValue(destURLs[index]);
-        }
-        this.serviceData.add(destinationURLsServiceData);
-    }
-    */
-
-    public ServiceTerminationReferenceType createService(CreationType creation)
-            throws RemoteException, ServiceAlreadyExistsFault,
-            GridServiceFault {
-        ServiceTerminationReferenceType retval = super.createService(creation);
-
-        fileStreamHandles.notifyChange();
-
-        return retval;
-    }
-
-    public Object createServiceObject(CreationType creation)
-            throws GridServiceException {
-        ExtensibilityType extension = creation.getServiceParameters();
-        Object obj = AnyHelper.getAny(extension);
+        Object obj = AnyHelper.getAsSingleObject(creationParameters);
         if(!(obj instanceof FileStreamAttributes)) {
             throw new GridServiceException(
                     "Invalid type for ServiceParameters");
         }
-        FileStreamAttributes options = (FileStreamAttributes) obj;
-        FileStreamPortType serviceInstance
-            = new FileStreamImpl(this.fileStreamFactoryAttributes, options);
+        FileStreamAttributes fileStreamAttributes = (FileStreamAttributes) obj;
+        FileStreamImpl fileStream = new FileStreamImpl(
+                this.fileStreamFactoryAttributes,
+                fileStreamAttributes);
 
-        /*
-        String destinationURL = options.getDestinationURL();
-
-        //Get current destination URLs service data
-        String[] currentDestURLs = null;
-        try {
-            currentDestURLs = getDestinationURLs();
-        } catch (RemoteException re) {
-            logger.error("problem obtaining service data", re);
-        }
-        
-        //Append new instance's destination URL to local copy of service data
-        String[] destURLs = new String[currentDestURLs.length+1];
-        for (int index=0; index<currentDestURLs.length; index++) {
-            destURLs[index] = currentDestURLs[index];
-        }
-        destURLs[destURLs.length-1] = destinationURL;
-
-        //Update destination URLs service data
-        updateDestinationURLs(destURLs);
-        */
-
-        return serviceInstance;
+        return fileStream;
     }
 
-    public void notifyDestroy(String path) {
-        super.notifyDestroy(path);
-        fileStreamHandles.notifyChange();
-
-        /*
-        //Obtain the index into the list of instances of the dying instance
-        String servicePath
-            = (String) getProperty(ServiceProperties.SERVICE_PATH);
-        ServiceNode serviceNode
-            = ServiceNode.getRootNode().getNode(servicePath);
-        Vector serviceInstances = serviceNode.getAllServices();
-        int serviceInstanceCount = serviceInstances.size();
-        int targetIndex = -1;
-        for (int index=0; index<serviceInstanceCount; index++) {
-            ServiceSkeleton service
-                = (ServiceSkeleton) serviceInstances.elementAt(index);
-            String instanceServicePath
-                = (String) service.getProperty(ServiceProperties.SERVICE_PATH);
-            if (path.equals(instanceServicePath)) {
-                targetIndex = index;
-                break;
-            }
-        }
-
-        //Get current destination URLs service data
-        String[] currentDestURLs = null;
-        try {
-            currentDestURLs = getDestinationURLs();
-        } catch (RemoteException re) {
-            logger.error("problem obtaining service data", re);
-        }
-
-        //Remove dying instance's destination URL from service data
-        String[] destURLs = new String[currentDestURLs.length-1];
-        for (int index=0; index<destURLs.length; index++) {
-            if (index >= targetIndex) {
-                //adjust for skipped/deleted element
-                destURLs[index] = currentDestURLs[index+1];
-            } else {
-                destURLs[index] = currentDestURLs[index];
-            }
-        }
-
-        //Update destination URLs service data
-        /*
-        try {
-            updateDestinationURLs(destURLs);
-        } catch (GridServiceException gse) {
-            logger.error("problem updating service data", gse);
-        }*/
-    }
-
-    public Object [] generateServiceDataValues(QName qname) {
-        logger.debug("generating service data for " + qname.toString());
-
-        if (qname.localPart.equals(FILE_STREAM_HANDLES_QNAME)) {
-            return getFileStreamHandlesDataValues();
-        } else {
-            return null;
-        }
-
-    }
-
-    protected Object [] getFileStreamHandlesDataValues() {
-        Object [] handles;
-        String myHandle = (String) getProperty(ServiceProperties.HANDLE);
-
-        String servicePath = (String) getProperty(
-                ServiceProperties.SERVICE_PATH);
-        logger.debug("First locating my ServiceNode at " + servicePath);
-        ServiceNode node = ServiceNode.getRootNode().getNode(servicePath);
-        Vector instances = node.getAllServices();
-        int instanceCount = instances.size();
-        logger.debug("Got " + String.valueOf(instanceCount-1)
-                + " instance" + ((instanceCount-1>1) ? "s" : "")
-                + " to deal with");
-
-        handles = new Object[instanceCount-1];
-
-        for (int i = 0, j = 0; i < instanceCount; i++) {
-            ServiceSkeleton service = (ServiceSkeleton) instances.get(i);
-            String handleString =
-                    (String) service.getProperty(ServiceProperties.HANDLE);
-
-            if (handleString.equals(myHandle)) {
-                // Skip the factory---only list instances
-                continue;
+    //*** ServiceDataValueCallback method ***//
+    public Collection getServiceDataValues(QName qname) {
+        if (qname.getLocalPart().equals(SOURCE_PATH_SD_NAME)) {
+            ArrayList sdList = new ArrayList();
+            Iterator sdIter = this.serviceData.iterator();
+            while (sdIter.hasNext()) {
+                ServiceData serviceData = (ServiceData) sdIter.next();
+                sdList.add(serviceData.getName());
             }
 
-            logger.debug("Adding instance #" + String.valueOf(i)
-                    + ": " + handleString);
-
-            HandleType handle = new HandleType(handleString);
-            ServiceHandleElementType element = new ServiceHandleElementType();
-
-            element.setServiceHandle(handle);
-
-            handles[j++] = element;
+            return sdList;
         }
-        return handles;
-    }
 
+        return new ArrayList();
+    }
 }

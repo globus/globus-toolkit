@@ -5,11 +5,14 @@
              xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
              xmlns:ogsi="http://www.gridforum.org/namespaces/2003/03/OGSI"
              xmlns:gsi="http://ogsa.globus.org/security/authentication"
+             xmlns:sd="http://www.gridforum.org/namespaces/2003/03/serviceData"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema"
              xmlns="http://schemas.xmlsoap.org/wsdl/">
 
 <import location="../../ogsi/ogsi.gwsdl"
         namespace="http://www.gridforum.org/namespaces/2003/03/OGSI"/>
+<import location="../../security/authentication/gss_secure_conversation_port_type.gwsdl"
+        namespace="http://ogsa.globus.org/security/authentication"/>
 
 <types>
     <xsd:schema targetNamespace="http://www.globus.org/namespaces/base/streaming"
@@ -32,25 +35,33 @@
 
         <xsd:complexType name="FileStreamAttributes">
             <xsd:sequence>
-                <xsd:element name="destinationURL" type="xsd:string"/>
+                <xsd:element name="destinationUrl" type="xsd:string"/>
                 <xsd:element name="offset" type="xsd:int"/>
             </xsd:sequence>
         </xsd:complexType>
+        <xsd:element name="FileStreamAttributesWrapper">
+            <xsd:complexType>
+                <xsd:sequence>
+                    <xsd:element name="fileStreamAttributes"
+                                 type="tns:FileStreamAttributes"/>
+                </xsd:sequence>
+            </xsd:complexType>
+        </xsd:element>
 
         <xsd:complexType name="FileStreamFactoryAttributes">
             <xsd:sequence>
-                <xsd:element name="path" type="xsd:string"/>
+                <xsd:element name="sourcePath" type="xsd:string"/>
             </xsd:sequence>
         </xsd:complexType>
         <xsd:element name="FileStreamFactoryAttributesWrapper">
-            <xsd:complexType name="FileStreamFactoryAttributes">
+            <xsd:complexType>
                 <xsd:sequence>
                     <xsd:element name="fileStreamFactoryAttributes"
                                  type="tns:FileStreamFactoryAttributes"/>
                 </xsd:sequence>
             </xsd:complexType>
         </xsd:element>
-    </schema>
+    </xsd:schema>
 </types>
 
 <message name="startInputMessage">
@@ -67,7 +78,9 @@
     <part name="parameters" element="tns:stopResponse"/>
 </message>
 
-<gwsdl:portType name="FileStreamPortType">
+<gwsdl:portType name="FileStreamPortType"
+                extends="ogsi:GridService
+                         gsi:SecureContextEstablishmentPortType">
     <operation name="start">
         <input message="tns:startInputMessage"/>
         <output message="tns:startOutputMessage"/>
@@ -77,16 +90,16 @@
         <output message="tns:stopOutputMessage"/>
     </operation>
 
-    <sd:serviceData name="destinationURL"
+    <sd:serviceData name="destinationUrl"
                     type="xsd:string"
                     minOccurs="1"
                     maxOccurs="1"
                     mutability="mutable"
                     nillable="false">
         <documentation>
-            The URL of the stream destination.
+            the URL of the stream destination
         </documentation>
-    </sd:serviceDataDescription>
+    </sd:serviceData>
 
 </gwsdl:portType>
 

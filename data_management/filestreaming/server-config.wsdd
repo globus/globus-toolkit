@@ -4,30 +4,37 @@
     xmlns="http://xml.apache.org/axis/wsdd/"
     xmlns:java="http://xml.apache.org/axis/wsdd/providers/java"
     xmlns:fs-types="http://www.globus.org/namespaces/base/filestreaming">
-    <service name="ogsa/gram/FileStreamingFactoryFactoryService" provider="Handler" style="wrapped">
-        <parameter name="allowedMethods" value="*"/>
-        <parameter name="className" value="org.globus.ogsa.impl.base.filestreaming.FileStreamFactoryFactory"/>
+    <service name="base/streaming/FileStreamingFactoryFactoryService"
+             provider="Handler"
+             style="wrapped">
+        <!--Factory (FS Factory Factory) Parameters-->
+        <parameter name="name" value="File Stream Factory Factory"/>
+        <parameter name="schemaPath"
+                   value="schema/ogsi/ogsi_factory_service.wsdl"/>
+        <parameter name="baseClassName"
+                   value="
+            org.globus.ogsa.impl.base.streaming.FileStreamFactoryFactoryImpl"/>
+        <parameter name="className"
+                   value="org.gridforum.ogsi.Factory"/>
+        <parameter name="operationProviders"
+                   value="org.globus.ogsa.impl.ogsi.FactoryProvider"/>
         <parameter name="persistent" value="true"/>
-        <parameter name="instanceLifecycle" value="persistent"/>
-        <parameter name="schemaPath" value="schema/core/factory/secure_factory_service.wsdl"/>
-        <parameter name="instanceSchemaPath" value="schema/core/factory/secure_factory_service.wsdl"/>
-        <parameter name="handlerClass" value="org.globus.ogsa.handlers.RPCURIProvider"/>
+        <parameter name="factoryCallback"
+                   value="org.globus.ogsa.impl.ogsi.DynamicFactoryCallbackImpl"
+        />
+        <parameter name="handlerClass"
+                   value="org.globus.ogsa.handlers.RPCURIProvider"/>
+        <parameter name="allowedMethods" value="*"/>
+        <!--Instance (FS Factory) Parameters-->
+        <parameter name="instance-schemaPath"
+                   value="schema/ogsi/ogsi_factory_service.wsdl"/>
+        <parameter name="instance-baseClassName"
+                   value="FileStreamFactoryImpl"/>
+        <parameter name="className"
+                   value="org.gridforum.ogsi.Factory"/>
+        <parameter name="operationProviders"
+                   value="org.globus.ogsa.impl.ogsi.FactoryProvider"/>
+        <parameter name="instance-lifecycle" value="persistent"/>
     </service>
-    
-    <!--
-    <typeMapping
-        qname="file-streaming-types:FileStreamingType"
-        languageSpecificType="java:org.globus.ogsa.base.gram.filestreaming.FileStreamingType"
-        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
-        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
-        encodingStyle="" />
-    <typeMapping
-        qname="file-streaming-types:FileStreamingOptionsType"
-        languageSpecificType="java:org.globus.ogsa.base.gram.filestreaming.FileStreamingOptionsType"
-        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
-        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
-        encodingStyle="" />
-        -->
-
 </deployment>
 
