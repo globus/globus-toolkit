@@ -204,7 +204,7 @@ typedef enum
 #define my_free(ptr)   globus_free(ptr)
 
 
-#if 1
+#if 0
 #define verbose(q) q
 #else
 #define verbose(q) { }
@@ -1599,6 +1599,7 @@ globus_gram_http_unpack_job_request_reply(
 	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
 	goto globus_gram_http_unpack_job_request_done;
     }	
+    rc = GLOBUS_SUCCESS;
     if (p)
     {
 	globus_libc_lock();

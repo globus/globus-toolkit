@@ -470,7 +470,7 @@ globus_gram_client_job_request(char *           gatekeeper_contact,
 
     if ((rc = globus_l_gram_client_setup_attr_t( 
 	             &attr,
-		     GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY,
+		     GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
 		     dn )) 
 
 	|| (rc = globus_gram_http_pack_job_request(
