@@ -23,7 +23,7 @@ BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
 my $self = {};
 use strict;
 
-use POSIX;
+use POSIX ();
 use Carp;
 use Sys::Hostname;
 use Data::Dumper;
