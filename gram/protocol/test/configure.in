@@ -18,4 +18,5 @@ AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
+	globus-gram-protocol-run-tests.pl
 )

@@ -1,187 +1,182 @@
 use Getopt::Long;
-
-my $selected_jm_type;
-my @all_jm_types = ('condor', 'easymcs', 'fork', 'glunix', 'grd', 'loadleveler', 'lsf',
-                    'nqe', 'nswc', 'pbs', 'pexec', 'prun'); 
-
-
-GetOptions( 'type=s' => \$selected_jm_type,
-            'help'   => \$help)
-  or pod2usage(1);
-
-pod2usage(0) if $help;
-
-sub pod2usage {
-  my $ex = shift;
-  print "setup-globus-gram-job-manager [ \\
-               -help \\
-               -type=[ @all_jm_types ]\\
-                     (fork is default)\\
-              ]\n";
-  exit $ex;
-}
-
-if ( $selected_jm_type eq "" )
-{
-   $selected_jm_type='fork';
-}
-
-if ( ! grep {$_ eq $selected_jm_type} @all_jm_types)
-{
-   die "Invalid Job Manager Type, valid types are: @all_jm_types";
-}
+use IO::File;
 
 my $gpath = $ENV{GPT_LOCATION};
 
 if (!defined($gpath))
 {
-  $gpath = $ENV{GLOBUS_LOCATION};
+    $gpath = $ENV{GLOBUS_LOCATION};
 }
 
 if (!defined($gpath))
 {
-   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
+    die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
 }
 
 @INC = (@INC, "$gpath/lib/perl");
 
 require Grid::GPT::Setup;
 
-my $metadata = new Grid::GPT::Setup(package_name => "globus_gram_job_manager_setup");
+my $metadata =
+    new Grid::GPT::Setup(package_name => "globus_gram_job_manager_setup");
 
-my $globusdir = $ENV{GLOBUS_LOCATION};
-my $setupdir = "$globusdir/setup/globus/";
-my $gk_conf = "$globusdir/etc/globus-gatekeeper.conf";
-my $jm_conf = "$globusdir/etc/globus-job-manager.conf";
-my $port = 0;
-my $subject;
-my $junk;
+my $globusdir	= $ENV{GLOBUS_LOCATION};
+my $setupdir	= "$globusdir/setup/globus";
+my $sysconfdir	= "$globusdir/etc";
+my $libexecdir	= "$globusdir/libexec";
+my $bindir	= "$globusdir/bin";
+my $sbindir	= "$globusdir/sbin";
 
-print "Setting up $selected_jm_type job manager\n";
-print "------------------------------\n";
-
-
-if ($selected_jm_type eq "fork")
+if(! -d "$globusdir/tmp")
 {
-   $rdn="jobmanager";
+    mkdir("$globusdir/tmp", 0777);
+    chmod(01777, "$globusdir/tmp");
 }
-else
+
+if(! -d "$globusdir/tmp/gram_job_state")
 {
-   $rdn="jobmanager-$selected_jm_type";
+    mkdir("$globusdir/tmp/gram_job_state", 0777);
+    chmod(01777, "$globusdir/tmp/gram_job_state");
 }
 
-my $jm_service = "$globusdir/etc/grid-services/$rdn";
-
-print "Creating job manager configuration file...\n";
-
-if ( ! open(CONF, ">$jm_conf") )
-{
-   die "open failed for $jm_conf";
-}
-
-if ( ! -f "$gk_conf" )
-{
-   die "File not found.  $gk_conf required";
-}
-
-print "  - Getting gatekeeper subject\n";
-my $host_cert_line = `grep x509_user_cert $gk_conf`;
-my $host_cert_file;
-chomp($host_cert_line);
-($junk, $host_cert_file) = split(/x509_user_cert/, $host_cert_line);
-
-$host_cert_file =~ s/^\s+//; #strip leading whitespace
-if ( ! -r "$host_cert_file" )
-{
-   print STDERR "Warning: Host cert file: $host_cert_file not found.\n";
-   print STDERR "         rerun setup-globus-gram-job-manager after installing host cert file.\n";
-   $subject="unavailable at time of install";
-}
-else
-{
-   $subject=`${globusdir}/bin/grid-cert-info -subject -file ${host_cert_file}`;
-   if ( $? != 0 )
-   {
-      die "Failed getting subject from host certificate: ${host_cert_file}.";
-   }
-   else
-   {
-      chomp($subject);
-      $subject =~ s/^\s+//; #strip leading whitespace
-   }
-}
-
-print "  - Getting gatekeeper port\n";
-if ( open(GK_CONF, $gk_conf) ) {
-  $port = (m/^(\s*)-port\s+([0-9]+)/)[1] while( ! $port && ($_=<GK_CONF>) );
-  close GK_CONF;
-}
-
-#get values from system commands/file
-my $hostname = `$globusdir/bin/globus-hostname`;
-my $cg_results = `$globusdir/sbin/config.guess`;
-($junk, my $uname_cmd) = split(/=/, `grep GLOBUS_SH_UNAME $globusdir/libexec/globus-sh-tools.sh`);
-
-chomp($hostname);
-chomp($cg_results);
-chomp($uname_cmd);
-
-my $os_name=`$uname_cmd -s`;
-my $os_version="";
-
-chomp($os_name);
-
-if($os_name eq "AIX")
-{
-   $os_version=`$uname_cmd -v`;
-   chomp($os_version);
-   $os_version.=".";
-}
-
-$os_version.=`$uname_cmd -r`;
-
-chomp($os_version);
-
-
-($cpu, $manuf, $junk) = split(/-/, $cg_results);
-
-print CONF "-home \"$globusdir\"\n";
-print CONF "-e $globusdir/libexec\n";
-print CONF "-globus-gatekeeper-host $hostname\n";
-print CONF "-globus-gatekeeper-port $port\n";
-print CONF "-globus-gatekeeper-subject \"$subject\"\n";
-print CONF "-globus-host-cputype $cpu\n";
-print CONF "-globus-host-manufacturer $manuf\n";
-print CONF "-globus-host-osname $os_name\n";
-print CONF "-globus-host-osversion $os_version\n";
-print CONF "-save-logfile on_errors\n";
-print CONF "-machine-type unknown\n";
-close(CONF);
-
-print "Done\n";
-
-
-if ( ! -d "$globusdir/etc/grid-services" )
-{
-   die "grid-services directory does not exist, cannot create jobmanager service file...";
-}
-
-print "Creating grid service jobmanager...\n";
-  
-if ( ! open(SERVICE, ">$jm_service") )
-{
-   die "open failed for $jm_service";
-}
-
-#service arguments must be on the same line
-print SERVICE "stderr_log,local_cred - ".
-              "$globusdir/libexec/globus-job-manager ".
-              "globus-job-manager ".
-              "-conf $globusdir/etc/globus-job-manager.conf ".
-              "-type $selected_jm_type -rdn $rdn -machine-type unknown ".
-              "-publish-jobs\n";
-
-close(SERVICE);
+&setup_job_manager_conf();
+&setup_script_shbang("${setupdir}/globus-job-manager-service.in",
+                      "${libexecdir}/globus-job-manager-service");
+&setup_script_shbang("${setupdir}/globus-job-manager-mds-provider.in",
+                      "${libexecdir}/globus-job-manager-mds-provider");
+&setup_script_shbang("$setupdir/globus-job-manager-script.in",
+                     "$libexecdir/globus-job-manager-script.pl");
 print "Done\n";
 
 $metadata->finish();
+
+sub setup_job_manager_conf
+{
+    my ($gatekeeper_port, $gatekeeper_subject);
+    my ($hostname, $cpu, $manufacturer, $os_name, $os_version);
+    my $jm_conf	= "${sysconfdir}/globus-job-manager.conf";
+    my $conf_file;
+
+    ($gatekeeper_subject, $gatekeeper_port) =
+	&get_gatekeeper_info("${sysconfdir}/globus-gatekeeper.conf");
+
+    ($hostname, $cpu, $manufacturer, $os_name, $os_version) = &get_system_info();
+
+    print "Creating job manager configuration file...\n";
+    $conf_file = new IO::File(">$jm_conf") || die "open failed for $jm_conf";
+
+    print $conf_file <<EOF;
+	-home \"$globusdir\"
+	-globus-gatekeeper-host $hostname
+	-globus-gatekeeper-port $gatekeeper_port
+	-globus-gatekeeper-subject \"$gatekeeper_subject\"
+	-globus-host-cputype $cpu
+	-globus-host-manufacturer $manufacturer
+	-globus-host-osname $os_name
+	-globus-host-osversion $os_version
+	-save-logfile on_errors
+	-machine-type unknown
+EOF
+    $conf_file->close();
+}
+
+sub get_gatekeeper_info
+{
+    my ($gatekeeper_conf_filename) = $_[0];
+    my ($host_cert_line, $host_cert_file, $subject, $port) = ();
+
+    print "Reading gatekeeper configuration file...\n";
+    if ( ! -f "$gatekeeper_conf_filename" )
+    {
+       die "File \"$gatekeeper_conf_filename\" not found.\n";
+    }
+
+    chomp($host_cert_line = `grep x509_user_cert $gatekeeper_conf_filename`);
+    $host_cert_file = (split(/x509_user_cert/, $host_cert_line))[1];
+    $host_cert_file =~ s/^\s+//; #strip leading whitespace
+
+    if ( ! -r "$host_cert_file" )
+    {
+	print STDERR <<EOF;
+Warning: Host cert file: $host_cert_file not found.  Re-run
+         setup-globus-gram-job-manager after installing host cert file.
+EOF
+       $subject="unavailable at time of install";
+    }
+    else
+    {
+       chomp($subject =
+             `${bindir}/grid-cert-info -subject -file $host_cert_file`);
+       if ( $? != 0 )
+       {
+	  die "Failed getting subject from host certificate: $host_cert_file.";
+       }
+       else
+       {
+	  $subject =~ s/^\s+//; #strip leading whitespace
+       }
+    }
+
+    my $port = 0;
+    if ( open(GK_CONF, $gatekeeper_conf_filename) )
+    {
+      $port =(m/^(\s*)-port\s+([0-9]+)/)[1] while(! $port && ($_=<GK_CONF>));
+      close GK_CONF;
+    }
+
+    return ($subject, $port);
+}
+
+sub get_system_info
+{
+    my ($hostname, $cpu, $manufacturer, $os_name, $os_version);
+
+    print "Determining system information...\n";
+    chomp($hostname = `${bindir}/globus-hostname`);
+    ($cpu, $manufacturer) = (split(/-/, `${sbindir}/config.guess`))[0,1];
+    $uname_cmd = &lookup_shell_command("GLOBUS_SH_UNAME");
+
+    chomp($os_name=`$uname_cmd -s`);
+    $os_version="";
+
+    if($os_name eq "AIX")
+    {
+       chomp($os_version = `$uname_cmd -v`);
+       $os_version .= ".";
+    }
+
+    chomp($os_version .= `$uname_cmd -r`);
+
+    return ($hostname, $cpu, $manufacturer, $os_name, $os_version);
+}
+
+sub lookup_shell_command
+{
+    my ($cmdvar, $cmd);
+
+    $cmdvar = $_[0];
+
+    chomp($cmd = `$bindir/globus-sh-exec -e echo \\\$$cmdvar`);
+
+    return $cmd;
+}
+
+sub setup_script_shbang
+{
+    my $inname = shift;
+    my $outname = shift;
+    my $infile = new IO::File("<$inname");
+    my $outfile = new IO::File(">$outname");
+    my $perl = &lookup_shell_command("GLOBUS_SH_PERL");
+
+    while(<$infile>)
+    {
+	s/\@PERL\@/$perl/g;
+	s/\@GLOBUS_LOCATION\@/$globusdir/g;
+
+	$outfile->print($_);
+    }
+    $infile->close();
+    $outfile->close();
+    chmod 0755, $outname;
+}

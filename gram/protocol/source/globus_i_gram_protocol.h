@@ -88,6 +88,23 @@ typedef struct
     globus_gram_protocol_handle_t	handle;
     globus_i_gram_protocol_listener_t *	listener;
     int					rc;
+    char *				uri;
+
+    /* added for delegation support */
+    globus_bool_t			keep_open;
+    globus_size_t			token_length;
+    globus_gram_protocol_delegation_callback_t
+					delegation_callback;
+    OM_uint32				delegation_major_status;
+    OM_uint32				delegation_minor_status;
+    void *				delegation_arg;
+    gss_cred_id_t			delegation_cred;
+    gss_OID_set				delegation_restriction_oids;
+    gss_buffer_set_t			delegation_restriction_buffers;
+    OM_uint32				delegation_req_flags;
+    OM_uint32				delegation_time_req;
+    gss_buffer_desc			delegation_input_token;
+    gss_buffer_desc			delegation_output_token;
 }
 globus_i_gram_protocol_connection_t;
 
@@ -100,6 +117,7 @@ extern globus_cond_t			globus_i_gram_protocol_cond;
 
 extern globus_list_t *			globus_i_gram_protocol_listeners;
 extern globus_list_t *			globus_i_gram_protocol_connections;
+extern globus_list_t *			globus_i_gram_protocol_old_creds;
 extern globus_bool_t 			globus_i_gram_protocol_shutdown_called;
 extern globus_io_attr_t			globus_i_gram_protocol_default_attr;
 extern int				globus_i_gram_protocol_num_connects;

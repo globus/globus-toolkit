@@ -1,6 +1,13 @@
 #include "globus_common.h"
 #include "globus_gram_protocol_constants.h"
 
+/**
+ * @defgroup globus_gram_protocol_error_messages Error Translation
+ * @ingroup globus_gram_protocol_functions
+ *
+ * Functions in this section handle translating GRAM error codes to
+ * strings which can help the user diagnose GRAM problems. 
+ */
 static char *
 globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 {
@@ -11,14 +18,14 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 
 /*   0 */     "Success",
 /*   1 */     "one of the RSL parameters is not supported",
-/*   2 */     "the RSL lentgh is greater than the maximum allowed",
-/*   3 */     "of an unused NO_RESOURCES",  /* NEEDS EDITING */
+/*   2 */     "the RSL length is greater than the maximum allowed",
+/*   3 */     "an I/O operation failed",
 /*   4 */     "jobmanager unable to set default to the directory requested",
 /*   5 */     "the executable does not exist",
 /*   6 */     "of an unused INSUFFICIENT_FUNDS",   /* NEEDS EDITING */
 /*   7 */     "authentication with the remote server failed",
-/*   8 */     "of an unused USER_CANCELLED",  /* NEEDS EDITING */
-/*   9 */     "of an unused SYSTEM_CANCELLED",  /* NEEDS EDITING */
+/*   8 */     "the user cancelled the job",
+/*   9 */     "the system cancelled the job",
 /*  10 */     "data transfer to the server failed",
 /*  11 */     "the stdin file does not exist",
 /*  12 */     "the connection to the server failed (check host and port)",
@@ -34,7 +41,7 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /*  22 */     "the job manager failed to create an internal script argument file",
 /*  23 */     "the job manager detected an invalid job state",
 /*  24 */     "the job manager detected an invalid script response",
-/*  25 */     "the job manager detected an invalid job state",
+/*  25 */     "the job manager detected an invalid script status",
 /*  26 */     "the provided RSL 'jobtype' value is not supported by this job manager",
 /*  27 */     "unused ERROR_UNIMPLEMENTED",  /* NEEDS EDITING */
 /*  28 */     "the job manager failed to create an internal script submission file",
@@ -142,14 +149,53 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 130 */     "the job manager was sent a stop signal (job is still running)",
 /* 131 */     "the user proxy expired (job is still running)",
 /* 132 */     "the job was not submitted by original jobmanager",
-/* 133 */     "the job manager is not waiting for that commit signal"
-/* 134 */     "the provided RSL 'scheduler_specific' parameter is invalid",
+/* 133 */     "the job manager is not waiting for that commit signal",
+/* 134 */     "the provided RSL scheduler specific parameter is invalid",
+/* 135 */     "the job manager could not stage in a file",
+/* 136 */     "the scratch directory could not be created",
+/* 137 */     "the provided 'gass_cache' parameter is invalid",
+/* 138 */     "the RSL contains attributes which are not valid for job submission",
+/* 139 */     "the RSL contains attributes which are not valid for stdio update",
+/* 140 */     "the RSL contains attributes which are not valid for job restart",
+/* 141 */     "the provided RSL 'file_stage_in' parameter is invalid",
+/* 142 */     "the provided RSL 'file_stage_in_shared' parameter is invalid",
+/* 143 */     "the provided RSL 'file_stage_out' parameter is invalid",
+/* 144 */     "the provided RSL 'gass_cache' parameter is invalid",
+/* 145 */     "the provided RSL 'file_cleanup' parameter is invalid",
+/* 146 */     "the provided RSL 'scratch_dir' parameter is invalid",
+/* 147 */     "the provided scheduler-specific RSL parameter is invalid",
+/* 148 */     "a required RSL attribute was not defined in the RSL spec",
+/* 149 */     "the gass_cache attribute points to an invalid cache directory",
+/* 150 */     "the provided RSL 'save_state' parameter has an invalid value",
+/* 151 */     "the job manager could not open the RSL attribute validation file",
+/* 152 */     "the  job manager could not read the RSL attribute validation file",
+/* 153 */     "the provided RSL 'proxy_timeout' is invalid",
+/* 154 */     "the RSL 'proxy_timeout' value is not greater than zero",
+/* 155 */     "the job manager could not stage out a file",
+/* 156 */     "the job contact string does not match any which the job manager is handling",
+/* 157 */     "proxy delegation failed",
+/* 158 */     "the job manager could not lock the state lock file"
 };
 
 static char *
 globus_l_gram_protocol_error_7_hack_message = GLOBUS_NULL;
 
-
+/**
+ * Error code translation.
+ * @ingroup globus_gram_protocol_error_messages
+ *
+ * This function takes the error code value and returns the associated error
+ * code string. The string is statically allocated by the Globus GRAM Protocol
+ * library and should not be modified or freed.
+ *
+ * @param error_code
+ *        The error code to look up.
+ *
+ * @return An error string containing the reason for the error. The error
+ *         string is written to be used in the context
+ *         "[operation] failed because [error_string]".
+ *
+ */
 const char *
 globus_gram_protocol_error_string(int error_code)
 {
@@ -164,7 +210,17 @@ globus_gram_protocol_error_string(int error_code)
 } /* globus_gram_protocol_error_string() */
 
 
-
+/**
+ * GSI specific error code hack.
+ * @ingroup globus_gram_protocol_error_messages
+ *
+ * This function creates a custom version of the error message for the error
+ * GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION.  <b>This function should really
+ * only used by the GRAM client library.</b>
+ *
+ * @param message
+ *        The new message to be associated with error code 7.
+ */
 void
 globus_gram_protocol_error_7_hack_replace_message(const char * message)
 {

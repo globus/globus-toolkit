@@ -19,4 +19,5 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile
+	globus-gram-client-run-tests.pl
 )

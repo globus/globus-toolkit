@@ -1,8 +1,8 @@
 /******************************************************************************
-globus_gram_scheduler.c
+globus_gram_reporter.c
 
 Description:
-    Globus GRAM scheduler wrapper program
+    Globus GRAM reporter program
 
 CVS Information:
     $Source$
@@ -122,7 +122,7 @@ print_usage()
 {
     fprintf(stderr, "\n");
     fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s\n",
-            "globus-gram-scheduler",
+            "globus-gram-reporter",
             "[-condor-arch archetecture] [-condor-os operating system]",
             "[-conf job manager configuration file]",
             "[-cldif cldif file to append information]",
@@ -994,7 +994,7 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
 
     arg[z] = (char *) 0;
 
-    /* find the parameters the gram-scheduler cares about in the argument list
+    /* find the parameters the gram-reporter cares about in the argument list
      */
     for (i = 0; i < z; i++)
     {
@@ -1205,16 +1205,27 @@ int main (int argc, char **argv)
         }
     }
 
-    if ( conf_values.home_dir == NULL )
+    /* only the -conf is required up front */
+    if ( conf_values.conf_file == NULL )
     {
-        fprintf(stderr, "Error: -home parameter is required.\n");
+        fprintf(stderr, "Error: -conf parameter is required.\n");
         print_usage();
         exit(1);
     }
         
-    if ( conf_values.conf_file == NULL )
+    if (verbose)
+        fprintf(stdout, "reading configuration file...............\n");
+
+    if (globus_l_gram_get_conf_values(&conf_values) > 1)
     {
-        fprintf(stderr, "Error: -conf parameter is required.\n");
+        exit(1);
+    }
+
+    /* we're done reading the -conf file, so check for all required values */
+
+    if ( conf_values.home_dir == NULL )
+    {
+        fprintf(stderr, "Error: -home parameter is required.\n");
         print_usage();
         exit(1);
     }
@@ -1244,14 +1255,6 @@ int main (int argc, char **argv)
     {
         fprintf(stderr, "Error: -keep-to parameter is invalid.\n");
         print_usage();
-        exit(1);
-    }
-
-    if (verbose)
-        fprintf(stdout, "reading configuration file...............\n");
-
-    if (globus_l_gram_get_conf_values(&conf_values) > 1)
-    {
         exit(1);
     }
 

@@ -1,0 +1,13 @@
+/**
+@mainpage GRAM Reporter Reference Manual
+@anchor globus_gram_reporter_main
+
+The GRAM Reporter program gathers and outputs scheduler information that is then
+published in the MDS.  It interfaces with a local scheduler to gather
+information about the scheduler's queues and jobs in the queues.  In addition, 
+it publishes information about the GRAM job manager service which is used for
+submitting jobs to the local scheduler.
+
+- @ref globus_gram_reporter_configuration
+- @ref globus_gram_reporter_script_interface
+*/

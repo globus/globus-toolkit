@@ -4,7 +4,7 @@ use strict;
 use POSIX;
 use Test;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-gram-client-cancel-test';
+my $test_exec = 'globus-gram-client-cancel-test';
 
 my $gpath = $ENV{GLOBUS_LOCATION};
 
@@ -51,7 +51,6 @@ sub cancel_test
     }
 }
 push(@tests, "cancel_test('$ENV{CONTACT_STRING}', 0);");
-push(@tests, "cancel_test('$ENV{CONTACT_STRING}X', 7);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

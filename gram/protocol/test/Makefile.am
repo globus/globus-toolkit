@@ -4,19 +4,25 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= \
 	pkgdata
 
+pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
+
 Scripts = \
 	  globus-gram-protocol-allow-attach-test.pl \
+	  globus-gram-protocol-error-test.pl \
 	  globus-gram-protocol-io-test.pl \
-	  globus-gram-protocol-pack-test.pl \
-	  globus-gram-protocol-run-tests.pl
+	  globus-gram-protocol-pack-test.pl
 
-test_SCRIPTS=$(Scripts)
-test_PROGRAMS= \
+pkgtest_SCRIPTS=$(Scripts) globus-gram-protocol-run-tests.pl
+
+pkgtest_PROGRAMS= \
 	globus-gram-protocol-allow-attach-test \
+	globus-gram-protocol-delegation-test \
+        globus-gram-protocol-error-test \
 	globus-gram-protocol-io-test \
 	globus-gram-protocol-pack-test
 
-EXTRA_DIST=$(test_SCRIPTS)
+EXTRA_DIST=$(Scripts) globus-gram-protocol-run-tests.pl.in
+
 INCLUDES += $(GPT_INCLUDES)
 
 LDADD = $(GPT_PGM_LINKS)
@@ -28,6 +34,12 @@ globus_gram_protocol_io_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_gram_protocol_allow_attach_test_SOURCES = globus_gram_protocol_allow_attach_test.c
 globus_gram_protocol_allow_attach_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_gram_protocol_error_test_SOURCES = globus_gram_protocol_error_test.c
+globus_gram_protocol_error_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_gram_protocol_delegation_test_SOURCES = globus_gram_protocol_delegation_test.c
+globus_gram_protocol_delegation_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
