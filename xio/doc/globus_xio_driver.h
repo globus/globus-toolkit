@@ -263,8 +263,7 @@ typedef globus_result_t
 typedef globus_result_t
 (*globus_xio_driver_server_init_t)(
     void **                                     out_server,
-    void *                                      server_attr,
-    globus_xio_driver_stack_t                   stack);
+    void *                                      server_attr);
 
 /**
  *  @ingroup driver_interface_grp
@@ -369,8 +368,7 @@ typedef globus_result_t
 (*globus_xio_driver_target_init_t)(
     void **                                     out_target,
     void *                                      target_attr,
-    const char *                                contact_string,
-    globus_xio_driver_stack_t                   stack);
+    const char *                                contact_string);
 
 /**
  *  @ingroup driver_interface_grp
@@ -438,6 +436,17 @@ typedef globus_result_t
     globus_xio_driver_operation_t               op);
 
 /**
+ *  transport open
+ */
+typedef globus_result_t
+(*globus_xio_driver_open_t)(
+    void **                                     driver_handle,
+    void *                                      driver_handle_attr,
+    void *                                      target,
+    globus_xio_driver_context_t                 context,
+    globus_xio_driver_operation_t               op);
+
+/**
  *  Driver API Open
  *  @ingroup driver_api_grp
  *
@@ -446,12 +455,15 @@ typedef globus_result_t
  *  function.  At which point the context structure will be intialized
  *  and available for use.
  *
+ *  As soon as the function returns the context is valid for creating 
+ *  other operations.
+ *
  *  @param context
  *         Structure represening the state of the driver stack for this
  *         driver handle.
  *
- *  @param stack
- *         The stack from which the context will be established.  This
+ *  @param op
+ *         The operation from which the context will be established.  This
  *         parameter is used to determine what drivers are in the stack and
  *         other such information.
  *
@@ -464,7 +476,7 @@ typedef globus_result_t
 globus_result_t
 globus_xio_driver_open(
     globus_xio_driver_context_t *               context,
-    globus_xio_stack_t                          stack,
+    globus_xio_driver_operation_t               op,
     globus_xio_driver_callback_t                cb,
     void *                                      user_arg);
 

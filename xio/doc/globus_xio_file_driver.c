@@ -246,7 +246,7 @@ typedef struct globus_xio_driver_s
     globus_xio_driver_attr_copy_t                       attr_copy_func;
     globus_xio_driver_attr_cntl_t                       attr_cntl_func;
     globus_xio_driver_attr_destroy_t                    attr_destroy_func;
-    int                                                 max_attr_cntl_cmd;
+    GLOBUS_XIO_FILE_MAX_CMD,
     
     /*
      *  No need for data descriptors.
