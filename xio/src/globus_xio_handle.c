@@ -587,7 +587,7 @@ globus_l_xio_timeout_callback(
         /* if canceling set the res and we will remove this timer event */
         if(cancel)
         {
-            op->cached_res = GlobusXIOErrorCanceled();
+            op->cached_res = GlobusXIOErrorCanceled_();
             rc = GLOBUS_TRUE;
             op->canceled = GLOBUS_TRUE;
             if(op->cancel_cb)

@@ -26,7 +26,7 @@
             "[%s] malloc failure",                                          \
             (func)))
 
-#define GlobusXIOErrorInvalidStack(func)                                    \
+#define GlobusXIOErrorInvalidStack_(func)                                    \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
@@ -80,7 +80,7 @@
             "[%s] The handle is not is a proper statefor the request",      \
             (func)))
 
-#define GlobusXIOErrorCanceled()                                            \
+#define GlobusXIOErrorCanceled_()                                            \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
@@ -113,7 +113,6 @@
             GLOBUS_XIO_ERROR_CANCELED,                                  \
             "Error Type Undefined."))
 
-#define GlobusXIOErrorIsEOF(res) 0
 
 #define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE             16
 #define GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT   4

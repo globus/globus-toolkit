@@ -889,7 +889,7 @@ globus_xio_target_init(
     stack_size = globus_list_size(stack->driver_stack);
     if(stack_size == 0)
     {
-        res = GlobusXIOErrorInvalidStack("globus_xio_target_init");
+        res = GlobusXIOErrorInvalidStack_("globus_xio_target_init");
         return res;
     }
 
