@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Usage:
+#
+#   1) Verify that your GLOBUS_LOCATION is set to the installation from which you
+#      wish to create a binary bundle.
+#
+#   2) Run the bin-bundle creation script:
+#
+#        ./make-bin-bundle
+#
+
+if [ "x$GLOBUS_LOCATION" = "x" ]; then
+    echo "Please set GLOBUS_LOCATION to the location from which you wish to make the binary bundle."
+    exit;
+fi
+
+source version.sh
+
+NAME="gsi_openssh_bundle-$VERSION-i686-pc-linux-gnu.tar.gz"
+XML="gsi_openssh_bundle-bin.xml"
+
+if [ ! -e output/$NAME ]; then
+    if [ ! -e output/ ]; then
+        mkdir -p output/
+    fi
+
+    if [ ! -e work/ ]; then
+        WORK_SCRIPTCREATED="1"
+        mkdir -p work/
+        cp $XML work/
+    fi
+
+    if [ ! -e work/sources/ ]; then
+        cp -a sources work/sources
+    fi
+
+    cd work/
+    $GPT_LOCATION/sbin/gpt-bundle -output=$NAME -bv=$VERSION -xml=$XML
+    mv $NAME ../output/
+    cd ../
+
+    if [ "x$WORK_SCRIPTCREATED" != "x" ]; then
+        rm -rf work/
+    fi
+else
+    echo "Please remove output/$NAME before running this script."
+    exit;
+fi
