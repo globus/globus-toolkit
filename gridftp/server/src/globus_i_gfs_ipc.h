@@ -291,39 +291,25 @@ typedef void
     globus_gfs_ipc_event_reply_t *     reply,
     void *                              user_arg);
 
-
-
 typedef void
 (*globus_gfs_ipc_iface_set_user_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 id,
-    const char *                        user_dn,
-    globus_i_gfs_ipc_data_callback_t          cb,
-    void *                              user_arg);
+    const char *                        user_dn);
 
 globus_result_t
 globus_gfs_ipc_set_user(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int *                               id,
-    const char *                        user_dn,
-    globus_gfs_ipc_callback_t           cb,
-    void *                              user_arg);
+    const char *                        user_dn);
 
 typedef void
 (*globus_gfs_ipc_iface_set_cred_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 id,
-    gss_cred_id_t                       cred_thing,
-    globus_i_gfs_ipc_data_callback_t          cb,
-    void *                              user_arg);
+    gss_cred_id_t                       del_cred);
 
 globus_result_t
 globus_gfs_ipc_set_cred(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int *                               id,
-    gss_cred_id_t                       cred_thing,
-    globus_gfs_ipc_callback_t           cb,
-    void *                              user_arg);
+    gss_cred_id_t                       del_cred);
 
 typedef void
 (*globus_gfs_ipc_iface_set_user_buffer_t)(
@@ -336,6 +322,7 @@ globus_gfs_ipc_set_user_buffer(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_byte_t *                     buffer,
     globus_size_t                       buffer_len);
+
 /*
  *  receive
  *
