@@ -185,10 +185,37 @@ globus_gsi_proxy_inquire_req(
     globus_gsi_proxy_handle_t           handle,
     BIO *                               input_bio)
 {
-    X509_REQ *                          request = NULL;
+    X509_REQ *                          request;
+    STACK_OF(X509_EXTENSION) *          extensions;
+    X509_EXTENSION *                    tmp_ext;
+    int                                 ext_index;
+    int                                 pci_NID;
+    PROXYCERTINFO *                     pci;
+    ASN1_OCTET_STRING *                 ext_data;
 
     d2i_X509_REQ_bio(input_bio, & request);
-/*      if( */
+    extensions = X509_REQ_get_extensions(request);
+    
+    pci_NID = OBJ_create(PROXYCERTINFO_OID, 
+                         PROXYCERTINFO_SN, 
+                         PROXYCERTINFO_LN);
+
+    /* we assume there's only one proxycertinfo extension */
+    if((ext_index = X509v3_get_ext_by_NID(extensions, pci_NID, -1)) != -1)
+    {
+        tmp_ext = X509v3_get_ext(extensions, ext_index);
+        if(tmp_ext == NULL)
+        {
+            /* ERROR */
+        }
+        ext_data = X509_EXTENSION_get_data(tmp_ext);
+        d2i_PROXYCERTINFO(& pci, & ext_data->data, ext_data->length);
+        handle->proxy_cert_info = PROXYCERTINFO_dup(pci);
+        X509_EXTENSION_free(tmp_ext);
+    }
+
+    sk_X509_EXTENSION_free(extensions);    
+    PROXYCERTINFO_free(pci);
     
     return GLOBUS_SUCCESS;
 }
