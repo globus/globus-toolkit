@@ -1,5 +1,17 @@
 AC_DEFUN(GLOBUS_INIT, [
 
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+if test "x$GPT_LOCATION" = "x"; then
+    GPT_LOCATION=$GLOBUS_LOCATION
+    export GPT_LOCATION
+fi
+
 GPT_INIT
 
 if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
@@ -72,19 +84,8 @@ AC_ARG_ENABLE(internal-doc,
 AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
 AC_SUBST(GLOBUS_FLAVOR_NAME)
 
-# checking for the GLOBUS_LOCATION
-
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
-if test "x$GPT_LOCATION" = "x"; then
-    GPT_LOCATION=$GLOBUS_LOCATION
-    export GPT_LOCATION
-fi
 
 # get the environment scripts
-. $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
 
 . $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 
