@@ -503,10 +503,11 @@ globus_l_xio_test_read_buffer(
     {
         result = GlobusXIOErrorMemory("buffer");
     }
-    while ((left > 0) && (result == GLOBUS_SUCCESS))
+    while ((left > 0) || (result == GLOBUS_SUCCESS))
     {
         nbytes = 0;
-        to_read = (left > buffer_size) ? buffer_size : left;
+        to_read = (left > buffer_size) ? buffer_size : 
+                (left > 0 ? left : buffer_size);
         result = globus_xio_read(
                 handle,
                 buffer,
