@@ -1935,7 +1935,7 @@ globus_l_io_handle_events(
     static char *			myname="globus_l_io_handle_events";
     globus_bool_t                       use_timeout;
     int					n_fdcopy;
-    globus_bool_t                       time_left_is_zero = GLOBUS_FALSE;
+    globus_bool_t                       time_left_is_zero;
     globus_bool_t			handled_something = GLOBUS_FALSE;
     int                                 select_highest_fd;
     globus_abstime_t                    time_now;
@@ -1944,14 +1944,18 @@ globus_l_io_handle_events(
     globus_i_io_debug_printf(5,
         (stderr, "%s(): entering\n", myname));
 
-    if (globus_reltime_cmp(time_left, &globus_i_reltime_zero) == 0)
-    {
-        time_left_is_zero = GLOBUS_TRUE;
-    }
-        
     done = GLOBUS_FALSE;
     while (!done && !globus_l_io_shutdown_called)
     {
+        if(globus_reltime_cmp(time_left, &globus_i_reltime_zero) == 0)
+        {
+            time_left_is_zero = GLOBUS_TRUE;
+        }
+        else
+        {
+            time_left_is_zero = GLOBUS_FALSE;
+        }
+        
         GlobusTimeAbstimeGetCurrent(time_now);
         
 	/* Handle any cancel or secure read callbacks right away.
