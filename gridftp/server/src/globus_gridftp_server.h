@@ -15,7 +15,7 @@ extern globus_extension_registry_t      globus_i_gfs_dsi_registry;
  */
 typedef enum globus_gfs_error_type_e
 {
-    GLOBUS_GFS_ERROR_MEMORY,
+    GLOBUS_GFS_ERROR_MEMORY = 1,
     GLOBUS_GFS_ERROR_PARAMETER,
     GLOBUS_GFS_ERROR_SYSTEM_ERROR,
     GLOBUS_GFS_ERROR_WRAPPED,
@@ -30,7 +30,7 @@ typedef enum globus_gfs_error_type_e
  */
 typedef enum globus_gfs_operation_type_e
 {
-    GLOBUS_GFS_OP_FINAL_REPLY,
+    GLOBUS_GFS_OP_FINAL_REPLY = 1,
     GLOBUS_GFS_OP_EVENT_REPLY,
     GLOBUS_GFS_OP_EVENT,    
     GLOBUS_GFS_OP_SESSION_START,
@@ -56,7 +56,7 @@ typedef enum globus_gfs_operation_type_e
  */
 typedef enum globus_gfs_command_type_e
 {
-    GLOBUS_GFS_CMD_MKD,
+    GLOBUS_GFS_CMD_MKD = 1,
     GLOBUS_GFS_CMD_RMD,
     GLOBUS_GFS_CMD_DELE,
     GLOBUS_GFS_CMD_RNTO,
@@ -72,7 +72,7 @@ typedef enum globus_gfs_command_type_e
  */
 typedef enum globus_gfs_event_type_e
 {
-    GLOBUS_GFS_EVENT_TRANSFER_BEGIN,
+    GLOBUS_GFS_EVENT_TRANSFER_BEGIN = 1,
     GLOBUS_GFS_EVENT_TRANSFER_ABORT,
     GLOBUS_GFS_EVENT_TRANSFER_COMPLETE,
     GLOBUS_GFS_EVENT_DISCONNECTED,

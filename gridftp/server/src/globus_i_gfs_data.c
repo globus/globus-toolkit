@@ -1457,6 +1457,7 @@ globus_l_gfs_data_transfer_event_kickout(
             break;
             
           default:
+            goto error;
             break;
         } 
         if(bounce_info->op->event_callback != NULL)
@@ -1485,6 +1486,12 @@ globus_l_gfs_data_transfer_event_kickout(
     globus_mutex_unlock(&bounce_info->op->lock);
         
     globus_free(bounce_info);       
+    return;
+    
+error:
+    globus_mutex_unlock(&bounce_info->op->lock);
+    globus_free(bounce_info); 
+    return;      
 }
 
 void
@@ -1508,6 +1515,10 @@ globus_i_gfs_data_request_transfer_event(
         {
             /* destroy the transfer op here */
         }
+    }
+    else if(event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+    {
+        /* destroy the transfer op here */
     }
     else
     {    
