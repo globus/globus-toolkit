@@ -57,11 +57,11 @@ main()
 
     memset(address,0,sizeof(struct sockaddr_un));
 
-    address->sun_family = AF_LOCAL;
+    address->sun_family = PF_UNIX;
 
     tmpnam(address->sun_path);
     
-    listen_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
+    listen_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 
     bind(listen_fd, (struct sockaddr *) address, sizeof(struct sockaddr_un));
 
@@ -229,7 +229,7 @@ client_func(
 
     for(i=0;i<ITERATIONS;i++)
     {
-	connect_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
+	connect_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 
 	result = connect(connect_fd,
 			 (struct sockaddr *) thread_args->address,
