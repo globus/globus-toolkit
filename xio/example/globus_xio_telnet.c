@@ -76,6 +76,7 @@ main(
     int                                     ctr;
     globus_bool_t                           done = GLOBUS_FALSE;
     int                                     ndx;
+    globus_size_t                           nbytes;
 
     globus_module_activate(GLOBUS_XIO_MODULE);
 
@@ -110,15 +111,16 @@ main(
     test_res(res);
     res = globus_xio_open(&xio_handle, NULL, target);
     test_res(res);
-
     fprintf(stderr, "Successfully opened.\n");
+/*
     res = globus_xio_register_read(xio_handle, read_buffer, 
             LINE_LEN, 1, NULL, 
             globus_l_xio_read_cb, NULL);
     test_res(res);
-
+*/
     while(!done)
     {
+
         globus_poll();
         if(fgets(line, LINE_LEN, stdin) == NULL)
         {
@@ -144,6 +146,15 @@ main(
                 }
             }
         }
+        globus_xio_read(xio_handle, read_buffer, LINE_LEN, 1, &nbytes, NULL);
+    for(ctr = 0; ctr < nbytes; ctr++)
+    {
+        if(isprint(read_buffer[ctr]) ||read_buffer[ctr] == '\n')
+        {
+            fprintf(stdout, "%c", read_buffer[ctr]);
+        }
+    }
+    fflush(stdout);
     }
 
     res = globus_xio_close(xio_handle, NULL);
