@@ -337,128 +337,74 @@ static int
 globus_l_gram_client_authenticate(
     char *                                 gatekeeper_url,
     globus_io_secure_delegation_mode_t     delegation_mode,
-    globus_io_handle_t *                   gatekeeper_handle )
+    globus_io_attr_t *                     attrp)
 {
-    int                                    rc;
-    globus_result_t                        res;
-    globus_io_attr_t                       attr;
-    globus_io_secure_authorization_data_t  auth_data;
-    char *                                 gatekeeper_host;
-    char *                                 gatekeeper_princ;
-    char * 			           gatekeeper_service = "jobmanager";
-    unsigned short                         gatekeeper_port = 0;
-    char *cp, *sp, *qp, *pp;
+  globus_result_t                        res;
+  globus_io_secure_authorization_data_t  auth_data;
+  char *                                 gatekeeper_host;
+  char *                                 gatekeeper_princ;
+  char *                                 gatekeeper_service = "jobmanager";
 
-    GLOBUS_L_LOCK;
-
-    grami_fprintf(globus_l_print_fp,
-		  "in globus_l_gram_client_authenticate()\n");
-
-    if ((cp = strdup(gatekeeper_url)))
-    {
-        gatekeeper_host = gatekeeper_princ = cp;
-        if ((sp = strchr(cp,':')))
-        {
-            *sp++ = '\0';
-            if ((qp = strchr(sp, ':')))
-            {
-                *qp++ = '\0';
-                gatekeeper_princ = qp;
-            }
-
-	    /*** TODO: this is wrong: the service is optional ***/
-
-	    if ((pp = strchr(sp,'/')))
-	    {
-		*pp++ = '\0';
-		gatekeeper_service = pp;
-	    }
-            gatekeeper_port = atoi(sp);
-        }
-        else
-        {
-            gatekeeper_port = 754;
-        }
-    } 
-    else
-    {
-        grami_fprintf(globus_l_print_fp, "strdup failed for gatekeeper_url\n");
-        GLOBUS_L_UNLOCK;
-        return(1);
+  if ((cp = strdup(gatekeeper_url))) {
+    gatekeeper_host = gatekeeper_princ = cp;
+    if ((sp = strchr(cp,':'))) {
+      *sp++ = '\0';
+      if ((qp = strchr(sp, ':'))) {
+	*qp++ = '\0';
+	gatekeeper_princ = qp;
+      }
+ 
+      /*** TODO: this is wrong: the service is optional ***/
+ 
+      if ((pp = strchr(sp,'/'))) {
+	*pp++ = '\0';
+	gatekeeper_service = pp;
+      }
+      gatekeeper_port = atoi(sp);
     }
-    
-    /* Connecting to the gatekeeper.
-     */
-
-    /* We use globus_io security to authenticate w/ the gatekeeper
-     * and wrap the session. */
-    globus_io_tcpattr_init(&attr);
-
-    if ( (res = globus_io_tcpattr_init(&attr))
-	 || (res = globus_io_secure_authorization_data_initialize(
-	                &auth_data))
-	 || (res = globus_io_attr_set_secure_authentication_mode(
-	                &attr,
-			GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
-			GSS_C_NO_CREDENTIAL))
-	 || (res = globus_io_secure_authorization_data_set_identity(
-	                 &auth_data,
-			 gatekeeper_princ))
-	 || (res = globus_io_attr_set_secure_authorization_mode(
-	                &attr,
-			GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
-			&auth_data))
-	 || (res = globus_io_attr_set_secure_delegation_mode(
-	                &attr,
-			delegation_mode))
-	 || (res = globus_io_attr_set_secure_channel_mode(
-	                &attr,
-			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
-    {
-	globus_object_t *  err = globus_error_get(res);
-
-	grami_fprintf(globus_l_print_fp, 
-		      "setting up IO attributes failed\n");
-
-	/* TODO: interrogate 'err' to choose the correct error code */
-
-	globus_object_free(err);
-	GLOBUS_L_UNLOCK;
-	return GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED;
+    else {
+      gatekeeper_port = 754;
     }
-
-    grami_fprintf(globus_l_print_fp, "Connecting to %s:%d/%s:%s\n",
-		  gatekeeper_host, gatekeeper_port, 
-		  gatekeeper_service, gatekeeper_princ);
-
-    if( (res = globus_io_tcp_connect(
-	            gatekeeper_host,
-		    gatekeeper_port,
-		    &attr,
-		    gatekeeper_handle))
-	!= GLOBUS_SUCCESS )
-    {
-	globus_object_t *  err = globus_error_get(res);
-
-        grami_fprintf(globus_l_print_fp,
-              " globus_io_tcp_connect failed.\n");
-		free(gatekeeper_host);
-
-	/* TODO: interrogate 'err' to choose the correct error code */
-
-	globus_object_free(err);
-	free(gatekeeper_host);
-	GLOBUS_L_UNLOCK;
-	return GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED;
-    }
-
-    grami_fprintf(globus_l_print_fp,
-		  "Authentication/authorization complete\n");
-
-    free(gatekeeper_host);
+  } 
+  else {
+    grami_fprintf(globus_l_print_fp, "strdup failed for gatekeeper_url\n");
     GLOBUS_L_UNLOCK;
-    return(0);
+    return(1);
+  }
 
+  if ( (res = globus_io_tcpattr_init(attrp))
+       || (res = globus_io_secure_authorization_data_initialize(
+			     &auth_data))
+       || (res = globus_io_attr_set_secure_authentication_mode(
+			     attrp,
+			     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+			     GSS_C_NO_CREDENTIAL))
+       || (res = globus_io_secure_authorization_data_set_identity(
+			     &auth_data,
+			     gatekeeper_princ))
+       || (res = globus_io_attr_set_secure_authorization_mode(
+		             attrp,
+			     GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
+			     &auth_data))
+       || (res = globus_io_attr_set_secure_delegation_mode(
+			     attrp,
+			     delegation_mode))
+       || (res = globus_io_attr_set_secure_channel_mode(
+			     attrp,
+			     GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) ) {
+    globus_object_t *  err = globus_error_get(res);
+    
+    grami_fprintf(globus_l_print_fp, 
+		  "setting up IO attributes failed\n");
+    
+    /* TODO: interrogate 'err' to choose the correct error code */
+    
+    globus_object_free(err);
+    GLOBUS_L_UNLOCK;
+    return GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED;
+  }
+
+  return GLOBUS_SUCCESS;
 } /* globus_l_gram_client_authenticate() */
 
 
@@ -484,31 +430,57 @@ Returns:
 int 
 globus_gram_client_ping(char * gatekeeper_url)
 {
-    int                                 rc;
-    globus_io_handle_t                  gatekeeper_handle;
+  int                          rc;
+  globus_io_attr_t             attr;
+  char                         query[GLOBUS_GRAM_HTTP_BUFSIZE];
+  globus_gram_http_monitor_t   monitor;
+  globus_size_t                querysize;
 
-    GLOBUS_L_LOCK;
+  if ( rc = globus_l_gram_client_authenticate( 
+                   gatekeeper_url,
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+		   GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
+#else
+		   GLOBUS_IO_SECURE_DELEGATION_MODE_NO_PROXY,
+#endif
+		   &attr) ) {
+    goto globus_gram_client_ping_authenticate_failed;
+  }
 
-    rc = globus_l_gram_client_authenticate( 
-	     gatekeeper_url,
-    #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
-	     GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
-    #else
-	     GLOBUS_IO_SECURE_DELEGATION_MODE_NO_PROXY,
-    #endif
-	     &gatekeeper_handle );
+  querysize = 0;
 
-    if (rc != GLOBUS_SUCCESS &&
-	rc != GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
-    {
-	GLOBUS_L_UNLOCK;
-	return(rc);
-    }
+  globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
+  globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
+  monitor.done = GLOBUS_FALSE;
 
-    globus_io_close(&gatekeeper_handle);
+  /* TODO: pass attr into this */
+  if ( rc = globus_gram_http_post_and_get(
+				     gatekeeper_url,
+				     (globus_byte_t *) query,
+				     &querysize,
+				     &monitor) ) {
+    goto globus_gram_client_ping_post_failed;
+  }
 
-    GLOBUS_L_UNLOCK;
-    return(GLOBUS_SUCCESS);
+  globus_mutex_lock(&monitor.mutex);
+  while (!monitor.done) {
+    globus_cond_wait(&monitor.cond, &monitor.mutex);
+  }
+  rc = monitor.errorcode;
+  globus_mutex_unlock(&monitor.mutex);
+
+  /* TODO: check ping response for version?? */
+
+  /* success, so fall through all cleanup code */
+  rc = GLOBUS_SUCCESS;
+
+ globus_gram_client_ping_post_failed:
+  globus_mutex_destroy(&monitor.mutex);
+  globus_cond_destroy(&monitor.cond);
+
+  globus_io_tcpattr_destroy (&attr);
+ globus_gram_client_ping_authenticate_failed:
+  return rc;
 } /* globus_gram_client_ping() */
 
 
@@ -533,42 +505,16 @@ globus_gram_client_job_request(char * gatekeeper_url,
     globus_gram_http_monitor_t   monitor;
     globus_io_attr_t             attr;
 
-    globus_io_tcpattr_init(&attr);
-
-    if ( (res = globus_io_tcpattr_init(&attr))
-	 || (res = globus_io_secure_authorization_data_initialize(
-	                &auth_data))
-	 || (res = globus_io_attr_set_secure_authentication_mode(
-	                &attr,
-			GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
-			GSS_C_NO_CREDENTIAL))
-	 || (res = globus_io_secure_authorization_data_set_identity(
-	                 &auth_data,
-			 gatekeeper_princ))
-	 || (res = globus_io_attr_set_secure_authorization_mode(
-	                &attr,
-			GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
-			&auth_data))
-	 || (res = globus_io_attr_set_secure_delegation_mode(
-	                &attr,
-			delegation_mode))
-	 || (res = globus_io_attr_set_secure_channel_mode(
-	                &attr,
-			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
-    {
-	globus_object_t *  err = globus_error_get(res);
-
-	grami_fprintf(globus_l_print_fp, 
-		      "setting up IO attributes failed\n");
-
-	/* TODO: interrogate 'err' to choose the correct error code */
-
-	globus_object_free(err);
-	GLOBUS_L_UNLOCK;
-	return GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED;
+    if ( rc = globus_l_gram_client_authenticate ( 
+		    gatekeeper_url,
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+		    GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
+#else
+		    GLOBUS_IO_SECURE_DELEGATION_MODE_NO_PROXY,
+#endif
+		    &attr) ) {
+      return rc;
     }
-
-    GLOBUS_L_LOCK;
 
     globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
     globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
@@ -591,8 +537,6 @@ globus_gram_client_job_request(char * gatekeeper_url,
     if (rc!=GLOBUS_SUCCESS)
 	goto globus_gram_client_job_request_done;
 
-    GLOBUS_L_UNLOCK;
-
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
@@ -600,8 +544,6 @@ globus_gram_client_job_request(char * gatekeeper_url,
     }
     rc = monitor.errorcode;
     globus_mutex_unlock(&monitor.mutex);
-
-    GLOBUS_L_LOCK;
 
     if (rc == GLOBUS_SUCCESS)
     {
@@ -635,7 +577,8 @@ globus_gram_client_job_request_done:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     
-    GLOBUS_L_UNLOCK;
+    globus_io_tcpattr_destroy (&attr);
+
     return rc;
 #endif
 } /* globus_gram_client_job_request() */
@@ -718,7 +661,7 @@ globus_gram_client_job_cancel(char * job_contact)
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
     }
 
-globus_gram_client_job_cancel_done:
+ globus_gram_client_job_cancel_done:
     
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
