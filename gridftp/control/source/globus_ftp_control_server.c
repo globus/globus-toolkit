@@ -3237,7 +3237,7 @@ globus_i_ftp_control_server_activate(void)
     /* the size of this array needs to be adjusted */
         
     entries = (globus_ftp_l_command_hash_entry_t *)
-        globus_libc_malloc(43 * sizeof(globus_ftp_l_command_hash_entry_t));
+        globus_libc_malloc(44 * sizeof(globus_ftp_l_command_hash_entry_t));
 
     entries[0].code = GLOBUS_FTP_CONTROL_COMMAND_SBUF;
     entries[0].parse_func = globus_l_ftp_control_parse_sbuf_cmd;
