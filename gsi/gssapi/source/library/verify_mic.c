@@ -219,7 +219,7 @@ GSS_CALLCONV gss_verify_mic(
         major_status = GSS_S_BAD_SIG;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_DATE,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_MIC,
             ("Message digest and token's contents are not equal"));
         goto exit;
     }
