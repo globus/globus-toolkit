@@ -6,6 +6,7 @@ setup-ssl-utils-sh-scripts
 globus-ssl.conf.tmpl
 configure.in
 configure
+config.guess
 aclocal.m4
 bootstrap
 install-sh
