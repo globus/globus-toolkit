@@ -1005,8 +1005,8 @@ globus_l_gfs_ipc_event_reply_kickout(
         request->reply,
         request->user_arg);
 
-    /* free the resources */
-    globus_free(request);
+    /* dont! free the resources */
+    //globus_free(request);
 }
 
 /*
@@ -1188,7 +1188,10 @@ globus_gfs_ipc_reply_event(
             {
                 goto err;
             }
-
+            
+            request->reply = reply;
+            request->type = reply->type;
+            
             globus_callback_register_oneshot(
                 NULL,
                 NULL,
@@ -1666,7 +1669,7 @@ globus_gfs_ipc_request_list(
 
     if(ipc->local)
     {
-        ipc->iface->send_func(ipc_handle, request->id, data_state);
+        ipc->iface->list_func(ipc_handle, request->id, data_state);
     }
 
     return GLOBUS_SUCCESS;

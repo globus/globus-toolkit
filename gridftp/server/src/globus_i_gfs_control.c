@@ -831,10 +831,12 @@ globus_l_gfs_request_send(
     send_state = (globus_gfs_transfer_state_t *) 
         globus_calloc(1, sizeof(globus_gfs_transfer_state_t));
     
+    send_state->pathname = fullpath;
     send_state->partial_offset = op_attr->partial_offset;
     send_state->partial_length = op_attr->partial_length;
     send_state->range_list = range_list;
     send_state->control_op = op;
+    send_state->data_handle_id = (int) data_handle;
 
     result = globus_gfs_ipc_request_send(
         instance->ipc_handle,
@@ -933,10 +935,13 @@ globus_l_gfs_request_recv(
     
     recv_state = (globus_gfs_transfer_state_t *) 
         globus_calloc(1, sizeof(globus_gfs_transfer_state_t));
-    
+
+    recv_state->pathname = fullpath;
     recv_state->partial_offset = op_attr->partial_offset;
+    recv_state->partial_length = op_attr->partial_length;
     recv_state->range_list = range_list;
     recv_state->control_op = op;
+    recv_state->data_handle_id = (int) data_handle;
 
     result = globus_gfs_ipc_request_recv(
         instance->ipc_handle,
@@ -1014,7 +1019,8 @@ globus_l_gfs_request_list(
     
     list_state->pathname = fullpath;
     list_state->list_type = globus_libc_strdup(list_type);
-    
+    list_state->data_handle_id = (int) data_handle;
+
     result = globus_gfs_ipc_request_list(
         instance->ipc_handle,
         &request_id,
@@ -1173,8 +1179,16 @@ globus_l_gfs_request_passive_data(
     data_state = (globus_gfs_data_state_t *) 
         globus_calloc(1, sizeof(globus_gfs_data_state_t));
     
-    /* XXX current data attr stuff will be set with set_state */
-    
+        data_state->ipv6 = attr.ipv6;       
+        data_state->nstreams = attr.nstreams;   
+        data_state->mode = attr.mode;       
+        data_state->type = attr.type;       
+        data_state->tcp_bufsize = attr.tcp_bufsize;
+        data_state->blocksize = attr.blocksize;  
+        data_state->prot = attr.prot;       
+        data_state->subject = attr.dcau.subject.subject;
+        data_state->dcau = attr.dcau.mode;
+        
     result = globus_gfs_ipc_request_passive_data(
         instance->ipc_handle,
         &request_id,
@@ -1275,7 +1289,15 @@ globus_l_gfs_request_active_data(
     data_state = (globus_gfs_data_state_t *) 
         globus_calloc(1, sizeof(globus_gfs_data_state_t));
     
-    /* XXX current data attr stuff will be set with set_state */
+        data_state->ipv6 = attr.ipv6;       
+        data_state->nstreams = attr.nstreams;   
+        data_state->mode = attr.mode;       
+        data_state->type = attr.type;       
+        data_state->tcp_bufsize = attr.tcp_bufsize;
+        data_state->blocksize = attr.blocksize;  
+        data_state->prot = attr.prot;       
+        data_state->subject = attr.dcau.subject.subject;
+        data_state->dcau = attr.dcau.mode;
     data_state->contact_strings = cs;
     data_state->cs_count = cs_count;
     

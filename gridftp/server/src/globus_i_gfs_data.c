@@ -519,10 +519,11 @@ static
 globus_result_t
 globus_l_gfs_data_handle_init(
     globus_i_gfs_data_handle_t **       u_handle,
-    globus_i_gfs_data_attr_t *          attr)
+    globus_gfs_data_state_t *           data_state)
 {
     globus_i_gfs_data_handle_t *        handle;
     globus_result_t                     result;
+    globus_i_gfs_data_attr_t            attr;
     GlobusGFSName(globus_l_gfs_data_handle_init);
     
     handle = (globus_i_gfs_data_handle_t *) 
@@ -533,12 +534,25 @@ globus_l_gfs_data_handle_init(
         goto error_alloc;
     }
     
-    if(!attr)
+    if(!data_state)
     {
-        attr = &globus_i_gfs_data_attr_defaults;
+        attr = globus_i_gfs_data_attr_defaults;
+    }
+    else
+    {
+        attr.delegated_cred = NULL;
+        attr.ipv6 = data_state->ipv6;       
+        attr.nstreams = data_state->nstreams;   
+        attr.mode = data_state->mode;       
+        attr.type = data_state->type;       
+        attr.tcp_bufsize = data_state->tcp_bufsize;
+        attr.blocksize = data_state->blocksize;  
+        attr.prot = data_state->prot;       
+        attr.dcau.subject.subject = data_state->subject;
+        attr.dcau.mode = data_state->dcau;
     }
 
-    memcpy(&handle->attr, attr, sizeof(globus_i_gfs_data_attr_t));
+    memcpy(&handle->attr, &attr, sizeof(globus_i_gfs_data_attr_t));
     
     result = globus_ftp_control_handle_init(&handle->data_channel);
     if(result != GLOBUS_SUCCESS)
@@ -607,17 +621,17 @@ globus_l_gfs_data_handle_init(
     }
 
     result = globus_ftp_control_local_dcau(
-        &handle->data_channel, &attr->dcau, attr->delegated_cred);
+        &handle->data_channel, &handle->attr.dcau, handle->attr.delegated_cred);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
             "globus_ftp_control_local_dcau", result);
         goto error_control;
     }
-    if(attr->dcau.mode != GLOBUS_FTP_CONTROL_DCAU_NONE)
+    if(handle->attr.dcau.mode != GLOBUS_FTP_CONTROL_DCAU_NONE)
     {
         result = globus_ftp_control_local_prot(
-            &handle->data_channel, attr->prot);
+            &handle->data_channel, handle->attr.prot);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(
@@ -755,6 +769,8 @@ globus_l_gfs_data_passive_kickout(
     globus_gfs_ipc_reply_t *            reply;   
     reply = (globus_gfs_ipc_reply_t *) 
         globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
+    reply->info.data.contact_strings = (const char **) 
+        globus_calloc(1, sizeof(char *));
  
     reply->type = GLOBUS_GFS_IPC_TYPE_PASSIVE;
     reply->id = bounce_info->id;
@@ -762,8 +778,8 @@ globus_l_gfs_data_passive_kickout(
     reply->info.data.data_handle_id = (int) bounce_info->handle;
     reply->info.data.bi_directional = bounce_info->bi_directional;
     reply->info.data.cs_count = 1;
-    reply->info.data.contact_strings = 
-        (const char **) &bounce_info->contact_string;
+    *reply->info.data.contact_strings = (const char *) 
+        globus_libc_strdup(bounce_info->contact_string);;
     
     globus_gfs_ipc_reply_finished(
         bounce_info->ipc_handle,
@@ -806,7 +822,7 @@ globus_i_gfs_data_passive_request(
     GlobusGFSName(globus_i_gfs_data_passive_request);
     
     /* gotta get data_attr_t info here (from kept state) */
-    result = globus_l_gfs_data_handle_init(&handle, NULL);
+    result = globus_l_gfs_data_handle_init(&handle, data_state);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -948,7 +964,7 @@ globus_i_gfs_data_active_request(
     globus_l_gfs_data_active_bounce_t * bounce_info;
     GlobusGFSName(globus_i_gfs_data_active_request);
     
-    result = globus_l_gfs_data_handle_init(&handle, NULL);
+    result = globus_l_gfs_data_handle_init(&handle, data_state);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -1079,7 +1095,7 @@ globus_i_gfs_data_recv_request(
     data_handle = (globus_i_gfs_data_handle_t *)
         recv_state->data_handle_id;
 
-    if(result != GLOBUS_SUCCESS || data_handle == NULL)
+    if(data_handle == NULL)
     {
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
@@ -1097,11 +1113,14 @@ globus_i_gfs_data_recv_request(
             "globus_l_gfs_data_operation_init", result);
         goto error_op;
     }
+
     op->ipc_handle = ipc_handle;    
     op->id = id;
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->data_handle = data_handle;
     op->sending = GLOBUS_FALSE;
+    op->range_list = recv_state->range_list;
+    op->partial_offset = recv_state->partial_offset;
 //    op->transfer_callback = callback;
 //    op->event_callback = event_callback;
 //    op->user_arg = user_arg;
@@ -1167,7 +1186,7 @@ globus_i_gfs_data_send_request(
     data_handle = (globus_i_gfs_data_handle_t *)
         send_state->data_handle_id;
 
-    if(result != GLOBUS_SUCCESS || data_handle == NULL)
+    if(data_handle == NULL)
     {
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
@@ -1190,6 +1209,9 @@ globus_i_gfs_data_send_request(
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->data_handle = data_handle;
     op->sending = GLOBUS_TRUE;
+    op->range_list = send_state->range_list;
+    op->partial_length = send_state->partial_length;
+    op->partial_offset = send_state->partial_offset;
 //    op->transfer_callback = callback;
 //    op->event_callback = event_callback;
 //    op->user_arg = user_arg;
@@ -1323,7 +1345,7 @@ globus_i_gfs_data_list_request(
     data_handle = (globus_i_gfs_data_handle_t *)
         list_state->data_handle_id;
 
-    if(result != GLOBUS_SUCCESS || data_handle == NULL)
+    if(data_handle == NULL)
     {
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
@@ -1527,14 +1549,14 @@ globus_gridftp_server_finished_transfer(
         
         if(result != GLOBUS_SUCCESS || !op->sending)
         {
-            globus_gridftp_server_control_event_send_perf(
+/*            globus_gridftp_server_control_event_send_perf(
                op->control_op,
                0,
                op->recvd_bytes[0]);
             globus_gridftp_server_control_event_send_restart(
                op->control_op,
                op->recvd_ranges);
-           
+*/           
             /* XXX mode s only */
             /* racey shit here */
             globus_gfs_ipc_reply_t *            reply;   
