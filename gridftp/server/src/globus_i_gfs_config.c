@@ -28,6 +28,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, {200, NULL}},
  {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, {0, NULL}},
  {"fork", "fork", NULL, "-fork", "-f", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"detach", "detach", NULL, "-detach", "-bg", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"no_gssapi", "no_gssapi", NULL, "-no-gssapi", "-ng", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"allow_clear", "allow_clear", NULL, "-allow-clear", "-ac", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
@@ -187,8 +188,8 @@ globus_l_gfs_config_load_config_file(
 
 error_parse:
     fclose(fptr);
-    fprintf(stderr, 
-        "Problem parsing config file %s: line %d\n", filename, line_num);
+    fprintf(stderr, "Problem parsing config file %s: line %d\n", 
+        filename, line_num);
     return -1;
 
 }

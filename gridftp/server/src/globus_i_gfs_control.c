@@ -46,6 +46,54 @@ globus_i_gfs_op_attr_copy(
     out_attr->range_list = in_attr->range_list;
 }
 
+static
+globus_result_t
+globus_l_gfs_get_full_path(
+    globus_i_gfs_server_instance_t *        instance,
+    const char *                            in_path,
+    char **                                 out_path)
+{
+    GlobusGFSName(globus_l_gfs_get_full_path);
+    globus_result_t                         result;
+    char                                    path[MAXPATHLEN];
+    char *                                  cwd = GLOBUS_NULL;
+    int                                     cwd_len;
+    
+    if(!in_path)
+    {
+        result = GlobusGFSErrorGeneric("invalid pathname");
+        goto done;
+    }
+    if(*in_path == '/')
+    {
+        strncpy(path, in_path, sizeof(path));
+    }
+    else
+    {
+        result = globus_gridftp_server_control_get_cwd(
+            instance->u.control.server, &cwd);
+        if(result != GLOBUS_SUCCESS || cwd == GLOBUS_NULL)
+        {
+            result = GlobusGFSErrorGeneric("invalid cwd");
+            goto done;
+        }
+        cwd_len = strlen(cwd);
+        if(cwd[cwd_len - 1] == '/')
+        {
+            cwd[--cwd_len] = '\0';
+        }
+        snprintf(path, sizeof(path), "%s/%s", cwd, in_path);
+        globus_free(cwd);
+    }
+    path[MAXPATHLEN - 1] = '\0';
+    
+    *out_path = globus_libc_strdup(path);
+    
+    return GLOBUS_SUCCESS;    
+
+done:
+    return result;
+}
 
 static
 void
@@ -230,13 +278,16 @@ globus_l_gfs_resource_request(
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
+    char *                              fullpath;
     GlobusGFSName(globus_l_gfs_resource_request);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
 
+    globus_l_gfs_get_full_path(instance, path, &fullpath);
+
     result = globus_i_gfs_ipc_resource_request(
         instance,
-        path,
+        fullpath,
         mask & GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY
             ? GLOBUS_TRUE
             : GLOBUS_FALSE,
@@ -316,16 +367,14 @@ globus_l_gfs_command_request(
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
     globus_i_gfs_cmd_attr_t             cmd_attr;
-
     GlobusGFSName(globus_l_gfs_command_request);
-    GlobusGridFTPServerName(globus_l_gsc_cmd_cwd);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
     if(strcmp(cmd_array[0], "MKD") == 0)
     {
         cmd_attr.command = GLOBUS_I_GFS_CMD_MKD;
-        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
@@ -334,7 +383,7 @@ globus_l_gfs_command_request(
     else if(strcmp(cmd_array[0], "RMD") == 0)
     {
         cmd_attr.command = GLOBUS_I_GFS_CMD_RMD;
-        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
@@ -343,7 +392,7 @@ globus_l_gfs_command_request(
     else if(strcmp(cmd_array[0], "DELE") == 0)
     {
         cmd_attr.command = GLOBUS_I_GFS_CMD_DELE;
-        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
@@ -353,8 +402,8 @@ globus_l_gfs_command_request(
     {
         /* XXX */
         cmd_attr.command = GLOBUS_I_GFS_CMD_RNFR;
-        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
-        instance->rnfr_pathname = globus_libc_strdup(cmd_array[1]);
+        globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
+        instance->rnfr_pathname = globus_libc_strdup(cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
@@ -366,7 +415,7 @@ globus_l_gfs_command_request(
     else if(strcmp(cmd_array[0], "RNTO") == 0)
     {
         cmd_attr.command = GLOBUS_I_GFS_CMD_RNTO;
-        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
@@ -381,7 +430,7 @@ globus_l_gfs_command_request(
     else if(strcmp(cmd_array[0], "CKSM") == 0)
     {
         cmd_attr.command = GLOBUS_I_GFS_CMD_CKSM;
-        cmd_attr.pathname = globus_libc_strdup(cmd_array[4]);
+        globus_l_gfs_get_full_path(instance, cmd_array[4], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
@@ -401,7 +450,7 @@ globus_l_gfs_command_request(
         strcmp(cmd_array[1], "CHMOD") == 0)
     {
         cmd_attr.command = GLOBUS_I_GFS_CMD_SITE_CHMOD;
-        cmd_attr.pathname = globus_libc_strdup(cmd_array[3]);
+        globus_l_gfs_get_full_path(instance, cmd_array[3], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
@@ -521,7 +570,7 @@ void
 globus_l_gfs_send_request(
     globus_gridftp_server_control_op_t  op,
     void *                              data_handle,
-    const char *                        local_target,
+    const char *                        path,
     const char *                        mod_name,
     const char *                        mod_parms,
     globus_range_list_t                 range_list,
@@ -532,6 +581,7 @@ globus_l_gfs_send_request(
     globus_i_gfs_op_attr_t *            op_attr;            
     globus_i_gfs_ipc_data_handle_t *    data;
     int                                 args;
+    char *                              fullpath;
     GlobusGFSName(globus_l_gfs_send_request);
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
@@ -546,6 +596,8 @@ globus_l_gfs_send_request(
             "globus_gridftp_server_abort_enable", result);
         goto error_attr;
     }
+    
+    globus_l_gfs_get_full_path(instance, path, &fullpath);
 
     result = globus_l_gfs_op_attr_init(&op_attr);
     if(result != GLOBUS_SUCCESS)
@@ -572,7 +624,7 @@ globus_l_gfs_send_request(
         instance,
         op_attr,
         data,
-        local_target,
+        fullpath,
         GLOBUS_NULL,
         GLOBUS_NULL,
         globus_l_gfs_ipc_transfer_cb,
@@ -601,7 +653,7 @@ void
 globus_l_gfs_recv_request(
     globus_gridftp_server_control_op_t  op,
     void *                              data_handle,
-    const char *                        local_target,
+    const char *                        path,
     const char *                        mod_name,
     const char *                        mod_parms,
     globus_range_list_t                 range_list,
@@ -612,6 +664,7 @@ globus_l_gfs_recv_request(
     globus_i_gfs_op_attr_t *            op_attr;            
     globus_i_gfs_ipc_data_handle_t *    data;
     int                                 args;
+    char *                              fullpath;
     GlobusGFSName(globus_l_gfs_recv_request);
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
@@ -626,6 +679,8 @@ globus_l_gfs_recv_request(
             "globus_gridftp_server_abort_enable", result);
         goto error_attr;
     }
+    
+    globus_l_gfs_get_full_path(instance, path, &fullpath);
 
     result = globus_l_gfs_op_attr_init(&op_attr);
     if(result != GLOBUS_SUCCESS)
@@ -651,7 +706,7 @@ globus_l_gfs_recv_request(
         instance,
         op_attr,
         data,
-        local_target,
+        fullpath,
         mod_name,
         mod_parms,
         globus_l_gfs_ipc_transfer_cb,
@@ -686,6 +741,7 @@ globus_l_gfs_list_request(
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
     globus_i_gfs_ipc_data_handle_t *    data;
+    char *                              fullpath;
     GlobusGFSName(globus_l_gfs_list_request);
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
@@ -701,10 +757,12 @@ globus_l_gfs_list_request(
         goto error_ipc;
     }
     
+    globus_l_gfs_get_full_path(instance, path, &fullpath);
+
     result = globus_i_gfs_ipc_list_request(
         instance,
         data,
-        path,
+        fullpath,
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
         op);
@@ -714,7 +772,6 @@ globus_l_gfs_list_request(
             "globus_i_gfs_ipc_list_request", result);
         goto error_ipc;
     }
-    
     return;
 error_ipc:     
     globus_gridftp_server_control_finished_transfer(
@@ -1009,7 +1066,7 @@ globus_l_gfs_add_commands(
         2,
         2,
         "MKD <sp> pathname",
-        GLOBUS_NULL);    
+        instance);    
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
@@ -1022,7 +1079,7 @@ globus_l_gfs_add_commands(
         2,
         2,
         "RMD <sp> pathname",
-        GLOBUS_NULL);    
+        instance);    
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
@@ -1035,7 +1092,7 @@ globus_l_gfs_add_commands(
         2,
         2,
         "DELE <sp> pathname",
-        GLOBUS_NULL);    
+        instance);    
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
@@ -1048,7 +1105,7 @@ globus_l_gfs_add_commands(
         4,
         4,
         "SITE CHMOD <sp> mode <sp> pathname",
-        GLOBUS_NULL);    
+        instance);    
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
@@ -1061,7 +1118,7 @@ globus_l_gfs_add_commands(
         5,
         5,
         "CKSM <sp> algorithm <sp> offset <sp> length <sp> pathname",
-        GLOBUS_NULL);    
+        instance);    
     if(result != GLOBUS_SUCCESS)
     {
         goto error;

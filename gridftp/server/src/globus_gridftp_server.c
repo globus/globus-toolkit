@@ -188,18 +188,28 @@ globus_l_gfs_sigchld(
     
     if(child_pid < 0)
     {
-        printf("SIGCHLD handled but waitpid has error: %d\n", errno);
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_ERR, 
+            "SIGCHLD handled but waitpid has error: %d\n", 
+            errno);
     }    
 
     if(WIFEXITED(child_status))
     {
         child_rc = WEXITSTATUS(child_status);
-        printf("Child process %d ended with rc = %d\n", child_pid, child_rc);
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO, 
+            "Child process %d ended with rc = %d\n", 
+            child_pid, 
+            child_rc);
     }
     else if(WIFSIGNALED(child_status))
     {
-        printf("Child process %d killed by signal %d\n", 
-            child_pid, WTERMSIG(child_rc));
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO, 
+            "Child process %d killed by signal %d\n",
+            child_pid, 
+            WTERMSIG(child_rc));
     }        
 }
 
@@ -241,7 +251,8 @@ globus_l_gfs_server_accept_cb(
         }
         else
         {   
-            printf("Child process %d started\n", child_pid);
+            globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_INFO, 
+                "Child process %d started\n", child_pid);
 
             result = globus_xio_close(
                 handle,
@@ -372,6 +383,8 @@ globus_l_gfs_be_daemon(void)
     globus_xio_stack_destroy(stack);
     globus_xio_attr_destroy(attr);
     
+    chdir("/");
+    
     if(globus_i_gfs_config_int("port") == 0 ||
         globus_i_gfs_config_bool("contact_string"))
     {
@@ -401,7 +414,20 @@ globus_l_gfs_be_daemon(void)
          * not sure how this will work for win32.  if it involves starting a
          * new process, need to set server handle to not close on exec
          */
-        globus_assert(0 && "detach code not here");
+        pid_t                           pid;
+        pid = fork();
+        if(pid < 0)
+        {
+        }
+        else if(pid != 0)
+        {
+            exit(0);
+        }
+        else
+        {
+            setsid();
+            chdir("/");
+        }
     }
     
     globus_l_gfs_xio_server_accepting = GLOBUS_TRUE;
