@@ -466,7 +466,7 @@ globus_l_gass_copy_glob_expand_ftp_url(
     }    
     else
     {
-        feature_response == GLOBUS_FTP_CLIENT_FALSE;
+        feature_response = GLOBUS_FTP_CLIENT_FALSE;
     }
     
     if(feature_response == GLOBUS_FTP_CLIENT_TRUE)
