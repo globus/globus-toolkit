@@ -1832,13 +1832,20 @@ globus_l_gass_transfer_http_new_request(
 	{
 	    goto url_error;
 	}
-	rc = globus_gass_transfer_secure_requestattr_get_authorization(
-	    attr,
-	    &mode,
-	    &subject);
-	if(rc != GLOBUS_SUCCESS)
+	if(*attr != GLOBUS_NULL)
 	{
-	    goto url_error;
+	    rc = globus_gass_transfer_secure_requestattr_get_authorization(
+		attr,
+		&mode,
+		&subject);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		goto url_error;
+	    }
+	}
+	else
+	{
+	    mode = GLOBUS_GASS_TRANSFER_AUTHORIZE_SELF;
 	}
 
 	switch(mode)
@@ -3804,6 +3811,14 @@ globus_l_gass_transfer_http_register_read(
 	if(smaller > proto->response_buflen - proto->response_offset)
 	{
 	    smaller = proto->response_buflen - proto->response_offset;
+	}
+	if(smaller == 0)
+	{
+	    memmove(proto->response_buffer,
+		    proto->response_buffer + proto->parsed_offset,
+		    proto->response_offset - proto->parsed_offset);
+	    proto->response_offset -= proto->parsed_offset;
+	    proto->parsed_offset = 0;
 	}
 
 	return
