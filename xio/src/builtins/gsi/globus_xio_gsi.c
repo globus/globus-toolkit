@@ -129,6 +129,7 @@ globus_l_xio_gsi_attr_cntl(
     globus_xio_gsi_proxy_mode_t         proxy_mode;
     globus_xio_gsi_delegation_mode_t *  out_delegation_mode;
     globus_xio_gsi_delegation_mode_t    delegation_mode;
+    globus_bool_t                       ssl_wrap;
     globus_result_t                     result;
     globus_size_t *                     out_size;
     GlobusXIOName(globus_l_xio_gsi_attr_cntl);
@@ -248,10 +249,19 @@ globus_l_xio_gsi_attr_cntl(
          * SSL compatibility mode
          */
       case GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE:
-        attr->req_flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
-        attr->req_flags &= ~(GSS_C_DELEG_FLAG |
-                             GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG);
-        attr->wrap_tokens = GLOBUS_FALSE;
+        ssl_wrap = va_arg(ap, globus_bool_t);
+        
+        if(ssl_wrap == GLOBUS_TRUE)
+        { 
+            attr->req_flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
+            attr->req_flags &= ~(GSS_C_DELEG_FLAG |
+                                 GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG);
+            attr->wrap_tokens = GLOBUS_FALSE;
+        }
+        else
+        {
+            attr->req_flags &= ~GSS_C_GLOBUS_SSL_COMPATIBLE;
+        }
         break;
         /*
          * Anonymous authentication
@@ -306,6 +316,11 @@ globus_l_xio_gsi_attr_cntl(
         else if(attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY)
         {
             attr->req_flags |= GSS_C_INTEG_FLAG;
+        }
+        else
+        {
+            /* clear the flags for protection level none*/
+            attr->req_flags &= ~(GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG);
         }
         break;
       case GLOBUS_XIO_GSI_GET_PROTECTION_LEVEL:

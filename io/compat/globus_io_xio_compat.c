@@ -4327,6 +4327,16 @@ globus_io_attr_set_secure_channel_mode(
         result = globus_xio_attr_cntl(
             (*attr)->attr, 
             globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE,
+            GLOBUS_FALSE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+
+        result = globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
             GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
             GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE);
         break;
@@ -4365,7 +4375,8 @@ globus_io_attr_set_secure_channel_mode(
         result = globus_xio_attr_cntl(
             (*attr)->attr, 
             globus_l_io_gsi_driver, 
-            GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE);
+            GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE,
+            GLOBUS_TRUE);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
