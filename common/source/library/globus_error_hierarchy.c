@@ -1,6 +1,4 @@
-#include "config.h"
 #include "globus_error_hierarchy.h"
-#include "globus_common_internal.h"
 #include "globus_libc.h"
 
 

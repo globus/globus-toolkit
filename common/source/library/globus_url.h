@@ -18,8 +18,7 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_URL_H_
 #define GLOBUS_INCLUDE_GLOBUS_URL_H_
 
-#include "config.h"
-#include "globus_common_types.h"
+#include "globus_common_include.h"
 
 EXTERN_C_BEGIN
 

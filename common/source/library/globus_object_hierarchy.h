@@ -2,8 +2,7 @@
 #ifndef GLOBUS_OBJECT_HIERARCHY_H
 #define GLOBUS_OBJECT_HIERARCHY_H
 
-#include "config.h"
-#include "globus_common_types.h"
+#include "globus_common_include.h"
 #include "globus_object.h"
 #include "globus_list.h"
 

@@ -1,14 +1,13 @@
-
 /********************************************************************
  *
  * This file implements the list_t type
  *
  ********************************************************************/
 
+#include "globus_common_include.h"
 #include "globus_list.h"
 #include "globus_memory.h"
 #include "globus_libc.h"
-#include "globus_common_internal.h"
 
 #define GLOBUS_L_LIST_INIT_MEM_COUNT            512
 

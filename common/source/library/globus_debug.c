@@ -1,5 +1,3 @@
-#include "config.h"
-#include "globus_common_internal.h"
 #include "globus_debug.h"
 #include "globus_libc.h"
 

@@ -45,11 +45,7 @@ EXTERN_C_END
 #include "globus_object_hierarchy.h"
 #include "globus_error.h"
 #include "globus_error_hierarchy.h"
-
-#ifdef GLOBUS_USE_NO_THREADS
-#include "globus_thread_none.h"
-#endif
-
+#include GLOBUS_THREAD_INCLUDE
 #include "globus_time.h"
 #include "globus_thread_pool.h"
 #include "globus_handle_table.h"

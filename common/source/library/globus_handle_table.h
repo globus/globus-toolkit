@@ -14,8 +14,7 @@ CVS Information:
 #ifndef GLOBUS_INCLUDE_HANDLE_TABLE_H
 #define GLOBUS_INCLUDE_HANDLE_TABLE_H
 
-#include "config.h"
-#include "globus_common_types.h"
+#include "globus_common_include.h"
 #include "globus_hashtable.h"
 #include GLOBUS_THREAD_INCLUDE
  

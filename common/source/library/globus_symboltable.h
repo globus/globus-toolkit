@@ -9,8 +9,7 @@
  *
  *
  ********************************************************************/
-#include "config.h"
-#include "globus_common_types.h"
+#include "globus_common_include.h"
 #include "globus_list.h"
 #include "globus_hashtable.h"
 

@@ -18,9 +18,9 @@ CVS Information:
 /******************************************************************************
 			             Include header files
 ******************************************************************************/
+#include "globus_common_include.h"
 #include "globus_time.h"
 #include GLOBUS_THREAD_INCLUDE
-#include "globus_common_types.h"
 
 /***************************************************************************
  *                              Macros

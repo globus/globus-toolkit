@@ -18,8 +18,7 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
-#include "globus_common_internal.h"
+#include "globus_common_include.h"
 
 #define GLOBUS_L_LIBC_MAX_ERR_SIZE 512
 

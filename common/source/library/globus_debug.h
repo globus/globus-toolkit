@@ -3,7 +3,7 @@
 #define GLOBUS_DEBUG_H
 
 
-#include "config.h"
+#include "globus_common_include.h"
 
  
 EXTERN_C_BEGIN

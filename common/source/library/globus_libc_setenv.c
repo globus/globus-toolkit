@@ -34,8 +34,7 @@
 /* based on @(#)setenv.c	8.1 (Berkeley) 6/4/93 */
 /* based on @(#)getenv.c	8.1 (Berkeley) 6/4/93 */
 
-#include "config.h"
-#include "globus_common_internal.h"
+#include "globus_common_include.h"
 #include "globus_libc.h"
 
 #ifndef	__P

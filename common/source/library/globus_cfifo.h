@@ -1,4 +1,3 @@
-
 #ifndef GLOBUS_COMMON_CFIFO_H
 #define GLOBUS_COMMON_CFIFO_H
 

@@ -22,6 +22,7 @@ Sources= \
 	globus_hashtable.c \
 	globus_hashtable.h \
 	globus_i_thread.h \
+	globus_common_include.h \
 	globus_libc.c \
 	globus_libc.h \
 	globus_libc_setenv.c \
@@ -70,6 +71,7 @@ flavorinclude_HEADERS = \
 	globus_module.h \
 	globus_url.h \
 	globus_list.h \
+	globus_common_include.h \
 	globus_hashtable.h \
 	globus_fifo.h \
 	globus_cfifo.h \

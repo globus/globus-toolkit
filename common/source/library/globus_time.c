@@ -1,4 +1,4 @@
-#include "config.h"
+#include "globus_common_include.h"
 #include "globus_time.h"
 #include "globus_libc.h"
 

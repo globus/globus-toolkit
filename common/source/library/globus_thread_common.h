@@ -9,7 +9,7 @@ CVS Information:
 #ifndef GLOBUS_THREAD_COMMON_H
 #define GLOBUS_THREAD_COMMON_H
 
-#include "config.h"
+#include "globus_common_include.h"
 #include "globus_module.h"
 
 EXTERN_C_BEGIN

@@ -17,7 +17,6 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
 #include "globus_memory.h"
 #include "globus_libc.h"
 

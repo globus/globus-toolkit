@@ -17,10 +17,9 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
+#include "globus_common_include.h"
 #include "globus_callback.h"
 #include "globus_thread_pool.h"
-#include "globus_common_internal.h"
 #include "globus_timeq.h"
 #include "globus_handle_table.h"
 #include "globus_libc.h"

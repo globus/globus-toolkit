@@ -18,9 +18,8 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
+#include "globus_common_include.h"
 #include GLOBUS_THREAD_INCLUDE
-#include "globus_common_internal.h"
 
 EXTERN_C_BEGIN
 

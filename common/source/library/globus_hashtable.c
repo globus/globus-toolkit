@@ -5,8 +5,6 @@
  *
  ********************************************************************/
 
-#include "config.h"
-#include "globus_common_internal.h"
 #include "globus_hashtable.h"
 #include "globus_list.h"
 #include "globus_libc.h"

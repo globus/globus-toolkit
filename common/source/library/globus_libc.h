@@ -9,8 +9,8 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_LIBC_H_
 #define GLOBUS_INCLUDE_GLOBUS_LIBC_H_ 1
 
-#include "config.h"
-#include "globus_common_internal.h"
+#include "globus_common_include.h"
+#include GLOBUS_THREAD_INCLUDE
 
 EXTERN_C_BEGIN
 

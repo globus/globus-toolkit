@@ -1,6 +1,4 @@
 
-#include "config.h"
-#include "globus_common_internal.h"
 #include "globus_object_cache.h"
 #include "globus_libc.h"
 

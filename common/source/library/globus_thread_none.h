@@ -21,9 +21,8 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
+#include "globus_common_include.h"
 #include "globus_module.h"
-#include "globus_common_internal.h"
 #include "globus_callback.h"
 
 /* HACK!!!!!!!!!! */

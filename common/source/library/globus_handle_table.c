@@ -11,7 +11,6 @@ CVS Information:
     $Revision$
     $Author$
 ******************************************************************************/
-#include "config.h"
 #include "globus_handle_table.h"
 #include GLOBUS_THREAD_INCLUDE
 #include "globus_libc.h"

@@ -1,9 +1,7 @@
-
 #ifndef GLOBUS_COMMON_LIST_H
 #define GLOBUS_COMMON_LIST_H
 
-#include "config.h"
-#include "globus_common_types.h"
+#include "globus_common_include.h"
 /********************************************************************
  *
  * This file defines the list_t type

@@ -1,8 +1,9 @@
 #ifndef GLOBUS_ERROR_STRING_H
 #define GLOBUS_ERROR_STRING_H
 
-#include "config.h"
+#include "globus_common_include.h"
 #include "globus_error.h"
+
  
 EXTERN_C_BEGIN
 

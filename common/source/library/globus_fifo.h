@@ -1,4 +1,3 @@
-
 #ifndef GLOBUS_COMMON_FIFO_H
 #define GLOBUS_COMMON_FIFO_H
 
@@ -8,7 +7,7 @@
  * useful for queuing arbitrary data (via void-pointer)
  *
  ********************************************************************/
-#include "config.h"
+#include "globus_common_include.h"
 #include "globus_list.h"
  
 EXTERN_C_BEGIN

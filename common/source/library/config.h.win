@@ -46,7 +46,6 @@
 #undef _LARGEFILE_SOURCE 
 #undef _LARGE_FILES
 
-typedef long globus_off_t;
 /* end moved from globus_common.h.in */
 
 /* Define if you have <alloca.h> and it should be used (not on Ultrix).  */

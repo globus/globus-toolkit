@@ -8,7 +8,7 @@ Description:
 #ifndef GLOBUS_INCLUDE_GLOBUS_STRPTIME_H_
 #define GLOBUS_INCLUDE_GLOBUS_STRPTIME_H_ 1
  
-#include "config.h"
+#include "globus_common_include.h"
  
  
 /******************************************************************************

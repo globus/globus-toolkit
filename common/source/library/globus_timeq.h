@@ -8,11 +8,9 @@
  *  The queue is ordered ascending by the time associated with each element 
  *  when it is added.
  */
-#include "config.h"
-#include "globus_common.h"
+#include "globus_common_include.h"
 #include "globus_time.h"
 #include "globus_memory.h"
-#include "globus_common_types.h"
 
 EXTERN_C_BEGIN
 

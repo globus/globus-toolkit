@@ -3,8 +3,7 @@
 #define GLOBUS_ERROR_HIERARCHY_H
 
 
-#include "globus_common.h"
-
+#include "globus_common_include.h"
 #include "globus_object.h"
 #include "globus_error.h"
 

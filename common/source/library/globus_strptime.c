@@ -19,17 +19,8 @@ ry/globus_strptime.c,v $
 /******************************************************************************
                              Include header files
 ******************************************************************************/
-#include "config.h"
-#include "globus_common_types.h"
+#include "globus_common_include.h"
 #include "globus_libc.h"
-
-#if HAVE_CTYPE_H
-#include <ctype.h>
-#endif
-
-#if HAVE_STRING_H
-#include <string.h>
-#endif
 
 /******************************************************************************
 Function: globus_strptime()

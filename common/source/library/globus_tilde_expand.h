@@ -8,7 +8,7 @@ Description:
 #ifndef GLOBUS_INCLUDE_GLOBUS_TILDE_EXPAND_H_
 #define GLOBUS_INCLUDE_GLOBUS_TILDE_EXPAND_H_ 1
  
-#include "config.h"
+#include "globus_common_include.h"
  
 EXTERN_C_BEGIN
  

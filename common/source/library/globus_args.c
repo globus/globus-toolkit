@@ -2,8 +2,7 @@
                    check globus_args.h for more detailed information.
 */
 
-#include "config.h"
-#include "globus_common_internal.h"
+#include "globus_common_include.h"
 #include "globus_args.h"
 #include "globus_libc.h"
 #include "globus_fifo.h"

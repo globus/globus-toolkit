@@ -1,5 +1,4 @@
-#include "config.h"
-#include "globus_common_internal.h"
+#include "globus_common_include.h"
 #include "globus_object_cache.h"
 #include "globus_error.h"
 #include "globus_error_hierarchy.h"
