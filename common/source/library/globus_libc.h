@@ -298,14 +298,16 @@ typedef struct addrinfo                 globus_addrinfo_t;
 #define GlobusLibcSockaddrGetPort(addr, port)                               \
     do                                                                      \
     {                                                                       \
-        switch(((struct sockaddr) (addr)).sa_family)                        \
+        const struct sockaddr *         _addr = (struct sockaddr *) &(addr);\
+                                                                            \
+        switch(_addr->sa_family)                                            \
         {                                                                   \
           case PF_INET:                                                     \
-            (port) = ntohs(((struct sockaddr_in) (addr)).sin_port);         \
+            (port) = ntohs(((struct sockaddr_in *) _addr)->sin_port);       \
             break;                                                          \
                                                                             \
           case PF_INET6:                                                    \
-            (port) = ntohs(((struct sockaddr_in6) (addr)).sin6_port);       \
+            (port) = ntohs(((struct sockaddr_in6 *) _addr)->sin6_port);     \
             break;                                                          \
                                                                             \
           default:                                                          \
@@ -319,19 +321,21 @@ typedef struct addrinfo                 globus_addrinfo_t;
 #define GlobusLibcSockaddrSetPort(addr, port)                               \
     do                                                                      \
     {                                                                       \
-        switch(((struct sockaddr) (addr)).sa_family)                        \
+        struct sockaddr *               _addr = (struct sockaddr *) &(addr);\
+                                                                            \
+        switch(_addr->sa_family)                                            \
         {                                                                   \
           case PF_INET:                                                     \
-            ((struct sockaddr_in) (addr)).sin_port = htons((port));         \
+            ((struct sockaddr_in *) _addr)->sin_port = htons((port));       \
             break;                                                          \
                                                                             \
           case PF_INET6:                                                    \
-            ((struct sockaddr_in6) (addr)).sin6_port = htons((port));       \
+            ((struct sockaddr_in6 *) _addr)->sin6_port = htons((port));     \
             break;                                                          \
                                                                             \
           default:                                                          \
             globus_assert(0 &&                                              \
-                "Unknown family in GlobusLibcSockaddrGetPort");             \
+                "Unknown family in GlobusLibcSockaddrSetPort");             \
             break;                                                          \
         }                                                                   \
     } while(0)                                                              \
@@ -342,7 +346,9 @@ typedef struct addrinfo                 globus_addrinfo_t;
 #define GlobusLibcSockaddrLen(addr, len)                                    \
     do                                                                      \
     {                                                                       \
-        switch(((struct sockaddr) (addr)).sa_family)                        \
+        const struct sockaddr *         _addr = &(addr);                    \
+                                                                            \
+        switch(_addr->sa_family)                                            \
         {                                                                   \
           case PF_INET:                                                     \
             (len) = sizeof(struct sockaddr_in);                             \
@@ -364,6 +370,7 @@ typedef struct addrinfo                 globus_addrinfo_t;
 #define GLOBUS_AI_NUMERICHOST           AI_NUMERICHOST
 #define GLOBUS_AI_CANONNAME             AI_CANONNAME
 
+#define GLOBUS_NI_MAXHOST               NI_MAXHOST
 #define GLOBUS_NI_NOFQDN                NI_NOFQDN
 #define GLOBUS_NI_NAMEREQD              NI_NAMEREQD
 #define GLOBUS_NI_DGRAM                 NI_DGRAM

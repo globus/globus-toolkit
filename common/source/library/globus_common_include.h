@@ -7,6 +7,9 @@
 
 #include "globus_config.h"
 
+/** GET IPv6 compatible types (at least with GNU) **/
+#define __USE_POSIX
+
 /*
  * include system files if we have them
  */
