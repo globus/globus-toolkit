@@ -46,8 +46,7 @@ Programs</h3>
 Creates and sends a delegated proxy to myproxy-server for later retrieval.
 <h3>
 SYNOPSIS</h3>
-<b>myproxy-init</b> [{-h, -u}| {--help, --usage}] [-D | --debug_level <i>level</i>][-v
-| --version] [-l | --username <i>username</i>] [-c | --cred_lifetime <i>hours</i>]
+<b>myproxy-init</b> [{-h, -u}| {--help, --usage}] [-D | --debug_level <i>level</i>][--version] [-l | --username <i>username</i>] [-c | --cred_lifetime <i>hours</i>]
 [-t | --proxy_lifetime <i>hours</i>] [-s | --pshost <i>proxy server hostname</i>]
 [-p | --psport <i>proxy server port #</i>] [-n | --no_passphrase] [-d |
 --dn_as_username ] [-x | --regex_dn_match] [-X | --match_cn_only] [-a |&nbsp;
@@ -85,7 +84,13 @@ Sets debug level. Valid values are 0,1,2</dt>
 Displays usage.</dd>
 
 <dt>
--v | --version</dt>
+-v | --verbose</dt>
+
+<dd>
+Display debugging messages.</dd>
+
+<dt>
+--version</dt>
 
 <dd>
 Displays version.</dd>
@@ -197,7 +202,7 @@ the MyProxyServer.
 Display information about proxy in a repository.
 <h3>
 SYNOPSIS</h3>
-<b>myproxy-info</b> [{-h, -u} | {--help, --usage}] [-v | --version]
+<b>myproxy-info</b> [{-h, -u} | {--help, --usage}] [--version]
 [-l | --username <i>username</i>] [-s | --pshost <i>proxy server hostname</i>]
 [-p | --psport <i>proxy server port #</i>] [-d | --dn_as_username ]
 <h3>
@@ -220,7 +225,13 @@ OPTIONS</h3>
 Displays usage.</dd>
 
 <dt>
--v | --version</dt>
+-v | --verbose</dt>
+
+<dd>
+Display debugging messages.</dd>
+
+<dt>
+--version</dt>
 
 <dd>
 Displays version.</dd>
@@ -262,7 +273,7 @@ EXIT STATUS</h3>
 Destroy any existing proxy on the myproxy-server.
 <h3>
 SYNOPSIS</h3>
-<b>myproxy-destroy</b> [{-h, -u} | {--help, --usage}] [-v | --version]
+<b>myproxy-destroy</b> [{-h, -u} | {--help, --usage}] [--version]
 [-l | --username <i>username</i>] [-s | --pshost <i>proxy server hostname</i>]
 [-p | --psport <i>proxy server port #</i>] [-d | --dn_as_username ]
 <h3>
@@ -285,7 +296,13 @@ OPTIONS</h3>
 Displays usage.</dd>
 
 <dt>
--v | --version</dt>
+-v | --verbose</dt>
+
+<dd>
+Display debugging messages.</dd>
+
+<dt>
+--version</dt>
 
 <dd>
 Displays version.</dd>
@@ -328,7 +345,7 @@ Retrieves a delegated credential from the myproxy-server for use by the
 user and/or web portal.
 <h3>
 SYNOPSIS</h3>
-<b>myproxy-get-delegation</b> [{-h, -u} | {--help, --usage}] [-v | --version]
+<b>myproxy-get-delegation</b> [{-h, -u} | {--help, --usage}] [--version]
 [-l | --username <i>username</i>] [-t | --proxy_lifetime <i>hours</i>]
 [-o | --out <i>path</i>] [-s | --pshost <i>proxy server hostname</i>] [-p
 | --psport <i>proxy server port #</i>] [-a | --authorization <i>path to
@@ -354,7 +371,13 @@ OPTIONS</h3>
 Displays usage.</dd>
 
 <dt>
--v | --version</dt>
+-v | --verbose</dt>
+
+<dd>
+Display debugging messages.</dd>
+
+<dt>
+--version</dt>
 
 <dd>
 Displays version.</dd>

@@ -9,11 +9,6 @@
 
 #include <sys/types.h>
 
-// Define debug levels
-#define DBG_HI 2
-#define DBG_IN 1
-#define DBG_LO 0
-
 struct _gsi_socket;
 typedef struct _gsi_socket GSI_SOCKET;
 

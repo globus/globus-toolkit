@@ -37,12 +37,13 @@ static char usage[] = \
 "\n"\
 "Syntax: myproxy-server [-d|-debug] [-p|-port #] "\
 "[-c config-file] [-s storage-dir] ...\n"\
-"        myproxy-server [-h|-help] [-v|-version]\n"\
+"        myproxy-server [-h|-help] [-version]\n"\
 "\n"\
 "   Options\n"\
 "       -h | --help                Displays usage\n"\
 "       -u | --usage                             \n"\
 "                                               \n"\
+"       -v | --verbose             Display debugging messages\n"\
 "       -v | --version             Displays version\n"\
 "       -d | --debug               Turns on debugging\n"\
 "       -D | --debug_level <level> Sets debug level (0,1,2)\n"
@@ -60,11 +61,12 @@ struct option long_options[] =
     {"config",     required_argument, NULL, 'c'},       
     {"storage",    required_argument, NULL, 's'},       
     {"usage",            no_argument, NULL, 'u'},
-    {"version",          no_argument, NULL, 'v'},
+    {"verbose",          no_argument, NULL, 'v'},
+    {"version",          no_argument, NULL, 'V'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "dhc:p:s:vuD:";
+static char short_options[] = "dhc:p:s:vVuD:";
 
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -131,8 +133,6 @@ static int get_client_authdata(myproxy_socket_attrs_t *attrs,
 
 static int debug = 0;
 
-static int debug_level = DBG_IN;   
-
 int
 main(int argc, char *argv[]) 
 {    
@@ -158,7 +158,10 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-   myproxy_log (DBG_HI, debug_level, "Server context retriever = %s renewers = %s", server_context->default_retriever_dns, server_context->default_renewer_dns);
+    myproxy_debug("Default retriever policy = %s",
+		  server_context->default_retriever_dns);
+    myproxy_debug("Default renewer policy = %s",
+		  server_context->default_renewer_dns);
    if (server_context->config_file == NULL)
     {
         server_context->config_file = strdup(default_config_file);
@@ -214,7 +217,7 @@ main(int argc, char *argv[])
      * Logging initialized: For here on use myproxy_log functions
      * instead of fprintf() and ilk.
      */
-    myproxy_log(DBG_IN, debug_level, "starting at %s", timestamp());
+    myproxy_log("starting at %s", timestamp());
 
     /* Set up signal handling to deal with zombie processes left over  */
     my_signal(SIGCHLD, sig_chld);
@@ -225,7 +228,7 @@ main(int argc, char *argv[])
     
     if (!server_context->run_as_daemon) 
     {
-       myproxy_log(DBG_IN, debug_level, "Connection from %s", inet_ntoa(client_addr.sin_addr));
+       myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
        socket_attrs->socket_fd = fileno(stdin);
        if (handle_client(socket_attrs, server_context) < 0) {
 	  my_failure("error in handle_client()");
@@ -241,7 +244,7 @@ main(int argc, char *argv[])
 	  socket_attrs->socket_fd = accept(listenfd,
 					   (struct sockaddr *) &client_addr,
 					   &client_addr_len);
-	  myproxy_log(DBG_IN, debug_level, "Connection from %s", inet_ntoa(client_addr.sin_addr));
+	  myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
 	  if (socket_attrs->socket_fd < 0) {
 	     if (errno == EINTR) {
 		continue; 
@@ -328,7 +331,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     {
 	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
-	myproxy_log(DBG_LO, debug_level, "Error enabling encryption: %s\n", error_string);
+	myproxy_log("Error enabling encryption: %s\n", error_string);
 	return -1;
     }
 #endif
@@ -341,7 +344,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     }
 
     /* Log client name */
-    myproxy_log(DBG_IN, debug_level, "Authenticated client %s", client_name); 
+    myproxy_log("Authenticated client %s", client_name); 
     
     /* Receive client request */
     requestlen = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
@@ -367,7 +370,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     /* Check client version */
     if (strcmp(client_request->version, MYPROXY_VERSION) != 0) {
-	myproxy_log(DBG_LO, debug_level,"client %s Invalid version number (%s) received",
+	myproxy_log("client %s Invalid version number (%s) received",
 		    client_name, client_request->version);
         respond_with_error_and_die(attrs,
 				   "Invalid version number received.\n");
@@ -377,7 +380,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     if ((client_request->username == NULL) ||
 	(strlen(client_request->username) == 0)) 
     {
-	myproxy_log(DBG_LO, debug_level, "client %s Invalid username (%s) received",
+	myproxy_log("client %s Invalid username (%s) received",
 		    client_name,
 		    (client_request->username == NULL ? "<NULL>" :
 		     client_request->username));
@@ -389,14 +392,17 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     if (client_request->passphrase && strlen(client_request->passphrase) 
 	&& strlen(client_request->passphrase) < MIN_PASS_PHRASE_LEN)
     {
-	myproxy_log(DBG_LO, debug_level, "client %s Pass phrase too short",
-		    client_name);
+	myproxy_log("client %s Pass phrase too short", client_name);
 	respond_with_error_and_die(attrs,
 				   "Pass phrase too short.\n");
     }
 
-    myproxy_log (DBG_HI, debug_level, "Retriever = %s",client_request->retrievers);
-    myproxy_log (DBG_HI, debug_level, "Renewer = %s",client_request->renewers);
+    myproxy_debug("Request's retriever policy = %s",
+		  client_request->retrievers ? client_request->retrievers :
+		  "DEFAULT");
+    myproxy_debug("Request's Renewer policy = %s",
+		  client_request->renewers ? client_request->renewers :
+		  "DEFAULT");
 
     /* Fill in credential structure = owner, user, passphrase, proxy location */
     client_creds->owner_name  = strdup(client_name);
@@ -424,7 +430,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* First level authorization checking happens here. */
     if (myproxy_authorize_accept(context, attrs, 
 	                         client_request, client_name) < 0) {
-       myproxy_log(DBG_LO, debug_level,"authorization failed - server-wide policy failure");
+       myproxy_log("authorization failed - server-wide policy failure");
        respond_with_error_and_die(attrs, verror_get_string());
     }
     
@@ -435,13 +441,14 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY: 
 	/* log request type */
-        myproxy_log(DBG_IN, debug_level,"Received GET request from %s", client_name);
+        myproxy_log("Received GET request from %s", client_name);
 
 	if (myproxy_creds_retrieve(client_creds) < 0) {
 	    respond_with_error_and_die(attrs, verror_get_string());
 	}
 
-        myproxy_log(DBG_HI, debug_level,"Retriever = ", client_creds->retrievers);
+        myproxy_debug("Retriever policy = ", client_creds->retrievers ?
+		      client_creds->retrievers : "DEFAULT");
 
     /*if retrievers are specified use them else use defaults for second level check*/
     if (client_creds->retrievers == NULL) // copy defaults
@@ -473,7 +480,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
 	if (str == NULL)
 	{
-	  myproxy_log (DBG_LO, debug_level,"No default retriver dns specified. Using *");
+	  myproxy_debug("No default retriver dns specified. Using *");
           client_creds->retrievers = strdup ("*");
 	}
 	else
@@ -511,7 +518,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
 	if (str == NULL)
 	{
-	  myproxy_log (DBG_LO, debug_level,"No default renewer dns specified. Using *");
+	  myproxy_debug("No default renewer dns specified. Using *");
           client_creds->renewers = strdup ("*");
 	}
 	else
@@ -548,7 +555,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
       if (myproxy_authorize_accept(client_context, attrs, 
 	                         client_request, client_name) < 0) {
-       myproxy_log(DBG_LO, debug_level,"authorization failed - per-user policy failure");
+       myproxy_log("authorization failed - per-user policy failure");
        respond_with_error_and_die(attrs, verror_get_string());
       }
    
@@ -567,7 +574,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     case MYPROXY_PUT_PROXY:
 	/* log request type */
-        myproxy_log(DBG_IN,debug_level,"Received PUT request from %s", client_name);
+        myproxy_log("Received PUT request from %s", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 	myproxy_debug("  Lifetime is %d seconds", client_request->proxy_lifetime);
 
@@ -581,20 +588,20 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     case MYPROXY_INFO_PROXY:
 	/* log request type */
-        myproxy_log(DBG_IN, debug_level, "Received client %s command: INFO", client_name);
+        myproxy_log("Received client %s command: INFO", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
         info_proxy(client_creds, server_response);
         break;
     case MYPROXY_DESTROY_PROXY:
 	/* log request type */
-        myproxy_log(DBG_IN, debug_level, "Received client %s command: DESTROY", client_name);
+        myproxy_log("Received client %s command: DESTROY", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 
         destroy_proxy(client_creds, server_response);
         break;
     default:
 	/* log request type */
-        myproxy_log(DBG_LO, debug_level,"Received client %s command: Invalid request type");
+        myproxy_log("Received client %s command: Invalid request type");
         strcat(server_response->error_string, "Invalid client request command.\n");
         break;
     }
@@ -603,7 +610,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     send_response(attrs, server_response, client_name);
 
     /* Log request */
-    myproxy_log(DBG_LO, debug_level, "Client %s disconnected", client_name);
+    myproxy_log("Client %s disconnected", client_name);
    
     /* free stuff up */
     if (client_creds != NULL) {
@@ -678,7 +685,10 @@ init_arguments(int argc, char *argv[],
             context->config_file =  malloc(strlen(gnu_optarg) + 1);
             strcpy(context->config_file, gnu_optarg);   
             break;
-        case 'v': /* print version and exit */
+	case 'v':
+	    myproxy_debug_set_level(1);
+	    break;
+        case 'V': /* print version and exit */
             fprintf(stderr, version);
             exit(1);
             break;
@@ -695,9 +705,6 @@ init_arguments(int argc, char *argv[],
             break;
         case 'd':
             debug = 1;
-            break;
-        case 'D':
-            debug_level = atoi (gnu_optarg);
             break;
         default: /* ignore unknown */ 
             arg_error = -1;
@@ -773,7 +780,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
         my_failure("error in myproxy_send()\n");
     } 
 
-    myproxy_log(DBG_LO, debug_level,"ERROR: %s. Exiting", error);
+    myproxy_log("ERROR: %s. Exiting", error);
     
     exit(1);
 }
@@ -825,7 +832,8 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	strcat(response->error_string, "Unable to delegate credentials.\n");
     } else {
-        myproxy_log(DBG_IN, debug_level,"Delegating credentials for %s lifetime=%d", creds->owner_name, min_lifetime);
+        myproxy_log("Delegating credentials for %s lifetime=%d",
+		    creds->owner_name, min_lifetime);
 	response->response_type = MYPROXY_OK_RESPONSE;
     } 
 }
@@ -839,7 +847,8 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     myproxy_debug("Storing credentials for username \"%s\"", creds->user_name);
     myproxy_debug("  Owner is \"%s\"", creds->owner_name);
     myproxy_debug("  Delegation lifetime is %d seconds", creds->lifetime);
-    myproxy_log (DBG_HI, debug_level," Retrievers = %s Renewers = %s", creds->retrievers, creds->renewers); 
+    myproxy_debug("  Retrievers = %s", creds->retrievers);
+    myproxy_debug("  Renewers = %s", creds->renewers); 
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
 	myproxy_log_verror();
@@ -948,7 +957,7 @@ sig_chld(int signo) {
 } 
 
 void sig_exit(int signo) {
-    myproxy_log(DBG_HI, debug_level,"Server killed by signal %d", signo);
+    myproxy_log("Server killed by signal %d", signo);
     exit(0);
 }
 
@@ -961,7 +970,7 @@ failure(const char *failure_message) {
 
 static void
 my_failure(const char *failure_message) {
-    myproxy_log(DBG_LO, debug_level, "Failure: %s", failure_message);       
+    myproxy_log("Failure: %s", failure_message);       
     exit(1);
 } 
 
@@ -1135,7 +1144,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        }
 
        if (credentials_exist && !client_owns_credentials) {
-	   myproxy_log(DBG_IN, debug_level, "Username \"%s\" in use by another client",
+	   myproxy_log("Username \"%s\" in use by another client",
 		       client_request->username);
 	   verror_put_string("Username in use by another client");
 	   goto end;

@@ -18,13 +18,14 @@
 static char usage[] = \
 "\n"\
 "Syntax: myproxy-info [-l username] ...\n"\
-"        myproxy-info [-usage|-help] [-v|-version]\n"\
+"        myproxy-info [-usage|-help] [-version]\n"\
 "\n"\
 "    Options\n"\
 "    -h | --help                Displays usage\n"\
 "    -u | --usage                             \n"\
 "                                            \n"\
-"    -v | --version             Displays version\n"\
+"    -v | --verbose             Display debugging messages\n"\
+"    -V | --version             Displays version\n"\
 "    -l | --username <username> Username for the delegated proxy\n"\
 "    -s | --pshost   <hostname> Hostname of the myproxy-server\n"\
 "    -p | --psport   #          Port of the myproxy-server\n"
@@ -40,12 +41,13 @@ struct option long_options[] =
     {"psport",     required_argument, NULL, 'p'},
     {"usage",            no_argument, NULL, 'u'},
     {"username",   required_argument, NULL, 'l'},
-    {"version",          no_argument, NULL, 'v'},
+    {"verbose",          no_argument, NULL, 'v'},
+    {"version",          no_argument, NULL, 'V'},
     {"dn_as_username",   no_argument, NULL, 'd'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:vd";
+static char short_options[] = "hus:p:l:vVd";
 
 static char version[] =
 "myproxy-destroy version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -238,7 +240,10 @@ init_arguments(int argc,
         case 'l':	/* username */
 	    request->username = strdup(gnu_optarg);
             break;
-        case 'v':       /* print version and exit */
+	case 'v':
+	    myproxy_debug_set_level(1);
+	    break;
+        case 'V':       /* print version and exit */
             fprintf(stderr, version);
             exit(1);
             break;

@@ -848,8 +848,6 @@ my_ssl_init(int verify, int peer_has_proxy)
 }
 #endif
 
-static int debug_level = DBG_IN;
-
 static int
 my_memccmp(unsigned char *s1, unsigned char *s2, unsigned int n)
 {
