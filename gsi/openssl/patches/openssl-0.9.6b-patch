@@ -1,5 +1,475 @@
---- openssl-0.9.6b/crypto/bn/Makefile.ssl.orig	Fri Mar 30 17:53:06 2001
-+++ openssl-0.9.6b/crypto/bn/Makefile.ssl	Mon Jul  9 22:13:02 2001
+diff -r -u -P openssl-0.9.6b/Configure openssl-0.9.6b.patched/Configure
+--- openssl-0.9.6b/Configure	Mon Jul  9 09:08:37 2001
++++ openssl-0.9.6b.patched/Configure	Thu Oct 25 12:16:34 2001
+@@ -186,11 +186,11 @@
+ # Only N32 and N64 ABIs are supported. If you need O32 ABI build, invoke
+ # './Configure irix-[g]cc' manually.
+ # -mips4 flag is added by ./config when appropriate.
+-"irix-mips3-gcc","gcc:-mabi=n32 -mmips-as -O3 -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::MD2_CHAR RC4_INDEX RC4_CHAR RC4_CHUNK_LL DES_UNROLL DES_RISC2 DES_PTR BF_PTR SIXTY_FOUR_BIT:${mips3_irix_asm}",
+-"irix-mips3-cc", "cc:-n32 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::DES_PTR RC4_CHAR RC4_CHUNK_LL DES_RISC2 DES_UNROLL BF_PTR SIXTY_FOUR_BIT:${mips3_irix_asm}",
++"irix-mips3-gcc","gcc:-mabi=n32 -mmips-as -O3 -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::MD2_CHAR RC4_INDEX RC4_CHAR RC4_CHUNK_LL DES_UNROLL DES_RISC2 DES_PTR BF_PTR SIXTY_FOUR_BIT:${mips3_irix_asm}:dlfcn:irix-shared:-shared:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
++"irix-mips3-cc", "cc:-n32 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::DES_PTR RC4_CHAR RC4_CHUNK_LL DES_RISC2 DES_UNROLL BF_PTR SIXTY_FOUR_BIT:${mips3_irix_asm}:dlfcn:irix-shared:-shared:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ # N64 ABI builds.
+-"irix64-mips4-gcc","gcc:-mabi=64 -mips4 -mmips-as -O3 -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::RC4_CHAR RC4_CHUNK DES_RISC2 DES_UNROLL SIXTY_FOUR_BIT_LONG:${mips3_irix_asm}",
+-"irix64-mips4-cc", "cc:-64 -mips4 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::RC4_CHAR RC4_CHUNK DES_RISC2 DES_UNROLL SIXTY_FOUR_BIT_LONG:${mips3_irix_asm}",
++"irix64-mips4-gcc","gcc:-mabi=64 -mips4 -mmips-as -O3 -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::RC4_CHAR RC4_CHUNK DES_RISC2 DES_UNROLL SIXTY_FOUR_BIT_LONG:${mips3_irix_asm}:dlfcn:irix-shared:-shared:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
++"irix64-mips4-cc", "cc:-64 -mips4 -O2 -use_readonly_const -DTERMIOS -DB_ENDIAN -DBN_DIV3W::-D_SGI_MP_SOURCE::RC4_CHAR RC4_CHUNK DES_RISC2 DES_UNROLL SIXTY_FOUR_BIT_LONG:${mips3_irix_asm}:dlfcn:irix-shared:-shared:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ 
+ #### Unified HP-UX ANSI C configs.
+ # Special notes:
+@@ -306,7 +306,7 @@
+ "linux-ppc",    "gcc:-DB_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::BN_LLONG::",
+ "linux-m68k",   "gcc:-DB_ENDIAN -DTERMIO -O2 -fomit-frame-pointer -Wall::-D_REENTRANT::BN_LLONG::",
+ "linux-s390",	"gcc:-DB_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::BN_LLONG::",
+-"linux-ia64",   "gcc:-DL_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall::(unknown)::SIXTY_FOUR_BIT_LONG::",
++"linux-ia64",   "gcc:-DL_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall::-D_REENTRANT:-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK RC4_CHAR:asm/ia64.o:::::::::dlfcn:linux-shared:-fPIC:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ "NetBSD-sparc",	"gcc:-DTERMIOS -O3 -fomit-frame-pointer -mv8 -Wall -DB_ENDIAN::(unknown)::BN_LLONG MD2_CHAR RC4_INDEX DES_UNROLL::::::::::dlfcn:bsd-gcc-shared:-fPIC:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ "NetBSD-m68",	"gcc:-DTERMIOS -O3 -fomit-frame-pointer -Wall -DB_ENDIAN::(unknown)::BN_LLONG MD2_CHAR RC4_INDEX DES_UNROLL::::::::::dlfcn:bsd-gcc-shared:-fPIC:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ "NetBSD-x86",	"gcc:-DTERMIOS -O3 -fomit-frame-pointer -m486 -Wall::(unknown)::BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}::::::::::dlfcn:bsd-gcc-shared:-fPIC:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+@@ -340,10 +340,16 @@
+ "unixware-7-pentium_pro","cc:-O -DFILIO_H -Kalloca -Kpentium_pro::-Kthread:-lsocket -lnsl:BN_LLONG MD2_CHAR RC4_INDEX ${x86_gcc_des}::",
+ 
+ # IBM's AIX.
+-"aix-cc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384::(unknown)::BN_LLONG RC4_CHAR:::",
++"aix-cc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR:::",
++"aix-cc_r",   "cc_r:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR:::",
++"aix-mpcc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR:::",
++"aix-mpcc_r",   "cc_r:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR:::",
+ "aix-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::(unknown)::BN_LLONG RC4_CHAR:::",
+-"aix43-cc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
+-"aix43-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
++"aix43-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::-D_REENTRANT::BN_LLONG RC4_CHAR::::::::::dlfcn:aix-gcc-shared:-shared:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
++"aix43-cc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::-qthreaded -D_THREAD_SAFE::BN_LLONG RC4_CHAR::::::::::dlfcn:aix-shared:-G:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
++"aix43-cc_r",   "cc_r:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
++"aix43-mpcc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
++"aix43-mpcc_r",   "cc_r:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
+ 
+ #
+ # Cray T90 (SDSC)
+@@ -789,6 +795,22 @@
+ my $shlib_version_history = "unknown";
+ my $shlib_major = "unknown";
+ my $shlib_minor = "unknown";
++
++# Check to see if gcc's linker is actually using gnu's linker.
++if ($cc eq 'gcc') {
++  my $ld = `$cc -print-prog-name=ld`;
++  my $result = `$ld -v 2>&1`;
++  if ($result =~ m!(?:GNU)|(?:with BFD)!) {
++    $shared_target = 'gcc-shared';
++  } else {
++    my $cctarget = $target;
++    $cctarget =~ s!-gcc!-cc!;
++    my ( $duncc, $duncflags, $dununistd, $dunthread_cflag, $dunlflags, $dunbn_ops, $dunbn_obj, $dundes_obj, $dunbf_obj,$dunmd5_obj,$dunsha1_obj, $duncast_obj, $dunrc4_obj,$dunrmd160_obj, $dunrc5_obj, $dundso_scheme, $dunshared_target, $dunshared_cflag, $dunshared_extension, $dunranlib)=
++       split(/\s*:\s*/,$table{$cctarget} . ":" x 30 , -1);
++    
++    $shared_target = $dunshared_target;
++  }
++}
+ 
+ open(IN,'<crypto/opensslv.h') || die "unable to read opensslv.h:$!\n";
+ while (<IN>)
+diff -r -u -P openssl-0.9.6b/Makefile openssl-0.9.6b.patched/Makefile
+--- openssl-0.9.6b/Makefile	Mon Jul  9 09:59:47 2001
++++ openssl-0.9.6b.patched/Makefile	Thu Oct 25 12:15:23 2001
+@@ -233,20 +233,21 @@
+ 		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 			for j in $${tmp:-x}; do \
+-				( set -x; rm -f lib$$i$$j ); \
++				( set -x; rm -f lib$${i}$$j ); \
+ 			done; \
+ 		fi; \
+-		( set -x; rm -f lib$$i$(SHLIB_EXT) ); \
++		( set -x; rm -f lib$${i}$(SHLIB_EXT) ); \
+ 	done
+ 
+ link-shared:
+ 	@for i in $(SHLIBDIRS); do \
+-		prev=lib$$i$(SHLIB_EXT); \
++		prev=lib$${i}$(SHLIB_EXT); \
+ 		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 			for j in $${tmp:-x}; do \
+-				( set -x; ln -f -s $$prev lib$$i$$j ); \
+-				prev=lib$$i$$j; \
++				( set -x; rm  -f lib$${i}$$j ); \
++				( set -x; ln -f -s $$prev lib$${i}$$j ); \
++				prev=lib$${i}$$j; \
+ 			done; \
+ 		fi; \
+ 	done
+@@ -257,9 +258,9 @@
+ do_linux-shared: do_gnu-shared
+ do_gnu-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+-	( set -x; ${CC}  -shared -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-Wl,-S,-soname=lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-Wl,--whole-archive lib$$i.a \
++	( set -x; ${CC}  -shared -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,-S,-soname=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,--whole-archive lib$${i}.a \
+ 		-Wl,--no-whole-archive $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
+@@ -267,9 +268,9 @@
+ # This assumes that GNU utilities are *not* used
+ do_tru64-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+-	( set -x; ${CC}  -shared -no_archive -o lib$$i.so \
++	( set -x; ${CC}  -shared -no_archive -o lib$${i}.so \
+ 		-set_version "${SHLIB_VERSION_HISTORY}${SHLIB_VERSION_NUMBER}" \
+-		-all lib$$i.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
++		-all lib$${i}.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
+ 
+@@ -277,11 +278,25 @@
+ do_solaris-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+ 	( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
+-	  set -x; ${CC}  -G -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-h lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-z allextract lib$$i.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	  set -x; ${CC}  -G -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-h lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-z allextract lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
++
++do_irix-shared:
++	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
++	rm -f lib$${i}.so \
++		lib$${i}.so.${SHLIB_MAJOR} \
++		lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR}; \
++	( set -x; ${CC}  -shared -all -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++	lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	libs="$$libs -L. -l$$i"; \
++	ln -s lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++	lib$${i}.so.${SHLIB_MAJOR}; \
++	ln -s lib$${i}.so.${SHLIB_MAJOR} lib$${i}.so; \
++	done
++
+ 
+ Makefile.ssl: Makefile.org
+ 	@echo "Makefile.ssl is older than Makefile.org."
+diff -r -u -P openssl-0.9.6b/Makefile.org openssl-0.9.6b.patched/Makefile.org
+--- openssl-0.9.6b/Makefile.org	Mon Jul  9 09:08:41 2001
++++ openssl-0.9.6b.patched/Makefile.org	Thu Oct 25 12:15:23 2001
+@@ -231,20 +231,21 @@
+ 		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 			for j in $${tmp:-x}; do \
+-				( set -x; rm -f lib$$i$$j ); \
++				( set -x; rm -f lib$${i}$$j ); \
+ 			done; \
+ 		fi; \
+-		( set -x; rm -f lib$$i$(SHLIB_EXT) ); \
++		( set -x; rm -f lib$${i}$(SHLIB_EXT) ); \
+ 	done
+ 
+ link-shared:
+ 	@for i in $(SHLIBDIRS); do \
+-		prev=lib$$i$(SHLIB_EXT); \
++		prev=lib$${i}$(SHLIB_EXT); \
+ 		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 			for j in $${tmp:-x}; do \
+-				( set -x; ln -f -s $$prev lib$$i$$j ); \
+-				prev=lib$$i$$j; \
++				( set -x; rm -f lib$${i}$$j ); \
++				( set -x; ln -f -s $$prev lib$${i}$$j ); \
++				prev=lib$${i}$$j; \
+ 			done; \
+ 		fi; \
+ 	done
+@@ -255,9 +256,9 @@
+ do_linux-shared: do_gnu-shared
+ do_gnu-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+-	( set -x; ${CC}  -shared -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-Wl,-S,-soname=lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-Wl,--whole-archive lib$$i.a \
++	( set -x; ${CC}  -shared -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,-S,-soname=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,--whole-archive lib$${i}.a \
+ 		-Wl,--no-whole-archive $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
+@@ -265,9 +266,9 @@
+ # This assumes that GNU utilities are *not* used
+ do_tru64-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+-	( set -x; ${CC}  -shared -no_archive -o lib$$i.so \
++	( set -x; ${CC}  -shared -no_archive -o lib$${i}.so \
+ 		-set_version "${SHLIB_VERSION_HISTORY}${SHLIB_VERSION_NUMBER}" \
+-		-all lib$$i.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
++		-all lib$${i}.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
+ 
+@@ -275,9 +276,33 @@
+ do_solaris-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+ 	( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
+-	  set -x; ${CC}  -G -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-h lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-z allextract lib$$i.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	  set -x; ${CC}  -G -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-h lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-z allextract lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	libs="$$libs -l$$i"; \
++	done
++
++do_irix-shared:
++	set -x; libs="-L. ${SHLIBDEPS}" ; \
++	for i in ${SHLIBDIRS}; do \
++		lib=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} ; \
++		${CC} $(CFLAG) -all -o $$lib lib$${i}.a $$libs ${EXLIBS} -lc ; \
++	libs="$$libs -l$$i"; \
++	done
++do_aix-gcc-shared:
++	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
++	( set -x; ${CC}  -shared -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,-soname=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR},-G \
++		lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	libs="$$libs -l$$i"; \
++	done
++
++do_aix-shared:
++	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
++	( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
++		 set -x; ${CC} -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,-G,-soname=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
+ 
+diff -r -u -P openssl-0.9.6b/Makefile.ssl openssl-0.9.6b.patched/Makefile.ssl
+--- openssl-0.9.6b/Makefile.ssl	Mon Jul  9 09:59:47 2001
++++ openssl-0.9.6b.patched/Makefile.ssl	Thu Oct 25 12:15:23 2001
+@@ -233,20 +233,21 @@
+ 		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 			for j in $${tmp:-x}; do \
+-				( set -x; rm -f lib$$i$$j ); \
++				( set -x; rm -f lib$${i}$$j ); \
+ 			done; \
+ 		fi; \
+-		( set -x; rm -f lib$$i$(SHLIB_EXT) ); \
++		( set -x; rm -f lib$${i}$(SHLIB_EXT) ); \
+ 	done
+ 
+ link-shared:
+ 	@for i in $(SHLIBDIRS); do \
+-		prev=lib$$i$(SHLIB_EXT); \
++		prev=lib$${i}$(SHLIB_EXT); \
+ 		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 			for j in $${tmp:-x}; do \
+-				( set -x; ln -f -s $$prev lib$$i$$j ); \
+-				prev=lib$$i$$j; \
++				( set -x; rm -f lib$${i}$$j ); \
++				( set -x; ln -f -s $$prev lib$${i}$$j ); \
++				prev=lib$${i}$$j; \
+ 			done; \
+ 		fi; \
+ 	done
+@@ -257,9 +258,9 @@
+ do_linux-shared: do_gnu-shared
+ do_gnu-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+-	( set -x; ${CC}  -shared -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-Wl,-S,-soname=lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-Wl,--whole-archive lib$$i.a \
++	( set -x; ${CC}  -shared -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,-S,-soname=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Wl,--whole-archive lib$${i}.a \
+ 		-Wl,--no-whole-archive $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
+@@ -267,9 +268,9 @@
+ # This assumes that GNU utilities are *not* used
+ do_tru64-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+-	( set -x; ${CC}  -shared -no_archive -o lib$$i.so \
++	( set -x; ${CC}  -shared -no_archive -o lib$${i}.so \
+ 		-set_version "${SHLIB_VERSION_HISTORY}${SHLIB_VERSION_NUMBER}" \
+-		-all lib$$i.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
++		-all lib$${i}.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
+ 
+@@ -277,11 +278,25 @@
+ do_solaris-shared:
+ 	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+ 	( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
+-	  set -x; ${CC}  -G -o lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-h lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-z allextract lib$$i.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	  set -x; ${CC}  -G -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-h lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-z allextract lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
+ 	libs="$$libs -l$$i"; \
+ 	done
++
++do_irix-shared:
++	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
++	rm -f lib$${i}.so \
++		lib$${i}.so.${SHLIB_MAJOR} \
++		lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR}; \
++	( set -x; ${CC}  -shared -all -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++	lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	libs="$$libs -L. -l$$i"; \
++	ln -s lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++	lib$${i}.so.${SHLIB_MAJOR}; \
++	ln -s lib$${i}.so.${SHLIB_MAJOR} lib$${i}.so; \
++	done
++
+ 
+ Makefile.ssl: Makefile.org
+ 	@echo "Makefile.ssl is older than Makefile.org."
+diff -r -u -P openssl-0.9.6b/config openssl-0.9.6b.patched/config
+--- openssl-0.9.6b/config	Fri Mar 30 09:49:08 2001
++++ openssl-0.9.6b.patched/config	Thu Oct 25 12:15:23 2001
+@@ -318,9 +318,11 @@
+ case "$i" in 
+ -d*) PREFIX="debug-";;
+ -t*) TEST="true";;
++-64*) BIT64="true";;
+ -h*) TEST="true"; cat <<EOF
+ Usage: config [options]
+  -d	Add a debug- prefix to machine choice.
++ -64	Use the 64 bit version of the machine choice.
+  -t	Test mode, do not run the Configure perl script.
+  -h	This help.
+ 
+@@ -333,6 +335,10 @@
+ esac
+ done
+ 
++
++#Only guess the compiler if CC is not set
++if test "x$CC" = "x"; then
++
+ # figure out if gcc is available and if so we use it otherwise
+ # we fallback to whatever cc does on the system
+ GCCVER=`(gcc --version) 2>/dev/null`
+@@ -344,6 +350,7 @@
+   GCCVER=`echo $GCCVER | sed 's/\([0-9]\)\.\([0-9]\).*/\1\2/'`
+ else
+   CC=cc
++  GCCVER=
+ fi
+ 
+ if [ "$SYSTEM" = "SunOS" ]; then
+@@ -380,6 +387,37 @@
+ GCCVER=${GCCVER:-0}
+ CCVER=${CCVER:-0}
+ 
++else
++# CC has been specified need to figure out gcc version
++
++GCCVER=`($CC --version) 2>/dev/null`
++if [ "$GCCVER" != "" ]; then
++    CC=gcc
++  # then strip off whatever prefix Cygnus prepends the number with...
++  GCCVER=`echo $GCCVER | sed 's/^[a-z]*\-//'`
++  # peak single digit before and after first dot, e.g. 2.95.1 gives 29
++  GCCVER=`echo $GCCVER | sed 's/\([0-9]\)\.\([0-9]\).*/\1\2/'`
++
++else
++    CCNAME=`echo $CC | sed 's,\(.*\)/\([^/]*\)$,\2,'`
++    if [ "x$CCNAME" = "x" ]; then
++        echo "ERROR: compiler $CC not recognized" >&2
++        exit 1
++    else
++        CC=$CCNAME
++    fi
++
++GCCVER=${GCCVER:-0}
++
++fi
++
++CCVER=${CCVER:-0}
++
++
++fi
++
++
++
+ # read the output of the embedded GuessOS 
+ read GUESSOS
+ 
+@@ -408,10 +446,6 @@
+ 	OUT="irix-mips3-$CC"
+ 	;;
+   mips4-sgi-irix64)
+-	echo "WARNING! If you wish to build 64-bit library, then you have to"
+-	echo "         invoke './Configure irix64-mips4-$CC' *manually*."
+-	echo "         Type return if you want to continue, Ctrl-C to abort."
+-	read waste < /dev/tty
+         CPU=`(hinv -t cpu) 2>/dev/null | sed 's/^CPU:[^R]*R\([0-9]*\).*/\1/'`
+         CPU=${CPU:-0}
+         if [ $CPU -ge 5000 ]; then
+@@ -419,7 +453,11 @@
+         else
+                 options="$options -mips3"
+         fi
+-	OUT="irix-mips3-$CC"
++        if [ "x$BIT64" = "xtrue" ]; then
++            OUT="irix64-mips4-$CC"
++        else
++            OUT="irix-mips3-$CC"
++        fi
+ 	;;
+   alpha-*-linux2)
+         ISA=`awk '/cpu model/{print$4}' /proc/cpuinfo`
+@@ -463,10 +501,9 @@
+   sun4u*-*-solaris2)
+ 	ISA64=`(isalist) 2>/dev/null | grep sparcv9`
+ 	if [ "$ISA64" != "" -a "$CC" = "cc" -a $CCVER -ge 50 ]; then
+-		echo "WARNING! If you wish to build 64-bit library, then you have to"
+-		echo "         invoke './Configure solaris64-sparcv9-cc' *manually*."
+-		echo "         Type return if you want to continue, Ctrl-C to abort."
+-		read waste < /dev/tty
++            if [ "x$BIT64" = "xtrue" ]; then
++                OUT="solaris64-sparcv9-cc"
++            fi
+ 	fi
+ 	OUT="solaris-sparcv9-$CC" ;;
+   sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
+diff -r -u -P openssl-0.9.6b/crypto/asn1/a_d2i_fp.c openssl-0.9.6b.patched/crypto/asn1/a_d2i_fp.c
+--- openssl-0.9.6b/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
++++ openssl-0.9.6b.patched/crypto/asn1/a_d2i_fp.c	Thu Oct 25 12:15:23 2001
+@@ -169,13 +169,17 @@
+ 					ASN1err(ASN1_F_ASN1_D2I_BIO,ERR_R_MALLOC_FAILURE);
+ 					goto err;
+ 					}
+-				i=BIO_read(in,&(b->data[len]),want);
+-				if (i <= 0)
+-					{
+-					ASN1err(ASN1_F_ASN1_D2I_BIO,ASN1_R_NOT_ENOUGH_DATA);
+-					goto err;
+-					}
+-				len+=i;
++                                while(want)
++                                        {
++                                        i=BIO_read(in,&(b->data[len]),want);
++                                        if (i <= 0)
++					        {
++					        ASN1err(ASN1_F_ASN1_D2I_BIO,ASN1_R_NOT_ENOUGH_DATA);
++					        goto err;
++					        }
++				        len+=i;
++                                        want-=i;
++                                        }
+ 				}
+ 			off+=(int)c.slen;
+ 			if (eos <= 0)
+diff -r -u -P openssl-0.9.6b/crypto/bn/Makefile openssl-0.9.6b.patched/crypto/bn/Makefile
+--- openssl-0.9.6b/crypto/bn/Makefile	Fri Mar 30 09:53:06 2001
++++ openssl-0.9.6b.patched/crypto/bn/Makefile	Thu Oct 25 12:16:05 2001
 @@ -124,6 +124,8 @@
  	$(CC) $(ASFLAGS) -E asm/sparcv8plus.S | \
  		/usr/ccs/bin/as -xarch=v8plus - -o asm/sparcv8plus-gcc27.o
@@ -9,8 +479,21 @@
  files:
  	$(PERL) $(TOP)/util/files.pl Makefile.ssl >> $(TOP)/MINFO
  
---- /dev/null	Tue May  5 22:32:27 1998
-+++ openssl-0.9.6b/crypto/bn/asm/ia64.S	Mon Jul  9 22:13:02 2001
+diff -r -u -P openssl-0.9.6b/crypto/bn/Makefile.ssl openssl-0.9.6b.patched/crypto/bn/Makefile.ssl
+--- openssl-0.9.6b/crypto/bn/Makefile.ssl	Fri Mar 30 09:53:06 2001
++++ openssl-0.9.6b.patched/crypto/bn/Makefile.ssl	Thu Oct 25 12:16:05 2001
+@@ -124,6 +124,8 @@
+ 	$(CC) $(ASFLAGS) -E asm/sparcv8plus.S | \
+ 		/usr/ccs/bin/as -xarch=v8plus - -o asm/sparcv8plus-gcc27.o
+ 
++asm/ia64.o: asm/ia64.S
++
+ files:
+ 	$(PERL) $(TOP)/util/files.pl Makefile.ssl >> $(TOP)/MINFO
+ 
+diff -r -u -P openssl-0.9.6b/crypto/bn/asm/ia64.S openssl-0.9.6b.patched/crypto/bn/asm/ia64.S
+--- openssl-0.9.6b/crypto/bn/asm/ia64.S	Wed Dec 31 18:00:00 1969
++++ openssl-0.9.6b.patched/crypto/bn/asm/ia64.S	Thu Oct 25 12:16:05 2001
 @@ -0,0 +1,1489 @@
 +.explicit
 +.text
@@ -1501,3 +1984,19 @@
 +	br.ret.sptk.many	b6;;
 +.endp	bn_div_words#
 +#endif
+diff -r -u -P openssl-0.9.6b/ssl/s3_srvr.c openssl-0.9.6b.patched/ssl/s3_srvr.c
+--- openssl-0.9.6b/ssl/s3_srvr.c	Mon Jul  9 09:11:06 2001
++++ openssl-0.9.6b.patched/ssl/s3_srvr.c	Thu Oct 25 12:15:23 2001
+@@ -537,7 +537,11 @@
+ 		SSL3_ST_SR_CERT_A,
+ 		SSL3_ST_SR_CERT_B,
+ 		-1,
+-		SSL3_RT_MAX_PLAIN_LENGTH,
++#if defined(MSDOS) && !defined(WIN32)
++                1024*30, /* 30k max cert list :-) */
++#else
++                1024*100, /* 100k max cert list :-) */
++#endif
+ 		&ok);
+ 	if (!ok) return((int)n);
+ 	s->s3->tmp.reuse_message = 1;
