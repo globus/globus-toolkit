@@ -24,12 +24,17 @@
     <Source_Dependencies Type="compile" >
       <Dependency Name="aggregator"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
-      <Dependency Name="gram"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="grim"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="mjs"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Build_Instructions>
 
 	    <Build_Step> ant -Dogsa.root=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> mkdir -p INSTALLDIR_GPTMACRO/gars</Build_Step>
+	    <Build_Step> cp build/lib/mmjfs.gar INSTALLDIR_GPTMACRO/gars</Build_Step>
+	    <Build_Step> cp build.xml INSTALLDIR_GPTMACRO/gars/build-mmjfs.xml</Build_Step>
+	    <Build_Step> cp build-setuid.xml INSTALLDIR_GPTMACRO/gars/build-setuid.xml</Build_Step>
 	    <Build_Step> ant deployGar -Dogsa.root=INSTALLDIR_GPTMACRO</Build_Step>
 
     </Build_Instructions>

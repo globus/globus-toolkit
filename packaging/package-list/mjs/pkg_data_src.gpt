@@ -24,7 +24,6 @@
     <Source_Dependencies Type="compile" >
       <Dependency Name="core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="filestreaming"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
-      <Dependency Name="grim"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="providers"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 

@@ -1,5 +1,2 @@
-etc/rips.providers
-etc/ripsConfig.xml
-etc/databaseSchema/jm_database_schema.sql
 etc/test.xml
 gars/mjs.gar
