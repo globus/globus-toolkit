@@ -1,18 +1,6 @@
 #ifndef GLOBUS_I_GFS_IPC_H
 #define GLOBUS_I_GFS_IPC_H
 
-
-/*
- *  replying
- *
- *  every comman requires a reply and comes with a reply id.  to reply
- *  the callee must fill in the globus_gfs_ipc_reply_t
- *  structure and then pass it
- *  to the function: globus_gfs_ipc_reply();  That call will result in
- *  the ipc communication that will untilimately call the callback
- *  on the callers side.
- */
-
 typedef struct globus_gfs_ipc_handle_s
 {
     globus_xio_handle_t                 xio_handle;
@@ -26,6 +14,18 @@ typedef struct globus_gfs_ipc_handle_s
     globus_mutex_t                      mutex;
 
 } globus_gfs_ipc_handle_t;
+
+/*
+ *  replying
+ *
+ *  every comman requires a reply and comes with a reply id.  to reply
+ *  the callee must fill in the globus_gfs_ipc_reply_t
+ *  structure and then pass it
+ *  to the function: globus_gfs_ipc_reply();  That call will result in
+ *  the ipc communication that will untilimately call the callback
+ *  on the callers side.
+ */
+
 
 typedef struct globus_gfs_ipc_passive_reply_s
 {
