@@ -19,9 +19,13 @@ my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus/";
 my $result = `$setupdir/setup-ssl-utils-sh-scripts`;
 
-$result = system("chmod 0755 $setupdir/grid-cert-request-config");
+$result = system("cp $setupdir/grid-security.conf /etc/grid-security/grid-security.conf");
+
+$result = system("chmod 0644 /etc/grid-security/grid-security.conf");
 
 $result = system("chmod 0755 $setupdir/grid-security-config");
+
+$result = system("chmod 0755 $setupdir/grid-cert-request-config");
 
 $result = system("$setupdir/grid-security-config");
 
