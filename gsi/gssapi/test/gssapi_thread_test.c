@@ -6,8 +6,8 @@
 #include <sys/un.h>
 
 
-#define NUM_CLIENTS 1
-#define ITERATIONS 1
+#define NUM_CLIENTS 10
+#define ITERATIONS 10
 
 struct thread_arg
 {
