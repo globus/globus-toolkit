@@ -9,6 +9,7 @@
 #include <memory.h>
 #include <fcntl.h>
 #include "globus_nexus.h"
+#include "globus_gram_job_manager.h"
 #include "globus_gram_client.h"
 #include "globus_i_gram_jm.h"
 
@@ -19,8 +20,6 @@
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
-
-extern char * grami_jm_libexecdir;
 
 /******************************************************************************
                        Define variables for external use
@@ -37,7 +36,7 @@ Parameters:     filled out params structure
 Returns:        1 if a paradyn job, 0 if not
 ******************************************************************************/
 int
-grami_is_paradyn_job(gram_request_param_t * params)
+grami_is_paradyn_job(globus_gram_jobmanager_request_t * params)
 {
 
     if (params->paradyn)
@@ -47,7 +46,7 @@ grami_is_paradyn_job(gram_request_param_t * params)
 
     return 0;
 
-} /* grami_paradyn_is_paradyn_job() */
+} /* grami_is_paradyn_job() */
 
 /******************************************************************************
 Function:       grami_paradyn_rewrite_params()
@@ -57,7 +56,7 @@ Parameters:     Filled out params structure
 Returns:        1 if it successfully 
 ******************************************************************************/
 int
-grami_paradyn_rewrite_params(gram_request_param_t * params)
+grami_paradyn_rewrite_params(globus_gram_jobmanager_request_t * params)
 {
     char tmp_string[GLOBUS_GRAM_CLIENT_PARAM_SIZE*4];
     char paradyn_port[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
@@ -93,7 +92,7 @@ grami_paradyn_rewrite_params(gram_request_param_t * params)
         return 0;
     }
 
-    for (i = 0; (params->pgm_args)[i]; i++)
+    for (i = 0; (params->arguments)[i]; i++)
         ;
 
     /* make new args big enough to handle all the paradyn ones plus the old
@@ -124,52 +123,33 @@ grami_paradyn_rewrite_params(gram_request_param_t * params)
      *  of a problem with paradynd.
      */
 
-    if (params->pgm[0] != '/')
+    if (params->executable[0] != '/')
     {
-        (new_args)[5]=(char *) malloc (sizeof(char *) * strlen(params->pgm) +3);
+        (new_args)[5]=(char *) malloc (sizeof(char *) * 
+                       strlen(params->executable) +3);
         strcpy((new_args)[5], "./");
-        strcat((new_args)[5], params->pgm);
+        strcat((new_args)[5], params->executable);
 
     }
     else
     {
-        (new_args)[5]=(char *) malloc (sizeof(char *) * strlen(params->pgm) +1);
-        strcpy((new_args)[5], params->pgm);
+        (new_args)[5]=(char *) malloc (sizeof(char *) *
+                       strlen(params->executable) +1);
+        strcpy((new_args)[5], params->executable);
     }
-
-
-/* 
- * old method for creating params->pgm_args
-
-       sprintf(tmp_string,"-p%s -m%s -l2 -z%s -runme ./%s %s"
-                         ,paradyn_port
-                         ,paradyn_host
-                         ,paradynd_type
-                         ,params->pgm
-                         ,params->pgm_args);
-
-       sprintf(tmp_string,"-p%s -m%s -l2 -z%s -runme %s %s"
-                         ,paradyn_port
-                         ,paradyn_host
-                         ,paradynd_type
-                         ,params->pgm
-                         ,params->pgm_args);
-
-    strncpy(params->pgm_args,tmp_string,GLOBUS_GRAM_CLIENT_PARAM_SIZE);
-*/
 
     /* Tack on the user defined arguments to the list
      */
-    for (i = 0; (params->pgm_args)[i]; i++)
+    for (i = 0; (params->arguments)[i]; i++)
     {
         (new_args)[i+6] = (char *) malloc (sizeof(char *) * 
-                                     strlen((params->pgm_args)[i]) +1);
-        strcpy((new_args)[i+6], (params->pgm_args)[i]);
+                                     strlen((params->arguments)[i]) +1);
+        strcpy((new_args)[i+6], (params->arguments)[i]);
     }
 
     (new_args)[i+6] = NULL;
 
-    params->pgm_args = new_args;
+    params->arguments = new_args;
 
     /*
      * Change program name to paradynd
@@ -177,18 +157,17 @@ grami_paradyn_rewrite_params(gram_request_param_t * params)
 
     if (strlen(paradynd_location) == 0)
     {
-        params->pgm = (char *) globus_malloc (sizeof(char *) * 
-                                              strlen(grami_jm_libexecdir) +
-                                              17);
-        strcpy(params->pgm,"file://");
-        strcat(params->pgm,grami_jm_libexecdir);
-        strcat(params->pgm,"/paradynd");
+        params->executable = (char *) globus_malloc (sizeof(char *) * 
+                              strlen(params->jobmanager_libexecdir) + 17);
+        strcpy(params->executable,"file://");
+        strcat(params->executable,params->jobmanager_libexecdir);
+        strcat(params->executable,"/paradynd");
     }
     else
     {
-        params->pgm = (char *) globus_malloc (sizeof(char *) * 
+        params->executable = (char *) globus_malloc (sizeof(char *) * 
                                               strlen(paradynd_location) + 1);
-        strcpy(params->pgm,paradynd_location);
+        strcpy(params->executable,paradynd_location);
     }
 
     return 1;
