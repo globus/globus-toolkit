@@ -1277,12 +1277,6 @@ globus_i_ftp_client_target_find(
 					    &(*target)->url);
 	if(err)
 	{
-	    err = globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		err,
-		"[%s] Cannot construct target at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
 	    goto free_target;
 	}
 	
