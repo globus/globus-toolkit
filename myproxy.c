@@ -817,13 +817,14 @@ myproxy_serialize_response(const myproxy_response_t *response,
 		if (!(response->data).creds.info_creds[i].credname)
 		{
 			// credential description
-			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_DESC_STRING, 
-						(response->data).creds.info_creds[i].creddesc, "\n", NULL);
+			if ((response->data).creds.info_creds[i].creddesc) {
+			    len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_DESC_STRING, (response->data).creds.info_creds[i].creddesc, "\n", NULL);
 
-			if (len == -1)
+			    if (len == -1)
 				goto error;
 
-			totlen += len;
+			    totlen += len;
+			}
 
 			// start time
 			snprintf(date, sizeof (date), "%lu",  (response->data).creds.info_creds[i].cred_start_time);
