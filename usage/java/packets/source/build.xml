@@ -53,6 +53,14 @@
         <jar destfile="${build.lib.dir}/${jar.name}" basedir="${build.dest}"/>
     </target>
 
+    <target name="libjar" depends="compile">
+        <jar destfile="${build.lib.dir}/globus_usage_sender.jar" 
+             basedir="${build.dest}"
+             includes="**/CustomByteBuffer*, 
+                       **/UsageMonitorPacket*, 
+                       **/IPTimeMonitorPacket*"/>
+    </target>
+
     <target name="dist" depends="jar">
         <ant antfile="${build.packages}" target="makeGar">
             <reference refid="${garjars.id}"/>
