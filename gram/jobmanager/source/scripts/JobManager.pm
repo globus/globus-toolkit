@@ -26,6 +26,7 @@ Globus::GRAM::JobManager - Base class for all Job Manager scripts
  $manager = new Globus::GRAM::JobManager($job_description);
 
  $manager->log("Starting new operation");
+ $manager->respond($hashref);
  $hashref = $manager->submit();
  $hashref = $manager->poll();
  $hashref = $manager->cancel();
@@ -99,12 +100,14 @@ sub log
     return;
 }
 
-=item $manager->respond($hashref)
+=item $manager->respond($message)
 
-Send a response to the job manager program. The response hashref consists
-of a hash of (variable, value) pairs, which will be returned to the job
-manager. This only needs to be called when the script wants to send a partial
-response while processing one of the scheduler interface methods (for example,
+Send a response to the job manager program. The response may either be
+a hash reference consisting of a hash of (variable, value) pairs, which will
+be returned to the job manager, or an already formatted string.
+This only needs to be directly called by a job manager implementation
+when the script wants to send a partial response while processing one of
+the scheduler interface methods (for example,
 to indicate that a file has been staged). 
 
 The valid keys for a response are defined in the RESPONSES section.
@@ -117,10 +120,17 @@ sub respond
     my $result = shift;
     my $var;
 
-    foreach (keys %{$result})
+    if(!ref($result))
     {
-	$var = uc($_);
-	print "GRAM_SCRIPT_$var:" . $result->{$_} . "\n";
+	print $result;
+    }
+    else
+    {
+	foreach (keys %{$result})
+	{
+	    $var = uc($_);
+	    print "GRAM_SCRIPT_$var:" . $result->{$_} . "\n";
+	}
     }
 }
 

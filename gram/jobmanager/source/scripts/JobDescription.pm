@@ -119,7 +119,8 @@ passed to the constructor.
 sub save
 {
     my $self = shift;
-    my $file = new IO::File(">$self->{_description_file}.new");
+    my $filename = shift or "$self->{_description_file}.new";
+    my $file = new IO::File(">$filename");
 
     $file->print("\$description = {\n");
 
@@ -133,7 +134,10 @@ sub save
     $file->print("};\n");
     $file->close();
 
-    rename("$self->{_description_file}.new", $self->{_description_file});
+    if($filename eq "$self->{_description_file}.new")
+    {
+	rename("$self->{_description_file}.new", $self->{_description_file});
+    }
 
     return 0;
 }
