@@ -129,7 +129,6 @@ typedef struct globus_l_gfs_ipc_connection_s
     char *                              community;
     char *                              cookie;
     char *                              username;
-    char *                              home_dir;
     char *                              subject;
     char *                              host_id;
     globus_bool_t                       map_user;
@@ -367,10 +366,6 @@ globus_l_gfs_ipc_handle_destroy(
     {
         globus_free(ipc->connection_info.subject);
     }
-    if(ipc->connection_info.home_dir)
-    {
-        globus_free(ipc->connection_info.home_dir);
-    }
     if(ipc->connection_info.host_id)
     {
         globus_free(ipc->connection_info.host_id);
@@ -419,6 +414,10 @@ globus_l_gfs_ipc_request_destroy(
                 if(stat_reply->stat_array != NULL)
                 {
                     globus_free(stat_reply->stat_array);
+                }
+                if(stat_reply->gid_array != NULL)
+                {
+                    globus_free(stat_reply->gid_array);
                 }
                 break;
             case GLOBUS_GFS_OP_COMMAND:
@@ -593,14 +592,6 @@ globus_l_gfs_ipc_session_info_copy(
             goto subject_error;
         }
     }
-    if(session_info->home_dir)
-    {
-        cp->home_dir = strdup(session_info->home_dir);
-        if(cp->home_dir == NULL)
-        {
-            goto home_dir_error;
-        }
-    }
     if(session_info->cookie)
     {
         cp->cookie = strdup(session_info->cookie);
@@ -623,8 +614,6 @@ globus_l_gfs_ipc_session_info_copy(
 host_id_error:
     globus_free(cp->host_id);
 cookie_error:
-    globus_free(cp->home_dir);
-home_dir_error:
     globus_free(cp->subject);
 subject_error:
     globus_free(cp->password);
@@ -656,10 +645,6 @@ globus_l_gfs_session_info_free(
         if(session_info->subject)
         {
             globus_free(session_info->subject);
-        }
-        if(session_info->home_dir)
-        {
-            globus_free(session_info->home_dir);
         }
         if(session_info->cookie)
         {
@@ -944,7 +929,7 @@ globus_l_gfs_ipc_request_ss_body_cb(
     }
     GFSDecodeString(buffer, len, reply.info.session.username);
     GFSDecodeString(buffer, len, reply.info.session.home_dir);
-
+          
     if(ipc->open_cb)
     {
         ipc->open_cb(ipc, result, &reply, ipc->user_arg);
@@ -1055,8 +1040,6 @@ globus_l_gfs_ipc_reply_ss_body_cb(
         globus_libc_strdup(ipc->connection_info.cookie);
     ipc->session_info->host_id = 
         globus_libc_strdup(ipc->connection_info.host_id);
-    ipc->session_info->home_dir = 
-        globus_libc_strdup(ipc->connection_info.home_dir);
     ipc->session_info->map_user = ipc->connection_info.map_user;
     GFSDecodeString(buffer, len, ipc->session_info->password);
     
@@ -1361,7 +1344,6 @@ globus_l_gfs_ipc_read_new_body_cb(
     GFSDecodeString(ptr, size, ipc->connection_info.subject);
     GFSDecodeString(ptr, size, ipc->connection_info.username);
     GFSDecodeString(ptr, size, ipc->connection_info.host_id);
-    GFSDecodeString(ptr, size, ipc->connection_info.home_dir);
     GFSDecodeUInt32(ptr, size, ipc->connection_info.map_user);
 
     if(strcmp(ipc->connection_info.version, globus_l_gfs_local_version) != 0)
@@ -1932,8 +1914,6 @@ globus_l_gfs_ipc_client_open_cb(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.username);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.host_id);
-        GFSEncodeString(
-            buffer, ipc->buffer_size, ptr, ipc->connection_info.home_dir);
         GFSEncodeUInt32(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.map_user);
         msg_size = ptr - buffer;
@@ -2063,8 +2043,6 @@ globus_l_gfs_ipc_handle_connect(
         session_info->subject ? strdup(session_info->subject) : NULL;
     ipc->connection_info.username = 
         session_info->username ? strdup(session_info->username) : NULL;
-    ipc->connection_info.home_dir = 
-        session_info->home_dir ? strdup(session_info->home_dir) : NULL;
     ipc->connection_info.host_id = strdup(session_info->host_id);
     ipc->connection_info.map_user = session_info->map_user;
 
@@ -2072,7 +2050,7 @@ globus_l_gfs_ipc_handle_connect(
     {
         globus_xio_attr_init(&attr);
         if(session_info->del_cred != NULL &&
-            globus_i_gfs_config_bool("ipc_gsi"))
+            globus_i_gfs_config_bool("secure_ipc"))
         {
             globus_xio_attr_cntl(
                 attr, globus_l_gfs_gsi_driver,
@@ -2213,7 +2191,6 @@ globus_gfs_ipc_handle_obtain_by_path(
         tmp_ci.community = community->name;
         tmp_ci.cookie = session_info->cookie;
         tmp_ci.username = session_info->username;
-        tmp_ci.home_dir = session_info->home_dir;
         tmp_ci.subject = session_info->subject;
         tmp_ci.map_user = session_info->map_user;
 
@@ -2586,9 +2563,22 @@ globus_l_gfs_ipc_unpack_reply(
                 GFSDecodeUInt32(
                     buffer, len, reply->info.stat.stat_array[ctr].ino);
             }
-            GFSDecodeUInt32(
-                buffer, len, reply->info.stat.uid);
-
+            GFSDecodeUInt32(buffer, len, reply->info.stat.uid);
+            GFSDecodeUInt32(buffer, len, reply->info.stat.gid_count);
+            if(reply->info.stat.gid_count > 0)
+            {
+                reply->info.stat.gid_array = (int *) globus_malloc(
+                    reply->info.stat.gid_count * sizeof(int));
+                for(ctr = 0; ctr < reply->info.stat.gid_count; ctr++)
+                {
+                    GFSDecodeUInt32(
+                        buffer, len, reply->info.stat.gid_array[ctr]);
+                }                        
+            }
+            else
+            {
+                reply->info.stat.gid_array = NULL;
+            }
             break;
 
         case GLOBUS_GFS_OP_COMMAND:
@@ -2648,6 +2638,10 @@ globus_l_gfs_ipc_unpack_reply(
         if(reply->info.stat.stat_array != NULL)
         {
             globus_free(reply->info.stat.stat_array);
+        }
+        if(reply->info.stat.gid_array != NULL)
+        {
+            globus_free(reply->info.stat.gid_array);
         }
         globus_free(reply);
     }
@@ -3702,7 +3696,7 @@ globus_gfs_ipc_init(
     {
         goto stack_push_error;
     }
-    if(globus_i_gfs_config_bool("ipc_gsi"))
+    if(globus_i_gfs_config_bool("secure_ipc"))
     {
         res = globus_xio_driver_load("gsi", &globus_l_gfs_gsi_driver);
         if(res != GLOBUS_SUCCESS)
@@ -4092,8 +4086,17 @@ globus_gfs_ipc_reply_finished(
                             reply->info.stat.stat_array[ctr].ino);
                     }
                     GFSEncodeUInt32(
-                        buffer, ipc->buffer_size, ptr, 
-                        reply->info.stat.uid);
+                        buffer, ipc->buffer_size, 
+                        ptr, reply->info.stat.uid);
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size,
+                        ptr, reply->info.stat.gid_count);
+                    for(ctr = 0; ctr < reply->info.stat.gid_count; ctr++)
+                    {
+                        GFSEncodeUInt32(
+                            buffer, ipc->buffer_size,
+                            ptr, reply->info.stat.gid_array[ctr]);
+                    }
 
                     break;
 

@@ -38,12 +38,8 @@ cleanup:
 
 **Usability issues:
 DOC DOC DOC
-only load one config file, first found
 be chatty while parsing config
-change option names to better group together common options
-syslog module
 ipc security options - doc well, make sure it works the way we expect
-    access lists for front/backend connections? 
 need some spec compliant support for partitioned layout
     current stripeblocksize impl is basically spec compliant RR
 
@@ -63,4 +59,5 @@ known bugs:
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other
     calls that attempt to use the handle.
+-- commands belong in server-lib
     

@@ -1,6 +1,6 @@
 Summary: Library providing support for "XML Signature" and "XML Encryption" standards
 Name: globus_xmlsec1
-Version: 1.4
+Version: 1.6
 Release: 1
 License: MIT
 Group: Development/Libraries

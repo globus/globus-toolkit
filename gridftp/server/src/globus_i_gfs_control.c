@@ -293,10 +293,6 @@ globus_l_gfs_auth_session_cb(
     {
         globus_free(auth_info->session_info->subject);
     }
-    if(auth_info->session_info->home_dir != NULL)
-    {
-        globus_free(auth_info->session_info->home_dir);
-    }
     globus_free(auth_info->session_info);
     globus_free(auth_info);
 }
@@ -416,9 +412,11 @@ globus_l_gfs_data_stat_cb(
         tmp_str = globus_error_print_friendly(globus_error_peek(reply->result));
         globus_gridftp_server_control_finished_resource(
             op,
-            reply->info.stat.stat_array,
-            reply->info.stat.stat_count,
-            reply->info.stat.uid,
+            NULL,
+            0,
+            0,
+            0,
+            NULL,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
             tmp_str);
         globus_free(tmp_str);
@@ -430,6 +428,8 @@ globus_l_gfs_data_stat_cb(
             reply->info.stat.stat_array,
             reply->info.stat.stat_count,
             reply->info.stat.uid,
+            reply->info.stat.gid_count,
+            reply->info.stat.gid_array,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             GLOBUS_NULL);
     }
@@ -1511,17 +1511,17 @@ globus_l_gfs_control_log(
     switch(type)
     {
       case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY:
-        log_type = GLOBUS_I_GFS_LOG_CONTROL;
+        log_type = GLOBUS_I_GFS_LOG_DUMP;
         globus_i_gfs_log_message(log_type, "%s: [SERVER]: %s",
             instance->remote_contact, message);
         break;
       case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR:
-        log_type = GLOBUS_I_GFS_LOG_ERR;
+        log_type = GLOBUS_I_GFS_LOG_WARN;
         globus_i_gfs_log_message(log_type, "%s: [CLIENT ERROR]: %s",
             instance->remote_contact, message);
          break;
       default:
-        log_type = GLOBUS_I_GFS_LOG_CONTROL;
+        log_type = GLOBUS_I_GFS_LOG_DUMP;
         globus_i_gfs_log_message(log_type, "%s: [CLIENT]: %s",
             instance->remote_contact, message);
          break;
@@ -1710,7 +1710,7 @@ globus_i_gfs_control_start(
         goto error_attr_setup;
     }
 
-    idle_timeout = globus_i_gfs_config_int("idle_timeout");
+    idle_timeout = globus_i_gfs_config_int("control_idle_timeout");
     if(idle_timeout)
     {
         result = globus_gridftp_server_control_attr_set_idle_time(

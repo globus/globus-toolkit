@@ -14,7 +14,7 @@
 
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
-#       define OPENSSLDIR "/sandbox/blau/i18n3/INSTALL/"
+#       define OPENSSLDIR "/sandbox/mlink/gridftp-server3b-branch/INSTALL"
 #   endif
 #endif
 

@@ -3907,6 +3907,7 @@ globus_gridftp_server_control_finished_auth(
             }
             op->server_handle->username = strdup(username);
         }
+        
         op->response_type = response_code;
         if(op->response_type == GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
         {
@@ -3932,9 +3933,11 @@ globus_gridftp_server_control_finished_resource(
     globus_gridftp_server_control_op_t  op,
     globus_gridftp_server_control_stat_t *  stat_info_array,
     int                                 stat_count,
-    uid_t                               uid,
+    int                                 uid,
+    int                                 gid_count,
+    int *                               gid_array,
     globus_gridftp_server_control_response_t response_code,
-    const char *                            msg)
+    const char *                        msg)
 {
     int                                 ctr;
     globus_result_t                     res = GLOBUS_SUCCESS;
@@ -3958,11 +3961,25 @@ globus_gridftp_server_control_finished_resource(
             globus_malloc(sizeof(globus_gridftp_server_control_stat_t) *
                 stat_count);
         op->stat_count = stat_count;
-        op->uid = uid;
         for(ctr = 0; ctr < op->stat_count; ctr++)
         {
             globus_i_gsc_stat_cp(
                 &op->stat_info[ctr], &stat_info_array[ctr]);
+        }
+        op->uid = uid;
+        
+        /* added gid stuff here, doesn't get pushed all the way through to
+            the cwd or mlsd funcs yet, but that is all internal api so easy
+            to change. */
+        op->gid_count = gid_count;
+        if(gid_count != 0 && gid_array != NULL)
+        {
+            op->gid_array = (int *) 
+                globus_malloc(gid_count * sizeof(int));
+            memcpy(
+                op->gid_array, 
+                gid_array, 
+                gid_count * sizeof(int));
         }
     }
     else

@@ -79,7 +79,7 @@ do
 	;;
 
     --version)
-	echo 1.4
+	echo 1.6
 	exit 0
 	;;
     

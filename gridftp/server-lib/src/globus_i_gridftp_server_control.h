@@ -244,9 +244,10 @@ typedef struct globus_i_gsc_op_s
     globus_gridftp_server_control_stat_t *  stat_info;
     int                                     stat_count;
 
-    uid_t                                   uid;
-
     /* stuff for resource */
+    int                                     uid;
+    int                                     gid_count;
+    int *                                   gid_array;
     char *                                  path;
     globus_gridftp_server_control_resource_mask_t mask;
 

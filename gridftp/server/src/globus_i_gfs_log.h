@@ -3,9 +3,12 @@
 
 typedef enum
 {
-    GLOBUS_I_GFS_LOG_ERR = 0x1,
-    GLOBUS_I_GFS_LOG_INFO = 0x2,
-    GLOBUS_I_GFS_LOG_CONTROL = 0x4
+    GLOBUS_I_GFS_LOG_ERR = 0x01,
+    GLOBUS_I_GFS_LOG_WARN = 0x02,
+    GLOBUS_I_GFS_LOG_INFO = 0x04,
+    GLOBUS_I_GFS_LOG_DUMP = 0x08,
+    
+    GLOBUS_I_GFS_LOG_ALL = 0xFF
 } globus_i_gfs_log_type_t;
 
 void

@@ -64,8 +64,14 @@ typedef struct
 typedef struct
 {
     globus_i_gfs_acl_handle_t           acl_handle;
+    
     gss_cred_id_t                       del_cred;   
     char *                              username;   
+    char *                              home_dir;
+    uid_t                               uid;
+    int                                 gid_count;
+    gid_t *                             gid_array; 
+      
     void *                              session_arg;
     void *                              data_handle;
     globus_mutex_t                      mutex;
@@ -130,7 +136,10 @@ typedef struct globus_l_gfs_data_operation_s
 
     int                                 stripe_connections_pending;
        
+    /* used to shift the offset from the dsi due to partial/restart */
     int                                 write_delta;
+    /* used to shift the offset from the dsi due to partial/restart */
+    int                                 transfer_delta;
     int                                 stripe_chunk;
     globus_range_list_t                 stripe_range_list;
     
@@ -542,7 +551,7 @@ globus_l_gfs_data_auth_init_cb(
     {
         goto error;
     }
-    
+
     op->session_handle->username = globus_libc_strdup(session_info->username);
     
     if(op->session_handle->dsi->init_func != NULL)
@@ -554,7 +563,7 @@ globus_l_gfs_data_auth_init_cb(
         finished_info.result = GLOBUS_SUCCESS;
         finished_info.info.session.session_arg = op->session_handle;
         finished_info.info.session.username = session_info->username;
-        finished_info.info.session.home_dir = session_info->home_dir;
+        finished_info.info.session.home_dir = op->session_handle->home_dir;
 
         if(op->callback == NULL)
         {
@@ -806,13 +815,15 @@ globus_l_gfs_data_authorize(
         res = GlobusGFSErrorParameter("setuid");
         goto uid_error;
     }
+    op->session_handle->uid = pwent->pw_uid;
+    op->session_handle->gid_count = getgroups(0, NULL);
+    op->session_handle->gid_array = (gid_t *) globus_malloc(
+        op->session_handle->gid_count * sizeof(gid_t));
+    getgroups(op->session_handle->gid_count, op->session_handle->gid_array);
+    
     if(pwent->pw_dir != NULL)
     {
-        if(session_info->home_dir != NULL)
-        {
-            globus_free(session_info->home_dir);
-        }
-        session_info->home_dir = strdup(pwent->pw_dir);
+        op->session_handle->home_dir = strdup(pwent->pw_dir);
     }
 
     rc = globus_i_gfs_acl_init(
@@ -866,7 +877,7 @@ globus_i_gfs_data_init()
 {
     char *                              dsi_name;
     
-    dsi_name = globus_i_gfs_config_string("dsi");
+    dsi_name = globus_i_gfs_config_string("load_dsi_module");
     
     globus_extension_register_builtins(local_extensions);
 
@@ -1035,7 +1046,9 @@ globus_l_gfs_data_stat_kickout(
         globus_error_put(bounce_info->error) : GLOBUS_SUCCESS;
     reply.info.stat.stat_array =  bounce_info->stat_array;
     reply.info.stat.stat_count =  bounce_info->stat_count;
-    reply.info.stat.uid =  bounce_info->op->uid;
+    reply.info.stat.uid = bounce_info->op->session_handle->uid;
+    reply.info.stat.gid_count = bounce_info->op->session_handle->gid_count;
+    reply.info.stat.gid_array = bounce_info->op->session_handle->gid_array;
 
     if(bounce_info->op->callback != NULL)
     {
@@ -2822,25 +2835,6 @@ globus_l_gfs_data_end_transfer_kickout(
         }
     }
 
-    reply.type = GLOBUS_GFS_OP_TRANSFER;
-    reply.id = op->id;
-    reply.result = op->cached_res;
-    
-    globus_assert(!op->writing || 
-        (op->sent_partial_eof == 1 || op->stripe_count == 1 ||
-        (op->node_ndx == 0 && op->eof_ready))); 
-    /* tell the control side the finished was called */
-    if(op->callback != NULL)
-    {
-        op->callback(&reply, op->user_arg);
-    }
-    else
-    {
-        globus_gfs_ipc_reply_finished(
-            op->ipc_handle,
-            &reply);
-    }
-
     /* log transfer */
     if(op->node_ndx == 0 && globus_i_gfs_config_string("log_transfer")
         && op->cached_res == GLOBUS_SUCCESS)
@@ -2906,6 +2900,25 @@ globus_l_gfs_data_end_transfer_kickout(
             "/",
             type,
             op->session_handle->username);            
+    }
+
+    reply.type = GLOBUS_GFS_OP_TRANSFER;
+    reply.id = op->id;
+    reply.result = op->cached_res;
+    
+    globus_assert(!op->writing || 
+        (op->sent_partial_eof == 1 || op->stripe_count == 1 ||
+        (op->node_ndx == 0 && op->eof_ready))); 
+    /* tell the control side the finished was called */
+    if(op->callback != NULL)
+    {
+        op->callback(&reply, op->user_arg);
+    }
+    else
+    {
+        globus_gfs_ipc_reply_finished(
+            op->ipc_handle,
+            &reply);
     }
    
     /* remove the refrence for this callback.  It is posible the before
@@ -3282,7 +3295,7 @@ globus_l_gfs_data_read_cb(
         error ? globus_error_put(globus_object_copy(error)) : GLOBUS_SUCCESS,
         buffer,
         length,
-        offset,
+        offset + bounce_info->op->write_delta,
         eof,
         bounce_info->user_arg);
     
@@ -3354,7 +3367,7 @@ globus_l_gfs_data_trev_kickout(
     }
     globus_mutex_unlock(&bounce_info->op->session_handle->mutex);
 
-    if(globus_i_gfs_config_bool("sync"))
+    if(globus_i_gfs_config_bool("sync_writes"))
     {
         sync();
     }
@@ -3818,6 +3831,19 @@ globus_i_gfs_data_session_start(
     }
     else
     {
+        struct passwd *                 pwent;
+        
+        op->session_handle->uid = getuid();
+        op->session_handle->gid_count = getgroups(0, NULL);
+        op->session_handle->gid_array = (gid_t *) globus_malloc(
+            op->session_handle->gid_count * sizeof(gid_t));
+        getgroups(op->session_handle->gid_count, op->session_handle->gid_array);
+        
+        pwent = getpwuid(op->session_handle->uid);
+        if(pwent->pw_dir != NULL)
+        {
+            op->session_handle->home_dir = strdup(pwent->pw_dir);
+        }
         globus_l_gfs_data_auth_init_cb(NULL, op, GLOBUS_SUCCESS);
     }
 }
@@ -3858,6 +3884,14 @@ globus_i_gfs_data_session_stop(
             if(session_handle->username)
             {
                 globus_free(session_handle->username);
+            }
+            if(session_handle->home_dir)
+            {
+                globus_free(session_handle->home_dir);
+            }
+            if(session_handle->gid_array)
+            {
+                globus_free(session_handle->gid_array);
             }
             globus_handle_table_destroy(&session_handle->handle_table);
             globus_i_gfs_acl_destroy(&session_handle->acl_handle);
@@ -4345,13 +4379,10 @@ globus_gridftp_server_operation_finished(
             break;
 
         case GLOBUS_GFS_OP_SESSION_START:
-            if(op->session_handle)
-            {
-                op->session_handle->session_arg = 
-                    (void *) finished_info->info.session.session_arg;
-            }
+            op->session_handle->session_arg = 
+                (void *) finished_info->info.session.session_arg;
             finished_info->info.session.session_arg = op->session_handle;
-                
+            /* XXX should set username and homedir to this process if null? */               
             break;
 
         case GLOBUS_GFS_OP_PASSIVE:
@@ -4445,7 +4476,8 @@ globus_gridftp_server_update_bytes_written(
     globus_mutex_lock(&op->session_handle->mutex);
     {
         op->recvd_bytes += length;
-        globus_range_list_insert(op->recvd_ranges, offset, length);
+        globus_range_list_insert(
+            op->recvd_ranges, offset + op->transfer_delta, length);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
@@ -4499,9 +4531,10 @@ void
 globus_gridftp_server_get_write_range(
     globus_gfs_operation_t   op,
     globus_off_t *                      offset,
-    globus_off_t *                      length,
+    globus_off_t *                      length)
+    /*,  do this transparently now 
     globus_off_t *                      write_delta,
-    globus_off_t *                      transfer_delta)
+    globus_off_t *                      transfer_delta) */
 {
     GlobusGFSName(globus_gridftp_server_get_write_range);
     globus_off_t                        tmp_off = 0;
@@ -4536,14 +4569,19 @@ globus_gridftp_server_get_write_range(
     {
         *length = tmp_len;
     }
+/*
     if(write_delta)
     {
         *write_delta = tmp_write;
     }
+
     if(transfer_delta)
     {
         *transfer_delta = tmp_transfer;
     }
+*/
+    op->write_delta = tmp_write;
+    op->transfer_delta = tmp_transfer;
     return;
 }
 
@@ -4551,8 +4589,9 @@ void
 globus_gridftp_server_get_read_range(
     globus_gfs_operation_t              op,
     globus_off_t *                      offset,
-    globus_off_t *                      length,
-    globus_off_t *                      write_delta)
+    globus_off_t *                      length)
+/* doing this transparently now
+    globus_off_t *                      write_delta) */
 {
     globus_off_t                        tmp_off = 0;
     globus_off_t                        tmp_len = -1;
@@ -4693,10 +4732,12 @@ globus_gridftp_server_get_read_range(
     {
         *length = tmp_len;
     }
+/*
     if(write_delta)
     {
         *write_delta = tmp_write;
     }
+*/
     
     return; 
 }
@@ -4769,7 +4810,7 @@ globus_gridftp_server_register_write(
         result = GlobusGFSErrorMemory("bounce_info");
         goto error_alloc;
     }
-    
+           
     bounce_info->op = op;
     bounce_info->callback.write = callback;
     bounce_info->user_arg = user_arg;
@@ -4791,7 +4832,7 @@ globus_gridftp_server_register_write(
                 &op->data_handle->data_channel,
                 buffer,
                 length,
-                offset,
+                offset + op->write_delta,
                 GLOBUS_FALSE,
                 op->write_stripe,
                 globus_l_gfs_data_write_cb,
@@ -4807,7 +4848,7 @@ globus_gridftp_server_register_write(
             &op->data_handle->data_channel,
             buffer,
             length,
-            offset,
+            offset + op->write_delta,
             GLOBUS_FALSE,
             globus_l_gfs_data_write_cb,
             bounce_info);

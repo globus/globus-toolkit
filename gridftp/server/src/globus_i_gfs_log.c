@@ -13,6 +13,38 @@ static globus_logging_handle_t          globus_l_gfs_log_handle = NULL;
 static FILE *                           globus_l_gfs_log_file = NULL;
 static FILE *                           globus_l_gfs_transfer_log_file = NULL;
 
+
+int
+globus_l_gfs_log_matchlevel(
+    char *                              tag)
+{
+    int                                 out;
+
+    if(strcasecmp(tag, "ERROR") == 0)
+    {   
+        out = GLOBUS_I_GFS_LOG_ERR;
+    }             
+    else if(strcasecmp(tag, "WARN") == 0)
+    {   
+        out = GLOBUS_I_GFS_LOG_WARN;
+    }             
+    else if(strcasecmp(tag, "INFO") == 0)
+    {   
+        out = GLOBUS_I_GFS_LOG_INFO;
+    }             
+    else if(strcasecmp(tag, "DUMP") == 0)
+    {   
+        out = GLOBUS_I_GFS_LOG_DUMP;
+    }             
+    else if(strcasecmp(tag, "ALL") == 0)
+    {   
+        out = GLOBUS_I_GFS_LOG_ALL;
+    } 
+    
+    return out;
+}            
+
+
 void
 globus_i_gfs_log_open(void)
 {
@@ -22,7 +54,46 @@ globus_i_gfs_log_open(void)
     char *                              logfilename;
     int                                 log_filemode;
     char *                              logunique;
+    char *                              log_level;
+    int                                 log_mask = 0;
+    char *                              ptr;
+    int                                 len;
+    int                                 ctr;
+    char *                              tag;
         
+    /* parse user supplied log level string */
+    log_level = globus_libc_strdup(globus_i_gfs_config_string("log_level"));
+    if(log_level != NULL)
+    {
+        len = strlen(log_level);
+        for(ctr = 0; ctr < len && isdigit(log_level[ctr]); ctr++);
+        /* just a number, set log level to the supplied level || every level
+            below */
+        if(ctr == len)
+        {
+            log_mask = atoi(log_level);
+            if(log_mask > 1)
+            {
+                log_mask |= (log_mask >> 1) | ((log_mask >> 1)  - 1);
+            }
+        }
+        else
+        {
+            tag = log_level;
+            while((ptr = strchr(tag, ',')) != NULL)
+            {
+                *ptr = '\0';
+                log_mask |= globus_l_gfs_log_matchlevel(tag);
+                tag = ptr + 1;
+            }
+            if(ptr == NULL)
+            {
+                log_mask |= globus_l_gfs_log_matchlevel(tag);
+            }               
+        }
+        globus_free(log_level);
+    }
+
     /* XXX should use the globus_extension stuff here */
     module = globus_i_gfs_config_string("log_module");
     if(module == NULL || strcmp(module, "stdio") == 0)
@@ -32,6 +103,8 @@ globus_i_gfs_log_open(void)
     else if(strcmp(module, "syslog") == 0)
     {
         log_mod = &globus_logging_syslog_module;
+        printf("syslog module not yet implemented\n");
+        exit(2);
         /* set syslog options and pass in log_arg */
     }
     else
@@ -74,7 +147,7 @@ globus_i_gfs_log_open(void)
         &globus_l_gfs_log_handle,
         GLOBUS_NULL, /* no buffered logs */
         2048,
-        globus_i_gfs_config_int("debug_level"), 
+        log_mask, 
         log_mod,
         log_arg);
         

@@ -452,12 +452,35 @@ globus_l_gfs_new_server_cb(
         result = globus_xio_handle_cntl(
             handle,
             globus_l_gfs_tcp_driver,
+            GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+            &remote_contact);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        if(!globus_i_gfs_config_allow_addr(remote_contact))
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "Connection disallowed by configuration from: %s\n", 
+                remote_contact);
+            goto error;
+        }
+        globus_free(remote_contact);       
+        result = globus_xio_handle_cntl(
+            handle,
+            globus_l_gfs_tcp_driver,
             GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
             &remote_contact);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
         }
+        
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "New connection from: %s\n", remote_contact);
+
         result = globus_xio_handle_cntl(
             handle,
             globus_l_gfs_tcp_driver,
@@ -467,9 +490,6 @@ globus_l_gfs_new_server_cb(
         {
             goto error2;
         }
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
-            "New connection from: %s\n", remote_contact);
 
         result = globus_xio_handle_cntl(
             handle,
@@ -780,7 +800,7 @@ globus_l_gfs_be_daemon(void)
         goto attr_error;
     }
 
-    if(!globus_i_gfs_config_bool("no_chdir"))
+    if(globus_i_gfs_config_bool("chdir"))
     {
         char *                          chdir_to;
         chdir_to = globus_i_gfs_config_string("chdir_to");
@@ -881,12 +901,12 @@ main(
     globus_cond_init(&globus_l_gfs_cond, GLOBUS_NULL);
     
     globus_l_gfs_open_count = 0;
-    globus_l_gfs_max_open_count = globus_i_gfs_config_int("max_connections");
+    globus_l_gfs_max_open_count = globus_i_gfs_config_int("connections_max");
     globus_l_gfs_exit = globus_i_gfs_config_int("bad_signal_exit");
     globus_l_gfs_xio_server = NULL;
 
     /* if all the want is version info print and exit */
-    if(globus_i_gfs_config_bool("usage"))
+    if(globus_i_gfs_config_bool("help"))
     {
         globus_i_gfs_config_display_usage();
         rc = 0;
@@ -937,7 +957,7 @@ main(
             freopen("/dev/null", "w+", stdin);
             freopen("/dev/null", "w+", stdout);
             freopen("/dev/null", "w+", stderr);
-            if(!globus_i_gfs_config_bool("no_chdir"))
+            if(globus_i_gfs_config_bool("chdir"))
             {
                 char *                  chdir_to;
                 chdir_to = globus_i_gfs_config_string("chdir_to");
