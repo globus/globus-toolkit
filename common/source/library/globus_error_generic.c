@@ -108,7 +108,7 @@ globus_error_initialize_error(
     const char *                        short_desc,
     const char *                        long_desc)
 {
-    globus_l_error_data_t *               instance_data;
+    globus_l_error_data_t *             instance_data;
 
     instance_data = (globus_l_error_data_t *)
         malloc(sizeof(globus_l_error_data_t));
@@ -233,7 +233,7 @@ globus_error_set_cause (
  */
 /*@{*/
 /**
- * Retrieve the error type from a error object.
+ * Retrieve the error type from a generic globus error object.
  * @ingroup globus_generic_error_accessor  
  *
  * @param error
@@ -255,7 +255,7 @@ globus_error_get_type(
  */
 /*@{*/
 /**
- * Set the error type in a error object.
+ * Set the error type in a generic globus error object.
  * @ingroup globus_generic_error_accessor  
  *
  * @param error
@@ -272,7 +272,7 @@ globus_error_set_type(
 {
     ((globus_l_error_data_t *)
      globus_object_get_local_instance_data(error))->type = type;
-}/* globus_error_get_type */
+}/* globus_error_set_type */
 /*@}*/
 
 
@@ -281,7 +281,8 @@ globus_error_set_type(
  */
 /*@{*/
 /**
- * Retrieve the short error description from a error object.
+ * Retrieve the short error description from a generic globus error
+ * object. 
  * @ingroup globus_generic_error_accessor  
  *
  * @param error
@@ -304,7 +305,7 @@ globus_error_get_short_desc(
  */
 /*@{*/
 /**
- * Set the short error description in a error object.
+ * Set the short error description in a generic globus error object. 
  * @ingroup globus_generic_error_accessor  
  *
  * @param error
@@ -342,7 +343,8 @@ globus_error_set_short_desc(
  */
 /*@{*/
 /**
- * Retrieve the long error description from a error object.
+ * Retrieve the long error description from a generic globus error
+ * object. 
  * @ingroup globus_generic_error_accessor  
  *
  * @param error
@@ -365,7 +367,7 @@ globus_error_get_long_desc(
  */
 /*@{*/
 /**
- * Set the long error description in a error object.
+ * Set the long error description in a generic globus error object.
  * @ingroup globus_generic_error_accessor  
  *
  * @param error
@@ -409,7 +411,7 @@ globus_error_set_long_desc(
  *
  * This function checks whether the error or any of it's causative
  * errors originated from a specific module and is of a specific
- * type. If the module descripto is left unspecified this function
+ * type. If the module descriptor is left unspecified this function
  * will check for any error of the specified type and vice versa.
  *
  * @param error

@@ -169,6 +169,7 @@ typedef GLOBUS_OFF_T globus_off_t;
 #include "globus_error.h"
 #include "globus_error_hierarchy.h"
 #include "globus_error_generic.h"
+#include "globus_error_errno.h"
 
 #ifdef GLOBUS_USE_PTHREADS
 #include "globus_thread_pthreads.h"
