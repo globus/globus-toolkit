@@ -6,7 +6,7 @@ dnl Users of this module should call
 dnl LAC_COMPILERS(REQUIRE-CXX-WORKS)
 dnl To set the various variables
 dnl
-dnl If the REQUIRE_CXX_WORKS argument is "yes", then this macro will 
+dnl If the REQUIRE_CXX_WORKS argument is "yes", then this macro will
 dnl cause an error if the various C++ compilers do not work.
 dnl
 dnl The variables that are set and substituted (AC_SUBST) by the
@@ -82,7 +82,7 @@ AC_ARG_ENABLE(64bit,
 	[lac_cv_build_64bit=${lac_cv_build_64bit='no'}])
 
 AC_ARG_ENABLE(insure,
- 	changequote(<<, >>)dnl	
+ 	changequote(<<, >>)dnl
   <<--enable-insure[=PATH]	use Insure++ [default=insure]>>,
 	changequote([, ])dnl
 	[
@@ -90,132 +90,12 @@ AC_ARG_ENABLE(insure,
 			lac_cv_INSURE="insure"
 		else
 			lac_cv_INSURE="$enableval"
-		fi 
+		fi
 	],
 	[
 		lac_cv_INSURE=""
 	])
-
-AC_ARG_WITH(mp,
-	[  --with-mp=protocol            include the IBM SP MPL, MPI, or Paragon INX protocols],
-	[
-	lac_cv_MP=$withval
-	case $withval in
-		mpl)
-             		LAC_COMPILERS_MPL
-			;;
-		mpi)
-             		LAC_COMPILERS_MPI
-			;;
-		inx)
-             		LAC_COMPILERS_INX
-			;;
-		no)
-			lac_cv_mpl=${lac_cv_mpl='no'}
-			lac_cv_mpi=${lac_cv_mpi='no'}
-			lac_cv_inx=${lac_cv_inx='no'}
-			;;
-		*)
-			AC_MSG_ERROR([--with-mp=$withval is not a valid message passing protocol])
-			exit 1
-			;;
-         esac
-        ],
-	[
-	lac_cv_mpl=${lac_cv_mpl='no'}
-	lac_cv_mpi=${lac_cv_mpi='no'}
-	lac_cv_inx=${lac_cv_inx='no'}
-	])
-
 ])
-
-AC_DEFUN(LAC_COMPILERS_MPL,
-[
-    AC_MSG_CHECKING(for MPL)
-    AC_CACHE_VAL(lac_cv_mpl, [dnl
-        case "$host" in
-            *-ibm-aix* )
-                poepackage="`/usr/bin/lslpp -clq | grep '/usr/lib/objrepos.*Parallel Operating Environment' | wc -l`"
-                case "$poepackage" in
-                    *1 )
-                        lac_cv_mpl="yes"
-                    ;;
-                    * )
-                        lac_cv_mpl="no"
-                    ;;
-                esac
-            ;;
-            * )
-                lac_cv_mpl="no"
-            ;;
-        esac])
-    if test $lac_cv_mpl = "no"; then
-	AC_MSG_ERROR([MPL is not supported on this platform])
-	exit 1
-    fi
-    AC_MSG_RESULT($lac_cv_mpl)
-])
-
-AC_DEFUN(LAC_COMPILERS_MPI,
-[
-    AC_MSG_CHECKING(for MPI)
-    AC_CACHE_VAL(lac_cv_mpi, [dnl
-        case "$host" in
-            *-ibm-aix* )
-                poepackage="`/usr/bin/lslpp -clq | grep '/usr/lib/objrepos.*Parallel Operating Environment' | wc -l`"
-                case "$poepackage" in
-                    *1 )
-                        lac_cv_mpi="yes"
-                    ;;
-                    * )
-                        lac_cv_mpi="no"
-                    ;;
-                esac
-            ;;
-            mips-sgi-irix6* )
-                lac_cv_mpi="yes"
-            ;;
-            alpha-cray-unicosmk* )
-                lac_cv_mpi="yes"
-            ;;
-            *-hp-hpux10* | *-hp-hpux11* )
-                lac_cv_mpi="yes"
-            ;;
-            i860-intel-osf* )
-                lac_cv_mpi="yes"
-            ;;
-            * )
-                lac_cv_mpi="no"
-            ;;
-        esac])
-    if test $lac_cv_mpi = "no"; then
-        AC_MSG_ERROR([MPI is not supported on this platform])
-        exit 1
-    fi
-    AC_MSG_RESULT($lac_cv_mpi)
-])
-
-AC_DEFUN(LAC_COMPILERS_INX,
-[
-    AC_MSG_CHECKING(for INX)
-    AC_CACHE_VAL(lac_cv_inx, [dnl
-        case "$host" in
-            i860-intel-osf* )
-                lac_cv_inx="yes"
-            ;;
-            * )
-                lac_cv_inx="no"
-            ;;
-        esac])
-    if test $lac_cv_inx = "no"; then
-	AC_MSG_ERROR([INX is not supported on this platform])
-	exit 1
-    fi
-    AC_MSG_RESULT($lac_cv_inx)
-])
-
-dnl ---------------------------------------------------------------
-
 
 AC_DEFUN(LAC_COMPILERS,
 [
@@ -225,7 +105,6 @@ LAC_THREADS
 
 LAC_COMPILERS_SET($lac_threads_type)
 
-LAC_SUBSTITUTE_COMPILER_VAR(MP)
 LAC_SUBSTITUTE_COMPILER_VAR(CC)
 LAC_SUBSTITUTE_COMPILER_VAR(CPP)
 LAC_SUBSTITUTE_COMPILER_VAR(CFLAGS)
@@ -282,7 +161,7 @@ case ${host}--$1 in
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
-        fi 
+        fi
         if test ! -z "$CC"; then
             AC_CHECK_PROG(lac_cv_CC, $CC, $CC, , , /usr/ucb/cc)
         fi
@@ -324,7 +203,7 @@ case ${host}--$1 in
         if test "$lac_cv_build_64bit" = "no"; then
             AC_MSG_ERROR(32 bits not supported on this platform)
             exit 1
-        fi 
+        fi
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
 	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
@@ -338,7 +217,7 @@ case ${host}--$1 in
                +*  )  lac_64bit_flag="$lac_cv_build_64bit"
                       ;;
 
-               *   )  lac_64bit_flag="+DA2.0"  
+               *   )  lac_64bit_flag="+DA2.0"
                       ;;
            esac
 
@@ -427,12 +306,12 @@ case ${host}--$1 in
 	LAC_PROG_CC_GNU($lac_cv_CXX, ,
 		[lac_CXXFLAGS="$lac_64bit_flag $lac_CXXFLAGS"])
 	LAC_CHECK_CFLAGS($lac_cv_CXX, [-woff 1048 $lac_CXXFLAGS],
-		[lac_CXXFLAGS="-woff 1048 $lac_CXXFLAGS"])		
+		[lac_CXXFLAGS="-woff 1048 $lac_CXXFLAGS"])
 
         dnl RANLIB is more or less defunct on SIG IRIX6.
         dnl Don't set RANLIB for since if its present its
 	dnl probable gnu and is incompatible
-        dnl     This fixes the reported problem on  modi4.ncsa.uiuc.edu 
+        dnl     This fixes the reported problem on  modi4.ncsa.uiuc.edu
 	AC_CACHE_VAL(lac_cv_RANLIB, lac_cv_RANLIB="true")
 
         if test "$lac_mpi" = "yes" ; then
@@ -443,13 +322,13 @@ case ${host}--$1 in
 	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
 	lac_F77FLAGS="$lac_64bit_flag $lac_F77FLAGS"
 	lac_F90FLAGS="$lac_64bit_flag $lac_F90FLAGS"
-      ;;	
+      ;;
     *-ibm-aix*--pthreads )
         dnl No 64bit support yet
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
-        fi 
+        fi
 	if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
 	    AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
 	    AC_PATH_PROGS(lac_cv_CXX, $CXX xlC_r)
@@ -490,7 +369,7 @@ case ${host}--$1 in
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
-        fi 
+        fi
 	if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
 	    AC_PATH_PROGS(lac_cv_CC, $CC xlc gcc)
 	    AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC xlC c++ g++ gcc)
@@ -531,7 +410,7 @@ case ${host}--$1 in
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
-        fi 
+        fi
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx c++ g++ gcc)
 	if test "$1" = "pthreads" ; then
@@ -554,7 +433,7 @@ case ${host}--$1 in
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
-        fi 
+        fi
 	AC_PATH_PROGS(lac_cv_CC, $CC cc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX CC)
 	lac_CFLAGS="-Xm $lac_CFLAGS"
@@ -568,18 +447,18 @@ case ${host}--$1 in
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
-        fi 
+        fi
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
 	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
 	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
       ;;
-    * ) 
+    * )
         dnl No 64bit support yet
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
-        fi 
+        fi
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++  g++ gcc)
 	AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
