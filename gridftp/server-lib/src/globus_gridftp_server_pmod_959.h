@@ -39,6 +39,13 @@ globus_gs_pmod_959_get_server(
     globus_gridftp_server_t *               out_server,
     globus_gs_pmod_959_handle_t             handle);
 
+globus_result_t
+globus_gs_pmod_959_get_cred(
+    globus_gs_pmod_959_handle_t             handle,
+    gss_cred_id_t *                         out_cred,
+    gss_cred_id_t *                         out_del_cred);
+
+
 extern globus_i_gridftp_server_pmod_t       globus_i_gsp_959_proto_mod;
 
 #endif

@@ -35,6 +35,8 @@ globus_gridftp_server_finished_auth(
     globus_l_gs_auth_info_t *               auth_info;
 
     server = (globus_gridftp_server_t)GlobusGridFTPServerOpGetServer(op);
+    auth_info = (globus_l_gs_auth_info_t *)
+        GlobusGridFTPServerOpGetUserArg(op);
 
     if(res == GLOBUS_SUCCESS)
     {
@@ -66,7 +68,7 @@ globus_l_gs_cmd_auth(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    va_list                                 ap)
+    globus_list_t *                         list)
 {
     globus_result_t                         res;
     globus_l_gs_auth_info_t *               auth_info;
@@ -92,19 +94,23 @@ globus_l_gs_cmd_auth(
 
     auth_info = (globus_l_gs_auth_info_t *) globus_malloc(
         sizeof(globus_l_gs_auth_info_t));
-    auth_info->username = va_arg(ap, char *);
+    auth_info->username = (char *) globus_list_first(list);
     if(auth_info->username != NULL)
     {
         auth_info->username = globus_libc_strdup(auth_info->username);
     }
-    auth_info->pw = va_arg(ap, char *);
+    list = globus_list_rest(list);
+
+    auth_info->pw = globus_list_first(list);
     if(auth_info->pw != NULL)
     {
         auth_info->pw = globus_libc_strdup(auth_info->pw);
     }
+    list = globus_list_rest(list);
 
-    auth_info->cred = (gss_cred_id_t) va_arg(ap, gss_cred_id_t);
-    auth_info->del_cred = (gss_cred_id_t) va_arg(ap, gss_cred_id_t);
+    auth_info->cred = (gss_cred_id_t) globus_list_first(list);
+    list = globus_list_rest(list);
+    auth_info->del_cred = (gss_cred_id_t) globus_list_first(list);
 
     GlobusGridFTPServerOpSetUserArg(op, auth_info);
     if(auth_cb != NULL)
@@ -138,7 +144,7 @@ globus_l_gs_simple_cmd(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    va_list                                 ap)
+    globus_list_t *                         list)
 {
     globus_i_gs_server_t *                  i_server;
     globus_i_gs_cmd_ent_t *                 cmd_ent;
@@ -154,7 +160,7 @@ globus_l_gs_simple_cmd(
     switch(cmd_ent->type)
     {
         case GLOBUS_L_GS_COMMAND_MODE:
-            ch = (int) va_arg(ap, int);
+            ch = (int) globus_list_first(list);
             if(ch != 'E' && ch != 'S')
             {
                 res = GlobusGridFTPServerErrorParameter("mode");
@@ -167,7 +173,7 @@ globus_l_gs_simple_cmd(
             break;
 
         case GLOBUS_L_GS_COMMAND_TYPE:
-            ch = (int) va_arg(ap, int);
+            ch = (int) globus_list_first(list);
             if(ch != 'A' && ch != 'I')
             {
                 res = GlobusGridFTPServerErrorParameter("type");
@@ -210,7 +216,7 @@ globus_l_gs_directory_cmd(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    va_list                                 ap)
+    globus_list_t *                         list)
 {
     globus_i_gs_server_t *                  i_server;
     globus_result_t                         res;
@@ -219,8 +225,9 @@ globus_l_gs_directory_cmd(
     i_server = (globus_i_gs_server_t *) server;
     i_op = (globus_i_gs_op_t *) op;
 
-    i_op->mask = (int) va_arg(ap, int);
-    i_op->str_arg = (char *) va_arg(ap, char *);
+    i_op->mask = (int) globus_list_first(list);
+    list = globus_list_rest(list);
+    i_op->str_arg = (char *) globus_list_first(list);
     globus_assert(i_op->str_arg == NULL
         && "This should not be allowed to be NULL");
     i_op->str_arg = globus_libc_strdup(i_op->str_arg);
@@ -233,6 +240,15 @@ globus_l_gs_directory_cmd(
     return res;
 }
 
+globus_result_t
+globus_l_gs_port_cmd(
+    globus_gridftp_server_t                 server,
+    const char *                            command_name,
+    globus_gridftp_server_operation_t       op,
+    globus_list_t *                         list)
+{
+    return GLOBUS_SUCCESS;
+}
 /*
  *  user calls back in when stat is finished.
  */
@@ -244,7 +260,6 @@ globus_gridftp_server_finished_resource(
     int                                     stat_count)
 {
     globus_result_t                         res;
-    va_list                                 ap;
     globus_i_gs_server_t *                  i_server;
     globus_i_gs_cmd_ent_t *                 cmd_ent;
     char *                                  tmp_s;
@@ -265,7 +280,8 @@ globus_gridftp_server_finished_resource(
             }
             else
             {
-                out_string = (char **) va_arg(ap, char **);
+                out_string = (char **) 
+                    globus_list_first(i_op->arg_list);
                 /* allow the user to get away with pushing in multiple
                     stats by only looking at the first one */
                 if(!S_ISDIR(stat_info_array[0].st_rdev))
@@ -297,7 +313,7 @@ globus_l_gs_noop_cmd(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    va_list                                 ap)
+    globus_list_t *                         list)
 {
     globus_result_t                         res;
 

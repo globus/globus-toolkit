@@ -383,17 +383,14 @@ globus_l_gs_user_op_kickout(
 {
     globus_result_t                         res;
     globus_i_gs_op_t *                      i_op;
-    va_list                                 ap;
 
     i_op = (globus_i_gs_op_t *) user_arg;
 
-    va_copy(ap, i_op->ap);
     res = i_op->cmd_ent->func(
         (globus_gridftp_server_t)i_op->server, 
         i_op->cmd_ent->name,
         (globus_gridftp_server_operation_t) i_op,
-        ap);
-    va_end(ap);
+        i_op->arg_list);
 
     /* if they return a failure then a finished will not be called */
     if(res != GLOBUS_SUCCESS)
@@ -459,7 +456,7 @@ globus_l_gs_operation_create(
     globus_i_gs_op_t **                     out_op,
     globus_gridftp_server_pmod_command_cb_t cb,
     void *                                  user_arg,
-    va_list                                 ap)
+    globus_list_t *                         arg_list)
 {
     globus_i_gs_op_t *                      i_op;
     GlobusGridFTPServerName(globus_l_gs_operation_create);
@@ -473,7 +470,7 @@ globus_l_gs_operation_create(
     i_op->cb = cb;
     i_op->res = GLOBUS_SUCCESS;
     i_op->user_arg = user_arg;
-    va_copy(i_op->ap, ap);
+    i_op->arg_list = globus_list_copy(arg_list);
 
     *out_op = i_op;
 
@@ -484,7 +481,7 @@ void
 globus_l_gs_operation_destroy(
     globus_i_gs_op_t *                      i_op)
 {
-    va_end(i_op->ap);
+    globus_list_free(i_op->arg_list);
     globus_free(i_op);
 }
 
@@ -1026,11 +1023,10 @@ globus_gridftp_server_pmod_command(
     const char *                            command_name,
     globus_gridftp_server_pmod_command_cb_t cb,
     void *                                  user_arg,
-    ...)
+    globus_list_t *                         arg_list)
 {
     globus_i_gs_op_t *                      i_op;
     globus_i_gs_server_t *                  i_server;
-    va_list                                 ap;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_gridftp_server_command);
    
@@ -1049,15 +1045,13 @@ globus_gridftp_server_pmod_command(
             case GLOBUS_L_GS_STATE_AUTH:
             case GLOBUS_L_GS_STATE_OPEN:
 
-                va_start(ap, user_arg);
                 res = globus_l_gs_operation_create(
-                    (globus_gridftp_server_t)server, &i_op, cb, user_arg, ap);
+                    server, &i_op, cb, user_arg, arg_list);
                 if(res != GLOBUS_SUCCESS)
                 {
                     globus_mutex_unlock(&i_server->mutex);
                     goto err;
                 }
-                va_end(ap);
 
                 /* inialize list to first command */
                 i_server->ref++;

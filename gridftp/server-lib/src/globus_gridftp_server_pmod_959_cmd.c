@@ -51,7 +51,8 @@ globus_l_gs_pmod_959_cmd_noop(
         server,
         "NOOP",
         globus_l_gs_pmod_959_cmd_noop_cb,
-        op);
+        op,
+        NULL);
 }
 
 static void
@@ -105,6 +106,7 @@ globus_l_gs_pmod_959_cmd_mode(
     globus_gridftp_server_t                 server;
     globus_l_gs_pmod_959_cmd_wrapper_t *    wrapper;
     char                                    ch;
+    globus_list_t *                         list = NULL;
 
     wrapper = (globus_l_gs_pmod_959_cmd_wrapper_t *) globus_malloc(
         sizeof(globus_l_gs_pmod_959_cmd_wrapper_t));
@@ -121,11 +123,14 @@ globus_l_gs_pmod_959_cmd_mode(
         "Mode set to %c.", ch);
     wrapper->success_code = 200;
 
+    globus_list_insert(&list, (void *)ch);
+
     globus_gridftp_server_pmod_command(
         server,
         "MODE",
         globus_l_gs_pmod_959_cmd_basic_cb,
-        wrapper);
+        wrapper,
+        list);
 }
 
 static void
@@ -139,6 +144,7 @@ globus_l_gs_pmod_959_cmd_type(
     globus_gridftp_server_t                 server;
     globus_l_gs_pmod_959_cmd_wrapper_t *    wrapper;
     char                                    ch;
+    globus_list_t *                         list = NULL;
 
     wrapper = (globus_l_gs_pmod_959_cmd_wrapper_t *) globus_malloc(
         sizeof(globus_l_gs_pmod_959_cmd_wrapper_t));
@@ -155,12 +161,13 @@ globus_l_gs_pmod_959_cmd_type(
         "Type set to %c.", ch);
     wrapper->success_code = 200;
 
+    globus_list_insert(&list, (void *)ch);
     globus_gridftp_server_pmod_command(
         server,
         "MODE",
         globus_l_gs_pmod_959_cmd_basic_cb,
         wrapper,
-        ch);
+        list);
 }
 
 /*
@@ -211,6 +218,7 @@ globus_l_gs_pmod_959_cmd_pass(
     gss_cred_id_t                           cred;
     gss_cred_id_t                           del_cred;
     globus_l_gs_pmod_959_cmd_wrapper_t *    wrapper;
+    globus_list_t *                         list = NULL;
 
     cmd_handle = (globus_l_gs_pmod_959_cmd_handle_t *) user_arg;
 
@@ -238,55 +246,17 @@ globus_l_gs_pmod_959_cmd_pass(
         "User logged in, proceed.");
     wrapper->success_code = 230;
 
+    globus_list_insert(&list, del_cred);
+    globus_list_insert(&list, cred);
+    globus_list_insert(&list, pass);
+    globus_list_insert(&list, cmd_handle->username);
+
     globus_gridftp_server_pmod_command(
         server,
         "AUTH",
         globus_l_gs_pmod_959_cmd_basic_cb,
         wrapper,
-        cmd_handle->username,
-        pass,
-        cred,
-        del_cred);
-}
-
-static void
-globus_l_gs_pmod_959_cmd_cwd(
-    globus_gs_pmod_959_handle_t             handle,
-    globus_gs_pmod_959_op_t                 op,
-    const char *                            command_name,
-    const char *                            full_command,
-    void *                                  user_arg)
-{
-}
-
-static void
-globus_l_gs_pmod_959_cmd_passive(
-    globus_gs_pmod_959_handle_t             handle,
-    globus_gs_pmod_959_op_t                 op,
-    const char *                            command_name,
-    const char *                            full_command,
-    void *                                  user_arg)
-{
-}
-
-static void
-globus_l_gs_pmod_959_cmd_store(
-    globus_gs_pmod_959_handle_t             handle,
-    globus_gs_pmod_959_op_t                 op,
-    const char *                            command_name,
-    const char *                            full_command,
-    void *                                  user_arg)
-{
-}
-
-static void
-globus_l_gs_pmod_959_cmd_retrieve(
-    globus_gs_pmod_959_handle_t             handle,
-    globus_gs_pmod_959_op_t                 op,
-    const char *                            command_name,
-    const char *                            full_command,
-    void *                                  user_arg)
-{
+        list);
 }
 
 void

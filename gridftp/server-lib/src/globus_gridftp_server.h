@@ -85,7 +85,7 @@ typedef globus_result_t
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_operation_t       op,
-    va_list                                 ap);
+    globus_list_t *                         list);
 
 /***************************************************************************
  *                      start up
@@ -565,7 +565,7 @@ globus_gridftp_server_pmod_command(
     const char *                            command_name,
     globus_gridftp_server_pmod_command_cb_t cb,
     void *                                  user_arg,
-    ...);
+    globus_list_t *                         list);
 
 /*
  *  cancel all outstanding commands
