@@ -197,7 +197,7 @@ globus_l_gass_transfer_operation_complete(
 		fail_callback(callback_arg,
 			      request);
 	    }
-	    globus_i_gass_transfer_lock();
+	    return;
 	}
 
 	break;

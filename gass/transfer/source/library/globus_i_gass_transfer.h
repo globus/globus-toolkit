@@ -177,10 +177,19 @@ globus_i_gass_transfer_fail(
 extern globus_cond_t globus_i_gass_transfer_shutdown_cond;
 extern globus_mutex_t globus_i_gass_transfer_mutex;
 
+#if defined(GLOBUS_DEBUG_GASS_TRANSFER)
+#define globus_i_gass_transfer_lock()   \
+	thread_print("locking mutex at %s:%d\n", __FILE__, __LINE__), \
+	globus_mutex_lock(&globus_i_gass_transfer_mutex)
+#define globus_i_gass_transfer_unlock()	\
+	thread_print("unlocking mutex at %s:%d\n", __FILE__, __LINE__), \
+	globus_mutex_unlock(&globus_i_gass_transfer_mutex)
+#else
 #define globus_i_gass_transfer_lock()   \
 	globus_mutex_lock(&globus_i_gass_transfer_mutex)
 #define globus_i_gass_transfer_unlock()	\
 	globus_mutex_unlock(&globus_i_gass_transfer_mutex)
+#endif
 
 int
 globus_i_gass_transfer_close_listener(
