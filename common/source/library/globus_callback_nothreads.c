@@ -680,7 +680,7 @@ globus_callback_unregister(
         if(callback_info->in_queue)
         {
             globus_priority_q_remove(
-                &callback_info->my_space->queue, callback_info)
+                &callback_info->my_space->queue, callback_info);
             
             callback_info->in_queue = GLOBUS_FALSE;
             globus_l_callback_info_dec_ref(callback_info);
@@ -752,7 +752,7 @@ globus_callback_blocking_unregister(
         if(callback_info->in_queue)
         {
             globus_priority_q_remove(
-                &callback_info->my_space->queue, callback_info))
+                &callback_info->my_space->queue, callback_info);
             
             callback_info->in_queue = GLOBUS_FALSE;
             
