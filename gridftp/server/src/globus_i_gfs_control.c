@@ -819,6 +819,16 @@ globus_l_gfs_request_command(
         }
         command_info->chmod_mode = strtol(cmd_array[2], NULL, 8);
     }
+    else if(strcmp(cmd_array[0], "SITE") == 0 &&
+        strcmp(cmd_array[1], "DSI") == 0)
+    {
+        command_info->command = GLOBUS_GFS_CMD_SITE_DSI;
+        command_info->pathname = strdup(cmd_array[2]);
+        if(command_info->pathname == NULL)
+        {
+            goto err;
+        }
+    }
     else
     {
         goto err;
@@ -1624,6 +1634,19 @@ globus_l_gfs_add_commands(
         2,
         2,
         "RNTO <sp> pathname",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE DSI",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE DSI <sp> dsi name",
         instance);
     if(result != GLOBUS_SUCCESS)
     {

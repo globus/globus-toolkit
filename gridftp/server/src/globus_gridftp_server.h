@@ -62,7 +62,8 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_RNTO,
     GLOBUS_GFS_CMD_RNFR,
     GLOBUS_GFS_CMD_CKSM,
-    GLOBUS_GFS_CMD_SITE_CHMOD
+    GLOBUS_GFS_CMD_SITE_CHMOD,
+    GLOBUS_GFS_CMD_SITE_DSI
 } globus_gfs_command_type_t;
 
 /*
@@ -460,6 +461,7 @@ typedef void
     void *                              user_arg);
 
 
+#define GLOBUS_GFS_DSI_DESCRIPTOR_SENDER 0x01
 /*
  *  globus_gfs_storage_iface_t
  * 
@@ -470,6 +472,8 @@ typedef void
  */
 typedef struct globus_gfs_storage_iface_s
 {
+    int                                 descriptor;
+
     /* session initiating functions */
     globus_gfs_storage_init_t           init_func;
     globus_gfs_storage_destroy_t        destroy_func;

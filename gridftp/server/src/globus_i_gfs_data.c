@@ -50,6 +50,7 @@ typedef struct
     globus_mutex_t                      mutex;
     int                                 ref;
     globus_gfs_storage_iface_t *        dsi;
+    globus_extension_handle_t           dsi_handle;
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -217,7 +218,7 @@ globus_i_gfs_data_init()
     dsi_name = globus_i_gfs_config_string("dsi");
     
     globus_extension_register_builtins(local_extensions);
-    
+
     globus_l_gfs_dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
         &globus_i_gfs_active_dsi_handle, GLOBUS_GFS_DSI_REGISTRY, dsi_name);
     if(!globus_l_gfs_dsi)
@@ -389,7 +390,9 @@ globus_i_gfs_data_request_command(
 {
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
-    globus_l_gfs_data_session_t *       session_handle;    
+    globus_gfs_storage_iface_t *        new_dsi;
+    globus_l_gfs_data_session_t *       session_handle;
+    char *                              dsi_name;
     GlobusGFSName(globus_i_gfs_data_command_request);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
@@ -408,11 +411,67 @@ globus_i_gfs_data_request_command(
     op->pathname = globus_libc_strdup(cmd_info->pathname);
     op->callback = cb;
     op->user_arg = user_arg;
-    
-    session_handle->dsi->command_func(op, cmd_info, session_handle->session_arg);
+    dsi_name = cmd_info->pathname;
+
+    if(cmd_info->command == GLOBUS_GFS_CMD_SITE_DSI &&
+        session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SENDER)
+    {
+        /* see if we already have this name loaded, if so use it */
+        new_dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
+            &session_handle->dsi_handle, GLOBUS_GFS_DSI_REGISTRY, dsi_name);
+        if(new_dsi == NULL)
+        {
+            /* if not already load it, activate it */
+            char                            buf[256];
+
+            snprintf(buf, 256, "globus_gridftp_server_%s", dsi_name);
+            buf[255] = 0;
+
+            if(globus_extension_activate(buf) != GLOBUS_SUCCESS)
+            {
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_ERR, "Unable to activate %s\n", buf);
+            }
+            else
+            {
+                new_dsi = (globus_gfs_storage_iface_t *) 
+                    globus_extension_lookup(
+                        &session_handle->dsi_handle,
+                        GLOBUS_GFS_DSI_REGISTRY,
+                        dsi_name);
+            }
+        }
+
+        /* if we couldn't load it, error */
+        if(new_dsi == NULL)
+        {
+            globus_gridftp_server_finished_command(op, result, NULL);
+        }
+        /* if it is the wrong type release and error */
+        else if(!(new_dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SENDER))
+        {
+            globus_gridftp_server_finished_command(op, result, NULL);
+        }
+        /* if all is well */
+        else
+        {
+            /* if not the global default release the reference */
+            if(session_handle->dsi != globus_l_gfs_dsi)
+            {
+                globus_extension_release(session_handle->dsi_handle);
+            }
+            /* set to new dsi */
+            op->session_handle->dsi = new_dsi;
+        }
+    }
+    else
+    {
+        session_handle->dsi->command_func(
+            op, cmd_info, session_handle->session_arg);
+    }
 
     return;
-    
+
 error_op:
     return;
 }
@@ -2696,6 +2755,10 @@ globus_i_gfs_data_session_stop(
 
         if(free_session)
         {
+            if(session_handle->dsi != globus_l_gfs_dsi)
+            {
+                globus_extension_release(session_handle->dsi_handle);
+            }
             globus_free(session_handle);
         }
     }

@@ -923,6 +923,7 @@ globus_l_gfs_remote_deactivate(void);
 
 static globus_gfs_storage_iface_t       globus_l_gfs_remote_dsi_iface = 
 {
+    0,
     globus_l_gfs_remote_init,
     globus_l_gfs_remote_destory,
     globus_l_gfs_remote_list,

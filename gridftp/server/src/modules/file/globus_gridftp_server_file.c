@@ -1540,6 +1540,7 @@ globus_l_gfs_file_deactivate(void);
 
 static globus_gfs_storage_iface_t       globus_l_gfs_file_dsi_iface = 
 {
+    GLOBUS_GFS_DSI_DESCRIPTOR_SENDER,
     NULL, /* globus_l_gfs_file_init, */
     NULL, /* globus_l_gfs_file_destroy, */
     NULL, /* list */
