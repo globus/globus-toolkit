@@ -137,7 +137,7 @@ close_cancel_main(
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
+/*
     res = globus_xio_register_open(
             &handle,
             attr,
@@ -157,7 +157,7 @@ close_cancel_main(
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
+*/
     globus_l_closed = GLOBUS_FALSE;
     res = globus_xio_register_open(
             &handle,

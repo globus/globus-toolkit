@@ -226,9 +226,9 @@ globus_xio_driver_open_deliver_DEBUG(
         /* if we have a close delayed */
         if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSED ||
             _my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING) &&
-            _my_context->outstanding_operations == 0)
+            _my_context->outstanding_operations == 0 &&
+            _my_context->close_op != NULL)
         {
-            globus_assert(_my_context->close_op != NULL);
             _close = GLOBUS_TRUE;
             _close_op = _my_context->close_op;
         }
@@ -239,7 +239,7 @@ globus_xio_driver_open_deliver_DEBUG(
     {
         /* if closed before fully opened and open was successful we need
            to start the regular close process */
-        if(_close_op->cached_res == GLOBUS_SUCCESS)
+        if(_op->cached_res == GLOBUS_SUCCESS)
         {
             globus_i_xio_driver_start_close(_close_op, GLOBUS_FALSE);
         }
