@@ -5,8 +5,8 @@
  *
  ********************************************************************/
 
-#include "globus_common.h"
 #include "config.h"
+#include "globus_common.h"
 
 #include <assert.h>
 #include <stdlib.h>

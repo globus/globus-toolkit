@@ -14,8 +14,8 @@ CVS Information:
   $Author$
 ******************************************************************************/
 
-#include "globus_common.h"
 #include "config.h"
+#include "globus_common.h"
 
 #ifdef HAVE_STRING_H
 #include <string.h>

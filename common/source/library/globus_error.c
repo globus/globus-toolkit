@@ -1,5 +1,5 @@
-#include "globus_common.h"
 #include "config.h"
+#include "globus_common.h"
 #include "globus_object_cache.h"
 
 /**********************************************************************

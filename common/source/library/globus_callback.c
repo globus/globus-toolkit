@@ -17,8 +17,8 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "globus_common.h"
 #include "config.h"
+#include "globus_common.h"
 #include "globus_thread_pool.h"
 #include <assert.h>
 
