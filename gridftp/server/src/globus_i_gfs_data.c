@@ -399,7 +399,7 @@ globus_l_gfs_data_authorize(
     /* if there is a del cred we are using gsi, look it up in the gridmap */
     if(session_info->del_cred != NULL)
     {
-        rc = globus_gss_assist_gridmap((char *) session_info->username, &usr);
+        rc = globus_gss_assist_gridmap((char *) session_info->subject, &usr);
         if(rc != 0)
         {
             goto pwent_error;
@@ -409,6 +409,7 @@ globus_l_gfs_data_authorize(
         {
             goto pwent_error;
         }
+        gid = pwent->pw_gid;
         grent = getgrgid(pwent->pw_gid);
         if(grent == NULL)
         {

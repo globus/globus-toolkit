@@ -313,10 +313,21 @@ globus_l_gfs_request_auth(
     {
         goto del_error;
     }
-    session_info->password = strdup(pw);
-    if(session_info->password == NULL)
+    if(pw != NULL)
     {
-        goto user_error;
+        session_info->password = strdup(pw);
+        if(session_info->password == NULL)
+        {
+            goto user_error;
+        }
+    }
+    if(subject != NULL)
+    {
+        session_info->subject = strdup(subject);
+        if(session_info->password == NULL)
+        {
+            goto user_error;
+        }
     }
 
     auth_info = (globus_l_gfs_auth_info_t *) calloc(1,
