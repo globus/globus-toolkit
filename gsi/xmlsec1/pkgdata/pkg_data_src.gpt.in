@@ -21,7 +21,7 @@
                     <Simple_Version Major="1"/>
                 </Version>
             </Dependency>                
-            <Dependency Name="globus_libxml2">
+            <Dependency Name="globus_libxml25">
                 <Version>
                     <Simple_Version Major="0"/>
                 </Version>
