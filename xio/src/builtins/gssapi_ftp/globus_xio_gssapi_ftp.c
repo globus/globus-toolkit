@@ -137,8 +137,9 @@ enum globus_l_xio_error_levels
 
 #define REPLY_530_BAD_MESSAGE "530 Please login with USER and PASS.\r\n"
 #define REPLY_504_BAD_AUTH_TYPE "504 Unknown authentication type.\r\n"
-#define REPLY_334_GOOD_AUTH_TYPE "334 Using authentication type; ADAT must follow\r\n"
-#define REPLY_530_EXPECTING_ADAT "530 Must perform GSSAPI authentication\r\n"
+#define REPLY_334_GOOD_AUTH_TYPE "334 Using authentication type; ADAT must follow.\r\n"
+#define REPLY_530_EXPECTING_ADAT "530 Must perform GSSAPI authentication.\r\n"
+#define REPLY_530_NO_CRED "530 Server does not have credentials for GSSAPI authentication.\r\n"
 
 #define REPLY_235_ADAT_DATA "235 ADAT="
 #define REPLY_335_ADAT_DATA "335 ADAT="
@@ -1168,6 +1169,8 @@ globus_l_xio_gssapi_ftp_server_read_cb(
     char **                             cmd_a = NULL;
     globus_byte_t *                     in_buffer;
     globus_size_t                       in_buffer_len;
+    OM_uint32                           maj_stat;
+    OM_uint32                           min_stat;
     GlobusXIOName(globus_l_xio_gssapi_ftp_server_read_cb);
 
     GlobusXIOGssapiftpDebugEnter();
@@ -1231,15 +1234,32 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                         msg = globus_libc_strdup(REPLY_530_EXPECTING_ADAT);
                     }
                 }
-                else if(strcasecmp(cmd_a[1], "GSSAPI") != 0)
+                else if(cmd_a[1] == NULL || 
+                        strcasecmp(cmd_a[1], "GSSAPI") != 0)
                 {
                     msg = globus_libc_strdup(REPLY_504_BAD_AUTH_TYPE);
                 }
                 else
                 {
-                    GlobusXIOGssapiftpDebugChangeState(handle,
-                        GSSAPI_FTP_STATE_SERVER_GSSAPI_READ);
-                    msg = globus_libc_strdup(REPLY_334_GOOD_AUTH_TYPE);
+                    /* get the credential now.  if we can't get it fail */
+                    maj_stat = globus_gss_assist_acquire_cred(
+                                    &min_stat,
+                                    GSS_C_ACCEPT,
+                                    &handle->cred_handle);
+                    if(maj_stat != GSS_S_COMPLETE)
+                    {
+                        /* XXX decide if this should fail and return to
+                           server or just reply and keep CC open 
+                        res = GlobusXIOGssapiFTPGSIAuthFailure(
+                            maj_stat, min_stat); */
+                        msg = globus_libc_strdup(REPLY_530_NO_CRED);
+                    }
+                    else
+                    {
+                        GlobusXIOGssapiftpDebugChangeState(handle,
+                            GSSAPI_FTP_STATE_SERVER_GSSAPI_READ);
+                        msg = globus_libc_strdup(REPLY_334_GOOD_AUTH_TYPE);
+                    }
                 }
                 break;
 
@@ -1247,7 +1267,16 @@ globus_l_xio_gssapi_ftp_server_read_cb(
             case GSSAPI_FTP_STATE_SERVER_READING_ADAT:
                 if(globus_libc_strcmp(cmd_a[0], "ADAT") != 0)
                 {
-                    msg = globus_libc_strdup(REPLY_530_EXPECTING_ADAT);
+                    if(strcasecmp(cmd_a[0], "QUIT") == 0)
+                    {
+                        GlobusXIOGssapiftpDebugChangeState(handle,
+                            GSSAPI_FTP_STATE_SERVER_QUITING);
+                        msg = globus_libc_strdup(REPLY_530_QUIT);
+                    }
+                    else
+                    {
+                        msg = globus_libc_strdup(REPLY_530_EXPECTING_ADAT);
+                    }
                 }
                 else if(cmd_a[1] == NULL)
                 {
@@ -2141,8 +2170,6 @@ globus_l_xio_gssapi_ftp_open(
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_l_xio_gssapi_attr_t *        attr;
     globus_result_t                     res;
-    OM_uint32                           maj_stat;
-    OM_uint32                           min_stat;
     GlobusXIOName(globus_l_xio_gssapi_ftp_open);
 
     GlobusXIOGssapiftpDebugEnter();
@@ -2198,18 +2225,6 @@ globus_l_xio_gssapi_ftp_open(
     /* do server protocol */
     else
     {
-        /* get the credential now.  if we can't get it fail */
-        maj_stat = globus_gss_assist_acquire_cred(
-                        &min_stat,
-                        GSS_C_ACCEPT,
-                        &handle->cred_handle);
-        if(maj_stat != GSS_S_COMPLETE)
-        {
-            res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
-            globus_l_xio_gssapi_ftp_handle_destroy(handle);
-            goto err;
-        }
-
         GlobusXIOGssapiftpDebugChangeState(handle,
             GSSAPI_FTP_STATE_SERVER_READING_AUTH);
         res = globus_xio_driver_pass_open(
