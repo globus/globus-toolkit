@@ -13,8 +13,6 @@ LibSources= \
 	gnu_getopt.c \
 	gnu_getopt.h \
 	gnu_getopt_long.c \
-	gsi_proxy.c \
-	gsi_proxy.h \
 	gsi_socket.c \
 	gsi_socket.h \
 	myproxy.c \
