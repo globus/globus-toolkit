@@ -63,7 +63,6 @@ AC_SUBST(OBJEXT)
 AC_SUBST(EXEEXT)
 
 GPT_INIT
-GPT_GENERATE_MASTER_FILELIST(pkgdata)
 
 # These files are not used outside of automake.  But the makefile still
 # has them as dependent targets.
@@ -88,7 +87,7 @@ define([AM_PROG_LIBTOOL],[
 
 dnl define FILELIST_FILE variable
 FILELIST_FILE=`pwd`;
-FILELIST_FILE="$FILELIST_FILE/$GLOBUS_FLAVOR_NAME.filelist"
+FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
 AC_SUBST(FILELIST_FILE)
 
 ])
