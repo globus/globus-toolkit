@@ -384,15 +384,15 @@ globus_l_gsc_cmd_stat_cb(
     {
         if((int)user_arg == 0)
         {
-            tmp_ptr = globus_i_gsc_list_line(stat_info, stat_count);
+            tmp_ptr = globus_i_gsc_list_single_line(stat_info);
         }
         else
         {
-            tmp_ptr = globus_i_gsc_mlsx_line(
-                op->server_handle, stat_info, stat_count);
+            tmp_ptr = globus_i_gsc_mlsx_line_single(
+                op->server_handle, stat_info);
         }
         msg =  globus_common_create_string(
-            "213-status of %s\r\n%s213 End of Status\r\n", 
+            "213-status of %s\r\n %s\r\n213 End of Status\r\n", 
             op->path, tmp_ptr);
     }
 
@@ -415,10 +415,11 @@ globus_l_gsc_cmd_stat(
     /* these are really just place holders in the list */
     int                                     mask = 0;
     char *                                  msg = NULL;
+    char *                                  path;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stat);
 
-    if(argc == 1)
+    if(argc == 1 && user_arg == 0)
     {
         msg = globus_common_create_string(
                 "212 GridFTP server status.\r\n");
@@ -430,11 +431,19 @@ globus_l_gsc_cmd_stat(
         globus_i_gsc_finished_command(op, msg);
         globus_free(msg);
     }
-    else if(argc == 2)
+    else
     {
+        if(argc != 2)
+        {
+            path = op->server_handle->cwd;
+        }
+        else
+        {
+            path = cmd_a[1];
+        }
         res = globus_i_gsc_resource_query(
                 op,
-                cmd_a[1],
+                path,
                 mask,
                 globus_l_gsc_cmd_stat_cb,
                 user_arg);

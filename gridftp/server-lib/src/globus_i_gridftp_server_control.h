@@ -532,6 +532,10 @@ globus_i_gsc_concat_path(
     const char *                                    in_path);
 
 char *
+globus_i_gsc_list_single_line(
+    globus_gridftp_server_control_stat_t *  stat_info);
+
+char *
 globus_i_gsc_list_line(
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count);
@@ -540,6 +544,11 @@ char *
 globus_i_gsc_nlst_line(
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count);
+
+char *
+globus_i_gsc_mlsx_line_single(
+    globus_i_gsc_server_handle_t *          server_handle,
+    globus_gridftp_server_control_stat_t *  stat_info);
 
 char *
 globus_i_gsc_mlsx_line(
