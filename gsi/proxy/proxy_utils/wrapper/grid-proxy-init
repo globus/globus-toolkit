@@ -7,6 +7,7 @@
 
 
 ARGS=''
+BINDIR="${GLOBUS_LOCATION}/bin"
 
 if test "X${GT_PROXY_MODE}" = "Xold" ; then
     STYLE='old'
@@ -18,11 +19,11 @@ for ARG in "$@" ; do
     case "$ARG" in
 	-help)
             if test "X${GT_PROXY_MODE}" = "Xold" ; then
-                grid-proxy-init-bin -help 2>&1 | \
+                ${BINDIR}/grid-proxy-init-bin -help 2>&1 | \
                     sed -e '/-old/s/$/ (default)/' \
 		        -e '/-old/a\    -new                      Creates a new-style globus proxy' 1>&2
             else
-                grid-proxy-init-bin -help 2>&1 | \
+                ${BINDIR}/grid-proxy-init-bin -help 2>&1 | \
                     sed -e '/-old/a\    -new                      Creates a new-style globus proxy (default)' 1>&2
             fi
 	    exit 0
@@ -40,8 +41,8 @@ for ARG in "$@" ; do
 done
 
 if [ $STYLE = 'old' ] ; then
-    grid-proxy-init-bin -old $ARGS
+    ${BINDIR}/grid-proxy-init-bin -old $ARGS
 else
-    grid-proxy-init-bin $ARGS
+    ${BINDIR}/grid-proxy-init-bin $ARGS
 fi
 
