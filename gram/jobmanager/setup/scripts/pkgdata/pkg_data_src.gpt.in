@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
-<gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_setup" >
+<gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_scripts_setup" >
 
   <Aging_Version Age="0" Major="2" Minor="0" />
-  <Description >GRAM Jobmanager Setup</Description>
+  <Description >GRAM Job Manager Script Setup</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
   <Version_Stability Release="alpha" />
 
@@ -24,10 +24,10 @@
     </Post_Install_Message>
 
     <Post_Install_Program >
-      globus/setup_globus_gram_job_manager
+      globus/setup-globus-gram-job-manager-scripts
     </Post_Install_Program>
 
-    <Setup Name="globus_gram_job_manager_setup" >
+    <Setup Name="globus_gram_job_manager_scripts_setup" >
       <Aging_Version Age="0" Major="2" Minor="0" />
     </Setup>
 
