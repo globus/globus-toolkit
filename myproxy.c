@@ -1446,12 +1446,10 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs,
 
 int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 				 myproxy_response_t *server_response,
-				 myproxy_request_t *client_request,
-				 char *certfile,
-				 int  use_kerberos)
+				 myproxy_request_t *client_request)
 {
    myproxy_proto_response_type_t response_type;
-   authorization_data_t *d; 
+   authorization_data_t *d = NULL;
    /* just pointer into server_response->authorization_data, no memory is 
       allocated for this pointer */
    int return_status = -1;
@@ -1460,25 +1458,29 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 
    response_type = server_response->response_type;
    if (response_type == MYPROXY_AUTHORIZATION_RESPONSE) {
-       if (certfile != NULL)
+       /* Server wants authorization. Try the possibilities. */
+       if (client_request->authzcreds != NULL) { /* We have an AUTHZ cert. */
 	   d = authorization_create_response(
 	           server_response->authorization_data,
-		   AUTHORIZETYPE_CERT, certfile, strlen(certfile) + 1);
+		   AUTHORIZETYPE_CERT, client_request->authzcreds,
+		   strlen(client_request->authzcreds) + 1);
+       }
 #if defined(HAVE_LIBSASL2)
-       else if (use_kerberos > 0) {
+       if (d == NULL) { /* No luck with AUTHORIZETYPE_CERT. Try SASL. */
 	   d = authorization_create_response(
 		   server_response->authorization_data,
 		   AUTHORIZETYPE_SASL, "", 1);
        }
 #endif
-       else 
+       if (d == NULL) { /* No luck with previous methods. Try PASSWD. */
 	   d = authorization_create_response(
 		   server_response->authorization_data,
 		   AUTHORIZETYPE_PASSWD,
 		   client_request->passphrase,
 		   strlen(client_request->passphrase) + 1);
-       if (d == NULL) {
-	   verror_put_string("Cannot create authorization response");
+       }
+       if (d == NULL) { /* No acceptable methods found. */
+	   verror_put_string("Cannot create authorization response.");
 	   goto end;
        }
 
@@ -1498,7 +1500,8 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
        }
 	 
 #if defined(HAVE_LIBSASL2)
-       if (use_kerberos > 0) {
+       /* SASL method requires more negotiation. */
+       if (d->method == AUTHORIZETYPE_SASL) {
 	   if (auth_sasl_negotiate_client(attrs, client_request) < 0)
 	       goto end;
        }

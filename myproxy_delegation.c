@@ -28,8 +28,6 @@ int myproxy_set_delegation_defaults(
 int myproxy_get_delegation(
     myproxy_socket_attrs_t *socket_attrs,
     myproxy_request_t      *client_request,
-    char *certfile,
-    int use_kerberos,
     myproxy_response_t     *server_response,
     char *outfile)
 {    
@@ -77,8 +75,7 @@ int myproxy_get_delegation(
 	}
 	if (server_response->response_type == MYPROXY_AUTHORIZATION_RESPONSE) {
 	    if (myproxy_handle_authorization(socket_attrs, server_response,
-					     client_request, certfile,
-					     use_kerberos) != 0) {
+					     client_request) != 0) {
 		fprintf(stderr, "%s\n", verror_get_string());
 		return(1);
 	    }
