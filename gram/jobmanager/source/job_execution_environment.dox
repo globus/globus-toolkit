@@ -4,8 +4,10 @@
 @subsection globus_gram_job_manager_env_vars Environment Variables
 
 The GRAM Job Manager provides a minimal environment for user's jobs. The
-following environment variables will be set by the job manager. Local
-schedulers may set additional environment variables.
+following environment variables will be set by the job manager. Variables
+marked with an asterisk (*) will only be set if a related job manager
+configuration option or RSL attribute is provided. Local schedulers may set
+additional environment variables.
 
 @par HOME
 The user's home directory.
@@ -28,16 +30,17 @@ The GRAM MyJob contact string for intrajob communication.
 @par GLOBUS_LOCATION
 The path to the Globus installation on the job manager host.
 
-@par GLOBUS_GASS_CACHE_DEFAULT
-The path to the job's GASS cache (if the gass_cache RSL attribute is set).
+@par GLOBUS_GASS_CACHE_DEFAULT*
+The path to the job's GASS cache (if the gass_cache RSL attribute is present).
 
-@par GLOBUS_TCP_PORT_RANGE
+@par GLOBUS_TCP_PORT_RANGE*
 A system-specific range of TCP ports which may be used by the job. Globus I/O
-will automatically honor this range.
+will automatically honor this range. Only present if the related configuration
+option is present in the job manager configuration file.
 
-@par GLOBUS_REMOTE_IO_URL
+@par GLOBUS_REMOTE_IO_URL*
 The path to a file containing a URL string of a GASS server which the job
-may access.
+may access (if the remote_io_url attribute is present).
 
 @subsection globus_gram_job_manager_rsl_subs RSL Substitions
 

@@ -293,10 +293,23 @@ globus_gram_job_manager_state_machine(
                                 (void *) "HOME",
                                 (void *) request->home);
 
+	globus_gram_job_manager_rsl_env_add(
+	    request->rsl,
+	    "HOME",
+	    request->home);
+
         if (request->logname)
+	{
             globus_symboltable_insert(&request->symbol_table,
                                 (void *) "LOGNAME",
                                 (void *) request->logname);
+
+	    globus_gram_job_manager_rsl_env_add(
+		request->rsl,
+		"LOGNAME",
+		request->logname);
+	}
+
         if (request->globus_id)
             globus_symboltable_insert(&request->symbol_table,
                                 (void *) "GLOBUS_ID",
@@ -1004,17 +1017,24 @@ globus_gram_job_manager_state_machine(
 	    globus_l_gram_job_manager_reply(request);
 	    break;
 	}
-	else
+	else if(request->job_id == NULL)
 	{
-	    globus_gram_job_manager_reporting_file_create(request);
-
-	    if(request->save_state)
+	    /* submission failed to generate a job id */
+	    if(request->failure_code == GLOBUS_SUCCESS)
 	    {
-		globus_gram_job_manager_state_file_write(request);
+		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_SUBMIT_UNKNOWN;
 	    }
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
 	}
+	globus_gram_job_manager_reporting_file_create(request);
+
+	if(request->save_state)
+	{
+	    globus_gram_job_manager_state_file_write(request);
+	}
+	request->jobmanager_state =
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
