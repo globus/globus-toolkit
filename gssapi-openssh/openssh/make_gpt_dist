@@ -93,7 +93,6 @@ chdir("./$srcdirname");
 
 printf("pruning source directory of extraneous files...\n");
 system("rm -rf `find . -name CVS -print`")==0 or die "Unable to remove cvs directories: $?";
-system("rm -rf ./gpt")==0 or die "Unable to remove gpt directory: $?";
 
 #
 # run the standard development tools to get the necessary derived files.
