@@ -2273,9 +2273,10 @@ globus_l_xio_gsi_read(
                 }
             }
 
-            if(handle->bytes_read > offset)
+            handle->bytes_read -= offset;                
+            
+            if(handle->bytes_read > 0)
             {
-                handle->bytes_read -= offset;                
                 memmove(handle->read_buffer, &handle->read_buffer[offset],
                        handle->bytes_read);
             }
