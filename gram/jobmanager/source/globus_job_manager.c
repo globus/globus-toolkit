@@ -693,14 +693,6 @@ int main(int argc,
         exit(1);
     }
 
-    if (! conf.rdn)
-    {
-        grami_fprintf( request->jobmanager_log_fp,
-            "JM: -rdn parameter required\n");
-        return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
-    }
-
-
     if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
     {
 	sleeptime = atoi(sleeptime_str);
@@ -758,6 +750,13 @@ int main(int argc,
 	return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
     }
     
+    if (! conf.rdn)
+    {
+        grami_fprintf( request->jobmanager_log_fp,
+            "JM: -rdn parameter required\n");
+        return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+    }
+
     request->jobmanager_type = (char *) globus_libc_strdup(conf.type);
 
     if (strcasecmp(request->jobmanager_type, "condor") == 0)
