@@ -749,6 +749,14 @@ write_data_file(const struct myproxy_creds *creds,
     int return_code = -1;
     char *tmp1;
 
+    /* Write out all the extra data associated with these credentials 
+     * support for crypt() added btemko /6/16/00
+     * Please, don't try to free tmp1 - crypt() uses one 
+     * static string space, a la getenv()
+     */
+    tmp1=(char *)crypt(creds->passphrase, 
+	&creds->owner_name[strlen(creds->owner_name)-3]);
+ 
 #if defined (MULTICRED_FEATURE)
     mydbase.owner = strdup (creds->owner_name);
     mydbase.passphrase = strdup (tmp1);
@@ -800,14 +808,6 @@ write_data_file(const struct myproxy_creds *creds,
         goto error;
     }
 
-    /* Write out all the extra data associated with these credentials 
-     * support for crypt() added btemko /6/16/00
-     * Please, don't try to free tmp1 - crypt() uses one 
-     * static string space, a la getenv()
-     */
-    tmp1=(char *)crypt(creds->passphrase, 
-	&creds->owner_name[strlen(creds->owner_name)-3]);
- 
     fprintf (data_stream, "OWNER=%s\n",creds->owner_name);
     fprintf (data_stream, "PASSPHRASE=%s\n", tmp1);
     fprintf (data_stream, "LIFETIME=%d\n", creds->lifetime);
