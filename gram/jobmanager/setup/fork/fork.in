@@ -14,6 +14,7 @@ use Globus::GRAM::StdioMerger;
 use Globus::Core::Paths;
 
 use Config;
+use IPC::Open2;
 
 # NOTE: This package name must match the name of the .pm file!!
 package Globus::GRAM::JobManager::fork;
@@ -72,6 +73,24 @@ sub submit
     my @environment;
     my @library_path;
     my @arguments;
+    my $fork_starter = "$ENV{GLOBUS_LOCATION}/libexec/globus-fork-starter";
+    my $fork_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-fork.conf";
+    my $log_path = '/dev/null';
+
+    if (-r $fork_conf)
+    {
+        local(*IN);
+
+        open(IN, "<$fork_conf");
+
+        while (<IN>) {
+            if (m/log_path=(.*)$/) {
+                $log_path = $1;
+            }
+        }
+
+        close(IN);
+    }
 
     if(!defined($description->directory()))
     {
@@ -166,103 +185,177 @@ sub submit
 	push(@cmdline, @arguments);
     }
 
-    for(my $i = 0; $i < $count; $i++)
-    {
-	if($multi_output)
-	{
-	    $job_stdout = $self->{STDIO_MERGER}->add_file('out');
-	    $job_stderr = $self->{STDIO_MERGER}->add_file('err');
-	}
-	else
-	{
-	    $job_stdout = $description->stdout();
-	    $job_stderr = $description->stderr();
-	}
+    if ($description->use_fork_starter() && -x $fork_starter) {
+        local(*STARTER_OUT, *STARTER_IN);
 
-	# obtain plain old pipe into temporary variables
-	local $^F = 2;		# assure close-on-exec for pipe FDs
-	local(*READER,*WRITER);	# always use local on perl FDs
-	pipe( READER, WRITER );
+        $pid = IPC::Open2::open2(\*STARTER_OUT, \*STARTER_IN,
+                "$fork_starter $log_path");
+        my $oldfh = select STARTER_OUT;
+        $|=1;
+        select $oldfh;
 
-	select((select(WRITER),$|=1)[$[]);
+        print STARTER_IN "100;perl-fork-start-$$;";
+        
+        print STARTER_IN 'directory='.
+            &escape_for_starter($description->directory()) . ';';
 
-	if( ($pid=fork()) == 0)
-	{
-	    close(READER);
+        if (keys %CHILD_ENV > 0) {
+            print STARTER_IN 'environment='.
+                join(',', map { &escape_for_starter($_)
+                        .'='.&escape_for_starter($CHILD_ENV{$_})
+                    } (keys %CHILD_ENV)) . ';';
+        }
 
-            # forked child
-	    %ENV = %CHILD_ENV;
+        print STARTER_IN 'count=' . $description->count() . ';';
 
-	    close(STDIN);
-	    close(STDOUT);
-	    close(STDERR);
+        print STARTER_IN 'executable=' .
+                &escape_for_starter($description->executable()) . ';';
+        if ($#arguments > 0)
+        {
+            print STARTER_IN 'arguments=' .
+                    join(',', map {&escape_for_starter($_)} @arguments) .
+                    ';';
+        }
+        
+        my @job_stdout;
+        my @job_stderr;
 
-	    open(STDIN, '<' . $description->stdin());
-	    open(STDOUT, ">>$job_stdout");
-	    open(STDERR, ">>$job_stderr");
-	    
-            # the below should never fail since we just forked
-            setpgrp(0,$$);
-
-	    if ( ! exec (@cmdline) )
+        for ($i = 0; $i < $description->count(); $i++) {
+            if($multi_output)
             {
-                my $err = "$!\n";
-                $SIG{PIPE} = 'IGNORE';
-                print WRITER "$err";
+                push(@job_stdout, $self->{STDIO_MERGER}->add_file('out'));
+                push(@job_stderr, $self->{STDIO_MERGER}->add_file('err'));
+            }
+            else
+            {
+                push(@job_stdout, $description->stdout());
+                push(@job_stderr, $description->stderr());
+            }
+        }
+
+        print STARTER_IN "stdin=" . &escape_for_starter($description->stdin()).
+                ';';
+        print STARTER_IN "stdout=" .
+                join(',', map {&escape_for_starter($_)} @job_stdout) . ';';
+        print STARTER_IN "stderr=" .
+                join(',', map {&escape_for_starter($_)} @job_stderr) . "\n";
+
+        close(STARTER_IN);
+        while (<STARTER_OUT>) {
+            chomp;
+            my @res = split(/;/, $_);
+
+            if ($res[1] ne "perl-fork-start-$$") {
+                next;
+            }
+            if ($res[0] == '101') {
+                @job_id = split(',', $res[2]);
+            } elsif ($res[0] == '102') {
+                $self->respond({GT3_FAILURE_MESSAGE => "starter: $res[3]" });
+                close(STARTER_OUT);
+                return new Globus::GRAM::Error($res[2]);
+            }
+        }
+        close(STARTER_OUT);
+    } else {
+        for(my $i = 0; $i < $count; $i++)
+        {
+            if($multi_output)
+            {
+                $job_stdout = $self->{STDIO_MERGER}->add_file('out');
+                $job_stderr = $self->{STDIO_MERGER}->add_file('err');
+            }
+            else
+            {
+                $job_stdout = $description->stdout();
+                $job_stderr = $description->stderr();
+            }
+
+            # obtain plain old pipe into temporary variables
+            local $^F = 2;		# assure close-on-exec for pipe FDs
+            local(*READER,*WRITER);	# always use local on perl FDs
+            pipe( READER, WRITER );
+
+            select((select(WRITER),$|=1)[$[]);
+
+            if( ($pid=fork()) == 0)
+            {
+                close(READER);
+
+                # forked child
+                %ENV = %CHILD_ENV;
+
+                close(STDIN);
+                close(STDOUT);
+                close(STDERR);
+
+                open(STDIN, '<' . $description->stdin());
+                open(STDOUT, ">>$job_stdout");
+                open(STDERR, ">>$job_stderr");
+                
+                # the below should never fail since we just forked
+                setpgrp(0,$$);
+
+                if ( ! exec (@cmdline) )
+                {
+                    my $err = "$!\n";
+                    $SIG{PIPE} = 'IGNORE';
+                    print WRITER "$err";
+                    close(WRITER);
+                    exit(1);
+                }
+            }
+            else
+            {
+                my $error_code = '';
+
+                if ($pid == undef)
+                {
+                    $self->log("fork failed\n");
+                    $failure_code = "fork: $!";
+                }
                 close(WRITER);
-                exit(1);
+                
+                $_ = <READER>;
+                close(READER);
+
+                if($_ ne '')
+                {
+                    chomp($_);
+                    $self->log("exec failed\n");
+                    $failure_code = "exec: $_";
+                }
+
+                if ($failure_code ne '')
+                {
+                    # fork or exec failed. kill rest of job and return an error
+
+                    $failure_code =~ s/\n/ /g;
+                    foreach(@job_id)
+                    {
+                        $pgid = getpgrp($_);
+
+                        $pgid == -1 ? kill($signo{TERM}, $_) :
+                            kill(-$signo{TERM}, $pgid);
+
+                        sleep(5);
+
+                        $pgid == -1 ? kill($signo{KILL}, $_) :
+                            kill(-$signo{KILL}, $pgid);
+
+                    }
+
+                    local(*ERR);
+                    open(ERR, '>' . $description->stderr());
+                    print ERR "$failure_code\n";
+                    close(ERR);
+
+                    $self->respond({GT3_FAILURE_MESSAGE => $failure_code });
+                    return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
+                }
+                push(@job_id, $pid);
             }
-	}
-	else
-	{
-            my $error_code = '';
-
-            if ($pid == undef)
-            {
-                $self->log("fork failed\n");
-                $failure_code = "fork: $!";
-            }
-	    close(WRITER);
-	    
-	    $_ = <READER>;
-	    close(READER);
-
-	    if($_ ne '')
-	    {
-                chomp($_);
-                $self->log("exec failed\n");
-                $failure_code = "exec: $_";
-            }
-
-            if ($failure_code ne '')
-            {
-		# fork or exec failed. kill rest of job and return an error
-
-                $failure_code =~ s/\n/ /g;
-		foreach(@job_id)
-		{
-                    $pgid = getpgrp($_);
-
-                    $pgid == -1 ? kill($signo{TERM}, $_) :
-                        kill(-$signo{TERM}, $pgid);
-
-                    sleep(5);
-
-                    $pgid == -1 ? kill($signo{KILL}, $_) :
-                        kill(-$signo{KILL}, $pgid);
-
-		}
-
-                local(*ERR);
-                open(ERR, '>' . $description->stderr());
-                print ERR "$failure_code\n";
-                close(ERR);
-
-                $self->respond({GT3_FAILURE_MESSAGE => $failure_code });
-		return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
-	    }
-	    push(@job_id, $pid);
-	}
+        }
     }
     $merge_file->close() if defined($merge_file);
 
@@ -333,6 +426,19 @@ sub cancel
     }
 
     return { JOB_STATE => Globus::GRAM::JobState::FAILED };
+}
+
+sub escape_for_starter
+{
+    my $str = shift;
+
+    $str =~ s/\\\\/\\/g;
+    $str =~ s/\\;/;/g;
+    $str =~ s/\\,/,/g;
+    $str =~ s/\\n/\n/g;
+    $str =~ s/\\=/=/g;
+
+    return $str;
 }
 
 1;
