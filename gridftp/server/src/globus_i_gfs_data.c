@@ -1268,6 +1268,7 @@ globus_i_gfs_data_request_send(
     op->event_callback = event_cb;
     op->user_arg = user_arg;
     op->node_ndx = send_info->node_ndx;
+    op->write_stripe = 0;
     op->stripe_chunk = send_info->node_ndx;
     op->node_count = send_info->node_count;    
     op->stripe_count = send_info->stripe_count;
@@ -2164,62 +2165,12 @@ globus_gridftp_server_get_read_range(
     int                                 i;
     GlobusGFSName(globus_gridftp_server_get_read_range);
     
-    stripe_block_size = op->data_handle->attr.blocksize;
-    start_offset = op->stripe_chunk * stripe_block_size;
-    end_offset = start_offset + stripe_block_size;
-        
-    if(globus_range_list_size(op->stripe_range_list))
+    globus_mutex_lock(&op->lock);
     {
-        rc = globus_range_list_remove_at(
-            op->stripe_range_list,
-            0,
-            &tmp_off,
-            &tmp_len);
-    
-        tmp_write = op->write_delta;
-    }
-    else if((size = globus_range_list_size(op->range_list)) != 0)
-    {
-        for(i = 0; i < size; i++)
-        {
-            rc = globus_range_list_at(
-                op->range_list,
-                i,
-                &tmp_off,
-                &tmp_len);
-    
-            if(op->partial_length != -1)
-            {
-                if(tmp_len == -1)
-                {
-                    tmp_len = op->partial_length;
-                }
-                if(tmp_off + tmp_len > op->partial_length)
-                {
-                    tmp_len = op->partial_length - tmp_off;
-                    if(tmp_len < 0)
-                    {
-                        tmp_len = 0;
-                    }
-                }
-            }
+        stripe_block_size = op->data_handle->attr.blocksize * 2;
+        start_offset = op->stripe_chunk * stripe_block_size;
+        end_offset = start_offset + stripe_block_size;
             
-            if(op->partial_offset > 0)
-            {
-                tmp_off += op->partial_offset;
-                tmp_write = 0 - op->partial_offset;
-            }
-            
-            globus_range_list_insert(
-                op->stripe_range_list, tmp_off, tmp_len);
-            op->write_delta = tmp_write;
-        }
-        globus_range_list_remove(
-            op->stripe_range_list, 0, start_offset);
-        globus_range_list_remove(
-            op->stripe_range_list, end_offset, GLOBUS_RANGE_LIST_MAX);
-        op->stripe_chunk += op->node_count;
-        
         if(globus_range_list_size(op->stripe_range_list))
         {
             rc = globus_range_list_remove_at(
@@ -2230,17 +2181,71 @@ globus_gridftp_server_get_read_range(
         
             tmp_write = op->write_delta;
         }
+        else if((size = globus_range_list_size(op->range_list)) != 0)
+        {
+            for(i = 0; i < size; i++)
+            {
+                rc = globus_range_list_at(
+                    op->range_list,
+                    i,
+                    &tmp_off,
+                    &tmp_len);
+        
+                if(op->partial_length != -1)
+                {
+                    if(tmp_len == -1)
+                    {
+                        tmp_len = op->partial_length;
+                    }
+                    if(tmp_off + tmp_len > op->partial_length)
+                    {
+                        tmp_len = op->partial_length - tmp_off;
+                        if(tmp_len < 0)
+                        {
+                            tmp_len = 0;
+                        }
+                    }
+                }
+                
+                if(op->partial_offset > 0)
+                {
+                    tmp_off += op->partial_offset;
+                    tmp_write = 0 - op->partial_offset;
+                }
+                
+                globus_range_list_insert(
+                    op->stripe_range_list, tmp_off, tmp_len);
+                op->write_delta = tmp_write;
+            }
+            globus_range_list_remove(
+                op->stripe_range_list, 0, start_offset);
+            globus_range_list_remove(
+                op->stripe_range_list, end_offset, GLOBUS_RANGE_LIST_MAX);
+            op->stripe_chunk += op->node_count;
+            
+            if(globus_range_list_size(op->stripe_range_list))
+            {
+                rc = globus_range_list_remove_at(
+                    op->stripe_range_list,
+                    0,
+                    &tmp_off,
+                    &tmp_len);
+            
+                tmp_write = op->write_delta;
+            }
+            else
+            {
+                tmp_len = 0;
+                tmp_off = 0;
+                tmp_write = 0;
+            }
+        }
         else
         {
             tmp_len = 0;
-            tmp_off = 0;
-            tmp_write = 0;
         }
     }
-    else
-    {
-        tmp_len = 0;
-    }
+    globus_mutex_unlock(&op->lock);
     if(offset)
     {
         *offset = tmp_off;
