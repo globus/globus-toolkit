@@ -1320,7 +1320,7 @@ globus_io_register_select(
     if (write_callback_func != GLOBUS_NULL)
     {
 	rc = globus_i_io_unregister_write(handle,
-					  GLOBUS_FALSE);
+					  GLOBUS_TRUE);
 	
 	globus_assert(rc == GLOBUS_SUCCESS);
     }
@@ -1328,7 +1328,7 @@ globus_io_register_select(
     if (write_callback_func != GLOBUS_NULL)
     {
 	rc = globus_i_io_unregister_read(handle,
-					  GLOBUS_FALSE);
+					  GLOBUS_TRUE);
 	globus_assert(rc == GLOBUS_SUCCESS);
     }
   read_failed:
@@ -1618,18 +1618,13 @@ globus_l_io_kickout_read_cb(
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
     {
-        if(select_info->read_callback)
+        if(select_info->read_callback && !globus_l_io_shutdown_called)
         {
             globus_callback_unregister(
                 select_info->read_callback_handle,
                 GLOBUS_NULL,
                 GLOBUS_NULL);
                 
-            if(globus_l_io_shutdown_called)
-            {
-                goto exit;
-            }
-            
             callback = select_info->read_callback;
             args = select_info->read_arg;
             handle = select_info->handle;
@@ -1676,18 +1671,13 @@ globus_l_io_kickout_write_cb(
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
     {
-        if(select_info->write_callback)
+        if(select_info->write_callback && !globus_l_io_shutdown_called)
         {
             globus_callback_unregister(
                 select_info->write_callback_handle,
                 GLOBUS_NULL,
                 GLOBUS_NULL);
                 
-            if(globus_l_io_shutdown_called)
-            {
-                goto exit;
-            }
-            
             callback = select_info->write_callback;
             args = select_info->write_arg;
             handle = select_info->handle;
@@ -1734,18 +1724,13 @@ globus_l_io_kickout_except_cb(
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
     {
-        if(select_info->except_callback)
+        if(select_info->except_callback && !globus_l_io_shutdown_called)
         {
             globus_callback_unregister(
                 select_info->except_callback_handle,
                 GLOBUS_NULL,
                 GLOBUS_NULL);
                 
-            if(globus_l_io_shutdown_called)
-            {
-                goto exit;
-            }
-            
             callback = select_info->except_callback;
             args = select_info->except_arg;
             handle = select_info->handle;
@@ -2590,8 +2575,10 @@ globus_l_io_activate(void)
     }
     
     globus_i_io_setup_nonblocking(&globus_l_io_wakeup_pipe_handle);
+    
+    /* not using a callback here... just holding a place for this fd */
     globus_i_io_register_read_func(&globus_l_io_wakeup_pipe_handle,
-				   globus_l_io_wakeup_pipe_callback,
+				   GLOBUS_NULL,
 				   GLOBUS_NULL,
 				   GLOBUS_NULL,
 				   GLOBUS_TRUE);
@@ -2697,7 +2684,6 @@ globus_l_io_deactivate(void)
                     globus_l_io_pending_count--;
                 }
                 
-                select_info->read_callback = GLOBUS_NULL;
                 if(select_info->read_destructor && select_info->read_arg)
                 {
                     select_info->read_destructor(select_info->read_arg);
@@ -2716,8 +2702,6 @@ globus_l_io_deactivate(void)
                     globus_l_io_pending_count--;
                 }
                 
-                select_info->write_callback = GLOBUS_NULL;
-                
                 if(select_info->write_destructor && select_info->write_arg)
                 {
                     select_info->write_destructor(select_info->write_arg);
@@ -2735,8 +2719,6 @@ globus_l_io_deactivate(void)
                 {
                     globus_l_io_pending_count--;
                 }
-                
-                select_info->except_callback = GLOBUS_NULL;
             }
         }
     }
