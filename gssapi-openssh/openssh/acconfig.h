@@ -52,9 +52,6 @@
 #undef SPT_TYPE
 #undef SPT_PADCHAR
 
-/* setgroups() NOOP allowed */
-#undef SETGROUPS_NOOP
-
 /* SCO workaround */
 #undef BROKEN_SYS_TERMIO_H
 

@@ -77,19 +77,11 @@ ssh_gssapi_client_mechanisms(char *host) {
 	EVP_MD_CTX	md;
 	int 		oidpos=0;
 	
-	if (datafellows & SSH_OLD_GSSAPI) return NULL;
-	
 	gss_indicate_mechs(&min_status,&supported);
-	if (datafellows & SSH_BUG_GSSAPI_BER) {
-		gss_enc2oid=xmalloc(sizeof(ssh_gss_kex_mapping)
-					*((supported->count*2)+1));
-	} else {
-		gss_enc2oid=xmalloc(sizeof(ssh_gss_kex_mapping)
-					*(supported->count+1));
-	}
+	gss_enc2oid=xmalloc(sizeof(ssh_gss_kex_mapping)
+			    *(supported->count+1));
 	
 	buffer_init(&buf);
-
 
 	for (i=0;i<supported->count;i++) {
 
@@ -98,44 +90,6 @@ ssh_gssapi_client_mechanisms(char *host) {
 		if (supported->elements[i].length<128 &&
 		    ssh_gssapi_check_mechanism(&(supported->elements[i]),host)) {
 
-			/* Earlier versions of this code interpreted the
-			 * spec incorrectly with regard to OID encoding. They
-			 * also mis-encoded the krb5 OID. The following
-			 * _temporary_ code interfaces with these broken
-			 * servers */
-
-			if (datafellows & SSH_BUG_GSSAPI_BER) {
-				char *bodge=NULL;
-				gss_OID_desc krb5oid={9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"};
-				gss_OID_desc gsioid={9, "\x2B\x06\x01\x04\x01\x9B\x50\x01\x01"};
-				
-				if (supported->elements[i].length==krb5oid.length &&
-				    memcmp(supported->elements[i].elements,
-				    	   krb5oid.elements, krb5oid.length)==0) {
-					bodge="Se3H81ismmOC3OE+FwYCiQ==";
-				}
-				
-				if (supported->elements[i].length==gsioid.length &&
-				    memcmp(supported->elements[i].elements,
-				    	   gsioid.elements, gsioid.length)==0) {
-					bodge="N3+k7/4wGxHyuP8Yxi4RhA==";
-				}
-
-				if (bodge) {				
-					if (oidpos!=0) {
-						buffer_put_char(&buf,',');
-					}
-				
-					buffer_append(&buf, KEX_GSS_SHA1, sizeof(KEX_GSS_SHA1)-1);
-					buffer_append(&buf, bodge, strlen(bodge));
-
-					gss_enc2oid[oidpos].oid=&(supported->elements[i]);
-					gss_enc2oid[oidpos].encoded=bodge;
-			
-					oidpos++;
-				}
-			}
-			
 			/* Add the required DER encoding octets and MD5 hash */
 			deroid[0]=0x06; /* Object Identifier */
 			deroid[1]=supported->elements[i].length;

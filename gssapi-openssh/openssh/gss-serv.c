@@ -356,8 +356,6 @@ ssh_gssapi_server_mechanisms() {
 	int		present;
 	char *		mechs;
 
-	if (datafellows & SSH_OLD_GSSAPI) return NULL;
-	
 	ssh_gssapi_supported_oids(&supported);
 	
 	buffer_init(&buf);
