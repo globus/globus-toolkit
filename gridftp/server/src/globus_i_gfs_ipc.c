@@ -115,6 +115,7 @@ globus_l_gfs_data_event_cb(
 globus_result_t
 globus_i_gfs_ipc_recv_request(
     globus_i_gfs_server_instance_t *    instance,
+    globus_i_gfs_op_attr_t *    op_attr,
     globus_i_gfs_ipc_data_handle_t *    data_handle,
     const char *                        pathname,
     const char *                        module_name,
@@ -141,6 +142,7 @@ globus_i_gfs_ipc_recv_request(
     
     result = globus_i_gfs_data_recv_request(
         instance,
+        op_attr,
         &data_handle->data,
         pathname,
         module_name,
@@ -167,6 +169,7 @@ error_alloc:
 globus_result_t
 globus_i_gfs_ipc_send_request(
     globus_i_gfs_server_instance_t *    instance,
+    globus_i_gfs_op_attr_t *    op_attr,
     globus_i_gfs_ipc_data_handle_t *    data_handle,
     const char *                        pathname,
     const char *                        module_name,
@@ -193,6 +196,7 @@ globus_i_gfs_ipc_send_request(
     
     result = globus_i_gfs_data_send_request(
         instance,
+        op_attr,
         &data_handle->data,
         pathname,
         module_name,

@@ -7,5 +7,9 @@ globus_result_t
 globus_i_gfs_control_start(
     globus_xio_handle_t                 handle,
     const char *                        remote_contact);
+    
+void
+globus_i_gfs_op_attr_destroy(
+    globus_i_gfs_op_attr_t *    attr);
 
 #endif
