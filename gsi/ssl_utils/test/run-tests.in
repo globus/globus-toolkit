@@ -20,7 +20,7 @@ for testfile in ""$TEST_EXECS; do
 	    echo "Executing test ${testfile}"
     
             if [ "$1" = "local" ]; then
-                ${testfile} > ${testfile}.out 2> ${testfile}.err
+                ./${testfile} > ${testfile}.out 2> ${testfile}.err
             else
    	        "$1" "-s" "-r" "$2" "&(executable=${testfile})
 			 	    (directory=`pwd`)
