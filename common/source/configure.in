@@ -13,7 +13,7 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER(config.h library/globus_common.h:library/globus_common.h.in)
 
 dnl Determine thread library flags
 dnl if test "x$NO_FLAVOR" = "x"; then
