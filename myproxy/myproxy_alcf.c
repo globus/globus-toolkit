@@ -29,32 +29,34 @@
 #include <globus_gss_assist.h>
 
 #define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
+#define	SECONDS_PER_HOUR (60 * 60)
 static int use_empty_passwd = 0;
 static int dn_as_username = 0;
 
 static char usage[] = \
 "\n"\
-"Syntax: myproxy-alcf [-l username] [-r retrievers] [-R renewers] ...\n"\
-"        myproxy-alcf [-usage|-help] [-version]\n"\
+"Syntax: myproxy-admin-load-credential [-l username] [-r retrievers] [-R renewers] ...\n"\
+"        myproxy-admin-load-credential [-usage|-help] [-version]\n"\
 "\n"\
 "   Options\n"\
 "       -h | --help                       Displays usage\n"
 "       -u | --usage                                    \n"
 "                                                      \n"
-"       -s | --storage         <directory> Specifies the credential storage directory\n"
-"	-C | --credfile	       <filename> Credential file name\n"
-"                                         Can also set MYPROXY_SERVER env. var.\n"
-"	-y | --keyfile		<filename> Key file name\n"
 "       -v | --verbose                    Display debugging messages\n"
 "       -V | --version                    Displays version\n"
-"       -l | --username        <username> Username for the delegated proxy\n"
+"       -s | --storage        <directory> Specifies the credential storage directory\n"
+"       -c | --certfile       <filename>  Certificate file name\n"
+"       -y | --keyfile        <filename>  Key file name\n"
+"       -l | --username       <username>  Username for the delegated proxy\n"
+"       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
+"                                         server (default 2 hours)\n"
 "       -a | --allow_anonymous_retrievers Allow credentials to be retrieved\n"
 "                                         with just username/passphrase\n"
 "       -A | --allow_anonymous_renewers   Allow credentials to be renewed by\n"
 "                                         any client (not recommended)\n"
-"       -r | --retrievable_by  <dn>       Allow specified entity to retrieve\n"
+"       -r | --retrievable_by <dn>        Allow specified entity to retrieve\n"
 "                                         credential\n"
-"       -R | --renewable_by    <dn>       Allow specified entity to renew\n"
+"       -R | --renewable_by   <dn>        Allow specified entity to renew\n"
 "                                         credential\n"
 "       -x | --regex_dn_match             Set regular expression matching mode\n"
 "                                         for following policy options\n"
@@ -64,16 +66,17 @@ static char usage[] = \
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
-"       -k | --credname        <name>     Specifies credential name\n"
-"       -K | --creddesc        <desc>     Specifies credential description\n"
+"       -k | --credname       <name>      Specifies credential name\n"
+"       -K | --creddesc       <desc>      Specifies credential description\n"
 "\n";
 
 struct option long_options[] =
 {
   {"help",                  no_argument, NULL, 'h'},
   {"usage",                 no_argument, NULL, 'u'},
-  {"credfile",	      required_argument, NULL, 'C'},
+  {"certfile",	      required_argument, NULL, 'c'},
   {"keyfile",	      required_argument, NULL, 'y'},
+  {"proxy_lifetime",  required_argument, NULL, 't'},
   {"storage",         required_argument, NULL, 's'},
   {"username",        required_argument, NULL, 'l'},
   {"verbose",               no_argument, NULL, 'v'},
@@ -93,9 +96,9 @@ struct option long_options[] =
 
 /*colon following an option indicates option takes an argument */
 
-static char short_options[] = "uhl:vVndr:R:xXaAk:K:C:y:s:";
+static char short_options[] = "uhl:vVndr:R:xXaAk:K:t:c:y:s:";
 
-static char *credfile;  /* credential file name */
+static char *certfile;  /* certificate file name */
 static char *keyfile;  /* key file name */
 
 static char version[] =
@@ -108,16 +111,15 @@ int main(int argc, char *argv[])
 	SSL_CREDENTIALS *creds;
 	myproxy_creds_t *my_creds;
 
-	printf ("Entered myproxy-alcf !!\n");
 	my_creds = (myproxy_creds_t *) malloc(sizeof(*my_creds));
 	memset (my_creds, 0, sizeof(*my_creds));
 
 	creds = ssl_credentials_new();
 	init_arguments (argc, argv, my_creds);
 
-	if (credfile == NULL)
+	if (certfile == NULL)
 	{
-		fprintf (stderr, "Specify credential file with -C option\n");
+		fprintf (stderr, "Specify certificate file with -c option\n");
 		goto cleanup;
 	}
 
@@ -127,7 +129,7 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
-	if (ssl_certificate_load_from_file(creds, credfile) == SSL_SUCCESS)
+	if (ssl_certificate_load_from_file(creds, certfile) == SSL_SUCCESS)
 	{
 	    	char proxyfile[64];
 		char passphrase[MAX_PASS_LEN+1];
@@ -145,7 +147,6 @@ int main(int argc, char *argv[])
 		/* Read private key */
 		if (ssl_private_key_load_from_file (creds, keyfile, passphrase) == SSL_ERROR)
 		{
-			perror ("Error");
 			fprintf (stderr, "Error reading private key: %s\n",verror_get_string());
 			goto cleanup;
 		}
@@ -186,7 +187,12 @@ int main(int argc, char *argv[])
 			}
     		}
 
-		my_creds->owner_name = strdup (my_creds->username);
+		if (ssl_get_base_subject_file(proxyfile,
+					      &my_creds->owner_name)) {
+		    fprintf(stderr,
+			    "Cannot get subject name from certificate.\n");
+		    goto cleanup;
+		}
 		my_creds->location = strdup (proxyfile);
 
 		if (myproxy_creds_store(my_creds) < 0) {
@@ -217,8 +223,10 @@ init_arguments(int argc,
     int arg;
     int expr_type = MATCH_CN_ONLY;  /*default */
 
-    credfile = NULL;
+    certfile = NULL;
     keyfile = NULL;
+    my_creds->lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_DELEG_HOURS;
+
     while((arg = gnu_getopt_long(argc, argv, short_options, 
                              long_options, NULL)) != EOF) 
     {
@@ -232,8 +240,8 @@ init_arguments(int argc,
           break;
          }
 	
-	case 'C': /* credential file name*/
-	    credfile = strdup (gnu_optarg);
+	case 'c': /* credential file name*/
+	    certfile = strdup (gnu_optarg);
 	    break;
 	case 'y': /* key file name */
 	    keyfile = strdup (gnu_optarg);
@@ -242,6 +250,9 @@ init_arguments(int argc,
             fprintf(stderr, usage);
             exit(1);
        	    break;
+	case 't': 	/* Specify proxy lifetime in hours */
+	    my_creds->lifetime = SECONDS_PER_HOUR * atoi(gnu_optarg);
+	    break;        
 	case 'h': 	/* print help and exit */
             fprintf(stderr, usage);
             exit(1);
