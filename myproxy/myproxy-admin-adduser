@@ -22,13 +22,7 @@ if (!(-x $grid_ca_sign)) {
 chomp($mpalc = `which myproxy-admin-load-credential 2>/dev/null`);
 if (!(-x $mpalc)) {
     print STDERR "Error: myproxy-admin-load-credential not found.\n";
-    print STDERR "Is MyProxy installed in ${GLOBUS_LOCATION}?\n";
-    exit 1;
-}
-chomp($mpauc = `which myproxy-admin-adduser-config 2>/dev/null`);
-if (!(-x $mpauc)) {
-    print STDERR "Error: myproxy-admin-adduser-config not found.\n";
-    print STDERR "Is MyProxy installed in ${GLOBUS_LOCATION}?\n";
+    print STDERR "Is MyProxy installed in $ENV{GLOBUS_LOCATION}?\n";
     exit 1;
 }
 
@@ -79,7 +73,8 @@ $reqfile = "${tmp_dir_name}/${prefix}cert_request.pem";
 $keyfile = "${tmp_dir_name}/${prefix}key.pem";
 
 @args = ("grid-cert-request", "-cn", $opt_c, "-prefix", $prefix, "-dir",
-	 $tmp_dir_name,  "-force", "-nopassphrase");
+	 $tmp_dir_name,  "-force");
+push(@args, "-nopassphrase") if ($opt_n);
 
 if (system(@args)) {
     print STDERR "grid-cert-request failed.\n";
@@ -127,7 +122,6 @@ if ($opt_r) {
 if ($opt_R) {
     push(@args, "-R"); push(@args, $opt_R);
 }
-push(@args, "-n") if ($opt_n);
 push(@args, "-d") if ($opt_d);
 if ($opt_k) {
     push(@args, "-k"); push(@args, $opt_k);
