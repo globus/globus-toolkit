@@ -73,7 +73,7 @@
 # Warning: enabling this may bypass the setting of 'PasswordAuthentication'
 #PAMAuthenticationViaKbdInt no
 
-#X11Forwarding no
+X11Forwarding yes
 #X11DisplayOffset 10
 #X11UseLocalhost yes
 #PrintMotd yes
@@ -93,5 +93,4 @@
 Subsystem	sftp	/usr/libexec/sftp-server
 
 # where to store the pid of sshd process
-# should be $localstatedir/sshd.pid => $globus_location/var/sshd.pid
 PidFile		/var/run/sshd.pid
