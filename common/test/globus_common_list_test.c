@@ -16,10 +16,22 @@ main(
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
 
+    if(globus_list_size(list) != 0)
+    {
+        printf("size test failed\n");
+        return -1;
+    }
+
     globus_list_insert(&list, &x1);
     globus_list_insert(&list, &x2);
     globus_list_insert(&list, &x3);
     globus_list_insert(&list, &x4);
+
+    if(globus_list_size(list) != 4)
+    {
+        printf("size test failed\n");
+        return -1;
+    }
 
     i = globus_list_search(list, &x1);
     ptr = globus_list_first(i);

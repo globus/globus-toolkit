@@ -104,7 +104,7 @@ globus_list_size(
     globus_list_t *                         list;
     int                                     size = 0;
 
-    for(list = globus_list_first(head); 
+    for(list = head;
         !globus_list_empty(list);
         list = globus_list_rest(list))
     {
