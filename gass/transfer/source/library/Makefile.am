@@ -35,10 +35,7 @@ INCLUDES += $(GPT_INCLUDES)
 # a list of header files that are to be installed in $prefix/include
 include_HEADERS= \
 	globus_gass_transfer.h \
-	globus_gass_transfer_proto.h \
-	globus_i_gass_transfer.h \
-	globus_i_gass_transfer_keyvalue.h \
-	globus_l_gass_transfer_http.h
+	globus_gass_transfer_proto.h
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
