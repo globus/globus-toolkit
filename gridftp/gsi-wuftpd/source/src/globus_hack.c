@@ -54,7 +54,6 @@ extern int file_count_out;
 extern int xfer_count_total;
 extern int xfer_count_in;
 extern int xfer_count_out;
-extern FILE * bean_bag;
 extern struct sockaddr_in ctrl_addr;
 /**********************************************************n
  * local function prototypes
@@ -214,7 +213,6 @@ g_send_data(
     throughput_calc(name, &bps, &bpsmult);
 #endif
 
-fprintf(bean_bag, "using globus send\n");
     wu_monitor_init(&monitor);
 
     res = globus_ftp_control_data_connect_write(

@@ -81,8 +81,6 @@
 #define VA_END		va_end(ap)
 
 
-FILE * bean_bag;
-
 /**** added by JB **********/
 #if defined(THROUGHPUT)
 #   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
@@ -1082,9 +1080,6 @@ int i = 0;
     }
 #endif
 
-bean_bag = fopen("my_ass", "w");
-fprintf(bean_bag, "start\n");
-
     if (RootDirectory != NULL) {
 	if ((chroot(RootDirectory) < 0)
 	    || (chdir("/") < 0)) {
@@ -1112,7 +1107,6 @@ while(i)
      *  globus hack added by JB
      *  initialize handle and put it into ascii mode
      */
-fprintf(bean_bag, "check 1\n");
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
         char *                            a;
@@ -5369,7 +5363,6 @@ int
     throughput_calc(name, &bps, &bpsmult);
 #endif
 
-fprintf(bean_bag, "using non globus send\n");
     buf = NULL;
     if (wu_setjmp(urgcatch)) {
 	draconian_FILE = NULL;
