@@ -2020,7 +2020,7 @@ globus_l_gram_http_parse_reply(
     }
     else if(code==500)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	rc = GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED;
     }
     else
     {
