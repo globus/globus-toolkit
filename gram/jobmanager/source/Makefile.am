@@ -22,6 +22,7 @@ LibSources= \
 PgmSources = \
 	globus_gram_job_manager.h \
 	globus_gram_paradyn.c \
+	globus_gram_job_manager_validate.c \
 	globus_job_manager.c
 
 # INCLUDES is an automake macro which contains 
@@ -40,7 +41,12 @@ lib_LTLIBRARIES = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
 libexec_PROGRAMS = globus-job-manager
 bin_SCRIPTS = globus-personal-gatekeeper
 
-EXTRA_DIST = globus-personal-gatekeeper
+ValidationFiles = submit.rvf restart.rvf
+
+validationdir = $(datadir)/globus-gram-job-manager
+validation_DATA = $(ValidationFiles)
+
+EXTRA_DIST = globus-personal-gatekeeper $(ValidationFiles)
 
 libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = $(LibSources)
 libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)

@@ -180,8 +180,7 @@ globus_l_gram_client_callback(int status, int failure_code);
 
 static int
 globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
-                           globus_gram_jobmanager_request_t * req,
-			   globus_bool_t initialize);
+                           globus_gram_jobmanager_request_t * req);
 
 static int
 globus_l_gram_request_environment_append(globus_gram_jobmanager_request_t * req,
@@ -364,7 +363,6 @@ static globus_bool_t    globus_l_gram_stderr_ignored = GLOBUS_TRUE;
 
 globus_list_t *  globus_l_gram_client_contacts = GLOBUS_NULL;
 
-static int                   graml_my_count;
 static globus_mutex_t        graml_api_mutex;
 static globus_cond_t         graml_api_cond;
 static int                   graml_stdout_count;
@@ -1202,6 +1200,12 @@ int main(int argc,
 	globus_jobmanager_log( request->jobmanager_log_fp,
 		              "JM: before canonicalization: %s\n",
 		              globus_rsl_unparse(rsl_tree));
+	/*
+	 * Canonize the RSL attributes.  This will remove underscores
+	 * and lowercase all characters.  For example, givin the RSL relation
+	 * "(Max_Time=20)" the attribute "Max_Time" will be altered in the
+	 * rsl_tree to be "maxtime".
+	 */
 	if (globus_rsl_assist_attributes_canonicalize(rsl_tree) != 0)
 	{
 	    /* Can't canonicalize the tree, bail! */
@@ -1261,11 +1265,37 @@ int main(int argc,
 
     }
 
+    request->rsl = rsl_tree;
+
     if (rc == GLOBUS_SUCCESS && request->jm_restart == NULL)
     {
+	char *				validation_file;
+
+	validation_file = globus_l_gram_genfilename(
+		conf.globus_location,
+		"share/globus-gram-job-manager",
+		"submit.rvf");
+
+	rc = globus_gram_job_manager_validate_rsl(
+		request,
+		validation_file,
+		NULL);
+	/*
+	 * Eval again, as some default parameters may have to be
+	 * RSL-substituted
+	 */
+	rc = globus_rsl_eval(rsl_tree, symbol_table);
+	if (rc != GLOBUS_SUCCESS)
+	{
+	    rc = GLOBUS_FAILURE;
+	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	    request->failure_code =
+		 GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+	}
+
         /* fill the request structure with values from the RSL
          */
-        rc = globus_l_gram_request_fill(rsl_tree, request, GLOBUS_TRUE);
+        rc = globus_l_gram_request_fill(rsl_tree, request);
     }
 
     if (rc == GLOBUS_SUCCESS && request->jm_restart != NULL)
@@ -1300,15 +1330,16 @@ int main(int argc,
 	{
 	    orig_rsl_tree = globus_rsl_parse( orig_rsl );
 
-	    rc = globus_l_gram_request_fill(orig_rsl_tree, request,
-					    GLOBUS_TRUE);
+	    rc = globus_l_gram_request_fill(orig_rsl_tree, request);
 
 	    free(orig_rsl);
 	}
 
 	if (rc == GLOBUS_SUCCESS)
 	{
-	    rc = globus_l_gram_request_fill(rsl_tree, request, GLOBUS_FALSE);
+	    /* TODO: Validate passed RSL and update request with
+	     * restart-acceptable attributes
+	     */
 	}
 
 	if (rc == GLOBUS_SUCCESS)
@@ -1734,91 +1765,91 @@ int main(int argc,
 	}
     }
 
-    if (!krbflag)
+    if ((!krbflag) && (!debugging_without_client))
     {
-    if (rc == GLOBUS_SUCCESS && ! debugging_without_client)
-    {
-	gss_OID_set				mechs;
-	int					present = 0;
-
-        /*
-	 * relocate the user proxy to the gass cache and
-         * return the local file name.
-         */
-        globus_jobmanager_log( request->jobmanager_log_fp,
-		       "JM: user proxy relocation\n");
-
-	/*
-         * Figure out if we're using GSI
-	 */
-	major_status = gss_indicate_mechs(&minor_status,
-		                          &mechs);
-	if(major_status == GSS_S_COMPLETE)
+	if (rc == GLOBUS_SUCCESS)
 	{
-	    major_status = gss_test_oid_set_member(
-		    &minor_status,
-		    &gss_mech_oid_globus_gssapi_ssleay,
-		    mechs,
-		    &present);
-	    if(major_status != GSS_S_COMPLETE)
-	    {
-		present = 0;
-	    }
-	    gss_release_oid_set(&minor_status, &mechs);
-	}
+	    gss_OID_set				mechs;
+	    int					present = 0;
 
-	/* If so, relocate our delegated proxy */
-        if (present)
-        {
-	    graml_env_x509_user_proxy =
-		globus_l_gram_user_proxy_relocate(request);
-            globus_jobmanager_log( request->jobmanager_log_fp,
-                  "JM: GSSAPI type is GSI\n");
+	    /*
+	     * relocate the user proxy to the gass cache and
+	     * return the local file name.
+	     */
+	    globus_jobmanager_log( request->jobmanager_log_fp,
+			   "JM: user proxy relocation\n");
 
-            if ((!graml_env_x509_user_proxy))
-            {
-                request->failure_code =
-                    GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
-		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-		rc = GLOBUS_FAILURE;
-            }
-	    else
+	    /*
+	     * Figure out if we're using GSI
+	     */
+	    major_status = gss_indicate_mechs(&minor_status,
+					      &mechs);
+	    if(major_status == GSS_S_COMPLETE)
 	    {
-		for(x = 0; request->environment[x] != GLOBUS_NULL; x++)
+		major_status = gss_test_oid_set_member(
+			&minor_status,
+			&gss_mech_oid_globus_gssapi_ssleay,
+			mechs,
+			&present);
+		if(major_status != GSS_S_COMPLETE)
 		{
-		    ;
+		    present = 0;
 		}
-		request->environment = (char **)
-		    globus_libc_realloc(request->environment,
-					(x+3) * sizeof(char *));
+		gss_release_oid_set(&minor_status, &mechs);
+	    }
 
-		request->environment[x] = "X509_USER_PROXY";
-		++x;
-		request->environment[x] = graml_env_x509_user_proxy;
-		++x;
-		request->environment[x] = GLOBUS_NULL;
+	    /* If so, relocate our delegated proxy */
+	    if (present)
+	    {
+		graml_env_x509_user_proxy =
+		    globus_l_gram_user_proxy_relocate(request);
+		globus_jobmanager_log( request->jobmanager_log_fp,
+		      "JM: GSSAPI type is GSI\n");
+
+		if ((!graml_env_x509_user_proxy))
+		{
+		    request->failure_code =
+			GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
+		    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		    rc = GLOBUS_FAILURE;
+		}
+		else
+		{
+		    for(x = 0; request->environment[x] != GLOBUS_NULL; x++)
+		    {
+			;
+		    }
+		    request->environment = (char **)
+			globus_libc_realloc(request->environment,
+					    (x+3) * sizeof(char *));
+
+		    request->environment[x] = "X509_USER_PROXY";
+		    ++x;
+		    request->environment[x] = graml_env_x509_user_proxy;
+		    ++x;
+		    request->environment[x] = GLOBUS_NULL;
+		}
 	    }
 	}
-    }
-    else
-    {
-        graml_env_x509_user_proxy = (char *) getenv("X509_USER_PROXY");
-        if (graml_env_x509_user_proxy)
-        {
-            if (remove(graml_env_x509_user_proxy) != 0)
-            {
-                globus_jobmanager_log( request->jobmanager_log_fp,
-                  "JM: Cannot remove user proxy file --> %s\n",
-                  graml_env_x509_user_proxy);
-            }
-            else
-            {
-                globus_jobmanager_log( request->jobmanager_log_fp,
-                  "JM: request failed at startup removed user proxy --> %s\n",
-                  graml_env_x509_user_proxy);
-            }
-        }
-    }
+	else
+	{
+	    graml_env_x509_user_proxy = (char *) getenv("X509_USER_PROXY");
+	    if (graml_env_x509_user_proxy)
+	    {
+		if (remove(graml_env_x509_user_proxy) != 0)
+		{
+		    globus_jobmanager_log( request->jobmanager_log_fp,
+		      "JM: Cannot remove user proxy file --> %s\n",
+		      graml_env_x509_user_proxy);
+		}
+		else
+		{
+		    globus_jobmanager_log( request->jobmanager_log_fp,
+		      "JM: request failed at startup removed user proxy --> %s\n",
+		      graml_env_x509_user_proxy);
+		}
+	    }
+	}
     } /*krbflag */
 
     if (graml_env_x509_user_proxy)
@@ -2994,8 +3025,7 @@ Returns:
 ******************************************************************************/
 static int
 globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
-                           globus_gram_jobmanager_request_t * req,
-			   globus_bool_t initialize)
+                           globus_gram_jobmanager_request_t * req)
 {
     int x;
     char ** tmp_param;
@@ -3034,7 +3064,7 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
         req->executable = (tmp_param)[0];
-    else if ( req->jm_restart == NULL && initialize == GLOBUS_TRUE )
+    else if ( req->jm_restart == NULL)
     {
         req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_EXE;
         return(GLOBUS_FAILURE);
@@ -3066,8 +3096,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
         req->directory = tmp_param[0];
-    else if (initialize == GLOBUS_TRUE)
-        req->directory = graml_env_home;
 
     /*
      * change to the right directory, so that std* files
@@ -3095,8 +3123,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
         req->my_stdin = tmp_param[0];
-    else if (initialize == GLOBUS_TRUE)
-        req->my_stdin = GLOBUS_GRAM_PROTOCOL_DEFAULT_STDIN;
 
     /**********************************
      *  GET STDOUT PARAM
@@ -3129,10 +3155,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 	{
 	    req->my_stdout_tag = GLOBUS_NULL;
 	}
-    }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->my_stdout = GLOBUS_GRAM_PROTOCOL_DEFAULT_STDOUT;
     }
 
     if (strcmp(req->my_stdout, GLOBUS_GRAM_PROTOCOL_DEFAULT_STDOUT) == 0)
@@ -3169,10 +3191,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->stdout_position = x;
         }
     }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->stdout_position = 0;
-    }
 
     /**********************************
      *  GET STDERR PARAM
@@ -3205,10 +3223,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 	{
 	    req->my_stderr_tag = GLOBUS_NULL;
 	}
-    }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->my_stderr = GLOBUS_GRAM_PROTOCOL_DEFAULT_STDERR;
     }
 
     if (strcmp(req->my_stderr, GLOBUS_GRAM_PROTOCOL_DEFAULT_STDERR) == 0)
@@ -3245,10 +3259,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->stderr_position = x;
         }
     }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->stderr_position = 0;
-    }
 
     /**********************************
      *  GET COUNT PARAM
@@ -3277,13 +3287,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->count = x;
         }
     }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->count = 1;
-    }
-
-    /* save count parameter for reporting to MDS */
-    graml_my_count = req->count;
 
     /**********************************
      *  GET MIN_MEMORY PARAM
@@ -3310,10 +3313,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         {
             req->min_memory = x;
         }
-    }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->min_memory = 0;
     }
 
     /**********************************
@@ -3342,10 +3341,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->max_memory = x;
         }
     }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->max_memory = 0;
-    }
 
     /**********************************
      *  GET MAX_WALL_TIME PARAM
@@ -3372,10 +3367,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         {
             req->max_wall_time = x;
         }
-    }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->max_wall_time = 0;
     }
 
     /**********************************
@@ -3404,10 +3395,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->max_cpu_time = x;
         }
     }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->max_cpu_time = 0;
-    }
 
     /**********************************
      *  GET MAX_TIME PARAM
@@ -3435,10 +3422,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->max_time = x;
         }
     }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->max_time = 0;
-    }
 
     /**********************************
      *  GET START_TIME PARAM
@@ -3454,9 +3437,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
         req->start_time = tmp_param[0];
-    else if (initialize == GLOBUS_TRUE)
-        req->start_time = GLOBUS_GRAM_PROTOCOL_DEFAULT_START_TIME;
-
 
     /**********************************
      *  GET HOST_COUNT PARAM
@@ -3484,10 +3464,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->host_count = x;
         }
     }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->host_count = 0;
-    }
 
     /**********************************
      *  GET PARADYN PARAM
@@ -3503,8 +3479,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
         req->paradyn = tmp_param[0];
-    else if (initialize == GLOBUS_TRUE)
-        req->paradyn = NULL;
 
     /**********************************
      *  GET JOB_TYPE PARAM
@@ -3534,10 +3508,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             return(GLOBUS_FAILURE);
         }
     }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->job_type = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE;
-    }
 
     /**********************************
      *  GET MYJOB PARAM
@@ -3562,8 +3532,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
         gram_myjob = tmp_param[0];
     }
-    else if (initialize == GLOBUS_TRUE)
-        gram_myjob = GLOBUS_GRAM_PROTOCOL_DEFAULT_MYJOB;
 
     /**********************************
      *  GET DRY_RUN PARAM
@@ -3582,8 +3550,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->dry_run = GLOBUS_TRUE;
         else
             req->dry_run = GLOBUS_FALSE;
-    else if (initialize == GLOBUS_TRUE)
-        req->dry_run = GLOBUS_FALSE;
 
     /**********************************
      *  GET SAVE_STATE PARAM
@@ -3602,8 +3568,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->save_state = GLOBUS_TRUE;
         else
             req->save_state = GLOBUS_FALSE;
-    else if (initialize == GLOBUS_TRUE)
-        req->save_state = GLOBUS_FALSE;
 
     /**********************************
      *  GET TWO_PHASE_COMMIT PARAM
@@ -3638,10 +3602,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 	    }
 	}
     }
-    else if (initialize == GLOBUS_TRUE)
-    {
-        req->two_phase_commit = 0;
-    }
 
     /**********************************
      *  GET REMOTE IO URL PARAM
@@ -3657,8 +3617,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
         graml_remote_io_url = tmp_param[0];
-    else if (initialize == GLOBUS_TRUE)
-	graml_remote_io_url = NULL;
 
     /**********************************
      *  GET QUEUE PARAM
@@ -3674,8 +3632,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
         req->queue = tmp_param[0];
-    else if (initialize == GLOBUS_TRUE)
-        req->queue = NULL;
 
     /**********************************
      *  GET RESERVATION HANDLE PARAM
@@ -3691,8 +3647,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
         req->reservation_handle = tmp_param[0];
-    else if (initialize == GLOBUS_TRUE)
-        req->reservation_handle = NULL;
 
     /**********************************
      *  GET PROJECT PARAM
@@ -3708,8 +3662,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
         req->project = tmp_param[0];
-    else if (initialize == GLOBUS_TRUE)
-        req->project = NULL;
 
     /**********************************
      *  GET ENVIRONMENT PARAM
@@ -3768,37 +3720,34 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
      * URLs. No new transfer will be done, but a new tag will be added to
      * the existing GASS cache entry.
      */
-    if (req->jm_restart == NULL || initialize == GLOBUS_FALSE)
+    if (globus_l_gram_stage_file(req->executable,
+				 &staged_file_path,
+				 0700) != GLOBUS_SUCCESS)
     {
-	if (globus_l_gram_stage_file(req->executable,
-				     &staged_file_path,
-				     0700) != GLOBUS_SUCCESS)
-	{
-	    req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_STAGING_EXECUTABLE;
-	    return(GLOBUS_FAILURE);
-	}
+	req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_STAGING_EXECUTABLE;
+	return(GLOBUS_FAILURE);
+    }
 
-	if (staged_file_path)
-	{
-	    req->executable = staged_file_path;
-	    globus_jobmanager_log( req->jobmanager_log_fp,
-		  "JM: executable staged filename is %s\n", staged_file_path);
-	}
+    if (staged_file_path)
+    {
+	req->executable = staged_file_path;
+	globus_jobmanager_log( req->jobmanager_log_fp,
+	      "JM: executable staged filename is %s\n", staged_file_path);
+    }
 
-	if (globus_l_gram_stage_file(req->my_stdin,
-				     &staged_file_path,
-				     0400) != GLOBUS_SUCCESS)
-	{
-	    req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_STAGING_STDIN;
-	    return(GLOBUS_FAILURE);
-	}
+    if (globus_l_gram_stage_file(req->my_stdin,
+				 &staged_file_path,
+				 0400) != GLOBUS_SUCCESS)
+    {
+	req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_STAGING_STDIN;
+	return(GLOBUS_FAILURE);
+    }
 
-	if (staged_file_path)
-	{
-	    req->my_stdin = staged_file_path;
-	    globus_jobmanager_log( req->jobmanager_log_fp,
-		  "JM: stdin staged filename is %s\n", staged_file_path);
-	}
+    if (staged_file_path)
+    {
+	req->my_stdin = staged_file_path;
+	globus_jobmanager_log( req->jobmanager_log_fp,
+	      "JM: stdin staged filename is %s\n", staged_file_path);
     }
 
     if (req->jm_restart == NULL)
@@ -6228,7 +6177,7 @@ globus_l_gram_job_manager_create_scratchdir(
 	    symbol_table,
 	    &tmp_scratch);
 
-    if(rc != GLOBUS_SUCCESS && tmp_scratch == GLOBUS_NULL)
+    if(rc != GLOBUS_SUCCESS || tmp_scratch == GLOBUS_NULL)
     {
 	return rc;
     }

@@ -16,6 +16,7 @@ CVS Information:
 
 #include "globus_common.h"
 #include "globus_gram_protocol.h"
+#include "globus_rsl.h"
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -383,6 +384,8 @@ typedef struct
 
     char *				scratch_dir_base;
     char *				scratchdir;
+
+    globus_rsl_t *			rsl;
 
     globus_gram_job_manager_callback_func_t
 					filename_callback_func;

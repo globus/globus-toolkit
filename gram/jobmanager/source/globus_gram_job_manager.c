@@ -218,6 +218,7 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->jm_restart = NULL;
     r->scratchdir = GLOBUS_NULL;
     r->scratch_dir_base = GLOBUS_NULL;
+    r->paradyn = NULL;
 
     if ( (graml_script_arg_file = tempnam(NULL, "grami")) == NULL )
     {
@@ -1195,6 +1196,8 @@ globus_jobmanager_request_rm_scratchdir(
 
     if (!request)
         return(GLOBUS_FAILURE);
+    if (!request->scratchdir)
+	return(GLOBUS_SUCCESS);
 
     if ((script_arg_fp = fopen(graml_script_arg_file, "w")) == NULL)
     {
