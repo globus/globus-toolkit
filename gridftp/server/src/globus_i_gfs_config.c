@@ -134,7 +134,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "File access permissions of log files. Should be an octal number such as "
     "0644 (the leading 0 is required).", NULL, NULL},
  {"disable_usage_stats", "disable_usage_stats", "GLOBUS_USAGE_OPTOUT", "disable-usage-stats", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Allow usage statistics to be transmitted to a Globus database or other specified target.", NULL, NULL},
+    "Disable transmission of per-transfer usage statistics.  See the Usage Statistics "
+    "section in the online documentation for more information.", NULL, NULL},
  {"usage_stats_target", "usage_stats_target", NULL, "usage-stats-target", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Comma seperated list of contact strings for usage statistics listeners.", NULL, NULL},
 {NULL, "Single and Striped Remote Data Node Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL},
@@ -843,16 +844,25 @@ globus_l_gfs_config_display_html_usage()
         }
         printf(
             "  <tr>\n"
-            "    <td valign=\"top\"><pre><p>%s%s</p><p>%s%s%s%s%s</p></pre></td>\n"
+            "    <td valign=\"top\">\n"
+            "     <table border=\"0\" cellpadding=\"2\" width=\"100%%\">\n"
+            "      <tr><td valign=\"top\"><pre>%s%s</pre></td></tr>\n"
+            "      <tr><td valign=\"top\"><pre>%s%s%s%s%s%s%s</pre></td></tr>\n"
+            "     </table>\n"
+            "    </td>\n"
             "    <td valign=\"top\"><p>%s</p><p>Default value: %s</p></td>\n"
             "  </tr>\n", 
             o->configfile_option, 
             value,
             o->short_cmdline_option ? shortflag : "", 
-            o->short_cmdline_option ? o->short_cmdline_option : "", 
-            o->short_cmdline_option ? " " : "", 
+            o->short_cmdline_option ? o->short_cmdline_option : "",
+            o->type != GLOBUS_L_GFS_CONFIG_BOOL && 
+                o->short_cmdline_option ? value : "",
+            o->short_cmdline_option ? "\n" : "", 
             o->long_cmdline_option ? longflag : "",
             o->long_cmdline_option ? o->long_cmdline_option : "",
+            o->type != GLOBUS_L_GFS_CONFIG_BOOL && 
+                o->long_cmdline_option ? value : "",
             o->usage,
             defval);
     }

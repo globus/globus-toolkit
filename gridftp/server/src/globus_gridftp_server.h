@@ -863,12 +863,6 @@ globus_gridftp_server_get_write_range(
     globus_off_t *                      length);
 
 
-
-/* XXX Hack here until module loading framework is in */
-extern globus_gfs_storage_iface_t       globus_gfs_file_dsi_iface;
-extern globus_gfs_storage_iface_t       globus_gfs_remote_dsi_iface;
-
-
 /* END Storage Interface API */
 
 typedef enum

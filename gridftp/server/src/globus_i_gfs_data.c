@@ -673,7 +673,7 @@ globus_l_gfs_data_authorize(
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
 
-    pw_file = (char *)globus_i_gfs_config_string("pw_file");
+    pw_file = (char *) globus_i_gfs_config_string("pw_file");
     /* if there is a del cred we are using gsi, look it up in the gridmap */
     if(session_info->del_cred != NULL)
     {
@@ -687,6 +687,8 @@ globus_l_gfs_data_authorize(
             {
                 usr = session_info->username;
             }
+
+            *authz_usr = '\0';            
             res = globus_gss_assist_map_and_authorize(
                 context,
                 FTP_SERVICE_NAME,
@@ -697,12 +699,18 @@ globus_l_gfs_data_authorize(
             {
                 goto pwent_error;
             }
-            usr = authz_usr;
-            if(session_info->username)
+            /* if res=success and authz_usr is empty, assume usr is ok
+             * and some callout just didn't copy it to authz_usr */
+            if(*authz_usr != '\0')
             {
-                globus_free(session_info->username);
+                usr = authz_usr;
+            
+                if(session_info->username)
+                {
+                    globus_free(session_info->username);
+                }
+                session_info->username = globus_libc_strdup(usr);
             }
-            session_info->username = strdup(usr);
         }
         else
         {
@@ -710,35 +718,49 @@ globus_l_gfs_data_authorize(
             {
                 rc = globus_gss_assist_gridmap(
                     (char *) session_info->subject, &usr);
+                if(rc != 0)
+                {
+                    GlobusGFSErrorGenericStr(res, 
+                        ("Gridmap lookup failure: unable to map '%s'.", 
+                        session_info->subject));
+                    goto pwent_error;
+                }
             }
             else
             {
                 rc = globus_gss_assist_userok(
                     session_info->subject, session_info->username);
                 usr = session_info->username;
-            }
-            if(rc != 0)
-            {
-                res = GlobusGFSErrorParameter("gridmap");
-                goto pwent_error;
+                if(rc != 0)
+                {
+                    GlobusGFSErrorGenericStr(res,
+                        ("Gridmap lookup failure: unable to map '%s' to '%s'.", 
+                        session_info->subject,
+                        session_info->username));
+                    goto pwent_error;
+                }
             }
             if(session_info->username)
             {
                 globus_free(session_info->username);
             }
-            session_info->username = strdup(usr);
+            session_info->username = globus_libc_strdup(usr);
         }
         pwent = getpwnam(session_info->username);
         if(pwent == NULL)
         {
-            res = GlobusGFSErrorParameter("pwent id");
+            GlobusGFSErrorGenericStr(res,
+                ("Mapped user '%s' is invalid.",
+                session_info->username));
             goto pwent_error;
         }
         gid = pwent->pw_gid;
         grent = getgrgid(pwent->pw_gid);
         if(grent == NULL)
         {
-            res = GlobusGFSErrorParameter("group id");
+            GlobusGFSErrorGenericStr(res,
+                ("Invalid group id assigned to user '%s'.",
+                session_info->username));
             goto pwent_error;
         }
     }
@@ -752,28 +774,35 @@ globus_l_gfs_data_authorize(
             usr = globus_i_gfs_config_string("anonymous_user");
             if(usr == NULL)
             {
-                res = GlobusGFSErrorParameter("anon");
+                res = GlobusGFSErrorGeneric("No anonymous user set.");
                 goto pwent_error;
             }
             pwent = getpwnam(usr);
             if(pwent == NULL)
             {
-                res = GlobusGFSErrorParameter("pwent");
+                res = GlobusGFSErrorGeneric("Invalid anonymous user set.");
                 goto pwent_error;
             }
             grp = globus_i_gfs_config_string("anonymous_group");
             if(grp == NULL)
             {
                 grent = getgrgid(pwent->pw_gid);
+                if(grent == NULL)
+                {
+                    res = GlobusGFSErrorGeneric(
+                        "Invalid group id assigned to anonymous user.");
+                    goto pwent_error;
+                }
             }
             else
             {
                 grent = getgrnam(grp);
-            }
-            if(grent == NULL)
-            {
-                res = GlobusGFSErrorParameter("group ent");
-                goto pwent_error;
+                if(grent == NULL)
+                {
+                    res = GlobusGFSErrorGeneric(
+                        "Invalid anonymous group set.");
+                    goto pwent_error;
+                }
             }
             gid = grent->gr_gid;
         }
@@ -783,14 +812,16 @@ globus_l_gfs_data_authorize(
             pwent = getpwuid(getuid());
             if(pwent == NULL)
             {
-                res = GlobusGFSErrorParameter("pwent");
+                res = GlobusGFSErrorGeneric(
+                    "Invalid passwd entry for current user.");
                 goto pwent_error;
             }
             gid = pwent->pw_gid;
             grent = getgrgid(pwent->pw_gid);
             if(grent == NULL)
             {
-                res = GlobusGFSErrorParameter("grent");
+                res = GlobusGFSErrorGeneric(
+                    "Invalid group id assigned to current user.");
                 goto pwent_error;
             }
         }
@@ -806,7 +837,8 @@ globus_l_gfs_data_authorize(
             FILE * pw = fopen(pw_file, "r");
             if(pw == NULL)
             {
-                res = GlobusGFSErrorParameter("pw file");
+                res = GlobusGFSErrorGeneric(
+                    "Invalid passwd file set.");
                 goto pwent_error;
             }
 
@@ -816,6 +848,8 @@ globus_l_gfs_data_authorize(
                 pwent = fgetpwent(pw);
 #else
                 pwent = NULL;
+                res = GlobusGFSErrorGeneric("Passwd file not supported.");
+                goto pwent_error;
 #endif
             }
             while(pwent != NULL &&
@@ -823,7 +857,7 @@ globus_l_gfs_data_authorize(
 
             if(pwent == NULL)
             {
-                res = GlobusGFSErrorParameter("pwent");
+                res = GlobusGFSErrorGeneric("Invalid user.");
                 goto pwent_error;
             }
             fclose(pw);
@@ -834,27 +868,30 @@ globus_l_gfs_data_authorize(
             pwent = globus_l_gfs_data_pwent;
             if(strcmp(pwent->pw_name, session_info->username) != 0)
             {
-                res = GlobusGFSErrorParameter("username");
+                res = GlobusGFSErrorGeneric(
+                    "Invalid user for current session.");
                 goto pwent_error;
             }
         }
         grent = getgrgid(pwent->pw_gid);
         if(grent == NULL)
         {
-            res = GlobusGFSErrorParameter("grent");
+            GlobusGFSErrorGenericStr(res,
+                ("Invalid group id assigned to user '%s'.",
+                session_info->username));
             goto pwent_error;
         }
         pw_hash = DES_crypt(session_info->password, pwent->pw_passwd);
         if(strcmp(pw_hash, pwent->pw_passwd) != 0)
         {
-            res = GlobusGFSErrorParameter("passwords");
+            res = GlobusGFSErrorGeneric("Invalid user.");
             goto pwent_error;
         }
         gid = pwent->pw_gid;
     }
     else
     {
-        res = GlobusGFSErrorParameter("auth");
+        res = GlobusGFSErrorGeneric("Access denied by configuration.");
         goto pwent_error;
     }
 
@@ -863,13 +900,15 @@ globus_l_gfs_data_authorize(
     rc = setgid(gid);
     if(rc != 0)
     {
-        res = GlobusGFSErrorParameter("setgid");
+        res = GlobusGFSErrorGeneric(
+            "Unable to set the gid of the server process.");
         goto uid_error;
     }
     rc = setuid(pwent->pw_uid);
     if(rc != 0)
     {
-        res = GlobusGFSErrorParameter("setuid");
+        res = GlobusGFSErrorGeneric(
+            "Unable to set the uid of the server process.");
         goto uid_error;
     }
     op->session_handle->uid = pwent->pw_uid;

@@ -15,6 +15,7 @@ striping:
 logging:
 -- instrument code
 -- clean up transfer and usage logging
+-- log commands
 
 other:
 -- error out of option parsing properly
