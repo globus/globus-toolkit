@@ -678,6 +678,13 @@ globus_gram_protocol_get_sec_context(
 
     *context = connection->context;
 
+    if(*context == GSS_C_NO_CONTEXT)
+    {
+	/* No context */
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
+	goto error_exit;        
+    }
+
     return GLOBUS_SUCCESS;
     
  error_exit:
@@ -2521,14 +2528,14 @@ globus_l_gram_protocol_authorization_callback(
 	globus_io_handle_t *		handle,
 	globus_result_t			result,
 	char *				identity,
-	gss_ctx_id_t *			context_handle)
+	gss_ctx_id_t 			context_handle)
 {
     globus_i_gram_protocol_connection_t *
     					connection;
     
     connection = (globus_i_gram_protocol_connection_t *) arg;
 
-    connection->context = *context_handle;
+    connection->context = context_handle;
     
     return GLOBUS_TRUE;
 }
