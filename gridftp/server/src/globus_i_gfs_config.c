@@ -6,7 +6,8 @@ typedef enum
     GLOBUS_L_GFS_CONFIG_BOOL,
     GLOBUS_L_GFS_CONFIG_INT,
     GLOBUS_L_GFS_CONFIG_STRING,
-    GLOBUS_L_GFS_CONFIG_LIST
+    GLOBUS_L_GFS_CONFIG_LIST,
+    GLOBUS_L_GFS_CONFIG_VOID
 } globus_l_gfs_config_type_t;
 
 typedef struct
@@ -22,33 +23,33 @@ typedef struct
 
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
- {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, 200},
+ {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, 0},
  {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, 0},
- {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, 0},
- {"detach", "detach", NULL, "-detach", "-S", GLOBUS_L_GFS_CONFIG_BOOL, 0},
- {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, 0},
- {"no_security", "no_security", NULL, "-no-security", "-ns", GLOBUS_L_GFS_CONFIG_BOOL, 0},
- {"allow_anonymous", "allow_anonymous", NULL, "-allow-anon", "-aa", GLOBUS_L_GFS_CONFIG_BOOL, 0},
- {"anonymous_user", "anonymous_user", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"data_node", "data_node", NULL, "-data-node", "-dn", GLOBUS_L_GFS_CONFIG_BOOL, 0},
- {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0},
- {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"login_msg", "login_msg", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"login_msg_file", "login_msg_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"connections_disabled", "connections_disabled", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0},
- {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"hostname", "hostname", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0},
+ {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"detach", "detach", NULL, "-detach", "-S", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"no_security", "no_security", NULL, "-no-security", "-ns", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"allow_anonymous", "allow_anonymous", NULL, "-allow-anon", "-aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"anonymous_user", "anonymous_user", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"data_node", "data_node", NULL, "-data-node", "-dn", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"login_msg", "login_msg", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"login_msg_file", "login_msg_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"connections_disabled", "connections_disabled", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"hostname", "hostname", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
  {"idle_timeout", "idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0},
- {"globus_location", "globus_location", "GLOBUS_LOCATION", "-G", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"logfile", "logfile", NULL, "-logfile", "-l", GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"remote", "remote", NULL, "-remote", "-r", GLOBUS_L_GFS_CONFIG_STRING, 0},
- {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, 1},
- {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0},
+ {"globus_location", "globus_location", "GLOBUS_LOCATION", "-G", NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"logfile", "logfile", NULL, "-logfile", "-l", GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"remote", "remote", NULL, "-remote", "-r", GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, (void *) 1},
+ {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, NULL},
  {"dsi", "storage_type", NULL, "-dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, "file"},
 
- {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0}
+ {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
@@ -61,7 +62,7 @@ static globus_hashtable_t               option_table;
 static
 int
 globus_l_gfs_config_set(
-    const char *                        option_name,
+    char *                              option_name,
     void *                              value)
 {
     globus_l_gfs_config_option_t *      option;
@@ -207,10 +208,10 @@ globus_l_gfs_config_load_config_file(
             switch(option->type)
             {
               case GLOBUS_L_GFS_CONFIG_BOOL:
-                option->value = (atoi(value) == 0) ? 0 : 1;
+                option->value = (void *) ((atoi(value) == 0) ? 0 : 1);
                 break;
               case GLOBUS_L_GFS_CONFIG_INT:
-                option->value = atoi(value);
+                option->value = (void *) atoi(value);
                 break;
               case GLOBUS_L_GFS_CONFIG_STRING:
                 option->value = globus_libc_strdup(value);
@@ -276,10 +277,10 @@ globus_l_gfs_config_load_config_env()
         switch(option->type)
         {
           case GLOBUS_L_GFS_CONFIG_BOOL:
-            option->value = (atoi(value) == 0) ? 0 : 1;
+            option->value = (void *) ((atoi(value) == 0) ? 0 : 1);
             break;
           case GLOBUS_L_GFS_CONFIG_INT:
-            option->value = atoi(value);
+            option->value = (void *) atoi(value);
             break;
           case GLOBUS_L_GFS_CONFIG_STRING:
             option->value = globus_libc_strdup(value);
@@ -339,7 +340,7 @@ globus_l_gfs_config_load_commandline(
             switch(option->type)
             {
               case GLOBUS_L_GFS_CONFIG_BOOL:
-                option->value = 1;
+                option->value = (void *)  1;
                 break;
 
               case GLOBUS_L_GFS_CONFIG_INT:
@@ -348,7 +349,7 @@ globus_l_gfs_config_load_commandline(
                     /* XXX error, log something */
                     return -1;
                 }
-                option->value = atoi(argv[arg_num]);
+                option->value = (void *) atoi(argv[arg_num]);
                 break;
                 
               case GLOBUS_L_GFS_CONFIG_STRING:
@@ -452,8 +453,6 @@ globus_result_t
 globus_l_gfs_config_misc()
 {
     int                                 rc;
-    int                                 i;
-    globus_l_gfs_config_option_t *      option;    
     globus_bool_t                       bool_value;
     char *                              value;
     char *                              data;
@@ -461,7 +460,7 @@ globus_l_gfs_config_misc()
     if(globus_i_gfs_config_bool("detach") && 
         !globus_i_gfs_config_bool("daemon"))
     {
-        globus_l_gfs_config_set("daemon", GLOBUS_TRUE);
+        globus_l_gfs_config_set("daemon", (void *) GLOBUS_TRUE);
     } 
     
     if((bool_value = globus_i_gfs_config_bool("terse_banner")) == GLOBUS_TRUE)
@@ -499,7 +498,7 @@ globus_l_gfs_config_misc()
     value = globus_i_gfs_config_string("remote");
     {
         globus_i_gfs_community_t *      community;
-        globus_list_t *                 community_list;
+        globus_list_t *                 community_list = NULL;
         char *                          p;
         int                             i;
         char *                          org_value;
