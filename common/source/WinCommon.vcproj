@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="common">
+	Name="globus_common">
 	<Build>
 		<Settings>
 			<Platform
@@ -30,7 +30,8 @@
 				<Tool
 					Name="VCCustomBuildTool"/>
 				<Tool
-					Name="VCLibrarianTool"/>
+					Name="VCLibrarianTool"
+					OutputFile="globus_common.lib"/>
 				<Tool
 					Name="VCMIDLTool"
 					TargetEnvironment="1"/>
