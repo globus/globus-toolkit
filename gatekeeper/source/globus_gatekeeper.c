@@ -995,8 +995,8 @@ static void doit()
 	char *				service_options[SERVICE_OPTIONS_MAX];
 	int					service_option_local_cred = 0;
 	int					service_option_stderr_log = 0;
-    char *              msg[MAX_MESSAGE_LENGTH];
-    unsigned int        msg_size;
+    char *              msg = NULL;
+    size_t              msg_size;
     unsigned char       int_buf[4];
     char                tmp_version[1];
     struct stat         statbuf;
@@ -1467,37 +1467,21 @@ static void doit()
 
 	/*DEE This should be moved to job manager*/
 
-    /*
-     * Read the size of the data, as a 4 byte big-endian unsigned integer
-     */
-    if (fread(int_buf, 1, 4, stdin) == 0)
-    {
-        notice(LOG_ERR,"message size of zero length, Pinged!!");
-        exit(0);
-    }
 
-    msg_size = (  ( ((unsigned int) int_buf[0]) << 24)
-	        | ( ((unsigned int) int_buf[1]) << 16)
-		| ( ((unsigned int) int_buf[2]) << 8)
-		|   ((unsigned int) int_buf[3]) );
+	major_status = globus_gss_assist_get_unwrap(&minor_status,
+				 		context_handle,
+						&msg,
+						&msg_size,
+						&token_status,
+						globus_gss_assist_token_get_fd,
+						stdin,
+						logging_usrlog?usrlog_fp:NULL);
 
-    if (msg_size > MAX_MESSAGE_LENGTH)
-    {
-	failure("message length too long");
-    }
-    
-    /*
-     * Read the data.
-     */
-    if (fread(msg, 1, msg_size, stdin) == 0)
-    {
-        failure("fread() failed trying to read job manager data");
-    }
+   	if (major_status != GSS_S_COMPLETE)
+   	{
+		failure("Reading jobmanager data\n");
+	}
 
-    /*
-     *  if a test_dat_file has been defined, pass data to the file and
-     *  return immediately.
-     */
     if (strlen(test_dat_file) > 0)
     {
         /*
@@ -1516,7 +1500,7 @@ static void doit()
         fclose(test_fp);
 
         return;
-    }
+	}
 	} /* if jobmanager for compatability */
 
     /*

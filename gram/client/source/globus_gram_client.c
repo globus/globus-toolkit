@@ -168,7 +168,8 @@ globus_l_start_time_callback_handler(globus_nexus_endpoint_t * endpoint,
 static int 
 globus_l_gram_client_authenticate(char * gatekeeper_url,
                                   int gss_flags,
-                                  int * gatekeeper_fd);
+                                  int * gatekeeper_fd,
+								  gss_ctx_id_t * pcontext_handle);
 
 /******************************************************************************
                        Define module specific variables
@@ -393,7 +394,8 @@ Returns:
 static int 
 globus_l_gram_client_authenticate(char * gatekeeper_url,
                                   int gss_flags,
-                                  int * gatekeeper_fd)
+                                  int * gatekeeper_fd,
+								  gss_ctx_id_t * pcontext_handle)
 {
     int                          rc;
     globus_byte_t                tmp_version;
@@ -407,7 +409,6 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     OM_uint32                    minor_status = 0;
     int                          token_status = 0;
     OM_uint32                    ret_flags = 0;
-    gss_ctx_id_t                 context_handle = GSS_C_NO_CONTEXT;
     char *cp, *sp, *qp;
 
 
@@ -474,7 +475,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 
     major_status = globus_gss_assist_init_sec_context(&minor_status,
                     credential_handle,
-                    &context_handle,
+                    pcontext_handle,
                     gatekeeper_princ,
                     gss_flags,
                     &ret_flags,
@@ -492,29 +493,14 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
                      minor_status,
                      token_status);
 
+		gss_delete_sec_context(&minor_status,
+							   pcontext_handle,
+							   GSS_C_NO_BUFFER);
         globus_nexus_fd_close(*gatekeeper_fd);
         GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
-#if NODEE
-    /* We still have the GSSAPI context setup and could use
-     * some of the other routines, such as get_mic, verify_mic
-     * at this point. But in this client we don't.
-     * But we need to do the gss_delete_sec_context
-     * sometime before returning from this module.
-     */
 
-	/*DEE context needs to be passed as a parameter, since 
-	 * all messages should be wrapped. 
-	 * This will require changes to many routines. 
-	 * For testing with new gatekeeper, don't delete yet. 
-	 */
-
-     gss_delete_sec_context(&minor_status,
-            &context_handle,
-            GSS_C_NO_BUFFER);
-
-#endif
     /*
      * Use the get_unwrap routine to read a status
      * message from the gatekeeper after the GSSAPI
@@ -525,12 +511,12 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
      */
 
 	if (globus_gss_assist_get_unwrap(&minor_status,
-				context_handle,
+				*pcontext_handle,
 				&auth_msg_buf,
 				&auth_msg_buf_size,
 				&token_status,
 				globus_gss_assist_token_get_nexus,
-				gatekeeper_fd,
+				(void *)gatekeeper_fd,
 				globus_l_print_fp) != GSS_S_COMPLETE)
     {
         grami_fprintf(globus_l_print_fp,
@@ -543,6 +529,9 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     { 
         grami_fprintf(globus_l_print_fp,
               "authorization buffer = %s\n", auth_msg_buf);
+	gss_delete_sec_context(&minor_status,
+						   pcontext_handle,
+						   GSS_C_NO_BUFFER);
 	globus_nexus_fd_close(*gatekeeper_fd);
 	GLOBUS_L_UNLOCK;
 
@@ -571,19 +560,23 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 	auth_msg_buf = NULL;
 
 	/* send the service name */ 
-	/*DEE for now this is hardcodded as "jobmanager" */
+	/*DEE for now this is hardcoded as "jobmanager" */
 
 	if (globus_gss_assist_wrap_send(&minor_status,
-					context_handle,
+					*pcontext_handle,
 					"jobmanager",
 					strlen("jobmanager")+1,
 					&token_status,
-					globus_gss_assist_token_send_nexus_without_length,
+					globus_gss_assist_token_send_nexus,
                     (void *) gatekeeper_fd,
 					globus_l_print_fp) != GSS_S_COMPLETE)
     {
 		grami_fprintf(globus_l_print_fp,
 			"Send of service name failed");
+		gss_delete_sec_context(&minor_status,
+							   pcontext_handle,
+							   GSS_C_NO_BUFFER);
+		globus_nexus_fd_close(*gatekeeper_fd);
 		GLOBUS_L_UNLOCK;
 		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
 	}
@@ -595,12 +588,12 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
      */
 
 	if (globus_gss_assist_get_unwrap(&minor_status,
-				context_handle,
+				*pcontext_handle,
 				&auth_msg_buf,
 				&auth_msg_buf_size,
 				&token_status,
 				globus_gss_assist_token_get_nexus,
-				gatekeeper_fd,
+				(void *)gatekeeper_fd,
 				globus_l_print_fp) != GSS_S_COMPLETE)
     {
         grami_fprintf(globus_l_print_fp,
@@ -613,6 +606,9 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     { 
         grami_fprintf(globus_l_print_fp,
               "service error buffer = %s\n", auth_msg_buf);
+		gss_delete_sec_context(&minor_status,
+							   pcontext_handle,
+							   GSS_C_NO_BUFFER);
 		globus_nexus_fd_close(*gatekeeper_fd);
 		GLOBUS_L_UNLOCK;
 		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
@@ -654,18 +650,24 @@ globus_gram_client_ping(char * gatekeeper_url)
 {
     int rc;
     int gatekeeper_fd;
+	gss_ctx_id_t  context_handle = GSS_C_NO_CONTEXT;
+	OM_uint32     minor_status = 0;
 
     if ((rc = globus_l_gram_client_authenticate(gatekeeper_url,
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
 									GSS_C_GLOBUS_LIMITED_PROXY_FLAG |
 #endif
                                     GSS_C_MUTUAL_FLAG,
-                                    &gatekeeper_fd)) != 0)
+                                    &gatekeeper_fd,
+									&context_handle)) != 0)
     {
         if (rc != GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
             return(rc);
     }
-
+	
+	gss_delete_sec_context(&minor_status,
+						   &context_handle,
+						   GSS_C_NO_BUFFER);
     globus_nexus_fd_close(gatekeeper_fd);
 
     return(0);
@@ -698,6 +700,9 @@ globus_gram_client_job_request(char * gatekeeper_url,
     globus_nexus_endpoint_t         reply_ep;
     globus_nexus_startpoint_t       reply_sp;
     globus_l_job_request_monitor_t  job_request_monitor;
+	gss_ctx_id_t                    context_handle = GSS_C_NO_CONTEXT;
+	OM_uint32                       minor_status = 0;
+	int								token_status = 0;
 
 
     grami_fprintf(globus_l_print_fp, "in globus_gram_client_job_request()\n");
@@ -728,7 +733,8 @@ globus_gram_client_job_request(char * gatekeeper_url,
        GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
 #endif
        GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
-    &gatekeeper_fd)) != 0)
+       &gatekeeper_fd,
+	   &context_handle)) != 0)
     {
         return(rc);
     }
@@ -812,17 +818,27 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     globus_nexus_user_put_startpoint_transfer(&tmp_buffer, &reply_sp, 1);
 
+#if NODEE
     rc = globus_nexus_fd_register_for_write(gatekeeper_fd,
                                            (char *) contact_msg_buffer,
                                            contact_msg_size,
                                            globus_l_write_callback,
                                            globus_l_write_error_callback,
                                            (void *) &job_request_monitor);
+#endif
 
-    if (rc != 0)
+	if (globus_gss_assist_wrap_send(&minor_status,
+					context_handle,
+					contact_msg_buffer+4,
+					size,
+					&token_status,
+					globus_gss_assist_token_send_nexus,
+                    (void *)  &gatekeeper_fd,
+					globus_l_print_fp) != GSS_S_COMPLETE)
     {
-        grami_fprintf(globus_l_print_fp,
-	       "globus_nexus_fd_register_for_write returned %d\n", rc);
+		gss_delete_sec_context(&minor_status,
+							   &context_handle,
+							   GSS_C_NO_BUFFER);
         globus_nexus_fd_close(gatekeeper_fd);
         GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
@@ -848,6 +864,9 @@ globus_gram_client_job_request(char * gatekeeper_url,
     }
 
     globus_free(contact_msg_buffer);
+	gss_delete_sec_context(&minor_status,
+						   &context_handle,
+						   GSS_C_NO_BUFFER);
     globus_nexus_fd_close(gatekeeper_fd);
     GLOBUS_L_UNLOCK;
     return(job_request_monitor.job_status);
