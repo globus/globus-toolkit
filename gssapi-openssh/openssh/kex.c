@@ -41,6 +41,10 @@ RCSID("$OpenBSD: kex.c,v 1.47 2002/02/28 15:46:33 markus Exp $");
 #include "match.h"
 #include "dispatch.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 #define KEX_COOKIE_LEN	16
 
 /* prototype */
@@ -222,6 +226,11 @@ kex_kexinit_finish(Kex *kex)
 	case DH_GEX_SHA1:
 		kexgex(kex);
 		break;
+#ifdef GSSAPI
+	case GSS_GRP1_SHA1:
+		kexgss(kex);
+		break;
+#endif
 	default:
 		fatal("Unsupported key exchange %d", kex->kex_type);
 	}
@@ -277,11 +286,15 @@ choose_kex(Kex *k, char *client, char *server)
 {
 	k->name = match_list(client, server, NULL);
 	if (k->name == NULL)
-		fatal("no kex alg");
+		fatal("No key exchange algorithm");
 	if (strcmp(k->name, KEX_DH1) == 0) {
 		k->kex_type = DH_GRP1_SHA1;
 	} else if (strcmp(k->name, KEX_DHGEX) == 0) {
 		k->kex_type = DH_GEX_SHA1;
+#ifdef GSSAPI
+	} else if (strncmp(k->name, KEX_GSS_SHA1, sizeof(KEX_GSS_SHA1)-1) == 0) {
+		k->kex_type = GSS_GRP1_SHA1;
+#endif
 	} else
 		fatal("bad kex alg %s", k->name);
 }

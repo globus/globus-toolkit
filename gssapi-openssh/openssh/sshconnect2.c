@@ -46,6 +46,10 @@ RCSID("$OpenBSD: sshconnect2.c,v 1.97 2002/02/25 16:33:27 markus Exp $");
 #include "dispatch.h"
 #include "canohost.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 /* import */
 extern char *client_version_string;
 extern char *server_version_string;
@@ -79,6 +83,30 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	xxx_host = host;
 	xxx_hostaddr = hostaddr;
 
+#ifdef GSSAPI
+	/* This is a bit of a nasty kludge. This adds the GSSAPI included
+	 * key exchange methods to the top of the list, allowing the GSSAPI
+	 * code to decide whether each one should be included or not.
+	 */	
+	{
+		char *orig, *gss;
+		int len;
+		orig = myproposal[PROPOSAL_KEX_ALGS];
+		gss = ssh_gssapi_mechanisms(0,host);
+		if (gss) {
+		   len = strlen(orig)+strlen(gss)+2;
+		   myproposal[PROPOSAL_KEX_ALGS]=xmalloc(len);
+		   snprintf(myproposal[PROPOSAL_KEX_ALGS],len,"%s,%s",gss,orig);
+		   /* If we've got GSSAPI algorithms, then we also support the
+		    * 'null' hostkey, as a last resort */
+		   orig=myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS];
+		   len = strlen(orig)+sizeof(",null");
+		   myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]=xmalloc(len);
+		   snprintf(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS],len,"%s,null",orig);  
+		}
+	}
+#endif
+
 	if (options.ciphers == (char *)-1) {
 		log("No valid ciphers for protocol version 2 given, using defaults.");
 		options.ciphers = NULL;
@@ -111,6 +139,11 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	kex->client_version_string=client_version_string;
 	kex->server_version_string=server_version_string;
 	kex->verify_host_key=&verify_host_key_callback;
+	kex->host=host;
+
+#ifdef GSSAPI
+	kex->options.gss_deleg_creds=options.gss_deleg_creds;
+#endif
 
 	xxx_kex = kex;
 
@@ -158,6 +191,8 @@ struct Authctxt {
 	int nkeys;
 	/* kbd-interactive */
 	int info_req_seen;
+	/* generic */
+	void *methoddata;
 };
 struct Authmethod {
 	char	*name;		/* string to compare against server's list */
@@ -179,6 +214,15 @@ int	userauth_passwd(Authctxt *);
 int	userauth_kbdint(Authctxt *);
 int	userauth_hostbased(Authctxt *);
 
+#ifdef GSSAPI
+int     userauth_external(Authctxt *authctxt);
+int     userauth_gssapi(Authctxt *authctxt);
+void    input_gssapi_response(int, u_int32_t, void *);
+void    input_gssapi_token(int, u_int32_t, void *);
+
+int     gss_host_key_ok=0;
+#endif
+
 void	userauth(Authctxt *, char *);
 
 static int sign_and_send_pubkey(Authctxt *, Key *, sign_cb_fn *);
@@ -189,6 +233,16 @@ static Authmethod *authmethod_lookup(const char *name);
 static char *authmethods_get(void);
 
 Authmethod authmethods[] = {
+#ifdef GSSAPI
+	{"external-keyx",
+		userauth_external,
+		&options.gss_authentication,
+		NULL},
+	{"gssapi",
+		userauth_gssapi,
+		&options.gss_authentication,
+		NULL},
+#endif
 	{"hostbased",
 		userauth_hostbased,
 		&options.hostbased_authentication,
@@ -254,6 +308,7 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 	authctxt.success = 0;
 	authctxt.method = authmethod_lookup("none");
 	authctxt.authlist = NULL;
+	authctxt.methoddata = NULL;
 	authctxt.keys = keys;
 	authctxt.nkeys = nkeys;
 	authctxt.info_req_seen = 0;
@@ -277,6 +332,11 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 void
 userauth(Authctxt *authctxt, char *authlist)
 {
+	if (authctxt->methoddata!=NULL) {
+		xfree(authctxt->methoddata);
+		authctxt->methoddata=NULL;
+	}
+           
 	if (authlist == NULL) {
 		authlist = authctxt->authlist;
 	} else {
@@ -323,6 +383,8 @@ input_userauth_success(int type, u_int32_t seq, void *ctxt)
 		fatal("input_userauth_success: no authentication context");
 	if (authctxt->authlist)
 		xfree(authctxt->authlist);
+	if (authctxt->methoddata)
+		xfree(authctxt->methoddata);
 	clear_auth_state(authctxt);
 	authctxt->success = 1;			/* break out */
 }
@@ -423,6 +485,151 @@ input_userauth_pk_ok(int type, u_int32_t seq, void *ctxt)
 
 }
 
+#ifdef GSSAPI
+int 
+userauth_gssapi(Authctxt *authctxt)
+{
+	int i;
+	Gssctxt *gssctxt;
+	static int tries=0;
+
+	/* For now, we only make one attempt at this. We could try offering
+	 * the server different GSSAPI OIDs until we get bored, I suppose.
+	 */	
+	if (tries++>0) return 0;
+
+        gssctxt=xmalloc(sizeof(Gssctxt));
+
+	/* Initialise as much of our context as we can, so failures can be
+	 * trapped before sending any packets.
+	 */
+	ssh_gssapi_build_ctx(gssctxt);
+	if (ssh_gssapi_import_name(gssctxt,authctxt->host)) {
+		return(0);
+	}
+	authctxt->methoddata=(void *)gssctxt;
+		
+	packet_start(SSH2_MSG_USERAUTH_REQUEST);
+	packet_put_cstring(authctxt->server_user);
+	packet_put_cstring(authctxt->service);
+        packet_put_cstring(authctxt->method->name);
+
+	/* FIXME: This assumes that our current GSSAPI implementation
+	 * supports all of the mechanisms listed in supported_mechs.
+	 * This may not be the case - we should use something along
+	 * the lines of the code in gss_genr to remove the ones that
+	 * aren't supported */
+	packet_put_int(GSS_LAST_ENTRY);
+	for (i=0;i<GSS_LAST_ENTRY;i++) {
+		packet_put_string(supported_mechs[i].oid.elements,
+			  	  supported_mechs[i].oid.length);
+	}
+        packet_send();
+        packet_write_wait();
+
+        dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE,&input_gssapi_response);
+        dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,&input_gssapi_token);
+	
+        return 1;
+}
+
+void
+input_gssapi_response(int type, u_int32_t plen, void *ctxt) 
+{
+	Authctxt *authctxt = ctxt;
+	Gssctxt *gssctxt;
+	OM_uint32 status,ms;
+	int oidlen;
+	char *oidv;
+	gss_buffer_desc send_tok;
+	
+	if (authctxt == NULL)
+		fatal("input_gssapi_response: no authentication context");
+	gssctxt = authctxt->methoddata;
+	
+	/* Setup our OID */
+	oidv=packet_get_string(&oidlen);
+	ssh_gssapi_set_oid_data(gssctxt,oidv,oidlen);
+	
+	packet_check_eom();
+	
+	status = ssh_gssapi_init_ctx(gssctxt, options.gss_deleg_creds,
+				     GSS_C_NO_BUFFER, &send_tok, 
+				     NULL);
+	if (GSS_ERROR(status)) {
+		/* Start again with next method on list */
+		debug("Trying to start again");
+		userauth(authctxt,NULL);
+		return;
+	}
+
+	/* We must have data to send */					
+	packet_start(SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
+	packet_put_string(send_tok.value,send_tok.length);
+	packet_send();
+	packet_write_wait();
+	gss_release_buffer(&ms, &send_tok);
+}
+
+void
+input_gssapi_token(int type, u_int32_t plen, void *ctxt)
+{
+	Authctxt *authctxt = ctxt;
+	Gssctxt *gssctxt;
+	gss_buffer_desc send_tok,recv_tok;
+	OM_uint32 status;
+	
+	if (authctxt == NULL)
+		fatal("input_gssapi_response: no authentication context");
+	gssctxt = authctxt->methoddata;
+	
+	recv_tok.value=packet_get_string(&recv_tok.length);
+
+	status=ssh_gssapi_init_ctx(gssctxt, options.gss_deleg_creds,
+				   &recv_tok, &send_tok, NULL);
+
+	packet_check_eom();
+	
+	if (GSS_ERROR(status)) {
+		/* Start again with the next method in the list */
+		userauth(authctxt,NULL);
+		return;
+	}
+	
+	if (send_tok.length>0) {
+		packet_start(SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
+		packet_put_string(send_tok.value,send_tok.length);
+		packet_send();
+		packet_write_wait();
+	}
+	
+	if (status == GSS_S_COMPLETE) {
+		/* If that succeeded, send a exchange complete message */
+		packet_start(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE);
+		packet_send();
+		packet_write_wait();
+	}
+}
+
+int
+userauth_external(Authctxt *authctxt)
+{
+        static int attempt =0;
+        
+        if (attempt++ >= 1)
+        	return 0;
+                                
+        debug2("userauth_external");
+        packet_start(SSH2_MSG_USERAUTH_REQUEST);
+        packet_put_cstring(authctxt->server_user);
+        packet_put_cstring(authctxt->service);
+        packet_put_cstring(authctxt->method->name);
+        packet_send();
+        packet_write_wait();
+        return 1;
+}                                                                                                
+#endif /* GSSAPI */
+
 int
 userauth_none(Authctxt *authctxt)
 {
@@ -433,6 +640,7 @@ userauth_none(Authctxt *authctxt)
 	packet_put_cstring(authctxt->method->name);
 	packet_send();
 	return 1;
+
 }
 
 int

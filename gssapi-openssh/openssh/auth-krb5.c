@@ -18,6 +18,9 @@ RCSID("$OpenBSD: auth-krb5.c,v 1.6 2002/03/04 17:27:39 stevesk Exp $");
 
 #ifdef KRB5
 #include <krb5.h>
+#ifndef HEIMDAL
+#define krb5_get_err_text(context,code) error_message(code)
+#endif /* !HEIMDAL */
 
 extern ServerOptions	 options;
 
@@ -70,8 +73,15 @@ auth_krb5(Authctxt *authctxt, krb5_data *auth, char **client)
 		goto err;
 
 	fd = packet_get_connection_in();
+#ifdef HEIMDAL
 	problem = krb5_auth_con_setaddrs_from_fd(authctxt->krb5_ctx,
 	    authctxt->krb5_auth_ctx, &fd);
+#else
+	problem = krb5_auth_con_genaddrs(authctxt->krb5_ctx, 
+	    authctxt->krb5_auth_ctx,fd,
+	    KRB5_AUTH_CONTEXT_GENERATE_REMOTE_FULL_ADDR |
+	    KRB5_AUTH_CONTEXT_GENERATE_LOCAL_FULL_ADDR);
+#endif
 	if (problem)
 		goto err;
 
@@ -84,9 +94,14 @@ auth_krb5(Authctxt *authctxt, krb5_data *auth, char **client)
 	    auth, server, NULL, NULL, &ticket);
 	if (problem)
 		goto err;
-
+	
+#ifdef HEIMDAL	
 	problem = krb5_copy_principal(authctxt->krb5_ctx, ticket->client,
 	    &authctxt->krb5_user);
+#else
+	problem = krb5_copy_principal(authctxt->krb5_ctx, ticket->enc_part2->client,
+	    &authctxt->krb5_user);
+#endif
 	if (problem)
 		goto err;
 
@@ -137,13 +152,23 @@ auth_krb5_tgt(Authctxt *authctxt, krb5_data *tgt)
 	krb5_error_code problem;
 	krb5_ccache ccache = NULL;
 	char *pname;
-
+	krb5_creds **creds;
+	
 	if (authctxt->pw == NULL || authctxt->krb5_user == NULL)
 		return (0);
 
 	temporarily_use_uid(authctxt->pw);
-
+	
+#ifdef HEIMDAL	
 	problem = krb5_cc_gen_new(authctxt->krb5_ctx, &krb5_fcc_ops, &ccache);
+#else
+{
+	char ccname[35];
+	
+	snprintf(ccname, sizeof(ccname), "FILE:/tmp/krb5cc_%d", authctxt->pw->pw_uid);
+	problem = krb5_cc_resolve(authctxt->krb5_ctx, ccname, &ccache);
+}
+#endif
 	if (problem)
 		goto fail;
 
@@ -151,12 +176,22 @@ auth_krb5_tgt(Authctxt *authctxt, krb5_data *tgt)
 	    authctxt->krb5_user);
 	if (problem)
 		goto fail;
-
+	
+#ifdef HEIMDAL	
 	problem = krb5_rd_cred2(authctxt->krb5_ctx, authctxt->krb5_auth_ctx,
 	    ccache, tgt);
 	if (problem)
 		goto fail;
-
+#else
+	problem = krb5_rd_cred(authctxt->krb5_ctx, authctxt->krb5_auth_ctx,
+	    tgt, &creds, NULL);
+	if (problem) 
+		goto fail;
+	problem = krb5_cc_store_cred(authctxt->krb5_ctx, ccache, *creds);
+	if (problem)
+	        goto fail;
+#endif
+	
 	authctxt->krb5_fwd_ccache = ccache;
 	ccache = NULL;
 
@@ -188,6 +223,10 @@ auth_krb5_tgt(Authctxt *authctxt, krb5_data *tgt)
 int
 auth_krb5_password(Authctxt *authctxt, const char *password)
 {
+#ifndef HEIMDAL
+        krb5_creds creds;
+	krb5_principal server;
+#endif	
 	krb5_error_code problem;
 
 	if (authctxt->pw == NULL)
@@ -203,9 +242,14 @@ auth_krb5_password(Authctxt *authctxt, const char *password)
 		    &authctxt->krb5_user);
 	if (problem)
 		goto out;
-
+	
+#ifdef HEIMDAL	
 	problem = krb5_cc_gen_new(authctxt->krb5_ctx, &krb5_mcc_ops,
 	    &authctxt->krb5_fwd_ccache);
+#else
+	problem = krb5_cc_resolve(authctxt->krb5_ctx, "MEMORY:", 
+	    &authctxt->krb5_fwd_ccache);
+#endif
 	if (problem)
 		goto out;
 
@@ -213,7 +257,8 @@ auth_krb5_password(Authctxt *authctxt, const char *password)
 	    authctxt->krb5_fwd_ccache, authctxt->krb5_user);
 	if (problem)
 		goto out;
-
+	
+#ifdef HEIMDAL	
 	restore_uid();
 	problem = krb5_verify_user(authctxt->krb5_ctx, authctxt->krb5_user,
 	    authctxt->krb5_fwd_ccache, password, 1, NULL);
@@ -221,6 +266,30 @@ auth_krb5_password(Authctxt *authctxt, const char *password)
 
 	if (problem)
 		goto out;
+	
+#else
+        problem = krb5_get_init_creds_password(authctxt->krb5_ctx, &creds, 
+            authctxt->krb5_user, password, NULL, NULL, 0, NULL, NULL);
+        if (problem)
+        	goto out;
+
+        problem = krb5_sname_to_principal(authctxt->krb5_ctx, NULL, NULL, 
+            KRB5_NT_SRV_HST, &server);
+        if (problem)
+        	goto out;
+
+	restore_uid();
+        problem = krb5_verify_init_creds(authctxt->krb5_ctx, &creds, server, NULL, NULL, 
+            NULL);
+	temporarily_use_uid(authctxt->pw);
+	
+        krb5_free_principal(authctxt->krb5_ctx, server);
+        if (problem)
+        	goto out;
+
+	problem = krb5_cc_store_cred(authctxt->krb5_ctx, authctxt->krb5_fwd_ccache, &creds);
+
+#endif /* HEIMDAL */
 
 	authctxt->krb5_ticket_file = (char *)krb5_cc_get_name(authctxt->krb5_ctx, authctxt->krb5_fwd_ccache);
 
