@@ -1028,6 +1028,16 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
+	if((!globus_list_empty(request->stage_in_todo)) ||
+           (!globus_list_empty(request->stage_in_shared_todo)))
+	{
+	    /* Didn't successfully stage in everything. */
+	    request->jobmanager_state = 
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+	    request->failure_code =
+		GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_IN_FAILED;
+	    break;
+	}
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT;
 
 	if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED && 
@@ -1342,6 +1352,16 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
+	if(!globus_list_empty(request->stage_out_todo))
+	{
+	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+	    if(request->failure_code == 0)
+	    {
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_STAGE_OUT_FAILED;
+	    }
+	}
+	/* FALLSTHROUGH */
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
 	if(request->unsent_status_change && request->save_state)

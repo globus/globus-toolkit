@@ -512,8 +512,10 @@ sub stage_out
 {
     my $self = shift;
     my $description = $self->{JobDescription};
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
     my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $local_path;
 
     foreach ($description->file_stage_out())
     {
@@ -523,14 +525,29 @@ sub stage_out
 	}
 	($local, $remote) = ($_->[0], $_->[1]);
 
-	if($local !~ m|^/|)
+	# handle a couple of types of URLs for local files
+	$local_path = $local;
+	if($local_path =~ m|^x-gass-cache://|)
 	{
-	    $local = $description->directory() . '/' . $local;
+	    chomp($local_path = `$cache_pgm -query $local_path 2>/dev/null`);
+
+	    if($local_path eq '')
+	    {
+		return Globus::GRAM::Error::STAGE_OUT_FAILED;
+	    }
+	}
+	elsif($local_path =~ m|^file:/|)
+	{
+	    $local_path =~ s|^file:/+|/|;
+	}
+	if($local_path !~ m|^/|)
+	{
+	    $local_path = $description->directory() . '/' . $local;
 	}
 
-	if(system("$url_copy file://$local $remote >/dev/null 2>&1") != 0)
+	if(system("$url_copy file://$local_path $remote >/dev/null 2>&1") != 0)
 	{
-	    return Globus::GRAM::Error::STAGE_IN_FAILED;
+	    return Globus::GRAM::Error::STAGE_OUT_FAILED;
 	}
 	$self->respond({'STAGED_OUT' => "$local $remote"});
     }

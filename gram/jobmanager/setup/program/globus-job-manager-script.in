@@ -2,9 +2,39 @@
 
 BEGIN
 {
+    use Config;
+
     push(@INC, "@GLOBUS_LOCATION@/lib/perl");
     $ENV{GLOBUS_LOCATION} =
         "@GLOBUS_LOCATION@" if(!exists($ENV{GLOBUS_LOCATION}));
+
+    if($Config{osname} eq 'irix')
+    {
+	if(exists($ENV{LD_LIBRARY64_PATH}))
+	{
+	    $ENV{LD_LIBRARY64_PATH}  .= ':' . $ENV{GLOBUS_LOCATION} . '/lib';
+	}
+	else
+	{
+	    $ENV{LD_LIBRARY64_PATH}   = $ENV{GLOBUS_LOCATION} . '/lib';
+	}
+	if(exists($ENV{LD_LIBRARYN32_PATH}))
+	{
+	    $ENV{LD_LIBRARYN32_PATH} .= ':' . $ENV{GLOBUS_LOCATION} . '/lib';
+	}
+	else
+	{
+	    $ENV{LD_LIBRARYN32_PATH} = $ENV{GLOBUS_LOCATION} . '/lib';
+	}
+    }
+    if(exists($ENV{LD_LIBRARY_PATH}))
+    {
+	$ENV{LD_LIBRARY_PATH} .= ':' . $ENV{GLOBUS_LOCATION} . '/lib';
+    }
+    else
+    {
+	$ENV{LD_LIBRARY_PATH} = $ENV{GLOBUS_LOCATION} . '/lib';
+    }
 }
 
 use Getopt::Long;

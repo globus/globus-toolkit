@@ -10,8 +10,8 @@ use Getopt::Long;
 use IO::File;
 use File::Copy;
 
-my $servicename = "jobmanager";
-my $method = "fork";
+my $servicename = 'jobmanager';
+my $method = 'fork';
 my $help = 0;
 my $force = 0;
 my $gpath;
@@ -27,6 +27,8 @@ my $perljmdir = "$globusdir/lib/perl/Globus/GRAM/JobManager";
 GetOptions('service-name|s=s' => \$servicename,
            'manager-type|m=s' => \$manager_type,
 	   'extra-config|e=s' => \$extra_config,
+	   'jobmanager-config|j=s' => \$job_manager_conf,
+	   'service-directory|d=s' => \$servicesdir,
 	   'help|h' => \$help);
 
 &usage() if $help;
@@ -70,7 +72,9 @@ sub usage
 {
     print "Usage: $0 [-service-name|-s service_name]\n".
           "          [-manager-type|-m manager_type]\n".
-          "          [-extra-config=EXTRA]\n".
+	  "          [-jobmanager-config|-j CONFIG FILE]\n".
+	  "          [-service-directory|-d DIRECTORY]\n".
+          "          [-extra-config EXTRA]\n".
           "          [-force]\n".
           "          [-help]\n";
     exit 1;
