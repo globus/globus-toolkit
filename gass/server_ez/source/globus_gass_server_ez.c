@@ -149,11 +149,17 @@ int globus_gass_server_ez_shutdown(unsigned short port)
 {
     int rc;
     globus_bool_t success=GLOBUS_TRUE;
-    while(servers[port]->requests_outstanding != 0)
-    {
-	globus_poll_blocking();
-    }
+    int mycount=0;
+    
     globus_gass_server_close(port);
+
+    while(servers[port]->requests_outstanding != 0 &&
+	  mycount < 100)
+    {
+	globus_poll_nonblocking();
+	globus_libc_usleep(10000);
+	mycount++;
+    }
 
     rc = globus_module_deactivate(GLOBUS_GASS_SERVER_MODULE);
     if(rc != GLOBUS_SUCCESS)
