@@ -50,7 +50,7 @@ static int read_passwd_from_stdin = 0;
 int
 main(int argc, char *argv[]) 
 {
-    char passphrase[MAX_PASS_LEN+1], new_passphrase[MAX_PASS_LEN+1];
+    char passphrase[MAX_PASS_LEN+1], new_passphrase[MAX_PASS_LEN+1], *np=NULL;
     int rval;
 
     myproxy_log_use_stream (stderr);
@@ -77,7 +77,8 @@ main(int argc, char *argv[])
 	fprintf(stderr, "Error reading pass phrase.\n");
 	return 1;
     }
-    cred.passphrase = passphrase;
+    if (passphrase)
+	cred.passphrase = passphrase;
 
     /* Accept new passphrase */
     if (read_passwd_from_stdin) {
@@ -93,8 +94,10 @@ main(int argc, char *argv[])
 	fprintf (stderr, "%s\n", verror_get_string());
 	return 1;
     }
+    if (new_passphrase[0])
+	np = new_passphrase;
 
-    if (myproxy_creds_change_passphrase(&cred, new_passphrase) < 0) {
+    if (myproxy_creds_change_passphrase(&cred, np) < 0) {
 	fprintf(stderr, "%s\n", verror_get_string());
 	exit(1);
     }
