@@ -75,6 +75,7 @@ main(
     char                                    read_buffer[LINE_LEN];
     int                                     ctr;
     globus_bool_t                           done = GLOBUS_FALSE;
+    globus_bool_t                           reading;
     int                                     ndx;
     globus_size_t                           nbytes;
 
@@ -111,7 +112,7 @@ main(
     test_res(res);
     res = globus_xio_open(&xio_handle, NULL, target);
     test_res(res);
-    fprintf(stderr, "Successfully opened.\n");
+    fprintf(stdout, "Successfully opened.\n");
 /*
     res = globus_xio_register_read(xio_handle, read_buffer, 
             LINE_LEN, 1, NULL, 
@@ -120,7 +121,6 @@ main(
 */
     while(!done)
     {
-
         globus_poll();
         if(fgets(line, LINE_LEN, stdin) == NULL)
         {
@@ -128,13 +128,6 @@ main(
         }
         else
         {
-            ndx = strlen(line);
-            line[ndx] = '\r';
-            line[ndx+1] = '\n';
-            line[ndx+2] = '\0';
-            res = globus_xio_write(xio_handle, line, 
-                    sizeof(line), strlen(line), NULL, NULL);
-            test_res(res);
             if(line[0] == 29)
             {
                 fprintf(stdout, "xio telnet>");
@@ -145,16 +138,42 @@ main(
                     done = GLOBUS_TRUE;
                 }
             }
+            else
+            {
+                ndx = strlen(line);
+                line[ndx-1] = '\r'; /* overwrite '\n' */
+                line[ndx] = '\n';
+                line[ndx+1] = '\0';
+                fprintf(stdout, "Sending:%s:\n", line);
+                res = globus_xio_write(xio_handle, line, 
+                        strlen(line), strlen(line), NULL, NULL);
+                test_res(res);
+            }
         }
-        globus_xio_read(xio_handle, read_buffer, LINE_LEN, 1, &nbytes, NULL);
-    for(ctr = 0; ctr < nbytes; ctr++)
-    {
-        if(isprint(read_buffer[ctr]) ||read_buffer[ctr] == '\n')
+
+        ndx = 0;
+        reading = GLOBUS_TRUE;
+        while(reading)
         {
-            fprintf(stdout, "%c", read_buffer[ctr]);
+                fprintf(stdout, "globus_xio_read\n");
+            res = globus_xio_read(
+                xio_handle, &read_buffer[ndx], LINE_LEN-ndx, 1, &nbytes, NULL);
+                fprintf(stdout, "done globus_xio_read\n");
+            test_res(res);
+            ndx += nbytes;
+            if(strstr(read_buffer, "\r\n") != NULL)
+            {
+                reading = GLOBUS_FALSE;
+            }
         }
-    }
-    fflush(stdout);
+        for(ctr = 0; ctr < ndx; ctr++)
+        {
+            if(isprint(read_buffer[ctr]) || read_buffer[ctr] == '\n')
+            {
+                fprintf(stdout, "%c", read_buffer[ctr]);
+            }
+        }
+        fflush(stdout);
     }
 
     res = globus_xio_close(xio_handle, NULL);
