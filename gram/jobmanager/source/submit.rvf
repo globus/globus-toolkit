@@ -43,9 +43,6 @@ Attribute: environment
 Description: "The environment variables that will be defined for the
 	      executable in addition to default set that is given to the job
 	      by the jobmanager."
-Default: "(X509_CERT_DIR $(HOME))
-          (GLOBUS_GRAM_JOB_CONTACT $(GLOBUS_GRAM_JOB_CONTACT))
-	  (GLOBUS_LOCATION $(GLOBUS_LOCATION))"
 
 Attribute: maxtime
 Description: "The maximum walltime or cputime for a single execution of the

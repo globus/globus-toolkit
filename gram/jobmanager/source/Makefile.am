@@ -9,19 +9,10 @@ SUBDIRS= \
 	doxygen \
 	scripts
 
-# Sources contains all of the source files in the directory.
-# Header files are included because automake will generate dependency targets 
-# for them and include them in a source distribution.
-#
-# If this directory builds multiple programs or libraries than these sources
-# will need to be seperated into seperate macros.
-LibSources= \
-	globus_gram_job_manager.c \
-	globus_gram_job_manager.h
-
 PgmSources = \
 	globus_gram_job_manager.h \
-	globus_gram_paradyn.c \
+	globus_gram_job_manager.c \
+	globus_gram_job_manager_output.c \
 	globus_gram_job_manager_validate.c \
 	globus_job_manager.c
 
@@ -32,12 +23,6 @@ PgmSources = \
 # from the dependent packages.
 INCLUDES += $(GPT_INCLUDES)
 
-# include_HEADERS is an automake macro which contains 
-# a list of header files that are to be installed in $prefix/include
-flavorinclude_HEADERS= \
-	globus_gram_job_manager.h
-
-lib_LTLIBRARIES = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
 libexec_PROGRAMS = globus-job-manager
 bin_SCRIPTS = globus-personal-gatekeeper
 
@@ -48,11 +33,7 @@ validation_DATA = $(ValidationFiles)
 
 EXTRA_DIST = globus-personal-gatekeeper $(ValidationFiles)
 
-libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = $(LibSources)
-libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
-
-LDADD = libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+LDADD = $(GPT_PGM_LINKS)
 
 globus_job_manager_SOURCES = $(PgmSources)
 globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)

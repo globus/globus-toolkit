@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 static globus_bool_t globus_l_gram_job_manager_verbose_debugging = 0;
 
@@ -394,8 +395,8 @@ globus_l_gram_job_manager_check_rsl_attributes(
 		fprintf(stderr,
 			"RSL attribute '%s' is not in the validation file!\n",
 			attribute);
-		return GLOBUS_FAILURE;
 	    }
+	    return GLOBUS_FAILURE;
 	}
 
 	record = globus_list_first(node);

@@ -1,0 +1,70 @@
+#! @PERL@
+
+BEGIN
+{
+    push(@INC, "@GLOBUS_LOCATION@/lib/perl");
+    $ENV{GLOBUS_LOCATION} =
+        "@GLOBUS_LOCATION@" if(!exists($ENV{GLOBUS_LOCATION}));
+}
+
+use Getopt::Long;
+use Globus::GRAM::Error;
+use Globus::GRAM::JobDescription;
+
+my($manager_name, $argument_file, $command) = (undef, undef, undef);
+
+GetOptions('manager-name|m=s' => \$manager_name,
+           'argument-file|f=s' => \$argument_file,
+	   'command|c=s' => \$command);
+
+if((!defined($manager_name)) ||
+   (!defined($argument_file)) ||
+   (!defined($command)))
+{
+    &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+}
+
+my $manager_class = "Globus::GRAM::JobManager::$manager_name";
+my $job_description = new Globus::GRAM::JobDescription($argument_file);
+
+eval "require $manager_class";
+
+$manager = new $manager_class($job_description) or
+    &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+
+$result = $manager->$command();
+
+if(UNIVERSAL::isa($result, 'Globus::GRAM::Error'))
+{
+    &fail($result);
+}
+else
+{
+    my $success = 0;
+    my $var;
+
+    # Job description may be augmented by job id or gass cache files
+    # being used, for example.
+    $job_description->save();
+    foreach (keys %{$result})
+    {
+	if(m/^JOB_STATE/i)
+	{
+	    $success = $result->{$_};
+	}
+	else
+	{
+	    $var = uc $_;
+	    print "GRAM_SCRIPT_$var:" . $result->{$_} . "\n";
+	}
+    }
+    print "GRAM_SCRIPT_SUCCESS:$success\n" 
+}
+
+sub fail
+{
+    my $error = shift;
+
+    print "GLOBUS_SCRIPT_ERROR:" . $error->value() . "\n";
+    exit 1;
+}
