@@ -2,6 +2,8 @@
  * myproxy_server_config.c
  *
  * Routines from reading and parsing the server configuration.
+ *
+ * See myproxy_server.h for documentation.
  */
 
 #include "myproxy_server.h"
@@ -13,6 +15,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+
+#if defined(HAVE_REGCOMP) && defined(HAVE_REGEX_H)
+#include <regex.h>
+
+#elif defined(HAVE_COMPILE) && defined(HAVE_REGEXPR_H)
+#include <regexpr.h>
+
+#else
+#define NO_REGEX_SUPPORT
+
+#endif
 
 /**********************************************************************
  *
@@ -147,6 +160,182 @@ line_parse_callback(void *context_arg,
     return return_code;
 }
 
+/*
+ * regex_compare()
+ *
+ * Does string match regex?
+ *
+ * Returns 1 if match, 0 if they don't and -1 on error setting verror.
+ */
+static int
+regex_compare(const char *regex,
+	      const char *string)
+{
+    int			result;
+
+#ifndef NO_REGEX_SUPPORT
+    char 		*buf;
+    char		*bufp;
+
+    /*
+     * First we convert the regular expression from the human-readable
+     * form (e.g. *.domain.com) to the machine-readable form
+     * (e.g. ^.*\.domain\.com$).
+     *
+     * Make a buffer large enough to hold the largest possible converted
+     * regex from the string plus our extra characters (one at the
+     * begining, one at the end, plus a NULL).
+     */
+    buf = (char *) malloc(2 * strlen(regex) + 3);
+
+    if (!buf)
+    {
+	verror_put_errno(errno);
+	verror_put_string("malloc() failed");
+	return -1;
+    }
+
+    bufp = buf;
+    *bufp++ = '^';
+
+    while (*regex)
+    {
+	switch(*regex)
+	{
+
+	case '*':
+	    /* '*' turns into '.*' */
+	    *bufp++ = '.';
+	    *bufp++ = '*';
+	    break;
+
+	case '?':
+	    /* '?' turns into '.' */
+	    *bufp++ = '.';
+	    break;
+
+	    /* '.' needs to be escaped to '\.' */
+	case '.':
+	    *bufp++ = '\\';
+	    *bufp++ = '.';
+	    break;
+
+	default:
+	    *bufp++ = *regex;
+	}
+
+	regex++;
+    }
+
+    *bufp++ = '$';
+    *bufp++ = '\0';
+
+#ifdef HAVE_REGCOMP
+    {
+	regex_t preg;
+
+	if (regcomp(&preg, buf, REG_EXTENDED))
+	{
+	    verror_put_string("Error parsing string \"%s\"",
+			      regex);
+	    /* Non-fatal error, just indicate failure to match */
+	    result = 0;
+	}
+	else
+	{
+	    result = (regexec(&preg, string, 0, NULL, 0) == 0);
+	    regfree(&preg);
+	}
+    }
+
+#elif HAVE_COMPILE
+    {
+	char *expbuf;
+
+	expbuf = compile(buf, NULL, NULL);
+
+	if (!expbuf)
+	{
+	    verror_put_string("Error parsing string \"%s\"",
+			      regex);
+	    /* Non-fatal error, just indicate failure to match */
+	    result = 0;
+
+	} else {
+	    result = step(string, expbuf);
+	    free(expbuf);
+	}
+    }
+#else
+
+    /*
+     * If we've gotten here then there is an error in the configuration
+     * process or this file's #ifdefs
+     */
+    error -  No regular expression support found.
+
+#endif
+
+    if (buf)
+	free(buf);
+
+#else /* NOREGEX_SUPPORT */
+
+    /* No regular expression support */
+    result = (strcmp(regex, string) == 0);
+
+#endif /* NO_REGEX_SUPPORT */
+
+    return result;
+
+}
+
+
+/*
+ * is_name_in_list()
+ *
+ * Is the given name in the given list of regular expressions.
+ *
+ * Returns 1 if it is, 0 if it isn't, -1 on error setting verror.
+ */
+static int
+is_name_in_list(const char **list,
+		const char *name)
+{
+    int return_code = -1;
+
+    assert(name != NULL);
+    
+    if (list == NULL)
+    {
+	/* Empty list */
+	return_code = 0;
+	goto done;
+    }
+
+    while (*list != NULL)
+    {
+	int rc;
+	
+	rc = regex_compare(*list, name);
+	
+	if (rc != 0)
+	{
+	    return_code = rc;
+	    goto done;
+	}
+	
+	list++;
+    }
+    
+    /* If we got here we failed to find the name in the list */
+    return_code = 0;
+
+  done:
+    return return_code;
+}
+
+
 
 /**********************************************************************
  *
@@ -224,3 +413,49 @@ myproxy_server_config_read(myproxy_server_context_t *context)
     
     return return_code;
 }
+
+
+int
+myproxy_server_check_client(myproxy_server_context_t *context,
+			    const char *client_name)
+{
+    int return_code = -1;
+    int allowed = 0;
+    
+    if ((context == NULL) ||
+	(client_name == NULL))
+    {
+	verror_put_errno(EINVAL);
+	return -1;
+    }
+
+    /* Why is this cast needed? */
+    return_code = is_name_in_list((const char **) context->authorized_client_dns,
+				  client_name);
+
+  error:
+    return return_code;
+}
+
+int
+myproxy_server_check_service(myproxy_server_context_t *context,
+			     const char *service_name)
+{
+    int return_code = -1;
+    int allowed = 0;
+    
+    if ((context == NULL) ||
+	(service_name == NULL))
+    {
+	verror_put_errno(EINVAL);
+	return -1;
+    }
+
+    /* Why is this cast needed? */
+    return_code = is_name_in_list((const char **) context->authorized_service_dns,
+				  service_name);
+
+  error:
+    return return_code;
+}
+
