@@ -124,7 +124,7 @@ Southern California. All Rights Reserved.
     THE SOFTWARE.
 */
 
-package org.globus.ogsa.impl.base.reliabletrasfer.test;
+package org.globus.ogsa.impl.base.reliabletransfer.test;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;

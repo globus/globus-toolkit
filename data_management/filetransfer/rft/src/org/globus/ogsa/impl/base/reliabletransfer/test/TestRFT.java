@@ -123,7 +123,7 @@ Southern California. All Rights Reserved.
     RESULTING FROM EXERCISE OF THIS LICENSE AGREEMENT OR THE USE OF
     THE SOFTWARE.
 */
-package org.globus.ogsa.impl.base.reliabletrasfer.test;
+package org.globus.ogsa.impl.base.reliabletransfer.test;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
