@@ -59,6 +59,8 @@ AC_SUBST(ARFLAGS)
 AC_SUBST(RANLIB)
 AC_SUBST(CROSS)
 AC_SUBST(cross_compiling)
+AC_SUBST(OBJEXT)
+AC_SUBST(EXEEXT)
 
 # These files are not used outside of automake.  But the makefile still
 # has them as dependent targets.

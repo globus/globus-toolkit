@@ -61,6 +61,10 @@ dnl check for perl
 AC_PATH_PROGS(PERL, perl)
 
 
+dnl Automake is using these for executables somehow
+AC_OBJEXT
+AC_EXEEXT
+
 AC_OUTPUT(Makefile
        	globus-build-env-${globus_cv_flavor}.sh:globus-build-env.sh.in
 	globus-sh-tools.sh
