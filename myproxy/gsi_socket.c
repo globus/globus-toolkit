@@ -174,82 +174,76 @@ read_token(const int sock,
 	length_high_byte                = 3,
 	length_low_byte                 = 4
     };
-
-    char *bufferp;
-    unsigned char header[5];
-    int data_len;
-    int buffer_len;
+    int tot_buffer_len=0, retval;
     
-
     assert(p_buffer != NULL);
+    *p_buffer = NULL;
+
+    do {
+	unsigned char header[5];
+	char *bufferp;
+	int data_len, buffer_len;
+	fd_set rfds;
+	struct timeval tv = { 0 };
+
+	if (read_all(sock, header, sizeof(header)) < 0) {
+	    if (errno == EPIPE && tot_buffer_len > 0) goto done;
+	    return -1;
+	}
+
+	/*
+	 * Check and make sure token looks right
+	 */
+	if (((header[flag] < 20) || (header[flag] > 26)) ||
+	    (header[major_version] != 3) ||
+	    ((header[minor_version] != 0) && (header[minor_version] != 1))) {
+	    errno = EINVAL;
+	    return -1;
+	}
     
-    if (read_all(sock, header, sizeof(header)) < 0) 
-    {
-	return -1;
-    }
+	data_len = (header[length_high_byte] << 8) + header[length_low_byte];
 
-    /*
-     * Check and make sure token looks right
-     */
-    if (((header[flag] < 20) || (header[flag] > 26)) ||
-	(header[major_version] != 3) ||
-	((header[minor_version] != 0) && (header[minor_version] != 1)))
-    {
-	errno = EINVAL;
-	return -1;
-    }
+	buffer_len = data_len + sizeof(header);
+
+	bufferp = *p_buffer = realloc(*p_buffer, tot_buffer_len+buffer_len);
+	
+	if (bufferp == NULL) {
+	    if (*p_buffer != NULL) {
+		free(*p_buffer);
+		*p_buffer = NULL;
+	    }
+	    return -1;
+	}
+
+	bufferp += tot_buffer_len;
+	tot_buffer_len += buffer_len;
+
+	memcpy(bufferp, header, sizeof(header));
+
+	bufferp += sizeof(header);
     
-    data_len = (header[length_high_byte] << 8) + header[length_low_byte];
+	if (read_all(sock, bufferp, data_len) < 0)
+	{
+	    free(*p_buffer);
+	    *p_buffer = NULL;
+	    return -1;
+	}
 
-    buffer_len = data_len + sizeof(header);
-
-    *p_buffer = malloc(buffer_len);
-
-    if (*p_buffer == NULL)
-    {
-	return -1;
-    }
-
-    bufferp = *p_buffer;
+	/* Check for more data on the socket.  We want the entire
+	   message and SSL may have fragmented it. */
+	FD_ZERO(&rfds);
+	FD_SET(sock, &rfds);
+	retval = select(sock+1, &rfds, NULL, NULL, &tv);
+	if (retval < 0) {
+	    free(*p_buffer);
+	    *p_buffer = NULL;
+	    return -1;
+	}
+    } while (retval == 1);
     
-    memcpy(bufferp, header, sizeof(header));
-
-    bufferp += sizeof(header);
-    
-    if (read_all(sock, bufferp, data_len) < 0)
-    {
-	free(*p_buffer);
-	*p_buffer = NULL;
-	return -1;
-    }
-    
-    return buffer_len;
-}
-
-/*
- * assist_read_token()
- *
- * Wrapper around read_token() for gss_assist routines.
- *
- * Returns 0 on success, -1 on error.
- */
-static int
-assist_read_token(void *p_sock,
-		  void **p_buffer,
-		  size_t *p_buffer_size)
-{
-    int return_value;
-    
-    assert(p_sock != NULL);
-    assert(p_buffer != NULL);
-    assert(p_buffer_size != NULL);
-    
-    return_value = read_token(*((int *) p_sock),
-			      (char **) p_buffer);
-
-    *p_buffer_size = return_value;
-
-    return (return_value == -1 ? -1 : 0);
+done:
+    myproxy_debug("read %d bytes", tot_buffer_len);
+    return tot_buffer_len;
 }
 
 /*
@@ -270,20 +264,10 @@ write_token(const int sock,
 
     return_value = write_all(sock, buffer, buffer_size);
 
+    myproxy_debug("wrote %d bytes", return_value);
     return (return_value == -1 ? -1 : 0);
 }
 
-
-static int
-assist_write_token(void *sock,
-		   void *buffer,
-		   size_t buffer_size)
-{
-    assert(sock != NULL);
-    assert(buffer != NULL);
-    
-    return write_token(*((int *) sock), (char *) buffer, buffer_size);
-}
 
 /*
  * Wrapper around setenv() function
@@ -668,7 +652,8 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     gss_buffer_desc		gss_buffer = { 0 }, tmp_gss_buffer = { 0 };
     gss_name_t			target_name = GSS_C_NO_NAME;
     gss_OID			target_name_type = GSS_C_NO_OID;
-    int				i, rc=0;
+    int				i, rc=0, sock;
+    FILE			*fp = NULL;
     
     if (self == NULL)
     {
@@ -703,6 +688,22 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     req_flags |= GSS_C_CONF_FLAG;
     req_flags |= GSS_C_INTEG_FLAG;
 
+    if ((sock = dup(self->sock)) < 0) {
+	self->error_string = strdup("dup() of socket fd failed");
+	self->error_number = errno;
+	goto error;
+    }
+    if ((fp = fdopen(sock, "r+")) < 0) {
+	self->error_string = strdup("fdopen() of socket failed");
+	self->error_number = errno;
+	goto error;
+    }
+    if (setvbuf(fp, NULL, _IONBF, 0) != 0) {
+	self->error_string = strdup("setvbuf() for socket failed");
+	self->error_number = errno;
+	goto error;
+    }
+    
     self->major_status =
 	globus_gss_assist_init_sec_context(&self->minor_status,
 					   creds,
@@ -711,10 +712,10 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 					   req_flags,
 					   &ret_flags,
 					   &token_status,
-					   assist_read_token,
-					   &self->sock,
-					   assist_write_token,
-					   &self->sock);
+					   globus_gss_assist_token_get_fd,
+					   (void *)fp,
+					   globus_gss_assist_token_send_fd,
+					   (void *)fp);
 
     if (self->major_status != GSS_S_COMPLETE) {
 	goto error;
@@ -808,6 +809,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	gss_release_buffer(&minor_status, &gss_buffer);
 	gss_release_name(&minor_status, &server_gss_name);
     }
+    if (fp) fclose(fp);
     
     return return_value;
 }
@@ -820,6 +822,8 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     int				token_status;
     int				return_value = GSI_SOCKET_ERROR;
     OM_uint32			gss_flags = 0;
+    int				sock;
+    FILE			*fp = NULL;
 
     if (self == NULL) {	
 	return GSI_SOCKET_ERROR;
@@ -846,6 +850,22 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     gss_flags |= GSS_C_CONF_FLAG;
     gss_flags |= GSS_C_INTEG_FLAG;
 
+    if ((sock = dup(self->sock)) < 0) {
+	self->error_string = strdup("dup() of socket fd failed");
+	self->error_number = errno;
+	goto error;
+    }
+    if ((fp = fdopen(sock, "r+")) < 0) {
+	self->error_string = strdup("fdopen() of socket failed");
+	self->error_number = errno;
+	goto error;
+    }
+    if (setvbuf(fp, NULL, _IONBF, 0) != 0) {
+	self->error_string = strdup("setvbuf() for socket failed");
+	self->error_number = errno;
+	goto error;
+    }
+    
     self->major_status =
 	globus_gss_assist_accept_sec_context(&self->minor_status,
 					     &self->gss_context,
@@ -857,10 +877,10 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 					     NULL, /* Delegated creds
 						    * added in Globus 1.1.3
 						    */
-					     assist_read_token,
-					     &self->sock,
-					     assist_write_token,
-					     &self->sock);
+					     globus_gss_assist_token_get_fd,
+					     (void *)fp,
+					     globus_gss_assist_token_send_fd,
+					     (void *)fp);
 
     if (self->major_status != GSS_S_COMPLETE) {
 	goto error;
@@ -875,6 +895,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 
 	gss_release_cred(&minor_status, &creds);
     }
+    if (fp) fclose(fp);
     
     return return_value;
 }
@@ -944,6 +965,7 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	if (return_value == -1)
 	{
 	    self->error_number = errno;
+	    self->error_string = strdup("failed to write token");
 	    goto error;
 	}
     }
@@ -981,6 +1003,7 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	if (return_value == -1)
 	{
 	    self->error_number = errno;
+	    self->error_string = strdup("failed to write token");
 	    gss_release_buffer(&self->minor_status, &wrapped_buffer);
 	    goto error;
 	}
@@ -1011,6 +1034,7 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 	
     if (len == -1) {
 	self->error_number = errno;
+	self->error_string = strdup("failed to read token");
 	goto error;
     }
 
@@ -1062,6 +1086,7 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
     if (bytes_read == -1)
     {
 	self->error_number = errno;
+	self->error_string = strdup("failed to read token");
 	goto error;
     }
     
@@ -1246,6 +1271,8 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     unsigned char	*input_buffer = NULL;
     int			input_buffer_len;
     char		filename[L_tmpnam];
+    unsigned char	*fmsg;
+    int                 i;
     
     if (self == NULL)
     {	
@@ -1285,6 +1312,18 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 			      &input_buffer_len) == GSI_SOCKET_ERROR)
     {
 	goto error;
+    }
+
+    /* MAJOR HACK:
+       We don't have application-level framing in our protocol.
+       We can't separate the certificate chain easily from
+       the final protocol message, so just discard it. */
+    fmsg = input_buffer;
+    for (i=0; i < input_buffer_len-strlen("VERSION"); i++, fmsg++) {
+	if (strncmp(fmsg, "VERSION", strlen("VERSION")) == 0) {
+	    input_buffer_len = fmsg-input_buffer;
+	    break;
+	}
     }
     
     if (ssl_proxy_delegation_finalize(creds, input_buffer,
