@@ -23,6 +23,7 @@ my $non_cluster		= 0;
 my $cpu_per_node	= 1;
 my $remote_shell	= 'default';
 my $validate_queues	= 1;
+my $help		= 0;
 
 GetOptions('service-name|s=s' => \$name,
            'non-cluster' => \$non_cluster,
@@ -30,7 +31,7 @@ GetOptions('service-name|s=s' => \$name,
 	   'remote-shell=s' => \$remote_shell,
 	   'validate-queues=s' => \$validate_queues,
 	   'force|f' => \$force,
-	   'help|h|?' => \$help);
+	   'help|h' => \$help);
 
 &usage if $help;
 
@@ -68,7 +69,7 @@ else
 }
 
 # Do script relocation
-mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager";
+mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager", 0777;
 
 print `./find-pbs-tools $non_cluster --with-cpu-per-node=$cpu_per_node --with-remote-shell=$remote_shell --cache-file=/dev/null`;
 if($? != 0)
