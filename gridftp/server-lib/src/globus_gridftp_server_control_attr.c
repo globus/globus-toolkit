@@ -252,7 +252,7 @@ globus_gridftp_server_control_attr_add_recv(
 
     if(module_name == NULL)
     {
-        attr->default_stor_cb = recv_cb;
+        attr->default_recv_cb = recv_cb;
     }
     else
     {
@@ -305,7 +305,7 @@ globus_gridftp_server_control_attr_add_send(
 
     if(module_name == NULL)
     {
-        attr->default_retr_cb = send_cb;
+        attr->default_send_cb = send_cb;
     }
     else
     {

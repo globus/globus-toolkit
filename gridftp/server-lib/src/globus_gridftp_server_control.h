@@ -144,8 +144,8 @@ typedef enum globus_gridftp_server_control_network_protocol_e
  */
 typedef enum globus_i_gsc_data_dir_e
 {
-    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_STOR = 0x01,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RETR = 0x02,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RECV = 0x01,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND = 0x02,
     GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI = 0x03
 } globus_gridftp_server_control_data_dir_t;
 
@@ -526,6 +526,7 @@ globus_gridftp_server_control_finished_passive_connect(
  */
 globus_result_t
 globus_gridftp_server_control_disconnected(
+    globus_gridftp_server_control_t         server,
     void *                                  user_data_handle);
 
 /**

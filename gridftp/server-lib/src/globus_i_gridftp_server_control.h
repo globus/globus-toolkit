@@ -213,7 +213,7 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_RESOURCE,
     GLOBUS_L_GSC_OP_TYPE_CREATE_PASV,
     GLOBUS_L_GSC_OP_TYPE_CREATE_PORT,
-    GLOBUS_L_GSC_OP_TYPE_DATA,
+    GLOBUS_L_GSC_OP_TYPE_TRANSFER,
     GLOBUS_L_GSC_OP_TYPE_DESTROY,
 } globus_i_gsc_op_type_t;
 
@@ -250,6 +250,8 @@ typedef struct globus_i_gsc_op_s
     int                                     net_prt;
     globus_i_gsc_passive_cb_t               passive_cb;
     globus_i_gsc_port_cb_t                  port_cb;
+    globus_i_gsc_transfer_cb_t              transfer_cb;
+    globus_i_gsc_event_cb_t                 event_cb;
 
     void *                                  old_data_obj;
 
@@ -278,8 +280,8 @@ typedef struct globus_i_gsc_attr_s
     globus_gridftp_server_control_passive_connect_cb_t  passive_cb;
     globus_gridftp_server_control_active_connect_cb_t   active_cb;
     globus_gridftp_server_control_data_destroy_cb_t     data_destroy_cb;
-    globus_gridftp_server_control_transfer_cb_t         default_stor_cb;
-    globus_gridftp_server_control_transfer_cb_t         default_retr_cb;
+    globus_gridftp_server_control_transfer_cb_t         default_recv_cb;
+    globus_gridftp_server_control_transfer_cb_t         default_send_cb;
 } globus_i_gsc_attr_t;
 
 
@@ -367,8 +369,8 @@ typedef struct globus_i_gsc_server_handle_s
     /* transfer functions */
     globus_hashtable_t                              send_cb_table;
     globus_hashtable_t                              recv_cb_table;
-    globus_gridftp_server_control_transfer_cb_t     default_stor_cb;
-    globus_gridftp_server_control_transfer_cb_t     default_retr_cb;
+    globus_gridftp_server_control_transfer_cb_t     default_send_cb;
+    globus_gridftp_server_control_transfer_cb_t     default_recv_cb;
 
     globus_gridftp_server_control_auth_cb_t auth_cb;
 
