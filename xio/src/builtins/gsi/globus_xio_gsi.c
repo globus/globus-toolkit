@@ -384,7 +384,7 @@ globus_l_xio_gsi_attr_copy(
     void *                              src)
 {
     globus_l_attr_t *                   attr;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_gsi_attr_copy);
 
     attr = (globus_l_attr_t *) malloc(sizeof(globus_l_attr_t));

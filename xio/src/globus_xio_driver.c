@@ -1,6 +1,38 @@
 #include "globus_xio.h"
 #include "globus_i_xio.h"
 
+void
+globus_l_xio_op_restarted(
+    globus_i_xio_op_t *                     op)
+{
+    globus_bool_t                           destroy_handle = GLOBUS_FALSE;
+    globus_bool_t                           destroy_context = GLOBUS_FALSE;
+    GlobusXIOName(globus_l_xio_op_restarted);
+
+    GlobusXIODebugInternalEnter();
+
+    globus_mutex_lock(&op->_op_context->mutex);
+    {
+        op->ref--;
+        if(op->ref == 0)
+        {
+            globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
+        }
+    }
+    globus_mutex_unlock(&op->_op_context->mutex);
+
+    if(destroy_handle)
+    {
+        if(destroy_context)
+        {
+            globus_i_xio_context_destroy(op->_op_context);
+        }
+        globus_i_xio_handle_destroy(op->_op_handle);
+    }
+                                                                                
+    GlobusXIODebugInternalExit();
+}
+
 globus_result_t
 globus_i_xio_repass_write(
     globus_i_xio_op_t *                     op)
@@ -232,8 +264,6 @@ void
 globus_l_xio_driver_op_write_kickout(
     void *                                  user_arg)
 {
-    globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     int                                     ndx;
     int                                     wb_ndx;
     globus_i_xio_handle_t *                 handle;
@@ -254,7 +284,15 @@ globus_l_xio_driver_op_write_kickout(
     handle = op->_op_handle;
     context = handle->context;
 
-    if(ndx == 0)
+    /* if no user callback check for restart, otherwise fall to bottom */
+    if(my_op->_op_ent_data_cb == NULL)
+    {
+        if(op->restarted)
+        {
+            globus_l_xio_op_restarted(op);
+        }
+    }
+    else if(ndx == 0)
     {
         globus_thread_blocking_space_callback_push(
             globus_i_xio_will_block_cb,
@@ -266,8 +304,9 @@ globus_l_xio_driver_op_write_kickout(
             my_op->_op_ent_nbytes, my_op->user_arg);
     
         if(op->restarted)
-        {        
-            goto restart;
+        {
+            globus_l_xio_op_restarted(op);
+            goto exit;
         }
         globus_thread_blocking_callback_pop(&wb_ndx);
     }
@@ -277,37 +316,14 @@ globus_l_xio_driver_op_write_kickout(
             my_op->_op_ent_nbytes, my_op->user_arg);
         if(op->restarted)
         {        
-            goto restart;
+            globus_l_xio_op_restarted(op);
+            goto exit;
         }
     }
 
     GlobusIXIODriverWriteDeliver(op, ndx);
 
-    GlobusXIODebugInternalExit();
-
-    return;
-
-  restart:
-
-    globus_mutex_lock(&context->mutex);
-    {
-        op->ref--; 
-        if(op->ref == 0)
-        {
-            globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
-        }
-    }
-    globus_mutex_unlock(&context->mutex);
-    if(destroy_handle)
-    {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(context);
-        }
-        globus_i_xio_handle_destroy(handle);
-    }
-
-    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_TRACE, ("op was restarted."));
+  exit:
     GlobusXIODebugInternalExit();
 }   
    
@@ -351,8 +367,6 @@ globus_l_xio_driver_op_read_kickout(
 {
     globus_i_xio_handle_t *                 handle;
     globus_i_xio_context_t *                context;
-    globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     globus_i_xio_context_entry_t *          my_context;
     int                                     ndx;
     int                                     wb_ndx;
@@ -372,7 +386,15 @@ globus_l_xio_driver_op_read_kickout(
     handle = op->_op_handle;
     context = handle->context;
 
-    if(ndx == 0)
+   /* if no user callback check for restart, otherwise fall to bottom */
+    if(my_op->_op_ent_data_cb == NULL)
+    {
+        if(op->restarted)
+        {
+            globus_l_xio_op_restarted(op);
+        }
+    }
+    else if(ndx == 0)
     {
         globus_thread_blocking_space_callback_push(
             globus_i_xio_will_block_cb,
@@ -383,7 +405,8 @@ globus_l_xio_driver_op_read_kickout(
             my_op->_op_ent_nbytes, my_op->user_arg);
         if(op->restarted) 
         {
-            goto restart;
+            globus_l_xio_op_restarted(op);
+            goto exit;
         }
         globus_thread_blocking_callback_pop(&wb_ndx);
     }
@@ -393,37 +416,14 @@ globus_l_xio_driver_op_read_kickout(
             my_op->_op_ent_nbytes, my_op->user_arg);
         if(op->restarted)
         {
-            return;
+            globus_l_xio_op_restarted(op);
+            goto exit;
         }
     }
 
     GlobusIXIODriverReadDeliver(op, ndx);
 
-    GlobusXIODebugInternalExit();
-
-    return;
-
-  restart:
-
-    globus_mutex_lock(&context->mutex);
-    {
-        op->ref--; 
-        if(op->ref == 0)
-        {
-            globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
-        }
-    }
-    globus_mutex_unlock(&context->mutex);
-    if(destroy_handle)
-    {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(context);
-        }
-        globus_i_xio_handle_destroy(handle);
-    }
-
-    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_TRACE, ("op was restarted."));
+  exit:
     GlobusXIODebugInternalExit();
 }
 
@@ -522,8 +522,6 @@ globus_l_xio_driver_open_op_kickout(
 {
     globus_i_xio_handle_t *                 handle;
     globus_i_xio_context_t *                context;
-    globus_bool_t                           destroy_handle = GLOBUS_FALSE;
-    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     globus_i_xio_context_entry_t *          my_context;
     int                                     ndx = 0;
     int                                     wb_ndx;
@@ -542,7 +540,15 @@ globus_l_xio_driver_open_op_kickout(
     handle = op->_op_handle;
     context = handle->context;
 
-    if(ndx == 0)
+   /* if no user callback check for restart, otherwise fall to bottom */
+    if(my_op->cb == NULL)
+    {
+        if(op->restarted)
+        {
+            globus_l_xio_op_restarted(op);
+        }
+    }
+    else if(ndx == 0)
     {
         globus_thread_blocking_space_callback_push(
             globus_i_xio_will_block_cb,
@@ -552,7 +558,8 @@ globus_l_xio_driver_open_op_kickout(
         my_op->cb(op, op->cached_res, my_op->user_arg);
         if(op->restarted)
         {
-            goto restart;
+            globus_l_xio_op_restarted(op);
+            goto exit;
         }
         globus_thread_blocking_callback_pop(&wb_ndx);
     }
@@ -561,37 +568,15 @@ globus_l_xio_driver_open_op_kickout(
         my_op->cb(op, op->cached_res, my_op->user_arg);
         if(op->restarted)
         {
-            goto restart;
+            globus_l_xio_op_restarted(op);
+            goto exit;
         }
     }
 
     GlobusIXIODriverOpenDeliver(op, ndx);
 
-    GlobusXIODebugInternalExit();
+  exit:
 
-    return;
-
-  restart:
-
-    globus_mutex_lock(&context->mutex);
-    {
-        op->ref--;
-        if(op->ref == 0)
-        {
-            globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
-        }
-    }
-    globus_mutex_unlock(&context->mutex);
-    if(destroy_handle)
-    {
-        if(destroy_context)
-        {
-            globus_i_xio_context_destroy(context);
-        }
-        globus_i_xio_handle_destroy(handle);
-    }
-
-    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_TRACE, ("op was restarted."));
     GlobusXIODebugInternalExit();
 }
 
