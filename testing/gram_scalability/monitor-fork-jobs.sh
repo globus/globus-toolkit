@@ -16,7 +16,8 @@ if [ $launch_proc_count -gt 1 ]; then
     echo $launch_proc_count UHEs detected
 fi
 
-sleep 10
+#sleep 10
+sleep 2
 
 done
 

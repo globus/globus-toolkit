@@ -16,23 +16,14 @@
             <rsl:string><rsl:stringElement value="Hello, World!"/></rsl:string>
         </rsl:stringArray>
     </gram:arguments>
-    <!--
     <gram:stdout>
         <rsl:pathArray> <rsl:path>
             <rsl:substitutionRef name="GLOBUS_CACHED_STDOUT"/>
         </rsl:path> </rsl:pathArray>
     </gram:stdout>
-    -->
-    <gram:stdout>
-        <rsl:pathArray> <rsl:path>
-            <rsl:substitutionRef name="HOME"/>
-            <rsl:stringElement value="/testing/gram_scalability/logs/echo-test.stdout"/>
-        </rsl:path> </rsl:pathArray>
-    </gram:stdout>
     <gram:stderr>
         <rsl:pathArray> <rsl:path>
-            <rsl:substitutionRef name="HOME"/>
-            <rsl:stringElement value="/testing/gram_scalability/logs/echo-test.stderr"/>
+            <rsl:substitutionRef name="GLOBUS_CACHED_STDERR"/>
         </rsl:path> </rsl:pathArray>
     </gram:stderr>
     <gram:fileStageOut>
@@ -43,7 +34,7 @@
                 </rsl:path>
                 <rsl:url>
                     <rsl:substitutionRef name="GLOBUSRUN_GASS_URL"/>
-                    <rsl:urlElement value="logs/echo-test.stdout"/>
+                    <rsl:urlElement value="logs/submit-test.stdout"/>
                 </rsl:url>
             </rsl:fileOutput>
         </rsl:fileOutputArray>

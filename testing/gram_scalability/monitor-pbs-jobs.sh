@@ -6,7 +6,7 @@ sleep_proc_count=0
 #while [ $sleep_proc_count -lt 400 ]; do
 while [ 1 ]; do
 
-qstat_job_count=`$GLOBUS_LOCATION/bin/qstat -a | grep lane | wc -l - | awk '{ print $1; }'`
+qstat_job_count=`qstat -a | grep lane | wc -l - | awk '{ print $1; }'`
 echo $qstat_job_count queued jobs detected
 
 ps_launch_count=`ps -u lane | grep launch_uhe | wc -l - | awk '{ print $1; }'`
