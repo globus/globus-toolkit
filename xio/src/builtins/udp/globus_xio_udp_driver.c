@@ -138,7 +138,7 @@ globus_l_xio_udp_activate(void)
     GlobusXIOName(globus_l_xio_udp_activate);
     
     if(globus_l_xio_udp_get_env_pair(
-        "GLOBUS_XIO_UDP_LISTEN_RANGE", &min, &max) && min <= max)
+        "GLOBUS_UDP_PORT_RANGE", &min, &max) && min <= max)
     {
         globus_l_xio_udp_attr_default.listener_min_port = min;
         globus_l_xio_udp_attr_default.listener_max_port = max;
@@ -1208,20 +1208,16 @@ globus_l_xio_udp_read(
     GlobusXIOName(globus_l_xio_udp_read);
 
     handle = (globus_l_handle_t *) driver_handle;
-    attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
-    
-    /* XXXX temporary */
-    if(!attr)
-    {
-        globus_l_xio_udp_attr_init(&attr);
-        GlobusXIOOperationSetDataDescriptor(op, attr);
-    }
     
     addr = GLOBUS_NULL;
-    if(attr && !handle->connected)
+    if(!handle->connected)
     {
-        addr = &attr->addr;
-        attr->use_addr = GLOBUS_TRUE;
+        GlobusXIOOperationGetDataDescriptor(attr, op, GLOBUS_FALSE);
+        if(attr)
+        {
+            addr = &attr->addr;
+            attr->use_addr = GLOBUS_TRUE;
+        }
     }
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
@@ -1295,12 +1291,15 @@ globus_l_xio_udp_write(
     GlobusXIOName(globus_l_xio_udp_write);
 
     handle = (globus_l_handle_t *) driver_handle;
-    attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
     
     addr = GLOBUS_NULL;
-    if(attr && attr->use_addr && !handle->connected)
+    if(!handle->connected)
     {
-        addr = &attr->addr;
+        GlobusXIOOperationGetDataDescriptor(attr, op, GLOBUS_FALSE);
+        if(attr && attr->use_addr)
+        {
+            addr = &attr->addr;
+        }
     }
 
     if(GlobusXIOOperationGetWaitFor(op) == 0)
@@ -1427,6 +1426,7 @@ globus_l_xio_udp_cntl(
         }
         break;
       
+      /* char *                         contact_string */
       case GLOBUS_XIO_UDP_CONNECT:
         in_string = va_arg(ap, char *);
         if(in_string)
@@ -1506,7 +1506,8 @@ globus_l_xio_udp_init(
         globus_l_xio_udp_close,
         globus_l_xio_udp_read,
         globus_l_xio_udp_write,
-        globus_l_xio_udp_cntl);
+        globus_l_xio_udp_cntl,
+        NULL);
 
     globus_xio_driver_set_client(
         driver,

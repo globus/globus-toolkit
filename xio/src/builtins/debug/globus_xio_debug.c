@@ -24,7 +24,7 @@ globus_l_xio_debug_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_debug_module =
+globus_module_descriptor_t  globus_i_xio_debug_module =
 {
     "globus_xio_debug",
     globus_l_xio_debug_activate,
@@ -154,7 +154,7 @@ globus_l_xio_debug_open(
   
     debug_driver_log("open");
 
-    GlobusXIODriverPassOpen(res, context, op, \
+    GlobusXIODriverPassOpen(res, &context, op, \
         globus_l_xio_debug_open_cb, NULL);
 
     return res;
@@ -226,7 +226,8 @@ globus_l_xio_debug_read(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, iovec, iovec_count, wait_for, \
+    GlobusXIODriverPassRead(res, op, 
+        (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
         globus_l_xio_debug_read_cb, NULL);
 
     return res;
@@ -262,7 +263,8 @@ globus_l_xio_debug_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, wait_for, \
+    GlobusXIODriverPassWrite(res, op, 
+        (globus_xio_iovec_t *) iovec, iovec_count, wait_for,
         globus_l_xio_debug_write_cb, NULL);
 
     return res;

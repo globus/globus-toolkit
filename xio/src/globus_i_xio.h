@@ -16,8 +16,88 @@
  **************************************************************************/
 GlobusDebugDeclare(GLOBUS_XIO);
 
+#define GlobusXIOOpInc(_in_op)                                              \
+do                                                                          \
+{                                                                           \
+    (_in_op)->ref++;                                                        \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Op ref increased to %d:\n", _xio_name, __LINE__,          \
+        (_in_op)->ref));                                                    \
+} while(0)
+
+#define GlobusXIOOpDec(_in_op)                                              \
+do                                                                          \
+{                                                                           \
+    (_in_op)->ref--;                                                        \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Op ref decreased to %d:\n", _xio_name, __LINE__,          \
+        (_in_op)->ref));                                                    \
+} while(0)
+
 #define GlobusXIODebugPrintf(level, message)                                \
     GlobusDebugPrintf(GLOBUS_XIO, level, message)
+
+#define GlobusXIOObjToResult(_in_obj)                                       \
+    (_in_obj == NULL ? GLOBUS_SUCCESS : globus_error_put(_in_obj))
+
+#define GlobusXIOResultToObj(_in_res)                                       \
+    (_in_res == GLOBUS_SUCCESS ? NULL : globus_error_get(_in_res))
+
+#define GlobusXIOHandleStateChange(_h, _new)                                \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_handle_t *                             _l_h;               \
+                                                                            \
+    _l_h = (_h);                                                            \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Handle state change:\n"                                   \
+         "    From:%s\n"                                                    \
+         "    to:  %s\n",                                                   \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            globus_i_xio_handle_state_name_table[_l_h->state],              \
+            globus_i_xio_handle_state_name_table[_new]));                   \
+   _l_h->state = _new;                                                      \
+} while(0)
+
+#define GlobusXIOOpStateChange(_op, _new)                                   \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_op_t *                                 _l_op;              \
+                                                                            \
+    _l_op = (_op);                                                          \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Op state change:\n"                                       \
+         "    From:%s\n"                                                    \
+         "    to:  %s\n",                                                   \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            globus_i_xio_op_state_name_table[_l_op->state],                 \
+            globus_i_xio_op_state_name_table[_new]));                       \
+   _l_op->state = _new;                                                     \
+} while(0)
+
+#define GlobusXIOContextStateChange(_c, _new)                               \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_context_entry_t *                      _l_context;         \
+                                                                            \
+    _l_context = (_c);                                                      \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Context state change:\n"                                  \
+         "    From:%s\n"                                                    \
+         "    to:  %s\n",                                                   \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            globus_i_xio_context_state_name_table[_l_context->state],       \
+            globus_i_xio_context_state_name_table[_new]));                  \
+   _l_context->state = _new;                                                \
+} while(0)
 
 #define GlobusXIODebugEnter()                                               \
     GlobusXIODebugPrintf(                                                   \
@@ -80,6 +160,8 @@ do                                                                          \
  *                 ---------------------------
  **************************************************************************/
 
+extern char * globus_i_xio_context_state_name_table[];
+
 typedef enum globus_i_xio_context_state_e
 {
     GLOBUS_XIO_CONTEXT_STATE_OPENING,
@@ -94,13 +176,19 @@ typedef enum globus_i_xio_context_state_e
     GLOBUS_XIO_CONTEXT_STATE_CLOSED,
 } globus_i_xio_context_state_t;
 
+extern char * globus_i_xio_handle_state_name_table[];
+
 typedef enum globus_i_xio_handle_state_e
 {
     GLOBUS_XIO_HANDLE_STATE_OPENING,
+    GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED,
+    GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING,
     GLOBUS_XIO_HANDLE_STATE_OPEN,
     GLOBUS_XIO_HANDLE_STATE_CLOSING,
     GLOBUS_XIO_HANDLE_STATE_CLOSED,
 } globus_i_xio_handle_state_t;
+
+extern char * globus_i_xio_op_state_name_table[];
 
 typedef enum globus_i_xio_op_state_e
 {
@@ -137,6 +225,19 @@ typedef enum globus_xio_target_type_e
 struct globus_i_xio_context_s;
 struct globus_i_xio_op_s;
 struct globus_i_xio_target_s;
+
+typedef struct globus_i_xio_monitor_s
+{
+    int                                     count;
+} globus_i_xio_monitor_t;
+
+void
+globus_i_xio_monitor_init(
+    globus_i_xio_monitor_t *                monitor);
+
+void
+globus_i_xio_monitor_destroy(
+    globus_i_xio_monitor_t *                monitor);
 
 typedef struct globus_i_xio_attr_ent_s
 {
@@ -212,11 +313,11 @@ typedef struct globus_i_xio_server_s
 
 typedef struct globus_i_xio_handle_s
 {
-    globus_bool_t                           shutting_down;
+    globus_i_xio_monitor_t *                sd_monitor;
+
     globus_list_t *                         cb_list;
     globus_mutex_t                          cancel_mutex;
     int                                     ref;
-    int                                     stack_size;
     struct globus_i_xio_context_s *         context;
 
     globus_i_xio_handle_state_t             state;
@@ -261,6 +362,9 @@ typedef struct globus_i_xio_context_entry_s
 
     /* every level but the top MUST be GLOBAL_SPACE */
     globus_bool_t                           read_eof;
+
+    /* is this hacky? */
+    globus_bool_t                           close_started;
 
     struct globus_i_xio_op_s *              open_op;
     struct globus_i_xio_op_s *              close_op;
@@ -361,6 +465,8 @@ typedef struct globus_i_xio_op_s
     globus_xio_operation_type_t             type;
     globus_i_xio_op_state_t                 state;
 
+    globus_bool_t                           is_user_dd;
+
     /*
      * user callbacks.  only 1 will be used per operation
      */
@@ -420,7 +526,7 @@ typedef struct globus_i_xio_op_s
     globus_bool_t                           restarted;
     globus_bool_t                           blocking;
     /* result code saved in op for kickouts */
-    globus_result_t                         cached_res;
+    globus_object_t *                       cached_obj;
 
     /* size of the arrays */
     int                                     stack_size;
@@ -461,6 +567,8 @@ typedef struct globus_i_xio_driver_s
     globus_xio_driver_target_cntl_t         target_cntl_func;
     globus_xio_driver_target_destroy_t      target_destroy_func;
 
+    globus_xio_driver_push_driver_t         push_driver_func;
+
     /*
      * target init functions.  Must have client or server
      */
@@ -493,7 +601,7 @@ typedef struct globus_i_xio_blocking_s
     globus_i_xio_op_t *                     op;
     globus_i_xio_target_t *                 target;
     globus_xio_data_descriptor_t            data_desc;
-    globus_result_t                         res;
+    globus_object_t *                       error_obj;
 } globus_i_xio_blocking_t;
 
 typedef struct globus_i_xio_restart_s
@@ -599,8 +707,7 @@ globus_i_xio_pass_failed(
     globus_i_xio_op_t *                     op,
     globus_i_xio_context_entry_t *          my_context,
     globus_bool_t *                         close,
-    globus_bool_t *                         destroy_handle,
-    globus_bool_t *                         destroy_context);
+    globus_bool_t *                         destroy_handle);
 
 void
 globus_i_xio_handle_destroy(
@@ -609,14 +716,12 @@ globus_i_xio_handle_destroy(
 void
 globus_i_xio_handle_dec(
     globus_i_xio_handle_t *                 handle,
-    globus_bool_t *                         destroy_handle,
-    globus_bool_t *                         destroy_context);
+    globus_bool_t *                         destroy_handle);
 
 void
 globus_i_xio_op_destroy(
     globus_i_xio_op_t *                     op,
-    globus_bool_t *                         destroy_handle,
-    globus_bool_t *                         destroy_context);
+    globus_bool_t *                         destroy_handle);
 
 globus_result_t
 globus_i_xio_repass_write(
@@ -646,6 +751,10 @@ typedef struct globus_i_xio_space_info_s
 void
 globus_i_xio_close_handles(
     globus_xio_driver_t                     driver);
+
+globus_result_t
+globus_i_xio_operation_cancel(
+    globus_i_xio_op_t *                     op);
 
 
 extern globus_i_xio_timer_t                 globus_l_xio_timeout_timer;
@@ -762,7 +871,8 @@ extern globus_cond_t                        globus_l_cond;
 #   define GlobusXIODriverPassOpen(                                         \
             _out_res, _out_context, _in_op, _in_cb, _in_user_arg)           \
         globus_xio_driver_pass_open_DEBUG(                                  \
-            &_out_res, &_out_context,  _in_op, _in_cb, _in_user_arg)
+            &_out_res, _out_context,                                        \
+            _in_op, _in_cb, _in_user_arg);                                  \
 
 #   define GlobusXIODriverFinishedOpen(                                     \
             _in_context, _in_dh, _in_op, _in_res)                           \

@@ -25,7 +25,7 @@ typedef enum
 typedef struct l_smtp_info_s
 {
     l_smtp_state_t                          state;
-    char *                                  return_address[256];
+    char                                    return_address[256];
     char                                    to_address[256];
     char                                    message[1024];
     int                                     buf_len;
@@ -345,7 +345,7 @@ globus_l_xio_smtp_open(
 
     globus_l_xio_smtp_attr_copy(&info, driver_attr);
 
-    GlobusXIODriverPassOpen(res, context, op, globus_l_xio_smtp_open_cb, info);
+    GlobusXIODriverPassOpen(res, &context, op, globus_l_xio_smtp_open_cb, info);
 
     return res;
 }
@@ -434,7 +434,8 @@ globus_l_xio_smtp_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, wait_for, \
+    GlobusXIODriverPassWrite(res, op, 
+        (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
         globus_l_xio_smtp_write_cb, NULL);
 
     return res;

@@ -96,7 +96,6 @@ globus_error_get(
 extern globus_object_t *
 globus_error_peek(
     globus_result_t                     result);
-
 /* returns pointer to object for result DOES NOT REMOVE object.
  * This pointer is only valid for the current thread and until another call to
  * globus_error_peek is made

@@ -93,7 +93,7 @@ globus_l_xio_null_pass_open(
     globus_result_t                     res;
     globus_xio_context_t                context;
   
-    GlobusXIODriverPassOpen(res, context, op, NULL, NULL);
+    GlobusXIODriverPassOpen(res, &context, op, NULL, NULL);
 
     return res;
 }
@@ -132,7 +132,8 @@ globus_l_xio_null_pass_read(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, iovec, iovec_count, wait_for, NULL, NULL);
+    GlobusXIODriverPassRead(res, op, 
+        (globus_xio_iovec_t *)iovec, iovec_count, wait_for, NULL, NULL);
 
     return res;
 }
@@ -153,7 +154,8 @@ globus_l_xio_null_pass_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, wait_for, NULL, NULL);
+    GlobusXIODriverPassWrite(res, op, 
+        (globus_xio_iovec_t *)iovec, iovec_count, wait_for, NULL, NULL);
 
     return res;
 }

@@ -389,6 +389,13 @@ redo:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_SITE_HELP;
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_INFORMATION;
 
+        target->features = globus_i_ftp_client_features_init();
+        if(!target->features)
+        {
+            error = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+	    goto notify_fault;
+        }
+
 	globus_i_ftp_client_plugin_notify_command(
 	    client_handle,
 	    target->url_string,
@@ -3066,12 +3073,6 @@ globus_l_ftp_client_parse_site_help(
     globus_ftp_control_response_t *		response)
 {
     char * p;
-    
-    target->features = globus_i_ftp_client_features_init();
-    if(!target->features)
-    {
-        return GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
-    }
     
     if(strstr((char *) response->response_buffer, "RETRBUFSIZE") != 0)
     {

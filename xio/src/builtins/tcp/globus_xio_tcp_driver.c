@@ -165,14 +165,14 @@ globus_l_xio_tcp_activate(void)
     GlobusXIOName(globus_l_xio_tcp_activate);
     
     if(globus_l_xio_tcp_get_env_pair(
-        "GLOBUS_XIO_TCP_LISTEN_RANGE", &min, &max) && min <= max)
+        "GLOBUS_TCP_PORT_RANGE", &min, &max) && min <= max)
     {
         globus_l_xio_tcp_attr_default.listener_min_port = min;
         globus_l_xio_tcp_attr_default.listener_max_port = max;
     }
     
     if(globus_l_xio_tcp_get_env_pair(
-        "GLOBUS_XIO_TCP_CONNECT_RANGE", &min, &max) && min <= max)
+        "GLOBUS_TCP_SOURCE_RANGE", &min, &max) && min <= max)
     {
         globus_l_xio_tcp_attr_default.connector_min_port = min;
         globus_l_xio_tcp_attr_default.connector_max_port = max;
@@ -602,36 +602,6 @@ globus_l_xio_tcp_attr_destroy(
 
 static
 globus_result_t
-globus_l_xio_tcp_apply_bind_attrs(
-    const globus_l_attr_t *             attr,
-    int                                 fd)
-{
-    globus_result_t                     result;
-    int                                 int_one = 1;
-    GlobusXIOName(globus_l_xio_tcp_apply_bind_attrs);
-    
-    if(attr->resuseaddr &&
-       setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(int_one)) < 0)
-    {
-        result = GlobusXIOErrorSystemError("setsockopt", errno);
-        goto error_sockopt;
-    }
-    
-    /* all handles created by me are closed on exec */
-    if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
-    {
-        result = GlobusXIOErrorSystemError("fcntl", errno);
-        goto error_sockopt;
-    }
-    
-    return GLOBUS_SUCCESS;
-
-error_sockopt:
-    return result;
-}
-
-static
-globus_result_t
 globus_l_xio_tcp_apply_handle_attrs(
     const globus_l_attr_t *             attr,
     int                                 fd,
@@ -641,22 +611,20 @@ globus_l_xio_tcp_apply_handle_attrs(
     int                                 int_one = 1;
     GlobusXIOName(globus_l_xio_tcp_apply_handle_attrs);
     
+    /* all handles created by me are closed on exec */
+    if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+    {
+        result = GlobusXIOErrorSystemError("fcntl", errno);
+        goto error_sockopt;
+    }
+        
     if(do_bind_attrs)
     {
-        result = globus_l_xio_tcp_apply_bind_attrs(attr, fd);
-        if(result != GLOBUS_SUCCESS)
+        if(attr->resuseaddr &&
+            setsockopt(
+                fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(int_one)) < 0)
         {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_l_xio_tcp_apply_bind_attrs", result);
-            goto error_bind_attrs;
-        }
-    }
-    else
-    {
-        /* all handles created by me are closed on exec */
-        if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
-        {
-            result = GlobusXIOErrorSystemError("fcntl", errno);
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
     }
@@ -731,7 +699,6 @@ globus_l_xio_tcp_apply_handle_attrs(
     return GLOBUS_SUCCESS;
 
 error_sockopt:
-error_bind_attrs:
     return result;
 }
 
@@ -864,11 +831,18 @@ globus_l_xio_tcp_target_cntl(
     globus_l_target_t *                 target;
     globus_result_t                     result;
     char **                             out_string;
+    globus_xio_system_handle_t *        out_handle;
     GlobusXIOName(globus_l_xio_tcp_target_cntl);
 
     target = (globus_l_target_t *) driver_target;
     switch(cmd)
     {
+      /* globus_xio_system_handle_t *   handle_out */
+      case GLOBUS_XIO_TCP_GET_HANDLE:
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        *out_handle = target->handle;
+        break;
+        
       /* char **                        contact_string_out */
       case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
@@ -1050,11 +1024,12 @@ globus_l_xio_tcp_create_listener(
                 continue;
             }
             
-            result = globus_l_xio_tcp_apply_bind_attrs(attr, fd);
+            result = globus_l_xio_tcp_apply_handle_attrs(
+                attr, fd, GLOBUS_TRUE);
             if(result != GLOBUS_SUCCESS)
             {
                 result = GlobusXIOErrorWrapFailed(
-                    "globus_l_xio_tcp_apply_bind_attrs", result);
+                    "globus_l_xio_tcp_apply_handle_attrs", result);
                 GlobusIXIOTcpCloseFd(fd);
                 continue;
             }
@@ -1154,7 +1129,8 @@ globus_l_xio_tcp_server_init(
     }
     else
     {
-        /* use specified handle */ 
+        /* use specified handle */
+        /* XXX should i apply other attrs here? */
         server->listener_handle = attr->handle;
     }
     
@@ -1283,12 +1259,19 @@ globus_l_xio_tcp_server_cntl(
     globus_l_server_t *                 server;
     globus_result_t                     result;
     char **                             out_string;
+    globus_xio_system_handle_t *        out_handle;
     GlobusXIOName(globus_l_xio_tcp_server_cntl);
     
     server = (globus_l_server_t *) driver_server;
     
     switch(cmd)
     {
+      /* globus_xio_system_handle_t *   handle_out */
+      case GLOBUS_XIO_TCP_GET_HANDLE:
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        *out_handle = server->listener_handle;
+        break;
+      
       /* char **                        contact_string_out */
       case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
@@ -1639,6 +1622,7 @@ globus_l_xio_tcp_connect(
     char *                              port;
     GlobusXIOName(globus_l_xio_tcp_connect);
     
+    /* XXXX need to define/parse out ipv6 addr... [] */
     host = globus_libc_strdup(contact_string);
     if(!host)
     {
@@ -1935,7 +1919,7 @@ globus_l_xio_tcp_write(
     GlobusXIOName(globus_l_xio_tcp_write);
 
     handle = (globus_l_handle_t *) driver_handle;
-    attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
+    GlobusXIOOperationGetDataDescriptor(attr, op, GLOBUS_FALSE);
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
     {
@@ -2009,12 +1993,19 @@ globus_l_xio_tcp_cntl(
     int                                 fd;
     globus_size_t                       len;
     char **                             out_string;
+    globus_xio_system_handle_t *        out_handle;
     GlobusXIOName(globus_l_xio_tcp_cntl);
 
     handle = (globus_l_handle_t *) driver_handle;
     fd = handle->handle;
     switch(cmd)
     {
+      /* globus_xio_system_handle_t *   handle_out */
+      case GLOBUS_XIO_TCP_GET_HANDLE:
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        *out_handle = fd;
+        break;
+        
       /* globus_bool_t                  keepalive */
       case GLOBUS_XIO_TCP_SET_KEEPALIVE:
         in_bool = va_arg(ap, globus_bool_t);
@@ -2217,7 +2208,8 @@ globus_l_xio_tcp_init(
         globus_l_xio_tcp_close,
         globus_l_xio_tcp_read,
         globus_l_xio_tcp_write,
-        globus_l_xio_tcp_cntl);
+        globus_l_xio_tcp_cntl,
+        NULL);
 
     globus_xio_driver_set_client(
         driver,

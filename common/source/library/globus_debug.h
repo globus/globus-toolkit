@@ -23,6 +23,10 @@ globus_debug_init(
     void globus_i_##module_name##_debug_printf(const char * fmt, ...)       \
     {                                                                       \
         va_list ap;                                                         \
+	                                                                    \
+        if(!globus_i_##module_name##_debug_file)                            \
+            return;                                                         \
+                                                                            \
         va_start(ap, fmt);                                                  \
         if(globus_i_##module_name##_print_threadids)                        \
         {                                                                   \
@@ -50,9 +54,11 @@ globus_debug_init(
  *    they will map to a 2^i value (so, list them in same order as value)
  *
  * will look in env for {module_name}_DEBUG whose value is:
- * <levels> [ , [ <file name> ] [ , <show tids>] ]
+ * <levels> [ , [ [ # ] <file name> ] [ , <show tids>] ]
  * where <levels> can be a single numeric or '|' separated level names
  * <file name> is a debug output file... can be empty.  stderr by default
+ *    if a '#' precedes the filename, the file will be overwritten on each run
+ *    otherwise, the default is to append to the existing (if one exists)
  * <show tids> is 0 or 1 to show thread ids on all messages.  0 by default
  */
 #define GlobusDebugInit(module_name, levels)                                \
@@ -71,6 +77,7 @@ globus_debug_init(
         if(globus_i_##module_name##_using_file)                             \
         {                                                                   \
             fclose(globus_i_##module_name##_debug_file);                    \
+            globus_i_##module_name##_debug_file = GLOBUS_NULL;              \
         }                                                                   \
     } while(0)
 

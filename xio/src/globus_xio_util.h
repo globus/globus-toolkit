@@ -13,31 +13,39 @@
 #endif
 
 #define GlobusXIOErrorCanceled()                                            \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_XIO_MODULE,                                              \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_ERROR_CANCELED,                                      \
-            "[%s:%d] Operation was canceled",                               \
-            _xio_name, __LINE__))                                           
+    globus_error_put(GlobusXIOErrorObjCanceled())                                           
+
+#define GlobusXIOErrorObjCanceled()                                         \
+    globus_error_construct_error(                                           \
+        GLOBUS_XIO_MODULE,                                                  \
+        GLOBUS_NULL,                                                        \
+        GLOBUS_XIO_ERROR_CANCELED,                                          \
+        "[%s:%d] Operation was canceled",                                   \
+        _xio_name, __LINE__)                                          
                                                                             
-#define GlobusXIOErrorTimedout()                                            \
-    globus_error_put(                                                       \
+#define GlobusXIOErrorObjTimedout()                                         \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_ERROR_TIMEDOUT,                                      \
             "[%s:%d] Operation timed out",                                  \
-            _xio_name, __LINE__))                                           
+            _xio_name, __LINE__)                                           
                                                                             
-#define GlobusXIOErrorEOF()                                                 \
+#define GlobusXIOErrorTimedout()                                            \
     globus_error_put(                                                       \
+        GlobusXIOErrorObjTimedout())
+
+#define GlobusXIOErrorObjEOF()                                              \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_ERROR_EOF,                                           \
             "[%s:%d] An end of file occurred",                              \
-            _xio_name, __LINE__))                                           
+            _xio_name, __LINE__)                                           
+                                                                            
+#define GlobusXIOErrorEOF()                                                 \
+    globus_error_put(                                                       \
+        GlobusXIOErrorObjEOF())                                             \
                                                                             
 #define GlobusXIOErrorInvalidCommand(cmd_number)                            \
     globus_error_put(                                                       \
@@ -66,20 +74,23 @@
             "[%s:%d] Bad parameter, %s",                                    \
             _xio_name, __LINE__, (param_name)))                             
                                                                             
-#define GlobusXIOErrorMemory(mem_name)                                      \
-    globus_error_put(                                                       \
+#define GlobusXIOErrorObjMemory(mem_name)                                   \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_ERROR_MEMORY,                                        \
             "[%s:%d] Memory allocation failed on %s",                       \
-            _xio_name, __LINE__, (mem_name)))                               
+            _xio_name, __LINE__, (mem_name))                               
                                                                             
-#define GlobusXIOErrorSystemError(system_func, errno)                       \
+#define GlobusXIOErrorMemory(mem_name_obj)                                  \
+    globus_error_put(                                                       \
+        GlobusXIOErrorObjMemory(mem_name_obj))
+                                                                            
+#define GlobusXIOErrorSystemError(system_func, _errno)                      \
     globus_error_put(                                                       \
         globus_error_wrap_errno_error(                                      \
             GLOBUS_XIO_MODULE,                                              \
-            (errno),                                                        \
+            (_errno),                                                       \
             GLOBUS_XIO_ERROR_SYSTEM_ERROR,                                  \
             "[%s:%d] System error in %s",                                   \
             _xio_name, __LINE__, (system_func)))                            
@@ -154,6 +165,24 @@
             NULL,                                                           \
             GLOBUS_XIO_ERROR_NOT_REGISTERED,                                \
             "[%s:%d] Not registered.",                                      \
+            _xio_name, __LINE__))                            
+
+#define GlobusXIOErrorNotActivated()                                        \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_ERROR_NOT_ACTIVATED,                                 \
+            "[%s:%d] Module not activated.",                                \
+            _xio_name, __LINE__))                            
+                                                                            
+#define GlobusXIOErrorUnloaded()                                            \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_ERROR_UNLOADED,                                      \
+            "[%s:%d] driver in handle has been unloaded.",                  \
             _xio_name, __LINE__))                            
                                                                             
 #define GlobusIXIOUtilTransferIovec(iov, siov, iovc)                        \

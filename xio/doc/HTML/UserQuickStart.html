@@ -45,7 +45,7 @@ code:
     globus_result_t                     res;
     globus_xio_driver_t                 driver;
 
-    res = globus_xio_load_driver(&driver, "file");
+    res = globus_xio_driver_load(&driver, "file");
 </PRE>
 
 If upon completion of the above function call res == GLOBUS_SUCCESS then

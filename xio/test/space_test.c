@@ -54,7 +54,7 @@ data_cb(
         }
         else
         {
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
         }
         globus_l_close_called = GLOBUS_TRUE;
     }
@@ -88,7 +88,7 @@ open_cb(
                     NULL,
                     data_cb,
                     user_arg);
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
             res = globus_xio_register_read(
                     handle,
                     buffer,
@@ -97,7 +97,7 @@ open_cb(
                     NULL,
                     data_cb,
                     user_arg);
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
             res = globus_xio_write(
                     handle,
@@ -139,10 +139,10 @@ space_main(
     globus_assert(rc == 0);
 
     res = globus_xio_attr_init(&attr);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_stack_init(&stack, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     opt_offset = parse_parameters(argc, argv, stack, attr);
 
@@ -154,7 +154,7 @@ space_main(
     globus_cond_init(&globus_l_cond, &condattr);
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_cntl(attr, NULL, GLOBUS_XIO_ATTR_SET_SPACE, globus_l_space);
 
@@ -164,7 +164,7 @@ space_main(
             target,
             open_cb,
             argv[opt_offset]);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     globus_mutex_lock(&globus_l_mutex);
     {

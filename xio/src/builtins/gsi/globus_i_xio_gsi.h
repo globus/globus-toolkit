@@ -1,6 +1,7 @@
 #ifndef GLOBUS_I_XIO_GSI_H
 #define GLOBUS_I_XIO_GSI_H
 
+#include <assert.h>
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
 #include "globus_i_xio.h"
@@ -10,6 +11,8 @@
 #include "globus_error_gssapi.h"
 
 #define GLOBUS_XIO_GSI_DRIVER_MODULE &globus_i_xio_gsi_module
+
+/* create/calculate a token header */
 
 #define GlobusLXIOGSICreateHeader(__iovec, __length)              \
     {                                                             \
@@ -23,6 +26,8 @@
             (unsigned char) (((__length)      ) & 0xff);          \
     }
 
+/* get the token length from a wrapped token */
+
 #define GlobusLXIOGSIGetTokenLength(__iovec, __length)            \
     {                                                             \
         globus_byte_t *                 c;                        \
@@ -34,7 +39,7 @@
     }
 
 
-
+/* macro for wrapping gssapi errors */
 
 #define GlobusXIOErrorWrapGSSFailed(failed_func, major_status, minor_status) \
     globus_error_put(                                                        \
@@ -45,6 +50,8 @@
             GLOBUS_XIO_ERROR_WRAPPED,                                        \
             "[%s:%d] %s failed.",                                            \
             _xio_name, __LINE__, (failed_func)))
+
+/* XIO debug stuff */
 
 GlobusDebugDeclare(GLOBUS_XIO_GSI);
 
@@ -99,17 +106,9 @@ typedef struct
     globus_xio_gsi_protection_level_t   prot_level;
 } globus_l_attr_t;
 
-static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
-{
-    GSS_C_NO_CREDENTIAL,
-    GSS_C_MUTUAL_FLAG,
-    0,
-    GSS_C_NO_OID,
-    GSS_C_NO_CHANNEL_BINDINGS,
-    GLOBUS_FALSE,
-    131072, /* 128K default read buffer */
-    GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE
-};
+/*
+ * target structure
+ */
 
 typedef struct
 {
@@ -118,6 +117,9 @@ typedef struct
     globus_bool_t                       init;
 } globus_l_target_t;
 
+/*
+ * driver handle structure
+ */
 
 typedef struct
 {
@@ -151,6 +153,43 @@ typedef struct
     globus_size_t                       bytes_returned;
     globus_bool_t                       done;
     globus_result_t                     result;
+    globus_xio_context_t                xio_context;
 } globus_l_handle_t;
 
+/*
+ * Structure used for passing information needed for the init/accept delegation
+ * operations 
+ */
+
+typedef struct
+{
+    globus_l_handle_t *                 xio_handle;
+    void *                              user_arg;
+    globus_xio_gsi_delegation_init_callback_t
+                                        init_callback;
+    globus_xio_gsi_delegation_accept_callback_t
+                                        accept_callback;
+    gss_cred_id_t                       cred;
+    gss_OID_set                         restriction_oids;
+    gss_buffer_set_t                    restriction_buffers;
+    OM_uint32                           time_req;
+    OM_uint32                           time_rec;
+    globus_xio_iovec_t                  iovec[2];
+    unsigned char                       header[4];
+    globus_bool_t                       done;
+    globus_result_t                     result;
+    globus_bool_t                       reading_header;
+} globus_l_delegation_handle_t;
+
+typedef struct
+{
+    globus_bool_t                       done;
+    globus_result_t                     result;
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    OM_uint32 *                         time_rec;
+    gss_cred_id_t *                     cred;
+} globus_l_xio_gsi_delegation_arg_t;
+
 #endif
+

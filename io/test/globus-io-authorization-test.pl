@@ -43,7 +43,7 @@ sub basic_func
        }
        else
        {
-           ok($result, 'Could not accept connection');
+           ok($result, "\nan authorization operation failed");
        }
    }
 }
@@ -58,7 +58,7 @@ push(@tests, "basic_func('self',0);");
 push(@tests, "basic_func('identity \"$identity\"',0)");
 push(@tests, "basic_func('identity \"/CN=bad DN\"',1)");
 push(@tests, "basic_func('callback',0);");
-push(@tests, "basic_func('-callback',0);");
+push(@tests, "basic_func('-callback',1);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

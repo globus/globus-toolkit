@@ -27,6 +27,7 @@ typedef struct globus_l_thread_stack_node_s
 {
     globus_thread_blocking_func_t  func;
     void *                         user_args;
+    globus_callback_space_t        space;
     globus_bool_t                  enabled;
 
 } globus_l_thread_stack_node_t;
@@ -141,11 +142,12 @@ globus_i_thread_report_bad_rc(int rc,
 /*
  *
  */
-globus_thread_result_t
-globus_thread_blocking_callback_push(
-    globus_thread_blocking_func_t        func,
-    void * user_args,
-    globus_thread_callback_index_t * i)
+int
+globus_thread_blocking_space_callback_push(
+    globus_thread_blocking_func_t       func,
+    void *                              user_args,
+    globus_callback_space_t             space,
+    globus_thread_callback_index_t *    i)
 {
    globus_l_thread_stack_node_t *            n;
    globus_l_thread_stack_manager_t *         manager; 
@@ -175,6 +177,7 @@ globus_thread_blocking_callback_push(
 
    n->func = func;
    n->user_args = user_args;
+   n->space = space;
    n->enabled = GLOBUS_TRUE;
 
    if(i != NULL)
@@ -198,7 +201,7 @@ globus_thread_blocking_callback_push(
 /*
  *
  */
-globus_thread_result_t
+int
 globus_thread_blocking_callback_pop(
     globus_thread_callback_index_t * i)
 {
@@ -233,7 +236,7 @@ globus_thread_blocking_callback_pop(
 /*
  *
  */
-globus_thread_result_t
+int
 globus_thread_blocking_callback_enable(
     globus_thread_callback_index_t * i)
 {
@@ -276,7 +279,7 @@ globus_thread_blocking_reset()
 /*
  *
  */
-globus_thread_result_t
+int
 globus_thread_blocking_callback_disable(
 					globus_thread_callback_index_t * i)
 {
@@ -309,7 +312,7 @@ globus_thread_blocking_callback_disable(
 /*
  *
  */
-globus_thread_result_t
+int
 globus_thread_blocking_space_will_block(
     int                                 blocking_space)
 {
@@ -336,7 +339,9 @@ globus_thread_blocking_space_will_block(
 
     for(ctr = manager->top;  ctr >= 0; ctr--)
     {
-       if(manager->stack[ctr].enabled)
+       if(manager->stack[ctr].enabled && 
+        (manager->stack[ctr].space == GLOBUS_CALLBACK_GLOBAL_SPACE ||
+            manager->stack[ctr].space == blocking_space))
        {
            func =  (manager->stack[ctr].func);
 	   func(blocking_space, ctr, manager->stack[ctr].user_args);

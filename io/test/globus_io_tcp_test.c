@@ -1,5 +1,5 @@
 #include "globus_io.h"
-
+#include "gssapi.h"
 #include <arpa/inet.h>
 
 void test1(void);

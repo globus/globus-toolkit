@@ -1,10 +1,3 @@
-driver ops
-doc updates
-better driver detection and per driver config
 contact string details
 
-finish deactivation
-deactivation tests
-
-start thinking about finishing with a different context
-cache driver
+reexamine build process

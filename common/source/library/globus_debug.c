@@ -140,10 +140,19 @@ globus_debug_init(
         {
             if(filename && *filename)
             {
-                *out_file = fopen(filename, "a");
+                if(*filename == '#')
+                {
+                    *out_file = fopen(filename + 1, "w");
+                }
+                else
+                {
+                    *out_file = fopen(filename, "a");
+                }
+                
                 if(*out_file)
                 {
                     *using_file = GLOBUS_TRUE;
+                    setvbuf(*out_file, GLOBUS_NULL, _IONBF, 0);
                     fprintf(*out_file, "### %d: %s ###\n", getpid(), env_name);
                 }
                 else

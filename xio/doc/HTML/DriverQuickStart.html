@@ -32,6 +32,11 @@ implements a file driver for globus_xio.  If a user of globus_xio were to
 put this file at the bottom of the stack they could access files on the 
 local file system.
 
+<I>NOTE: This driver is for learning purposes only. It is written in a 
+blocking fashion and therefore could not actualy be a globus_xio driver.  It
+is required that XIO drivers be created in a nonblocking fashion.  A blocking
+example was choosen as a teaching tool due to its simplicity.</I>
+
     <h3><a name="DataStructures">Data Structures</a></h3>
 <P>
 There are three data structures that will be explored in this example:

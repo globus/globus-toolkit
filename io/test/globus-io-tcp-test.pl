@@ -159,6 +159,9 @@ push(@tests, "basic_func(\"-b\",\"-b\",0,0);");
 push(@tests, "basic_func(\"-b -g\",\"-b -g\",0,0);");
 push(@tests, "basic_func(\"-b -s\",\"-b -s\",1,0);");
 push(@tests, "basic_func(\"-b -c\",\"-b -c\",0,0);");
+push(@tests, "basic_func(\"-g -P none\",\"-g -P none\",0,0);");
+push(@tests, "basic_func(\"-g -P integrity\",\"-g -P integrity\",0,0);");
+push(@tests, "basic_func(\"-g -P privacy\",\"-g -P privacy\",0,0);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

@@ -6,7 +6,9 @@ SUBDIRS= \
 
 Sources=                                \
 	test_common.c                       \
+	driver_stack.c                      \
     blocking_dd_test.c                  \
+    unload_test.c                       \
 	framework_test.c                    \
 	space_test.c                        \
 	timeout_test.c                      \
@@ -20,12 +22,12 @@ Sources=                                \
 
 INCLUDES += $(GPT_INCLUDES)
 
-test_PROGRAMS= \
+test_PROGRAMS=                          \
 	framework_test
 
 framework_test_SOURCES = $(Sources)
 framework_test_LDFLAGS = $(GPT_LDFLAGS)
-framework_test_LDADD = $(GPT_PGM_LINKS)
+framework_test_LDADD = $(GPT_PGM_LINKS)  -lefence
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

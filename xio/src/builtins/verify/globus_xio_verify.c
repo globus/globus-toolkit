@@ -17,7 +17,7 @@ globus_l_xio_verify_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_verify_module =
+globus_module_descriptor_t  globus_i_xio_verify_module =
 {
     "globus_xio_verify",
     globus_l_xio_verify_activate,
@@ -223,7 +223,7 @@ globus_l_xio_verify_open(
         globus_assert(!"Server string doesn't match");
     }
 
-    GlobusXIODriverPassOpen(res, context, op, \
+    GlobusXIODriverPassOpen(res, &context, op, \
         globus_l_xio_verify_open_cb, NULL);
 
     return res;
@@ -303,7 +303,8 @@ globus_l_xio_verify_read(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, iovec, iovec_count, wait_for, \
+    GlobusXIODriverPassRead(res, op, (globus_xio_iovec_t *)iovec, 
+        iovec_count, wait_for, \
         globus_l_xio_verify_read_cb, NULL);
 
     return res;
@@ -342,7 +343,8 @@ globus_l_xio_verify_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, wait_for, \
+    GlobusXIODriverPassWrite(res, op, 
+        (globus_xio_iovec_t *) iovec, iovec_count, wait_for, 
         globus_l_xio_verify_write_cb, NULL);
 
     return res;
