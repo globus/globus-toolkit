@@ -365,7 +365,7 @@ sub fixpaths
     return 0;
 }
 
-print "------------------------------------------------------\n";
+print "---------------------------------------------------------------\n";
 print "$myname: Configuring package 'gsi_openssh'..\n";
 print "\n";
 print "--> NOTE: Run this as root for the intended effect. <--\n";
@@ -381,7 +381,7 @@ $metadata->finish();
 
 print "\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
-print "------------------------------------------------------\n";
+print "---------------------------------------------------------------\n";
 
 #
 # Just need a minimal action() subroutine for now..
