@@ -30,6 +30,13 @@
 #define DEBUG_GASS_TRANSFER
 */
 
+typedef struct
+{
+    globus_gass_transfer_http_listener_proto_t *	l_proto;
+    globus_gass_transfer_request_t                      request;
+}
+globus_l_gass_transfer_failed_kickout_closure_t;
+
 #if defined(DEBUG_GASS_TRANSFER)
 static char * globus_l_gass_transfer_http_debug_level="";
 /* Debug Levels */
@@ -72,6 +79,11 @@ static int globus_l_gass_lock_tmp=0;
 #define debug_printf(level, fmt)
 #define MYNAME(x)
 #endif
+
+static
+void
+globus_l_gass_transfer_http_accept_failed_kickout(
+    void *                                      arg);
 
 static volatile int globus_l_gass_transfer_http_closing;
 #if !defined(GLOBUS_GASS_TRANSFER_HTTP_PARSER_TEST)
@@ -301,8 +313,8 @@ globus_l_gass_transfer_http_send(
 	else if(last_data && new_proto->user_buflen == 0)
 	{
 	    /* last data, with a zero-length chunk from the user */
-	    new_proto->iov[1].iov_base = CRLF;
-	    new_proto->iov[1].iov_len = strlen(CRLF);
+	    new_proto->iov[1].iov_base = CRLF "0" CRLF;
+	    new_proto->iov[1].iov_len = strlen(CRLF "0" CRLF);
 	    num_iovecs = 2;
 	}
 	else
@@ -2082,6 +2094,7 @@ globus_l_gass_transfer_http_new_request(
     {
 	goto proto_error;
     }
+    globus_io_attr_set_socket_keepalive(&tcp_attr, GLOBUS_TRUE);
 
     if(*attr != GLOBUS_NULL)
     {
@@ -2525,6 +2538,8 @@ globus_l_gass_transfer_http_new_listener(
     
     debug_printf(1, ("Entering %s()\n",myname));
     globus_io_tcpattr_init(&tcpattr);
+
+    globus_io_attr_set_socket_keepalive(&tcpattr, GLOBUS_TRUE);
 
     /* Allocate proto instance */
     proto = (globus_gass_transfer_http_listener_proto_t *)
@@ -4001,6 +4016,8 @@ globus_l_gass_transfer_http_accept(
     globus_bool_t				nodelay;
     globus_gass_transfer_file_mode_t		file_mode=GLOBUS_GASS_TRANSFER_FILE_MODE_BINARY;
     globus_io_secure_authorization_data_t	data;
+    globus_l_gass_transfer_failed_kickout_closure_t *kickout;
+    globus_reltime_t                            delay_time;
     MYNAME(globus_l_gass_transfer_http_accept);
 
     debug_printf(1, ("entering %s()\n",myname));
@@ -4020,6 +4037,7 @@ globus_l_gass_transfer_http_accept(
     {
 	goto proto_error;
     }
+    globus_io_attr_set_socket_keepalive(&tcp_attr, GLOBUS_TRUE);
 
     if(attr != GLOBUS_NULL &&
        *attr != GLOBUS_NULL)
@@ -4188,11 +4206,15 @@ globus_l_gass_transfer_http_accept(
     debug_printf(4,("%s(): Registering accept on %p\n",
 		    myname,
 		    &l_proto->handle));
-    globus_io_tcp_register_accept(&l_proto->handle,
+    result = globus_io_tcp_register_accept(&l_proto->handle,
 				  &tcp_attr,
 				  &l_proto->request->handle,
 				  globus_l_gass_transfer_http_accept_callback,
 				  l_proto);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto tcpattr_error;
+    }
 
     globus_io_tcpattr_destroy(&tcp_attr);
 
@@ -4205,11 +4227,27 @@ globus_l_gass_transfer_http_accept(
     globus_io_tcpattr_destroy(&tcp_attr);
   proto_error:
     globus_l_gass_transfer_http_proto_destroy(l_proto->request);
+    l_proto->request = NULL;
   error_exit:
     l_proto->state = GLOBUS_GASS_TRANSFER_HTTP_LISTENER_STARTING;
 
     globus_l_gass_transfer_http_unlock();
-    /* should callback here */
+
+    GlobusTimeReltimeSet(delay_time, 0, 0);
+    debug_printf(4,("%s(): Registering oneshot\n",
+			myname));
+    kickout = globus_libc_malloc(
+            sizeof(globus_l_gass_transfer_failed_kickout_closure_t));
+
+    kickout->l_proto = l_proto;
+    kickout->request = request;
+
+    globus_callback_register_oneshot(
+        GLOBUS_NULL,
+	&delay_time,
+	globus_l_gass_transfer_http_accept_failed_kickout,
+	kickout);
+
     debug_printf(1, ("exiting %s()\n",myname));
 }
 /* globus_l_gass_transfer_http_accept() */
@@ -4423,8 +4461,8 @@ globus_l_gass_transfer_http_construct_request(
 	    /* This never changes */
 	    proto->iov[2].iov_base = CRLF;
 	    proto->iov[2].iov_len = strlen(CRLF);
-	    proto->iov[3].iov_base = "0" CRLF;
-	    proto->iov[3].iov_len = strlen("0" CRLF);
+	    proto->iov[3].iov_base = "0" CRLF "0" CRLF;
+	    proto->iov[3].iov_len = strlen("0" CRLF "0" CRLF);
 
 	    if(cmd == GLOBUS_NULL)
 	    {
@@ -4510,8 +4548,8 @@ globus_l_gass_transfer_http_construct_request(
 	    /* This never changes */
 	    proto->iov[2].iov_base = CRLF;
 	    proto->iov[2].iov_len = strlen(CRLF);
-	    proto->iov[3].iov_base = "0" CRLF;
-	    proto->iov[3].iov_len = strlen("0" CRLF);
+	    proto->iov[3].iov_base = "0" CRLF "0" CRLF;
+	    proto->iov[3].iov_len = strlen("0" CRLF "0" CRLF);
 
 	    if(cmd == GLOBUS_NULL)
 	    {
@@ -6144,6 +6182,23 @@ globus_l_gass_transfer_http_extract_referral(
     return;
 }
 /* globus_l_gass_transfer_http_extract_referral() */
+
+static
+void
+globus_l_gass_transfer_http_accept_failed_kickout(
+    void *                                      arg)
+{
+    globus_l_gass_transfer_failed_kickout_closure_t *
+                                                closure;
+    closure = (globus_l_gass_transfer_failed_kickout_closure_t *) arg;
+
+    globus_gass_transfer_proto_new_listener_request(
+            closure->l_proto->listener,
+            closure->request,
+            GLOBUS_NULL);
+
+    globus_libc_free(closure);
+}
 
 #if !defined(GLOBUS_GASS_TRANSFER_HTTP_PARSER_TEST)
 static

@@ -108,7 +108,7 @@ globus_gass_transfer_create_listener(
 
     if(rc != GLOBUS_SUCCESS)
     {
-	goto listener_exit;
+	goto destroy_handle;
     }
 
     l->status = GLOBUS_GASS_TRANSFER_LISTENER_STARTING;
@@ -116,6 +116,10 @@ globus_gass_transfer_create_listener(
     globus_i_gass_transfer_unlock();
 
     return GLOBUS_SUCCESS;
+
+  destroy_handle:
+    globus_i_gass_transfer_listener_destroy(*listener);
+    globus_i_gass_transfer_listener_destroy(*listener);
 
   listener_exit:
     if(l->base_url != GLOBUS_NULL)

@@ -504,6 +504,9 @@ globus_gass_transfer_proto_new_listener_request(
 	if(proto == GLOBUS_NULL)
 	{
 	    req->status = GLOBUS_GASS_TRANSFER_REQUEST_FAILED;
+
+            /* Destroy GASS's reference to this request proto */
+            globus_i_gass_transfer_request_destroy(request);
 	}
 	else
 	{
