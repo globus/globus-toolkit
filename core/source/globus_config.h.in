@@ -72,6 +72,7 @@
 #undef HAVE_STRUCT_IOVEC
 #undef IOV_MAX
 #undef RETSIGTYPE
+#undef HAVE_ATEXIT
 
 #undef GLOBUS_OFF_T
 #undef GLOBUS_OFF_T_FORMAT 
