@@ -90,6 +90,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	xxx_hostaddr = hostaddr;
 
 #ifdef GSSAPI
+	if (options.gss_keyex) {
 	/* Add the GSSAPI mechanisms currently supported on this client to
 	 * the key exchange algorithm proposal */
 	orig = myproposal[PROPOSAL_KEX_ALGS];
@@ -98,6 +99,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	   len = strlen(orig)+strlen(gss)+2;
 	   myproposal[PROPOSAL_KEX_ALGS]=xmalloc(len);
 	   snprintf(myproposal[PROPOSAL_KEX_ALGS],len,"%s,%s",gss,orig);
+	}
 	}
 #endif
 
@@ -131,7 +133,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 #ifdef GSSAPI
         /* If we've got GSSAPI algorithms, then we also support the
          * 'null' hostkey, as a last resort */
-	if (gss) {
+	if (options.gss_keyex && gss) {
 		orig=myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS];
 		len = strlen(orig)+sizeof(",null");
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]=xmalloc(len);

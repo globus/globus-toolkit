@@ -50,6 +50,7 @@ typedef struct {
 
 #ifdef GSSAPI
 	int 	gss_authentication;
+	int	gss_keyex;
 	int	gss_deleg_creds;
 #ifdef GSI
 	int	gss_globus_deleg_limited_proxy;

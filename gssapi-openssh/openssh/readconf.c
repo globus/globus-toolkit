@@ -98,7 +98,7 @@ typedef enum {
 	oKerberosAuthentication,
 #endif
 #ifdef GSSAPI
-	oGssAuthentication, oGssDelegateCreds,
+	oGssAuthentication, oGssKeyEx, oGssDelegateCreds,
 #ifdef GSI
 	oGssGlobusDelegateLimitedCreds,
 #endif /* GSI */
@@ -151,6 +151,7 @@ static struct {
 #endif
 #ifdef GSSAPI
 	{ "gssapiauthentication", oGssAuthentication },
+	{ "gssapikeyexchange", oGssKeyEx },
 	{ "gssapidelegatecredentials", oGssDelegateCreds },
 #ifdef GSI
 	/* For backwards compatability with old 1.2.27 client code */
@@ -382,6 +383,10 @@ parse_flag:
 		intptr = &options->gss_authentication;
 		goto parse_flag;
       
+	case oGssKeyEx:
+	    	intptr = &options->gss_keyex;
+		goto parse_flag;
+
 	case oGssDelegateCreds:
 		intptr = &options->gss_deleg_creds;
 		goto parse_flag;
@@ -781,6 +786,7 @@ initialize_options(Options * options)
 	options->challenge_response_authentication = -1;
 #ifdef GSSAPI
         options->gss_authentication = -1;
+	options->gss_keyex = -1;
         options->gss_deleg_creds = -1;
 #ifdef GSI
         options->gss_globus_deleg_limited_proxy = -1;
@@ -866,6 +872,8 @@ fill_default_options(Options * options)
 #ifdef GSSAPI
 	if (options->gss_authentication == -1)
 		options->gss_authentication = 1;
+	if (options->gss_keyex == -1)
+		options->gss_keyex = 1;
 	if (options->gss_deleg_creds == -1)
 		options->gss_deleg_creds = 1;
 #ifdef GSI
