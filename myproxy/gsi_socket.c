@@ -831,6 +831,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
     int				token_status;
     int				return_value = GSI_SOCKET_ERROR;
+    OM_uint32			gss_flags = 0;
 
     if (self == NULL) {	
 	return GSI_SOCKET_ERROR;
@@ -849,12 +850,20 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	goto error;
     }
     
+    /* These are supposed to be return flags only, according to RFC
+       2774, but GSI helpfully uses them as request flags too. */
+    gss_flags |= GSS_C_ANON_FLAG;
+    gss_flags |= GSS_C_REPLAY_FLAG;
+    gss_flags |= GSS_C_MUTUAL_FLAG;
+    gss_flags |= GSS_C_CONF_FLAG;
+    gss_flags |= GSS_C_INTEG_FLAG;
+
     self->major_status =
 	globus_gss_assist_accept_sec_context(&self->minor_status,
 					     &self->gss_context,
 					     creds,
 					     &self->peer_name,
-					     NULL, /* ret_flags */
+					     &gss_flags,
 					     NULL, /* u2u flag */
 					     &token_status,
 					     NULL, /* Delegated creds
