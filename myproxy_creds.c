@@ -35,18 +35,13 @@ char *crypt(const char *key, const char *salt);
 /* Files should only be readable by me */
 #define FILE_MODE               0600
 
-/* Where to store our files */
-#ifndef CREDS_STORAGE_DIRECTORY
-#define CREDS_STORAGE_DIRECTORY         MYPROXY_SERVER_DIR "/store/"
-#endif /* CREDS_STORAGE_DIRECTORY */
-
 /**********************************************************************
  *
  * Internal variables
  *
  */
 
-char *storage_dir = CREDS_STORAGE_DIRECTORY;
+char *storage_dir = MYPROXY_SERVER_STORE_DIR;
 
 /**********************************************************************
  *
