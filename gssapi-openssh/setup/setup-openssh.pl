@@ -127,7 +127,7 @@ makeConfDir();
 copyPRNGFile();
 $keyhash = determineKeys();
 runKeyGen($keyhash->{gen});
-copyKeyFiles($keyhash->{copy});
+linkKeyFiles($keyhash->{link});
 copyConfigFiles();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
@@ -426,22 +426,22 @@ sub findExecutable
     return "undef";
 }
 
-### copyKeyFiles( $copylist )
+### linkKeyFiles( $linklist )
 #
-# given an array of keys to copy, copy both the key and its public variant into
+# given an array of keys to link, link both the key and its public variant into
 # the gsi-openssh configuration directory.
 #
 
-sub copyKeyFiles
+sub linkKeyFiles
 {
-    my($copylist) = @_;
+    my($linklist) = @_;
     my($regex, $basename);
 
-    if (@$copylist)
+    if (@$linklist)
     {
-        debug1("Copying ssh host keys...\n");
+        debug1("Linking ssh host keys...\n");
 
-        for my $f (@$copylist)
+        for my $f (@$linklist)
         {
             $f =~ s:/+:/:g;
 
@@ -450,8 +450,8 @@ sub copyKeyFiles
                 $keyfile = "$f";
                 $pubkeyfile = "$f.pub";
 
-                copyFile("$localsshdir/$keyfile", "$sysconfdir/$keyfile");
-                copyFile("$localsshdir/$pubkeyfile", "$sysconfdir/$pubkeyfile");
+                linkFile("$localsshdir/$keyfile", "$sysconfdir/$keyfile");
+                linkFile("$localsshdir/$pubkeyfile", "$sysconfdir/$pubkeyfile");
             }
         }
     }
@@ -596,10 +596,10 @@ sub determineKeys
 
     $keyhash = {};
     $keyhash->{gen} = [];   # a list of keytypes to generate
-    $keyhash->{copy} = [];  # a list of files to copy from the 
+    $keyhash->{link} = [];  # a list of files to link
 
     $genlist = $keyhash->{gen};
-    $copylist = $keyhash->{copy};
+    $linklist = $keyhash->{link};
 
     #
     # loop over our keytypes and determine what we need to do for each of them
@@ -633,7 +633,7 @@ sub determineKeys
         }
 
         #
-        # if we can find a copy of the keys in /etc/ssh, we'll copy them to the user's
+        # if we can find a copy of the keys in /etc/ssh, we'll link them to the user's
         # globus location
         #
 
@@ -642,7 +642,7 @@ sub determineKeys
 
         if ( isReadable($mainkeyfile) && isReadable($mainpubkeyfile) )
         {
-            push(@$copylist, $basekeyfile);
+            push(@$linklist, $basekeyfile);
             $count++;
             next;
         }
@@ -886,6 +886,29 @@ sub copyConfigFiles
     #
 
     copySXXScript("$setupdir/SXXsshd.in", "$sbindir/SXXsshd");
+}
+
+### linkFile( $src, $dest )
+#
+# create a symbolic link from $src to $dest.
+#
+
+sub linkFile
+{
+    my($src, $dest) = @_;
+
+    if ( !isReadable($src) )
+    {
+        debug1("$src is not readable... not creating $dest.\n");
+        return;
+    }
+
+    if ( !prepareFileWrite($dest) )
+    {
+        return;
+    }
+
+    action("ln -s $src $dest");
 }
 
 ### copyFile( $src, $dest )
