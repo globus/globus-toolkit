@@ -11,14 +11,15 @@ package Globus::GRAM::JobManager::lsf;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($mpirun, $bsub, $bjobs, $bkill);
+my ($lsf_profile, $mpirun, $bsub, $bjobs, $bkill);
 
 BEGIN
 {
+    $lsf_profile = '@LSF_PROFILE@';
     $mpirun = '@MPIRUN@';
-    $bsub   = '@BSUB@';
-    $bjobs  = '@BJOBS@';
-    $bkill  = '@BKILL@';
+    $bsub   = ". $lsf_profile && @BSUB@";
+    $bjobs  = ". $lsf_profile && @BJOBS@";
+    $bkill  = ". $lsf_profile && @BKILL@";
 }
 
 sub submit
