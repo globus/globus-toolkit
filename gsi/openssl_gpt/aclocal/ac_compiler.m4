@@ -100,7 +100,7 @@ AC_DEFUN(LAC_COMPILER_SET_OPTIMIZATIONS,
                     if test "$GCC" = "yes"; then
                         lac_CFLAGS="$lac_CFLAGS -O3 -fomit-frame-pointer -Wall"
                     else
-                        lac_CFLAGS="lac_CFLAGS -O2 -Wall"
+                        lac_CFLAGS="$lac_CFLAGS -O2 -Wall"
                     fi
                 ;;
                 *alpha*)
