@@ -60,7 +60,7 @@ globus_xio_driver_pass_open_DEBUG(
         if(_op->ndx == _op->stack_size)                                     
         {                                                                   
             _res = _driver->transport_open_func(                            
-                        _my_op->target,                                     
+                        _handle->target->entry[_op->ndx - 1].target,        
                         _my_op->attr,                                       
                         _my_context,                                        
                         _op);                                               
@@ -68,7 +68,7 @@ globus_xio_driver_pass_open_DEBUG(
         else                                                                
         {                                                                   
             _res = _driver->transform_open_func(                            
-                        _my_op->target,                                     
+                        _handle->target->entry[_op->ndx - 1].target,        
                         _my_op->attr,                                       
                         _op);                                               
         }                                                                   
@@ -633,7 +633,7 @@ globus_xio_driver_pass_read_DEBUG(
                 _my_context->read_operations--;                             
                 if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||
                     _my_context->state ==                                   
-                       GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) &&
+                       GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) & 
                     _my_context->outstanding_operations == 0)               
                 {                                                           
                     globus_assert(_my_context->close_op != NULL);           

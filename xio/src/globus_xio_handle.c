@@ -867,8 +867,6 @@ globus_l_xio_register_open(
     }
     handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;
     GlobusIXIOHandleDec(destroy_handle, handle);
-    context->ref = 0;
-    globus_i_xio_context_destroy(context);
     if(destroy_handle)
     {
         GlobusXIOHandleDestroy(handle);
@@ -1188,6 +1186,7 @@ globus_xio_register_open(
     }
     if(handle != NULL)
     {
+        handle->context = NULL;
         GlobusXIOHandleDestroy(handle);
     }
     if(context != NULL)

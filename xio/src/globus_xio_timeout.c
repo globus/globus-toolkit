@@ -205,6 +205,7 @@ globus_i_xio_timer_poller_callback(
         }
     }
     globus_mutex_unlock(&timer->mutex);
+    globus_list_free(tmp_list);
 
     /* remove from the list all that were canceled */
     while(!globus_list_empty(call_list))
@@ -224,6 +225,11 @@ globus_i_xio_timer_poller_callback(
                 globus_list_insert(&timer->op_list, entry);
             }
             globus_mutex_unlock(&timer->mutex);
+        }
+        /* if they return true we are done with the entry */
+        else
+        {
+            globus_free(entry);
         }
     }
 }

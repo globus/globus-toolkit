@@ -17,9 +17,28 @@
 #define GlobusXIOHandleDestroy(_in_h)                                       \
 do                                                                          \
 {                                                                           \
-    globus_i_xio_handle_t *                         _h;                     \
+    globus_i_xio_handle_t *                 _h;                             \
+    globus_bool_t                           _c_destroy = GLOBUS_FALSE;      \
                                                                             \
     _h = (_in_h);                                                           \
+                                                                            \
+    if(_h->context != NULL)                                                 \
+    {                                                                       \
+        globus_mutex_lock(&_h->context->mutex);                             \
+        {                                                                   \
+            _h->context->ref--;                                             \
+            if(_h->context->ref == 0)                                       \
+            {                                                               \
+                _c_destroy = GLOBUS_TRUE;                                   \
+            }                                                               \
+        }                                                                   \
+    }                                                                       \
+    globus_mutex_unlock(&_h->context->mutex);                               \
+    if(_c_destroy)                                                          \
+    {                                                                       \
+        globus_i_xio_context_destroy(_h->context);                          \
+    }                                                                       \
+                                                                            \
     globus_mutex_lock(&globus_l_mutex);                                     \
     {                                                                       \
         globus_list_remove(&globus_l_outstanding_handles_list,              \

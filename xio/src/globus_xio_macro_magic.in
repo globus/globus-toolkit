@@ -13,7 +13,7 @@
 1     globus_xio_operation_t  _in_op,
 1     globus_xio_driver_callback_t _in_cb,
 1     void * _in_user_arg) 
-2 #define GlobusXIODriverPassOpen_DEDUG(_out_res, _out_context,             \
+2 #define GlobusXIODriverPassOpen(_out_res, _out_context,                   \
 2            _in_op, _in_cb, _in_user_arg)                                  \
 2 do                                                                        \
 {                                                                           \
@@ -63,7 +63,7 @@
         if(_op->ndx == _op->stack_size)                                     \
         {                                                                   \
             _res = _driver->transport_open_func(                            \
-                        _my_op->target,                                     \
+                        _handle->target->entry[_op->ndx - 1].target,        \
                         _my_op->attr,                                       \
                         _my_context,                                        \
                         _op);                                               \
@@ -71,7 +71,7 @@
         else                                                                \
         {                                                                   \
             _res = _driver->transform_open_func(                            \
-                        _my_op->target,                                     \
+                        _handle->target->entry[_op->ndx - 1].target,        \
                         _my_op->attr,                                       \
                         _op);                                               \
         }                                                                   \
@@ -92,7 +92,7 @@
 1     void *                                          _in_dh,
 1     globus_xio_operation_t                          _in_op,
 1     globus_result_t                                 _in_res)
-2 #define GlobusXIODriverFinishedOpen_DEBUG(                                \
+2 #define GlobusXIODriverFinishedOpen(                                      \
 2     _in_context, _in_dh, _in_op, _in_res)                                 \
 2 do                                                                        \
 {                                                                           \
@@ -172,7 +172,7 @@
 1     globus_xio_operation_t                          _in_op,
 1     globus_xio_driver_callback_t                    _in_cb,
 1     void *                                          _in_ua) 
-2 #define GlobusXIODriverPassClose_DEBUG(                                   \
+2 #define GlobusXIODriverPassClose(                                         \
 2           _out_res, _in_op, _in_cb, _in_ua)                               \
 2 do                                                                        \
 {                                                                           \
@@ -272,7 +272,7 @@
 1 globus_xio_driver_finished_close_DEBUG(
 1     globus_xio_operation_t                          op,
 1     globus_result_t                              _in_res)
-2 #define GlobusXIODriverFinishedClose_DEBUG(op, res)                       \
+2 #define GlobusXIODriverFinishedClose(op, res)                             \
 2 do                                                                        \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
@@ -330,7 +330,7 @@
 1     globus_size_t                                   _in_wait_for,
 1     globus_xio_driver_data_callback_t               _in_cb,
 1     void *                                          _in_user_arg)
-2 #define GlobusXIODriverPassWrite_DEBUG(_out_res, _in_op,                  \
+2 #define GlobusXIODriverPassWrite(_out_res, _in_op,                        \
 2             _in_iovec, _in_iovec_count,                                   \
 2             _in_wait_for, _in_cb, _in_user_arg)                           \
 2 do                                                                        \
@@ -433,7 +433,7 @@
 1     globus_xio_operation_t                          op,
 1     globus_result_t                                 result,
 1     globus_size_t                                   nbytes)
-2 #define GlobusXIODriverFinishedWrite_DEBUG(op, result, nbytes)            \
+2 #define GlobusXIODriverFinishedWrite(op, result, nbytes)                  \
 2 do                                                                        \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
@@ -520,7 +520,7 @@
 1 void
 1 globus_xio_driver_write_deliver_DEBUG(
 1     globus_xio_operation_t                          op)
-2 #define GlobusIXIODriverWriteDeliver_DEBUG(op)                            \
+2 #define GlobusIXIODriverWriteDeliver(op)                                  \
 2 do                                                                        \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
@@ -577,7 +577,7 @@
 1     globus_size_t                                   _in_wait_for,
 1     globus_xio_driver_data_callback_t               _in_cb,
 1     void *                                          _in_user_arg)
-2 #define GlobusXIODriverPassRead_DEBUG(_out_res, _in_op, _in_iovec,        \
+2 #define GlobusXIODriverPassRead(_out_res, _in_op, _in_iovec,              \
 2             _in_iovec_count, _in_wait_for, _in_cb, _in_user_arg)          \
 2 do                                                                        \
 {                                                                           \
@@ -689,7 +689,7 @@
 1     globus_xio_operation_t                          op,
 1     globus_result_t                                 result,
 1     globus_size_t                                   nbytes)
-2 #define GlobusXIODriverFinishedRead_DEBUG(op, result, nbytes)             \
+2 #define GlobusXIODriverFinishedRead(op, result, nbytes)                   \
 2 do                                                                        \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
@@ -823,7 +823,7 @@
 1 void 
 1 globus_xio_driver_read_deliver_DEBUG(
 1     globus_xio_operation_t                          op)
-2 #define GlobusIXIODriverReadDeliver_DEBUG(op)                             \
+2 #define GlobusIXIODriverReadDeliver(op)                                   \
 2 do                                                                        \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
@@ -926,7 +926,7 @@
 1     globus_xio_operation_t                          _in_op,
 1     globus_xio_driver_callback_t                    _in_cb,
 1     void *                                          _in_user_arg)
-2 #define GlobusXIODriverPassAccept_DEBUG(_out_res, _in_op, _in_cb,         \
+2 #define GlobusXIODriverPassAccept(_out_res, _in_op, _in_cb,               \
 2             _in_user_arg)                                                 \
 2 do                                                                        \
 {                                                                           \
@@ -982,7 +982,7 @@
 1     globus_xio_operation_t                          _in_op,
 1     void *                                          _in_target,
 1     globus_result_t                                 _in_res)
-2 #define GlobusXIODriverFinishedAccept_DEBUG(_in_op, _in_target, _in_res)  \
+2 #define GlobusXIODriverFinishedAccept(_in_op, _in_target, _in_res)        \
 2 do                                                                        \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
