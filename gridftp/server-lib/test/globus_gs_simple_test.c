@@ -21,6 +21,25 @@ char *  CONTACT_STRINGS[]     = {"127.0.0.1:2", NULL};
 
 #define CONTACT_STRINGS_COUNT   1
 
+static void
+globus_gs_cmd_site(
+    globus_gridftp_server_control_op_t      op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    if(strcmp(cmd_a[1], "MINE") == 0)
+    {
+        globus_gsc_959_finished_command(
+            op, "200 successful sire interception\r\n");
+    }
+    else
+    {
+        globus_gsc_959_finished_command(op, NULL);
+    }
+}
+
 
 static globus_mutex_t                       globus_l_mutex;
 static globus_cond_t                        globus_l_cond;
@@ -176,11 +195,12 @@ transfer(
 void
 auth_func(
     globus_gridftp_server_control_op_t      op,
+    int                                     type,
     const char *                            subject,
     const char *                            user_name,
     const char *                            pw)
 {
-    fprintf(stderr, "User: %s Pass: %s\n", user_name, pw);
+    fprintf(stderr, "User: %s Pass: %s: type = %d\n", user_name, pw, type);
 
     if(strcmp(user_name, "failme") == 0)
     {
@@ -289,6 +309,16 @@ main(
     res = globus_xio_handle_cntl(xio_handle, tcp_driver,
             GLOBUS_XIO_TCP_GET_HANDLE, &system_handle);
     test_res(res, __LINE__);
+
+    globus_gsc_959_command_add(
+        ftp_server,
+        "SITE",
+        globus_gs_cmd_site,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: SITE <sp> pathname\r\n",
+        NULL);
 
     globus_mutex_lock(&globus_l_mutex);
     {
