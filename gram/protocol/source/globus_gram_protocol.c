@@ -171,7 +171,7 @@ globus_l_gram_http_parse_reply(
 			"Content-Type: application/x-globus-gram" CRLF
 
 #define GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE \
-			"Content-Length: %d" CRLF
+			"Content-Length: %ld" CRLF
 
 #define GLOBUS_GRAM_HTTP_REPLY_LINE \
 			"HTTP/1.1 %3d %s" CRLF
@@ -1267,7 +1267,7 @@ globus_gram_http_frame_request(char *             uri,
 			       GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE);
     tmp += globus_libc_sprintf(buf + tmp,
 			       GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE,
-			       msgsize);
+			       (long) msgsize);
     tmp += globus_libc_sprintf(buf + tmp,
 			       CRLF);
 
@@ -1368,7 +1368,7 @@ globus_gram_http_frame_reply(int		code,
 		       GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE);
 	tmp += globus_libc_sprintf(buf + tmp,
 		       GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE,
-		       msgsize);
+		       (long)msgsize);
 	tmp += globus_libc_sprintf(buf + tmp,
 		       CRLF);
 
@@ -1978,14 +1978,16 @@ globus_l_gram_http_parse_request(
     globus_byte_t *			buf,
     globus_size_t *			payload_length)
 {
-    int rc;
-    char *uri;
-    char *host;
+    int      rc;
+    long     tmp;
+    char *   uri;
+    char *   host;
 
     uri = (char *) globus_malloc(strlen((char *) buf));
     host = (char *) globus_malloc(strlen((char *) buf));
     
     globus_libc_lock();
+
     rc = sscanf( (char *) buf,
 		 GLOBUS_GRAM_HTTP_REQUEST_LINE
 		 GLOBUS_GRAM_HTTP_HOST_LINE
@@ -1994,7 +1996,7 @@ globus_l_gram_http_parse_request(
 		 CRLF,
 		 uri,
 		 host,
-		 payload_length);
+		 &tmp);
     globus_libc_unlock();
     if(rc != 3)
     {
@@ -2004,6 +2006,7 @@ globus_l_gram_http_parse_request(
     }
     else
     {
+	*payload_length = tmp;
 	rc = GLOBUS_SUCCESS;
     }
 
@@ -2024,7 +2027,7 @@ globus_l_gram_http_parse_reply(
     int code;
     int offset;
     char * reason;
-    int tmp;
+    long tmp;
 
     reason = (char *) globus_malloc(strlen((char *)buf));
 
@@ -2050,7 +2053,6 @@ globus_l_gram_http_parse_reply(
 		     GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE
 		     GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE,
 		     &tmp);
-	*payload_length = tmp;
 	globus_libc_unlock();
 	if(rc != 1)
 	{
@@ -2059,6 +2061,7 @@ globus_l_gram_http_parse_reply(
 	}
 	else
 	{
+	    *payload_length = tmp;
 	    rc = GLOBUS_SUCCESS;
 	}
     }
