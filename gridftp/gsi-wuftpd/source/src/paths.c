@@ -146,13 +146,13 @@ void setup_paths(void)
     strcat(_path_ftpusers, _PATH_FTPUSERS);
 
     strcpy(_path_private, globus_loc);
-    strcpy(_path_private, _PATH_PRIVATE);
+    strcat(_path_private, _PATH_PRIVATE);
 
     strcpy(_path_cvt, globus_loc);
-    strcpy(_path_cvt, _PATH_CVT);
+    strcat(_path_cvt, _PATH_CVT);
 
     strcpy(logfile, globus_loc);
-    strcpy(logfile, _PATH_XFERLOG);
+    strcat(logfile, _PATH_XFERLOG);
 #else
     strcpy(_path_ftpaccess, _PATH_FTPACCESS);
     strcpy(_path_ftpusers, _PATH_FTPUSERS);

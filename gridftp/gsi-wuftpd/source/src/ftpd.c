@@ -694,9 +694,9 @@ int i = 0;
 #endif /* DAEMON */
 
 #ifndef DAEMON
-    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1G:")) != -1) {
 #else /* DAEMON */
-    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1G:")) != -1) {
 #endif /* DAEMON */
 	switch (c) {
 
@@ -828,6 +828,10 @@ int i = 0;
 
 	case '1':
 	    debug_no_fork = 1;
+	    break;
+
+	case 'G':
+	    setenv("GLOBUS_LOCATION", optarg, 1);
 	    break;
 
 	default:
