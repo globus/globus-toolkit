@@ -198,7 +198,6 @@ globus_gsi_callback_data_copy(
         }
     }
 
-    (*dest)->multiple_limited_proxy_ok = source->multiple_limited_proxy_ok;
     (*dest)->cert_dir = strdup(source->cert_dir);
     (*dest)->extension_cb = source->extension_cb;
 
@@ -430,7 +429,7 @@ globus_gsi_callback_get_cert_type(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
-        "globus_gsi_callback_get_limited_proxy";
+        "globus_gsi_callback_get_cert_type";
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
  
     if(!callback_data)
@@ -655,6 +654,8 @@ globus_gsi_callback_set_cert_chain(
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
  *        a globus error object ID is returned
+ * @deprecated This function always returns true now. It will be removed
+ *             in the next release.
  */
 globus_result_t
 globus_gsi_callback_get_multiple_limited_proxy_ok(
@@ -686,7 +687,7 @@ globus_gsi_callback_get_multiple_limited_proxy_ok(
         goto exit;
     }
 
-    *multiple_limited_proxy_ok = callback_data->multiple_limited_proxy_ok;
+    *multiple_limited_proxy_ok = GLOBUS_TRUE;
 
  exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
@@ -707,6 +708,8 @@ globus_gsi_callback_get_multiple_limited_proxy_ok(
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
  *        a globus error object ID is returned
+ * @deprecated This function has been turned into a no-op. It will be removed
+ *             in the next release.
  */
 globus_result_t
 globus_gsi_callback_set_multiple_limited_proxy_ok(
@@ -728,8 +731,6 @@ globus_gsi_callback_set_multiple_limited_proxy_ok(
              _function_name_));
         goto exit;
     }
-
-    callback_data->multiple_limited_proxy_ok = multiple_limited_proxy_ok;
 
  exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;

@@ -265,24 +265,6 @@ globus_i_gsi_gss_create_and_fill_context(
         }
     }
     
-    /* set the callback data if its OK to accept proxies
-     * signed by limited proxies
-     */
-    if ( context->req_flags & 
-         GSS_C_GLOBUS_ACCEPT_PROXY_SIGNED_BY_LIMITED_PROXY_FLAG)
-    {
-        local_result = globus_gsi_callback_set_multiple_limited_proxy_ok(
-            context->callback_data, GLOBUS_TRUE);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-            major_status = GSS_S_FAILURE;
-            goto free_callback_data;
-        }
-    }
-
     /* get the local credential */
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {

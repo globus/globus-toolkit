@@ -800,9 +800,11 @@ globus_i_gsi_callback_check_proxy(
         /* a legacy globus proxy may only be followed by another legacy globus
          * proxy or a limited legacy globus_proxy.
          * a limited legacy globus proxy may only be followed by another
-         * limited legacy globus proxy or a full legacy globus proxy
+         * limited legacy globus proxy
          * a draft compliant proxy may only be followed by another draft
          * compliant proxy
+         * a draft compliant limited proxy may only be followed by another draft
+         * compliant limited proxy or a draft compliant independent proxy
          */
         
         if((GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(callback_data->cert_type) &&
@@ -816,40 +818,19 @@ globus_i_gsi_callback_check_proxy(
             goto exit;
         }
 
-        if (GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
+        if(GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(callback_data->cert_type) &&
+           (!GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type) ||
+            cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY))
         {
-            /*
-             * If its a limited proxy, it means its use has been limited 
-             * during delegation. It can not sign other certs i.e.  
-             * it must be the top cert in the chain. 
-             * Depending on who we are, 
-             * We may want to accept this for authentication. 
-             * 
-             *   Globus gatekeeper -- don't accept
-             *   sslk5d accept, but should check if from local site.
-             *   globus user-to-user Yes, thats the purpose 
-             *    of this cert. 
-             *
-             * Caller can reject based on the proxy type (limited proxy)
-             * or not.
-             */
-
-            if (x509_context->error_depth && 
-                !callback_data->multiple_limited_proxy_ok)
-            {
-                /* tried to sign a cert with a limited proxy
-                 * i.e. there is still another cert on the chain
-                 * indicating we are trying to sign it! */
-                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CALLBACK_ERROR_LIMITED_PROXY,
-                    (_CLS("Can't sign a cert with a limited proxy "
-                     "as the signer")));
-                x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
-                goto exit;
-            }
+            GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_LIMITED_PROXY,
+                (_CLS("Can't sign a non-limited, non-independent proxy "
+                      "with a limited proxy")));
+            x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
+            goto exit;
         }
-
+       
         GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "Passed proxy test\n");
 
         callback_data->proxy_depth++;
@@ -863,6 +844,7 @@ globus_i_gsi_callback_check_proxy(
             goto exit;
         }
     }
+
     callback_data->cert_type = cert_type;
   
  exit:
