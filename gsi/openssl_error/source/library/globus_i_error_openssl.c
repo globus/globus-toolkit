@@ -203,8 +203,7 @@ globus_error_openssl_create_error_string(
     const char *                        format,
     ...)
 {
-    int                                 len = 128;
-    int                                 length;
+    int                                 len;
     va_list                             ap;
     char *                              error_string;
     static char *                       _function_name_ =
@@ -214,34 +213,18 @@ globus_error_openssl_create_error_string(
 
     va_start(ap, format);
 
+    len = globus_libc_vprintf_length(format,ap);
+
     if((error_string = malloc(len)) == NULL)
     {
+        va_end(ap);
         return NULL;
     }
-
-    while(1)
-    {
-        length = globus_libc_vsnprintf(error_string, len, format, ap);
-        if(length > -1 && length < len)
-        {
-            break;
-        }
-
-        if(length > -1)
-        {
-            len = length + 1;
-        }
-        else
-        {
-            len *= 2;
-        }
-
-        if((error_string = realloc(error_string, len)) == NULL)
-        {
-            return NULL;
-        }
-    }
-
+    
+    globus_libc_vsnprintf(error_string,
+                          len,
+                          format,
+                          ap);
     va_end(ap);
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;

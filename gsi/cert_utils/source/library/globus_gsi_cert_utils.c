@@ -609,40 +609,24 @@ globus_gsi_cert_utils_v_create_string(
     const char *                        format,
     va_list                             ap)
 {
-    int                                 length;
-    int                                 len = 128;
+    int                                 len;
     char *                              new_string = NULL;
     static char *                       _function_name_ =
         "globus_i_gsi_cert_utils_v_create_string";
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
+    
+    len = globus_libc_vprintf_length(format,ap);
+
     if((new_string = malloc(len)) == NULL)
     {
         return NULL;
     }
-
-    while(1)
-    {
-        length = globus_libc_vsnprintf(new_string, len, format, ap);
-        if(length > -1 && length < len)
-        {
-            break;
-        }
-
-        if(length > -1)
-        {
-            len = length + 1;
-        }
-        else
-        {
-            len *= 2;
-        }
-
-        if((new_string = realloc(new_string, len)) == NULL)
-        {
-            return NULL;
-        }
-    }
+    
+    globus_libc_vsnprintf(new_string,
+                          len,
+                          format,
+                          ap);
     
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return new_string;
@@ -664,7 +648,7 @@ globus_gsi_cert_utils_v_create_nstring(
         return NULL;
     }
 
-    length = globus_libc_vsnprintf(new_string, length + 1, format, ap);
+    globus_libc_vsnprintf(new_string, length + 1, format, ap);
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return new_string;

@@ -91,6 +91,7 @@
 #define X509_INSTALLED_CERT_DIR         "etc"
 #define X509_LOCAL_CERT_DIR             ".globus"
 #define DEFAULT_GRIDMAP                 "/etc/grid-security/grid-mapfile"
+#define INSTALLED_GRIDMAP               "etc/grid-mapfile"
 #define LOCAL_GRIDMAP                   ".gridmap"
 #endif
 
@@ -2386,9 +2387,8 @@ globus_result_t
 globus_gsi_sysconfig_get_user_id_string_unix(
     char **                             user_id_string)
 {
-    int                                 uid;
-    int                                 len = 10;
-    int                                 length;
+    uid_t                               uid;
+    int                                 len;
     globus_result_t                     result;
 
     static char *                       _function_name_ =
@@ -2397,37 +2397,16 @@ globus_gsi_sysconfig_get_user_id_string_unix(
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     uid = getuid();
+    
+    len = globus_libc_printf_length("%d",uid);
 
     if((*user_id_string = malloc(len)) == NULL)
     {
         result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
         goto exit;
     }
-
-    while(1)
-    {
-        length = globus_libc_snprintf(*user_id_string, len,
-                                      "%d", uid);
-        if(length > -1 && length < len)
-        {
-            break;
-        }
-        
-        if(length > -1)
-        {
-            len = length + 1;
-        }
-        else
-        {
-            len *= 2;
-        }
-        
-        if((*user_id_string = realloc(*user_id_string, len)) == NULL)
-        {
-            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-            goto exit;
-        }
-    }
+    
+    globus_libc_snprintf(*user_id_string,len,"%d",uid);
 
     result = GLOBUS_SUCCESS;
 
@@ -2499,9 +2478,8 @@ globus_result_t
 globus_gsi_sysconfig_get_proc_id_string_unix(
     char **                             proc_id_string)
 {
-    int                                 pid;
-    int                                 len = 10;
-    int                                 length;
+    pid_t                               pid;
+    int                                 len;
     globus_result_t                     result;
 
     static char *                       _function_name_ =
@@ -2510,37 +2488,16 @@ globus_gsi_sysconfig_get_proc_id_string_unix(
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     pid = getpid();
+    
+    len = globus_libc_printf_length("%d",pid);
 
     if((*proc_id_string = malloc(len)) == NULL)
     {
         result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
         goto exit;
     }
-
-    while(1)
-    {
-        length = globus_libc_snprintf(*proc_id_string, len,
-                                      "%d", pid);
-        if(length > -1 && length < len)
-        {
-            break;
-        }
-        
-        if(length > -1)
-        {
-            len = length + 1;
-        }
-        else
-        {
-            len *= 2;
-        }
-        
-        if((*proc_id_string = realloc(*proc_id_string, len)) == NULL)
-        {
-            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-            goto exit;
-        }
-    }
+    
+    globus_libc_snprintf(*proc_id_string,len,"%d",pid);
 
     result = GLOBUS_SUCCESS;
 

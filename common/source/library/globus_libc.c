@@ -2130,6 +2130,22 @@ globus_libc_vprintf_length(const char * fmt, va_list ap)
     return globus_libc_vfprintf(devnull, fmt, ap);
 }
 
+int
+globus_libc_printf_length(const char * fmt, ...)
+{
+    int                                 length;
+    va_list                             ap;
+
+    va_start(ap,fmt);
+
+    length = globus_libc_vprintf_length(fmt,ap);
+    
+    va_end(ap);
+
+    return length;
+}
+
+
 #ifdef TARGET_ARCH_CRAYT3E
 /* for alloca on T3E */
 #if !defined (__GNUC__) || __GNUC__ < 2
