@@ -1291,6 +1291,18 @@ globus_gsi_proxy_create_signed(
         goto exit;
     }
 
+    result = globus_gsi_proxy_handle_set_common_name(
+        inquire_handle,
+        handle->common_name);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
+        goto exit;
+    }
+
     result = globus_gsi_proxy_handle_set_time_valid(
         inquire_handle,
         handle->time_valid);
