@@ -219,18 +219,18 @@ sub fixpaths
     #
 
     @files = (
-        "${sysconfdir}/ssh_config" => 0,
-        "${sysconfdir}/sshd_config" => 0,
-        "${sysconfdir}/moduli" => 0,
-        "${mandir}/${mansubdir}1/scp.1" => 0,
-        "${mandir}/${mansubdir}1/ssh-add.1" => 0,
-        "${mandir}/${mansubdir}1/ssh-agent.1" => 0,
-        "${mandir}/${mansubdir}1/ssh-keygen.1" => 0,
-        "${mandir}/${mansubdir}1/ssh-keyscan.1" => 0,
-        "${mandir}/${mansubdir}1/ssh.1" => 0,
-        "${mandir}/${mansubdir}8/sshd.8" => 0,
-        "${mandir}/${mansubdir}8/sftp-server.8" => 0,
-        "${mandir}/${mansubdir}1/sftp.1" => 0,
+        "${sysconfdir}/ssh_config",
+        "${sysconfdir}/sshd_config",
+        "${sysconfdir}/moduli",
+        "${mandir}/${mansubdir}1/scp.1",
+        "${mandir}/${mansubdir}1/ssh-add.1",
+        "${mandir}/${mansubdir}1/ssh-agent.1",
+        "${mandir}/${mansubdir}1/ssh-keygen.1",
+        "${mandir}/${mansubdir}1/ssh-keyscan.1",
+        "${mandir}/${mansubdir}1/ssh.1",
+        "${mandir}/${mansubdir}8/sshd.8",
+        "${mandir}/${mansubdir}8/sftp-server.8",
+        "${mandir}/${mansubdir}1/sftp.1",
         );
 
     for my $f (@files)
