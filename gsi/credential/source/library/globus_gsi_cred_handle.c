@@ -1584,8 +1584,6 @@ globus_gsi_cred_verify_cert_chain(
     X509_STORE *                        cert_store = NULL;
     X509 *                              tmp_cert = NULL;
     X509_STORE_CTX *                    store_context = NULL;
-    X509_LOOKUP *                       lookup = NULL;
-    int                                 chain_index, store_index;
     int                                 callback_data_index;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -1597,26 +1595,20 @@ globus_gsi_cred_verify_cert_chain(
     X509_STORE_set_verify_cb_func(cert_store, 
                                   globus_gsi_callback_create_proxy_callback);
 
+    result = globus_gsi_callback_get_cert_dir(callback_data, &cert_dir);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+                GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
+        goto exit;
+    }
 
     tmp_cert = cred_handle->cert;
     cert = tmp_cert;
     
-    if ((lookup = X509_STORE_add_lookup(cert_store,
-                                        X509_LOOKUP_hash_dir())))
+    if (X509_STORE_load_locations(cert_store, NULL, cert_dir))
     {
-        result = globus_gsi_callback_get_cert_dir(callback_data, &cert_dir);
-        if(result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
-            goto exit;
-        }
-
-        X509_LOOKUP_add_dir(lookup, 
-                            cert_dir, 
-                            X509_FILETYPE_PEM);
-        
         store_context = X509_STORE_CTX_new();
         X509_STORE_CTX_init(store_context, cert_store, cert,
                             cred_handle->cert_chain);
@@ -1662,8 +1654,8 @@ globus_gsi_cred_verify_cert_chain(
 
             goto exit;
         }
-    } 
-
+    }
+    
  exit:
 
     if(cert_store)
