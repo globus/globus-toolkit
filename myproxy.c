@@ -86,7 +86,6 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data);
 #define STRING_TO_INT_NONNUMERIC	0
 
 
-static int debug_level = DBG_IN;   //debugging level
 /**********************************************************************
  *
  * Exported functions
@@ -197,8 +196,6 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile)
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
        verror_put_string("Error setting credentials to use: %s\n", error_string);
-
-//	myproxy_log (DBG_HI, debug_level, "myproxy_authenticate_init - 1\n");  //C
        return -1;
    }
 
@@ -206,7 +203,6 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile)
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
        verror_put_string("Error authenticating: %s\n", error_string);
-	//myproxy_log (DBG_HI, debug_level, "myproxy_authenticate_init - 2\n");  //C
        return -1;
    }
    return 0;
@@ -378,8 +374,6 @@ myproxy_deserialize_request(const char *data, const int datalen,
     assert(request != NULL);
     assert(data != NULL);
 
-    //myproxy_log(DBG_HI, debug_level, "myproxy_deserialize_request: Data = %s\n\n", data);
-    
     len = convert_message(data, datalen,
 			  MYPROXY_VERSION_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,

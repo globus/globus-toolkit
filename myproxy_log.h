@@ -35,7 +35,7 @@ void myproxy_log_use_stream(FILE *stream);
  *
  * Log something. Takes arguments like sprintf().
  */
-void myproxy_log(int debug_level, int current_debug_level, const char *format, ...);
+void myproxy_log(const char *format, ...);
 
 /*
  * mproxy_log_verror()

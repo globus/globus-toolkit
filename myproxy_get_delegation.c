@@ -26,13 +26,14 @@
 static char usage[] = \
 "\n"
 "Syntax: myproxy-get-delegation [-t hours] [-l username] ...\n"
-"        myproxy-get-delegation [-usage|-help] [-v|--version]\n"
+"        myproxy-get-delegation [-usage|-help] [-version]\n"
 "\n"
 "   Options\n"
 "       -h | --help                       Displays usage\n"
 "       -u | --usage                                    \n"
 "                                                      \n"
-"       -v | --version                    Displays version\n"
+"       -v | --verbose                    Display debugging messages\n"
+"       -V | --version                    Displays version\n"
 "       -l | --username        <username> Username for the delegated proxy\n"
 "       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
 "                                         the server (default 2 hours)\n"
@@ -55,13 +56,14 @@ struct option long_options[] =
     {"out",              required_argument, NULL, 'o'},
     {"usage",                  no_argument, NULL, 'u'},
     {"username",         required_argument, NULL, 'l'},
-    {"version",                no_argument, NULL, 'v'},
+    {"verbose",                no_argument, NULL, 'v'},
+    {"version",                no_argument, NULL, 'V'},
     {"authorization",    required_argument, NULL, 'r'},
     {"dn_as_username",         no_argument, NULL, 'd'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:va:d";
+static char short_options[] = "hus:p:l:t:o:vVa:d";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -188,8 +190,11 @@ init_arguments(int argc,
             break;    
 	case 'a':       /* special authorization */
 	    creds_to_authorization = strdup(gnu_optarg);
-	    break; 
-        case 'v':       /* print version and exit */
+	    break;
+	case 'v':
+	    myproxy_debug_set_level(1);
+	    break;
+        case 'V':       /* print version and exit */
             fprintf(stderr, version);
             exit(1);
             break;
