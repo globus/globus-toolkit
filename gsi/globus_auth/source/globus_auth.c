@@ -123,7 +123,7 @@ globus_authorization_handle_init(
         }
 
         (*handle)->gaa_cb_arg.actions = (char **)
-            malloc(sizeof(char *)*i);
+            malloc(sizeof(char *)*(i+1));
         
         i=0;
 
@@ -278,7 +278,7 @@ globus_authorization_handle_set_gss_ctx(
                             min_stat;
     gss_buffer_set_t	    policy_extension = 0;
     gss_name_t		    signer_identity;
-    gss_buffer_desc	    signer_namebuf;
+    gss_buffer_desc	    signer_namebuf = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc	    policy_buf;
     cas_policy *	    caspolicy = 0;
     globus_auth_result_t    result = GLOBUS_SUCCESS;
@@ -399,7 +399,7 @@ globus_authorization_handle_set_gss_ctx(
 
 	if (policy_buf.length < MAX_POLICY_BUF_LENGTH)
 	{
-	    ((char *)policy_buf.value)[policy_buf.length] = '\0';
+	    ((char *)policy_buf.value)[policy_buf.length-1] = '\0';
 	    if ((handle->policy_display_string =
 		 strdup((char *)policy_buf.value)) == 0)
 	    {
