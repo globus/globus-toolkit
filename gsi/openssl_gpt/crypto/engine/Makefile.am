@@ -1,7 +1,9 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_openssl_pre
 
-Sources= \
+SUBDIRS = vendor_defns
+
+Sources = \
 	eng_err.c eng_lib.c eng_list.c eng_init.c eng_ctrl.c \
 	eng_table.c eng_pkey.c eng_fat.c eng_all.c \
 	tb_rsa.c tb_dsa.c tb_dh.c tb_rand.c tb_cipher.c tb_digest.c \
@@ -9,8 +11,16 @@ Sources= \
 	hw_atalla.c hw_cswift.c hw_ncipher.c hw_nuron.c hw_ubsec.c \
 	hw_cryptodev.c hw_aep.c hw_sureware.c hw_4758_cca.c
 
-opensslinclude_HEADERS= \
+opensslinclude_HEADERS = \
 	engine.h
+
+noinst_HEADERS = \
+	hw_aep_err.h \
+	hw_ncipher_err.h \
+	hw_ubsec_err.h \
+	eng_int.h \
+	hw_atalla_err.h \
+	hw_nuron_err.h
 
 Test_Sources = \
 	enginetest.c
@@ -25,7 +35,7 @@ libengine___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 libengine___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
-EXTRA_DIST = $(Test_Sources)
+EXTRA_DIST = README $(Test_Sources)
 
 include $(top_srcdir)/globus_openssl_post
 include $(top_srcdir)/globus_automake_post
