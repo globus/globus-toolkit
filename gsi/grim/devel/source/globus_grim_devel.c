@@ -85,6 +85,11 @@ globus_module_descriptor_t globus_i_grim_devel_module =
 {                                                                           \
     if(assertion == NULL)                                                   \
     {                                                                       \
+        return globus_error_put(                                            \
+                   globus_error_construct_string(                           \
+                       GLOBUS_GRIM_DEVEL_MODULE,                            \
+                       GLOBUS_NULL,                                         \
+                       "[globus_grim_devel]::assertion handle is null."));  \
     }                                                                       \
     info = (struct globus_l_grim_conf_info_s *) assertion;                  \
 }
@@ -108,6 +113,11 @@ globus_grim_assertion_init(
                 globus_malloc(sizeof(struct globus_l_grim_assertion_s *));
     if(ass == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: malloc failed."));
     }
     ass->subject = strdup(subject);
     ass->username = strdup(username);
@@ -144,6 +154,11 @@ globus_grim_assertion_serialize(
 
     if(out_assertion_string == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: out_assertion_string is null."));
     }
 
     res = globus_l_grim_build_assertion(info, out_assertion_string);
@@ -167,11 +182,11 @@ globus_grim_assertion_destroy(
     free(info->username);
     if(info->dn_array != NULL)
     {
-	GlobusGrimFreeNullArray(info->dn_array);
+        GlobusGrimFreeNullArray(info->dn_array);
     }
     if(info->port_types_array)
     {
-	GlobusGrimFreeNullArray(info->port_types_array);
+        GlobusGrimFreeNullArray(info->port_types_array);
     }
     globus_free(info);
 
@@ -191,6 +206,11 @@ globus_grim_assertion_get_subject(
     GlobusLGrimSetGetAssertionEnter(assertion, info);
     if(subject == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: subject is null."));
     }
 
     *subject = info->subject;
@@ -198,6 +218,9 @@ globus_grim_assertion_get_subject(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_get_username(
     globus_grim_assertion_t                 assertion,
@@ -208,7 +231,13 @@ globus_grim_assertion_get_username(
     GlobusLGrimSetGetAssertionEnter(assertion, info);
     if(username == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: username is null."));
     }
+
     *username = info->username;
 
     return GLOBUS_SUCCESS;
@@ -228,6 +257,11 @@ globus_grim_assertion_get_dn_array(
 
     if(dn_array == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: dn_array is null."));
     }
 
     *dn_array = info->dn_array;
@@ -266,6 +300,11 @@ globus_grim_assertion_get_port_types_array(
 
     if(port_types_array == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: port_types_array is null."));
     }
 
     *port_types_array = info->port_types_array;
@@ -311,20 +350,33 @@ globus_grim_assertion_set_port_types_array(
 {                                                                           \
     if(config == NULL)                                                      \
     {                                                                       \
+        return globus_error_put(                                            \
+                   globus_error_construct_string(                           \
+                       GLOBUS_GRIM_DEVEL_MODULE,                            \
+                       GLOBUS_NULL,                                         \
+                       "[globus_grim_devel]::config handle is null."));     \
     }                                                                       \
     info = (struct globus_l_grim_conf_info_s *) config;                     \
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_init(
     globus_grim_config_t *                  config)
 {
-    struct globus_l_grim_conf_info_s *        info;
+    struct globus_l_grim_conf_info_s *      info;
 
     info = (struct globus_l_grim_conf_info_s *)
                 globus_malloc(sizeof(struct globus_l_grim_conf_info_s));
     if(info == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: malloc failed."));
     }
 
     GlobusLGrimConfInfoInit(info);
@@ -334,6 +386,9 @@ globus_grim_config_init(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_init_from_file(
     globus_grim_config_t *                  config,
@@ -344,15 +399,30 @@ globus_grim_config_init_from_file(
 
     if(fptr == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: file pointer is NULL."));
     }
     if(config == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: config handle is NULL."));
     }
 
     info = (struct globus_l_grim_conf_info_s *)
                 globus_malloc(sizeof(struct globus_l_grim_conf_info_s));
     if(info == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: malloc failed."));
     }
 
     GlobusLGrimConfInfoInit(info);
@@ -362,6 +432,9 @@ globus_grim_config_init_from_file(
     return res;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_destroy(
     globus_grim_config_t                    config)
@@ -379,6 +452,9 @@ globus_grim_config_destroy(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_get_max_time(
     globus_grim_config_t                    config,
@@ -387,11 +463,23 @@ globus_grim_config_get_max_time(
     struct globus_l_grim_conf_info_s *      info;
     
     GlobusLGrimSetGetConfigEnter(config, info);
+    if(max_time == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: max_time is NULL."));
+    }
+
     *max_time = info->max_time;
 
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_set_max_time(
     globus_grim_config_t                    config,
@@ -405,6 +493,9 @@ globus_grim_config_set_max_time(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_get_default_time(
     globus_grim_config_t                    config,
@@ -413,11 +504,23 @@ globus_grim_config_get_default_time(
     struct globus_l_grim_conf_info_s *      info;
     
     GlobusLGrimSetGetConfigEnter(config, info);
+    if(default_time == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: default_time is NULL."));
+    }
+
     *default_time = info->default_time;
 
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_set_default_time(
     globus_grim_config_t                    config,
@@ -431,6 +534,9 @@ globus_grim_config_set_default_time(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_get_key_bits(
     globus_grim_config_t                    config,
@@ -439,11 +545,23 @@ globus_grim_config_get_key_bits(
     struct globus_l_grim_conf_info_s *      info;
     
     GlobusLGrimSetGetConfigEnter(config, info);
+    if(key_bits == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: key_bits is NULL."));
+    }
+
     *key_bits = info->key_bits;
 
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_set_key_bits(
     globus_grim_config_t                    config,
@@ -457,6 +575,9 @@ globus_grim_config_set_key_bits(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_get_ca_cert_dir(
     globus_grim_config_t                    config,
@@ -465,11 +586,23 @@ globus_grim_config_get_ca_cert_dir(
     struct globus_l_grim_conf_info_s *      info;
     
     GlobusLGrimSetGetConfigEnter(config, info);
+    if(ca_cert_dir == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: ca_cert_dir is NULL."));
+    }
+
     *ca_cert_dir = info->ca_cert_dir;
 
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_set_ca_cert_dir(
     globus_grim_config_t                    config,
@@ -484,6 +617,9 @@ globus_grim_config_set_ca_cert_dir(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_get_cert_filename(
     globus_grim_config_t                    config,
@@ -492,11 +628,23 @@ globus_grim_config_get_cert_filename(
     struct globus_l_grim_conf_info_s *      info;
     
     GlobusLGrimSetGetConfigEnter(config, info);
+    if(cert_filename == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: cert_filename is NULL."));
+    }
+
     *cert_filename = info->cert_filename;
 
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_set_cert_filename(
     globus_grim_config_t                    config,
@@ -511,6 +659,9 @@ globus_grim_config_set_cert_filename(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_get_key_filename(
     globus_grim_config_t                    config,
@@ -519,11 +670,23 @@ globus_grim_config_get_key_filename(
     struct globus_l_grim_conf_info_s *      info;
     
     GlobusLGrimSetGetConfigEnter(config, info);
+    if(key_filename == NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: key_filename is NULL."));
+    }
+
     *key_filename = info->key_filename;
 
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_set_key_filename(
     globus_grim_config_t                    config,
@@ -538,6 +701,9 @@ globus_grim_config_set_key_filename(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_get_gridmap_filename(
     globus_grim_config_t                    config,
@@ -551,6 +717,9 @@ globus_grim_config_get_gridmap_filename(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_set_gridmap_filename(
     globus_grim_config_t                    config,
@@ -565,6 +734,9 @@ globus_grim_config_set_gridmap_filename(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_get_port_type_filename(
     globus_grim_config_t                    config,
@@ -578,6 +750,9 @@ globus_grim_config_get_port_type_filename(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_config_set_port_type_filename(
     globus_grim_config_t                    config,
@@ -603,7 +778,10 @@ globus_grim_devel_get_NID(
     if(!globus_l_grim_activated)
     {
         return globus_error_put(
-                   );
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: Module not activated."));
     }
 
     *nid = globus_l_grim_NID;
@@ -625,9 +803,19 @@ globus_grim_devel_port_type_file_parse(
 
     if(fptr == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: File pointer is NULL."));
     }
     if(port_types == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: port_types parameter is NULL."));
     }
 
     res = globus_l_grim_devel_parse_port_type_file(
@@ -651,9 +839,19 @@ globus_grim_devel_get_all_port_types(
 
     if(fptr == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: File pointer is NULL."));
     }
     if(port_types == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: port_types parameter is NULL."));
     }
 
     res = globus_l_grim_devel_parse_port_type_file(
@@ -681,9 +879,19 @@ globus_grim_devel_port_type_file_parse_uid(
 
     if(fptr == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: File pointer is NULL."));
     }
     if(port_types == NULL)
     {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_GRIM_DEVEL_MODULE,
+                       GLOBUS_NULL,
+                       "[globus_grim_devel]:: port_types parameter is NULL."));
     }
 
     /*
@@ -745,67 +953,10 @@ globus_l_grim_devel_deactivate()
 }
 
 
-
-globus_result_t
-grim_build_assertion(
-    char **                                 out_assertion_string,
-    char *                                  subject,
-    char *                                  username,
-    char **                                 dna,
-    char **                                 port_types)
-{
-    char *                                  buffer;
-    int                                     ctr;
-    int                                     buffer_size = 1024;
-    int                                     buffer_ndx = 0;
-    char                                    hostname[MAXHOSTNAMELEN];
-
-    globus_libc_gethostname(hostname, MAXHOSTNAMELEN);
-    buffer = globus_malloc(sizeof(char) * buffer_size);
-
-    GrowString(buffer, buffer_size, "<GrimAssertion>\n", buffer_ndx);
-    GrowString(buffer, buffer_size, "    <Version>", buffer_ndx);
-    GrowString(buffer, buffer_size, GRIM_ASSERTION_FORMAT_VERSION, buffer_ndx);
-    GrowString(buffer, buffer_size, "    </Version>\n", buffer_ndx);
-    GrowString(buffer, buffer_size, 
-        "    <ServiceGridId Format=\"#X509SubjectName\">", 
-        buffer_ndx);
-    GrowString(buffer, buffer_size, subject, buffer_ndx);
-    GrowString(buffer, buffer_size, "</ServerGridId>\n", buffer_ndx);
-    GrowString(buffer, buffer_size, 
-        "    <ServiceLocalId Format=\"#UnixAccountName\" \n", 
-        buffer_ndx);
-    GrowString(buffer, buffer_size, "        NameQualifier=\"", buffer_ndx);
-    GrowString(buffer, buffer_size, hostname, buffer_ndx);
-    GrowString(buffer, buffer_size, "\">", buffer_ndx);
-    GrowString(buffer, buffer_size, username, buffer_ndx);
-    GrowString(buffer, buffer_size, "</ServiceLocalId>\n", buffer_ndx);
-
-    /* add all mapped dns */
-    for(ctr = 0; dna[ctr] != NULL; ctr++)
-    {
-        GrowString(buffer, buffer_size, 
-            "<authorizedClientId Format=\"#X509SubjectName\">",
-            buffer_ndx);
-        GrowString(buffer, buffer_size, dna[ctr], buffer_ndx);
-        GrowString(buffer, buffer_size, "</AuthorizedClientId>\n", buffer_ndx);
-    }
-
-    /* add in port_types */
-    for(ctr = 0; port_types[ctr] != NULL; ctr++)
-    {
-        GrowString(buffer, buffer_size, "<authorizedPortType>", buffer_ndx);
-        GrowString(buffer, buffer_size, port_types[ctr], buffer_ndx);
-        GrowString(buffer, buffer_size, "</authorizedPortType>\n", buffer_ndx);
-    }
-
-    GrowString(buffer, buffer_size, "</GRIMAssertion>\n", buffer_ndx);
-
-    return buffer;
-}
-
-
-struct grim_port_type_info_s
+/************************************************************************
+ *                 xml parsing code for port file
+ ***********************************************************************/
+struct globus_lgrim_port_type_info_s
 {
     int                                     found;
     char *                                  username;
@@ -814,7 +965,7 @@ struct grim_port_type_info_s
 };  
 
 static void
-grim_port_type_start(
+globus_l_grim_port_type_start(
     void *                                  data,
     const char *                            el, 
     const char **                           attr)
@@ -873,14 +1024,14 @@ grim_port_type_start(
 }
 
 static void
-grim_port_type_end(
+globus_l_grim_port_type_end(
     void *                                  data,
     const char *                            el)
 {
 }
 
 static void
-grim_port_type_cdata(
+globus_l_grim_port_type_cdata(
     void *                                  data,
     const XML_Char *                        s,
     int                                     len)
@@ -924,7 +1075,8 @@ globus_l_grim_devel_parse_port_type_file(
         return 1;
     }
 
-    XML_SetElementHandler(p, grim_port_type_start, grim_port_type_end);
+    XML_SetElementHandler(p, globus_l_grim_port_type_start, 
+        globus_l_grim_port_type_end);
     info.list = NULL;
     info.found = 0;
     info.username = username;
@@ -970,11 +1122,7 @@ globus_l_grim_devel_parse_port_type_file(
 
 /************************************************************************
  *                 xml parsing code for conf file
- *
- *                 These are run with priveldges
  ***********************************************************************/
-    
-
 static void
 grim_conf_end(
     void *                                  data,
@@ -1072,6 +1220,9 @@ globus_l_grim_parse_conf_file(
 }
 
 
+/************************************************************************
+ *              code for dealing with assertions
+ ***********************************************************************/
 globus_result_t
 globus_l_grim_build_assertion(
     struct globus_l_grim_assertion_s *      info,
