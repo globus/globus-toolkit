@@ -419,8 +419,14 @@ GSS_CALLCONV gss_compare_name(
         }
     }
     else
-    {    
-        if (!X509_NAME_cmp(name1->x509n, name2->x509n))
+    {
+	/* need to compare just the strings, since
+	 * an X509_NAME_cmp compares name entries,
+	 * and some of the entries may not match
+	 * due to extensible NE's (like /Email=...)
+	 */
+	if(!strcmp(X509_NAME_oneline(name1->x509n, NULL, 0), 
+		   X509_NAME_oneline(name2->x509n, NULL, 0)))
         {
             *name_equal = GSS_NAMES_EQUAL;
         }

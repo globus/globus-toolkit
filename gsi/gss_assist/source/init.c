@@ -138,7 +138,8 @@ globus_gss_assist_init_sec_context(
              * instead. 
              */
 
-            if (strchr(target_name_char,'@'))
+            if (strchr(target_name_char,'@') && 
+                !strstr(target_name_char,"CN="))
             { 
                 target_name_type = gss_nt_service_name;
             }
@@ -408,7 +409,8 @@ globus_gss_assist_init_sec_context_async(
              * instead. 
              */
           
-            if (strchr(target_name_char, '@'))
+            if (strchr(target_name_char, '@') &&
+                !strstr(target_name_char, "CN="))
             { 
                 target_name_type = gss_nt_service_name;
             }
