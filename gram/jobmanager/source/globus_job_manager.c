@@ -1122,6 +1122,14 @@ graml_stage_file(char *url, int mode)
     globus_url_t gurl;
     int rc;
 
+    if(url == NULL)
+    {
+        return;
+    }
+    if(strlen(url) == 0)
+    {
+	return;
+    }
     grami_fprintf( grami_log_fp, 
                    "JM: staging file = %s\n", url);
 
