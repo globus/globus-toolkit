@@ -125,17 +125,13 @@ globus_version_print(
 
 int
 globus_module_set_args(
-    int                                 argc,
-    char **                             argv);
-
-int
-globus_module_get_args(
     int *                               argc,
     char ***                            argv);
 
 int
-globus_module_free_args();
-
+globus_module_get_args(
+    int **                              argc,
+    char ****                           argv);
 
 
 #ifndef SWIG

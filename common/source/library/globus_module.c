@@ -28,8 +28,8 @@ CVS Information:
  * global vars
  */
 
-static int                              globus_l_module_argc = 0;
-static char **                          globus_l_module_argv = NULL;
+static int *                            globus_l_module_argc = NULL;
+static char ***                         globus_l_module_argv = NULL;
 
 /*
  * data structure needed to implement a recursive mutex
@@ -1010,62 +1010,19 @@ globus_l_module_mutex_destroy(
 
 int
 globus_module_set_args(
-    int                                 argc,
-    char **                             argv)
+    int *                               argc,
+    char ***                            argv)
 {
-    int                                 i;
-    int                                 j;
-
     globus_l_module_argc = argc;
-
-    globus_l_module_argv = malloc(argc * sizeof(char *));
-
-    if(globus_l_module_argv == NULL)
-    {
-        return -1;
-    }
-    
-    for(i = 0; i < argc; i++)
-    {
-        globus_l_module_argv[i] = malloc(strlen(argv[i])+1);
-
-        if(globus_l_module_argv[i] == NULL)
-        {
-            for(j = 0; j < i; j++)
-            {
-                free(globus_l_module_argv[j]);
-            }
-            return -1;
-        }
-        
-        strcpy(globus_l_module_argv[i], argv[i]);
-    }
-    return 0;
+    globus_l_module_argv = argv;
 }
 
 int
 globus_module_get_args(
-    int *                               argc,
-    char ***                            argv)
+    int **                               argc,
+    char ****                            argv)
 {
     *argc = globus_l_module_argc;
     *argv = globus_l_module_argv;
-    return 0;
 }
 
-int
-globus_module_free_args()
-{
-    int                                 i;
-
-    for(i = 0; i < globus_l_module_argc; i++)
-    {
-        free(globus_l_module_argv[i]);
-    }
-
-    free(globus_l_module_argv);
-
-    globus_l_module_argc = 0;
-
-    globus_l_module_argv = NULL;
-}
