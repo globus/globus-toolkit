@@ -424,8 +424,16 @@ public class TransferClient {
                         destinationSubjectName ) );
             }
 
-            setTransferParams( destinationHost, this.credential );
-            setTransferParams( sourceHost, this.credential );
+            try { 
+                setTransferParams( destinationHost, this.credential );
+            } catch (Exception ae1) {
+                throw new RemoteException(MessageUtils.toString( ae1 ));
+            }
+            try {
+                setTransferParams( sourceHost, this.credential );
+            } catch(Exception ae2) {
+                throw new RemoteException(MessageUtils.toString( ae2 ));
+            }
             counter++;
             logger.debug( "This is transfer # " + counter );
             if ( this.sourcePath.endsWith( "/" ) ) {
@@ -436,8 +444,9 @@ public class TransferClient {
                         ( this.sourceHost, this.destinationHost, sourceGlobusURL, destinationGlobusURL );
                 this.urlExpander.start();
             } else {
-                size = sourceHost.getSize( sourcePath );
-                this.markerListener = new MyMarkerListener( transferProgress,
+                if ( this.status !=2 ) {
+                    size = sourceHost.getSize( sourcePath );
+                    this.markerListener = new MyMarkerListener( transferProgress,
                         serviceData,
                         transferProgressData, size,
                         restartMarkerServiceData,
@@ -446,8 +455,11 @@ public class TransferClient {
                         gridFTPRestartMarkerElement,
                         gridFTPPerfMarkerSD,
                         gridFTPPerfMarkerElement );
-                this.markerListener.setTransferId( transferid );
-                logger.debug( "Transfer Id in TransferClient : " + transferid );
+                    this.markerListener.setTransferId( transferid );
+                    logger.debug( "Transfer Id in TransferClient : " + transferid );
+                } else {
+                    throw new RemoteException("Error in transferClient");
+                }
 
             }
         } catch ( MalformedURLException mue ) {
@@ -655,7 +667,8 @@ public class TransferClient {
      *@param  host  DOCUMENT ME!
      *@param  cred  DOCUMENT ME!
      */
-    public void setTransferParams( GridFTPClient host, GSSCredential cred ) {
+    public void setTransferParams( GridFTPClient host, GSSCredential cred ) 
+    throws Exception {
 
         try {
             host.authenticate( cred );
@@ -680,7 +693,6 @@ public class TransferClient {
             logger.debug( "Error in setting Params", e );
             setStatus( 2 );
 
-            return;
         }
     }
 
