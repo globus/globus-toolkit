@@ -138,6 +138,10 @@ main(int argc, char *argv[])
         is_err = 1;
     }
     
+    /* Set version */
+    server_response->version = malloc(strlen(MYPROXY_VERSION) + 1);
+    sprintf(server_response->version, "%s", MYPROXY_VERSION);
+
     responselen = myproxy_serialize_response(server_response, 
                                          server_buffer, sizeof(server_buffer));
     
@@ -194,17 +198,21 @@ init_arguments(int argc, char *argv[], myproxy_socket_attrs_t *attrs)
 }
 
 int get_proxy(const myproxy_request_t *request, myproxy_response_t *response) {
-  return 0;
+    response->response_type = MYPROXY_OK_RESPONSE;
+    return 0;
 }
 
 int put_proxy(const myproxy_request_t *request, myproxy_response_t *response) {
-  return 0;
+    response->response_type = MYPROXY_OK_RESPONSE;
+    return 0;
 }
 
 int info_proxy(const myproxy_request_t *request, myproxy_response_t *response) {
-  return 0;
+    response->response_type = MYPROXY_OK_RESPONSE;
+    return 0;
 }
 
 int destroy_proxy(const myproxy_request_t *request, myproxy_response_t *response) {
-  return 0;
+    response->response_type = MYPROXY_OK_RESPONSE;
+    return 0;
 }
