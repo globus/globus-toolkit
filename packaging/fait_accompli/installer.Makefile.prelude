@@ -9,17 +9,18 @@ THR=@thr@
 @aixargs@
 
 # Functional group dependencies, expressed in bundles.
-i18n: gpt globus-internationalization globus-internationalization-thr
+common: gpt globus_core globus_libtool globus_common globus_common_setup
+i18n: gpt common globus-internationalization globus-internationalization-thr
 prews: prewsgram gridftp prewsmds
-prewsgram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus-resource-management-sdk-thr
-gridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk globus-data-management-sdk-thr
+prewsgram: gpt globus-resource-management-sdk-thr globus-resource-management-server globus-resource-management-client globus-resource-management-sdk 
+gridftp: gpt globus-data-management-sdk-thr globus-data-management-server globus-data-management-client globus-data-management-sdk 
 prewsmds: gpt globus-information-services-server globus-information-services-client globus-information-services-sdk
 rls: gpt globus-rls-server
 wsjava: gpt gt4-java-ws-core gt4-java-ws-core-test
 wsmds: gpt wsjava gt4-mds gt4-mds-test
 webmds: gpt wsjava gt4-webmds
 wsdel: gpt wsjava gt4-delegation
-wsrft: gpt wsjava gt4-delegation gt4-rft gt4-rft-test
+wsrft: gpt common wsjava gt4-delegation gt4-rft gt4-rft-test
 wsgram: gpt globus-resource-management-server globus-data-management-server wsjava gt4-mds wsrft gt4-gram gt4-gram-test
 wscas: gpt wsjava gt4-cas
 wsc: gpt globus-gsi gt4-c-ws-core
@@ -40,7 +41,7 @@ myproxy:
 	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-1.16 ${FLAVOR}
 gsi-openssh: gpt globus-gsi gsi_openssh gsi_openssh_setup
 gsi_openssh:
-	CONFIGOPTS_GPTMACRO="@gsiopensshargs@" ${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh-3.5-src ${FLAVOR}
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh-3.5-src ${FLAVOR} GSI_OPENSSH_GPTMACRO="@gsiopensshargs@"
 gsi_openssh_setup:
 	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh_setup-3.5-src ${FLAVOR}
 
