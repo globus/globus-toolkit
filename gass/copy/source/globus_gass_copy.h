@@ -440,7 +440,7 @@ globus_gass_copy_set_user_pointer(
 globus_result_t
 globus_gass_copy_get_user_pointer(
     globus_gass_copy_handle_t * handle,
-    void * user_data);
+    void ** user_data);
 
 globus_result_t
 globus_gass_copy_register_performance_cb(
