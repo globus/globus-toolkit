@@ -119,8 +119,9 @@ setPrivilegeSeparation(0);
 # point.
 #
 
-debug0("$myname: Configuring package 'gsi_openssh'...\n");
-debug0("---------------------------------------------------------------------\n");
+debug0("Configuring gsi_openssh\n");
+debug0("------------------------------------------------------------\n");
+debug0("Executing...\n");
 
 makeConfDir();
 copyPRNGFile();
@@ -133,7 +134,7 @@ my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
 $metadata->finish();
 
-debug1("\n");
+debug0("\n");
 debug0("Notes:\n\n");
 
 if ( getPrivilegeSeparation() )
@@ -146,8 +147,8 @@ elsif ( !getPrivilegeSeparation() )
 }
 
 debug0("  o GSI-OpenSSH website is <http://grid.ncsa.uiuc.edu/ssh/>.\n");
-debug0("---------------------------------------------------------------------\n");
-debug0("$myname: Finished configuring package 'gsi_openssh'.\n");
+debug0("------------------------------------------------------------\n");
+debug0("Finished configuring gsi_openssh.\n");
 
 exit;
 
