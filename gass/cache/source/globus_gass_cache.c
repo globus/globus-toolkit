@@ -59,10 +59,10 @@ CVS Information:
                           Module specific variables
 ******************************************************************************/
 
-/* variables not used by them-self, but pointed by the field "init" of the   */
-/* cache_handle structures, to indicate if the cache has been initialised    */
-/* simple methode to help the user: it is his responsbility to open the cache*/
-/* before using it. A list of handlers could be used...                      */
+/* variables not used by them-self, but pointed by the field "init" of the
+   cache_handle structures, to indicate if the cache has been initialised 
+   simple methode to help the user: it is his responsbility to open the cache
+   before using it. A list of handlers could be used...*/
 static char globus_l_gass_cache_is_init;
 static char globus_l_gass_cache_is_not_init;
 
@@ -70,11 +70,13 @@ static char globus_l_gass_cache_is_not_init;
 #define CHECK_CACHE_IS_INIT() if (cache_handle->init != &globus_l_gass_cache_is_init) return(GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED)
 #define CHECK_CACHE_IS_NOT_INIT() if (cache_handle->init == &globus_l_gass_cache_is_init) return(GLOBUS_GASS_CACHE_ERROR_CACHE_ALREADY_OPENED)
 									   
-/* this is not in the globus_gass_cache specs, but we can see if we want to add it  */
-/* it is a list of error message corresponding to each error codes returned  */
-/* by globus_gass_cache functions. The user does not have direct access to this     */
-/* variable, but thrue the function globus_gass_cache_error_string()                */
-static char *
+/* this is not in the globus_gass_cache specs, but we can see if we want to
+   add it. It is a list of error message corresponding to each error codes
+   returned by globus_gass_cache functions. The user does not have direct
+   access to this variable, but thrue the function
+   globus_gass_cache_error_string()*/
+static
+char *
 globus_gass_cache_error_strings[] =
 {
     "success",
@@ -104,61 +106,101 @@ globus_gass_cache_error_strings[] =
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
-static void globus_l_gass_cache_log(FILE* f,
-				    char * str,...);
-static void globus_l_gass_cache_trace(char* source_file,
-				      int line,
-				      char * str, ...);
-static void globus_l_gass_cache_entry_free(globus_gass_cache_entry_t** entry,
-					   globus_bool_t itself);
-static int  globus_l_gass_cache_read_nb_entries(
+static
+void
+globus_l_gass_cache_log(
+    FILE*                               f,
+    char *                              str,...);
+
+static
+void
+globus_l_gass_cache_trace(
+    char*                              source_file,
+    int                                line,
+    char *                             str, ...);
+static
+void
+globus_l_gass_cache_entry_free(
+    globus_gass_cache_entry_t**         entry,
+    globus_bool_t                       itself);
+static
+int
+globus_l_gass_cache_read_nb_entries(
     globus_gass_cache_t* cache_handle);
-static int  globus_l_gass_cache_write_nb_entries(int fd,
-						 int nb_entries);
-static int  globus_l_gass_cache_lookfor_url(
-    globus_gass_cache_entry_t** return_entry,
-    char *searched_url,
-    globus_gass_cache_t *cache_handle);
-static int  globus_l_gass_cache_write_state_file(
-    globus_gass_cache_entry_t* entry,
-    globus_gass_cache_t *cache_handle);
-static int  globus_l_gass_cache_write_one_str(char* buff_pt,
-					      int fd);
-static int  globus_l_gass_cache_write_one_entry(
-    int fd,
-    globus_gass_cache_entry_t *entry);
-static int  globus_l_gass_cache_read_one_str(char** buff_pt,
-					     int fd);
-static int  globus_l_gass_cache_read_one_entry(
-    int fd,
-    globus_gass_cache_entry_t** entry);
+static
+int
+globus_l_gass_cache_write_nb_entries(
+    int                                 fd,
+    int                                 nb_entries);
+static
+int
+globus_l_gass_cache_lookfor_url(
+    globus_gass_cache_entry_t**         return_entry,
+    char *                              searched_url,
+    globus_gass_cache_t *               cache_handle);
+static
+int
+globus_l_gass_cache_write_state_file(
+    globus_gass_cache_entry_t *         entry,
+    globus_gass_cache_t *               cache_handle);
+static
+int
+globus_l_gass_cache_write_one_str(
+    char*                               buff_pt,
+    int                                 fd);
+static
+int
+globus_l_gass_cache_write_one_entry(
+    int                                 fd,
+    globus_gass_cache_entry_t *         entry);
+static
+int
+globus_l_gass_cache_read_one_str(
+    char**                              buff_pt,
+    int                                 fd);
+static
+int
+globus_l_gass_cache_read_one_entry(
+    int                                 fd,
+    globus_gass_cache_entry_t**         entry);
 
-static int  globus_l_gass_cache_lock_file(char* file, char *temp_file);
-static int  globus_l_gass_cache_unlock_file(char* file);
-static int  globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle);
-static int  globus_l_gass_cache_unlock_close(globus_gass_cache_t *cache_handle,
-					     globus_bool_t abort);
-/******************************************************************************
-Function: globus_l_gass_cache_log()
-
-Description: Write in the file [first param] the message passed as a
-    "printf-like" argument list, prepended by the date, the hostname and
-    the PID of the caller process.
-    
-Parameters: input:
-               f   : file to write in.
-               ... : "printf-like" argument list, message and variable to
-		         write
-
-	   output:
-	       none
-Returns:
-               none           
-******************************************************************************/
-static void 
-globus_l_gass_cache_log(FILE* f,
-			char* str,
-			...)
+static
+int
+globus_l_gass_cache_lock_file(
+    char *                              file,
+    char *                              temp_file);
+static
+int
+globus_l_gass_cache_unlock_file(
+    char*                               file);
+static
+int
+globus_l_gass_cache_lock_open(
+    globus_gass_cache_t*                cache_handle);
+static
+int
+globus_l_gass_cache_unlock_close(
+    globus_gass_cache_t *               cache_handle,
+    globus_bool_t                       abort);
+/*
+ * globus_l_gass_cache_log()
+ *
+ * Write in the file [first param] the message passed as a
+ * "printf-like" argument list, prepended by the date, the hostname and
+ * the PID of the caller process.
+ * 
+ * Parameters: 
+ *      f - file to write in.
+ *
+ * Returns:
+ *      none           
+ */
+static
+void 
+globus_l_gass_cache_log(
+    FILE*      f,
+    char*      str,
+    ...)
 {
     va_list    args;
     char *     fmt;
@@ -193,35 +235,33 @@ globus_l_gass_cache_log(FILE* f,
     globus_libc_lock();
     fflush(f);
     globus_libc_unlock();
-} /* globus_gass_cache_log */
+}
+/* globus_gass_cache_log() */
 
-/******************************************************************************
-Function: globus_l_gass_cache_trace()
-
-Description: Write on the standard error the message passed as a
-    "printf-like" argument list [3rd arg], prepended by the file name of
-    the source code and the line number passed as 2 first arguments.
-    This function should be called this way:
-    globus_l_gass_cache_trace(__FILE__,__LINE," printf-like format string",args...);
-    
-Parameters: input:
-               source_file : File name of the source code
-	       line        : line number in the source code
-	       ...         : "printf-like" argument list, message and variable
-	                     to write
-
-	    output:
-	       none
-Returns:
-               none 
-         
-******************************************************************************/
-
-static void 
-globus_l_gass_cache_trace(char* source_file,
-			  int line,
-			  char *str,
-			  ...)
+/*
+ * globus_l_gass_cache_trace()
+ *
+ * Writes on the standard error the message passed as a
+ * "printf-like" argument list [3rd arg], prepended by the file name of
+ * the source code and the line number passed as 2 first arguments.
+ * This function should be called this way:
+ * globus_l_gass_cache_trace(__FILE__,__LINE," printf-like format string",
+ * args...);
+ *    
+ * Parameters:
+ *     source_file - File name of the source code
+ *     line        - line number in the source code
+ *
+ *Returns:
+ *               none 
+ */         
+static
+void 
+globus_l_gass_cache_trace(
+    char*                        source_file,
+    int                          line,
+    char                         *str,
+    ...)
 {
     va_list    args;
     char *     fmt;
@@ -254,33 +294,33 @@ globus_l_gass_cache_trace(char* source_file,
     fflush(fp);
     globus_libc_unlock();
     
-} /* globus_l_gass_cache_trace */
+}
+/* globus_l_gass_cache_trace() */
 
-/******************************************************************************
-Function: globus_l_gass_cache_write_comment()
-
-Description: Write the first line of the file containning the version of
-             the format of the stat file and a comment.
-   
-Parameters: input:
-               cache_handle : handler to the chache directory to use.
-	           cache_handle->comment  and
-
-	    output:
-	       none
-Returns: 
-            GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen.     
-******************************************************************************/
-
-static int
-globus_l_gass_cache_write_comment(globus_gass_cache_t*  cache_handle,
-				  int fd)
+/*
+ * globus_l_gass_cache_write_comment()
+ *
+ * Write the first line of the file containning the version of
+ * the format of the stat file and a comment.
+ *   
+ * Parameters:
+ *
+ *     cache_handle - handler to the chache directory to use.
+ *     fd - File descriptor where to write the comment  
+ * 
+ * Returns: 
+ *     GLOBUS_SUCCESS or
+ *     GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen.
+ */
+static
+int
+globus_l_gass_cache_write_comment(
+    globus_gass_cache_t*             cache_handle,
+    int                              fd)
 {
     /* In future version, We should take care of backward compatibility,
-     * and eventually write an other version number, but for now
-     * we do not care
-     */
+       and eventually write an other version number, but for now
+       we do not care */
     globus_libc_sprintf(
 	cache_handle->comment,
 	"%s%5u%-65s",
@@ -301,33 +341,36 @@ globus_l_gass_cache_write_comment(globus_gass_cache_t*  cache_handle,
     }
     return(GLOBUS_SUCCESS);
 
-}   /* globus_l_gass_cache_write_comment */
+}
+/* globus_l_gass_cache_write_comment() */
 
-/******************************************************************************
-Function: globus_l_gass_cache_write_one_str()
-
-Description: write one string of variable lenght (buff_pt*) into the file fd,
-   by writing first its lenght (in ascii coded decimal format) and then
-   the string itself.
-   
-Parameters: input:
-               buff_pt: pointer to the string of variable lenght to be writen.
-	       fd     : descriptor of the file to write in.
-
-	    output:
-	       none
-Returns: 
-            GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen.     
-******************************************************************************/
-
-static int
-globus_l_gass_cache_write_one_str(char* buff_pt,
-				  int fd)
+/*
+ * globus_l_gass_cache_write_one_str()
+ * 
+ * Write one string of variable lenght (buff_pt*) into the file fd,
+ * by writing first its lenght (in ascii coded decimal format) and then
+ * the string itself.
+ *    
+ * Parameters:
+ *
+ *     buff_pt - pointer to the string of variable lenght to be writen.
+ *
+ *     fd - descriptor of the file to write in.
+ *
+ * Returns: 
+ *     GLOBUS_SUCCESS or
+ *     GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen.
+ */
+static
+int
+globus_l_gass_cache_write_one_str(
+    char*                           buff_pt,
+    int                             fd)
 {
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    unsigned int size;  /* size of the data to write             */
+    /* size of the data to write             */
+    unsigned int size;  
 
     
     /* write buffer lenght, including \n */
@@ -363,36 +406,42 @@ globus_l_gass_cache_write_one_str(char* buff_pt,
     }
     return(GLOBUS_SUCCESS);
 
-}   /* globus_l_gass_cache_write_one_str */
-/******************************************************************************
-Function:globus_l_gass_cache_read_one_str()
+}
+/* globus_l_gass_cache_write_one_str() */
 
-Description: read one string of variable lenght from the file fd.
-    Read first the string lenght from the file (ascii coded decimal), then
-    allocate the memory for the string and at last, read the string
-    and return the address of this buffer.
-    
-    fd must be positioned in the file at a place where a "variable-lenght"
-    followed by the string itself are expected.
-   
-Parameters: input:
-	       fd     : descriptor of the file to read from.
-	       
-	    output:
-               buff_pt: pointer to the string read. 	  
-Returns: 
-            GLOBUS_SUCCESS or
-            GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT if the string could not be read or
-	    GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
-******************************************************************************/
-
-static int
-globus_l_gass_cache_read_one_str(char** buff_pt,
-				 int fd)
+/*
+ * globus_l_gass_cache_read_one_str()
+ * 
+ * Read one string of variable lenght from the file fd.
+ *     Read first the string lenght from the file (ascii coded decimal), then
+ *     allocate the memory for the string and at last, read the string
+ *     and return the address of this buffer.
+ *     
+ *     fd must be positioned in the file at a place where a "variable-lenght"
+ *     followed by the string itself are expected.
+ *    
+ * Parameters: 
+ * 	       
+ *     fd - descriptor of the file to read from.
+ * 	       
+ *     buff_pt - pointer to the string read. 	  
+ * 	       
+ * Returns: 
+ * 	       
+ *     GLOBUS_SUCCESS or
+ *     GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT if the string could not be read
+ *     GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ */
+static
+int
+globus_l_gass_cache_read_one_str(
+    char**                        buff_pt,
+    int                           fd)
 {
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    size_t size;  /* size of the next data to read             */
+    /* size of the next data to read             */
+    size_t size;  
 
     
     /* read buffer lenght, including \n */
@@ -427,32 +476,37 @@ globus_l_gass_cache_read_one_str(char** buff_pt,
 	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 	}
     }
-    (*buff_pt)[size-1]='\0';  /* replace \n with  0 (end of string) */
+    /* replace \n with  0 (end of string) */
+    (*buff_pt)[size-1]='\0';  
     
     return(GLOBUS_SUCCESS);
-} /* globus_l_gass_cache_read_one_str */
+}
+/* globus_l_gass_cache_read_one_str() */
 
-/******************************************************************************
-Function: globus_l_gass_cache_read_nb_entries()
-
-Description: Read from the cache state file the number of globus_gass_cache_entry
-    it contains. This number is always the last information storred in the
-    file; The file pointer must be correctly positionned in the file before
-    this function is called.
-    
-Parameters: input:
-               cache_handle : contains the file desciptor of the cache file
-	                      to read (cache_handle->state_file_fd)
-	    output:
-               cache_handle : this function update the field
-	                      cache_handle->nb_entries whith the values read.
-			      
-Returns: 
-            GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT if the data could not be read.
-******************************************************************************/
+/*
+ * globus_l_gass_cache_read_nb_entries()
+ * 
+ * Read from the cache state file the number of globus_gass_cache_entry
+ * it contains. This number is always the last information storred in the
+ * file; The file pointer must be correctly positionned in the file before
+ * this function is called.
+ *     
+ * Parameters:
+ *     
+ *    cache_handle - contains the file desciptor of the cache file
+ * 	                      to read (cache_handle->state_file_fd)
+ *     
+ *    cache_handle - this function update the field
+ * 	                      cache_handle->nb_entries whith the values read.
+ * 			      
+ * Returns: 
+ *     
+ *     GLOBUS_SUCCESS or
+ *     GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT if the data could not be read.
+ */
 static int
-globus_l_gass_cache_read_nb_entries(globus_gass_cache_t*  cache_handle)
+globus_l_gass_cache_read_nb_entries(
+    globus_gass_cache_t*  cache_handle)
 {
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
@@ -473,34 +527,36 @@ globus_l_gass_cache_read_nb_entries(globus_gass_cache_t*  cache_handle)
     cache_handle->nb_entries = atoi(size_s);
 
     return(GLOBUS_SUCCESS);
-} /* globus_l_gass_cache_read_nb_entries */
+}
+/* globus_l_gass_cache_read_nb_entries() */
 
-/******************************************************************************
-Function: globus_l_gass_cache_write_nb_entries()
-
-Description: Write into the cache state file the number of globus_gass_cache_entry
-    it contains. This number is always the last information storred in the
-    file; The file pointer must be correctly positionned in the file before
-    this function is called.
-    
-Parameters: input:
-               fd : contains the file desciptor of the cache file to write in.
-	            (in the current implementation, it is
-		    cache_handle->state_file_temp_fd)
-	       nb_entries : number of entries to write.
-	            (it should be cache_handle->nb_entries)
-	    output:
-               cache_handle : this function update the field
-	                      cache_handle->nb_entries whith the values read.
-			      
-Returns: 
-            GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen. 
- 
-******************************************************************************/
-static int
-globus_l_gass_cache_write_nb_entries(int fd,
-				     int nb_entries)
+/*
+ * globus_l_gass_cache_write_nb_entries()
+ * 
+ * Write into the cache state file the number of globus_gass_cache_entry
+ * it contains. This number is always the last information storred in the
+ * file; The file pointer must be correctly positionned in the file before
+ * this function is called.
+ *     
+ * Parameters:
+ *      fd - contains the file desciptor of the cache file to write in.
+ * 	(in the current implementation, it is cache_handle->state_file_temp_fd)
+ *
+ * 	nb_entries - number of entries to write.
+ * 	(it should be cache_handle->nb_entries)
+ *     
+ *      cache_handle - this function update the field
+ *	cache_handle->nb_entries whith the values read.
+ *     		      
+ * Returns: 
+ *      GLOBUS_SUCCESS or
+ *      GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen. 
+ */
+static
+int
+globus_l_gass_cache_write_nb_entries(
+    int                               fd,
+    int                               nb_entries)
 {
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
@@ -531,40 +587,46 @@ globus_l_gass_cache_write_nb_entries(int fd,
     }
 
     return(GLOBUS_SUCCESS);
-} /* globus_l_gass_cache_write_nb_entries */
+}
+/* globus_l_gass_cache_write_nb_entries() */
 
 
-/******************************************************************************
-Function: globus_l_gass_cache_write_one_entry()
-
-Description: write one globus_gass_cache_entry_t structure in a file ,
-   mapping the data to text as desribed below:
-   - Eache data is ascii coded, on one line (terminated by \n)
-   - Eache entry is preceded by a "header" : #
-   - numerical values are ascii coded into a fixed number of char:
-     GLOBUS_L_GASS_CACHE_L_LENGHT
-   - Eache string (url, filename,...) is preceded by is lenght, coded as
-     described above
-    
-Parameters: input:
-               fd : file descriptor of the open file to write in at the
-                    current position.  
-	       entry : address of the globus_gass_cache_entry_t to write in the file
-	    output:
-	       none
-Returns:
-            GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE
-         
-******************************************************************************/
-static int
-globus_l_gass_cache_write_one_entry(int fd,
-				    globus_gass_cache_entry_t* entry)
+/*
+ * globus_l_gass_cache_write_one_entry()
+ *
+ * Write one globus_gass_cache_entry_t structure in a file ,
+ *   mapping the data to text as desribed below:
+ *   - Eache data is ascii coded, on one line (terminated by \n)
+ *   - Eache entry is preceded by a "header" : #
+ *   - numerical values are ascii coded into a fixed number of char:
+ *     GLOBUS_L_GASS_CACHE_L_LENGHT
+ *   - Eache string (url, filename,...) is preceded by is lenght, coded as
+ *     described above
+ *    
+ * Parameters:
+ *
+ *     fd - file descriptor of the open file to write in at the
+ *     current position.
+ *
+ *     entry - address of the globus_gass_cache_entry_t to write in the file
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS or
+ *     GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE
+ */        
+static
+int
+globus_l_gass_cache_write_one_entry(
+    int                               fd,
+    globus_gass_cache_entry_t*        entry)
 {
     /* ascii coded size of the next data to read         */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    unsigned int size;  /* size of the next data to read                     */
-    unsigned int i;     /* to loop in the tags array                         */
+    /* size of the next data to read                     */
+    unsigned int size;  
+    /* to loop in the tags array                         */
+    unsigned int i;
+
     
     /* first lets write an entry separator to tell that there is one more    */
     while ( write(fd, "#\n",2) != 2 )
@@ -695,31 +757,32 @@ globus_l_gass_cache_write_one_entry(int fd,
 } /*  globus_l_gass_cache_write_one_entry() */
 
 
-/******************************************************************************
-Function: globus_l_gass_cache_read_one_entry()
-
-Description: read one globus_gass_cache_entry_t structure from a file.
-    The entry must have been writen following the format described and used in
-    globus_l_gass_cache_write_one_entry(). All the memory necessary to store this
-    structure is allocated: The function globus_l_gass_cache_entry_free()
-    must be called subsequently.
-
-  Parameters: input:
-                 fd   : file descriptor of the open file to read from at the
-                        current position.  
-	    output:
-	        entry : Pointer to the  globus_gass_cache_entry_t read
-	                from the file.
-
-Returns:    GLOBUS_SUCCESS or
-            GLOBUS_GASS_CACHE_ERROR_NO_MEMORY or
-	    GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT if not all the expected structure
-	       field could be read.	    
-         
-******************************************************************************/
+/*
+ * globus_l_gass_cache_read_one_entry()
+ *
+ * Read one globus_gass_cache_entry_t structure from a file.
+ * The entry must have been writen following the format described and used in
+ * globus_l_gass_cache_write_one_entry(). All the memory necessary to store
+ * this structure is allocated: The function globus_l_gass_cache_entry_free()
+ * must be called subsequently.
+ * 
+ * Parameters:
+ *      fd - file descriptor of the open file to read from at the
+ *      current position.  
+ * 	   
+ * 	entry - Pointer to the  globus_gass_cache_entry_t read
+ * 	from the file.
+ * 
+ * Returns:
+ *      GLOBUS_SUCCESS or
+ *      GLOBUS_GASS_CACHE_ERROR_NO_MEMORY or
+ * 	GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT if not all the
+ *      expected structure fields could be read.	    
+ */         
 static int
-globus_l_gass_cache_read_one_entry(int fd,
-				   globus_gass_cache_entry_t** entry)
+globus_l_gass_cache_read_one_entry(
+    int                                fd,
+    globus_gass_cache_entry_t**        entry)
 {
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
@@ -869,25 +932,28 @@ globus_l_gass_cache_read_one_entry(int fd,
     (**entry).tags[(**entry).num_tags+1].tag=GLOBUS_NULL;
     return(GLOBUS_SUCCESS);
     
-} /* globus_l_gass_cache_read_one_entry() */
+}
+/* globus_l_gass_cache_read_one_entry() */
 
 
-/******************************************************************************
-Function: globus_l_gass_cache_entry_free()
-
-Description: Free the memory allocated by globus_l_gass_cache_read_one_entry().
-    
-Parameters: input:
-               entry : address to the "entry pointer" pointing to
-	               the globus_gass_cache_entry_t structure to free.
-	    output:
-	       none
-Returns: 
-               none (as free()) 
-******************************************************************************/
+/*
+ * globus_l_gass_cache_entry_free()
+ *
+ * Free the memory allocated by globus_l_gass_cache_read_one_entry().
+ * 
+ * Parameters: 
+ *      entry - address to the "entry pointer" pointing to
+ *	the globus_gass_cache_entry_t structure to free.
+ *
+ *      itself - indicate if the pointer "entry" itself should be freed, or
+ *      if only the entries should be freed
+ * Returns: 
+ *      none
+ */
 static void
-globus_l_gass_cache_entry_free(globus_gass_cache_entry_t** entry,
-			       globus_bool_t itself)
+globus_l_gass_cache_entry_free(
+    globus_gass_cache_entry_t**           entry,
+    globus_bool_t                         itself)
 {
     int i;
     if (*entry != GLOBUS_NULL)
@@ -915,32 +981,36 @@ globus_l_gass_cache_entry_free(globus_gass_cache_entry_t** entry,
 	    *entry=GLOBUS_NULL;
 	}	
     }
-} /* globus_l_gass_cache_entry_free() */
+}
+/* globus_l_gass_cache_entry_free() */
 
-/******************************************************************************
-Function: globus_l_gass_cache_write_state_file()
-
-Description: Call globus_l_gass_cache_write_one_entry() to write one
-    globus_gass_cache_entry_t structure in the state file. In this function, we
-    define in which file we want the entry to be writen.
-    (globus_l_gass_cache_write_one_entry() is independant of this choice)
-    For the current implementation, we use a temporary file.
-    => cache_handle->temp_file_fd.
-    
-   
-Parameters: input:
-               entry : address of the globus_gass_cache_entry_t to write in the file
-	       cache_handle : contains the name/file descriptor of the file
-	               to write to.
-	    output:
-	       none
-Returns:
-            GLOBUS_SUCCESS or
-            error code returned by globus_l_gass_cache_write_one_entry().
-******************************************************************************/
-static int
-globus_l_gass_cache_write_state_file(globus_gass_cache_entry_t* entry,
-				     globus_gass_cache_t*  cache_handle)
+/*
+ * globus_l_gass_cache_write_state_file()
+ *
+ * Call globus_l_gass_cache_write_one_entry() to write one
+ * globus_gass_cache_entry_t structure in the state file. In this function, we
+ * define in which file we want the entry to be writen.
+ * (globus_l_gass_cache_write_one_entry() is independant of this choice)
+ * For the current implementation, we use a temporary file.
+ * => cache_handle->temp_file_fd.
+ *  
+ * 
+ * Parameters:
+ *
+ *     entry : address of the globus_gass_cache_entry_t to write in the file
+ *
+ *     cache_handle : contains the name/file descriptor of the file
+ *     to write to.
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS or
+ *     error code returned by globus_l_gass_cache_write_one_entry().
+ */
+static
+int
+globus_l_gass_cache_write_state_file(
+    globus_gass_cache_entry_t *            entry,
+    globus_gass_cache_t *                  cache_handle)
 {
     int      rc; /* general purpose return code */
 
@@ -955,44 +1025,49 @@ globus_l_gass_cache_write_state_file(globus_gass_cache_entry_t* entry,
 	}
     }
     return(GLOBUS_SUCCESS);
-} /* globus_l_gass_cache_write_state_file() */
+}
+/* globus_l_gass_cache_write_state_file() */
 
-/******************************************************************************
-Function: globus_l_gass_cache_lookfor_url()
-
-Description: search [read] in the cache state file for an existing entry
-   with an url identic to the url (searched_url).
-   When an entry is read, if it does not correspond to the searched url, the
-   entry is writen back in the state file (actually to the temporary state
-   file in the current implementation)
-   
-   If the entry read correspond to the searched url, it is returned 
-   in an allocated  globus_gass_cache_entry_t structure.
-   
-   if none are found, NULL pointer is returned.
-
-   Note that the whole file is scaned, self the url has been found before the
-   last entry.
-   
-Parameters: input:
-               searched_url : url to look for in the file
-	       cache_handle : cache handler used to get the
-	                      file names /descriptor to read/write.
-	       
-	    output:
-	       return_entry : pointer to the entry found; NULL if none found
-Returns: 
-            GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_OPEN_STATE
-	    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE
-	    GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT
-	    error code returned by globus_l_gass_cache_read_one_entry()
-	    error code returned by globus_l_gass_cache_write_one_entry()
-******************************************************************************/
+/*
+ * globus_l_gass_cache_lookfor_url()
+ *
+ * Search [read] in the cache state file for an existing entry
+ *    with an url identic to the url (searched_url).
+ *    When an entry is read, if it does not correspond to the searched url, the
+ *    entry is writen back in the state file (actually to the temporary state
+ *    file in the current implementation)
+ *    
+ *    If the entry read correspond to the searched url, it is returned 
+ *    in an allocated  globus_gass_cache_entry_t structure.
+ *    
+ *    if none are found, NULL pointer is returned.
+ * 
+ *    Note that the whole file is scaned, self the url has been found before
+ *    the last entry.
+ *  
+ * Parameters:
+ *
+ *       searched_url - url to look for in the file
+ *
+ *       cache_handle - cache handler used to get the
+ *       file names /descriptor to read/write.
+ *      
+ *       return_entry - pointer to the entry found; NULL if none found
+ *
+ * Returns:
+ *
+ *    GLOBUS_SUCCESS or
+ *    GLOBUS_GASS_CACHE_ERROR_OPEN_STATE
+ *    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE
+ *    GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT
+ *    error code returned by globus_l_gass_cache_read_one_entry()
+ *    error code returned by globus_l_gass_cache_write_one_entry()
+ */
 static int
-globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
-				char * searched_url,
-				globus_gass_cache_t*  cache_handle)
+globus_l_gass_cache_lookfor_url(
+    globus_gass_cache_entry_t **       return_entry,
+    char *                             searched_url,
+    globus_gass_cache_t *              cache_handle)
 {
     globus_gass_cache_entry_t* globus_gass_cache_entry_pt=NULL;
 				/* for general usage            */
@@ -1061,36 +1136,38 @@ globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
     {
 	return(globus_l_gass_cache_read_nb_entries(cache_handle));
     }
-} /* globus_l_gass_cache_lookfor_url() */
+}
+/* globus_l_gass_cache_lookfor_url() */
 
 
-/******************************************************************************
-Function: globus_l_gass_cache_lock_file()
-
-Description: Create an advisory lock on a file. To methode have been
-    implemented: using hard link (if NEW_LOCK is not defined) and
-    using open(... O_CREAT|O_EXCL) which return an error if file exist.
-    ->hard links do not exist on AFS
-    -> open(... O_CREAT|O_EXCL) do not work on all version of unix (But
-    all the new versions/POSIX [IEEE 1988]
-
-Parameters: input:
-               file_to_be_locked : path to the file to lock
-	    output:
-	        none
-Returns: 
-            GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR or
-	    GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT
-	    
-Note : If compilled with LOCK_TOUT defined, the lock will timeout after
-       LOCK_TOUT try to get the lock, if the file to lock is older than
-       LOCK_TOUT*LOOP_TIME
-	    
-******************************************************************************/
-static int
-globus_l_gass_cache_lock_file(char* file_to_be_locked,
-			      char* temp_file)
+/*
+ * globus_l_gass_cache_lock_file()
+ *
+ * Create an advisory lock on a file. To methode have been
+ * implemented: using hard link (if NEW_LOCK is not defined) and
+ *  using open(... O_CREAT|O_EXCL) which return an error if file exist.
+ *  ->hard links do not exist on AFS
+ *  -> open(... O_CREAT|O_EXCL) do not work on all version of unix (But
+ *  all the new versions/POSIX [IEEE 1988]
+ *  Note : If compilled with LOCK_TOUT defined, the lock will timeout after
+ *  LOCK_TOUT try to get the lock, if the file to lock is older than
+ *  LOCK_TOUT*LOOP_TIME
+ *
+ * Parameters:
+ *
+ *     file_to_be_locked : path to the file to lock
+ *
+ * Returns: 
+ *
+ *     GLOBUS_SUCCESS or
+ *     GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR or
+ *     GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT
+ */	    
+static
+int
+globus_l_gass_cache_lock_file(
+    char *                       file_to_be_locked,
+    char *                       temp_file)
 {
     char   lock_file[PATH_MAX+1];
     int    lock_file_fd;
@@ -1285,25 +1362,27 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked,
     } while ( 1 );
     
     return(return_code);
-} /* globus_l_gass_cache_lock_file */
+}
+/* globus_l_gass_cache_lock_file() */
 
 
-/******************************************************************************
-Function:globus_l_gass_cache_unlock_file()
-
-Description: Remove the lock previously created by globus_l_gass_cache_lock_file()
-
-Parameters: input:
-               file_to_be_locked : path to the file to lock
-	    output:
-	        none
-Returns: 
-            GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK
-	    
-******************************************************************************/
-static int
-globus_l_gass_cache_unlock_file(char* file_to_be_locked)
+/*
+ * globus_l_gass_cache_unlock_file()
+ *
+ * Remove the lock previously created by globus_l_gass_cache_lock_file()
+ *
+ * Parameters:
+ *
+ *     file_to_be_locked - path to the file to lock
+ *
+ * Returns: 
+ *     GLOBUS_SUCCESS or
+ *     GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK
+ */  
+static
+int
+globus_l_gass_cache_unlock_file(
+    char *                        file_to_be_locked)
 {
     char   lock_file[PATH_MAX+1];
     int    lock_file_fd;
@@ -1348,50 +1427,53 @@ globus_l_gass_cache_unlock_file(char* file_to_be_locked)
     }
     
     return(GLOBUS_SUCCESS); 
-} /* globus_l_gass_cache_unlock_file */
+}
+/* globus_l_gass_cache_unlock_file() */
 
-/******************************************************************************
-Function: globus_l_gass_cache_lock_open()
-
-Description: Check if the cache state file is locked; wait it is unlocked
-    using a simple sleep loop and lock it.
-    The lock is implemented using a hard link on the file to lock.
-
-    Open the cache state file when locked.
-    
-    It also initialise the file if it is empty (first use) (this is done in
-    this function because we need the file to be locked before it can be
-    modified)
-    
-Parameters: input:
-               cache_handle : handler to the chache directory to use.
-	           cache_handle->state_file_path  and
-		   cache_handle->state_file_lock_path
-	       
-            output:
-	       cache_handle->state_file_fd: file descriptor of the open
-		    cache state file
-		    
-	       cache_handle->temp_file_fd : file descriptor of an open
-		    temporary cache state file into which every modification
-		    made to the cache state file is stored. Used to prevent
-		    cache state file corruption in case of proglobus_gramm
-		    crash.
-		    the temporary file will "atomically" overwrite the
-		    cache state file by the function
-		    globus_l_gass_cache_unlock_close()
-		   
-	       cache_handle->nb_entries  : If the cache state file was empty,
-	            this variable is initialised to 0 (zero).
-		    
-Returns: GLOBUS_SUCCESS or error code:
-         GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR or
-	 GLOBUS_GASS_CACHE_ERROR_OPEN_STATE or
-	 GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT (Not implemented in this version)
-	 
-******************************************************************************/
-static int
-globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
+/*
+ * globus_l_gass_cache_lock_open()
+ *
+ * Check if the cache state file is locked; wait it is unlocked
+ * using a simple sleep loop and lock it.
+ * The lock is implemented using a hard link on the file to lock.
+ *
+ * Open the cache state file when locked.
+ *  
+ * It also initialise the file if it is empty (first use) (this is done in
+ * this function because we need the file to be locked before it can be
+ * modified)
+ *  
+ * Parameters:
+ *
+ *      cache_handle - handler to the chache directory to use.
+ *      cache_handle->state_file_path  and
+ *      cache_handle->state_file_lock_path
+ *	
+ *      cache_handle->state_file_fd - file descriptor of the open
+ *      cache state file
+ *	    
+ *      cache_handle->temp_file_fd - file descriptor of an open
+ *      temporary cache state file into which every modification
+ *      made to the cache state file is stored. Used to prevent
+ *      cache state file corruption in case of proglobus_gramm
+ *      crash.
+ *      the temporary file will "atomically" overwrite the
+ *      cache state file by the function
+ *      globus_l_gass_cache_unlock_close()
+ *	   
+ *      cache_handle->nb_entries  - If the cache state file was empty,
+ *      this variable is initialised to 0 (zero).
+ *	    
+ * Returns:
+ *      GLOBUS_SUCCESS or error code:
+ *      GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR or
+ *      GLOBUS_GASS_CACHE_ERROR_OPEN_STATE or
+ *      GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT (Not implemented in this version)
+ */ 
+static
+int
+globus_l_gass_cache_lock_open(
+    globus_gass_cache_t*             cache_handle)
 {
     int rc;
 
@@ -1528,48 +1610,49 @@ globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
     GLOBUS_L_GASS_CACHE_LG("Temporary State file opened");
     
     return (GLOBUS_SUCCESS);
-} /* globus_l_gass_cache_lock_open() */
+}
+/* globus_l_gass_cache_lock_open() */
 
-/******************************************************************************
-Function: globus_l_gass_cache_unlock_close(()
-
-Description: Close the state file of the cache and remove its lock.
-    Actually, because of the choice of using a temporary state file
-    to avoid file corruption, some more is done:
-   
-       - the number of entries is writen at the end of the temp file,
-       - the temporary state file and the state are closed, 
-       - if the function is called with the parameter "commit",
-           the temporary state file "atomically" overwrite the state
-	   file (using a rename system call), and therefor, the changes are
-	   commited.
-       - if the function is called with the parameter "abort",
-           the temporary file is just abandonned, and the changes are
-	   therefor discarded.
-
-       - The lock is removed
-       
-Parameters: input: 
-               cache_handle : handler to the chache directory to use.
-	           cache_handle->state_file_path  and
-		   cache_handle->temp_file_fd     and
-		   cache_handle->state_file_lock_path are used to access
-		   the corresponding files.
-
-            output: 
-	       - Some files are renamed/ deleted, as explained in the
-	           description above
-		   
-Returns: BLOBUS_SUCCESS or error code:
-         GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR if the lock could not be removed, or
-         error code returned by globus_l_gass_cache_write_nb_entries()
-	 
-******************************************************************************/
-static int
-globus_l_gass_cache_unlock_close(globus_gass_cache_t*  cache_handle,
-			globus_bool_t abort)
+/*
+ * globus_l_gass_cache_unlock_close()
+ *
+ * Close the state file of the cache and remove its lock.
+ * Actually, because of the choice of using a temporary state file
+ * to avoid file corruption, some more is done:
+ * 
+ *      - the number of entries is writen at the end of the temp file,
+ *      - the temporary state file and the state are closed, 
+ *      - if the function is called with the parameter "commit",
+ *        the temporary state file "atomically" overwrite the state
+ *        file (using a rename system call), and therefor, the changes are
+ *        commited.
+ *      - if the function is called with the parameter "abort",
+ *        the temporary file is just abandonned, and the changes are
+ *        therefor discarded.
+ *
+ *      - The lock is removed
+ *    
+ * Parameters:
+ *
+ *      cache_handle - handler to the chache directory to use.
+ *      cache_handle->state_file_path  and
+ *	cache_handle->temp_file_fd     and
+ *	cache_handle->state_file_lock_path are used to access
+ *	the corresponding files.
+ *
+ * Returns:
+ *      BLOBUS_SUCCESS or error code:
+ *      GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR if the lock could not be removed,
+ *      error code returned by globus_l_gass_cache_write_nb_entries()
+ */ 
+static
+int
+globus_l_gass_cache_unlock_close(
+    globus_gass_cache_t *           cache_handle,
+    globus_bool_t                   abort)
 {
-    int                 rc;                  /* return code                  */
+    /* return code                  */
+    int                 rc;                  
 
     /* before I close, I want to write the number of entries */
     if (!abort)
@@ -1639,46 +1722,49 @@ globus_l_gass_cache_unlock_close(globus_gass_cache_t*  cache_handle,
   
 ******************************************************************************/
 
-/******************************************************************************
-Function: globus_gass_cache_open()
-
-Description:
-    Open the cache specified by the cache_directory_path argument, and return
-    a cache handle that can be used in subsequent cache calls. 
-
-    If cache_directory_path is NULL, then use the value contained in the
-    GLOBUS_GASS_CACHE_DEFAULT environment variable if it is defined,
-    otherwise use ~/.globus_gass_cache.
-
-    The cache_directory_path must be a directory. If it is a file, this call
-    will fail with a non-0 return value.
-
-    If the specified directory does not exist, then this call will create the
-    directory.
-
-Parameters: input:    
-                cache_directory_path: Path to the cache directory to open.
-		    Can be NULL (see above)
-		cache_handle->is_init: checked and return an error if 
-		    cache_handle has already been used.
-		    
-	    output: 
-	      	cache_handle: Structure containning all the necessary
-		information to access the cache (file names, descriptor,...)
-		(see globus_gass_gache.h) Some files are also opened:
-		globus_gass_cache_close() must be called subsequently to close those
-		files.
-		
-Returns:    BLOBUS_SUCCESS or error code:	
-            GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG if the cache directory path is
-	        too long
-	    GLOBUS_GASS_CACHE_ERROR_NO_HOME if cache_directory_path is NULL and
-	        the env. variable GLOBUS_GASS_CACHE_DEFAULT is empty and
-		the env. variable $HOME is not defined !
-	    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE if the cache directory or any
-	         necessary file can not be created.
-	 
-******************************************************************************/
+/*
+ * globus_gass_cache_open()
+ *
+ * Open the cache specified by the cache_directory_path argument, and return
+ * a cache handle that can be used in subsequent cache calls. 
+ *
+ * If cache_directory_path is NULL, then use the value contained in the
+ * GLOBUS_GASS_CACHE_DEFAULT environment variable if it is defined,
+ * otherwise use ~/.globus_gass_cache.
+ *
+ * The cache_directory_path must be a directory. If it is a file, this call
+ * will fail with a non-0 return value.
+ *
+ * If the specified directory does not exist, then this call will create the
+ * directory.
+ *
+ * Parameters:     
+ *
+ *     cache_directory_path : Path to the cache directory to open.
+ *     Can be NULL (see above)
+ *
+ *     cache_handle->is_init: checked and return an error if 
+ *     cache_handle has already been used.
+ *	    
+ *     cache_handle: Structure containning all the necessary
+ *     information to access the cache (file names, descriptor,...)
+ *     (see globus_gass_gache.h) Some files are also opened:
+ *     globus_gass_cache_close() must be called subsequently to close those
+ *     files.
+ *     This parameter is modified by the globus_gass_cache_open()
+ *	
+ * Returns:    
+ *     BLOBUS_SUCCESS or error code:	
+ *     GLOBUS_GASS_CACHE_ERROR_CACHE_ALREADY_OPENED
+ *     GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG if the cache directory path is
+ *     too long
+ *     GLOBUS_GASS_CACHE_ERROR_NO_HOME if cache_directory_path is NULL and
+ *     the env. variable GLOBUS_GASS_CACHE_DEFAULT is empty and
+ *     the env. variable $HOME is not defined !
+ *     GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE if the cache directory or any
+ *     necessary file can not be created.
+ *	 
+ */
 int 
 globus_gass_cache_open(char                *cache_directory_path,
 		       globus_gass_cache_t *cache_handle)
@@ -1939,45 +2025,45 @@ globus_gass_cache_open(char                *cache_directory_path,
     cache_handle->init = &globus_l_gass_cache_is_init;
 
     /* just to check the version number */
-       rc = globus_l_gass_cache_lock_open(cache_handle);
-       if (rc != GLOBUS_SUCCESS)
-       {
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT);
-	   /* mark this handle as not opened */
-	   cache_handle->init=&globus_l_gass_cache_is_not_init;
-	   
-	   return(rc);
-       }
-       return(globus_l_gass_cache_unlock_close(cache_handle,
-					GLOBUS_L_GASS_CACHE_ABORT));
+    rc = globus_l_gass_cache_lock_open(cache_handle);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	globus_l_gass_cache_unlock_close(cache_handle,
+					 GLOBUS_L_GASS_CACHE_ABORT);
+	/* mark this handle as not opened */
+	cache_handle->init=&globus_l_gass_cache_is_not_init;
+	
+	return(rc);
+    }
+    return(globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT));
     
-    } /*  globus_gass_cache_open() */
+}
+/*  globus_gass_cache_open() */
 
-
-
-/******************************************************************************
-Function: globus_gass_cache_close()
-
-Description:
-  Close (NOT delete) a previously opened cache:
-  - close the opened files and 
-  - free the memory allocated for the cache_handle.
-  - mark the handle as "not initialized".
-  
-  Parameters: input:    
-		cache_handle: Handler to the opened cahe directory to use.    
-		    
-	    output: 
-	      	cache_handle->is_init set to "not initialized" and all the
-		    files opened bu globus_gass_cache_open are closed . 
-
-Returns:    GLOBUS_SUCCESS or error code:
-            GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED
-	 
-******************************************************************************/
+/*
+ * globus_gass_cache_close()
+ *
+ *
+ * Close (NOT delete) a previously opened cache:
+ * - close the opened files and 
+ * - free the memory allocated for the cache_handle.
+ * - mark the handle as "not initialized".
+ *
+ * Parameters: 
+ *     cache_handle: Handler to the opened cahe directory to use.    
+ *	    
+ *     cache_handle->is_init set to "not initialized" and all the
+ *     files opened bu globus_gass_cache_open are closed . 
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS or error code:
+ *     GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED
+ * 
+ */
 int
-globus_gass_cache_close(globus_gass_cache_t *  cache_handle)
+globus_gass_cache_close(
+    globus_gass_cache_t *          cache_handle)
 {
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
@@ -1992,83 +2078,90 @@ globus_gass_cache_close(globus_gass_cache_t *  cache_handle)
     
     GLOBUS_L_GASS_CACHE_LG("Cache Closed");
     return(GLOBUS_SUCCESS);
-} /*  globus_gass_cache_close() */
+}
+/*  globus_gass_cache_close() */
 
-/******************************************************************************
-Function: globus_gass_cache_add()
-
-Description: Create a new cache file or add a tag on it.
-
-    If the URL is already in the cache but is locked, then this call will block
-    until the cache entry is unlocked, then will proceed with the subsequent
-    operations.
-
-    If the URL is already in the cache and unlocked, then add the tag to the
-    cache entry's tag list, return the local cache filename in *local_filename,
-    return the entry's current timestamp in *timestamp, lock the cache entry,
-    and return GLOBUS_GASS_CACHE_ADD_EXISTS.
-
-    If the URL is not in the cache, and create==GLOBUS_TRUE, then create a new
-    unique empty local cache file, add it to the cache with the specified tag,
-    return the filename in *local_filename, return *timestamp set to
-    GLOBUS_GASS_TIMESTAMP_UNKNOWN, lock the cache entry, and
-    return GLOBUS_GASS_CACHE_ADD_NEW.
-
-    If the URL is not in the cache, and create==GLOBUS_FALSE, then do not
-    add it to the cache, and return GLOBUS_GASS_CACHE_URL_NOT_FOUND. 
-
-    If this function returns GLOBUS_GASS_CACHE_ADD_EXISTS or GLOBUS_GASS_CACHE_ADD_NEW,
-    then globus_gass_cache_add_done() or globus_gass_cache_delete() must be subsequently
-    called to unlock the cache entry. 
-
-    Subsequent calls to globus_gass_cache_add() and globus_gass_cache_delete_start() on the
-    same cache and url, made either from this process or another, will block
-    until the cache entry is unlocked.
-
-    If tag==NULL, then a tag with the value "null" will be added to the cache
-    entry's tag list.
-
-    The same tag can be used multiple times, in which case this tag will be
-    added to the entry's tag list multiple times.
-
-    Note: It is recommended that programs started via GLOBUS_GRAM pass a tag value
-    of getenv("GLOBUS_GRAM_JOB_CONTACT"), since upon completion of a job GLOBUS_GRAM will
-    automatically cleanup entries with this tag.
-
-    Important Note: the local_filename MUST be free by the user in a
-    subsequent operation, using globus_free()
-    
-Parameters: input:    
-                cache_handle: Handler to the opened cahe directory to use.
-		url : url of the file to be cached. It is used as the main
-		    key to the cache entries.
-		tag : tag specifying which job is/are using the cache. This
-		    is usually the GLOBUS_GRAM_JOB_CONTACT. Can be NULL or empty; the
-		    tag "null" is then used.
-		create: Tells if the cache entry should be created if it is
-		    not already existing.
-		
-	    output: 
-	      	timestamp: time stamp of the cached file, set by
-		    globus_gass_cache_done(), (or globus_gass_cache_delete() ).
-		local_filename: Path the the local file caching the file
-		    specified by "url". NULL if "url" not yet cached and
-		    creation not requested (create false). 
-
-Returns:    
-            GLOBUS_GASS_CACHE_URL_NOT_FOUND
-	    GLOBUS_GASS_CACHE_ADD_NEW
-	    GLOBUS_GASS_CACHE_ADD_EXISTS
-	    or any of the defined gass error code.
-	    
-******************************************************************************/
+/*
+ * globus_gass_cache_add()
+ *
+ * Create a new cache file or add a tag on it.
+ *
+ * If the URL is already in the cache but is locked, then this call will block
+ * until the cache entry is unlocked, then will proceed with the subsequent
+ * operations.
+ *
+ * If the URL is already in the cache and unlocked, then add the tag to the
+ * cache entry's tag list, return the local cache filename in *local_filename,
+ * return the entry's current timestamp in *timestamp, lock the cache entry,
+ * and return GLOBUS_GASS_CACHE_ADD_EXISTS.
+ *
+ * If the URL is not in the cache, and create==GLOBUS_TRUE, then create a new
+ * unique empty local cache file, add it to the cache with the specified tag,
+ * return the filename in *local_filename, return *timestamp set to
+ * GLOBUS_GASS_TIMESTAMP_UNKNOWN, lock the cache entry, and
+ * return GLOBUS_GASS_CACHE_ADD_NEW.
+ *
+ * If the URL is not in the cache, and create==GLOBUS_FALSE, then do not
+ * add it to the cache, and return GLOBUS_GASS_CACHE_URL_NOT_FOUND. 
+ *
+ * If this function returns GLOBUS_GASS_CACHE_ADD_EXISTS or
+ * GLOBUS_GASS_CACHE_ADD_NEW, then globus_gass_cache_add_done() or
+ * globus_gass_cache_delete() must be subsequently
+ * called to unlock the cache entry. 
+ *
+ * Subsequent calls to globus_gass_cache_add() and
+ * globus_gass_cache_delete_start() on the same cache and url, made either
+ * from this process or another, will block until the cache entry is unlocked.
+ *
+ * If tag==NULL, then a tag with the value "null" will be added to the cache
+ * entry's tag list.
+ *
+ * The same tag can be used multiple times, in which case this tag will be
+ * added to the entry's tag list multiple times.
+ *
+ * Note: It is recommended that proglobus_grams started via GLOBUS_GRAM
+ * pass a tag value
+ * of getenv("GLOBUS_GRAM_JOB_CONTACT"), since upon completion of a
+ * job GLOBUS_GRAM will automatically cleanup entries with this tag.
+ *
+ * Important Note: the local_filename MUST be free by the user in a
+ * subsequent operation, using globus_free()
+ *  
+ * Parameters:
+ *
+ *     cache_handle - Handler to the opened cahe directory to use.
+ *
+ *     url - url of the file to be cached. It is used as the main
+ *     key to the cache entries.
+ *
+ *     tag - tag specifying which job is/are using the cache. This
+ *     is usually the GLOBUS_GRAM_JOB_CONTACT. Can be NULL or empty; the
+ *     tag "null" is then used.
+ *     create - Tells if the cache entry should be created if it is
+ *     not already existing.
+ *
+ *     timestamp - time stamp of the cached file, set by
+ *     globus_gass_cache_done(), (or globus_gass_cache_delete() ).
+ *
+ *     local_filename - Path the the local file caching the file
+ *     specified by "url". NULL if "url" not yet cached and
+ *     creation not requested (create false). 
+ *
+ * Returns:    
+ *     GLOBUS_GASS_CACHE_URL_NOT_FOUND
+ *     GLOBUS_GASS_CACHE_ADD_NEW
+ *     GLOBUS_GASS_CACHE_ADD_EXISTS
+ *     or any of the defined gass error code.
+ *
+ */
 int
-globus_gass_cache_add(globus_gass_cache_t *cache_handle,
-		      char                *url,
-		      char                *tag,
-		      globus_bool_t        create,
-		      unsigned long      *timestamp,
-		      char              **local_filename)
+globus_gass_cache_add(
+    globus_gass_cache_t *      cache_handle,
+    char*                      url,
+    char *                     tag,
+    globus_bool_t              create,
+    unsigned long *            timestamp,
+    char **                    local_filename)
 {
     int                        rc;   /* general purpose return code */
     globus_gass_cache_entry_t *entry_found_pt;
@@ -2441,39 +2534,39 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   } /* file ready */
        } /* url found */
    } /* while recurs */
-} /*  globus_gass_cache_add() */
+}
+/*  globus_gass_cache_add() */
 
     
-/******************************************************************************
-Function: globus_gass_cache_add_done()
-
-Description:
-
-  globus_gass_cache_add_done() MUST be called after globus_gass_cache_add(), to
-  set the timestamp in the cache entry for the URL, and then unlock the
-  cache entry. (The only case it does not need to be called is if
-  globus_gass_cache_add() has returned GLOBUS_GASS_CACHE_URL_NOT_FOUND, of course.
-  
-Parameters: input:    
-                cache_handle: Handler to the opened cahe directory to use.
-		url : url of the cached file to set as "done" (unlock)
-		tag : tag specifying which job has locked the cache and must
-		    therfor be unlocked.It is an error to call this function
-		    with a tag which does not currently own the cache lock.
-		timestamp: time stamp of the cached file.
-		
-	    output: 
-                none (well, the state file is updated and the cache file
-		lock removed)
-Returns:    GLOBUS_SUCCESS or error code:
-	    or any of the defined gass error code.
-
-******************************************************************************/
+/*
+ * globus_gass_cache_add_done()
+ *
+ * globus_gass_cache_add_done() MUST be called after globus_gass_cache_add(),
+ * to set the timestamp in the cache entry for the URL, and then unlock the
+ * cache entry. (The only case it does not need to be called is if
+ * globus_gass_cache_add() has returned GLOBUS_GASS_CACHE_URL_NOT_FOUND, of
+ * course.
+ * 
+ * Parameters:    
+ *     cache_handle - Handler to the opened cahe directory to use.
+ *
+ *     url - url of the cached file to set as "done" (unlock)
+ *     tag - tag specifying which job has locked the cache and must
+ *     therfor be unlocked.It is an error to call this function
+ *     with a tag which does not currently own the cache lock.
+ *     timestamp: time stamp of the cached file.
+ *	
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS or error code:
+ *     or any of the defined gass error code.
+ */
 int
-globus_gass_cache_add_done(globus_gass_cache_t *cache_handle,
-			   char                *url,
-			   char                *tag,
-			   unsigned long        timestamp)
+globus_gass_cache_add_done(
+    globus_gass_cache_t *cache_handle,
+    char                *url,
+    char                *tag,
+    unsigned long        timestamp)
 {
     int                        rc;   /* general purpose return code */
     char                       notready_file_path[PATH_MAX+1];
@@ -2568,33 +2661,37 @@ globus_gass_cache_add_done(globus_gass_cache_t *cache_handle,
 					      GLOBUS_L_GASS_CACHE_COMMIT);
 	return(rc);
     }
-} /* globus_gass_cache_add_done() */
+}
+/* globus_gass_cache_add_done() */
 
 
-/******************************************************************************
-Function: globus_gass_cache_delete_start()
-
-Description:
-    Lock the cache entry for the URL, and return the cache entry's current
-    timestamp in *timestamp.
-    This function will block if the data file is already locked, until it is
-    unlocked.
-
-    Parameters: input:    
-                cache_handle: Handler to the opened cahe directory to use.
-		url : url of the cached file to set as "done" (unlock)
-		tag : tag specifying which job has locked the cache and must
-		    therfor be unlocked.It is an error to call this function
-		    with a tag which does not currently own the cache lock.
-		
-	    output: 
-	      	timestamp: time stamp of the cached file, set by
-		    globus_gass_cache_done(), (or globus_gass_cache_delete() ).
-
-Returns:    GLOBUS_SUCCESS or error code:
-	    or any of the defined gass error code.
-
-******************************************************************************/
+/*
+ * globus_gass_cache_delete_start()
+ *
+ *
+ * Lock the cache entry for the URL, and return the cache entry's current
+ * timestamp in *timestamp.
+ * This function will block if the data file is already locked, until it is
+ * unlocked.
+ *
+ * Parameters:     
+ *
+ *     cache_handle - Handler to the opened cahe directory to use.
+ *
+ *     url - url of the cached file to set as "done" (unlock)
+ *
+ *     tag - tag specifying which job has locked the cache and must
+ *     therfor be unlocked.It is an error to call this function
+ *     with a tag which does not currently own the cache lock.
+ *	
+ *     timestamp - time stamp of the cached file, set by
+ *     globus_gass_cache_done(), (or globus_gass_cache_delete() ).
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS or error code:
+ *     or any of the defined gass error code.
+ *
+ */
 int
 globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 			       char                *url,
@@ -2808,54 +2905,60 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 	   }
        } /* file ready */
    } /* while recurs */    
-} /* globus_gass_cache_delete_start */
-/******************************************************************************
-Function: globus_gass_cache_delete()
-
-Description:
-    Remove one instance of the tag from the cache entry's tag list.
-
-    If there are no more tags in the tag list, then remove this cache
-    entry and delete the associated local cache file.
-
-    Otherwise, update the timestamp to the passed value.
-    
-    This call will leave the cache entry unlocked.
-
-    If is_locked==GLOBUS_TRUE, then this cache entry was locked during a
-    previous call to globus_gass_cache_add() or globus_gass_cache_delete_start(). The cache
-    file should be locked by the corresponding url/tag, or an error is
-    returned. If it is locked by the corresponding url/tag, then the normal
-    operation occur, whithout blocking (remove one instance from the tag
-    list, update the timestamp and unlock the cache).
-
-    If is_locked==GLOBUS_FALSE, eventually wait the cache is not locked any
-    more, and then proceed with the normal operations.(remove one instance
-    from the tag list and update the timestamp).
-
-Parameters: input:    
-                cache_handle: Handler to the opened cahe directory to use.
-		url : url of the file to be cached. It is used as the main
-		    key to the cache entries.
-		tag : tag specifying which job is/are using the cache. This
-		    is usually the GLOBUS_GRAM_JOB_CONTACT. Can be NULL or empty; the
-		    tag "null" is then used.
-		timestamp: time stamp of the cached file.
-        	is_locked: indicate if this cache entry was locked during a
-		    previous call to globus_gass_cache_add() or
-		    globus_gass_cache_delete_start().
-	    output:
-	        none 
-		
-Returns:    GLOBUS_SUCCESS or error code:
-	    or any of the defined gass error code.   
-******************************************************************************/
+}
+/* globus_gass_cache_delete_start() */
+/*
+ * globus_gass_cache_delete()
+ *
+ * Remove one instance of the tag from the cache entry's tag list.
+ *
+ * If there are no more tags in the tag list, then remove this cache
+ * entry and delete the associated local cache file.
+ *
+ * Otherwise, update the timestamp to the passed value.
+ *    
+ * This call will leave the cache entry unlocked.
+ *
+ * If is_locked==GLOBUS_TRUE, then this cache entry was locked during a
+ * previous call to globus_gass_cache_add() or
+ * globus_gass_cache_delete_start(). The cache
+ * file should be locked by the corresponding url/tag, or an error is
+ * returned. If it is locked by the corresponding url/tag, then the normal
+ * operation occur, whithout blocking (remove one instance from the tag
+ * update the timestamp and unlock the cache).
+ *
+ * If is_locked==GLOBUS_FALSE, eventually wait the cache is not locked any
+ * more, and then proceed with the normal operations.(remove one instance
+ * from the tag list and update the timestamp).
+ *
+ * Parameters:  
+ *      cache_handle - Handler to the opened cahe directory to use.
+ *
+ *	url - url of the file to be cached. It is used as the main
+ *	key to the cache entries.
+ *
+ *	tag - tag specifying which job is/are using the cache. This
+ *      is usually the GLOBUS_GRAM_JOB_CONTACT. Can be NULL or empty; the
+ *	tag "null" is then used.
+ *
+ *	timestamp - time stamp of the cached file.
+ *
+ *      is_locked - indicate if this cache entry was locked during a
+ *	previous call to globus_gass_cache_add() or
+ *	globus_gass_cache_delete_start().
+ * 
+ *		
+ * Returns:
+ *      GLOBUS_SUCCESS or error code:
+ *      or any of the defined gass error code.   
+ */
 int
-globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
-			 char                *url,
-			 char                *tag,
-			 unsigned long        timestamp,
-			 globus_bool_t        is_locked)
+globus_gass_cache_delete(
+    globus_gass_cache_t *cache_handle,
+    char                *url,
+    char                *tag,
+    unsigned long        timestamp,
+    globus_bool_t        is_locked)
 { 
     int                        rc; /* general purpose return code */
     globus_gass_cache_entry_t *entry_found_pt;
@@ -3087,44 +3190,45 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
        /* and return */
        return(rc);
    } /* while recurs */
-} /* globus_gass_cache_delete */
+}
+/* globus_gass_cache_delete() */
 
-/******************************************************************************
-Function: globus_gass_cache_cleanup_tag()
-
-Description:
-    Remove all instances of the tag from the cache entry's tag list.
-    If there are no more tags in the tag list, then remove this cache entry
-    and delete the associated local cache file.
-
-    If the cache entry is locked with the same tag as is passed to this
-    function, then the entry is unlocked after removing the tags.
-    Otherwise, the cache entry's lock is left untouched.
-
-    This function never block. 
-
-    Note: The GLOBUS_GRAM job manager will automatically call this function with a
-    tag of getenv("GLOBUS_GRAM_JOB_CONTACT") upon completion of a job.
-    
-Parameters: input:    
-                cache_handle: Handler to the opened cahe directory to use.
-		url : url of the file to be cached. It is used as the main
-		    key to the cache entries.
-		tag : tag specifying which job is/are using the cache. This
-		    is usually the GLOBUS_GRAM_JOB_CONTACT. Can be NULL or empty; the
-		    tag "null" is then used.
-
-	    output:
-	        none 
-		
-Returns:    GLOBUS_SUCCESS or error code:
-	    or any of the defined gass error code.   
-
-******************************************************************************/
+/*
+ * globus_gass_cache_cleanup_tag()
+ *
+ * Remove all instances of the tag from the cache entry's tag list.
+ * If there are no more tags in the tag list, then remove this cache entry
+ * and delete the associated local cache file.
+ * If the cache entry is locked with the same tag as is passed to this
+ * function, then the entry is unlocked after removing the tags.
+ * Otherwise, the cache entry's lock is left untouched.
+ *
+ * This function does not block on a locked reference. 
+ *
+ * Note: The GLOBUS_GRAM job manager will automatically call this function
+ * with a tag of getenv("GLOBUS_GRAM_JOB_CONTACT") upon completion of a job.
+ *
+ * Parameters:
+ *
+ *     cache_handle - Handler to the opened cahe directory to use.
+ *
+ *     url - url of the file to be cached. It is used as the main
+ *     key to the cache entries.
+ *
+ *     tag - tag specifying which job is/are using the cache. This
+ *     is usually the GLOBUS_GRAM_JOB_CONTACT. Can be NULL or empty; the
+ *     tag "null" is then used.
+ *
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS or error code:
+ *     or any of the defined gass error code.   
+ */
 int
-globus_gass_cache_cleanup_tag(globus_gass_cache_t *cache_handle,
-			      char                *url,
-			      char                *tag)
+globus_gass_cache_cleanup_tag(
+    globus_gass_cache_t *cache_handle,
+    char                *url,
+    char                *tag)
 {
     int                        rc; /* general purpose return code */
     globus_gass_cache_entry_t *entry_found_pt;
@@ -3249,22 +3353,34 @@ globus_gass_cache_cleanup_tag(globus_gass_cache_t *cache_handle,
    /* and return */
    return(rc);
     
-} /*globus_gass_cache_add_cleanup_tag() */
+}
+/*globus_gass_cache_add_cleanup_tag() */
 
 
-/******************************************************************************
-Function: globus_gass_cache_cleanup_file()
-
-Description:
-    Remove the cache entry and delete the associated local cache file,
-    regardless of the tags in tag list, and regardless of whether or not
-    the cache entry is locked.
-
-    This function never block. 
-******************************************************************************/
+/*
+ * Function: globus_gass_cache_cleanup_file()
+ * 
+ * Description:
+ * Remove the cache entry and delete the associated local cache file,
+ * regardless of the tags in tag list, and regardless of whether or not
+ * the cache entry is locked.
+ * 
+ * This function does not block on a locked reference.
+ *     
+ * Parameters:   
+ *      cache_handle - Handler to the opened cahe directory to use.
+ *
+ * 	url - url of the file to be cached. It is used as the main
+ * 	key to the cache entries.
+ *  		
+ * Returns:
+ *      GLOBUS_SUCCESS or error code:
+ *      or any of the defined gass error code.   
+ */
 int
-globus_gass_cache_cleanup_file(globus_gass_cache_t *cache_handle,
-			       char                *url)
+globus_gass_cache_cleanup_file(
+    globus_gass_cache_t *cache_handle,
+    char                *url)
 {
     int                        rc; /* general purpose return code */
     globus_gass_cache_entry_t *entry_found_pt;
@@ -3333,34 +3449,38 @@ globus_gass_cache_cleanup_file(globus_gass_cache_t *cache_handle,
     /* and return */
     return(rc);
     
-} /*globus_gass_cache_add_cleanup_file() */
+}
+/*globus_gass_cache_add_cleanup_file() */
 
-/******************************************************************************
-Function: globus_gass_cache_list()
-
-Description:
-    Return the entries of the cache in *entries as an array of
-    globus_gass_cache_entry_t structures, and return the number of elements in
-    this array in *size.
-
-    The function globus_gass_cache_list_free() must be called subsequently to free
-    the *entrie array allocated by globus_gass_cache_list();
-Parameters: input:    
-                cache_handle: Handler to the opened cahe directory to use.
-
-	    output:
-	        entries : array of globus_gass_cache_entry_t structure describing
-		    eache cache entry.
-		size : size of the "entries" array, (nb of entries)
-		
-Returns:    GLOBUS_SUCCESS or error code:
-	    or any of the defined gass error code.      
-    
-******************************************************************************/
+/*
+ * globus_gass_cache_add_list()
+ *
+ * Return the entries of the cache in *entries as an array of
+ * globus_gass_cache_entry_t structures, and return the number of elements in
+ * this array in *size.
+ *
+ * The function globus_gass_cache_list_free() must be called subsequently to
+ * free the entrie array allocated by globus_gass_cache_list();
+ *
+ * Parameters:
+ *
+ *     cache_handle - Handler to the opened cahe directory to use.
+ *
+ *     entries - array of globus_gass_cache_entry_t structure describing
+ *     eache cache entry.
+ *		
+ *     size - size of the "entries" array, (nb of entries)
+ *		
+ * Returns:
+ *		
+ *      GLOBUS_SUCCESS 
+ *	or any of the defined gass error code.      
+ */
 int
-globus_gass_cache_list(globus_gass_cache_t        *cache_handle,
-		       globus_gass_cache_entry_t **entries,
-		       int                        *size)
+globus_gass_cache_list(
+    globus_gass_cache_t        *cache_handle,
+    globus_gass_cache_entry_t **entries,
+    int                        *size)
 {
     int      rc;		/* general purpose return code */
     char     size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
@@ -3491,25 +3611,29 @@ globus_gass_cache_list(globus_gass_cache_t        *cache_handle,
     return(rc);
 
     
-} /* globus_gass_cache_list() */
+}
+/* globus_gass_cache_list() */
 
-/******************************************************************************
-Function: globus_gass_cache_add_list_free()
-
-Description:
-  Free the cache entries previously returned by globus_gass_cache_list().
-
-Parameters: input:
-               entries : array of globus_gass_cache_entry_t structure describing
-		    eache cache entry.
-	       size : size of the "entries" array, (nb of entries)
-
-Returns:    GLOBUS_SUCCESS
-
-******************************************************************************/
+/*
+ * globus_gass_cache_list_free()
+ *
+ * Free the cache entries previously returned by globus_gass_cache_list().
+ *
+ * Parameters:
+ *
+ *     entries - array of globus_gass_cache_entry_t structure describing
+ *     eache cache entry.
+ *
+ *     size - size of the "entries" array, (nb of entries)
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS
+ *
+ */
 int 
-globus_gass_cache_list_free(globus_gass_cache_entry_t *entries,
-			    int                        size)
+globus_gass_cache_list_free(
+    globus_gass_cache_entry_t *entries,
+    int                        size)
 {
     int i;
     globus_gass_cache_entry_t *an_entry_pt;
@@ -3526,21 +3650,22 @@ globus_gass_cache_list_free(globus_gass_cache_entry_t *entries,
 } /* globus_gass_cache_add_list_free() */
 
 
-/******************************************************************************
-Function: globus_gass_cache_error_string()
-
-Description:
-  Return a pointer on an error description string.
-
-Parameters: input:    
-               error_code: error code returned by a previously called
-	       globus_gass_cache function.
-	    output:
-	       none
-Returns:   Pointer to an error message, or NULL if invalide error code.      
-******************************************************************************/
-const char *
-globus_gass_cache_error_string(int error_code)
+/*
+ * globus_gass_cache_error_string()
+ *
+ * Return a pointer on an error description string.
+ *
+ *Parameters: 
+ *     error_code: error code returned by a previously called
+ *     globus_gass_cache function.
+ *	    
+ * Returns:
+ *     Pointer to an error message, or NULL if invalide error code.
+ */
+const
+char *
+globus_gass_cache_error_string(
+    int error_code)
 {
     if (error_code > 0 ||
 	-error_code >=
@@ -3551,7 +3676,7 @@ globus_gass_cache_error_string(int error_code)
     }
     return(globus_gass_cache_error_strings[-error_code]);
 }
-
+/* globus_gass_cache_error_string() */
 
 
 

@@ -333,33 +333,6 @@ globus_gass_cache_add_done(
     char *                 tag,
     unsigned long          timestamp);
 
-/*
- * globus_gass_cache_delete_start()
- *
- *
- * Lock the cache entry for the URL, and return the cache entry's current
- * timestamp in *timestamp.
- * This function will block if the data file is already locked, until it is
- * unlocked.
- *
- * Parameters:     
- *
- *     cache_handle - Handler to the opened cahe directory to use.
- *
- *     url - url of the cached file to set as "done" (unlock)
- *
- *     tag - tag specifying which job has locked the cache and must
- *     therfor be unlocked.It is an error to call this function
- *     with a tag which does not currently own the cache lock.
- *	
- *     timestamp - time stamp of the cached file, set by
- *     globus_gass_cache_done(), (or globus_gass_cache_delete() ).
- *
- * Returns:
- *     GLOBUS_SUCCESS or error code:
- *     or any of the defined gass error code.
- *
- */
 extern
 int
 globus_gass_cache_delete_start(
@@ -460,7 +433,7 @@ globus_gass_cache_cleanup_tag(
     char *                 url,
     char *                 tag);
 
-/******************************************************************************
+/*
  * Function: globus_gass_cache_cleanup_file()
  * 
  * Description:
@@ -519,7 +492,7 @@ globus_gass_cache_list(
     int *                         size);
 
 /*
- * globus_gass_cache_add_list_free()
+ * globus_gass_cache_list_free()
  *
  * Free the cache entries previously returned by globus_gass_cache_list().
  *
@@ -533,8 +506,9 @@ globus_gass_cache_list(
  * Returns:
  *     GLOBUS_SUCCESS
  *
-*/
-extern int
+ */
+extern
+int
 globus_gass_cache_list_free(
     globus_gass_cache_entry_t *  entry,
     int                          size);
