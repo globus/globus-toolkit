@@ -697,9 +697,9 @@ cmd: USER SP username CRLF
             {
 		retrieve_is_data = 0;
 #ifndef INTERNAL_LS
-                retrieve("/bin/ls -c1", $4, -1, -1);
+                retrieve("/bin/ls -c1 %s", $4, -1, -1);
 #else
-		ls(NULL, 0);
+		ls($4, 0);
 #endif
             }
 #else /* USE_GLOBUS_DATA_CODE */
