@@ -31,6 +31,7 @@ CVS Information:
 
 #include "globus_nexus.h"
 #include "globus_gram_client.h"
+#include "globus_i_gram_version.h"
 #include "globus_i_gram_handlers.h"
 #include "grami_fprintf.h"
 #include "globus_rsl.h"
@@ -92,6 +93,9 @@ globus_l_job_manager_duct_environment(int count,
 				      char *myjob,
 				      char **newvar,
 				      char **newval);
+static char *
+globus_l_jm_getenv_var(char * env_var_name,
+                       char * default_name);
 
 static int 
 graml_rsl_add(char * attribute_name, 
@@ -99,8 +103,25 @@ graml_rsl_add(char * attribute_name,
 /******************************************************************************
                        Define variables for external use
 ******************************************************************************/
+
+/*
+ * these are used by fork and shell to set environment variables for the job.
+ *
+ *                                         reason needed
+ *                                         --------------
+ */
+char * grami_env_x509_user_proxy = NULL;   /* security */
+char * grami_env_x509_cert_dir = NULL;     /* security */
+char * grami_env_krb5ccname = NULL;        /* security */
+char * grami_env_nlspath = NULL;           /* poe fork */
+char * grami_env_logname = NULL;           /* all */
+char * grami_env_home = NULL;              /* all */
+char * grami_env_tz = NULL;                /* all */
+
+/*
+ * other GRAM internal variables 
+ */
 char * grami_jm_libexecdir = GLOBUS_LIBEXECDIR;
-char * grami_user_proxy_path = NULL;
 char * grami_script_arg_file = NULL;
 char * grami_jm_type = NULL;
 char * grami_logfile = NULL;
@@ -125,10 +146,9 @@ static nexus_handler_t graml_handlers[] =
 #endif  /* BUILD_LITE */
 };
 
-static char * graml_env_home;
 static char graml_callback_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
 static char * graml_job_contact = NULL;
-static char * graml_my_globusid = NULL;
+static char * graml_env_globusid = NULL;
 static char * graml_job_status  = NULL;
 static char * graml_nickname  = NULL;
 static globus_rsl_t * graml_rsl_tree;
@@ -167,6 +187,7 @@ main(int argc,
     int                    size;
     int                    rc;
     int                    count;
+    int                    gram_version;
     int                    n_nodes;
     int                    format;
     int                    job_status;
@@ -180,7 +201,6 @@ main(int argc,
     char *                 arg_libexecdir = NULL;
     char *                 tmp_ptr;
     char *                 my_host;
-    char *                 globusid_ptr;
     unsigned short         my_port;
     FILE *                 args_fp;
     nexus_byte_t           type;
@@ -194,10 +214,15 @@ main(int argc,
     globus_gass_cache_entry_t   * cache_entries;
     int                    cache_size;
     globus_symboltable_t * symbol_table; 
-    char *                 my_env_path;
-    char *                 my_env_user;
-    char *                 my_globus_prefix;
-    char *                 tmp_env_var;
+    char *                 jm_env_globus_subject;
+    char *                 jm_env_globus_site_dn;
+    char *                 jm_env_globus_gram_dn;
+    char *                 jm_env_globus_host_dn;
+    char *                 jm_env_globus_host_manufacturer;
+    char *                 jm_env_globus_host_cputype;
+    char *                 jm_env_globus_host_osname;
+    char *                 jm_env_globus_host_osversion;
+    char *                 jm_globus_prefix;
 
     /* Initialize modules that I use */
     rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
@@ -306,16 +331,15 @@ main(int argc,
         }
     }
 
-    tmp_env_var = (char *) getenv("HOME");
-    if (!tmp_env_var)
+    grami_env_home = globus_l_jm_getenv_var("HOME", NULL);
+    if (!grami_env_home)
     {
+        /* we have to have HOME because we might need it for the default
+         * directory for the user's job
+         */
         fprintf(stderr, "ERROR: unable to get HOME from the environment.\n");
 	exit(1);
     }
-
-    graml_env_home = (char *) globus_malloc(sizeof(char *) * 
-                                            strlen(tmp_env_var) + 1);
-    strcpy(graml_env_home, tmp_env_var);
 
     if (print_debug_flag)
     {
@@ -323,7 +347,7 @@ main(int argc,
          * Open the gram logfile just for testing!
          */
         sprintf(tmp_buffer, "%s/gram_job_mgr_%lu.log",
-                graml_env_home,
+                grami_env_home,
                 (unsigned long) getpid());
 
         if ((grami_log_fp = fopen(tmp_buffer, "a")) == NULL)
@@ -347,45 +371,48 @@ main(int argc,
     grami_logfile = (char *) globus_malloc (strlen(tmp_buffer) + 1);
     strcpy(grami_logfile, tmp_buffer);
 
-    grami_fprintf( grami_log_fp, "-----------------------------------------\n");
-    grami_fprintf( grami_log_fp, "JM: Entering gram_job_manager main()\n");
+    grami_fprintf(grami_log_fp,"-----------------------------------------\n");
+    grami_fprintf(grami_log_fp, "JM: Entering gram_job_manager main()\n");
 
     if (graml_nickname)
     {
         grami_fprintf( grami_log_fp, "JM: nickname = %s\n", graml_nickname);
     }
 
-    grami_fprintf( grami_log_fp, "JM: HOME = %s\n", graml_env_home);
+    grami_fprintf( grami_log_fp, "JM: HOME = %s\n", grami_env_home);
 
-    tmp_env_var = (char *) getenv("PATH");
-    if (!tmp_env_var)
-    {
-        grami_fprintf( grami_log_fp, 
-                       "ERROR: unable to get PATH from the environment.\n");
-        my_env_path = NULL;
-    }
-    else
-    {
-        my_env_path = (char *) globus_malloc(sizeof(char *) * 
-                                            strlen(tmp_env_var) + 1);
-        strcpy(my_env_path, tmp_env_var);
-        grami_fprintf( grami_log_fp, "JM: PATH = %s\n", my_env_path);
-    }
+    /*
+     * Getting environment variables for RSL substitution.
+     */
+    grami_env_logname = globus_l_jm_getenv_var("LOGNAME", NULL);
+    jm_env_globus_subject = globus_l_jm_getenv_var("GLOBUS_SUBJECT", NULL);
+    jm_env_globus_site_dn = globus_l_jm_getenv_var("GLOBUS_SITE_DN", NULL);
+    jm_env_globus_gram_dn = globus_l_jm_getenv_var("GLOBUS_GRAM_DN", NULL);
+    jm_env_globus_host_dn = globus_l_jm_getenv_var("GLOBUS_HOST_DN", NULL);
+    jm_env_globus_host_manufacturer = 
+         globus_l_jm_getenv_var("GLOBUS_HOST_MANUFACTURER", NULL);
+    jm_env_globus_host_cputype = 
+         globus_l_jm_getenv_var("GLOBUS_HOST_CPUTYPE", NULL);
+    jm_env_globus_host_osname  = 
+         globus_l_jm_getenv_var("GLOBUS_HOST_OSNAME", NULL);
+    jm_env_globus_host_osversion = 
+         globus_l_jm_getenv_var("GLOBUS_HOST_OSVERSION", NULL);
 
-    tmp_env_var = (char *) getenv("USER");
-    if (!tmp_env_var)
-    {
-        grami_fprintf( grami_log_fp, 
-                       "ERROR: unable to get USER from the environment.\n");
-        my_env_user = NULL;
-    }
-    else
-    {
-        my_env_user = (char *) globus_malloc(sizeof(char *) * 
-                                            strlen(tmp_env_var) + 1);
-        strcpy(my_env_user, tmp_env_var);
-        grami_fprintf( grami_log_fp, "JM: USER = %s\n", my_env_user);
-    }
+    /*
+     * Getting environment variables to be added to RSL.
+     */
+    graml_env_globusid =
+         globus_l_jm_getenv_var("GLOBUSID", "unknown globusid");
+ 
+    /*
+     * Getting environment variables to be added to the job's environment.
+     * LOGNAME and HOME will be added as well
+     */
+    grami_env_x509_user_proxy= globus_l_jm_getenv_var("X509_USER_PROXY", NULL);
+    grami_env_x509_cert_dir  = globus_l_jm_getenv_var("X509_CERT_DIR", NULL);
+    grami_env_krb5ccname     = globus_l_jm_getenv_var("KRB5CCNAME", NULL);
+    grami_env_nlspath        = globus_l_jm_getenv_var("NLSPATH", NULL);
+    grami_env_tz             = globus_l_jm_getenv_var("TZ", NULL);
 
     if (jm_home_dir)
     {
@@ -404,37 +431,13 @@ main(int argc,
     }
     else
     {
+        /* in this case a status file will not be written */
         graml_jm_status_dir = NULL;
     }
 
     grami_fprintf( grami_log_fp, "JM: grami_jm_libexecdir = %s\n", 
                    grami_jm_libexecdir);
 
-    if ((grami_user_proxy_path = 
-        (char *) getenv("X509_USER_PROXY")) == NULL)
-    {
-        grami_fprintf( grami_log_fp, 
-            "JM: X509_USER_PROXY not defined.\n");
-    }
-    else
-    {
-        grami_fprintf( grami_log_fp, 
-                       "JM: X509_USER_PROXY = %s\n",
-                       grami_user_proxy_path);
-    }
- 
-    if ((globusid_ptr = (char*) getenv("GLOBUSID")) == NULL)
-    {
-        graml_my_globusid = (char *) globus_malloc (sizeof(char *) * 17);
-        strcpy(graml_my_globusid, "unknown globusid");
-    }
-    else
-    {
-        graml_my_globusid = (char *) globus_malloc (sizeof(char *) *
-                            (strlen(globusid_ptr) + 1));
-        strcpy(graml_my_globusid, globusid_ptr);
-    }
- 
     /*
      *  if a test_dat_file has been defined, read data from the file 
      *  instead of from stdin.
@@ -455,7 +458,7 @@ main(int argc,
     }
 
     /*
-     * Read the format incomming message.
+     * Read the format incoming message.
      */
     if (fread(buffer, 1, 1, args_fp) <= 0)
     {
@@ -465,8 +468,34 @@ main(int argc,
     format = (int)buffer[0];
 
     /*
-     * Read the size incomming message.
-    if (fread(buffer, 1, 4, args_fp) <= 0)
+     * Read the globus gram protocol version number.
+     */
+    if (fread(buffer, 1, nexus_dc_sizeof_remote_int(1, format), args_fp) <= 0)
+    {
+        grami_fprintf( grami_log_fp, 
+                       "JM: failed to read gram protocol version number.\n");
+    }
+    ptr = buffer;
+    nexus_user_get_int(&ptr, &gram_version, 1, format);
+
+    if (GLOBUS_GRAM_PROTOCOL_VERSION != gram_version)
+    {
+        grami_fprintf(grami_log_fp, 
+              "JM: ERROR: globus gram protocol version mismatch!\n");
+        grami_fprintf(grami_log_fp, 
+              "JM: gram client version      = %d\n", gram_version);
+        grami_fprintf(grami_log_fp, 
+              "JM: gram job manager version = %d\n",
+              GLOBUS_GRAM_PROTOCOL_VERSION);
+        fprintf(stderr, "ERROR: globus gram protocol version mismatch!\n");
+        fprintf(stderr, "gram client version      = %d\n", gram_version);
+        fprintf(stderr, "gram job manager version = %d\n",
+                                                 GLOBUS_GRAM_PROTOCOL_VERSION);
+        return(GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
+    }
+
+    /*
+     * Read the size incoming message.
      */
     if (fread(buffer, 1, nexus_dc_sizeof_remote_int(1, format), args_fp) <= 0)
     {
@@ -474,10 +503,10 @@ main(int argc,
                        "JM: failed to read size of message buffer.\n");
     }
     ptr = buffer;
-    nexus_dc_get_int(&ptr, &count, 1, format);
+    nexus_user_get_int(&ptr, &count, 1, format);
 
     /*
-     * Read the remainder of the incomming message.
+     * Read the remainder of the incoming message.
      */
     if (fread(buffer, 1, count - nexus_dc_sizeof_remote_int(1, format) + 1,
         args_fp) <= 0)
@@ -554,63 +583,98 @@ main(int argc,
     /* call the RSL routine to parse the user request
      */
     rsl_tree = globus_rsl_parse(rsl_spec);
+    if (!rsl_tree)
+    {
+        job_status = GLOBUS_GRAM_CLIENT_ERROR_BAD_RSL;
+    }
+    else
+    {
 
 /*
         printf("\n------------  after parse  ---------------\n\n");
         globus_rsl_print_recursive(rsl_tree);
 */
 
-    my_globus_prefix = (char *) globus_malloc(sizeof(char *) * 
+        jm_globus_prefix = (char *) globus_malloc(sizeof(char *) * 
                                             strlen(GLOBUS_PREFIX) + 1);
-    strcpy(my_globus_prefix, GLOBUS_PREFIX);
+        strcpy(jm_globus_prefix, GLOBUS_PREFIX);
 
 
-    symbol_table = (globus_symboltable_t *) globus_malloc 
+        /*
+         * build symbol table for RSL evaluation.
+         * variable found in the RSL will be replaced with these values.
+         */
+        symbol_table = (globus_symboltable_t *) globus_malloc 
                             (sizeof(globus_symboltable_t));
 
-    globus_symboltable_init(symbol_table,
-                          globus_hashtable_string_hash,
-                          globus_hashtable_string_keyeq);
+        globus_symboltable_init(symbol_table,
+                              globus_hashtable_string_hash,
+                              globus_hashtable_string_keyeq);
 
-    globus_symboltable_create_scope(symbol_table);
+        globus_symboltable_create_scope(symbol_table);
 
-    globus_symboltable_insert(symbol_table,
-                            (void *) "HOME",
-                            (void *) graml_env_home);
-    if (my_env_path)
-    {
         globus_symboltable_insert(symbol_table,
-                                 (void *) "PATH",
-                                 (void *) my_env_path);
-    }
-    if (my_env_user)
-    {
+                                (void *) "HOME",
+                                (void *) grami_env_home);
+        if (grami_env_logname)
+            globus_symboltable_insert(symbol_table,
+                                (void *) "LOGNAME",
+                                (void *) grami_env_logname);
+        if (jm_env_globus_subject)
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_SUBJECT",
+                                (void *) jm_env_globus_subject);
+        if (jm_env_globus_site_dn)
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_SITE_DN",
+                                (void *) jm_env_globus_site_dn);
+        if (jm_env_globus_gram_dn)
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_GRAM_DN",
+                                (void *) jm_env_globus_gram_dn);
+        if (jm_env_globus_host_dn)
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_HOST_DN",
+                                (void *) jm_env_globus_host_dn);
+        if (jm_env_globus_host_manufacturer)
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_HOST_MANUFACTURER",
+                                (void *) jm_env_globus_host_manufacturer);
+        if (jm_env_globus_host_cputype)
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_HOST_CPUTYPE",
+                                (void *) jm_env_globus_host_cputype);
+        if (jm_env_globus_host_osname)
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_HOST_OSNAME",
+                                (void *) jm_env_globus_host_osname);
+        if (jm_env_globus_host_osversion)
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_HOST_VERSION",
+                                (void *) jm_env_globus_host_osversion);
         globus_symboltable_insert(symbol_table,
-                                (void *) "USER",
-                                (void *) my_env_user);
-    }
-    globus_symboltable_insert(symbol_table,
-			    (void *) "GLOBUS_PREFIX",
-			    (void *) my_globus_prefix);
+                                (void *) "GLOBUS_PREFIX",
+                                (void *) jm_globus_prefix);
     
-    if (globus_rsl_eval(rsl_tree, symbol_table) != 0)
-    {
-        job_status = GLOBUS_GRAM_CLIENT_ERROR_RSL_EVALUATION_FAILED;
-    }
-    else
-    {
+        if (globus_rsl_eval(rsl_tree, symbol_table) != 0)
+        {
+            job_status = GLOBUS_GRAM_CLIENT_ERROR_RSL_EVALUATION_FAILED;
+        }
+        else
+        {
 /*
             printf("\n------------  after eval  ---------------\n\n");
             globus_rsl_print_recursive(rsl_tree);
 */
 
-        graml_rsl_tree = rsl_tree;
+            graml_rsl_tree = rsl_tree;
 
-        /*
-         * Start the job.  If successful reply with graml_job_contact else
-         * send error status.
-         */
-        job_status = grami_jm_job_request(graml_job_contact, rsl_tree);
+            /*
+             * Start the job.  If successful reply with graml_job_contact else
+             * send error status.
+             */
+            job_status = grami_jm_job_request(graml_job_contact, rsl_tree);
+        }
     }
 
 
@@ -619,16 +683,19 @@ main(int argc,
         count= strlen(graml_job_contact);
 	size = nexus_sizeof_int(1);
 	size += nexus_sizeof_int(1);
+	size += nexus_sizeof_int(1);
 	size += nexus_sizeof_char(count);
 	nexus_buffer_init(&reply_buffer, size, 0);
+        nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
         nexus_put_int(&reply_buffer, &job_status, 1);
         nexus_put_int(&reply_buffer, &count, 1);
 	nexus_put_char(&reply_buffer, graml_job_contact, count);
     }
     else
     {
-	size = nexus_sizeof_int(1);
+	size = nexus_sizeof_int(2);
 	nexus_buffer_init(&reply_buffer, size, 0);
+        nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
         nexus_put_int(&reply_buffer, &job_status, 1);
     }
  
@@ -688,19 +755,19 @@ main(int argc,
             free(grami_script_arg_file);
         }
 
-        if (grami_user_proxy_path)
+        if (grami_env_x509_user_proxy)
         {
-            if (remove(grami_user_proxy_path) != 0)
+            if (remove(grami_env_x509_user_proxy) != 0)
             {
                 grami_fprintf( grami_log_fp, 
                          "JM: Cannot remove user proxy file --> %s\n",
-                         grami_user_proxy_path);
+                         grami_env_x509_user_proxy);
             }
             else
             {
                 grami_fprintf( grami_log_fp, 
                          "JM: Removed user proxy file --> %s\n",
-                         grami_user_proxy_path);
+                         grami_env_x509_user_proxy);
             }
         }
     }
@@ -840,15 +907,16 @@ grami_jm_callback(int state, int errorcode)
         if (rc == 0)
         {
             size  = nexus_sizeof_int(1);
+            size += nexus_sizeof_int(1);
             size += nexus_sizeof_char(strlen(graml_job_contact));
             size += nexus_sizeof_int(1);
             size += nexus_sizeof_int(1);
 
-            nexus_buffer_init(&reply_buffer, size, 0);
             count= strlen(graml_job_contact);
+            nexus_buffer_init(&reply_buffer, size, 0);
+            nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
             nexus_put_int(&reply_buffer, &count, 1);
-            nexus_put_char(&reply_buffer, graml_job_contact,
-                           strlen(graml_job_contact));
+            nexus_put_char(&reply_buffer, graml_job_contact, count);
             nexus_put_int(&reply_buffer, &state, 1);
             nexus_put_int(&reply_buffer, &errorcode, 1);
 
@@ -958,7 +1026,7 @@ graml_status_file_gen(int job_status)
                 tmp_attribute = (char *) globus_malloc(sizeof(char *) * 10);
                 strcpy(tmp_attribute, "globus_id");
                 
-                if (graml_rsl_add(tmp_attribute, graml_my_globusid) != 0)
+                if (graml_rsl_add(tmp_attribute, graml_env_globusid) != 0)
                 {
                     grami_fprintf( grami_log_fp, 
                         "JM: ERROR adding %s to the RSL.\n", tmp_attribute);
@@ -1186,7 +1254,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
     if (tmp_param[0])
         params->dir = tmp_param[0];
     else
-        params->dir = graml_env_home;
+        params->dir = grami_env_home;
 
     /********************************** 
      *  GET STDIN PARAM
@@ -1525,8 +1593,9 @@ graml_cancel_handler(nexus_endpoint_t * endpoint,
 
     rc = grami_jm_job_cancel();
 
-    size = nexus_sizeof_int(1);
+    size = nexus_sizeof_int(2);
     nexus_buffer_init(&reply_buffer, size, 0);
+    nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
     nexus_put_int(&reply_buffer, &rc, 1);
 
     nexus_send_rsr(&reply_buffer,
@@ -1589,8 +1658,10 @@ graml_start_time_handler(nexus_endpoint_t * endpoint,
     size  = nexus_sizeof_int(1);
     size += nexus_sizeof_int(1);
     size += nexus_sizeof_int(1);
+    size += nexus_sizeof_int(1);
 
     nexus_buffer_init(&reply_buffer, size, 0);
+    nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
     nexus_put_int(&reply_buffer, &rc, 1);
     nexus_put_int(&reply_buffer, &estimate.dumb_time, 1);
     nexus_put_int(&reply_buffer, &interval_size.dumb_time, 1);
@@ -1795,4 +1866,42 @@ globus_l_job_manager_duct_environment(int count,
     (*newvar) = strdup("GLOBUS_GRAM_MYJOB_CONTACT");
 
     return GLOBUS_SUCCESS;
+}
+
+static char *
+globus_l_jm_getenv_var(char * env_var_name,
+                       char * default_name)
+{
+    char * tmp_env_var;
+    char * env_var;
+
+    tmp_env_var = (char *) getenv(env_var_name);
+
+    if (tmp_env_var)
+    {
+        env_var = (char *) globus_malloc(sizeof(char *) * 
+                                         strlen(tmp_env_var) + 1);
+        strcpy(env_var, tmp_env_var);
+        grami_fprintf( grami_log_fp, "JM: %s = %s\n", env_var_name, env_var);
+    }
+    else
+    {
+        grami_fprintf( grami_log_fp, 
+                       "ERROR: unable to get %s from the environment.\n",
+                       env_var_name);
+        if (default_name)
+        {
+            env_var = (char *) globus_malloc (sizeof(char *) *
+                                            strlen(default_name) + 1);
+            strcpy(env_var, default_name);
+            grami_fprintf( grami_log_fp, "JM: %s = %s\n", env_var_name,
+                 env_var);
+        }
+        else
+        {
+            env_var = NULL;
+        }
+    }
+
+    return(env_var);
 }
