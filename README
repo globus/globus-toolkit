@@ -124,62 +124,6 @@ the username.
 4. License and Support
 ----------------------
 
-The myproxy-server allows both the server administrator and users who
-upload credentials to control who is authorized to retrieve the
-credentials.  The server administrator sets a server-wide policy that
-specifies which authenticated identities (Distinguished Names) are
-allowed to upload, retrieve, and renew credentials using the
-accepted_credentials, authorized_retrievers, and authorized_renewers
-statements in the myproxy-server configuration file.  Users can not
-override these server-wide policies, so they must be permissive enough
-to allow the myproxy-server to be used as required at the site.
-
-Policy expressions are also associated with each credential, to
-control which authenticated identities may retrieve or renew that
-specific credential.  The server administrator specifies a default
-policy that is applied if the user doesn't specify one when uploading
-the credential, using the default_retrievers and default_renewers
-statements in the myproxy-server configuration file.  The intention is
-that the server administrator will set restrictive default
-per-credential policies and more permissive server-wide policies, to
-allow users to override the restrictive per-credential policies as
-needed.
-
-Users can specify the policies for credential retrieval and renewal
-using arguments to myproxy-init.  This allows the user to set an
-appropriate policy when uploading a credential for a specific
-purpose.  For example, when uploading a credential to use with a
-specific web portal, the user can authorize only that specific web
-portal to retrieve the credential, and then use myproxy-destroy to
-remove the credential when finished using that portal.
-
-Examples:
-
-  1. Upload a credential for use with the Alliance User Portal:
-
-       myproxy-init -r "portal/aup.ncsa.uiuc.edu"
-
-  2. Upload a credential for retrieval with just a username/passphrase
-     (so-called "anonymous" retrieval):
-
-       myproxy-init -a
-
-  3. Upload a credential for renewal by Condor-G on
-     hn01.ncsa.uiuc.edu:
-
-       myproxy-init -R "condorg/hn01.ncsa.uiuc.edu"
-
-The ability to set per-credential policies makes it more attractive to
-upload different credentials for different purposes.  Currently, the
-support for this is limited but it is an area we plan to work on.  The
-best approach right now is to use different usernames for the
-different credentials, like "jbasney-portal1", "jbasney-portal2",
-"jbasney-renewable", etc.  Use the -l option with myproxy-init to set
-the username.
-
-4. License and Support
-----------------------
-
 Myproxy is Copyright 2000-2002 The Board of Trustees of the University
 of Illinois.
 
@@ -220,8 +164,8 @@ Jim Basney
 
 7. Contributors
 ---------------
-Jarek Gawor <gawor@mcs.anl.gov>
-Benjamin Temko <btemko@extreme.indiana.edu>
-Daniel Kouril <kouril@ics.muni.cz>
-Miroslav Ruda <ruda@ics.muni.cz>
-Shiva Shankar Chetan <chetan@ncsa.uiuc.edu>
+Jarek Gawor
+Benjamin Temko
+Daniel Kouril
+Miroslav Ruda
+Shiva Shankar Chetan
