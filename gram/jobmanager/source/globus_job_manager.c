@@ -48,6 +48,9 @@ CVS Information:
 #include "globus_gass_transfer_assist.h"
 #include "globus_duct_control.h"
 
+#include "globus_i_gram_http.h"
+#include <globus_io.h>
+
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
@@ -228,6 +231,14 @@ globus_bool_t
 globus_l_gram_jm_check_status(
     globus_time_t			time_can_block,
     void *				callback_arg);
+
+void
+globus_l_jm_http_query_callback( void * arg,
+				 globus_io_handle_t * handle,
+				 globus_result_t result,
+				 globus_byte_t * buf,
+				 globus_size_t nbytes);
+
 /******************************************************************************
                        Define variables for external use
 ******************************************************************************/
@@ -441,6 +452,14 @@ main(int argc,
     {
 	fprintf(stderr, "%s activation failed with rc=%d\n",
 		GLOBUS_GRAM_JOBMANAGER_MODULE->module_name, rc);
+	exit(1);
+    }
+
+    rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "%s activation failed with rc=%d\n",
+		GLOBUS_GRAM_CLIENT_MODULE->module_name, rc);
 	exit(1);
     }
 
@@ -1068,6 +1087,7 @@ main(int argc,
     grami_fprintf( request->jobmanager_log_fp,
           "JM: job status mask = %d\n",job_state_mask);
 
+#ifndef GRAM_GOES_HTTP
     /*
      * Create an endpoint that will be used by globus_l_gram_attach_requested
      * when other attach to this job manager
@@ -1085,24 +1105,37 @@ main(int argc,
                             &my_host,                       /* host      */
                             globus_l_gram_attach_requested, /*approval_func()*/
                             NULL);
-    if (rc != 0)
-    {
-        GRAM_UNLOCK;
-        return(GLOBUS_GRAM_CLIENT_ERROR_JM_FAILED_ALLOW_ATTACH);
-    }
-    else
-    {
-        sprintf(tmp_buffer, "x-nexus://%s:%hu/%lu/%lu/",
-                              my_host,
-                              my_port,
-                              (unsigned long) getpid(),
-                              (unsigned long) time(0));
+    #define GRAM_I_PROTOCOL "x-nexus"
 
-        graml_job_contact = (char *) globus_libc_strdup (tmp_buffer);
+#else
+    rc = globus_gram_http_allow_attach( &my_port,
+					&my_host,
+					(void *) request,
+					globus_l_jm_http_query_callback,
+					GLOBUS_NULL );
 
-        grami_setenv("GLOBUS_GRAM_JOB_CONTACT", graml_job_contact, 1);
-        conf.num_env_adds++;
+    #define GRAM_I_PROTOCOL "https" 
+    
+#endif
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+	GRAM_UNLOCK;
+	return GLOBUS_GRAM_CLIENT_ERROR_JM_FAILED_ALLOW_ATTACH;
     }
+
+    sprintf(tmp_buffer,
+	    "%s://%s:%hu/%lu/%lu/",
+	    GRAM_I_PROTOCOL,
+	    my_host,
+	    my_port,
+	    (unsigned long) getpid(),
+	    (unsigned long) time(0));
+    
+    graml_job_contact = (char *) globus_libc_strdup (tmp_buffer);
+    
+    grami_setenv("GLOBUS_GRAM_JOB_CONTACT", graml_job_contact, 1);
+    conf.num_env_adds++;
 
     /* call the RSL routine to parse the user request
      */
@@ -4226,3 +4259,108 @@ globus_l_gram_jm_check_files(
     return GLOBUS_FALSE;
 }
 
+/******************************************************************************
+Function:       globus_gram_http_query_callback()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+
+#define my_malloc(type) (type *) globus_libc_malloc(sizeof(type))
+
+void
+globus_l_jm_http_query_callback( void * arg,
+				 globus_io_handle_t * handle,
+				 globus_result_t result,
+				 globus_byte_t * buf,
+				 globus_size_t nbytes)
+{
+    char            message[GLOBUS_GRAM_HTTP_BUFSIZE];
+    globus_size_t   msgsize;
+    int             version;
+    int             query;
+    int             rc;
+    int *           tstatus = GLOBUS_NULL;
+    char *          p;
+
+    globus_libc_printf("jm_read_callback : read done on %d\n", handle->fd);
+
+    if (result != GLOBUS_SUCCESS)
+    {
+	globus_libc_printf("jm_read_callback : error, closing %d\n",
+			   handle->fd);
+	globus_io_register_close( handle,
+				  globus_gram_http_close_callback,
+				  GLOBUS_NULL );
+    }
+    else
+    {
+	/* acquire mutex */
+	rc = globus_gram_http_unframe( buf,
+				       nbytes,
+				       (globus_byte_t *) message,
+				       &msgsize );
+
+	globus_libc_printf("jm_read_callback : rc = %d message = %s \n",
+			   rc,
+			   message);
+
+	if ((rc != GLOBUS_SUCCESS)
+	    || (2!=sscanf(message, "%d\n%d", &version, &query))
+	    || (version != GLOBUS_GRAM_PROTOCOL_VERSION))
+	{
+	    globus_libc_printf("jm_read_callback : msg error\n");
+	    globus_gram_http_frame_error( buf );
+	}
+	else
+	{
+	    globus_io_handle_get_user_pointer( handle,
+					       (void **) &tstatus );
+	    rc = GLOBUS_SUCCESS;
+	    switch(query)
+	    {
+	    case GLOBUS_I_GRAM_JOB_MANAGER_CANCEL_HANDLER_ID:
+		*tstatus = GLOBUS_GRAM_CLIENT_JOB_STATE_DONE;
+		globus_libc_sprintf(
+		    message,
+		    "%d\n%d\n",
+		    GLOBUS_GRAM_PROTOCOL_VERSION,
+		    GLOBUS_SUCCESS );
+		break;
+
+	    case GLOBUS_I_GRAM_JOB_MANAGER_STATUS_HANDLER_ID:
+		globus_libc_sprintf(
+		    message,
+		    "%d\n%d %d\n",
+		    GLOBUS_GRAM_PROTOCOL_VERSION,
+		    *tstatus,
+		    GLOBUS_SUCCESS );
+		break;
+
+	     default:
+		 globus_libc_printf("ouch...\n");
+		 ++rc;
+		 break;
+	     }
+	    
+	    if (rc == GLOBUS_SUCCESS)
+		rc = globus_gram_http_frame( (globus_byte_t *) message,
+					     (globus_size_t) strlen(message),
+					     buf );
+	    if (rc != GLOBUS_SUCCESS)
+		globus_gram_http_frame_error(buf);
+	}
+	globus_libc_printf("jm_read_callback : write on %d\n%s-----\n",
+			   handle->fd,
+			   (char *) buf); 
+
+	/* release mutex */
+	
+	result = globus_io_register_write(
+	    handle,
+	    buf,
+	    GLOBUS_GRAM_HTTP_BUFSIZE,
+	    globus_gram_http_close_after_read_or_write,
+	    GLOBUS_NULL );
+    }
+}
