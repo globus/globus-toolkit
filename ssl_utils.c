@@ -1104,8 +1104,9 @@ ssl_proxy_store_to_file(SSL_CREDENTIALS		*proxy_creds,
      * exist.
      */
     open_flags = O_CREAT | O_EXCL | O_WRONLY;
+    file_mode = S_IRUSR | S_IWUSR;	/* 0600 */
     
-    fd = open(path, open_flags);
+    fd = open(path, open_flags, file_mode);
     
     if (fd == -1)
     {
@@ -1114,16 +1115,6 @@ ssl_proxy_store_to_file(SSL_CREDENTIALS		*proxy_creds,
 	goto error;
     }
 
-    /* Set file permissions */
-    file_mode = S_IRUSR | S_IWUSR;	/* 600 */
-
-    if (fchmod(fd, file_mode) == -1)
-    {
-	verror_put_string("Error setting permissions on %s", path);
-	verror_put_errno(errno);
-	goto error;
-    }
-    
     /*
      * Dump proxy to buffer
      */
