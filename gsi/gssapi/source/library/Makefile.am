@@ -32,6 +32,8 @@ Sources = \
 include_HEADERS= \
 	gssapi.h
 
+AM_CFLAGS = -DDEBUG
+
 lib_LTLIBRARIES = libglobus_gssapi_gsi_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = $(GPT_INCLUDES)
