@@ -959,42 +959,6 @@ try_password_authentication(char *prompt)
 }
 
 #ifdef GSSAPI
-/*
- * This code stolen from the gss-client.c sample program from MIT's
- * kerberos 5 distribution.
- */
-
-static void display_status_1(m, code, type)
- char *m;
- OM_uint32 code;
- int type;
-{
-  OM_uint32 maj_stat, min_stat;
-  gss_buffer_desc msg;
-  OM_uint32 msg_ctx;
-
-  msg_ctx = 0;
-  while (1) {
-    maj_stat = gss_display_status(&min_stat, code,
-                                  type, GSS_C_NULL_OID,
-                                  &msg_ctx, &msg);
-    debug("GSS-API error %s: %s", m, (char *)msg.value);
-    (void) gss_release_buffer(&min_stat, &msg);
-
-    if (!msg_ctx)
-      break;
-  }
-}
-
-static void display_gssapi_status(msg, maj_stat, min_stat)
-  char *msg;
-  OM_uint32 maj_stat;
-  OM_uint32 min_stat;
-{
-  display_status_1(msg, maj_stat, GSS_C_GSS_CODE);
-  display_status_1(msg, min_stat, GSS_C_MECH_CODE);
-}
-
 #ifdef GSI
 char * get_gsi_name()
 {
@@ -1007,7 +971,6 @@ char * get_gsi_name()
   gss_OID_set oidset;
   gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
 
-  debug("calling gss_acquire_cred");
   gss_create_empty_oid_set(&min_stat,&oidset);
   gss_add_oid_set_member(&min_stat,&supported_mechs[GSI].oid,&oidset);
   maj_stat = gss_acquire_cred(&min_stat,
@@ -1020,10 +983,7 @@ char * get_gsi_name()
                               NULL);
 
   if (maj_stat != GSS_S_COMPLETE) {
-    display_gssapi_status("Failuring acquiring GSSAPI credentials",
-                          maj_stat, min_stat);
-    gss_cred = GSS_C_NO_CREDENTIAL; /* should not be needed */
-    return 0;
+      goto error;
   }
 
   debug("calling gss_inquire_cred");
@@ -1034,7 +994,7 @@ char * get_gsi_name()
                               NULL,
                               NULL);
   if (maj_stat != GSS_S_COMPLETE) {
-    return NULL;
+      goto error;
   }
 
   maj_stat = gss_display_name(&min_stat,
@@ -1042,12 +1002,12 @@ char * get_gsi_name()
 			      tmpnamed,
 			      NULL);
   if (maj_stat != GSS_S_COMPLETE) {
-     return NULL;
+      goto error;
   }
   debug("gss_display_name finsished");
   retname = (char *)malloc(tmpname.length + 1);
   if (!retname) {
-    return NULL;
+      goto error;
   }
   memcpy(retname, tmpname.value, tmpname.length);
   retname[tmpname.length] = '\0';
@@ -1056,6 +1016,11 @@ char * get_gsi_name()
   gss_release_buffer(&min_stat, tmpnamed);
 
   return retname;
+
+ error:
+  debug("Failed to set GSI username from credentials");
+  ssh_gssapi_error(&supported_mechs[GSI].oid, maj_stat, min_stat);
+  return NULL;
 }
 #endif /* GSI */
 
@@ -1135,14 +1100,14 @@ int try_gssapi_authentication(char *host, Options *options)
   service_name = NULL;
 
   if (maj_stat != GSS_S_COMPLETE) {
-    display_gssapi_status("importing service name", maj_stat, min_stat);
+    ssh_gssapi_error(GSS_C_NO_OID, maj_stat, min_stat);
     goto cleanup;
   }
 
   maj_stat = gss_indicate_mechs(&min_stat, &gss_mechs);
 
   if (maj_stat != GSS_S_COMPLETE) {
-    display_gssapi_status("indicating mechs", maj_stat, min_stat);
+    ssh_gssapi_error(GSS_C_NO_OID, maj_stat, min_stat);
     goto cleanup;
   }
 
@@ -1270,7 +1235,7 @@ int try_gssapi_authentication(char *host, Options *options)
       (void) gss_release_buffer(&min_stat, &recv_tok);
 
     if (maj_stat != GSS_S_COMPLETE && maj_stat != GSS_S_CONTINUE_NEEDED) {
-      display_gssapi_status("initializing context", maj_stat, min_stat);
+      ssh_gssapi_error(&mech_oid, maj_stat, min_stat);
 
       /* Send an abort message */
       packet_start(SSH_MSG_AUTH_GSSAPI_ABORT);
@@ -1358,8 +1323,7 @@ int try_gssapi_authentication(char *host, Options *options)
                           &qop_state);
 
     if (maj_stat != GSS_S_COMPLETE) {
-      display_gssapi_status("unwraping SSHD key hash",
-                            maj_stat, min_stat);
+      ssh_gssapi_error(&mech_oid, maj_stat, min_stat);
       packet_disconnect("Verification of SSHD keys through GSSAPI-secured channel failed: "
                         "Unwrapping of hash failed.");
     }
