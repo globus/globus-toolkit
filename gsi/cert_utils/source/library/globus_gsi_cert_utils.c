@@ -3,6 +3,7 @@
 #include "globus_openssl.h"
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include "version.h"
 #include "config.h"
 #include <ctype.h>
@@ -200,23 +201,39 @@ globus_gsi_cert_utils_make_time(
 }
 
 globus_result_t
-globus_gsi_cert_utils_check_proxy_name(
-    X509 *                                    cert,
-    globus_gsi_cert_utils_proxy_type_t *      type)
+globus_gsi_cert_utils_get_cert_type(
+    X509 *                              cert,
+    globus_gsi_cert_utils_cert_type_t * type)
 {
     X509_NAME *                         subject = NULL;
     X509_NAME *                         name = NULL;
     X509_NAME_ENTRY *                   ne = NULL;
     X509_NAME_ENTRY *                   new_ne = NULL;
     ASN1_STRING *                       data = NULL;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    int                                 index;
+    int                                 critical;
+    BASIC_CONSTRAINTS *                 x509v3_bc;
     static char *                       _function_name_ =
-        "globus_i_gsi_cred_X509_check_proxy_name";
+        "globus_gsi_cert_utils_get_cert_type";
     
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
-    *type = GLOBUS_NOT_PROXY;
+    /* assume it is a EEC if nothing else matches */
+    
+    *type = GLOBUS_GSI_CERT_UTILS_TYPE_EEC;
+    
+    if((x509v3_bc = X509_get_ext_d2i(cert,
+                                     NID_basic_constraints,
+                                     &critical,
+                                     &index)) && x509v3_bc->ca)
+    {
+        *type = GLOBUS_GSI_CERT_UTILS_TYPE_CA;
+        goto exit;
+    }
+    
     subject = X509_get_subject_name(cert);
+    
     if((ne = X509_NAME_get_entry(subject, X509_NAME_entry_count(subject)-1))
        == NULL)
     {
@@ -231,21 +248,25 @@ globus_gsi_cert_utils_check_proxy_name(
     {
         /* the name entry is of the type: common name */
         data = X509_NAME_ENTRY_get_data(ne);
-        if (data->length == 5 && !memcmp(data->data,"proxy",5))
+        if(data->length == 5 && !memcmp(data->data,"proxy",5))
         {
-            *type = GLOBUS_FULL_PROXY;
+            *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
         }
-        else if (data->length == 13 && !memcmp(data->data,"limited proxy",13))
+        else if(data->length == 13 && !memcmp(data->data,"limited proxy",13))
         {
-            *type = GLOBUS_LIMITED_PROXY;
+            *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
         }
-        else if (data->length == 16 && 
-                 !memcmp(data->data,"restricted proxy",16))
+        else if((index = X509_get_ext_by_NID(cert,
+                                            OBJ_sn2nid(PROXYCERTINFO_SN),
+                                            -1)) != -1 &&
+                X509_EXTENSION_get_critical(X509_get_ext(cert,index)))
         {
-	    *type = GLOBUS_RESTRICTED_PROXY;
-        } 
+            *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
+        }
 
-        if(*type != GLOBUS_NOT_PROXY)
+        if(*type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY ||
+           *type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY ||
+           *type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
         {
             /* its some kind of proxy - now we check if the subject
              * matches the signer, by adding the proxy name entry CN
@@ -301,7 +322,11 @@ globus_gsi_cert_utils_check_proxy_name(
                  * Reject this certificate, only the user
                  * may sign the proxy
                  */
-                *type = GLOBUS_ERROR_PROXY;
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Issuer name + proxy CN entry does not equal subject name"));
+                goto exit;
             }
 
             if(name)

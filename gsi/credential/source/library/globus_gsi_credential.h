@@ -263,9 +263,9 @@ globus_result_t globus_gsi_cred_get_goodtill(
     globus_gsi_cred_handle_t            handle,
     time_t *                            goodtill);
  
-globus_result_t globus_gsi_cred_check_proxy(
-    globus_gsi_cred_handle_t               handle,
-    globus_gsi_cert_utils_proxy_type_t *   type);
+globus_result_t globus_gsi_cred_get_cert_type(
+    globus_gsi_cred_handle_t            handle,
+    globus_gsi_cert_utils_cert_type_t * type);
 
 globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,

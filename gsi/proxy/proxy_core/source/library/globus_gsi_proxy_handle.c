@@ -125,7 +125,7 @@ globus_gsi_proxy_handle_init(
         }
     }
 
-    handle_i->type = GLOBUS_GSI_PROXY_TYPE_GSI_3;
+    handle_i->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
 
     result = GLOBUS_SUCCESS;
     goto exit;
@@ -484,7 +484,7 @@ globus_gsi_proxy_handle_set_private_key(
 globus_result_t
 globus_gsi_proxy_handle_get_type(
     globus_gsi_proxy_handle_t           handle,
-    globus_gsi_proxy_type_t *           type)
+    globus_gsi_cert_utils_cert_type_t * type)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ = 
@@ -533,7 +533,7 @@ globus_gsi_proxy_handle_get_type(
 globus_result_t
 globus_gsi_proxy_handle_set_type(
     globus_gsi_proxy_handle_t           handle,
-    globus_gsi_proxy_type_t             type)
+    globus_gsi_cert_utils_cert_type_t   type)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ = 

@@ -127,24 +127,6 @@ typedef struct globus_l_gsi_proxy_handle_s *
 typedef struct 
 globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 
-/**
- * Proxy Types.
- * @ingroup globus_gsi_proxy_handle
- *
- * The C version of GSI currently supports three types of proxies:
- *
- * - GLOBUS_GSI_PROXY_TYPE_GSI_3 - a proxy conforming to the GGF X.509 Proxy
- *   Certificate Profile document.
- * - GLOBUS_GSI_PROXY_TYPE_GSI_2 - a full globus proxy
- * - GLOBUS_GSI_PROXY_TYPE_GSI_2_LIMITED - a limited globus proxy
- */
-
-typedef enum globus_gsi_proxy_type_e
-{
-    GLOBUS_GSI_PROXY_TYPE_GSI_3,
-    GLOBUS_GSI_PROXY_TYPE_GSI_2,
-    GLOBUS_GSI_PROXY_TYPE_GSI_2_LIMITED
-} globus_gsi_proxy_type_t;
 
 /**
  * @defgroup globus_gsi_proxy_handle Handle Management
@@ -193,12 +175,12 @@ globus_gsi_proxy_handle_set_private_key(
 globus_result_t
 globus_gsi_proxy_handle_get_type(
     globus_gsi_proxy_handle_t           handle,
-    globus_gsi_proxy_type_t *           type);
+    globus_gsi_cert_utils_cert_type_t * type);
 
 globus_result_t
 globus_gsi_proxy_handle_set_type(
     globus_gsi_proxy_handle_t           handle,
-    globus_gsi_proxy_type_t             type);
+    globus_gsi_cert_utils_cert_type_t   type);
 
 
 globus_result_t

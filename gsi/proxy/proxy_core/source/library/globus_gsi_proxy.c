@@ -118,10 +118,7 @@ globus_l_gsi_proxy_activate(void)
     /* create the proxycertinfo object identifier and add it to the
      * database of oids
      */
-    pci_NID = OBJ_create(PROXYCERTINFO_OID, 
-                         PROXYCERTINFO_SN, 
-                         PROXYCERTINFO_LN);
-
+    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
     pci_x509v3_ext_meth = PROXYCERTINFO_x509v3_ext_meth();
 
     /* this sets the pci NID in the static X509V3_EXT_METHOD struct */
@@ -361,7 +358,7 @@ globus_gsi_proxy_create_req(
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, X509_REQ, handle->req);
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END X509_REQ  ******\n");
 
-    if(handle->type == GLOBUS_GSI_PROXY_TYPE_GSI_3)
+    if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
     {
         /* write the PCI to the BIO */
         if(i2d_PROXYCERTINFO_bio(output_bio, handle->proxy_cert_info) == 0)
@@ -492,11 +489,11 @@ globus_gsi_proxy_inquire_req(
             goto done;
         }
 
-        handle->type = GLOBUS_GSI_PROXY_TYPE_GSI_3;
+        handle->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
     }
     else
     {
-        handle->type = GLOBUS_GSI_PROXY_TYPE_GSI_2;
+        handle->type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
     }
 
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START X509_REQ ******\n");
@@ -630,7 +627,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
     
-    if(handle->type == GLOBUS_GSI_PROXY_TYPE_GSI_3)
+    if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
     {
         long                            sub_hash;
         unsigned int                    len;
@@ -731,7 +728,7 @@ globus_gsi_proxy_sign_req(
                 ("Couldn't add X509 extension to new proxy cert"));
         }
     }
-    else if(handle->type == GLOBUS_GSI_PROXY_TYPE_GSI_2_LIMITED)
+    else if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
     {
         common_name = LIMITED_PROXY_NAME;
         serial_number = X509_get_serialNumber(issuer_cert);
@@ -908,7 +905,7 @@ globus_gsi_proxy_sign_req(
     }
 
  done:  
-    if(handle->type == GLOBUS_GSI_PROXY_TYPE_GSI_3)
+    if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
     {
         if(serial_number)
         {

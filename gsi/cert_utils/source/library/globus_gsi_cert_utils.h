@@ -86,9 +86,9 @@ globus_result_t globus_gsi_cert_utils_make_time(
 globus_result_t globus_gsi_cert_utils_get_base_name(
     X509_NAME *                         subject);
 
-globus_result_t globus_gsi_cert_utils_check_proxy_name(
-    X509 *                                 cert,
-    globus_gsi_cert_utils_proxy_type_t *   type);
+globus_result_t globus_gsi_cert_utils_get_cert_type(
+    X509 *                              cert,
+    globus_gsi_cert_utils_cert_type_t * type);
 
 globus_result_t globus_gsi_cert_utils_get_x509_name(
     char *                              subject_string,

@@ -245,7 +245,7 @@ typedef struct globus_l_gsi_proxy_handle_s
     /** The number of minutes the proxy certificate is valid for */
     int                                 time_valid;
     /** The type of the generated proxy */
-    globus_gsi_proxy_type_t             type;
+    globus_gsi_cert_utils_cert_type_t   type;
 } globus_i_gsi_proxy_handle_t;
 
 

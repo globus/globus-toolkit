@@ -453,7 +453,8 @@ globus_i_gsi_callback_cred_verify(
         goto exit;
     }
 
-    if(callback_data->proxy_type == GLOBUS_NOT_PROXY)
+    if(callback_data->cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_EEC ||
+       callback_data->cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_CA)
     {
         /* only want to check that the cert isn't revoked if its not
          * a proxy, since proxies don't ever get revoked
@@ -523,7 +524,7 @@ globus_i_gsi_callback_check_proxy(
     X509_STORE_CTX *                    x509_context,
     globus_gsi_callback_data_t          callback_data)
 {
-    globus_gsi_cert_utils_proxy_type_t  proxy_type;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_i_gsi_callback_check_proxy";
@@ -534,8 +535,8 @@ globus_i_gsi_callback_check_proxy(
      * look at the certificate to verify the proxy rules, 
      * and ca-signing-policy rules. We will also do a CRL check
      */
-    result = globus_gsi_cert_utils_check_proxy_name(x509_context->current_cert,
-                                                    &proxy_type);
+    result = globus_gsi_cert_utils_get_cert_type(x509_context->current_cert,
+                                                    &cert_type);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
@@ -544,23 +545,15 @@ globus_i_gsi_callback_check_proxy(
         goto exit;
     }
 
-    if(proxy_type == GLOBUS_ERROR_PROXY)
-    {
-        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CALLBACK_ERROR_INVALID_PROXY,
-            ("Invalid proxy: subject of proxy cert contains "
-             "proxy name, but subject does not "
-             "match issuer's subject name"));
-        x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
-        goto exit;
-    }
-    else if(proxy_type != GLOBUS_NOT_PROXY)
+    callback_data->cert_type = cert_type;
+    
+    if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY ||
+       cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY ||
+       cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
     {  
-        /* gotta be a proxy */
-        callback_data->proxy_type = proxy_type;
+        /* it is a proxy */
 
-        if (proxy_type == GLOBUS_LIMITED_PROXY)
+        if (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
         {
             /*
              * If its a limited proxy, it means its use has been limited 
@@ -1199,7 +1192,7 @@ int globus_gsi_callback_check_issued(
     globus_result_t                     result;
     int                                 return_value;
     int                                 return_code = 1;
-    globus_gsi_cert_utils_proxy_type_t  cert_type;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
     static char *                       _function_name_ =
         "globus_gsi_callback_check_issued";
     
@@ -1218,15 +1211,16 @@ int globus_gsi_callback_check_issued(
               * So check if its a proxy, and ignore
               * the error if so. 
               */
-            result = globus_gsi_cert_utils_check_proxy_name(cert, &cert_type);
+            result = globus_gsi_cert_utils_get_cert_type(cert, &cert_type);
             if(result != GLOBUS_SUCCESS)
             {
                 return_code = 0;
                 break;
             }
             
-            if(cert_type != GLOBUS_NOT_PROXY &&
-               cert_type != GLOBUS_ERROR_PROXY)
+            if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY ||
+               cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY ||
+               cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
             {
                 /* its a proxy! */
                 return_code = 1;

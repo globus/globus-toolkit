@@ -65,6 +65,8 @@ globus_l_openssl_activate(void)
     CRYPTO_set_id_callback(globus_l_openssl_thread_id);
 
     OBJ_create("0.9.2342.19200300.100.1.1","USERID","userId");
+
+    OBJ_create(PROXYCERTINFO_OID,PROXYCERTINFO_SN,PROXYCERTINFO_LN);
     
     return GLOBUS_SUCCESS;
 }
