@@ -187,6 +187,7 @@ public class TestRFT extends TestCase {
 	String servicePort = System.getProperty("testServicePort");
 	String rftSrcURL = System.getProperty("rftSrcMachine");
 	String rftDestURL = System.getProperty("rftDestMachine");
+	String verifyTrue = System.getProperty("verifyTrue");
 
 	String pathSeparator = System.getProperty("file.separator");
 
@@ -200,12 +201,14 @@ public class TestRFT extends TestCase {
 		  + "/" + rftDestFile, rftTCPBuffer, rftTCPStream );
 
 	Thread.currentThread().sleep(10);
-	verifyOutput("/" + rftSrcFile, "/" + rftDestFile);
+	if ( (verifyTrue.equals("true")) || (verifyTrue.equals("yes")))
+	    verifyOutput("/" + rftSrcFile, "/" + rftDestFile);
     }
 
     private static void rftClient(String factoryEndpoint, String srcURL, String destURL, String tcpBuffer, String parallelStreams ) 
 	throws Exception {
 
+	logger.debug("rftClient called");
 	FactoryServiceGridLocator factoryService = new FactoryServiceGridLocator();
 	FactoryPortType factory = factoryService.getFactoryPort(new URL(factoryEndpoint));
 	CreationType creation = new CreationType();

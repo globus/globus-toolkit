@@ -223,6 +223,7 @@ Southern California. All Rights Reserved.
       <jvmarg value="-DrftDestMachine=${rftDestMachine}" />
       <jvmarg value="-DrftSrcFile=${rftSrcFile}" />
       <jvmarg value="-DrftDestFile=${rftDestFile}" />
+      <jvmarg value="-DverifyTrue=${verifyTrue}"/>
     </junit>
   </target>
   
