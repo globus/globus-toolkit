@@ -11,6 +11,7 @@
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
 extern globus_bool_t				g_send_restart_info;
+extern int mode;
 
 typedef struct
 {
@@ -206,8 +207,8 @@ g_start()
               &host_port);
     assert(res == GLOBUS_SUCCESS);
 
-    g_parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
-    g_parallelism.fixed.size = 4;
+    g_parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
+    g_parallelism.base.size = 1;
     g_layout.mode = GLOBUS_FTP_CONTROL_STRIPING_NONE;
 
     globus_ftp_control_local_parallelism(
@@ -383,7 +384,7 @@ g_send_data(
     int                                             jb_i;
     register int                                    c;
     register int                                    cnt = 0;
-    globus_byte_t *                                 buf;
+    globus_byte_t *                                 buf = GLOBUS_NULL;
     int                                             filefd;
     globus_bool_t                                   eof = GLOBUS_FALSE;
     globus_bool_t                                   aborted;
@@ -416,26 +417,29 @@ g_send_data(
     (void) signal(SIGALRM, g_alarm_signal);
     alarm(timeout_connect);
 
-    if(g_layout.mode == GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED)
+    if(mode == MODE_E)
     {
-	if(!retrieve_is_data)
+	if(g_layout.mode == GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED)
 	{
-	    struct stat s;
+	    if(!retrieve_is_data)
+	    {
+		struct stat s;
 
-	    fstat(fileno(instr), &s);
-	    
-	    g_layout.partitioned.size = s.st_size;
+		fstat(fileno(instr), &s);
+		
+		g_layout.partitioned.size = s.st_size;
 
+		globus_ftp_control_local_layout(&g_data_handle, &g_layout, 0);
+	    }
+	}
+	else
+	{
 	    globus_ftp_control_local_layout(&g_data_handle, &g_layout, 0);
 	}
-    }
-    else
-    {
-	globus_ftp_control_local_layout(&g_data_handle, &g_layout, 0);
-    }
-    globus_ftp_control_local_parallelism(&g_data_handle,
-					 &g_parallelism);
+	globus_ftp_control_local_parallelism(&g_data_handle,
+					     &g_parallelism);
 
+    }
     res = globus_ftp_control_data_connect_write(
               handle,
               connect_callback,

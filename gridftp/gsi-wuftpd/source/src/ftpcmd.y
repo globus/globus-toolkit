@@ -93,6 +93,7 @@ extern int logging;
 extern int log_commands;
 extern int log_security;
 extern int type;
+extern int mode;
 extern int form;
 extern int debug;
 extern unsigned int timeout_idle;
@@ -551,6 +552,7 @@ cmd: USER SP username CRLF
 
 		case MODE_S:
 		    reply(200, "MODE S ok.");
+		    mode = $4;
 		    break;
 
 #               if defined(USE_GLOBUS_DATA_CODE)
@@ -562,6 +564,7 @@ cmd: USER SP username CRLF
                     if(res == GLOBUS_SUCCESS)
                     {
 			g_send_restart_info = GLOBUS_TRUE;
+			mode = $4;
 		        reply(200, "MODE E ok.");
 			
                     }
