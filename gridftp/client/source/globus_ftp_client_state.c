@@ -3796,6 +3796,7 @@ globus_l_ftp_client_guess_buffer_command(
     int						i;
     globus_bool_t				stor_desired = GLOBUS_FALSE;
     globus_bool_t				retr_desired = GLOBUS_FALSE;
+    int                                         first_maybe;
 
     if(handle->op == GLOBUS_FTP_CLIENT_GET ||
        (handle->op == GLOBUS_FTP_CLIENT_TRANSFER && handle->source == target))
@@ -3807,16 +3808,34 @@ globus_l_ftp_client_guess_buffer_command(
     {
 	stor_desired = GLOBUS_TRUE;
     }
-
+    
+    first_maybe = -1;
     for(i = 0; i < GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND; i++)
     {
-	if(globus_i_ftp_client_feature_get(target->features, i) &&
+        globus_ftp_client_tristate_t            is_supported;
+        
+        is_supported = globus_i_ftp_client_feature_get(target->features, i);
+        
+	if(is_supported &&
 	   ((globus_l_ftp_client_buffer_cmd_info[i].stor_ok && stor_desired) ||
 	    (globus_l_ftp_client_buffer_cmd_info[i].retr_ok && retr_desired)))
 	{
-	    return globus_l_ftp_client_buffer_cmd_info[i].string;
+	    if(is_supported == GLOBUS_FTP_CLIENT_TRUE)
+	    {
+	        return globus_l_ftp_client_buffer_cmd_info[i].string;
+	    }
+	    else if(first_maybe < 0)
+	    {
+	        first_maybe = i;
+	    }
 	}
     }
+    
+    if(first_maybe >= 0)
+    {
+        return globus_l_ftp_client_buffer_cmd_info[first_maybe].string;
+    }
+    
     return NULL;
 }
 /* globus_l_ftp_client_guess_buffer_command() */
