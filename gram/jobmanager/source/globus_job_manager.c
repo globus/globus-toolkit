@@ -2540,6 +2540,7 @@ int main(int argc,
     }
 
     if (!graml_jm_ttl_expired && !graml_jm_stop &&
+	!(request->jm_restart != NULL && graml_jm_request_failed) &&
 	!(request->two_phase_commit != 0 && !graml_jm_commit_end &&
 	  request->save_state != 0))
     {
@@ -2592,7 +2593,8 @@ int main(int argc,
         }
 
     }
-    else if (!graml_jm_ttl_expired)
+    else if (!graml_jm_ttl_expired &&
+	     !(request->jm_restart != NULL && graml_jm_request_failed) )
     {
 
 	/*
@@ -6089,12 +6091,19 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *req,
 	globus_jobmanager_log(graml_log_fp,
 		      "JM: state file TTL hasn't expired yet. Waiting...\n");
 
-	fseek( fp, 0, SEEK_SET );
+	fclose( fp );
 
 	abs.tv_sec = ttl + 1;
 	abs.tv_nsec = 0;
 	while(globus_cond_timedwait(&graml_api_cond, &graml_api_mutex, &abs) !=
 	      ETIMEDOUT);
+
+	fp = fopen( graml_job_state_file, "r" );
+	if ( fp == NULL )
+	{
+	    req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_READING_STATE_FILE;
+	    return GLOBUS_FAILURE;
+	}
 
 	fscanf( fp, "%[^\n]%*c", buffer );
 	req->status = atoi( buffer );
