@@ -313,7 +313,7 @@ init_arguments(int argc, char *argv[],
 }
 
 int get_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-    if (myproxy_creds_retrieve(creds->user_name, creds) < 0) {
+    if (myproxy_creds_retrieve(creds) < 0) {
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
         strcat(response->error_string, "Unable to retrieve credentials\n"); 
     }
@@ -336,7 +336,7 @@ int info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
 }
 
 int destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-  myproxy_creds_delete(creds->user_name);  
+  myproxy_creds_delete(creds);  
     response->response_type = MYPROXY_OK_RESPONSE;
     return 0;
 }
