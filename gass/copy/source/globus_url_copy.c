@@ -90,7 +90,7 @@ globus_l_globus_get_performance(globus_abstime_t *  time_stop,
 const char * oneline_usage
     = "globus-url-copy [-help] [-usage] [-version] [-b | -a] [-bs <size>]\n"
       "                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
-      "                        [-tcp-bs <size>]\n"
+      "                        [-tcp-bs <size>] [-p <parallelism>]\n"
       "                        sourceURL destURL";
 
 const char * long_usage =
@@ -119,6 +119,8 @@ const char * long_usage =
 "\t -bs <block size> | -block-size <block size>\n"
 "\t      specify the size (in bytes) of the buffer to be used by the\n"
 "\t      underlying transfer methods\n"
+"\t -p <parallelism> | -parallel <parallelism>\n"
+"\t      specify the number of streams to be used in the ftp transfer\n"
 "\n";
 
 /***********
@@ -166,7 +168,7 @@ test_integer( char *   value,
     return res;
 }
 
-enum { arg_a = 1, arg_b, arg_s, arg_vb, arg_ss, arg_ds, arg_tcp_bs, arg_bs,
+enum { arg_a = 1, arg_b, arg_s, arg_p, arg_vb, arg_ss, arg_ds, arg_tcp_bs, arg_bs,
        arg_num = arg_bs };
 
 #define listname(x) x##_aliases
@@ -196,6 +198,7 @@ oneargdef(arg_tcp_bs, "-tcp-bs", "-tcp-buffer-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_s, "-s", "-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ss, "-ss", "-source-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ds, "-ds", "-dest-subject", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_p, "-p", "-parallel",test_integer,GLOBUS_NULL);
 
 static globus_args_option_descriptor_t args_options[arg_num];
 
@@ -246,6 +249,8 @@ main(int argc, char **argv)
     int                                block_size = 0;
     int                                tcp_buffer_size = 0;
     globus_ftp_control_tcpbuffer_t     tcp_buffer;
+    int                                num_streams = 1;
+    globus_ftp_control_parallelism_t   parallelism;
     char *                             subject = GLOBUS_NULL;
     char *                             source_subject = GLOBUS_NULL;
     char *                             dest_subject = GLOBUS_NULL;
@@ -337,6 +342,9 @@ main(int argc, char **argv)
         case arg_ds:
             dest_subject = globus_libc_strdup(instance->values[0]);
             break;
+	case arg_p:
+	    num_streams = atoi(instance->values[0]);
+	    break;
         default:
             globus_url_copy_l_args_error_fmt("parse panic, arg id = %d",
                                        instance->id_number );
@@ -410,6 +418,14 @@ main(int argc, char **argv)
                 globus_ftp_client_attr_set_tcp_buffer(source_ftp_attr,
                                                       &tcp_buffer);
             }
+
+	    if (num_streams > 1)
+	    {
+		parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
+		parallelism.fixed.size = num_streams;
+		globus_ftp_client_attr_set_parallelism(source_ftp_attr,
+						       &parallelism);
+	    }
 
             if (source_subject  ||
                 source_url.user ||
@@ -496,6 +512,14 @@ main(int argc, char **argv)
                 globus_ftp_client_attr_set_tcp_buffer(dest_ftp_attr,
                                                       &tcp_buffer);
             }
+
+	    if (num_streams > 1)
+	    {
+		parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
+		parallelism.fixed.size = num_streams;
+		globus_ftp_client_attr_set_parallelism(dest_ftp_attr,
+						       &parallelism);
+	    }
 
             if (dest_subject  ||
                 dest_url.user ||
