@@ -1242,15 +1242,29 @@ globus_io_tcpattr_init(
     {
         goto error_attr;
     }
+
+    result = globus_xio_attr_cntl(
+            iattr->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
+            GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_xio_attr;
+    }
     
     *attr = iattr;
     
     return GLOBUS_SUCCESS;
 
-error_attr:
+ error_xio_attr:
+    globus_xio_attr_destroy(iattr->attr);
+    
+ error_attr:
     globus_free(iattr);
     
-error_alloc:
+ error_alloc:
     *attr = GLOBUS_NULL;
     return result;
 }
@@ -4247,6 +4261,8 @@ globus_io_attr_set_secure_channel_mode(
     globus_io_secure_channel_mode_t     mode)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_xio_gsi_protection_level_t   protection_level;
+    
     GlobusIOName(globus_io_attr_set_secure_channel_mode);
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_ATTR);
@@ -4267,14 +4283,64 @@ globus_io_attr_set_secure_channel_mode(
             globus_l_io_gsi_driver, 
             GLOBUS_XIO_GSI_SET_WRAP_MODE,
             GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        
+        result = globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_GET_PROTECTION_LEVEL,
+            &protection_level);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+
+        if(protection_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
+        {        
+            result = globus_xio_attr_cntl(
+                (*attr)->attr, 
+                globus_l_io_gsi_driver, 
+                GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
+                GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY);
+        }
         break;
       case GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP:
         result = globus_xio_attr_cntl(
             (*attr)->attr, 
             globus_l_io_gsi_driver, 
             GLOBUS_XIO_GSI_SET_SSL_COMPATIBLE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        
+        result = globus_xio_attr_cntl(
+            (*attr)->attr, 
+            globus_l_io_gsi_driver, 
+            GLOBUS_XIO_GSI_GET_PROTECTION_LEVEL,
+            &protection_level);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+
+        if(protection_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
+        {        
+            result = globus_xio_attr_cntl(
+                (*attr)->attr, 
+                globus_l_io_gsi_driver, 
+                GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
+                GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY);
+        }
         break;
     }
+    
+ error:
     return result;
 }
 
