@@ -743,7 +743,16 @@ main(int argc,
         } /* endwhile */
     }
 
-    if (!save_files_flag)
+    if (save_files_flag)
+    {
+        grami_fprintf( grami_log_fp, 
+            "JM: NOTICE, flag set to NOT DELETE script argument file --> %s\n",
+            grami_script_arg_file);
+        grami_fprintf( grami_log_fp, 
+            "JM: NOTICE, flag set to NOT DELETE user proxy file --> %s\n",
+            grami_env_x509_user_proxy);
+    }
+    else
     {
         if (grami_script_arg_file)
         {
