@@ -1,0 +1,27 @@
+
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
+
+GLOBUS_INIT
+
+AM_PROG_LIBTOOL
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+AC_PATH_PROGS(TAR, gnutar gtar tar, failed, $PATH:/bin/:/usr/bin:/usr/local/bin)
+
+if test $TAR = failed; then
+    AC_MSG_ERROR("Could not find gnu tar in your current path")
+else
+    $TAR --version | grep "GNU" > /dev/null
+    if test $? -ne 0; then
+        AC_MSG_ERROR("Your version of tar is not GNU tar.  This package requires GNU tar to be installed on your system")    
+    fi
+fi
+
+AC_OUTPUT(
+        Makefile
+        pkgdata/Makefile
+        pkgdata/pkg_data_src.gpt
+)
