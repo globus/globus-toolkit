@@ -111,6 +111,10 @@ SourceLocation      \gass\server_ez\source
 Win32Location       \gass\server_ez\source\win32
 
 ModuleType          library
+SourceLocation      \gass\cache\source
+Win32Location       \gass\cache\source\win32
+
+ModuleType          library
 SourceLocation      \gram\protocol\source
 Win32Location       \gram\protocol\source\win32
 
