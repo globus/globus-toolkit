@@ -863,71 +863,65 @@ globus_xio_server_create(
     }
     
     /* take what the user stack has at the time of registration */
-    globus_mutex_lock(&stack->mutex);
+    stack_size = globus_list_size(stack->driver_stack);
+    xio_op = (globus_i_xio_op_t *)
+        globus_calloc(1, sizeof(globus_i_xio_op_t) + 
+            (sizeof(globus_i_xio_op_entry_t) * (stack_size - 1)));
+    if(xio_op == NULL)
     {
-        stack_size = globus_list_size(stack->driver_stack);
-        xio_op = (globus_i_xio_op_t *)
-            globus_calloc(1, sizeof(globus_i_xio_op_t) + 
-                (sizeof(globus_i_xio_op_entry_t) * (stack_size - 1)));
-        if(xio_op == NULL)
-        {
-            globus_mutex_unlock(&stack->mutex);
-            res = GlobusXIOErrorMemory("operation");
-            goto err;
-        }
+        res = GlobusXIOErrorMemory("operation");
+        goto err;
+    }
+
+    xio_server = (globus_i_xio_server_t *)
+        globus_calloc(1, sizeof(globus_i_xio_server_t) +
+            (sizeof(globus_i_xio_server_entry_t) * (stack_size - 1)));
+    if(xio_server == NULL)
+    {
+        res = GlobusXIOErrorMemory("server");
+        goto err;
+    }
+
+    xio_server->stack_size = globus_list_size(stack->driver_stack);
+    xio_server->ref = 1;
+    xio_server->state = GLOBUS_XIO_SERVER_STATE_OPEN;
+    xio_server->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    globus_mutex_init(&xio_server->mutex, NULL);
+    xio_server->accept_timeout = NULL;
+
+    /* timeout handling */
+    if(server_attr != NULL)
+    {
+        xio_server->accept_timeout = server_attr->accept_timeout_cb;
+        xio_server->space = server_attr->space;
+    }
+    globus_callback_space_reference(xio_server->space);
     
-        xio_server = (globus_i_xio_server_t *)
-            globus_calloc(1, sizeof(globus_i_xio_server_t) +
-                (sizeof(globus_i_xio_server_entry_t) * (stack_size - 1)));
-        if(xio_server == NULL)
-        {
-            globus_mutex_unlock(&stack->mutex);
-            res = GlobusXIOErrorMemory("server");
-            goto err;
-        }
+    /* Only using this op for its index, really... things like type
+     * and state don't matter to me.  I will also be using the open_attr
+     * field for the server attr.
+     */
+    xio_op->_op_server = xio_server;
+    xio_op->stack_size = xio_server->stack_size;
+    
+    /* walk through the stack and add each entry to the array */
+    ctr = 0;
+    for(list = stack->driver_stack;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        xio_server->entry[ctr].driver = (globus_xio_driver_t)
+            globus_list_first(list);
 
-        xio_server->stack_size = globus_list_size(stack->driver_stack);
-        xio_server->ref = 1;
-        xio_server->state = GLOBUS_XIO_SERVER_STATE_OPEN;
-        xio_server->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-        globus_mutex_init(&xio_server->mutex, NULL);
-        xio_server->accept_timeout = NULL;
-
-        /* timeout handling */
         if(server_attr != NULL)
         {
-            xio_server->accept_timeout = server_attr->accept_timeout_cb;
-            xio_server->space = server_attr->space;
+            GlobusIXIOAttrGetDS(ds_attr, server_attr,               \
+                xio_server->entry[ctr].driver);
+            xio_op->entry[ctr].open_attr = ds_attr;
         }
-        globus_callback_space_reference(xio_server->space);
         
-        /* Only using this op for its index, really... things like type
-         * and state don't matter to me.  I will also be using the open_attr
-         * field for the server attr.
-         */
-        xio_op->_op_server = xio_server;
-        xio_op->stack_size = xio_server->stack_size;
-        
-        /* walk through the stack and add each entry to the array */
-        ctr = 0;
-        for(list = stack->driver_stack;
-            !globus_list_empty(list);
-            list = globus_list_rest(list))
-        {
-            xio_server->entry[ctr].driver = (globus_xio_driver_t)
-                globus_list_first(list);
-
-            if(server_attr != NULL)
-            {
-                GlobusIXIOAttrGetDS(ds_attr, server_attr,               \
-                    xio_server->entry[ctr].driver);
-                xio_op->entry[ctr].open_attr = ds_attr;
-            }
-            
-            ctr++;
-        }
+        ctr++;
     }
-    globus_mutex_unlock(&stack->mutex);
     
     xio_op->ndx = xio_op->stack_size;
     memset(&contact_info, 0, sizeof(contact_info));

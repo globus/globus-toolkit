@@ -45,30 +45,43 @@ globus_xio_driver_unload(
  *  This needs to precede use of GlobusXIO{Un}RegisterDriver()
  */
 #define GlobusXIODefineDriver(driver_name, init_func, destroy_func)         \
-static globus_xio_driver_hook_t globus_i_xio_##driver_name##_hook =         \
+globus_xio_driver_hook_t globus_i_xio_##driver_name##_hook =                \
 {                                                                           \
     #driver_name,                                                           \
     init_func,                                                              \
     destroy_func,                                                           \
 }
+#define GlobusXIODeclareDriver(driver_name)                                 \
+    extern globus_xio_driver_hook_t globus_i_xio_##driver_name##_hook
+#define GlobusXIOMyDriver(driver_name)                                      \
+    &globus_i_xio_##driver_name##_hook
 
 #define GlobusXIORegisterDriver(driver_name)                                \
     globus_extension_registry_add(                                          \
         GLOBUS_XIO_DRIVER_REGISTRY,                                         \
-        "globus_xio_" #driver_name "_driver",                               \
-        &globus_i_xio_##driver_name##_hook)
-
+        #driver_name,                                                       \
+        GlobusXIOMyDriver(driver_name))
 #define GlobusXIOUnRegisterDriver(driver_name)                              \
     globus_extension_registry_remove(                                       \
         GLOBUS_XIO_DRIVER_REGISTRY,                                         \
-        "globus_xio_" #driver_name "_driver")
- 
+        #driver_name)
+
+/**
+ * The following are just utility macros for extensions that contain only one
+ * driver.  If your extension contains multiple drivers, you'll need to
+ * define your own extension module and register all the drivers in that
+ * module's activate function (with the above macros).
+ */
 #define GlobusXIODefineModule(driver_name)                                  \
     GlobusExtensionDefineModule(globus_xio_##driver_name##_driver)
 #define GlobusXIODeclareModule(driver_name)                                 \
     GlobusExtensionDeclareModule(globus_xio_##driver_name##_driver)
 #define GlobusXIOMyModule(driver_name)                                      \
     GlobusExtensionMyModule(globus_xio_##driver_name##_driver)
+#define GlobusXIOExtensionName(driver_name)                                 \
+    "globus_xio_" #driver_name "_driver"
+
+#define GLOBUS_XIO_EXTENSION_FORMAT "globus_xio_%s_driver"
 
 /* internal activate funcs */
 int

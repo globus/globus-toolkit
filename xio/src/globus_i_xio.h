@@ -316,7 +316,6 @@ typedef struct globus_i_xio_attr_s
 
 typedef struct globus_i_xio_stack_s
 {
-    globus_mutex_t                      mutex;
     int                                 size;
     globus_list_t *                     driver_stack;
     globus_xio_driver_t                 transport_driver;

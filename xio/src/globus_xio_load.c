@@ -57,12 +57,13 @@ globus_xio_driver_load(
         goto error_param;
     }
     
-    snprintf(buf, 256, "globus_xio_%s_driver", driver_name);
-    buf[255] = 0;
-    hook = (globus_xio_driver_hook_t *)
-        globus_extension_lookup(&handle, GLOBUS_XIO_DRIVER_REGISTRY, buf);
+    hook = (globus_xio_driver_hook_t *) globus_extension_lookup(
+        &handle, GLOBUS_XIO_DRIVER_REGISTRY, driver_name);
     if(!hook)
     {
+        snprintf(buf, 256, GLOBUS_XIO_EXTENSION_FORMAT, driver_name);
+        buf[255] = 0;
+    
         if(globus_extension_activate(buf) != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorInvalidDriver("extension activate failed");
@@ -70,8 +71,8 @@ globus_xio_driver_load(
         }
         
         activated = GLOBUS_TRUE;
-        hook = (globus_xio_driver_hook_t *)
-            globus_extension_lookup(&handle, GLOBUS_XIO_DRIVER_REGISTRY, buf);
+        hook = (globus_xio_driver_hook_t *) globus_extension_lookup(
+            &handle, GLOBUS_XIO_DRIVER_REGISTRY, driver_name);
     }
     
     if(!hook)
@@ -129,13 +130,14 @@ globus_xio_driver_unload(
         goto error_param;
     }
     
-    snprintf(buf, 256, "globus_xio_%s_driver", driver->name);
-    buf[255] = 0;
-    
     hook = driver->hook;
     handle = driver->extension_handle;
     activated = driver->extension_activated;
-    
+    if(activated)
+    {
+        snprintf(buf, 256, GLOBUS_XIO_EXTENSION_FORMAT, driver->name);
+        buf[255] = 0;
+    }
     globus_i_xio_close_handles(driver);
     hook->destroy(driver);
     globus_extension_release(handle);
