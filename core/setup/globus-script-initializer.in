@@ -44,9 +44,12 @@ if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
 else
     prefix="${GLOBUS_INSTALL_PATH}"
     exec_prefix=@installed_exec_prefix@
-    if [ "X${GLOBUS_ARCH_INDEPENDENT}" = "X" ] &&
-       [ '@installed_exec_prefix@' != '${prefix}' ] ; then
-       exec_prefix="${GLOBUS_INSTALL_PATH}/services/`${GLOBUS_INSTALL_PATH}/sbin/config.guess`"
+    if [ "X${GLOBUS_ARCH_INDEPENDENT}" = "XTRUE" ]; then
+	if [ '@installed_exec_prefix@' != '${prefix}' ] ; then
+	    arch="`${GLOBUS_INSTALL_PATH}/sbin/config.guess`"
+	    exec_prefix="${prefix}/services/${arch}"
+	    arch_sysconfdir="${prefix}/etc/${arch}"
+	fi
     fi
 fi
 
@@ -63,27 +66,34 @@ localstatedir=${prefix}/var
 tmpdir=@tmpdir@
 local_tmpdir=@local_tmpdir@
 secure_tmpdir=@secure_tmpdir@
+[ -z "${arch_sysconfdir}" ] && arch_sysconfdir=@arch_sysconfdir@
 
 if [ -z "${GLOBUS_SSL_PATH}" ]; then
-    if [ ! -r "${exec_prefix}/etc/globus-ssl-path.sh" ]; then
-	echo "ERROR: cannot read ${exec_prefix}/etc/globus-ssl-path.sh" 1>&2
+    if [ -r "${arch_sysconfdir}/globus-ssl-path-32.sh" ] ; then
+	globus_ssl_path_sh="${arch_sysconfdir}/globus-ssl-path-32.sh"
+    elif [ -r "${arch_sysconfdir}/globus-ssl-path-64.sh" ] ; then
+	globus_ssl_path_sh="${arch_sysconfdir}/globus-ssl-path-64.sh"
+    else
+	echo "ERROR: cannot resolve path to SSL installation -- excepted" 1>&2
+	echo "to find this information in ${arch_sysconfdir}"             1>&2
+	echo "Set environment variable GLOBUS_SSL_PATH and try again"     1>&2
 	exit 1
     fi
-    . "${exec_prefix}/etc/globus-ssl-path.sh"
+    . "${globus_ssl_path_sh}"
     if [ -z "${GLOBUS_SSL_PATH}" ]; then
-	echo "ERROR: environment variable GLOBUS_SSL_PATH not defined"  1>&2
-	echo "in ${exec_prefix}/etc/globus-ssl-path.sh"         1>&2
+	echo "ERROR: value for GLOBUS_SSL_PATH not defined"  1>&2
+	echo "in ${globus_ssl_path_sh}"                      1>&2
 	exit 1
     fi
 fi
 if [ -z "$GLOBUS_SH_VARIABLES_SET" ]; then
-    if [ ! -r ${exec_prefix}/etc/globus-sh-commands.sh ] ; then
-	echo "ERROR: cannot read ${exec_prefix}/etc/globus-sh-commands.sh" 1>&2
+    if [ ! -r ${arch_sysconfdir}/globus-sh-commands.sh ] ; then
+	echo "ERROR: cannot read ${arch_sysconfdir}/globus-sh-commands.sh" 1>&2
 	exit 1
     fi
-    . ${exec_prefix}/etc/globus-sh-commands.sh
+    . ${arch_sysconfdir}/globus-sh-commands.sh
     for _var in `${GLOBUS_SH_SED} -n '/^GLOBUS_SH/s/=.*$//p' \
-	${exec_prefix}/etc/globus-sh-commands.sh`
+	${arch_sysconfdir}/globus-sh-commands.sh`
     do
 	export ${_var}
     done
