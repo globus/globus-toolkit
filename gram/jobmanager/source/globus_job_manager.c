@@ -1051,23 +1051,22 @@ main(int argc,
                                                       request->failure_code);
                     }
                 }
-		skip_poll = request->poll_frequency;
+                else
+                {
+                    /* we are here because the cancel handler was called */
+                    globus_l_gram_delete_file_list(globus_l_gram_stdout_fd,
+                                                   &globus_l_gram_stdout_files);
+                    globus_l_gram_delete_file_list(globus_l_gram_stderr_fd,
+                                                   &globus_l_gram_stderr_files);
+    
+                    globus_gass_close(globus_l_gram_stdout_fd);
+                    globus_gass_close(globus_l_gram_stderr_fd);
+
+                    globus_l_gram_client_callback(request->status,
+                                                  request->failure_code);
+                }
+	    	skip_poll = request->poll_frequency;
 	    }
-            else
-            {
-                /* we are here because the cancel handler was called */
-                globus_l_gram_delete_file_list(globus_l_gram_stdout_fd,
-                                               &globus_l_gram_stdout_files);
-                globus_l_gram_delete_file_list(globus_l_gram_stderr_fd,
-                                               &globus_l_gram_stderr_files);
-
-                globus_gass_close(globus_l_gram_stdout_fd);
-                globus_gass_close(globus_l_gram_stderr_fd);
-
-                globus_l_gram_client_callback(request->status,
-                                              request->failure_code);
-            }
-
 
             if ((request->status != GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) &&
                 (request->status != GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
