@@ -747,6 +747,8 @@ error_exit:
         handle, 
         GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
     globus_i_io_close(handle);
+    
+    handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
     globus_i_io_mutex_unlock();
     info->callback(info->callback_arg,
                    handle,
