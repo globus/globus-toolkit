@@ -182,6 +182,13 @@ int
 globus_l_gass_cache_unlock_close(
     globus_gass_cache_t *               cache_handle,
     globus_bool_t                       abort);
+void
+globus_l_gass_cache_name_lock_file(char * lock_file,
+				   char * file_to_be_locked);
+void
+globus_l_gass_cache_name_uniq_lock_file(char * uniq_lock_file,
+					char * file_to_be_locked);
+
 /*
  * globus_l_gass_cache_log()
  *
@@ -296,6 +303,39 @@ globus_l_gass_cache_trace(
     
 }
 /* globus_l_gass_cache_trace() */
+
+/*
+ * globus_l_gass_cache_name_lock_file()
+ *
+ */
+void
+globus_l_gass_cache_name_lock_file(char * lock_file,
+				   char * file_to_be_locked)
+{
+    strcpy(lock_file, file_to_be_locked);
+    strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);    
+} /* globus_l_gass_cache_name_lock_file() */
+
+/*
+ * globus_l_gass_cache_name_uniq_lock_file()
+ *
+ */
+void
+globus_l_gass_cache_name_uniq_lock_file(char * uniq_lock_file,
+					char * file_to_be_locked)
+{
+    char   hname[MAXHOSTNAMELEN];
+    /* !!! need to handle multi threaded !!! */
+    globus_libc_gethostname(hname,sizeof(hname));
+
+    globus_libc_sprintf(uniq_lock_file,"%s%s_%s_%ld_%ld",
+			file_to_be_locked,
+			GLOBUS_L_GASS_CACHE_LOCK_EXT,
+			hname,
+			(long) globus_libc_getpid(),
+			(long) globus_thread_self());
+
+} /* globus_l_gass_cache_name_uniq_lock_file() */
 
 /*
  * globus_l_gass_cache_write_comment()
@@ -1175,7 +1215,6 @@ globus_l_gass_cache_lock_file(
     char   uniq_lock_file[PATH_MAX+1];
     int    uniq_lock_file_fd;
     struct stat file_stat, tmp_file_stat;
-    char   hname[MAXHOSTNAMELEN];
     int    return_code=GLOBUS_SUCCESS;
 
 #   ifdef LOCK_TOUT
@@ -1184,15 +1223,9 @@ globus_l_gass_cache_lock_file(
 #   endif
 
     /* build the name of the file used to lock "file_to_be_locked" */
-    strcpy(lock_file, file_to_be_locked);
-    strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);
-    globus_libc_gethostname(hname,sizeof(hname));
+    globus_l_gass_cache_name_lock_file(lock_file, file_to_be_locked);
+    globus_l_gass_cache_name_uniq_lock_file(uniq_lock_file, file_to_be_locked);
 
-    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld_%ld",
-			lock_file,
-			hname,
-			(long) globus_libc_getpid(),
-			(long) globus_thread_self());
     
     while ( (uniq_lock_file_fd = creat(uniq_lock_file,
 				       GLOBUS_L_GASS_CACHE_STATE_MODE)) < 0 )
@@ -1206,6 +1239,7 @@ globus_l_gass_cache_lock_file(
     
     /* write its own name in the file, so it could be read in the "common"
        lock file */
+    /* NOT USED 
     while ( write(uniq_lock_file_fd, uniq_lock_file, strlen(uniq_lock_file) )
 	    != strlen(uniq_lock_file))
     {
@@ -1214,7 +1248,7 @@ globus_l_gass_cache_lock_file(
 	    CACHE_TRACE("Error writing state file");
 	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
 	}
-    }
+    }*/
     
     while (close(uniq_lock_file_fd) < 0 )
     {
@@ -1314,12 +1348,14 @@ globus_l_gass_cache_lock_file(
 			 *
 			 * BREAK THE LOCK !!!!!!!!
 			 *
+			 * This is very dangerous, can not be done without
+			 * taking a chance (risk of corruption of the cache)
 			 */
 			/*
 			  CACHE_TRACE2("Lock on %s too old: I BREAK IT !!\n",
 			  file_to_be_locked);
 			  */
-			while (unlink(temp_file) != 0 )
+			while ( unlink(temp_file) != 0 )
 			{
 			    if (errno != EINTR && errno != ENOENT )
 			    {
@@ -1332,6 +1368,7 @@ globus_l_gass_cache_lock_file(
 				break;
 			    }
 			}
+			
 			while (unlink(lock_file) != 0 )
 			{
 			    if (errno != EINTR && errno != ENOENT )
@@ -1430,19 +1467,10 @@ globus_l_gass_cache_unlock_file(
 
     char   uniq_lock_file[PATH_MAX+1];
     int    uniq_lock_file_fd;
-    char   hname[MAXHOSTNAMELEN];
  
     /* build the name of the file used to lock "file_to_be_locked" */
-    strcpy(lock_file, file_to_be_locked);
-    strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);
-    /* !!! need to handle multi threaded !!! */
-    globus_libc_gethostname(hname,sizeof(hname));
-
-    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld_%ld",
-			lock_file,
-			hname,
-			(long) globus_libc_getpid(),
-			(long) globus_thread_self());
+    globus_l_gass_cache_name_lock_file(lock_file, file_to_be_locked);
+    globus_l_gass_cache_name_uniq_lock_file(uniq_lock_file, file_to_be_locked);
  
     /* remove the lock */
     while (unlink(lock_file) != 0 )
@@ -1706,6 +1734,8 @@ globus_l_gass_cache_unlock_close(
 {
     /* return code                  */
     int                 rc;                  
+    struct stat         lock_stat;   
+    char   uniq_lock_file[PATH_MAX+1];
 
     /* before I close, I want to write the number of entries */
     if (!abort)
@@ -1739,29 +1769,60 @@ globus_l_gass_cache_unlock_close(
 	}
 	cache_handle->temp_file_fd = -1;
     }
-    if (!abort)                    /* if (abort=GLOBUS_SUCCESS) */
+
+    /* for test purpose: add this so you can remove manually the lock...
+       sleep(10);
+       */
+    
+    /* if I still have the lock
+     */    
+    globus_l_gass_cache_name_uniq_lock_file(uniq_lock_file,
+					    cache_handle->state_file_path);
+    while ((rc =  stat(uniq_lock_file,
+		      &lock_stat)) != 0)
     {
-	if (rename(cache_handle->temp_file_path,cache_handle->state_file_path))
+	if (errno != EINTR )
 	{
-	    /* that is too bad... and should not happen... lets test it...   */
-	    GLOBUS_L_GASS_CACHE_LG("Error renaming the temporary state file/state file");
+	    break;
 	}
+    }
+    if (rc == 0  &&  lock_stat.st_nlink==2)
+    {
+	/* I still have the lock */
+
+	if (!abort)                    /* if (abort=GLOBUS_SUCCESS) */
+	{
+	    if (rename(cache_handle->temp_file_path,cache_handle->state_file_path))
+	    {
+		/* that is too bad... and should not happen... lets test it...   */
+		GLOBUS_L_GASS_CACHE_LG("Error renaming the temporary state file/state file");
+	    }
+	}
+	else
+	{
+	    if (unlink(cache_handle->temp_file_path))
+	    {
+		GLOBUS_L_GASS_CACHE_LG("Error unlinking the temporary state file");
+	    }
+	}
+	
+	/* release the lock */
+	rc = globus_l_gass_cache_unlock_file(cache_handle->state_file_path);
+	if ( rc != GLOBUS_SUCCESS)
+	{
+	    return(rc);
+	}
+
+    
     }
     else
     {
-	if (unlink(cache_handle->temp_file_path))
-	{
-	    GLOBUS_L_GASS_CACHE_LG("Error unlinking the temporary state file");
-	}
+	/* if I lost the lock, I just leave every thing in place
+	 * and do nothing: I do not want to take a chance of corrupting the
+	 * cache if someone "stole" the lock 
+	 */
+	return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
     }
-    
-    /* release the lock */
-    rc = globus_l_gass_cache_unlock_file(cache_handle->state_file_path);
-    if ( rc != GLOBUS_SUCCESS)
-    {
-	return(rc);
-    }
-
     GLOBUS_L_GASS_CACHE_LG("State file UNlocked");
     
     return (GLOBUS_SUCCESS);
