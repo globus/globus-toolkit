@@ -9,7 +9,7 @@
 <cflags>@GPT_CFLAGS@</cflags>
 <external_includes>@GPT_INCLUDES@</external_includes>
 <external_libs>@GPT_LIBS@</external_libs>
-<pkg_libs>-lglobus_common</pkg_libs>
+<pkg_libs>-lglobus_common_$GLOBUS_FLAVOR_NAME</pkg_libs>
 </Build_Environment>
 
 </src_pkg>
