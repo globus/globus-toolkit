@@ -363,14 +363,24 @@ main(int argc, char **argv)
                               (sizeof(globus_ftp_client_attr_t));
             globus_ftp_client_attr_init(source_ftp_attr);
 
+/*
+            globus_ftp_client_attr_set_authorization(
+                                  source_ftp_attr,
+                                  source_url.user,
+                                  source_url.password,
+                                  "bester",
+                                  source_subject);
+ temp hack */
+
             if (source_subject  ||
                 source_url.user ||
                 source_url.password)
             {
-                globus_ftp_control_auth_info_init(&source_ftp_attr->auth_info,
+                globus_ftp_client_attr_set_authorization(
+                                      source_ftp_attr,
                                       source_url.user,
                                       source_url.password,
-                                      source_url.user,
+                                      NULL,
                                       source_subject);
             }
 
@@ -444,7 +454,8 @@ main(int argc, char **argv)
                 dest_url.user ||
                 dest_url.password)
             {
-                globus_ftp_control_auth_info_init(&dest_ftp_attr->auth_info,
+                globus_ftp_client_attr_set_authorization(
+                                      dest_ftp_attr,
                                       dest_url.user,
                                       dest_url.password,
                                       dest_url.user,
@@ -606,18 +617,18 @@ Returns:
 static void
 globus_l_url_copy_monitor_callback(void * callback_arg,
     globus_gass_copy_handle_t * handle,
-    globus_object_t * result)
+    globus_object_t * error)
 {
     my_monitor_t *               monitor;
-    globus_object_t *            err;
     globus_bool_t                use_err = GLOBUS_FALSE;
     monitor = (my_monitor_t * )  callback_arg;
 
     printf("i'm in the callback\n");
 
-    if (result != GLOBUS_SUCCESS)
+    if (error != GLOBUS_SUCCESS)
     {
-        err = globus_error_get(result);
+        fprintf(stderr, " url copy error: %s\n",
+                globus_object_printable_to_string(error));
         use_err = GLOBUS_TRUE;
     }
 
@@ -626,7 +637,7 @@ globus_l_url_copy_monitor_callback(void * callback_arg,
     if (use_err)
     {
         monitor->use_err = GLOBUS_TRUE;
-        monitor->err = err;
+        monitor->err = globus_object_copy(error);
     }
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
@@ -644,18 +655,16 @@ Returns:
 static void
 globus_l_url_copy_cancel_callback(void * callback_arg,
     globus_gass_copy_handle_t * handle,
-    globus_object_t * result)
+    globus_object_t * error)
 {
     my_monitor_t *               monitor;
-    globus_object_t *            err;
     globus_bool_t                use_err = GLOBUS_FALSE;
     monitor = (my_monitor_t * )  callback_arg;
 
     printf("i'm in the cancel callback\n");
 
-    if (result != GLOBUS_SUCCESS)
+    if (error != GLOBUS_SUCCESS)
     {
-        err = globus_error_get(result);
         use_err = GLOBUS_TRUE;
     }
 
@@ -664,7 +673,7 @@ globus_l_url_copy_cancel_callback(void * callback_arg,
     if (use_err)
     {
         monitor->use_err = GLOBUS_TRUE;
-        monitor->err = err;
+        monitor->err = globus_object_copy(error);
     }
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
