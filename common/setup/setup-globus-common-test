@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# temporary setup script, should be improved
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+. $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
+
+if test "x$GLOBUS_SH_PERL" = "x"; then
+    echo "ERROR Please specify GLOBUS_SH_PERL" >&2
+    exit 1
+fi
+
+PERL="$GLOBUS_SH_PERL"
+
+for i in $GLOBUS_LOCATION/test/globus_common*.pl \
+         $GLOBUS_LOCATION/test/run-common-tests.pl; do
+	cat $i|sed "s,perl,$PERL," > $i.tmp
+	mv $i.tmp $i
+	chmod a+x $i
+done

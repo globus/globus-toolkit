@@ -1,0 +1,2 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_ARGUMENTS *)
+&(executable=/bin/true)(arguments=(incorrect format (for arguments)))

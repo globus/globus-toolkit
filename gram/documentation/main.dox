@@ -1,0 +1,39 @@
+/**
+@mainpage Globus Resource Allocation Manager (GRAM)
+
+The Globus Resource Allocation Manager (GRAM) processes the requests for
+resources for remote application execution, allocates the required resources,
+and manages the active jobs. It also returns updated information regarding
+the capabilities and availability of the computing resources to the
+Metacomputing Directory Service (MDS).
+
+GRAM provides an API for submitting and canceling a job request, as well as
+checking the status of a submitted job. The specifications are written by the
+user in the Resource Specification Language (RSL), and is processed by GRAM
+as part of the job request.
+
+- @ref gram_general_overview "General Overview"
+- @ref globus_gram_web_changes "Change Log"
+- @ref globus_job_manager_rsl "RSL Parameters"
+- @ref globus_gram_job_manager_job_execution_environment "Job Execution Environment"
+- <a href="http://www.globus.org/about/faq/errors.html">GRAM Error
+  Troubleshooting</a>
+- GRAM Tutorial
+- <a href="http://www-fp.globus.org/gram/rsl_spec1.html">Resource
+  Specification Language (RSL)</a>
+
+@subsection gram_client GRAM Client
+
+- @ref globus_gram_client_main "GRAM Client Reference Manual"
+
+@subsection gram_myjob GRAM_myjob
+
+- <a href="http://www.globus.org/gram/client/frames.html">
+GRAM_myjob Function Reference</a> with frames
+- <a href="http://www.globus.org/gram/myjob/function_reference.html">
+GRAM_myjob Function Reference</a> without frames
+
+@subsection gram_job_manager GRAM Job Manager
+
+- @ref globus_gram_job_manager_main "GRAM Job Manager Reference Manual"
+*/
