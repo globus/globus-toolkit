@@ -140,14 +140,20 @@ globus_l_gfs_prepare_stack(
     result = globus_xio_stack_push_driver(*stack, globus_l_gfs_tcp_driver);
     globus_l_gfs_check_log_and_die(result);
 
-    result = globus_xio_stack_push_driver(*stack, globus_l_gfs_gssapi_ftp_driver);
-    globus_l_gfs_check_log_and_die(result);
-    
     if(!globus_i_gfs_config_bool("data_node"))
     {
-        result = globus_xio_stack_push_driver(
-            *stack, globus_l_gfs_ftp_cmd_driver);
-        globus_l_gfs_check_log_and_die(result);
+        if(globus_i_gfs_config_bool("no_gssapi"))
+        {
+            result = globus_xio_stack_push_driver(
+                *stack, globus_l_gfs_ftp_cmd_driver);
+            globus_l_gfs_check_log_and_die(result);
+        }
+        else
+        {
+            result = globus_xio_stack_push_driver(
+                *stack, globus_l_gfs_gssapi_ftp_driver);
+            globus_l_gfs_check_log_and_die(result);
+        }
     }
 }
 
