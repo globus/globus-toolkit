@@ -276,7 +276,7 @@ globus_gsi_proxy_create_req(
     {
         result = GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-            ("Couldn't creat new ASN.1 octet string for the DER encoding"
+            ("Couldn't create new ASN.1 octet string for the DER encoding"
              " of a PROXYCERTINFO struct"));
         goto free_rsa;
     }
@@ -400,6 +400,14 @@ globus_gsi_proxy_inquire_req(
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    if(pci_NID == 0)
+    {
+        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+            ("proxycertinfo oid is not initialized"));
+        goto done;
+    }
+        
     if(d2i_X509_REQ_bio(input_bio, & request) == NULL)
     {
         result = GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -417,14 +425,6 @@ globus_gsi_proxy_inquire_req(
         goto free_request;
     }
     
-    if(pci_NID == 0)
-    {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
-            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-            ("proxycertinfo oid is not initialized"));
-        goto free_extensions;
-    }
-        
     /* we assume there's only one proxycertinfo extension */
     if((ext_index = X509v3_get_ext_by_NID(extensions, pci_NID, -1)) != -1)
     {
@@ -967,8 +967,8 @@ globus_l_gsi_proxy_get_base_name(
                  !memcmp(data->data,"proxy",5)) ||
                 (data->length == 13 && 
                  !memcmp(data->data,"limited proxy",13)) ||
-		(data->length == 16 &&
-		 !memcmp(data->data,"restricted proxy",16)))
+                (data->length == 16 &&
+                 !memcmp(data->data,"restricted proxy",16)))
             {
                 ne = X509_NAME_delete_entry(subject,
                                             X509_NAME_entry_count(subject)-1);
