@@ -37,6 +37,7 @@ AC_DEFUN(LAC_CRYPTO,
     LAC_DEFINE_VAR(BN_DIV2W)
     LAC_DEFINE_VAR(BN_DIV3W)
     LAC_DEFINE_VAR(BF_PTR)
+    LAC_DEFINE_VAR(BF_PTR2)
     LAC_DEFINE_VAR(RC4_CHUNK)
     LAC_DEFINE_VAR(RC4_INDEX)
     LAC_DEFINE_VAR(RC4_INT)
@@ -65,6 +66,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
     lac_BN_DIV2W=""
     lac_BN_DIV3W=""
     lac_BF_PTR=""
+    lac_BF_PTR2=""
     lac_RC4_CHUNK=""
     lac_RC4_INDEX=""
     lac_RC4_INT="unsigned int"
@@ -138,6 +140,16 @@ AC_DEFUN(LAC_CRYPTO_SET,
                     lac_RC4_CHUNK="unsigned long"
                     lac_DES_UNROLL="1" 
                     lac_BF_PTR="1"
+                ;;
+                *x86_64*)
+                    # gcc
+                    lac_SIXTY_FOUR_BIT_LONG="1"
+                    lac_THIRTY_TWO_BIT=""
+                    lac_RC4_INT="unsigned char"
+                    lac_RC4_CHUNK="unsigned long"
+                    lac_BF_PTR2="1"
+                    lac_DES_UNROLL="1"
+                    lac_DES_LONG="unsigned int"
                 ;;
                 *x86*)
                     # gcc
