@@ -590,7 +590,7 @@ case ${host}--$1 in
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b64 $lac_LDFLAGS"
+                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
@@ -598,7 +598,7 @@ case ${host}--$1 in
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b32 $lac_LDFLAGS"
+                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
                 fi
@@ -687,7 +687,7 @@ case ${host}--$1 in
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b64 $lac_LDFLAGS"
+                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
@@ -695,7 +695,7 @@ case ${host}--$1 in
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b32 $lac_LDFLAGS"
+                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
                 fi
