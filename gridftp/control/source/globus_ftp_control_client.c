@@ -1157,24 +1157,35 @@ globus_l_ftp_control_end_of_reply(
         }
         else
         {
-            out_buf = globus_libc_realloc(response->response_buffer,response->response_length + 1);
-            
-            if( out_buf == GLOBUS_NULL)
-            {
-                return -1;
-            }
-            
-            memmove(&response->response_buffer[found + 1],
-                    &response->response_buffer[found],
-                    response->response_length-found);
+	    response->response_length++;
+	    found++;
 
-            response->response_length++;
-            response->response_buffer_size = response->response_length;
+	    if(response->response_buffer_size < response->response_length)
+	    { 
+		response->response_buffer_size = response->response_length;
+	    
+		out_buf = globus_libc_realloc(response->response_buffer,
+					      response->response_length);
+            
+		if( out_buf == GLOBUS_NULL)
+		{
+		    return -1;
+		}
+
+		response->response_buffer = out_buf;
+	    }
+	    
+	    if(response->response_length-found)
+	    {
+		memmove(&response->response_buffer[found],
+			&response->response_buffer[found - 1],
+			response->response_length-found);
+	    }
         }
 
         /* get the ftp response code */
 
-        response->response_buffer[found]='\0';
+        response->response_buffer[found - 1] = '\0';
 
         if(sscanf(&(response->response_buffer[last+1]), 
                   "%d", &response->code) < 1)
@@ -2720,7 +2731,7 @@ globus_l_ftp_control_send_cmd_cb(
 	    /* base64 decode the reply */
 
 	    ftp_response->response_buffer
-		[ftp_response->response_length-2]='\0';
+		[ftp_response->response_length-3]='\0';
 	    
 	    len = strlen(ftp_response->response_buffer);
 						
