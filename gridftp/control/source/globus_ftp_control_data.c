@@ -681,7 +681,7 @@ globus_ftp_control_data_connect_read(
     globus_result_t                             result;
     globus_i_ftp_dc_handle_t *                  dc_handle;
     globus_object_t *                           err;
-    static char *                               myname=
+    static char *                               my_name=
                                         "globus_ftp_control_data_connect_read";
 
     if(handle == GLOBUS_NULL)
@@ -691,7 +691,7 @@ globus_ftp_control_data_connect_read(
                   GLOBUS_NULL,
                   "handle",
                   1,
-                  myname);
+                  my_name);
         return globus_error_put(err);
     }
 
@@ -705,7 +705,7 @@ globus_ftp_control_data_connect_read(
                   GLOBUS_NULL,
                   "handle",
                   1,
-                  myname);
+                  my_name);
         return globus_error_put(err);
     }
     if(dc_handle->transfer_handle == GLOBUS_NULL)
@@ -713,7 +713,9 @@ globus_ftp_control_data_connect_read(
         err = globus_error_construct_string(
                            GLOBUS_FTP_CONTROL_MODULE,
                            GLOBUS_NULL,
-                           "globus_ftp_control_data_connect_read():transfer handle does not exist");
+                           "[%s]:%s():transfer handle does not exist",
+                           GLOBUS_FTP_CONTROL_MODULE->module_name,
+                           my_name);
         return globus_error_put(err);
     }
 
@@ -729,7 +731,8 @@ globus_ftp_control_data_connect_read(
                 err = globus_error_construct_string(
                            GLOBUS_FTP_CONTROL_MODULE,
                            GLOBUS_NULL,
-   "Need to call local_pasv() or local_port() before calling connect_read/write()");
+   "[%s] Need to call local_pasv() or local_port() before calling connect_read/write()",
+                           GLOBUS_FTP_CONTROL_MODULE->module_name);
                 return globus_error_put(err);
             }
             result =  globus_l_ftp_control_data_stream_connect_direction(
@@ -789,7 +792,7 @@ globus_ftp_control_data_connect_write(
     globus_result_t                             result;
     globus_i_ftp_dc_handle_t *                  dc_handle;
     globus_object_t *                           err;
-    static char *                               myname=
+    static char *                               my_name=
                                       "globus_ftp_control_data_connect_write";
 
     if(handle == GLOBUS_NULL)
@@ -799,7 +802,7 @@ globus_ftp_control_data_connect_write(
                   GLOBUS_NULL,
                   "handle",
                   1,
-                  myname);
+                  my_name);
         return globus_error_put(err);
     }
 
@@ -812,7 +815,7 @@ globus_ftp_control_data_connect_write(
                   GLOBUS_NULL,
                   "handle",
                   1,
-                  myname);
+                  my_name);
         return globus_error_put(err);
     }
 
@@ -828,7 +831,9 @@ globus_ftp_control_data_connect_write(
                 err =  globus_error_construct_string(
                            GLOBUS_FTP_CONTROL_MODULE,
                            GLOBUS_NULL,
-   "Need to call local_pasv() or local_port() before calling connect_read/write()");
+   "[%s]:%s() Need to call local_pasv() or local_port() before calling connect_read/write()",
+                           GLOBUS_FTP_CONTROL_MODULE->module_name,
+                           my_name);
                 return globus_error_put(err);
             }
 
@@ -882,6 +887,8 @@ globus_l_ftp_control_data_eb_connect_write(
     globus_bool_t *                             connected;
     globus_reltime_t                            reltime;
     globus_l_ftp_dc_connect_cb_info_t *         connect_cb_info;
+    static char *                               my_name =  
+       "globus_l_ftp_control_data_eb_connect_write";
 
     /*
      *  make sure that we still exist   
@@ -910,7 +917,9 @@ globus_l_ftp_control_data_eb_connect_write(
         return globus_error_put(globus_error_construct_string(
                    GLOBUS_FTP_CONTROL_MODULE,
                    GLOBUS_NULL,
-                   "eb_connect_write(): Handle not in transfer state proper state.  Call local_port or local_spor before calling connect_write."));
+                   "[%s]:%s(): Handle not in transfer state proper state.  Call local_port or local_spor before calling connect_write.",
+                           GLOBUS_FTP_CONTROL_MODULE->module_name,
+                           my_name));
 
     }
 
@@ -1060,6 +1069,8 @@ globus_l_ftp_control_data_eb_connect_read(
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_reltime_t                            reltime;
     globus_l_ftp_dc_connect_cb_info_t *         connect_cb_info;
+    static char *                               my_name =
+        "globus_l_ftp_control_data_eb_connect_read";
     /*
      *  make sure that we still exist   
      */
@@ -1090,7 +1101,9 @@ globus_l_ftp_control_data_eb_connect_read(
         err = globus_error_construct_string(
                    GLOBUS_FTP_CONTROL_MODULE,
                    GLOBUS_NULL,
-                   "eb_connect_write(): Handle not in transfer state proper state.  Call local_port or local_spor before calling connect_write.");
+                   "[%s]:%s Handle not in transfer state proper state.  Call local_port or local_spor before calling connect_write.",
+                   GLOBUS_FTP_CONTROL_MODULE->module_name,
+                   my_name);
 
         return globus_error_put(err);
     }
@@ -1211,7 +1224,9 @@ globus_l_ftp_control_data_eb_connect_read(
         err = globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
                       GLOBUS_NULL,
-                      "eb_connect_read(): Handle not in the proper state");
+                      "[%s]:%s Handle not in the proper state",
+                      GLOBUS_FTP_CONTROL_MODULE->module_name,
+                      my_name);
         return globus_error_put(err);
     }
 
@@ -1234,6 +1249,8 @@ globus_l_ftp_control_data_stream_connect_direction(
     char                                        local_host[30];
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     globus_object_t *                           err;
+    static char *                               my_name = 
+        "globus_l_ftp_control_data_stream_connect_direction";
 
     /*
      *  make sure that we still exist   
@@ -1257,7 +1274,9 @@ globus_l_ftp_control_data_stream_connect_direction(
         err =  globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
                       GLOBUS_NULL,
-                "stream_connect_direction(): stripe count does not equal 1.");
+                "[%s]:%s() stripe count does not equal 1.",
+                      GLOBUS_FTP_CONTROL_MODULE->module_name,
+                      my_name);
         globus_error_put(err);
     }
     if(dc_handle->parallel.base.size != 1)
@@ -1265,7 +1284,9 @@ globus_l_ftp_control_data_stream_connect_direction(
         err = globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
                       GLOBUS_NULL,
-          "stream_connect_direction(): requesting parrallelism in stream mode is not valid.");
+          "[%s]:%s(): requesting parrallelism in stream mode is not valid.",
+                      GLOBUS_FTP_CONTROL_MODULE->module_name,
+                      my_name);
         globus_error_put(err);
     }
    
