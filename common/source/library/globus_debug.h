@@ -147,6 +147,9 @@ globus_debug_init(
 #define GlobusDebugMyFwrite(module_name, buffer, size, count)               \
     globus_i_##module_name##_debug_fwrite((buffer), (size), (count))
 
+#define GlobusDebugMyFile(module_name)                                      \
+    (globus_i_##module_name##_debug_handle.file)
+    
 /* use this in an if() to debug enable blocks of code 
  * for example
  * 
@@ -205,6 +208,7 @@ globus_debug_init(
 #define GlobusDebugMyPrintf(module_name, message)               do {} while(0)
 #define GlobusDebugMyTimePrintf(module_name, message)           do {} while(0)
 #define GlobusDebugMyFwrite(module_name, buffer, size, count)   do {} while(0)
+#define GlobusDebugMyFile(module_name)
 #define GlobusDebugTrue(module_name, level)                     0
 
 #endif
