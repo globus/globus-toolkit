@@ -685,44 +685,50 @@ globus_l_cache_local_op(
 	{
 	    globus_gass_copy_handle_t  copy_handle;
 	    globus_result_t result;
+	    char * fileurl ;
+	    return_value = GLOBUS_SUCCESS;
 
-	    char * fileurl = globus_libc_malloc(strlen(local_filename) +
-		                                strlen("file://") + 1);
-	    sprintf(fileurl, "file://%s", local_filename);
-
-	    globus_gass_copy_handle_init(&copy_handle, GLOBUS_NULL);
-
-	    result = globus_gass_copy_url_to_url(
-		    &copy_handle,
-		    url,
-		    GLOBUS_NULL,
-		    fileurl,
-		    GLOBUS_NULL);
-	    globus_gass_copy_handle_destroy(&copy_handle);
-
-	    if(result != GLOBUS_SUCCESS)
+	    if(strcmp(url, "file:/dev/null") != 0 &&
+	       strcmp(url, "file:///dev/null") != 0)
 	    {
-		printf("Error transferring %s\n",
-		       url);
+		fileurl = globus_libc_malloc(strlen(local_filename) +
+						    strlen("file://") + 1);
+		sprintf(fileurl, "file://%s", local_filename);
 
-		rc = globus_gass_cache_delete(&cache_handle,
-					      name,
-					      tag,
-					      timestamp,
-					      GLOBUS_TRUE);
-		return_value = GLOBUS_FAILURE;
+		globus_gass_copy_handle_init(&copy_handle, GLOBUS_NULL);
+
+		result = globus_gass_copy_url_to_url(
+			&copy_handle,
+			url,
+			GLOBUS_NULL,
+			fileurl,
+			GLOBUS_NULL);
+		globus_gass_copy_handle_destroy(&copy_handle);
+
+		if(result != GLOBUS_SUCCESS)
+		{
+		    printf("Error transferring %s\n",
+			   url);
+
+		    rc = globus_gass_cache_delete(&cache_handle,
+						  name,
+						  tag,
+						  timestamp,
+						  GLOBUS_TRUE);
+		    return_value = GLOBUS_FAILURE;
+		}
 	    }
-	    else
+	    if(return_value == GLOBUS_SUCCESS)
 	    {
 		rc = globus_gass_cache_add_done(&cache_handle,
 						name,
 						tag,
 						timestamp);
 	    }
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_libc_printf("Could not unlock cache entry because %s\n",
-                                   globus_gass_cache_error_string(rc));
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		globus_libc_printf("Could not unlock cache entry because %s\n",
+				   globus_gass_cache_error_string(rc));
 		return_value = GLOBUS_FAILURE;
 	    }
 	}
