@@ -74,7 +74,7 @@ main(int argc, char *argv[])
 		 "Enter (current) MyProxy pass phrase:");
     }
     if (rval == -1) {
-	fprintf(stderr, "Error reading pass phrase.\n");
+	verror_print_error(stderr);
 	return 1;
     }
     if (passphrase)
@@ -91,14 +91,14 @@ main(int argc, char *argv[])
 		 "Enter new MyProxy pass phrase:");
     }
     if (rval == -1) {
-	fprintf (stderr, "%s\n", verror_get_string());
+	verror_print_error(stderr);
 	return 1;
     }
     if (new_passphrase[0])
 	np = new_passphrase;
 
     if (myproxy_creds_change_passphrase(&cred, np) < 0) {
-	fprintf(stderr, "%s\n", verror_get_string());
+	verror_print_error(stderr);
 	exit(1);
     }
 
