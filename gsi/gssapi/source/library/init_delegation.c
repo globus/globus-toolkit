@@ -67,7 +67,8 @@ static char *rcsid = "$Id$";
  *        
  * @param time_req
  *        The requested period of validity (seconds) of the delegated
- *        credential. May be NULL.
+ *        credential. Passing a time_req of 0 cause the delegated credential to
+ *        have the same lifetime as the credential that issued it. 
  * @param output_token
  *        A token that should be passed to gss_accept_delegation if the
  *        return value is GSS_S_CONTINUE_NEEDED.
@@ -309,8 +310,32 @@ GSS_CALLCONV gss_init_delegation(
             goto mutex_unlock;            
         }    
 
-        /* clear the proxycertinfo */
+        /* set the requested time */
 
+        if(time_req != 0)
+        {
+            if(time_req%60)
+            {
+                /* round up */
+                time_req += 60;
+            }
+            
+            local_result = globus_gsi_proxy_handle_set_time_valid(
+                context->proxy_handle,
+                time_req/60);
+
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                major_status = GSS_S_FAILURE;
+                context->delegation_state = GSS_DELEGATION_DONE;
+                goto mutex_unlock;            
+            }
+        }
+        
+        /* clear the proxycertinfo */
         
         local_result =
             globus_gsi_proxy_handle_clear_cert_info(context->proxy_handle);
