@@ -209,8 +209,8 @@ globus_l_gsi_sysconfig_activate(void)
     }
 
     cputime = clock();
-#warning
-/*    RAND_add((void *) cputime, sizeof(cputime), 2); */
+
+/*  #warning  RAND_add((void *) cputime, sizeof(cputime), 2); */
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_FPRINTF(
         2, (globus_i_gsi_sysconfig_debug_fstream,
