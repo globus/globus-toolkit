@@ -16,8 +16,9 @@ if (!defined($gpath))
 
 require Grid::GPT::Setup;
 use Getopt::Long;
+use File::Copy;
 
-my $path                = '/var/spool/lsf/server_logs';
+my $path                = '';
 my $help		= 0;
 
 GetOptions('path|p=s' => \$path,
@@ -25,35 +26,26 @@ GetOptions('path|p=s' => \$path,
 
 &usage if $help;
 
-if (-e $path)
-{
-    if (! -d $path)
-    {
-        print STDERR "$path is not a directory\n";
-        exit 1;
-    }
-    elsif(! -r $path)
-    {
-        print STDERR "$path cannot be read\n";
-        exit 1;
-    }
+
+if ($path ne '') {
+    system("./find-lsf-logs --with-log-path=$path");
+} else {
+    system("./find-lsf-logs");
 }
-else
+
+if ($? != 0)
 {
-    print STDERR "$path does not exist\n";
-    exit 1;
+    exit $?;
 }
+
+copy('globus-lsf.conf', "$ENV{GLOBUS_LOCATION}/etc/globus-lsf.conf");
+
 my $metadata =
     new Grid::GPT::Setup(package_name =>
             'globus_scheduler_event_generator_lsf_setup');
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
-local(*FP);
-
-open(FP, ">$globusdir/etc/globus-lsf.conf");
-print FP "log_path=$path\n";
-close(FP);
 
 $metadata->finish();
 
