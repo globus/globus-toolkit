@@ -63,7 +63,7 @@ globus_gsi_proxy_handle_destroy(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_destroy */
-/*}@*/
+/*@}*/
 
 
 /**
@@ -93,7 +93,7 @@ globus_gsi_proxy_handle_set_policy(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_set_policy */
-/*}@*/
+/*@}*/
 
 
 /**
@@ -123,7 +123,7 @@ globus_gsi_proxy_handle_get_policy(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_get_policy */
-/*}@*/
+/*@}*/
 
 /**
  * @name Set Group
@@ -152,7 +152,7 @@ globus_gsi_proxy_handle_set_group(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_set_group */
-/*}@*/
+/*@}*/
 
 
 /**
@@ -182,7 +182,7 @@ globus_gsi_proxy_handle_get_group(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_get_group */
-/*}@*/
+/*@}*/
 
 
 /**
@@ -211,7 +211,7 @@ globus_gsi_proxy_handle_set_pathlen(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_set_pathlen */
-/*}@*/
+/*@}*/
 
 
 /**
@@ -240,7 +240,7 @@ globus_gsi_proxy_handle_get_pathlen(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_get_pathlen */
-/*}@*/
+/*@}*/
 
 
 /**
@@ -268,5 +268,6 @@ globus_gsi_proxy_handle_clear_cert_info(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_clear_cert_info */
-/*}@*/
+/*@}*/
+
 

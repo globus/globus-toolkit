@@ -10,7 +10,6 @@
 
 #include "globus_i_gsi_proxy.h"
 
-
 globus_result_t
 globus_gsi_proxy_handle_attrs_init(
     globus_gsi_proxy_handle_attrs_t *   handle_attrs)

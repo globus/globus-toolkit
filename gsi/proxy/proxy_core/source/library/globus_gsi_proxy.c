@@ -80,7 +80,7 @@ globus_gsi_proxy_create_req(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_create_req */
-/*}@*/
+/*@}*/
 
 /**
  * @name Inquire Request
@@ -110,7 +110,7 @@ globus_gsi_proxy_inquire_req(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_inquire_req */
-/*}@*/
+/*@}*/
 
 /**
  * @name Sign Request
@@ -146,7 +146,7 @@ globus_gsi_proxy_sign_req(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_sign_req */
-/*}@*/
+/*@}*/
 
 /* read cert and cert chain from bio and combine them with the private
  * key into a credential structure.
@@ -186,7 +186,7 @@ globus_gsi_proxy_assemble_cred(
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_assemble_cred */
-/*}@*/
+/*@}*/
 
 
 
