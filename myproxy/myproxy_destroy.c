@@ -22,13 +22,13 @@ static char usage[] = \
 "        myproxy-destroy [-usage|-help] [-v|-version]\n"\
 "\n"\
 "    Options\n"\
-"    -h | -help                Displays usage\n"\
-"    -u | -usage                             \n"\
+"    -h | --help                Displays usage\n"\
+"    -u | --usage                             \n"\
 "                                            \n"\
-"    -v | -version             Displays version\n"\
-"    -l | -username <username> Username for the delegated proxy\n"\
-"    -s | -pshost   <hostname> Hostname of the myproxy-server\n"\
-"    -p | -psport   #          Port of the myproxy-server\n"\
+"    -v | --version             Displays version\n"\
+"    -l | --username <username> Username for the delegated proxy\n"\
+"    -s | --pshost   <hostname> Hostname of the myproxy-server\n"\
+"    -p | --psport   #          Port of the myproxy-server\n"\
 "\n";
 
 struct option long_options[] =

@@ -12,6 +12,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h> 
 #include <assert.h>
 
 static char usage[] = \
@@ -20,15 +23,16 @@ static char usage[] = \
 "        myproxy-get-delegation [-usage|-help] [-v|--version]\n"
 "\n"
 "   Options\n"
-"       -h | -help                       Displays usage\n"
-"       -u | -usage                                    \n"
+"       -h | --help                       Displays usage\n"
+"       -u | --usage                                    \n"
 "                                                      \n"
-"       -v | -version                    Displays version\n"
-"       -l | -username        <username> Username for the delegated proxy\n"
-"       -t | -portal_lifetime <hours>    Lifetime of delegated proxy on\n" 
+"       -v | --version                    Displays version\n"
+"       -l | --username        <username> Username for the delegated proxy\n"
+"       -t | --portal_lifetime <hours>    Lifetime of delegated proxy on\n" 
 "                                         the portal (default 2 hours)\n"
-"       -s | -pshost          <hostname> Hostname of the myproxy-server\n"
-"       -p | -psport          <port #>   Port of the myproxy-server\n"
+"       -o | --out             <path>     Location of delegated proxy\n"
+"       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
+"       -p | --psport          <port #>   Port of the myproxy-server\n"
 "\n";
 
 struct option long_options[] =
@@ -37,13 +41,14 @@ struct option long_options[] =
     {"pshost",           required_argument, NULL, 's'},
     {"psport",           required_argument, NULL, 'p'},
     {"portal_lifetime",  required_argument, NULL, 't'},
+    {"out",              required_argument, NULL, 'o'},
     {"usage",                  no_argument, NULL, 'u'},
     {"username",         required_argument, NULL, 'l'},
     {"version",                no_argument, NULL, 'v'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:v";
+static char short_options[] = "hus:p:l:t:o:v";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -59,13 +64,20 @@ int  read_passphrase(char *passphrase, const int passlen,
 void receive_response(myproxy_socket_attrs_t *attrs, 
 		      myproxy_response_t *response);
 
+static int copy_file(const char *source,
+		     const char *dest,
+		     const mode_t mode);
+
+/* location of delegated proxy */
+char *outputfile;
+
 int
 main(int argc, char *argv[]) 
 {    
     char *pshost;
     char request_buffer[1024];
     int  requestlen;
-    char delegfile[64];
+    char delegfile[128];
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -147,6 +159,14 @@ main(int argc, char *argv[])
     /* Continue unless the response is not OK */
     receive_response(socket_attrs, server_response);
 
+    /* move delegfile to outputfile if specified */
+    if (outputfile != NULL) {
+      copy_file(delegfile, outputfile, 0600);
+      unlink(delegfile);
+      strcpy(delegfile, outputfile);
+    }
+
+    printf("A proxy has been received for user %s in %s\n", client_request->username, delegfile);
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
 
@@ -189,6 +209,10 @@ init_arguments(int argc,
             request->username = malloc(strlen(gnu_optarg) + 1);
             strcpy(request->username, gnu_optarg); 
             break;
+	case 'o':	/* output file */
+	    outputfile = malloc(strlen(gnu_optarg) + 1);
+	    strcpy(outputfile, gnu_optarg);
+            break;    
         case 'v':       /* print version and exit */
             fprintf(stderr, version);
             exit(1);
@@ -292,4 +316,91 @@ receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
             break;
     }
     return;
+}
+
+/*
+ * copy_file()
+ *
+ * Copy source to destination, creating destination if needed.
+ * Set permissions on destination to given mode.
+ *
+ * Returns 0 on success, -1 on error.
+ */
+static int
+copy_file(const char *source,
+	  const char *dest,
+	  const mode_t mode)
+{
+    int src_fd = -1;
+    int dst_fd = -1;
+    int src_flags = O_RDONLY;
+    int dst_flags = O_WRONLY | O_CREAT | O_TRUNC;
+    char buffer[2048];
+    int bytes_read;
+    int return_code = -1;
+    
+    assert(source != NULL);
+    assert(dest != NULL);
+    
+    src_fd = open(source, src_flags);
+    
+    if (src_fd == -1)
+    {
+	verror_put_errno(errno);
+	verror_put_string("opening %s for reading", source);
+	goto error;
+    }
+    
+    dst_fd = open(dest, dst_flags, mode);
+    
+    if (dst_fd == -1)
+    {
+	verror_put_errno(errno);
+	verror_put_string("opening %s for writing", dest);
+	goto error;
+    }
+    
+    do 
+    {
+	bytes_read = read(src_fd, buffer, sizeof(buffer));
+	
+	if (bytes_read == -1)
+	{
+	    verror_put_errno(errno);
+	    verror_put_string("reading %s", source);
+	    goto error;
+	}
+
+	if (bytes_read != 0)
+	{
+	    if (write(dst_fd, buffer, bytes_read) == -1)
+	    {
+		verror_put_errno(errno);
+		verror_put_string("writing %s", dest);
+		goto error;
+	    }
+	}
+    }
+    while (bytes_read > 0);
+    
+    /* Success */
+    return_code = 0;
+	
+  error:
+    if (src_fd != -1)
+    {
+	close(src_fd);
+    }
+    
+    if (dst_fd != -1)
+    {
+	close(dst_fd);
+
+	if (return_code == -1)
+	{
+	    unlink(dest);
+	}
+    }
+    
+    return return_code;
 }
