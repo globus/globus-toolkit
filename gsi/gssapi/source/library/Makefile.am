@@ -1,5 +1,4 @@
-include $(top_srcdir)/globus_automake_config
-include $(top_srcdir)/globus_automake_targets
+include $(top_srcdir)/globus_automake_pre
 
 Sources = \
 	accept_sec_context.c \
@@ -46,4 +45,4 @@ libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
-include $(top_srcdir)/globus_automake_rules
+include $(top_srcdir)/globus_automake_post

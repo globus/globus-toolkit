@@ -1,5 +1,4 @@
-include $(top_srcdir)/globus_automake_config
-include $(top_srcdir)/globus_automake_targets
+include $(top_srcdir)/globus_automake_pre
 
 Scripts= \
 	grid-cert-info \
@@ -23,4 +22,5 @@ grid_proxy_init_LDADD = ../library/libglobus_ssl_utils_$(GLOBUS_FLAVOR_NAME).la 
 grid_proxy_destroy_LDADD = ../library/libglobus_ssl_utils_$(GLOBUS_FLAVOR_NAME).la @GPT_PGM_LINKS@
 grid_proxy_info_LDADD =  ../library/libglobus_ssl_utils_$(GLOBUS_FLAVOR_NAME).la @GPT_PGM_LINKS@
 
-include $(top_srcdir)/globus_automake_rules
+include $(top_srcdir)/globus_automake_post
+

@@ -1,5 +1,6 @@
-include $(top_srcdir)/globus_automake_config
-include $(top_srcdir)/globus_automake_targets
+include $(top_srcdir)/globus_automake_pre
+include $(top_srcdir)/globus_automake_pre_top
+
 
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
@@ -67,8 +68,6 @@ libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 
-
-
-include $(top_srcdir)/globus_automake_rules
-include $(top_srcdir)/globus_automake_top_rules
+include $(top_srcdir)/globus_automake_post
+include $(top_srcdir)/globus_automake_post_top
 

@@ -1,24 +1,5 @@
 #! /bin/sh
 
-error()
-{
-    echo ""
-    echo "ERROR: bootstrap failed!"
-    echo ""
-    exit 1
-}
-
-
-# check for autotools
-
-for program in automake aclocal autoconf autoheader
-    do
-    ($program --version ) > /dev/null 2>&1 || { 
-    echo "ERROR: $program not found" >&2
-    exit 1
-    }
-done
-
 # checking for the GLOBUS_LOCATION
 
 if test "x$GLOBUS_LOCATION" = "x"; then
@@ -26,29 +7,4 @@ if test "x$GLOBUS_LOCATION" = "x"; then
     exit 1
 fi
 
-echo "running aclocal -I $GLOBUS_LOCATION/share/globus_aclocal"
-aclocal -I $GLOBUS_LOCATION/share/globus_aclocal || error
-
-if test -f acconfig.h ; then
-echo "running autoheader"
-    autoheader || error
-fi
-
-if test ! -h globus_automake_targets; then
-    echo "installing extra automake files"
-    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_targets \
-    globus_automake_targets
-    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_rules \
-    globus_automake_rules
-    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_top_rules \
-    globus_automake_top_rules
-    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_config \
-    globus_automake_config
-fi
-
-echo "running automake --copy -add-missing --foreign"
-automake --copy --add-missing --foreign || \
-  automake --copy --add-missing --foreign  || error
-
-echo "running autoconf"
-autoconf || error
+. ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh

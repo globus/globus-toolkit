@@ -1,5 +1,4 @@
-include $(top_srcdir)/globus_automake_config
-include $(top_srcdir)/globus_automake_targets
+include $(top_srcdir)/globus_automake_pre
 
 SUBDIRS = oldgaa
 
@@ -26,4 +25,4 @@ libglobus_ssl_utils___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS) \
 
 libglobus_ssl_utils___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
-include $(top_srcdir)/globus_automake_rules
+include $(top_srcdir)/globus_automake_post
