@@ -136,10 +136,29 @@ dnl END OF GLOBUS_INIT
 
 
 AC_DEFUN(GLOBUS_FINALIZE, [
-if test ! -z "$INSURE"; then
-	CC=$INSURE
-	LD=$INSURE
-	CXX=$INSURE
+
+lac_INSURE=$INSURE
+
+AC_ARG_ENABLE(insure,
+ 	changequote(<<, >>)dnl
+  <<--disable-insure	disable Insure++ >>,
+	changequote([, ])dnl
+	[
+		if test "$enableval" = "yes"; then
+			lac_INSURE="${INSURE-insure}"
+		else
+			lac_INSURE="$enableval"
+		fi
+	],
+	[
+		lac_INSURE=""
+	])
+
+
+if test ! -z "$lac_INSURE"; then
+	CC=$lac_INSURE
+	LD=$lac_INSURE
+	CXX=$lac_INSURE
 	AC_SUBST(CC) 
 	AC_SUBST(LD) 
 	AC_SUBST(CXX) 
