@@ -37,6 +37,7 @@ EXTERN_C_BEGIN
 #include <stdlib.h>
 #include <time.h>
 #include "openssl/crypto.h"
+#include "openssl/pkcs12.h"
 
 
 #if SSLEAY_VERSION_NUMBER < 0x0090581fL
@@ -111,9 +112,10 @@ EXTERN_C_BEGIN
 
 #ifdef WIN32
 #define GSI_REGISTRY_DIR "software\\Globus\\GSI"
-#define X509_DEFAULT_CERT_DIR   ".globus\\certificates"
-#define X509_DEFAULT_USER_CERT  ".globus\\usercert.pem"
-#define X509_DEFAULT_USER_KEY   ".globus\\userkey.pem"
+#define X509_DEFAULT_CERT_DIR     ".globus\\certificates"
+#define X509_DEFAULT_USER_CERT    ".globus\\usercert.pem"
+#define X509_DEFAULT_USER_KEY     ".globus\\userkey.pem"
+#define X509_DEFAULT_PKCS12_FILE  ".globus\\usercred.p12"
 #define X509_INSTALLED_CERT_DIR "share\\certificates"
 #define X509_INSTALLED_HOST_CERT_DIR "NEEDS_TO_BE_DETERMINED"
 #define X509_DEFAULT_HOST_CERT  "NEEDS_TO_BE_DETERMINED"
@@ -122,6 +124,7 @@ EXTERN_C_BEGIN
 #define X509_DEFAULT_CERT_DIR   ".globus/certificates"
 #define X509_DEFAULT_USER_CERT  ".globus/usercert.pem"
 #define X509_DEFAULT_USER_KEY   ".globus/userkey.pem"
+#define X509_DEFAULT_PKCS12_FILE  ".globus/usercred.p12"
 #define X509_INSTALLED_CERT_DIR "share/certificates"
 #define X509_INSTALLED_HOST_CERT_DIR "/etc/grid-security/certificates"
 #define X509_DEFAULT_HOST_CERT  "/etc/grid-security/hostcert.pem"
@@ -366,6 +369,12 @@ proxy_load_user_key(
     const char *                        user_key,
     int                                 (*pw_cb)(),
     BIO *                               bp);
+
+int
+pkcs12_load_credential(
+    proxy_cred_desc *                   pcd, 
+    const char *                        user_cred,
+    char *                              password);
 
 int
 proxy_create_local(

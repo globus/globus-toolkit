@@ -3205,6 +3205,35 @@ proxy_get_filenames(
                                                 
                 user_cert = default_user_cert;
                 user_key = default_user_key;
+
+                if(checkstat(user_cert) ||
+                   checkstat(user_key))
+                {
+                    len = strlen(home) + strlen(X509_DEFAULT_PKCS12_FILE) + 2;
+                    default_user_cert = (char *)realloc(default_user_cert,len);
+
+                    if (!default_user_cert)
+                    {
+                        PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_OUT_OF_MEMORY);
+                        goto err;
+                    } 
+
+                    sprintf(default_user_cert,"%s%s%s",
+                            home, FILE_SEPERATOR, X509_DEFAULT_PKCS12_FILE);
+                    len = strlen(home) + strlen(X509_DEFAULT_PKCS12_FILE) + 2;
+                    default_user_key = (char *) remalloc(default_user_key,len);
+                    if (!default_user_key)
+                    {
+                        PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_OUT_OF_MEMORY);
+                        goto err;
+                    }
+                    sprintf(default_user_key, "%s%s%s",
+                            home,FILE_SEPERATOR, X509_DEFAULT_PKCS12_FILE);
+                                                
+                    user_cert = default_user_cert;
+                    user_key = default_user_key;
+
+                }
             }
         }
     }
@@ -4545,4 +4574,153 @@ d2i_integer_bio(
     ASN1_INTEGER_free(asn1_int);
 
     return *v;
+}
+
+int
+pkcs12_load_credential(
+    proxy_cred_desc *                   pcd, 
+    const char *                        user_cred,
+    char *                              password)
+{
+    PKCS12 *                            p12 = NULL;
+    STACK_OF(PKCS7) *                   auth_safes = NULL;
+    STACK_OF(PKCS12_SAFEBAG) *          bags = NULL;
+    PKCS12_SAFEBAG *                    bag;
+    int                                 bag_nid;
+    int                                 i;
+    PKCS7 *                             p7;
+    PKCS8_PRIV_KEY_INFO *               p8;
+    int                                 status = -1;
+    FILE *                              fp;
+
+#ifdef DEBUG
+    fprintf(stderr,"pkcs12_load_credential\n");
+#endif
+    /* Check arguments */
+    if (!user_cred)
+    {
+        if (pcd->owner==CRED_OWNER_SERVER)
+        {
+            PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_SERVER_NOCERT_FILE);
+            status = PRXYERR_R_PROBLEM_SERVER_NOCERT_FILE;
+        }
+        else
+        {
+            PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_USER_NOCERT_FILE);
+            status = PRXYERR_R_PROBLEM_USER_NOCERT_FILE;
+        }
+        
+        ERR_add_error_data(1, "\n        No credential file found");
+        goto err;   
+    }
+
+    if((fp = fopen(user_cred,"r")) == NULL)
+    {
+        if (pcd->type == CRED_TYPE_PROXY && pcd->owner == CRED_OWNER_USER)
+        {
+            PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_NO_PROXY);
+            ERR_add_error_data(2, "\n        Proxy File=", user_cred);
+            status = PRXYERR_R_NO_PROXY;
+        }
+        else
+        {
+            if (pcd->owner==CRED_OWNER_SERVER)
+            {
+                PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_SERVER_NOCERT_FILE);
+                status = PRXYERR_R_PROBLEM_SERVER_NOCERT_FILE;
+            }
+            else
+            {
+                PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_USER_NOCERT_FILE);
+                status = PRXYERR_R_PROBLEM_USER_NOCERT_FILE;
+            }
+                    
+            ERR_add_error_data(2, "\n        Cert File=", user_cred);
+        }
+        goto err;
+    }
+    
+    p12 = d2i_PKCS12_fp(fp, NULL);
+    
+    if(p12 == NULL)
+    {
+        /* some error or other */
+        goto err;   
+    }
+    
+    /* don't know if we need to check the MAC */
+    
+    if(!PKCS12_verify_mac(p12,NULL,0))
+    {
+        /* some error or other */
+        goto err;   
+    }
+    
+    auth_safes = M_PKCS12_unpack_authsafes(p12);
+    
+    if(!auth_safes)
+    {
+        /* some error or other */
+        goto err;   
+    }
+    
+    /* pick the first auth safe */
+    
+    p7 = sk_PKCS7_value (auth_safes, 0);
+    
+    bag_nid = OBJ_obj2nid (p7->type);
+    
+    if(bag_nid != NID_pkcs7_data)
+    {
+        /* some error or other */
+        goto err;   
+    }
+    
+    bags = M_PKCS12_unpack_p7data(p7);
+    
+    for (i=0;i<sk_PKCS12_SAFEBAG_num (bags);i++)
+    {
+        bag = sk_PKCS12_SAFEBAG_value (bags, i);
+        
+        if(M_PKCS12_bag_type(bag) == NID_certBag &&
+           M_PKCS12_cert_bag_type(bag) == NID_x509Certificate &&
+           pcd->ucert == NULL)
+        {
+            pcd->ucert = M_PKCS12_certbag2x509(bag);  
+        }
+        else if(M_PKCS12_bag_type(bag) == NID_keyBag &&
+            pcd->upkey == NULL)
+        {
+            p8 = bag->value.keybag;
+            if (!(pcd->upkey = EVP_PKCS82PKEY (p8)))
+            {
+                /* some error or other */
+                goto err;   
+            }
+        }
+        else if(M_PKCS12_bag_type(bag) == NID_pkcs8ShroudedKeyBag &&
+                pcd->upkey == NULL)
+        {
+            if (!(p8 = M_PKCS12_decrypt_skey(bag,
+                                             password,
+                                             strlen(password))))
+            {
+                /* some error or other */
+                goto err;   
+            }
+            
+            if (!(pcd->upkey = EVP_PKCS82PKEY(p8)))
+            {
+                /* some error or other */
+                goto err;   
+            }
+            
+            PKCS8_PRIV_KEY_INFO_free(p8);
+        }
+    }
+    
+    fclose(fp);
+
+err:
+    return status;
 }
