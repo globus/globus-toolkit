@@ -36,6 +36,16 @@ globus_i_gfs_op_attr_destroy(
     globus_free(attr);
 }
 
+void
+globus_i_gfs_op_attr_copy(
+    globus_i_gfs_op_attr_t *            out_attr)
+    globus_i_gfs_op_attr_t *            in_attr)
+{
+    out_attr->partial_offset = in_attr->partial_offset;
+    out_attr->partial_length = in_attr->partial_length;
+    out_attr->restart_marker = in_attr->restart_marker;
+}
+
 
 static
 void

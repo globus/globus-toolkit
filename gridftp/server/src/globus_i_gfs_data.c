@@ -83,7 +83,7 @@ globus_l_gfs_data_operation_destroy(
 {
     if(op->op_attr)
     {
-        globus_i_gfs_op_attr_destroy(op->op_attr);
+       /* globus_i_gfs_op_attr_destroy(op->op_attr); */
     }
     globus_mutex_destroy(&op->lock);
     globus_free(op);

@@ -2629,7 +2629,7 @@ globus_i_gsc_list(
         return GlobusGridFTPServerNotACommand();
     }
 
-    return GLOBUS_SUCCESS;
+    return op->res;
 }
 
 globus_result_t
@@ -2909,7 +2909,10 @@ globus_gridftp_server_control_finished_resource(
     {
         return GlobusGridFTPServerErrorParameter("op");
     }
-
+    
+    res = result;
+    op->res = result;
+    
     if(res == GLOBUS_SUCCESS)
     {
         op->stat_info = (globus_gridftp_server_control_stat_t *)
@@ -2922,7 +2925,6 @@ globus_gridftp_server_control_finished_resource(
                 &op->stat_info[ctr], &stat_info_array[ctr]);
         }
     }
-    op->res = result;
     if(op->stat_cb != NULL)
     {
         GlobusLGSCRegisterInternalCB(op);
@@ -3377,16 +3379,19 @@ void
 globus_i_gsc_restart_destroy(
     globus_i_gsc_restart_t *                restart)
 {
-    if(restart->offset_a != NULL)
+    if(restart)
     {
-        globus_free(restart->offset_a);
+        if(restart->offset_a != NULL)
+        {
+            globus_free(restart->offset_a);
+        }
+        if(restart->length_a != NULL)
+        {
+            globus_free(restart->length_a);
+        }
+        globus_priority_q_destroy(&restart->q);
+        globus_free(restart);
     }
-    if(restart->length_a != NULL)
-    {
-        globus_free(restart->length_a);
-    }
-    globus_priority_q_destroy(&restart->q);
-    globus_free(restart);
 }
 
 void
