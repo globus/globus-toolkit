@@ -426,7 +426,7 @@ globus_result_t globus_gsi_cred_read(
                      "     has expired %d minutes ago.\n",
                      cert,
                      subject,
-                     (-lifetime)));
+                     (-lifetime)/60));
                 
                 free(subject);
                 goto exit;
@@ -549,7 +549,7 @@ globus_result_t globus_gsi_cred_read(
                      "has expired %d minutes ago.\n",
                      cert,
                      subject,
-                     (-lifetime)));
+                     (-lifetime)/60));
                 
                 free(subject);
                 goto exit;
@@ -686,7 +686,7 @@ globus_result_t globus_gsi_cred_read(
                          "     has expired %d minutes ago.\n",
                          cert,
                          subject,
-                         (-lifetime)));
+                         (-lifetime)/60));
                     
                     free(subject);
                     goto exit;
