@@ -982,6 +982,7 @@ globus_callback_space_init(
                 {
                     int                         rc;
                     
+                    globus_l_callback_thread_count++;
                     rc = globus_thread_create(
                         GLOBUS_NULL,
                         GLOBUS_NULL,
@@ -1316,28 +1317,28 @@ globus_l_callback_blocked_cb(
             globus_mutex_unlock(&callback_info->my_space->lock);
 
             restart_info->restarted = GLOBUS_TRUE;
-        }
-        
-        if(restart_info->create_thread)
-        {
-            globus_mutex_lock(&globus_l_callback_thread_lock);
+            
+            if(restart_info->create_thread)
             {
-                if(!globus_l_callback_shutting_down)
+                globus_mutex_lock(&globus_l_callback_thread_lock);
                 {
-                    int                 rc;
-                    
-                    callback_info->my_space->thread_count++;
-                    globus_l_callback_thread_count++;
-                    
-                    rc = globus_thread_create(
-                        GLOBUS_NULL,
-                        GLOBUS_NULL,
-                        globus_l_callback_thread_poll,
-                        callback_info->my_space);
-                    globus_assert(rc == 0);
-                }
-            } 
-            globus_mutex_unlock(&globus_l_callback_thread_lock);
+                    if(!globus_l_callback_shutting_down)
+                    {
+                        int                 rc;
+                        
+                        callback_info->my_space->thread_count++;
+                        globus_l_callback_thread_count++;
+                        
+                        rc = globus_thread_create(
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            globus_l_callback_thread_poll,
+                            callback_info->my_space);
+                        globus_assert(rc == 0);
+                    }
+                } 
+                globus_mutex_unlock(&globus_l_callback_thread_lock);
+            }
         }
     }
 }
