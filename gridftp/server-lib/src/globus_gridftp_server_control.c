@@ -1238,6 +1238,10 @@ globus_i_guc_data_object_destroy(
     globus_result_t                     res;
     GlobusGridFTPServerName(globus_i_guc_data_object_destroy);
 
+    globus_hashtable_remove(
+        &server_handle->data_object_table, 
+        data_object->user_handle);
+
     if(server_handle->funcs.data_destroy_cb != NULL)
     {
         server_handle->ref++;
