@@ -312,10 +312,10 @@ uninstallall:	uninstall
 
 uninstall: 
 	-rm -f $(DESTDIR)$(bindir)/slogin
+	-rm -f $(DESTDIR)$(bindir)/gsiscp
+	-rm -f $(DESTDIR)$(bindir)/gsissh
 	-rm -f $(DESTDIR)$(bindir)/ssh$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/scp$(EXEEXT)
-	-rm -f $(DESTDIR)$(bindir)/gsiscp$(EXEEXT)
-	-rm -f $(DESTDIR)$(bindir)/gsissh$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/ssh-add$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/ssh-agent$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/ssh-keygen$(EXEEXT)
