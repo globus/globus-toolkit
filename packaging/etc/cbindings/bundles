@@ -24,3 +24,10 @@ BUNDLE	ogsi-cbindings
 	globus_ogsi_notification
 	globus_ogsa_samples_counter_bindings
 	globus_grim_devel
+        globus_gt3_gram_client_test
+        globus_ogsa_base_gram_mj_test
+        globus_gt3_gram_client
+        globus_ogsa_base_gram_managed_job
+        globus_gram_xml_rsl_test
+        globus_gram_xml_rsl
+        globus_ogsa_base_gram_mj_bindings
