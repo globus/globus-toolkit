@@ -52,6 +52,8 @@ extern ServerOptions options;
 extern u_char *session_id2;
 extern int session_id2_len;
 
+int 	userauth_external(Authctxt *authctxt);
+int	userauth_gssapi(Authctxt *authctxt);
 void    userauth_reply(Authctxt *authctxt, int authenticated);
 static void gssapi_unsetenv(const char *var);
 
