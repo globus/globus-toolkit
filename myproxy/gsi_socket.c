@@ -1226,7 +1226,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
      * no delegation.
      */
     if (SSL_read(self->ssl, &deleg_flag, 1) != 1) {
-	self->error_string = strdup("Failed to read GSSAPI deleg flag");
+	self->error_string = strdup("SSL_read() failed.  Client disconnected during SSL negotiation?");
 	return GSI_SOCKET_ERROR;
     }
 
