@@ -150,8 +150,8 @@ kex_dh_hash(char *, char *, char *, int, char *, int, u_char *, int,
 u_char *
 kexgex_hash(char *, char *, char *, int, char *, int, u_char *, int,
     int, int, int, BIGNUM *, BIGNUM *, BIGNUM *, BIGNUM *, BIGNUM *);
-u_char *
 #ifdef GSSAPI
+u_char *
 kex_gssapi_hash(char *, char *, char *, int, char *, int, u_char *, int,
     BIGNUM *, BIGNUM *, BIGNUM *);
 #endif
