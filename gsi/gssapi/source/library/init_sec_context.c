@@ -44,7 +44,6 @@ GSS_CALLCONV gss_init_sec_context(
     OM_uint32                           local_minor_status;
     OM_uint32                           local_major_status;
     globus_result_t                     local_result;
-    globus_result_t                     callback_error;
     int                                 rc;
     char                                cbuf[1];
     globus_gsi_cert_utils_cert_type_t   cert_type;
@@ -165,41 +164,7 @@ GSS_CALLCONV gss_init_sec_context(
             break;
         }
 
-        /* need to check callback data for error first */
-        local_result = globus_gsi_callback_get_error(
-            context->callback_data,
-            &callback_error);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-            major_status = GSS_S_FAILURE;
-            break;
-        }
-
-        if(callback_error != GLOBUS_SUCCESS && GSS_ERROR(major_status))
-        {
-            local_result = globus_i_gsi_gssapi_error_join_chains_result(
-                (globus_result_t) local_minor_status,
-                callback_error);
-
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED);
-            context->gss_state = GSS_CON_ST_DONE;
-            break;
-        }
-        else if(callback_error != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, callback_error,
-                GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED);
-            context->gss_state = GSS_CON_ST_DONE;
-            major_status = GSS_S_FAILURE;
-            break;
-        }
-        else if(GSS_ERROR(major_status))
+        if(GSS_ERROR(major_status))
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,

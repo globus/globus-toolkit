@@ -796,8 +796,7 @@ globus_i_gsi_gss_handshake(
     OM_uint32 *                         minor_status,
     gss_ctx_id_desc *                   context_handle)
 {
-    globus_result_t                     local_result;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     int rc;
     
@@ -855,24 +854,35 @@ globus_i_gsi_gss_handshake(
             }
 
             major_status = GSS_S_DEFECTIVE_CREDENTIAL;
-            goto exit;
         }
     }
 
-    local_result = globus_gsi_callback_get_error(context_handle->callback_data,
-                                                 &result);
+    globus_gsi_callback_get_error(context_handle->callback_data,
+                                  &result);
     
-    if(local_result != GLOBUS_SUCCESS)
+    if(result != GLOBUS_SUCCESS && GSS_ERROR(major_status))
     {
-        result = local_result;
+        result = globus_i_gsi_gssapi_error_join_chains_result(
+            (globus_result_t) *minor_status,
+            result);
+        
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, result,
+            GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED);
+        goto exit;
     }
-
-    if(result != GLOBUS_SUCCESS)
+    else if(GSS_ERROR(major_status))
+    {
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED);
+        goto exit;
+    }
+    else if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-        major_status = GSS_S_FAILURE;
         goto exit;
     }
 
