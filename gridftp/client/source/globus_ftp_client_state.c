@@ -2666,8 +2666,15 @@ redo:
 			client_handle,
 			target->url_string,
 			error);
-
-		    globus_object_free(error);
+                    
+                    if(client_handle->err)
+                    {
+		        globus_object_free(error);
+		    }
+		    else
+		    {
+		        client_handle->err = error;
+		    }
 
 		    if(client_handle->state == 
 		        GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
