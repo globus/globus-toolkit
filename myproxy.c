@@ -227,6 +227,11 @@ myproxy_resolve_hostname(char **host)
 		return;
 	    }
 	    hostinfo = gethostbyname(buf);
+	    if (hostinfo == NULL || hostinfo->h_name == NULL) {
+		free(*host);
+		*host = strdup(buf);
+		return;
+	    }
 	}
     }
     free(*host);
