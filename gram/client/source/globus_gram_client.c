@@ -623,6 +623,12 @@ globus_gram_client_job_check(char * gatekeeper_url,
 } /* globus_gram_client_job_check() */
 
 
+const char *
+globus_gram_client_error_string(int error_code)
+{
+    return globus_gram_protocol_error_string(error_code);
+}
+
 /******************************************************************************
 Function:	globus_l_gram_client_to_jobmanager()
 Description:	packing/sending to jobmanager URL/waiting/unpacking 
