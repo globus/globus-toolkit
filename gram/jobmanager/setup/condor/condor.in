@@ -513,6 +513,10 @@ sub cancel
     my $job_id = $description->jobid();
     my $count = 0;
 
+    if ($job_id =~ m/(\d+\.\d+)\.\d+/) {
+        $job_id = $1;
+    }
+
     $self->log("cancel job " . $description->jobid());
     # we do not need to be too efficient here
     $self->log(`$condor_rm $job_id 2>&1`);
