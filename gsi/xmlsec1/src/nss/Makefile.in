@@ -66,15 +66,30 @@ EXEEXT = @EXEEXT@
 OBJEXT = @OBJEXT@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 AMTAR = @AMTAR@
+AR = @AR@
+ARFLAGS = @ARFLAGS@
 AS = @AS@
 AWK = @AWK@
 CC = @CC@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CROSS = @CROSS@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+CXXFLAGS = @CXXFLAGS@
 DEPDIR = @DEPDIR@
+DIRT_BRANCH_ID = @DIRT_BRANCH_ID@
+DIRT_TIMESTAMP = @DIRT_TIMESTAMP@
 DLLTOOL = @DLLTOOL@
+DOXYGEN = @DOXYGEN@
 ECHO = @ECHO@
+F77 = @F77@
+F77FLAGS = @F77FLAGS@
+F90 = @F90@
+F90FLAGS = @F90FLAGS@
+FILELIST_FILE = @FILELIST_FILE@
+GLOBUS_FLAVOR_NAME = @GLOBUS_FLAVOR_NAME@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_CONFIG = @GNUTLS_CONFIG@
 GNUTLS_CRYPTO_LIB = @GNUTLS_CRYPTO_LIB@
@@ -83,22 +98,33 @@ GNUTLS_LIBS = @GNUTLS_LIBS@
 GNUTLS_MIN_VERSION = @GNUTLS_MIN_VERSION@
 GNUTLS_PREFIX = @GNUTLS_PREFIX@
 GNUTLS_VERSION = @GNUTLS_VERSION@
+GPT_CFLAGS = @GPT_CFLAGS@
+GPT_CONFIG_CFLAGS = @GPT_CONFIG_CFLAGS@
+GPT_CONFIG_INCLUDES = @GPT_CONFIG_INCLUDES@
+GPT_CONFIG_LIBS = @GPT_CONFIG_LIBS@
+GPT_CONFIG_PKG_LIBS = @GPT_CONFIG_PKG_LIBS@
+GPT_EXTERNAL_INCLUDES = @GPT_EXTERNAL_INCLUDES@
+GPT_EXTERNAL_LIBS = @GPT_EXTERNAL_LIBS@
+GPT_INCLUDES = @GPT_INCLUDES@
+GPT_IS_2 = @GPT_IS_2@
+GPT_LDFLAGS = @GPT_LDFLAGS@
+GPT_LIBS = @GPT_LIBS@
+GPT_LIB_LINKS = @GPT_LIB_LINKS@
+GPT_LINKTYPE = @GPT_LINKTYPE@
+GPT_LOCATION = @GPT_LOCATION@
+GPT_MAJOR_VERSION = @GPT_MAJOR_VERSION@
+GPT_MINOR_VERSION = @GPT_MINOR_VERSION@
+GPT_PGM_LINKS = @GPT_PGM_LINKS@
+GPT_PKG_CFLAGS = @GPT_PKG_CFLAGS@
 INCLTDL = @INCLTDL@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+INSURE = @INSURE@
+LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBADD_DL = @LIBADD_DL@
 LIBLTDL = @LIBLTDL@
+LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIBXML_CFLAGS = @LIBXML_CFLAGS@
-LIBXML_CONFIG = @LIBXML_CONFIG@
-LIBXML_LIBS = @LIBXML_LIBS@
-LIBXML_MIN_VERSION = @LIBXML_MIN_VERSION@
-LIBXML_PREFIX = @LIBXML_PREFIX@
-LIBXSLT_CFLAGS = @LIBXSLT_CFLAGS@
-LIBXSLT_CONFIG = @LIBXSLT_CONFIG@
-LIBXSLT_LIBS = @LIBXSLT_LIBS@
-LIBXSLT_MIN_VERSION = @LIBXSLT_MIN_VERSION@
-LIBXSLT_PREFIX = @LIBXSLT_PREFIX@
 LN_S = @LN_S@
 MAINT = @MAINT@
 MOZILLA_MIN_VERSION = @MOZILLA_MIN_VERSION@
@@ -123,6 +149,7 @@ OPENSSL_MIN_VERSION = @OPENSSL_MIN_VERSION@
 OPENSSL_PREFIX = @OPENSSL_PREFIX@
 OPENSSL_VERSION = @OPENSSL_VERSION@
 PACKAGE = @PACKAGE@
+PERL = @PERL@
 RANLIB = @RANLIB@
 RM = @RM@
 STRIP = @STRIP@
@@ -156,7 +183,6 @@ XMLSEC_NO_DES = @XMLSEC_NO_DES@
 XMLSEC_NO_DSA = @XMLSEC_NO_DSA@
 XMLSEC_NO_GNUTLS = @XMLSEC_NO_GNUTLS@
 XMLSEC_NO_HMAC = @XMLSEC_NO_HMAC@
-XMLSEC_NO_LIBXML = @XMLSEC_NO_LIBXML@
 XMLSEC_NO_LIBXSLT = @XMLSEC_NO_LIBXSLT@
 XMLSEC_NO_NSS = @XMLSEC_NO_NSS@
 XMLSEC_NO_OPENSSL = @XMLSEC_NO_OPENSSL@
@@ -181,6 +207,8 @@ XMLSEC_VERSION_SAFE = @XMLSEC_VERSION_SAFE@
 XMLSEC_VERSION_SUBMINOR = @XMLSEC_VERSION_SUBMINOR@
 am__include = @am__include@
 am__quote = @am__quote@
+builddir = @builddir@
+cross_compiling = @cross_compiling@
 install_sh = @install_sh@
 NULL = 
 
@@ -253,7 +281,6 @@ libxmlsec1_nss_la_OBJECTS = $(am_libxmlsec1_nss_la_OBJECTS)
 
 DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
-LIBS = @LIBS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/app.Plo ./$(DEPDIR)/bignum.Plo \
@@ -281,7 +308,7 @@ all: all-am
 .SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  src/nss/Makefile
+	  $(AUTOMAKE) --foreign  src/nss/Makefile
 Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)
 libLTLIBRARIES_INSTALL = $(INSTALL)
@@ -515,3 +542,108 @@ uninstall-am: uninstall-info-am uninstall-libLTLIBRARIES
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
+link-am:
+
+unlink-am:
+
+filelist-am:
+
+link: link-recursive link-libLTLIBRARIES 
+	:
+
+unlink: unlink-recursive unlink-libLTLIBRARIES 
+	:
+
+.PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-amlink-libLTLIBRARIES unlink-libLTLIBRARIES filelist-libLTLIBRARIES 
+
+filelist: filelist-recursive filelist-libLTLIBRARIES 
+	:
+
+
+
+
+link-libLTLIBRARIES: $(lib_LTLIBRARIES)
+	@$(NORMAL_INSTALL)
+	@$(mkinstalldirs) $(DESTDIR)$(libdir)
+	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	  if test -f $$p; then \
+	  	mydir=`pwd`; \
+	    	target_p=$(DESTDIR)$(libdir)/$$p; \
+		target_dir="$(DESTDIR)$(libdir)/"; \
+		root_p=`echo $$p | sed "s,.la,,"`; \
+		liblist=`ls $$mydir/.libs/$$root_p.so*`; for so in $$liblist; do \
+			if test ! -h $$so; then \
+				so_name=`echo $$so | sed "s,$$mydir/.libs/,,"`; \
+				so_list="$$so_list $$so_name"; \
+			fi; \
+		done; \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+			for so in $$so_list; do \
+				echo "mv $$target_dir/$$so $$target_dir/$$so.$(LINK_BAK)"; \
+				mv $$target_dir/$$so $$target_dir/$$so.$(LINK_BAK); \
+			done; \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$mydir/$$p $$target_p"; \
+			ln -s $$mydir/$$p $$target_p; \
+			for so in $$so_list; do \
+				echo "ln -s $$mydir/.libs/$$so $$target_dir/$$so"; \
+				ln -s $$mydir/.libs/$$so $$target_dir/$$so; \
+			done; \
+		fi; \
+	  else :; fi; \
+	done
+
+unlink-libLTLIBRARIES:
+	@$(NORMAL_UNINSTALL)
+	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	    	target_p=$(DESTDIR)$(libdir)/$$p; \
+		target_dir="$(DESTDIR)$(libdir)/"; \
+		root_p=`echo $$p | sed "s,.la,,"`; \
+		so_list=`ls $$target_dir/$$root_p.so*.$(LINK_BAK)`; \
+		if test -h $$target_p; then \
+			echo "rm $$target_p"; \
+			rm $$target_p; \
+			for so in $$so_list; do \
+				so_name=`echo $$so | sed "s,.$(LINK_BAK),,"`; \
+				echo "rm $$so_name"; \
+				rm $$so_name; \
+			done; \
+		fi; \
+		if test -f $$target_p.$(LINK_BAK); then \
+			echo "mv $$target_p.$(LINK_BAK) $$target_p"; \
+			mv $$target_p.$(LINK_BAK) $$target_p; \
+			for so in $$so_list; do \
+				so_name=`echo $$so | sed "s,.$(LINK_BAK),,"`; \
+				mv $$so_name.$(LINK_BAK) $$so_name; \
+			done; \
+		fi; \
+	done
+
+filelist-libLTLIBRARIES: $(lib_LTLIBRARIES)
+	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	  $(GPT_LOCATION)/sbin/gpt_get_lib_names $$p $(DESTDIR)$(libdir) >> $(FILELIST_FILE); \
+	done
+
+
+link-recursive unlink-recursive filelist-recursive:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
+

@@ -1,9 +1,15 @@
+include $(top_srcdir)/globus_automake_pre
+
+##SUBDIRS=xmlsec
+
+
 ## Process this file with automake to produce Makefile.in
 NULL =
-SUBDIRS = $(XMLSEC_CRYPTO_LIST)
+##SUBDIRS = $(XMLSEC_CRYPTO_LIST)
+SUBDIRS = openssl
 EXTRA_DIST = skeleton mscrypto $(XMLSEC_CRYPTO_DISABLED_LIST)
 
-xmlsecincdir = $(includedir)/xmlsec1/xmlsec
+xmlsecincdir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/xmlsec1/xmlsec
 
 xmlsecinc_HEADERS = \
 	app.h \
@@ -60,3 +66,4 @@ remove-old-headers:
 install-exec-hook: remove-old-headers
 	$(mkinstalldirs) $(DESTDIR)$(xmlsecincdir)
 
+include $(top_srcdir)/globus_automake_post

@@ -1,8 +1,8 @@
 #! /bin/sh
 
-prefix="/usr"
-package="xmlsec1"
-exec_prefix="${prefix}"
+prefix="$(GLOBUS_LOCATION)"
+package="globus_xmlsec1"
+exec_prefix="$(GLOBUS_LOCATION)"
 exec_prefix_set=no
 
 usage()
@@ -20,7 +20,7 @@ Known values for OPTION are:
   --help		display this help and exit
   --version		output version information
   --crypto=LIB		configure with XMLSEC crypto library (one of the
-			following: none default  openssl nss) 
+			following: none default openssl) 
 			[default "openssl"]
 EOF
 
@@ -79,7 +79,7 @@ do
 	;;
 
     --version)
-	echo 1.2.1
+	echo 1.2
 	exit 0
 	;;
     
@@ -110,17 +110,17 @@ done
 #
 # Get LibXML2 settings
 #
-the_xml_flags="`xml2-config --cflags`"
-the_xml_libs="`xml2-config --libs`"
+the_xml_flags="`@LIBXML_CONFIG@ --cflags`"
+the_xml_libs="`@LIBXML_CONFIG@ --libs`"
 
 #
 # Get LibXSLT settings
 #
 the_xslt_flags=""
 the_xslt_libs=""
-if test "0" = "0"; then 
-    the_xslt_flags="`xslt-config --cflags`"
-    the_xslt_libs="`xslt-config --libs`"
+if test "1" = "0"; then 
+    the_xslt_flags="`@LIBXSLT_CONFIG@ --cflags`"
+    the_xslt_libs="`@LIBXSLT_CONFIG@ --libs`"
 fi    
 
 #
@@ -140,9 +140,9 @@ none)
     ;;
 
 default) 
-    the_crypto_flags="-DXMLSEC_CRYPTO_OPENSSL=1  -DXMLSEC_CRYPTO=\\\"openssl\\\""
-    the_crypto_libs="-lcrypto"
-    the_xmlsec_crypto_lib="-lxmlsec1-openssl"
+    the_crypto_flags=" -DXMLSEC_CRYPTO=\\\"openssl\\\""
+    the_crypto_libs=""
+    the_xmlsec_crypto_lib="-l"
     ;;
     
 openssl)
@@ -168,9 +168,9 @@ gnutls)
     ;;
 
 nss)
-    if test "0" = "no"; then
-        the_crypto_flags="-DXMLSEC_CRYPTO_NSS=1 -I/usr/include/mozilla-1.4/nss -I/usr/include/mozilla-1.4/nspr -DXMLSEC_CRYPTO=\\\"nss\\\""
-	the_crypto_libs="-lnss3 -lsmime3 -lnspr4 -lplds4 -lplc4"
+    if test "1" = "no"; then
+        the_crypto_flags="-DXMLSEC_CRYPTO_NSS=1 -DXMLSEC_CRYPTO=\\\"nss\\\""
+	the_crypto_libs=""
         the_xmlsec_crypto_lib="-lxmlsec1-nss"
     else
         echo "Error: the \"$crypto\" cryptographic library is not supported"
@@ -188,7 +188,7 @@ esac
 #
 # Assemble all the settings together
 #
-the_flags="$the_flags  -D__XMLSEC_FUNCTION__=__FUNCTION__ -DXMLSEC_NO_XKMS=1 -I${prefix}/include/xmlsec1   $the_xml_flags $the_xslt_flags $the_crypto_flags"
+the_flags="$the_flags  -D__XMLSEC_FUNCTION__=__FUNCTION__ -DXMLSEC_NO_XSLT=1 -DXMLSEC_NO_XKMS=1 -I${prefix}/include/xmlsec1   $the_xml_flags $the_xslt_flags $the_crypto_flags"
 the_libs="$the_libs -L${exec_prefix}/lib -lxmlsec1  -ldl  $the_xmlsec_crypto_lib -lxmlsec1 $the_xml_libs $the_xslt_libs $the_crypto_libs"
 
 if $cflags; then

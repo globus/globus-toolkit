@@ -66,15 +66,30 @@ EXEEXT = @EXEEXT@
 OBJEXT = @OBJEXT@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 AMTAR = @AMTAR@
+AR = @AR@
+ARFLAGS = @ARFLAGS@
 AS = @AS@
 AWK = @AWK@
 CC = @CC@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CROSS = @CROSS@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+CXXFLAGS = @CXXFLAGS@
 DEPDIR = @DEPDIR@
+DIRT_BRANCH_ID = @DIRT_BRANCH_ID@
+DIRT_TIMESTAMP = @DIRT_TIMESTAMP@
 DLLTOOL = @DLLTOOL@
+DOXYGEN = @DOXYGEN@
 ECHO = @ECHO@
+F77 = @F77@
+F77FLAGS = @F77FLAGS@
+F90 = @F90@
+F90FLAGS = @F90FLAGS@
+FILELIST_FILE = @FILELIST_FILE@
+GLOBUS_FLAVOR_NAME = @GLOBUS_FLAVOR_NAME@
 GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
 GNUTLS_CONFIG = @GNUTLS_CONFIG@
 GNUTLS_CRYPTO_LIB = @GNUTLS_CRYPTO_LIB@
@@ -83,22 +98,33 @@ GNUTLS_LIBS = @GNUTLS_LIBS@
 GNUTLS_MIN_VERSION = @GNUTLS_MIN_VERSION@
 GNUTLS_PREFIX = @GNUTLS_PREFIX@
 GNUTLS_VERSION = @GNUTLS_VERSION@
+GPT_CFLAGS = @GPT_CFLAGS@
+GPT_CONFIG_CFLAGS = @GPT_CONFIG_CFLAGS@
+GPT_CONFIG_INCLUDES = @GPT_CONFIG_INCLUDES@
+GPT_CONFIG_LIBS = @GPT_CONFIG_LIBS@
+GPT_CONFIG_PKG_LIBS = @GPT_CONFIG_PKG_LIBS@
+GPT_EXTERNAL_INCLUDES = @GPT_EXTERNAL_INCLUDES@
+GPT_EXTERNAL_LIBS = @GPT_EXTERNAL_LIBS@
+GPT_INCLUDES = @GPT_INCLUDES@
+GPT_IS_2 = @GPT_IS_2@
+GPT_LDFLAGS = @GPT_LDFLAGS@
+GPT_LIBS = @GPT_LIBS@
+GPT_LIB_LINKS = @GPT_LIB_LINKS@
+GPT_LINKTYPE = @GPT_LINKTYPE@
+GPT_LOCATION = @GPT_LOCATION@
+GPT_MAJOR_VERSION = @GPT_MAJOR_VERSION@
+GPT_MINOR_VERSION = @GPT_MINOR_VERSION@
+GPT_PGM_LINKS = @GPT_PGM_LINKS@
+GPT_PKG_CFLAGS = @GPT_PKG_CFLAGS@
 INCLTDL = @INCLTDL@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+INSURE = @INSURE@
+LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBADD_DL = @LIBADD_DL@
 LIBLTDL = @LIBLTDL@
+LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIBXML_CFLAGS = @LIBXML_CFLAGS@
-LIBXML_CONFIG = @LIBXML_CONFIG@
-LIBXML_LIBS = @LIBXML_LIBS@
-LIBXML_MIN_VERSION = @LIBXML_MIN_VERSION@
-LIBXML_PREFIX = @LIBXML_PREFIX@
-LIBXSLT_CFLAGS = @LIBXSLT_CFLAGS@
-LIBXSLT_CONFIG = @LIBXSLT_CONFIG@
-LIBXSLT_LIBS = @LIBXSLT_LIBS@
-LIBXSLT_MIN_VERSION = @LIBXSLT_MIN_VERSION@
-LIBXSLT_PREFIX = @LIBXSLT_PREFIX@
 LN_S = @LN_S@
 MAINT = @MAINT@
 MOZILLA_MIN_VERSION = @MOZILLA_MIN_VERSION@
@@ -123,6 +149,7 @@ OPENSSL_MIN_VERSION = @OPENSSL_MIN_VERSION@
 OPENSSL_PREFIX = @OPENSSL_PREFIX@
 OPENSSL_VERSION = @OPENSSL_VERSION@
 PACKAGE = @PACKAGE@
+PERL = @PERL@
 RANLIB = @RANLIB@
 RM = @RM@
 STRIP = @STRIP@
@@ -156,7 +183,6 @@ XMLSEC_NO_DES = @XMLSEC_NO_DES@
 XMLSEC_NO_DSA = @XMLSEC_NO_DSA@
 XMLSEC_NO_GNUTLS = @XMLSEC_NO_GNUTLS@
 XMLSEC_NO_HMAC = @XMLSEC_NO_HMAC@
-XMLSEC_NO_LIBXML = @XMLSEC_NO_LIBXML@
 XMLSEC_NO_LIBXSLT = @XMLSEC_NO_LIBXSLT@
 XMLSEC_NO_NSS = @XMLSEC_NO_NSS@
 XMLSEC_NO_OPENSSL = @XMLSEC_NO_OPENSSL@
@@ -181,13 +207,38 @@ XMLSEC_VERSION_SAFE = @XMLSEC_VERSION_SAFE@
 XMLSEC_VERSION_SUBMINOR = @XMLSEC_VERSION_SUBMINOR@
 am__include = @am__include@
 am__quote = @am__quote@
+builddir = @builddir@
+cross_compiling = @cross_compiling@
 install_sh = @install_sh@
+
+setupdir = $(GLOBUS_LOCATION)/setup/globus
+
+testdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
+
+scriptsysconfdir = $(GLOBUS_LOCATION)/etc
+
+flavorincludedir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)
+
+pkgdir = $(GLOBUS_LOCATION)/etc/globus_packages/$(PACKAGE)
+
+aclocaldir = $(GLOBUS_LOCATION)/share/globus_aclocal
+
+amdirdir = $(GLOBUS_LOCATION)/share/globus_amdir
+
+doxygendir = $(GLOBUS_LOCATION)/share/doxygen
+
+docdir = $(GLOBUS_LOCATION)/share/doc
+
+LINK_BAK = orig
+AUTOMAKE_OPTIONS = no-dependencies
+
 NULL = 
 
 SUBDIRS = . $(XMLSEC_CRYPTO_LIST)
 
 INCLUDES = \
 	-DPACKAGE=\"@PACKAGE@\" \
+	-DGLOBUS_FLAVOR_NAME=\"@GLOBUS_FLAVOR_NAME@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
 	$(XMLSEC_DEFINES) \
@@ -207,11 +258,11 @@ EXTRA_DIST = \
 
 
 lib_LTLIBRARIES = \
-	libxmlsec1.la \
+	libxmlsec1_$(GLOBUS_FLAVOR_NAME).la \
 	$(NULL)
 
 
-libxmlsec1_la_SOURCES = \
+libxmlsec1___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	$(LTDL_SOURCE_FILES) \
 	app.c \
 	base64.c \
@@ -244,16 +295,12 @@ libxmlsec1_la_SOURCES = \
 	$(NULL)
 
 
-libxmlsec1_la_LIBADD = \
-	$(LIBXSLT_LIBS) \
-	$(LIBXML_LIBS) \
-	$(XMLSEC_DL_LIBS) \
-	$(NULL)
+libxmlsec1___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+	@GPT_LIB_LINKS@
 
 
-libxmlsec1_la_LDFLAGS = \
-	-version-info @XMLSEC_VERSION_INFO@ \
-	$(NULL)
+libxmlsec1___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+	@GPT_LDFLAGS@
 
 
 @XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_TRUE@LTDL_SOURCE_FILES = \
@@ -276,39 +323,24 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(lib_LTLIBRARIES)
 
-libxmlsec1_la_DEPENDENCIES =
+libxmlsec1___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES =
 am__objects_1 =
 @XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_TRUE@am__objects_2 = $(am__objects_1)
 @XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_FALSE@am__objects_2 = xmlsec-ltdl.lo \
 @XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_FALSE@	$(am__objects_1)
-am_libxmlsec1_la_OBJECTS = $(am__objects_2) app.lo base64.lo bn.lo \
-	buffer.lo c14n.lo dl.lo enveloped.lo errors.lo io.lo keyinfo.lo \
-	keys.lo keysdata.lo keysmngr.lo list.lo membuf.lo nodeset.lo \
-	parser.lo strings.lo templates.lo transforms.lo x509.lo xkms.lo \
-	xmldsig.lo xmlenc.lo xmlsec.lo xmltree.lo xpath.lo xslt.lo \
-	$(am__objects_1)
-libxmlsec1_la_OBJECTS = $(am_libxmlsec1_la_OBJECTS)
+am_libxmlsec1___GLOBUS_FLAVOR_NAME__la_OBJECTS = $(am__objects_2) app.lo \
+	base64.lo bn.lo buffer.lo c14n.lo dl.lo enveloped.lo errors.lo \
+	io.lo keyinfo.lo keys.lo keysdata.lo keysmngr.lo list.lo \
+	membuf.lo nodeset.lo parser.lo strings.lo templates.lo \
+	transforms.lo x509.lo xkms.lo xmldsig.lo xmlenc.lo xmlsec.lo \
+	xmltree.lo xpath.lo xslt.lo $(am__objects_1)
+libxmlsec1___GLOBUS_FLAVOR_NAME__la_OBJECTS = \
+	$(am_libxmlsec1___GLOBUS_FLAVOR_NAME__la_OBJECTS)
 
 DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
-LIBS = @LIBS@
-depcomp = $(SHELL) $(top_srcdir)/depcomp
-am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/app.Plo ./$(DEPDIR)/base64.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/bn.Plo ./$(DEPDIR)/buffer.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/c14n.Plo ./$(DEPDIR)/dl.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/enveloped.Plo ./$(DEPDIR)/errors.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/io.Plo ./$(DEPDIR)/keyinfo.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/keys.Plo ./$(DEPDIR)/keysdata.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/keysmngr.Plo ./$(DEPDIR)/list.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/membuf.Plo ./$(DEPDIR)/nodeset.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/parser.Plo ./$(DEPDIR)/strings.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/templates.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/transforms.Plo ./$(DEPDIR)/x509.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/xkms.Plo ./$(DEPDIR)/xmldsig.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/xmlenc.Plo ./$(DEPDIR)/xmlsec-ltdl.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/xmlsec.Plo ./$(DEPDIR)/xmltree.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/xpath.Plo ./$(DEPDIR)/xslt.Plo
+depcomp =
+am__depfiles_maybe =
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -316,7 +348,7 @@ LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-DIST_SOURCES = $(libxmlsec1_la_SOURCES)
+DIST_SOURCES = $(libxmlsec1___GLOBUS_FLAVOR_NAME__la_SOURCES)
 
 RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
@@ -324,15 +356,15 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
 DIST_COMMON = Makefile.am Makefile.in
 DIST_SUBDIRS = $(SUBDIRS)
-SOURCES = $(libxmlsec1_la_SOURCES)
+SOURCES = $(libxmlsec1___GLOBUS_FLAVOR_NAME__la_SOURCES)
 
 all: all-recursive
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/globus_automake_pre $(top_srcdir)/globus_automake_post $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  src/Makefile
+	  $(AUTOMAKE) --foreign  src/Makefile
 Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)
 libLTLIBRARIES_INSTALL = $(INSTALL)
@@ -363,8 +395,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libxmlsec1.la: $(libxmlsec1_la_OBJECTS) $(libxmlsec1_la_DEPENDENCIES) 
-	$(LINK) -rpath $(libdir) $(libxmlsec1_la_LDFLAGS) $(libxmlsec1_la_OBJECTS) $(libxmlsec1_la_LIBADD) $(LIBS)
+libxmlsec1_$(GLOBUS_FLAVOR_NAME).la: $(libxmlsec1___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(libxmlsec1___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES) 
+	$(LINK) -rpath $(libdir) $(libxmlsec1___GLOBUS_FLAVOR_NAME__la_LDFLAGS) $(libxmlsec1___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(libxmlsec1___GLOBUS_FLAVOR_NAME__la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT) core *.core
@@ -372,57 +404,14 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/app.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bn.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/buffer.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/c14n.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dl.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enveloped.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/errors.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/keyinfo.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/keys.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/keysdata.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/keysmngr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/membuf.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodeset.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parser.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strings.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/templates.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/transforms.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x509.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xkms.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmldsig.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmlenc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmlsec-ltdl.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmlsec.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmltree.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xpath.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xslt.Plo@am__quote@
-
-distclean-depend:
-	-rm -rf ./$(DEPDIR)
-
 .c.o:
-@AMDEP_TRUE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(COMPILE) -c `test -f '$<' || echo '$(srcdir)/'`$<
 
 .c.obj:
-@AMDEP_TRUE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(COMPILE) -c `cygpath -w $<`
 
 .c.lo:
-@AMDEP_TRUE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(LTCOMPILE) -c -o $@ `test -f '$<' || echo '$(srcdir)/'`$<
-CCDEPMODE = @CCDEPMODE@
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -606,8 +595,8 @@ clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
 
 distclean: distclean-recursive
 
-distclean-am: clean-am distclean-compile distclean-depend \
-	distclean-generic distclean-libtool distclean-tags
+distclean-am: clean-am distclean-compile distclean-generic \
+	distclean-libtool distclean-tags
 
 dvi: dvi-recursive
 
@@ -642,22 +631,26 @@ uninstall-info: uninstall-info-recursive
 
 .PHONY: $(RECURSIVE_TARGETS) GTAGS all all-am check check-am clean \
 	clean-generic clean-libLTLIBRARIES clean-libtool \
-	clean-recursive distclean distclean-compile distclean-depend \
-	distclean-generic distclean-libtool distclean-recursive \
-	distclean-tags distdir dvi dvi-am dvi-recursive info info-am \
-	info-recursive install install-am install-data install-data-am \
-	install-data-recursive install-exec install-exec-am \
-	install-exec-recursive install-info install-info-am \
-	install-info-recursive install-libLTLIBRARIES install-man \
-	install-recursive install-strip installcheck installcheck-am \
-	installdirs installdirs-am installdirs-recursive \
-	maintainer-clean maintainer-clean-generic \
-	maintainer-clean-recursive mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool mostlyclean-recursive \
-	tags tags-recursive uninstall uninstall-am uninstall-info-am \
-	uninstall-info-recursive uninstall-libLTLIBRARIES \
-	uninstall-recursive
+	clean-recursive distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-recursive distclean-tags distdir \
+	dvi dvi-am dvi-recursive info info-am info-recursive install \
+	install-am install-data install-data-am install-data-recursive \
+	install-exec install-exec-am install-exec-recursive \
+	install-info install-info-am install-info-recursive \
+	install-libLTLIBRARIES install-man install-recursive \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am installdirs-recursive maintainer-clean \
+	maintainer-clean-generic maintainer-clean-recursive mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	mostlyclean-recursive tags tags-recursive uninstall \
+	uninstall-am uninstall-info-am uninstall-info-recursive \
+	uninstall-libLTLIBRARIES uninstall-recursive
 
+	$(LIBXSLT_LIBS) \
+	$(XMLSEC_DL_LIBS) \
+	$(NULL)
+	-version-info @XMLSEC_VERSION_INFO@ \
+	$(NULL)
 
 @XMLSEC_NO_CRYPTO_DYNAMIC_LOADING_FALSE@xmlsec-ltdl.c: xmlsec-ltdl.h 
 
@@ -668,3 +661,108 @@ uninstall-info: uninstall-info-recursive
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
+link-am:
+
+unlink-am:
+
+filelist-am:
+
+link: link-recursive link-libLTLIBRARIES 
+	:
+
+unlink: unlink-recursive unlink-libLTLIBRARIES 
+	:
+
+.PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-amlink-libLTLIBRARIES unlink-libLTLIBRARIES filelist-libLTLIBRARIES 
+
+filelist: filelist-recursive filelist-libLTLIBRARIES 
+	:
+
+
+
+
+link-libLTLIBRARIES: $(lib_LTLIBRARIES)
+	@$(NORMAL_INSTALL)
+	@$(mkinstalldirs) $(DESTDIR)$(libdir)
+	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	  if test -f $$p; then \
+	  	mydir=`pwd`; \
+	    	target_p=$(DESTDIR)$(libdir)/$$p; \
+		target_dir="$(DESTDIR)$(libdir)/"; \
+		root_p=`echo $$p | sed "s,.la,,"`; \
+		liblist=`ls $$mydir/.libs/$$root_p.so*`; for so in $$liblist; do \
+			if test ! -h $$so; then \
+				so_name=`echo $$so | sed "s,$$mydir/.libs/,,"`; \
+				so_list="$$so_list $$so_name"; \
+			fi; \
+		done; \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+			for so in $$so_list; do \
+				echo "mv $$target_dir/$$so $$target_dir/$$so.$(LINK_BAK)"; \
+				mv $$target_dir/$$so $$target_dir/$$so.$(LINK_BAK); \
+			done; \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$mydir/$$p $$target_p"; \
+			ln -s $$mydir/$$p $$target_p; \
+			for so in $$so_list; do \
+				echo "ln -s $$mydir/.libs/$$so $$target_dir/$$so"; \
+				ln -s $$mydir/.libs/$$so $$target_dir/$$so; \
+			done; \
+		fi; \
+	  else :; fi; \
+	done
+
+unlink-libLTLIBRARIES:
+	@$(NORMAL_UNINSTALL)
+	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	    	target_p=$(DESTDIR)$(libdir)/$$p; \
+		target_dir="$(DESTDIR)$(libdir)/"; \
+		root_p=`echo $$p | sed "s,.la,,"`; \
+		so_list=`ls $$target_dir/$$root_p.so*.$(LINK_BAK)`; \
+		if test -h $$target_p; then \
+			echo "rm $$target_p"; \
+			rm $$target_p; \
+			for so in $$so_list; do \
+				so_name=`echo $$so | sed "s,.$(LINK_BAK),,"`; \
+				echo "rm $$so_name"; \
+				rm $$so_name; \
+			done; \
+		fi; \
+		if test -f $$target_p.$(LINK_BAK); then \
+			echo "mv $$target_p.$(LINK_BAK) $$target_p"; \
+			mv $$target_p.$(LINK_BAK) $$target_p; \
+			for so in $$so_list; do \
+				so_name=`echo $$so | sed "s,.$(LINK_BAK),,"`; \
+				mv $$so_name.$(LINK_BAK) $$so_name; \
+			done; \
+		fi; \
+	done
+
+filelist-libLTLIBRARIES: $(lib_LTLIBRARIES)
+	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
+	  $(GPT_LOCATION)/sbin/gpt_get_lib_names $$p $(DESTDIR)$(libdir) >> $(FILELIST_FILE); \
+	done
+
+
+link-recursive unlink-recursive filelist-recursive:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
+
