@@ -50,8 +50,8 @@
             </Dependency>
         </Source_Dependencies>
 
-	<Source_Dependencies Type="data_runtime">
-            <Dependency Name="globus_common">
+	<Source_Dependencies Type="lib_runtime">
+            <Dependency Name="globus_common" Package="data">
                 <Version>
                     <Simple_Version Major="4"/>
                 </Version>

@@ -16,7 +16,8 @@ data_DATA= \
 	globus_common_root.res
 
 EXTRA_DIST = \
-	version.h.in 
+	version.h.in\
+	globus_common.txt
 
 RESNAME=globus_common
 GENRB=$(shell $(GLOBUS_LOCATION)/bin/icu-config --invoke=genrb)
