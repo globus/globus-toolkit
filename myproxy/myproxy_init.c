@@ -236,6 +236,24 @@ main(int argc, char *argv[])
 	goto cleanup;
     }
 
+    /* Get final response from server */
+    if (myproxy_recv_response(socket_attrs, server_response) != 0) {
+        fprintf(stderr, "%s\n", verror_get_string());
+        goto cleanup;
+    }
+
+    /* Get actual lifetime from credential. */
+    if (cred_lifetime == 0) {
+	time_t cred_expiration;
+	if (ssl_get_times(proxyfile, NULL, &cred_expiration) == 0) {
+	    cred_lifetime = cred_expiration-time(0);
+	    if (cred_lifetime <= 0) {
+		fprintf(stderr, "Error: Credential expired!\n");
+		goto cleanup;
+	    }
+	}
+    }
+
     /* Delete proxy file */
     if (grid_proxy_destroy(proxyfile) != 0) {
         fprintf(stderr, "Failed to remove temporary proxy credential.\n");
@@ -243,12 +261,6 @@ main(int argc, char *argv[])
     }
     cleanup_user_proxy = 0;
     
-    /* Get final response from server */
-    if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "%s\n", verror_get_string());
-        goto cleanup;
-    }
-
     hours = (int)(cred_lifetime/SECONDS_PER_HOUR);
     days = (float)(hours/24.0);
     printf("A proxy valid for %d hours (%.1f days) for user %s now exists on %s.\n", 
