@@ -52,7 +52,6 @@ else
     $ENV{CONTACT_STRING} = $contact;
 }
 
-runtests(@tests);
 $test_result = eval "runtests(\@tests);";
 if(!defined($test_result))
 {
