@@ -902,6 +902,8 @@ grim_write_proxy(
 
 /***************************************************************************
  *                   xml parsing code for port type file
+ *
+ *                  These are run as user, no privledges
  **************************************************************************/
 struct grim_port_type_info_s
 {
@@ -1077,6 +1079,8 @@ grim_parse_port_type_file(
 
 /************************************************************************
  *                 xml parsing code for conf file
+ *
+ *                 These are run with priveldges
  ***********************************************************************/
 struct grim_conf_info_s
 {
@@ -1226,4 +1230,23 @@ grim_parse_conf_file(
         XML_ParserFree(p);
     }
     return rc;
+}
+
+/*************************************************************************
+ *
+ ************************************************************************/
+{
+
+    
+"<element name="GRIMAssertion">\n"
+"    <element name=\"Version\" type="integer">\n"
+"    <element name=\"ServiceGridId\" type=\"saml:NameIdentifierType\"/>\n"
+"    <element name=\"ServiceLocalId\" type="saml:NameIdentifierType"/>\n"
+"    <element name="AuthorizedClientId" type="saml:NameIdentifierType"
+           maxOccurs="unbounded"/>
+  <!-- PortType(s) the unix account is authorized to run -->
+  <element name="AuthorizedPortType" type="QName"
+           maxOccurs="unbounded"/>
+</element>
+
 }
