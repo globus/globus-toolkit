@@ -188,6 +188,9 @@ typedef struct globus_i_gsc_server_s
     char                                            mode;
     char *                                          modes;
     char *                                          types;
+    int                                             parallelism;
+    globus_size_t                                   send_buf;
+    globus_size_t                                   receive_buf;
 
     globus_hashtable_t                              send_table;
     globus_hashtable_t                              recv_table;

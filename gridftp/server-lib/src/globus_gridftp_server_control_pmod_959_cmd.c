@@ -1202,7 +1202,7 @@ globus_l_gsc_pmod_959_cmd_site(
 {
     globus_l_gsc_pmod_959_cmd_handle_t *    cmd_handle;
     char *                                  site_type = NULL;
-    char *                                  msg;
+    char *                                  msg = NULL;
     int                                     tmp_i;
     int                                     sc;
     GlobusGridFTPServerName(globus_l_gsc_pmod_959_cmd_site);
@@ -1239,12 +1239,30 @@ globus_l_gsc_pmod_959_cmd_site(
     {
         cmd_handle->send_window = tmp_i;
     }
+    else if(strcmp(site_type, "HELP") == 0)
+    {
+        void *                              tmp_ptr;
+
+        tmp_ptr = strstr(full_command, "HELP");
+        globus_assert(tmp_ptr != NULL);
+        tmp_ptr += 5;
+
+        globus_l_gsc_pmod_959_cmd_help(
+            op,
+            server,
+            "HELP",
+            tmp_ptr,
+            user_arg);
+    }
     else
     {
         msg = "500 Invalid Command.\r\n";
     }
 
-    globus_gsc_pmod_959_finished_op(op, msg);
+    if(msg != NULL)
+    {
+        globus_gsc_pmod_959_finished_op(op, msg);
+    }
     return;
 
   err:
@@ -2254,7 +2272,10 @@ globus_i_gsc_pmod_959_add_commands(
     cmd_handle->send_window = 65536;
     cmd_handle->receive_window = 65536;
     cmd_handle->packet_size = 65536;
-    cmd_handle->parallelism = 4;
+    cmd_handle->parallelism = 1;
+    res = globus_gridftp_server_control_set_parallelism(
+            server, cmd_handle->parallelism);
+    globus_assert(res == GLOBUS_SUCCESS);
 
     cmd_handle->opts_pasv_max = 1;
     cmd_handle->opts_pasv_prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;

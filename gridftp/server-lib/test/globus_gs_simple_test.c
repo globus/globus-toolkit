@@ -64,7 +64,7 @@ data_func(
         globus_poll();
     }
 
-    globus_gridftp_server_control_finished_data(op, GLOBUS_SUCCESS);
+    globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
 }
 
 void

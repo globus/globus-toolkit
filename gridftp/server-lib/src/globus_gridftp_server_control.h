@@ -457,6 +457,28 @@ globus_gridftp_server_control_get_banner(
     char **                                         banner);
 
 globus_result_t
+globus_gridftp_server_control_set_buffer_size(
+    globus_gridftp_server_control_t                 server,
+    globus_size_t                                   recv_bs,
+    globus_size_t                                   send_bs);
+
+globus_result_t
+globus_gridftp_server_control_get_buffer_size(
+    globus_gridftp_server_control_operation_t       op,
+    globus_size_t *                                 out_recv_bs,
+    globus_size_t *                                 out_send_bs);
+
+globus_result_t
+globus_gridftp_server_control_get_parallelism(
+    globus_gridftp_server_control_operation_t       op,
+    int *                                           out_parallelism);
+
+globus_result_t
+globus_gridftp_server_control_set_parallelism(
+    globus_gridftp_server_control_t                 server,
+    int                                             parallelism);
+
+globus_result_t
 globus_gridftp_server_control_get_mode(
     globus_gridftp_server_control_operation_t       op,
     char *                                          out_mode);
