@@ -68,6 +68,7 @@ EXTERN_C_END
 #include "globus_thread_common.h" 
 #include "globus_thread_rw_mutex.h"
 #include "globus_error_errno.h"
+#include "globus_error_generic.h"
 
 #ifndef HAVE_ALLOCA_H
 #undef HAVE_ALLOCA_H
