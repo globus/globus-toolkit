@@ -19,7 +19,7 @@
 
     <With_Flavors build="yes" />
 
-    <Version_Label>3.1p1</Version_Label>
+    <Version_Label>3.2.3p1</Version_Label>
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_openssl"><Version><Version_Range Upper_Major="1000" Lower_Major="0" Upper_Minor="1000" Lower_Minor="3" /></Version></Dependency>
@@ -46,7 +46,7 @@
       <Build_Step>
         . $GLOBUS_LOCATION/libexec/globus-build-env-FLAVOR_GPTMACRO.sh
 
-        ./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-suid-ssh GSI_OPENSSH_GPTMACRO
+        ./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO GSI_OPENSSH_GPTMACRO
       </Build_Step>
 
       <Build_Step>
