@@ -1,10 +1,15 @@
 #!/bin/sh
 
-if echo $@ | grep new >/dev/null 2>&1 ; then
-    ARGS=`echo $@ | sed s/-new//`
-    grid-proxy-init-bin $ARGS
+if test "X${GT_PROXY_MODE}" = "Xold" ; then
+    if echo $@ | grep new >/dev/null 2>&1 ; then
+        ARGS=`echo $@ | sed s/\ -new\ // | sed s/^-new//`
+        grid-proxy-init-bin $ARGS
+    else
+        grid-proxy-init-bin -old $@
+    fi
 else
-    grid-proxy-init-bin -old $@
+    ARGS=`echo $@ | sed s/\ -new\ // | sed s/^-new//`
+    grid-proxy-init-bin $ARGS
 fi
 
 exit $?
