@@ -361,7 +361,7 @@ get_local_port(void)
 }
 
 void
-resolve_hostname(char **host)
+resolve_localhost(char **host)
 {
     struct hostent *hostinfo;
 
@@ -370,7 +370,7 @@ resolve_hostname(char **host)
 	debug("gethostbyname(%s) failed", *host);
 	return;
     }
-    if (hostinfo->h_addrtype == AF_INET) { /* check for localhost */
+    if (hostinfo->h_addrtype == AF_INET) {
 	struct in_addr addr;
 	addr = *(struct in_addr *)(hostinfo->h_addr);
 	if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
@@ -380,8 +380,8 @@ resolve_hostname(char **host)
 		return;
 	    }
 	    hostinfo = gethostbyname(buf);
+	    xfree(*host);
+	    *host = xstrdup(hostinfo->h_name);
 	}
     }
-    xfree(*host);
-    *host = xstrdup(hostinfo->h_name);
 }

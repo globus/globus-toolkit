@@ -91,10 +91,15 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 
 #ifdef GSSAPI
 	if (options.gss_keyex) {
+	char *canonhost;
 	/* Add the GSSAPI mechanisms currently supported on this client to
 	 * the key exchange algorithm proposal */
 	orig = myproposal[PROPOSAL_KEX_ALGS];
-	gss = ssh_gssapi_mechanisms(0,host);
+	canonhost = xstrdup(get_canonical_hostname(1));
+	resolve_localhost(&canonhost);
+	gss = ssh_gssapi_mechanisms(0,canonhost);
+	xfree(canonhost);
+	canonhost=NULL;
 	if (gss) {
 	   len = strlen(orig)+strlen(gss)+2;
 	   myproposal[PROPOSAL_KEX_ALGS]=xmalloc(len);
@@ -513,7 +518,7 @@ userauth_gssapi(Authctxt *authctxt)
 	 */
 	ssh_gssapi_build_ctx(&gssctxt);
 
-	if (ssh_gssapi_import_name(gssctxt,authctxt->host)) {
+	if (ssh_gssapi_import_name(gssctxt,get_canonical_hostname(1))) {
 		return(0);
 	}
 	

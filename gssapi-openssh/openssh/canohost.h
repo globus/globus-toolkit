@@ -24,4 +24,4 @@ char		*get_local_name(int);
 int		 get_remote_port(void);
 int		 get_local_port(void);
 
-void		 resolve_hostname(char **host);
+void		 resolve_localhost(char **host);
