@@ -1322,7 +1322,51 @@ ssl_credentials_destroy(SSL_CREDENTIALS		*creds)
 }
 
 
-	
+int
+ssl_proxy_file_destroy(const char *proxyfile)
+{
+    FILE *fp;
+    long offset, i;
+    char zero = '\0';
+    
+    assert(proxyfile != NULL);
+
+    fp = fopen(proxyfile, "r+");
+    if (!fp) {
+	verror_put_string("fopen: %s\n", strerror(errno));
+	return SSL_ERROR;
+    }
+    if (fseek(fp, 0L, SEEK_END) < 0) {
+	verror_put_string("fseek: %s\n", strerror(errno));
+	fclose(fp);
+	return SSL_ERROR;
+    }
+    offset = ftell(fp);
+    if (offset < 0) {
+	verror_put_string("ftell: %s\n", strerror(errno));
+	fclose(fp);
+	return SSL_ERROR;
+    }
+    if (fseek(fp, 0L, SEEK_SET) < 0) {
+	verror_put_string("fseek: %s\n", strerror(errno));
+	fclose(fp);
+	return SSL_ERROR;
+    }
+    for (i=0; i < offset; i++) {
+	if (fwrite(&zero, 1, 1, fp) != 1) {
+	    verror_put_string("fwrite: %s\n", strerror(errno));
+	    fclose(fp);
+	    return SSL_ERROR;
+	}
+    }
+    fclose(fp);
+    if (unlink(proxyfile) < 0) {
+	verror_put_string("unlink: %s\n", strerror(errno));
+	return SSL_ERROR;
+    }
+
+    return SSL_SUCCESS;
+}	
 		     
 		     
 int
