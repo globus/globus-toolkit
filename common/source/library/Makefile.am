@@ -80,6 +80,8 @@ Sources= \
 	globus_extension.c \
 	globus_extension.h \
 	globus_common_include.h
+	globus_i18n.c \
+	globus_i18n.h
 
 
 flavorinclude_HEADERS = \
@@ -117,7 +119,8 @@ flavorinclude_HEADERS = \
 	globus_extension.h \
 	globus_common.h \
 	globus_thread_$(GLOBUS_THREADS).h \
-	globus_common_include.h
+	globus_common_include.h \
+	globus_i18n.h
 
 
 lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
