@@ -34,7 +34,7 @@ Sources = \
 include_HEADERS= \
 	gssapi.h
 
-AM_CFLAGS = -DDEBUG
+#AM_CFLAGS = -DDEBUG
 
 lib_LTLIBRARIES = libglobus_gssapi_gsi_$(GLOBUS_FLAVOR_NAME).la
 
@@ -42,7 +42,7 @@ INCLUDES = $(GPT_INCLUDES)
 
 libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIBS)
+libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_rules

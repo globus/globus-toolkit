@@ -111,7 +111,6 @@ static ERR_STRING_DATA prxyerr_str_functs[]=
  {ERR_PACK(0,PRXYERR_F_INIT_CRED ,0),"proxy_init_cred"},
  {ERR_PACK(0,PRXYERR_F_LOCAL_CREATE, 0),"proxy_local_create"},
  {ERR_PACK(0,PRXYERR_F_CB_NO_PW, 0),"proxy_pw_cb"},
- {ERR_PACK(0,PRXYERR_F_GET_CA_SIGN_PATH, 0),"get_ca_signing_policy_path"},
  {0,NULL},
 };
 
@@ -157,7 +156,6 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
  {PRXYERR_R_EXT_ADD,"Problem adding extension"},
  {PRXYERR_R_DELEGATE_CREATE,"Problem creating delegate extension"},
  {PRXYERR_R_DELEGATE_COPY,"Problem copying delegate extension to proxy"},
- {PRXYERR_R_BUFFER_TOO_SMALL,"Buffer too small"},
  {0,NULL},
 };
 
@@ -231,69 +229,6 @@ getpid() { return 0;}
 
 #endif /* WIN32 */
 
-
-
-/**********************************************************************
-Function: get_ca_signing_policy_path()
-
-Description:
-
-Given a CA certificate, return the filename for the signing policy
-file for that certificate.
-
-        
-Parameters:
-
-cert_dir, a string specifying the path to the trusted certificates
-directory.
-
-ca_name, the X509_NAME of the CA in question.
-
-
-Returns:
-
-Allocated buffer containing string with path to signing policy file
-for this CA. NULL on error.
-
-**********************************************************************/
-
-
-static char *
-get_ca_signing_policy_path(
-    const char *			cert_dir,
-    X509_NAME *				ca_name)
-{
-    char				*buffer;
-    unsigned int			buffer_len;
-    unsigned long			hash;
-    int status;
-    
-    if ((cert_dir == NULL) ||
-	(ca_name == NULL)) 
-    {
-	PRXYerr(PRXYERR_F_GET_CA_SIGN_PATH, ERR_R_PASSED_NULL_PARAMETER);
-	return NULL;
-    }
-    
-    
-    hash = X509_NAME_hash(ca_name);
-    
-    buffer_len = strlen(cert_dir) + strlen(FILE_SEPERATOR) + 8 /* hash */
-	+ strlen(SIGNING_POLICY_FILE_EXTENSION) + 1 /* NUL */;
-    
-    buffer = malloc(buffer_len);
-    
-    if (buffer == NULL) 
-    {
-	PRXYerr(PRXYERR_F_GET_CA_SIGN_PATH, ERR_R_MALLOC_FAILURE);
-	return NULL;
-    }
-
-    sprintf(buffer,"%s%s%08lx%s", cert_dir, FILE_SEPERATOR, hash,
-	    SIGNING_POLICY_FILE_EXTENSION);
-    
-    return buffer;
-}
 
 #if SSLEAY_VERSION_NUMBER < 0x0900
 /**********************************************************************
@@ -1295,6 +1230,7 @@ proxy_verify_ctx_init(proxy_verify_ctx_desc * pvxd)
 
 	pvxd->magicnum=PVXD_MAGIC_NUMBER; /* used for debuging */
 	pvxd->certdir = NULL;
+	pvxd->goodtill = 0;
 
 }
 /**********************************************************************
@@ -1557,6 +1493,7 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 	int	itsaproxy = 0;
 	int i,n;
 	int ret;
+	time_t  goodtill;
 	char *ca_policy_file_path = NULL;
 	char *cert_dir            = NULL;
 	char *ca_policy_filename  = "ca-signing-policy.conf";
@@ -1821,14 +1758,25 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 
 		cert_dir = pvd->pvxd->certdir ? pvd->pvxd->certdir : getenv(X509_CERT_DIR);
 
-		ca_policy_file_path =
-		    get_ca_signing_policy_path(cert_dir,
-					       X509_get_issuer_name(ctx->current_cert));
-		
-		if (ca_policy_file_path == NULL)
+		if (cert_dir)
 		{
-		    goto fail_verify;
+				ca_policy_file_path = malloc(strlen(cert_dir) +
+									 strlen(ca_policy_filename) +
+									 2 /* for '/' and NUL */);
+
+				if (!ca_policy_file_path)
+				{
+						PRXYerr(PRXYERR_F_VERIFY_CB,
+							PRXYERR_R_CA_POLICY_RETRIEVE);
+						ctx->error = X509_V_ERR_OUT_OF_MEM;
+						goto fail_verify;
+				}
 		}
+
+		sprintf(ca_policy_file_path, "%s%s%s", 
+								cert_dir,
+								FILE_SEPERATOR,
+								ca_policy_filename);
 
 		/*
 		 * XXX - make sure policy file exists. We get a segfault later
@@ -1977,6 +1925,17 @@ if(detailed_answer)
 		}
 		} /* end of do not check self signed certs */
 	}
+
+	/*
+	 * We want to determine the minimum amount of time
+	 * any certificate in the chain is good till
+	 * Will be used for lifetime calculations
+	 */
+
+	goodtill = ASN1_UTCTIME_mktime(X509_get_notAfter(ctx->current_cert));
+	if (pvd->pvxd->goodtill == 0 || goodtill < pvd->pvxd->goodtill) {
+		pvd->pvxd->goodtill = goodtill;
+	}
 	
 	/* We need to make up a cert_chain if we are the server. 
 	 * The ssl code does not save this as I would expect. 
@@ -1992,19 +1951,9 @@ if(detailed_answer)
 #ifdef DEBUG 
 	fprintf(stderr,"proxy_verify_callback:returning:%d\n\n", ok);
 #endif
-	if (ca_policy_file_path != NULL)
-	{
-	    free(ca_policy_file_path);
-	}
-	
 	return(ok);
 
 fail_verify:
-	if (ca_policy_file_path != NULL)
-	{
-	    free(ca_policy_file_path);
-	}
-
 	if (ctx->current_cert) {
 		char *subject_s = NULL;
 		char *issuer_s = NULL;
@@ -2456,7 +2405,7 @@ proxy_get_filenames(int proxy_in,
 			goto err;
 		}
 	}
-	/* if X509_USER_PROXY is defined, use it for cert and key,
+	/* if x509_USER_PROXY is defined, use it for cert and key,
 	 * and for additional certs. 
 	 * if not, and the default user_proxy file is present, 
 	 * use it. 
@@ -2478,7 +2427,7 @@ proxy_get_filenames(int proxy_in,
 		}
 	}
 #endif
-	if (!user_proxy) {
+	if (!user_proxy || getenv("X509_RUN_AS_SERVER")) {
 		unsigned long uid;
 		uid = getuid();
 		len = strlen(DEFAULT_SECURE_TMP_DIR) 

@@ -24,6 +24,8 @@ INCLUDES = $(GPT_INCLUDES)
 
 lib_LTLIBRARIES = libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).la
 libglobus_gss_assist___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_gss_assist___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gss_assist___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 EXTRA_DIST = globus_automake_config
 

@@ -19,15 +19,15 @@ for program in automake aclocal autoconf autoheader
     }
 done
 
-# checking for the GLOBUS_INSTALL_PATH
+# checking for the GLOBUS_LOCATION
 
-if test "x$GLOBUS_INSTALL_PATH" = "x"; then
-    echo "ERROR Please specify GLOBUS_INSTALL_PATH" >&2
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
     exit 1
 fi
 
-echo "running aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal"
-aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal || error
+echo "running aclocal -I $GLOBUS_LOCATION/share/globus_aclocal"
+aclocal -I $GLOBUS_LOCATION/share/globus_aclocal || error
 
 if test -f acconfig.h ; then
 echo "running autoheader"
@@ -36,13 +36,13 @@ fi
 
 if test ! -h globus_automake_targets; then
     echo "installing extra automake files"
-    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_targets \
+    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_targets \
     globus_automake_targets
-    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_rules \
+    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_rules \
     globus_automake_rules
-    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_top_rules \
+    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_top_rules \
     globus_automake_top_rules
-    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_config \
+    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_config \
     globus_automake_config
 fi
 

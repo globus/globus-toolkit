@@ -243,9 +243,10 @@ typedef struct proxy_cred_desc_struct {
 typedef struct proxy_verify_ctx_desc_struct {
   int				magicnum ;  
   char				*certdir; 
+  time_t			goodtill;
 } proxy_verify_ctx_desc ;
 
-/* proxy_verify_desc - allws for recursive verifys with delegation */
+/* proxy_verify_desc - allows for recursive verifys with delegation */
 
 typedef struct proxy_verify_desc_struct proxy_verify_desc;
 
