@@ -9,6 +9,7 @@ globusperldir = $(GLOBUS_LOCATION)/lib/perl/Globus
 globusperl_DATA = URL.pm
 
 Scripts= \
+	TEST.pl \
 	FtpTestLib.pm \
 	globus-ftp-client-bad-buffer-test.pl \
 	globus-ftp-client-create-destroy-test.pl \
