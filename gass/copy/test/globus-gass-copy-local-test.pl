@@ -30,13 +30,16 @@ sub test_gridftp_local
     chomp($subject);
     
     $ENV{GRIDMAP}="gridmap";
-    
-    if( 0 != system("grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1") / 256)
-    {
-        print "Unable to create gridmap file\n";
-        exit 1;
-    }
 
+    if(! -f $ENV{GRIDMAP})
+    {
+        if( 0 != system("grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1") / 256)
+        {
+            print "Unable to create gridmap file\n";
+            exit 1;
+        }
+    }
+    
     my ($source_pid, $source_fd) = 
         $u->command_blocking("in.ftpd -a -1 -s -p 0");
     
