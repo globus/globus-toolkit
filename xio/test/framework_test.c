@@ -301,8 +301,6 @@ main(
     }
     globus_mutex_unlock(&globus_l_mutex);
     
-    globus_xio_driver_unload("test", driver);
-    
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 
