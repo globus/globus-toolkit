@@ -230,7 +230,7 @@ static char *  long_usage = \
 "    -b | -batch\n"\
 "           Cause globusrun to terminate after the job is successfully\n"\
 "           submitted to the scheduler. Useful for batch jobs. This option\n"\
-"           cannot be used together with or -interactive, and is also\n"\
+"           cannot be used together with -interactive, and is also\n"\
 "           incompatible with multi-request jobs.\n" \
 "           If used with -s, files may be staged in to the job, but stdout\n"\
 "           and stderr will not be redirected.\n"\
@@ -1347,11 +1347,11 @@ globus_l_globusrun_gramrun(char * request_string,
     if(err == GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
     {
 	send_commit = GLOBUS_TRUE;
-	err = globus_gram_client_job_signal(monitor.job_contact,
+	err = NULL; /*globus_gram_client_job_signal(monitor.job_contact,
 				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
 					    "commit",
 					    &tmp1,
-					    &tmp2);
+					    &tmp2);*/
     }
 
     if(err != GLOBUS_SUCCESS)
@@ -1431,11 +1431,11 @@ globus_l_globusrun_gramrun(char * request_string,
 
     if(send_commit == GLOBUS_TRUE)
     {
-	err = globus_gram_client_job_signal(monitor.job_contact,
+	err = NULL; /*globus_gram_client_job_signal(monitor.job_contact,
 				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
 					    "commit",
 					    &tmp1,
-					    &tmp2);
+					    &tmp2);*/
     }
 
     if (options & GLOBUSRUN_ARG_BATCH)

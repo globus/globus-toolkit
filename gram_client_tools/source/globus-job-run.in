@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 
 #
 # globus-job-run and globus-job-submit (same code base)
@@ -327,6 +327,7 @@ parse_fileopt ()
     fi
 
     stagevar=dummy
+    dont_stringify=0
     case "${PROGRAM_NAME}:${opt}" in
 	*-run:-stdin | *-run:executable)
 	    stagevar=job_needs_gass_read
@@ -340,9 +341,13 @@ parse_fileopt ()
 	*-submit:-stderr)
 	    job_cache_stderr=false
 	    ;;
+        *:-file)
+            dont_stringify=1
+            ;;
     esac
 
     shift
+
     case "$1" in
     -s | -stage)
 	if [ $# -eq 1 ]; then
@@ -367,7 +372,11 @@ parse_fileopt ()
 	return 0
 	;;
     *)
-	result=`echo "$1" | stringify`
+        if test "$dont_stringify" = 1; then
+            result=$1
+        else
+            result=`echo "$1" | stringify`
+        fi
 	return 2
 	;;
     esac

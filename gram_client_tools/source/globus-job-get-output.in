@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
@@ -77,8 +77,8 @@ while [ -n "$1" ]; do
 	    if [ -z "$2" ]; then
 		globus_args_option_error "$1" "need an integer argument"
 	    fi
-	    if `${GLOBUS_SH_EXPR-expr} "$2" + 1 - 1 \> 0 \
-		1>/dev/null 2>/dev/null`
+	    if ! ${GLOBUS_SH_EXPR-expr} "$2" + 1 - 1 \> 0 \
+		1>/dev/null 2>/dev/null
 	    then
 		globus_args_option_error "$1" "need an integer argument"
 	    fi
