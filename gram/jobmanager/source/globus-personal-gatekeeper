@@ -66,7 +66,7 @@ EOF
 }
 
 
-source ${libexecdir}/globus-args-parser-header
+. ${libexecdir}/globus-args-parser-header
 
 debug=:
 
