@@ -267,10 +267,8 @@ ssh_gssapi_gsi_userok(char *name)
     authorized = (globus_gss_assist_userok(gssapi_client_name.value,
 					   name) == 0);
     
-    debug("GSI user %s is%s authorized as target user %s",
-	  (char *) gssapi_client_name.value,
-	  (authorized ? "" : " not"),
-	  name);
+    log("GSI user %s is%s authorized as target user %s",
+	(char *) gssapi_client_name.value, (authorized ? "" : " not"), name);
     
     return authorized;
 }
