@@ -2,6 +2,7 @@
 
 # Inserted by configure.
 @globus_script_initializer@
+. ${libexecdir}/globus-gram-constants
 
 ####################################################
 # This script will submit a condor request and return information to the GRAM
@@ -23,7 +24,7 @@ arg_file=$1
 # check for the argument file if it does not exist
 # then return with an error immediately.
 if [ ! -f $arg_file ] ; then
-   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE@
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE
    exit 1
 fi
 
@@ -58,7 +59,7 @@ $DEBUG_ECHO ""                                            >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
 if [ $grami_job_type = "0" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: error: jobtype MPI not supported " >> $grami_logfile
-   echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED@"
+   echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED"
    exit 1
 elif [ $grami_job_type = "1" ] ; then
     condor_universe="vanilla"
@@ -68,21 +69,21 @@ elif [ $grami_job_type = "3" ] ; then
     condor_universe="standard"
 else
    $DEBUG_ECHO "JM_SCRIPT: error: invalid jobtype parameter" >> $grami_logfile
-   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE@
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE
    exit 1
 fi
 
 if [ -z "${grami_condor_arch}" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: error: condor arch parameter undefined" \
        >> $grami_logfile
-   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_CONDOR_ARCH@
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_CONDOR_ARCH
    exit 1
 fi
 
 if [ -z "${grami_condor_os}" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: error: condor os parameter undefined" \
        >> $grami_logfile
-   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_CONDOR_OS@
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_CONDOR_OS
    exit 1
 fi
 
@@ -146,14 +147,14 @@ if [ ${condor_universe} = "standard" ] ; then
    else
       $DEBUG_ECHO "JM_SCRIPT: directory DOES NOT exist, exiting with 1"\
                >> $grami_logfile
-      echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_BAD_DIRECTORY@"
+      echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_DIRECTORY"
       exit
    fi
 
    $DEBUG_ECHO "JM_SCRIPT: verifying stdin">> $grami_logfile
    if [ ! -r ${grami_stdin} ] ; then
        #stdin file is not readable by this process
-      echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_STDIN_NOT_FOUND@"
+      echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_STDIN_NOT_FOUND"
       exit
    fi
 fi
@@ -195,7 +196,7 @@ $DEBUG_ECHO "JM_SCRIPT: testing successful creation of the submit"\
 if [ ! -w "${condor_file}" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: creation of the submit description file "\
                "${condor_file} FAILED" >> $grami_logfile
-   echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_TEMP_SCRIPT_FILE_FAILED@"
+   echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_TEMP_SCRIPT_FILE_FAILED"
 fi
 
 #
@@ -209,17 +210,17 @@ status=`${condor_submit} $condor_file | ${grep} "submitted to cluster" | ${awk} 
 
 if test -n "${status}"; then
    $DEBUG_ECHO "JM_SCRIPT: returning job state: "\
-               "@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@" >> $grami_logfile
+               "$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING" >> $grami_logfile
    echo "GRAM_SCRIPT_JOB_ID:$status"
-   echo "GRAM_SCRIPT_SUCCESS:@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@"
+   echo "GRAM_SCRIPT_SUCCESS:$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING"
 else
    $DEBUG_ECHO "##############################" >> $grami_logfile
    $DEBUG_ECHO "JM_SCRIPT: returning script error: "\
-               "@GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED@" >> $grami_logfile
+               "$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED" >> $grami_logfile
    $DEBUG_ECHO "JM_SCRIPT: unknown response from condor_submit!"\
                >> $grami_logfile
    $DEBUG_ECHO "##############################" >> $grami_logfile
-   echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED@"
+   echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED"
 fi
 
 ${rm} $condor_file

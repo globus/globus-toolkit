@@ -16,6 +16,7 @@
 
 # Inserted by configure.
 @globus_script_initializer@
+. ${libexecdir}/globus-gram-constants
 
 condor_q=${GLOBUS_SH_CONDOR_Q-condor_q}
 awk=${GLOBUS_SH_AWK-awk}
@@ -25,7 +26,7 @@ arg_file=$1
 # check for the argument file if it does not exist
 # then return with an error immediately.
 if [ ! -f $arg_file ] ; then
-   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE@
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE
    exit 1
 fi
 
@@ -79,10 +80,10 @@ else
 fi
 
 if [ $got_failed_job -eq 1 ] ; then
-   gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED@
+   gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED
 else
    if [ $got_active_job -eq 1 ] ; then
-      gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE@
+      gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE
    else
       if [ $got_pending_job -eq 1 ] ; then
 #
@@ -93,12 +94,12 @@ else
 #              So if we only have pending and dones jobs then return active
 #
          if [ $got_done_job -eq 1 ] ; then
-            gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE@
+            gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE
          else
-            gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@
+            gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING
          fi
       else
-         gram_job_state=@GLOBUS_GRAM_CLIENT_JOB_STATE_DONE@
+         gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_DONE
       fi
    fi
 fi
