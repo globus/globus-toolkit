@@ -20,7 +20,7 @@ Known values for OPTION are:
   --help		display this help and exit
   --version		output version information
   --crypto=LIB		configure with XMLSEC crypto library (one of the
-			following: none default  openssl) 
+			following: none default openssl) 
 			[default "openssl"]
 EOF
 
@@ -170,7 +170,7 @@ gnutls)
 nss)
     if test "1" = "no"; then
         the_crypto_flags="-DXMLSEC_CRYPTO_NSS=1 -DXMLSEC_CRYPTO=\\\"nss\\\""
-	the_crypto_libs="-lnss3 -lsmime3"
+	the_crypto_libs=""
         the_xmlsec_crypto_lib="-lxmlsec1-nss"
     else
         echo "Error: the \"$crypto\" cryptographic library is not supported"

@@ -11414,7 +11414,7 @@ if test "${with_gnutls+set}" = set; then
   withval="$with_gnutls"
 
 fi;
-if test "z$with_gnutls" = "zno" ; then
+if true ; then
     XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST gnutls"
     echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
@@ -11513,7 +11513,8 @@ if test "${with_mozilla+set}" = set; then
   withval="$with_mozilla"
 
 fi;
-if test "z$with_nss" = "zno" ; then
+
+if true ; then
     XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST nss"
 else
     MOZILLA_VERSION="1.4"
@@ -12306,6 +12307,7 @@ XMLSEC_LIBS="-L${libdir} -l$XMLSEC_CRYPTO_LIB $XMLSEC_CORE_LIBS $LIBXML_LIBS $LI
 
 
 
+XMLSEC_CRYPTO_LIST="openssl"
 
 
 

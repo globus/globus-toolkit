@@ -238,7 +238,7 @@ LINK_BAK = orig
 AUTOMAKE_OPTIONS = no-dependencies
 
 NULL = 
-SUBDIRS = $(XMLSEC_CRYPTO_LIST)
+SUBDIRS = openssl
 EXTRA_DIST = skeleton mscrypto $(XMLSEC_CRYPTO_DISABLED_LIST)
 
 xmlsecincdir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/xmlsec1/xmlsec

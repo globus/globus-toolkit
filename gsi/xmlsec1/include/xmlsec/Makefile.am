@@ -5,7 +5,8 @@ include $(top_srcdir)/globus_automake_pre
 
 ## Process this file with automake to produce Makefile.in
 NULL =
-SUBDIRS = $(XMLSEC_CRYPTO_LIST)
+##SUBDIRS = $(XMLSEC_CRYPTO_LIST)
+SUBDIRS = openssl
 EXTRA_DIST = skeleton mscrypto $(XMLSEC_CRYPTO_DISABLED_LIST)
 
 xmlsecincdir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/xmlsec1/xmlsec

@@ -356,7 +356,9 @@ GNUTLS_CRYPTO_LIB="$XMLSEC_PACKAGE-gnutls"
 
 AC_MSG_CHECKING(for gnutls libraries >= $GNUTLS_MIN_VERSION) 
 AC_ARG_WITH(gnutls, [  --with-gnutls=[PFX]       gnutls location])
-if test "z$with_gnutls" = "zno" ; then
+dnl disable this always
+dnl if test "z$with_gnutls" = "zno" ; then
+if true ; then
     XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST gnutls"
     AC_MSG_RESULT(no)
 else
@@ -445,7 +447,10 @@ dnl if nss is disabled, bail out early
 AC_ARG_WITH(nss, [  --with-nss=[PFX]          nss location])
 AC_ARG_WITH(nspr, [  --with-nspr=[PFX]         nspr location (needed for NSS)])
 AC_ARG_WITH(mozilla, [  --with-mozilla-ver=[VER]  mozilla version (alt to --with-nss, --with-nspr)])
-if test "z$with_nss" = "zno" ; then
+
+dnl disable this always
+dnl if test "z$with_nss" = "zno" ; then
+if true ; then
     XMLSEC_CRYPTO_DISABLED_LIST="$XMLSEC_CRYPTO_DISABLED_LIST nss"
 else
     MOZILLA_VERSION="1.4"
@@ -1010,6 +1015,8 @@ AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
 AC_SUBST(XMLSEC_CRYPTO)
+dnl for glubus we need only openssl
+XMLSEC_CRYPTO_LIST="openssl"
 AC_SUBST(XMLSEC_CRYPTO_LIST)
 AC_SUBST(XMLSEC_CRYPTO_DISABLED_LIST)
 AC_SUBST(XMLSEC_CRYPTO_LIB)
