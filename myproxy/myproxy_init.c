@@ -464,46 +464,10 @@ grid_proxy_init(int seconds, const char *proxyfile) {
 int
 grid_proxy_destroy(const char *proxyfile)
 {
-    FILE *fp;
-    long offset, i;
-    char zero = '\0';
-    
-    assert(proxyfile != NULL);
-
-    fp = fopen(proxyfile, "r+");
-    if (!fp) {
-	perror("fopen");
+    if (ssl_proxy_file_destroy(proxyfile) != SSL_SUCCESS) {
+	fprintf(stderr, "%s\n", verror_get_string());
 	return -1;
     }
-    if (fseek(fp, 0L, SEEK_END) < 0) {
-	perror("fseek");
-	fclose(fp);
-	return -1;
-    }
-    offset = ftell(fp);
-    if (offset < 0) {
-	perror("ftell");
-	fclose(fp);
-	return -1;
-    }
-    if (fseek(fp, 0L, SEEK_SET) < 0) {
-	perror("fseek");
-	fclose(fp);
-	return -1;
-    }
-    for (i=0; i < offset; i++) {
-	if (fwrite(&zero, 1, 1, fp) != 1) {
-	    perror("fwrite");
-	    fclose(fp);
-	    return -1;
-	}
-    }
-    fclose(fp);
-    if (unlink(proxyfile) < 0) {
-	perror("unlink");
-	return -1;
-    }
-
     return 0;
 }
 
