@@ -3763,7 +3763,7 @@ proxy_init_cred(
     if (!pcd->ucert)
     {
         if (status = proxy_load_user_cert(pcd, user_cert,
-                                 pw_cb, NULL))
+                                 pw_cb, bp))
         {
             goto err;
         }
@@ -3785,7 +3785,7 @@ proxy_init_cred(
     if (!pcd->upkey)
     {
         if (status = proxy_load_user_key(pcd, user_key,
-                                pw_cb, NULL))
+                                pw_cb, bp))
         {
             goto err;
         }
