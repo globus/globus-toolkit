@@ -1,0 +1,147 @@
+
+<project default="all" basedir=".">
+
+  <target name="all" depends="gar"/>
+
+  <property name="ogsa.root" value="../../ogsa/impl/java"/>
+
+  <property name="src.dir" value="src"/>
+  <property name="build.dir" value="build" />
+  <property name="build.lib" value="${build.dir}/lib"/>
+  <property name="build.dest" value="${build.dir}/classes"/>
+  <property name="build.javadocs" value="${build.dir}/javadocs"/>
+  <property name="undeploy.dir" value="${ogsa.root}/undeploy"/>
+  <property name="build.undeploy" value="${undeploy.dir}/job_state_monitor-undeploy.xml"/>
+
+  <property name="server.config" value="server-config.wsdd"/>
+  <property name="core.config" value="${ogsa.root}/core-config.wsdd"/>
+  <property name="etc.dir" value="etc" />
+  <property name="jar.name" value="job_state_monitor.jar" />
+  <property name="gar.name" value="job_state_monitor.gar" />
+  <property name="gram.client" value="gram-client" />
+  <property name="globusrun" value="globusrun" />  
+  <property file="${ogsa.root}/ogsa.properties"/>
+  <property name="wsrf_common_dir" 
+        value="${ogsa.root}/share/globus_wsrf_common"/>
+  <property name="build.packages" value="${wsrf_common_dir}/build-packages.xml"/>
+
+  <property name="garjars.id" value="garjars"/>
+
+  <fileset dir="${build.lib}" id="garjars">
+    <include name="${jar.name}"/>
+  </fileset>
+
+
+  <target name="setenvAbsolute">
+    <basename property="ogsa.root.base" file="${ogsa.root}"/>
+    <dirname property="absolute.ogsa.root.parent.path" file="${ogsa.root}"/>
+    <property name="absolute.ogsa.root"
+              value="${absolute.ogsa.root.parent.path}/${ogsa.root.base}"/>
+  </target>
+
+  <path id="classpath">
+    <pathelement location="."/>
+    <pathelement location="${java.home}/../lib/tools.jar"/>
+    <pathelement location="${build.dest}"/>
+    <pathelement location="${ogsa.root}/build/classes"/>
+    <fileset dir="${ogsa.root}/lib">
+     <include name="*.jar"/>
+     <exclude name="${jar.name}"/>
+    </fileset>
+    <pathelement path="${java.class.path}"/>
+  </path>
+
+  <target name="setenv" depends="setenvAbsolute">
+    <mkdir dir="${build.dest}"/>
+    <mkdir dir="${build.lib}"/>
+
+    <uptodate property="javadocs.uptodate"
+            targetfile="${build.javadocs}/index.html">
+        <srcfiles dir="${src.dir}" includes="**/*.java" />
+    </uptodate>
+    <available property="garDeployed" file="${build.undeploy}"/>
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Compiles the source directory                                       -->
+  <!-- =================================================================== -->
+  <target name="build" depends="compile"/>
+  <target name="compile" depends="setenv">
+    <javac  srcdir="${src.dir}"
+            destdir="${build.dest}"
+            debug="${debug}"
+            deprecation="${deprecation}"
+            classpathref="classpath">
+      <exclude name="**/gui/*"/>
+    </javac>
+     <copy todir="${build.dest}" >
+      <fileset dir="${src.dir}" includes="**/*.properties" />
+      <fileset dir="${src.dir}" includes="**/*security-config.xml" />
+    </copy>
+  </target>
+
+  <target name="jar" depends="compile">
+    <jar jarfile="${build.lib}/${jar.name}" basedir="${build.dest}" >
+    <!-- ben: warning here if you aren't a .org domain! -->
+      <include name="org/**" />
+      <include name="*.wsdd" />
+      <exclude name="**/org/gridforum/**"/>
+    </jar>
+  </target>
+
+  <!-- Gar Packaging -->
+  <target name="gar" depends="jar">
+    <ant antfile="${build.packages}" target="makeGar">
+        <reference refid="${garjars.id}"/>
+    </ant>
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Clean targets                                                       -->
+  <!-- =================================================================== -->
+  <target name="clean">
+    <antcall target="cleanClasses"/>
+    <delete file="${build.lib}/${jar.name}"/>
+    <delete file="${build.lib}/${gar.name}"/>
+  </target>
+
+  <target name="cleanClasses">
+    <delete dir="${build.dest}"/>
+  </target>
+
+  <target name="cleanJavadocs">
+    <delete dir="${build.javadocs}"/>
+  </target>
+
+  <target name="cleanAll" depends="clean">
+    <delete file="${server.config}"/>
+    <delete dir="${build.dir}"/>
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Deployment Targets                                                  -->
+  <!-- =================================================================== -->
+  <target name="deployGar" depends="gar">
+    <ant antfile="${build.packages}" target="deployGar" dir="${ogsa.root}">
+      <property name="gar.name" value="${basedir}/${build.lib}/${gar.name}"/>       
+    </ant>
+  </target>
+
+  <target name="undeploy" if="garDeployed" depends="setenv">
+      <ant antfile="${build.undeploy}"/>
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Documentation Targets                                               -->
+  <!-- =================================================================== -->
+  <target name="javadocs" unless="javadocs.uptodate" depends="setenv">
+      <mkdir dir="${build.javadocs}"/>
+      <javadoc
+          classpathref="classpath"
+          destdir="${build.javadocs}"
+          windowtitle="ManagedJob API">
+          <packageset dir="${src.dir}" defaultexcludes="yes"/>
+      </javadoc>
+  </target>
+
+</project>
