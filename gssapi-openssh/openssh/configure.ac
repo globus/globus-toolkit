@@ -826,8 +826,67 @@ AC_ARG_WITH(ssl-dir,
 
 # Patch up SSL libraries for GSI authentication as needed
 if test "x$globus_flavor_type" != "xno" ; then
+	#
 	# For Globus 2, always link with the static libraries
-	LIBS="$LIBS ${gsi_path}/lib/libglobus_ssl_utils_${globus_flavor_type}.a ${gsi_path}/lib/libssl_${globus_flavor_type}.a ${gsi_path}/lib/libcrypto_${globus_flavor_type}.a"
+	#
+
+	libssl_utils="${gsi_path}/lib/libglobus_ssl_utils_${globus_flavor_type}.a"
+
+	#
+	# Trouble arrives at GT 2.1.3+ with the reorg of globus_ssl_utils.  Compensating for
+	# the new library linking required here through file tests to see which libraries to 
+	# link against.
+	#
+
+	libgsi_proxy_core="${gsi_path}/lib/libglobus_gsi_proxy_core_${globus_flavor_type}.a"
+	libgsi_credential="${gsi_path}/lib/libglobus_gsi_credential_${globus_flavor_type}.a"
+	libgsi_callback="${gsi_path}/lib/libglobus_gsi_callback_${globus_flavor_type}.a"
+	liboldgaa="${gsi_path}/lib/libglobus_oldgaa_${globus_flavor_type}.a"
+	libgsi_sysconfig="${gsi_path}/lib/libglobus_gsi_sysconfig_${globus_flavor_type}.a"
+	libproxy_ssl="${gsi_path}/lib/libglobus_proxy_ssl_${globus_flavor_type}.a"
+	libgsi_cert_utils="${gsi_path}/lib/libglobus_gsi_cert_utils_${globus_flavor_type}.a"
+	libopenssl_error="${gsi_path}/lib/libglobus_openssl_error_${globus_flavor_type}.a"
+	libopenssl="${gsi_path}/lib/libglobus_openssl_${globus_flavor_type}.a"
+
+	if test -r ${libgsi_proxy_core} \
+	     -a -r ${libgsi_credential} \
+	     -a -r ${libgsi_callback} \
+	     -a -r ${liboldgaa} \
+	     -a -r ${libgsi_sysconfig} \
+	     -a -r ${libproxy_ssl} \
+	     -a -r ${libgsi_cert_utils} \
+	     -a -r ${libopenssl_error} \
+	     -a -r ${libopenssl} ; then
+		LIBS="$LIBS ${libgsi_proxy_core}"
+		LIBS="$LIBS ${libgsi_credential}"
+		LIBS="$LIBS ${libgsi_callback}"
+		LIBS="$LIBS ${liboldgaa}"
+		LIBS="$LIBS ${libgsi_sysconfig}"
+		LIBS="$LIBS ${libproxy_ssl}"
+		LIBS="$LIBS ${libgsi_cert_utils}"
+		LIBS="$LIBS ${libopenssl_error}"
+		LIBS="$LIBS ${libopenssl}"
+	elif test -r ${libssl_utils}; then
+		LIBS="$LIBS ${libssl_utils}"
+	else
+		AC_MSG_ERROR(All of the required Globus Toolkit libraries are not present/configured correctly)
+	fi
+
+	#
+	# Standard openssl libraries.  They need to appear near the end of the link line.
+	#
+
+	LIBS="$LIBS ${gsi_path}/lib/libssl_${globus_flavor_type}.a"
+	LIBS="$LIBS ${gsi_path}/lib/libcrypto_${globus_flavor_type}.a"
+
+	#
+	# Another "GT 2.1.3+"ism.
+	#
+
+	libcommon_path="${gsi_path}/lib/libglobus_common_${globus_flavor_type}.a"
+	if test -r ${libcommon_path}; then
+		LIBS="$LIBS ${libcommon_path}"
+	fi
 else
 	if test "x$gsi_path" != "xno" ; then
 		# Older GSI needs -lssl too
