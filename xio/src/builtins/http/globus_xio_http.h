@@ -389,7 +389,11 @@ typedef enum
     /**
      * There is no entity body to read or write.
      */
-    GLOBUS_XIO_HTTP_ERROR_NO_ENTITY
+    GLOBUS_XIO_HTTP_ERROR_NO_ENTITY,
+    /**
+     * Server side fake EOF
+     */
+    GLOBUS_XIO_HTTP_ERROR_EOF
 }
 globus_xio_http_errors_t;
 

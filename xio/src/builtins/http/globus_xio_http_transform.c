@@ -796,7 +796,14 @@ globus_l_xio_http_read_callback(
 
         if (headers->content_length == 0 && result == GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorEOF();
+            if (http_handle->target_info.is_client)
+            {
+                result = GlobusXIOErrorEOF();
+            }
+            else
+            {
+                result = GlobusXIOHttpErrorEOF();
+            }
         }
     }
     else if (headers->transfer_encoding
@@ -868,7 +875,14 @@ globus_l_xio_http_read_chunk_header_callback(
             headers->content_length == 0)
         {
             /* Synthesize EOF if we've read all of the entity content */
-            result = GlobusXIOErrorEOF();
+            if (http_handle->target_info.is_client)
+            {
+                result = GlobusXIOErrorEOF();
+            }
+            else
+            {
+                result = GlobusXIOHttpErrorEOF();
+            }
         }
         /*
          * Either we've read enough, hit end of chunk, no entity was present,
@@ -1058,7 +1072,15 @@ globus_l_xio_http_parse_chunk_header(
                 http_handle->read_buffer_valid -= parsed;
                 http_handle->read_buffer_offset += parsed;
                 http_handle->parse_state = GLOBUS_XIO_HTTP_EOF;
-                result = GlobusXIOErrorEOF();
+
+                if (http_handle->target_info.is_client)
+                {
+                    result = GlobusXIOErrorEOF();
+                }
+                else
+                {
+                    result = GlobusXIOHttpErrorEOF();
+                }
             }
             else
             {

@@ -717,4 +717,32 @@ free_url_exit:
 error_exit:
     return result;
 }
+
 /* http_test_client_request() */
+globus_bool_t
+http_is_eof(
+    globus_result_t                     res)
+{
+    globus_bool_t                       status = GLOBUS_TRUE;
+    globus_result_t                     res2;
+    globus_xio_driver_t                 http_driver;
+
+    res2 = globus_xio_driver_load("http", &http_driver);
+    if (res2 != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+                "Error loading http driver: %s\n",
+                globus_object_printable_to_string(globus_error_peek(res2)));
+
+        goto error_exit;
+    }
+    status= globus_error_match(
+            globus_error_peek(res), GLOBUS_XIO_MODULE, GLOBUS_XIO_ERROR_EOF) ||
+            globus_xio_driver_error_match(http_driver, globus_error_peek(res),
+            GLOBUS_XIO_HTTP_ERROR_EOF);
+
+    globus_xio_driver_unload(http_driver);
+
+error_exit:
+    return status;
+}

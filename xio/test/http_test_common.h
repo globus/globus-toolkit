@@ -92,4 +92,8 @@ http_test_initialize(
     globus_xio_driver_t *               http_driver,
     globus_xio_stack_t *                stack);
 
+globus_bool_t
+http_is_eof(
+    globus_result_t                     res);
+
 #endif /* HTTP_TEST_COMMON_H */
