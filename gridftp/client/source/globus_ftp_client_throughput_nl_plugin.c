@@ -494,6 +494,7 @@ globus_ftp_client_throughput_nl_plugin_destroy(
 
 /**
  * Receive throughput callbacks
+ * @ingroup globus_ftp_client_throughput_nl_plugin
  *
  * You can still get the automatic netlogging of throughput along with
  * receiving the same throughput callbacks that the throughput plugin

@@ -15,7 +15,7 @@
  * @defgroup globus_ftp_client_throughput_nl_plugin Netlogger Throughput Plugin
  * @ingroup globus_ftp_client_plugins
  *
- * This plugins allows a user to easily use the throughput plugin to log
+ * This plugin allows a user to easily use the throughput plugin to log
  * performance data vi Netlogger.
  *
  * The plugin will log the following Event Types with its coressponding info
