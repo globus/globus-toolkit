@@ -249,7 +249,7 @@ if(!(-d $lockfile  && -o $lockfile))
         }
         else
         {
-            print("PMT Waiting 15 seconds to aquire lock...\n");
+            print("PMT Waiting 15 seconds to acquire lock...\n");
             sleep 15;
         }
     }
