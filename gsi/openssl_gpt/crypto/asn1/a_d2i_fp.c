@@ -169,13 +169,17 @@ char *ASN1_d2i_bio(char *(*xnew)(), char *(*d2i)(), BIO *in,
 					ASN1err(ASN1_F_ASN1_D2I_BIO,ERR_R_MALLOC_FAILURE);
 					goto err;
 					}
-				i=BIO_read(in,&(b->data[len]),want);
-				if (i <= 0)
-					{
-					ASN1err(ASN1_F_ASN1_D2I_BIO,ASN1_R_NOT_ENOUGH_DATA);
-					goto err;
-					}
-				len+=i;
+				    while(want)
+                                        {
+                                        i=BIO_read(in,&(b->data[len]),want);
+                                        if (i <= 0)
+					        {
+					        ASN1err(ASN1_F_ASN1_D2I_BIO,ASN1_R_NOT_ENOUGH_DATA);
+					        goto err;
+					        }
+				        len+=i;
+                                        want-=i;
+                                        }
 				}
 			off+=(int)c.slen;
 			if (eos <= 0)
