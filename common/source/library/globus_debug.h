@@ -22,10 +22,11 @@ globus_debug_init(
     static globus_bool_t globus_i_##module_name##_print_threadids;          \
     void globus_i_##module_name##_debug_printf(const char * fmt, ...)       \
     {                                                                       \
+        va_list ap;                                                         \
+	                                                                    \
         if(!globus_i_##module_name##_debug_file)                            \
             return;                                                         \
                                                                             \
-        va_list ap;                                                         \
         va_start(ap, fmt);                                                  \
         if(globus_i_##module_name##_print_threadids)                        \
         {                                                                   \
