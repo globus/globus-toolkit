@@ -99,7 +99,7 @@ globus_l_gsi_gss_assist_deactivate(void)
     
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
     globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
-    globus_module_activate(GLOBUS_CALLOUT_MODULE);
+    globus_module_deactivate(GLOBUS_CALLOUT_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
