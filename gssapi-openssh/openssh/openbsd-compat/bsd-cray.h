@@ -53,7 +53,6 @@ extern char cray_tmpdir[];
 # define MAXHOSTNAMELEN  64
 #endif
 #ifndef _CRAYT3E
-# include <sys/ttold.h>
 # define TIOCGPGRP (tIOC|20)
 #endif
 

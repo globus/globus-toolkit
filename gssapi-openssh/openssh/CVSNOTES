@@ -51,6 +51,34 @@ module that contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ History ]
 
+    2004/03/04
+    ----------
+      Action: Merge
+        - occurred on: GPT branch
+        - orig base: OPENSSH_3_7_1P2_GSSAPI_20040123
+        - new base: OPENSSH_3_8P1_GSSAPI_20040304
+      Conflicts: 3
+        - Makefile.in
+            acss.o added to LIBSSH_OBJS in OpenSSH release.
+	    conflicted because of nearby comment about LIBSSH_OBJS on
+	    gpt-branch.
+        - configure.ac
+	    bugfix on trunk ('==' should be '=') in globus-static
+	    section conflicted because earlier line differs between
+	    trunk and gpt-branch.
+	    code to add -lcrypto to $LIBS conflicted because base
+            OpenSSH change moved -lcrypto before $LIBS and trunk and
+            gpt-branch differed on whitespace.  accepted trunk version
+            with same whitespace to avoid future conflicts.
+	    OpenSSH base pid-dir code changed, causing conflict
+            because we drop this code on gpt-branch, as we want
+            pid-dir set at run-time based on $GL, not configure time.
+        - version.h
+            OpenSSH base version changed and patch version spec
+            conflicts with GPT version spec.  accepted OpenSSH base
+            version change and incremented GPT version spec to 3.1.
+            this will probably conflict every time from now on.
+
     2004/01/23
     ----------
       Action: Merge
