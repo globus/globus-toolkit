@@ -253,12 +253,20 @@ sub setup_remote_dest()
 #bool = source_is_remote()
 sub source_is_remote()
 {
+    if(defined($ENV{'FTP_TEST_NO_SCP'}))
+    {
+        return 0;
+    }
     return ($ENV{FTP_TEST_SOURCE_HOST} and !($ENV{FTP_TEST_SOURCE_HOST} =~ m/localhost/))
 }
 
 #bool = dest_is_remote()
 sub dest_is_remote()
 {
+    if(defined($ENV{'FTP_TEST_NO_SCP'}))
+    {
+        return 0;
+    }
     return ($ENV{FTP_TEST_DEST_HOST} and !($ENV{FTP_TEST_DEST_HOST} =~ m/localhost/))
 }
 
@@ -269,7 +277,7 @@ sub clean_remote_file($$)
     my $host = shift;
     my $file = shift;
     
-    if($host =~ m/localhost/)
+    if($host =~ m/localhost/ || defined($ENV{'FTP_TEST_NO_SCP'}))
     {
         unlink($file);
     }
@@ -300,7 +308,7 @@ sub get_remote_file($$;$)
     
     push(@{$self->{staged_files}}, $dest);
     
-    if($host =~ m/localhost/)
+    if($host =~ m/localhost/ || defined($ENV{'FTP_TEST_NO_SCP'}))
     {
         copy($file, $dest);
     }
