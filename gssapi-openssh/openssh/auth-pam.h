@@ -37,11 +37,12 @@ u_int do_pam_account(void);
 void do_pam_session(void);
 void do_pam_set_tty(const char *);
 void do_pam_setcred(int );
-int is_pam_password_change_required(void);
 void do_pam_chauthtok(void);
 int do_pam_putenv(char *, char *);
-void print_pam_messages(void);
 char ** fetch_pam_environment(void);
+char ** fetch_pam_child_environment(void);
 void free_pam_environment(char **);
+void sshpam_thread_cleanup(void);
+void sshpam_cleanup(void);
 
 #endif /* USE_PAM */

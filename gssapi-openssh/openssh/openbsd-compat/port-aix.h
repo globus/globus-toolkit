@@ -51,12 +51,23 @@
 # include <sys/timers.h>
 #endif
 
-#ifdef WITH_AIXAUTHENTICATE
-# define CUSTOM_FAILED_LOGIN 1
-void record_failed_login(const char *, const char *);
-void aix_setauthdb(const char *);
+/*
+ * According to the setauthdb man page, AIX password registries must be 15
+ * chars or less plus terminating NUL.
+ */
+#ifdef HAVE_SETAUTHDB
+# define REGISTRY_SIZE	16
 #endif
 
 void aix_usrinfo(struct passwd *);
+
+#ifdef WITH_AIXAUTHENTICATE
+# define CUSTOM_SYS_AUTH_PASSWD 1
+# define CUSTOM_FAILED_LOGIN 1
+void record_failed_login(const char *, const char *);
+#endif
+
+void aix_setauthdb(const char *);
+void aix_restoreauthdb(void);
 void aix_remove_embedded_newlines(char *);
 #endif /* _AIX */

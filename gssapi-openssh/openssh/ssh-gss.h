@@ -1,3 +1,4 @@
+/*	$OpenBSD: ssh-gss.h,v 1.4 2003/11/17 11:06:07 markus Exp $	*/
 /*
  * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
  *
@@ -30,12 +31,20 @@
 #include "kex.h"
 #include "buffer.h"
 
+#ifdef HAVE_GSSAPI_H
 #include <gssapi.h>
+#elif defined(HAVE_GSSAPI_GSSAPI_H)
+#include <gssapi/gssapi.h>
+#endif
 
 #ifndef MECHGLUE
 #ifdef KRB5
-#ifndef HEIMDAL
-#include <gssapi_generic.h>
+# ifndef HEIMDAL
+#  ifdef HAVE_GSSAPI_GENERIC_H
+#   include <gssapi_generic.h>
+#  elif defined(HAVE_GSSAPI_GSSAPI_GENERIC_H)
+#   include <gssapi/gssapi_generic.h>
+#  endif
 
 /* MIT Kerberos doesn't seem to define GSS_NT_HOSTBASED_SERVICE */
 
@@ -57,6 +66,7 @@
 #define SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE	63
 #define SSH2_MSG_USERAUTH_GSSAPI_ERROR			64
 #define SSH2_MSG_USERAUTH_GSSAPI_ERRTOK			65
+#define SSH2_MSG_USERAUTH_GSSAPI_MIC			66
 
 #define SSH_GSS_OIDTYPE 0x06
 
@@ -120,7 +130,9 @@ void ssh_gssapi_error(Gssctxt *ctx);
 char *ssh_gssapi_last_error(Gssctxt *ctxt, OM_uint32 *maj, OM_uint32 *min);
 void ssh_gssapi_build_ctx(Gssctxt **ctx);
 void ssh_gssapi_delete_ctx(Gssctxt **ctx);
+OM_uint32 ssh_gssapi_sign(Gssctxt *, gss_buffer_t, gss_buffer_t);
 OM_uint32 ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid);
+void ssh_gssapi_buildmic(Buffer *, const char *, const char *, const char *);
 
 int ssh_gssapi_check_mechanism(gss_OID oid, char *host);
 
@@ -128,14 +140,9 @@ int ssh_gssapi_check_mechanism(gss_OID oid, char *host);
 gss_OID ssh_gssapi_server_id_kex(char *name);
 int ssh_gssapi_userok(char *name);
 int ssh_gssapi_localname(char **name);
-void ssh_gssapi_server(Kex *kex, Buffer *client_kexinit, 
-		       Buffer *server_kexinit);
-
-OM_uint32 ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *buffer, 
-					gss_buffer_desc *hash);
-
+OM_uint32 ssh_gssapi_checkmic(Gssctxt *, gss_buffer_t, gss_buffer_t);
 void ssh_gssapi_do_child(char ***envp, u_int *envsizep);
-void ssh_gssapi_cleanup_creds(void *ignored);
+void ssh_gssapi_cleanup_creds(void);
 void ssh_gssapi_storecreds(void);
 char *ssh_gssapi_server_mechanisms();
 

@@ -1,4 +1,4 @@
-/*	$OpenBSD: monitor_wrap.h,v 1.11 2003/08/28 12:54:34 markus Exp $	*/
+/*	$OpenBSD: monitor_wrap.h,v 1.13 2003/11/17 11:06:07 markus Exp $	*/
 
 /*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
@@ -40,6 +40,7 @@ struct mm_master;
 struct passwd;
 struct Authctxt;
 
+int mm_is_monitor(void);
 DH *mm_choose_dh(int, int, int);
 int mm_key_sign(Key *, u_char **, u_int *, u_char *, u_int);
 void mm_inform_authserv(char *, char *);
@@ -61,6 +62,13 @@ OM_uint32 mm_ssh_gssapi_server_ctx(Gssctxt **ctxt, gss_OID oid);
 OM_uint32 mm_ssh_gssapi_accept_ctx(Gssctxt *ctxt,
    gss_buffer_desc *recv, gss_buffer_desc *send, OM_uint32 *flags);
 int mm_ssh_gssapi_userok(char *user);
+OM_uint32 mm_ssh_gssapi_checkmic(Gssctxt *, gss_buffer_t, gss_buffer_t);
+OM_uint32 mm_ssh_gssapi_sign(Gssctxt *ctxt, gss_buffer_desc *buffer,
+			     gss_buffer_desc *hash);
+int mm_ssh_gssapi_localname(char **user);
+OM_uint32 mm_gss_indicate_mechs(OM_uint32 *minor_status,
+				gss_OID_set *mech_set);
+char *mm_ssh_gssapi_last_error(Gssctxt *ctxt, OM_uint32 *maj, OM_uint32 *min);
 #endif
 
 #ifdef USE_PAM
@@ -72,24 +80,10 @@ int mm_sshpam_respond(void *, u_int, char **);
 void mm_sshpam_free_ctx(void *);
 #endif
 
-#ifdef GSSAPI
-#include "ssh-gss.h"
-OM_uint32 mm_ssh_gssapi_server_ctx(Gssctxt **ctxt, gss_OID oid);
-OM_uint32 mm_ssh_gssapi_accept_ctx(Gssctxt *ctxt, gss_buffer_desc *recv,
-				   gss_buffer_desc *send, OM_uint32 *flags);
-OM_uint32 mm_ssh_gssapi_sign(Gssctxt *ctxt, gss_buffer_desc *buffer,
-			     gss_buffer_desc *hash);
-int mm_ssh_gssapi_userok(char *user);
-int mm_ssh_gssapi_localname(char **user);
-OM_uint32 mm_gss_indicate_mechs(OM_uint32 *minor_status,
-				gss_OID_set *mech_set);
-char *mm_ssh_gssapi_last_error(Gssctxt *ctxt, OM_uint32 *maj, OM_uint32 *min);
-
-#endif
-
+struct Session;
 void mm_terminate(void);
 int mm_pty_allocate(int *, int *, char *, int);
-void mm_session_pty_cleanup2(void *);
+void mm_session_pty_cleanup2(struct Session *);
 
 /* SSHv1 interfaces */
 void mm_ssh1_session_id(u_char *);

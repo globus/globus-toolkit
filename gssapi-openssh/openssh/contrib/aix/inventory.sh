@@ -59,5 +59,5 @@ find . ! -name . -print | perl -ne '{
 	} elsif ( -d $_ ) {
 		# Entry is Directory
 		print "\ttype=DIRECTORY\n";
-	} 
+	}
 }'
