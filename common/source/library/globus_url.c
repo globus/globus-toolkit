@@ -14,12 +14,9 @@
 #endif
 
 #include "config.h"
-#include "globus_common.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include "globus_common_internal.h"
+#include "globus_libc.h"
+#include "globus_url.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /*

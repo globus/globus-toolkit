@@ -12,16 +12,6 @@
 #include "globus_fifo.h"
 
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
- 
 EXTERN_C_BEGIN
 
 typedef globus_fifo_t globus_cfifo_t;

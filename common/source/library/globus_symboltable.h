@@ -9,20 +9,11 @@
  *
  *
  ********************************************************************/
-
+#include "config.h"
+#include "globus_common_types.h"
 #include "globus_list.h"
 #include "globus_hashtable.h"
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
- 
 EXTERN_C_BEGIN
 
 typedef struct symt {

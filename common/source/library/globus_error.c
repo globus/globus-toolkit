@@ -1,6 +1,11 @@
 #include "config.h"
-#include "globus_common.h"
+#include "globus_common_internal.h"
 #include "globus_object_cache.h"
+#include "globus_error.h"
+#include "globus_error_hierarchy.h"
+#include "globus_libc.h"
+#include "globus_module.h"
+
 
 /**********************************************************************
  * Error Types

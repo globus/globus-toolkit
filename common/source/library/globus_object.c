@@ -1,8 +1,8 @@
 
 #include "config.h"
-#include "globus_common.h"
-
-#include <assert.h>
+#include "globus_common_internal.h"
+#include "globus_object.h"
+#include "globus_libc.h"
 
 
 globus_bool_t

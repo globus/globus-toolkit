@@ -18,9 +18,14 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "config.h"
-#include "globus_common.h"
+#include "globus_callback.h"
 #include "globus_thread_pool.h"
-#include <assert.h>
+#include "globus_common_internal.h"
+#include "globus_timeq.h"
+#include "globus_handle_table.h"
+#include "globus_libc.h"
+#include "globus_callback.h"
+#include "globus_error.h"
 
 /******************************************************************************
 		             Type definitions
@@ -91,7 +96,7 @@ static void
 globus_l_callback_free(
     globus_l_callback_info_t *                 info);
 
-int
+globus_result_t
 globus_l_callback_register(
     globus_callback_handle_t *                 callback_handle,
     globus_reltime_t *                         start_time,
@@ -567,20 +572,20 @@ globus_callback_poll(
 #   endif
 }
 
-int
+globus_result_t
 globus_callback_register_oneshot(
-    globus_callback_handle_t *                 callback_handle,
-    globus_reltime_t *                         start_time,
-    globus_callback_func_t                     callback_func,
-    void *                                     callback_user_args,
-    globus_wakeup_func_t                       wakeup_func,
-    void *                                     wakeup_user_args)
+    globus_callback_handle_t *                  callback_handle,
+    globus_reltime_t *                          start_time,
+    globus_callback_func_t                      callback_func,
+    void *                                      callback_user_args,
+    globus_wakeup_func_t                        wakeup_func,
+    void *                                      wakeup_user_args)
 {
-    int rc;
-    globus_reltime_t                           period;
+    globus_result_t                             res;
+    globus_reltime_t                            period;
 
     GlobusTimeReltimeCopy(period, globus_i_reltime_infinity);
-    rc = globus_l_callback_register(
+    res = globus_l_callback_register(
             callback_handle,
             start_time,
             &period,
@@ -589,18 +594,18 @@ globus_callback_register_oneshot(
             wakeup_func,
             wakeup_user_args);
 
-   return rc;
+   return res;
 }
 
-int
+globus_result_t
 globus_callback_register_periodic(
-    globus_callback_handle_t *                 callback_handle,
-    globus_reltime_t *                         start_time,
-    globus_reltime_t *                         period,
-    globus_callback_func_t                     callback_func,
-    void *                                     callback_user_args,
-    globus_wakeup_func_t                       wakeup_func,
-    void *                                     wakeup_user_args)
+    globus_callback_handle_t *                  callback_handle,
+    globus_reltime_t *                          start_time,
+    globus_reltime_t *                          period,
+    globus_callback_func_t                      callback_func,
+    void *                                      callback_user_args,
+    globus_wakeup_func_t                        wakeup_func,
+    void *                                      wakeup_user_args)
 {
     return globus_l_callback_register(
                callback_handle,
@@ -612,21 +617,21 @@ globus_callback_register_periodic(
                wakeup_user_args);
 }
 
-int
+globus_result_t
 globus_l_callback_register(
-    globus_callback_handle_t *                 callback_handle,
-    globus_reltime_t *                         start_time,
-    globus_reltime_t *                         period,
-    globus_callback_func_t                     callback_func,
-    void *                                     callback_user_args,
-    globus_wakeup_func_t                       wakeup_func,
-    void *                                     wakeup_user_args)
+    globus_callback_handle_t *                  callback_handle,
+    globus_reltime_t *                          start_time,
+    globus_reltime_t *                          period,
+    globus_callback_func_t                      callback_func,
+    void *                                      callback_user_args,
+    globus_wakeup_func_t                        wakeup_func,
+    void *                                      wakeup_user_args)
 {
-    globus_l_callback_info_t *            callback_info;
+    globus_l_callback_info_t *                  callback_info;
 
     if(globus_l_callback_module_is_active == GLOBUS_FALSE)
     {
-        return GLOBUS_FAILURE;
+        return globus_error_put(GLOBUS_ERROR_NO_INFO);
     }
 
     assert(period != GLOBUS_NULL);
@@ -636,8 +641,8 @@ globus_l_callback_register(
     {
 	/* if not threaded wakeup function is illegal */
         if(wakeup_func != GLOBUS_NULL)
-	{
-	    wakeup_func = GLOBUS_NULL;
+	    {
+	        wakeup_func = GLOBUS_NULL;
         }
     }
 #   endif
@@ -650,9 +655,9 @@ globus_l_callback_register(
     {
         callback_info->handle = 
               globus_handle_table_insert(
-                  &globus_l_callback_handle_table,
-		  (void*)callback_info,
-		  2);
+                    &globus_l_callback_handle_table,
+		            (void*)callback_info,
+		            2);
 
         *callback_handle = callback_info->handle;
     }
@@ -692,8 +697,7 @@ globus_l_callback_register(
     {
         globus_mutex_lock(&globus_l_thread_create_lock);
 	{
-            if(
-               !globus_l_callback_shutting_down)
+            if(!globus_l_callback_shutting_down)
             {
                 globus_cond_signal(&globus_l_callback_run_cond);
 	    }
@@ -701,6 +705,7 @@ globus_l_callback_register(
         globus_mutex_unlock(&globus_l_thread_create_lock);
     }
 #   endif
+
     return GLOBUS_SUCCESS;
 }
 
@@ -1329,7 +1334,7 @@ globus_l_callback_queue_get_next(
 }
 
 /*
- *  returns a bool indicating wheather or not time has expired
+ *  returns a bool indicating whether or not time has expired
  */
 globus_bool_t
 globus_callback_get_timeout(
@@ -1348,7 +1353,7 @@ globus_callback_get_timeout(
     if(globus_abstime_cmp(&time_stop, (globus_abstime_t *)&globus_i_abstime_infinity) == 0)
     {
         GlobusTimeReltimeCopy(*time_left, globus_i_reltime_infinity);
-	rc = GLOBUS_FALSE;
+	    rc = GLOBUS_FALSE;
     }
     else
     {

@@ -5,34 +5,35 @@
  *
  ********************************************************************/
 
-#include "globus_common.h"
+#include "globus_list.h"
+#include "globus_memory.h"
+#include "globus_libc.h"
+#include "globus_common_internal.h"
 
-#include <assert.h>
-
-#define GLOBUS_L_LIST_INIT_MEM_COUNT       512
+#define GLOBUS_L_LIST_INIT_MEM_COUNT            512
 
 #define _MEMORY_USE_INTERNAL_MEM 1
 
-#ifdef  _MEMORY_USE_INTERNAL_MEM
-    static globus_memory_t                globus_l_memory_list_info;
-    static globus_mutex_t                 globus_l_list_memory_lock;
+#if defined(_MEMORY_USE_INTERNAL_MEM)
+    static globus_memory_t                      globus_l_memory_list_info;
+    static globus_mutex_t                       globus_l_list_memory_lock;
 
-#   define MALLOC_LIST_T()                                            \
-        ((globus_list_t *)                                            \
+#   define MALLOC_LIST_T()                                                  \
+        ((globus_list_t *)                                                  \
              globus_memory_pop_node(&globus_l_memory_list_info))
-#   define FREE_LIST_T(ptr)                                           \
-        (globus_memory_push_node(                                     \
-                                  &globus_l_memory_list_info,         \
+#   define FREE_LIST_T(ptr)                                                 \
+        (globus_memory_push_node(                                           \
+                                  &globus_l_memory_list_info,               \
                                   (globus_byte_t *)ptr))
 #else
-#   define MALLOC_LIST_T()                                            \
-        ((globus_list_t *)                                            \
+#   define MALLOC_LIST_T()                                                  \
+        ((globus_list_t *)                                                  \
             globus_malloc(sizeof(globus_list_t)))
-#   define FREE_LIST_T(ptr)                                           \
+#   define FREE_LIST_T(ptr)                                                 \
         (globus_free(ptr))
 #endif
 
-static globus_bool_t                     globus_l_list_active = GLOBUS_FALSE;
+static globus_bool_t                            globus_l_list_active = GLOBUS_FALSE;
 /******************************************************************************
                           Function Definitions
 ******************************************************************************/
@@ -58,82 +59,99 @@ globus_i_list_pre_activate(void)
 }
 
 int
-globus_list_int_less (void * low_datum, void * high_datum,
-		      void *ignored)
+globus_list_int_less (
+    void * low_datum, 
+    void * high_datum,
+    void *ignored)
 {
-  return ((unsigned long) low_datum) < ((unsigned long) high_datum);
+    return (low_datum) < (high_datum);
 }
 
 void *
-globus_list_first (globus_list_t * head)
+globus_list_first(
+    globus_list_t * head)
 {
-  assert (head != GLOBUS_NULL);
-  return (void *) head->datum;
+    assert (head != GLOBUS_NULL);
+    return (void *) head->datum;
 }
 
 globus_list_t *
-globus_list_rest (globus_list_t * head)
+globus_list_rest(
+    globus_list_t * head)
 {
-  assert (head != GLOBUS_NULL);
-  return (globus_list_t *) head->next;
+    assert (head != GLOBUS_NULL);
+    return (globus_list_t *) head->next;
 }
 
 globus_list_t **
-globus_list_rest_ref (globus_list_t * head)
+globus_list_rest_ref(
+    globus_list_t * head)
 {
-  assert (head != GLOBUS_NULL);
-  return (globus_list_t **) &(head->next);
+    assert (head != GLOBUS_NULL);
+    return (globus_list_t **) &(head->next);
 }
 
 int 
-globus_list_empty (globus_list_t * head)
+globus_list_empty(
+    globus_list_t * head)
 {
-  return head == GLOBUS_NULL;
+    return head == GLOBUS_NULL;
 }
 
 int 
-globus_list_size (globus_list_t *head)
+globus_list_size(
+    globus_list_t *head)
 {
-  if (globus_list_empty (head)) {
-    return 0;
-  }
-  else {
-    return 1 + globus_list_size (globus_list_rest (head));
-  }
+    if (globus_list_empty (head)) 
+    {
+        return 0;
+    }
+    else 
+    {
+        return 1 + globus_list_size (globus_list_rest (head));
+    }
 }
 
 /* return the old datum value */
 void *
-globus_list_replace_first (globus_list_t * head, void *datum)
+globus_list_replace_first(
+    globus_list_t * head, 
+    void *datum)
 {
-  void *old_datum;
-  assert (head != GLOBUS_NULL);
-  old_datum = head->datum;
-  head->datum = datum;
-  return old_datum;
+    void *old_datum;
+    assert (head != GLOBUS_NULL);
+    old_datum = head->datum;
+    head->datum = datum;
+    return old_datum;
 }
 
 globus_list_t *
-globus_list_search (globus_list_t *head, void *datum)
+globus_list_search (
+    globus_list_t *head, 
+    void *datum)
 {
-  if (globus_list_empty (head)) {
-    /* end of list chain */
-    return GLOBUS_NULL;
-  }
-  else if (globus_list_first (head) == datum) {
-    /* found list binding */
-    return head;
-  }
-  else {
-    /* check rest of chain */
-    return globus_list_search (globus_list_rest (head), datum);
-  }
+    if (globus_list_empty (head)) 
+    {
+        /* end of list chain */
+        return GLOBUS_NULL;
+    }
+    else if (globus_list_first (head) == datum) 
+    {
+        /* found list binding */
+        return head;
+    }
+    else 
+    {
+        /* check rest of chain */
+        return globus_list_search (globus_list_rest (head), datum);
+    }
 }
 
 globus_list_t *
-globus_list_search_pred (globus_list_t *head, 
-			 globus_list_pred_t predicate,
-			 void *pred_args)
+globus_list_search_pred(
+    globus_list_t *head, 
+	globus_list_pred_t predicate,
+	void *pred_args)
 {
   if (globus_list_empty (head)) {
     /* end of list chain */
@@ -150,78 +168,88 @@ globus_list_search_pred (globus_list_t *head,
 }
 
 static globus_list_t *
-s_globus_list_min_with_register (globus_list_t *current_min,
-				 globus_list_t *rest_head,
-				 globus_list_relation_t relation,
-				 void *relation_args)
+s_globus_list_min_with_register(
+    globus_list_t *current_min,
+	globus_list_t *rest_head,
+	globus_list_relation_t relation,
+	void *relation_args)
 {
-  if (globus_list_empty (rest_head)) {
-    return current_min;
-  }
-  else if ( (*relation) (globus_list_first(current_min), 
+    if (globus_list_empty (rest_head)) 
+    {
+        return current_min;
+    }
+    else if((*relation) (globus_list_first(current_min), 
 			 globus_list_first(rest_head),
-			 relation_args) ) {
-    return s_globus_list_min_with_register (current_min,
+			 relation_args) ) 
+    {
+        return s_globus_list_min_with_register (current_min,
 				     globus_list_rest (rest_head),
 				     relation,
 				     relation_args);
-  }
-  else {
-    return s_globus_list_min_with_register (rest_head,
+    }
+    else 
+    {
+        return s_globus_list_min_with_register (rest_head,
 				     globus_list_rest (rest_head),
 				     relation,
 				     relation_args);
-  }
+    }
 }
 
 globus_list_t *
-globus_list_min (globus_list_t *head,
-		 globus_list_relation_t relation,
-		 void *relation_args)
+globus_list_min(
+    globus_list_t *head,
+	globus_list_relation_t relation,
+	void *relation_args)
 {
-  if (globus_list_empty (head)) {
-    return GLOBUS_NULL;
-  }
-  else {
-    return s_globus_list_min_with_register (head,
+    if (globus_list_empty (head)) 
+    {
+        return GLOBUS_NULL;
+    }
+    else 
+    {
+        return s_globus_list_min_with_register (head,
 				     globus_list_rest(head),
 				     relation,
 				     relation_args);
-  }
+    }
 }
 
 void
-globus_list_halves_destructive (globus_list_t  * head,
-				globus_list_t * volatile * leftp,
-				globus_list_t * volatile * rightp)
+globus_list_halves_destructive (
+    globus_list_t  * head,
+	globus_list_t * volatile * leftp,
+	globus_list_t * volatile * rightp)
 {
-  int len;
-  int i;
+    int len;
+    int i;
 
-  assert (leftp!=GLOBUS_NULL);
-  assert (rightp!=GLOBUS_NULL);
+    assert (leftp!=GLOBUS_NULL);
+    assert (rightp!=GLOBUS_NULL);
   
-  len = globus_list_size (head);
+    len = globus_list_size (head);
   
-  *leftp = head;
+    *leftp = head;
 
-  for (i=0; i<(len/2 - 1); i++) {
-    head = globus_list_rest (head);
-  }
+    for (i=0; i<(len/2 - 1); i++) 
+    {
+        head = globus_list_rest (head);
+    }
 
-  *rightp = globus_list_rest (head);
+    *rightp = globus_list_rest (head);
 
-  *(globus_list_rest_ref (head)) = GLOBUS_NULL;
+    *(globus_list_rest_ref (head)) = GLOBUS_NULL;
 }
 
 globus_list_t *
-globus_list_sort_merge_destructive (globus_list_t * left,
-				    globus_list_t * right,
-				    globus_list_relation_t relation,
-				    void *relation_args)
+globus_list_sort_merge_destructive(
+    globus_list_t * left,
+	globus_list_t * right,
+	globus_list_relation_t relation,
+	void *relation_args)
 {
-  globus_list_t  * result = GLOBUS_NULL;
-  globus_list_t ** result_tail = GLOBUS_NULL;
+    globus_list_t  * result = GLOBUS_NULL;
+    globus_list_t ** result_tail = GLOBUS_NULL;
 
   while ( (! globus_list_empty (left))
 	  && (! globus_list_empty (right)) ) {
@@ -257,12 +285,13 @@ globus_list_sort_merge_destructive (globus_list_t * left,
 }
 
 globus_list_t *
-globus_list_sort_destructive (globus_list_t *head,
-			      globus_list_relation_t relation,
-			      void *relation_args)
+globus_list_sort_destructive (
+    globus_list_t *head,
+	globus_list_relation_t relation,
+	void *relation_args)
 {
-  globus_list_t * left;
-  globus_list_t * right;
+    globus_list_t * left;
+    globus_list_t * right;
 
   if ( globus_list_empty (head) 
        || globus_list_empty (globus_list_rest (head)) ) return head;

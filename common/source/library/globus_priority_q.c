@@ -1,12 +1,8 @@
 #include "config.h"
-#include "globus_common.h"
-
-#include <assert.h>
-#include <stdlib.h>
-#include <sys/time.h>
-
+#include "globus_common_internal.h"
 #include "globus_priority_q.h"
 #include "globus_list.h"
+#include "globus_libc.h"
 
 typedef struct globus_l_priority_q_entry_s
 {
@@ -94,9 +90,9 @@ globus_priority_q_destroy(
         }
 	priority_q->head = GLOBUS_NULL;
 	priority_q->tail = GLOBUS_NULL;
-
-        PRIORITY_Q_MEM_DESTROY(priority_q);
     }
+    
+    PRIORITY_Q_MEM_DESTROY(priority_q);
 }
 
 globus_bool_t 

@@ -1,5 +1,5 @@
 /*****************************************************************************
-globus_error.c
+globus_print.c
 
 Description:
    Error- and status-reporting functions, extracted from nexus
@@ -12,17 +12,19 @@ CVS Information:
    $Author$
 ******************************************************************************/
 #include "config.h"
-
-#include "globus_common.h"
+#include "globus_common_internal.h"
+#include "globus_libc.h"
 
 /*****************************************************************************
 		      Module specific prototypes
 *****************************************************************************/
 
-static void globus_l_descriptor_string(char *fmt,
-					      char *s1,
-					      char *s2,
-					      char *s3);
+static void 
+globus_l_descriptor_string(
+    char *                                          fmt,
+    char *                                          s1,
+	char *                                          s2,
+	char *                                          s3);
 
 /*****************************************************************************
 		      Module specific prototypes

@@ -24,7 +24,7 @@ EXTERN_C_BEGIN
  *   globus_result_t          --   used as error object handle
  **********************************************************************/
 
-typedef void * globus_result_t;
+
 
 #define GLOBUS_SUCCESS 0
 

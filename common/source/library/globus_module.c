@@ -16,7 +16,12 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "config.h"
-#include "globus_common.h"
+#include "globus_module.h"
+#include "globus_list.h"
+#include "globus_hashtable.h"
+#include "globus_common_internal.h"
+#include "globus_libc.h"
+#include GLOBUS_THREAD_INCLUDE
 
 /******************************************************************************
 			       Type definitions
@@ -510,7 +515,6 @@ globus_l_module_initialize()
      * Now finish initializing the threads package
      */
     globus_module_activate(GLOBUS_THREAD_MODULE);
-
 }
 /* globus_l_module_initialize() */
 

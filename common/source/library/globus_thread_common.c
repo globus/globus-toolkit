@@ -13,20 +13,13 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "config.h"
-#include "globus_common.h"
+#include "globus_common_internal.h"
 #include "globus_thread_common.h"
 #include "globus_i_thread.h"
-
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-
-#if HAVE_SIGNAL_H
-#include <signal.h>
-#endif
+#include "globus_libc.h"
+#include "globus_callback.h"
 
 #define THREAD_STACK_INIT_SIZE 32
-
 
 typedef struct globus_l_thread_stack_node_s
 {
@@ -379,6 +372,7 @@ globus_l_thread_blocking_callback_destroy(void* p)
                                  (void *)GLOBUS_NULL);
 }
 
+#ifndef TARGET_ARCH_WIN32
 void thread_print(char * s, ...)
 {
     char tmp[1023];
@@ -408,6 +402,14 @@ void thread_print(char * s, ...)
    
     fflush(stdin);
 }
+
+#endif
+
+
+/*
+ *  not found in win32
+ */
+#ifndef TARGET_ARCH_WIN32
 
 int
 globus_i_thread_ignore_sigpipe(void)
@@ -444,3 +446,5 @@ globus_i_thread_ignore_sigpipe(void)
     }
 }
 /* globus_i_thread_ignore_sigpipe() */
+
+#endif

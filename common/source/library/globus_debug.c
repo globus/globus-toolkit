@@ -1,9 +1,7 @@
 #include "config.h"
-#include "globus_common.h"
-
-#include <stdio.h>
-#include <stdarg.h>
-#include <assert.h>
+#include "globus_common_internal.h"
+#include "globus_debug.h"
+#include "globus_libc.h"
 
 /* MACRO to instantiate module-specific static storage */
 #define globus_implement_debug_interface_storage(module_name) \

@@ -35,23 +35,16 @@
 /* based on @(#)getenv.c	8.1 (Berkeley) 6/4/93 */
 
 #include "config.h"
-#include "globus_common.h"
-
-#include <stddef.h>
-#ifdef TARGET_ARCH_CRAYT3E
-#include <malloc.h>
-#else
-#include <stdlib.h>
-#endif
-#include <string.h>
+#include "globus_common_internal.h"
+#include "globus_libc.h"
 
 #ifndef	__P
 #define __P(x)	()
 #endif
 static char *globus_l_libc_findenv __P((const char *, globus_size_t *)); 
 
-/*
- * setenv --
+/**
+ * globus_libc_setenv --
  *	Set the value of the environmental variable "name" to be
  *	"value".  If rewrite is set, replace any current value.
  */
@@ -124,7 +117,7 @@ globus_libc_setenv(name, value, rewrite)
 	return (0);
 }
 
-/*
+/**
  * unsetenv(name) --
  *	Delete environmental variable "name".
  */
@@ -145,8 +138,8 @@ globus_libc_unsetenv(name)
 	globus_libc_unlock();
 }
 
-/*
- * getenv --
+/**
+ * globus_libc_getenv --
  *	Returns ptr to value associated with name, if any, else NULL.
  */
 char *
@@ -163,7 +156,7 @@ globus_libc_getenv(name)
     return ptr;
 }
 
-/*
+/**
  * globus_l_libc_findenv --
  *	Returns pointer to value associated with name, if any, else NULL.
  *	Sets offset to be the offset of the name/value combination in the
@@ -192,4 +185,3 @@ globus_l_libc_findenv(name, offset)
 	}
     return (NULL);
 }
-

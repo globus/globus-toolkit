@@ -1,106 +1,18 @@
-/******************************************************************************
-globus_libc.h
-
-Description:
-   Thread-safe libc macros, function prototypes
-
-******************************************************************************/
+/**
+ *
+ *  globus_libc.h
+ *  -------------
+ *
+ *  Description:
+ *     Thread-safe libc macros, function prototypes
+ */
 #ifndef GLOBUS_INCLUDE_GLOBUS_LIBC_H_
 #define GLOBUS_INCLUDE_GLOBUS_LIBC_H_ 1
 
-#include "globus_config.h"
+#include "config.h"
+#include "globus_common_internal.h"
 
-#include <sys/stat.h>
-
-#ifdef HAVE_SYS_TYPES_H
-#   include <sys/types.h>
-#endif
-
-#ifdef HAVE_SYS_SIGNAL_H
-#   include <sys/signal.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#   include <unistd.h>
-#endif
-
-#include <errno.h>
-#include <pwd.h>
-
-#ifdef HAVE_NETDB_H
-#   include <netdb.h>
-#endif
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-#include <sys/param.h>
-
-#include <stdarg.h>
-
-#if defined(TIME_WITH_SYS_TIME)
-#   include <sys/time.h>
-#   include <time.h>
-#else
-#   if HAVE_SYS_TIME_H
-#       include <sys/time.h>
-#   else
-#       include <time.h>
-#   endif
-#endif
-
-#include <stdlib.h>
-#include <stdio.h>
-
-#ifdef HAVE_FCNTL_H
-#   include <fcntl.h>
-#endif
-
-#if defined(HAVE_DIRENT_H)
-#   include <dirent.h>
-#   define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-#   define dirent direct
-#   define NAMLEN(dirent) (dirent)->d_namlen
-#   define HAVE_DIRENT_NAMELEN 1
-#   if defined(HAVE_SYS_NDIR_H)
-#       include <sys/ndir.h>
-#   endif
-#   if defined(HAVE_SYS_DIR_H)
-#       include <sys/dir.h>
-#   endif
-#   if defined(HAVE_NDIR_H)
-#       include <ndir.h>
-#   endif
-#endif
-
-#if defined(HAVE_SYS_UIO_H)
-#   include <sys/uio.h>
-#endif
-
-#include <limits.h>
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
- 
 EXTERN_C_BEGIN
-
-typedef size_t globus_size_t;
-
-#if !defined(HAVE_STRUCT_IOVEC)
-struct iovec {
-    void *		iov_base;
-    int			iov_len;
-};
-#endif
-
 
 /*
  * Reentrant lock
@@ -264,19 +176,17 @@ int globus_libc_getpwnam_r(char *name,
 			   int bufsize,
 			   struct passwd **result);
 
-int globus_libc_getpwuid_r(uid_t uid,
-			   struct passwd *pwd,
-			   char *buffer,
-			   int bufsize,
-			   struct passwd **result);
+int 
+globus_libc_strncasecmp(
+    const char *                            s1,
+    const char *                            s2,
+    globus_size_t                           n);
+
 int globus_libc_setenv(register const char *name,
 		       register const char *value,
 		       int rewrite);
 void globus_libc_unsetenv(register const char *name);
 char *globus_libc_getenv(register const char *name);
-
-int globus_libc_readdir_r(DIR *dirp,
-			  struct dirent **result);
 
 char *globus_libc_system_error_string(int the_error);
 
@@ -294,8 +204,23 @@ int globus_libc_gethomedir(char *result, int bufsize);
 #  define HAVE_MEMMOVE
 #endif
 
+
+#if !defined(TARGET_ARCH_WIN32)
+int 
+globus_libc_getpwuid_r(
+    uid_t                                                     uid,
+    struct passwd *                                           pwd,
+			   char *buffer,
+			   int bufsize,
+			   struct passwd **result);
+
+int globus_libc_readdir_r(DIR *dirp,
+			  struct dirent **result);
+
+
+
+#endif /* WIN32 */
+
 EXTERN_C_END
 
 #endif
-
-

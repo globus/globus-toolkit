@@ -15,23 +15,11 @@ CVS Information:
 #if !defined(GLOBUS_INCLUDE_GLOBUS_I_THREAD)
 #define GLOBUS_INCLUDE_GLOBUS_I_THREAD 1
 
-
-
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include <unistd.h>
-#include <sys/stat.h>
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#include "config.h"
+#include "globus_common_internal.h"
 
 #define GLOBUS_L_LIBC_MAX_ERR_SIZE 512
 

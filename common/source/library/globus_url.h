@@ -18,15 +18,8 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_URL_H_
 #define GLOBUS_INCLUDE_GLOBUS_URL_H_
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#include "config.h"
+#include "globus_common_types.h"
 
 EXTERN_C_BEGIN
 

@@ -7,18 +7,10 @@
  *
  ********************************************************************/
 
-#include "globus_common.h"
-
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
+#include "config.h"
+#include "globus_common_types.h"
+#include "globus_memory.h"
+#include "globus_list.h"
 
 EXTERN_C_BEGIN
 

@@ -1,8 +1,10 @@
 #if !defined(GLOBUS_THREAD_POOL_H)
 #define GLOBUS_THREAD_POOL_H 1
 
-#include "globus_common.h"
-
+#include "config.h"
+#include "globus_common_types.h"
+#include "globus_thread_common.h"
+#include GLOBUS_THREAD_INCLUDE
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus

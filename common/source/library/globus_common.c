@@ -19,6 +19,7 @@ CVS Information:
 ******************************************************************************/
 #include "config.h"
 #include "globus_common.h"
+#include "globus_common_internal.h"
 
 /******************************************************************************
 			  Module activation structure

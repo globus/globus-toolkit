@@ -1,17 +1,8 @@
 #ifndef GLOBUS_ERROR_STRING_H
 #define GLOBUS_ERROR_STRING_H
 
+#include "config.h"
 #include "globus_error.h"
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
  
 EXTERN_C_BEGIN
 

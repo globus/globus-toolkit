@@ -7,11 +7,11 @@
  ********************************************************************/
 
 #include "config.h"
-#include "globus_common.h"
+#include "globus_common_internal.h"
 #include "globus_symboltable.h"
 #include "globus_list.h"
 #include "globus_hashtable.h"
-#include <assert.h>
+#include "globus_libc.h"
 
 
 void *globus_symboltable_lookup (globus_symboltable_t *table, 
