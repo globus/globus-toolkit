@@ -38,7 +38,7 @@
 
     <Source_Setup_Dependencies PkgType="pgm" >
       <Setup_Dependency Name="globus_ssl_utils_setup" > <Version > <Simple_Version Major="2" /> </Version> </Setup_Dependency>
-      <Setup_Dependency Name="gsi_openssh_setup"> <Version > <Simple_Version Major="2" /> </Version> </Setup_Dependency>
+      <Setup_Dependency Name="gsi_openssh_setup"> <Version > <Simple_Version Major="0" /> </Version> </Setup_Dependency>
     </Source_Setup_Dependencies>
 
     <Build_Instructions>
