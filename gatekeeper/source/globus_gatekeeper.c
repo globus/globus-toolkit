@@ -190,6 +190,7 @@ extern char *   sys_errlist[];
 extern int      errno;
 
 static int      connection_fd;
+static int      listener_fd = -1;
 
 static FILE *   usrlog_fp;
 static char *   logfile = LOGFILE;
@@ -221,6 +222,7 @@ static char *   x509_cert_file = NULL;
 static char *   x509_user_proxy = NULL;
 static char *   x509_user_cert = NULL;
 static char *   x509_user_key = NULL;
+static char *   desired_name_char = NULL;
 static int      ok_to_send_errmsg = 0;
 static FILE *   fdout;
 static int      got_ping_request = 0;
@@ -278,6 +280,43 @@ get_globusid()
     return globusid_tmp;
 }
 
+/******************************************************************************
+Function:       terminate()
+Description:    Handle a  SIGTERM, and specificly close the listener_fd
+				This should avoid problems when the gatekeeper
+				is shutdown. 
+Parameters:
+Returns:
+******************************************************************************/
+void 
+terminate(int s)
+{
+	notice2(LOG_NOTICE,"Gatekeeper received signal:%d",s);
+	if (listener_fd > 0)
+	{
+
+#if 0
+/* may need to add code for unicos MLS to get socket closed */
+#     if defined(TARGET_ARCH_CRAYT3E)
+      {
+		if(gatekeeper_uid == 0)
+          {
+          close_unicos_socket(listener_fd);
+          }
+      }
+#     endif
+#endif
+
+		if (close(listener_fd) == -1)
+		{
+			notice3(LOG_ERR, "Shutdown of %d: %.100s",
+					listener_fd, strerror(errno));
+					
+		}
+		listener_fd = -1;
+	}
+	failure2(FAILED_SERVER,"Gatekeeper shutdown on signal:%d",s)
+}
 /******************************************************************************
 Function:       reaper()
 Description:    Wait for any child processes that have terminated.
@@ -367,7 +406,6 @@ main(int xargc,
     int    ttyfd;
 	int    rc;
     netlen_t   namelen;
-    int    listener_fd;
     struct sockaddr_in name;
 	struct stat         statbuf;
 
@@ -664,6 +702,13 @@ main(int xargc,
             i++;
         }
         
+        else if ((strcmp(argv[i], "-desired_name") == 0)
+                && (i + 1 < argc))
+        {
+            desired_name_char = argv[i+1];
+            i++;
+        }
+
         else if ((strcmp(argv[i], "-globuskmap") == 0)
                 && (i + 1 < argc))
         {
@@ -811,6 +856,10 @@ main(int xargc,
      */
 #ifdef HAS_BSD_SIGNAL
     signal(SIGCHLD, reaper);
+	if (!run_from_inetd)
+	{
+		signal(SIGTERM, terminate);
+	}
 #else
     {
         struct sigaction act;
@@ -819,6 +868,14 @@ main(int xargc,
         sigaddset(&act.sa_mask, SIGCHLD);
         act.sa_flags = 0;
         sigaction(SIGCHLD, &act, NULL);
+		if (!run_from_inetd)
+		{
+			act.sa_handler = terminate;
+			sigemptyset(&act.sa_mask);
+			sigaddset(&act.sa_mask, SIGTERM);
+			act.sa_flags = 0;
+			sigaction(SIGTERM, &act, NULL);
+		}
     }
 #endif
 
@@ -835,9 +892,14 @@ main(int xargc,
      * If we are running as a deamon, and should not
      * have any prompts
      */
-    major_status = globus_gss_assist_acquire_cred(&minor_status,
-                                                  GSS_C_ACCEPT,
-                                                  &credential_handle);
+    major_status = globus_gss_assist_acquire_cred_ext(&minor_status,
+                              desired_name_char,
+                              GSS_C_INDEFINITE,
+                              GSS_C_NO_OID_SET,
+                              GSS_C_ACCEPT,
+                              &credential_handle,
+                              NULL,
+                              NULL);
 
     if (major_status != GSS_S_COMPLETE)
     {
@@ -1029,6 +1091,7 @@ main(int xargc,
                 fclose(stdin); /* take care of stream buffers too */
                 close(0);
                 close(listener_fd);
+				listener_fd = -1;
 
                 dup2(connection_fd, 0);
                 /* this should work, but not sure !? */
