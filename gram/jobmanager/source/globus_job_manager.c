@@ -76,7 +76,7 @@ graml_status_file_gen(int job_status);
 static char *
 genfilename(char * prefix, char * path, char * sufix);
 
-static void
+static int
 graml_stage_file(char **url, int mode);
 
 static int 
@@ -1421,8 +1421,15 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
     /* GEM: Stage pgm and std_in to local filesystem, if they are URLs.
        Do this before paradyn rewriting.
      */
-    graml_stage_file(&(params->pgm), 0700);
-    graml_stage_file(&(params->std_in), 0400);
+    if (graml_stage_file(&(params->pgm), 0700) != GLOBUS_SUCCESS)
+    {
+        return(GLOBUS_GRAM_CLIENT_ERROR_STAGING_EXECUTABLE);
+    }
+
+    if (graml_stage_file(&(params->std_in), 0400) != GLOBUS_SUCCESS)
+    {
+        return(GLOBUS_GRAM_CLIENT_ERROR_STAGING_STDIN);
+    }
     
     if (grami_is_paradyn_job(params))
     {
@@ -1431,7 +1438,10 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
             return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_PARADYN);
 	}
 
-        graml_stage_file(&(params->pgm), 0700);
+        if (graml_stage_file(&(params->pgm), 0700) != GLOBUS_SUCCESS)
+        {
+            return(GLOBUS_GRAM_CLIENT_ERROR_STAGING_EXECUTABLE);
+        }
     }
 
     return(0);
@@ -1612,19 +1622,21 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-static void
+static int
 graml_stage_file(char **url, int mode)
 {
     globus_url_t gurl;
     int rc;
+    int error_flag = 0;
 
     if(url == NULL)
     {
-        return;
+        return(GLOBUS_FAILURE);
     }
+
     if(strlen(*url) == 0)
     {
-	return;
+        return(GLOBUS_FAILURE);
     }
     grami_fprintf( grami_log_fp, 
                    "JM: staging file = %s\n", *url);
@@ -1671,7 +1683,7 @@ graml_stage_file(char **url, int mode)
 	    }
 	    else
 	    {
-		globus_gass_client_get_fd(*url,
+		error_flag = globus_gass_client_get_fd(*url,
 					  GLOBUS_NULL,
 					  fd,
 					  GLOBUS_GASS_LENGTH_UNKNOWN,
@@ -1692,6 +1704,13 @@ graml_stage_file(char **url, int mode)
     globus_url_destroy(&gurl);
     grami_fprintf( grami_log_fp, 
                    "JM: new name = %s\n", *url);
+
+    if (error_flag != GLOBUS_SUCCESS)
+    {
+        return(GLOBUS_FAILURE);
+    }
+
+    return(GLOBUS_SUCCESS);
 }
 
 /******************************************************************************
