@@ -30,6 +30,7 @@ CVS Information:
 #include <fcntl.h>
 #include "globus_gram_protocol.h"
 #include "globus_gram_job_manager.h"
+#include "version.h"
 
 #define GLOBUS_GRAM_JOB_MANAGER_TOOLS "/libexec/globus-gram-job-manager-tools.sh"
 
@@ -112,10 +113,12 @@ static char * graml_poe_executable = NULL;
 static char * graml_mpirun_executable = NULL;
 
 globus_module_descriptor_t globus_i_gram_jobmanager_module = {
-    "globus_gram_jobmanager",
+    "globus_gram_job_manager",
     globus_l_gram_jobmanager_activate,
     globus_l_gram_jobmanager_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 /******************************************************************************
@@ -1027,6 +1030,7 @@ globus_l_gram_cancel_fork(globus_gram_jobmanager_request_t * request)
     }
 
     request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
 
     return(GLOBUS_SUCCESS);
 
@@ -1062,6 +1066,7 @@ globus_l_gram_cancel_shell(globus_gram_jobmanager_request_t * request)
     }
 
     request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
 
     if (rc == GLOBUS_FAILURE)
     {

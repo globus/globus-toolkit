@@ -6,7 +6,7 @@
   <Aging_Version Age="0" Major="3" Minor="0" />
   <Description >GRAM Jobmanager</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
-  <Version_Stability Release="alpha" />
+  <Version_Stability Release="Beta2" />
 
   <src_pkg >
 
@@ -43,6 +43,7 @@
       <Dependency Name="globus_rsl" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_rsl_assist" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_duct_control" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_gram_job_manager" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="doc_runtime" >

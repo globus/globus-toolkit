@@ -33,7 +33,7 @@ PBS_JOB_SCRIPT="${local_tmpdir}/pbs_job_script."$$
 PBS_JOB_OUT="${PBS_JOB_SCRIPT}.out"
 PBS_JOB_ERR="${PBS_JOB_SCRIPT}.err"
 
-is_cluster=false
+is_cluster=true
 
 arg_file=$1
 
@@ -213,6 +213,8 @@ fi
 echo "#PBS -o $grami_stdout" >> $PBS_JOB_SCRIPT
 echo "#PBS -e $grami_stderr" >> $PBS_JOB_SCRIPT
 echo "#PBS -l ncpus=$grami_count" >> $PBS_JOB_SCRIPT
+echo "#PBS -l nodes=$grami_count" >> $PBS_JOB_SCRIPT
+echo "#PBS -S /bin/sh" >> $PBS_JOB_SCRIPT
 
 # Uncomment the following lines if your pbs allows node count specification
 #if [ $grami_host_count -ne 0 ] ; then
@@ -227,16 +229,19 @@ echo "#PBS -l ncpus=$grami_count" >> $PBS_JOB_SCRIPT
 #required for this scheduling system.
 #
 new_grami_env=""
+rsh_grami_env=""
 if [ ! -z "${grami_env}" ] ; then
    eval set -- ${grami_env}
    x=0
    while [ "$#" -ne 0 ]; do
        if [ $x = 0 ] ; then
           new_grami_env="${new_grami_env}$1"
+          rsh_grami_env="${rsh_grami_env}export $1"
           x=1
        else
           x=0
           new_grami_env="${new_grami_env}=$1,"
+          rsh_grami_env="${rsh_grami_env}=$1;"
        fi
        shift
    done
@@ -273,11 +278,9 @@ if [ $pbs_jobtype = "mpi" ] ; then
    fi
 elif [ $pbs_jobtype = "multiple" ] ; then
    if ${is_cluster} ; then
-      echo 'counter=1' >> $PBS_JOB_SCRIPT;
       echo 'hosts=`cat $PBS_NODEFILE`' >> $PBS_JOB_SCRIPT;
       echo 'for host in $hosts; do' >> $PBS_JOB_SCRIPT;
-      echo '  /usr/bin/rsh $host "'"cd $grami_directory; $pbs_new_grami_env $grami_program $new_grami_args < $grami_stdin "'"&' >> $PBS_JOB_SCRIPT;
-      echo '  counter=`expr $counter + 1`' >> $PBS_JOB_SCRIPT;
+      echo '  /usr/bin/rsh $host "'"/bin/sh -c 'cd $grami_directory; $rsh_grami_env $grami_program $new_grami_args < $grami_stdin '"'"&' >> $PBS_JOB_SCRIPT;
       echo 'done' >> $PBS_JOB_SCRIPT
       echo 'wait' >> $PBS_JOB_SCRIPT
    else
@@ -294,10 +297,11 @@ else
     echo "$grami_program $new_grami_args < $grami_stdin" >> $PBS_JOB_SCRIPT
 fi
 
-if ${is_cluster} ; then
-   echo "#ctrans nfs_in ${grami_directory}" >> $PBS_JOB_SCRIPT
-   echo "#ctrans nfs_out ${grami_directory}" >> $PBS_JOB_SCRIPT
-fi
+#these commands were specific to ANL's chiba cluster
+#if ${is_cluster} ; then
+#   echo "#ctrans nfs_in ${grami_directory}" >> $PBS_JOB_SCRIPT
+#   echo "#ctrans nfs_out ${grami_directory}" >> $PBS_JOB_SCRIPT
+#fi
 
 $DEBUG_ECHO PBS job script successfully built >> $grami_logfile
 $DEBUG_ECHO submitting PBS job script >> $grami_logfile

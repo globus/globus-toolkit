@@ -33,6 +33,7 @@ CVS Information:
 #include <stdlib.h>
 
 #include "nexus.h"
+#include "version.h"
 
 
 
@@ -273,7 +274,9 @@ globus_module_descriptor_t              globus_i_gram_myjob_module =
     "globus_gram_myjob_duct",
     globus_gram_myjob_activate,
     globus_gram_myjob_deactivate,
-    globus_gram_myjob_atexit
+    globus_gram_myjob_atexit,
+    GLOBUS_NULL,
+    &local_version
 };
 
 
@@ -500,4 +503,3 @@ globus_gram_myjob_kill ()
 }
 
 #endif /* if NOT GLOBUS_MP_HAS_MPI_PROTO */
-

@@ -147,8 +147,8 @@ globus_i_filename_callback_func(int stdout_flag);
 
 
 static int
-globus_l_gram_status_file_gen(char * request_string,
-                              char * job_status_file_path,
+globus_l_gram_reporting_file_gen(char * request_string,
+                              char * job_reporting_file,
                               char * globus_id,
                               char * job_id,
 			      int status);
@@ -422,8 +422,8 @@ int main(int argc,
     int                    publish_jobs_flag = 0;
     char                   *rsl_spec = GLOBUS_NULL; /* Must free! */
     char                   tmp_buffer[256];
-    char                   job_status_file_path[512];
-    char *                 job_status_dir = GLOBUS_NULL;
+    char                   job_reporting_file[512];
+    char *                 job_reporting_dir = GLOBUS_NULL;
     char *                 home_dir = NULL;
     char *                 client_contact_str = GLOBUS_NULL;
     char *                 my_url_base;
@@ -549,7 +549,7 @@ int main(int argc,
 
     GRAM_LOCK;
 
-    *job_status_file_path = '\0';
+    *job_reporting_file = '\0';
 
     /* if -conf is passed then get the arguments from the file
      * specified
@@ -656,9 +656,14 @@ int main(int argc,
         {
             libexecdir = argv[i+1]; i++;
         }
+        else if ((strcmp(argv[i], "-job-reporting-dir") == 0)
+                 && (i + 1 < argc))
+        {
+	    job_reporting_dir = globus_libc_strdup(argv[i+1]); i++;
+        }
         else if (strcmp(argv[i], "-publish-jobs") == 0)
         {
-            publish_jobs_flag = 1;
+            /* NOP */ ;
         }
         else if (strcmp(argv[i], "-publish-users") == 0)
         {
@@ -763,7 +768,7 @@ int main(int argc,
                     "\t-e libexec dir\n"
                     "\t-condor-arch arch, i.e. SUN4x\n"
                     "\t-condor-os os, i.e. SOLARIS26\n"
-                    "\t-publish-jobs\n"
+                    "\t-job-reporting-dir\n"
                     "\t-save-logfile [ always | on_errors ]\n"
                     "\t-globus-tcp-port-range <min port #>,<max port #>\n"
                     "\n"
@@ -1196,6 +1201,18 @@ int main(int argc,
 	{
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_LOCATION",
+                                (void *) conf.globus_location);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_TOOLS_PATH",
+                                (void *) conf.globus_location);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_DEVELOPMENT_PATH",
+                                (void *) conf.globus_location);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_SERVICES_PATH",
+                                (void *) conf.globus_location);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_INSTALL_PATH",
                                 (void *) conf.globus_location);
 	}
 
@@ -2217,27 +2234,23 @@ int main(int argc,
 
 
         /* if we are publishing jobs, then setup the necessary variables */
-        if (publish_jobs_flag)
+        if (job_reporting_dir)
         {
             if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) == GLOBUS_NULL)
                 final_rsl_spec = (char *) globus_libc_strdup("RSL UNKNOWN");
 
-            job_status_dir = globus_l_gram_genfilename(conf.globus_location,
-						       "var",
-						       NULL);
-
-            sprintf( job_status_file_path,
+            sprintf( job_reporting_file,
 		     "%s/%s_%s.%s",
-		     job_status_dir,
+		     job_reporting_dir,
 		     conf.rdn,
 		     graml_env_logname,
 		     request->job_id );
 
             globus_jobmanager_log( request->jobmanager_log_fp,
-                 "JM: job_status_file_path = %s\n", job_status_file_path);
+                 "JM: job_reporting_file = %s\n", job_reporting_file);
 
-            globus_l_gram_status_file_gen(final_rsl_spec,
-                                          job_status_file_path,
+            globus_l_gram_reporting_file_gen(final_rsl_spec,
+                                          job_reporting_file,
                                           graml_env_globus_id,
                                           request->job_id,
 					  request->status);
@@ -2257,7 +2270,7 @@ int main(int argc,
 					  &delay_time,
 					  &period_time,
 					  globus_l_gram_status_file_cleanup,
-					  (void *) job_status_dir,
+					  (void *) job_reporting_dir,
 					  GLOBUS_NULL,
 					  GLOBUS_NULL);
 
@@ -2285,10 +2298,10 @@ int main(int argc,
 	    if (!graml_jm_done)
 	    {
 		/* check if cancel handler was called */
-		if (publish_jobs_flag)
+		if (job_reporting_dir)
 		{
 		    /* touch the file so we know we did not crash */
-		    if ( utime(job_status_file_path, NULL) != 0 )
+		    if ( utime(job_reporting_file, NULL) != 0 )
 		    {
 			if(errno == ENOENT)
 			{
@@ -2297,8 +2310,8 @@ int main(int argc,
 					   "rewritting it with current "
 					   "status.\n");
 
-			    globus_l_gram_status_file_gen(final_rsl_spec,
-							  job_status_file_path,
+			    globus_l_gram_reporting_file_gen(final_rsl_spec,
+							  job_reporting_file,
                                                           graml_env_globus_id,
 							  request->job_id,
 							  request->status);
@@ -2348,8 +2361,8 @@ int main(int argc,
 			tmp_status = request->status;
 			globus_l_gram_client_callback(tmp_status,
 						      request->failure_code);
-			globus_l_gram_status_file_gen(final_rsl_spec,
-						      job_status_file_path,
+			globus_l_gram_reporting_file_gen(final_rsl_spec,
+						      job_reporting_file,
 						      graml_env_globus_id,
 						      request->job_id,
 						      request->status);
@@ -2506,13 +2519,13 @@ int main(int argc,
         /*
          * Check to see if the job status file exists.  If so, then delete it.
          */
-        if (stat(job_status_file_path, &statbuf) == 0)
+        if (stat(job_reporting_file, &statbuf) == 0)
         {
-            if (remove(job_status_file_path) != 0)
+            if (remove(job_reporting_file) != 0)
             {
                 globus_jobmanager_log( request->jobmanager_log_fp,
                       "JM: Failed to remove job status file --> %s\n",
-                      job_status_file_path);
+                      job_reporting_file);
             }
         }
     }
@@ -2811,14 +2824,14 @@ globus_l_gram_client_callback(int status, int failure_code)
 
 
 /******************************************************************************
-Function:       globus_l_gram_status_file_gen()
+Function:       globus_l_gram_reporting_file_gen()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 static int
-globus_l_gram_status_file_gen(char * request_string,
-                              char * job_status_file_path,
+globus_l_gram_reporting_file_gen(char * request_string,
+                              char * job_reporting_file,
                               char * globus_id,
                               char * job_id,
 			      int status)
@@ -2828,7 +2841,7 @@ globus_l_gram_status_file_gen(char * request_string,
     struct stat  statbuf;
 
     globus_jobmanager_log( graml_log_fp,
-			   "JM: in globus_l_gram_status_file_gen\n");
+			   "JM: in globus_l_gram_reporting_file_gen\n");
 
     switch(status)
     {
@@ -2851,27 +2864,27 @@ globus_l_gram_status_file_gen(char * request_string,
             strcpy(status_str, "UNKNOWN   ");
     }
 
-    if (stat(job_status_file_path, &statbuf) == 0)
+    if (stat(job_reporting_file, &statbuf) == 0)
     {
         /* the file exists, so just update the first line which is the
          * job status
          */
-        if ((status_fp = fopen(job_status_file_path, "r+")) == NULL)
+        if ((status_fp = fopen(job_reporting_file, "r+")) == NULL)
         {
             globus_jobmanager_log( graml_log_fp,
                  "JM: Failed opening job status file %s\n",
-                 job_status_file_path);
+                 job_reporting_file);
             return(1);
         }
         fprintf(status_fp, "%s\n", status_str);
     }
     else
     {
-        if ((status_fp = fopen(job_status_file_path, "w")) == NULL)
+        if ((status_fp = fopen(job_reporting_file, "w")) == NULL)
         {
            globus_jobmanager_log(graml_log_fp,
                "JM: Failed opening job status file %s\n",
-               job_status_file_path);
+               job_reporting_file);
            return(1);
         }
         else
@@ -2888,7 +2901,7 @@ globus_l_gram_status_file_gen(char * request_string,
     fclose(status_fp);
 
     return(0);
-} /* globus_l_gram_status_file_gen() */
+} /* globus_l_gram_reporting_file_gen() */
 
 
 /******************************************************************************
@@ -4237,7 +4250,7 @@ globus_l_gram_status_file_cleanup(
     void *				callback_arg)
 {
     DIR *            status_dir;
-    char * job_status_dir;
+    char * job_reporting_dir;
     struct dirent *  dir_entry = GLOBUS_NULL;
     char             logname_string[256];
     char             stat_file_path[1024];
@@ -4245,9 +4258,9 @@ globus_l_gram_status_file_cleanup(
     unsigned long    now;
     globus_bool_t    status = GLOBUS_FALSE;
 
-    job_status_dir = (char *) callback_arg;
+    job_reporting_dir = (char *) callback_arg;
 
-    if(job_status_dir == GLOBUS_NULL)
+    if(job_reporting_dir == GLOBUS_NULL)
     {
         if (graml_cleanup_print_flag)
         {
@@ -4258,7 +4271,7 @@ globus_l_gram_status_file_cleanup(
         return GLOBUS_FALSE;
     }
 
-    status_dir = globus_libc_opendir(job_status_dir);
+    status_dir = globus_libc_opendir(job_reporting_dir);
     if(status_dir == GLOBUS_NULL)
     {
         globus_jobmanager_log( graml_log_fp,
@@ -4277,7 +4290,7 @@ globus_l_gram_status_file_cleanup(
     {
         if (strstr(dir_entry->d_name, logname_string) != NULL)
         {
-            sprintf(stat_file_path, "%s/%s", job_status_dir, dir_entry->d_name);
+            sprintf(stat_file_path, "%s/%s", job_reporting_dir, dir_entry->d_name);
             globus_jobmanager_log( graml_log_fp,
                    "JM: found user file --> %s\n", stat_file_path);
             if (stat(stat_file_path, &statbuf) == 0)
@@ -5224,6 +5237,7 @@ globus_l_jm_http_query_handler(
 	     * NOTE: old code set state to FAILED. Shouldn't it be DONE?
 	     */
 	    status = request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
     	    /*
 	     * wake up the timed() wait in the main routine
 	     */
@@ -5500,6 +5514,7 @@ globus_l_jm_http_query_send_reply:
 
     GRAM_LOCK;
     graml_jm_can_exit = GLOBUS_TRUE;
+    globus_cond_signal(&graml_api_cond);
     GRAM_UNLOCK;
 
     return GLOBUS_FALSE;

@@ -288,6 +288,7 @@ if test -z "${GLOBUS_SH_WHOAMI}"; then
 else
     user=`${GLOBUS_SH_WHOAMI}`
 fi
+
     ${GLOBUS_SH_CAT-cat} > ${scratch}/gridmap <<EOF
 "${subject}" ${user}
 EOF

@@ -62,7 +62,7 @@ $DEBUG_ECHO "JM_SCRIPT: parsing condor log file ${grami_condor_ulog} "\
             "for job id ${grami_job_id}" >> $grami_logfile
 
 
-status=`${grep} '^[0-9]* ('${grami_job_id} ${grami_condor_ulog} | ${cut} -d' ' -f1,2 | ${sort} | ${uniq}`
+status=`${grep} '^[0-9]* (0*'${grami_job_id} ${grami_condor_ulog} | ${cut} -d' ' -f1,2 | ${sort} | ${uniq}`
 
 
 num_done=`echo "$status" | ${grep} '^005' | ${wc} -l`
