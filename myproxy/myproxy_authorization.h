@@ -6,10 +6,8 @@
 typedef enum {
   AUTHORIZETYPE_NULL = 0,
   AUTHORIZETYPE_PASSWD,
-#if defined(HAVE_LIBSASL2)
-  AUTHORIZETYPE_SASL,
-#endif
-  AUTHORIZETYPE_CERT
+  AUTHORIZETYPE_CERT,
+  AUTHORIZETYPE_SASL
 } author_method_t;
 
 /* client/server authorization data */
@@ -22,7 +20,10 @@ typedef struct
   author_method_t  method;
 } authorization_data_t;
 
-int authorization_init_server (authorization_data_t ***data);
+/* The methods argument should be an array of methods to prompt for,
+   terminated by AUTHORIZETPYE_NULL. */
+int authorization_init_server (authorization_data_t ***data,
+			       author_method_t methods[]);
 void authorization_data_free (authorization_data_t **data);
 
 char * authorization_get_name(author_method_t method);
