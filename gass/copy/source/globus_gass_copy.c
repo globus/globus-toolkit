@@ -1005,9 +1005,10 @@ globus_gass_copy_register_performance_cb(
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 static
-globus_bool_t
+void
 globus_l_gass_copy_perf_local_cb(
-    globus_abstime_t *                      time_stop,
+    const globus_abstime_t *                timenow,
+    const globus_abstime_t *                time_stop,
     void *                                  user_arg)
 {
     globus_gass_copy_perf_info_t *          perf_info;
@@ -1059,9 +1060,6 @@ globus_l_gass_copy_perf_local_cb(
         bytes_now,
         instantaneous_throughput,
         avg_throughput);
-
-    /* user may have changed something */
-    return GLOBUS_TRUE;
 }
 
 static
@@ -1127,7 +1125,8 @@ void
 globus_l_gass_copy_perf_cancel_local_callback(
     globus_gass_copy_perf_info_t *          perf_info)
 {
-    globus_callback_unregister(perf_info->local_cb_handle);
+    globus_callback_blocking_cancel_periodic(
+        perf_info->local_cb_handle);
 }
 
 static

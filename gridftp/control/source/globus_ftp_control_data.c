@@ -401,24 +401,32 @@ globus_l_ftp_io_close_callback(
     globus_io_handle_t *                        handle,
     globus_result_t                             result);
 
-globus_bool_t
+static
+void
 globus_l_ftp_control_command_kickout(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *                                      user_args);
 
-globus_bool_t
+static
+void
 globus_l_ftp_control_send_data_kickout(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args);
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
+    void *                                      user_args);
 
-globus_bool_t
+static
+void
 globus_l_ftp_control_reuse_connect_callback(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args);
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
+    void *                                      user_args);
 
-globus_bool_t
+static
+void
 globus_l_ftp_control_close_kickout(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *                                      user_args);
 
 void
@@ -992,7 +1000,6 @@ globus_l_ftp_control_data_eb_connect_write(
                     /* register a on shot for connection */
                     GlobusTimeReltimeSet(reltime, 0, 0);
                     globus_callback_register_oneshot(
-                        GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_reuse_connect_callback,
                         (void *) connect_cb_info,
@@ -1176,7 +1183,6 @@ globus_l_ftp_control_data_eb_connect_read(
                     /* register a on shot for connection */
                     GlobusTimeReltimeSet(reltime, 0, 0);
                     globus_callback_register_oneshot(
-                        GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_reuse_connect_callback,
                         (void *) connect_cb_info,
@@ -5306,10 +5312,12 @@ globus_i_ftp_control_create_data_info(
     return GLOBUS_SUCCESS;
 }
 
-globus_bool_t
+static
+void
 globus_l_ftp_control_release_data_kickout(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args)
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
+    void *                                      user_args)
 {
     globus_l_ftp_handle_table_entry_t *          cb_ent;
 
@@ -5324,8 +5332,6 @@ globus_l_ftp_control_release_data_kickout(
         cb_ent->offset,
         cb_ent->eof);
     globus_free(cb_ent);
-
-    return GLOBUS_TRUE;
 }
 
 globus_result_t
@@ -5353,7 +5359,6 @@ globus_i_ftp_control_release_data_info(
     {
         GlobusTimeReltimeSet(reltime, 0, 0);
         globus_callback_register_oneshot(
-            GLOBUS_NULL,
             &reltime,
             globus_l_ftp_control_release_data_kickout,
             (void *) cb_ent,
@@ -5600,7 +5605,6 @@ globus_l_ftp_data_eb_poll(
                                 /* kick out a callback */
                                 GlobusTimeReltimeSet(reltime, 0, 0);
                                 globus_callback_register_oneshot(
-                                    GLOBUS_NULL,
                                     &reltime,
                                     globus_l_ftp_control_send_data_kickout,
                                     (void *) entry,
@@ -5749,7 +5753,6 @@ globus_l_ftp_data_eb_poll(
                     transfer_handle->big_buffer = GLOBUS_NULL;
                     GlobusTimeReltimeSet(reltime, 0, 0);
                     globus_callback_register_oneshot(
-                        GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_command_kickout,
                         (void *) entry,
@@ -5784,7 +5787,6 @@ globus_l_ftp_data_eb_poll(
 
                     GlobusTimeReltimeSet(reltime, 0, 0);
                     globus_callback_register_oneshot(
-                        GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_command_kickout,
                         (void *) entry,
@@ -5944,10 +5946,12 @@ globus_l_ftp_control_data_register_eod(
  *
  *  This function works like a dummy _eod callback.
  */
-globus_bool_t
+static
+void
 globus_l_ftp_control_send_data_kickout(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args)
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
+    void *                                      user_args)
 {
     globus_i_ftp_dc_handle_t *                   dc_handle;
     globus_ftp_control_data_callback_t           eof_callback = GLOBUS_NULL;
@@ -6048,8 +6052,6 @@ globus_l_ftp_control_send_data_kickout(
     globus_l_ftp_data_stripe_poll(dc_handle);
 
     globus_free(entry);
-
-    return GLOBUS_TRUE;
 }
 
 
@@ -6359,10 +6361,12 @@ globus_l_ftp_control_data_adjust_connection(
     return res;
 }
 
-globus_bool_t
+static
+void
 globus_l_ftp_control_command_flush_callback(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args)
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
+    void *                                      user_args)
 {
     globus_l_ftp_handle_table_entry_t *          entry;
     globus_l_ftp_handle_table_entry_t *          cb_ent;
@@ -6433,8 +6437,6 @@ globus_l_ftp_control_command_flush_callback(
     globus_mutex_unlock(&dc_handle->mutex);
 
     globus_free(entry);
-
-    return GLOBUS_TRUE;
 }
 
 /*
@@ -6465,7 +6467,6 @@ globus_l_error_flush_command_q(
 
         GlobusTimeReltimeSet(reltime, 0, 0);
         globus_callback_register_oneshot(
-            GLOBUS_NULL,
             &reltime,
             globus_l_ftp_control_command_flush_callback,
             (void *) entry,
@@ -6474,10 +6475,12 @@ globus_l_error_flush_command_q(
     }
 }
 
-globus_bool_t
+static
+void
 globus_l_ftp_control_command_kickout(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args)
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
+    void *                                      user_args)
 {
     globus_l_ftp_handle_table_entry_t *          entry;
     globus_i_ftp_dc_handle_t *                   dc_handle;
@@ -6517,14 +6520,14 @@ globus_l_ftp_control_command_kickout(
     }
 
     globus_free(entry);
-
-    return GLOBUS_TRUE;
 }
 
-globus_bool_t
+static
+void
 globus_l_ftp_control_reuse_connect_callback(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args)
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
+    void *                                      user_args)
 {
     globus_l_ftp_dc_connect_cb_info_t *          connect_cb_info;
     globus_i_ftp_dc_handle_t *                   dc_handle;
@@ -6550,8 +6553,6 @@ globus_l_ftp_control_reuse_connect_callback(
     globus_mutex_unlock(&dc_handle->mutex);
 
     globus_free(connect_cb_info);
-
-    return GLOBUS_TRUE;
 }
 
 /*
@@ -6664,10 +6665,9 @@ globus_l_ftp_control_dc_dec_ref(
         if(dc_handle->close_callback != GLOBUS_NULL &&
            globus_list_empty(dc_handle->transfer_list))
         {
-	    int res;
+	    globus_result_t             res;
             GlobusTimeReltimeSet(reltime, 0, 0);
             res = globus_callback_register_oneshot(
-                         GLOBUS_NULL,
                          &reltime,
                          globus_l_ftp_control_close_kickout,
                          (void *)dc_handle,
@@ -6701,10 +6701,12 @@ globus_l_ftp_control_dc_dec_ref(
     return rc;
 }
 
-globus_bool_t
+static
+void
 globus_l_ftp_control_close_kickout(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args)
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
+    void *                                      user_args)
 {
     globus_ftp_control_handle_t *                control_handle;
     globus_ftp_control_callback_t                cb;
@@ -6736,8 +6738,6 @@ globus_l_ftp_control_close_kickout(
     {
         cb(cb_arg, control_handle, GLOBUS_NULL);
     }
-
-    return GLOBUS_TRUE;
 }
 
 /*

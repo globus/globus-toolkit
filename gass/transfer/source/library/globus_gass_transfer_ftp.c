@@ -974,7 +974,6 @@ globus_l_gass_transfer_ftp_new_request(
   
     GlobusTimeReltimeSet(delay_time, 0, 0);
     globus_callback_register_oneshot(
-	GLOBUS_NULL /* callback handle */,
 	&delay_time,
 	globus_l_gass_transfer_ftp_callback_denied,
 	(void *) request,
@@ -1093,9 +1092,10 @@ globus_l_gass_transfer_ftp_put_done_callback(
 } /* globus_l_gass_transfer_ftp_put_done_callback() */
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_ftp_callback_denied(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_request_t		request;
@@ -1106,8 +1106,6 @@ globus_l_gass_transfer_ftp_callback_denied(
 	request,
 	GLOBUS_L_DEFAULT_FAILURE_CODE,
 	globus_libc_strdup(GLOBUS_L_DEFAULT_FAILURE_REASON));
-
-    return GLOBUS_TRUE;
 }
 
 #endif /* !parser only */

@@ -251,9 +251,11 @@ data_close_callback(
 static char *
 globus_l_wu_create_range_string(globus_fifo_t * ranges);
 
-static globus_bool_t
+static
+void
 globus_l_wu_perf_update_callback(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *				user_args);
 
 static globus_bool_t
@@ -605,18 +607,18 @@ wu_monitor_destroy(
     globus_fifo_destroy(&mon->ranges);
 }
 
-static int
+static
+void
 g_timeout_wakeup(
-    globus_abstime_t *                           time_stop,
-    void *                                       user_args)
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
+    void *                                      user_args)
 {
     globus_mutex_lock(&g_monitor.mutex);
     {   
         globus_cond_signal(&g_monitor.cond);
     }
     globus_mutex_unlock(&g_monitor.mutex);
-
-    return GLOBUS_TRUE;
 }
 
 void
@@ -711,7 +713,7 @@ G_ENTER();
     globus_fifo_init(&g_restarts);
 
     debug_printf("registering wakeup at %d secs\n", timeout_connect / 2);
-    rc = globus_callback_register_periodic(
+    res = globus_callback_register_periodic(
              GLOBUS_NULL,
              &delay_time,
              &period_time,
@@ -1677,7 +1679,10 @@ g_receive_data(
             if ((buf = (globus_byte_t *) globus_malloc(buffer_size)) == NULL)
             {
                 transflag = 0;
-		globus_callback_unregister(g_monitor.callback_handle);
+		globus_callback_register_cancel_periodic(
+		    g_monitor.callback_handle,
+		    GLOBUS_NULL,
+		    GLOBUS_NULL);
 
                 G_EXIT();
                 perror_reply(451, "Local resource failure: malloc");
@@ -1730,7 +1735,10 @@ g_receive_data(
         {
             alarm(0);
             g_force_close(cb_count);
-	    globus_callback_unregister(g_monitor.callback_handle);
+	    globus_callback_register_cancel_periodic(
+		    g_monitor.callback_handle,
+		    GLOBUS_NULL,
+		    GLOBUS_NULL);
 
             G_EXIT();
 	    goto bail;
@@ -1774,7 +1782,10 @@ g_receive_data(
 
     g_force_close(cb_count);
 
-    globus_callback_unregister(g_monitor.callback_handle);
+    globus_callback_register_cancel_periodic(
+        g_monitor.callback_handle,
+        GLOBUS_NULL,
+        GLOBUS_NULL);
 
     alarm(0);
     transflag = 0;
@@ -1794,7 +1805,10 @@ g_receive_data(
 
 
   file_err:
-    globus_callback_unregister(g_monitor.callback_handle);
+    globus_callback_register_cancel_periodic(
+        g_monitor.callback_handle,
+        GLOBUS_NULL,
+        GLOBUS_NULL);
 
     alarm(0);
     transflag = 0;
@@ -1810,7 +1824,10 @@ g_receive_data(
 
   clean_exit:
     G_File_Close(&g_monitor.io_handle, 0);
-    globus_callback_unregister(g_monitor.callback_handle);
+    globus_callback_register_cancel_periodic(
+        g_monitor.callback_handle,
+        GLOBUS_NULL,
+        GLOBUS_NULL);
 
     G_EXIT();
 
@@ -2168,9 +2185,11 @@ globus_l_wu_create_range_string(
     return buf;
 }
 
-static globus_bool_t
+static
+void
 globus_l_wu_perf_update_callback(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *				user_args)
 {
     globus_i_wu_monitor_t *		monitor;
@@ -2183,8 +2202,6 @@ globus_l_wu_perf_update_callback(
         globus_cond_signal(&monitor->cond);
     }
     globus_mutex_lock(&monitor->mutex);
-
-    return GLOBUS_TRUE;
 }
 
 static globus_bool_t 

@@ -93,7 +93,7 @@ typedef int globus_thread_once_t;
     (*(M) ? 1 : globus_macro_mutex_lock(M))
 
 #define globus_macro_cond_init(C,A) \
-    (((A) ? (*(C) = *((int *)A)) : (*(C) = GLOBUS_CALLBACK_GLOBAL_SPACE)), 0)
+    (((A) ? (*(C) = *((int *)(A))) : (*(C) = GLOBUS_CALLBACK_GLOBAL_SPACE)), 0)
     
 #define globus_macro_cond_destroy(C) \
     (*(C) = 0)

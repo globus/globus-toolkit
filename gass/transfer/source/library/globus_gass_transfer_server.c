@@ -18,9 +18,10 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
-globus_bool_t
+void
 globus_l_gass_transfer_callback_close_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg);
 #endif
 
@@ -892,7 +893,6 @@ globus_i_gass_transfer_close_listener(
 
         GlobusTimeReltimeSet(delay_time, 0, 0);
 	globus_callback_register_oneshot(
-	    GLOBUS_NULL /* callback handle */,
 	    &delay_time,
 	    globus_l_gass_transfer_callback_close_callback,
 	    (void *) listener,
@@ -931,9 +931,10 @@ globus_i_gass_transfer_close_listener(
 }
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_callback_close_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_listener_t 		listener;
@@ -962,7 +963,6 @@ globus_l_gass_transfer_callback_close_callback(
     globus_i_gass_transfer_lock();
     globus_i_gass_transfer_listener_destroy(listener);
     globus_i_gass_transfer_unlock();
-    return GLOBUS_TRUE;
 }
 /* globus_l_gass_transfer_callback_close_callback() */
 

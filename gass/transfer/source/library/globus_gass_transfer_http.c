@@ -347,7 +347,6 @@ globus_l_gass_transfer_http_send(
 
     debug_printf(4, ("%s(): Registering oneshot\n", myname));
     globus_callback_register_oneshot(
-	GLOBUS_NULL /* callback handle */,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_send_callback,
 	(void *) new_proto,
@@ -404,7 +403,6 @@ globus_l_gass_transfer_http_receive(
     GlobusTimeReltimeSet(delay_time, 0, 0);
     debug_printf(4, ("%s(): Registering oneshot\n", myname));
     globus_callback_register_oneshot(
-	GLOBUS_NULL /* callback handle */,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_read_buffered_callback,
 	(void *) new_proto,
@@ -1427,7 +1425,6 @@ globus_l_gass_transfer_http_listen(
 	debug_printf(4,("%s(): registering oneshot because listen failed\n",
 		    myname));
 	globus_callback_register_oneshot(
-	    GLOBUS_NULL /* callback handle */,
 	    &delay_time,
 	    globus_l_gass_transfer_http_callback_listen_callback,
 	    (void *) new_proto,
@@ -1886,7 +1883,6 @@ globus_l_gass_transfer_http_request_authorize(
 	debug_printf(4, ("%s(): registering oneshot\n",
 			 myname));
 	globus_callback_register_oneshot(
-	    GLOBUS_NULL /* callback handle */,
 	    &delay_time,
 	    globus_l_gass_transfer_http_callback_ready_callback,
 	    (void *) proto,
@@ -2387,7 +2383,6 @@ globus_l_gass_transfer_http_new_request(
     debug_printf(4,("%s(): Registering oneshot\n",
 			myname));
     globus_callback_register_oneshot(
-	GLOBUS_NULL /* callback handle */,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_denied,
 	(void *) request,
@@ -3893,9 +3888,10 @@ globus_l_gass_transfer_http_request_callback(
 /* globus_l_gass_transfer_http_request_callback() */
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_send_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_request_proto_t *		proto;
@@ -3912,14 +3908,14 @@ globus_l_gass_transfer_http_callback_send_callback(
 					     proto->failure_occurred,
 					     proto->failure_occurred);
     debug_printf(3, ("Exiting globus_l_gass_transfer_http_callback_send_callback()\n"));
-    return GLOBUS_TRUE;
 }
 
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_ready_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_request_proto_t *	proto;
@@ -3929,14 +3925,13 @@ globus_l_gass_transfer_http_callback_ready_callback(
     debug_printf(2, ("calling globus_gass_transfer_proto_request_ready"));
     globus_gass_transfer_proto_request_ready(proto->request,
 					     (globus_gass_transfer_request_proto_t *) proto);
-
-    return GLOBUS_TRUE;
 }
 /* globus_l_gass_transfer_http_callback_read_buffered_callback() */
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_read_buffered_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_request_proto_t *	proto;
@@ -3956,15 +3951,15 @@ globus_l_gass_transfer_http_callback_read_buffered_callback(
 						       proto->response_buffer +
 						        proto->response_offset,
 						       0);
-    return GLOBUS_TRUE;
 }
 /* globus_l_gass_transfer_http_callback_read_buffered_callback() */
 
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_listen_callback(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_listener_proto_t *proto;
@@ -3984,8 +3979,6 @@ globus_l_gass_transfer_http_callback_listen_callback(
 
     debug_printf(2, ("calling globus_gass_transfer_proto_listener_ready()"));
     globus_gass_transfer_proto_listener_ready(listener);
-    
-    return GLOBUS_TRUE;
 }
 /* globus_l_gass_transfer_http_callback_listen_callback() */
 
@@ -6153,9 +6146,10 @@ globus_l_gass_transfer_http_extract_referral(
 
 #if !defined(GLOBUS_GASS_TRANSFER_HTTP_PARSER_TEST)
 static
-globus_bool_t
+void
 globus_l_gass_transfer_http_callback_denied(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_request_t		request;
@@ -6167,8 +6161,6 @@ globus_l_gass_transfer_http_callback_denied(
 	request,
 	GLOBUS_L_DEFAULT_FAILURE_CODE,
 	globus_libc_strdup(GLOBUS_L_DEFAULT_FAILURE_REASON));
-
-    return GLOBUS_TRUE;
 }
 #endif /* !GLOBUS_GASS_TRANSFER_HTTP_PARSER_TEST */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
