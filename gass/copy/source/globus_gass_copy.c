@@ -244,7 +244,7 @@ globus_gass_copy_handle_destroy(
         result = globus_ftp_client_handle_destroy(&handle->ftp_dest_handle);
 
 	if(handle->err != GLOBUS_NULL)
-             globus_libc_free(handle->err);
+             globus_object_free(handle->err);
 
         handle->err = GLOBUS_NULL;
 
@@ -918,8 +918,7 @@ globus_l_gass_copy_target_populate(
 		GLOBUS_NULL,
 		"[%s]: failed malloc a globus_gass_copy_attr_t structure successfully",
 		myname);
-	    globus_i_gass_copy_set_error(handle, err);
-	    return globus_error_put(handle->err);
+	    return globus_error_put(err);
 	}
       
 	globus_gass_copy_attr_init(tmp_attr);
@@ -971,8 +970,7 @@ globus_l_gass_copy_target_populate(
 	    "[%s]: %s: GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED",
 	    myname,
 	    url);
-	globus_i_gass_copy_set_error(handle, err);
-	return globus_error_put(handle->err);
+	return globus_error_put(err);
 
 	break;
     }
@@ -986,8 +984,7 @@ globus_l_gass_copy_target_populate(
 	    GLOBUS_NULL,
 	    "[%s]: failed to initialize fifo successfully",
 	    myname);
-	globus_i_gass_copy_set_error(handle, err);
-	return globus_error_put(handle->err);
+	return globus_error_put(err);
     }
     
     return GLOBUS_SUCCESS;
@@ -1029,8 +1026,7 @@ globus_l_gass_copy_io_target_populate(
 	    GLOBUS_NULL,
 	    "[%s]: failed to initialize fifo successfully",
 	    myname);
-	globus_i_gass_copy_set_error(handle, err);
-	return globus_error_put(handle->err);
+	return globus_error_put(err);
     }
     
     return GLOBUS_SUCCESS;
@@ -1117,8 +1113,8 @@ globus_l_gass_copy_state_new(
 	    GLOBUS_NULL,
 	    "[%s]: failed to malloc a globus_gass_copy_state_t successfully",
 	    myname);
-	globus_i_gass_copy_set_error(handle, err);
-	return globus_error_put(handle->err);
+
+	return globus_error_put(err);
     }
     
     handle->status = GLOBUS_GASS_COPY_STATUS_INITIAL;
@@ -1323,7 +1319,9 @@ globus_l_gass_copy_transfer_start(
     if(handle->err)
     {
 	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
-	return globus_error_put(handle->err);
+	err = handle->err;
+	handle->err = GLOBUS_NULL;
+	return globus_error_put(err);
     }
     
     handle->status = GLOBUS_GASS_COPY_STATUS_SOURCE_READY;
@@ -1434,7 +1432,9 @@ globus_l_gass_copy_transfer_start(
 
         /* clean up the source side since it was already opened..... */
         globus_gass_copy_cancel(handle, NULL, NULL);
-	return globus_error_put(handle->err);
+	err = handle->err;
+	handle->err = GLOBUS_NULL;
+	return globus_error_put(err);
     }
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     fprintf(stderr, "transfer_start(): dest is ready, let's get goin'\n");
@@ -1923,8 +1923,7 @@ globus_l_gass_copy_io_setup_get(
 		GLOBUS_NULL,
 		"[%s]: failed to malloc a globus_io_handle_t successfully",
 		myname);
-	    globus_i_gass_copy_set_error(handle, err);
-	    return globus_error_put(handle->err);
+	    return globus_error_put(err);
 	}
 	result = globus_io_file_open(
 	    parsed_url.url_path,
@@ -1985,8 +1984,7 @@ globus_l_gass_copy_io_setup_put(
 		GLOBUS_NULL,
 		"[%s]: failed to malloc a globus_io_handle_t successfully",
 		myname);
-	    globus_i_gass_copy_set_error(handle, err);
-	    return globus_error_put(handle->err);
+	    return globus_error_put(err);
 	}
 
         result = globus_io_file_open(
@@ -2696,7 +2694,8 @@ globus_l_gass_copy_write_from_queue(
     globus_i_gass_copy_buffer_t *  buffer_entry;
     globus_result_t result = GLOBUS_SUCCESS;
     globus_bool_t do_the_write = GLOBUS_FALSE;
-  
+    globus_object_t * err = GLOBUS_NULL;
+
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     fprintf(stderr, "globus_l_gass_copy_write_from_queue(): called\n");
 #endif
@@ -2785,20 +2784,19 @@ globus_l_gass_copy_write_from_queue(
 	    fprintf(stderr,
                 "write_from_queue(): about to call user callback\n");
 #endif
+	    err = handle->err;
+	    handle->err = GLOBUS_NULL;
 	    if(handle->user_callback != GLOBUS_NULL)
 		handle->user_callback(
 		    handle->callback_arg,
 		    handle,
-		    handle->err);
+		    err);
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    fprintf(stderr, "write_from_queue(): done calling user callback\n");
 #endif
 	    /* if an error object was created, free it */
-	    if(handle)
-            {
-	        if(handle->err != GLOBUS_NULL)
-                    globus_libc_free(handle->err);
-            }
+	    if(err != GLOBUS_NULL)
+		globus_object_free(err);
 	} /*  if(state->dest.n_pending == 0 && state->source.n_pending == 0 )*/
     } /* if both source and dest are GLOBUS_I_GASS_COPY_TARGET_DONE */
 } /* globus_l_gass_copy_write_from_queue() */
@@ -3614,8 +3612,8 @@ globus_gass_copy_register_url_to_url(
 	    myname,
 	    src_msg,
 	    dest_msg);
-	globus_i_gass_copy_set_error(handle, err);
-	return globus_error_put(handle->err);
+
+	return globus_error_put(err);
     }
     
     /* Initialize the state for this transfer */
@@ -3802,8 +3800,8 @@ globus_gass_copy_register_url_to_handle(
 	    "[%s]: %s,  GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED",
 	    myname,
 	    source_url);
-	globus_i_gass_copy_set_error(handle, err);
-	return globus_error_put(handle->err);
+
+	return globus_error_put(err);
     }
 
     /* Initialize the state for this transfer */
@@ -3946,8 +3944,8 @@ globus_gass_copy_register_handle_to_url(
 	    "[%s]: %s,  GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED",
 	    myname,
 	    dest_url);
-	globus_i_gass_copy_set_error(handle, err);
-	return globus_error_put(handle->err);
+
+	return globus_error_put(err);
     }
 
     /* Initialize the state for this transfer */
@@ -4454,6 +4452,7 @@ globus_l_gass_copy_generic_cancel(
 {
     globus_gass_copy_handle_t * handle = cancel_info->handle;
     globus_bool_t  all_done = GLOBUS_FALSE;
+    globus_object_t * err = GLOBUS_NULL;
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	fprintf(stderr, "starting _gass_copy_generic_cancel()\n");
@@ -4505,22 +4504,24 @@ globus_l_gass_copy_generic_cancel(
 		handle->err);
         }
 
+	err = handle->err;
+	handle->err = GLOBUS_NULL;
+
 	if(handle->user_callback != GLOBUS_NULL)
         {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "        ...calling user callback.\n");
+	    fprintf(stderr, "        ...calling user callback.\n");
 #endif
 	    handle->user_callback(
 		handle->callback_arg,
 		handle,
-		handle->err);
+		err);
         }
 	/* if an error object was created, free it */
 	
-        if (handle)
+        if (err)
         {
-	    if(handle->err != GLOBUS_NULL)
-	        globus_libc_free(handle->err);
+	    globus_object_free(err);
         }
 	    
     } /* if (all_done) */
