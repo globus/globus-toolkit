@@ -3320,6 +3320,8 @@ globus_i_ftp_control_auth_info_init(
 	    dest->account = GLOBUS_NULL;
 	}
 	dest->delegated_credential_handle = GSS_C_NO_CREDENTIAL;
+
+        dest->encrypt = src->encrypt;
     }
 
     dest->prev_cmd=GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN;    
@@ -3327,7 +3329,6 @@ globus_i_ftp_control_auth_info_init(
     dest->req_flags = 0;
     dest->target_name = GSS_C_NO_NAME;
     dest->authenticated = GLOBUS_FALSE;
-    dest->encrypt = src->encrypt;
     
     return GLOBUS_SUCCESS;
 }
