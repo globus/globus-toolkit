@@ -3,9 +3,6 @@
 
 #include "globus_i_gridftp_server.h"
 
-extern globus_i_gfs_data_attr_t         globus_i_gfs_data_attr_defaults;
-
-
 typedef globus_gfs_finished_info_t      globus_gfs_data_reply_t;
 typedef globus_gfs_event_info_t         globus_gfs_data_event_reply_t;
 

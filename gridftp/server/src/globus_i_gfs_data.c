@@ -15,6 +15,14 @@ typedef enum
     GLOBUS_L_GFS_DATA_COMPLETE,
 } globus_l_gfs_data_state_t;
 
+typedef enum
+{
+    GLOBUS_L_GFS_DATA_HANDLE_OPENING = 1,
+    GLOBUS_L_GFS_DATA_HANDLE_OPEN,
+    GLOBUS_L_GFS_DATA_HANDLE_CLOSING,
+    GLOBUS_L_GFS_DATA_HANDLE_CLOSED
+} globus_l_gfs_data_handle_state_t;
+
 typedef struct
 {
     globus_gfs_operation_t   op;
@@ -33,13 +41,21 @@ typedef struct
     void *                              session_arg;
     void *                              data_handle;
 } globus_l_gfs_data_session_t;
-    
+
+typedef struct
+{
+    globus_mutex_t                      lock;
+    globus_l_gfs_data_handle_state_t    state;
+    globus_gfs_data_info_t              info;
+    globus_ftp_control_handle_t         data_channel;
+} globus_l_gfs_data_handle_t;  
+
 typedef struct globus_l_gfs_data_operation_s
 {
     globus_i_gfs_server_instance_t *    instance;
     globus_l_gfs_data_state_t           state;
     globus_mutex_t                      mutex;
-    globus_i_gfs_data_handle_t *        data_handle;
+    globus_l_gfs_data_handle_t *        data_handle;
     
     int                                 id;
     globus_gfs_ipc_handle_t             ipc_handle;
@@ -100,9 +116,9 @@ typedef struct
 {
     globus_gfs_ipc_handle_t             ipc_handle;
     int                                 id;
-    globus_i_gfs_data_handle_t *        handle;
+    globus_l_gfs_data_handle_t *        handle;
     globus_bool_t                       bi_directional;
-    globus_i_gfs_data_callback_t       callback;
+    globus_i_gfs_data_callback_t        callback;
     void *                              user_arg;
 } globus_l_gfs_data_active_bounce_t;
 
@@ -110,7 +126,7 @@ typedef struct
 {
     globus_gfs_ipc_handle_t             ipc_handle;
     int                                 id;
-    globus_i_gfs_data_handle_t *        handle;
+    globus_l_gfs_data_handle_t *        handle;
     globus_bool_t                       bi_directional;
     char *                              contact_string;
     globus_i_gfs_data_callback_t        callback;
@@ -124,17 +140,6 @@ typedef struct
     int                                 stat_count;
     globus_gfs_stat_t *                 stat_array;
 } globus_l_gfs_data_stat_bounce_t;
-
-globus_i_gfs_data_attr_t                globus_i_gfs_data_attr_defaults = 
-{
-    GLOBUS_FALSE,                       /* ipv6 */
-    1,                                  /* nstreams */
-    'S',                                /* mode */
-    'A',                                /* type */
-    0,                                  /* tcp_bufsize (sysdefault) */
-    256 * 1024                          /* blocksize */
-};
-
 
 void
 globus_i_gfs_monitor_init(
@@ -382,41 +387,23 @@ error_op:
 static
 globus_result_t
 globus_l_gfs_data_handle_init(
-    globus_i_gfs_data_handle_t **       u_handle,
-    globus_gfs_data_info_t *           data_info)
+    globus_l_gfs_data_handle_t **       u_handle,
+    globus_gfs_data_info_t *            data_info)
 {
-    globus_i_gfs_data_handle_t *        handle;
+    globus_l_gfs_data_handle_t *        handle;
     globus_result_t                     result;
-    globus_i_gfs_data_attr_t            attr;
+    globus_ftp_control_dcau_t           dcau;
     GlobusGFSName(globus_l_gfs_data_handle_init);
     
-    handle = (globus_i_gfs_data_handle_t *) 
-        globus_malloc(sizeof(globus_i_gfs_data_handle_t));
+    handle = (globus_l_gfs_data_handle_t *) 
+        globus_malloc(sizeof(globus_l_gfs_data_handle_t));
     if(!handle)
     {
         result = GlobusGFSErrorMemory("handle");
         goto error_alloc;
     }
     
-    if(!data_info)
-    {
-        attr = globus_i_gfs_data_attr_defaults;
-    }
-    else
-    {
-        attr.delegated_cred = NULL;
-        attr.ipv6 = data_info->ipv6;       
-        attr.nstreams = data_info->nstreams;   
-        attr.mode = data_info->mode;       
-        attr.type = data_info->type;       
-        attr.tcp_bufsize = data_info->tcp_bufsize;
-        attr.blocksize = data_info->blocksize;  
-        attr.prot = data_info->prot;       
-        attr.dcau.subject.subject = data_info->subject;
-        attr.dcau.mode = data_info->dcau;
-    }
-
-    memcpy(&handle->attr, &attr, sizeof(globus_i_gfs_data_attr_t));
+    memcpy(&handle->info, data_info, sizeof(globus_gfs_data_info_t));
     
     result = globus_ftp_control_handle_init(&handle->data_channel);
     if(result != GLOBUS_SUCCESS)
@@ -427,7 +414,7 @@ globus_l_gfs_data_handle_init(
     }
     
     result = globus_ftp_control_local_mode(
-        &handle->data_channel, handle->attr.mode);
+        &handle->data_channel, handle->info.mode);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -436,7 +423,7 @@ globus_l_gfs_data_handle_init(
     }
     
     result = globus_ftp_control_local_type(
-        &handle->data_channel, handle->attr.type, 0);
+        &handle->data_channel, handle->info.type, 0);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -444,12 +431,12 @@ globus_l_gfs_data_handle_init(
         goto error_control;
     }
     
-    if(handle->attr.tcp_bufsize > 0)
+    if(handle->info.tcp_bufsize > 0)
     {
         globus_ftp_control_tcpbuffer_t  tcpbuffer;
         
         tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
-        tcpbuffer.fixed.size = handle->attr.tcp_bufsize;
+        tcpbuffer.fixed.size = handle->info.tcp_bufsize;
         
         result = globus_ftp_control_local_tcp_buffer(
             &handle->data_channel, &tcpbuffer);
@@ -461,18 +448,18 @@ globus_l_gfs_data_handle_init(
         }
     }
     
-    if(handle->attr.mode == 'S')
+    if(handle->info.mode == 'S')
     {
-        handle->attr.nstreams = 1;
+        handle->info.nstreams = 1;
     }
     else
     {
         globus_ftp_control_parallelism_t  parallelism;
         
-        globus_assert(handle->attr.mode == 'E');
+        globus_assert(handle->info.mode == 'E');
         
         parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
-        parallelism.fixed.size = handle->attr.nstreams;
+        parallelism.fixed.size = handle->info.nstreams;
         
         result = globus_ftp_control_local_parallelism(
             &handle->data_channel, &parallelism);
@@ -492,19 +479,21 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
     }
-
+    dcau.mode = handle->info.dcau;
+    dcau.subject.mode = handle->info.dcau;
+    dcau.subject.subject = handle->info.subject;
     result = globus_ftp_control_local_dcau(
-        &handle->data_channel, &handle->attr.dcau, handle->attr.delegated_cred);
+        &handle->data_channel, &dcau, handle->info.del_cred);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
             "globus_ftp_control_local_dcau", result);
         goto error_control;
     }
-    if(handle->attr.dcau.mode != GLOBUS_FTP_CONTROL_DCAU_NONE)
+    if(handle->info.dcau != 'N')
     {
         result = globus_ftp_control_local_prot(
-            &handle->data_channel, handle->attr.prot);
+            &handle->data_channel, handle->info.prot);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(
@@ -513,6 +502,7 @@ globus_l_gfs_data_handle_init(
         }
     }
     
+    handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
     globus_mutex_init(&handle->lock, GLOBUS_NULL);
     
     *u_handle = handle;
@@ -535,13 +525,35 @@ globus_l_gfs_data_close_cb(
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
-    globus_i_gfs_data_handle_t *        handle;
+    globus_l_gfs_data_handle_t *        handle;
     
-    handle = (globus_i_gfs_data_handle_t *) callback_arg;
+    handle = (globus_l_gfs_data_handle_t *) callback_arg;
+
+    globus_mutex_lock(&handle->lock);           
+    {
+        handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+    }
+    globus_mutex_unlock(&handle->lock);
+
+    return;
+}
+
+static
+void
+globus_l_gfs_data_destroy_cb(
+    void *                              callback_arg,
+    globus_ftp_control_handle_t *       ftp_handle,
+    globus_object_t *                   error)
+{
+    globus_l_gfs_data_handle_t *        handle;
+    
+    handle = (globus_l_gfs_data_handle_t *) callback_arg;
     
     globus_mutex_destroy(&handle->lock);
     globus_ftp_control_handle_destroy(&handle->data_channel);
     globus_free(handle);
+
+    return;    
 }
 
 void
@@ -551,7 +563,7 @@ globus_i_gfs_data_destroy_handle(
     int                                 data_connection_id)
 {
     globus_result_t                     result;
-    globus_i_gfs_data_handle_t *        handle;
+    globus_l_gfs_data_handle_t *        handle;
     globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_handle_destroy);
 
@@ -566,24 +578,74 @@ globus_i_gfs_data_destroy_handle(
     }
     else
     {
-        handle = (globus_i_gfs_data_handle_t *) data_connection_id;
+        handle = (globus_l_gfs_data_handle_t *) data_connection_id;
         if(handle == GLOBUS_NULL)
         {
             goto error;
         }
-        result = globus_ftp_control_data_force_close(
-            &handle->data_channel, globus_l_gfs_data_close_cb, handle);
-        if(result != GLOBUS_SUCCESS)
+        /* should be locked checking state here, but dunno how */
+        if(handle->state == GLOBUS_L_GFS_DATA_HANDLE_OPEN)
+        {
+            globus_mutex_lock(&handle->lock);           
+            {
+                handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
+            }
+            globus_mutex_unlock(&handle->lock);
+
+            result = globus_ftp_control_data_force_close(
+                &handle->data_channel, globus_l_gfs_data_destroy_cb, handle);
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_mutex_destroy(&handle->lock);
+                globus_ftp_control_handle_destroy(&handle->data_channel);
+                globus_free(handle);
+            }
+        }
+        else if(handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSED)
         {
             globus_mutex_destroy(&handle->lock);
             globus_ftp_control_handle_destroy(&handle->data_channel);
             globus_free(handle);
-        }
+        }            
     }
 
 error:
     return;    
 }
+
+static
+void
+globus_l_gfs_data_close_handle(
+    globus_l_gfs_data_handle_t *        handle)
+{
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_data_close_handle);
+
+    if(handle == GLOBUS_NULL)
+    {
+        goto error;
+    }
+    
+    /* need to lock here, can i lock around the force_close? */
+    globus_mutex_lock(&handle->lock);           
+    if(handle->state == GLOBUS_L_GFS_DATA_HANDLE_OPEN)
+    {
+        handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
+        result = globus_ftp_control_data_force_close(
+            &handle->data_channel, globus_l_gfs_data_close_cb, handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+        }
+    }
+    globus_mutex_unlock(&handle->lock);
+
+    return;
+    
+error:
+    return;    
+}
+
 
 static
 void
@@ -635,7 +697,7 @@ globus_i_gfs_data_request_passive(
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg)
 {
-    globus_i_gfs_data_handle_t *        handle;
+    globus_l_gfs_data_handle_t *        handle;
     globus_result_t                     result;
     globus_ftp_control_host_port_t      address;
     globus_sockaddr_t                   addr;
@@ -663,7 +725,8 @@ globus_i_gfs_data_request_passive(
         op->pathname = data_info->pathname;
         op->callback = cb;
         op->user_arg = user_arg;
-        globus_l_gfs_dsi->passive_func(op, data_info, session_handle->session_arg);
+        globus_l_gfs_dsi->passive_func(
+            op, data_info, session_handle->session_arg);
     }
     else
     {
@@ -787,7 +850,7 @@ globus_i_gfs_data_request_active(
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg)
 {
-    globus_i_gfs_data_handle_t *        handle;
+    globus_l_gfs_data_handle_t *        handle;
     globus_result_t                     result;
     globus_ftp_control_host_port_t *    addresses;
     int                                 i;
@@ -931,12 +994,12 @@ globus_i_gfs_data_request_recv(
 {
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
-    globus_i_gfs_data_handle_t *        data_handle;
+    globus_l_gfs_data_handle_t *        data_handle;
     globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_recv_request);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
-    data_handle = (globus_i_gfs_data_handle_t *)
+    data_handle = (globus_l_gfs_data_handle_t *)
         recv_info->data_handle_id;
 
     if(data_handle == NULL)
@@ -989,12 +1052,12 @@ globus_i_gfs_data_request_send(
 {
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
-    globus_i_gfs_data_handle_t *        data_handle;
+    globus_l_gfs_data_handle_t *        data_handle;
     globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_send_request);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
-    data_handle = (globus_i_gfs_data_handle_t *)
+    data_handle = (globus_l_gfs_data_handle_t *)
         send_info->data_handle_id;
 
     if(data_handle == NULL)
@@ -1122,13 +1185,13 @@ globus_i_gfs_data_request_list(
     globus_l_gfs_data_operation_t *     stat_op;
     globus_l_gfs_data_operation_t *     data_op;
     globus_result_t                     result;
-    globus_i_gfs_data_handle_t *        data_handle;
+    globus_l_gfs_data_handle_t *        data_handle;
     globus_gfs_stat_info_t *            stat_info;
     globus_l_gfs_data_session_t *       session_handle;    
     GlobusGFSName(globus_i_gfs_data_list_request);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
-    data_handle = (globus_i_gfs_data_handle_t *)
+    data_handle = (globus_l_gfs_data_handle_t *)
         list_info->data_handle_id;
 
     if(data_handle == NULL)
@@ -1218,6 +1281,12 @@ globus_l_gfs_data_begin_cb(
         goto err;
     }
 
+    globus_mutex_lock(&op->data_handle->lock);
+    {
+        op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_OPEN;
+    }
+    globus_mutex_unlock(&op->data_handle->lock);
+
     event_reply = (globus_gfs_ipc_event_reply_t *) 
         globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
     if(event_reply == NULL)
@@ -1242,7 +1311,10 @@ globus_l_gfs_data_begin_cb(
   err:
 
     /* XXX MIKEY XXX : to deal with errors like this i am just sending
-        an abort message to the DSI.  are multiple abort messages OK? */
+        an abort message to the DSI.  are multiple abort messages OK?
+       XXX buzzy ZZZ still send abort to dsi if they want it, but what if
+       they don't? we can abort locally, but all that does is close the
+       handle, and since we are errored here, the handle is already closed */
     return;    
 }
 
@@ -1266,21 +1338,23 @@ globus_l_gfs_data_end_transfer_kickout(
     event_reply->id = op->id;
     event_reply->data_handle_id = (int) op->data_handle;
 
-    /* XXX mode s only */
-    event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;
-    if(op->event_callback != NULL)
+    if(op->data_handle->info.mode != 'E')
     {
-        op->event_callback(
-            event_reply,
-            op->user_arg);
+        event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;
+        if(op->event_callback != NULL)
+        {
+            op->event_callback(
+                event_reply,
+                op->user_arg);
+        }
+        else
+        {
+            globus_gfs_ipc_reply_event(
+                op->ipc_handle,
+                event_reply);
+        }
     }
-    else
-    {
-        globus_gfs_ipc_reply_event(
-            op->ipc_handle,
-            event_reply);
-    }
-
+    
     reply->type = GLOBUS_GFS_OP_TRANSFER;
     reply->id = op->id;
     reply->result = op->cached_res;
@@ -1409,13 +1483,13 @@ globus_l_gfs_data_write_eof_cb(
     }
     else
     {
-        if(op->data_handle->attr.mode == 'E')
+        if(op->data_handle->info.mode == 'E')
         {        
             for(i = 0; i < op->stripe_count; i++)
             {
                 op->eof_count[i] = 
                     (op->node_ndx == 0) ?
-                    (op->node_count - 1) * op->data_handle->attr.nstreams :
+                    (op->node_count - 1) * op->data_handle->info.nstreams :
                     0;
             }
 
@@ -1648,9 +1722,30 @@ globus_i_gfs_data_request_transfer_event(
                 }
                 break;
 
-            /* if abrt or anything else pass it through if they
-                care and it isn't too late */
             case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
+                if(op->state != GLOBUS_L_GFS_DATA_COMPLETE)
+                {
+                    /* if the DSI is handling these events */
+                    if(globus_l_gfs_dsi->trev_func != NULL &&
+                        event_type & op->event_mask)
+                    {
+                        pass = GLOBUS_TRUE;
+                    }
+                    /* if DSI not handling, take care of for them */
+                    else
+                    {
+                        pass = GLOBUS_FALSE;
+                        /* XXX call this outside of the lock? */
+                        globus_l_gfs_data_close_handle(op->data_handle);
+                        globus_i_gfs_log_message(
+                            GLOBUS_I_GFS_LOG_INFO, 
+                            "Forced data connection closed.\n");                           
+                    }
+                }
+                break;
+                
+            /* if anything else pass it through if they
+                care and it isn't too late */
             default:
                 if(op->state == GLOBUS_L_GFS_DATA_COMPLETE ||
                     globus_l_gfs_dsi->trev_func == NULL ||
@@ -2014,6 +2109,11 @@ globus_gridftp_server_begin_transfer(
     op->ref++;
     if(op->state == GLOBUS_L_GFS_DATA_SENDING)
     {
+        globus_mutex_lock(&op->data_handle->lock);
+        {
+            op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_OPENING;
+        }
+        globus_mutex_unlock(&op->data_handle->lock);
         result = globus_ftp_control_data_connect_write(
             &op->data_handle->data_channel,
             globus_l_gfs_data_begin_cb,
@@ -2025,6 +2125,11 @@ globus_gridftp_server_begin_transfer(
     }
     else if(op->state == GLOBUS_L_GFS_DATA_RECVING)
     {
+        globus_mutex_lock(&op->data_handle->lock);
+        {
+            op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_OPENING;
+        }
+        globus_mutex_unlock(&op->data_handle->lock);
         result = globus_ftp_control_data_connect_read(
             &op->data_handle->data_channel,
             globus_l_gfs_data_begin_cb,
@@ -2088,6 +2193,7 @@ globus_gridftp_server_finished_transfer(
         if(result != GLOBUS_SUCCESS)
         {
             op->cached_res = result;
+            op->state = GLOBUS_L_GFS_DATA_COMPLETE;
             globus_callback_register_oneshot(
                 NULL,
                 NULL,
@@ -2198,7 +2304,7 @@ globus_gridftp_server_get_optimal_concurrency(
 {
     GlobusGFSName(globus_gridftp_server_get_optimal_concurrency);
     
-    *count = op->data_handle->attr.nstreams * op->stripe_count * 2;
+    *count = op->data_handle->info.nstreams * op->stripe_count * 2;
 }
 
 void
@@ -2208,7 +2314,7 @@ globus_gridftp_server_get_block_size(
 {
     GlobusGFSName(globus_gridftp_server_get_block_size);
     
-    *block_size = op->data_handle->attr.blocksize;
+    *block_size = op->data_handle->info.blocksize;
 }
 
 
@@ -2242,7 +2348,7 @@ globus_gridftp_server_get_write_range(
             &tmp_off,
             &tmp_len);
     }
-    if(op->data_handle->attr.mode == 'S')
+    if(op->data_handle->info.mode == 'S')
     {
         tmp_write = tmp_off;
     }
@@ -2291,7 +2397,7 @@ globus_gridftp_server_get_read_range(
     
     globus_mutex_lock(&op->mutex);
     {
-        stripe_block_size = op->data_handle->attr.blocksize * 2;
+        stripe_block_size = op->data_handle->info.blocksize * 2;
         start_offset = op->stripe_chunk * stripe_block_size;
         end_offset = start_offset + stripe_block_size;
             
@@ -2459,7 +2565,7 @@ globus_gridftp_server_register_write(
     bounce_info->callback.write = callback;
     bounce_info->user_arg = user_arg;
 
-    if(op->data_handle->attr.mode == 'E')
+    if(op->data_handle->info.mode == 'E')
     {
         /* XXX not sure what this is all about */
         globus_mutex_lock(&op->mutex);

@@ -702,7 +702,6 @@ globus_l_gfs_data_event_cb(
 {
     globus_result_t                     result;
     globus_gridftp_server_control_op_t  op;
-    char                                mode;
     globus_i_gfs_server_instance_t *    instance;
     GlobusGFSName(globus_l_gfs_data_event_cb);
 
@@ -729,12 +728,8 @@ globus_l_gfs_data_event_cb(
         break;
       
       case GLOBUS_GFS_EVENT_DISCONNECTED:
-        globus_gridftp_server_control_get_mode(op, &mode);
-        if(mode != 'E')
-        {
-            globus_gridftp_server_control_disconnected(
-                instance->server_handle, (void *) reply->data_handle_id);
-        }
+         globus_gridftp_server_control_disconnected(
+            instance->server_handle, (void *) reply->data_handle_id);
         break;
 
       case GLOBUS_GFS_EVENT_BYTES_RECVD:
@@ -756,7 +751,7 @@ globus_l_gfs_data_event_cb(
 static
 void
 globus_l_gfs_data_transfer_cb(
-    globus_gfs_data_reply_t *            reply,
+    globus_gfs_data_reply_t *           reply,
     void *                              user_arg)
 {
     globus_gridftp_server_control_op_t  op;
@@ -764,6 +759,9 @@ globus_l_gfs_data_transfer_cb(
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     op = instance->op;    
     
+    /* no more aborts once this returns */
+    globus_gridftp_server_abort_disable(op);
+
     if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_transfer(
@@ -778,15 +776,12 @@ globus_l_gfs_data_transfer_cb(
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
             GLOBUS_NULL);
     }
-    /* no more aborts once this returns */
-    globus_gridftp_server_abort_disable(op);
-/*
+
     globus_i_gfs_data_request_transfer_event(
         NULL, 
         instance->session_id,
         instance->transfer_id,
         GLOBUS_GFS_EVENT_TRANSFER_COMPLETE);
-*/
 }
 
 static

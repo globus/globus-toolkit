@@ -29,27 +29,6 @@ typedef struct
     globus_gridftp_server_control_t server_handle;
 } globus_i_gfs_server_instance_t;
 
-typedef struct
-{
-    globus_bool_t                       ipv6;
-    int                                 nstreams;
-    char                                mode;
-    char                                type;
-    int                                 tcp_bufsize;
-    globus_size_t                       blocksize;
-        
-    globus_ftp_control_protection_t     prot;
-    globus_ftp_control_dcau_t           dcau;
-    gss_cred_id_t                       delegated_cred;
-} globus_i_gfs_data_attr_t;
-
-typedef struct
-{
-    globus_mutex_t                      lock;
-    globus_i_gfs_data_attr_t            attr;
-    globus_ftp_control_handle_t         data_channel;
-} globus_i_gfs_data_handle_t;
-
 typedef struct globus_i_gfs_monitor_s
 {
     globus_bool_t                       done;

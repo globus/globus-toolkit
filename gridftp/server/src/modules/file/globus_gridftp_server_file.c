@@ -906,7 +906,7 @@ globus_l_gfs_file_open_write_cb(
     }
 
     globus_gridftp_server_begin_transfer(
-        monitor->op, GLOBUS_GFS_EVENT_TRANSFER_ABORT, monitor);
+        monitor->op, 0, monitor);
     
     globus_mutex_lock(&monitor->lock);
     {
@@ -1414,7 +1414,7 @@ globus_l_gfs_file_open_read_cb(
     }
     
     globus_gridftp_server_begin_transfer(
-        monitor->op, GLOBUS_GFS_EVENT_TRANSFER_ABORT, monitor);
+        monitor->op, 0, monitor);
     
     globus_mutex_lock(&monitor->lock);
     monitor->first_read = GLOBUS_TRUE;
