@@ -4,6 +4,7 @@
 #include "proto.h"
 #include "../support/ftp.h"
 #include <syslog.h>
+#include <sys/file.h>
 
 extern int                                      TCPwindowsize;
 extern globus_ftp_control_layout_t		g_layout;
@@ -45,6 +46,15 @@ static struct timeval                           g_perf_end_tv;
 static globus_ftp_control_host_port_t           g_perf_address;
 /* externally visible */
 char *                                          g_perf_log_file_name = NULL;
+char **                                         g_mountPts;
+
+void
+setup_volumetable();
+
+void
+get_volume(
+    const char *                                name,
+    char *                                      volume);
 
 void
 g_write_to_log_file(
@@ -417,6 +427,12 @@ g_timeout_wakeup(
 }
 
 void
+g_pre_fork()
+{
+
+}
+
+void
 g_start(
     int                               argc,
     char **                           argv)
@@ -443,6 +459,7 @@ G_ENTER();
                                  O_WRONLY | O_CREAT | O_APPEND,
                                  S_IRUSR | S_IRGRP | S_IROTH);
     }
+    setup_volumetable();
 
     rc = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
     assert(rc == GLOBUS_SUCCESS);
@@ -2022,6 +2039,91 @@ g_set_tcp_buffer(int size)
     }
 }
 
+void
+get_volume(
+    const char *                           name, 
+    char *                                 volume)
+{
+    int                                    ctr; 
+    int                                    max = 0;
+    char *                                 p;
+
+    ctr = 0;
+    while(g_mountPts[ctr] != NULL)
+    {
+        if((p = (char *)strstr(name, g_mountPts[ctr])) && 
+            (strlen(p) == strlen(name)))
+        {
+            if(strlen(g_mountPts[ctr]) > max)
+            {
+                max = strlen(g_mountPts[ctr]);
+                strcpy(volume, g_mountPts[ctr]);
+            }
+        }
+        ctr++;
+    }
+}
+
+void
+globus_tmp_libc_flock(int fd)
+{
+    struct flock fl;
+
+    fl.l_type   = F_WRLCK;  /* F_RDLCK, F_WRLCK, F_UNLCK    */
+    fl.l_whence = SEEK_SET; /* SEEK_SET, SEEK_CUR, SEEK_END */
+    fl.l_start  = 0;        /* Offset from l_whence         */
+    fl.l_len    = 0;        /* length, 0 = to EOF           */
+    fl.l_pid    = getpid(); /* our PID                      */
+
+    fcntl(fd, F_SETLKW, &fl);  /* F_GETLK, F_SETLK, F_SETLKW */
+}
+
+void
+globus_tmp_libc_funlock(int fd)
+{
+    struct flock fl;
+
+    fl.l_type   = F_UNLCK;  /* F_RDLCK, F_WRLCK, F_UNLCK    */
+    fl.l_whence = SEEK_SET; /* SEEK_SET, SEEK_CUR, SEEK_END */
+    fl.l_start  = 0;        /* Offset from l_whence         */
+    fl.l_len    = 0;        /* length, 0 = to EOF           */
+    fl.l_pid    = getpid(); /* our PID                      */
+
+    fcntl(fd, F_SETLKW, &fl);  /* F_GETLK, F_SETLK, F_SETLKW */
+}
+
+
+void
+setup_volumetable()
+{
+    FILE *fp;
+    char buf[80];
+    int  ctr; 
+    int max_mpt_ptrs = 32;
+
+    /* if fd is -1 we are not logging */
+    if(g_perf_log_file_fd == -1)
+    {
+        return;
+    }
+
+    ctr = 0;
+    g_mountPts = malloc(sizeof(char *) * 32);
+    fp = popen("mount | awk '{print $3}'", "r");
+    while(fgets(buf, 80, fp)) 
+    {
+        buf[strlen(buf) - 1] = '\0';
+        if(ctr >= max_mpt_ptrs)
+        {
+            max_mpt_ptrs *= 2;
+            g_mountPts = realloc(g_mountPts, max_mpt_ptrs);
+        }
+        g_mountPts[ctr] = strdup(buf);
+        ctr++;
+    }
+    g_mountPts[ctr] = NULL;
+    pclose(fp);
+}
 
 void
 g_write_to_log_file(
@@ -2048,6 +2150,7 @@ g_write_to_log_file(
     int                                     ctr;
     int                                     tmp_i;
     int                                     ndx;
+    char                                    volume[80];
 
     /* if fd is -1 we are not logging */
     if(g_perf_log_file_fd == -1)
@@ -2068,6 +2171,8 @@ g_write_to_log_file(
     {
         return;
     }
+
+    get_volume(fname, volume);
 
     res = globus_ftp_control_get_stripe_count(
               handle,
@@ -2103,6 +2208,7 @@ g_write_to_log_file(
         "BUFFER=%ld "
         "BLOCK=%ld "
         "NBYTES=%ld "
+        "VOLUME=%s "
         "STREAMS=%d "
         "STRIPES=%d "
         "DEST=1[%d.%d.%d.%d] " 
@@ -2131,6 +2237,7 @@ g_write_to_log_file(
         buffer_size,
         blksize,
         nbytes,
+        volume,
         stream_count, 
         stripe_count,
         dest_host_port->host[0], dest_host_port->host[1], 
@@ -2142,9 +2249,9 @@ g_write_to_log_file(
      *  lock and write the string
      */
   write:
-    flock(g_perf_log_file_fd, LOCK_EX);
+    globus_tmp_libc_flock(g_perf_log_file_fd);
     write(g_perf_log_file_fd, out_buf, strlen(out_buf));
-    flock(g_perf_log_file_fd, LOCK_UN);
+    globus_tmp_libc_funlock(g_perf_log_file_fd);
 }
 
 #endif /* USE_GLOBUS_DATA_CODE */
