@@ -152,83 +152,69 @@ globus_gram_http_frame_response(int		   code,
 				globus_byte_t **   framedmsg,
 				globus_size_t *    framedsize);
 
-
+/************************ "HTTP" pack/unpack functions *********************/
 
 /* These functions pack and unpack GRAM requests into HTTP format
-   They come in two forms right now, depending upon how they handle
-   the memory for the HTTP request itself: the _fb forms accept a
-   "fixed size buffer" as an IN/OUT argument, the _malloc forms
-   allocate enough memory for their needs, memory which must be freed.  
-   The _fb _pack_ forms would theoretically have the size of the
-   allocated buffer passed to them as in the globus_size_t argument;
-   they get it back chopped down to the actual amount of the buffer
-   that was used.    In practice, though, the buffers are always of
-   size GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE
+   There are now no fixed-buffer forms left; the  _alloc forms
+   allocate enough memory for their needs return values, memory which
+   must be freed by the caller.
 
-   If the _fb_ forms wind up with the address of a pointer to the
-   buffer passed to them, don't worry about it; that will be returned
-   unscathed, and is being done for easier transition to the _malloc
-   forms.  
-
-   Also, the returned buffers, in practice, are null-terminated, so we
+   The returned buffers are always null-terminated, so we
    don't even need to worry about the buffer_size returns. 
 
-   TODO: We will soon standardize on the _malloc forms, but the _fb
-   forms work with other existing code.  Obviously, as an interim
-   step, the _fb versions should be written as wrappers around the
-   malloc forms.  Obviously the malloc forms are more desirable, since
-   we don't want to exceed buffer sizes.
+   --Steve A  7/20/99, 7/22/99
+*/
 
-
-   --Steve A  7/20/99
-. */
-
+extern
 int
-globus_i_gram_pack_http_job_request_fb(
-    globus_byte_t *query,	/* OUT */
-    globus_size_t *query_size, /* OUT */
-    int job_state_mask /* integer (IN) */,
-    const char *callback_url /* user's state listener URL (IN) */,
-    const char *description /* user's RSL (IN) */);
+globus_i_gram_pack_http_job_request(
+    int job_state_mask		/* integer (IN) */,
+    const char *callback_url	/* user's state listener URL (IN) */,
+    const char *description	/* user's RSL (IN) */,
+    globus_byte_t **query_startp /* OUT */,
+    globus_size_t *query_sizep	/* OUT; optional (NULL OK) */);
 
+extern
 int
-globus_i_gram_unpack_http_job_request_fb(
+globus_i_gram_unpack_http_job_request(
+    globus_byte_t *query,	/* IN */
+    globus_size_t query_size,	/* IN */
+    int *job_state_maskp,	/* OUT */
+    globus_byte_t **client_contact_strp,	/* OUT */
+    globus_size_t *client_contact_strsizep, /* OUT, optional */
+    globus_byte_t **rslp,	/* OUT */
+    globus_size_t *rslsizep); /* OUT, optional */
+
+
+extern
+int
+globus_i_gram_pack_http_job_request_result(
+    int gram_status_code	/* IN */,
+    const char *graml_job_contact /* IN */,
+    globus_byte_t **reply_startp /* OUT */,
+    globus_size_t *reply_sizep	/* OUT, optionally NULL */);
+
+
+
+
+extern
+int
+globus_i_gram_unpack_http_job_request_result(
     globus_byte_t *query,
-    globus_size_t *query_size,
-    int *job_state_mask,
-    char *client_contact_str,
-    char *rsl_spec,
-    globus_size_t *rsl_spec_size);
+    globus_size_t query_size,
+    int *result_statusp /* GLOBUS_SUCCESS or a failure */,
+    globus_byte_t **result_contactp /* NULL if not SUCCESS */,
+    globus_size_t *result_contactsizep);
+
 
 int
-globus_i_gram_pack_http_job_request_result_fb(
-    globus_byte_t *reply	/* OUT */,
-    globus_size_t *reply_size	/* OUT */,
-    int result_code		/* IN */,
-    const char *graml_job_contact /* IN */);
-
-
-/* pass in result_contactp as a pointer to a null character pointer.
-   This will be malloced. */
-int
-globus_i_gram_unpack_http_job_request_result_fb(
-    globus_byte_t *query,
-    globus_size_t *query_size,
-    int *result_status, /* GLOBUS_SUCCESS or a failure */
-    char **result_contactp /* NULL if not SUCCESS */);
-
-int
-globus_i_gram_http_pack_status_message_fb(
-    globus_byte_t *message	/* OUT */,
-    globus_size_t *message_size /* OUT */,
+globus_i_gram_http_pack_status_message(
     const char *graml_job_contact /* IN */,
     int status			/* IN */,
-    int failure_code /* IN */);
+    int failure_code		/* IN */,
+    globus_byte_t *message	/* OUT */,
+    globus_size_t *message_sizep /* OUT */);
 
-#define globus_gram_http_version(x) (\
-	/* TODO --steve A */ puts("Must replace this with" \
-	" a test against the return code from *_unpack_*"), \
-	GLOBUS_GRAM_PROTOCOL_VERSION)
 
 EXTERN_C_END
 

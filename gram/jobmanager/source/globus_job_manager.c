@@ -308,14 +308,14 @@ main(int argc,
     int                    print_debug_flag = 0;
     int                    tmp_status;
     int                    publish_jobs_flag = 0;
-    char                   rsl_spec[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
+    char                   *rsl_spec = GLOBUS_NULL; /* Must free! */
     char                   read_rsl_file[256];
     char                   write_rsl_file[256];
     char                   tmp_buffer[256];
     char                   job_status_file_path[512];
     char *                 job_status_dir = GLOBUS_NULL;
     char *                 home_dir = NULL;
-    char *                 client_contact_str;
+    char *                 client_contact_str = GLOBUS_NULL;
     char *                 my_host;
     char *                 libexecdir;
     char *                 final_rsl_spec = GLOBUS_NULL;
@@ -325,7 +325,6 @@ main(int argc,
     struct stat            statbuf;
     globus_byte_t *        ptr;
     globus_byte_t                       buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
-    globus_size_t			request_size;
     globus_byte_t *                     reply;
     globus_rsl_t *                      rsl_tree;
     globus_gass_cache_entry_t *         cache_entries;
@@ -345,7 +344,9 @@ main(int argc,
     OM_uint32		                minor_status = 0;
     int					token_status = 0;
     gss_ctx_id_t	                context_handle = GSS_C_NO_CONTEXT;
+#if 0				/* Unused */
     char				tmp_version[64];
+#endif
 	
     char *				jrbuf;
     size_t				jrbuf_size;
@@ -976,51 +977,47 @@ main(int argc,
 
     ptr = buffer;
 
-    if ( globus_gram_http_version(buffer) 
-	 != GLOBUS_GRAM_PROTOCOL_VERSION ) {
-      grami_fprintf( request->jobmanager_log_fp,
-		     "JM: ERROR: globus gram protocol version mismatch!\n");
-      grami_fprintf( request->jobmanager_log_fp,
-		     "JM: gram client version      = %d\n", gram_version);
-      grami_fprintf( request->jobmanager_log_fp,
-		     "JM: gram protocol version = %d\n",
-		     GLOBUS_GRAM_PROTOCOL_VERSION);
-      fprintf(stderr, "ERROR: globus gram protocol version mismatch!\n");
-      fprintf(stderr, "gram client version      = %d\n", gram_version);
-      fprintf(stderr, "gram job manager version = %d\n",
-	      GLOBUS_GRAM_PROTOCOL_VERSION);
-      return(GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
+    /*  Anything left TODO here? --Steve A */
+    rc = globus_i_gram_unpack_http_job_request(
+			   buffer, strlen((char *) buffer),
+			   &job_state_mask,
+			   (globus_byte_t **) &client_contact_str,
+			   (globus_size_t *) NULL,
+			   (globus_byte_t **) &rsl_spec, 
+			   (globus_size_t *) NULL);
+    if (rc == GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH) {
+	grami_fprintf( request->jobmanager_log_fp,
+		       "JM: ERROR: globus gram protocol version mismatch!\n");
+	grami_fprintf( request->jobmanager_log_fp,
+		       "JM: gram client version      = %d\n", gram_version);
+	grami_fprintf( request->jobmanager_log_fp,
+		       "JM: gram protocol version = %d\n",
+		       GLOBUS_GRAM_PROTOCOL_VERSION);
+	fprintf(stderr, "ERROR: globus gram protocol version mismatch!\n");
+	fprintf(stderr, "gram client version      = %d\n", gram_version);
+	fprintf(stderr, "gram job manager version = %d\n",
+		GLOBUS_GRAM_PROTOCOL_VERSION);
+    } else if (rc) {
+	grami_fprintf( request->jobmanager_log_fp,
+		       "JM: ERROR: globus gram protocol failure!\n");
+	return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
 
-/*  TODO:
-    if ( globus_i_gram_unpack_http_job_request_fb(
-			   buffer,
-			   &request_size,
-			   &job_state_mask,
-			   &client_contact_str,
-			   &rsl_spec,
-			   &rsl_spec_size)
-	     != GLOBUS_SUCCESS ) {
-      grami_fprintf( request->jobmanager_log_fp,
-		     "JM: ERROR: globus gram protocol failure!\n");
-      return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-    }
-    */
 
     if (client_contact_str!=NULL)
     {
-      client_contact_node = (globus_l_gram_client_contact_t *)
-	globus_libc_malloc(sizeof(globus_l_gram_client_contact_t));
+	client_contact_node = (globus_l_gram_client_contact_t *)
+	    globus_libc_malloc(sizeof(globus_l_gram_client_contact_t));
 
-      client_contact_node->contact        = client_contact_str;
-      client_contact_node->job_state_mask = job_state_mask;
-      client_contact_node->failed_count   = 0;
-
-      globus_list_insert(&globus_l_gram_client_contacts,
-			 (void *) client_contact_node);
-
-      grami_fprintf( request->jobmanager_log_fp,
-		     "JM: client contact = %s\n", client_contact_str);
+	client_contact_node->contact        = client_contact_str;
+	client_contact_node->job_state_mask = job_state_mask;
+	client_contact_node->failed_count   = 0;
+	
+	globus_list_insert(&globus_l_gram_client_contacts,
+			   (void *) client_contact_node);
+	
+	grami_fprintf( request->jobmanager_log_fp,
+		       "JM: client contact = %s\n", client_contact_str);
     }
 
     grami_fprintf( request->jobmanager_log_fp,
@@ -1057,6 +1054,8 @@ main(int argc,
     /* call the RSL routine to parse the user request
      */
     rsl_tree = globus_rsl_parse(rsl_spec);
+    globus_free(rsl_spec);
+    rsl_spec = GLOBUS_NULL;
     if (!rsl_tree)
     {
         rc = GLOBUS_FAILURE;
@@ -3966,8 +3965,14 @@ globus_l_jm_http_query_callback( void *               arg,
 	break;
 
     case GLOBUS_GRAM_HTTP_QUERY_JOB_UNREGISTER:
+#if 0				/* TODO: What was this supposed to be?
+				   --steve A*/
 	if (2!=sscanf((char *)buf,"%d %s %d", &query, url))
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+#else
+	if (2!=sscanf((char *)buf,"%d %s %*d", &query, url))
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+#endif
 	
 	if (rc == GLOBUS_SUCCESS)
 	{

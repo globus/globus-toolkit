@@ -466,7 +466,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
 #if 0
     int                          rc;
     int                          version;
-    char                         query[GLOBUS_GRAM_HTTP_BUFSIZE];
+    globus_byte_t		 query = GLOBUS_NULL; /* MUST FREE */
     globus_size_t                querysize;
     globus_gram_http_monitor_t   monitor;
     globus_io_attr_t             attr;
@@ -487,18 +487,17 @@ globus_gram_client_job_request(char * gatekeeper_url,
     monitor.done = GLOBUS_FALSE;
 
     /* TODO: pass attr into this */
-    rc = globus_i_gram_pack_http_job_request_fb(
-		       &query,	/* OUT */
-		       &query_size, /* OUT */
-		       job_state_mask /* integer (IN) */,
-		       callback_url /* user's state listener URL (IN) */,
-		       description /* user's RSL (IN) */);
+    rc = globus_i_gram_pack_http_job_request(
+	job_state_mask /* integer (IN) */,
+	callback_url /* user's state listener URL (IN) */,
+	description /* user's RSL (IN) */,
+	&query,	/* OUT */
+	&querysize, /* OUT */);
 
     rc = globus_gram_http_post_and_get(
 	    gatekeeper_url,
 	    &attr,
-	    (globus_byte_t *) query,
-	    &querysize,
+	    query, &querysize,	/* passed for reuse by the callback. */
 	    &monitor);
 
     if (rc!=GLOBUS_SUCCESS)
@@ -514,33 +513,28 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     if (rc == GLOBUS_SUCCESS)
     {
-	char * result_contact;	/* This points to allocated memory
-				     that must be freed.. */
+	char * result_contact = GLOBUS_NULL; /* This points to allocated memory
+						that must be freed.. */
 	int    result_status;
 
-	/* TODO: XXX STEVE A: Return the proper error code from unpack
-	   rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-	*/
-	/* TODO:  nuke globus_gram_http_version (query), search for
-	   other occurrences of it.  */ 
-
-	  if ( rc = globus_i_gram_unpack_http_job_request_result_fb(
-			     &query, /* IN/OUT */
-			     &query_size,	/* IN/OUT */
-			     &result_status, /* GLOBUS_SUCCESS or a failure */
-			     &result_contact /* NULL if not SUCCESS */) ) {
-	    /* rc already set */
-	  }
-	  else {
-	      rc = result_status;
-	      if ( job_contact!=NULL ) {
-		  (*job_contact) = ((job_status==GLOBUS_SUCCESS) 
-				    ? globus_libc_strdup (result_contact)
-				    : NULL);
-	      }
-	  }
-	  if (result_contact)
-	      globus_free(result_contact)
+	if ((rc = globus_i_gram_unpack_http_job_request_result(
+	    query, /* IN */
+	    query_size,	/* IN */
+	    &result_status, /* GLOBUS_SUCCESS or a failure */
+	    &result_contact /* NULL if not SUCCESS */))
+	    == GLOBUS_SUCCESS) {
+	    rc = result_status;
+	    if ( job_contact ) {
+		(*job_contact) = ((job_status==GLOBUS_SUCCESS) 
+				  ? globus_libc_strdup (result_contact)
+				  : NULL);
+	    }
+	}
+	if (result_contact)
+	    globus_free(result_contact);
+	if (query)		/* not needed any more */
+	    globus_free(query);
+	query = GLOBUS_NULL;
     }
 
 globus_gram_client_job_request_done:
