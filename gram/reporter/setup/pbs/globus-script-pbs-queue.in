@@ -43,11 +43,13 @@
 globus_source ${libexecdir}/globus-sh-tools.sh
 
 # programs used in this script located by autoconf:
-qstat=@QSTAT@
+qstat=${GLOBUS_SH_QSTAT-qstat}
+pbsnodes=${GLOBUS_SH_PBSNODES-pbsnodes}
 uptime=${GLOBUS_SH_UPTIME-uptime}
 grep=${GLOBUS_SH_GREP-grep}                                 
 awk=${GLOBUS_SH_AWK-awk}
 wc=${GLOBUS_SH_WC-wc}
+cut=$GLOBUS_SH_CUT-cut}
 ########
 
 tmp_file="${local_tmpdir}/globus_tmp_file.$$"
@@ -113,17 +115,18 @@ GetNodeCount() {
     PBS_NODESIZE=1
 
 
-    eval `${qstat} -a | ${awk} '
+    eval `${pbsnodes} -a | ${awk} '
     BEGIN {
         total=0; used=0;
     }
-    /nodes used/ {
-        slash = index($2, "/");
-        used += int(substr($2,0,slash-1));
-        total += int(substr($2,slash+1));
+    /state = free/ {
+        free += 1;
+    }
+    /state = / {
+        total += 1;
     }
     END {
-        printf("TOTALNODES=%d ; FREENODES=%d ;", total, total-used);
+        printf("TOTALNODES=%d ; FREENODES=%d ;", total, free);
     }'`
 
 
@@ -231,7 +234,7 @@ ${qstat} -q | while read entry ; do
     fi 
 
 
-    firstchar=`echo $entry | cut -c1 | sed 's/[^a-zA-Z]//'`
+    firstchar=`echo $entry | ${cut} -c1 | sed 's/[^a-zA-Z]//'`
     if [ "$firstchar" = "-" -o ! "$firstchar" ]
     then
         continue
@@ -299,7 +302,7 @@ ${qstat} -q | while read entry ; do
     shift
 
 
-    firstchar=`echo $1 | cut -c1`
+    firstchar=`echo $1 | ${cut} -c1`
     if [ "$firstchar" = "E" ] ; then
     queueStatus="enabled"
     elif [ "$firstchar" = "D" ] ; then
@@ -314,7 +317,7 @@ ${qstat} -q | while read entry ; do
 # obtain  information about jobs in this queue 
     while read jobentry ; do
     set -- ${jobentry}
-    if [ "$3" != "$queueName" ] ; then
+    if [ "$3" != "`echo \"$queueName\"| ${cut} -c1-8`" ] ; then
          continue
        else
          localjobid=$1
