@@ -38,13 +38,13 @@ static char usage[] = \
 "        myproxy-server [-h|-help] [-v|-version]\n"\
 "\n"\
 "   Options\n"\
-"       -h | -help                Displays usage\n"\
-"       -u | -usage                             \n"\
+"       -h | --help                Displays usage\n"\
+"       -u | --usage                             \n"\
 "                                               \n"\
-"       -v | -version             Displays version\n"\
-"       -d | -debug               Turns on debugging\n"\
-"       -c | -config              Specifies configuration file to use\n"\
-"       -p | -port <portnumber>   Specifies the port to run on\n"\
+"       -v | --version             Displays version\n"\
+"       -d | --debug               Turns on debugging\n"\
+"       -c | --config              Specifies configuration file to use\n"\
+"       -p | --port <portnumber>   Specifies the port to run on\n"\
 "\n";
 
 struct option long_options[] =
