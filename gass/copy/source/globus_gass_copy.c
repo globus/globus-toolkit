@@ -2134,7 +2134,7 @@ globus_l_gass_copy_read_from_queue(
     globus_bool_t do_the_read = GLOBUS_FALSE;
     static char * myname="globus_l_gass_copy_read_from_queue";
 
-    while(1)
+    do
     {
 	do_the_read = GLOBUS_FALSE;
 	buffer_entry = GLOBUS_NULL;
@@ -2150,21 +2150,20 @@ globus_l_gass_copy_read_from_queue(
 #endif
 
 	    if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY)
-	    {/* the  source is ready (and not DONE, FAILURE, CANCEL) */
+	    {
 		if (((state->source.n_pending <
 		      state->source.n_simultaneous) &&
 		     !state->cancel))
-		{ /* if there aren't too many reads outstanding,
-                   * and we haven't canceled
-                   */
+		{
 		    if(!globus_fifo_empty(&(state->source.queue)))
-		    {/* there's a buffer in the queue, use it */
+		    {
 			state->source.n_pending++;
 			buffer_entry =
                             globus_fifo_dequeue(&(state->source.queue));
 			buffer = buffer_entry->bytes;
+			globus_libc_free(buffer_entry);
 			do_the_read = GLOBUS_TRUE;
-		    } /* there's a buffer in the queue, use it */
+		    }
 		    else
 		    {
                         globus_mutex_lock(&(state->mutex));
@@ -2175,66 +2174,47 @@ globus_l_gass_copy_read_from_queue(
                             do_the_read = GLOBUS_TRUE;
                         }
                         globus_mutex_unlock(&(state->mutex));
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-		    globus_libc_fprintf(stderr, "read_from_queue: should create a new buffer\n");
-#endif
-		    } /* else (no buffer in the queue, we'll need to create one) */
-		} /* (n_pending < n_simulatneous) && !cancel */
-
-	    } /* if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY) */
-	} /* lock state->source */
-	globus_mutex_unlock(&(state->source.mutex));
-
-
-	if(do_the_read)
-	{
-	    if(buffer==GLOBUS_NULL)
-	    { /* we need to create a buffer */
-		buffer = globus_libc_malloc(handle->buffer_length);
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-		globus_libc_fprintf(stderr, "read_from_queue: new buffer was created: %d\n", buffer);
-#endif
-		if(buffer == GLOBUS_NULL)
-		{
-		    /* out of memory error */
-		    err = globus_error_construct_string(
-			GLOBUS_GASS_COPY_MODULE,
-			GLOBUS_NULL,
-			"[%s]: failed to malloc buffer of size %d",
-			myname,
-			handle->buffer_length);
-		    globus_i_gass_copy_set_error(handle, err);
-		    result = globus_error_put(err);
-		} /* if(buffer == GLOBUS_NULL), the create failed*/
-	    } /* if(buffer == GLOBUS_NULL), we need to create a buffer */
-
-	    if(result==GLOBUS_SUCCESS)
-	    { /* we have a valid buffer, register a read */
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-		globus_libc_fprintf(stderr, "read_from_queue: gonna register_read with buffer: %d\n", buffer);
-#endif
-		result = globus_l_gass_copy_register_read(
-		    handle,
-		    buffer);
-
-		if(buffer_entry)
-		    globus_libc_free(buffer_entry);
-	    }
-
-            if (result != GLOBUS_SUCCESS)
-            {/* there was an error from above */
-                state->cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-                globus_libc_fprintf(stderr, "read_from_queue(): there was an ERROR trying to register a read, call cancel\n");
-#endif          
-                globus_i_gass_copy_set_error_from_result(handle, result);
-                globus_gass_copy_cancel(handle, NULL, NULL);
+		    }
+		}
+                
+                if(do_the_read)
+                {
+                    if(!buffer)
+                    {
+                        buffer = globus_libc_malloc(handle->buffer_length);
+                        if(!buffer)
+                        {
+                            err = globus_error_construct_string(
+                                GLOBUS_GASS_COPY_MODULE,
+                                GLOBUS_NULL,
+                                "[%s]: failed to malloc buffer of size %d",
+                                myname,
+                                handle->buffer_length);
+                            result = globus_error_put(err);
+                        }
+                    }
+                    
+                    if(buffer)
+                    {
+                        result = globus_l_gass_copy_register_read(
+                            handle,
+                            buffer);
+                    }
+                    
+                    if (result != GLOBUS_SUCCESS)
+                    {
+                        state->cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
+                        globus_i_gass_copy_set_error_from_result(handle, result);
+                        globus_gass_copy_cancel(handle, NULL, NULL);
+                        do_the_read = GLOBUS_FALSE;
+                    }
+                }
             }
+        }
+        globus_mutex_unlock(&(state->source.mutex));
 
-	} /* if (do_the_read) */
-	else
-	    break;
-    } /* while (1)  */
+    } while(do_the_read);
+    
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    globus_libc_fprintf(stderr, "read_from_queue(): returning\n");
 #endif
