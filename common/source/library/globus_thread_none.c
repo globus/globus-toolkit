@@ -330,6 +330,54 @@ globus_mutex_trylock(
 
 
 /*
+ * globus_condattr_init()
+ */
+#undef globus_condattr_init
+int globus_condattr_init(globus_condattr_t *attr)
+{
+    int rc;
+    rc = globus_macro_condattr_init(attr);
+    return (rc);
+}
+
+/*
+ * globus_condattr_destroy()
+ */
+#undef globus_condattr_destroy
+int globus_condattr_destroy(globus_condattr_t *attr)
+{
+    int rc;
+    rc = globus_macro_condattr_destroy(attr);
+    return (rc);
+}
+
+/*
+ * globus_condattr_setspace()
+ */
+#undef globus_condattr_setspace
+int globus_condattr_setspace(
+    globus_condattr_t *                 attr,
+    int                                 space)
+{
+    int rc;
+    rc = globus_macro_condattr_setspace(attr, space);
+    return (rc);
+}
+
+/*
+ * globus_condattr_getspace()
+ */
+#undef globus_condattr_getspace
+int globus_condattr_getspace(
+    globus_condattr_t *                 attr,
+    int *                               space)
+{
+    int rc;
+    rc = globus_macro_condattr_getspace(attr, space);
+    return (rc);
+}
+
+/*
  * globus_cond_init()
  */
 #undef globus_cond_init

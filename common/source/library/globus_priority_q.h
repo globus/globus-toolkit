@@ -3,7 +3,7 @@
 
 /********************************************************************
  *
- *  THis file defines the a time stamped queue for globus
+ *  This file defines the a priority queue for globus
  *
  ********************************************************************/
 
@@ -25,72 +25,63 @@ EXTERN_C_BEGIN
 #define __PRIORITY_Q_USE_I_MEM 1
 
 typedef int (*globus_priority_q_cmp_func_t)(
-    void *                                    priority_1,
-    void *                                    priority_2);
+    void *                                  priority_1,
+    void *                                  priority_2);
 
-typedef struct globus_priority_q_s 
+typedef struct globus_priority_q_s
 {
-    globus_list_t * volatile       head;
-    globus_list_t * volatile       tail;
-
-    globus_priority_q_cmp_func_t   cmp_func;
-
-#if defined(__PRIORITY_Q_USE_I_MEM)
-    globus_memory_t                mem;
-    globus_bool_t                  mem_initialized;
-#endif
-
+    struct globus_l_priority_q_entry_s **   heap;
+    int                                     next_slot;
+    size_t                                  max_len;
+    globus_memory_t                         memory;
+    globus_priority_q_cmp_func_t            cmp_func;
 } globus_priority_q_t;
 
-int 
-globus_priority_q_fifo_cmp_func(
-    void *                                    priority_1,
-    void *                                    priority_2);
-
-extern int
+int
 globus_priority_q_init(
-    globus_priority_q_t *                     priority_q,
-    globus_priority_q_cmp_func_t              cmp_func);
+    globus_priority_q_t *               priority_q,
+    globus_priority_q_cmp_func_t        cmp_func);
 
-extern void
+int
 globus_priority_q_destroy(
-    globus_priority_q_t *                     priority_q);
+    globus_priority_q_t *               priority_q);
 
-extern globus_bool_t 
+globus_bool_t
 globus_priority_q_empty(
-    globus_priority_q_t *                     priority_q);
+    globus_priority_q_t *               priority_q);
 
-extern int 
+int
 globus_priority_q_size(
-    globus_priority_q_t *                     priority_q);
+    globus_priority_q_t *               priority_q);
 
-extern int
+int
 globus_priority_q_enqueue(
-    globus_priority_q_t *                     priority_q,
-    void *                                    datum,
-    void *                                    priority);
+    globus_priority_q_t *               priority_q,
+    void *                              datum,
+    void *                              priority);
 
-extern void *
+void *
 globus_priority_q_remove(
-    globus_priority_q_t *                     headp, 
-    void *                                    datum);
+    globus_priority_q_t *               priority_q,
+    void *                              datum);
 
-extern void *
+void *
+globus_priority_q_modify(
+    globus_priority_q_t *               priority_q,
+    void *                              datum,
+    void *                              new_priority);
+
+void *
 globus_priority_q_dequeue(
-    globus_priority_q_t *                     priority_q);
+    globus_priority_q_t *               priority_q);
 
-extern void *
+void *
 globus_priority_q_first(
-    globus_priority_q_t *                     priority_q);
+    globus_priority_q_t *               priority_q);
 
 void *
-globus_timeq_first_priority(
-    globus_priority_q_t *                     priority_q);
-
-void *
-globus_priority_q_priority_at(
-    globus_priority_q_t *                     priority_q,
-    int                                       element_index);
+globus_priority_q_first_priority(
+    globus_priority_q_t *               priority_q);
 
 EXTERN_C_END
 

@@ -1,352 +1,405 @@
-#include "config.h"
-#include "globus_common.h"
-
-#include <assert.h>
-#include <stdlib.h>
-#include <sys/time.h>
-
 #include "globus_priority_q.h"
-#include "globus_list.h"
+
+#define GLOBUS_L_PRIORITY_Q_CHUNK_SIZE 100
+
+/* you can't change this, it is just more descriptive than '1' */
+#define GLOBUS_L_PRIORITY_Q_TOP_SLOT 1
 
 typedef struct globus_l_priority_q_entry_s
 {
-    void *                        priority;
-    void *                        datum;
+    void *                              priority;
+    void *                              datum;
 } globus_l_priority_q_entry_t;
 
-#if defined(__PRIORITY_Q_USE_I_MEM)
+static
+int
+globus_l_priority_q_percolate_up(
+    globus_priority_q_t *               priority_q,
+    int                                 hole,
+    void *                              priority)
+{
+    globus_l_priority_q_entry_t **      heap;
+    globus_priority_q_cmp_func_t        cmp_func;
 
-#   define PRIORITY_Q_MEM_INIT(TimeQ)                                 \
-    {                                                                 \
-           TimeQ->mem_initialized = GLOBUS_TRUE;                      \
-           globus_memory_init(                                      \
-               &TimeQ->mem,                                           \
-               sizeof(globus_l_priority_q_entry_t),                   \
-               10);                                                   \
+    heap = priority_q->heap;
+    cmp_func = priority_q->cmp_func;
+
+    while(hole > GLOBUS_L_PRIORITY_Q_TOP_SLOT && 
+        cmp_func(heap[hole / 2]->priority, priority) > 0)
+    {
+        heap[hole] = heap[hole / 2];
+        hole /= 2;
+    }
+    
+    return hole;
+}
+
+static
+int
+globus_l_priority_q_percolate_down(
+    globus_priority_q_t *               priority_q,
+    int                                 hole,
+    void *                              priority)
+{
+    globus_l_priority_q_entry_t **      heap;
+    globus_priority_q_cmp_func_t        cmp_func;
+    int                                 last_slot;
+    int                                 child;
+
+    heap = priority_q->heap;
+    cmp_func = priority_q->cmp_func;
+    last_slot = priority_q->next_slot - 1;
+
+    child = hole * 2;
+    while(child <= last_slot)
+    {
+        if(child != last_slot && 
+            cmp_func(heap[child]->priority, heap[child + 1]->priority) > 0)
+        {
+            child++;
+        }
+
+        if(cmp_func(priority, heap[child]->priority) > 0)
+        {
+            heap[hole] = heap[child];
+            hole = child;
+            child = hole * 2;
+        }
+        else
+        {
+            break;
+        }
     }
 
-#   define PRIORITY_Q_MEM_DESTROY(TimeQ)                              \
-    {                                                                 \
-           TimeQ->mem_initialized = GLOBUS_FALSE;                     \
-           globus_memory_destroy(                                   \
-               &TimeQ->mem);                                          \
-    }
-
-#   define MALLOC_PRIORITY_Q_ENTRY(TimeQ)                             \
-        ((globus_l_priority_q_entry_t *) globus_memory_pop_node(    \
-                                        &TimeQ->mem))
-
-#   define FREE_PRIORITY_Q_ENTRY(TimeQ, ptr)                          \
-        (globus_memory_push_node(                                   \
-             &TimeQ->mem,                                             \
-             (globus_byte_t *)ptr))
-
-#else
-
-#   define PRIORITY_Q_MEM_INIT(TimeQ)                                 \
-    {}
-
-#   define PRIORITY_Q_MEM_DESTROY(TimeQ)                              \
-    {}
-
-#   define MALLOC_PRIORITY_Q_ENTRY(TimeQ)                             \
-       ((globus_l_priority_q_entry_t *)globus_malloc(                 \
-                                      sizeof(globus_l_priority_q_entry_t)))
-
-#   define  FREE_PRIORITY_Q_ENTRY(TimeQ, ptr)                         \
-       (globus_free(ptr))
-
-#endif
+    return hole;
+}
 
 int
 globus_priority_q_init(
-    globus_priority_q_t *                       priority_q,
-    globus_priority_q_cmp_func_t                cmp_func)
+    globus_priority_q_t *               priority_q,
+    globus_priority_q_cmp_func_t        cmp_func)
 {
-    PRIORITY_Q_MEM_INIT(priority_q);
-
-    if(priority_q == GLOBUS_NULL)
+    globus_bool_t                       result;
+    
+    if(!priority_q)
     {
-	return GLOBUS_FAILURE;
+        return GLOBUS_FAILURE;
     }
+    
+    priority_q->heap = (globus_l_priority_q_entry_t **)
+        globus_libc_malloc(
+            GLOBUS_L_PRIORITY_Q_CHUNK_SIZE * 
+                sizeof(globus_l_priority_q_entry_t *));
+    if(!priority_q->heap)
+    {
+        return GLOBUS_FAILURE;
+    }
+    
+    result = globus_memory_init(
+        &priority_q->memory,
+        sizeof(globus_l_priority_q_entry_t),
+        GLOBUS_L_PRIORITY_Q_CHUNK_SIZE);                                    
 
-    priority_q->head = GLOBUS_NULL;
-    priority_q->tail = GLOBUS_NULL;
+    if(result != GLOBUS_TRUE)
+    {
+        globus_libc_free(priority_q->heap);
+        return GLOBUS_FAILURE;
+    }
+    
+    priority_q->next_slot = GLOBUS_L_PRIORITY_Q_TOP_SLOT;
+    priority_q->max_len = GLOBUS_L_PRIORITY_Q_CHUNK_SIZE;
     priority_q->cmp_func = cmp_func;
 
     return GLOBUS_SUCCESS;
 }
 
-void
+int
 globus_priority_q_destroy(
-    globus_priority_q_t *                           priority_q)
+    globus_priority_q_t *               priority_q)
 {
-    globus_list_t *            head;
-    void *                     priority_q_entry;
-
-    if(priority_q != GLOBUS_NULL)
+    int                                 i;
+    globus_l_priority_q_entry_t **      heap;
+    
+    if(!priority_q)
     {
-	head = priority_q->head;
-	while (!globus_list_empty (head)) 
-	{
-	    priority_q_entry = globus_list_remove(&head, head);
-            FREE_PRIORITY_Q_ENTRY(priority_q, priority_q_entry);
-        }
-	priority_q->head = GLOBUS_NULL;
-	priority_q->tail = GLOBUS_NULL;
-
-        PRIORITY_Q_MEM_DESTROY(priority_q);
+        return GLOBUS_FAILURE;
     }
+    
+    i = priority_q->next_slot - GLOBUS_L_PRIORITY_Q_TOP_SLOT;
+    heap = priority_q->heap + GLOBUS_L_PRIORITY_Q_TOP_SLOT;
+    while(i--)
+    {
+        globus_memory_push_node(&priority_q->memory, (globus_byte_t *) heap[i]);
+    }
+    
+    globus_libc_free(priority_q->heap);
+    globus_memory_destroy(&priority_q->memory);
+    
+    return GLOBUS_SUCCESS;
 }
 
-globus_bool_t 
+globus_bool_t
 globus_priority_q_empty(
-    globus_priority_q_t *                           priority_q)
+    globus_priority_q_t *               priority_q)
 {
-    if(priority_q == GLOBUS_NULL)
+    if(!priority_q)
     {
         return GLOBUS_FALSE;
     }
 
-    return (priority_q->head == GLOBUS_NULL);
+    return (priority_q->next_slot == GLOBUS_L_PRIORITY_Q_TOP_SLOT);
 }
 
-int 
+int
 globus_priority_q_size(
-    globus_priority_q_t *                           priority_q)
+    globus_priority_q_t *               priority_q)
 {
-    assert(priority_q != GLOBUS_NULL);
-
-    return globus_list_size(priority_q->head);
+    if(!priority_q)
+    {
+        return GLOBUS_FAILURE;
+    }
+    
+    return priority_q->next_slot - GLOBUS_L_PRIORITY_Q_TOP_SLOT;
 }
 
 int
 globus_priority_q_enqueue(
-    globus_priority_q_t *                           priority_q,
-    void *                                          datum,
-    void *                                          priority)
+    globus_priority_q_t *               priority_q,
+    void *                              datum,
+    void *                              priority)
 {
-    globus_list_t *                      i;
-    globus_list_t *                      j;
-    globus_l_priority_q_entry_t *        entry;
-    globus_l_priority_q_entry_t *        tmp_entry;
-    globus_bool_t                        found = GLOBUS_FALSE;
-
-    if(priority_q == GLOBUS_NULL)
+    globus_l_priority_q_entry_t **      heap;
+    globus_l_priority_q_entry_t *       new_entry;
+    int                                 hole;
+    
+    if(!priority_q)
     {
-	return GLOBUS_FAILURE;
+        return GLOBUS_FAILURE;
     }
-
-   
-    /* create new entry */ 
-    entry = MALLOC_PRIORITY_Q_ENTRY(priority_q);
-
-    entry->priority = priority;
-    entry->datum = datum;
-
-    /* if queue empty insert in front */
-    if(priority_q->head == GLOBUS_NULL)
+    
+    /* make sure we have room */
+    if(priority_q->next_slot == priority_q->max_len)
     {
-	globus_list_insert(&priority_q->head, (void *) entry);
-	priority_q->tail = priority_q->head;
-    }
-    else
-    {
-       i = GLOBUS_NULL;
-       j = priority_q->head;
-       while(!globus_list_empty(j) && !found)
-       {
-           tmp_entry = (globus_l_priority_q_entry_t *)
-			  globus_list_first(j);
-           if(priority_q->cmp_func(
-                  &tmp_entry->priority,
-                  &entry->priority) > 0)
-	   {
-               globus_list_insert((globus_list_t **) &j, (void *)entry);
-	       /* if inserting at begining, repoint head */
-	       if(i == GLOBUS_NULL)
-	       {
-                   priority_q->head = j;
-	       }
-	       /* otherwise insert new list after old beginning */
-	       else
-	       {
-                   i->next = j;
-	       }
-	       found = GLOBUS_TRUE;
-	   }
-
-	   /* advance pointers */
-	   i = j;
-	   j = globus_list_rest(j);
-       }
-
-       /*if not found place at end */
-       if(!found)
-       {
-	   i = GLOBUS_NULL;
-           globus_list_insert((globus_list_t **) &i,
-			      (void *)           entry);
-           priority_q->tail->next = i;
-	   priority_q->tail = i;
-       }
-    }
-
-    return GLOBUS_TRUE;
-}
-
-void *
-globus_priority_q_remove(
-    globus_priority_q_t *                           priority_q, 
-    void *                                          datum)
-{
-    globus_list_t *                    i;
-    globus_list_t *                    j;
-    globus_bool_t                      found = GLOBUS_FALSE;
-    globus_l_priority_q_entry_t *      entry;
-    void *                        rc;
-
-    assert(priority_q != GLOBUS_NULL);
-
-    if(globus_list_empty(priority_q->head))
-    {
-	return GLOBUS_NULL;
-    }
-
-    i = GLOBUS_NULL;
-    j = priority_q->head;
-    while(!globus_list_empty(j) && !found)
-    {
-        entry = (globus_l_priority_q_entry_t *)
-		   globus_list_first(j);
-        if(entry->datum == datum)
-	{
-            found = GLOBUS_TRUE;
-	}
-	else
-	{
-            i = j;
-	    j = globus_list_rest(j);
-	}
-    }
-
-    if(found)
-    {
-        rc = entry->datum;
-	if(j == priority_q->tail)
-	{
-	    priority_q->tail = i;
+        heap = (globus_l_priority_q_entry_t **)
+            globus_libc_realloc(
+                priority_q->heap,
+                (priority_q->max_len + GLOBUS_L_PRIORITY_Q_CHUNK_SIZE) * 
+                    sizeof(globus_l_priority_q_entry_t *));
+        if(!heap)
+        {
+            return GLOBUS_FAILURE;
         }
-	globus_list_remove(&priority_q->head, j);
-        FREE_PRIORITY_Q_ENTRY(priority_q, entry);
-    }
-    else
-    {
-	rc = GLOBUS_NULL;
+
+        priority_q->heap = heap;
+        priority_q->max_len += GLOBUS_L_PRIORITY_Q_CHUNK_SIZE;
     }
 
-    return rc;
+    /* allocate a new entry */
+    new_entry = (globus_l_priority_q_entry_t *) 
+        globus_memory_pop_node(&priority_q->memory);
+    if(!new_entry)
+    {
+        return GLOBUS_FAILURE;
+    }
+    new_entry->datum = datum;
+    new_entry->priority = priority;
+    
+    /* set new entry at next_slot and percolate up */
+    hole = globus_l_priority_q_percolate_up(
+        priority_q, priority_q->next_slot++, priority);
+    
+    priority_q->heap[hole] = new_entry;
+
+    return GLOBUS_SUCCESS;
 }
 
 void *
 globus_priority_q_dequeue(
-    globus_priority_q_t *                           priority_q)
+    globus_priority_q_t *               priority_q)
 {
-    void *                        rc;
-    globus_l_priority_q_entry_t *      entry;
-
-    assert(priority_q != GLOBUS_NULL);
-
-    if(globus_list_empty(priority_q->head))
+    globus_l_priority_q_entry_t *       entry;
+    void *                              datum;
+    int                                 hole;
+    
+    if(!priority_q || priority_q->next_slot == GLOBUS_L_PRIORITY_Q_TOP_SLOT)
     {
         return GLOBUS_NULL;
     }
 
-    entry = (globus_l_priority_q_entry_t *)
-	       globus_list_remove (&(priority_q->head),
-				   priority_q->head);
+    /* remove first element and save user's data */
+    entry = priority_q->heap[GLOBUS_L_PRIORITY_Q_TOP_SLOT];
+    datum = entry->datum;
+    globus_memory_push_node(&priority_q->memory, (globus_byte_t *) entry);
 
-    if(globus_list_empty(priority_q->head))
+    /* take last element and percolate down */
+    if(--priority_q->next_slot > GLOBUS_L_PRIORITY_Q_TOP_SLOT)
     {
-        priority_q->tail = priority_q->head;
+        entry = priority_q->heap[priority_q->next_slot];
+        
+        hole = globus_l_priority_q_percolate_down(
+            priority_q, GLOBUS_L_PRIORITY_Q_TOP_SLOT, entry->priority);
+        
+        priority_q->heap[hole] = entry;
     }
-
-    rc = entry->datum;
-    FREE_PRIORITY_Q_ENTRY(priority_q, entry);
-    return rc;
+    
+    return datum;
 }
-
 
 void *
 globus_priority_q_first (
-    globus_priority_q_t *                     priority_q)
+    globus_priority_q_t *               priority_q)
 {
-    void *                                    rc;
-    globus_l_priority_q_entry_t *             entry;
+    globus_l_priority_q_entry_t *       entry;
 
-    assert(priority_q != GLOBUS_NULL);
-
-    if(globus_list_empty(priority_q->head))
+    if(!priority_q || priority_q->next_slot == GLOBUS_L_PRIORITY_Q_TOP_SLOT)
     {
         return GLOBUS_NULL;
     }
+    
+    entry = priority_q->heap[GLOBUS_L_PRIORITY_Q_TOP_SLOT];
 
-    entry = (globus_l_priority_q_entry_t *)
-	       globus_list_first(priority_q->head);
-
-    rc = entry->datum;
-    return rc;
+    return entry->datum;
 }
 
 void *
 globus_priority_q_first_priority(
-    globus_priority_q_t *                         priority_q)
+    globus_priority_q_t *               priority_q)
 {
-    globus_l_priority_q_entry_t *                 entry;
+    globus_l_priority_q_entry_t *       entry;
 
-    assert(priority_q != GLOBUS_NULL);
-
-    if(globus_list_empty(priority_q->head))
+    if(!priority_q || priority_q->next_slot == GLOBUS_L_PRIORITY_Q_TOP_SLOT)
     {
         return GLOBUS_NULL;
     }
+    
+    entry = priority_q->heap[GLOBUS_L_PRIORITY_Q_TOP_SLOT];
 
-    entry = (globus_l_priority_q_entry_t *)
-	       globus_list_first(priority_q->head);
-
-    return &entry->priority;
+    return entry->priority;
 }
 
 void *
-globus_priority_q_priority_at(
-    globus_priority_q_t *                        priority_q,
-    int                                          element_index)
+globus_priority_q_remove(
+    globus_priority_q_t *               priority_q,
+    void *                              datum)
 {
-    int                                          ctr;
-    globus_l_priority_q_entry_t *                entry;
-    globus_list_t *               list;
-
-    list = priority_q->head;
-    for(ctr = 0; ctr < element_index; ctr++)
+    globus_l_priority_q_entry_t **      heap;
+    globus_l_priority_q_entry_t *       entry;
+    int                                 hole;
+    int                                 size;
+    void *                              old_priority;
+    void *                              new_priority;
+    
+    if(!priority_q)
     {
-        if(list == GLOBUS_NULL)
-	{
-            return GLOBUS_NULL;
-	}
-	list = globus_list_rest(list);
+        return GLOBUS_NULL;
     }
     
-    entry = (globus_l_priority_q_entry_t *)
-	       globus_list_first(list);
-
-    return &entry->priority;
+    /* first find entry and position */
+    heap = priority_q->heap;
+    hole = GLOBUS_L_PRIORITY_Q_TOP_SLOT;
+    size = priority_q->next_slot;
+    entry = GLOBUS_NULL;
+    
+    while(hole < size)
+    {
+        if(heap[hole]->datum == datum)
+        {
+            entry = heap[hole];
+            break;
+        }
+        hole++;
+    }
+    
+    /* if we found it, remove it
+     * then we need to percolate the new hole up, then down
+     */
+    if(entry)
+    {
+        old_priority = entry->priority;
+        globus_memory_push_node(&priority_q->memory, (globus_byte_t *) entry);
+        
+        /* take entry from end of heap if removed entry
+         * was not at the end of the heap (also catches empty heap) 
+         */
+        if(--priority_q->next_slot != hole)
+        {
+            entry = heap[priority_q->next_slot];
+            new_priority = entry->priority;
+            
+            if(priority_q->cmp_func(new_priority, old_priority) > 0)
+            {
+                hole = globus_l_priority_q_percolate_down(
+                    priority_q, hole, new_priority);
+            }
+            else
+            {
+                hole = globus_l_priority_q_percolate_up(
+                    priority_q, hole, new_priority);
+            }
+            
+            heap[hole] = entry;
+        }
+        
+        return datum;
+    }
+    else
+    {
+        return GLOBUS_NULL;
+    }
 }
 
-
-int 
-globus_priority_q_fifo_cmp_func(
-    void *                                    priority_1,
-    void *                                    priority_2)
+void *
+globus_priority_q_modify(
+    globus_priority_q_t *               priority_q,
+    void *                              datum,
+    void *                              new_priority)
 {
-    return -1;
+    globus_l_priority_q_entry_t **      heap;
+    globus_l_priority_q_entry_t *       entry;
+    int                                 hole;
+    int                                 size;
+    void *                              old_priority;
+    
+    if(!priority_q)
+    {
+        return GLOBUS_NULL;
+    }
+    
+    /* first find entry and position */
+    heap = priority_q->heap;
+    hole = GLOBUS_L_PRIORITY_Q_TOP_SLOT;
+    size = priority_q->next_slot;
+    entry = GLOBUS_NULL;
+    
+    while(hole < size)
+    {
+        if(heap[hole]->datum == datum)
+        {
+            entry = heap[hole];
+            break;
+        }
+        hole++;
+    }
+    
+    /* if we found it, modify it and
+     * then we need to percolate up, then down
+     */
+    if(entry)
+    {
+        old_priority = entry->priority;
+        entry->priority = new_priority;
+        
+        hole = globus_l_priority_q_percolate_down(
+            priority_q, hole, new_priority);
+        hole = globus_l_priority_q_percolate_up(
+            priority_q, hole, new_priority);
+        
+        heap[hole] = entry;
+        
+        return old_priority;
+    }
+    else
+    {
+        return GLOBUS_NULL;
+    }
 }

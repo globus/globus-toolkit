@@ -20,28 +20,33 @@
 
 /* Module-specific prototypes */
 static
-globus_bool_t
+void
 globus_l_ftp_client_restart_get_callback(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *				user_arg);
 
 static
-globus_bool_t
+void
 globus_l_ftp_client_restart_put_callback(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *				user_arg);
 
 static
-globus_bool_t
+void
 globus_l_ftp_client_restart_transfer_callback(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *				user_arg);
 
 static
-globus_bool_t
+void
 globus_l_ftp_client_restart_no_connection(
-    globus_abstime_t *				time_stop,
-    void *					user_arg);
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *			        user_arg);
+
 
 /**
  * Register the oneshot event which will restart the current transfer 
@@ -62,7 +67,7 @@ globus_i_ftp_client_restart_register_oneshot(
     globus_abstime_t				now;
     globus_reltime_t				when;
     globus_reltime_t				zero;
-    int						rc = 0;
+    globus_result_t                             result = GLOBUS_SUCCESS;
     static char * myname = "globus_l_ftp_client_restart_register_oneshot";
 
     /* Update the restart marker in the handle */
@@ -97,43 +102,30 @@ globus_i_ftp_client_restart_register_oneshot(
        handle->op == GLOBUS_FTP_CLIENT_NLST   ||
        handle->op == GLOBUS_FTP_CLIENT_LIST)
     {
-	rc = globus_callback_register_oneshot(
+	result = globus_callback_register_oneshot(
 	    &handle->restart_info->callback_handle,
 	    &when,
 	    globus_l_ftp_client_restart_get_callback,
-	    handle,
-	    GLOBUS_NULL,
-	    GLOBUS_NULL);
+	    handle);
     }
     else if(handle->op == GLOBUS_FTP_CLIENT_PUT)
     {
-	rc = globus_callback_register_oneshot(
+	result = globus_callback_register_oneshot(
 	    &handle->restart_info->callback_handle,
 	    &when,
 	    globus_l_ftp_client_restart_put_callback,
-	    handle,
-	    GLOBUS_NULL,
-	    GLOBUS_NULL);
+	    handle);
     }
     else if(handle->op == GLOBUS_FTP_CLIENT_TRANSFER)
     {
-	rc = globus_callback_register_oneshot(
+	result = globus_callback_register_oneshot(
 	    &handle->restart_info->callback_handle,
 	    &when,
 	    globus_l_ftp_client_restart_transfer_callback,
-	    handle,
-	    GLOBUS_NULL,
-	    GLOBUS_NULL);
+	    handle);
     }
 
-    if(rc != GLOBUS_SUCCESS)
-    {
-	return GLOBUS_I_FTP_CLIENT_ERROR_INTERNAL_ERROR(GLOBUS_NULL);
-    }
-    else
-    {
-	return GLOBUS_SUCCESS;
-    }
+    return result;
 }
 /* globus_i_ftp_client_restart_register_oneshot() */
 
@@ -155,9 +147,10 @@ globus_i_ftp_client_restart_register_oneshot(
  *        processed the event which was registered.
  */
 static
-globus_bool_t
+void
 globus_l_ftp_client_restart_get_callback(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *				user_arg)
 {
     globus_i_ftp_client_handle_t *	handle;
@@ -247,7 +240,7 @@ globus_l_ftp_client_restart_get_callback(
 
     globus_i_ftp_client_handle_unlock(handle);
 
-    return GLOBUS_TRUE;
+    return;
 src_problem_exit:
     globus_i_ftp_client_target_release(handle,
 				       handle->source);
@@ -278,7 +271,7 @@ error_exit:
     /* This function unlocks and potentially frees the client_handle */
     globus_i_ftp_client_transfer_complete(handle);
 
-    return GLOBUS_TRUE;
+    return;
 restart:
     globus_i_ftp_client_restart_info_delete(restart_info);
     if(handle->source)
@@ -302,7 +295,6 @@ restart:
 	/* This function unlocks and potentially frees the client_handle */
 	globus_i_ftp_client_transfer_complete(handle);
     }
-    return GLOBUS_TRUE;
 }
 /* globus_l_ftp_client_restart_get_callback() */
 
@@ -324,9 +316,10 @@ restart:
  *        processed the event which was registered.
  */
 static
-globus_bool_t
+void
 globus_l_ftp_client_restart_put_callback(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *				user_arg)
 {
     globus_i_ftp_client_handle_t *	handle;
@@ -411,7 +404,7 @@ globus_l_ftp_client_restart_put_callback(
 
     globus_i_ftp_client_handle_unlock(handle);
 
-    return GLOBUS_TRUE;
+    return;
 
 dest_problem_exit:
     globus_i_ftp_client_target_release(handle,
@@ -441,7 +434,7 @@ error_exit:
     /* This function unlocks and potentially frees the client_handle */
     globus_i_ftp_client_transfer_complete(handle);
 
-    return GLOBUS_TRUE;
+    return;
 
 restart:
     globus_i_ftp_client_restart_info_delete(restart_info);
@@ -465,7 +458,6 @@ restart:
 	/* This function unlocks and potentially frees the client_handle */
 	globus_i_ftp_client_transfer_complete(handle);
     }
-    return GLOBUS_TRUE;
 }
 /* globus_l_ftp_client_restart_put_callback() */
 
@@ -487,9 +479,10 @@ restart:
  *        processed the event which was registered.
  */
 static
-globus_bool_t
+void
 globus_l_ftp_client_restart_transfer_callback(
-    globus_abstime_t *			time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *				user_arg)
 {
     globus_i_ftp_client_handle_t *	handle;
@@ -589,7 +582,7 @@ globus_l_ftp_client_restart_transfer_callback(
 
     globus_i_ftp_client_handle_unlock(handle);
 
-    return GLOBUS_TRUE;
+    return;
 
 dest_problem_exit:
     globus_i_ftp_client_target_release(handle,
@@ -624,7 +617,7 @@ error_exit:
     /* This function unlocks and potentially frees the client_handle */
     globus_i_ftp_client_transfer_complete(handle);
 
-    return GLOBUS_TRUE;
+    return;
 restart:
     globus_i_ftp_client_restart_info_delete(restart_info);
     if(handle->source)
@@ -651,8 +644,6 @@ restart:
 	/* This function unlocks and potentially frees the client_handle */
 	globus_i_ftp_client_transfer_complete(handle);
     }
-
-    return GLOBUS_TRUE;
 }
 /* globus_l_ftp_client_restart_transfer_callback() */
 
@@ -744,7 +735,7 @@ globus_i_ftp_client_restart(
 	    }
 	    else if(handle->source->state == GLOBUS_FTP_CLIENT_TARGET_CONNECT)
 	    {
-		int rc;
+		globus_result_t             rc;
 		err = globus_error_get(result);
 
 		handle->state = GLOBUS_FTP_CLIENT_HANDLE_RESTART;
@@ -755,11 +746,9 @@ globus_i_ftp_client_restart(
 
 		rc = globus_callback_register_oneshot(
 			GLOBUS_NULL,
-			&globus_i_reltime_infinity,
+			&globus_i_reltime_zero,
 			globus_l_ftp_client_restart_no_connection,
-			handle->source,
-			GLOBUS_NULL,
-			GLOBUS_NULL);
+			handle->source);
 
 		if(rc == GLOBUS_SUCCESS)
 		{
@@ -844,10 +833,11 @@ globus_i_ftp_client_restart(
 /* globus_i_ftp_client_restart() */
 
 static
-globus_bool_t
+void
 globus_l_ftp_client_restart_no_connection(
-    globus_abstime_t *				time_stop,
-    void *					user_arg)
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *			        user_arg)
 {
     globus_i_ftp_client_target_t *		target;
 
@@ -858,7 +848,6 @@ globus_l_ftp_client_restart_no_connection(
 	    target->control_handle,
 	    GLOBUS_NULL,
 	    GLOBUS_NULL);
-    return GLOBUS_TRUE;
 }
 
 #endif

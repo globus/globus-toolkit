@@ -595,7 +595,7 @@ typedef struct globus_i_ftp_client_restart_s
     globus_i_ftp_client_operationattr_t *	dest_attr;
     globus_ftp_client_restart_marker_t		marker;
     globus_abstime_t				when;
-    globus_callback_handle_t			callback_handle;
+    globus_callback_handle_t                    callback_handle;
 }
 globus_i_ftp_client_restart_t;
 

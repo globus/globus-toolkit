@@ -82,10 +82,11 @@ typedef struct
 } globus_io_secure_read_info_t;
 
 static
-globus_bool_t
+void
 globus_l_io_oneshot_auth_callback(
-    globus_abstime_t *                  time_stop,
-    void *              callback_arg);
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args);
 
 static
 globus_bool_t
@@ -321,13 +322,12 @@ globus_i_io_securesocket_register_accept(
 
             info->err = err;
             GlobusTimeReltimeSet(delay_time, 0, 0);
-            globus_callback_register_oneshot(
-                GLOBUS_NULL /* callback handle */,
+            globus_callback_space_register_oneshot(
+                GLOBUS_NULL,
                 &delay_time,
                 globus_l_io_oneshot_auth_callback,
                 (void *) info,
-                GLOBUS_NULL /* wakeup func */,
-                GLOBUS_NULL /* wakeup arg */);
+                handle->socket_attr.space);
             return GLOBUS_SUCCESS;
         }
     }
@@ -359,13 +359,12 @@ globus_i_io_securesocket_register_accept(
 
             info->err = err;
             GlobusTimeReltimeSet(delay_time, 0, 0);
-            globus_callback_register_oneshot(
-                GLOBUS_NULL /* callback handle */,
+            globus_callback_space_register_oneshot(
+                GLOBUS_NULL,
                 &delay_time,
                 globus_l_io_oneshot_auth_callback,
                 (void *) info,
-                GLOBUS_NULL /* wakeup func */,
-                GLOBUS_NULL /* wakeup arg */);
+                handle->socket_attr.space);
             return GLOBUS_SUCCESS;
         }
     }
@@ -2612,21 +2611,20 @@ error_exit:
 /* globus_l_io_secure_accept_callback() */
 
 static
-globus_bool_t
+void
 globus_l_io_oneshot_auth_callback(
-    globus_abstime_t *                  time_stop,
-    void *              callback_arg)
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args)
 {
     globus_i_io_callback_info_t *   info;
 
-    info = (globus_i_io_callback_info_t *) callback_arg;
+    info = (globus_i_io_callback_info_t *) user_args;
 
     info->callback(info->callback_arg,
                    info->handle,
                    globus_error_put(info->err));
     globus_free(info);
-
-    return GLOBUS_TRUE;
 }
 /* globus_l_io_oneshot_auth_callback() */
 
@@ -2930,6 +2928,7 @@ globus_io_register_init_delegation(
                 GLOBUS_NULL,
                 handle,
                 save_errno));
+        return rc;
     }
 
     memset(init_info,0,sizeof(globus_io_authentication_info_t));
@@ -2943,11 +2942,15 @@ globus_io_register_init_delegation(
     init_info->time_req = time_req;
     init_info->iteration = globus_l_io_init_delegation;
     init_info->any_token_received = GLOBUS_FALSE;
-
-    init_info->iteration(init_info,
-                         handle,
-                         GLOBUS_SUCCESS);
-    return rc;
+    
+    globus_i_io_register_read_func(
+                handle,
+                globus_l_io_init_delegation,
+                init_info,
+                GLOBUS_NULL,
+                GLOBUS_FALSE);
+                
+    return GLOBUS_SUCCESS;
 } /* globus_io_register_init_delegation */
 
 
@@ -2996,13 +2999,13 @@ globus_io_init_delegation(
     globus_result_t                     rc;
 
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
     monitor.done = GLOBUS_FALSE;
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
     monitor.data = globus_malloc(sizeof(globus_io_delegation_data_t));
-    
+
     rc = globus_io_register_init_delegation(handle,
                                             cred_handle,
                                             restriction_oids,
@@ -3025,7 +3028,7 @@ globus_io_init_delegation(
         }
     }
     globus_mutex_unlock(&monitor.mutex);
-
+    
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     globus_free(monitor.data);
@@ -3148,6 +3151,8 @@ globus_io_register_accept_delegation(
                 GLOBUS_NULL,
                 handle,
                 save_errno));
+        
+        return rc;
     }
     
     memset(accept_info,0,sizeof(globus_io_authentication_info_t));
@@ -3160,11 +3165,15 @@ globus_io_register_accept_delegation(
     accept_info->cred_handle = GSS_C_NO_CREDENTIAL;
     accept_info->iteration = globus_l_io_accept_delegation;
     accept_info->any_token_received = GLOBUS_FALSE;
-
-    accept_info->iteration(accept_info,
-                           handle,
-                           GLOBUS_SUCCESS);
-    return rc;
+    
+    globus_i_io_register_read_func(
+                handle,
+                globus_l_io_accept_delegation,
+                accept_info,
+                GLOBUS_NULL,
+                GLOBUS_FALSE);
+                
+    return GLOBUS_SUCCESS;
 }
 
 
@@ -3232,7 +3241,7 @@ globus_io_accept_delegation(
     
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_i_io_setup_cond_space_from_handle(handle, &monitor.cond);
     monitor.done = GLOBUS_FALSE;
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
@@ -3260,7 +3269,7 @@ globus_io_accept_delegation(
         }
     }
     globus_mutex_unlock(&monitor.mutex);
-
+    
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
 

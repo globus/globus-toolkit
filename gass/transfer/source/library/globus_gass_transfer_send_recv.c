@@ -34,9 +34,10 @@ globus_l_gass_transfer_size_check(
     globus_size_t 				send_length);
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_drain_callbacks(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg);
 /* @} */
 #endif
@@ -452,12 +453,10 @@ globus_i_gass_transfer_fail(
 	 */
         GlobusTimeReltimeSet(delay_time, 0, 0);
 	globus_callback_register_oneshot(
-	    GLOBUS_NULL /* callback_handle */,
+	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_drain_callbacks,
-	    (void *) request,
-	    GLOBUS_NULL,
-	    GLOBUS_NULL);
+	    (void *) request);
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
       case GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL1:
@@ -705,9 +704,10 @@ globus_i_gass_transfer_recv_dispatcher(
 /* globus_i_gass_transfer_recv_dispatcher() */
 
 static
-globus_bool_t
+void
 globus_l_gass_transfer_drain_callbacks(
-    globus_abstime_t *                          time_stop,
+    const globus_abstime_t *                    time_now,
+    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_request_t		request;
@@ -722,7 +722,7 @@ globus_l_gass_transfer_drain_callbacks(
 				   request);
     if(req == GLOBUS_NULL)
     {
-	return GLOBUS_TRUE;
+	return;
     }
 
     if(globus_i_gass_transfer_deactivating)
@@ -767,8 +767,6 @@ globus_l_gass_transfer_drain_callbacks(
 	callback(callback_arg,
 		 request);
     }
-
-    return GLOBUS_TRUE;
 }
 /* globus_l_gass_transfer_drain_callbacks() */
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
