@@ -245,6 +245,11 @@ globus_l_xio_telnet_cmd_write_cb(
 
     handle = (globus_l_xio_telnet_handle_t *) user_arg;
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_xio_driver_finished_read(op, result, 0);
+        return;
+    }
     globus_mutex_lock(&handle->mutex);
     {
         globus_free(handle->write_iovec.iov_base);
@@ -264,6 +269,11 @@ globus_l_xio_telnet_read_cb(
 
     handle = (globus_l_xio_telnet_handle_t *) user_arg;
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_xio_driver_finished_read(op, result, nbytes);
+        return;
+    }
     globus_mutex_lock(&handle->mutex);
     {
         handle->read_buffer_ndx += nbytes;
