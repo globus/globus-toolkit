@@ -1079,7 +1079,8 @@ globus_l_gsc_user_data_destroy_cb_kickout(
 
     if(server_handle->funcs.data_destroy_cb != NULL)
     {
-        server_handle->funcs.data_destroy_cb(data_object->user_handle);
+        server_handle->funcs.data_destroy_cb(
+            data_object->user_handle, server_handle->funcs.data_destroy_arg);
     }
     globus_free(data_object);
 
@@ -1116,7 +1117,7 @@ globus_l_gsc_user_close_kickout(
         server_handle->funcs.done_cb(
             server_handle,
             server_handle->cached_res,
-            server_handle->user_arg);
+            server_handle->funcs.done_arg);
     }
 }
 
@@ -2090,7 +2091,7 @@ globus_gridftp_server_control_start(
             NULL,
             NULL);
 
-        server_handle->user_arg = user_arg;
+        server_handle->funcs.done_arg = user_arg;
 
         server_handle->state = GLOBUS_L_GSC_STATE_OPENING;
         res = globus_xio_register_open(
@@ -2947,7 +2948,8 @@ globus_i_gsc_resource_query(
         op->server_handle->funcs.resource_cb(
             op,
             op->path,
-            op->mask);
+            op->mask,
+            op->server_handle->funcs.resource_arg);
     }
     else
     {
@@ -3021,7 +3023,8 @@ globus_i_gsc_authenticate(
             type,
             op->server_handle->subject,
             op->username,
-            op->password);
+            op->password,
+            op->server_handle->funcs.auth_arg);
     }
     /* just always authenticate... so just call the callback */
     else
@@ -3082,7 +3085,8 @@ globus_i_gsc_port(
             op,
             op->net_prt,
             (const char **)op->cs,
-            op->max_cs);
+            op->max_cs,
+            op->server_handle->funcs.active_arg);
     }
     else
     {
@@ -3125,7 +3129,8 @@ globus_i_gsc_passive(
         op->server_handle->funcs.passive_cb(
             op,
             op->net_prt,
-            op->max_cs);
+            op->max_cs,
+            op->server_handle->funcs.passive_arg);
     }
     else
     {
@@ -3176,7 +3181,8 @@ globus_i_gsc_list(
         user_cb(
             op, 
             op->server_handle->data_object->user_handle,
-            op->path);
+            op->path,
+            op->server_handle->funcs.data_destroy_arg);
     }
     else
     {
@@ -3262,7 +3268,8 @@ globus_i_gsc_send(
             op->path,
             op->mod_name,
             op->mod_parms,
-            op->range_list);
+            op->range_list,
+            op->server_handle->funcs.data_destroy_arg);
     }
     else
     {
@@ -3281,6 +3288,8 @@ globus_i_gsc_recv(
     globus_i_gsc_transfer_cb_t          transfer_cb,
     void *                              user_arg)
 {
+    globus_i_gsc_module_func_t *        mod_func;
+    void *                              mod_arg;
     globus_gridftp_server_control_transfer_cb_t user_cb;
     GlobusGridFTPServerName(globus_i_gsc_recv);
 
@@ -3301,17 +3310,20 @@ globus_i_gsc_recv(
         if(mod_name == NULL)
         {
             user_cb = op->server_handle->funcs.default_recv_cb;
+            mod_arg = op->server_handle->funcs.default_recv_arg;
         }
         else
         {
-            user_cb = (globus_gridftp_server_control_transfer_cb_t)
+            mod_func = (globus_i_gsc_module_func_t *)
                 globus_hashtable_lookup(
                     &op->server_handle->funcs.recv_cb_table, (char *)mod_name);
-            if(user_cb == NULL)
+            if(mod_func == NULL)
             {
                 globus_mutex_unlock(&op->server_handle->mutex);
                 return GlobusGridFTPServerErrorParameter("op");
             }
+            user_cb = mod_func->func;
+            mod_arg = mod_func->user_arg;
         }
         globus_range_list_init(&op->range_list);
         if(op->server_handle->range_list == NULL)
@@ -3348,7 +3360,8 @@ globus_i_gsc_recv(
             op->path,
             op->mod_name,
             op->mod_parms,
-            op->range_list);
+            op->range_list,
+            mod_arg);
     }
     else
     {
@@ -3628,7 +3641,7 @@ globus_gridftp_server_control_disconnected(
 
     if(destroy_cb != NULL)
     {
-        destroy_cb(user_data_handle);
+        destroy_cb(user_data_handle, server->funcs.data_destroy_arg);
     }
 
     return GLOBUS_SUCCESS;

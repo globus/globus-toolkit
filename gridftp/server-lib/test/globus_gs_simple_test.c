@@ -28,6 +28,7 @@ static void
 logging_func(
     globus_gridftp_server_control_t     server_handle,
     const char *                        full_command,
+    int                                 cls,
     void *                              user_arg)
 {
     time_t tm = time(NULL);
@@ -103,7 +104,8 @@ static void
 globus_l_resource_cb(
     globus_gridftp_server_control_op_t      op,
     const char *                            path,
-    globus_gridftp_server_control_resource_mask_t mask)
+    globus_gridftp_server_control_resource_mask_t mask,
+    void *                                  user_arg)
 {
     globus_result_t                         res;
     globus_gridftp_server_control_stat_t    stat_info;
@@ -154,7 +156,8 @@ static void
 list_cb(
     globus_gridftp_server_control_op_t      op,
     void *                                  data_handle,
-    const char *                            path)
+    const char *                            path,
+    void *                                  user_arg)
 {
     globus_gridftp_server_control_begin_transfer(op, 0, NULL, NULL);
     globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
@@ -164,7 +167,8 @@ static void
 passive_connect(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_network_protocol_t net_prt,
-    int                                     max)
+    int                                     max,
+    void *                                  user_arg)
 {
     globus_gridftp_server_control_finished_passive_connect(
         op,
@@ -180,7 +184,8 @@ active_connect(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_network_protocol_t net_prt,
     const char **                           cs,
-    int                                     cs_count)
+    int                                     cs_count,
+    void *                                  user_arg)
 {
     globus_gridftp_server_control_finished_active_connect(
         op,
@@ -191,7 +196,8 @@ active_connect(
 
 static void
 data_destroy_cb(
-    void *                                  user_data_handle)
+    void *                                  user_data_handle,
+    void *                                  user_arg)
 {
     fprintf(stdout, "data_destroy_cb()\n");
     globus_assert(user_data_handle == USER_DATA_HANDLE);
@@ -217,7 +223,8 @@ transfer(
     const char *                            local_target,
     const char *                            mod_name,
     const char *                            mod_parms,
-    globus_range_list_t                     range_list)
+    globus_range_list_t                     range_list,
+    void *                                  user_arg)
 {
     int                                     ctr;
     globus_size_t                           off = 0;
@@ -255,7 +262,8 @@ auth_func(
     globus_gridftp_server_control_security_type_t type,
     const char *                            subject,
     const char *                            user_name,
-    const char *                            pw)
+    const char *                            pw,
+    void *                                  user_arg)
 {
     fprintf(stderr, "User: %s Pass: %s: type = %d\n", user_name, pw, type);
 
@@ -340,15 +348,16 @@ main(
             ftp_attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE);
     }
 
-    res = globus_gridftp_server_control_attr_set_auth(ftp_attr, auth_func);
+    res = globus_gridftp_server_control_attr_set_auth(
+        ftp_attr, auth_func, NULL);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_set_resource(
-        ftp_attr, globus_l_resource_cb);
+        ftp_attr, globus_l_resource_cb, NULL);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_set_list(
-        ftp_attr, list_cb);
+        ftp_attr, list_cb, NULL);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_set_idle_time(
@@ -368,14 +377,15 @@ main(
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_data_functions(
-        ftp_attr, active_connect, passive_connect, data_destroy_cb);
+        ftp_attr, active_connect, NULL, 
+        passive_connect, NULL, data_destroy_cb, NULL);
 
     res = globus_gridftp_server_control_attr_add_send(
-        ftp_attr, NULL, transfer);
+        ftp_attr, NULL, transfer, NULL);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_add_recv(
-        ftp_attr, NULL, transfer);
+        ftp_attr, NULL, transfer, NULL);
     test_res(res, __LINE__);
 
     res = globus_xio_handle_cntl(xio_handle, tcp_driver,

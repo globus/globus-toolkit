@@ -168,19 +168,34 @@ typedef struct globus_i_gsc_handle_opts_s
     globus_gridftp_server_control_network_protocol_t     pasv_prt;
 } globus_i_gsc_handle_opts_t;
 
+typedef struct globus_i_gsc_module_func_s
+{
+    globus_gridftp_server_control_transfer_cb_t         func;
+    void *                                              user_arg;
+} globus_i_gsc_module_func_t;
+
 typedef struct globus_i_gsc_user_funcs_s
 {
     globus_hashtable_t                                  send_cb_table;
     globus_hashtable_t                                  recv_cb_table;
     globus_gridftp_server_control_transfer_cb_t         default_send_cb;
+    void *                                              default_send_arg;
     globus_gridftp_server_control_transfer_cb_t         default_recv_cb;
+    void *                                              default_recv_arg;
     globus_gridftp_server_control_auth_cb_t             auth_cb;
+    void *                                              auth_arg;
     globus_gridftp_server_control_passive_connect_cb_t  passive_cb;
+    void *                                              passive_arg;
     globus_gridftp_server_control_active_connect_cb_t   active_cb;
+    void *                                              active_arg;
     globus_gridftp_server_control_data_destroy_cb_t     data_destroy_cb;
+    void *                                              data_destroy_arg;
     globus_gridftp_server_control_list_cb_t             list_cb;
+    void *                                              list_arg;
     globus_gridftp_server_control_resource_cb_t         resource_cb;
+    void *                                              resource_arg;
     globus_gridftp_server_control_cb_t                  done_cb;
+    void *                                              done_arg;
     globus_gridftp_server_control_log_cb_t              log_func;
     int                                                 log_mask;
     void *                                              log_arg;
@@ -236,7 +251,6 @@ typedef struct globus_i_gsc_op_s
     globus_bool_t                           aborted;
     globus_gridftp_server_control_abort_cb_t abort_cb;
     void *                                  abort_user_arg;
-
     void *                                  user_arg;
 } globus_i_gsc_op_t;
 
@@ -324,8 +338,6 @@ typedef struct globus_i_gsc_server_handle_s
     /*
      *  user function pointers
      */
-    void *                              user_arg;
-
     globus_range_list_t                 range_list;
 
     globus_i_gsc_user_funcs_t           funcs;

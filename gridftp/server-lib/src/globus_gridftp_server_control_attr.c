@@ -252,8 +252,10 @@ globus_result_t
 globus_gridftp_server_control_attr_add_recv(
     globus_gridftp_server_control_attr_t    in_attr,
     const char *                            module_name,
-    globus_gridftp_server_control_transfer_cb_t recv_cb)
+    globus_gridftp_server_control_transfer_cb_t recv_cb,
+    void *                                  user_arg)
 {
+    globus_i_gsc_module_func_t *            mod_func;
     globus_i_gsc_attr_t *                   attr;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_gridftp_server_control_attr_add_recv);
@@ -282,13 +284,23 @@ globus_gridftp_server_control_attr_add_recv(
     if(module_name == NULL)
     {
         attr->funcs.default_recv_cb = recv_cb;
+        attr->funcs.default_recv_arg = user_arg;
     }
     else
     {
+        mod_func = (globus_i_gsc_module_func_t *) globus_malloc(
+            sizeof(globus_i_gsc_module_func_t));
+        if(mod_func == NULL)
+        {
+            res = GlobusGridFTPServerControlErrorSytem();
+            goto err;
+        }
+        mod_func->func = recv_cb;
+        mod_func->user_arg = user_arg;
         globus_hashtable_insert(
             &attr->funcs.recv_cb_table,
             (void *)module_name,
-            recv_cb);
+            mod_func);
     }
     GlobusGridFTPServerDebugExit();
 
@@ -305,8 +317,10 @@ globus_result_t
 globus_gridftp_server_control_attr_add_send(
     globus_gridftp_server_control_attr_t    in_attr,
     const char *                            module_name,
-    globus_gridftp_server_control_transfer_cb_t send_cb)
+    globus_gridftp_server_control_transfer_cb_t send_cb,
+    void *                                  user_arg)
 {
+    globus_i_gsc_module_func_t *            mod_func;
     globus_i_gsc_attr_t *                   attr;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_gridftp_server_control_attr_add_send);
@@ -335,13 +349,23 @@ globus_gridftp_server_control_attr_add_send(
     if(module_name == NULL)
     {
         attr->funcs.default_send_cb = send_cb;
+        attr->funcs.default_send_arg = user_arg;
     }
     else
     {
+        mod_func = (globus_i_gsc_module_func_t *) globus_malloc(
+            sizeof(globus_i_gsc_module_func_t));
+        if(mod_func == NULL)
+        {
+            res = GlobusGridFTPServerControlErrorSytem();
+            goto err;
+        }
+        mod_func->func = send_cb;
+        mod_func->user_arg = user_arg;
         globus_hashtable_insert(
             &attr->funcs.send_cb_table,
             (void *)module_name,
-            send_cb);
+            mod_func);
     }
     GlobusGridFTPServerDebugExit();
 
@@ -357,7 +381,8 @@ globus_gridftp_server_control_attr_add_send(
 globus_result_t
 globus_gridftp_server_control_attr_set_auth(
     globus_gridftp_server_control_attr_t    in_attr,
-    globus_gridftp_server_control_auth_cb_t auth_cb)
+    globus_gridftp_server_control_auth_cb_t auth_cb,
+    void *                                  user_arg)
 {
     globus_i_gsc_attr_t *                   attr;
     globus_result_t                         res;
@@ -384,6 +409,7 @@ globus_gridftp_server_control_attr_set_auth(
     }
 
     attr->funcs.auth_cb = auth_cb;
+    attr->funcs.auth_cb = user_arg;
 
     GlobusGridFTPServerDebugExit();
 
@@ -399,7 +425,8 @@ globus_gridftp_server_control_attr_set_auth(
 globus_result_t
 globus_gridftp_server_control_attr_set_resource(
     globus_gridftp_server_control_attr_t    in_attr,
-    globus_gridftp_server_control_resource_cb_t resource_query_cb)
+    globus_gridftp_server_control_resource_cb_t resource_query_cb,
+    void *                                  resource_arg)
 {
     globus_i_gsc_attr_t *                   attr;
     globus_result_t                         res;
@@ -426,6 +453,7 @@ globus_gridftp_server_control_attr_set_resource(
     }
 
     attr->funcs.resource_cb = resource_query_cb;
+    attr->funcs.resource_arg = resource_arg;
 
     GlobusGridFTPServerDebugExit();
 
@@ -440,10 +468,13 @@ globus_gridftp_server_control_attr_set_resource(
 
 globus_result_t
 globus_gridftp_server_control_attr_data_functions(
-    globus_gridftp_server_control_attr_t            server_attr,
-    globus_gridftp_server_control_active_connect_cb_t  active_cb,
-    globus_gridftp_server_control_passive_connect_cb_t passive_cb,
-    globus_gridftp_server_control_data_destroy_cb_t    destroy_cb)
+    globus_gridftp_server_control_attr_t                server_attr,
+    globus_gridftp_server_control_active_connect_cb_t   active_cb,
+    void *                                              active_arg,
+    globus_gridftp_server_control_passive_connect_cb_t  passive_cb,
+    void *                                              passive_arg,
+    globus_gridftp_server_control_data_destroy_cb_t     destroy_cb,
+    void *                                              destroy_arg)
 {
     globus_i_gsc_attr_t *                   attr;
     globus_result_t                         res;
@@ -457,8 +488,11 @@ globus_gridftp_server_control_attr_data_functions(
     attr = (globus_i_gsc_attr_t *) server_attr;
 
     attr->funcs.passive_cb = passive_cb;
+    attr->funcs.passive_arg = passive_cb;
     attr->funcs.active_cb = active_cb;
+    attr->funcs.active_arg = passive_arg;
     attr->funcs.data_destroy_cb = destroy_cb;
+    attr->funcs.data_destroy_arg = destroy_arg;
 
     return GLOBUS_SUCCESS;
 
@@ -499,7 +533,8 @@ globus_gridftp_server_control_attr_set_log(
 globus_result_t
 globus_gridftp_server_control_attr_set_list(
     globus_gridftp_server_control_attr_t    in_attr,
-    globus_gridftp_server_control_list_cb_t list_cb)
+    globus_gridftp_server_control_list_cb_t list_cb,
+    void *                                  user_arg)
 {
     globus_i_gsc_attr_t *                   attr;
     GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
@@ -511,6 +546,7 @@ globus_gridftp_server_control_attr_set_list(
     attr = (globus_i_gsc_attr_t *) in_attr;
 
     attr->funcs.list_cb = list_cb;
+    attr->funcs.list_arg = user_arg;
 
     return GLOBUS_SUCCESS;
 }
