@@ -123,7 +123,7 @@ it if lastlog is installed in a different place.
 
 --without-lastlog will disable lastlog support entirely.
 
---with-sia, --without-sia will enable or disable OSF1's Security 
+--with-osfsia, --without-osfsia will enable or disable OSF1's Security 
 Integration Architecture.  The default for OSF1 machines is enable.
 
 --with-kerberos4=PATH will enable Kerberos IV support. You will need
