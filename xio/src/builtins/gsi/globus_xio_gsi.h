@@ -26,6 +26,9 @@
 typedef enum
 {
     /** Set the credential to be used */
+    /** if this is called with the handle_cntl, there must be no outstanding
+     * operations on the handle.
+     */
     GLOBUS_XIO_GSI_SET_CREDENTIAL,
     /** Get the credential to be used */
     GLOBUS_XIO_GSI_GET_CREDENTIAL,

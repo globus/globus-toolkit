@@ -3602,6 +3602,7 @@ globus_io_tcp_get_security_context(
     GlobusIOName(globus_io_tcp_get_security_context);
     
     GlobusLIOCheckHandle(handle, GLOBUS_I_IO_TCP_HANDLE);
+    GlobusLIOCheckNullParam(context);
     
     return globus_xio_handle_cntl(
         (*handle)->xio_handle,
@@ -3618,12 +3619,48 @@ globus_io_tcp_get_delegated_credential(
     GlobusIOName(globus_io_tcp_get_delegated_credential);
     
     GlobusLIOCheckHandle(handle, GLOBUS_I_IO_TCP_HANDLE);
+    GlobusLIOCheckNullParam(cred);
     
     return globus_xio_handle_cntl(
         (*handle)->xio_handle,
         globus_l_io_gsi_driver,
         GLOBUS_XIO_GSI_GET_DELEGATED_CRED,
         cred);
+}
+
+/* new api just for gram_protocol_io */
+globus_result_t
+globus_io_tcp_set_credential(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t                       credential)
+{
+    GlobusIOName(globus_io_tcp_set_credential);
+    
+    GlobusLIOCheckHandle(handle, GLOBUS_I_IO_TCP_HANDLE);
+    
+    return globus_xio_handle_cntl(
+        (*handle)->xio_handle, 
+        globus_l_io_gsi_driver, 
+        GLOBUS_XIO_GSI_SET_CREDENTIAL, 
+        credential);
+}
+
+/* new api just for gram_protocol_io */
+globus_result_t
+globus_io_tcp_get_credential(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t *                     credential)
+{
+    GlobusIOName(globus_io_tcp_get_credential);
+    
+    GlobusLIOCheckHandle(handle, GLOBUS_I_IO_TCP_HANDLE);
+    GlobusLIOCheckNullParam(credential);
+    
+    return globus_xio_handle_cntl(
+        (*handle)->xio_handle, 
+        globus_l_io_gsi_driver, 
+        GLOBUS_XIO_GSI_GET_CREDENTIAL,
+        credential);
 }
 
 static

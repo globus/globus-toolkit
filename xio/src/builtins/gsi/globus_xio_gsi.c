@@ -2813,6 +2813,18 @@ globus_l_xio_gsi_cntl(
     
     switch(cmd)
     {
+      case GLOBUS_XIO_GSI_SET_CREDENTIAL:
+        /** this is bad, but is needed to support old globus io code.
+         * ideally, we would have locks and ensure there are no pending ops
+         * when this is called
+         */
+        handle->attr->credential = va_arg(ap, gss_cred_id_t);
+        break;
+      case GLOBUS_XIO_GSI_GET_CREDENTIAL:
+        out_cred = va_arg(ap, gss_cred_id_t *);
+        *out_cred = handle->attr->credential;
+        break;
+        
         /* extract the context */
       case GLOBUS_XIO_GSI_GET_CONTEXT:
         out_ctx = va_arg(ap, gss_ctx_id_t *);

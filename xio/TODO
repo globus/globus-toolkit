@@ -4,8 +4,6 @@ need clean method of getting contact string
 
 need a kickout utility for drivers so their driver specific cntls can respect callback space
 
-need to check for sysconf for system driver, otherwise we're going to have a 256 fd limit
-
 driver op cancel needs to remember who canceled it so the flag can be reset when it returns to that driver.
 
 also, if something like target init or server accept fails somewhere along the way, the success targets need to be destroyed (same for attr, etc)

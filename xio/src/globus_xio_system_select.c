@@ -46,7 +46,6 @@ enum globus_l_xio_error_levels
     GLOBUS_L_XIO_SYSTEM_DEBUG_INFO      = 4
 };
 
-/*** XXXX ***/
 #ifdef HAVE_SYSCONF
 #define GLOBUS_L_OPEN_MAX sysconf(_SC_OPEN_MAX)
 #else
@@ -302,6 +301,7 @@ static globus_bool_t                globus_l_xio_system_select_active;
 static globus_bool_t                globus_l_xio_system_wakeup_pending;
 static globus_bool_t                globus_l_xio_system_shutdown_called;
 static int                          globus_l_xio_system_highest_fd;
+static int                          globus_l_xio_system_max_fds;
 static int                          globus_l_xio_system_fd_allocsize;
 static fd_set *                     globus_l_xio_system_read_fds;
 static fd_set *                     globus_l_xio_system_write_fds;
@@ -381,12 +381,13 @@ globus_l_xio_system_activate(void)
      * necessarily large enough to hold the maximum number of open file
      * descriptors.  This ensures that it will be.
      */
+    globus_l_xio_system_max_fds = GLOBUS_L_OPEN_MAX;
     globus_l_xio_system_fd_allocsize = sizeof(fd_set);
-    if(globus_l_xio_system_fd_allocsize * 8 < GLOBUS_L_OPEN_MAX)
+    if(globus_l_xio_system_fd_allocsize * 8 < globus_l_xio_system_max_fds)
     {
         /* Conservatively round up to 64 bits */
         globus_l_xio_system_fd_allocsize =
-            ((GLOBUS_L_OPEN_MAX + 63) & ~63) / 8;
+            ((globus_l_xio_system_max_fds + 63) & ~63) / 8;
     }
 
     i = globus_l_xio_system_fd_allocsize;
@@ -405,13 +406,14 @@ globus_l_xio_system_activate(void)
 
     globus_l_xio_system_read_operations = (globus_l_operation_info_t **)
         globus_calloc(
-            GLOBUS_L_OPEN_MAX * 2, sizeof(globus_l_operation_info_t *));
+            globus_l_xio_system_max_fds * 2,
+            sizeof(globus_l_operation_info_t *));
     if(!globus_l_xio_system_read_operations)
     {
         goto error_operations;
     }
     globus_l_xio_system_write_operations =
-        globus_l_xio_system_read_operations + GLOBUS_L_OPEN_MAX;
+        globus_l_xio_system_read_operations + globus_l_xio_system_max_fds;
 
     /* I am going to leave this memory around after deactivation.  To safely
      * destroy them, I would need a lot more synchronization of kicked out
@@ -716,7 +718,7 @@ globus_l_xio_system_register_read(
             goto error_canceled;
         }
 
-        if(fd >= GLOBUS_L_OPEN_MAX)
+        if(fd >= globus_l_xio_system_max_fds)
         {
             result = GlobusXIOErrorSystemResource("too many fds");
             goto error_too_many_fds;
@@ -798,7 +800,7 @@ globus_l_xio_system_register_write(
             goto error_canceled;
         }
 
-        if(fd >= GLOBUS_L_OPEN_MAX)
+        if(fd >= globus_l_xio_system_max_fds)
         {
             result = GlobusXIOErrorSystemResource("too many fds");
             goto error_too_many_fds;

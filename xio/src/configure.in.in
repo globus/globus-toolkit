@@ -9,6 +9,14 @@ AM_PROG_LIBTOOL
 
 dnl config header goes here
 
+dnl check for -lsocket -lnsl
+
+CHECK_NEED_LNSL
+
+CHECK_NEED_LSOCKET
+
+GPT_SET_LIBS(["$EXTERNAL_LIBS"])
+
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
@@ -44,6 +52,9 @@ AC_SUBST(XIO_BUILTIN_HOOKS_DEC)
 AC_SUBST(XIO_BUILTIN_HOOKS_DEF)
 
 LAC_DOXYGEN("../", "*.doc")
+
+AM_CONFIG_HEADER(config.h)
+AC_CHECK_FUNCS(sysconf)
 
 GLOBUS_FINALIZE
 
