@@ -21,6 +21,11 @@ LibSources= \
 PgmSources = \
 	globus_gram_reporter.c
 
+sysconf_DATA = \
+        grid-info-gram-reporter.schema
+
+EXTRA_DIST = $(sysconf_DATA)
+
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
 #
