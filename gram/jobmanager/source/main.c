@@ -24,7 +24,9 @@
 
 #include "gssapi.h"
 #include "globus_gss_assist.h"
-
+#include "globus_gsi_system_config.h"
+#include "globus_common.h"
+#include "globus_callout.h"
 #include "globus_gram_job_manager.h"
 #include "globus_gram_protocol.h"
 #include "globus_rsl.h"
@@ -34,6 +36,7 @@
 #include "globus_io.h"
 #include "globus_gass_transfer.h"
 #include "globus_ftp_client.h"
+#include "globus_gram_jobmanager_callout_error.h"
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
@@ -587,14 +590,32 @@ globus_l_gram_job_manager_activate(void)
 	fprintf(stderr, "common module activation failed with rc=%d\n", rc);
 	goto common_failed;
     }
-
-    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    rc = globus_module_activate(GLOBUS_CALLOUT_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "gss assist activation failed with rc=%d\n", rc);
+	fprintf(stderr, "callout module activation failed with rc=%d\n", rc);
+	goto callout_failed;
+    }
+    rc = globus_module_activate(GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "jobmanager callout error module activation failed with rc=%d\n", rc);
+	goto jobmanager_callout_error_failed;
+    }
+    rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "gssapi activation failed with rc=%d\n", rc);
         goto gss_assist_failed;
     }
 
+    rc = globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "gsi sysconfig activation failed with rc=%d\n", rc);
+        goto gsi_sysconfig_failed;
+    }
+    
     rc = globus_module_activate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -643,7 +664,7 @@ globus_l_gram_job_manager_activate(void)
 	fprintf(stderr, "ftp client module activation failed with rc=%d\n", rc);
 	goto ftp_client_failed;
     }
-
+    
 ftp_client_failed:
 gass_transfer_failed:
 nexus_failed:
@@ -652,6 +673,9 @@ gass_cache_failed:
 gram_protocol_failed:
 io_failed:
 gss_assist_failed:
+gsi_sysconfig_failed:
+callout_failed:
+jobmanager_callout_error_failed:
     if(rc)
     {
 	globus_module_deactivate_all();
