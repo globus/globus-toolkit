@@ -2,6 +2,7 @@
 
 <project default="all" basedir=".">
 
+    <property environment="env"/>
     <property name="env.GLOBUS_LOCATION" value="../../wsrf/install"/>
     <property name="deploy.dir" location="${env.GLOBUS_LOCATION}"/>
 
