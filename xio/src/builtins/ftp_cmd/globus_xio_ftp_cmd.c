@@ -75,7 +75,9 @@ globus_l_xio_ftp_cmd_complete_command(
     globus_size_t *                     end_offset)
 {
     globus_byte_t *                     tmp_ptr;
-    globus_size_t                       end_off;
+    globus_size_t                       len;
+    globus_byte_t *                     start_ptr;
+    globus_bool_t                       done = GLOBUS_FALSE;
 
     /* all a 0 length to be passed */
     if(length == 0)
@@ -83,16 +85,9 @@ globus_l_xio_ftp_cmd_complete_command(
         return GLOBUS_FALSE;
     }
 
-    tmp_ptr = globus_libc_memrchr(buffer, '\r', length);
+    tmp_ptr = globus_libc_memmem(buffer, length, "\r\n", 2);
     /* IF There is no '\r' */
     if(tmp_ptr == NULL)
-    {
-        return GLOBUS_FALSE;
-    }
-    end_off = tmp_ptr - buffer;
-
-    /* if the '\r' is the last character, or the next isn't '\n' */
-    if(end_off == length - 1 || tmp_ptr[1] != '\n')
     {
         return GLOBUS_FALSE;
     }
@@ -100,26 +95,30 @@ globus_l_xio_ftp_cmd_complete_command(
     /* if server we are done as soon as we get \r\n */
     if(!client)
     {
-        *end_offset = end_off;
+        *end_offset = tmp_ptr - buffer + 2;
         return GLOBUS_TRUE;
     }
 
-    /* server must check for continuation commands */
-    tmp_ptr = globus_libc_memrchr(buffer, '\r', end_off - 1);
-    /* if not found just check from start */
-    if(tmp_ptr == NULL)
+    start_ptr = buffer;
+    len = length;
+    while(!done)
     {
-        tmp_ptr = buffer;
-    }
-    else
-    {
-        tmp_ptr += 2; /* move beyound \r\n */
-    }
-    /* if 4th colums is a space and first is a number we are done */
-    if(tmp_ptr[3] == ' ' && isdigit(tmp_ptr[0]))
-    {
-        *end_offset = end_off;
-        return GLOBUS_TRUE;
+        /* if 4th colums is a space and first is a number we are done */
+        if(start_ptr[3] == ' ' && isdigit(start_ptr[0]))
+        {
+            *end_offset = tmp_ptr - buffer + 2;
+            return GLOBUS_TRUE;
+        }
+        else
+        {
+            len -= start_ptr - tmp_ptr - 2;
+            start_ptr = tmp_ptr + 2;
+            tmp_ptr = globus_libc_memmem(start_ptr, len, "\r\n", 2);
+            if(tmp_ptr == NULL)
+            {
+                done = GLOBUS_TRUE;;
+            }
+        }
     }
 
     return GLOBUS_FALSE;
@@ -422,22 +421,25 @@ globus_l_xio_ftp_cmd_read_cb(
                     tmp_ptr++;
                     end_offset--;
                 }
-                /* copy it into its own buffer */
-                done_buf = globus_malloc(end_offset+1);
-                memcpy(done_buf, handle->buffer, end_offset+1);
-                done_buf[end_offset] = '\0';
-                globus_fifo_enqueue(&handle->read_q, done_buf);
 
-                remain = handle->buffer_ndx - end_offset - 2;
+                if(!(end_offset == 2 && *tmp_ptr == '\r' && tmp_ptr[1] == '\n'))
+                {
+                    /* copy it into its own buffer */
+                    done_buf = globus_malloc(end_offset+1);
+                    memcpy(done_buf, handle->buffer, end_offset);
+                    done_buf[end_offset] = '\0';
+                    globus_fifo_enqueue(&handle->read_q, done_buf);
+                }
+
+                remain = handle->buffer_ndx - end_offset;
                 if(remain > 0)
                 {
                     memmove(
                         handle->buffer,
-                        &handle->buffer[handle->buffer_ndx],
+                        &handle->buffer[end_offset],
                         remain);
                 }
                 handle->buffer_ndx = remain;
-
                 complete = globus_l_xio_ftp_cmd_complete_command(
                     handle->buffer,
                     handle->buffer_ndx,
