@@ -146,12 +146,6 @@ typedef enum
     GLOBUS_GRIDFTP_SERVER_COMMAND_CONTINUE,
 } globus_i_gs_command_complete_code;
 
-typedef struct globus_i_gs_server_protocol_module_s
-{
-    globus_gridftp_server_pmod_start_t      start_func;
-    globus_gridftp_server_pmod_stop_t       stop_func;
-} globus_i_gs_server_protocol_module_t;
-
 typedef struct globus_i_gs_server_s
 {
     int                                     version_ctl;
@@ -187,7 +181,7 @@ typedef struct globus_i_gs_server_s
     char *                                  syst;
     char *                                  help;
 
-    globus_i_gs_server_protocol_module_t *  pmod;
+    globus_i_gridftp_server_pmod_t *        pmod;
     void *                                  proto_arg;
 
     void *                                  user_arg;
@@ -249,7 +243,7 @@ typedef struct globus_i_gs_attr_s
     globus_hashtable_t                      command_func_table;
     globus_gridftp_server_resource_func_t   resource_func;
     globus_gridftp_server_error_func_t      error_func;
-    globus_i_gs_server_protocol_module_t *  pmod;
+    globus_i_gridftp_server_pmod_t *        pmod;
     globus_i_gs_state_t                     start_state;
 } globus_i_gs_attr_t;
 

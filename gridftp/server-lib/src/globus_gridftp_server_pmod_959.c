@@ -147,9 +147,17 @@ enum
 
 typedef globus_result_t
 (*globus_l_gsp_959_parse_func_t)(
-    globus_gridftp_server_t                 server,
-    int                                     cmd,
-    const char *                            command);
+    const char *                            command,
+    globus_l_gsp_959_cmd_ent_t *            cmd_ent,
+    void *                                  user_arg);
+
+typedef globus_result_t
+(*globus_l_gsp_959_reply_format_func_t)(
+    const char *                            command,
+    globus_l_gsp_959_cmd_ent_t *            cmd_ent,
+    globus_result_t                         result,
+    void *                                  user_arg);
+    
 
 static globus_hashtable_t                   globus_l_gsp_959_command_table;
 static globus_byte_t *                      globus_l_gsp_959_fake_buffer 
@@ -191,14 +199,17 @@ globus_l_gsp_959_handle_destroy(
 
 typedef struct globus_l_gsp_959_read_ent_s
 {
-    globus_l_gsp_959_cmd_ent_t *            cmd_type;
+    globus_l_gsp_959_handle_t *             handle;
+    globus_l_gsp_959_cmd_ent_t *            cmd_ent;
     char *                                  command;
+    globus_size_t                           length;
 } globus_l_gsp_959_read_ent_t;
 
 globus_l_gsp_959_read_ent_t *
 globus_l_gsp_959_read_ent_create(
     globus_l_gsp_959_cmd_ent_t *            cmt_ent,
-    const char *                            buffer)
+    const char *                            buffer,
+    globus_l_gsp_959_handle_t *             handle)
 {
     globus_l_gsp_959_read_ent_t *           read_ent;
 
@@ -209,8 +220,9 @@ globus_l_gsp_959_read_ent_create(
         return NULL;
     }
 
-    read_ent->cmd_type = cmt_ent;
-    read_ent->command = globus_libc_strdup(buffer);
+    read_ent->cmd_ent = cmt_ent;
+    read_ent->handle = handle;
+    read_ent->command = buffer;
 
     return read_ent;
 }
@@ -335,7 +347,7 @@ globus_l_gsp_959_panic(
             break;
     }
 
-    globus_gridftp_server_protocol_error(handle->server, res);
+    globus_gridftp_server_pmod_error(handle->server, res);
 }
 
 /*
@@ -358,9 +370,20 @@ globus_l_gsp_959_process_next_cmd(
             globus_fifo_dequeue(&handle->read_q);
 
         /* determine the command type and deal with it */
-        switch(read_ent->cmd_type->cmd)
+        handle->ref++;
+        res = read_ent->cmd_ent->parse_func(
+            read_ent->buffer, read_ent->cmd_ent, handle);
+        if(res != GLOBUS_SUCCESS)
         {
-
+            handle->ref--;
+            res = globus_l_gsp_959_reply(
+                    handle,
+                    226,
+                    "Abort successful");
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_l_gsp_959_panic(handle, res);
+            }
         }
     }
 }
@@ -457,7 +480,7 @@ globus_l_gsp_959_read_callback(
                 else
                 {
                     read_ent = globus_l_gsp_959_read_ent_create(
-                        cmd_ent, buffer);
+                        cmd_ent, buffer, len);
                     if(read_ent == NULL)
                     {
                         globus_l_gsp_959_panic(handle, res);
@@ -1086,8 +1109,6 @@ globus_l_gsp_959_init()
     return GLOBUS_SUCCESS;
 };
 
-#include "version.h"
-
 static globus_result_t
 globus_l_gsp_959_destroy()
 {
@@ -1096,7 +1117,7 @@ globus_l_gsp_959_destroy()
     return GLOBUS_SUCCESS;
 }
 
-globus_i_gridftp_server_protocol_module_t   globus_i_gsp_959_proto_mod =
+globus_i_gridftp_server_pmod_t              globus_i_gsp_959_proto_mod =
 {
     globus_l_gsp_959_init,
     globus_l_gsp_959_destroy,

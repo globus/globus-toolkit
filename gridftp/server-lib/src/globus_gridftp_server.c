@@ -1059,7 +1059,7 @@ globus_gridftp_server_pmod_command(
  *  called by the protocol module when an error occurs
  */
 globus_result_t
-globus_gridftp_server_protocol_error(
+globus_gridftp_server_pmod_error(
     globus_gridftp_server_t                 server,
     globus_result_t                         result)
 {

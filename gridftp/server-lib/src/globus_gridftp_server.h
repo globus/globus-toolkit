@@ -338,6 +338,10 @@ globus_gridftp_server_get_auth_cb(
     globus_gridftp_server_t                 server,
     globus_gridftp_server_auth_callback_t * auth_cb);
 
+globus_result_t
+globus_gridftp_server_command_cancel(
+    globus_gridftp_server_t                 server);
+
 /***************************************************************************
  *                      user callbacks
  *                      --------------
