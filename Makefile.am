@@ -45,7 +45,7 @@ ServerSources= \
 INCLUDES += $(GPT_INCLUDES)
 
 Scripts= \
-	myproxy.cron
+	myproxy-test
 
 sbin_SCRIPTS = $(Scripts)
 
