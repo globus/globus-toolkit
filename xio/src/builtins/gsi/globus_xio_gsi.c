@@ -2033,7 +2033,6 @@ globus_l_xio_gsi_read(
 
  error:
     GlobusXIOGSIDebugExitWithError();
-    globus_xio_driver_finished_read(op, result, handle->bytes_returned);
     return result;
 }
 
@@ -2353,7 +2352,6 @@ globus_l_xio_gsi_write(
     return result;
  error:
     GlobusXIOGSIDebugExitWithError();
-    globus_xio_driver_finished_write(op, result, 0);
     return result;
 
 }
