@@ -6,8 +6,6 @@
 #include "winglue.h"
 #include <winuser.h>
 #include <stdio.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
 #include <malloc.h>
 
 
