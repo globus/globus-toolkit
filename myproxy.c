@@ -7,7 +7,6 @@
 
 #include "myproxy.h"
 #include "gsi_socket.h"
-#include "version.h"
 #include "verror.h"
 #include "string_funcs.h"
 

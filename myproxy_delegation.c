@@ -1,6 +1,5 @@
 #include "myproxy.h"
 #include "gnu_getopt.h"
-#include "version.h"
 #include "verror.h"
 #include "myproxy_delegation.h"
 
