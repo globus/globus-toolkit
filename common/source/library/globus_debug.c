@@ -144,6 +144,7 @@ globus_debug_init(
                 if(*out_file)
                 {
                     *using_file = GLOBUS_TRUE;
+                    setvbuf(*out_file, GLOBUS_NULL, _IONBF, 0);
                     fprintf(*out_file, "### %d: %s ###\n", getpid(), env_name);
                 }
                 else
