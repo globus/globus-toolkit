@@ -8,7 +8,9 @@
 #include "myproxy.h"
 #include "gsi_socket.h"
 #include "version.h"
+#include "verror.h"
 
+#include <errno.h> 
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,17 +26,16 @@ int convert_message(const char *buffer, const char *varname,
                     char *line, const int linelen);
 
 int 
-myproxy_init_client(myproxy_socket_attrs_t *attrs) 
-{
+myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct sockaddr_in sin;
     struct hostent *host_info;
     char error_string[1024];
 
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (attrs->socket_fd == -1)
-    {
-        perror("socket");
+    if (attrs->socket_fd == -1) {
+	verror_put_errno(errno);
+	verror_put_string("socket() failed");
         return -1;
     } 
 
@@ -42,7 +43,7 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs)
 
     if (host_info == NULL)
     {
-        fprintf(stderr, "Unknown host \"%s\"\n", attrs->pshost);
+        verror_put_string("Unknown host \"%s\"\n", attrs->pshost);
         return -1;
     } 
 
@@ -52,14 +53,15 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs)
     sin.sin_port = htons(attrs->psport);
 
     if (connect(attrs->socket_fd, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-        perror("connect\n");
+        verror_put_errno(errno);
+        verror_put_string("Unable to connect to %s\n", attrs->pshost);
         return -1;
     }
 
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
     
     if (attrs->gsi_socket == NULL) {
-        perror("GSI_SOCKET_new()\n");
+        verror_put_string("GSI_SOCKET_new()\n");
         return -1;
     }
 
@@ -67,7 +69,7 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs)
    {
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
-       fprintf(stderr, "Error enabling encryption: %s\n", error_string);
+       verror_put_string("Error enabling encryption: %s\n", error_string);
        return -1;
    }
 
@@ -79,18 +81,18 @@ int
 myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile) 
 {
    char error_string[1024];
-
+   
    if (GSI_SOCKET_use_creds(attrs->gsi_socket, proxyfile) == GSI_SOCKET_ERROR) {
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
-       fprintf(stderr, "Error setting credentials to use: %s\n", error_string);
+       verror_put_string("Error setting credentials to use: %s\n", error_string);
        return -1;
    }
 
    if (GSI_SOCKET_authentication_init(attrs->gsi_socket) == GSI_SOCKET_ERROR) {
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
-       fprintf(stderr, "Error authenticating: %s\n", error_string);
+       verror_put_string("Error authenticating: %s\n", error_string);
        return -1;
    }
    return 0;
@@ -107,7 +109,9 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
     if (GSI_SOCKET_authentication_accept(attrs->gsi_socket) == GSI_SOCKET_ERROR) {
         GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                     sizeof(error_string));
-        fprintf(stderr, "Error authenticating client: %s\n", error_string);
+
+        verror_put_string("Error authenticating client: %s\n", error_string);
+
         return -1;
     }
 
@@ -116,7 +120,7 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
                                    namelen) == GSI_SOCKET_ERROR) {
         GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                     sizeof(error_string));
-        fprintf(stderr, "Error getting client name: %s\n", error_string);
+        verror_put_string("Error getting client name: %s\n", error_string);
         return -1;
     }
     return 0;
@@ -134,12 +138,13 @@ myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, co
   if (GSI_SOCKET_delegation_init_ext(attrs->gsi_socket, 
 				     delegfile,  /* delegation file */
 				     0,          /* flags */
-				     0,     /* lifetime */
+				     0,          /* lifetime */
 				     NULL        /* restrictions */) == GSI_SOCKET_ERROR) {
     
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				sizeof(error_string));
-    fprintf(stderr, "Error delegating credentials: %s\n", error_string);
+
+    verror_put_string("Error delegating credentials: %s\n", error_string);
     return -1;
   }
   return 0;
@@ -155,7 +160,7 @@ myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int d
   if (GSI_SOCKET_delegation_accept_ext(attrs->gsi_socket, data, datalen) == GSI_SOCKET_ERROR) {
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				sizeof(error_string));
-    fprintf(stderr, "Error accepting delegating credentials: %s\n", error_string);
+    verror_put_string("Error accepting delegating credentials: %s\n", error_string);
     return -1;
   }
   return 0;
@@ -294,7 +299,6 @@ myproxy_serialize_response(const myproxy_response_t *response,
     }
     data[totlen] = '\0';
 
-    printf("RESPONSE: %s\n", data);
     return totlen+1;
 }
 
@@ -347,7 +351,7 @@ myproxy_send(myproxy_socket_attrs_t *attrs,
     {
 	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				    sizeof(error_string));
-	fprintf(stderr, "Error writing: %s\n", error_string);
+	verror_put_string("Error writing: %s\n", error_string);
 	return -1;
     }
     return 0;
@@ -367,10 +371,10 @@ myproxy_recv(myproxy_socket_attrs_t *attrs,
    {
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				    sizeof(error_string));
-       fprintf(stderr, "Error reading: %s\n", error_string);
+       verror_put_string("Error reading: %s\n", error_string);
        return -1;
    } else if (readlen == GSI_SOCKET_TRUNCATED) {
-       fprintf(stderr, "Response was truncated\n");
+       verror_put_string("Response was truncated\n");
        return -2;
    }
    return readlen;

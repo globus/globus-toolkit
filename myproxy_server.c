@@ -252,6 +252,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
+
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
  
@@ -348,6 +349,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Handle client request */
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY:
+	/* log request type */
+        myproxy_log("Received client %s command: GET");
 	/* return server response */
 	send_response(attrs, server_response, client_name);
 
@@ -356,6 +359,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
         get_proxy(attrs, client_creds, server_response);
         break;
     case MYPROXY_PUT_PROXY:
+	/* log request type */
+        myproxy_log("Received client %s command: PUT");
 	/* return server response */
 	send_response(attrs, server_response, client_name);
 
@@ -364,12 +369,18 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
         put_proxy(attrs, client_creds, server_response);
         break;
     case MYPROXY_INFO_PROXY:
+	/* log request type */
+        myproxy_log("Received client %s command: INFO");
         info_proxy(client_creds, server_response);
         break;
     case MYPROXY_DESTROY_PROXY:
+	/* log request type */
+        myproxy_log("Received client %s command: DESTROY");
         destroy_proxy(client_creds, server_response);
         break;
     default:
+	/* log request type */
+        myproxy_log("Received client %s command: Invalid request type");
         strcat(server_response->error_string, "Invalid client request command.\n");
         break;
     }
@@ -548,6 +559,7 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, 
  
     if (myproxy_send(attrs, server_buffer, responselen) < 0) {
         my_failure("error in myproxy_send()\n");
+	myproxy_log_verror();
     } 
 
     return;
@@ -562,6 +574,7 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     
     /* Retrieve credentials */
     if (myproxy_creds_retrieve(creds) < 0) {
+	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
         strcat(response->error_string, "Unable to retrieve credentials.\n");
 	return;
@@ -573,14 +586,13 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     
     /* Delegate credentials to client */
     if (myproxy_init_delegation(attrs, creds->location, creds->lifetime) < 0) {
-        response->response_type =  MYPROXY_ERROR_RESPONSE; 
+        myproxy_log_verror();
+	response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	strcat(response->error_string, "Unable to delegate credentials.\n");
-	myproxy_log("Unable to delegate credentials for %s", creds->owner_name);
     } else {
         myproxy_log("Delegating credentials for %s", creds->owner_name);
 	response->response_type = MYPROXY_OK_RESPONSE;
-    }
-  
+    } 
 }
 
 void put_proxy(myproxy_socket_attrs_t *attrs, 
@@ -595,9 +607,9 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
-	myproxy_log("error in myproxy_accept_delegation()");
-        exit(1);
+	myproxy_log_verror();
     }
+
     myproxy_debug("  Accepted delegation: %s", delegfile);
  
     creds->location = malloc(strlen(delegfile) + 1);
@@ -624,8 +636,19 @@ void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
 }
 
 void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-    myproxy_creds_delete(creds);  
-    response->response_type = MYPROXY_OK_RESPONSE;
+    
+    myproxy_debug("Deleting credentials for username \"%s\"", creds->user_name);
+    myproxy_debug("  Owner is \"%s\"", creds->owner_name);
+    myproxy_debug("  Delegation lifetime is %d seconds", creds->lifetime);
+    
+    if (myproxy_creds_delete(creds) < 0) { 
+	myproxy_log_verror();
+        response->response_type =  MYPROXY_ERROR_RESPONSE; 
+        strcat(response->error_string, "Unable to store credentials.\n"); 
+    } else {
+	response->response_type = MYPROXY_OK_RESPONSE;
+    }
+ 
 }
 
 /*
@@ -709,7 +732,8 @@ static int
 become_daemon(myproxy_server_context_t *context)
 {
     pid_t childpid;
-    int fd, fdlimit;
+    int fd = 0;
+    int fdlimit;
     
     /* Steps taken from UNIX Programming FAQ */
     
