@@ -1,23 +1,5 @@
 #!/bin/sh
 
-error()
-{
-    echo ""
-    echo "ERROR: bootstrap failed!"
-    echo ""
-    exit 1
-}
-
-# check for autotools
-
-for program in aclocal autoconf
-    do
-    ($program --version ) > /dev/null 2>&1 || { 
-    echo "ERROR: $program not found" >&2
-    exit 1
-    }
-done
-
 # checking for the GLOBUS_LOCATION
 
 if test "x$GLOBUS_LOCATION" = "x"; then
@@ -25,19 +7,10 @@ if test "x$GLOBUS_LOCATION" = "x"; then
     exit 1
 fi
 
-#if test ! -f "$GLOBUS_LOCATION/share/globus_aclocal/gpt_autoconf_macros.m4"; then
-#    if test "x$GPT_LOCATION" = "x"; then
-#        echo "ERROR Globus Packaging Tools not found" >&2
-#        echo "ERROR either set GPT_LOCATION or install them in $GLOBUS_LOCATION" >&2
-#        exit 1
-#    else
-#        config="$config -I $GPT_LOCATION/share/globus_aclocal"
-#    fi
-#else
-#    config="$config -I $GLOBUS_LOCATION/share/globus_aclocal"
-#fi
+. ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
+. ${GLOBUS_LOCATION}/libexec/gpt-bootstrap.sh
 
-echo "running autoconf"
+echo "generating findshelltools"
 autoconf findshelltools.in > findshelltools || error
 chmod 755 findshelltools
 
