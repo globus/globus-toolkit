@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.35 $)
+AC_REVISION($Revision: 1.36 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -11,20 +11,6 @@ dnl config header goes here
 
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
-
-dnl These switches are provided for users who manually build myproxy.
-dnl gpt-build will use the default values for these switches.
-
-AC_ARG_ENABLE(conditional-encryption,
-	[  --enable-conditional-encryption  Only encrypt when sending passphrase],
-	if test "$enableval" = yes ; then
-	   AC_MSG_RESULT([Conditional encryption support enabled])
-	   AC_DEFINE(CONDITIONAL_ENCRYPTION)
-	else
-	   AC_MSG_RESULT([Encryption required on all communication])
-	fi,
-	AC_MSG_RESULT([Encryption required on all communication]))
-
 
 dnl
 dnl Figure out which regular expression parser to use.
