@@ -69,7 +69,8 @@ GSS_CALLCONV gss_import_cred(
     OM_uint32                           major_status = 0;
     BIO *                               bp = NULL;
     int                                 rc = 0;
-    
+    char *                              filename;
+    FILE *                              fp;
     
 #ifdef DEBUG
     fprintf(stderr,"import_cred:\n");
@@ -125,14 +126,19 @@ GSS_CALLCONV gss_import_cred(
         }
         else if(option_req == 1) 
         {
-            rc = putenv((char *) import_buffer->value);
-
-            if(rc != 0)
+            filename = strchr((char *) import_buffer->value, '=');
+            filename++;
+            
+            if ((fp = fopen(filename,"r")) == NULL)
             {
-                /* not quite sure what error to return here */
-                major_status = GSS_S_FAILURE;
+                /* right error? */
+                major_status = GSS_S_DEFECTIVE_TOKEN;
                 goto err;
             }
+            
+            bp = BIO_new(BIO_s_file());
+            
+            BIO_set_fp(bp,fp,BIO_NOCLOSE);
         }
         else
         {
