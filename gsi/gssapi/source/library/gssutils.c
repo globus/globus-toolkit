@@ -188,6 +188,10 @@ gss_create_and_fill_context(
 #error blah
     }
 
+    memset(context->peer_cred_handle->globusid, 
+           (char *) NULL, 
+           sizeof(gss_name_desc));
+    
     /* 
      * set if its OK to accept proxies signed by limited proxies
      */
@@ -642,7 +646,6 @@ gss_retrieve_peer(
     const gss_cred_usage_t              cred_usage) 
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    gss_name_desc *                     outname;
     X509 *                              peer_cert = NULL;
     STACK_OF(X509) *                    peer_cert_chain = NULL;
     STACK_OF(X509_EXTENSION) *          extensions;
@@ -665,84 +668,94 @@ gss_retrieve_peer(
     {
         peer_cert = context_handle->gss_ssl->session->peer;
     }
+
+    if(peer_cert == NULL)
+    {
+        context_handle->peer_cred_handle->globusid->name_oid 
+            = GSS_C_NT_ANONYMOUS;
+    }
+    else
+    {
+        context_handle->peer_cred_handle->globusid->name_oid 
+            = GSS_C_NO_OID;
+
+        result = globus_gsi_cred_set_cert(
+            context_handle->peer_cred_handle->cred_handle, 
+            peer_cert);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+#error add error object
+        }
+
+        result = globus_gsi_cred_callback_get_peer_cert_chain(
+            context_handle->callback_data,
+            & peer_cert_chain);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+#error do error here
+        }
+
+        result = globus_gsi_cred_set_cert_chain(
+            context->peer_cred_handle->cred_handle, 
+            peer_cert_chain);
+
+        sk_X509_pop_free(peer_cert_chain);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+#error do error here
+        }
+
+        result = globus_gsi_cred_get_subject_name(
+            context->peer_cred_handle->cred_handle,
+            & context->peer_cred_handle->globusid->x509n);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+#error do error here
+        }
+
+        if(result = context->peer_cred_handle->globusid->x509n == NULL)
+        {
+#error add error object
+            GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_PROCESS_CERT);
+            major_status = GSS_S_FAILURE;
+            goto err;
+        }
+
+        result = globus_gsi_cred_get_base_name(
+            context->peer_cred_handle->globusid->x509n);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+#error add error object
+        }
+
+        /* debug statement */
+        { 
+            char * s;
+            s = X509_NAME_oneline(context->peer_cred_handle->globusid->x509n,
+                                  NULL,
+                                  0);
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (stderr, "X509 subject after proxy : %s\n", s));
+            free(s);
+        }
+
+        cert_count = context_handle->callback_data.cert_depth;
+
+        result = globus_gsi_cred_get_group_name(
+            context_handle->peer_cred_handle->cred_handle,
+            & context->peer_cred_handle->globusid->group,
+            & context->peer_cred_handle->globusid->group_types);
     
-    result = globus_gsi_cred_set_cert(
-        context_handle->peer_cred_handle->cred_handle, 
-        peer_cert);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-#error add error object
-    }
-
-    result = globus_gsi_cred_callback_get_peer_cert_chain(
-        context_handle->callback_data,
-        & peer_cert_chain);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-#error do error here
-    }
-
-    result = globus_gsi_cred_set_cert_chain(
-        context->peer_cred_handle->cred_handle, 
-        peer_cert_chain);
-
-    sk_X509_pop_free(peer_cert_chain);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-#error do error here
-    }
-
-    result = globus_gsi_cred_get_subject_name(
-        context->peer_cred_handle->cred_handle,
-        & context->peer_cred_handle->globusid->x509n);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-#error do error here
-    }
-
-    if(result = context->peer_cred_handle->globusid->x509n == NULL)
-    {
-#error add error object
-        GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_PROCESS_CERT);
-        major_status = GSS_S_FAILURE;
-        goto err;
-    }
-
-    result = globus_gsi_cred_get_base_name(
-        context->peer_cred_handle->globusid->x509n);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-#error add error object
-    }
-
-    /* debug statement */
-    { 
-        char * s;
-        s = X509_NAME_oneline(context->peer_cred_handle->globusid->x509n,
-                              NULL,
-                              0);
-        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-            2, (stderr, "X509 subject after proxy : %s\n", s));
-        free(s);
-    }
-
-    cert_count = context_handle->callback_data.cert_depth;
-
-    result = globus_gsi_cred_get_group_name(
-        context_handle->peer_cred_handle->cred_handle,
-        & context->peer_cred_handle->globusid->group,
-        & context->peer_cred_handle->globusid->group_types);
-    
-    if(result != GLOBUS_SUCCESS)
-    {
+        if(result != GLOBUS_SUCCESS)
+        {
 #error add error here
-    }
-    
+        }
+    }    
     major_status = GSS_S_COMPLETE;
 
  err:
@@ -753,16 +766,18 @@ gss_retrieve_peer(
 
 OM_uint32
 gss_create_anonymous_cred(
+    OM_unit32 *                         minor_status,
     gss_cred_id_t *                     output_cred_handle,
     const gss_cred_usage_t              cred_usage)
 {
     gss_cred_id_desc *                  newcred;
     OM_uint32                           major_status = GSS_S_FAILURE;
-    OM_uint32                           minor_status;
+    OM_uint32                           local_minor_status;
+
+    static char *                       _function_name_ =
+        "gss_create_anonymous_cred";
     
-#ifdef DEBUG
-    fprintf(stderr,"gss_create_anonymous_cred\n");
-#endif
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *output_cred_handle = GSS_C_NO_CREDENTIAL;
     
@@ -776,10 +791,13 @@ gss_create_anonymous_cred(
 
     newcred->cred_usage = cred_usage;
 
+    globus_gsi_cred_handle_init(& newcred->cred_handle, NULL);
+
     newcred->globusid = (gss_name_desc*) malloc(sizeof(gss_name_desc)) ;
 
     if (newcred->globusid == NULL)
     {
+#error add error object
         GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         goto err;
     }
@@ -792,50 +810,21 @@ gss_create_anonymous_cred(
 
     newcred->globusid->group_types = NULL;
     
-    newcred->gss_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
-
-    if(!newcred->gss_bio_err)
-    {
-        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
-        goto err;
-    }
-    
     if (!(newcred->pcd = proxy_cred_desc_new()))
     {
+#error add error object
         GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         goto err;
     }
-
-    if (proxy_get_filenames(newcred->pcd,
-                             1,
-                             &newcred->pcd->certfile,
-                             &newcred->pcd->certdir,
-                             NULL,
-                             NULL,
-                             NULL))
-    {
-        goto err;
-    }
-
     
-    if(globus_ssl_utils_setup_ssl_ctx(
-           &newcred->pcd->gss_ctx,
-           newcred->pcd->certfile,
-           newcred->pcd->certdir,
-           NULL,
-           NULL,
-           NULL,
-           &newcred->pcd->num_null_enc_ciphers))
-    {
-        goto err;
-    }
-
     *output_cred_handle = newcred;
     
-    return GSS_S_COMPLETE;
+    major_status = GSS_S_COMPLETE;
     
 err:
-    gss_release_cred(&minor_status, (gss_cred_id_t *) &newcred);
+    gss_release_cred(& local_minor_status, (gss_cred_id_t *) & newcred);
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
 
@@ -853,6 +842,7 @@ Returns:
 
 OM_uint32 
 gss_create_and_fill_cred(
+    OM_uint32 *                         minor_status,
     gss_cred_id_t *                     output_cred_handle_P,
     const gss_cred_usage_t              cred_usage,
     X509 *                              ucert,
@@ -878,10 +868,11 @@ gss_create_and_fill_cred(
     int                                 cert_count;
     char *                              subgroup;
 
-#ifdef DEBUG
-    fprintf(stderr,"gss_create_and_fill_cred\n");
-#endif
+    static char *                       _function_name_ =
+        "gss_create_and_fill_cred";
 
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+    
     *output_cred_handle = NULL;
 
     newcred = (gss_cred_id_desc*) malloc(sizeof(gss_cred_id_desc)) ;
