@@ -5,9 +5,9 @@
 #   1) Verify that your GLOBUS_LOCATION is set to the installation from which you
 #      wish to create a binary bundle.
 #
-#   2) Run the bin-bundle creation script:
+#   2) Run the bin-bundle creation script, passing the platform name to it:
 #
-#        ./make-bin-bundle
+#        ./make-bin-bundle <platform>
 #
 
 if [ "x$GLOBUS_LOCATION" = "x" ]; then
@@ -15,9 +15,14 @@ if [ "x$GLOBUS_LOCATION" = "x" ]; then
     exit;
 fi
 
+if [ "x$1" = "x" ]; then
+    echo "Usage: make-bin-bundle <platform>"
+    exit;
+fi
+
 source version.sh
 
-NAME="gsi_openssh_bundle-$VERSION-i686-pc-linux-gnu.tar.gz"
+NAME="gsi_openssh_bundle-$VERSION-$1.tar.gz"
 XML="gsi_openssh_bundle-bin.xml"
 
 if [ ! -e output/$NAME ]; then
