@@ -91,7 +91,6 @@
                 "%s:%d: %s: %s", \
                 __FILE__, __LINE__, _function_name_, \
                 _tmp_str_)); \
-        globus_libc_free(_tmp_str_); \
     }
 
 #define GLOBUS_GSI_GSSAPI_ERRNO_ERROR_RESULT(_MIN_RESULT_, \

@@ -141,7 +141,10 @@ GSS_CALLCONV gss_import_cred(
 
             if(filename == NULL)
             {
-                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                    ("Import buffer does not contain a ="));
                 major_status = GSS_S_FAILURE;
                 goto exit;
             }
