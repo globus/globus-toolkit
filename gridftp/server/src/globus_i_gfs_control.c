@@ -71,6 +71,18 @@ globus_l_gfs_channel_close_cb(
 
 static
 void
+globus_l_gfs_abort_cb(
+    globus_gridftp_server_control_op_t      op,
+    void *                                  user_arg)
+{
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_ERR,
+        "**** NEED TO ABORT ****\n");
+    return;   
+}
+
+static
+void
 globus_l_gfs_done_cb(
     globus_gridftp_server_control_t     server,
     globus_result_t                     result,
@@ -527,6 +539,15 @@ globus_l_gfs_send_request(
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
 
+    result = globus_gridftp_server_abort_enable(
+        op, globus_l_gfs_abort_cb, instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_gridftp_server_abort_enable", result);
+        goto error_attr;
+    }
+
     result = globus_l_gfs_op_attr_init(&op_attr);
     if(result != GLOBUS_SUCCESS)
     {
@@ -598,6 +619,15 @@ globus_l_gfs_recv_request(
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
 
+    result = globus_gridftp_server_abort_enable(
+        op, globus_l_gfs_abort_cb, instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_gridftp_server_abort_enable", result);
+        goto error_attr;
+    }
+
     result = globus_l_gfs_op_attr_init(&op_attr);
     if(result != GLOBUS_SUCCESS)
     {
@@ -663,6 +693,15 @@ globus_l_gfs_list_request(
 
     instance = (globus_i_gfs_server_instance_t *) user_arg;
 
+    result = globus_gridftp_server_abort_enable(
+        op, globus_l_gfs_abort_cb, instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_gridftp_server_abort_enable", result);
+        goto error_ipc;
+    }
+    
     result = globus_i_gfs_ipc_list_request(
         instance,
         data,
@@ -912,16 +951,6 @@ globus_l_gfs_data_destroy(
     data_handle = (globus_i_gfs_ipc_data_handle_t *) user_data_handle;
     
     globus_i_gfs_ipc_data_destroy(data_handle);
-}
-
-static
-void
-globus_l_gfs_abort_cb(
-    globus_gridftp_server_control_op_t      op,
-    void *                                  user_arg)
-{
-    
-    return;   
 }
 
 static
