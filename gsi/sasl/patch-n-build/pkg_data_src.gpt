@@ -22,12 +22,18 @@
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
+    <Source_Dependencies Type="compile" >
+      <Dependency Name="globus_gdbm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+    </Source_Dependencies>
+    <Source_Dependencies Type="lib_link" >
+      <Dependency Name="globus_gdbm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+    </Source_Dependencies>
 
     <Build_Instructions>
 
       <Build_Step>MAKE_GPTMACRO distclean</Build_Step>
 
-      <Build_Step Macro_Args="libs='ssl crypto sasl anonymous crammd5 digestmd5 plain'">
+      <Build_Step Macro_Args="libs='ssl gdbm crypto sasl anonymous crammd5 digestmd5 plain'">
         RUN_FLAVOR_MAKEFILES_GPTMACRO
       </Build_Step>
 	<Build_Step>touch aclocal.m4</Build_Step>
