@@ -79,10 +79,10 @@
 #define N2L(CHAR_ARRAY, LONG_VAL) \
    { \
        char *                           _char_array_ = CHAR_ARRAY; \
-       (LONG_VAL)  = ((unsigned long) (*(_char_array_++))) << 24; \
-       (LONG_VAL) |= ((unsigned long) (*(_char_array_++))) << 16; \
-       (LONG_VAL) |= ((unsigned long) (*(_char_array_++))) << 8; \
-       (LONG_VAL) |= ((unsigned long) (*(_char_array_++))); \
+       (LONG_VAL)  = ((*(_char_array_++)) << 24) & 0xff000000; \
+       (LONG_VAL) |= ((*(_char_array_++)) << 16) & 0xff0000; \
+       (LONG_VAL) |= ((*(_char_array_++)) << 8) & 0xff00; \
+       (LONG_VAL) |= ((*(_char_array_++)) & 0xff); \
    }
 
 #define N2S(CHAR_ARRAY, SHORT) \

@@ -159,7 +159,7 @@ GSS_CALLCONV gss_verify_mic(
         {
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream,
-                    "%2.2X", *(debug_token_value++)));
+                    "%2.2X", (*(debug_token_value++) & 0xff)));
         }
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "\n");
