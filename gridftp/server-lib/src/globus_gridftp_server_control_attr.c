@@ -85,6 +85,7 @@ globus_gridftp_server_control_attr_destroy(
     globus_hashtable_destroy(&attr->funcs.send_cb_table);
     globus_hashtable_destroy(&attr->funcs.recv_cb_table);
 
+    globus_free(attr->base_dir);
     globus_free(attr->modes);
     globus_free(attr->types);
     globus_free(attr);

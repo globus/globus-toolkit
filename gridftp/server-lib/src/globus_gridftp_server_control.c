@@ -14,6 +14,10 @@ do                                                                      \
 {                                                                       \
     globus_result_t                         _res;                       \
                                                                         \
+   GlobusGSDebugPrintf(                                                 \
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_WARNING,                    \
+        ("[%s] ### Register done \n", _gridftp_server_name));           \
+                                                                        \
     _res = globus_callback_space_register_oneshot(                      \
                 NULL,                                                   \
                 NULL,                                                   \
@@ -303,6 +307,15 @@ globus_l_gsc_op_destroy(
     op->ref--;
     if(op->ref == 0)
     {
+        if(op->username != NULL)
+        {
+            globus_free(op->username);
+        }
+        if(op->password != NULL)
+        {
+            globus_free(op->password);
+        }
+
         globus_free(op);
     }
 }
@@ -503,7 +516,6 @@ globus_l_gsc_read_cb(
 
             case GLOBUS_L_GSC_STATE_STOPPING:
             case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
-                globus_free(buffer);
                 goto err;
                 break;
 
@@ -514,6 +526,7 @@ globus_l_gsc_read_cb(
                 globus_assert(0 && "invalid state, likely memory curroption");
                 break;
         }
+        globus_free(buffer);
     }
     globus_mutex_unlock(&server_handle->mutex);
 
@@ -1092,8 +1105,6 @@ globus_l_gsc_user_close_kickout(
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
-    globus_assert(server_handle->ref == 0);
-
     globus_mutex_lock(&server_handle->mutex);
     {
         globus_assert(server_handle->ref == 0);
@@ -1651,6 +1662,19 @@ globus_gridftp_server_control_destroy(
     {
         res = GlobusGridFTPServerErrorState(server_handle->state);
         goto err;
+    }
+
+    if(server_handle->cwd != NULL)
+    {
+        globus_free(server_handle->cwd);
+    }
+    if(server_handle->modes != NULL)
+    {
+        globus_free(server_handle->modes);
+    }
+    if(server_handle->types != NULL)
+    {
+        globus_free(server_handle->types);
     }
 
     globus_mutex_destroy(&server_handle->mutex);

@@ -103,8 +103,8 @@ globus_l_gsc_cmd_dcau(
         case 'N':
         case 'A':
             msg = globus_common_create_string("200 DCAU %c.\r\n", *tmp_ptr);
-            globus_gsc_959_finished_command(op, msg);
             op->server_handle->dcau = *tmp_ptr;
+            globus_gsc_959_finished_command(op, msg);
             globus_free(msg);
             break;
 
