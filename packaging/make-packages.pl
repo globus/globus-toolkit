@@ -353,10 +353,24 @@ sub generate_build_list()
 
     if ( $listpack )
     {
+       install_globus_core();
+       install_gt2_autotools();
        print "Final package build list:\n";
+       print "$installer: ";
        foreach my $pack ( @package_build_list )
        {
-            print "$pack\n";
+            print "$pack ";
+       }
+       print "\n";
+       foreach my $pack ( @package_build_list )
+       {
+            print "$pack:\n";
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=" . $package_list{$pack}[1] . " $flavor\n";
+            my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
+                                            $package_list{$pack}[1],
+                                            $package_list{$pack}[2]);
+
+            package_source_bootstrap($pack, $subdir, $tree);
        }
     }
 }
@@ -1310,6 +1324,51 @@ sub inplace_build()
     log_system("$ENV{GPT_LOCATION}/sbin/gpt-build $build_args $flavor", "$pkglog/$package");
     paranoia("Inplace build of $package in $subdir failed!");
 
+}
+
+# --------------------------------------------------------------------
+sub package_source_bootstrap()
+# --------------------------------------------------------------------
+{
+    my ($package, $subdir, $tree) = @_;
+    my $custom = $package_list{$package}[2];
+
+    chdir cvs_subdir($tree);
+    chdir $subdir;
+
+    system("mkdir -p $pkglog");
+
+    if ( $custom eq "gpt" ){
+       log_system("./bootstrap", "$pkglog/$package");
+    } elsif ( $custom eq "pnb" ){
+       my $tarname = $package_list{$package}[3];
+       my $tarfile = cvs_subdir($tree) . "/tarfiles/" . $tarname;
+       my $tarbase = $tarname;
+       $tarbase =~ s!\.tar\.gz!!;
+       my $patchfile = "${tarbase}-patch";
+   
+       system("pwd");
+       my $version = gpt_get_version("pkg_data_src.gpt");
+   
+       # Some patches will fail to apply a second time
+       # So clean up the old patched tar directory if
+       # it exists from a previous build.
+       if ( -d "$tarbase" )
+       {
+           log_system("rm -fr $tarbase", "$pkglog/$package");
+           paranoia("$tarbase exists, but could not be deleted.\n");
+       }
+   
+       log_system("gzip -dc $tarfile | tar xf -",
+                  "$pkglog/$package");
+       paranoia "Untarring $package failed.  See $pkglog/$package.";
+       chdir $tarbase;
+       log_system("patch -N -s -p1 -i ../patches/$patchfile",
+                  "$pkglog/$package");
+       paranoia "patch failed.  See $pkglog/$package.";
+    } elsif ( $custom eq "tar" ) {
+      ; # nothing to do
+    }
 }
 
 # --------------------------------------------------------------------
