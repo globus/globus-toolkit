@@ -24,6 +24,7 @@ Sources= \
 	globus_i_ftp_client.h \
 	globus_ftp_client_attr.c \
 	globus_ftp_client.c \
+	globus_ftp_client_error.c \
 	globus_ftp_client_data.c \
 	globus_ftp_client_exists.c \
 	globus_ftp_client_debug_plugin.c \

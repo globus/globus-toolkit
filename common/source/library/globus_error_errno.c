@@ -233,6 +233,13 @@ globus_error_errno_match(
  *        The error type. We may reserve part of this namespace for
  *        common errors. Errors not in this space are assumed to be
  *        local to the originating module.
+ * @param source_file
+ *        Name of file.  Use __FILE__
+ * @param source_func
+ *        Name of function.  Use _globus_func_name and declare your func with
+ *        GlobusFuncName(<name>)
+ * @param source_line
+ *        Line number.  Use __LINE__
  * @param short_desc_format
  *        Short format string giving a succinct description
  *        of the error. To be passed on to the user.
@@ -247,8 +254,11 @@ globus_error_errno_match(
 globus_object_t *
 globus_error_wrap_errno_error(
     globus_module_descriptor_t *        base_source,
-    const int                           system_errno,
-    const int                           type,
+    int                                 system_errno,
+    int                                 type,
+    const char *                        source_file,
+    const char *                        source_func,
+    int                                 source_line,
     const char *                        short_desc_format,
     ...)
 {
@@ -290,6 +300,9 @@ globus_error_wrap_errno_error(
         base_source,
         causal_error,
         type,
+        source_file,
+        source_func,
+        source_line,
         fmt,
         ap);
 

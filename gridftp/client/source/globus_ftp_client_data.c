@@ -118,7 +118,7 @@ globus_ftp_client_register_read(
     globus_l_ftp_client_data_t *		data;
     globus_result_t				result;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_register_read";
+    GlobusFuncName(globus_ftp_client_register_read);
 
     globus_i_ftp_client_debug_printf(3, 
         (stderr, "globus_ftp_client_register_read() entering\n"));
@@ -330,7 +330,7 @@ globus_ftp_client_register_write(
     globus_l_ftp_client_data_t *		data;
     globus_result_t				result;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_register_write";
+    GlobusFuncName(globus_ftp_client_register_write);
     
     globus_i_ftp_client_debug_printf(3, 
         (stderr, "globus_ftp_client_register_write() entering\n"));

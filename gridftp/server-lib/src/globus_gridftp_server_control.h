@@ -41,8 +41,10 @@ typedef enum globus_gsc_error_type_e
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX,                     \
-            "[%s:%d] Syntax error",                                         \
-            _gridftp_server_name, __LINE__))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Syntax error"))
 
 #define GlobusGridFTPServerControlErrorPanic()                              \
     globus_error_put(                                                       \
@@ -50,8 +52,10 @@ typedef enum globus_gsc_error_type_e
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PANIC,                      \
-            "[%s:%d] Panic error",                                          \
-            _gridftp_server_name, __LINE__))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Panic error"))
 
 #define GlobusGridFTPServerControlErrorSytem()                              \
     globus_error_put(                                                       \
@@ -59,8 +63,10 @@ typedef enum globus_gsc_error_type_e
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYSTEM_RESOURCE,            \
-            "[%s:%d] Sytem resource error",                                 \
-            _gridftp_server_name, __LINE__))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Sytem resource error"))
 
 #define GlobusGridFTPServerControlErrorAuthentication()                     \
     globus_error_put(                                                       \
@@ -68,8 +74,10 @@ typedef enum globus_gsc_error_type_e
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_AUTHENTICATION,             \
-            "[%s:%d] Sytem resource error",                                 \
-            _gridftp_server_name, __LINE__))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "Sytem resource error"))
 
 #define GlobusGridFTPServerControlErrorDataConnection()                     \
     globus_error_put(                                                       \
@@ -77,8 +85,10 @@ typedef enum globus_gsc_error_type_e
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_DATA_CONNECTION,            \
-            "[%s:%d] data connection error",                                \
-            _gridftp_server_name, __LINE__))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "data connection error"))
 
 #define GlobusGridFTPServerControlErrorPath()                               \
     globus_error_put(                                                       \
@@ -86,8 +96,10 @@ typedef enum globus_gsc_error_type_e
             GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE,                           \
             GLOBUS_NULL,                                                    \
             GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PATH,                       \
-            "[%s:%d] path error",                                           \
-            _gridftp_server_name, __LINE__))
+            __FILE__,                                                       \
+            _gridftp_server_name,                                           \
+            __LINE__,                                                       \
+            "path error"))
 
 /**
  *  stat structure

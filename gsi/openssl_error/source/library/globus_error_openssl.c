@@ -1037,6 +1037,13 @@ globus_error_match_openssl_error(
  *        where the error occurred
  * @param error_type
  *        The type of error encapsulating the openssl error
+ * @param source_file
+ *        Name of file.  Use __FILE__
+ * @param source_func
+ *        Name of function.  Use _globus_func_name and declare your func with
+ *        GlobusFuncName(<name>)
+ * @param source_line
+ *        Line number.  Use __LINE__
  * @param format
  *        format string for the description of the error entry
  *        point where the openssl error occurred, should be followed
@@ -1051,7 +1058,10 @@ globus_error_match_openssl_error(
 globus_object_t *
 globus_error_wrap_openssl_error(
     globus_module_descriptor_t *        base_source,
-    const int                           error_type,
+    int                                 error_type,
+    const char *                        source_file,
+    const char *                        source_func,
+    int                                 source_line,
     const char *                        format,
     ...)
 {
@@ -1071,6 +1081,9 @@ globus_error_wrap_openssl_error(
         base_source,
         causal_error,
         error_type,
+        source_file,
+        source_func,
+        source_line,
         format,
         ap);
 

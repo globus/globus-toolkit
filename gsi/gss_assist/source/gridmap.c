@@ -901,8 +901,10 @@ globus_i_gss_assist_gridmap_parse_line(
                     GLOBUS_GSI_GSS_ASSIST_MODULE,
                     errno,
                     GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
-                    "%s:%d: Could not allocate enough memory",
-                    __FILE__, __LINE__));
+                    __FILE__,
+                    _function_name_,
+                    __LINE__,
+                    "Could not allocate enough memory"));
 		goto error_exit;
             }
 
@@ -917,8 +919,10 @@ globus_i_gss_assist_gridmap_parse_line(
                 GLOBUS_GSI_GSS_ASSIST_MODULE,
                 errno,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
-                "%s:%d: Could not allocate enough memory",
-                __FILE__, __LINE__));
+                __FILE__,
+                _function_name_,
+                __LINE__,
+                "Could not allocate enough memory"));
             goto error_exit;
         }
 
@@ -951,8 +955,10 @@ globus_i_gss_assist_gridmap_parse_line(
             GLOBUS_GSI_GSS_ASSIST_MODULE,
             errno,
             GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
-            "%s:%d: Could not allocate enough memory",
-            __FILE__, __LINE__));
+            __FILE__,
+            _function_name_,
+            __LINE__,
+            "Could not allocate enough memory"));
         goto error_exit;
     }
 
@@ -1119,8 +1125,10 @@ globus_i_gss_assist_gridmap_parse_globusid(
             GLOBUS_GSI_GSS_ASSIST_MODULE, 
             errno, 
             GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO, 
-            "%s:%d: Could not allocate enough memory",
-            __FILE__, __LINE__));
+            __FILE__,
+            _function_name_,
+            __LINE__,
+            "Could not allocate enough memory"));
         goto exit;
     }
 
@@ -1175,8 +1183,10 @@ globus_i_gss_assist_gridmap_parse_globusid(
                     GLOBUS_GSI_GSS_ASSIST_MODULE,
                     errno,
                     GLOBUS_GSI_GSS_ASSIST_ERROR_ERRNO,
-                    "%s:%d: Could not allocate enough memory",
-                    __FILE__, __LINE__));
+                    __FILE__,
+                    _function_name_,
+                    __LINE__,
+                    "Could not allocate enough memory"));
                 goto exit;
 	    }
             

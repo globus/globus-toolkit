@@ -94,19 +94,29 @@ globus_error_initialize_gssapi_error(
     const OM_uint32                     minor_status)
 {
     globus_l_gssapi_error_data_t *      instance_data;
-
+    globus_object_t *                   minor_obj;
+    
     instance_data = (globus_l_gssapi_error_data_t *)
         malloc(sizeof(globus_l_gssapi_error_data_t));
 
     instance_data->major_status = major_status;
-
-    instance_data->minor_status = minor_status;
-
+    
+    minor_obj = globus_error_get((globus_result_t) minor_status);
+    if(!minor_obj)
+    {
+        minor_obj = base_cause;
+    }
+    else if(base_cause)
+    {
+        minor_obj = globus_error_initialize_base(
+            minor_obj, globus_error_get_source(base_cause), base_cause);
+    }
+    
     globus_object_set_local_instance_data(error, (void *) instance_data);
 
     return globus_error_initialize_base(error,
                                         base_source,
-                                        base_cause);
+                                        minor_obj);
 }/* globus_error_initialize_gssapi_error() */
 /*@}*/
 
@@ -155,53 +165,6 @@ globus_error_gssapi_set_major_status(
     ((globus_l_gssapi_error_data_t *)
      globus_object_get_local_instance_data(error))->major_status = major_status;
 }/* globus_error_gssapi_set_major_status */
-/*@}*/
-
-/**
- * @name Get Minor Status
- */
-/*@{*/
-/**
- * Retrieve the minor status from a gssapi error object.
- * @ingroup globus_gssapi_error_accessor  
- *
- * @param error
- *        The error from which to retrieve the minor status
- * @return
- *        The minor status stored in the object
- */
-OM_uint32
-globus_error_gssapi_get_minor_status(
-    globus_object_t *                   error)
-{
-    return ((globus_l_gssapi_error_data_t *)
-            globus_object_get_local_instance_data(error))->minor_status;
-}/* globus_error_gssapi_get_minor_status */
-/*@}*/
-
-/**
- * @name Set Minor Status
- */
-/*@{*/
-/**
- * Set the minor status in a gssapi error object.
- * @ingroup globus_gssapi_error_accessor  
- *
- * @param error
- *        The error object for which to set the minor status
- * @param minor_status
- *        The minor status
- * @return
- *        void
- */
-void
-globus_error_gssapi_set_minor_status(
-    globus_object_t *                   error,
-    const OM_uint32                     minor_status)
-{
-    ((globus_l_gssapi_error_data_t *)
-     globus_object_get_local_instance_data(error))->minor_status = minor_status;
-}/* globus_error_gssapi_set_minor_status */
 /*@}*/
 
 /**
@@ -290,6 +253,13 @@ globus_error_gssapi_match(
  *        The error type. We may reserve part of this namespace for
  *        common errors. Errors not in this space are assumed to be
  *        local to the originating module.
+ * @param source_file
+ *        Name of file.  Use __FILE__
+ * @param source_func
+ *        Name of function.  Use _globus_func_name and declare your func with
+ *        GlobusFuncName(<name>)
+ * @param source_line
+ *        Line number.  Use __LINE__
  * @param short_desc_format
  *        Short format string giving a succinct description
  *        of the error. To be passed on to the user.
@@ -304,9 +274,12 @@ globus_error_gssapi_match(
 globus_object_t *
 globus_error_wrap_gssapi_error(
     globus_module_descriptor_t *        base_source,
-    const OM_uint32                     major_status,
-    const OM_uint32                     minor_status,
-    const int                           type,
+    OM_uint32                           major_status,
+    OM_uint32                           minor_status,
+    int                                 type,
+    const char *                        source_file,
+    const char *                        source_func,
+    int                                 source_line,
     const char *                        short_desc_format,
     ...)
 {
@@ -331,6 +304,9 @@ globus_error_wrap_gssapi_error(
         base_source,
         causal_error,
         type,
+        source_file,
+        source_func,
+        source_line,
         short_desc_format,
         ap);
 

@@ -1430,7 +1430,7 @@ static void doit()
         char *                          error_message = NULL;
 
         error = globus_error_get(result);
-        error_message = globus_error_print_chain(error);
+        error_message = globus_error_print_friendly(error);
         globus_object_free(error);
         failure2(FAILED_AUTHORIZATION,
                  "globus_gss_assist_gridmap() failed authorization."
@@ -1728,7 +1728,7 @@ static void doit()
 
             error_obj = globus_error_get((globus_result_t) minor_status);
             
-            error_str = globus_error_print_chain(error_obj);
+            error_str = globus_error_print_friendly(error_obj);
             failure(FAILED_SERVER, error_str);
         }
     }

@@ -159,7 +159,7 @@ globus_ftp_client_feat(
     globus_result_t                     result;
     globus_bool_t                       registered;
     
-    static char * myname = "globus_ftp_client_feat";
+    GlobusFuncName(globus_ftp_client_feat);
     
     if(u_handle == GLOBUS_NULL) 
     {

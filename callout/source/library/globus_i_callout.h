@@ -148,10 +148,11 @@ extern FILE *                           globus_i_callout_debug_fstream;
                 GLOBUS_CALLOUT_MODULE, \
                 errno, \
                 GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY, \
-                "%s:%d: %s: %s", \
-                __FILE__, __LINE__, _function_name_, \
+                __FILE__, \
+                _function_name_, \
+                __LINE__, \
+                "%s", \
                 _tmp_str_)); \
-        globus_libc_free(_tmp_str_); \
     }
 
 #define GLOBUS_CALLOUT_ERRNO_ERROR_RESULT(_RESULT_, \
@@ -164,8 +165,10 @@ extern FILE *                           globus_i_callout_debug_fstream;
                 GLOBUS_CALLOUT_MODULE, \
                 errno, \
                 _ERRORTYPE_, \
-                "%s:%d: %s: %s", \
-                __FILE__, __LINE__, _function_name_, \
+                __FILE__, \
+                _function_name_, \
+                __LINE__, \
+                "%s", \
                 _tmp_str_)); \
         globus_libc_free(_tmp_str_); \
     }

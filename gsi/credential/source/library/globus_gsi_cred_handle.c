@@ -22,8 +22,11 @@
         GLOBUS_GSI_CREDENTIAL_MODULE, \
         errno, \
         GLOBUS_GSI_CRED_ERROR_ERRNO, \
-        "%s:%d: Could not allocate enough memory: %d bytes", \
-        __FILE__, __LINE__, _LENGTH_))
+        __FILE__, \
+        _function_name_, \
+        __LINE__, \
+        "Could not allocate enough memory: %d bytes", \
+        _LENGTH_))
 
 /**
  * Initialize Handle
@@ -71,6 +74,9 @@ globus_result_t globus_gsi_cred_handle_init(
                 GLOBUS_GSI_CREDENTIAL_MODULE,
                 errno,
                 GLOBUS_GSI_CRED_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
                 "Error allocating space (malloc) for credential handle"));
         goto error_exit;
     }
@@ -1169,6 +1175,9 @@ globus_gsi_cred_get_policies(
                     GLOBUS_GSI_CREDENTIAL_MODULE,
                     errno,
                     GLOBUS_GSI_CRED_ERROR_ERRNO,
+                    __FILE__,
+                    _function_name_,
+                    __LINE__,
                     "Couldn't allocate space"
                     "for the policy string"));
             goto error_exit;

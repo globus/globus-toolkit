@@ -24,7 +24,7 @@ globus_result_t
 globus_ftp_client_restart_marker_init(
     globus_ftp_client_restart_marker_t *	marker)
 {
-    static char * myname = "globus_ftp_client_restart_marker_init";
+    GlobusFuncName(globus_ftp_client_restart_marker_init);
 
     if(marker == GLOBUS_NULL)
     {
@@ -58,7 +58,7 @@ globus_ftp_client_restart_marker_copy(
     globus_ftp_client_restart_marker_t *	marker)
 {
     globus_fifo_t * tmp;
-    static char * myname = "globus_ftp_client_restart_marker_copy";
+    GlobusFuncName(globus_ftp_client_restart_marker_copy);
 
     if(new_marker == GLOBUS_NULL)
     {
@@ -125,7 +125,7 @@ globus_result_t
 globus_ftp_client_restart_marker_destroy(
     globus_ftp_client_restart_marker_t *	marker)
 {
-    static char * myname = "globus_ftp_client_restart_marker_destroy";
+    GlobusFuncName(globus_ftp_client_restart_marker_destroy);
 
     if(marker == GLOBUS_NULL)
     {
@@ -195,7 +195,7 @@ globus_ftp_client_restart_marker_insert_range(
     globus_i_ftp_client_range_t *		range;
     globus_i_ftp_client_range_t *		newrange;
     globus_object_t *				err = GLOBUS_SUCCESS;
-    static char * myname = "globus_ftp_client_insert_range";
+    GlobusFuncName(globus_ftp_client_insert_range);
 
     if(marker == GLOBUS_NULL)
     {
@@ -337,7 +337,7 @@ globus_ftp_client_restart_marker_set_ascii_offset(
     globus_off_t				offset,
     globus_off_t				ascii_offset)
 {
-    static char * myname = "globus_ftp_client_restart_marker_set_ascii_offset";
+    GlobusFuncName(globus_ftp_client_restart_marker_set_ascii_offset);
 
     if(marker == GLOBUS_NULL)
     {
@@ -390,7 +390,7 @@ globus_ftp_client_restart_marker_set_offset(
     globus_ftp_client_restart_marker_t *	marker,
     globus_off_t				offset)
 {
-    static char * myname = "globus_ftp_client_restart_marker_set_offset";
+    GlobusFuncName(globus_ftp_client_restart_marker_set_offset);
 
     if(marker == GLOBUS_NULL)
     {
@@ -433,7 +433,7 @@ globus_ftp_client_restart_marker_get_total(
     globus_ftp_client_restart_marker_t *	marker,
     globus_off_t *				total_bytes)
 {
-    static char * myname = "globus_ftp_client_restart_marker_get_total";
+    GlobusFuncName(globus_ftp_client_restart_marker_get_total);
 
     if(marker == GLOBUS_NULL)
     {
@@ -510,7 +510,7 @@ globus_ftp_client_restart_marker_to_string(
     globus_off_t			offset;
     globus_size_t			digits;
     globus_object_t *			err;
-    static char * myname = "globus_ftp_client_restart_marker_to_string";
+    GlobusFuncName(globus_ftp_client_restart_marker_to_string);
 
     if(marker == GLOBUS_NULL)
     {
@@ -642,7 +642,7 @@ globus_ftp_client_restart_marker_from_string(
     globus_object_t *				err;
     globus_result_t				res;
     const char *				p;
-    static char * myname = "globus_ftp_client_restart_marker_from_string";
+    GlobusFuncName(globus_ftp_client_restart_marker_from_string);
 
     if(marker == GLOBUS_NULL)
     {

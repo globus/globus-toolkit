@@ -156,6 +156,9 @@ globus_error_signal_fault (
     globus_object_t *                   error);
 #endif /* 0 */
 
+#include GLOBUS_THREAD_INCLUDE
+extern globus_bool_t globus_i_error_verbose;
+extern globus_thread_key_t globus_i_error_verbose_key;
 
 /**********************************************************************
  * Module definition

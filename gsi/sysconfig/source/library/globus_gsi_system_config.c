@@ -172,8 +172,10 @@ const char *default_gaa_file(void);
         GLOBUS_GSI_SYSCONFIG_MODULE, \
         errno, \
         GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO, \
-        "%s:%d: Could not allocate enough memory", \
-        __FILE__, __LINE__))
+        __FILE__, \
+        _function_name_, \
+        __LINE__, \
+        "Could not allocate enough memory"))
 
 
 int                                     globus_i_gsi_sysconfig_debug_level;
@@ -523,9 +525,10 @@ globus_gsi_sysconfig_set_key_permissions_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error opening keyfile for reading\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_));
+                "Error opening keyfile for reading\n"));
         goto exit;
     }
 
@@ -536,9 +539,10 @@ globus_gsi_sysconfig_set_key_permissions_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error getting status of keyfile\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_));
+                "Error getting status of keyfile\n"));
         goto exit;
     }
 
@@ -580,10 +584,10 @@ globus_gsi_sysconfig_set_key_permissions_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_SETTING_PERMS,
-                __FILE__":%d:%s: Error setting permissions to "
-                "user read only of file: %s\n", 
-                __LINE__,
+                __FILE__,
                 _function_name_,
+                __LINE__,
+                "Error setting permissions to user read only of file: %s\n", 
                 filename));
         goto exit;
     }
@@ -747,10 +751,10 @@ globus_gsi_sysconfig_file_exists_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
-                    __FILE__":%d:%s: Error getting status "
-                    "of file: %s\n",
-                    __LINE__, 
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file: %s\n",
                     filename));
             goto exit;
         
@@ -850,10 +854,10 @@ globus_gsi_sysconfig_dir_exists_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
-                    __FILE__":%d:%s: Error getting status "
-                    "of certificate directory: %s\n",
-                    __LINE__, 
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of certificate directory: %s\n",
                     filename));
             goto exit;
         
@@ -947,9 +951,10 @@ globus_gsi_sysconfig_check_keyfile_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING,
-                    __FILE__":%d:%s: Error getting status of file: %s\n",
-                    __LINE__,
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file: %s\n",
                     filename));
             goto exit;
         }
@@ -1068,9 +1073,10 @@ globus_gsi_sysconfig_check_certfile_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-                    __FILE__":%d:%s: Error getting status of file %s\n",
-                    __LINE__,
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file %s\n",
                     filename));
             goto exit;
         }
@@ -1179,8 +1185,10 @@ globus_gsi_sysconfig_get_current_working_dir_win32(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                    "%s:%d: Couldn't get the current working directory",
-                    __FILE__, __LINE__));
+                    __FILE__,
+                    _function_name_,
+                    __LINE__,
+                    "Couldn't get the current working directory"));
         }
         else
         {
@@ -2734,6 +2742,9 @@ globus_gsi_sysconfig_get_ca_cert_files_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
                 "Error opening directory: %s", ca_cert_dir));
         goto exit;
     }
@@ -2854,6 +2865,9 @@ globus_gsi_sysconfig_remove_all_owned_files_win32(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
                 "Error opening directory: %s", DEFAULT_SECURE_TMP_DIR));
         goto exit;
     }
@@ -3762,9 +3776,10 @@ globus_gsi_sysconfig_set_key_permissions_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error opening keyfile for reading\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_));
+                "Error opening keyfile for reading\n"));
         goto exit;
     }
 
@@ -3775,9 +3790,10 @@ globus_gsi_sysconfig_set_key_permissions_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error getting status of keyfile\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_));
+                "Error getting status of keyfile\n"));
         goto exit;
     }
 
@@ -3827,10 +3843,10 @@ globus_gsi_sysconfig_set_key_permissions_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_SETTING_PERMS,
-                __FILE__":%d:%s: Error setting permissions to "
-                "user read only of file: %s\n", 
-                __LINE__,
+                __FILE__,
                 _function_name_,
+                __LINE__,
+                "Error setting permissions to user read only of file: %s\n", 
                 filename));
         goto exit;
     }
@@ -4270,8 +4286,10 @@ globus_gsi_sysconfig_get_current_working_dir_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                    "%s:%d: Couldn't get the current working directory",
-                    __FILE__, __LINE__));
+                    __FILE__,
+                    _function_name_,
+                    __LINE__,
+                    "Couldn't get the current working directory"));
         }
         else
         {
@@ -4454,10 +4472,10 @@ globus_gsi_sysconfig_file_exists_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
-                    __FILE__":%d:%s: Error getting status "
-                    "of file: %s\n",
-                    __LINE__, 
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file: %s\n",
                     filename));
             goto exit;
         
@@ -4556,10 +4574,10 @@ globus_gsi_sysconfig_dir_exists_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
-                    __FILE__":%d:%s: Error getting status "
-                    "of certificate directory: %s\n",
-                    __LINE__, 
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of certificate directory: %s\n",
                     filename));
             goto exit;
         
@@ -4660,9 +4678,10 @@ globus_gsi_sysconfig_check_keyfile_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING,
-                    __FILE__":%d:%s: Error getting status of file: %s\n",
-                    __LINE__,
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file: %s\n",
                     filename));
             goto exit;
         }
@@ -4793,9 +4812,10 @@ globus_gsi_sysconfig_check_certfile_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-                    __FILE__":%d:%s: Error getting status of file %s\n",
-                    __LINE__,
+                    __FILE__,
                     _function_name_,
+                    __LINE__,
+                    "Error getting status of file %s\n",
                     filename));
             goto exit;
         }
@@ -6200,6 +6220,9 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
                 "Error opening directory: %s", ca_cert_dir));
         goto exit;
     }
@@ -6318,9 +6341,10 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                __FILE__":%d:%s: Error opening directory: %s\n",
+                __FILE__,
+                _function_name_,
                 __LINE__,
-                _function_name_, 
+                "Error opening directory: %s\n",
                 DEFAULT_SECURE_TMP_DIR));
         goto exit;
     }

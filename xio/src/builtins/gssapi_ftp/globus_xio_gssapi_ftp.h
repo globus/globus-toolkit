@@ -2,6 +2,7 @@
 #define GLOBUS_XIO_DRIVER_SMTP_H 1
 
 #include "globus_common.h"
+#include "globus_error_gssapi.h"
 
 typedef enum  globus_i_xio_gssapi_ftp_state_s
 {
@@ -39,8 +40,10 @@ typedef enum
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_GSSAPI_FTP_OUTSTANDING_OP,                           \
-            "[%s:%d] Operation is outstanding",                             \
-            _xio_name, __LINE__))
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Operation is outstanding"))
 
 #define GlobusXIOGssapiFTPEncodingError()                                   \
     globus_error_put(                                                       \
@@ -48,8 +51,10 @@ typedef enum
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_GSSAPI_FTP_ERROR_ENCODING,                           \
-            "[%s:%d] Error encoding.",                                      \
-            _xio_name, __LINE__))
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Error encoding."))
 
 #define GlobusXIOGssapiFTPAllocError()                                      \
     globus_error_put(                                                       \
@@ -57,30 +62,22 @@ typedef enum
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_GSSAPI_FTP_ERROR_ALLOC,                              \
-            "[%s:%d] Operation is outstanding",                             \
-            _xio_name, __LINE__))
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Operation is outstanding"))
 
-#define GlobusXIOGssapiFTPGSIAuthFailure(res, maj, min)                     \
-do                                                                          \
-{                                                                           \
-    char *                                  _err_str;                       \
-                                                                            \
-    globus_gss_assist_display_status_str(&_err_str,                         \
-                             GLOBUS_NULL,                                   \
-                             maj,                                           \
-                             min,                                           \
-                             0);                                            \
-                                                                            \
-    res = globus_error_put(                                                 \
-        globus_error_construct_error(                                       \
+#define GlobusXIOGssapiFTPGSIAuthFailure(maj, min)                          \
+    globus_error_put(                                                       \
+        globus_error_wrap_gssapi_error(                                     \
             GLOBUS_XIO_MODULE,                                              \
-            GLOBUS_NULL,                                                    \
+            (maj),                                                          \
+            (min),                                                          \
             GLOBUS_XIO_GSSAPI_FTP_ERROR_AUTH,                               \
-            "[%s:%d] Authentication Error: %s.",                            \
-            _xio_name, __LINE__, _err_str));                                \
-    globus_free(_err_str);                                                  \
-}                                                                           \
-while(0)
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Authentication Error"))
 
 #define GlobusXIOGssapiFTPAuthenticationFailure(str)                        \
     globus_error_put(                                                       \
@@ -88,8 +85,11 @@ while(0)
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_GSSAPI_FTP_ERROR_ALLOC,                              \
-            "[%s:%d] Authentication Error: %s",                             \
-            _xio_name, __LINE__, str))
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Authentication Error: %s",                                     \
+            str))
 
 
 

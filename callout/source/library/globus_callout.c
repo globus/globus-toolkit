@@ -29,7 +29,7 @@ static void
 globus_l_callout_library_table_element_free(
     void *                              element);
 
-static globus_result_t
+static void
 globus_l_callout_data_free(
     globus_i_callout_data_t *           data);
 
@@ -731,11 +731,10 @@ globus_callout_call_type(
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-static globus_result_t
+static void
 globus_l_callout_data_free(
     globus_i_callout_data_t *           data)
 {
-    globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_l_callout_data_free";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
@@ -761,8 +760,6 @@ globus_l_callout_data_free(
     }
     
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
-
-    return result;
 }
 
 

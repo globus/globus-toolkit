@@ -102,8 +102,10 @@ extern char * globus_i_gram_jobmanager_callout_error_strings[];
             GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,                 \
             (__RESULT) ? globus_error_get(__RESULT) : NULL,              \
             __TYPE,                                                      \
-            "%s:%d: %s: %s%s%s",                                         \
-            __FILE__, __LINE__, "GRAM Authorization Callout",            \
+            __FILE__,                                                    \
+            "GRAM Authorization Callout",                                \
+            __LINE__,                                                    \
+            "%s%s%s",                                                    \
             globus_i_gram_jobmanager_callout_error_strings[__TYPE],      \
             _tmp_str_ ? ": " : "",                                       \
             _tmp_str_ ? _tmp_str_ : ""));                                \

@@ -9,6 +9,9 @@
             GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE,                    \
             NULL,                                                       \
             location,                                                   \
+            __FILE__,                                                   \
+            _globus_func_name,                                          \
+            __LINE__,                                                   \
             "I am soooo lazy"))
 
 

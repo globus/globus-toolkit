@@ -63,8 +63,10 @@ extern char * globus_gsi_authz_callout_error_strings[];
             GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_MODULE,                 \
             (__RESULT) ? globus_error_get(__RESULT) : NULL,              \
             __TYPE,                                                      \
-            "%s:%d: %s: %s%s%s",                                         \
-            __FILE__, __LINE__, "Authz Callout",            \
+            __FILE__, \
+            "Authz Callout", \
+            __LINE__, \
+            "%s%s%s",                                         \
             globus_gsi_authz_callout_error_strings[__TYPE],      \
             _tmp_str_ ? ": " : "",                                       \
             _tmp_str_ ? _tmp_str_ : ""));                                \

@@ -44,8 +44,6 @@ typedef struct globus_l_gssapi_error_data_s
 {
     /** the major status */
     OM_uint32                           major_status;
-    /** the minor status */
-    OM_uint32                           minor_status;
 }
 globus_l_gssapi_error_data_t;
 

@@ -4,7 +4,6 @@
 
 
 #include "globus_common_include.h"
-#include "globus_module.h"
 
 EXTERN_C_BEGIN
 
@@ -175,6 +174,8 @@ globus_object_printable_to_string (globus_object_t * object);
 
 extern globus_object_printable_string_func_t 
 globus_object_printable_get_string_func (globus_object_t * object);
+
+#include "globus_module.h"
 
 extern globus_module_descriptor_t globus_i_object_module;
 

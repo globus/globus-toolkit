@@ -648,8 +648,11 @@ globus_i_xio_http_close_callback(
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_HTTP_ERROR_PARSE,                                    \
-            "[%s:%d] Error parsing %s token at %s",                         \
-            _xio_name, __LINE__, token, context)
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Error parsing %s token at %s",                                 \
+            token, context)
 
 #define GlobusXIOHttpErrorParse(token, context)                             \
     globus_error_put(                                                       \
@@ -660,8 +663,11 @@ globus_i_xio_http_close_callback(
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_HTTP_ERROR_INVALID_HEADER,                           \
-            "[%s:%d] Invalid %s header value %s",                           \
-            _xio_name, __LINE__, name, value)
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Invalid %s header value %s",                                   \
+            name, value)
 
 #define GlobusXIOHttpErrorInvalidHeader(name, value)                        \
     globus_error_put(                                                       \
@@ -672,8 +678,11 @@ globus_i_xio_http_close_callback(
             GLOBUS_XIO_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_HTTP_ERROR_NO_ENTITY,                                \
-            "[%s:%d] No entity to read or write",                           \
-            _xio_name, __LINE__)
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "No entity to read or write")
+
 #define GlobusXIOHttpErrorNoEntity()                                        \
     globus_error_put(                                                       \
         GlobusXIOHttpErrorObjNoEntity())

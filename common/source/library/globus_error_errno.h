@@ -110,8 +110,11 @@ globus_error_errno_match(
 globus_object_t *
 globus_error_wrap_errno_error(
     globus_module_descriptor_t *        base_source,
-    const int                           system_errno,
-    const int                           type,
+    int                                 system_errno,
+    int                                 type,
+    const char *                        source_file,
+    const char *                        source_func,
+    int                                 source_line,
     const char *                        short_desc_format,
     ...);
 

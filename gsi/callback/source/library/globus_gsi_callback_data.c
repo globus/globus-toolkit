@@ -43,6 +43,9 @@ globus_gsi_callback_data_init(
                 GLOBUS_GSI_CALLBACK_MODULE,
                 errno,
                 GLOBUS_GSI_CALLBACK_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
                 "Error allocating space (malloc) for callback data"));
         goto exit;
     }

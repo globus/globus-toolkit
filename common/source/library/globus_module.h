@@ -21,9 +21,12 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
+struct globus_module_descriptor_s;
+typedef struct globus_module_descriptor_s globus_module_descriptor_t;
+
 #include "globus_common_include.h"
+#include "globus_error_generic.h"
 #include <stdio.h>
- 
   
 EXTERN_C_BEGIN
 
@@ -51,7 +54,7 @@ typedef struct
 /*
  * this remains publicly exposed.  Used throughpout globus
  */
-typedef struct
+struct globus_module_descriptor_s
 {
     char *				module_name;
     globus_module_activation_func_t	activation_func;
@@ -59,7 +62,8 @@ typedef struct
     globus_module_atexit_func_t		atexit_func;
     globus_module_get_pointer_func_t 	get_pointer_func;
     globus_version_t *                  version;
-} globus_module_descriptor_t;
+    globus_error_print_friendly_t       friendly_error_func;
+};
 
 /******************************************************************************
 			      Function prototypes
@@ -144,7 +148,6 @@ void
 globus_module_get_args(
     int **                              argc,
     char ****                           argv);
-
 
 #ifndef SWIG
 EXTERN_C_END

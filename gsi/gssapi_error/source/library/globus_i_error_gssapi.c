@@ -38,8 +38,6 @@ globus_l_error_copy_gssapi(
     (*dst) = (void *) malloc(sizeof(globus_l_gssapi_error_data_t));
     ((globus_l_gssapi_error_data_t *) *dst)->major_status =
         ((globus_l_gssapi_error_data_t *) src)->major_status;
-    ((globus_l_gssapi_error_data_t *) *dst)->minor_status =
-        ((globus_l_gssapi_error_data_t *) src)->minor_status;
     return;
 }/* globus_l_error_copy_gssapi */
 /*@}*/
@@ -85,18 +83,73 @@ char *
 globus_l_error_gssapi_printable(
     globus_object_t *                   error)
 {
-    char *                              error_string = NULL;
-
-    globus_gss_assist_display_status_str(
-        &error_string,
-        NULL,
-        ((globus_l_gssapi_error_data_t *)
-         globus_object_get_local_instance_data(error))->major_status,
-        ((globus_l_gssapi_error_data_t *)
-         globus_object_get_local_instance_data(error))->minor_status,
-        0);
-        
-    return error_string;
+    OM_uint32	                        major_status;
+    OM_uint32	                        minor_status;
+    OM_uint32                           message_context;
+    gss_buffer_desc                     status_string_desc 
+        = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        status_string = &status_string_desc;
+    char *                              msg = NULL;
+    char *                              tmp;
+    int                                 len = 0;
+    
+    major_status = ((globus_l_gssapi_error_data_t *)
+         globus_object_get_local_instance_data(error))->major_status;
+         
+    message_context = 0;
+    do
+    {
+        if(gss_display_status(&minor_status,
+                               major_status,
+                               GSS_C_GSS_CODE,
+                               GSS_C_NO_OID,
+                               &message_context,
+                               status_string) == GSS_S_COMPLETE)
+        {
+            if(status_string->length)
+            {
+                if(msg)
+                {
+                    tmp = globus_realloc(
+                        msg, sizeof(char) * (len + status_string->length + 1));
+                }
+                else
+                {
+                    tmp = globus_malloc(
+                        sizeof(char) * (status_string->length + 1));
+                }
+                if(tmp)
+                {
+                    memcpy(
+                        tmp + len,
+                        status_string->value,
+                        status_string->length);
+                }
+                else
+                {
+                    if(msg)
+                    {
+                        free(msg);
+                    }
+                    return NULL;
+                }
+                msg = tmp;
+                len += status_string->length;
+            }
+            gss_release_buffer(&minor_status, status_string);
+        }
+    } while(message_context != 0);
+    
+    if(msg)
+    {
+        if(msg[len - 1] == '\n')
+        {
+            len--;
+        }
+        msg[len] = '\0';
+    }
+    
+    return msg;
 }/* globus_l_error_gssapi_printable */
 /*@}*/
 

@@ -48,10 +48,10 @@ globus_i_gsi_proxy_openssl_error_result(
         globus_error_wrap_openssl_error(
             GLOBUS_GSI_PROXY_MODULE,
             error_type,
-            "%s:%d: %s: %s%s%s",
             filename,
-            line_number,
             function_name,
+            line_number,
+            "%s%s%s",
             globus_l_gsi_proxy_error_strings[error_type],
             short_desc ? ": " : "",
             short_desc ? short_desc : "");
@@ -88,8 +88,10 @@ globus_i_gsi_proxy_error_result(
         GLOBUS_GSI_PROXY_MODULE,
         NULL,
         error_type,
-        "%s:%d: %s: %s",
-        filename, line_number, function_name,
+        filename,
+        function_name,
+        line_number, 
+        "%s%s%s",
         globus_l_gsi_proxy_error_strings[error_type],
         short_desc ? ": " : "",
         short_desc ? short_desc : "");
@@ -128,8 +130,10 @@ globus_i_gsi_proxy_error_chain_result(
             GLOBUS_GSI_PROXY_MODULE,
             globus_error_get(chain_result),
             error_type,
-            "%s:%d: %s: %s%s%s",
-            filename, line_number, function_name,
+            filename,
+            function_name,
+            line_number, 
+            "%s%s%s",
             globus_l_gsi_proxy_error_strings[error_type],
             short_desc ? ": " : "",
             short_desc ? short_desc : "");

@@ -36,7 +36,12 @@ typedef struct globus_l_error_data_s
     /** the short error description */
     char *                              short_desc;
     /** the long error description */
-    char *                              long_desc;    
+    char *                              long_desc;
+    
+    /* these are static strings, do NOT free them */
+    const char *                        file;
+    const char *                        func;
+    int                                 line;
 }
 globus_l_error_data_t;
 

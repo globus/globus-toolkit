@@ -70,10 +70,10 @@ globus_i_gsi_cred_openssl_error_result(
         globus_error_wrap_openssl_error(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             error_type,
-            "%s:%d: %s: %s%s%s",
             filename,
-            line_number,
             function_name,
+            line_number,
+            "%s%s%s",
             globus_l_gsi_cred_error_strings[error_type],
             short_desc ? ": " : "",
             short_desc ? short_desc : "");    
@@ -111,8 +111,10 @@ globus_i_gsi_cred_error_result(
         GLOBUS_GSI_CREDENTIAL_MODULE,
         NULL,
         error_type,
-        "%s:%d: %s: %s%s%s",
-        filename, line_number, function_name, 
+        filename,
+        function_name,
+        line_number, 
+        "%s%s%s",
         globus_l_gsi_cred_error_strings[error_type],
         short_desc ? ": " : "",
         short_desc ? short_desc : "");
@@ -152,8 +154,10 @@ globus_i_gsi_cred_error_chain_result(
             GLOBUS_GSI_CREDENTIAL_MODULE,
             globus_error_get(chain_result),
             error_type,
-            "%s:%d: %s: %s%s%s",
-            filename, line_number, function_name, 
+            filename,
+            function_name,
+            line_number, 
+            "%s%s%s",
             globus_l_gsi_cred_error_strings[error_type],
             short_desc ? ": " : "",
             short_desc ? short_desc : "");
@@ -210,11 +214,10 @@ globus_i_gsi_cred_error_join_chains_result(
                 GLOBUS_GSI_CREDENTIAL_MODULE,
                 NULL,
                 GLOBUS_GSI_CRED_ERROR_CREATING_ERROR_OBJ,
-                "%s:%d: %s: "
-                 "Couldn't join inner and outter error chains",
-                 __FILE__,
-                 __LINE__,
-                 _function_name_);
+                __FILE__,
+                _function_name_,
+                __LINE__,
+                "Couldn't join inner and outter error chains");
     }
 
     result = globus_error_put(result_error_obj);

@@ -88,8 +88,10 @@
                 GLOBUS_GSI_GSSAPI_MODULE, \
                 errno, \
                 GLOBUS_GSI_GSSAPI_ERROR_OUT_OF_MEMORY, \
-                "%s:%d: %s: %s", \
-                __FILE__, __LINE__, _function_name_, \
+                __FILE__, \
+                _function_name_, \
+                __LINE__, \
+                "%s", \
                 _tmp_str_)); \
     }
 
@@ -103,8 +105,10 @@
                 GLOBUS_GSI_GSSAPI_MODULE, \
                 errno, \
                 _ERRORTYPE_, \
-                "%s:%d: %s: %s", \
-                __FILE__, __LINE__, _function_name_, \
+                __FILE__, \
+                _function_name_, \
+                __LINE__, \
+                "%s", \
                 _tmp_str_)); \
         globus_libc_free(_tmp_str_); \
     }

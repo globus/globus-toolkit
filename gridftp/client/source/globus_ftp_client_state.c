@@ -200,7 +200,7 @@ globus_i_ftp_client_response_callback(
     unsigned long				pbsz = 0;
     int						rc, oldrc, i;
     char *                                      pathname;
-    static char * myname = "globus_i_ftp_client_response_callback";
+    GlobusFuncName(globus_i_ftp_client_response_callback);
     
     target = (globus_i_ftp_client_target_t *) user_arg;
     client_handle = target->owner;
@@ -3764,7 +3764,7 @@ globus_l_ftp_client_connection_error(
     globus_ftp_control_response_t *		response)
 {
     globus_result_t				result;
-    static char * myname = "globus_l_ftp_client_connection_error";
+    GlobusFuncName(globus_l_ftp_client_connection_error);
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_connection_error() entering\n"));
@@ -4163,7 +4163,7 @@ globus_l_ftp_client_parse_cksm(
 {
     char *                                      p;
     int                                         rc;
-    static char * myname = "globus_l_ftp_client_parse_cksm";
+    GlobusFuncName(globus_l_ftp_client_parse_cksm);
 
     if(response->code != 213)
     {
@@ -4198,7 +4198,7 @@ globus_l_ftp_client_parse_mdtm(
     unsigned long				nsec = 0UL;
     int 					rc;
     int						i;
-    static char * myname = "globus_l_ftp_client_parse_mdtm";
+    GlobusFuncName(globus_l_ftp_client_parse_mdtm);
 
     if(response->code != 213)
     {
@@ -4345,7 +4345,7 @@ globus_l_ftp_client_parse_mlst(
     int                                         filename_length = 0;
     int                                         data_length;
 
-    static char * myname = "globus_l_ftp_client_parse_mlst";
+    GlobusFuncName(globus_l_ftp_client_parse_mlst);
 
     if(response->code != 250)
     {

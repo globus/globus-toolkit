@@ -100,8 +100,10 @@ extern char * globus_i_gridmap_callout_error_strings[];
             GLOBUS_GRIDMAP_CALLOUT_ERROR_MODULE,                         \
             (__RESULT) ? globus_error_get(__RESULT) : NULL,              \
             __TYPE,                                                      \
-            "%s:%d: %s: %s%s%s",                                         \
-            __FILE__, __LINE__, "Globus Gridmap Callout",                \
+            __FILE__, \
+            "Globus Gridmap Callout",                \
+            __LINE__, \
+            "%s%s%s",                                         \
             globus_i_gridmap_callout_error_strings[__TYPE],              \
             _tmp_str_ ? ": " : "",                                       \
             _tmp_str_ ? _tmp_str_ : ""));                                \
@@ -115,13 +117,11 @@ extern char * globus_i_gridmap_callout_error_strings[];
             __MAJOR_STATUS,                                                        \
             __MINOR_STATUS,                                                        \
             GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR,                                   \
-            "%s:%d: %s: %s",                                                       \
-            __FILE__, __LINE__, "Globus Gridmap Callout",                          \
+            __FILE__,                                                              \
+            "Globus Gridmap Callout",                                              \
+            __LINE__,                                                              \
+            "%s",                                                                  \
             globus_i_gridmap_callout_error_strings[GLOBUS_GRIDMAP_CALLOUT_GSSAPI_ERROR]))
-
-
-
-
 
 EXTERN_C_END
 

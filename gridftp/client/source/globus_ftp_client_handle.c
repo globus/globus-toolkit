@@ -105,7 +105,7 @@ globus_ftp_client_handle_init(
     globus_ftp_client_handle_t *		handle,
     globus_ftp_client_handleattr_t *		attr)
 {
-    static char * myname = "globus_ftp_client_handle_init";
+    GlobusFuncName(globus_ftp_client_handle_init);
     globus_i_ftp_client_handle_t *		i_handle;
     globus_i_ftp_client_handleattr_t *		i_attr;
 
@@ -219,7 +219,7 @@ globus_ftp_client_handle_destroy(
     globus_ftp_client_handle_t *		handle)
 {
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_handle_destroy";
+    GlobusFuncName(globus_ftp_client_handle_destroy);
 
     if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
     {
@@ -310,7 +310,7 @@ globus_ftp_client_handle_cache_url_state(
     globus_object_t *				err;
     globus_result_t				result;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_handle_cache_url_state";
+    GlobusFuncName(globus_ftp_client_handle_cache_url_state);
 
     if(handle == GLOBUS_NULL)
     {
@@ -359,7 +359,7 @@ globus_ftp_client_handle_flush_url_state(
     globus_object_t *				err;
     globus_result_t				result;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_handle_flush_url_state";
+    GlobusFuncName(globus_ftp_client_handle_flush_url_state);
 
     if(handle == GLOBUS_NULL)
     {
@@ -418,7 +418,7 @@ globus_ftp_client_handle_set_user_pointer(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_handle_set_user_pointer";
+    GlobusFuncName(globus_ftp_client_handle_set_user_pointer);
 
     if(handle == GLOBUS_NULL)
     {
@@ -450,7 +450,7 @@ globus_ftp_client_handle_get_user_pointer(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_handle_get_user_pointer";
+    GlobusFuncName(globus_ftp_client_handle_get_user_pointer);
 
     if(handle == GLOBUS_NULL)
     {
@@ -518,7 +518,7 @@ globus_ftp_client_handle_add_plugin(
     globus_i_ftp_client_handle_t *		i_handle;
     globus_list_t *				node;
     globus_ftp_client_plugin_t *		tmp;
-    static char * myname = "globus_ftp_client_handle_add_plugin";
+    GlobusFuncName(globus_ftp_client_handle_add_plugin);
 
     if(handle == GLOBUS_NULL)
     {
@@ -641,7 +641,7 @@ globus_ftp_client_handle_remove_plugin(
     globus_i_ftp_client_handle_t *		i_handle;
     globus_list_t *				node;
     globus_i_ftp_client_plugin_t *		tmp;
-    static char * myname = "globus_ftp_client_handle_add_plugin";
+    GlobusFuncName(globus_ftp_client_handle_add_plugin);
 
     if(handle == GLOBUS_NULL)
     {
@@ -1133,7 +1133,7 @@ globus_i_ftp_client_target_find(
     globus_i_ftp_client_cache_entry_t *		cache_entry;
     globus_l_ftp_client_target_search_t         searcher;
 
-    static char * myname = "globus_i_ftp_client_target_find";
+    GlobusFuncName(globus_i_ftp_client_target_find);
 
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_i_ftp_client_target_find() entering\n"));
@@ -1289,7 +1289,7 @@ globus_l_ftp_client_url_parse(
 {
     int rc;
     globus_object_t *				err = GLOBUS_NULL;
-    static char * myname = "globus_l_ftp_client_url_parse";
+    GlobusFuncName(globus_l_ftp_client_url_parse);
 
     /* Try to parse url */
 
@@ -1596,7 +1596,7 @@ globus_i_ftp_client_cache_add(
     globus_i_ftp_client_cache_entry_t *		cache_entry;
     globus_l_ftp_client_target_search_t         searcher;
 
-    static char * myname = "globus_i_ftp_client_cache_add";
+    GlobusFuncName(globus_i_ftp_client_cache_add);
 
     if(url == GLOBUS_NULL)
     {
@@ -1674,7 +1674,7 @@ globus_i_ftp_client_cache_remove(
     globus_i_ftp_client_cache_entry_t *		cache_entry;
     globus_l_ftp_client_target_search_t         searcher;
 
-    static char * myname = "globus_i_ftp_client_cache_remove";
+    GlobusFuncName(globus_i_ftp_client_cache_remove);
 
     if(url == GLOBUS_NULL)
     {

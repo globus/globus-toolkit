@@ -54,8 +54,10 @@ static globus_module_descriptor_t       globus_i_xio_tcp_module =
             &globus_i_xio_tcp_module,                                       \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_TCP_ERROR_NO_ADDRS,                                  \
-            "[%s:%d] No addrs for INET family",                             \
-            _xio_name, __LINE__))
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "No addrs for INET family"))
 
 
 #define GlobusIXIOTcpCloseFd(fd)                                            \

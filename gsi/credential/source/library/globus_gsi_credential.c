@@ -191,7 +191,6 @@ globus_result_t globus_gsi_cred_read(
     time_t                              lifetime = 0;
     int                                 index = 0;
     int                                 result_index = 0;
-    int                                 result_count = 0;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_result_t                     results[4];
     X509_NAME *                         found_subject = NULL;
@@ -199,7 +198,7 @@ globus_result_t globus_gsi_cred_read(
     char *                              key = NULL;
     char *                              proxy = NULL;
     char *                              service_name = NULL;
-
+    
     static char *                       _function_name_ =
         "globus_gsi_cred_read";
 
@@ -214,7 +213,7 @@ globus_result_t globus_gsi_cred_read(
     if(handle == NULL)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
+            results[result_index],
             GLOBUS_GSI_CRED_ERROR_READING_CRED,
             ("Null handle passed to function: %s", _function_name_));
         goto exit;
@@ -341,19 +340,16 @@ globus_result_t globus_gsi_cred_read(
             if(results[result_index] != GLOBUS_SUCCESS)
             {
                 globus_object_t *       error_obj;
-                error_obj = globus_error_get(results[result_index]);
+                error_obj = globus_error_peek(results[result_index]);
                 if(globus_error_get_type(error_obj) == 
                    GLOBUS_GSI_CRED_ERROR_KEY_IS_PASS_PROTECTED)
                 {
-                    results[result_index] = globus_error_put(error_obj);
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         results[result_index],
                         GLOBUS_GSI_CRED_ERROR_READING_CRED);
                     break;
                 }
 
-                results[result_index] = globus_error_put(error_obj);
-                
                 GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                     results[result_index],
                     GLOBUS_GSI_CRED_ERROR_READING_CRED);
@@ -464,19 +460,16 @@ globus_result_t globus_gsi_cred_read(
             if(results[result_index] != GLOBUS_SUCCESS)
             {
                 globus_object_t *       error_obj;
-                error_obj = globus_error_get(results[result_index]);
+                error_obj = globus_error_peek(results[result_index]);
                 if(globus_error_get_type(error_obj) == 
                    GLOBUS_GSI_CRED_ERROR_KEY_IS_PASS_PROTECTED)
                 {
-                    results[result_index] = globus_error_put(error_obj);
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         results[result_index],
                         GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
                     break;
                 }
 
-                results[result_index] = globus_error_put(error_obj);
-                
                 GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                     results[result_index],
                     GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
@@ -604,18 +597,16 @@ globus_result_t globus_gsi_cred_read(
                 if(results[result_index] != GLOBUS_SUCCESS)
                 {
                     globus_object_t *   error_obj;
-                    error_obj = globus_error_get(results[result_index]);
+                    error_obj = globus_error_peek(results[result_index]);
                     if(globus_error_get_type(error_obj) == 
                        GLOBUS_GSI_CRED_ERROR_KEY_IS_PASS_PROTECTED)
                     {
-                        results[result_index] = globus_error_put(error_obj);
                         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                             results[result_index],
                             GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
                         break;
                     }
 
-                    results[result_index] = globus_error_put(error_obj);
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         results[result_index],
                         GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
@@ -702,20 +693,28 @@ globus_result_t globus_gsi_cred_read(
             }
             
         case GLOBUS_SO_END:
-
-            result_count = result_index;
-            for(result_index = (result_count - 2); 
-                result_index >= 0; 
-                --result_index)
             {
-                results[result_index] = 
-                    globus_i_gsi_cred_error_join_chains_result(
-                        results[result_index],
-                        results[result_index + 1]);
-                results[result_index + 1] = GLOBUS_SUCCESS;
+                globus_object_t *       multiple_obj;
+                
+                multiple_obj = globus_error_construct_multiple(
+                    GLOBUS_GSI_CREDENTIAL_MODULE,
+                    GLOBUS_GSI_CRED_ERROR_NO_CRED_FOUND,
+                    globus_l_gsi_cred_error_strings[
+                        GLOBUS_GSI_CRED_ERROR_NO_CRED_FOUND]);
+                
+                while(result_index--)
+                {
+                    globus_error_mutliple_add_chain(
+                        multiple_obj,
+                        globus_error_get(results[result_index]),
+                        "Attempt %d",
+                        result_index + 1);
+                }
+                
+                result_index = 0;
+                results[result_index] = globus_error_put(multiple_obj);
             }
-
-            result_index = 0;
+            
             GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                 results[result_index],
                 GLOBUS_GSI_CRED_ERROR_NO_CRED_FOUND);

@@ -12,8 +12,10 @@
             GLOBUS_CALLBACK_MODULE,                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_CALLBACK_ERROR_INVALID_CALLBACK_HANDLE,                  \
-            "[%s] Invalid callback handle",                                 \
-            (func)))
+            __FILE__,                                                       \
+            (func),                                                         \
+            __LINE__,                                                       \
+            "Invalid callback handle"))
 
 #define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE(func)                     \
     globus_error_put(                                                       \
@@ -21,8 +23,10 @@
             GLOBUS_CALLBACK_MODULE,                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_CALLBACK_ERROR_INVALID_SPACE,                            \
-            "[%s] Invalid space handle",                                    \
-            (func)))
+            __FILE__,                                                       \
+            (func),                                                         \
+            __LINE__,                                                       \
+            "Invalid space handle"))
 
 #define GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(func, alloc)               \
     globus_error_put(                                                       \
@@ -30,8 +34,10 @@
             GLOBUS_CALLBACK_MODULE,                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC,                             \
-            "[%s] Could not allocate memory for %s",                        \
+            __FILE__,                                                       \
             (func),                                                         \
+            __LINE__,                                                       \
+            "Could not allocate memory for %s",                             \
             (alloc)))
 
 #define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(func, argument)        \
@@ -40,8 +46,10 @@
             GLOBUS_CALLBACK_MODULE,                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT,                         \
-            "[%s] Invalid argument: %s",                                    \
+            __FILE__,                                                       \
             (func),                                                         \
+            __LINE__,                                                       \
+            "Invalid argument: %s",                                         \
             (argument)))
 
 #define GLOBUS_L_CALLBACK_CONSTRUCT_ALREADY_CANCELED(func)                  \
@@ -50,8 +58,10 @@
             GLOBUS_CALLBACK_MODULE,                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_CALLBACK_ERROR_ALREADY_CANCELED,                         \
-            "[%s] Callback previoulsy unregistered",                        \
-            (func)))
+            __FILE__,                                                       \
+            (func),                                                         \
+            __LINE__,                                                       \
+            "Callback previoulsy unregistered"))
 
 #define GLOBUS_L_CALLBACK_CONSTRUCT_NO_ACTIVE_CALLBACK(func)                \
     globus_error_put(                                                       \
@@ -59,8 +69,10 @@
             GLOBUS_CALLBACK_MODULE,                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_CALLBACK_ERROR_NO_ACTIVE_CALLBACK,                       \
-            "[%s] No cuurently running callback",                           \
-            (func)))
+            __FILE__,                                                       \
+            (func),                                                         \
+            __LINE__,                                                       \
+            "No cuurently running callback"))
 
 #define GlobusICallbackReadyInit(queue)                                     \
     do {                                                                    \

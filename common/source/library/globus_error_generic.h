@@ -2,6 +2,8 @@
 #define GLOBUS_INCLUDE_GENERIC_ERROR_H
 
 #include "globus_common_include.h"
+#include "globus_object.h"
+#include "globus_module.h"
 
 /**
  * @defgroup globus_error_api Globus Error API
@@ -71,7 +73,6 @@ EXTERN_C_BEGIN
  * @hideinitializer
  */
 #define GLOBUS_ERROR_TYPE_GLOBUS (&GLOBUS_ERROR_TYPE_GLOBUS_DEFINITION)
-
 extern const globus_object_type_t GLOBUS_ERROR_TYPE_GLOBUS_DEFINITION;
 
 #ifndef DOXYGEN
@@ -80,7 +81,10 @@ globus_object_t *
 globus_error_construct_error(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
-    const int                           type,
+    int                                 type,
+    const char *                        source_file,
+    const char *                        source_func,
+    int                                 source_line,
     const char *                        short_desc_format,
     ...);
 
@@ -88,7 +92,10 @@ globus_object_t *
 globus_error_v_construct_error(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
-    const int                           type,
+    int                                 type,
+    const char *                        source_file,
+    const char *                        source_func,
+    int                                 source_line,
     const char *                        short_desc_format,
     va_list                             ap);
 
@@ -97,7 +104,10 @@ globus_error_initialize_error(
     globus_object_t *                   error,
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
-    const int                           type,
+    int                                 type,
+    const char *                        source_file,
+    const char *                        source_func,
+    int                                 source_line,
     const char *                        short_desc_format,
     va_list                             ap);
 
@@ -186,14 +196,64 @@ char *
 globus_error_print_chain(
     globus_object_t *                   error);
 
+char *
+globus_error_print_friendly(
+    globus_object_t *                   error);
 
+/**
+ * If registered with a module's descriptor, this handler will be called on
+ * behalf of globus_error_print_friendly()
+ * 
+ * @param error
+ *      The error chain that originated from this module.  The top error object
+ *      in the chain will be one created by this module and have a type of
+ *      'type';  The remaining objects are the same as the cause chain used at
+ *      creation time.  The user can use globus_error_get_type(error) to get
+ *      the error code (for GLOBUS_ERROR_TYPE_GLOBUS objects)
+ * 
+ * @param type
+ *      The error object type for the top object in the error chain
+ *      (e.g. GLOBUS_ERROR_TYPE_GLOBUS, GLOBUS_ERROR_TYPE_ERRNO)
+ * 
+ * @return
+ *      The function should return a newly allocated string with a friendly
+ *      error message explaining the error in more detail.  This string should
+ *      be considered the only message a user will see.  If the module
+ *      has nothing nice to say, it should return NULL so the next module in
+ *      the error chain can be tried.
+ * 
+ *      If you think a friendly error from causes beneath you should be 
+ *      included, you may use 
+ *      globus_error_print_friendly(globus_error_get_cause(error)) 
+ *      within this handler to append to your message.
+ */
+typedef char * (*globus_error_print_friendly_t)(
+    globus_object_t *                   error,
+    const globus_object_type_t *        type);
+
+
+#define GLOBUS_ERROR_TYPE_MULTIPLE (&GLOBUS_ERROR_TYPE_MULTIPLE_DEFINITION)
+extern const globus_object_type_t GLOBUS_ERROR_TYPE_MULTIPLE_DEFINITION;
+
+globus_object_t *
+globus_error_construct_multiple(
+    globus_module_descriptor_t *        base_source,
+    int                                 type,
+    const char *                        fmt,
+    ...);
+
+void
+globus_error_mutliple_add_chain(
+    globus_object_t *                   multiple_error,
+    globus_object_t *                   chain,
+    const char *                        fmt,
+    ...);
+
+globus_object_t *
+globus_error_multiple_remove_chain(
+    globus_object_t *                   multiple_error);
+    
 #endif
 
 EXTERN_C_END
 #endif /* GLOBUS_INCLUDE_GENERIC_ERROR_H */
-
-
-
-
-
-

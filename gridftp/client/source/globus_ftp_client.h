@@ -94,6 +94,27 @@ EXTERN_C_BEGIN
 extern globus_module_descriptor_t globus_i_ftp_client_module;
 
 /**
+ * Error types
+ */
+typedef enum
+{
+    GLOBUS_FTP_CLIENT_ERROR_PARAMETER,
+    GLOBUS_FTP_CLIENT_ERROR_MEMORY,
+    GLOBUS_FTP_CLIENT_ERROR_ABORTED,
+    GLOBUS_FTP_CLIENT_ERROR_INTERNAL,
+    GLOBUS_FTP_CLIENT_ERROR_IN_USE,
+    GLOBUS_FTP_CLIENT_ERROR_NOT_IN_USE,
+    GLOBUS_FTP_CLIENT_ERROR_COMPLETED,
+    GLOBUS_FTP_CLIENT_ERROR_INVALID_OPERATION,
+    GLOBUS_FTP_CLIENT_ERROR_UNEXPECTED_EOF,
+    GLOBUS_FTP_CLIENT_ERROR_NO_SUCH_FILE,
+    GLOBUS_FTP_CLIENT_ERROR_PROTOCOL,
+    GLOBUS_FTP_CLIENT_ERROR_RESPONSE,
+    GLOBUS_FTP_CLIENT_ERROR_FEATURE,
+    GLOBUS_FTP_CLIENT_ERROR_NO_RESTART_MARKER
+} globus_ftp_client_error_t;
+
+/**
  * Restart marker types.
  * @ingroup globus_ftp_client_restart_markers
  * @internal
@@ -1000,6 +1021,24 @@ globus_result_t globus_ftp_client_features_init(
 globus_result_t globus_ftp_client_features_destroy(
     globus_ftp_client_features_t *);
 
+/**
+ * returns the FTP response code for GLOBUS_ERROR_TYPE_FTP errors.
+ * this function will search the entire chain for the correct type error and
+ * return the code stored in that error.
+ * 
+ * @param error
+ *      an error object or chain with type GLOBUS_ERROR_TYPE_FTP
+ * 
+ * @return
+ *      the associated FTP response code if found, 0 otherwise.
+ */
+int
+globus_error_ftp_error_get_code(
+    globus_object_t *                   error);
+
+#define GLOBUS_ERROR_TYPE_FTP (&GLOBUS_ERROR_TYPE_FTP_DEFINITION)
+extern const globus_object_type_t GLOBUS_ERROR_TYPE_FTP_DEFINITION;
+   
 #endif
 EXTERN_C_END
 

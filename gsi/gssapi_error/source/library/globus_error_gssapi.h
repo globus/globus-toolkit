@@ -98,15 +98,6 @@ globus_error_gssapi_set_major_status(
     globus_object_t *                   error,
     const OM_uint32                     major_status);
 
-OM_uint32
-globus_error_gssapi_get_minor_status(
-    globus_object_t *                   error);
-
-void
-globus_error_gssapi_set_minor_status(
-    globus_object_t *                   error,
-    const OM_uint32                     minor_status);
-
 #endif
 
 /**
@@ -130,9 +121,12 @@ globus_error_gssapi_match(
 globus_object_t *
 globus_error_wrap_gssapi_error(
     globus_module_descriptor_t *        base_source,
-    const OM_uint32                     major_status,
-    const OM_uint32                     minor_status,
-    const int                           type,
+    OM_uint32                           major_status,
+    OM_uint32                           minor_status,
+    int                                 type,
+    const char *                        source_file,
+    const char *                        source_func,
+    int                                 source_line,
     const char *                        short_desc_format,
     ...);
 

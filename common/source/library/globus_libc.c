@@ -3159,8 +3159,10 @@ globus_libc_getaddrinfo(
                     GLOBUS_COMMON_MODULE,
                     errno,
                     rc + GLOBUS_EAI_ERROR_OFFSET,
-                    "[%s] %s",
+                    __FILE__,
                     "globus_libc_getaddrinfo",
+                    __LINE__,
+                    "%s",
                     gai_strerror(rc)));
         }
         else
@@ -3170,8 +3172,10 @@ globus_libc_getaddrinfo(
                     GLOBUS_COMMON_MODULE,
                     GLOBUS_NULL,
                     rc + GLOBUS_EAI_ERROR_OFFSET,
-                    "[%s] %s",
+                    __FILE__,
                     "globus_libc_getaddrinfo",
+                    __LINE__,
+                    "%s",
                     gai_strerror(rc)));
         }
     }
@@ -3216,8 +3220,10 @@ globus_libc_getnameinfo(
                     GLOBUS_COMMON_MODULE,
                     errno,
                     rc + GLOBUS_EAI_ERROR_OFFSET,
-                    "[%s] %s",
+                    __FILE__,
                     "globus_libc_getnameinfo",
+                    __LINE__,
+                    "%s",
                     gai_strerror(rc)));
         }
         else
@@ -3227,8 +3233,10 @@ globus_libc_getnameinfo(
                     GLOBUS_COMMON_MODULE,
                     GLOBUS_NULL,
                     rc + GLOBUS_EAI_ERROR_OFFSET,
-                    "[%s] %s",
+                    __FILE__,
                     "globus_libc_getnameinfo",
+                    __LINE__,
+                    "%s",
                     gai_strerror(rc)));
         }
     }
@@ -3320,10 +3328,13 @@ globus_libc_addr_to_contact_string(
                GLOBUS_COMMON_MODULE,
                GLOBUS_NULL,
                0,
-               "[globus_libc_addr_to_contact_string] Invalid addr family"));
+               __FILE__,
+               "globus_libc_addr_to_contact_string",
+               __LINE__,
+               "Invalid addr family"));
         goto error_nameinfo;
     }
-    
+        
     if(opts_mask & GLOBUS_LIBC_ADDR_LOCAL ||
         globus_libc_addr_is_loopback(addr) || 
         globus_libc_addr_is_wildcard(addr))
@@ -3335,7 +3346,10 @@ globus_libc_addr_to_contact_string(
                    GLOBUS_COMMON_MODULE,
                    GLOBUS_NULL,
                    0,
-                   "[globus_libc_addr_to_contact_string] globus_libc_gethostaddr failed"));
+                   __FILE__,
+                   "globus_libc_addr_to_contact_string",
+                   __LINE__,
+                    "globus_libc_gethostaddr failed"));
             goto error_nameinfo;
         }
         
@@ -3366,7 +3380,10 @@ globus_libc_addr_to_contact_string(
                 GLOBUS_COMMON_MODULE,
                 GLOBUS_NULL,
                 0,
-                "[globus_libc_addr_to_contact_string] malloc fsiled"));
+                __FILE__,
+                "globus_libc_addr_to_contact_string",
+                __LINE__,
+                "malloc failed"));
         goto error_memory;
     }
     
@@ -3386,4 +3403,67 @@ globus_libc_addr_to_contact_string(
 error_memory:
 error_nameinfo:
     return result;
+}
+
+/**
+ * create a new string from all of the strings in array
+ * 
+ * @param array
+ *      an array of strings to concatenate (null entries are skipped)
+ * @param count
+ *      length of array
+ */
+char *
+globus_libc_join(
+    const char **                       array,
+    int                                 count)
+{
+    int *                               lens;
+    int                                 len;
+    char *                              s;
+    int                                 i;
+    
+    if(count <= 0)
+    {
+        return NULL;
+    }
+    
+    lens = (int *) globus_malloc(sizeof(int) * count);
+    if(!lens)
+    {
+        return NULL;
+    }
+    
+    len = 0;
+    for(i = 0; i < count; i++)
+    {
+        len += lens[i] = array[i] ? strlen(array[i]) : 0;
+    }
+    
+    if(len)
+    {
+        s = (char *) globus_malloc(sizeof(char) * (len + 1));
+        if(s)
+        {
+            len = 0;
+            for(i = 0; i < count; i++)
+            {
+                if(lens[i])
+                {
+                    memcpy(s + len, array[i], lens[i]);
+                    len += lens[i];
+                }
+            }
+            
+            s[len] = '\0';
+        }
+    }
+    else
+    {
+        s = NULL;
+    }
+    
+    globus_free(lens);
+    
+    return s;
 }

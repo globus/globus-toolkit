@@ -88,7 +88,7 @@ globus_ftp_client_plugin_restart_list(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_list";
+    GlobusFuncName(globus_ftp_client_plugin_restart_list);
 
     if(url == GLOBUS_NULL)
     {
@@ -150,7 +150,7 @@ globus_ftp_client_plugin_restart_verbose_list(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_verbose_list";
+    GlobusFuncName(globus_ftp_client_plugin_restart_verbose_list);
 
     if(url == GLOBUS_NULL)
     {
@@ -213,7 +213,7 @@ globus_ftp_client_plugin_restart_machine_list(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_machine_list";
+    GlobusFuncName(globus_ftp_client_plugin_restart_machine_list);
 
     if(url == GLOBUS_NULL)
     {
@@ -275,7 +275,7 @@ globus_ftp_client_plugin_restart_mlst(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_mlst";
+    GlobusFuncName(globus_ftp_client_plugin_restart_mlst);
 
     if(url == GLOBUS_NULL)
     {
@@ -341,7 +341,7 @@ globus_ftp_client_plugin_restart_chmod(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_chmod";
+    GlobusFuncName(globus_ftp_client_plugin_restart_chmod);
 
     if(url == GLOBUS_NULL)
     {
@@ -420,7 +420,7 @@ globus_ftp_client_plugin_restart_cksm(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_cksm";
+    GlobusFuncName(globus_ftp_client_plugin_restart_cksm);
 
     if(url == GLOBUS_NULL)
     {
@@ -482,7 +482,7 @@ globus_ftp_client_plugin_restart_delete(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_delete";
+    GlobusFuncName(globus_ftp_client_plugin_restart_delete);
 
     if(url == GLOBUS_NULL)
     {
@@ -544,7 +544,7 @@ globus_ftp_client_plugin_restart_feat(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_feat";
+    GlobusFuncName(globus_ftp_client_plugin_restart_feat);
 
     if(url == GLOBUS_NULL)
     {
@@ -606,7 +606,7 @@ globus_ftp_client_plugin_restart_mkdir(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_mkdir";
+    GlobusFuncName(globus_ftp_client_plugin_restart_mkdir);
 
     if(url == GLOBUS_NULL)
     {
@@ -668,7 +668,7 @@ globus_ftp_client_plugin_restart_rmdir(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_rmdir";
+    GlobusFuncName(globus_ftp_client_plugin_restart_rmdir);
 
     if(url == GLOBUS_NULL)
     {
@@ -739,7 +739,7 @@ globus_ftp_client_plugin_restart_move(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_move";
+    GlobusFuncName(globus_ftp_client_plugin_restart_move);
 
     if(source_url == GLOBUS_NULL)
     {
@@ -819,7 +819,7 @@ globus_ftp_client_plugin_restart_get(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_get";
+    GlobusFuncName(globus_ftp_client_plugin_restart_get);
 
     if(url == GLOBUS_NULL)
     {
@@ -895,7 +895,7 @@ globus_ftp_client_plugin_restart_put(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_put";
+    GlobusFuncName(globus_ftp_client_plugin_restart_put);
 
     if(url == GLOBUS_NULL)
     {
@@ -980,7 +980,7 @@ globus_ftp_client_plugin_restart_third_party_transfer(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_transfer";
+    GlobusFuncName(globus_ftp_client_plugin_restart_transfer);
 
     if(source_url == GLOBUS_NULL)
     {
@@ -1046,7 +1046,7 @@ globus_ftp_client_plugin_restart_size(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_size";
+    GlobusFuncName(globus_ftp_client_plugin_restart_size);
 
     if(url == GLOBUS_NULL)
     {
@@ -1105,7 +1105,7 @@ globus_ftp_client_plugin_restart_modification_time(
 {
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_modification_time";
+    GlobusFuncName(globus_ftp_client_plugin_restart_modification_time);
 
     if(url == GLOBUS_NULL)
     {
@@ -1155,7 +1155,7 @@ globus_ftp_client_plugin_restart_get_marker(
 {
     globus_result_t				result;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char * myname = "globus_ftp_client_plugin_restart_get_marker";
+    GlobusFuncName(globus_ftp_client_plugin_restart_get_marker);
 
     if(handle == GLOBUS_NULL)
     {
@@ -1194,34 +1194,19 @@ globus_ftp_client_plugin_restart_get_marker(
             else
             {
                 result = globus_error_put(
-                    globus_error_construct_string(
-                        GLOBUS_FTP_CLIENT_MODULE,
-                        GLOBUS_NULL,
-                        "[%s] Could not find restart info %s\n",
-                        GLOBUS_FTP_CLIENT_MODULE->module_name,
-                        myname));
+                    GLOBUS_I_FTP_CLIENT_NO_RESTART_MARKER());
             }
         }
         else
         {
             result = globus_error_put(
-                globus_error_construct_string(
-                    GLOBUS_FTP_CLIENT_MODULE,
-                    GLOBUS_NULL,
-                    "[%s] No restart marker for restarted operation at %s\n",
-                    GLOBUS_FTP_CLIENT_MODULE->module_name,
-                    myname));
+                GLOBUS_I_FTP_CLIENT_NO_RESTART_MARKER());
         }
     }
     else
     {
         result = globus_error_put(
-            globus_error_construct_string(
-                GLOBUS_FTP_CLIENT_MODULE,
-                GLOBUS_NULL,
-                "[%s] Handle not in restart state %s\n",
-                GLOBUS_FTP_CLIENT_MODULE->module_name,
-                myname));
+            GLOBUS_I_FTP_CLIENT_NO_RESTART_MARKER());
     }
 
     globus_i_ftp_client_handle_unlock(i_handle);
@@ -1280,7 +1265,7 @@ globus_ftp_client_plugin_add_data_channels(
     globus_result_t				result;
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char *				myname = "globus_ftp_client_plugin_add_data_channels";
+    GlobusFuncName(globus_ftp_client_plugin_add_data_channels);
 
     i_handle = *handle;
     globus_i_ftp_client_handle_lock(i_handle);
@@ -1345,7 +1330,7 @@ globus_ftp_client_plugin_remove_data_channels(
     globus_result_t				result;
     globus_object_t *				err;
     globus_i_ftp_client_handle_t *		i_handle;
-    static char *				myname = "globus_ftp_client_plugin_remove_data_channels";
+    GlobusFuncName(globus_ftp_client_plugin_remove_data_channels);
 
     i_handle = *handle;
     globus_i_ftp_client_handle_lock(i_handle);
@@ -1394,7 +1379,7 @@ globus_ftp_client_plugin_init(
 {
     globus_i_ftp_client_plugin_t *		i_plugin;
     globus_object_t *				err;
-    static char * myname = "globus_ftp_client_plugin_init";
+    GlobusFuncName(globus_ftp_client_plugin_init);
 
     if(plugin == GLOBUS_NULL)
     {
@@ -1447,7 +1432,7 @@ globus_ftp_client_plugin_destroy(
     globus_ftp_client_plugin_t *		plugin)
 {
     globus_object_t *				err;
-    static char * myname = "globus_ftp_client_plugin_destroy";
+    GlobusFuncName(globus_ftp_client_plugin_destroy);
 
     if(plugin == GLOBUS_NULL)
     {
@@ -1480,7 +1465,7 @@ globus_ftp_client_plugin_get_plugin_specific(
 {
     globus_i_ftp_client_plugin_t *		i_plugin;
     globus_object_t *				err;
-    static char * myname = "globus_ftp_client_plugin_get_plugin_specific";
+    GlobusFuncName(globus_ftp_client_plugin_get_plugin_specific);
 
     if(plugin == GLOBUS_NULL)
     {
@@ -1513,7 +1498,7 @@ globus_ftp_client_plugin_set_##type##_func(\
 { \
     globus_i_ftp_client_plugin_t *		i_plugin; \
     globus_object_t *				err; \
-    static char * myname = "globus_ftp_client_plugin_set_" #type "_func"; \
+    GlobusFuncName(globus_ftp_client_plugin_set_" #type "_func); \
     if(plugin == GLOBUS_NULL) \
     { \
 	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("plugin"); \
@@ -1636,7 +1621,7 @@ globus_l_ftp_client_plugin_restart_operation(
     globus_object_t *				err;
     globus_result_t				result;
     globus_i_ftp_client_restart_t *		restart_info;
-    static char * myname = "globus_i_ftp_client_plugin_restart_operation";
+    GlobusFuncName(globus_i_ftp_client_plugin_restart_operation);
 
     if(handle == GLOBUS_NULL)
     {

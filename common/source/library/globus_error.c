@@ -266,6 +266,8 @@ static globus_thread_key_t   s_peek_key;
 
 static int  s_error_cache_initialized = 0;
 static globus_bool_t globus_i_error_output = GLOBUS_FALSE;
+globus_bool_t globus_i_error_verbose = GLOBUS_FALSE;
+globus_thread_key_t globus_i_error_verbose_key;
 
 static
 void
@@ -296,6 +298,14 @@ static int s_error_cache_init (void)
         globus_i_error_output = GLOBUS_TRUE;
     }
     
+    tmp_string = globus_module_getenv("GLOBUS_ERROR_VERBOSE");
+    if(tmp_string != GLOBUS_NULL)
+    {
+        globus_i_error_verbose = GLOBUS_TRUE;
+    }
+    
+    globus_thread_key_create(&globus_i_error_verbose_key, GLOBUS_NULL);
+
   return GLOBUS_SUCCESS;
 }
 
@@ -310,7 +320,8 @@ static int s_error_cache_destroy (void)
   }
     
   globus_thread_key_delete(s_peek_key);
-    
+  globus_thread_key_delete(globus_i_error_verbose_key);
+  
   globus_object_cache_destroy (&s_result_to_object_mapper);
   globus_mutex_destroy (&s_result_to_object_mutex);
   s_error_cache_initialized = 0;

@@ -178,10 +178,11 @@ extern char *                    globus_l_gsi_cert_utils_error_strings[];
                 GLOBUS_GSI_CERT_UTILS_MODULE, \
                 errno, \
                 GLOBUS_GSI_CERT_UTILS_ERROR_OUT_OF_MEMORY, \
-                "%s:%d: %s: %s", \
-                __FILE__, __LINE__, _function_name_, \
+                __FILE__, \
+                _function_name_, \
+                __LINE__, \
+                "%s", \
                 _tmp_str_)); \
-        globus_libc_free(_tmp_str_); \
     }
 
 globus_result_t

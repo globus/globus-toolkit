@@ -82,8 +82,11 @@ extern char * globus_l_gsi_authz_error_strings[];
         GLOBUS_GSI_AUTHZ_MODULE, \
         errno, \
         GLOBUS_GSI_AUTHZ_ERROR_ERRNO, \
-        "%s:%d: %s: Could not allocate enough memory: %d bytes", \
-        __FILE__, __LINE__, _function_name_, (_LENGTH_)))
+        __FILE__, \
+        _function_name_, \
+        __LINE__, \
+        "Could not allocate enough memory: %d bytes", \
+        (_LENGTH_)))
 
 
 #define GLOBUS_GSI_AUTHZ_ERROR_NULL_VALUE(_WHAT_) \
@@ -91,8 +94,10 @@ extern char * globus_l_gsi_authz_error_strings[];
         GLOBUS_GSI_AUTHZ_MODULE, \
         NULL, \
 	GLOBUS_GSI_AUTHZ_ERROR_BAD_PARAMETER, \
-        "%s:%d: %s: %s %s is null", \
-        __FILE__, __LINE__, _function_name_, \
+	__FILE__, \
+        _function_name_, \
+        __LINE__, \
+        "%s %s is null", \
         globus_l_gsi_authz_error_strings[GLOBUS_GSI_AUTHZ_ERROR_BAD_PARAMETER]\
         , (_WHAT_)))
 
@@ -101,8 +106,10 @@ extern char * globus_l_gsi_authz_error_strings[];
         GLOBUS_GSI_AUTHZ_MODULE, \
         globus_error_get(_RESULT_), \
 	GLOBUS_GSI_AUTHZ_ERROR_CALLOUT, \
-        "%s:%d: %s: %s", \
-        __FILE__, __LINE__, _function_name_, \
+	__FILE__, \
+        _function_name_, \
+        __LINE__, \
+        "%s", \
         globus_l_gsi_authz_error_strings[GLOBUS_GSI_AUTHZ_ERROR_CALLOUT]))
 
 typedef struct globus_l_gsi_authz_cb_arg_s
