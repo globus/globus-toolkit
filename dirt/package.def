@@ -100,3 +100,7 @@ globus_gram_job_manager_setup_fork gram/jobmanager/setup/fork dirt.sh
 globus_gram_job_manager_setup_lsf gram/jobmanager/setup/lsf dirt.sh
 globus_gram_job_manager_setup_pbs gram/jobmanager/setup/pbs dirt.sh
 globus_gram_job_manager_setup_remote gram/jobmanager/setup/remote dirt.sh
+globus_gram_reporter_condor_setup gram/reporter/setup/condor dirt.sh
+globus_gram_reporter_fork_setup gram/reporter/setup/fork dirt.sh
+globus_gram_reporter_lsf_setup gram/reporter/setup/lsf dirt.sh
+globus_gram_reporter_pbs_setup gram/reporter/setup/pbs dirt.sh
