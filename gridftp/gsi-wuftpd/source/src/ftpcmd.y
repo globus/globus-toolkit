@@ -1607,7 +1607,7 @@ cmd: USER SP username CRLF
          * CKSM*
          */
     | CKSM check_login SP STRING SP pathname CRLF
-        =       {
+        {
             if(exit_at == CKSM)
             {   
                 dologout(0);
@@ -1626,7 +1626,7 @@ cmd: USER SP username CRLF
                 free($6);
         }
     | CKSM check_login SP STRING SP OFFSET SP pathname CRLF
-        =       {
+        {
             if(exit_at == CKSM)
             {   
                 dologout(0);
@@ -1645,7 +1645,7 @@ cmd: USER SP username CRLF
                 free($8);
         }
     | CKSM check_login SP STRING SP OFFSET SP LENGTH SP pathname CRLF
-        =       {
+        {
             if(exit_at == CKSM)
             {   
                 dologout(0);
