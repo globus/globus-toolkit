@@ -8,6 +8,14 @@ if ( ! $?GLOBUS_LOCATION ) then
     exit 1
 endif
 
+if ( ! $?MANPATH ) then
+    setenv MANPATH
+endif
+
+if ( ! $?LD_LIBRARY_PATH ) then
+    setenv LD_LIBRARY_PATH
+endif
+
 if ( $?GLOBUS_PATH ) then
     setenv PATH `echo "$PATH" | sed -e "s%:$GLOBUS_PATH[^:]*%%g" -e "s%^$GLOBUS_PATH[^:]*:\{0,1\}%%"`
     setenv MANPATH `echo "$MANPATH" | sed -e "s%:$GLOBUS_PATH[^:]*%%g" -e "s%^$GLOBUS_PATH[^:]*:\{0,1\}%%"`
@@ -22,13 +30,13 @@ setenv GLOBUS_PATH $GLOBUS_LOCATION
 setenv PATH "$GLOBUS_LOCATION/bin:$GLOBUS_LOCATION/sbin:$PATH";
 
 set DELIM
-if ( $?MANPATH ) then
+if ( "X$MANPATH" != "X" ) then
     set DELIM=:
 endif
 setenv MANPATH "$GLOBUS_LOCATION/man$DELIM$MANPATH"
 
 set DELIM=
-if ( $?LD_LIBRARY_PATH ) then
+if ( "X$LD_LIBRARY_PATH" != "X" ) then
     set DELIM=:
 endif
 setenv LD_LIBRARY_PATH "$GLOBUS_LOCATION/lib$DELIM$LD_LIBRARY_PATH"
