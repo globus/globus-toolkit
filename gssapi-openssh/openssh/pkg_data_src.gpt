@@ -41,11 +41,6 @@
           <Simple_Version Major="2"></Simple_Version>
         </Version>
       </Setup_Dependency>
-      <Setup_Dependency Name="gsi_openssh_setup">
-        <Version>
-          <Version_Range Upper_Major="2" Upper_Minor="2" Lower_Major="2" Lower_Minor="2" />
-        </Version>
-      </Setup_Dependency>
     </Source_Setup_Dependency>
 
     <Build_Instructions>
@@ -62,7 +57,28 @@
         MAKE_GPTMACRO gpt-install
       </Build_Step>
 
+      <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/</Build_Step>
+      <Build_Step>cp ./gpt/setup/setup-openssh INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/setup-openssh</Build_Step>
+      <Build_Step>cp ./gpt/setup/setup-openssh.pl INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/setup-openssh.pl</Build_Step>
+      <Build_Step>cp ./gpt/setup/SXXsshd.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/SXXsshd.in</Build_Step>
+      <Build_Step>cp ./ssh_config INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/ssh_config</Build_Step>
+      <Build_Step>cp ./sshd_config INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/sshd_config.in</Build_Step>
+      <Build_Step>cp ./ssh_prng_cmds.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/ssh_prng_cmds.in</Build_Step>
+      <Build_Step>cp ./moduli INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/moduli</Build_Step>
+
     </Build_Instructions>
+
+    <Post_Install_Program >
+      gsi_openssh_setup/setup-openssh
+    </Post_Install_Program>
+
+    <Post_Install_Message >
+      Please run GLOBUS_LOCATION/setup/gsi_openssh_setup/setup-openssh.
+    </Post_Install_Message>
+
+    <Setup Name="gsi_openssh">
+      <Aging_Version Major="2" Minor="2" Age="0" />
+    </Setup>
 
   </src_pkg >
 
