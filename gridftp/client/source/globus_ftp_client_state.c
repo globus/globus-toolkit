@@ -3549,6 +3549,8 @@ globus_l_ftp_client_connection_error(
 		/*
 		 * Kill the current target---the other one is idle now.
 		 */
+		target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+
 		result = globus_ftp_control_force_close(
 		    target->control_handle,
 		    globus_i_ftp_client_force_close_callback,
