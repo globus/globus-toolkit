@@ -1047,8 +1047,12 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
                               strlen(tmp_date_str) + 1);
     strcpy(vals->curr_gmt_time, tmp_date_str);
 
+/*
+ *       !vals->host_dn         ||
+ *       !vals->org_dn         ||
+ */
+
     if ( !vals->home_dir ||
-         !vals->host_dn         ||
          !vals->gate_host       ||
          !vals->gate_port       ||
          !vals->gate_subject    ||
@@ -1056,8 +1060,7 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
          !vals->osname          ||
          !vals->osversion       ||
          !vals->manufacturer    ||
-         !vals->machine_type    ||
-         !vals->org_dn )
+         !vals->machine_type )
     {
         fprintf(stderr, "Failed to find all required parameters from the "
                         "configuration file - %s\n", vals->conf_file);
