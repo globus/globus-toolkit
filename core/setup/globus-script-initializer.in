@@ -113,5 +113,29 @@ globus_source () {
   . "$1"
 }
 
+globus_get_ldap_path () {
+
+if [ -z "${GLOBUS_LDAP_PATH}" ]; then
+    if [ -r "${arch_sysconfdir}/globus-ldap-path-32.sh" ] ; then
+	globus_ldap_path_sh="${arch_sysconfdir}/globus-ldap-path-32.sh"
+    elif [ -r "${arch_sysconfdir}/globus-ldap-path-64.sh" ] ; then
+	globus_ldap_path_sh="${arch_sysconfdir}/globus-ldap-path-64.sh"
+    else
+	echo "ERROR: cannot resolve path to LDAP installation -- excepted" 1>&2
+	echo "to find this information in ${arch_sysconfdir}"             1>&2
+	echo "Set environment variable GLOBUS_LDAP_PATH and try again"     1>&2
+	exit 1
+    fi
+    . "${globus_ldap_path_sh}"
+    if [ -z "${GLOBUS_LDAP_PATH}" ]; then
+	echo "ERROR: value for GLOBUS_LDAP_PATH not defined"  1>&2
+	echo "in ${globus_ldap_path_sh}"                      1>&2
+	exit 1
+    fi
+fi
+}
+	if 
 
 ################# END    Inserted by configure #############
+
+
