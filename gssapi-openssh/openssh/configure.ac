@@ -691,6 +691,9 @@ AC_ARG_WITH(globus-flavor,
 	[  --with-globus-flavor=TYPE         Describe Globus flavor type (ex: gcc32dbg, etc.)],
 	[
 		globus_flavor_type="$withval"
+		if test "x$gsi_path" == "xno" ; then
+			gsi_path="yes"
+		fi
 	]
 )
 
