@@ -201,7 +201,7 @@ gaa_simple_l_name_matches(char *	policyname,
     }
     
     /*
-     * Names like "/foo/bar/*" match anything that starts with /foo/bar
+     * Names like "/foo/bar/ *" match anything that starts with /foo/bar
      * or /foo/bar/blech/, but not /fooo.
      */
     if ((prlen > 1) &&
@@ -215,7 +215,7 @@ gaa_simple_l_name_matches(char *	policyname,
 	}
 	
 	/*
-	 * Names like "/foo/bar/*" also match /foo/bar/ and /foo/bar
+	 * Names like "/foo/bar/ *" also match /foo/bar/ and /foo/bar
 	 */
 	policybuf[prlen-1] = '\0';
 	if (strcmp(policybuf, objectname) == 0)
@@ -274,12 +274,12 @@ gaa_simple_l_add_ads_rights (gaa_ptr 		gaa,
     gaa_condition    *cond = 0;
     char *auth_p;
     char *val_p;
-    *found_rights = 0;
     gaa_right_type right_type;
     int pri = 1;
     int num = 0;
     struct action *action;
     gaa_status status = GAA_S_SUCCESS;
+    *found_rights = 0;
 
     if (strcasecmp(ads->decision, "permit") == 0)
     {

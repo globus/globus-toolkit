@@ -4,8 +4,9 @@
 main(int argc, char **argv)
 {
     char errbuf[2048];
-    errbuf[0] = '\0';
     xmlDocPtr doc;
+
+    errbuf[0] = '\0';
 
     if (argc < 2) {
 	fprintf(stderr, USAGE, argv[0]);
