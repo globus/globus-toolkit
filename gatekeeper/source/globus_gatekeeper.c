@@ -991,6 +991,18 @@ static void doit()
     /* We will use the assist functions here since we 
      * don't need any special processing
      */
+	
+	/* 
+	 * We will not accept limited proxies for authentication, as
+	 * they may have been stolen. This enforces part of the 
+	 * Globus security policy.
+	 */
+
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+	ret_flags = GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
+#else
+	ret_flags = 0;
+#endif
 
     major_status = globus_gss_assist_accept_sec_context(&minor_status,
                        &context_handle,
