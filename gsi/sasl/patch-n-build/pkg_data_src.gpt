@@ -30,7 +30,7 @@
       <Build_Step Macro_Args="libs='ssl gdbm crypto sasl anonymous crammd5 digestmd5 plain'">
         RUN_FLAVOR_MAKEFILES_GPTMACRO
       </Build_Step>
-	<Build_Step>touch aclocal.m4</Build_Step>
+	<Build_Step>touch aclocal.m4 config.h.in configure stamp-h.in</Build_Step>
 	<Build_Step>find . -name "Makefile.in" -print | xargs touch</Build_Step>
       <Build_Step>CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --disable-gssapi --without-pam --without-dblib --without-dbpath</Build_Step>
       <Build_Step>MAKE_GPTMACRO</Build_Step>
