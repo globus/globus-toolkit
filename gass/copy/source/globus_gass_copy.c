@@ -6580,9 +6580,10 @@ globus_l_gass_copy_ftp_client_op_done_callback(
     info = (globus_l_gass_copy_glob_info_t *) user_arg;
            
     globus_mutex_lock(&info->mutex);
-    if (err != GLOBUS_SUCCESS && info->result != GLOBUS_SUCCESS)
+    if (err != GLOBUS_SUCCESS && info->result == GLOBUS_SUCCESS)
     {
-        info->result = globus_object_copy(err);
+        info->result = globus_error_put(
+            globus_object_copy(err));
     }
     info->callbacks_left--;
     globus_cond_signal(&info->cond);
@@ -6889,11 +6890,12 @@ error_malloc:
 error_before_callback:
 
     globus_mutex_lock(&info->mutex);
-    if (info->result != GLOBUS_SUCCESS)
+    if (info->result == GLOBUS_SUCCESS)
     {
         if (err != GLOBUS_SUCCESS)
         { 
-            info->result = globus_object_copy(err);
+            info->result = globus_error_put(
+                globus_object_copy(err));
         }
         else
         {

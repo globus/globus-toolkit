@@ -1555,8 +1555,6 @@ error_too_many_matches:
             
 error_expand:
     globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
-
-    globus_fifo_destroy(&matched_url_list);
     
     globus_free(user_url_pair->src_url);
     globus_free(user_url_pair->dst_url);
