@@ -144,11 +144,11 @@ int main(
 	    break;
 	}
 
-	if (strcmp(argp, "-all") == 0)
+	else if (strcmp(argp, "-all") == 0)
         {
 	    all_flag++;
         }
-	if (strcmp(argp, "-default") == 0)
+	else if (strcmp(argp, "-default") == 0)
         {
 	    default_flag++;
         }

@@ -555,6 +555,12 @@ main(
         if(result != GLOBUS_SUCCESS ||
            file_status != GLOBUS_FILE_DIR)
         {
+            globus_libc_fprintf(
+                stderr, 
+                "\n\nERROR: %s is not a valid directory for writing the "
+                "proxy certificate\n\n",
+                temp_dir);
+
             if(temp_dir)
             {
                 free(temp_dir);
@@ -567,11 +573,6 @@ main(
                 temp_filename = NULL;
             }
 
-            globus_libc_fprintf(
-                stderr, 
-                "\n\nERROR: %s is not a valid directory for writing the "
-                "proxy certificate\n\n",
-                temp_dir);
             if(result != GLOBUS_SUCCESS)
             {
                 GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
@@ -676,7 +677,7 @@ main(
             }
         }
     }
-    else if(user_cert_filename != user_key_filename)
+    else
     {
         result = globus_gsi_cred_read_cert(
             cred_handle,
@@ -726,16 +727,6 @@ main(
                 user_key_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
-    }
-    else
-    {
-        globus_libc_fprintf(
-            stderr,
-            "\n\nERROR: The user certificate filename: %s\n"
-            "and key filename: %s\nare the same, but they do not point to a "
-            "PKCS12 formatted (.p12 extension) certificate\n\n",
-            user_cert_filename, user_key_filename);
-        exit(1);
     }
 
     /* add restrictions now */
