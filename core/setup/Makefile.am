@@ -12,6 +12,12 @@ setup_DATA = \
 
 SUBDIRS = pkgdata
 
+EXTRA_DIST = findshelltools \
+	setup_globus_core \
+	setup_globus_core.pl \
+	globus-script-initializer.in \
+	globus-sh-tools.sh.in
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
 
