@@ -371,7 +371,7 @@ globus_l_gsc_cmd_mdtm_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -665,7 +665,7 @@ globus_l_gsc_cmd_cwd_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -791,17 +791,21 @@ globus_l_gsc_cmd_stat_cb(
     {
         if((int)user_arg == 0)
         {
+            code = 213;
             tmp_ptr = globus_i_gsc_list_single_line(stat_info);
         }
         else
         {
+            code = 250;
+            /* for mlst we want the requested path, not just the filename */
+            snprintf(stat_info->name, MAXPATHLEN, "%s", path);
             tmp_ptr = globus_i_gsc_mlsx_line_single(
                 op->server_handle->opts.mlsx_fact_str, uid, stat_info);
         }
-        code = 213;
         msg =  globus_common_create_string(
             "status of %s\n %s\n",
             op->path, tmp_ptr);
+        globus_free(tmp_ptr);
     }
 
     if(response_msg != NULL)
@@ -810,7 +814,8 @@ globus_l_gsc_cmd_stat_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    /* set a blank preline -- mlst output already has the initial space */
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg, "");
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -932,7 +937,7 @@ globus_l_gsc_cmd_size_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -1099,7 +1104,7 @@ globus_l_gsc_auth_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -2082,7 +2087,7 @@ globus_l_gsc_cmd_port_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -2398,7 +2403,7 @@ globus_l_gsc_data_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(wrapper->op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -3187,7 +3192,7 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "SPAS");
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
-    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;");    
+    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;UNIX.slink*;");    
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    

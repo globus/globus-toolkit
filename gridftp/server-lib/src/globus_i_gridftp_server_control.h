@@ -76,7 +76,8 @@ typedef enum globus_i_gsc_mlsx_fact_e
     GLOBUS_GSC_MLSX_FACT_SIZE = 'S',
     GLOBUS_GSC_MLSX_FACT_PERM = 'P',
     GLOBUS_GSC_MLSX_FACT_UNIXMODE = 'U',
-    GLOBUS_GSC_MLSX_FACT_UNIQUE = 'Q'
+    GLOBUS_GSC_MLSX_FACT_UNIQUE = 'Q',
+    GLOBUS_GSC_MLSX_FACT_UNIXSLINK = 'L'
 } globus_i_gsc_mlsx_fact_t;
 
 typedef enum
@@ -524,7 +525,8 @@ globus_i_gsc_mlsx_line(
 char *
 globus_i_gsc_string_to_959(
     int                                 code,
-    const char *                        in_str);
+    const char *                        in_str, 
+    const char *                        preline);
 
 void
 globus_i_guc_command_data_destroy(

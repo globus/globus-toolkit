@@ -948,7 +948,7 @@ globus_l_gsc_open_cb(
         goto err;
     }
 
-    msg = globus_i_gsc_string_to_959(220, server_handle->pre_auth_banner);
+    msg = globus_i_gsc_string_to_959(220, server_handle->pre_auth_banner, NULL);
     globus_mutex_lock(&server_handle->mutex);
     {
         res = globus_xio_register_write(
@@ -2238,7 +2238,7 @@ globus_gridftp_server_control_start(
         globus_free(server_handle->types);
     }
     /* default options */
-    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUQ");
+    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUQL");
     server_handle->opts.send_buf = -1; 
     server_handle->opts.perf_frequency = 5;
     server_handle->opts.restart_frequency = 5;
@@ -2665,10 +2665,17 @@ globus_i_gsc_get_help(
     return NULL;
 }
 
+/*  preline only affects multiline strings.
+    a null preline will prepend a "code-" to the front of each line by default, 
+    otherwise the preline is prepended.
+    used to follow spec for mlst where the lines MUST be prepended with exactly
+    one space, but general multiline responses are allowed to have any 
+    (or none at all, i.e. "") padding text */
 char *
 globus_i_gsc_string_to_959(
     int                                 code,
-    const char *                        in_str)
+    const char *                        in_str,
+    const char *                        preline)
 {
     globus_bool_t                       done = GLOBUS_FALSE;
     char *                              msg;
@@ -2676,6 +2683,7 @@ globus_i_gsc_string_to_959(
     char *                              start_ptr;
     char *                              start_ptr_copy;
     char *                              end_ptr;
+    char *                              prepad = NULL;
     int                                 ctr = 0;
 
     if(in_str == NULL)
@@ -2686,7 +2694,15 @@ globus_i_gsc_string_to_959(
     {
         start_ptr_copy = strdup(in_str);
         start_ptr = start_ptr_copy;
-        msg = strdup("");
+        msg = globus_common_create_string("%d-", code);
+        if(preline == NULL)
+        {
+            prepad = globus_libc_strdup(msg);
+        }
+        else
+        {
+            prepad = (char *) preline;
+        }
         while(!done)
         {
             end_ptr = strchr(start_ptr, '\n');
@@ -2706,14 +2722,21 @@ globus_i_gsc_string_to_959(
             }
 
             tmp_ptr = msg;
-            msg = globus_common_create_string("%s%d-%s\r\n", 
-                tmp_ptr, code, start_ptr);
+            msg = globus_common_create_string(
+                "%s%s%s\r\n", 
+                tmp_ptr, 
+                (ctr > 0) ? prepad : "",
+                start_ptr);
             globus_free(tmp_ptr);
 
             start_ptr = end_ptr;
             ctr++;
         }
-        free(start_ptr_copy);
+        globus_free(start_ptr_copy);
+        if(preline == NULL)
+        {
+            globus_free(prepad);
+        }
         if(ctr == 1)
         {
             msg[3] = ' ';
@@ -2727,6 +2750,47 @@ globus_i_gsc_string_to_959(
     }
 
     return msg;
+}
+
+
+#define NEEDS_ENCODING(c) \
+    (!isgraph(c) || (c) == '%' || (c) == '=' || (c) == ';')
+
+static const char *hex_chars = "0123456789ABCDEF";
+
+/** Encode string using URL encoding from rfc1738 (sec 2.2).
+    used to encode paths in mlsx responses */
+static
+void
+globus_l_gsc_mlsx_urlencode(
+    const char *                        in_string,
+    char **                             out_string)
+{
+    int                                 len;
+    char *                              in_ptr;
+    char *                              out_ptr;
+    char                                out_buf[MAXPATHLEN * 3];
+
+    in_ptr = (char *) in_string;
+    out_ptr = out_buf;
+    len = strlen(in_string);
+
+    while(in_ptr < in_string + len)
+    {
+        if(NEEDS_ENCODING(*in_ptr))
+        {
+            *out_ptr++ = '%';
+            *out_ptr++ = hex_chars[(*in_ptr >> 4) & 0xF];
+            *out_ptr++ = hex_chars[*in_ptr & 0xF];
+        } 
+        else
+        {
+            *out_ptr++ = *in_ptr;
+        }
+        in_ptr++;
+    }
+    *out_ptr = '\0';
+    *out_string = globus_libc_strdup(out_buf);    
 }
 
 char *
@@ -2773,15 +2837,16 @@ globus_i_gsc_mlsx_line_single(
     char *                              tmp_ptr;
     char *                              fact;
     char *                              dir_ptr;
+    char *                              encoded_symlink_target;
     int                                 buf_len;
     struct tm *                         tm;
     int                                 is_readable = 0;
     int                                 is_writable = 0;
     int                                 is_executable = 0;
 
-    buf_len = MAXPATHLEN * 2 + 256; /* this could be suspect
-                                    256 is way too small, could have
-                                    2 paths in the line */
+    buf_len = MAXPATHLEN * 4 + 256; /* rough guess... could be a maxpathlen 
+                                       for the path, and 3*maxpathlen for 
+                                       the urlencoded link target */
     out_buf = globus_malloc(buf_len);
 
     tmp_ptr = out_buf;
@@ -2938,13 +3003,29 @@ globus_i_gsc_mlsx_line_single(
                     (unsigned long) stat_info->ino);
                 break;
 
+            case GLOBUS_GSC_MLSX_FACT_UNIXSLINK:
+                if(*stat_info->symlink_target != '\0')
+                {
+                    encoded_symlink_target = NULL;
+                    globus_l_gsc_mlsx_urlencode(
+                        stat_info->symlink_target, &encoded_symlink_target);
+                    if(encoded_symlink_target != NULL)
+                    {
+                        sprintf(tmp_ptr, 
+                            "UNIX.slink=%s;", encoded_symlink_target);
+                        globus_free(encoded_symlink_target);
+                    }
+                }
+                break;
+
             default:
                 globus_assert(0 && "not a valid fact");
                 break;
         }
         tmp_ptr += strlen(tmp_ptr);
-        sprintf(tmp_ptr, " %s", stat_info->name);
     }
+    sprintf(tmp_ptr, " %s", stat_info->name);
+
     return out_buf;
 }
 

@@ -14,9 +14,6 @@ XX authz instrumentation
 protocol:
 -- correct FEAT response?
 -- reply codes - verify.
-    fix MLST response code to 250, if easy enough pathname 
-    in mlst should be the same that was requested
-** add symlink_target to stat buffer, server-lib stuff to display it in mlsx
 -- disable perf markers in mode S (if we must)
 ** define reply errors properly for going over ipc
 
@@ -69,3 +66,9 @@ cleanup:
 known bugs:
 
 
+
+
+DONE
+    fix MLST response code to 250, if easy enough pathname 
+    in mlst should be the same that was requested
+** add symlink_target to stat buffer, server-lib stuff to display it in mlsx
