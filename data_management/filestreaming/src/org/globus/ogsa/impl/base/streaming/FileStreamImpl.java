@@ -17,7 +17,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import org.globus.axis.gsi.GSIConstants;
-import org.globus.gatekeeper.jobmanager.internal.Tail;
+import org.globus.util.Tail;
 import org.globus.gsi.gssapi.auth.SelfAuthorization;
 import org.globus.io.streams.FTPOutputStream;
 import org.globus.io.streams.GassOutputStream;
