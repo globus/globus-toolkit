@@ -346,7 +346,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     int len;
     int totlen = 0;
     char lifetime_string[64];
-    char str[64];
     const char *command_string;
 
     assert(data != NULL);
@@ -462,21 +461,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
-    /* force database write */
-    if (encode_integer(request->force_credential_overwrite,
-			str,
-			sizeof(str)) == -1)
-    {
-	return -1;
-    }
-			
-    len = concatenate_strings(data, datalen, MYPROXY_FORCE_CREDENTIAL_OVERWRITE,
-			      str, "\n", NULL);
-    if (len < 0)
-      return -1;
-
-    totlen += len;
-   
     return totlen+1;
 }
 
@@ -687,25 +671,6 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	  return -1;
          }
        }
-
-    /* force credential overwrite */
-    len = convert_message(data, datalen,
-			  MYPROXY_FORCE_CREDENTIAL_OVERWRITE,
-			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-                          buf, sizeof(buf));
-    if (len == -1)
-    {
-	verror_prepend_string("Error parsing force_database_write from client request");
-	return -1;
-    }
-    else
-	if (len == -2) /* string not found */
-         request->force_credential_overwrite = 0;
-      else
-    	if (parse_string(buf, &request->force_credential_overwrite) == -1)  
-    	{
-		return -1;
-    	}
 
     /* Success */
     return 0;

@@ -31,7 +31,6 @@
 #define MYPROXY_RENEWER_STRING     "RENEWER="
 #define MYPROXY_CRED_NAME_STRING   "NAME="
 #define MYPROXY_CRED_DESC_STRING   "DESC="
-#define MYPROXY_FORCE_CREDENTIAL_OVERWRITE "FORCE_CREDENTIAL_OVERWRITE="
 #define MYPROXY_AUTHORIZATION_STRING "AUTHORIZATION_DATA="
 #define MYPROXY_ADDITIONAL_CREDS_STRING "ADDL_CREDS="
 
@@ -97,7 +96,6 @@ typedef struct
     char                         *renewers;
     char			 *credname;
     char			 *creddesc;
-    int		   		 force_credential_overwrite;
 } myproxy_request_t;
 
 /* A server response object */

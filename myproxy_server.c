@@ -107,8 +107,7 @@ void get_proxy(myproxy_socket_attrs_t *server_attrs,
 
 void put_proxy(myproxy_socket_attrs_t *server_attrs, 
 	      myproxy_creds_t *creds, 
-	      myproxy_response_t *response,
-	      int overwrite);
+	      myproxy_response_t *response);
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
 
@@ -446,8 +445,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 
 	/* Store the credentials in the repository and
 	   set final server_response */
-        put_proxy(attrs, client_creds, server_response,
-		  client_request->force_credential_overwrite);
+        put_proxy(attrs, client_creds, server_response);
         break;
 
     case MYPROXY_INFO_PROXY:
@@ -699,8 +697,7 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 /* Accept delegated credentials from client */
 void put_proxy(myproxy_socket_attrs_t *attrs, 
 	       myproxy_creds_t *creds, 
-	       myproxy_response_t *response,
-	       int overwrite) 
+	       myproxy_response_t *response) 
 {
     char delegfile[64];
 
@@ -716,7 +713,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
  
     creds->location = strdup(delegfile);
 
-    if (myproxy_creds_store(creds, overwrite) < 0) {
+    if (myproxy_creds_store(creds) < 0) {
 	myproxy_log_verror();
         response->response_type = MYPROXY_ERROR_RESPONSE; 
         response->error_str = strdup("Unable to store credentials.\n"); 
