@@ -525,10 +525,6 @@ restart_marker_plugin_destroy_cb(
     globus_ftp_client_plugin_t *                plugin,
     void *                                      plugin_specific)
 {
-    restart_marker_plugin_info_t *              ps;
-
-    ps = (restart_marker_plugin_info_t *) plugin_specific;
-
     globus_ftp_client_restart_marker_plugin_destroy(plugin);
     globus_free(plugin);
 }
