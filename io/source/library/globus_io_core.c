@@ -958,7 +958,7 @@ globus_i_io_unregister_operation(
                 globus_io_error_construct_internal_error(
                     GLOBUS_IO_MODULE,
                     GLOBUS_NULL,
-                    handle));
+                    myname));
             
             goto exit_error;
         }
@@ -973,7 +973,7 @@ globus_i_io_unregister_operation(
                 globus_io_error_construct_internal_error(
                     GLOBUS_IO_MODULE,
                     GLOBUS_NULL,
-                    handle));
+                    myname));
             
             goto exit_error;
         }
@@ -988,7 +988,7 @@ globus_i_io_unregister_operation(
                 globus_io_error_construct_internal_error(
                     GLOBUS_IO_MODULE,
                     GLOBUS_NULL,
-                    handle));
+                    myname));
             
             goto exit_error;
         }
@@ -2914,7 +2914,8 @@ globus_l_io_deactivate(void)
 {
     int					fd;
     int					rc = 0;
-
+    globus_bool_t                   active;
+    
     globus_i_io_debug_printf(3, (stderr, "globus_l_io_deactivate(): entering\n"));
 
     globus_i_io_mutex_lock();
@@ -2934,7 +2935,6 @@ globus_l_io_deactivate(void)
     {
         globus_io_select_info_t *	    select_info;
         globus_io_operation_info_t *    operation_info;
-        globus_bool_t                   active;
         
         select_info = globus_l_io_fd_table[fd];
         
