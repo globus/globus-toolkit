@@ -12,8 +12,13 @@ SUBDIRS= \
 #
 # If this directory builds multiple programs or libraries than these sources
 # will need to be seperated into seperate macros.
-Sources= \
+framework_Sources= \
+	test_common.c \
 	framework_test.c
+
+close_barrier_Sources= \
+	test_common.c \
+    close_barrier_test.c
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -32,25 +37,16 @@ INCLUDES += $(GPT_INCLUDES)
 # You can also use any directory defined by a macro of the form 
 # <directory_name>dir
 test_PROGRAMS= \
-	framework_test
+	framework_test  \
+    close_barrier_test
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
-framework_test_SOURCES = $(Sources)
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
+framework_test_SOURCES = $(framework_Sources)
 framework_test_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LDADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LDADD is specific for linking programs
-# 
-# GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 framework_test_LDADD = $(GPT_PGM_LINKS)
+
+close_barrier_test_SOURCES = $(close_barrier_Sources)
+close_barrier_test_LDFLAGS = $(GPT_LDFLAGS)
+close_barrier_test_LDADD = $(GPT_PGM_LINKS)
 
 
 include $(top_srcdir)/globus_automake_post

@@ -51,18 +51,21 @@ do                                                                          \
          */                                                                 \
         _h->stack_size = (s);                                               \
                                                                             \
-        _h->open_timeout_cb = _a->open_timeout_cb;                          \
-        GlobusTimeReltimeCopy(_h->open_timeout_period,                      \
-            _a->open_timeout_period);                                       \
-        _h->read_timeout_cb = _a->read_timeout_cb;                          \
-        GlobusTimeReltimeCopy(_h->read_timeout_period,                      \
-            _a->read_timeout_period);                                       \
-        _h->write_timeout_cb = _a->write_timeout_cb;                        \
-        GlobusTimeReltimeCopy(_h->write_timeout_period,                     \
-            _a->write_timeout_period);                                      \
-        _h->close_timeout_cb = _a->close_timeout_cb;                        \
-        GlobusTimeReltimeCopy(_h->close_timeout_period,                     \
-            _a->close_timeout_period);                                      \
+        if(_a != NULL)                                                      \
+        {                                                                   \
+            _h->open_timeout_cb = _a->open_timeout_cb;                      \
+            GlobusTimeReltimeCopy(_h->open_timeout_period,                  \
+                _a->open_timeout_period);                                   \
+            _h->read_timeout_cb = _a->read_timeout_cb;                      \
+            GlobusTimeReltimeCopy(_h->read_timeout_period,                  \
+                _a->read_timeout_period);                                   \
+            _h->write_timeout_cb = _a->write_timeout_cb;                    \
+            GlobusTimeReltimeCopy(_h->write_timeout_period,                 \
+                _a->write_timeout_period);                                  \
+            _h->close_timeout_cb = _a->close_timeout_cb;                    \
+            GlobusTimeReltimeCopy(_h->close_timeout_period,                 \
+                _a->close_timeout_period);                                  \
+        }                                                                   \
     }                                                                       \
                                                                             \
     globus_list_insert(&globus_l_outstanding_handles_list, _h);             \
@@ -1107,6 +1110,8 @@ globus_xio_register_open(
     globus_i_xio_context_t *                    context = NULL;
     globus_result_t                             res = GLOBUS_SUCCESS;
     int                                         ctr;
+    globus_callback_space_t                     space = 
+            GLOBUS_CALLBACK_GLOBAL_SPACE;
     GlobusXIOName(globus_xio_register_open);
 
     if(user_handle == NULL)
@@ -1170,10 +1175,14 @@ globus_xio_register_open(
     handle->open_op = op;
     handle->outstanding_operations = 1; /* open operation */
 
+    if(user_attr != NULL)
+    {
+        space =  user_attr->space;
+    }
     /* initialize the context */
     context->ref = 1; /* for the refrence the handle has */
-    context->entry[0].space = user_attr->space;
-    globus_callback_space_reference(context->entry[0].space);
+    context->entry[0].space = space;
+    globus_callback_space_reference(space);
 
     /* set entries in structures */
     for(ctr = 0; ctr < handle->stack_size; ctr++)
@@ -1181,8 +1190,15 @@ globus_xio_register_open(
         context->entry[ctr].driver = target->entry[ctr].driver;
 
         op->entry[ctr].target = target->entry[ctr].target;
-        GlobusIXIOAttrGetDS(op->entry[ctr].attr,                    \
-            user_attr, target->entry[ctr].driver);
+        if(user_attr != NULL)
+        {
+            GlobusIXIOAttrGetDS(op->entry[ctr].attr,                    \
+                user_attr, target->entry[ctr].driver);
+        }
+        else
+        {
+            op->entry[ctr].attr = NULL;
+        }
     }
 
 
