@@ -130,6 +130,7 @@ main(
     res = globus_xio_open(&xio_handle, attr, target);
     test_res(res);
 
+    fprintf(stderr, "open\n");
     while(!done)
     {
         globus_poll();

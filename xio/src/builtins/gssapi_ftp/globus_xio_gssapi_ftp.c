@@ -90,8 +90,7 @@ typedef struct globus_l_xio_gssapi_ftp_handle_s
     char *                                  subject;
 
     char *                                  reply_220;
-    char *                                  banner_reply;
-    int                                     banner_ndx;
+    char **                                 banner;
 
     globus_i_xio_gssapi_ftp_state_t         state;
 
@@ -190,6 +189,10 @@ globus_result_t
 globus_l_xio_gssapi_finshed_read(
     globus_l_xio_gssapi_ftp_handle_t *      handle,
     globus_xio_operation_t                  op);
+
+char **
+globus_l_xio_gssapi_ftp_command_array_copy(
+    char **                                 cmd_a);
 
 /**************************************************************************
  *                    global data
@@ -733,6 +736,37 @@ globus_l_xio_gssapi_ftp_command_array_size(
 
     return len;
 }
+
+/*
+ *  return he buffer length needed to serialize a command array
+ */
+char **
+globus_l_xio_gssapi_ftp_command_array_copy(
+    char **                                 cmd_a)
+{
+    char **                                 out_cmd_a;
+    int                                     ctr;
+    globus_size_t                           size;
+    GlobusXIOName(globus_l_xio_gssapi_ftp_command_array_copy);
+
+    size = globus_l_xio_gssapi_ftp_command_array_size(cmd_a);
+
+
+    for(ctr = 0; cmd_a[ctr] != NULL; ctr++)
+    {
+    }
+    size = ctr + 1;
+    out_cmd_a = (char **) globus_malloc(sizeof(char **) * size);
+
+    for(ctr = 0; cmd_a[ctr] != NULL; ctr++)
+    {
+        out_cmd_a[ctr] = globus_libc_strdup(cmd_a[ctr]);
+    }
+    out_cmd_a[ctr] = NULL;
+
+    return out_cmd_a;
+}
+
 
 /*
  *  take a wrapped buffer and decode and unwrap it.  The caller is 
@@ -1726,26 +1760,8 @@ globus_l_xio_gssapi_ftp_client_incoming(
                 handle->state = GSSAPI_FTP_STATE_CLIENT_SENDING_AUTH;
                 send_buffer = globus_libc_strdup(CLIENT_AUTH_GSSAPI_COMMAND);
 
-                w_buf = (globus_l_xio_gssapi_buffer_t *)
-                    globus_malloc(sizeof(globus_l_xio_gssapi_buffer_t));
-                if(w_buf == NULL)
-                {
-                    res = GlobusXIOGssapiFTPAllocError();
-                    goto err;
-                }
-
-                /*
-                 *  add this as the first thing read from the server
-                 */
-                w_buf->buf = (char *)
-                    globus_malloc(handle->read_buffer_length);
-                globus_l_xio_gssapi_ftp_serialize_command_array(
-                    cmd_a,
-                    w_buf->buf,
-                    handle->read_buffer_length);
-                w_buf->length = strlen(w_buf->buf);
-                w_buf->ndx = 0;
-                globus_fifo_enqueue(&handle->unwrapped_q, w_buf);
+                handle->banner = globus_l_xio_gssapi_ftp_command_array_copy(
+                    cmd_a);
             }
             break;
 
@@ -1805,6 +1821,7 @@ globus_l_xio_gssapi_ftp_client_incoming(
                     }
                 }
                 handle->state = GSSAPI_FTP_STATE_OPEN;
+                globus_fifo_enqueue(&handle->read_command_q, handle->banner);
                 done = GLOBUS_TRUE;
                 GlobusXIODriverFinishedOpen(handle->context, handle, op, res);
             }
@@ -1905,7 +1922,6 @@ globus_l_xio_gssapi_ftp_client_incoming(
                 globus_fifo_enqueue(&handle->unwrapped_q, w_buf);
                 res = globus_l_xio_gssapi_finshed_read(handle, op);
             }
-
             break;
 
         default:
