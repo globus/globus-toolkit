@@ -14,6 +14,40 @@
  *                         internal macros
  *                         ---------------
  **************************************************************************/
+#define GlobusXIODebugPrintf(level, message)                                \
+    GlobusDebugPrintf(GLOBUS_XIO, level, message)
+
+#define GlobusXIODebugEnter()                                               \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_TRACE,                                             \
+        ("[%s] Entering\n", _xio_name))
+
+#define GlobusXIODebugExit()                                                \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_TRACE,                                             \
+        ("[%s] Exiting\n", _xio_name))
+
+#define GlobusXIODebugExitWithError()                                       \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_TRACE,                                             \
+        ("[%s] Exiting with error\n", _xio_name))
+
+#define GlobusXIODebugInternalEnter()                                       \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_INTERNAL_TRACE,                                    \
+        ("[%s] I Entering\n", _xio_name))
+
+#define GlobusXIODebugInternalExit()                                        \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_INTERNAL_TRACE,                                    \
+        ("[%s] I Exiting\n", _xio_name))
+
+#define GlobusXIODebugInternalExitWithError()                               \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_INTERNAL_TRACE,                                    \
+        ("[%s] I Exiting with error\n", _xio_name))
+
+
 #define GlobusXIOHandleDestroy(_in_h)                                       \
 do                                                                          \
 {                                                                           \

@@ -18,6 +18,10 @@ void
 globus_i_xio_timer_init(
     globus_i_xio_timer_t *                      timer)
 {
+    GlobusXIOName(globus_i_xio_timer_init);
+
+    GlobusXIODebugInternalEnter();
+
     globus_mutex_init(&timer->mutex, NULL);
     globus_cond_init(&timer->cond, NULL);
     timer->op_list = NULL;
@@ -30,6 +34,8 @@ globus_i_xio_timer_init(
         globus_i_xio_timer_poller_callback,
         (void *)timer,
         GLOBUS_CALLBACK_GLOBAL_SPACE);
+
+    GlobusXIODebugInternalExit();
 }
 
 void
@@ -37,6 +43,9 @@ globus_l_xio_timer_unregister_cb(
     void *                              user_args)
 {
     globus_i_xio_timer_t *                          timer;
+    GlobusXIOName(globus_l_xio_timer_unregister_cb);
+
+    GlobusXIODebugInternalEnter();
 
     timer = (globus_i_xio_timer_t *) user_args;
 
@@ -46,6 +55,8 @@ globus_l_xio_timer_unregister_cb(
         globus_cond_signal(&timer->cond);
     }
     globus_mutex_unlock(&timer->mutex);
+
+    GlobusXIODebugInternalExit();
 }
 
 
@@ -55,6 +66,9 @@ globus_i_xio_timer_destroy(
 {
     globus_result_t                                 res;
     globus_bool_t                                   active;
+    GlobusXIOName(globus_i_xio_timer_destroy);
+
+    GlobusXIODebugInternalEnter();
 
     globus_mutex_lock(&timer->mutex);
     {
@@ -78,6 +92,8 @@ globus_i_xio_timer_destroy(
 
     /* if the list is not empty i am not gonna complain */
     globus_mutex_destroy(&timer->mutex);
+
+    GlobusXIODebugInternalExit();
 }
 
 
@@ -91,6 +107,9 @@ globus_i_xio_timer_register_timeout(
 {
     globus_i_xio_timer_entry_t *                    entry;
     globus_result_t                                 res;
+    GlobusXIOName(globus_i_xio_timer_register_timeout);
+
+    GlobusXIODebugInternalEnter();
 
     entry = globus_malloc(sizeof(globus_i_xio_timer_entry_t));
     entry->datum = datum;
@@ -117,6 +136,8 @@ globus_i_xio_timer_register_timeout(
         globus_list_insert(&timer->op_list, entry);
     }
     globus_mutex_unlock(&timer->mutex);
+
+    GlobusXIODebugInternalExit();
 }
 
 globus_bool_t
@@ -127,6 +148,9 @@ globus_i_xio_timer_unregister_timeout(
     globus_list_t *                                 list;
     globus_bool_t                                   found = GLOBUS_FALSE;
     globus_i_xio_timer_entry_t *                    entry;
+    GlobusXIOName(globus_i_xio_timer_unregister_timeout);
+
+    GlobusXIODebugInternalEnter();
 
     globus_mutex_lock(&timer->mutex);
     {
@@ -154,6 +178,8 @@ globus_i_xio_timer_unregister_timeout(
     }
     globus_mutex_unlock(&timer->mutex);
 
+    GlobusXIODebugInternalExit();
+
     return found;
 }
 
@@ -168,6 +194,9 @@ globus_i_xio_timer_poller_callback(
     globus_i_xio_timer_entry_t *                    entry;
     globus_list_t *                                 call_list = NULL;
     globus_list_t *                                 tmp_list = NULL;
+    GlobusXIOName(globus_i_xio_timer_poller_callback);
+
+    GlobusXIODebugInternalEnter();
 
     timer = (globus_i_xio_timer_t *)user_arg;
 
@@ -232,4 +261,6 @@ globus_i_xio_timer_poller_callback(
             globus_free(entry);
         }
     }
+
+    GlobusXIODebugInternalExit();
 }

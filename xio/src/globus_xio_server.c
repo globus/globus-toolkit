@@ -79,6 +79,8 @@ globus_l_xio_server_accept_kickout(
     globus_i_xio_op_t *                     xio_op;
     GlobusXIOName(globus_l_xio_server_accept_kickout);
 
+    GlobusXIODebugInternalEnter();
+
     xio_op = (globus_i_xio_op_t *) user_arg;
     xio_server = xio_op->_op_server;
 
@@ -164,6 +166,8 @@ globus_l_xio_server_accept_kickout(
     {
         GlobusIXIOServerDestroy(xio_server);
     }
+
+    GlobusXIODebugInternalExit();
 }
 
 /*
@@ -178,6 +182,9 @@ globus_i_xio_server_accept_callback(
     globus_i_xio_server_t *                 xio_server;
     globus_i_xio_op_t *                     xio_op;
     globus_bool_t                           accept = GLOBUS_TRUE;
+    GlobusXIOName(globus_i_xio_server_accept_callback);
+
+    GlobusXIODebugInternalEnter();
 
     xio_op = op;
     xio_server = xio_op->_op_server;
@@ -230,6 +237,8 @@ globus_i_xio_server_accept_callback(
             globus_l_xio_server_accept_kickout((void *)xio_op);
         }
     }
+
+    GlobusXIODebugInternalExit();
 }
 
 globus_bool_t
@@ -244,6 +253,8 @@ globus_l_xio_accept_timeout_callback(
     globus_bool_t                           timeout = GLOBUS_FALSE;
     globus_bool_t                           destroy_server = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_accept_timeout_callback);
+
+    GlobusXIODebugInternalEnter();
 
     xio_op = (globus_i_xio_op_t *) user_arg;
     xio_server = xio_op->_op_server;
@@ -316,7 +327,7 @@ globus_l_xio_accept_timeout_callback(
         {
             GlobusIXIOServerDestroy(xio_server);
         }
-        return rc;
+        goto exit;
     }
 
     globus_mutex_lock(&xio_server->mutex);
@@ -377,6 +388,9 @@ globus_l_xio_accept_timeout_callback(
         }
     }
 
+  exit:
+
+    GlobusXIODebugInternalExit();
     return rc;
 }
 
@@ -404,17 +418,21 @@ globus_xio_server_init(
     void *                                  ds_attr = NULL;
     GlobusXIOName(globus_xio_server_init);
 
+    GlobusXIODebugEnter();
     if(server == NULL)
     {
-        return GlobusXIOErrorParameter("server");
+        res = GlobusXIOErrorParameter("server");
+        goto err;
     }
     if(stack == NULL)
     {
-        return GlobusXIOErrorParameter("stack");
+        res = GlobusXIOErrorParameter("stack");
+        goto err;
     }
     if(globus_list_empty(stack->driver_stack))
     {
-        return GlobusXIOErrorParameter("stack is empty");
+        res = GlobusXIOErrorParameter("stack is empty");
+        goto err;
     }
 
     /* take what the user stack has at the time of registration */
@@ -474,8 +492,19 @@ globus_xio_server_init(
     }
     globus_mutex_unlock(&stack->mutex);
 
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
     *server = xio_server;
 
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+    *server = NULL;
+
+    GlobusXIODebugExitWithError();
     return res;
 }
 
@@ -496,9 +525,11 @@ globus_xio_server_cntl(
     globus_i_xio_server_t *                 xio_server;
     GlobusXIOName(globus_xio_server_cntl);
 
+    GlobusXIODebugEnter();
     if(server == NULL)
     {
-        return GlobusXIOErrorParameter("server");
+        res = GlobusXIOErrorParameter("server");
+        goto err;
     }
 
     xio_server = (globus_i_xio_server_t *) server;
@@ -535,6 +566,17 @@ globus_xio_server_cntl(
     }
     globus_mutex_unlock(&xio_server->mutex);
 
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
     return res;
 }
 
@@ -554,6 +596,7 @@ globus_xio_server_register_accept(
     globus_i_xio_op_t *                     xio_op;
     GlobusXIOName(globus_xio_server_register_accept);
 
+    GlobusXIODebugEnter();
     if(server == NULL)
     {
         return GlobusXIOErrorParameter("server");
@@ -631,6 +674,7 @@ globus_xio_server_register_accept(
         goto err;
     }
 
+    GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   err:
@@ -659,6 +703,7 @@ globus_xio_server_register_accept(
     }
     globus_mutex_unlock(&xio_server->mutex);
 
+    GlobusXIODebugExitWithError();
     return res;
 }
 
@@ -673,6 +718,7 @@ globus_xio_server_cancel_accept(
     globus_i_xio_server_t *                 xio_server;
     GlobusXIOName(globus_xio_server_cancel_accept);
 
+    GlobusXIODebugEnter();
     xio_server = (globus_i_xio_server_t *)  server;
 
     globus_mutex_lock(&xio_server->mutex);
@@ -701,6 +747,17 @@ globus_xio_server_cancel_accept(
     }
     globus_mutex_unlock(&xio_server->mutex);
 
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
     return res;
 }
 
@@ -718,9 +775,11 @@ globus_xio_server_destroy(
     int                                     ctr;
     GlobusXIOName(globus_xio_server_destroy);
 
+    GlobusXIODebugEnter();
     if(server == NULL)
     {
-        return GlobusXIOErrorParameter("server");
+        res = GlobusXIOErrorParameter("server");
+        goto err;
     }
 
     xio_server = (globus_i_xio_server_t *) server;
@@ -761,6 +820,18 @@ globus_xio_server_destroy(
     {
         GlobusIXIOServerDestroy(xio_server);
     }
+
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
     return res;
 }
 
@@ -775,18 +846,21 @@ globus_xio_target_destroy(
     int                                     ctr;
     GlobusXIOName(globus_xio_target_destroy);
 
+    GlobusXIODebugEnter();
     /*
      *  parameter checking 
      */
     if(target == NULL)
     {
-        return GlobusXIOErrorParameter("target");
+        res = GlobusXIOErrorParameter("target");
+        goto err;
     }
     xio_target = (globus_i_xio_target_t *) target;
     if(xio_target->type != GLOBUS_XIO_TARGET_TYPE_SERVER &&
        xio_target->type != GLOBUS_XIO_TARGET_TYPE_CLIENT)
     {
-        return GlobusXIOErrorInvalidState(xio_target->type);
+        res = GlobusXIOErrorInvalidState(xio_target->type);
+        goto err;
     }
 
     for(ctr = 0; ctr < xio_target->stack_size; ctr++)
@@ -801,6 +875,17 @@ globus_xio_target_destroy(
     }
     globus_free((void*)xio_target);
 
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
     return res;
 }
 
@@ -823,13 +908,16 @@ globus_xio_target_cntl(
     va_list                                 ap;
     GlobusXIOName(globus_xio_target_cntl);
 
+    GlobusXIODebugEnter();
     if(target == NULL)
     {
-        return GlobusXIOErrorParameter("target");
+        res = GlobusXIOErrorParameter("target");
+        goto err;
     }
     if(cmd < 0)
     {
-        return GlobusXIOErrorParameter("cmd");
+        res = GlobusXIOErrorParameter("cmd");
+        goto err;
     }
     
 #   ifdef HAVE_STDARG_H
@@ -854,8 +942,9 @@ globus_xio_target_cntl(
                     xio_target->entry[ctr].target,
                     cmd,
                     ap);
+                va_end(ap);
 
-                return res;
+                goto err;
             }
         }
         return GlobusXIOErrorInvalidDriver("not found");
@@ -867,7 +956,12 @@ globus_xio_target_cntl(
 
     va_end(ap);
 
+    GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
+
+  err:
+    GlobusXIODebugExitWithError();
+    return res;
 }
 
 /*
@@ -889,27 +983,31 @@ globus_xio_target_init(
     void *                                  driver_attr;
     GlobusXIOName(globus_xio_target_init);
 
+    GlobusXIODebugEnter();
     /*
      *  parameter checking 
      */
     if(target == NULL)
     {
-        return GlobusXIOErrorParameter("target");
+        res = GlobusXIOErrorParameter("target");
+        goto err;
     }
     if(contact_string == NULL)
     {
-        return GlobusXIOErrorParameter("contact_string");
+        res = GlobusXIOErrorParameter("contact_string");
+        goto err;
     }
     if(stack == NULL)
     {
-        return GlobusXIOErrorParameter("stack");
+        res = GlobusXIOErrorParameter("stack");
+        goto err;
     }
 
     stack_size = globus_list_size(stack->driver_stack);
     if(stack_size == 0)
     {
         res = GlobusXIOErrorParameter("stack_size");
-        return res;
+        goto err;
     }
 
     /* TODO: check stack, make sure it meets requirements */
@@ -919,7 +1017,8 @@ globus_xio_target_init(
                             (stack_size - 1)));
     if(xio_target == NULL)
     {
-        return GlobusXIOErrorMemory("target");
+        res = GlobusXIOErrorMemory("target");
+        goto err;
     }
     memset(xio_target, '\0', sizeof(globus_i_xio_target_t) +
         (sizeof(globus_i_xio_target_entry_t) * (stack_size - 1)));
@@ -960,7 +1059,7 @@ globus_xio_target_init(
                         xio_target->entry[ndx].target);
                 }
                 globus_free(xio_target);
-                return res;
+                goto err;
             }
         }
 
@@ -971,5 +1070,12 @@ globus_xio_target_init(
 
     *target = (globus_xio_target_t) xio_target;
 
+    GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
+
+  err:
+
+    *target = NULL;
+    GlobusXIODebugExitWithError();
+    return res;
 }
