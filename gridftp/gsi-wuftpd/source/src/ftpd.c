@@ -7575,6 +7575,11 @@ send_file_list(
 #define MAXLINE      2048	/* max line length for setproctitle */
 #define SPACELEFT(buf, ptr)  (sizeof buf - ((ptr) - buf))
 
+#ifdef HAVE_PSTAT
+#undef	SPT_TYPE
+#define	SPT_TYPE	SPT_PSTAT
+#endif
+
 #ifndef SPT_TYPE
 #define SPT_TYPE	SPT_REUSEARGV
 #endif

@@ -1125,7 +1125,7 @@ g_send_data(
                 /*
                  *  allocate a buffer for each send
                  */
-                if ((buf = (char *) globus_malloc(blksize)) == NULL)  
+                if ((buf = (globus_byte_t *) globus_malloc(blksize)) == NULL)  
                 {
                     transflag = 0;
  
@@ -1536,7 +1536,7 @@ g_receive_data(
     globus_result_t                          res;
     int                                      ctr;
     int                                      cb_count = 0;
-    int                                      data_connection_count = 1;
+    unsigned int                             data_connection_count = 1;
     globus_reltime_t			     five_seconds;
     char                                     error_buf[1024];
     int                                      tmp_i;
@@ -1645,7 +1645,7 @@ g_receive_data(
                           0);
 	assert(res == GLOBUS_SUCCESS);
 
-	debug_printf("receive data parallelism: %d", 
+	debug_printf("receive data parallelism: %u", 
 		     data_connection_count);
 
         if(res == GLOBUS_SUCCESS)
@@ -1997,7 +1997,7 @@ data_read_callback(
         }
         else
         {
-            int                          data_connection_count;
+            unsigned int                 data_connection_count;
             int                          new_callbacks;
             int                          ctr;
 
@@ -2401,7 +2401,7 @@ g_write_to_log_file(
     int                                     stripe_count; 
     globus_result_t                         res;
     int                                     ctr;
-    int                                     tmp_i;
+    unsigned int                            tmp_i;
     int                                     ndx;
     char                                    volume[80];
     char                                    cwd[124];
