@@ -25,3 +25,9 @@ if test ! -h doxygen/Makefile.am ; then
     ln -s $GLOBUS_LOCATION/share/globus_aclocal/doxygen_Makefile.am \
     doxygen/Makefile.am
 fi
+
+if test "x$GPT_LOCATION" = "x"; then
+    GPT_LOCATION=$GLOBUS_LOCATION
+fi
+
+. ${GPT_LOCATION}/libexec/gpt-bootstrap.sh
