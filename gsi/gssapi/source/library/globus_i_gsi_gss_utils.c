@@ -372,7 +372,7 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_cert_dir;
     }
 
-    SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
+    SSL_set_ssl_method(context->gss_ssl, SSLv3_method());
     SSL_set_options(context->gss_ssl, 
                     SSL_OP_NO_SSLv2 |
                     SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
