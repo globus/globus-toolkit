@@ -2074,7 +2074,7 @@ diff -u -r -P openssl-0.9.6b/Makefile.ssl openssl-0.9.6b-patched/Makefile.ssl
  	@echo "Makefile.ssl is older than Makefile.org."
 diff -u -r -P openssl-0.9.6b/config openssl-0.9.6b-patched/config
 --- openssl-0.9.6b/config	Fri Mar 30 09:49:08 2001
-+++ openssl-0.9.6b-patched/config	Thu Nov  1 22:58:52 2001
++++ openssl-0.9.6b-patched/config	Fri Nov  2 00:25:56 2001
 @@ -318,9 +318,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -2175,7 +2175,7 @@ diff -u -r -P openssl-0.9.6b/config openssl-0.9.6b-patched/config
 +        if [ "x$BIT64" = "xtrue" ]; then
 +            OUT="irix64-mips4-$CC"
 +        else
-+            OUT="irix-mips4-$CC"
++            OUT="irix64-mips4-$CC"
 +        fi
  	;;
    alpha-*-linux2)
