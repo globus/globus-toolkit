@@ -6,13 +6,15 @@ TREV
 merge _init() with _start() and _destroy() with _stop()
 -- deal with adding commands
 
-data object destroy
--- need a function that commands can call to destroy data channel on
-   prot dcau pasv and port.
+ALLO
+-- create all command interceptor
+    -- logging will work with this
 
-abort
--- make sure ABOR works
--- make sure connection dropping works
+help and feat
+-- change help and feat so that commands add messages in a nicer way.
+
+SITE
+-- allow for site to kick out 1 command
 
 test
 --crazy messages sent to server
@@ -22,4 +24,4 @@ errors
 -- check proper replys etc
 
 logging
--- will come from a seprate module.
+-- will come from a seperate module.

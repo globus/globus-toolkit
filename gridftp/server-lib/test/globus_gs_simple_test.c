@@ -39,7 +39,7 @@ globus_gs_cmd_site(
     }
     else
     {
-        globus_gsc_959_finished_command(op, NULL);
+        globus_assert(0);
     }
 }
 
@@ -342,7 +342,7 @@ main(
 
     globus_gsc_959_command_add(
         ftp_server,
-        "SITE",
+        "SITE MINE",
         globus_gs_cmd_site,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,

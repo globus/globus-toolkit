@@ -328,6 +328,8 @@ typedef struct globus_i_gsc_server_handle_s
     char *                              types;
     int                                 stripe_count;
 
+    globus_off_t                        allocated_bytes;
+
     /* opts state */
     globus_i_gsc_handle_opts_t          opts;
 
@@ -355,6 +357,7 @@ typedef struct globus_i_gsc_server_handle_s
     globus_fifo_t                       reply_q;
     int                                 abort_cnt;
     globus_hashtable_t                  cmd_table;
+    globus_hashtable_t                  site_cmd_table;
     struct globus_i_gsc_op_s *          outstanding_op;
 } globus_i_gsc_server_handle_t;
 
@@ -501,5 +504,8 @@ void
 globus_i_gsc_restart_destroy(
     globus_i_gsc_restart_t *                restart);
 
+globus_bool_t
+globus_i_guc_data_object_destroy(
+    globus_i_gsc_server_handle_t *      server_handle);
 
 #endif
