@@ -190,7 +190,6 @@ import org.globus.ogsa.wsdl.GSR;
  
 import org.globus.ogsa.impl.security.SecurityManager;
 import org.globus.axis.gsi.GSIConstants;
-import org.globus.gsi.gssapi.auth.SelfAuthorization;
 import org.globus.util.Util;
 
 import org.globus.util.GlobusURL;
@@ -199,7 +198,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import org.ietf.jgss.GSSCredential;
+
 import org.globus.ogsa.impl.security.authentication.SecureServicePropertiesHelper;
+import org.globus.ogsa.impl.security.authentication.Constants;
+import org.globus.ogsa.impl.security.authorization.SelfAuthorization;
+
 public class RftImpl
     extends GridServiceImpl {
     static Log logger = LogFactory.getLog (RftImpl.class.getName ());
@@ -256,19 +259,14 @@ public class RftImpl
    
     public int start() 
         throws RemoteException {
-        Subject subject;
-        MessageContext ctx = MessageContext.getCurrentContext ();
-        SecContext secContext = (SecContext) ctx.getProperty(
-                                                org.globus.ogsa.impl.security.authentication.Constants.CONTEXT);
-        if (secContext == null) {
-            throw new RemoteException ("Service must be accessed Securely");
-        }
-        subject = SecurityManager.getManager().setServiceOwnerFromContext(this);
+        Subject subject = 
+	    SecurityManager.getManager().setServiceOwnerFromContext(this);
         
         GSSCredential cred = JaasGssUtil.getCredential(subject);
         if (cred == null) {
             throw new RemoteException("Delegation not performed");
         }
+
         try {
             String path = TransferClient.saveCredential(cred);
             Util.setFilePermissions (path,600);
@@ -408,7 +406,7 @@ public class RftImpl
                 
                 GSSCredential credential = TransferClient.loadCredential(proxyLocation);
                 setNotifyProps(credential,
-                    org.globus.ogsa.impl.security.authentication.Constants.ENCRYPTION);
+			       Constants.ENCRYPTION);
 
                 
                 Vector recoveredTransferJobs = dbAdapter.getActiveTransfers(persistentRequestId);
@@ -454,14 +452,12 @@ public class RftImpl
                     }
                 }
             } else {
-               // CredentialProvider provider = (CredentialProvider) getProperty(ServiceProperties.CREDENTIAL_PROVIDER);
-                
                 /*GSSCredential credential = provider.transferCredential (messageContext);
                 setNotifyProps(credential,
                 messageContext.getMessageContext().getProperty (org.globus.ogsa.impl.security.authentication.Constants.MSG_SEC_TYPE));*/
                 SecurityManager manager = SecurityManager.getManager();
                 //GSSCredential cred = manager.setServiceOwnerFromContext(this, messageContext);
-		 GSSCredential cred = SecureServicePropertiesHelper.getCredential(this);
+		GSSCredential cred = SecureServicePropertiesHelper.getCredential(this);
                 transfers = this.transferRequest.getTransferArray();
                 this.concurrency = transferRequest.getConcurrency();
                 requestId = dbAdapter.storeTransferRequest(this.transferRequest);
@@ -523,11 +519,10 @@ public class RftImpl
         this.notifyProps = new HashMap();
         this.notifyProps.put (GSIConstants.GSI_MODE,
                               GSIConstants.GSI_MODE_NO_DELEG);
-        //this.notifyProps.put (org.globus.ogsa.impl.security.authentication.Constants.ESTABLISH_CONTEXT, Boolean.TRUE);
-        this.notifyProps.put (org.globus.ogsa.impl.security.authentication.Constants.MSG_SEC_TYPE,
+        this.notifyProps.put (Constants.GSI_SEC_CONV,
                               msgProt);
-        this.notifyProps.put (GSIConstants.GSI_AUTHORIZATION,
-                                SelfAuthorization.getInstance());
+        this.notifyProps.put (Constants.AUTHORIZATION,
+			      SelfAuthorization.getInstance());
         this.notifyProps.put (GSIConstants.GSI_CREDENTIALS,
                               credential);
     }
