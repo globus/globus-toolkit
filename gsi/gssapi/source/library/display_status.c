@@ -71,9 +71,9 @@ GSS_CALLCONV gss_display_status
 #endif
 	char * data;
 #ifdef DEBUG
-	char format[] = "Function:%s  Reason:%s %s\n        Source:%s:%d";
+        char format[] = "%s %s  Function:%s\n        Source:%s:%d";
 #else
-	char format[] = "Function:%s  Reason:%s %s";
+        char format[] = "%s %s  Function:%s";
 #endif
 	int line;
 	char fbuf[1024];
@@ -93,22 +93,22 @@ GSS_CALLCONV gss_display_status
 				reason = "GSS_S_FAILURE - general failure";
 				break;
 			case GSS_S_DEFECTIVE_TOKEN:
-				reason = "GSS_S_DEFECTIVE_TOKEN";
+				reason = "Communications Error";
 				break;
 			case GSS_S_DEFECTIVE_CREDENTIAL:
-				reason = "GSS_S_DEFECTIVE_CREDENTIAL - sslv3 handshake";
+				reason = "Authentication Failed - sslv3 handshake";
 				break;
 			case GSS_S_CREDENTIALS_EXPIRED:
-				reason = "GSS_S_CREDENTIALS_EXPIRED";
+				reason = "Credentials Expired";
 				break;
 			case GSS_S_BAD_NAME:
-				reason = "GSS_S_BAD_NAME - globusid malformed";
+				reason = "Service or hostname could not be understood";
 				break;
 			case GSS_S_UNAUTHORIZED:
-				reason = "GSS_S_UNAUTHORIZED - wrong gatekeeper or service";
+				reason = "Unauthorized Gatekeeper or Service";
 				break;
 			case GSS_S_NO_CRED:
-				reason = "GSS_S_NO_CRED - No credentials";			
+				reason = "No Credentials";			
 				break;
 			default:
 				reason = "Some Other GSS failure";
@@ -158,10 +158,10 @@ GSS_CALLCONV gss_display_status
 			}
 			
 #ifdef DEBUG
-			sprintf(status_string->value, format, fs, rs, data,
+			sprintf(status_string->value, format, rs, data, fs,
 								 file, line);
 #else
-			sprintf(status_string->value, format, fs, rs, data);
+			sprintf(status_string->value, format, rs, data, fs);
 #endif
 
 			*message_context = 1;
