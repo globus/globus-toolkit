@@ -220,7 +220,6 @@ Southern California. All Rights Reserved.
           <include name="**/*.jar"/>
       </fileset>
     </copy>
-    <replaceregexp file="${package.dir}-server-config.wsdd" match="GT3_LOCATION" replace="${ogsa.root}" byline="true"/>
     <ant antfile="${ogsa.root}/${build.packages}" target="makeGar">
       <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
       <property name="garlib.dir" value="${build.lib}"/>
