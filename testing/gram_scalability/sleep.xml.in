@@ -38,7 +38,8 @@
             <rsl:url>
                 <rsl:urlElement value="file://"/>
                 <rsl:substitutionRef name="HOME"/>
-                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stdout.JOBINDEX"/>
+                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stdout."/>
+                <rsl:substitutionRef name="JOB_INDEX"/>
             </rsl:url>
         </rsl:fileOutput>
         <rsl:fileOutput>
@@ -48,7 +49,8 @@
             <rsl:url>
                 <rsl:urlElement value="file://"/>
                 <rsl:substitutionRef name="HOME"/>
-                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stderr.JOBINDEX"/>
+                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stderr."/>
+                <rsl:substitutionRef name="JOB_INDEX"/>
             </rsl:url>
         </rsl:fileOutput>
     </rsl:fileOutputArray> </gram:fileStageOut>

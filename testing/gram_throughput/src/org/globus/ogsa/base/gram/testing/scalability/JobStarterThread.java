@@ -65,8 +65,7 @@ import org.globus.ogsa.utils.PerformanceLog;
 
 public class JobStarterThread
     extends                         ServicePropertiesImpl
-    implements                      Runnable,
-                                    NotificationSinkCallback {
+    implements                      Runnable {
 
     static Log logger = LogFactory.getLog(JobStarterThread.class.getName());
     static final Object RSL_MONITOR;
@@ -160,21 +159,20 @@ public class JobStarterThread
             ExtensibilityType creationParameters
                 = AnyHelper.getExtensibility(this.rsl);
             gshHolder = gridServiceFactory.createService(creationParameters);
-            this.harness.notifyCreated(this.jobIndex, gshHolder.getHandle());
             this.rsl = null;
         }
         this.mjsLocator = new ManagedJobServiceGridLocator();
         //This next step caches the GSR in the locator for use later
         ManagedJobPortType managedJob
             = this.mjsLocator.getManagedJobPort(gshHolder);
-
-        /*
-        try {
-            subscribeForNotifications();
-        } catch (Exception e) {
-            throw new Exception("unable to subscribe for MJS notifications", e);
+        String jobHandle = this.mjsLocator.getGSR().getHandle().toString();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Job Handle: " + jobHandle);
         }
-        */
+        this.harness.notifyCreated( this.jobIndex, jobHandle);
+        if (logger.isDebugEnabled()) {
+            logger.debug("notified harness that the job was created");
+        }
     }
 
     protected void startService() {
@@ -229,6 +227,5 @@ public class JobStarterThread
         }
         this.harness.notifyError();
         jobIndex = -1;
-        cleanup();
     }
 }

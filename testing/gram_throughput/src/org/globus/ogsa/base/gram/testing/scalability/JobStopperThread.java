@@ -65,8 +65,7 @@ import org.globus.ogsa.utils.PerformanceLog;
 
 public class JobStopperThread
     extends                         ServicePropertiesImpl
-    implements                      Runnable,
-                                    NotificationSinkCallback {
+    implements                      Runnable {
 
     static Log logger = LogFactory.getLog(JobStopperThread.class.getName());
     static final Object RSL_MONITOR;

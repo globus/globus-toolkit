@@ -24,24 +24,30 @@ public class ScalabilityTester {
         waitForAllToComplete();
     }
 
-    protected void createAll() {
+    protected synchronized void createAll() {
         //this.jobList = new JobStarterThread[this.count];
         this.jobHandleList = new String[this.count];
         this.jobPhaseState = new int[this.count];
+        this.startedList = new boolean[this.count];
+        for (int index=0; index<this.count; index++) {
+            this.startedList[index] = false;
+        }
 
         if (logger.isDebugEnabled()) {
             logger.debug("creating " + this.count + " job(s)");
         }
 
         for (int i=0; i<this.count; i++) {
-            if ((i > 0) && ((i % 30) == 0)) {
-                try {
-                    Thread.currentThread().sleep(60000);
-                } catch (Exception e) { }
-            }
             //this.jobList[i] = new JobStarterThread(this, i);
             //new Thread(this.jobList[i]).start();
             new Thread(new JobStarterThread(this, i)).start();
+            //if ((i > 0) && (i % 20) == 0) {
+                try {
+                    wait(1000);
+                } catch (Exception e) {
+                    logger.error("error waiting for next submission", e);
+                }
+            //}
         }
 
         if (logger.isDebugEnabled()) {
@@ -50,10 +56,6 @@ public class ScalabilityTester {
     }
 
     protected void waitForAllToComplete() {
-        this.startedList = new boolean[this.count];
-        for (int index=0; index<this.count; index++) {
-            this.startedList[index] = false;
-        }
         int oldCompletedCount = -1;
         while (this.startedCount < this.count) {
             if (logger.isDebugEnabled()) {
@@ -93,6 +95,9 @@ public class ScalabilityTester {
     }
 
     synchronized void notifyCreated(int jobIndex, String jobHandle) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("got created signal from job #" + jobIndex);
+        }
         this.jobHandleList[jobIndex] = jobHandle;
     }
 

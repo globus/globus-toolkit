@@ -17,16 +17,16 @@
   <property name="core.config" value="${ogsa.root}/${server.config}"/>
   <property name="schema.dir" value="schema"/>
   <property name="schema.origin" value="${ogsa.root}/schema"/>
-  <property name="throughput.schema.dir" value="testing/throughput"/>
-  <property name="mapping.file" value="NStoPkg.properties.throughput"/>
+  <property name="scalability.schema.dir" value="testing/scalability"/>
+  <property name="mapping.file" value="NStoPkg.properties.scalability"/>
   <property name="etc.dir" value="etc" />
   <property name="lib.dir" value="lib" />
   <property name="build.dir" value="build" />
   <property name="build.lib" value="${build.dir}/lib"/>
   <property name="build.dest" value="${build.dir}/classes"/>
   <property name="build.stubs" value="${build.dir}/stubs"/>
-  <property name="jar.name" value="testing-throughput.jar" />
-  <property name="gar.name" value="testing-throughput.gar" />
+  <property name="jar.name" value="testing-scalability.jar" />
+  <property name="gar.name" value="testing-scalability.gar" />
   <property name="test-reports.dir" value="test-reports" />
   <property name="container.initialization" value="eager" />
   <property name="log.dir" value="logs" />
@@ -86,7 +86,7 @@
   <target name="copySchemaDir">
     <copy toDir="${schema.dir}">
         <fileset dir="${schema.origin}" casesensitive="yes">
-            <exclude name="fusion/throughput/*"/>
+            <exclude name="fusion/scalability/*"/>
         </fileset>
     </copy>
   </target>
@@ -99,14 +99,14 @@
     <ant target="copySchemaDir"/>
 
     <ant antfile="${ogsa.root}/${build.services}" target="GWSDL2WSDL">
-        <property name="build.schema.dir" value="${throughput.schema.dir}"/>
-        <property name="wsdl.root" value="relocatable_throughput_types"/>
+        <property name="build.schema.dir" value="${scalability.schema.dir}"/>
+        <property name="wsdl.root" value="relocatable_scalability_types"/>
     </ant>
     <ant antfile="${ogsa.root}/${build.services}" target="generateBinding">
-        <property name="binding.root" value="relocatable_throughput"/>
-        <property name="build.schema.dir" value="${throughput.schema.dir}"/>
+        <property name="binding.root" value="relocatable_scalability"/>
+        <property name="build.schema.dir" value="${scalability.schema.dir}"/>
         <property name="porttype.wsdl"
-                 value="relocatable_throughput_types.wsdl"/>
+                 value="relocatable_scalability_types.wsdl"/>
     </ant>
     -->
   </target>
@@ -123,9 +123,9 @@
     <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS"
          inheritrefs="false">
         <property name="build.schema" value="${schema.dir}"/>
-        <property name="schema.file.dir" value="${throughput.schema.dir}"/>
+        <property name="schema.file.dir" value="${scalability.schema.dir}"/>
         <property name="schema.file"
-                  value="relocatable_throughput_types.wsdl"/>
+                  value="relocatable_scalability_types.wsdl"/>
         <property name="stubs.dest" value="../${build.stubs}"/>
         <reference refid="classpath"/>
     </ant>
@@ -157,12 +157,12 @@
   <target name="jar" depends="compile">
     <delete includeEmptyDirs="true" quiet="true">
       <fileset dir="${build.dest}/org">
-        <exclude name="**/throughput/**"/>
+        <exclude name="**/scalability/**"/>
       </fileset>
     </delete>
 
     <jar jarfile="${build.lib}/${jar.name}" basedir="${build.dest}" >
-      <include name="org/globus/ogsa/base/gram/testing/throughput/**" />
+      <include name="org/globus/ogsa/base/gram/testing/scalability/**" />
       <include name="*.wsdd" />
     </jar>
   </target>
@@ -230,8 +230,8 @@
       <property name="garlib.dir" value="${build.lib}"/>
       <property name="garserverdeployment.file" value="${server.deploy}"/>
       <property name="garclientdeployment.file" value="${client.deploy}"/>
-      <property name="garschema.origin" value="${schema.dir}/${throughput.schema.dir}"/>
-      <property name="garschema.path" value="fusion/throughput"/>
+      <property name="garschema.origin" value="${schema.dir}/${scalability.schema.dir}"/>
+      <property name="garschema.path" value="fusion/scalability"/>
       -->
     </ant>
   </target>
@@ -255,7 +255,7 @@
 
     <delete includeEmptyDirs="true" quiet="true">
       <fileset dir="${schema.dir}">
-          <exclude name="testing/throughput/throughput_types.wsdl"/>
+          <exclude name="testing/scalability/scalability_types.wsdl"/>
       </fileset>
     </delete>
     -->
@@ -301,7 +301,7 @@
     <echo message="Port: ${service.port}"/>
     <echo message="Count: ${job.count}"/>
 
-    <java classname="org.globus.ogsa.base.gram.testing.throughput.ScalabilityTester"
+    <java classname="org.globus.ogsa.base.gram.testing.scalability.ScalabilityTester"
           fork="yes"
           classpathref="classpath" failonerror="true" >
 
