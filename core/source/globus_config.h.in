@@ -1,7 +1,6 @@
 /* globus_config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 #undef HAVE_EXTERNALTHREADS
-#undef HAVE_LWP
 #undef HAVE_PTHREAD
 #undef HAVE_PTHREAD_DRAFT_10
 #undef HAVE_PTHREAD_DRAFT_4
@@ -19,3 +18,4 @@
 #undef _REENTRANT
 #undef _SGI_MP_SOURCE
 #undef __USE_FIXED_PROTOTYPES__
+#undef BUILD_LITE

@@ -4,8 +4,6 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE(globus_core, 2.0.0,0)
 AM_CONFIG_HEADER(globus_config.h)
 
-LAC_COMPILERS_ARGS
-
 AC_ARG_WITH(
     flavor,
     [  --with-flavor                 Globus flavor string],
@@ -21,16 +19,9 @@ fi
 GLOBUS_FLAVOR_NAME=$globus_cv_flavor
 AC_SUBST(GLOBUS_FLAVOR_NAME)
 
-dnl
-dnl Gather information about our build environment
-dnl
-dnl NOTE: this needs to be done before AM_PROG_LIBTOOL is called
-dnl
-LAC_COMPILERS_TARGET(no)
 
-dnl
-dnl
-dnl
+LAC_COMPILERS
+
 save_LD=$LD
 LD=
 AM_PROG_LIBTOOL

@@ -1,8 +1,6 @@
 dnl
-dnl LAC_THREADS_ARGS()
-dnl	Call this if you want the thread arguments.
 dnl LAC_THREADS()
-dnl	Calls LAC_THREADS_ARGS.
+dnl	Adds thread-related options to the configure command-line handling
 dnl	Set the appropriate lac_cv_* variables:
 dnl		lac_cv_threads_type ("no", "pthreads", 
 dnl					"solaristhreads")
@@ -16,13 +14,6 @@ dnl	that are independent of the compiler.  Compiler dependent
 dnl	flags should be specified in accompiler.m4.
 dnl     Also setup lac_threads_* variables that mirror the lac_cv_threads_*
 dnl     variables.
-dnl LAC_THREADS_NONE
-dnl     Setup the various lac_threads_* variables to indicate no threads.
-dnl	
-dnl LAC_THREADS_DEFINE()
-dnl	Perform the AC_DEFINE() calls, based on the variables set
-dnl	by LAC_THREADS.
-dnl
 
 dnl LAC_THREADS_ARGS()
 AC_DEFUN(LAC_THREADS_ARGS,
@@ -52,7 +43,9 @@ if test "$lac_cv_threads_vars_set" != "yes" ; then
     lac_cv_threads_LIBS=""
     lac_cv_threads_vars_set="yes"
 
-    if test "$lac_cv_threads_type" != "no" ; then
+    if test "$lac_cv_threads_type" = "no" ; then
+        LAC_THREADS_NONE
+    else
         LAC_THREADS_SOLARISTHREADS
         LAC_THREADS_PTHREADS
 	LAC_THREADS_SPROC
@@ -89,16 +82,15 @@ lac_threads_CFLAGS=""
 lac_threads_CXXFLAGS=""
 lac_threads_LDFLAGS=""
 lac_threads_LIBS=""
+LAC_THREADS_ADD_DEFINE(BUILD_LITE)
 ])
 
 
-dnl ------------------------------------------------------------------------
-dnl ----                   LAC_THREADS_SOLARISTHREADS
-dnl ------------------------------------------------------------------------
+dnl LAC_THREADS_SOLARISTHREADS
 AC_DEFUN(LAC_THREADS_SOLARISTHREADS,
 [
 if test "$lac_cv_threads_type" = "solaristhreads" -o "$lac_cv_threads_type" = "yes" ; then
-    case "$target" in
+    case "$host" in
         *solaris2* )
             found_inc="no"
             found_lib="no"
@@ -126,9 +118,7 @@ if test "$lac_cv_threads_type" = "solaristhreads" -o "$lac_cv_threads_type" = "y
 fi
 ])
 
-dnl ------------------------------------------------------------------------
-dnl ----                   LAC_THREADS_EXTERNAL
-dnl ------------------------------------------------------------------------
+dnl LAC_THREADS_EXTERNAL
 AC_DEFUN(LAC_THREADS_EXTERNAL,
 [
 if test "$lac_cv_threads_type" = "external"; then
@@ -143,7 +133,7 @@ dnl --with-thread-library appropriately
     lac_cv_threads_LIBS="$lac_thread_library_path"
     lac_cv_threads_CFLAGS="-I$lac_thread_include_path"
     
-    case "$target" in
+    case "$host" in
         mips-sgi-irix6* )
             LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
             LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)	
@@ -172,14 +162,12 @@ fi
 ])
 
 
-dnl ------------------------------------------------------------------------
-dnl ----                   LAC_THREADS_SPROC
-dnl ------------------------------------------------------------------------
+dnl LAC_THREADS_SPROC
 AC_DEFUN(LAC_THREADS_SPROC,
 [
 if test "$lac_cv_threads_type" = "sproc" -o "$lac_cv_threads_type" = "yes" ; then
 
-   case "$target" in 
+   case "$host" in 
 	*irix*)
 	found_inc="no"
 
@@ -200,9 +188,7 @@ if test "$lac_cv_threads_type" = "sproc" -o "$lac_cv_threads_type" = "yes" ; the
 fi
 ])
 
-dnl ------------------------------------------------------------------------
-dnl ----                         LAC_THREADS_PTHREADS
-dnl ------------------------------------------------------------------------
+dnl LAC_THREADS_PTHREADS
 AC_DEFUN(LAC_THREADS_PTHREADS,
 [
 if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; then
@@ -216,15 +202,6 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
                 ])
 
     if test "$found_lib" = "no"; then
-        LAC_FIND_USER_LIB(gthreads,$lac_thread_library_path /usr/local/fsu-pthreads,
-                [found_lib="yes"
-                 lib_type="fsu"
-                 lac_thread_library_path="$ac_find_lib_dir"
-                 lac_thread_library_file="$ac_find_lib_file"
-                ])
-    fi
-
-    if test "$found_lib" = "no"; then
         LAC_FIND_USER_LIB(pthread,$lac_thread_library_path,
                 [found_lib="yes"
                  lib_type="pthread"
@@ -234,20 +211,14 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
     fi
 
     if test "$found_lib" = "no"; then
-        LAC_FIND_USER_LIB(pthreads,$lac_thread_library_path /usr/local/fsu-pthreads,
+        LAC_FIND_USER_LIB(pthreads,$lac_thread_library_path,
                 [found_lib="yes"
                  dnl
-                 dnl Old versions of fsu-pthreads for the Sun
-                 dnl      installed to libpthreads.a.
-                 dnl Under AIX3, HPUX9, HPUX10, and DEC Unix 3.x,
-		 dnl      libpthreads.a is dce threads.
+                 dnl Under HPUX10, libpthreads.a is dce threads.
                  dnl
-                 case "$target" in
-                     *-ibm-aix3* | *-hp-hpux9* | *-hp-hpux10* | *-dec-osf3* )
+                 case "$host" in
+                     *-hp-hpux10* )
                          lib_type="dce"
-                     ;;
-                     *sunos4* | *solaris1* )
-                         lib_type="fsu-old"
                      ;;
                      * )
                          lib_type="pthread"
@@ -259,17 +230,6 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
                 ])
 		 
     fi
-
-    case "$target" in
-	*-ibm-aix* )
-	    LAC_FIND_USER_LIB(pthreads_compat,
-		    $lac_thread_library_path /usr/local/fsu-pthreads,
-		    [
-		     found_compat_lib="yes"
-		    ])
-	;;
-    esac
-
 
     if test "$found_lib" = "no"; then
         LAC_FIND_USER_LIB(dce,$lac_thread_library_path,
@@ -285,7 +245,7 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
         LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD)
         case "$lib_type" in
           pthread )
-            case "$target" in
+            case "$host" in
               mips-sgi-irix6* )
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
@@ -303,7 +263,7 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
 		    lac_cv_threads_LIBS="-lpthreads_compat"
 		fi
               ;;
-              alpha-dec-osf4* )
+              alpha-dec-osf[45]* )
 		LAC_THREADS_ADD_DEFINE(_REENTRANT)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
@@ -329,6 +289,7 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
                 lac_cv_threads_LIBS="-lpthread -lposix4"
 	      ;;
               *86-*-linux* )
+                LAC_THREADS_ADD_DEFINE(_REENTRANT)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
@@ -345,12 +306,8 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
             esac
           ;;
           dce )
-            case "$target" in
-              *-ibm-aix3* )
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_4)
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_SCHED)
-              ;;
-              *-hp-hpux9* | *-hp-hpux10* | *-hp-hpux11* )
+            case $host in 
+              *-hp-hpux10* )
                 LAC_THREADS_ADD_DEFINE(_REENTRANT)
                 LAC_THREADS_ADD_DEFINE(_CMA_REENTRANT_CLIB_)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_4)
@@ -360,62 +317,17 @@ if test "$lac_cv_threads_type" = "pthreads" -o "$lac_cv_threads_type" = "yes"; t
                 lac_cv_threads_CFLAGS="-I/usr/include/reentrant"
                 lac_cv_threads_CXXFLAGS="-I/usr/include/reentrant"
 		lac_cv_threads_LIBS="-ldce -lm -lc_r"
-		case "$target" in
+		case "$host" in
 		  *-hp-hpux10* | *-hp-hpux11* )
 		    lac_cv_threads_LIBS="-ldce -lm"
 		   ;;
 		esac
               ;;
-              *-dec-osf3* )
-dnl                LAC_THREADS_ADD_DEFINE(_REENTRANT)
-dnl                LAC_THREADS_ADD_DEFINE(_CMA_REENTRANT_CLIB_)
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_4)
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_SCHED)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
-              ;;
             esac
-          ;;
-          fsu )
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_6)
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_SCHED)
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_INIT_FUNC)
-            LAC_THREADS_ADD_DEFINE(__USE_FIXED_PROTOTYPES__)
-            lac_cv_threads_CFLAGS="-I$lac_thread_include_path"
-            lac_cv_threads_CXXFLAGS="-I$lac_thread_include_path"
-            lac_cv_threads_LIBS="-L$lac_thread_library_path -lgthreads -lmalloc"
-          ;;
-          fsu-old )
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_6)
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_SCHED)
-            LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_INIT_FUNC)
-            LAC_THREADS_ADD_DEFINE(__USE_FIXED_PROTOTYPES__)
-            lac_cv_threads_CFLAGS="-I$lac_thread_include_path"
-            lac_cv_threads_CXXFLAGS="-I$lac_thread_include_path"
-            lac_cv_threads_LIBS="-L$lac_thread_library_path -lpthreads -lmalloc"
           ;;
         esac
     fi
 fi
-])
-
-
-AC_DEFUN(LAC_SYS_LWP,
-[ AC_MSG_CHECKING(for light-weight processes)
-  AC_CACHE_VAL(ac_cv_sys_lwp, [dnl
-  result=0
-  AC_CHECK_FUNC(_lwp_getprivate, result=`expr $result + 1`)
-  AC_CHECK_FUNC(_lwp_setprivate, result=`expr $result + 1`)
-  if test "$result" = "2"; then
-    ac_cv_sys_lwp="yes"
-  else
-    ac_cv_sys_lwp="no"
-  fi
-  ])
-  AC_MSG_RESULT($ac_cv_sys_lwp)
-  if test "$ac_cv_sys_lwp" = "yes"; then
-    AC_DEFINE(HAVE_LWP)
-  fi
 ])
 
 
@@ -451,9 +363,9 @@ do
         LAC_THREADS_DEFINE_ONE(_REENTRANT)
         LAC_THREADS_DEFINE_ONE(_CMA_REENTRANT_CLIB_)
 	LAC_THREADS_DEFINE_ONE(__USE_FIXED_PROTOTYPES__)
-	LAC_THREADS_DEFINE_ONE(HAVE_LWP)
+	LAC_THREADS_DEFINE_ONE(BUILD_LITE)
         * )
-            AC_MSG_ERROR([Internal error: acthreads.m4:LAC THREADS_DEFINE is missing a definition for $lac_def])
+            AC_MSG_ERROR([Internal error: acthreads.m4:LAC THREADS_DEFINE is missing a definition for "$lac_def"])
 	;;
     esac
 done
