@@ -58,6 +58,11 @@ static void
 tree_free(gram_specification_t * sp);
 
 /******************************************************************************
+                       Define variables for external use
+******************************************************************************/
+char * grami_jm_libexecdir = GLOBUS_LIBEXECDIR;
+
+/******************************************************************************
                        Define module specific variables
 ******************************************************************************/
 static nexus_handler_t handlers[] =
@@ -146,11 +151,11 @@ main(int argc,
      */
     if ((log_fp = fopen("job_mgr.tmp", "a")) == NULL)
     {
-		if ((log_fp = fopen("/tmp/job_mgr.tmp", "a")) == NULL)
-		{
-        fprintf(stderr, "Cannot open logfile.\n");
-        exit(1);
-		}
+        if ((log_fp = fopen("/tmp/job_mgr.tmp", "a")) == NULL)
+        {
+            fprintf(stderr, "Cannot open logfile.\n");
+            exit(1);
+        }
     }
 
     setbuf(log_fp, NULL);
@@ -184,12 +189,20 @@ main(int argc,
             strcpy(test_dat_file, argv[i+1]);
             i++;
         }
+        if ((strcmp(argv[i], "-e") == 0)
+                 && (i + 1 < argc))
+        {
+            grami_jm_libexecdir = argv[i+1];
+            i++;
+        }
         else
         {
-            fprintf(stderr, "Usage: %s [-t test_dat_file]\n", argv[0]);
+            fprintf(stderr, "Usage: %s [-t test_dat_file] [-e lib exe dir]\n", argv[0]);
             exit(1);
         }
     }
+
+    fprintf(log_fp, "grami_jm_libexecdir = %s\n", grami_jm_libexecdir);
 
     /*
      *  if a test_dat_file has been defined, read data from the file 
