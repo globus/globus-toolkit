@@ -377,9 +377,11 @@ globus_l_lsf_read_callback(
     }
     globus_mutex_unlock(&globus_l_lsf_mutex);
 
-    stat(state->event_idx_path, &s);
+    rc = stat(state->event_idx_path, &s);
 
-    if (state->fp != NULL && state->event_idx_stat.st_mtime != s.st_mtime)
+    if ((rc == 0 && state->fp != NULL &&
+            state->event_idx_stat.st_mtime != s.st_mtime)
+        || (rc != 0 && errno != ENOENT))
     {
         /* Log was rotated since we started our read, so we need to
          * figure out what we need to read
@@ -562,6 +564,14 @@ globus_l_lsf_find_logfile(
         {
             stat(state->event_idx_path, &state->event_idx_stat);
             idx_file = fopen(state->event_idx_path, "r");
+            if (idx_file == NULL)
+            {
+                sprintf(state->path, "%s/lsb.events", state->log_dir);
+                state->is_current_file = GLOBUS_TRUE;
+                rc = 0;
+
+                break;
+            }
             fscanf(idx_file, 
                     "#LSF_JOBID_INDEX_FILE %*d.%*d %d %ld",
                     &num_idx_files,
