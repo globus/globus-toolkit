@@ -31,8 +31,11 @@ Sources = \
 	gssapi.h \
 	gssapi_ssleay.h	
 
-flavorinclude_HEADERS= \
+include_HEADERS = \
 	gssapi.h
+
+flavorinclude_HEADERS= \
+	globus_gssapi_config.h
 
 #AM_CFLAGS = -DDEBUG
 

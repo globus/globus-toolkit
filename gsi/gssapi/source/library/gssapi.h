@@ -37,14 +37,7 @@
 /*
  * Configure set the following
  */
-
-#ifndef SIZEOF_LONG
-#undef SIZEOF_LONG 
-#endif
-
-#ifndef SIZEOF_SHORT
-#undef SIZEOF_SHORT
-#endif
+#include "globus_gssapi_config.h"
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
