@@ -1,7 +1,8 @@
-#include "globus_gram_client.h"
+#include "globus_common.h"
+#include "globus_gram_protocol_error.h"
 
 static char *
-globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
+globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 {
   /* 
    * these error strings are phrased to fit grammatically into 
@@ -143,34 +144,34 @@ globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 };
 
 static char *
-globus_l_gram_client_error_7_hack_message = GLOBUS_NULL;
+globus_l_gram_protocol_error_7_hack_message = GLOBUS_NULL;
 
 
 const char *
-globus_gram_client_error_string(int error_code)
+globus_gram_protocol_error_string(int error_code)
 {
-    if (error_code<0 || error_code>=GRAM_ERROR_LAST)
+    if (error_code<0 || error_code>=GLOBUS_GRAM_PROTOCOL_ERROR_LAST)
         return("Invalid error code");
 
-    if ((error_code == GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION)
-	&& globus_l_gram_client_error_7_hack_message)
-	return globus_l_gram_client_error_7_hack_message;
+    if ((error_code == GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION)
+	&& globus_l_gram_protocol_error_7_hack_message)
+	return globus_l_gram_protocol_error_7_hack_message;
 
-    return(globus_l_gram_client_error_strings[error_code]);
-} /* globus_gram_client_error_string() */
+    return(globus_l_gram_protocol_error_strings[error_code]);
+} /* globus_gram_protocol_error_string() */
 
 
 
 void
-globus_gram_client_error_7_hack_replace_message(const char * message)
+globus_gram_protocol_error_7_hack_replace_message(const char * message)
 {
-    if (globus_l_gram_client_error_7_hack_message)
-	globus_libc_free(globus_l_gram_client_error_7_hack_message);
+    if (globus_l_gram_protocol_error_7_hack_message)
+	globus_libc_free(globus_l_gram_protocol_error_7_hack_message);
 
-    globus_l_gram_client_error_7_hack_message = GLOBUS_NULL;
+    globus_l_gram_protocol_error_7_hack_message = GLOBUS_NULL;
 
     if (message)
-	globus_l_gram_client_error_7_hack_message = 
+	globus_l_gram_protocol_error_7_hack_message = 
 	    globus_libc_strdup(message);
 }
 
