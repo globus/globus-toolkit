@@ -32,11 +32,14 @@ BUNDLE gt4-c-ws-core
 
 BUNDLE gt4-mds
         globus_wsrf_mds_aggregator
+        globus_wsrf_mds_aggregator_schema
         globus_wsrf_mds_index
+        globus_wsrf_mds_index_schema
         globus_wsrf_mds_trigger
         globus_wsrf_mds_usefulrp
         globus_wsrf_mds_usefulrp_schema
         globus_wsrf_servicegroup
+        globus_wsrf_servicegroup_schema
         globus_wsrf_mds_archive
         globus_wsrf_mds_hawkeye
 
