@@ -1314,7 +1314,7 @@ globus_l_callback_blocked_cb(
                 {
                     int                 rc;
                     
-                    i_space->thread_count++;
+                    callback_info->my_space->thread_count++;
                     globus_l_callback_thread_count++;
                     
                     rc = globus_thread_create(

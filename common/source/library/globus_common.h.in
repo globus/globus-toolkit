@@ -279,6 +279,14 @@ typedef struct globus_barrier_s
 /*
  * Various macro definitions for assertion checking
  */
+
+#if 0
+void globus_dump_stack();
+#define GLOBUS_DUMP_STACK() globus_dump_stack()
+#else
+#define GLOBUS_DUMP_STACK()
+#endif
+
 #if defined(BUILD_DEBUG)
 #   define globus_assert(assertion)					\
     do {								\
@@ -287,6 +295,8 @@ typedef struct globus_barrier_s
             fprintf(stderr, "Assertion " #assertion			\
 		    " failed in file %s at line %d\n",			\
 		    __FILE__, __LINE__);				\
+	    
+	    GLOBUS_DUMP_STACK(); \
 	    abort();							\
          }								\
     } while(0)
@@ -298,6 +308,7 @@ typedef struct globus_barrier_s
     	    fprintf(stderr, "Assertion " #assertion			\
 		    " failed in file %s at line %d: %s",		\
 		    __FILE__, __LINE__, string);			\
+		GLOBUS_DUMP_STACK(); \
 	    abort();							\
     	}								\
     } while(0)

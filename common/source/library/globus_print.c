@@ -67,10 +67,29 @@ va_dcl
     globus_thread_diagnostics_vprintf(fmt, ap);
     va_end(ap);
 
+    GLOBUS_DUMP_STACK();
+
     globus_silent_fatal();
     
 } /* globus_fatal() */
 
+void globus_dump_stack()
+{
+    char s[1024];
+    char filename[1024];
+    int count;
+    
+    sprintf(s, "/proc/%d/exe", getpid());
+    count = readlink(s, filename, 1024);
+    filename[count] = 0;
+
+#ifdef BUILD_LITE
+    sprintf(s, "echo 'set pagination off\nfile %s\nattach %d\nwhere\nquit' | gdb -n -batch -x /dev/stdin", filename, getpid());
+#else    
+    sprintf(s, "echo 'set pagination off\nfile %s\nattach %d\nthread apply all where\nquit' | gdb -n -batch -x /dev/stdin", filename, getpid());
+#endif
+    system(s);
+}
 
 /*
  * globus_l_descriptor_string()
