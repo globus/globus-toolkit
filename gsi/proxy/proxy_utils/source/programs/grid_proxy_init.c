@@ -178,6 +178,15 @@ main(
         exit(1);
     }
 
+    if(globus_module_activate(GLOBUS_GSI_CALLBACK_MODULE) != (int)GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(
+            stderr,
+            "\n\nERROR: Couldn't load module: GLOBUS_GSI_CALLBACK_MODULE.\n"
+            "Make sure Globus is installed correctly.\n\n");
+        exit(1);
+    }
+
     /* get the program name */
     if (strrchr(argv[0], '/'))
     {
@@ -962,6 +971,7 @@ main(
     }
 
     globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_CALLBACK_MODULE);
 
     exit(return_value);
 }
