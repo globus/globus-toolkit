@@ -15,6 +15,7 @@ usage () {
 	echo "		$0 -t my_tag	Use \"-r my_tag\" in cvs commands"
 	echo "		$0 -n 		Don't update the CVS checkout"
 	echo "		$0 -h		Print this help message"
+	echo "		$0 -c		Just build C bindings"
 	echo
 }
 
@@ -97,7 +98,7 @@ install_gpt() {
 install_gt2() {
 	export GLOBUS_LOCATION=`pwd`/gt2-installation
 	echo Installing custom GT2 bundle
-	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt3_alpha_bin_bundle.tar.gz
+	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz
 	$GPT_LOCATION/sbin/gpt-postinstall
 	echo
 }
@@ -110,7 +111,6 @@ install_cdeps() {
 	cvs -d$CVSROOT co side_tools/build-autotools
 	./side_tools/build-autotools
 	export PATH=$PWD/autotools/bin:$PATH
-	export GLOBUS_LOCATION=$PWD/gt2-installation
 	./cvs-build-ogsa -force gcc32dbg
 	cd binary_packages
 	$GPT_LOCATION/sbin/gpt-bundle -bindir=. -output=ogsa_cbindings_bin_bundle.tar.gz `cat packaging_list | xargs`
@@ -231,6 +231,7 @@ read_args() {
 	tag=""
 	update=1
 	package=""
+	onlyc=-1;
 
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
@@ -242,13 +243,16 @@ read_args() {
 		elif [ $1 = "-p" ]; then
 			package=$2;
 			shift; shift;
+		elif [ $1 = "-c" ]; then
+			onlyc=1;
+			shift;
 		elif [ $1 = "-h" ]; then
 			usage
 			exit
 		fi
 	done
 
-	export tag update package;
+	export tag update package onlyc;
 }
 
 
@@ -278,12 +282,13 @@ fi
 
 #This is the poor man's dependency code ...
 
-echo Building Java-only packages
-dir_iter package-list
-echo
+if [ $onlyc != 1 ]; then
+	echo Building Java-only packages
+	dir_iter package-list
+	echo
+fi
 
-# install_gt2
-
+install_gt2
 
 echo Building C-dependent packages
 install_cdeps
