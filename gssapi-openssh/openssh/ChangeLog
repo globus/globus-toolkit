@@ -1,3 +1,10 @@
+20030429
+ - (djm) Add back radix.o (used by AFS support), after it went missing from
+   Makefile many moons ago
+ - (djm) Apply "owl-always-auth" patch from Openwall/Solar Designer
+ - (djm) Fix blibpath specification for AIX/gcc
+ - (djm) Some systems have basename in -lgen. Fix from ayamura@ayamura.org
+
 20030401
  - (djm) OpenBSD CVS Sync
    - jmc@cvs.openbsd.org 2003/03/28 10:11:43

@@ -201,7 +201,7 @@ void do_pam_cleanup_proc(void *context)
 	}
 }
 
-/* Attempt password authentation using PAM */
+/* Attempt password authentication using PAM */
 int auth_pam_password(Authctxt *authctxt, const char *password)
 {
 	extern ServerOptions options;
@@ -215,13 +215,13 @@ int auth_pam_password(Authctxt *authctxt, const char *password)
 	pamstate = INITIAL_LOGIN;
 	pam_retval = do_pam_authenticate(
 	    options.permit_empty_passwd == 0 ? PAM_DISALLOW_NULL_AUTHTOK : 0);
-	if (pam_retval == PAM_SUCCESS) {
-		debug("PAM Password authentication accepted for "
-		    "user \"%.100s\"", pw->pw_name);
+	if (pam_retval == PAM_SUCCESS && pw) {
+		debug("PAM password authentication accepted for "
+		    "%.100s", pw->pw_name);
 		return 1;
 	} else {
-		debug("PAM Password authentication for \"%.100s\" "
-		    "failed[%d]: %s", pw->pw_name, pam_retval, 
+		debug("PAM password authentication failed for "
+		    "%.100s: %s", pw ? pw->pw_name : "an illegal user",
 		    PAM_STRERROR(__pamh, pam_retval));
 		return 0;
 	}
