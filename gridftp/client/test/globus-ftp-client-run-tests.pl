@@ -61,7 +61,7 @@ if(0 != system("./globus-ftp-client-get-test -s gsiftp://$source_host$source_fil
     print "Sanity check of source (gsiftp://$source_host$source_file) failed.\n";
     if(defined($server_pid))
     {
-        kill(9,$server_pid);
+        kill(-9,getpgrp($server_pid));
     }
     
     exit 1;
@@ -73,7 +73,7 @@ if(0 != system("./globus-ftp-client-put-test -d gsiftp://$dest_host$dest_file < 
 
     if(defined($server_pid))
     {
-        kill(9,$server_pid);
+        kill(-9,getpgrp($server_pid));
     }
     
     exit 1;
@@ -89,7 +89,7 @@ $@ && print "$@";
 
 if($server_pid)
 {
-    kill(9,$server_pid);
+    kill(-9,getpgrp($server_pid));
     $server_pid=0;
 }
 
@@ -130,7 +130,8 @@ sub setup_server()
         print "Unable to start server\n";
         exit 1;
     }
-
+    
+    setpgrp($server_pid,$server_pid);
     select((select(SERVER), $| = 1)[0]);
     $server_port = <SERVER>;
     $server_port =~ s/Accepting connections on port (\d+)/\1/;
