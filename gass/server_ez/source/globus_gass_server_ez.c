@@ -106,13 +106,6 @@ static void globus_l_gass_server_ez_get_callback(
 				    globus_bool_t       last_data);
 
 /* callbacks to handle completed send or receive of part of the request's data */
-static void globus_l_gass_server_ez_get_fd_done(globus_gass_server_get_request_t *request,
-						int fd,
-						unsigned long send_length);
-
-static void globus_gass_server_ez_put_fd_done(globus_gass_server_put_request_t *request,
-					      int fd,
-					      unsigned long receive_length);
 
 static void globus_gass_server_ez_put_memory_done(void * arg,
 						  globus_gass_transfer_request_t request,
@@ -261,72 +254,6 @@ globus_gass_server_ez_shutdown(globus_gass_transfer_listener_t listener)
     return rc;
 } /* globus_gass_server_ez_shutdown() */
 
-/******************************************************************************
-Function: globus_l_gass_server_ez_get_fd_done()
-
-Description: 
-
-Parameters: 
-
-Returns: 
-******************************************************************************/
-static void
-globus_l_gass_server_ez_get_fd_done(globus_gass_server_get_request_t *request,
-				    int fd,
-				    unsigned long send_length)
-{
-    globus_gass_server_ez_request_t *r;
-    globus_l_gass_server_ez_t *server;
-
-printf("In globus_l_gass_server_ez_get_fd_done\n");
-    
-    r = (globus_gass_server_ez_request_t *) request->user_pointer;
-    close(r->fd);
-    
-    globus_free(r);
-
-    globus_gass_server_get_request_done(request);
-} /* globus_l_gass_server_ez_get_fd_done() */
-
-/******************************************************************************
-Function: globus_l_gass_server_ez_put_fd_done()
-
-Description: 
-
-Parameters: 
-
-Returns: 
-******************************************************************************/
-static void
-globus_gass_server_ez_put_fd_done(globus_gass_server_put_request_t *request,
-				  int fd,
-				  unsigned long receive_length)
-{
-    globus_gass_server_ez_request_t *r;
-    struct stat s;
-
-
-    /* When this function is called, the request either is done, or failed.
-     * In any case, we should be able to clean up the request-related structures
-     */
-    r = (globus_gass_server_ez_request_t *) request->user_pointer;
-
-    /* Don't close /dev/<*> files, as we didn't open them */
-    if(r->special == GLOBUS_FALSE)
-    {
-        globus_libc_fstat(r->fd, &s);
-        globus_libc_close(r->fd);
-    }
-    else
-    {
-	s.st_mtime = 0U;
-    }
-    r->timestamp = (unsigned long) s.st_mtime;
-
-    globus_gass_server_put_request_done(request,
-					r->timestamp);
-    globus_free(r);
-} /* globus_l_gass_server_ez_put_fd_done() */
 
 /******************************************************************************
 Function: globus_l_gass_server_ez_put_memory_done()

@@ -28,7 +28,6 @@ CVS Information:
 #endif
 #endif
 
-#include "globus_gass_server.h"
 #include "globus_gass_transfer.h"
 
 EXTERN_C_BEGIN
