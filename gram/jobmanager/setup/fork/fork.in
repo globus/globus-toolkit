@@ -210,7 +210,7 @@ sub submit
 
         print STARTER_IN 'executable=' .
                 &escape_for_starter($description->executable()) . ';';
-        if ($#arguments > 0)
+        if ($#arguments >= 0)
         {
             print STARTER_IN 'arguments=' .
                     join(',', map {&escape_for_starter($_)} @arguments) .
