@@ -317,7 +317,7 @@ globus_l_xio_file_system_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_operation_t       op;
+    globus_xio_operation_t              op;
     globus_xio_driver_context_t         context;
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_file_system_open_cb);
@@ -344,7 +344,7 @@ globus_l_xio_file_open(
     void *                              driver_attr,
     void *                              driver_target,
     globus_xio_driver_context_t         context,
-    globus_xio_operation_t       op)
+    globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     const globus_l_target_t *           target;
@@ -403,7 +403,7 @@ globus_l_xio_file_system_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_operation_t       op;
+    globus_xio_operation_t              op;
     globus_xio_driver_context_t         context;
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_file_system_close_cb);
@@ -426,7 +426,7 @@ globus_result_t
 globus_l_xio_file_close(
     void *                              driver_handle,
     globus_xio_driver_context_t         context,
-    globus_xio_operation_t       op)
+    globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     globus_result_t                     result;
@@ -462,7 +462,7 @@ globus_l_xio_file_system_read_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_xio_operation_t       op;
+    globus_xio_operation_t              op;
     GlobusXIOName(globus_l_xio_file_system_read_cb);
     
     op = (globus_xio_operation_t) user_arg;
@@ -478,7 +478,7 @@ globus_l_xio_file_read(
     void *                              driver_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
-    globus_xio_operation_t       op)
+    globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_file_read);
@@ -519,7 +519,7 @@ globus_l_xio_file_system_write_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_xio_operation_t       op;
+    globus_xio_operation_t              op;
     GlobusXIOName(globus_l_xio_file_system_write_cb);
     
     op = (globus_xio_operation_t) user_arg;
@@ -535,7 +535,7 @@ globus_l_xio_file_write(
     void *                              driver_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
-    globus_xio_operation_t       op)
+    globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_file_write);

@@ -1080,7 +1080,7 @@ error_server:
 
 typedef struct
 {
-    globus_xio_operation_t       op;
+    globus_xio_operation_t              op;
     globus_l_target_t *                 target;
 } globus_l_accept_info_t;
 
@@ -1112,7 +1112,7 @@ globus_result_t
 globus_l_xio_tcp_server_accept(
     void *                              driver_server,
     void *                              driver_attr,
-    globus_xio_operation_t       op)
+    globus_xio_operation_t              op)
 {
     globus_l_server_t *                 server;
     globus_l_attr_t *                   attr;
@@ -1389,7 +1389,7 @@ error_getaddrinfo:
 
 typedef struct
 {
-    globus_xio_operation_t       op;
+    globus_xio_operation_t              op;
     globus_l_handle_t *                 handle;
     globus_l_handle_t *                 attr;
     globus_addrinfo_t *                 save_addrinfo;
@@ -1559,7 +1559,7 @@ error_no_addrinfo:
 static
 globus_result_t
 globus_l_xio_tcp_connect(
-    globus_xio_operation_t       op,
+    globus_xio_operation_t              op,
     globus_l_handle_t *                 handle,
     globus_l_attr_t *                   attr,
     const char *                        contact_string)
@@ -1664,7 +1664,7 @@ globus_l_xio_tcp_open(
     void *                              driver_attr,
     void *                              driver_target,
     globus_xio_driver_context_t         context,
-    globus_xio_operation_t       op)
+    globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     const globus_l_target_t *           target;
@@ -1729,7 +1729,7 @@ globus_l_xio_tcp_system_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_operation_t       op;
+    globus_xio_operation_t              op;
     globus_xio_driver_context_t         context;
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_tcp_system_close_cb);
@@ -1752,7 +1752,7 @@ globus_result_t
 globus_l_xio_tcp_close(
     void *                              driver_handle,
     globus_xio_driver_context_t         context,
-    globus_xio_operation_t       op)
+    globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     globus_result_t                     result;
@@ -1788,7 +1788,7 @@ globus_l_xio_tcp_system_read_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_xio_operation_t       op;
+    globus_xio_operation_t              op;
     GlobusXIOName(globus_l_xio_tcp_system_read_cb);
     
     op = (globus_xio_operation_t) user_arg;
@@ -1804,7 +1804,7 @@ globus_l_xio_tcp_read(
     void *                              driver_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
-    globus_xio_operation_t       op)
+    globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_tcp_read);
@@ -1845,7 +1845,7 @@ globus_l_xio_tcp_system_write_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_xio_operation_t       op;
+    globus_xio_operation_t              op;
     GlobusXIOName(globus_l_xio_tcp_system_write_cb);
     
     op = (globus_xio_operation_t) user_arg;
@@ -1861,7 +1861,7 @@ globus_l_xio_tcp_write(
     void *                              driver_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
-    globus_xio_operation_t       op)
+    globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
     globus_l_attr_t *                   attr;
