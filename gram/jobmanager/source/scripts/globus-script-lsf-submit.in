@@ -192,7 +192,7 @@ Kb=1024
 $DEBUG_ECHO "JM_SCRIPT: testing for maximum memory limit" >> $grami_logfile
 if [ $grami_max_memory -eq 0 ] ; then
     max_memory=0
-    $DEBUG_ECHO "JM_SCRIPT: no maximum memory requested specified" >> $grami_log_file
+    $DEBUG_ECHO "JM_SCRIPT: no maximum memory requested specified" >> $grami_logfile
 else
     max_memory=`expr "$grami_max_memory" \* "$Kb"`
     $DEBUG_ECHO "JM_SCRIPT: requested $grami_max_memory Mb for maximum memory" >> $grami_logfile
@@ -202,7 +202,7 @@ fi
 
 $DEBUG_ECHO "JM_SCRIPT: testing for minimum memory limit" >> $grami_logfile
 if [ $grami_min_memory -eq 0 ] ; then
-    $DEBUG_ECHO "JM_SCRIPT: no minimum memory requested specified" >> $grami_log_file
+    $DEBUG_ECHO "JM_SCRIPT: no minimum memory requested specified" >> $grami_logfile
 else
     $DEBUG_ECHO "JM_SCRIPT: requested $grami_min_memory Mb for minimum memory" >> $grami_logfile
     $DEBUG_ECHO "JM_SCRIPT: minimum memory request is not supported" >> $grami_logfile
