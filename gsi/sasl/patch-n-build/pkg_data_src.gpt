@@ -28,12 +28,12 @@
       <Build_Step>patch -N -p1 -i ../patches/cyrus-sasl-1.5.27-patch</Build_Step>
       <Build_Step>MAKE_GPTMACRO distclean</Build_Step>
 
-      <Build_Step Macro_Args="libs='ssl crypto sasl'">
+      <Build_Step Macro_Args="libs='ssl crypto sasl plain'">
         RUN_FLAVOR_MAKEFILES_GPTMACRO
       </Build_Step>
 	<Build_Step>touch aclocal.m4</Build_Step>
 	<Build_Step>find . -name "Makefile.in" -print | xargs touch</Build_Step>
-      <Build_Step>./configure --prefix=INSTALLDIR_GPTMACRO --disable-gssapi --disable-cram --disable-digest --disable-krb4 --disable-anon --disable-plain --without-dblib</Build_Step>
+      <Build_Step>./configure --prefix=INSTALLDIR_GPTMACRO --disable-gssapi --disable-cram --disable-digest --disable-krb4 --disable-anon --without-dblib</Build_Step>
       <Build_Step>MAKE_GPTMACRO</Build_Step>
       <Build_Step>MAKE_GPTMACRO DESTDIR_GPTMACRO install</Build_Step>
       <Build_Step>RUN_FLAVOR_INSTALL_GPTMACRO</Build_Step>
