@@ -283,6 +283,10 @@ globus_l_xio_http_find_cached_handle(
     globus_i_xio_http_handle_t *        http_handle = NULL;
     globus_list_t *                     iter;
 
+    if (http_attr == NULL)
+    {
+        return NULL;
+    }
     if (http_attr->request.http_version == GLOBUS_XIO_HTTP_VERSION_1_0 ||
         !http_target->is_client)
     {
@@ -1631,7 +1635,6 @@ globus_l_xio_http_client_cache_kickout(
     void *                              user_arg)
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
-    globus_result_t                     result = GLOBUS_SUCCESS;
 
     globus_assert(http_handle->target_info.is_client &&
         http_handle->user_close &&
