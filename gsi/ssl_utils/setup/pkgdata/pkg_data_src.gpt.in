@@ -20,14 +20,14 @@
     </Build_Environment>
 
     <Post_Install_Message >
-      You need to run setup_ssl_utils
+      You need to run setup-ssl-utils
     </Post_Install_Message>
 
     <Post_Install_Program >
-      globus/setup_ssl_utils
+      globus/setup-ssl-utils
     </Post_Install_Program>
 
-    <Setup Name="ssl_utils_setup" >
+    <Setup Name="globus_ssl_utils_setup" >
       <Aging_Version Age="0" Major="0" Minor="1" />
     </Setup>
 

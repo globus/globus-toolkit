@@ -13,11 +13,11 @@ if (!defined($gpath))
 
 require Grid::GPT::Setup;
 
-my $metadata = new Grid::GPT::Setup(package_name => "ssl_utils_setup");
+my $metadata = new Grid::GPT::Setup(package_name => "globus_ssl_utils_setup");
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus/";
-my $result = `$setupdir/setup-ssl_utils-sh-scripts`;
+my $result = `$setupdir/setup-ssl-utils-sh-scripts`;
 
 $result = system("chmod 0755 $setupdir/grid-cert-request-config");
 
