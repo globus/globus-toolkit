@@ -93,6 +93,16 @@ Step 3: After a hopefully successful make you are ready to install. You
 	specific portions with 'make server-install', 'make tools-install'
 	or 'make client-install'. You probably will need root access.
 
+Step 4: Configuring MySQL
+	
+	The present version of myproxy requires creation of a default 
+	database. 
+
+	Run  'mysql -u root'
+	
+	At the mysql prompt:
+	mysql> create database mydbase;
+
 3. Installing the client (user) software
 ----------------------------------------
 
@@ -301,6 +311,13 @@ default_renewers <DN regex>
 	which allows any client to pass the per-credential policy
 	check.  (The client must still pass the authorized_renewers
 	check.)
+
+default_database_name <database name>
+
+	This line specifies the default database to be used if one is not
+	specified by the myproxy-server command line. There can be several
+	such lines but only the database name specified in the last line is 
+	considered.
 
 6. Using myproxy-get-delegation from a trusted service
 ---------------------------------
