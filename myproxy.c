@@ -6,6 +6,7 @@
  */
 
 #include "myproxy.h"
+#include "myproxy_log.h"
 #include "gsi_socket.h"
 #include "verror.h"
 #include "string_funcs.h"
@@ -17,6 +18,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/param.h>
 #include <netinet/in.h>
 #include <netdb.h> 
 #include <unistd.h>
@@ -160,7 +162,6 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct sockaddr_in sin;
     struct hostent *host_info;
     char error_string[1024];
-    char *expected_dn;
     char *port_range;
     
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -189,7 +190,7 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
 		}
 		sin.sin_port = htons(++port);
 	    }
-	    /* fprintf(stderr, "Socket bound to port %hu.\n", port); */
+	    myproxy_debug("Socket bound to port %hu.\n", port);
 	}
     }
 
@@ -217,50 +218,163 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
         return -1;
     }
 
-   /*
-    * Are we connecting to a server that has a non-standard DN.
-    */
-   expected_dn = getenv("MYPROXY_SERVER_DN");
-   
-   if (expected_dn != NULL)
-   {
-       fprintf(stderr, "NOTE: Expecting non-standard server DN:\n\t\"%s\"\n",
-	       expected_dn);
-       
-       if (GSI_SOCKET_set_expected_peer_name(attrs->gsi_socket,
-					     expected_dn) == GSI_SOCKET_ERROR)
-       {
-	   GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
-                                   sizeof(error_string));
-	   verror_put_string("Error setting expected peername: %s\n",
-			     error_string);
-	   return -1;
-       }
-   }
-   
-
    return attrs->socket_fd;
 }
     
+/* If *host is a name for the loopback interface, try to change
+   it to local hostname (not necessarily fully-qualified). */
+static void
+resolve_localhost(char **host)
+{
+    struct hostent *hostinfo;
+
+    hostinfo = gethostbyname(*host);
+    if (hostinfo &&
+	hostinfo->h_addrtype == AF_INET) {
+	struct in_addr addr;
+	addr = *(struct in_addr *)(hostinfo->h_addr);
+	if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
+	    char buf[MAXHOSTNAMELEN];
+	    if (gethostname(buf, sizeof(buf)) == 0) {
+		free(*host);
+		*host = strdup(buf);
+	    }
+	}
+    }
+}
+
+/* A (hopefully) portable way to make a fully-qualified hostname for
+   GSSAPI authentication without relying on a potentially remote,
+   untrusted resolver.
+   Note: getdomainname() is not portable.
+*/
+static void
+make_fqhn(char **host)
+{
+    char *domainname = NULL, *fqhn = NULL, myhn[MAXHOSTNAMELEN];
+    struct hostent *hent = NULL;
+    int i;
+
+    if (strchr(*host, '.')) {
+	return;			/* already fully qualified */
+    }
+
+    /* Otherwise, figure out our local domainname without using
+       getdomainname(). */
+    if (gethostname(myhn, sizeof(myhn)) < 0) {
+	myproxy_debug("gethostname() failed, can't convert %s to fqhn", *host);
+	return;
+    }
+    if ((domainname = strchr(myhn, '.')) == NULL) {
+	
+	/* Resolving our local hostname should be secure
+	   (unlike resolving a remote hostname). */
+	if ((hent = gethostbyname(myhn)) != NULL) {
+	    if ((domainname = strchr(hent->h_name, '.')) == NULL) {
+		for (i=0;
+		     hent->h_aliases[i] &&
+			 (domainname =
+			  strchr(hent->h_aliases[i], '.')) == NULL;
+		     i++);
+	    }
+	}
+    }
+
+    if (domainname) {
+	domainname++;
+	fqhn = malloc(strlen(*host)+strlen(domainname)+2);
+	sprintf(fqhn, "%s.%s", *host, domainname);
+	free(*host);
+	*host = fqhn;
+	return;
+    }
+
+    myproxy_debug("unable to determine fully-qualified local hostname");
+    return;
+}
+
 int 
-myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile) 
+myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
+			  const char *proxyfile) 
 {
    char error_string[1024];
-   
-   if (GSI_SOCKET_use_creds(attrs->gsi_socket, proxyfile) == GSI_SOCKET_ERROR) {
+   char peer_name[1024] = "";
+   char *accepted_peer_names[3] = { 0 };
+   char *server_dn;
+   int  rval, return_value = -1;
+
+   if (GSI_SOCKET_use_creds(attrs->gsi_socket,
+			    proxyfile) == GSI_SOCKET_ERROR) {
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
-       verror_put_string("Error setting credentials to use: %s\n", error_string);
-       return -1;
+       verror_put_string("Error setting credentials to use: %s\n",
+			 error_string);
+       goto error;
    }
 
-   if (GSI_SOCKET_authentication_init(attrs->gsi_socket) == GSI_SOCKET_ERROR) {
+   /*
+    * What identity to we expect the server to have?
+    */
+   server_dn = getenv("MYPROXY_SERVER_DN");
+   if (server_dn) {
+       myproxy_debug("Expecting non-standard server DN \"%s\"\n", server_dn);
+       accepted_peer_names[0] = strdup(server_dn);
+   } else {
+       char *fqhn, *buf;
+       fqhn = strdup(attrs->pshost);
+       resolve_localhost(&fqhn);
+       make_fqhn(&fqhn);
+       buf = malloc(strlen(fqhn)+strlen("myproxy@")+1);
+       sprintf(buf, "myproxy@%s", fqhn);
+       accepted_peer_names[0] = buf;
+       buf = malloc(strlen(fqhn)+strlen("host@")+1);
+       sprintf(buf, "host@%s", fqhn);
+       accepted_peer_names[1] = buf;
+   }
+   
+   rval = GSI_SOCKET_authentication_init(attrs->gsi_socket,
+					 accepted_peer_names);
+   if (rval == GSI_SOCKET_UNAUTHORIZED) {
+       /* This is a common error.  Send the GSI errors to debug and
+	  return a more friendly error message in verror(). */
+       GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+                                   sizeof(error_string));
+       myproxy_debug("Error authenticating: %s\n", error_string);
+       GSI_SOCKET_get_peer_name(attrs->gsi_socket, peer_name,
+				sizeof(peer_name));
+       if (server_dn) {
+	   verror_put_string("Server authorization failed.  Server identity\n"
+			     "(%s)\ndoes not match $MYPROXY_SERVER_DN\n"
+			     "(%s).\nIf the server identity is acceptable, "
+			     "set\nMYPROXY_SERVER_DN=\"%s\"\n"
+			     "and try again.\n",
+			     peer_name, server_dn, peer_name);
+       } else {
+	   verror_put_string("Server authorization failed.  Server identity\n"
+			     "(%s)\ndoes not match expected identities\n"
+			     "%s or %s.\n"
+			     "If the server identity is acceptable, "
+			     "set\nMYPROXY_SERVER_DN=\"%s\"\n"
+			     "and try again.\n",
+			     peer_name, accepted_peer_names[0],
+			     accepted_peer_names[1], peer_name);
+       }
+       goto error;
+   } else if (rval == GSI_SOCKET_ERROR) {
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
        verror_put_string("Error authenticating: %s\n", error_string);
-       return -1;
+       goto error;
    }
-   return 0;
+
+   return_value = 0;
+
+ error:
+   if (accepted_peer_names[0]) free(accepted_peer_names[0]);
+   if (accepted_peer_names[1]) free(accepted_peer_names[1]);
+   if (accepted_peer_names[2]) free(accepted_peer_names[2]);
+   
+   return return_value;
 }
 
 
@@ -280,9 +394,9 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
         return -1;
     }
 
-    if (GSI_SOCKET_get_client_name(attrs->gsi_socket,
-                                   client_name,
-                                   namelen) == GSI_SOCKET_ERROR) {
+    if (GSI_SOCKET_get_peer_name(attrs->gsi_socket,
+				 client_name,
+				 namelen) == GSI_SOCKET_ERROR) {
         GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                     sizeof(error_string));
         verror_put_string("Error getting client name: %s\n", error_string);
