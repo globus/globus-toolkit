@@ -3441,6 +3441,8 @@ globus_l_ftp_client_parallelism_string(
  * There aren't any restart or abort points in this code, but if a
  * restart happened already, in addition to th fault, then we can deal
  * with it.
+ *
+ * handle is locked on entry, unlocked on exit
  */
 static
 void
@@ -3612,12 +3614,12 @@ globus_l_ftp_client_connection_error(
 		    target->control_handle,
 		    globus_i_ftp_client_force_close_callback,
 		    target);
+                
+                globus_i_ftp_client_handle_unlock(client_handle);
 
 		if(result != GLOBUS_SUCCESS)
 		{
 		    /* Shoot, that didn't work. Fake it. */
-		    globus_i_ftp_client_handle_unlock(client_handle);
-
 		    globus_i_ftp_client_force_close_callback(
 			target,
 			target->control_handle,
