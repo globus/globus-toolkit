@@ -45,9 +45,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_gssapi_inquire_sec_ctx_by_
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_gssapi_acquire_test", "..\..\..\gssapi\test\Win32\_gssapi_acquire_test.vcproj", "{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_gssapi_group_test", "..\..\..\gssapi\test\Win32\_gssapi_group_test.vcproj", "{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssl_utils", "..\..\..\ssl_utils\source\WinProjects\SSL_Utils.vcproj", "{0066D723-F842-4374-93F6-28E07EE11E0C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_win_sysconfig_test", "..\..\..\sysconfig\source\win32\_win_sysconfig_test.vcproj", "{B41EBA04-0012-4614-8639-2D9024674CC8}"
 EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
@@ -196,18 +194,12 @@ Global
 		{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}.DebugThr.Build.0 = Debug|Win32
 		{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}.Release.ActiveCfg = Release|Win32
 		{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}.Release.Build.0 = Release|Win32
-		{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}.Debug.ActiveCfg = Debug|Win32
-		{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}.Debug.Build.0 = Debug|Win32
-		{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}.DebugThr.ActiveCfg = Debug|Win32
-		{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}.DebugThr.Build.0 = Debug|Win32
-		{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}.Release.ActiveCfg = Release|Win32
-		{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}.Release.Build.0 = Release|Win32
-		{0066D723-F842-4374-93F6-28E07EE11E0C}.Debug.ActiveCfg = Debug|Win32
-		{0066D723-F842-4374-93F6-28E07EE11E0C}.Debug.Build.0 = Debug|Win32
-		{0066D723-F842-4374-93F6-28E07EE11E0C}.DebugThr.ActiveCfg = Debug|Win32
-		{0066D723-F842-4374-93F6-28E07EE11E0C}.DebugThr.Build.0 = Debug|Win32
-		{0066D723-F842-4374-93F6-28E07EE11E0C}.Release.ActiveCfg = Release|Win32
-		{0066D723-F842-4374-93F6-28E07EE11E0C}.Release.Build.0 = Release|Win32
+		{B41EBA04-0012-4614-8639-2D9024674CC8}.Debug.ActiveCfg = Debug|Win32
+		{B41EBA04-0012-4614-8639-2D9024674CC8}.Debug.Build.0 = Debug|Win32
+		{B41EBA04-0012-4614-8639-2D9024674CC8}.DebugThr.ActiveCfg = Debug|Win32
+		{B41EBA04-0012-4614-8639-2D9024674CC8}.DebugThr.Build.0 = Debug|Win32
+		{B41EBA04-0012-4614-8639-2D9024674CC8}.Release.ActiveCfg = Release|Win32
+		{B41EBA04-0012-4614-8639-2D9024674CC8}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

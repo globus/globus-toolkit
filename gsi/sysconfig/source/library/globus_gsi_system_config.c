@@ -20,15 +20,39 @@
 #include <errno.h>
 #ifndef WIN32
 #include <sys/times.h>
+#else
+#include <direct.h>
 #endif
 #include "version.h"
 
-/* Windows uses $TMP for "secure" paths (following the lead of Java CoG)
-*/
 #ifdef WIN32
-char *get_tmp_path_win32(void);
+/* Note: On the Windows side the default paths must be determined at
+         runtime, so they can't be defined by constants as the Unix
+         default paths are. Instead a set of functions that return
+         appropriate paths and filenames have been implemented. */
+         
+/* Function Prototypes */
+const char *win32_secure_path(void);
+const char *x509_default_user_cert(void);
+const char *x509_default_user_key(void);
+const char *x509_default_pkcs12_file(void);
+const char *x509_local_trusted_cert_dir(void);
+const char *x509_local_cert_dir(void);
+const char *local_gridmap(void);
+const char *local_authz_file(void);
+const char *win32_cwd(void);
+const char *x509_installed_trusted_cert_dir(void);
+const char *x509_installed_cert_dir(void);
+const char *installed_gridmap(void);
+const char *installed_authz_file(void);
+const char *win32_etc(void);
+const char *x509_default_trusted_cert_dir(void);
+const char *x509_default_cert_dir(void);
+const char *default_gridmap(void);
+const char *default_authz_file(void);
+
 #define WIN32_FALLBACK_PATH             "c:\\temp"
-#define WIN32_SECURE_PATH               get_tmp_path_win32()
+#define WIN32_SECURE_PATH               win32_secure_path()
 #endif
 
 #ifndef DEFAULT_SECURE_TMP_DIR
@@ -79,21 +103,21 @@ char *get_tmp_path_win32(void);
 
 #ifdef WIN32
 #define FILE_SEPERATOR                  "\\"
-#define GSI_REGISTRY_DIR                "software\\Globus\\GSI"
-#define X509_DEFAULT_USER_CERT          "globus\\usercert.pem"
-#define X509_DEFAULT_USER_KEY           "globus\\userkey.pem"
-#define X509_DEFAULT_PKCS12_FILE        "globus\\usercred.p12"
-#define X509_DEFAULT_TRUSTED_CERT_DIR   "\\etc\\grid-security\\certificates"
-#define X509_INSTALLED_TRUSTED_CERT_DIR "share\\certificates"
-#define X509_LOCAL_TRUSTED_CERT_DIR     "globus\\certificates"
-#define X509_DEFAULT_CERT_DIR           "\\etc\\grid-security"
-#define X509_INSTALLED_CERT_DIR         "etc"
-#define X509_LOCAL_CERT_DIR             "globus"
-#define DEFAULT_GRIDMAP                 "\\etc\\grid-security\\grid-mapfile"
-#define LOCAL_GRIDMAP                   "gridmap"
-#define DEFAULT_AUTHZ_FILE              "\\etc\\grid-security\\gsi-authz.conf"
-#define INSTALLED_AUTHZ_FILE            "etc\\gsi-authz.conf"
-#define LOCAL_AUTHZ_FILE                "gsi-authz.conf"
+#define X509_DEFAULT_USER_CERT          ".globus\\usercert.pem"
+#define X509_DEFAULT_USER_KEY           ".globus\\userkey.pem"
+#define X509_DEFAULT_PKCS12_FILE        ".globus\\usercred.p12"
+#define X509_DEFAULT_TRUSTED_CERT_DIR   x509_default_trusted_cert_dir()
+#define X509_INSTALLED_TRUSTED_CERT_DIR x509_installed_trusted_cert_dir()
+#define X509_LOCAL_TRUSTED_CERT_DIR     ".globus\\certificates"
+#define X509_DEFAULT_CERT_DIR           x509_default_cert_dir()
+#define X509_INSTALLED_CERT_DIR         x509_installed_cert_dir()
+#define X509_LOCAL_CERT_DIR             x509_local_cert_dir()
+#define DEFAULT_GRIDMAP                 default_gridmap()
+#define INSTALLED_GRIDMAP               installed_gridmap()
+#define LOCAL_GRIDMAP                   ".gridmap"
+#define DEFAULT_AUTHZ_FILE              ".gsi-authz.conf"
+#define INSTALLED_AUTHZ_FILE            installed_authz_file()
+#define LOCAL_AUTHZ_FILE                ".gsi-authz.conf"
 
 #else
 #define FILE_SEPERATOR                  "/"
@@ -888,7 +912,7 @@ globus_gsi_sysconfig_check_keyfile_win32(
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_check_keyfile_unix";
+        "globus_i_gsi_sysconfig_check_keyfile_win32";
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
@@ -1005,8 +1029,7 @@ globus_gsi_sysconfig_check_keyfile_win32(
  */
 globus_result_t
 globus_gsi_sysconfig_check_certfile_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status)
+    const char *                        filename)
 {
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -1687,7 +1710,7 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
     globus_result_t                     result;
 
     static char *                       _function_name_ =
-        "globus_gsi_sysconfig_get_user_cert_filename_unix";
+        "globus_gsi_sysconfig_get_user_cert_filename_win32";
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
@@ -1934,7 +1957,7 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
     globus_result_t                     result;
 
     static char *                       _function_name_ =
-        "globus_gsi_sysconfig_get_host_cert_filename_unix";
+        "globus_gsi_sysconfig_get_host_cert_filename_win32";
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
@@ -3207,7 +3230,11 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_authz_lib_conf_filename_win32";
-        
+
+   /* ToDo: Port This */
+   /* Return any old error */
+   return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+   #ifdef THISHASNOTBEENPORTEDYET
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     if((authz_lib_env = (char *) getenv("GSI_AUTHZ_LIB_CONF"))   != NULL)
@@ -3366,6 +3393,7 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+#endif
 }
 /* @} */
 
@@ -3396,7 +3424,13 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_gaa_conf_filename_win32";
-        
+
+    
+   /* ToDo: Port This */
+   /* Return any old error */
+   return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+   #ifdef THISHASNOTBEENPORTEDYET
+
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     if((gaa_env = (char *) getenv("GSI_GAA_CONF"))   != NULL)
@@ -3547,6 +3581,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+    #endif
 }
 /* @} */
 
@@ -3692,18 +3727,6 @@ globus_gsi_sysconfig_get_signing_policy_filename_win32(
     return result;
 }
 /* @} */
-
-
-/* Returns $TMP if it exists, otherwise c:\temp */
-char *get_tmp_path_win32(void)
-{
-    if(getenv("TMP")) 
-        return getenv("TMP");
-    else if(getenv("TEMP"))
-        return getenv("TEMP");
-    else
-        return WIN32_FALLBACK_PATH;
-}
 
 
 /* END WIN32 SYSCONFIG DEFINITIONS */
@@ -7173,3 +7196,179 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
 }
 
 /* @} */
+
+
+/* 
+**  Windows Default Directory And File Routines
+*/
+#ifdef WIN32
+
+/*--------------------------------------------------------*/
+/* Home Directory e.g. C:\Documents and Settings\gaffaney */
+const char *win32_secure_path(void)
+{
+    char *                              home_drive = NULL;
+    char *                              home_path  = NULL;
+    char *                              tmp_path   = NULL;
+    char *                              temp_path  = NULL;
+    static char                         buffer[MAX_PATH];
+    
+    /* Collect environment all variables we might need */    
+    home_drive = getenv("HOMEDRIVE");
+    home_path  = getenv("HOMEPATH");
+    tmp_path   = getenv("TMP");
+    temp_path  = getenv("TEMP");
+    
+    /* Build Preferred Path */
+    if(home_drive && home_path) 
+    {
+        sprintf(buffer,"%s%s",home_drive,home_path);
+        return buffer;
+    }
+    /* Use $TMP */      
+    else if(tmp_path) 
+    {
+        return tmp_path;
+    }
+    /* Use $TEMP */      
+    else if(temp_path) 
+    {
+        return temp_path;
+    }
+    /* Fallback, use c:\temp */
+    else
+    {
+        return WIN32_FALLBACK_PATH;
+    }
+}
+
+
+/*--------------------------------------------------*/
+/* Get Globus Location Or Current Working Directory */
+const char *win32_cwd(void)
+{
+    char *                              globus_location = NULL;
+    char *                              tmp_path        = NULL;
+    char *                              temp_path       = NULL;
+    char *                              cwd             = NULL;
+    static char                         buffer[MAX_PATH];
+    
+    /* Collect environment all variables we might need */    
+    tmp_path        = getenv("TMP");
+    temp_path       = getenv("TEMP");
+    globus_location = getenv("GLOBUS_LOCATION");
+    cwd = _getcwd(buffer,sizeof(buffer) - 1);
+    
+    if(globus_location)
+    {
+        return globus_location;
+    }
+    else if(cwd) 
+    {
+        return buffer;
+    }
+    /* Use $TMP */      
+    else if(tmp_path) 
+    {
+        return tmp_path;
+    }
+    /* Use $TEMP */      
+    else if(temp_path) 
+    {
+        return temp_path;
+    }
+    /* Fallback, use c:\temp */
+    else
+    {
+        return WIN32_FALLBACK_PATH;
+    }
+}
+
+/* Relative to Current Working Directory */
+const char *x509_installed_trusted_cert_dir(void)
+{
+    static char                         buffer[MAX_PATH];
+    sprintf(buffer,"%s%s",win32_cwd(),"\\share\\certificates");
+    return buffer;
+}
+
+/* Relative to Current Working Directory */
+const char *x509_installed_cert_dir(void)
+{
+    static char                         buffer[MAX_PATH];
+    sprintf(buffer,"%s%s",win32_cwd(),"\\etc");
+    return buffer;
+}
+
+/* Relative to Current Working Directory */
+const char *installed_gridmap(void)
+{
+    static char                         buffer[MAX_PATH];
+    sprintf(buffer,"%s%s",win32_cwd(),"\\etc\\grid-mapfile");
+    return buffer;
+}
+
+/* Relative to Current Working Directory */
+const char *installed_authz_file(void)
+{
+    static char                         buffer[MAX_PATH];
+    sprintf(buffer,"%s%s",win32_cwd(),"\\etc\\gsi-authz.conf");
+    return buffer;
+}
+
+/*---------------------------*/
+/* Get Windows etc Directory */
+const char *win32_etc(void)
+{
+    char *                              system_root     = NULL;
+    char *                              tmp_path        = NULL;
+    char *                              temp_path       = NULL;
+    char *                              cwd             = NULL;
+    static char                         buffer[MAX_PATH];
+    
+    system_root     = getenv("SystemRoot");
+    if(system_root)
+    {
+        sprintf(buffer,"%s\\system32\\drivers\\etc",system_root);
+        return buffer;
+    }
+    else
+    {
+        sprintf(buffer,"c:\\winnt\\system32\\drivers\\etc",system_root);
+        return buffer;
+    }
+}
+
+/* Relative To etc Directory */
+const char *x509_default_trusted_cert_dir(void)
+{
+    static char                         buffer[MAX_PATH];
+    sprintf(buffer,"%s%s",win32_etc(),"\\grid-security\\certificates");
+    return buffer;
+}
+
+/* Relative To etc Directory */
+const char *x509_default_cert_dir(void)
+{
+    static char                         buffer[MAX_PATH];
+    sprintf(buffer,"%s%s",win32_etc(),"\\grid-security");
+    return buffer;
+}
+
+/* Relative To etc Directory */
+const char *default_gridmap(void)
+{
+    static char                         buffer[MAX_PATH];
+    sprintf(buffer,"%s%s",win32_etc(),"\\grid-security\\grid-mapfile");
+    return buffer;
+}
+
+/* Relative To etc Directory */
+const char *default_authz_file(void)
+{
+    static char                         buffer[MAX_PATH];
+    sprintf(buffer,"%s%s",win32_etc(),"\\grid-security\\gsi-auth.conf");
+    return buffer;
+}
+    
+#endif  /* WIN32 */

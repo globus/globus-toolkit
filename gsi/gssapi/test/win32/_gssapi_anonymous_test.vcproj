@@ -23,12 +23,13 @@
 				AdditionalIncludeDirectories="\include;\include\threaded"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
+				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"
 				CompileAs="0"/>
 			<Tool
@@ -40,13 +41,16 @@
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="\lib"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/_gssapi_anonymous_test.pdb"
+				ProgramDatabaseFile="$(OutDir)/gssapi_anonymous_test.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				CommandLine="copy $(OutDir)\$(TargetName).exe \bin\*.*
+copy $(OutDir)\$(TargetName).pdb \bin\*.*
+"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

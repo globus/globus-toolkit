@@ -249,8 +249,8 @@ GSS_CALLCONV gss_init_sec_context(
                     ("The target name (%s) in the context, and the target "
                      "name (%s) passed to the function do not match",
                      actual_name,expected_name));
-                free(actual_name);
-                free(expected_name);
+                OPENSSL_free(actual_name);
+                OPENSSL_free(expected_name);
                 major_status = GSS_S_UNAUTHORIZED;
                 context->gss_state = GSS_CON_ST_DONE;
                 break;

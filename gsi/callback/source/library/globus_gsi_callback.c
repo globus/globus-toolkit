@@ -451,7 +451,7 @@ globus_i_gsi_callback_cred_verify(
                     (X509_verify_cert_error_string(x509_context->error)));
             }
 	
-	    globus_libc_free(subject_name);
+	    OPENSSL_free(subject_name);
 
             goto exit;
         }
@@ -728,7 +728,7 @@ globus_i_gsi_callback_check_revoked(
 		GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
 		("Couldn't get the issuer certificate of the CRL with "
 		 "subject: %s", subject_string));
-            free(subject_string);
+            OPENSSL_free(subject_string);
             x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
             goto free_X509_object;
 	}
@@ -842,7 +842,7 @@ globus_i_gsi_callback_check_revoked(
                         "revoked %lX\n", 
 			ASN1_INTEGER_get(revoked->serialNumber)));
 
-                free(subject_string);
+                OPENSSL_free(subject_string);
             }
         }
     }
@@ -1078,9 +1078,9 @@ globus_i_gsi_callback_check_gaa_auth(
     
 #endif /* #ifndef NO_OLDGAA_API */
     
-    free(subject_name);
+    OPENSSL_free(subject_name);
     subject_name = NULL;
-    free(issuer_name);
+    OPENSSL_free(issuer_name);
     issuer_name = NULL;
     
     if (policy_result != 0)
@@ -1108,12 +1108,12 @@ globus_i_gsi_callback_check_gaa_auth(
 
     if(issuer_name)
     {
-        globus_libc_free(issuer_name);
+        OPENSSL_free(issuer_name);
     }
 
     if(subject_name)
     {
-        globus_libc_free(subject_name);
+        OPENSSL_free(subject_name);
     }
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;

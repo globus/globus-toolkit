@@ -54,6 +54,10 @@ int main()
     ret_flags = 0;
     req_flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
 
+    /* Activate Modules */
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+
 /*      oid_buffer.value = malloc(EXT_SIZE); */
 /*      oid_buffer.length = EXT_SIZE; */
 
@@ -639,6 +643,8 @@ int main()
 /*             __FILE__, */
 /*             __LINE__, */
 /*             (char *) inquire_buffers->elements[0].value); */
+
+    globus_module_deactivate_all();
 
     exit(0);
 }

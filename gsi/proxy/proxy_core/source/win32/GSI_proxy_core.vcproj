@@ -19,14 +19,16 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include;&quot;$(SolutionDir)&quot;;\include\nonthreaded;\core\source\win32\nonthreaded;\gsi\openssl_error\source\library;\gsi\proxy\proxy_ssl\source\library;\gsi\credential\source\library;\gsi\callback\source\library;\gsi\cert_utils\source\library;\gsi\openssl_module\source\library"
+				AdditionalIncludeDirectories="\include;\include\threaded;\include\openssl"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
+				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="1"/>
 			<Tool
 				Name="VCCustomBuildTool"/>

@@ -104,11 +104,11 @@ GSS_CALLCONV gss_compare_name(
         subject = X509_NAME_oneline(name1->x509n, NULL, 0);
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream, "%s\n", subject));
-        globus_libc_free(subject);
+        OPENSSL_free(subject);
         subject = X509_NAME_oneline(name2->x509n, NULL, 0);
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream, "%s\n", subject));
-        globus_libc_free(subject);
+        OPENSSL_free(subject);
     }
 
     
@@ -259,8 +259,8 @@ GSS_CALLCONV gss_compare_name(
             *name_equal = GSS_NAMES_EQUAL;
         }
 
-        free(ce1);
-        free(ce2);
+        OPENSSL_free(ce1);
+        OPENSSL_free(ce2);
     }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(

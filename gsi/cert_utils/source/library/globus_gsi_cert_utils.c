@@ -611,7 +611,7 @@ globus_gsi_cert_utils_get_x509_name(
             ("The X509 name doesn't start with a /"));
         goto exit;
     }
-
+    /* ToDo: Fix memory leak from X509_NAME_oneline call below */
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_PRINT(2, "ORIGINAL SUBJECT STRING: ");
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_FNPRINTF(2, (length, subject_string));
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_FPRINTF(

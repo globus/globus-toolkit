@@ -1103,7 +1103,7 @@ globus_i_gsi_gss_retrieve_peer(
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (globus_i_gsi_gssapi_debug_fstream, 
                     "X509 subject after proxy : %s\n", subject));
-            globus_libc_free(subject);
+            OPENSSL_free(subject);
         }
 
     }

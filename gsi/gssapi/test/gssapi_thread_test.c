@@ -7,6 +7,7 @@
 #include <sys/un.h>
 #else
 #include <winsock2.h>
+#define sockadder_un sockadder_in
 struct  sockaddr_un {
    short   sun_family;             /* AF_UNIX */
    char    sun_path[108];          /* path name (gag) */
@@ -36,6 +37,14 @@ void *
 client_func(
     void *                              arg);
 
+
+/* This test does not run on windows and would take a bit of work to make it 
+   compatible. Windows does not support the AF_UNIX family, so AF_INET must 
+   be used instead. The the sockaddr_un structure references must be replaced
+   by sockaddr_in references and the sockaddr_un.sun_path replaced with the
+   IP address (or INADDR_ANY) and a Port.
+*/
+
 int
 main()
 {
@@ -46,6 +55,14 @@ main()
     struct thread_arg *                 arg = NULL;
     globus_thread_t                     thread_handle;
     int                                 i;
+    int                                 ret;
+    int                                 error;
+
+    #ifdef WIN32
+    printf("This test does not run on Windows yet.\n");
+    printf("Please try again later.\n");
+    exit(0);
+    #endif    
     
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
@@ -69,10 +86,29 @@ main()
     tmpnam(address->sun_path);
     
     listen_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+    #ifdef WIN32
+    if(listen_fd == -1)
+    {
+    error = WSAGetLastError();
+    }
+    #endif
 
-    bind(listen_fd, (struct sockaddr *) address, sizeof(struct sockaddr_un));
 
-    listen(listen_fd,NUM_CLIENTS);
+    ret = bind(listen_fd, (struct sockaddr *) address, sizeof(struct sockaddr_un));
+    #ifdef WIN32
+    if(ret != 0)
+    {
+    error = WSAGetLastError();
+    }
+    #endif
+
+    ret = listen(listen_fd,NUM_CLIENTS);
+    #ifdef WIN32
+    if(ret != 0)
+    {
+    error = WSAGetLastError();
+    }
+    #endif
 
     /* acquire credentials */
 
@@ -160,9 +196,8 @@ main()
     /* free address */
 
     free(address);
-    
-    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
+
+    globus_module_deactivate_all();
 
     exit(0);
 }

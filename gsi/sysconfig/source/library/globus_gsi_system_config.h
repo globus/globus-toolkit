@@ -481,6 +481,7 @@ globus_gsi_sysconfig_get_proxy_filename_win32(
 
 globus_result_t
 globus_gsi_sysconfig_get_signing_policy_filename_win32(
+    X509_NAME *                         ca_name,
     char *                              cert_dir,
     char **                             signing_policy_filename);
 
@@ -527,6 +528,11 @@ globus_gsi_sysconfig_get_proc_id_string_win32(
 globus_result_t
 globus_gsi_sysconfig_get_gridmap_filename_win32(
     char **                             filename);
+
+globus_result_t
+globus_gsi_sysconfig_get_authz_conf_filename_win32(
+    char **                             filename);
+
 
 #else /* if WIN32 is not defined, then define the unix functions */
 
