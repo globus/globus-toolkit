@@ -86,6 +86,7 @@ sub basic_tests
                 my $c = $_;
                 push(@tests, "$test_name -w 1 -r 0 -c $c -b $buffer_size $inline_finish $d");
                 push(@tests, "$test_name -w 0 -r 1 -c $c -b $buffer_size $inline_finish $d");
+                push(@tests, "$test_name -w 0 -r 0 -c $c -b $buffer_size $inline_finish $d");
                 for(my $write_count = 1; $write_count <= 8; $write_count *= 2)
                 {
                     for(my $read_count = 1; $read_count <= 8; $read_count *= 2)

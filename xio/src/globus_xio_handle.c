@@ -301,18 +301,20 @@ globus_l_xio_open_close_callback_kickout(
 
         /* this is likely useless, but may help in debugging */
         op->state = GLOBUS_XIO_OP_STATE_FINISHED;
-
-        if(handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSING)
+/*
+        if(handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSING &&
+            op->type == GLOBUS_XIO_OPERATION_TYPE_CLOSE)
         {
             handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;
         }
-
+*/
         /* 
          *  if we were trying toclose or the open has a failed result.
          */
         if(op->type == GLOBUS_XIO_OPERATION_TYPE_CLOSE ||
            op->cached_res != GLOBUS_SUCCESS)
         {
+            handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;
             GlobusIXIOHandleDec(destroy_handle, handle);
             /* destroy handle cannot possibly be true yet 
                 the handle stll has the operation reference */

@@ -18,6 +18,7 @@
 
 static globus_mutex_t                   globus_l_mutex;
 static globus_cond_t                    globus_l_cond;
+static globus_callback_space_t          globus_l_space;
 
 static int
 globus_l_xio_test_activate();
@@ -106,6 +107,8 @@ test_inline_blocker(
     globus_abstime_t                            timeout;
     globus_reltime_t                            zero;
     int                                         rc;
+    int                                         sec;
+    int                                         usec;
 
     GlobusTimeReltimeSet(zero, 0, 0);
     if(globus_reltime_cmp(delay, &zero) != 0)
@@ -113,10 +116,17 @@ test_inline_blocker(
         GlobusTimeAbstimeGetCurrent(timeout);
         GlobusTimeAbstimeInc(timeout, *delay);
         globus_mutex_lock(&globus_l_mutex);
+        GlobusTimeReltimeGet(*delay, sec, usec);
+
+        sleep(sec);
+        globus_libc_usleep(usec);
+/*
         do
         {
             rc = globus_cond_timedwait(&globus_l_cond, &globus_l_mutex, &timeout);
         } while (rc != ETIMEDOUT);
+
+*/
         globus_mutex_unlock(&globus_l_mutex);
     }
 }
@@ -739,6 +749,7 @@ globus_l_xio_test_activate(void)
 {
     int                                 rc;
     globus_l_xio_test_handle_t *        attr;
+    globus_condattr_t                   cond_attr;
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if(rc != GLOBUS_SUCCESS)
@@ -746,7 +757,10 @@ globus_l_xio_test_activate(void)
         return rc;
     }
 
-    globus_cond_init(&globus_l_cond, NULL);
+    globus_callback_space_init(&globus_l_space, NULL);
+    globus_condattr_init(&cond_attr);
+    globus_condattr_setspace(&cond_attr, globus_l_space);
+    globus_cond_init(&globus_l_cond, &cond_attr);
     globus_mutex_init(&globus_l_mutex, NULL);
 
     attr = &globus_l_default_attr;
@@ -765,6 +779,7 @@ static
 int
 globus_l_xio_test_deactivate(void)
 {
+    globus_callback_space_destroy(&globus_l_space);
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 

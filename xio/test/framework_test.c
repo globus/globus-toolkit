@@ -194,37 +194,52 @@ open_cb(
     globus_result_t                             res;
     int                                         ctr;
     test_info_t *                               info;
+    globus_bool_t                               data = GLOBUS_FALSE;
 
     info = (test_info_t *) user_arg;
 
     test_res(GLOBUS_XIO_TEST_FAIL_FINISH_OPEN, result, __LINE__);
 
-    for(ctr = 0; ctr < info->write_count; ctr++)
+    globus_mutex_lock(&info->mutex);
     {
-        res = globus_xio_register_write(
-                handle,
-                info->buffer,
-                info->buffer_length,
-                info->buffer_length,
-                NULL,
-                write_cb,
-                user_arg);
-        test_res(GLOBUS_XIO_TEST_FAIL_PASS_WRITE, res, __LINE__);
-    }
+        for(ctr = 0; ctr < info->write_count; ctr++)
+        {
+            res = globus_xio_register_write(
+                    handle,
+                    info->buffer,
+                    info->buffer_length,
+                    info->buffer_length,
+                    NULL,
+                    write_cb,
+                    user_arg);
+            test_res(GLOBUS_XIO_TEST_FAIL_PASS_WRITE, res, __LINE__);
+            data = GLOBUS_TRUE;
+        }
 
-    for(ctr = 0; ctr < info->read_count; ctr++)
-    {
-        res = globus_xio_register_read(
-                handle,
-                info->buffer,
-                info->buffer_length,
-                info->buffer_length,
-                NULL,
-                read_cb,
-                user_arg);
-        test_res(GLOBUS_XIO_TEST_FAIL_PASS_READ, res, __LINE__);
-    }
+        for(ctr = 0; ctr < info->read_count; ctr++)
+        {
+            res = globus_xio_register_read(
+                    handle,
+                    info->buffer,
+                    info->buffer_length,
+                    info->buffer_length,
+                    NULL,
+                    read_cb,
+                    user_arg);
+            test_res(GLOBUS_XIO_TEST_FAIL_PASS_READ, res, __LINE__);
+            data = GLOBUS_TRUE;
+        }
 
+        if(!data)
+        {
+            res = globus_xio_register_close(
+                    handle,
+                    NULL,
+                    close_cb,
+                    user_arg);
+                    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        }
+    }
 }
 
 int
