@@ -10,6 +10,8 @@
 # Chase Phillips <cphillip@ncsa.uiuc.edu>
 #
 
+printf("setup-openssh.pl: Configuring gsi-openssh package\n");
+
 #
 # Get user's GPT_LOCATION since we may be installing this using a new(er)
 # version of GPT.
