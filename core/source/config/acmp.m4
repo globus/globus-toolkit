@@ -114,6 +114,9 @@ AC_DEFUN(LAC_MP_MPI,
         esac])
     AC_MSG_RESULT($lac_cv_mpi)
 
+dnl Later checks look for lac_mpi, not lac_cv_mpi
+    lac_mpi=$lac_cv_mpi
+
     if test "$lac_cv_mpi" != "yes" ; then
         AC_MSG_ERROR([This system does not support MPI])
         exit 1
