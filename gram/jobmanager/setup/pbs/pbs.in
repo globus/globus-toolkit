@@ -363,9 +363,6 @@ EOF
 
     if($? == 0)
     {
-        # truncate off the domain name
-	$job_id =~ s/([^\.]*).([^\.]*)\..*/$1.$2/;
-
 	#system("$cache_pgm -cleanup-url $script_url");
 
 	return {JOB_ID => $job_id,
@@ -387,10 +384,10 @@ sub poll
     $self->log("polling job $job_id");
 
     # Get first line matching job id
-    $_ = (grep(/$job_id/, `qstat $job_id 2>/dev/null`))[0];
+    $_ = (grep(/job_state/, `$qstat -f $job_id 2>/dev/null`))[0];
 
-    # Get 4th field (status)
-    $_ = (split(/\s+/))[4];
+    # Get 3rd field (after = )
+    $_ = (split(/\s+/))[3];
 
     if(/Q|W|T/)
     {
