@@ -19,7 +19,7 @@ main(
     char *                              facts = 
         "Type;Size;Modify;UNIX.mode;Perm;";
 
-    if(argc == 2)
+    if(argc >= 2)
     {
         dir = opendir(argv[1]);
     }

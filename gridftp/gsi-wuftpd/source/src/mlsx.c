@@ -62,7 +62,7 @@ get_abs_path(
     
     if(!path)
     {
-        mapping_getcwd(abs_path, sizeof(abs_path));
+        mapping_getcwd(abs_path, size);
     }
     else if(*path == '/')
     {
