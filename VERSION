@@ -1,8 +1,12 @@
-This is MyProxy v0.6.2 21 Jun 2004.
+This is MyProxy v0.6.3 XX XX 200X.
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.6.3 XX XX 200X (GPT package version 1.15)
+  - Modified client tools to attempt connecting to the server first,
+    before prompting for user input, to catch server problems early.
+
 v0.6.2 21 Jun 2004 (GPT package version 1.14)
   - added initial experimental support for PAM authentication via
     the SASL/PLAIN mechanism.
