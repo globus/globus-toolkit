@@ -22,7 +22,9 @@ fi
 
 AC_TYPE_SIGNAL
 
-CHECK_FOR_TCPFASTACK
+dnl CHECK_FOR_TCPFASTACK seems currently undefined, 
+dnl probably happend during the windows merge
+dnl CHECK_FOR_TCPFASTACK
 
 CHECK_FOR_ATEXIT
 
