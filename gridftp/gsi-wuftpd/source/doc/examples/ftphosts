@@ -1,7 +1,0 @@
-# Example host access file
-#
-# Everything after a '#' is treated as comment,
-# empty lines are ignored
-
-    allow   bartm   somehost.domain
-    deny    fred    otherhost.domain 131.211.32.*

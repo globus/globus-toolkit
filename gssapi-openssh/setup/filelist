@@ -1,7 +1,0 @@
-setup/gsi_openssh_setup/moduli
-setup/gsi_openssh_setup/setup-openssh
-setup/gsi_openssh_setup/setup-openssh.pl
-setup/gsi_openssh_setup/ssh_config
-setup/gsi_openssh_setup/ssh_prng_cmds.in
-setup/gsi_openssh_setup/sshd_config.in
-setup/gsi_openssh_setup/SXXsshd.in
