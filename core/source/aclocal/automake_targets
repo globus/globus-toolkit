@@ -1,5 +1,8 @@
 ## Special globus installation directories
 
+setupdir = $(GLOBUS_LOCATION)/setup/globus
+## setup = [ DATA,PROGRAMS,SCRIPTS ]
+
 testdir = $(GLOBUS_LOCATION)/test
 ## test = [ DATA,PROGRAMS,SCRIPTS ]
 

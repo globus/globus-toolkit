@@ -4,15 +4,15 @@ unlink-am:
 
 filelist-am:
 
-link: link-recursive link-libLTLIBRARIES link-libLIBRARIES link-libexecPROGRAMS link-libexecSCRIPTS link-etcDATA link-binPROGRAMS link-binSCRIPTS link-sbinPROGRAMS link-sbinSCRIPTS link-includeHEADERS link-shareDATA link-testDATA link-testPROGRAMS link-testSCRIPTS link-scriptsysconfPROGRAMS link-scriptsysconfSCRIPTS link-flavorincludeHEADERS link-pkgDATA link-aclocalDATA link-doxygenDATA link-docDATA 
+link: link-recursive link-libLTLIBRARIES link-libLIBRARIES link-libexecPROGRAMS link-libexecSCRIPTS link-etcDATA link-binPROGRAMS link-binSCRIPTS link-sbinPROGRAMS link-sbinSCRIPTS link-includeHEADERS link-shareDATA link-setupDATA link-setupPROGRAMS link-setupSCRIPTS link-testDATA link-testPROGRAMS link-testSCRIPTS link-scriptsysconfPROGRAMS link-scriptsysconfSCRIPTS link-flavorincludeHEADERS link-pkgDATA link-aclocalDATA link-doxygenDATA link-docDATA 
 	:
 
-unlink: unlink-recursive unlink-libLTLIBRARIES unlink-libLIBRARIES unlink-libexecPROGRAMS unlink-libexecSCRIPTS unlink-etcDATA unlink-binPROGRAMS unlink-binSCRIPTS unlink-sbinPROGRAMS unlink-sbinSCRIPTS unlink-includeHEADERS unlink-shareDATA unlink-testDATA unlink-testPROGRAMS unlink-testSCRIPTS unlink-scriptsysconfPROGRAMS unlink-scriptsysconfSCRIPTS unlink-flavorincludeHEADERS unlink-pkgDATA unlink-aclocalDATA unlink-doxygenDATA unlink-docDATA 
+unlink: unlink-recursive unlink-libLTLIBRARIES unlink-libLIBRARIES unlink-libexecPROGRAMS unlink-libexecSCRIPTS unlink-etcDATA unlink-binPROGRAMS unlink-binSCRIPTS unlink-sbinPROGRAMS unlink-sbinSCRIPTS unlink-includeHEADERS unlink-shareDATA unlink-setupDATA unlink-setupPROGRAMS unlink-setupSCRIPTS unlink-testDATA unlink-testPROGRAMS unlink-testSCRIPTS unlink-scriptsysconfPROGRAMS unlink-scriptsysconfSCRIPTS unlink-flavorincludeHEADERS unlink-pkgDATA unlink-aclocalDATA unlink-doxygenDATA unlink-docDATA 
 	:
 
-.PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-amlink-libLTLIBRARIES unlink-libLTLIBRARIES filelist-libLTLIBRARIES link-libLIBRARIES unlink-libLIBRARIES filelist-libLIBRARIES link-libexecPROGRAMS unlink-libexecPROGRAMS filelist-libexecPROGRAMS link-libexecSCRIPTS unlink-libexecSCRIPTS filelist-libexecSCRIPTS link-etcDATA unlink-etcDATA filelist-etcDATA link-binPROGRAMS unlink-binPROGRAMS filelist-binPROGRAMS link-binSCRIPTS unlink-binSCRIPTS filelist-binSCRIPTS link-sbinPROGRAMS unlink-sbinPROGRAMS filelist-sbinPROGRAMS link-sbinSCRIPTS unlink-sbinSCRIPTS filelist-sbinSCRIPTS link-includeHEADERS unlink-includeHEADERS filelist-includeHEADERS link-shareDATA unlink-shareDATA filelist-shareDATA link-testDATA unlink-testDATA filelist-testDATA link-testPROGRAMS unlink-testPROGRAMS filelist-testPROGRAMS link-testSCRIPTS unlink-testSCRIPTS filelist-testSCRIPTS link-scriptsysconfPROGRAMS unlink-scriptsysconfPROGRAMS filelist-scriptsysconfPROGRAMS link-scriptsysconfSCRIPTS unlink-scriptsysconfSCRIPTS filelist-scriptsysconfSCRIPTS link-flavorincludeHEADERS unlink-flavorincludeHEADERS filelist-flavorincludeHEADERS link-pkgDATA unlink-pkgDATA filelist-pkgDATA link-aclocalDATA unlink-aclocalDATA filelist-aclocalDATA link-doxygenDATA unlink-doxygenDATA filelist-doxygenDATA link-docDATA unlink-docDATA filelist-docDATA 
+.PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-amlink-libLTLIBRARIES unlink-libLTLIBRARIES filelist-libLTLIBRARIES link-libLIBRARIES unlink-libLIBRARIES filelist-libLIBRARIES link-libexecPROGRAMS unlink-libexecPROGRAMS filelist-libexecPROGRAMS link-libexecSCRIPTS unlink-libexecSCRIPTS filelist-libexecSCRIPTS link-etcDATA unlink-etcDATA filelist-etcDATA link-binPROGRAMS unlink-binPROGRAMS filelist-binPROGRAMS link-binSCRIPTS unlink-binSCRIPTS filelist-binSCRIPTS link-sbinPROGRAMS unlink-sbinPROGRAMS filelist-sbinPROGRAMS link-sbinSCRIPTS unlink-sbinSCRIPTS filelist-sbinSCRIPTS link-includeHEADERS unlink-includeHEADERS filelist-includeHEADERS link-shareDATA unlink-shareDATA filelist-shareDATA link-setupDATA unlink-setupDATA filelist-setupDATA link-setupPROGRAMS unlink-setupPROGRAMS filelist-setupPROGRAMS link-setupSCRIPTS unlink-setupSCRIPTS filelist-setupSCRIPTS link-testDATA unlink-testDATA filelist-testDATA link-testPROGRAMS unlink-testPROGRAMS filelist-testPROGRAMS link-testSCRIPTS unlink-testSCRIPTS filelist-testSCRIPTS link-scriptsysconfPROGRAMS unlink-scriptsysconfPROGRAMS filelist-scriptsysconfPROGRAMS link-scriptsysconfSCRIPTS unlink-scriptsysconfSCRIPTS filelist-scriptsysconfSCRIPTS link-flavorincludeHEADERS unlink-flavorincludeHEADERS filelist-flavorincludeHEADERS link-pkgDATA unlink-pkgDATA filelist-pkgDATA link-aclocalDATA unlink-aclocalDATA filelist-aclocalDATA link-doxygenDATA unlink-doxygenDATA filelist-doxygenDATA link-docDATA unlink-docDATA filelist-docDATA 
 
-filelist: filelist-recursive filelist-libLTLIBRARIES filelist-libLIBRARIES filelist-libexecPROGRAMS filelist-libexecSCRIPTS filelist-etcDATA filelist-binPROGRAMS filelist-binSCRIPTS filelist-sbinPROGRAMS filelist-sbinSCRIPTS filelist-includeHEADERS filelist-shareDATA filelist-testDATA filelist-testPROGRAMS filelist-testSCRIPTS filelist-scriptsysconfPROGRAMS filelist-scriptsysconfSCRIPTS filelist-flavorincludeHEADERS filelist-pkgDATA filelist-aclocalDATA filelist-doxygenDATA filelist-docDATA 
+filelist: filelist-recursive filelist-libLTLIBRARIES filelist-libLIBRARIES filelist-libexecPROGRAMS filelist-libexecSCRIPTS filelist-etcDATA filelist-binPROGRAMS filelist-binSCRIPTS filelist-sbinPROGRAMS filelist-sbinSCRIPTS filelist-includeHEADERS filelist-shareDATA filelist-setupDATA filelist-setupPROGRAMS filelist-setupSCRIPTS filelist-testDATA filelist-testPROGRAMS filelist-testSCRIPTS filelist-scriptsysconfPROGRAMS filelist-scriptsysconfSCRIPTS filelist-flavorincludeHEADERS filelist-pkgDATA filelist-aclocalDATA filelist-doxygenDATA filelist-docDATA 
 	:
 
 
@@ -554,6 +554,153 @@ unlink-shareDATA:
 filelist-shareDATA:
 	@list='$(share_DATA)'; for p in $$list; do \
 	  echo "$(DESTDIR)$(sharedir)/$$p" >> $(FILELIST_FILE); \
+	done
+
+
+
+
+
+link-setupDATA: $(setup_DATA)
+	@$(NORMAL_INSTALL)
+	@$(mkinstalldirs) $(DESTDIR)$(setupdir)
+	@list='$(setup_DATA)'; for p in $$list; do \
+	  mydir=`pwd`; \
+	  target_p=$(DESTDIR)$(setupdir)/$$p; \
+	  if test -f $(srcdir)/$$p; then \
+		cd $(srcdir); \
+		fullsrcdir=`pwd`; \
+		cd $$mydir; \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$fullsrcdir/$$p $$target_p"; \
+			ln -s $$fullsrcdir/$$p $$target_p; \
+		fi; \
+	  else if test -f $$p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$mydir/$$p $$target_p"; \
+			ln -s $$mydir/$$p $$target_p; \
+		fi; \
+	  fi; fi; \
+	done
+
+unlink-setupDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(setup_DATA)'; for p in $$list; do \
+	target_p=$(DESTDIR)$(setupdir)/$$p; \
+	if test -h $$target_p; then \
+		echo "rm $$target_p"; \
+		rm $$target_p; \
+	fi; \
+	if test -f $$target_p.$(LINK_BAK); then \
+		echo "mv $$target_p.$(LINK_BAK) $$target_p"; \
+		mv $$target_p.$(LINK_BAK) $$target_p; \
+	fi; \
+	done
+
+filelist-setupDATA:
+	@list='$(setup_DATA)'; for p in $$list; do \
+	  echo "$(DESTDIR)$(setupdir)/$$p" >> $(FILELIST_FILE); \
+	done
+
+
+
+
+
+link-setupPROGRAMS: $(setup_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	@$(mkinstalldirs) $(DESTDIR)$(setupdir)
+	@list='$(setup_PROGRAMS)'; for p in $$list; do \
+	  if test -f $$p; then \
+	  	mydir=`pwd`; \
+		target_p=$(DESTDIR)$(setupdir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$mydir/$$p $$target_p"; \
+			ln -s $$mydir/$$p $$target_p; \
+		fi; \
+	  else :; fi; \
+	done
+
+unlink-setupPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(setup_PROGRAMS)'; for p in $$list; do \
+		target_p=$(DESTDIR)$(setupdir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+		if test -h $$target_p; then \
+			echo "rm $$target_p"; \
+			rm $$target_p; \
+		fi; \
+		if test -f $$target_p.$(LINK_BAK); then \
+			echo "mv $$target_p.$(LINK_BAK) $$target_p"; \
+			mv $$target_p.$(LINK_BAK) $$target_p; \
+		fi; \
+	done
+
+filelist-setupPROGRAMS:
+	@list='$(setup_PROGRAMS)'; for p in $$list; do \
+	  echo "$(DESTDIR)$(setupdir)/$$p" >> $(FILELIST_FILE); \
+	done
+
+
+
+
+
+link-setupSCRIPTS: $(setup_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	@$(mkinstalldirs) $(DESTDIR)$(setupdir)
+	@list='$(setup_SCRIPTS)'; for p in $$list; do \
+	  mydir=`pwd`; \
+	  target_p=$(DESTDIR)$(setupdir)/`echo $$p|sed '$(transform)'`; \
+	  if test -f $$p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$mydir/$$p $$target_p"; \
+			ln -s $$mydir/$$p $$target_p; \
+		fi; \
+	  else if test -f $(srcdir)/$$p; then \
+		cd $(srcdir); \
+		fullsrcdir=`pwd`; \
+		cd $$mydir; \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$fullsrcdir/$$p $$target_p"; \
+			ln -s $$fullsrcdir/$$p $$target_p; \
+		fi; \
+	  else :; fi; fi; \
+	done
+
+unlink-setupSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(setup_SCRIPTS)'; for p in $$list; do \
+	    	target_p=$(DESTDIR)$(setupdir)/`echo $$p|sed '$(transform)'`; \
+		if test -h $$target_p; then \
+			echo "rm $$target_p"; \
+			rm $$target_p; \
+		fi; \
+		if test -f $$target_p.$(LINK_BAK); then \
+			echo "mv $$target_p.$(LINK_BAK) $$target_p"; \
+			mv $$target_p.$(LINK_BAK) $$target_p; \
+		fi; \
+	done
+
+filelist-setupSCRIPTS:
+	@list='$(setup_SCRIPTS)'; for p in $$list; do \
+	  echo "$(DESTDIR)$(setupdir)/$$p" >> $(FILELIST_FILE); \
 	done
 
 
