@@ -1290,7 +1290,7 @@ redo:
 	{
 	    goto skip_prot;
 	}
-	if(target->attr->prot == target->prot)
+	if(target->attr->data_prot == target->data_prot)
 	{
 	    goto skip_prot;
 	}
@@ -1305,7 +1305,7 @@ redo:
 	    &target->url,
 	    target->mask,
 	    "PROT %c" CRLF,
-	    (char) target->attr->prot);
+	    (char) target->attr->data_prot);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
@@ -1324,7 +1324,7 @@ redo:
 	    "PROT %c" CRLF,
 	    globus_i_ftp_client_response_callback,
 	    target,
-	    (char) target->attr->prot);
+	    (char) target->attr->data_prot);
 
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -1343,10 +1343,10 @@ redo:
 	if((!error) &&
 	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
-	    target->prot = target->attr->prot;
+	    target->data_prot = target->attr->data_prot;
 
 	    result = globus_ftp_control_local_prot(target->control_handle,
-						   target->prot);
+						   target->data_prot);
 	    if(result != GLOBUS_SUCCESS)
 	    {
 		goto result_fault;

@@ -597,7 +597,7 @@ globus_ftp_client_operationattr_init(
     i_attr->mode			= GLOBUS_FTP_CONTROL_MODE_STREAM;
     i_attr->append			= GLOBUS_FALSE;
     i_attr->dcau.mode			= GLOBUS_FTP_CONTROL_DCAU_NONE;
-    i_attr->prot			= GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
+    i_attr->data_prot			= GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
     i_attr->read_all			= GLOBUS_FALSE;
     i_attr->read_all_intermediate_callback= GLOBUS_NULL;
     i_attr->read_all_intermediate_callback_arg
@@ -632,6 +632,7 @@ globus_ftp_client_operationattr_init(
 
     result = globus_ftp_control_auth_info_init(&i_attr->auth_info,
 					       GSS_C_NO_CREDENTIAL,
+					       GLOBUS_TRUE,
 					       tmp_name,
 					       tmp_pass,
 					       0,
@@ -1982,17 +1983,19 @@ error_exit:
  *
  * @param attr
  *        The attribute set to query or modify.
- * @param dcau
+ * @param protection
  *        The value of data channel protection attribute. 
+ *
+ * @bug Only safe and private protection levels are supported by gsiftp.
  */
 globus_result_t
-globus_ftp_client_operationattr_set_protection(
+globus_ftp_client_operationattr_set_data_protection(
     globus_ftp_client_operationattr_t *		attr,
-    globus_ftp_control_protection_t 		prot)
+    globus_ftp_control_protection_t 		protection)
 {
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_protection";
+    static char * myname = "globus_ftp_client_operationattr_set_data_protection";
 
     if(attr == GLOBUS_NULL)
     {
@@ -2007,23 +2010,23 @@ globus_ftp_client_operationattr_set_protection(
     }
     i_attr = *attr;
 
-    i_attr->prot = prot;
+    i_attr->data_prot = protection;
     
     return GLOBUS_SUCCESS;
 
 error_exit:
     return globus_error_put(err);
 }
-/* globus_ftp_client_operationattr_set_protection() */
+/* globus_ftp_client_operationattr_set_data_protection() */
 
 globus_result_t
-globus_ftp_client_operationattr_get_protection(
+globus_ftp_client_operationattr_get_data_protection(
     const globus_ftp_client_operationattr_t *	attr,
-    globus_ftp_control_protection_t * 		prot)
+    globus_ftp_control_protection_t * 		protection)
 {
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
-    static char * myname = "globus_ftp_client_operationattr_get_protection";
+    static char * myname = "globus_ftp_client_operationattr_get_data_protection";
 
     if(attr == GLOBUS_NULL)
     {
@@ -2036,29 +2039,144 @@ globus_ftp_client_operationattr_get_protection(
 	
 	goto error_exit;
     }
-    if(prot == GLOBUS_NULL)
+    if(protection == GLOBUS_NULL)
     {
 	err = globus_error_construct_string(
 	    GLOBUS_FTP_CLIENT_MODULE,
 	    GLOBUS_NULL,
-	    "[%s] NULL prot parameter at %s\n",
+	    "[%s] NULL protection parameter at %s\n",
 	    GLOBUS_FTP_CLIENT_MODULE->module_name,
 	    myname);
 	
 	goto error_exit;
     }
     i_attr = *attr;
-    *prot = i_attr->prot;
+    *protection = i_attr->data_prot;
     
     return GLOBUS_SUCCESS;
 
 error_exit:
     return globus_error_put(err);
 }
-/* globus_ftp_client_operationattr_get_protection() */
+/* globus_ftp_client_operationattr_get_data_protection() */
 
 /* @} */
 
+/**
+ * @name Control Channel Protection
+ */
+/* @{ */
+/**
+ * Set/Get the control channel protection attribute for an ftp client
+ * attribute set.
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * The control channel protection attribute allows the user to decide whether
+ * to encrypt or integrity check the command session between the client
+ * and the FTP server. This attribute is only relevant if used with a gsiftp
+ * URL.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param protection
+ *        The value of control channel protection attribute. 
+ *
+ * @bug The clear and safe protection levels are treated identically, with
+ *      the client integrity checking all commands. The
+ *      confidential and private protection levels are treated identically,
+ *      with the client encrypting all commands.
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_control_protection(
+    globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_control_protection_t 		protection)
+{
+    globus_object_t *				err;
+    globus_i_ftp_client_operationattr_t *	i_attr;
+    static char * myname = "globus_ftp_client_operationattr_set_control_protection";
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot set values on a NULL attribute at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+	
+	goto error_exit;
+    }
+    i_attr = *attr;
+
+    switch(protection)
+    {
+	case GLOBUS_FTP_CONTROL_PROTECTION_CLEAR:
+	case GLOBUS_FTP_CONTROL_PROTECTION_SAFE:
+	    i_attr->auth_info.encrypt = GLOBUS_FALSE;
+	    break;
+	case GLOBUS_FTP_CONTROL_PROTECTION_CONFIDENTIAL:
+	case GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE:
+	    i_attr->auth_info.encrypt = GLOBUS_TRUE;
+	    break;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_set_control_protection() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_control_protection(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_ftp_control_protection_t * 		protection)
+{
+    globus_object_t *				err;
+    const globus_i_ftp_client_operationattr_t *	i_attr;
+    static char * myname = "globus_ftp_client_operationattr_get_control_protection";
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot set values on a NULL attribute at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+	
+	goto error_exit;
+    }
+    if(protection == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] NULL protection parameter at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+	
+	goto error_exit;
+    }
+    i_attr = *attr;
+
+    if(i_attr->auth_info.encrypt)
+    {
+	*protection = GLOBUS_FTP_CONTROL_PROTECTION_SAFE;
+    }
+    else
+    {
+	*protection = GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_get_control_protection() */
+
+/* @} */
 /**
  * @name Append
  */
@@ -2397,8 +2515,19 @@ globus_ftp_client_operationattr_copy(
 	goto destroy_exit;
     }
 
-    result = globus_ftp_client_operationattr_set_protection(dst,
-					                    i_src->prot);
+    result = globus_ftp_client_operationattr_set_data_protection(
+	    dst,
+	    i_src->data_prot);
+
+    if(result)
+    {
+	goto destroy_exit;
+    }
+
+    result = globus_ftp_client_operationattr_set_control_protection(
+	    dst,
+	    i_src->auth_info.encrypt ? GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE
+	                             : GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
     if(result)
     {
 	goto destroy_exit;

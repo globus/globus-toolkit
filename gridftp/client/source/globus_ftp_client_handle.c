@@ -588,7 +588,7 @@ globus_l_ftp_client_target_new(
     target->structure = GLOBUS_FTP_CONTROL_STRUCTURE_NONE;
     target->layout.mode = GLOBUS_FTP_CONTROL_STRIPING_NONE;
     target->parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
-    target->prot = GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
+    target->data_prot = GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
 
     target->cached_data_conn.source = GLOBUS_NULL;
     target->cached_data_conn.dest = GLOBUS_NULL;
@@ -618,6 +618,7 @@ globus_l_ftp_client_target_new(
     {
 	result = globus_ftp_control_auth_info_init(&target->auth_info,
 						   GSS_C_NO_CREDENTIAL,
+						   GLOBUS_FALSE,
 						   0,
 						   0,
 						   0,
@@ -1133,6 +1134,8 @@ globus_l_ftp_client_quit_callback(
  * @param arg
  *        A pointer to a #globus_l_ftp_client_target_search_t containing
  *        the desired target URL and attributes.
+ *
+ * @todo Add control channel protection matching.
  */
 static
 int

@@ -9,11 +9,9 @@
  */
 #endif
 
-
 #include "globus_i_ftp_client.h"
 #include <string.h>		/* strstr(), strncmp() */
 #include <ctype.h>		/* isupper() */
-
 
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL

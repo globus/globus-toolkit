@@ -88,7 +88,7 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_ftp_control_mode_t                   mode;
     globus_bool_t                               append;
     globus_ftp_control_dcau_t                   dcau;
-    globus_ftp_control_protection_t             prot;
+    globus_ftp_control_protection_t             data_prot;
     globus_bool_t                               resume_third_party;
     globus_bool_t                               read_all;
     globus_ftp_client_data_callback_t           read_all_intermediate_callback;
@@ -454,7 +454,7 @@ typedef struct globus_i_ftp_client_target_s
 					features[GLOBUS_FTP_CLIENT_FEATURE_MAX];
     /** Current settings */
     globus_ftp_control_dcau_t			dcau;
-    globus_ftp_control_protection_t		prot;
+    globus_ftp_control_protection_t		data_prot;
     globus_ftp_control_type_t			type;
     globus_ftp_control_tcpbuffer_t		tcp_buffer;
     globus_ftp_control_mode_t			mode;

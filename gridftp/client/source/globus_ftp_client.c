@@ -86,6 +86,7 @@ globus_l_ftp_client_activate(void)
 
     globus_ftp_control_auth_info_init(&globus_i_ftp_client_default_auth_info,
 		                      GSS_C_NO_CREDENTIAL,
+				      GLOBUS_TRUE,
 				      ":globus-mapping:",
 				      "",
 				      0,

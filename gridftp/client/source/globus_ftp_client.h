@@ -683,12 +683,22 @@ globus_ftp_client_operationattr_get_dcau(
     globus_ftp_control_dcau_t *			dcau);
 
 globus_result_t
-globus_ftp_client_operationattr_set_protection(
+globus_ftp_client_operationattr_set_data_protection(
     globus_ftp_client_operationattr_t *		attr,
     globus_ftp_control_protection_t		protection);
 
 globus_result_t
-globus_ftp_client_operationattr_get_protection(
+globus_ftp_client_operationattr_get_data_protection(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_ftp_control_protection_t *		protection);
+
+globus_result_t
+globus_ftp_client_operationattr_set_control_protection(
+    globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_control_protection_t		protection);
+
+globus_result_t
+globus_ftp_client_operationattr_get_control_protection(
     const globus_ftp_client_operationattr_t *	attr,
     globus_ftp_control_protection_t *		protection);
 
