@@ -109,3 +109,9 @@ PERL_PATH              = @PERL@
 
 HAVE_DOT               = @HAVE_DOT@
 
+# The DOTFILE_DIRS tag can be used to specify one or more directories that 
+# contain dot files that are included in the documentation (see the 
+# \dotfile command).
+
+DOTFILE_DIRS           =  @lac_doxygen_srcdirs@ \
+                          @lac_doxygen_examples@
