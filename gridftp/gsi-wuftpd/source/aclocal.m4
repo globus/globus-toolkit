@@ -200,3 +200,69 @@ if test "$with_gssapi" != "no" ; then
 fi
 
 ]) dnl AC_GSSAPI_CONFIG
+dnl
+dnl AFS configuration macros
+dnl
+
+AC_DEFUN([AFS_CONFIG],
+[
+dnl
+dnl --with-afs		Use transarc AFS libraries
+AC_MSG_CHECKING(whether to use Transarc AFS libraries)
+AC_ARG_WITH([afs],
+[  --with-afs=<PATH>	Use transarc AFS libraries],
+,with_afs=no)dnl
+AC_MSG_RESULT($with_afs)
+case "$with_afs" in
+	no)	;;
+	yes)	with_afs="/usr/afsws" ;;
+	*)	;;
+esac
+
+if test $with_afs != no; then
+	if test ! -d "$with_afs"; then
+		AC_MSG_ERROR(Could not find AFS directory $with_afs)
+	fi
+	AC_DEFINE(AFS)
+	AC_DEFINE(HAVE_TRANSARC_AFS)
+	AFS_LDFLAGS="-L${with_afs}/lib -L${with_afs}/lib/afs"
+	AFS_LIBS="-lauth -lsys -lrx -llwp -lsys"
+	AFS_CFLAGS="-I${with_afs}/include"
+	dnl case $krb5_cv_host in
+	dnl *-*-solaris*)
+	dnl 	AFSLIBS="$AFSLIBS -lc -L/usr/ucblib -lucb -R/usr/ucblib"
+	dnl	;;
+	dnl *-*-hpux*)
+	dnl	AFSLIBS="$AFSLIBS -lBSD -lm"
+	dnl 	;;
+	dnl *-*-netbsd*)
+	dnl 	AFSLIBS="$AFSLIBS -lcompat"
+	dnl 	;;
+	dnl esac
+fi
+
+dnl
+dnl --with-krbafs	Use krbafs libraries
+dnl
+AC_MSG_CHECKING(whether to use libkrbafs)
+AC_ARG_WITH(krbafs,
+[  --with-krbafs=<PATH>  Use libkrbafs libraries],,with_krbafs=no)
+AC_MSG_RESULT($with_krbafs)
+case "$with_krbafs" in
+  no)   ;;
+  *)
+	if test ! -d "$with_krbafs"; then
+		AC_MSG_ERROR(Could not find krbafs directory $with_krbafs)
+	fi
+	AC_DEFINE(AFS)	
+	AC_DEFINE(HAVE_LIBKRBAFS)
+	dnl Set with_afs so that we can use that as a test for AFS
+	with_afs="yes"
+	AFS_LIBS="-lkrbafs"
+	AFS_CFLAGS="-I${with_krbafs}/include"
+	AFS_LIBS="-L${withval}/lib -lkrbafs"
+   ;;
+esac
+
+]) dnl AFS_CONFIG
+

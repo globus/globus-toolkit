@@ -216,4 +216,13 @@
  */
 #undef POST_AUTH_PROCESS
 
+/*
+ * Define this if you want AFS support, plus one of the following definitions
+ */
+#undef AFS
+/* Define if you have Transarc AFS libraries */
+#undef HAVE_TRANSARC_AFS
+/* Define if you have libkrbafs */
+#undef HAVE_LIBKRBAFS
+
 #include "../config.h"
