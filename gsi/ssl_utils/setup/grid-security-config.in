@@ -10,6 +10,8 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
+globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
+
 #
 # Should this go into the initializer:
 #
