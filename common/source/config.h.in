@@ -1,0 +1,312 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define if using alloca.c.  */
+#undef C_ALLOCA
+
+/* Define to one of _getb67, GETB67, getb67 for Cray-2 and Cray-YMP systems.
+   This function is required for alloca.c support on those systems.  */
+#undef CRAY_STACKSEG_END
+
+/* Define if you have alloca, as a function or macro.  */
+#undef HAVE_ALLOCA
+
+/* Define if you have <alloca.h> and it should be used (not on Ultrix).  */
+#undef HAVE_ALLOCA_H
+
+/* Define if you have <sys/wait.h> that is POSIX.1 compatible.  */
+#undef HAVE_SYS_WAIT_H
+
+/* Define as the return type of signal handlers (int or void).  */
+#undef RETSIGTYPE
+
+/* Define to `unsigned' if <sys/types.h> doesn't define.  */
+#undef size_t
+
+/* If using the C implementation of alloca, define if you know the
+   direction of stack growth for your system; otherwise it will be
+   automatically deduced at run-time.
+ STACK_DIRECTION > 0 => grows toward higher addresses
+ STACK_DIRECTION < 0 => grows toward lower addresses
+ STACK_DIRECTION = 0 => direction of growth unknown
+ */
+#undef STACK_DIRECTION
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if you can safely include both <sys/time.h> and <time.h>.  */
+#undef TIME_WITH_SYS_TIME
+
+#undef HAVE_TCP_FASTACK
+
+#undef ssize_t
+#undef HAVE_STRUCT_IOVEC
+#undef IOV_MAX
+
+#undef GLOBUS_HAVE_PW_AGE
+#undef GLOBUS_HAVE_PW_COMMENT
+
+#undef GLOBUS_HAVE_GETHOSTBYNAME_R_3
+#undef GLOBUS_HAVE_GETHOSTBYNAME_R_5
+#undef GLOBUS_HAVE_GETHOSTBYNAME_R_6
+
+#undef GLOBUS_HAVE_GETHOSTBYADDR_R_5
+#undef GLOBUS_HAVE_GETHOSTBYADDR_R_7
+#undef GLOBUS_HAVE_GETHOSTBYADDR_R_8
+
+#undef GLOBUS_HAVE_CTIME_R_2
+#undef GLOBUS_HAVE_CTIME_R_3
+#undef GLOBUS_HAVE_GETPWNAM_R_4
+#undef GLOBUS_HAVE_GETPWNAM_R_5
+#undef GLOBUS_HAVE_GETPWUID_R_4
+#undef GLOBUS_HAVE_GETPWUID_R_5
+
+#undef GLOBUS_HAVE_READDIR_R_2
+#undef GLOBUS_HAVE_READDIR_R_3
+
+#undef GLOBUS_HAVE_DIRENT_OFFSET
+#undef GLOBUS_HAVE_DIRENT_OFF
+#undef GLOBUS_HAVE_DIRENT_TYPE
+#undef GLOBUS_HAVE_DIRENT_RECLEN
+
+#undef HAVE_NETINET_TCP_H
+
+#undef GLOBUS_OFF_T
+#undef GLOBUS_OFF_T_FORMAT
+
+#undef GLOBUS_TIMESPEC_EXISTS
+
+#undef GLOBUS_USE_SOLARIS_THREADS
+#undef GLOBUS_USE_PTHREADS
+#undef GLOBUS_USE_SPROC
+#undef GLOBUS_USE_NO_THREADS
+#undef GLOBUS_USE_EXTERNAL_THREADS
+
+/* The number of bytes in a int.  */
+#undef SIZEOF_INT
+
+/* The number of bytes in a long.  */
+#undef SIZEOF_LONG
+
+/* The number of bytes in a long long.  */
+#undef SIZEOF_LONG_LONG
+
+/* The number of bytes in a off_t.  */
+#undef SIZEOF_OFF_T
+
+/* The number of bytes in a short.  */
+#undef SIZEOF_SHORT
+
+/* Define if you have the ctime function.  */
+#undef HAVE_CTIME
+
+/* Define if you have the ctime_r function.  */
+#undef HAVE_CTIME_R
+
+/* Define if you have the getcwd function.  */
+#undef HAVE_GETCWD
+
+/* Define if you have the gethostbyaddr function.  */
+#undef HAVE_GETHOSTBYADDR
+
+/* Define if you have the gethostbyaddr_r function.  */
+#undef HAVE_GETHOSTBYADDR_R
+
+/* Define if you have the gethostbyname function.  */
+#undef HAVE_GETHOSTBYNAME
+
+/* Define if you have the gethostbyname_r function.  */
+#undef HAVE_GETHOSTBYNAME_R
+
+/* Define if you have the getpwnam function.  */
+#undef HAVE_GETPWNAM
+
+/* Define if you have the getpwnam_r function.  */
+#undef HAVE_GETPWNAM_R
+
+/* Define if you have the getpwuid function.  */
+#undef HAVE_GETPWUID
+
+/* Define if you have the getpwuid_r function.  */
+#undef HAVE_GETPWUID_R
+
+/* Define if you have the getwd function.  */
+#undef HAVE_GETWD
+
+/* Define if you have the memmove function.  */
+#undef HAVE_MEMMOVE
+
+/* Define if you have the mktime function.  */
+#undef HAVE_MKTIME
+
+/* Define if you have the nrand48 function.  */
+#undef HAVE_NRAND48
+
+/* Define if you have the poll function.  */
+#undef HAVE_POLL
+
+/* Define if you have the readdir_r function.  */
+#undef HAVE_READDIR_R
+
+/* Define if you have the seekdir function.  */
+#undef HAVE_SEEKDIR
+
+/* Define if you have the sigblock function.  */
+#undef HAVE_SIGBLOCK
+
+/* Define if you have the sighold function.  */
+#undef HAVE_SIGHOLD
+
+/* Define if you have the sigset function.  */
+#undef HAVE_SIGSET
+
+/* Define if you have the strerror function.  */
+#undef HAVE_STRERROR
+
+/* Define if you have the strptime function.  */
+#undef HAVE_STRPTIME
+
+/* Define if you have the strtoul function.  */
+#undef HAVE_STRTOUL
+
+/* Define if you have the telldir function.  */
+#undef HAVE_TELLDIR
+
+/* Define if you have the usleep function.  */
+#undef HAVE_USLEEP
+
+/* Define if you have the wait3 function.  */
+#undef HAVE_WAIT3
+
+/* Define if you have the waitpid function.  */
+#undef HAVE_WAITPID
+
+/* Define if you have the writev function.  */
+#undef HAVE_WRITEV
+
+/* Define if you have the <arpa/inet.h> header file.  */
+#undef HAVE_ARPA_INET_H
+
+/* Define if you have the <ctype.h> header file.  */
+#undef HAVE_CTYPE_H
+
+/* Define if you have the <dce/cma.h> header file.  */
+#undef HAVE_DCE_CMA_H
+
+/* Define if you have the <dce/cma_ux.h> header file.  */
+#undef HAVE_DCE_CMA_UX_H
+
+/* Define if you have the <dirent.h> header file.  */
+#undef HAVE_DIRENT_H
+
+/* Define if you have the <fcntl.h> header file.  */
+#undef HAVE_FCNTL_H
+
+/* Define if you have the <getopt.h> header file.  */
+#undef HAVE_GETOPT_H
+
+/* Define if you have the <libc.h> header file.  */
+#undef HAVE_LIBC_H
+
+/* Define if you have the <limits.h> header file.  */
+#undef HAVE_LIMITS_H
+
+/* Define if you have the <malloc.h> header file.  */
+#undef HAVE_MALLOC_H
+
+/* Define if you have the <ndir.h> header file.  */
+#undef HAVE_NDIR_H
+
+/* Define if you have the <netdb.h> header file.  */
+#undef HAVE_NETDB_H
+
+/* Define if you have the <netinet/tcp.h> header file.  */
+#undef HAVE_NETINET_TCP_H
+
+/* Define if you have the <proj.h> header file.  */
+#undef HAVE_PROJ_H
+
+/* Define if you have the <signal.h> header file.  */
+#undef HAVE_SIGNAL_H
+
+/* Define if you have the <stdarg.h> header file.  */
+#undef HAVE_STDARG_H
+
+/* Define if you have the <string.h> header file.  */
+#undef HAVE_STRING_H
+
+/* Define if you have the <sys/access.h> header file.  */
+#undef HAVE_SYS_ACCESS_H
+
+/* Define if you have the <sys/cnx_pattr.h> header file.  */
+#undef HAVE_SYS_CNX_PATTR_H
+
+/* Define if you have the <sys/dir.h> header file.  */
+#undef HAVE_SYS_DIR_H
+
+/* Define if you have the <sys/errno.h> header file.  */
+#undef HAVE_SYS_ERRNO_H
+
+/* Define if you have the <sys/file.h> header file.  */
+#undef HAVE_SYS_FILE_H
+
+/* Define if you have the <sys/ioctl.h> header file.  */
+#undef HAVE_SYS_IOCTL_H
+
+/* Define if you have the <sys/limits.h> header file.  */
+#undef HAVE_SYS_LIMITS_H
+
+/* Define if you have the <sys/lwp.h> header file.  */
+#undef HAVE_SYS_LWP_H
+
+/* Define if you have the <sys/ndir.h> header file.  */
+#undef HAVE_SYS_NDIR_H
+
+/* Define if you have the <sys/param.h> header file.  */
+#undef HAVE_SYS_PARAM_H
+
+/* Define if you have the <sys/select.h> header file.  */
+#undef HAVE_SYS_SELECT_H
+
+/* Define if you have the <sys/signal.h> header file.  */
+#undef HAVE_SYS_SIGNAL_H
+
+/* Define if you have the <sys/stat.h> header file.  */
+#undef HAVE_SYS_STAT_H
+
+/* Define if you have the <sys/sysmp.h> header file.  */
+#undef HAVE_SYS_SYSMP_H
+
+/* Define if you have the <sys/time.h> header file.  */
+#undef HAVE_SYS_TIME_H
+
+/* Define if you have the <sys/types.h> header file.  */
+#undef HAVE_SYS_TYPES_H
+
+/* Define if you have the <sys/uio.h> header file.  */
+#undef HAVE_SYS_UIO_H
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
+/* Define if you have the <utime.h> header file.  */
+#undef HAVE_UTIME_H
+
+/* Define if you have the <values.h> header file.  */
+#undef HAVE_VALUES_H
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
+
+/* Define to make fseeko etc. visible, on some hosts. */
+#undef _LARGEFILE_SOURCE
+
+/* Define for large files, on AIX-style hosts. */
+#undef _LARGE_FILES
+
