@@ -11,6 +11,14 @@ if [ -z $rsl_file ]; then
     echo "ERROR: No rsl file specified"
     exit
 fi
+
+if [ ! -d ./schema ]; then
+    /bin/cp -rf $GLOBUS_LOCATION/schema .
+fi
+
+cat date.xml.in | sed -e "s#GLOBUS_LOCATION#$GLOBUS_LOCATION#" > date.xml
+
+
 begin_time=0
 end_time=0
 gass_option=-o

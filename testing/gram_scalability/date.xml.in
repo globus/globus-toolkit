@@ -5,9 +5,9 @@
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="
                 http://www.globus.org/namespaces/2004/02/rsl
-                /home/lane/Software/globus/schema/base/gram/rsl.xsd
+                GLOBUS_LOCATION/schema/base/gram/rsl.xsd
                 http://www.globus.org/namespaces/2004/02/rsl/gram
-                /home/lane/Software/globus/schema/base/gram/gram_rsl.xsd">
+                GLOBUS_LOCATION/schema/base/gram/gram_rsl.xsd">
 <gram:job>
     <gram:executable> <rsl:path>
         <rsl:stringElement value="/bin/date"/> </rsl:path>
@@ -22,10 +22,5 @@
             <rsl:substitutionRef name="GLOBUS_CACHED_STDERR"/>
         </rsl:path> </rsl:pathArray>
     </gram:stderr>
-    <log:logfile>
-        <rsl:string>
-            <rsl:stringElement value="/home/lane/testing/gram_scalability/logs/script.log"/>
-        </rsl:string>
-    </log:logfile>
 </gram:job>
 </rsl:rsl>
