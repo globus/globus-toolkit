@@ -596,7 +596,6 @@ globus_l_gfs_data_handle_init(
         result = GlobusGFSErrorMemory("handle");
         goto error_alloc;
     }
-    handle->closed = GLOBUS_FALSE;
     
     if(!data_info)
     {
@@ -735,27 +734,6 @@ globus_l_gfs_data_close_cb(
     globus_free(handle);
 }
 
-static
-globus_result_t
-globus_i_gfs_data_close_handle(
-    globus_i_gfs_data_handle_t *        handle)
-{
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    
-    globus_mutex_lock(&handle->lock);
-    {
-        if(!handle->closed)
-        {
-            result = globus_ftp_control_data_force_close(
-                &handle->data_channel, globus_l_gfs_data_close_cb, handle);
-            handle->closed = GLOBUS_TRUE;
-        }
-    }
-    globus_mutex_unlock(&handle->lock);
-    
-    return result;
-}
-
 void
 globus_i_gfs_data_destroy_handle(
     globus_i_gfs_data_handle_t *        handle)
@@ -768,7 +746,8 @@ globus_i_gfs_data_destroy_handle(
         goto error;
     }
 
-    result = globus_i_gfs_data_close_handle(handle);
+    result = globus_ftp_control_data_force_close(
+        &handle->data_channel, globus_l_gfs_data_close_cb, handle);
     if(result != GLOBUS_SUCCESS)
     {
         globus_mutex_destroy(&handle->lock);
@@ -1185,13 +1164,6 @@ globus_i_gfs_data_request_recv(
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
     }
-/*
-    if(data_handle->closed)
-    {
-        result = GlobusGFSErrorData("Data handle has been closed");
-        goto error_handle;
-    }
-*/    
     result = globus_l_gfs_data_operation_init(&op);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1266,13 +1238,6 @@ globus_i_gfs_data_request_send(
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
     }
-/*
-    if(data_handle->closed)
-    {
-        result = GlobusGFSErrorData("Data handle has been closed");
-        goto error_handle;
-    }
-*/    
     result = globus_l_gfs_data_operation_init(&op);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1458,12 +1423,6 @@ globus_i_gfs_data_request_list(
     }
     else
     {    
-        if(data_handle->closed)
-        {
-            result = GlobusGFSErrorData("Data handle has been closed");
-            goto error_handle;
-        }
-
         result = globus_l_gfs_data_operation_init(&stat_op);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1799,7 +1758,6 @@ globus_gridftp_server_finished_transfer(
       
       /* this state always means this was called internally */
       case GLOBUS_L_GFS_DATA_ERROR:
-        globus_i_gfs_data_close_handle(op->data_handle);
         {
         /* racey shit here */
         globus_gfs_ipc_reply_t *            reply;   
@@ -1808,7 +1766,7 @@ globus_gridftp_server_finished_transfer(
             globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
         event_reply = (globus_gfs_ipc_event_reply_t *) 
             globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
-    
+
         event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;
         event_reply->id = op->id;
     
@@ -2041,44 +1999,6 @@ error_register:
     
 error_alloc:
     return result;
-}
-
-/* aborts all pending operations and calls callbacks */
-void
-globus_gridftp_server_flush_queue(
-    globus_gfs_operation_t   op)
-{
-    GlobusGFSName(globus_gridftp_server_flush_queue);
-    
-    globus_i_gfs_data_close_handle(op->data_handle);
-    {  
-    globus_gfs_ipc_event_reply_t *      event_reply;   
-    event_reply = (globus_gfs_ipc_event_reply_t *) 
-        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
- 
-    event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;
-    event_reply->id = op->id;
-
-    if(op->event_callback != NULL)
-    {
-        op->event_callback(
-            event_reply,
-            op->user_arg);        
-    }
-    else
-    {
-        globus_gfs_ipc_reply_event(
-            op->ipc_handle,
-            event_reply);
-    }
-    }
-    /*
-    op->event_callback(
-        op->instance,
-        GLOBUS_GFS_EVENT_DISCONNECTED,
-        op->data_handle,
-        op->user_arg);
-    */
 }
 
 void

@@ -85,7 +85,6 @@ typedef struct
     globus_mutex_t                      lock;
     globus_i_gfs_data_attr_t            attr;
     globus_ftp_control_handle_t         data_channel;
-    globus_bool_t                       closed;
 } globus_i_gfs_data_handle_t;
 
 typedef struct globus_i_gfs_monitor_s

@@ -637,15 +637,6 @@ globus_gridftp_server_register_read(
  **/
 
 /*
- * flush queue
- * 
- * This should be called when you are preparing to abort a transfer.
- */ 
-void
-globus_gridftp_server_flush_queue(
-    globus_gfs_operation_t              op);
-    
-/*
  * update bytes
  * 
  * This should be called during a recv(), after each successful write
