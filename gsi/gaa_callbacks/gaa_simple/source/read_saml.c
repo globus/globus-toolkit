@@ -435,6 +435,10 @@ gaa_simple_get_saml_signer_identity(gaa_ptr		*gaa,
 	goto end;
     }
 
+    if (*saml_assertion == '\0') {
+	goto end;
+    }
+
     doc = xmlParseMemory(saml_assertion, strlen(saml_assertion));
 
     status = gaa_simple_i_find_signer(doc,
