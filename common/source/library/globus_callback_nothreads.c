@@ -1,3 +1,4 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 #include "globus_common.h"
 
@@ -41,13 +42,14 @@ typedef struct
 
     globus_unregister_callback_func_t   unregister_callback;
     void *                              unreg_args;
-    
+
     globus_l_callback_space_t *         my_space;
 } globus_l_callback_info_t;
 
 typedef struct
 {
     globus_bool_t                       restarted;
+    globus_bool_t                       signaled;
     globus_abstime_t *                  timeout;
     globus_l_callback_info_t *          callback_info;
 } globus_l_callback_restart_info_t;
@@ -60,20 +62,88 @@ static globus_memory_t                  globus_l_callback_callback_space_memory;
 static globus_l_callback_space_t        globus_l_callback_global_space;
 static globus_l_callback_restart_info_t * globus_l_callback_restart_info;
 
+/* common error objects */
+
+#define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(func)           \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_CALLBACK_MODULE,                                         \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_CALLBACK_ERROR_INVALID_CALLBACK_HANDLE,                  \
+            "[%s] Invalid callback handle",                                 \
+            (func)))
+
+#define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE(func)                     \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_CALLBACK_MODULE,                                         \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_CALLBACK_ERROR_INVALID_SPACE,                            \
+            "[%s] Invalid space handle",                                    \
+            (func)))
+
+#define GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(func, alloc)               \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_CALLBACK_MODULE,                                         \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC,                             \
+            "[%s] Could not allocate memory for %s",                        \
+            (func),                                                         \
+            (alloc)))
+
+#define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(func, argument)        \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_CALLBACK_MODULE,                                         \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT,                         \
+            "[%s] Invalid argument: %s",                                    \
+            (func),                                                         \
+            (argument)))
+
+#define GLOBUS_L_CALLBACK_CONSTRUCT_BLOCKING_CANCEL_RUNNING(func)           \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_CALLBACK_MODULE,                                         \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_CALLBACK_ERROR_BLOCKING_CANCEL_RUNNING,                  \
+            "[%s] Cannot do a blocking cancel on a callback running in "    \
+            "your stack",                                                   \
+            (func)))
+
+#define GLOBUS_L_CALLBACK_CONSTRUCT_NO_ACTIVE_CALLBACK(func)                \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_CALLBACK_MODULE,                                         \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_CALLBACK_ERROR_NO_ACTIVE_CALLBACK,                       \
+            "[%s] No cuurently running callback",                           \
+            (func)))
+
+#define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_BEHAVIOR(func)                  \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_CALLBACK_MODULE,                                         \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_CALLBACK_ERROR_INVALID_BEHAVIOR,                         \
+            "[%s] Invalid behavior.  Only "                                 \
+            "GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED is valid for a "     \
+            "non-threaded build",                                           \
+            (func)))
+
 /**
  * globus_l_callback_requeue
  *
- * Called by globus_l_callback_blocked_cb and globus_callback_poll. Used to 
- * requeue a periodic callback after it has blocked or completed
+ * Called by globus_l_callback_blocked_cb, globus_callback_space_poll, and
+ * globus_callback_adjust_period. Used to requeue a periodic callback after it
+ * has blocked or completed
  *
- * simply increments the start time associated with the callback (not its 
- * actual start time) by its period.  If this new start time is less than the
- * current time, set the next start time to be current time.
- * This causes drift if we're falling behind, but at least keeps
- * the callback moving forward in time with all the other callbacks.
- *
- * @param time_now
- *        This should be the start time of the last start of this callback
+ * simply increments the start time associated with the callback by its period.
+ * If the new start time is less than the current time, set the start time to
+ * be the current time. This causes drift if we're falling behind, but at
+ * least keeps the callback moving forward in time with all the other
+ * callbacks.
  */
 
 static
@@ -82,10 +152,10 @@ globus_l_callback_requeue(
     globus_l_callback_info_t *          callback_info)
 {
     globus_abstime_t                    time_now;
-    
+
     GlobusTimeAbstimeGetCurrent(time_now);
     GlobusTimeAbstimeInc(callback_info->start_time, callback_info->period);
-    
+
     if(globus_abstime_cmp(&time_now, &callback_info->start_time) > 0)
     {
         /* we're running way behind, reset start time to current time
@@ -104,9 +174,9 @@ globus_l_callback_requeue(
  *
  * This call is registered with globus_thread_blocking_callback_push.  It is
  * called when a user calls globus_thread_blocking_will_block/globus_cond_wait
- * 
+ *
  * When called, this function will requeue a periodic callback iff .
- * globus_thread_blocking_will_block/globus_cond_wait was called on that 
+ * globus_thread_blocking_will_block/globus_cond_wait was called on that
  * callbacks 'space'
  */
 
@@ -117,20 +187,20 @@ globus_l_callback_blocked_cb(
     globus_thread_callback_index_t      index,
     void *                              user_args)
 {
-    if(globus_l_callback_restart_info && 
+    if(globus_l_callback_restart_info &&
         !globus_l_callback_restart_info->restarted)
     {
         globus_l_callback_info_t *      callback_info;
-        
+
         callback_info = globus_l_callback_restart_info->callback_info;
-        
+
         if(callback_info->my_space->handle == space)
         {
             if(callback_info->is_periodic)
             {
                 globus_l_callback_requeue(callback_info);
             }
-               
+
             globus_l_callback_restart_info->restarted = GLOBUS_TRUE;
         }
     }
@@ -150,7 +220,7 @@ globus_l_callback_activate()
 
     globus_handle_table_init(&globus_l_callback_handle_table);
     globus_handle_table_init(&globus_l_callback_space_table);
-    
+
     /* init global 'space' */
     globus_l_callback_global_space.handle = GLOBUS_CALLBACK_GLOBAL_SPACE;
     globus_priority_q_init(
@@ -161,19 +231,19 @@ globus_l_callback_activate()
         &globus_l_callback_callback_info_memory,
         sizeof(globus_l_callback_info_t),
         GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE);
-    
+
     globus_memory_init(
         &globus_l_callback_callback_space_memory,
         sizeof(globus_l_callback_space_t),
         GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE);
-    
+
     globus_l_callback_restart_info = GLOBUS_NULL;
-    
+
     globus_thread_blocking_callback_push(
         globus_l_callback_blocked_cb,
-        GLOBUS_NULL, 
+        GLOBUS_NULL,
         GLOBUS_NULL);
-        
+
     return GLOBUS_SUCCESS;
 }
 
@@ -183,26 +253,26 @@ globus_l_callback_deactivate()
 {
     globus_l_callback_info_t *          callback_info;
     globus_priority_q_t *               queue;
-    
+
     queue = &globus_l_callback_global_space.queue;
-    
+
     while(!globus_priority_q_empty(queue))
     {
         callback_info = (globus_l_callback_info_t *)
             globus_priority_q_dequeue(queue);
-        
+
         globus_memory_push_node(
             &globus_l_callback_callback_info_memory, callback_info);
     }
-    
+
     globus_thread_blocking_callback_pop(GLOBUS_NULL);
-    
+
     globus_memory_destroy(&globus_l_callback_callback_space_memory);
     globus_memory_destroy(&globus_l_callback_callback_info_memory);
     globus_priority_q_destroy(queue);
     globus_handle_table_destroy(&globus_l_callback_space_table);
     globus_handle_table_destroy(&globus_l_callback_handle_table);
-    
+
     return globus_module_deactivate(GLOBUS_THREAD_MODULE);
 }
 
@@ -220,10 +290,10 @@ globus_l_callback_space_dec_ref(
     globus_l_callback_space_t *          space)
 {
     globus_bool_t                       still_referenced;
-    
+
     still_referenced = globus_handle_table_decrement_reference(
         &globus_l_callback_space_table, space->handle);
-        
+
     if(!still_referenced)
     {
         globus_priority_q_destroy(&space->queue);
@@ -246,18 +316,18 @@ globus_l_callback_info_dec_ref(
     globus_l_callback_info_t *          callback_info)
 {
     globus_bool_t                       still_referenced;
-    
+
     still_referenced = globus_handle_table_decrement_reference(
         &globus_l_callback_handle_table, callback_info->handle);
-        
+
     if(!still_referenced)
     {
-        /* global space is local storage, is not managed */ 
+        /* global space is local storage, is not managed */
         if(callback_info->my_space->handle != GLOBUS_CALLBACK_GLOBAL_SPACE)
         {
             globus_l_callback_space_dec_ref(callback_info->my_space);
         }
-        
+
         globus_memory_push_node(
             &globus_l_callback_callback_info_memory, callback_info);
     }
@@ -268,11 +338,11 @@ globus_l_callback_info_dec_ref(
  * globus_l_callback_register
  *
  * called by the external register functions.
- * -- populate a callback_info structure.  
+ * -- populate a callback_info structure.
  */
 
 static
-int
+globus_result_t
 globus_l_callback_register(
     globus_callback_handle_t *          callback_handle,
     const globus_abstime_t *            start_time,
@@ -282,19 +352,21 @@ globus_l_callback_register(
     globus_callback_space_t             space)
 {
     globus_l_callback_info_t *          callback_info;
-    
+
     if(!callback_func)
     {
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_register_oneshot", "callback_func");
     }
-    
+
     callback_info = (globus_l_callback_info_t *)
         globus_memory_pop_node(&globus_l_callback_callback_info_memory);
     if(!callback_info)
     {
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(
+            "globus_l_callback_register", "callback_info");
     }
-    
+
     if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
         callback_info->my_space = &globus_l_callback_global_space;
@@ -303,7 +375,7 @@ globus_l_callback_register(
     {
         /* get internal space structure and increment its ref count */
         globus_l_callback_space_t *     i_space;
-        
+
         i_space = (globus_l_callback_space_t *)
             globus_handle_table_lookup(
                 &globus_l_callback_space_table, space);
@@ -311,20 +383,22 @@ globus_l_callback_register(
         {
             globus_memory_push_node(
                 &globus_l_callback_callback_info_memory, callback_info);
-            return GLOBUS_FAILURE;
+
+            return GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(
+                "globus_l_callback_register", "i_space");
         }
-        
+
         globus_handle_table_increment_reference(
             &globus_l_callback_space_table, space);
-        
+
         callback_info->my_space = i_space;
     }
-    
+
     callback_info->callback_func = callback_func;
     callback_info->callback_args = callback_user_args;
     callback_info->running_count = 0;
     callback_info->unregister_callback = GLOBUS_NULL;
-    
+
     GlobusTimeAbstimeCopy(callback_info->start_time, *start_time);
     if(period)
     {
@@ -335,14 +409,14 @@ globus_l_callback_register(
     {
         callback_info->is_periodic = GLOBUS_FALSE;
     }
-    
+
     if(callback_handle)
     {
         /* if user passed callback_handle, there are two refs to this
          * info, me and user.  User had better cancel or destroy this handle
          * to free up the memory
          */
-        callback_info->handle = 
+        callback_info->handle =
             globus_handle_table_insert(
                 &globus_l_callback_handle_table, callback_info, 2);
 
@@ -350,7 +424,7 @@ globus_l_callback_register(
     }
     else
     {
-        callback_info->handle = 
+        callback_info->handle =
             globus_handle_table_insert(
                 &globus_l_callback_handle_table, callback_info, 1);
     }
@@ -376,9 +450,8 @@ globus_l_callback_register(
  *        ignored for non-threaded build
  */
 
-int
+globus_result_t
 globus_callback_space_register_oneshot(
-    globus_callback_handle_t *          callback_handle,
     const globus_reltime_t *            delay_time,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
@@ -387,17 +460,18 @@ globus_callback_space_register_oneshot(
     globus_callback_space_t             space)
 {
     globus_abstime_t                    start_time;
-    
+
     if(!delay_time)
     {
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_register_oneshot", "delay_time");
     }
-    
+
     GlobusTimeAbstimeGetCurrent(start_time);
-    GlobusTimeAbstimeInc(start_time, *delay_time); 
-    
+    GlobusTimeAbstimeInc(start_time, *delay_time);
+
     return globus_l_callback_register(
-        callback_handle,
+        GLOBUS_NULL,
         &start_time,
         GLOBUS_NULL,
         callback_func,
@@ -417,7 +491,7 @@ globus_callback_space_register_oneshot(
  *        ignored for non-threaded build
  */
 
-int
+globus_result_t
 globus_callback_space_register_periodic(
     globus_callback_handle_t *          callback_handle,
     const globus_reltime_t *            delay_time,
@@ -429,15 +503,21 @@ globus_callback_space_register_periodic(
     globus_callback_space_t             space)
 {
     globus_abstime_t                    start_time;
-    
-    if(!(delay_time && period))
+
+    if(!delay_time)
     {
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_register_periodic", "delay_time");
     }
-    
+    if(!period)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_register_periodic", "period");
+    }
+
     GlobusTimeAbstimeGetCurrent(start_time);
-    GlobusTimeAbstimeInc(start_time, *delay_time); 
-    
+    GlobusTimeAbstimeInc(start_time, *delay_time);
+
     return globus_l_callback_register(
         callback_handle,
         &start_time,
@@ -453,7 +533,7 @@ globus_callback_space_register_periodic(
  * external function that registers a one shot to start at some specific time.
  * this is useful if the user has a specific time that a callback should be
  * triggered.  It is also useful if the user is registering many callbacks at
- * once.  It it is more efficient to call this many times with the same time 
+ * once.  It it is more efficient to call this many times with the same time
  * then to call globus_callback_register_oneshot many times.  The latter would
  * have to make repeated, expensive, gettimeofday calls.
  *
@@ -464,9 +544,8 @@ globus_callback_space_register_periodic(
  *        ignored for non-threaded build
  */
 
-int
+globus_result_t
 globus_callback_space_register_abstime_oneshot(
-    globus_callback_handle_t *          callback_handle,
     const globus_abstime_t *            start_time,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
@@ -476,11 +555,12 @@ globus_callback_space_register_abstime_oneshot(
 {
     if(!start_time)
     {
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_register_abstime_oneshot", "start_time");
     }
-    
+
     return globus_l_callback_register(
-        callback_handle,
+        GLOBUS_NULL,
         start_time,
         GLOBUS_NULL,
         callback_func,
@@ -491,64 +571,70 @@ globus_callback_space_register_abstime_oneshot(
 /**
  * globus_l_callback_cancel_kickout
  *
- * driver callback to kickout unregister callback. registered by 
+ * driver callback to kickout unregister callback. registered by
  * globus_callback_register_cancel
- * 
+ *
  * This is only going to get registered if the canceled callback was not
  * running or already complete.
  */
 
 static
-globus_bool_t
+void
 globus_l_callback_cancel_kickout_cb(
-    globus_abstime_t *                  time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     globus_l_callback_info_t *          callback_info;
-    
+
     callback_info = (globus_l_callback_info_t *) user_args;
-    
+
     callback_info->unregister_callback(callback_info->unreg_args);
 
     /* this will cause the callback_info to be freed */
     globus_l_callback_info_dec_ref(callback_info);
-    
-    return GLOBUS_TRUE;
 }
 
 /**
- * globus_callback_register_cancel
+ * globus_callback_register_cancel_periodic
  *
  * external function that cancels a previously registered callback.  will not
  * interrupt an already running callback.  also handles case where callback has
  * already completed.  it is safe to call this within the callback
  * that is being cancelled.
+ *
+ * the combination of this func and adjust period may cause some confusion in
+ * understanding the operation.  remember that adjust period can make a
+ * callback appear to be a oneshot (if adjust period is passed a null period,
+ * is_periodic will become false)... rest assured, that if the user has the
+ * callback handle, it started out as a periodic.
  */
 
-int
-globus_callback_register_cancel(
+globus_result_t
+globus_callback_register_cancel_periodic(
     globus_callback_handle_t            callback_handle,
     globus_unregister_callback_func_t   unregister_callback,
     void *                              unreg_args)
 {
     globus_l_callback_info_t *          callback_info;
-    
+
     callback_info = (globus_l_callback_info_t *)
         globus_handle_table_lookup(
                 &globus_l_callback_handle_table, callback_handle);
-    
+
     if(!callback_info)
     {
-        /* this is definitly an error, 
+        /* this is definitely an error,
          * if user had the handle and didnt destroy it (or cancel it),
          * it has to exist
          */
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(
+            "globus_callback_register_cancel_periodic");
     }
-    
+
     callback_info->unregister_callback = unregister_callback;
     callback_info->unreg_args = unreg_args;
- 
+
     if(callback_info->running_count > 0)
     {
         if(callback_info->is_periodic)
@@ -556,10 +642,10 @@ globus_callback_register_cancel(
             /* would only be in queue if it was restarted */
             globus_priority_q_remove(
                 &callback_info->my_space->queue, callback_info);
-            
+
             callback_info->is_periodic = GLOBUS_FALSE;
         }
-        
+
         /* unregister callback will get called when running_count == 0 */
 
         /* this decrements the user's reference */
@@ -567,23 +653,22 @@ globus_callback_register_cancel(
     }
     else
     {
-        /* 
-         * if the callback_info is not in the queue, it can only mean 
-         * that it was run already. In this case, I would have already 
-         * decremented the ref once.  I'll let the 
+        /*
+         * if the callback_info is not in the queue, it can only mean
+         * that it has been suspended (by adjust_period). In this case, I would
+         * have already decremented the ref once.  I'll let the
          * globus_l_callback_cancel_kickout_cb decr the last ref
          */
         if(globus_priority_q_remove(
-            &callback_info->my_space->queue, callback_info) || 
-            !unregister_callback)
+            &callback_info->my_space->queue, callback_info) ||
+            !unregister_callback || !unregister_callback)
         {
             globus_l_callback_info_dec_ref(callback_info);
         }
-        
+
         if(unregister_callback)
         {
             globus_callback_space_register_oneshot(
-                GLOBUS_NULL,
                 &globus_i_reltime_zero,
                 globus_l_callback_cancel_kickout_cb,
                 callback_info,
@@ -592,7 +677,7 @@ globus_callback_register_cancel(
                 callback_info->my_space->handle);
         }
     }
-    
+
     return GLOBUS_SUCCESS;
 }
 
@@ -605,36 +690,38 @@ globus_callback_register_cancel(
  * stupid thing to do (I'll return an error)
  */
 
-int
-globus_callback_blocking_cancel(
+globus_result_t
+globus_callback_blocking_cancel_periodic(
     globus_callback_handle_t            callback_handle)
 {
     globus_l_callback_info_t *          callback_info;
-    
+
     callback_info = (globus_l_callback_info_t *)
         globus_handle_table_lookup(
                 &globus_l_callback_handle_table, callback_handle);
-    
+
     if(!callback_info)
     {
-        /* this is definitly an error, 
+        /* this is definitly an error,
          * if user had the handle and didnt destroy it (or cancel it),
          * it has to exist
          */
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(
+            "globus_callback_blocking_cancel_periodic");
     }
-    
+
     if(callback_info->running_count > 0)
     {
         /* I cant block waiting for a running callback, it will never finish */
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_BLOCKING_CANCEL_RUNNING(
+            "globus_callback_blocking_cancel_periodic");
     }
     else
     {
-        /* 
-         * if the callback_info is not in the queue, it can only mean 
-         * that it was run already. In this case, I would have already 
-         * decremented the ref once. 
+        /*
+         * if the callback_info is not in the queue, it can only mean
+         * that it has been suspended (by adjust_period). In this case,
+         * I would have already decremented the ref once.
          */
         if(globus_priority_q_remove(
             &callback_info->my_space->queue, callback_info))
@@ -642,10 +729,10 @@ globus_callback_blocking_cancel(
             /* this decr my reference */
             globus_l_callback_info_dec_ref(callback_info);
         }
-        
+
         /* this decr user's reference */
         globus_l_callback_info_dec_ref(callback_info);
-    
+
         return GLOBUS_SUCCESS;
     }
 }
@@ -654,28 +741,33 @@ globus_callback_blocking_cancel(
  * globus_callback_adjust_period
  *
  * external function to allow a user to adjust the period of a previously
- * registered callback.  it is safe to call this within or outside of 
+ * registered callback.  it is safe to call this within or outside of
  * the callback that is being modified.
  *
  * this func also allows a user to 'suspend' a periodic callback till another
  * time by passing a period of globus_i_reltime_infinity.  the callback can
  * be resumed by passing in a new period at some other time.
+ *
+ * this function could cause confusion in understanding this code.  When a
+ * periodic is suspended, it 'becomes' non-periodic (ie, is_periodic is set to
+ * false)
  */
 
-globus_bool_t
+globus_result_t
 globus_callback_adjust_period(
     globus_callback_handle_t            callback_handle,
     const globus_reltime_t *            new_period)
 {
     globus_l_callback_info_t *          callback_info;
     globus_reltime_t                    diff;
-    
+
     callback_info = (globus_l_callback_info_t *)
         globus_handle_table_lookup(
             &globus_l_callback_handle_table, callback_handle);
     if(!(callback_info))
     {
-        return GLOBUS_FALSE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(
+            "globus_callback_blocking_cancel_periodic");
     }
 
     if(!new_period || globus_time_reltime_is_infinity(new_period))
@@ -683,9 +775,9 @@ globus_callback_adjust_period(
         /* doing this will cause this not to be requeued if currently running
          */
         callback_info->is_periodic = GLOBUS_FALSE;
-        
-        /* may or may not be in queue depending on if its not running or its 
-         * been restarted.  if its not in queue, no problem... it wont get 
+
+        /* may or may not be in queue depending on if its not running or its
+         * been restarted.  if its not in queue, no problem... it wont get
          * queued again
          */
         if(globus_priority_q_remove(
@@ -699,7 +791,7 @@ globus_callback_adjust_period(
     else
     {
         GlobusTimeReltimeDiff(diff, *new_period, callback_info->period);
-    
+
         if(globus_reltime_cmp(new_period, &callback_info->period) > 0)
         {
             GlobusTimeAbstimeInc(callback_info->start_time, diff);
@@ -708,21 +800,21 @@ globus_callback_adjust_period(
         {
             GlobusTimeAbstimeDec(callback_info->start_time, diff);
         }
-        
+
         GlobusTimeReltimeCopy(callback_info->period, *new_period);
         callback_info->is_periodic = GLOBUS_TRUE;
-    
-        /* may or may not be in queue depending on if its not running or its 
-         * been restarted.  if its not in queue and its running, no problem... 
+
+        /* may or may not be in queue depending on if its not running or its
+         * been restarted.  if its not in queue and its running, no problem...
          * when it gets requeued it will be with the new priority
          */
         if(!globus_priority_q_modify(
             &callback_info->my_space->queue,
-            callback_info, 
+            callback_info,
             &callback_info->start_time) &&
             callback_info->running_count == 0)
         {
-            /* it wasnt in the queue... it was either a one shot, or we
+            /* it wasnt in the queue and its not running...  we must have
              * previously set the period to infinity... I need to requeue it
              * and take my ref to it back
              */
@@ -731,82 +823,50 @@ globus_callback_adjust_period(
                 &globus_l_callback_handle_table, callback_handle);
         }
     }
-    
-    return GLOBUS_TRUE;
-}
 
-
-/**
- * globus_callback_destroy
- *
- * external function to allow user to free callback state attached to 
- * callback_handle.  if the user received a handle from one of the register
- * calls, it had better call this or one of the cancel functions to free the
- * callback state.
- *
- * It is safe to call this at any time. (even from the callback itself).
- * destroying this callback handle does NOT imply canceling the callback.
- */
-
-int
-globus_callback_destroy(
-    globus_callback_handle_t            callback_handle)
-{
-    globus_l_callback_info_t *          callback_info;
-    
-    callback_info = (globus_l_callback_info_t *)
-        globus_handle_table_lookup(
-            &globus_l_callback_handle_table, callback_handle);
-    if(!callback_info)
-    {
-        return GLOBUS_FAILURE;
-    }
-    
-    /* this decrements the user's reference */
-    globus_l_callback_info_dec_ref(callback_info);
-    
     return GLOBUS_SUCCESS;
 }
 
 /**
  * globus_callback_space_init
  *
- * -- attrs are ignored here since there are none that make sense in 
+ * -- attrs are ignored here since there are none that make sense in
  *    a non-threaded build
  *
  */
 
-int
+globus_result_t
 globus_callback_space_init(
     globus_callback_space_t *           space,
     globus_callback_space_attr_t        attr)
 {
     globus_l_callback_space_t *         i_space;
-    
+
     if(!space)
     {
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_init", "space");
     }
-    
+
     i_space = (globus_l_callback_space_t *)
         globus_memory_pop_node(&globus_l_callback_callback_space_memory);
     if(!i_space)
     {
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(
+            "globus_callback_space_init", "i_space");
     }
-    
+
     globus_priority_q_init(
         &i_space->queue, (globus_priority_q_cmp_func_t) globus_abstime_cmp);
-    
+
     i_space->handle =
         globus_handle_table_insert(
             &globus_l_callback_space_table, i_space, 1);
-    
+
     *space = i_space->handle;
-    
+
     return GLOBUS_SUCCESS;
 }
-
 
 /**
  * globus_callback_space_destroy
@@ -816,25 +876,47 @@ globus_callback_space_init(
  * destroyed untill all callbacks referencing it are destroyed.
  */
 
-int
+globus_result_t
 globus_callback_space_destroy(
     globus_callback_space_t             space)
 {
     globus_l_callback_space_t *         i_space;
-    
+
     i_space = (globus_l_callback_space_t *)
         globus_handle_table_lookup(
                 &globus_l_callback_space_table, space);
     if(!i_space)
     {
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE(
+            "globus_callback_space_destroy");
     }
-    
+
     globus_l_callback_space_dec_ref(i_space);
-    
+
     return GLOBUS_SUCCESS;
 }
 
+/**
+ * Just a predicate for other libraries to verify that this is a valid space
+ */
+globus_bool_t
+globus_callback_space_is_valid(
+    globus_callback_space_t             space)
+{
+    globus_l_callback_space_t *         i_space;
+
+    i_space = (globus_l_callback_space_t *)
+        globus_handle_table_lookup(
+                &globus_l_callback_space_table, space);
+    if(!i_space)
+    {
+        return GLOBUS_FALSE;
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+ 
 /**
  * globus_callback_space_attr_*
  *
@@ -842,47 +924,54 @@ globus_callback_space_destroy(
  *      in a non-threaded build
  */
 
-int
+globus_result_t
 globus_callback_space_attr_init(
     globus_callback_space_attr_t *      attr)
 {
     return GLOBUS_SUCCESS;
 }
 
-int
+globus_result_t
 globus_callback_space_attr_destroy(
     globus_callback_space_attr_t        attr)
 {
     return GLOBUS_SUCCESS;
 }
 
-int
+globus_result_t
 globus_callback_space_attr_set_behavior(
     globus_callback_space_attr_t        attr,
     globus_callback_space_behavior_t    behavior)
 {
+    if(behavior != GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_BEHAVIOR(
+            "globus_callback_space_attr_set_behavior");
+    }
+
     return GLOBUS_SUCCESS;
 }
 
-int
+globus_result_t
 globus_callback_space_attr_get_behavior(
     globus_callback_space_attr_t        attr,
     globus_callback_space_behavior_t *  behavior)
 {
     if(!behavior)
     {
-        return GLOBUS_FAILURE;
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_space_attr_get_behavior", "behavior");
     }
-    
+
     *behavior = GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED;
-    
+
     return GLOBUS_SUCCESS;
 }
 
 /**
  * globus_l_callback_get_next
  *
- * check queue for ready entry, pass back next ready time 
+ * check queue for ready entry, pass back next ready time
  * in ready_time.  return callback info.
  *
  */
@@ -897,13 +986,13 @@ globus_l_callback_get_next(
 {
     globus_abstime_t *                  tmp_time;
     globus_l_callback_info_t *          callback_info;
-    
+
     if(!globus_priority_q_empty(queue))
     {
         tmp_time = (globus_abstime_t *)
             globus_priority_q_first_priority(queue);
         if(globus_abstime_cmp(tmp_time, time_now) > 0)
-        { 
+        {
             /* not ready yet */
             GlobusTimeAbstimeCopy(*ready_time, *tmp_time);
             callback_info = GLOBUS_NULL;
@@ -913,7 +1002,7 @@ globus_l_callback_get_next(
             /* we got one */
             callback_info = (globus_l_callback_info_t *)
                 globus_priority_q_dequeue(queue);
-            
+
             /* get the next ready time */
             tmp_time = (globus_abstime_t *)
                 globus_priority_q_first_priority(queue);
@@ -933,7 +1022,7 @@ globus_l_callback_get_next(
         GlobusTimeAbstimeCopy(*ready_time, globus_i_abstime_infinity);
         callback_info = GLOBUS_NULL;
     }
-    
+
     return callback_info;
 }
 
@@ -955,14 +1044,20 @@ globus_callback_space_poll(
     globus_abstime_t                    time_now;
     globus_l_callback_restart_info_t *  last_restart_info;
     globus_l_callback_restart_info_t    restart_info;
-    
-      
+    globus_abstime_t                    l_timestop;
+
+    if(!timestop)
+    {
+        GlobusTimeAbstimeCopy(l_timestop, globus_i_abstime_zero);
+        timestop = &l_timestop;
+    }
+
     space_queue = GLOBUS_NULL;
-    
+
     if(space != GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
         globus_l_callback_space_t *     i_space;
-    
+
         i_space = (globus_l_callback_space_t *)
             globus_handle_table_lookup(
                 &globus_l_callback_space_table, space);
@@ -971,21 +1066,21 @@ globus_callback_space_poll(
             space_queue = &i_space->queue;
         }
     }
-    
+
     done = GLOBUS_FALSE;
-    
+
     GlobusTimeAbstimeGetCurrent(time_now);
-    
+
     last_restart_info = globus_l_callback_restart_info;
     globus_l_callback_restart_info = &restart_info;
-    
+
     do
     {
         globus_l_callback_info_t *      callback_info;
         globus_abstime_t                space_ready_time;
         globus_abstime_t                global_ready_time;
         globus_abstime_t *              first_ready_time;
-        
+
         callback_info = GLOBUS_NULL;
 
         /* first we'll see if there is a callback ready on the polled space */
@@ -994,7 +1089,7 @@ globus_callback_space_poll(
             callback_info = globus_l_callback_get_next(
                 space_queue, &time_now, &space_ready_time);
         }
-        
+
         /* if we didnt get one from the polled space, check the global queue */
         if(!callback_info)
         {
@@ -1005,11 +1100,11 @@ globus_callback_space_poll(
         }
         else
         {
-            /* still need to know when the next one is ready 
-             * on the global space 
+            /* still need to know when the next one is ready
+             * on the global space
              */
             globus_abstime_t *          tmp_time;
-            
+
             tmp_time = (globus_abstime_t *)
                 globus_priority_q_first_priority(
                     &globus_l_callback_global_space.queue);
@@ -1024,7 +1119,7 @@ globus_callback_space_poll(
                     global_ready_time, globus_i_abstime_infinity);
             }
         }
-        
+
         /* pick whoever's next is ready first */
         first_ready_time = &global_ready_time;
         if(space_queue)
@@ -1035,7 +1130,7 @@ globus_callback_space_poll(
                 first_ready_time = &space_ready_time;
             }
         }
-        
+
         if(callback_info)
         {
             /* we got a callback, kick it out */
@@ -1048,17 +1143,26 @@ globus_callback_space_poll(
                 restart_info.timeout = (globus_abstime_t *) timestop;
             }
             
+            if(globus_abstime_cmp(&time_now, &restart_info.timeout) > 0)
+            {
+                restart_info.timeout = &time_now;
+            }
+            
             restart_info.restarted = GLOBUS_FALSE;
+            restart_info.signaled = GLOBUS_FALSE;
             restart_info.callback_info = callback_info;
-            
+
             callback_info->running_count++;
-            
+
             /* if user 'changes' something, done will be true */
-            done = callback_info->callback_func(
-                restart_info.timeout, callback_info->callback_args);
-            
+            callback_info->callback_func(
+                &time_now, restart_info.timeout, callback_info->callback_args);
+
             callback_info->running_count--;
-           
+
+            done = restart_info.signaled;
+
+            /* a periodic that was canceled has is_periodic == false */
             if(!callback_info->is_periodic &&
                 callback_info->running_count == 0)
             {
@@ -1085,10 +1189,10 @@ globus_callback_space_poll(
                 /* sleep until first one is ready */
                 globus_reltime_t        sleep_time;
                 unsigned long           usec;
-                
+
                 GlobusTimeAbstimeDiff(sleep_time, *first_ready_time, time_now);
                 GlobusTimeReltimeToUSec(usec, sleep_time);
-                
+
                 if(usec > 0)
                 {
                     globus_libc_usleep(usec);
@@ -1096,8 +1200,8 @@ globus_callback_space_poll(
             }
             else if(globus_time_abstime_is_infinity(timestop))
             {
-                /* we can only get here if both queues are empty 
-                 * and we are blocking forever. in this case, it is not 
+                /* we can only get here if both queues are empty
+                 * and we are blocking forever. in this case, it is not
                  * possible for a new callback to be registered, except by
                  * a signal handler. pause will wake up in that case
                  */
@@ -1109,17 +1213,52 @@ globus_callback_space_poll(
                 done = GLOBUS_TRUE;
             }
         }
-        
+
         if(!done)
         {
             GlobusTimeAbstimeGetCurrent(time_now);
         }
-        
+
     } while(!done && globus_abstime_cmp(timestop, &time_now) > 0);
-    
+
     globus_l_callback_restart_info = last_restart_info;
 }
 
+void
+globus_callback_signal_poll()
+{
+    if(globus_l_callback_restart_info)
+    {
+        globus_l_callback_restart_info->signaled = GLOBUS_TRUE;
+    }
+}
+
+/**
+ * globus_callback_get_space
+ *
+ * allow a user to get the current space from within a callback
+ */
+globus_result_t
+globus_callback_get_space(
+    globus_callback_space_t *           space)
+{
+    if(!space)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
+            "globus_callback_get_space", "space");
+    }
+    
+    if(!globus_l_callback_restart_info)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_NO_ACTIVE_CALLBACK(
+            "globus_callback_get_space");
+    }
+    
+    *space = globus_l_callback_restart_info->callback_info->my_space->handle;
+    
+    return GLOBUS_SUCCESS;
+}
+    
 /**
  * globus_callback_get_timeout
  *
@@ -1131,20 +1270,19 @@ globus_callback_get_timeout(
     globus_reltime_t *                  time_left)
 {
     globus_abstime_t                    time_now;
-    
-    if(!globus_l_callback_restart_info || 
-        globus_abstime_cmp(
-            globus_l_callback_restart_info->timeout,
-            &globus_i_abstime_infinity) == 0)
+
+    if(!globus_l_callback_restart_info ||
+        globus_time_abstime_is_infinity(
+            globus_l_callback_restart_info->timeout))
     {
         if(time_left)
         {
             GlobusTimeReltimeCopy(*time_left, globus_i_reltime_infinity);
         }
-        
+
         return GLOBUS_FALSE;
     }
-    
+
     GlobusTimeAbstimeGetCurrent(time_now);
     if(globus_abstime_cmp(
         &time_now, globus_l_callback_restart_info->timeout) >= 0)
@@ -1153,17 +1291,17 @@ globus_callback_get_timeout(
         {
             GlobusTimeReltimeCopy(*time_left, globus_i_reltime_zero);
         }
-        
+
         return GLOBUS_TRUE;
     }
-    
+
     if(time_left)
     {
         GlobusTimeAbstimeDiff(
             *time_left, time_now, *globus_l_callback_restart_info->timeout);
     }
-    
-    return GLOBUS_FALSE;    
+
+    return GLOBUS_FALSE;
 }
 
 
@@ -1181,7 +1319,7 @@ globus_callback_get_timestop(
     {
         return GLOBUS_FALSE;
     }
-    
+
     if(globus_l_callback_restart_info)
     {
         GlobusTimeAbstimeCopy(
@@ -1191,7 +1329,7 @@ globus_callback_get_timestop(
     {
         GlobusTimeAbstimeCopy(*time_stop, globus_i_abstime_infinity);
     }
-    
+
     return GLOBUS_TRUE;
 }
 
@@ -1199,29 +1337,30 @@ globus_bool_t
 globus_callback_has_time_expired()
 {
     globus_abstime_t                    time_now;
-    
-    if(!globus_l_callback_restart_info || 
-        globus_abstime_cmp(
-            globus_l_callback_restart_info->timeout,
-            &globus_i_abstime_infinity) == 0)
+
+    if(!globus_l_callback_restart_info ||
+        globus_time_abstime_is_infinity(
+            globus_l_callback_restart_info->timeout))
     {
         return GLOBUS_FALSE;
     }
-    
+
     GlobusTimeAbstimeGetCurrent(time_now);
     if(globus_abstime_cmp(
         &time_now, globus_l_callback_restart_info->timeout) > 0)
     {
         return GLOBUS_TRUE;
     }
-    
-    return GLOBUS_FALSE;    
+
+    return GLOBUS_FALSE;
 }
 
 globus_bool_t
 globus_callback_was_restarted()
 {
-    return globus_l_callback_restart_info 
-        ? globus_l_callback_restart_info->restarted 
+    return globus_l_callback_restart_info
+        ? globus_l_callback_restart_info->restarted
         : GLOBUS_FALSE;
 }
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
