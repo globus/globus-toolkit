@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# Usage: ./make-bin-bundle
+#
 
 NAME="gsi_openssh_bundle-2.1-i686-pc-linux-gnu.tar.gz"
 
