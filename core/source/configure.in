@@ -45,6 +45,12 @@ FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
 AC_SUBST(FILELIST_FILE)
 
+dnl go look for perl
+if test "x$PERL" = "x"; then
+        AC_PATH_PROG(PERL,perl)
+fi
+
+
 LAC_COMPILERS
 
 AC_ARG_ENABLE(internal-doc,
