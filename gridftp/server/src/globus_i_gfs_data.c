@@ -2427,50 +2427,56 @@ globus_i_gfs_data_node_start(
 globus_result_t
 globus_i_gfs_data_session_start(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int *                               id,
+    int                                 id,
     const char *                        user_dn,
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg)
 {
     globus_l_gfs_dsi_handle_t *         dsi_handle;
-    globus_result_t                     res;
-    globus_gfs_ipc_reply_t *            reply;   
+    globus_l_gfs_data_operation_t *     op;
+    globus_result_t                     result;
+    GlobusGFSName(globus_i_gfs_data_session_start);
 
-    reply = (globus_gfs_ipc_reply_t *) 
-        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
- 
-    dsi_handle = globus_calloc(sizeof(globus_l_gfs_dsi_handle_t), 1);
-    reply->code = 230;
-    if(dsi->init_func != NULL)
+    dsi_handle = (globus_l_gfs_dsi_handle_t *) session_id;
+    result = globus_l_gfs_data_operation_init(&op);
+    if(result != GLOBUS_SUCCESS)
     {
-        res = dsi->init_func(user_dn, &dsi_handle->mod_handle);
-        if(res != GLOBUS_SUCCESS)
+        result = GlobusGFSErrorWrapFailed(
+            "globus_i_gfs_data_session_start", result);
+        goto error_op;
+    }
+    
+    op->ipc_handle = ipc_handle;
+    op->id = id;
+    op->uid = getuid();
+    
+    op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+    op->callback = cb;
+    op->user_arg = user_arg;
+    
+    result = dsi->init_func(op, user_dn);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed("hook", result);
+        goto error_hook;
+    }
+    
+    globus_mutex_lock(&op->lock);
+    {
+        if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
         {
-            reply->code = 530;
+            op->state = GLOBUS_L_GFS_DATA_PENDING;
         }
     }
-    else
-    {
-        res = GLOBUS_SUCCESS;
-        dsi_handle->mod_handle = NULL;
-    }
+    globus_mutex_unlock(&op->lock);
+    
+    return GLOBUS_SUCCESS;
 
-    reply->type = GLOBUS_GFS_OP_SESSION_START;
-    reply->id = id;
-    reply->session_id = (int) dsi_handle->mod_handle;
-    reply->result = GLOBUS_SUCCESS;
-
-    if(cb != NULL)
-    {
-        cb(reply, user_arg);
-    }
-    else
-    {
-        globus_gfs_ipc_reply_finished(ipc_handle, reply);
-    }
-    globus_free(reply);
-
-    return res;
+error_hook:
+    globus_l_gfs_data_operation_destroy(op);
+    
+error_op:
+    return result;
 }
 
 void
