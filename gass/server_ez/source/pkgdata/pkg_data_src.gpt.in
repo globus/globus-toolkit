@@ -28,6 +28,7 @@
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_gass_transfer" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_gass_server_ez" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
     <Build_Environment >

@@ -35,6 +35,7 @@
       <Dependency Name="globus_ftp_control" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_gass_transfer" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_io" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_gass_copy" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
     <Build_Environment >
