@@ -219,7 +219,6 @@ class SchedulerEventGenerator extends Thread {
                 }
             }
             proc = runtime.exec(cmd);
-            proc.getOutputStream().close();
             return true;
         } else {
             return false;
