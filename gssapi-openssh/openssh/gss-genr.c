@@ -103,6 +103,7 @@ ssh_gssapi_mechanisms(int server,char *host) {
 	Buffer		buf;
 	int 		i = 0;
 	int		present;
+	int		mech_count=0;
 	char *		mechs;
 	Gssctxt *	ctx = NULL;	
 
@@ -128,13 +129,25 @@ ssh_gssapi_mechanisms(int server,char *host) {
 		    	 			       &supported_mechs[i].oid,
 		    	 			       host)))) {
 				/* Append gss_group1_sha1_x to our list */
+				if (++mech_count > 1) {
+				    buffer_append(&buf, ",", 1);
+				}
 				buffer_append(&buf, gssprefix,
 					      strlen(gssprefix));
 		        	buffer_append(&buf, 
 		        		      supported_mechs[i].enc_name,
 	        	      		      strlen(supported_mechs[i].enc_name));
-	               }
- 		}
+				debug("GSSAPI mechanism %s (%s%s) supported",
+				      supported_mechs[i].name, gssprefix,
+				      supported_mechs[i].enc_name);
+			} else {
+			    debug("no credentials for GSSAPI mechanism %s",
+				  supported_mechs[i].name);
+			}
+ 		} else {
+		    debug("GSSAPI mechanism %s not supported",
+			  supported_mechs[i].name);
+		}
 	} while (supported_mechs[++i].name != NULL);
 	
 	buffer_put_char(&buf,'\0');
@@ -227,6 +240,9 @@ gss_OID ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
 
   if (ctx) ssh_gssapi_set_oid(ctx,&supported_mechs[i].oid);
 
+  debug("using GSSAPI mechanism %s (%s%s)", supported_mechs[i].name,
+	gssprefix, supported_mechs[i].enc_name);
+
   return &supported_mechs[i].oid;
 }
 
@@ -236,7 +252,7 @@ static void
 ssh_gssapi_error_ex(OM_uint32 major_status,OM_uint32 minor_status,
 		    int send_packet) {
 	OM_uint32 lmaj, lmin;
-        gss_buffer_desc msg;
+        gss_buffer_desc msg = {0,NULL};
         OM_uint32 ctx;
         
         ctx = 0;
@@ -307,6 +323,7 @@ ssh_gssapi_delete_ctx(Gssctxt **ctx)
 	if ((*ctx)==NULL)
 		return;
 		
+#if !defined(MECHGLUE) /* mechglue has some memory management issues */
 	if ((*ctx)->context != GSS_C_NO_CONTEXT) 
 		gss_delete_sec_context(&ms,&(*ctx)->context,GSS_C_NO_BUFFER);
 	if ((*ctx)->name != GSS_C_NO_NAME)
@@ -322,6 +339,7 @@ ssh_gssapi_delete_ctx(Gssctxt **ctx)
 		gss_release_name(&ms,&(*ctx)->client);	
 	if ((*ctx)->client_creds != GSS_C_NO_CREDENTIAL)
 		gss_release_cred(&ms,&(*ctx)->client_creds);
+#endif
 	
 	xfree(*ctx);
 	*ctx=NULL; 
@@ -422,7 +440,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 /* Create a service name for the given host */
 OM_uint32
 ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
-	gss_buffer_desc gssbuf;
+	gss_buffer_desc gssbuf = {0,NULL};
 	OM_uint32 maj_status, min_status;
 	struct hostent *hostinfo = NULL;
 	char *xhost, *addr;
@@ -581,7 +599,7 @@ ssh_gssapi_server_ctx(Gssctxt **ctx,gss_OID oid) {
 
 OM_uint32 
 ssh_gssapi_client_ctx(Gssctxt **ctx,gss_OID oid, char *host) {
-	gss_buffer_desc token;
+	gss_buffer_desc token = {0,NULL};
 	OM_uint32 major,minor;
 	
 	if (*ctx) ssh_gssapi_delete_ctx(ctx);
