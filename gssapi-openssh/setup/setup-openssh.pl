@@ -331,6 +331,65 @@ sub fixpaths
     return 0;
 }
 
+sub fixGlobusLocation
+{
+    $data = readFile($initfile);
+    $data =~ s|@GLOBUS_LOCATION@|$gpath|g;
+    writeFile($data);
+}
+
+### readFile( $filename )
+#
+# reads and returns $filename's contents
+#
+
+sub readFile
+{
+    my ($filename) = @_;
+    my $data;
+
+    open (IN, "$filename") || die "Can't open '$filename': $!";
+    $/ = undef;
+    $data = <IN>;
+    $/ = "\n";
+    close(IN);
+
+    return $data;
+}
+
+### writeFile( $filename, $fileinput )
+#
+# create the inputs to the ssl program at $filename, appending the common name to the
+# stream in the process
+#
+
+sub writeFile
+{
+    my ($filename, $fileinput) = @_;
+
+    #
+    # test for a valid $filename
+    #
+
+    if ( !defined($filename) || (length($filename) lt 1) )
+    {
+        die "Filename is undefined";
+    }
+
+    if ( ( -e "$filename" ) && ( ! -w "$filename" ) )
+    {
+        die "Cannot write to filename '$filename'";
+    }
+
+    #
+    # write the output to $filename
+    #
+
+    open(OUT, ">$filename");
+    print OUT "$fileinput";
+    close(OUT);
+}
+
 print "---------------------------------------------------------------\n";
 print "Hi, I'm the setup script for the gsi_openssh package!  There\n";
 print "are some last minute details that I've got to set straight\n";

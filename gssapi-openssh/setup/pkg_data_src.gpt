@@ -24,11 +24,11 @@
       <COMMENT> things break, that's what </COMMENT>
 
       <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/setup/globus</Build_Step>
-      <Build_Step>cp setup-openssh INSTALLDIR_GPTMACRO/setup/globus/setup-openssh</Build_Step>
-      <Build_Step>cp setup-openssh.pl INSTALLDIR_GPTMACRO/setup/globus/setup-openssh.pl</Build_Step>
-      <Build_Step>cp ssh_config INSTALLDIR_GPTMACRO/setup/globus/ssh_config</Build_Step>
-      <Build_Step>cp sshd_config INSTALLDIR_GPTMACRO/setup/globus/sshd_config</Build_Step>
-      <Build_Step>cp moduli INSTALLDIR_GPTMACRO/setup/globus/moduli</Build_Step>
+      <Build_Step>cp ./setup-openssh INSTALLDIR_GPTMACRO/setup/globus/setup-openssh</Build_Step>
+      <Build_Step>cp ./setup-openssh.pl INSTALLDIR_GPTMACRO/setup/globus/setup-openssh.pl</Build_Step>
+      <Build_Step>cp ./ssh_config INSTALLDIR_GPTMACRO/setup/globus/ssh_config</Build_Step>
+      <Build_Step>cp ./sshd_config INSTALLDIR_GPTMACRO/setup/globus/sshd_config</Build_Step>
+      <Build_Step>cp ./moduli INSTALLDIR_GPTMACRO/setup/globus/moduli</Build_Step>
 
       <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib</Build_Step>
 
