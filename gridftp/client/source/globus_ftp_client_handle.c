@@ -798,6 +798,7 @@ globus_l_ftp_client_target_new(
     target->layout.mode = GLOBUS_FTP_CONTROL_STRIPING_NONE;
     target->parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
     target->data_prot = GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
+    target->pbsz = 0;
 
     target->cached_data_conn.source = GLOBUS_NULL;
     target->cached_data_conn.dest = GLOBUS_NULL;
