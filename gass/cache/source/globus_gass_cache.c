@@ -514,7 +514,7 @@ globus_l_gass_cache_write_one_entry(int fd,
 
     /* write timestamp */               /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!*/
     globus_libc_lock();
-    sprintf(size_s,"%40u",entry->timestamp);
+    sprintf(size_s,"%40lu",entry->timestamp);
     size_s[sizeof(size_s)-1] = '\n';
     globus_libc_unlock();
                              
@@ -563,7 +563,7 @@ globus_l_gass_cache_write_one_entry(int fd,
     /* write the number of existing tag enties */
     /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!      */
     globus_libc_lock();
-    sprintf(size_s,"%40u",entry->num_tags);
+    sprintf(size_s,"%40lu",entry->num_tags);
     size_s[sizeof(size_s)-1] = '\n';
     globus_libc_unlock();
     
@@ -1002,11 +1002,11 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked)
     /* !!! need to handle multi threaded !!! */
     gethostname(hname,sizeof(hname));
 #ifdef BUILD_LITE
-    sprintf(uniq_lock_file,"%s_%s_%d",
+    sprintf(uniq_lock_file,"%s_%s_%ld",
             lock_file,hname,
             (long)getpid());
 #else
-    sprintf(uniq_lock_file,"%s_%s_%d",
+    sprintf(uniq_lock_file,"%s_%s_%ld",
             lock_file,hname,
             (long)globus_thread_self());
 #endif
@@ -1102,7 +1102,7 @@ globus_l_gass_cache_unlock_file(char* file_to_be_locked)
     strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);
     /* !!! need to handle multi threaded !!! */
     gethostname(hname,sizeof(hname));
-    sprintf(uniq_lock_file,"%s_%s_%d",lock_file,hname,(long)getpid());
+    sprintf(uniq_lock_file,"%s_%s_%ld",lock_file,hname,(long)getpid());
  
     /* remove the lock */
     while (unlink(lock_file) != 0 )
