@@ -661,7 +661,7 @@ globus_gsi_cert_utils_get_base_name(
 {
     X509_NAME_ENTRY *                   ne;
     int                                 i;
-    int                                 depth;
+    int                                 depth = 0;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_gsi_cert_utils_cert_type_t   cert_type;
     static char *                       _function_name_ =
