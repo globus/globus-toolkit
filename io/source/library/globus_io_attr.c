@@ -3249,6 +3249,14 @@ globus_io_attr_set_secure_authentication_mode(
 	{
 	    instance->internal_credential = GLOBUS_FALSE;
 	}
+        
+        if(mode == GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS)
+        {
+            instance->authorization_mode =
+                GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY;
+            instance->authorized_identity =
+                globus_libc_strdup("<anonymous>");
+        }
     }
     
     
@@ -3452,8 +3460,11 @@ globus_io_attr_set_secure_authorization_mode(
 		myname));
     }
 
-    if(instance->authentication_mode ==
-       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    if((instance->authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE) ||
+       (instance->authentication_mode ==
+        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS &&
+        mode == GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF))
     {
 	    return globus_error_put(
 		globus_io_error_construct_attribute_mismatch(
@@ -4550,8 +4561,11 @@ globus_io_attr_set_secure_delegation_mode(
 		myname));
     }
     
-    if(instance->authentication_mode ==
-       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    if((instance->authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE) ||
+        (instance->authentication_mode ==
+            GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS &&
+         mode != GLOBUS_IO_SECURE_DELEGATION_MODE_NONE))
     {
 	return globus_error_put(
 	    globus_io_error_construct_attribute_mismatch(
