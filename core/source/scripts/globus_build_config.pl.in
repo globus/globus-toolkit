@@ -12,7 +12,7 @@ if (!defined($prefix)) {
 
 
 for (@ARGV) {
-  if (/^--ldflags="(.+)"/) {
+  if (/^--ldflags=(.+)$/) {
     $rawldflags=$1;
   } elsif (/^--flavor=(\w+)/) {
     $flavor=$1;
