@@ -922,12 +922,14 @@ globus_xio_target_init(
     {
         return GlobusXIOErrorMemory("target");
     }
+    memset(xio_target, '\0', sizeof(globus_i_xio_target_t) +
+        (sizeof(globus_i_xio_target_entry_t) * (stack_size - 1)));
 
     xio_target->type = GLOBUS_XIO_TARGET_TYPE_CLIENT;
     /* initialize what we need of the target structure */
     xio_target->stack_size = stack_size;
 
-    target_attr = NULL;
+    driver_attr = NULL;
     ndx = 0;
     for(list = stack->driver_stack;
     !globus_list_empty(list);
