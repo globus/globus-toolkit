@@ -14,8 +14,6 @@ Pass Accept, get back,  pass_open, get back, pass_read... does that work?
 
 need to check for sysconf for system driver, otherwise we're going to have a 256 fd limit
 
-1) parallelism and tcpbs, 
-2) fix insure bugs and leaks, 
 3) fix race 
 4) Add driver operation cancel, for ANY op
    -- it takes context, if op is not greater than context, then fail

@@ -270,7 +270,6 @@ globus_xio_driver_open_delivered(
                 {
                     my_context->close_started = GLOBUS_TRUE;
                     close_op = my_context->close_op;
-                    close_op->cached_obj = GlobusXIOErrorObjCanceled();
                 }
                 break;
 
@@ -304,7 +303,6 @@ globus_xio_driver_open_delivered(
         /* if open failed then just kickout the close */
         else
         {
-            close_op->cached_obj = NULL;
             if(close_op->entry[close_op->ndx - 1].prev_ndx == 0 &&
                     !close_op->blocking &&
                 close_op->_op_handle != NULL)
@@ -1260,7 +1258,11 @@ globus_xio_driver_pass_accept(
                     my_op->accept_attr,
                     op);
         my_op->in_register = GLOBUS_FALSE;
-        my_op->accept_attr = NULL;
+        if(driver->attr_destroy_func != NULL && my_op->accept_attr != NULL)
+        {
+            driver->attr_destroy_func(my_op->accept_attr);
+            my_op->accept_attr = NULL;
+        }
     }
     GlobusXIODebugInternalExit();
 
