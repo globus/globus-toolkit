@@ -16,6 +16,16 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 
+#define GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(_RESULT_) \
+        _RESULT_ = globus_error_put(globus_error_wrap_errno_error( \
+            GLOBUS_GSI_CREDENTIAL_MODULE, \
+            errno, \
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS, \
+            __FILE__":__LINE__:%s:%s", \
+            _function_name_, \
+            globus_l_gsi_cred_error_strings[ \
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]))
+
 /**
  * Initialize Credential Handle Attributes
  * @ingroup globus_gsi_cred_handle_attrs
@@ -48,7 +58,8 @@ globus_gsi_cred_handle_attrs_init(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s", 
              _function_name_));
@@ -58,13 +69,7 @@ globus_gsi_cred_handle_attrs_init(
     if((*handle_attrs = (globus_gsi_cred_handle_attrs_t)
         globus_malloc(sizeof(globus_i_gsi_cred_handle_attrs_t))) == NULL)
     {
-        result = globus_error_put(
-            globus_error_wrap_errno_error(
-                GLOBUS_GSI_CREDENTIAL_MODULE,
-                errno,
-                GLOBUS_GSI_CRED_ERROR_ERRNO,
-                "%s:%d: Could not allocate memory for handle attributes",
-                __FILE__, __LINE__));
+        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
         goto exit;
     }
 
@@ -98,7 +103,7 @@ globus_gsi_cred_handle_attrs_init(
 
     globus_gsi_cred_handle_attrs_destroy(*handle_attrs);
     
-    result = GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+    GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
         result,
         GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS);
 
@@ -186,22 +191,25 @@ globus_gsi_cred_handle_attrs_copy(
 
     if(a == NULL || b == NULL)
     {
-        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             ("NULL parameter passed to function: %s", _function_name_));
         goto exit;
     }
 
+    result = globus_gsi_cred_handle_attrs_init(b);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS);
+        goto exit;
+    }
+            
     if(((*b)->ca_cert_dir = strdup(a->ca_cert_dir)) == NULL)
     {
-        result = globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
         goto exit;
     }
 
@@ -212,14 +220,7 @@ globus_gsi_cred_handle_attrs_copy(
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
                                           * (size + 1))) == NULL)
     {
-        result = globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
         goto exit;
     }        
 
@@ -266,7 +267,8 @@ globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s", 
              _function_name_));
@@ -275,14 +277,7 @@ globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     
     if((handle_attrs->ca_cert_dir = strdup(ca_cert_dir)) == NULL)
     {
-        result = globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
         goto exit;
     }
 
@@ -325,7 +320,8 @@ globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s", 
              _function_name_));
@@ -334,7 +330,8 @@ globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
     
     if(ca_cert_dir == NULL)
     {
-        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -343,14 +340,7 @@ globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
 
     if((*ca_cert_dir = strdup(handle_attrs->ca_cert_dir)) == NULL)
     {
-        result = globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
         goto exit;
     }
 
@@ -396,7 +386,8 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -410,14 +401,7 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
                                           * (size + 1))) == NULL)
     {
-        result = globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
         goto exit;
     }        
 
@@ -462,7 +446,8 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -471,7 +456,8 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
 
     if(handle_attrs->search_order == NULL)
     {
-        result = GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
             ("The search order of the handle attributes is NULL"));
         goto exit;
@@ -484,14 +470,7 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
                                           * (size + 1))) == NULL)
     {
-        result = globus_error_wrap_errno_error(
-            GLOBUS_GSI_CREDENTIAL_MODULE,
-            errno,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS,
-            __FILE__":__LINE__:%s:%s",
-            _function_name_,
-            globus_l_gsi_cred_error_strings[
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]);
+        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
         goto exit;
     }        
 

@@ -1,3 +1,14 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gsi_cred_error.c
+ * Globus GSI Credential Library
+ * @author Sam Lang, Sam Meder
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
 #include "globus_i_gsi_credential.h"
 #include "globus_gsi_cred_constants.h"
@@ -24,7 +35,7 @@ globus_l_gsi_cred_error_strings[GLOBUS_GSI_CRED_ERROR_LAST] =
 /* 13 */  "System Error",
 /* 14 */  "Error with System Configuration",
 /* 15 */  "Error with Credential Handle Attributes"
-
+/* 16 */  "Error with Credential's SSL context"
 };
 
 /* ERROR FUNCTIONS */

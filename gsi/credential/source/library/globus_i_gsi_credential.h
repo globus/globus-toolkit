@@ -78,30 +78,37 @@ extern FILE *                           globus_i_gsi_cred_debug_fstream;
 
 /* ERROR MACROS */
 
-#define GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(_ERRORTYPE_, _ERRSTR_) \
-    globus_i_gsi_cred_openssl_error_result( \
-        _ERRORTYPE_, \
-        __FILE__, \
-        _function_name_, \
-        __LINE__, \
-        globus_i_gsi_cred_create_string _ERRSTR_)
+#define GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
+    {                                                                         \
+        char *                          _tmp_str_ =                           \
+            globus_i_gsi_cred_create_string _ERRSTR_;                         \
+        _RESULT_ = globus_i_gsi_cred_openssl_error_result(_ERRORTYPE_,        \
+                                                          __FILE__,           \
+                                                          _function_name_,    \
+                                                          __LINE__,           \
+                                                          _tmp_str_);         \
+        globus_libc_free(_tmp_str_);                                          \
+    }
 
-#define GLOBUS_GSI_CRED_ERROR_RESULT(_ERRORTYPE_, _ERRSTR_) \
-    globus_i_gsi_cred_error_result( \
-        _ERRORTYPE_, \
-        __FILE__, \
-        _function_name_, \
-        __LINE__, \
-        globus_i_gsi_cred_create_string _ERRSTR_)
+#define GLOBUS_GSI_CRED_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
+    {                                                                 \
+        char *                          _tmp_str_ =                   \
+            globus_i_gsi_cred_create_string _ERRSTR_;                 \
+        _RESULT_ = globus_i_gsi_cred_error_result(_ERRORTYPE_,        \
+                                                  __FILE__,           \
+                                                  _function_name_,    \
+                                                  __LINE__,           \
+                                                  _tmp_str_);         \
+        globus_libc_free(_tmp_str_);                                  \
+    }
 
-#define GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(_TOP_RESULT_, _ERRORTYPE_) \
-    globus_i_gsi_cred_error_chain_result( \
-        _TOP_RESULT_, \
-        _ERRORTYPE_, \
-        __FILE__, \
-        _function_name_, \
-        __LINE__, \
-        NULL)
+#define GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(_TOP_RESULT_, _ERRORTYPE_)    \
+    _TOP_RESULT_ = globus_i_gsi_cred_error_chain_result(_TOP_RESULT_,    \
+                                                        _ERRORTYPE_,     \
+                                                        __FILE__,        \
+                                                        _function_name_, \
+                                                        __LINE__,        \
+                                                        NULL)
 
 extern char *                    globus_l_gsi_cred_error_strings[];
 
@@ -157,21 +164,6 @@ globus_i_gsi_cred_goodtill(
     globus_gsi_cred_handle_t            cred_handle,
     time_t *                            goodtill);
 
-globus_result_t
-globus_i_gsi_cred_make_time(
-    ASN1_UTCTIME *                      ctm,
-    time_t *                            newtime);
-
-int
-globus_i_gsi_X509_check_issued(
-    X509_STORE_CTX *                    ctx,
-    X509 *                              x,
-    X509 *                              issuer);
-
-int
-globus_i_gsi_X509_verify_cert_callback(
-    X509_STORE_CTX *                    ctx);
-
 globus_result_t globus_i_gsi_cred_get_proxycertinfo(
     X509 *                              cert,
     PROXYCERTINFO **                    proxycertinfo);
@@ -206,9 +198,13 @@ globus_i_gsi_cred_create_string(
     const char *                        format,
     ...);
 
+char *
+globus_i_gsi_cred_v_create_string(
+    const char *                        format,
+    va_list                             ap);
+
 EXTERN_C_END
 
 #endif /* GLOBUS_I_INCLUDE_GSI_CREDENTIAL_H */
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-

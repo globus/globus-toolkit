@@ -8,13 +8,12 @@ Sources= \
 	globus_i_gsi_credential.h \
 	globus_gsi_cred_handle.c \
 	globus_gsi_cred_handle_attrs.c \
-	globus_gsi_cred_error.c \
-	globus_gsi_cred_system_config.h \
-	globus_gsi_cred_system_config.c
+	globus_gsi_cred_constants.h \
+	globus_gsi_cred_error.c 
 
 flavorinclude_HEADERS= \
 	globus_gsi_credential.h \
-	globus_gsi_cred_system_config.h
+	globus_gsi_cred_constants.h
 
 lib_LTLIBRARIES = libglobus_gsi_credential_$(GLOBUS_FLAVOR_NAME).la
 

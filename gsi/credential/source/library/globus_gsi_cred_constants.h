@@ -27,7 +27,10 @@ typedef enum
     GLOBUS_GSI_CRED_ERROR_ERRNO = 13,
     GLOBUS_GSI_CRED_ERROR_SYSTEM_CONFIG = 14,
     GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS = 15,
-    GLOBUS_GSI_CRED_ERROR_LAST = 16
+    GLOBUS_GSI_CRED_ERROR_WITH_SSL_CTX = 16,
+    GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA = 17,
+    GLOBUS_GSI_CRED_ERROR_VERIFYING_NEW_PROXY = 18,
+    GLOBUS_GSI_CRED_ERROR_LAST = 19
 } globus_gsi_cred_error_t;
 
 /**
@@ -48,22 +51,6 @@ typedef enum
     GLOBUS_SERVICE,
     GLOBUS_SO_END
 } globus_gsi_cred_type_t;
-
-/**
- * Globus Proxy Type Enum
- * @ingroup globus_gsi_proxy
- *
- * SLANG: This enum needs documentation
- */
-typedef enum
-{
-    GLOBUS_ERROR_PROXY = -1,
-    GLOBUS_NOT_PROXY = 0,
-    GLOBUS_FULL_PROXY = 1,
-    GLOBUS_LIMITED_PROXY = 2,
-    GLOBUS_RESTRICTED_PROXY = 3
-} globus_gsi_cred_proxy_type_t;
-
 
 #define GLOBUS_NULL_GROUP               "GLOBUS_NULL_GROUP"
 #define GLOBUS_NULL_POLICY              "GLOBUS_NULL_POLICY"

@@ -32,6 +32,8 @@ EXTERN_C_BEGIN
 #include "globus_common.h"
 #include "globus_error_openssl.h"
 #include "globus_gsi_cred_constants.h"
+#include "globus_gsi_callback.h"
+#include "globus_gsi_cert_utils.h"
 
 /** 
  * @defgroup globus_gsi_credential_activation Activation
@@ -66,10 +68,10 @@ EXTERN_C_BEGIN
  * @ingroup globus_gsi_credential_activation
  * @hideinitializer
  */
-#define GLOBUS_GSI_CREDENTIAL_MODULE    (&globus_i_gsi_proxy_module)
+#define GLOBUS_GSI_CREDENTIAL_MODULE    (&globus_i_gsi_credential_module)
 
 extern 
-globus_module_descriptor_t              globus_i_gsi_proxy_module;
+globus_module_descriptor_t              globus_i_gsi_credential_module;
 
 
 #include "globus_gsi_cred_constants.h"
@@ -138,6 +140,10 @@ globus_result_t globus_gsi_cred_handle_attrs_copy(
     globus_gsi_cred_handle_attrs_t      a,
     globus_gsi_cred_handle_attrs_t *    b);
 
+globus_result_t
+globus_gsi_cred_handle_init_ssl_context(
+    globus_gsi_cred_handle_t            cred_handle);
+
 /* acquire a credential from a filesystem location. The search order
  * is there to allow people to specify what kind of credential should
  * looked for first. I'm not quite sure whether I like this yet.
@@ -186,13 +192,11 @@ globus_result_t globus_gsi_cred_write_proxy(
 
 /* Determine whether the credential structure contains a proxy */
 
-globus_result_t globus_gsi_cred_is_proxy(
-    globus_gsi_cred_handle_t            handle,
-    int *                               is_proxy);
 
-/* If we can, walk the cert chain and make sure that the credential is
-  * ok. Might also check that all proxy certs are wellformed.
-  */
+globus_result_t
+globus_gsi_cred_verify_proxy_cert_chain(
+    globus_gsi_cred_handle_t            cred_handle,
+    globus_gsi_callback_data_t          callback_data);
 
 globus_result_t globus_gsi_cred_verify(
     globus_gsi_cred_handle_t            handle);
@@ -264,7 +268,8 @@ globus_result_t globus_gsi_cred_get_ssl_context(
 
 globus_result_t globus_gsi_cred_check_proxy_name(
     globus_gsi_cred_handle_t            handle,
-    globus_gsi_cred_proxy_type_t *      type);
+    globus_gsi_cert_utils_proxy_type_t *      
+                                        type);
 
 globus_result_t globus_gsi_cred_get_lifetime(
     globus_gsi_cred_handle_t            handle,
@@ -273,7 +278,7 @@ globus_result_t globus_gsi_cred_get_lifetime(
 globus_result_t globus_gsi_cred_get_goodtill(
     globus_gsi_cred_handle_t            handle,
     time_t *                            goodtill);
-
+ 
 globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char *                              ca_cert_dir);
@@ -291,11 +296,8 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     globus_gsi_cred_type_t *            search_order[]);/*{PROXY,USER,HOST}*/
 
-globus_result_t globus_gsi_cred_get_base_name(
-    X509_NAME *                         subject);
-
 EXTERN_C_END
 
-#endif /* GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H */
+#endif /* DOXYGEN */
 
-#endif
+#endif /* GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H */
