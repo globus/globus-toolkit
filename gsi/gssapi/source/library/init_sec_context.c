@@ -76,7 +76,8 @@ GSS_CALLCONV gss_init_sec_context(
     char 			        cbuf[1];
     time_t                              goodtill = 0;
     int                                 cert_count = 0;
-
+    globus_proxy_type_t                 proxy_type = GLOBUS_FULL_PROXY;
+    
 #ifdef DEBUG
     fprintf(stderr, "init_sec_context:\n") ;
 #endif /* DEBUG */
@@ -338,14 +339,24 @@ GSS_CALLCONV gss_init_sec_context(
         X509_REQ_print_fp(stderr,reqp);
 #endif
 
+        if(proxy_check_proxy_name(context->cred_handle->pcd->ucert)
+           == GLOBUS_RESTRICTED_PROXY)
+        {
+            proxy_type = GLOBUS_RESTRICTED_PROXY;
+        }
+        else if(context->req_flags & GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)
+        {
+            proxy_type = GLOBUS_LIMITED_PROXY;
+        }
+
+
         proxy_sign(context->cred_handle->pcd->ucert,
                    context->cred_handle->pcd->upkey,
                    reqp,
                    &ncert,
                    time_req,
                    NULL,
-                   (context->req_flags &
-                    GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)? 1:0);
+                   proxy_type);
 
 #ifdef DEBUG
         X509_print_fp(stderr,ncert);

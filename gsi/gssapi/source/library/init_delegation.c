@@ -92,6 +92,7 @@ GSS_CALLCONV gss_init_delegation(
     X509 *                              cert = NULL;
     X509_EXTENSION *                    ex = NULL;
     STACK_OF(X509_EXTENSION) *          extensions = NULL;
+    globus_proxy_type_t                 proxy_type = GLOBUS_FULL_PROXY;
     int                                 i;
     int                                 cert_chain_length = 0;
     int                                 found_group_extension = 0;
@@ -274,13 +275,24 @@ GSS_CALLCONV gss_init_delegation(
             }
         }
 
+        /* For now make any delegated cert with extensions into a
+         * restricted proxy. This may need to be changed later on.
+         */ 
+        
+        if(sk_num(extensions) ||
+           proxy_check_proxy_name(cred->pcd->ucert)
+           == GLOBUS_RESTRICTED_PROXY)
+        {
+            proxy_type = GLOBUS_RESTRICTED_PROXY;
+        }
+
         if(proxy_sign(cred->pcd->ucert,
                       cred->pcd->upkey,
                       reqp,
                       &ncert,
                       time_req,
                       extensions,
-                      0))
+                      proxy_type))
         {
             /* should probably return a error related to not being
                able to sign the cert */
