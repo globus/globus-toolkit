@@ -75,10 +75,10 @@ globus_gsi_callback_data_destroy(
         goto exit;
     }
 
-/*      if(callback_data->cert_chain) */
-/*      { */
-/*          sk_X509_pop_free(callback_data->cert_chain, X509_free); */
-/*      } */
+    if(callback_data->cert_chain)
+    { 
+        sk_X509_pop_free(callback_data->cert_chain, X509_free); 
+    } 
     
     if(callback_data->cert_dir)
     {
@@ -90,7 +90,6 @@ globus_gsi_callback_data_destroy(
     globus_object_free(globus_error_get(callback_data->error));
 
     globus_libc_free(callback_data);
-    callback_data = NULL;
 
  exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
