@@ -151,7 +151,7 @@ typedef struct
 /* Initialize the request structure to its default values.
  */
 extern int
-globus_gram_jobmanager_request_init(
+globus_jobmanager_request_init(
 	globus_gram_jobmanager_request_t ** request);
 
 /*-----------------------------------------------------------------------
@@ -159,7 +159,7 @@ globus_gram_jobmanager_request_init(
  * This function does NOT cancel the job request
  */
 extern int 
-globus_gram_jobmanager_request_destroy(
+globus_jobmanager_request_destroy(
 	globus_gram_jobmanager_request_t * request);
 
 /*-----------------------------------------------------------------------
@@ -169,7 +169,7 @@ globus_gram_jobmanager_request_destroy(
  * set to GLOBUS_GRAM_ERROR_*.
  */
 extern int 
-globus_gram_jobmanager_request(
+globus_jobmanager_request(
 	globus_gram_jobmanager_request_t * request);
 
 /*-----------------------------------------------------------------------
@@ -178,7 +178,7 @@ globus_gram_jobmanager_request(
  * otherwise it returns GLOBUS_FAILURE.
  */
 extern int 
-globus_gram_jobmanager_request_cancel(
+globus_jobmanager_request_cancel(
 	globus_gram_jobmanager_request_t * request);
 
 /*-----------------------------------------------------------------------
@@ -189,7 +189,7 @@ globus_gram_jobmanager_request_cancel(
  * if the job status has changed
  */
 extern int 
-globus_gram_jobmanager_request_check(
+globus_jobmanager_request_check(
 	globus_gram_jobmanager_request_t * request);
 
 /******************************************************************************

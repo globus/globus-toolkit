@@ -61,6 +61,21 @@ globus_l_gram_script_run(char * cmd,
 static int
 globus_l_gram_request_validate(globus_gram_jobmanager_request_t * request);
 
+static int 
+globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request);
+static int 
+globus_l_gram_check_fork(globus_gram_jobmanager_request_t * request);
+static int 
+globus_l_gram_cancel_fork(globus_gram_jobmanager_request_t * request);
+
+static int 
+globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request);
+static int 
+globus_l_gram_check_shell(globus_gram_jobmanager_request_t * request);
+static int 
+globus_l_gram_cancel_shell(globus_gram_jobmanager_request_t * request);
+
+
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
@@ -151,7 +166,6 @@ Returns:
 int 
 globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
 {
-    char tmp_buffer[256];
     globus_gram_jobmanager_request_t * r;
 
     /*** creating request structure ***/
@@ -554,7 +568,6 @@ Returns:
 int 
 globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
 {
-    int rc;
     char script_cmd[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     FILE * script_arg_fp;
     char new_param[4096];
@@ -927,17 +940,12 @@ static int
 globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
                            int processes_requested)
 {
-    int n, i, x, y;
+    int n, i, x;
     int p[2];
-    int rc;
     int rd;
     int wr;
     int pid;
-    int fd_in;
-    int fd_out;
-    int fd_err;
     char * s;
-    char * args[MAXARGS];
     char buf[1024];
     char tmpbuf[256];
     char * stdout_filename = GLOBUS_NULL;
@@ -1325,8 +1333,6 @@ static int
 globus_l_gram_env_not_set(char * env_name, char *** env_list)
 {
     int i;
-    int var_length;
-    char * c;
 
     if (!env_name)
         return(0);
