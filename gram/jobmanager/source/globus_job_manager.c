@@ -420,11 +420,18 @@ main(int argc,
         {
 	    GRAM_UNLOCK;
             fprintf(stderr, "Unknown argument %s\n", argv[i]);
-            fprintf(stderr, "Usage: %s [-home deploy home dir ] "
-                                      "[-e lib exe dir] "
-                                      "[-d debug print] "
-                                      "[-s save files] "
-                                      "[-t test dat file]\n", argv[0]);
+            fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s\n",
+                    argv[0],
+                    "[-home deploy home dir ] [-e lib exe dir]",
+                    "[-d debug print] [-s save files]",
+                    "[-nickname resource manager nickname]",
+                    "[-type resource manager type] [-globus_site_dn dn]",
+                    "[-globus_gram_dn dn] [-globus_host_dn dn]",
+                    "[-globus_host_manufacturer manufacturer]",
+                    "[-globus_host_cputype cputype]",
+                    "[-globus_host_osname osname]",
+                    "[-globus_host_osversion osversion ] [-t test dat file]"
+                   );
             exit(1);
         }
     }
