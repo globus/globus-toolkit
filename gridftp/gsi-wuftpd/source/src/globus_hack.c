@@ -1,7 +1,7 @@
-#if defined(USE_GLOBUS_DATA_CODE)
-#include  <globus_common.h>
 #include <setjmp.h>
 #include "config.h"
+#if defined(USE_GLOBUS_DATA_CODE)
+#include  <globus_common.h>
 #include "proto.h"
 #include "../support/ftp.h"
 #include <syslog.h>
