@@ -9,7 +9,6 @@ Basic Tenants:
  1) All communications between MyProxy process will be authenticated
     via GSSAPI. The MyProxyServer will always be the accepting side and
     will have an identity of "host/<fully qualified domain name>".
-    The client will require mutual authentication.
  
  2) The transport protocol will be SSL (Kerberos support is planned)
     Each message will be integrity protected and encrypted via gss_wrap().
