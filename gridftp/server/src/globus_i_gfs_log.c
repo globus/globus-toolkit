@@ -264,7 +264,7 @@ globus_i_gfs_log_transfer(
     globus_size_t                       blksize,
     globus_size_t                       tcp_bs,
     const char *                        fname,
-    globus_size_t                       nbytes,
+    globus_off_t                        nbytes,
     int                                 code,
     char *                              volume,
     char *                              type,
@@ -337,7 +337,7 @@ globus_i_gfs_log_transfer(
         "FILE=%s "
         "BUFFER=%ld "
         "BLOCK=%ld "
-        "NBYTES=%ld "
+        "NBYTES=%"GLOBUS_OFF_T_FORMAT" "
         "VOLUME=%s "
         "STREAMS=%d "
         "STRIPES=%d "
@@ -367,7 +367,7 @@ globus_i_gfs_log_transfer(
         fname,
         win_size,
         (long) blksize,
-        (long) nbytes,
+        nbytes,
         volume,
         stream_count, 
         stripe_count,

@@ -43,7 +43,7 @@ globus_i_gfs_log_transfer(
     globus_size_t                       blksize,
     globus_size_t                       tcp_bs,
     const char *                        fname,
-    globus_size_t                       nbytes,
+    globus_off_t                        nbytes,
     int                                 code,
     char *                              volume,
     char *                              type,
