@@ -289,12 +289,14 @@ fi
 
 # Determine directory to be used as working directory 
 
-echo "\n# Changing to directory as requested by user\n" >> $LSF_JOB_SCRIPT
+echo ""  >> $LSF_JOB_SCRIPT
+echo "# Changing to directory as requested by user" >> $LSF_JOB_SCRIPT
 echo "cd $grami_directory" >> $LSF_JOB_SCRIPT
  
 # Determining job request type
 
-echo "\n# Executing job as requested by user\n" >> $LSF_JOB_SCRIPT
+echo ""  >> $LSF_JOB_SCRIPT
+echo "# Executing job as requested by user" >> $LSF_JOB_SCRIPT
 if [ $lsf_jobtype = "mpi" ] ; then
     echo "${mpirun} -np $grami_count $grami_program $new_grami_args" >> $LSF_JOB_SCRIPT
 elif [ $lsf_jobtype = "multiple" ] ; then
