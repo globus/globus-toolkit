@@ -740,17 +740,20 @@ globus_l_gass_transfer_http_read_buffered_callback(
     }
     /* Register the socket for closing if we're done reading from it */
     else if(proto->recv_state == GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_EOF ||
-       proto->recv_state == GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_ERROR)
+	    proto->recv_state == GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_ERROR)
     {
-	proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_CLOSING;
-	result =
-	    globus_io_register_close(
-		&proto->handle,
-		globus_l_gass_transfer_http_close_callback,
-		proto);
-	if(result != GLOBUS_SUCCESS)
+	if(proto->state != GLOBUS_GASS_TRANSFER_HTTP_STATE_CLOSING)
 	{
-	    proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_DONE;
+	    proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_CLOSING;
+	    result =
+		globus_io_register_close(
+		    &proto->handle,
+		    globus_l_gass_transfer_http_close_callback,
+		    proto);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+		proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_DONE;
+	    }
 	}
     }
     if(proto->user_waitlen == 0 ||
@@ -778,6 +781,7 @@ globus_l_gass_transfer_http_read_buffered_callback(
 						    proto->user_offset,
 						    proto->failure_occurred,
 						    last_data);
+	result = GLOBUS_SUCCESS;
     }
     else
     {
