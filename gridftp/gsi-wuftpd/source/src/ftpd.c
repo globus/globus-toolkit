@@ -92,11 +92,11 @@
 
 #ifdef USE_GLOBUS_DATA_CODE
 #   if defined(THROUGHPUT)
-#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length)  \
-            g_send_data(__name, __instr, __h, __off, __blksize, __length)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length, __size)  \
+            g_send_data(__name, __instr, __h, __off,(off_t) __blksize, (off_t)__length, __size)
 #   else
-#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length)  \
-            g_send_data(__instr, __h, __off, __blksize, __length)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length, __size)  \
+            g_send_data(__instr, __h, __off, (off_t)__blksize, (off_t)__length, __size)
 #   endif
 #endif
 
@@ -4177,7 +4177,7 @@ void ls(char *file, char nlst)
 }
 #endif /* INTERNAL_LS */
 
-void retrieve(char *cmd, char *name, int offset, int length)
+void retrieve(char *cmd, char *name, off_t offset, off_t length)
 {
     FILE *fin = NULL, *dout;
     struct stat st, junk;
@@ -4199,7 +4199,18 @@ void retrieve(char *cmd, char *name, int offset, int length)
 
     wu_realpath(name, realname, chroot_path);
 
+#   if HAVE_BROKEN_STAT
+    if(cmd == NULL && (stat_ret = open(name, O_RDONLY)) >= 0)
+    {
+	st.st_size = lseek(stat_ret, 0, SEEK_END);
+	st.st_blksize = BUFSIZ;
+	close(stat_ret);
+	stat_ret = 0;
+    }
+    if(cmd == NULL && stat_ret == 0)
+#   else
     if (cmd == NULL && (stat_ret = stat(name, &st)) == 0)
+#   endif
 	/* there isn't a command and the file exists */
 	if (use_accessfile && checknoretrieve(name)) {	/* see above.  _H */
 	    if (log_security)
@@ -4411,8 +4422,19 @@ void retrieve(char *cmd, char *name, int offset, int length)
     }
     if (cmd == NULL &&
 	(fstat(fileno(fin), &st) < 0 || (st.st_mode & S_IFMT) != S_IFREG)) {
+#       if HAVE_BROKEN_STAT
+        /* Is this safe to do on a FILE *'s fd? */
+        st.st_size = lseek(fileno(fin), 0, SEEK_END);
+	lseek(fileno(fin), 0, SEEK_SET);
+	if(st.st_size < 0)
+	{
+	    reply(550, "%s: not a plain file.", name);
+	    goto done;
+	}
+#       else
 	reply(550, "%s: not a plain file.", name);
 	goto done;
+#       endif
     }
 
 
@@ -4436,15 +4458,16 @@ void retrieve(char *cmd, char *name, int offset, int length)
 #       ifdef BUFFER_SIZE
             TransferComplete = G_SEND_DATA(name, fin, 
                                    &g_data_handle, tmp_restart,
-                                   BUFFER_SIZE, length);
+                                   BUFFER_SIZE, length, st.st_size);
 #       else
 #           ifdef HAVE_ST_BLKSIZE
                 TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
-                                       tmp_restart, st.st_blksize * 2, length);
+                                       tmp_restart, st.st_blksize * 2, length,
+				       st.st_size);
 #           else
                 TransferComplete = G_SEND_DATA(name, fin, 
                                        &g_data_handle, tmp_restart, BUFSIZ, 
-                                       length);
+                                       length, st.st_size);
 #           endif
 #       endif
     }
@@ -4575,7 +4598,7 @@ store(
     char *                                    name, 
     char *                                    mode, 
     int                                       unique, 
-    int                                       offset)
+    off_t                                     offset)
 {
     FILE *                                    fout; 
     FILE *                                    din;

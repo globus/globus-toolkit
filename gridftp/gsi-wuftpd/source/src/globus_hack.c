@@ -1,4 +1,3 @@
-#include <setjmp.h>
 #include "config.h"
 #if defined(USE_GLOBUS_DATA_CODE)
 #include  <globus_common.h>
@@ -78,8 +77,8 @@ debug_printf(char * fmt, ...)
 
 typedef struct
 {
-    globus_size_t		offset;
-    globus_size_t		length;
+    off_t			offset;
+    off_t			length;
 }
 globus_l_wu_range_t;
 
@@ -95,7 +94,7 @@ typedef struct globus_i_wu_monitor_s
     int                        count;
     int                        fd;
 
-    int                        offset; 
+    off_t	               offset; 
     int                        callback_count;
 
     /* Range response messages */
@@ -169,7 +168,7 @@ data_read_callback(
     globus_object_t *                           error,
     globus_byte_t *                             buffer,
     globus_size_t                               length,
-    globus_size_t                               offset,
+    globus_off_t                                offset,
     globus_bool_t                               eof);
 
 void
@@ -179,7 +178,7 @@ data_write_callback(
     globus_object_t *                           error,
     globus_byte_t *                             buffer,
     globus_size_t                               length,
-    globus_size_t                               offset,
+    globus_off_t                                offset,
     globus_bool_t                               eof);
 
 void 
@@ -207,7 +206,6 @@ send_range(
 /*************************************************************
  *   global vairables 
  ************************************************************/
-static globus_bool_t                            g_timeout_occured;
 globus_ftp_control_handle_t                     g_data_handle;
 
 static globus_i_wu_monitor_t                     g_monitor;
@@ -274,7 +272,7 @@ globus_read(
     globus_io_handle_t *                handle,
     globus_byte_t *                     buffer,
     int                                 length,
-    int                                 offset,
+    off_t                               offset,
     off_t *                             offs_out)
 {
     globus_size_t                       bytes_read;
@@ -296,7 +294,7 @@ globus_write(
     globus_io_handle_t *                handle,
     globus_byte_t *                     buffer,
     int                                 length,
-    int                                 offset)
+    off_t                               offset)
 {
     globus_result_t                     res;
     globus_size_t                       bytes_written;
@@ -323,8 +321,8 @@ std_read(
     int                                 fd,
     globus_byte_t *                     buffer,
     int                                 length,
-    int                                 offset,
-    off_t *                               offs_out)
+    off_t                               offset,
+    off_t *                             offs_out)
 {
     *offs_out = offset;
 
@@ -336,7 +334,7 @@ std_write(
     int                                 fd,
     globus_byte_t *                     buffer,
     int                                 length,
-    int                                 offset)
+    off_t                               offset)
 {
     int                                 ret;
 
@@ -606,8 +604,8 @@ g_alarm_signal(
  */
 int
 invert_restart(
-    int *                                          offset_a, 
-    int *                                          length_a) 
+    off_t *                                        offset_a, 
+    off_t *                                        length_a) 
 {
     int                                            start = 0;
     globus_l_wu_range_t *			   tmp;
@@ -659,16 +657,18 @@ g_send_data(
     char *                                          name,
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
-    int                                             offset,
+    off_t                                           offset,
     off_t                                           blksize,
-    off_t                                           length)
+    off_t                                           length,
+    off_t					    size)
 #else
 g_send_data(
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
-    int                                             offset,
+    off_t                                           offset,
     off_t                                           blksize,
-    off_t                                           length)
+    off_t                                           length,
+    off_t					    size)
 #endif
 {
     int                                             jb_count;
@@ -686,11 +686,11 @@ g_send_data(
     int                                             connection_count = 4;
     globus_bool_t                                   l_timed_out = GLOBUS_FALSE;
     globus_ftp_control_parallelism_t                parallelism;
-    int *                                           offset_a;
-    int *                                           length_a;
+    off_t *                                         offset_a;
+    off_t *                                         length_a;
     int                                             count_a;
     int                                             ctr;
-    int                                             skipped_offset;
+    off_t                                           skipped_offset;
     char                                            error_buf[1024];
 #if defined(STRIPED_SERVER_BACKEND)
     bmap_offs_t                                     offs_out = -1;
@@ -747,8 +747,6 @@ g_send_data(
 	{
 	    if(retrieve_is_data)
 	    {
-		struct stat s;
-
 #if defined (STRIPED_SERVER_BACKEND)
                 if(g_striped_file_size > 0)
                 {
@@ -756,11 +754,8 @@ g_send_data(
                 }
                 else
 #endif
-                {
-		    fstat(fileno(instr), &s);
-		
-		    g_layout.partitioned.size = s.st_size;
-                }
+		g_layout.partitioned.size = size;
+
 		globus_ftp_control_local_layout(handle, &g_layout, 0);
 	    }
 	}
@@ -847,17 +842,17 @@ g_send_data(
 
         if(!globus_fifo_empty(&g_restarts))
         {
-            offset_a = (int
-			*)globus_malloc(sizeof(int)*
+            offset_a = (off_t
+			*)globus_malloc(sizeof(off_t)*
 					(globus_fifo_size(&g_restarts) + 1));
-            length_a = (int *)globus_malloc(sizeof(int)*(
+            length_a = (off_t *)globus_malloc(sizeof(off_t)*(
 		                               globus_fifo_size(&g_restarts) + 1));
             count_a = invert_restart(offset_a, length_a);
         }
         else
         {
-            offset_a = (int *)globus_malloc(sizeof(int));
-            length_a = (int *)globus_malloc(sizeof(int));
+            offset_a = (off_t *)globus_malloc(sizeof(off_t));
+            length_a = (off_t *)globus_malloc(sizeof(off_t));
             offset_a[0] = offset;
             length_a[0] = length;
             count_a = 1;
@@ -1278,7 +1273,7 @@ data_write_callback(
     globus_object_t *                           error,
     globus_byte_t *                             buffer,
     globus_size_t                               length,
-    globus_size_t                               offset,
+    globus_off_t                                offset,
     globus_bool_t                               eof)
 {
     globus_i_wu_monitor_t *                         monitor;
@@ -1303,7 +1298,7 @@ int
 g_receive_data(
     globus_ftp_control_handle_t *            handle,
     FILE *                                   outstr,
-    int                                      offset,
+    off_t                                    offset,
     char *                                   fname)
 {
     register int                             c;
@@ -1641,7 +1636,7 @@ data_read_callback(
     globus_object_t *                           error,
     globus_byte_t *                             buffer,
     globus_size_t                               length,
-    globus_size_t                               offset,
+    globus_off_t                                offset,
     globus_bool_t                               eof)
 {
     globus_i_wu_monitor_t *                      monitor;
@@ -1785,8 +1780,8 @@ g_eof_receive = GLOBUS_TRUE;
 void
 globus_i_wu_insert_range(
     globus_fifo_t *				ranges,
-    globus_size_t				offset,
-    globus_size_t				length)
+    globus_off_t				offset,
+    globus_off_t				length)
 {
     globus_fifo_t				tmp;
     globus_l_wu_range_t *			range;
@@ -1903,11 +1898,15 @@ globus_l_wu_create_range_string(
 	mylen++;
 
 	buf = realloc(buf, length + mylen + 1);
-	sprintf(buf + length,
-		"%d-%d,", 
-		range->offset, range->offset+range->length);
+	length += globus_libc_sprint_off_t(buf + length,
+					   range->offset);
+	length += sprintf(buf+length, "-");
+
+	length += globus_libc_sprint_off_t(buf + length,
+					   range->offset +
+					   range->length);
+	length += sprintf(buf + length, ",");
 	globus_libc_free(range);
-	length += mylen;
     }
     buf[strlen(buf)-1] = '\0';
 

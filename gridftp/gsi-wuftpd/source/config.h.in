@@ -344,3 +344,8 @@
  * Define this to support quota mechanisms...
  */
 #undef QUOTA
+
+/*
+ * Define this if stat doesn't work with large files
+ */
+#undef HAVE_BROKEN_STAT

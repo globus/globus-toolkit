@@ -229,8 +229,8 @@ extern int port_allowed(const char *remoteaddr);
     int Number;
     struct {
 	int mode;
-	long long offset;
-	long long length;
+	off_t offset;
+	off_t length;
     } estor_eret;
     struct {
 	struct in_addr addr;
@@ -641,7 +641,7 @@ cmd: USER SP username CRLF
 		       $4.offset, $4.length, CHECKNULL($6));
 	    if ($2 && $6 != NULL && !restrict_check($6)) {
 		retrieve_is_data = 1;
-		retrieve((char *) NULL, $6, (int) $4.offset, (int) $4.length);
+		retrieve((char *) NULL, $6, $4.offset, $4.length);
 	    }
 	    if ($6 != NULL)
 		free($6);
@@ -2607,31 +2607,49 @@ void sizecmd(char *filename)
 	    struct stat stbuf;
 	    if (stat(filename, &stbuf) < 0 ||
 		(stbuf.st_mode & S_IFMT) != S_IFREG)
-		reply(550, "%s: not a plain file.", filename);
+#               if defined(HAVE_BROKEN_STAT)
+                {
+		    int fd;
+		    off_t size;
+		    fd = open(filename, O_RDONLY);
+		    if(fd >= 0)
+		    {
+			size = lseek(fd, 0, SEEK_END);
+			close(fd);
+		    }
+		    if(fd < 0 || size < 0)
+			reply(550, "%s: not a plain file.", filename);
+		    else
+			reply(213, "%"L_FORMAT, size);
+		}
+#               else
+		    reply(550, "%s: not a plain file.", filename);
+#               endif
 	    else
-#if OFFSET_SIZE == 8
-		reply(213, "%qu", stbuf.st_size);
-#else
-#ifdef _AIX42
-		reply(213, "%llu", stbuf.st_size);
-#else
-		reply(213, "%lu", stbuf.st_size);
-#endif
-#endif
+		reply(213, "%" L_FORMAT, stbuf.st_size);
 	    break;
 	}
     case TYPE_A:{
 	    FILE *fin;
 	    register int c;
-	    register long count;
+	    register off_t count;
 	    struct stat stbuf;
 	    fin = fopen(filename, "r");
 	    if (fin == NULL) {
 		perror_reply(550, filename);
 		return;
 	    }
-	    if (fstat(fileno(fin), &stbuf) < 0 ||
-		(stbuf.st_mode & S_IFMT) != S_IFREG) {
+
+            /* with a broken stat, we can still detect non-plain files--
+	     * we just can't trust that stat returning -1 is a bad file.
+	     */
+#           if defined(HAVE_BROKEN_STAT)
+		if ((fstat(fileno(fin), &stbuf) == 0) &&
+		    (stbuf.st_mode & S_IFMT) != S_IFREG) {
+#           else
+		if ((fstat(fileno(fin), &stbuf) < 0) ||
+		    (stbuf.st_mode & S_IFMT) != S_IFREG) {
+#           endif
 		reply(550, "%s: not a plain file.", filename);
 		(void) fclose(fin);
 		return;
@@ -2645,7 +2663,7 @@ void sizecmd(char *filename)
 	    }
 	    (void) fclose(fin);
 
-	    reply(213, "%ld", count);
+	    reply(213, "%"L_FORMAT, count);
 	    break;
 	}
     default:

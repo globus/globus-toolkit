@@ -482,6 +482,9 @@ else
 	fi
 fi
 
+AC_SYS_LARGEFILE
+CHECK_STAT_WORKS
+
 AC_MSG_CHECKING(how to printf gr_gid)
 AC_TRY_RUN([#include <sys/types.h>
 #include <grp.h>
@@ -504,21 +507,21 @@ if test $result = "no"; then
   if test $result = "no"; then
     AC_TRY_RUN([#include <stdio.h>
     int main(int argc, char **argv) {
-      if(printf("Ld",(long long) 1)==1)
+      if(printf("%Ld",(long long) 1)==1)
         return 0;
       return 1;
     }],[ result="Ld" ],[ result="no" ], [ result="no" ])
     if test $result = "no"; then
       AC_TRY_RUN([#include <stdio.h>
       int main(int argc, char **argv) {
-        if(printf("lld",(long long) 1)==1)
+        if(printf("%lld",(long long) 1)==1)
           return 0;
         return 1;
       }],[ result="lld" ],[ result="no" ], [ result="no" ])
       if test $result = "no"; then
         AC_TRY_RUN([#include <stdio.h>
         int main(int argc, char **argv) {
-          if(printf("ld",(long long) 1)==1)
+          if(printf("%ld",(long long) 1)==1)
             return 0;
           return 1;
         }],[ result="ld" ],[ result="d" ], [ result="d" ])

@@ -91,23 +91,25 @@ g_send_data(
     char *                                          name,
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
-    int                                             offset,
+    off_t                                           offset,
     off_t                                           blksize,
-    off_t                                           length);
+    off_t                                           length,
+    off_t					    size);
 #else
 g_send_data(
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
-    int                                             offset,
+    off_t                                           offset,
     off_t                                           blksize,
-    off_t                                           length);
+    off_t                                           length,
+    off_t					    size);
 #endif
 
 int
 g_receive_data(
     globus_ftp_control_handle_t *                   handle,
     FILE *                                          outstr,
-    int                                             offset,
+    off_t                                           offset,
     char *                                          fname);
 
 int
@@ -126,8 +128,8 @@ g_end();
 
 void
 globus_i_wu_insert_range(globus_fifo_t * ranges,
-			 globus_size_t offset,
-			 globus_size_t length);
+			 globus_off_t offset,
+			 globus_off_t length);
 void
 globus_i_wu_free_ranges(globus_fifo_t * ranges);
 
@@ -232,8 +234,8 @@ int unrestricteduid(uid_t uid);
 int restrictedgid(gid_t gid);
 int unrestrictedgid(gid_t gid);
 char *opt_string(int options);
-void retrieve(char *cmd, char *name, int offset, int length);
-void store(char *name, char *mode, int unique, int offset);
+void retrieve(char *cmd, char *name, off_t offset, off_t length);
+void store(char *name, char *mode, int unique, off_t offset);
 FILE *getdatasock(char *mode);
 FILE *dataconn(char *name, off_t size, char *mode);
 #ifdef THROUGHPUT
