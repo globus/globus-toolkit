@@ -2257,12 +2257,11 @@ int main(int argc,
                 final_rsl_spec = (char *) globus_libc_strdup("RSL UNKNOWN");
 
            sprintf( job_history_file,
-                     "%s/%s_%s-%s.%s",
+                     "%s/history.%s-%s_%s",
                      job_history_dir,
-                     conf.rdn,
+                     my_host,
                      conf.type,
-                     graml_env_logname,
-                     request->job_id );
+                     request->uniq_id );
 
            globus_jobmanager_log( request->jobmanager_log_fp,
                  "JM: job_history_file = %s\n", job_history_file);
