@@ -78,4 +78,10 @@ int myproxy_creds_is_owner(const char *username,
  */
 void myproxy_creds_free_contents(struct myproxy_creds *creds);
 
+/* 
+ * myproxy_set_storage_dir()
+ * 
+ * Change default storage directory.
+ */
+void myproxy_set_storage_dir(char *dir);
 #endif /* __MYPROXY_CREDS_H */
