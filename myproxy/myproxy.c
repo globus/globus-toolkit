@@ -1816,6 +1816,14 @@ encode_command(const myproxy_proto_request_type_t	command_value)
       case MYPROXY_CHANGE_CRED_PASSPHRASE:
 	string = "4";
 	break;
+
+      case MYPROXY_STORE_CERT:
+        string = "5";
+        break;
+
+      case MYPROXY_RETRIEVE_CERT:
+        string = "6";
+        break;
 	
       default:
 	/* Should never get here */
@@ -2136,3 +2144,91 @@ end:
       authorization_data_free(data);
    return return_status;
 }
+
+int
+myproxy_init_credentials(myproxy_socket_attrs_t *attrs,
+                         const char             *delegfile,
+                         const int               lifetime,
+                         char                   *passphrase)
+{
+
+  char error_string[1024];
+
+  if (attrs == NULL)
+    return -1;
+
+  if (GSI_SOCKET_credentials_init_ext(attrs->gsi_socket,
+                                     delegfile,
+                                     lifetime,
+                                     passphrase) == GSI_SOCKET_ERROR) {
+
+    GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+                                sizeof(error_string));
+
+    verror_put_string("Error storing  credentials: %s\n", error_string);
+    return -1;
+  }
+  return 0;
+}
+
+/*
+** send buffer credbuff to the server.  credbugg contains both the user
+** end-entity credential and the user key.  This information will be stored
+** in the myproxy database.
+*/
+int
+myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
+                           const char             *delegfile,
+                           const int               delegfile_len,
+                           char                   *passphrase)
+{
+  char error_string[1024];
+
+  if (attrs == NULL)
+    return -1;
+
+  if (GSI_SOCKET_credentials_accept_ext(attrs->gsi_socket,
+                                        delegfile,
+                                        delegfile_len,
+                                        passphrase) == GSI_SOCKET_ERROR)
+  {
+    GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+                                sizeof(error_string));
+
+    verror_put_string("Error accepting credentials: %s\n", error_string);
+    return -1;
+  }
+  return 0;
+}
+
+/*
+** send buffer credbuff to the server.  credbugg contains both the user
+** end-entity credential and the user key.  This information will be stored
+** in the myproxy database.
+*/
+int
+myproxy_get_credentials(myproxy_socket_attrs_t *attrs,
+                         const char             *delegfile,
+                         const int               lifetime,
+                         char                   *passphrase)
+{
+  char error_string[1024];
+
+  if (attrs == NULL)
+    return -1;
+
+  if (GSI_SOCKET_get_creds(attrs->gsi_socket,
+                                     delegfile,
+                                     lifetime,
+                                     passphrase) == GSI_SOCKET_ERROR)
+  {
+    GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+                                sizeof(error_string));
+
+    verror_put_string("Error getting credentials: %s\n", error_string);
+    return -1;
+  }
+
+  return 0;
+}
+

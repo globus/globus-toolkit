@@ -9,30 +9,32 @@
 #include <stdio.h>
 #include <time.h>
 
-#define REGULAR_EXP 1
+#define REGULAR_EXP   1
 #define MATCH_CN_ONLY 0
+#define ENDENTITY     1
 
 struct myproxy_creds {
-    char *username;
-    char *location;
+    char  *username;
+    char  *location;
 
     /* the following items are stored in the credential data file */
-    char *passphrase; /* stored crypt()'ed */
-    char *owner_name;
-    int lifetime;
-    char *credname;
-    char *creddesc;
-    char *retrievers;
-    char *renewers;
+    char                 *passphrase; /* stored crypt()'ed */
+    char                 *owner_name;
+    int                   lifetime;
+    char                 *credname;
+    char                 *creddesc;
+    char                 *retrievers;
+    char                 *renewers;
+    int                   endentity;
 
     /* start_time and end_time are set from the certificates in the cred */
-    time_t start_time;
-    time_t end_time;
+    time_t                start_time;
+    time_t                end_time;
 
     /* non-NULL lockmsg indicates credential is administratively
        locked and should not be accessible.  lockmsg should be
        returned on any attempted access. */
-    char *lockmsg;
+    char                 *lockmsg;
 
     struct myproxy_creds *next;
 };
@@ -203,5 +205,16 @@ int myproxy_check_storage_dir();
  */
 int myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out);
 
+/*
+ * myproxy_check_endentity()
+ *
+ * Check to see if the given user already has end entity credentials stored.
+ *
+ * Returns 1 if the user does, 0 if they do not, -1 on error.
+ */
+int
+myproxy_check_endentity( const char *username,
+                         const char *credname,
+                         const char *client_name);
 #endif
 

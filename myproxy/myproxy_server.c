@@ -116,6 +116,18 @@ static int do_account_authorization(myproxy_socket_attrs_t *attrs,
 				    char *client_name);
 #endif
 
+/* Delegate requested credentials to the client */
+void get_credentials(myproxy_socket_attrs_t *attrs,
+                     myproxy_creds_t        *creds,
+                     myproxy_request_t      *request,
+                     myproxy_response_t     *response,
+                     int                     max_proxy_lifetime);
+
+/* Accept end-entity credentials from client */
+void put_credentials(myproxy_socket_attrs_t *attrs,
+                     myproxy_creds_t        *creds,
+                     myproxy_response_t     *response);
+
 static int debug = 0;
 
 int
@@ -339,6 +351,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     client_creds->username       = strdup(client_request->username);
     client_creds->passphrase     = strdup(client_request->passphrase);
     client_creds->lifetime 	 = client_request->proxy_lifetime;
+    client_creds->endentity 	 = !(ENDENTITY);
     if (client_request->retrievers != NULL)
 	client_creds->retrievers = strdup(client_request->retrievers);
     if (client_request->renewers != NULL)
@@ -353,8 +366,14 @@ handle_client(myproxy_socket_attrs_t *attrs,
       
     /* Handle client request */
     switch (client_request->command_type) {
+    case MYPROXY_RETRIEVE_CERT:
     case MYPROXY_GET_PROXY: 
-        myproxy_log("Received GET request from %s", client_name);
+
+        myproxy_log("Received %s request from %s", 
+                        (client_request->command_type == MYPROXY_GET_PROXY)
+                            ? "GET"
+                            : "RETRIEVE", 
+                         client_name);
 
 	/* Retrieve the credentials from the repository */
 	if (myproxy_creds_retrieve(client_creds) < 0) {
@@ -386,13 +405,21 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    strcat(error, client_creds->lockmsg);
 	    respond_with_error_and_die(attrs, error);
 	}
-	
+
 	/* Send initial OK response */
 	send_response(attrs, server_response, client_name);
-	
-	/* Delegate the credential and set final server_response */
-        get_proxy(attrs, client_creds, client_request, server_response,
-		  context->max_proxy_lifetime);
+        if( client_request->command_type == MYPROXY_GET_PROXY )
+        {	
+	  /* Delegate the credential and set final server_response */
+          get_proxy(attrs, client_creds, client_request, server_response,
+	  	    context->max_proxy_lifetime);
+        }
+        else if( client_request->command_type == MYPROXY_RETRIEVE_CERT )
+        {
+          /* Delegate the credential and set final server_response */
+          get_credentials(attrs, client_creds, client_request, server_response,
+                          context->max_proxy_lifetime);
+        }
         break;
 
 
@@ -452,11 +479,38 @@ handle_client(myproxy_socket_attrs_t *attrs,
 
 	change_passwd(client_creds, client_request->new_passphrase,
 		      server_response);
+        break;
+
+      case MYPROXY_STORE_CERT:
+          /* this is an end entity credential */
+          client_creds->endentity 	 = ENDENTITY;
+          myproxy_debug("  EndEntuty: %d\n", client_creds->endentity );
+
+          /* Store the end-entity credential */
+          myproxy_log("Received STORE request from %s", client_name);
+          myproxy_debug("  Username: %s", client_creds->username);
+          myproxy_debug("  Max. delegation lifetime: %d seconds",
+                        client_creds->lifetime);
+          if (client_creds->retrievers != NULL)
+              myproxy_debug("  Retriever policy: %s", client_creds->retrievers);
+          if (client_creds->renewers != NULL)
+              myproxy_debug("  Renewer policy: %s", client_creds->renewers);
+ 
+          /* Send initial OK response */
+          send_response(attrs, server_response, client_name);
+ 
+          /* Store the credentials in the repository and
+             set final server_response */
+          put_credentials(attrs, client_creds, server_response);
+          break;
 
     default:
         server_response->error_string = strdup("Unknown command.\n");
         break;
     }
+
+//printf( "SLEEP 10\n" );
+//sleep(10);
     
     /* return server response */
     send_response(attrs, server_response, client_name);
@@ -720,6 +774,34 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     } 
 }
 
+/* Delegate requested credentials to the client */
+void get_credentials(myproxy_socket_attrs_t *attrs,
+                     myproxy_creds_t        *creds,
+                     myproxy_request_t      *request,
+                     myproxy_response_t     *response,
+                     int                     max_proxy_lifetime)
+{
+    int min_lifetime;
+
+    min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
+
+    if (max_proxy_lifetime) {
+      min_lifetime = MIN(min_lifetime, max_proxy_lifetime);
+    }
+
+    if (myproxy_get_credentials(attrs, creds->location, min_lifetime,
+                                request->passphrase) < 0) {
+      myproxy_log_verror();
+      response->response_type =  MYPROXY_ERROR_RESPONSE;
+      response->error_string = strdup("Unable to delegate credentials.\n");
+    } else {
+      myproxy_log("Delegating credentials for %s lifetime=%d",
+                   creds->owner_name, min_lifetime);
+      response->response_type = MYPROXY_OK_RESPONSE;
+    }
+}
+
+
 /* Accept delegated credentials from client */
 void put_proxy(myproxy_socket_attrs_t *attrs, 
 	       myproxy_creds_t *creds, 
@@ -753,6 +835,48 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 			   delegfile);
     }
 }
+
+/* Accept end-entity credentials from client */
+void put_credentials(myproxy_socket_attrs_t *attrs,
+                     myproxy_creds_t        *creds,
+                     myproxy_response_t     *response)
+{
+    char delegfile[64];
+
+    if (myproxy_accept_credentials(attrs,
+                                   delegfile,
+                                   sizeof(delegfile),
+                                   creds->passphrase) < 0)
+    {
+      myproxy_log_verror();
+      response->response_type =  MYPROXY_ERROR_RESPONSE;
+      response->error_string = strdup("Failed to accept credentials.\n");
+      return;
+    }
+
+    myproxy_debug("  Accepted delegation: %s", delegfile);
+
+    creds->location = strdup(delegfile);
+
+    if (myproxy_creds_store(creds) < 0)
+    {
+      myproxy_log_verror();
+      response->response_type = MYPROXY_ERROR_RESPONSE;
+      response->error_string = strdup("Unable to store credentials.\n");
+    }
+    else
+    {
+      response->response_type = MYPROXY_OK_RESPONSE;
+    }
+
+    /* Clean up temporary delegation */
+    if (ssl_proxy_file_destroy(delegfile) != SSL_SUCCESS)
+    {
+      myproxy_log_perror("Removal of temporary credentials file %s failed",
+                         delegfile);
+    }
+}
+
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     if (myproxy_creds_retrieve_all(creds) < 0) {
@@ -998,6 +1122,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    myproxy_creds_t creds = { 0 };
 
    switch (client_request->command_type) {
+   case MYPROXY_RETRIEVE_CERT:
    case MYPROXY_GET_PROXY:
        /* Gather all authorization information for the GET request from
 	  the client.  May include additional network exchanges. */
@@ -1101,6 +1226,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        break;
 
    case MYPROXY_PUT_PROXY:
+   case MYPROXY_STORE_CERT:
    case MYPROXY_DESTROY_PROXY:
        /* Is this client authorized to store credentials here? */
        authorization_ok =
@@ -1125,7 +1251,8 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   }
 
 	   if (!client_owns_credentials) {
-	       if (client_request->command_type == MYPROXY_PUT_PROXY) {
+	       if ((client_request->command_type == MYPROXY_PUT_PROXY) ||
+                   (client_request->command_type == MYPROXY_STORE_CERT)) {
 		   myproxy_log("Username and credential name in use by another client.");
 		   verror_put_string("Username and credential name in use by someone else.");
 	       } else {
@@ -1134,6 +1261,30 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       }
 	       goto end;
 	   }
+
+           /* 
+           ** If these are the users end entity credentials the should
+           ** not be overwritten.
+           */
+           int endentity_credentials;
+           endentity_credentials = myproxy_check_endentity( 
+                                       client_request->username, 
+                                       client_request->credname, 
+                                       client_name);
+
+	   if (endentity_credentials == -1) {
+	       verror_put_string("Error checking for end entity credentials.");
+	       goto end;
+	   }
+
+           if (endentity_credentials) {
+               if (client_request->command_type != MYPROXY_DESTROY_PROXY) {
+                   myproxy_log("End entity credential can not be overwritten.");
+                   verror_put_string("End entity credential can not be overwritten.");
+                   goto end;
+               }
+           }
+             
        }
        break;
 

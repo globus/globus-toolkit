@@ -13,7 +13,9 @@ typedef enum
     MYPROXY_PUT_PROXY,
     MYPROXY_INFO_PROXY,
     MYPROXY_DESTROY_PROXY,
-    MYPROXY_CHANGE_CRED_PASSPHRASE
+    MYPROXY_CHANGE_CRED_PASSPHRASE,
+    MYPROXY_STORE_CERT,
+    MYPROXY_RETRIEVE_CERT
 } myproxy_proto_request_type_t;
 
 /* server response codes */
@@ -195,6 +197,36 @@ int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data,
 			      const int datalen, char *passphrase);
 
 /*
+ * myproxy_accept_credentials()
+ *
+ * Accepts credentials into file location data
+ *
+ * returns 0 on success, -1 on error
+ */
+int
+myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
+                           const char             *delegfile,
+                           const int               delegfile_len,
+                           char                   *passphrase);
+
+/*
+ * myproxy_init_credentials()
+ *
+ * returns 0 on success, -1 on error 
+ */
+int
+myproxy_init_credentials(myproxy_socket_attrs_t *attrs,
+                         const char             *delegfile,
+                         const int               lifetime,
+                         char                   *passphrase);
+
+int
+myproxy_get_credentials(myproxy_socket_attrs_t *attrs,
+                         const char             *delegfile,
+                         const int               lifetime,
+                         char                   *passphrase);
+
+/*
  * myproxy_free()
  * 
  * Frees up memory used for creating request, response and socket objects 
@@ -243,5 +275,16 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
  *
  */
 void myproxy_resolve_hostname(char **host);
+
+/*
+ * myproxy_endentity_store()
+ *
+ * Stores an end-entity credential on the server
+ *
+ * returns 0 on success, -1 on error
+ */
+int myproxy_endentity_store( myproxy_socket_attrs_t *attrs,
+                             const char *delegfile,
+                             char *passphrase);
 
 #endif /* __MYPROXY_PROTOCOL_H */
