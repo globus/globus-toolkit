@@ -1,0 +1,142 @@
+#!/bin/bash
+
+# This script iterates over files in the subdirectory package-list
+# Each file should define name, subdir, and build.
+# The script will cd to subdir and execute the list of build commands
+
+# If the result is a single gar, the file can also define "gar".
+# Otherwise, it should perform appropriate processing in build.  The
+# destination directory is available to the build commands as
+# \$destdir
+
+# Call with one argument to build a specific package.
+
+release="alpha"
+
+setup_environment() {
+	#If user already has a JAVA_HOME, use it
+	if [ x"$JAVA_HOME" = "x" ]; then
+		# Best guess.
+		export JAVA_HOME=/usr/java/jdk1.3.1_06
+	fi
+
+	export OGSA_HOME=`pwd`/gt3-core-bin/gt3-core
+}
+
+# If we're on an MCS machine, just checkout from filesystem.
+# Otherwise use ssh.
+# If we have a co already, just update it.
+checkout_cvs() {
+	if [ -d /home/globdev/CVS/gridservices ]; then
+		export CVSROOT=/home/globdev/CVS/gridservices
+	else
+		export CVSROOT=cvs.globus.org:/home/globdev/CVS/gridservices
+		export CVS_RSH=ssh
+	fi
+	if [ ! -d ogsa-cvs ]; then
+		echo Making fresh CVS checkout
+		mkdir ogsa-cvs
+		cd ogsa-cvs
+		cvs co all
+	else
+		echo Updating CVS checkout
+		cd ogsa-cvs
+		cvs -z3 -qq up all
+	fi
+	cd ..
+
+	echo
+}
+
+#If GPT hasn't been built here yet, build it now.
+#Some packages use GPT_LOCATION commands in build.
+install_gpt() {
+	if [ -d gpt-2.2.5 ]; then
+		echo Skipping GPT installation.
+		echo Delete gpt-2.2.5 to force rebuild
+		export GPT_LOCATOIN=`pwd`/gpt-2.2.5
+	else
+		tar xzf fait_accompli/gpt-2.2.5-src.tar.gz
+		cd gpt-2.2.5
+		export GPT_LOCATION=`pwd`
+		./build_gpt
+		cd ..
+	fi
+	echo
+}
+
+install_gt2() {
+	export GLOBUS_LOCATION=`pwd`/gt2-installation
+	echo Installing custom GT2 bundle
+	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt3_alpha_bin_bundle.tar.gz
+	$GPT_LOCATION/sbin/gpt-postinstall
+	echo
+}
+
+# Go to subdir, run the build script.
+# Copy gar if one is specified.
+make_package() {
+	export destdir=`pwd`/${name}-bin/${name}
+	export GPT_LOCATION=`pwd`/gpt-2.2.5
+
+	if [ -d $destdir ]; then
+		echo Skipping package $name;
+		echo Delete $destdir to force rebuild;
+	else
+		echo Building package $name;
+		mkdir -p $destdir
+		echo Moving to build directory
+		pushd ogsa-cvs/$subdir
+		echo
+		echo Executing build script
+		echo ----------------------
+		echo $build
+		echo ----------------------
+		echo
+		/bin/bash -c "$build"
+		popd
+		if [ "x"$gar != "x" ]; then
+			echo Copying GAR $gar
+			cp ogsa-cvs/$subdir/$gar $destdir
+		fi
+		touch $destdir/INSTALL
+	fi
+	
+	unset destdir;
+	echo
+}
+
+#Cleanup env for next iteration.
+unset_env() {
+	unset name subdir build gar;
+}
+
+dir_iter() {
+	for f in $1/*; do
+		source $f
+		make_package
+		unset_env
+	done
+}
+
+if [ "x"$1 != "x" ]; then
+	source $1
+	make_package
+	exit
+fi
+
+setup_environment
+install_gpt
+checkout_cvs
+
+#This is the poor man's dependency code ...
+
+echo Building Java-only packages
+dir_iter package-list
+echo
+
+install_gt2
+
+echo Building C-dependent packages
+dir_iter package-list-cdeps
+
