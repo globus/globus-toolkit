@@ -247,8 +247,8 @@ case ${host}--$1 in
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC icc ecc cc)
                 AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icc ecc CC c++)
-                AC_PATH_PROGS(lac_cv_F77, $F77 ifc efc f77)
-                AC_PATH_PROGS(lac_cv_F90, $F90 ifc efc f90)
+                AC_PATH_PROGS(lac_cv_F77, $F77 ifort efc f77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 ifort efc f90)
                 lac_CFLAGS="$lac_CFLAGS -restrict"
             fi
         fi
@@ -721,14 +721,14 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
-                AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC g++ gcc CC c++)
+                AC_PATH_PROGS(lac_cv_F77, $F77 g77 f77)
                 AC_PATH_PROGS(lac_cv_F90, $F90 f90)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC icc cc)
                 AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icc CC c++)
-                AC_PATH_PROGS(lac_cv_F77, $F77 ifc f77)
-                AC_PATH_PROGS(lac_cv_F90, $F90 ifc f90)
+                AC_PATH_PROGS(lac_cv_F77, $F77 ifort ifc f77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 ifort ifc f90)
             fi
             
         fi
