@@ -75,6 +75,11 @@ globus_l_ftp_control_activate(void)
     {
         goto exit;
     }
+    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
     rc = (int)globus_i_ftp_control_server_activate();
     if(rc != GLOBUS_SUCCESS)
     {
@@ -118,6 +123,11 @@ globus_l_ftp_control_deactivate(void)
         goto exit;
     }
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+    rc = globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
         goto exit;
