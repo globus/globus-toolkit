@@ -178,12 +178,11 @@ int main(int argc, char *argv[])
     }
     if(test_num == 0 || test_num == 4)
     {
-	rc = test3();
+	rc = test4();
 	printf("%sok\n", rc ? "not " : "");
 	not_ok |= rc;
     }
 
-  error_exit:
     return not_ok;
 }
 

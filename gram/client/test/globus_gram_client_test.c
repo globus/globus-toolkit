@@ -10,6 +10,7 @@
 #include "globus_gram_client.h"
 
 #include <stdio.h> 
+#include <string.h>
 
 
 /**************************************************
@@ -77,9 +78,7 @@ int main(int argc, char ** argv)
 
     char * rm_contact;
     char * specification;
-    int job_status = 0;
     my_monitor_t Monitor;
-    int failure_code;
 
     /* Retrieve relevant parameters from the command line */ 
 

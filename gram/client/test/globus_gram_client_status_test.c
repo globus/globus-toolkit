@@ -117,10 +117,10 @@ destroy_callback_contact:
 	GlobusTimeAbstimeDiff(delta, start_time, stop_time);
 
 	fprintf(stderr,
-		"Made %d calls to status in %d.%06d seconds\n",
+		"Made %d calls to status in %ld.%06ld seconds\n",
 		calls,
-		delta.tv_sec,
-		delta.tv_usec);
+		(long) delta.tv_sec,
+		(long) delta.tv_usec);
     }
     globus_gram_client_callback_disallow(callback_contact);
     globus_libc_free(callback_contact);

@@ -57,7 +57,8 @@ globus_l_gram_job_manager_query_reply(
     globus_gram_jobmanager_request_t *	request,
     globus_gram_protocol_handle_t	handle,
     int					status,
-    int					failure_code);
+    int					query_failure_code,
+    int					job_failure_code);
 
 static
 globus_bool_t
@@ -77,11 +78,13 @@ globus_gram_job_manager_query_callback(
     char *				rest;
     int					rc;
     int					status;
+    int					job_failure_code;
     globus_bool_t			reply		= GLOBUS_TRUE;
 
     globus_mutex_lock(&request->mutex);
 
     status = request->status;
+    job_failure_code = request->failure_code;
 
     rc = globus_gram_protocol_unpack_status_request(buf, nbytes, &query);
 
@@ -128,6 +131,7 @@ unpack_failed:
     if (rc != GLOBUS_SUCCESS)
     {
 	status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	job_failure_code = 0;
     }
 
     globus_gram_job_manager_request_log( request,
@@ -137,7 +141,8 @@ unpack_failed:
 
     if(reply)
     {
-	globus_l_gram_job_manager_query_reply(request, handle, status, rc);
+	globus_l_gram_job_manager_query_reply(request, handle, status, rc,
+					      job_failure_code);
     }
     globus_mutex_unlock(&request->mutex);
 
@@ -166,7 +171,10 @@ globus_gram_job_manager_query_reply(
     globus_l_gram_job_manager_query_reply(request,
 	                                  query->handle,
 					  request->status,
-					  query->failure_code);
+					  query->failure_code,
+					  query->failure_code
+					      ? 0
+					      : request->failure_code);
     if(query->signal_arg)
     {
 	globus_libc_free(query->signal_arg);
@@ -181,7 +189,8 @@ globus_l_gram_job_manager_query_reply(
     globus_gram_jobmanager_request_t *	request,
     globus_gram_protocol_handle_t	handle,
     int					status,
-    int					failure_code)
+    int					query_failure_code,
+    int					job_failure_code)
 {
     int					rc;
     int					i;
@@ -189,14 +198,14 @@ globus_l_gram_job_manager_query_reply(
     globus_size_t			replysize;
     globus_byte_t *			reply             = GLOBUS_NULL;
 
-    rc = failure_code;
+    rc = query_failure_code;
 
     if (rc != GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED)
     {
 	rc = globus_gram_protocol_pack_status_reply(
 	    status,
 	    rc,
-	    failure_code,
+	    job_failure_code,
 	    &reply,
 	    &replysize );
     }

@@ -20,14 +20,23 @@ gram_state_callback(
     int					state,
     int					errorcode);
 
+static
+void
+nonblocking_callback(
+    void *                              user_callback_arg,
+    globus_gram_protocol_error_t        operation_failure_code,
+    const char *                        job_contact,
+    globus_gram_protocol_job_state_t    job_state,
+    globus_gram_protocol_error_t        job_failure_code);
+
+
+
 int main(int argc, char *argv[])
 {
     char *				callback_contact;
     char *				job_contact;
     monitor_t				monitor;
     int					rc = 0;
-    int					status = 0;
-    int					failure_code = 0;
     globus_abstime_t			timeout;
     globus_abstime_t			start_time;
     globus_abstime_t			stop_time;
@@ -91,7 +100,7 @@ int main(int argc, char *argv[])
     {
 	rc = globus_gram_client_register_job_status(
 		job_contact,
-		gram_state_callback,
+		nonblocking_callback,
 		&monitor);
 	cb_count++;
 	calls++;
@@ -124,10 +133,10 @@ destroy_callback_contact:
 	GlobusTimeAbstimeDiff(delta, start_time, stop_time);
 
 	fprintf(stderr,
-		"Made %d calls to status in %d.%06d seconds\n",
+		"Made %d calls to status in %ld.%06ld seconds\n",
 		calls,
-		delta.tv_sec,
-		delta.tv_usec);
+		(long) delta.tv_sec,
+		(long) delta.tv_usec);
     }
     globus_gram_client_callback_disallow(callback_contact);
     globus_libc_free(callback_contact);
@@ -151,15 +160,28 @@ gram_state_callback(
     int					state,
     int					errorcode)
 {
+    nonblocking_callback(arg, 0, job_contact, state, errorcode);
+}
+/* gram_state_callback() */
+
+static
+void
+nonblocking_callback(
+    void *                              user_callback_arg,
+    globus_gram_protocol_error_t        operation_failure_code,
+    const char *                        job_contact,
+    globus_gram_protocol_job_state_t    job_state,
+    globus_gram_protocol_error_t        job_failure_code)
+{
     monitor_t *				monitor;
 
-    monitor = arg;
+    monitor = user_callback_arg;
 
     globus_mutex_lock(&monitor->mutex);
-    monitor->state = state;
-    monitor->errorcode = errorcode;
+    monitor->state = job_state;
+    monitor->errorcode =
+	operation_failure_code ? operation_failure_code : job_failure_code;
     cb_count--;
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
 }
-/* gram_state_callback() */

@@ -347,9 +347,6 @@ disable_module:
 int
 main(int argc, char *argv[])
 {
-    char *				callback_contact;
-    char *				job_contact;
-    monitor_t				monitor;
     int					rc = 0;
     int					test_num = 0;
     int					not_ok = 0;

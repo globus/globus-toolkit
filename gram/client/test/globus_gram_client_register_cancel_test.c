@@ -18,6 +18,15 @@ gram_state_callback(
     int					state,
     int					errorcode);
 
+static
+void
+nonblocking_callback(
+    void *				arg,
+    globus_gram_protocol_error_t        operation_failure_code,
+    const char *                        job_contact,
+    globus_gram_protocol_job_state_t    job_state,
+    globus_gram_protocol_error_t        job_failure_code);
+
 int main(int argc, char *argv[])
 {
     char *				callback_contact;
@@ -85,7 +94,7 @@ int main(int argc, char *argv[])
     {
 	rc = globus_gram_client_register_job_cancel(
 		job_contact,
-		gram_state_callback,
+		nonblocking_callback,
 		&monitor);
 
 	if(rc != GLOBUS_SUCCESS)
@@ -131,14 +140,27 @@ gram_state_callback(
     int					state,
     int					errorcode)
 {
+    nonblocking_callback(arg, 0, job_contact, state, errorcode);
+}
+/* gram_state_callback() */
+
+static
+void
+nonblocking_callback(
+    void *				arg,
+    globus_gram_protocol_error_t        operation_failure_code,
+    const char *                        job_contact,
+    globus_gram_protocol_job_state_t    job_state,
+    globus_gram_protocol_error_t        job_failure_code)
+{
     monitor_t *				monitor;
 
     monitor = arg;
 
     globus_mutex_lock(&monitor->mutex);
-    monitor->state = state;
-    monitor->errorcode = errorcode;
+    monitor->state = job_state;
+    monitor->errorcode =
+	operation_failure_code ? operation_failure_code : job_failure_code;
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
 }
-/* gram_state_callback() */

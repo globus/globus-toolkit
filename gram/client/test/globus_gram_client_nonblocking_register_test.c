@@ -21,6 +21,15 @@ gram_state_callback(
     int					state,
     int					errorcode);
 
+static
+void
+nonblocking_callback(
+    void *				arg,
+    globus_gram_protocol_error_t	operation_failure_code,
+    const char *			job_contact,
+    globus_gram_protocol_job_state_t	job_state,
+    globus_gram_protocol_error_t	job_failure_code);
+
 /* submit a job without a callback contact, register a callback
  * contact, wait for job to terminate
  */
@@ -77,7 +86,7 @@ test1()
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
 	    callback_contact,
-	    gram_state_callback,
+	    nonblocking_callback,
 	    GLOBUS_NULL);
 
     if(rc != GLOBUS_SUCCESS)
@@ -190,7 +199,7 @@ test2()
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
 	    callback_contact[1],
-	    gram_state_callback,
+	    nonblocking_callback,
 	    GLOBUS_NULL);
 
     if(rc != GLOBUS_SUCCESS)
@@ -206,7 +215,7 @@ test2()
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
 	    callback_contact[2],
-	    gram_state_callback,
+	    nonblocking_callback,
 	    GLOBUS_NULL);
 
     if(rc != GLOBUS_SUCCESS)
@@ -253,8 +262,6 @@ test3()
     char *				bad_callback_contact;
     int					rc;
     monitor_t				monitor;
-    int					bad_status;
-    int					bad_failure_code;
 
     rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
 
@@ -310,7 +317,7 @@ test3()
     rc = globus_gram_client_register_job_callback_unregistration(
 	    job_contact,
 	    bad_callback_contact,
-	    gram_state_callback,
+	    nonblocking_callback,
 	    GLOBUS_NULL);
 
     while(monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED &&
@@ -347,9 +354,6 @@ disable_module:
 int
 main(int argc, char *argv[])
 {
-    char *				callback_contact;
-    char *				job_contact;
-    monitor_t				monitor;
     int					rc = 0;
     int					test_num = 0;
     int					not_ok = 0;
@@ -409,20 +413,33 @@ gram_state_callback(
     int					state,
     int					errorcode)
 {
+    nonblocking_callback(arg, 0, job_contact, state, errorcode);
+}
+/* gram_state_callback() */
+
+static
+void
+nonblocking_callback(
+    void *				arg,
+    globus_gram_protocol_error_t	operation_failure_code,
+    const char *			job_contact,
+    globus_gram_protocol_job_state_t	job_state,
+    globus_gram_protocol_error_t	job_failure_code)
+{
     monitor_t *				monitor;
 
     monitor = arg;
     if(!monitor) return;
 
     globus_mutex_lock(&monitor->mutex);
-    monitor->state = state;
-    monitor->errorcode = errorcode;
-    if(state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ||
-       state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+    monitor->state = job_state;
+    monitor->errorcode = operation_failure_code ? operation_failure_code : job_failure_code;
+    if(job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ||
+       job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
     {
 	monitor->done_count++;
     }
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
 }
-/* gram_state_callback() */
+/* nonblocking_callback() */
