@@ -19,7 +19,7 @@ EXTRA_DIST = \
 	globus-args-parser-header \
 	globus-sh-tools.sh \
 	globus-hostname \
-	globus-build-doxygen-dependencies 
-
+	globus-build-doxygen-dependencies \
+	globus-makefile-header
 
 include $(top_srcdir)/globus_automake_post
