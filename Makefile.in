@@ -11,6 +11,7 @@ TARGETS	=	gsi-socket-test myproxy-init myproxy-get-delegation myproxy-server
 
 COMMON_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o
 INIT_OBJS	= myproxy_init.o $(COMMON_OBJS)
+DESTROY_OBJS	= myproxy_destroy.o $(COMMON_OBJS)
 GET_OBJS	= myproxy_get_delegation.o $(COMMON_OBJS)
 SERVER_OBJS	= myproxy_server.o verror.o myproxy_creds.o \
 			myproxy_log.o $(COMMON_OBJS)
@@ -28,6 +29,10 @@ myproxy-init: $(INIT_OBJS)
 	$(LINK) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
 
+myproxy-destroy: $(DESTROY_OBJS)
+	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
+
 myproxy-get-delegation: $(GET_OBJS)
 	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
@@ -36,8 +41,11 @@ myproxy-server: $(SERVER_OBJS)
 	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
 
-myproxy.o: myproxy.c
+myproxy.o: myproxy.c myproxy.h
 	$(CC) $(GSI_SOCKET_CFLAGS) -c $<
+
+myproxy_creds.o: myproxy_creds.c myproxy_creds.h
+	$(CC) -c $<
 
 gnu_getopt.o: gnu_getopt.c
 	$(CC) -c $<
