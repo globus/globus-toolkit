@@ -6242,16 +6242,10 @@ AC_DEFUN(LAC_CPU_SET,
         *ia64*)
             lac_cv_CPU="ia64"
         ;;        
-        *solaris*)
-            lac_cv_CPU=`uname -m`
-        ;;
         *hpux*)
             lac_cv_CPU="parisc"
         ;;
-        *-ibm-aix*)
-            lac_cv_CPU=`uname -m`
-        ;;
-        *-dec-osf*)
+        *-ibm-aix*|*-dec-osf*|*alpha*linux*|*solaris*)
             lac_cv_CPU=`uname -m`
         ;;
         *irix6*)
@@ -6418,7 +6412,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
                     lac_DES_UNROLL="1" 
                     lac_BF_PTR="1"
 
-                    if test ! "$GCC" = "1"; then
+                    if test ! "$GCC" = "yes"; then
                         lac_DES_PTR="1"
                         lac_DES_RISC1="1"
                     fi
@@ -6430,7 +6424,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
                     lac_DES_UNROLL="1" 
                     lac_BF_PTR="1"
 
-                    if test "$GCC" = "1"; then
+                    if test "$GCC" = "yes"; then
                         lac_RC4_CHUNK="unsigned long"
                     else
                         lac_RC4_CHUNK="unsigned long long"
@@ -6443,7 +6437,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
                     lac_DES_PTR="1"
                     lac_DES_UNROLL="1" 
 
-                    if test "$GCC" = "1"; then
+                    if test "$GCC" = "yes"; then
                         lac_RC4_INDEX="1"
                         lac_DES_RISC1="1"
                     else
@@ -6496,7 +6490,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
                     lac_DES_RISC1="1" 
                     lac_DES_UNROLL="1" 
 
-                    if test ! "$GCC" = "1"; then
+                    if test ! "$GCC" = "yes"; then
                         lac_RC4_INT="unsigned char"
                     fi
                 ;;
@@ -6525,7 +6519,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
                     lac_DES_UNROLL="1"
                     lac_BF_PTR="1"
 
-                    if test "$GCC" = "1"; then
+                    if test "$GCC" = "yes"; then
                         lac_MD2_INT="unsigned char"
                         lac_RC4_INDEX="1"
                     fi
@@ -6537,7 +6531,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
             lac_DES_RISC1="1"
             lac_BN_DIV2W="1"            
 
-            if test "$GCC" = "1"; then
+            if test "$GCC" = "yes"; then
                 lac_BN_LLONG="1"
                 lac_DES_PTR="1"
             else
@@ -6553,7 +6547,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
             lac_RC4_INT="unsigned char"
         ;;
         *-dec-osf*)
-            if test "$GCC" = "1"; then
+            if test "$GCC" = "yes"; then
                 lac_SIXTY_FOUR_BIT_LONG="1"
                 lac_THIRTY_TWO_BIT=""
                 lac_RC4_CHUNK="unsigned long"
@@ -6868,6 +6862,8 @@ AC_TRY_LINK(
 AC_MSG_RESULT($lac_cv_lnsl)
 
 ])
+
+
 
 
 AC_DEFUN(GLOBUS_INIT, [
