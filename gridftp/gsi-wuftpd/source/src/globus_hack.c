@@ -1,5 +1,3 @@
-#define OUTSTANDING_READ_COUNT                      4
-
 #include  <globus_common.h>
 #include <setjmp.h>
 #include "config.h"
@@ -822,6 +820,8 @@ g_receive_data(
     globus_result_t                          res;
     int                                      ctr;
     int                                      cb_count = 0;
+    int                                      data_connection_count = 1;
+    globus_ftp_control_parallelism_t         parallel;
     globus_reltime_t			     five_seconds;
 #ifdef BUFFER_SIZE
     size_t                                   buffer_size = BUFFER_SIZE;
@@ -880,6 +880,18 @@ g_receive_data(
         g_monitor.done = GLOBUS_FALSE;
         g_monitor.fd = filefd;
         cb_count = 0;
+        res = globus_ftp_control_get_parallelism(
+                  handle,
+                  &parallel);
+        if(res == GLOBUS_SUCCESS)
+        {
+            data_connection_count = parallel.base.size;
+        }
+        else
+        {
+            data_connection_count = 2;
+        }
+
 
 	GlobusTimeReltimeSet(five_seconds, 5, 0);
 
@@ -892,7 +904,7 @@ g_receive_data(
 	    GLOBUS_NULL,
 	    GLOBUS_NULL);
 					  
-        for(ctr = 0; ctr < OUTSTANDING_READ_COUNT; ctr++)
+        for(ctr = 0; ctr < data_connection_count; ctr++)
         {
             if ((buf = (globus_byte_t *) globus_malloc(buffer_size)) == NULL)
             {
