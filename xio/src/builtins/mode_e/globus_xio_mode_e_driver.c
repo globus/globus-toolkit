@@ -80,6 +80,7 @@ static globus_l_xio_mode_e_attr_t       globus_l_xio_mode_e_attr_default =
     GLOBUS_NULL,
     GLOBUS_FALSE,
     GLOBUS_FALSE,
+    -1,
     GLOBUS_FALSE
 };
 
@@ -125,7 +126,7 @@ typedef struct
     globus_xio_operation_t              op;
     globus_xio_iovec_t *                iovec;
     int                                 iovec_count;
-    globus_l_xio_mode_e_attr_t *	attr;
+    globus_l_xio_mode_e_attr_t *	dd;
     globus_l_xio_mode_e_handle_t *      handle;
     globus_xio_handle_t                 xio_handle;
 } globus_i_xio_mode_e_requestor_t;
@@ -333,21 +334,24 @@ globus_l_xio_mode_e_hashtable_offset_hash(
     char *                              key;
     int					i;
     globus_size_t			size;
+    GlobusXIOName(globus_l_xio_mode_e_hashtable_offset_hash);
     
+    GlobusXIOModeEDebugEnter();
     key = (char *) offsetp;
     size = sizeof(globus_off_t);
     for (i = 0; i < sizeof(globus_off_t); i++)
     {
         h = (h << 4) + *key++;
-        if((g = (h & 0xF0UL)))
+        if ((g = (h & 0xF0UL)))
         {
             h ^= g >> 24;
             h ^= g;
         }   
     }   
-    
+    GlobusXIOModeEDebugExit();
     return h % limit;
 }
+
 
 int
 globus_l_xio_mode_e_hashtable_offset_keyeq(
@@ -355,14 +359,18 @@ globus_l_xio_mode_e_hashtable_offset_keyeq(
     void *                              offsetp2)
 {
     globus_size_t			size;
+    int					rc = 0;
+    GlobusXIOName(globus_l_xio_mode_e_hashtable_offset_keyeq);
+
+    GlobusXIOModeEDebugEnter();
     size = sizeof(globus_off_t);
     if(offsetp1 == offsetp2 ||
         (offsetp1 && offsetp2 && strncmp(offsetp1, offsetp2, size) == 0))
     {
-        return 1;
+        rc = 1;
     }
-
-    return 0;
+    GlobusXIOModeEDebugExit();
+    return rc;
 }
 
 
@@ -429,7 +437,7 @@ globus_i_xio_mode_e_header_encode(
      * least significant byte
      */
     globus_assert(GLOBUS_XIO_MODE_E_MAX_OFFSET_SIZE >= offset_size);
-    for (i = GLOBUS_XIO_MODE_E_MAX_OFFSET_SIZE; i > offset_size; i++)
+    for (i = GLOBUS_XIO_MODE_E_MAX_OFFSET_SIZE; i > offset_size; i--)
     {
         buf[GLOBUS_XIO_MODE_E_MAX_OFFSET_SIZE - i] = 0;
     }
@@ -461,7 +469,7 @@ globus_i_xio_mode_e_header_decode(
         /* 
          * if offset_size < MAX_OFFSET_SIZE; then the most significant
          * (MAX_OFFSET_SIZE - offset_size) number of bytes should be zero;
-         * otherwise there is a overflow
+         * otherwise there is an overflow
          */ 
         if (buf[GLOBUS_XIO_MODE_E_MAX_OFFSET_SIZE - i] != 0)
         {
@@ -512,7 +520,7 @@ globus_l_xio_mode_e_handle_create(
     }
     if (!attr)
     {
-       result = globus_l_xio_mode_e_attr_init((void**)&handle->attr); 
+        result = globus_l_xio_mode_e_attr_init((void**)&handle->attr); 
         if (result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -821,7 +829,7 @@ globus_l_xio_mode_e_cancel_cb(
 	    break;
 	case GLOBUS_XIO_MODE_E_OPENING:
 	    result = globus_xio_handle_cancel_operations(
-		requestor->xio_handle, GLOBUS_XIO_CANCEL_OPEN);
+			requestor->xio_handle, GLOBUS_XIO_CANCEL_OPEN);
             if (result != GLOBUS_SUCCESS)
 	    {
 		goto error;
@@ -834,7 +842,7 @@ globus_l_xio_mode_e_cancel_cb(
 	    }
 	    else
 	    {
-		mask = GLOBUS_XIO_CANCEL_READ;
+		mask = GLOBUS_XIO_CANCEL_WRITE;
 	    }
 	    if (globus_fifo_empty(&handle->io_q) ||
 		!globus_fifo_remove(&handle->io_q, requestor))
@@ -848,6 +856,8 @@ globus_l_xio_mode_e_cancel_cb(
 	    }
 	    else
 	    {
+	        globus_memory_push_node(
+			&handle->requestor_memory, (void*)requestor);
 		finish = GLOBUS_TRUE;
 	    }
 	default:
@@ -876,6 +886,7 @@ error:
     return;
 }
 
+
 static
 globus_result_t
 globus_l_xio_mode_e_server_accept(
@@ -890,6 +901,8 @@ globus_l_xio_mode_e_server_accept(
     GlobusXIOModeEDebugEnter();
     handle = (globus_l_xio_mode_e_handle_t*)driver_server;
     handle->outstanding_op = op;
+
+    /* no race for requestor_memory as accept is not finished yet */
     requestor = (globus_i_xio_mode_e_requestor_t *)
                     globus_memory_pop_node(&handle->requestor_memory);
     requestor->handle = handle;
@@ -907,9 +920,9 @@ globus_l_xio_mode_e_server_accept(
         goto error_operation_canceled;
     }
     result = globus_xio_server_register_accept(
-        handle->server, 
-        globus_l_xio_mode_e_server_accept_cb,
-        handle);
+		handle->server, 
+		globus_l_xio_mode_e_server_accept_cb,
+		handle);
     if (result != GLOBUS_SUCCESS)
     {
         goto error_register_accept;
@@ -926,9 +939,9 @@ error_cancel_enable:
     /*
      * xio calls the cancel_cb with cancel lock held and disable_cancel waits
      * for that. so cancel_cb can not be active after i call disable_cancel
-     * and thus i can safely push the requestor memory and call handle_destroy
-     * As the accept is not finished yet, no other code that uses
-     * requestor_memory can be active. So i dont lock before pushing the node
+     * and thus i can safely push the requestor memory. As the accept is not 
+     * finished yet, no other code that uses requestor_memory can be active. 
+     * So i dont lock before pushing the node
      */
     globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
     GlobusXIOModeEDebugExitWithError();
@@ -1106,7 +1119,7 @@ globus_l_xio_mode_e_process_outstanding_data(
 	if (handle->attr->offset_reads)
 	{
 	    /* wait_for of this requestor should be zero */
-	    requestor->attr->offset = 
+	    requestor->dd->offset = 
 		connection_handle->outstanding_data_offset;
 	    globus_hashtable_insert(
 			&handle->offset_ht, 
@@ -1116,6 +1129,7 @@ globus_l_xio_mode_e_process_outstanding_data(
 	else
 	{
 	    connection_handle->requestor = requestor;
+	    requestor = GLOBUS_NULL;
 	    globus_i_xio_mode_e_register_read(connection_handle);
 	}
     }
@@ -1279,7 +1293,10 @@ globus_l_xio_mode_e_read_header_cb(
             }
         }
     }
-    else if (result == GlobusXIOErrorCanceled())
+    else if(globus_error_match(
+		globus_error_peek(result), 
+		GLOBUS_XIO_MODULE, 
+		GLOBUS_XIO_ERROR_CANCELED))
     {
 	/* 
 	 * if there are outstanding header reads and user calls close, the 
@@ -1675,6 +1692,7 @@ globus_l_xio_mode_e_server_open(
 {
     globus_i_xio_mode_e_requestor_t *	requestor;
     globus_result_t                     result;
+    globus_bool_t			destroy = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_mode_e_server_open);
 
     GlobusXIOModeEDebugEnter();
@@ -1687,15 +1705,16 @@ globus_l_xio_mode_e_server_open(
 		    GLOBUS_XIO_MODE_E_OFFSET_HT_SIZE,
 		    globus_l_xio_mode_e_hashtable_offset_hash,
 		    globus_l_xio_mode_e_hashtable_offset_keyeq);
-    }
-    if (result != GLOBUS_SUCCESS)
-    {
-	goto error_hashtable_init;
+	if (result != GLOBUS_SUCCESS)
+	{
+	    goto error_hashtable_init;
+	}
     }
     requestor = (globus_i_xio_mode_e_requestor_t *)
                     globus_memory_pop_node(&handle->requestor_memory);
     requestor->xio_handle = handle->accepted_handle;
     requestor->handle = handle;
+    globus_mutex_unlock(&handle->mutex);
     if (globus_xio_operation_enable_cancel(
         op, globus_l_xio_mode_e_cancel_cb, requestor))
     {
@@ -1716,14 +1735,13 @@ globus_l_xio_mode_e_server_open(
                 handle);
     if (result != GLOBUS_SUCCESS)
     {
-        handle->state = GLOBUS_XIO_MODE_E_ERROR;
         if (handle->ref_count == 0)
         {
-            globus_l_xio_mode_e_handle_destroy(handle);    
+	    destroy = GLOBUS_TRUE;
         }
         else
         {
-            globus_mutex_unlock(&handle->mutex);
+            handle->state = GLOBUS_XIO_MODE_E_ERROR;
         }
         goto error_register_open;
     }
@@ -1754,6 +1772,10 @@ error_cancel_enable:
      */
     globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
 error_hashtable_init:
+    if (destroy)
+    {
+        globus_l_xio_mode_e_handle_destroy(handle);
+    }
     GlobusXIOModeEDebugExitWithError();
     return result;
 
@@ -1770,13 +1792,12 @@ globus_l_xio_mode_e_open(
 {
     globus_l_xio_mode_e_handle_t *      handle;
     globus_l_xio_mode_e_attr_t *        attr;
-    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_result_t                     result;
     GlobusXIOName(globus_l_xio_mode_e_open);
 
     GlobusXIOModeEDebugEnter();
     handle = (globus_l_xio_mode_e_handle_t *) driver_link;
     attr = (globus_l_xio_mode_e_attr_t *) driver_attr;
-    handle->state = GLOBUS_XIO_MODE_E_OPENING;
     if (!handle) /* Client */
     {
         result = globus_l_xio_mode_e_handle_create(&handle, attr);
@@ -1784,6 +1805,7 @@ globus_l_xio_mode_e_open(
         {
             goto error_handle_create;
         }
+        handle->state = GLOBUS_XIO_MODE_E_OPENING;
         result = globus_xio_contact_info_to_string(
 					contact_info, &handle->cs);
         if (result != GLOBUS_SUCCESS)
@@ -1801,9 +1823,11 @@ globus_l_xio_mode_e_open(
     }
     else                /* Server */
     {
+        handle->state = GLOBUS_XIO_MODE_E_OPENING;
         result = globus_l_xio_mode_e_server_open(handle, op);
         if (result != GLOBUS_SUCCESS)
         {
+	    handle->state = GLOBUS_XIO_MODE_E_ERROR;
             goto error_server_open; 
         }
     }
@@ -1815,7 +1839,6 @@ error_contact_info_to_string:
     globus_l_xio_mode_e_handle_destroy(handle);    
 error_handle_create:
 error_server_open:
-    handle->state = GLOBUS_XIO_MODE_E_ERROR;
     GlobusXIOModeEDebugExitWithError();
     return result;
 }
@@ -2051,7 +2074,7 @@ globus_l_xio_mode_e_read(
 {
     globus_l_xio_mode_e_handle_t *      handle;
     globus_i_xio_mode_e_requestor_t *   requestor;
-    globus_l_xio_mode_e_attr_t *	attr;
+    globus_l_xio_mode_e_attr_t *	dd;
     globus_result_t                     result;
     globus_size_t                       wait_for;
     globus_bool_t			finish = GLOBUS_FALSE;
@@ -2073,9 +2096,9 @@ globus_l_xio_mode_e_read(
     }
     if (handle->attr->offset_reads)
     {
-	attr = (globus_l_xio_mode_e_attr_t *)
+	dd = (globus_l_xio_mode_e_attr_t *)
 		globus_xio_operation_get_data_descriptor(op, GLOBUS_FALSE);
-	if (!attr)
+	if (!dd)
 	{
 	    result = GlobusXIOModeEReadError("dd expected");
 	    goto error_dd;
@@ -2087,7 +2110,7 @@ globus_l_xio_mode_e_read(
     requestor->op = op;
     requestor->iovec = (globus_xio_iovec_t*)iovec;
     requestor->iovec_count = iovec_count;
-    requestor->attr = attr;
+    requestor->dd = dd;
     requestor->handle = handle;
     requestor->xio_handle = GLOBUS_NULL;
     globus_mutex_unlock(&handle->mutex);
@@ -2146,7 +2169,7 @@ globus_l_xio_mode_e_read(
 			&handle->offset_ht, 
 			(void *)&connection_handle->outstanding_data_offset, 
 			(void *)connection_handle);
-		    attr->offset = connection_handle->outstanding_data_offset;
+		    dd->offset = connection_handle->outstanding_data_offset;
 		    finish = GLOBUS_TRUE;
 		}
 		else 
@@ -2156,7 +2179,7 @@ globus_l_xio_mode_e_read(
 			connection_handle = 
 				(globus_l_xio_mode_e_connection_handle_t*) 
 					globus_hashtable_remove(
-					    &handle->offset_ht, &attr->offset);
+					    &handle->offset_ht, &dd->offset);
 			if (!connection_handle)
 			{
 			    result = GlobusXIOModeEReadError("Invalid offset");
@@ -2215,7 +2238,7 @@ globus_l_xio_mode_e_write_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_result_t                     res;
+    globus_result_t                     requestor_result;
     globus_l_xio_mode_e_connection_handle_t *
                                         connection_handle;
     globus_l_xio_mode_e_handle_t *      handle;
@@ -2241,15 +2264,16 @@ globus_l_xio_mode_e_write_cb(
         requestor = (globus_i_xio_mode_e_requestor_t *)
                         globus_fifo_dequeue(&handle->io_q);
         connection_handle->requestor = requestor;
-        res = globus_i_xio_mode_e_register_write(connection_handle);
-        if (res != GLOBUS_SUCCESS)
+        requestor_result = globus_i_xio_mode_e_register_write(
+							connection_handle);
+        if (requestor_result != GLOBUS_SUCCESS)
         {   
             requestor_op = requestor->op;    
             requestor_offset = connection_handle->outstanding_data_offset;
             finish_next = GLOBUS_TRUE;
-            handle->state = GLOBUS_XIO_MODE_E_ERROR;
 	    globus_memory_push_node(
 			&handle->requestor_memory, (void*)requestor);
+	    goto error;
         }
     }
     else
@@ -2261,7 +2285,7 @@ globus_l_xio_mode_e_write_cb(
 	     * I'll get this cb with eod_sent == TRUE for one connection alone
 	     * and I send EOF (if need be) on this connection alone. If I dont
 	     * need to send EOF and eods_sent == connection_count, I need to 
-	     * finish the write (with SEND_EOD set on dd)
+	     * finish the write (that had SEND_EOD set on dd)
 	     */
 	    if (!connection_handle->eod)
 	    {
@@ -2275,8 +2299,14 @@ globus_l_xio_mode_e_write_cb(
 		if (handle->eod_count > -1)
 		{
 		    descriptor = GLOBUS_XIO_MODE_E_DATA_DESCRIPTOR_EOF;
-		    res = globus_l_xio_mode_e_register_eod(
-				  connection_handle, descriptor);
+		    requestor_result = globus_l_xio_mode_e_register_eod(
+					      connection_handle, descriptor);
+		    if (requestor_result != GLOBUS_SUCCESS)
+		    {
+		        globus_fifo_enqueue(
+				&handle->connection_q, connection_handle);
+			goto error;
+		    }
 		}
 		else
 		{
@@ -2304,6 +2334,12 @@ globus_l_xio_mode_e_write_cb(
 			    offset);
 	globus_xio_driver_finished_write(op, result, nbytes);
     }
+    GlobusXIOModeEDebugExit();
+    return;
+
+error:
+    handle->state = GLOBUS_XIO_MODE_E_ERROR;
+    globus_mutex_unlock(&handle->mutex);
     if (finish_next)
     {
         globus_xio_driver_data_descriptor_cntl(
@@ -2311,9 +2347,9 @@ globus_l_xio_mode_e_write_cb(
                     NULL,
                     GLOBUS_XIO_DD_SET_OFFSET,
                     requestor_offset);
-        globus_xio_driver_finished_write(requestor_op, res, 0);
+        globus_xio_driver_finished_write(requestor_op, requestor_result, 0);
     }
-    GlobusXIOModeEDebugExit();
+    GlobusXIOModeEDebugExitWithError();
     return;
 }
 
@@ -2374,13 +2410,13 @@ globus_l_xio_mode_e_write_header_cb(
 	    iovec_count = connection_handle->requestor->iovec_count;
 	    GlobusXIOUtilIovTotalLength(iovec_len, iovec, iovec_count);
 	    res = globus_xio_register_writev(
-		connection_handle->xio_handle,
-		(globus_xio_iovec_t*)iovec,
-		iovec_count,
-		iovec_len,
-		GLOBUS_NULL,
-		globus_l_xio_mode_e_write_cb,
-		connection_handle);
+			connection_handle->xio_handle,
+			(globus_xio_iovec_t*)iovec,
+			iovec_count,
+			iovec_len,
+			GLOBUS_NULL,
+			globus_l_xio_mode_e_write_cb,
+			connection_handle);
 	    if (res != GLOBUS_SUCCESS)
 	    {
 		goto error;
@@ -2397,6 +2433,10 @@ globus_l_xio_mode_e_write_header_cb(
 	    descriptor = GLOBUS_XIO_MODE_E_DATA_DESCRIPTOR_EOF;
 	    res = globus_l_xio_mode_e_register_eod(
 				connection_handle, descriptor);
+	    if (res != GLOBUS_SUCCESS)
+	    {
+		goto error;
+	    }
 	}
 	else 
 	{
@@ -2414,7 +2454,9 @@ globus_l_xio_mode_e_write_header_cb(
 		finish = GLOBUS_TRUE;
 		/* 
 		 * handle->eod_offset also has same value. if i have to finish
-		 * in eod_cb, i cant use the connection_handle thing 
+		 * in eod_cb, connection_handle->outstanding_data_offset cant
+		 * be used coz i dont know which connection_handle is 
+		 * associated with the user_write (that had SEND_EOD set).
 		 */
 		offset = connection_handle->outstanding_data_offset;
 		/* the op is stored in handle->outstanding_op too */
@@ -2501,18 +2543,18 @@ globus_i_xio_mode_e_register_write(
     globus_i_xio_mode_e_header_encode(header->offset, offset);
     connection_handle->outstanding_data_offset = offset;
     offset += size;
-    if (handle->offset > offset)
+    if (offset > handle->offset)
     {
 	handle->offset = offset;
     }
     result = globus_xio_register_write(
-        connection_handle->xio_handle, 
-        (globus_byte_t*)header, 
-        header_size,
-        header_size,
-        GLOBUS_NULL,
-        globus_l_xio_mode_e_write_header_cb,
-        connection_handle);
+		connection_handle->xio_handle, 
+		(globus_byte_t*)header, 
+		header_size,
+		header_size,
+		GLOBUS_NULL,
+		globus_l_xio_mode_e_write_header_cb,
+		connection_handle);
     if (result != GLOBUS_SUCCESS)
     {
         goto error;
@@ -2540,7 +2582,7 @@ globus_l_xio_mode_e_write(
 {
     globus_l_xio_mode_e_handle_t *      handle;
     globus_i_xio_mode_e_requestor_t *   requestor;
-    globus_l_xio_mode_e_attr_t *	attr;
+    globus_l_xio_mode_e_attr_t *	dd;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_mode_e_write);
 
@@ -2550,9 +2592,9 @@ globus_l_xio_mode_e_write(
      * Mode E is unidirectional. Server can only read and client can only write
      */
     globus_assert(handle->server == GLOBUS_NULL); 
-    attr = (globus_l_xio_mode_e_attr_t *)
-	    globus_xio_operation_get_data_descriptor(op, GLOBUS_FALSE);
     globus_mutex_lock(&handle->mutex);
+    dd = (globus_l_xio_mode_e_attr_t *)
+	    globus_xio_operation_get_data_descriptor(op, GLOBUS_FALSE);
     requestor = (globus_i_xio_mode_e_requestor_t *)
 		globus_memory_pop_node(&handle->requestor_memory);
     requestor->op = op;
@@ -2560,23 +2602,20 @@ globus_l_xio_mode_e_write(
     requestor->iovec_count = iovec_count;
     requestor->handle = handle;
     requestor->xio_handle = GLOBUS_NULL;
-    if (!attr || !attr->send_eod)
+/*    globus_mutex_unlock(&handle->mutex);
+    if (globus_xio_operation_enable_cancel(
+	op, globus_l_xio_mode_e_cancel_cb, requestor))
     {
-	globus_mutex_unlock(&handle->mutex);
-	/* I dont allow cancellation of write that has SEND_EOD set on dd */
-	if (globus_xio_operation_enable_cancel(
-	    op, globus_l_xio_mode_e_cancel_cb, requestor))
-	{
-	    result = GlobusXIOErrorCanceled();
-	    goto error_cancel_enable;
-	}
-	globus_mutex_lock(&handle->mutex);
-	if (globus_xio_operation_is_canceled(op))
-	{
-	    result = GlobusXIOErrorCanceled();
-	    goto error_operation_canceled;
-	}
+	result = GlobusXIOErrorCanceled();
+	goto error_cancel_enable;
     }
+    globus_mutex_lock(&handle->mutex);
+    if (globus_xio_operation_is_canceled(op))
+    {
+	result = GlobusXIOErrorCanceled();
+	goto error_operation_canceled;
+    }
+*/
     switch (handle->state)
     {
 	case GLOBUS_XIO_MODE_E_OPEN:
@@ -2593,7 +2632,7 @@ globus_l_xio_mode_e_write(
 	    {
 		handle->eof_sent = GLOBUS_FALSE;
 	    }
-	    if (attr && attr->send_eod)
+	    if (dd && dd->send_eod)
 	    {
 		handle->state = GLOBUS_XIO_MODE_E_SENDING_EOD;
 		handle->outstanding_op = op;
@@ -2601,9 +2640,9 @@ globus_l_xio_mode_e_write(
 		{
 		    handle->eod_count = handle->connection_count;
 		}
-		else if (attr->eod_count > -1)
+		else if (dd->eod_count > -1)
 		{
-		    handle->eod_count = attr->eod_count;
+		    handle->eod_count = dd->eod_count;
 		}
 	    }
 	    if (!globus_fifo_empty(&handle->connection_q))
@@ -2661,17 +2700,13 @@ globus_l_xio_mode_e_write(
 error_invalid_state:
 error_open_new_stream:
 error_register_write:
+/*
 error_operation_canceled:
-    if (!attr || !attr->send_eod)
-    {
-	globus_mutex_unlock(&handle->mutex);
-	globus_xio_operation_disable_cancel(op);
-    }
+    globus_mutex_unlock(&handle->mutex);
+    globus_xio_operation_disable_cancel(op);
 error_cancel_enable:
-    if (!attr || !attr->send_eod)
-    {
-	globus_mutex_lock(&handle->mutex);
-    }
+    globus_mutex_lock(&handle->mutex);
+*/
     globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
     globus_mutex_unlock(&handle->mutex);
     GlobusXIOModeEDebugExitWithError();
@@ -2746,6 +2781,7 @@ globus_l_xio_mode_e_write_eod_cb(
     globus_xio_operation_t              op;
     globus_off_t			offset;
     globus_bool_t                       finish = GLOBUS_FALSE;
+    globus_result_t			res;
     GlobusXIOName(globus_l_xio_mode_e_write_eod_cb);
 
     GlobusXIOModeEDebugEnter();
@@ -2757,11 +2793,15 @@ globus_l_xio_mode_e_write_eod_cb(
     globus_mutex_lock(&handle->mutex);
     if (header->descriptor & GLOBUS_XIO_MODE_E_DATA_DESCRIPTOR_CLOSE)
     {
-        globus_xio_register_close(
+        res = globus_xio_register_close(
                 xio_handle,
                 handle->attr->xio_attr,
                 globus_l_xio_mode_e_close_cb,
                 handle);
+	if (res != GLOBUS_SUCCESS)
+	{
+	    goto error;
+	}
         globus_free(connection_handle);
     }
     else
@@ -2799,9 +2839,18 @@ globus_l_xio_mode_e_write_eod_cb(
 	globus_xio_driver_finished_write(op, result, 0);
     }
     GlobusXIOModeEDebugExit();
+    return;
+
+error:
+    handle->state = GLOBUS_XIO_MODE_E_ERROR;
+    globus_memory_push_node(&handle->header_memory, (void*)header);
+    globus_mutex_unlock(&handle->mutex);
+    GlobusXIOModeEDebugExitWithError();
+    return;
 }
 
 
+/* called locked */
 static
 globus_result_t
 globus_l_xio_mode_e_register_eod(
@@ -2817,11 +2866,11 @@ globus_l_xio_mode_e_register_eod(
 
     GlobusXIOModeEDebugEnter();
     handle = connection_handle->mode_e_handle;
-    globus_mutex_lock(&handle->mutex);
     header = (globus_l_xio_mode_e_header_t *)
                     globus_memory_pop_node(&handle->header_memory);
     header_size = sizeof(globus_l_xio_mode_e_header_t);
     memset(header, 0, header_size);
+    header->descriptor = descriptor;
     if (header->descriptor & GLOBUS_XIO_MODE_E_DATA_DESCRIPTOR_EOF)
     {
         globus_i_xio_mode_e_header_encode(
@@ -2839,13 +2888,11 @@ globus_l_xio_mode_e_register_eod(
     {
         goto error;
     }
-    globus_mutex_unlock(&handle->mutex);
     GlobusXIOModeEDebugExit();
     return GLOBUS_SUCCESS;
 
 error:
     globus_memory_push_node(&handle->header_memory, (void*)header);         
-    globus_mutex_unlock(&handle->mutex);
     GlobusXIOModeEDebugExitWithError();
     return result;
 }
@@ -2951,9 +2998,13 @@ globus_l_xio_mode_e_close(
 	    connection_handle = (globus_l_xio_mode_e_connection_handle_t *)
 				globus_fifo_dequeue(&handle->connection_q);
 	    descriptor |= GLOBUS_XIO_MODE_E_DATA_DESCRIPTOR_EOF;
-	    globus_l_xio_mode_e_register_eod(
+	    result = globus_l_xio_mode_e_register_eod(
 				connection_handle, descriptor);
-	    descriptor &= !GLOBUS_XIO_MODE_E_DATA_DESCRIPTOR_EOF;
+	    if (result != GLOBUS_SUCCESS)
+	    {
+		goto error;
+	    }
+	    descriptor &= ~GLOBUS_XIO_MODE_E_DATA_DESCRIPTOR_EOF;
 	}
         while (!globus_fifo_empty(&handle->connection_q))
         {
@@ -2961,6 +3012,10 @@ globus_l_xio_mode_e_close(
                                     globus_fifo_dequeue(&handle->connection_q);
             result = globus_l_xio_mode_e_register_eod(
 				connection_handle, descriptor);
+	    if (result != GLOBUS_SUCCESS)
+	    {
+		goto error;
+	    }
         }
     }
     else
@@ -2990,6 +3045,11 @@ globus_l_xio_mode_e_close(
     }
     GlobusXIOModeEDebugExit();
     return GLOBUS_SUCCESS;      
+
+error:
+    globus_mutex_unlock(&handle->mutex);
+    GlobusXIOModeEDebugExitWithError();
+    return result; 
 }
 
 
