@@ -1,11 +1,19 @@
 #!/usr/bin/perl -w
+# Thanks to Steve Mock @SDSC for expect stuff
+#
 use CGI qw/:standard/;
 
 use Expect;
 
-my $program = '/home/novotny/myproxy/myproxy-get-delegation'; 
-my $username = param(USERNAME);
-my $password = param(PASSWORD);
+# Edit this line to reflect location of myproxy-get-delegation
+my $program  = "/home/novotny/myproxy/myproxy/myproxy/myproxy-get-delegation"; 
+
+my $username    = param(USERNAME);
+my $password    = param(PASSWORD);
+my $portal_life = param(PORTALLIFE);
+
+my $outfile = "$username.cred";
+my $args     = "-s localhost -l $username -t $portal_life -o $outfile";
 my $lifetime = 30;
 
 # Check length of password
@@ -16,8 +24,7 @@ if (($len < 5) || ($len > 10))
 }
 
 # use expect to run the command
-#my $command "echo $password |$program";
-my $cmd_filehandle = Expect->spawn("$program");
+my $cmd_filehandle = Expect->spawn("$program $args");
 
 # this looks for the string "myproxy-server:" for 20 seconds
 # and failing that, does the "error" subroutine.
@@ -41,36 +48,6 @@ print "<pre>\n";
 foreach(reverse(@back)) { print; }
 print "</pre>\n";
 
-
-sub accessgranted
-{
-  print header;
-  print "<TITLE>Access Granted</TITLE>";
-  print "<FONT FACE=Arial SIZE=3 COLOR=Blue><STRONG>";
-  print "A proxy has been retrieved for $username";
-  print "</STRONG></FONT>";
-}
-
-sub wrongpassword
-{
-  print header;
-  print "<TITLE>Access Denied</TITLE>";
-  print "<FONT FACE=Arial SIZE=3 COLOR=Red><STRONG>";
-  print "You entered in invalid password to the myproxy-server.";
-  print "</STRONG></FONT>";
-  exit;
-}
-
-sub accessdenied
-{
-  print header;
-  print "<TITLE>Access Denied</TITLE>";
-  print "<FONT FACE=Arial SIZE=3 COLOR=Red><STRONG>";
-  print "You were denied access to the myproxy-server.";
-  print "</STRONG></FONT>";
-  exit;
-}
-
 sub passwordtoolong
 {
   print header;
@@ -86,7 +63,7 @@ sub error
   print header;
   print  "<TITLE>Error!</TITLE>";
   print "<FONT FACE=Arial SIZE=3 COLOR=Red><STRONG>";
-  print "Unable to run $program!";
+  print "Unable to run myproxy-get-delegation!";
   print "</STRONG></FONT>";
   exit;
 }
