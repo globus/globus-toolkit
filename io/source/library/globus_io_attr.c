@@ -274,6 +274,9 @@ globus_io_attr_get_callback_space(
     globus_io_attr_t *                  attr, 
     globus_callback_space_t *           space)
 {
+    static char *                            myname =
+        "globus_io_attr_get_callback_space";
+
     if(!attr)
     {
         return globus_error_put(
@@ -365,9 +368,6 @@ globus_netlogger_write(
     const char *                             tag)
 {
     struct globus_netlogger_handle_s *       s_nl_handle;
-    char *                                   outstr;
-    int                                      outstr_len;
-    int                                      rc;
     static char *                            myname=
         "globus_netlogger_write";
 
@@ -499,7 +499,6 @@ globus_netlogger_handle_init(
     struct globus_netlogger_handle_s *       s_gnl_handle;
     char *                                   main_str;
     int                                      ms_len = 0;
-    NLhandle *                               nl_handle;
     static char *                            myname=
         "globus_netlogger_handle_init";
 
@@ -582,7 +581,7 @@ globus_netlogger_handle_init(
     if(pid != GLOBUS_NULL)
     {
         ms_len += strlen("PID=") + strlen(pid) + 1;
-        s_gnl_handle->pid = strdup(pid);
+        s_gnl_handle->pid = globus_libc_strdup(pid);
     }
     main_str = (char *)globus_malloc(ms_len);
     main_str[0] = '\0';
@@ -591,8 +590,8 @@ globus_netlogger_handle_init(
         strcat(main_str, " PID=");
         strcat(main_str, pid);
     }
-    s_gnl_handle->hostname = strdup(hostname);
-    s_gnl_handle->progname = strdup(progname);
+    s_gnl_handle->hostname = globus_libc_strdup(hostname);
+    s_gnl_handle->progname = globus_libc_strdup(progname);
     s_gnl_handle->main_str = main_str;
     s_gnl_handle->desc = GLOBUS_NULL;
 
@@ -734,23 +733,23 @@ globus_io_attr_netlogger_copy_handle(
     d_gnl_handle->nl_handle = s_gnl_handle->nl_handle;
     if(s_gnl_handle->hostname != GLOBUS_NULL)
     {
-        d_gnl_handle->hostname = strdup(s_gnl_handle->hostname);
+        d_gnl_handle->hostname = globus_libc_strdup(s_gnl_handle->hostname);
     }
     if(s_gnl_handle->progname != GLOBUS_NULL)
     {
-        d_gnl_handle->progname = strdup(s_gnl_handle->progname);
+        d_gnl_handle->progname = globus_libc_strdup(s_gnl_handle->progname);
     }
     if(s_gnl_handle->main_str != GLOBUS_NULL)
     {
-        d_gnl_handle->main_str = strdup(s_gnl_handle->main_str);
+        d_gnl_handle->main_str = globus_libc_strdup(s_gnl_handle->main_str);
     }
     if(s_gnl_handle->pid != GLOBUS_NULL)
     {
-        d_gnl_handle->pid = strdup(s_gnl_handle->pid);
+        d_gnl_handle->pid = globus_libc_strdup(s_gnl_handle->pid);
     }
     if(s_gnl_handle->desc != GLOBUS_NULL)
     {
-        d_gnl_handle->desc = strdup(s_gnl_handle->desc);
+        d_gnl_handle->desc = globus_libc_strdup(s_gnl_handle->desc);
     }
 
     return GLOBUS_SUCCESS;
@@ -804,7 +803,7 @@ globus_netlogger_set_desc(
     {
         free(s_nl_handle->desc);
     }
-    s_nl_handle->desc = strdup(desc);
+    s_nl_handle->desc = globus_libc_strdup(desc);
 
     return GLOBUS_SUCCESS;
 }
@@ -3072,8 +3071,6 @@ globus_io_attr_set_tcp_interface(
     globus_object_t *			tcpattr;
     globus_i_io_tcpattr_instance_t *	instance;
     unsigned int			address[4];
-    struct in_addr			addr;
-    int					rc;
     static char *			myname=
 	                                "globus_io_attr_set_tcp_interface";
 
@@ -3137,7 +3134,7 @@ globus_io_attr_set_tcp_interface(
 		myname));
     }
 
-    sprintf(instance->interface, "%u.%u.%u.%u",
+    sprintf((char *)instance->interface, "%u.%u.%u.%u",
             address[0], address[1], address[2], address[3]);
 
     return GLOBUS_SUCCESS;
