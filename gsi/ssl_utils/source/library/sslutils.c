@@ -3954,6 +3954,7 @@ proxy_init_cred(
 {
         
     int                                 status = -1;
+    int					len;
     int                                 i;
     int                                 j;
     char *                              cert_file = NULL;
@@ -4848,6 +4849,7 @@ globus_ssl_utils_setup_ssl_ctx(
     int *                               num_null_enc_ciphers)
 {
     int                                 status = -1;
+    int					len;
     int                                 i;
     int                                 j;
     char *                              fname = NULL;
