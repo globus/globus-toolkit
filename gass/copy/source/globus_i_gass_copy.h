@@ -33,18 +33,6 @@ typedef enum
 } globus_i_gass_copy_target_status_t;
 
 
-/** 
- * valid state numbers (aka states)
- */
-typedef enum
-{
-    GLOBUS_I_GASS_COPY_STATE_INITIAL,
-    GLOBUS_I_GASS_COPY_STATE_SOURCE_READY,
-    GLOBUS_I_GASS_COPY_STATE_TRANSFER_IN_PROGRESS,
-    GLOBUS_I_GASS_COPY_STATE_READ_COMPLETE,
-    GLOBUS_I_GASS_COPY_STATE_WRITE_COMPLETE,
-} globus_i_gass_copy_state_number_t;
-
 /**
  * The buffer structure used for read/write queue entries
  */
@@ -167,14 +155,15 @@ typedef struct globus_i_gass_copy_state_target_s
  * The state structure contains all that is required to perform a file transfer
  * from a source to a destination.
  */
-typedef struct globus_i_gass_copy_state_s
+struct globus_gass_copy_state_s
 {
     /**
      * handle.  Useful for saving ftp server connections when doing multiple
      * globus_gass_copy_* calls to/from the same url's
      */
-    globus_gass_copy_handle_t *		handle;
-
+  /*
+     globus_gass_copy_handle_t *		handle;
+  */
     /**
      * Source information for the file transfer
      */
@@ -189,8 +178,9 @@ typedef struct globus_i_gass_copy_state_s
      * Used for keeping state of the transfer.
      * (state.state seemed like a bad idea. ;-)
      */
-    globus_i_gass_copy_state_number_t	number;
-
+  /*  moved to handle
+   *   globus_gass_copy_state_status_t	number;
+  */
     /**
      * Used for signalling from the various callback functions
      */
@@ -209,28 +199,12 @@ typedef struct globus_i_gass_copy_state_s
      */
     int                                 buffer_length;
 
-    /*
-     * pointer to user callback function
-     */
-    globus_gass_copy_callback_t         user_callback;
-    /*
-     * pointer to user argument to user callback function
-     */
-    void *                              callback_arg;
-
-    /*
-     * the result of the data transfer, error or otherwise
-     */
-    globus_result_t                     result;
-
-    int                                 err;
-
     /**
      * coordinates the modifying of the state,  aside from the target structures
      */
     globus_mutex_t                      mutex;
     
-} globus_i_gass_copy_state_t;
+};
 
 
 #endif
