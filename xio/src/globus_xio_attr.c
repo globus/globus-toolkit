@@ -404,6 +404,12 @@ globus_xio_data_descriptor_cntl(
 
     op = (globus_i_xio_op_t *) data_desc;
 
+    if(op->type != GLOBUS_XIO_OPERATION_TYPE_DD)
+    {
+        res = GlobusXIOErrorParameter("data_desc");
+        goto err;
+    }
+
 #   ifdef HAVE_STDARG_H
     {
         va_start(ap, cmd);
@@ -414,7 +420,7 @@ globus_xio_data_descriptor_cntl(
     }
 #   endif
 
-    res = globus_i_xio_driver_dd_cntl(op, driver, cmd, ap);
+    res = globus_i_xio_driver_dd_cntl(op, driver, op->type, cmd, ap);
 
     va_end(ap);
 

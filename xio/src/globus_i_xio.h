@@ -800,6 +800,7 @@ globus_result_t
 globus_i_xio_driver_dd_cntl(
     globus_i_xio_op_t *                     op,
     globus_xio_driver_t                     driver,
+    globus_xio_operation_type_t             type,
     int                                     cmd,
     va_list                                 ap);
 

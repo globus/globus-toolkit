@@ -1192,12 +1192,14 @@ globus_result_t
 globus_i_xio_driver_dd_cntl(
     globus_i_xio_op_t *                     op,
     globus_xio_driver_t                     driver,
+    globus_xio_operation_type_t             type,
     int                                     cmd,
     va_list                                 ap)
 {
     globus_result_t                         res;
     int                                     ndx;
     int                                     ctr;
+    void *                                  in_attr = NULL;
     GlobusXIOName(globus_i_xio_driver_dd_cntl);
 
     GlobusXIODebugEnter();
@@ -1209,14 +1211,42 @@ globus_i_xio_driver_dd_cntl(
         {
             if(driver == op->_op_context->entry[ctr].driver)
             {
-                if(op->entry[ctr].dd == NULL)
+                switch(type)
                 {
-                    res = op->_op_context->entry[ctr].driver->attr_init_func(
-                            &op->entry[ctr].dd);
-                    if(res != GLOBUS_SUCCESS)
-                    {
-                        goto err;
-                    }
+                    case GLOBUS_XIO_OPERATION_TYPE_OPEN:
+                        if(op->entry[ctr].open_attr == NULL)
+                        {
+                            res = 
+                            op->_op_context->entry[ctr].driver->attr_init_func(
+                                &op->entry[ctr].open_attr);
+                        }
+                        in_attr = op->entry[ctr].open_attr;
+                        break;
+
+                    case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
+                        if(op->entry[ctr].close_attr == NULL)
+                        {
+                            res = 
+                            op->_op_context->entry[ctr].driver->attr_init_func(
+                                &op->entry[ctr].close_attr);
+                        }
+                        in_attr = op->entry[ctr].close_attr;
+                        break;
+
+                    default:
+                        if(op->entry[ctr].dd == NULL)
+                        {
+                            res = 
+                            op->_op_context->entry[ctr].driver->attr_init_func(
+                                &op->entry[ctr].dd);
+                        }
+                        in_attr = op->entry[ctr].dd;
+                        break;
+                }
+
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto err;
                 }
                 ndx = ctr;
             }
@@ -1230,7 +1260,7 @@ globus_i_xio_driver_dd_cntl(
         if(op->_op_context->entry[ndx].driver->attr_cntl_func)
         {
             res = op->_op_context->entry[ndx].driver->attr_cntl_func(
-                    op->entry[ndx].dd,
+                    in_attr,
                     cmd,
                     ap);
             if(res != GLOBUS_SUCCESS)
@@ -1263,6 +1293,7 @@ globus_xio_driver_attr_cntl(
     int                                     cmd,
     ...)
 {
+    int                                     prev_ndx;
     globus_result_t                         res;
     va_list                                 ap;
     GlobusXIOName(globus_xio_driver_data_descriptor_cntl);
@@ -1285,7 +1316,10 @@ globus_xio_driver_attr_cntl(
     }
 #   endif
 
-    res = globus_i_xio_driver_dd_cntl(op, driver, cmd, ap);
+    prev_ndx = op->entry[op->ndx - 1].prev_ndx;
+
+    res = globus_i_xio_driver_dd_cntl(
+        op, driver, op->entry[prev_ndx].type, cmd, ap);
 
     va_end(ap);
 
@@ -1333,7 +1367,8 @@ globus_xio_driver_data_descriptor_cntl(
     }
 #   endif
 
-    res = globus_i_xio_driver_dd_cntl(op, driver, cmd, ap);
+    res = globus_i_xio_driver_dd_cntl(
+        op, driver, GLOBUS_XIO_OPERATION_TYPE_DD, cmd, ap);
 
     va_end(ap);
 
