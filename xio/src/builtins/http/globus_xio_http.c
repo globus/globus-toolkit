@@ -571,7 +571,7 @@ globus_l_xio_http_accept_cb(
     void *                                  user_arg)
 {
 
-    globus_xio_driver_finished_accept(op, globus_libc_strdup(_TARGET), GLOBUS_SUCCESS);
+    globus_xio_driver_finished_accept(op, globus_libc_strdup(_TARGET), result);
     return;
 
 }
