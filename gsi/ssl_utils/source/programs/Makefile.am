@@ -11,7 +11,7 @@ EXTRA_DIST = $(Scripts)
 
 bin_PROGRAMS = grid-proxy-init grid-proxy-destroy grid-proxy-info
 
-INCLUDES = $(GPT_INCLUDES) -I $(top_srcdir)/library
+INCLUDES = -I $(top_srcdir)/library $(GPT_INCLUDES) 
 
 
 grid_proxy_init_SOURCES = grid_proxy_init.c
