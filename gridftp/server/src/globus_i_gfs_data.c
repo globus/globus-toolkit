@@ -3054,8 +3054,10 @@ globus_l_gfs_data_end_transfer_kickout(
     }
 
     /* log transfer */
-    if(op->node_ndx == 0 && globus_i_gfs_config_string("log_transfer")
-        && op->cached_res == GLOBUS_SUCCESS)
+    if(op->node_ndx == 0 && 
+        op->cached_res == GLOBUS_SUCCESS &&
+        (globus_i_gfs_config_string("log_transfer") || 
+        !globus_i_gfs_config_bool("disable_usage_stats")))
     {
         char *                          type;
         globus_gfs_transfer_info_t *    info;
@@ -3104,20 +3106,40 @@ globus_l_gfs_data_end_transfer_kickout(
         }
         gettimeofday(&end_timeval, NULL);
 
-        globus_i_gfs_log_transfer(
-            op->node_count,
-            op->node_count * op->data_handle->info.nstreams,
-            &op->start_timeval,
-            &end_timeval,
-            op->remote_ip ? op->remote_ip : "0.0.0.0",
-            op->data_handle->info.blocksize,
-            op->data_handle->info.tcp_bufsize,
-            info->pathname,
-            op->bytes_transferred,
-            226,
-            "/",
-            type,
-            op->session_handle->username);
+        if(globus_i_gfs_config_string("log_transfer"))
+        {
+            globus_i_gfs_log_transfer(
+                op->node_count,
+                op->node_count * op->data_handle->info.nstreams,
+                &op->start_timeval,
+                &end_timeval,
+                op->remote_ip ? op->remote_ip : "0.0.0.0",
+                op->data_handle->info.blocksize,
+                op->data_handle->info.tcp_bufsize,
+                info->pathname,
+                op->bytes_transferred,
+                226,
+                "/",
+                type,
+                op->session_handle->username);
+        }
+        if(!globus_i_gfs_config_string("disable_usage_stats"))
+        {
+            globus_i_gfs_log_usage_stats(
+                op->node_count,
+                op->node_count * op->data_handle->info.nstreams,
+                &op->start_timeval,
+                &end_timeval,
+                op->remote_ip ? op->remote_ip : "0.0.0.0",
+                op->data_handle->info.blocksize,
+                op->data_handle->info.tcp_bufsize,
+                info->pathname,
+                op->bytes_transferred,
+                226,
+                "/",
+                type,
+                op->session_handle->username);
+        }            
     }
 
     reply.type = GLOBUS_GFS_OP_TRANSFER;

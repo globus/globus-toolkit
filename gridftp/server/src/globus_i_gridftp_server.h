@@ -11,6 +11,7 @@
 #include "globus_xio_gsi.h"
 #include "globus_ftp_control.h"
 #include "globus_gsi_authz.h"
+#include "globus_usage.h"
 
 typedef void
 (*globus_i_gfs_server_close_cb_t)(

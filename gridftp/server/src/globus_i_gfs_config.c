@@ -111,6 +111,10 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"log_filemode", "log_filemode", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "File access permissions of log files. Should be an octal number such as "
     "0644 (the leading 0 is required)."},
+ {"disable_usage_stats", "disable_usage_stats", NULL, "disable-usage-stats", "GLOBUS_USAGE_STATS_DISABLE", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Allow usage statistics to be transmitted to a Globus database or other specified target."},
+ {"usage_stats_target", "usage_stats_target", NULL, "usage-stats-target", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Comma seperated list of contact strings for usage statistics listeners."},
 {NULL, "Single and Striped Remote Data Node Options", NULL, NULL, NULL, 0, 0, NULL, NULL},
  {"remote_nodes", "remote_nodes", NULL, "remote-nodes", "r", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Comma seperated list of remote node contact strings."},

@@ -1035,6 +1035,7 @@ main(
     /* activte globus stuff */    
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE);
+    globus_module_activate(GLOBUS_USAGE_MODULE);
 
     /* init all the server modules */
     globus_i_gfs_config_init(argc, argv);

@@ -10,9 +10,9 @@
  
 
 static globus_logging_handle_t          globus_l_gfs_log_handle = NULL;
+static globus_usage_stats_handle_t      globus_l_gfs_usage_handle = NULL;
 static FILE *                           globus_l_gfs_log_file = NULL;
 static FILE *                           globus_l_gfs_transfer_log_file = NULL;
-
 
 int
 globus_l_gfs_log_matchlevel(
@@ -62,6 +62,7 @@ globus_i_gfs_log_open()
     int                                 len;
     int                                 ctr;
     char *                              tag;
+    globus_result_t                     result;
     GlobusGFSName(globus_i_gfs_log_open);
     GlobusGFSDebugEnter();
         
@@ -164,6 +165,12 @@ globus_i_gfs_log_open()
         globus_free(logfilename);
     }
 
+    if(!globus_i_gfs_config_bool("disable_usage_stats"))
+    {
+       result = globus_usage_stats_handle_init(
+            &globus_l_gfs_usage_handle, 0, 0, NULL);      
+    }
+
     GlobusGFSDebugExit();        
 }
 
@@ -186,6 +193,10 @@ globus_i_gfs_log_close(void)
         globus_l_gfs_transfer_log_file = NULL;
     }    
 
+    if(globus_l_gfs_usage_handle != NULL)
+    {
+        globus_usage_stats_handle_destroy(globus_l_gfs_usage_handle);
+    }
     GlobusGFSDebugExit();
 }
 
@@ -375,6 +386,131 @@ globus_i_gfs_log_transfer(
         
     fwrite(out_buf, 1, strlen(out_buf), globus_l_gfs_transfer_log_file);
 
+    GlobusGFSDebugExit();
+    return;
+    
+err:
+    GlobusGFSDebugExitWithError();
+}
+
+
+void
+globus_i_gfs_log_usage_stats(
+    int                                 stripe_count,
+    int                                 stream_count, 
+    struct timeval *                    start_gtd_time,
+    struct timeval *                    end_gtd_time,
+    char *                              dest_ip,
+    globus_size_t                       blksize,
+    globus_size_t                       tcp_bs,
+    const char *                        fname,
+    globus_off_t                        nbytes,
+    int                                 code,
+    char *                              volume,
+    char *                              type,
+    char *                              username)
+{
+    time_t                              start_time_time;
+    time_t                              end_time_time;
+    struct tm *                         tmp_tm_time;
+    struct tm                           start_tm_time;
+    struct tm                           end_tm_time;
+    long                                win_size;
+    char                                start_b[256];
+    char                                block_b[256]; 
+    char                                buffer_b[256];
+    char                                nbytes_b[256];
+    char                                streams_b[256];
+    char                                stripes_b[256];
+    char                                code_b[256];
+    globus_result_t                     result;
+    GlobusGFSName(globus_i_gfs_log_usage_stats);
+    GlobusGFSDebugEnter();
+
+    if(globus_l_gfs_usage_handle == NULL)
+    {
+        goto err;
+    }
+
+    start_time_time = (time_t)start_gtd_time->tv_sec;
+    tmp_tm_time = gmtime(&start_time_time);
+    if(tmp_tm_time == NULL)
+    {
+        goto err;
+    }
+    start_tm_time = *tmp_tm_time;
+
+    end_time_time = (time_t)end_gtd_time->tv_sec;
+    tmp_tm_time = gmtime(&end_time_time);
+    if(tmp_tm_time == NULL)
+    {
+        goto err;
+    }
+    end_tm_time = *tmp_tm_time;
+
+    if(tcp_bs == 0)
+    {
+        win_size = 0;
+/*      int                             sock;
+        int                             opt_len;
+        int                             opt_dir;
+
+        if(strcmp(type, "RETR") == 0 || strcmp(type, "ERET") == 0)
+        {
+            opt_dir = SO_SNDBUF;
+            sock = STDOUT_FILENO;
+        }
+        else
+        {
+            opt_dir = SO_RCVBUF;
+            sock = STDIN_FILENO;
+        }
+        opt_len = sizeof(win_size);
+        getsockopt(sock, SOL_SOCKET, opt_dir, &win_size, &opt_len);
+*/
+    }
+    else
+    {
+        win_size = tcp_bs;
+    }
+    
+    sprintf(start_b, "%04d%02d%02d%02d%02d%02d.%d", 
+        start_tm_time.tm_year + 1900,
+        start_tm_time.tm_mon + 1,
+        start_tm_time.tm_mday,
+        start_tm_time.tm_hour,
+        start_tm_time.tm_min,
+        start_tm_time.tm_sec,
+        (int) start_gtd_time->tv_usec);
+    sprintf(block_b, "%ld",(long) blksize);
+    sprintf(buffer_b, "%ld", win_size);
+    sprintf(nbytes_b, "%"GLOBUS_OFF_T_FORMAT, nbytes);
+    sprintf(streams_b, "%d", stream_count);
+    sprintf(stripes_b, "%d", stripe_count);
+    sprintf(code_b, "%d", code);
+
+    result = globus_usage_stats_send(
+        globus_l_gfs_usage_handle,
+        11,
+        /* include an end time, incase we don't actually send this til well
+        after transfer finished? */
+        "START", start_b,
+        "USER", username,
+        "FILE", fname,
+        "BUFFER", buffer_b,
+        "BLOCK", block_b,
+        "NBYTES", nbytes_b,
+        "STREAMS", streams_b,
+        "STRIPES", stripes_b,
+        "DEST", dest_ip,
+        "TYPE", type,
+        "CODE", code_b);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    
     GlobusGFSDebugExit();
     return;
     
