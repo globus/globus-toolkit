@@ -1,5 +1,5 @@
 #include "globus_xio_driver.h"
-#include "globus_xio_test_driver.h"
+#include "globus_common.h"
 
 #define XIOTestCreateOpWraper(ow, dh, op, res, nb)                      \
 {                                                                       \
@@ -10,7 +10,6 @@
     ow->res = res;                                                      \
     ow->nbytes = nb;                                                    \
 }
-
 
 typedef enum globus_xio_test_failure_e
 {
@@ -36,7 +35,7 @@ globus_l_xio_test_deactivate();
 typedef struct globus_l_xio_test_handle_s
 {
     globus_xio_test_failure_t           failure;
-    globus_xio_driver_context_t         context;
+    globus_xio_context_t                context;
     globus_reltime_t                    delay;
     globus_bool_t                       inline_finish;
     globus_size_t                       read_nbytes;
@@ -67,24 +66,6 @@ globus_module_descriptor_t              globus_i_xio_test_module =
     &local_version
 };
 
-static
-int
-globus_l_xio_test_activate(void)
-{
-    int                                 rc;
-
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
-
-    globus_l_xio_test_attr_init(&globus_l_default_attr);
-}
-
-static
-int
-globus_l_xio_test_deactivate(void)
-{
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
-}
-
 /*
  *  initialize a driver attribute
  */
@@ -107,6 +88,24 @@ globus_l_xio_test_attr_init(
     *out_attr = attr;
 
     return GLOBUS_SUCCESS;
+}
+
+static
+int
+globus_l_xio_test_activate(void)
+{
+    int                                 rc;
+
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+
+    globus_l_xio_test_attr_init(&globus_l_default_attr);
+}
+
+static
+int
+globus_l_xio_test_deactivate(void)
+{
+    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 
 /*

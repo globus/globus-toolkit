@@ -1,6 +1,6 @@
 #include "globus_xio_pass.h"
-#include "globus_i_xio.h"
 #include "globus_xio.h"
+#include "globus_i_xio.h"
 
 void
 globus_l_xio_driver_op_read_kickout(

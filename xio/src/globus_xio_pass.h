@@ -1,8 +1,9 @@
 #if !defined(GLOBUS_XIO_PASS_H)
 #define GLOBUS_XIO_PASS_H 1
 
-#include "globus_i_xio.h"
 #include "globus_common.h"
+#include "globus_xio.h"
+#include "globus_i_xio.h"
 
 /************************************************************************
  *                      attribute macros

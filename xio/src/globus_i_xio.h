@@ -2,10 +2,8 @@
 #define GLOBUS_I_XIO_H 1
 
 #include "globus_xio.h"
+#include "globus_i_xio_driver.h"
 #include "globus_common.h"
-#include "globus_error.h"
-#include "globus_error_generic.h"
-#include "globus_xio_driver.h"
 
 /***************************************************************************
  *                    Error construction macros
