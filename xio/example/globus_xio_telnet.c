@@ -1,4 +1,5 @@
 #include "globus_xio.h"
+#include "globus_xio_gssapi_ftp.h"
 
 #define LINE_LEN 1024
 
@@ -69,6 +70,7 @@ main(
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
     globus_xio_target_t                     target;
+    globus_xio_attr_t                       attr;
     char *                                  cs;
     globus_result_t                         res;
     char                                    line[LINE_LEN];
@@ -85,6 +87,8 @@ main(
     test_res(res);
     globus_xio_stack_init(&stack, NULL);
     globus_xio_stack_push_driver(stack, tcp_driver);
+
+    globus_xio_attr_init(&attr);
 
     if(argc < 2)
     {
@@ -104,13 +108,20 @@ main(
             res = globus_xio_driver_load(argv[ctr + 1], &driver);
             globus_xio_stack_push_driver(stack, driver);
         }
+        else if(strcmp(argv[ctr], "-S") == 0 && ctr + 1 < argc - 1)
+        {
+            ctr++;
+            res = globus_xio_attr_cntl(
+                attr, driver, GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUBJECT, argv[ctr]);
+        }
     }
 
     cs = argv[argc - 1];
-
     res = globus_xio_target_init(&target, NULL, cs, stack);
     test_res(res);
-    res = globus_xio_open(&xio_handle, NULL, target);
+
+
+    res = globus_xio_open(&xio_handle, attr, target);
     test_res(res);
     fprintf(stdout, "Successfully opened.\n");
 /*

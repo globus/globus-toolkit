@@ -29,6 +29,7 @@ push(@chunk_sizes, "2048");
 #setup different driver combinations
 my @drivers;
 push(@drivers, "");
+push(@drivers, "-D op");
 push(@drivers, "-D debug");
 push(@drivers, "-D bounce");
 push(@drivers, "-D debug -D bounce");

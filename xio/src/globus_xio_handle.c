@@ -532,7 +532,6 @@ globus_l_xio_open_close_callback_kickout(
         {
             globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
         }
-
     }
     globus_mutex_unlock(&handle->context->mutex);
 

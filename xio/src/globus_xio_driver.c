@@ -228,7 +228,15 @@ globus_i_xio_op_destroy(
     }
 
     globus_memory_push_node(&context->op_memory, op);
-    globus_i_xio_handle_dec(handle, destroy_handle, destroy_context);
+    if(handle != NULL)
+    {
+        globus_i_xio_handle_dec(handle, destroy_handle, destroy_context);
+    }
+    else
+    {
+        *destroy_handle = GLOBUS_FALSE;
+        *destroy_context = GLOBUS_FALSE;
+    }
 }
 
 void
@@ -301,7 +309,7 @@ globus_l_xio_driver_op_write_kickout(
     ndx = op->ndx;
     my_context = &op->_op_context->entry[ndx];
     handle = op->_op_handle;
-    context = handle->context;
+    context = op->_op_context;
 
     if(ndx == 0)
     {
@@ -405,7 +413,7 @@ globus_l_xio_driver_op_read_kickout(
     ndx = op->ndx; /* cache this value on stack */
     my_context = &op->_op_context->entry[ndx];
     handle = op->_op_handle;
-    context = handle->context;
+    context = op->_op_context;
 
     if(ndx == 0)
     {
@@ -603,7 +611,7 @@ globus_l_xio_driver_open_op_kickout(
     ndx = op->ndx;
     my_context = &op->_op_context->entry[ndx];
     handle = op->_op_handle;
-    context = handle->context;
+    context = op->_op_context;
 
     if(ndx == 0)
     {
@@ -692,15 +700,6 @@ globus_xio_driver_context_close(
 
     return res;
 }
-
-globus_result_t
-globus_xio_driver_set_dd(
-    globus_xio_operation_t                  op,
-    void *                                  driver_dd)
-{
-
-}
-
 
 void
 globus_i_xio_context_destroy(
@@ -896,6 +895,109 @@ globus_xio_driver_finished_accept(
     globus_result_t                         res)
 {
     GlobusXIODriverFinishedAccept(op, target, res);
+}
+
+/*
+ *  read ahead stuff
+ */
+void 
+globus_xio_driver_operation_destroy(
+    globus_xio_operation_t                  operation)
+{
+    globus_i_xio_context_t *                l_context;
+    globus_bool_t                           destroy_context = GLOBUS_FALSE;
+    globus_i_xio_op_t *                     op;
+
+    op = operation;
+    l_context = op->_op_context;
+
+    globus_mutex_lock(&l_context->mutex);
+    {
+        op->ref--;
+        if(op->ref == 0)
+        {
+            l_context->ref--;
+            if(l_context->ref == 0)
+            {
+                destroy_context = GLOBUS_TRUE;
+            }
+            globus_memory_push_node(&l_context->op_memory, op);
+        }
+    }
+    globus_mutex_unlock(&l_context->mutex);
+
+    if(destroy_context)
+    {
+        globus_i_xio_context_destroy(l_context);
+    }
+}
+
+globus_result_t
+globus_xio_driver_operation_create(
+    globus_xio_operation_t *                operation,
+    globus_xio_context_t                    context)
+{
+    globus_i_xio_op_t *                     op;
+    globus_i_xio_op_entry_t *               my_op;
+    globus_result_t                         res;
+    globus_i_xio_context_entry_t *          my_context;
+    globus_i_xio_context_t *                l_context;
+    int                                     index = -1;
+    int                                     ctr;
+    globus_bool_t                           done = GLOBUS_FALSE;
+    GlobusXIOName(globus_xio_driver_operation_create);
+
+    GlobusXIODebugEnter();
+
+    my_context = context;
+    l_context = my_context->whos_my_daddy;
+    for(ctr = 0; ctr < l_context->stack_size && !done; ctr++)
+    {
+        if(my_context == &l_context->entry[ctr])
+        {
+            index = ctr;
+            done = GLOBUS_TRUE;
+        }
+    }
+
+    if(index == -1)
+    {
+        res = GlobusXIOErrorParameter("context");
+        goto err;
+    }
+
+    GlobusXIOOperationCreate(op, l_context);
+    if(op == NULL)
+    {
+        res = GlobusXIOErrorMemory("op");
+        goto err;
+    }
+    op->ndx = index + 1;
+
+    op->type = GLOBUS_XIO_OPERATION_TYPE_DRIVER;
+    op->state = GLOBUS_XIO_OP_STATE_OPERATING;
+    op->ref = 1;
+    op->_op_handle = NULL;
+    op->_op_context = l_context;
+    op->_op_handle_timeout_cb = NULL;
+
+    my_op = &op->entry[index];
+    my_op->_op_ent_nbytes = 0;
+    my_op->_op_ent_wait_for = 0;
+    my_op->prev_ndx = -1;
+    my_op->type = GLOBUS_XIO_OPERATION_TYPE_DRIVER;
+
+    l_context->ref++;
+
+    *operation = op;
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
+    return res;
 }
 
 /***************************************************************************

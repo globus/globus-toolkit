@@ -764,9 +764,13 @@ globus_xio_driver_finished_open(
  *   
  */
 globus_result_t
-globus_xio_driver_create_operation(
+globus_xio_driver_operation_create(
     globus_xio_operation_t *                operation,
     globus_xio_context_t                    context);
+
+void
+globus_xio_driver_operation_destroy(
+    globus_xio_operation_t                  operation);
 
 /**
  *  Driver API  Get Context
