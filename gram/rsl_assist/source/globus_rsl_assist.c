@@ -488,7 +488,7 @@ globus_l_rsl_assist_simple_query_ldap(
     {
 	server=GLOBUS_MDS_HOST;
     }
-    if ((base_dn=globus_libc_getenv("GLOBUS_BASE_DN")) == GLOBUS_NULL)
+    if ((base_dn=globus_libc_getenv("GLOBUS_MDS_BASE_DN")) == GLOBUS_NULL)
     {
 	base_dn=GLOBUS_MDS_ROOT_DN;
     }
