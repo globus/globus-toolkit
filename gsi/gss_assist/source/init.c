@@ -135,12 +135,13 @@ globus_gss_assist_init_sec_context
             { 
                 target_name_type = gss_nt_service_name;
             }
-        }
 
-        major_status = gss_import_name(&minor_status1,
-                                       tmp_buffer,
-                                       target_name_type,
-                                       &target_name);
+            major_status = gss_import_name(&minor_status1,
+                                           tmp_buffer,
+                                           target_name_type,
+                                           &target_name);
+        }
+        
     } else {
 
         major_status = gss_inquire_cred(&minor_status1,
