@@ -7,6 +7,7 @@ SUBDIRS= \
 Sources=                                \
 	test_common.c                       \
     blocking_dd_test.c                  \
+    unload_test.c                       \
 	framework_test.c                    \
 	space_test.c                        \
 	timeout_test.c                      \
