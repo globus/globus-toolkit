@@ -48,41 +48,59 @@ $piddir = "/var/run";
 $xauth_path = "/usr/bin/X11/xauth";
 
 #
-# Just need a minimal action() subroutine for now..
+# We need to make sure it's okay to copy our setup files (if some files are already
+# present).  If we do copy any files, we backup the old files so the user can (possibly)
+# reverse any damage.
 #
-
-sub action
-{
-    my ($command) = @_;
-
-    printf "$command\n";
-
-    my $result = system("$command 2>&1");
-
-    if (($result or $?) and $command !~ m!patch!)
-    {
-        die "ERROR: Unable to execute command: $!\n";
-    }
-}
 
 sub copy_setup_files
 {
+    my $response, $curr_time;
+
+    $curr_time = time();
+
+    $response = "y";
     if ( -e "${sysconfdir}/ssh_config" )
     {
-        print "${sysconfdir}/ssh_config already exists, skipping.\n";
+        $response = query_boolean("${sysconfdir}/ssh_config already exists.  Overwrite? ", "n");
     }
-    else
+
+    if ($response eq "y")
     {
+        action("cp ${sysconfdir}/ssh_config ${sysconfdir}/ssh_config.bak_${curr_time}");
         action("cp ${globusdir}/setup/globus/ssh_config ${sysconfdir}/ssh_config");
     }
 
+    #
+    # Reset response for our new query
+    #
+
+    $response = "y";
     if ( -e "${sysconfdir}/sshd_config" )
     {
-        print "${sysconfdir}/sshd_config already exists, skipping.\n";
+        $response = query_boolean("${sysconfdir}/sshd_config already exists.  Overwrite? ", "n");
     }
-    else
+
+    if ($response eq "y")
     {
+        action("cp ${sysconfdir}/sshd_config ${sysconfdir}/sshd_config.bak_${curr_time}");
         action("cp ${globusdir}/setup/globus/sshd_config ${sysconfdir}/sshd_config");
+    }
+
+    #
+    # Reset response for our new query
+    #
+
+    $response = "y";
+    if ( -e "${sysconfdir}/moduli" )
+    {
+        $response = query_boolean("${sysconfdir}/moduli already exists.  Overwrite? ", "n");
+    }
+
+    if ($response eq "y")
+    {
+        action("cp ${sysconfdir}/moduli ${sysconfdir}/moduli.bak_${curr_time}");
+        action("cp ${globusdir}/setup/globus/moduli ${sysconfdir}/moduli");
     }
 }
 
@@ -246,3 +264,54 @@ my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 $metadata->finish();
 
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
+
+#
+# Just need a minimal action() subroutine for now..
+#
+
+sub action
+{
+    my ($command) = @_;
+
+    printf "$command\n";
+
+    my $result = system("$command 2>&1");
+
+    if (($result or $?) and $command !~ m!patch!)
+    {
+        die "ERROR: Unable to execute command: $!\n";
+    }
+}
+
+sub query_boolean
+{
+    my ($query_text, $default) = @_;
+    my $nondefault, $foo, $bar;
+
+    #
+    # Set $nondefault to the boolean opposite of $default.
+    #
+
+    if ($default eq "n")
+    {
+        $nondefault = "y";
+    }
+    else
+    {
+        $nondefault = "n";
+    }
+
+    print "${query_text} ";
+    print "[$default] ";
+
+    $foo = getc(STDIN);
+    $bar = <STDIN>;
+
+    if ($foo ne $nondefault)
+    {
+        $foo = $default;
+    }
+
+    return $foo;
+}
+
