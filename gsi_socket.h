@@ -158,6 +158,29 @@ int GSI_SOCKET_read_buffer(GSI_SOCKET *gsi_socket,
 			   size_t buffer_len);
 
 /*
+ * GSI_SOCKET_read_token()
+ *
+ * Read a token from the peer. If authentication has been done,
+ * the buffer will be protected via the GSI.
+ *
+ * buffer will be set to point to an allocated buffer that should
+ * be freed with GSI_SOCKET_free_token(). buffer_len will be
+ * set to the length of the buffer.
+ *
+ * Returns GSI_SOCKET_SUCCESS or GSI_SOCKET_ERROR.
+ */
+int GSI_SOCKET_read_token(GSI_SOCKET *gsi_socket,
+			  unsigned char **buffer,
+			  size_t *buffer_len);
+
+/*
+ * GSI_SOCKET_free_token()
+ *
+ * Free a token returned by GSI_SOCKET_read_token().
+ */
+void GSI_SOCKET_free_token(unsigned char *buffer);
+
+/*
  * GSI_SOCKET_delegation_init_ext()
  *
  * Delegate credentials to the peer.

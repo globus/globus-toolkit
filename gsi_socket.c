@@ -5,6 +5,8 @@
  */
 
 #include "gsi_socket.h"
+#include "ssl_utils.h"
+#include "verror.h"
 
 #include <globus_gss_assist.h>
 
@@ -439,6 +441,31 @@ myunsetenv(const char *var)
     /* And make sure new array is NULL terminated */
     *p1 = NULL;
 #endif /* HAVE_UNSETENV */
+}
+
+/*
+ * GSI_SOCKET_set_error_from_verror()
+ *
+ * Set the given GSI_SOCKET's error state from verror.
+ */
+static void
+GSI_SOCKET_set_error_from_verror(GSI_SOCKET *self)
+{
+    char		*string;
+    
+    if (verror_is_error() == 0)
+    {
+	return;
+    }
+    
+    string = verror_get_string();
+    
+    if (string != NULL)
+    {
+	self->error_string = strdup(string);
+    }
+    
+    self->error_number = verror_get_errno();
 }
 
 	    
@@ -1008,9 +1035,6 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 
 	    if (self->major_status != GSS_S_COMPLETE)
 	    {
-		OM_uint32 minor_status;
-	    
-		gss_release_buffer(&minor_status, &wrapped_buffer);
 		goto error;
 	    }
 	
@@ -1051,33 +1075,93 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
     return return_value;
 }
 
+int GSI_SOCKET_read_token(GSI_SOCKET *self,
+			  unsigned char **pbuffer,
+			  size_t *pbuffer_len)
+{
+    int			bytes_read;
+    unsigned char	*buffer;
+    int			buffer_len;
+    int			return_status = GSI_SOCKET_ERROR;
+    
+    bytes_read = read_token(self->sock,
+			    (char **) &buffer,
+			    &buffer_len);
+    
+    if (bytes_read == -1)
+    {
+	self->error_number = errno;
+	goto error;
+    }
+    
+    if (self->gss_context != GSS_C_NO_CONTEXT)
+    {
+	/* Need to unwrap read data */
+	gss_buffer_desc unwrapped_buffer;
+	gss_buffer_desc wrapped_buffer;
+	int conf_state;
+	gss_qop_t qop_state;
+
+	wrapped_buffer.value = buffer;
+	wrapped_buffer.length = buffer_len;
+
+	self->major_status = gss_unwrap(&self->minor_status,
+					self->gss_context,
+					&wrapped_buffer,
+					&unwrapped_buffer,
+					&conf_state,
+					&qop_state);
+
+	free(buffer);
+
+	if (self->major_status != GSS_S_COMPLETE)
+	{
+	    goto error;
+	}
+	
+	buffer = unwrapped_buffer.value;
+	buffer_len = unwrapped_buffer.length;
+    }
+
+    /* Success */
+    *pbuffer = buffer;
+    *pbuffer_len = buffer_len;
+    return_status = GSI_SOCKET_SUCCESS;
+    
+  error:
+    return return_status;}
+
+void GSI_SOCKET_free_token(unsigned char *buffer)
+{
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
+}
+
 int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 				   const char *source_credentials,
 				   int flags,
 				   int lifetime,
 				   const void *restrictions)
 {
-    gss_ctx_id_t		tmp_gss_context = GSS_C_NO_CONTEXT;
-    gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
-    OM_uint32			req_flags = 0;
     int				return_value = GSI_SOCKET_ERROR;
-    gss_buffer_desc		output_token;
-    gss_buffer_desc		input_token;
-    gss_buffer_desc		*input_token_ptr = GSS_C_NO_BUFFER;
-
-#ifdef GSI_SOCKET_SSLEAY
-    char			*x509_user_proxy_save = NULL;
-#endif /* GSI_SOCKET_SSLEAY */
+    SSL_CREDENTIALS		*creds = NULL;
+    unsigned char		*input_buffer = NULL;
+    int				input_buffer_length;
+    unsigned char		*output_buffer = NULL;
+    int				output_buffer_length;
+    
 
     if (self == NULL)
     {
-	return GSI_SOCKET_ERROR;
+	goto error;
     }
 
     if (self->gss_context == GSS_C_NO_CONTEXT)
     {
 	self->error_string = strdup("GSI_SOCKET not authenticated");
-	return GSI_SOCKET_ERROR;
+	goto error;
     }
 
     /*
@@ -1087,130 +1171,79 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 	(restrictions != NULL))
     {
 	self->error_number = EINVAL;
-	return GSI_SOCKET_ERROR;
+	goto error;
     }
 
     /*
-     * This this is all currently a hack. What we do is reauthenticate
-     * and delegate as this is currently the only way to do this through
-     * the gssapi.
+     * Load proxy we are going to use to sign delegation
      */
-
-#ifdef GSI_SOCKET_SSLEAY
-    if (source_credentials != NULL)
+    creds = ssl_credentials_new();
+    
+    if (creds == NULL)
     {
-	/*
-	 * Set X509_USER_PROXY so that we are using the requested
-	 * credentials.
-	 */
-	x509_user_proxy_save = getenv("X509_USER_PROXY");
-	mysetenv("X509_USER_PROXY", source_credentials, 1);
+	GSI_SOCKET_set_error_from_verror(self);
+	goto error;
     }
-#endif /* GSI_SOCKET_SSLEAY */    
-	
-    self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
-							GSS_C_INITIATE,
-							&creds);
-
-#ifdef GSI_SOCKET_SSLEAY
-    if (source_credentials != NULL)
+    
+    if (ssl_proxy_load_from_file(creds, source_credentials,
+				 NULL /* No pass phrase */) == SSL_ERROR)
     {
-	/* Restore the previous setting of X509_USER_PROXY */
-	if (x509_user_proxy_save == NULL)
-	{
-	    myunsetenv("X509_USER_PROXY");
-	}
-	else
-	{
-	    mysetenv("X509_USER_PROXY", x509_user_proxy_save, 1);
-	}
+	GSI_SOCKET_set_error_from_verror(self);
+	goto error;
     }
-#endif /* GSI_SOCKET_SSLEAY */
 
-    if (self->major_status != GSS_S_COMPLETE)
+    /*
+     * Read the certificate request from the client
+     */
+    if (GSI_SOCKET_read_token(self, &input_buffer,
+			      &input_buffer_length) == GSI_SOCKET_ERROR)
     {
 	goto error;
     }
 
-    req_flags |= GSS_C_DELEG_FLAG;
-
-    do {
-	OM_uint32 min_stat;
-	
-	self->major_status =
-	    gss_init_sec_context(&self->minor_status,
-				 creds,
-				 &tmp_gss_context,
-				 NULL,	/* No need to do mutual auth */
-				 NULL,	/* No mech type specified */
-				 req_flags,
-				 lifetime,
-				 NULL,	/* no channel bindings */
-				 input_token_ptr,
-				 NULL,	/* ignore mech type */
-				 &output_token,
-				 NULL,	/* ret_flags */
-				 NULL);	/* ignore time_rec */
-
-	if (input_token_ptr != GSS_C_NO_BUFFER)
-	{
-	    (void) gss_release_buffer(&min_stat, input_token_ptr);
-	}
-
-	if ((self->major_status != GSS_S_COMPLETE) &&
-	    (self->major_status != GSS_S_CONTINUE_NEEDED))
-	{
-	    goto error;
-	}
-
-	if (output_token.length != 0)
-	{
-	    if (write_token(self->sock,
-			    output_token.value,
-			    output_token.length) == -1)
-	    {
-		goto error;
-	    }
-	    
-	    (void) gss_release_buffer(&min_stat, &output_token);
-	}
-	  
-	if (self->major_status == GSS_S_CONTINUE_NEEDED)
-	{
-	    if (read_token(self->sock,
-			   (char **) &input_token.value,
-			   &input_token.length) == -1)
-	    {
-		goto error;
-	    }
-
-	    input_token_ptr = &input_token;
-	}
-    } while (self->major_status == GSS_S_CONTINUE_NEEDED);
+    /*
+     * Sign the request
+     */
+    if (ssl_proxy_delegation_sign(creds,
+				  NULL /* No restrictions */,
+				  input_buffer,
+				  input_buffer_length,
+				  &output_buffer,
+				  &output_buffer_length) == SSL_ERROR)
+    {
+	GSI_SOCKET_set_error_from_verror(self);
+	goto error;
+    }
+    
+    /*
+     * Write the proxy certificate back to user
+     */
+    if (GSI_SOCKET_write_buffer(self,
+				output_buffer,
+				output_buffer_length) == GSI_SOCKET_ERROR)
+    {
+	goto error;
+    }
 
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;
     
   error:
-    if (creds != GSS_C_NO_CREDENTIAL)
+    if (input_buffer != NULL)
     {
-	OM_uint32 minor_status;
-	
-	gss_release_cred(&minor_status, &creds);
+	GSI_SOCKET_free_token(input_buffer);
     }
-
-    if (tmp_gss_context != GSS_C_NO_CONTEXT)
+    
+    if (output_buffer != NULL)
     {
-	gss_buffer_desc output_token_desc  = GSS_C_EMPTY_BUFFER;
-	OM_uint32 minor_status;
-
-	gss_delete_sec_context(&minor_status,
-			       &tmp_gss_context,
-			       &output_token_desc);
-	
-	/* XXX Should deal with output_token_desc here */
+	ssl_free_buffer(output_buffer);
     }
-
+    
+    if (creds != NULL)
+    {
+	ssl_credentials_destroy(creds);
+    }
+    
     return return_value;
 }
 
@@ -1220,14 +1253,13 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 				 char *delegated_credentials,
 				 int delegated_credentials_len)
 {
-    gss_ctx_id_t		tmp_gss_context = GSS_C_NO_CONTEXT;
-    gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
-    int				token_status;
-    int				return_value = GSI_SOCKET_ERROR;
-#ifdef GSI_SOCKET_SSLEAY
-    char			*x509_user_deleg_proxy_save = NULL;
-#endif /* GSI_SOCKET_SSLEAY */
-    char			*delegated_creds;
+    int			return_value = GSI_SOCKET_ERROR;
+    SSL_CREDENTIALS	*creds = NULL;
+    unsigned char	*output_buffer = NULL;
+    int			output_buffer_len;
+    unsigned char	*input_buffer = NULL;
+    int			input_buffer_len;
+    char		filename[] = "/tmp/proxy-deleg-XXXXXX";
     
     if (self == NULL)
     {	
@@ -1246,91 +1278,73 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 	self->error_string = strdup("GSI_SOCKET not authenticated");
 	return GSI_SOCKET_ERROR;
     }
-	
-    self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
-							GSS_C_ACCEPT,
-							&creds);
 
-    if (self->major_status != GSS_S_COMPLETE)
+    /* Generate proxy certificate request and send */
+    if (ssl_proxy_delegation_init(&creds, &output_buffer, &output_buffer_len,
+				  0 /* default number of bits */,
+				  NULL /* No callback */) == SSL_ERROR)
     {
-	goto error;
-    }
-
-#ifdef GSI_SOCKET_SSLEAY
-    /* Save current value of X509_USER_DELEG_PROXY */
-    x509_user_deleg_proxy_save = getenv("X509_USER_DELEG_PROXY");
-#endif /* GSI_SOCKET_SSLEAY */
-
-    self->major_status =
-	globus_gss_assist_accept_sec_context(&self->minor_status,
-					     &tmp_gss_context,
-					     creds,
-					     NULL, /* peer name */
-					     NULL, /* ret_flags */
-					     NULL, /* u2u flag */
-					     &token_status,
-					     NULL, /* Delegated creds
-						    * added in Globus 1.1.3
-						    */
-					     assist_read_token,
-					     &self->sock,
-					     assist_write_token,
-					     &self->sock);
-
-    
-#ifdef GSI_SOCKET_SSLEAY
-    /* Get location of delegated proxy and restore X509_USER_DELEG_PROXY */
-    delegated_creds = getenv("X509_USER_DELEG_PROXY");
-    
-    if (x509_user_deleg_proxy_save == NULL)
-    {
-	myunsetenv("X509_USER_DELEG_PROXY");
-    }
-    else
-    {
-	mysetenv("X509_USER_DELEG_PROXY", x509_user_deleg_proxy_save, 1);
-    }
-#endif /* GSI_SOCKET_SSLEAY */
-
-    if (self->major_status != GSS_S_COMPLETE)
-    {
-	goto error;
-    }
-
-    if (delegated_creds == NULL)
-    {
-	self->error_string =  strdup("No credentials received.");
+	GSI_SOCKET_set_error_from_verror(self);
 	goto error;
     }
     
-    if (snprintf(delegated_credentials, delegated_credentials_len,
-		 "%s", delegated_creds) == -1)
+    if (GSI_SOCKET_write_buffer(self, output_buffer,
+				output_buffer_len) == GSI_SOCKET_ERROR)
     {
-	self->error_string = strdup("Delegated credentials buffer too small.");
 	goto error;
+    }
+    
+    /* Now read the signed certificate */
+    if (GSI_SOCKET_read_token(self, &input_buffer,
+			      &input_buffer_len) == GSI_SOCKET_ERROR)
+    {
+	goto error;
+    }
+    
+    if (ssl_proxy_delegation_finalize(creds, input_buffer,
+				      input_buffer_len) == SSL_ERROR)
+    {
+	GSI_SOCKET_set_error_from_verror(self);
+	goto error;
+    }
+    
+    /* Now store the credentials */
+    if (mktemp(filename) == NULL)
+    {
+	self->error_number = errno;
+	self->error_string = strdup("mktemp() failed");
+	goto error;
+    }
+    
+    if (ssl_proxy_store_to_file(creds, filename,
+				NULL /* No pass phrase */) == SSL_ERROR)
+    {
+	GSI_SOCKET_set_error_from_verror(self);
+	goto error;
+    }
+    
+    if (delegated_credentials != NULL)
+    {
+	strncpy(delegated_credentials, filename, delegated_credentials_len);
     }
     
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;
     
   error:
-    if (creds != GSS_C_NO_CREDENTIAL)
+    if (creds != NULL)
     {
-	OM_uint32 minor_status;
-
-	gss_release_cred(&minor_status, &creds);
+	ssl_credentials_destroy(creds);
     }
-
-    if (tmp_gss_context != GSS_C_NO_CONTEXT)
+    
+    if (input_buffer != NULL)
     {
-	gss_buffer_desc output_token_desc  = GSS_C_EMPTY_BUFFER;
-	OM_uint32 minor_status;
-
-	gss_delete_sec_context(&minor_status,
-			       &tmp_gss_context,
-			       &output_token_desc);
-	
-	/* XXX Should deal with output_token_desc here */
+	GSI_SOCKET_free_token(input_buffer);
+    }
+    
+    if (output_buffer != NULL)
+    {
+	ssl_free_buffer(output_buffer);
     }
 
     return return_value;
