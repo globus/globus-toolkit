@@ -10,7 +10,7 @@ static globus_hashtable_t               option_table;
 
 /* option_name, default val, configfile, env, cmdline long, cmdline short */
 
-static char[][] option_list = {
+static char* option_list[][6] = {
     {"port",                "0",    "port",                 "GLOBUS_GRIDFTP_SERVER_PORT",        "-port",               "-p"},
     {"data_port_range",     "0",    "data_port_range",      "GLOBUS_TCP_PORT_RANGE",             "-data-port-range",    "-dpr"},
     {"max_connections",     "200",  "max_connections",      "",                                  "-max-connections",    "-mc"},
