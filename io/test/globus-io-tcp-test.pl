@@ -19,7 +19,7 @@ my $client_prog = './globus_io_tcp_test_client';
 $ENV{X509_CERT_DIR} = cwd();
 $ENV{X509_USER_PROXY} = "testcred.pem";
 
-my $identity = `grid-proxy-info -subject`;
+my $identity = `grid-proxy-info -identity`;
 
 chomp($identity);
 

@@ -7,7 +7,7 @@ dnl and copy things into the user buffers as neccessary.
 AC_DEFUN(CHECK_REENTRANT_FUNCS,[
 
 case "$host_os" in
-    osf[5-9].*)
+    osf5.*)
         check_gethostbyaddr_r=no
         check_gethostbyname_r=no
         ;;

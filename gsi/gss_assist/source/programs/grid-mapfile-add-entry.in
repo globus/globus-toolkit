@@ -39,8 +39,9 @@ ${short_usage}
     Options:
       -help, -usage           Displays help
       -version                Displays version
-      -dn DN                  Distuingished Name (DN) to add
-      -ln LN		      Local login name(s) to map DN to
+      -dn DN                  Distinguished Name (DN) to add. Remember to 
+                              quote the DN if it contains spaces.
+      -ln LN1 [LN2...]        Local login name(s) to map DN to
       -dryrun, -d             Shows what would be done but will not add the entry
       -mapfile FILE, -f FILE  Path of Grid map file to be used
 
@@ -113,9 +114,7 @@ while [ -n "$1" ]; do
 		ln=$1
 		shift
 		if [ $# -ge 1 ] ; then
-		    while [ "$1" != "-dn" -a "$1" != "-d" \
-			    -a "$1" != "-dryrun" -a "$1" != "-f" \
-			    -a "$1" != "-mapfile" ] ; do
+		    while test "`${GLOBUS_SH_ECHO-echo} $1|${GLOBUS_SH_CUT-cut} -c 1`" != "-" ; do
 			ln=$ln" "$1
 			shift
 			if [ $# -eq 0 ] ; then
@@ -128,7 +127,7 @@ while [ -n "$1" ]; do
 		exit 1
 	    fi
 	    ;;
-       -d | -dryrun )
+        -d | -dryrun )
 	    ECHO_DRYRUN=echo
 	    shift
 	    ;;
@@ -138,7 +137,6 @@ while [ -n "$1" ]; do
 	    GRID_MAP_FILE=$1
 	    shift
 	    ;;
-			
         * )
 	    globus_args_unrecognized_option "$1"
 	    ;;
@@ -222,7 +220,7 @@ if [ ! -s $EXISTING_DN_ENTRIES ]  ; then
 	if  [ "$?" -eq 0 ] ; then
 	    $ECHO_DRYRUN "Local Name=$name does exist"
 	else
-            echo "entry not added because the LN(s) is/are not legitimate"
+             echo "entry not added because the LN(s) is/are not legitimate"
 	    $ECHO_DRYRUN "Local Name=$name does *NOT* exist"
 	    $ECHO_DRYRUN "Entry *NOT* added"
 	    Cleanup
@@ -249,11 +247,15 @@ if [ ! -s $EXISTING_DN_ENTRIES ]  ; then
     if  [ -s $CONSISTANCY_CHECK ] ; then
 	echo "ERROR: $GRID_MAP_FILE has changed since this program started" >&2
 	echo "No changes will be made." >&2
+        Cleanup
+        exit 1
     else
 	    # Restore proper permissions to original grid map file
 	${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
 	if [ $? -ne 0 ] ; then
 	    echo "ERROR: Could not change mode of $GRID_MAP_FILE" >&2
+            Cleanup
+            exit 1
 	else
 	    # Append new entry to original grid map file
 	    $ECHO_DRYRUN "Appending new entry $new_mapfile_entry"
@@ -270,6 +272,8 @@ if [ ! -s $EXISTING_DN_ENTRIES ]  ; then
 	${GLOBUS_SH_CP-cp} $GRID_MAP_FILE_COPY $GRID_MAP_FILE.old
 	if [ $? -ne 0 ] ; then
 	    echo "ERROR: Could not create a copy of $GRID_MAP_FILE" >&2
+            Cleanup
+            exit 1
 	fi
     fi
 else
@@ -278,6 +282,8 @@ else
     $ECHO_DRYRUN "Distinguished Name=$dn"
     $ECHO_DRYRUN "already exists. No action will be taken."
     $ECHO_DRYRUN "Use the grid-mapfile-delete-entry tool to remove an entry."
+    Cleanup
+    exit 1
 fi
 
 Cleanup

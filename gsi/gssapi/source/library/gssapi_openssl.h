@@ -111,8 +111,6 @@ typedef struct gss_name_desc_struct {
     /* gss_buffer_desc  name_buffer ; */
     gss_OID                             name_oid;
     X509_NAME *                         x509n;
-    STACK *                             group;
-    ASN1_BIT_STRING *                   group_types;
 } gss_name_desc;
 
 typedef struct gss_cred_id_desc_struct {
@@ -140,6 +138,7 @@ typedef struct gss_ctx_id_desc_struct{
     gss_con_st_t                        gss_state;
     int                                 locally_initiated;
     gss_delegation_state_t              delegation_state;
+    gss_OID_set                         extension_oids;
 } gss_ctx_id_desc;
 
 extern

@@ -166,7 +166,7 @@ globus_gss_assist_init_sec_context(
         {
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                 4, (globus_i_gsi_gss_assist_debug_fstream,
-                    "req_flags: %8.8x  input_token length: %d\n",
+                    "req_flags: %8.8x  input_token length: %u\n",
                     (unsigned int) req_flags, 
                     input_token->length));
             
@@ -187,7 +187,7 @@ globus_gss_assist_init_sec_context(
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                 4, (globus_i_gsi_gss_assist_debug_fstream,
                     "major:%8.8x  minor:%8.8x  ret_flags: %8.8x\n "
-                    "output_token length: %d  context_handle: %p\n",
+                    "output_token length: %u  context_handle: %p\n",
                     (unsigned int) major_status, 
                     (unsigned int) minor_status1, 
                     (unsigned int) ((ret_flags) ? *ret_flags : -1),
@@ -436,7 +436,7 @@ globus_gss_assist_init_sec_context_async(
     {
         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
             4, (globus_i_gsi_gss_assist_debug_fstream,
-                "req_flags: %8.8x  input_token length: %d\n",
+                "req_flags: %8.8x  input_token length: %u\n",
                 (unsigned int) req_flags,
                 input_token->length));
 
@@ -456,7 +456,7 @@ globus_gss_assist_init_sec_context_async(
         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
             4, (globus_i_gsi_gss_assist_debug_fstream,
                 "major: %8.8x minor: %8.8x ret_flags: %8.8x\n"
-                "output_token length: %d context_handle: %p\n",
+                "output_token length: %u context_handle: %p\n",
                 (unsigned int) major_status, 
                 (unsigned int) minor_status1, 
                 (unsigned int) ((ret_flags) ? *ret_flags : -1),

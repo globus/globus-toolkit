@@ -48,7 +48,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_proxy_ssl">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gsi_credential">
@@ -91,7 +91,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_proxy_ssl">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
             <Dependency Name="globus_gsi_credential">

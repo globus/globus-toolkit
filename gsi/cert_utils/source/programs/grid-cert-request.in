@@ -74,10 +74,15 @@ ${short_usage}
       grid-cert-request -service ldap -host [my.host.fqdn]
 
   Options:
-    -cn <name>         : Common name of the user
+    
+    -version           : Display version
+    -?, -h, -help,     : Display usage
+    -usage 
+    -cn <name>,        : Common name of the user
+    -commonname <name>
     -service <service> : Create certificate for a service. Requires
                          the -host option and implies that the generated 
-                         key will not be password protected (ie implies -nopw). 
+                         key will not be password protected (ie implies -nopw).
     -host <FQDN>       : Create certificate for a host named <FQDN>
     -dir <dir_name>    : Changes the directory the private key and certificate 
                          request will be placed in. By default user 
@@ -88,7 +93,9 @@ ${short_usage}
     -prefix <prefix>   : Causes the generated files to be named 
                          <prefix>cert.pem, <prefix>key.pem and
                          <prefix>cert_request.pem
-    -nopw              : Create certificate without a passwd
+    -nopw,             : Create certificate without a passwd
+    -nodes,
+    -nopassphrase,
     -verbose           : Don't clear the screen
     -int[eractive]     : Prompt user for each component of the DN
     -force             : Overwrites preexisting certifictes

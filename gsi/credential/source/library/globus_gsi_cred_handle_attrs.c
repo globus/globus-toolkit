@@ -34,9 +34,6 @@
  * Initializes the immutable Credential Handle Attributes
  * The handle attributes are initialized as follows:
  * 
- * ca_cert_dir - The directory containing trusted CA certificates
- * is set by first checking the environment variable X509_CERT_DIR, 
- * if that isn't, it then checks 
  * @param handle_attrs
  *        the attributes to be initialized
  * @return
@@ -76,13 +73,6 @@ globus_gsi_cred_handle_attrs_init(
            (int) NULL, 
            sizeof(globus_i_gsi_cred_handle_attrs_t));
     
-    if((result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(
-        &(*handle_attrs)->ca_cert_dir)) != GLOBUS_SUCCESS)
-    {
-        (*handle_attrs)->ca_cert_dir = NULL;
-        goto error_exit;
-    }
-
     (*handle_attrs)->search_order = 
         (globus_gsi_cred_type_t *) 
         malloc(sizeof(globus_gsi_cred_type_t) * 5);
@@ -95,14 +85,6 @@ globus_gsi_cred_handle_attrs_init(
 
     result = GLOBUS_SUCCESS;
     goto exit;
-
- error_exit:
-
-    globus_gsi_cred_handle_attrs_destroy(*handle_attrs);
-    
-    GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-        result,
-        GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS);
 
  exit:
 
@@ -139,10 +121,6 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
     
     if(handle_attrs != NULL)
     {
-        if(handle_attrs->ca_cert_dir != NULL)
-        {
-            globus_libc_free(handle_attrs->ca_cert_dir);
-        }
         if(handle_attrs->search_order != NULL)
         {
             globus_libc_free(handle_attrs->search_order);
@@ -204,21 +182,7 @@ globus_gsi_cred_handle_attrs_copy(
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS);
         goto exit;
     }
-
-    if(a->ca_cert_dir)
-    {
-        if((*b)->ca_cert_dir)
-        {
-            free((*b)->ca_cert_dir);
-        }
-
-        if(((*b)->ca_cert_dir = strdup(a->ca_cert_dir)) == NULL)
-        {
-            GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
-            goto exit;
-        }
-    }
-
+    
     size = -1;
     while(a->search_order[++size] != GLOBUS_SO_END);
 
@@ -287,18 +251,8 @@ globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
         goto exit;
     }
 
-    if(handle_attrs->ca_cert_dir)
-    {
-        free(handle_attrs->ca_cert_dir);
-        handle_attrs->ca_cert_dir = NULL;
-    }
-
-    if((handle_attrs->ca_cert_dir = strdup(ca_cert_dir)) == NULL)
-    {
-        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
-        goto exit;
-    }
-
+    /* NOTE: This function has been turned into a no-op */
+    
     result = GLOBUS_SUCCESS;
 
  exit:
@@ -356,11 +310,12 @@ globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
         goto exit;
     }
 
-    if((*ca_cert_dir = strdup(handle_attrs->ca_cert_dir)) == NULL)
-    {
-        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
-        goto exit;
-    }
+    /* NOTE: This function has been turned into a no-op, please use
+       GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR to obtain the trusted certs
+       directory
+    */
+    
+    *ca_cert_dir = NULL;
 
     result = GLOBUS_SUCCESS;
 

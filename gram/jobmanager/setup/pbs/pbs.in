@@ -33,7 +33,6 @@ sub submit
     my $pbs_job_script;
     my $pbs_job_script_name;
     my $errfile = "";
-    my $queue;
     my $job_id;
     my $rsh_env;
     my $script_url;
@@ -151,11 +150,11 @@ EOF
     }
     $pbs_job_script->print("#PBS -m $email_when\n");
 
-    if(defined($queue))
+    if($description->queue() ne '')
     {
-	$pbs_job_script->print("#PBS -q $queue\n");
+	$pbs_job_script->print("#PBS -q $description->queue()\n");
     }
-    if(defined($description->project()))
+    if($description->project() ne '')
     {
 	$pbs_job_script->print("#PBS -A " . $description->project() . "\n");
     }

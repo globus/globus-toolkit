@@ -51,7 +51,7 @@ sub basic_func
 $ENV{X509_CERT_DIR} = cwd();
 $ENV{X509_USER_PROXY} = "testcred.pem";
 
-my $identity = `grid-proxy-info -subject`;
+my $identity = `grid-proxy-info -identity`;
 chomp($identity);
 
 push(@tests, "basic_func('self',0);");

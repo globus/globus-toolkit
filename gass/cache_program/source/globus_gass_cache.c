@@ -276,6 +276,13 @@ main(int argc, char **argv)
 			   rc);
 	exit(1);
     }
+    if(GLOBUS_SUCCESS !=
+            (rc = globus_module_activate(GLOBUS_GASS_CACHE_MODULE)))
+    {
+	globus_libc_printf("Error %d activating GASS cache library\n",
+			   rc);
+	exit(1);
+    }
     
     globus_i_gass_cache_args_init();
 

@@ -1,0 +1,78 @@
+===========
+globus-grim
+===========
+
+required grim packages (grim has additional dependencies in gsi and common)
+
++======================================+
+|    package         |  cvs module     |
++--------------------+-----------------+ 
+| globus_expat       |  gsi/grim/expat |
+| globus_grim_devel  |  gsi/grim/devel |
+| globus_grim_util   |  gsi/grim/util  |
++--------------------+-----------------+
+
+cvs-build has been modified to build all of the above packages when the
+gsi_bundle is requested.  See `cvs-build -help` for more information.
+
+Once built a statically linked program can be found at:
+$GLOBUS_LOCATION/bin/globus-grim
+
+This program must be run as a setuid program.  The privileged user does 
+not need to be root or any type of super user.  They simply need read 
+permission to some sensitive files.
+
+------------------
+configuration file
+------------------
+
+globus-grim will expect to find a configuration file in one of 2 places 
+depending the on user id.
+
+If the user is root (uid 0)
+    /etc/grid-security/grim-conf.xml
+else
+    ~/.globus/grim-conf.xml
+end if
+
+The configuration file tells grim where to find other files as well as 
+provides it with some default settings.  An example conf file follows:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- example grim config file -->
+<grim_conf>
+    <conf max_time="240"/>
+    <conf default_time="24"/>
+    <conf key_bits="512"/>
+    <conf cert_filename="/homes/bresnaha/.globus/usercert.pem"/>
+    <conf key_filename="/tmp/x509up_u589"/>
+    <conf gridmap_filename="/etc/grid-security/grid-mapfile"/>
+    <conf port_type_filename="/etc/grid-security/grim-port-type.xml"/>
+</grim_conf>
+
+If no configuration file is found grim will use the following settings:
+
+    gridmap file:           /etc/grid-security/grid-mapfile
+    ca_cert_directory       /etc/grid-security/certificates/
+    certificate file         /etc/grid-security/hostcert.pem
+    key file                /etc/grid-security/hostkey.pem
+    port type file          /etc/grid-security/grim-port-type.xml ||
+                            ~/.globus/grim-port-types.xml
+    max time                14400 [10 days in minutes]
+    default time            1440  [1 day in minutes]
+    key bits                512
+
+--------------
+port type file
+--------------
+
+A port type file must be found for grim to succeed.  The port type file maps 
+users and groups to access to port types.  An example port type follows:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <authorized_port_types>
+        <port_type username="bresnaha">http://all_port_type.html</port_type>
+        <port_type username="bresnaha">http://port_type.html</port_type>
+        <port_type username="not me" access="no">http://all_port_type.html</port_type>
+        <port_type group="globus">http://port_type</port_type>
+    </authorized_port_types>

@@ -1,20 +1,14 @@
 include $(top_srcdir)/globus_automake_pre
 
 Sources= \
-	signature.c \
-	signature.h \
 	proxycertinfo.c \
 	proxycertinfo.h \
-	proxygroup.c \
-	proxygroup.h \
-	proxyrestriction.c \
-	proxyrestriction.h
+	proxypolicy.c \
+	proxypolicy.h
 
 flavorinclude_HEADERS= \
-	signature.h \
 	proxycertinfo.h \
-	proxygroup.h \
-	proxyrestriction.h
+	proxypolicy.h
 
 lib_LTLIBRARIES = libglobus_proxy_ssl_$(GLOBUS_FLAVOR_NAME).la
 

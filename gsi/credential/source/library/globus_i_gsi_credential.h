@@ -177,8 +177,6 @@ extern char *                    globus_l_gsi_cred_error_strings[];
  */
 typedef struct globus_l_gsi_cred_handle_attrs_s
 {
-    /* the filename of the CA certificate directory */
-    char *                              ca_cert_dir;
     /* the order to search in for a certificate */
     globus_gsi_cred_type_t *            search_order; /*{PROXY,USER,HOST}*/
 } globus_i_gsi_cred_handle_attrs_t;

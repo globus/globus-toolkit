@@ -70,9 +70,6 @@ GSS_CALLCONV gss_import_name(
         goto exit;
     } 
     
-    output_name->group = NULL;
-    output_name->group_types = NULL;
-
     if(g_OID_equal(input_name_type, GSS_C_NT_ANONYMOUS))
     {
         output_name->name_oid = input_name_type;

@@ -564,6 +564,11 @@ globus_gass_transfer_refer(
 	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
+    else if(req->proto == GLOBUS_NULL)
+    {
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
+	goto error_exit;
+    }
     else if(req->client_side == GLOBUS_TRUE)
     {
         rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
@@ -688,8 +693,12 @@ globus_gass_transfer_authorize(
 	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
-
-    if(req->proto->authorize == GLOBUS_NULL)
+    else if(req->proto == GLOBUS_NULL)
+    {
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
+	goto error_exit;
+    }
+    else if(req->proto->authorize == GLOBUS_NULL)
     {
 	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
 	goto error_exit;
@@ -795,8 +804,12 @@ globus_gass_transfer_deny(
 	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
-
-    if(req->proto->deny == GLOBUS_NULL)
+    else if(req->proto == GLOBUS_NULL)
+    {
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
+	goto error_exit;
+    }
+    else if(req->proto->deny == GLOBUS_NULL)
     {
 	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
 	goto error_exit;

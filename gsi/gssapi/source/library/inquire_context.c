@@ -121,9 +121,11 @@ GSS_CALLCONV gss_inquire_context(
 
     if (lifetime_rec)
     {
+        time_t                          lifetime;
+        
         local_result = globus_gsi_cred_get_lifetime(
             context->cred_handle->cred_handle,
-            (time_t *) &lifetime_rec);
+            &lifetime);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -131,6 +133,7 @@ GSS_CALLCONV gss_inquire_context(
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
             goto exit;
         }
+        *lifetime_rec = (OM_uint32) lifetime;
     }
 
     if (mech_type)

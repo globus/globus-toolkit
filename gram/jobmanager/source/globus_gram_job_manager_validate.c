@@ -866,7 +866,8 @@ globus_l_gram_job_manager_check_rsl_attributes(
 	    globus_l_gram_job_manager_validate_log(
 		request,
 		"RSL attribute '%s' is not valid when %d\n",
-		when);
+                attribute,
+                when);
 
 	    switch(when)
 	    {

@@ -105,6 +105,7 @@ int main(int argc, char *argv[])
 
     sprintf(rsl, rsl_format, job_contact);
     globus_libc_free(job_contact);
+    monitor.state = GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED;
 
     rc = globus_gram_client_job_request(
 	    argv[1],

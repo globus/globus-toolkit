@@ -894,6 +894,7 @@ globus_i_io_initialize_handle(
     handle->read_operation = GLOBUS_NULL;
     handle->write_operation = GLOBUS_NULL;
     handle->except_operation = GLOBUS_NULL;
+    handle->nl_handle = NULL;
     
     return GLOBUS_SUCCESS;
 }
