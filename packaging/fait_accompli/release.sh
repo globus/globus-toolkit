@@ -1,12 +1,12 @@
 #!/bin/sh
 
-VERSION="3.2beta"
+VERSION="3.3exp"
 INSTALLER="gt${VERSION}-base-installer"
 GPT="fait_accompli/gpt-3.0.1-src.tar.gz"
 
 mkdir $INSTALLER
 
-./make-packages.pl --bundles=gt3-all-src,globus-data-management-server,globus-resource-management-server,ogsi-cbindings,gt3-extras --packages=globus_rls_client,globus_rls_server,globus_rls_server_setup --version=$VERSION --installer=install-gt3
+./make-packages.pl --bundles=gt3-all-src,globus-data-management-server,globus-resource-management-server,ogsi-cbindings,gt3-extras --packages=globus_rls_client,globus_rls_server,globus_rls_server_setup --version=$VERSION --installer=install-gt3 $@
 ./make-packages.pl -n --bundles=mmjfs,mmjfs-static,scheduler-fork --installer=install-gt3-mmjfs --version=$VERSION
 
 mkdir $INSTALLER/bundles
