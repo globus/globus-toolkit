@@ -895,7 +895,7 @@ globus_gass_copy_get_url_mode(
  *        see performance info
  *
  * @param callback
- *        the performance callback @see globus_gass_copy_performance_cb_t
+ *        the performance callback
  *
  * @param user_arg
  *        a user pointer that will be passed to all callbacks for a given
@@ -904,6 +904,8 @@ globus_gass_copy_get_url_mode(
  * @return
  *        - GLOBUS_SUCCESS
  *        - error on a NULL or busy handle
+ *
+ * @see globus_gass_copy_performance_cb_t
  */
 
 globus_result_t
