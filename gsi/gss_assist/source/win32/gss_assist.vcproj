@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="gss_assist"
+	Name="GSI_gss_assist"
 	ProjectGUID="{4F439695-80FA-4DDF-8574-3AF6C8C7612F}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -19,10 +19,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;..\..\..\gssapi\source\win32"
+				AdditionalIncludeDirectories="\core\source\win32\nonthreaded;\gsi\gssapi\source\WinProjects;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;..\..\..\gssapi\source\win32;\gsi\sysconfig\source\library"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -33,11 +33,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gss_assist.lib"/>
+				OutputFile="$(OutDir)/libglobus_gss_assist_win32dbg.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				CommandLine="copy .\debug\*.lib \lib\*.*"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -99,6 +100,18 @@
 				RelativePath="..\display.c">
 			</File>
 			<File
+				RelativePath="..\export_sec_context.c">
+			</File>
+			<File
+				RelativePath="..\globus_gss_assist_error.c">
+			</File>
+			<File
+				RelativePath="..\globus_gss_assist_module.c">
+			</File>
+			<File
+				RelativePath="..\gridmap.c">
+			</File>
+			<File
 				RelativePath="..\import_sec_context.c">
 			</File>
 			<File
@@ -121,7 +134,16 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
+				RelativePath="..\acconfig.h">
+			</File>
+			<File
 				RelativePath="..\globus_gss_assist.h">
+			</File>
+			<File
+				RelativePath="..\globus_gss_assist_constants.h">
+			</File>
+			<File
+				RelativePath="..\globus_i_gss_assist.h">
 			</File>
 		</Filter>
 	</Files>
