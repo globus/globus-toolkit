@@ -64,6 +64,24 @@
 int
 globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl);
 
+/*
+ * globus_rsl_assist_get_rm_contact()
+ *
+ *     Return the resourceManagerContact corresponding to 
+ *     the resourceManagerName given as argument, by querying the MDS. 
+ *
+ * Parameters:
+ *    resourceManagerName - String containing the Name of the Resource Manager
+ *
+ * Returns:
+ *    Pointer to a newly allocated string containing the Resource
+ *    Manager Contact. This string MUST be freed by the user.
+ *    OR
+ *    GLOBUS_NULL in case of failure.
+ */
+char*
+globus_rsl_assist_get_rm_contact(char* resourceManagerName);
+
 #endif
 
 
