@@ -7,6 +7,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
+
+
+extern int  myproxy_extras_grid_proxy_init(int hours, const char *proxyfile);
+extern int  myproxy_extras_grid_proxy_destroy(const char *proxyfile);
+extern int  myproxy_extras_read_passphrase(char *passphrase, const int passlen, 
+                            const int min, const int max);
+
 
 /* read_passphrase()
  * 
@@ -14,7 +22,7 @@
  * be less than min and greater than max characters
  */
 int
-read_passphrase(char *passphrase, const int passlen, const int min, const int max) 
+myproxy_extras_read_passphrase(char *passphrase, const int passlen, const int min, const int max) 
 {
     int i;
     char pass[passlen];
@@ -24,7 +32,7 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
 
     /* Get user's passphrase */    
     do {
-        printf("Enter password to access myproxy-server:\n");
+        printf("Enter password to protect proxy on  myproxy-server:\n");
         
         if (!(fgets(pass, passlen, stdin))) {
             fprintf(stderr,"Failed to read password from stdin\n");   
@@ -52,13 +60,13 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
  * returns grid-proxy-init status 0 if OK, -1 on error
  */
 int
-grid_proxy_init(int hours, const char *proxyfile) {
+myproxy_extras_grid_proxy_init(int hours, const char *proxyfile) {
 
     int rc;
     char command[128];
   
     assert(proxyfile != NULL);
-
+    
     sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);
     rc = system(command);
 
@@ -72,7 +80,7 @@ grid_proxy_init(int hours, const char *proxyfile) {
  * returns grid-proxy-destroy status 0 if OK, -1 on error
  */
 int
-grid_proxy_destroy(const char *proxyfile) {
+myproxy_extras_grid_proxy_destroy(const char *proxyfile) {
   
     int rc;
     char command[128];
