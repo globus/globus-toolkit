@@ -466,13 +466,13 @@ setup_target_dir ()
     if test ! -d ${TARGET_DIR} ; then
         ${GLOBUS_SH_MKDIR-mkdir} ${TARGET_DIR}
         if [ $? -ne 0 ] ; then
-            ${GLOBUS_SH_PRINTF-printf} "\n\nUnable to create ${TARGET_DIR}. Pleas make sure that you have the right to create this directory before running this script.\n" 1>&2
+            ${GLOBUS_SH_PRINTF-printf} "\n\nUnable to create ${TARGET_DIR}. Please make sure that you have the right to create this directory before running this script.\n" 1>&2
             exit $?
         fi 
     fi
 
     if test ! -w ${TARGET_DIR} ; then
-        ${GLOBUS_SH_PRINTF-printf} "\n\nUnable to access ${TARGET_DIR}. Pleas make sure that you have the right to create files in this directory before running this script.\n" 1>&2
+        ${GLOBUS_SH_PRINTF-printf} "\n\nUnable to access ${TARGET_DIR}. Please make sure that you have the right to create files in this directory before running this script.\n" 1>&2
         exit 1
     fi
 }
