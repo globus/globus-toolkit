@@ -207,7 +207,7 @@ createScript () {
 
    if [ "${grami_host_count}" -ne 0 ]; then
       echo "#@ total_tasks      = ${grami_count}"
-      echo "#@ nodes            = ${grami_host_count}"
+      echo "#@ node             = ${grami_host_count}"
    else
       echo "#@ min_processors   = ${grami_count}"
       echo "#@ max_processors   = ${grami_count}"
