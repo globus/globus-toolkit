@@ -220,7 +220,7 @@ globus_gsi_cert_utils_get_cert_type(
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 index;
     int                                 critical;
-    BASIC_CONSTRAINTS *                 x509v3_bc;
+    BASIC_CONSTRAINTS *                 x509v3_bc = NULL;
     unsigned char *                     tmp_data;
     static char *                       _function_name_ =
         "globus_gsi_cert_utils_get_cert_type";
@@ -421,6 +421,11 @@ globus_gsi_cert_utils_get_cert_type(
     result = GLOBUS_SUCCESS;
 
  exit:
+
+    if(x509v3_bc)
+    {
+        BASIC_CONSTRAINTS_free(x509v3_bc);
+    }
 
     if(new_ne)
     {
