@@ -480,6 +480,7 @@ globus_i_gfs_data_new_dsi(
     const char *                        dsi_name)
 {
     globus_gfs_storage_iface_t *        new_dsi;
+    int                                 rc;
     GlobusGFSName(globus_i_gfs_data_new_dsi);
     GlobusGFSDebugEnter();
 
@@ -494,10 +495,15 @@ globus_i_gfs_data_new_dsi(
         snprintf(buf, 256, "globus_gridftp_server_%s", dsi_name);
         buf[255] = 0;
 
-        if(globus_extension_activate(buf) != GLOBUS_SUCCESS)
+        rc = globus_extension_activate(buf);
+        if(rc != GLOBUS_SUCCESS)
         {
             globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_ERR, "Unable to activate %s\n", buf);
+                GLOBUS_I_GFS_LOG_ERR, 
+                "Unable to activate %s: %s\n", 
+                buf,
+                globus_error_print_friendly(
+                    globus_error_peek((globus_result_t) rc)));
         }
         else
         {
@@ -974,6 +980,7 @@ void
 globus_i_gfs_data_init()
 {
     char *                              dsi_name;
+    int                                 rc;
     GlobusGFSName(globus_i_gfs_data_init);
     GlobusGFSDebugEnter();
 
@@ -989,11 +996,15 @@ globus_i_gfs_data_init()
 
         snprintf(buf, 256, "globus_gridftp_server_%s", dsi_name);
         buf[255] = 0;
-
-        if(globus_extension_activate(buf) != GLOBUS_SUCCESS)
+        rc = globus_extension_activate(buf);
+        if(rc != GLOBUS_SUCCESS)
         {
             globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_ERR, "Unable to activate %s\n", buf);
+                GLOBUS_I_GFS_LOG_ERR, 
+                "Unable to activate %s: %s\n", 
+                buf,
+                globus_error_print_friendly(
+                    globus_error_peek((globus_result_t) rc)));
             exit(1);
         }
 
