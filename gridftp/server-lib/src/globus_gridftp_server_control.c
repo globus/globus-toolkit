@@ -1,6 +1,5 @@
 #include "globus_i_gridftp_server_control.h"
 #include "version.h"
-#include "globus_gridftp_server_control_pmod_959.h"
 #include <sys/utsname.h>
 
 #define GlobusGSUserDoneKickout(_in_server)                             \
@@ -233,6 +232,7 @@ globus_gridftp_server_control_start(
     globus_gridftp_server_control_t                 server,
     globus_gridftp_server_control_attr_t            attr,
     globus_xio_handle_t                             xio_handle,
+    globus_gridftp_server_control_callback_t        done_callback,
     void *                                          user_arg)
 {
     globus_i_gsc_server_t *                         i_server;
@@ -324,9 +324,7 @@ globus_gridftp_server_control_start(
 
 globus_result_t
 globus_gridftp_server_control_stop(
-    globus_gridftp_server_control_t                 server,
-    globus_gridftp_server_control_callback_t        done_callback,
-    void *                                          user_arg)
+    globus_gridftp_server_control_t                 server)
 {
     globus_i_gsc_server_t *                         i_server;
     globus_result_t                                 res;
@@ -502,14 +500,6 @@ globus_l_gsc_perform_op(
     }
 
     return res;
-}
-
-
-globus_result_t
-globus_gridftp_server_control_pmod_command_cancel(
-    globus_gridftp_server_control_t                 server)
-{
-    return GLOBUS_SUCCESS;
 }
 
 globus_result_t

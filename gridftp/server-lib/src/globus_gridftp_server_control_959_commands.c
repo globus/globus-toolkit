@@ -1,4 +1,3 @@
-#include "globus_i_gridftp_server_control_959_reader.h"
 #include "globus_gridftp_server_control.h"
 #include "globus_i_gridftp_server_control.h"
 #include <grp.h>

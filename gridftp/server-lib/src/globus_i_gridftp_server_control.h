@@ -113,7 +113,6 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
             __LINE__,                                                       \
             "Command not implemented."))
 
-
 #define GlobusGridFTPServerOpSetUserArg(_in_op, _in_arg)                    \
     (_in_op)->user_arg = (_in_arg);                                         \
 
@@ -141,16 +140,6 @@ typedef enum globus_gridftp_server_debug_levels_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INFO_VERBOSE = 32
 } globus_gridftp_server_debug_levels_t;
 
-typedef enum globus_i_gs_state_e
-{
-    GLOBUS_L_GS_STATE_NONE,
-    GLOBUS_L_GS_STATE_OPEN,
-    GLOBUS_L_GS_STATE_AUTH,
-    GLOBUS_L_GS_STATE_STOPPED,
-    GLOBUS_L_GS_STATE_STOPPING,
-    GLOBUS_L_GS_STATE_ERROR
-} globus_i_gs_state_t;
-
 typedef enum globus_gridftp_server_error_type_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PARAMETER,
@@ -175,72 +164,6 @@ typedef struct globus_i_gsc_data_s
     globus_i_gsc_conn_dir_t                         conn_dir;
 } globus_i_gsc_data_t;
 
-typedef struct globus_i_gsc_server_s
-{
-    int                                             version_ctl;
-
-    globus_mutex_t                                  mutex;
-    /*
-     *  authentication information
-     */
-    char *                                          username;
-    char *                                          pw;
-    char *                                          banner;
-    gss_cred_id_t                                   cred;
-    gss_cred_id_t                                   del_cred;
-    globus_gridftp_server_control_auth_callback_t   auth_cb;
-
-    uid_t                                           uid;
-
-    /*
-     *  
-     */
-    char *                                          cwd;
-    char                                            type;
-    char                                            mode;
-    char *                                          modes;
-    char *                                          types;
-    int                                             parallelism;
-    int                                             send_buf;
-    int                                             receive_buf;
-
-    globus_hashtable_t                              send_table;
-    globus_hashtable_t                              recv_table;
-    globus_gridftp_server_control_transfer_func_t   default_stor;
-    globus_gridftp_server_control_transfer_func_t   default_retr;
-
-    /*
-     *  action functions
-     */
-    globus_gridftp_server_control_action_func_t     delete_func;
-    globus_gridftp_server_control_action_func_t     mkdir_func;
-    globus_gridftp_server_control_action_func_t     rmdir_func;
-    globus_gridftp_server_control_move_func_t       move_func;
-
-    globus_result_t                                 cached_res;
-
-    /*
-     *  static conf strings.
-     */
-    char *                                          syst;
-    char *                                          help;
-
-    void *                                          user_arg;
-
-    globus_bool_t                                   refresh;
-    int                                             ref;
-    globus_i_gs_state_t                             state;
-
-    globus_i_gsc_data_t *                           data_object;
-    globus_fifo_t                                   data_q;
-    globus_gridftp_server_control_passive_connect_t passive_func;
-    globus_gridftp_server_control_active_connect_t  active_func;
-    globus_gridftp_server_control_data_destroy_t    data_destroy_func;
-
-    globus_gridftp_server_control_callback_t        user_stop_func;
-    globus_gridftp_server_control_resource_callback_t resource_func;
-    globus_gridftp_server_control_callback_t        done_func;
-} globus_i_gsc_server_t;
 
 typedef enum globus_i_gsc_op_type_e
 {
@@ -263,6 +186,7 @@ typedef struct globus_i_gsc_op_s
     globus_result_t                                 res;
 
     /* stuff for auth */
+    globus_bool_t                                   authenticated;
     char *                                          username;
     char *                                          password;
     gss_cred_id_t                                   cred;
@@ -303,6 +227,7 @@ typedef struct globus_i_gsc_attr_s
     char *                                          modes;
     char *                                          types;
     char *                                          base_dir;
+
     globus_gridftp_server_control_auth_callback_t   auth_func;
     globus_gridftp_server_control_passive_connect_t passive_func;
     globus_gridftp_server_control_active_connect_t  active_func;
@@ -334,6 +259,12 @@ typedef enum globus_gridftp_server_command_desc_e
 /*
  *   959 Structures
  */
+typedef enum globus_gsc_959_command_desc_e
+{
+    GLOBUS_GSC_959_COMMAND_POST_AUTH = 0x01,
+    GLOBUS_GSC_959_COMMAND_PRE_AUTH = 0x02
+} globus_gsc_959_command_desc_t;
+
 typedef enum globus_l_gsc_959_state_e
 {
     GLOBUS_L_GSP_959_STATE_OPEN,
@@ -344,8 +275,72 @@ typedef enum globus_l_gsc_959_state_e
     GLOBUS_L_GSP_959_STATE_STOPPED,
 } globus_l_gsc_state_t;
 
-typedef struct globus_l_gsc_959_handle_s
+/* the server handle */
+typedef struct globus_i_gsc_server_s
 {
+    int                                             version_ctl;
+
+    globus_mutex_t                                  mutex;
+
+    /*
+     *  authentication information
+     */
+    char *                                  username;
+    char *                                  pw;
+    char *                                  banner;
+    gss_cred_id_t                           cred;
+    gss_cred_id_t                           del_cred;
+    globus_gridftp_server_control_auth_callback_t   auth_cb;
+    uid_t                                   uid;
+
+    /*
+     *  state information  
+     */
+    char *                                  cwd;
+    char                                    type;
+    char                                    mode;
+    char *                                  modes;
+    char *                                  types;
+    int                                     parallelism;
+    int                                     send_buf;
+    int                                     receive_buf;
+    globus_bool_t                           refresh;
+
+    /*
+     *  user function pointers
+     */
+    void *                                          user_arg;
+
+    /* transfer functions */
+    globus_hashtable_t                              send_table;
+    globus_hashtable_t                              recv_table;
+    globus_gridftp_server_control_transfer_func_t   default_stor_cb;
+    globus_gridftp_server_control_transfer_func_t   default_retr_cb;
+
+    /*  action functions  */
+    globus_gridftp_server_control_action_func_t     delete_cb;
+    globus_gridftp_server_control_action_func_t     mkdir_cb;
+    globus_gridftp_server_control_action_func_t     rmdir_cb;
+    globus_gridftp_server_control_move_func_t       move_cb;
+
+    /* data functions */
+    globus_gridftp_server_control_passive_connect_t passive_func;
+    globus_gridftp_server_control_active_connect_t  active_func;
+    globus_gridftp_server_control_data_destroy_t    data_destroy_func;
+
+    /* list function */
+    globus_gridftp_server_control_resource_callback_t resource_func;
+    /* done function */
+    globus_gridftp_server_control_callback_t        done_func;
+    
+    globus_i_gsc_data_t *                   data_object;
+    globus_fifo_t                           data_q;
+
+    globus_result_t                         cached_res;
+
+    /* 
+     *  read.c members 
+     */
     globus_bool_t                           reply_outstanding;
     globus_i_gsc_server_t *                 server;
     globus_xio_handle_t                     xio_handle;
@@ -357,7 +352,7 @@ typedef struct globus_l_gsc_959_handle_s
     globus_gsc_959_abort_func_t             abort_func;
     void *                                  abort_arg;
     struct globus_gsc_op_959_s *            outstanding_op;
-} globus_l_gsc_959_handle_t;
+} globus_i_gsc_server_t;
 
 typedef struct globus_l_gsc_959_cmd_ent_s
 {
