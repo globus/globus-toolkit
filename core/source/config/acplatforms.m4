@@ -86,6 +86,9 @@ case "$host" in
   sparc64-pc-linux-gnu )
     AC_DEFINE(TARGET_ARCH_LINUX)
   ;;
+  *-*-linux* )
+    AC_DEFINE(TARGET_ARCH_LINUX)
+  ;;
   * )
 	echo "platform not configured with TARGET_ARCH_*"
   ;;
