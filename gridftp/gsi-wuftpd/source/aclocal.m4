@@ -31,7 +31,7 @@ AC_ARG_ENABLE(gssapi,
 [gssapi_type=$enableval], [gssapi_type="none"])
 
 AC_ARG_WITH(gssapi,
-[  --with-gssapi=<type>        Obsolete. Use --enable-gssapi instead.]
+[  --with-gssapi=<type>        Obsolete. Use --enable-gssapi instead.],
 [gssapi_type=$withval], [gssapi_type="none"])
 
 case $gssapi_type in
@@ -248,7 +248,7 @@ if test $with_afs != no; then
 	AC_DEFINE(AFS)
 	AC_DEFINE(HAVE_TRANSARC_AFS)
 	AFS_LDFLAGS="-L${with_afs}/lib -L${with_afs}/lib/afs"
-	AFS_LIBS="-lauth -lsys -lrx -llwp -lsys"
+	AFS_LIBS="-lauth -lsys -lrx -llwp"
 	AFS_CFLAGS="-I${with_afs}/include"
 	dnl case $krb5_cv_host in
 	dnl *-*-solaris*)
