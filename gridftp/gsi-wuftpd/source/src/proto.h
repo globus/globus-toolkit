@@ -134,7 +134,7 @@ ftp_check_authorization(char * object,
                         char * action);
 
 int 
-ftp_authorization_initialize(char *             cffile,
+ftp_authorization_initialize(char *             use_hostname,
                              char *             errstr,
                              int                errstr_len);
 
