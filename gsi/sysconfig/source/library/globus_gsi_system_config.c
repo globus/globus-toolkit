@@ -4879,7 +4879,12 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
     {
         globus_libc_closedir(dir_handle);
     }
-    
+
+    if(tmp_entry != NULL)
+    {
+	globus_libc_free(tmp_entry);
+    }
+
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
 
@@ -5144,7 +5149,7 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
     if(result != GLOBUS_SUCCESS)
     {
         proc_id_string = NULL;
-        result = GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_DELEG_FILENAME);
         goto done;
@@ -5174,7 +5179,7 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
             unique_postfix,
             ++i)) != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_DELEG_FILENAME);
         goto done;
