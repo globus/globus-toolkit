@@ -1,7 +1,19 @@
 include $(top_srcdir)/globus_automake_pre
 
 Sources= \
-    globus_xio_http.c
+    globus_xio_http.c \
+    globus_xio_http_attr.c \
+    globus_xio_http_client.c \
+    globus_xio_http_handle.c \
+    globus_xio_http_header.c \
+    globus_xio_http_header_info.c \
+    globus_xio_http_request.c \
+    globus_xio_http_response.c \
+    globus_xio_http_rfc2616.c \
+    globus_xio_http_server.c \
+    globus_xio_http_target.c \
+    globus_xio_http_transform.c \
+    http_version_notes.c
 
 flavorinclude_HEADERS = \
     globus_xio_http.h
