@@ -145,17 +145,14 @@ AC_ARG_ENABLE(wstests, AC_HELP_STRING([--disable-wstests],\
 AC_SUBST(wstests, $wstests)
 
 # java
-AC_PATH_PROG(JAVA_PATH, java)
-if test "$JAVA_PATH" != "$JAVA_HOME/java"; then
-   AC_MSG_ERROR(the java in your path is not from your \$JAVA_HOME environment)
-fi
 AC_PATH_PROG(JAVAC_PATH, javac)
-if test "$JAVA_PATH" != "$JAVA_HOME/java"; then
-   AC_MSG_ERROR(the java in your path is not from your \$JAVA_HOME environment)
-fi
 if test "x$JAVAC_PATH" = "x"; then
-   AC_MSG_WARN(A Java compiler is needed for some parts of the toolkit) 
-   AC_MSG_WARN(If you know you will not need one, this message can be ignored)
+    AC_MSG_WARN(A Java compiler is needed for some parts of the toolkit) 
+    AC_MSG_WARN(If you know you will not need one, this message can be ignored)
+else
+    if test "$JAVAC_PATH" != "$JAVA_HOME/java"; then
+        AC_MSG_ERROR(the javac in your path is not from your \$JAVA_HOME environment)
+    fi
 fi
 
 # ant
