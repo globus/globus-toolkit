@@ -379,30 +379,52 @@ sub poll
     my $job_id = $description->jobid();
     my $state;
     my $status_line;
+    my $exit_code;
 
     $self->log("polling job $job_id");
 
     # Get first line matching job id
     $_ = (grep(/job_state/, `$qstat -f $job_id 2>/dev/null`))[0];
+    # get the exit code of the qstat command.  for info search $CHILD_ERROR
+    # in perlvar documentation.
+    $exit_code = $? >> 8;
 
-    # Get 3rd field (after = )
-    $_ = (split(/\s+/))[3];
-
-    if(/Q|W|T/)
+    # return code 153 = "Unknown Job Id".
+    # verifying that the job is no longer there.
+    if($exit_code == 153)
     {
-	$state = Globus::GRAM::JobState::PENDING;
-    }
-    elsif(/S|H/)
-    {
-	$state = Globus::GRAM::JobState::SUSPENDED
-    }
-    elsif(/R|E/)
-    {
-	$state = Globus::GRAM::JobState::ACTIVE;
+        $self->log("qstat rc is 153 == Unknown Job ID == DONE");
+        $state = Globus::GRAM::JobState::DONE;
     }
     else
     {
-	$state = Globus::GRAM::JobState::DONE;
+
+        # Get 3rd field (after = )
+        $_ = (split(/\s+/))[3];
+
+        if(/Q|W|T/)
+        {
+            $state = Globus::GRAM::JobState::PENDING;
+        }
+        elsif(/S|H/)
+        {
+            $state = Globus::GRAM::JobState::SUSPENDED
+        }
+        elsif(/R|E/)
+        {
+            $state = Globus::GRAM::JobState::ACTIVE;
+        }
+        else
+        {
+            # This else is reached by an unknown response from pbs.
+            # It could be that PBS was temporarily unavailable, but that it
+            # can recover and the submitted job is fine.
+            # So, we want the JM to ignore this poll and keep the same state
+            # as the previous state.  Returning an empty hash below will tell
+            # the JM to ignore the respose.
+            $self->log("qstat returned an unknown response.  Telling JM to ignore this poll");
+            return {};
+        }
     }
 
     return {JOB_STATE => $state};
