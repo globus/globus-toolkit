@@ -71,7 +71,8 @@ typedef struct globus_l_extension_handle_s
 {
     globus_l_extension_module_t *       owner;
     globus_module_descriptor_t *        module;
-    char *                              symbol;
+    globus_bool_t                       user_hashing;
+    void *                              symbol;
     void *                              datum;
     long                                ref;
 } globus_l_extension_handle_t;
@@ -509,14 +510,14 @@ error_param:
 int
 globus_extension_registry_add(
     globus_extension_registry_t *       registry,
-    const char *                        symbol,
+    void *                              symbol,
     globus_module_descriptor_t *        module,
     void *                              data)
 {
     globus_l_extension_handle_t *       entry;
     GlobusFuncName(globus_extension_registry_add);
     
-    GlobusExtensionDebugEnterSymbol(symbol);
+    GlobusExtensionDebugEnterSymbol(registry->user_hashing ? "" : symbol);
     
     if(!data || !symbol || !registry)
     {
@@ -535,11 +536,8 @@ globus_extension_registry_add(
     entry->module = module;
     entry->datum = data;
     entry->ref = 1;
-    entry->symbol = globus_libc_strdup(symbol);
-    if(!entry->symbol)
-    {
-        goto error_dup;
-    }
+    entry->symbol = symbol;
+    entry->user_hashing = registry->user_hashing;
     
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
@@ -571,8 +569,6 @@ globus_extension_registry_add(
 error_insert:
 error_init:
     globus_rmutex_unlock(&globus_l_extension_mutex);
-    globus_free(entry->symbol);
-error_dup:
     globus_free(entry);
 error_malloc:
 error_params:
@@ -583,13 +579,13 @@ error_params:
 void *
 globus_extension_registry_remove(
     globus_extension_registry_t *       registry,
-    const char *                        symbol)
+    void *                              symbol)
 {
     globus_l_extension_handle_t *       entry;
     void *                              datum = NULL;
     GlobusFuncName(globus_extension_registry_remove);
     
-    GlobusExtensionDebugEnterSymbol(symbol);
+    GlobusExtensionDebugEnterSymbol(registry->user_hashing ? "" : symbol);
     
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
@@ -603,7 +599,6 @@ globus_extension_registry_remove(
                 globus_hashtable_remove(&registry->table, (void *) symbol);
                 if(--entry->ref == 0)
                 {
-                    globus_free(entry->symbol);
                     globus_free(entry);
                 }
             }
@@ -615,17 +610,55 @@ globus_extension_registry_remove(
     return datum;
 }
 
+int
+globus_extension_registry_set_hashing(
+    globus_extension_registry_t *       registry,
+    globus_hashtable_hash_func_t        hash_func,
+    globus_hashtable_keyeq_func_t       keyeq_func)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    GlobusFuncName(globus_extension_registry_remove);
+    
+    GlobusExtensionDebugEnter();
+    
+    globus_rmutex_lock(&globus_l_extension_mutex);
+    {
+        /* if registry->initialized == true,
+         * can't detect if this is misuse or just the result of being
+         * activated after a deactivate, so just return success
+         */
+        if(!registry->initialized)
+        {
+            rc = globus_hashtable_init(
+                &registry->table,
+                20,
+                hash_func,
+                keyeq_func);
+            if(rc == GLOBUS_SUCCESS)
+            {
+                registry->initialized = GLOBUS_TRUE;
+                registry->user_hashing = GLOBUS_TRUE;
+            }
+        }
+    }
+    globus_rmutex_unlock(&globus_l_extension_mutex);
+    
+    GlobusExtensionDebugExit();
+    
+    return rc;
+}
+    
 void *
 globus_extension_lookup(
     globus_extension_handle_t *         handle,
     globus_extension_registry_t *       registry,
-    const char *                        symbol)
+    void *                              symbol)
 {
     globus_l_extension_handle_t *       entry;
     void *                              datum = NULL;
     GlobusFuncName(globus_extension_lookup);
     
-    GlobusExtensionDebugEnterSymbol(symbol);
+    GlobusExtensionDebugEnterSymbol(registry->user_hashing ? "" : symbol);
     
     if(!handle)
     {
@@ -680,9 +713,8 @@ globus_extension_release(
     globus_l_extension_module_t *       owner = NULL;
     GlobusFuncName(globus_extension_release);
     
-    GlobusExtensionDebugEnterSymbol(handle->symbol);
-    
     entry = handle;
+    GlobusExtensionDebugEnterSymbol(entry->user_hashing ? "" : entry->symbol);
     
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
@@ -695,7 +727,6 @@ globus_extension_release(
             
             if(--entry->ref == 0)
             {
-                globus_free(entry->symbol);
                 globus_free(entry);
             }
             
