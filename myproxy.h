@@ -26,7 +26,8 @@
 #define MYPROXY_USERNAME_STRING     "USERNAME="
 #define MYPROXY_PASSPHRASE_STRING   "PASSPHRASE="
 #define MYPROXY_LIFETIME_STRING     "LIFETIME="
-
+#define MYPROXY_AUTH_SERVICE_STRING "AUTHORIZE_SERVICE="
+#define MYPROXY_AUTH_CLIENT_STRING  "AUTHORIZED_CLIENT="
 
 /* myproxy server protocol information */
 #define MYPROXY_RESPONSE_STRING     "RESPONSE="
@@ -68,6 +69,8 @@ typedef struct
     char                         passphrase[MAX_PASS_LEN+1];
     myproxy_proto_request_type_t command_type;
     int                          portal_lifetime;    
+    char                         **authorized_service_dns;
+    char                         **authorized_client_dns;
 } myproxy_request_t;
 
 /* A server response object */
