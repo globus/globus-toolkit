@@ -4,6 +4,7 @@ BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
 
 use strict;
 use Test::Harness;
+use Cwd;
 require 5.005;
 use vars qw(@tests);
 use Globus::Core::Paths;
@@ -21,10 +22,11 @@ my $startargs = '-log never ';
     globus-gram-job-manager-failure-test.pl
     globus-gram-job-manager-proxy-expire-test.pl
 );
-if(0 != system("grid-proxy-info -exists -hours 2") / 255)
+if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
 {
-    print STDERR "Security proxy required to run the tests.\n";
-    exit 1;
+    $ENV{X509_CERT_DIR} = cwd();
+    $ENV{X509_USER_PROXY} = "testcred.pem";
+    system('chmod go-rw testcred.pem'); 
 }
 
 chdir $Globus::Core::Paths::exec_prefix . "/test/@PACKAGE@";
