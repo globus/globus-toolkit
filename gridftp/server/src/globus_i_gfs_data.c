@@ -1822,7 +1822,10 @@ globus_l_gfs_data_transfer_event_kickout(
 
     globus_mutex_lock(&bounce_info->op->session_handle->mutex);
     {    
-        /* XXX MIKEY XXX  whats this all about?  should it be in other lock */
+        /* XXX MIKEY XXX  whats this all about?  should it be in other lock 
+            !! if it can't be locked around the reply, we'll need to copy
+            the range list for the reply... as it is now we can lose ranges
+            if they are updated between time of reply and this remove */
         if(bounce_info->event_type == GLOBUS_GFS_EVENT_RANGES_RECVD)
         {
             globus_range_list_remove(
@@ -1853,6 +1856,7 @@ globus_l_gfs_data_transfer_event_kickout(
     }
 
     globus_free(bounce_info);       
+    globus_free(event_reply);       
 }
 
 /* must be called locked */
