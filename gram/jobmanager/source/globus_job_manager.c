@@ -252,6 +252,7 @@ main(int argc,
      char **argv)
 {
     int                    i;
+    int                    tag_index;
     int                    size;
     int                    rc;
     int                    count;
