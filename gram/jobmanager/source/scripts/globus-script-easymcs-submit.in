@@ -62,15 +62,6 @@ if [ ! -z "${grami_env}" ] ; then
    done
 fi
 
-new_grami_args="${grami_args}"
-# Handle single quote escaping
-new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/'/'\\\\\"'\\\\\"'/g"`
-new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/'/'\\\\\"'\\\\\"'/g"`
-# Handle \ escaping
-new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/\\\\\\\\\\\\\/\\\\\/g"`
-# Handle $ escaping
-new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/\\\\\\\\\\\\$/$/g"`
-
 # 4 jobtypes exist               easymcs progtype
 # -----------------              -------------------
 # jobtype 0 = mpi        ----->  M
@@ -96,6 +87,19 @@ else
    echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE
    exit 1
 fi
+
+new_grami_args="${grami_args}"
+
+if [ ${sp_progtype} != "S" ] ; then
+   # Handle single quote escaping
+   new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/'/'\\\\\"'\\\\\"'/g"`
+   new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/'/'\\\\\"'\\\\\"'/g"`
+   # Handle \ escaping
+   new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/\\\\\\\\\\\\\/\\\\\/g"`
+   # Handle $ escaping
+   new_grami_args=`echo "${new_grami_args}" | ${GLOBUS_SH_SED-sed} -e "s/\\\\\\\\\\\\$/$/g"`
+fi
+
 
 $DEBUG_ECHO "JM_SCRIPT: testing maxtime">> $grami_logfile
 if [ $grami_max_time -eq 0 ] ; then
@@ -136,12 +140,21 @@ $DEBUG_ECHO "" >> $grami_logfile
 
 $DEBUG_ECHO "JM_SCRIPT: executing spsubmit command" >> $grami_logfile
 
-status=`eval "${spsubmit} -np ${grami_count} ${new_grami_env} \
+if [ ${sp_progtype} != "S" ] ; then
+   status=`eval "${spsubmit} -np ${grami_count} ${new_grami_env} \
          -progtype ${sp_progtype} -nomail \
          -stdin ${grami_stdin} -stdout ${grami_stdout} \
          -stderr ${grami_stderr} ${grami_max_time} ${grami_program} \
          \\''${new_grami_args}'\\' "</dev/null 2>/dev/null \
          | head -1 | ${grep}  '^[^\.]*\.[0-9][0-9]*\.[0-9][0-9]*$'`
+else
+   status=`${spsubmit} -np ${grami_count} ${new_grami_env} \
+         -progtype ${sp_progtype} -nomail \
+         -stdin ${grami_stdin} -stdout ${grami_stdout} \
+         -stderr ${grami_stderr} ${grami_max_time} ${grami_program} \
+         ${new_grami_args} </dev/null 2>/dev/null \
+         | head -1 | ${grep}  '^[^\.]*\.[0-9][0-9]*\.[0-9][0-9]*$'`
+fi
 
 if test -n "${status}"; then
    $DEBUG_ECHO "JM_SCRIPT: returning job state: "\
