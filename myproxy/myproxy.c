@@ -28,6 +28,7 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs)
 {
     struct sockaddr_in sin;
     struct hostent *host_info;
+    char error_string[1024];
 
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -62,6 +63,15 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs)
         return -1;
     }
 
+   if (GSI_SOCKET_set_encryption(attrs->gsi_socket, 1) == GSI_SOCKET_ERROR)
+   {
+       GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+                                   sizeof(error_string));
+       fprintf(stderr, "Error enabling encryption: %s\n", error_string);
+       return -1;
+   }
+
+
     return attrs->socket_fd;
 }
     
@@ -76,7 +86,7 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile)
        fprintf(stderr, "Error setting credentials to use: %s\n", error_string);
        return -1;
    }
-   
+
    if (GSI_SOCKET_authentication_init(attrs->gsi_socket) == GSI_SOCKET_ERROR) {
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
