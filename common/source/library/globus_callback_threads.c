@@ -1352,7 +1352,7 @@ globus_l_callback_finish_callback(
     globus_bool_t                       unregister;
     globus_callback_func_t              unregister_callback;
     
-    i_space = callback_info->myspace;
+    i_space = callback_info->my_space;
     unregister = GLOBUS_FALSE;
     
     globus_mutex_lock(&i_space->lock);
