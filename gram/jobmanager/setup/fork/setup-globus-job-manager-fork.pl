@@ -7,8 +7,7 @@ my $force		= 0;
 my $cmd;
 
 GetOptions('service-name|s=s' => \$name,
-	   'force|f' => \$force,
-	   'help|h|?' => \$help);
+	   'help|h' => \$help);
 
 &usage if $help;
 
@@ -18,20 +17,11 @@ my $metadata =
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
 
-if($force != 0)
-{
-    $force = '-f';
-}
-else
-{
-    $force = '';
-}
-
-mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager";
+mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager", 0777;
 
 print `./find-fork-tools`;
 
-$cmd = "$libexecdir/globus-job-manager-service-add -m fork -s \"$name\" $force";
+$cmd = "$libexecdir/globus-job-manager-service-add -m fork -s \"$name\"";
 system("$cmd >/dev/null 2>/dev/null");
 
 if($? == 0)

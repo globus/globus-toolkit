@@ -26,8 +26,7 @@ my $perljmdir = "$globusdir/lib/perl/Globus/GRAM/JobManager";
 
 GetOptions('service-name|s=s' => \$servicename,
            'manager-type|m=s' => \$manager_type,
-	   'force|f|' => \$force,
-	   'help|h|?' => \$help);
+	   'help|h' => \$help);
 
 &usage() if $help;
 
@@ -40,13 +39,7 @@ if(! &valid_manager_type($manager_type))
 if(! -d $servicesdir)
 {
     print "Creating grid services directory.\n";
-    mkdir $servicesdir;
-}
-if( (-f "${servicesdir}/${servicename}") && (!$force) )
-{
-    print STDERR "WARNING: Service ${servicename} already exists.\n".
-		 "         Use --force to overwrite this service.\n";
-    exit 3;
+    mkdir $servicesdir, 0777;
 }
 
 &create_services_file("$servicesdir/$servicename");
