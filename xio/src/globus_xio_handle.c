@@ -1193,7 +1193,6 @@ globus_i_xio_operation_cancel(
     globus_i_xio_op_t *                 op,
     int                                 source_ndx)
 {
-    globus_bool_t                       tmp_rc;
     GlobusXIOName(globus_i_xio_operation_cancel);
 
     GlobusXIODebugInternalEnter();
@@ -1217,8 +1216,11 @@ globus_i_xio_operation_cancel(
          * if the user oks the cancel then remove the timeout from 
          * the poller
          */
-        tmp_rc = globus_i_xio_timer_unregister_timeout(
-                &globus_i_xio_timeout_timer, op);
+        if(globus_i_xio_timer_unregister_timeout(
+                &globus_i_xio_timeout_timer, op))
+        {
+            GlobusXIOOpDec(op);
+        }
     }
     /* since in callback this will always be true */
 
