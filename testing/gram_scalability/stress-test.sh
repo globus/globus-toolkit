@@ -11,6 +11,8 @@ if [ -z $max ]; then
     exit
 fi
 
+cat sleep.xml.in | sed -e "s#GLOBUS_LOCATION#$GLOBUS_LOCATION#" > sleep.xml
+
 count=1
 begin_time=0
 end_time=0

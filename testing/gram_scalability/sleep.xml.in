@@ -5,9 +5,9 @@
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="
                 http://www.globus.org/namespaces/2004/02/rsl
-                /home/lane/Software/globus/schema/base/gram/rsl.xsd
+                GLOBUS_LOCATION/schema/base/gram/rsl.xsd
                 http://www.globus.org/namespaces/2004/02/rsl/gram
-                /home/lane/Software/globus/schema/base/gram/gram_rsl.xsd">
+                GLOBUS_LOCATION/schema/base/gram/gram_rsl.xsd">
 <gram:job>
     <gram:executable>
         <rsl:path>
@@ -32,10 +32,5 @@
             <rsl:stringElement value="/testing/gram_scalability/logs/stress-test.stderr"/>
         </rsl:path> </rsl:pathArray>
     </gram:stderr>
-    <!--
-    <my:logfile> <rsl:path>
-        <rsl:stringElement value="/homes/lane/.globus/uhe-promptu.mcs.anl.gov/script_log"/> </rsl:path>
-    </my:logfile>
-    -->
 </gram:job>
 </rsl:rsl>
