@@ -240,6 +240,7 @@ open_cb(
                     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
         }
     }
+    globus_mutex_unlock(&info->mutex);
 }
 
 int
