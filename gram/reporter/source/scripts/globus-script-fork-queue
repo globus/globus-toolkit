@@ -1,4 +1,4 @@
-#! @SH@ -f
+#! /bin/sh -f
 ###################################################################
 # globus-script-<scheduler>-queue script
 # --------------------------------------
@@ -44,7 +44,9 @@ wc=${GLOBUS_SH_WC-wc}
 #
 
 GetNodeCount () {
-case "`${libexecdir}/grid-info-osguess`" in
+
+UPTIME_IS_AVERAGE=1
+case "`${sbindir}/config.guess`" in
   *linux*)
      # linux doesn't provide a sysctl interface to get cpu count
      # so grid-info-num-procs won't give correct data
@@ -58,6 +60,12 @@ case "`${libexecdir}/grid-info-osguess`" in
         # assume not SMP
         TOTALNODES=1
      fi
+     ;;
+  *hpux11*)
+     # hpux 11 interprets load average as average number of jobs in run queue
+     # divided by number of cpus.  typical load count is average number of jobs in run queue
+     UPTIME_IS_AVERAGE=0
+     TOTALNODES=`${libexecdir}/grid-info-num-procs`
      ;;
   *)
      TOTALNODES=`${libexecdir}/grid-info-num-procs`
@@ -75,7 +83,7 @@ else
                       for (i=1; $i != "average:" && $i != "averages:"; i++) ;
                       v = $(i+1) ;
                       l = substr(v,1,length(v)-1) ;
-                      if(@GLOBUS_UPTIME_IS_AVERAGE@ == 1) {
+                      if($UPTIME_IS_AVERAGE == 1) {
                         fnodes = tnodes - int(l * tnodes + 0.5);
                       } else {
                         fnodes = tnodes - int(l + 0.5) ;
@@ -108,8 +116,6 @@ echo "GRAM_SCRIPT_Q:whenActive 0"
 echo "GRAM_SCRIPT_Q:status 0"
 echo "GRAM_SCRIPT_Q:dispatchType Immediate"
 #echo "GRAM_SCRIPT_Q:priority 0"
-#echo "GRAM_SCRIPT_Q:allowedUser user1"
-#echo "GRAM_SCRIPT_Q:allowedUser user2"
 #echo "GRAM_SCRIPT_Q:jobWait 0"
 #echo "GRAM_SCRIPT_Q:schedulerSpecific"
 echo "GRAM_SCRIPT_Q:EndQueue"
