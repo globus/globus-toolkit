@@ -30,6 +30,11 @@ globus_gsc_pmod_959_finished_op(
     globus_gsc_pmod_959_op_t                op,
     char *                                  reply_msg);
 
+globus_result_t
+globus_gsc_pmod_959_get_server(
+    globus_gridftp_server_control_t *               out_server,
+    globus_gsc_pmod_959_handle_t                    handle);
+
 /*
  *  the oepration is only valid for the life of this function
  */

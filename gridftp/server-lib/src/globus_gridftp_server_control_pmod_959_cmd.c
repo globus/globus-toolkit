@@ -1283,12 +1283,10 @@ globus_l_gsc_pmod_959_cmd_pasv_cb(
     if(res != GLOBUS_SUCCESS)
     {
         globus_gsc_pmod_959_finished_op(wrapper->op, "500 Command failed.\r\n");
-        goto err;
     }
     else if(addr_count > wrapper->max && wrapper->max != -1)
     {
         globus_gsc_pmod_959_finished_op(wrapper->op, "500 Command failed.\r\n");
-        goto err;
     }
     else
     {
@@ -2229,6 +2227,18 @@ globus_i_gsc_pmod_959_add_commands(
     globus_gsc_pmod_959_handle_t            handle)
 {
     globus_l_gsc_pmod_959_cmd_handle_t *    cmd_handle;
+    globus_gridftp_server_control_t         server;
+    globus_result_t                         res;
+
+    /* not possible for this to fail */
+    res = globus_gsc_pmod_959_get_server(&server, handle);
+    globus_assert(res == GLOBUS_SUCCESS);
+
+    /* set defaults */
+    res = globus_gridftp_server_control_set_type(server, "A");
+    globus_assert(res == GLOBUS_SUCCESS);
+    res = globus_gridftp_server_control_set_mode(server, "S");
+    globus_assert(res == GLOBUS_SUCCESS);
 
     cmd_handle = (globus_l_gsc_pmod_959_cmd_handle_t *) globus_malloc(
         sizeof(globus_l_gsc_pmod_959_cmd_handle_t));
