@@ -29,6 +29,7 @@
 
 /* Home grown routines */
 #include "bsd-arc4random.h"
+#include "bsd-getpeereid.h"
 #include "bsd-misc.h"
 #include "bsd-snprintf.h"
 #include "bsd-waitpid.h"

@@ -22,3 +22,6 @@ Configure Options
     IA-64 Linux GCC (RedHat) | --with-md5-passwords --with-tcp-wrappers
       Sun Solaris VendorCC   |            --with-tcp-wrappers
         SGI Irix VendorCC    |            --with-tcp-wrappers
+
+Run ./configure --help inside the gsi_openssh-<version>-src/ directory to get a
+full listing of the available options.

@@ -10,7 +10,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: servconf.c,v 1.112 2002/06/23 09:46:51 deraadt Exp $");
+RCSID("$OpenBSD: servconf.c,v 1.115 2002/09/04 18:52:42 stevesk Exp $");
 
 #if defined(KRB4)
 #include <krb.h>
@@ -106,6 +106,7 @@ initialize_server_options(ServerOptions *options)
 	options->kbd_interactive_authentication = -1;
 	options->challenge_response_authentication = -1;
 	options->permit_empty_passwd = -1;
+	options->permit_user_env = -1;
 	options->use_login = -1;
 	options->compression = -1;
 	options->allow_tcp_forwarding = -1;
@@ -163,7 +164,7 @@ fill_default_server_options(ServerOptions *options)
 	if (options->server_key_bits == -1)
 		options->server_key_bits = 768;
 	if (options->login_grace_time == -1)
-		options->login_grace_time = 600;
+		options->login_grace_time = 120;
 	if (options->key_regeneration_time == -1)
 		options->key_regeneration_time = 3600;
 	if (options->permit_root_login == PERMIT_NOT_SET)
@@ -238,6 +239,8 @@ fill_default_server_options(ServerOptions *options)
 		options->challenge_response_authentication = 1;
 	if (options->permit_empty_passwd == -1)
 		options->permit_empty_passwd = 0;
+	if (options->permit_user_env == -1)
+		options->permit_user_env = 0;
 	if (options->use_login == -1)
 		options->use_login = 0;
 	if (options->compression == -1)
@@ -272,7 +275,7 @@ fill_default_server_options(ServerOptions *options)
 	if (use_privsep == -1)
 		use_privsep = 1;
 
-#if !defined(HAVE_MMAP_ANON_SHARED)
+#ifndef HAVE_MMAP
 	if (use_privsep && options->compression == 1) {
 		error("This platform does not support both privilege "
 		    "separation and compression");
@@ -309,7 +312,7 @@ typedef enum {
 	sPrintMotd, sPrintLastLog, sIgnoreRhosts,
 	sX11Forwarding, sX11DisplayOffset, sX11UseLocalhost,
 	sStrictModes, sEmptyPasswd, sKeepAlives,
-	sUseLogin, sAllowTcpForwarding, sCompression,
+	sPermitUserEnvironment, sUseLogin, sAllowTcpForwarding, sCompression,
 	sAllowUsers, sDenyUsers, sAllowGroups, sDenyGroups,
 	sIgnoreUserKnownHosts, sCiphers, sMacs, sProtocol, sPidFile,
 	sGatewayPorts, sPubkeyAuthentication, sXAuthLocation, sSubsystem, sMaxStartups,
@@ -379,6 +382,7 @@ static struct {
 	{ "xauthlocation", sXAuthLocation },
 	{ "strictmodes", sStrictModes },
 	{ "permitemptypasswords", sEmptyPasswd },
+	{ "permituserenvironment", sPermitUserEnvironment },
 	{ "uselogin", sUseLogin },
 	{ "compression", sCompression },
 	{ "keepalive", sKeepAlives },
@@ -750,6 +754,10 @@ parse_flag:
 
 	case sEmptyPasswd:
 		intptr = &options->permit_empty_passwd;
+		goto parse_flag;
+
+	case sPermitUserEnvironment:
+		intptr = &options->permit_user_env;
 		goto parse_flag;
 
 	case sUseLogin:
