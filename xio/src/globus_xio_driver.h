@@ -395,6 +395,22 @@ typedef void
     globus_xio_driver_t                     driver,
     globus_xio_stack_t                      stack);
 
+
+globus_result_t
+globus_xio_driver_data_descriptor_cntl(
+    globus_xio_operation_t                  op,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    ...);
+
+globus_result_t
+globus_xio_driver_handle_cntl(
+    globus_xio_operation_t                  op,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    ...);
+
+
 /**
  *  @ingroup driver_pgm
  */

@@ -788,6 +788,19 @@ globus_xio_driver_read_delivered(
     int                                     in_ndx,
     globus_xio_operation_type_t *           deliver_type);
 
+globus_result_t
+globus_i_xio_driver_dd_cntl(
+    globus_i_xio_op_t *                     op,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    va_list                                 ap);
+
+globus_result_t
+globus_i_xio_driver_handle_cntl(
+    globus_i_xio_context_t *                context,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    va_list                                 ap);
 
 extern globus_i_xio_timer_t                 globus_l_xio_timeout_timer;
 extern globus_list_t *                      globus_l_outstanding_handles_list;

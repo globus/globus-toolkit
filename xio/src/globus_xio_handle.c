@@ -2262,8 +2262,6 @@ globus_xio_handle_cntl(
     ...)
 {
     globus_result_t                         res;
-    int                                     ctr;
-    int                                     ndx;
     va_list                                 ap;
     globus_i_xio_context_t *                context;
     GlobusXIOName(globus_xio_handle_cntl);
@@ -2272,6 +2270,11 @@ globus_xio_handle_cntl(
     GlobusLXIOActiveTest();
 
     if(handle == NULL)
+    {
+        return GlobusXIOErrorParameter("handle");
+    }
+    context = handle->context;
+    if(context == NULL)
     {
         return GlobusXIOErrorParameter("handle");
     }
@@ -2286,42 +2289,22 @@ globus_xio_handle_cntl(
     }
 #   endif
 
-    context = handle->context;
-    if(driver != NULL)
-    {
-        ndx = -1;
-        for(ctr = 0; ctr < context->stack_size && ndx == -1; ctr++)
-        {
-            if(driver == context->entry[ctr].driver)
-            {
-                res = context->entry[ctr].driver->handle_cntl_func(
-                        context->entry[ctr].driver_handle,
-                        cmd,
-                        ap);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto exit;
-                }
-                ndx = ctr;
-            }
-        }
-        if(ndx == -1)
-        {
-            /* throw error */
-            res = GlobusXIOErrorInvalidDriver("not found");
-            goto exit;
-        }
-    }
-    else
-    {
-        /* do general settings */
-    }
+    res = globus_i_xio_driver_handle_cntl(context, driver, cmd, ap);
 
-  exit:
     va_end(ap);
+
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
 
     GlobusXIODebugExit();
 
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
     return res;
 }
 

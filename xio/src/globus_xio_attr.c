@@ -496,8 +496,6 @@ globus_xio_data_descriptor_cntl(
     ...)
 {
     globus_result_t                         res;
-    int                                     ndx;
-    int                                     ctr;
     globus_i_xio_op_t *                     op;
     va_list                                 ap;
     GlobusXIOName(globus_xio_data_descriptor_cntl);
@@ -512,56 +510,24 @@ globus_xio_data_descriptor_cntl(
 
     op = (globus_i_xio_op_t *) data_desc;
 
-    if(driver != NULL)
+#   ifdef HAVE_STDARG_H
     {
-        ndx = -1;
-        for(ctr = 0; ctr < op->stack_size && ndx == -1; ctr++)
-        {
-            if(driver == op->_op_context->entry[ctr].driver)
-            {
-                if(op->entry[ctr].dd == NULL)
-                {
-                    res = op->_op_context->entry[ctr].driver->attr_init_func(
-                            &op->entry[ctr].dd);
-                    if(res != GLOBUS_SUCCESS)
-                    {
-                        goto err;
-                    }
-                }
-                ndx = ctr;
-            }
-        }
-        if(ndx == -1)
-        {
-            /* throw error */
-            res = GlobusXIOErrorInvalidDriver("not found");
-            goto err;
-        }
-#       ifdef HAVE_STDARG_H
-        {
-            va_start(ap, cmd);
-        }
-#       else
-        {
-            va_start(ap);
-        }
-#       endif
-
-        res = op->_op_context->entry[ndx].driver->attr_cntl_func(
-                op->entry[ndx].dd,
-                cmd,
-                ap);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
-        va_end(ap);
+        va_start(ap, cmd);
     }
-    else
+#   else
     {
-        /* TODO: add code for general dd attributes */
+        va_start(ap);
     }
+#   endif
 
+    res = globus_i_xio_driver_dd_cntl(op, driver, cmd, ap);
+
+    va_end(ap);
+
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
     GlobusXIODebugExit();
 
     return GLOBUS_SUCCESS;

@@ -1014,6 +1014,234 @@ globus_xio_driver_operation_create(
 }
 
 globus_result_t
+globus_i_xio_driver_dd_cntl(
+    globus_i_xio_op_t *                     op,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    va_list                                 ap)
+{
+    globus_result_t                         res;
+    int                                     ndx;
+    int                                     ctr;
+    globus_i_xio_op_t *                     op;
+    va_list                                 ap;
+    GlobusXIOName(globus_i_xio_driver_dd_cntl);
+
+    GlobusXIODebugEnter();
+
+    if(driver != NULL)
+    {
+        ndx = -1;
+        for(ctr = 0; ctr < op->stack_size && ndx == -1; ctr++)
+        {
+            if(driver == op->_op_context->entry[ctr].driver)
+            {
+                if(op->entry[ctr].dd == NULL)
+                {
+                    res = op->_op_context->entry[ctr].driver->attr_init_func(
+                            &op->entry[ctr].dd);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        goto err;
+                    }
+                }
+                ndx = ctr;
+            }
+        }
+        if(ndx == -1)
+        {
+            res = GlobusXIOErrorInvalidDriver("not found");
+            goto err;
+        }
+
+        if(op->_op_context->entry[ndx].driver->attr_cntl_func)
+        {
+            res = op->_op_context->entry[ndx].driver->attr_cntl_func(
+                    op->entry[ndx].dd,
+                    cmd,
+                    ap);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+        else
+        {
+            res = GlobusXIOErrorInvalidDriver("driver doesn't support dd cntl");
+            goto err;
+        }
+    }
+    else
+    {
+    }
+    GlobusXIODebugExit();
+
+    return GLOBUS_SUCCESS;
+  err:
+
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
+globus_result_t
+globus_xio_driver_data_descriptor_cntl(
+    globus_xio_operation_t                  op,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    ...)
+{
+    globus_result_t                         res;
+    va_list                                 ap;
+    GlobusXIOName(globus_xio_driver_data_descriptor_cntl);
+
+    GlobusXIODebugEnter();
+
+    if(op == NULL)
+    {
+        res = GlobusXIOErrorParameter("op");
+        goto err;
+    }
+
+#   ifdef HAVE_STDARG_H
+    {
+        va_start(ap, cmd);
+    }
+#   else
+    {
+        va_start(ap);
+    }
+#   endif
+
+    res = globus_i_xio_driver_dd_cntl(op, driver, cmd, ap);
+
+    va_end(ap);
+
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    GlobusXIODebugExit();
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
+globus_result_t
+globus_i_xio_driver_handle_cntl(
+    globus_i_xio_context_t *                context,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    va_list                                 ap)
+{
+    globus_result_t                         res;
+    int                                     ctr;
+    int                                     ndx;
+    GlobusXIOName(globus_i_xio_driver_handle_cntl);
+
+    GlobusXIODebugEnter();
+
+    if(context == NULL)
+    {
+        res = GlobusXIOErrorParameter("conext");
+        goto err;
+    }
+
+    if(driver != NULL)
+    {
+        ndx = -1;
+        for(ctr = 0; ctr < context->stack_size && ndx == -1; ctr++)
+        {
+            if(driver == context->entry[ctr].driver)
+            {
+                res = context->entry[ctr].driver->handle_cntl_func(
+                        context->entry[ctr].driver_handle,
+                        cmd,
+                        ap);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto err;
+                }
+                ndx = ctr;
+            }
+        }
+        if(ndx == -1)
+        {
+            /* throw error */
+            res = GlobusXIOErrorInvalidDriver("not found");
+            goto err;
+        }
+    }
+    else
+    {
+        /* do general settings */
+    }
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
+globus_result_t
+globus_xio_driver_handle_cntl(
+    globus_xio_operation_t                  op,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    ...)
+{
+    globus_result_t                         res;
+    va_list                                 ap;
+    globus_i_xio_context_t *                context;
+    GlobusXIOName(globus_xio_driver_handle_cntl);
+
+    GlobusXIODebugEnter();
+
+    if(op == NULL)
+    {
+        res = GlobusXIOErrorParameter("op");
+        goto err;
+    }
+    context = op->_op_context;
+    if(context == NULL)
+    {
+        res = GlobusXIOErrorParameter("op");
+        goto err;
+    }
+#   ifdef HAVE_STDARG_H
+    {
+        va_start(ap, cmd);
+    }
+#   else
+    {
+        va_start(ap);
+    }
+#   endif
+
+    res = globus_i_xio_driver_handle_cntl(context, driver, cmd, ap);
+    va_end(ap);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
+globus_result_t
 globus_xio_driver_operation_cancel(
     globus_xio_operation_t                  operation)
 {

@@ -256,7 +256,7 @@ globus_xio_driver_open_delivered(
             /* this happens when the open fails and the user calls close */
             case GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING:
                 GlobusXIOContextStateChange(my_context,
-                    GLOBUS_XIO_CONTEXT_STATE_CLOSED);
+                    GLOBUS_XIO_CONTEXT_STATE_CLOSING);
                 close_kickout = GLOBUS_TRUE;
                 if(!my_context->close_started &&
                     my_context->close_op != NULL)
