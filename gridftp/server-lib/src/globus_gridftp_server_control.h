@@ -332,11 +332,6 @@ globus_gridftp_server_control_attr_set_auth(
     globus_gridftp_server_control_auth_callback_t   auth_cb);
 
 globus_result_t
-globus_gridftp_server_control_attr_set_error(
-    globus_gridftp_server_control_attr_t            server_attr,
-    globus_gridftp_server_control_callback_t        error_cb);
-
-globus_result_t
 globus_gridftp_server_control_attr_set_done(
     globus_gridftp_server_control_attr_t            server_attr,
     globus_gridftp_server_control_callback_t        done_cb);
@@ -351,7 +346,7 @@ globus_gridftp_server_control_attr_add_recv(
     globus_gridftp_server_control_transfer_func_t   recv_func);
 
 globus_result_t
-globus_gridftp_server_attr_add_send(
+globus_gridftp_server_control_attr_add_send(
     globus_gridftp_server_control_attr_t            in_attr,
     const char *                                    module_name,
     globus_gridftp_server_control_transfer_func_t   send_func);
