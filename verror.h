@@ -1,7 +1,8 @@
 /*
  * verror.h
  *
- * Simple error-handling interface. Won't work with multi-threaded.
+ * Simple error-handling interface for MyProxy API.
+ * Won't work with multi-threaded.
  */
 #ifndef __VERROR_H
 #define __VERROR_H
