@@ -48,15 +48,16 @@ typedef struct
     long                                module_ref;
     globus_module_descriptor_t *        module;
     lt_dlhandle                         dlhandle;
-} globus_l_extension_handle_t;
+} globus_l_extension_module_t;
 
-typedef struct
+typedef struct globus_l_extension_handle_s
 {
-    globus_l_extension_handle_t *       owner;
+    globus_l_extension_module_t *       owner;
+    globus_hashtable_t *                table;
     char *                              symbol;
     void *                              datum;
     long                                ref;
-} globus_l_registry_entry_t;
+} globus_l_extension_handle_t;
 
 static globus_thread_key_t              globus_l_extension_owner_key;
 static globus_thread_key_t              globus_l_libtool_key;
@@ -161,7 +162,7 @@ error_dlinit:
 static
 void
 globus_l_extension_shutdown_extension(
-    globus_l_extension_handle_t *       handle,
+    globus_l_extension_module_t *       handle,
     globus_bool_t                       in_proxy)
 {
     globus_module_descriptor_t *        module;
@@ -215,11 +216,11 @@ globus_l_extension_deactivate_proxy(
     globus_module_descriptor_t *        module,
     void *                              user_arg)
 {
-    globus_l_extension_handle_t *       handle;
+    globus_l_extension_module_t *       handle;
     GlobusFuncName(globus_l_extension_deactivate_proxy);
     
     GlobusExtensionDebugEnter();
-    handle = (globus_l_extension_handle_t *) user_arg;
+    handle = (globus_l_extension_module_t *) user_arg;
     
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
@@ -232,22 +233,12 @@ globus_l_extension_deactivate_proxy(
     return GLOBUS_SUCCESS;
 }
 
-/**
- * Search order:
- *  - <extension_name> in mappings hash
- *      - mapped name in builtin hash
- *      - mapped name in dll hash
- *      - load mapped name
- *  - <extension_name> in builtin hash
- *  - lib<extension_name>_<build_flavor> in dll hash
- *  - load lib<extension_name>_<build_flavor>
- */
 int
 globus_extension_activate(
     const char *                        extension_name)
 {
-    globus_l_extension_handle_t *       handle;
-    globus_l_extension_handle_t *       last_handle;
+    globus_l_extension_module_t *       handle;
+    globus_l_extension_module_t *       last_handle;
     char                                library[1024];
     const char *                        dlerror;
     int                                 rc;
@@ -266,12 +257,12 @@ globus_extension_activate(
     
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
-        handle = (globus_l_extension_handle_t *)
+        handle = (globus_l_extension_module_t *)
             globus_hashtable_lookup(&globus_l_extension_dlls, library);
         if(!handle)
         {
-            handle = (globus_l_extension_handle_t *)
-                globus_malloc(sizeof(globus_l_extension_handle_t));
+            handle = (globus_l_extension_module_t *)
+                globus_malloc(sizeof(globus_l_extension_module_t));
             if(!handle)
             {
                 goto error_alloc;
@@ -312,7 +303,7 @@ globus_extension_activate(
             globus_hashtable_insert(
                 &globus_l_extension_dlls, handle->library_name, handle);
                 
-            last_handle = (globus_l_extension_handle_t *)
+            last_handle = (globus_l_extension_module_t *)
                 globus_thread_getspecific(globus_l_extension_owner_key);
             globus_thread_setspecific(globus_l_extension_owner_key, handle);
             
@@ -357,7 +348,7 @@ int
 globus_extension_deactivate(
     const char *                        extension_name)
 {
-    globus_l_extension_handle_t *       handle;
+    globus_l_extension_module_t *       handle;
     char                                library[1024];
     GlobusFuncName(globus_extension_deactivate);
     
@@ -374,7 +365,7 @@ globus_extension_deactivate(
     
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
-        handle = (globus_l_extension_handle_t *)
+        handle = (globus_l_extension_module_t *)
             globus_hashtable_lookup(&globus_l_extension_dlls, library);
         if(!handle)
         {
@@ -405,27 +396,28 @@ globus_extension_registry_add(
     const char *                        symbol,
     void *                              data)
 {
-    globus_l_extension_handle_t *       owner;
-    globus_l_registry_entry_t *         entry;
+    globus_l_extension_module_t *       owner;
+    globus_l_extension_handle_t *       entry;
     GlobusFuncName(globus_extension_registry_add);
     
     GlobusExtensionDebugEnter();
     
-    owner = (globus_l_extension_handle_t *)
+    owner = (globus_l_extension_module_t *)
         globus_thread_getspecific(globus_l_extension_owner_key);
     if(!owner || !data || !symbol || !registry)
     {
         goto error_not_extension;
     }
     
-    entry = (globus_l_registry_entry_t *)
-        globus_malloc(sizeof(globus_l_registry_entry_t));
+    entry = (globus_l_extension_handle_t *)
+        globus_malloc(sizeof(globus_l_extension_handle_t));
     if(!entry)
     {
         goto error_malloc;
     }
     
     entry->owner = owner;
+    entry->table = &registry->table;
     entry->datum = data;
     entry->ref = 1;
     entry->symbol = globus_libc_strdup(symbol);
@@ -478,7 +470,7 @@ globus_extension_registry_remove(
     globus_extension_registry_t *       registry,
     const char *                        symbol)
 {
-    globus_l_registry_entry_t *         entry;
+    globus_l_extension_handle_t *       entry;
     void *                              datum = NULL;
     GlobusFuncName(globus_extension_registry_remove);
     
@@ -488,7 +480,7 @@ globus_extension_registry_remove(
     {
         if(registry->initialized)
         {
-            entry = (globus_l_registry_entry_t *)
+            entry = (globus_l_extension_handle_t *)
                 globus_hashtable_lookup(&registry->table, (void *) symbol);
             if(entry && entry->datum)
             {
@@ -510,27 +502,41 @@ globus_extension_registry_remove(
 }
 
 void *
-globus_extension_registry_get(
+globus_extension_lookup(
+    globus_extension_handle_t *         handle,
     globus_extension_registry_t *       registry,
     const char *                        symbol)
 {
-    globus_l_registry_entry_t *         entry;
+    globus_l_extension_handle_t *       entry;
     void *                              datum = NULL;
     GlobusFuncName(globus_extension_registry_get);
     
     GlobusExtensionDebugEnter();
     
+    if(!handle)
+    {
+        goto error_param;
+    }
+    
+    *handle = NULL;
+    if(!registry || !symbol)
+    {
+        goto error_param;
+    }
+    
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
         if(registry->initialized)
         {
-            entry = (globus_l_registry_entry_t *)
+            entry = (globus_l_extension_handle_t *)
                 globus_hashtable_lookup(&registry->table, (void *) symbol);
             if(entry && entry->datum)
             {
                 datum = entry->datum;
                 entry->ref++;
                 entry->owner->ref++;
+                
+                *handle = entry;
             }
         }
     }
@@ -538,43 +544,43 @@ globus_extension_registry_get(
     
     GlobusExtensionDebugExit();
     return datum;
+
+error_param:
+    GlobusExtensionDebugExitWithError();
+    return NULL;
 }
 
 void
-globus_extension_registry_put(
-    globus_extension_registry_t *       registry,
-    const char *                        symbol)
+globus_extension_release(
+    globus_extension_handle_t           handle)
 {
-    globus_l_registry_entry_t *         entry;
-    globus_l_extension_handle_t *       owner = NULL;
+    globus_l_extension_handle_t *       entry;
+    globus_l_extension_module_t *       owner = NULL;
     GlobusFuncName(globus_extension_registry_put);
     
     GlobusExtensionDebugEnter();
     
+    entry = handle;
+    
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
-        if(registry->initialized)
+        if(entry)
         {
-            entry = (globus_l_registry_entry_t *)
-                globus_hashtable_lookup(&registry->table, (void *) symbol);
-            if(entry)
+            if(--entry->owner->ref == 0)
             {
-                if(--entry->owner->ref == 0)
-                {
-                    owner = entry->owner;
-                }
-                
-                if(--entry->ref == 0)
-                {
-                    globus_hashtable_remove(&registry->table, (void *) symbol);
-                    globus_free(entry->symbol);
-                    globus_free(entry);
-                }
-                
-                if(owner)
-                {
-                    globus_l_extension_shutdown_extension(owner, GLOBUS_FALSE);
-                }
+                owner = entry->owner;
+            }
+            
+            if(--entry->ref == 0)
+            {
+                globus_hashtable_remove(entry->table, entry->symbol);
+                globus_free(entry->symbol);
+                globus_free(entry);
+            }
+            
+            if(owner)
+            {
+                globus_l_extension_shutdown_extension(owner, GLOBUS_FALSE);
             }
         }
     }
