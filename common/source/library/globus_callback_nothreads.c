@@ -127,7 +127,7 @@ globus_l_callback_blocked_cb(
 {
     globus_l_callback_restart_info_t *  restart_info;
     
-    restart_info = (globus_l_thread_restart_info_t *) user_args;
+    restart_info = (globus_l_callback_restart_info_t *) user_args;
     
     if(restart_info && !restart_info->restarted)
     {

@@ -1303,7 +1303,7 @@ globus_callback_space_poll(
         return;
     }        
         
-    last_restart_info = (globus_l_thread_restart_info_t *)
+    last_restart_info = (globus_l_callback_restart_info_t *)
         globus_thread_getspecific(globus_l_callback_restart_info_key);
     globus_thread_setspecific(
         globus_l_callback_restart_info_key, &restart_info);
@@ -1464,7 +1464,7 @@ globus_callback_signal_poll()
 {
     globus_l_callback_restart_info_t *  restart_info;
     
-    restart_info = (globus_l_thread_restart_info_t *)
+    restart_info = (globus_l_callback_restart_info_t *)
         globus_thread_getspecific(globus_l_callback_restart_info_key);
         
     if(restart_info)
@@ -1493,7 +1493,7 @@ globus_l_callback_blocked_cb(
 {
     globus_l_callback_restart_info_t *  restart_info;
     
-    restart_info = (globus_l_thread_restart_info_t *) user_args;
+    restart_info = (globus_l_callback_restart_info_t *) user_args;
     
     if(restart_info && !restart_info->restarted)
     {
@@ -1887,7 +1887,7 @@ globus_callback_space_get(
             "globus_callback_space_get", "space");
     }
     
-    restart_info = (globus_l_thread_restart_info_t *)
+    restart_info = (globus_l_callback_restart_info_t *)
         globus_thread_getspecific(globus_l_callback_restart_info_key);
         
     if(!restart_info)
@@ -1914,7 +1914,7 @@ globus_callback_get_timeout(
     globus_abstime_t                    time_now;
     globus_l_callback_restart_info_t *  restart_info;
     
-    restart_info = (globus_l_thread_restart_info_t *)
+    restart_info = (globus_l_callback_restart_info_t *)
         globus_thread_getspecific(globus_l_callback_restart_info_key);
         
     if(!restart_info || globus_time_abstime_is_infinity(restart_info->timeout))
@@ -1954,7 +1954,7 @@ globus_callback_has_time_expired()
     globus_abstime_t                    time_now;
     globus_l_callback_restart_info_t *  restart_info;
     
-    restart_info = (globus_l_thread_restart_info_t *)
+    restart_info = (globus_l_callback_restart_info_t *)
         globus_thread_getspecific(globus_l_callback_restart_info_key);
 
     if(!restart_info || globus_time_abstime_is_infinity(restart_info->timeout))
@@ -1977,7 +1977,7 @@ globus_callback_was_restarted()
 {
     globus_l_callback_restart_info_t *  restart_info;
     
-    restart_info = (globus_l_thread_restart_info_t *)
+    restart_info = (globus_l_callback_restart_info_t *)
         globus_thread_getspecific(globus_l_callback_restart_info_key);
         
     return restart_info
