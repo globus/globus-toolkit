@@ -81,7 +81,10 @@ typedef enum
     /** Accept delegation-at-any-time process */
     GLOBUS_XIO_GSI_ACCEPT_DELEGATION,
     /** Accept delegation-at-any-time process */
-    GLOBUS_XIO_GSI_REGISTER_ACCEPT_DELEGATION
+    GLOBUS_XIO_GSI_REGISTER_ACCEPT_DELEGATION,
+    /** Set with target cntl. Behave as though this was a server
+     * (accept delegation) pass a boolean */
+    GLOBUS_XIO_GSI_FORCE_SERVER_MODE
 } globus_xio_gsi_cmd_t;
 
 /**

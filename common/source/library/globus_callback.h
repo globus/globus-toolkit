@@ -786,6 +786,20 @@ globus_callback_space_get(
     globus_callback_space_t *           space);
 
 /**
+ * Retrieve the current nesting level of a space
+ *
+ * @param space
+ *        The space to query.
+ *
+ * @return
+ *      - the current nesting level
+ *      - -1 on invalid space
+ */
+int
+globus_callback_space_get_depth(
+    globus_callback_space_t             space);
+
+/**
  * See if the specified space is a single threaded behavior space 
  *
  * @param space

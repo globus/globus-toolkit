@@ -7,12 +7,6 @@
 #endif
 
 static
-globus_result_t
-globus_l_xio_http_client_write_request(
-    globus_xio_operation_t              op,
-    globus_i_xio_http_handle_t *        http_handle);
-
-static
 void
 globus_l_xio_http_client_write_request_callback(
     globus_xio_operation_t              op,
@@ -68,12 +62,10 @@ globus_i_xio_http_client_open_callback(
     void *                              user_arg)
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
-    globus_xio_driver_handle_t          handle;
     globus_result_t                     result2;
 
     globus_mutex_lock(&http_handle->mutex);
 
-    handle = http_handle->handle;
     if (result != GLOBUS_SUCCESS)
     {
         http_handle->send_state = GLOBUS_XIO_HTTP_CLOSE;
@@ -81,7 +73,7 @@ globus_i_xio_http_client_open_callback(
         goto error_exit;
     }
 
-    result = globus_l_xio_http_client_write_request(op, http_handle);
+    result = globus_i_xio_http_client_write_request(op, http_handle);
 
     if (result != GLOBUS_SUCCESS)
     {
@@ -133,7 +125,6 @@ destroy_handle_exit:
         http_handle = NULL;
     }
     globus_xio_driver_finished_open(
-            handle,
             http_handle,
             op,
             result);
@@ -164,9 +155,8 @@ destroy_handle_exit:
  * @retval GLOBUS_XIO_ERROR_MEMORY
  *     Unable to compose or write the request because of memory constraints.
  */
-static
 globus_result_t
-globus_l_xio_http_client_write_request(
+globus_i_xio_http_client_write_request(
     globus_xio_operation_t              op,
     globus_i_xio_http_handle_t *        http_handle)
 {
@@ -235,6 +225,7 @@ globus_l_xio_http_client_write_request(
     }
     else
     {
+        http_handle->request_info.http_version = GLOBUS_XIO_HTTP_VERSION_1_1;
         str = " HTTP/1.1\r\n";
     }
     GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs, str, strlen(str), free_iovecs_exit);
@@ -400,7 +391,7 @@ free_iovecs_exit:
 error_exit:
     return result;
 }
-/* globus_l_xio_http_client_write_request() */
+/* globus_i_xio_http_client_write_request() */
 
 /**
  * Request Written Callback 
@@ -453,19 +444,35 @@ globus_l_xio_http_client_write_request_callback(
         goto error_exit;
     }
 
-    /* This may have to be different if we have persistent connections */
-    http_handle->read_buffer.iov_len = GLOBUS_XIO_HTTP_CHUNK_SIZE;
-    http_handle->read_buffer.iov_base = globus_libc_malloc(
-            GLOBUS_XIO_HTTP_CHUNK_SIZE);
-
-    http_handle->read_iovec.iov_base = http_handle->read_buffer.iov_base;
-    http_handle->read_iovec.iov_len = http_handle->read_buffer.iov_len;
-
+    /*
+     * First time we use a connection with a handle, we allocate a buffer,
+     * later on we just reuse after shifting offset to catch already read
+     * bits
+     */
     if (http_handle->read_buffer.iov_base == NULL)
     {
-        result = GlobusXIOErrorMemory("read_buffer");
+        http_handle->read_buffer.iov_len = GLOBUS_XIO_HTTP_CHUNK_SIZE;
+        http_handle->read_buffer.iov_base = globus_libc_malloc(
+                GLOBUS_XIO_HTTP_CHUNK_SIZE);
 
-        goto destroy_op_exit;
+        http_handle->read_iovec.iov_base = http_handle->read_buffer.iov_base;
+        http_handle->read_iovec.iov_len = http_handle->read_buffer.iov_len;
+
+        if (http_handle->read_buffer.iov_base == NULL)
+        {
+            result = GlobusXIOErrorMemory("read_buffer");
+
+            goto destroy_op_exit;
+        }
+    }
+    else
+    {
+        result = globus_i_xio_http_clean_read_buffer(http_handle);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto destroy_op_exit;
+        }
     }
 
     http_handle->parse_state = GLOBUS_XIO_HTTP_STATUS_LINE;
@@ -500,7 +507,6 @@ globus_l_xio_http_client_write_request_callback(
     globus_mutex_unlock(&http_handle->mutex);
 
     globus_xio_driver_finished_open(
-            http_handle->handle,
             http_handle,
             op,
             result);
@@ -518,7 +524,6 @@ error_exit:
     globus_mutex_unlock(&http_handle->mutex);
 
     globus_xio_driver_finished_open(
-            http_handle->handle,
             http_handle,
             op,
             result);
@@ -590,7 +595,10 @@ globus_l_xio_http_client_read_response_callback(
      */
     if (http_handle->read_operation.operation != NULL)
     {
-        result = globus_i_xio_http_parse_residue(http_handle);
+        if (result == GLOBUS_SUCCESS)
+        {
+            result = globus_i_xio_http_parse_residue(http_handle);
+        }
 
         if (http_handle->read_operation.wait_for <= 0
                 || result != GLOBUS_SUCCESS)

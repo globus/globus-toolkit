@@ -15,7 +15,7 @@ CHECK_NEED_LNSL
 
 CHECK_NEED_LSOCKET
 
-GPT_SET_LIBS(["$EXTERNAL_LIBS"])
+GPT_SET_LIBS(["$EXTERNAL_LIBS -lm"])
 
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)

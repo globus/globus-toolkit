@@ -1,6 +1,18 @@
 include makefile_header
 
-all: globus-xio-telnet globus-xio-email globus-xio-udp-echo globus-xio-http-app
+all:  globus-xio-client globus-xio-server globus-xio-example globus-xio-telnet
+
+ftp: globus-xio-ftp-client globus-xio-ftp-server
+
+globus-xio-ftp-client: globus_xio_ftp_client.c
+	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-ftp-client \
+        globus_xio_ftp_client.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS)              \
+        $(GLOBUS_PKG_LIBS)
+
+globus-xio-ftp-server: globus_xio_ftp_server.c
+	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-ftp-server \
+        globus_xio_ftp_server.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS)              \
+        $(GLOBUS_PKG_LIBS)
 
 globus-xio-client: globus_xio_client.c
 	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-client \
@@ -31,4 +43,5 @@ globus-xio-http-app: globus_xio_http_app.c
 	globus_xio_http_app.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS) $(GLOBUS_PKG_LIBS)
 
 clean:
-	rm globus-xio-email globus-xio-telnet globus-xio-udp-echo globus-xio-http-app globus-xio-server globus-xio-client
+	rm globus-xio-email globus-xio-telnet globus-xio-udp-echo globus-xio-http-app globus-xio-server globus-xio-client globus-xio-ftp-client globus-xio-ftp-server
+

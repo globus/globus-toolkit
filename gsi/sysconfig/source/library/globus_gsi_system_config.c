@@ -6245,7 +6245,6 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
         
         if(full_filename_path == NULL)
         {
-            globus_free(tmp_entry);
             while((full_filename_path =
                    (char *) globus_fifo_dequeue(ca_cert_list)) != NULL)
             {

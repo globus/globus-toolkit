@@ -7,13 +7,11 @@ SUBDIRS=\
 Sources= \
     globus_gridftp_server_control.c                     \
 	globus_gridftp_server_control_attr.c                \
-    globus_gridftp_server_control_pmod_959_cmd.c        \
-    globus_gridftp_server_control_pmod_959.c
+    globus_gridftp_server_control_accessors.c        \
+    globus_gridftp_server_control_commands.c
 
 flavorinclude_HEADERS =                         \
     globus_i_gridftp_server_control.h           \
-    globus_gridftp_server_control_pmod.h        \
-    globus_gridftp_server_control_pmod_959.h    \
     globus_gridftp_server_control.h
 
 lib_LTLIBRARIES = libglobus_gridftp_server_control_$(GLOBUS_FLAVOR_NAME).la

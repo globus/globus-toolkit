@@ -69,7 +69,7 @@ globus_i_xio_http_handle_init(
     else
     {
         http_handle->parse_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
-        http_handle->parse_state = GLOBUS_XIO_HTTP_STATUS_LINE;
+        http_handle->send_state = GLOBUS_XIO_HTTP_STATUS_LINE;
     }
 
     if (result != GLOBUS_SUCCESS)
@@ -121,6 +121,90 @@ error_exit:
 }
 /* globus_i_xio_http_handle_init() */
 
+globus_result_t
+globus_i_xio_http_handle_reinit(
+    globus_i_xio_http_handle_t *        http_handle,
+    globus_i_xio_http_attr_t *          http_attr,
+    globus_i_xio_http_target_t *        http_target)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_i_xio_http_handle_reinit);
+
+    if (http_target && http_target->is_client && http_attr != NULL)
+    {
+        globus_i_xio_http_request_destroy(&http_handle->request_info);
+
+        result = globus_i_xio_http_request_copy(
+                &http_handle->request_info,
+                &http_attr->request);
+    }
+    else
+    {
+        globus_i_xio_http_request_destroy(&http_handle->request_info);
+        result = globus_i_xio_http_request_init(&http_handle->request_info);
+    }
+
+    if (http_target && http_target->is_client)
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
+    }
+    else
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_STATUS_LINE;
+    }
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto free_mutex_exit;
+    }
+
+    globus_i_xio_http_response_destroy(&http_handle->response_info);
+    result = globus_i_xio_http_response_init(&http_handle->response_info);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto free_request_exit;
+    }
+    if (http_attr != NULL)
+    {
+        http_handle->response_info.callback = http_attr->request_callback;
+        http_handle->response_info.callback_arg
+            = http_attr->request_callback_arg;
+    }
+
+    globus_i_xio_http_target_destroy_internal(&http_handle->target_info);
+    if (http_target)
+    {
+        result = globus_i_xio_http_target_copy(
+                &http_handle->target_info,
+                http_target);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto free_response_exit;
+        }
+    }
+    http_handle->header_iovec = NULL;
+    http_handle->header_iovcnt = 0;
+    http_handle->close_operation = NULL;
+    http_handle->read_operation.iov = NULL;
+    http_handle->read_operation.iovcnt = 0;
+    http_handle->read_operation.operation = NULL;
+    http_handle->read_operation.nbytes = 0;
+    http_handle->write_operation.iov = NULL;
+    http_handle->write_operation.iovcnt = 0;
+    http_handle->write_operation.operation = NULL;
+    http_handle->write_operation.nbytes = 0;
+    http_handle->user_close = GLOBUS_FALSE;
+
+    return GLOBUS_SUCCESS;
+
+free_response_exit:
+    globus_i_xio_http_response_destroy(&http_handle->response_info);
+free_request_exit:
+    globus_i_xio_http_request_destroy(&http_handle->request_info);
+free_mutex_exit:
+    globus_mutex_destroy(&http_handle->mutex);
+    return result;
+}
 /**
  * Destroy an HTTP handle
  * @ingroup globus_i_xio_http_handle
@@ -405,6 +489,14 @@ globus_l_xio_http_write_eof_callback(
     {
         result = globus_i_xio_http_close_internal(http_handle);
     }
+    else if ((! http_handle->target_info.is_client) &&
+             (! http_handle->response_info.headers.connection_close) &&
+             (  http_handle->response_info.http_version ==
+                    GLOBUS_XIO_HTTP_VERSION_1_1))
+    {
+        globus_i_xio_http_server_read_next_request(http_handle);
+    }
+
     globus_mutex_unlock(&http_handle->mutex);
 
     return;

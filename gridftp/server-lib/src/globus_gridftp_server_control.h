@@ -5,7 +5,7 @@
 #include "globus_common.h"
 #include "globus_gss_assist.h"
 
-typedef struct globus_i_gsc_server_s *      
+typedef struct globus_i_gsc_server_handle_s *
     globus_gridftp_server_control_t;
 typedef struct globus_i_gsc_attr_s *        
     globus_gridftp_server_control_attr_t;
@@ -175,7 +175,7 @@ typedef enum globus_gridftp_server_control_event_type_e
  *  globus_gridftp_server_control_finished_auth() with the appropriate values.
  */
 typedef void
-(*globus_gridftp_server_control_auth_callback_t)(
+(*globus_gridftp_server_control_auth_cb_t)(
     globus_gridftp_server_control_operation_t       op,
     const char *                                    user_name,
     const char *                                    pw,
@@ -230,7 +230,7 @@ typedef void
  *  parameters.
  */
 typedef void
-(*globus_gridftp_server_control_resource_callback_t)(
+(*globus_gridftp_server_control_resource_cb_t)(
     globus_gridftp_server_control_operation_t       op,
     const char *                                    path,
     globus_gridftp_server_control_resource_mask_t   mask);
@@ -246,6 +246,32 @@ typedef void
     const char *                                    local_target,
     const char *                                    mod_name,
     const char *                                    mod_parms);
+
+typedef void
+(*globus_gridftp_server_control_abort_func_t)(
+    globus_gridftp_server_control_operation_t       op,
+    void *                                          user_arg);
+
+/*
+ *  action callbacks
+ */
+
+/* 
+ *  used for DELE, MKD, RMD
+ */
+typedef void
+(*globus_gridftp_server_control_action_func_t)(
+    globus_gridftp_server_control_operation_t       op,
+    const char *                                    path);
+
+/* 
+ *  RNFR & RNTO
+ */
+typedef void
+(*globus_gridftp_server_control_move_func_t)(
+    globus_gridftp_server_control_operation_t       op,
+    const char *                                    from_path,
+    const char *                                    to_path);
 
 /**
  *  data connection interface functions
@@ -336,17 +362,37 @@ globus_gridftp_server_control_attr_copy(
 globus_result_t
 globus_gridftp_server_control_attr_set_resource(
     globus_gridftp_server_control_attr_t            in_attr,
-    globus_gridftp_server_control_resource_callback_t resource_cb);
+    globus_gridftp_server_control_resource_cb_t     resource_cb);
 
 globus_result_t
 globus_gridftp_server_control_attr_set_auth(
     globus_gridftp_server_control_attr_t            in_attr,
-    globus_gridftp_server_control_auth_callback_t   auth_cb);
+    globus_gridftp_server_control_auth_cb_t         auth_cb);
 
 globus_result_t
 globus_gridftp_server_control_attr_set_done(
     globus_gridftp_server_control_attr_t            server_attr,
     globus_gridftp_server_control_callback_t        done_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_move(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_move_func_t       move_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_delete(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     delete_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_mkdir(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     mkdir_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_rmdir(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     rmdir_cb);
 
 /*
  *  if module name is NULL then it is the default handler
@@ -429,6 +475,7 @@ globus_gridftp_server_control_start(
     globus_gridftp_server_control_t                 server,
     globus_gridftp_server_control_attr_t            attr,
     globus_xio_handle_t                             xio_handle,
+    globus_gridftp_server_control_callback_t        done_cb,
     void *                                          user_arg);
 
 /**
@@ -441,9 +488,7 @@ globus_gridftp_server_control_start(
  */
 globus_result_t
 globus_gridftp_server_control_stop(
-    globus_gridftp_server_control_t                 server,
-    globus_gridftp_server_control_callback_t        done_callback,
-    void *                                          user_arg);
+    globus_gridftp_server_control_t                 server);
 
 /*
  *  setters and getters

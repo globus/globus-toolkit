@@ -11,7 +11,7 @@ sub run_test
     my $cmd=(shift);
     my $test_str=(shift);
     my ($errors,$rc) = ("",0);
-    my $output_dir=$ENV{'xio-test-output-dir'};
+    my $output_dir=$ENV{'XIO_TEST_OUPUT_DIR'};
 
     # delete the output dir if it exists
     $rc = system("mkdir -p $output_dir");
@@ -21,10 +21,28 @@ sub run_test
     $rc = system("rm -f $output_dir/$test_str.out");
 
     $ENV{"INSURE_REPORT_FILE_NAME"} = "$output_dir/$test_str.insure";
-    $ENV{"GLOBUS_XIO_DEBUG"} = "127,#$output_dir/$test_str.dbg,1";
-    $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "2";
+    if(!defined($ENV{"XIO_TEST_NO_DEBUG"}))
+    {
+        $ENV{"GLOBUS_XIO_DEBUG"} = "ALL,#$output_dir/$test_str.dbg,1";
+    }
+    if(!defined($ENV{"GLOBUS_CALLBACK_POLLING_THREADS"}))
+    {
+        $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "2";
+    }
 
     my $command = "$cmd > $output_dir/$test_str.out 2> $output_dir/$test_str.err";
+    if(defined($ENV{"XIO_TEST_EF"}))
+    {
+        $command = "ef $command";
+    }
+    elsif(defined($ENV{"XIO_TEST_VALGRIND"}))
+    {
+        $ENV{"VALGRIND_OPTS"} = "-q --error-limit=no --num-callers=10 " .
+            "--profile=no --leak-check=yes --leak-resolution=med " .
+            "--freelist-vol=10000000 --logfile=$output_dir/$test_str.valgrind";
+        $command = "valgrind $command";
+    }
+
     $rc = system($command);
     if($rc != 0)
     {

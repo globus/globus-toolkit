@@ -44,7 +44,7 @@ sub basic_func
         $ENV{'X509_USER_PROXY'} = "/dev/null";
     }
     my $command = "$test_exec -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if(($use_proxy && $rc != 0) || (!$use_proxy && $rc == 0))
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -93,7 +93,7 @@ sub bad_url_src
     unlink('core');
 
     my $command = "$test_exec -s gsiftp://$source_host/no-such-file-here -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 2)
     {
         $errors .= "\n# Test exited with $rc.";
@@ -125,7 +125,7 @@ sub bad_url_dest
     my ($errors,$rc) = ("",0);
 
     my $command = "$test_exec -s gsiftp://$source_host$source_file -d gsiftp://$dest_host/no-such-file-here >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 2)
     {
         $errors .= "\n# Test exited with $rc.";
@@ -160,7 +160,7 @@ sub abort_test
     unlink('core');
 
     my $command = "$test_exec -a $abort_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
@@ -196,7 +196,7 @@ sub restart_test
     unlink('core');
 
     my $command = "$test_exec -r $restart_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";

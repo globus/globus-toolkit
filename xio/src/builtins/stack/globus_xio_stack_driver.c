@@ -1,6 +1,5 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_stack_driver.h"
 
@@ -24,16 +23,16 @@ globus_module_descriptor_t  globus_i_xio_stack_module =
 
 typedef struct globus_l_xio_stack_info_s
 {
-    globus_xio_driver_t                     debug_driver;
-    globus_xio_driver_t                     test_driver;
+    globus_xio_driver_t                 debug_driver;
+    globus_xio_driver_t                 test_driver;
 } globus_l_xio_stack_info_t;
 
 static globus_result_t
 globus_l_xio_stack_push(
-    globus_xio_driver_t                     driver,
-    globus_xio_stack_t                      stack)
+    globus_xio_driver_t                 driver,
+    globus_xio_stack_t                  stack)
 {
-    globus_l_xio_stack_info_t *             stack_info;
+    globus_l_xio_stack_info_t *         stack_info;
 
     globus_xio_driver_get_user_data(driver, (void **)&stack_info);
 
@@ -77,6 +76,7 @@ globus_l_xio_stack_load(
         NULL,
         NULL,
         NULL,
+        NULL,
         NULL);
 
     *out_driver = driver;
@@ -94,6 +94,7 @@ globus_l_xio_stack_unload(
 
     globus_xio_driver_unload(stack_info->debug_driver);
     globus_xio_driver_unload(stack_info->test_driver);
+    globus_free(stack_info);
     globus_xio_driver_destroy(driver);
 }
 

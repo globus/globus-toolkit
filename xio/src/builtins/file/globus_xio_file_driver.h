@@ -22,14 +22,21 @@ typedef enum
     GLOBUS_XIO_FILE_SET_FLAGS,
     /* int *                            flags)out */
     GLOBUS_XIO_FILE_GET_FLAGS,
-    
-    /**
-     * target attrs 
-     */
     /* globus_xio_system_handle_t       handle */
     GLOBUS_XIO_FILE_SET_HANDLE,
+    
+    /**
+     * handle attr/cntl
+     */
     /* globus_xio_system_handle_t *     handle_out */
-    GLOBUS_XIO_FILE_GET_HANDLE
+    GLOBUS_XIO_FILE_GET_HANDLE,
+    
+    /**
+     * handle cntl
+     */
+    /* globus_off_t *                   in_out_offset */
+    /* globus_xio_file_whence_t         whence */
+    GLOBUS_XIO_FILE_SEEK
 } globus_xio_file_attr_cmd_t;
 
 typedef enum
@@ -65,13 +72,6 @@ typedef enum
     GLOBUS_XIO_FILE_IWGRP               = S_IWGRP,
     GLOBUS_XIO_FILE_IXGRP               = S_IXGRP
 } globus_xio_file_mode_t;
-
-typedef enum
-{
-    /* globus_off_t *                   in_out_offset */
-    /* globus_xio_file_whence_t         whence */
-    GLOBUS_XIO_FILE_SEEK
-} globus_xio_file_cntl_cmd_t;
 
 typedef enum
 {

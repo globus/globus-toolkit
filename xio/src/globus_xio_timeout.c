@@ -2,21 +2,21 @@
 
 typedef struct globus_i_xio_timer_entry_s
 {
-    void *                                          datum;
-    globus_bool_t *                                 progress_ptr;
-    globus_i_xio_timer_cb_t                         timer_cb;
-    globus_reltime_t                                rel_timeout;
-    globus_abstime_t                                abs_timeout;
+    void *                              datum;
+    globus_bool_t *                     progress_ptr;
+    globus_i_xio_timer_cb_t             timer_cb;
+    globus_reltime_t                    rel_timeout;
+    globus_abstime_t                    abs_timeout;
 } globus_i_xio_timer_entry_t;
 
 
 void
 globus_i_xio_timer_poller_callback(
-    void *                                      user_arg);
+    void *                              user_arg);
 
 void
 globus_i_xio_timer_init(
-    globus_i_xio_timer_t *                      timer)
+    globus_i_xio_timer_t *              timer)
 {
     GlobusXIOName(globus_i_xio_timer_init);
 
@@ -42,7 +42,7 @@ void
 globus_l_xio_timer_unregister_cb(
     void *                              user_args)
 {
-    globus_i_xio_timer_t *                          timer;
+    globus_i_xio_timer_t *              timer;
     GlobusXIOName(globus_l_xio_timer_unregister_cb);
 
     GlobusXIODebugInternalEnter();
@@ -61,9 +61,9 @@ globus_l_xio_timer_unregister_cb(
 
 void
 globus_i_xio_timer_destroy(
-    globus_i_xio_timer_t *                          timer)
+    globus_i_xio_timer_t *              timer)
 {
-    globus_result_t                                 res;
+    globus_result_t                     res;
     GlobusXIOName(globus_i_xio_timer_destroy);
 
     GlobusXIODebugInternalEnter();
@@ -95,14 +95,14 @@ globus_i_xio_timer_destroy(
 
 void
 globus_i_xio_timer_register_timeout(
-    globus_i_xio_timer_t *                          timer,
-    void *                                          datum,
-    globus_bool_t *                                 progress_ptr,
-    globus_i_xio_timer_cb_t                         timeout_cb,
-    globus_reltime_t *                              timeout)
+    globus_i_xio_timer_t *              timer,
+    void *                              datum,
+    globus_bool_t *                     progress_ptr,
+    globus_i_xio_timer_cb_t             timeout_cb,
+    globus_reltime_t *                  timeout)
 {
-    globus_i_xio_timer_entry_t *                    entry;
-    globus_result_t                                 res;
+    globus_i_xio_timer_entry_t *        entry;
+    globus_result_t                     res;
     GlobusXIOName(globus_i_xio_timer_register_timeout);
 
     GlobusXIODebugInternalEnter();
@@ -146,14 +146,14 @@ globus_i_xio_timer_register_timeout(
 
 globus_bool_t
 globus_i_xio_timer_unregister_timeout(
-    globus_i_xio_timer_t *                          timer,
-    void *                                          datum)
+    globus_i_xio_timer_t *              timer,
+    void *                              datum)
 {
-    globus_list_t *                                 list;
-    globus_list_t *                                 tmp_list = NULL;
-    globus_bool_t                                   found = GLOBUS_FALSE;
+    globus_list_t *                     list;
+    globus_list_t *                     tmp_list = NULL;
+    globus_bool_t                       found = GLOBUS_FALSE;
     /* intialize to remove warning, but not needed */
-    globus_i_xio_timer_entry_t *                    entry = NULL;
+    globus_i_xio_timer_entry_t *        entry = NULL;
     GlobusXIOName(globus_i_xio_timer_unregister_timeout);
 
     GlobusXIODebugInternalEnter();
@@ -194,15 +194,15 @@ globus_i_xio_timer_unregister_timeout(
 
 void
 globus_i_xio_timer_poller_callback(
-    void *                                          user_arg)
+    void *                              user_arg)
 {
-    globus_i_xio_timer_t  *                         timer;
-    globus_list_t *                                 list;
-    globus_abstime_t                                now;
-    globus_reltime_t                                tmp_rel;
-    globus_i_xio_timer_entry_t *                    entry;
-    globus_list_t *                                 call_list = NULL;
-    globus_list_t *                                 tmp_list = NULL;
+    globus_i_xio_timer_t  *             timer;
+    globus_list_t *                     list;
+    globus_abstime_t                    now;
+    globus_reltime_t                    tmp_rel;
+    globus_i_xio_timer_entry_t *        entry;
+    globus_list_t *                     call_list = NULL;
+    globus_list_t *                     tmp_list = NULL;
     GlobusXIOName(globus_i_xio_timer_poller_callback);
 
     GlobusXIODebugInternalEnter();

@@ -30,18 +30,14 @@ unlink("test_results.txt");
             block-barrier-test.pl
             stack-test.pl
             unload-test.pl
-            http-header-test.pl
-            http-post-test.pl
-            http-put-test.pl
-            http-get-test.pl
             );
 
 my $runserver;
 my $server_pid;
 
-$ENV{'xio-test-output-dir'}="test_output/$$";
+$ENV{'XIO_TEST_OUPUT_DIR'}="test_output/$$";
 
-my $test_dir=$ENV{'xio-test-output-dir'};
+my $test_dir=$ENV{'XIO_TEST_OUPUT_DIR'};
 
 system("rm -rf $test_dir");
 

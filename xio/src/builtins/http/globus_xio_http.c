@@ -56,16 +56,11 @@ globus_l_xio_http_load(
         globus_i_xio_http_handle_cntl,
 	NULL);
 
-    globus_xio_driver_set_client(
-        driver,
-        globus_i_xio_http_target_init,
-        NULL,
-        globus_i_xio_http_target_destroy);
-
     globus_xio_driver_set_server(
         driver,
         NULL,
         globus_i_xio_http_accept,
+        NULL,
         NULL,
         NULL,
         globus_i_xio_http_target_destroy);
@@ -101,6 +96,9 @@ globus_l_xio_http_activate(void)
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
 
+    globus_mutex_init(&globus_i_xio_http_cached_handle_mutex, NULL);
+    globus_i_xio_http_cached_handles = NULL;
+
     return rc;
 }
 
@@ -108,6 +106,30 @@ static
 int
 globus_l_xio_http_deactivate(void)
 {
+    globus_i_xio_http_handle_t *        http_handle;
+    globus_result_t                     result;
+
+    globus_mutex_lock(&globus_i_xio_http_cached_handle_mutex);
+    while (!globus_list_empty(globus_i_xio_http_cached_handles))
+    {
+        http_handle = globus_list_remove(
+                &globus_i_xio_http_cached_handles,
+                globus_i_xio_http_cached_handles);
+
+        result = globus_xio_driver_operation_create(
+                &http_handle->close_operation,
+                http_handle->handle);
+
+        globus_assert(result == GLOBUS_SUCCESS);
+        http_handle->user_close = GLOBUS_FALSE;
+
+        result = globus_i_xio_http_close_internal(http_handle);
+
+        globus_assert(result == GLOBUS_SUCCESS);
+    }
+    globus_mutex_unlock(&globus_i_xio_http_cached_handle_mutex);
+    globus_mutex_destroy(&globus_i_xio_http_cached_handle_mutex);
+
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 

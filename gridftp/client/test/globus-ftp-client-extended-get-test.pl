@@ -46,7 +46,7 @@ sub basic_func
     unlink('core', $tmpname);
 
     my $command = "$test_exec -P $parallelism -s gsiftp://$source_host$testfile >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -89,7 +89,7 @@ sub bad_url
     unlink('core');
 
     my $command = "$test_exec -s gsiftp://$source_host/no-such-file-here >/dev/null  2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 1)
     {
         $errors .= "\n# Test exited with $rc.";
@@ -127,7 +127,7 @@ sub abort_test
     unlink('core');
 
     my $command = "$test_exec -P $par -a $abort_point -s gsiftp://$source_host$testfile >/dev/null 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if(-r 'core')
     {
         my $core_str = $test_exec."_abort_".$abort_point."_P_".$par.".core";
@@ -170,7 +170,7 @@ sub restart_test
     unlink('core', $tmpname);
 
     my $command = "$test_exec -P $par -r $restart_point -s gsiftp://$source_host$testfile >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -225,7 +225,7 @@ sub perf_test
     unlink('core');
 
     my $command = "$test_exec -s gsiftp://$source_host$testfile -M >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -264,7 +264,7 @@ sub throughput_test
     unlink('core');
 
     my $command = "$test_exec -s gsiftp://$source_host$testfile -T >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";

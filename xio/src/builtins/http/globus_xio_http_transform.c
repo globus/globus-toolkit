@@ -1,5 +1,4 @@
 #include "globus_i_xio_http.h"
-#include "globus_i_xio.h"
 #include <limits.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -7,6 +6,31 @@
  * @defgroup globus_i_xio_http_transform Internal Transform Implementation
  */
 #endif
+
+globus_mutex_t                          globus_i_xio_http_cached_handle_mutex;
+globus_list_t *                         globus_i_xio_http_cached_handles = NULL;
+
+static
+globus_i_xio_http_handle_t *
+globus_l_xio_http_find_cached_handle(
+    globus_i_xio_http_target_t *        target,
+    globus_i_xio_http_attr_t *          attr);
+
+static
+globus_result_t
+globus_l_xio_http_reopen(
+    globus_i_xio_http_handle_t *        http_handle,
+    globus_i_xio_http_target_t *        http_target,
+    globus_i_xio_http_attr_t *          http_attr,
+    globus_xio_operation_t              op);
+
+static
+globus_result_t
+globus_l_xio_http_open(
+    const globus_xio_contact_t *        contact_info,
+    void *                              target,
+    void *                              attr,
+    globus_xio_operation_t              op);
 
 static
 void
@@ -68,6 +92,105 @@ globus_l_xio_http_server_close_kickout(
  */
 globus_result_t
 globus_i_xio_http_open(
+    const globus_xio_contact_t *        contact_info,
+    void *                              link,
+    void *                              attr,
+    globus_xio_operation_t              op)
+{
+    globus_result_t                     result;
+    globus_i_xio_http_target_t *        target = NULL;
+    globus_i_xio_http_handle_t *        http_handle;
+    GlobusXIOName(globus_i_xio_http_open);
+    
+    if(link)
+    {
+        target = (globus_i_xio_http_target_t *) link;
+    }
+    else
+    {
+        result = globus_i_xio_http_target_init(&target, contact_info);
+    }
+    
+    http_handle = globus_l_xio_http_find_cached_handle(target, attr);
+
+    if (http_handle != NULL)
+    {
+        result = globus_l_xio_http_reopen(http_handle, target, attr, op);
+    }
+    else
+    {
+        result = globus_l_xio_http_open(contact_info, target, attr, op);
+    }
+    
+    if(!link && target)
+    {
+        globus_i_xio_http_target_destroy(target);
+    }
+    
+    return result;
+}
+/* globus_i_xio_http_open() */
+
+static
+globus_result_t
+globus_l_xio_http_reopen(
+    globus_i_xio_http_handle_t *        http_handle,
+    globus_i_xio_http_target_t *        http_target,
+    globus_i_xio_http_attr_t *          http_attr,
+    globus_xio_operation_t              op)
+{
+    globus_result_t                     result;
+
+    globus_mutex_lock(&http_handle->mutex);
+
+    globus_assert(http_handle->target_info.is_client == http_target->is_client);
+    globus_assert(http_handle->request_info.http_version
+            == GLOBUS_XIO_HTTP_VERSION_1_1);
+
+    result = globus_i_xio_http_handle_reinit(
+            http_handle,
+            http_attr,
+            http_target);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+    result = globus_xio_driver_merge_handle(
+            op,
+            http_handle->handle);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+    if (http_target->is_client)
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
+        http_handle->parse_state = GLOBUS_XIO_HTTP_STATUS_LINE;
+
+        result = globus_i_xio_http_client_write_request(op, http_handle);
+    }
+    else
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_STATUS_LINE;
+        http_handle->parse_state = GLOBUS_XIO_HTTP_REQUEST_LINE;;
+
+        globus_i_xio_http_server_read_request_callback(
+                op,
+                GLOBUS_SUCCESS,
+                0,
+                http_handle);
+    }
+error_exit:
+    globus_mutex_unlock(&http_handle->mutex);
+
+    return result;
+}
+/* globus_l_xio_http_reopen() */
+
+static
+globus_result_t
+globus_l_xio_http_open(
+    const globus_xio_contact_t *        contact_info,
     void *                              target,
     void *                              attr,
     globus_xio_operation_t              op)
@@ -76,6 +199,8 @@ globus_i_xio_http_open(
     globus_i_xio_http_handle_t *        http_handle;
     globus_i_xio_http_attr_t *          http_attr = attr;
     globus_xio_driver_callback_t        open_callback;
+    globus_xio_contact_t                new_contact_info;
+    char                                port_buf[12];
     GlobusXIOName(globus_l_xio_http_open);
 
     http_handle = globus_libc_calloc(1, sizeof(globus_i_xio_http_handle_t));
@@ -108,7 +233,9 @@ globus_i_xio_http_open(
         {
             if (!http_handle->request_info.headers.content_length_set)
             {
-                result = GlobusXIOHttpErrorInvalidHeader("Content-Length", "not set");
+                result = GlobusXIOHttpErrorInvalidHeader(
+                        "Content-Length",
+                        "not set");
 
                 goto destroy_http_handle;
             }
@@ -119,10 +246,16 @@ globus_i_xio_http_open(
         open_callback = globus_i_xio_http_server_open_callback;
         http_handle->send_state = GLOBUS_XIO_HTTP_STATUS_LINE;
     }
+    
+    memcpy(&new_contact_info, contact_info, sizeof(new_contact_info));
+    snprintf(port_buf, sizeof(port_buf), "%hu", http_handle->target_info.port);
+    new_contact_info.port = port_buf;
+    
+    http_handle->handle = globus_xio_operation_get_driver_handle(op);
 
     result = globus_xio_driver_pass_open(
-        &http_handle->handle,
         op,
+        &new_contact_info,
         open_callback,
         http_handle);
 
@@ -139,7 +272,46 @@ free_http_handle_exit:
 error_exit:
     return result;
 }
-/* globus_i_xio_http_open() */
+/* globus_l_xio_http_open() */
+
+static
+globus_i_xio_http_handle_t *
+globus_l_xio_http_find_cached_handle(
+    globus_i_xio_http_target_t *        http_target,
+    globus_i_xio_http_attr_t *          http_attr)
+{
+    globus_i_xio_http_handle_t *        http_handle = NULL;
+    globus_list_t *                     iter;
+
+    if (http_attr->request.http_version == GLOBUS_XIO_HTTP_VERSION_1_0 ||
+        !http_target->is_client)
+    {
+        return NULL;
+    }
+
+    globus_mutex_lock(&globus_i_xio_http_cached_handle_mutex);
+    iter = globus_i_xio_http_cached_handles;
+    while (! globus_list_empty(iter))
+    {
+        http_handle = globus_list_first(iter);
+
+        if (strcmp(http_target->host, http_handle->target_info.host) == 0 &&
+            http_target->port == http_handle->target_info.port)
+        {
+            globus_list_remove(&globus_i_xio_http_cached_handles, iter);
+
+            break;
+        }
+        else
+        {
+            iter = globus_list_rest(iter);
+        }
+    }
+    globus_mutex_unlock(&globus_i_xio_http_cached_handle_mutex);
+
+    return http_handle;
+}
+/* globus_l_xio_http_find_cached_handle() */
 
 /**
  * Read from an HTTP stream
@@ -230,7 +402,7 @@ globus_i_xio_http_read(
     http_handle->read_operation.iovcnt = iovec_count;
     http_handle->read_operation.operation = op;
     http_handle->read_operation.nbytes = 0;
-    http_handle->read_operation.wait_for = GlobusXIOOperationGetWaitFor(op);
+    http_handle->read_operation.wait_for = globus_xio_operation_get_wait_for(op);
 
     for (i = 0; i < iovec_count; i++)
     {
@@ -679,7 +851,10 @@ globus_l_xio_http_read_chunk_header_callback(
     {
         headers = &http_handle->request_info.headers;
     }
-    globus_i_xio_http_parse_residue(http_handle);
+    if (result == GLOBUS_SUCCESS)
+    {
+        result = globus_i_xio_http_parse_residue(http_handle);
+    }
     if (http_handle->read_operation.wait_for <= 0 || result != GLOBUS_SUCCESS)
     {
         if (headers->transfer_encoding !=
@@ -1011,7 +1186,7 @@ globus_i_xio_http_write(
                     op,
                     (globus_xio_iovec_t *) iovec,
                     iovec_count,
-                    GlobusXIOOperationGetWaitFor(op),
+                    globus_xio_operation_get_wait_for(op),
                     globus_i_xio_http_write_callback,
                     http_handle);
             break;
@@ -1249,10 +1424,6 @@ globus_i_xio_http_write_callback(
  *     Void pointer to a #globus_i_xio_http_handle_t.
  * @param attr
  *     Close attributes. (Ignored by the HTTP driver).
- * @param driver_handle
- *     XIO driver handle associated with this handle which we are closing.
- *     We ignore this now, as we receive this value when we open the 
- *     handle and store it in the HTTP handle.
  * @param op
  *     Operation associated with the close.
  *
@@ -1266,7 +1437,6 @@ globus_result_t
 globus_i_xio_http_close(
     void *                              handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_result_t                     result;
@@ -1282,6 +1452,16 @@ globus_i_xio_http_close(
             break;
 
         case GLOBUS_XIO_HTTP_STATUS_LINE:
+            if (! http_handle->target_info.is_client)
+            {
+                /* On server, when we close we ought to set the
+                 * "Connection: close" header when we want to close if
+                 * we haven't sent our status line yet.
+                 */
+                http_handle->response_info.headers.connection_close
+                        = GLOBUS_TRUE;
+            }
+            /* FALLSTHROUGH */
         case GLOBUS_XIO_HTTP_CHUNK_BODY:
             http_handle->close_operation = op;
             http_handle->user_close = GLOBUS_TRUE;
@@ -1382,9 +1562,28 @@ globus_i_xio_http_close_internal(
 
     http_handle->send_state = GLOBUS_XIO_HTTP_CLOSE;
 
-    if (! http_handle->target_info.is_client)
+    if (http_handle->target_info.is_client &&
+        http_handle->user_close &&
+        http_handle->request_info.http_version == GLOBUS_XIO_HTTP_VERSION_1_1 &&
+        (!http_handle->response_info.headers.connection_close) &&
+        http_handle->parse_state == GLOBUS_XIO_HTTP_EOF)
     {
-        /* Server will wait 100ms before closing connection */
+        GlobusTimeReltimeSet(delay, 0, 0);
+
+        result = globus_callback_register_oneshot(
+                NULL,
+                &delay,
+                globus_l_xio_http_server_close_kickout,
+                http_handle);
+
+        if (result == GLOBUS_SUCCESS)
+        {
+            goto finish;
+        }
+    }
+    else if (! http_handle->target_info.is_client)
+    {
+        /* HACK: Server will wait 100ms before closing connection */
         GlobusTimeReltimeSet(delay, 0, 100000);
 
         result = globus_callback_register_oneshot(
@@ -1417,7 +1616,6 @@ globus_i_xio_http_close_callback(
     void *                              user_arg)
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
-    globus_xio_driver_handle_t          driver_handle = http_handle->handle;
 
     globus_mutex_lock(&http_handle->mutex);
     /*
@@ -1435,7 +1633,6 @@ globus_i_xio_http_close_callback(
         globus_xio_driver_operation_destroy(http_handle->close_operation);
     }
     http_handle->close_operation = NULL;
-    globus_xio_driver_handle_close(driver_handle);
 
     globus_i_xio_http_handle_destroy(user_arg);
 }
@@ -1449,6 +1646,18 @@ globus_l_xio_http_server_close_kickout(
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_result_t                     result;
 
+    if (http_handle->target_info.is_client &&
+        http_handle->user_close &&
+        http_handle->request_info.http_version == GLOBUS_XIO_HTTP_VERSION_1_1)
+    {
+        globus_xio_driver_finished_close(http_handle->close_operation, result);
+
+        globus_mutex_lock(&globus_i_xio_http_cached_handle_mutex);
+        globus_list_insert(&globus_i_xio_http_cached_handles, http_handle);
+        globus_mutex_unlock(&globus_i_xio_http_cached_handle_mutex);
+
+        return;
+    }
     result = globus_xio_driver_pass_close(
             http_handle->close_operation,
             globus_i_xio_http_close_callback,

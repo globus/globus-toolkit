@@ -25,20 +25,6 @@
         __LINE__,                                                           \
         "Operation was canceled")                                          
                                                                             
-#define GlobusXIOErrorObjTimedout()                                         \
-        globus_error_construct_error(                                       \
-            GLOBUS_XIO_MODULE,                                              \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_ERROR_TIMEDOUT,                                      \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Operation timed out")                                           
-                                                                            
-#define GlobusXIOErrorTimedout()                                            \
-    globus_error_put(                                                       \
-        GlobusXIOErrorObjTimedout())
-
 #define GlobusXIOErrorObjEOF()                                              \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
@@ -338,23 +324,24 @@
 
 globus_bool_t
 globus_xio_error_is_eof(
-    globus_result_t                             res);
+    globus_result_t                     res);
 
 globus_bool_t
 globus_xio_error_is_canceled(
-    globus_result_t                             res);
-
-globus_bool_t
-globus_xio_error_is_timeout(
-    globus_result_t                             res);
+    globus_result_t                     res);
 
 void
 globus_xio_contact_destroy(
-    globus_xio_contact_t *                  contact_info);
+    globus_xio_contact_t *              contact_info);
 
 globus_result_t
 globus_xio_contact_parse(
-    globus_xio_contact_t *                  contact_info,
-    const char *                            contact_string);
+    globus_xio_contact_t *              contact_info,
+    const char *                        contact_string);
+
+globus_result_t
+globus_xio_contact_info_to_string(
+    const globus_xio_contact_t *        contact_info,
+    char **                             contact_string);
 
 #endif

@@ -28,7 +28,7 @@ sub create_destroy
     unlink('core');
     
     my $command = "$test_exec >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";

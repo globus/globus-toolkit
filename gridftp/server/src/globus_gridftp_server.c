@@ -12,6 +12,7 @@ static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
 static globus_xio_driver_t              globus_l_gfs_ftp_cmd_driver = GLOBUS_NULL;
 static globus_xio_server_t              globus_l_gfs_xio_server = GLOBUS_NULL;
 static globus_bool_t                    globus_l_gfs_xio_server_accepting;
+static globus_xio_attr_t                globus_l_gfs_xio_attr;
 
 static
 void
@@ -95,23 +96,9 @@ error_cb:
 static
 globus_result_t
 globus_l_gfs_open_new_server(
-    globus_xio_target_t                 target)
+    globus_xio_handle_t                 handle)
 {
     globus_result_t                     result;
-    globus_xio_handle_t                 handle;
-    
-    if(!globus_i_gfs_config_bool("data_node"))
-    {
-        result = globus_xio_target_cntl(
-            target,
-            globus_l_gfs_ftp_cmd_driver,
-            GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER,
-            GLOBUS_TRUE);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_cntl;
-        }
-    }
     
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
@@ -121,9 +108,9 @@ globus_l_gfs_open_new_server(
     
     /* dont need the handle here, will get it in callback too */
     result = globus_xio_register_open(
-        &handle,
+        handle,
         GLOBUS_NULL,
-        target,
+        globus_l_gfs_xio_attr,
         globus_l_gfs_new_server_cb,
         GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
@@ -135,8 +122,6 @@ globus_l_gfs_open_new_server(
 
 error_open:
     globus_l_gfs_server_closed();
-
-error_cntl:
     return result;
 }
 
@@ -168,29 +153,22 @@ globus_l_gfs_convert_inetd_handle(void)
 {
     globus_result_t                     result;
     globus_xio_stack_t                  stack;
-    globus_xio_attr_t                   attr;
-    globus_xio_target_t                 target;
+    globus_xio_handle_t                 handle;
     
     globus_l_gfs_prepare_stack(&stack);
     
-    result = globus_xio_attr_init(&attr);
-    globus_l_gfs_check_log_and_die(result);
-    
     result = globus_xio_attr_cntl(
-        attr,
+        globus_l_gfs_xio_attr,
         globus_l_gfs_tcp_driver,
         GLOBUS_XIO_TCP_SET_HANDLE,
         STDIN_FILENO);
     globus_l_gfs_check_log_and_die(result);
-    
 
-
-    result = globus_xio_target_init(&target, attr, "", stack);
+    result = globus_xio_handle_create(&handle, stack);
     globus_l_gfs_check_log_and_die(result);
     globus_xio_stack_destroy(stack);
-    globus_xio_attr_destroy(attr);
     
-    result = globus_l_gfs_open_new_server(target);
+    result = globus_l_gfs_open_new_server(handle);
     globus_l_gfs_check_log_and_die(result);
 }
 
@@ -199,7 +177,7 @@ static
 void
 globus_l_gfs_server_accept_cb(
     globus_xio_server_t                 server,
-    globus_xio_target_t                 target,
+    globus_xio_handle_t                 handle,
     globus_result_t                     result,
     void *                              user_arg)
 {
@@ -211,7 +189,7 @@ globus_l_gfs_server_accept_cb(
     if(globus_i_gfs_config_bool("fork"))
     {
         globus_assert(0 && "forking code not here yet");
-        /* be sure to destroy target on server proc and close server on 
+        /* be sure to close handle on server proc and close server on 
          * client proc (close on exec)
          *
          * need to handle proc exits and decrement the open server count
@@ -223,7 +201,7 @@ globus_l_gfs_server_accept_cb(
     }
     else
     {
-        result = globus_l_gfs_open_new_server(target);
+        result = globus_l_gfs_open_new_server(handle);
         if(result != GLOBUS_SUCCESS)
         {
             globus_i_gfs_log_result("Could not open new handle", result);
@@ -244,7 +222,6 @@ globus_l_gfs_server_accept_cb(
         {
             result = globus_xio_server_register_accept(
                 server,
-                GLOBUS_NULL,
                 globus_l_gfs_server_accept_cb,
                 GLOBUS_NULL);
             if(result != GLOBUS_SUCCESS)
@@ -311,10 +288,8 @@ globus_l_gfs_be_daemon(void)
     {
         char *                          contact_string;
         
-        result = globus_xio_server_cntl(
+        result = globus_xio_server_get_contact_string(
             globus_l_gfs_xio_server,
-            globus_l_gfs_tcp_driver,
-            GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
             &contact_string);
         globus_l_gfs_check_log_and_die(result);
         
@@ -334,7 +309,6 @@ globus_l_gfs_be_daemon(void)
     globus_l_gfs_xio_server_accepting = GLOBUS_TRUE;
     result = globus_xio_server_register_accept(
         globus_l_gfs_xio_server,
-        GLOBUS_NULL,
         globus_l_gfs_server_accept_cb,
         GLOBUS_NULL);
     globus_l_gfs_check_log_and_die(result);
@@ -368,6 +342,19 @@ globus_l_gfs_file_activate();
     result = globus_xio_driver_load("ftp_cmd", &globus_l_gfs_ftp_cmd_driver);
     globus_l_gfs_check_log_and_die(result);
     
+    result = globus_xio_attr_init(&globus_l_gfs_xio_attr);
+    globus_l_gfs_check_log_and_die(result);
+    
+    if(!globus_i_gfs_config_bool("data_node"))
+    {
+        result = globus_xio_attr_cntl(
+            globus_l_gfs_xio_attr,
+            globus_l_gfs_ftp_cmd_driver,
+            GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER,
+            GLOBUS_TRUE);
+        globus_l_gfs_check_log_and_die(result);
+    }
+    
     if(globus_i_gfs_config_bool("inetd"))
     {
         globus_l_gfs_convert_inetd_handle();
@@ -391,6 +378,7 @@ globus_l_gfs_file_activate();
         globus_xio_server_close(globus_l_gfs_xio_server);
     }
     
+    globus_xio_attr_destroy(globus_l_gfs_xio_attr);
     globus_xio_driver_unload(globus_l_gfs_ftp_cmd_driver);
     globus_xio_driver_unload(globus_l_gfs_tcp_driver);
     globus_i_gfs_log_close();
@@ -448,7 +436,6 @@ globus_l_gfs_server_closed()
             globus_l_gfs_xio_server_accepting = GLOBUS_TRUE;
             result = globus_xio_server_register_accept(
                 globus_l_gfs_xio_server,
-                GLOBUS_NULL,
                 globus_l_gfs_server_accept_cb,
                 GLOBUS_NULL);
             if(result != GLOBUS_SUCCESS)

@@ -4,7 +4,6 @@
 #include <assert.h>
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_gsi.h"
 #include "gssapi.h"
@@ -121,19 +120,9 @@ typedef struct
     globus_bool_t                       wrap_tokens;
     globus_size_t                       buffer_size;
     globus_xio_gsi_protection_level_t   prot_level;
-} globus_l_attr_t;
-
-/*
- * target structure
- */
-
-typedef struct
-{
     gss_name_t                          target_name;
-    globus_l_attr_t *                   attr;
-    /* init or accept flag */
     globus_bool_t                       init;
-} globus_l_target_t;
+} globus_l_attr_t;
 
 /*
  * driver handle structure
@@ -142,7 +131,6 @@ typedef struct
 typedef struct
 {
     globus_l_attr_t *                   attr;
-    globus_l_target_t *                 target;
     OM_uint32                           ret_flags;
     OM_uint32                           time_rec;
     OM_uint32                           max_wrap_size;
@@ -172,8 +160,8 @@ typedef struct
     globus_bool_t                       done;
     globus_object_t *                   result_obj;
     globus_bool_t                       eof;
-    globus_xio_driver_handle_t          xio_driver_handle;
     int                                 connection_id;
+    globus_xio_driver_handle_t          xio_driver_handle;
 } globus_l_handle_t;
 
 /*

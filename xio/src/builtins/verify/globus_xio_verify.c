@@ -1,11 +1,10 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_verify.h"
 
 #define _SERVER "test_server_string"
-#define _TARGET "test_target_string"
+#define _LINK "test_link_string"
 #define _HANDLE "test_handle_string"
 #define _ATTR   "test_attr_string"
 
@@ -90,43 +89,24 @@ globus_l_xio_verify_attr_copy(
 
 static globus_result_t
 globus_l_xio_verify_server_init(
-    void **                             out_server,
-    void *                              driver_attr)
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op)
 {
-    *out_server = (void *)strdup(_SERVER);
-
-    return GLOBUS_SUCCESS;
+    return globus_xio_driver_pass_server_init(
+        op, contact_info, strdup(_SERVER));
 }
 
 static globus_result_t
-globus_l_xio_verify_target_init(
-    void **                                 out_driver_target,
-    globus_xio_operation_t                  target_op,
-    const globus_xio_contact_t *            contact_info,
-    void *                                  driver_attr)
-{
-    globus_result_t                         result;
-    
-    *out_driver_target = (void *)strdup(_TARGET);
-    result = globus_xio_driver_client_target_pass(target_op, contact_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_free(*out_driver_target);
-    }
-    
-    return result;
-}
-
-static globus_result_t
-globus_l_xio_verify_target_destroy(
-    void *                              driver_target)
+globus_l_xio_verify_link_destroy(
+    void *                              driver_link)
 {
     char *                              tst_str;
 
-    tst_str = (char *) driver_target;
-    if(strcmp(tst_str, _TARGET) != 0)
+    tst_str = (char *) driver_link;
+    if(strcmp(tst_str, _LINK) != 0)
     {
-        globus_assert(!"Target string doesn't match");
+        globus_assert(!"Link string doesn't match");
     }
     free(tst_str);
 
@@ -136,17 +116,16 @@ globus_l_xio_verify_target_destroy(
 
 void
 globus_l_xio_verify_accept_cb(
-    globus_i_xio_op_t *                 op,
+    globus_xio_operation_t              op,
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_driver_finished_accept(op, strdup(_TARGET), result);
+    globus_xio_driver_finished_accept(op, strdup(_LINK), result);
 }
 
 static globus_result_t
 globus_l_xio_verify_accept(
     void *                              driver_server,
-    void *                              driver_attr,
     globus_xio_operation_t              accept_op)
 {
     globus_result_t                     res;
@@ -207,32 +186,28 @@ globus_l_xio_verify_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_driver_handle_t          driver_handle;
-
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
-
-    globus_xio_driver_finished_open(driver_handle, strdup(_HANDLE), op, result);
+    globus_xio_driver_finished_open(strdup(_HANDLE), op, result);
 }   
 
 static
 globus_result_t
 globus_l_xio_verify_open(
-    void *                              driver_target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
-    globus_xio_driver_handle_t          driver_handle;
     char *                              tst_str;
 
-    tst_str = (char *) driver_target;
-    if(strcmp(tst_str, _TARGET) != 0)
+    tst_str = (char *) driver_link;
+    if(tst_str && strcmp(tst_str, _LINK) != 0)
     {
         globus_assert(!"Server string doesn't match");
     }
 
-    res = globus_xio_driver_pass_open(&driver_handle, op,
-        globus_l_xio_verify_open_cb, NULL);
+    res = globus_xio_driver_pass_open(
+        op, contact_info, globus_l_xio_verify_open_cb, NULL);
 
     return res;
 }
@@ -246,11 +221,7 @@ globus_l_xio_verify_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {   
-    globus_xio_driver_handle_t          driver_handle;
-
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_handle_close(driver_handle);
 }   
 
 static
@@ -258,7 +229,6 @@ globus_result_t
 globus_l_xio_verify_close(
     void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
@@ -309,7 +279,7 @@ globus_l_xio_verify_read(
         globus_assert(!"Handle string doesn't match");
     }
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     res = globus_xio_driver_pass_read(op, (globus_xio_iovec_t *)iovec, 
         iovec_count, wait_for,
@@ -349,7 +319,7 @@ globus_l_xio_verify_write(
         globus_assert(!"Handle string doesn't match");
     }
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     res = globus_xio_driver_pass_write( 
         op, (globus_xio_iovec_t *) iovec, iovec_count, wait_for, 
@@ -398,19 +368,14 @@ globus_l_xio_verify_load(
         globus_l_xio_verify_cntl,
         NULL);
 
-    globus_xio_driver_set_client(
-        driver,
-        globus_l_xio_verify_target_init,
-        NULL,
-        globus_l_xio_verify_target_destroy);
-
     globus_xio_driver_set_server(
         driver,
         globus_l_xio_verify_server_init,
         globus_l_xio_verify_accept,
         globus_l_xio_verify_server_destroy,
         globus_l_xio_verify_server_cntl,
-        globus_l_xio_verify_target_destroy);
+        NULL,
+        globus_l_xio_verify_link_destroy);
 
     globus_xio_driver_set_attr(
         driver,

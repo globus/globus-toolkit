@@ -59,7 +59,7 @@ sub basic_func
         FtpTestLib::push_proxy("/dev/null");
     }
     my $command = "$test_exec -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if(($use_proxy && $rc != 0) || (!$use_proxy && $rc == 0))
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -115,7 +115,7 @@ sub bad_url
     unlink('core');
     
     my $command = "$test_exec -s ".$bogus_url->to_string()." >/dev/null 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 1)
     {
         $errors .= "\n# Test exited with $rc.";
@@ -156,7 +156,7 @@ sub abort_test
     unlink('core');
 
     my $command = "$test_exec -a $abort_point -s 'gsiftp://$source_host$source_file' >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
@@ -193,7 +193,7 @@ sub restart_test
     unlink('core');
 
     my $command = "$test_exec -r $restart_point -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -259,7 +259,7 @@ sub dcau_test
     unlink('core');
 
     my $command = "$test_exec -c $dcau -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != $desired_rc)
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -334,7 +334,7 @@ sub prot_test
     unlink('core');
 
     my $command = "$test_exec -c self -t $prot -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != $desired_rc)
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -379,7 +379,7 @@ sub perf_test
     unlink('core');
 
     my $command = "$test_exec -M -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -422,7 +422,7 @@ sub throughput_test
     unlink('core');
 
     my $command = "$test_exec -T -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";
@@ -474,7 +474,7 @@ sub restart_plugin_test
     }
 
     my $command = "$test_exec -s 'gsiftp://$source_host$source_file' -f 0,0,0,0 $other_args > $tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 0)
     {
         $errors .= "\n# Test exited with $rc. ";

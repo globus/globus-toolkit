@@ -1,6 +1,5 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_queue.h"
 
@@ -14,7 +13,7 @@ globus_l_xio_queue_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_queue_module =
+static globus_module_descriptor_t       globus_i_xio_queue_module =
 {
     "globus_xio_queue",
     globus_l_xio_queue_activate,
@@ -38,7 +37,6 @@ typedef struct globus_xio_driver_queue_handle_s
     globus_bool_t                       outstanding_write;
     globus_fifo_t                       read_q;
     globus_fifo_t                       write_q;
-    globus_xio_driver_handle_t          driver_handle;
     globus_mutex_t                      mutex;
 } globus_xio_driver_queue_handle_t;
 
@@ -82,7 +80,7 @@ globus_l_xio_queue_open_cb(
 
     handle = (globus_xio_driver_queue_handle_t *) user_arg;
 
-    globus_xio_driver_finished_open(handle->driver_handle, handle, op, result);
+    globus_xio_driver_finished_open(handle, op, result);
     if(result != GLOBUS_SUCCESS)
     {
         globus_l_xiod_q_handle_destroy(handle);
@@ -93,7 +91,8 @@ globus_l_xio_queue_open_cb(
 static
 globus_result_t
 globus_l_xio_queue_open(
-    void *                              driver_target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
@@ -102,7 +101,7 @@ globus_l_xio_queue_open(
 
     handle = globus_l_xiod_q_handle_create();
 
-    res = globus_xio_driver_pass_open(&handle->driver_handle, op,
+    res = globus_xio_driver_pass_open(op, contact_info,
         globus_l_xio_queue_open_cb, handle);
 
     return res;
@@ -113,7 +112,6 @@ globus_result_t
 globus_l_xio_queue_close(
     void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
@@ -204,7 +202,7 @@ globus_l_xio_queue_read(
 
     handle = (globus_xio_driver_queue_handle_t *) driver_specific_handle;
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     globus_mutex_lock(&handle->mutex);
     {
@@ -313,7 +311,7 @@ globus_l_xio_queue_write(
     GlobusXIOName(globus_l_xio_queue_write);
 
     handle = (globus_xio_driver_queue_handle_t *) driver_specific_handle;
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     globus_mutex_lock(&handle->mutex);
     {

@@ -17,44 +17,13 @@ globus_i_xio_http_target_new(void)
 }
 /* globus_l_xio_http_target_new() */
 
-/**
- * Allocate and initialize an HTTP target
- * @ingroup globus_i_xio_http_target
- *
- * Creates a new target with default values. The new target will be used for
- * client operations. This is called by the XIO driver via
- * globus_xio_target_init().
- * 
- * @param out_driver_target
- *     Pointer value will be set to point to a
- *     newly allocated and initilized #globus_i_xio_http_target_t
- *     structure.
- * @param target_op
- *     Operation to pass the target initialization request to drivers
- *     below us in the stack.
- * @param contact_info
- *     Contact information used for this new target (ignored by this driver).
- * @param driver_attr
- *     Attributes used to create this target (ignored by this driver).
- *
- * @returns
- *     This function returns one of the following error types. Underlying
- *     drivers may generate other error types.
- * @retval GLOBUS_SUCCESS
- *     Target successfully initialized.
- * @retval GLOBUS_XIO_ERROR_MEMORY
- *     Initialization failed due to memory constraints.
- */
 globus_result_t
 globus_i_xio_http_target_init(
-    void **                             out_driver_target,
-    globus_xio_operation_t              target_op,
-    const globus_xio_contact_t *        contact_info,
-    void *                              driver_attr)
+    globus_i_xio_http_target_t **       out_target,
+    const globus_xio_contact_t *        contact_info)
 {
     globus_result_t                     res;
     globus_i_xio_http_target_t *        target;
-    globus_xio_contact_t                new_contact_info;
     GlobusXIOName(globus_l_xio_http_target_init);
 
     target = globus_i_xio_http_target_new();
@@ -97,25 +66,29 @@ globus_i_xio_http_target_init(
         goto free_target_exit;
     }
 
-    memcpy(&new_contact_info, contact_info, sizeof(globus_xio_contact_t));
-    if (new_contact_info.port == 0
-            && (strcmp(new_contact_info.scheme, "http")==0))
+    if(contact_info->port == 0)
     {
-        new_contact_info.port = "80";
+        if(strcmp(contact_info->scheme, "http") == 0)
+        {
+            target->port = 80;
+        }
+        else if(strcmp(contact_info->scheme, "https") == 0)
+        {
+            target->port = 443;
+        }
+        else
+        {
+            res = GlobusXIOErrorParameter("port");
+    
+            goto free_target_exit;
+        }
     }
-    else if (new_contact_info.port == 0
-            && (strcmp(new_contact_info.scheme, "https")==0))
+    else
     {
-        new_contact_info.port = "443";
+        target->port = (unsigned short) atoi(contact_info->port);
     }
-    res = globus_xio_driver_client_target_pass(target_op, &new_contact_info);
 
-    if (res != GLOBUS_SUCCESS)
-    {
-        goto free_target_exit;
-    }
-
-    *out_driver_target = target;
+    *out_target = target;
 
     return res;
 
@@ -179,6 +152,8 @@ globus_i_xio_http_target_copy(
         }
     }
 
+    dest->port = src->port;
+
     return res;
 
 free_host_exit:
@@ -216,7 +191,7 @@ globus_i_xio_http_target_destroy(
 /* globus_i_xio_http_target_destroy() */
 
 extern
-globus_result_t
+void
 globus_i_xio_http_target_destroy_internal(
     globus_i_xio_http_target_t *        target)
 {
@@ -231,7 +206,5 @@ globus_i_xio_http_target_destroy_internal(
     {
         globus_libc_free(http_target->uri);
     }
-
-    return GLOBUS_SUCCESS;
 }
 /* globus_i_xio_http_target_destroy_internal() */

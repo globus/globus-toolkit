@@ -156,7 +156,6 @@ close_barrier_main(
     int                                     rc;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     handle;
-    globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_abstime_t                        end_time;
     globus_xio_attr_t                       attr;
@@ -178,13 +177,13 @@ close_barrier_main(
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);
 
-    res = globus_xio_target_init(&target, NULL, "whatever", stack);
+    res = globus_xio_handle_create(&handle, stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_register_open(
-            &handle,
+            handle,
+            "whatever",
             attr,
-            target,
             open_cb,
             NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);

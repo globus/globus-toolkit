@@ -28,7 +28,6 @@ unload_main(
     globus_xio_driver_t                     bounce_driver;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     handle;
-    globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_byte_t                           buffer[1024];
     int                                     pos;
@@ -56,22 +55,22 @@ unload_main(
     res = globus_xio_stack_push_driver(stack, debug_driver);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    res = globus_xio_target_init(&target, NULL, "whatever", stack);
+    res = globus_xio_handle_create(&handle, stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     if(pos == 1)
     {
         res = globus_xio_open(
-            &handle,
-            NULL,
-            target);
+            handle,
+            "whatever",
+            NULL);
     }
     else if(pos == 2)
     {
         res = globus_xio_register_open(
-            &handle,
+            handle,
+            "whatever",
             NULL,
-            target,
             NULL,
             NULL);
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
@@ -79,9 +78,9 @@ unload_main(
     else if(pos == 3)
     {
         res = globus_xio_open(
-            &handle,
-            NULL,
-            target);
+            handle,
+            "whatever",
+            NULL);
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
         res = globus_xio_register_write(
@@ -97,9 +96,9 @@ unload_main(
     else if(pos == 4)
     {
         res = globus_xio_open(
-            &handle,
-            NULL,
-            target);
+            handle,
+            "whatever",
+            NULL);
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
         res = globus_xio_register_read(
@@ -116,7 +115,8 @@ unload_main(
     {
         globus_assert(0);
     }
-
+    
+    globus_xio_stack_destroy(stack);
     res = globus_xio_driver_unload(debug_driver);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     res = globus_xio_driver_unload(test_driver);

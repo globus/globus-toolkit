@@ -1,6 +1,5 @@
 
 #include "globus_common.h"
-#include "globus_i_xio.h"
 #include "globus_xio_system.h"
 #include "globus_xio_driver.h"
 
@@ -135,8 +134,8 @@ enum globus_l_xio_error_levels
 #define GlobusIXIOSystemAddNonBlocking(fd, rc)                              \
     do                                                                      \
     {                                                                       \
-        int                         _fd;                                    \
-        int                         _flags;                                 \
+        int                             _fd;                                \
+        int                             _flags;                             \
                                                                             \
         _fd = (fd);                                                         \
         _flags = fcntl(_fd, F_GETFL);                                       \
@@ -154,8 +153,8 @@ enum globus_l_xio_error_levels
 #define GlobusIXIOSystemRemoveNonBlocking(fd, rc)                           \
     do                                                                      \
     {                                                                       \
-        int                         _fd;                                    \
-        int                         _flags;                                 \
+        int                             _fd;                                \
+        int                             _flags;                             \
                                                                             \
         _fd = (fd);                                                         \
         _flags = fcntl(_fd, F_GETFL);                                       \
@@ -226,23 +225,23 @@ typedef enum
 typedef struct
 {
     /* common members */
-    globus_l_operation_type_t                   type;
-    globus_l_operation_state_t                  state;
-    globus_xio_operation_t                      op;
-    int                                         fd;
-    globus_object_t *                           error;
-    void *                                      user_arg;
+    globus_l_operation_type_t           type;
+    globus_l_operation_state_t          state;
+    globus_xio_operation_t              op;
+    int                                 fd;
+    globus_object_t *                   error;
+    void *                              user_arg;
     /* used for reads/writes, 0 for others. here to simplify some things */
-    globus_size_t                               nbytes;
-    globus_size_t                               waitforbytes;
+    globus_size_t                       nbytes;
+    globus_size_t                       waitforbytes;
 
     union
     {
         /* non data ops -- connect, accept */
         struct
         {
-            globus_xio_system_callback_t        callback;
-            int *                               out_fd;
+            globus_xio_system_callback_t callback;
+            int *                       out_fd;
         } non_data;
 
         /* data ops */
@@ -255,37 +254,37 @@ typedef struct
                 /* single buffer ops -- read, recv[from], write, send[to] */
                 struct
                 {
-                    void *                      buf;
-                    globus_size_t               bufsize;
+                    void *              buf;
+                    globus_size_t       bufsize;
 
                     /* extra data used for recv[from] and send[to] */
                     struct
                     {
-                        globus_sockaddr_t *     addr;
-                        int                     flags;
+                        globus_sockaddr_t * addr;
+                        int             flags;
                     } ex;
                 } single;
 
                 /* ops involving iovecs  -- readv, writev, recvmsg, sendmsg */
                 struct
                 {
-                    struct iovec *              start_iov;
-                    int                         start_iovc;
+                    struct iovec *      start_iov;
+                    int                 start_iovc;
 
                     union
                     {
                         /* for readv and writev */
                         struct
                         {
-                            struct iovec *      iov;
-                            int                 iovc;
+                            struct iovec * iov;
+                            int         iovc;
                         } plain;
 
                         /* for recvmsg and sendmsg */
                         struct
                         {
-                            struct msghdr *     msghdr;
-                            int                 flags;
+                            struct msghdr * msghdr;
+                            int         flags;
                         } ex;
                     } cont;
                 } iovec;
@@ -294,29 +293,29 @@ typedef struct
     } sop;
 } globus_l_operation_info_t;
 
-static globus_cond_t                globus_l_xio_system_cond;
-static globus_mutex_t               globus_l_xio_system_fdset_mutex;
-static globus_mutex_t               globus_l_xio_system_cancel_mutex;
-static globus_bool_t                globus_l_xio_system_select_active;
-static globus_bool_t                globus_l_xio_system_wakeup_pending;
-static globus_bool_t                globus_l_xio_system_shutdown_called;
-static int                          globus_l_xio_system_highest_fd;
-static int                          globus_l_xio_system_max_fds;
-static int                          globus_l_xio_system_fd_allocsize;
-static fd_set *                     globus_l_xio_system_read_fds;
-static fd_set *                     globus_l_xio_system_write_fds;
-static fd_set *                     globus_l_xio_system_ready_reads;
-static fd_set *                     globus_l_xio_system_ready_writes;
-static globus_list_t *              globus_l_xio_system_canceled_reads;
-static globus_list_t *              globus_l_xio_system_canceled_writes;
-static globus_l_operation_info_t ** globus_l_xio_system_read_operations;
-static globus_l_operation_info_t ** globus_l_xio_system_write_operations;
-static globus_memory_t              globus_l_xio_system_op_info_memory;
-static globus_memory_t              globus_l_xio_system_iov_memory;
-static globus_memory_t              globus_l_xio_system_msghdr_memory;
-static globus_bool_t                globus_l_xio_system_memory_initialized = 0;
-static int                          globus_l_xio_system_wakeup_pipe[2];
-static globus_callback_handle_t     globus_l_xio_system_poll_handle;
+static globus_cond_t                    globus_l_xio_system_cond;
+static globus_mutex_t                   globus_l_xio_system_fdset_mutex;
+static globus_mutex_t                   globus_l_xio_system_cancel_mutex;
+static globus_bool_t                    globus_l_xio_system_select_active;
+static globus_bool_t                    globus_l_xio_system_wakeup_pending;
+static globus_bool_t                    globus_l_xio_system_shutdown_called;
+static int                              globus_l_xio_system_highest_fd;
+static int                              globus_l_xio_system_max_fds;
+static int                              globus_l_xio_system_fd_allocsize;
+static fd_set *                         globus_l_xio_system_read_fds;
+static fd_set *                         globus_l_xio_system_write_fds;
+static fd_set *                         globus_l_xio_system_ready_reads;
+static fd_set *                         globus_l_xio_system_ready_writes;
+static globus_list_t *                  globus_l_xio_system_canceled_reads;
+static globus_list_t *                  globus_l_xio_system_canceled_writes;
+static globus_l_operation_info_t **     globus_l_xio_system_read_operations;
+static globus_l_operation_info_t **     globus_l_xio_system_write_operations;
+static globus_memory_t                  globus_l_xio_system_op_info_memory;
+static globus_memory_t                  globus_l_xio_system_iov_memory;
+static globus_memory_t                  globus_l_xio_system_msghdr_memory;
+static globus_bool_t                    globus_l_xio_system_memory_initialized;
+static int                              globus_l_xio_system_wakeup_pipe[2];
+static globus_callback_handle_t         globus_l_xio_system_poll_handle;
 
 /* In the pre-activation of the thread module, we
  * are setting up some code to block the SIGPIPE
@@ -396,13 +395,13 @@ globus_l_xio_system_activate(void)
     {
         goto error_fdsets;
     }
-    globus_l_xio_system_read_fds         = (fd_set *) block;
-    globus_l_xio_system_write_fds        = (fd_set *) (block + i * 1);
-    globus_l_xio_system_ready_reads      = (fd_set *) (block + i * 2);
-    globus_l_xio_system_ready_writes     = (fd_set *) (block + i * 3);
+    globus_l_xio_system_read_fds        = (fd_set *) block;
+    globus_l_xio_system_write_fds       = (fd_set *) (block + i * 1);
+    globus_l_xio_system_ready_reads     = (fd_set *) (block + i * 2);
+    globus_l_xio_system_ready_writes    = (fd_set *) (block + i * 3);
 
-    globus_l_xio_system_canceled_reads   = GLOBUS_NULL;
-    globus_l_xio_system_canceled_writes  = GLOBUS_NULL;
+    globus_l_xio_system_canceled_reads  = GLOBUS_NULL;
+    globus_l_xio_system_canceled_writes = GLOBUS_NULL;
 
     globus_l_xio_system_read_operations = (globus_l_operation_info_t **)
         globus_calloc(
@@ -606,7 +605,7 @@ globus_l_xio_system_cancel_cb(
                     }
                     else
                     {
-                        globus_result_t     result;
+                        globus_result_t result;
 
                         op_info->state = GLOBUS_L_OPERATION_COMPLETE;
                         
@@ -689,15 +688,13 @@ globus_l_xio_system_register_read(
     globus_l_operation_info_t *         read_info)
 {
     globus_result_t                     result;
-    globus_bool_t                       canceled;
     GlobusXIOName(globus_l_xio_system_register_read);
 
     GlobusXIOSystemDebugEnterFD(fd);
 
     /* I have to do this outside the lock because of lock inversion issues */
-    GlobusXIODriverEnableCancel(
-        read_info->op, canceled, globus_l_xio_system_cancel_cb, read_info);
-    if(canceled)
+    if(globus_xio_operation_enable_cancel(
+        read_info->op, globus_l_xio_system_cancel_cb, read_info))
     {
         result = GlobusXIOErrorCanceled();
         goto error_cancel_enable;
@@ -757,7 +754,7 @@ error_canceled:
 error_deactivated:
     read_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    GlobusXIODriverDisableCancel(read_info->op);
+    globus_xio_operation_disable_cancel(read_info->op);
 
 error_cancel_enable:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
@@ -771,15 +768,13 @@ globus_l_xio_system_register_write(
     globus_l_operation_info_t *         write_info)
 {
     globus_result_t                     result;
-    globus_bool_t                       canceled;
     GlobusXIOName(globus_l_xio_system_register_write);
 
     GlobusXIOSystemDebugEnterFD(fd);
 
     /* I have to do this outside the lock because of lock inversion issues */
-    GlobusXIODriverEnableCancel(
-        write_info->op, canceled, globus_l_xio_system_cancel_cb, write_info);
-    if(canceled)
+    if(globus_xio_operation_enable_cancel(
+        write_info->op, globus_l_xio_system_cancel_cb, write_info))
     {
         result = GlobusXIOErrorCanceled();
         goto error_cancel_enable;
@@ -839,7 +834,7 @@ error_canceled:
 error_deactivated:
     write_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    GlobusXIODriverDisableCancel(write_info->op);
+    globus_xio_operation_disable_cancel(write_info->op);
 
 error_cancel_enable:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
@@ -892,7 +887,7 @@ globus_l_xio_system_kickout(
 
     GlobusXIOSystemDebugEnterFD(op_info->fd);
 
-    GlobusXIODriverDisableCancel(op_info->op);
+    globus_xio_operation_disable_cancel(op_info->op);
 
     switch(op_info->type)
     {
@@ -953,7 +948,8 @@ globus_l_xio_system_select_wakeup(void)
     GlobusXIOName(globus_l_xio_system_select_wakeup);
 
     GlobusXIOSystemDebugEnter();
-
+    
+    globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
     byte = 0;
 
     do
@@ -961,11 +957,7 @@ globus_l_xio_system_select_wakeup(void)
         rc = write(globus_l_xio_system_wakeup_pipe[1], &byte, sizeof(byte));
     } while(rc < 0 && errno == EINTR);
 
-    if(rc > 0)
-    {
-        globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
-    }
-    else
+    if(rc <= 0)
     {
         globus_panic(
             GLOBUS_XIO_SYSTEM_MODULE,
@@ -1006,37 +998,41 @@ globus_l_xio_system_try_read(
     globus_size_t                       buflen,
     globus_size_t *                     nbytes)
 {
-    globus_ssize_t                      rc;
+    globus_ssize_t                      rc = 0;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_read);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
-    do
+    
+    /* calls to this with buflen == 0 are requesting select only */
+    if(buflen)
     {
-        rc = read(fd, buf, buflen);
-    } while(rc < 0 && errno == EINTR);
-
-    GlobusXIOSystemDebugPrintf(
-        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Read %d bytes (buflen = %d)\n", _xio_name, rc, buflen));
-
-    if(rc < 0)
-    {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        do
         {
-            rc = 0;
-        }
-        else
+            rc = read(fd, buf, buflen);
+        } while(rc < 0 && errno == EINTR);
+    
+        if(rc < 0)
         {
-            result = GlobusXIOErrorSystemError("read", errno);
-            goto error_errno;
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                rc = 0;
+            }
+            else
+            {
+                result = GlobusXIOErrorSystemError("read", errno);
+                goto error_errno;
+            }
         }
-    }
-    else if(rc == 0) /* what about UDP? */
-    {
-        result = GlobusXIOErrorEOF();
-        goto error_eof;
+        else if(rc == 0) /* what about UDP? */
+        {
+            result = GlobusXIOErrorEOF();
+            goto error_eof;
+        }
+        
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+            ("[%s] Read %d bytes (buflen = %d)\n", _xio_name, rc, buflen));
     }
 
     *nbytes = rc;
@@ -1282,27 +1278,31 @@ globus_l_xio_system_try_write(
     globus_size_t                       buflen,
     globus_size_t *                     nbytes)
 {
-    globus_ssize_t                      rc;
+    globus_ssize_t                      rc = 0;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_write);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
-    do
+    
+    /* calls to this with buflen == 0 are requesting select only */
+    if(buflen)
     {
-        rc = write(fd, buf, buflen);
-    } while(rc < 0 && errno == EINTR);
-
-    if(rc < 0)
-    {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        do
         {
-            rc = 0;
-        }
-        else
+            rc = write(fd, buf, buflen);
+        } while(rc < 0 && errno == EINTR);
+    
+        if(rc < 0)
         {
-            result = GlobusXIOErrorSystemError("write", errno);
-            goto error_errno;
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                rc = 0;
+            }
+            else
+            {
+                result = GlobusXIOErrorSystemError("write", errno);
+                goto error_errno;
+            }
         }
     }
 
@@ -1535,7 +1535,7 @@ globus_l_xio_system_handle_read(
     read_info = globus_l_xio_system_read_operations[fd];
     result = GLOBUS_SUCCESS;
 
-    GlobusXIOOperationRefreshTimeout(read_info->op);
+    globus_xio_operation_refresh_timeout(read_info->op);
 
     if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
     {
@@ -1556,16 +1556,16 @@ globus_l_xio_system_handle_read(
 
             if(new_fd < 0)
             {
-                result = GlobusXIOErrorSystemError("accept", errno);
+                if(errno != ECONNABORTED &&
+                    errno != EAGAIN && errno != EWOULDBLOCK)
+                {
+                    result = GlobusXIOErrorSystemError("accept", errno);
+                }
             }
             else
             {
                 int                     rc;
                 
-                /* XXX it is possible to get ECONNABORTED,
-                 * need to set listener non-blocking and deal with this error
-                 * and EAGAIN
-                 */
                 GlobusIXIOSystemAddNonBlocking(new_fd, rc);
                 if(rc < 0)
                 {
@@ -1575,6 +1575,7 @@ globus_l_xio_system_handle_read(
                 else
                 {
                     *read_info->sop.non_data.out_fd = new_fd;
+                    read_info->nbytes++;
                     GlobusXIOSystemDebugPrintf(
                         GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
                         ("[%s] Accepted new connection, fd=%d\n",
@@ -1725,7 +1726,7 @@ globus_l_xio_system_handle_write(
     result = GLOBUS_SUCCESS;
     write_info = globus_l_xio_system_write_operations[fd];
 
-    GlobusXIOOperationRefreshTimeout(write_info->op);
+    globus_xio_operation_refresh_timeout(write_info->op);
 
     if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
     {
@@ -2008,15 +2009,11 @@ globus_l_xio_system_poll(
         GlobusXIOSystemDebugPrintf(
             GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
             ("[%s] After select\n", _xio_name));
-            
+        
         globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
         {
-            globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
-            {
-                globus_l_xio_system_select_active = GLOBUS_FALSE;
-            }
-            globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-
+            globus_l_xio_system_select_active = GLOBUS_FALSE;
+            
             if(nready > 0)
             {
                 fd = globus_l_xio_system_wakeup_pipe[0];
@@ -2307,12 +2304,19 @@ globus_xio_system_register_accept(
     void *                              user_arg)
 {
     globus_result_t                     result;
+    int                                 rc;
     globus_l_operation_info_t *         op_info;
     GlobusXIOName(globus_xio_system_register_accept);
 
     GlobusXIOSystemDebugEnterFD(listener_fd);
     
-    /* XXX  need to set this fd non-blocking */
+    GlobusIXIOSystemAddNonBlocking(listener_fd, rc);
+    if(rc < 0)
+    {
+        result = GlobusXIOErrorSystemError("fcntl", errno);
+        goto error_nonblocking;
+    }
+    
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
     {
@@ -2327,6 +2331,7 @@ globus_xio_system_register_accept(
     op_info->user_arg = user_arg;
     op_info->sop.non_data.callback = callback;
     op_info->sop.non_data.out_fd = out_fd;
+    op_info->waitforbytes = 1;
 
     result = globus_l_xio_system_register_read(listener_fd, op_info);
 
@@ -2344,13 +2349,11 @@ error_register:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
+error_nonblocking:
     GlobusXIOSystemDebugExitWithErrorFD(listener_fd);
     return result;
 }
 
-/* XXX should modify these read calls to set the lo watermark opt 
- * (may affect timeout refresh)
- */
 globus_result_t
 globus_xio_system_register_read(
     globus_xio_operation_t              op,
@@ -2555,9 +2558,6 @@ error_op_info:
     return result;
 }
 
-/* XXX should modify these write calls to set the lo watermark opt
- * (may affect timeout refresh)
- */
 globus_result_t
 globus_xio_system_register_write(
     globus_xio_operation_t              op,

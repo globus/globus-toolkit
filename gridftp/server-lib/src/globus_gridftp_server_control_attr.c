@@ -1,5 +1,4 @@
 #include "globus_i_gridftp_server_control.h"
-#include "globus_gridftp_server_control_pmod_959.h"
 
 globus_result_t
 globus_gridftp_server_control_attr_init(
@@ -42,8 +41,6 @@ globus_gridftp_server_control_attr_init(
 
     attr->resource_func = NULL;
     attr->version_ctl = GLOBUS_GRIDFTP_VERSION_CTL;
-    attr->pmod = &globus_i_gsc_959_proto_mod; /* for now default is only */
-    attr->start_state = GLOBUS_L_GS_STATE_AUTH;
     attr->modes = globus_libc_strdup("ES");
     attr->types = globus_libc_strdup("AI");
     attr->base_dir = globus_libc_strdup("/");
@@ -458,6 +455,78 @@ globus_gridftp_server_control_attr_data_functions(
     attr->passive_func = passive_func;
     attr->active_func = active_func;
     attr->data_destroy_func = destroy_func;
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
+}
+
+globus_result_t
+globus_gridftp_server_control_attr_set_delete(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     delete_cb)
+{
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_delete);
+
+    if(server_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server_attr");
+        goto err;
+    }
+    attr = (globus_i_gsc_attr_t *) server_attr;
+    attr->delete_func = delete_cb;
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
+}
+
+globus_result_t
+globus_gridftp_server_control_attr_set_mkdir(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     mkdir_cb)
+{
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_mkdir);
+
+    if(server_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server_attr");
+        goto err;
+    }
+    attr = (globus_i_gsc_attr_t *) server_attr;
+    attr->mkdir_func = mkdir_cb;
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
+}
+
+globus_result_t
+globus_gridftp_server_control_attr_set_rmdir(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_action_func_t     rmdir_cb)
+{
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_rmdir);
+
+    if(server_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server_attr");
+        goto err;
+    }
+    attr = (globus_i_gsc_attr_t *) server_attr;
+    attr->rmdir_func = rmdir_cb;
 
     return GLOBUS_SUCCESS;
 

@@ -10,11 +10,11 @@
 #define GlobusIXIOAttrGetDS(_out_ds, _in_attr, _in_driver)                  \
 do                                                                          \
 {                                                                           \
-    int                                         _ctr;                       \
-    globus_i_xio_attr_t *                       _attr;                      \
-    globus_xio_driver_t                         _driver;                    \
-    globus_i_xio_attr_ent_t *                   _entry;                     \
-    void *                                      _ds = NULL;                 \
+    int                                 _ctr;                               \
+    globus_i_xio_attr_t *               _attr;                              \
+    globus_xio_driver_t                 _driver;                            \
+    globus_i_xio_attr_ent_t *           _entry;                             \
+    void *                              _ds = NULL;                         \
                                                                             \
     _attr = (_in_attr);                                                     \
     _driver = (_in_driver);                                                 \
@@ -37,128 +37,6 @@ do                                                                          \
     }                                                                       \
 } while(0)
     
-/*
- *  cancel and timeout functions 
- */
-#define GlobusXIODriverBlockTimeout(_in_op)                                 \
-do                                                                          \
-{                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-                                                                            \
-    _op = (_in_op);                                                         \
-    _op->block_timeout = GLOBUS_TRUE;                                       \
-} while(0)
-
-#define GlobusXIODriverUnblockTimeout(_in_op)                               \
-do                                                                          \
-{                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-                                                                            \
-    _op = (_in_op);                                                         \
-    _op->block_timeout = GLOBUS_FALSE;                                      \
-} while(0)
-
-#define GlobusXIOOperationRefreshTimeout(_in_op)                            \
-do                                                                          \
-{                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-                                                                            \
-    _op = (_in_op);                                                         \
-    _op->progress = GLOBUS_TRUE;                                            \
-} while(0)
-
-#define GlobusXIODriverEnableCancel(op, _canceled, cb, user_arg)            \
-do                                                                          \
-{                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_mutex_t *                                _mutex;                 \
-                                                                            \
-    _op = (globus_i_xio_op_t *)(op);                                        \
-    if(_op->type == GLOBUS_XIO_OPERATION_TYPE_ACCEPT)                       \
-    {                                                                       \
-        _mutex = &_op->_op_server->mutex;                                   \
-    }                                                                       \
-    else                                                                    \
-    {                                                                       \
-        _mutex = &_op->_op_context->mutex;                                  \
-    }                                                                       \
-    globus_mutex_lock(_mutex);                                              \
-    {                                                                       \
-        _canceled = (_op->canceled != 0);                                   \
-        if(_op->canceled == 0)                                              \
-        {                                                                   \
-            _op->cancel_cb = (cb);                                          \
-            _op->cancel_arg = (user_arg);                                   \
-        }                                                                   \
-    }                                                                       \
-    globus_mutex_unlock(_mutex);                                            \
-} while(0)
-
-#define GlobusXIODriverDisableCancel(op)                                    \
-do                                                                          \
-{                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_mutex_t *                                _mutex;                 \
-                                                                            \
-    _op = (globus_i_xio_op_t *)(op);                                        \
-    if(_op->type == GLOBUS_XIO_OPERATION_TYPE_ACCEPT)                       \
-    {                                                                       \
-        _mutex = &_op->_op_server->mutex;                                   \
-    }                                                                       \
-    else                                                                    \
-    {                                                                       \
-        _mutex = &_op->_op_context->mutex;                                  \
-    }                                                                       \
-    globus_mutex_lock(_mutex);                                              \
-    {                                                                       \
-        _op->cancel_cb = NULL;                                              \
-        _op->cancel_arg = NULL;                                             \
-    }                                                                       \
-    globus_mutex_unlock(_mutex);                                            \
-} while(0)
-
-#define GlobusXIOOperationGetWaitFor(_in_op)                                \
-    ((_in_op)->entry[(_in_op)->ndx - 1]._op_ent_wait_for)
-
-#define GlobusXIOOperationGetDriverSpecificHandle(_in_op)                   \
-    ((_in_op)->_op_context->entry[(_in_op)->ndx - 1].driver_handle)
-
-#define GlobusXIOOperationGetDriverHandle(_in_op)                           \
-    &((_in_op)->_op_context->entry[(_in_op)->ndx])
-
-/* this is obfuscated, but necessary to be able to 'return' dd instead of
- * passing it back, which has its own problems.
- * 
- * so, what it does is this:
- * 
- *  if(dd is NULL)
- *      if(this is a user_dd OR force_create is true)
- *          -- we create one --
- *          if(attr_init_func(&dd) != SUCCESS)
- *              dd = NULL -- to clean up after failed attempt
- *          endif
- *      endif
- *  endif
- *  return dd
- * 
- * 
- * we will get rid of this before beta as we convert everything from macros to
- * functions
- */
-#define GlobusXIOOperationGetDataDescriptor(_in_op, _force_create)          \
-(                                                                           \
- ((_in_op)->entry[(_in_op)->ndx - 1].dd == NULL &&                          \
-    ((_in_op)->is_user_dd || _force_create) &&                              \
-    (((_in_op)->_op_context->entry[(_in_op)->ndx - 1].driver->attr_init_func( \
-        &(_in_op)->entry[(_in_op)->ndx - 1].dd) == GLOBUS_SUCCESS) ||       \
-            ((_in_op)->entry[(_in_op)->ndx - 1].dd = NULL))),               \
- (_in_op)->entry[(_in_op)->ndx - 1].dd                                      \
-)
-
-#define GlobusXIOOperationSetDataDescriptor(_in_op, _in_dd)                 \
-    ((_in_op)->entry[(_in_op)->ndx - 1].dd) = (_in_dd)
-
-
 /*******************************************************************
  *                      driver interface
  ******************************************************************/
@@ -359,9 +237,9 @@ do                                                                          \
  */
 typedef void
 (*globus_xio_driver_callback_t)(
-    struct globus_i_xio_op_s *              op,
-    globus_result_t                         result,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg);
 
 
 /**
@@ -387,43 +265,43 @@ typedef void
  */
 typedef void
 (*globus_xio_driver_data_callback_t)(
-    struct globus_i_xio_op_s *              op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg);
 
 
 typedef globus_result_t
 (*globus_xio_driver_push_driver_t)(
-    globus_xio_driver_t                     driver,
-    globus_xio_stack_t                      stack);
+    globus_xio_driver_t                 driver,
+    globus_xio_stack_t                  stack);
 
 globus_result_t
 globus_xio_driver_attr_cntl(
-    globus_xio_operation_t                  op,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
+    globus_xio_operation_t              op,
+    globus_xio_driver_t                 driver,
+    int                                 cmd,
     ...);
 
 globus_result_t
 globus_xio_driver_data_descriptor_cntl(
-    globus_xio_operation_t                  op,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
+    globus_xio_operation_t              op,
+    globus_xio_driver_t                 driver,
+    int                                 cmd,
     ...);
 
 globus_result_t
 globus_xio_driver_handle_cntl(
-    globus_xio_driver_handle_t              driver_handle,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
+    globus_xio_driver_handle_t          handle,
+    globus_xio_driver_t                 driver,
+    int                                 cmd,
     ...);
 
 globus_result_t
 globus_xio_driver_server_cntl(
-    globus_xio_driver_server_t              driver_server,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
+    globus_xio_driver_server_t          driver_server,
+    globus_xio_driver_t                 driver,
+    int                                 cmd,
     ...);
 
 /**
@@ -431,7 +309,7 @@ globus_xio_driver_server_cntl(
  */
 typedef globus_result_t
 (*globus_xio_driver_get_driver_t)(
-    globus_xio_driver_t *                   out_driver);
+    globus_xio_driver_t *               out_driver);
 
 /**
  *  @ingroup driver_pgm
@@ -455,7 +333,7 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_init_t)(
-    void **                                 out_attr);
+    void **                             out_driver_attr);
 
 /**
  *  @ingroup driver_pgm
@@ -466,8 +344,8 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_copy_t)(
-    void **                                 dst,
-    void *                                  src);
+    void **                             dst,
+    void *                              src);
 
 /**
  *  @ingroup driver_pgm
@@ -478,7 +356,7 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_destroy_t)(
-    void *                                  driver_attr);
+    void *                              driver_attr);
 
 /**
  *  @ingroup driver_pgm
@@ -501,9 +379,9 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_cntl_t)(
-    void *                                  attr,
-    int                                     cmd,
-    va_list                                 ap);
+    void *                              attr,
+    int                                 cmd,
+    va_list                             ap);
 
 /**
  *  @ingroup driver_pgm
@@ -513,26 +391,59 @@ typedef globus_result_t
  *  handles server operations (pasive opens).  In the tcp driver this 
  *  function should create a listener.
  *
- *  @param out_server
- *         An output parameter.  Upon return from this function this
- *         should point to user defined memory that will serve as a 
- *         handle to this server object.
- *
+ *  @param op
+ *         An op which should be passed to globus_xio_driver_server_created.
+ *         Note, that unlike most operations, the server is created from
+ *         the bottom of the stack to the top.
+ * 
+ *  @param contact_info
+ *         This the contact info for the stack below this driver.
+ *         (entries will always be NULL for the transport driver)
+ *         
  *  @param driver_attr
  *         A server attr if the user specified any driver specific 
  *         attributes.  This may be NULL.
- *
- *  @param driver_server
- *         A handle to the internal server object.  Can be used to perform
- *         operations on the server until globus_xio_driver_server_destroy_t
- *         is called upon it.  If the driver has no plans to use
- *         globus_xio_driver_server_cntl() or other functions that require
- *         this value for input then it can be ignored.
+ * 
+ *  @return
+ *         Returning GLOBUS_SUCCESS for this means that 
+ *  `      globus_xio_driver_pass_server_init returned success and
+ *         the driver's server was successfully initialized.
  */
 typedef globus_result_t
 (*globus_xio_driver_server_init_t)(
-    void **                                 out_ds_server,
-    void *                                  driver_attr);
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op);
+
+/**
+ * signify that the server has been created with this call.  Must be called
+ * within the call to the driver's globus_xio_driver_server_init_t
+ * interface.  This call is different than all other pass calls, as it operates
+ * from the bottom of the stack to the top.  If it returns an error, the user
+ * should destroy their driver_server.
+ * 
+ *  @param op
+ *         The operation passed to the globus_xio_driver_server_init_t
+ *         function.
+ * 
+ *  @param contact_info
+ *         The contact info for this driver and the stack below.  If the driver
+ *         has nothing to add, it should just pass the one it received on the
+ *         interface.
+ * 
+ *         The memory for this contact_info is only needed for the life of the
+ *         call, so it is acceptable for it to be declared on the stack and
+ *         it is acceptable to 'steal' pointers from the received contact_info.
+ * 
+ *  @param driver_server
+ *         The driver's server handle.  Future calls to server accept or server
+ *         cntl will be passed this value.
+ */
+globus_result_t
+globus_xio_driver_pass_server_init(
+    globus_xio_operation_t              op,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_server);
 
 /**
  *  @ingroup driver_pgm
@@ -550,7 +461,7 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_server_destroy_t)(
-    void *                                  driver_server);
+    void *                              driver_server);
 
 /**
  *  @ingroup driver_pgm
@@ -559,44 +470,37 @@ typedef globus_result_t
  *  The driver developer should implement this function if their driver 
  *  handles server operations.  Once the accept operation completes, the
  *  connection is established.  The user still has an opertunity to
- *  open the target or destroy it.  They can query the target for 
- *  additional information on which to base a decision to open upon.
+ *  open the link or destroy it.  They can query the link for 
+ *  additional information on which to base the decision to open.
  *
  *  @param driver_server
- *         The server object from which the target connection will be 
+ *         The server object from which the link connection will be 
  *         accepted.
  *
- *  @param driver_attr
- *         If a driver specific attribute was set this will point to it.
- *         Ths parameter may be NULL.
- *
- *  @param target_op
+ *  @param op
  *         The requested operation.  When the driver is finished acepting
  *         the server connection it uses this structure to signal globus_xio 
- *         that it has completed the operation.  This op can be used to pass
- *         client_init or pass_accept.
+ *         that it has completed the operation.
  */
 
 typedef globus_result_t
 (*globus_xio_driver_server_accept_t)(
-    void *                                  driver_server,
-    void *                                  driver_attr,
-    globus_xio_operation_t                  target_op);
+    void *                              driver_server,
+    globus_xio_operation_t              op);
 
 globus_result_t
 globus_xio_driver_pass_accept(
-    globus_xio_operation_t                  target_op,
-    globus_xio_driver_callback_t            in_cb,
-    void *                                  in_user_arg);
-
+    globus_xio_operation_t              op,
+    globus_xio_driver_callback_t        in_cb,
+    void *                              in_user_arg);
 
 /**
  *  @ingroup driver_pgm
  */
 typedef void
 (*globus_xio_driver_cancel_callback_t)(
-    globus_xio_operation_t                  op,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    void *                              user_arg);
 
 /**
  *  @ingroup driver_pgm
@@ -607,21 +511,21 @@ typedef void
  *  resources associated with the accept_op and potientially cause xio
  *  to pop the signal up the driver stack.
  *
- *  @param target_op
+ *  @param op
  *          The requested accept operation that has completed.
  *
- *  @param driver_target
- *          This is the initialized driver target that is required on success
- *          of this operation (if result != GLOBUS_SUCCESS, NULL ok)
+ *  @param driver_link
+ *          This is the initialized driver link that is that will be passed to
+ *          the open interface when this handle is opened.
  * 
  *  @param result
  *          Return status of the completed operation
  */
 void
 globus_xio_driver_finished_accept(
-    globus_xio_operation_t                  target_op,
-    void *                                  driver_target,
-    globus_result_t                         result);
+    globus_xio_operation_t              op,
+    void *                              driver_link,
+    globus_result_t                     result);
     
 /**
  *  @ingroup driver_pgm
@@ -642,91 +546,33 @@ globus_xio_driver_finished_accept(
  */
 typedef globus_result_t
 (*globus_xio_driver_server_cntl_t)(
-    void *                                  driver_server,
-    int                                     cmd,
-    va_list                                 ap);
+    void *                              driver_server,
+    int                                 cmd,
+    va_list                             ap);
 
-
-/**
- *  @ingroup driver_pgm
- *  Initalize a target.
- *
- *  This function is only called when the user is setting up a client
- *  target.  It does not imply any i/o operation will be preformed.  It
- *  merely gives the driver a chance to set up memory for a client target.
- * 
- *  this function is called for each driver from top (transform) to bottom
- *  (transport)
- *
- *  @param target_op
- *         The request operation to cleate a client target from the driver
- *         below.
- *
- *  @param contact_info
- *         A globus_xio_contact_t with describing the user's resource request.
- *         Driver's should document which portions of this they look at.
- *         see globus_target_init for more details.
- * 
- *  @param driver_attr
- *         If the user added any driver specific attributes for this 
- *         operation this will point to a driver specific operation.
- *
- */
-typedef globus_result_t
-(*globus_xio_driver_client_target_init_t)(
-    void **                                 out_driver_target,
-    globus_xio_operation_t                  target_op,
-    const globus_xio_contact_t *            contact_info,
-    void *                                  driver_attr);
-
-/**
- *  @ingroup driver_pgm
- *  Request the driver below to intialize the target_op in a client manner
- *
- *  @param target_op
- *         The operation to be set up as a target.  This function does not
- *         take over the op, the op is available for the upon return in
- *         the same way that it is proor to the call.
- *
- *  @param contact_info
- *         A driver may pass in the contact info passed to it or create a 
- *         new one.
- *
- *  @param driver_target
- *         The driver target to be threaded through to the open interface 
- *         function.
- */
-globus_result_t
-globus_xio_driver_client_target_pass(
-    globus_xio_operation_t                  target_op,
-    const globus_xio_contact_t *            contact_info);
 
 /**
  *  @ingroup driver_pgm
  */
 typedef globus_result_t
-(*globus_xio_driver_target_cntl_t)(
-    void *                                  driver_target,
-    int                                     cmd,
-    va_list                                 ap);
+(*globus_xio_driver_link_cntl_t)(
+    void *                              driver_link,
+    int                                 cmd,
+    va_list                             ap);
 
 /**
  *  @ingroup driver_pgm
- *  destroy a target
+ *  destroy a link
  *
- *  The driver should clean up all resources associated with the target
+ *  The driver should clean up all resources associated with the link
  *  when this function is called.
  *
- *  @param driver_target
- *         The target to be destroyed.
- *
- *  @param driver_target
- *         The internal target reference that is invalid when this function
- *         returns.
+ *  @param driver_link
+ *         The link to be destroyed.
  */
 typedef globus_result_t
-(*globus_xio_driver_target_destroy_t)(
-    void *                                  driver_target);
+(*globus_xio_driver_link_destroy_t)(
+    void *                              driver_link);
 
 
 /**********************************************************************
@@ -737,33 +583,22 @@ typedef globus_result_t
  *  Open a handle
  *  @ingroup driver_pgm
  *
- *  This is called when a user requests to close a handle.  The driver 
- *  implementor should clean up all resources connected to there driver handle
- *  when this function is called.
+ *  This is called when a user requests to open a handle.
  *
- *  @param driver_handle
- *          An unitialized pointer is passed in.  The driver will assign 
- *          this pointwe to some memory and then reference pass in back.
- *          Futrue interface funstion calls will be passed this value.
+ *  @param driver_link
+ *         Comes from server accept.  Used to link an accepted connection to
+ *         an xio handle.  xio will destroy this object upon the return of
+ *         this interface call.
  *
  *  @param driver_attr
  *         A attribute describing how to open.  This points to a piece of 
  *         memory created by the globus_xio_driver_driver_attr_init_t
  *         interface funstion.
  *
- *  @param target
- *         Holds stack information and tells the user how to preform the
- *         open operation.
- * 
- *  @param server
- *         If a passive open is requested this will be the value passed 
- *         back by the drivers globus_xio_driver_server_init() function.
- *         If an active open has been requested this will be NULL.
- *
- *  @param contact_string
- *         This value will be NULL if a passive open is taking place.
- *         If it is not NULL an active open is requested and the this 
- *         parameter points to the contact string.
+ *  @param contact_info
+ *         Contains information about the requested resource.  Its members
+ *         may all be null (especially when link is not null).  XIO will
+ *         destroy this contact info upon return from the interface function
  *    
  *  @param op
  *         The requested operation.  When the driver is finished opening
@@ -774,9 +609,10 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_transform_open_t)(
-    void *                                  driver_target,
-    void *                                  driver_attr,
-    globus_xio_operation_t                  op);
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
+    void *                              driver_attr,
+    globus_xio_operation_t              op);
 
 /**
  *  @ingroup driver_pgm
@@ -784,10 +620,10 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_transport_open_t)(
-    void *                                  driver_target,
-    void *                                  driver_attr,
-    globus_xio_driver_handle_t              handle,
-    globus_xio_operation_t                  op);
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
+    void *                              driver_attr,
+    globus_xio_operation_t              op);
 
 /**
  *  Driver API Open
@@ -801,15 +637,16 @@ typedef globus_result_t
  *  As soon as the function returns the handle is valid for creating 
  *  other operations.
  *
- *  @param handle
- *         Structure represening the state of the driver stack for this
- *         driver handle.
- *
  *  @param op
  *         The operation from which the handle will be established.  This
  *         parameter is used to determine what drivers are in the stack and
  *         other such information.
- *
+ * 
+ *  @param contact_info
+ *         The contact info describing the resource the driver below should
+ *         open.  This will normally be the same contact info that was
+ *         passed in on the open interface.
+ * 
  *  @param cb
  *         The function to be called wehn the open operation is complete.
  *
@@ -818,10 +655,10 @@ typedef globus_result_t
  */
 globus_result_t
 globus_xio_driver_pass_open(
-    globus_xio_driver_handle_t *            handle,
-    globus_xio_operation_t                  op,
-    globus_xio_driver_callback_t            cb,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_driver_callback_t        cb,
+    void *                              user_arg);
 
 /**
  *  Driver API finished open
@@ -829,27 +666,24 @@ globus_xio_driver_pass_open(
  *
  *  This function should be called to signal globus_xio that it has 
  *  completed the open operation requested of it.  It will free up 
- *  resources associated with the open_op and potientially cause xio
+ *  resources associated with the op and potientially cause xio
  *  to pop the signal up the driver stack.
  *
- *  @param handle
- *         The opened handle that will be associated with future operations
- *         upon the handle.  useful if merging handles.  For the non
- *         advanced user this will always be the same value acieved
- *         from pass open.
+ *  @param driver_handle
+ *          The driver specific handle pointer that will be passed to 
+ *          future interface funstion calls.
  *
  *  @param open_op
  *          The requested open operation that has completed.
  *
  *  @param result
- *o         Return status of the completed operation
+ *          Return status of the completed operation
  */
 void
 globus_xio_driver_finished_open(
-    globus_xio_driver_handle_t              handle,
-    void *                                  driver_handle,
-    globus_xio_operation_t                  open_op,
-    globus_result_t                         result);
+    void *                              driver_handle,
+    globus_xio_operation_t              op,
+    globus_result_t                     result);
 
 /**********************************************************************
  *                      Context functions
@@ -874,23 +708,23 @@ globus_xio_driver_finished_open(
  */
 globus_result_t
 globus_xio_driver_operation_create(
-    globus_xio_operation_t *                operation,
-    globus_xio_driver_handle_t              driver_handle);
+    globus_xio_operation_t *            operation,
+    globus_xio_driver_handle_t          handle);
 
 /**
  *  @ingroup driver_pgm
  */
 void
 globus_xio_driver_operation_destroy(
-    globus_xio_operation_t                  operation);
+    globus_xio_operation_t              operation);
 
 /**
  *  @ingroup driver_pgm
  */
 globus_result_t
 globus_xio_driver_operation_cancel(
-    globus_xio_driver_handle_t              driver_handle,
-    globus_xio_operation_t                  operation);
+    globus_xio_driver_handle_t          handle,
+    globus_xio_operation_t              operation);
 
 /**
  *  Is Operation blocking.
@@ -902,16 +736,22 @@ globus_xio_driver_operation_cancel(
  */
 globus_bool_t
 globus_xio_driver_operation_is_blocking(
-    globus_xio_operation_t                  operation);
+    globus_xio_operation_t              operation);
 
 /**
  *  @ingroup driver_pgm
  */
 typedef globus_result_t
 (*globus_xio_driver_handle_cntl_t)(
-    void *                                  handle,
-    int                                     cmd,
-    va_list                                 ap);
+    void *                              handle,
+    int                                 cmd,
+    va_list                             ap);
+
+
+globus_result_t
+globus_xio_driver_merge_handle(
+    globus_xio_operation_t              op,
+    globus_xio_driver_handle_t          handle);
 
 /**********************************************************************
  *                          Close
@@ -925,24 +765,23 @@ typedef globus_result_t
  *  when this function is called.
  *
  *  @param driver_specific_handle
- *          The driver handle to be closed.
+ *         The driver handle to be closed.
  *
- *  @param driver_handle
- *         The driver_handle representing the globus_xio user handle that is
- *         requesting a close operation.
+ *  @param driver_attr
+ *         A driver specific attr which may be used to alter how a close
+ *         is performed (e,g, caching drivers)
  * 
  *  @param op
  *         The requested operation.  When the driver is finished closing
  *         the handle it uses this structure to signal globus_xio that it
  *         has completed the operation requested.  It does this by calling
- *         globus_xio_driver_finished_operation()
+ *         globus_xio_driver_finished_close()
  */
 typedef globus_result_t
 (*globus_xio_driver_close_t)(
-    void *                                  driver_specific_handle,
-    void *                                  driver_attr,
-    globus_xio_driver_handle_t              driver_handle,
-    globus_xio_operation_t                  op);
+    void *                              driver_handle,
+    void *                              driver_attr,
+    globus_xio_operation_t              op);
 
 /**
  *  Driver API Close
@@ -964,9 +803,9 @@ typedef globus_result_t
  */
 globus_result_t
 globus_xio_driver_pass_close(
-    globus_xio_operation_t                  op,
-    globus_xio_driver_callback_t            cb,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    globus_xio_driver_callback_t        cb,
+    void *                              user_arg);
 
 /**
  *  Driver API finished_close
@@ -985,28 +824,8 @@ globus_xio_driver_pass_close(
  */
 void
 globus_xio_driver_finished_close(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result);
-
-/**
- *  @ingroup driver_pgm
- *
- *  Close a driver_handle
- *
- *  Once a driver has finished using a driver_handle it should close it 
- *  to return the resources it is using to globus_xio.  In typical
- *  cases this function will be caled imediuately after calling 
- *  globus_xio_driver_finished_close().  However the driver is free
- *  tocache the driver_handle for use with handles that the user may possibily 
- *  open in the future.
- *
- *  @param driver_handle
- *         The driver_handle atd that the driver is finished using and wishes 
- *         to close.
- */
-globus_result_t
-globus_xio_driver_handle_close(
-    globus_xio_driver_handle_t              driver_handle);
+    globus_xio_operation_t              op,
+    globus_result_t                     result);
 
 /**********************************************************************
  *                          Read
@@ -1036,10 +855,10 @@ globus_xio_driver_handle_close(
  */
 typedef globus_result_t
 (*globus_xio_driver_read_t)(
-    void *                                  driver_specific_handle,
-    const globus_xio_iovec_t *              iovec,
-    int                                     iovec_count,
-    globus_xio_operation_t                  op);
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op);
 
 /**
  *  Driver read
@@ -1074,12 +893,12 @@ typedef globus_result_t
  */
 globus_result_t
 globus_xio_driver_pass_read(
-    globus_xio_operation_t                  op,
-    globus_xio_iovec_t *                    iovec,
-    int                                     iovec_count,
-    globus_size_t                           wait_for,
-    globus_xio_driver_data_callback_t       cb,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    globus_xio_iovec_t *                iovec,
+    int                                 iovec_count,
+    globus_size_t                       wait_for,
+    globus_xio_driver_data_callback_t   cb,
+    void *                              user_arg);
 
 /**
  *  Finished Read
@@ -1100,9 +919,9 @@ globus_xio_driver_pass_read(
  */
 void
 globus_xio_driver_finished_read(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nread);
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nread);
 
 /**********************************************************************
  *                          Write
@@ -1132,10 +951,10 @@ globus_xio_driver_finished_read(
  */
 typedef globus_result_t
 (*globus_xio_driver_write_t)(
-    void *                                  driver_specific_handle,
-    const globus_xio_iovec_t *              iovec,
-    int                                     iovec_count,
-    globus_xio_operation_t                  op);
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op);
 
 /**
  *  Driver write
@@ -1171,12 +990,12 @@ typedef globus_result_t
  */
 globus_result_t
 globus_xio_driver_pass_write(
-    globus_xio_operation_t                  op,
-    globus_xio_iovec_t *                    iovec,
-    int                                     iovec_count,
-    globus_size_t                           wait_for,
-    globus_xio_driver_data_callback_t       cb,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    globus_xio_iovec_t *                iovec,
+    int                                 iovec_count,
+    globus_size_t                       wait_for,
+    globus_xio_driver_data_callback_t   cb,
+    void *                              user_arg);
 
 /**
  *  Finished Write
@@ -1197,12 +1016,13 @@ globus_xio_driver_pass_write(
  */
 void
 globus_xio_driver_finished_write(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nwritten);
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nwritten);
 
 /**
- *  Finishes an operation and merge to op structures.
+ *  Finishes an operation and merge two op structures.
+ *  (XXX not implemented yet)
  *  @ingroup driver_pgm
  *
  *  This function will join to operations together and signal globus_xio
@@ -1225,9 +1045,9 @@ globus_xio_driver_finished_write(
  * other finish() call)
  */
 globus_result_t
-globus_xio_driver_finished_from_previous(
-    globus_xio_operation_t                  top_op,
-    globus_xio_operation_t                  bottom_op);
+globus_xio_driver_merge_operation(
+     globus_xio_operation_t             top_op,
+     globus_xio_operation_t             bottom_op);
 
 
 /**********************************************************************
@@ -1291,81 +1111,115 @@ globus_xio_driver_finished_from_previous(
 
 globus_result_t
 globus_xio_driver_init(
-    globus_xio_driver_t *                   driver,
-    const char *                            driver_name,
-    void *                                  user_data);
+    globus_xio_driver_t *               driver,
+    const char *                        driver_name,
+    void *                              user_data);
 
 /**
  *  @ingroup driver_pgm
  */
 globus_result_t
 globus_xio_driver_get_user_data(
-    globus_xio_driver_t                     in_driver,
-    void **                                 out_user_data);
+    globus_xio_driver_t                 in_driver,
+    void **                             out_user_data);
 
 /**
  *  @ingroup driver_pgm
  */
 globus_result_t
 globus_xio_driver_destroy(
-    globus_xio_driver_t                     driver);
+    globus_xio_driver_t                 driver);
 
 /**
  *  @ingroup driver_pgm
  */
 globus_result_t
 globus_xio_driver_set_transport(
-    globus_xio_driver_t                     driver,
-    globus_xio_driver_transport_open_t      transport_open_func,
-    globus_xio_driver_close_t               close_func,
-    globus_xio_driver_read_t                read_func,
-    globus_xio_driver_write_t               write_func,
-    globus_xio_driver_handle_cntl_t         handle_cntl_func);
+    globus_xio_driver_t                 driver,
+    globus_xio_driver_transport_open_t  transport_open_func,
+    globus_xio_driver_close_t           close_func,
+    globus_xio_driver_read_t            read_func,
+    globus_xio_driver_write_t           write_func,
+    globus_xio_driver_handle_cntl_t     handle_cntl_func);
 
 /**
  *  @ingroup driver_pgm
  */
 globus_result_t
 globus_xio_driver_set_transform(
-    globus_xio_driver_t                     driver,
-    globus_xio_driver_transform_open_t      transform_open_func,
-    globus_xio_driver_close_t               close_func,
-    globus_xio_driver_read_t                read_func,
-    globus_xio_driver_write_t               write_func,
-    globus_xio_driver_handle_cntl_t         handle_cntl_func,
-    globus_xio_driver_push_driver_t         push_driver_func);
-
-/**
- *  @ingroup driver_pgm
- */
-globus_result_t
-globus_xio_driver_set_client(
-    globus_xio_driver_t                     driver,
-    globus_xio_driver_client_target_init_t  target_init_func,
-    globus_xio_driver_target_cntl_t         target_cntl_func,
-    globus_xio_driver_target_destroy_t      target_destroy_func);
+    globus_xio_driver_t                 driver,
+    globus_xio_driver_transform_open_t  transform_open_func,
+    globus_xio_driver_close_t           close_func,
+    globus_xio_driver_read_t            read_func,
+    globus_xio_driver_write_t           write_func,
+    globus_xio_driver_handle_cntl_t     handle_cntl_func,
+    globus_xio_driver_push_driver_t     push_driver_func);
 
 /**
  *  @ingroup driver_pgm
  */
 globus_result_t
 globus_xio_driver_set_server(
-    globus_xio_driver_t                     driver,
-    globus_xio_driver_server_init_t         server_init_func,
-    globus_xio_driver_server_accept_t       server_accept_func,
-    globus_xio_driver_server_destroy_t      server_destroy_func,
-    globus_xio_driver_server_cntl_t         server_cntl_func,
-    globus_xio_driver_target_destroy_t      target_destroy_func);
+    globus_xio_driver_t                 driver,
+    globus_xio_driver_server_init_t     server_init_func,
+    globus_xio_driver_server_accept_t   server_accept_func,
+    globus_xio_driver_server_destroy_t  server_destroy_func,
+    globus_xio_driver_server_cntl_t     server_cntl_func,
+    globus_xio_driver_link_cntl_t       link_cntl_func,
+    globus_xio_driver_link_destroy_t    link_destroy_func);
 
 /**
  *  @ingroup driver_pgm
  */
 globus_result_t
 globus_xio_driver_set_attr(
-    globus_xio_driver_t                     driver,
-    globus_xio_driver_attr_init_t           attr_init_func,
-    globus_xio_driver_attr_copy_t           attr_copy_func,
-    globus_xio_driver_attr_cntl_t           attr_cntl_func,
-    globus_xio_driver_attr_destroy_t        attr_destroy_func);
+    globus_xio_driver_t                 driver,
+    globus_xio_driver_attr_init_t       attr_init_func,
+    globus_xio_driver_attr_copy_t       attr_copy_func,
+    globus_xio_driver_attr_cntl_t       attr_cntl_func,
+    globus_xio_driver_attr_destroy_t    attr_destroy_func);
+
+/*
+ *  operation accessors
+ */
+void
+globus_xio_operation_block_timeout(
+    globus_xio_operation_t              op);
+    
+void
+globus_xio_operation_unblock_timeout(
+    globus_xio_operation_t              op);
+
+void
+globus_xio_operation_refresh_timeout(
+    globus_xio_operation_t              op);
+
+/** returns true if operation already canceled */
+globus_bool_t
+globus_xio_operation_enable_cancel(
+    globus_xio_operation_t              op,
+    globus_xio_driver_cancel_callback_t cb,
+    void *                              user_arg);
+
+void
+globus_xio_operation_disable_cancel(
+    globus_xio_operation_t              op);
+
+globus_size_t
+globus_xio_operation_get_wait_for(
+    globus_xio_operation_t              op);
+
+void *
+globus_xio_operation_get_driver_specific(
+    globus_xio_operation_t              op);
+
+globus_xio_driver_handle_t
+globus_xio_operation_get_driver_handle(
+    globus_xio_operation_t              op);
+
+void *
+globus_xio_operation_get_data_descriptor(
+    globus_xio_operation_t              op,
+    globus_bool_t                       force_create);
 
 #endif /* GLOBUS_XIO_DRIVER_H */

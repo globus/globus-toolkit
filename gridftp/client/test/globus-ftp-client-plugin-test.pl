@@ -27,7 +27,7 @@ sub go
 {
     my $rc;
     my $errors="";
-    $rc = system("$test_exec") / 256;
+    $rc = run_command("$test_exec") / 256;
     if($rc != 0)
     {
         $errors .= "Test exited with $rc. ";

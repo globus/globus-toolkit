@@ -35,7 +35,7 @@ sub check_existence
     unlink('core');
 
     my $command = "$test_exec -s $src_url >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != $existence_rc)
     {
         $errors .= "\n# Test exited with $rc. ";
