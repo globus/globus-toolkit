@@ -170,6 +170,7 @@ main(int argc, char *argv[])
     /* Check version */
     if (strcmp(server_response->version, MYPROXY_VERSION) != 0) {
         fprintf(stderr, "Invalid version number received from server\n");
+	exit(1);
     }
 
     /* Check response */
@@ -177,6 +178,7 @@ main(int argc, char *argv[])
     case MYPROXY_ERROR_RESPONSE:
         fprintf(stderr, "Received ERROR_RESPONSE: %s\n",
 		server_response->error_string);
+	exit(1);
         break;
     case MYPROXY_OK_RESPONSE:
 	printf("username: %s\n", client_request->username);
@@ -184,6 +186,7 @@ main(int argc, char *argv[])
 	break;
     default:
         fprintf(stderr, "Invalid response type received.\n");
+	exit(1);
         break;
     }
 
