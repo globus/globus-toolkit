@@ -75,11 +75,11 @@
             "[%s:%d] Memory allocation failed on %s",                       \
             _xio_name, __LINE__, (mem_name)))                               
                                                                             
-#define GlobusXIOErrorSystemError(system_func, errno)                       \
+#define GlobusXIOErrorSystemError(system_func, _errno)                      \
     globus_error_put(                                                       \
         globus_error_wrap_errno_error(                                      \
             GLOBUS_XIO_MODULE,                                              \
-            (errno),                                                        \
+            (_errno),                                                       \
             GLOBUS_XIO_ERROR_SYSTEM_ERROR,                                  \
             "[%s:%d] System error in %s",                                   \
             _xio_name, __LINE__, (system_func)))                            
