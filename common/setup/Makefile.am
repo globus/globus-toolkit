@@ -14,6 +14,7 @@ SUBDIRS = pkgdata
 
 EXTRA_DIST = \
 	setup-common-sh-scripts \
+	setup-common-sh-scripts.in \
 	setup-globus-common \
 	setup-globus-common.pl \
 	setup-globus-common-test \
