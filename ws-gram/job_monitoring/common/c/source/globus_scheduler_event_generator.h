@@ -147,6 +147,10 @@ globus_scheduler_event_done(
     const char *                        jobid,
     int                                 exit_code);
 
+globus_result_t
+globus_scheduler_event_generator_get_timestamp(
+    time_t *                            timestamp);
+
 /* API used by executable which drives the SEG */
 globus_result_t
 globus_scheduler_event_generator_set_timestamp(

@@ -519,6 +519,36 @@ globus_scheduler_event_done(
             exit_code);
 }
 
+/**
+ * Get the timestamp for the earliest event an SEG module should send.
+ * @ingroup seg_api
+ *
+ * @param timestamp
+ *     Pointer to a time_t which will be set to the timestamp passed to the
+ *     SEG executable. The module should not send any events which occur prior
+ *     to this timestamp.
+ * @retval GLOBUS_SEG_ERROR_NULL
+ *     Null timestamp.
+ * @retval GLOBUS_SUCCESS
+ *     Timestamp value updated. If the timestamp was not set on the SEG
+ *     command-line, then the value pointed to by @a timestamp will be set to
+ *     0.
+ */
+globus_result_t
+globus_scheduler_event_generator_get_timestamp(
+    time_t *                            timestamp)
+{
+    if (timestamp == NULL)
+    {
+        return GLOBUS_SEG_ERROR_NULL;
+    }
+    *timestamp = globus_l_seg_timestamp;
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_scheduler_event_generator_get_timestamp() */
+
+
 globus_result_t
 globus_scheduler_event_generator_set_timestamp(
     time_t                              timestamp)
@@ -562,12 +592,6 @@ globus_scheduler_event_generator_load_module(
     char                                timestamp_str[64];
     const char *                        symbol_name
             = "globus_scheduler_event_module_ptr";
-
-    if (globus_l_seg_timestamp != 0)
-    {
-        sprintf(timestamp_str, "%lu", globus_l_seg_timestamp);
-        globus_module_setenv("GLOBUS_SEG_TIMESTAMP", timestamp_str);
-    }
 
     globus_mutex_lock(&globus_l_seg_mutex);
     if (globus_l_seg_scheduler_handle != NULL)
