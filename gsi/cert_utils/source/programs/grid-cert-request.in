@@ -15,8 +15,10 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
     if [ -r "${GRID_SECURITY_DIR}/globus-user-ssl.conf" ] && 
        [ -r "${GRID_SECURITY_DIR}/globus-host-ssl.conf" ] ; then
         secconfdir="${GRID_SECURITY_DIR}"
-        if test "X`echo ${GRID_SECURITY_DIR}|sed 's/etc$//'|sed 's/\/$//'`" = \
-            "X`echo ${GLOBUS_LOCATION}|sed 's/\/$//'`" ; then
+        if test ! -z "${X509_CERT_DIR}" ; then
+            trusted_certs_dir="${X509_CERT_DIR}"
+        elif test "X`echo ${GRID_SECURITY_DIR}|sed 's/etc$//'|sed 's/\/$//'`" \
+            = "X`echo ${GLOBUS_LOCATION}|sed 's/\/$//'`" ; then
             trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
         else
             trusted_certs_dir="${secconfdir}/certificates"
@@ -32,11 +34,19 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
 elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] && 
      [ -r "/etc/grid-security/globus-host-ssl.conf" ] ; then
     secconfdir="/etc/grid-security"
-    trusted_certs_dir="${secconfdir}/certificates"
+    if test ! -z "${X509_CERT_DIR}" ; then
+        trusted_certs_dir="${X509_CERT_DIR}"
+    else
+        trusted_certs_dir="${secconfdir}/certificates"
+    fi
 elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
      [ -r "${GLOBUS_LOCATION}/etc/globus-host-ssl.conf" ] ; then
     secconfdir="${GLOBUS_LOCATION}/etc"
-    trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
+    if test ! -z "${X509_CERT_DIR}" ; then
+        trusted_certs_dir="${X509_CERT_DIR}"
+    else
+        trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
+    fi
 else
     echo "Can't find valid CA config files. Please make sure"
     echo "that you have installed and setup a CA setup package."
