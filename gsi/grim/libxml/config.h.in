@@ -18,20 +18,17 @@
 #undef HAVE_LIBPTHREAD
 #undef HAVE_PTHREAD_H
 
-/* Define if you have the _stat function.  */
-#undef HAVE__STAT
-
 /* Define if you have the class function.  */
 #undef HAVE_CLASS
 
 /* Define if you have the finite function.  */
 #undef HAVE_FINITE
 
-/* Define if you have the fp_class function.  */
-#undef HAVE_FP_CLASS
-
 /* Define if you have the fpclass function.  */
 #undef HAVE_FPCLASS
+
+/* Define if you have the fp_class function.  */
+#undef HAVE_FP_CLASS
 
 /* Define if you have the fprintf function.  */
 #undef HAVE_FPRINTF
@@ -65,6 +62,9 @@
 
 /* Define if you have the stat function.  */
 #undef HAVE_STAT
+
+/* Define if you have the _stat function.  */
+#undef HAVE__STAT
 
 /* Define if you have the strdup function.  */
 #undef HAVE_STRDUP
@@ -165,11 +165,11 @@
 /* Define if you have the <sys/stat.h> header file.  */
 #undef HAVE_SYS_STAT_H
 
-/* Define if you have the <sys/time.h> header file.  */
-#undef HAVE_SYS_TIME_H
-
 /* Define if you have the <sys/timeb.h> header file.  */
 #undef HAVE_SYS_TIMEB_H
+
+/* Define if you have the <sys/time.h> header file.  */
+#undef HAVE_SYS_TIME_H
 
 /* Define if you have the <sys/types.h> header file.  */
 #undef HAVE_SYS_TYPES_H
