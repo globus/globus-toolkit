@@ -176,7 +176,7 @@ typedef enum
      *      The ftp client handle pointer will be stored here. If none is set,
      *      GLOBUS_NULL will be set.
      */
-    /* globus_ftp_client_handle_t **	ftp_handle */
+    /* globus_ftp_client_handle_t **	ftp_handle_out */
     GLOBUS_XIO_GRIDFTP_GET_HANDLE,
 
     /** GlobusVarArgEnum(attr)
