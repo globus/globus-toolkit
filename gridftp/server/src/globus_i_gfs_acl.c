@@ -291,10 +291,6 @@ globus_i_gfs_acl_destroy(
         }
         globus_free(acl_handle->grpent.gr_mem);
     }
-    if(acl_handle->auth_action)
-    {
-        globus_free(acl_handle->auth_action);
-    }
     if(acl_handle->auth_object)
     {
         globus_free(acl_handle->auth_object);

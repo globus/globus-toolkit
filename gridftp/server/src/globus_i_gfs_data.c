@@ -149,10 +149,11 @@ typedef struct globus_l_gfs_data_operation_s
 
     int                                 ref;
     globus_result_t                     cached_res;
-    void *                              info;
 
     globus_gfs_storage_iface_t *        dsi;
     int                                 sent_partial_eof;
+
+    void *                              stat_wrapper;
 } globus_l_gfs_data_operation_t;
 
 typedef struct
@@ -349,6 +350,7 @@ globus_l_gfs_data_auth_stat_cb(
     {
         globus_l_gfs_authorize_cb(recv_info->pathname, op, res);
     }
+    globus_free(op->stat_wrapper);
 }
 
 void
@@ -2161,6 +2163,7 @@ globus_i_gfs_data_request_recv(
     stat_info->file_only = GLOBUS_FALSE;
 
     op->info_struct = recv_info;
+    op->stat_wrapper = stat_info;
 
     globus_i_gfs_data_request_stat(
         ipc_handle,
@@ -2310,6 +2313,7 @@ globus_l_gfs_data_list_stat_cb(
     op = (globus_gfs_operation_t) user_arg;
     bounce_info = (globus_l_gfs_data_bounce_t *) op->user_arg;
 
+    globus_free(op->stat_wrapper);
     if(reply->result != GLOBUS_SUCCESS)
     {
         result = reply->result;
@@ -2449,6 +2453,7 @@ globus_i_gfs_data_request_list(
         stat_info->file_only = GLOBUS_FALSE;
 
         data_op->info_struct = list_info;
+        data_op->stat_wrapper = stat_info;
 
         globus_i_gfs_data_request_stat(
             ipc_handle,
@@ -3765,7 +3770,6 @@ globus_gridftp_server_finished_stat(
     globus_gfs_stat_t *                 stat_copy;
     GlobusGFSName(globus_gridftp_server_finished_stat);
 
-    globus_free(op->info);
     if(result == GLOBUS_SUCCESS)
     {
         stat_copy = (globus_gfs_stat_t *)
