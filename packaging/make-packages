@@ -461,7 +461,7 @@ if [ x"$package" != "x" ]; then
 
 		export GLOBUS_LOCATION=$dir
 
-		$GPT_LOCATION/sbin/gpt-bundle -bn=custom-src -bv=1.0 -srcdir=package-output -all
+		$GPT_LOCATION/sbin/gpt-bundle -nodeps -bn=custom-src -bv=1.0 -srcdir=package-output $package
 		$GPT_LOCATION/sbin/gpt-build custom-src-1.0-src_bundle.tar.gz gcc32dbg
 	fi
 
