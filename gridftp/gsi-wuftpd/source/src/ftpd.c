@@ -4802,6 +4802,276 @@ retrieve(
 	(*closefunc) (fin);
 }
 
+void 
+retrieve_mlst(
+    char *                                           cmd, 
+    char *                                           name, 
+    off_t                                            offset, 
+    off_t                                            length)
+{
+    FILE *fin = NULL, *dout;
+    struct stat st, junk;
+    int (*closefunc) () = NULL;
+    int options = 0;
+    int ThisRetrieveIsData = retrieve_is_data;
+    time_t start_time = time(NULL);
+    char *logname;
+    char namebuf[MAXPATHLEN];
+    char fnbuf[MAXPATHLEN];
+    int TransferComplete = 0;
+    struct convert *cptr;
+    char realname[MAXPATHLEN];
+    int stat_ret = -1;
+
+    off_t                            tmp_restart = 0; /* added by JB */
+
+    extern int checknoretrieve(char *);
+
+    wu_realpath(name, realname, chroot_path);
+
+#   if HAVE_BROKEN_STAT
+    if(cmd == NULL && (stat_ret = open(name, O_RDONLY)) >= 0)
+    {
+	st.st_size = lseek(stat_ret, 0, SEEK_END);
+	st.st_blksize = BUFSIZ;
+	close(stat_ret);
+	stat_ret = 0;
+    }
+    if(cmd == NULL && stat_ret == 0)
+#   else
+    if (cmd == NULL && (stat_ret = stat(name, &st)) == 0)
+#   endif
+	/* there isn't a command and the file exists */
+	if (use_accessfile && checknoretrieve(name)) {	/* see above.  _H */
+	    if (log_security)
+		if (anonymous)
+		    syslog(LOG_NOTICE, "anonymous(%s) of %s tried to download %s (noretrieve)",
+			   guestpw, remoteident, realname);
+		else
+		    syslog(LOG_NOTICE, "%s of %s tried to download %s (noretrieve)",
+			   pw->pw_name, remoteident, realname);
+	    return;
+	}
+
+#ifdef TRANSFER_COUNT
+#ifdef TRANSFER_LIMIT
+    if (((file_limit_raw_out > 0) && (xfer_count_out >= file_limit_raw_out))
+	|| ((file_limit_raw_total > 0) && (xfer_count_total >= file_limit_raw_total))
+	|| ((data_limit_raw_out > 0) && (byte_count_out >= data_limit_raw_out))
+	|| ((data_limit_raw_total > 0) && (byte_count_total >= data_limit_raw_total))) {
+	if (log_security)
+	    if (anonymous)
+		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
+		       guestpw, remoteident, realname);
+	    else
+		syslog(LOG_NOTICE, "%s of %s tried to retrieve %s (Transfer limits exceeded)",
+		       pw->pw_name, remoteident, realname);
+	reply(553, "Permission denied on server. (Transfer limits exceeded)");
+	return;
+    }
+#ifdef RATIO
+    if (retrieve_is_data && (upload_download_rate > 0) )
+	if( freefile = is_downloadfree(name) ) {
+	    syslog(LOG_INFO, "%s is download free.", name );
+	}
+	else {
+	    if( cmd == NULL ) {
+		off_t credit = ( data_count_in * upload_download_rate ) - (data_count_out - total_free_dl);
+		if( st.st_size > credit  ) {
+		    reply( 550, "%s: file size %d exceed credit %d.",
+			name, st.st_size, credit );
+		    goto done;
+		}
+	    }
+	}
+#endif /* RATIO */
+#endif
+#endif
+
+
+    logname = (char *) NULL;
+    /* file does not exist */
+    /* XXX maybe a check should still exist for null cmd.
+       but it should be caught correctly below so none for now */
+    /* if (cmd == NULL && stat_ret != 0) */
+    
+    {
+        
+        static char line[BUFSIZ];
+
+        (void) snprintf(line, sizeof line, cmd, name), name = line;
+        fin = ftpd_popen(line, "r", 1), closefunc = ftpd_pclose;
+        st.st_size = -1;
+#ifdef HAVE_ST_BLKSIZE
+        st.st_blksize = BUFSIZ;
+#endif
+    }
+    
+
+    if (fin == NULL)
+    {
+	if (errno != 0)
+	    perror_reply(550, name);
+	if ((errno == EACCES) || (errno == EPERM))
+	    if (log_security)
+		if (anonymous)
+		    syslog(LOG_NOTICE, "anonymous(%s) of %s tried to download %s (file permissions)",
+			   guestpw, remoteident, realname);
+		else
+		    syslog(LOG_NOTICE, "%s of %s tried to download %s (file permissions)",
+			   pw->pw_name, remoteident, realname);
+	return;
+    }
+
+    tmp_restart = 0;
+
+#ifdef GSSAPI_GLOBUS 
+#ifdef GLOBUS_AUTHORIZATION
+     
+    /* Just getting information about a file (e.g. an "ls") */
+    if (!ftp_check_authorization(realname, "lookup"))
+    {
+        reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+              "%s: Permission denied by proxy credential ('lookup')",
+              name);   
+        syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+               "%s of %s tried to lookup %s (noretrieve)",
+               pw->pw_name, remoteident, realname); 
+        return;
+    }
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
+
+#   if defined(USE_GLOBUS_DATA_CODE)
+    {
+            TransferComplete = g_send_data(
+                                   name, 
+                                   fin, 
+                                   &g_data_handle, 
+                                   tmp_restart,
+                                   offset==-1?0:offset, 
+                                   length, 
+                                   st.st_size);
+    }
+#   else
+    {
+        if (tmp_restart) 
+        {
+            if (type == TYPE_A) 
+            {
+                register int i, n, c;
+
+	        n = tmp_restart;
+                i = 0;
+	        while (i++ < n) {
+	    	    if ((c = getc(fin)) == EOF) {
+		        perror_reply(550, name);
+		        goto done;
+		    }
+		    if (c == '\n')
+		        i++;
+	        }
+	    }
+	    else if (lseek(fileno(fin), tmp_restart, SEEK_SET) < 0) {
+	        perror_reply(550, name);
+	        goto done;
+	    }
+        }
+
+        dout = dataconn(name, st.st_size, "w");
+        if (dout == NULL)
+        {
+	    goto done;
+        }
+#       ifdef BUFFER_SIZE
+            TransferComplete = SEND_DATA(name, fin, dout, BUFFER_SIZE, length);
+#       else
+#           ifdef HAVE_ST_BLKSIZE
+                TransferComplete = SEND_DATA(name, fin, dout, 
+                                       st.st_blksize * 2, length);
+#           else
+                TransferComplete = SEND_DATA(name, fin, dout, BUFSIZ);
+#           endif
+#       endif
+       (void) fclose(dout);
+    }
+#   endif
+
+
+  logresults:
+    if (ThisRetrieveIsData)
+	fb_realpath((logname != NULL) ? logname : name, LastFileTransferred);
+
+    if (log_outbound_xfers && (xferlog || syslogmsg) && (cmd == 0)) {
+	char msg[MAXPATHLEN + 2 * MAXHOSTNAMELEN + 100 + 128];	/* AUTHNAMESIZE is 100 */
+	size_t msglen;		/* for stupid_sprintf */
+	int xfertime = time(NULL) - start_time;
+	time_t curtime = time(NULL);
+	int loop;
+
+	if (!xfertime)
+	    xfertime++;
+#ifdef XFERLOG_REALPATH
+	wu_realpath((logname != NULL) ? logname : name, &namebuf[0], chroot_path);
+#else
+	fb_realpath((logname != NULL) ? logname : name, &namebuf[0]);
+#endif
+	for (loop = 0; namebuf[loop]; loop++)
+	    if (isspace(namebuf[loop]) || iscntrl(namebuf[loop]))
+		namebuf[loop] = '_';
+
+/* Some systems use one format, some another.  This takes care of the garbage */
+#ifndef L_FORMAT		/* Autoconf detects this... */
+#if (defined(BSD) && (BSD >= 199103)) && !defined(LONGOFF_T)
+#define L_FORMAT "qd"
+#else
+#ifdef _AIX42
+#define L_FORMAT "lld"
+#else
+#ifdef SOLARIS_2
+#define L_FORMAT "ld"
+#else
+#define L_FORMAT "d"
+#endif
+#endif
+#endif
+#endif
+
+/* Some sprintfs can't deal with a lot of arguments, so we split this */
+/* Note it also needs fixing for C9X, so we ALWAYS split it. */
+	sprintf(msg, "%.24s %d %s %" L_FORMAT " ",
+		ctime(&curtime),
+		xfertime,
+		remotehost,
+		byte_count
+	    );
+	msglen = strlen(msg);	/* sigh */
+	snprintf(msg + msglen, sizeof(msg) - msglen, "%s %c %s %c %c %s ftp %d %s %c\n",
+		 namebuf,
+		 (type == TYPE_A) ? 'a' : 'b',
+		 opt_string(options),
+		 'o',
+		 anonymous ? 'a' : (guest ? 'g' : 'r'),
+		 anonymous ? guestpw : pw->pw_name,
+		 authenticated,
+		 authenticated ? authuser : "*",
+		 TransferComplete ? 'c' : 'i'
+	    );
+	/* Ensure msg always ends with '\n' */
+	if (strlen(msg) == sizeof(msg) - 1)
+	    msg[sizeof(msg) - 2] = '\n';
+	if (syslogmsg != 1)
+	    write(xferlog, msg, strlen(msg));
+	if (syslogmsg != 0)
+	    syslog(LOG_INFO, "xferlog (send): %s", msg + 25);
+    }
+    data = -1;
+    pdata = -1;
+  done:
+    if (closefunc)
+	(*closefunc) (fin);
+}
+
 /*
  *  modified by JB for globus data code
  */

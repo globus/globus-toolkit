@@ -44,6 +44,8 @@
 #include <ctype.h>
 #include <pwd.h>
 #include <setjmp.h>
+#include "mlsx.h"
+
 #ifdef HAVE_SYS_SYSLOG_H
 #include <sys/syslog.h>
 #endif
@@ -77,6 +79,7 @@ globus_list_t *					host_port_list = NULL;
 globus_ftp_control_layout_t			g_layout;
 globus_size_t                                   g_striped_file_size;
 globus_ftp_control_parallelism_t		g_parallelism;
+globus_ftp_control_delay_passive_t                    g_delayed_passive;
 globus_ftp_control_dcau_t			g_dcau;
 globus_bool_t					g_send_restart_info = GLOBUS_FALSE;
 globus_fifo_t					g_restarts;
@@ -214,7 +217,7 @@ extern int port_allowed(const char *remoteaddr);
     ABOR    DELE    CWD     LIST    NLST    SITE
     STAT_CMD    HELP    NOOP    MKD     RMD     PWD
     CDUP    STOU    SMNT    SYST    SIZE    MDTM
-    FAULT
+    FAULT   MLST
 
     AUTH    ADAT    PROT    PBSZ    CCC     DCAU
 
@@ -225,7 +228,7 @@ extern int port_allowed(const char *remoteaddr);
     CHECKMETHOD     CHECKSUM        BUFSIZE PSIZE
 
     STRIPELAYOUT    PARTITIONED BLOCKED BLOCKSIZE
-    PARALLELISM
+    PARALLELISM     DELAYED_PASV
 
     LEXERR
 
@@ -425,7 +428,7 @@ cmd: USER SP username CRLF
 	=	{
 	    if(exit_at == PASV)
 	    {
-		dologout(0);
+            dologout(0);
 	    }
 /* Require login for PASV, too.  This actually fixes a bug -- telnet to an
    unfixed wu-ftpd and type PASV first off, and it crashes! */
@@ -434,16 +437,18 @@ cmd: USER SP username CRLF
 	    if ($2)
 #if (defined (DISABLE_PORT) || !defined (DISABLE_PASV))
 
-                /*
-                 *  globus code added by JB
-                 */
 #               if defined(USE_GLOBUS_DATA_CODE)
                 {
-		    g_passive(GLOBUS_FALSE);
+                    if(g_delayed_passive)
+                    {
+                        g_delayed_passive = GLOBUS_FTP_CONTROL_DELAYED_SINGLE_PASSIVE;
+                    }
+                    
+                    g_passive(GLOBUS_FALSE);
                 }
 #               else
                 {
-		    passive();
+                    passive();
                 }
 #               endif
 
@@ -463,11 +468,12 @@ cmd: USER SP username CRLF
 	    if ($2)
 #if (defined (DISABLE_PORT) || !defined (DISABLE_PASV))
 
-                /*
-                 *  globus code added by JB
-                 */
                 {
-		    g_passive(GLOBUS_TRUE);
+                    if(g_delayed_passive)
+                    {
+                        g_delayed_passive = GLOBUS_FTP_CONTROL_DELAYED_STRIPED_PASSIVE;
+                    }
+                    g_passive(GLOBUS_TRUE);
                 }
 #else
 		reply(425, "Cannot open passive connection");
@@ -705,6 +711,16 @@ cmd: USER SP username CRLF
 		syslog(LOG_INFO, "RETR %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4)) {
 		retrieve_is_data = 1;
+
+		if(g_delayed_passive == GLOBUS_FTP_CONTROL_DELAYED_SINGLE_PASSIVE)
+		{
+            g_passive(GLOBUS_FALSE);
+        }
+        else if( g_delayed_passive == GLOBUS_FTP_CONTROL_DELAYED_STRIPED_PASSIVE)
+        {
+            g_passive(GLOBUS_TRUE);
+        }
+                
 		retrieve((char *) NULL, $4, -1, -1);
 	    }
 	    if ($4 != NULL)
@@ -838,14 +854,26 @@ cmd: USER SP username CRLF
 #endif
             }
 #else /* USE_GLOBUS_DATA_CODE */
-	    if (log_commands)
-		syslog(LOG_INFO, "NLST %s", $4);
+        if (log_commands)
+        syslog(LOG_INFO, "NLST %s", $4);
 	    if ($2 && $4 && !restrict_check($4))
 		send_file_list($4);
 	    if ($4 != NULL)
 		free($4);
 #endif
 	}
+    | MLST check_login SP pathname CRLF
+	=	{
+	    if(exit_at == MLST)
+	    {
+		dologout(0);
+	    }
+	    if (log_commands)
+		syslog(LOG_INFO, "MLST");
+        mlst("","");
+	}
+
+
     | LIST check_login CRLF
 	=	{
 	    if(exit_at == LIST)
@@ -858,14 +886,36 @@ cmd: USER SP username CRLF
 		retrieve_is_data = 0;
 #ifndef INTERNAL_LS
 		if (anonymous && dolreplies)
-		    retrieve(ls_long, "", -1, -1);
+		    retrieve_mlst(ls_long, "", -1, -1);
 		else
-		    retrieve(ls_short, "", -1, -1);
+		    retrieve_mlst(ls_short, "", -1, -1);
 #else
 		ls(NULL, 0);
 #endif
 	    }
 	}
+
+/*     | LIST check_login CRLF */
+/* 	=	{ */
+/* 	    if(exit_at == LIST) */
+/* 	    { */
+/* 		dologout(0); */
+/* 	    } */
+/* 	    if (log_commands) */
+/* 		syslog(LOG_INFO, "LIST"); */
+/* 	    if ($2 && !restrict_check(".")) { */
+/* 		retrieve_is_data = 0; */
+/* #ifndef INTERNAL_LS */
+/* 		if (anonymous && dolreplies) */
+/* 		    retrieve(ls_long, "", -1, -1); */
+/* 		else */
+/* 		    retrieve(ls_short, "", -1, -1); */
+/* #else */
+/* 		ls(NULL, 0); */
+/* #endif */
+/* 	    } */
+/* 	} */
+
     | LIST check_login SP pathname CRLF
 	=	{
 	    if(exit_at == LIST)
@@ -1890,6 +1940,14 @@ retr_option:
 #       if USE_GLOBUS_DATA_CODE
 	{
 	    g_layout.round_robin.block_size = $3;
+	}
+#       endif
+    }
+    | DELAYED_PASV EQUALS NUMBER SEMICOLON
+    {
+#       if USE_GLOBUS_DATA_CODE
+	{
+	    g_delayed_passive = $3;
 	}
 #       endif
     }
@@ -2944,6 +3002,11 @@ int yylex(void)
 	    {
 		cbuf[cpos] = c;
 		return PARALLELISM;
+	    }
+	    else if(strcasecmp(cp, "delayed_pasv") == 0)
+	    {
+		cbuf[cpos] = c;
+		return DELAYED_PASV;
 	    }
 	    else
 	    {

@@ -29,9 +29,9 @@ gss_cred_id_t                            	g_deleg_cred = GSS_C_NO_CREDENTIAL;
 extern SIGNAL_TYPE         
 lostconn(int sig);
 
-extern globus_fifo_t				g_restarts;
+extern globus_fifo_t				            g_restarts;
 extern globus_ftp_control_dcau_t                g_dcau;
-
+extern globus_ftp_control_delay_passive_t       g_delayed_passive;
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
 static int                                      g_window_size;
@@ -774,6 +774,22 @@ g_abort()
 
 void
 g_passive(globus_bool_t spas)
+{
+	if( g_delayed_passive)
+	{
+		//must wait until later to alloc the port
+		//XXX must find out what code to really return here!
+        reply(000, "Delayed passive mode on, will return port later");
+	}
+	else 
+	{
+		g_passive_port_alloc(spas);
+	}
+	
+}
+
+void
+g_passive_port_alloc(globus_bool_t spas)
 {
     globus_result_t                             res;
     globus_ftp_control_host_port_t              host_port;
