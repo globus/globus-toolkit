@@ -9,45 +9,63 @@
 </HEAD>
 
     <body>
-        <CENTER><B><H1>UNDER CONSTRUCTION</H1></B></CENTER>
+        <CENTER><B><H2> Globus XIO Architecture</H2></B></CENTER>
+        <BR>
+        This document shall explain the external view of the globus xio
+        architecture.  To see an explanation of the data types used to 
+        implement the system see <I>Internal arch</I>
+        Globus XIO is broken down into two main components, famework and
+        drivers.  The following picture illustrates the architecture:
+        <H3>figure 1</H3>
+        <IMG SRC="xio_arch.jpg" width="25%">
+        <H3>Globus XIO Framework</H3>
         <P>
-        Read this page at your own risk.  I am adding doc to this as i 
-        mold the code.  For the time bieng it will not flow well and will
-        look a lot like source code documentation (guess why).
+        The Globus XIO framework manages io operation requests that an 
+        application makes via the user api @ref.  The framework does no 
+        work to deliver the data in an io operation nor does it manipulate 
+        the data.  All of that work is done by the drivers.  The frameworks
+        job is to manage requests and map them to the drivers interface.
+        It is the drivers themselves that are reposnsible for manipulating
+        and transporting the data.
+        <BR>
+        <H3>Drivers</H3>
+        <P>
+        A driver is the component of globus xio that is responsible for 
+        manipulating and transporting the users data.  There are two types
+        of drivers, transform and transport. Transform drivers are those that
+        manipulate the data buffers passed to it via the user api and the
+        xio framework.  Transform drivers are those that are capable of
+        sending the data over a wire.
+        <BR><BR>
+        Drivers are grouped into stacks, that is of course one driver on 
+        top of another.  When an io operation is requested the globus xio
+        framwork passes the operation request to every driver in the order
+        they are in the stack.  When the bottom level driver 
+        (the transport driver) finishes shipping the data, it passes the
+        data request back to the xio framework.  Globus xio will then
+        deliver the request back up the stack in this manner until it
+        reaches the top, at which point the application will be notified 
+        that there request is completed.
+        <BR><BR>
+        In a driver stack there can only be one 
+        transport driver.  The reason for this is simple. The transport
+        driver is the one responsible for sending or receiving the data.
+        Once this type of operation is preformmed it makes no sense to 
+        pass the request down a stack, rather it is time to pass the 
+        request back up. [totally unclear].
+        <BR>
+        There can be many transform drivers in any given driver stack.
+        A transform driver is one that can manipulate the reuest operations
+        as the pass.  Some good examples of transport drivers are security
+        wrappers and compression.  However a transport driver can also be one 
+        that adds additional protocol.  For example a stack could consist of
+        a TCP transport driver and an HTTP transform driver.  The HTTP driver 
+        would be responsible for marshalling the HTTP protocol and the TCP
+        driver would be responsible for shipping that protocol over the wire.
         </P>
-        <CENTER><B><H2>Globus XIO</H2></B></CENTER>
-        <BR>
-        When designing globus_xio extreme care has been taken to provide an 
-        efficient system.  When creating a extensible flexible runtime system
-        it is often the case that efficiency must be sacrificed.  This is not
-        the case with globus_xio.  The arcitecture of globus_xio is described
-        here.
-        <BR>
-
-        <H3>Target</H3>
-        <PRE>
-/*
- *  used by: handle, and target, operation
- *
- *  lifecycle
- *  ---------
- *  When created by target it lives as long as the target does.  Essentially
- *  The user stack is converted into this structure and maintained by the 
- *  target.  Ass soon and the target is destroyed the driver stack is
- *  destroyed.
- *
- *  When used by the handle it is "created" on open from a target (the one in
- *  target is simply reused).  When the handle is destroyed this adt is 
- *  destroyed with it.
- *
- *  Operations simply reference the driver stack maintained by the handle. 
- *  Operations are only allowed to live as long as the handle from which they 
- *  came, so there is no reference counting needed here.
- *
- *  Not all members are used by target.
- */
-
-        </PRE>
-
+        <H3>Example</H3>
+        <P>
+        Step through io operation
+        </P>
     </body>
 </html>
