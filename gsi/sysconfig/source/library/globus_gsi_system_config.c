@@ -23,7 +23,8 @@
 #endif
 #include "version.h"
 
-// Windows uses $TMP for "secure" paths (following the lead of Java CoG)
+/* Windows uses $TMP for "secure" paths (following the lead of Java CoG)
+*/
 #ifdef WIN32
 char *get_tmp_path_win32(void);
 #define WIN32_FALLBACK_PATH             "c:\\temp"
@@ -234,7 +235,7 @@ globus_l_gsi_sysconfig_activate(void)
 		/* ToDo: look at return code? */
 
         /* probably overestimating the entropy in the below */
-       	#ifndef WIN32	// ToDo: Do this for Win32?
+       	#ifndef WIN32	/* ToDo: Do this for Win32? */
         uptime = times(&proc_times);
         
         RAND_add((void *) &uptime, sizeof(clock_t), 2);
