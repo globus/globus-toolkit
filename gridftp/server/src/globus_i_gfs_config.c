@@ -546,7 +546,7 @@ globus_l_gfs_config_misc()
             globus_malloc(sizeof(globus_i_gfs_community_t)); 
         if(!value)
         {
-            value = globus_libc_strdup("");
+            value = "";
         }
         else
         {

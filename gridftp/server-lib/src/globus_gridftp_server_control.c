@@ -2519,7 +2519,7 @@ globus_i_gsc_get_help(
             {
                 cmd_ctr = 0;
             }
-            list = globus_list_rest(list);
+            globus_list_remove(&list, list);
         }
         help_str = globus_common_create_string(
             "%s\r\n214 End\r\n", help_str);
@@ -2603,6 +2603,7 @@ globus_i_gsc_string_to_959(
     char *                              msg;
     char *                              tmp_ptr;
     char *                              start_ptr;
+    char *                              start_ptr_copy;
     char *                              end_ptr;
     int                                 ctr = 0;
 
@@ -2612,7 +2613,8 @@ globus_i_gsc_string_to_959(
     }
     else
     {
-        start_ptr = strdup(in_str);
+        start_ptr_copy = strdup(in_str);
+        start_ptr = start_ptr_copy;
         msg = strdup("");
         while(!done)
         {
@@ -2625,10 +2627,6 @@ globus_i_gsc_string_to_959(
                 {
                     end_ptr = NULL;
                     done = GLOBUS_TRUE;
-                }
-                else
-                {
-                    end_ptr = strdup(end_ptr);
                 }
             }
             else
@@ -2644,6 +2642,7 @@ globus_i_gsc_string_to_959(
             start_ptr = end_ptr;
             ctr++;
         }
+        free(start_ptr_copy);
         if(ctr == 1)
         {
             msg[3] = ' ';
@@ -3538,7 +3537,6 @@ globus_l_gsc_internal_cb_kickout(
     void *                              user_arg)
 {
     globus_i_gsc_op_t *                 op;
-    int                                 ctr;
 
     op = (globus_i_gsc_op_t *) user_arg;
 
