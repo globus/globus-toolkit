@@ -3189,7 +3189,16 @@ globus_i_gsc_send(
                 return GlobusGridFTPServerErrorParameter("op");
             }
         }
-        op->range_list = op->server_handle->range_list;
+        globus_range_list_init(&op->range_list);
+        if(op->server_handle->range_list == NULL)
+        {
+            globus_range_list_insert(op->range_list, 0, -1);
+        }
+        else
+        {
+            globus_i_gsc_reverse_restart(
+                op->server_handle->range_list, op->range_list);
+        }
         op->server_handle->range_list = NULL;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
@@ -3267,7 +3276,16 @@ globus_i_gsc_recv(
                 return GlobusGridFTPServerErrorParameter("op");
             }
         }
-        op->range_list = op->server_handle->range_list;
+        globus_range_list_init(&op->range_list);
+        if(op->server_handle->range_list == NULL)
+        {
+            globus_range_list_insert(op->range_list, 0, -1);
+        }
+        else
+        {
+            globus_i_gsc_reverse_restart(
+                op->server_handle->range_list, op->range_list);
+        }
         op->server_handle->range_list = NULL;
     }
     globus_mutex_unlock(&op->server_handle->mutex);

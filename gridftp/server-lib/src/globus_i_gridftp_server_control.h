@@ -350,6 +350,12 @@ typedef struct globus_i_gsc_server_handle_s
     struct globus_i_gsc_op_s *          outstanding_op;
 } globus_i_gsc_server_handle_t;
 
+
+void
+globus_i_gsc_reverse_restart(
+    globus_range_list_t                 in_range,
+    globus_range_list_t                 out_range);
+
 void
 globus_i_gsc_op_destroy(
     globus_i_gsc_op_t *                 op);

@@ -52,7 +52,8 @@ globus_i_gsc_reverse_restart(
         {
             globus_range_list_insert(out_range, 0, offset);
         }
-        while(globus_range_list_size != 1)
+
+        while(globus_range_list_size(in_range) != 1)
         {
             globus_range_list_remove_at(in_range, 0, &offset, &length);
 
