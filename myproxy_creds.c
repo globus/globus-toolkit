@@ -211,7 +211,13 @@ check_storage_directory()
     /* Make sure it's owned by me */
     if (statbuf.st_uid != getuid())
     {
-        verror_put_string("bad ownership on %s", storage_dir);
+	struct passwd *pw;
+	pw = getpwuid(getuid());
+	if (pw) {
+	    verror_put_string("%s not owned by %s", storage_dir, pw->pw_name);
+	} else {
+	    verror_put_string("%s not owned by uid %d", storage_dir, getuid());
+	}
         goto error;
     }
     
@@ -219,7 +225,7 @@ check_storage_directory()
     if ((statbuf.st_mode & S_IRWXG) ||
         (statbuf.st_mode & S_IRWXO))
     {
-        verror_put_string("bad permissions on %s", storage_dir);
+        verror_put_string("permissions on %s must be 0700", storage_dir);
         goto error;
     }
     
