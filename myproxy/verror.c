@@ -38,7 +38,7 @@ struct verror_context my_context = { 0, NULL, 0, 0 };
  *
  * Wrapper around vsnprintf(). Returned an allocated buffer.
  */
-char *
+static char *
 my_vsnprintf(const char *format, va_list ap)
 {
     char *buffer = NULL;
