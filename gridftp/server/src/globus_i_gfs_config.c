@@ -859,7 +859,8 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("daemon", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("detach", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("fork", GLOBUS_FALSE, NULL);
-        globus_l_gfs_config_set("allow-anonymous", GLOBUS_TRUE, NULL);
+        globus_l_gfs_config_set("bad_signal_exit", GLOBUS_FALSE, NULL);
+        globus_l_gfs_config_set("allow_anonymous", GLOBUS_TRUE, NULL);
         globus_l_gfs_config_set("secure_ipc", GLOBUS_FALSE, NULL);
     }
 
