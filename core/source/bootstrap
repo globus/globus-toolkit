@@ -8,13 +8,38 @@ error()
     exit 1
 }
 
-libtoolize --automake --copy --force || error
-aclocal -I config || error
-if test -f acconfig.h ; then
-    autoheader || error
+# check for autotools
+
+for program in automake aclocal autoconf autoheader
+    do
+    ($program --version ) > /dev/null 2>&1 || { 
+    echo "ERROR: $program not found" >&2
+    exit 1
+    }
+done
+
+# checking for the GLOBUS_INSTALL_PATH
+
+if test "x$GLOBUS_INSTALL_PATH" = "x"; then
+    echo "ERROR Please specify GLOBUS_INSTALL_PATH" >&2
+    exit 1
 fi
-perl ./aclocal/create_automake_rules.pl ./aclocal
+
+ echo "running libtoolize --automake --copy --force"
+libtoolize --automake --copy --force || error
+
+echo "running aclocal -I ./config"
+aclocal -I config || error
+
+if test -f acconfig.h ; then
+ echo "running autoheader"
+   autoheader || error
+fi
+
+echo "running automake --copy -add-missing --foreign"
 automake --copy --add-missing --foreign || \
   automake --copy --add-missing --foreign  || error
+
+echo "running autoconf"
 autoconf || error
 exit 0
