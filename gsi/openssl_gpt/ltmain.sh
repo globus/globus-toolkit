@@ -1739,8 +1739,8 @@ EOF
 	  if test "$found" != yes; then
 	    # deplib doesn't seem to be a libtool library
 	    if test "$linkmode,$pass" = "prog,link"; then
-	      compile_deplibs="$compile_deplibs"
-	      finalize_deplibs="$finalize_deplibs"
+	      compile_deplibs="$deplib $compile_deplibs"
+	      finalize_deplibs="$deplib $finalize_deplibs"
 	    else
 	      deplibs="$deplib $deplibs"
 	      test "$linkmode" = lib && newdependency_libs="$deplib $newdependency_libs"
