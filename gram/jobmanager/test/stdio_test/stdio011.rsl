@@ -1,6 +1,6 @@
 (* 2 *)
 &(executable = $(GLOBUS_LOCATION) # '/bin/globus-sh-exec')
- (arguments = -e '$GLOBUS_PERL -e ''print STDERR "stderr\n"; '
+ (arguments = -e '$GLOBUS_SH_PERL -e ''print STDERR "stderr\n"; '
             #                      'print STDOUT "stdout\n";''')
  (scratch_dir = $(HOME) )
  (stdout = ( $(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".001" )

@@ -624,10 +624,10 @@ AC_DEFUN(LAC_DOXYGEN,dnl
     if test -n "$DOXYGEN" ; then
 	AC_PATH_PROG(DOT, dot)
 	
-	if test -z "$GLOBUS_PERL" ; then
+	if test -z "$GLOBUS_SH_PERL" ; then
 	   AC_PATH_PROG(PERL, perl)
 	else
-	    PERL="$GLOBUS_PERL"
+	    PERL="$GLOBUS_SH_PERL"
 	    AC_SUBST(PERL)
 	fi
 	if test "$DOT" != ""; then

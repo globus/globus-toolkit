@@ -167,7 +167,7 @@ sub setup_script_shbang
     my $outname = shift;
     my $infile = new IO::File("<$inname");
     my $outfile = new IO::File(">$outname");
-    my $perl = &lookup_shell_command("GLOBUS_PERL");
+    my $perl = &lookup_shell_command("GLOBUS_SH_PERL");
 
     while(<$infile>)
     {
