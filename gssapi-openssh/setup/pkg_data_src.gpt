@@ -14,10 +14,6 @@
       <Setup_Dependency Name="globus_core_setup" > <Version > <Simple_Version Major="0" /> </Version> </Setup_Dependency>
     </Source_Setup_Dependency>
 
-    <Source_Dependency Type="pgm_runtime">
-      <Dependency Name="gsi_openssh"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>        
-    </Source_Dependency>
-
     <Version_Label>3.0.2p1</Version_Label>
 
     <With_Flavors build="no" />
