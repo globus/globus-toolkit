@@ -1565,26 +1565,36 @@ globus_i_gridftp_server_control_cs_verify(
     }
     else if(net_prt == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
     {
-        host_str = globus_malloc(strlen(cs));
-        sc = sscanf(cs, " [ %s ]:%d", host_str, &port);
-        if(sc != 2)
+        globus_xio_contact_t            contact_info;
+        
+        if(globus_xio_contact_parse(&contact_info, cs) != GLOBUS_SUCCESS)
         {
-            globus_free(host_str);
             return GLOBUS_FALSE;
         }
-
+        
+        if(!(contact_info.host && contact_info.port) || 
+            (unsigned) atoi(contact_info.port) > 65535)
+        {
+            globus_xio_contact_destroy(&contact_info);
+            return GLOBUS_FALSE;
+        }
+        
         /* verify that the string contains nothing but
          * hex digits, ':'. and '.'
          */
-        for(ctr = 0; ctr < strlen(cs); ctr++)
+        cs = contact_info.host;
+        while(*cs)
         {
-            if(cs[ctr] != ':' && cs[ctr] != '.' && !isxdigit(cs[ctr]))
+            if(!isxdigit(*cs) && *cs != ':' && *cs != '.')
             {
-                globus_free(host_str);
+                globus_xio_contact_destroy(&contact_info);
                 return GLOBUS_FALSE;
             }
+            cs++;
         }
-        globus_free(host_str);
+        
+        globus_xio_contact_destroy(&contact_info);
+        
         return GLOBUS_TRUE;
     }
 
