@@ -37,7 +37,7 @@ extern FILE *                           globus_i_gsi_cert_utils_debug_fstream;
         if (GLOBUS_I_GSI_CERT_UTILS_DEBUG(_LEVEL_)) \
         { \
            char *                          _tmp_str_ = \
-               globus_gsi_cert_utils_create_nstring _MESSAGE_; \
+               globus_common_create_nstring _MESSAGE_; \
            globus_libc_fprintf(globus_i_gsi_cert_utils_debug_fstream, \
                                _tmp_str_); \
            globus_libc_free(_tmp_str_); \

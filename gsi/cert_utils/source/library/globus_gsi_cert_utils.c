@@ -1,4 +1,4 @@
-ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_cert_utils.c
  * @author Sam Lang
