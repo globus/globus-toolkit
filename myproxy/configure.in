@@ -79,6 +79,7 @@ if test -x ${GSI_INSTALL_PATH}/sbin/globus-makefile-header ; then
 	fi
 	`${GSI_INSTALL_PATH}/sbin/globus-makefile-header -flavor=${GLOBUS_FLAVOR} -link=static globus_gss_assist globus_gssapi_gsi globus_openssl > globus_makefile_header`
         GLOBUS_MAKEFILE_HEADER=globus_makefile_header
+        GLOBUS_LIB_DIR=${GSI_INSTALL_PATH}/lib
 
 elif test -d ${GSI_INSTALL_PATH}/lib ; then
 	# Looks like a flat directory structure from configure/make and not
@@ -118,10 +119,12 @@ else
 		AC_MSG_ERROR(Cannot find GSI development directory: $GSI_DEV_PATH does not exist)
 	fi
         GLOBUS_MAKEFILE_HEADER=${GSI_DEV_PATH}/etc/makefile_header
+        GLOBUS_LIB_DIR=${GSI_DEV_PATH}/lib
 fi
 
 AC_MSG_RESULT($GSI_INSTALL_PATH)
 AC_SUBST(GLOBUS_MAKEFILE_HEADER)
+AC_SUBST(GLOBUS_LIB_DIR)
 
 AC_ARG_ENABLE(anonymous-auth,
 	[  --disable-anonymous-auth  Disable support for SSL anonymous authentication],
