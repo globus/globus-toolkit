@@ -68,10 +68,10 @@ SSL_EXEC="${GLOBUS_LOCATION}/bin/openssl"
 DEF_GLOBUS_DIR="${HOME}/.globus"
 DEF_CERT_FILE="${DEF_GLOBUS_DIR}/usercert.pem"
 
+toprint=""
 
 if [ $# -eq 0 ]; then
-    globus_args_short_usage
-    exit 1
+    toprint="$toprint -text"
 fi
 
 # set default location of certificate (may be overridden by --file)
@@ -81,7 +81,6 @@ if [ -n "$X509_USER_CERT" ]; then
    certfile=${X509_USER_CERT}
 fi
 
-toprint=""
 
 while [ "X$1" != "X" ]; do
     case $1 in
