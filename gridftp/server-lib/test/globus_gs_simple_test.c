@@ -61,6 +61,7 @@ globus_l_done_cb(
     globus_mutex_unlock(&globus_l_mutex);
 }
 
+
 static void
 globus_l_resource_cb(
     globus_gridftp_server_control_op_t      op,
@@ -142,6 +143,7 @@ static void
 data_destroy_cb(
     void *                                  user_data_handle)
 {
+    fprintf(stdout, "data_destroy_cb()\n");
     globus_assert(user_data_handle == USER_DATA_HANDLE);
 }
 
@@ -214,9 +216,12 @@ main(
     res = globus_xio_server_create(&xio_server, NULL, stack);
     test_res(res, __LINE__);
 
+    globus_xio_stack_destroy(stack);
+
     res = globus_xio_server_get_contact_string(xio_server, &cs);
     test_res(res, __LINE__);
     fprintf(stdout, "%s\n", cs);
+    globus_free(cs);
 
     res = globus_xio_server_accept(&xio_handle, xio_server);
     test_res(res, __LINE__);
@@ -230,6 +235,8 @@ main(
 
     res = globus_gridftp_server_control_attr_init(&ftp_attr);
     test_res(res, __LINE__);
+
+    globus_xio_server_close(xio_server);
 
     if(argc > 1)
     {
@@ -277,6 +284,12 @@ main(
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
+
+    fprintf(stdout, "Ending...\n");
+    res = globus_gridftp_server_control_attr_destroy(ftp_attr);
+    test_res(res, __LINE__);
+    res = globus_gridftp_server_control_destroy(ftp_server);
+    test_res(res, __LINE__);
 
     globus_module_deactivate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
     globus_module_deactivate(GLOBUS_XIO_MODULE);

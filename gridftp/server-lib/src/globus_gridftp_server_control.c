@@ -78,7 +78,6 @@ do                                                                      \
 {                                                                       \
     globus_result_t                         _res;                       \
                                                                         \
-    _do->server_handle->ref++;                                          \
     _res = globus_callback_space_register_oneshot(                      \
                 NULL,                                                   \
                 NULL,                                                   \
@@ -307,6 +306,8 @@ static void
 globus_l_gsc_op_destroy(
     globus_i_gsc_op_t *                     op)
 {
+    int                                     ctr;
+
     op->ref--;
     if(op->ref == 0)
     {
@@ -317,6 +318,26 @@ globus_l_gsc_op_destroy(
         if(op->password != NULL)
         {
             globus_free(op->password);
+        }
+        if(op->path != NULL)
+        {
+            globus_free(op->path);
+        }
+        if(op->mod_name != NULL)
+        {
+            globus_free(op->mod_name);
+        }
+        if(op->mod_parms != NULL)
+        {
+            globus_free(op->mod_parms);
+        }
+        if(op->cs != NULL)
+        {
+            for(ctr = 0; op->cs[ctr] != NULL; ctr++)
+            {
+                globus_free(op->cs[ctr]);
+            }
+            globus_free(op->cs);
         }
         globus_free(op->command);
 
@@ -518,13 +539,13 @@ globus_l_gsc_read_cb(
                 globus_free(command_name);
                 break;
 
-            case GLOBUS_L_GSC_STATE_STOPPED:
             case GLOBUS_L_GSC_STATE_STOPPING:
             case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
                 goto err;
                 break;
 
 
+            case GLOBUS_L_GSC_STATE_STOPPED:
             case GLOBUS_L_GSC_STATE_OPENING:
             case GLOBUS_L_GSC_STATE_ABORTING:
             default:
@@ -962,16 +983,14 @@ globus_l_gsc_final_reply_cb(
 
             case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
             case GLOBUS_L_GSC_STATE_STOPPING:
-            case GLOBUS_L_GSC_STATE_STOPPED:
-
                 globus_l_gsc_server_ref_check(server_handle);
-
                 break;
 
             /* in open state if intermediate message has been sent */
             case GLOBUS_L_GSC_STATE_OPEN:
                 break;
 
+            case GLOBUS_L_GSC_STATE_STOPPED:
             default:
                 globus_assert(0 && "should never reach this state");
                 break;
@@ -1091,6 +1110,11 @@ globus_l_gsc_user_data_destroy_cb_kickout(
 
     data_object = (globus_i_gsc_data_t *) user_arg;
     server_handle = data_object->server_handle;
+
+    if(server_handle->funcs.data_destroy_cb != NULL)
+    {
+        server_handle->funcs.data_destroy_cb(data_object->user_handle);
+    }
     globus_free(data_object);
 
     globus_mutex_lock(&server_handle->mutex);
@@ -1116,6 +1140,7 @@ globus_l_gsc_user_close_kickout(
         globus_assert(
             server_handle->state == GLOBUS_L_GSC_STATE_STOPPED);
         done_cb = server_handle->funcs.done_cb;
+        server_handle->state = GLOBUS_L_GSC_STATE_NONE;
     }
     globus_mutex_unlock(&server_handle->mutex);
 
@@ -1610,15 +1635,13 @@ globus_gridftp_server_control_init(
         goto err;
     }
 
-    server_handle = (globus_i_gsc_server_handle_t *) globus_malloc(
-        sizeof(globus_i_gsc_server_handle_t));
+    server_handle = (globus_i_gsc_server_handle_t *) globus_calloc(
+        sizeof(globus_i_gsc_server_handle_t), 1);
     if(server_handle == NULL)
     {
         res = GlobusGridFTPServerErrorMemory("server_handle");
         goto err;
     }
-
-    memset(server_handle, '\0', sizeof(globus_i_gsc_server_handle_t));
 
     globus_mutex_init(&server_handle->mutex, NULL);
 
@@ -1662,7 +1685,7 @@ globus_gridftp_server_control_destroy(
     }
 
     server_handle = (globus_i_gsc_server_handle_t *) server;
-    if(server_handle->state != GLOBUS_L_GSC_STATE_STOPPED)
+    if(server_handle->state != GLOBUS_L_GSC_STATE_NONE)
     {
         res = GlobusGridFTPServerErrorState(server_handle->state);
         goto err;
@@ -1683,6 +1706,10 @@ globus_gridftp_server_control_destroy(
     if(server_handle->pre_auth_banner != NULL)
     {
         globus_free(server_handle->pre_auth_banner);
+    }
+    if(server_handle->username != NULL)
+    {
+        globus_free(server_handle->username);
     }
     for(list = server_handle->feature_list;
         !globus_list_empty(list);
@@ -1995,10 +2022,7 @@ globus_l_gsc_server_ref_check(
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_l_gsc_server_ref_check);
 
-    if(server_handle->state == GLOBUS_L_GSC_STATE_STOPPED)
-    {
-        return;
-    }
+    globus_assert(server_handle->state != GLOBUS_L_GSC_STATE_STOPPED);
 
     if(server_handle->ref == 0)
     {
@@ -2006,7 +2030,10 @@ globus_l_gsc_server_ref_check(
         {
             if(server_handle->funcs.data_destroy_cb != NULL)
             {
+                server_handle->ref++;
                 GlobusLGSCDestroyData(server_handle->data_object);
+                server_handle->data_object = NULL;
+                return;
             }
             else
             {
@@ -2807,6 +2834,7 @@ globus_i_gsc_port(
         {
             if(op->server_handle->funcs.data_destroy_cb != NULL)
             {
+                op->server_handle->ref++;
                 GlobusLGSCDestroyData(op->server_handle->data_object);
             }
             else
@@ -2824,11 +2852,12 @@ globus_i_gsc_port(
     op->max_cs = stripe_count;
     op->user_arg = user_arg;
 
-    op->cs = globus_malloc(sizeof(char *) * stripe_count);
+    op->cs = globus_malloc(sizeof(char *) * (stripe_count+1));
     for(ctr = 0; ctr < stripe_count; ctr++)
     {
         op->cs[ctr] = globus_libc_strdup(contact_strings[ctr]);
     }
+    op->cs[ctr] = NULL;
 
     if(op->server_handle->funcs.active_cb != NULL)
     {
@@ -2868,6 +2897,7 @@ globus_i_gsc_passive(
         {
             if(op->server_handle->funcs.data_destroy_cb != NULL)
             {
+                op->server_handle->ref++;
                 GlobusLGSCDestroyData(op->server_handle->data_object);
             }
             else
@@ -3340,11 +3370,12 @@ globus_gridftp_server_control_finished_passive_connect(
     data_obj->user_handle = user_data_handle;
     data_obj->server_handle = op->server_handle;
 
-    op->cs = (char **) globus_malloc(sizeof(char *) * cs_count);
+    op->cs = (char **) globus_malloc(sizeof(char *) * (cs_count + 1));
     for(ctr = 0; ctr < cs_count; ctr++)
     {
         op->cs[ctr] = globus_libc_strdup(cs[ctr]);
     }
+    op->cs[ctr] = NULL;
     op->res = res;
 
     globus_mutex_lock(&op->server_handle->mutex);
@@ -3385,6 +3416,7 @@ globus_gridftp_server_control_disconnected(
         {
             if(server->funcs.data_destroy_cb != NULL)
             {
+                server->ref++;
                 GlobusLGSCDestroyData(server->data_object);
             }
             else
