@@ -18,7 +18,7 @@ int main(int argc, char * argv[])
     OM_uint32                           minor_status;
     int                                 token_status;
     gss_ctx_id_t                        accept_context = GSS_C_NO_CONTEXT;
-    OM_uint32                           ret_flags;
+    OM_uint32                           ret_flags = 0;
     int                                 sock, connect_sock;
     FILE *                              infd;
     FILE *                              outfd;
