@@ -2,7 +2,7 @@
 
 # Format is: "program-name args" path rate
 
-# The "rate" represents the number of bits of usuable entropy per 
+# The "rate" represents the number of bits of usuable entropy per
 # byte of command output. Be conservative.
 #
 # $Id$
