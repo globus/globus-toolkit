@@ -29,7 +29,7 @@ static globus_bool_t                            g_send_range;
 FILE * g_out;
 
 #define DEBUG_OPEN() \
-g_out = fopen("/home/bresnaha/wuftpd_out", "w")
+g_out = fopen("/disks/space1/wuftpd_out", "w")
 
 #define DEBUG_CLOSE() \
 fclose(g_out)
@@ -104,6 +104,7 @@ typedef struct globus_i_wu_montor_s
     char *                     name;
     bmap_file_t                *bmap_handle;    
 #endif /* STRIPED_SERVER_BACKEND */
+    globus_io_handle_t         io_handle;
 
 } globus_i_wu_montor_t;
 
@@ -221,15 +222,92 @@ static globus_i_wu_montor_t                     g_monitor;
 
 #else
 
-#define G_File_Open(handle, fname, flags, fd)  0
+#define G_File_Open(handle, fname, flags, fd)  \
+    globus_open(handle,fd)
 
-#define G_File_Read(handle, fd, buf, length, offset, offset_out) \
-    std_read(fd, buf, length, offset, offset_out)
+#define G_File_Read(handle, fd, buffer, length, offset, offset_out) \
+    globus_read(handle, buffer, length, offset, offset_out)
 
 #define G_File_Write(handle, fd, buffer, length, offset) \
-    std_write(fd, buffer, length, offset)
+    globus_write(handle, buffer, length, offset)
 
-#define G_File_Close(handle, fd) 0
+#define G_File_Close(handle, fd) \
+    globus_close(handle)
+
+
+int globus_open(
+    globus_io_handle_t *   handle,
+    int                    fd)
+{
+    globus_result_t        res;
+
+    res = globus_io_file_posix_convert(dup(fd),
+				       GLOBUS_NULL,
+				       handle);
+
+    return (res == GLOBUS_SUCCESS) ? 0 : -1;
+}
+
+
+int globus_close(
+    globus_io_handle_t *   handle)
+{
+    globus_result_t        res;
+
+    res = globus_io_close(handle);
+
+    return (res == GLOBUS_SUCCESS) ? 0 : -1;
+}
+
+
+int
+globus_read(    
+    globus_io_handle_t *                handle,
+    globus_byte_t *                     buffer,
+    int                                 length,
+    int                                 offset,
+    off_t *                             offs_out)
+{
+    globus_size_t                       bytes_read;
+    globus_result_t                     res;
+
+    *offs_out = offset;
+
+    res = globus_io_read(handle, 
+			 buffer, 
+			 length, 
+			 length, 
+			 &bytes_read);
+
+    return (res == GLOBUS_SUCCESS) ? bytes_read : -1;
+}
+
+int 
+globus_write(
+    globus_io_handle_t *                handle,
+    globus_byte_t *                     buffer,
+    int                                 length,
+    int                                 offset)
+{
+    globus_result_t                     res;
+    globus_size_t                       bytes_written;
+
+    res = globus_io_file_seek(handle,
+			      offset,
+			      GLOBUS_IO_SEEK_SET);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return -1;
+    }
+    
+    res = globus_io_write(handle, 
+			  buffer, 
+			  length,
+			  &bytes_written);
+
+    return (res == GLOBUS_SUCCESS) ? bytes_written : -1;
+}
+
 
 int
 std_read(    
@@ -366,9 +444,10 @@ G_ENTER();
 
     GlobusTimeReltimeSet(delay_time, timeout_connect / 2, 0);
     GlobusTimeReltimeSet(period_time, timeout_connect / 2, 0);
+
     globus_fifo_init(&g_restarts);
 
-debug_printf("registering wakeup at %d secs\n", timeout_connect / 2);
+    debug_printf("registering wakeup at %d secs\n", timeout_connect / 2);
     res = globus_callback_register_periodic(
              GLOBUS_NULL,
              &delay_time,
@@ -595,7 +674,7 @@ g_send_data(
     int                                             file_ndx;
     int                                             connection_count = 4;
     globus_bool_t                                   l_timed_out = GLOBUS_FALSE;
-
+    globus_ftp_control_parallelism_t                parallelism;
     int *                                           offset_a;
     int *                                           length_a;
     int                                             count_a;
@@ -624,15 +703,25 @@ g_send_data(
 
     wu_monitor_reset(&g_monitor);
 
+#if defined (STRIPED_SERVER_BACKEND)
     if(G_File_Open(
-           &(g_monitor.bmap_handle),
-           name,
-           O_RDONLY,
-           fileno(instr)) != 0)
+	&(g_monitor.bmap_handle),
+	name,O_RDONLY,
+	fileno(instr)) != 0)
+#else
+    if(G_File_Open(
+	&(g_monitor.io_handle),
+	NULL,
+	NULL,
+	fileno(instr)) != 0)
+#endif
      {
          sprintf(error_buf, "file_open failed");
          goto data_err;
      }
+
+
+
            
     if(offset == -1)
     {
@@ -780,6 +869,7 @@ g_send_data(
                     jb_len = length - jb_count;
                 }
                 offs_out = -1;
+#            if defined(STRIPED_SERVER_BACKEND)
                 cnt = G_File_Read(
                           g_monitor.bmap_handle,
                           filefd,
@@ -787,6 +877,16 @@ g_send_data(
                           jb_len,
                           offset,
                           &offs_out);
+#            else
+                cnt = G_File_Read(
+		          &g_monitor.io_handle,
+                          filefd,
+                          buf,
+                          jb_len,
+                          offset,
+                          &offs_out);
+
+#            endif
             
                if(offs_out > 0 && cnt > 0)
                {
@@ -828,11 +928,13 @@ g_send_data(
                 offset += cnt;
                 jb_count += cnt;
 
-                res = globus_ftp_control_data_query_channels(
-                          handle,
-                          &connection_count,
-                          0);
+		res = globus_ftp_control_get_parallelism(
+			  handle,
+			  &parallelism);
                 assert(res == GLOBUS_SUCCESS);
+
+		connection_count = 2*parallelism.base.size;
+
                 globus_mutex_lock(&g_monitor.mutex);
                 {   
                     g_monitor.count++;
@@ -1060,12 +1162,17 @@ g_send_data(
   bail0:
 #if defined(STRIPED_SERVER_BACKEND)
     G_File_Close(g_monitor.bmap_handle, filefd);
+#else
+    G_File_Close(&g_monitor.io_handle, 0);
 #endif 
+
     globus_i_wu_free_ranges(&g_restarts);
     return (0);
   bail1:
 #if defined(STRIPED_SERVER_BACKEND)
     G_File_Close(g_monitor.bmap_handle, filefd);
+#else
+    G_File_Close(&g_monitor.io_handle, 0);
 #endif 
     globus_i_wu_free_ranges(&g_restarts);
     return (1);
@@ -1073,6 +1180,8 @@ g_send_data(
   clean_exit:
 #if defined(STRIPED_SERVER_BACKEND)
     G_File_Close(g_monitor.bmap_handle, filefd);
+#else
+    G_File_Close(&g_monitor.io_handle, 0);
 #endif 
 
     G_EXIT();
@@ -1184,9 +1293,8 @@ g_receive_data(
     int                                      ctr;
     int                                      cb_count = 0;
     int                                      data_connection_count = 1;
-    globus_ftp_control_parallelism_t         parallel;
     globus_reltime_t			     five_seconds;
-    char                                            error_buf[1024];
+    char                                     error_buf[1024];
 #ifdef BUFFER_SIZE
     size_t                                   buffer_size = BUFFER_SIZE;
 #else
@@ -1201,19 +1309,24 @@ g_receive_data(
     (void) signal(SIGALRM, g_alarm_signal);
     alarm(timeout_accept);
 
-#    if defined(STRIPED_SERVER_BACKEND)
-     {
-         if(bmap_file_open( 
-                        &(g_monitor.bmap_handle),
-                        fname,
-                        O_WRONLY,
-                        fileno(outstr)) != 0 )
-         {
-             sprintf(error_buf, "bmap_file_open() failed");
-             goto data_err;
-         }
+#if defined(STRIPED_SERVER_BACKEND)
+    if(G_File_Open( 
+	&(g_monitor.bmap_handle),
+	fname,
+	O_WRONLY,
+	fileno(outstr)) != 0 )
+#else
+    if(G_File_Open(
+	&(g_monitor.io_handle),
+	GLOBUS_NULL,
+	GLOBUS_NULL,
+	fileno(outstr)) != 0)
+#endif  /* STRIPED_SERVER_BACKEND */
+    {
+	sprintf(error_buf, "file_open() failed");
+	goto data_err;
     }
-#   endif  /* STRIPED_SERVER_BACKEND */
+
 
     res = globus_ftp_control_data_connect_read(
               handle,
@@ -1265,17 +1378,25 @@ g_receive_data(
         g_monitor.done = GLOBUS_FALSE;
         g_monitor.fd = filefd;
         cb_count = 0;
-        res = globus_ftp_control_get_parallelism(
-                  handle,
-                  &parallel);
+	res = globus_ftp_control_data_query_channels(
+			  handle,
+                          &data_connection_count,
+                          0);
+	assert(res == GLOBUS_SUCCESS);
+
+	debug_printf("receive data parallelism: %d", 
+		     data_connection_count);
+
         if(res == GLOBUS_SUCCESS)
         {
-            data_connection_count = parallel.base.size;
+            data_connection_count *= 2;
         }
         else
         {
             data_connection_count = 2;
         }
+
+	data_connection_count = 8;
 
 	GlobusTimeReltimeSet(five_seconds, 5, 0);
 
@@ -1411,6 +1532,8 @@ g_receive_data(
     bail:
 #if defined(STRIPED_SERVER_BACKEND)
     G_File_Close(g_monitor.bmap_handle, filefd);
+#else
+    G_File_Close(&g_monitor.io_handle, 0);
 #endif 
     globus_i_wu_free_ranges(&g_restarts);
     return (-1);
@@ -1418,6 +1541,8 @@ g_receive_data(
   clean_exit:
 #if defined(STRIPED_SERVER_BACKEND)
     G_File_Close(g_monitor.bmap_handle, filefd);
+#else
+    G_File_Close(&g_monitor.io_handle, 0);
 #endif 
     globus_callback_unregister(g_monitor.callback_handle);
 
@@ -1499,13 +1624,21 @@ data_read_callback(
             {
                 offset = offset + monitor->offset;
             }
-
+#        if defined(STRIPED_SERVER_BACKEND)
             ret = G_File_Write(
                       monitor->bmap_handle,
                       monitor->fd,
                       buffer,
                       length,
                       offset);
+#        else
+            ret = G_File_Write(
+                      &monitor->io_handle,
+                      monitor->fd,
+                      buffer,
+                      length,
+                      offset);
+#        endif
             if(ret <= 0)
             {
                 /* How to signal error ? */
