@@ -2,9 +2,12 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_RW_MUTEX
 #define GLOBUS_INCLUDE_GLOBUS_RW_MUTEX 1
 
+#include "globus_common_include.h"
+#include GLOBUS_THREAD_INCLUDE
+
 #ifndef BUILD_LITE
 
-#include "globus_common.h"
+EXTERN_C_BEGIN
 
 typedef struct
 {
@@ -64,6 +67,8 @@ globus_rw_cond_timedwait(
     globus_cond_t *                     cond,
     globus_rw_mutex_t *                 rw_lock,
     globus_abstime_t *                  abstime);
+
+EXTERN_C_END
 
 #else
 
