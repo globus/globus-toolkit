@@ -213,7 +213,6 @@ globus_l_gfs_auth_data_cb(
     void *                              user_arg,
     globus_result_t                     result)
 {
-    globus_result_t                     res;
     globus_l_gfs_auth_info_t *          auth_info;  
 
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
@@ -225,7 +224,7 @@ globus_l_gfs_auth_data_cb(
 
     globus_i_gfs_data_session_start(
         NULL,
-        &auth_info->id,
+        0,
         auth_info->username,
         globus_l_gfs_auth_session_cb,
         auth_info);
@@ -1303,8 +1302,11 @@ void
 globus_l_gfs_request_data_destroy(
     void *                              user_data_handle,
     void *                              user_arg)
-{    
-    // globus_i_gfs_data_destroy_handle(data_handle);
+{
+    globus_i_gfs_data_handle_t *        data_handle;
+
+    data_handle = (globus_i_gfs_data_handle_t *) user_data_handle;
+    globus_i_gfs_data_destroy_handle(data_handle);
 }
 
 static

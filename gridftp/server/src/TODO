@@ -1,3 +1,27 @@
+Immediate:
+----------
+0) max off t
+1) make data_destroy go
+2) implement security stuff in dsi
+3) add striping stuff to feat list
+4) guc
+    stripes
+5) test suite
+    single local 
+        non-daemon
+        daemon
+        detached
+        inetd
+    single remote data-node 
+        non-daemon
+        daemon
+        detached
+        inetd 
+6) check what version this should be, and change package name.
+7) merge branch to trunk and verify nothing broke
+8) update doc to reflect striping info and current issues/limitations
+
+
 file not trunc on striped puts, since they all look like partials, also
     truncating on pasv stor... who truncates, and have to deal with
     data coming before the 150 response
