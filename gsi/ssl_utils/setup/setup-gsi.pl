@@ -65,14 +65,6 @@ else
    $target_dir = "/etc/grid-security";
 }
 
-# modify grid-cert-request to have correct security directory
-$reqfile = "$globusdir/bin/grid-cert-request";
-
-if( ! -w $reqfile ){
-    print "To run this script, $reqfile must be writeable\n";
-    exit 1;
-}
-
 my $trusted_certs_dir;
 if($target_dir eq "/etc/grid-security/") {
     
