@@ -74,6 +74,8 @@ main(int argc, char *argv[])
 {
     int numcreds;
 
+    myproxy_log_use_stream (stderr);
+
     /* Initialize arguments*/
     init_arguments(argc, argv);
 

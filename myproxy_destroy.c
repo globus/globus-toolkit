@@ -65,6 +65,8 @@ main(int argc, char *argv[])
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
     
+    myproxy_log_use_stream (stderr);
+
     socket_attrs = malloc(sizeof(*socket_attrs));
     memset(socket_attrs, 0, sizeof(*socket_attrs));
 
