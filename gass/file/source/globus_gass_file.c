@@ -156,6 +156,7 @@ globus_l_gass_file_activate(void)
     int					i;
     
     globus_module_activate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
+    globus_module_activate(GLOBUS_GASS_CACHE_MODULE);
 
     globus_mutex_init(&globus_l_gass_file_mutex, GLOBUS_NULL);
     globus_cond_init(&globus_l_gass_file_cond, GLOBUS_NULL);
@@ -239,6 +240,7 @@ globus_l_gass_file_deactivate(void)
     globus_mutex_destroy(&globus_l_gass_file_mutex);
     globus_cond_destroy(&globus_l_gass_file_cond);
     
+    globus_module_deactivate(GLOBUS_GASS_CACHE_MODULE);
     globus_module_deactivate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
 
     return GLOBUS_SUCCESS;
@@ -479,6 +481,12 @@ globus_gass_open(
 		globus_assert(GLOBUS_FALSE);
 		done = GLOBUS_TRUE;
 		break;
+	    default:
+		/* The above are the only documented states which
+		 *  globus_gass_transfer_request_get_status can return
+		 */
+		globus_assert(GLOBUS_FALSE);
+		done = GLOBUS_TRUE;
 	    }
 	}
 	if(globus_gass_transfer_request_get_status(append->request) !=
