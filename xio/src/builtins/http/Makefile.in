@@ -156,19 +156,19 @@ docdir = $(GLOBUS_LOCATION)/share/doc
 LINK_BAK = orig
 AUTOMAKE_OPTIONS = no-dependencies
 
-Sources =      globus_xio_smtp.c
+Sources =      globus_xio_http.c
 
 
-flavorinclude_HEADERS =      globus_xio_smtp.h
+flavorinclude_HEADERS =      globus_xio_http.h
 
 
-noinst_LTLIBRARIES = libglobus_xio_smtp_driver_$(GLOBUS_FLAVOR_NAME).la 
+noinst_LTLIBRARIES = libglobus_xio_http_driver_$(GLOBUS_FLAVOR_NAME).la 
 
 INCLUDES = -I$(top_srcdir) $(GPT_INCLUDES)
 
-libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 EXTRA_DIST =  bootstrap         globus_automake_pre         globus_automake_post         globus_automake_pre_top         globus_automake_post_top 	dirt.sh
 
@@ -178,9 +178,9 @@ LTLIBRARIES =  $(noinst_LTLIBRARIES)
 
 
 DEFS = @DEFS@ -I. -I$(srcdir) 
-libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = 
-libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_OBJECTS =  \
-globus_xio_smtp.lo
+libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = 
+libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_OBJECTS =  \
+globus_xio_http.lo
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
@@ -194,14 +194,14 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = tar
 GZIP_ENV = --best
-SOURCES = $(libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_SOURCES)
-OBJECTS = $(libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_OBJECTS)
+SOURCES = $(libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_SOURCES)
+OBJECTS = $(libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_OBJECTS)
 
 all: all-redirect
 .SUFFIXES:
 .SUFFIXES: .S .c .lo .o .s
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) $(top_srcdir)/globus_automake_pre $(top_srcdir)/globus_automake_pre_top $(top_srcdir)/globus_automake_post $(top_srcdir)/globus_automake_post_top
-	cd $(top_srcdir) && $(AUTOMAKE) --foreign builtins/smtp/Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --foreign builtins/http/Makefile
 
 Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) \
@@ -255,8 +255,8 @@ distclean-libtool:
 
 maintainer-clean-libtool:
 
-libglobus_xio_smtp_driver_$(GLOBUS_FLAVOR_NAME).la: $(libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES)
-	$(LINK)  $(libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS) $(libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(libglobus_xio_smtp_driver___GLOBUS_FLAVOR_NAME__la_LIBADD) $(LIBS)
+libglobus_xio_http_driver_$(GLOBUS_FLAVOR_NAME).la: $(libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES)
+	$(LINK)  $(libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS) $(libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(libglobus_xio_http_driver___GLOBUS_FLAVOR_NAME__la_LIBADD) $(LIBS)
 
 install-flavorincludeHEADERS: $(flavorinclude_HEADERS)
 	@$(NORMAL_INSTALL)
@@ -304,7 +304,7 @@ maintainer-clean-tags:
 
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 
-subdir = builtins/smtp
+subdir = builtins/http
 
 distdir: $(DISTFILES)
 	@for file in $(DISTFILES); do \
