@@ -82,14 +82,14 @@ my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $deporder, $inplace, $restart_package, $gt2dir, $gt3dir, $doxygen,
-    $autotools, $deps, $graph, $listpack, $listbun,
-    $cvsuser, $gpt, $enable_64bit ) =
+    $deps, $graph, $listpack, $listbun, $cvsuser,
+    $autotools, $gpt, $core, $enable_64bit ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
     0, 0, "no", 0, "", "", 0,
-    1, 0, 0, 0, 0,
-    "", 1, "");
+    0, 0, 0, 0, "",
+    1, 1, 1, "");
 
 my @user_bundles;
 my @user_packages;
@@ -123,6 +123,7 @@ GetOptions( 'i|install=s' => \$install,
             'doxygen!' => \$doxygen,
             'autotools!' => \$autotools,
             'gpt!' => \$gpt,
+            'core!' => \$core,
             'd|deps!' => \$deps,
             'graph!' => \$graph,
             'lp|list-packages!' => \$listpack,
@@ -738,10 +739,11 @@ sub build_prerequisites()
         install_gt2_autotools() if $autotools;
     }
 
-    if ( $cvs_build_hash{'gt2'} eq 1 or 
-         $cvs_build_hash{'gt3'} eq 1 or
-         $cvs_build_hash{'gt4'} eq 1 or
-         $cvs_build_hash{'cbindings'} eq 1)
+    if ( $core and
+         (  $cvs_build_hash{'gt2'} eq 1 or 
+            $cvs_build_hash{'gt3'} eq 1 or
+            $cvs_build_hash{'gt4'} eq 1 or
+            $cvs_build_hash{'cbindings'} eq 1))
     {
         install_globus_core();
     }
@@ -1825,8 +1827,9 @@ Options:
     --anonymous            Use anonymous cvs checkouts
     --cvsuser=<user>       Use "user" as account on CVS server
     --no-updates           Don't update CVS checkouts
-    --noautotools           Don't build autotools
-    --nogpt                   Don't build gpt
+    --noautotools          Don't build autotools
+    --nogpt                Don't build gpt
+    --nocore               Don't build core
     --force                Force
     --faster               Don't repackage if packages exist already
     --flavor=<flv>         Set flavor base.  Default gcc32dbg
@@ -1892,6 +1895,11 @@ already on your PATH for this to work.
 Don't build GPT.  You must have the correct version of GPT
 on your PATH already for this to work.
 
+=item B<--nocore>
+
+Don't build GT2 core.  You must have core installed from an existing
+installation for this to work.
+
 =item B<--faster>
 
 Faster doesn't work correctly.  It is supposed to not try 
@@ -1903,10 +1911,10 @@ Set flavor base.  Default gcc32dbg.  You might want to
 switch it to vendorcc.  Threading type is currently always
 "pthr" if necessary.
 
-=item B<--gt2-tag=TAG3, --gt3-tag=TAG3>
+=item B<--gt2-tag=TAG3, --gt3-tag=TAG3, --gt4-tag=TAG4>
 
-Set GT2 or GT3 tag.  Default HEAD.  Short version is "-t2="
-or "-t3=".
+Set GT2, GT3, or GT4 tag.  Default HEAD.  Short version is "-t2=",
+"-t3=", or "-t4".
 
 =item B<--verbose>
 
