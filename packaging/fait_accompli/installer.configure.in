@@ -1,0 +1,66 @@
+dnl Intended to be used with a Makefile.in generated from:
+dnl ./make-packages.pl --bundles=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-information-services-server,globus-information-services-client,globus-information-services-sdk,globus-rls-server,gt4-java-ws-core,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-cas,gt4-c-ws-core --list-packages --deps --deporder 
+AC_INIT(installer, 3.9.4)
+AC_CONFIG_FILES(Makefile)
+dnl Pre-webservices code
+prewsgram="globus-resource-management-server globus-resource-management-client globus-resource-management-sdk"
+AC_ARG_ENABLE(prewsgram, AC_HELP_STRING([--disable-prewsgram],\
+   [Don't build pre-webservices [GRAM].  Default is enabled.]),\
+   [if test $enableval = "no"; then prewsgram=" "; fi], [])
+AC_SUBST(prewsgram, $prewsgram)
+prewsgridftp="globus-data-management-server globus-data-management-client globus-data-management-sdk"
+AC_ARG_ENABLE(prewsgridftp, AC_HELP_STRING([--disable-gridftp],\
+   [Don't build GridFTP.  Default is enabled.]),\
+   [if test $enableval = "no"; then prewsgridftp=" "; fi], [])
+AC_SUBST(prewsgridftp, $prewsgridftp)
+prewsmds="globus-information-services-server globus-information-services-client globus-information-services-sdk"
+AC_ARG_ENABLE(prewsmds, AC_HELP_STRING([--disable-prewsmds],\
+   [Don't build pre-webservices mds.  Default is enabled.]),
+   [if test $enableval = "no"; then prewsmds=" "; fi], [])
+AC_SUBST(prewsmds, $prewsmds)
+AC_ARG_WITH(iodbc, AC_HELP_STRING([--with-iodbc=dir],\
+   [Use the iodbc library in dir/lib/libiodbc.so.  Required for [RLS] builds.]),
+   [[GLOBUS_IODBC_PATH]=$withval], [])
+AC_SUBST(globus_iodbc, $[GLOBUS_IODBC_PATH])
+rls="globus-rls-server"
+AC_ARG_ENABLE(rls, AC_HELP_STRING([--disable-rls],\
+   [Don't build [RLS].  Default is enabled, but you must also specify an [IODBC] driver using --with-iodbc]),
+   [if test $enableval = "no"; then rls=" "; fi], [])
+AC_SUBST(rls, $rls)
+dnl Java code
+wsjava="gt4-java-ws-core"
+AC_ARG_ENABLE(wsjava, AC_HELP_STRING([--disable-wsjava],\
+   [Don't build java webservices core.  Default is enabled.]),
+   [if test $enableval = "no"; then wsjava=" "; fi], [])
+AC_SUBST(wsjava, $wsjava)
+wsmds="gt4-mds"
+AC_ARG_ENABLE(wsmds, AC_HELP_STRING([--disable-wsmds],\
+   [Don't build webservices Monitoring and Discovery Services.  Default is enabled.]),
+   [if test $enableval = "no"; then wsmds=" "; fi], [])
+AC_SUBST(wsmds, $wsmds)
+wsdel="gt4-delegation"
+AC_ARG_ENABLE(wsdel, AC_HELP_STRING([--disable-wsdel],\
+   [Don't build webservices delegation code.  Default is enabled.]),
+   [if test $enableval = "no"; then wsdel=" "; fi], [])
+AC_SUBST(wsdel, $wsdel)
+wsrft="gt4-rft"
+AC_ARG_ENABLE(wsrft, AC_HELP_STRING([--disable-wsrft],\
+   [Don't build webservices Reliable File Transfer.  Default is enabled.]),
+   [if test $enableval = "no"; then wsrft=" "; fi], [])
+AC_SUBST(wsrft, $wsrft)
+wsgram="gt4-gram"
+AC_ARG_ENABLE(wsgram, AC_HELP_STRING([--disable-wsgram],\
+   [Don't build webservices [GRAM].  Default is enabled.]),
+   [if test $enableval = "no"; then wsgram=" "; fi], [])
+AC_SUBST(wsgram, $wsgram)
+wscas="gt4-cas"
+AC_ARG_ENABLE(wscas, AC_HELP_STRING([--disable-wscas],\
+   [Don't build webservices Community Authorization Service.  Default is enabled.]),
+   [if test $enableval = "no"; then wscas=" "; fi], [])
+AC_SUBST(wscas, $wscas)
+wsc="gt4-c-ws-core"
+AC_ARG_ENABLE(wsc, AC_HELP_STRING([--disable-wsc],\
+   [Don't build [C] webservices core.  Default is enabled.]),
+   [if test $enableval = "no"; then wsc=" "; fi], [])
+AC_SUBST(wsc, $wsc)
+AC_OUTPUT
