@@ -848,10 +848,10 @@ globus_error_print_friendly(
     globus_module_descriptor_t *        module;
     char *                              layout[8];
     int                                 i = 0;
-    char *                              friendly;
-    char *                              top;
-    char *                              bottom;
-    char *                              verbose;
+    char *                              friendly = NULL;
+    char *                              top = NULL;
+    char *                              bottom = NULL;
+    char *                              verbose = NULL;
     globus_bool_t                       verbose_allowed = GLOBUS_TRUE;
     
     if(!error)
@@ -875,69 +875,12 @@ globus_error_print_friendly(
                 globus_i_error_verbose_key, (int *) 0x01);
         }
     }
-        
-    current_error = error;
-    friendly = NULL;
-    do
-    {
-        source_error = current_error;
-        module = globus_error_get_source(current_error);
-        if(module && module->friendly_error_func)
-        {
-            friendly = module->friendly_error_func(
-                current_error,
-                globus_object_get_type(current_error));
-        }
-    } while(friendly == NULL &&
-        (current_error = globus_error_get_cause(current_error)));
-    
-    if(globus_object_get_type(error) == GLOBUS_ERROR_TYPE_MULTIPLE)
-    {
-        top = globus_l_error_multiple_print(error, GLOBUS_TRUE);
-    }
-    else
-    {
-        top = globus_object_printable_to_string(error);
-    }
-    if(top)
-    {
-        layout[i++] = top;
-        layout[i++] = "\n";
-    }
-    
-    if(error != source_error)
-    {
-        if(globus_object_get_type(source_error) == GLOBUS_ERROR_TYPE_MULTIPLE)
-        {
-            bottom = globus_l_error_multiple_print(source_error, GLOBUS_TRUE);
-        }
-        else
-        {
-            bottom = globus_object_printable_to_string(source_error);
-        }
-        if(bottom)
-        {
-            layout[i++] = bottom;
-            layout[i++] = "\n";
-        }
-    }
-    else
-    {
-        bottom = NULL;
-    }
-    
-    if(friendly)
-    {
-        layout[i++] = friendly;
-        layout[i++] = "\n";
-    }
     
     if(globus_i_error_verbose && verbose_allowed)
     {
         verbose = globus_error_print_chain(error);
-        if(verbose || i > 0)
+        if(verbose)
         {
-            layout[i++] = _GCSL("\nVerbose error follows:\n");
             layout[i++] = verbose;
         }
         
@@ -945,7 +888,62 @@ globus_error_print_friendly(
     }
     else
     {
-        verbose = NULL;
+        current_error = error;
+        do
+        {
+            source_error = current_error;
+            module = globus_error_get_source(current_error);
+            if(module && module->friendly_error_func)
+            {
+                friendly = module->friendly_error_func(
+                    current_error,
+                    globus_object_get_type(current_error));
+            }
+        } while(friendly == NULL &&
+            (current_error = globus_error_get_cause(current_error)));
+        
+        if(globus_object_get_type(error) == GLOBUS_ERROR_TYPE_MULTIPLE)
+        {
+            top = globus_l_error_multiple_print(error, GLOBUS_TRUE);
+        }
+        else
+        {
+            top = globus_object_printable_to_string(error);
+        }
+        if(top)
+        {
+            layout[i++] = top;
+            layout[i++] = "\n";
+        }
+        
+        if(error != source_error)
+        {
+            if(globus_object_get_type(source_error)
+                == GLOBUS_ERROR_TYPE_MULTIPLE)
+            {
+                bottom = globus_l_error_multiple_print(
+                    source_error, GLOBUS_TRUE);
+            }
+            else
+            {
+                bottom = globus_object_printable_to_string(source_error);
+            }
+            if(bottom)
+            {
+                layout[i++] = bottom;
+                layout[i++] = "\n";
+            }
+        }
+        else
+        {
+            bottom = NULL;
+        }
+        
+        if(friendly)
+        {
+            layout[i++] = friendly;
+            layout[i++] = "\n";
+        }
     }
     
     error_string = globus_libc_join((const char **) layout, i);
