@@ -70,7 +70,7 @@ AC_DEFUN(LAC_COMPILER_SET_OPTIMIZATIONS,
                     if test "$GCC" = "yes"; then
                         lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -O3 -fomit-frame-pointer -Wall"
                     else
-                        lac_CFLAGS="$lac_CFLAGS -xtarget=ultra -xarch=v8plus -xO5 -xstrconst -xdepend -Xa"
+                        lac_CFLAGS="-xtarget=ultra -xO5 -xstrconst -xdepend -Xa $lac_CFLAGS"
                     fi
                 ;;
                 *x86*)

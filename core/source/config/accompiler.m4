@@ -166,6 +166,15 @@ lac_NM=""
 lac_OBJECT_MODE=""
 unset lac_cflags_opt
 unset lac_cxxflags_opt
+
+if test -z "$GLOBUS_CC" ; then
+    if echo $globus_cv_flavor | grep gcc > /dev/null 2>&1 ; then
+        GLOBUS_CC="gcc"
+    else
+        GLOBUS_CC="unknown"
+    fi
+fi
+
 case ${host}--$1 in
     *solaris2*)
         dnl On Solaris, avoid the pre-ansi BSD compatibility compiler
