@@ -1799,7 +1799,7 @@ globus_io_tcp_get_local_address(
             goto error_cntl;
         }
         
-        if(sock_addr.ss_family != PF_INET)
+        if(((struct sockaddr *) &sock_addr)->sa_family != PF_INET)
         {
             /* interface doesnt support ipv6 addresses */
             result = globus_error_put(
@@ -1891,7 +1891,7 @@ globus_io_tcp_get_remote_address(
         goto error_cntl;
     }
     
-    if(sock_addr.ss_family != PF_INET)
+    if(((struct sockaddr *) &sock_addr)->sa_family != PF_INET)
     {
         /* interface doesnt support ipv6 addresses */
         result = globus_error_put(
