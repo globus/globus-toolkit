@@ -170,23 +170,6 @@ case ${host}--$1 in
     *solaris2*)
         dnl On Solaris, avoid the pre-ansi BSD compatibility compiler
 
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
-        fi
-        if test ! -z "$CC"; then
-            AC_CHECK_PROG(lac_cv_CC, $CC, $CC, , , /usr/ucb/cc)
-        fi
-        if test -z "$lac_cv_CC"; then
-            AC_CHECK_PROG(lac_cv_CC, cc, cc, , , /usr/ucb/cc)
-        fi
-        dnl if test -z "$lac_cv_CC" ; then
-        dnl    AC_CHECK_PROG(lac_cv_CC, gcc, gcc)
-        dnl fi
-        dnl if test -n "$lac_cv_CC" ; then
-        dnl    AC_PATH_PROG(lac_cv_CC, $lac_cv_CC)
-        
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
             AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
@@ -205,7 +188,11 @@ case ${host}--$1 in
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
         CC="$lac_cv_CC"
-        dnl fi
+
+        if test "$CC" = "/usr/ucb/cc" ; then
+            AC_MSG_ERROR([The compiler found was /usr/ucb/cc (not supported)])
+            exit 1            
+        fi
 
         LAC_PROG_CC_GNU($lac_cv_CC,
                         [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
@@ -226,6 +213,11 @@ case ${host}--$1 in
                          fi
                          lac_cxxflags_opt="-xO3"
                         ])
+
+        if test "$lac_cv_build_64bit" = "yes"; then
+            lac_CFLAGS="$lac_CFLAGS -xcode=pic32 -xarch=v9"
+        fi
+
         ;;
     *ia64-*linux* )
         if test "$lac_cv_build_64bit" = "no"; then
