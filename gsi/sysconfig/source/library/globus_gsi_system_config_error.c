@@ -37,7 +37,8 @@ globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 /* 12 */  "Error removing all owned files from secure tmp directory",
 /* 13 */  "Could not find a valid gridmap file",
 /* 14 */  "Error checking superuser status",
-/* 15 */  "Error setting file permissions"
+/* 15 */  "Error setting file permissions",
+/* 16 */  "Error getting signing policy file"
 
 };
 /* @} */

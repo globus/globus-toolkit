@@ -296,15 +296,6 @@ globus_i_gsi_sysconfig_create_cert_dir_string(
     {
         *cert_dir = *cert_dir_value;
     }
-    else
-    {
-        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR,
-            ("%s %s\n", *cert_dir_value, 
-             globus_l_gsi_sysconfig_status_strings[*status]));
-        goto exit;
-    }
 
     result = GLOBUS_SUCCESS;
 
@@ -2881,15 +2872,35 @@ globus_gsi_sysconfig_file_exists_unix(
 
     if (stat(filename,&stx) == -1)
     {
+        switch(errno)
+        {
+
+        case ENOENT:
+        case ENOTDIR:
+            *status = GLOBUS_FILE_DOES_NOT_EXIST;
+            result = GLOBUS_SUCCESS;
+            goto exit;
+
+        case EACCES:
+
+            *status = GLOBUS_FILE_BAD_PERMISSIONS;
+            result = GLOBUS_SUCCESS;
+            goto exit;
+
+        default:
         result = globus_error_put(
             globus_error_wrap_errno_error(
                 GLOBUS_GSI_SYSCONFIG_MODULE,
                 errno,
                 GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
                 __FILE__":%d:%s: Error getting status "
-                "of certificate directory\n",
-                __LINE__, _function_name_));
+                "of certificate directory: %s\n",
+                __LINE__, 
+                _function_name_,
+                filename));
         goto exit;
+        
+        }
     }
 
     /*
@@ -2987,9 +2998,10 @@ globus_gsi_sysconfig_check_keyfile_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING,
-                    __FILE__":%d:%s: Error getting status of keyfile\n",
+                    __FILE__":%d:%s: Error getting status of keyfile: %s\n",
                     __LINE__,
-                    _function_name_));
+                    _function_name_,
+                    filename));
             goto exit;
         }
     }
@@ -3109,7 +3121,7 @@ globus_gsi_sysconfig_check_certfile_unix(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
                     errno,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-                    __FILE__":%d:%s: Error getting status of file %s\n",
+                    __FILE__":%d:%s: Error getting status of cert file %s\n",
                     __LINE__,
                     _function_name_,
                     filename));
@@ -3239,6 +3251,16 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR);
             goto error_exit;
         }
+
+        if(status != GLOBUS_FILE_DIR)
+        {
+            GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR,
+                ("X509_CERT_DIR=%s, but the the path "
+                 "is not a valid directory"));
+            goto error_exit;
+        }
     }
 
     /* now check for a trusted CA directory in the user's home directory */
@@ -3261,10 +3283,7 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                              FILE_SEPERATOR,
                              X509_LOCAL_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
             {
-                if(status != GLOBUS_FILE_DOES_NOT_EXIST)
-                {
-                    goto error_exit;
-                }
+                goto error_exit;
             }
         }
     }
@@ -3278,10 +3297,7 @@ globus_gsi_sysconfig_get_cert_dir_unix(
             &status,
             X509_DEFAULT_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
         {
-            if(status != GLOBUS_FILE_DOES_NOT_EXIST)
-            {
-                goto error_exit;
-            }
+            goto error_exit;
         }
     }
 
@@ -3301,10 +3317,7 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                 FILE_SEPERATOR,
                 X509_INSTALLED_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
             {
-                if(status != GLOBUS_FILE_DOES_NOT_EXIST)
-                {
-                    goto error_exit;
-                }
+                goto error_exit;
             }
         }
     }
@@ -4369,7 +4382,7 @@ globus_gsi_sysconfig_get_signing_policy_filename_unix(
         {
             GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
                 result,
-                GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PROXY_FILENAME);
+                GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_SIGNING_POLICY);
             goto exit;
         }
     }
@@ -4378,7 +4391,7 @@ globus_gsi_sysconfig_get_signing_policy_filename_unix(
     {
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PROXY_FILENAME,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_SIGNING_POLICY,
             ("NULL parameter ca_name passed to: %s", _function_name_));
         goto exit;
     }
@@ -4400,10 +4413,10 @@ globus_gsi_sysconfig_get_signing_policy_filename_unix(
     {
         GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
             result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PROXY_FILENAME);
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_SIGNING_POLICY);
         goto exit;
     }
-    
+
     if(status == GLOBUS_FILE_VALID)
     {
         *signing_policy_filename = signing_policy;
