@@ -66,6 +66,10 @@ globus_simple_ca                gsi/simple_ca/source            dirt.sh
 globus_simple_ca_setup          gsi/simple_ca/setup             dirt.sh
 globus_proxy_ssl                gsi/proxy/proxy_ssl/source      dirt.sh
 globus_proxy_core               gsi/proxy/proxy_core/source     dirt.sh
+globus_cert_utils               gsi/cert_utils/source           dirt.sh
+globus_gsi_credential           gsi/credential/source           dirt.sh
+globus_gsi_callback             gsi/credential/source           dirt.sh
+globus_gsi_sysconfig            gsi/sysconfig/source            dirt.sh
 globus_gram_reporter            gram/reporter/source            dirt.sh
 globus_gram_reporter_setup      gram/reporter/setup             dirt.sh
 globus_gsi_openssl_error        gsi/openssl_error/source        dirt.sh
