@@ -383,7 +383,7 @@ globus_l_xio_http_open_cb(
 {
     globus_xio_driver_handle_t              driver_handle;
     l_http_info_t                           *handle;
-    int                                     nbytes=0;
+    globus_size_t                           nbytes;
     driver_handle = GlobusXIOOperationGetDriverHandle(op);
 
     //Parse the recv_headers
@@ -405,7 +405,7 @@ globus_l_xio_http_open(
     void *                                  driver_attr,
     globus_xio_operation_t                  op)
 {
-    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_result_t                         res;
     globus_xio_driver_handle_t              driver_handle;
 
     res = globus_xio_driver_pass_open(
@@ -537,12 +537,15 @@ globus_l_xio_http_write(
 
 static globus_result_t
 globus_l_xio_http_target_init(
-    void **                             out_target,
-    void *                              driver_attr,
-    globus_xio_contact_t *              contact_info)
-{ 
+    void **                                 out_target,
+    globus_xio_operation_t                  target_op,
+    const globus_xio_contact_t *            contact_info,
+    void *                                  driver_attr)
+{
     //We don't do client work yet.  Only server
     *out_target = (void *)globus_libc_strdup(_TARGET);
+    globus_xio_driver_client_target_pass(
+        target_op, contact_info);
 
     return GLOBUS_SUCCESS;
 }

@@ -136,8 +136,9 @@ globus_l_xio_ftp_cmd_complete_command(
 static globus_result_t
 globus_l_xio_ftp_cmd_target_init(
     void **                                 out_target,
-    void *                                  driver_attr,
-    globus_xio_contact_t *                  contact_info)
+    globus_xio_operation_t                  target_op,
+    const globus_xio_contact_t *            contact_info,
+    void *                                  driver_attr)
 {
     globus_l_xio_ftp_cmd_target_t *         target;
 
@@ -146,6 +147,9 @@ globus_l_xio_ftp_cmd_target_init(
     target->client = GLOBUS_TRUE;
     target->create_buffer_mode = GLOBUS_FALSE;
     *out_target = target;
+
+    globus_xio_driver_client_target_pass(
+        target_op, contact_info);
 
     return GLOBUS_SUCCESS;
 }

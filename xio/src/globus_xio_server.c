@@ -107,9 +107,9 @@ globus_l_xio_server_accept_kickout(
 {
     int                                     ctr;
     int                                     wb_ndx;
-    globus_i_xio_target_t *                 xio_target = NULL;
     globus_i_xio_server_t *                 xio_server;
     globus_i_xio_op_t *                     xio_op;
+    globus_i_xio_op_t *                     target_op = NULL;
     globus_bool_t                           destroy_server = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_server_accept_kickout);
 
@@ -121,27 +121,21 @@ globus_l_xio_server_accept_kickout(
     /* create the structure if successful, otherwise the target is null */
     if(xio_op->cached_obj == NULL)
     {
-        xio_target = globus_malloc(sizeof(globus_i_xio_target_t) +
-                        (sizeof(globus_i_xio_target_entry_t) * 
-                            (xio_op->stack_size - 1)));
-        if(xio_target == NULL)
-        {
-            xio_op->cached_obj = GlobusXIOErrorObjMemory("target");
-        }
-    }
-    
-    if(xio_op->cached_obj == NULL)
-    {
-        xio_target->type = GLOBUS_XIO_TARGET_TYPE_SERVER;
+        target_op = (globus_i_xio_op_t *) globus_malloc(
+            sizeof(globus_i_xio_op_t) + (
+                sizeof(globus_i_xio_op_entry_t) * (xio_op->stack_size - 1)));
+        memset(target_op, '\0', 
+            sizeof(globus_i_xio_op_t) + (
+                sizeof(globus_i_xio_op_entry_t) * (xio_op->stack_size - 1)));
         /* initialize the target structure */
-        xio_target->stack_size = xio_op->stack_size;
-        for(ctr = 0;  ctr < xio_target->stack_size; ctr++)
+        for(ctr = 0;  ctr < xio_op->stack_size; ctr++)
         {
-            xio_target->entry[ctr].target = 
-                    xio_op->entry[ctr].target;
-            xio_target->entry[ctr].driver = 
+            target_op->entry[ctr].driver = 
                     xio_server->entry[ctr].driver;
+            target_op->entry[ctr].target = 
+                    xio_op->entry[ctr].target;
         }
+        target_op->stack_size = xio_op->stack_size;
     }
     /* if failed clean up the operation */
     else
@@ -167,7 +161,7 @@ globus_l_xio_server_accept_kickout(
     /* call the users callback */
     xio_op->_op_accept_cb(
         xio_server,
-        xio_target,
+        target_op,
         GlobusXIOObjToResult(xio_op->cached_obj),
         xio_op->user_arg);
     globus_thread_blocking_callback_pop(&wb_ndx);
@@ -181,6 +175,7 @@ globus_l_xio_server_accept_kickout(
             {
                 /* remove the reference for the target on the server */
                 GlobusIXIOServerDec(destroy_server, xio_server);
+                globus_free(xio_op);
             }
         }
         globus_mutex_unlock(&xio_server->mutex);
@@ -249,7 +244,6 @@ globus_i_xio_server_post_accept(
         GlobusXIOOpDec(xio_op);
         if(xio_op->ref == 0)
         {
-            globus_free(xio_op);
             GlobusIXIOServerDec(destroy_server, xio_server);
         }
     }
@@ -586,7 +580,7 @@ globus_l_server_accept_cb(
     globus_mutex_lock(&info->mutex);
     {
         info->error_obj = GlobusXIOResultToObj(result);
-        info->target = target;
+        info->target_op = target;
         info->done = GLOBUS_TRUE;
         globus_cond_signal(&info->cond);
     }
@@ -936,7 +930,7 @@ globus_xio_server_register_accept(
     int                                     tmp_size;
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_i_xio_server_t *                 xio_server;
-    globus_i_xio_op_t *                     xio_op;
+    globus_i_xio_op_t *                     xio_op = NULL;
     GlobusXIOName(globus_xio_server_register_accept);
 
     GlobusXIODebugEnter();
@@ -976,6 +970,10 @@ globus_xio_server_register_accept(
     return GLOBUS_SUCCESS;
 
   err:
+    if(xio_op != NULL)
+    {
+        globus_free(xio_op);
+    }
 
     GlobusXIODebugExitWithError();
     return res;
@@ -1103,7 +1101,7 @@ globus_xio_server_accept(
         goto register_error;
     }
 
-    *out_target = info->target;
+    *out_target = info->target_op;
     globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
@@ -1263,7 +1261,7 @@ globus_result_t
 globus_xio_target_destroy(
     globus_xio_target_t                     target)
 {   
-    globus_i_xio_target_t *                 xio_target;
+    globus_i_xio_op_t *                     xio_op;
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_result_t                         tmp_res;
     int                                     ctr;
@@ -1278,20 +1276,20 @@ globus_xio_target_destroy(
         res = GlobusXIOErrorParameter("target");
         goto err;
     }
-    xio_target = (globus_i_xio_target_t *) target;
-    if(xio_target->type != GLOBUS_XIO_TARGET_TYPE_SERVER &&
-       xio_target->type != GLOBUS_XIO_TARGET_TYPE_CLIENT)
+    xio_op = (globus_i_xio_op_t *) target;
+    if(xio_op->type != GLOBUS_XIO_OPERATION_TYPE_ACCEPT &&
+       xio_op->type != GLOBUS_XIO_OPERATION_TYPE_CLIENT)
     {
-        res = GlobusXIOErrorInvalidState(xio_target->type);
+        res = GlobusXIOErrorInvalidState(xio_op->type);
         goto err;
     }
 
-    for(ctr = 0; ctr < xio_target->stack_size; ctr++)
+    for(ctr = 0; ctr < xio_op->stack_size; ctr++)
     {
-        if(xio_target->entry[ctr].driver->target_destroy_func != NULL)
+        if(xio_op->entry[ctr].driver->target_destroy_func != NULL)
         {
-            tmp_res = xio_target->entry[ctr].driver->target_destroy_func(
-                xio_target->entry[ctr].target);
+            tmp_res = xio_op->entry[ctr].driver->target_destroy_func(
+                xio_op->entry[ctr].target);
             /* this will effectively report the last error detected */
             if(tmp_res != GLOBUS_SUCCESS)
             {
@@ -1299,7 +1297,7 @@ globus_xio_target_destroy(
             }
         }
     }
-    globus_free((void*)xio_target);
+    globus_free((void*)xio_op);
 
     if(res != GLOBUS_SUCCESS)
     {
@@ -1328,10 +1326,10 @@ globus_xio_target_cntl(
     int                                     cmd,
     ...)
 {
-    globus_i_xio_target_t *                 xio_target;
     int                                     ctr;
     globus_result_t                         res;
     va_list                                 ap;
+    globus_i_xio_op_t *                     xio_op;
     GlobusXIOName(globus_xio_target_cntl);
 
     GlobusXIODebugEnter();
@@ -1356,16 +1354,16 @@ globus_xio_target_cntl(
     }
 #   endif
 
-    xio_target = (globus_i_xio_target_t *) target;
+    xio_op = (globus_i_xio_op_t *) target;
 
     if(driver != NULL)
     {
-        for(ctr = 0; ctr < xio_target->stack_size; ctr++)
+        for(ctr = 0; ctr < xio_op->stack_size; ctr++)
         {
-            if(xio_target->entry[ctr].driver == driver)
+            if(xio_op->entry[ctr].driver == driver)
             {
                 res = driver->target_cntl_func(
-                    xio_target->entry[ctr].target,
+                    xio_op->entry[ctr].target,
                     cmd,
                     ap);
                 va_end(ap);
@@ -1785,13 +1783,12 @@ globus_xio_target_init(
     globus_xio_stack_t                      stack)
 {
     globus_result_t                         res;
-    globus_i_xio_target_t *                 xio_target;
     int                                     stack_size;
-    int                                     ctr;
     int                                     ndx;
     globus_list_t *                         list;
     void *                                  driver_attr;
     globus_xio_contact_t                    contact_info;
+    globus_i_xio_op_t *                     xio_op;
     GlobusXIOName(globus_xio_target_init);
 
     GlobusXIODebugEnter();
@@ -1819,67 +1816,51 @@ globus_xio_target_init(
     {
         goto err_param;
     }
-    
-    /* TODO: check stack, make sure it meets requirements */
-    xio_target = (globus_i_xio_target_t *)
-                    globus_malloc(sizeof(globus_i_xio_target_t) +
-                        (sizeof(globus_i_xio_target_entry_t) * 
-                            (stack_size - 1)));
-    if(xio_target == NULL)
+
+    xio_op = (globus_i_xio_op_t *) 
+        globus_malloc(sizeof(globus_i_xio_op_t) +
+            (sizeof(globus_i_xio_op_t) * (stack_size - 1)));
+    if(xio_op == NULL)
     {
-        res = GlobusXIOErrorMemory("target");
+        res = GlobusXIOErrorMemory("operation");
         goto err;
     }
-    memset(xio_target, '\0', sizeof(globus_i_xio_target_t) +
-        (sizeof(globus_i_xio_target_entry_t) * (stack_size - 1)));
+    memset(xio_op, '\0', 
+        sizeof(globus_i_xio_op_t) +
+            (sizeof(globus_i_xio_op_t) * (stack_size - 1)));
 
-    xio_target->type = GLOBUS_XIO_TARGET_TYPE_CLIENT;
-    /* initialize what we need of the target structure */
-    xio_target->stack_size = stack_size;
+    xio_op->type = GLOBUS_XIO_OPERATION_TYPE_CLIENT;
+    xio_op->state = GLOBUS_XIO_OP_STATE_OPERATING;
+    xio_op->ref = 1;
+    xio_op->ndx = 0;
+    xio_op->stack_size = stack_size;
 
     driver_attr = NULL;
     ndx = 0;
     for(list = stack->driver_stack;
-    !globus_list_empty(list);
+        !globus_list_empty(list);
         list = globus_list_rest(list))
     {
-        xio_target->entry[ndx].driver = (globus_xio_driver_t) 
+        xio_op->entry[ndx].driver = (globus_xio_driver_t) 
                                         globus_list_first(list);
 
-        if(xio_target->entry[ndx].driver->target_init_func != NULL)
+        xio_op->entry[ndx].target_attr = NULL;
+        GlobusIXIOAttrGetDS(driver_attr,
+            target_attr, xio_op->entry[ndx].driver);
+        if(driver_attr != NULL)
         {
-            /* pull driver specific info out of target attr */
-            if(target_attr != NULL)
-            {
-                GlobusIXIOAttrGetDS(driver_attr, target_attr,               \
-                    xio_target->entry[ndx].driver);
-            }
-
-            res = xio_target->entry[ndx].driver->target_init_func(
-                    &xio_target->entry[ndx].target,
-                    driver_attr,
-                    &contact_info);
-            if(res != GLOBUS_SUCCESS)
-            {
-                /* loop back through and destroy all inited targets */
-                for(ctr = 0; ctr < ndx; ctr++)
-                {
-                    /* ignore the result, but it must be passed */
-                    xio_target->entry[ctr].driver->target_destroy_func(
-                        xio_target->entry[ctr].target);
-                }
-                globus_free(xio_target);
-                goto err;
-            }
+            xio_op->entry[ndx].driver->attr_copy_func(
+                &xio_op->entry[ndx].target_attr, driver_attr);
         }
-
         ndx++;
     }
     /* hell has broken loose if these are not equal */
     globus_assert(ndx == stack_size);
 
-    *target = (globus_xio_target_t) xio_target;
-    
+    globus_xio_driver_client_target_pass(xio_op, &contact_info);
+
+    *target = xio_op;
+
     globus_xio_contact_destroy(&contact_info);
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;

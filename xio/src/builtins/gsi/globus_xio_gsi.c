@@ -368,9 +368,10 @@ globus_l_xio_gsi_attr_destroy(
 static
 globus_result_t
 globus_l_xio_gsi_target_init(
-    void **                             out_target,
-    void *                              driver_attr,
-    globus_xio_contact_t *              contact_info)
+    void **                                 out_target,
+    globus_xio_operation_t                  target_op,
+    const globus_xio_contact_t *            contact_info,
+    void *                                  driver_attr)
 {
     globus_l_target_t *                 target;
     globus_result_t                     result;
@@ -392,6 +393,11 @@ globus_l_xio_gsi_target_init(
 
     *out_target = target;
 
+    if(target_op != NULL)
+    {
+        globus_xio_driver_client_target_pass(
+            target_op, contact_info);
+    }
     GlobusXIOGSIDebugExit();
     return GLOBUS_SUCCESS;
     
@@ -509,7 +515,7 @@ globus_l_xio_gsi_accept_cb(
         goto error;
     }
 
-    result = globus_l_xio_gsi_target_init((void **) &target, NULL, NULL);
+    result = globus_l_xio_gsi_target_init((void **) &target, NULL, NULL, NULL);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -2446,7 +2452,6 @@ globus_l_xio_gsi_write_delegation_token_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_xio_driver_handle_t          driver_handle;
     globus_l_delegation_handle_t *      handle;
     gss_buffer_desc                     tmp_buffer;
     OM_uint32                           minor_status;
@@ -2456,8 +2461,6 @@ globus_l_xio_gsi_write_delegation_token_cb(
 
     handle = (globus_l_delegation_handle_t *) user_arg;
      
-    driver_handle = GlobusXIOOperationGetDriverHandle(op);
-
     /* iovec was used to write a sec token */
     
     tmp_buffer.length = handle->iovec[1].iov_len;

@@ -427,13 +427,6 @@ globus_xio_driver_server_cntl(
     int                                     cmd,
     ...);
 
-globus_result_t
-globus_xio_driver_target_cntl(
-    globus_xio_driver_target_t              driver_target,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
-    ...);
-
 /**
  *  @ingroup driver_pgm
  */
@@ -578,21 +571,22 @@ typedef globus_result_t
  *         If a driver specific attribute was set this will point to it.
  *         Ths parameter may be NULL.
  *
- *  @param op
+ *  @param target_op
  *         The reuqested operation.  When the driver is finished acepting
  *         the server connection it uses this structure to signal globus_xio 
- *         that it has completed the operation.
+ *         that it has completed the operation.  This op can be used to pass
+ *         client_init or pass_accept.
  */
 
 typedef globus_result_t
 (*globus_xio_driver_server_accept_t)(
     void *                                  driver_server,
     void *                                  driver_attr,
-    globus_xio_operation_t                  accept_op);
+    globus_xio_operation_t                  target_op);
 
 globus_result_t
 globus_xio_driver_pass_accept(
-    globus_xio_operation_t                  in_op,
+    globus_xio_operation_t                  target_op,
     globus_xio_driver_callback_t            in_cb,
     void *                                  in_user_arg);
 
@@ -630,7 +624,7 @@ globus_xio_server_disable_cancel(
  *  resources associated with the accept_op and potientially cause xio
  *  to pop the signal up the driver stack.
  *
- *  @param accept_op
+ *  @param target_op
  *          The requested accept operation that has completed.
  *
  *  @param driver_target
@@ -642,7 +636,7 @@ globus_xio_server_disable_cancel(
  */
 void
 globus_xio_driver_finished_accept(
-    globus_xio_operation_t                  accept_op,
+    globus_xio_operation_t                  target_op,
     void *                                  driver_target,
     globus_result_t                         result);
     
@@ -681,34 +675,48 @@ typedef globus_result_t
  *  this function is called for each driver from top (transform) to bottom
  *  (transport)
  *
- *  @param out_target
- *         An output parameter.  upon return from this function this should
- *         point to a area of memory that will serve as a handle to the
- *         target.
- *
- *  @param driver_attr
- *         If the user added any driver specific attributes for this 
- *         operation this will point to a driver specific operation.
+ *  @param target_op
+ *         The request operation to cleate a client target from the driver
+ *         below.
  *
  *  @param contact_info
  *         A globus_xio_contact_t with describing the user's resource request.
  *         Driver's should document which portions of this they look at.
  *         see globus_target_init for more details.
  * 
- *         A driver may change the fields in this before returning.  it should
- *         free any memory it is replacing and leave any memory it allocates
- *         for xio to free.
+ *  @param driver_attr
+ *         If the user added any driver specific attributes for this 
+ *         operation this will point to a driver specific operation.
  *
- *  @param driver_target
- *         The internal reference to the xio target.  If the driver will not
- *         be calling globus_xio_driver_target_cntl or other function that
- *         requires this paremeter, then it can be ignored.
  */
 typedef globus_result_t
-(*globus_xio_driver_target_init_t)(
-    void **                                 out_target,
-    void *                                  driver_attr,
-    globus_xio_contact_t *                  contact_info);
+(*globus_xio_driver_client_target_init_t)(
+    void **                                 out_driver_target,
+    globus_xio_operation_t                  target_op,
+    const globus_xio_contact_t *            contact_info,
+    void *                                  driver_attr);
+
+/**
+ *  @ingroup driver_pgm
+ *  Request the driver below to intialize the target_op in a client manner
+ *
+ *  @param target_op
+ *         The operation to be set up as a target.  This function does not
+ *         take over the op, the op is available for the upon return in
+ *         the same way that it is proor to the call.
+ *
+ *  @param contact_info
+ *         A driver may pass in the contact info passed to it or create a 
+ *         new one.
+ *
+ *  @param driver_target
+ *         The driver target to be threaded through to the open interface 
+ *         function.
+ */
+globus_result_t
+globus_xio_driver_client_target_pass(
+    globus_xio_operation_t                  target_op,
+    const globus_xio_contact_t *            contact_info);
 
 /**
  *  @ingroup driver_pgm
@@ -1349,7 +1357,7 @@ globus_xio_driver_set_transform(
 globus_result_t
 globus_xio_driver_set_client(
     globus_xio_driver_t                     driver,
-    globus_xio_driver_target_init_t         target_init_func,
+    globus_xio_driver_client_target_init_t  target_init_func,
     globus_xio_driver_target_cntl_t         target_cntl_func,
     globus_xio_driver_target_destroy_t      target_destroy_func);
 

@@ -2027,8 +2027,9 @@ globus_l_xio_gssapi_ftp_client_incoming(
 static globus_result_t
 globus_l_xio_gssapi_ftp_target_init(
     void **                                 out_target,
-    void *                                  driver_attr,
-    globus_xio_contact_t *                  contact_info)
+    globus_xio_operation_t                  target_op,
+    const globus_xio_contact_t *            contact_info,
+    void *                                  driver_attr)
 {
     globus_l_xio_gssapi_ftp_target_t *      target;
     char *                                  tmp_ptr;
@@ -2046,6 +2047,8 @@ globus_l_xio_gssapi_ftp_target_init(
     target->host = globus_libc_strdup(contact_info->host);
 
     *out_target = target;
+    globus_xio_driver_client_target_pass(
+        target_op, contact_info);
 
     return GLOBUS_SUCCESS;
 }

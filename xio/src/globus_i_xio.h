@@ -220,15 +220,6 @@ typedef enum globus_xio_server_state_e
     GLOBUS_XIO_SERVER_STATE_CLOSED,
 } globus_xio_server_state_t;
 
-typedef enum globus_xio_target_type_e
-{
-    GLOBUS_XIO_TARGET_TYPE_NONE,
-    GLOBUS_XIO_TARGET_TYPE_SERVER,
-    GLOBUS_XIO_TARGET_TYPE_CLIENT,
-} globus_xio_target_type_t;
-
-
-
 /***************************************************************************
  *                  Internally exposed data structures
  *                  ----------------------------------
@@ -237,7 +228,6 @@ typedef enum globus_xio_target_type_e
 
 struct globus_i_xio_context_s;
 struct globus_i_xio_op_s;
-struct globus_i_xio_target_s;
 
 typedef struct globus_i_xio_monitor_s
 {
@@ -408,9 +398,6 @@ typedef struct globus_i_xio_context_s
 #define _op_ent_iovec_count                 type_u.handle_s.iovec_count
 #define _op_ent_fake_iovec                  type_u.handle_s.fake_iovec
 
-#define _op_ent_driver                      type_u.target_s.driver
-
-#define _op_ent_accept_attr                 type_u.target_s.accept_attr
 /*
  *  represents a entry in an array of operations.  each entry
  *  is mapped to a driver at the same index.
@@ -434,11 +421,6 @@ typedef struct globus_i_xio_op_entry_s
             int                             iovec_count;
             globus_xio_iovec_t *            fake_iovec;
         } handle_s;
-        /* target op entries */
-        struct
-        {
-            globus_xio_driver_t             driver;
-        } target_s;
     } type_u;
     globus_bool_t                           in_register;
     globus_bool_t                           is_limited;
@@ -448,8 +430,10 @@ typedef struct globus_i_xio_op_entry_s
     void *                                  open_attr;
     void *                                  accept_attr;
     void *                                  close_attr;
+    void *                                  target_attr;
     int                                     prev_ndx;
     int                                     next_ndx;
+    globus_xio_driver_t                     driver;
 
     globus_xio_operation_type_t *           deliver_type;
 } globus_i_xio_op_entry_t;
@@ -492,8 +476,9 @@ typedef struct globus_i_xio_op_s
         globus_xio_callback_t               cb;
         globus_xio_accept_callback_t        accept_cb;
     }callback_u;
-        globus_xio_data_callback_t          data_cb;
-        globus_xio_iovec_callback_t         iovec_cb;
+
+    globus_xio_data_callback_t          data_cb;
+    globus_xio_iovec_callback_t         iovec_cb;
     void *                                  user_arg;
    
     /*
@@ -554,19 +539,6 @@ typedef struct globus_i_xio_op_s
     globus_i_xio_op_entry_t                 entry[1];
 } globus_i_xio_op_t;
 
-typedef struct globus_i_xio_target_entry_s
-{
-    globus_xio_driver_t                     driver;
-    void *                                  target;
-} globus_i_xio_target_entry_t;
-
-typedef struct globus_i_xio_target_s
-{
-    globus_xio_target_type_t                type;
-    int                                     stack_size;
-    globus_i_xio_target_entry_t             entry[1];
-} globus_i_xio_target_t; 
-
 typedef struct globus_i_xio_driver_s
 {
     char *                                  name;
@@ -581,7 +553,7 @@ typedef struct globus_i_xio_driver_s
     globus_xio_driver_write_t               write_func;
     globus_xio_driver_handle_cntl_t         handle_cntl_func;
 
-    globus_xio_driver_target_init_t         target_init_func;
+    globus_xio_driver_client_target_init_t  target_init_func;
     globus_xio_driver_target_cntl_t         target_cntl_func;
     globus_xio_driver_target_destroy_t      target_destroy_func;
 
@@ -617,7 +589,7 @@ typedef struct globus_i_xio_blocking_s
     globus_bool_t                           done;
     globus_size_t                           nbytes;
     globus_i_xio_op_t *                     op;
-    globus_i_xio_target_t *                 target;
+    globus_i_xio_op_t *                     target_op;
     globus_xio_data_descriptor_t            data_desc;
     globus_object_t *                       error_obj;
 } globus_i_xio_blocking_t;
@@ -707,7 +679,7 @@ globus_i_xio_timer_unregister_timeout(
 
 globus_i_xio_context_t *
 globus_i_xio_context_create(
-    globus_i_xio_target_t *                 xio_target);
+    int                                     stack_size);
 
 void
 globus_i_xio_context_destroy(

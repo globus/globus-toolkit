@@ -80,7 +80,7 @@ globus_xio_driver_pass_open(
         if(op->ndx == op->stack_size)
         {
             res = driver->transport_open_func(
-                        handle->target->entry[op->ndx - 1].target,
+                        my_op->target,
                         my_op->open_attr,
                         my_context,
                         op);
@@ -88,7 +88,7 @@ globus_xio_driver_pass_open(
         else
         {
             res = driver->transform_open_func(
-                        handle->target->entry[op->ndx - 1].target,
+                        my_op->target,
                         my_op->open_attr,
                         op);
         }
@@ -1311,4 +1311,60 @@ globus_xio_driver_finished_accept(
         globus_l_xio_driver_op_accept_kickout(op);
     }
     GlobusXIODebugInternalExit();
+}
+
+/*
+ *
+ */
+globus_result_t
+globus_xio_driver_client_target_pass(
+    globus_xio_operation_t                  target_op,
+    const globus_xio_contact_t *            contact_info)
+{
+    globus_i_xio_op_entry_t *               my_op;
+    globus_result_t                         res;
+    GlobusXIOName(globus_xio_driver_client_target_pass);
+
+    GlobusXIODebugInternalEnter();
+
+    if(target_op == NULL)
+    {
+        res = GlobusXIOErrorParameter("target_op");
+        goto err;
+    }
+    if(contact_info == NULL)
+    {
+        res = GlobusXIOErrorParameter("contact_info");
+        goto err;
+    }
+    if(target_op->ndx == target_op->stack_size)
+    {
+        res = GlobusXIOErrorParameter("target_op");
+        goto err;
+    }
+
+    my_op = &target_op->entry[target_op->ndx];
+    target_op->ndx++;
+
+    if(my_op->driver->target_init_func != NULL)
+    {
+        res = my_op->driver->target_init_func(
+                &my_op->target,
+                target_op,
+                contact_info,
+                my_op->accept_attr);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+    }
+
+    GlobusXIODebugInternalExit();
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugInternalExitWithError();
+    return res;
 }

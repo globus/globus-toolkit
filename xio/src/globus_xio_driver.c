@@ -285,7 +285,15 @@ globus_i_xio_op_destroy(
         }
     }
 
-    globus_memory_push_node(&context->op_memory, op);
+    if(op->type != GLOBUS_XIO_OPERATION_TYPE_OPEN)
+    {
+        globus_memory_push_node(&context->op_memory, op);
+    }
+    else
+    {
+        globus_free(op);
+    }
+
     if(handle != NULL)
     {
         globus_i_xio_handle_dec(handle, destroy_handle);
@@ -895,7 +903,7 @@ globus_i_xio_context_destroy(
 
 globus_i_xio_context_t *
 globus_i_xio_context_create(
-    globus_i_xio_target_t *                 xio_target)
+    int                                     stack_size)
 {
     globus_i_xio_context_t *                xio_context;
     int                                     size;
@@ -905,7 +913,7 @@ globus_i_xio_context_create(
     GlobusXIODebugInternalEnter();
 
     size = sizeof(globus_i_xio_context_t) +
-        (sizeof(globus_i_xio_context_entry_t) * (xio_target->stack_size - 1));
+        (sizeof(globus_i_xio_context_entry_t) * (stack_size - 1));
 
     xio_context = (globus_i_xio_context_t *) globus_malloc(size);
     if(xio_context != NULL)
@@ -914,11 +922,11 @@ globus_i_xio_context_create(
 
         globus_mutex_init(&xio_context->mutex, NULL);
         globus_mutex_init(&xio_context->cancel_mutex, NULL);
-        xio_context->stack_size = xio_target->stack_size;
+        xio_context->stack_size = stack_size;
         globus_memory_init(&xio_context->op_memory,
             sizeof(globus_i_xio_op_t) +
                 (sizeof(globus_i_xio_op_entry_t) *
-                    (xio_target->stack_size - 1)),
+                    (stack_size - 1)),
             GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT);
         xio_context->ref++;
         for(ctr = 0; ctr < xio_context->stack_size; ctr++)
@@ -1677,7 +1685,7 @@ globus_xio_driver_set_transform(
 globus_result_t
 globus_xio_driver_set_client(
     globus_xio_driver_t                     driver,
-    globus_xio_driver_target_init_t         target_init_func,
+    globus_xio_driver_client_target_init_t  target_init_func,
     globus_xio_driver_target_cntl_t         target_cntl_func,
     globus_xio_driver_target_destroy_t      target_destroy_func)
 {

@@ -673,7 +673,6 @@ globus_l_xio_open_close_callback_kickout(
     globus_result_t                         res;
     globus_i_xio_op_t *                     op;
     globus_i_xio_op_t *                     close_op = NULL;
-    globus_i_xio_target_t *                 target;
     globus_i_xio_handle_t *                 handle;
     globus_bool_t                           start_close = GLOBUS_FALSE;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
@@ -699,21 +698,18 @@ globus_l_xio_open_close_callback_kickout(
         /* clean up the target */
         if(op->type == GLOBUS_XIO_OPERATION_TYPE_OPEN)
         {
-            target = handle->target;
-            for(ctr = 0;  ctr < target->stack_size; ctr++)
+            for(ctr = 0; ctr < op->stack_size; ctr++)
             {
-                if(target->entry[ctr].target != NULL &&
-                    target->entry[ctr].driver->target_destroy_func !=
+                if(op->entry[ctr].target != NULL &&
+                    op->entry[ctr].driver->target_destroy_func !=
                         NULL)
                 {
                     /* ignore result code.  user should be more interested in
                         result from callback */
-                    target->entry[ctr].driver->target_destroy_func(
-                            target->entry[ctr].target);
+                    op->entry[ctr].driver->target_destroy_func(
+                            op->entry[ctr].target);
                 }
             }
-            globus_free(target);
-            handle->target = NULL;
         }
 
         switch(handle->state)
@@ -1429,7 +1425,6 @@ globus_l_xio_register_open(
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
     globus_i_xio_handle_t *                 handle;
     globus_result_t                         res;
-    globus_i_xio_context_t *                context;
     GlobusXIOName(globus_l_xio_register_open);
 
     GlobusXIODebugInternalEnter();
@@ -1492,7 +1487,6 @@ globus_l_xio_register_open(
         GlobusXIOOpDec(op); /* dec for the register */
         globus_assert(op->ref > 0);
 
-        context = op->_op_context;
         if(globus_i_xio_timer_unregister_timeout(
             &globus_l_xio_timeout_timer, op))
         {
@@ -1684,7 +1678,6 @@ globus_xio_register_open(
     void *                                  driver_attr;
     globus_i_xio_op_t *                     op = NULL;
     globus_i_xio_handle_t *                 handle = NULL;
-    globus_i_xio_target_t *                 target;
     globus_i_xio_context_t *                context = NULL;
     globus_result_t                         res = GLOBUS_SUCCESS;
     int                                     ctr;
@@ -1702,18 +1695,15 @@ globus_xio_register_open(
     }
     if(user_target == NULL)
     {
-        res = GlobusXIOErrorParameter(target);
+        res = GlobusXIOErrorParameter("target");
         goto err;
     }
 
     *user_handle = NULL; /* initialze to be nice to user */
-    target = (globus_i_xio_target_t *) user_target;
-
-    /* this is gaurenteed to be greater than zero */
-    globus_assert(target->stack_size > 0);
+    op = (globus_i_xio_op_t *) user_target;
 
     /* allocate and initialize context */
-    context = globus_i_xio_context_create(target);
+    context = globus_i_xio_context_create(op->stack_size);
     if(context == NULL)
     {
         res = GlobusXIOErrorMemory("context");
@@ -1728,13 +1718,6 @@ globus_xio_register_open(
         goto err;
     }
 
-    GlobusXIOOperationCreate(op, context);
-    if(op == NULL)
-    {
-        res = GlobusXIOErrorMemory("operation");
-        goto err;
-    }
-
     /* all memory has been allocated, now set up the different structures */
 
     /*
@@ -1744,6 +1727,7 @@ globus_xio_register_open(
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->_op_handle = handle;
     op->ref = 1;
+    op->ndx = 0;
     op->_op_cb = cb;
     op->user_arg = user_arg;
     op->entry[0].prev_ndx = -1; /* for first pass there is no return */
@@ -1764,17 +1748,16 @@ globus_xio_register_open(
     handle->space = space;
     globus_callback_space_reference(space);
 
-    handle->target = target;
     /* set entries in structures */
     for(ctr = 0; ctr < context->stack_size; ctr++)
     {
-        context->entry[ctr].driver = target->entry[ctr].driver;
+        context->entry[ctr].driver = op->entry[ctr].driver;
 
         op->entry[ctr].open_attr = NULL;
         if(user_attr != NULL)
         {
             GlobusIXIOAttrGetDS(driver_attr, user_attr,
-                target->entry[ctr].driver);
+                op->entry[ctr].driver);
 
             if(driver_attr != NULL)
             {
@@ -2426,14 +2409,13 @@ globus_xio_open(
     void *                                  driver_attr = NULL;
     globus_i_xio_op_t *                     op = NULL;
     globus_i_xio_handle_t *                 handle = NULL;
-    globus_i_xio_target_t *                 target;
     globus_i_xio_context_t *                context = NULL;
     globus_result_t                         res = GLOBUS_SUCCESS;
     int                                     ctr;
     globus_i_xio_blocking_t *               info;
     globus_callback_space_t                 space = 
             GLOBUS_CALLBACK_GLOBAL_SPACE;
-    GlobusXIOName(globus_xio_register_open);
+    GlobusXIOName(globus_xio_open);
 
     GlobusXIODebugEnter();
     GlobusLXIOActiveTest();
@@ -2450,13 +2432,10 @@ globus_xio_open(
     }
 
     *user_handle = NULL; /* initialze to be nice to user */
-    target = (globus_i_xio_target_t *) user_target;
-
-    /* this is gaurenteed to be greater than zero */
-    globus_assert(target->stack_size > 0);
+    op = (globus_i_xio_op_t *) user_target;
 
     /* allocate and initialize context */
-    context = globus_i_xio_context_create(target);
+    context = globus_i_xio_context_create(op->stack_size);
     if(context == NULL)
     {
         res = GlobusXIOErrorMemory("context");
@@ -2469,13 +2448,6 @@ globus_xio_open(
     {
         res = GlobusXIOErrorMemory("handle");
         goto handle_alloc_err;
-    }
-
-    GlobusXIOOperationCreate(op, context);
-    if(op == NULL)
-    {
-        res = GlobusXIOErrorMemory("operation");
-        goto op_alloc_err;
     }
 
     info = globus_i_xio_blocking_alloc();
@@ -2495,6 +2467,7 @@ globus_xio_open(
     op->type = GLOBUS_XIO_OPERATION_TYPE_OPEN;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
     op->_op_handle = handle;
+    op->ndx = 0;
     op->ref = 1;
     op->_op_cb = globus_l_xio_blocking_cb;
     op->user_arg = info;
@@ -2516,18 +2489,16 @@ globus_xio_open(
     handle->space = space;
     globus_callback_space_reference(space);
 
-
-    handle->target = target;
     /* set entries in structures */
     for(ctr = 0; ctr < context->stack_size; ctr++)
     {
-        context->entry[ctr].driver = target->entry[ctr].driver;
+        context->entry[ctr].driver = op->entry[ctr].driver;
 
         op->entry[ctr].open_attr = NULL;
         if(user_attr != NULL)
         {
             GlobusIXIOAttrGetDS(driver_attr, user_attr,
-                target->entry[ctr].driver);
+                op->entry[ctr].driver);
 
             if(driver_attr != NULL)
             {
@@ -2574,7 +2545,6 @@ globus_xio_open(
 
         globus_i_xio_op_destroy(op, &destroy_handle);
     }
-  op_alloc_err:
     handle->context = NULL;
     globus_i_xio_handle_destroy(handle);
 
