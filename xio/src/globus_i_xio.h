@@ -121,21 +121,37 @@ struct globus_i_xio_stack_s
  */
 typedef struct globus_i_xio_driver_target_entry_s
 {
-    struct globus_xio_driver_s *                driver;
+    globus_i_xio_driver_t *                     driver;
     void *                                      target;
+    void *                                      accept_attr;
 } globus_i_xio_driver_target_entry_t;
 
 typedef struct globus_i_xio_target_s
 {
     globus_i_xio_target_type_t                  type;
     int                                         stack_size;
+
+    globus_i_xio_server_t *                     xio_server;
+
+    int                                         ref;
+
+    globus_xio_driver_accept_cancel_callback_t  cancel_cb;
+    void *                                      cancel_user_arg;
+    globus_bool_t                               canceled;
+
+    globus_xio_accept_callback_t                accept_cb;
+    void *                                      user_arg;
+
+    globus_bool_t                               progess;
+
+    int                                         ndx;
+    /* stretchy entry array */
     globus_i_xio_driver_target_entry_t          entry[1];
 } globus_i_xio_target_t;
 
 typedef struct globus_i_xio_server_entry_s
 {
     globus_xio_driver_t                         driver;
-    void *                                      attr;
     void *                                      server_handle;
 } globus_i_xio_server_entry_t;
 
@@ -144,16 +160,9 @@ typedef struct globus_i_xio_server_entry_s
  */
 typedef struct globus_xio_server_s
 {
-    int                                         ndx;
-    globus_bool_t                               canceled;
-    globus_xio_server_state_t                   state;
-    globus_xio_driver_accept_cancel_callback_t  cancel_cb;
-    void *                                      cancel_user_arg;
-
     globus_xio_server_state_t                   state;
 
-    globus_xio_accept_callback_t                cb;
-    void *                                      user_arg;
+    globus_xio_timeout_callback_t               accept_timeout;
 
     int                                         ref;
 
@@ -305,12 +314,15 @@ typedef enum globus_i_xio_operation_type_e
     GLOBUS_XIO_OPERATION_TYPE_EOF,
 } globus_i_xio_operation_type_t;
 
-typedef enum globus_i_xio_target_type_e
+typedef enum globus_i_xio_target_state_e
 {
-    GLOBUS_XIO_TARGET_TYPE_NONE,
-    GLOBUS_XIO_TARGET_TYPE_SERVER,
-    GLOBUS_XIO_TARGET_TYPE_CLIENT,
-} globus_i_xio_target_type_t;
+    GLOBUS_XIO_TARGET_STATE_ACCEPTING,
+    GLOBUS_XIO_TARGET_STATE_SERVER,
+    GLOBUS_XIO_TARGET_STATE_CLIENT,
+    GLOBUS_XIO_TARGET_STATE_TIMEOUT_PENDING,
+    GLOBUS_XIO_TARGET_STATE_ACCEPT_WAITING,
+    GLOBUS_XIO_TARGET_STATE_CLOSED,
+} globus_i_xio_target_state_t;
 
 typedef enum globus_xio_server_state_e
 {

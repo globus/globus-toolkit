@@ -429,8 +429,9 @@ enum globus_xio_handle_attr_cmd_t
  *  @param arg
  *         A user arg threaded throw to the callback.
  */
+
 typedef globus_bool_t
-(*globus_xio_timeout_callback)(
+(*globus_xio_timeout_callback_t)(
     globus_xio_handle_t                         handle,
     globus_xio_operation_type_t                 type,
     void *                                      arg);
