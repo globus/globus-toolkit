@@ -226,8 +226,7 @@ main(int argc, char *argv[])
 
     /* Continue unless the response is not OK */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "%s\n", 
-		verror_get_string());
+        fprintf(stderr, "%s\n", verror_get_string());
         goto cleanup;
     }
     
@@ -248,8 +247,7 @@ main(int argc, char *argv[])
     
     /* Get final response from server */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "%s\n", 
-		verror_get_string());
+        fprintf(stderr, "%s\n", verror_get_string());
         goto cleanup;
     }
 
