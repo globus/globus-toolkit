@@ -25,7 +25,6 @@ EXTERN_C_BEGIN
 /**********************************************************************
                              Include header files
 **********************************************************************/
- 
 #ifndef NO_GLOBUS_CONFIG_H
 #include <globus_config.h>
 #endif
