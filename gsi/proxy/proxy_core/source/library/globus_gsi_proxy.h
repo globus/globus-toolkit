@@ -340,6 +340,13 @@ globus_gsi_proxy_sign_req(
     BIO *                               output_bio);
 
 globus_result_t
+globus_gsi_proxy_resign_cert(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer_credential,
+    globus_gsi_cred_handle_t            peer_credential,
+    globus_gsi_cred_handle_t *          resigned_credential);
+
+globus_result_t
 globus_gsi_proxy_assemble_cred(
     globus_gsi_proxy_handle_t           handle,
     globus_gsi_cred_handle_t *          proxy_credential,

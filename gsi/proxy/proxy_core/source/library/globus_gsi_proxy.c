@@ -35,6 +35,13 @@
 static int globus_l_gsi_proxy_activate(void);
 static int globus_l_gsi_proxy_deactivate(void);
 
+static globus_result_t
+globus_l_gsi_proxy_sign_key(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer_credential,
+    EVP_PKEY *                          public_key,
+    X509 **                             signed_cert);
+
 /**
  * Module descriptor static initializer.
  */
@@ -658,6 +665,205 @@ globus_gsi_proxy_inquire_req(
 /* globus_gsi_proxy_inquire_req */
 /*@}*/
 
+
+/**
+ * @name Resign Certificate
+ * @ingroup globus_gsi_proxy_operations
+ */
+/*@{*/
+/**
+ * Resign a existing certificate into a proxy
+ *
+ * This function use the public key in a existing certificate
+ * to create a new proxy certificate chained to the issuers
+ * credentials. This operation will add a
+ * ProxyCertInfo extension to the proxy certificate if values
+ * contained in the extension are specified in the handle.
+ *
+ * @param handle
+ *        A GSI Proxy handle to use for the signing operation.
+ * @param issuer_credential
+ *        The credential structure to be used for signing the proxy
+ *        certificate. 
+ * @param peer_credential
+ *        The credential structure that contains the certificate to
+ *        be resigned.
+ * @param resgined_credential
+ *        A credential structure that upon return will contain the resigned
+ *        certificate and associated certificate chain.
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
+globus_result_t
+globus_gsi_proxy_resign_cert(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer_credential,
+    globus_gsi_cred_handle_t            peer_credential,
+    globus_gsi_cred_handle_t *          resigned_credential)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    X509 *                              peer_cert = NULL;
+    X509 *                              issuer_cert = NULL;
+    EVP_PKEY *                          peer_pubkey = NULL;
+    X509 *                              new_pc = NULL;
+    STACK_OF(X509) *                    issuer_cert_chain = NULL;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_resign_cert";
+    
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+    
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+        goto done;
+    }
+
+    if(issuer_credential == NULL)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("NULL issuer credential handle passed to function: %s"),
+             _function_name_));
+        goto done;
+    }
+
+    if(peer_credential == NULL)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("NULL peer credential handle passed to function: %s"),
+             _function_name_));
+        goto done;
+    }
+
+    if(resigned_credential == NULL)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("NULL resigned credential handle passed to function: %s"),
+             _function_name_));
+        goto done;
+    }
+    
+    result = globus_gsi_cred_get_cert(peer_credential, &peer_cert);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE);
+        goto done;
+    }
+
+    peer_pubkey = X509_get_pubkey(peer_cert);
+    if(peer_pubkey == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_X509);
+        goto done;
+    }
+
+    result = globus_l_gsi_proxy_sign_key(handle, issuer_credential,
+                                         peer_pubkey, &new_pc);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_SIGNING);
+        goto done;
+    }
+
+    result = globus_gsi_cred_handle_init(resigned_credential,
+                                         NULL);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE);
+        goto done;
+    }
+
+    result = globus_gsi_cred_set_cert(*resigned_credential, new_pc);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE);
+        goto done;
+    }
+
+    result = globus_gsi_cred_get_cert_chain(issuer_credential,
+                                            &issuer_cert_chain);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE);
+        goto done;
+    }
+
+    if(issuer_cert_chain == NULL)
+    {
+        issuer_cert_chain = sk_X509_new_null();
+    }    
+    
+    result = globus_gsi_cred_get_cert(issuer_credential, &issuer_cert);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE);
+        goto done;
+    }
+
+    sk_X509_unshift(issuer_cert_chain, issuer_cert);
+    issuer_cert = NULL;
+    
+    result = globus_gsi_cred_set_cert_chain(*resigned_credential,
+                                            issuer_cert_chain);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_CRED_HANDLE);
+        goto done;
+    }
+
+ done:
+
+    if(issuer_cert != NULL)
+    {
+        X509_free(issuer_cert);
+    }
+
+    if(peer_cert != NULL)
+    {
+        X509_free(peer_cert);
+    }
+
+    if(issuer_cert_chain != NULL)
+    {
+        sk_X509_pop_free(issuer_cert_chain, X509_free);
+    }
+
+    return result;
+}
+/* globus_gsi_proxy_resign_cert */
+/*@}*/
+
+
 /**
  * @name Sign Request
  * @ingroup globus_gsi_proxy_operations
@@ -671,9 +877,7 @@ globus_gsi_proxy_inquire_req(
  * the supplied issuer_credential. This operation will add a
  * ProxyCertInfo extension to the proxy certificate if values
  * contained in the extension are specified in the handle.
- * The resulting signed certificate is written to the output_bio, along
- * with the new cert chain for that certificate.  The order of data written
- * to the bio is: N, N-1, ..., 0.  N being the newly signed certificate.
+ * The resulting signed certificate is written to the output_bio.
  *
  * @param handle
  *        A GSI Proxy handle to use for the signing operation.
@@ -681,7 +885,7 @@ globus_gsi_proxy_inquire_req(
  *        The credential structure to be used for signing the proxy
  *        certificate. 
  * @param output_bio
- *        A BIO to write the resulting certificate and cert chain to.
+ *        A BIO to write the resulting certificate to.
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which case, 
  *        a globus error object ID is returned
@@ -692,22 +896,10 @@ globus_gsi_proxy_sign_req(
     globus_gsi_cred_handle_t            issuer_credential,
     BIO *                               output_bio)
 {
-    char *                              common_name;
-    int                                 pci_NID = NID_undef;
-    int                                 pci_DER_length;
-    unsigned char *                     pci_DER = NULL;
-    unsigned char *                     mod_pci_DER = NULL;
-    ASN1_OCTET_STRING *                 pci_DER_string = NULL;
     X509 *                              new_pc = NULL;
-    X509 *                              issuer_cert = NULL;
-    X509_EXTENSION *                    pci_ext = NULL;
-    X509_EXTENSION *                    extension;
-    int                                 position;
-    EVP_PKEY *                          issuer_pkey = NULL;
     EVP_PKEY *                          req_pubkey = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 res;
-    ASN1_INTEGER *                      serial_number = NULL;
     
     static char *                       _function_name_ =
         "globus_gsi_proxy_sign_req";
@@ -752,6 +944,112 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
 
+    result = globus_l_gsi_proxy_sign_key(handle, issuer_credential,
+                                         req_pubkey, &new_pc);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_SIGNING);
+        goto done;
+    }
+
+    /* write out the X509 certificate in DER encoded format to the BIO */
+    if(!i2d_X509_bio(output_bio, new_pc))
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_X509,
+            (_PCSL("Error converting X509 proxy cert from internal "
+             "to DER encoded form")));
+        goto done;
+    }
+
+    result = GLOBUS_SUCCESS;
+
+ done:
+
+    if(new_pc)
+    {
+        X509_free(new_pc); 
+    }
+    
+    if(req_pubkey)
+    {
+        EVP_PKEY_free(req_pubkey);
+    }
+    
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_sign_req */
+/*@}*/
+
+static globus_result_t
+globus_l_gsi_proxy_sign_key(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer_credential,
+    EVP_PKEY *                          public_key,
+    X509 **                             signed_cert)
+{
+    char *                              common_name;
+    int                                 pci_NID = NID_undef;
+    int                                 pci_DER_length;
+    unsigned char *                     pci_DER = NULL;
+    unsigned char *                     mod_pci_DER = NULL;
+    ASN1_OCTET_STRING *                 pci_DER_string = NULL;
+    X509 *                              issuer_cert = NULL;
+    X509_EXTENSION *                    pci_ext = NULL;
+    X509_EXTENSION *                    extension;
+    int                                 position;
+    EVP_PKEY *                          issuer_pkey = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    ASN1_INTEGER *                      serial_number = NULL;
+    
+    static char *                       _function_name_ =
+        "globus_l_gsi_proxy_sign_key";
+
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+    
+    if(handle == NULL || issuer_credential == NULL)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
+        goto done;
+    }
+    
+    if(signed_cert == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("NULL signed cert structure passed to function: %s"),
+             _function_name_));
+        goto done;
+    }
+
+    if(public_key == NULL)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("Error getting public key from request structure")));
+        goto done;
+    }
+
+    if(signed_cert == NULL)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            (_PCSL("Error getting public key from request structure")));
+        goto done;
+    }
+
+    *signed_cert = NULL;
+    
     result = globus_gsi_cred_get_cert(issuer_credential, &issuer_cert);
     if(result != GLOBUS_SUCCESS)
     {
@@ -761,7 +1059,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
 
-    if((new_pc = X509_new()) == NULL)
+    if((*signed_cert = X509_new()) == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -777,7 +1075,7 @@ globus_gsi_proxy_sign_req(
         long                            sub_hash;
         unsigned int                    len;
         
-        ASN1_digest(i2d_PUBKEY,sha1,(char *) req_pubkey,md,&len);
+        ASN1_digest(i2d_PUBKEY,sha1,(char *) public_key,md,&len);
 
         sub_hash = md[0] + (md[1] + (md[2] + (md[3] >> 1) * 256) * 256) * 256; 
         
@@ -879,7 +1177,7 @@ globus_gsi_proxy_sign_req(
             goto done;
         }
 
-        if(!X509_add_ext(new_pc, pci_ext, 0))
+        if(!X509_add_ext(*signed_cert, pci_ext, 0))
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
@@ -1007,7 +1305,7 @@ globus_gsi_proxy_sign_req(
             goto done;
         }
         
-        if(!X509_add_ext(new_pc, extension, 0))
+        if(!X509_add_ext(*signed_cert, extension, 0))
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
@@ -1043,7 +1341,7 @@ globus_gsi_proxy_sign_req(
             goto done;
         }
 
-        if(!X509_add_ext(new_pc, extension, 0))
+        if(!X509_add_ext(*signed_cert, extension, 0))
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
@@ -1054,7 +1352,7 @@ globus_gsi_proxy_sign_req(
     }
     
     /* create proxy subject name */
-    result = globus_i_gsi_proxy_set_subject(new_pc, issuer_cert, common_name);
+    result = globus_i_gsi_proxy_set_subject(*signed_cert, issuer_cert, common_name);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
@@ -1063,7 +1361,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
 
-    if(!X509_set_issuer_name(new_pc, X509_get_subject_name(issuer_cert)))
+    if(!X509_set_issuer_name(*signed_cert, X509_get_subject_name(issuer_cert)))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -1072,7 +1370,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
 
-    if(!X509_set_version(new_pc, 2))
+    if(!X509_set_version(*signed_cert, 2))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -1081,7 +1379,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
 
-    if(!X509_set_serialNumber(new_pc, serial_number))
+    if(!X509_set_serialNumber(*signed_cert, serial_number))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -1090,7 +1388,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
 
-    result = globus_i_gsi_proxy_set_pc_times(new_pc, issuer_cert, 
+    result = globus_i_gsi_proxy_set_pc_times(*signed_cert, issuer_cert, 
                                              handle->attrs->clock_skew, 
                                              handle->time_valid);
     if(result != GLOBUS_SUCCESS)
@@ -1101,7 +1399,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
     
-    if(!X509_set_pubkey(new_pc, req_pubkey))
+    if(!X509_set_pubkey(*signed_cert, public_key))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -1134,7 +1432,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
     
-    if(!X509_sign(new_pc, issuer_pkey, handle->attrs->signing_algorithm))
+    if(!X509_sign(*signed_cert, issuer_pkey, handle->attrs->signing_algorithm))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -1143,19 +1441,8 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
 
-    /* write out the X509 certificate in DER encoded format to the BIO */
-    if(!i2d_X509_bio(output_bio, new_pc))
-    {
-        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-            (_PCSL("Error converting X509 proxy cert from internal "
-             "to DER encoded form")));
-        goto done;
-    }
-        
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START SIGNED CERT ******\n");
-    GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, X509, new_pc);
+    GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, X509, *signed_cert);
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END SIGNED CERT  ******\n");
 
     result = GLOBUS_SUCCESS;
@@ -1172,16 +1459,11 @@ globus_gsi_proxy_sign_req(
         X509_free(issuer_cert);
     }
 
-    if(new_pc)
+    if(result != GLOBUS_SUCCESS && *signed_cert)
     {
-        X509_free(new_pc); 
+        X509_free(*signed_cert); 
     }
     
-    if(req_pubkey)
-    {
-        EVP_PKEY_free(req_pubkey);
-    }
-
     if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
     {
         if(pci_ext)
@@ -1230,8 +1512,6 @@ globus_gsi_proxy_sign_req(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* globus_gsi_proxy_sign_req */
-/*@}*/
 
 /**
  * @name Create Signed
