@@ -1,0 +1,9 @@
+aclocal.m4
+missing
+install-sh
+mkinstalldirs
+Makefile.in
+config.log
+config.cache
+config.status
+globus_ftp_client-[0-9]*
