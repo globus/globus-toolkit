@@ -87,7 +87,6 @@ GSS_CALLCONV gss_delete_sec_context(
         SSL_shutdown((*context_handle)->gs_ssl);
         
         gs_get_token(*context_handle,
-                     NULL,
                      output_token);
 
 #ifdef DEBUG

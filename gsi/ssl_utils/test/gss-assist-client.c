@@ -636,7 +636,7 @@ int main(argc, argv)
 	   } else if (strcmp(*argv, "-d") == 0) {
 	       deleg_flag |= GSS_C_DELEG_FLAG;
 	   } else if (strcmp(*argv, "-ssl") == 0) {
-	       deleg_flag |= GSS_C_GLOBUS_SSL_COMPATIBLE;
+	       deleg_flag |= GSS_C_GLOBUS_SSL_COMPATABLE;
 	  } else if (strcmp(*argv, "-f") == 0) {
 	       use_file = 1;
 	  } else if (strcmp(*argv, "-e") == 0) {

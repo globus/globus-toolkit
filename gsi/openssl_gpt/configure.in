@@ -30,11 +30,14 @@ LD=
 AC_PROVIDE([AC_PROG_CXX])
 AC_PROVIDE([AC_PROG_CXXCPP])
 
-enable_libtool_lock="no"
+#save_CXXCPP=$CXXCPP
+#CXXCPP=
 
 AM_PROG_LIBTOOL
 
 LD=$save_LD
+#CXXCPP=$save_CXXCPP
+
 
 dnl config header goes here
 

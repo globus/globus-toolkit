@@ -66,17 +66,15 @@ AC_DEFUN(LAC_ASM_SET,
                         lac_MD5_OBJ="asm/md5-sparcv8plus.lo"
                     ;;
                     *x86*)
-#  gcc/solaris ld doesn't like the assembler stuff, so disable it for now
-#
-#                            lac_BN_OBJ="asm/bn86-sol.lo asm/co86-sol.lo"
-#                            lac_BF_OBJ="asm/bx86-sol.lo"
-#                            lac_DES_OBJ="asm/dx86-sol.lo asm/yx86-sol.lo"
-#                            lac_CAST_OBJ="asm/cx86-sol.lo"
-#                            lac_RC4_OBJ="asm/rx86-sol.lo"
-#                            lac_RC5_OBJ="asm/r586-sol.lo"
-#                            lac_SHA1_OBJ="asm/sx86-sol.lo"
-#                            lac_MD5_OBJ="asm/mx86-sol.lo"
-#                            lac_RMD_OBJ="asm/rm86-sol.lo"
+                            lac_BN_OBJ="asm/bn86-sol.lo asm/co86-sol.lo"
+                            lac_BF_OBJ="asm/bx86-sol.lo"
+                            lac_DES_OBJ="asm/dx86-sol.lo asm/yx86-sol.lo"
+                            lac_CAST_OBJ="asm/cx86-sol.lo"
+                            lac_RC4_OBJ="asm/rx86-sol.lo"
+                            lac_RC5_OBJ="asm/r586-sol.lo"
+                            lac_SHA1_OBJ="asm/sx86-sol.lo"
+                            lac_MD5_OBJ="asm/mx86-sol.lo"
+                            lac_RMD_OBJ="asm/rm86-sol.lo"
                     ;;
                 esac
             ;;   

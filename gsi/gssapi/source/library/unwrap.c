@@ -175,7 +175,6 @@ GSS_CALLCONV gss_unwrap(
          */
 
         if (gs_put_token(context,
-                         NULL,
                          input_message_buffer) != GSS_S_COMPLETE)
         {
             return GSS_S_DEFECTIVE_TOKEN;       

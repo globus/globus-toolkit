@@ -351,7 +351,6 @@ GSS_CALLCONV gss_wrap(
         /* get the data from the write BIO */
         
         return gs_get_token(context,
-                            NULL,
                             output_message_buffer);
     }
 }

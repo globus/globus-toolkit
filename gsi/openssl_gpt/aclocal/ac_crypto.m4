@@ -34,7 +34,6 @@ AC_DEFUN(LAC_CRYPTO,
     LAC_DEFINE_VAR(DES_UNROLL)
     LAC_DEFINE_VAR(DES_LONG)
     LAC_DEFINE_VAR(BN_LLONG)
-    LAC_DEFINE_VAR(BN_DIV2W)
     LAC_DEFINE_VAR(BF_PTR)
     LAC_DEFINE_VAR(RC4_CHUNK)
     LAC_DEFINE_VAR(RC4_INDEX)
@@ -61,7 +60,6 @@ AC_DEFUN(LAC_CRYPTO_SET,
     lac_DES_UNROLL=""
     lac_DES_LONG="unsigned long"
     lac_BN_LLONG=""
-    lac_BN_DIV2W=""
     lac_BF_PTR=""
     lac_RC4_CHUNK=""
     lac_RC4_INDEX=""
@@ -74,44 +72,52 @@ AC_DEFUN(LAC_CRYPTO_SET,
         *solaris*)
             case ${lac_cv_CPU} in
                 *sun4m*|*sun4d*)
-                    lac_BN_LLONG="1"
-                    lac_BN_DIV2W="1"
-                    lac_RC4_INT="unsigned char"
-                    lac_RC4_CHUNK="unsigned long"
-                    lac_DES_UNROLL="1" 
-                    lac_BF_PTR="1"
-
-                    if test ! "$GCC" = "1"; then
+                    if test "$GCC" = "1"; then
+                        lac_BN_LLONG="1"
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long"
+                        lac_DES_UNROLL="1" 
+                        lac_BF_PTR="1"
+                    else
+                        lac_BN_LLONG="1"
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long"
                         lac_DES_PTR="1"
                         lac_DES_RISC1="1"
+                        lac_DES_UNROLL="1" 
+                        lac_BF_PTR="1"
                     fi
                 ;;
                 *sun4u*)
-                    lac_BN_LLONG="1"
-                    lac_BN_DIV2W="1"
-                    lac_RC4_INT="unsigned char"
-                    lac_DES_UNROLL="1" 
-                    lac_BF_PTR="1"
-
                     if test "$GCC" = "1"; then
+                        lac_BN_LLONG="1"
+                        lac_RC4_INT="unsigned char"
                         lac_RC4_CHUNK="unsigned long"
+                        lac_DES_UNROLL="1" 
+                        lac_BF_PTR="1"
                     else
+                        lac_BN_LLONG="1"
+                        lac_RC4_INT="unsigned char"
                         lac_RC4_CHUNK="unsigned long long"
                         lac_DES_PTR="1"
                         lac_DES_RISC1="1"
+                        lac_DES_UNROLL="1" 
+                        lac_BF_PTR="1"
                     fi
                 ;;
                 *x86*)
-                    lac_BN_LLONG="1"
-                    lac_DES_PTR="1"
-                    lac_DES_UNROLL="1" 
-
                     if test "$GCC" = "1"; then
+                        lac_BN_LLONG="1"
                         lac_RC4_INDEX="1"
+                        lac_DES_PTR="1"
                         lac_DES_RISC1="1"
+                        lac_DES_UNROLL="1" 
                     else
+                        lac_BN_LLONG="1"
                         lac_RC4_INT="unsigned char"
                         lac_RC4_CHUNK="unsigned long"
+                        lac_DES_PTR="1"
+                        lac_DES_UNROLL="1" 
                         lac_BF_PTR="1"
                     fi
                 ;;
@@ -122,7 +128,6 @@ AC_DEFUN(LAC_CRYPTO_SET,
                 *sun4m*|*sun4d*)
                     # gcc
                     lac_BN_LLONG="1"
-                    lac_BN_DIV2W="1"
                     lac_RC4_INT="unsigned char"
                     lac_RC4_CHUNK="unsigned long"
                     lac_DES_UNROLL="1" 
@@ -131,7 +136,6 @@ AC_DEFUN(LAC_CRYPTO_SET,
                 *sun4u*)
                     # gcc
                     lac_BN_LLONG="1"
-                    lac_BN_DIV2W="1"
                     lac_RC4_INT="unsigned char"
                     lac_RC4_CHUNK="unsigned long"
                     lac_DES_UNROLL="1" 
@@ -140,10 +144,10 @@ AC_DEFUN(LAC_CRYPTO_SET,
                 *x86*)
                     # gcc
                     lac_BN_LLONG="1"
-                    lac_DES_PTR="1"
-                    lac_DES_RISC1="1"
-                    lac_DES_UNROLL="1"
-                    lac_RC4_INDEX="1"
+                    lac_RC4_INT="unsigned char"
+                    lac_RC4_CHUNK="unsigned long"
+                    lac_DES_UNROLL="1" 
+                    lac_BF_PTR="1"
                 ;;
                 *ia64*)
                     # gcc
@@ -153,14 +157,19 @@ AC_DEFUN(LAC_CRYPTO_SET,
                     lac_RC4_CHUNK="unsigned long"
                 ;;
                 *alpha*)
-                    lac_SIXTY_FOUR_BIT_LONG="1"
-                    lac_THIRTY_TWO_BIT=""
-                    lac_RC4_CHUNK="unsigned long"
-                    lac_DES_RISC1="1" 
-                    lac_DES_UNROLL="1" 
-
-                    if test ! "$GCC" = "1"; then
+                    if test "$GCC" = "1"; then
+                        lac_SIXTY_FOUR_BIT_LONG="1"
+                        lac_THIRTY_TWO_BIT=""
+                        lac_RC4_CHUNK="unsigned long"
+                        lac_DES_RISC1="1" 
+                        lac_DES_UNROLL="1" 
+                    else
+                        lac_SIXTY_FOUR_BIT_LONG="1"
+                        lac_THIRTY_TWO_BIT=""
                         lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long"
+                        lac_DES_RISC1="1" 
+                        lac_DES_UNROLL="1" 
                     fi
                 ;;
             esac
@@ -179,35 +188,43 @@ AC_DEFUN(LAC_CRYPTO_SET,
         *irix6*)
             case ${lac_cv_CPU} in
                 *mips3* | *mips4* )
-                    lac_SIXTY_FOUR_BIT="1"
-                    lac_THIRTY_TWO_BIT=""
-                    lac_RC4_INT="unsigned char"
-                    lac_RC4_CHUNK="unsigned long long"
-                    lac_DES_RISC2="1"
-                    lac_DES_PTR="1"
-                    lac_DES_UNROLL="1"
-                    lac_BF_PTR="1"
-
                     if test "$GCC" = "1"; then
                         lac_MD2_INT="unsigned char"
                         lac_RC4_INDEX="1"
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long long"
+                        lac_DES_RISC2="1"
+                        lac_DES_PTR="1"
+                        lac_DES_UNROLL="1"
+                        lac_BF_PTR="1"
+                        lac_SIXTY_FOUR_BIT="1"
+                        lac_THIRTY_TWO_BIT=""
+                    else
+                        lac_RC4_INT="unsigned char"
+                        lac_RC4_CHUNK="unsigned long long"
+                        lac_DES_RISC2="1"
+                        lac_DES_PTR="1"
+                        lac_DES_UNROLL="1"
+                        lac_BF_PTR="1"
+                        lac_SIXTY_FOUR_BIT="1"
+                        lac_THIRTY_TWO_BIT=""
                     fi
                 ;;
             esac
         ;;
         *hpux*)
-            lac_DES_UNROLL="1"
-            lac_DES_RISC1="1"
-            lac_BN_DIV2W="1"            
-
             if test "$GCC" = "1"; then
                 lac_BN_LLONG="1"
                 lac_DES_PTR="1"
+                lac_DES_UNROLL="1"
+                lac_DES_RISC1="1"
             else
                 lac_MD2_INT="unsigned char"
                 lac_RC4_INDEX="1"
                 lac_RC4_INT="unsigned char"
+                lac_DES_RISC1="1"
                 lac_DES_LONG="unsigned int"
+                lac_DES_UNROLL="1"
             fi
         ;;
         *-ibm-aix*)
