@@ -97,10 +97,10 @@ my $keyfiles = {
 # to verify correct args by using anon subs in various places.
 #
 
-my($interactive, $force, $verbose);
+my($prompt, $force, $verbose);
 
 GetOptions(
-            'interactive!' => \$interactive,
+            'prompt!' => \$prompt,
             'force' => \$force,
             'verbose' => \$verbose,
           ) or pod2usage(2);
@@ -226,9 +226,12 @@ print "    <http://www.ncsa.uiuc.edu/Divisions/ACES/GSI/openssh/>\n";
 # give the user a chance to read all of this output
 #
 
-print "\n";
-print "Press <return> to continue... ";
-$trash = <STDIN>;
+if (!$prompt)
+{
+    print "\n";
+    print "Press <return> to continue... ";
+    $trash = <STDIN>;
+}
 
 print "---------------------------------------------------------------------\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
@@ -1119,6 +1122,12 @@ sub query_boolean
 {
     my($query_text, $default) = @_;
     my($nondefault, $foo, $bar);
+
+    if (!$prompt)
+    {
+        print "Prompt suppressed.  Continuing...\n";
+        return "y";
+    }
 
     #
     # Set $nondefault to the boolean opposite of $default.
