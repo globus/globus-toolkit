@@ -17,7 +17,8 @@
  * resolve the given host name string to the canonical DNS name for the host.
  *
  * @param hostname
- *        The host name to resolved and transform into a GSS Name
+ *        The host name or numerical address to be resolved and transform 
+ *        into a GSS Name
  * @param authorization_hostname
  *        The resulting GSS Name
  * 
@@ -40,40 +41,97 @@ globus_gss_assist_authorization_host_name(
     globus_addrinfo_t *                 addrinfo;
 
     memset(&hints, 0, sizeof(globus_addrinfo_t));
-    hints.ai_flags = GLOBUS_AI_CANONNAME;
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = 0;
 
-    result = globus_libc_getaddrinfo(hostname, NULL, &hints, &addrinfo);
-
-    if(result != GLOBUS_SUCCESS ||
-       addrinfo == NULL ||
-       addrinfo->ai_canonname == NULL)
-    {
-        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_GSS_ASSIST_ERROR_CANONICALIZING_HOSTNAME);
-        goto error_exit;
-    }    
-
-    /* 
-     * For connections to localhost, check for certificate
-     * matching our real hostname, not "localhost"
-     */
-
-    if(globus_libc_addr_is_loopback(addrinfo->ai_addr) == GLOBUS_TRUE)
-    {
-        globus_libc_gethostname(&realhostname[5], sizeof(realhostname) - 5);
-    }
+    /* If hostname is an ip address, do a non-canonname getaddrinfo to get
+     * the sockaddr, then getnameinfo to get the hostname from that addr */ 
+    if(hostname && (isdigit(hostname[0]) || strchr(hostname, ':')))
+    { 
+        hints.ai_flags = GLOBUS_AI_NUMERICHOST;
+        result = globus_libc_getaddrinfo(hostname, NULL, &hints, &addrinfo);
+        if(result != GLOBUS_SUCCESS ||
+           addrinfo == NULL ||
+           addrinfo->ai_addr == NULL)
+        {
+            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_ERROR_CANONICALIZING_HOSTNAME);
+            goto error_exit;
+        }    
+        
+        /* 
+         * For connections to localhost, check for certificate
+         * matching our real hostname, not "localhost"
+         */
+    
+        if(globus_libc_addr_is_loopback(
+            (const globus_sockaddr_t *) addrinfo->ai_addr) == GLOBUS_TRUE)
+        {
+            globus_libc_gethostname(
+                &realhostname[5], sizeof(realhostname) - 5);
+        }
+        else
+        {
+            /* use GLOBUS_NI_NAMEREQD to fail if address can't be looked up? 
+             * if not, realhostname will just be the same ip address 
+             * we pass in */
+            result = globus_libc_getnameinfo(
+                (const globus_sockaddr_t *) addrinfo->ai_addr,
+                &realhostname[5],
+                sizeof(realhostname) - 5,
+                NULL,
+                0,
+                0);
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_libc_freeaddrinfo(addrinfo);
+                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_GSS_ASSIST_ERROR_CANONICALIZING_HOSTNAME);
+                goto error_exit;
+            }
+        }
+        
+        globus_libc_freeaddrinfo(addrinfo);
+    }   
+    
+    /* else just do a getaddrinfo lookup of the hostname */ 
     else
     {
-        strncpy(&realhostname[5], addrinfo->ai_canonname, 
-                sizeof(realhostname) - 5);
-        realhostname[132] = '\0';
-    }
+        hints.ai_flags = GLOBUS_AI_CANONNAME;
+        result = globus_libc_getaddrinfo(hostname, NULL, &hints, &addrinfo);
+    
+        if(result != GLOBUS_SUCCESS ||
+           addrinfo == NULL ||
+           addrinfo->ai_canonname == NULL)
+        {
+            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_ERROR_CANONICALIZING_HOSTNAME);
+            goto error_exit;
+        }    
 
-    globus_libc_freeaddrinfo(addrinfo);
+        /* 
+         * For connections to localhost, check for certificate
+         * matching our real hostname, not "localhost"
+         */
+    
+        if(globus_libc_addr_is_loopback(
+            (const globus_sockaddr_t *) addrinfo->ai_addr) == GLOBUS_TRUE)
+        {
+            globus_libc_gethostname(&realhostname[5], sizeof(realhostname) - 5);
+        }
+        else
+        {
+            strncpy(&realhostname[5], addrinfo->ai_canonname, 
+                    sizeof(realhostname) - 5);
+            realhostname[132] = '\0';
+        }
+    
+        globus_libc_freeaddrinfo(addrinfo);
+    }
     
     /*
      * To work around the GSI GSSAPI library being case sensitive
