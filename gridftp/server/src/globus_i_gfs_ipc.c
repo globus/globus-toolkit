@@ -223,6 +223,11 @@ globus_i_gfs_community_t *
 globus_l_gfs_ipc_find_community(
     const char *                        path);
 
+static
+void
+globus_l_gfs_ipc_send_start_session(
+    globus_i_gfs_ipc_handle_t *         ipc);
+
 /***************************************************************************
  *  connection bootstrap
  *  --------------------
@@ -563,6 +568,49 @@ alloc_error:
     return NULL;
 }
 
+static
+void
+globus_l_gfs_ipc_read_request_fault_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     in_buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_list_t *                     list;
+    globus_i_gfs_ipc_handle_t *         ipc;
+                                                                                
+    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+
+    /* if it is successful or not canceled we must shut this connection
+        down */
+    if(result == GLOBUS_SUCCESS ||
+        !globus_error_match(
+            globus_error_peek(result),
+            GLOBUS_XIO_MODULE,
+            GLOBUS_XIO_ERROR_CANCELED))
+
+    {
+        globus_mutex_lock(&globus_l_ipc_mutex);
+        {
+            list = (globus_list_t *) globus_hashtable_remove(
+                &globus_l_ipc_handle_table, &ipc->connection_info);
+            globus_list_remove(&list, globus_list_search(list, ipc));
+            if(!globus_list_empty(list))
+            {
+                globus_hashtable_insert(
+                    &globus_l_ipc_handle_table, &ipc->connection_info, list);
+            }
+        }
+        globus_mutex_unlock(&globus_l_ipc_mutex);
+    }
+    else
+    {
+        globus_l_gfs_ipc_send_start_session(ipc);
+    }
+}
 
 static
 void
@@ -1826,7 +1874,9 @@ globus_gfs_ipc_handle_obtain_by_path(
                     goto open_error;
                 }
                 handle_count--;
-                globus_l_gfs_ipc_send_start_session(ipc);
+
+                globus_xio_handle_cancel_operations(
+                    ipc->xio_handle, GLOBUS_XIO_CANCEL_READ);
             }
             /* if unused add to list for connection */
             else
@@ -1887,7 +1937,8 @@ globus_gfs_ipc_handle_obtain_by_path(
                 ipc->error_arg = error_user_arg;
                 ipc->session_info =
                     globus_l_gfs_ipc_session_info_copy(&tmp_si);
-                globus_l_gfs_ipc_send_start_session(ipc);
+                globus_xio_handle_cancel_operations(
+                    ipc->xio_handle, GLOBUS_XIO_CANCEL_READ);
             }
             handle_count--;
 
@@ -3839,8 +3890,20 @@ globus_l_gfs_ipc_stop_write_cb(
 
     globus_free(buffer);
 
-    globus_mutex_lock(&ipc->mutex);
+    globus_mutex_lock(&globus_l_ipc_mutex);
     {
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        result = globus_xio_register_read(
+            ipc->xio_handle,
+            buffer, /* bs parmeter */
+            0,
+            0,
+            NULL,
+            globus_l_gfs_ipc_read_request_fault_cb,
+            ipc);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
@@ -3855,7 +3918,7 @@ globus_l_gfs_ipc_stop_write_cb(
         globus_hashtable_insert(
             &globus_l_ipc_handle_table, &ipc->connection_info, list);
     }
-    globus_mutex_unlock(&ipc->mutex);
+    globus_mutex_unlock(&globus_l_ipc_mutex);
 
     return;
 
