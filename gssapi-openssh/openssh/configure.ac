@@ -487,53 +487,16 @@ if test "x$gsi_path" != "xno" ; then
 	globus_install_dir=$gsi_path
 
 	if test "x$globus_install_dir" = "xyes" ; then
-		if test -n "$GLOBUS_INSTALL_PATH" ; then
-			globus_install_dir=$GLOBUS_INSTALL_PATH
-		elif test -n "$GSI_INSTALL_PATH" ; then
-			globus_install_dir=$GSI_INSTALL_PATH
-		elif test -d /usr/local/globus ; then
-			globus_install_dir="/usr/local/globus"
-		elif test -d /usr/local/gsi ; then
-			globus_install_dir="/usr/local/gsi"
-		else
-			AC_MSG_ERROR(Cannot find Globus/GSI installation directory)
-		fi	
+                AC_MSG_ERROR(Cannot find Globus/GSI installation directory -- a path must be specified!)
 	fi
 	AC_MSG_RESULT($globus_install_dir)
 
 	# Find GLOBUS/GSI development directory
 	AC_MSG_CHECKING(for Globus/GSI development directory)
 
-	if test -d ${globus_install_dir}/lib ; then
-		# Looks like a flat directory structure from configure/make
-		# and not globus-install or gsi-install
-		globus_dev_dir=$globus_install_dir
-
-	else
-		# Assume a true globus installation with architecture
-		# directories and run globus-development-path to find
-		# the development directory
-
-		# Set GLOBUS_INSTALL_PATH
-		GLOBUS_INSTALL_PATH=$globus_install_dir
-		export GLOBUS_INSTALL_PATH
-
-		dev_path_program=${globus_install_dir}/bin/globus-development-path
-
-		if test ! -x ${dev_path_program} ; then
-			AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
-		fi
-
-		globus_dev_dir=`${dev_path_program}`
-
-		if test -z "$globus_dev_dir" -o "X$globus_dev_dir" = "X<not found>" ; then
-				AC_MSG_ERROR(Cannot find Globus/GSI development directory)
-		fi
-
-		if test ! -d "$globus_dev_dir" ; then
-			AC_MSG_ERROR(Cannot find Globus/GSI development directory: $globus_dev_dir does not exist)
-		fi
-	fi
+        # Looks like a flat directory structure from configure/make
+        # and not globus-install or gsi-install
+        globus_dev_dir=$globus_install_dir
 	AC_MSG_RESULT($globus_dev_dir)
 
 	# Find GLOBUS/GSI flavor Directory
@@ -544,22 +507,41 @@ if test "x$gsi_path" != "xno" ; then
 		GSI_LDFLAGS="-L${globus_dev_dir}/lib"
 		GSI_CFLAGS="-I${globus_dev_dir}/include"
 		AC_MSG_RESULT(none)
+        elif test "x$globus_flavor_type" = "xyes" ; then
+                AC_MSG_ERROR(No Globus flavor type specified)
 	else
-                GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
+                globus_incl_dir="${globus_dev_dir}/include/${globus_flavor_type}"
 
-		if test ! -d "$GLOBUS_FLAVOR_TYPE_INCL_DIR" ; then
-			AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_FLAVOR_TYPE_INCL_DIR})
+		if test ! -d "$globus_incl_dir" ; then
+			AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${globus_incl_dir})
                 fi
 
 		AC_MSG_RESULT($globus_flavor_type)
+
+                globus_lib_dir="${globus_dev_dir}/lib"
+
 		GSI_LIBS="-lglobus_gss_assist_${globus_flavor_type} -lglobus_gssapi_gsi_${globus_flavor_type}"
-		GSI_LDFLAGS="-L${globus_dev_dir}/lib"
-		GSI_CFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
+		GSI_LDFLAGS="-L${globus_lib_dir}"
+		GSI_CFLAGS="-I${globus_incl_dir}"
 	fi
 
 	LIBS="$LIBS $GSI_LIBS"
 	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
 	CFLAGS="$CFLAGS $GSI_CFLAGS"
+
+        #
+        # some systems don't compile in the path to the shared lib with the
+        # rest of the objects.  to compensate, we set $LD_LIBRARY_PATH
+        # accordingly.
+        #
+
+        AC_MSG_CHECKING(whether to compensate linking with LD_LIBRARY_PATH)
+        AC_MSG_RESULT()
+
+        if test "x${LD_LIBRARY_PATH}" != "x" ; then
+            LD_LIBRARY_PATH="$LD_LIBRARY_PATH:"
+        fi
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH${globus_lib_dir}"
 # End Globus/GSI section
 fi
 
@@ -2176,10 +2158,16 @@ AC_ARG_ENABLE(suid-ssh,
 [ case "$enableval" in
   no)
        AC_MSG_RESULT(no)
-       SSHMODE=0711
+       SSHMODE=0755
+       # SSHMODE=0711
+       # ^- this is the old mode setting.  is there a good reason for this?  as a regular
+       #      user, i can't load libraries with 711 perms when i'm not the owner
        ;;
   *)   AC_MSG_RESULT(yes)
-       SSHMODE=4711
+       SSHMODE=4755
+       # SSHMODE=4711
+       # ^- this is the old mode setting.  is there a good reason for this?  as a regular
+       #      user, i can't load libraries with 4711 perms when i'm not the owner
        ;;
   esac ],
   AC_MSG_RESULT(yes)
