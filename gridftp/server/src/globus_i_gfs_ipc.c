@@ -1281,7 +1281,6 @@ globus_gfs_ipc_request_command(
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg)
 {
-    globus_size_t                       size;
     globus_size_t                       msg_size;
     globus_result_t                     res;
     globus_gfs_ipc_request_t *          request;
@@ -1319,18 +1318,24 @@ globus_gfs_ipc_request_command(
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
             /* pack body */
-            GFSEncodeUInt32(buffer, size, ptr, cmd_state->command);
-            GFSEncodeString(buffer, size, ptr, cmd_state->pathname);
-            GFSEncodeUInt64(buffer, size, ptr, cmd_state->cksm_offset);
-            GFSEncodeUInt64(buffer, size, ptr, cmd_state->cksm_length);
-            GFSEncodeString(buffer, size, ptr, cmd_state->cksm_alg);
-            GFSEncodeString(buffer, size, ptr, cmd_state->cksm_response);
-            GFSEncodeUInt32(buffer, size, ptr, cmd_state->chmod_mode);
-            GFSEncodeString(buffer, size, ptr, cmd_state->rnfr_pathname);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, cmd_state->command);
+            GFSEncodeString(buffer, ipc->buffer_size, ptr, cmd_state->pathname);
+            GFSEncodeUInt64(
+                buffer, ipc->buffer_size, ptr, cmd_state->cksm_offset);
+            GFSEncodeUInt64(
+                buffer, ipc->buffer_size, ptr, cmd_state->cksm_length);
+            GFSEncodeString(
+                buffer, ipc->buffer_size, ptr, cmd_state->cksm_alg);
+            GFSEncodeString(
+                buffer, ipc->buffer_size, ptr, cmd_state->cksm_response);
+            GFSEncodeUInt32(
+                buffer, ipc->buffer_size, ptr, cmd_state->chmod_mode);
+            GFSEncodeString(
+                buffer, ipc->buffer_size, ptr, cmd_state->rnfr_pathname);
 
             /* now that we know size, add it in */
             msg_size = ptr - buffer;
-            GFSEncodeUInt32(buffer, size, ptr, msg_size);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, msg_size);
 
             res = globus_xio_register_write(
                 ipc_handle->xio_handle,
@@ -1433,6 +1438,8 @@ globus_l_gfs_ipc_pack_data(
     {
         globus_free(buffer);
     }
+
+    return res;
 }
 
 /*
@@ -1594,6 +1601,9 @@ globus_gfs_ipc_request_resource(
     globus_gfs_ipc_request_t *          request = NULL;
     globus_byte_t *                     buffer = NULL;
     globus_i_gfs_ipc_handle_t *         ipc;
+    globus_byte_t *                     ptr;
+    globus_byte_t *                     size_ptr;
+    globus_size_t                       msg_size;
     GlobusGFSName(globus_gfs_ipc_request_resource);
 
     ipc = ipc_handle;
@@ -1608,24 +1618,62 @@ globus_gfs_ipc_request_resource(
         request->id = (int) request;
         request->cb = cb;
         request->user_arg = user_arg;
+        request->ipc = ipc_handle;
+
+        if(!ipc->local)
+        {
+            /* pack the header */
+            buffer = globus_malloc(ipc->buffer_size);
+            ptr = buffer;
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_TYPE_COMMAND);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, id);
+            size_ptr = ptr;
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
+
+            /* pack body */
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, resource_state->file_only);
+            GFSEncodeString(
+                buffer, ipc->buffer_size, ptr, resource_state->pathname);
+
+            /* now that we know size, add it in */
+            msg_size = ptr - buffer;
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, msg_size);
+
+            res = globus_xio_register_write(
+                ipc_handle->xio_handle,
+                buffer,
+                msg_size,
+                msg_size,
+                NULL,
+                globus_l_gfs_ipc_write_cb,
+                request);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+
+            globus_hashtable_insert(
+                &ipc->call_table,
+                (void *)request->id,
+                request);
+        }
 
         globus_hashtable_insert(
             &ipc_handle->call_table,
             (void *)request->id,
             request);
-    
-        if(ipc->local)
-        {
-            ipc_handle->iface->resource_func(
-                ipc_handle,
-                request->id,
-                resource_state);
-        }
-        else
-        {
-        }
     }
     globus_mutex_unlock(&ipc->mutex);
+
+    if(ipc->local)
+    {
+        ipc_handle->iface->resource_func(
+            ipc_handle,
+            request->id,
+            resource_state);
+    }
     
     return GLOBUS_SUCCESS;
 

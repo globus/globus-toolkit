@@ -206,8 +206,8 @@ typedef struct globus_gfs_data_state_s
 
 typedef struct globus_gfs_resource_state_s
 {
-    char *                              pathname;
     globus_bool_t                       file_only;
+    char *                              pathname;
 } globus_gfs_resource_state_t;
 
 typedef void
