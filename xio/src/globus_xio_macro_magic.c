@@ -57,7 +57,7 @@ globus_xio_driver_pass_open_DEBUG(
         /* hold a ref for this driver */
         if(_out_context != NULL)
         {
-            GlobusXIODebugSetOut(_out_context, _my_context);
+            _out_context = _my_context;
             _context->ref++;
         }
 

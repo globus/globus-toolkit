@@ -93,7 +93,7 @@ globus_l_xio_null_pass_open(
     globus_result_t                     res;
     globus_xio_context_t                context;
   
-    GlobusXIODriverPassOpen(res, context, op, NULL, NULL);
+    GlobusXIODriverPassOpen(res, &context, op, NULL, NULL);
 
     return res;
 }

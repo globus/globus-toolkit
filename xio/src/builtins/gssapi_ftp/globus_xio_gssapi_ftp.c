@@ -2250,7 +2250,7 @@ globus_l_xio_gssapi_ftp_open(
         handle->host = globus_libc_strdup(target->host);
         handle->state = GSSAPI_FTP_STATE_CLIENT_READING_220;
         handle->cred_handle = GSS_C_NO_CREDENTIAL;
-        GlobusXIODriverPassOpen(res, handle->context, op,
+        GlobusXIODriverPassOpen(res, &handle->context, op,
                             globus_l_xio_gssapi_ftp_client_open_cb, handle);
     }
     /* do server protocol */
@@ -2269,7 +2269,7 @@ globus_l_xio_gssapi_ftp_open(
         }
 
         handle->state = GSSAPI_FTP_STATE_SERVER_READING_AUTH;
-        GlobusXIODriverPassOpen(res, handle->context, op,
+        GlobusXIODriverPassOpen(res, &handle->context, op,
                             globus_l_xio_gssapi_ftp_server_open_cb, handle);
     }
     if(res != GLOBUS_SUCCESS)

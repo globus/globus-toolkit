@@ -345,7 +345,7 @@ globus_l_xio_smtp_open(
 
     globus_l_xio_smtp_attr_copy(&info, driver_attr);
 
-    GlobusXIODriverPassOpen(res, context, op, globus_l_xio_smtp_open_cb, info);
+    GlobusXIODriverPassOpen(res, &context, op, globus_l_xio_smtp_open_cb, info);
 
     return res;
 }

@@ -102,7 +102,7 @@ globus_l_xio_queue_open(
 
     handle = globus_l_xiod_q_handle_create();
 
-    GlobusXIODriverPassOpen(res, handle->context, op, \
+    GlobusXIODriverPassOpen(res, &handle->context, op, \
         globus_l_xio_queue_open_cb, handle);
 
     return res;

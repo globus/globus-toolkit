@@ -154,7 +154,7 @@ globus_l_xio_debug_open(
   
     debug_driver_log("open");
 
-    GlobusXIODriverPassOpen(res, context, op, \
+    GlobusXIODriverPassOpen(res, &context, op, \
         globus_l_xio_debug_open_cb, NULL);
 
     return res;

@@ -276,7 +276,7 @@ globus_l_xio_ftp_cmd_open(
 
     GlobusXIODriverPassOpen(
         res,
-        handle->context,
+        &handle->context,
         op, 
         globus_l_xio_ftp_cmd_open_cb,
         handle);

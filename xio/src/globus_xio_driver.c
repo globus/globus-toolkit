@@ -797,7 +797,7 @@ globus_xio_driver_pass_open(
 {
     globus_result_t                         res;
 
-    GlobusXIODriverPassOpen(res, *out_context, op, cb, user_arg);
+    GlobusXIODriverPassOpen(res, out_context, op, cb, user_arg);
 
     return res;
 }

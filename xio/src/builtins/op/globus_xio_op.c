@@ -188,7 +188,7 @@ globus_l_xio_op_open(
     globus_result_t                     res;
     globus_xio_context_t                context;
   
-    GlobusXIODriverPassOpen(res, context, op, \
+    GlobusXIODriverPassOpen(res, &context, op, \
         globus_l_xio_op_open_cb, NULL);
 
     return res;

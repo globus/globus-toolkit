@@ -110,7 +110,7 @@ test_bounce_next_op(
     switch(info->next_op)
     {
         case TEST_OPEN:
-            GlobusXIODriverPassOpen(res, info->context, op, \
+            GlobusXIODriverPassOpen(res, &info->context, op, \
                 bounce_cb, (void*)info);
 
             info->next_op = TEST_READ;
@@ -248,7 +248,7 @@ globus_l_xio_bounce_open(
     info->max_count = MAX_COUNT;
     info->start_op = TEST_OPEN;
 
-    GlobusXIODriverPassOpen(res, info->context, op, \
+    GlobusXIODriverPassOpen(res, &info->context, op, \
                 bounce_cb, (void*)info);
 
 

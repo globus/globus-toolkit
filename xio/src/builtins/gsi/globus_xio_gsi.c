@@ -1493,7 +1493,7 @@ globus_l_xio_gsi_open(
         handle->ret_flags = attr->req_flags;
     }
     
-    GlobusXIODriverPassOpen(result, context, op,
+    GlobusXIODriverPassOpen(result, &context, op,
                             globus_l_xio_gsi_open_cb, handle);
 
     if(result != GLOBUS_SUCCESS)
