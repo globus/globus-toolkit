@@ -1100,6 +1100,7 @@ globus_l_gsc_user_data_destroy_cb_kickout(
             data_object->user_handle, server_handle->funcs.data_destroy_arg);
     }
     globus_free(data_object);
+    server_handle->data_object = NULL;
 
     globus_mutex_lock(&server_handle->mutex);
     {
