@@ -359,7 +359,7 @@ case ${host}--$1 in
                 case $lac_cv_build_64bit in
                         yes )  lac_64bit_flag="-mabi=64" ;;
                         -*  )  lac_64bit_flag="$lac_cv_build_64bit" ;;
-                        *   )  lac_64bit_flag="-mabi=32" ;;
+                        *   )  lac_64bit_flag="-mabi=n32" ;;
                 esac
                 ],
                 [
