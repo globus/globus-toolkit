@@ -31,7 +31,12 @@ static char usage[] = \
 "    -v | --version             Displays version\n"\
 "    -l | --username <username> Username for the delegated proxy\n"\
 "    -s | --pshost   <hostname> Hostname of the myproxy-server\n"\
-"    -p | --psport   #          Port of the myproxy-server\n"\
+"    -p | --psport   #          Port of the myproxy-server\n"
+#if !defined(DN_DEFAULT_USERNAME)
+"	-d | --dn_as_username             Use the proxy certificate subject\n"
+"                                         (DN) as the default username\n"
+"                                         of the LOGNAME env. var.\n"
+#endif
 "\n";
 
 struct option long_options[] =
@@ -42,14 +47,16 @@ struct option long_options[] =
     {"usage",            no_argument, NULL, 'u'},
     {"username",   required_argument, NULL, 'l'},
     {"version",          no_argument, NULL, 'v'},
+    {"dn_as_username",   no_argument, NULL, 'd'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:v";
+static char short_options[] = "hus:p:l:vd";
 
 static char version[] =
 "myproxy-destroy version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
+static int dn_as_username = 0;
 
 /* Function declarations */
 void init_arguments(int argc, char *argv[], 
@@ -121,12 +128,23 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    /* If the user didn't provide us with required username, we will try to use
-       subject name from user's default certificate. */
-     if (client_request->username == NULL &&
-	 ssl_get_base_subject_file(NULL, &client_request->username)) {
-	 fprintf(stderr, "Cannot get subject name from your certificate\n");
-	 exit(1);
+    if (client_request->username == NULL) { /* set default username */
+#if !defined(DN_DEFAULT_USERNAME)
+	if (!dn_as_username) {
+	    if (!(client_request->username = getenv("LOGNAME"))) {
+		fprintf(stderr, "Please specify a username.\n");
+		exit(1);
+	    }
+	} else {
+#endif
+	    if (ssl_get_base_subject_file(NULL, &client_request->username)) {
+		fprintf(stderr,
+			"Cannot get subject name from your certificate\n");
+		exit(1);
+	    }
+#if !defined(DN_DEFAULT_USERNAME)
+	}
+#endif
      }
 
     /* Serialize client request object */
@@ -219,6 +237,10 @@ init_arguments(int argc,
             fprintf(stderr, version);
             exit(1);
             break;
+	case 'd':   /* use the certificate subject (DN) as the default
+		       username instead of LOGNAME */
+	    dn_as_username = 1;
+	    break;
         default:        /* print usage and exit */ 
             fprintf(stderr, usage);
 	    exit(1);
