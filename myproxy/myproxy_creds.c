@@ -418,10 +418,6 @@ copy_file(const char *source,
 
     do 
     {
-#if defined (MULTICRED_FEATURE)
-	static int size = 0;
-#endif
-
         bytes_read = read(src_fd, buffer, sizeof(buffer)-1);
 	buffer[bytes_read]='\0';
         if (bytes_read == -1)
@@ -431,10 +427,6 @@ copy_file(const char *source,
             goto error;
         }
 
-#if defined (MULTICRED_FEATURE)
-	size += bytes_read;
-#endif
-	
         if (bytes_read != 0)
         {
             if (write(dst_fd, buffer, bytes_read) == -1)
@@ -583,6 +575,8 @@ read_data_file(struct myproxy_creds *creds,
     assert(creds != NULL);
     assert(datafile_path != NULL);
     
+    myproxy_creds_free_contents(creds);	/* initialize creds structure */
+
     data_stream = fopen(datafile_path, data_stream_mode);
     
     if (data_stream == NULL)
@@ -591,9 +585,6 @@ read_data_file(struct myproxy_creds *creds,
         verror_put_string("opening %s for reading", datafile_path);
         goto error;
     }
-
-    creds->retrievers = NULL; 
-    creds->renewers = NULL; 
 
     while (!done)
     {
@@ -862,8 +853,6 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
         return -1;
     }
 
-    memset(&retrieved_creds, 0, sizeof(retrieved_creds));
-   
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
                               data_path, sizeof(data_path), creds->credname) == -1)
@@ -1024,8 +1013,6 @@ myproxy_creds_is_owner(const char		*username,
     struct myproxy_creds retrieved_creds = {0}; /* initialize with 0s */
     int return_code = -1;
 
-    memset(&retrieved_creds, 0, sizeof(retrieved_creds));
-
     assert(username != NULL);
     assert(client_name != NULL);
     
@@ -1156,6 +1143,8 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
 		goto error;
 	}
 
+	memset(&tmp_creds, 0, sizeof(struct myproxy_creds));
+
     	if (read_data_file(&tmp_creds, fullpath) == -1)
    	{
         	goto error;
@@ -1218,7 +1207,6 @@ myproxy_creds_info(struct myproxy_creds *creds, myproxy_response_t *response)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
-    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
     int return_code = -1;
     time_t end_time;
 
@@ -1270,34 +1258,16 @@ error:
 
 void myproxy_creds_free_contents(struct myproxy_creds *creds)
 {
-    if (creds == NULL)
-    {
-        return;
-    }
-    
-    if (creds->username != NULL)
-    {
-        free(creds->username);
-        creds->username = NULL;
-    }
-
-    if (creds->passphrase != NULL)
-    {
-        free(creds->passphrase);
-        creds->passphrase = NULL;
-    }
-
-    if (creds->owner_name != NULL)
-    {
-        free(creds->owner_name);
-        creds->owner_name = NULL;
-    }
-    
-    if (creds->location != NULL)
-    {
-        free(creds->location);
-        creds->location = NULL;
-    }
+    if (creds == NULL) return;
+    if (creds->username != NULL)	free(creds->username);
+    if (creds->passphrase != NULL)	free(creds->passphrase);
+    if (creds->owner_name != NULL)	free(creds->owner_name);
+    if (creds->location != NULL)	free(creds->location);
+    if (creds->retrievers != NULL)	free(creds->retrievers);
+    if (creds->renewers != NULL)	free(creds->renewers);
+    if (creds->credname != NULL)	free(creds->credname);
+    if (creds->creddesc != NULL)	free(creds->creddesc);
+    memset(creds, 0, sizeof(struct myproxy_creds));
 }
 
 void myproxy_set_storage_dir(const char *dir)
