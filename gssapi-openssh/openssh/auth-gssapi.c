@@ -33,6 +33,10 @@
 #include "log.h"
 #include "ssh1.h"
 
+/*modified by binhe*/
+#include "ssh-gss.h"
+/*end of modification*/
+
 /* Version Tag */
 static char gssapi_patch_version[] = GSSAPI_PATCH_VERSION;
 
@@ -377,7 +381,11 @@ int auth_gssapi(const char *target_account,
 			     &send_tok,
 			     &ret_flags,
 			     NULL, 	/* ignore time_rec */
-			     NULL); 	/* ignore del_cred_handle */
+			     //NULL); 	/* ignore del_cred_handle */
+/*modified by binhe*/
+			     &gssapi_client_creds); 
+   gssapi_client_type = GSS_GSI;
+/*end of modification*/
 
 
     (void) gss_release_buffer(&min_stat, &recv_tok);
