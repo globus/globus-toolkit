@@ -1932,34 +1932,41 @@ globus_l_gass_copy_ftp_get_done_callback(
 	= (globus_gass_copy_handle_t *) callback_arg;
     globus_i_gass_copy_monitor_t * source_monitor
 	= &(copy_handle->state->source.data.ftp.monitor);
+    globus_i_gass_copy_cancel_t * cancel_info = GLOBUS_NULL;
     
-    globus_mutex_lock(&(source_monitor->mutex));
-    if (error != GLOBUS_SUCCESS)
-    {
-	/* FIXX - do some error handling */
-        if (copy_handle->status != GLOBUS_GASS_COPY_STATUS_CANCEL)
-        {
-            globus_i_gass_copy_set_error(copy_handle, error);
-        }
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "ftp_get_done_callback(): !!!GLOBUS_SUCCESS\n");
+    fprintf(stderr, "ftp_get_done_callback(): starting\n");
+#endif
+
+
+    if ((copy_handle->status == GLOBUS_GASS_COPY_STATUS_CANCEL) ||
+        (copy_handle->status == GLOBUS_GASS_COPY_STATUS_FAILURE))
+    {
+        cancel_info = (globus_i_gass_copy_cancel_t *)
+            globus_libc_malloc(sizeof(globus_i_gass_copy_cancel_t));
+        cancel_info->handle = copy_handle;
+        cancel_info->canceling_source = GLOBUS_TRUE;
+        globus_mutex_lock(&(source_monitor->mutex));
+        source_monitor->done = GLOBUS_TRUE;
+        globus_mutex_unlock(&(source_monitor->mutex));
+
+        globus_l_gass_copy_generic_cancel(cancel_info);
     }
     else
     {
-	fprintf(stderr, "ftp_get_done_callback(): called with GLOBUS_SUCCESS\n");
+        globus_mutex_lock(&(source_monitor->mutex));
+        if (error != GLOBUS_SUCCESS)
+        {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	    fprintf(stderr, "ftp_get_done_callback(): called with error\n");
 #endif
+            globus_i_gass_copy_set_error(copy_handle, error);
+        }
+        source_monitor->done = GLOBUS_TRUE;
+        globus_cond_signal(&(source_monitor->cond));
+        globus_mutex_unlock(&(source_monitor->mutex));
     }
-
-    source_monitor->done = GLOBUS_TRUE;
-    globus_cond_signal(&(source_monitor->cond));
-    globus_mutex_unlock(&(source_monitor->mutex));
     
-    /*  FIXX -  not sure what should happen here
-	globus_mutex_lock(&state->monitor.mutex);
-	done = 1;
-	globus_cond_signal(&state->monitor.cond);
-	globus_mutex_unlock(&state->monitor.mutex);
-	*/
 } /* globus_l_gass_copy_ftp_get_done_callback() */
 
 void
@@ -1972,33 +1979,39 @@ globus_l_gass_copy_ftp_put_done_callback(
 	= (globus_gass_copy_handle_t *) callback_arg;
     globus_i_gass_copy_monitor_t * dest_monitor
 	= &(copy_handle->state->dest.data.ftp.monitor);
-    
-    globus_mutex_lock(&(dest_monitor->mutex));
-    if (error != GLOBUS_SUCCESS)
-    {
-        if (copy_handle->status != GLOBUS_GASS_COPY_STATUS_CANCEL)
-        {
-            globus_i_gass_copy_set_error(copy_handle, error);
-        }
+    globus_i_gass_copy_cancel_t * cancel_info = GLOBUS_NULL;
+
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "ftp_put_done_callback(): !!!GLOBUS_SUCCESS\n");
+    fprintf(stderr, "ftp_put_done_callback(): starting\n");
+#endif
+
+    if ((copy_handle->status == GLOBUS_GASS_COPY_STATUS_CANCEL) ||
+        (copy_handle->status == GLOBUS_GASS_COPY_STATUS_FAILURE))
+    {
+        cancel_info = (globus_i_gass_copy_cancel_t *)
+            globus_libc_malloc(sizeof(globus_i_gass_copy_cancel_t));
+        cancel_info->handle = copy_handle;
+        cancel_info->canceling_source = GLOBUS_FALSE;
+        globus_mutex_lock(&(dest_monitor->mutex));
+        dest_monitor->done = GLOBUS_TRUE;
+        globus_mutex_unlock(&(dest_monitor->mutex));
+        globus_l_gass_copy_generic_cancel(cancel_info);
     }
     else
     {
-	fprintf(stderr, "ftp_put_done_callback(): called with GLOBUS_SUCCESS\n");
+        globus_mutex_lock(&(dest_monitor->mutex));
+        if (error != GLOBUS_SUCCESS)
+        {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+            fprintf(stderr, "ftp_put_done_callback(): called with error\n");
 #endif
+            globus_i_gass_copy_set_error(copy_handle, error);
+        }
+        dest_monitor->done = GLOBUS_TRUE;
+        globus_cond_signal(&(dest_monitor->cond));
+        globus_mutex_unlock(&(dest_monitor->mutex));
     }
 
-    dest_monitor->done = GLOBUS_TRUE;
-    globus_cond_signal(&(dest_monitor->cond));
-    globus_mutex_unlock(&(dest_monitor->mutex));
-    
-    /*  FIXX -  not sure what should happen here
-	globus_mutex_lock(&state->monitor.mutex);
-	state->monitor.done = 1;
-	globus_cond_signal(&state->monitor.cond);
-	globus_mutex_unlock(&state->monitor.mutex);
-	*/
 } /* globus_l_gass_copy_ftp_put_done_callback() */
 
 
@@ -2943,7 +2956,6 @@ globus_gass_copy_url_to_url(
      */
     if(monitor.use_err)
     {
-	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
 	return globus_error_put(monitor.err);
     }
     else
@@ -3919,8 +3931,7 @@ globus_gass_copy_cancel(
         return GLOBUS_SUCCESS;
     }
 
-    if ((handle->state->cancel == GLOBUS_I_GASS_COPY_CANCEL_CALLED) ||
-        (handle->state->cancel == GLOBUS_I_GASS_COPY_CANCEL_DONE))
+    if (handle->state->cancel == GLOBUS_I_GASS_COPY_CANCEL_CALLED)
     {
         return GLOBUS_SUCCESS;
     }
@@ -3956,8 +3967,7 @@ globus_gass_copy_cancel(
     else
     {
         result = globus_l_gass_copy_target_cancel(source_cancel_info);
-        if (result == GLOBUS_SUCCESS)
-            return globus_l_gass_copy_target_cancel(dest_cancel_info);
+        result = globus_l_gass_copy_target_cancel(dest_cancel_info);
     }
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -4012,6 +4022,14 @@ globus_l_gass_copy_target_cancel(
     {
         case GLOBUS_GASS_COPY_URL_MODE_FTP:
              result = globus_ftp_client_abort(target->data.ftp.handle);
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+             if (result != GLOBUS_SUCCESS)
+             {
+                 fprintf(stderr, "_ftp_client_abort():  returned an error\n");
+                 fprintf(stderr, "    resetting to SUCCESS\n");
+                 result = GLOBUS_SUCCESS;
+             }
+#endif
              break;
         case GLOBUS_GASS_COPY_URL_MODE_GASS:
              rc = globus_gass_transfer_fail(
@@ -4108,20 +4126,21 @@ globus_l_gass_copy_generic_cancel(
 
     if (cancel_info->canceling_source)
     {
-	handle->state->cancel = GLOBUS_I_GASS_COPY_CANCEL_DONE;
-        if (handle->state->cancel == GLOBUS_I_GASS_COPY_CANCEL_DONE)
+	handle->state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
+        if (handle->state->dest.status == GLOBUS_I_GASS_COPY_TARGET_DONE)
         {
            all_done = GLOBUS_TRUE; 
         }
     }
     else
     {
-	handle->state->cancel = GLOBUS_I_GASS_COPY_CANCEL_DONE;
-        if (handle->state->cancel == GLOBUS_I_GASS_COPY_CANCEL_DONE)
+	handle->state->dest.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
+        if (handle->state->source.status == GLOBUS_I_GASS_COPY_TARGET_DONE)
         {
            all_done = GLOBUS_TRUE; 
         }
     }
+    globus_libc_free(cancel_info);
 
     globus_mutex_unlock(&(handle->state->mutex));
 

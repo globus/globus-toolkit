@@ -38,7 +38,6 @@ typedef enum
     GLOBUS_I_GASS_COPY_CANCEL_FALSE,
     GLOBUS_I_GASS_COPY_CANCEL_TRUE,
     GLOBUS_I_GASS_COPY_CANCEL_CALLED,
-    GLOBUS_I_GASS_COPY_CANCEL_DONE,
 } globus_i_gass_copy_cancel_status_t;
 
 
