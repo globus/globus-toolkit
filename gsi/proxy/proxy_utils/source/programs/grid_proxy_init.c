@@ -224,12 +224,12 @@ main(
         else if(strcmp(argp, "-certdir") == 0)
         {
             args_verify_next(arg_index, argp, "need a file name argument");
-            ca_cert_dir = argv[++arg_index];
+            ca_cert_dir = strdup(argv[++arg_index]);
         }
         else if(strcmp(argp, "-out") == 0)
         {
             args_verify_next(arg_index, argp, "need a file name argument");
-            proxy_out_filename = argv[++arg_index];
+            proxy_out_filename = strdup(argv[++arg_index]);
         }
         else if(strcmp(argp, "-key") == 0)
         {
@@ -425,7 +425,7 @@ main(
     {
         user_key_filename = tmp_user_key_filename;
     }
-
+    
     if(debug)
     {
         globus_libc_fprintf(stderr,
@@ -515,15 +515,20 @@ main(
                 "\n\nERROR: Can't split the full path into "
                 "directory and filename. The full path is: %s", 
                 proxy_absolute_path);
-
             if(proxy_absolute_path)
             {
                 free(proxy_absolute_path);
+                proxy_absolute_path = NULL;
             }
-            
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
-
+        
+        if(proxy_absolute_path)
+        {
+            free(proxy_absolute_path);
+            proxy_absolute_path = NULL;
+        }
+        
         result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(temp_dir, &file_status);
         if(result != GLOBUS_SUCCESS ||
            file_status != GLOBUS_FILE_DIR)
@@ -537,7 +542,7 @@ main(
             if(temp_filename)
             {
                 free(temp_filename);
-                temp_dir = NULL;
+                temp_filename = NULL;
             }
 
             globus_libc_fprintf(
@@ -600,6 +605,15 @@ main(
         globus_libc_fprintf(stderr,
                             "\n\nERROR: Couldn't initialize credential "
                             "handle\n");
+        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+    }
+
+    result = globus_gsi_cred_handle_attrs_destroy(cred_handle_attrs);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(stderr,
+                            "\n\nERROR: Couldn't destroy credential "
+                            "handle attributes.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
@@ -860,6 +874,12 @@ main(
             "Proxy Verify OK\n");
     }
 
+    if(ca_cert_dir)
+    {
+        free(ca_cert_dir);
+        ca_cert_dir = NULL;
+    }
+
     result = globus_gsi_cred_write_proxy(proxy_cred_handle,
                                          proxy_out_filename);
     if(result != GLOBUS_SUCCESS)
@@ -869,6 +889,12 @@ main(
             "\n\nERROR: The proxy credential could not be "
             "written to the output file.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+    }
+
+    if(proxy_out_filename)
+    {
+        free(proxy_out_filename);
+        proxy_out_filename = NULL;
     }
 
     result = globus_gsi_cred_get_lifetime(
@@ -924,6 +950,18 @@ main(
     globus_gsi_cred_handle_destroy(cred_handle);
     globus_gsi_cred_handle_destroy(proxy_cred_handle);
     globus_gsi_callback_data_destroy(callback_data);
+
+    if(tmp_user_cert_filename)
+    {
+        free(tmp_user_cert_filename);
+    }
+
+    if(tmp_user_key_filename)
+    {
+        free(tmp_user_key_filename);
+    }
+
+    globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
 
     exit(return_value);
 }

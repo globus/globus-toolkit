@@ -692,7 +692,7 @@ globus_result_t globus_gsi_cred_read(
     } while(++index);
     
  exit:
-    
+
     result = results[result_index];
     for(index = 0; index < result_index; ++index)
     {
@@ -704,6 +704,11 @@ globus_result_t globus_gsi_cred_read(
         }
     }
 
+    if(proxy)
+    {
+        free(proxy);
+    }
+    
     if(found_subject)
     {
         globus_free(found_subject);
@@ -733,7 +738,7 @@ globus_result_t globus_gsi_cred_read_proxy(
     globus_gsi_cred_handle_t            handle,
     char *                              proxy_filename)
 {
-    BIO *                               proxy_bio;
+    BIO *                               proxy_bio = NULL;
     globus_result_t                     result;
     
     static char *                       _function_name_ =
@@ -770,9 +775,12 @@ globus_result_t globus_gsi_cred_read_proxy(
         goto exit;
     }
 
-    BIO_free(proxy_bio);
-
  exit:
+
+    if(proxy_bio)
+    {
+        BIO_free(proxy_bio);
+    }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
@@ -1017,33 +1025,14 @@ globus_gsi_cred_read_key(
         goto exit;
     }
 
-    if (handle->key->type == EVP_PKEY_RSA)
-    {
-        /* add in key as random data too */
-        /* not sure if this is kosher */
-          
-        if (handle->key->pkey.rsa != NULL)
-        {
-            if(handle->key->pkey.rsa->p != NULL)
-            {
-                RAND_add((void*)handle->key->pkey.rsa->p->d,
-                         BN_num_bytes(handle->key->pkey.rsa->p),
-                         BN_num_bytes(handle->key->pkey.rsa->p)/2);
-            }
-            if(handle->key->pkey.rsa->q != NULL)
-            {
-                RAND_add((void*)handle->key->pkey.rsa->q->d,
-                         BN_num_bytes(handle->key->pkey.rsa->q),
-                         BN_num_bytes(handle->key->pkey.rsa->q)/2);
-            }
-        }
-    }
-    
-    BIO_free(key_bio);
-
     result = GLOBUS_SUCCESS;
 
  exit:
+
+    if(key_bio)
+    {
+        BIO_free(key_bio);
+    }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
@@ -1113,8 +1102,6 @@ globus_result_t globus_gsi_cred_read_cert(
         goto exit;
     }
 
-    BIO_free(cert_bio);
-
     if(handle->cert_chain != NULL)
     {
         sk_X509_pop_free(handle->cert_chain, X509_free);
@@ -1134,6 +1121,11 @@ globus_result_t globus_gsi_cred_read_cert(
     result = GLOBUS_SUCCESS;
 
  exit:
+
+    if(cert_bio)
+    {
+        BIO_free(cert_bio);
+    }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
@@ -1319,6 +1311,7 @@ globus_result_t globus_gsi_cred_read_pkcs12(
         if(X509_check_private_key(handle->cert, handle->key)) 
         {
             sk_X509_pop_free(pkcs12_certs, X509_free);
+            pkcs12_certs = NULL;
             break;
         }
         else
@@ -1347,6 +1340,21 @@ globus_result_t globus_gsi_cred_read_pkcs12(
     }
 
  exit:
+
+    if(pkcs12_bio)
+    {
+        BIO_free(pkcs12_bio);
+    }
+
+    if(pkcs12)
+    {
+        PKCS12_free(pkcs12);
+    }
+
+    if(pkcs12_certs)
+    {
+        sk_X509_pop_free(pkcs12_certs, X509_free);
+    }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;

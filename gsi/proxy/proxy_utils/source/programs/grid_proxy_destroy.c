@@ -231,6 +231,10 @@ int main(
                                                   dryrun_flag);
     }
 
+    free(default_full_file);
+
+    globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
+
     return 0;
 }
 

@@ -320,6 +320,12 @@ globus_gsi_proxy_create_req(
         goto error_exit;
     }
 
+    if(req_name_entry)
+    {
+        X509_NAME_ENTRY_free(req_name_entry);
+        req_name_entry = NULL;
+    }
+
     X509_REQ_set_subject_name(handle->req, req_name);
     X509_NAME_free(req_name);
     req_name = NULL;
@@ -382,6 +388,11 @@ globus_gsi_proxy_create_req(
     if(req_name)
     {
         X509_NAME_free(req_name);
+    }
+
+    if(req_name_entry)
+    {
+        X509_NAME_ENTRY_free(req_name_entry);
     }
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
@@ -708,8 +719,11 @@ globus_gsi_proxy_sign_req(
         goto free_issuer_cert;
     }
 
-    EVP_PKEY_free(req_pubkey);
-    req_pubkey = NULL;
+    if(req_pubkey)
+    {
+        EVP_PKEY_free(req_pubkey);
+        req_pubkey = NULL;
+    }
 
     if(handle->proxy_cert_info != NULL)
     { 
@@ -792,7 +806,7 @@ globus_gsi_proxy_sign_req(
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
                 ("Couldn't create X509 extension list "
                  "to hold PROXYCERTINFO extension"));
-            goto free_pci_DER;
+            goto free_pci_DER_string;
         }
 
         /* 
@@ -874,6 +888,12 @@ globus_gsi_proxy_sign_req(
         X509_EXTENSION_free(pci_ext);
     }
     
+ free_pci_DER_string:
+    if(pci_DER_string)
+    {
+        free(pci_DER_string);
+    }
+
  free_pci_DER:
     if(pci_DER)
     {
@@ -933,7 +953,6 @@ globus_gsi_proxy_create_signed(
     X509 *                              issuer_cert = NULL;
     STACK_OF(X509) *                    issuer_cert_chain = NULL;
     int                                 chain_index = 0;
-    globus_gsi_proxy_handle_attrs_t     inquire_attrs = NULL;
     globus_gsi_proxy_handle_t           inquire_handle = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     BIO *                               rw_mem_bio = NULL;
@@ -960,16 +979,7 @@ globus_gsi_proxy_create_signed(
         goto exit;
     }
 
-    result = globus_gsi_proxy_handle_attrs_copy(handle->attrs, &inquire_attrs);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
-        goto exit;
-    }
-
-    result = globus_gsi_proxy_handle_init(&inquire_handle, inquire_attrs);
+    result = globus_gsi_proxy_handle_init(&inquire_handle, handle->attrs);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
@@ -1072,6 +1082,11 @@ globus_gsi_proxy_create_signed(
     }
 
  exit:
+
+    if(inquire_handle)
+    {
+        globus_gsi_cred_handle_destroy(inquire_handle);
+    }
 
     if(rw_mem_bio)
     {
@@ -1245,14 +1260,17 @@ globus_gsi_proxy_assemble_cred(
 
  free_cred_handle:
     globus_gsi_cred_handle_destroy(*proxy_credential);
+ done:
  free_cred_handle_attrs:
-    globus_gsi_cred_handle_attrs_destroy(cred_handle_attrs);
+    if(cred_handle_attrs)
+    {
+        globus_gsi_cred_handle_attrs_destroy(cred_handle_attrs);
+    }
  free_signed_cert:
     if(signed_cert)
     {
         X509_free(signed_cert);
     }
- done:
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }

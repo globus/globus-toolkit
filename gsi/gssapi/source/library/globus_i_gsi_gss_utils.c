@@ -344,6 +344,12 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_handle_attrs;
     }
 
+    if(handle_attrs)
+    {
+        globus_gsi_cred_handle_attrs_destroy(handle_attrs);
+        handle_attrs = NULL;
+    }
+
     if (certdir)
     {
         local_result = globus_gsi_callback_set_cert_dir(
@@ -369,7 +375,11 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_cert_dir;
     }
 
-    globus_libc_free(certdir);
+    if(certdir)
+    {
+        free(certdir);
+        certdir = NULL;
+    }
 
     context->gss_ssl = SSL_new(context->cred_handle->ssl_context);
 
@@ -1339,8 +1349,8 @@ globus_i_gsi_gss_cred_read(
     gss_cred_id_t *                     cred_handle,
     const X509_NAME *                   desired_subject) 
 {
-    globus_result_t                     local_result;
-    globus_gsi_cred_handle_t            local_cred_handle;
+    globus_result_t                     local_result = GLOBUS_SUCCESS;
+    globus_gsi_cred_handle_t            local_cred_handle = NULL;
     OM_uint32                           local_minor_status;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     static char *                       _function_name_ =
@@ -1383,6 +1393,11 @@ globus_i_gsi_gss_cred_read(
     }
 
  exit:
+
+    if(local_cred_handle)
+    {
+        globus_gsi_cred_handle_destroy(local_cred_handle);
+    }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
@@ -2334,6 +2349,11 @@ globus_i_gsi_gssapi_init_ssl_context(
 
  exit:
 
+    if(handle_attrs)
+    {
+        globus_gsi_cred_handle_attrs_destroy(handle_attrs);
+    }
+
     if(client_cert)
     {
         X509_free(client_cert);
@@ -2347,6 +2367,11 @@ globus_i_gsi_gssapi_init_ssl_context(
     if(client_cert_chain)
     {
         sk_X509_pop_free(client_cert_chain, X509_free);
+    }
+
+    if(ca_cert_dir)
+    {
+        free(ca_cert_dir);
     }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;

@@ -2503,9 +2503,9 @@ globus_gsi_sysconfig_get_proc_id_string_unix(
         result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
         goto exit;
     }
-    
-    globus_libc_snprintf(*proc_id_string,len,"%d",pid);
 
+    globus_libc_snprintf(*proc_id_string,len,"%d",pid);
+    
     result = GLOBUS_SUCCESS;
 
  exit:
@@ -2805,6 +2805,7 @@ globus_gsi_sysconfig_get_home_dir_unix(
         if(result != GLOBUS_SUCCESS)
         {
             globus_object_t *               error_obj;
+            free(temp_home_dir);
             error_obj = globus_error_get(result);
             globus_object_free(error_obj);
             result = GLOBUS_SUCCESS;
@@ -3549,6 +3550,12 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
                 goto done;
             }
 
+            if(home)
+            {
+                free(home);
+                home = NULL;
+            }
+
             if((*user_cert) && !(*user_key))
             {
                 GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
@@ -3615,6 +3622,12 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
             }
             *user_cert = *user_key;
         }
+
+        if(home)
+        {
+            free(home);
+            home = NULL;
+        }
     }
 
     if(!(*user_cert))
@@ -3671,6 +3684,10 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
     if(default_user_key && default_user_key != (*user_key))
     {
         globus_libc_free(default_user_key);
+    }
+    if(home)
+    {
+        free(home);
     }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
@@ -4633,6 +4650,9 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
             *user_proxy = user_id_string;
             goto done;
         }
+
+        free(user_id_string);
+        user_id_string = NULL;
     }
 
     if(!(*user_proxy) && 
@@ -4660,6 +4680,11 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
     result = GLOBUS_SUCCESS;
 
  done:
+
+    if(user_id_string)
+    {
+        free(user_id_string);
+    }
 
     if(default_user_proxy && (default_user_proxy != (*user_proxy)))
     {

@@ -4,6 +4,9 @@
 #include "gssapi_openssl.h"
 #include "globus_gss_assist.h"
 
+void internal_release_buffer(
+    gss_buffer_desc *                   buffer);
+
 int verify_cred(
     gss_cred_id_t                       credential);
 
@@ -239,6 +242,7 @@ int main()
         exit(1);
     }
 
+    internal_release_buffer(&recv_tok);
     maj_stat = gss_wrap(&min_stat,
                         init_context,
                         0,
@@ -246,8 +250,7 @@ int main()
                         &send_tok,
                         NULL,
                         &recv_tok);
-                        
-    
+
     if(maj_stat != GSS_S_COMPLETE)
     {
         globus_gss_assist_display_status_str(&error_str,
@@ -262,14 +265,15 @@ int main()
     
     while(1)
     {
+
+        internal_release_buffer(&send_tok);
         maj_stat = gss_unwrap(&min_stat,
                               accept_context,
                               &recv_tok,
                               &send_tok,
                               NULL,
                               NULL);
-        
-    
+            
         if(maj_stat != GSS_S_COMPLETE)
         {
             globus_gss_assist_display_status_str(&error_str,
@@ -282,6 +286,7 @@ int main()
             exit(1);
         }
 
+        internal_release_buffer(&recv_tok);
         accept_maj_stat=gss_accept_delegation(&min_stat,
                                               accept_context,
                                               GSS_C_NO_OID_SET,
@@ -312,7 +317,7 @@ int main()
             break;
         }
 
-
+        internal_release_buffer(&send_tok);
         maj_stat = gss_wrap(&min_stat,
                             accept_context,
                             0,
@@ -334,6 +339,7 @@ int main()
             exit(1);
         }
 
+        internal_release_buffer(&recv_tok);
         maj_stat = gss_unwrap(&min_stat,
                               init_context,
                               &send_tok,
@@ -354,6 +360,7 @@ int main()
             exit(1);
         }
 
+        internal_release_buffer(&send_tok);
         init_maj_stat = gss_init_delegation(&min_stat,
                                             init_context,
                                             cred_handle,
@@ -381,6 +388,7 @@ int main()
             exit(1);
         }
 
+        internal_release_buffer(&recv_tok);
         maj_stat = gss_wrap(&min_stat,
                             init_context,
                             0,
@@ -411,6 +419,7 @@ int main()
     /* this can be done both to a buffer and to a file */
     /* New in GT 2.0 */
 
+    internal_release_buffer(&send_tok);
     maj_stat = gss_export_cred(&min_stat,
                                delegated_cred,
                                GSS_C_NO_OID,
@@ -425,11 +434,10 @@ int main()
                                              min_stat,
                                              0);
         printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
-            globus_print_error((globus_result_t) min_stat);
+        globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
 
-    
     maj_stat = gss_import_cred(&min_stat,
                                &imported_cred,
                                GSS_C_NO_OID,
@@ -450,6 +458,8 @@ int main()
             globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
+
+    internal_release_buffer(&send_tok);
 
     printf("%s:%d: Successfully exported/imported the delegated credential\n",
            __FILE__,
@@ -533,11 +543,11 @@ int main()
         globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
-
-
     
     while(1)
     {
+        internal_release_buffer(&recv_tok);
+
         accept_maj_stat=gss_accept_sec_context(&min_stat,
                                                &del_accept_context,
                                                imported_cred,
@@ -567,7 +577,7 @@ int main()
         {
             break;
         }
-        
+
         init_maj_stat = gss_init_sec_context(&min_stat,
                                              imported_cred,
                                              &del_init_context,
@@ -711,4 +721,24 @@ void globus_print_error(
     globus_libc_fprintf(stderr, "%s\n", error_string);
     globus_libc_free(error_string);
     globus_object_free(error_obj);
+}
+
+void internal_release_buffer(
+    gss_buffer_desc *                   buffer)
+{
+    char *                              error_str = NULL;
+    OM_uint32                           maj_stat, min_stat;
+
+    maj_stat = gss_release_buffer(&min_stat, (gss_buffer_t) buffer);
+    if(maj_stat != GSS_S_COMPLETE)
+    {
+        globus_gss_assist_display_status_str(&error_str,
+                                             NULL,
+                                             maj_stat,
+                                             min_stat,
+                                             0);
+        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        globus_print_error((globus_result_t) min_stat);
+        exit(1);
+    }
 }

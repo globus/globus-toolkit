@@ -134,8 +134,16 @@ globus_result_t globus_gsi_cred_handle_copy(
             ("Null parameter passed to function"));
         goto exit;
     }
+    
+    if(a->attrs)
+    {
+        result = globus_gsi_cred_handle_init(b, a->attrs);
+    }
+    else
+    {
+        result = globus_gsi_cred_handle_init(b, NULL);
+    }
 
-    result = globus_gsi_cred_handle_init(b, NULL);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -187,21 +195,8 @@ globus_result_t globus_gsi_cred_handle_copy(
             ++chain_index)
         {
             sk_X509_insert((*b)->cert_chain, 
-                           sk_X509_value(a->cert_chain, chain_index), 
+                           X509_dup(sk_X509_value(a->cert_chain, chain_index)), 
                            chain_index);
-        }
-    }
-
-    if(a->attrs)
-    {
-        result = globus_gsi_cred_handle_attrs_copy(a->attrs,
-                                                   &(*b)->attrs);
-        if(result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED);
-            goto exit;
         }
     }
 
@@ -317,6 +312,8 @@ globus_result_t globus_gsi_cred_get_lifetime(
     globus_gsi_cert_utils_make_time(asn1_time, &time_now);
 
     *lifetime = cred_handle->goodtill - time_now;
+    ASN1_UTCTIME_free(asn1_time);
+
     result = GLOBUS_SUCCESS;
 
  error_exit:
@@ -627,14 +624,29 @@ globus_result_t globus_gsi_cred_set_cert_chain(
         {
             if(prev_cert != NULL)
             {
-                if(!X509_verify(prev_cert, X509_get_pubkey(tmp_cert)))
+                EVP_PKEY *              tmp_pkey;
+
+                tmp_pkey = X509_get_pubkey(tmp_cert);
+                if(!tmp_pkey)
                 {
+                    GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
+                        ("Could not get private key of cert"));
+                    goto error_exit;
+                }
+
+                if(!X509_verify(prev_cert, tmp_pkey))
+                {
+                    EVP_PKEY_free(tmp_pkey);
                     GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                         result,
                         GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
                         ("Error verifying X509 cert in cert chain"));
                     goto error_exit;
                 }
+
+                EVP_PKEY_free(tmp_pkey);
             }
             
             prev_cert = tmp_cert;
@@ -972,7 +984,7 @@ globus_result_t globus_gsi_cred_get_subject_name(
     globus_gsi_cred_handle_t            handle,
     char **                             subject_name)
 {
-    X509_NAME *                         x509_subject;
+    X509_NAME *                         x509_subject = NULL;
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_gsi_cred_get_subject_name";
@@ -1001,6 +1013,11 @@ globus_result_t globus_gsi_cred_get_subject_name(
     result = GLOBUS_SUCCESS;
 
  error_exit:
+
+    if(x509_subject)
+    {
+        X509_NAME_free(x509_subject);
+    }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;

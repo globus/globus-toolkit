@@ -143,7 +143,7 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
             globus_libc_free(handle_attrs->ca_cert_dir);
         }
         if(handle_attrs->search_order != NULL)
-        {
+       {
             globus_libc_free(handle_attrs->search_order);
         }
 
@@ -202,17 +202,25 @@ globus_gsi_cred_handle_attrs_copy(
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS);
         goto exit;
     }
-            
-    if(((*b)->ca_cert_dir = strdup(a->ca_cert_dir)) == NULL)
+
+    if(a->ca_cert_dir)
     {
-        GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
-        goto exit;
+        if((*b)->ca_cert_dir)
+        {
+            free((*b)->ca_cert_dir);
+        }
+
+        if(((*b)->ca_cert_dir = strdup(a->ca_cert_dir)) == NULL)
+        {
+            GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
+            goto exit;
+        }
     }
 
     size = -1;
     while(a->search_order[++size] != GLOBUS_SO_END);
 
-    if(((*b)->search_order = 
+    if((!(*b)->search_order) && ((*b)->search_order = 
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
                                           * (size + 1))) == NULL)
     {
@@ -270,7 +278,13 @@ globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
              _function_name_));
         goto exit;
     }
-    
+
+    if(handle_attrs->ca_cert_dir)
+    {
+        free(handle_attrs->ca_cert_dir);
+        handle_attrs->ca_cert_dir = NULL;
+    }
+
     if((handle_attrs->ca_cert_dir = strdup(ca_cert_dir)) == NULL)
     {
         GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);

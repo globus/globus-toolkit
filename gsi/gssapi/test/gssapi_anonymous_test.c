@@ -4,6 +4,7 @@
 #include "gssapi.h"
 #include "globus_gss_assist.h"
 #include "globus_error_openssl.h"
+#include <openssl/crypto.h>
 
 void globus_print_error(globus_result_t              error_result);
 
@@ -41,10 +42,15 @@ int main()
     accept_maj_stat = GSS_S_CONTINUE_NEEDED;
     req_flags = GSS_C_ANON_FLAG|GSS_C_CONF_FLAG;
     ret_flags = 0;
+    send_tok.value = NULL;
+    recv_tok.value = NULL;
 
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
     
     /* acquire the credential */
+
+    CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ENABLE);
+    CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
 
     maj_stat = gss_acquire_cred(&min_stat,
                                 NULL,
@@ -118,6 +124,12 @@ int main()
 
     while(1)
     {
+        if(recv_tok.value)
+        {
+            free(recv_tok.value);
+            recv_tok.value = NULL;
+        }
+
         accept_maj_stat=gss_accept_sec_context(&min_stat,
                                                &accept_context,
                                                GSS_C_NO_CREDENTIAL,
@@ -146,6 +158,12 @@ int main()
         else if(accept_maj_stat == GSS_S_COMPLETE)
         {
             break;
+        }
+
+        if(send_tok.value)
+        {
+            free(send_tok.value);
+            send_tok.value = NULL;
         }
 
         init_maj_stat = gss_init_sec_context(&min_stat,
@@ -275,6 +293,8 @@ int main()
         globus_print_error((globus_result_t) min_stat);
         exit(1);
     }
+
+    
 
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
 
