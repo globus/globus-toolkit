@@ -43,15 +43,15 @@ BEGIN     { FS = ","; lastorg=0; lastou=0; }
     while(b[i] != "")
     {
         split(b[i],c,"=");
-        if(c[1] ~ /ou/)
+        if(tolower(c[1]) ~ /ou/)
         { 
             ou[lastou++]=c[2];
         }
-        else if(c[1] ~ /c/)
+        else if(tolower(c[1]) ~ /c/)
         {
             country=c[2];
         }
-        else if(c[1] ~ /o/)
+        else if(tolower(c[1]) ~ /o/)
         {
             org[lastorg++]=c[2];
         }
