@@ -59,8 +59,8 @@ CVS Information:
  *    LOCK_TOUT try to get the lock, if the file to lock is older than
  *    LOCK_TOUT*LOOP_TIME
  *    LOOPTIME is currently define as 500000 (1/2 second)
- *    If I define  LOCK_TOUT 60, I will wait the file is older than 30 seconds
- *    loked before I break the lock
+ *    If I define  LOCK_TOUT 60, I will wait until the lock file and temp file
+ *    are untouched for more than 30 locked before I break the lock.
  */
 #define LOCK_TOUT 60
 
@@ -87,27 +87,27 @@ static char globus_l_gass_cache_is_not_init;
 static char *
 globus_gass_cache_error_strings[] =
 {
-    "Success",
-    "GLOBUS_GASS_CACHE_ERROR_NO_HOME",
-    "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE",
-    "GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG",
-    "GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR",
-    "GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT",
-    "GLOBUS_GASS_CACHE_ERROR_OPEN_STATE",
-    "GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT",
-    "GLOBUS_GASS_CACHE_ERROR_NO_MEMORY",
-    "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F",
-    "GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND",
-    "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK",
-    "GLOBUS_GASS_CACHE_ERROR_WRONG_TAG",
-    "GLOBUS_GASS_CACHE_ERROR_ALREADY_DONE",
-    "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE",
-    "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_READ",
-    "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DELETE_DATA_F",
-    "GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED",
-    "GLOBUS_GASS_CACHE_ERROR_CACHE_ALREADY_OPENED",
-    "GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER",
-    "GLOBUS_GASS_CACHE_ERROR_INVALID_VERSION"
+    "success",
+    "your home directory could not be determined",
+    "the GASS cache directory or status file could not be created",
+    "the pathname of the internal cache files is too long for the system to handle",
+    "the GASS cache lock file could not be created or read",
+    "the GASS cache lock file was broken due to a time out",
+    "the GASS cache state file could not be opened for reading",
+    "the GASS cache state file is corrupt",
+    "a memory allocation failed",
+    "the local file for an URL could not be created",
+    "the URL was not found in the GASS cache",
+    "an old lock file could not be removed",
+    "the cache entry was locked using a different tag",
+    "the cache entry was not locked",
+    "the cache state could not be written",
+    "the cache state file could not be read",
+    "the local file for an URL was not being used, but could not be removed",
+    "the cache handle was invalid",
+    "the cache handle was already opened",
+    "the cache_directory_path parameter is not supported",
+    "the cache library and the cache state file have an incompatible versions"
 };
 
 
@@ -1804,7 +1804,7 @@ globus_gass_cache_open(char                *cache_directory_path,
 	strcpy(cache_handle->cache_directory_path,
 	       cache_directory_path);
 #       else
-	CACHE_TRACE("Parrameter cache_directory_path must be NULL when calling globus_gass_cache_open() in this version of GLOBUS_GASS_CACHE\n");
+	CACHE_TRACE("Parameter cache_directory_path must be NULL when calling globus_gass_cache_open() in this version of GLOBUS_GASS_CACHE\n");
 	return (GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER);
 #       endif
 
@@ -1905,7 +1905,7 @@ globus_gass_cache_open(char                *cache_directory_path,
        {
 	   globus_l_gass_cache_unlock_close(cache_handle,
 					    GLOBUS_L_GASS_CACHE_ABORT);
-	   /* marque this handle as not opened */
+	   /* mark this handle as not opened */
 	   cache_handle->init=&globus_l_gass_cache_is_not_init;
 	   
 	   return(rc);
@@ -1992,7 +1992,7 @@ Description: Create a new cache file or add a tag on it.
     The same tag can be used multiple times, in which case this tag will be
     added to the entry's tag list multiple times.
 
-    Note: It is recommended that proglobus_grams started via GLOBUS_GRAM pass a tag value
+    Note: It is recommended that programs started via GLOBUS_GRAM pass a tag value
     of getenv("GLOBUS_GRAM_JOB_CONTACT"), since upon completion of a job GLOBUS_GRAM will
     automatically cleanup entries with this tag.
 
@@ -2846,7 +2846,7 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
 	       /* just check coherence between state file and blocking file */
 	       if ( stat(notready_file_path, &file_stat) == -1 )
 	       {
-		   GLOBUS_L_GASS_CACHE_LG("State file and bloking file "
+		   GLOBUS_L_GASS_CACHE_LG("State file and blocking file "
 					  "are not coherent");
 		   globus_l_gass_cache_unlock_close(cache_handle,
 						    GLOBUS_L_GASS_CACHE_ABORT);
