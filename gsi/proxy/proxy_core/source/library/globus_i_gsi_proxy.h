@@ -240,12 +240,12 @@ typedef struct globus_l_gsi_proxy_handle_s
     EVP_PKEY *                          proxy_key;
     /** Proxy handle attributes */
     globus_gsi_proxy_handle_attrs_t     attrs;
-    /** Flag for whether the proxy is limited or not */
-    globus_bool_t                       is_limited;
     /** The proxy cert info extension used in the operations */
     PROXYCERTINFO *                     proxy_cert_info;    
     /** The number of minutes the proxy certificate is valid for */
     int                                 time_valid;
+    /** The type of the generated proxy */
+    globus_gsi_proxy_type_t             type;
 } globus_i_gsi_proxy_handle_t;
 
 

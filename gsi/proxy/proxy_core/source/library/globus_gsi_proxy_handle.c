@@ -125,7 +125,7 @@ globus_gsi_proxy_handle_init(
         }
     }
 
-    hand->is_limited = GLOBUS_FALSE;
+    hand->type = GLOBUS_GSI_PROXY_TYPE_GSI_3;
 
     result = GLOBUS_SUCCESS;
     goto exit;
@@ -465,30 +465,30 @@ globus_gsi_proxy_handle_set_private_key(
 /*@}*/
 
 /**
- * @name Get Limited Proxy State
+ * @name Get Proxy Type
  */
 /*@{*/
 /**
- * Determine whether a limited proxy will be generated when using this handle. 
+ * Determine the type of proxy that will be generated when using this handle. 
  * @ingroup globus_gsi_proxy_handle
  *
  * @param handle
- *        The handle from which to get the is_limited field
- * @param is_limited
- *        Parameter used to return the field.
+ *        The handle from which to get the type
+ * @param type
+ *        Parameter used to return the type.
  * @return
  *        GLOBUS_SUCCESS
  *
- * @see globus_gsi_proxy_handle_set_is_limited()
+ * @see globus_gsi_proxy_handle_set_type()
  */
 globus_result_t
-globus_gsi_proxy_handle_get_is_limited(
+globus_gsi_proxy_handle_get_type(
     globus_gsi_proxy_handle_t           handle,
-    globus_bool_t *                     is_limited)
+    globus_gsi_proxy_type_t *           type)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ = 
-        "globus_gsi_proxy_handle_get_is_limited";
+        "globus_gsi_proxy_handle_get_type";
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -500,41 +500,44 @@ globus_gsi_proxy_handle_get_is_limited(
         goto exit;
     }
 
-    *is_limited = handle->is_limited;
+    *type = handle->type;
 
  exit:
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* globus_gsi_proxy_handle_get_is_limited */
+/* globus_gsi_proxy_handle_get_type */
 /*@}*/
 
+
 /**
- * @name Set Limited Proxy State
+ * @name Set Proxy Type
  */
 /*@{*/
 /**
- * Set the limited proxy flag for this handle
+ * Set the type of proxy that will be generated when using this handle. Note
+ * that this will have no effect when generating a proxy from a proxy. In that
+ * case the generated proxy will inherit the type of the parent.
  * @ingroup globus_gsi_proxy_handle
  *
  * @param handle
- *        The handle for which to set the is_limited field
- * @param is_limited
- *        Parameter used to pass the value to be set
+ *        The handle for which to set the type
+ * @param type
+ *        Parameter used to pass the type.
  * @return
  *        GLOBUS_SUCCESS
  *
- * @see globus_gsi_proxy_handle_get_is_limited()
+ * @see globus_gsi_proxy_handle_set_type()
  */
 globus_result_t
-globus_gsi_proxy_handle_set_is_limited(
+globus_gsi_proxy_handle_set_type(
     globus_gsi_proxy_handle_t           handle,
-    globus_bool_t                       is_limited)
+    globus_gsi_proxy_type_t             type)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ = 
-        "globus_gsi_proxy_handle_set_is_limited";
+        "globus_gsi_proxy_handle_set_type";
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
     if(!handle)
@@ -546,14 +549,14 @@ globus_gsi_proxy_handle_set_is_limited(
         goto exit;
     }
 
-    handle->is_limited = is_limited;
+    handle->type = type;
 
  exit:
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* globus_gsi_proxy_handle_set_is_limited */
+/* globus_gsi_proxy_handle_set_type */
 /*@}*/
 
 /**
