@@ -50,7 +50,8 @@ Southern California. All Rights Reserved.
   <property name="schema.origin" value="${ogsacore.javadir}/schema"/>
   <property name="package.dir" value="reliabletransfer"/>
   <property name="build.packages" value="${ogsacore.javadir}/build-packages.xml"/>
-  
+  <property name="etc.dir" value="./etc"/>
+
   <!-- properties for testing -->
   <property name="test.report.dir" value="test-report"/>
   <!-- =================================================================== -->
@@ -159,15 +160,20 @@ Southern California. All Rights Reserved.
       <property name="garschema.origin" value="./schema/base/reliabletransfer"/>
       <property name="garschema.path" value="base/reliabletransfer"/>
     </ant>
+    <ant antfile="${ogsacore.javadir}/build-packages.xml" target="addDocs">
+        <property name="docs.dir" value="docs"/>
+         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>      
+    </ant>
+    <ant antfile="${ogsacore.javadir}/build-packages.xml" target="addEtc">
+        <property name="etc.dir" value="etc"/>
+         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>      
+    </ant>    
+
   </target>
 
  <!-- deploys the gar -->
    <target name="deployGar" depends="gar">
     
-    <ant antfile="${ogsacore.javadir}/build-packages.xml" target="addDocs">
-        <property name="docs.dir" value="docs"/>
-         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>      
-    </ant>
 
        <copy todir="${ogsacore.javadir}/lib" file="${build.lib}/${package.dir}.gar"/>
        <ant antfile="${ogsacore.javadir}/build-packages.xml" target="deployClientServerGar" dir="${ogsacore.javadir}">
