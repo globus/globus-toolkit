@@ -243,12 +243,6 @@ sub fixpaths
         "/etc/sshrc" => "${sysconfdir}/sshrc",
         "/usr/X11R6/bin/xauth" => "${xauth_path}",
         "/usr/bin:/bin:/usr/sbin:/sbin" => "/usr/bin:/bin:/usr/sbin:/sbin:${bindir}",
-        "(/path/to/scp.real)" => "${bindir}/scp.real",
-        "(/path/to/ssh)" => "${bindir}/ssh",
-        "(/path/to/sftp.real)" => "${bindir}/sftp.real",
-        "(/path/to/sshd.real)" => "${sbindir}/sshd.real",
-        "(/path/to/ssh_config)" => "${sysconfdir}/ssh_config",
-        "(/path/to/sshd_config)" => "${sysconfdir}/sshd_config",
         );
 
     #
@@ -256,9 +250,6 @@ sub fixpaths
     #
 
     %files = (
-        "${bindir}/scp" => 0,
-        "${bindir}/sftp" => 0,
-        "${sbindir}/sshd" => 0,
         "${sysconfdir}/ssh_config" => 1,
         "${sysconfdir}/sshd_config" => 1,
         "${sysconfdir}/moduli" => 1,
@@ -381,6 +372,16 @@ $metadata->finish();
 
 print "\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
+print "\n";
+print "You are required to set the following variables in your environment\n";
+print "to ensure that the gsi_ssh package works correctly:\n";
+print "\n";
+print "\$GSI_SCP_LOC = \"${bindir}/scp.real\"\n";
+print "\$GSI_SFTP_LOC = \"${bindir}/sftp.real\"\n";
+print "\$GSI_SSH_LOC = \"${bindir}/ssh\"\n";
+print "\$GSI_SSHD_LOC = \"${sbindir}/sshd.real\"\n";
+print "\$GSI_SSH_CONFIG_LOC = \"${sysconfdir}/ssh_config\"\n";
+print "\$GSI_SSHD_CONFIG_LOC = \"${sysconfdir}/sshd_config\"\n";
 print "---------------------------------------------------------------\n";
 
 #
