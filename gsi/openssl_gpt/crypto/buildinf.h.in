@@ -1,0 +1,12 @@
+
+#ifndef CC
+#   define CC "@CC@"
+#endif
+
+#ifndef CFLAGS
+#   define CFLAGS "@CFLAGS@"
+#endif
+
+#ifndef HOST
+#   define HOST "@host@"
+#endif
