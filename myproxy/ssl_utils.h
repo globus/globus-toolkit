@@ -13,24 +13,24 @@ struct _ssl_proxy_restrictions;
 typedef struct _ssl_proxy_restrictions SSL_PROXY_RESTRICTIONS;
 
 /*
- * ssl_destroy_credentials()
+ * ssl_credentials_destroy()
  *
  * Destroys the given credentials, deallocating all memory
  * associated with them.
  */
-void ssl_destroy_credentials(SSL_CREDENTIALS *creds);
+void ssl_credentials_destroy(SSL_CREDENTIALS *creds);
 
 
 /*
- * ssl_load_certificate()
+ * ssl_certificate_load_from_file()
  *
  * Load a certificate from the given file into the given set of
  * credentials. Any existing certificate will be erased.
  *
  * Returns 0 on success, -1 on error setting verror.
  */
-int ssl_load_cert(SSL_CREDENTIALS		*creds,
-		  const char			*path);
+int ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
+				   const char		*path);
 
 /*
  * ssl_load_private_key()
@@ -41,12 +41,12 @@ int ssl_load_cert(SSL_CREDENTIALS		*creds,
  *
  * Returns 0 on success, -1 on error.
  */
-int ssl_load_private_key(SSL_CREDENTIALS	*creds,
-			 const char		*path,
-			 const char		*pass_phrase);
+int ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
+				   const char		*path,
+				   const char		*pass_phrase);
 
 /*
- * ssl_load_proxy()
+ * ssl_proxy_load_from_file()
  *
  * Load a proxy certificate and key from the given file, using pass_phrase
  * if needed, and storing the credentials in the given SSL_CREDENTIALS
@@ -55,9 +55,9 @@ int ssl_load_private_key(SSL_CREDENTIALS	*creds,
  *
  * Returns 0 on success, -1 on error.
  */
-int ssl_load_proxy(SSL_CREDENTIALS		*creds,
-		   const char			*path,
-		   const char			*pass_phrase);
+int ssl_proxy_load_from_file(SSL_CREDENTIALS		*creds,
+			     const char			*path,
+			     const char			*pass_phrase);
 
 /*
  * ssl_new_credentials()
@@ -66,13 +66,14 @@ int ssl_load_proxy(SSL_CREDENTIALS		*creds,
  *
  * Returns NULL on error.
  */
-SSL_CREDENTIALS *ssl_new_credentials();
+SSL_CREDENTIALS *ssl_credentials_new();
 
 /*
  *
- * ssl_proxy_request_init()
+ * ssl_proxy_buffer_init()
  *
- * Generate a request for a proxy.
+ * Generate a request for a proxy in a buffer suitable for
+ * shipping over the network.
  *
  * pcreds will be filled in with the private key and should be
  * passed to ssl_accept_proxy() to be filled in with the
@@ -94,17 +95,18 @@ SSL_CREDENTIALS *ssl_new_credentials();
  *
  * Returns 0 on success, -1 on error.
  */
-int ssl_proxy_request_init(SSL_CREDENTIALS	**new_creds,
-			   unsigned char	**buffer,
-			   int			*buffer_length,
-			   int			requested_bits,
-			   void			(*callback)(int,int,char *));
+int ssl_proxy_buffer_init(SSL_CREDENTIALS	**new_creds,
+			  unsigned char		**buffer,
+			  int			*buffer_length,
+			  int			requested_bits,
+			  void			(*callback)(int,int,char *));
 
 
 /*
- * ssl_proxy_request_finalize()
+ * ssl_proxy_buffer_finalize()
  *
- * Finalize the process of getting a proxy certificate.
+ * Finalize the process of getting a proxy certificate using
+ * buffers in a form suitable for shipping over the network.
  *
  * creds should be the credentials originally obtained from
  * ssl_proxy_request_init()
@@ -113,14 +115,16 @@ int ssl_proxy_request_init(SSL_CREDENTIALS	**new_creds,
  *
  * buffer_len should be the length of buffer.
  */
-int ssl_proxy_request_finalize(SSL_CREDENTIALS	*creds,
-			       unsigned char	*buffeer,
-			       int		buffer_length);
+int ssl_proxy_buffer_finalize(SSL_CREDENTIALS	*creds,
+			      unsigned char	*buffer,
+			      int		buffer_length);
 
 /*
- * ssl_proxy_request_sign()
+ * ssl_proxy_buffer_sign()
  *
  * Sign a proxy request and generate a proxy certificate.
+ * Input and output are buffers suitable for shipping over
+ * the network.
  *
  * creds contains the credentials used the sign the request.
  *
@@ -142,12 +146,12 @@ int ssl_proxy_request_finalize(SSL_CREDENTIALS	*creds,
  *
  * Returns 0 on success, -1 on error.
  */
-int ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
-			   SSL_PROXY_RESTRICTIONS	*restrictions,
-			   unsigned char		*request_buffer,
-			   int				request_buffer_length,
-			   unsigned char		**proxy_buffer,
-			   int				*proxy_buffer_length);
+int ssl_proxy_buffer_sign(SSL_CREDENTIALS		*creds,
+			  SSL_PROXY_RESTRICTIONS	*restrictions,
+			  unsigned char			*request_buffer,
+			  int				request_buffer_length,
+			  unsigned char			**proxy_buffer,
+			  int				*proxy_buffer_length);
 
 			   
 #endif /* _SSL_UTILS_H */
