@@ -222,4 +222,38 @@
         }                                                                   \
     } while(0)
 
+#define GlobusIXIOSystemTransferAdjustedIovec(                              \
+    new_iov, new_iovc, iov, iovc, nbytes)                                   \
+    do                                                                      \
+    {                                                                       \
+        globus_ssize_t                  _n;                                 \
+        struct iovec *                  _iov;                               \
+        int                             _iovc;                              \
+        struct iovec *                  _new_iov;                           \
+        int                             _i;                                 \
+        int                             _j;                                 \
+        int                             _k;                                 \
+                                                                            \
+        _n = (nbytes);                                                      \
+        _iov = (iov);                                                       \
+        _iovc = (iovc);                                                     \
+        _new_iov = (new_iov);                                               \
+                                                                            \
+        /* skip all completely filled iovecs */                             \
+        for(_i = 0, _n = rc;                                                \
+            _i < _iovc &&  _n >= _iov[_i].iov_len;                          \
+            _n -= _iov[_i].iov_len, _i++);                                  \
+                                                                            \
+        /* copy remaining */                                                \
+        for(_k = 0, _j = _i; _j < _iovc; _k++, _j++)                        \
+        {                                                                   \
+            _new_iov[_k].iov_base = _iov[_j].iov_base;                      \
+            _new_iov[_k].iov_len = _iov[_j].iov_len;                        \
+        }                                                                   \
+                                                                            \
+        _new_iov[0].iov_base = (char *) _iov[_i].iov_base + _n;             \
+        _new_iov[0].iov_len -= _n;                                          \
+        (new_iovc) = _iovc - _i;                                            \
+    } while(0)
+
 #endif
