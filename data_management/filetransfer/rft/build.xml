@@ -50,9 +50,7 @@ Southern California. All Rights Reserved.
   <property name="schema.origin" value="${ogsacore.javadir}/schema"/>
   <property name="package.dir" value="reliabletransfer"/>
   <property name="build.packages" value="${ogsacore.javadir}/build-packages.xml"/>
-  <property name="test-reports.dir" value="test-reports"/>
-  <property name="jobManager.properties" value="jmDatabase.properties"/>
-
+ 
   <!-- =================================================================== -->
   <!-- Determine what dependencies are present                             -->
   <!-- =================================================================== -->
@@ -113,15 +111,13 @@ Southern California. All Rights Reserved.
       <arg value="-Nhttp://www.gridforum.org/namespaces/2002/10/gridServices=org.gridforum.ogsa"/>
       <arg value="reliable_transfer_service.wsdl"/>
     </java>
-
-
   </target>
 
 
   <!-- =================================================================== -->
   <!-- Compiles the source directory                                       -->
   <!-- =================================================================== -->
-  <target name="compile" > <!-- depends="stubs"> -->
+  <target name="compile" depends="stubs">
     <mkdir dir="${build.dest}" />
 
     <javac srcdir="${src.dir}" destdir="${build.dest}" debug="${debug}"
@@ -132,7 +128,7 @@ Southern California. All Rights Reserved.
     </javac>
   </target> 
 
-  <target name="jar" depends="compile">
+   <target name="jar" depends="compile">
     <jar jarfile="${build.lib}/${jarname}.jar" basedir="${build.dest}" >
     <!-- ben: warning here if you aren't a .org domain! -->
       <include name="org/**" />
@@ -146,16 +142,6 @@ Southern California. All Rights Reserved.
   <!-- =================================================================== -->
   <target name="all" depends="compile, jar"/>
 
-  <!-- =================================================================== -->
-  <!-- Compiles the JUnit testcases -->
-  <!-- =================================================================== -->
-
-  <path id="test-classpath">
-    <pathelement location="${build.dest}" />
-    <path refid="classpath"/>
-  </path>
-
-
   <!-- Gar Packaging -->
   <target name="gar" depends="jar">
     <copy todir="${build.lib}">
@@ -164,7 +150,6 @@ Southern California. All Rights Reserved.
       </fileset>
     </copy>
     <ant antfile="${ogsacore.javadir}/build-packages.xml" target="makeClientServerGar">
-    <!-- <ant antfile="${build.packages}" target="makeGar"> -->
       <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
       <property name="garlib.dir" value="${build.lib}"/>
       <property name="garserverdeployment.file" value="${package.dir}-server-config.wsdd"/>
@@ -174,22 +159,26 @@ Southern California. All Rights Reserved.
     </ant>
   </target>
 
+ <!-- deploys the gar -->
+   <target name="deployGar" depends="gar">
+       <copy todir="${ogsacore.javadir}/lib" file="${build.lib}/${package.dir}.gar"/>
+       <ant antfile="${ogsacore.javadir}/build-packages.xml" target="deployClientServerGar" dir="${ogsacore.javadir}">
+         <reference refid="classpath" torefid="classpath"/>
+         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>       
+       </ant>
+
+   </target>
+
   <!-- =================================================================== -->
   <!-- Cleans everything                                                   -->
   <!-- =================================================================== -->
   <target name="clean">
     <antcall target="cleanBuild"/>
-    <delete dir="${test-reports.dir}"/>
     <delete dir="${stubs.dir}"/>
   </target>
 
   <target name="cleanBuild">
     <delete dir="${build.dir}"/>
   </target>
-
-  <!--
-  <property file="build.properties"/>
-  <property file="${user.home}/build.properties"/>
-  -->
 
 </project>
