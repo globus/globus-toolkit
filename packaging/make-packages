@@ -16,6 +16,7 @@ usage () {
 	echo
 	echo "$0 -p \"p1 p2 ...\" 	Build packages p1, p2, ..."
 	echo "$0 -t my_tag	Use \"-r my_tag\" in cvs commands"
+	echo "$0 -t2 gt2_tag -t3 gt3_tag	Use two different tags"
 	echo "$0 -i dir		Install into dir"
 	echo "$0 -r		Make a release candidate.  Requires -i"
 	echo "$0 -n 		Don't update the CVS checkout"
@@ -107,11 +108,23 @@ checkout_cvs_generic() {
 
 # Checkout GT3 cvs
 checkout_cvs() {
-	checkout_cvs_generic /home/globdev/CVS/gridservices ogsa-cvs all $tag
+	if [ x${gt3tag} != "x" ]; then
+		mytag=$gt3tag
+	else
+		mytag="$tag"
+	fi
+
+	checkout_cvs_generic /home/globdev/CVS/gridservices ogsa-cvs all $mytag
 }
 
 checkout_cvs_gt2() {
-	checkout_cvs_generic /home/globdev/CVS/globus-packages gt2-cvs all $tag
+	if [ x${gt2tag} != "x" ]; then
+		mytag = $gt2tag
+	else
+		mytag = "$tag"
+	fi
+
+	checkout_cvs_generic /home/globdev/CVS/globus-packages gt2-cvs all $mytag
 }
 
 checkout_cvs_gt2_autotools() {
@@ -438,6 +451,8 @@ read_args() {
 	package=""
 	release=-1
 	tag=""
+	gt2tag=""
+	gt3tag=""
 	gt2_branch="HEAD"
 	update=1
 	anonymous=0
@@ -448,6 +463,12 @@ read_args() {
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
 			export tag=$2;
+			shift; shift;
+		elif [ $1 = "-t2" ]; then
+			export gt2tag=$2;
+			shift; shift;
+		elif [ $1 = "-t3" ]; then
+			export gt3tag=$2;
 			shift; shift;
 		elif [ $1 = "-r" ]; then
 			release=1;
