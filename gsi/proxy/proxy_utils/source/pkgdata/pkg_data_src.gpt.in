@@ -63,7 +63,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_proxy_core">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -117,7 +117,7 @@
             </Dependency>
             <Dependency Name="globus_gsi_proxy_core">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
