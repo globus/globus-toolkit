@@ -1,0 +1,146 @@
+.\"-------
+.\" Dd	distance to space vertically before a "display"
+.\" These are what n/troff use for interparagraph distance
+.\"-------
+.if t .nr Dd .4v
+.if n .nr Dd 1v
+.\"-------
+.\" Sp	space down the interparagraph distance
+.\"-------
+.de Sp
+.sp \\n(Ddu
+..
+.\"-------
+.\" Ds	begin a display, indented .5 inches from the surrounding text.
+.\"
+.\" Note that uses of Ds and De may NOT be nested.
+.\"-------
+.de Ds
+.Sp
+.in +0.5i
+.nf
+..
+.\"-------
+.\" De	end a display (no trailing vertical spacing)
+.\"-------
+.de De
+.fi
+.in
+..
+.\"-------
+.\" Xs	begin a display 
+.\"
+.\" Note that uses of Ds and De may NOT be nested.
+.\"-------
+.de Xs
+.Sp
+.nf
+..
+.\"-------
+.\" Xe	end a display (no trailing vertical spacing)
+.\"-------
+.de Xe
+.fi
+.in
+..
+.TH Strn 3 "" "West Interactive Corporation"
+.SH NAME
+Strncpy(), Strncat() - Safe string copying functions
+.SH "SYNOPSIS"
+.Xs
+cc \-I/usr/src/include \. \. \. \-L/usr/src/lib -lStrn
+
+#include <string.h>
+#include <Strn.h>
+
+char *Strncpy(char *dst, char *src, size_t max);
+
+char *Strncat(char *dst, char *src, size_t max);
+.Xe
+
+.\"-------
+.SH "DESCRIPTION"
+.\"-------
+.PP
+The
+.I Strn
+library provides bounds-safe versions of string copying and concatenation
+functions.
+These are useful with fixed length character arrays because the functions
+will not overwrite past the end of the array, unlike
+.IR strcat " or " "strncat" "."
+The functions also guarantee that a string is nul-terminated, unlike
+.IR strncpy " or " "strncat" "."
+.PP
+For example:
+.Ds
+char bar1[8], foo[8], bar2[8];
+
+.De
+In the following block, Strncpy correctly sets this to "hello w",
+using seven characters + a nul terminator, so the array is full and
+nul-terminated.
+.Ds
+Strncpy(foo, "hello world", sizeof(foo));
+
+.De
+strncpy will write 8 characters, but it won't nul-terminate.
+If you tried to print "foo" you would get "hello wo" and garbage.
+.Ds
+strncpy(foo, "hello world", sizeof(foo));
+
+.De
+These cooperate to guarantee that the bounds of "foo" are not violated.
+Here, you would get "hello" and then "hello w".
+.Ds
+Strncpy(foo, "hello", sizeof(foo));
+Strncat(foo, " world", sizeof(foo));
+
+.De
+These two would overflow, with this usage.
+The strncpy would work, but then the strncat would happily write
+past the end of foo.
+.Ds
+strncpy(foo, "hello", sizeof(foo));
+strncat(foo, " world", sizeof(foo));
+
+.De
+To get the result I want, I would have
+to do this, which with all the extra
+overhead in the third argument is unacceptable.
+.Ds
+strncpy(foo, "hello", sizeof(foo));
+strncat(foo, " world", sizeof(foo) - strlen(foo) - 1);
+
+.De
+In actual use, you don't usually call
+.IR Strncpy " or " Strncat " directly."
+The library's header file includes two macros which fill in the third
+argument with sizeof(dst) for you.
+That way, they can be used as direct replacements of
+.IR strcpy " and " strcat
+most of the time:
+.Ds
+char fullName[32];
+
+strcpy(fullName, firstName);
+strcat(fullName, " ");
+strcat(fullName, lastName);
+
+.De
+This can be transformed into the following, and you can rest assured
+that you won't trash the stack if for some reason "firstName" + "lastName"
+would exceed the bounds of "fullName."
+.Ds
+STRNCPY(fullName, firstName);
+STRNCAT(fullName, " ");
+STRNCAT(fullName, lastName);
+.De
+.\"-------
+.SH "SEE ALSO"
+.\"-------
+.IR strcpy (3),
+.IR strncpy (3),
+.IR strcat (3),
+.IR strncat (3),
+.IR sprintf (3).

@@ -1,0 +1,34 @@
+#! @SH@
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+globus_source ${libexecdir}/globus-sh-tools.sh
+
+
+progname=`echo "$0" | ${GLOBUS_SH_SED-sed} -e 's|.*/||'`
+
+short_usage="$progname [-help] [-usage] [-version] <GASS-URL>"
+
+long_usage ()
+{
+    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+
+Syntax: ${short_usage}
+
+    Allows the user to shut down a (remotely) running GASS server, started
+    with client-shutdown permissions (option -c).
+
+    Options:
+    -help, -usage        Displays usage
+    -version             Displays version
+    
+EOF
+}
+
+globus_source ${libexecdir}/globus-args-parser-header
+
+if [ "$#" -ne 1 ]; then
+    globus_args_option_error "" "GASS URL must be provided"
+fi
+
+${bindir}/globus-url-copy file:/dev/null "$1"/dev/globus_gass_client_shutdown > /dev/null 2>&1
+

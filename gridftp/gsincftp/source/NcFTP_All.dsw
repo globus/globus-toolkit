@@ -1,0 +1,218 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "NcFTP_All"=.\NcFTP_All.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name bmed
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libncftp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ncftp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ncftpbatch
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ncftpget
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ncftpls
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ncftpput
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sio
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Strn
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "Strn"=.\Strn\Strn.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "bmed"=.\win\bmed\bmed.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Strn
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "libncftp"=.\libncftp\libncftp.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name sio
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Strn
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "ncftp"=.\ncftp\ncftp.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libncftp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sio
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Strn
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "ncftpbatch"=.\sh_util\ncftpbatch.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libncftp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sio
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Strn
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "ncftpget"=.\sh_util\ncftpget.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libncftp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sio
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Strn
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "ncftpls"=.\sh_util\ncftpls.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libncftp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sio
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Strn
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "ncftpput"=.\sh_util\ncftpput.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name libncftp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sio
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Strn
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "sio"=.\sio\sio.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

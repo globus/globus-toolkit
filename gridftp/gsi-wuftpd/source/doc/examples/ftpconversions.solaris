@@ -1,0 +1,2 @@
+ :.Z:  :  :/usr/bin/compress -d -c %s:T_REG|T_ASCII:O_UNCOMPRESS:UNCOMPRESS
+ :   : :.Z:/usr/bin/compress -c %s:T_REG:O_COMPRESS:COMPRESS
