@@ -4439,7 +4439,7 @@ void retrieve(char *cmd, char *name, int offset, int length)
                                        offset, st.st_blksize * 2, length);
 #           else
                 TransferComplete = G_SEND_DATA(name, fin, 
-                                       &g_data_handle, offset, BUFSIZ);
+                                       &g_data_handle, offset, BUFSIZ, length);
 #           endif
 #       endif
     }

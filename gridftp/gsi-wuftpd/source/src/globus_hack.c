@@ -444,8 +444,8 @@ g_send_data(
             res = globus_ftp_control_data_write(
                       handle,
                       buf,
-                      cnt + offset,
-                      jb_count,
+                      cnt,
+                      jb_count + offset,
                       eof,
                       data_write_callback,
                       &g_monitor);
