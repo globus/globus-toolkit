@@ -16,6 +16,12 @@ fi
 
 GPT_INIT
 
+#extract whether the package is built with flavors from the src metadata
+$GPT_LOCATION/sbin/gpt_extract_data --build $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
+
+. ./tmpfile.gpt
+rm ./tmpfile.gpt
+
 if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
         GLOBUS_FLAVOR_NAME="noflavor"
 fi
