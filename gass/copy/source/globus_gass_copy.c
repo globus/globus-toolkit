@@ -1407,7 +1407,8 @@ globus_l_gass_copy_io_setup_get(
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
       printf("io_setup_get(): handle should already have been  opened by the user\n");
 #endif
-    state->source.status = GLOBUS_I_GASS_COPY_TARGET_READY;
+        state->source.status = GLOBUS_I_GASS_COPY_TARGET_READY;
+        result=GLOBUS_SUCCESS;
     }
 
     return result;
@@ -1461,6 +1462,7 @@ globus_l_gass_copy_io_setup_put(
       printf("io_setup_put(): handle should already have been  opened by the user\n");
 #endif   
       state->dest.status = GLOBUS_I_GASS_COPY_TARGET_READY;
+      result=GLOBUS_SUCCESS;
     }
 
     return result;
@@ -2984,6 +2986,7 @@ globus_gass_copy_register_handle_to_url(
     if(source_handle == GLOBUS_NULL)
 	goto error_exit;
     if(dest_url == GLOBUS_NULL)
+	goto error_exit;
 	
     result = globus_gass_copy_get_url_mode(
 	dest_url,
