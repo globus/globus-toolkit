@@ -34,10 +34,12 @@ CVS Information:
 #define GLOBUS_L_GASS_CACHE_STATE_F_TEMP        "/globus_gass_cache_state.temp"
 #define GLOBUS_L_GASS_CACHE_LOCK_EXT            ".lock"
 
-/* 10 char are enought to code the nb of second for 100 years ...            */
-#define GLOBUS_L_GASS_CACHE_FILENAME(str) sprintf((str),"%s/globus_gass_cache_%-i",\
+/* 10 char are enough to code the nb of second for 100 years ...            */
+#define GLOBUS_L_GASS_CACHE_FILENAME(str) sprintf((str),"%s/globus_gass_cache_%-i_%i_%i",\
 					 cache_handle->cache_directory_path,\
-					 (int) time(GLOBUS_NULL))
+					 (int) time(GLOBUS_NULL), \
+					 (int) globus_l_gass_cache_pid, \
+					 globus_l_gass_cache_fn_fudge++)
 
 /* !! this variable must contain the lenght of the longer name used in       */
 /* the cache including cache files, state files and lock files.              */
