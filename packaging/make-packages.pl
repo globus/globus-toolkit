@@ -889,16 +889,7 @@ sub package_source_gpt()
 
 	print "Following GPT packaging for $package.\n";
 
-	if ( $package eq "globus_openssl" or
-	     $package eq "globus_gsoap_soapcpp2" or
-	     $package eq "globus_gsoap_stdsoap2" or
-	     $package eq "ogsa_core_grid_service" or
-	     $package eq "ogsa_core_handle" or
-	     $package eq "globus_ogsi_types_bindings" or
-	     $package eq "globus_ogsa_security_authentication_bindings" or
-#	     $package eq "globus_ogsa_security_authentication" or
-	     $package eq "globus_ogsa_samples_counter_bindings" or
-	     $package eq "globus_ogsa_base_gram_mj_bindings")
+	if ( $package eq "globus_openssl" ) 
 	{
 	    print "\tUsing openssl_tools version of autotools.\n";
 	    my $OPATH = $ENV{PATH};
