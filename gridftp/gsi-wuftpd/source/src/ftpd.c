@@ -1072,18 +1072,6 @@ int i = 0;
 
 #ifdef GSSAPI
     gssapi_setup_environment();
-
-#ifdef GLOBUS_AUTHORIZATION
-    if (!ftp_authorization_initialize(my_hostname,
-				      ftp_authorization_error_buffer,
-                                      sizeof(ftp_authorization_error_buffer)))
-    {
-        syslog(LOG_ERR,
-               "Could not initialize ftp authorization code: %s",
-               ftp_authorization_error_buffer);
-        exit(1);
-    } 
-#endif /* GLOBUS_AUTHORIZATION */
 #endif /* GSSAPI */
 
     setup_paths();
@@ -1125,6 +1113,18 @@ int i = 0;
     data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
     data_source.sin_port = 0;
 #endif /* DAEMON */
+    
+#ifdef GLOBUS_AUTHORIZATION
+    if (!ftp_authorization_initialize(my_hostname,
+				      ftp_authorization_error_buffer,
+                                      sizeof(ftp_authorization_error_buffer)))
+    {
+        syslog(LOG_ERR,
+               "Could not initialize ftp authorization code: %s",
+               ftp_authorization_error_buffer);
+        exit(1);
+    } 
+#endif /* GLOBUS_AUTHORIZATION */
 
     /* Try to handle urgent data inline */
 #ifdef SO_OOBINLINE
