@@ -17,7 +17,6 @@ AC_OUTPUT(
         pkgdata/pkg_data_src.gpt
 	library/Makefile
 	library/oldgaa/Makefile
-        library/oldgaa/config.h
 	doxygen/Makefile
 	doxygen/Doxyfile 
 	doxygen/Doxyfile-internal

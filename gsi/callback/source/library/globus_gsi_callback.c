@@ -10,6 +10,7 @@
  */
 #endif
 
+#include "proxycertinfo.h"
 #include "globus_gsi_callback_constants.h"
 #include "globus_i_gsi_callback.h"
 #include "globus_gsi_system_config.h"
@@ -19,6 +20,7 @@
 #include <openssl/crypto.h>
 #include <openssl/rand.h>
 #include <openssl/x509v3.h>
+#include "version.h"
 
 #ifndef BUILD_FOR_K5CERT_ONLY
 #ifndef NO_OLDGAA_API
@@ -29,7 +31,101 @@
 #endif
 #endif
 
-extern int globus_gsi_proxycertinfo_extension_NID;
+static int globus_l_gsi_callback_activate(void);
+static int globus_l_gsi_callback_deactivate(void);
+
+int                              globus_i_gsi_callback_debug_level   = 0;
+FILE *                           globus_i_gsi_callback_debug_fstream = NULL;
+
+/**
+ * Module descriptor static initializer.
+ */
+globus_module_descriptor_t globus_i_gsi_callback_module =
+{
+    "globus_module",
+    globus_l_gsi_callback_activate,
+    globus_l_gsi_callback_deactivate,
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
+};
+
+/**
+ * Module activation
+ */
+static
+int
+globus_l_gsi_callback_activate(void)
+{
+    int                                 result;
+    char *                              tmp_string;
+    static char *                       _function_name_ =
+        "globus_l_gsi_callback_activate";
+
+    tmp_string = globus_module_getenv("GLOBUS_GSI_CALLBACK_DEBUG_LEVEL");
+    if(tmp_string != GLOBUS_NULL)
+    {
+        globus_i_gsi_callback_debug_level = atoi(tmp_string);
+        
+        if(globus_i_gsi_callback_debug_level < 0)
+        {
+            globus_i_gsi_callback_debug_level = 0;
+        }
+    }
+
+    tmp_string = globus_module_getenv("GLOBUS_GSI_CALLBACK_DEBUG_FILE");
+    if(tmp_string != GLOBUS_NULL)
+    {
+        globus_i_gsi_callback_debug_fstream = fopen(tmp_string, "w");
+        if(globus_i_gsi_callback_debug_fstream == NULL)
+        {
+            result = GLOBUS_NULL;
+            goto exit;
+        }
+    }
+    else
+    {
+        globus_i_gsi_callback_debug_fstream = stderr;
+    }
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+
+    OpenSSL_add_all_algorithms();
+
+ exit:
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+/**
+ * Module deactivation
+ */
+static
+int
+globus_l_gsi_callback_deactivate(void)
+{
+    int                                 result;
+    static char *                       _function_name_ =
+        "globus_l_gsi_callback_deactivate";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    EVP_cleanup();
+
+    globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+
+    if(globus_i_gsi_callback_debug_fstream != stderr)
+    {
+        fclose(globus_i_gsi_callback_debug_fstream);
+    }
+
+    return result;
+}
 
 static int globus_i_gsi_callback_SSL_callback_data_index = -1;
 static int globus_i_gsi_callback_X509_STORE_callback_data_index = -1;
@@ -892,9 +988,10 @@ globus_i_gsi_callback_check_critical_extensions(
     ASN1_OBJECT *                       extension_object = NULL;
     X509_EXTENSION *                    extension = NULL;
     int                                 nid;
+    int                                 pci_NID;
     int                                 critical_position = -1;
     globus_result_t                     result;
-    static char *                       _function_name_ =
+   static char *                       _function_name_ =
         "globus_i_gsi_callback_check_extensions";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
@@ -922,21 +1019,23 @@ globus_i_gsi_callback_check_critical_extensions(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                 ("Couldn't get object form of X509 extension for "
-                 "the certificate being verified"));
+                 "the certificate being verified."));
             x509_context->error = X509_V_ERR_CERT_REJECTED;
             goto exit;
         }
 
         nid = OBJ_obj2nid(extension_object);
-            
-        if(globus_gsi_proxycertinfo_extension_NID == 0)
+        if(nid == NID_undef)
         {
-            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
-                GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
+                GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                ("Couldn't get NID from the ASN1_OBJECT extension "
+                 "contained in the certificate being verified."));
             x509_context->error = X509_V_ERR_CERT_REJECTED;
-            goto exit;
         }
+
+        pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
 
         if(nid != NID_basic_constraints &&
            nid != NID_key_usage &&
@@ -944,7 +1043,7 @@ globus_i_gsi_callback_check_critical_extensions(
            nid != NID_netscape_cert_type &&
            nid != NID_subject_key_identifier &&
            nid != NID_authority_key_identifier &&
-           nid != globus_gsi_proxycertinfo_extension_NID)
+           nid != pci_NID)
         {
             if(callback_data->extension_cb)
             {

@@ -35,7 +35,7 @@ globus_gsi_callback_data_init(
         goto exit;
     }
 
-    *callback_data = globus_libc_malloc(sizeof(globus_i_gsi_callback_data_t));
+    *callback_data = malloc(sizeof(globus_i_gsi_callback_data_t));
     if(*callback_data == NULL)
     {
         result = globus_error_put(
@@ -66,6 +66,11 @@ globus_gsi_callback_data_destroy(
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
+    if(!callback_data)
+    {
+        goto exit;
+    }
+
     if(callback_data->cert_chain)
     {
         sk_pop_free(callback_data->cert_chain, (void(*)(void *))X509_free);
@@ -83,6 +88,7 @@ globus_gsi_callback_data_destroy(
     globus_libc_free(callback_data);
     callback_data = NULL;
 
+ exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }   
