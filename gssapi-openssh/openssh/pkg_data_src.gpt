@@ -44,9 +44,7 @@
     <Build_Instructions>
 
       <Build_Step>
-        . $GLOBUS_LOCATION/libexec/globus-build-env-FLAVOR_GPTMACRO.sh
-
-        ./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO GSI_OPENSSH_GPTMACRO
+        CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO GSI_OPENSSH_GPTMACRO
       </Build_Step>
 
       <Build_Step>
