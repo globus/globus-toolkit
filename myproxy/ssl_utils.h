@@ -41,6 +41,14 @@ typedef struct _ssl_proxy_restrictions SSL_PROXY_RESTRICTIONS;
  */
 void ssl_credentials_destroy(SSL_CREDENTIALS *creds);
 
+/*
+ * ssl_proxy_file_destroy()
+ *
+ * Fill the proxy file with zeros and unlink.
+ *
+ * Returns SSL_SUCCESS or SSL_ERROR, setting verror.
+ */
+int ssl_proxy_file_destroy(const char *path);
 
 /*
  * ssl_certificate_load_from_file()
