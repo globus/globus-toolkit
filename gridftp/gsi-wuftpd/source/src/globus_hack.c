@@ -142,12 +142,23 @@ wu_monitor_destroy(
     globus_cond_destroy(&mon->cond);
 }
 
+static int
+g_timeout_wakeup(
+    globus_abstime_t *                           time_stop,
+    void *                                       user_args)
+{
+    return GLOBUS_TRUE;
+}
+
 void
 g_start()
 {
     char *                            a;
     globus_ftp_control_host_port_t    host_port;
     globus_result_t                   res;
+    globus_reltime_t                  delay_time;
+    globus_reltime_t                  period_time;
+
 
     res = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
     assert(res == GLOBUS_SUCCESS);
@@ -166,6 +177,18 @@ g_start()
               &g_data_handle,
               &host_port);
     assert(res == GLOBUS_SUCCESS);
+
+    GlobusTimeReltimeSet(delay_time, 0, 0);
+    GlobusTimeReltimeSet(period_time, 0, timeout_connect / 2);
+
+    globus_callback_register_periodic(
+        GLOBUS_NULL,
+        &delay_time,
+        &period_time,
+        g_timeout_wakeup,
+        GLOBUS_NULL,
+        GLOBUS_NULL,
+        GLOBUS_NULL);
 }
 
 void
