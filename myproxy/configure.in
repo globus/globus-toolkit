@@ -58,8 +58,8 @@ if test -x ${GSI_INSTALL_PATH}/sbin/globus-makefile-header ; then
 	if test -z "${GLOBUS_FLAVOR}" ; then
 		AC_MSG_ERROR(Must specify --with-globus-flavor)
 	fi
-	`${GSI_INSTALL_PATH}/sbin/globus-makefile-header -flavor=${GLOBUS_FLAVOR} globus_gss_assist globus_gssapi_gsi globus_openssl > ${srcdir}/globus_makefile_header`
-        GLOBUS_MAKEFILE_HEADER=${srcdir}/globus_makefile_header
+	`${GSI_INSTALL_PATH}/sbin/globus-makefile-header -flavor=${GLOBUS_FLAVOR} -link=static globus_gss_assist globus_gssapi_gsi globus_openssl > globus_makefile_header`
+        GLOBUS_MAKEFILE_HEADER=globus_makefile_header
 
 elif test -d ${GSI_INSTALL_PATH}/lib ; then
 	# Looks like a flat directory structure from configure/make and not
