@@ -3,14 +3,14 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="gsi_openssh_setup" >
 
-  <Aging_Version Major="0" Minor="7" Age="0" />
-  <Description>GSI-OpenSSH 3.2.3p1 setup package</Description>
+  <Aging_Version Major="0" Minor="8" Age="0" />
+  <Description>GSI-OpenSSH 3.4p1 setup package</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
-  <Version_Stability Release="beta" />
+  <Version_Stability Release="stable" />
 
   <src_pkg >
 
-    <Version_Label>3.2.3p1</Version_Label>
+    <Version_Label>3.4p1</Version_Label>
 
     <With_Flavors build="no" />
 
@@ -25,6 +25,10 @@
       <Build_Step>cp ./sshd_config.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/sshd_config.in</Build_Step>
       <Build_Step>cp ./moduli INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/moduli</Build_Step>
 
+      <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/man/man5/</Build_Step>
+      <Build_Step>cp ./ssh_config.5 INSTALLDIR_GPTMACRO/man/man5/ssh_config.5</Build_Step>
+      <Build_Step>cp ./sshd_config.5 INSTALLDIR_GPTMACRO/man/man5/sshd_config.5</Build_Step>
+
     </Build_Instructions>
 
     <Post_Install_Program >
@@ -32,11 +36,11 @@
     </Post_Install_Program>
 
     <Post_Install_Message >
-      You need to run setup-openssh
+      Please run GLOBUS_LOCATION/setup/gsi_openssh_setup/setup-openssh.
     </Post_Install_Message>
 
     <Setup Name="gsi_openssh_setup">
-      <Aging_Version Major="0" Minor="7" Age="0" />
+      <Aging_Version Major="0" Minor="8" Age="0" />
     </Setup>
 
   </src_pkg >

@@ -5,3 +5,5 @@ setup/gsi_openssh_setup/ssh_config
 setup/gsi_openssh_setup/ssh_prng_cmds.in
 setup/gsi_openssh_setup/sshd_config.in
 setup/gsi_openssh_setup/SXXsshd.in
+man/man5/ssh_config.5
+man/man5/sshd_config.5
