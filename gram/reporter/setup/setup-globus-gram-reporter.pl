@@ -27,11 +27,11 @@ $hostname =~ s/\s//g; #strip whitespace
 
 print "\nIn the file ${globusdir}/etc/grid-info-slapd.conf\n";
 print "The following line must be added after the other include statements.\n";
-print ">>>>>>>>>\n";
+print "AFTER THIS LINE--------->\n";
 print "include  ${globusdir}/etc/grid-info-gram-reporter.schema\n";
-print "<<<<<<<<<\n\n\n";
+print "<----------BEFORE THIS LINE\n\n\n";
 
-print "In the file $globus_dir/etc/grid-info-resource-ldif.conf\n";
+print "In the file ${globusdir}/etc/grid-info-resource-ldif.conf\n";
 print "The following lines must be added at the bottom.\n";
 
 print "AFTER THIS LINE--------->\n";
