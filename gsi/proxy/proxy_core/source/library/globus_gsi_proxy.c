@@ -361,7 +361,7 @@ globus_gsi_proxy_create_req(
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, X509_REQ, handle->req);
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END X509_REQ  ******\n");
 
-    if(handle->proxy_cert_info)
+    if(handle->type == GLOBUS_GSI_PROXY_TYPE_GSI_3)
     {
         /* write the PCI to the BIO */
         if(i2d_PROXYCERTINFO_bio(output_bio, handle->proxy_cert_info) == 0)
@@ -491,6 +491,12 @@ globus_gsi_proxy_inquire_req(
                  "to internal form"));
             goto done;
         }
+
+        handle->type = GLOBUS_GSI_PROXY_TYPE_GSI_3;
+    }
+    else
+    {
+        handle->type = GLOBUS_GSI_PROXY_TYPE_GSI_2;
     }
 
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START X509_REQ ******\n");
@@ -927,7 +933,7 @@ globus_gsi_proxy_sign_req(
  */
 /* @{ */
 /**
- * Created Signed Proxy Certificate, and send it to the BIO
+ * Create Signed Proxy Certificate
  *
  * @param handle
  *        The proxy handle used to create and sign the proxy certificate

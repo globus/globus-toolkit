@@ -48,7 +48,7 @@ globus_gsi_proxy_handle_init(
     globus_gsi_proxy_handle_t *         handle,
     globus_gsi_proxy_handle_attrs_t     handle_attrs)
 {
-    globus_gsi_proxy_handle_t           hand;
+    globus_gsi_proxy_handle_t           handle_i;
     globus_result_t                     result;
     int                                 len;
     static char *                       _function_name_ =
@@ -78,10 +78,10 @@ globus_gsi_proxy_handle_init(
 
     memset(*handle, (int) NULL, len);
 
-    hand = *handle; 
+    handle_i = *handle; 
 
     /* initialize the X509 request structure */
-    if((hand->req = X509_REQ_new()) == NULL)
+    if((handle_i->req = X509_REQ_new()) == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -91,7 +91,7 @@ globus_gsi_proxy_handle_init(
     }
 
     /* create a new PCI extension */
-    if((hand->proxy_cert_info = PROXYCERTINFO_new()) == NULL)
+    if((handle_i->proxy_cert_info = PROXYCERTINFO_new()) == NULL)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -103,7 +103,7 @@ globus_gsi_proxy_handle_init(
     /* initialize the handle attributes */
     if(handle_attrs == NULL)
     {
-        result = globus_gsi_proxy_handle_attrs_init(&hand->attrs);
+        result = globus_gsi_proxy_handle_attrs_init(&handle_i->attrs);
         if(result != GLOBUS_SUCCESS)
         {
             result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
@@ -115,7 +115,7 @@ globus_gsi_proxy_handle_init(
     else
     {
         result = globus_gsi_proxy_handle_attrs_copy(handle_attrs, 
-                                                    &hand->attrs);
+                                                    &handle_i->attrs);
         if(result != GLOBUS_SUCCESS)
         {
             result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
@@ -125,16 +125,16 @@ globus_gsi_proxy_handle_init(
         }
     }
 
-    hand->type = GLOBUS_GSI_PROXY_TYPE_GSI_3;
+    handle_i->type = GLOBUS_GSI_PROXY_TYPE_GSI_3;
 
     result = GLOBUS_SUCCESS;
     goto exit;
 
  free_handle:
 
-    if(hand)
+    if(handle_i)
     {
-        globus_gsi_proxy_handle_destroy(hand);
+        globus_gsi_proxy_handle_destroy(handle_i);
     }
 
  exit:
