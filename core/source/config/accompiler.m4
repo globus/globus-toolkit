@@ -335,7 +335,11 @@ case ${host}--$1 in
                 exit 1
         fi
 	if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
-	    AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
+	    if test "$GLOBUS_CC" = "gcc"; then
+	        AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+	    else
+	        AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
+	    fi
 	    AC_PATH_PROGS(lac_cv_CXX, $CXX xlC_r)
 	    AC_PATH_PROGS(lac_cv_F77, $F77 xlf_r)
 	    AC_PATH_PROGS(lac_cv_F90, $F90 xlf90_r)
@@ -343,7 +347,11 @@ case ${host}--$1 in
 		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
 	    fi
 	else
-	    AC_PATH_PROGS(lac_cv_CC, $CC mpcc_r)
+	    if test "$GLOBUS_CC" = "gcc"; then
+	        lac_cv_CC=""
+	    else
+	        AC_PATH_PROGS(lac_cv_CC, $CC mpcc_r)
+	    fi
 	    AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC_r)
 	    AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf_r)
 	    AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90_r)
@@ -352,6 +360,7 @@ case ${host}--$1 in
 	    fi
 	fi
 
+	CC="$lac_cv_CC"	
         LAC_PROG_CC_GNU($lac_cv_CC,
 	    [],
 	    [
@@ -376,7 +385,11 @@ case ${host}--$1 in
                 exit 1
         fi
 	if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
-	    AC_PATH_PROGS(lac_cv_CC, $CC xlc gcc)
+	    if test "$GLOBUS_CC" = "gcc"; then
+	         AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            else
+	         AC_PATH_PROGS(lac_cv_CC, $CC xlc)
+	    fi
 	    AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC xlC c++ g++ gcc)
 	    AC_PATH_PROGS(lac_cv_F77, $F77 xlf)
 	    AC_PATH_PROGS(lac_cv_F90, $F90 xlf90)
@@ -384,7 +397,11 @@ case ${host}--$1 in
 		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
 	    fi
 	else
-	    AC_PATH_PROGS(lac_cv_CC, $CC mpcc)
+	    if test "$GLOBUS_CC" = "gcc"; then
+	        lac_cv_CC=""
+	    else
+	        AC_PATH_PROGS(lac_cv_CC, $CC mpcc)
+	    fi
 	    AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC)
 	    AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf)
 	    AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90)
@@ -392,7 +409,7 @@ case ${host}--$1 in
 		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
 	    fi
 	fi
-
+	CC="$lac_cv_CC"	
         LAC_PROG_CC_GNU($lac_cv_CC,
 	    [],
 	    [

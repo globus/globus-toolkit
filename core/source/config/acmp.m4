@@ -121,7 +121,7 @@ AC_DEFUN(LAC_MP_MPI,
         lac_mpi="yes"
     fi
 
-    if test $GLOBUS_THREADS != "none" ; then
+    if test "$GLOBUS_THREADS" != "none" ; then
         case "$host" in
             *-ibm-aix* )
                 if test ! -x /usr/bin/mpcc_r ; then
