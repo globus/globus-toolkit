@@ -7,7 +7,8 @@ v0.5.0 15 Nov 2002 (GPT package version 1.2)
   This is the first version for Globus Toolkit 2.2.  It adds support
   for storing multiple credentials per username, stores private keys
   encrypted with the credential's passphrase (if set), and adds the
-  myproxy-change-pass-phrase command.
+  myproxy-change-pass-phrase command.  It is also the first version to
+  be released unter the NCSA Open Source license.
 
 v0.4.6 3 Sep 2002 (GPT package version 1.1)
   This version adds sample init.d and xinetd entries in the GPT
