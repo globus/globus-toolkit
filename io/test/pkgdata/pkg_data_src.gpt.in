@@ -6,7 +6,7 @@
   <Aging_Version Major="2" Minor="0" Age="0"/>
   <Description>IO Test</Description>
   <Functional_Group >Communication</Functional_Group>
-  <Version_Stability Release="Beta2" />
+  <Version_Stability Release="production" />
 
   <src_pkg>
 

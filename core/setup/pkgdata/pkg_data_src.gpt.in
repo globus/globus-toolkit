@@ -9,7 +9,7 @@
   <Aging_Version Major="2" Minor="0" Age="1" />
   <Description >Globus Core Setup</Description>
   <Functional_Group >Core</Functional_Group>
-  <Version_Stability Release="Beta2" />
+  <Version_Stability Release="production" />
 
   <src_pkg >
 

@@ -6,7 +6,7 @@
   <Aging_Version Major="2" Minor="0" Age="1" />
   <Description>SSL Utilities Setup</Description>
   <Functional_Group >Security</Functional_Group>
-  <Version_Stability Release="Beta2" />
+  <Version_Stability Release="production" />
 
   <src_pkg >
 

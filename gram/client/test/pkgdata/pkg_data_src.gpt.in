@@ -6,7 +6,7 @@
   <Aging_Version Age="0" Major="2" Minor="0" />
   <Description >Test programs for the GRAM Client Library</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
-  <Version_Stability Release="Beta2" />
+  <Version_Stability Release="production" />
 
   <src_pkg >
 

@@ -10,7 +10,7 @@
 
   <Description >GRAM Job Manager Setup</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
-  <Version_Stability Release="Beta2" />
+  <Version_Stability Release="production" />
 
   <src_pkg >
 
