@@ -41,6 +41,9 @@ static char usage[] = \
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -a | --authorization   <path>     Use credential for authorization\n"
 "                                         (instead of passphrase)\n"
+"       -d | --dn_as_username             Use subject of the authorization\n"
+"                                         credential as the default username\n"
+"                                         instead of the LOGNAME env. var.\n"
 "\n";
 
 struct option long_options[] =
@@ -54,10 +57,11 @@ struct option long_options[] =
     {"username",         required_argument, NULL, 'l'},
     {"version",                no_argument, NULL, 'v'},
     {"authorization",    required_argument, NULL, 'r'},
+    {"dn_as_username",         no_argument, NULL, 'd'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:va:";
+static char short_options[] = "hus:p:l:t:o:va:d";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -76,6 +80,7 @@ init_arguments(int argc, char *argv[],
 /* location of delegated proxy */
 char *outputfile = NULL;
 char *creds_to_authorization = NULL;
+static int dn_as_username = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -114,6 +119,20 @@ main(int argc, char *argv[])
 	   fprintf(stderr, "Error reading passphrase\n");
 	   exit(1);
        }
+    }
+
+    if (dn_as_username && creds_to_authorization) {
+	char *username = NULL;
+	if (ssl_get_base_subject_file(creds_to_authorization,
+		                     &username)) {
+	  fprintf(stderr, "Cannot get subject name from your certificate %s\n",
+		  creds_to_authorization);
+	  exit(1);
+	}
+	if (client_request->username) {
+	    free(client_request->username);
+	}
+	client_request->username = strdup(username);
     }
 
     if (myproxy_get_delegation(socket_attrs, client_request, 
@@ -175,6 +194,10 @@ init_arguments(int argc,
             fprintf(stderr, version);
             exit(1);
             break;
+	case 'd':   /* use the certificate subject (DN) as the default
+		       username instead of LOGNAME */
+	    dn_as_username = 1;
+	    break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);
 	    exit(1);
