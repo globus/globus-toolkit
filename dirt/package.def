@@ -111,4 +111,5 @@ globus_gram_reporter_condor_setup gram/reporter/setup/condor dirt.sh
 globus_gram_reporter_fork_setup gram/reporter/setup/fork dirt.sh
 globus_gram_reporter_lsf_setup gram/reporter/setup/lsf dirt.sh
 globus_gram_reporter_pbs_setup gram/reporter/setup/pbs dirt.sh
-autotools                       autotools                       dirt.sh
+globus_test             test                     dirt.sh
+autotools               autotools                dirt.sh
