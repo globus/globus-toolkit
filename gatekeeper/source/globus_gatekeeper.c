@@ -24,7 +24,8 @@ CVS Information:
 #define _ALL_SOURCE
 #endif
 #include "globus_config.h"
-#include "globus_i_gram_version.h"
+#include "globus_gatekeeper_config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -40,24 +41,24 @@ CVS Information:
 #include <syslog.h>
 #include <netdb.h>
 #include <netinet/in.h>
+
 #if defined (HAVE_NETINET_TCP_H)
 #   include <netinet/tcp.h>
 #endif
-#include <arpa/inet.h>
+
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
+
 #ifdef HAVE_MALLOC_H
-#include <malloc.h>
+#   include <malloc.h>
 #endif
 
-#ifdef GSS_AUTHENTICATION
 #include "globus_gss_assist.h"
-#include <gssapi.h>
-#endif
+#include "gssapi.h"
 
 #if defined(TARGET_ARCH_SOLARIS)
 #include <termios.h>
@@ -69,15 +70,13 @@ CVS Information:
 #define netlen_t int
 #endif
 
-#include <strings.h>
-
 #include <arpa/inet.h> /* for inet_ntoa() */
 
-#ifdef BSD
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
 
-#ifdef SYSV
+#if HAVE_STRING_H
 #include <string.h>
 #endif
 
@@ -91,6 +90,14 @@ CVS Information:
 
 #if !defined(MAXPATHLEN) 
 #   define MAXPATHLEN PATH_MAX
+#endif
+
+#ifndef HAVE_SETENV
+extern int setenv();
+#endif
+
+#ifndef HAVE_UNSETENV
+extern void unsetenv();
 #endif
 
 #include "globus_gatekeeper_utils.h"
@@ -112,32 +119,21 @@ CVS Information:
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
-static void 
-doit();
-static int 
-logging_startup(void);
-static int
-logging_phase2(void);
-static void 
-failure(short failure_type, char *s);
-static void 
-notice(int, char *s);
-static int 
-net_accept(int socket);
-static void 
-net_setup_listener(int backlog, int *port, int *socket);
-static void 
-error_check(int val, char *string);
-static char 
-*timestamp(void);
+static void doit(void);
+static int logging_startup(void);
+static int logging_phase2(void);
+static void failure(short failure_type, char *s);
+static void notice(int, char *s);
+static int net_accept(int socket);
+static void net_setup_listener(int backlog, int *port, int *socket);
+static void error_check(int val, char *string);
+static char *timestamp(void);
 
-static char *
-genfilename(char * prefix, char * path, char * sufix);
+static char * genfilename(char * prefix, char * path, char * sufix);
 
 /*
  * GSSAPI - credential handle for this process
  */
-
 static gss_cred_id_t credential_handle = GSS_C_NO_CREDENTIAL;
 static gss_cred_id_t delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
@@ -641,7 +637,7 @@ main(int xargc,
         else if ((strcmp(argv[i], "-globusid") == 0)
                 && (i + 1 < argc))
         {
-            grami_setenv("GLOBUSID", argv[i+1],1);
+            setenv("GLOBUSID", argv[i+1],1);
             i++;
         }
         else if ((strcmp(argv[i], "-gridmap") == 0)
@@ -765,7 +761,7 @@ main(int xargc,
 
     if (gatekeeper_uid == 0)
     {
-    grami_unsetenv("X509_USER_PROXY");
+    unsetenv("X509_USER_PROXY");
     }
 
     if (gatekeeper_test)
@@ -790,49 +786,49 @@ main(int xargc,
 
 	if (gatekeeperhome)
 	{
-		grami_setenv("GLOBUS_DEPLOY_PATH",gatekeeperhome,1);
+		setenv("GLOBUS_DEPLOY_PATH",gatekeeperhome,1);
 	}
 	
-    grami_setenv("GRIDMAP", genfilename(gatekeeperhome,gridmap,NULL),1);
+    setenv("GRIDMAP", genfilename(gatekeeperhome,gridmap,NULL),1);
     if (globuspwd) 
     {
-        grami_setenv("GLOBUSPWD", genfilename(gatekeeperhome,globuspwd,NULL),1);
+        setenv("GLOBUSPWD", genfilename(gatekeeperhome,globuspwd,NULL),1);
     }
 
     if (x509_cert_dir)
     {
-        grami_setenv("X509_CERT_DIR",
+        setenv("X509_CERT_DIR",
                      genfilename(gatekeeperhome,x509_cert_dir,NULL),
                      1);
     }
     if (x509_cert_file)
     {
-        grami_setenv("X509_CERT_FILE",
+        setenv("X509_CERT_FILE",
                      genfilename(gatekeeperhome,x509_cert_file,NULL),
                      1);
     }
     if (x509_user_proxy)
     {
-        grami_setenv("X509_USER_PROXY",
+        setenv("X509_USER_PROXY",
                      genfilename(gatekeeperhome,x509_user_proxy,NULL),
                      1);
     }
 
     if (x509_user_cert)
     {
-        grami_setenv("X509_USER_CERT",
+        setenv("X509_USER_CERT",
                      genfilename(gatekeeperhome,x509_user_cert,NULL),
                      1);
     }
     if (x509_user_key)
     {
-        grami_setenv("X509_USER_KEY", 
+        setenv("X509_USER_KEY", 
                      genfilename(gatekeeperhome,x509_user_key,NULL),
                      1);
     }
     if (krb5flag) 
     {
-        grami_setenv("GLOBUSKMAP",
+        setenv("GLOBUSKMAP",
                      genfilename(gatekeeperhome,globuskmap,NULL),
                      1);
     }
@@ -854,13 +850,6 @@ main(int xargc,
     /*
      * Setup SIGCHLD signal handler to reap processes that we create
      */
-#ifdef HAS_BSD_SIGNAL
-    signal(SIGCHLD, reaper);
-	if (!run_from_inetd)
-	{
-		signal(SIGTERM, terminate);
-	}
-#else
     {
         struct sigaction act;
         act.sa_handler = reaper;
@@ -877,7 +866,6 @@ main(int xargc,
 			sigaction(SIGTERM, &act, NULL);
 		}
     }
-#endif
 
     if (run_from_inetd)
     {
@@ -886,7 +874,6 @@ main(int xargc,
         setbuf(stdout,NULL);
     }
 
-#ifdef GSS_AUTHENTICATION
     /* Get the GSS credential for the accepter
      * If not run_from_inetd we can prompt here.
      * If we are running as a deamon, and should not
@@ -911,7 +898,6 @@ main(int xargc,
 
         failure(FAILED_SERVER, "GSS failed to get server credentials\n");
     }
-#endif /* GSS_AUTHENTICATION */
 
     if (gatekeeper_test) 
     {
@@ -959,7 +945,7 @@ main(int xargc,
 #         endif
       }
       
-      /* ajr,vs --changed printf to sprintf, and added grami_setenv
+      /* ajr,vs --changed printf to sprintf, and added setenv
        * This is considered to be a temporary change */
       if ((contact_string = (char *)malloc(strlen(fqdn) 
                 + strlen(globusid) + 40))) 
@@ -969,7 +955,7 @@ main(int xargc,
                   fqdn, daemon_port, globusid);
           if (!run_from_inetd)
               printf("GRAM contact: %s\n", contact_string);
-          grami_setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
+          setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
                   contact_string,
                   1);
      
@@ -1155,17 +1141,15 @@ static void doit()
     char *              http_body;
     size_t              http_body_length;
     FILE *              http_body_file;
-    
-#ifdef GSS_AUTHENTICATION
     /* GSSAPI assist variables */
     OM_uint32           major_status = 0;
     OM_uint32           minor_status = 0;
     OM_uint32           minor_status2 = 0;
     int                 token_status = 0;
     OM_uint32           ret_flags = 0;
-	gss_buffer_desc 	context_token = GSS_C_EMPTY_BUFFER;
-	FILE *				context_tmpfile = NULL;
-	char *              delcname = NULL;
+    gss_buffer_desc 	context_token = GSS_C_EMPTY_BUFFER;
+    FILE *		context_tmpfile = NULL;
+    char *              delcname = NULL;
 
     /* Authorization variables */
     int                 rc;
@@ -1173,7 +1157,6 @@ static void doit()
     char *              userid;
     struct passwd *     pw;
 
-#endif
 
 	/* Now do stdout, so it points at the socket too */
 	/* needed for the grid-services */
@@ -1256,8 +1239,6 @@ static void doit()
 		failure(FAILED_NOLOGIN, 
 			"Not accepting connections at this time");
 	}
-
-#ifdef GSS_AUTHENTICATION
 
     /* We will use the assist functions here since we 
      * don't need any special processing
@@ -1377,22 +1358,6 @@ static void doit()
 
     /* End of authentication */
 
-#else /* GSS_AUTHENTICATION */
-
-    /*
-     * if the GSS_AUTHENTICATION is left as an option, then
-     * running as root without authentication is considered
-     * a failure. It may be set to notice for testing only
-     */
-
-    if ((service_uid = getuid()) == 0) 
-        failure(FAILED_AUTHORIZATION, 
-		"ERROR: Root requires authentication");
-    else
-        notice(LOG_ERR, "WARNING: No authentication done");
-
-#endif /* GSS_AUTHENTICATION */
-
     /* 
      * Read from the client the service it would like to use
      * For now this is a null terminated string which has been
@@ -1478,7 +1443,7 @@ static void doit()
 		setbuf(http_body_file,NULL);
 		fcntl(fileno(http_body_file), F_SETFD, 0);
 		sprintf(buf, "%d", fileno(http_body_file));
-		grami_setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
+		setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
 		notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
 
 		fwrite(http_body,
@@ -1690,7 +1655,7 @@ static void doit()
 				cp = strchr(delcname,'=');
 				*cp = '\0';
 				cp++;
-				grami_setenv(delcname,cp,1);
+				setenv(delcname,cp,1);
 				delcname = NULL;
 			}
 		}
@@ -1817,20 +1782,20 @@ static void doit()
 	failure2(FAILED_SERVER, "fcntl F_SETFD failed: %s", sys_errlist[errno]);
     }
 
-    grami_setenv("GLOBUS_ID",client_name,1);
-    grami_setenv("GRID_ID",client_name,1);
-	grami_setenv("GRID_AUTH_METHOD","TO_FILLED_IN_LATER",1);
+    setenv("GLOBUS_ID",client_name,1);
+    setenv("GRID_ID",client_name,1);
+	setenv("GRID_AUTH_METHOD","TO_FILLED_IN_LATER",1);
 
     /*
      * Become the appropriate user
      */
     if (gatekeeper_uid == 0)
     {
-	grami_setenv("USER",userid,1);
-	grami_setenv("LOGNAME",userid,1);
-	grami_setenv("LOGIN",userid,1);
-	grami_setenv("HOME",pw->pw_dir,1);
-	grami_setenv("SHELL",pw->pw_shell,1);
+	setenv("USER",userid,1);
+	setenv("LOGNAME",userid,1);
+	setenv("LOGIN",userid,1);
+	setenv("HOME",pw->pw_dir,1);
+	setenv("SHELL",pw->pw_shell,1);
 	/* 
 	 * Could set path, and other variables as well 
 	 * Unset many of the gssapi set env variables. 
@@ -1838,12 +1803,12 @@ static void doit()
 	 * Leave the X509_CERT_DIR of trusted certs
 	 * for the user to use. 
 	 */
-	grami_unsetenv("GRIDMAP"); /* unset it */
-	grami_unsetenv("GLOBUSCERTDIR"); /* unset it */
-	grami_unsetenv("GLOBUSKEYDIR"); /* unset it */
-	grami_unsetenv("X509_USER_KEY"); /* unset it */
-	grami_unsetenv("X509_USER_CERT"); /* unset it */
-	grami_unsetenv("X509_USER_PROXY"); /* unset it */
+	unsetenv("GRIDMAP"); /* unset it */
+	unsetenv("GLOBUSCERTDIR"); /* unset it */
+	unsetenv("GLOBUSKEYDIR"); /* unset it */
+	unsetenv("X509_USER_KEY"); /* unset it */
+	unsetenv("X509_USER_CERT"); /* unset it */
+	unsetenv("X509_USER_PROXY"); /* unset it */
     }
 
 	/* for tranition, if gatekeeper has the path, set it
@@ -1851,7 +1816,7 @@ static void doit()
 	 */
 	if (jm_conf_path && !strncmp(service_name,"jobmanager",10))
 	{
-		grami_setenv("JM_CONF_PATH",jm_conf_path,1);
+		setenv("JM_CONF_PATH",jm_conf_path,1);
 	} 
     /* 
      * If the gssapi_ssleay did delegation, promote the
@@ -1859,8 +1824,8 @@ static void doit()
      */
     if ((x509_delegate = getenv("X509_USER_DELEG_PROXY")))
     {
-        grami_setenv("X509_USER_PROXY",strdup(x509_delegate),1);
-        grami_unsetenv("X509_USER_DELEG_PROXY");
+        setenv("X509_USER_PROXY",strdup(x509_delegate),1);
+        unsetenv("X509_USER_DELEG_PROXY");
     }
 
 	/*
@@ -1908,7 +1873,7 @@ static void doit()
 		setbuf(context_tmpfile,NULL);
 		fcntl(fileno(context_tmpfile), F_SETFD, 0);
 		sprintf(buf, "%d", fileno(context_tmpfile));
-		grami_setenv("GRID_SECURITY_CONTEXT_FD", buf, 1);
+		setenv("GRID_SECURITY_CONTEXT_FD", buf, 1);
 		notice2(0,"GRID_SECURITY_CONTEXT_FD=%s",buf)
 	}
 	else
@@ -2308,7 +2273,8 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-static void 
+static
+void 
 error_check(int val,
             char * str)
 {
@@ -2331,7 +2297,8 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-static char *
+static
+char *
 timestamp(void)
 {
     time_t clock;
