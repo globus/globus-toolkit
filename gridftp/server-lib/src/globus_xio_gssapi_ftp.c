@@ -991,7 +991,11 @@ globus_l_xio_gssapi_ftp_unwrap(
     GlobusXIOGssapiftpDebugEnter();
 
     /* allocate out buffer same size as in, assuming unwrap will be samller */
-    buf =  globus_malloc(in_length);
+    buf =  globus_malloc(in_length+2); /* + 2 is likely not needed since
+                                         buffer will be big enough anyway
+                                         but there maybe some crazy special
+                                         case */
+
     if(buf == NULL)
     {
         goto err;
@@ -1032,8 +1036,14 @@ globus_l_xio_gssapi_ftp_unwrap(
     {
         len--;
     }
+    if(buf[len - 1] != '\n' && buf[len - 2] != '\r')
+    {
+        buf[len] = '\r';
+        len++;
+        buf[len] = '\n';
+        len++;
+    }
     buf[len] = '\0';
-
     *out_buffer = (char *) buf;
 
     gss_release_buffer(&min_stat, &unwrapped_token);

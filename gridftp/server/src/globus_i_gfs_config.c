@@ -26,7 +26,7 @@ typedef struct
 
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
- {"help", NULL, NULL, "help", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"help", NULL, NULL, "help", "h", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Show this."},
 /* logging */
  {"log_module", "log_module", NULL, "log-module", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,

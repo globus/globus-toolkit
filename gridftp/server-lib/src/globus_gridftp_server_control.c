@@ -485,7 +485,8 @@ globus_l_gsc_read_cb(
                 /*  parse out the command name */
                 command_name = (char *) globus_malloc(len + 1);
                 for(ctr = 0, tmp_ptr = buffer; 
-                    *tmp_ptr != ' ' && *tmp_ptr != '\r'; 
+                    *tmp_ptr != ' ' && *tmp_ptr != '\r' 
+                    && *tmp_ptr != '\n' && ctr < len;
                     tmp_ptr++, ctr++)
                 {
                     command_name[ctr] = toupper(*tmp_ptr);
