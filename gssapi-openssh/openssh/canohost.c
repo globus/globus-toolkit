@@ -359,3 +359,75 @@ get_local_port(void)
 {
 	return get_port(1);
 }
+
+/* If *host is a name for the loopback interface, try to change
+   it to local hostname (not necessarily fully-qualified). */
+void
+resolve_localhost(char **host)
+{
+    struct hostent *hostinfo;
+
+    hostinfo = gethostbyname(*host);
+    if (hostinfo &&
+	hostinfo->h_addrtype == AF_INET) {
+	struct in_addr addr;
+	addr = *(struct in_addr *)(hostinfo->h_addr);
+	if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
+	    char buf[MAXHOSTNAMELEN];
+	    if (gethostname(buf, sizeof(buf)) == 0) {
+		xfree(*host);
+		*host = xstrdup(buf);
+	    }
+	}
+    }
+}
+
+/* A (hopefully) portable way to make a fully-qualified hostname for
+   GSSAPI authentication without relying on a potentially remote,
+   untrusted resolver.
+   Note: getdomainname() is not portable.
+*/
+void
+make_fqhn(char **host)
+{
+    char *domainname = NULL, *fqhn = NULL, myhn[MAXHOSTNAMELEN];
+    struct hostent *hent = NULL;
+    int i;
+
+    if (strchr(*host, '.')) {
+	return;			/* already fully qualified */
+    }
+
+    /* Otherwise, figure out our local domainname without using
+       getdomainname(). */
+    if (gethostname(myhn, sizeof(myhn)) < 0) {
+	debug("gethostname() failed, can't convert %s to fqhn", *host);
+	return;
+    }
+    if ((domainname = strchr(myhn, '.')) == NULL) {
+	
+	/* Resolving our local hostname should be secure
+	   (unlike resolving a remote hostname). */
+	if ((hent = gethostbyname(myhn)) != NULL) {
+	    if ((domainname = strchr(hent->h_name, '.')) == NULL) {
+		for (i=0;
+		     hent->h_aliases[i] &&
+			 (domainname =
+			  strchr(hent->h_aliases[i], '.')) == NULL;
+		     i++);
+	    }
+	}
+    }
+
+    if (domainname) {
+	domainname++;
+	fqhn = xmalloc(strlen(*host)+strlen(domainname)+2);
+	sprintf(fqhn, "%s.%s", *host, domainname);
+	xfree(*host);
+	*host = fqhn;
+	return;
+    }
+
+    debug("unable to determine fully-qualified local hostname");
+    return;
+}
