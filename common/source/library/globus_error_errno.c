@@ -260,6 +260,7 @@ globus_error_wrap_errno_error(
     {
         return GLOBUS_NULL;
     }
+    
     va_start(ap, short_desc_format);
     
     error = globus_error_v_construct_error(
