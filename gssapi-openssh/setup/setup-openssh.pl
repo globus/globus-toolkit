@@ -365,8 +365,10 @@ sub fixpaths
     return 0;
 }
 
-print "\n$myname: Configuring package 'gsi_openssh'..\n";
-print "NOTE: Run this as root for the intended effect.\n";
+print "------------------------------------------------------\n";
+print "$myname: Configuring package 'gsi_openssh'..\n";
+print "\n";
+print "--> NOTE: Run this as root for the intended effect. <--\n";
 
 test_dirs();
 copy_setup_files();
@@ -377,7 +379,9 @@ my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
 $metadata->finish();
 
+print "\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
+print "------------------------------------------------------\n";
 
 #
 # Just need a minimal action() subroutine for now..
