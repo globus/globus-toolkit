@@ -625,6 +625,21 @@ globus_l_gass_transfer_http_callback_denied(
     globus_time_t				time_can_block,
     void *					arg);
 
+static
+void
+globus_l_gass_transfer_http_close(
+    globus_gass_transfer_http_request_proto_t *		proto);
+
+static
+void
+globus_l_gass_transfer_http_register_close(
+    globus_gass_transfer_http_request_proto_t *		proto);
+
+static
+void
+globus_l_gass_transfer_http_listener_close(
+    globus_gass_transfer_http_listener_proto_t * proto);
+
 EXTERN_C_END
 
 #endif /* GLOBUS_GASS_INCLUDE_GLOBUS_L_GASS_TRANSFER_HTTP_H */
