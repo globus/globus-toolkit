@@ -47,7 +47,7 @@ exit 0
  
 MYEND
 
-RESULT=`${bindir}/globusrun -s -r "${TARGET_MACH_FORK}"  "&(executable=\$(GLOBUS_TOOLS_PREFIX)/bin/globus-sh-exec)(arguments=\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
+RESULT=`@ECHO@ "" |${bindir}/globusrun -s -r "${TARGET_MACH_FORK}"  "&(executable=\$(GLOBUS_TOOLS_PREFIX)/bin/globus-sh-exec)(arguments=\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
 
 THIS_STATUS=$?
 if [ $THIS_STATUS -ne 0 ]
