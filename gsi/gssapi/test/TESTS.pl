@@ -1,5 +1,4 @@
 #!/usr/bin/env perl
 
-exit system('./run-gssapi-tests.pl');
-
-
+my $res = system('./run-gssapi-tests.pl');
+exit ( $res != 0 );
