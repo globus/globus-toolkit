@@ -298,7 +298,6 @@ globus_module_deactivate_all(void)
 	while(deactivated_one)
 	{
 	    globus_list_t *		module_list;
-            globus_list_t *		module_list_next;
 
 	    module_list = globus_l_module_list;
 	    deactivated_one = GLOBUS_FALSE;
@@ -308,17 +307,14 @@ globus_module_deactivate_all(void)
 		globus_l_module_entry_t *module_entry;
 
 		module_entry = globus_list_first(module_list);
-		module_list_next = globus_list_rest(module_list);
+		module_list = globus_list_rest(module_list);
 	    
 		if(globus_list_empty(module_entry->clients) &&
 		   module_entry->reference_count > 0)
 		{
 		    globus_module_deactivate(module_entry->descriptor);
 		    deactivated_one = GLOBUS_TRUE;
-                    globus_list_remove(&globus_l_module_list, module_list);
 		}
-
-                module_list = module_list_next;
 	    }
 	}
     }
