@@ -35,6 +35,8 @@
 
 #include "ssh-gss.h"
 
+extern ServerOptions options;
+
 #include <globus_gss_assist.h>
 
 static int ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name);
