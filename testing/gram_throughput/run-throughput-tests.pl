@@ -103,6 +103,11 @@ Options:
                                     to test against (default is 8080)
     --type=<type>                   Specify the factory type to test against
                                     (default is "Fork")
+    --startcount=<count>            Specify the first test case's job count
+                                    (default is 1)
+    --endcount=<count>              Specify the last test case's job count,
+                                    rouneded to the last power of 2
+                                    (default is 1)
     --help                          Print short usage.
     --man                           Print long usage.
 
@@ -124,6 +129,22 @@ to "8080".
 
 Specify the factory type to test against.  Usual values are "Fork", "Pbs", "Lsf"
 , and "CondorIntelLinux".  This options defaults to "Fork".
+
+=item B<--startcount>
+
+Specify the first test case's job count (default is 1).  The job count is the
+number of jobs to run in parallel.  Test cases will be run starting with the
+startcount and ending with endcount with endcount by powers of 2.  For example,
+if one specifies -startcount=4 and -endcount=40, test cases will be run with job
+counts of 4, 8, 16, and 32.
+
+=item B<--endcount>
+
+Specify the last test case's job count, rounded to the last power of 2 (default
+is 1).  The job count is the number of jobs to run in parallel.  Test cases will
+be run starting with the startcount and ending with endcount with endcount by
+powers of 2.  For example, if one specifies -startcount=4 and -endcount=40, test
+cases will be run with job counts of 4, 8, 16, and 32.
 
 =item B<--help>
 
