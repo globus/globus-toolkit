@@ -840,7 +840,7 @@ globus_gridftp_server_finished_transfer(
       case GLOBUS_L_GFS_DATA_REQUESTING:
         op->state = GLOBUS_L_GFS_DATA_COMPLETE;
         
-        if(result == GLOBUS_SUCCESS)
+        if(result == GLOBUS_SUCCESS && op->sending)
         {
             result = globus_ftp_control_data_write(
                 &op->data_handle->data_channel,
@@ -852,7 +852,7 @@ globus_gridftp_server_finished_transfer(
                 op);
         }
         
-        if(result != GLOBUS_SUCCESS)
+        if(result != GLOBUS_SUCCESS || op->sending)
         {
             /* XXX mode s only */
             op->event_callback(
