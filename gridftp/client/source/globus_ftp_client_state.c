@@ -2918,10 +2918,6 @@ redo:
 		response->response_class
 		== GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
-	    globus_assert(client_handle->state ==
-			  GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER ||
-			  client_handle->state ==
-			  GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER_ONE_COMPLETE);
 	    if(client_handle->state ==
 	       GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER)
 	    {
@@ -2936,6 +2932,19 @@ redo:
 		globus_i_ftp_client_transfer_complete(client_handle);
 		
 		goto do_return;
+	    }
+	    else
+	    {
+	        /* this shouldnt really be possible, but handle it */
+	        target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+	        globus_i_ftp_client_data_flush(client_handle);
+	        memset(&target->cached_data_conn,
+                    '\0', sizeof(globus_i_ftp_client_data_target_t));
+                globus_ftp_control_data_force_close(
+		    target->control_handle,
+		    globus_l_ftp_client_data_force_close_callback,
+		    GLOBUS_NULL);
+	        goto redo;
 	    }
 	}
 	else
