@@ -167,6 +167,7 @@ BUNDLE globus-data-management-server
 	globus_gaa_authz_callout_setup
 	globus_gridmap_callout_error
         globus_gridftp_server_control
+        globus_usage
         globus_gridftp_server2
 
 BUNDLE globus-data-management-sdk
@@ -455,6 +456,7 @@ BUNDLE gt2-unthreaded
 	globus_xmlsec1
 	gssapi_error
         globus_gridftp_server_control
+        globus_usage
         globus_gridftp_server2
         globus_xio_gridftp_driver
 
@@ -585,6 +587,7 @@ BUNDLE globus-gridftp
         globus_authz_null_callout
         gaa_debug
         globus_gridftp_server_control
+        globus_usage
         globus_gridftp_server2
         globus_authz_gaa_callout
         globus_gridmap_callout_error
