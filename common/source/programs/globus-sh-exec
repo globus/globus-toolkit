@@ -3,6 +3,19 @@
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
 
+# This was done by the script initializer before V2.0
+# So we need to add it here
+#
+if [ -z "$GLOBUS_SH_VARIABLES_SET" ]; then
+    for _var in `${GLOBUS_SH_SED} -n '/^GLOBUS_SH/s/=.*$//p' \
+        ${libexecdir}/globus-sh-tools.sh`
+    do
+        export ${_var}
+    done
+    GLOBUS_SH_VARIABLES_SET="Y"
+    export GLOBUS_SH_VARIABLES_SET
+fi 
+ 
 #
 # sources the globus-sh-tools file, then executes a script provided
 # by the user.
