@@ -8,15 +8,15 @@ BEGIN
     push(@INC, "@GLOBUS_LOCATION@/lib/perl");
     $ENV{GLOBUS_LOCATION} =
         "@GLOBUS_LOCATION@" if(!exists($ENV{GLOBUS_LOCATION}));
-
-    if($Config{osname} eq 'irix')
-    {
-
-	&append_path(\%ENV, 'LD_LIBRARY64_PATH', $path);
-	&append_path(\%ENV, 'LD_LIBRARYN32PATH', $path);
-    }
-    &append_path(\%ENV, 'LD_LIBRARY_PATH', $path);
 }
+
+if($Config{osname} eq 'irix')
+{
+
+    &append_path(\%ENV, 'LD_LIBRARY64_PATH', $path);
+    &append_path(\%ENV, 'LD_LIBRARYN32PATH', $path);
+}
+&append_path(\%ENV, 'LD_LIBRARY_PATH', $path);
 
 use Getopt::Long;
 use Globus::GRAM::Error;

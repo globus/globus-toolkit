@@ -32,7 +32,10 @@ globus_gram_job_manager_state_file_set(
 
     if(request->job_state_file_dir == GLOBUS_NULL)
     {
-	sprintf(buffer, "%s/.globus/job.%s.%s", request->home, my_host,
+	sprintf(buffer, "%s/tmp/gram_job_state/%s.%s.%s",
+		request->globus_location,
+		request->logname ? request->logname : "globus",
+		my_host,
 		request->uniq_id);
     }
     else

@@ -27,6 +27,18 @@ my $libexecdir	= "$globusdir/libexec";
 my $bindir	= "$globusdir/bin";
 my $sbindir	= "$globusdir/sbin";
 
+if(! -d "$globusdir/tmp")
+{
+    mkdir("$globusdir/tmp", 0777);
+    chmod(01777, "$globusdir/tmp");
+}
+
+if(! -d "$globusdir/tmp/gram_job_state")
+{
+    mkdir("$globusdir/tmp/gram_job_state", 0777);
+    chmod(01777, "$globusdir/tmp/gram_job_state");
+}
+
 &setup_job_manager_conf();
 &setup_script_shbang("${setupdir}/globus-job-manager-service.in",
                       "${libexecdir}/globus-job-manager-service");
