@@ -435,7 +435,7 @@ sub populate_bundle_build_list()
 sub build_prerequisites()
 # --------------------------------------------------------------------
 {
-    install_gpt2();
+    install_gpt();
 
     if ( $cvs_build_hash{'autotools'} eq 1 or
 	 $cvs_build_hash{'gt2'} eq 1 or
@@ -506,10 +506,10 @@ sub log_system
 }
 
 # --------------------------------------------------------------------
-sub install_gpt2()
+sub install_gpt()
 # --------------------------------------------------------------------
 {
-    my $gpt_ver = "gpt-2.2.9";
+    my $gpt_ver = "gpt-3.0.1";
     my $gpt_dir = $top_dir . "/$gpt_ver";
 
     $ENV{'GPT_LOCATION'}=$gpt_dir;
@@ -526,7 +526,14 @@ sub install_gpt2()
 	paranoia("Trouble untarring fait_accompli/${gpt_ver}-src.tar.gz");
 
 	chdir $gpt_dir;
+
+	# gpt 3.0.1 has trouble if LANG is set, as on RH9
+	# Newer GPTs will unset LANG automatically in build_gpt.
+	my $OLANG = $ENV{'LANG'};
+	$ENV{'LANG'} = "";
 	system("./build_gpt > $log_dir/$gpt_ver.log 2>&1");
+	$ENV{'LANG'} = $OLANG;
+
 	paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
     }
 
