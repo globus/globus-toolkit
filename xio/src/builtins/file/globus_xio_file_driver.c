@@ -126,28 +126,34 @@ globus_l_xio_file_attr_cntl(
     attr = (globus_l_attr_t *) driver_attr;
     switch(cmd)
     {
+      /* int                            mode */
       case GLOBUS_XIO_FILE_SET_MODE:
         attr->mode = va_arg(ap, int);
         break;
-
+        
+      /* int *                          mode_out */
       case GLOBUS_XIO_FILE_GET_MODE:
         out_int = va_arg(ap, int *);
         *out_int = attr->mode;
         break;
 
+      /* int                            mode */
       case GLOBUS_XIO_FILE_SET_FLAGS:
         attr->flags = va_arg(ap, int);
         break;
 
+      /* int *                          mode_out */
       case GLOBUS_XIO_FILE_GET_FLAGS:
         out_int = va_arg(ap, int *);
         *out_int = attr->flags;
         break;
     
+      /* globus_xio_system_handle_t     handle */
       case GLOBUS_XIO_FILE_SET_HANDLE:
         attr->handle = va_arg(ap, globus_xio_system_handle_t);
         break;
         
+      /* globus_xio_system_handle_t *   handle */
       case GLOBUS_XIO_FILE_GET_HANDLE:
         out_handle = va_arg(ap, globus_xio_system_handle_t *);
         *out_handle = attr->handle;
@@ -600,18 +606,20 @@ globus_l_xio_file_cntl(
     va_list                             ap)
 {
     globus_l_handle_t *                 handle;
-    globus_off_t                        offset;
+    globus_off_t *                      offset;
     int                                 whence;
     GlobusXIOName(globus_l_xio_file_cntl);
 
     handle = (globus_l_handle_t *) driver_handle;
     switch(cmd)
     {
+      /* globus_off_t *                 in_out_offset */
+      /* globus_xio_file_whence_t       whence */
       case GLOBUS_XIO_FILE_SEEK:
-        offset = va_arg(ap, globus_off_t);
+        offset = va_arg(ap, globus_off_t *);
         whence = va_arg(ap, int);
-        offset = lseek(handle->handle, offset, whence);
-        if(offset < 0)
+        *offset = lseek(handle->handle, *offset, whence);
+        if(*offset < 0)
         {
             return GlobusXIOErrorSystemError("lseek", errno);
         }
