@@ -25,7 +25,13 @@ noinst_HEADERS = \
 	hw_atalla_err.h \
 	hw_atalla_err.c \
 	hw_nuron_err.h \
-	hw_nuron_err.c
+	hw_nuron_err.c \
+	hw_4758_cca_err.h \
+	hw_4758_cca_err.c \
+	hw_cswift_err.h \
+	hw_cswift_err.c \
+	hw_sureware_err.h \
+	hw_sureware_err.c
 
 Test_Sources = \
 	enginetest.c
