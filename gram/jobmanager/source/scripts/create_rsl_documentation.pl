@@ -14,7 +14,7 @@ by the GRAM Job Manager.
 
 EOF
 
-    foreach(keys %values)
+    foreach(sort keys %values)
     {
 	next if($values{$_}{Publish} eq "false");
 	print <<EOF;
