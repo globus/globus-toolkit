@@ -1771,13 +1771,13 @@ globus_l_gfs_data_read_cb(
 
 static
 void
-globus_l_gfs_data_transfer_event_kickout(
+globus_l_gfs_data_trev_kickout(
     void *                              user_arg)
 {
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
     globus_gfs_ipc_event_reply_t *      event_reply;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
-    GlobusGFSName(globus_l_gfs_data_transfer_event_kickout);
+    GlobusGFSName(globus_l_gfs_data_trev_kickout);
 
     bounce_info = (globus_l_gfs_data_trev_bounce_t *) user_arg;
     event_reply = (globus_gfs_ipc_event_reply_t *) 
@@ -1797,7 +1797,13 @@ globus_l_gfs_data_transfer_event_kickout(
             
             case GLOBUS_GFS_EVENT_RANGES_RECVD:
                 event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
-                event_reply->recvd_ranges = bounce_info->op->recvd_ranges;
+                globus_range_list_init(&event_reply->recvd_ranges);
+                globus_range_list_merge(
+                    &event_reply->recvd_ranges,
+                    bounce_info->op->recvd_ranges,
+                    NULL);
+                globus_range_list_remove(
+                    bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);                
                 break;
             
             default:
@@ -1822,15 +1828,6 @@ globus_l_gfs_data_transfer_event_kickout(
 
     globus_mutex_lock(&bounce_info->op->session_handle->mutex);
     {    
-        /* XXX MIKEY XXX  whats this all about?  should it be in other lock 
-            !! if it can't be locked around the reply, we'll need to copy
-            the range list for the reply... as it is now we can lose ranges
-            if they are updated between time of reply and this remove */
-        if(bounce_info->event_type == GLOBUS_GFS_EVENT_RANGES_RECVD)
-        {
-            globus_range_list_remove(
-                bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
-        }
         bounce_info->op->ref--;
         if(bounce_info->op->ref == 0)
         {
@@ -1855,7 +1852,8 @@ globus_l_gfs_data_transfer_event_kickout(
         globus_l_gfs_data_operation_destroy(bounce_info->op);
     }
 
-    globus_free(bounce_info);       
+    globus_free(bounce_info);
+    globus_range_list_destroy(event_reply->recvd_ranges);     
     globus_free(event_reply);       
 }
 
@@ -2007,7 +2005,7 @@ globus_i_gfs_data_request_transfer_event(
                         globus_callback_register_oneshot(
                             NULL,
                             NULL,
-                            globus_l_gfs_data_transfer_event_kickout,
+                            globus_l_gfs_data_trev_kickout,
                             bounce_info);
                     }
                 }
