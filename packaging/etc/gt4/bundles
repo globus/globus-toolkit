@@ -41,6 +41,7 @@ BUNDLE gt4-mds
         globus_wsrf_servicegroup
         globus_wsrf_servicegroup_schema
         globus_wsrf_mds_archive
+        globus_wsrf_mds_archive_schema
         globus_wsrf_mds_hawkeye
 
 BUNDLE gt4-mds-test
