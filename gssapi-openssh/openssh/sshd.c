@@ -830,6 +830,7 @@ main(int ac, char **av)
 #endif
 	__progname = ssh_get_progname(av[0]);
 	init_pathnames();
+	config_file_name = _PATH_SERVER_CONFIG_FILE;
 	init_rng();
 
 	/* Save argv. Duplicate so setproctitle emulation doesn't clobber it */
