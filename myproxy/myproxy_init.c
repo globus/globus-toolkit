@@ -37,11 +37,9 @@ static char usage[] = \
 "					  Can also set MYPROXY_SERVER env. var.\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -n | --no_passphrase              Disable passphrase authentication\n"
-#if !defined(DN_DEFAULT_USERNAME)
 "	-d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username\n"
 "                                         of the LOGNAME env. var.\n"
-#endif
 "\n";
 
 struct option long_options[] =
@@ -138,23 +136,21 @@ main(int argc, char *argv[])
     cleanup_user_proxy = 1;
     
     if (client_request->username == NULL) { /* set default username */
-#if !defined(DN_DEFAULT_USERNAME)
-	if (!use_empty_passwd && !dn_as_username) {
-	    if (!(client_request->username = getenv("LOGNAME"))) {
-		fprintf(stderr, "Please specify a username.\n");
-		goto cleanup;
-	    }
-	} else {
-#endif
+	char *username = NULL;
+	if (dn_as_username) {
 	    if (ssl_get_base_subject_file(proxyfile,
-					  &client_request->username)) {
+					  &username)) {
 		fprintf(stderr,
 			"Cannot get subject name from your certificate\n");
 		goto cleanup;
 	    }
-#if !defined(DN_DEFAULT_USERNAME)
+	} else {
+	    if (!(username = getenv("LOGNAME"))) {
+		fprintf(stderr, "Please specify a username.\n");
+		goto cleanup;
+	    }
 	}
-#endif
+	client_request->username = strdup(username);
     }
 
     /* Allow user to provide a passphrase */
