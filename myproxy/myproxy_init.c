@@ -5,7 +5,6 @@
  */
 
 #include "myproxy.h"
-#include "myproxy_server.h"
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
@@ -15,8 +14,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
-/* specify default lifetime for delegated credentials */
-#define MYPROXY_DEFAULT_HOURS  84
+/* specify maximum delegation lifetime allowed on myproxy-server */
+#define MYPROXY_DEFAULT_HOURS  168
 
 static char usage[] = \
 "\n"\
@@ -158,8 +157,8 @@ main(int argc, char *argv[])
     /* Continue unless the response is not OK */
     receive_response(socket_attrs, server_response);
     
-    /* Delegate credentials to server  */
-    if (myproxy_init_delegation(socket_attrs, proxyfile, client_request->lifetime_seconds) < 0) {
+    /* Delegate credentials to server using the default lifetime of the cert. */
+    if (myproxy_init_delegation(socket_attrs, proxyfile, 0) < 0) {
 	fprintf(stderr, "error in myproxy_init_delegation(): %s\n", 
 		verror_get_string());
 	exit(1);
@@ -240,11 +239,6 @@ init_arguments(int argc,
 	exit(1);
     }
 
-    /* Check to see that lifetime is < MYPROXY_SERVER_MAX_CRED_HOURS */
-    if (request->lifetime_seconds > 60*60*MYPROXY_SERVER_MAX_CRED_HOURS) {
-        fprintf(stderr, "The credential lifetime cannot be greater than %d.\n", MYPROXY_SERVER_MAX_CRED_HOURS);
-        exit(1);
-    } 
     return;
 }
 

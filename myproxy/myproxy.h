@@ -17,6 +17,9 @@
 /* Location of default proxy */
 #define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
 
+/* Define default myproxy-server -- should probably be put in config file */
+#define MYPROXY_SERVER_PORT            7512
+
 /* myproxy client protocol information */
 #define MYPROXY_VERSION_STRING      "VERSION="
 #define MYPROXY_COMMAND_STRING      "COMMAND="
