@@ -448,7 +448,7 @@ globus_l_rsl_assist_simple_query_ldap(
     /* disconnect from the server */
     ldap_unbind(ldap_server);
     /* to avoid a leak in ldap code */
-    globus_libc_free(reply);
+    ldap_msgfree(reply);
     return GLOBUS_SUCCESS;
 } /* globus_l_rsl_assist_simple_query_ldap() */
 
