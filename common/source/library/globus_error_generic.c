@@ -181,7 +181,7 @@ globus_error_initialize_error(
     {
         size = globus_libc_vprintf_length(short_desc_format,ap);
         
-        if ((*instance_data->short_desc = malloc (size)) == NULL)
+        if ((instance_data->short_desc = malloc (size)) == NULL)
         {
             va_end(ap);
             return;
