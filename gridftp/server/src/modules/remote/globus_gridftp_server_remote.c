@@ -375,7 +375,11 @@ globus_l_gfs_ipc_transfer_cb(
     {
         bounce_info->cached_result = reply->result;
     }
-    if(!bounce_info->nodes_pending && !bounce_info->nodes_requesting)
+    
+    /* wait for all the nodes to return, or if recving and we get an error
+        before the first begin_cb we quit right now */    
+    if((!bounce_info->nodes_pending && !bounce_info->nodes_requesting) || 
+        (reply->result != GLOBUS_SUCCESS && bounce_info->recv_pending))
     {
         globus_gfs_finished_info_t *    finished_info;
         

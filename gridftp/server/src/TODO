@@ -30,7 +30,6 @@ logging:
 -- produce netlogger output based on perf marker info ( -Z option in wu )
 
 general:
--- verify on 64bit machines (after void * changes)
 -- instrument any remaining configuration options and limits
 
 threads:
@@ -44,11 +43,10 @@ cleanup:
 -----------------------------------------------------------------------
 known bugs:
 -- op used in data_session_start isn't freed
--- there's no way to tell the difference between a NULL string and an empty
-    string ("") over the ipc since they are encoded the same. DecodeString
-    was always decoding them as "", but I don't think we send "" purposely, 
-    and I know we rely on some values being NULL, so I changed DecodeString
-    to decode it as a NULL pointer.  This still needs to be fixed.
+-- we don't chdir to the users home directory on successful auth, which 
+    should at least be an option.  There is no way to set a cwd in the 
+    server-lib though?
+
 
 
 DONE
@@ -68,7 +66,15 @@ DONE
 ** load dsi speficied in module_name on ERET/ESTO 
 -- sync() before each transfer stat update (by option)
 -- added ipc connect timeout and idle timeout (removes from cache)
+-- verify on 64bit machines (after void * changes)
+    passes test suite without problems in local, remote, and striped
 
+fixed bugs:
+-- there's no way to tell the difference between a NULL string and an empty
+    string ("") over the ipc since they are encoded the same. DecodeString
+    was always decoding them as "", but I don't think we send "" purposely, 
+    and I know we rely on some values being NULL, so I changed DecodeString
+    to decode it as a NULL pointer.  This still needs to be fixed.
 -- on zero byte sends, file module calls begin, and immediately calls finished 
 with success.  this results in server sending 226 and never 150 since the
 begin_cb hasn't happened yet.  need to delay the transfer finished until
