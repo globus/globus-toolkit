@@ -22,6 +22,7 @@ Scripts= \
 	gssapi-limited-delegation-test.pl \
 	gssapi-delegation-compat-test.pl \
 	gssapi-group-test.pl \
+	gssapi-thread-test.pl \
 	run-gssapi-tests.pl
 
 Data= \
