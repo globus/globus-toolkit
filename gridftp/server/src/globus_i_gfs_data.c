@@ -3780,7 +3780,7 @@ globus_i_gfs_data_node_start(
         globus_l_gfs_data_ipc_error_cb,
         NULL);
     
-    //globus_i_gfs_monitor_wait(&monitor);
+/* XXX    //globus_i_gfs_monitor_wait(&monitor); */
     
     globus_l_gfs_data_is_remote_node = GLOBUS_TRUE;
     

@@ -536,7 +536,7 @@ globus_l_gfs_ipc_request_destroy(
                 }
                 if(data_info->del_cred != NULL)
                 {
-                    //gss_release_cred(&min_rc, &data_info->del_cred);
+                  /* XXX  //gss_release_cred(&min_rc, &data_info->del_cred); */
                 }
                 globus_free(data_info);
                 break;
@@ -1685,7 +1685,7 @@ globus_l_gfs_ipc_add_server_accept_cb(
     }
     ipc->state = GLOBUS_GFS_IPC_STATE_SERVER_OPENING;
 
-//    if(!globus_l_gfs_ipc_requester)
+/* XXX //    if(!globus_l_gfs_ipc_requester) */
     {
         ipc->iface = &globus_gfs_ipc_default_iface;
     }

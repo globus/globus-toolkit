@@ -99,7 +99,7 @@ globus_gfs_acl_cas_destroy(
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
 
-//    globus_gsi_authz_handle_destroy(cas_handle, NULL, NULL);
+/* XXX //    globus_gsi_authz_handle_destroy(cas_handle, NULL, NULL); */
 }
 
 globus_gfs_acl_module_t                 globus_gfs_acl_cas_module = 

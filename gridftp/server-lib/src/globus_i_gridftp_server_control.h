@@ -312,7 +312,7 @@ typedef enum globus_l_gsc_state_e
     GLOBUS_L_GSC_STATE_ABORTING,
     GLOBUS_L_GSC_STATE_ABORTING_STOPPING,
     GLOBUS_L_GSC_STATE_STOPPING,
-    GLOBUS_L_GSC_STATE_STOPPED,
+    GLOBUS_L_GSC_STATE_STOPPED
 } globus_l_gsc_state_t;
 
 /* the server handle */

@@ -727,7 +727,7 @@ globus_i_gsc_terminate(
             globus_l_gsc_flush_reads(
                 server_handle,
                 _FSMSL("421 Service not available, closing control connection.\r\n"));
-//            res = globus_l_gsc_final_reply(server_handle, msg);
+/* XXX     res = globus_l_gsc_final_reply(server_handle, msg); */
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
                 GLOBUS_XIO_CANCEL_READ);

@@ -183,7 +183,7 @@ globus_l_gfs_signal_init()
 
 #   ifdef SIGKILL
     {
-        //signal(SIGKILL, globus_l_gfs_bad_signal_handler);
+    /* XXX    //signal(SIGKILL, globus_l_gfs_bad_signal_handler); */
     }
 #   endif
 #   ifdef SIGSEGV
@@ -218,7 +218,7 @@ globus_l_gfs_signal_init()
 #   endif
 #   ifdef SIGPIPE
     {
-        //signal(SIGPIPE, globus_l_gfs_bad_signal_handler);
+ /* XXX       //signal(SIGPIPE, globus_l_gfs_bad_signal_handler); */
     }
 #   endif
 #   ifdef SIGEMT
@@ -241,7 +241,7 @@ globus_l_gfs_signal_init()
 #   endif
 #   ifdef SIGSTOP
     {
-        //signal(SIGSTOP, globus_l_gfs_bad_signal_handler);
+ /* XXX       //signal(SIGSTOP, globus_l_gfs_bad_signal_handler); */
     }
 
 #   endif
