@@ -874,8 +874,6 @@ globus_l_xio_register_open(
             &handle->open_timeout_period);
     }
 
-    handle->ref++; /* for the operation */
-
     GlobusXIODriverPassOpen(res, tmp_context, op, \
         globus_i_xio_open_close_callback, NULL);
     
