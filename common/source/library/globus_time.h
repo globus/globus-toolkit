@@ -61,6 +61,12 @@ typedef struct timeval  globus_reltime_t;
     }                                                     \
 }
 
+#define  GlobusTimeReltimeGet(Reltime, Sec, USec)         \
+{                                                         \
+    (USec) = (Reltime).tv_usec;                           \
+    (Sec) = (Reltime).tv_sec;                             \
+}
+
 #define  GlobusTimeAbstimePrintf(Abstime)                 \
 {                                                         \
     printf("sec  -->%lu\n", (Abstime).tv_sec);            \
