@@ -1430,8 +1430,12 @@ globus_gridftp_server_update_bytes_written(
     globus_off_t                        length)
 {
     GlobusGFSName(globus_gridftp_server_update_bytes_written);
-    
 
+    globus_gridftp_server_control_update_bytes(
+       op->op_attr->control_op,
+       stripe_ndx,
+       offset,
+       length);
 }
 
 void
