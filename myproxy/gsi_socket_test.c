@@ -259,7 +259,7 @@ do_transmit()
 	return -1;
     }
     
-    if (GSI_SOCKET_authentication_init(gsi_socket, "FIXME") ==
+    if (GSI_SOCKET_authentication_init(gsi_socket, NULL) ==
 	GSI_SOCKET_ERROR)
     {
 	GSI_SOCKET_get_error_string(gsi_socket, error_string,
