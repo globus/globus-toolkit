@@ -74,7 +74,7 @@ GT3CVS=$CVSBASE:/home/globdev/CVS/gridservices
 
 cd $BASEDIR/source-trees/gt2-cvs
 
-#cvs -d$GT2CVS co $GT2PKGS
+cvs -d$GT2CVS co $GT2PKGS
 if test ! $? = 0; then
 	echo ""
 	echo "cvs checkout of $GT2PKGS failed. check CVSROOT env."
@@ -84,7 +84,7 @@ fi
  
 cd $BASEDIR/source-trees/cbindings
 
-#cvs -d$GT3CVS co $GT3PKGS
+cvs -d$GT3CVS co $GT3PKGS
 if test ! $? = 0; then
 	echo ""
 	echo "cvs checkout of $GT3PKGS failed"
