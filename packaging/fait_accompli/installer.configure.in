@@ -1,7 +1,5 @@
-dnl Intended to be used with a Makefile.in generated from:
-dnl ./make-packages.pl --bundles=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-information-services-server,globus-information-services-client,globus-information-services-sdk,globus-rls-server,gt4-java-ws-core,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-cas,gt4-c-ws-core --list-packages --deps --deporder 
-dnl Also requires config.guess, config.sub and install-sh from autotools
-AC_INIT(installer, 3.9.4)
+dnl Intended to be used with a Makefile.in generated from installer.sh
+AC_INIT(Globus Toolkit, 3.9.4)
 AC_CONFIG_FILES(Makefile)
 AC_PREFIX_DEFAULT(/usr/local/globus-3.9.4)
 AC_CANONICAL_BUILD
@@ -40,19 +38,27 @@ thr=pthr
 AC_SUBST(flavor, $flavor)
 AC_SUBST(thr, $thr)
 
+AC_ARG_WITH(buildopts, AC_HELP_STRING([--with-buildopts="args"],\
+   [Arguments to pass to gpt-build, like "--verbose" or "--force".]),\
+   [buildopts=$withval], [])
+AC_SUBST(buildopts, $buildopts)
+
 dnl AC_SUBST(globusloc, prefix)
 dnl Pre-webservices code
-prewsgram="globus-resource-management-server globus-resource-management-client globus-resource-management-sdk"
+prewsgram="globus-resource-management-server globus-resource-management-client\
+ globus-resource-management-sdk globus-resource-management-sdk-thr"
 AC_ARG_ENABLE(prewsgram, AC_HELP_STRING([--disable-prewsgram],\
    [Don't build pre-webservices [GRAM].  Default is enabled.]),\
    [if test $enableval = "no"; then prewsgram=" "; fi], [])
 AC_SUBST(prewsgram, $prewsgram)
-prewsgridftp="globus-data-management-server globus-data-management-client globus-data-management-sdk"
+prewsgridftp="globus-data-management-server globus-data-management-client\
+ globus-data-management-sdk globus-data-management-sdk-thr"
 AC_ARG_ENABLE(prewsgridftp, AC_HELP_STRING([--disable-gridftp],\
    [Don't build GridFTP.  Default is enabled.]),\
    [if test $enableval = "no"; then prewsgridftp=" "; fi], [])
 AC_SUBST(prewsgridftp, $prewsgridftp)
-prewsmds="globus-information-services-server globus-information-services-client globus-information-services-sdk"
+prewsmds="globus-information-services-server\
+ globus-information-services-client globus-information-services-sdk"
 AC_ARG_ENABLE(prewsmds, AC_HELP_STRING([--disable-prewsmds],\
    [Don't build pre-webservices mds.  Default is enabled.]),
    [if test $enableval = "no"; then prewsmds=" "; fi], [])
@@ -109,6 +115,13 @@ AC_ARG_ENABLE(wsgram-pbs, AC_HELP_STRING([--enable-wsgram-pbs],\
    [Build GRAM PBS schduler interface.  Default is disabled.]),
    [if test $enableval = "yes"; then wsgrampbs="gt4-gram-pbs"; fi], [])
 AC_SUBST(wsgrampbs, $wsgrampbs)
+
+i18n=" "
+AC_ARG_ENABLE(i18n, AC_HELP_STRING([--enable-i18n],\
+   [Enable internationalization.  Default is disabled.]),
+   [if test $enableval = "yes"; then i18n="globus-internationalization"; fi],
+   [])
+AC_SUBST(i18n, $i18n)
 
 wscas="gt4-cas"
 AC_ARG_ENABLE(wscas, AC_HELP_STRING([--disable-wscas],\

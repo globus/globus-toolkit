@@ -358,49 +358,60 @@ sub generate_build_list()
        install_gt2_autotools();
        print "Final package build list:\n";
 
-       print "all: gpt \@prewsgram\@ \@prewsgridftp\@ \@prewsmds\@ \@rls\@ \@wsjava\@ \@wsmds\@ \@wsdel\@ \@wsrft\@ \@wsgram\@ \@wsgramcondor\@ \@wsgramlsf\@ \@wsgrampbs\@ \@wscas\@ \@wsc\@ \@tests\@ postinstall\n";
-       print "GLOBUS_LOCATION=\@prefix\@\n";
-       print "GPT_LOCATION=\@prefix\@\n";
-       print "GLOBUS_IODBC_PATH=\@globus_iodbc\@\n";
-       print "export GLOBUS_IODBC_PATH GPT_LOCATION GLOBUS_LOCATION\n";
-       print "FLAVOR=\@flavor\@\n";
-       print "THR=\@thr\@\n\n";
-       print "gpt:\n\tcd gpt-3.2autotools2004 && ./build_gpt\n";
-
+       # First list all the bundles as targets, followed by their depordered
+       # package lists.  Then list all the packages as targets in both
+       # threaded and unthreaded versions.  Bootstrap the CVS directories
+       # as we go so they can be built.
        foreach my $bun ( @user_bundles )
        {
             my ($flavor, $flag, @packs) = @{$bundle_list{$bun}};
             my $suffix = " ";
+            my @sdkbundle;
+
+           
             print "$bun: ";
             if ( $flavor =~ /thr/ )
             {
                  $suffix = "-thr ";
             }
 
+            # We have the dependency sorted list of packages in our build list.
+            # We will go through it in order, printing out those packages which
+            # appear in the current bundle.  This gives us a dep-sorted bundle
             foreach my $pack ( @package_build_list )
             {
                  if ( grep /^$pack$/, @packs )
                  {
                      print "$pack$suffix";
+                     push @sdkbundle, "$pack" . "-thr";
                  }
             }
             print "\n";
+
+            # For SDK bundles, also create a threaded version
+            if ( ( $bun =~ /sdk$/ ) and not ( $flavor =~ /thr/ ) )
+            {
+                print "$bun" . "-thr: ";
+                foreach my $pack ( @sdkbundle )
+                {
+                    print "$pack ";
+                }
+           }
+           print "\n";
        }
             
        foreach my $pack ( @package_build_list )
        {
             print "$pack:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
             print "${pack}-thr:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
             my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
                                             $package_list{$pack}[1],
                                             $package_list{$pack}[2]);
 
             package_source_bootstrap($pack, $subdir, $tree) unless $noupdates;
        }
-
-       print "postinstall:\n\t\${GPT_LOCATION}/sbin/gpt-postinstall\n";
     }
 }
 

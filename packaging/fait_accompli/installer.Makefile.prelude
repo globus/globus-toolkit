@@ -1,0 +1,11 @@
+all: gpt @prewsgram@ @prewsgridftp@ @prewsmds@ @rls@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @wsc@ @i18n@ @tests@ postinstall
+GLOBUS_LOCATION=@prefix@
+GPT_LOCATION=@prefix@
+GLOBUS_IODBC_PATH=@globus_iodbc@
+export GLOBUS_IODBC_PATH GPT_LOCATION GLOBUS_LOCATION
+BUILD_OPTS=@buildopts@
+FLAVOR=@flavor@
+THR=@thr@
+
+gpt:
+	cd gpt-3.2autotools2004 && ./build_gpt
