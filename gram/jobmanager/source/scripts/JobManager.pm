@@ -1019,6 +1019,8 @@ sub job_dir {
     $job_dir = $ENV{HOME}."/.globus/job/$posix_hostname/".$description->uniq_id();
     $self->log("making my own job dir @ $job_dir");
 
+    return $job_dir;
+
 }
 
 1;
