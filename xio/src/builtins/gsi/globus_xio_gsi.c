@@ -2318,7 +2318,7 @@ globus_l_xio_gsi_read(
             handle->read_buffer = tmp_ptr;
         }
 
-        wait_for =- handle->bytes_read;
+        wait_for -= handle->bytes_read;
 
         handle->read_iovec[1].iov_base =
             &(handle->read_buffer[handle->bytes_read]);
