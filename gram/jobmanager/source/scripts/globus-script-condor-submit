@@ -127,17 +127,10 @@ createScript () {
        echo "Environment    = ${new_grami_env}"
     fi
     echo ""
-    if [ "${condor_universe}" = "vanilla" ] ; then
-       echo "Initialdir = /var/tmp"
-       echo "Input = /dev/null"
-       echo "Output = /dev/null"
-       echo "Error = /dev/null"
-    else
-       eval echo "Initialdir = ${grami_directory}"
-       eval echo "Input = ${grami_stdin}"
-       eval echo "Output = ${grami_stdout}"
-       eval echo "Error = ${grami_stderr}"
-    fi
+    eval echo "Initialdir = ${grami_directory}"
+    eval echo "Input = ${grami_stdin}"
+    eval echo "Output = ${grami_stdout}"
+    eval echo "Error = ${grami_stderr}"
     echo "Log = ${grami_condor_ulog}"
     echo ""
     echo "queue ${grami_count}"

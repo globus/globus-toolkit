@@ -141,8 +141,7 @@ if [ ! -z "${grami_queue}" ]; then
     if (test "$?" -eq "0") then
         $DEBUG_ECHO "JM_SCRIPT: LSF queue $grami_queue found" >> $grami_logfile
     else
-        $DEBUG_ECHO LSF queue [$grami_queue] DOES NOT exist; exiting with exit code 1 >> $grami_lo
-gfile
+        $DEBUG_ECHO LSF queue [$grami_queue] DOES NOT exist; exiting with exit code 1 >> $grami_logfile
         echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_INVALID_QUEUE
         exit 1
     fi
