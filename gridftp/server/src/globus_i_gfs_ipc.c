@@ -3092,6 +3092,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
             ipc->iface->buffer_send(
                 ipc, ipc->user_arg,
                 user_buffer, user_buffer_type, user_buffer_length);
+            globus_l_gfs_ipc_request_destroy(request);
             break;
 
         case GLOBUS_GFS_OP_STAT:
@@ -3928,6 +3929,7 @@ globus_gfs_ipc_reply_finished(
             {
                 goto xio_error;
             }
+            globus_free(request);
         }
     }
     globus_mutex_unlock(&ipc_handle->mutex);
