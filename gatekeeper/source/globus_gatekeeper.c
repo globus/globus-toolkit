@@ -2118,9 +2118,13 @@ net_setup_listener(int backlog,
 {
     netlen_t        sinlen;
     struct sockaddr_in sin;
+    int one=1;
 
     *skt = socket(AF_INET, SOCK_STREAM, 0);
     error_check(*skt,"net_setup_anon_listener socket");
+
+    error_check(setsockopt(*skt, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one)),
+                "net_setup_anon_listener setsockopt");
 
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
