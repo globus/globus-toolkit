@@ -95,7 +95,7 @@ globus_l_xio_driver_op_kickout(
 
     op = (globus_i_xio_op_t *) user_arg;
 
-    my_op = &op->entry[op->ndx];
+    my_op = &op->entry[op->ndx - 1];
     op->ndx = my_op->caller_ndx;
     my_op->cb(
         op,

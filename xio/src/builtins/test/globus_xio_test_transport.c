@@ -335,8 +335,8 @@ globus_l_xio_test_close(
     if(dh->inline_finish)
     {
         GlobusXIODriverFinishedClose(op, res);
-        globus_l_xio_test_attr_destroy(dh);
         globus_xio_driver_context_close(dh->context);
+        globus_l_xio_test_attr_destroy(dh);
     }
     else
     {
