@@ -14,7 +14,8 @@ Sources = \
 	gaa_plugin_private.h
 
 setup_DATA = \
-	globus_gaa.conf
+	globus_gaa.conf \
+	globus_gaa_custom.conf
 
 INCLUDES += $(GPT_INCLUDES)
 

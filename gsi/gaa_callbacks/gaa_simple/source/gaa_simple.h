@@ -12,6 +12,8 @@ typedef struct {
     char *                              service_type;
     char *                              urlbase;
     char *                              restrictions;
+    char *				start_time;
+    char *				end_time;
     char **                             actions;
 } gaa_simple_callback_arg_t;
 
@@ -80,6 +82,26 @@ gaa_simple_check_id_cond_nocase(
     gaa_list_ptr                        req_options,
     gaa_status *                        output_flags,
     void *                              params);
+
+
+extern gaa_status
+gaa_simple_check_notbefore(gaa_ptr		gaa,
+			   gaa_sc_ptr		sc,
+			   gaa_condition *	cond,
+			   gaa_time_period *	valid_time,
+			   gaa_list_ptr		req_options,
+			   gaa_status *    	output_flags,
+			   void *		params);
+
+
+extern gaa_status
+gaa_simple_check_notafter(gaa_ptr		gaa,
+			  gaa_sc_ptr		sc,
+			  gaa_condition *	cond,
+			  gaa_time_period *	valid_time,
+			  gaa_list_ptr		req_options,
+			  gaa_status *    	output_flags,
+			  void *		params);
 
 extern void gaa_simple_free_pval(
     void *                              pval);

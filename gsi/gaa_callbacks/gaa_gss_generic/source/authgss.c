@@ -1,5 +1,8 @@
 #include "gssapi.h"
 #include "gaa.h"
+#include "gssapi.h"
+#include "gaa_gss_generic.h"
+#include "string.h"
 #define MY_MECHNAME "gss"
 
 /** @defgroup gaa_gss_generic "gaa generic gss callbacks"
@@ -21,8 +24,8 @@
  * @param which
  *        this argument is ignored
  * @param params
- *        input -- should be a (gss_ctx_id_t *) pointer to a gss security
- *        context
+ *        input -- should be a (gaa_gss_generic_param_t) containing a gss
+ *	  security context or credential.
  *
  * @retval GAA_S_SUCCESS
  *        success
@@ -34,14 +37,14 @@ gaa_gss_generic_cred_pull(gaa_ptr		gaa,
 			void *		params)
 {
     gaa_status status = GAA_S_SUCCESS;
-    gss_ctx_id_t context;
+    gaa_gss_generic_param_t gss_param;
     gaa_cred *cred = 0;
 
     if (params == 0)
 	return(GAA_S_SUCCESS);
 
-    context = *(gss_ctx_id_t *)params;
-    if ((status = gaa_new_cred(gaa, sc, &cred, MY_MECHNAME, context,
+    gss_param = (gaa_gss_generic_param_t)params;
+    if ((status = gaa_new_cred(gaa, sc, &cred, MY_MECHNAME, gss_param,
 			       GAA_IDENTITY, 1, 0)) != GAA_S_SUCCESS)
 	return(status);
     return(gaa_add_cred(gaa, sc, cred));
@@ -63,7 +66,8 @@ gaa_gss_generic_cred_pull(gaa_ptr		gaa,
  *        input/output credential (an unevaluated credential is input
  *        and will be filled in if appropriate).
  * @param raw
- *        input "raw" credential -- a (gss_ctx_id_t) gss security context.
+ *        input "raw" credential --  a (gaa_gss_generic_param_t) containing
+ *	  a gss security context or credential.
  * @param cred_type
  *        this argument is ignored
  * @param params
@@ -86,11 +90,10 @@ gaa_gss_generic_cred_eval(gaa_ptr		gaa,
     OM_uint32				majstat;
     OM_uint32				minstat;
     gss_name_t				src_name;
-    gss_ctx_id_t			context;
+    gaa_gss_generic_param_s *		gss_param;
     gss_OID				mech_type;
     gss_buffer_desc			nbuf;
     gss_buffer_t			namebuf = &nbuf;
-    gaa_sec_attrb *			principal;
     char **				authp = (char **)params;
 
     if (cred == 0)
@@ -99,11 +102,25 @@ gaa_gss_generic_cred_eval(gaa_ptr		gaa,
     if (authp == 0)
 	return(GAA_STATUS(GAA_S_CONFIG_ERR, 0));
 
-    context = (gss_ctx_id_t)raw;
-    if ((majstat = gss_inquire_context(&minstat, context, &src_name,
-				       0, 0, &mech_type, 0, 0,
-				       0)) != GSS_S_COMPLETE)
-	return(GAA_STATUS(GAA_S_CRED_EVAL_FAILURE, 0));
+    gss_param = (gaa_gss_generic_param_t)raw;
+    if (gss_param->type == GAA_GSS_GENERIC_CTX)
+    {
+	    if ((majstat = gss_inquire_context(&minstat, gss_param->param.ctx,
+					       &src_name,
+					       0, 0, &mech_type, 0, 0,
+					       0)) != GSS_S_COMPLETE)
+		    return(GAA_STATUS(GAA_S_CRED_EVAL_FAILURE, 0));
+    }
+    else if (gss_param->type == GAA_GSS_GENERIC_CRED)
+    {
+	    if ((majstat = gss_inquire_cred(&minstat, gss_param->param.cred,
+					    &src_name,
+					    0, 0,
+					    0)) != GSS_S_COMPLETE)
+		    return(GAA_STATUS(GAA_S_CRED_EVAL_FAILURE, 0));
+    }
+    else
+	    return(GAA_STATUS(GAA_S_CRED_EVAL_FAILURE, 0));
     if ((majstat = gss_display_name(&minstat, src_name, namebuf,
 				    0)) != GSS_S_COMPLETE)
 	return(GAA_STATUS(GAA_S_CRED_EVAL_FAILURE, 0));
@@ -113,7 +130,7 @@ gaa_gss_generic_cred_eval(gaa_ptr		gaa,
 	return(status);
     if ((status = gaa_new_identity_info(gaa, &(cred->info.id_info))) != GAA_S_SUCCESS)
 	return(status);
-    cred->mech_spec_cred = context;
+    cred->mech_spec_cred = gss_param;
     cred->type = cred->principal->type;
     return(GAA_S_SUCCESS);
 }
@@ -141,7 +158,7 @@ gaa_status
 gaa_gss_generic_cred_verify(gaa_cred *	cred,
 			  void *	params)
 {
-    gss_ctx_id_t			context;
+    gaa_gss_generic_param_t		gss_param;
     gss_OID				mech_type;
     OM_uint32				majstat;
     OM_uint32				minstat;
@@ -157,12 +174,27 @@ gaa_gss_generic_cred_verify(gaa_cred *	cred,
 	strcmp(cred->principal->authority, *authp) ||
 	cred->principal->value == 0)
 	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
-    if ((context = (gss_ctx_id_t)cred->mech_spec_cred) == 0)
+    if ((gss_param = (gaa_gss_generic_param_t)cred->mech_spec_cred) == 0)
 	return(GAA_STATUS(GAA_S_CRED_VERIFY_FAILURE, 0));
-    if ((majstat = gss_inquire_context(&minstat, context, &src_name,
-				       0, &lifetime, &mech_type, 0, 0,
-				       0)) != GSS_S_COMPLETE)
-	return(GAA_STATUS(GAA_S_CRED_VERIFY_FAILURE, 0));
+    if (gss_param->type == GAA_GSS_GENERIC_CTX)
+    {
+	    if ((majstat = gss_inquire_context(&minstat, gss_param->param.ctx,
+					       &src_name,
+					       0, &lifetime, &mech_type, 0, 0,
+					       0)) != GSS_S_COMPLETE)
+		    return(GAA_STATUS(GAA_S_CRED_VERIFY_FAILURE, 0));
+    }
+    else if (gss_param->type == GAA_GSS_GENERIC_CRED)
+    {
+	    if ((majstat = gss_inquire_cred(&minstat, gss_param->param.cred,
+					    &src_name,
+					    &lifetime, 0,
+					    0)) != GSS_S_COMPLETE)
+		    return(GAA_STATUS(GAA_S_CRED_VERIFY_FAILURE, 0));
+    }
+    else
+	    return(GAA_STATUS(GAA_S_CRED_VERIFY_FAILURE, 0));
+
     if (lifetime == 0)
     {
 	gaa_set_callback_err("GSS context has expired");
