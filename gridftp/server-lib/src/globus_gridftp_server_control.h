@@ -192,8 +192,8 @@ globus_gridftp_server_control_finished_auth(
  */
 typedef enum globus_gridftp_server_control_resource_mask_e
 {
-    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_DIRECTORY_LIST,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_DIRECTORY_LIST = 1,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY      = 2
 } globus_gridftp_server_control_resource_mask_t;
 
 /**
