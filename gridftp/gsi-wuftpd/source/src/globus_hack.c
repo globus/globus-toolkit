@@ -143,6 +143,7 @@ g_start()
     globus_result_t                   res;
     globus_reltime_t                  delay_time;
     globus_reltime_t                  period_time;
+    globus_ftp_control_parallelism_t  par;
 
 
     res = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
@@ -162,6 +163,11 @@ g_start()
               &g_data_handle,
               &host_port);
     assert(res == GLOBUS_SUCCESS);
+    par.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
+    par.fixed.size = 1;
+    globus_ftp_control_local_parallelism(
+              &g_data_handle,
+              &par);
 
     GlobusTimeReltimeSet(delay_time, 0, 0);
     GlobusTimeReltimeSet(period_time, 0, timeout_connect / 2);
@@ -324,6 +330,7 @@ g_send_data(
     globus_result_t                                 res;
     int                                             buffer_ndx;
     int                                             file_ndx;
+    int                                             connection_count = 4;
     globus_bool_t                                   l_timed_out = GLOBUS_FALSE;
 #ifdef THROUGHPUT
     int                                             bps;
@@ -457,6 +464,23 @@ g_send_data(
 
             jb_count += cnt;
 
+            res = globus_ftp_control_data_query_channels(
+                      handle,
+                      &connection_count,
+                      0);
+            assert(res == GLOBUS_SUCCESS);
+            globus_mutex_lock(&g_monitor.mutex);
+            {   
+                g_monitor.count++;
+                while(g_monitor.count == connection_count && 
+                      !g_monitor.abort &&
+                      !g_monitor.timed_out)
+                {
+                    globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
+                }
+            }
+            globus_mutex_unlock(&g_monitor.mutex);
+
             /*
              *  reset the alarm  when data comes in
             (void) signal(SIGALRM, g_alarm_signal);
@@ -516,7 +540,7 @@ g_send_data(
          */
         globus_mutex_lock(&g_monitor.mutex);
         {   
-            while(g_monitor.count < cb_count && 
+            while(g_monitor.count > 0 && 
                   !g_monitor.abort &&
                   !g_monitor.timed_out)
             {
@@ -681,7 +705,7 @@ data_write_callback(
 
     globus_mutex_lock(&monitor->mutex);
     {
-        monitor->count++;
+        monitor->count--;
         globus_cond_signal(&monitor->cond);
     }
     globus_mutex_unlock(&monitor->mutex);
