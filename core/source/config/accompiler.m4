@@ -405,7 +405,7 @@ case ${host}--$1 in
 	       ])
 	fi
       ;;
-    alpha-dec-osf[45]* )
+    *-dec-osf4* | *-dec-osf5* )
         dnl No 64bit support yet
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
@@ -416,8 +416,7 @@ case ${host}--$1 in
 	if test "$1" = "pthreads" ; then
             LAC_PROG_CC_GNU($lac_cv_CC,
 			[ ],
-			[lac_CFLAGS="-pthread $lac_CFLAGS"
-			 lac_LDFLAGS="-pthread $lac_LDFLAGS"])
+			[lac_CFLAGS="-pthread $lac_CFLAGS"])
 	    LAC_PROG_CC_GNU($lac_cv_CXX,
 			[ ],
 			[lac_CXXFLAGS="-pthread $lac_CXXFLAGS"])
