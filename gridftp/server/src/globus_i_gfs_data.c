@@ -1481,14 +1481,14 @@ globus_l_gfs_data_write_eof_cb(
     globus_bool_t                       eof)
 {
     globus_gridftp_server_operation_t   op;
-    GlobusGFSName(globus_l_gfs_data_write_eof_cb);
-    
-    op = (globus_gridftp_server_operation_t) user_arg;
     
     /* XXX mode s only */
     /* racey shit here */
     globus_gfs_ipc_reply_t *            reply;   
     globus_gfs_ipc_event_reply_t *            event_reply;   
+    GlobusGFSName(globus_l_gfs_data_write_eof_cb);
+    
+    op = (globus_gridftp_server_operation_t) user_arg;
     reply = (globus_gfs_ipc_reply_t *) 
         globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
     event_reply = (globus_gfs_ipc_event_reply_t *) 
@@ -1625,6 +1625,7 @@ globus_gridftp_server_finished_transfer(
       /* this state always means this was called internally */
       case GLOBUS_L_GFS_DATA_ERROR:
         globus_i_gfs_data_handle_close(op->data_handle);
+        {
         /* racey shit here */
         globus_gfs_ipc_reply_t *            reply;   
         globus_gfs_ipc_event_reply_t *            event_reply;   
@@ -1663,7 +1664,7 @@ globus_gridftp_server_finished_transfer(
         */
         op->state = GLOBUS_L_GFS_DATA_ERROR_COMPLETE;
         break;
-      
+      }
       default:
         globus_assert(0 && "Invalid state");
         break;
