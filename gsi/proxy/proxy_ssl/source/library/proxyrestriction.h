@@ -2,10 +2,6 @@
 #ifndef HEADER_PROXYRESTRICTION_H
 #define HEADER_PROXYRESTRICTION_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @defgroup proxyrestriction ProxyRestriction
  *
@@ -24,6 +20,18 @@ extern "C" {
  * draft-ietf-pkix-proxy-01.txt
  */
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 /* Used for error handling */
 #define ASN1_F_PROXYRESTRICTION_NEW                      450
 #define ASN1_F_D2I_PROXYRESTRICTION                      451
@@ -32,7 +40,6 @@ extern "C" {
 
 /**
  * @ingroup proxyrestriction
- * @tupedef PROXYRESTRICTION
  *
  * @note NOTE: The API provides functions to manipulate
  * the fields of a PROXYRESTRICTION.  Accessing the fields
@@ -105,8 +112,6 @@ PROXYRESTRICTION * d2i_PROXYRESTRICTION(
     unsigned char **                    a,
     long                                length);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
 #endif /* HEADER_PROXYRESTRICTION_H */

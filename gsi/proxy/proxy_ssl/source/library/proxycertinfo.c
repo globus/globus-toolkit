@@ -1,3 +1,13 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file proxycertinfo.c
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ * $Author$
+ */
+#endif
 
 #include <stdio.h>
 #include <openssl/err.h>
@@ -7,6 +17,12 @@
 #include "proxycertinfo.h"
 
 /**
+ * @name ASN1_METHOD
+ */
+/*@{*/
+/** 
+ * Define the functions required for 
+ * manipulating a PROXYCERTINFO and its ASN1 form. 
  * @ingroup proxycertinfo
  * 
  * Creates an ASN1_METHOD structure, which contains
@@ -27,8 +43,16 @@ ASN1_METHOD * PROXYCERTINFO_asn1_meth()
     };
     return (&proxycertinfo_asn1_meth);
 }
+/* PROXYCERTINFO_asn1_meth() */
+/*@}*/
+
 
 /**
+ * @name New
+ */
+/*@{*/
+/**
+ * Create a new PROXYCERTINFO.
  * @ingroup proxycertinfo
  *
  * Allocates and initializes a new PROXYCERTINFO structure.
@@ -54,11 +78,17 @@ PROXYCERTINFO * PROXYCERTINFO_new()
     return (ret);
     M_ASN1_New_Error(ASN1_F_PROXYCERTINFO_NEW);
 }
+/* PROXYCERTINFO_new() */
+/* @} */
+
 
 /**
+ * @name Free.
+ */
+/* @{ */
+/**
+ * Free a PROXYCERTINFO.
  * @ingroup proxycertinfo
- *
- * Frees the PROXYCERTINFO structure
  *
  * @param cert_info pointer to the PROXYCERTINFO structure
  * to be freed.
@@ -76,8 +106,16 @@ void PROXYCERTINFO_free(
     X509_SIG_free(cert_info->issuer_signature);
     OPENSSL_free(cert_info);
 }
+/* PROXYCERTINFO_free */
+/* @} */
+
 
 /**
+ * @name Duplicate
+ */
+/* @{ */
+/**
+ * Makes a copy of a PROXYCERTINFO.
  * @ingroup proxycertinfo
  *
  * Makes a copy of a PROXYCERTINFO structure
@@ -93,8 +131,14 @@ PROXYCERTINFO * PROXYCERTINFO_dup(
                                        (char *(*)())d2i_PROXYCERTINFO,
                                        (char *)cert_info));
 }
+/* PROXYCERINFO_dup() */
+/* @} */
 
 /**
+ * @name Compare
+ */
+/* @{ */
+/** 
  * @ingroup proxycertinfo
  * 
  * Compares two PROXYCERTINFO structures
@@ -122,12 +166,20 @@ int PROXYCERTINFO_cmp(
     }
     return 0;
 }
+/* PROXYCERTINFO_cmp() */
+/* @} */
 
+
+/**
+ * @name Print to a BIO stream
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  *
  * print the PROXYCERTINFO structure to stdout
  *
+ * @param bp the BIO to print to
  * @param cert_info the PROXYCERTINFO to print
  *
  * @return 1 on success, 0 on error
@@ -177,7 +229,14 @@ int PROXYCERTINFO_print(
     }
     return (ret);
 }
+/* PROXYCERTINFO_print() */
+/* @} */
 
+
+/**
+ * @name Print From Stream
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -204,8 +263,15 @@ int PROXYCERTINFO_print_fp(
 
     return (ret);
 }   
+/* PROXYCERTINFO_print_fp() */
+/* @} */
+
 
 /**
+ * @name Get the Proxy Certificate Field
+ */
+/* @{ */
+/** 
  * @ingroup proxycertinfo
  *
  * Returns the boolean pC value of the PROXYCERTINFO
@@ -220,8 +286,15 @@ ASN1_BOOLEAN * PROXYCERTINFO_get_pC(
 {
     return cert_info->pC;
 }
+/* PROXYCERTINFO_get_pC() */
+/* @} */
+
 
 /**
+ * @name Set the Proxy Certificate Field
+ */
+/* @{ */
+/** 
  * @ingroup proxycertinfo
  * 
  * Sets the boolean pC (proxy cert) value of the PROXYCERTINFO
@@ -239,8 +312,15 @@ int PROXYCERTINFO_set_pC(
     *(cert_info->pC) = pC;
     return 1;
 }
+/* PROXYCERTINFO_set_pC() */
+/* @} */
+
 
 /**
+ * @name Set the Version Field
+ */
+/* @{ */
+/** 
  * @ingroup proxycertinfo
  *
  * Sets the version of the PROXYCERTINFO struct
@@ -256,7 +336,13 @@ int PROXYCERTINFO_set_version(
 {
     return ASN1_INTEGER_set(cert_info->version, version);
 }
+/* PROXYCERTINFO_set_version */
+/* @} */
 
+/**
+ * @name Get the Version Field
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -271,7 +357,14 @@ long PROXYCERTINFO_get_version(
 {
     return ASN1_INTEGER_get(cert_info->version);
 }
+/* PROXYCERTINFO_get_version() */
+/* @} */
 
+
+/**
+ * @name Set the Group Field
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -305,7 +398,14 @@ int PROXYCERTINFO_set_group(
     }
     return 1;
 }
+/* PROXYCERTINFO_set_group() */
+/* @} */
 
+
+/**
+ * @name Get the Group Field
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -321,7 +421,14 @@ PROXYGROUP * PROXYCERTINFO_get_group(
 {
     return cert_info->group;
 }
+/* PROXYCERTINFO_get_group() */
+/* @} */
 
+
+/**
+ * @name Set the Restriction Field
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -354,7 +461,13 @@ int PROXYCERTINFO_set_restriction(
     }
     return 1;
 }
+/* PROXYCERTINFO_set_restriction() */
+/* @} */
 
+/**
+ * @name Get the Restriction Field 
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  * 
@@ -369,7 +482,14 @@ PROXYRESTRICTION * PROXYCERTINFO_get_restriction(
 {
     return cert_info->restriction;
 }
+/* PROXYCERTINFO_get_restriction() */
+/* @} */
 
+
+/**
+ * @name Set the Path Length Field 
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -408,7 +528,14 @@ int PROXYCERTINFO_set_path_length(
     }
     return 0;
 }
+/* PROXYCERTINFO_set_path_length() */
+/* @} */
 
+
+/**
+ * @name Get Path Length Field
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  * 
@@ -425,7 +552,13 @@ long PROXYCERTINFO_get_path_length(
 {
     return ASN1_INTEGER_get(cert_info->path_length);
 }
+/* PROXYCERTINFO_get_path_length() */
+/* @} */
 
+/**
+ * @name Set Issuer Signature Field
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -459,7 +592,14 @@ int PROXYCERTINFO_set_issuer_signature(
     }
     return 1;
 }
+/* PROXYCERTINFO_set_issuer_signature() */
+/* @} */
 
+
+/**
+ * @name Get Issuer Signature Field
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  *
@@ -476,7 +616,14 @@ X509_SIG * PROXYCERTINFO_get_issuer_signature(
 {
     return cert_info->issuer_signature;
 }
+/* PROXYCERTINFO_get_issuer_signature() */
+/* @} */
+
     
+/**
+ * @name Convert PROXYCERTINFO to DER encoding
+ */
+/* @{ */
 /**
  * @ingroup proxycertinfo
  * 
@@ -484,7 +631,7 @@ X509_SIG * PROXYCERTINFO_get_issuer_signature(
  * format to a DER encoded ASN.1 string
  *
  * @param cert_info the PROXYCERTINFO structure to convert
- * @param buffer the resulting DER encoded string
+ * @param pp the resulting DER encoded string
  *
  * @return the length of the DER encoded string
  */
@@ -525,7 +672,14 @@ int i2d_PROXYCERTINFO(
                            i2d_X509_SIG, 4, v4);
     M_ASN1_I2D_finish();
 }
+/* i2d_PROXYCERTINFO() */
+/* @} */
 
+
+/**
+ * @name Convert a PROXYCERTINFO to internal form
+ */
+/* @{ */
 /**
  * @ingroup
  *
@@ -574,3 +728,5 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
                       PROXYCERTINFO_free, 
                       ASN1_F_D2I_PROXYCERTINFO);
 }
+/* d2i_PROXYCERTINFO() */
+/* @} */

@@ -6,6 +6,10 @@
 #include "proxyrestriction.h"
 
 /**
+ * @name Get a method for ASN1 conversion
+ */
+/* @{ */
+/**
  * @ingroup proxyrestriction
  *  
  * Creates an ASN1_METHOD structure, which contains
@@ -27,7 +31,14 @@ ASN1_METHOD * PROXYRESTRICTION_asn1_meth()
     };
     return (&proxyrestriction_asn1_meth);
 }
+/* PROXYRESTRICTION_asn1_meth() */
+/* @} */
 
+
+/**
+ * @name New
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -48,7 +59,14 @@ PROXYRESTRICTION * PROXYRESTRICTION_new()
     return (ret);
     M_ASN1_New_Error(ASN1_F_PROXYRESTRICTION_NEW);
 }
+/* PROXYRESTRICTION_new() */
+/* @} */
 
+
+/**
+ * @name Free
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -64,7 +82,14 @@ void PROXYRESTRICTION_free(
     M_ASN1_OCTET_STRING_free(restriction->policy);
     OPENSSL_free(restriction);
 }
+/* PROXYRESTRICTION_free() */
+/* @} */
 
+
+/**
+ * @name Duplicate
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  * 
@@ -84,7 +109,14 @@ PROXYRESTRICTION * PROXYRESTRICTION_dup(
                                           (char *(*)())d2i_PROXYRESTRICTION,
                                           (char *)restriction));
 }
+/* PROXYRESTRICTION_dup() */
+/* @} */
 
+
+/**
+ * @name Compare
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -106,7 +138,13 @@ int PROXYRESTRICTION_cmp(
     }
     return 0;
 }
+/* @} */
 
+
+/**
+ * @name Print to a BIO stream
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -149,7 +187,13 @@ int PROXYRESTRICTION_print(
     
     return (ret + tmpret);
 }
+/* @} */
 
+
+/**
+ * @name Print to a File Stream
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -173,7 +217,13 @@ int PROXYRESTRICTION_print_fp(
 
     return (ret);
 }
+/* @} */
 
+
+/**
+ * @name Set the Policy Language Field
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -196,7 +246,13 @@ int PROXYRESTRICTION_set_policy_language(
     }
     return 0;
 }
+/* @} */
 
+
+/**
+ * @name Get the Policy Language Field
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  * 
@@ -212,7 +268,13 @@ ASN1_OBJECT * PROXYRESTRICTION_get_policy_language(
 {
     return restriction->policy_language;
 }
+/* @} */
 
+
+/**
+ * @name Set the Policy Field
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -236,7 +298,13 @@ int PROXYRESTRICTION_set_policy(
     }
     return 0;
 }
+/* @} */
 
+
+/**
+ * @name Get the Policy Field
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -255,7 +323,13 @@ unsigned char * PROXYRESTRICTION_get_policy(
     (*length) = restriction->policy->length;
     return restriction->policy->data;
 }
+/* @} */
 
+
+/**
+ * @name Convert from Internal to DER encoded form
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -283,7 +357,13 @@ int i2d_PROXYRESTRICTION(
 
     M_ASN1_I2D_finish();
 }
+/* @} */
 
+
+/**
+ * @name Convert from DER encoded form to Internal
+ */
+/* @{ */
 /**
  * @ingroup proxyrestriction
  *
@@ -313,3 +393,4 @@ PROXYRESTRICTION * d2i_PROXYRESTRICTION(
                       PROXYRESTRICTION_free, 
                       ASN1_F_D2I_PROXYRESTRICTION);
 }
+/* @} */

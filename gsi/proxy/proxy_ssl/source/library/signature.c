@@ -7,6 +7,10 @@
 #include "signature.h"
 
 /**
+ * @name Method for ASN1 Conversion Functions
+ */
+/* @{ */
+/**
  * @ingroup signature
  * Creates an ASN1_METHOD structure, which contains pointers 
  * to routines that convert any X509_SIG structure to DER 
@@ -25,7 +29,12 @@ ASN1_METHOD * X509_SIG_asn1_method()
     };
     return (&x509_signature_meth);
 }
+/* @} */
 
+/**
+ * @name Duplicate
+ */
+/* @{ */
 /**
  * @ingroup signature
  * Makes a copy of the X509_SIG
@@ -43,7 +52,13 @@ X509_SIG * X509_SIG_dup(
                                   (char *(*)())d2i_X509_SIG,
                                   (char *)signature));
 }
+/* @} */
 
+
+/**
+ * @name Compare
+ */
+/* @{ */
 /**
  * @ingroup signature
  * Compares two X509_SIG structures
@@ -65,10 +80,16 @@ int X509_SIG_cmp(
     ret &= ASN1_STRING_cmp(a->digest, b->digest);
     return (ret);
 }
+/* @} */
+
 
 /**
+ * @name Print to a BIO Stream
+ */
+/* @{ */
+/**
  * @ingroup signature
- * Prints the X509_SIG structure to stdout
+ * Prints the X509_SIG structure to a BIO
  * 
  * @param bp  a BIO pointer to print to
  * @param signature pointer to the X509_SIG to be printed
@@ -98,7 +119,13 @@ int X509_SIG_print(
     BIO_pop(bp);
     return (tmpret + ret);
 }
+/* @} */
 
+
+/**
+ * @name Print to a File Stream
+ */
+/* @{ */
 /**
  * @ingroup signature
  * Prints the X509_SIG structure to a file stream
@@ -129,7 +156,13 @@ int X509_SIG_print_fp(
 
     return (ret);
 }
+/* @} */
 
+
+/**
+ * @name Get the Algorithm Field
+ */
+/* @{ */
 /**
  * @ingroup signature
  * Determines the algorithm used to generate the signature
@@ -169,7 +202,13 @@ EVP_MD * X509_SIG_get_algorithm(
         default:             return EVP_md_null();
     }
 }
+/* @} */
 
+
+/**
+ * @name Set the Algorithm Field
+ */
+/* @{ */
 /**
  * @ingroup signature
  * Sets the signature value of the X509_SIG structure 
@@ -195,13 +234,19 @@ int X509_SIG_set(
     signature->algor = X509_ALGOR_dup(cert->sig_alg);
     return (ret);
 }
+/* @} */
 
+
+/**
+ * @name Get the Signature Field
+ */
+/* @{ */
 /**
  * @ingroup signature
  * Returns the bit string of a signature
  *
  * @param signature the X509_SIG structure to return the bit string of
- * @param pointer to the length of the bit string - this value gets set
+ * @param length to the length of the bit string - this value gets set
  *
  * @return the bit string in a byte array (char *)
  */
@@ -212,3 +257,4 @@ unsigned char * X509_SIG_get_signature(
     (*length) = signature->digest->length;
     return (unsigned char *) signature->digest->data;
 }    
+/* @} */

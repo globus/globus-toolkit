@@ -2,6 +2,22 @@
 #ifndef HEADER_PROXYCERTINFO_H
 #define HEADER_PROXYCERTINFO_H
 
+/**
+ * @anchor globus_gsi_proxy_ssl_api
+ * @mainpage Globus GSI Proxy SSL API
+ *
+ * The globus_gsi_proxy_ssl library provides the ability
+ * to create a PROXYCERTINFO extension to be included in
+ * an X509 certificate.  The current specification for the
+ * extension is described in the Internet Draft 
+ * Document: draft-ietf-pkix-proxy-01.txt
+ * 
+ * The library conforms to the ASN1 implementation in
+ * the OPENSSL library (formerly SSLeay), and provides
+ * an interface to convert from a DER encoded PROXYCERTINFO
+ * to its internal structure and vice-versa.
+ */
+
 #include "signature.h"
 #include "proxyrestriction.h"
 #include "proxygroup.h"
@@ -9,9 +25,18 @@
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
 
-#ifdef __cplusplus
-extern "C" {
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
 #endif
+
+EXTERN_C_BEGIN
+
 
 /**
  * @defgroup proxycertinfo ProxyCertInfo
@@ -20,9 +45,7 @@ extern "C" {
  * @author Sam Lang
  * 
  * The proxycertinfo.h file defines a method of
- * maintaining information about proxy certificates
- * as defined in Internet Draft Document: 
- * draft-ietf-pkix-proxy-01.txt
+ * maintaining information about proxy certificates.
  */
 
 /**
@@ -35,7 +58,6 @@ extern "C" {
 
 /**
  * @ingroup proxycertinfo
- * @typedef PROXYCERTINFO
  *
  * This typedef maintains information about a proxy
  * certificate.
@@ -143,8 +165,6 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
     unsigned char **                    a,
     long                                length);
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
 #endif // HEADER_PROXYCERTINFO_H

@@ -6,6 +6,10 @@
 #include "proxygroup.h"
 
 /**
+ * @name Define the ASN1 conversion functions
+ */
+/* @{ */
+/**
  * @ingroup proxygroup
  *
  * Creates an ASN1_METHOD structure, which contains
@@ -26,7 +30,14 @@ ASN1_METHOD * PROXYGROUP_asn1_meth()
     };
     return (&proxygroup_asn1_meth);
 }
+/* PROXYGROUP_asn1_meth() */
+/* @} */
 
+
+/**
+ * @name New
+ */
+/* @{ */
 /**
  * @ingroup proxygroup
  *
@@ -48,7 +59,14 @@ PROXYGROUP * PROXYGROUP_new()
     return (ret);
     M_ASN1_New_Error(ASN1_F_PROXYGROUP_NEW);
 }
+/* PROXYGROUP_new() */
+/* @} */
 
+
+/**
+ * @name Free
+ */
+/* @{ */
 /**
  * @ingroup proxygroup
  *
@@ -66,7 +84,14 @@ void PROXYGROUP_free(
     group->attached_group = NULL;
     OPENSSL_free(group);
 }
+/* PROXYGROUP_free() */
+/* @} */
 
+
+/**
+ * @name Duplicate
+ */
+/* @{ */
 /**
  * @ingroup proxygroup
  *
@@ -83,7 +108,14 @@ PROXYGROUP * PROXYGROUP_dup(
                                     (char *(*)())d2i_PROXYGROUP,
                                     (char *)group));
 }
+/* PROXYGROUP_dup() */
+/* @} */
 
+
+/**
+ * @name Compare
+ */
+/* @{ */
 /**
  * @ingroup proxygroup
  *
@@ -109,8 +141,17 @@ int PROXYGROUP_cmp(
     }
     return 0;
 }
+/* PROXYGROUP_cmp() */
+/* @} */
+
 
 /**
+ * @name Print to a BIO
+ */
+/* @{ */
+/**
+ * @ingroup proxygroup
+ *
  * prints the PROXYGROUP struct in a readable format
  * using a BIO stream
  *
@@ -139,8 +180,17 @@ int PROXYGROUP_print(
 
     return (ret + tmpret);
 }
+/* PROXYGROUP_print() */
+/* @} */
+
 
 /**
+ * @name Print to a file stream
+ */
+/* @{ */
+/**
+ * @ingroup proxygroup
+ *
  * prints the PROXYGROUP struct in a readable format
  * using a FILE * stream
  *
@@ -162,8 +212,17 @@ int PROXYGROUP_print_fp(
 
     return (ret);
 }
+/* PROXYGROUP_print_fp() */
+/* @} */
+
 
 /**
+ * @name Set the Name Field
+ */
+/* @{ */
+/**
+ * @ingroup proxygroup
+ *
  * Sets the name of the group a proxy cert is in
  *
  * @param group the PROXYGROUP to set the name of
@@ -183,8 +242,17 @@ int PROXYGROUP_set_name(
     }
     return 0;
 }
+/* PROXYGROUP_set_name() */
+/* @} */
+
 
 /**
+ * @name Get the Name Field
+ */
+/* @{ */
+/**
+ * @ingroup proxygroup
+ *
  * Gets the name of the PROXYGROUP
  *
  * @param group the PROXYGROUP to get the name of
@@ -199,8 +267,17 @@ char * PROXYGROUP_get_name(
     *length = group->group_name->length;
     return group->group_name->data;
 }
+/* PROXYGROUP_get_name() */
+/* @} */
+
 
 /**
+ * @name Set the Attached Field
+ */
+/* @{ */
+/**
+ * @ingroup proxygroup
+ *
  * Sets the value of the PROXYGROUP's attached field to 
  * true or false.  
  *
@@ -216,8 +293,17 @@ int PROXYGROUP_set_attached(
     *(group->attached_group) = attached;
     return 1;
 }
+/* PROXYGROUP_set_attached() */
+/* @} */
+
 
 /**
+ * @name Get the Attached Field
+ */
+/* @{ */
+/**
+ * @ingroup proxygroup
+ *
  * Gets the attached setting of a PROXYGROUP
  *
  * @param group the PROXYGROUP to get the attached field of
@@ -229,8 +315,16 @@ ASN1_BOOLEAN * PROXYGROUP_get_attached(
 {
     return group->attached_group;
 }
+/* PROXYGROUP_get_attached() */
+/* @} */
 
 /**
+ * @name Convert to DER encoded form
+ */
+/* @{ */
+/**
+ * @ingroup proxygroup
+ *
  * Converts the PROXYGROUP struct from internal
  * form to its DER encoded form
  *
@@ -255,8 +349,17 @@ int i2d_PROXYGROUP(
 
     M_ASN1_I2D_finish();
 }
+/* i2d_PROXYGROUP() */
+/* @} */
+
 
 /**
+ * @name Convert to Internal form
+ */
+/* @{ */
+/**
+ * @ingroup proxygroup
+ *
  * Converts a PROXYGROUP struct from its DER encoded
  * form to its internal (data structure) form
  *
@@ -286,3 +389,5 @@ PROXYGROUP * d2i_PROXYGROUP(
 
     M_ASN1_D2I_Finish(a, PROXYGROUP_free, ASN1_F_D2I_PROXYGROUP);
 }
+/* d2i_PROXYGROUP() */
+/* @} */

@@ -2,10 +2,6 @@
 #ifndef HEADER_PROXYGROUP_H
 #define HEADER_PROXYGROUP_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @defgroup proxygroup ProxyGroup
  *
@@ -23,6 +19,20 @@ extern "C" {
  * draft-ietf-pkix-proxy-01.txt
  */
 
+
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
+
 /* Used for error handling */
 #define ASN1_F_PROXYGROUP_NEW                            440
 #define ASN1_F_D2I_PROXYGROUP                            441
@@ -31,7 +41,6 @@ extern "C" {
 
 /**
  * @ingroup proxygroup
- * @typedef PROXYGROUP
  *
  * @note NOTE: The API provides functions to manipulate
  * the fields of a PROXYGROUP.  Accessing the fields
@@ -106,8 +115,6 @@ PROXYGROUP * d2i_PROXYGROUP(
     unsigned char **                    a,
     long                                length);
 
-#ifdef _cplusplus
-}
-#endif
+EXTERN_C_END
 
 #endif // HEADER_PROXYGROUP_H

@@ -2,10 +2,6 @@
 #ifndef HEADER_SIGNATURE_H
 #define HEADER_SIGNATURE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @defgroup signature Signature
  *
@@ -21,6 +17,18 @@ extern "C" {
  */
 
 #include <openssl/x509.h>
+
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
 
 ASN1_METHOD * X509_SIG_asn1_meth();
 
@@ -59,9 +67,6 @@ X509_SIG * d2i_X509_SIG(
     unsigned char **                    buffer,
     long                                length);
 
-
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 
 #endif // HEADER_SIGNATURE_H
