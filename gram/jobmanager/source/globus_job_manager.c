@@ -1102,16 +1102,22 @@ main(int argc,
 
     nexus_disallow_attach(my_port);
 
-    if ((request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) || 
-        (request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
+    if (globus_l_gram_stdout_fd != -1)
     {
         globus_l_gram_delete_file_list(globus_l_gram_stdout_fd,
                                        &globus_l_gram_stdout_files);
+        globus_gass_close(globus_l_gram_stdout_fd);
+    }
+    if (globus_l_gram_stderr_fd != -1)
+    {
         globus_l_gram_delete_file_list(globus_l_gram_stderr_fd,
                                        &globus_l_gram_stderr_files);
-        globus_gass_close(globus_l_gram_stdout_fd);
         globus_gass_close(globus_l_gram_stderr_fd);
+    }
 
+    if ((request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) || 
+        (request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
+    {
         globus_l_gram_client_callback(request->status,
                                       request->failure_code);
     }
