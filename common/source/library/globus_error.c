@@ -1,6 +1,7 @@
 #include "globus_common_include.h"
 #include "globus_object_cache.h"
 #include "globus_error.h"
+#include "globus_error_generic.h"
 #include "globus_error_hierarchy.h"
 #include "globus_libc.h"
 #include "globus_module.h"
@@ -243,8 +244,10 @@ globus_error_construct_base (globus_module_descriptor_t * source_module,
         { \
             char *                          tmp_string; \
             \
-            tmp_string = globus_object_printable_to_string(error); \
-            globus_libc_fprintf(stderr, "globus_error_put(): %s\n", tmp_string); \
+            tmp_string = globus_error_print_chain(error); \
+            if(tmp_string) \
+                globus_libc_fprintf( \
+                    stderr, "globus_error_put(): %s\n", tmp_string); \
             globus_free(tmp_string); \
         } \
     } while(0)
@@ -259,14 +262,29 @@ globus_error_construct_base (globus_module_descriptor_t * source_module,
 static globus_object_cache_t s_result_to_object_mapper;
 static globus_uint_t         s_next_available_result_count;
 static globus_mutex_t        s_result_to_object_mutex;
+static globus_thread_key_t   s_peek_key;
 
 static int  s_error_cache_initialized = 0;
 static globus_bool_t globus_i_error_output = GLOBUS_FALSE;
 
+static
+void
+s_key_destructor_func(
+    void *                              value)
+{
+    globus_object_free((globus_object_t *) value);
+}
+
 static int s_error_cache_init (void)
 {
     char *                              tmp_string;
-    
+  
+  if(globus_module_activate(GLOBUS_OBJECT_MODULE) != GLOBUS_SUCCESS)
+  {
+    return GLOBUS_FAILURE;
+  }
+  globus_thread_key_create(&s_peek_key, s_key_destructor_func);
+				   
   globus_object_cache_init (&s_result_to_object_mapper);
   globus_mutex_init (&s_result_to_object_mutex, NULL);
   s_next_available_result_count = 1;
@@ -283,9 +301,14 @@ static int s_error_cache_init (void)
 
 static int s_error_cache_destroy (void)
 {
+  globus_thread_key_delete(s_peek_key);
+    
   globus_object_cache_destroy (&s_result_to_object_mapper);
   globus_mutex_destroy (&s_result_to_object_mutex);
   s_error_cache_initialized = 0;
+  
+  globus_module_deactivate(GLOBUS_OBJECT_MODULE);
+  
   return GLOBUS_SUCCESS;
 }
 
@@ -308,6 +331,45 @@ globus_error_get (globus_result_t result)
 
   globus_mutex_unlock (&s_result_to_object_mutex);
 
+  if (error!=NULL) 
+    return error;
+  else
+    return GLOBUS_ERROR_NO_INFO;
+}
+
+globus_object_t *
+globus_error_peek(
+    globus_result_t                     result)
+{
+  globus_object_t * error;
+  int err;
+
+  if (! s_error_cache_initialized ) return NULL;
+
+  if ( result == GLOBUS_SUCCESS ) return NULL;
+
+  err = globus_mutex_lock (&s_result_to_object_mutex);
+  if (err) return NULL;
+
+  error = globus_object_cache_lookup (&s_result_to_object_mapper,
+				      result);
+  
+  if (error!=NULL) 
+  {
+    globus_object_t *                   cached;
+    
+    cached = (globus_object_t *) globus_thread_getspecific(s_peek_key);
+    if(cached)
+    {
+        globus_object_free(cached);
+    }
+    
+    globus_object_reference(error);
+    globus_thread_setspecific(s_peek_key, error);
+  }
+  
+  globus_mutex_unlock (&s_result_to_object_mutex);
+  
   if (error!=NULL) 
     return error;
   else

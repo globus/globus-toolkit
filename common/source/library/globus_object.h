@@ -4,6 +4,7 @@
 
 
 #include "globus_common_include.h"
+#include "globus_module.h"
 
 EXTERN_C_BEGIN
 
@@ -29,6 +30,7 @@ typedef struct globus_object_s {
   const globus_object_type_t *   type;
   struct globus_object_s *       parent_object;
   void *                         instance_data;
+  int                            ref_count;
 } globus_object_t;
 
 typedef char * (*globus_object_printable_string_func_t)
@@ -55,13 +57,17 @@ globus_object_construct_base ();
 {                                                                          \
   (object_type),                                                           \
   (parent_prototype),                                                      \
-  ((void *) NULL)                                                          \
+  ((void *) NULL),                                                         \
+  1                                                                        \
 }
 
 extern globus_object_t *
 globus_object_copy (const globus_object_t * object);
 /* returns fresh copy, or
  * returns NULL on error or if object is NULL */
+
+void
+globus_object_reference(globus_object_t * object);
 
 extern void
 globus_object_free (globus_object_t * object);
@@ -170,6 +176,9 @@ globus_object_printable_to_string (globus_object_t * object);
 extern globus_object_printable_string_func_t 
 globus_object_printable_get_string_func (globus_object_t * object);
 
+extern globus_module_descriptor_t globus_i_object_module;
+
+#define GLOBUS_OBJECT_MODULE (&globus_i_object_module)
 
 EXTERN_C_END
 
