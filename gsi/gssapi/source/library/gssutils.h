@@ -55,6 +55,11 @@ gss_create_and_fill_context(
     OM_uint32                           req_flags);
 
 OM_uint32
+gss_create_anonymous_cred(
+    gss_cred_id_t *                     output_cred_handle,
+    const gss_cred_usage_t              cred_usage);
+
+OM_uint32
 gss_create_and_fill_cred(
     gss_cred_id_t *                     output_cred_handle_P,
     const gss_cred_usage_t              cred_usage,

@@ -88,6 +88,14 @@ GSS_CALLCONV gss_init_sec_context(
 
     context = *context_handle_P;
 
+
+    if(req_flags & GSS_C_ANON_FLAG & GSS_C_DELEG_FLAG)
+    {
+        GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
+        major_status = GSS_S_FAILURE;
+        return major_status;
+    }
     
     if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))

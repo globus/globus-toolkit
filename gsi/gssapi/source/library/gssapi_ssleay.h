@@ -78,7 +78,7 @@ CVS Information:
 #define GSSERR_F_NAME_TO_NAME           GSSERR_F_BASE + 11
 #define GSSERR_F_CREATE_FILL            GSSERR_F_BASE + 12
 #define GSSERR_F_GS_HANDSHAKE           GSSERR_F_BASE + 13
-#define GSSERR_F_GS_RETRIVE_PEER        GSSERR_F_BASE + 14
+#define GSSERR_F_GS_RETRIEVE_PEER       GSSERR_F_BASE + 14
 
 #define GSSERR_F_WRAP                   GSSERR_F_BASE + 15
 #define GSSERR_F_UNWRAP                 GSSERR_F_BASE + 16
@@ -99,6 +99,7 @@ CVS Information:
 #define GSSERR_F_ADD_OID_SET_MEMBER     GSSERR_F_BASE + 29
 #define GSSERR_F_CREATE_EMPTY_OID_SET   GSSERR_F_BASE + 30
 #define GSSERR_F_TEST_OID_SET_MEMBER    GSSERR_F_BASE + 31
+#define GSSERR_F_SET_SEC_CONTEXT_OPT    GSSERR_F_BASE + 32
 
 
 /*
@@ -130,7 +131,6 @@ CVS Information:
 #define GSSERR_R_IMPEXP_BIO_SSL                 GSSERR_R_BASE + 8
 #define GSSERR_R_IMPEXP_NO_CIPHER               GSSERR_R_BASE + 9
 #define GSSERR_R_IMPEXP_BAD_LEN                 GSSERR_R_BASE + 10
-#define GSSERR_R_CLASS_ADD_EXT                  GSSERR_R_BASE + 11
 #define GSSERR_R_EXPORT_FAIL                    GSSERR_R_BASE + 12
 #define GSSERR_R_IMPORT_FAIL                    GSSERR_R_BASE + 13
 #define GSSERR_R_READ_BIO                       GSSERR_R_BASE + 14
@@ -284,6 +284,7 @@ typedef struct gss_name_desc_struct {
     /* gss_buffer_desc  name_buffer ; */
     gss_OID                             name_oid;
     X509_NAME *                         x509n;
+    STACK_OF(ASN1_OCTET_STRING) *       group;
 } gss_name_desc ;
 
 typedef struct gss_cred_id_desc_struct {

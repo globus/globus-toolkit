@@ -197,6 +197,7 @@ ERR_set_continue_needed(void);
 #define PRXYERR_F_PROXY_SIGN_EXT               PRXYERR_F_BASE + 9
 #define PRXYERR_F_PROXY_CHECK_SUBJECT_NAME     PRXYERR_F_BASE + 10
 #define PRXYERR_F_PROXY_CONSTRUCT_NAME         PRXYERR_F_BASE + 11
+#define PRXYERR_F_SETUP_SSL_CTX                PRXYERR_F_BASE + 12
 
 /* 
  * defines for reasons 
@@ -250,27 +251,26 @@ ERR_set_continue_needed(void);
 #define PRXYERR_R_CB_NO_PW                     PRXYERR_R_BASE + 40
 #define PRXYERR_R_CB_CALLED_WITH_ERROR         PRXYERR_R_BASE + 41
 #define PRXYERR_R_CB_ERROR_MSG                 PRXYERR_R_BASE + 42
-#define PRXYERR_R_CLASS_ADD_OID                PRXYERR_R_BASE + 43
-#define PRXYERR_R_CLASS_ADD_EXT                PRXYERR_R_BASE + 44
-#define PRXYERR_R_DELEGATE_VERIFY              PRXYERR_R_BASE + 45
-#define PRXYERR_R_EXT_ADD                      PRXYERR_R_BASE + 46
-#define PRXYERR_R_DELEGATE_COPY                PRXYERR_R_BASE + 47
-#define PRXYERR_R_DELEGATE_CREATE              PRXYERR_R_BASE + 48
-#define PRXYERR_R_BUFFER_TOO_SMALL             PRXYERR_R_BASE + 49
-#define PRXYERR_R_PROXY_EXPIRED                PRXYERR_R_BASE + 50
-#define PRXYERR_R_NO_PROXY                     PRXYERR_R_BASE + 51
-#define PRXYERR_R_CA_UNKNOWN                   PRXYERR_R_BASE + 52
-#define PRXYERR_R_CA_NOPATH                    PRXYERR_R_BASE + 53
-#define PRXYERR_R_CA_NOFILE                    PRXYERR_R_BASE + 54
-#define PRXYERR_R_CA_POLICY_ERR                PRXYERR_R_BASE + 55
-#define PRXYERR_R_INVALID_CERT                 PRXYERR_R_BASE + 56
-#define PRXYERR_R_CERT_NOT_YET_VALID           PRXYERR_R_BASE + 57
-#define PRXYERR_R_LOCAL_CA_UNKNOWN             PRXYERR_R_BASE + 58
-#define PRXYERR_R_REMOTE_CRED_EXPIRED          PRXYERR_R_BASE + 59
-#define PRXYERR_R_OUT_OF_MEMORY                PRXYERR_R_BASE + 60
-#define PRXYERR_R_BAD_ARGUMENT                 PRXYERR_R_BASE + 61
-#define PRXYERR_R_BAD_MAGIC                    PRXYERR_R_BASE + 62
-#define PRXYERR_R_UNKNOWN_CRIT_EXT             PRXYERR_R_BASE + 63
+#define PRXYERR_R_DELEGATE_VERIFY              PRXYERR_R_BASE + 43
+#define PRXYERR_R_EXT_ADD                      PRXYERR_R_BASE + 44
+#define PRXYERR_R_DELEGATE_COPY                PRXYERR_R_BASE + 45
+#define PRXYERR_R_DELEGATE_CREATE              PRXYERR_R_BASE + 46
+#define PRXYERR_R_BUFFER_TOO_SMALL             PRXYERR_R_BASE + 47
+#define PRXYERR_R_PROXY_EXPIRED                PRXYERR_R_BASE + 48
+#define PRXYERR_R_NO_PROXY                     PRXYERR_R_BASE + 49
+#define PRXYERR_R_PROCESS_CA_CERT              PRXYERR_R_BASE + 50
+#define PRXYERR_R_CA_UNKNOWN                   PRXYERR_R_BASE + 51
+#define PRXYERR_R_CA_NOPATH                    PRXYERR_R_BASE + 52
+#define PRXYERR_R_CA_NOFILE                    PRXYERR_R_BASE + 53
+#define PRXYERR_R_CA_POLICY_ERR                PRXYERR_R_BASE + 54
+#define PRXYERR_R_INVALID_CERT                 PRXYERR_R_BASE + 55
+#define PRXYERR_R_CERT_NOT_YET_VALID           PRXYERR_R_BASE + 56
+#define PRXYERR_R_LOCAL_CA_UNKNOWN             PRXYERR_R_BASE + 57
+#define PRXYERR_R_REMOTE_CRED_EXPIRED          PRXYERR_R_BASE + 58
+#define PRXYERR_R_OUT_OF_MEMORY                PRXYERR_R_BASE + 59
+#define PRXYERR_R_BAD_ARGUMENT                 PRXYERR_R_BASE + 60
+#define PRXYERR_R_BAD_MAGIC                    PRXYERR_R_BASE + 61
+#define PRXYERR_R_UNKNOWN_CRIT_EXT             PRXYERR_R_BASE + 62
 /* NOTE: Don't go over 1500 here or will conflict with errors in scutils.h */
 
 /* constants for gsi error messages 
@@ -513,10 +513,6 @@ int proxy_password_callback_no_prompt(
     int,
     int);
 
-X509_EXTENSION *
-proxy_extension_class_add_create(
-    void *                              buffer, 
-    size_t                              length);
 /*
  * SSLeay does not have a compare time function
  * So we add a convert to time_t function
@@ -542,6 +538,18 @@ d2i_integer_bio(
     long *                              v);
 
 
+int
+ssl_utils_setup_ssl_ctx(
+    SSL_CTX **                          context,
+    char *                              ca_cert_file,
+    char *                              ca_cert_dir,
+    X509 *                              client_cert,
+    EVP_PKEY *                          client_private_key,
+    STACK_OF(X509) *                    cert_chain,
+    int *                               num_null_enc_ciphers);
+
 EXTERN_C_END
 
 #endif /* _SSLUTILS_H */
+
+

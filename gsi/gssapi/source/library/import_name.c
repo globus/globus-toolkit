@@ -50,8 +50,8 @@ Description:
 		We will make up a name with only /CN=service/FQDN
 		This is done to match the Kerberos service names.          
 		For example the service name of host is used for logins etc. 
-	(1) /x=y/x=y... i.e. x500 type name
-    (2) commonname@globus.org
+        (1) /x=y/x=y... i.e. x500 type name
+        (2) commonname@globus.org
 	(3) commonname
 
 	With (2) or (3) the commonname is used to generate
@@ -69,190 +69,235 @@ Returns:
 **********************************************************************/
 
 OM_uint32 
-GSS_CALLCONV gss_import_name
-(OM_uint32 *          minor_status,
- const gss_buffer_t   input_name_buffer,
- const gss_OID        input_name_type,
- gss_name_t *         output_name_P
-)
+GSS_CALLCONV gss_import_name(
+    OM_uint32 *                         minor_status,
+    const gss_buffer_t                  input_name_buffer,
+    const gss_OID                       input_name_type,
+    gss_name_t *                        output_name_P)
 {
-  gss_name_desc* output_name;
-  X509_NAME * x509n;
-  X509_NAME_ENTRY *ne;
-  int nid;
-  char * buf;
-  char * cp;
-  char * np;
-  char * vp;
-  char * qp;
-  char * ep;
-  int len;
+    gss_name_desc *                     output_name;
+    X509_NAME *                         x509n;
+    X509_NAME_ENTRY *                   ne;
+    int                                 nid;
+    char *                              buf;
+    char *                              cp;
+    char *                              np;
+    char *                              vp;
+    char *                              qp;
+    char *                              ep;
+    int                                 len;
 
-  *minor_status = 0;
-  ne = NULL;
-  output_name = NULL;
-  buf = NULL;
+    *minor_status = 0;
+    ne = NULL;
+    output_name = NULL;
+    buf = NULL;
 
-  output_name = (gss_name_t) malloc(sizeof(gss_name_desc));
-  if (output_name == NULL) {
-    goto err;
-  } 
-
-  x509n = X509_NAME_new();
-  if (x509n == NULL) {
-    goto err; 
-  }
-   
-  /*
-   * copy input, so has trailing zero, and can be written over
-   * during parse
-   */
-
-  len = input_name_buffer->length;
-  if ((buf = (char *)malloc(len+1)) == NULL) {
-      goto err;
-  }
-
-  memcpy(buf, input_name_buffer->value, len);
-
-  buf[len] = '\0';
-  cp = buf;
-
-  /* 
-   * take the same form Kerberos does,i.e. service@FQDN
-   * and get the FQDN as a CN
-   * DEE need to convert to FQDN-host for globus conventions
-   * but leave off for now, as this may change.
-   */
-
-  if (g_OID_equal(GSS_C_NT_HOSTBASED_SERVICE, input_name_type)) {
-
-	vp = strchr(cp,'@');
-	if (vp) {
-		*vp = '/';   /* replace with a / */
-	}
-
-    ne=X509_NAME_ENTRY_create_by_NID(&ne, OBJ_txt2nid("CN"),
-                 V_ASN1_APP_CHOOSE, (unsigned char *)cp, -1);
-    X509_NAME_add_entry(x509n,ne,0,0);
-
-  }
-  /*
-   * The SSLeay does not have a string to x509 name, 
-   * so we will define one here. 
-   * Accept names in three forms:
-   * /xx=yy/xx=yy i.e. the X500 type, which allows any name. 
-   * commonname
-   * commonname@globus.org
-   *
-   * The first case assumes that there are no "/"s in the name
-   * The xx must be valid short or long names in the objects
-   * the last two, assume /C=US/O=Globus/CN=commonname
-   */
-
-   else 
-   if (*cp == '/') {
-    cp++;                 /* skip first / */
-    while ((cp != NULL) && (*cp != '\0')) {
-      np = cp;              /* point at name= */
-      cp = strchr(np,'=');
-      if (cp == NULL) {
+    output_name = (gss_name_t) malloc(sizeof(gss_name_desc));
+    
+    if (output_name == NULL)
+    {
         goto err;
-      }
-      *cp = '\0';           /* terminate name string */
-      cp++;                 /* point at value */
-      vp = cp;
-	  cp = strchr(vp,'=');   /* find next =, then last / */
-	  if (cp != NULL) {
-		ep = cp;
-		*ep = '\0';				/* for now set = to 0 */
-      	cp = strrchr(vp,'/');   /* find last / in  value */
-		*ep = '=';				/* reset = */
-      	if (cp != NULL) {
-       	 *cp = '\0';          /* terminate value string */
-       	 cp++;
-      	}
-	  }
-      nid=OBJ_txt2nid(np);
-      if (nid == NID_undef) {
-		/* 
-		 * not found, lets try upper case instead
-	     */
-		 qp = np;
-		 while (*qp != '\0') {
+    } 
+
+    x509n = X509_NAME_new();
+    if (x509n == NULL)
+    {
+        goto err; 
+    }
+   
+    /*
+     * copy input, so has trailing zero, and can be written over
+     * during parse
+     */
+    
+    len = input_name_buffer->length;
+    if ((buf = (char *)malloc(len+1)) == NULL)
+    {
+        goto err;
+    }
+
+    memcpy(buf, input_name_buffer->value, len);
+    
+    buf[len] = '\0';
+    cp = buf;
+
+    /* 
+     * take the same form Kerberos does,i.e. service@FQDN
+     * and get the FQDN as a CN
+     * DEE need to convert to FQDN-host for globus conventions
+     * but leave off for now, as this may change.
+     */
+
+    if (g_OID_equal(GSS_C_NT_HOSTBASED_SERVICE, input_name_type))
+    {
+	vp = strchr(cp,'@');
+	if (vp)
+        {
+            *vp = '/';   /* replace with a / */
+	}
+        
+        ne=X509_NAME_ENTRY_create_by_NID(&ne,
+                                         OBJ_txt2nid("CN"),
+                                         V_ASN1_APP_CHOOSE,
+                                         (unsigned char *)cp,
+                                         -1);
+        X509_NAME_add_entry(x509n,ne,0,0);
+    }
+    
+    /*
+     * The SSLeay does not have a string to x509 name, 
+     * so we will define one here. 
+     * Accept names in three forms:
+     * /xx=yy/xx=yy i.e. the X500 type, which allows any name. 
+     * commonname
+     * commonname@globus.org
+     *
+     * The first case assumes that there are no "/"s in the name
+     * The xx must be valid short or long names in the objects
+     * the last two, assume /C=US/O=Globus/CN=commonname
+     */
+
+    else
+    {
+        if (*cp == '/')
+        {
+            cp++;                 /* skip first / */
+            while ((cp != NULL) && (*cp != '\0'))
+            {
+                np = cp;              /* point at name= */
+                cp = strchr(np,'=');
+                if (cp == NULL)
+                {
+                    goto err;
+                }
+                *cp = '\0';           /* terminate name string */
+                cp++;                 /* point at value */
+                vp = cp;
+                cp = strchr(vp,'=');   /* find next =, then last / */
+                if (cp != NULL)
+                {
+                    ep = cp;
+                    *ep = '\0';	/* for now set = to 0 */
+                    cp = strrchr(vp,'/');   /* find last / in  value */
+                    *ep = '=';	/* reset = */
+                    if (cp != NULL)
+                    {
+                        *cp = '\0'; /* terminate value string */
+                        cp++;
+                    }
+                }
+                nid=OBJ_txt2nid(np);
+
+                if (nid == NID_undef)
+                {
+                    /* 
+                     * not found, lets try upper case instead
+                     */
+                    qp = np;
+                    while (*qp != '\0')
+                    {
 			*qp = toupper(*qp);
 			qp++;
-		 }
-		 nid=OBJ_txt2nid(np);
-		 if (nid == NID_undef) {
-        	goto err;
-		 }
-      }
-      ne=X509_NAME_ENTRY_create_by_NID(&ne, nid, V_ASN1_APP_CHOOSE, 
-                                       (unsigned char *)vp, -1);
-      if (ne == NULL) {
-        goto err;
-      }
-      if (!X509_NAME_add_entry(x509n, ne, 
-                   X509_NAME_entry_count(x509n), 0)) {
-        goto err;
-      }
+                    }
+                    nid=OBJ_txt2nid(np);
+                    if (nid == NID_undef)
+                    {
+                        goto err;
+                    }
+                }
+                ne=X509_NAME_ENTRY_create_by_NID(&ne,
+                                                 nid,
+                                                 V_ASN1_APP_CHOOSE, 
+                                                 (unsigned char *)vp,
+                                                 -1);
+                if (ne == NULL)
+                {
+                    goto err;
+                }
+                
+                if (!X509_NAME_add_entry(x509n,
+                                         ne, 
+                                         X509_NAME_entry_count(x509n),
+                                         0))
+                {
+                    goto err;
+                }
+            }
+        }
+        else
+        {
+            ne=X509_NAME_ENTRY_create_by_NID(&ne,
+                                             OBJ_txt2nid("C"),
+                                             V_ASN1_APP_CHOOSE,
+                                             (unsigned char *)"US",
+                                             -1);
+            X509_NAME_add_entry(x509n,ne,0,0);
+            
+            ne=X509_NAME_ENTRY_create_by_NID(&ne,
+                                             OBJ_txt2nid("O"),
+                                             V_ASN1_APP_CHOOSE,
+                                             (unsigned char *)"Globus",
+                                             -1);
+            X509_NAME_add_entry(x509n,ne,1,0);
+            
+            if (!memcmp(&cp[len-11],"@globus.org",11))
+            {
+                len = len - 11;
+            }
+            ne=X509_NAME_ENTRY_create_by_NID(&ne,
+                                             OBJ_txt2nid("CN"),
+                                             V_ASN1_APP_CHOOSE,
+                                             (unsigned char *)cp,
+                                             len);
+            X509_NAME_add_entry(x509n,ne,2,0);
+        }
     }
-  } else {
-    ne=X509_NAME_ENTRY_create_by_NID(&ne,OBJ_txt2nid("C"),
-                 V_ASN1_APP_CHOOSE,(unsigned char *)"US",-1);
-    X509_NAME_add_entry(x509n,ne,0,0);
-   
-    ne=X509_NAME_ENTRY_create_by_NID(&ne, OBJ_txt2nid("O"),
-                 V_ASN1_APP_CHOOSE,(unsigned char *)"Globus",-1);
-    X509_NAME_add_entry(x509n,ne,1,0);
- 
-    if (!memcmp(&cp[len-11],"@globus.org",11)) {
-      len = len - 11;
-    }
-    ne=X509_NAME_ENTRY_create_by_NID(&ne, OBJ_txt2nid("CN"),
-                 V_ASN1_APP_CHOOSE, (unsigned char *)cp, len);
-    X509_NAME_add_entry(x509n,ne,2,0);
-  }
   
 #ifdef DEBUG
-  {
-    char *s;
-    s = X509_NAME_oneline(x509n,NULL,0);
-    fprintf(stderr,"gss_import_name:%s\n",s);
-    free(s);
-  }
+    {
+        char *s;
+        s = X509_NAME_oneline(x509n,NULL,0);
+        fprintf(stderr,"gss_import_name:%s\n",s);
+        free(s);
+    }
 #endif
-
-  if (ne) {
-	X509_NAME_ENTRY_free(ne);
-  }
-  if (buf) {
-	free(buf);
-  }
-  output_name->name_oid = input_name_type;
-  output_name->x509n = x509n;
-  *output_name_P = output_name;
-  return GSS_S_COMPLETE ;
-
+    
+    if (ne)
+    {
+        X509_NAME_ENTRY_free(ne);
+    }
+    
+    if (buf)
+    {
+        free(buf);
+    }
+    output_name->name_oid = input_name_type;
+    output_name->x509n = x509n;
+    output_name->group = NULL;
+    *output_name_P = output_name;
+    return GSS_S_COMPLETE ;
 err:
-  if (ne) {
-	X509_NAME_ENTRY_free(ne);
-  }
-  if (x509n) {
-    X509_NAME_free(x509n);
-  }
-  if (output_name) {
-    free(output_name);
-  }
-  if (buf) {
-    free(buf);
-  }
-
-  GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_UNEXPECTED_FORMAT);
-
-  *minor_status = gsi_generate_minor_status();
-
-  return GSS_S_BAD_NAME ;
-
+    if (ne)
+    {
+        X509_NAME_ENTRY_free(ne);
+    }
+    if (x509n)
+    {
+        X509_NAME_free(x509n);
+    }
+    if (output_name)
+    {
+        free(output_name);
+    }
+    if (buf)
+    {
+        free(buf);
+    }
+    
+    GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_UNEXPECTED_FORMAT);
+    
+    *minor_status = gsi_generate_minor_status();
+    
+    return GSS_S_BAD_NAME ;
+    
 } /* gss_import_name */

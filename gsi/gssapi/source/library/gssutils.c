@@ -154,26 +154,36 @@ gss_create_and_fill_context(
 
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {
-        OM_uint32 minor_status;
+        if(req_flags & GSS_C_ANON_FLAG)
+        {
+            major_status = gss_create_anonymous_cred(
+                &output_cred_handle,
+                cred_usage);
+        }
+        else
+        {
+            OM_uint32 minor_status;
 
-        /*
-         * Ok, go ahead and get minor_status here and throw
-         * it away. A subsequent call to gsi_generate_minor_status()
-         * should regenerate it.
-         */
-        major_status = gss_acquire_cred(&minor_status,
-                                        GSS_C_NO_NAME,
-                                        GSS_C_INDEFINITE,
-                                        GSS_C_NO_OID_SET,
-                                        cred_usage,
-                                        &output_cred_handle,
-                                        NULL,
-                                        NULL);
+            /*
+             * Ok, go ahead and get minor_status here and throw
+             * it away. A subsequent call to gsi_generate_minor_status()
+             * should regenerate it.
+             */
+            major_status = gss_acquire_cred(&minor_status,
+                                            GSS_C_NO_NAME,
+                                            GSS_C_INDEFINITE,
+                                            GSS_C_NO_OID_SET,
+                                            cred_usage,
+                                            &output_cred_handle,
+                                            NULL,
+                                            NULL);
+        }
+        
         if (GSS_ERROR(major_status))
         {
             return major_status;
         }
-
+        
 #ifdef DEBUG
         fprintf(stderr,"Passed gss_acquire_cred\n");
 #endif
@@ -212,7 +222,7 @@ gss_create_and_fill_context(
     }
 
     SSL_CTX_set_verify(context->cred_handle->pcd->gs_ctx,
-                       SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                       SSL_VERIFY_PEER,
                        proxy_verify_callback);
 
 #ifdef DEBUG
@@ -674,60 +684,202 @@ Returns:
 
 
 OM_uint32
-gs_retrieve_peer
-(gss_ctx_id_desc *              context_handle,
- const gss_cred_usage_t         cred_usage) 
+gs_retrieve_peer(
+    gss_ctx_id_desc *                   context_handle,
+    const gss_cred_usage_t              cred_usage) 
 {
-	gss_name_desc * outname;
-	X509 * peer = NULL;
-	X509_NAME * subject;
+	gss_name_desc *                 outname;
+	X509 *                          peer = NULL;
+	X509_NAME *                     subject;
+        X509_NAME_ENTRY *               name_entry; 
 
-	if (context_handle->gs_ssl->session) {
+	if (context_handle->gs_ssl->session)
+        {
 		peer = context_handle->gs_ssl->session->peer;
 	}
-	if (peer == NULL) {
-		return GSS_S_FAILURE;
+
+        outname = ( gss_name_desc *)malloc(sizeof(gss_name_desc));
+        if (outname == NULL)
+        {
+            GSSerr(GSSERR_F_GS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
+            return GSS_S_FAILURE;
+        }
+
+        
+	if (peer == NULL)
+        {
+            subject = X509_NAME_new();
+
+            if (subject == NULL)
+            {
+                GSSerr(GSSERR_F_GS_RETRIEVE_PEER,GSSERR_R_OUT_OF_MEMORY);
+                return GSS_S_FAILURE;
+            }
+
+            if ((name_entry = X509_NAME_ENTRY_create_by_NID(
+                     NULL,
+                     NID_commonName,
+                     V_ASN1_APP_CHOOSE,
+                     (unsigned char *)"anonymous",
+                     -1)) == NULL)
+            {
+                GSSerr(GSSERR_F_GS_RETRIEVE_PEER,GSSERR_R_OUT_OF_MEMORY);
+                return GSS_S_FAILURE;
+            }
+            
+            X509_NAME_add_entry(subject,
+                                name_entry,
+                                X509_NAME_entry_count(subject),
+                                0);
+
+            outname->name_oid =  GSS_C_NT_ANONYMOUS;
 	}
-
-	subject = X509_NAME_dup(X509_get_subject_name(peer));
-
+        else
+        {
+            subject = X509_NAME_dup(X509_get_subject_name(peer));
 #ifdef DEBUG
-	{
+            {
 		char *s;
 		s = X509_NAME_oneline(subject,NULL,0);
 		fprintf(stderr,"gs_retrieve_peer: X509 subject: %s\n", s);
 		free(s);
-	}
+            }
 #endif
 
-	/*
-	 * drop all the /CN=proxy entries 
-	 */
-	proxy_get_base_name(subject);
-
-	outname = ( gss_name_desc *)malloc(sizeof(gss_name_desc));
-	if (outname == NULL) {
-		GSSerr(GSSERR_F_GS_RETRIVE_PEER, GSSERR_R_OUT_OF_MEMORY);
-		return GSS_S_FAILURE;
-	}
-	outname->name_oid =  GSS_C_NO_OID;
-	outname->x509n = subject;
-
+            /*
+             * drop all the /CN=proxy entries 
+             */
+            proxy_get_base_name(subject);
+            
+            outname->name_oid =  GSS_C_NO_OID;
+            
 #ifdef DEBUG
-	{ 
+            { 
 		char * s;
 		s = X509_NAME_oneline(subject,NULL,0);
 		fprintf(stderr,"X509 subject after proxy : %s\n", s);
 		free(s);
-	}
+            }
 #endif
-  
+        }
+
+        outname->x509n = subject;
+        
 	if (cred_usage == GSS_C_INITIATE) {
 		context_handle->target_name = outname;
-	} else {
+	}
+        else
+        {
 		context_handle->source_name = outname;
 	}
 	return GSS_S_COMPLETE ;
+}
+
+OM_uint32
+gss_create_anonymous_cred(
+    gss_cred_id_t *                     output_cred_handle,
+    const gss_cred_usage_t              cred_usage)
+{
+    gss_cred_id_desc *                  newcred;
+    OM_uint32                           major_status = GSS_S_FAILURE;
+    OM_uint32                           minor_status;
+    X509_NAME_ENTRY *                   name_entry; 
+    
+#ifdef DEBUG
+    fprintf(stderr,"gss_create_anonymous_cred\n");
+#endif
+
+    *output_cred_handle = GSS_C_NO_CREDENTIAL;
+    
+    newcred = (gss_cred_id_desc*) malloc(sizeof(gss_cred_id_desc));
+
+    if (newcred == NULL)
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
+        return GSS_S_FAILURE ;
+    }
+
+    newcred->cred_usage = cred_usage;
+
+    newcred->globusid = (gss_name_desc*) malloc(sizeof(gss_name_desc)) ;
+
+    if (newcred->globusid == NULL)
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
+        goto err;
+    }
+    
+    newcred->globusid->name_oid = GSS_C_NT_ANONYMOUS;
+
+    newcred->globusid->x509n = X509_NAME_new();
+
+    if (newcred->globusid->x509n == NULL)
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED,GSSERR_R_OUT_OF_MEMORY);
+        goto err;
+    }
+
+    if ((name_entry = X509_NAME_ENTRY_create_by_NID(
+             NULL,
+             NID_commonName,
+             V_ASN1_APP_CHOOSE,
+             (unsigned char *)"anonymous",
+             -1)) == NULL)
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED,GSSERR_R_OUT_OF_MEMORY);
+        goto err;
+    }
+    
+    X509_NAME_add_entry(newcred->globusid->x509n,
+                        name_entry,
+                        X509_NAME_entry_count(newcred->globusid->x509n),
+                        0);
+    
+    newcred->gs_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
+
+    if(!newcred->gs_bio_err)
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
+        goto err;
+    }
+    
+    if (!(newcred->pcd = proxy_cred_desc_new()))
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
+        goto err;
+    }
+
+    if (proxy_get_filenames(newcred->pcd,
+                             1,
+                             &newcred->pcd->certfile,
+                             &newcred->pcd->certdir,
+                             NULL,
+                             NULL,
+                             NULL))
+    {
+        goto err;
+    }
+
+    
+    if(ssl_utils_setup_ssl_ctx(
+           &newcred->pcd->gs_ctx,
+           newcred->pcd->certfile,
+           newcred->pcd->certdir,
+           NULL,
+           NULL,
+           NULL,
+           &newcred->pcd->num_null_enc_ciphers))
+    {
+        goto err;
+    }
+
+    *output_cred_handle = newcred;
+    
+    return GSS_S_COMPLETE;
+    
+err:
+    gss_release_cred(&minor_status, (gss_cred_id_t *) &newcred);
+    return major_status;
 }
 
 /**********************************************************************
@@ -754,7 +906,7 @@ gss_create_and_fill_cred(
     gss_cred_id_desc **                 output_cred_handle = 
         (gss_cred_id_desc**) output_cred_handle_P ;
     OM_uint32                           major_status = GSS_S_NO_CRED;
-    gss_cred_id_desc*                   newcred;
+    gss_cred_id_desc *                  newcred;
     int                                 status;
     int                                 i;
 
@@ -764,7 +916,8 @@ gss_create_and_fill_cred(
 
     newcred = (gss_cred_id_desc*) malloc(sizeof(gss_cred_id_desc)) ;
 
-    if (newcred == NULL) {
+    if (newcred == NULL)
+    {
         GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         return GSS_S_FAILURE ;
     }
@@ -773,7 +926,8 @@ gss_create_and_fill_cred(
     newcred->globusid = NULL;
     newcred->gs_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
     
-    if (!(newcred->pcd = proxy_cred_desc_new())) {
+    if (!(newcred->pcd = proxy_cred_desc_new()))
+    {
         GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         return GSS_S_FAILURE ;
     }

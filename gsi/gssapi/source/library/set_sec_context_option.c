@@ -57,7 +57,7 @@ gss_set_sec_context_option(
 
     if(minor_status == NULL)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+        GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
         /* *minor_status = gsi_generate_minor_status(); */
         major_status = GSS_S_FAILURE;
         goto err;
@@ -67,7 +67,7 @@ gss_set_sec_context_option(
 
     if(option == GSS_C_NO_OID)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+        GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
         *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
@@ -81,7 +81,7 @@ gss_set_sec_context_option(
 
         if (context == NULL)
         {
-            GSSerr(GSSERR_F_CREATE_FILL, GSSERR_R_OUT_OF_MEMORY);
+            GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT, GSSERR_R_OUT_OF_MEMORY);
             *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             goto err;
@@ -104,7 +104,7 @@ gss_set_sec_context_option(
     {
         if(value == GSS_C_NO_BUFFER)
         {
-            GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
+            GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
             *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             goto err;

@@ -116,6 +116,7 @@ static ERR_STRING_DATA prxyerr_str_functs[]=
     {ERR_PACK(0,PRXYERR_F_PROXY_CHECK_SUBJECT_NAME,0),
      "proxy_check_subject_name"},
     {ERR_PACK(0,PRXYERR_F_PROXY_CONSTRUCT_NAME ,0),"proxy_construct_name"},
+    {ERR_PACK(0,PRXYERR_F_SETUP_SSL_CTX ,0),"ssl_utils_setup_ssl_ctx"},
     {0,NULL},
 };
 
@@ -136,6 +137,7 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_PROCESS_KEY, "processing key"},
     {PRXYERR_R_PROCESS_CERT, "processing cert"},
     {PRXYERR_R_PROCESS_CERTS, "unable to access trusted certificates in:"},
+    {PRXYERR_R_PROCESS_CA_CERT, "unable to read trusted certificate in:"},
     {PRXYERR_R_PROCESS_PROXY, "processing user proxy cert"},
     {PRXYERR_R_NO_TRUSTED_CERTS, "check X509_CERT_DIR and X509_CERT_FILE"},
     {PRXYERR_R_PROBLEM_KEY_FILE, "bad file system permissions on private key\n"
@@ -170,8 +172,6 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_CB_NO_PW, "no proxy credentials: run grid-proxy-init or wgpi first"},
     {PRXYERR_R_CB_CALLED_WITH_ERROR,"certificate failed verify:"},
     {PRXYERR_R_CB_ERROR_MSG, "certificate:"},
-    {PRXYERR_R_CLASS_ADD_OID,"can't find CLASS_ADD OID"},
-    {PRXYERR_R_CLASS_ADD_EXT,"problem adding CLASS_ADD Extension"},
     {PRXYERR_R_DELEGATE_VERIFY,"problem verifiying the delegate extension"},
     {PRXYERR_R_EXT_ADD,"problem adding extension"},
     {PRXYERR_R_DELEGATE_CREATE,"problem creating delegate extension"},
@@ -474,7 +474,6 @@ ERR_load_prxyerr_strings(
             SSL_load_error_strings();
         }
         
-        OBJ_create("1.3.6.1.4.1.3536.1.1.1.1","CLASSADD","ClassAdd");
         OBJ_create("1.3.6.1.4.1.3536.1.1.1.2","DELEGATE","Delegate");
         OBJ_create("1.3.6.1.4.1.3536.1.1.1.3","RESTRICTEDRIGHTS",
                    "RestrictedRights");
@@ -3943,7 +3942,6 @@ proxy_init_cred(
     if (cert_dir)
     {
         pcd->certdir = strdup(cert_dir);
-
     }
 
     if (cert_file)
@@ -4602,72 +4600,6 @@ proxy_password_callback_no_prompt(
     return(-1);
 }
 
-/**********************************************************************
-Function: proxy_extension_class_add_create()
-
-Description:
-            create a X509_EXTENSION for the class_add info. 
-        
-Parameters:
-                A buffer and length. The date is added as
-                ANS1_OCTET_STRING to an extension with the 
-                class_add  OID.
-
-Returns:
-
-**********************************************************************/
-
-X509_EXTENSION *
-proxy_extension_class_add_create(
-    void *                              buffer,
-    size_t                              length)
-
-{
-    X509_EXTENSION *                    ex = NULL;
-    ASN1_OBJECT *                       class_add_obj = NULL;
-    ASN1_OCTET_STRING *                 class_add_oct = NULL;
-    int                                 crit = 0;
-
-    if(!(class_add_obj = OBJ_nid2obj(OBJ_txt2nid("CLASSADD"))))
-    {
-        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_OID);
-        goto err;
-    }
-
-    if(!(class_add_oct = ASN1_OCTET_STRING_new()))
-    {
-        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
-        goto err;
-    }
-
-    class_add_oct->data = buffer;
-    class_add_oct->length = length;
-
-    if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, class_add_obj, 
-                                            crit, class_add_oct)))
-    {
-        PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
-        goto err;
-    }
-    class_add_oct = NULL;
-
-    return ex;
-
-err:
-    if (class_add_oct)
-    {
-        ASN1_OCTET_STRING_free(class_add_oct);
-    }
-    
-    if (class_add_obj)
-    {
-        ASN1_OBJECT_free(class_add_obj);
-    }
-    return NULL;
-}
-
-
-
 
 int
 i2d_integer_bio(
@@ -4883,5 +4815,288 @@ pkcs12_load_credential(
     }
 
 err:
+    return status;
+}
+
+int
+ssl_utils_setup_ssl_ctx(
+    SSL_CTX **                          context,
+    char *                              ca_cert_file,
+    char *                              ca_cert_dir,
+    X509 *                              client_cert,
+    EVP_PKEY *                          client_private_key,
+    STACK_OF(X509) *                    cert_chain,
+    int *                               num_null_enc_ciphers)
+{
+    int                                 status = -1;
+    int                                 len;
+    int                                 i;
+    int                                 j;
+    char *                              fname = NULL;
+#ifndef WIN32
+    DIR *                               dirp = NULL;
+    struct dirent *                     direntp;
+#endif
+    FILE *                              fp = NULL;
+    X509 *                              ca_cert = NULL;
+    X509 *                              xcert = NULL;
+    SSL_CIPHER *                        cipher;
+    
+    SSLeay_add_ssl_algorithms();
+    *context = SSL_CTX_new(SSLv3_method());
+
+    if(*context == NULL)
+    {
+        goto err;
+    }
+
+    SSL_CTX_set_options(*context, 0); /* no options */
+    
+    SSL_CTX_set_cert_verify_callback(*context, 
+                                     proxy_app_verify_callback,
+                                     NULL);
+
+    /* set a small limit on ssl session-id reuse */
+
+    SSL_CTX_sess_set_cache_size(*context,5);
+
+    if (!SSL_CTX_load_verify_locations(*context,
+                                       ca_cert_file,
+                                       ca_cert_dir))
+    {
+        PRXYerr(PRXYERR_F_SETUP_SSL_CTX,PRXYERR_R_PROCESS_CERTS);
+        ERR_add_error_data(4, "\n        x509_cert_file=", 
+                           (ca_cert_file) ? ca_cert_file: "NONE" ,
+                           "\n        x509_cert_dir=",
+                           (ca_cert_dir) ? ca_cert_dir : "NONE");
+        status = PRXYERR_R_PROCESS_CERTS;       
+        goto err;
+    }
+        
+    /*
+     * Need to load the cert_file and/or the CA certificates
+     * to get the client_CA_list. This is really only needed
+     * on the server side, but will do it on both for now. 
+     * Some Java implementations insist on having this. 
+     */
+
+    if (ca_cert_file)
+    {
+        SSL_CTX_set_client_CA_list(*context,
+                                   SSL_load_client_CA_file(ca_cert_file));
+        if (!SSL_CTX_get_client_CA_list(*context))
+        {
+            PRXYerr(PRXYERR_F_SETUP_SSL_CTX,PRXYERR_R_PROBLEM_CLIENT_CA);
+            ERR_add_error_data(2,"\n        File=", ca_cert_file);
+            status = PRXYERR_R_PROBLEM_CLIENT_CA;
+            goto err;
+        }
+    }
+        
+    /*
+     * So go through the ca_cert_dir looking for certificates
+     * then verify that they are in the ca-signing-policy 
+     * as well. 
+     */ 
+
+#ifndef WIN32
+    if ((dirp = opendir(ca_cert_dir)) != NULL)
+    {
+#ifdef DEBUG
+        fprintf(stderr,"looking for CA certs\n");
+#endif
+        while ( (direntp = readdir( dirp )) != NULL )
+        {
+            /* look for hashed file names hhhhhhhh.n */
+            len = strlen(direntp->d_name);
+            if ((len >= 10)
+                && (*(direntp->d_name + 8) == '.')
+                && (strspn(direntp->d_name, 
+                           "0123456789abcdefABCDEF") == 8)
+                && (strspn((direntp->d_name + 9),
+                           "0123456789") == (len - 9)))
+            {
+                fname = (char *)malloc(strlen(ca_cert_dir) + 
+                                       strlen(direntp->d_name) + 2);
+                if (!fname)
+                {
+                    PRXYerr(PRXYERR_F_SETUP_SSL_CTX, PRXYERR_R_OUT_OF_MEMORY);
+                    status = PRXYERR_R_OUT_OF_MEMORY;
+                    goto err;
+                }
+                sprintf(fname,"%s%s%s", ca_cert_dir,
+                        FILE_SEPERATOR,
+                        direntp->d_name);
+
+#ifdef DEBUG
+                fprintf(stderr,"CA cert=%s\n",fname);
+#endif
+                if ((fp = fopen(fname,"r")) == NULL)
+                {
+                    PRXYerr(PRXYERR_F_SETUP_SSL_CTX,PRXYERR_R_PROCESS_CA_CERT);
+                    ERR_add_error_data(2, "\n        File=", fname);
+                    goto err;
+                }
+
+                if (PEM_read_X509(fp,
+                                  &ca_cert,
+                                  OPENSSL_PEM_CB(NULL,NULL)) == NULL)
+                {
+                    PRXYerr(PRXYERR_F_SETUP_SSL_CTX,PRXYERR_R_PROCESS_CERT);
+                    ERR_add_error_data(2, "\n        File=", fname);
+                    status = PRXYERR_R_PROCESS_CERT;
+                    goto err;
+                }
+
+                free(fname);
+                fname = NULL;
+                fclose(fp);
+                fp = NULL;
+                SSL_CTX_add_client_CA(*context, ca_cert);
+                X509_free(ca_cert);
+                ca_cert = NULL;
+            }
+        }
+    }
+#endif /* WIN32 */
+    
+    if (client_cert && !SSL_CTX_use_certificate(*context,client_cert))
+    {
+        PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
+        status = PRXYERR_R_PROCESS_CERT;
+        goto err;
+    }
+    
+    if (client_private_key && !SSL_CTX_use_PrivateKey(*context,
+                                                      client_private_key))
+    {
+        PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
+        status = PRXYERR_R_PROCESS_KEY;
+        goto err;
+    }
+
+    if (cert_chain)
+    {
+        for (i=0;i<sk_X509_num(cert_chain);i++)
+        {
+            xcert = sk_X509_value(cert_chain,i);
+
+#ifdef DEBUG
+            {
+                char * s;
+                s=X509_NAME_oneline(X509_get_subject_name(xcert),NULL,0);
+                fprintf(stderr,"Adding to X509_STORE %d %p %s\n",i,xcert,s);
+                free(s);
+            }
+#endif
+            j = X509_STORE_add_cert((*context)->cert_store,xcert);
+            
+            if (!j)
+            {
+                if ((ERR_GET_REASON(ERR_peek_error()) ==
+                     X509_R_CERT_ALREADY_IN_HASH_TABLE))
+                {
+                    ERR_clear_error();
+                    break;
+                }
+                else
+                {
+                    goto err;
+                }
+            }
+        }
+    }
+
+    
+    /*
+     * The SSLeay when built by default excludes the NULL 
+     * encryption options: #ifdef SSL_ALLOW_ENULL in ssl_ciph.c
+     * Since the user obtains and builds the SSLeay, we have 
+     * no control over how it is built. 
+     *
+     * We have an export licence for this code, and don't
+     * need/want encryption. We will therefore turn off
+     * any encryption by placing the RSA_NULL_MD5 cipher
+     * first. See s3_lib.c ssl3_ciphers[]=  The RSA_NUL_MD5
+     * is the first, but the way to get at it is as  n-1 
+     *
+     * Now that we support encryption, we may still add
+     * RSA_NUL_MD5 but it may be at the begining or end
+     * of the list. This will allow for some compatability. 
+     * (But in this code we will put it last for now.)
+     *
+     * Where, if at all, RSA_NUL_MD5 is added:
+     *
+     *                 |  Initiate     Accept
+     * ----------------------------------------
+     * GSS_C_CONF_FLAG |
+     *     set         |  end        don't add
+     *   notset        |  begining   end
+     *                 ------------------------
+     *
+     * This gives the initiator control over the encryption
+     * but lets the server force encryption.
+     *
+     *                         Acceptor
+     *                   |    yes     no    either
+     * ----------------------------------------------
+     *             yes   |    yes    reject  yes
+     * Initiator   no    |    reject  no     no
+     *             either|    yes     no     no
+     * 
+     * When encryption is selected, the ret_flags will have
+     * ret_flags set with GSS_C_CONF_FLAG. The initiator and
+     * acceptor can then decied if this was acceptable, i.e.
+     * reject the connection. 
+     *                 
+     * 
+     * This method may need to be checked with new versions
+     * of the SSLeay packages. 
+     */ 
+
+#define MY_NULL_MASK 0x130021L
+        
+    j = 0;
+
+    for (i=0; i<(*((*context)->method->num_ciphers))(); i++)
+    {
+        cipher = (*((*context)->method->get_cipher))(i);
+
+        if (cipher && 
+            ((cipher->algorithms & MY_NULL_MASK) == MY_NULL_MASK))
+        {
+            j++;
+#ifdef DEBUG
+            fprintf(stderr,"adding cipher %d %d\n", i, j);
+#endif
+            sk_SSL_CIPHER_push(
+                (*context)->cipher_list, cipher);
+            sk_SSL_CIPHER_push(
+                (*context)->cipher_list_by_id, cipher);
+        }
+    }
+
+    if(num_null_enc_ciphers)
+    {
+        *num_null_enc_ciphers = j;
+    }
+    
+    status = 0;
+err:
+    if (fname)
+    {
+        free(fname);
+    }
+    if (fp)
+    {
+        fclose(fp);
+    }
+#ifndef WIN32
+    if (dirp)
+    {
+        closedir(dirp);
+    }
+#endif
+
     return status;
 }
