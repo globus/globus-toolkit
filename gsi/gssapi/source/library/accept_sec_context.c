@@ -71,7 +71,17 @@ GSS_CALLCONV gss_accept_sec_context(
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
     output_token->length = 0;
 
-    context = context_handle_P ? *context_handle_P : GSS_C_NO_CONTEXT;
+    if(!context_handle_P)
+    {
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
+            ("Parameter context_handle_P passed to function: %s is NULL",
+             _function_name_));
+        goto exit;
+    }
+
+    context = *context_handle_P;
     
     /* module activation if not already done by calling
      * globus_module_activate
@@ -407,6 +417,17 @@ GSS_CALLCONV gss_accept_sec_context(
                         GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
                     break;
                 }            
+            }
+            else
+            {
+                local_result = globus_gsi_cred_handle_destroy(delegated_cred);
+                if(local_result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                    break;
+                }
             }
 
             context->ret_flags |= GSS_C_DELEG_FLAG;
