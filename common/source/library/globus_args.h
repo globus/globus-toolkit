@@ -6,6 +6,10 @@ EXTERN_C_BEGIN
 #include "globus_module.h"
 #include "globus_list.h"
 
+#define GLOBUS_ARGS_HELP        -2  /* for -help and -usage */
+#define GLOBUS_ARGS_VERSION     -3  /* for -version and -versions */
+
+
 /*  globus_args.h : a Globus-style argument option parser
 
     The API implements the following behavior:
@@ -123,7 +127,10 @@ typedef struct globus_args_option_instance_s
 
     Returns:
     -> The number of successfully identified and validated options.
-    -> -1 if an error or reserved option was detected
+    -> -1 if an error was detected
+    -> GLOBUS_ARGS_HELP or GLOBUS_ARGS_VERSION
+       if the corresponding reserved option was detected
+       (all < 0)
 
 */
 

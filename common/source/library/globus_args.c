@@ -154,7 +154,10 @@ globus_l_args_validate( globus_args_option_descriptor_t *   option,
     }   /* for */
 
     if (rc)
+    {
 	free(*values);
+	rc = GLOBUS_FAILURE;
+    }
 
     return rc;
 }
@@ -344,7 +347,7 @@ globus_args_scan(
         {
             globus_l_args_create_msg( error_msg ,
 				      (char *) long_usage );
-	    rc = GLOBUS_FAILURE;
+	    rc = GLOBUS_ARGS_HELP;
             done = GLOBUS_TRUE;
             continue;
         }
@@ -356,7 +359,7 @@ globus_args_scan(
                 stderr,
                 GLOBUS_FALSE);
                 
-	    rc = GLOBUS_FAILURE;
+	    rc = GLOBUS_ARGS_VERSION;
             done = GLOBUS_TRUE;
             continue;
         }
@@ -370,7 +373,7 @@ globus_args_scan(
             
             globus_module_print_activated_versions(stderr, GLOBUS_TRUE);
                 
-	    rc = GLOBUS_FAILURE;
+	    rc = GLOBUS_ARGS_VERSION;
             done = GLOBUS_TRUE;
             continue;
         }
@@ -451,8 +454,6 @@ globus_args_scan(
 	    *argc -= my_argc - 1;
 	}
     }
-    else
-	rc = -1;   /* ensure negative return value for non-success */
 
     globus_mutex_unlock(&args_mutex);
     return rc;

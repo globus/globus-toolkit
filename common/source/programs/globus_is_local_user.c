@@ -47,7 +47,7 @@ int main(int argc, char * argv[])
 			   
     if (rc < 0)
     {
-	exit_code = 1;
+	exit_code = (rc == GLOBUS_FAILURE) ? 1 : 0;
     }
     else if (argc < 2)
     {

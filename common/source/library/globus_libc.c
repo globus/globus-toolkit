@@ -16,7 +16,7 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "globus_libc.h"
-
+#include "globus_thread_common.h"
 
 #ifdef HAVE_STRING_H
 #include <string.h>
