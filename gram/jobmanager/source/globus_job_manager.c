@@ -1041,14 +1041,24 @@ main(int argc,
 	{
 	    for(i=0; i<cache_size; i++)
 	    {
-                grami_fprintf( request->jobmanager_log_fp,
-		      "Trying to clean up with <url=%s> <tag=%s>\n",
-		      cache_entries[i].url,
-		      graml_job_contact);
-		globus_gass_cache_cleanup_tag(&cache_handle,
-					      cache_entries[i].url,
-					      graml_job_contact);
-	    }
+		for(tag_index=0;
+		    tag_index<cache_entries[i].num_tags;
+		    tag_index++)
+		{
+		    if (!strcmp(cache_entries[i].tags[tag_index].tag,
+				graml_job_contact))
+		    {
+			grami_fprintf(
+			    request->jobmanager_log_fp,
+			    "Trying to clean up with <url=%s> <tag=%s>\n",
+			    cache_entries[i].url,
+			    graml_job_contact);
+			globus_gass_cache_cleanup_tag(&cache_handle,
+						      cache_entries[i].url,
+						      graml_job_contact);
+		    }
+		} /* for each tags */
+	    } /* for each cache entries */
 	}
 	fflush(request->jobmanager_log_fp);
 	globus_gass_cache_list_free(cache_entries,
