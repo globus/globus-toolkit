@@ -57,8 +57,8 @@ CVS Information:
 
 #include "openssl/md5.h"
 
-#define DEBUG				0
-#define GLOBUS_L_GASS_CACHE_LOG 	0
+/* #define DEBUG				0 */
+/* #define GLOBUS_L_GASS_CACHE_LOG 	0 */
 #include "globus_i_gass_cache.h"
 #include "globus_gass_cache.h"
 #include "version.h"
@@ -496,6 +496,8 @@ globus_l_gass_cache_log(
 #define LOG_ERROR(_x_)
 #define RET_ERROR(_rc_)			return(_rc_)
 #define RET_ERRORMSG(_rc_,_msg_)	return(_rc_)
+#define MARK_ERROR(_rc_)
+#define MARK_ERRORMSG(_rc_,_msg_)
 #endif
 
 #ifdef DEBUG
@@ -3339,12 +3341,20 @@ globus_l_gass_cache_lock_local_dir( cache_names	*names,
  * globus_l_gass_cache_unlock_local_dir()
  *
  * Unlock the local directory
- *  
+ *
  * Parameters:
+ *	names - The standard "names" structure of various file/dir names
+ *
+ *	target_name - Unlock can rename the existing lock file to a
+ *	target name.  Specify GLOBUS_NULL to not do this.
  *
  * Returns:
+ *	GLOBUS_SUCESS
+ *	Values returned from _build_filename(), _unlink(), and _rename()
  *
+ * Notes:
  */
+
 static
 int
 globus_l_gass_cache_unlock_local_dir( cache_names	*names,
@@ -3364,6 +3374,24 @@ globus_l_gass_cache_unlock_local_dir( cache_names	*names,
     /* If the target name is valid, rename to it.. */
     if ( GLOBUS_NULL != target_name )
     {
+	int	tmp_rc;
+
+	/* rename(a,b) doesn't always work as you would expect.  If a
+	 * & b are _hard links_ to each other, it is valid for
+	 * rename(a,b) to return 0 (success), and do _nothing_
+	 * (i.e. leave a and b).  For this reason, you see the
+	 * _unlink() followed by _rename() * logic below. */
+
+	/* Kill the target file, if it exists */
+	tmp_rc = globus_l_gass_cache_stat( target_name, GLOBUS_NULL );
+	if ( GLOBUS_SUCCESS == tmp_rc )
+	{
+	    (void) globus_l_gass_cache_unlink( target_name );
+	}
+	CLR_ERROR;	/* This is ok! */
+
+	/* Now, we should be safe to rename to it (we still have the
+	 * "dir lock".  This will also _release_ this lock. */
 	rc = globus_l_gass_cache_rename( names->localdir_lock_file,
 					 target_name );
 	if ( GLOBUS_SUCCESS != rc )
@@ -3540,10 +3568,8 @@ globus_l_gass_cache_make_local_file( cache_names	*names,
     }
 
     /* Release the lock & create a uniq "link count" file in one op */
-    rc = globus_l_gass_cache_link( names->localdir_lock_file,
-				   names->local_uniq_file );
-    rc = globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
-    /* 				       names->local_uniq_file );*/
+    rc = globus_l_gass_cache_unlock_local_dir( names,
+					       names->local_uniq_file );
     if ( GLOBUS_SUCCESS != rc )
     {
 	RET_ERROR( rc );
