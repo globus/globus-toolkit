@@ -261,7 +261,7 @@ extern int port_allowed(const char *remoteaddr);
 
 cmd_list:	/* empty */
     | cmd_list cmd
-	=	{
+	{
 	    fromname = (char *) NULL;
 	    restart_point = 0;
 	}
@@ -269,7 +269,7 @@ cmd_list:	/* empty */
     ;
 
 cmd: USER SP username CRLF
-	=	{
+	{
 	    if(exit_at == USER)
 	    {
 		dologout(0);
@@ -280,7 +280,7 @@ cmd: USER SP username CRLF
 	    free($3);
 	}
     | PASS SP password CRLF
-	=	{
+	{
 	    if(exit_at == PASS)
 	    {
 		dologout(0);
@@ -295,7 +295,7 @@ cmd: USER SP username CRLF
 	    free($3);
 	}
     | PORT check_login SP host_port CRLF
-	=	{
+	{
 	    if(exit_at == PORT)
 	    {
 		dologout(0);
@@ -366,7 +366,7 @@ cmd: USER SP username CRLF
 	    }
 	}
     | SPOR check_login host_port_list CRLF
-	=	{
+	{
 	    if(exit_at == SPOR)
 	    {
 		dologout(0);
@@ -425,7 +425,7 @@ cmd: USER SP username CRLF
 	}
 
     | PASV check_login CRLF
-	=	{
+	{
 	    if(exit_at == PASV)
 	    {
             dologout(0);
@@ -457,7 +457,7 @@ cmd: USER SP username CRLF
 #endif
 	}
     | SPAS check_login CRLF
-	=	{
+	{
 	    if(exit_at == SPAS)
 	    {
 		dologout(0);
@@ -481,7 +481,7 @@ cmd: USER SP username CRLF
 #endif
 	}
     | PROT SP prot_code CRLF
-        =       {
+        {
 	    if(exit_at == PROT)
 	    {
 		dologout(0);
@@ -508,7 +508,7 @@ cmd: USER SP username CRLF
 #           endif
 	}
 	|	CCC CRLF
-	=   	{
+	{
 	    if(exit_at == CCC)
 	    {
 		dologout(0);
@@ -518,7 +518,7 @@ cmd: USER SP username CRLF
 #endif /* FTP_SECURITY_EXTENSIONS */
 	}
 	|	PBSZ SP STRING CRLF
-	=	{
+	{
 	    if(exit_at == PBSZ)
 	    {
 		dologout(0);
@@ -528,7 +528,7 @@ cmd: USER SP username CRLF
 #endif /* FTP_SECURITY_EXTENSIONS */
 	}
     | TYPE check_login SP type_code CRLF
-	=	{
+	{
 	    if(exit_at == TYPE)
 	    {
 		dologout(0);
@@ -596,7 +596,7 @@ cmd: USER SP username CRLF
 		}
 	}
     | STRU check_login SP struct_code CRLF
-	=	{
+	{
 	    if(exit_at == STRU)
 	    {
 		dologout(0);
@@ -616,7 +616,7 @@ cmd: USER SP username CRLF
 		}
 	}
     | MODE check_login SP mode_code CRLF
-	=	{
+	{
 #           if defined(USE_GLOBUS_DATA_CODE)
             globus_result_t                            res;
 	    g_send_restart_info = GLOBUS_FALSE;
@@ -680,7 +680,7 @@ cmd: USER SP username CRLF
 		}
 	}
     | ALLO check_login SP NUMBER CRLF
-	=	{
+	{
 	    if(exit_at == ALLO)
 	    {
 		dologout(0);
@@ -691,7 +691,7 @@ cmd: USER SP username CRLF
 		reply(202, "ALLO command ignored.");
 	}
     | ALLO check_login SP NUMBER SP R SP NUMBER CRLF
-	=	{
+	{
 	    if(exit_at == ALLO)
 	    {
 		dologout(0);
@@ -702,7 +702,7 @@ cmd: USER SP username CRLF
 		reply(202, "ALLO command ignored.");
 	}
     | RETR check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == RETR)
 	    {
 		dologout(0);
@@ -727,7 +727,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | STOR check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == STOR)
 	    {
 		dologout(0);
@@ -754,7 +754,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | ERET check_login SP eret_mode SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == ERET)
 	    {
 		dologout(0);
@@ -777,7 +777,7 @@ cmd: USER SP username CRLF
 		free($6);
 	}
     | ESTO check_login SP esto_mode SP pathname CRLF
-        =	{
+        {
 	    if(exit_at == ESTO)
 	    {
 		dologout(0);
@@ -797,7 +797,7 @@ cmd: USER SP username CRLF
 		free($6);
 	}
     | APPE check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == APPE)
 	    {
 		dologout(0);
@@ -810,7 +810,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | NLST check_login CRLF
-	=	{
+	{
 	    if(exit_at == NLST)
 	    {
 		dologout(0);
@@ -835,7 +835,7 @@ cmd: USER SP username CRLF
 #endif
 	}
     | NLST check_login SP STRING CRLF
-	=	{
+	{
 
 	    if(exit_at == NLST)
 	    {
@@ -863,7 +863,7 @@ cmd: USER SP username CRLF
 #endif
 	}
     | MLST check_login CRLF
-        =       {
+            {
             if(exit_at == MLST)
             {
                 dologout(0);
@@ -877,7 +877,7 @@ cmd: USER SP username CRLF
         }
         
     | MLST check_login SP pathname CRLF
-        =       {
+            {
             if(exit_at == MLST)
             {
                 dologout(0);
@@ -893,7 +893,7 @@ cmd: USER SP username CRLF
         }
         
     | MLSD check_login CRLF
-        =       {
+            {
             if(exit_at == MLSD)
             {
                 dologout(0);
@@ -908,7 +908,7 @@ cmd: USER SP username CRLF
         }
         
     | MLSD check_login SP pathname CRLF
-        =       {
+          {
         if(exit_at == MLSD)
             {
                 dologout(0);
@@ -925,7 +925,7 @@ cmd: USER SP username CRLF
         }
 
     | LIST check_login CRLF
-	=	{
+	{
 	    if(exit_at == LIST)
 	    {
 		dologout(0);
@@ -946,7 +946,7 @@ cmd: USER SP username CRLF
 	}
 
     | LIST check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == LIST)
 	    {
 		dologout(0);
@@ -968,7 +968,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | STAT_CMD check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == STAT_CMD)
 	    {
 		dologout(0);
@@ -981,7 +981,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | STAT_CMD check_login CRLF
-	=	{
+	{
 	    if(exit_at == STAT_CMD)
 	    {
 		dologout(0);
@@ -992,7 +992,7 @@ cmd: USER SP username CRLF
 		statcmd();
 	}
     | DELE check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == DELE)
 	    {
 		dologout(0);
@@ -1005,7 +1005,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | RNTO check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == RNTO)
 	    {
 		dologout(0);
@@ -1026,7 +1026,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | ABOR check_login CRLF
-	=	{
+	{
 	    if(exit_at == ABOR)
 	    {
 		dologout(0);
@@ -1037,7 +1037,7 @@ cmd: USER SP username CRLF
 		reply(225, "ABOR command successful.");
 	}
     | CWD check_login CRLF
-	=	{
+	{
 	    if(exit_at == CWD)
 	    {
 		dologout(0);
@@ -1048,7 +1048,7 @@ cmd: USER SP username CRLF
 		cwd(home);
 	}
     | CWD check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == CWD)
 	    {
 		dologout(0);
@@ -1061,7 +1061,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | HELP check_login CRLF
-	=	{
+	{
 	    if(exit_at == HELP)
 	    {
 		dologout(0);
@@ -1072,7 +1072,7 @@ cmd: USER SP username CRLF
 		help(cmdtab, (char *) NULL);
 	}
     | HELP check_login SP STRING CRLF
-	=	{
+	{
 	    register char *cp = (char *) $4;
 
 	    if(exit_at == HELP)
@@ -1097,7 +1097,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | FEAT check_login CRLF
-	=	{
+	{
 	    if(exit_at == FEAT)
 	    {
 		dologout(0);
@@ -1108,7 +1108,7 @@ cmd: USER SP username CRLF
 		feat(feattab);
 	}
     | DCAU check_login SP STRING CRLF
-        =	{
+        {
 	    if(exit_at == DCAU)
 	    {
 		dologout(0);
@@ -1164,7 +1164,7 @@ cmd: USER SP username CRLF
 	    }
 	}
     | NOOP check_login CRLF
-	=	{
+	{
 	    if(exit_at == NOOP)
 	    {
 		dologout(0);
@@ -1175,7 +1175,7 @@ cmd: USER SP username CRLF
 		reply(200, "NOOP command successful.");
 	}
     | MKD check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == MKD)
 	    {
 		dologout(0);
@@ -1188,7 +1188,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | RMD check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == RMD)
 	    {
 		dologout(0);
@@ -1201,7 +1201,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | PWD check_login CRLF
-	=	{
+	{
 	    if(exit_at == PWD)
 	    {
 		dologout(0);
@@ -1212,7 +1212,7 @@ cmd: USER SP username CRLF
 		pwd();
 	}
     | CDUP check_login CRLF
-	=	{
+	{
 	    if(exit_at == CDUP)
 	    {
 		dologout(0);
@@ -1226,7 +1226,7 @@ cmd: USER SP username CRLF
 		    ack("CWD");
 	}
     | SITE check_login SP PSIZE SP bufsize CRLF
-	=	{
+	{
 #if defined(STRIPED_SERVER_BACKEND)
             g_striped_file_size = $6;
             reply(200, "PSIZE command received.");
@@ -1235,7 +1235,7 @@ cmd: USER SP username CRLF
 #endif
 	}
     | SITE check_login SP HELP CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1246,7 +1246,7 @@ cmd: USER SP username CRLF
 		help(sitetab, (char *) NULL);
 	}
     | SITE check_login SP HELP SP STRING CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1259,7 +1259,7 @@ cmd: USER SP username CRLF
 		free($6);
 	}
     | SITE check_login SP UMASK CRLF
-	=	{
+	{
 	    mode_t oldmask;
 
 	    if(exit_at == SITE)
@@ -1275,7 +1275,7 @@ cmd: USER SP username CRLF
 	    }
 	}
     | SITE check_login SP UMASK SP octal_number CRLF
-	=	{
+	{
 	    mode_t oldmask;
 	    struct aclmember *entry = NULL;
 	    int ok = 1;
@@ -1307,7 +1307,7 @@ cmd: USER SP username CRLF
 	    }
 	}
     | SITE check_login SP CHMOD SP octal_number SP pathname CRLF
-	=	{
+	{
 	    struct aclmember *entry = NULL;
 	    int ok = (anonymous ? 0 : 1);
 
@@ -1361,7 +1361,7 @@ cmd: USER SP username CRLF
 		free($8);
 	}
     | SITE check_login SP IDLE CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1374,7 +1374,7 @@ cmd: USER SP username CRLF
 		      timeout_idle, timeout_maxidle);
 	}
     | SITE check_login SP IDLE SP NUMBER CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1393,7 +1393,7 @@ cmd: USER SP username CRLF
 		}
 	}
     | SITE check_login SP GROUP SP username CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1407,7 +1407,7 @@ cmd: USER SP username CRLF
 #endif /* !NO_PRIVATE */
 	}
     | SITE check_login SP GPASS SP password CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1421,7 +1421,7 @@ cmd: USER SP username CRLF
 #endif /* !NO_PRIVATE */
 	}
     | SITE check_login SP GPASS CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1434,7 +1434,7 @@ cmd: USER SP username CRLF
 #endif /* !NO_PRIVATE */
 	}
     | SITE check_login SP NEWER SP STRING CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1450,7 +1450,7 @@ cmd: USER SP username CRLF
 	    free($6);
 	}
     | SITE check_login SP NEWER SP STRING SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1469,7 +1469,7 @@ cmd: USER SP username CRLF
 		free($8);
 	}
     | SITE check_login SP MINFO SP STRING CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1485,7 +1485,7 @@ cmd: USER SP username CRLF
 	    free($6);
 	}
     | SITE check_login SP MINFO SP STRING SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1504,7 +1504,7 @@ cmd: USER SP username CRLF
 		free($8);
 	}
     | SITE check_login SP INDEX SP STRING CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1523,7 +1523,7 @@ cmd: USER SP username CRLF
 		free($6);
 	}
     | SITE check_login SP EXEC SP STRING CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1536,7 +1536,7 @@ cmd: USER SP username CRLF
 	}
 
     | STOU check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == STOU)
 	    {
 		dologout(0);
@@ -1549,7 +1549,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     | SYST check_login CRLF
-	=	{
+	{
 	    if(exit_at == SYST)
 	    {
 		dologout(0);
@@ -1577,7 +1577,7 @@ cmd: USER SP username CRLF
 	 * using with RESTART (we just count bytes).
 	 */
     | SIZE check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == SIZE)
 	    {
 		dologout(0);
@@ -1610,7 +1610,7 @@ cmd: USER SP username CRLF
 	 * not necessarily 3 digits)
 	 */
     | MDTM check_login SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == MDTM)
 	    {
 		dologout(0);
@@ -1639,7 +1639,7 @@ cmd: USER SP username CRLF
 		free($4);
 	}
     |	AUTH SP STRING CRLF
-    =	{
+    {
 	    if(exit_at == AUTH)
 	    {
 		dologout(0);
@@ -1649,7 +1649,7 @@ cmd: USER SP username CRLF
 #endif /* FTP_SECURITY_EXTENSIONS */
     }
     |	ADAT SP STRING CRLF
-    =	{
+    {
 	    if(exit_at == ADAT)
 	    {
 		dologout(0);
@@ -1660,12 +1660,11 @@ cmd: USER SP username CRLF
 	free((char *) $3);
     }
     | OPTS check_login opts CRLF
-    =
     {
 	reply(200, "Opts successful.");
     }
     | QUIT CRLF
-	=	{
+	{
 	    if(exit_at == QUIT)
 	    {
 		dologout(0);
@@ -1683,13 +1682,13 @@ cmd: USER SP username CRLF
 	    dologout(0);
 	}
     | error CRLF
-	=	{
+	{
 	    yyerrok;
 	}
     ;
 
 rcmd: RNFR check_login SP pathname CRLF
-	=	{
+	{
 
 	    if(exit_at == RNFR)
 	    {
@@ -1710,7 +1709,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		free($4);
 	}
     | REST check_login SP byte_size CRLF
-	=	{
+	{
 	    if(exit_at == REST)
 	    {
 		dologout(0);
@@ -1738,7 +1737,6 @@ rcmd: RNFR check_login SP pathname CRLF
 	    }
 	}
     | REST check_login SP byte_range_list CRLF
-        =       
 	{
 #       if USE_GLOBUS_DATA_CODE
 	    if(exit_at == REST)
@@ -1771,7 +1769,7 @@ rcmd: RNFR check_login SP pathname CRLF
 #	endif
 	}
     | SITE check_login SP ALIAS CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1782,7 +1780,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		alias((char *) NULL);
 	}
     | SITE check_login SP ALIAS SP STRING CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1795,7 +1793,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		free($6);
 	}
     | SITE check_login SP GROUPS CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1806,7 +1804,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		print_groups();
 	}
     | SITE check_login SP CDPATH CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1817,7 +1815,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		cdpath();
 	}
     | SITE check_login SP CHECKMETHOD SP method CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1830,7 +1828,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		free($6);
 	}
     | SITE check_login SP CHECKMETHOD CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1841,7 +1839,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		ShowCheckMethod();
 	}
     | SITE check_login SP CHECKSUM SP pathname CRLF
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1854,7 +1852,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		free($6);
 	}
     | SITE check_login SP CHECKSUM CRLF
-	=	{
+	   {
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1865,7 +1863,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		CheckSumLastFile();
 	}
     | SITE check_login SP BUFSIZE CRLF   
-	=	{
+	{
 	    if(exit_at == SITE)
 	    {
 		dologout(0);
@@ -1874,7 +1872,7 @@ rcmd: RNFR check_login SP pathname CRLF
 	    print_bufsize ();
  	}
     | SITE check_login SP BUFSIZE SP bufsize CRLF
-	=	{	
+	{	
 	    int size = $6;
 	    if(exit_at == SITE)
 	    {
@@ -1885,7 +1883,7 @@ rcmd: RNFR check_login SP pathname CRLF
 	    set_bufsize (size);
 	}
     | SITE check_login SP FAULT SP STRING CRLF
-        =	{
+        {
 	    struct tab * cmd;
 
 	    if (log_commands)
@@ -1912,7 +1910,7 @@ username: STRING
     ;
 
 password: /* empty */
-	=	{
+	{
 	    $$ = (char *) malloc(1);
 	    $$[0] = '\0';
 	}
@@ -2002,7 +2000,7 @@ retr_option:
     }
     ;
 host_port_list:
-    SP host_port host_port_list =
+    SP host_port host_port_list
     {
 #       if USE_GLOBUS_DATA_CODE
 	{
@@ -2022,7 +2020,7 @@ host_port_list:
 	}
 #       endif
     }
-    | SP host_port =
+    | SP host_port
     {
 #       if USE_GLOBUS_DATA_CODE
 	{
@@ -2047,7 +2045,7 @@ host_port_list:
     ;
 
 host_port: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER
-	=	{
+	{
 	    register char *a, *p;
 		   
 	    a = (char *) &cliaddr;
@@ -2065,39 +2063,39 @@ host_port: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMB
     ;
 
 form_code: N
-	=	{
+	{
 	    $$ = FORM_N;
 	}
     | T
-	=	{
+	{
 	    $$ = FORM_T;
 	}
     | C
-	=	{
+	{
 	    $$ = FORM_C;
 	}
     ;
 
 prot_code:	C
-	= {
+	{
 #ifdef FTP_SECURITY_EXTENSIONS
 		$$ = PROT_C;
 #endif /* FTP_SECURITY_EXTENSIONS */
 	}
 	|	S
-	= {
+	{
 #ifdef FTP_SECURITY_EXTENSIONS
 		$$ = PROT_S;
 #endif /* FTP_SECURITY_EXTENSIONS */
 	}
 	|	P
-	= {
+	{
 #ifdef FTP_SECURITY_EXTENSIONS
 		$$ = PROT_P;
 #endif /* FTP_SECURITY_EXTENSIONS */
 	}
 	|	E
-	= {
+	{
 #ifdef FTP_SECURITY_EXTENSIONS
 		$$ = PROT_E;
 #endif /* FTP_SECURITY_EXTENSIONS */
@@ -2105,81 +2103,81 @@ prot_code:	C
 	;
 
 type_code: A
-	=	{
+	{
 	    cmd_type = TYPE_A;
 	    cmd_form = FORM_N;
 	}
     | A SP form_code
-	=	{
+	{
 	    cmd_type = TYPE_A;
 	    cmd_form = $3;
 	}
     | E
-	=	{
+	{
 	    cmd_type = TYPE_E;
 	    cmd_form = FORM_N;
 	}
     | E SP form_code
-	=	{
+	{
 	    cmd_type = TYPE_E;
 	    cmd_form = $3;
 	}
     | I
-	=	{
+	{
 	    cmd_type = TYPE_I;
 	}
     | L
-	=	{
+	{
 	    cmd_type = TYPE_L;
 	    cmd_bytesz = NBBY;
 	}
     | L SP byte_size
-	=	{
+	{
 	    cmd_type = TYPE_L;
 	    cmd_bytesz = $3;
 	}
     /* this is for a bug in the BBN ftp */
     | L byte_size
-	=	{
+	{
 	    cmd_type = TYPE_L;
 	    cmd_bytesz = $2;
 	}
     ;
 
 struct_code: F
-	=	{
+	{
 	    $$ = STRU_F;
 	}
     | R
-	=	{
+	{
 	    $$ = STRU_R;
 	}
     | P
-	=	{
+	{
 	    $$ = STRU_P;
 	}
     ;
 
 mode_code:  S
-	=	{
+	{
 	    $$ = MODE_S;
 	}
     | E
-	=	{
+	{
 	    $$ = MODE_E;
 	}
     | B
-	=	{
+	{
 	    $$ = MODE_B;
 	}
     | C
-	=	{
+	{
 	    $$ = MODE_C;
 	}
     ;
 
 pathname: pathstring
-	=	{
+	{
 	    /*
 	     * Problem: this production is used for all pathname
 	     * processing, but only gives a 550 error reply.
@@ -2271,7 +2269,7 @@ method: STRING
     ;
 
 octal_number: NUMBER
-	=	{
+	{
 	    register int ret, dec, multby, digit;
 
 	    /*
@@ -2296,7 +2294,7 @@ octal_number: NUMBER
     ;
 
 check_login: /* empty */
-	=	{
+	{
 	    if (logged_in)
 		$$ = 1;
 	    else {
@@ -2313,14 +2311,14 @@ bufsize: NUMBER
     ;
 
 esto_mode: A SP OFFSET
-    =	        {
+    {
 	$$.mode = 'A';
 	$$.offset = $3;
     }
     ;
 
 eret_mode: P SP OFFSET SP LENGTH
-    =	        {
+    {
 	$$.mode = 'P';
 	$$.offset = $3;
 	$$.length = $5;
@@ -3221,7 +3219,7 @@ void sizecmd(char *filename)
 		    if(fd < 0 || size < 0)
 			reply(550, "%s: not a plain file.", filename);
 		    else
-			reply(213, "%"GLOBUS_OFF_T_FORMAT, size);
+			reply(213, "%" GLOBUS_OFF_T_FORMAT, size);
 		}
 #               else
 		    reply(550, "%s: not a plain file.", filename);
@@ -3264,7 +3262,7 @@ void sizecmd(char *filename)
 	    }
 	    (void) fclose(fin);
 
-	    reply(213, "%"GLOBUS_OFF_T_FORMAT, count);
+	    reply(213, "%" GLOBUS_OFF_T_FORMAT, count);
 	    break;
 	}
     default:
