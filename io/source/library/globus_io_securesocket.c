@@ -2019,7 +2019,8 @@ error_exit:
         GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
         
     globus_i_io_close(handle);
-
+    handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
+    
     globus_i_io_mutex_unlock();
     init_info->callback(init_info->callback_arg,
                         handle,
@@ -2313,6 +2314,7 @@ globus_l_io_write_auth_token(
             {
                 /* Not authorized */
                 globus_i_io_close(handle);
+                handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
             }
         }
         
