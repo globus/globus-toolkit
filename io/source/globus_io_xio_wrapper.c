@@ -2099,7 +2099,6 @@ error_server_cntl:
     globus_xio_server_close(ihandle->xio_server);
     
 error_server:
-error_gsi:
     globus_l_io_handle_destroy(ihandle);
     
 error_alloc:
