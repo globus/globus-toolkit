@@ -1667,7 +1667,9 @@ globus_l_xio_system_poll(
     globus_bool_t                       time_left_is_zero;
     globus_bool_t                       handled_something;
     GlobusXIOName(globus_l_xio_system_poll);
-
+    
+    handled_something = GLOBUS_FALSE;
+    
     do
     {
         globus_reltime_t                time_left;
