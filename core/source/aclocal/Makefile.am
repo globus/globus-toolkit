@@ -24,41 +24,45 @@ EXTRA_DIST = $(PRE_FILES) \
 	$(POST_TOP_FILES)
 
 globus_automake_pre: $(PRE_FILES)
-	@file="globus_automake_pre"; \
+	file="globus_automake_pre"; \
+	list="$(PRE_FILES)"
 	if test -f $$file; then \
 		rm $$file; \
 	fi; \
 	touch $$file; \
-	for p in $(PRE_FILES); do \
+	for p in $$list; do \
 		cat $$p >> $$file; \
 	done
 
 globus_automake_post: $(POST_FILES)
-	@file="globus_automake_post"; \
+	file="globus_automake_post"; \
+	list="$(POST_FILES)"
 	if test -f $$file; then \
 		rm $$file; \
 	fi; \
 	touch $$file; \
-	for p in $(POST_FILES); do \
+	for p in $$list; do \
 		cat $$p >> $$file; \
 	done
 
 globus_automake_pre_top: $(PRE_TOP_FILES)
-	@file="globus_automake_pre_top"; \
+	file="globus_automake_pre_top"; \
+	list="$(PRE__TOP_FILES)"
 	if test -f $$file; then \
 		rm $$file; \
 	fi; \
 	touch $$file; \
-	for p in $(PRE__TOP_FILES); do \
+	for p in $$list; do \
 		cat $$p >> $$file; \
 	done
 
 globus_automake_post_top: $(POST_TOP_FILES)
-	@file="globus_automake_post_top"; \
+	file="globus_automake_post_top"; \
+	list="$(POST_TOP_FILES)"
 	if test -f $$file; then \
 		rm $$file; \
 	fi; \
 	touch $$file; \
-	for p in $(POST_TOP_FILES); do \
+	for p in $$list; do \
 		cat $$p >> $$file; \
 	done
