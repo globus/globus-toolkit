@@ -409,12 +409,17 @@ sub build_prerequisites()
 {
     install_gpt2();
 
-    if ( $cvs_build_hash{'autotools'} eq 1 or $cvs_build_hash{'gt2'} eq 1 )
+    if ( $cvs_build_hash{'autotools'} eq 1 or
+	 $cvs_build_hash{'gt2'} eq 1 or
+	 $cvs_build_hash{'gt3'} eq 1 or
+	 $cvs_build_hash{'cbindings'})
     {
 	install_gt2_autotools();
     }
 
-    if ( $cvs_build_hash{'gt2'} eq 1 or $cvs_build_hash{'gt3'} eq 1 )
+    if ( $cvs_build_hash{'gt2'} eq 1 or 
+	 $cvs_build_hash{'gt3'} eq 1 or
+	 $cvs_build_hash{'cbindings'} eq 1)
     {
 	install_globus_core();
     }
