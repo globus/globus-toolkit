@@ -911,6 +911,23 @@ main(int xargc,
       }
       
       globusid = get_globusid();
+
+
+      if (!run_from_inetd)
+      {
+	  logging_phase2(); /* now set stderr to logfile after gss prompts */
+
+	  net_setup_listener(2, &daemon_port, &listener_fd);
+	  
+#         if defined(TARGET_ARCH_CRAYT3E)
+	  {
+	      if(gatekeeper_uid == 0)
+	      {
+		  set_unicos_sockopts(listener_fd);
+	      }
+	  }
+#         endif
+      }
       
       /* ajr,vs --changed printf to sprintf, and added grami_setenv
        * This is considered to be a temporary change */
@@ -939,26 +956,11 @@ main(int xargc,
 
     if (run_from_inetd)
     {
-		(void) setsid();
+	(void) setsid();
         doit();
     }
     else
     {
-
-        logging_phase2(); /* now set stderr to logfile after gss prompts */
-
-        net_setup_listener(2, &daemon_port, &listener_fd);
-
-#       if defined(TARGET_ARCH_CRAYT3E)
-        {
-	    if(gatekeeper_uid == 0)
-	    {
-		set_unicos_sockopts(listener_fd);
-	    }
-	}
-#       endif
-
-
         if (!foreground)
         {
             /*
