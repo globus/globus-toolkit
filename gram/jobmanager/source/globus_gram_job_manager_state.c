@@ -106,7 +106,7 @@ globus_gram_job_manager_state_machine(
 {
     globus_bool_t			event_registered = GLOBUS_FALSE;
     globus_reltime_t			delay_time;
-    int					rc;
+    int					rc = 0;
     int					save_status;
     int					save_jobmanager_state;
     char *				tmp_str;
@@ -883,8 +883,18 @@ globus_gram_job_manager_state_machine(
 	}
 	break;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
-	if(request->x509_user_proxy)
+	if((!request->kerberos) && globus_gram_job_manager_gsi_used(request))
 	{
+	    if(!request->x509_user_proxy)
+	    {
+		/* failed to relocated proxy! */
+		request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_REPLY;
+		break;
+	    }
+
 	    /*
 	     * The proxy timeout callback is registered to happen shortly
 	     * (5 minutes) before the job manager's proxy will expire. We
@@ -924,9 +934,9 @@ globus_gram_job_manager_state_machine(
 		    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 		    request->failure_code =
 			GLOBUS_GRAM_PROTOCOL_ERROR_WRITING_STATE_FILE;
-		    rc = GLOBUS_FAILURE;
-			globus_gram_job_manager_request_log( request,
-				       "JM: error writing the state file\n");
+		    globus_gram_job_manager_request_log( request,
+				   "JM: error writing the state file\n");
+		    break;
 		}
 	    }
 	}
