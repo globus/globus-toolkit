@@ -545,6 +545,7 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 		for(lp = rp->msg.first; lp != NULL; lp = lp->next) {
 			gss_buffer_desc wrapped_token, unwrapped_token;
 			char * out_buf;
+                        char * unwrapped_response;
 			int len = 0;
 			int conf_state;
 			gss_qop_t qop_state;
@@ -582,17 +583,27 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 				return (kNoErr);
 			}
 
+                        unwrapped_response = malloc(
+                            unwrapped_token.length + 1);
+
+                        memcpy(unwrapped_response,
+                               unwrapped_token.value,
+                               unwrapped_token.length);
+
+                        unwrapped_response[unwrapped_token.length] = '\0';
+                        
 			/* Add it to the buffer */
 			if(p == NULL) {
 				p = malloc(unwrapped_token.length + 1);
-				strcpy(p, unwrapped_token.value);
+				strcpy(p, unwrapped_response);
 				bufferedAmt += unwrapped_token.length;
 			} else {
-				p = realloc(p, bufferedAmt + unwrapped_token.length);
-				strcat(p, unwrapped_token.value);
+				p = realloc(p, bufferedAmt + unwrapped_token.length + 1);
+				strcat(p, unwrapped_response);
 				bufferedAmt += unwrapped_token.length;
 			}
 
+                        free(unwrapped_response);
 			free(out_buf);
 			gss_release_buffer(&min_stat, &unwrapped_token);
 		}
@@ -695,7 +706,7 @@ SendCommand(const FTPCIPtr cip, const char *cmdspec, va_list ap)
 			/* Strip off '\r\n', since we're encoding this request */
 			*(strrchr(command, '\r')) = '\0';
 			in_buf.value = command;
-			in_buf.length = strlen(command) + 1;
+			in_buf.length = strlen(command);
 
 			maj_stat = gss_wrap(&min_stat, cip->connectionContext,
 						(cip->protectionLevel == kProtectionLevelPrivate),
