@@ -1,6 +1,6 @@
 #include "globus_xio_pass.h"
-#include "globus_xio.h"
 #include "globus_i_xio.h"
+#include "globus_xio.h"
 
 void
 globus_l_xio_driver_op_read_kickout(
@@ -206,5 +206,160 @@ globus_i_xio_context_create(
     }
 
     return xio_context;
+}
+
+/**************************************************************************
+ *                  macro wrapper functions
+ *                  -----------------------
+ *
+ *  this is mainly a compile test, but who knows, someone may want it
+ *************************************************************************/
+void *
+globus_i_xio_attr_get_ds(
+    globus_i_xio_attr_t *                       attr,
+    globus_xio_driver_t                         driver)
+{
+    void *                                      rc;
+
+    GlobusIXIOAttrGetDS(rc, attr, driver);
+
+    return rc;
+}
+
+void *
+globus_i_xio_dd_get_ds(
+    globus_i_xio_dd_t *                         dd,
+    globus_xio_driver_t                         driver)
+{
+    void *                                      rc;
+
+    GlobusIXIODDGetDS(rc, dd, driver);
+
+    return rc;    
+}
+
+/*
+ *  pass functions
+ */
+globus_result_t
+globus_xio_driver_pass_server_accept(
+    globus_i_xio_op_t *                         op,
+    globus_xio_driver_callback_t                cb,
+    void *                                      user_arg)
+{
+    globus_result_t                             res;
+
+    GlobusXIODriverPassServerAccept(res, op, cb, user_arg);
+
+    return res;
+}
+
+globus_result_t
+globus_xio_driver_pass_open(
+    globus_xio_context_t *                      out_context,
+    globus_i_xio_op_t *                         op,
+    globus_xio_driver_callback_t                cb,
+    void *                                      user_arg)
+{
+    globus_result_t                             res;
+
+    GlobusXIODriverPassOpen(res, *out_context, op, cb, user_arg);
+
+    return res;
+}
+
+globus_result_t
+globus_xio_driver_pass_close(
+    globus_i_xio_op_t *                         op,
+    globus_xio_driver_callback_t                cb,
+    void *                                      user_arg)
+{
+    globus_result_t                             res;
+
+    GlobusXIODriverPassClose(res, op, cb, user_arg);
+
+    return res;
+}
+
+globus_result_t
+globus_xio_driver_pass_read(
+    globus_i_xio_op_t *                         op,
+    globus_xio_iovec_t *                        iovec,
+    int                                         iovec_count,
+    globus_size_t                               waitfor,
+    globus_xio_driver_data_callback_t           cb,
+    void *                                      user_arg)
+{
+    globus_result_t                             res;
+
+    GlobusXIODriverPassRead(res, op, iovec, iovec_count,  \
+        waitfor, cb, user_arg);
+
+    return res;
+}
+
+globus_result_t
+globus_xio_driver_pass_write(
+    globus_i_xio_op_t *                         op,
+    globus_xio_iovec_t *                        iovec,
+    int                                         iovec_count,
+    globus_size_t                               waitfor,
+    globus_xio_driver_data_callback_t           cb,
+    void *                                      user_arg)
+{
+    globus_result_t                             res;
+
+    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, \
+        waitfor, cb, user_arg);
+
+    return res;
+}
+
+/*
+ *  finishes function wrappers
+ */
+void
+globus_xio_driver_finished_open(
+    globus_xio_context_t                        context,
+    void *                                      handle,
+    globus_xio_operation_t                      op,
+    globus_result_t                             res)
+{
+    GlobusXIODriverFinishedOpen(context, handle, op, res);
+}
+
+void
+globus_xio_driver_finished_close(
+    globus_xio_operation_t                      op,
+    globus_result_t                             res)
+{
+    GlobusXIODriverFinishedClose(op, res);
+}
+
+void
+globus_xio_driver_finished_read(
+    globus_xio_operation_t                      op,
+    globus_result_t                             res,
+    globus_size_t                               nbytes)
+{
+    GlobusXIODriverFinishedRead(op, res, nbytes);
+}
+
+void
+globus_xio_driver_finished_write(
+    globus_xio_operation_t                      op,
+    globus_result_t                             res,
+    globus_size_t                               nbytes)
+{
+    GlobusXIODriverFinishedWrite(op, res, nbytes);
+}
+
+void
+globus_xio_driver_finished_accept(
+    globus_xio_operation_t                      op,
+    void *                                      target,
+    globus_result_t                             res)
+{
+    GlobusXIODriverFinishedAccept(op, target, res);
 }
 

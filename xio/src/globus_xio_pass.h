@@ -1,8 +1,8 @@
-#if !defined(GLOBUS_XIO_PASS_MACRO_H)
-#define GLOBUS_XIO_PASS_MACRO_H 1
+#if !defined(GLOBUS_XIO_PASS_H)
+#define GLOBUS_XIO_PASS_H 1
 
-#include "globus_common.h"
 #include "globus_i_xio.h"
+#include "globus_common.h"
 
 /************************************************************************
  *                      attribute macros
@@ -47,7 +47,7 @@ do                                                                          \
     {                                                                       \
         if(_entry[_ctr].driver == _driver)                                  \
         {                                                                   \
-            _ds = entry[_ctr].driver_data;                                  \
+            _ds = _entry[_ctr].driver_data;                                 \
         }                                                                   \
     }                                                                       \
     _out_ds = _ds;                                                          \
@@ -60,69 +60,72 @@ do                                                                          \
 /*
  *  for the server
  */
-#define GlobusXIODriverPassServerAccept(res, op, cb, user_arg)              \
+#define GlobusXIODriverPassServerAccept(_out_res, _in_op, _in_cb,           \
+            _in_user_arg)                                                   \
 do                                                                          \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
     globus_i_xio_server_t *                         _server;                \
+    globus_i_xio_server_entry_t *                   _server_entry;          \
     globus_i_xio_op_entry_t *                       _next_entry;            \
     globus_i_xio_op_entry_t *                       _my_entry;              \
     int                                             _caller_ndx;            \
                                                                             \
-    _op = (globus_i_xio_op_t *)(op);                                        \
+    _op = (globus_i_xio_op_t *)(_in_op);                                    \
     _server = _op->_op_server;                                              \
                                                                             \
     globus_assert(_op->ndx < _op->stack_size);                              \
     if(_op->canceled)                                                       \
     {                                                                       \
-        out_res = GlobusXIOErrorOperationCanceled(                          \
-                    "GlobusXIODriverPassServerAccept"):                     \
+        _out_res = GlobusXIOErrorOperationCanceled(                         \
+                    "GlobusXIODriverPassServerAccept");                     \
     }                                                                       \
     else                                                                    \
     {                                                                       \
         _op->progress = GLOBUS_TRUE;                                        \
-        _op->timeout_blocked = GLOBUS_FALSE;                                \
+        _op->block_timeout = GLOBUS_FALSE;                                  \
         _my_entry = &_op->entry[_op->ndx];                                  \
-        _my_entry->cb = (cb);                                               \
-        _my_entry->user_arg = (user_arg);                                   \
+        _my_entry->cb = (_in_cb);                                           \
+        _my_entry->user_arg = (_in_user_arg);                               \
         _my_entry->in_register = GLOBUS_TRUE;                               \
         _caller_ndx = _op->ndx;                                             \
         do                                                                  \
         {                                                                   \
             _op->ndx++;                                                     \
             _next_entry = &_op->entry[_op->ndx];                            \
+            _server_entry = &_server->entry[_op->ndx];                      \
         }                                                                   \
-        while(_next_entry->driver->server_accept_func == NULL);             \
-        _next_entry->caller_ndx = _caller_ndx;                              \
+        while(_server_entry->driver->server_accept_func == NULL);           \
+        _my_entry->caller_ndx = _caller_ndx;                                \
                                                                             \
         /* at time that stack is built this will be varified */             \
         globus_assert(_op->ndx <= _op->stack_size);                         \
-        res = _next_entry->driver->server_accept_func(                      \
-                    _server->entry[_op->ndx]->server_handle,                \
-                    _my_entry->_op_ent_accept_attr,                         \
+        _out_res = _server_entry->driver->server_accept_func(               \
+                    _server_entry->server_handle,                           \
+                    _my_entry->attr,                                        \
                     _op);                                                   \
         _my_entry->in_register = GLOBUS_FALSE;                              \
     }                                                                       \
-}
+} while(0)
 
-#define GlobusXIODriverFinishedAccept(op, target, result)                   \
+#define GlobusXIODriverFinishedAccept(_in_op, _in_target, _in_res)          \
 do                                                                          \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
     int                                             _caller_ndx;            \
                                                                             \
-    _op = (globus_i_xio_op_t *)(op);                                        \
+    _op = (globus_i_xio_op_t *)(_in_op);                                    \
     globus_assert(_op->ndx > 0);                                            \
     _op->progress = GLOBUS_TRUE;                                            \
-    _op->timeout_blocked = GLOBUS_FALSE;                                    \
+    _op->block_timeout = GLOBUS_FALSE;                                      \
                                                                             \
     _caller_ndx = _op->entry[_op->ndx].caller_ndx;                          \
     _op->ndx = _caller_ndx;                                                 \
-    _op->entry[_op->ndx].target = (target);                                 \
+    _op->entry[_op->ndx].target = (_in_target);                             \
                                                                             \
     if(_op->entry[_op->ndx].in_register)                                    \
     {                                                                       \
-        _op->cached_res = (result);                                         \
+        _op->cached_res = (_in_res);                                        \
         globus_callback_space_register_oneshot(                             \
             NULL,                                                           \
             NULL,                                                           \
@@ -132,7 +135,7 @@ do                                                                          \
     }                                                                       \
     else                                                                    \
     {                                                                       \
-        _op->entry[_op->ndx].cb(_op, result,                                \
+        _op->entry[_op->ndx].cb(_op, _op->cached_res,                       \
             _op->entry[_op->ndx].user_arg);                                 \
     }                                                                       \
 } while(0)
@@ -191,58 +194,60 @@ do                                                                          \
             _out_res = _next_context->driver->transport_open_func(          \
                         _next_op->target,                                   \
                         _next_op->attr,                                     \
-                        _context,                                           \
+                        _my_context,                                        \
                         _op);                                               \
         }                                                                   \
         else                                                                \
         {                                                                   \
-            _out_res = _next_context->driver->transform_open_func(         \
+            _out_res = _next_context->driver->transform_open_func(          \
                         _next_op->target,                                   \
                         _next_op->attr,                                     \
                         _op);                                               \
         }                                                                   \
         _my_op->in_register = GLOBUS_FALSE;                                 \
-        _out_context = _context;                                            \
+        _out_context = _my_context;                                         \
     }                                                                       \
 } while(0)
 
 
 /* open does not need to lock */
-#define GlobusXIODriverFinishedOpen(context, dh, op, res)                   \
+#define GlobusXIODriverFinishedOpen(_in_context, _in_dh, _in_op, _in_res)   \
 do                                                                          \
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
     globus_i_xio_context_entry_t *                  _my_context;            \
     globus_i_xio_context_t *                        _context;               \
-    globus_i_xio_op_entry_t *                       _next_op;               \
     globus_i_xio_op_entry_t *                       _my_op;                 \
     globus_result_t                                 _res;                   \
     int                                             _caller_ndx;            \
+    int                                             _ctr;                   \
                                                                             \
-    _res = (res);                                                           \
-    _op = (globus_i_xio_op_t *)(op);                                        \
+    _res = (_in_res);                                                       \
+    _op = (globus_i_xio_op_t *)(_in_op);                                    \
     globus_assert(_op->ndx > 0);                                            \
     _op->progress = GLOBUS_TRUE;                                            \
-    _op->timeout_blocked = GLOBUS_FALSE;                                    \
+    _op->block_timeout = GLOBUS_FALSE;                                      \
                                                                             \
     /*                                                                      \
      * this means that we are finishing with a different context            \
      * copy the finishing one into the operations;                          \
      */                                                                     \
-    if(_op->context != _context && _context != NULL)                        \
+    if(_op->_op_context != _in_context->whos_my_daddy &&                    \
+            _in_context != NULL)                                            \
     {                                                                       \
         /* iterate through them all and copy handles into new slot */       \
-        for(ctr = _op->ndx + 1; ctr < _op->stack_size; ctr++)               \
+        for(_ctr = _op->ndx + 1; _ctr < _op->stack_size; _ctr++)            \
         {                                                                   \
-            _op->context[ctr].driver_handle = _control[ctr].driver_handle;  \
+            _op->_op_context->entry[_ctr].driver_handle =                   \
+                _in_context->whos_my_daddy->entry[_ctr].driver_handle;      \
         }                                                                   \
     }                                                                       \
                                                                             \
-    _context = _op->context;                                                \
+    _context = _op->_op_context;                                            \
     _caller_ndx = _op->entry[_op->ndx].caller_ndx;                          \
     _my_context = &_context->entry[_caller_ndx];                            \
-    _my_context->driver_handle = (dh);                                      \
-    _my_op = _op->entry[_caller_ndx];                                       \
+    _my_context->driver_handle = (_in_dh);                                  \
+    _my_op = &_op->entry[_caller_ndx];                                      \
     /* no operation can happen while in OPENING state so no need to lock */ \
     if((res) != GLOBUS_SUCCESS)                                             \
     {                                                                       \
@@ -263,7 +268,7 @@ do                                                                          \
     {                                                                       \
         /* if still in register call stack or at top level and a user       \
            requested a callback space */                                    \
-        if(_my_op->.in_register ||                                          \
+        if(_my_op->in_register ||                                           \
             _my_context->space != GLOBUS_CALLBACK_GLOBAL_SPACE)             \
         {                                                                   \
             _op->cached_res = _res;                                         \
@@ -521,6 +526,7 @@ do                                                                          \
     globus_i_xio_context_entry_t *                  _next_context;          \
     globus_i_xio_context_t *                        _context;               \
     int                                             _caller_ndx;            \
+    int                                             _iovec_count;           \
                                                                             \
     _op = (globus_i_xio_op_t *)(op);                                        \
     globus_assert(_op->ndx > 0);                                            \
@@ -530,8 +536,8 @@ do                                                                          \
                                                                             \
     _caller_ndx =_op->entry[_op->ndx].caller_ndx;                           \
     _my_op = &_op->entry[_caller_ndx];                                      \
-    _context = _op->context;                                                \
-    _my_context = _context->entry[_caller_ndx];                             \
+    _context = _op->_op_context;                                            \
+    _my_context = &_context->entry[_caller_ndx];                            \
     _res = (result);                                                        \
                                                                             \
     _my_op->_op_ent_nbytes += nbytes;                                       \
@@ -540,7 +546,7 @@ do                                                                          \
         _res == GLOBUS_SUCCESS)                                             \
     {                                                                       \
         /* if not enough bytes read set the fire_cb deafult to false */     \
-        fire_cb = GLOBUS_FALSE;                                             \
+        _fire_cb = GLOBUS_FALSE;                                            \
         /* allocate tmp iovec to the bigest it could ever be */             \
         if(_my_op->_op_ent_fake_iovec == NULL)                              \
         {                                                                   \
@@ -553,7 +559,7 @@ do                                                                          \
         GlobusIXIOSystemTransferAdjustedIovec(                              \
             _tmp_iovec, _iovec_count,                                       \
             _my_op->_op_ent_iovec, _my_op->_op_ent_iovec_count,             \
-            _my_op->_op_ent_nwritten);                                      \
+            _my_op->_op_ent_nbytes);                                        \
                                                                             \
         _next_context = &_context->entry[_op->ndx];                         \
         /* repass the operation down */                                     \
@@ -564,16 +570,16 @@ do                                                                          \
                 _op);                                                       \
         if(_res != GLOBUS_SUCCESS)                                          \
         {                                                                   \
-            fire_cb = GLOBUS_TRUE;                                          \
+            _fire_cb = GLOBUS_TRUE;                                         \
         }                                                                   \
     }                                                                       \
-    if(fire_cb)                                                             \
+    if(_fire_cb)                                                            \
     {                                                                       \
         _op->ndx = _caller_ndx;                                             \
         _op->cached_res = _res;                                             \
-        if(_my_entry->fake_iovec != NULL)                                   \
+        if(_my_op->_op_ent_fake_iovec != NULL)                              \
         {                                                                   \
-            globus_free(_my_op->fake_iovec);                                \
+            globus_free(_my_op->_op_ent_fake_iovec);                        \
         }                                                                   \
         if(_my_op->in_register)                                             \
         {                                                                   \
@@ -734,6 +740,7 @@ do                                                                          \
     globus_i_xio_context_entry_t *                  _my_context;            \
     globus_i_xio_context_entry_t *                  _next_context;          \
     int                                             _caller_ndx;            \
+    int                                             _iovec_count;           \
                                                                             \
     _op = (globus_i_xio_op_t *)(op);                                        \
     globus_assert(_op->ndx > 0);                                            \
@@ -747,8 +754,8 @@ do                                                                          \
     /* deal with wait for stuff */                                          \
     _caller_ndx = _op->entry[_op->ndx].caller_ndx;                          \
     _my_op = &_op->entry[_caller_ndx];                                      \
-    _my_context = &_op->context.entry[_caller_ndx];                         \
-    _next_context = &_op->context.entry[_op->ndx];                          \
+    _my_context = &_op->_op_context->entry[_caller_ndx];                    \
+    _next_context = &_op->_op_context->entry[_op->ndx];                     \
     _res = (result);                                                        \
     _my_op->_op_ent_nbytes += nbytes;                                       \
     _op->ndx = _caller_ndx;                                                 \
@@ -777,7 +784,7 @@ do                                                                          \
                     globus_assert(0);                                       \
                     break;                                                  \
             }                                                               \
-            _my_op->eof = GLOBUS_TRUE;                                      \
+            _my_op->_op_ent_read_eof = GLOBUS_TRUE;                         \
             _my_context->read_operations--;                                 \
             if(_my_context->read_operations > 0)                            \
             {                                                               \
@@ -793,7 +800,7 @@ do                                                                          \
         _res == GLOBUS_SUCCESS)                                             \
     {                                                                       \
         /* if not enough bytes read set the fire_cb deafult to false */     \
-        fire_cb = GLOBUS_FALSE;                                             \
+        _fire_cb = GLOBUS_FALSE;                                            \
         /* allocate tmp iovec to the bigest it could ever be */             \
         if(_my_op->_op_ent_fake_iovec == NULL)                              \
         {                                                                   \
@@ -816,7 +823,7 @@ do                                                                          \
                 _op);                                                       \
         if(_res != GLOBUS_SUCCESS)                                          \
         {                                                                   \
-            fire_cb = GLOBUS_TRUE;                                          \
+            _fire_cb = GLOBUS_TRUE;                                        \
         }                                                                   \
     }                                                                       \
                                                                             \

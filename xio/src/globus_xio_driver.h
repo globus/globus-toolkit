@@ -1,3 +1,6 @@
+#if !defined(GLOBUS_XIO_DRIVER_H)
+#define GLOBUS_XIO_DRIVER_H 1
+
 /*******************************************************************
  *                      driver interface
  ******************************************************************/
@@ -387,8 +390,7 @@ globus_xio_server_disable_cancel(
  *  @param result
  *          Return status of the completed operation
  */
-
-globus_result_t
+void
 globus_xio_driver_finished_accept(
     globus_xio_operation_t                      accept_op,
     void *                                      driver_target,
@@ -591,7 +593,7 @@ globus_xio_driver_open(
  *  @param result
  *          Return status of the completed operation
  */
-globus_result_t
+void
 globus_xio_driver_finished_open(
     globus_xio_context_t                        context,
     void *                                      driver_handle,
@@ -785,7 +787,7 @@ globus_xio_driver_close(
  *  @param result
  *          Return status of the completed operation
  */
-globus_result_t
+void
 globus_xio_driver_finished_close(
     globus_xio_operation_t                      op,
     globus_result_t                             result);
@@ -900,7 +902,7 @@ globus_xio_driver_read(
  *  @param nread
  *          The number of bytes read
  */
-globus_result_t
+void
 globus_xio_driver_finished_read(
     globus_xio_operation_t                      op,
     globus_result_t                             result,
@@ -997,7 +999,7 @@ globus_xio_driver_write(
  *  @param nwritten
  *          The number of bytes written
  */
-globus_result_t
+void
 globus_xio_driver_finished_write(
     globus_xio_operation_t                      op,
     globus_result_t                             result,
@@ -1230,3 +1232,6 @@ globus_result_t
 globus_xio_driver_fire_signal(
      globus_xio_context_t                       context,
      int                                        signal_mask);
+
+
+#endif
