@@ -202,12 +202,13 @@ main(int argc, char *argv[])
     /*Check response */
     switch (server_response->response_type) {
 	    case MYPROXY_ERROR_RESPONSE:
-		    fprintf (stderr, "Receiver ERROR_RESPONSE: %s\n", 
+		    fprintf (stderr, "Error: %s\nPassphrase unchanged.\n", 
 			     server_response->error_string);
+		    
 		    return 1;
 
 	    case MYPROXY_OK_RESPONSE:
-    		    printf("Passphrase changed\n");
+    		    printf("Passphrase changed.\n");
 		    break;
 	
 	    default:
