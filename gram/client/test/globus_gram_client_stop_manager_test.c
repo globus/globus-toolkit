@@ -1,5 +1,7 @@
 #include "globus_gram_client.h"
 
+#include <string.h>
+
 typedef struct
 {
     globus_mutex_t			mutex;
@@ -36,10 +38,17 @@ int main(int argc, char *argv[])
     const char *			rsl_format="&(restart=%s)";
     char *				rsl;
     test_monitor_t			monitor;
+    int                                 test_num=1;
 
-    if(argc != 2)
+    if(argc != 2 && argc != 3)
     {
-	fprintf(stderr, "usage: %s gatekeeper-contact\n", argv[0]);
+	fprintf(stderr, "usage: %s gatekeeper-contact [test-number]\n"
+                "where test-number is 1 or 2\n", argv[0]);
+    }
+
+    if(argc == 3)
+    {
+        test_num = atoi(argv[2]);
     }
     rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
     rc |= globus_module_activate(GLOBUS_COMMON_MODULE);
@@ -61,9 +70,14 @@ int main(int argc, char *argv[])
     {
 	goto deactivate_exit;
     }
+    printf("submitting job request\n");
     rc = globus_gram_client_job_request(
 	    argv[1],
-	    "&(executable=/bin/no-such-executable)(two_phase=30)(save_state=yes)",
+            (test_num == 1)
+                ? ("&(executable=/bin/no-such-executable)"
+                    "(two_phase=30)(save_state=yes)")
+                : ("&(executable=/bin/sleep)(arguments=60)"
+                   " (two_phase=30)(save_state=yes)"),
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
 	    contact,
 	    &job_contact);
@@ -73,6 +87,7 @@ int main(int argc, char *argv[])
 	goto disallow_exit;
     }
 
+    printf("sending commit signal\n");
     rc = globus_gram_client_job_signal(
 	    job_contact,
 	    GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
@@ -85,20 +100,34 @@ int main(int argc, char *argv[])
 	goto disallow_exit;
     }
 
+    printf("waiting for job\n");
     while(monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
 	  monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
     {
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
+    printf("stopping the job manager\n");
     rc = globus_gram_client_job_signal(
 	    job_contact,
 	    GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STOP_MANAGER,
 	    NULL,
 	    NULL,
 	    NULL);
+
     if(rc != GLOBUS_SUCCESS)
     {
 	goto disallow_exit;
+    }
+
+    if(test_num == 1 && monitor.failure_code
+            != GLOBUS_GRAM_PROTOCOL_ERROR_EXECUTABLE_NOT_FOUND)
+    {
+        goto disallow_exit;
+    }
+    else if(test_num == 2 && monitor.failure_code
+            != GLOBUS_SUCCESS)
+    {
+        goto disallow_exit;
     }
 
     rsl = globus_libc_malloc(strlen(rsl_format) + strlen(job_contact) + 1);
@@ -107,6 +136,7 @@ int main(int argc, char *argv[])
     globus_libc_free(job_contact);
     monitor.state = GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED;
 
+    printf("restarting the job manager\n");
     rc = globus_gram_client_job_request(
 	    argv[1],
 	    rsl,
@@ -118,6 +148,8 @@ int main(int argc, char *argv[])
     {
 	goto disallow_exit;
     }
+
+    printf("commiting the restart\n");
     rc = globus_gram_client_job_signal(
 	    job_contact,
 	    GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
@@ -129,31 +161,39 @@ int main(int argc, char *argv[])
     {
 	goto disallow_exit;
     }
-
+    printf("waiting for the job\n");
     while(monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
 	  monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
     {
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
-    rc = globus_gram_client_job_signal(
-	    job_contact,
-	    GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
-	    NULL,
-	    NULL,
-	    NULL);
-
-    if(rc != GLOBUS_SUCCESS)
+    if(test_num == 1 && monitor.failure_code
+            == GLOBUS_GRAM_PROTOCOL_ERROR_EXECUTABLE_NOT_FOUND)
     {
-	goto disallow_exit;
+        printf("signalling commit end\n");
+        rc = globus_gram_client_job_signal(
+                job_contact,
+                GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
+                NULL,
+                NULL,
+                NULL);
     }
-    if(monitor.failure_code == 5)
+    else if(test_num == 2 && monitor.failure_code == GLOBUS_SUCCESS)
     {
-	rc = 0;
+        printf("signalling commit end\n");
+        rc = globus_gram_client_job_signal(
+                job_contact,
+                GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
+                NULL,
+                NULL,
+                NULL);
     }
     else
     {
-	rc = -1;
+        rc = -1;
     }
+
+
 
 disallow_exit:
     globus_gram_client_callback_disallow(contact);

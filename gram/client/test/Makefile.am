@@ -17,7 +17,9 @@ Scripts = \
 	globus-gram-client-register-cancel-test.pl \
 	globus-gram-client-register-refresh-credentials-test.pl \
 	globus-gram-client-status-test.pl \
-	globus-gram-client-stop-manager-test.pl
+	globus-gram-client-stop-manager-test.pl \
+	globus-gram-client-register-ping-test.pl \
+        globus-gram-client-two-phase-commit-test.pl
 
 Data = \
 	dc31a685.0 \
@@ -43,7 +45,9 @@ test_PROGRAMS= \
 	globus-gram-client-status-test \
 	globus-gram-client-stdio-update-test \
 	globus-gram-client-stop-manager-test \
-	globus-gram-client-register-test
+	globus-gram-client-register-test \
+	globus-gram-client-register-ping-test \
+        globus-gram-client-two-phase-commit-test
 
 EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
 
@@ -95,6 +99,12 @@ globus_gram_client_register_refresh_credentials_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_gram_client_stop_manager_test_SOURCES = globus_gram_client_stop_manager_test.c
 globus_gram_client_stop_manager_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_gram_client_two_phase_commit_test_SOURCES = globus_gram_client_two_phase_commit_test.c
+globus_gram_client_two_phase_commit_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_gram_client_register_ping_test_SOURCES = globus_gram_client_register_ping_test.c
+globus_gram_client_register_ping_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

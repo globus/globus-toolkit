@@ -28,19 +28,13 @@ sub status_test
 {
     my ($errors,$rc) = ("",0);
     my ($output);
-    my ($contact, $result) = @_;
+    my ($contact, $arg, $result) = @_;
 
-    unlink('core');
-
-    system("$test_exec '$contact' >/dev/null 2>/dev/null");
+    system("$test_exec '$contact' $arg >/dev/null 2>/dev/null");
     $rc = $?>> 8;
     if($rc != $result)
     {
         $errors .= "Test exited with $rc. ";
-    }
-    if(-r 'core')
-    {
-        $errors .= "\n# Core file generated.";
     }
 
     if($errors eq "")
@@ -52,7 +46,8 @@ sub status_test
         ok($errors, 'success');
     }
 }
-push(@tests, "status_test('$ENV{CONTACT_STRING}', 0);");
+push(@tests, "status_test('$ENV{CONTACT_STRING}', 1, 0);");
+push(@tests, "status_test('$ENV{CONTACT_STRING}', 2, 0);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

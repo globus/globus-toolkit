@@ -3,7 +3,7 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_client_test">
     
-    <Aging_Version Age="0" Major="2" Minor="2"/>
+    <Aging_Version Age="0" Major="2" Minor="3"/>
     <Description>Test programs for the GRAM Client Library</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -26,7 +26,7 @@
 
             <Dependency Name="globus_gram_client">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -40,7 +40,7 @@
 
             <Dependency Name="globus_gram_client">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -52,7 +52,7 @@
                 </Version>
             </Dependency>
 
-            <Dependency Name="globus_gram_client_test" Package="data">
+            <Dependency Name="globus_gass_cache_program" Package="pgm">
                 <Version>
                     <Simple_Version Major="2"/>
                 </Version>
