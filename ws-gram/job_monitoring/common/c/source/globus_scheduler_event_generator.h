@@ -3,15 +3,25 @@
 
 #include "globus_common.h"
 
-enum
+/** @ingroup seg_api
+ * Error types used by the SEG.
+ */
+typedef enum
 {
+    /** NULL Parameter */
     GLOBUS_SEG_ERROR_TYPE_NULL = 1024,
+    /** Already called a one-time function */
     GLOBUS_SEG_ERROR_TYPE_ALREADY_SET,
+    /** Shared module missing descriptor */
     GLOBUS_SEG_ERROR_TYPE_INVALID_MODULE,
+    /** Invalid printf format for SEG protocol message */
     GLOBUS_SEG_ERROR_TYPE_INVALID_FORMAT,
+    /** Out of memory */
     GLOBUS_SEG_ERROR_TYPE_OUT_OF_MEMORY,
+    /** Unable to load scheduler module */
     GLOBUS_SEG_ERROR_TYPE_LOADING_MODULE
-};
+}
+globus_scheduler_event_generator_error_t;
 
 #if __STDC_VERSION__ == 199901L
 #    define MYNAME __func__
@@ -107,7 +117,9 @@ extern globus_module_descriptor_t globus_i_scheduler_event_generator_module;
 #define GLOBUS_SCHEDULER_EVENT_GENERATOR_MODULE \
     (&globus_i_scheduler_event_generator_module)
 
-/* API for scheduler-specific module implementations */
+/**
+ * @defgroup seg_api Scheduler Implementation API
+ */
 globus_result_t
 globus_scheduler_event(
     const char * format,
@@ -135,8 +147,7 @@ globus_scheduler_event_done(
     const char *                        jobid,
     int                                 exit_code);
 
-
-/* API for executable which drives the SEG */
+/* API used by executable which drives the SEG */
 globus_result_t
 globus_scheduler_event_generator_set_timestamp(
     time_t                              timestamp);

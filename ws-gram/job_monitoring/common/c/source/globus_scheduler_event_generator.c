@@ -278,23 +278,6 @@ globus_l_seg_deactivate(void)
 {
     char *                              buffer;
 
-
-    globus_mutex_lock(&globus_l_seg_mutex);
-    globus_l_seg_fault_handler = NULL;
-    globus_l_seg_fault_arg = NULL;
-    globus_mutex_unlock(&globus_l_seg_mutex);
-
-    globus_xio_close(globus_l_seg_input_handle, NULL);
-    globus_xio_close(globus_l_seg_output_handle, NULL);
-
-    globus_mutex_lock(&globus_l_seg_mutex);
-    while (!globus_fifo_empty(&globus_l_seg_buffers))
-    {
-        buffer = globus_fifo_dequeue(&globus_l_seg_buffers);
-
-        globus_libc_free(buffer);
-    }
-    globus_fifo_destroy(&globus_l_seg_buffers);
     if (globus_l_seg_scheduler_module)
     {
         globus_module_deactivate(globus_l_seg_scheduler_module);
@@ -306,7 +289,22 @@ globus_l_seg_deactivate(void)
         lt_dlclose(globus_l_seg_scheduler_handle);
         globus_l_seg_scheduler_handle = NULL;
     }
+
+    globus_mutex_lock(&globus_l_seg_mutex);
+    globus_l_seg_fault_handler = NULL;
+    globus_l_seg_fault_arg = NULL;
+
+    while (!globus_fifo_empty(&globus_l_seg_buffers))
+    {
+        buffer = globus_fifo_dequeue(&globus_l_seg_buffers);
+
+        globus_libc_free(buffer);
+    }
+    globus_fifo_destroy(&globus_l_seg_buffers);
     globus_mutex_unlock(&globus_l_seg_mutex);
+
+    globus_xio_close(globus_l_seg_output_handle, NULL);
+    globus_xio_close(globus_l_seg_input_handle, NULL);
 
     globus_mutex_destroy(&globus_l_seg_mutex);
 
@@ -320,11 +318,15 @@ globus_l_seg_deactivate(void)
 
 /**
  * Send an arbitrary SEG notification.
+ * @ingroup seg_api
  *
  * @param format
  *     Printf-style format of the SEG notification message
  * @param ...
  *     Varargs which will be interpreted as per format.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Scheduler message sent or queued.
  * @retval GLOBUS_SEG_ERROR_NULL
  *     Null format.
  * @retval GLOBUS_SEG_ERROR_INVALID_FORMAT
@@ -379,19 +381,30 @@ error:
 
 /**
  * Send a job pending event to the JobSchedulerMonitor implementation.
+ * @ingroup seg_api
  *
  * @param timestamp
  *        Timestamp to use for the event. If set to 0, the time which
  *        this function was called is used.
  * @param jobid
  *        String indicating the scheduler-specific name of the job.
- * @return see #globus_scheduler_event() documentation for return values.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Scheduler message sent or queued.
+ * @retval GLOBUS_SEG_ERROR_NULL
+ *     Null jobid.
+ * @retval GLOBUS_SEG_ERROR_INVALID_FORMAT
+ *     Unable to determine length of formatted string.
  */
 globus_result_t
 globus_scheduler_event_pending(
     time_t                              timestamp,
     const char *                        jobid)
 {
+    if (jobid == NULL)
+    {
+        return GLOBUS_SEG_ERROR_NULL;
+    }
     return globus_l_scheduler_event_state_change(
             timestamp,
             jobid,
@@ -403,19 +416,30 @@ globus_scheduler_event_pending(
 
 /**
  * Send a job active event to the JobSchedulerMonitor implementation.
+ * @ingroup seg_api
  *
  * @param timestamp
  *        Timestamp to use for the event. If set to 0, the time which
  *        this function was called is used.
  * @param jobid
  *        String indicating the scheduler-specific name of the job.
- * @return see #globus_scheduler_event() documentation for return values.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Scheduler message sent or queued.
+ * @retval GLOBUS_SEG_ERROR_NULL
+ *     Null jobid.
+ * @retval GLOBUS_SEG_ERROR_INVALID_FORMAT
+ *     Unable to determine length of formatted string.
  */
 globus_result_t
 globus_scheduler_event_active(
     time_t                              timestamp,
     const char *                        jobid)
 {
+    if (jobid == NULL)
+    {
+        return GLOBUS_SEG_ERROR_NULL;
+    }
     return globus_l_scheduler_event_state_change(
             timestamp,
             jobid,
@@ -425,6 +449,7 @@ globus_scheduler_event_active(
 
 /**
  * Send a job failed event to the JobSchedulerMonitor implementation.
+ * @ingroup seg_api
  *
  * @param timestamp
  *        Timestamp to use for the event. If set to 0, the time which
@@ -433,7 +458,13 @@ globus_scheduler_event_active(
  *        String indicating the scheduler-specific name of the job.
  * @param failure_code
  *        Failure code of the process if known.
- * @return see #globus_scheduler_event() documentation for return values.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Scheduler message sent or queued.
+ * @retval GLOBUS_SEG_ERROR_NULL
+ *     Null jobid.
+ * @retval GLOBUS_SEG_ERROR_INVALID_FORMAT
+ *     Unable to determine length of formatted string.
  */
 globus_result_t
 globus_scheduler_event_failed(
@@ -441,6 +472,10 @@ globus_scheduler_event_failed(
     const char *                        jobid,
     int                                 failure_code)
 {
+    if (jobid == NULL)
+    {
+        return GLOBUS_SEG_ERROR_NULL;
+    }
     return globus_l_scheduler_event_state_change(
             timestamp,
             jobid,
@@ -450,6 +485,7 @@ globus_scheduler_event_failed(
 
 /**
  * Send a job done event to the JobSchedulerMonitor implementation.
+ * @ingroup seg_api
  *
  * @param timestamp
  *        Timestamp to use for the event. If set to 0, the time which
@@ -458,7 +494,13 @@ globus_scheduler_event_failed(
  *        String indicating the scheduler-specific name of the job.
  * @param exit_code
  *        Exit code of the process if known.
- * @return see #globus_scheduler_event() documentation for return values.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Scheduler message sent or queued.
+ * @retval GLOBUS_SEG_ERROR_NULL
+ *     Null jobid.
+ * @retval GLOBUS_SEG_ERROR_INVALID_FORMAT
+ *     Unable to determine length of formatted string.
  */
 globus_result_t
 globus_scheduler_event_done(
@@ -466,6 +508,10 @@ globus_scheduler_event_done(
     const char *                        jobid,
     int                                 exit_code)
 {
+    if (jobid == NULL)
+    {
+        return GLOBUS_SEG_ERROR_NULL;
+    }
     return globus_l_scheduler_event_state_change(
             timestamp,
             jobid,
@@ -513,7 +559,7 @@ globus_scheduler_event_generator_load_module(
 {
     globus_result_t                     result;
     int                                 rc;
-    char *                              timestamp_str[64];
+    char                                timestamp_str[64];
     const char *                        symbol_name
             = "globus_scheduler_event_module_ptr";
 
@@ -653,6 +699,10 @@ globus_l_xio_read_eof_callback(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_scheduler_event_generator_fault_handler_t
+                                        handler;
+    void *                              arg;
+
     if (result == GLOBUS_SUCCESS)
     {
         /* shouldn't be reading stuff here!?! */
@@ -666,12 +716,14 @@ globus_l_xio_read_eof_callback(
                 NULL);
     }
 
-    if (result != GLOBUS_SUCCESS)
+    globus_mutex_lock(&globus_l_seg_mutex);
+    handler = globus_l_seg_fault_handler;
+    arg = globus_l_seg_fault_arg;
+    globus_mutex_unlock(&globus_l_seg_mutex);
+
+    if (result != GLOBUS_SUCCESS && handler != NULL)
     {
-        if (globus_l_seg_fault_handler)
-        {
-            globus_l_seg_fault_handler(globus_l_seg_fault_arg, result);
-        }
+        (*handler)(arg, result);
     }
 }
 /* globus_l_xio_read_eof_callback() */
@@ -749,6 +801,17 @@ call_fault_handler:
 }
 /* globus_l_seg_register_write() */
 
+/**
+ * Callback for writing event to scheduler.
+ *
+ * @param handle
+ * @param result
+ * @param iovec
+ * @param count
+ * @param nbytes
+ * @param data_desc
+ * @param user_arg
+ */
 static
 void
 globus_l_seg_writev_callback(
