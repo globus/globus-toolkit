@@ -15,6 +15,8 @@ static globus_xio_server_t              globus_l_gfs_xio_server = GLOBUS_NULL;
 static globus_bool_t                    globus_l_gfs_xio_server_accepting;
 static globus_xio_attr_t                globus_l_gfs_xio_attr;
 static globus_bool_t                    globus_l_gfs_exit = GLOBUS_FALSE;
+static globus_bool_t                    globus_l_gfs_sigint_caught = GLOBUS_FALSE;
+
 
 static
 globus_result_t
@@ -63,11 +65,21 @@ globus_l_gfs_sigint(
 {
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_ERR, 
-        "Server is exiting...\n");
+        "Server is shutting down...\n");
 
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
+        if(globus_l_gfs_sigint_caught)
+        {
+            globus_l_gfs_open_count = 0;
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_ERR, 
+                "Forcing unclean shutdown.\n");
+        }
+
+        globus_l_gfs_sigint_caught = GLOBUS_TRUE;
         globus_l_gfs_terminated = GLOBUS_TRUE;
+
         if(globus_l_gfs_open_count == 0)
         {
             globus_cond_signal(&globus_l_gfs_cond);
