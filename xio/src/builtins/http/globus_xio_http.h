@@ -5,7 +5,8 @@
 
 typedef enum
 {
-    GLOBUS_XIO_SMTP_CMD_SET_ADDRESS
-} globus_xio_smtp_attr_cmd_t;
+    GLOBUS_XIO_HTTP_GET_HEADERS,
+    GLOBUS_XIO_HTTP_GET_CONTACT
+} globus_xio_smtp_handle_cmd_t;
 
 #endif

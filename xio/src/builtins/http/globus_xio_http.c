@@ -2,24 +2,18 @@
 #include "globus_xio_load.h"
 #include "globus_i_xio.h"
 #include "globus_common.h"
+#include "globus_hashtable.h"
 #include "globus_error_string.h"
 #include "globus_xio_http.h"
 #include "version.h"
- 
-typedef enum
-{
-    HTTP_S_HEADER,
-    HTTP_S_ARGS,
-    HTTP_R_BODY
-} l_http_state_t;
 
 #define _SERVER "test_server_string"
 #define _TARGET "test_target_string"
-#define _HANDLE "test_handle_string"
 
 typedef struct l_http_info_s
 {
-    char remote_address[256];
+    char *                 uri;
+    globus_hashtable_t     headers;
 } l_http_info_t;
     
 /*
@@ -33,20 +27,15 @@ globus_l_xio_http_target_destroy(
     return GLOBUS_SUCCESS;
 }
 
-
-static char *                               globus_l_remote_address = NULL;
-
 l_http_info_t *
 l_http_create_new_info()
 {
     l_http_info_t *                         info;
 
     info = (l_http_info_t *) globus_malloc(sizeof(l_http_info_t));
-    sprintf(info->remote_address, "%s", globus_l_remote_address);
 
     return info;
 }
-
 
 static globus_result_t
 globus_l_xio_http_attr_init(
@@ -61,6 +50,45 @@ globus_l_xio_http_attr_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    return GLOBUS_SUCCESS;
+}
+
+void
+globus_l_xio_http_handle_copy_element(
+    void **                             dest_key,
+    void **                             dest_datum,
+    void *                              src_key,
+    void *                              src_datum)
+{
+    dest_key[0] = globus_malloc(strlen(src_key));
+    dest_datum[0] = globus_malloc(strlen(src_datum));
+    strcpy((char *)dest_key[0], (char*)src_key);
+    strcpy((char *)dest_datum[0], (char*)src_datum);
+}
+
+static globus_result_t
+globus_l_xio_http_handle_cntl(
+    void *                              driver_handle,
+    int                                 cmd,
+    va_list                             ap)
+{
+    globus_hashtable_t *user_table;
+    char *user_uri;
+
+    if(cmd == GLOBUS_XIO_HTTP_GET_HEADERS)
+    {
+        user_table = (globus_hashtable_t *) va_arg(ap, globus_hashtable_t *);
+        globus_hashtable_lookup(user_table, "Content-Length"); 
+        globus_hashtable_copy(user_table, 
+                              &((l_http_info_t *)driver_handle)->headers,
+                              globus_l_xio_http_handle_copy_element);
+        globus_hashtable_lookup(user_table, "Content-Length"); 
+    }
+    else if(cmd == GLOBUS_XIO_HTTP_GET_CONTACT)
+    {
+        user_uri = (char *)va_arg(ap, char *);
+        strcpy(user_uri, ((l_http_info_t *)driver_handle)->uri);
+    }
 
     return GLOBUS_SUCCESS;
 }
@@ -93,8 +121,43 @@ globus_l_xio_http_attr_destroy(
 
 
 /*
+ *  read
+ */
+void
+globus_l_xio_http_read_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    printf("readcb\n");
+    GlobusXIODriverFinishedRead(op, result, nbytes);
+}
+
+static
+globus_result_t
+globus_l_xio_http_read(
+    void *                              driver_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
+{
+    globus_result_t                     res;
+    globus_size_t                       wait_for;
+
+    wait_for = GlobusXIOOperationGetWaitFor(op);
+
+    GlobusXIODriverPassRead(res, op, (void*)iovec, iovec_count, wait_for, \
+        globus_l_xio_http_read_cb, NULL);
+
+    return res;
+}
+
+/*
  *  open
  */
+
+
 void
 globus_l_xio_http_open_cb(
     globus_xio_operation_t                  op,
@@ -102,11 +165,49 @@ globus_l_xio_http_open_cb(
     void *                                  user_arg)
 {
     globus_xio_context_t                    context;
-
+    l_http_info_t                           *handle;
+    char                                   buffer[2048]; //XXX fixed size?  not cool
+    int                                     buffer_offset=0;
+    int                                     nbytes=0;
+    globus_result_t                         res;
+    globus_xio_iovec_t                      read_iovec;
+    globus_xio_operation_t                  driver_op;
     context = GlobusXIOOperationGetContext(op);
 
-    GlobusXIODriverFinishedOpen(context, strdup(_HANDLE), op, result);
-}   
+    //Parse the headers
+    nbytes = 2048;
+    buffer[0]='\0';
+    handle = (l_http_info_t *) globus_malloc(sizeof(l_http_info_t));
+    strcpy(buffer, "this is an uninteresting string");
+    while(strstr((char*)buffer, "\n\n") == 0 && buffer_offset < 2048) 
+        {
+            res = globus_xio_driver_operation_create(
+                                                     &driver_op, context);
+            read_iovec.iov_len = 20;
+            read_iovec.iov_base = buffer;
+            GlobusXIODriverPassRead(result, driver_op, &read_iovec, 1, 1, \
+                                    globus_l_xio_http_read_cb, handle);
+            if(res != GLOBUS_SUCCESS) {
+                printf("oops\n");
+                fprintf(stderr, "ERROR: %s\n", globus_error_print_chain(
+                                                                        globus_error_peek(res)));
+            }
+            strcpy((char *)0, "bob");
+            printf("read: %s - %d\n", buffer, nbytes);
+            buffer_offset ++;
+        }
+    
+
+    handle->uri = (char*)globus_malloc(512);
+    strcpy(handle->uri, "rw2 needs to put a real uri here");
+    globus_hashtable_init(&handle->headers,
+                          16,  /*XXX how to decide this size? */
+                          globus_hashtable_string_hash,
+                          globus_hashtable_string_keyeq);
+    globus_hashtable_insert(&handle->headers, "Content-Length", "1024");
+    GlobusXIODriverFinishedOpen(context, handle, op, result);
+
+}
 
 static
 globus_result_t
@@ -115,20 +216,12 @@ globus_l_xio_http_open(
     void *                                  driver_attr,
     globus_xio_operation_t                  op)
 {
-    globus_result_t                         res;
+    globus_result_t                         res = GLOBUS_SUCCESS;
     globus_xio_context_t                    context;
-    l_http_info_t *                         info;
 
-    if(driver_attr == NULL)
-    {
-        return globus_error_put(GLOBUS_ERROR_NO_INFO);
-    }
+    GlobusXIODriverPassOpen(res, context, op, globus_l_xio_http_open_cb, NULL);
 
-    globus_l_xio_http_attr_copy(&info, driver_attr);
-
-    GlobusXIODriverPassOpen(res, context, op, globus_l_xio_http_open_cb, info);
-
-    return res;
+    return GLOBUS_SUCCESS;
 }
 
 /*
@@ -196,50 +289,12 @@ globus_l_xio_http_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, wait_for, \
+    GlobusXIODriverPassWrite(res, op, (void*)iovec, iovec_count, wait_for, \
         globus_l_xio_http_write_cb, NULL);
 
     return res;
 }
 
-/*
- *  read
- */
-void
-globus_l_xio_http_read_cb(
-    globus_xio_operation_t              op,
-    globus_result_t                     result,
-    globus_size_t                       nbytes,
-    void *                              user_arg)
-{
-    GlobusXIODriverFinishedRead(op, result, nbytes);
-}
-
-static
-globus_result_t
-globus_l_xio_http_read(
-    void *                              driver_handle,
-    const globus_xio_iovec_t *          iovec,
-    int                                 iovec_count,
-    globus_xio_operation_t              op)
-{
-    globus_result_t                     res;
-    globus_size_t                       wait_for;
-    char *                              tst_str;
-
-    tst_str = (char *) driver_handle;
-    if(strcmp(tst_str, _HANDLE) != 0)
-    {
-        globus_assert(!"Handle string doesn't match");
-    }
-
-    wait_for = GlobusXIOOperationGetWaitFor(op);
-
-    GlobusXIODriverPassRead(res, op, iovec, iovec_count, wait_for, \
-        globus_l_xio_http_read_cb, NULL);
-
-    return res;
-}
 
 static globus_result_t
 globus_l_xio_http_target_init(
@@ -280,18 +335,14 @@ globus_l_xio_http_accept_cb(
     GlobusXIODriverFinishedAccept(op, strdup(_TARGET), GLOBUS_SUCCESS);
     return;
 
-  err:
-
-    GlobusXIODriverFinishedAccept(op, NULL, result);
-    return;
 }
-
+ 
 
 static globus_result_t
 globus_l_xio_http_accept(
     void *                                  driver_server,
     void *                                  driver_attr,
-    globus_xio_operation_t                  accept_op)
+    globus_xio_operation_t                   accept_op)
 {
     globus_result_t                         res;
     GlobusXIOName(globus_l_xio_http_accept);
@@ -323,7 +374,7 @@ globus_l_xio_http_load(
         globus_l_xio_http_close,
         globus_l_xio_http_read,
         globus_l_xio_http_write,
-        NULL);
+        globus_l_xio_http_handle_cntl);
 
     globus_xio_driver_set_attr(
         driver,

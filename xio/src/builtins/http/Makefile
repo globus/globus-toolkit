@@ -18,8 +18,9 @@
 
 SHELL = /bin/sh
 
-srcdir = .
-top_srcdir = ../..
+srcdir = /home/wellner/dev/globus/xio/src/builtins/http
+top_srcdir = /home/wellner/dev/globus/xio/src
+VPATH = /home/wellner/dev/globus/xio/src/builtins/http
 prefix = $(GLOBUS_LOCATION)
 exec_prefix = $(GLOBUS_LOCATION)
 
@@ -75,7 +76,7 @@ CXX = /usr/bin/c++
 CXXCPP = /usr/bin/c++ -E
 CXXFLAGS = -g  
 DIRT_BRANCH_ID = 38
-DIRT_TIMESTAMP = 1055794395
+DIRT_TIMESTAMP = 1061400365
 DLLTOOL = @DLLTOOL@
 DOT = 
 DOXYFILE = Doxyfile
@@ -91,18 +92,18 @@ GPT_CFLAGS =  -D_FILE_OFFSET_BITS=64
 GPT_CONFIG_CFLAGS =  -D_FILE_OFFSET_BITS=64 
 GPT_CONFIG_INCLUDES =  
 GPT_CONFIG_LIBS =  -ldl 
-GPT_CONFIG_PKG_LIBS =  -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_common_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg 
+GPT_CONFIG_PKG_LIBS =  -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_common_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg 
 GPT_EXTERNAL_INCLUDES = 
 GPT_EXTERNAL_LIBS = 
 GPT_INCLUDES = -I/home/wellner/dev/globus/INSTALL/include/gcc32dbg  
 GPT_LDFLAGS =  -L/home/wellner/dev/globus/INSTALL/lib 
-GPT_LIBS =  -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_common_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg   -ldl 
-GPT_LIB_LINKS =  -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_common_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg   -ldl 
+GPT_LIBS =  -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_common_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg   -ldl 
+GPT_LIB_LINKS =  -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_common_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg   -ldl 
 GPT_LINKTYPE = shared
 GPT_LOCATION = /home/wellner/dev/globus/INSTALL
 GPT_MAJOR_VERSION = 0
 GPT_MINOR_VERSION = 1
-GPT_PGM_LINKS =  -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_common_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg   -ldl 
+GPT_PGM_LINKS =  -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_common_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg   -ldl 
 GPT_PKG_CFLAGS = 
 HAVE_DOT = 
 INSURE = 
@@ -119,10 +120,10 @@ PACKAGE = globus_xio
 PERL = /usr/bin/perl
 RANLIB = /usr/bin/ranlib
 VERSION = 0.1
-XIO_BUILTIN_DIRS =  builtins/bounce builtins/debug builtins/file builtins/gsi builtins/gssapi_ftp builtins/null builtins/null_pass builtins/http builtins/tcp builtins/test builtins/udp builtins/verify
-XIO_BUILTIN_HOOKS_DEC =   globus_i_xio_bounce_hook , globus_i_xio_debug_hook , globus_i_xio_file_hook , globus_i_xio_gsi_hook , globus_i_xio_gssapi_ftp_hook , globus_i_xio_null_hook , globus_i_xio_null_pass_hook , globus_i_xio_smtp_hook , globus_i_xio_http_hook ,globus_i_xio_tcp_hook , globus_i_xio_test_hook , globus_i_xio_udp_hook , globus_i_xio_verify_hook
-XIO_BUILTIN_HOOKS_DEF =   &globus_i_xio_bounce_hook , &globus_i_xio_debug_hook , &globus_i_xio_file_hook , &globus_i_xio_gsi_hook , &globus_i_xio_gssapi_ftp_hook , &globus_i_xio_null_hook , &globus_i_xio_null_pass_hook , &globus_i_xio_smtp_hook , &globus_i_xio_http_hook , &globus_i_xio_tcp_hook , &globus_i_xio_test_hook , &globus_i_xio_udp_hook , &globus_i_xio_verify_hook
-XIO_BUILTIN_LIBS =  builtins/bounce/libglobus_xio_bounce_driver_gcc32dbg.la builtins/debug/libglobus_xio_debug_driver_gcc32dbg.la builtins/file/libglobus_xio_file_driver_gcc32dbg.la builtins/gsi/libglobus_xio_gsi_driver_gcc32dbg.la builtins/gssapi_ftp/libglobus_xio_gssapi_ftp_driver_gcc32dbg.la builtins/null/libglobus_xio_null_driver_gcc32dbg.la builtins/null_pass/libglobus_xio_null_pass_driver_gcc32dbg.la builtins/smtp/libglobus_xio_smtp_driver_gcc32dbg.la builtins/tcp/libglobus_xio_tcp_driver_gcc32dbg.la builtins/test/libglobus_xio_test_driver_gcc32dbg.la builtins/udp/libglobus_xio_udp_driver_gcc32dbg.la builtins/verify/libglobus_xio_verify_driver_gcc32dbg.la
+XIO_BUILTIN_DIRS =  bounce debug file ftp_cmd gsi gssapi_ftp http null null_pass op smtp tcp test udp verify
+XIO_BUILTIN_HOOKS_DEC =   globus_i_xio_bounce_hook , globus_i_xio_debug_hook , globus_i_xio_file_hook , globus_i_xio_ftp_cmd_hook , globus_i_xio_gsi_hook , globus_i_xio_gssapi_ftp_hook , globus_i_xio_http_hook , globus_i_xio_null_hook , globus_i_xio_null_pass_hook , globus_i_xio_op_hook , globus_i_xio_smtp_hook , globus_i_xio_tcp_hook , globus_i_xio_test_hook , globus_i_xio_udp_hook , globus_i_xio_verify_hook
+XIO_BUILTIN_HOOKS_DEF =   &globus_i_xio_bounce_hook , &globus_i_xio_debug_hook , &globus_i_xio_file_hook , &globus_i_xio_ftp_cmd_hook , &globus_i_xio_gsi_hook , &globus_i_xio_gssapi_ftp_hook , &globus_i_xio_http_hook , &globus_i_xio_null_hook , &globus_i_xio_null_pass_hook , &globus_i_xio_op_hook , &globus_i_xio_smtp_hook , &globus_i_xio_tcp_hook , &globus_i_xio_test_hook , &globus_i_xio_udp_hook , &globus_i_xio_verify_hook
+XIO_BUILTIN_LIBS =  builtins/bounce/libglobus_xio_bounce_driver_gcc32dbg.la builtins/debug/libglobus_xio_debug_driver_gcc32dbg.la builtins/file/libglobus_xio_file_driver_gcc32dbg.la builtins/ftp_cmd/libglobus_xio_ftp_cmd_driver_gcc32dbg.la builtins/gsi/libglobus_xio_gsi_driver_gcc32dbg.la builtins/gssapi_ftp/libglobus_xio_gssapi_ftp_driver_gcc32dbg.la builtins/http/libglobus_xio_http_driver_gcc32dbg.la builtins/null/libglobus_xio_null_driver_gcc32dbg.la builtins/null_pass/libglobus_xio_null_pass_driver_gcc32dbg.la builtins/op/libglobus_xio_op_driver_gcc32dbg.la builtins/smtp/libglobus_xio_smtp_driver_gcc32dbg.la builtins/tcp/libglobus_xio_tcp_driver_gcc32dbg.la builtins/test/libglobus_xio_test_driver_gcc32dbg.la builtins/udp/libglobus_xio_udp_driver_gcc32dbg.la builtins/verify/libglobus_xio_verify_driver_gcc32dbg.la
 builddir = /home/wellner/dev/globus/xio/src
 cross_compiling = no
 lac_doxygen_examples = 
