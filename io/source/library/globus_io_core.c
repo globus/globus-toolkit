@@ -2135,6 +2135,7 @@ globus_l_io_handle_events(
 	{
 	    if (select_errno == EINTR)
 	    {
+	        globus_callback_get_timeout(time_left);
 		continue;
 	    }
 	    else
