@@ -186,7 +186,8 @@ globus_i_gsi_gss_create_and_fill_context(
     /* initialize the context handle */
     if(*context_handle_P == GSS_C_NO_CONTEXT)
     {
-        context = (gss_ctx_id_desc*) globus_malloc(sizeof(gss_ctx_id_desc));
+        context = (gss_ctx_id_desc*) 
+            malloc(sizeof(gss_ctx_id_desc));
         if (context == NULL)
         {
             GLOBUS_I_GSI_GSSAPI_MALLOC_ERROR(minor_status);
@@ -211,7 +212,7 @@ globus_i_gsi_gss_create_and_fill_context(
     globus_mutex_init(&context->mutex, NULL);
 
     /* initialize the peer_cred_handle */
-    context->peer_cred_handle = globus_malloc(sizeof(gss_cred_id_desc));
+    context->peer_cred_handle = malloc(sizeof(gss_cred_id_desc));
     if(context->peer_cred_handle == NULL)
     {
         GLOBUS_I_GSI_GSSAPI_MALLOC_ERROR(minor_status);
@@ -231,7 +232,7 @@ globus_i_gsi_gss_create_and_fill_context(
     }
 
     if((context->peer_cred_handle->globusid = 
-        globus_malloc(sizeof(gss_name_desc))) == NULL)
+        malloc(sizeof(gss_name_desc))) == NULL)
     {
         GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
         major_status = GSS_S_FAILURE;
@@ -1576,7 +1577,7 @@ globus_i_gsi_gssapi_create_string(
     
     va_start(ap, format);
 
-    if((error_string = globus_malloc(len)) == NULL)
+    if((error_string = malloc(len)) == NULL)
     {
         return NULL;
     }

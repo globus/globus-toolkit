@@ -321,7 +321,7 @@ GSS_CALLCONV gss_accept_sec_context(
         case(GSS_CON_ST_CERT):
 
             *delegated_cred_handle_P = 
-                (gss_cred_id_t) globus_malloc(sizeof(gss_cred_id_desc));
+                (gss_cred_id_t) malloc(sizeof(gss_cred_id_desc));
             
             local_result = globus_gsi_proxy_assemble_cred(
                 context->proxy_handle,

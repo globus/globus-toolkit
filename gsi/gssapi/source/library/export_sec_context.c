@@ -207,7 +207,7 @@ GSS_CALLCONV gss_export_sec_context(
         goto exit;
     }
 
-    context_serialized = (unsigned char *) globus_libc_malloc(length);
+    context_serialized = (unsigned char *) malloc(length);
 
     if (!context_serialized)
     {
