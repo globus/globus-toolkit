@@ -191,7 +191,6 @@ EOF
     $self->nfssync( $description->stdout(), 1 );
     print JOB '#BSUB -e ', $description->stderr(), "\n";
     $self->nfssync( $description->stderr(), 1 );
-    print JOB "#BSUB -N\n";
     print JOB '#BSUB -n ', $description->count(), "\n";
 
     foreach my $tuple ($description->environment())
