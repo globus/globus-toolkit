@@ -9,6 +9,7 @@ BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
 use strict;
 use Globus::Testing::Utilities;
 use POSIX;
+use IO::File;
 
 test_gram_local();
 
@@ -29,6 +30,7 @@ sub test_gram_local
     my $rc;
     my $year = (localtime)[5] + 1900;
     my $tmpfile = POSIX::tmpnam();
+    my $arg_file;
 
     # cleanup
 
@@ -61,6 +63,19 @@ sub test_gram_local
         $u->command("globus-job-run \"$gatekeeper_url\" /bin/echo I ran",5);
     $output =~ /I ran/ && $rc == 0 ? 
         $u->report("SUCCESS") : $u->report("FAILURE");
+
+    # globus-job-run, with arguments from a file
+    $arg_file = new IO::File(">$tmpfile");
+    $arg_file->print("\"$gatekeeper_url\" /bin/echo I ran\n");
+    $arg_file->close();
+
+    ($rc, $output) =
+        $u->command("globus-job-run -file \"$tmpfile\"\n",5);
+    $output =~ /I ran/ && $rc == 0 ?
+        $u->report("SUCCESS") : $u->report("FAILURE");
+    # truncate temp file
+    $arg_file = new IO::File(">$tmpfile");
+    $arg_file->close();
 
     # globus-job-run with staging and arguments
     ($rc, $output) = 
