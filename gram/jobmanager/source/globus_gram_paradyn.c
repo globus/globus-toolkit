@@ -1,6 +1,8 @@
 /******************************************************************************
                              Include header files
 ******************************************************************************/
+#include "globus_common.h"
+
 #include <stdio.h>
 #include <malloc.h>
 #include <sys/param.h>
@@ -8,7 +10,7 @@
 #include <string.h> /* for strdup() */
 #include <memory.h>
 #include <fcntl.h>
-#include "globus_nexus.h"
+
 #include "globus_gram_job_manager.h"
 #include "globus_gram_client.h"
 

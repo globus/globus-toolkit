@@ -127,14 +127,13 @@
 #include "globus_config.h"
 
 #include "globus_gram_protocol.h" 
-#include "globus_gram_protocol_error.h"       /* GRAM error codes */
 
 #include "globus_io.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#define GLOBUS_GRAM_HTTP_BUFSIZE 64000
+#define GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE 64000
 
 gss_cred_id_t globus_i_gram_protocol_credential;
 static int globus_l_gram_protocol_activate(void);
@@ -383,8 +382,8 @@ globus_gram_protocol_initialize_connection_t( globus_gram_protocol_connection_t 
 { \
     if (!status->buf) \
     { \
-	status->buf = my_malloc(globus_byte_t, GLOBUS_GRAM_HTTP_BUFSIZE); \
-        status->bufsize = GLOBUS_GRAM_HTTP_BUFSIZE; \
+	status->buf = my_malloc(globus_byte_t, GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE); \
+        status->bufsize = GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE; \
     } \
     status->read_type = rtype; \
     {  \

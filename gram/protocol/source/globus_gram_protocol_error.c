@@ -1,5 +1,5 @@
 #include "globus_common.h"
-#include "globus_gram_protocol_error.h"
+#include "globus_gram_protocol_constants.h"
 
 static char *
 globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =

@@ -13,10 +13,12 @@
 
 
 #include "globus_io.h"
+#include "globus_gram_protocol_constants.h"
 
 EXTERN_C_BEGIN
 
 enum { GLOBUS_GRAM_PROTOCOL_VERSION = 2 };
+enum { GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE = 64000 };
 
 typedef struct
 {

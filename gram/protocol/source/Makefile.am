@@ -16,13 +16,11 @@ SUBDIRS= \
 Sources= \
 	globus_gram_protocol.c \
 	globus_gram_protocol.h \
-	globus_gram_protocol_error.h \
-	globus_gram_protocol_error.c \
-	globus_gram_protocol_states.h
+	globus_gram_protocol_constants.h \
+	globus_gram_protocol_error.c
 
-gram_protocol_constants = \
-	globus_gram_protocol_error.h \
-	globus_gram_protocol_states.h
+BUILT_SOURCES = globus_gram_protocol_constants.h
+EXTRA_DIST = globus-gram-protocol-constants.sh
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -34,12 +32,10 @@ INCLUDES += $(GPT_INCLUDES)
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
 include_HEADERS= \
-	globus_gram_protocol_error.h \
-	globus_gram_protocol.h \
-	globus_gram_protocol_states.h
+	globus_gram_protocol_constants.h \
+	globus_gram_protocol.h 
 
-data_DATA = \
-    globus-gram-protocol-constants
+libexec_SCRIPTS = globus-gram-protocol-constants.sh
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
@@ -49,12 +45,11 @@ libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
-DISTCLEANFILES = $(data_DATA)
-
-globus-gram-protocol-constants: $(gram_protocol_constants)
-	$(RM) globus-gram-protocol-constants
-	cat $(gram_protocol_constants) | \
-	    sed -e 's/#define *//' -e 's/ /=/' > globus-gram-protocol-constants
+globus_gram_protocol_constants.h: globus-gram-protocol-constants.sh
+	$(RM) globus_gram_protocol_constants.h
+	@PERL@ $(srcdir)/scripts/create_protocol_constants.pl \
+		$(srcdir)/globus-gram-protocol-constants.sh \
+		> globus_gram_protocol_constants.h
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

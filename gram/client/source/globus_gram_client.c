@@ -27,8 +27,6 @@ CVS Information:
 #include "globus_config.h"
 #include "globus_gram_client.h"
 #include "globus_gram_protocol.h"
-#include "globus_gram_protocol_error.h"
-#include "globus_gram_protocol_states.h"
 #include "globus_rsl.h"
 
 #include <assert.h>
@@ -762,7 +760,7 @@ Returns:
 ******************************************************************************/
 int 
 globus_gram_client_job_signal(char * job_contact,
-                              globus_gram_client_job_signal_t signal,
+                              globus_gram_protocol_job_signal_t signal,
                               char * signal_arg,
 			      int  * job_status,
                               int * failure_code)

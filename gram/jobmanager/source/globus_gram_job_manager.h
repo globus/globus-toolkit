@@ -15,7 +15,6 @@ CVS Information:
 ******************************************************************************/
 
 #include "globus_common.h"
-#include "globus_rsl.h"
 #include "globus_gram_client.h"
 
 #ifndef EXTERN_C_BEGIN
@@ -33,7 +32,6 @@ EXTERN_C_BEGIN
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
-#define GLOBUS_GRAM_JOBMANAGER_VERSION 1
 
 #define   GLOBUS_GRAM_JOBMANAGER_STATUS_UNCHANGED   0
 #define   GLOBUS_GRAM_JOBMANAGER_STATUS_CHANGED     1
@@ -51,8 +49,6 @@ typedef char * (* globus_gram_job_manager_callback_func_t) (int stdout_flag);
 
 typedef struct
 {
- int	version;         /* The jobmanager library version */
-
  int	status;		 /* The state of the job:
 			  *     GLOBUS_GRAM_STATE_PENDING
 			  *     GLOBUS_GRAM_STATE_ACTIVE
@@ -170,7 +166,7 @@ typedef struct
  globus_bool_t dry_run;    /* GLOBUS_TRUE if this is a dryrun */
 
  
- globus_gram_client_job_signal_t signal;  /* enum of type of signal to job
+ globus_gram_protocol_job_signal_t signal;  /* enum of type of signal to job
                                            * (cancel, suspend, priority, ...)
                                            */
 
@@ -205,46 +201,6 @@ typedef struct
  globus_gram_job_manager_callback_func_t filename_callback_func;
 
 } globus_gram_jobmanager_request_t;
-
-typedef struct globus_l_gram_scheduler_s
-{
-    int add_entries_flag;
-    int maxtime;
-    int maxcputime;
-    int maxcount;
-    int maxrunningjobs;
-    int maxjobsinqueue;
-    int maxtotalmemory;
-    int maxsinglememory;
-    int totalnodes;
-    int freenodes;
-    char * queuename;
-    char * whenactive;
-    char * status;
-    char * dispatchtype;
-    char * priority;
-    char * alloweduserlist; /* char * of globusUserNames */
-    char * jobwait;
-    char * schedulerspecific;
-    globus_list_t * entry_list; /* globus_gram_scheduler_queue_entry_t */
-} globus_gram_scheduler_t;
-
-typedef struct globus_l_gram_scheduler_entry_s
-{
-    char * local_job_id;
-    char * global_job_id;
-    char * local_user_name;
-    char * global_user_name;
-    int count;
-    char * status;
-    unsigned long start_time;
-    unsigned long finish_time;
-    unsigned long elapsed_time;
-    int requested_memory;
-    int requested_time;
-    char * schedulerspecific;
-    char * specification;
-} globus_gram_scheduler_entry_t;
 
 /******************************************************************************
                               Function prototypes
@@ -294,59 +250,9 @@ extern int
 globus_jobmanager_request_check(
 	globus_gram_jobmanager_request_t * request);
 
-/*-----------------------------------------------------------------------
- * This function gets a list of the queue(s) paramters and entries managed by
- * the GRAM.
- */
-extern int 
-globus_gram_scheduler_queue_list_get(
-        char * script_cmd,
-	globus_list_t ** queue_list);
-
-/*-----------------------------------------------------------------------
- * This function free the memory from a previous
- * globus_gram_queue_list_get() call
- */
-extern int 
-globus_gram_scheduler_queue_list_free(
-	globus_list_t * queue_list);
-
-/*-----------------------------------------------------------------------
- * This function initializes the passed in scheduler queue node
- */
-extern void
-globus_i_gram_q_init(
-        globus_gram_scheduler_t * q_node);
-
-/*-----------------------------------------------------------------------
- * This function initializes the passed in scheduler queue entry node
- */
-extern void
-globus_i_gram_q_entry_init(
-        globus_gram_scheduler_entry_t * q_entry_node);
-
-/******************************************************************************
-                               Define constants
-******************************************************************************/
-#define GRAM_VERSION "@GRAMVERSION@"
-#define GRAM_VERSION_DATE "@GRAMVERSIONDATE@"
-#define GRAM_SECURITY "@GSSAPI_TYPE@"
-
-/* remove or ignore old status files after no activity for
- * GRAM_JOB_MANAGER_STATUS_FILE_SECONDS
- */
-#define GRAM_JOB_MANAGER_STATUS_FILE_SECONDS 600
-
-
 /******************************************************************************
  *                    Module Definition
  *****************************************************************************/
-extern int
-globus_i_gram_jobmanager_activate(void);
- 
-extern int
-globus_i_gram_jobmanager_deactivate(void);
-
 #define GLOBUS_GRAM_JOBMANAGER_MODULE (&globus_i_gram_jobmanager_module)
 extern globus_module_descriptor_t globus_i_gram_jobmanager_module;
 
