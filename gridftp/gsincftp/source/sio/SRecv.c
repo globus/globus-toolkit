@@ -46,7 +46,7 @@ SRecv(int sfd, char *const buf0, size_t size, int fl, int tlen, int retry)
 	nleft = (int) size;
 	time(&now);
 	done = now + tlen;
-	while (1) {
+	forever {
 		tleft = (int) (done - now);
 		if (tleft < 1) {
 			nread = size - nleft;

@@ -13,6 +13,12 @@
 #	define _ALL_SOURCE 1
 #endif
 
+#if defined(HPUX) || defined(_HPUX_SOURCE)
+#	ifndef _XOPEN_SOURCE_EXTENDED
+#		define _XOPEN_SOURCE_EXTENDED 1
+#	endif
+#endif
+
 #ifdef HAVE_UNISTD_H
 #	include <unistd.h>
 #endif
@@ -35,6 +41,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_STRINGS_H
+#	include <strings.h>
+#endif
 #include <stddef.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -58,6 +67,34 @@
 #	endif
 #endif
 
+/* These next two sections are mostly for HP-UX. */
+#if defined(HAVE___GETMAXX) && !defined(HAVE_GETMAXX) && !defined(getmaxx)
+#	define HAVE_GETMAXX 1
+#	define getmaxx __getmaxx
+#endif
+#if defined(HAVE___GETMAXY) && !defined(HAVE_GETMAXY) && !defined(getmaxy)
+#	define HAVE_GETMAXY 1
+#	define getmaxy __getmaxy
+#endif
+#if defined(HAVE___GETMAXY) && defined(HAVE___GETMAXX) && !defined(HAVE_GETMAXYX) && !defined(getmaxyx)
+#	define HAVE_GETMAXYX 1
+#	define getmaxyx(__win,__y,__x) { WINDOW *__wi; __wi = __win; ((__y) = __getmaxy(__wi), (__x) = __getmaxx(__wi)); }
+#endif
+
+#if defined(HAVE___GETBEGX) && !defined(HAVE_GETBEGX) && !defined(getbegx)
+#	define HAVE_GETBEGX 1
+#	define getbegx __getbegx
+#endif
+#if defined(HAVE___GETBEGY) && !defined(HAVE_GETBEGY) && !defined(getbegy)
+#	define HAVE_GETBEGY 1
+#	define getbegy __getbegy
+#endif
+#if defined(HAVE___GETBEGY) && defined(HAVE___GETBEGX) && !defined(HAVE_GETBEGYX) && !defined(getbegyx)
+#	define HAVE_GETBEGYX 1
+#	define getbegyx(__win,__y,__x) { WINDOW *__wi; __wi = __win; ((__y) = __getbegy(__wi), (__x) = __getbegx(__wi)); }
+#endif
+
+/* Otherwise, try accessing the structure directly. */
 #ifndef HAVE_GETMAXYX
 #	ifdef HAVE__MAXX
 #		ifndef getmaxyx
@@ -161,6 +198,46 @@
 #endif
 
 #define NDEBUG 1			/* For assertions. */
+
+#if defined(HAVE_LONG_LONG) && defined(HAVE_OPEN64)
+#	define Open open64
+#else
+#	define Open open
+#endif
+
+#if defined(HAVE_LONG_LONG) && defined(HAVE_STAT64) && defined(HAVE_STRUCT_STAT64)
+#	define Stat stat64
+#	ifdef HAVE_FSTAT64
+#		define Fstat fstat64
+#	else
+#		define Fstat fstat
+#	endif
+#	ifdef HAVE_LSTAT64
+#		define Lstat lstat64
+#	else
+#		define Lstat lstat
+#	endif
+#else
+#	define Stat stat
+#	define Fstat fstat
+#	define Lstat lstat
+#endif
+
+#if defined(HAVE_LONG_LONG) && defined(HAVE_LSEEK64)
+#	define Lseek(a,b,c) lseek64(a, (longest_int) b, c)
+#elif defined(HAVE_LONG_LONG) && defined(HAVE_LLSEEK)
+#	if 1
+#		if defined(LINUX) && (LINUX <= 23000)
+#			define Lseek(a,b,c) lseek(a, (off_t) b, c)
+#		else
+#			define Lseek(a,b,c) llseek(a, (longest_int) b, c)
+#		endif
+#	else
+#		define Lseek(a,b,c) lseek(a, (off_t) b, c)
+#	endif
+#else
+#	define Lseek(a,b,c) lseek(a, (off_t) b, c)
+#endif
 
 #include <Strn.h>			/* Library header. */
 #include <ncftp.h>			/* Mostly for utility routines it has. */

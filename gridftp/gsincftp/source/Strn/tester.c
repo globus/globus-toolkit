@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <Strn.h>
 
-main()
+int main(int argc, char **argv)
 {
 	char a[8];
 	char pad1[32];
@@ -71,7 +73,7 @@ main()
 	for (i=0; i<sizeof(c); i++)
 		c[i] = 'X';
 	b = Strnpcpy(c, "testing", sizeof(c) - 2);
-#if (STRN_ZERO_PAD == 1)
+#if (STRNP_ZERO_PAD == 1)
 	for (i=7; i<sizeof(c) - 2; i++) {
 		if (c[i] != '\0') {
 			printf("5: did not clear to end of buffer\n");
@@ -90,7 +92,7 @@ main()
 		c[i] = 'X';
 	b = Strnpcpy(c, "testing", sizeof(c) - 2);
 	b = Strnpcat(c, " still", sizeof(c) - 2);
-#if (STRN_ZERO_PAD == 1)
+#if (STRNP_ZERO_PAD == 1)
 	for (i=13; i<sizeof(c) - 2; i++) {
 		if (c[i] != '\0') {
 			printf("6: did not clear to end of buffer\n");
@@ -104,4 +106,30 @@ main()
 			break;
 		}
 	}
+
+/*--------------*/
+	{
+		char *str;
+
+		str = NULL;
+		if (Dynscat(&str, "this is a test", 0) == NULL) {
+			printf("7a: fail\n");
+		} else if (strcmp(str, "this is a test") != 0) {
+			printf("7b: fail\n");
+		}
+		free(str);
+
+		str = NULL;
+		if (Dynscat(&str, "this is a test", 0) == NULL) {
+			printf("7c: fail\n");
+		} else if (strcmp(str, "this is a test") != 0) {
+			printf("7d: fail\n");
+		} else if (Dynscat(&str, " ", "", "and", " ", "so is this", 0) == NULL) {
+			printf("7e: fail\n");
+		} else if (strcmp(str, "this is a test and so is this") != 0) {
+			printf("7f: fail\n");
+		}
+		free(str);
+	}
+	exit(0);
 }

@@ -1,9 +1,9 @@
 #include "syshdrs.h"
 
-static char gSioVersion[] = "@(#) sio 6.0 ** Copyright 1992-1999 Mike Gleason. All rights reserved.";
+static char UNUSED(gSioVersion[]) = "@(#) sio 6.0.3 ** Copyright 1992-2001 Mike Gleason. All rights reserved.";
 
 #ifdef NO_SIGNALS
-static char gNoSignalsMarker[] = "@(#) sio - NO_SIGNALS";
+static char UNUSED(gNoSignalsMarker[]) = "@(#) sio - NO_SIGNALS";
 #else
 extern volatile Sjmp_buf gNetTimeoutJmp;
 extern volatile Sjmp_buf gPipeJmp;
@@ -64,7 +64,7 @@ SRead(int sfd, char *const buf0, size_t size, int tlen, int retry)
 	nleft = (int) size;
 	time(&now);
 	done = now + tlen;
-	while (1) {
+	forever {
 		tleft = (int) (done - now);
 		if (tleft < 1) {
 			nread = size - nleft;
@@ -92,6 +92,9 @@ SRead(int sfd, char *const buf0, size_t size, int tlen, int retry)
 				errno = 0;
 				nread = 0;
 				/* Try again. */
+
+				/* Ignore this line... */
+				LIBSIO_USE_VAR(gSioVersion);
 			}
 		}
 		nleft -= nread;
@@ -189,6 +192,10 @@ SRead(int sfd, char *const buf0, size_t size, int tlen, int retry)
 				errno = 0;
 				nread = 0;
 				/* Try again. */
+
+				/* Ignore these two lines */
+				LIBSIO_USE_VAR(gSioVersion);
+				LIBSIO_USE_VAR(gNoSignalsMarker);
 			}
 		}
 		nleft -= nread;

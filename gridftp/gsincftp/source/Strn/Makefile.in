@@ -1,6 +1,7 @@
 #
 # Strn makefile
 #
+VER=2.2.0
 PREFIX=@prefix@
 MAN=@prefix@/man
 SHELL=/bin/sh
@@ -14,18 +15,19 @@ CPPFLAGS=
 CFLAGS=@CFLAGS@
 DEFS=-DSTRNP_ZERO_PAD=0 -DSTRN_ZERO_PAD=1
 
-OBJS=Strncpy.o Strncat.o Strntok.o Strnpcpy.o Strnpcat.o strtokc.o version.o
-SOBJS=Strncpy.so Strncat.so Strntok.so Strnpcpy.so Strnpcat.so strtokc.so version.so
+OBJS=Dynscat.o Strncpy.o Strncat.o Strntok.o Strnpcpy.o Strnpcat.o strtokc.o version.o
+SOBJS=Dynscat.so Strncpy.so Strncat.so Strntok.so Strnpcpy.so Strnpcat.so strtokc.so version.so
 
 all: static
 	-@echo "Done making Strn."
 
 static: $(LIB)
 
-$(LIB): Strncpy.o Strncat.o Strntok.o Strnpcpy.o Strnpcat.o strtokc.o version.o
-	ar rv $(LIB) Strncpy.o Strncat.o Strntok.o Strnpcpy.o Strnpcat.o strtokc.o version.o
+$(LIB): $(OBJS)
+	ar rv $(LIB) $(OBJS)
 	chmod 644 "$(LIB)"
 	-ranlib "$(LIB)"
+	echo "$(VER)" > Strn.version
 	-@/bin/ls -l "$(LIB)"
 
 .c.o:
@@ -56,14 +58,14 @@ tester: $(LIB) tester.c
 	$(CC) $(CFLAGS) tester.c -o tester -I. -L. -lStrn
 
 clean:
-	/bin/rm -f "$(LIB)" "$(SOLIB)" $(OBJS) $(SOBJS)
+	/bin/rm -f "$(LIB)" "$(LIBSO)" $(OBJS) $(SOBJS)
 
 install:
 	if test ! -d $(PREFIX)/include ; then mkdir -p "$(PREFIX)/include" ; fi
 	if test ! -d $(PREFIX)/lib ; then mkdir -p "$(PREFIX)/lib" ; fi
-	cp "$(LIB)" "$(PREFIX)/lib/$(LIB)"
+	cp "$(LIB)" Strn.version "$(PREFIX)/lib"
 	cp Strn.h "$(PREFIX)/include/Strn.h"
-	-chmod 664 "$(PREFIX)/include/Strn.h" "$(PREFIX)/lib/$(LIB)"
+	-chmod 664 "$(PREFIX)/include/Strn.h" "$(PREFIX)/lib/Strn.version" "$(PREFIX)/lib/$(LIB)"
 	-cp Strn.3 "$(MAN)/man3/Strn.3"
 	-chmod 664 "$(MAN)/man3/Strn.3"
 	-ln "$(MAN)/man3/Strn.3" "$(MAN)/man3/Strncpy.3"
@@ -72,7 +74,7 @@ install:
 uninstall:
 	/bin/rm -f "$(PREFIX)/lib/$(LIB)" "$(PREFIX)/include/Strn.h"
 
-PACKAGE=Makefile Strncpy.c Strncat.c Strnpcpy.c Strnpcat.c Strntok.c strtokc.c Strn.h Strn.3 tester.c version.c
+PACKAGE=configure Makefile.in configure.in Strn.dsp Strn.dsw Dynscat.c Strncpy.c Strncat.c Strnpcpy.c Strnpcat.c Strntok.c strtokc.c Strn.h Strn.3 tester.c version.c Strn.version
 
 TMPDIR=/tmp
 TARDIR=Strn
@@ -103,6 +105,7 @@ gz: tar
 	-@chmod 644 $(TGZFILE)
 	-@ls -l $(TGZFILE)
 
+Dynscat.o: Dynscat.c Strn.h
 Strncat.o: Strncat.c Strn.h
 Strncpy.o: Strncpy.c Strn.h
 Strnpcat.o: Strnpcat.c Strn.h

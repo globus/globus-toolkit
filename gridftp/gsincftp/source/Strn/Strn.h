@@ -37,12 +37,15 @@ int Strntok(char *, size_t, char *, const char *);
 char *strtokc(char *, const char *, char **);
 int strntokc(char *, size_t, char *, const char *, char **);
 
-#define STRNCPY(d,s) Strncpy((d), (s), (size_t) sizeof(d))
-#define STRNCAT(d,s) Strncat((d), (s), (size_t) sizeof(d))
+/* Dynscat.c */
+char * Dynscat(char **dst, ...);
 
 #ifdef __cplusplus
 }
 #endif
+
+#define STRNCPY(d,s) Strncpy((d), (s), (size_t) sizeof(d))
+#define STRNCAT(d,s) Strncat((d), (s), (size_t) sizeof(d))
 
 #endif	/* _Strn_h_ */
 

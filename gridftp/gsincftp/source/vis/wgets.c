@@ -47,71 +47,71 @@ static char *gBufPtr;
  * area for editing, but allowing for longer input strings.  The display
  * window will scroll as needed.
  */
-static char *gWinStartPtr;
+static char *gWinStartPtr = 0;
 
 /* This would be the last character drawn in the display window. */
-static char *gWinEndPtr;
+static char *gWinEndPtr = 0;
 
 /* Number of characters in the buffer. */
-static size_t gBufLen;
+static size_t gBufLen = 0;
 
 /* If true, the display window needs to be redrawn. */
-static int gNeedUpdate;
+static int gNeedUpdate = 0;
 
 /* The curses library window we are doing the editing in.  This window
  * is different from what I call the "display window."   The display
  * window is a subregion of the curses window, and does not have to have
  * a separate WINDOW pointer just for the editing.
  */
-static WINDOW *gW;
+static WINDOW *gW = 0;
 
 /* The column and row where the display window starts. */
-static int gSy, gSx;
+static int gSy = 0, gSx = 0;
 
 /* This is the buffer for the characters typed. */
-static char *gDst;
+static char *gDst = 0;
 
 /* This is the length of the display window on screen.  It should <=
  * the size of the buffer itself.
  */
-static int gWindowWidth;
+static int gWindowWidth = 0;
 
 /* This is the size of the buffer. */
-static size_t gDstSize;
+static size_t gDstSize = 0;
 
 /* This flag tells whether we are allowed to use the contents of the buffer
  * passed by the caller, and whether the contents had length 1 or more.
  */
-static int gHadStartingString;
+static int gHadStartingString = 0;
 
 /* This is a flag to tell if the user did any editing.  If any characters
  * are added or deleted, this flag will be set.  If the user just used the
  * arrow keys to move around and/or just hit return, it will be false.
  */
-static int gChanged;
+static int gChanged = 0;
 
 /* This is a flag to tell if we have moved at all on the line before
  * hitting return.  This is mostly used for ^D handling.  We want ^D to
  * return EOF if they hit right it away on a new line.
  */
-static int gMoved;
+static int gMoved = 0;
 
 /* We have the flexibility with respect to echoing characters. We can just
  * echo the same character we read back to the screen like normal, always
  * echo "bullets," or not echo at all.
  */
-static int gEchoMode;
+static int gEchoMode = 0;
 
 /* You can specify that the routine maintain a history buffer. If so, then
  * the user can use the arrow keys to move up and down through the history
  * to edit previous lines.
  */
-static LineListPtr gHistory;
+static LineListPtr gHistory = 0;
 
 /* This is a pointer to the line in the history that is being used as a copy
  * for editing.
  */
-static LinePtr gCurHistLine;
+static LinePtr gCurHistLine = 0;
 
 static void
 wg_SetCursorPos(char *newPos)
@@ -191,7 +191,7 @@ wg_KillCh(int count)
 	char *limit;
 
 	if (count > gBufPtr - gDst)
-		count = gBufPtr - gDst;
+		count = (int) (gBufPtr - gDst);
 	if (count) {
 		limit = gDst + gBufLen;
 		if (gBufPtr != limit) {
@@ -220,7 +220,7 @@ static void
 wg_KillWord(void)
 {
 	int count;
-	int off = gBufPtr - gDst - 1;
+	int off = (int) (gBufPtr - gDst) - 1;
 	count = off;
 
 	/* Find the end of the previous word */
@@ -444,7 +444,7 @@ wg_Update(void)
 	for ( ; cp <= gWinEndPtr; cp++)
 		waddch(gW, ' ');
 xx:
-	wmove(gW, gSy, gSx + (gBufPtr - gWinStartPtr));
+	wmove(gW, gSy, gSx + (int) (gBufPtr - gWinStartPtr));
 	wrefresh(gW);
 	gNeedUpdate = 0;
 } /* wg_Update */
@@ -534,7 +534,7 @@ wg_Gets(WGetsParamPtr wgpp)
 		gBufLen = 0;
 	}
 
-	while (1) {
+	for (;;) {
 		if (gNeedUpdate) 
 			wg_Update();
 
@@ -590,7 +590,7 @@ wg_Gets(WGetsParamPtr wgpp)
 					result = wg_EOF;
 					goto done;
 				}
-				/* fall */
+				/*FALLTHROUGH*/
 #ifdef KEY_DC
 			case KEY_DC:
 #endif
@@ -706,7 +706,7 @@ done:
 
 	gDst[gBufLen] = '\0';
 	wgpp->changed = gChanged;
-	wgpp->dstLen = gBufLen;
+	wgpp->dstLen = (int) gBufLen;
 	if ((gHistory != wg_NoHistory) && (gBufLen > 0))
 		AddLine(wgpp->history, gDst);
 	

@@ -44,7 +44,7 @@ SWrite(int sfd, const char *const buf0, size_t size, int tlen, int swopts)
 	nleft = (int) size;
 	time(&now);
 	done = now + tlen;
-	while (1) {
+	forever {
 		tleft = (int) (done - now);
 		if (tleft < 1) {
 			nwrote = size - nleft;

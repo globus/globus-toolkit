@@ -273,12 +273,18 @@ InitOurDirectory(void)
 	}
 
 	if (gOurInstallationPath[0] != '\0') {
-		STRNCPY(gOurDirectoryPath, gOurInstallationPath);
-		if (gUser[0] == '\0') {
-			STRNCAT(gOurDirectoryPath, "\\Users\\default");
+		if ((cp = getenv("NCFTPDIR")) != NULL) {
+			(void) STRNCPY(gOurDirectoryPath, cp);
+		} else if ((cp = getenv("HOME")) != NULL) {
+			(void) STRNCPY(gOurDirectoryPath, cp);
 		} else {
-			STRNCAT(gOurDirectoryPath, "\\Users\\");
-			STRNCAT(gOurDirectoryPath, gUser);
+			STRNCPY(gOurDirectoryPath, gOurInstallationPath);
+			if (gUser[0] == '\0') {
+				STRNCAT(gOurDirectoryPath, "\\Users\\default");
+			} else {
+				STRNCAT(gOurDirectoryPath, "\\Users\\");
+				STRNCAT(gOurDirectoryPath, gUser);
+			}
 		}
 		rc = MkDirs(gOurDirectoryPath, 00755);
 	}

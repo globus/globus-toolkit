@@ -3,7 +3,7 @@
 # SocketIO makefile for the platform @OS@, on the host @host@.
 #
 #-----------------------------------------------------------------------------
-VER=6
+VER=6.0.2
 CC=@CC@
 CFLAGS=@CFLAGS@
 #CFLAGS=-O2 -g -W -Wall -Wimplicit -Wstrict-prototypes -Wmissing-prototypes
@@ -16,7 +16,7 @@ PREFIX=@prefix@
 LIB=libsio.a
 LIBSO=libsio.so.5
 LIBSOS=libsio.so
-SFLAG=@SFLAG@
+STRIP=strip
 
 OBJS=\
 PRead.o		  PWrite.o	    SAcceptA.o	      SAcceptS.o \
@@ -26,7 +26,8 @@ SRecvfrom.o	  SRecvmsg.o	    SSelect.o	      SSend.o \
 SSendto.o	  SSendtoByName.o   SWrite.o	      SocketUtil.o \
 StrAddr.o	  UAcceptA.o	    UAcceptS.o	      UBind.o \
 UConnect.o	  UConnectByName.o  UNew.o	      URecvfrom.o \
-USendto.o	  USendtoByName.o   SError.o          main.o
+USendto.o	  USendtoByName.o   SError.o          main.o \
+SWait.o
 
 SOBJS=\
 PRead.so	   PWrite.so	      SAcceptA.so	 SAcceptS.so \
@@ -36,7 +37,8 @@ SRecvfrom.so	   SRecvmsg.so	      SSelect.so	 SSend.so \
 SSendto.so	   SSendtoByName.so   SWrite.so		 SocketUtil.so \
 StrAddr.so	   UAcceptA.so	      UAcceptS.so	 UBind.so \
 UConnect.so	   UConnectByName.so  UNew.so		 URecvfrom.so \
-USendto.so	   USendtoByName.so   SError.so          main.so
+USendto.so	   USendtoByName.so   SError.so          main.so \
+SWait.so
 
 all: $(LIB)
 	-@/bin/ls -l $(LIB)
@@ -73,19 +75,19 @@ soinstall: $(LIBSO)
 	-@/bin/ls -l $(PREFIX)/lib/$(LIBSO) $(PREFIX)/include/sio.h $(PREFIX)/include/usio.h
 
 ucase_c: ucase_c/ucase_c.c $(LIB)
-	( cd ucase_c ; $(MAKE) "CFLAGS=$(CFLAGS)" "SFLAG=$(SFLAG)" "LIBS=$(LIBS)" )
+	( cd ucase_c ; $(MAKE) "CFLAGS=$(CFLAGS)" "STRIP=$(STRIP)" "LIBS=$(LIBS)" )
 
 ucase_s: ucase_s/ucase_s.c $(LIB)
-	( cd ucase_s ; $(MAKE) "CFLAGS=$(CFLAGS)" "SFLAG=$(SFLAG)" "LIBS=$(LIBS)" )
+	( cd ucase_s ; $(MAKE) "CFLAGS=$(CFLAGS)" "STRIP=$(STRIP)" "LIBS=$(LIBS)" )
 
 srltest: srltest/srltest.c $(LIB)
-	( cd srltest ; $(MAKE) "CFLAGS=$(CFLAGS)" "SFLAG=$(SFLAG)" "LIBS=$(LIBS)" )
+	( cd srltest ; $(MAKE) "CFLAGS=$(CFLAGS)" "STRIP=$(STRIP)" "LIBS=$(LIBS)" )
 
 time_c: time_c/time_c.c $(LIB)
-	( cd time_c ; $(MAKE) "CFLAGS=$(CFLAGS)" "SFLAG=$(SFLAG)" "LIBS=$(LIBS)" )
+	( cd time_c ; $(MAKE) "CFLAGS=$(CFLAGS)" "STRIP=$(STRIP)" "LIBS=$(LIBS)" )
 
 time_s: time_s/time_s.c $(LIB)
-	( cd time_s ; $(MAKE) "CFLAGS=$(CFLAGS)" "SFLAG=$(SFLAG)" "LIBS=$(LIBS)" )
+	( cd time_s ; $(MAKE) "CFLAGS=$(CFLAGS)" "STRIP=$(STRIP)" "LIBS=$(LIBS)" )
 
 samples: ucase_c ucase_s time_c time_s srltest
 
@@ -116,7 +118,7 @@ SRecvfrom.c	  SRecvmsg.c	    SSelect.c	      SSend.c \
 SSendto.c	  SSendtoByName.c   SWrite.c	      SocketUtil.c \
 StrAddr.c	  UAcceptA.c	    UAcceptS.c	      UBind.c \
 UConnect.c	  UConnectByName.c  UNew.c	      URecvfrom.c \
-USendto.c	  USendtoByName.c   main.c	      
+USendto.c	  USendtoByName.c   SWait.c           main.c	      
 
 HFILES=sio.h usio.h
 
@@ -177,6 +179,7 @@ SSend.o: SSend.c sio.h
 SSendto.o: SSendto.c sio.h
 SSendtoByName.o: SSendtoByName.c sio.h
 SWrite.o: SWrite.c sio.h
+SWait.o: SWait.c sio.h
 SocketUtil.o: SocketUtil.c sio.h
 StrAddr.o: StrAddr.c sio.h
 UAcceptA.o: UAcceptA.c sio.h usio.h

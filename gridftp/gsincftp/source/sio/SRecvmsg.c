@@ -45,7 +45,7 @@ SRecvmsg(int sfd, void *const msg, int fl, int tlen)
 	time(&now);
 	done = now + tlen;
 	tleft = (int) (done - now);
-	while (1) {
+	forever {
 		(void) alarm((unsigned int) tleft);
 		nread = recvmsg(sfd, (struct msghdr *) msg, fl);
 		(void) alarm(0);
@@ -92,7 +92,7 @@ SRecvmsg(int sfd, void *const msg, int fl, int tlen)
 	time(&now);
 	done = now + tlen;
 	tleft = (int) (done - now);
-	while (1) {
+	forever {
 				
 		for (;;) {
 			errno = 0;

@@ -1,9 +1,20 @@
 #include "syshdrs.h"
 
+#ifndef SO_RCVBUF
+int
+GetSocketBufSize(int UNUSED(sockfd), size_t *const rsize, size_t *const ssize)
+{
+	LIBSIO_USE_VAR(sockfd);
+	if (ssize != NULL)
+		*ssize = 0;
+	if (rsize != NULL)
+		*rsize = 0;
+	return (-1);
+}	/* GetSocketBufSize */
+#else
 int
 GetSocketBufSize(int sockfd, size_t *const rsize, size_t *const ssize)
 {
-#ifdef SO_RCVBUF
 	int rc = -1;
 	int opt;
 	int optsize;
@@ -27,22 +38,25 @@ GetSocketBufSize(int sockfd, size_t *const rsize, size_t *const ssize)
 			*rsize = 0;
 	}
 	return (rc);
-#else
-	if (ssize != NULL)
-		*ssize = 0;
-	if (rsize != NULL)
-		*rsize = 0;
-	return (-1);
-#endif
 }	/* GetSocketBufSize */
+#endif
 
 
 
 
+#ifndef SO_RCVBUF
+int
+SetSocketBufSize(int UNUSED(sockfd), size_t UNUSED(rsize), size_t UNUSED(ssize))
+{
+	LIBSIO_USE_VAR(sockfd);
+	LIBSIO_USE_VAR(rsize);
+	LIBSIO_USE_VAR(ssize);
+	return (-1);
+}	/* SetSocketBufSize */
+#else
 int
 SetSocketBufSize(int sockfd, size_t rsize, size_t ssize)
 {
-#ifdef SO_RCVBUF
 	int rc = -1;
 	int opt;
 	int optsize;
@@ -62,20 +76,23 @@ SetSocketBufSize(int sockfd, size_t rsize, size_t ssize)
 			return (rc);
 	}
 	return (0);
-#else
-	return (-1);
-#endif
 }	/* SetSocketBufSize */
+#endif
 
 
 
 
+#ifndef TCP_NODELAY
+int
+GetSocketNagleAlgorithm(const int UNUSED(fd))
+{
+	LIBSIO_USE_VAR(fd);
+	return (-1);
+}	/* GetSocketNagleAlgorithm */
+#else
 int
 GetSocketNagleAlgorithm(const int fd)
 {
-#ifndef TCP_NODELAY
-	return (-1);
-#else
 	int optsize;
 	int opt;
 
@@ -84,36 +101,48 @@ GetSocketNagleAlgorithm(const int fd)
 	if (getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, &optsize) < 0)
 		return (-1);
 	return (opt);
-#endif	/* TCP_NODELAY */
 }	/* GetSocketNagleAlgorithm */
+#endif	/* TCP_NODELAY */
 
 
 
 
 
+#ifndef TCP_NODELAY
+int
+SetSocketNagleAlgorithm(const int UNUSED(fd), const int UNUSED(onoff))
+{
+	LIBSIO_USE_VAR(fd);
+	LIBSIO_USE_VAR(onoff);
+	return (-1);
+}	/* SetSocketNagleAlgorithm */
+#else
 int
 SetSocketNagleAlgorithm(const int fd, const int onoff)
 {
-#ifndef TCP_NODELAY
-	return (-1);
-#else
 	int optsize;
 	int opt;
 
 	opt = onoff;
 	optsize = (int) sizeof(opt);
 	return (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, optsize));
-#endif	/* TCP_NODELAY */
 }	/* SetSocketNagleAlgorithm */
+#endif	/* TCP_NODELAY */
 
 
 
+#ifndef SO_LINGER
+int
+GetSocketLinger(const int UNUSED(fd), int *const UNUSED(lingertime))
+{
+	LIBSIO_USE_VAR(fd);
+	LIBSIO_USE_VAR(lingertime);
+	return (-1);
+}	/* GetSocketLinger */
+#else
 int
 GetSocketLinger(const int fd, int *const lingertime)
 {
-#ifndef SO_LINGER
-	return (-1);
-#else
 	int optsize;
 	struct linger opt;
 
@@ -125,17 +154,24 @@ GetSocketLinger(const int fd, int *const lingertime)
 	if (lingertime != NULL)
 		*lingertime = opt.l_linger;
 	return (opt.l_onoff);
-#endif	/* SO_LINGER */
 }	/* GetSocketLinger */
+#endif	/* SO_LINGER */
 
 
 
+#ifndef SO_LINGER
+int
+SetSocketLinger(const int UNUSED(fd), const int UNUSED(l_onoff), const int UNUSED(l_linger))
+{
+	LIBSIO_USE_VAR(fd);
+	LIBSIO_USE_VAR(l_onoff);
+	LIBSIO_USE_VAR(l_linger);
+	return (-1);
+}	/* SetSocketLinger */
+#else
 int
 SetSocketLinger(const int fd, const int l_onoff, const int l_linger)
 {
-#ifndef SO_LINGER
-	return (-1);
-#else
 	struct linger opt;
 	int optsize;
 /*
@@ -163,5 +199,5 @@ struct	linger {
 	opt.l_linger = l_linger;
 	optsize = (int) sizeof(opt);
 	return (setsockopt(fd, SOL_SOCKET, SO_LINGER, (char *) &opt, optsize));
-#endif	/* SO_LINGER */
 }	/* SetSocketLinger */
+#endif	/* SO_LINGER */
