@@ -414,7 +414,12 @@ globus_l_xio_file_system_open_cb(
     
     open_info = (globus_l_open_info_t *) user_arg;
     
-    if(result != GLOBUS_SUCCESS)
+    if(result == GLOBUS_SUCCESS)
+    {
+        /* all handles created by me are closed on exec */
+        fcntl(open_info->handle->handle, F_SETFD, FD_CLOEXEC);
+    }
+    else
     {
         globus_l_xio_file_handle_destroy(open_info->handle);
         open_info->handle = GLOBUS_NULL;

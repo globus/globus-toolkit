@@ -607,6 +607,13 @@ globus_l_xio_tcp_apply_bind_attrs(
         goto error_sockopt;
     }
     
+    /* all handles created by me are closed on exec */
+    if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+    {
+        result = GlobusXIOErrorSystemError("fcntl", errno);
+        goto error_sockopt;
+    }
+    
     return GLOBUS_SUCCESS;
 
 error_sockopt:
@@ -632,6 +639,15 @@ globus_l_xio_tcp_apply_handle_attrs(
             result = GlobusXIOErrorWrapFailed(
                 "globus_l_xio_tcp_apply_bind_attrs", result);
             goto error_bind_attrs;
+        }
+    }
+    else
+    {
+        /* all handles created by me are closed on exec */
+        if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+        {
+            result = GlobusXIOErrorSystemError("fcntl", errno);
+            goto error_sockopt;
         }
     }
     
@@ -701,7 +717,7 @@ globus_l_xio_tcp_apply_handle_attrs(
         result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
     }
-
+    
     return GLOBUS_SUCCESS;
 
 error_sockopt:
@@ -1099,7 +1115,12 @@ globus_l_xio_tcp_system_accept_cb(
     
     accept_info = (globus_l_accept_info_t *) user_arg;
     
-    if(result != GLOBUS_SUCCESS)
+    if(result == GLOBUS_SUCCESS)
+    {
+        /* all handles created by me are closed on exec */
+        fcntl(accept_info->target->handle, F_SETFD, FD_CLOEXEC);
+    }
+    else
     {
         globus_free(accept_info->target);
         accept_info->target = GLOBUS_NULL;
