@@ -1291,8 +1291,8 @@ globus_l_xio_udt_add_data_to_read_buf(
      * condition below would take care of user_buf_size == 0 
      */
     GlobusXIOUdtDebugPrintf(GLOBUS_L_XIO_UDT_DEBUG_TRACE, 
-         ("add data ack_ptr = %d  offset = %d len = %d start_pos = %d 
-         last_ack_pos = %d\n", ack_ptr, offset, len, read_buf->start_pos, 
+         ("add data ack_ptr = %d  offset = %d len = %d start_pos = %d"
+         " last_ack_pos = %d\n", ack_ptr, offset, len, read_buf->start_pos, 
          read_buf->last_ack_pos)); 
     if (ack_ptr + offset + orig_len  >= user_buf_size)
     {
@@ -4533,8 +4533,8 @@ globus_l_xio_udt_write_ack(
     *((int*)iovec[0].iov_base) = 0x80000000 | (GLOBUS_L_XIO_UDT_ACK << 28);
 
     GlobusXIOUdtDebugPrintf(GLOBUS_L_XIO_UDT_DEBUG_TRACE, 
-	("inside ack read_cntl->last_ack is %d curr_seqno is %d 
-	reader_loss_length is %d\n", 
+	("inside ack read_cntl->last_ack is %d curr_seqno is %d "
+	"reader_loss_length is %d\n", 
 	handle->read_cntl->last_ack, handle->read_cntl->curr_seqno, 
 	handle->reader_loss_info->length));
 
@@ -4571,9 +4571,9 @@ globus_l_xio_udt_write_ack(
 	    handle->reader_loss_info) - last_ack;
 	if (ack > GLOBUS_L_XIO_UDT_SEQ_NO_THRESH) 
 	{
-	  GlobusXIOUdtDebugPrintf(GLOBUS_L_XIO_UDT_DEBUG_INTERNAL_TRACE, 		("difference between smallest seqno in reader loss list and 
-	    handle->read_cntl->last_ack is greater than 
-	    GLOBUS_L_XIO_UDT_SEQ_NO_THRESH"));
+	  GlobusXIOUdtDebugPrintf(GLOBUS_L_XIO_UDT_DEBUG_INTERNAL_TRACE, 		("difference between smallest seqno in reader loss list and "
+	    "handle->read_cntl->last_ack is greater than "
+	    "GLOBUS_L_XIO_UDT_SEQ_NO_THRESH"));
 	  goto error_data;	
 	}
 	/* 
@@ -7427,8 +7427,8 @@ globus_i_xio_udt_write_retransmit_data(
     {
 	GlobusXIOUdtDebugPrintf(
 	    GLOBUS_L_XIO_UDT_DEBUG_INTERNAL_TRACE,
-	    ("Retransmit failed. seqno is [%d],
-	    write_cntl->last_ack is [%d]\n", seqno,
+	    ("Retransmit failed. seqno is [%d], "
+	    "write_cntl->last_ack is [%d]\n", seqno,
 	    handle->write_cntl->last_ack));
 	globus_mutex_unlock(&handle->write_cntl->mutex);
 	goto error;
@@ -7691,7 +7691,6 @@ globus_l_xio_udt_close_cb(
 
     handle = (globus_l_handle_t *) user_arg;
     globus_xio_driver_finished_close(op, result);
-    globus_xio_driver_handle_close(handle->driver_handle);
     globus_l_xio_udt_handle_destroy(handle);
 
     GlobusXIOUdtDebugExit();
