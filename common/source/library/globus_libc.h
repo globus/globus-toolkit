@@ -81,7 +81,7 @@ EXTERN_C_BEGIN
         extern void globus_libc_closedir(DIR *dirp);
 
 #   else  /* HAVE_THREAD_SAFE_SELECT */
-#       define globus_libc              open
+#       define globus_libc_open         open
 #       define globus_libc_close        close
 #       define globus_libc_read         read
 #       define globus_libc_write        write

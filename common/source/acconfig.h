@@ -1,10 +1,8 @@
-/* Application specific options */
+/* Application specific options */VE_STDARG_H
 
 #undef HAVE_POLL
 
 #undef ssize_t
-#undef HAVE_STRUCT_IOVEC
-#undef IOV_MAX
 
 #undef HAVE_SEEKDIR
 #undef HAVE_TELLDIR
@@ -17,6 +15,8 @@
 
 #undef HAVE_CTIME
 #undef HAVE_CTIME_R
+
+#undef HAVE_STDARG_H
 
 #undef HAVE_MKTIME
 
