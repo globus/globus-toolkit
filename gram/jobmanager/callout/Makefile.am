@@ -11,7 +11,7 @@ confdir = $(datadir)/$(PACKAGE)
 Data = \
 	gsi-authz.conf
 
-confdir_DATA = $(Data)
+conf_DATA = $(Data)
 
 
 EXTRA_DIST = $(Data)
@@ -20,11 +20,11 @@ INCLUDES += $(GPT_INCLUDES)
 
 lib_LTLIBRARIES = libglobus_gram_jobmanager_callout_$(GLOBUS_FLAVOR_NAME).la
 
-libglobus_gram_jobmanager_callout__GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_gram_jobmanager_callout___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	@GPT_LIB_LINKS@
-libglobus_gram_jobmanager_callout__GLOBUS_FLAVOR_NAME__la_SOURCES = \
+libglobus_gram_jobmanager_callout___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_gram_jobmanager_callout.c
-libglobus_gram_jobmanager_callout__GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_gram_jobmanager_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	@GPT_LDFLAGS@
 
 include $(top_srcdir)/globus_automake_post

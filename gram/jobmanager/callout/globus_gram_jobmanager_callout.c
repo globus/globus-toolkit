@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include "globus_common.h"
 #include "gssapi.h"
-#include "rsl.h"
-#include "rsl_assist.h"
+#include "globus_rsl.h"
+#include "globus_rsl_assist.h"
 
 globus_result_t
 globus_gram_jobmanager_callout(va_list ap)
@@ -12,7 +12,7 @@ globus_gram_jobmanager_callout(va_list ap)
     char *                              job_id;
     char *                              action;
     globus_rsl_t *                      rsl;
-    globus_result_t                     result = GLOBUS_SUCCES;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     

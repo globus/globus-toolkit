@@ -16,7 +16,26 @@
                     <Simple_Version Major="2"/>
                 </Version>
             </Dependency>                
+
             <Dependency Name="globus_common">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_rsl">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+    
+            <Dependency Name="globus_rsl_assist">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gssapi_gsi">
                 <Version>
                     <Simple_Version Major="3"/>
                 </Version>
@@ -25,6 +44,24 @@
 
         <Source_Dependencies Type="lib_link">
             <Dependency Name="globus_common">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>        
+
+            <Dependency Name="globus_rsl">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+    
+            <Dependency Name="globus_rsl_assist">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gssapi_gsi">
                 <Version>
                     <Simple_Version Major="3"/>
                 </Version>
