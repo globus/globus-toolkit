@@ -3129,8 +3129,8 @@ globus_l_gfs_ipc_reply_read_header_cb(
                     result = globus_xio_register_read(
                         handle,
                         new_buf,
-                        reply_size - GFS_IPC_HEADER_SIZE,
-                        reply_size - GFS_IPC_HEADER_SIZE,
+                        GFS_IPC_HEADER_SIZE,
+                        GFS_IPC_HEADER_SIZE,
                         NULL,
                         globus_l_gfs_ipc_ss_header_cb,
                         ipc);
