@@ -470,7 +470,7 @@ void
 globus_gridftp_server_operation_finished(
     globus_gfs_operation_t              op,
     globus_result_t                     result,
-    globus_gfs_finished_info_t          finished_info);
+    globus_gfs_finished_info_t *        finished_info);
 
 /*
  *  operation event
@@ -483,7 +483,7 @@ void
 globus_gridftp_server_operation_event(
     globus_gfs_operation_t              op,
     globus_result_t                     result,
-    globus_gfs_event_info_t             event_info);
+    globus_gfs_event_info_t *           event_info);
 
 /*
  * begin transfer event

@@ -81,7 +81,6 @@ typedef struct globus_l_gfs_data_operation_s
     /**/
     
     globus_i_gfs_data_callback_t        callback;
-    globus_i_gfs_data_callback_t        stat_callback;
     globus_i_gfs_data_event_callback_t  event_callback;
     void *                              user_arg;
 } globus_l_gfs_data_operation_t;
@@ -170,7 +169,7 @@ globus_i_gfs_data_request_stat(
     op->callback = cb;
     op->user_arg = user_arg;
     
-    result = dsi->stat_func(op, stat_info, NULL);
+    result = dsi->stat_func(op, stat_info, dsi_user_arg);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("hook", result);
@@ -241,8 +240,53 @@ globus_l_gfs_data_stat_kickout(
 }
 
 void
+globus_gridftp_server_operation_finished(
+    globus_gfs_operation_t              op,
+    globus_result_t                     result,
+    globus_gfs_finished_info_t *        finished_info)
+{
+    if(op->callback != NULL)
+    {
+        op->callback(
+            finished_info,
+            op->user_arg);        
+    }
+    else
+    {
+        globus_gfs_ipc_reply_finished(
+            op->ipc_handle,
+            finished_info);
+    }
+    
+    return;  
+}
+    
+void
+globus_gridftp_server_operation_event(
+    globus_gfs_operation_t              op,
+    globus_result_t                     result,
+    globus_gfs_event_info_t *           event_info)
+{
+    if(op->event_callback != NULL)
+    {
+        op->event_callback(
+            event_info,
+            op->user_arg);        
+    }
+    else
+    {
+        globus_gfs_ipc_reply_event(
+            op->ipc_handle,
+            event_info);
+    }
+
+    return;
+}
+
+
+void
 globus_gridftp_server_finished_command(
-    globus_gfs_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_result_t                     result,
     char *                              command_data)
 {
@@ -436,7 +480,7 @@ globus_i_gfs_data_request_command(
     op->callback = cb;
     op->user_arg = user_arg;
     
-    result = dsi->command_func(op, cmd_info, NULL);
+    result = dsi->command_func(op, cmd_info, dsi_user_arg);
       
     if(result != GLOBUS_SUCCESS)
     {
@@ -781,6 +825,12 @@ globus_i_gfs_data_request_passive(
             goto error_op;
         }
         
+        op->ipc_handle = ipc_handle;
+        op->id = id;
+        op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+        op->pathname = data_info->pathname;
+        op->callback = cb;
+        op->user_arg = user_arg;
         result = dsi->passive_func(op, data_info, dsi_user_arg);
     }
     else
@@ -941,6 +991,12 @@ globus_i_gfs_data_request_active(
             goto error_op;
         }
         
+        op->ipc_handle = ipc_handle;
+        op->id = id;
+        op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+        op->pathname = data_info->pathname;
+        op->callback = cb;
+        op->user_arg = user_arg;
         result = dsi->active_func(op, data_info, dsi_user_arg);
     }
     else
@@ -1067,12 +1123,13 @@ globus_i_gfs_data_request_recv(
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
     }
+/*
     if(data_handle->closed)
     {
         result = GlobusGFSErrorData("Data handle has been closed");
         goto error_handle;
     }
-    
+*/    
     result = globus_l_gfs_data_operation_init(&op);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1093,7 +1150,7 @@ globus_i_gfs_data_request_recv(
     op->user_arg = user_arg;
     
     /* XXX */
-    result = dsi->recv_func(op, recv_info, NULL);
+    result = dsi->recv_func(op, recv_info, dsi_user_arg);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("recv_hook", result);
@@ -1142,12 +1199,13 @@ globus_i_gfs_data_request_send(
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
     }
+/*
     if(data_handle->closed)
     {
         result = GlobusGFSErrorData("Data handle has been closed");
         goto error_handle;
     }
-    
+*/    
     result = globus_l_gfs_data_operation_init(&op);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1168,7 +1226,7 @@ globus_i_gfs_data_request_send(
     op->user_arg = user_arg;
     
     /* XXX */
-    result = dsi->send_func(op, send_info, NULL);
+    result = dsi->send_func(op, send_info, dsi_user_arg);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("send_hook", result);
@@ -1291,11 +1349,6 @@ globus_i_gfs_data_request_list(
         result = GlobusGFSErrorData("Data handle not found");
         goto error_handle;
     }
-    if(data_handle->closed)
-    {
-        result = GlobusGFSErrorData("Data handle has been closed");
-        goto error_handle;
-    }
 
     result = globus_l_gfs_data_operation_init(&data_op);
     if(result != GLOBUS_SUCCESS)
@@ -1327,7 +1380,13 @@ globus_i_gfs_data_request_list(
         }
     }
     else
-    {
+    {    
+        if(data_handle->closed)
+        {
+            result = GlobusGFSErrorData("Data handle has been closed");
+            goto error_handle;
+        }
+
         result = globus_l_gfs_data_operation_init(&stat_op);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1352,26 +1411,26 @@ globus_i_gfs_data_request_list(
             result = GlobusGFSErrorWrapFailed("list_hook", result);
             goto error_hook2;
         }
+        globus_mutex_lock(&stat_op->lock);
+        {
+            if(stat_op->state == GLOBUS_L_GFS_DATA_REQUESTING)
+            {
+                stat_op->state = GLOBUS_L_GFS_DATA_PENDING;
+            }
+        }
+        globus_mutex_unlock(&stat_op->lock);
     }
 
-    globus_mutex_lock(&stat_op->lock);
-    {
-        if(stat_op->state == GLOBUS_L_GFS_DATA_REQUESTING)
-        {
-            stat_op->state = GLOBUS_L_GFS_DATA_PENDING;
-        }
-    }
-    globus_mutex_unlock(&stat_op->lock);
     
     return GLOBUS_SUCCESS;
 
 error_hook2:
     globus_l_gfs_data_operation_destroy(stat_op);
+error_handle:
 error_hook1:
     globus_l_gfs_data_operation_destroy(data_op);
 
 error_op:
-error_handle:
     return result;
 }
 
