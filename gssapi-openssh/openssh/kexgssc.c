@@ -40,7 +40,6 @@
 #include "ssh-gss.h"
 #include "canohost.h"
 
-
 void
 kexgss_client(Kex *kex)
 {
