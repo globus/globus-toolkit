@@ -431,7 +431,7 @@ globus_handle_table_lookup(
 
     if(!e_handle_table)
     {
-        return GLOBUS_FAILURE;
+        return (void *)GLOBUS_FAILURE;
     }
 
 	handle_table = *e_handle_table;
