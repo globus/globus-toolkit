@@ -18,6 +18,7 @@ BUNDLE gt4-mds
         globus_wsrf_servicegroup
 
 BUNDLE gt4-rft
+    globus_wsrf_rft_client_java_source
 	globus_wsrf_rft_service_source
 	globus_wsrf_rft_common_java_source
 	globus_wsrf_rft_common_schema
