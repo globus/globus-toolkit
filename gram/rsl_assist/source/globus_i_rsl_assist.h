@@ -46,11 +46,11 @@ char*
 globus_i_rsl_assist_get_rm_contact(char* resourceManagerName);
 
 /*
- * globus_i_rsl_assist_get_job_list()
+ * globus_i_rsl_assist_get_scheduledjob_list()
  *
- *     By querying the MDS, return the list of job contact currently
- *     registerd in the MDS, the rsl for each job and the status of the job.
- *     The user code must free each string of the structure and string
+ *     By querying the MDS, return the list of "scheduledjobs" currently
+ *     registerd in the MDS.
+ *     The user code must free each string of the list and the list
  *     itself when it is not usefull anymore.
  *     
  *
@@ -66,7 +66,7 @@ globus_i_rsl_assist_get_rm_contact(char* resourceManagerName);
  *    GLOBUS_NULL in case of failure.
  */
 int
-globus_i_rsl_assist_get_job_list(globus_list_t ** job_list);
+globus_i_rsl_assist_get_scheduledjob_list(globus_list_t ** job_list);
 
 /*
  * Function: globus_i_rsl_assist_extract_attribute()

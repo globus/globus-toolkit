@@ -589,7 +589,7 @@ globus_l_rsl_assist_simple_query_ldap(
 
 
 /*
- * Function: globus_i_rsl_assist_get_job_contact_list()
+ * Function: globus_i_rsl_assist_get_scheduledjob_list()
  *
  * Connect to the ldap server, and search for the contact string
  * associated with the resourceManagerName.
@@ -599,7 +599,7 @@ globus_l_rsl_assist_simple_query_ldap(
  * Returns: 
  */ 
 int
-globus_i_rsl_assist_get_job_contact_list(globus_list_t ** job_contact_list)
+globus_i_rsl_assist_get_scheduledjob_list(globus_list_t ** job_contact_list)
 {
 
     int rc;
@@ -613,7 +613,7 @@ globus_i_rsl_assist_get_job_contact_list(globus_list_t ** job_contact_list)
 	search_string,
 	job_contact_list);
 
-} /* globus_l_rsl_assist_get_job_contact_list() */
+} /* globus_i_rsl_assist_get_scheduledjob_list() */
 
 
 /*
