@@ -2903,6 +2903,17 @@ globus_ftp_control_local_dcau(
                   myname);
         return globus_error_put(err);
     }
+    else if(dcau->mode != GLOBUS_FTP_CONTROL_DCAU_NONE &&
+            dcau->mode != GLOBUS_FTP_CONTROL_DCAU_SELF &&
+            dcau->mode != GLOBUS_FTP_CONTROL_DCAU_SUBJECT)
+    {
+        err = globus_error_construct_string(
+		    GLOBUS_FTP_CONTROL_MODULE,
+		    GLOBUS_NULL,
+		    "globus_ftp_control_local_dcau: invalid dcau mode");
+        return globus_error_put(err);
+    }
+
     dc_handle = &handle->dc_handle;
     GlobusFTPControlDataTestMagic(dc_handle);
     if(!dc_handle->initialized)
@@ -2972,6 +2983,11 @@ globus_ftp_control_local_dcau(
 	    globus_io_attr_set_secure_channel_mode(
 		    &dc_handle->io_attr,
 		    GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR);
+
+	    globus_io_attr_set_secure_authorization_mode(
+		    &dc_handle->io_attr,
+		    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE,
+		    GLOBUS_NULL);
 
 	    globus_io_attr_set_secure_authentication_mode(
 		    &dc_handle->io_attr,

@@ -1391,6 +1391,7 @@ user_command(
     res = globus_ftp_control_auth_info_init(
               &auth,
 	      GLOBUS_NULL,
+	      GLOBUS_FALSE,
               username,
               passwd,
               account,

@@ -79,7 +79,8 @@ typedef enum globus_ftp_control_dcau_mode_e
 {
     GLOBUS_FTP_CONTROL_DCAU_NONE = 'N',
     GLOBUS_FTP_CONTROL_DCAU_SELF = 'A',
-    GLOBUS_FTP_CONTROL_DCAU_SUBJECT = 'S'
+    GLOBUS_FTP_CONTROL_DCAU_SUBJECT = 'S',
+    GLOBUS_FTP_CONTROL_DCAU_DEFAULT
 } globus_ftp_control_dcau_mode_t;
 
 /**
