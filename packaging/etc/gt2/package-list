@@ -46,6 +46,8 @@ globus_gram_reporter_setup_pbs		gram/reporter/setup/pbs
 globus_gram_reporter_setup_lsf		gram/reporter/setup/lsf
 globus_gram_reporter_setup_condor	gram/reporter/setup/condor
 globus_gridftp_server		gridftp/gsi-wuftpd/source
+globus_gridftp_server_control	gridftp/server-lib/src
+globus_gridftp_server2		gridftp/server/src
 globus_gsi_callback		gsi/callback/source
 globus_gsi_cert_utils		gsi/cert_utils/source
 globus_gsi_credential		gsi/credential/source
@@ -61,6 +63,7 @@ globus_gss_assist_test		gsi/gss_assist/test
 globus_hostname2contacts	gram/globus-hostname2contacts
 globus_io			io/source
 globus_io_test			io/test
+globus_xio			xio/src
 globus_ldapmodules		mds/openldap/ldapmodules
 globus_libtool mds/libtool pnb libtool-1.4.2.tar.gz
 globus_mds_back_giis		mds/openldap/giis-ldapmodules
