@@ -95,11 +95,11 @@ globus_gatekeeper_util_globusxmap( char * filename, char * index, char ** comman
 {
 
 	FILE * fd;
-	char   line[BUFSIZ];
-	char   f_index[256]; 
 	int    rc;
 	int	   i;
     int    offset;
+	char   f_index[256]; 
+	char   line[4096];
 
 	*command = NULL;
 
