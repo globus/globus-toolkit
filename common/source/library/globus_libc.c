@@ -792,14 +792,16 @@ globus_libc_gethostname(char *name, int len)
         }
         hostname_length = strlen(hostname);
         if(strchr(hostname, '.') != GLOBUS_NULL)
-	{
-             int i=0;
-             for (i=0; i<hostname_length; i++)
-               hostname[i] = tolower(hostname[i]);
-	    strncpy(name, hostname, len);
+	    {
+            unsigned int                    i = 0;
+            for (i=0; i<hostname_length; i++)
+            {
+                hostname[i] = tolower(hostname[i]);
+            }
+	        strncpy(name, hostname, len);
             globus_mutex_unlock(&gethostname_mutex);
-	    return 0;
-	}
+	        return 0;
+	    }
 
 	hp_ptr = globus_libc_gethostbyname_r(hostname,
 					     &hp2,
@@ -889,6 +891,9 @@ globus_libc_gethostname(char *name, int len)
 } /* globus_libc_gethostname() */
 
 
+/*
+ *  The windows definition of the following funtions differs
+ */
 #if defined(TARGET_ARCH_WIN32)
 
 int
@@ -915,8 +920,13 @@ globus_libc_getpid(void)
     return(pid);
 } /* globus_libc_getpid() */
 
+int
+globus_libc_fork(void)
+{
+    return -1;
+}
 
-#else
+#else /* TARGET_ARCH_WIN32 */
 /******************************************************************************
 Function: globus_libc_getpid()
 
@@ -1047,58 +1057,56 @@ globus_libc_gethostbyname_r(char *hostname,
     struct hostent *hp=GLOBUS_NULL;
 #   if defined(GLOBUS_HAVE_GETHOSTBYNAME_R_3)
         struct hostent_data hp_data;
-	int rc;
+	    int rc;
 #   endif
-
 #   if defined(GLOBUS_HAVE_GETHOSTBYNAME_R_6)
-	int rc;
+	   int rc;
 #   endif
-
 
     globus_libc_lock();
 
 #   if !defined(HAVE_GETHOSTBYNAME_R)
     {
         hp = gethostbyname(hostname);
-	if(hp != GLOBUS_NULL)
-	{
+	    if(hp != GLOBUS_NULL)
+	    {
             memcpy(result, hp, sizeof(struct hostent));
             globus_l_libc_copy_hostent_data_to_buffer(result, buffer, (size_t) buflen);
-	    hp = result;
-	    if (h_errnop != GLOBUS_NULL)
-	    {
-		*h_errnop = h_errno;
+	        hp = result;
+	        if (h_errnop != GLOBUS_NULL)
+	        {
+		        *h_errnop = h_errno;
+	        }
 	    }
-	}
-	else
-	{
-	    if (h_errnop != GLOBUS_NULL)
+	    else
 	    {
-		*h_errnop = h_errno;
-	    }
-	} 
+	        if (h_errnop != GLOBUS_NULL)
+	        {
+		        *h_errnop = h_errno;
+	        }
+	    } 
     }
 #   elif defined(GLOBUS_HAVE_GETHOSTBYNAME_R_3)
     {
-	rc = gethostbyname_r(hostname,
+	    rc = gethostbyname_r(hostname,
 			     result,
 			     &hp_data);
         if(rc == 0)
-	{
+	    {
             globus_l_libc_copy_hostent_data_to_buffer(result, buffer, (size_t) buflen);
-	    hp = result;
-	    if (h_errnop != GLOBUS_NULL)
-	    {
-		*h_errnop = h_errno;
-	    }
+	        hp = result;
+	        if(h_errnop != GLOBUS_NULL)
+	        {
+		        *h_errnop = h_errno;
+	        }
         }
-	else
-	{
-	    hp = GLOBUS_NULL;
-	    if (h_errnop != GLOBUS_NULL)
+	    else
 	    {
-		*h_errnop = h_errno;
-	    }
+	        hp = GLOBUS_NULL;
+	        if(h_errnop != GLOBUS_NULL)
+	        {
+		        *h_errnop = h_errno;
+	        }
         }
     }
 #   elif defined(GLOBUS_HAVE_GETHOSTBYNAME_R_5)
@@ -1120,7 +1128,7 @@ globus_libc_gethostbyname_r(char *hostname,
     }
 #   else
     {
-	GLOBUS_HAVE_GETHOSTBYNAME symbol must be defined!!!;
+	    GLOBUS_HAVE_GETHOSTBYNAME symbol must be defined!!!;
     }
 #   endif
 
@@ -1133,23 +1141,23 @@ globus_libc_gethostbyname_r(char *hostname,
      */
     if (hp == GLOBUS_NULL)
     {
-	if (isdigit(hostname[0]))
-	{
-	    struct in_addr			addr;
-
-	    addr.s_addr = inet_addr(hostname);
-	    if ((int) addr.s_addr != -1)
+	    if(isdigit(hostname[0]))
 	    {
-		hp = globus_libc_gethostbyaddr_r(
-		    (void *) &addr,
-		    sizeof(addr),
-		    AF_INET,
-		    result,
-		    buffer,
-		    buflen,
-		    h_errnop);
+	        struct in_addr			addr;
+
+	        addr.s_addr = inet_addr(hostname);
+	        if ((int) addr.s_addr != -1)
+	        {
+		        hp = globus_libc_gethostbyaddr_r(
+		        (void *) &addr,
+		        sizeof(addr),
+		        AF_INET,
+		        result,
+		        buffer,
+		        buflen,
+		        h_errnop);
+	        }
 	    }
-	}
     }
 
     return hp;
@@ -1317,7 +1325,7 @@ globus_libc_ctime_r(time_t *clock,
 } /* globus_libc_ctime_r() */
 
 /*
- * win32 solution in question fot these
+ * These functions are not defined on win32
  */
 #if !defined(TARGET_ARCH_WIN32)
 /******************************************************************************
@@ -1482,24 +1490,6 @@ globus_libc_getpwuid_r(uid_t uid,
     return rc;
 } /* globus_libc_getpwuid_r */
 
-#else /* TARGET_ARCH_WIN32 */
-
-int
-globus_libc_getpwnam_r(char *name,
-		       struct passwd *pwd,
-		       char *buffer,
-		       int buflen,
-		       struct passwd **result)
-{
-	BOOL							rc;
-
-
-	rc =  GetUserName(
-  LPTSTR lpBuffer,  // name buffer
-  LPDWORD nSize     // size of name buffer
-);
-}
-
 #endif /* TARGET_ARCH_WIN32 */
 
 /******************************************************************************
@@ -1635,10 +1625,11 @@ globus_libc_system_error_string(int the_error)
 #endif
 } /* globus_libc_system_error_string() */
 
-#if defined(TARGET_ARCH_WIN32)
 
-#else
-
+/*
+ *  these functions are not defined on win32
+ */
+#if !defined(TARGET_ARCH_WIN32)
 /******************************************************************************
 Function: globus_l_libc_copy_pwd_data_to_buffer()
 
@@ -1896,7 +1887,7 @@ globus_libc_strdup(const char * string)
 
 
 /*
- * win32 issues not worked out yet
+ * not defined on win32
  */
 #if !defined(TARGET_ARCH_WIN32)
 

@@ -69,12 +69,16 @@ globus_libc_setenv(name, value, rewrite)
 		    globus_libc_unlock();
 		    return (0);
 		}
-		if (strlen(c) >= l_value) {	/* old larger; copy over */
-		    while ((*c++ = *value++));
+		if (strlen(c) >= l_value) /* old larger; copy over */
+        {	
+            while ((*c++ = *value++));
+
 		    globus_libc_unlock();
 		    return (0);
 		}
-	} else {					/* create new slot */
+	} 
+    else 
+    {					/* create new slot */
 		register int cnt;
 		register char **p;
 

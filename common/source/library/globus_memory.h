@@ -31,6 +31,7 @@ EXTERN_C_BEGIN
 
 extern globus_mutex_t                           globus_i_memory_mutex;
 
+struct globus_memory_s;
 typedef struct globus_memory_s *                globus_memory_t;
 
 globus_bool_t

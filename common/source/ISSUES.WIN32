@@ -24,8 +24,6 @@ Current warnings
 
 globus_libc_setenv.c
 c:\cygwin\home\bresnaha\Dev\common\source\library\globus_libc_setenv.c(72) : warning C4018: '>=' : signed/unsigned mismatch
-globus_libc.c
-c:\cygwin\home\bresnaha\Dev\common\source\library\globus_libc.c(797) : warning C4018: '<' : signed/unsigned mismatch
 ---------------------------------------------------------
 
 ---------------------------------------------------------
@@ -42,6 +40,9 @@ open/close/read/write/writev
 I have simply made these macros to _open, _close, etc.
 I think this is the right thing to do.  We should document
 them telling user to use globus_io for real portability.
+
+writev is a macro to write, but only looks at the first one
+also MAX_IOV is set to 1
 ---------------------------------------------------------
 
 functions to take care of:

@@ -5,11 +5,78 @@
 #if !defined(GLOBUS_COMMON_INCLUDE_H)
 #define GLOBUS_COMMON_INCLUDE_H 1
 
-/* for now !!!!!!!!!!! if you read this delete iy and fix it*/
-#define HAVE_PWD_H 1
+#include "config.h"
 
-#include "globus_config.h"
-#include "globus_common_config.h"
+/*
+ * configure macros
+ */
+#define TARGET_ARCH_WIN32           1
+#define BUILD_LITE                  1
+
+#define GLOBUS_WINDOWS_THREADS      1
+#define HAVE_MEMMOVE                1
+#define HAVE_STDARG_H               1
+#define HAVE_SYS_TYPES_H            1
+#define HAVE_SYS_STAT_H             1
+
+#define MAXPATHLEN                  128
+#define MAXHOSTNAMELEN              128
+   
+/* Define as the return type of signal handlers (int or void).  */
+#define RETSIGTYPE                  void
+
+#define HAVE_SYS_WAIT_H             1
+#define RETSIGTYPE                  void
+#define STDC_HEADERS                1
+/* issue */
+#define IOV_MAX                     1
+
+#define GLOBUS_HAVE_DIRENT_OFF      1
+#define GLOBUS_HAVE_DIRENT_TYPE     1
+#define GLOBUS_HAVE_DIRENT_RECLEN   1
+
+#define HAVE_ATEXIT                 1
+
+#define HAVE_NETINET_TCP_H          1
+
+#define GLOBUS_OFF_T                long
+#define GLOBUS_OFF_T_FORMAT         "qd"
+#define SIZEOF_OFF_T                8
+
+#define GLOBUS_USE_NO_THREADS       1
+
+#define SIZEOF_INT                  4
+#define SIZEOF_LONG                 4
+/*#define SIZEOF_LONG_LONG 8 */
+#define SIZEOF_SHORT                2
+
+#define HAVE_CTIME                  1
+
+#define HAVE_GETHOSTBYADDR          1
+#define HAVE_GETHOSTBYNAME          1
+
+#define HAVE_MEMMOVE                1
+#define HAVE_CTYPE_H                1
+
+#define HAVE_FCNTL_H                1
+#define HAVE_LIMITS_H               1
+#define HAVE_IO_H                   1
+
+#define HAVE_SIGNAL_H               1
+#define HAVE_STRING_H               1
+
+
+#define VERSION "2.1"
+
+#define _FILE_OFFSET_BITS           64
+
+
+#include <io.h>
+
+/*
+ * end configure macros
+ */
+
 
 /*
  * include system files if we have them
@@ -19,6 +86,9 @@
 #endif
 #ifdef HAVE_SYS_TYPES_H
 #   include <sys/types.h>
+#endif
+#ifdef HAVE_IO_H
+#   include <io.h>
 #endif
 #ifdef HAVE_SYS_SIGNAL_H
 #   include <sys/signal.h>
@@ -38,8 +108,11 @@
 #ifdef HAVE_SYS_PARAM_H
 #   include <sys/param.h>
 #endif
+#if HAVE_FCNTL_H
+#   include <fcntl.h>
+#endif
 #ifdef HAVE_STRING_H
-#   include <string.h>
+#  include <string.h>
 #endif
 #if HAVE_CTYPE_H
 #   include <ctype.h>
@@ -48,10 +121,11 @@
 
 #ifdef HAVE_SYS_SOCKET_H
 #   include <sys/socket.h>
-#else
-#   if defined(TARGET_ARCH_WIN32)
-#       include <Winsock2.h>
-#   endif
+#endif
+
+#if defined(TARGET_ARCH_WIN32)
+#   include <Winsock2.h>
+#   include <process.h>
 #endif
 
 /*

@@ -12,6 +12,10 @@ CVS Information:
   $Author$
 ******************************************************************************/
 
+/**
+ *  Globus Callback
+ *  ---------------
+ */
 #if !defined(GLOBUS_INCLUDE_GLOBUS_CALLBACK_H)
 #define GLOBUS_INCLUDE_GLOBUS_CALLBACK_H
 

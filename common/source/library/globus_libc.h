@@ -18,31 +18,28 @@ EXTERN_C_BEGIN
  * Reentrant lock
  */
 #ifdef BUILD_LITE
-
-#define globus_macro_libc_lock() (0)
-#define globus_macro_libc_unlock() (0)
+#   define globus_macro_libc_lock() (0)
+#   define globus_macro_libc_unlock() (0)
 
 #else  /* BUILD_LITE */
-
-extern globus_mutex_t globus_libc_mutex;
-
-#define globus_macro_libc_lock() \
-    globus_mutex_lock(&globus_libc_mutex)
-#define globus_macro_libc_unlock() \
-    globus_mutex_unlock(&globus_libc_mutex)
-
+   extern globus_mutex_t globus_libc_mutex;
+#   define globus_macro_libc_lock() \
+      globus_mutex_lock(&globus_libc_mutex)
+#   define globus_macro_libc_unlock() \
+       globus_mutex_unlock(&globus_libc_mutex)
 #endif /* BUILD_LITE */
 
 #ifdef USE_MACROS
-#define globus_libc_lock()   globus_macro_libc_lock()
-#define globus_libc_unlock() globus_macro_libc_unlock()
+#   define globus_libc_lock()   globus_macro_libc_lock()
+#   define globus_libc_unlock() globus_macro_libc_unlock()
 #else  /* USE_MACROS */
-extern int globus_libc_lock(void);
-extern int globus_libc_unlock(void);
+    extern int globus_libc_lock(void);
+    extern int globus_libc_unlock(void);
 #endif /* USE_MACROS */
 
-
-
+/*
+ *
+ */
 #if !defined(HAVE_THREAD_SAFE_STDIO) && !defined(BUILD_LITE)
 #   define globus_stdio_lock globus_libc_lock
 #   define globus_stdio_unlock globus_libc_unlock
@@ -65,42 +62,29 @@ extern int globus_libc_unlock(void);
 
 /*
  * File I/O routines
+ *  These functions are not supported on the windwos platform
  */
-#if !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE)
+#if !defined(TARGET_ARCH_WIN32)
+#   if !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE)
 
-    extern int globus_libc_open(char *path, int flags, ... /*int mode*/);
-    extern int globus_libc_close(int fd);
-    extern int globus_libc_read(int fd, char *buf, int nbytes);
-    extern int globus_libc_write(int fd, char *buf, int nbytes);
-    extern int globus_libc_writev(int fd, struct iovec *iov, int iovcnt);
-    extern int globus_libc_fstat(int fd, struct stat *buf);
-
-    extern DIR *globus_libc_opendir(char *filename);
-    extern long globus_libc_telldir(DIR *dirp);
-    extern void globus_libc_seekdir(DIR *dirp, long loc);
-    extern void globus_libc_rewinddir(DIR *dirp);
-    extern void globus_libc_closedir(DIR *dirp);
-
-#else  /* HAVE_THREAD_SAFE_SELECT */
-#   if defined(TARGET_ARCH_WIN32)
-#       define globus_libc_open _open
-#       define globus_libc_close _close
-#       define globus_libc_read _read
-#       define globus_libc_write _write
-#       define globus_libc_writev(fd,iov,iovcnt) \
-	            _write(fd,iov[0].iov_base,iov[0].iov_len)
-#       define globus_libc_fstat _fstat
+        extern int globus_libc_open(char *path, int flags, ... /*int mode*/);
+        extern int globus_libc_close(int fd);
+        extern int globus_libc_read(int fd, char *buf, int nbytes);
+        extern int globus_libc_write(int fd, char *buf, int nbytes);
+        extern int globus_libc_writev(int fd, struct iovec *iov, int iovcnt);
+        extern int globus_libc_fstat(int fd, struct stat *buf);
 
         extern DIR *globus_libc_opendir(char *filename);
         extern long globus_libc_telldir(DIR *dirp);
         extern void globus_libc_seekdir(DIR *dirp, long loc);
         extern void globus_libc_rewinddir(DIR *dirp);
         extern void globus_libc_closedir(DIR *dirp);
-#   else
-#       define globus_libc_open open
-#       define globus_libc_close close
-#       define globus_libc_read read
-#       define globus_libc_write write
+
+#   else  /* HAVE_THREAD_SAFE_SELECT */
+#       define globus_libc_open    open
+#       define globus_libc_close   close
+#       define globus_libc_read    read
+#       define globus_libc_write   write
 #       if defined(HAVE_WRITEV)
 #           define globus_libc_writev writev
 #       else
@@ -113,11 +97,25 @@ extern int globus_libc_unlock(void);
 #       define globus_libc_seekdir seekdir
 #       define globus_libc_rewinddir rewinddir
 #       define globus_libc_closedir closedir
-#    endif
+#    endif /* HAVE_THREAD_SAFE_SELECT */
+     int 
+     globus_libc_getpwuid_r(
+        uid_t                                                   uid,
+        struct passwd *                                         pwd,
+	    char *                                                  buffer,
+	    int                                                     bufsize,
+	    struct passwd **                                        result);
 
-
-#endif /* HAVE_THREAD_SAFE_SELECT */
-
+    int 
+    globus_libc_readdir_r(
+        DIR *                                                   dirp,
+        struct dirent **                                        result);
+#else /* TARGET_ARCH_WIN32 */
+#    define globus_libc_open    _open
+#    define globus_libc_close   _close
+#    define globus_libc_read    _read
+#    define globus_libc_write   _write
+#endif /* TARGET_ARCH_WIN32 */
 
 /*
  * Memory allocation routines
@@ -128,29 +126,24 @@ extern int globus_libc_unlock(void);
 #define globus_free(ptr) globus_libc_free(ptr)
     
 #if !defined(BUILD_LITE)
-
-extern void *globus_libc_malloc(size_t bytes);
-extern void *globus_libc_realloc(void *ptr,
+    extern void *globus_libc_malloc(size_t bytes);
+    extern void *globus_libc_realloc(void *ptr,
 				 size_t bytes);
-extern void *globus_libc_calloc(size_t nobj, 
+    extern void *globus_libc_calloc(size_t nobj, 
 				size_t bytes);
-extern void globus_libc_free(void *ptr);
+    extern void globus_libc_free(void *ptr);
 
-extern void *globus_libc_alloca(size_t bytes);
-
+    extern void *globus_libc_alloca(size_t bytes);
 #else  /* BUILD_LITE */
-
-#define globus_libc_malloc	malloc
-#define globus_libc_realloc	realloc
-#define globus_libc_calloc	calloc
-#define globus_libc_free	free
-
-#define globus_libc_alloca	alloca
-
+#   define globus_libc_malloc	malloc
+#   define globus_libc_realloc	realloc
+#   define globus_libc_calloc	calloc
+#   define globus_libc_free	free
+#   define globus_libc_alloca	alloca
 #endif /* BUILD_LITE */
 
 #ifdef TARGET_ARCH_CRAYT3E
-extern void *alloca(size_t bytes);
+    extern void *alloca(size_t bytes);
 #endif /* TARGET_ARCH_CRAYT3E */
 
 /* Never a macro because globus_off_t must match largefile definition */
@@ -197,13 +190,19 @@ globus_libc_strncasecmp(
     const char *                            s2,
     globus_size_t                           n);
 
-int globus_libc_setenv(register const char *name,
+int 
+globus_libc_setenv(register const char *name,
 		       register const char *value,
 		       int rewrite);
-void globus_libc_unsetenv(register const char *name);
-char *globus_libc_getenv(register const char *name);
 
-char *globus_libc_system_error_string(int the_error);
+void 
+globus_libc_unsetenv(register const char *name);
+
+char *
+globus_libc_getenv(register const char *name);
+
+char *
+globus_libc_system_error_string(int the_error);
 
 char *
 globus_libc_strdup(const char * source);
@@ -212,23 +211,13 @@ int
 globus_libc_vprintf_length(const char * fmt, va_list ap);
 
 /* not really 'libc'... but a convenient place to put it in */
-int globus_libc_gethomedir(char *result, int bufsize);
+int 
+globus_libc_gethomedir(char *result, int bufsize);
 
 #ifndef HAVE_MEMMOVE
 #  define memmove(d, s, n) bcopy ((s), (d), (n))
 #  define HAVE_MEMMOVE
 #endif
-
-int 
-globus_libc_getpwuid_r(
-    uid_t                                                     uid,
-    struct passwd *                                           pwd,
-	char *buffer,
-	int bufsize,
-	struct passwd **result);
-
-int globus_libc_readdir_r(DIR *dirp,
-			  struct dirent **result);
 
 
 EXTERN_C_END

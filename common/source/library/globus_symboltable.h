@@ -15,17 +15,14 @@
 
 EXTERN_C_BEGIN
 
-typedef struct symt {
-  globus_list_t * scopes;
-  globus_hashtable_hash_func_t  volatile hash_func;
-  globus_hashtable_keyeq_func_t volatile keyeq_func;
-} globus_symboltable_t;
-
+struct globus_symboltable_s;
+typedef struct globus_symboltable_s *               globus_symboltable_t;
 
 extern int 
-globus_symboltable_init (globus_symboltable_t          * table,
-			 globus_hashtable_hash_func_t    hash_func,
-			 globus_hashtable_keyeq_func_t   keyeq_func);
+globus_symboltable_init(
+    globus_symboltable_t          *                 table,
+	globus_hashtable_hash_func_t                    hash_func,
+	globus_hashtable_keyeq_func_t                   keyeq_func);
 
 
 extern void *
