@@ -5,4 +5,6 @@ if [ "$GLOBUS_LOCATION" = "" ]; then
   exit 1
 fi
 
+. $GLOBUS_LOCATION/etc/globus-user-env.sh
+
 perl $GLOBUS_LOCATION/setup/gsi_openssh_setup/setup-openssh.pl $*
