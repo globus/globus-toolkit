@@ -127,9 +127,6 @@ typedef void (* globus_io_authentication_callback_t)(
  */
 struct globus_io_authentication_info_s
 {
-    /* only used for first iteration */
-    globus_io_handle_t *        handle;
-    
     globus_io_input_token_t     input_token;
 
     globus_byte_t *         output_buffer;
@@ -2810,23 +2807,6 @@ read_failed_exit:
 }
 /* globus_l_io_read_input_token() */
 
-static
-void
-globus_l_io_kickout_first_iteration(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
-    void *                              user_args)
-{
-    globus_io_authentication_info_t *   auth_info;
-    
-    auth_info = (globus_io_authentication_info_t *) user_args;
-        
-    auth_info->iteration(
-        auth_info,
-        auth_info->handle,
-        GLOBUS_SUCCESS);
-}
-
 /**
  * Asynchronous credential delegation initiation.
  *
@@ -2964,22 +2944,14 @@ globus_io_register_init_delegation(
     init_info->iteration = globus_l_io_init_delegation;
     init_info->any_token_received = GLOBUS_FALSE;
     
-    init_info->handle = handle;
-    
-    rc = globus_callback_space_register_oneshot(
-        &globus_i_reltime_zero,
-        globus_l_io_kickout_first_iteration,
-        init_info,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        handle->space);
-    
-    if(rc != GLOBUS_SUCCESS)
-    {
-        globus_free(init_info);
-    }
-    
-    return rc;
+    globus_i_io_register_read_func(
+                handle,
+                globus_l_io_init_delegation,
+                init_info,
+                GLOBUS_NULL,
+                GLOBUS_FALSE);
+                
+    return GLOBUS_SUCCESS;
 } /* globus_io_register_init_delegation */
 
 
@@ -3201,22 +3173,14 @@ globus_io_register_accept_delegation(
     accept_info->iteration = globus_l_io_accept_delegation;
     accept_info->any_token_received = GLOBUS_FALSE;
     
-    accept_info->handle = handle;
-    
-    rc = globus_callback_space_register_oneshot(
-        &globus_i_reltime_zero,
-        globus_l_io_kickout_first_iteration,
-        accept_info,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        handle->space);
-    
-    if(rc != GLOBUS_SUCCESS)
-    {
-        globus_free(accept_info);
-    }
-    
-    return rc;
+    globus_i_io_register_read_func(
+                handle,
+                globus_l_io_accept_delegation,
+                accept_info,
+                GLOBUS_NULL,
+                GLOBUS_FALSE);
+                
+    return GLOBUS_SUCCESS;
 }
 
 
