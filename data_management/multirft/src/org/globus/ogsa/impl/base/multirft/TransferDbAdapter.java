@@ -734,7 +734,7 @@ public class TransferDbAdapter {
      *@return                     The transferJob value
      *@exception  RftDBException  Description of the Exception
      */
-    public TransferJob getTransferJob( int requestId )
+    public synchronized TransferJob getTransferJob( int requestId )
              throws RftDBException {
 
         Connection c = getDBConnection();
@@ -929,7 +929,7 @@ public class TransferDbAdapter {
      *@param  transferJob         Description of the Parameter
      *@exception  RftDBException  Description of the Exception
      */
-    public void update( TransferJob transferJob )
+    public synchronized void update( TransferJob transferJob )
              throws RftDBException {
 
         Connection c = getDBConnection();
@@ -950,6 +950,7 @@ public class TransferDbAdapter {
                      .append (transferJob.getTransferId() );
             logger.debug("Updating transfer "+query.toString()); 
             int update = st.executeUpdate(query.toString());
+            c.commit();
             st.close();
         } catch ( Exception e ) {
             returnDBConnection( c );

@@ -88,7 +88,8 @@ public class MultiRFTClient
     int transferCount;
     int numDone;
     String sink;
-
+    RFTPortType rftPort;
+    
     public MultiRFTClient(String[] args) {
 	this.args = args;
 	this.requests = new HashMap();
@@ -219,7 +220,7 @@ public class MultiRFTClient
 
 
             MultiFileRFTServiceGridLocator loc = new MultiFileRFTServiceGridLocator();
-            RFTPortType rftPort = loc.getMultiFileRFTPort(locator);
+            rftPort = loc.getMultiFileRFTPort(locator);
             ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
                                          NoAuthorization.getInstance());
             ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE, 
@@ -309,8 +310,10 @@ public class MultiRFTClient
 	       System.out.println("Done");
            try {
 	            nm.removeListener(sink);
+                rftPort.destroy();
 	        } catch (Exception e) {
 	            System.out.println("Unable to remove listener");
+                e.printStackTrace();
 	        }
 
                 // printAndExit();

@@ -60,6 +60,7 @@ extends GridServiceImpl {
     
     static Log logger = LogFactory.getLog(RftImpl.class.getName());
     boolean connectionPoolingEnabled = false; //no connection pooling
+    private static Object criticalSection = new Object();
     String configPath;
     TransferRequestType transferRequest;
     TransferRequestElement transferRequestElement;
@@ -523,10 +524,8 @@ extends GridServiceImpl {
         Util.destroy(this.proxyLocation);
         try {
             closeAll();
-        } catch (IOException ioe) {
+        } catch (Exception ioe) {
             logger.error("Error while closing connections",ioe);
-        } catch (ServerException se) {
-            logger.error("Error while closing connections",se);
         }
         logger.debug( "RFT instance destroyed" );
     }
@@ -556,13 +555,16 @@ extends GridServiceImpl {
         singleFileTransferStatusSDE.notifyChange();
     }
     
-    private void closeAll()
-    throws IOException,ServerException {
-        logger.debug("Closing all connections");
-        for ( int i = 0; i < this.transferClients.size(); i++ ) {
-            TransferClient transferClient = (TransferClient)
-            this.transferClients.elementAt(i);
-            transferClient.close();
+    private void closeAll() {
+        try {
+            logger.debug("Closing all connections");
+            for ( int i = 0; i < this.transferClients.size(); i++ ) {
+                TransferClient transferClient = (TransferClient)
+                this.transferClients.elementAt(i);
+                transferClient.close();
+            }
+        } catch (Exception e){
+            logger.debug("Exception while closing all connections",e);
         }
     }
     
@@ -573,17 +575,18 @@ extends GridServiceImpl {
      *@param  destinationURL            
      *@exception  MalformedURLException  
      */
-    public TransferClient 
+    public synchronized TransferClient 
         getTransferClient( String sourceURL, String destinationURL )
         throws MalformedURLException {
         TransferClient transferClient = null;
         boolean flag = false;
         for ( int i = 0; i < this.transferClients.size(); i++ ) {
             TransferClient tempTransferClient = (TransferClient) 
-                this.transferClients.elementAt( i );
+                this.transferClients.remove(i);
             GlobusURL source = tempTransferClient.getSourceURL();
             GlobusURL destination = tempTransferClient.getDestinationURL();
             int status = tempTransferClient.getStatus();
+            logger.debug("status in recycled client: " + status);
             GlobusURL tempSource = new GlobusURL( sourceURL );
             GlobusURL tempDest = new GlobusURL( destinationURL );
             if ( (status != TransferJob.STATUS_ACTIVE)) { 
@@ -619,7 +622,6 @@ extends GridServiceImpl {
         int attempts;
         BufferedReader stdInput;
         BufferedReader stdError;
-        
         
         /**
          *  Constructor for the TransferThread object
@@ -719,11 +721,9 @@ extends GridServiceImpl {
                         logger.debug( "No more transfers " );
                         try {
                             closeAll();
-                        } catch (IOException ioe) {
+                        } catch (Exception ioe) {
                             logger.error("Error closing connections",ioe);
-                        } catch (ServerException se) {
-                            logger.error("Server Exception while closing connections",se);
-                        }
+                        } 
                     }
                     
                     throw new RemoteException( MessageUtils.toString( e ) );
@@ -768,6 +768,7 @@ extends GridServiceImpl {
                             transferClient.
                                 setStatus( TransferJob.STATUS_FINISHED );
                             transferClients.add( transferClient );
+                            logger.debug("Adding transferclient to list");
                         } else if ( ( x == 1 ) &&
                         ( transferJob.getAttempts() < maxAttempts ) ) {
                             transferJob.
@@ -807,18 +808,19 @@ extends GridServiceImpl {
                 }
                 
                 dbAdapter.update( transferJob );
-                
+                synchronized( criticalSection ) {
                 TransferJob newTransferJob = dbAdapter.getTransferJob(
                 requestId );
-                
                 if ( newTransferJob != null ) {
                     logger.debug( "starting a new transfer " 
                     + newTransferJob.getTransferId() 
                         + "  " + newTransferJob.getStatus() );
                     transferThread = new TransferThread( newTransferJob );
-                    transferThread.start();
                     newTransferJob.setStatus( TransferJob.STATUS_ACTIVE );
                     statusChanged( newTransferJob );
+                    dbAdapter.update( newTransferJob );
+                    transferThread.start();
+                    
                 } else {
                     URLExpander urlExpander = transferClient.getUrlExpander();
                     if ( urlExpander != null ) {
@@ -838,12 +840,9 @@ extends GridServiceImpl {
                             logger.debug( "No more transfers " );
                             try {
                                 closeAll();
-                            } catch (IOException ioe) {
+                            } catch (Exception ioe) {
                                 logger.error("Error closing connections",ioe);
-                            } catch (ServerException se) {
-                                logger.error(
-                                "Server Exception while closing connections",se);
-                            }
+                            } 
                         } else {
                             transferThread = 
                                 new TransferThread( newTransferJob1 );
@@ -854,6 +853,7 @@ extends GridServiceImpl {
                         }
                         
                     }
+                }
                 }
             } catch ( Exception ioe ) {
                 logger.error( "Error in Transfer Thread" 

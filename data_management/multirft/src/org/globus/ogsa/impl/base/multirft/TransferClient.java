@@ -635,10 +635,10 @@ public class TransferClient {
         this.sourcePath = "/" + sourcePath;
         this.markerListener = null;
         try {
-            this.size = sourceHost.getSize( this.sourcePath );
+            //this.size = sourceHost.getSize( this.sourcePath );
         } catch ( Exception e ) {
             logger.error( "Unable to get size of : " + sourcePath, e );
-            setStatus( TransferJob.STATUS_FAILED );
+            //setStatus( TransferJob.STATUS_FAILED );
         }
 
     }
@@ -732,10 +732,13 @@ public class TransferClient {
         this.parallelism = parallel;
     }
 
-    public void close() 
-    throws IOException,ServerException {
-        this.sourceHost.close();
-        this.destinationHost.close();
+    public void close() {
+        try {
+            this.sourceHost.close();
+            this.destinationHost.close();
+        } catch (Exception e) {
+            logger.debug("Exception while closing client connection",e); 
+        }
     }
 
     /**
@@ -785,21 +788,15 @@ public class TransferClient {
     private void tptNonExtendedTransfer() {
 
         try {
-            logger.debug( "In NonExtended transfer" );
+            logger.debug( "In NonExtended transfer" + this.transferid );
             sourceHost.setOptions( new RetrieveOptions( parallelism ) );
             sourceHost.setTCPBufferSize( this.tcpBufferSize );
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
             sourceHost.transfer( this.sourcePath,
                     this.destinationHost, this.destinationPath, false, this.markerListener );
-            if(checkSize()) {
-                logger.debug( "Transfer done" );
-                this.markerListener = null;
-                setStatus( TransferJob.STATUS_FINISHED );
-            } else {
-                System.out.println("Transfer Not done");
-                setStatus( TransferJob.STATUS_ACTIVE);
-                wait();
-            }
+            logger.debug( "Transfer done " + this.transferid );
+            this.markerListener = null;
+            setStatus( TransferJob.STATUS_FINISHED );
         } catch ( Exception e ) {
             logger.debug( "Exception in transfer", e );
 
