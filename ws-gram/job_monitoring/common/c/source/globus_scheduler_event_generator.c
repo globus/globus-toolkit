@@ -703,7 +703,7 @@ free_module_path_error:
 free_globus_location_error:
     if (globus_loc != NULL)
     {
-        globus_libc_free(globus_location);
+        globus_libc_free(globus_loc);
     }
 unlock_error:
     globus_mutex_unlock(&globus_l_seg_mutex);
