@@ -17,7 +17,9 @@ DOXYGEN_FILES = \
 	Doxyfile.in \
 	Doxyfile-internal.in
 	
-aclocal_DATA = $(AUTOMAKE_MACROS) \
+aclocal_DATA = \
+	$(AUTOMAKE_MACROS) \
+	$(DOXYGEN_FILES) \
 	globus_automake_pre \
 	globus_automake_post \
 	globus_automake_pre_top \
