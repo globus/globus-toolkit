@@ -198,13 +198,15 @@ int main(int argc, char **argv)
 
     maj_stat = globus_gss_assist_acquire_cred(
         &min_stat,
-        GSS_C_INITIATE,
+        GSS_C_ACCEPT,
         &globus_l_gass_server_credential);
 
     if (maj_stat != GSS_S_COMPLETE)
     {
 	fprintf(stderr, "Warning:  You do not have valid credentials at this time\n");
     }
+
+    gss_release_cred(&maj_stat,&globus_l_gass_server_credential);
 
     
     globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
