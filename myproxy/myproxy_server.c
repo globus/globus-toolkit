@@ -304,12 +304,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     }
 
     /* Fill in credential structure = owner, user, passphrase, proxy location */
-    client_creds->owner_name = malloc(strlen(client_name) + 1);
-    strcpy(client_creds->owner_name, client_name);
-    client_creds->user_name = malloc(strlen(client_request->username) + 1);
-    strcpy(client_creds->user_name, client_request->username);
-    client_creds->pass_phrase = malloc(strlen(client_request->passphrase) + 1);
-    strcpy(client_creds->pass_phrase, client_request->passphrase);
+    client_creds->owner_name  = strdup(client_name);
+    client_creds->user_name   = strdup(client_request->username);
+    client_creds->pass_phrase = strdup(client_request->passphrase);
     
     /* Check authorization for request */
     switch (client_request->command_type)	
@@ -400,16 +397,31 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     
     /* return server response */
     send_response(attrs, server_response, client_name);
-  
-    myproxy_destroy(attrs, client_request, server_response);
 
     /* Log request */
     myproxy_log("Client %s disconnected total clients=%d", client_name, numclients);
+   
+    /* free stuff up */
+    if (client_creds != NULL) {
+	if (client_creds->owner_name != NULL) {
+	    free(client_creds->owner_name);
+	}
+	if (client_creds->user_name != NULL) {
+	    free(client_creds->user_name);
+	}
+	if (client_creds->pass_phrase != NULL) {
+	    free(client_creds->pass_phrase);
+	}
+	if (client_creds->location != NULL) {
+	    free(client_creds->location);
+	}
+    }
+
+    myproxy_destroy(attrs, client_request, server_response);
     if (context->config_file != NULL) {
         free(context->config_file);
         context->config_file = NULL;
     }
-
     free(context);
 
     return 0;
@@ -492,8 +504,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number)
     struct sockaddr_in sin;
 
     /* Could do something smarter to get FQDN */
-    attrs->pshost = malloc(strlen("localhost")+1);
-    strcpy(attrs->pshost, "localhost");
+    attrs->pshost = strdup("localhost");
     attrs->psport = port_number;
     
     listen_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -617,8 +628,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 
     myproxy_debug("  Accepted delegation: %s", delegfile);
  
-    creds->location = malloc(strlen(delegfile) + 1);
-    strcpy(creds->location, delegfile);
+    creds->location = strdup(delegfile);
 
     if (myproxy_creds_store(creds) < 0) {
 	myproxy_log_verror();
