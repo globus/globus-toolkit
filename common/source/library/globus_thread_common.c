@@ -20,6 +20,7 @@ CVS Information:
 #include "globus_callback.h"
 #include "globus_libc.h"
 #include "globus_print.h"
+#include "globus_common.h"
 
 #define THREAD_STACK_INIT_SIZE 32
 
@@ -99,31 +100,31 @@ globus_i_thread_report_bad_rc(int rc,
 	switch( rc )
 	{
 	case EAGAIN:
-	    strcpy(achDesc, "system out of resources (EAGAIN)");
+	    strcpy(achDesc, _GCSL("system out of resources (EAGAIN)"));
 	    break;
 	case ENOMEM:
-	    strcpy(achDesc, "insufficient memory (ENOMEM)");
+	    strcpy(achDesc, _GCSL("insufficient memory (ENOMEM)"));
 	    break;
 	case EINVAL:
-	    strcpy(achDesc, "invalid value passed to thread interface (EINVAL)");
+	    strcpy(achDesc, _GCSL("invalid value passed to thread interface (EINVAL)"));
 	    break;
 	case EPERM:
-	    strcpy(achDesc, "user does not have adequate permission (EPERM)");
+	    strcpy(achDesc, _GCSL("user does not have adequate permission (EPERM)"));
 	    break;
 	case ERANGE:
-	    strcpy(achDesc, "a parameter has an invalid value (ERANGE)");
+	    strcpy(achDesc, _GCSL("a parameter has an invalid value (ERANGE)"));
 	    break;
 	case EBUSY:
-	    strcpy(achDesc, "mutex is locked (EBUSY)");
+	    strcpy(achDesc, _GCSL("mutex is locked (EBUSY)"));
 	    break;
 	case EDEADLK:
-	    strcpy(achDesc, "deadlock detected (EDEADLK)");
+	    strcpy(achDesc, _GCSL("deadlock detected (EDEADLK)"));
 	    break;
 	case ESRCH:
-	    strcpy(achDesc, "could not find specified thread (ESRCH)");
+	    strcpy(achDesc, _GCSL("could not find specified thread (ESRCH)"));
 	    break;
 	default:
-	    globus_fatal("%s %s\n%s unknown error number: %d\n",
+	    globus_fatal(_GCSL("%s %s\n%s unknown error number: %d\n"),
 				  achMessHead,
 				  message,
 				  achMessHead,
@@ -359,7 +360,6 @@ globus_l_thread_common_activate(void)
     /* 
      * safely initialize ICU library w/ threads
      */
-    uloc_getDefault(); 
 
     rc = globus_thread_key_create(&l_thread_stack_key,
 			          globus_l_thread_blocking_callback_destroy);
