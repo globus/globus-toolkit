@@ -926,10 +926,6 @@ AC_CACHE_CHECK("C++ Preprocessor", lac_cv_CXXCPP, lac_cv_CXXCPP="$lac_cv_CXX -E"
 AC_CACHE_CHECK("F77 flags", lac_cv_F77FLAGS, lac_cv_F77FLAGS="$lac_F77FLAGS")
 AC_CACHE_CHECK("F90 flags", lac_cv_F90FLAGS, lac_cv_F90FLAGS="$lac_F90FLAGS")
 
-dnl If a system did not set the LD then set it using CC
-if test -z "$lac_cv_LD" ; then
-   lac_cv_LD="$lac_cv_CC"
-fi
 
 CC="$lac_cv_CC"
 LD="$lac_cv_LD"

@@ -85,12 +85,8 @@ AC_ARG_ENABLE(internal-doc,
 AC_SUBST(AUTOMAKE_OPTS)
 
 
-save_LD=$LD
-LD=
-enable_libtool_lock="no"
 AM_PROG_LIBTOOL
 mv ./libtool libtool-$GLOBUS_FLAVOR_NAME
-LD=$save_LD
 
 dnl
 dnl Output selected thread package
@@ -112,6 +108,13 @@ AC_SUBST(CONFIG_PARAMETERS)
 
 ISGCC=$ac_cv_prog_gcc
 AC_SUBST(ISGCC)
+
+dnl  Another hack - set LD to whatever libtool picked up, so that
+dnl  it can be registered in build-parameters
+if test "x-$lt_cv_path_LD" != "x-"; then
+    LD="$lt_cv_path_LD"
+    AC_SUBST(LD)
+fi
 
 AC_OUTPUT(Makefile
        	scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
