@@ -17,12 +17,13 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
+#include "globus_common_include.h"
 #include "globus_module.h"
 #include "globus_error.h"
 #include "globus_callback.h"
-#include "globus_thread_none.h"
+#include GLOBUS_THREAD_INCLUDE
+#include "globus_extension.h"
 #include "version.h"
-
 
 /******************************************************************************
 			  Module activation structure
@@ -64,59 +65,53 @@ globus_l_common_activate(void)
 		return GLOBUS_FAILURE;
 #endif
 
-  if ( globus_module_activate(GLOBUS_ERROR_MODULE) != GLOBUS_SUCCESS )
+    if(globus_module_activate(GLOBUS_ERROR_MODULE) != GLOBUS_SUCCESS)
     {
-      return GLOBUS_FAILURE;
+        goto error_error;
     }
 
-    if (globus_module_activate(GLOBUS_CALLBACK_MODULE) != GLOBUS_SUCCESS)
+    if(globus_module_activate(GLOBUS_CALLBACK_MODULE) != GLOBUS_SUCCESS)
     {
-      globus_module_deactivate (GLOBUS_ERROR_MODULE);
-
-	return GLOBUS_FAILURE;
+	goto error_callback;
     }
 
-    if (globus_module_activate(GLOBUS_THREAD_MODULE) != GLOBUS_SUCCESS)
+    if(globus_module_activate(GLOBUS_THREAD_MODULE) != GLOBUS_SUCCESS)
     {
-        globus_module_deactivate (GLOBUS_ERROR_MODULE);
-	globus_module_deactivate(GLOBUS_CALLBACK_MODULE);
-	
-	return GLOBUS_FAILURE;
+	goto error_thread;
+    }
+    
+    if(globus_module_activate(GLOBUS_EXTENSION_MODULE) != GLOBUS_SUCCESS)
+    {
+	goto error_extension;
     }
 
     return GLOBUS_SUCCESS;
+
+error_extension:
+    globus_module_deactivate(GLOBUS_THREAD_MODULE);
+error_thread:
+    globus_module_deactivate(GLOBUS_CALLBACK_MODULE);
+error_callback:
+    globus_module_deactivate(GLOBUS_ERROR_MODULE);
+error_error:
+    return GLOBUS_FAILURE;
 }
 
 
 static int
 globus_l_common_deactivate(void)
 {
-    int					rc;
-
-    rc = GLOBUS_SUCCESS;
+    globus_module_deactivate(GLOBUS_EXTENSION_MODULE);
+    globus_module_deactivate(GLOBUS_THREAD_MODULE);
+    globus_module_deactivate(GLOBUS_CALLBACK_MODULE);
+    globus_module_deactivate(GLOBUS_ERROR_MODULE);
     
-    if (globus_module_deactivate(GLOBUS_THREAD_MODULE) != GLOBUS_SUCCESS)
-    {
-	rc = GLOBUS_FAILURE;
-    }
-
-    if (globus_module_deactivate(GLOBUS_CALLBACK_MODULE) != GLOBUS_SUCCESS)
-    {
-	rc = GLOBUS_FAILURE;
-    }
-
-    if ( globus_module_deactivate(GLOBUS_ERROR_MODULE) != GLOBUS_SUCCESS)
-    {
-	rc = GLOBUS_FAILURE;
-    }
-
 #ifdef TARGET_ARCH_WIN32
 	// shutdown Winsock
 	WSACleanup();
 #endif
 
-    return rc;
-    
+    return GLOBUS_SUCCESS;
 }
 
 

@@ -78,20 +78,46 @@ struct globus_module_descriptor_s
  */
 int
 globus_module_activate(
-    globus_module_descriptor_t *	        module_descriptor);
+    globus_module_descriptor_t *        module_descriptor);
 
 /**
  *  Deactivate a module
  */
 int
 globus_module_deactivate(
-    globus_module_descriptor_t *	        module_descriptor);
+    globus_module_descriptor_t *        module_descriptor);
 
 /**
  *  deactivate all active modules
  */
 int
 globus_module_deactivate_all(void);
+
+/**
+ * module must be deactivated in this call with
+ * module_descriptor->deactivation_func();
+ * (be sure module_descriptor->deactivation_func is !NULL)
+ */
+typedef
+int
+(*globus_module_deactivate_proxy_cb_t)(
+    globus_module_descriptor_t *        module_descriptor,
+    void *                              user_arg);
+
+/**
+ * this call registers a callback to be called to handle deactivation when
+ * globus_module_deactivate() or globus_module_deactivate_all() is called
+ * 
+ * The callback is only respected for the first call to activate this module.
+ * The purpose of these proxy calls is to allow 'private' module descriptors
+ * that are activated by some other user function, but may still be affected
+ * by deactivate_all().
+ */
+int
+globus_module_activate_proxy(
+    globus_module_descriptor_t *        module_descriptor,
+    globus_module_deactivate_proxy_cb_t deactivate_cb,
+    void *                              user_arg);
 
 /**
  *  set an environment variable

@@ -36,7 +36,8 @@ CVS Information:
 
 static int *                            globus_l_module_argc = NULL;
 static char ***                         globus_l_module_argv = NULL;
-
+static globus_thread_key_t              globus_l_activate_parent_key;
+static globus_thread_key_t              globus_l_deactivate_parent_key;
 /*
  * data structure needed to implement a recursive mutex
  */
@@ -57,6 +58,8 @@ typedef struct
     globus_module_descriptor_t *	descriptor;
     globus_list_t *			clients;
     int					reference_count;
+    globus_module_deactivate_proxy_cb_t deactivate_cb;
+    void *                              user_arg;
 } globus_l_module_entry_t;
 
 /******************************************************************************
@@ -101,9 +104,11 @@ globus_l_module_initialize();
 static globus_bool_t
 globus_l_module_increment(
     globus_module_descriptor_t *	module_descriptor,
-    globus_l_module_key_t		parent_key);
+    globus_l_module_key_t		parent_key,
+    globus_module_deactivate_proxy_cb_t deactivate_cb,
+    void *                              user_arg);
 
-static globus_bool_t
+static globus_l_module_entry_t *
 globus_l_module_decrement(
     globus_module_descriptor_t *	module_descriptor,
     globus_l_module_key_t		parent_key);
@@ -147,13 +152,14 @@ globus_l_module_mutex_destroy(
  * globus_module_activate()
  */
 int
-globus_module_activate(
-    globus_module_descriptor_t *	module_descriptor)
+globus_module_activate_proxy(
+    globus_module_descriptor_t *	module_descriptor,
+    globus_module_deactivate_proxy_cb_t deactivate_cb,
+    void *                              user_arg)
 {
-    static globus_l_module_key_t	parent_key = GLOBUS_NULL;
-
-    int					ret_val;
-    globus_l_module_key_t		parent_key_save;
+    globus_l_module_key_t               parent_key;
+    int                                 ret_val;
+    globus_l_module_key_t               parent_key_save;
     
     /*
      * If this is the first time this routine has been called, then we need to
@@ -165,7 +171,9 @@ globus_module_activate(
 	globus_i_module_initialized = GLOBUS_TRUE;
 	globus_l_module_initialize();
     }
-
+    
+    parent_key = (globus_l_module_key_t)
+        globus_thread_getspecific(globus_l_activate_parent_key);
     /*
      * Once the recursive mutex has been acquired, increment the reference
      * counter for this module, and call it's activation function if it is not
@@ -178,18 +186,21 @@ globus_module_activate(
 	if (module_descriptor->activation_func != GLOBUS_NULL)
 	{
 	    if (globus_l_module_increment(module_descriptor,
-					  parent_key) == GLOBUS_TRUE)
+					  parent_key,
+					  deactivate_cb,
+					  user_arg) == GLOBUS_TRUE)
 	    {
 		parent_key_save = parent_key;
-		parent_key = module_descriptor->activation_func;
+		globus_thread_setspecific(
+		    globus_l_activate_parent_key,
+		    module_descriptor->activation_func);
 		
 		ret_val = module_descriptor->activation_func();
                 
                 if(ret_val != GLOBUS_SUCCESS)
                 {
-                    parent_key = parent_key_save;
-                    
-                    globus_l_module_decrement(module_descriptor, parent_key);
+                    globus_l_module_decrement(
+                        module_descriptor, parent_key_save);
                 }
                 else
                 {
@@ -214,9 +225,10 @@ globus_module_activate(
                         }
                     }
 #                   endif
-                    
-                    parent_key = parent_key_save;
                 }
+                
+                globus_thread_setspecific(
+		    globus_l_activate_parent_key, parent_key_save);
 	    }
 	}
     }
@@ -226,6 +238,13 @@ globus_module_activate(
 }
 /* globus_module_activate() */
 
+int
+globus_module_activate(
+    globus_module_descriptor_t *	module_descriptor)
+{
+    return globus_module_activate_proxy(module_descriptor, NULL, NULL);
+}
+
 /*
  * globus_module_deactivate()
  */
@@ -233,8 +252,7 @@ int
 globus_module_deactivate(
     globus_module_descriptor_t *	module_descriptor)
 {
-    static globus_l_module_key_t	parent_key = GLOBUS_NULL;
-
+    globus_l_module_key_t               parent_key;
     int					ret_val;
     globus_l_module_key_t		parent_key_save;
 
@@ -247,6 +265,8 @@ globus_module_deactivate(
 	return GLOBUS_FAILURE;
     }
     
+    parent_key = (globus_l_module_key_t)
+        globus_thread_getspecific(globus_l_deactivate_parent_key);
     /*
      * Once the recursive mutex has been acquired, decrement the reference
      * counter for this module, and call it's deactivation function if it is
@@ -258,18 +278,28 @@ globus_module_deactivate(
 
 	if (module_descriptor->activation_func != GLOBUS_NULL)
 	{
-	    if (globus_l_module_decrement(module_descriptor,
-					  parent_key) == GLOBUS_TRUE)
+	    globus_l_module_entry_t *   entry;
+	    
+	    entry = globus_l_module_decrement(module_descriptor, parent_key);
+	    if (entry && entry->reference_count == 0)
 	    {
-		parent_key_save = parent_key;
-		parent_key = module_descriptor->activation_func;
+	        parent_key_save = parent_key;
+		globus_thread_setspecific(
+		    globus_l_deactivate_parent_key,
+		    module_descriptor->activation_func);
 		
-		if(module_descriptor->deactivation_func != NULL)
+		if(entry->deactivate_cb)
+		{
+		    ret_val = entry->deactivate_cb(
+		        module_descriptor, entry->user_arg);
+		}
+		else if(module_descriptor->deactivation_func != NULL)
 		{
 		    ret_val = module_descriptor->deactivation_func();
 		}
 
-		parent_key = parent_key_save;
+		globus_thread_setspecific(
+		    globus_l_deactivate_parent_key, parent_key_save);
 	    }
 	    else if(globus_l_module_reference_count(module_descriptor) == 0)
             {
@@ -732,7 +762,10 @@ globus_l_module_initialize()
      * Initialize the recursive mutex
      */
     globus_l_module_mutex_init(&globus_l_module_mutex);
-
+    
+    globus_thread_key_create(&globus_l_activate_parent_key, NULL);
+    globus_thread_key_create(&globus_l_deactivate_parent_key, NULL);
+    
     /*
      * Now finish initializing the threads package
      */
@@ -747,7 +780,9 @@ globus_l_module_initialize()
 static globus_bool_t
 globus_l_module_increment(
     globus_module_descriptor_t *	module_descriptor,
-    globus_l_module_key_t		parent_key)
+    globus_l_module_key_t		parent_key,
+    globus_module_deactivate_proxy_cb_t deactivate_cb,
+    void *                              user_arg)
 {
     globus_l_module_entry_t *		entry;
     
@@ -772,6 +807,8 @@ globus_l_module_increment(
 
 	if(entry->reference_count == 1)
 	{
+	    entry->deactivate_cb = deactivate_cb;
+	    entry->user_arg = user_arg;
 	    return GLOBUS_TRUE;
 	}
 	else
@@ -792,6 +829,8 @@ globus_l_module_increment(
 	entry->descriptor = module_descriptor;
 	entry->reference_count = 1;
 	entry->clients = GLOBUS_NULL;
+	entry->deactivate_cb = deactivate_cb;
+	entry->user_arg = user_arg;
 	if (parent_key != GLOBUS_NULL)
 	{
 	    globus_list_insert(&entry->clients, (void *) parent_key);
@@ -833,7 +872,7 @@ globus_l_module_reference_count(
 /*
  * globus_l_module_decrement()
  */
-static globus_bool_t
+static globus_l_module_entry_t *
 globus_l_module_decrement(
     globus_module_descriptor_t *	module_descriptor,
     globus_l_module_key_t		parent_key)
@@ -846,7 +885,7 @@ globus_l_module_decrement(
 	    (void *) module_descriptor->activation_func);
     if (entry == GLOBUS_NULL || entry->reference_count <= 0)
     {
-	return GLOBUS_FALSE;
+	return NULL;
     }
 
     entry->reference_count--;
@@ -865,14 +904,7 @@ globus_l_module_decrement(
 	/* else module was activated outside this parent */
     }
 
-    if (entry->reference_count == 0)
-    {
-	return GLOBUS_TRUE;
-    }
-    else
-    {
-	return GLOBUS_FALSE;
-    }
+    return entry;
 }
 /* globus_l_module_decrement() */
 

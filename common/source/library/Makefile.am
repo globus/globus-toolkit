@@ -77,6 +77,8 @@ Sources= \
 	globus_url.h \
 	globus_error_string.c \
 	globus_error_string.h \
+	globus_extension.c \
+	globus_extension.h \
 	globus_common_include.h
 
 
@@ -112,6 +114,7 @@ flavorinclude_HEADERS = \
 	globus_thread_common.h \
 	globus_thread_rw_mutex.h \
 	globus_thread_rmutex.h \
+	globus_extension.h \
 	globus_common.h \
 	globus_thread_$(GLOBUS_THREADS).h \
 	globus_common_include.h

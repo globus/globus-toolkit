@@ -76,21 +76,26 @@ globus_rmutex_unlock(
 {
     globus_mutex_lock(&rmutex->mutex);
     {
-        globus_assert(rmutex->level > 0);
-        globus_assert(
-            globus_thread_equal(rmutex->thread_id, globus_thread_self()));
-
-        rmutex->level--;
-        if(rmutex->level == 0)
+        /* I dont fail here because this is being used with libtool and it
+         * unlocks a mutex that was never locked
+         */
+        if(rmutex->level > 0)
         {
-            #ifdef WIN32
-            memset(&rmutex->thread_id,0,sizeof(rmutex->thread_id));
-            #else
-            rmutex->thread_id = 0;
-            #endif
-            if(rmutex->waiting)
+            globus_assert(
+                globus_thread_equal(rmutex->thread_id, globus_thread_self()));
+    
+            rmutex->level--;
+            if(rmutex->level == 0)
             {
-                globus_cond_signal(&rmutex->cond);
+                #ifdef WIN32
+                memset(&rmutex->thread_id,0,sizeof(rmutex->thread_id));
+                #else
+                rmutex->thread_id = 0;
+                #endif
+                if(rmutex->waiting)
+                {
+                    globus_cond_signal(&rmutex->cond);
+                }
             }
         }
     }
