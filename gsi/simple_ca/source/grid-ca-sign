@@ -265,8 +265,6 @@ if test "${openssl_result}" = "1"; then
         echo "ERROR: The cert request does not match CA cert"
         echo "Check that the correct security config files are"
         echo "set during grid-cert-request"
-        echo "correct security configuration is being used when"
-        echo "the certificate is being requested."
         echo ""
         echo "The default configuration can be set using either"
         echo "the command:  grid-default-ca, or via the -ca option"
