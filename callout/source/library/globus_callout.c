@@ -15,7 +15,7 @@
 #ifndef WIN32
 #include "ltdl.h"
 #else
-#include "win_ltdl.h"
+#include "globus_libtool_windows.h"
 #endif
 #include "version.h"
 
