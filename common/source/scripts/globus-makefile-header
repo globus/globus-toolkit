@@ -202,7 +202,7 @@ sub getDevLines
 {
     my($header, $args) = @_;
     my($installation, $liblines);
-    my($cflagslist, $includeslist, $libslist, $pkglibslist);
+    my($cflagslist, $includeslist, $libslist, $pkglibslist, $extlibslist);
 
     #
     # pull out the command-line arguments
@@ -242,6 +242,7 @@ sub getDevLines
     $includeslist = $liblines->{'includes'};
     $libslist = $liblines->{'libs'};
     $pkglibslist = $liblines->{'pkglibs'};
+    $extlibslist = $liblines->{'extlibs'};
 
     if ( defined($static) )
     {
@@ -265,6 +266,10 @@ sub getDevLines
     $pkglibslist =~ s:\s+: :g;
     $pkglibslist =~ s:^\s|\s$::g;
 
+    $extlibslist =~ s:\s+: :g;
+    $extlibslist =~ s:^\s|\s$::g;
+
+
     #
     # push all of our entries onto our header array
     #
@@ -273,7 +278,7 @@ sub getDevLines
     push(@$header, "GLOBUS_INCLUDES=\"-I${globus_path}/include/$flavor $includeslist\"");
     push(@$header, "GLOBUS_LIBS=\"$libslist\"");
     push(@$header, "GLOBUS_LDFLAGS=\"-L${globus_path}/lib\"");
-    push(@$header, "GLOBUS_PKG_LIBS=\"$pkglibslist\"");
+    push(@$header, "GLOBUS_PKG_LIBS=\"$pkglibslist $extlibslist\"");
     push(@$header, "GLOBUS_LIBTOOL=\"$globus_path/sbin/libtool-$flavor\"");
 }
 

@@ -65,12 +65,37 @@ gss_display_name(
 
     if(!g_OID_equal(input_name->name_oid, GSS_C_NT_ANONYMOUS))
     {
-        /* ToDo: Memory returned by X509_NAME_oneline() must be freed using
-                 OPENSSL_free() not free() and caller won't know that. So
-                 an new string should be malloc'd and that one returned
-                 instead so the SSL one can be freed here.              */
+        #ifdef WIN32
+        /* On Windows allocating memory with X509_NAME_oneline() and freeing
+           it with free() causes an Assertion */
+        char *value = NULL;
+        size_t length = 0;
+        value = X509_NAME_oneline(input_name->x509n, NULL, 0);
+        if(value)
+        {
+            length = strlen((char *) value)+1;
+            output_name->value = malloc(length);
+            if(output_name->value)
+            {
+                memcpy(output_name->value,value,length);
+                output_name->length = length;
+                X509_free(value);
+            }
+            else
+            {
+                output_name->value = (void *) strdup(GSS_I_ANON_NAME);
+                output_name->length = strlen(GSS_I_ANON_NAME);
+            }
+        }
+        else
+        {
+            output_name->value = (void *) strdup(GSS_I_ANON_NAME);
+            output_name->length = strlen(GSS_I_ANON_NAME);
+        }
+        #else
         output_name->value = X509_NAME_oneline(input_name->x509n, NULL, 0);
         output_name->length = strlen((char *) output_name->value);
+        #endif
     }
     else
     {

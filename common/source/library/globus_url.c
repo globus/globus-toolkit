@@ -1451,14 +1451,26 @@ globusl_url_get_file_specific(const char **stringp,
 
 	pos = 0;
 	/* Parse host name */
+    #ifdef WIN32
+	while(isalnum((*stringp)[pos]) ||
+	      (*stringp)[pos] == '\\' ||
+	      (*stringp)[pos] == ':' ||
+	      (*stringp)[pos] == '-' ||
+	      (*stringp)[pos] == '.')
+    #else
 	while(isalnum((*stringp)[pos]) ||
 	      (*stringp)[pos] == '-' ||
 	      (*stringp)[pos] == '.')
+    #endif
 	{
 	    pos++;
 	} 
 
+    #ifdef WIN32
+	if((*stringp)[pos] == '\\' && pos != 0)
+    #else
 	if((*stringp)[pos] == '/' && pos != 0)
+    #endif
 	{
 	    rc = globusl_url_get_substring(*stringp, host, pos);
 	    (*stringp) += pos;
@@ -1481,6 +1493,47 @@ globusl_url_get_file_specific(const char **stringp,
 	(*stringp) += (pos - 1);
     }
     pos = 0;
+
+    #ifdef WIN32
+    /* This is something of a hack. Rather than rewire lower level routines it
+       does a simple check for windows file syntax here and returns success */
+       
+    /* verify "c:\" type syntax */
+    if(isalnum((*stringp)[pos]) && 
+      (*stringp)[pos+1] == ':'  &&
+      ((*stringp)[pos+2] == '\\' || (*stringp)[pos+2] == '/'))
+    {
+        char *temp_path;
+        size_t i;
+        temp_path = malloc(strlen(*stringp) + 1);
+        strcpy(temp_path,*stringp);
+        for(i = 0;i < strlen(temp_path);i++)
+        {
+            if(temp_path[i] == '/') temp_path[i] = '\\';
+        }
+        *path = temp_path;
+        return GLOBUS_SUCCESS;
+    }
+    /* verify "\" type syntax */
+    else if((*stringp)[pos] == '\\' || (*stringp)[pos] == '/')
+    {
+        char *temp_path;
+        size_t i;
+        temp_path = malloc(strlen(*stringp) + 1);
+        strcpy(temp_path,*stringp);
+        for(i = 0;i < strlen(temp_path);i++)
+        {
+            if(temp_path[i] == '/') temp_path[i] = '\\';
+        }
+        *path = temp_path;
+        return GLOBUS_SUCCESS;
+    }
+    else
+    {
+        rc = GLOBUS_URL_ERROR_BAD_PATH;
+        return rc;
+    }
+    #endif
 
     if((*stringp)[pos] != '/')
     {

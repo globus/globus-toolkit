@@ -48,7 +48,10 @@ print "Updating documentation tree $docpath\n";
 
 foreach (glob("$docpath/*"))
 {
-    if(-r "$_/html/main.html")
+    my $nonempty = `wc -l $_/html/*.tag 2> /dev/null`;
+    chomp($nonempty);
+
+    if($nonempty > 3)
     {
 	push(@pkgs, $_);
     }

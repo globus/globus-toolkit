@@ -44,7 +44,11 @@
  * @defgroup gsi_driver_io Reading/Writing
  * @ingroup gsi_driver
  * The GSI driver behaves similar to the underlying transport driver with
- * respect to reads and writes.
+ * respect to reads and writes, except for the try-read and try-write
+ * operations (ie. waitforbytes ==0) which always return immediately. This is
+ * due to the fact that the security layer needs to read and write tokens of a
+ * certain minimal size and thus needs to rely on the underlying transport to
+ * handle greater than 0 reads/write which is not possible in "try" mode.
  */
 
 /**

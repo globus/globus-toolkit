@@ -2642,7 +2642,6 @@ globus_l_callback_thread_signal_poll(
     sigset_t                            current_sigset;
     globus_bool_t                       locked;
     
-    
     locked = GLOBUS_FALSE;
     globus_thread_cleanup_push(
         globus_l_callback_signal_thread_cleanup, &locked);

@@ -505,9 +505,6 @@ globus_callout_register(
     
     memset(datum,'\0',sizeof(globus_i_callout_data_t));
 
-    datum->next = datum;
-
-
     if((flavor_start = strrchr(library,'_')) &&
        (strstr(flavor_start, "32") || strstr(flavor_start, "64")))
     {
@@ -555,6 +552,10 @@ globus_callout_register(
     {
         existing_datum = globus_hashtable_lookup(&handle->symbol_htable,
                                                  datum->type);
+        while(existing_datum->next)
+        {
+            existing_datum = existing_datum->next;
+        }
         datum->next = existing_datum->next;
         existing_datum->next = datum;
     }
@@ -617,7 +618,6 @@ globus_callout_call_type(
     char *                              type,
     ...)
 {
-    globus_i_callout_data_t *           datum;
     globus_i_callout_data_t *           current_datum;
     lt_ptr                              function;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -629,10 +629,9 @@ globus_callout_call_type(
         "globus_callout_handle_call_type";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
-    datum = globus_hashtable_lookup(&handle->symbol_htable,
-                                    type);
-
-    if(datum == NULL)
+    current_datum = globus_hashtable_lookup(&handle->symbol_htable,
+                                            type);
+    if(current_datum == NULL)
     {
         GLOBUS_CALLOUT_ERROR_RESULT(
             result,
@@ -640,8 +639,6 @@ globus_callout_call_type(
             ("unknown type: %s\n", type));
         goto exit;
     }
-
-    current_datum = datum->next;
 
     do
     {
@@ -659,7 +656,7 @@ globus_callout_call_type(
             
             *dlhandle = NULL;
             rc = globus_hashtable_insert(&handle->library_htable,
-                                         datum->file,
+                                         current_datum->file,
                                          dlhandle);
             if(rc < 0)
             {
@@ -678,7 +675,7 @@ globus_callout_call_type(
              * need to open it
              */
             
-            *dlhandle = lt_dlopenext(datum->file);
+            *dlhandle = lt_dlopenext(current_datum->file);
             
             if(*dlhandle == NULL)
             {
@@ -686,13 +683,13 @@ globus_callout_call_type(
                     result,
                     GLOBUS_CALLOUT_ERROR_WITH_DL,
                     ("couldn't dlopen %s: %s\n",
-                     datum->file,
+                     current_datum->file,
                      (dlerror = lt_dlerror()) ? dlerror : "(null)"));
                 goto exit;
             }
         }
 
-        function = lt_dlsym(*dlhandle, datum->symbol);
+        function = lt_dlsym(*dlhandle, current_datum->symbol);
 
         if(function == NULL)
         {
@@ -700,8 +697,8 @@ globus_callout_call_type(
                 result,
                 GLOBUS_CALLOUT_ERROR_WITH_DL,
                 ("symbol %s could not be found in %s: %s\n",
-                 datum->symbol,
-                 datum->file,
+                 current_datum->symbol,
+                 current_datum->file,
                  (dlerror = lt_dlerror()) ? dlerror : "(null)"));
             goto exit;
         }
@@ -721,7 +718,7 @@ globus_callout_call_type(
         }
         current_datum = current_datum->next;
     }
-    while(current_datum != datum->next);
+    while(current_datum);
     
  exit:
     GLOBUS_I_CALLOUT_DEBUG_EXIT;

@@ -47,9 +47,9 @@ echo Starting Build On %DATE% At %TIME% > BuildResults.log
 echo .
 echo . Create And Execute Build For Static Debug Threaded Libraries (win32dbgmtdthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32dbgmtdthr 14.2
-call WinCVSBuildLibs
-call WinCVSBuildExes
+WinCVSBuild.pl %GlobusLocation% win32dbgmtdthr 15.0
+call WinCVSBuildLibs-win32dbgmtdthr
+call WinCVSBuildExes-win32dbgmtdthr
 
 echo .
 echo . Put A Closing Time Stamp In BuildResults.log

@@ -1,0 +1,7 @@
+
+#ifndef _FLAVOR_H_
+#define _FLAVOR_H_
+
+#define GLOBUS_FLAVOR_NAME "@GLOBUS_FLAVOR_NAME@"
+
+#endif
