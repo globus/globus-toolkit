@@ -200,6 +200,20 @@ globus_validate_filename( char *    value,
                           char **   error_msg );
 
 
+/* ----------------------------------------------------------------------------
+    globus_bytestr_to_num()
+
+    converts a string such as 40M, 256K, 2G to an equivalent off_t.  
+    Valid multipliers are  G,g, M,m, K,k, B,b.
+    
+    Returns 0 on success, nonzero on error.
+
+*/
+int
+globus_args_bytestr_to_num( 
+    const char *                        str,
+    globus_off_t *                      out);
+
 EXTERN_C_END
 
 #endif /* ifndef GLOBUS_ARGS_H */

@@ -1,18 +1,19 @@
 #include <globus_logging.h>
 #include <globus_common.h>
+#include <syslog.h>
 
 #define GLOBUS_L_LOGGING_OUTSTANDING_LINES  32
 
 #ifdef __GNUC__
-#define GlobusGridFTPServerName(func) static const char * _globus_logging_name __attribute__((__unused__)) = #func
+#define GlobusLoggingName(func) static const char * _globus_logging_name __attribute__((__unused__)) = #func
 #else
-#define GlobusGridFTPServerName(func) static const char * _globus_logging_name = #func
+#define GlobusLoggingName(func) static const char * _globus_logging_name = #func
 #endif
-                                                                                
+static int                              globus_l_logging_pid;
 /*
  *  error types
  */
-#define GlobusGridFTPServerErrorParameter(param_name)                       \
+#define GlobusLoggingErrorParameter(param_name)                       \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GLOBUS_COMMON_MODULE,                                           \
@@ -24,7 +25,7 @@
             "Bad parameter, %s",                                            \
             (param_name)))
 
-#define GlobusGridFTPServerMemory()                                         \
+#define GlobusLoggingMemory()                                         \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GLOBUS_COMMON_MODULE,                                           \
@@ -121,21 +122,21 @@ globus_logging_init(
     globus_result_t                     res;
     globus_l_logging_handle_t *         handle;
     globus_size_t                       buffer_length;
-    GlobusGridFTPServerName(globus_logging_init);
+    GlobusLoggingName(globus_logging_init);
 
     if(out_handle == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("out_handle");
+        res = GlobusLoggingErrorParameter("out_handle");
         goto err;
     }
     if(max_log_line < 0)
     {
-        res = GlobusGridFTPServerErrorParameter("max_mem_buffer");
+        res = GlobusLoggingErrorParameter("max_mem_buffer");
         goto err;
     }
     if(module == NULL || module->write_func == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("module");
+        res = GlobusLoggingErrorParameter("module");
         goto err;
     }
 
@@ -145,14 +146,16 @@ globus_logging_init(
         globus_malloc(sizeof(globus_l_logging_handle_t) + buffer_length - 1);
     if(handle == NULL)
     {
-        res = GlobusGridFTPServerMemory();
+        res = GlobusLoggingMemory();
         goto err;
     }
 
+    globus_l_logging_pid = getpid();
+    
     handle->module.open_func = module->open_func;
     handle->module.write_func = module->write_func;
     handle->module.close_func = module->close_func;
-    handle->module.time_func = module->time_func;
+    handle->module.header_func = module->header_func;
 
     globus_mutex_init(&handle->mutex, NULL);
     handle->type_mask = log_type;
@@ -204,16 +207,16 @@ globus_logging_vwrite(
     globus_result_t                     res;
     globus_size_t                       remain;
     globus_size_t                       nbytes;
-    GlobusGridFTPServerName(globus_logging_write);
+    GlobusLoggingName(globus_logging_write);
 
     if(handle == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("handle");
+        res = GlobusLoggingErrorParameter("handle");
         goto err;
     }
     if(fmt == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("fmt");
+        res = GlobusLoggingErrorParameter("fmt");
         goto err;
     }
 
@@ -227,10 +230,10 @@ globus_logging_vwrite(
                 globus_l_logging_flush(handle);
                 remain = handle->buffer_length;
             }
-            if(handle->module.time_func != NULL)
+            if(handle->module.header_func != NULL)
             {
                 nbytes = remain;
-                handle->module.time_func(
+                handle->module.header_func(
                     &handle->buffer[handle->used_length],
                     &nbytes);
                 handle->used_length += nbytes;
@@ -274,7 +277,7 @@ globus_result_t
 globus_logging_flush(
     globus_logging_handle_t             handle)
 {
-    GlobusGridFTPServerName(globus_logging_flush);
+    GlobusLoggingName(globus_logging_flush);
 
     globus_mutex_lock(&handle->mutex);
     {
@@ -290,11 +293,11 @@ globus_logging_destroy(
     globus_logging_handle_t             handle)
 {
     globus_result_t                     res;
-    GlobusGridFTPServerName(globus_logging_destroy);
+    GlobusLoggingName(globus_logging_destroy);
 
     if(handle == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("handle");
+        res = GlobusLoggingErrorParameter("handle");
         goto err;
     }
 
@@ -338,7 +341,7 @@ globus_logging_stdio_write_func(
 }
 
 void
-globus_logging_stdio_time_func(
+globus_logging_stdio_header_func(
     char *                              buf,
     globus_size_t *                     len)
 {
@@ -349,20 +352,34 @@ globus_logging_stdio_time_func(
     tm = time(NULL);
     str = ctime(&tm);
     str_len = strlen(str);
-
-    if(str_len < *len)
+    if(str[str_len - 1] == '\n')
     {
-        *len = str_len-1;
+        str[str_len - 1] = '\0';
     }
-    memcpy(buf, str, *len);
-    buf[*len] = ' ';
-    (*len)++;
-    buf[*len] = ':';
-    (*len)++;
-    buf[*len] = ':';
-    (*len)++;
-    buf[*len] = ' ';
-    (*len)++;
+    (*len) = snprintf(buf, *len, "[%d] %s :: ", globus_l_logging_pid, str);
+}
+
+void
+globus_logging_syslog_open_func(
+    void *                              user_arg)
+{
+    openlog(NULL, LOG_PID, LOG_USER);
+}
+
+void
+globus_logging_syslog_close_func(
+    void *                              user_arg)
+{
+    closelog();
+}
+    
+void
+globus_logging_syslog_write_func(
+    globus_byte_t *                     buf,
+    globus_size_t                       length,
+    void *                              user_arg)
+{
+    syslog(LOG_NOTICE, "%s", (char *) buf);
 }
 
 globus_logging_module_t                 globus_logging_stdio_module =
@@ -370,13 +387,13 @@ globus_logging_module_t                 globus_logging_stdio_module =
     NULL,
     globus_logging_stdio_write_func,
     NULL,
-    globus_logging_stdio_time_func
+    globus_logging_stdio_header_func
 };
 
 globus_logging_module_t                 globus_logging_syslog_module =
 {
-    NULL,
-    NULL,
-    NULL,
+    globus_logging_syslog_open_func,
+    globus_logging_syslog_write_func,
+    globus_logging_syslog_close_func,
     NULL
 };
