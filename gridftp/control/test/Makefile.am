@@ -29,7 +29,7 @@ gftp_LDADD = $(GPT_PGM_LINKS)
 
 data_test_SOURCES = $(data_test_Sources)
 data_test_LDFLAGS = $(GPT_LDFLAGS)
-data_test_LDADD = $(GPT_PGM_LINKS)
+data_test_LDADD = $(GPT_PGM_LINKS) -lefence
 
 test_server_SOURCES = $(test_server_Sources)
 test_server_LDFLAGS = $(GPT_LDFLAGS)
