@@ -94,7 +94,6 @@ typedef enum globus_i_xio_op_type_e
     GLOBUS_XIO_OPERATION_TYPE_READ,
     GLOBUS_XIO_OPERATION_TYPE_WRITE,
     GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
-    GLOBUS_XIO_OPERATION_TYPE_EOF,
 } globus_i_xio_op_type_t;
 
 typedef enum globus_i_xio_op_state_e
