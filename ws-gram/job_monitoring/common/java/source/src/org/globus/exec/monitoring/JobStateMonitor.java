@@ -113,8 +113,8 @@ public class JobStateMonitor {
      * @param userName
      *     User name that the SEG should run as (via sudo(8)).
      *     (Currently ignored).
-     * @param schedulerPath
-     *     Path to the scheduler-specific SEG module.
+     * @param schedulerName
+     *     Name of the scheduler SEG module to use.
      * @param listener
      *     Reference to the JobStateChangeListener which will be notified
      *     when notifications relating to Job ID which has a mapping
@@ -127,7 +127,7 @@ public class JobStateMonitor {
     public JobStateMonitor(
             java.io.File segPath,
             String userName,
-            java.io.File schedulerPath,
+            String schedulerName,
             JobStateChangeListener listener,
             JobStateRecoveryListener recoveryListener)
     {
@@ -140,7 +140,7 @@ public class JobStateMonitor {
         this.cacheFlushTask = null;
         this.recoveryTask = null;
 
-        this.seg = new Seg(segPath, userName, schedulerPath); 
+        this.seg = new Seg(segPath, userName, schedulerName); 
     }
 
     /**
@@ -435,7 +435,7 @@ public class JobStateMonitor {
          */
         private String userName;
         /** Path to the SEG executable */
-        private java.io.File schedulerPath;
+        private String schedulerName;
         /** SEG Process handle */
         private Process proc;
         /**
@@ -455,15 +455,15 @@ public class JobStateMonitor {
          *     Path to the Scheduler Event Generator executable.
          * @param userName
          *     Username to sudo(8) to start the SEG.
-         * @param schedulerPath
-         *     schedulerPath
+         * @param schedulerName
+         *     Name of the scheduler SEG module to use (fork, lsf, etc).
          */
         public Seg(java.io.File path, String userName,
-                java.io.File schedulerPath) 
+                String schedulerName) 
         {
             this.path = path;
             this.userName = userName;
-            this.schedulerPath = schedulerPath;
+            this.schedulerName = schedulerName;
             this.proc = null;
             this.shutdownCalled = false;
             this.timeStamp = null;
@@ -580,12 +580,12 @@ public class JobStateMonitor {
                 if (timeStamp != null) {
                     cmd = new String[] {
                         path.toString(),
-                        "-s", schedulerPath.toString(),
+                        "-s", schedulerName,
                         "-t", Long.toString(
                                 timeStamp.getTime() / 1000)};
                 } else {
                     cmd = new String[] {
-                        path.toString(), "-s", schedulerPath.toString()
+                        path.toString(), "-s", schedulerName
                     };
                 }
                 proc = runtime.exec(cmd);
@@ -598,7 +598,7 @@ public class JobStateMonitor {
         /**
          * Tell a SEG process to terminate.
          * 
-         * This function closes the standard input of the SEG process started
+         * This funcName
          * by this object and will cause the thread associated with this
          * object to terminate once all input has been processed.
          */
