@@ -12,6 +12,18 @@
 #ifndef _GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H_
 #define _GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H_
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 /**
  * @defgroup globus_gsi_sysconfig_datatypes Datatypes
  */
@@ -101,5 +113,6 @@ typedef enum
 }
 globus_gsi_proxy_file_type_t;
 
+EXTERN_C_END
 
 #endif /* _GLOBUS_GSI_SYSTEM_CONFIG_CONSTANTS_H_ */

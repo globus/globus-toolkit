@@ -13,6 +13,18 @@
 #ifndef GLOBUS_GSI_CERT_UTILS_CONSTANTS_H
 #define GLOBUS_GSI_CERT_UTILS_CONSTANTS_H
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 /**
  * @defgroup globus_gsi_cert_utils_constants Cert Utils Constants
  */
@@ -69,5 +81,7 @@ typedef enum globus_gsi_cert_utils_cert_type_e
     /** A legacy Globus limited impersonation proxy */
     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY
 } globus_gsi_cert_utils_cert_type_t;
+
+EXTERN_C_END
 
 #endif

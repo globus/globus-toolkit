@@ -13,6 +13,18 @@
 #ifndef GLOBUS_GSI_GSS_ASSIST_CONSTANTS_H
 #define GLOBUS_GSI_GSS_ASSIST_CONSTANTS_H
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 /**
  * @defgroup globus_gsi_gss_assist_constants 
  * GSI GSS Assist Constants
@@ -43,5 +55,7 @@ typedef enum
     GLOBUS_GSI_GSS_ASSIST_ERROR_CANONICALIZING_HOSTNAME = 18,
     GLOBUS_GSI_GSS_ASSIST_ERROR_LAST = 19
 } globus_gsi_gss_assist_error_t;
+
+EXTERN_C_END
 
 #endif

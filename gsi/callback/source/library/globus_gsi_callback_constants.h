@@ -13,6 +13,18 @@
 #ifndef GLOBUS_GSI_CALLBACK_CONSTANTS_H
 #define GLOBUS_GSI_CALLBACK_CONSTANTS_H
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 /**
  * @defgroup globus_gsi_callback_constants GSI Callback Constants
  */
@@ -60,6 +72,8 @@ typedef enum
     GLOBUS_GSI_CALLBACK_ERROR_LAST = 18
 
 } globus_gsi_callback_error_t;
+
+EXTERN_C_END
 
 #endif /* GLOBUS_GSI_CALLBACK_CONSTANTS_H */
 

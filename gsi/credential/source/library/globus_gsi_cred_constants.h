@@ -13,6 +13,18 @@
 #ifndef GLOBUS_GSI_CREDENTIAL_CONSTANTS_H
 #define GLOBUS_GSI_CREDENTIAL_CONSTANTS_H
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 /**
  * @defgroup globus_gsi_credential_constants Credential Constants
  */
@@ -97,6 +109,8 @@ typedef enum
 
 #define GLOBUS_NULL_GROUP               "GLOBUS_NULL_GROUP"
 #define GLOBUS_NULL_POLICY              "GLOBUS_NULL_POLICY"
+
+EXTERN_C_END
 
 #endif
 
