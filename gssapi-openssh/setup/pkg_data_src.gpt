@@ -23,7 +23,7 @@
     </Build_Instructions>
 
     <Post_Install_Program >
-      setup-openssh
+      gsi_openssh_setup/setup-openssh
     </Post_Install_Program>
 
     <Post_Install_Message >
