@@ -1,4 +1,4 @@
-all: gpt @prewsmds@ @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ postinstall
+all: gpt @prewsmds@ @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ 
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_PATH=@globus_iodbc@
@@ -38,17 +38,18 @@ gpt: gpt-stamp
 gpt-stamp:
 	cd gpt-3.2autotools2004 && OBJECT_MODE=32 ./build_gpt
 	touch gpt-stamp
+install: postinstall
 postinstall:
 	${GPT_LOCATION}/sbin/gpt-postinstall
 
 # NCSA targets
 gsi-myproxy: gpt globus-gsi myproxy
-myproxy:
+myproxy: gpt globus_gss_assist globus_gssapi_gsi
 	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-1.16 ${FLAVOR}
 gsi-openssh: gpt globus-gsi gsi_openssh gsi_openssh_setup
-gsi_openssh:
+gsi_openssh: gpt globus_openssl globus_gss_assist
 	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh-3.5-src ${FLAVOR} @gsiopensshargs@
-gsi_openssh_setup:
+gsi_openssh_setup: gpt
 	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh_setup-3.5-src ${FLAVOR}
 
 # Bundle dependencies, expressed in packages.

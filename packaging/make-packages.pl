@@ -67,6 +67,10 @@ my @bundle_build_list;
 my %package_build_hash;
 my @package_build_list;
 
+# For each package, keep track of that package's dependencies.
+# $package_dep_hash{$pkg1}{$pkg2} == 1 if pkg1 depends on pkg2
+my %package_dep_hash;
+
 # Which of the CVS trees should I operate on?
 my @cvs_build_list;
 my %cvs_build_hash;
@@ -411,10 +415,28 @@ sub generate_build_list()
                  $extras = "-static ";
 	    }
 
-            print "$pack:\n";
+            print "$pack: gpt";
+            foreach my $deppack ( @package_build_list )
+            {
+                 if ( $package_dep_hash{$pack}{$deppack} eq 1 )
+                 {
+                      print " $deppack" unless ( $pack eq $deppack );
+                 }
+            }
+            print "\n";
+
             print "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
-            print "${pack}-thr:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
+            print "${pack}-thr: gpt";
+            foreach my $deppack ( @package_build_list )
+            {
+                 if ( $package_dep_hash{$pack}{$deppack} eq 1 )
+                 {
+                      print " ${deppack}-thr" unless ( $pack eq $deppack );
+                 }
+            }
+            print "\n";
+
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
             my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
                                             $package_list{$pack}[1],
                                             $package_list{$pack}[2]);
@@ -1248,6 +1270,7 @@ sub topol_sort
                        or ($deptype eq "lib_link") );
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})
         {
+            $package_dep_hash{$node}{$dep} = 1;
             if(exists $package_build_hash{$dep})
             {
                 $in_call_stack->{$node} = $node;
