@@ -165,14 +165,8 @@ while [ -n "$1" ]; do
 	    debug=yes
 	    shift
 	    ;;
-	-help | -usage)
-	    Usage 1>&2
-	    exit 1
-	    ;;
 	-*)
-	    echo "Error: Unknown option $1" 1>&2
-	    Usage 1>&2
-	    exit 1
+            globus_args_unrecognized_option $1
 	    ;;
 	*)
 	    challenge="$1"
@@ -229,7 +223,11 @@ if [ ! -x ${bindir}/grid-cert-info ]; then
     exit 1
 fi
 
-BASE_DN=`${bindir}/grid-cert-info -subject | sed -e "s|^\(\/[Oo]=[Gg][Rr][Ii][Dd]\/[Oo]=[Gg][Ll][Oo][Bb][Uu][Ss]\)\/.*|\1|"`
+if [ -n "${oldcert}" ]; then
+    BASE_DN=`${bindir}/grid-cert-info -subject -f ${oldcert} | sed -e "s|^\(\/[Oo]=[Gg][Rr][Ii][Dd]\/[Oo]=[Gg][Ll][Oo][Bb][Uu][Ss]\)\/.*|\1|"`
+else
+    BASE_DN=`${bindir}/grid-cert-info -subject | sed -e "s|^\(\/[Oo]=[Gg][Rr][Ii][Dd]\/[Oo]=[Gg][Ll][Oo][Bb][Uu][Ss]\)\/.*|\1|"`
+fi
 
 IS_GLOBUS_NS=`check_for_globus_ns $BASE_DN`
 if [ "$IS_GLOBUS_NS" != "YES" ]; then
