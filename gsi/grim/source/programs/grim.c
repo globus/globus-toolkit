@@ -8,6 +8,30 @@
 #include <unistd.h>
 #include <sys/types.h>
 
+/**
+ *  Default values:
+ *
+ *  GRIDMAP:
+ *      Can only be changed by conf file.
+ *
+ *  CA_CERT_DIR
+ *      Can only be changed by conf file.
+ *
+ *  KEY_FILENAME
+ *      Can only be changed by conf file.
+ *
+ *  CERT_FILENAME
+ *      Can only be changed by conf file.
+ *
+ *  MAX_TIME
+ *      Can be changed with conf file.
+ *
+ *  TIME
+ *      Can be changed with -hours or -valid command line switch.
+ *
+ *  KEY_BITS
+ *      Can be changed with -bits command line switch.
+ */
 #define DEFAULT_GRIDMAP             "/etc/grid-security/grid-mapfile"
 #define DEFAULT_CA_CERT_DIR         "/etc/grid-security/certificates/"
 #define DEFAULT_KEY_FILENAME        "/etc/grid-security/hostkey.pem"
@@ -15,11 +39,25 @@
 #define DEFAULT_MAX_TIME            24*60
 #define DEFAULT_TIME                12*60
 #define DEFAULT_KEY_BITS            512
+/* default proxy location: /tmp/x509_u<user id> */
 
+
+/*
+ *  globals:
+ *
+ *  g_quiet: set by command line option.  elimintates logging when true.
+ *
+ *  g_logfile: FILE * of place to log data.  opened with privledges.
+ *
+ *  g_username: the user name running the program (not the privledged user).
+ */
 static globus_bool_t                            g_quiet = GLOBUS_FALSE;
 static FILE *                                   g_logfile = NULL;
 static char *                                   g_username = NULL;
 
+/************************************************************************
+ *                     function signatures
+ ***********************************************************************/
 static int
 grim_pw_stdin_callback(
     char *                                      buf, 
@@ -35,7 +73,9 @@ grim_privedged_code(
     globus_gsi_cred_handle_t *                  cred_handle,
     char *                                      ca_cert_dir,
     char *                                      user_cert_filename,
-    char *                                      user_key_filename);
+    char *                                      user_key_filename,
+    char *                                      dns[],
+    int                                         dn_count);
 
 int
 grim_parse_input(
@@ -55,6 +95,12 @@ grim_write_proxy(
     int                                         key_bits,
     char *                                      proxy_out_filename);
 
+/*
+ *  like printf for the log messages.
+ *
+ *  The log file is opened with privledges and this function is called
+ *  with privledges at certain times.
+ */
 int
 grim_write_log(
     const char *                                format, 
@@ -99,6 +145,17 @@ static char *  LONG_USAGE = \
 "    -out      <proxyfile>     Non-standard location of new proxy cert\n" \
 "\n" ;
 
+/*
+ *  PSUEDOCODE:
+ *
+ *  Initializes globus and global variables.
+ *  Parase the input parameters.
+ *  Look up all DNs in gridmap file.
+ *  Look up port types.
+ *  Read in the host cer and proxy
+ *  Drop privledges.
+ *  Write out proxy.
+ */
 int 
 main(
     int                                         argc,
@@ -120,6 +177,13 @@ main(
     struct passwd *                             pw_ent;
     char **                                     globus_dns;
     int                                         dn_count;
+
+    /***** BEGIN PRIVLEDGES *****/
+    /*
+     *  this program is intended to be run with a setuid bit to a 
+     *  privledged user, for the purposes of reading in credentials
+     *  from which a user proxy is created.
+     */
 
     /* initialize some globals */
     g_logfile = stderr;
@@ -164,6 +228,10 @@ main(
         goto exit;
     }
 
+    /*
+     *  This may or may not need to be called with privledges.  That 
+     *  depends on whether or not gridmap file is world readable.
+     */
     res = globus_gss_assist_lookup_all_globusid(
               g_username,
               &globus_dns,
@@ -176,13 +244,6 @@ main(
         goto exit;
     }
 
-    for(ctr = 0; ctr < dn_count; ctr++)
-    {
-        fprintf(stderr, "%s\n", globus_dns[ctr]);
-    }
-
-    GlobusGssAssistFreeDNArray(globus_dns);
-    
     /*
      * do privilaged bits
      */
@@ -190,20 +251,33 @@ main(
             &cred_handle,
             ca_cert_dir,
             user_cert_filename,
-            user_key_filename);
+            user_key_filename,
+            globus_dns,
+            dn_count);
     if(rc != 0)
     {
         goto exit;
     }
 
     /*
+     * TODO: look up port types.
+     */
+
+    /*
      *  drop privledges
      */
     user_id = getuid();
     seteuid(user_id);
+    /***** END PRIVLEDGES *****?
+
     /*
      *  at this point we no loner have special privledges
      */
+
+    /*
+     *  clean up memory
+     */
+    GlobusGssAssistFreeDNArray(globus_dns);
 
     /*
      * if no proxy out file is detected find it
@@ -232,6 +306,9 @@ main(
         }
     }
 
+    /*
+     *  write out the proxy
+     */
     rc = grim_write_proxy(
             cred_handle,
             valid,
@@ -254,6 +331,12 @@ main(
     return rc;
 }
 
+/*
+ *  This function will be called by the gsi code if the key used in 
+ *  creating a proxy requires a password.  If a password is required
+ *  this function logs that the key may not be used and returns -1, 
+ *  which will cause the failure.
+ */
 static int
 grim_pw_stdin_callback(
     char *                              buf, 
@@ -395,6 +478,11 @@ grim_parse_input(
     {
         valid = max_valid;
     }
+
+    /*
+     *  This is a bit of a hack.  The gsi code will check this env later
+     *  to find the location of the gridmap file.
+     */
     setenv("GRIDMAP", gridmap, 1);
 
     /*
@@ -428,6 +516,12 @@ grim_parse_input(
     return 0;
 }
 
+/*
+ *  verify proxy.
+ *
+ *  This function is called to verify the existance of a proxy in the
+ *  given location.
+ */
 int
 grim_verify_proxy(
     char *                                  proxy_out_filename)
@@ -524,7 +618,9 @@ grim_privedged_code(
     globus_gsi_cred_handle_t *                  cred_handle,
     char *                                      ca_cert_dir,
     char *                                      user_cert_filename,
-    char *                                      user_key_filename)
+    char *                                      user_key_filename
+    char *                                      dns[],
+    int                                         dn_count)
 {
     globus_result_t                             res;
     globus_gsi_cred_handle_attrs_t              cred_handle_attrs;
@@ -623,6 +719,12 @@ grim_privedged_code(
     return 0;
 }
 
+/*
+ *  write the proxy
+ *
+ *  This function writes the proxy out to proxy_out_filename.  It is
+ *  not run with provledges.
+ */
 int
 grim_write_proxy(
     globus_gsi_cred_handle_t                    cred_handle,
@@ -742,6 +844,34 @@ grim_write_proxy(
 
     globus_gsi_proxy_handle_destroy(proxy_handle);
     globus_gsi_cred_handle_destroy(proxy_cred_handle);
+
+    return 0;
+}
+
+
+int
+grim_parse_port_type_file(
+    char *                                  port_type_filename,
+    char *                                  username,
+    char *                                  groups,
+    char ***                                port_types,
+    int *                                   port_type_count)
+{
+    FILE *                                  fptr;
+    char *                                  quote_start;
+    char *                                  quote_end;
+    char                                    line[1024];
+
+    fptr = fopen(port_type_filename, "r");
+    if(fptr == NULL)
+    {
+        return 1;
+    }
+
+    while(fget(line, sizeof(line), fptr) != NULL)
+    {
+        
+    }
 
     return 0;
 }
