@@ -71,7 +71,7 @@ CVS Information:
 #define GLOBUS_L_GASS_CACHE_NULL_TAG "null"
 
 #define GLOBUS_L_GASS_CACHE_COMMIT    0
-#define GLOBUS_L_GASS_CACHE_ABORT     -1
+#define GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT     -1
 
 
 /******************************************************************************
