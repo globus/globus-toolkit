@@ -1230,7 +1230,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
    if (client_length <= 0)
       goto end;
 
-   client_auth_method = (*client_buffer);
+   client_auth_method = (author_method_t)(*client_buffer);
    /* fill in the client's response and return pointer to filled data */
    client_auth_data = authorization_store_response(
 	                  client_buffer + sizeof(client_auth_method),
