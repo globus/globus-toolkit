@@ -24,7 +24,6 @@ globus_automake_post
 globus_automake_post_top
 globus_automake_pre
 globus_automake_pre_top
-grid-default-ca
 pkgdata/pkg_data_src.gpt.in.tmpl
 pkgdata/Makefile.am
 pkgdata/Makefile.in
