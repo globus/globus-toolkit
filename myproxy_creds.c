@@ -755,7 +755,7 @@ read_data_file(struct myproxy_creds *creds,
  */
 
 int
-myproxy_creds_store(const struct myproxy_creds *creds)
+myproxy_creds_store(const struct myproxy_creds *creds, int overwrite)
 {
     char creds_path[MAXPATHLEN] = "";
     char data_path[MAXPATHLEN] = "";
@@ -764,7 +764,6 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     int return_code = -1;
     struct stat buf;
    
-	printf ("myproxy_creds_store entered\n"); 
     if ((creds == NULL) ||
         (creds->username == NULL) ||
         (creds->passphrase == NULL) ||
@@ -782,24 +781,20 @@ myproxy_creds_store(const struct myproxy_creds *creds)
         goto error;
     }
 
-    if (stat (data_path, &buf) == -1 || creds->force_credential_overwrite)  /* file is not present or  */
-	/* force_credential_overwrite enabled */
-    {
-    	if (write_data_file(creds, data_path, data_file_mode) == -1) /* info about credential */
-    	{
-		verror_put_string ("Error writing data file");
-        	goto clean_up;
+    if (stat (data_path, &buf) == -1 || overwrite)  {
+	/* info about credential */
+    	if (write_data_file(creds, data_path, data_file_mode) == -1) {
+	    verror_put_string ("Error writing data file");
+	    goto clean_up;
     	}
 
-    	if (copy_file(creds->location, creds_path, creds_file_mode) == -1) /* credential */
-    	{
-		verror_put_string ("Error writing credential file");
-    	   	goto clean_up;
+	/* credential */
+    	if (copy_file(creds->location, creds_path, creds_file_mode) == -1) {
+	    verror_put_string ("Error writing credential file");
+	    goto clean_up;
     	}
-    }
-    else
-    {
-	verror_put_string("Credential already present. Force credential overwrite");
+    } else {
+	verror_put_string("Credential exists.  Overwrite with myproxy-init -force or remove with myproxy-destroy first.");
 	goto error;
     }
 	
@@ -824,22 +819,20 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN] = "";
     char data_path[MAXPATHLEN] = "";
-    char *username = NULL, *credname = NULL;
+    char *username = NULL;
     
     if ((creds == NULL) || (creds->username == NULL)) {
         verror_put_errno(EINVAL);
         return -1;
     }
 
+    /* stash username */
     username = mystrdup(creds->username);
-    if (credname) {
-	credname = mystrdup(creds->credname);
-    }
 
     if (get_storage_locations(username,
                               creds_path, sizeof(creds_path),
                               data_path, sizeof(data_path),
-			      credname) == -1) {
+			      creds->credname) == -1) {
 	return -1;
     }
 
@@ -848,8 +841,8 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 	return -1;
     }
 
+    /* reset username from stashed value */
     creds->username = username;
-    creds->credname = credname;
     creds->location = mystrdup(creds_path);
     ssl_get_times(creds_path, &creds->start_time, &creds->end_time);
 
@@ -1070,37 +1063,27 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
-    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
     int return_code = -1;
     
-    if ((creds == NULL) ||
-        (creds->username == NULL))
-    {
+    if ((creds == NULL) || (creds->username == NULL)) {
         verror_put_errno(EINVAL);
         return -1;
     }
     
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
-                              data_path, sizeof(data_path), creds->credname) == -1)
-    {
+                              data_path, sizeof(data_path),
+			      creds->credname) == -1) {
         goto error;
     }
 
-    if (read_data_file(&tmp_creds, data_path) == -1)
-    {
-        goto error;
-    }
-    
-    if (unlink(creds_path) == -1)
-    {
+    if (unlink(creds_path) == -1) {
         verror_put_errno(errno);
         verror_put_string("deleting credentials file %s", creds_path);
         goto error;
     }
     
-    if (unlink(data_path) == -1)
-    {
+    if (unlink(data_path) == -1) {
         verror_put_errno(errno);
         verror_put_string("deleting credentials data file %s", creds_path);
         goto error;
