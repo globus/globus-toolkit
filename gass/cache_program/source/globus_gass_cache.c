@@ -1,4 +1,4 @@
-/*****************************************************************************r
+/*****************************************************************************
 gass_cache.c 
 
 Description:
@@ -399,7 +399,7 @@ globus_l_cache_get_rm_contact(char *resource)
     search_string=malloc(strlen(resource)+5);
 
     globus_libc_sprintf(search_string, "cn=%s", resource);
-g    
+    
     if(ldap_search_s(ldap_server,
 		     base_dn,
 		     LDAP_SCOPE_SUBTREE,
