@@ -21,6 +21,7 @@
       <Build_Step>cp ./setup-openssh.pl INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/setup-openssh.pl</Build_Step>
       <Build_Step>cp ./SXXsshd.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/SXXsshd.in</Build_Step>
       <Build_Step>cp ./ssh_config INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/ssh_config</Build_Step>
+      <Build_Step>cp ./ssh_prng_cmds.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/ssh_prng_cmds.in</Build_Step>
       <Build_Step>cp ./sshd_config.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/sshd_config.in</Build_Step>
       <Build_Step>cp ./moduli INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/moduli</Build_Step>
 
