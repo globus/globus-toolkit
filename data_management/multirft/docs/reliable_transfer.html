@@ -5,7 +5,7 @@
 </head>
 <body>
 <img border="0" src="gt_logo.jpg">
-<h1>Reliable File Transfer Service -Beta</h1>
+<h1>Reliable File Transfer Service -Final</h1>
 <!-- --------------------------- -->
 <h3>Overview</h3>
 <p>The Reliable Transfer Service (RFT) is an OGSA based service that
@@ -18,7 +18,7 @@ of the GT2 globus-url-copy tool and more.<!-- --------------------------- --> </
 <h3>Prerequisites and Dependencies</h3>
 <p> The Prerequisites to RFT are: </p>
 <ul>
-	<li><b>Core Beta Distribution</b> 	</li>
+	<li><b>Core Final Distribution</b> 	</li>
   <li><b>GridFTP</b> with a properly configured <b>Host Certificate</b> 	</li>
   <li><b>PostgreSQL</b> </li>
 </ul>
@@ -29,7 +29,7 @@ DBMS that supports JDBC can be used, although no other has been tested. </p>
 <p>GridFTP server can only be run on Unix or Linux. There are 2 ways to
 get GridFTP: </p>
 <ol>
-  <li>Packaged with the core GT3 Beta installation. </li>
+  <li>Packaged with the core GT3 Final installation. </li>
   <li>As part of the Globus Toolkit 2.2 distribution. </li>
 </ol>
 If you don't already have GridFTP from GT2 installed, use the GT3
@@ -205,6 +205,7 @@ true #type of transfer true=binary false=ascii<br>
 false&nbsp;&nbsp;&nbsp; #Notpt <br>
 1&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; # Number of parallel streams<br>
 true&nbsp;&nbsp;&nbsp; #DCAU<br>
+1&nbsp;&nbsp;&nbsp; #Concurrency<br>
 gsiftp://dg0n1.mcs.anl.gov/sandbox/madduri/smalltest #sourceURL1<br>
 gsiftp://dg0n1.mcs.anl.gov/sandbox/madduri/test1&nbsp;&nbsp;&nbsp;
 #destinationURL1<br>

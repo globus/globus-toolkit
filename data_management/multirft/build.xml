@@ -54,10 +54,11 @@ Southern California. All Rights Reserved.
    <pathelement location="${ogsa.root}/build/classes"/>
    <pathelement location="${build.dest}"/>
     <fileset dir="lib">
-     <include name="*.jar"/>
+      <include name="*.jar"/>
     </fileset>
     <fileset dir="${ogsa.root}/lib">
-     <include name="*.jar"/>
+      <include name="*.jar"/>
+      <exclude name="${jar.name}"/>
     </fileset>
 
     <pathelement path="${java.class.path}"/>

@@ -46,6 +46,7 @@ import org.gridforum.ogsi.WSDLReferenceType;
 import org.gridforum.ogsi.holders.ExtensibilityTypeHolder;
 import org.gridforum.ogsi.holders.LocatorTypeHolder;
 import org.gridforum.ogsi.holders.TerminationTimeTypeHolder;
+import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -99,7 +100,7 @@ public class RFTClient {
             } catch (java.io.IOException ioe) {
             }
 
-            int transferCount = (requestData.size() - 6) / 2;
+            int transferCount = (requestData.size() - 7) / 2;
             TransferType[] transfers1 = new TransferType[transferCount];
             RFTOptionsType multirftOptions = new RFTOptionsType();
             multirftOptions.setBinary(Boolean.valueOf(
@@ -121,7 +122,7 @@ public class RFTClient {
                     "Request Data Size " + requestData.size() + " " + 
                     transferCount);
 
-            int i = 6;
+            int i = 7;
 
             for (int j = 0; j < transfers1.length; j++) {
                 transfers1[j] = new TransferType();
@@ -134,7 +135,8 @@ public class RFTClient {
 
             TransferRequestType transferRequest = new TransferRequestType();
             transferRequest.setTransferArray(transfers1);
-            transferRequest.setConcurrency(2);
+            transferRequest.setConcurrency(Integer.valueOf(
+                (String)requestData.elementAt(6)).intValue());
 
             TransferRequestElement requestElement = new TransferRequestElement();
             requestElement.setTransferRequest(transferRequest);
@@ -160,6 +162,8 @@ public class RFTClient {
                                          GSIConstants.GSI_MODE_FULL_DELEG);
             ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV, 
                                          Constants.SIGNATURE);
+            ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
+                                                          new IgnoreProxyPolicyHandler());
 
             /* WSDLReferenceType ref = (WSDLReferenceType) locator.getReference()[0];
              opts.setOptions( ((Stub)factory));

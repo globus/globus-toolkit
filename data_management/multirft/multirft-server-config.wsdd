@@ -31,7 +31,8 @@
     <parameter name="dbusername" value="globus"/>
     <parameter name="password" value="dummy"/>
     <parameter name="maxAttempts" value="10"/>
-    <parameter name="instanceLifecycle" value="persistent"/>
+    <parameter name="instance-lifecycle" value="persistent"/>
+    <parameter name="activateOnStartup" value="true"/>
 </service>
 <!-- Multi File RFT mappings -->
 <typeMapping

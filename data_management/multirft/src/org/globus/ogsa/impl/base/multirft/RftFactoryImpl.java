@@ -44,11 +44,9 @@ public class RftFactoryImpl
                                         throws GridServiceException {
 
         RftImpl rftImpl;
-        System.out.println("in RFT factory");
-
         try {
 
-            if (creation != null) {
+            if (creation.get_any() != null) {
                 Object obj = AnyHelper.getAsSingleObject(creation, 
                                                          TransferRequestElement.class);
                 if (!(obj instanceof TransferRequestElement)) {
