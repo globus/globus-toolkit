@@ -149,6 +149,14 @@ globus_l_gfs_done_cb(
     
     globus_gridftp_server_control_destroy(instance->u.control.server);
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "Control connection closed with error: %s\n",
+             globus_object_printable_to_string(globus_error_get(result)));
+    }
+
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
