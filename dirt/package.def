@@ -124,4 +124,4 @@ globus_callout                  callout/source                  dirt.sh
 globus_callout_test             callout/test                    dirt.sh
 globus_gram_job_manager_callout  gram/jobmanager/callout         dirt.sh
 globus_gram_job_manager_callout_error  gram/jobmanager/callout_error dirt.sh
-globus_gram_job_manager_callout_setup gram/jobmanager/setup/callout  dirt.sh
+globus_gram_job_manager_setup_callout gram/jobmanager/setup/callout  dirt.sh
