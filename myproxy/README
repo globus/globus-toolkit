@@ -13,9 +13,18 @@ README		myproxy
 1. Overview
 -----------
 
-Myproxy v0.1b1 provides a server and client-side utilities to store and retrieve delegated X509 certificates via the Globus Security Infrastructure (GSI). Services that do not support GSI, including web browsers, can retrieve user credentials from a myproxy-server via a user generated passphrase.
+Myproxy v0.1 provides a  server and  client-side utilities to store
+and retrieve  delegated  X509  certificates  via the  Globus  Security
+Infrastructure (GSI). Services that do not  support GSI, including web
+browsers,  can retrieve user  credentials from a  myproxy-server via a
+user generated passphrase.
 
-The myproxy-server uses the GSI to perform mutual authentication between clients and web portals. It should be installed on a secured host separate from the web server. The myproxy-server saves the credentials in the case the system should go down. A configuration file is used to store information about which portals and users can access the myproxy-server.
+The myproxy-server uses the GSI to perform mutual authentication
+between clients and web portals. It should be installed on a secured
+host separate from the web server. The myproxy-server saves the
+credentials in the case the system should go down. A configuration
+file is used to store information about which portals and users can
+access the myproxy-server.
 
 The user uses myproxy-init to delegate credentials to myproxy-server,
 along with a username and pass phrase to authenticate credential 
