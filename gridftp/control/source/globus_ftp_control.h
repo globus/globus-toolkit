@@ -1472,6 +1472,12 @@ globus_ftp_control_local_spor(
     unsigned int                                num_addresses);
 
 globus_result_t
+globus_ftp_control_get_spor(
+    globus_ftp_control_handle_t *               handle,
+    globus_ftp_control_host_port_t              addresses[],
+    unsigned int *                              num_addresses);
+
+globus_result_t
 globus_ftp_control_local_type(
     globus_ftp_control_handle_t *		handle,
     globus_ftp_control_type_t			type,
