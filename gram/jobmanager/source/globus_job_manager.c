@@ -196,7 +196,7 @@ main(int argc,
             strcpy(test_dat_file, argv[i+1]);
             i++;
         }
-        if ((strcmp(argv[i], "-e") == 0)
+        else if ((strcmp(argv[i], "-e") == 0)
                  && (i + 1 < argc))
         {
             grami_jm_libexecdir = argv[i+1];
