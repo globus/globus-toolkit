@@ -27,7 +27,7 @@ sub basic_func
    $ENV{X509_CERT_DIR} = cwd();
    $ENV{X509_USER_PROXY} = "testcred.pem";
 
-   $rc = system("$test_prog >/dev/null 2>&1") / 256;
+   $rc = system("./$test_prog >/dev/null 2>&1") / 256;
 
    if($rc != 0)
    {
