@@ -298,6 +298,12 @@ init_arguments(int argc,
             break;	
         }
     }
+    if (gnu_optind != argc) {
+	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
+		argv[gnu_optind]);
+	fprintf(stderr, usage);
+	exit(1);
+    }
 }
 
 int file2buf(const char filename[], char **buf)
