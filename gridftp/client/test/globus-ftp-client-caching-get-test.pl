@@ -42,7 +42,7 @@ sub basic_func
         FtpTestLib::push_proxy("/dev/null");
     }
     
-    my $command = "$test_exec -s gsiftp://$source_host$source_file >'$tmpname' 2>/dev/null";
+    my $command = "$test_exec -s gsiftp://$source_host$source_file >$tmpname 2>/dev/null";
     $rc = system($command) / 256;
     if(($use_proxy && $rc != 0) || (!$use_proxy && $rc == 0))
     {

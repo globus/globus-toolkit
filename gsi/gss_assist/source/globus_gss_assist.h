@@ -24,9 +24,9 @@
 
 EXTERN_C_BEGIN
 
+#include "gssapi.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "gssapi.h"
 
 /**
  * @defgroup globus_gsi_gss_assist_activation Activation

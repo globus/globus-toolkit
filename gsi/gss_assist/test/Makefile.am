@@ -10,7 +10,22 @@ Sources = \
 	gss_assist_impexp_init.c \
 	gss_assist_impexp_accept.c
 
+Scripts = \
+	TESTS.pl \
+	gss-assist-run-tests.pl \
+	gss-assist-impexp-test.pl \
+	gss-assist-auth-test.pl
+
+Data = \
+	dc31a685.0 \
+	dc31a685.signing_policy \
+	testcred.pem
+
 INCLUDES += $(GPT_INCLUDES)
+
+test_SCRIPTS = $(Scripts)
+
+test_DATA = $(Data)
 
 test_PROGRAMS = \
 	gss-assist-auth-init \
@@ -41,6 +56,8 @@ gss_assist_impexp_accept_SOURCES = gss_assist_impexp_accept.c
 gss_assist_impexp_accept_LDFLAGS = $(GPT_LDFLAGS)
 
 gss_assist_impexp_accept_LDADD = $(GPT_PGM_LINKS)
+
+EXTRA_DIST = $(Scripts) $(Data)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

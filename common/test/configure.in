@@ -15,7 +15,7 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 LAC_DOXYGEN([" ../ "])
 
 if test ! "X$GLOBUS_THREADS" = "Xnone"; then
-    THREAD_TEST="globus_common_thread_test.pl"
+    THREAD_TEST="globus-common-thread-test.pl"
 else
     THREAD_TEST=""
 fi
@@ -25,7 +25,7 @@ case "$GLOBUS_HOST" in
 	MEM_TEST=""
 	;;
     * )
-	MEM_TEST="globus_common_mem_test.pl"
+	MEM_TEST="globus-common-mem-test.pl"
 	;;
 esac
 

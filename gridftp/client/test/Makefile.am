@@ -9,6 +9,7 @@ globusperldir = $(GLOBUS_LOCATION)/lib/perl/Globus
 globusperl_DATA = URL.pm
 
 Scripts= \
+	TESTS.pl \
 	FtpTestLib.pm \
 	globus-ftp-client-bad-buffer-test.pl \
 	globus-ftp-client-create-destroy-test.pl \
@@ -32,7 +33,15 @@ Scripts= \
 	globus-ftp-client-user-auth-test.pl
 
 test_SCRIPTS = $(Scripts)
-EXTRA_DIST = $(Scripts) $(globusperl_DATA)
+
+Data = \
+	dc31a685.0 \
+	dc31a685.signing_policy \
+	testcred.pem
+
+test_DATA = $(Data) 
+
+EXTRA_DIST = $(Scripts) $(Data) $(globusperl_DATA)
 
 LibHeaders = \
 	globus_ftp_client_test_abort_plugin.h \

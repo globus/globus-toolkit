@@ -396,6 +396,7 @@ sub rewrite_urls
     my $self = shift;
     my $description = $self->{JobDescription};
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $url;
     my $filename;
 
@@ -404,7 +405,7 @@ sub rewrite_urls
 	chomp($url = $description->$_());
 	if($url =~ m|^[a-zA-Z]+://|)
 	{
-	    chomp($filename = `$cache_pgm -query $url`);
+	    chomp($filename = `$cache_pgm -query -t $tag $url`);
 	    if($filename ne '')
 	    {
 		$description->add($_, $filename);
@@ -490,7 +491,7 @@ sub stage_in
 
 	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") == 0)
 	{
-	    chomp($cached = `$cache_pgm -query $remote`);
+	    chomp($cached = `$cache_pgm -query -t $tag $remote`);
 	    symlink($cached, $local);
 	}
 	else
@@ -534,7 +535,7 @@ sub stage_out
 	$local_path = $local;
 	if($local_path =~ m|^x-gass-cache://|)
 	{
-	    chomp($local_path = `$cache_pgm -query $local_path 2>/dev/null`);
+	    chomp($local_path = `$cache_pgm -query -t $tag $local_path 2>/dev/null`);
 
 	    if($local_path eq '')
 	    {
@@ -600,7 +601,7 @@ sub remote_io_file_create
     $tmpfile->print($description->remote_io_url() . "\n");
     $tmpfile->close();
 
-    chomp($result = `$cache_pgm -query $filename`);
+    chomp($result = `$cache_pgm -query -t $tag $filename`);
 
     if($result eq '')
     {
@@ -615,7 +616,7 @@ sub remote_io_file_create
 	       . ">/dev/null");
         if($? == 0)
 	{
-	    chomp($tmpcachefile = `$cache_pgm -q $filename.$$`);
+	    chomp($tmpcachefile = `$cache_pgm -q -t $tag $filename.$$`);
 	    rename($tmpcachefile, $result);
 	}
 	system("$cache_pgm -cleanup-url $filename.$$");
@@ -628,7 +629,7 @@ sub remote_io_file_create
 	return Globus::GRAM::Error::WRITING_REMOTE_IO_URL;
     }
 
-    chomp($result = `$cache_pgm -query $filename`);
+    chomp($result = `$cache_pgm -query -t $tag $filename`);
 
     if($? != 0)
     {

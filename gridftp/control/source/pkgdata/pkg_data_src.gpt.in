@@ -15,7 +15,7 @@
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_core" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_gssapi_gsi" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_io" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
     </Source_Dependencies>
@@ -27,7 +27,7 @@
     </Source_Dependencies>
 
     <Build_Environment >
-      <cflags >@GPT_CFLAGS@</cflags>
+      <cflags >@GPT_PKG_CFLAGS@</cflags>
       <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>
       <pkg_libs > -lglobus_ftp_control</pkg_libs>
       <external_libs >@GPT_EXTERNAL_LIBS@</external_libs>

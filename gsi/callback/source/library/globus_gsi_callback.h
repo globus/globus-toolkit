@@ -24,9 +24,9 @@
 
 EXTERN_C_BEGIN
 
-#include <openssl/x509.h>
 #include <globus_common.h>
 #include "globus_gsi_cert_utils.h"
+#include <openssl/x509.h>
 
 /** 
  * @defgroup globus_gsi_callback_activation Activation

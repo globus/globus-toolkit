@@ -34,17 +34,23 @@ sub correct_auth
     my ($hostname) = ();
     unlink('core', $tmpname);
 
-    if(exists $ENV{GLOBUS_HOSTNAME})
+    if(exists $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT})
     {
-        $hostname = $ENV{GLOBUS_HOSTNAME};
+        $hostname = $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT};
+    }
+    elsif(exists $ENV{GLOBUS_HOSTNAME})
+    {
+        $hostname = "host\@$ENV{GLOBUS_HOSTNAME}";
     }
     else
     {
         $hostname = `hostname`;
+        $hostname = "host\@$hostname";
     }
+
     chomp($hostname);
     
-    my $command = "$test_exec -s gsiftp://$source_host$source_file -A 'host\@$hostname' >$tmpname 2>/dev/null";
+    my $command = "$test_exec -s gsiftp://$source_host$source_file -A '$hostname' >$tmpname 2>/dev/null";
     $rc = system($command) / 256;
     if($rc != 0)
     {

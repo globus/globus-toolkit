@@ -58,7 +58,7 @@ email_address RSL attribute if present) when the job terminates.
 
 @section pbs_changes Change Log
 
-@subsection globus_gram_job_manager_setup_pbs globus_gram_job_manager_setup_fork 1.0
+@subsection globus_gram_job_manager_setup_pbs globus_gram_job_manager_setup_pbs 1.0
 
 Split from the core of the Job Manager as a setup package.
 */

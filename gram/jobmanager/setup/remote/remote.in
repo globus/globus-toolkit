@@ -59,7 +59,7 @@ sub submit
           
     $remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
                 . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
-		. "globus-gass-cache -query "
+		. "globus-gass-cache -query -t $tag "
 		. "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stdout\n";
 
     $remote_stdout = `echo '$remote_cmd' | $rsh $host /bin/sh - 2>/dev/null`;
@@ -67,7 +67,7 @@ sub submit
 
     $remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
                 . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
-		. "globus-gass-cache -query "
+		. "globus-gass-cache -query -t $tag "
 		. "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stderr\n";
     $remote_stderr = `echo '$remote_cmd' | $rsh $host /bin/sh - 2>/dev/null`;
     chomp($remote_stderr);
@@ -97,7 +97,7 @@ sub poll
 	$remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
                     . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
 	            . "remote_file=\`globus-gass-cache "
-	            . "-query $ENV{GLOBUS_GRAM_JOB_CONTACT}dev/$type\`;\n"
+	            . "-query -t $tag $ENV{GLOBUS_GRAM_JOB_CONTACT}dev/$type\`;\n"
 	            . "eval dd if=\"\$remote_file\" bs=1 skip=$size;\n";
 
 	system("echo '$remote_cmd' | $rsh $host /bin/sh - >>$local_file 2>/dev/null");
@@ -216,7 +216,7 @@ sub remote_cmd
 
     $remote_cmd  = "GLOBUS_LOCATION=$globus_location ;\n";
     $remote_cmd .= "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh ; \n";
-    $remote_cmd .= "globus-gass-cache -query " .
+    $remote_cmd .= "globus-gass-cache -query -t $tag " .
 		  "$ENV{GLOBUS_GRAM_JOB_CONTACT}x509_user_proxy;\n";
 
     if($cmd eq 'proxy_relocate')
@@ -225,7 +225,8 @@ sub remote_cmd
     }
     else
     {
-	$proxy_line="X509_USER_PROXY=\`globus-gass-cache -query $ENV{GLOBUS_GRAM_JOB_CONTACT}\`;\n";
+	$proxy_line="X509_USER_PROXY=\`globus-gass-cache -query -t $tag ".
+	            "$ENV{GLOBUS_GRAM_JOB_CONTACT}\`;\n";
     }
 
     $remote_cmd  = "GLOBUS_LOCATION=$globus_location ;\n";

@@ -72,7 +72,7 @@
 </Dependency>
 </Source_Dependencies>
 <Build_Environment >
-<cflags >@GPT_CFLAGS@</cflags>
+<cflags >@GPT_PKG_CFLAGS@</cflags>
 <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>
 <pkg_libs > -lglobus_auth </pkg_libs>
 <external_libs >@GPT_EXTERNAL_LIBS@</external_libs>

@@ -322,6 +322,14 @@ accept_sec_context(
 	if(major_status != GSS_S_COMPLETE &&
 	   major_status != GSS_S_CONTINUE_NEEDED)
 	{
+            char *                      error_string = NULL;
+            globus_object_t *           error_obj = NULL;
+
+            error_obj = globus_error_get((globus_result_t) minor_status);
+            error_string = globus_error_print_chain(error_obj);
+            fprintf(stderr, "ERROR CHAIN:\n%s\n", error_string);
+            free(error_string);
+            globus_object_free(error_obj);
 	    abort();
 	}
 
@@ -440,6 +448,14 @@ init_sec_context(
 	if(major_status != GSS_S_COMPLETE &&
 	   major_status != GSS_S_CONTINUE_NEEDED)
 	{
+            char *                      error_string = NULL;
+            globus_object_t *           error_obj = NULL;
+
+            error_obj = globus_error_get((globus_result_t) minor_status);
+            error_string = globus_error_print_chain(error_obj);
+            fprintf(stderr, "ERROR CHAIN:\n%s\n", error_string);
+            free(error_string);
+            globus_object_free(error_obj);
 	    abort();
 	}
 	/* free any token we've just processed */

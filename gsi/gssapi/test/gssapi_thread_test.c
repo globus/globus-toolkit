@@ -6,8 +6,8 @@
 #include <sys/un.h>
 
 
-#define NUM_CLIENTS 2
-#define ITERATIONS 10
+#define NUM_CLIENTS 1
+#define ITERATIONS 1
 
 struct thread_arg
 {
@@ -51,16 +51,6 @@ main()
 
     globus_cond_init(&done, NULL);
     
-    /* acquire credentials */
-
-    credential = globus_gsi_gssapi_test_acquire_credential();
-
-    if(credential == GSS_C_NO_CREDENTIAL)
-    {
-	fprintf(stderr,"Unable to aquire credential\n");
-	exit(-1);
-    }
-    
     /* setup listener */
 
     address = malloc(sizeof(struct sockaddr_un));
@@ -76,6 +66,16 @@ main()
     bind(listen_fd, (struct sockaddr *) address, sizeof(struct sockaddr_un));
 
     listen(listen_fd,NUM_CLIENTS);
+
+    /* acquire credentials */
+
+    credential = globus_gsi_gssapi_test_acquire_credential();
+
+    if(credential == GSS_C_NO_CREDENTIAL)
+    {
+	fprintf(stderr,"Unable to aquire credential\n");
+	exit(-1);
+    }
 
     /* start the clients here */
 
@@ -148,14 +148,14 @@ main()
     
     /* release credentials */
 
-    globus_gsi_gssapi_test_release_credential(&credential);
+/*      globus_gsi_gssapi_test_release_credential(&credential); */
 
     /* free address */
 
     free(address);
     
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     exit(0);
 }
@@ -169,6 +169,7 @@ server_func(
     globus_bool_t                       authenticated;
     gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
     char *                              user_id = NULL;
+    gss_cred_id_t                       credential = GSS_C_NO_CREDENTIAL;
     gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
     
     thread_args = (struct thread_arg *) arg;
@@ -218,13 +219,13 @@ client_func(
     globus_bool_t                       authenticated;
     gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
     char *                              user_id = NULL;
+    gss_cred_id_t                       credential = GSS_C_NO_CREDENTIAL;
     gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
     int                                 connect_fd;
     int                                 result;
     int                                 i;
     
     thread_args = (struct thread_arg *) arg;
-
 
     for(i=0;i<ITERATIONS;i++)
     {

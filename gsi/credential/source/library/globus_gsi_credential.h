@@ -25,15 +25,15 @@
 
 EXTERN_C_BEGIN
 
-#include <openssl/x509.h>
-#include <openssl/bio.h>
-#include <openssl/ssl.h>
-
 #include "globus_common.h"
 #include "globus_error_openssl.h"
 #include "globus_gsi_cred_constants.h"
 #include "globus_gsi_callback.h"
 #include "globus_gsi_cert_utils.h"
+
+#include <openssl/x509.h>
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
 
 /** 
  * @defgroup globus_gsi_credential_activation Activation

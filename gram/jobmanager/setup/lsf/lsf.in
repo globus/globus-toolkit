@@ -119,7 +119,7 @@ sub submit
 
     $script_url = "$tag/lsf_job_script.$$"; 
     system("globus-gass-cache -add -t $tag -n $script_url file:/dev/null");
-    $lsf_job_script_name = `globus-gass-cache -query $script_url`;
+    $lsf_job_script_name = `globus-gass-cache -query -t $tag $script_url`;
     chomp($lsf_job_script_name);
     if($lsf_job_script_name eq "")
     {

@@ -16,6 +16,7 @@ CVS Information:
 
 /* defines the environment variable to be used as default cache dir.         */
 #define GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR "GLOBUS_GASS_CACHE_DEFAULT"
+#define GLOBUS_L_GASS_CACHE_DEBUG		"GLOBUS_GASS_CACHE_DEBUG"
 
 /* if GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR is not defined in user env. */
 /* we use $HOME and  GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME below */
@@ -46,8 +47,11 @@ CVS Information:
 
 /* Special file names */
 #define DATA_FILE		"data"		/* Name of the data file */
-#define DATA_FILE_PAT		"data."		/*  Used for scandir */
-#define DATA_FILE_PAT_LEN	5		/*  Length of it */
+#define DATA_FILE_PAT		"data"		/* Pattern for matching */
+#define DATA_FILE_PAT_LEN	4		/*  It's length */
+#define UDATA_FILE		"data."		/* Uniq data file name */
+#define UDATA_FILE_PAT		"data."		/* Uniq data file pattern */
+#define UDATA_FILE_PAT_LEN	5		/*  Length of it */
 #define LOCK_FILE		"lock"		/* Name of the lock file */
 #define URL_FILE		"url"		/* Name of the URL file */
 #define TAG_FILE		"tag"		/* Name of the tag file */
@@ -72,6 +76,13 @@ CVS Information:
 */
 #define LINKBUG_SLEEP_USEC	50000	/* Sleep before trying link() again */
 #define LINKBUG_MAX_RETRY	100	/* Max times to retry.. */
+
+/* Various functions will keep trying in several cases, but should
+   eventually give up.  This controls how many times to try before
+   that.. */
+#define MAKE_DIRTREE_MAX_TRIES	100
+#define UNLINK_MAX_TRIES	20
+#define CREATE_MAX_TRIES	20
 
 /* If compilled with LOCK_TOUT defined, the lock will timeout after
    LOCK_TOUT try to get the lock, if the file to lock is older than

@@ -177,7 +177,6 @@ globus_gram_job_manager_request_open_logfile(
 
 	    if(request->jobmanager_log_fp == NULL)
             {
-                fprintf(stderr, "JM: Cannot open gram logfile.\n");
                 sprintf(request->jobmanager_logfile, "/dev/null");
             }
         }

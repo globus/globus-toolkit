@@ -95,7 +95,7 @@ static void gssapi_unsetenv();
  * Environment variables pointing to delegated credentials
  */
 static char *delegation_env[] = {
-  "X509_USER_PROXY",		/* GSSAPI/SSLeay */
+    /* "X509_USER_PROXY",		 GSSAPI/SSLeay */
   "KRB5CCNAME",			/* Krb5 and possibly SSLeay */
   NULL
 };
@@ -154,6 +154,8 @@ gssapi_fix_env(void)
    * X509_USER_DELEG_PROXY. We need to copy that over into
    * X509_USER_PROXY for actual use.
    */
+
+  
   if (getenv("X509_USER_DELEG_PROXY")) {
       if (debug)
 	  syslog(LOG_DEBUG, "Setting X509_USER_PROXY to '%s'",
@@ -686,6 +688,29 @@ gssapi_acquire_server_credentials(void)
     {
 	return 0;
     }
+
+    /* if not run as root try to acquire any credential we can get
+     */
+    
+    if(getuid())
+    {
+	acquire_maj = gss_acquire_cred(&acquire_min, GSS_C_NO_NAME, 0,
+				       GSS_C_NULL_OID_SET, GSS_C_ACCEPT,
+				       &server_creds, NULL, NULL);
+        
+	if (acquire_maj == GSS_S_COMPLETE)
+        {
+            return 0;
+        }
+        else
+        {
+            gssapi_reply_error(501, acquire_maj, acquire_min,
+                               "acquiring credentials");
+            syslog(LOG_ERR, "gssapi error acquiring credentials");
+            return -1;
+        }
+    }
+    
 #ifndef KRB5_MULTIHOMED_FIXES
     /* Get all default hostname */
     if (gethostname(localname, sizeof(localname))) {
@@ -1020,35 +1045,38 @@ gssapi_reply_error(code, maj_stat, min_stat, s)
     int code_num;
     
     
-    for (code_num = 0; code_num < 1 ; code_num++) {
-	msg_ctx = min_stat;
-        gmaj_stat = gss_display_status(&gmin_stat, maj_stat,
-                                       codes[code_num],
-                                       GSS_C_NULL_OID,
-                                       &msg_ctx, &msg);
-        if ((gmaj_stat == GSS_S_COMPLETE)||
-            (gmaj_stat == GSS_S_CONTINUE_NEEDED))
-        {
-            /*
-             * Might return multiple lines in one string
-             * which the client doesn't handle, so split
-             * up into multiple replies
-             */
-            line = msg.value;
-            while(line && *line)
-            {
-                eol = strchr(line, '\n');
-                if (eol)
-                {	
-                    *eol = '\0';
-                }
-                lreply(code, "FTPD GSSAPI error: %s", line);
-                line = eol ? eol + 1 : NULL;
-            }
-            (void) gss_release_buffer(&gmin_stat, &msg);
-        }
-        if (gmaj_stat != GSS_S_CONTINUE_NEEDED)
-            break;
+    for (code_num = 0; code_num < 2 ; code_num++) {
+	msg_ctx = 0;
+	while (!msg_ctx) {
+	    gmaj_stat = gss_display_status(&gmin_stat,
+                                           code_num ? maj_stat : min_stat,
+					   codes[code_num],
+					   GSS_C_NULL_OID,
+					   &msg_ctx, &msg);
+	    if ((gmaj_stat == GSS_S_COMPLETE)||
+		(gmaj_stat == GSS_S_CONTINUE_NEEDED))
+		{
+		    /*
+		     * Might return multiple lines in one string
+		     * which the client doesn't handle, so split
+		     * up into multiple replies
+		     */
+		    line = msg.value;
+		    while(line && *line)
+			{
+			    eol = strchr(line, '\n');
+			    if (eol)
+				{	
+				    *eol = '\0';
+				}
+			    lreply(code, "FTPD GSSAPI error: %s", line);
+			    line = eol ? eol + 1 : NULL;
+			}
+		    (void) gss_release_buffer(&gmin_stat, &msg);
+		}
+	    if (gmaj_stat != GSS_S_CONTINUE_NEEDED)
+		break;
+	}
     }
     
     reply(code, "FTPD GSSAPI error: %s", s);

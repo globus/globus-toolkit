@@ -10,8 +10,9 @@
  */
 #endif
 
-#include "globus_gsi_callback_constants.h"
+
 #include "globus_i_gsi_callback.h"
+#include "globus_gsi_callback_constants.h"
 #include <openssl/x509.h>
 
 globus_result_t

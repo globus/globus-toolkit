@@ -96,11 +96,7 @@ not available.
 
 $myname: Complete
 
-Press return to continue.
 ";
-
-   $foo=<STDIN>;
-   
 }
 
 sub pod2usage 

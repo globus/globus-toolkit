@@ -348,9 +348,17 @@ sub dcau_test
     clean_remote_file($dest_host, $dest_file);
 }
 
-chomp(my $subject = `grid-cert-info -subject`);
-    
-$subject =~ s/^ *//;
+my $subject;
+
+if($ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT})
+{
+    $subject = $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT};
+}
+else
+{
+    chomp($subject = `grid-cert-info -subject`);   
+    $subject =~ s/^ *//;
+}
 
 push(@tests, "dcau_test('none', 0);");
 push(@tests, "dcau_test('self', 0);");

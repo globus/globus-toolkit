@@ -266,7 +266,7 @@ sub dcau_test
 
     unlink('core');
 
-    my $command = "$test_exec -c $dcau -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -c $dcau -d gsiftp://$dest_host$dest_file < $local_copy 2>&1";
     $rc = system($command) / 256;
     if($rc != $desired_rc)
     {
@@ -298,9 +298,17 @@ sub dcau_test
     clean_remote_file($dest_host, $dest_file);
 }
 
-chomp(my $subject = `grid-cert-info -subject`);
+my $subject;
 
-$subject =~ s/^ *//;
+if($ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT})
+{
+    $subject = $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT};
+}
+else
+{
+    chomp($subject = `grid-cert-info -subject`);   
+    $subject =~ s/^ *//;
+}
 
 push(@tests, "dcau_test('none', 0);");
 push(@tests, "dcau_test('self', 0);");

@@ -72,7 +72,6 @@ my $method = 'fork';
 my $add = 0;
 my $remove = 0;
 my $help = 0;
-my $force = 0;
 my $gpath;
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
@@ -118,14 +117,26 @@ if(! -d $servicesdir)
     mkdir $servicesdir, 0777;
 }
 
+my $symlink_exists = eval { symlink("", ""); 1 };
+
 if( $add )
 {
    &create_services_file("$servicesdir/$servicename");
    copy("${setupdir}/${manager_type}.pm", "${perljmdir}/");
+
+   if($symlink_exists && ! -r "$servicesdir/jobmanager")
+   {
+       symlink($servicename, "$servicesdir/jobmanager");
+   }
 }
 else
 {
-   system("rm $servicesdir/$servicename");
+   if($symlink_exists && readlink("$servicesdir/jobmanager") eq "$servicename")
+   {
+       unlink("$servicesdir/jobmanager");
+       print STDERR "Warning: Removing default job manager\n";
+   }
+   unlink("$servicesdir/$servicename");
 }
 
 
@@ -158,7 +169,6 @@ sub usage
           "          [-extra-config EXTRA]\n".
           "          [-add]\n".
           "          [-remove]\n".
-          "          [-force]\n".
           "          [-help]\n";
     exit 1;
 }

@@ -10,15 +10,15 @@
 
 static char *rcsid = "$Id$";
 
-#include <string.h>
-#include <stdlib.h>
-
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 #include "globus_gsi_credential.h"
 #include "globus_gsi_callback.h"
 #include "globus_gsi_system_config.h"
 #include <openssl/ssl3.h>
+
+#include <string.h>
+#include <stdlib.h>
 
 #include "ssl_locl.h"
 

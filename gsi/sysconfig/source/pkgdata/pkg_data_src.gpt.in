@@ -20,7 +20,7 @@
       </Source_Dependencies>
 
     <Source_Dependencies Type="lib_link" >
-      <Dependency Name="globus_common"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_common"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_openssl_module"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gsi_openssl_error"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
@@ -30,7 +30,7 @@
     <With_Flavors build="yes" />
 
     <Build_Environment>
-      <cflags>@GPT_CFLAGS@</cflags>
+      <cflags>@GPT_PKG_CFLAGS@</cflags>
       <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
       <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
       <pkg_libs>-lglobus_gsi_sysconfig</pkg_libs>
