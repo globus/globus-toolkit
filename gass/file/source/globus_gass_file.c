@@ -509,6 +509,18 @@ globus_gass_open(
 		globus_gass_transfer_referral_destroy(&referral);
 	    }
 	    globus_free(append);
+
+	    /* This is failure *after* adding to cache/file table, so
+	     * we need to do more clean up here.
+	     */
+	    globus_l_gass_file_table[file->fd] = GLOBUS_NULL;
+	    close(file->fd);
+	    globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+				     file->url,
+				     globus_l_gass_file_tag,
+				     file->timestamp,
+				     GLOBUS_FALSE);
+
 	    goto failure;
 	}
 	file->append = append;
