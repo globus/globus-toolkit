@@ -196,11 +196,11 @@ typedef struct globus_gass_copy_attr_s
 
 /** initialization and destruction of GASS copy handle */
 globus_result_t
-globus_gass_copy_init(
+globus_gass_copy_handle_init(
     globus_gass_copy_handle_t * handle);
 
 globus_result_t
-globus_gass_copy_destroy(
+globus_gass_copy_handle_destroy(
     globus_gass_copy_handle_t * handle);
 
 /** set the size of the buffer to be used for the transfers */

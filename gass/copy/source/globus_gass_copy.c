@@ -8,7 +8,22 @@
 
 #include "globus_gass_copy.h"
 
-#define GLOBUS_GASS_COPY_DEBUG
+#define GLOBUS_I_GASS_COPY_DEBUG
+
+#define globus_i_gass_copy_set_error(handle, error) \
+{ \
+      if(handle->err == GLOBUS_NULL) \
+	  handle->err = globus_object_copy(error); \
+}
+
+#define globus_i_gass_copy_set_error_from_result(handle, result) \
+{ \
+      if(handle->err == GLOBUS_NULL) \
+      { \
+	  handle->err = globus_error_get(result); \
+	  result = globus_error_put(handle->err); \
+      } \
+}
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #include "globus_i_gass_copy.h"
@@ -506,7 +521,7 @@ globus_gass_copy_get_url_mode(
 
     if ((rc = globus_url_parse(url, &url_info)) != GLOBUS_SUCCESS)
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("copy_url_scheme(): globus_url_parse returned !GLOBUS_SUCCESS for url: %s\n", url);
 #endif
       return globus_error_put(GLOBUS_ERROR_NO_INFO);
@@ -674,7 +689,7 @@ globus_l_gass_copy_target_destroy(
   /* free up the attr, if we allocated it */
   if(target->free_attr == GLOBUS_TRUE)
   {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("target_destroy(): freeing the target attr\n");
 #endif
     globus_libc_free(&(target->attr));
@@ -740,7 +755,7 @@ globus_result_t
 globus_l_gass_copy_state_free(
     globus_gass_copy_state_t * state)
 {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
   printf("globus_l_gass_copy_state_free(): freeing up the state\n");
 #endif
   /* clean  up the monitor */
@@ -788,7 +803,7 @@ globus_l_gass_copy_transfer_start(
   globus_result_t result = GLOBUS_SUCCESS;
   int rc;
 
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("made it to globus_l_gass_copy_transfer_start()\n");
 #endif
     
@@ -852,7 +867,7 @@ globus_l_gass_copy_transfer_start(
 	break;
 
       case GLOBUS_GASS_COPY_URL_MODE_GASS:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("transfer_start(): about to call globus_gass_transfer_register_get()\n");
 #endif
 	rc = globus_gass_transfer_register_get(
@@ -866,7 +881,7 @@ globus_l_gass_copy_transfer_start(
   */
 	if (rc != GLOBUS_SUCCESS)
 	{
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    printf("transfer_start(): globus_gass_transfer_register_get returned !GLOBUS_SUCCESS\n");
 #endif	    
 	  result = globus_error_put(GLOBUS_ERROR_NO_INFO);
@@ -882,13 +897,14 @@ globus_l_gass_copy_transfer_start(
 
     if(result != GLOBUS_SUCCESS)
     {
+	globus_i_gass_copy_set_error_from_result(handle, result);
       handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
       return result;
     }
     
     /* wait for ok from the source */
     globus_mutex_lock(&(state->monitor.mutex));
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
  printf("transfer_start(): about to cond_wait() while source is setup\n");
 #endif
     while(state->source.status == GLOBUS_I_GASS_COPY_TARGET_INITIAL)
@@ -901,11 +917,11 @@ globus_l_gass_copy_transfer_start(
     if(handle->err)
     {
       handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
-      return globus_error_put(GLOBUS_ERROR_NO_INFO);
+      return globus_error_put(handle->err);
     }
     
     handle->status = GLOBUS_GASS_COPY_STATUS_SOURCE_READY;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("transfer_start(): source is ready\n");
 #endif
     /*
@@ -922,7 +938,7 @@ globus_l_gass_copy_transfer_start(
 	break;
 
       case GLOBUS_GASS_COPY_URL_MODE_GASS:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("transfer_start(): about to call globus_gass_transfer_register_put()\n");
 #endif
         rc = globus_gass_transfer_register_put(
@@ -939,7 +955,7 @@ globus_l_gass_copy_transfer_start(
 	break;
 
        case GLOBUS_GASS_COPY_URL_MODE_IO:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("transfer_start(): about to call globus_l_gass_copy_io_setup_put()\n");
 #endif
 	 result = globus_l_gass_copy_io_setup_put(state);
@@ -954,14 +970,15 @@ globus_l_gass_copy_transfer_start(
                   *  prolly need to call user's callback here.
 	globus_gass_copy_cancel(handle);
 	*/
-#ifdef GLOBUS_GASS_COPY_DEBUG
+      globus_i_gass_copy_set_error_from_result(handle, result);
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("transfer_start(): error with setting up the dest\n");
 #endif
       return result;
     }
     /* wait for ok from the dest */
     globus_mutex_lock(&(state->monitor.mutex));
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("transfer_start(): about to cond_wait() while dest is setup\n");
 #endif
     while(state->dest.status == GLOBUS_I_GASS_COPY_TARGET_INITIAL)
@@ -978,9 +995,9 @@ globus_l_gass_copy_transfer_start(
                   *  prolly need to call user's callback here.
 	globus_gass_copy_cancel(handle);
 	*/
-      return globus_error_put(GLOBUS_ERROR_NO_INFO);
+      return globus_error_put(handle->err);
     }
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("transfer_start(): dest is ready, let's get goin'\n");
 #endif
     /* both sides are ready, start the transfer */
@@ -1003,7 +1020,7 @@ globus_l_gass_copy_read_from_queue(
   globus_result_t result = GLOBUS_SUCCESS;
     
     globus_mutex_lock(&(state->source.mutex));
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("read_from_queue(): n_pending= %d  n_simultaneous= %d\n", state->source.n_pending, state->source.n_simultaneous);
 #endif
 
@@ -1023,7 +1040,7 @@ globus_l_gass_copy_read_from_queue(
 	  if ((buffer_entry = globus_fifo_dequeue(&(state->source.queue)))
               != GLOBUS_NULL)
 	  {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    printf("read_from_queue: about to register_read() with buffer from fifo\n");
 #endif
 	    state->source.n_pending++;
@@ -1063,7 +1080,7 @@ globus_l_gass_copy_read_from_queue(
 	  if (result != GLOBUS_SUCCESS)
 	  {
 	      state->source.cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	      printf("read_from_queue(): there was an ERROR trying to register a read\n");
 #endif
 	  }
@@ -1073,12 +1090,12 @@ globus_l_gass_copy_read_from_queue(
 
     if(result != GLOBUS_SUCCESS)
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("read_from_queue():  gonna call globus_gass_copy_cancel()\n");
 #endif
 	/* call globus_gass_copy_cancel() */
     }
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("read_from_queue(): returning\n");
 #endif
    
@@ -1117,7 +1134,7 @@ globus_l_gass_copy_register_read(
     switch (state->source.mode)
     {
       case GLOBUS_GASS_COPY_URL_MODE_FTP:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_read():  calling globus_ftp_client_register_read()\n");
 #endif	  
  	result = globus_ftp_client_register_read(
@@ -1131,7 +1148,7 @@ globus_l_gass_copy_register_read(
 	  break;
 
       case GLOBUS_GASS_COPY_URL_MODE_GASS:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_read():  calling globus_gass_transfer_receive_bytes()\n");
 #endif
 	rc = globus_gass_transfer_receive_bytes(
@@ -1207,7 +1224,7 @@ globus_l_gass_copy_gass_setup_callback(
 	
 
     globus_gass_transfer_request_status_t status;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("globus_l_gass_copy_gass_setup_callback() called\n");
 #endif   
     status = globus_gass_transfer_request_get_status(request);
@@ -1215,7 +1232,7 @@ globus_l_gass_copy_gass_setup_callback(
     switch(status)
     {
       case GLOBUS_GASS_TRANSFER_REQUEST_REFERRED:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("request status == GLOBUS_GASS_TRANSFER_REQUEST_REFERRED\n");
 #endif
            globus_gass_transfer_request_get_referral(request, &referral);
@@ -1225,13 +1242,13 @@ globus_l_gass_copy_gass_setup_callback(
            {
                /* first setup the source with the register get
                 */
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	       printf("REQUEST_REFERRED:  STATE_INITIAL\n");
 #endif
                state->source.url =
                    globus_gass_transfer_referral_get_url(&referral, 0);
 	       
-#ifdef GLOBUS_GASS_COPY_DEBUG              
+#ifdef GLOBUS_I_GASS_COPY_DEBUG              
 	       printf("REQUEST_REFERRED: about to globus_gass_transfer_register_get() again with: %s\n",state->source.url);
 #endif
                if ( (rc = globus_gass_transfer_register_get(
@@ -1242,7 +1259,7 @@ globus_l_gass_copy_gass_setup_callback(
                      (void *) handle)) != GLOBUS_SUCCESS )
                {
                    globus_mutex_lock(&state->monitor.mutex);
-#ifdef GLOBUS_GASS_COPY_DEBUG	   
+#ifdef GLOBUS_I_GASS_COPY_DEBUG	   
 		   printf("gass_setup_callback(): transfer_register_get() returned: %d\n", rc);
 		   if(rc==GLOBUS_GASS_ERROR_BAD_URL)
 		       printf("rc == GLOBUS_GASS_ERROR_BAD_URL\n");
@@ -1283,7 +1300,7 @@ globus_l_gass_copy_gass_setup_callback(
            break;
 
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("request status == GLOBUS_GASS_TRANSFER_REQUEST_PENDING, should signal the monitor\n");
 #endif
            if (handle->status == GLOBUS_GASS_COPY_STATUS_INITIAL)
@@ -1303,7 +1320,7 @@ globus_l_gass_copy_gass_setup_callback(
            break;
 
       case GLOBUS_GASS_TRANSFER_REQUEST_DONE:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("request status == GLOBUS_GASS_TRANSFER_REQUEST_DONE\n");
 #endif
            globus_mutex_lock(&state->monitor.mutex);
@@ -1311,7 +1328,7 @@ globus_l_gass_copy_gass_setup_callback(
            break;
 
       case GLOBUS_GASS_TRANSFER_REQUEST_DENIED:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("request status == GLOBUS_GASS_TRANSFER_REQUEST_DENIED\n");
 #endif
            globus_mutex_lock(&state->monitor.mutex);
@@ -1324,7 +1341,7 @@ globus_l_gass_copy_gass_setup_callback(
            break;
 
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("request status == GLOBUS_GASS_TRANSFER_REQUEST_FAILED\n");
 #endif
            globus_mutex_lock(&state->monitor.mutex);
@@ -1376,7 +1393,7 @@ globus_l_gass_copy_io_setup_get(
 	if(result==GLOBUS_SUCCESS)
 	{
 	  state->source.status = GLOBUS_I_GASS_COPY_TARGET_READY;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("io_setup_get(): SUCCESS opening %s\n",parsed_url.url_path);
 	}
 	else
@@ -1387,7 +1404,7 @@ globus_l_gass_copy_io_setup_get(
     }
     else
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
       printf("io_setup_get(): handle should already have been  opened by the user\n");
 #endif
     state->source.status = GLOBUS_I_GASS_COPY_TARGET_READY;
@@ -1410,12 +1427,12 @@ globus_l_gass_copy_io_setup_put(
             globus_libc_malloc(sizeof(globus_io_handle_t));
 	if(state->dest.data.io.handle == GLOBUS_NULL)
 	{
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("io_setup_put(): error mallocing io_handle_t\n");
 #endif
 	  return globus_error_put(GLOBUS_ERROR_NO_INFO);
 	}
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	else
 	  printf("io_setup_put(): malloced io_handle_t without a problem\n");
 #endif
@@ -1429,7 +1446,7 @@ globus_l_gass_copy_io_setup_put(
 	if(result==GLOBUS_SUCCESS)
 	{
 	  state->dest.status = GLOBUS_I_GASS_COPY_TARGET_READY;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("io_setup_put(): SUCCESS opening %s\n",parsed_url.url_path);
 	}
 	else
@@ -1440,7 +1457,7 @@ globus_l_gass_copy_io_setup_put(
     }
     else
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
       printf("io_setup_put(): handle should already have been  opened by the user\n");
 #endif   
       state->dest.status = GLOBUS_I_GASS_COPY_TARGET_READY;
@@ -1470,7 +1487,7 @@ globus_l_gass_copy_ftp_setup_get(
     if(result==GLOBUS_SUCCESS)
     {
       state->source.status = GLOBUS_I_GASS_COPY_TARGET_READY;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
       printf("ftp_setup_get(): SUCCESS opening %s\n",state->source.url);
     }
     else
@@ -1501,7 +1518,7 @@ globus_l_gass_copy_ftp_setup_put(
     if(result==GLOBUS_SUCCESS)
     {
       state->dest.status = GLOBUS_I_GASS_COPY_TARGET_READY;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
       printf("ftp_setup_put(): SUCCESS opening %s\n",state->dest.url);
     }
     else
@@ -1525,7 +1542,7 @@ globus_l_gass_copy_ftp_transfer_callback(
     globus_gass_copy_handle_t * copy_handle
 	= (globus_gass_copy_handle_t *) user_arg;
 
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("ftp_transfer_callback(): called\n");
 #endif
 
@@ -1533,10 +1550,11 @@ globus_l_gass_copy_ftp_transfer_callback(
     {
 	/* do some error handling */
 	/*
-	copy_handle->err = globus_copy_error(error);
-	*/
+	  copy_handle->err = globus_copy_error(error);
+	 */
 	copy_handle->err = error;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("ftp_transfer_callback(): !GLOBUS_SUCESS, error= %d\n", error);
     }
     else
@@ -1548,7 +1566,7 @@ globus_l_gass_copy_ftp_transfer_callback(
     globus_l_gass_copy_state_free(copy_handle->state);
       copy_handle->state = GLOBUS_NULL;
 
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
       if(copy_handle->state == GLOBUS_NULL)
 	printf("copy_handle->state == GLOBUS_NULL\n");
       printf("ftp_transfer_callback(): about to call user callback\n");
@@ -1573,7 +1591,7 @@ globus_l_gass_copy_ftp_get_done_callback(
     if (error != GLOBUS_SUCCESS)
     {
       /* FIXX - do some error handling */
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
       printf("ftp_get_done_callback(): !!!GLOBUS_SUCCESS\n");
     }
     else
@@ -1620,7 +1638,7 @@ globus_l_gass_copy_generic_read_callback(
 {
     globus_gass_copy_state_t *    state = handle->state;
     globus_i_gass_copy_buffer_t *  buffer_entry;
-#ifdef GLOBUS_GASS_COPY_DEBUG   
+#ifdef GLOBUS_I_GASS_COPY_DEBUG   
     printf("generic_read_callback(): read %d bytes\n", nbytes);
 #endif   
     globus_mutex_lock(&(state->source.mutex));
@@ -1631,7 +1649,7 @@ globus_l_gass_copy_generic_read_callback(
 	  state->source.cancel = GLOBUS_I_GASS_COPY_CANCEL_CALLED;
 	  */
 	globus_mutex_unlock(&(state->source.mutex));
-#ifdef GLOBUS_GASS_COPY_DEBUG   
+#ifdef GLOBUS_I_GASS_COPY_DEBUG   
 	printf("generic_read_callback(): there was an error, call cancel\n");
 #endif
 	/*globus_gass_copy_cancel() */
@@ -1643,7 +1661,7 @@ globus_l_gass_copy_generic_read_callback(
      * put it in the write queue
      */
     
-    if(nbytes >0)
+    if(nbytes >0 || last_data)
     {
       buffer_entry = (globus_i_gass_copy_buffer_t *)
 	globus_libc_malloc(sizeof(globus_i_gass_copy_buffer_t));
@@ -1652,7 +1670,7 @@ globus_l_gass_copy_generic_read_callback(
       {
 	  /* out of memory error */
 	  handle->err = GLOBUS_ERROR_NO_INFO;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("generic_read_callback():  out of memory error, gonna call globus_gass_copy_cancel()\n");
 #endif
 	  /* call globus_gass_copy_cancel() */
@@ -1676,7 +1694,7 @@ globus_l_gass_copy_generic_read_callback(
     /* start the next write if there isn't already one outstanding */
     if(handle->state)
       globus_l_gass_copy_write_from_queue(handle);
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     else
       printf("generic_read_callback(): handle->state == GLOBUS_NULL\n");
 #endif
@@ -1684,7 +1702,7 @@ globus_l_gass_copy_generic_read_callback(
   /* if we haven't read everything from the source, read again */
     if(handle->state)
       globus_l_gass_copy_read_from_queue(handle);
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     else
       printf("generic_read_callback(): handle->state == GLOBUS_NULL\n");
 #endif
@@ -1709,7 +1727,7 @@ globus_l_gass_copy_ftp_read_callback(
  
     globus_bool_t last_data;
 
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("ftp_read_callback(): has been called\n");
 #endif
 
@@ -1734,7 +1752,7 @@ globus_l_gass_copy_ftp_read_callback(
 	{
 	  if(!state->source.cancel) /* cancel has not been set already */
 	  {
-	    copy_handle->err = globus_object_copy(error);
+	    globus_i_gass_copy_set_error(copy_handle, error);
 	    state->source.cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
 	    copy_handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
 	  }
@@ -1772,7 +1790,7 @@ globus_l_gass_copy_gass_read_callback(
 	= (globus_gass_copy_handle_t *) callback_arg;
     globus_gass_copy_state_t * state = handle->state;
     req_status = globus_gass_transfer_request_get_status(request);
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("globus_l_gass_copy_gass_read_callback(): req_status= %d\n", req_status);
 #endif
     if(last_data)
@@ -1788,7 +1806,7 @@ globus_l_gass_copy_gass_read_callback(
 	rc = globus_gass_transfer_request_get_status(request);
 	if(rc == GLOBUS_GASS_TRANSFER_REQUEST_DONE)
 	{
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("gass_read_callback(): GLOBUS_GASS_TRANSFER_REQUEST_DONE\n");
 #endif
 	  globus_gass_transfer_request_destroy(request);
@@ -1796,7 +1814,7 @@ globus_l_gass_copy_gass_read_callback(
 	else
 	{
 	    /* there's an error, tell someone who cares */
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("gass_read_callback(): this was last_data, but status !=GLOBUS_GASS_TRANSFER_REQUEST_DONE\n");
 #endif
 	}
@@ -1821,13 +1839,13 @@ globus_l_gass_copy_io_read_callback(
     globus_size_t                   nbytes)
 {
     globus_size_t offset;
-    globus_object_t * err;
+    globus_object_t * err = GLOBUS_NULL;
     globus_bool_t last_data=GLOBUS_FALSE;
     globus_gass_copy_handle_t * handle
 	= (globus_gass_copy_handle_t *) callback_arg;
     globus_gass_copy_state_t * state = handle->state;
    
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     if(result== GLOBUS_SUCCESS)
       printf("io_read_callback(): result == GLOBUS_SUCCESS\n");
     else
@@ -1835,40 +1853,60 @@ globus_l_gass_copy_io_read_callback(
     
     printf("io_read_callback(): %d bytes READ\n", nbytes);
 #endif
+    
     if(result != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(result);
 	last_data=globus_io_eof(err);
-    }   
-#ifdef GLOBUS_GASS_COPY_DEBUG
-    printf("io_read_callback(): last_data == %d\n", last_data);
+      
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	printf("io_read_callback(): last_data == %d\n", last_data);
 #endif
-    if(last_data)
-    { /* this was the last read.  set READ_COMPLETE */
-	int rc;
-	globus_mutex_lock(&(state->source.mutex));
+	if(last_data)
+	{ /* this was the last read.  set READ_COMPLETE */
+	    int rc;
+	    globus_mutex_lock(&(state->source.mutex));
+	    {
+		state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
+	    }
+	    globus_mutex_unlock(&(state->source.mutex));
+	    handle->status = GLOBUS_GASS_COPY_STATUS_READ_COMPLETE;
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	    printf("io_read_callback(): this was the last READ, source.status == GLOBUS_I_GASS_COPY_TARGET_DONE\n");
+#endif
+	    if(state->source.data.io.free_handle)
+	    {
+		globus_io_close(io_handle);
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+		printf("io_read_callback(): handle closed\n");
+#endif
+		/*   thinking that this should go in the globus_l_gass_copy_state_free()
+		     globus_libc_free(handle);
+		     */
+	    }	    	    
+	}/* if(last_data) */
+	else  /* there was an error */
 	{
-	  state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
-	}
-	globus_mutex_unlock(&(state->source.mutex));
-	handle->status = GLOBUS_GASS_COPY_STATUS_READ_COMPLETE;
-#ifdef GLOBUS_GASS_COPY_DEBUG
-	printf("io_read_callback(): this was the last READ, source.status == GLOBUS_I_GASS_COPY_TARGET_DONE\n");
-#endif
-	if(state->source.data.io.free_handle)
-	{
-	  globus_io_close(io_handle);
-#ifdef GLOBUS_GASS_COPY_DEBUG
-	  printf("io_read_callback(): handle closed\n");
-#endif
-	  /*   thinking that this should go in the globus_l_gass_copy_state_free()
-	       globus_libc_free(handle);
-	  */
-	}
-	
-	
-    }/* if(last_data) */
-
+	    globus_mutex_lock(&(state->source.mutex));
+	    {
+		if(!state->source.cancel) /* cancel has not been set already */
+		{
+		    globus_i_gass_copy_set_error(handle, err);
+		    state->source.cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
+		    handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+		}
+		else
+		{
+		    state->source.n_pending--;
+		    globus_mutex_unlock(&(state->source.mutex));
+		    return;
+		}
+		
+	    }
+	    globus_mutex_unlock(&(state->source.mutex));
+	} /* else (there was an error) */
+    }
+    
     offset = state->source.n_complete * handle->buffer_length;
     globus_l_gass_copy_generic_read_callback(
         handle,
@@ -1899,7 +1937,7 @@ globus_l_gass_copy_generic_write_callback(
     if(state->dest.cancel == GLOBUS_I_GASS_COPY_CANCEL_TRUE)
     {
 	globus_mutex_unlock(&(state->dest.mutex));
-#ifdef GLOBUS_GASS_COPY_DEBUG   
+#ifdef GLOBUS_I_GASS_COPY_DEBUG   
 	printf("generic_write_callback(): there was an error, call cancel\n");
 #endif
 	/* globus_gass_copy_cancel() */
@@ -1908,7 +1946,7 @@ globus_l_gass_copy_generic_write_callback(
     
     globus_mutex_unlock(&(state->dest.mutex));
 
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("generic_write_callback(): wrote %d bytes\n", nbytes);
 #endif
     /* push the buffer on the read queue and start another read */
@@ -1920,7 +1958,7 @@ globus_l_gass_copy_generic_write_callback(
     {
 	/* out of memory error */
 	handle->err = GLOBUS_ERROR_NO_INFO;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("generic_write_callback():  out of memory error, gonna call globus_gass_copy_cancel()\n");
 #endif
 	/* call globus_gass_copy_cancel() */
@@ -1932,24 +1970,24 @@ globus_l_gass_copy_generic_write_callback(
     globus_mutex_lock(&(state->source.mutex));
     globus_fifo_enqueue( &(state->source.queue), buffer_entry);
     globus_mutex_unlock(&(state->source.mutex));
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("generic_write_callback(): calling read_from_queue()\n");
 #endif
     if(handle->state)
       globus_l_gass_copy_read_from_queue(handle);
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     else
       printf("generic_write_callback(): handle->state == GLOBUS_NULL\n");
 #endif
 	
 	
      /* if there are more writes to do, register the next write */
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("generic_write_callback(): calling write_from_queue()\n");
 #endif
     if(handle->state)
       globus_l_gass_copy_write_from_queue(handle);
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     else
       printf("generic_write_callback(): handle->state == GLOBUS_NULL\n");
 #endif
@@ -1962,7 +2000,7 @@ globus_l_gass_copy_write_from_queue(
 {
     globus_gass_copy_state_t * state = handle->state;
     globus_i_gass_copy_buffer_t *  buffer_entry;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("globus_l_gass_copy_write_from_queue(): called\n");
 #endif
    
@@ -1972,7 +2010,7 @@ globus_l_gass_copy_write_from_queue(
      */
     if(state->dest.status == GLOBUS_I_GASS_COPY_TARGET_READY)
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("write_from_queue(): dest.status == TARGET_READY, n_pending= %d,  n_simultaneous= %d\n", state->dest.n_pending, state->dest.n_simultaneous);
 #endif
   
@@ -1990,7 +2028,7 @@ globus_l_gass_copy_write_from_queue(
               != GLOBUS_NULL)
 	  {
 	    state->dest.n_pending++;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    printf("write_from_queue(): about to call register_write()\n");
 #endif
 	    globus_l_gass_copy_register_write(
@@ -2007,7 +2045,7 @@ globus_l_gass_copy_write_from_queue(
     if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_DONE &&
        state->dest.status == GLOBUS_I_GASS_COPY_TARGET_DONE  )
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    printf("write_from_queue(): source and dest status == TARGET_DONE\n");
 #endif      
 	if(state->dest.n_pending == 0 && state->source.n_pending == 0 )
@@ -2023,7 +2061,7 @@ globus_l_gass_copy_write_from_queue(
       globus_l_gass_copy_state_free(handle->state);
       handle->state = GLOBUS_NULL;
 
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
       if(handle->state == GLOBUS_NULL)
 	printf("  handle->state == GLOBUS_NULL\n");
       printf("write_from_queue(): about to call user callback\n");
@@ -2047,7 +2085,7 @@ globus_l_gass_copy_register_write(
     {
       case GLOBUS_GASS_COPY_URL_MODE_FTP:
 	/* check the offset to see if its what we are expecting */
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_write():  calling globus_ftp_client_register_write()\n");
 	printf("                            nbytes= %d, offset= %d, last_data= %d\n", buffer_entry->nbytes,
 	    buffer_entry->offset,
@@ -2064,7 +2102,7 @@ globus_l_gass_copy_register_write(
 	if(result != GLOBUS_SUCCESS)
 	{
 	    /* do some error handling */
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    printf("register_write(): globus_ftp_client_register_write() returned: %d\n", result);
 	}
 	else
@@ -2075,7 +2113,7 @@ globus_l_gass_copy_register_write(
 	  break;
 
       case GLOBUS_GASS_COPY_URL_MODE_GASS:
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_write(): send_bytes -- %d bytes (last_data==%d)\n", buffer_entry->nbytes, buffer_entry->last_data);
 #endif
 	/* check the offset to see if its what we are expecting */
@@ -2129,7 +2167,7 @@ globus_l_gass_copy_ftp_write_callback(
 
     globus_bool_t last_data;
 
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("ftp_write_callback():  has been called, nbytes: %d\n", nbytes);
 #endif
 
@@ -2154,7 +2192,7 @@ globus_l_gass_copy_ftp_write_callback(
 	{
 	  if(!state->dest.cancel) /* cancel has not been set already */
 	  {
-	    copy_handle->err = globus_object_copy(error);
+	    globus_i_gass_copy_set_error(copy_handle, error);
 	    state->dest.cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
 	    copy_handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
 	  }
@@ -2190,13 +2228,13 @@ globus_l_gass_copy_gass_write_callback(
 	= (globus_gass_copy_handle_t *) callback_arg;
     globus_gass_copy_state_t * state = handle->state;
     req_status = globus_gass_transfer_request_get_status(request);
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("gass_write_callback(): last_data== %d, req_status= %d\n", last_data, req_status);
 #endif
     if(last_data)
     { /* this was the last write.  set WRITE_COMPLETE and free the request */
         int rc;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("gass_write_callback(): THIS WAS THE LAST WRITE\n");
 #endif
 	globus_mutex_lock(&(state->dest.mutex));
@@ -2208,7 +2246,7 @@ globus_l_gass_copy_gass_write_callback(
 	rc = globus_gass_transfer_request_get_status(request);
 	if(rc == GLOBUS_GASS_TRANSFER_REQUEST_DONE)
 	{
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("gass_write_callback(): GLOBUS_GASS_TRANSFER_REQUEST_DONE\n");
 #endif
 	  globus_gass_transfer_request_destroy(request);
@@ -2216,7 +2254,7 @@ globus_l_gass_copy_gass_write_callback(
 	else
 	{
 	    /* there's an error, tell someone who cares */
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("gass_write_callback(): this was last_data, but status !=GLOBUS_GASS_TRANSFER_REQUEST_DONE\n");
 
 	  if(req_status == GLOBUS_GASS_TRANSFER_REQUEST_FAILED)
@@ -2243,18 +2281,19 @@ globus_l_gass_copy_io_write_callback(
 	= (globus_gass_copy_handle_t *) callback_arg;
     globus_gass_copy_state_t * state = handle->state;
 
-#ifdef GLOBUS_GASS_COPY_DEBUG
+
     if(result==GLOBUS_SUCCESS)
+    {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
       printf("io_write_callback(): result == GLOBUS_SUCCESS\n");
-    else
-      printf("io_write_callback(): result != GLOBUS_SUCCESS\n");
 #endif
-    globus_mutex_lock(&(state->source.mutex));
-    {    
-      if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_DONE &&
-	 state->source.n_pending == 0)
+
+      globus_mutex_lock(&(state->source.mutex));
+      {    
+	if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_DONE &&
+	   state->source.n_pending == 0)
 	{
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	  printf("io_write_callback(): THIS WAS THE LAST WRITE\n");
 #endif
 	  globus_mutex_lock(&(state->dest.mutex));
@@ -2267,7 +2306,7 @@ globus_l_gass_copy_io_write_callback(
 	  if(state->dest.data.io.free_handle)
 	  {
        	    globus_io_close(io_handle);
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    printf("io_write_callback(): handle closed\n");
 #endif
 	    /*   thinking that this should go in the globus_l_gass_copy_state_free()
@@ -2277,9 +2316,31 @@ globus_l_gass_copy_io_write_callback(
 	
 	  
 	} /* end if last write */
+      }
+      globus_mutex_unlock(&(state->source.mutex));
     }
-    globus_mutex_unlock(&(state->source.mutex));
-    
+    else /* there was an error */
+    {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+      printf("io_write_callback(): result != GLOBUS_SUCCESS\n");
+#endif
+      globus_mutex_lock(&(state->dest.mutex));
+      {
+	if(!state->dest.cancel) /* cancel has not been set already */
+	{
+	  globus_i_gass_copy_set_error_from_result(handle, result);
+	  state->dest.cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
+	  handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+	}
+	else
+	{
+	  state->dest.n_pending--;
+	  globus_mutex_unlock(&(state->dest.mutex));
+	  return;
+	}
+      }
+      globus_mutex_unlock(&(state->dest.mutex));
+    } /* else (there was an error) */
     globus_l_gass_copy_generic_write_callback(
         handle,
         bytes,
@@ -2611,21 +2672,21 @@ globus_gass_copy_register_url_to_url(
     /* Check arguments for validity */
     if(handle == GLOBUS_NULL)
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_url_to_url(): handle was GLOBUS_NULL\n");
 #endif
 	goto error_no_handle_exit;
     }
     if(source_url == GLOBUS_NULL)
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_url_to_url(): source_url  was GLOBUS_NULL\n");
 #endif
 	goto error_exit;
     }
     if(dest_url == GLOBUS_NULL)
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_url_to_url(): dest_url was GLOBUS_NULL\n");
 #endif
 	goto error_exit;    
@@ -2636,7 +2697,7 @@ globus_gass_copy_register_url_to_url(
 		 &source_url_mode);
     if(result != GLOBUS_SUCCESS)
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_url_to_url(): copy_url_mode returned ! GLOBUS_SUCCESS for source_url\n");
 #endif
 	goto error_result_exit;
@@ -2647,7 +2708,7 @@ globus_gass_copy_register_url_to_url(
 		&dest_url_mode);
     if(result != GLOBUS_SUCCESS)
     {
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_url_to_url(): copy_url_mode returned ! GLOBUS_SUCCESS for dest_url\n");
 #endif	
 	goto error_result_exit;
@@ -2659,7 +2720,7 @@ globus_gass_copy_register_url_to_url(
       /* FIXX -- do error handling properly 
 	 return GLOBUS_FAILURE;
       */
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("register_url_to_url(): source or dest is URL_MODE_UNSUPPORTED\n");
 #endif
 	goto error_exit;
@@ -2681,7 +2742,7 @@ globus_gass_copy_register_url_to_url(
 	    source_attr);
 
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("source target populated\n");
 #endif
     result = globus_l_gass_copy_target_populate(
@@ -2691,7 +2752,7 @@ globus_gass_copy_register_url_to_url(
 	    dest_attr);
     
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	printf("dest target populated\n");
 #endif
 	
@@ -2699,7 +2760,7 @@ globus_gass_copy_register_url_to_url(
 	&& (dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP) )
     {
 	
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
         printf("calling globus_ftp_client_third_party_transfer()\n");
 #endif
         result = globus_ftp_client_third_party_transfer(
@@ -2715,11 +2776,11 @@ globus_gass_copy_register_url_to_url(
 	if (result != GLOBUS_SUCCESS)
 	{
 	    /* do some error handling */
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    printf("third_party_transfer() was not GLOBUS_SUCCESS! it returned %d\n", result);
 #endif
 	    goto error_result_exit;
-#ifdef GLOBUS_GASS_COPY_DEBUG	    
+#ifdef GLOBUS_I_GASS_COPY_DEBUG	    
 	}
 	else
 	{
@@ -2837,7 +2898,7 @@ globus_gass_copy_register_url_to_handle(
 	    source_url,
 	    source_attr);
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("source target populated\n");
 #endif
     result = globus_l_gass_copy_io_target_populate(
@@ -2845,7 +2906,7 @@ globus_gass_copy_register_url_to_handle(
 	    dest_handle);
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
     
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("dest target populated\n");
 #endif
     
@@ -2950,7 +3011,7 @@ globus_gass_copy_register_handle_to_url(
             &(state->source),
 	    source_handle);
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("source target populated\n");
 #endif
     result = globus_l_gass_copy_target_populate(
@@ -2959,7 +3020,7 @@ globus_gass_copy_register_handle_to_url(
 	    dest_url,
 	    dest_attr);
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
-#ifdef GLOBUS_GASS_COPY_DEBUG
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
     printf("dest target populated\n");
 #endif
     result = globus_l_gass_copy_transfer_start(handle);
