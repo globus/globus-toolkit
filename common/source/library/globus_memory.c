@@ -197,6 +197,12 @@ globus_memory_destroy(
 #else
 
 globus_bool_t
+globus_i_memory_pre_activate(void)
+{
+    return GLOBUS_SUCCESS;
+}
+
+globus_bool_t
 globus_memory_init(
     globus_memory_t *         mem_info,
     int                       node_size,
