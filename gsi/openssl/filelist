@@ -219,7 +219,11 @@ bin/c_rehash
 lib/libcrypto.a
 lib/libssl.a
 lib/libcrypto.so.0.9.6
+lib/libcrypto.so.0
+lib/libcrypto.so
 lib/libssl.so.0.9.6
+lib/libssl.so.0
+lib/libssl.so
 include/openssl/e_os.h
 include/openssl/e_os2.h
 include/openssl/crypto.h
