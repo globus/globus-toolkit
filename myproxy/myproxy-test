@@ -78,7 +78,7 @@ if ($exitstatus == 0) {
 
 ($exitstatus, $output) = &runtest("myproxy-info -v", undef);
 print "MyProxy Test 2 (get info for stored credential): ";
-if ($exitstatus == 0 && $output =~ /default credential/) {
+if ($exitstatus == 0 && $output =~ /username/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -110,7 +110,7 @@ $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
     &runtest("myproxy-change-pass-phrase -v",
 	     "$old_passphrase\n$passphrase\n$passphrase\n");
 print "MyProxy Test 5 (change passphrase for credential): ";
-if ($exitstatus == 0 && $output =~ /Passphrase changed/) {
+if ($exitstatus == 0 && $output =~ /Pass phrase changed/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -148,7 +148,7 @@ if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
 ($exitstatus, $output) =
     &runtest("myproxy-destroy -v", undef);
 print "MyProxy Test 9 (remove credential from repository): ";
-if ($exitstatus == 0 && $output =~ /was succesfully removed/) {
+if ($exitstatus == 0 && $output =~ /was successfully removed/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
