@@ -33,8 +33,6 @@ typedef enum
     GLOBUS_GFS_IPC_TYPE_RESOURCE
 } globus_gfs_ipc_request_type_t;
 
-
-
 /*
  *  replying
  *
@@ -210,11 +208,10 @@ typedef struct globus_gfs_resource_state_s
 } globus_gfs_resource_state_t;
 
 typedef void
-(*globus_gfs_ipc_iface_set_user)(
+(*globus_gfs_ipc_iface_set_user_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    const char *                        user_dn,
     int                                 id,
-    globus_gfs_transfer_state_t *       recv_state);
+    const char *                        user_dn);
 
 globus_result_t
 globus_gfs_ipc_set_user(
@@ -224,11 +221,10 @@ globus_gfs_ipc_set_user(
     void *                              user_arg);
 
 typedef void
-(*globus_gfs_ipc_iface_set_cred)(
+(*globus_gfs_ipc_iface_set_cred_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    const char *                        user_dn,
     int                                 id,
-    globus_gfs_transfer_state_t *       recv_state);
+    gss_cred_id_t                       cred_thing);
 
 globus_result_t
 globus_gfs_ipc_set_cred(
@@ -380,7 +376,6 @@ globus_gfs_ipc_data_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 data_connection_id);
 
-
 typedef struct globus_i_gfs_ipc_iface_s
 {
     globus_gfs_ipc_iface_recv_t         recv_func;
@@ -391,8 +386,9 @@ typedef struct globus_i_gfs_ipc_iface_s
     globus_gfs_ipc_iface_data_destroy_t data_destroy_func;
     globus_gfs_ipc_iface_resource_t     resource_func;
     globus_gfs_ipc_iface_list_t         list_func;
+    globus_gfs_ipc_iface_set_cred_t     set_cred;
+    globus_gfs_ipc_iface_set_user_t     set_user;
 } globus_gfs_ipc_iface_t;
-
 
 globus_result_t
 globus_gfs_ipc_open(
@@ -417,7 +413,6 @@ globus_gfs_ipc_close(
     globus_gfs_ipc_handle_t *           ipc_handle,
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg);
-
 
 
 #endif

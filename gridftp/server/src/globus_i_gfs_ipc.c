@@ -962,31 +962,16 @@ globus_gfs_ipc_set_user(
         request->cb = cb;
         request->user_arg = user_arg;
 
-        ipc->state = GLOBUS_GFS_IPC_STATE_AUTHENTICATING;
-
-        if(ipc->local)
+        if(!ipc->local)
         {
-            globus_callback_register_oneshot(
-                NULL,
-                NULL,
-                globus_l_gfs_ipc_finished_reply_kickout,
-                request);
-        }
-        else
-        {
-            globus_hashtable_insert(
-                &ipc_handle->call_table,
-                (void *)request->id,
-                request);
-
             buffer = globus_malloc(ipc->buffer_size);
             ptr = buffer;
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_TYPE_AUTH);
-            /* bs id, no response */
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
             size_ptr = ptr;
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
+            /* body */
             GFSEncodeUInt32(
                 buffer, ipc->buffer_size, ptr, strlen(user_dn));
             GFSEncodeString(buffer, ipc->buffer_size, ptr, user_dn);
@@ -1007,8 +992,17 @@ globus_gfs_ipc_set_user(
                 goto err;
             }
         }
+        globus_hashtable_insert(
+            &ipc_handle->call_table,
+            (void *)request->id,
+            request);
     }
     globus_mutex_unlock(&ipc->mutex);
+
+    if(ipc->local)
+    {
+        ipc_handle->iface->set_user(ipc, request->id, user_dn);
+    }
 
     return GLOBUS_SUCCESS;
 
@@ -1029,6 +1023,83 @@ globus_gfs_ipc_set_cred(
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg)
 {
+    gss_buffer_desc                     gsi_buffer;
+    int                                 maj_rc;
+    int                                 min_rc;
+    globus_i_gfs_ipc_handle_t *         ipc;
+    globus_result_t                     res;
+    globus_gfs_ipc_request_t *          request;
+    globus_byte_t *                     buffer = NULL;
+    globus_byte_t *                     ptr;
+    globus_byte_t *                     size_ptr;
+    globus_size_t                       msg_size;
+    GlobusGFSName(globus_gfs_ipc_set_cred);
+
+    /* sreialize the cred */
+    maj_rc = gss_export_cred(&min_rc, del_cred, NULL, 0, &gsi_buffer);
+    if(maj_rc != GSS_S_COMPLETE)
+    {
+        return GlobusGFSErrorParameter("del_cred");
+    }
+
+    ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
+    globus_mutex_lock(&ipc->mutex);
+    {
+        request = (globus_gfs_ipc_request_t *) 
+            globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
+        request->id = (int) request;
+        request->cb = cb;
+        request->user_arg = user_arg;
+
+        if(!ipc->local)
+        {
+            buffer = globus_malloc(ipc->buffer_size);
+            ptr = buffer;
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_TYPE_AUTH);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
+            size_ptr = ptr;
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, gsi_buffer.length);
+            /* body */
+            memcpy(ptr, gsi_buffer.value, gsi_buffer.length);
+
+            msg_size = ptr - buffer + gsi_buffer.length;
+            res = globus_xio_register_write(
+                ipc_handle->xio_handle,
+                buffer,
+                msg_size,
+                msg_size,
+                NULL,
+                globus_l_gfs_ipc_write_cb,
+                request);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+
+        globus_hashtable_insert(
+            &ipc_handle->call_table,
+            (void *)request->id,
+            request);
+    }
+    globus_mutex_unlock(&ipc->mutex);
+
+    if(ipc->local)
+    {
+        ipc_handle->iface->set_cred(ipc, request->id, del_cred);
+    }
+
+    return GLOBUS_SUCCESS;
+
+  err:
+    globus_mutex_unlock(&ipc->mutex);
+    if(buffer != NULL)
+    {
+        globus_free(buffer);
+    }
+
+    return res;
     return GLOBUS_SUCCESS;
 }
 
