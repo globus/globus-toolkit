@@ -14,7 +14,8 @@ INIT_OBJS	= myproxy_init.o $(COMMON_OBJS)
 DESTROY_OBJS	= myproxy_destroy.o $(COMMON_OBJS)
 GET_OBJS	= myproxy_get_delegation.o $(COMMON_OBJS)
 SERVER_OBJS	= myproxy_server.o verror.o myproxy_creds.o \
-			myproxy_log.o vparse.o $(COMMON_OBJS)
+			myproxy_log.o vparse.o myproxy_server_config.o \
+			$(COMMON_OBJS)
 
 default:	$(TARGETS)
 
