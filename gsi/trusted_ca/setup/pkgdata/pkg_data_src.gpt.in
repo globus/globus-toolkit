@@ -24,12 +24,12 @@
         </Source_Dependencies>
 
         <Source_Dependencies Type="compile">
-	        <Dependency Name="globus_core"> 
+            <Dependency Name="globus_core"> 
                 <Version>
                     <Simple_Version Major="2"/>
                 </Version> 
             </Dependency>
-	    </Source_Dependencies>
+        </Source_Dependencies>
 
 
         <Source_Setup_Dependency PkgType="pgm">

@@ -14,6 +14,7 @@
             <Dependency Name="globus_core">
                 <Version>
                     <Simple_Version Major="2"/>
+                </Version>
             </Dependency>                
             <Dependency Name="globus_common">
                 <Version>
