@@ -58,31 +58,19 @@ globus_i_xio_driver_start_close(
     globus_bool_t                               can_fail)
 {
     globus_result_t                             res;
-    globus_i_xio_op_entry_t *                   next_op;
     globus_i_xio_op_entry_t *                   my_op;
-    globus_i_xio_context_entry_t *              next_context;
-    int                                         caller_ndx;
+    globus_i_xio_context_entry_t *              my_context;
 
     op->progress = GLOBUS_TRUE;
     op->block_timeout = GLOBUS_FALSE;
-    my_op = &op->entry[op->ndx];
+    my_op = &op->entry[op->ndx - 1];
     my_op->in_register = GLOBUS_TRUE;
-    caller_ndx = op->ndx;
+    my_context = &op->_op_context->entry[op->ndx - 1];
 
-    do
-    {
-        op->ndx++;
-        next_op = &op->entry[op->ndx];
-        next_context = &op->_op_context->entry[op->ndx];
-    }
-    while(next_context->driver->close_func == NULL);
-
-    next_op->caller_ndx = caller_ndx;
-
-    res = next_context->driver->close_func(
-                    next_context->driver_handle,
-                    next_op->attr,
-                    &op->_op_context->entry[op->ndx],
+    res = my_context->driver->close_func(
+                    my_context->driver_handle,
+                    my_op->attr,
+                    my_context,
                     op);
     if(res != GLOBUS_SUCCESS && !can_fail)
     {
@@ -103,13 +91,16 @@ globus_l_xio_driver_op_kickout(
     void *                                      user_arg)
 {
     globus_i_xio_op_t *                         op;
+    globus_i_xio_op_entry_t *                   my_op;
 
     op = (globus_i_xio_op_t *) user_arg;
 
-    op->entry[op->ndx].cb(
+    my_op = &op->entry[op->ndx];
+    op->ndx = my_op->caller_ndx;
+    my_op->cb(
         op,
         op->cached_res,
-        op->entry[op->ndx].user_arg);
+        my_op->user_arg);
 }
 
 /**************************************************************************

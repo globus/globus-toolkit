@@ -170,7 +170,7 @@ globus_i_xio_timer_poller_callback(
     globus_mutex_lock(&timer->mutex);
     {
         for(list = timer->op_list; 
-            globus_list_empty(list);
+            !globus_list_empty(list);
             list = globus_list_rest(list))
         {
             entry = (globus_i_xio_timer_entry_t *) globus_list_first(list);

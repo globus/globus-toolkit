@@ -173,6 +173,8 @@ globus_l_xio_test_attr_copy(
                 globus_malloc(sizeof(globus_l_xio_test_handle_t));
     memcpy(attr, src, sizeof(globus_l_xio_test_handle_t));
 
+    *dst = attr;
+
     return GLOBUS_SUCCESS;
 }
 
@@ -262,7 +264,7 @@ globus_l_xio_test_open(
 {
     globus_l_xio_test_handle_t *        attr;
     globus_l_xio_test_handle_t *        dh;
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
 
     attr = (globus_l_xio_test_handle_t *) driver_attr;
 
@@ -275,11 +277,11 @@ globus_l_xio_test_open(
     globus_l_xio_test_attr_copy((void **)&dh, attr);
     dh->context = context;
 
-    if(dh->failure | GLOBUS_XIO_TEST_FAIL_PASS_OPEN)
+    if(dh->failure & GLOBUS_XIO_TEST_FAIL_PASS_OPEN)
     {
         return GlobusXIOErrorLazy();
     }
-    else if(dh->failure | GLOBUS_XIO_TEST_FAIL_FINISH_OPEN)
+    else if(dh->failure & GLOBUS_XIO_TEST_FAIL_FINISH_OPEN)
     {
         res = GlobusXIOErrorLazy();
     }
@@ -321,11 +323,11 @@ globus_l_xio_test_close(
 
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
-    if(dh->failure | GLOBUS_XIO_TEST_FAIL_PASS_CLOSE)
+    if(dh->failure & GLOBUS_XIO_TEST_FAIL_PASS_CLOSE)
     {
         return GlobusXIOErrorLazy();
     }
-    else if(dh->failure | GLOBUS_XIO_TEST_FAIL_FINISH_CLOSE)
+    else if(dh->failure & GLOBUS_XIO_TEST_FAIL_FINISH_CLOSE)
     {
         res = GlobusXIOErrorLazy();
     }
@@ -370,11 +372,11 @@ globus_l_xio_test_read(
 
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
-    if(dh->failure | GLOBUS_XIO_TEST_FAIL_PASS_READ)
+    if(dh->failure & GLOBUS_XIO_TEST_FAIL_PASS_READ)
     {
         return GlobusXIOErrorLazy();
     }
-    else if(dh->failure | GLOBUS_XIO_TEST_FAIL_FINISH_READ)
+    else if(dh->failure & GLOBUS_XIO_TEST_FAIL_FINISH_READ)
     {
         res = GlobusXIOErrorLazy();
     }
@@ -428,11 +430,11 @@ globus_l_xio_test_write(
     
     dh = (globus_l_xio_test_handle_t *) driver_handle;
     
-    if(dh->failure | GLOBUS_XIO_TEST_FAIL_PASS_WRITE)
+    if(dh->failure & GLOBUS_XIO_TEST_FAIL_PASS_WRITE)
     {
         return GlobusXIOErrorLazy();
     }
-    else if(dh->failure | GLOBUS_XIO_TEST_FAIL_FINISH_WRITE)
+    else if(dh->failure & GLOBUS_XIO_TEST_FAIL_FINISH_WRITE)
     {
         res = GlobusXIOErrorLazy();
     }

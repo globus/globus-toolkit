@@ -211,7 +211,16 @@ globus_i_xio_open_close_callback(
     handle = op->_op_handle;
 
     globus_mutex_lock(&handle->mutex);
-    {   
+    {
+        if(result != GLOBUS_SUCCESS)
+        {
+            handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSING;
+        }
+        else if(handle->state == GLOBUS_XIO_HANDLE_STATE_OPENING)
+        {
+            handle->state = GLOBUS_XIO_HANDLE_STATE_OPEN;
+        }
+
         /* set to finished for the sake of the timeout */
         if(op->state == GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING)
         {
@@ -286,6 +295,11 @@ globus_l_xio_open_close_callback_kickout(
 
         /* this is likely useless, but may help in debugging */
         op->state = GLOBUS_XIO_OP_STATE_FINISHED;
+
+        if(handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSING)
+        {
+            handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;
+        }
 
         /* 
          *  if we were trying toclose or the open has a failed result.
@@ -1149,6 +1163,7 @@ globus_xio_register_open(
     op->_op_cb = cb;
     op->user_arg = user_arg;
     op->entry[0].caller_ndx = -1; /* for first pass there is no return */
+    op->_op_context = context;
 
     /* initialize the handle */
     handle->ref = 2; /* itself, operation */
@@ -1523,7 +1538,15 @@ globus_xio_register_close(
     /* set up op */
     for(ctr = 0; ctr < handle->stack_size; ctr++)
     {
-        GlobusIXIOAttrGetDS(op->entry[ctr].attr, attr, handle->context->entry[ctr].driver);
+        if(attr != NULL)
+        {
+            GlobusIXIOAttrGetDS(op->entry[ctr].attr, attr,          \
+                handle->context->entry[ctr].driver);
+        }
+        else
+        {
+            op->entry[ctr].attr = NULL;
+        }
     }
 
      res = globus_l_xio_register_close(op);
