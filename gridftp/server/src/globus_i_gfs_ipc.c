@@ -4957,7 +4957,6 @@ globus_l_gfs_ipc_transfer_pack(
     globus_byte_t *                     buffer = NULL;
     globus_byte_t *                     ptr;
     globus_size_t                       msg_size;
-    int                                 id;
     globus_result_t                     res;
     int                                 range_size;
     int                                 ctr;
@@ -4965,8 +4964,6 @@ globus_l_gfs_ipc_transfer_pack(
     globus_off_t                        length;
     GlobusGFSName(globus_l_gfs_ipc_transfer_pack);
     GlobusGFSDebugEnter();
-
-    id = (int) request;
 
     /* pack the header */
     buffer = globus_malloc(ipc->buffer_size);
@@ -5120,7 +5117,6 @@ globus_gfs_ipc_request_send(
 
         request = (globus_gfs_ipc_request_t *) 
             globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
-        request->id = (int) request;
         request->cb = cb;
         request->event_cb = event_cb;
         request->user_arg = user_arg;
@@ -5184,7 +5180,6 @@ globus_gfs_ipc_request_list(
 
         request = (globus_gfs_ipc_request_t *) 
             globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
-        request->id = (int) request;
         request->cb = cb;
         request->ipc = ipc_handle;
         request->event_cb = event_cb;
@@ -5263,7 +5258,6 @@ globus_gfs_ipc_request_command(
             result = GlobusGFSErrorIPC();
             goto error;
         }
-        request->id = (int) request;
         request->cb = cb;
         request->user_arg = user_arg;
         request->ipc = ipc_handle;
@@ -5463,7 +5457,6 @@ globus_l_gfs_ipc_pack_data(
     globus_byte_t *                     buffer = NULL;
     globus_byte_t *                     ptr;
     globus_size_t                       msg_size;
-    int                                 id;
     globus_result_t                     res;
     int                                 ctr;
     OM_uint32                           maj_rc;
@@ -5488,7 +5481,6 @@ globus_l_gfs_ipc_pack_data(
         }
     }
 
-    id = request->id;
     /* pack the header */
     buffer = globus_malloc(ipc->buffer_size);
     ptr = buffer;
@@ -5678,7 +5670,6 @@ globus_gfs_ipc_request_passive_data(
             res = GlobusGFSErrorMemory("request");
             goto err;
         }
-        request->id = (int) request;
         request->cb = cb;
         request->user_arg = user_arg;
         request->ipc = ipc_handle;
@@ -5758,7 +5749,6 @@ globus_gfs_ipc_request_stat(
         {
             goto err;
         }
-        request->id = (int) request;
         request->cb = cb;
         request->user_arg = user_arg;
         request->ipc = ipc_handle;

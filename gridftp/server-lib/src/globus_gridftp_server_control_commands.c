@@ -811,7 +811,7 @@ globus_l_gsc_cmd_stat_cb(
     }
     else
     {
-        if((int)user_arg == 0)
+        if(user_arg == NULL)
         {
             code = 213;
             tmp_ptr = globus_i_gsc_list_single_line(stat_info);
