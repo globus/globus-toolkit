@@ -1,8 +1,5 @@
  /**
- * @file globus_gass_copy.h
- *
- * @brief Globus GASS Copy API 
- *
+ * @mainpage
  *
  * The Globus GASS Copy library is motivated by the desire to provide a
  * uniform interface to transfer files specified by different protocols.
@@ -13,10 +10,8 @@
  * for a variety of protocols. These include the standard HTTP, FTP and 
  * GSIFTP options.  Some of the new file transfer capabilities in GSIFTP are
  * parallel, striping, authentication and TCP buffer sizing.
- *
  *   - Provide a service to support nonblocking file transfer and handle
  * asynchronous file and network events.
- *
  *   - Provide a simple and portable way to implement file transfers.
  * 
  * Any program that uses Globus GASS Copy functions must include
@@ -192,7 +187,6 @@ struct globus_gass_copy_handle_s
 
   globus_ftp_client_handle_t	      ftp_source_handle;
   globus_ftp_client_handle_t	      ftp_dest_handle;
-  globus_ftp_client_plugin_t **	      ftp_plugins;
 };
 
 /**
@@ -201,25 +195,42 @@ struct globus_gass_copy_handle_s
  */
 typedef struct globus_gass_copy_attr_s
 {
-  globus_ftp_client_attr_t * ftp_attr;
+  globus_ftp_client_operationattr_t * ftp_attr;
   globus_io_attr_t * io;
   globus_gass_transfer_requestattr_t * gass_requestattr;
-  globus_ftp_client_plugin_t **		ftp_plugins;
 } globus_gass_copy_attr_t;
+
+/**
+ * GASS Copy Handle attribute structure. Contains any/all attributes that
+ * are required to create lower-level handles (ftp, gass, io).
+ */
+typedef struct globus_gass_copy_handleattr_s
+{
+  globus_ftp_client_handleattr_t *	ftp_attr;
+} globus_gass_copy_handleattr_t;
 
 /** initialization and destruction of GASS Copy handle */
 globus_result_t
 globus_gass_copy_handle_init(
-    globus_gass_copy_handle_t * handle);
+    globus_gass_copy_handle_t * handle,
+    globus_gass_copy_handleattr_t * handle_attr);
 
 globus_result_t
 globus_gass_copy_handle_destroy(
     globus_gass_copy_handle_t * handle);
 
 globus_result_t
-globus_gass_copy_attr_set_ftp_plugins(
-    globus_gass_copy_handle_t * handle,
-    globus_ftp_client_plugin_t ** ftp_plugins);
+globus_gass_copy_handleattr_init(
+    globus_gass_copy_handleattr_t * handle_attr);
+
+globus_result_t
+globus_gass_copy_handleattr_destroy(
+    globus_gass_copy_handleattr_t * handle_attr);
+
+globus_result_t
+globus_gass_copy_handleattr_set_ftp_attr(
+    globus_gass_copy_handleattr_t * handle_attr,
+    globus_ftp_client_handleattr_t * ftp_attr);
 
 /** set the size of the buffer to be used for the transfers */
 globus_result_t
@@ -242,7 +253,7 @@ globus_gass_copy_attr_init(
 globus_result_t
 globus_gass_copy_attr_set_ftp(
     globus_gass_copy_attr_t * attr,
-    globus_ftp_client_attr_t * ftp_attr);
+    globus_ftp_client_operationattr_t * ftp_attr);
 
 globus_result_t
 globus_gass_copy_attr_set_io(

@@ -245,8 +245,8 @@ main(int argc, char **argv)
     globus_io_handle_t *               dest_io_handle    = GLOBUS_NULL;
     globus_gass_transfer_requestattr_t * source_gass_attr = GLOBUS_NULL;
     globus_gass_transfer_requestattr_t * dest_gass_attr = GLOBUS_NULL;
-    globus_ftp_client_attr_t *         source_ftp_attr = GLOBUS_NULL;
-    globus_ftp_client_attr_t *         dest_ftp_attr = GLOBUS_NULL;
+    globus_ftp_client_operationattr_t *         source_ftp_attr = GLOBUS_NULL;
+    globus_ftp_client_operationattr_t *         dest_ftp_attr = GLOBUS_NULL;
     globus_gass_copy_attr_t            source_gass_copy_attr;
     globus_gass_copy_attr_t            dest_gass_copy_attr;
     globus_gass_copy_url_mode_t        source_url_mode;
@@ -382,7 +382,7 @@ main(int argc, char **argv)
     monitor.done = GLOBUS_FALSE;
     monitor.use_err = GLOBUS_FALSE;
 
-    globus_gass_copy_handle_init(&gass_copy_handle);
+    globus_gass_copy_handle_init(&gass_copy_handle, GLOBUS_NULL);
     globus_gass_copy_attr_init(&source_gass_copy_attr);
     globus_gass_copy_attr_init(&dest_gass_copy_attr);
 
@@ -414,38 +414,39 @@ main(int argc, char **argv)
         if (source_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
         {
             source_ftp_attr = globus_libc_malloc
-                              (sizeof(globus_ftp_client_attr_t));
-            globus_ftp_client_attr_init(source_ftp_attr);
+                              (sizeof(globus_ftp_client_operationattr_t));
+            globus_ftp_client_operationattr_init(source_ftp_attr);
 
             if (tcp_buffer_size > 0)
             {
                 tcp_buffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
                 tcp_buffer.fixed.size = tcp_buffer_size;
-                globus_ftp_client_attr_set_tcp_buffer(source_ftp_attr,
-                                                      &tcp_buffer);
+                globus_ftp_client_operationattr_set_tcp_buffer(source_ftp_attr,
+							       &tcp_buffer);
             }
 
 	    if (num_streams >= 1)
 	    {
-		globus_ftp_client_attr_set_mode(
+		globus_ftp_client_operationattr_set_mode(
 		    source_ftp_attr,
 		    GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
 		parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
 		parallelism.fixed.size = num_streams;
-		globus_ftp_client_attr_set_parallelism(source_ftp_attr,
-						       &parallelism);
+		globus_ftp_client_operationattr_set_parallelism(
+		    source_ftp_attr,
+		    &parallelism);
 	    }
 
             if (source_subject  ||
                 source_url.user ||
                 source_url.password)
             {
-                globus_ftp_client_attr_set_authorization(
-                                      source_ftp_attr,
-                                      source_url.user,
-                                      source_url.password,
-                                      NULL,
-                                      source_subject);
+                globus_ftp_client_operationattr_set_authorization(
+		    source_ftp_attr,
+		    source_url.user,
+		    source_url.password,
+		    NULL,
+		    source_subject);
             }
 
             globus_gass_copy_attr_set_ftp(&source_gass_copy_attr,
@@ -511,38 +512,38 @@ main(int argc, char **argv)
         if (dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
         {
             dest_ftp_attr = globus_libc_malloc
-                              (sizeof(globus_ftp_client_attr_t));
-            globus_ftp_client_attr_init(dest_ftp_attr);
+                              (sizeof(globus_ftp_client_operationattr_t));
+            globus_ftp_client_operationattr_init(dest_ftp_attr);
 
             if (tcp_buffer_size > 0)
             {
                 tcp_buffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
                 tcp_buffer.fixed.size = tcp_buffer_size;
-                globus_ftp_client_attr_set_tcp_buffer(dest_ftp_attr,
-                                                      &tcp_buffer);
+                globus_ftp_client_operationattr_set_tcp_buffer(dest_ftp_attr,
+							       &tcp_buffer);
             }
 
 	    if (num_streams >= 1)
 	    {
-		globus_ftp_client_attr_set_mode(
+		globus_ftp_client_operationattr_set_mode(
 		    dest_ftp_attr,
 		    GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
 		parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
 		parallelism.fixed.size = num_streams;
-		globus_ftp_client_attr_set_parallelism(dest_ftp_attr,
-						       &parallelism);
+		globus_ftp_client_operationattr_set_parallelism(dest_ftp_attr,
+								&parallelism);
 	    }
 
             if (dest_subject  ||
                 dest_url.user ||
                 dest_url.password)
             {
-                globus_ftp_client_attr_set_authorization(
-                                      dest_ftp_attr,
-                                      dest_url.user,
-                                      dest_url.password,
-                                      dest_url.user,
-                                      dest_subject);
+                globus_ftp_client_operationattr_set_authorization(
+		    dest_ftp_attr,
+		    dest_url.user,
+		    dest_url.password,
+		    dest_url.user,
+		    dest_subject);
             }
 
             globus_gass_copy_attr_set_ftp(&dest_gass_copy_attr,

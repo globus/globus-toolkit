@@ -253,7 +253,7 @@ globus_l_gass_transfer_ftp_write_callback(
     globus_object_t *                           error,
     globus_byte_t *                             bytes,
     globus_size_t                               nbytes,
-    globus_size_t                               offset,
+    globus_off_t                                offset,
     globus_bool_t		                eof);
 
 #ifdef TEMP_DEF
@@ -282,7 +282,7 @@ globus_l_gass_transfer_ftp_read_callback(
     globus_object_t *               error,
     globus_byte_t *                 bytes,
     globus_size_t                   nbytes,
-    globus_size_t                   offset,
+    globus_off_t                    offset,
     globus_bool_t		    eof);
 
 void

@@ -335,7 +335,7 @@ globus_l_gass_transfer_ftp_write_callback(
     globus_object_t *                           error,
     globus_byte_t *                             bytes,
     globus_size_t                               nbytes,
-    globus_size_t                               offset,
+    globus_off_t                                offset,
     globus_bool_t		                eof)
 {
     globus_gass_transfer_ftp_request_proto_t *		proto;
@@ -401,7 +401,7 @@ globus_l_gass_transfer_ftp_read_callback(
     globus_object_t *               error,
     globus_byte_t *                 bytes,
     globus_size_t                   nbytes,
-    globus_size_t                   offset,
+    globus_off_t                    offset,
     globus_bool_t		    eof)
 {
     globus_gass_transfer_ftp_request_proto_t *		proto;
@@ -677,7 +677,7 @@ globus_l_gass_transfer_ftp_new_request(
 {
     int						rc=GLOBUS_SUCCESS;
     globus_gass_transfer_file_mode_t		file_mode=GLOBUS_GASS_TRANSFER_FILE_MODE_BINARY;
-    globus_ftp_client_attr_t			ftp_attr;
+    globus_ftp_client_operationattr_t		ftp_attr;
     globus_ftp_control_tcpbuffer_t              tcp_buffer;
     globus_result_t				result;
     globus_gass_transfer_ftp_request_proto_t *	proto;
@@ -710,7 +710,7 @@ globus_l_gass_transfer_ftp_new_request(
     {
 	goto proto_error;
     }
-    result = globus_ftp_client_attr_init(&ftp_attr);
+    result = globus_ftp_client_operationattr_init(&ftp_attr);
     
     if(result != GLOBUS_SUCCESS)
     {
@@ -784,8 +784,8 @@ globus_l_gass_transfer_ftp_new_request(
 	}
 	if(file_mode == GLOBUS_GASS_TRANSFER_FILE_MODE_TEXT)
 	{
-	  globus_ftp_client_attr_set_type(&ftp_attr,
-					  GLOBUS_FTP_CONTROL_TYPE_ASCII);
+	  globus_ftp_client_operationattr_set_type(&ftp_attr,
+					           GLOBUS_FTP_CONTROL_TYPE_ASCII);
 	}    
 	/*
 	rc = globus_gass_transfer_requestattr_get_block_size(attr,
@@ -844,12 +844,12 @@ globus_l_gass_transfer_ftp_new_request(
 	  proto->url.password ||
 	  subject )
       {
-	globus_ftp_client_attr_set_authorization(
-						 &ftp_attr,
-						 proto->url.user,
-						 proto->url.password,
-						 NULL,
-						 subject);
+	globus_ftp_client_operationattr_set_authorization(
+						          &ftp_attr,
+						          proto->url.user,
+						          proto->url.password,
+						          NULL,
+						          subject);
       }
     }
 #endif /* NOT skipping attribute stuff for now */
@@ -903,15 +903,15 @@ globus_l_gass_transfer_ftp_new_request(
       {
 	tcp_buffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
 	tcp_buffer.fixed.size = sndbuf;
-	globus_ftp_client_attr_set_tcp_buffer(&ftp_attr,
-					      &tcp_buffer);
+	globus_ftp_client_operationattr_set_tcp_buffer(&ftp_attr,
+					               &tcp_buffer);
       }
       
       result = globus_ftp_client_put(
 	    &proto->handle,
 	    proto->url_string,
 	    &ftp_attr,
-	    GLOBUS_NULL,
+            GLOBUS_NULL,
 	    globus_l_gass_transfer_ftp_put_done_callback,
 	    (void *) proto);
 	break;
@@ -926,15 +926,15 @@ globus_l_gass_transfer_ftp_new_request(
       {
 	tcp_buffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
 	tcp_buffer.fixed.size = rcvbuf;
-	globus_ftp_client_attr_set_tcp_buffer(&ftp_attr,
-					      &tcp_buffer);
+	globus_ftp_client_operationattr_set_tcp_buffer(&ftp_attr,
+					               &tcp_buffer);
       }
       
 	result = globus_ftp_client_get(
 	    &proto->handle,
 	    proto->url_string,
 	    &ftp_attr,
-	    GLOBUS_NULL,
+            GLOBUS_NULL,
 	    globus_l_gass_transfer_ftp_get_done_callback,
 	    (void *) proto);
 	break;
@@ -954,14 +954,14 @@ globus_l_gass_transfer_ftp_new_request(
 	proto->request,
 	(globus_gass_transfer_request_proto_t *) proto);
     
-    globus_ftp_client_attr_destroy(&ftp_attr);
+    globus_ftp_client_operationattr_destroy(&ftp_attr);
     return ;
 
   url_error:
     globus_url_destroy(&proto->url);
 
   attr_error:
-    globus_ftp_client_attr_destroy(&ftp_attr);
+    globus_ftp_client_operationattr_destroy(&ftp_attr);
   handle_error:
     globus_ftp_client_handle_destroy(&proto->handle);
   proto_error:
