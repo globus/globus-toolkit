@@ -225,8 +225,7 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 	    }
 	    else
 	    {
-		globus_free(duplicate);
-		return GLOBUS_GRAM_CLIENT_ERROR_BAD_GATEKEEPER_CONTACT;
+			dn = "";
 	    }
 	    iport = (unsigned short) atoi(port);
     
@@ -254,7 +253,18 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
      * done with the port, can now put the slash back
      */
     *gatekeeper_service = globus_libc_strdup(service);
-    *gatekeeper_dn = globus_libc_strdup(dn);
+	if (*dn)
+	{
+    	*gatekeeper_dn = globus_libc_strdup(dn);
+	}
+	else
+	{
+		if (*gatekeeper_dn = globus_libc_malloc(6 + strlen(host)))
+		{
+			globus_libc_sprintf(*gatekeeper_dn, "host@%s",
+				host);
+		}
+	}
     globus_libc_free(duplicate);
 
     return GLOBUS_SUCCESS;
