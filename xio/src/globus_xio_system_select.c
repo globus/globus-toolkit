@@ -599,6 +599,7 @@ globus_l_xio_system_deactivate(void)
             globus_l_xio_system_unregister_periodic_cb,
             &signaled,
             GLOBUS_NULL);
+        globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
         globus_l_xio_system_select_wakeup();
 
         while(!signaled)
@@ -674,6 +675,7 @@ globus_l_xio_system_cancel_cb(
                         /* pend the cancel for after select wakes up */
                         if(!globus_l_xio_system_wakeup_pending)
                         {
+                            globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
                             globus_l_xio_system_select_wakeup();
                         }
 
@@ -764,6 +766,7 @@ globus_l_xio_system_register_read(
     globus_l_operation_info_t *         read_info)
 {
     globus_result_t                     result;
+    globus_bool_t                       do_wakeup = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_system_register_read);
 
     GlobusXIOSystemDebugEnterFD(fd);
@@ -814,13 +817,23 @@ globus_l_xio_system_register_read(
         if(globus_l_xio_system_select_active &&
             !globus_l_xio_system_wakeup_pending)
         {
-            globus_l_xio_system_select_wakeup();
+            globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
+            do_wakeup = GLOBUS_TRUE;
         }
 
         read_info->state = GLOBUS_L_OPERATION_PENDING;
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
 
+    if(do_wakeup)
+    {
+        /* I do this outside the lock because the select thread is likely
+         * to wakeup immediately which would mean immediate contention for
+         * that lock
+         */
+        globus_l_xio_system_select_wakeup();
+    }
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -844,6 +857,7 @@ globus_l_xio_system_register_write(
     globus_l_operation_info_t *         write_info)
 {
     globus_result_t                     result;
+    globus_bool_t                       do_wakeup = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_system_register_write);
 
     GlobusXIOSystemDebugEnterFD(fd);
@@ -894,13 +908,23 @@ globus_l_xio_system_register_write(
         if(globus_l_xio_system_select_active &&
             !globus_l_xio_system_wakeup_pending)
         {
-            globus_l_xio_system_select_wakeup();
+            globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
+            do_wakeup = GLOBUS_TRUE;
         }
 
         write_info->state = GLOBUS_L_OPERATION_PENDING;
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-
+    
+    if(do_wakeup)
+    {
+        /* I do this outside the lock because the select thread is likely
+         * to wakeup immediately which would mean immediate contention for
+         * that lock
+         */
+        globus_l_xio_system_select_wakeup();
+    }
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -1025,7 +1049,6 @@ globus_l_xio_system_select_wakeup(void)
 
     GlobusXIOSystemDebugEnter();
     
-    globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
     byte = 0;
 
     do
@@ -1060,8 +1083,6 @@ globus_l_xio_system_handle_wakeup(void)
     {
         done = read(globus_l_xio_system_wakeup_pipe[0], buf, sizeof(buf));
     } while(done < 0 && errno == EINTR);
-
-    globus_l_xio_system_wakeup_pending = GLOBUS_FALSE;
 
     GlobusXIOSystemDebugExit();
 }
@@ -2116,6 +2137,7 @@ globus_l_xio_system_poll(
                 if(FD_ISSET(fd, globus_l_xio_system_ready_reads))
                 {
                     globus_l_xio_system_handle_wakeup();
+                    globus_l_xio_system_wakeup_pending = GLOBUS_FALSE;
                     FD_CLR(fd, globus_l_xio_system_ready_reads);
                     nready--;
                 }
