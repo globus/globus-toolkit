@@ -21,7 +21,7 @@ gss_create_cas_proxy(
     int                                 result;
     gss_cred_id_desc *                  cred_handle;
     int                                 hours = 12;
-    globus_proxy_type_t                 proxy_type = GLOBUS_RESTRICTED_PROXY;
+    globus_proxy_type_t                 proxy_type = GLOBUS_FULL_PROXY;
     int                                 bits = 512;
     int                                 length;
     char *                              outfile = NULL;
@@ -36,12 +36,12 @@ gss_create_cas_proxy(
 
     sk_X509_EXTENSION_push(extensions, ex);
 
-    length = strlen(CAS_PROXY_BASE_FN) + strlen(proxy_tag) + 1;
+    length = strlen(CAS_PROXY_BASE_FN) + strlen(proxy_tag) + 16;
     
     outfile = malloc(length);
 
-    snprintf(outfile,length,CAS_PROXY_BASE_FN "%s",proxy_tag);
-        
+    snprintf(outfile,length,"%s.%d.%s", CAS_PROXY_BASE_FN, getuid(), proxy_tag);
+
     result = proxy_create_local(cred_handle->pcd,
                                 outfile,
                                 hours,
@@ -49,14 +49,13 @@ gss_create_cas_proxy(
                                 proxy_type,
                                 NULL,
                                 extensions);
-
     if(result)
     {
         major_status = GSS_S_FAILURE;
         *minor_status = gsi_generate_minor_status();
         goto done;
     }
-    
+
  done:
 
     if (extensions)
@@ -71,7 +70,6 @@ gss_create_cas_proxy(
     }
 
     
-
     return major_status;
 }
 
@@ -86,14 +84,13 @@ proxy_create_cas_extension(
     int                                 crit = 0;
 
     asn1_obj = OBJ_txt2obj("CASRIGHTS",0);   
-    
     if(!(asn1_oct_string = ASN1_OCTET_STRING_new()))
     {
         /* set some sort of error */
         goto err;
     }
 
-    asn1_oct_string->data = extension_data->value;
+    asn1_oct_string->data = strdup(extension_data->value);
     asn1_oct_string->length = extension_data->length;
 
     if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
@@ -108,11 +105,11 @@ err:
     {
         ASN1_OCTET_STRING_free(asn1_oct_string);
     }
-    
+
     if (asn1_obj)
     {
         ASN1_OBJECT_free(asn1_obj);
     }
-    
+
     return ex;
 }

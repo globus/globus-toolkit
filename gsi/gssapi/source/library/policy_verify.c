@@ -13,6 +13,7 @@ gss_policy_verify(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     BIO *                               bio = NULL;
+    BIO *                               b64 = NULL;
     int                                 result;
     ASN1_BIT_STRING *                   signature = NULL;
     ASN1_OCTET_STRING *                 policy = NULL;
@@ -21,10 +22,12 @@ gss_policy_verify(
     X509 *                              sig_cert = NULL;
     X509 *                              chain_cert = NULL; 
     gss_name_desc *                     sig_identity = NULL;
-    
+
     context_handle = (gss_ctx_id_desc *) context;
     
     bio = BIO_new(BIO_s_mem());
+    b64 = BIO_new(BIO_f_base64());
+    b64 = BIO_push(b64, bio);
 
     major_status = gs_put_token(NULL,bio,input_token);
 
@@ -36,7 +39,7 @@ gss_policy_verify(
     
     ASN1_d2i_bio((char *(*)()) ASN1_OCTET_STRING_new,
                  (char *(*)()) d2i_ASN1_OCTET_STRING,
-                 bio,
+                 b64,
                  (unsigned char **) &policy);
 
     if(policy == NULL)
@@ -48,30 +51,26 @@ gss_policy_verify(
 
     ASN1_d2i_bio((char *(*)()) ASN1_BIT_STRING_new,
                  (char *(*)()) d2i_ASN1_BIT_STRING,
-                 bio,
+                 b64,
                  (unsigned char **) &signature);
-
     if(signature == NULL)
     {
         *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto done;
     }
-
-    d2i_X509_bio(bio,&sig_cert);
-
+    d2i_X509_bio(b64,&sig_cert);
     if(sig_cert == NULL)
     {
         *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto done;
     }
-    
     cert_chain = sk_X509_new_null();
     
-    while(BIO_pending(bio))
+    while(BIO_pending(b64))
     {
-        chain_cert = d2i_X509_bio(bio, NULL);
+        chain_cert = d2i_X509_bio(b64, NULL);
 
         if(chain_cert == NULL)
         {
@@ -82,7 +81,6 @@ gss_policy_verify(
 
         sk_X509_push(cert_chain,chain_cert);
     }
-    
     result = globus_ssl_utils_verify_signature(policy,
                                                signature,
                                                sig_cert);
@@ -96,7 +94,6 @@ gss_policy_verify(
     result = globus_ssl_utils_verify_cert(sig_cert,
                                           cert_chain,
                                           context_handle->pvxd.certdir);
-
     if(result)
     {
         major_status = GSS_S_FAILURE;
@@ -145,7 +142,6 @@ gss_policy_verify(
     {
         sk_X509_pop_free(cert_chain, X509_free);
     }
-
     return major_status;
     
 }
