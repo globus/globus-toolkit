@@ -19,7 +19,7 @@ globus_l_xio_system_deactivate();
 
 #include "version.h"
 
-globus_module_descriptor_t              globus_i_callback_module =
+globus_module_descriptor_t              globus_i_xio_system_module =
 {
     "globus_xio_system_select",
     globus_l_xio_system_activate,
@@ -153,7 +153,7 @@ static globus_callback_handle_t     globus_l_xio_system_poll_handle;
  */
 static
 int
-globus_l_xio_system_activate()
+globus_l_xio_system_activate(void)
 {
     int                                 rc;
     int                                 i;
@@ -263,7 +263,7 @@ globus_l_xio_system_unregister_periodic_cb(
 
 static
 int
-globus_l_xio_system_deactivate()
+globus_l_xio_system_deactivate(void)
 {
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {

@@ -1,6 +1,26 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_file_driver.h"
 
+static
+int
+globus_l_xio_file_activate();
+
+static
+int
+globus_l_xio_file_deactivate();
+
+#include "version.h"
+
+globus_module_descriptor_t              globus_i_xio_file_module =
+{
+    "globus_xio_file",
+    globus_l_xio_file_activate,
+    globus_l_xio_file_deactivate,
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
+};
+
 /*
  *  attribute structure
  */
@@ -50,6 +70,20 @@ static const globus_l_handle_t          globus_l_xio_file_handle_default =
 {
     /* handle    */     GLOBUS_XIO_FILE_INVALID_HANDLE
 };
+
+static
+int
+globus_l_xio_system_activate(void)
+{
+    return globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
+}
+
+static
+int
+globus_l_xio_system_deactivate(void)
+{
+    return globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
+}
 
 /*
  *  initialize a driver attribute
