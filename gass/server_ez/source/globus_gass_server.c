@@ -50,6 +50,7 @@ static char *  long_usage = \
 "        Enable write access to the local file system\n"
 "    -c | -client-shutdown\n"
 "        Allow client to trigger shutdown the GASS server\n"
+"        See globus-gass-server-shutdown\n"
 "    -o\n"
 "        Writes to <base URL>/dev/stdout will be forwarded to stdout\n"
 "    -e\n"
