@@ -15,6 +15,8 @@
 #include <string.h>
 #include <assert.h>
 
+/* Location of default proxy */
+#define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
 
 static char usage[] = \
 "\n"\
@@ -60,6 +62,7 @@ main(int argc, char *argv[])
     char *username, *pshost; 
     char request_buffer[1024], response_buffer[1024];
     int requestlen, responselen;
+    char proxyfile[64];
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -93,6 +96,15 @@ main(int argc, char *argv[])
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
+
+    /* Create a proxy by running [grid-proxy-init] */
+    sprintf(proxyfile, "%s.%s", MYPROXY_DEFAULT_PROXY, client_request->username);
+
+    /* Run grid-proxy-init to create a proxy that will be destroyed right after */
+    if (grid_proxy_init(1, proxyfile) != 0) {
+        fprintf(stderr, "Program grid_proxy_init failed\n");
+        exit(1);
+    }
 
     /* Allow user to provide a passphrase */
     if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1, 
@@ -164,6 +176,12 @@ main(int argc, char *argv[])
         break;
     }
     
+    /* Delete proxy file */
+    if (grid_proxy_destroy(proxyfile) != 0) {
+        fprintf(stderr, "Program grid_proxy_destroy failed\n");
+        exit(1);
+    }
+
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
 
@@ -212,6 +230,13 @@ init_arguments(int argc,
         }
     }
 
+    /* Check to see if myproxy-server specified */
+    if (attrs->pshost == NULL) {
+	fprintf(stderr, usage);
+	fprintf(stderr, "Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
+	exit(1);
+    }
+
     /* Check to see if username specified */
     if (request->username == NULL) {
 	fprintf(stderr, usage);
@@ -239,7 +264,7 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
 
     /* Get user's passphrase */    
     do {
-        printf("Enter password to retrieve proxy on  myproxy-server:\n");
+        printf("Enter password used to delete  proxy on  myproxy-server:\n");
         
         if (!(fgets(pass, 1024, stdin))) {
             fprintf(stderr,"Failed to read password from stdin\n");   
@@ -258,4 +283,44 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
     }
     strncpy(passphrase, pass, passlen);
     return 0;
+}
+
+/* grid_proxy_init()
+ *
+ * Uses the system() call to run grid-proxy-init to create a user proxy
+ *
+ * returns grid-proxy-init status 0 if OK, -1 on error
+ */
+int
+grid_proxy_init(int hours, const char *proxyfile) {
+
+    int rc;
+    char command[128];
+  
+    assert(proxyfile != NULL);
+    
+    sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);
+    rc = system(command);
+
+    return rc;
+}
+
+/* grid_proxy_destroy()
+ *
+ * Uses the system() call to run grid-proxy-destroy to create a user proxy
+ *
+ * returns grid-proxy-destroy status 0 if OK, -1 on error
+ */
+int
+grid_proxy_destroy(const char *proxyfile) {
+  
+    int rc;
+    char command[128];
+
+    assert(proxyfile != NULL);
+
+    sprintf(command, "grid-proxy-destroy %s", proxyfile);
+    rc = system(command);
+
+    return rc;
 }
