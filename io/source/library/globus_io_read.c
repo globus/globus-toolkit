@@ -562,10 +562,12 @@ globus_i_io_try_read(
          */ 
         if(handle->nl_handle != GLOBUS_NULL)
         {
-            sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=TRY_READ", handle->fd);
+            sprintf(tag_str, "SOCK=%d", handle->fd);
             globus_netlogger_write(
                 handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_START_READ,
+                "GIOTR",
+                3,
                 tag_str);
         }
 	n_read =
@@ -580,12 +582,14 @@ globus_i_io_try_read(
         if(handle->nl_handle != GLOBUS_NULL)
         {
             sprintf(tag_str, 
-                "SOCK=%d GLOBUS_IO_TAG=TRY_READ GLOBUS_IO_NBYTES=%ld", 
+                "SOCK=%d GLOBUS_IO_NBYTES=%ld", 
                 handle->fd,
                 n_read);
             globus_netlogger_write(
-                handle->nl_handle,
+                handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_END_READ,
+                "GIOTR",
+                3,
                 tag_str);
         }
 	save_errno = errno;
@@ -780,11 +784,13 @@ globus_l_io_read_callback(
          */
         if(handle->nl_handle != GLOBUS_NULL)
         {
-            sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=READ", 
+            sprintf(tag_str, "SOCK=%d", 
                 handle->fd);
             globus_netlogger_write(
-                handle->nl_handle,
+                handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_START_READ,
+                "GIOR",
+                3,
                 tag_str);
         }
 	n_read =
@@ -798,12 +804,14 @@ globus_l_io_read_callback(
          */
         if(handle->nl_handle != GLOBUS_NULL)
         {
-            sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=READ GLOBUS_IO_NBYTES=%ld", 
+            sprintf(tag_str, "SOCK=%d GLOBUS_IO_NBYTES=%ld", 
                 handle->fd,
                 n_read);
             globus_netlogger_write(
-                handle->nl_handle,
+                handle->nl_handle, 
                 GLOBUS_IO_NL_EVENT_END_READ,
+                "GIOR",
+                3,
                 tag_str);
 	}
  

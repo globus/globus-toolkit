@@ -69,9 +69,14 @@ typedef void NLhandle;
 
 struct globus_netlogger_handle_s
 {   
-    char *                                nl_event_str;
-    char *                                desc;
     NLhandle *                            nl_handle;
+    char *                                hostname;
+    char *                                progname;
+    char *                                gsid;
+    char *                                pid;
+    char *                                desc;
+
+    char *                                main_str;
 };
 
 /*

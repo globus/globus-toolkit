@@ -1504,11 +1504,13 @@ globus_i_io_try_write(
          */
         if(handle->nl_handle) 
         {
-            sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=TRY_WRITE",
+            sprintf(tag_str, "SOCK=%d",
                 handle->fd);
             globus_netlogger_write(
                 handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_START_WRITE,
+                "GIOTW",
+                3,
                 tag_str);
         }
 	n_written = globus_libc_write(
@@ -1522,12 +1524,14 @@ globus_i_io_try_write(
         if(handle->nl_handle) 
         {
             sprintf(tag_str, 
-                "SOCK=%d GLOBUS_IO_TAG=TRY_WRITE GLOBUS_IO_NBYTES=%ld",
+                "SOCK=%d GLOBUS_IO_NBYTES=%ld",
                 handle->fd,
                 n_written);
             globus_netlogger_write(
                 handle->nl_handle,
                 GLOBUS_IO_NL_EVENT_END_WRITE,
+                "GIOTW",
+                3,
                 tag_str);
         }
 
@@ -1732,11 +1736,13 @@ globus_i_io_try_writev(
         /*
          *  NETLOGGER information
          */
-        sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=WRITEV",
+        sprintf(tag_str, "SOCK=%d",
             handle->fd);
         globus_netlogger_write(
             handle->nl_handle,
             GLOBUS_IO_NL_EVENT_START_WRITE,
+            "GIOTWV",
+            3,
             tag_str);
 
 	n_written = globus_libc_writev(
@@ -1744,12 +1750,14 @@ globus_i_io_try_writev(
 	    iov,
 	    count_used);
 
-        sprintf(tag_str, "SOCK=%d GLOBUS_IO_TAG=WRITEV GLOBUS_IO_NBYTES=%ld",
+        sprintf(tag_str, "SOCK=%d GLOBUS_IO_NBYTES=%ld",
             handle->fd,
             n_written);
         globus_netlogger_write(
             handle->nl_handle,
             GLOBUS_IO_NL_EVENT_END_WRITE,
+            "GIOTWV",
+            3,
             tag_str);
 
 	save_errno = errno;
