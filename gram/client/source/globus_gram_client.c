@@ -114,6 +114,13 @@ globus_l_gram_client_job_request(
     globus_l_gram_client_monitor_t *	monitor);
 
 static
+int
+globus_l_gram_client_job_refresh_credentials(
+    char *				job_contact,
+    gss_cred_id_t			creds,
+    globus_l_gram_client_monitor_t *	monitor);
+
+static
 void
 globus_l_gram_client_callback(
     void *				arg,
@@ -606,10 +613,11 @@ globus_gram_client_ping_attr_failed:
         globus_libc_free(dn);
 
 globus_gram_client_ping_parse_failed:
-    globus_mutex_destroy(&monitor.mutex);
-    globus_cond_destroy(&monitor.cond);
+    globus_l_gram_client_monitor_destroy(&monitor);
+
     return rc;
-} /* globus_gram_client_ping() */
+}
+/* globus_gram_client_ping() */
 
 
 /**
@@ -1480,6 +1488,11 @@ error_exit:
  * Delegate new credentials to a job manager.
  * @ingroup globus_gram_client_job_functions
  *
+ * This function performs a new delegation handshake with the job
+ * manager, updating it with a new user proxy. This will allow the job
+ * manager to continue to send job state callbacks after the original
+ * proxy would have expired.
+ *
  * @param job_contact
  *        The job contact string of the job manager to contact. This is the
  *        same value returned from globus_gram_client_job_request().
@@ -1500,65 +1513,92 @@ globus_gram_client_job_refresh_credentials(
 {
     globus_l_gram_client_monitor_t	monitor;
     int					rc;
-    globus_byte_t *			query = GLOBUS_NULL;
-    globus_size_t			querysize;
 
-    globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
-    globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
-    monitor.done = GLOBUS_FALSE;
-    monitor.handle = 0;
+    globus_l_gram_client_monitor_init(&monitor,
+	                              GLOBUS_NULL,
+				      GLOBUS_NULL);
 
-    globus_mutex_lock(&monitor.mutex);
-    monitor.type = GLOBUS_GRAM_CLIENT_RENEW;
+    rc = globus_l_gram_client_job_refresh_credentials(
+	    job_contact,
+	    creds,
+	    &monitor);
 
-    rc = globus_gram_protocol_pack_status_request(
-	 "renew",
-	 &query,
-	 &querysize);
-
-    if (rc!=GLOBUS_SUCCESS)
-      goto end;
-
-    /* Send the request to the job manager, if successful, delegate a
-     * credential to the job manager. call back when all is done.
-     */
-    rc = globus_gram_protocol_post_delegation(
-	 job_contact,
-	 &monitor.handle,
-	 GLOBUS_NULL,
-	 query,
-	 querysize,
-	 creds,
-	 GSS_C_NO_OID_SET,
-	 GSS_C_NO_BUFFER_SET,
-	 GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG | GSS_C_GLOBUS_SSL_COMPATIBLE,
-	 0,
-	 globus_l_gram_client_monitor_callback,
-	 &monitor);
-
-    if (rc!=GLOBUS_SUCCESS)
+    if (rc != GLOBUS_SUCCESS)
     {
-        goto end;
+	goto end;
     }
 
+    globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-      goto end;
-    }
-
-  end:
     globus_mutex_unlock(&monitor.mutex);
-    globus_cond_destroy(&monitor.cond);
+
+end:
+    globus_l_gram_client_monitor_destroy(&monitor);
+
     return rc;
 }
 /* globus_gram_client_job_refresh_credentials() */
 
+/**
+ * Delegate new credentials to a job manager (nonblocking).
+ * @ingroup globus_gram_client_job_functions
+ *
+ * This function performs the same operation as globus_gram_client_job_refresh_credentials(), but without blocking the calling thread. Once the delegation
+ * has completed, it's final status will be reported in the
+ * @a register_callback.
+ *
+ * @param job_contact
+ *        The job contact string of the job manager to contact. This is the
+ *        same value returned from globus_gram_client_job_request().
+ * @param creds
+ *        A credential which should be used to contact the job manager. This
+ *        may be GSS_C_NO_CREDENTIAL to use the process's default
+ *        credential.
+ * @param register_callback
+ *        Callback function to be called when the job refresh has
+ *        been processed.
+ * @param register_callback_arg
+ *        A pointer to user data which will be passed to the callback as
+ *        it's @a user_callback_arg.
+ */
+int
+globus_gram_client_register_job_refresh_credentials(
+    char *				job_contact,
+    gss_cred_id_t			creds,
+    globus_gram_client_nonblocking_func_t
+    					register_callback,
+    void *				register_callback_arg)
+{
+    globus_l_gram_client_monitor_t *	monitor;
+    int					rc;
+
+    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+
+    if(!monitor)
+    {
+	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+    }
+    globus_l_gram_client_monitor_init(monitor,
+	                              register_callback,
+				      register_callback_arg);
+
+    rc = globus_l_gram_client_job_refresh_credentials(
+	    job_contact,
+	    creds,
+	    monitor);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+	globus_l_gram_client_monitor_destroy(monitor);
+	globus_libc_free(monitor);
+    }
+
+    return rc;
+}
 /**
  * Nonblocking register a callback contact for job state changes.
  * @ingroup globus_gram_client_job_functions
@@ -1926,6 +1966,55 @@ globus_gram_client_job_request_parse_failed:
     return rc;
 }
 /* globus_l_gram_client_job_request() */
+
+static
+int
+globus_l_gram_client_job_refresh_credentials(
+    char *				job_contact,
+    gss_cred_id_t			creds,
+    globus_l_gram_client_monitor_t *	monitor)
+{
+    int					rc;
+    globus_byte_t *			query = GLOBUS_NULL;
+    globus_size_t			querysize;
+
+    globus_mutex_lock(&monitor->mutex);
+
+    monitor->type = GLOBUS_GRAM_CLIENT_RENEW;
+
+    rc = globus_gram_protocol_pack_status_request(
+	 "renew",
+	 &query,
+	 &querysize);
+
+    if (rc!=GLOBUS_SUCCESS)
+      goto end;
+
+    /* Send the request to the job manager, if successful, delegate a
+     * credential to the job manager. call back when all is done.
+     */
+    rc = globus_gram_protocol_post_delegation(
+	 job_contact,
+	 &monitor->handle,
+	 GLOBUS_NULL,
+	 query,
+	 querysize,
+	 creds,
+	 GSS_C_NO_OID_SET,
+	 GSS_C_NO_BUFFER_SET,
+	 GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG | GSS_C_GLOBUS_SSL_COMPATIBLE,
+	 0,
+	 (monitor->callback != GLOBUS_NULL)
+	     ?  globus_l_gram_client_register_callback
+	     : globus_l_gram_client_monitor_callback,
+	 monitor);
+
+end:
+    globus_mutex_unlock(&monitor->mutex);
+
+    return rc;
+}
+/* globus_l_gram_client_job_refresh_credentials() */
 
 static
 void

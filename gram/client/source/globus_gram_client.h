@@ -167,6 +167,13 @@ globus_gram_client_job_refresh_credentials(
     char *                              job_contact,
     gss_cred_id_t                       creds);
 
+int
+globus_gram_client_register_job_refresh_credentials(
+    char *				job_contact,
+    gss_cred_id_t			creds,
+    globus_gram_client_nonblocking_func_t
+    					register_callback,
+    void *				register_callback_arg);
 
 int
 globus_gram_client_job_status(
