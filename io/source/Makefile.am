@@ -1,9 +1,9 @@
+include $(top_srcdir)/globus_automake_config
 include $(top_srcdir)/globus_automake_targets
 
 SUBDIRS= \
 	library \
-	pkgdata \
-	tests
+	pkgdata
 
 
 include $(top_srcdir)/globus_automake_rules
