@@ -827,23 +827,20 @@ GSS_CALLCONV GSS_FUNC(gss_duplicate_name)
    OM_uint32 
    GSS_CALLCONV GSS_FUNC(gss_import_cred)
               (OM_uint32 *,        /* minor_status */
-               const gss_buffer_t, /* interprocess_token */
-               OM_uint32,          /* time_req */
-               const gss_OID_set,  /* desired mech*/
-               gss_cred_usage_t,   /* what usage for this cred */
                gss_cred_id_t *,    /* cred to be exported */
-               gss_OID_set *,      /* actual_mechs */
-               OM_uint32 *         /* time_rec */
+               const gss_OID,      /* desired mech*/
+               OM_uint32,          /* option req */
+               const gss_buffer_t  /* import buffer */
               );
 
    GSS_MAKE_TYPEDEF
    OM_uint32
    GSS_CALLCONV GSS_FUNC(gss_export_cred)
               (OM_uint32 *,        /* minor_status */
-               gss_cred_id_t,      /* cred_handle */
-               const gss_OID_set,  /* desired mechs */
-               gss_cred_usage_t,   /* cred usage */
-               gss_buffer_t        /* interprocess_token */
+               const gss_cred_id_t,/* cred_handle */
+               const gss_OID,      /* desired mech */
+               OM_uint32,          /* option req */
+               gss_buffer_t        /* output buffer */
               );
 
 #endif /* GSI_EXTENDED_GSSAPI */

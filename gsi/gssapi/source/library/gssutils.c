@@ -94,12 +94,12 @@ Returns:
 **********************************************************************/
 
 OM_uint32 
-gss_create_and_fill_context
-(OM_uint32  * minor_status,
- gss_ctx_id_desc** context_handle_P,
- gss_cred_id_desc* cred_handle,
- const gss_cred_usage_t cred_usage,
- OM_uint32 req_flags)
+gss_create_and_fill_context(
+    OM_uint32  *                        minor_status,
+    gss_ctx_id_desc **                  context_handle_P,
+    gss_cred_id_desc *                  cred_handle,
+    const gss_cred_usage_t              cred_usage,
+    OM_uint32                           req_flags)
 {
 
 	OM_uint32 major_status = GSS_S_COMPLETE;
@@ -688,190 +688,206 @@ Returns:
 **********************************************************************/
 
 OM_uint32 
-gss_create_and_fill_cred
-(OM_uint32  * minor_status,
- gss_cred_id_t *           output_cred_handle_P,
- const gss_cred_usage_t cred_usage,
- X509   * ucert,
- EVP_PKEY	* upkey,
- STACK_OF(X509)  * cert_chain,
- BIO * bp) 
+gss_create_and_fill_cred(
+    OM_uint32 *                         minor_status,
+    gss_cred_id_t *                     output_cred_handle_P,
+    const gss_cred_usage_t              cred_usage,
+    X509 *                              ucert,
+    EVP_PKEY *                          upkey,
+    STACK_OF(X509) *                    cert_chain,
+    BIO *                               bp) 
 {
-    gss_cred_id_desc** output_cred_handle = 
+    gss_cred_id_desc **                 output_cred_handle = 
         (gss_cred_id_desc**) output_cred_handle_P ;
-  
-    OM_uint32 major_status = GSS_S_NO_CRED;
-    gss_cred_id_desc* newcred ;
-    int status;
-	int i;
+    OM_uint32                           major_status = GSS_S_NO_CRED;
+    gss_cred_id_desc*                   newcred;
+    int                                 status;
+    int                                 i;
 
 #ifdef DEBUG
-	fprintf(stderr,"gss_create_and_fill_cred\n");
+    fprintf(stderr,"gss_create_and_fill_cred\n");
 #endif
     *minor_status = 0;
 
-	newcred = (gss_cred_id_desc*) malloc(sizeof(gss_cred_id_desc)) ;
-	if (newcred == NULL) {
-		GSSerr(GSSERR_F_ACQUIRE_CRED,ERR_R_MALLOC_FAILURE);
-		return GSS_S_FAILURE ;
-	}
-	newcred->cred_usage = cred_usage ;
-	newcred->globusid = NULL;
-	newcred->gs_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
+    newcred = (gss_cred_id_desc*) malloc(sizeof(gss_cred_id_desc)) ;
 
-        if (!(newcred->pcd = proxy_cred_desc_new())) {
-                GSSerr(GSSERR_F_ACQUIRE_CRED,ERR_R_MALLOC_FAILURE);
-                return GSS_S_FAILURE ;
+    if (newcred == NULL) {
+        GSSerr(GSSERR_F_ACQUIRE_CRED,ERR_R_MALLOC_FAILURE);
+        return GSS_S_FAILURE ;
+    }
+
+    newcred->cred_usage = cred_usage;
+    newcred->globusid = NULL;
+    newcred->gs_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
+    
+    if (!(newcred->pcd = proxy_cred_desc_new())) {
+        GSSerr(GSSERR_F_ACQUIRE_CRED,ERR_R_MALLOC_FAILURE);
+        return GSS_S_FAILURE ;
+    }
+
+    /* delegated certificate, save in pcd */
+    
+    if (ucert)
+    {
+        newcred->pcd->ucert = ucert;
+    }
+
+    if (upkey)
+    {
+        newcred->pcd->upkey = upkey;
+    }
+
+    if (cert_chain)
+    {
+        /* Delegated credential is a proxy */
+        newcred->pcd->type = CRED_TYPE_PROXY;   
+        newcred->pcd->cert_chain = sk_X509_new_null();
+        for(i=0;i<sk_X509_num(cert_chain);i++)
+        {
+            sk_X509_insert(newcred->pcd->cert_chain,
+                           X509_dup(sk_X509_value(cert_chain,i)),
+                           sk_X509_num(cert_chain));
+        }
+    }
+
+
+    /*
+     * setup SSLeay environment
+     * This will find the user's cert, key, proxy etc
+     */ 
+    
+    if ((status = proxy_init_cred(newcred->pcd, 
+                                  proxy_password_callback_no_prompt,
+                                  bp)))
+    {
+		
+        if (status == PRXYERR_R_CERT_EXPIRED)
+        { 
+            *minor_status =  GSSERR_R_CERT_EXPIRED;
+            major_status =  GSS_S_CREDENTIALS_EXPIRED;
         }
 
-	/* delegated certificate, save in pcd */
+        if (status = PRXYERR_R_PROXY_EXPIRED)
+        { 
+            *minor_status =  GSSERR_R_PROXY_EXPIRED;
+            major_status =  GSS_S_CREDENTIALS_EXPIRED;
+        }
+        goto err;
+    }
 
-	if (ucert) {
-		newcred->pcd->ucert = ucert;
-	}
-	if (upkey) {
-		newcred->pcd->upkey = upkey;
-	}
-	if (cert_chain) {
-    		/* Delegated credential is a proxy */
-                newcred->pcd->type = CRED_TYPE_PROXY;   
-		newcred->pcd->cert_chain = sk_X509_new_null();
-		for(i=0;i<sk_X509_num(cert_chain);i++) {
-			 sk_X509_insert(newcred->pcd->cert_chain,
-			 	X509_dup(sk_X509_value(cert_chain,i)),
-				sk_X509_num(cert_chain));
-		}
-	}
+    /*
+     * The SSLeay when built by default excludes the NULL 
+     * encryption options: #ifdef SSL_ALLOW_ENULL in ssl_ciph.c
+     * Since the user obtains and builds the SSLeay, we have 
+     * no control over how it is built. 
+     *
+     * We have an export licence for this code, and don't
+     * need/want encryption. We will therefore turn off
+     * any encryption by placing the RSA_NULL_MD5 cipher
+     * first. See s3_lib.c ssl3_ciphers[]=  The RSA_NUL_MD5
+     * is the first, but the way to get at it is as  n-1 
+     *
+     * Now that we support encryption, we may still add
+     * RSA_NUL_MD5 but it may be at the begining or end
+     * of the list. This will allow for some compatability. 
+     * (But in this code we will put it last for now.)
+     *
+     * Where, if at all, RSA_NUL_MD5 is added:
+     *
+     *                 |  Initiate     Accept
+     * ----------------------------------------
+     * GSS_C_CONF_FLAG |
+     *     set         |  end        don't add
+     *   notset        |  begining   end
+     *                 ------------------------
+     *
+     * This gives the initiator control over the encryption
+     * but lets the server force encryption.
+     *
+     *                         Acceptor
+     *                   |    yes     no    either
+     * ----------------------------------------------
+     *             yes   |    yes    reject  yes
+     * Initiator   no    |    reject  no     no
+     *             either|    yes     no     no
+     * 
+     * When encryption is selected, the ret_flags will have
+     * ret_flags set with GSS_C_CONF_FLAG. The initiator and
+     * acceptor can then decied if this was acceptable, i.e.
+     * reject the connection. 
+     *                 
+     * 
+     * This method may need to be checked with new versions
+     * of the SSLeay packages. 
+     */ 
 
+    {
+        int n;
+        int m;
+        int i;
+        int j;
+        SSL_CIPHER * cipher;
 
-	/*
-	 * setup SSLeay environment
-	 * This will find the user's cert, key, proxy etc
-	 */ 
-
-	if ((status = proxy_init_cred(newcred->pcd, 
-			proxy_password_callback_no_prompt, bp)))  {
-		
-		if (status == PRXYERR_R_CERT_EXPIRED) { 
-			*minor_status =  GSSERR_R_CERT_EXPIRED;
-			major_status =  GSS_S_CREDENTIALS_EXPIRED;
-		}
-
-		if (status = PRXYERR_R_PROXY_EXPIRED) { 
-			*minor_status =  GSSERR_R_PROXY_EXPIRED;
-			major_status =  GSS_S_CREDENTIALS_EXPIRED;
-		}
-		goto err;
-	}
-
-	/*
-	 * The SSLeay when built by default excludes the NULL 
-	 * encryption options: #ifdef SSL_ALLOW_ENULL in ssl_ciph.c
-	 * Since the user obtains and builds the SSLeay, we have 
-	 * no control over how it is built. 
-	 *
-	 * We have an export licence for this code, and don't
-	 * need/want encryption. We will therefore turn off
-	 * any encryption by placing the RSA_NULL_MD5 cipher
-	 * first. See s3_lib.c ssl3_ciphers[]=  The RSA_NUL_MD5
-	 * is the first, but the way to get at it is as  n-1 
-	 *
-	 * Now that we support encryption, we may still add
-	 * RSA_NUL_MD5 but it may be at the begining or end
-	 * of the list. This will allow for some compatability. 
-	 * (But in this code we will put it last for now.)
-	 *
-	 * Where, if at all, RSA_NUL_MD5 is added:
-	 *
-	 *                 |  Initiate     Accept
-	 * ----------------------------------------
-	 * GSS_C_CONF_FLAG |
-	 *     set         |  end        don't add
-	 *   notset        |  begining   end
-	 *                 ------------------------
-	 *
-	 * This gives the initiator control over the encryption
-	 * but lets the server force encryption.
-	 *
-	 *                         Acceptor
-	 *                   |    yes     no    either
-	 * ----------------------------------------------
-	 *             yes   |    yes    reject  yes
-	 * Initiator   no    |    reject  no     no
-	 *             either|    yes     no     no
-	 * 
-	 * When encryption is selected, the ret_flags will have
-	 * ret_flags set with GSS_C_CONF_FLAG. The initiator and
-	 * acceptor can then decied if this was acceptable, i.e.
-	 * reject the connection. 
-	 *                 
-	 * 
-	 * This method may need to be checked with new versions
-	 * of the SSLeay packages. 
-	 */ 
-
-	{
-		int n;
-		int m;
-		int i;
-		int j;
-		SSL_CIPHER * cipher;
-
-		j = 0;
-		n = ((*newcred->pcd->gs_ctx->method->num_ciphers))();
-		for (i=0; i<n; i++) {
-			cipher = (*(newcred->pcd->gs_ctx->method->get_cipher))(i);
+        j = 0;
+        n = ((*newcred->pcd->gs_ctx->method->num_ciphers))();
+        for (i=0; i<n; i++)
+        {
+            cipher = (*(newcred->pcd->gs_ctx->method->get_cipher))(i);
 #if SSLEAY_VERSION_NUMBER >= 0x0090581fL
 #define MY_NULL_MASK 0x130021L
 #else
 #define MY_NULL_MASK 0x830021L
 #endif
-			if (cipher && 
-				((cipher->algorithms & MY_NULL_MASK) == MY_NULL_MASK)) {
-				j++;
+            if (cipher && 
+                ((cipher->algorithms & MY_NULL_MASK) == MY_NULL_MASK))
+            {
+                j++;
 #ifdef DEBUG
-				fprintf(stderr,"adding cipher %d %d\n", i, j);
+                fprintf(stderr,"adding cipher %d %d\n", i, j);
 #endif
 		
-				sk_SSL_CIPHER_push(
-				    newcred->pcd->gs_ctx->cipher_list, cipher);
-				sk_SSL_CIPHER_push(
-				    newcred->pcd->gs_ctx->cipher_list_by_id, cipher);
-			}
-		}
-		newcred->pcd->num_null_enc_ciphers = j;
-	}
+                sk_SSL_CIPHER_push(
+                    newcred->pcd->gs_ctx->cipher_list, cipher);
+                sk_SSL_CIPHER_push(
+                    newcred->pcd->gs_ctx->cipher_list_by_id, cipher);
+            }
+        }
+        newcred->pcd->num_null_enc_ciphers = j;
+    }
 
-	/*
-	 * get the globusid, which is the subject name - any proxy entries
-	 */
+    /*
+     * get the globusid, which is the subject name - any proxy entries
+     */
 
-	newcred->globusid = (gss_name_desc*) malloc(sizeof(gss_name_desc)) ;
-	if (newcred->globusid == NULL) {
-		GSSerr(GSSERR_F_ACQUIRE_CRED,ERR_R_MALLOC_FAILURE);
-		goto err;
-	}
-	newcred->globusid->name_oid = GSS_C_NO_OID;
-	newcred->globusid->x509n =
-                 X509_NAME_dup(X509_get_subject_name(newcred->pcd->ucert));
-	if (newcred->globusid->x509n == NULL) {
-		GSSerr(GSSERR_F_ACQUIRE_CRED,GSSERR_R_PROCESS_CERT);
-		goto err;
-	}
+    newcred->globusid = (gss_name_desc*) malloc(sizeof(gss_name_desc)) ;
+    if (newcred->globusid == NULL)
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED,ERR_R_MALLOC_FAILURE);
+        goto err;
+    }
+    newcred->globusid->name_oid = GSS_C_NO_OID;
+    newcred->globusid->x509n =
+        X509_NAME_dup(X509_get_subject_name(newcred->pcd->ucert));
+
+    if (newcred->globusid->x509n == NULL)
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED,GSSERR_R_PROCESS_CERT);
+        goto err;
+    }
 	
-	/* now strip off any /CN=proxy entries */
+    /* now strip off any /CN=proxy entries */
 
-	proxy_get_base_name(newcred->globusid->x509n);
+    proxy_get_base_name(newcred->globusid->x509n);
 	
-	major_status = GSS_S_COMPLETE;
+    major_status = GSS_S_COMPLETE;
 
 err:
-	/* user will call delete_sec_context to cleanup the cred. */
+    /* user will call delete_sec_context to cleanup the cred. */
 
-	*output_cred_handle = newcred;
+    *output_cred_handle = newcred;
 
 #ifdef DEBUG
-	fprintf(stderr,"gss_create_and_fill_cred:major_status:%08x\n",major_status);
+    fprintf(stderr,"gss_create_and_fill_cred:major_status:%08x\n",major_status);
 #endif
-	return major_status;
+    return major_status;
 }

@@ -59,27 +59,20 @@ Returns:
 
 
 OM_uint32 
-GSS_CALLCONV gss_import_cred
-(OM_uint32 *                       minor_status,
- const gss_buffer_t                input_token,
- OM_uint32                         time_req,
- const gss_OID_set                 desired_mechs,
- gss_cred_usage_t                  cred_usage,
- gss_cred_id_t *                   cred_handle_P,
- gss_OID_set *                     actual_mechs,
- OM_uint32 *                       time_rec
-) 
+GSS_CALLCONV gss_import_cred(
+    OM_uint32 *                         minor_status,
+    gss_cred_id_t *                     output_cred_handle,
+    const gss_OID                       desired_mech,
+    OM_uint32                           option_req,
+    const gss_buffer_t                  import_buffer)
 {
-	OM_uint32 major_status = 0;
-	BIO * bp = NULL;
-	FILE * fp = NULL;
-	X509 * ucert = NULL;
-	EVP_PKEY * upkey = NULL;
-	STACK_OF(X509) * certchain = NULL;
-	char * cp;
-
+    OM_uint32                           major_status = 0;
+    BIO *                               bp = NULL;
+    int                                 rc = 0;
+    
+    
 #ifdef DEBUG
-	fprintf(stderr,"import_cred:\n");
+    fprintf(stderr,"import_cred:\n");
 #endif /* DEBUG */
 
     /*
@@ -89,58 +82,86 @@ GSS_CALLCONV gss_import_cred
 
     ERR_load_gsserr_strings(0);  /* load our gss ones as well */
 
-	*minor_status = 0;
+    *minor_status = 0;
 
-	if (actual_mechs != NULL) {
-		major_status = gss_indicate_mechs(minor_status,
-						actual_mechs);
-		if (major_status != GSS_S_COMPLETE) {
-			goto err;
-		}
-	}
+    if (import_buffer == NULL ||
+        import_buffer ==  GSS_C_NO_BUFFER ||
+        import_buffer->length < 1) 
+    {
+        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
 
-	if (time_rec != NULL) {
-		*time_rec = GSS_C_INDEFINITE ;
-	}
+    if (output_cred_handle == NULL )
+    { 
+        GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
 
-	if (input_token == NULL ||
-			input_token ==  GSS_C_NO_BUFFER ||
-			input_token->length < 1) {
-		GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
-		*minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
-		major_status = GSS_S_FAILURE;
-		goto err;
-	}
+    if(desired_mech != NULL &&
+       desired_mech != (gss_OID) gss_mech_globus_gssapi_ssleay)
+    {
+        GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_MECH);
+        *minor_status = GSSERR_R_BAD_MECH;
+        major_status = GSS_S_BAD_MECH;
+        goto err;
+    }
+    
 
-	if (cred_handle_P == NULL ) { 
-		 GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
-		*minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
-		major_status = GSS_S_FAILURE;
-		goto err;
-	}
-	
-	bp = BIO_new(BIO_s_mem());
+        
+    if (import_buffer->length > 0)
+    {
+        if(option_req == 0)
+        {
+            bp = BIO_new(BIO_s_mem());
+            
+            BIO_write(bp,
+                      import_buffer->value,
+                      import_buffer->length);
+        }
+        else if(option_req == 1) 
+        {
+            rc = putenv((char *) import_buffer->value);
 
-   	if (input_token->length > 0) {
-		BIO_write(bp,
-			input_token->value,
-			input_token->length);
-	} else {
-		major_status = GSS_S_DEFECTIVE_TOKEN;
-		goto err;
-	}
-	major_status = gss_create_and_fill_cred(minor_status,
-		cred_handle_P,
-		cred_usage,
-		NULL, NULL, NULL, bp);
-	
+            if(rc != 0)
+            {
+                /* not quite sure what error to return here */
+                major_status = GSS_S_FAILURE;
+                goto err;
+            }
+        }
+        else
+        {
+            GSSerr(GSSERR_F_IMPORT_CRED,GSSERR_R_IMPEXP_BAD_PARMS);
+            *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+            major_status = GSS_S_FAILURE;
+            goto err;
+        }
+    }
+    else
+    {
+        major_status = GSS_S_DEFECTIVE_TOKEN;
+        goto err;
+    }
+    
+    major_status = gss_create_and_fill_cred(minor_status,
+                                            output_cred_handle,
+                                            GSS_C_BOTH,
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            bp);
+        
 err:
-	if (bp) {
-		BIO_free(bp);
-	}
-	if (fp) {
-		fclose(fp);
-	}
-	return major_status;
+    if (bp) 
+    {
+        BIO_free(bp);
+    }
+    return major_status;
 }
 #endif /*  _HAVE_GSI_EXTENDED_GSSAPI */
+

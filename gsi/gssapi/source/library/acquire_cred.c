@@ -59,61 +59,61 @@ Returns:
 **********************************************************************/
 
 OM_uint32 
-GSS_CALLCONV gss_acquire_cred
-(OM_uint32 *               minor_status ,
- const gss_name_t          desired_name_P ,
- OM_uint32                 time_req ,
- const gss_OID_set         desired_mechs ,
- gss_cred_usage_t          cred_usage ,
- gss_cred_id_t *           output_cred_handle_P ,
- gss_OID_set *             actual_mechs ,
- OM_uint32 *               time_rec 
-) 
+GSS_CALLCONV gss_acquire_cred(
+    OM_uint32 *                         minor_status,
+    const gss_name_t                    desired_name_P,
+    OM_uint32                           time_req,
+    const gss_OID_set                   desired_mechs,
+    gss_cred_usage_t                    cred_usage,
+    gss_cred_id_t *                     output_cred_handle_P,
+    gss_OID_set *                       actual_mechs,
+    OM_uint32 *                         time_rec) 
 {
-	gss_cred_id_desc** output_cred_handle = 
-		(gss_cred_id_desc**) output_cred_handle_P ;
-  
-	OM_uint32 major_status = GSS_S_NO_CRED;
-	gss_cred_id_desc* newcred ;
-	int status;
+    gss_cred_id_desc **                 output_cred_handle = 
+        (gss_cred_id_desc **) output_cred_handle_P ;
+    OM_uint32                           major_status = GSS_S_NO_CRED;
+    gss_cred_id_desc *                  newcred ;
+    int                                 status;
 
 #ifdef DEBUG
-	fprintf(stderr,"acquire_cred:usage=%d\n",cred_usage);
-	fprintf(stderr,"uid=%d, pid=%d$HOME=%s\n",getuid(),getpid(),
-		getenv("HOME")?getenv("HOME"):"NO_HOME");
+    fprintf(stderr,"acquire_cred:usage=%d\n",cred_usage);
+    fprintf(stderr,"uid=%d, pid=%d$HOME=%s\n",getuid(),getpid(),
+            getenv("HOME")?getenv("HOME"):"NO_HOME");
 #endif /* DEBUG */
   
-	/* 
-	 * We are going to use the SSL error routines, get them
-	 * initilized early. They may be called more then once. 
-	 */
+    /* 
+     * We are going to use the SSL error routines, get them
+     * initilized early. They may be called more then once. 
+     */
 
-	ERR_load_gsserr_strings(0);  /* load our gss ones as well */
+    ERR_load_gsserr_strings(0);  /* load our gss ones as well */
 
-	*minor_status = 0;
+    *minor_status = 0;
   
-	if (actual_mechs != NULL) {
-		major_status = gss_indicate_mechs(minor_status,
-						actual_mechs);
-		if (major_status != GSS_S_COMPLETE) {
-			return  major_status;
-		}
-	}
+    if (actual_mechs != NULL) {
+        major_status = gss_indicate_mechs(minor_status,
+                                          actual_mechs);
+        if (major_status != GSS_S_COMPLETE) {
+            return  major_status;
+        }
+    }
 
-	if (time_rec != NULL) {
-		*time_rec = GSS_C_INDEFINITE ;
-	}
+    if (time_rec != NULL) {
+        *time_rec = GSS_C_INDEFINITE ;
+    }
 
 
-major_status = gss_create_and_fill_cred(minor_status,
-                    output_cred_handle_P,
-                    cred_usage,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL);
+    major_status = gss_create_and_fill_cred(minor_status,
+                                            output_cred_handle_P,
+                                            cred_usage,
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            NULL);
 #ifdef DEBUG
-	fprintf(stderr,"acquire_cred:major_status:%08x\n",major_status);
+    fprintf(stderr,"acquire_cred:major_status:%08x\n",major_status);
 #endif
-	return major_status;
+    return major_status;
 }
+
+
