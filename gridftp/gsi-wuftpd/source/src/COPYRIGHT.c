@@ -28,6 +28,7 @@
 #include <stdio.h>
 
 void print_copyright(void);
+extern char *version;
 
 char *Copyright = "\n\
   Copyright (c) 1999,2000 WU-FTPD Development Group.\n\
@@ -54,4 +55,5 @@ char *Copyright = "\n\
 void print_copyright(void)
 {
     printf("%s\n", Copyright);
+    printf("%s\n", version);
 }

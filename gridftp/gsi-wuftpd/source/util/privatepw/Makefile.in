@@ -43,8 +43,8 @@ LIBS=@LIBS@
 
 all: privatepw
 
-privatepw:   privatepw.c ../../src/COPYRIGHT.c 
-	$(CC) $(CFLAGS) -L../../support $(LIBS) -I../../src -o $@ $(srcdir)/privatepw.c $(srcdir)/../../src/COPYRIGHT.c 
+privatepw:   privatepw.c ../../src/COPYRIGHT.c ../../src/vers.c
+	$(CC) $(CFLAGS) -L../../support $(LIBS) -I../../src -o $@ $(srcdir)/privatepw.c $(srcdir)/../../src/COPYRIGHT.c $(srcdir)/../../src/vers.c
 
 install: $(BINDIR)/privatepw $(MANDIR)/privatepw.8
 

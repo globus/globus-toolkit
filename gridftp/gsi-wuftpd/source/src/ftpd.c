@@ -1469,9 +1469,10 @@ int i = 0;
 	    else if (!strcasecmp(ARG0, "brief"))
 		version_option = 1;
 	}
+	version_option = 0;
 	switch (version_option) {
 	default:
-	    reply(220, "%s FTP server (%s) ready.", hostname, version);
+	    reply(220, "%s %s ready.", hostname, version);
 	    break;
 	case 1:
 	    reply(220, "%s FTP server ready.", hostname);

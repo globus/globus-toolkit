@@ -210,6 +210,8 @@ int main(int argc, char **argv)
     char altmsgpath[MAXPATHLEN];
 #endif
 
+    gsi_wuftp_get_version();
+
     while ((c = getopt(argc, argv, "vVl:d:")) != EOF) {
 	switch (c) {
 	case 'v':

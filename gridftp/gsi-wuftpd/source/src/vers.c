@@ -6,8 +6,16 @@
 
 */
 
+/* to remove dependency on globus common */
+typedef struct
+{
+    int                                 major;
+    int                                 minor;
+    unsigned long                       timestamp;
+    int                                 branch_id;
+} globus_version_t;
+
 #include "config.h"
-#include "globus_common.h"
 #include "version.h"
 
 // Global, allocated at runtime
@@ -26,8 +34,8 @@ Designed to be called once at startup by main() to populate
 the variable.
 
 @retval
-       - GLOBUS_SUCCESS 
-       - GLOBUS_FAILURE if malloc fails
+       - 0 
+       - 1 if malloc fails
 
 @date 7/3/02
 */
@@ -38,11 +46,11 @@ gsi_wuftp_get_version(void)
   int                           rc;
 
   /* Allocate space in the global space for the version string */
-  version = globus_libc_malloc(sizeof(char) * GSI_WUFTP_VER_LEN_MAX);
-  if(version == GLOBUS_NULL)
-    return(GLOBUS_FAILURE);
+  version = malloc(sizeof(char) * GSI_WUFTP_VER_LEN_MAX);
+  if(version == NULL)
+    return(0);
 
-  rc = globus_libc_sprintf(
+  rc = sprintf(
       version,
       "GridFTP Server %d.%d"
 #ifdef GLOBUS_AUTHORIZATION
@@ -55,12 +63,13 @@ gsi_wuftp_get_version(void)
 #ifdef GSSAPI_KRB5
       " Kerberos 5"
 #endif
-      " wu-2.6.2 (%lu-%d)",
+      " wu-2.6.2 (%s, %lu-%d)",
       local_version.major,
       local_version.minor,
+      flavor,
       local_version.timestamp,
       local_version.branch_id);
 
-  return(GLOBUS_SUCCESS);
+  return(0);
 }
 

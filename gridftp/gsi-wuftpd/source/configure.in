@@ -1072,6 +1072,7 @@ AC_SUBST(GPT_MAJOR_VERSION)
 AC_SUBST(GPT_MINOR_VERSION)
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
+AC_SUBST(GLOBUS_FLAVOR_NAME)
 
 dnl end of hubbard changes, except for addition of version.h below
 dnl ===========================================================================
