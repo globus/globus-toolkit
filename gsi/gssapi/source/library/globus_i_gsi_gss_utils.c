@@ -2308,6 +2308,8 @@ globus_i_gsi_gssapi_init_ssl_context(
                 if(!X509_STORE_add_cert(cred_handle->ssl_context->cert_store,
                                        tmp_cert))
                 {
+                    /* need to free to reduce ref count */
+                    X509_free(tmp_cert);
                     if ((ERR_GET_REASON(ERR_peek_error()) ==
                          X509_R_CERT_ALREADY_IN_HASH_TABLE))
                     {
@@ -2324,7 +2326,9 @@ globus_i_gsi_gssapi_init_ssl_context(
                         major_status = GSS_S_FAILURE;
                         goto exit;
                     }
-                }                
+                }
+                /* need to free to reduce ref count */
+                X509_free(tmp_cert);
             }
         }
     }
