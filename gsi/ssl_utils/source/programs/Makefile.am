@@ -13,9 +13,9 @@ Admin_Scripts = \
 
 Dist_Scripts = \
 	grid-cert-info.in \
-	grid-cert-renew \
-	grid-change-pass-phrase \
-	grid-cert-request \
+	grid-cert-renew.in \
+	grid-change-pass-phrase.in \
+	grid-cert-request.in \
 	grid-mapfile-add-entry.in \
 	grid-mapfile-delete-entry.in \
 	grid-mapfile-check-consistency.in
