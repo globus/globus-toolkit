@@ -60,9 +60,19 @@ extern "C" {
  * @param issuer_signature holds the signature of the certificate
  * that signed this proxy certificate (issued it)
  */
-#ifndef _PROXY_SSL_INTERNAL_
-typedef void PROXYCERTINFO;
-#endif
+struct PROXYCERTINFO_st
+{
+    ASN1_BOOLEAN *                      pC;                       
+    ASN1_INTEGER *                      path_length;
+    PROXYRESTRICTION *                  restriction;
+    PROXYGROUP *                        group;
+    X509_SIG *                          issuer_signature;
+};
+
+typedef struct PROXYCERTINFO_st PROXYCERTINFO;
+
+DECLARE_STACK_OF(PROXYCERTINFO)
+DECLARE_ASN1_SET_OF(PROXYCERTINFO)
 
 /* functions */
     
@@ -113,14 +123,14 @@ int PROXYCERTINFO_set_path_length(
     PROXYCERTINFO *                     cert_info,
     long *                              path_length);
 
-ASN1_INTEGER * PROXYCERTINFO_get_path_length(
+long PROXYCERTINFO_get_path_length(
     PROXYCERTINFO *                     cert_info);
 
-int PROXYCERTINFO_set_issuer_cert_digest(
+int PROXYCERTINFO_set_issuer_signature(
     PROXYCERTINFO *                     cert_info,
-    X509_SIG *                          cert_digest);
+    X509_SIG *                          signature);
 
-X509_SIG * PROXYCERTINFO_get_issuer_cert_digest(
+X509_SIG * PROXYCERTINFO_get_issuer_signature(
     PROXYCERTINFO *                     cert_info);
 
 int i2d_PROXYCERTINFO(

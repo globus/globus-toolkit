@@ -46,9 +46,16 @@ extern "C" {
  * @param policy the policy that determines the restrictions
  * on a certificate
  */
-#ifndef _PROXY_SSL_INTERNAL_
-typedef void PROXYRESTRICTION;
-#endif
+struct PROXYRESTRICTION_st
+{
+    ASN1_OBJECT *                       policy_language;
+    ASN1_OCTET_STRING *                 policy;
+};
+
+typedef struct PROXYRESTRICTION_st PROXYRESTRICTION;
+
+DECLARE_STACK_OF(PROXYRESTRICTION)
+DECLARE_ASN1_SET_OF(PROXYRESTRICTION)
 
 /* functions */
 

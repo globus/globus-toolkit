@@ -21,10 +21,10 @@ ASN1_METHOD * PROXYGROUP_asn1_meth()
 {
     static ASN1_METHOD proxygroup_asn1_meth =
     {
-	(int (*)())   i2d_PROXYGROUP,
-	(char *(*)()) d2i_PROXYGROUP,
-	(char *(*)()) PROXYGROUP_new,
-	(void (*)()) PROXYGROUP_free
+        (int (*)())   i2d_PROXYGROUP,
+        (char *(*)()) d2i_PROXYGROUP,
+        (char *(*)()) PROXYGROUP_new,
+        (void (*)()) PROXYGROUP_free
     };
     return (&proxygroup_asn1_meth);
 }
@@ -38,8 +38,11 @@ ASN1_METHOD * PROXYGROUP_asn1_meth()
  */
 PROXYGROUP * PROXYGROUP_new()
 {
-    ASN1_CTX c;
-    PROXYGROUP * ret = NULL;
+    ASN1_CTX                            c;
+    PROXYGROUP *                        ret;
+
+    ret = NULL;
+
     M_ASN1_New_Malloc(ret, PROXYGROUP);
     M_ASN1_New(ret->group_name, M_ASN1_OCTET_STRING_new);
     ret->attached_group = (ASN1_BOOLEAN *)OPENSSL_malloc(sizeof(ASN1_BOOLEAN));
@@ -79,8 +82,8 @@ PROXYGROUP * PROXYGROUP_dup(
     PROXYGROUP *                        group)
 {
     return ((PROXYGROUP *) ASN1_dup((int (*)())i2d_PROXYGROUP,
-				    (char *(*)())d2i_PROXYGROUP,
-				    (char *)group));
+                                    (char *(*)())d2i_PROXYGROUP,
+                                    (char *)group));
 }
 
 /**
@@ -101,31 +104,44 @@ int PROXYGROUP_cmp(
     const PROXYGROUP *                  a,
     const PROXYGROUP *                  b)
 {
-    int ret;
-    
-    ret =  ASN1_OCTET_STRING_cmp(a->group_name, b->group_name);
-    ret &= (a->attached_group == b->attached_group);
-    return (ret);
+    if(ASN1_OCTET_STRING_cmp(a->group_name, b->group_name) &&
+       (a->attached_group == b->attached_group))
+    {
+        return 1;
+    }
+    return 0;
 }
 
 int PROXYGROUP_print(
     BIO *                               bp,
     PROXYGROUP *                        group)
 {
-    int ret;
+    int                                 ret,
+                                        tmpret;
 
-    ret = BIO_printf(bp, "PROXYGROUP::GroupName: ");
-    ret &= ASN1_STRING_print(bp, group->group_name);
-    ret &= BIO_printf(bp, "PROXYGROUP::AttachedGroup: %s", 
-		       group->attached_group ? "TRUE" : "FALSE");
-    return (ret);
+    if(ret = BIO_printf(bp, "PROXYGROUP::GroupName: ") < 0)
+    {
+        return ret;
+    }
+    if(tmpret = ASN1_STRING_print(bp, group->group_name) < 0)
+    {
+        return tmpret;
+    }
+    ret += tmpret;
+    if(tmpret = BIO_printf(bp, "PROXYGROUP::AttachedGroup: %s", 
+                           group->attached_group ? "TRUE" : "FALSE") < 0)
+    {
+        return tmpret;
+    }
+
+    return (ret + tmpret);
 }
 
 int PROXYGROUP_print_fp(
     FILE *                              fp,
     PROXYGROUP *                        group)
 {
-    int ret;
+    int                                 ret;
 
     BIO * bp = BIO_new(BIO_s_file());
     BIO_set_fp(bp, fp, BIO_NOCLOSE);
@@ -142,7 +158,7 @@ int PROXYGROUP_set_name(
 {
     if(group_name != NULL)
     {
-	return ASN1_OCTET_STRING_set(group->group_name, group_name, length);
+        return ASN1_OCTET_STRING_set(group->group_name, group_name, length);
     }
     return 0;
 }
@@ -173,13 +189,16 @@ int i2d_PROXYGROUP(
     PROXYGROUP *                        group,
     unsigned char **                    buffer)
 {
-    unsigned char ** pp = buffer;
+    unsigned char **                    pp;
 
     M_ASN1_I2D_vars(group);
+
+    pp = buffer;
+
     M_ASN1_I2D_len(group->group_name,
-		   i2d_ASN1_OCTET_STRING);
+                   i2d_ASN1_OCTET_STRING);
     M_ASN1_I2D_len(*(group->attached_group),
-		   i2d_ASN1_BOOLEAN);
+                   i2d_ASN1_BOOLEAN);
     M_ASN1_I2D_seq_total();
     M_ASN1_I2D_put(group->group_name, i2d_ASN1_OCTET_STRING);
     M_ASN1_I2D_put(*(group->attached_group), i2d_ASN1_BOOLEAN);
@@ -191,17 +210,20 @@ PROXYGROUP * d2i_PROXYGROUP(
     unsigned char **                    buffer,
     long                                length)
 {
-    unsigned char ** pp = buffer;
-    
+    unsigned char **                    pp;
+
     M_ASN1_D2I_vars(group, PROXYGROUP *, PROXYGROUP_new);
+
+    pp = buffer;
+    
     M_ASN1_D2I_Init();
     M_ASN1_D2I_start_sequence();
     M_ASN1_D2I_get(ret->group_name, d2i_ASN1_OCTET_STRING);
     
     if((c.slen != 0) && (M_ASN1_next == (V_ASN1_UNIVERSAL|V_ASN1_BOOLEAN)))
     {
-	c.q = c.p;
-	if(d2i_ASN1_BOOLEAN(ret->attached_group, &c.p, c.slen) < 0) goto err;
+        c.q = c.p;
+        if(d2i_ASN1_BOOLEAN(ret->attached_group, &c.p, c.slen) < 0) goto err;
     }
 
     M_ASN1_D2I_Finish(group, PROXYGROUP_free, ASN1_F_D2I_PROXYGROUP);

@@ -21,10 +21,10 @@ ASN1_METHOD * PROXYCERTINFO_asn1_meth()
 {
     static ASN1_METHOD proxycertinfo_asn1_meth =
     {
-	(int (*)())   i2d_PROXYCERTINFO,
-	(char *(*)()) d2i_PROXYCERTINFO,
-	(char *(*)()) PROXYCERTINFO_new,
-	(void (*)())  PROXYCERTINFO_free
+        (int (*)())   i2d_PROXYCERTINFO,
+        (char *(*)()) d2i_PROXYCERTINFO,
+        (char *(*)()) PROXYCERTINFO_new,
+        (void (*)())  PROXYCERTINFO_free
     };
     return (&proxycertinfo_asn1_meth);
 }
@@ -38,11 +38,19 @@ ASN1_METHOD * PROXYCERTINFO_asn1_meth()
  */
 PROXYCERTINFO * PROXYCERTINFO_new()
 {
-    PROXYCERTINFO * ret = NULL;
-    ASN1_CTX c;
+    PROXYCERTINFO *                     ret;
+    ASN1_CTX                            c;
+
+    ret = NULL;
+
     M_ASN1_New_Malloc(ret, PROXYCERTINFO);
     ret->pC = (ASN1_BOOLEAN *)OPENSSL_malloc(sizeof(ASN1_BOOLEAN));
-    *(ret->pC) = 0;
+    *(ret->pC) = 1;
+    ret->path_length      = NULL;
+    ret->restriction      = NULL;
+    ret->group            = NULL;
+    ret->issuer_signature = NULL;
+    
     M_ASN1_New(ret->path_length, M_ASN1_INTEGER_new);
     M_ASN1_New(ret->restriction, PROXYRESTRICTION_new);
     M_ASN1_New(ret->group, PROXYGROUP_new);
@@ -84,8 +92,8 @@ PROXYCERTINFO * PROXYCERTINFO_dup(
     PROXYCERTINFO *                     cert_info)
 {
     return ((PROXYCERTINFO *) ASN1_dup((int (*)())i2d_PROXYCERTINFO,
-				       (char *(*)())d2i_PROXYCERTINFO,
-				       (char *)cert_info));
+                                       (char *(*)())d2i_PROXYCERTINFO,
+                                       (char *)cert_info));
 }
 
 /**
@@ -105,14 +113,15 @@ int PROXYCERTINFO_cmp(
     const PROXYCERTINFO *               a,
     const PROXYCERTINFO *               b)
 {
-    int ret;
-
-    ret = (a->pC == b->pC);
-    ret &= ASN1_INTEGER_cmp(a->path_length, b->path_length);
-    ret &= PROXYRESTRICTION_cmp(a->restriction, b->restriction);
-    ret &= PROXYGROUP_cmp(a->group, b->group);
-    ret &= X509_SIG_cmp(a->issuer_signature, b->issuer_signature);
-    return (ret);
+    if((a->pC == b->pC) &&
+       ASN1_INTEGER_cmp(a->path_length, b->path_length) &&
+       PROXYRESTRICTION_cmp(a->restriction, b->restriction) &&
+       PROXYGROUP_cmp(a->group, b->group) &&
+       X509_SIG_cmp(a->issuer_signature, b->issuer_signature))
+    {
+        return 1;
+    }
+    return 0;
 }
 
 /**
@@ -128,27 +137,48 @@ int PROXYCERTINFO_print(
     BIO *                               bp,
     PROXYCERTINFO *                     cert_info) 
 {
-    int ret;
-    ret = BIO_printf(bp, 
-		      "PROXYCERTINFO::ProxyCertificate: %s\n", 
-		      cert_info->pC ? "TRUE" : "FALSE");
+    int                                 ret,
+                                        tmpret;
+
+    if(ret = BIO_printf(bp, 
+                        "PROXYCERTINFO::ProxyCertificate: %s\n", 
+                        cert_info->pC ? "TRUE" : "FALSE") < 0)
+    {
+        return ret;
+    }
     if(cert_info->path_length != NULL)
     {
-	ret &= BIO_printf(bp, 
-			  "PROXYCERTINFO::ProxyCertificatePathLength: %d\n", 
-			  cert_info->path_length);
+        if(tmpret = BIO_printf(bp, 
+                            "PROXYCERTINFO::ProxyCertificatePathLength: %d\n", 
+                               cert_info->path_length) < 0)
+        {
+            return tmpret;
+        }
+        ret += tmpret;
     }
     if(cert_info->restriction != NULL)
     {
-	ret &= PROXYRESTRICTION_print(bp, cert_info->restriction);
+        if(tmpret = PROXYRESTRICTION_print(bp, cert_info->restriction) < 0)
+        {
+            return tmpret;
+        }
+        ret += tmpret;
     }
     if(cert_info->group)
     {
-	ret &= PROXYGROUP_print(bp, cert_info->group);
+        if(tmpret = PROXYGROUP_print(bp, cert_info->group) < 0)
+        {
+            return tmpret;
+        }
+        ret += tmpret;
     }
     if(cert_info->issuer_signature != NULL)
     {
-	ret &= X509_SIG_print(bp, cert_info->issuer_signature);
+        if(tmpret = X509_SIG_print(bp, cert_info->issuer_signature))
+        {
+            return tmpret;
+        }
+        ret += tmpret;
     }
     return (ret);
 }
@@ -162,14 +192,16 @@ int PROXYCERTINFO_print(
  * @param fp the file stream (FILE *) to print to
  * @param cert_info the PROXYCERTINFO structure to print
  *
- * @return 1 on success, 0 on error
+ * @return the number of characters printed
  */
 int PROXYCERTINFO_print_fp(
     FILE *                              fp,
     PROXYCERTINFO *                     cert_info)
 {
-    int ret;
-    BIO * bp = BIO_new(BIO_s_file());
+    int                                 ret;
+    BIO *                               bp;
+
+    bp = BIO_new(BIO_s_file());
     
     BIO_set_fp(bp, fp, BIO_NOCLOSE);
     ret =  PROXYCERTINFO_print(bp, cert_info);
@@ -238,11 +270,11 @@ int PROXYCERTINFO_set_group(
     PROXYGROUP_free(cert_info->group);
     if(group != NULL)
     {
-	cert_info->group = PROXYGROUP_dup(group);
+        cert_info->group = PROXYGROUP_dup(group);
     }
     else
     {
-	cert_info->group = NULL;
+        cert_info->group = NULL;
     }
     return 1;
 }
@@ -287,11 +319,11 @@ int PROXYCERTINFO_set_restriction(
     PROXYRESTRICTION_free(cert_info->restriction);
     if(restriction != NULL)
     {
-	cert_info->restriction = PROXYRESTRICTION_dup(restriction);
+        cert_info->restriction = PROXYRESTRICTION_dup(restriction);
     }
     else
     {
-	cert_info->restriction = NULL;
+        cert_info->restriction = NULL;
     }
     return 1;
 }
@@ -329,19 +361,19 @@ PROXYRESTRICTION * PROXYCERTINFO_get_restriction(
  */
 int PROXYCERTINFO_set_path_length(
     PROXYCERTINFO *                     cert_info,
-    long *                               path_length)
+    long *                              path_length)
 {
     if(cert_info != NULL) 
     {
-	if(path_length != NULL)
-	{
-	    return ASN1_INTEGER_set(cert_info->path_length, *path_length);
-	}
-	else
-	{
-	    cert_info->path_length = NULL;
-	    return 1;
-	}
+        if(path_length != NULL)
+        {
+            return ASN1_INTEGER_set(cert_info->path_length, *path_length);
+        }
+        else
+        {
+            cert_info->path_length = NULL;
+            return 1;
+        }
     }
     return 0;
 }
@@ -357,10 +389,10 @@ int PROXYCERTINFO_set_path_length(
  * 
  * @return the path length of the PROXYCERTINFO
  */
-ASN1_INTEGER * PROXYCERTINFO_get_path_length(
+long PROXYCERTINFO_get_path_length(
     PROXYCERTINFO *                     cert_info)
 {
-    return cert_info->path_length;
+    return ASN1_INTEGER_get(cert_info->path_length);
 }
 
 /**
@@ -374,25 +406,25 @@ ASN1_INTEGER * PROXYCERTINFO_get_path_length(
  *
  * @param cert_info the PROXYCERTINFO to set the 
  * signed cert digest of
- * @param cert_digest the X509_SIG to set the
+ * @param signature the X509_SIG to set the
  * PROXYCERTINFO issuer's signature to
  *
  * @return 1 on success, 0 on error
  */
-int PROXYCERTINFO_set_issuer_cert_digest(
+int PROXYCERTINFO_set_issuer_signature(
     PROXYCERTINFO *                     cert_info,
-    X509_SIG *                          cert_digest)
+    X509_SIG *                          signature)
 {
     X509_SIG_free(cert_info->issuer_signature);
-    if(cert_digest != NULL) 
+    if(signature != NULL) 
     {
-	cert_info->issuer_signature = (X509_SIG *) ASN1_dup((int (*)())   i2d_X509_SIG, 
-							    (char *(*)()) d2i_X509_SIG, 
-							    (char *)      cert_digest);
+        cert_info->issuer_signature = (X509_SIG *) ASN1_dup((int (*)())   i2d_X509_SIG, 
+                                                            (char *(*)()) d2i_X509_SIG, 
+                                                            (char *)      signature);
     }
     else
     {
-	cert_info->issuer_signature = NULL;
+        cert_info->issuer_signature = NULL;
     }
     return 1;
 }
@@ -408,7 +440,7 @@ int PROXYCERTINFO_set_issuer_cert_digest(
  *
  * @return the signed cert digest of the issuer's certificate
  */
-X509_SIG * PROXYCERTINFO_get_issuer_cert_digest(
+X509_SIG * PROXYCERTINFO_get_issuer_signature(
     PROXYCERTINFO *                     cert_info)
 {
     return cert_info->issuer_signature;
@@ -429,39 +461,46 @@ int i2d_PROXYCERTINFO(
     PROXYCERTINFO *                     cert_info,
     unsigned char **                    buffer)
 {
-    unsigned char ** pp = buffer;
-    int v1 = 0, v2 = 0, v3 = 0, v4 = 0;
+    unsigned char **                    pp;
+    int                                 v1,
+                                        v2,
+                                        v3,
+                                        v4;
 
     M_ASN1_I2D_vars(cert_info);
+    
+    v1 = v2 = 0;
+    pp = buffer;
+
     M_ASN1_I2D_len(*(cert_info->pC),              
-		   i2d_ASN1_BOOLEAN);
+                   i2d_ASN1_BOOLEAN);
     M_ASN1_I2D_len_EXP_opt(cert_info->path_length,      
-			   i2d_ASN1_INTEGER,
-			   0, v1);
+                           i2d_ASN1_INTEGER,
+                           0, v1);
     M_ASN1_I2D_len_EXP_opt(cert_info->restriction,      
-			   i2d_PROXYRESTRICTION,
-			   0, v2);
+                           i2d_PROXYRESTRICTION,
+                           0, v2);
     M_ASN1_I2D_len_EXP_opt(cert_info->group,
-			   i2d_PROXYGROUP,
-			   0, v3);
+                           i2d_PROXYGROUP,
+                           0, v3);
     M_ASN1_I2D_len_EXP_opt(cert_info->issuer_signature,
-			   i2d_X509_SIG,
-			   0, v4);
+                           i2d_X509_SIG,
+                           0, v4);
     M_ASN1_I2D_seq_total();
     M_ASN1_I2D_put(*(cert_info->pC),
-		   i2d_ASN1_BOOLEAN);
+                   i2d_ASN1_BOOLEAN);
     M_ASN1_I2D_put_EXP_opt(cert_info->path_length,
-			   i2d_ASN1_INTEGER,
-			   0, v1);
+                           i2d_ASN1_INTEGER,
+                           0, v1);
     M_ASN1_I2D_put_EXP_opt(cert_info->restriction,
-			   i2d_PROXYRESTRICTION,
-			   0, v2);
+                           i2d_PROXYRESTRICTION,
+                           0, v2);
     M_ASN1_I2D_put_EXP_opt(cert_info->group,
-			   i2d_PROXYGROUP,
-			   0, v3);
+                           i2d_PROXYGROUP,
+                           0, v3);
     M_ASN1_I2D_put_EXP_opt(cert_info->issuer_signature,
-			   i2d_X509_SIG,
-			   0, v4);
+                           i2d_X509_SIG,
+                           0, v4);
     M_ASN1_I2D_finish();
 }
 
@@ -477,38 +516,41 @@ int i2d_PROXYCERTINFO(
  * @param the length of the buffer
  *
  * @return the resultingin PROXYCERTINFO in internal form
- */						
+ */                                             
 PROXYCERTINFO * d2i_PROXYCERTINFO(
     PROXYCERTINFO **                    cert_info,
     unsigned char **                    buffer,
     long                                length)
 {
-    unsigned char ** pp = buffer;
+    unsigned char **                    pp;
 
     M_ASN1_D2I_vars(cert_info, PROXYCERTINFO *, PROXYCERTINFO_new);
+
+    pp = buffer;
+
     M_ASN1_D2I_Init();
     M_ASN1_D2I_start_sequence();
 
     if((c.slen != 0) && (M_ASN1_next == (V_ASN1_UNIVERSAL|V_ASN1_BOOLEAN)))
     {
-	c.q = c.p;
-	if(d2i_ASN1_BOOLEAN(ret->pC, &c.p, c.slen) < 0) goto err;
-	c.slen -= (c.p - c.q);
+        c.q = c.p;
+        if(d2i_ASN1_BOOLEAN(ret->pC, &c.p, c.slen) < 0) goto err;
+        c.slen -= (c.p - c.q);
     }
 
     M_PROXY_ASN1_D2I_get_EXP_opt(ret->path_length, 
-				 d2i_ASN1_INTEGER, 
-				 ASN1_INTEGER_free);
+                                 d2i_ASN1_INTEGER, 
+                                 ASN1_INTEGER_free);
     M_PROXY_ASN1_D2I_get_EXP_opt(ret->restriction, 
-				 d2i_PROXYRESTRICTION, 
-				 PROXYRESTRICTION_free);
+                                 d2i_PROXYRESTRICTION, 
+                                 PROXYRESTRICTION_free);
     M_PROXY_ASN1_D2I_get_EXP_opt(ret->group,
-				 d2i_PROXYGROUP,
-				 PROXYGROUP_free);
+                                 d2i_PROXYGROUP,
+                                 PROXYGROUP_free);
     M_PROXY_ASN1_D2I_get_EXP_opt(ret->issuer_signature, 
-				 d2i_X509_SIG,
-				 X509_SIG_free);
+                                 d2i_X509_SIG,
+                                 X509_SIG_free);
     M_ASN1_D2I_Finish(cert_info, 
-		      PROXYCERTINFO_free, 
-		      ASN1_F_D2I_PROXYCERTINFO);
+                      PROXYCERTINFO_free, 
+                      ASN1_F_D2I_PROXYCERTINFO);
 }

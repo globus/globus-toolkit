@@ -46,9 +46,16 @@ extern "C" {
  * whether the proxy certificate is actually in the 
  * group or not
  */
-#ifndef _PROXY_SSL_INTERNAL_
-typedef void PROXYGROUP;
-#endif
+struct PROXYGROUP_st
+{
+    ASN1_OCTET_STRING *                 group_name;
+    ASN1_BOOLEAN *                      attached_group;
+};
+
+typedef struct PROXYGROUP_st PROXYGROUP;
+
+DECLARE_STACK_OF(PROXYGROUP)
+DECLARE_ASN1_SET_OF(PROXYGROUP)
 
 /* functions */
 

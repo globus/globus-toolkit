@@ -18,10 +18,10 @@ ASN1_METHOD * X509_SIG_asn1_method()
 {
     static ASN1_METHOD x509_signature_meth = 
     {
-	(int (*)())    i2d_X509_SIG,
-	(char *(*)())  d2i_X509_SIG,
-	(char *(*)())  X509_SIG_new,
-	(void (*)())   X509_SIG_free
+        (int (*)())    i2d_X509_SIG,
+        (char *(*)())  d2i_X509_SIG,
+        (char *(*)())  X509_SIG_new,
+        (void (*)())   X509_SIG_free
     };
     return (&x509_signature_meth);
 }
@@ -40,8 +40,8 @@ X509_SIG * X509_SIG_dup(
     X509_SIG *                    signature)
 {
     return ((X509_SIG *) ASN1_dup((int (*)())i2d_X509_SIG,
-				  (char *(*)())d2i_X509_SIG,
-				  (char *)signature));
+                                  (char *(*)())d2i_X509_SIG,
+                                  (char *)signature));
 }
 
 /**
@@ -56,12 +56,12 @@ X509_SIG * X509_SIG_dup(
  * 1 otherwise
  */
 int X509_SIG_cmp(
-    const X509_SIG *              a,
-    const X509_SIG *              b)
+    const X509_SIG *                    a,
+    const X509_SIG *                    b)
 {
-    int ret;
+    int                                 ret;
     ret  = (OBJ_obj2nid((ASN1_OBJECT *)a->algor) == 
-	    OBJ_obj2nid((ASN1_OBJECT *)b->algor));
+            OBJ_obj2nid((ASN1_OBJECT *)b->algor));
     ret &= ASN1_STRING_cmp(a->digest, b->digest);
     return (ret);
 }
@@ -76,13 +76,21 @@ int X509_SIG_cmp(
  * @return 1 on success, 0 on error
  */
 int X509_SIG_print(
-    BIO *                         bp,
-    X509_SIG *                    signature) 
+    BIO *                               bp,
+    X509_SIG *                          signature) 
 {
-    int ret;
-    ret = BIO_printf(bp, "Signing Algorithm: %s\n", signature->algor->algorithm->ln);
-    ret &= ASN1_STRING_print(bp, (ASN1_STRING *) signature->digest);
-    return (ret);
+    int                                 ret,
+                                        tmpret;
+    if(ret = BIO_printf(bp, "Signing Algorithm: %s\n", 
+                        signature->algor->algorithm->ln) < 0)
+    {
+        return ret;
+    }
+    if(tmpret = ASN1_STRING_print(bp, (ASN1_STRING *) signature->digest) < 0)
+    {
+        return tmpret;
+    }
+    return (tmpret + ret);
 }
 
 /**
@@ -96,9 +104,9 @@ int X509_SIG_print(
  */
 int X509_SIG_print_fp(
     FILE *                              fp,
-    X509_SIG *                    signature) {
+    X509_SIG *                          signature) {
 
-    int ret;
+    int                                 ret;
     BIO * bp = BIO_new(BIO_s_file());
     
     BIO_set_fp(bp, fp, BIO_NOCLOSE);
@@ -165,8 +173,8 @@ int X509_SIG_set_signature(
     X509 *                              cert)
 {    
     return ASN1_STRING_set(signature->digest,
-			   cert->signature->data, 
-			   cert->signature->length);
+                           cert->signature->data, 
+                           cert->signature->length);
 }
 
 /**
