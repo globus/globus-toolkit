@@ -64,6 +64,7 @@ GSS_CALLCONV gss_unwrap(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
     time_t                              context_goodtill;
+    int                                 ssl_error;
     static char *                       _function_name_ =
         "gss_unwrap";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
@@ -227,7 +228,8 @@ GSS_CALLCONV gss_unwrap(
          * We don't know how big it is, so assume the max?
          */
 
-        while((rc = SSL_read(context->gs_ssl, readarea, sizeof(readarea))) > 0)
+        while((rc = SSL_read(context->gss_ssl, 
+                             readarea, sizeof(readarea))) > 0)
         {
             void * realloc_ptr;
 
@@ -262,7 +264,7 @@ GSS_CALLCONV gss_unwrap(
         
         if (rc < 0)
         {
-            ssl_error = SSL_get_error(context->gs_ssl, rc);
+            ssl_error = SSL_get_error(context->gss_ssl, rc);
             
             if(!ssl_error == SSL_ERROR_WANT_READ)
             {
