@@ -103,8 +103,8 @@ typedef struct globus_i_wu_monitor_s
 
     /* Performance update messages */
     struct timeval	       last_perf_update;
-    globus_size_t	       all_transferred;
-    globus_size_t	       accum_bytes;
+    globus_off_t	       all_transferred;
+    globus_off_t	       accum_bytes;
     globus_callback_handle_t   callback_handle;
     globus_ftp_control_handle_t *
 			       handle;
@@ -1767,7 +1767,10 @@ g_eof_receive = GLOBUS_TRUE;
 
                     return;
                 }
-                buffer = (globus_byte_t *) globus_malloc(buffer_size);
+		if(ctr < new_callbacks-1)
+		{
+		    buffer = (globus_byte_t *) globus_malloc(buffer_size);
+		}
             }
         }
 
@@ -1975,7 +1978,6 @@ globus_l_wu_perf_update(
     lreply(0, " StripeConnections: 0 %u", num_channels);
     lreply(0, " StripeThroughput: 0 %f", throughput);
     reply(112, "End");
-    G_ENTER();
 
     monitor->accum_bytes = 0;
     monitor->last_perf_update = tv;
@@ -2060,7 +2062,7 @@ stripd_server_size(
     {
         case TYPE_L:
         case TYPE_I:
-            reply(213, "%llu", size);
+            reply(213, "%"L_FORMAT, size);
             break;
 
         case TYPE_A:
