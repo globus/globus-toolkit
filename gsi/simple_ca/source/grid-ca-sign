@@ -51,12 +51,18 @@ ${short_usage}
     -dir <cadir>             : Set the configure directory of the CA
     -in  <cert req>          : The cert request to sign.
     -out <signed cert>       : The newly signed cert.  
-    -<openssl option>        : Any of the options alllowed with the openssl ca command
-    -openssl-help            : List possible options to the openssl ca command and exit
-    -passin pass:<password>  : This is an openssl option.  Specify the password
-                               for the CA private key if you don't care about
-                               security.  Other -passin options also exist,
+
+    -<openssl option>        : Any of the options allowed with the 
+                               openssl ca command.  Example:
+                               
+			       -passin pass:<password>
+
+                               Specify the password for the CA private key if 
+                               you don't care about security.  
+                               Other -passin options also exist,
 			       see openssl manpage for further details.
+
+    -openssl-help            : List possible options to the openssl ca command and exit
 
 EOF
 }
