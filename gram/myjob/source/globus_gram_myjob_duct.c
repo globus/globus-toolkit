@@ -287,7 +287,7 @@ globus_gram_myjob_rank (int * rankp)
   (*rankp) = -1;
 
   for (i=0; i<(remote_count+1); i++) {
-    if ( ((int) globus_list_first (list_iter))
+    if ( ((int) (long) globus_list_first (list_iter))
 	 == local_addr ) 
       (*rankp) = i;
     list_iter = globus_list_rest (list_iter);
@@ -381,7 +381,7 @@ globus_gram_myjob_send (int             dest_addr,
     list_iter = globus_list_rest (list_iter);
   }
 
-  dest_duct_addr = ((int) globus_list_first (list_iter));
+  dest_duct_addr = ((int) (long) globus_list_first (list_iter));
 
   err = globus_duct_runtime_send (&s_duct,
 				  dest_duct_addr,
