@@ -241,7 +241,7 @@ extern int port_allowed(const char *remoteaddr);
 	struct in_addr addr;
 	unsigned short port;
     } address;
-    long long Bignum;
+    off_t Bignum;
 }
 
 %type <String>  STRING password pathname pathstring username method
