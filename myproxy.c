@@ -44,7 +44,7 @@ static int convert_message(const char		*buffer,
 
 
 static int parse_command(const char			*command_str,
-			 myproxy_proto_response_type_t	*command_value);
+			 myproxy_proto_request_type_t	*command_value);
 
 
 static int
@@ -699,7 +699,7 @@ convert_message(const char			*buffer,
  */
 static int
 parse_command(const char			*command_str,
-	      myproxy_proto_response_type_t	*command_value)
+	      myproxy_proto_request_type_t	*command_value)
 {
     int				value;
     int				return_value = -1;
