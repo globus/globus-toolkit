@@ -318,6 +318,7 @@ globus_l_xio_test_attr_destroy(
 static
 globus_result_t
 globus_l_xio_test_target_init(
+    void **                                 out_driver_target,
     globus_xio_operation_t                  target_op,
     const globus_xio_contact_t *            contact_info,
     void *                                  driver_attr)

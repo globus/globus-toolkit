@@ -1116,10 +1116,10 @@ globus_l_ftp_control_data_eb_connect_write(
     }
     else
     {
-        result =  globus_error_construct_string(
+        result =  globus_error_put(globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
                       GLOBUS_NULL,
-                      "eb_connect_write(): Handle not in the proper state");
+                      "eb_connect_write(): Handle not in the proper state"));
     }
 
  exit:
@@ -1427,10 +1427,10 @@ globus_l_ftp_control_data_stream_connect_direction(
     }
     else
     {
-        result = globus_error_construct_string(
+        result = globus_error_put(globus_error_construct_string(
                       GLOBUS_FTP_CONTROL_MODULE,
                       GLOBUS_NULL,
-                      "stream_connect_direction(): must call local_pasv/port first.");
+                      "stream_connect_direction(): must call local_pasv/port first."));
     }
 
     return result;

@@ -76,9 +76,10 @@ globus_gss_assist_import_sec_context(
             *token_status = GLOBUS_GSS_ASSIST_TOKEN_NOT_FOUND;
             major_status = GSS_S_FAILURE;
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                minor_status,
+                local_result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_IMPORTING_CONTEXT,
                 ("environment variable: GRID_SECURITY_CONTEXT_FD not set"));
+            *minor_status = (OM_uint32) local_result;
             goto err;
         }
         if ((fd = atoi(context_fd_char)) <= 0)
@@ -86,10 +87,11 @@ globus_gss_assist_import_sec_context(
             *token_status = GLOBUS_GSS_ASSIST_TOKEN_NOT_FOUND;
             major_status = GSS_S_FAILURE;
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-                minor_status,
+                local_result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_IMPORTING_CONTEXT,
                 ("Environment variable GRID_SECURITY_CONTEXT_FD set to "
                  "invalid valie"));
+            *minor_status = (OM_uint32) local_result;
             goto err;
         }
     }
@@ -102,9 +104,10 @@ globus_gss_assist_import_sec_context(
     {
         *token_status = GLOBUS_GSS_ASSIST_TOKEN_ERR_BAD_SIZE;
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
-            minor_status,
+            local_result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_TOKEN,
             ("Couldn't read token size bytes from file descriptor."));
+        *minor_status = (OM_uint32) local_result;
         major_status = GSS_S_FAILURE;
         goto err;
     }

@@ -1481,13 +1481,7 @@ static char *
   }
   else
   {
-    err = globus_error_construct_string(
-        GLOBUS_GASS_COPY_MODULE,
-	GLOBUS_NULL,
-	"[%s]: BAD_PARAMETER, handle is NULL",
-	myname);
-
-	return globus_error_put(err);
+	return "[globus_gass_copy_get_status_string]: BAD_PARAMETER, handle is NULL";
   }
 }
 

@@ -1674,7 +1674,7 @@ globus_l_ftp_control_auth_read_cb(
                         &min_stat,
                         cc_handle->auth_info.target_name,
                         &subject_buf,
-                        GSS_C_NO_OID);
+                        GLOBUS_NULL);
 
                     cc_handle->auth_info.auth_gssapi_subject =
                         globus_libc_malloc(sizeof(char)*

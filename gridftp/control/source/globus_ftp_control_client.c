@@ -2972,7 +2972,7 @@ globus_l_ftp_control_send_cmd_cb(
 
 	    gss_wrap_size_limit(
 		    &min_stat,
-		    &handle->cc_handle.auth_info.auth_gssapi_context,
+		    handle->cc_handle.auth_info.auth_gssapi_context,
 		    0,
 		    GSS_C_QOP_DEFAULT,
 		    1<<30,
@@ -2980,7 +2980,7 @@ globus_l_ftp_control_send_cmd_cb(
 
 	    gss_wrap_size_limit(
 		    &min_stat,
-		    &handle->cc_handle.auth_info.auth_gssapi_context,
+		    handle->cc_handle.auth_info.auth_gssapi_context,
 		    1,
 		    GSS_C_QOP_DEFAULT,
 		    1<<30,

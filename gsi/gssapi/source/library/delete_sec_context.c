@@ -170,7 +170,7 @@ GSS_CALLCONV gss_delete_sec_context(
     } 
 
     major_status = gss_release_oid_set(
-        &minor_status,
+        minor_status,
         &(*context_handle)->extension_oids);
     if(GSS_ERROR(major_status))
     {
