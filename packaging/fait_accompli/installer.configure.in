@@ -184,7 +184,7 @@ AC_ARG_ENABLE(gsiopenssh, AC_HELP_STRING([--disable-gsiopenssh],\
 AC_SUBST(gsiopenssh, $gsiopenssh)
 AC_ARG_WITH(gsiopensshargs, AC_HELP_STRING([--with-gsiopensshargs="args"],\
    [Arguments to pass to the build of GSI-OpenSSH, like --with-tcp-wrappers]),
-   [gsiopensshargs=$withval], [])
+   [gsiopensshargs="GSI_OPENSSH_GPTMACRO=\"$withval\""], [])
 AC_SUBST(gsiopensshargs, $gsiopensshargs)
 
 # java
