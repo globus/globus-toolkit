@@ -111,8 +111,10 @@ typedef struct
  char * my_stdin;     /* File path (full, relative to home, no) for stdin */
 
  char * my_stdout;    /* File path (full, relative to home, no ~) for stdout */
+ char * my_stdout_tag;/* Specific tag, used only for stdout x-gass-cache URL */
 
  char * my_stderr;    /* File path (full, relative to home, no ~) for stderr */
+ char * my_stderr_tag;/* Specific tag, used only for stderr x-gass-cache URL */
 
  unsigned int count;       /* Number of processes to start */
 
