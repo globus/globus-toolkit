@@ -20,11 +20,22 @@ cp bundle-output/install-wsrf $INSTALLER
 chmod +x $INSTALLER/install-wsrf
 cp $GPT $INSTALLER
 
-rm -fr *-output
-
-./make-packages.pl -n --bundles=gt4-gram-pbs --version=$VERSION
-
+# make the dir where the GRAM scheduler bundles will go
 mkdir $INSTALLER/schedulers
+
+# build the PBS bundle
+rm -fr *-output
+./make-packages.pl -n --bundles=gt4-gram-pbs --version=$VERSION
+cp bundle-output/*.tar.gz  $INSTALLER/schedulers
+
+# build the Condor bundle
+rm -fr *-output
+./make-packages.pl -n --bundles=gt4-gram-condor --version=$VERSION
+cp bundle-output/*.tar.gz  $INSTALLER/schedulers
+
+# build the LSF bundle
+rm -fr *-output
+./make-packages.pl -n --bundles=gt4-gram-lsf --version=$VERSION
 cp bundle-output/*.tar.gz  $INSTALLER/schedulers
 
 if [ -d contrib ]; then
