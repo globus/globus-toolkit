@@ -959,7 +959,8 @@ globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
 	else
 	{
 	    /* the same url */
-	    CACHE_TRACE("URL found ");
+	    GLOBUS_L_GASS_CACHE_LG("URL found ");
+
 	    *return_entry=globus_gass_cache_entry_pt;
 	    globus_gass_cache_entry_pt=GLOBUS_NULL;
 	}
@@ -976,8 +977,9 @@ globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
     }
 } /* globus_l_gass_cache_lookfor_url() */
 
+
 /******************************************************************************
-Function:globus_l_gass_cache_lock_file()
+Function: _globus_l_gass_cache_lock_file()
 
 Description: Create an advisory lock on a file. To methode have been
     implemented: using hard link (if NEW_LOCK is not defined) and
@@ -985,6 +987,9 @@ Description: Create an advisory lock on a file. To methode have been
     ->hard links do not exist on AFS
     -> open(... O_CREAT|O_EXCL) do not work on all version of unix (But
     all the new versions/POSIX [IEEE 1988]
+    This function is identical to globus_l_gass_cache_lock_file(), but return
+    GLOBUS_GASS_CACHE_LOCK_TIMEOUT is the lock timed out and the lock had to
+    be broken. (to be used for test purpose.)
 
 Parameters: input:
                file_to_be_locked : path to the file to lock
@@ -992,18 +997,29 @@ Parameters: input:
 	        none
 Returns: 
             GLOBUS_SUCCESS or
-	    GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR
+	    GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR or
+	    GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT
+	    
+Note : If compilled with LOCK_TOUT defined, the lock will timeout after
+       LOCK_TOUT try to get the lock, if the file to lock is older than
+       LOCK_TOUT*LOOP_TIME
 	    
 ******************************************************************************/
 static int
-globus_l_gass_cache_lock_file(char* file_to_be_locked)
+_globus_l_gass_cache_lock_file(char* file_to_be_locked)
 {
     char   lock_file[FILENAME_MAX+1];
     int    lock_file_fd;
     char   uniq_lock_file[FILENAME_MAX+1];
     int    uniq_lock_file_fd;
-    struct stat uniq_file_stat;
+    struct stat file_stat;
     char   hname[MAXHOSTNAMELEN];
+
+#   ifdef LOCK_TOUT
+    int    lock_tout=0;
+    struct timeval tv;
+    int    return_code=GLOBUS_SUCCESS;
+#   endif
 
     /* build the name of the file used to lock "file_to_be_locked" */
     strcpy(lock_file, file_to_be_locked);
@@ -1045,14 +1061,62 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked)
 	    /* EINTR : system call interrupted: retry                        */
 	    if (errno != EEXIST && errno != EINTR  && errno != ENOTEMPTY  )
 	    {
-		CACHE_TRACE3("(%ld)could not link files (%d)\n",uniqid,errno);
+		CACHE_TRACE3("Lock: Could not link files %s and %s\n",uniq_lock_file, lock_file);
+		CACHE_TRACE2("Lock: Errno :%d\n",errno);
 		return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
 	    }
+
+#           ifdef LOCK_TOUT
+	    lock_tout++;
+	    if (lock_tout> LOCK_TOUT)
+	    {
+		/* check the age of the file to lock */
+		while ( stat(file_to_be_locked ,&file_stat) != 0)
+		{
+		    if (errno != EINTR)
+		    {
+			CACHE_TRACE2("could not get stat of file %s",
+				     uniq_lock_file);
+			return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+		    }
+		}
+		/* get system time */
+		gettimeofday(&tv, 0);
+
+		if ( file_stat.st_ctime + (LOOP_TIME*LOCK_TOUT)/1000000 < tv.tv_sec)
+		{
+		    /* the file has not been accessed for long,
+		       lets break the lock */
+		    /*
+		    CACHE_TRACE2("Lock on %s too old: I BREAK IT !!\n",
+				 file_to_be_locked);
+		    */
+		    while (unlink(lock_file) != 0 )
+		    {
+			if (errno != EINTR && errno != ENOENT )
+			{
+			    CACHE_TRACE2("Could not remove lock file %s",lock_file);
+			    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
+			}
+		    }
+		    return_code=GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT;
+		}
+		
+		lock_tout=0;
+	    }
+	    else
+	    {
+		globus_libc_usleep(LOOP_TIME);
+	    }
+#           else
+		
 	    globus_libc_usleep(LOOP_TIME);
+#           endif
+	    /* try again to lock the file */
 
 	}
 
-	while ( stat(uniq_lock_file ,&uniq_file_stat) != 0)
+	while ( stat(uniq_lock_file ,&file_stat) != 0)
 	{
 	    if (errno != EINTR)
 	    {
@@ -1061,11 +1125,20 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked)
 	    }
 	}
 	
-	if  ( uniq_file_stat.st_nlink != 2)
+	if  ( file_stat.st_nlink != 2)
 	{
 	    /* we manage to create the file, but it is not a hard link
 	       to the uniq_file, for some wird reasons. let try again */
-	     unlink(lock_file);
+	    while (unlink(lock_file) != 0 )
+	    {
+		if (errno != EINTR && errno != ENOENT )
+		{
+		    CACHE_TRACE2("Could not remove lock file %s",lock_file);
+		    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
+		}
+		if (errno == ENOENT )
+		    break;
+	    }
 	}
 	else
 	{
@@ -1073,6 +1146,178 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked)
 	    break;
 	}
 	globus_libc_usleep(LOOP_TIME);
+	
+	/* try again to lock the file */
+    } while ( 1 );
+    
+    return(return_code);
+} /* _globus_l_gass_cache_lock_file */
+
+/******************************************************************************
+Function:globus_l_gass_cache_lock_file()
+
+Description: Create an advisory lock on a file. To methode have been
+    implemented: using hard link (if NEW_LOCK is not defined) and
+    using open(... O_CREAT|O_EXCL) which return an error if file exist.
+    ->hard links do not exist on AFS
+    -> open(... O_CREAT|O_EXCL) do not work on all version of unix (But
+    all the new versions/POSIX [IEEE 1988]
+
+Parameters: input:
+               file_to_be_locked : path to the file to lock
+	    output:
+	        none
+Returns: 
+            GLOBUS_SUCCESS or
+	    GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR
+
+Note : If compilled with LOCK_TOUT defined, the lock will timeout after
+       LOCK_TOUT try to get the lock, if the file to lock is older than
+       LOCK_TOUT*LOOP_TIME
+	    
+******************************************************************************/
+static int
+globus_l_gass_cache_lock_file(char* file_to_be_locked)
+{
+    char   lock_file[FILENAME_MAX+1];
+    int    lock_file_fd;
+    char   uniq_lock_file[FILENAME_MAX+1];
+    int    uniq_lock_file_fd;
+    struct stat file_stat;
+    char   hname[MAXHOSTNAMELEN];
+
+#   ifdef LOCK_TOUT
+    int    lock_tout=0;
+    struct timeval tv;
+#   endif
+
+    /* build the name of the file used to lock "file_to_be_locked" */
+    strcpy(lock_file, file_to_be_locked);
+    strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);
+    /* !!! need to handle multi threaded !!! */
+    globus_libc_gethostname(hname,sizeof(hname));
+
+    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld:%ld",
+			lock_file,
+			hname,
+			(long) globus_libc_getpid(),
+			(long) globus_thread_self());
+    
+    while ( (uniq_lock_file_fd = creat(uniq_lock_file,
+				       GLOBUS_L_GASS_CACHE_STATE_MODE)) < 0 )
+    {
+	if (errno != EINTR)
+	{
+	    CACHE_TRACE2("could not create uniq lock file %s",uniq_lock_file);
+	    return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+	}
+    }
+    while (close(uniq_lock_file_fd) < 0 )
+    {
+	if (errno != EINTR)
+	{
+	    CACHE_TRACE2("could not close uniq lock file %s",uniq_lock_file);
+	    return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+	}
+    }
+    
+    do
+    {
+	while ( link(uniq_lock_file, lock_file) < 0)
+	{
+            /* ENOTEMPTY: I try to ignore it for problems on DFS from a      */
+	    /* Solaris machine                                               */
+	    /* EEXIST : the file is locked by an other process               */
+	    /* EINTR : system call interrupted: retry                        */
+	    if (errno != EEXIST && errno != EINTR  && errno != ENOTEMPTY  )
+	    {
+		CACHE_TRACE3("Lock: Could not link files %s and %s\n",uniq_lock_file, lock_file);
+		CACHE_TRACE2("Lock: Errno :%d\n",errno);
+		return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+	    }
+
+#           ifdef LOCK_TOUT
+	    lock_tout++;
+	    if (lock_tout> LOCK_TOUT)
+	    {
+		/* check the age of the file to lock */
+		while ( stat(file_to_be_locked ,&file_stat) != 0)
+		{
+		    if (errno != EINTR)
+		    {
+			CACHE_TRACE2("could not get stat of file %s",
+				     uniq_lock_file);
+			return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+		    }
+		}
+		/* get system time */
+		gettimeofday(&tv, 0);
+
+		if ( file_stat.st_ctime + (LOOP_TIME*LOCK_TOUT)/1000000 < tv.tv_sec)
+		{
+		    /* the file has not been accessed for long,
+		       lets break the lock */
+		    /*
+		    CACHE_TRACE2("Lock on %s too old: I BREAK IT !!\n",
+				 file_to_be_locked);
+		    */
+		    while (unlink(lock_file) != 0 )
+		    {
+			if (errno != EINTR && errno != ENOENT )
+			{
+			    CACHE_TRACE2("Could not remove lock file %s",lock_file);
+			    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
+			}
+		    }
+		}
+		
+		lock_tout=0;
+	    }
+	    else
+	    {
+		globus_libc_usleep(LOOP_TIME);
+	    }
+#           else
+		
+	    globus_libc_usleep(LOOP_TIME);
+#           endif
+	    /* try again to lock the file */
+
+	}
+
+	while ( stat(uniq_lock_file ,&file_stat) != 0)
+	{
+	    if (errno != EINTR)
+	    {
+		CACHE_TRACE("could not get stat of files");
+		return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+	    }
+	}
+	
+	if  ( file_stat.st_nlink != 2)
+	{
+	    /* we manage to create the file, but it is not a hard link
+	       to the uniq_file, for some wird reasons. let try again */
+	    while (unlink(lock_file) != 0 )
+	    {
+		if (errno != EINTR && errno != ENOENT )
+		{
+		    CACHE_TRACE2("Could not remove lock file %s",lock_file);
+		    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
+		}
+		if (errno == ENOENT )
+		    break;
+	    }
+	}
+	else
+	{
+	    /* we aquired the lock correctly, lets continue */
+	    break;
+	}
+
+	globus_libc_usleep(LOOP_TIME);
+	
+	/* try again to lock the file */
     } while ( 1 );
     
     return(GLOBUS_SUCCESS);
@@ -1119,7 +1364,7 @@ globus_l_gass_cache_unlock_file(char* file_to_be_locked)
     {
 	if (errno != EINTR)
 	{
-	    CACHE_TRACE2("(%ld)could not remove lock file",uniqid);
+	    CACHE_TRACE("Could not remove lock file");
 	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 	}
     }
@@ -1441,7 +1686,9 @@ globus_gass_cache_open(char                *cache_directory_path,
 	if ( f_name_lenght == 0 )
 	{
 	    cache_directory_path = GLOBUS_NULL;
-	    CACHE_TRACE("cache_directory_path empty");
+
+	    CACHE_TRACE("Error: cache_directory_path empty");
+
 	}
     }
 
@@ -1459,9 +1706,8 @@ globus_gass_cache_open(char                *cache_directory_path,
 		pt = GLOBUS_NULL;
 	    }
 	}
+	GLOBUS_L_GASS_CACHE_LG("GLOBUS_GASS_CACHE_DEFAULT_DIR_ENV_VAR is empty");
 
-	CACHE_TRACE("GLOBUS_GASS_CACHE_DEFAULT_DIR_ENV_VAR is empty");
-	
 	if ( pt == GLOBUS_NULL )
 	{
 	    /* cache directory still not defined; use the defaults */
@@ -1537,9 +1783,7 @@ globus_gass_cache_open(char                *cache_directory_path,
     else			/* cache_directory_path is valid */
     {
 	/* For the first version, we do not accept a  cache_directory_path */
-#       if 0
-	CACHE_TRACE("Parrameter cache_directory_path must be NULL when calling globus_gass_cache_open() in this version of GLOBUS_GASS_CACHE\n");
-	
+#       if 0	
 	/* for the version which will accept a cache directory not null  */
 	if (f_name_lenght >= FILENAME_MAX)
 	{
@@ -1549,14 +1793,14 @@ globus_gass_cache_open(char                *cache_directory_path,
 	strcpy(cache_handle->cache_directory_path,
 	       cache_directory_path);
 #       else
+	CACHE_TRACE("Parrameter cache_directory_path must be NULL when calling globus_gass_cache_open() in this version of GLOBUS_GASS_CACHE\n");
 	return (GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER);
 #       endif
 
     }
-
-    CACHE_TRACE2(" cache directory :%s ",
+    GLOBUS_L_GASS_CACHE_LG2(" cache directory :%s ",
 		 cache_handle->cache_directory_path );
-    
+
     /* here, *cache_handle.cache_directory_path should be defined */
     /* let see if it exists, and create it if it does not */
     rc =  stat(cache_handle->cache_directory_path,
@@ -1600,7 +1844,6 @@ globus_gass_cache_open(char                *cache_directory_path,
 #   if defined GLOBUS_L_GASS_CACHE_LOG
     strcpy(log_f_name,cache_handle->cache_directory_path);
     strcat(log_f_name,GLOBUS_L_GASS_CACHE_LOG_F_NAME);
-    CACHE_TRACE(log_f_name);
     cache_handle->log_FILE = fopen( log_f_name,"a");
     if (cache_handle->log_FILE == GLOBUS_NULL)
     {
@@ -1617,8 +1860,8 @@ globus_gass_cache_open(char                *cache_directory_path,
     /* open or create the state file */
     strcpy(cache_handle->state_file_path,cache_handle->cache_directory_path);
     strcat(cache_handle->state_file_path,GLOBUS_L_GASS_CACHE_STATE_F_NAME );
-    
-    CACHE_TRACE(cache_handle->state_file_path);
+    GLOBUS_L_GASS_CACHE_LG(cache_handle->state_file_path);
+
     state_f_fd = open(cache_handle->state_file_path,
 		      O_RDWR|O_CREAT,
 		      GLOBUS_L_GASS_CACHE_STATE_MODE);
@@ -1805,7 +2048,8 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
        
        if (entry_found_pt == GLOBUS_NULL)   /* url not found */
        {
-	   CACHE_TRACE("URL not found");
+	   GLOBUS_L_GASS_CACHE_LG("URL not found");
+
 	   if (create == GLOBUS_FALSE)
 	   {
 	       globus_l_gass_cache_unlock_close(cache_handle,
@@ -1826,9 +2070,9 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	       GLOBUS_L_GASS_CACHE_FILENAME(*local_filename);
 	   }
 	   globus_libc_unlock();
-	   
-	   CACHE_TRACE(*local_filename);
-	   
+
+	   GLOBUS_L_GASS_CACHE_LG(*local_filename);
+
 	   if ((tmp_fd = creat(*local_filename, 
                                GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
 	   {
@@ -1965,10 +2209,11 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
        } 
        else /* url found */
        {
-	   CACHE_TRACE("URL found");
+	   GLOBUS_L_GASS_CACHE_LG("URL found");
+
 	   if (entry_found_pt->lock_tag != GLOBUS_NULL) /* data file not ready */
 	   {
-	       CACHE_TRACE("Data file not ready: wait");
+	       GLOBUS_L_GASS_CACHE_LG("Data file not ready: wait");
 	       
 	       strcpy(notready_file_path,
 		      entry_found_pt->filename);
@@ -2013,23 +2258,13 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 			     &file_stat);
 	       }
 	       
-	       CACHE_TRACE("Data file now ready: continue/call recursivelly");
-	       /* now it should be ready */
-	       /* lets call recursivelly */
-	       /* no ! Lets do it in a loop ...
-	       rc = globus_gass_cache_add(cache_handle,
-	                           url,
-				   tag,
-				   create,
-				   timestamp,
-				   local_filename);
-	       return (rc);
-	       */
+	       GLOBUS_L_GASS_CACHE_LG("Data file now ready: continue");
+
 	       continue;
 	   }
 	   else  /* file ready */
 	   {
-	       CACHE_TRACE("Data file ready...");
+	       GLOBUS_L_GASS_CACHE_LG("Data file ready...");
 	   
 	       /* return the file name and the timestamp */
 	       /* create a new file name */
@@ -2053,7 +2288,8 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	       }
 	       if (tag_pt->tag == GLOBUS_NULL)
 	       {
-		   CACHE_TRACE("Tag Not found");
+		   GLOBUS_L_GASS_CACHE_LG("Tag Not found");
+
 		   /* the tag was not found. Now, we are pointing one
 		   the first empty tag entry allocated for tag
 		   creation. Lets create it */
@@ -2341,10 +2577,11 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
        }
        else
        { /* URL found */
-	   CACHE_TRACE("URL found");
+	   GLOBUS_L_GASS_CACHE_LG("URL found");
+
 	   if (entry_found_pt->lock_tag != GLOBUS_NULL)
 	   {			/* data file not ready */
-	       CACHE_TRACE("Data file not ready: wait");
+	       GLOBUS_L_GASS_CACHE_LG("Data file not ready: wait");
 	       
 	       strcpy(notready_file_path,
 		      entry_found_pt->filename);
@@ -2386,21 +2623,12 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 		   globus_libc_usleep(LOOP_TIME);
 		   rc = stat(notready_file_path, &file_stat);
 	       }
-	       CACHE_TRACE("Data file now ready: continue/call recursivelly");
-	       /* now it should be ready */
-	       /* lets call recursivelly */
-	       /* no ! Lets do it in a loop ...
-		  rc = globus_gass_cache_delete_start(cache_handle,
-					    url,
-					    tag,
-					    timestamp);
-		  return (rc);
-	       */
+	       GLOBUS_L_GASS_CACHE_LG("Data file now ready: continue/call recursivelly");
 	       continue;
 	   }
 	   else  /* file ready */
 	   {
-	       CACHE_TRACE("Data file ready...");
+	       GLOBUS_L_GASS_CACHE_LG("Data file ready...");
 	       
 	       /* return the timestamp */
 	       *timestamp=entry_found_pt->timestamp;
@@ -2572,7 +2800,7 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
        }
     
        /* URL found */
-       CACHE_TRACE("URL found");
+       GLOBUS_L_GASS_CACHE_LG("URL found");
     
        if ( entry_found_pt->lock_tag != GLOBUS_NULL )
        {			/* if file locked and */
@@ -2582,7 +2810,7 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
 				/* but I did not do it   */
 	       )
 	   {			/*  I wait               */
-	       CACHE_TRACE("Data file not ready: wait");
+	       GLOBUS_L_GASS_CACHE_LG("Data file not ready: wait");
 	    
 	       strcpy(notready_file_path,
 		      entry_found_pt->filename);
@@ -2624,17 +2852,7 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
 		   rc = stat(notready_file_path,
 			     &file_stat);
 	       }
-	       CACHE_TRACE("Data file now ready: continue/call recursivelly");
-	       /* now it should be ready */
-	       /* lets call recursivelly */
-	       /* no ! Lets do it in a loop ...
-	       rc = globus_gass_cache_delete(cache_handle,
-				      url,
-				      tag,
-				      timestamp,
-				      is_locked);
-	       return (rc);
-	       */
+	       GLOBUS_L_GASS_CACHE_LG("Data file now ready: continue/call recursivelly");
 	       continue;
 	   } 
        }
@@ -2814,7 +3032,7 @@ globus_gass_cache_cleanup_tag(globus_gass_cache_t *cache_handle,
        return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
    }
    /* URL found */
-   CACHE_TRACE("URL found");
+   GLOBUS_L_GASS_CACHE_LG("URL found");
 
    /* look for the tag */
    tag_pt = entry_found_pt->tags;
@@ -2945,7 +3163,7 @@ globus_gass_cache_cleanup_file(globus_gass_cache_t *cache_handle,
 	return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
     }
     /* URL found */
-    CACHE_TRACE("URL found");
+    GLOBUS_L_GASS_CACHE_LG("URL found");
     
     
     /* delete the cache file */
