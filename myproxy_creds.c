@@ -652,6 +652,31 @@ myproxy_creds_store(const struct myproxy_creds *creds)
 }
 
 int
+myproxy_creds_fetch_entry(char *user_name, struct myproxy_creds *creds)
+{
+   char creds_path[MAXPATHLEN];
+   char data_path[MAXPATHLEN];
+
+   if (user_name == NULL || creds == NULL) {
+      verror_put_errno(EINVAL);
+      return -1;
+   }
+
+   if (get_storage_locations(user_name,
+	                     creds_path, sizeof(creds_path),
+			     data_path, sizeof(data_path)) == -1)
+      return -1;
+
+   if (read_data_file(creds, data_path) == -1)
+      return -1;
+
+   creds->user_name = mystrdup(user_name);
+   creds->location = mystrdup(creds_path);
+   creds->restrictions = NULL;
+   return 0;
+}
+
+int
 myproxy_creds_retrieve(struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN];
