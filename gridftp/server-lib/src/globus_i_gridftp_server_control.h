@@ -151,6 +151,7 @@ typedef struct globus_i_gsc_event_data_s
     globus_callback_handle_t                restart_handle;
     globus_bool_t                           restart_running;
 
+    int                                     event_mask;
     globus_gridftp_server_control_event_cb_t user_cb;
     void *                                  user_arg;
 
@@ -255,7 +256,6 @@ typedef struct globus_i_gsc_op_s
     globus_i_gsc_event_data_t               event;
 
     globus_bool_t                           aborted;
-    globus_gridftp_server_control_abort_cb_t abort_cb;
     void *                                  abort_user_arg;
     void *                                  user_arg;
 } globus_i_gsc_op_t;

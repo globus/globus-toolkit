@@ -520,12 +520,15 @@ globus_l_gsc_read_cb(
                         globus_assert(server_handle->outstanding_op!=NULL);
 
                         server_handle->outstanding_op->aborted = GLOBUS_TRUE;
-                        if(server_handle->outstanding_op->abort_cb != NULL)
+                        if(server_handle->outstanding_op->event.event_mask &
+                            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT)
                         {
-                            server_handle->outstanding_op->abort_cb(
+                            server_handle->outstanding_op->event.user_cb(
                                 server_handle->outstanding_op,
-                                server_handle->outstanding_op->abort_user_arg);
-                            server_handle->outstanding_op->abort_cb = NULL;
+                                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT,
+                                server_handle->outstanding_op->event.user_arg);
+                            server_handle->outstanding_op->aborted = 
+                                GLOBUS_FALSE;
                         }
                     }
                 }
@@ -635,12 +638,14 @@ globus_i_gsc_terminate(
             if(server_handle->outstanding_op != NULL)
             {
                 server_handle->outstanding_op->aborted = GLOBUS_TRUE;
-                if(server_handle->outstanding_op->abort_cb != NULL)
+                if(server_handle->outstanding_op->event.event_mask &
+                    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT)
                 {
-                    server_handle->outstanding_op->abort_cb(
+                    server_handle->outstanding_op->event.user_cb(
                         server_handle->outstanding_op,
-                        server_handle->outstanding_op->abort_user_arg);
-                    server_handle->outstanding_op->abort_cb = NULL;
+                        GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT,
+                        server_handle->outstanding_op->event.user_arg);
+                    server_handle->outstanding_op->aborted = GLOBUS_FALSE;
                 }
             }
             /* ignore return code, we are stopping so it doesn' matter */
@@ -3715,10 +3720,7 @@ globus_gridftp_server_control_disconnected(
                                                                                 
 globus_result_t
 globus_gridftp_server_control_begin_transfer(
-    globus_gridftp_server_control_op_t  op,
-    int                                 event_mask,
-    globus_gridftp_server_control_event_cb_t event_cb,
-    void *                              user_arg)
+    globus_gridftp_server_control_op_t  op)
 {
     globus_result_t                     res;
     GlobusGridFTPServerName(globus_gridftp_server_control_begin_transfer);
@@ -3740,7 +3742,6 @@ globus_gridftp_server_control_begin_transfer(
     {
         /* TODO: determine if cached */
         res = globus_i_gsc_intermediate_reply(op, "150 Begining transfer.\r\n");
-        globus_i_gsc_event_start(op, event_mask, event_cb, user_arg);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -3777,7 +3778,6 @@ globus_gridftp_server_control_finished_transfer(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        globus_i_gsc_event_end(op);
         if(op->range_list != NULL)
         {
             globus_range_list_destroy(op->range_list);
@@ -3848,60 +3848,68 @@ globus_gridftp_server_control_list_buffer_free(
 }
 
 globus_result_t
-globus_gridftp_server_abort_enable(
+globus_gridftp_server_events_enable(
     globus_gridftp_server_control_op_t  op,
-    globus_gridftp_server_control_abort_cb_t abort_cb,
+    int                                 event_mask,
+    globus_gridftp_server_control_event_cb_t event_cb,
     void *                              user_arg)
 {
-    GlobusGridFTPServerName(globus_gridftp_server_abort_enable);
+    globus_result_t                     res;
+    GlobusGridFTPServerName(globus_gridftp_server_events_enable);
 
     if(op == NULL)
     {
-        return GlobusGridFTPServerErrorParameter("op");
+        res = GlobusGridFTPServerErrorParameter("op");
+        goto error_param;
+    }
+    if(op->type != GLOBUS_L_GSC_OP_TYPE_SEND &&
+        op->type != GLOBUS_L_GSC_OP_TYPE_RECV &&
+        op->type != GLOBUS_L_GSC_OP_TYPE_LIST &&
+        op->type != GLOBUS_L_GSC_OP_TYPE_NLST &&
+        op->type != GLOBUS_L_GSC_OP_TYPE_MLSD) 
+    {
+        res = GlobusGridFTPServerErrorParameter("op");
+        goto error_param;
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        if(op->aborted && op->abort_cb != NULL)
-        {
-            op->aborted = GLOBUS_FALSE;
-            abort_cb(op, user_arg);
-            op->abort_cb = NULL;
-        }
-        else
-        {
-            op->abort_cb = abort_cb;
-            op->abort_user_arg = user_arg;
-        }
+        /* TODO: determine if cached */
+        globus_i_gsc_event_start(op, event_mask, event_cb, user_arg);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
     return GLOBUS_SUCCESS;
+
+  error_param:
+
+    return res;
 }
 
 globus_result_t
-globus_gridftp_server_abort_disable(
+globus_gridftp_server_events_disable(
     globus_gridftp_server_control_op_t  op)
 {
-    GlobusGridFTPServerName(globus_gridftp_server_abort_disable);
+    globus_result_t                     res;
+    GlobusGridFTPServerName(globus_gridftp_server_events_disable);
 
     if(op == NULL)
     {
-        return GlobusGridFTPServerErrorParameter("op");
+        res = GlobusGridFTPServerErrorParameter("op");
+        goto error_param;
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        if(op->aborted && op->abort_cb != NULL)
-        {
-            op->abort_cb(op, op->abort_user_arg);
-            op->abort_cb = NULL;
-        }
-        op->abort_user_arg = NULL;
+        globus_i_gsc_event_end(op);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
     return GLOBUS_SUCCESS;
+
+  error_param:
+
+    return res;
 }
 
 globus_result_t

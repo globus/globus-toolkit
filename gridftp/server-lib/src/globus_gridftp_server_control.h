@@ -175,7 +175,8 @@ typedef enum globus_i_gsc_data_dir_e
 typedef enum globus_gridftp_server_control_event_type_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF = 0x01,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART = 0x02
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART = 0x02,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT = 0x04
 } globus_gridftp_server_control_event_type_t;
 
 /**
@@ -288,31 +289,6 @@ void
 globus_gridftp_server_control_list_buffer_free(
     globus_byte_t *                         buffer);
 
-typedef void
-(*globus_gridftp_server_control_abort_cb_t)(
-    globus_gridftp_server_control_op_t      op,
-    void *                                  user_arg);
-
-globus_result_t
-globus_gridftp_server_control_enable_abort(
-    globus_gridftp_server_control_op_t      op,
-    globus_gridftp_server_control_abort_cb_t abort_cb,
-    void *                                  user_arg);
-
-globus_result_t
-globus_gridftp_server_control_disable_abort(
-    globus_gridftp_server_control_op_t      op);
-
-globus_result_t
-globus_gridftp_server_abort_enable(
-    globus_gridftp_server_control_op_t  op,
-    globus_gridftp_server_control_abort_cb_t abort_cb,
-    void *                                  user_arg);
-
-globus_result_t
-globus_gridftp_server_abort_disable(
-    globus_gridftp_server_control_op_t  op);
-
 /**
  *  logging 
  *
@@ -400,6 +376,17 @@ typedef void
     globus_gridftp_server_control_op_t      op,
     int                                     event_type,
     void *                                  user_arg);
+
+globus_result_t
+globus_gridftp_server_control_events_enable(
+    globus_gridftp_server_control_op_t  op,
+    int                                 event_mask,
+    globus_gridftp_server_control_event_cb_t event_cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gridftp_server_control_events_disable(
+    globus_gridftp_server_control_op_t      op);
 
 /**
  *  finished resource query request
@@ -677,10 +664,7 @@ globus_gridftp_server_control_disconnected(
  */
 globus_result_t
 globus_gridftp_server_control_begin_transfer(
-    globus_gridftp_server_control_op_t  op,
-    int                                 event_mask,
-    globus_gridftp_server_control_event_cb_t event_cb,
-    void *                              user_arg);
+    globus_gridftp_server_control_op_t  op);
 
 /**
  *  a data transfer requested has been completed.
