@@ -82,7 +82,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds);
  * If creds->username is non-NULL, only retrieve credentials for that
  * username.
  * If creds->credname is non-NULL, only retrieve credentials for that
- * credential name.
+ * credential name.  A credname of "" indicates the "default" credential.
  * If creds->start_time is non-zero, only retrieve credentials with
  * end_time >= specified time.
  * If creds->end_time is non-zero, only retrieve credentials with

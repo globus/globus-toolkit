@@ -954,8 +954,9 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 			continue;
 
 	    if (credname)
-		if (new_cred->credname == NULL ||
-		    strcmp(credname, new_cred->credname))
+		if ((new_cred->credname == NULL && credname[0] != '\0') ||
+		    (new_cred->credname != NULL &&
+		     strcmp(credname, new_cred->credname)))
 			continue;
 
 	    if (myproxy_creds_retrieve(new_cred) == 0) {
