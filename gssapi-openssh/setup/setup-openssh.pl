@@ -115,11 +115,12 @@ print "---------------------------------------------------------------------\n";
 print "Hi, I'm the setup script for the gsi_openssh package!  I will create\n";
 print "a number of configuration files based on your local system setup.  I\n";
 print "will also attempt to copy or create a number of SSH key pairs for\n";
-print "this machine.\n";
+print "this machine.  (Loosely, if I find a pair of host keys in /etc/ssh,\n";
+print "I will copy them into \$GLOBUS_LOCATION/etc/ssh.  Otherwise, I will\n";
+print "generate them for you.)\n";
 print "\n";
-print "(Loosely, if I find a pair of host keys in /etc/ssh, I will copy them\n";
-print "into \$GLOBUS_LOCATION/etc/ssh.  Otherwise, I will generate them for\n";
-print "you.)\n";
+print "    Jacobim Mugatu says,\n";
+print "    \t\"Utopian Prime Minister Bad!  GSI-OpenSSH Good!\"\n";
 print "\n";
 
 if ( isForced() )
@@ -165,15 +166,35 @@ print "\n";
 print "    Remember to keep this variable set (correctly) when you want to\n";
 print "    use the executables that came with this package.\n";
 print "\n";
-print "    After that you may run, e.g.:\n";
+print "    After that you may execute, for example:\n";
 print "\n";
 print "    \t\$ . \$GLOBUS_LOCATION/etc/globus-user-env.sh\n";
 print "\n";
 print "    to prepare your environment for running the gsi_openssh\n";
 print "    executables.\n";
-print "\n";
-print "    Jacobim Mugatu says,\n";
-print "    \t\"Utopian Prime Minister Bad!  GSI-OpenSSH Good!\"\n";
+
+if ( !getPrivilegeSeparation() )
+{
+    print "\n";
+    print "  o For System Administrators:\n";
+    print "\n";
+    print "    If you are going to run the GSI-OpenSSH server, we recommend\n";
+    print "    enabling privilege separation.  Although this package supports\n";
+    print "    this feature, your system appears to require some additional\n";
+    print "    configuration.\n";
+    print "\n";
+    print "    To enable privilege separation:\n";
+    print "\n";
+    print "    \tIf the system user 'sshd' does not already exist,\n";
+    print "    \tadd a user with that username.\n";
+    print "\n";
+    print "    \tVerify that /var/empty exists, is owned by root,\n";
+    print "    \tand has a mode of 0700.\n";
+    print "\n";
+    print "    \tEnable the feature UsePrivilegeSeparation in\n";
+    print "    \t\$GLOBUS_LOCATION/etc/ssh/sshd_config.\n";
+}
+
 print "---------------------------------------------------------------------\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
 
@@ -724,6 +745,7 @@ sub copySSHDConfigFile
     my($fileInput, $fileOutput);
     my($mode, $uid, $gid);
     my($line, $newline);
+    my($privsep_enabled);
 
     print "Fixing paths in sshd_config...\n";
 
@@ -750,6 +772,28 @@ sub copySSHDConfigFile
     }
 
     #
+    # check to see whether we should enable privilege separation
+    #
+
+    if ( userExists("sshd") && ( -d "/var/empty" ) && ( getMode("/var/empty") eq "0700" ) )
+    {
+        setPrivilegeSeparation(1);
+    }
+    else
+    {
+        setPrivilegeSeparation(0);
+    }
+
+    if ( getPrivilegeSeparation() )
+    {
+        $privsep_enabled = "yes";
+    }
+    else
+    {
+        $privsep_enabled = "no";
+    }
+
+    #
     # Grab the current mode/uid/gid for use later
     #
 
@@ -761,36 +805,34 @@ sub copySSHDConfigFile
     # Open the files for reading and writing, and loop over the input's contents
     #
 
-    open(IN, "<$fileInput") || die ("$0: input file $fileInput missing!\n");
-    open(OUT, ">$fileOutput") || die ("$0: unable to open output file $fileOutput!\n");
+    $data = readFile($fileInput);
 
-    while (<IN>)
-    {
-        #
-        # sorry for the whacky regex, but i need to verify a whole line
-        #
+    #
+    # alter the PidFile config
+    #
 
-        $line = $_;
-        if ( $line =~ /^\s*Subsystem\s+sftp\s+\S+\s*$/ )
-        {
-            $line = "Subsystem\tsftp\t$gpath/libexec/sftp-server\n";
-            $line =~ s:/+:/:g;
-        }
-        elsif ( $line =~ /^\s*PidFile.*$/ )
-        {
-            $line = "PidFile\t$gpath/var/sshd.pid\n";
-            $line =~ s:/+:/:g;
-        }
-        else
-        {
-            # do nothing
-        }
+    $text = "PidFile\t$gpath/var/sshd.pid";
+    $data =~ s:^[\s|#]*PidFile.*$:$text:gm;
 
-        print OUT "$line";
-    } # while <IN>
+    #
+    # set the sftp directive
+    #
 
-    close(OUT);
-    close(IN);
+    $text = "Subsystem\tsftp\t$gpath/libxec/sftp-server";
+    $data =~ s:^[\s|#]*Subsystem\s+sftp\s+.*$:$text:gm;
+
+    #
+    # set the privilege separation directive
+    #
+
+    $text = "UsePrivilegeSeparation\t${privsep_enabled}";
+    $data =~ s:^[\s|#]*UsePrivilegeSeparation.*$:$text:gm;
+
+    #
+    # dump the modified output to the config file
+    #
+
+    writeFile($fileOutput, $data);
 
     #
     # An attempt to revert the new file back to the original file's
@@ -801,6 +843,28 @@ sub copySSHDConfigFile
     chown($uid, $gid, $fileOutput);
 
     return 0;
+}
+
+### setPrivilegeSeparation( $value )
+#
+# set the privilege separation variable to $value
+#
+
+sub setPrivilegeSeparation
+{
+    my($value) = @_;
+
+    $privsep = $value;
+}
+
+### getPrivilegeSeparation( )
+#
+# return the value of the privilege separation variable
+#
+
+sub getPrivilegeSeparation
+{
+    return $privsep;
 }
 
 ### prepareFileWrite( $file )
@@ -1064,4 +1128,64 @@ sub absolutePath
     $file = "$startd/$file" if $file !~ m!^\s*/!;
     $file = abs_path($file);
     return $file;
+}
+
+### getMode( $file )
+#
+# return a string containing the mode of the given file.
+#
+
+sub getMode
+{
+    my($file) = @_;
+    my($tempmode, $mode);
+
+    #
+    # call stat() to get the mode of the file
+    #
+
+    $tempmode = (stat($file))[2];
+    if (length($tempmode) < 1)
+    {
+        return "";
+    }
+
+    #
+    # call sprintf to format the mode into a UNIX-like string
+    #
+
+    $mode = sprintf("%04o", $tempmode & 07777);
+
+    return $mode;
+}
+
+### userExists( $username )
+#
+# given a username, return true if the user exists on the system.  return false
+# otherwise.
+#
+
+sub userExists
+{
+    my($username) = @_;
+    my($uid);
+
+    #
+    # retrieve the userid of the user with the given username
+    #
+
+    $uid = getpwnam($username);
+
+    #
+    # return true if $uid is defined and has a length greater than 0
+    #
+
+    if ( defined($uid) and (length($uid) > 0) )
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
