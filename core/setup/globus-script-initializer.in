@@ -79,4 +79,17 @@ if [ -z "$GLOBUS_SH_VARIABLES_SET" ]; then
     export GLOBUS_SH_VARIABLES_SET
 fi
 
+
+globus_source () {
+
+  # Check if file exists and source it
+  if [ ! -f "$1" ] ; then
+     ${GLOBUS_SH_PRINTF-printf} "$1 not found.\n" >&2
+     exit 1
+  fi
+
+  . "$1"
+}
+
+
 ################# END    Inserted by configure #############
