@@ -130,17 +130,6 @@ typedef struct globus_i_gass_copy_state_target_s
     int                                         n_complete;
 
     /**
-     * The total number of bytes transfered
-     */
-    globus_off_t                                n_bytes_transfered;
-
-    /**
-     * The total number of bytes transfered in this time period.
-     * Used to determine the transfer rate.
-     */
-    globus_off_t                                n_bytes_in_period;
-
-    /**
      * signifies the target has been successfully setup
      */
     globus_i_gass_copy_target_status_t          status;
@@ -170,7 +159,7 @@ typedef struct globus_i_gass_copy_state_target_s
 	    int					n_channels;
 	    int					n_reads_posted;
 	} ftp;
-	
+
         /**
          * GASS specific data
          */
@@ -181,7 +170,7 @@ typedef struct globus_i_gass_copy_state_target_s
              */
 	    globus_gass_transfer_request_t	request;
 	} gass;
-	
+
         /**
          * IO specific data
          */
@@ -235,18 +224,7 @@ struct globus_gass_copy_state_s
      * number of buffers that have been allocated for reading/writing
      */
     int                                 n_buffers;
-  
-    /*
-     * Used to mark the start of a timing period in order to determine the
-     * current transfer rate.
-     */
-    double                              timestamp;
-  
-    /*
-     * transfer rate (in bytes) for current timing period.
-     */
-    int                       transfer_rate;
-  
+
     /**
      * coordinates the modifying of the state,  aside from the target structures
      */
@@ -256,9 +234,8 @@ struct globus_gass_copy_state_s
      * indicates the status of the cancel operation.
      */
     globus_i_gass_copy_cancel_status_t cancel;
-    
-};
 
+};
 
 EXTERN_C_END
 
