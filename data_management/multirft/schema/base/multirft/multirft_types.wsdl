@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <wsdl:definitions name="MultiFileRFTTypes"
-  targetNamespace="http://multirft.base.ogsa.globus.org/rft_types"
+  targetNamespace="http://www.globus.org/namespaces/2004/04/rft/rft_types"
   xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
 
 <wsdl:types>
-<xsd:schema targetNamespace="http://multirft.base.ogsa.globus.org/rft_types"
-             xmlns:rft-types="http://multirft.base.ogsa.globus.org/rft_types"
+<xsd:schema targetNamespace="http://www.globus.org/namespaces/2004/04/rft/rft_types"
+             xmlns:rft-types="http://www.globus.org/namespaces/2004/04/rft/rft_types"
              attributeFormDefault="qualified"
              elementFormDefault="qualified"
 	     xmlns="http://www.w3.org/2001/XMLSchema">

@@ -64,7 +64,6 @@ extends GridServiceImpl {
     String configPath;
     TransferRequestType transferRequest;
     TransferRequestElement transferRequestElement;
-   // TransferType[] transfers;
     private Map notifyProps;
     int concurrency;
     int maxAttempts = 10;
@@ -125,6 +124,7 @@ extends GridServiceImpl {
         
         this.transferRequest = transferRequest;
         this.globalRFTOptionsType = transferRequest.getRftOptions();
+        System.out.println("global: " + this.globalRFTOptionsType.getSourceSubjectName() + " " + this.globalRFTOptionsType.getDestinationSubjectName());
         
         if ( transferRequest == null ) {
             logger.debug( "transfer request is null" );
@@ -211,6 +211,26 @@ extends GridServiceImpl {
         }
         else {
             throw new RemoteException("GetStatus returned null");
+        }
+    }
+
+    public FileTransferJobStatusType[] getStatusGroup( 
+            int initial, int offset ) throws RemoteException {
+        logger.debug(" Getting Status from : " + initial );
+        logger.debug(" To : " + offset );
+        Vector statusTypes =
+            dbAdapter.getStatusGroup( this.requestId, initial, offset ); 
+        int size = statusTypes.size();
+        FileTransferJobStatusType[] statusTypesArray = 
+            new FileTransferJobStatusType[ size ];
+        for ( int i = 0;i < size; i++ ) {
+            statusTypesArray[i] = (FileTransferJobStatusType) 
+                statusTypes.remove(i);
+        }
+        if ( statusTypes != null ) { 
+            return statusTypesArray;
+        } else {
+            throw new RemoteException("getStatusGroup returned null");
         }
     }
     /**
@@ -414,7 +434,7 @@ extends GridServiceImpl {
             String persistentRequestIdString = (String) getPersistentProperty(
             "requestId" );
             String temp = (String) factoryProperties.getProperty( "maxAttempts" );
-            int maxAttempts = Integer.parseInt( temp );
+            this.maxAttempts = Integer.parseInt( temp );
             String jdbcDriver = (String) factoryProperties.getProperty(
             "JdbcDriver" );
             String connectionURL = (String) factoryProperties.getProperty(
@@ -671,9 +691,7 @@ extends GridServiceImpl {
                 int tempId = transferJob.getTransferId();
                 TransferThread transferThread;
                 RFTOptionsType rftOptions = transferJob.getRftOptions();
-                if ( rftOptions == null ) {
-                    rftOptions = globalRFTOptionsType;
-                }
+                rftOptions = globalRFTOptionsType;
                 try {
                     transferClient = getTransferClient
                         ( transferJob.getSourceUrl(),
@@ -828,22 +846,6 @@ extends GridServiceImpl {
                     + newTransferJob.getTransferId() 
                         + "  " + newTransferJob.getStatus() );
                     logger.debug(numberActive + " " + concurrency);
-                    /*while (numberActive < concurrency) {
-                        logger.debug(numberActive + " " + concurrency);
-                        TransferJob tempTransferJob2 = 
-                            dbAdapter.getTransferJob(requestId);
-                        if ( tempTransferJob2 != null) {
-                            TransferThread transferThread2 = 
-                                new TransferThread( tempTransferJob2 );
-                            transferThread2.start();
-                            tempTransferJob2.
-                                setStatus( TransferJob.STATUS_ACTIVE );
-                            statusChanged( tempTransferJob2 );
-                        } else {
-                            logger.debug("no transfers");
-                        }
-                    }*/
-
                     transferThread = new TransferThread( newTransferJob );
                     newTransferJob.setStatus( TransferJob.STATUS_ACTIVE );
                     statusChanged( newTransferJob );

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions name="MultiFileRFT"
-             targetNamespace="http://multirft.base.ogsa.globus.org"
-             xmlns:tns="http://multirft.base.ogsa.globus.org"
+             targetNamespace="http://www.globus.org/namespaces/2004/04/rft"
+             xmlns:tns="http://www.globus.org/namespaces/2004/04/rft"
              xmlns:ogsi="http://www.gridforum.org/namespaces/2003/03/OGSI"
              
 xmlns:grid="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
@@ -9,14 +9,14 @@ xmlns:grid="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
 xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/serviceData"
              xmlns="http://schemas.xmlsoap.org/wsdl/"
              
-xmlns:rft-types="http://multirft.base.ogsa.globus.org/rft_types"
+xmlns:rft-types="http://www.globus.org/namespaces/2004/04/rft/rft_types"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 <import location="../../ogsi/ogsi.gwsdl" 
 namespace="http://www.gridforum.org/namespaces/2003/03/OGSI"/>
 <import location="multirft_types.wsdl"
-        namespace="http://multirft.base.ogsa.globus.org/multirft_types"/>
+        namespace="http://www.globus.org/namespaces/2004/04/rft/rft_types"/>
 <types>
-<xsd:schema targetNamespace="http://multirft.base.ogsa.globus.org"
+<xsd:schema targetNamespace="http://www.globus.org/namespaces/2004/04/rft"
     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
     elementFormDefault="qualified">
     

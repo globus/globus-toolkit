@@ -130,11 +130,13 @@ public class RFTClient {
             if (sourceSubjectName != null) {
                 multirftOptions.setSourceSubjectName(
                     sourceSubjectName);
+                System.out.println( sourceSubjectName);
             }
             String destinationSubjectName = (String)requestData.elementAt(i++);
             if (destinationSubjectName != null) {
                 multirftOptions.setDestinationSubjectName(
                     destinationSubjectName);
+                System.out.println( destinationSubjectName ); 
             }
             System.out.println(
                     "Request Data Size " + requestData.size() + " " +

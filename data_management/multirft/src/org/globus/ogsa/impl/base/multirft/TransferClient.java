@@ -413,24 +413,32 @@ public class TransferClient {
             this.rftOptions = rftOptions;
             subjectName = this.rftOptions.getSubjectName();
             sourceSubjectName = this.rftOptions.getSourceSubjectName();
+            logger.debug("source sub name "  + sourceSubjectName );
             destinationSubjectName = this.rftOptions.getDestinationSubjectName();
+            logger.debug("dest sub name "  + destinationSubjectName);
 
             if ( subjectName != null ) {
                 destinationHost.setAuthorization( new IdentityAuthorization(
                         subjectName ) );
+                logger.debug("subjectName : " + subjectName);
                 sourceHost.setAuthorization( new IdentityAuthorization(
                         subjectName ) );
             }
 
             if ( sourceSubjectName != null ) {
+                logger.debug("source sub name "  + sourceSubjectName );
                 sourceHost.setAuthorization( new IdentityAuthorization(
                         sourceSubjectName ) );
             }
 
             if ( destinationSubjectName != null ) {
+                logger.debug("setting dest sub name :  " + destinationSubjectName);
                 destinationHost.setAuthorization( new IdentityAuthorization(
                         destinationSubjectName ) );
+            } else {
+                logger.debug("dest sub is null");
             }
+
 
             try {
                 setTransferParams( destinationHost, this.credential );
@@ -470,9 +478,7 @@ public class TransferClient {
             setStatus( TransferJob.STATUS_FAILED );
             logger.error( "Error in TransferClient:Invalid URLs", mue );
         } catch ( Exception e ) {
-            setStatus( TransferJob.STATUS_FAILED );
             logger.error( "Error in TransferClient", e );
-            throw new RemoteException( MessageUtils.toString( e ) );
         }
 
     }
