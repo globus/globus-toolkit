@@ -131,10 +131,11 @@ $DEBUG_ECHO "JM_SCRIPT: getting environment vars" >> $grami_logfile
 #loop through all the environment variables.  Variables and values are seperate
 #arguments.  While assembling var/value pairs add the specific syntax
 #required for this scheduling system (VAR1=VALUE;VAR2=VALUE;) and check the
-# values for MP_EUILIB and MP_EUIDEVICE, if set.
+#values for MP_EUILIB, MP_EUIDEVICE, and MAUI_COMMENT, if set.
 #
 euilib=""
 euidev=""
+comment=""
 new_grami_env=""
 if [ ! -z "${grami_env}" ] ; then
    eval set -- ${grami_env}
@@ -149,6 +150,8 @@ if [ ! -z "${grami_env}" ] ; then
 	    euilib=$2
 	  elif [ "$1" = "MP_EUIDEVICE" -a -n "$2" ]; then
 	    euidev=$2
+	  elif [ "$1" = "MAUI_COMMENT" -a -n "$2" ]; then
+	    comment=$2
 	  fi
           x=1
        else
@@ -195,11 +198,16 @@ createScript () {
    echo "#@ Requirements     = ${grami_requirements}"
    echo "#" 
 
-   if [ -n "{new_grami_env}" ] ; then
+   if [ -n "${new_grami_env}" ] ; then
       echo "#@ environment      = ${new_grami_env}"
    fi
 
    echo "#" 
+   echo "#@ job_type         = ${ll_jobtype}" 
+
+   if [ -n "${comment}" ]; then
+      echo "#@ comment          = ${comment}"
+   fi
    echo "#@ job_type         = ${ll_jobtype}" 
 
    if [ "${grami_host_count}" -ne 0 ]; then
