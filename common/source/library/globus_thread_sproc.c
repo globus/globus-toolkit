@@ -965,7 +965,7 @@ globus_cond_wait(globus_cond_t *cond,
     globus_i_thread_t *				thread;
 
     /* added by JB */
-    globus_thread_blocking_will_block();
+    globus_thread_blocking_space_will_block(cond->space);
 
     if(cond->space == GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
@@ -1020,7 +1020,9 @@ globus_cond_timedwait(globus_cond_t *cond,
     globus_i_thread_t *				thread;
     int						save_errno = 0;
     int						fd;
-
+    
+    globus_thread_blocking_space_will_block(cond->space);
+    
     if(cond->space == GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
     thread = (globus_i_thread_t *) globus_thread_self();
@@ -1068,8 +1070,6 @@ globus_cond_timedwait(globus_cond_t *cond,
 	    fd_set			semaphore_set;
 	    struct timeval		timeout;
 	    
-            globus_thread_blocking_will_block();
-
 	    errno = 0;
 	    do
 	    {

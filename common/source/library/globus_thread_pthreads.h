@@ -352,7 +352,7 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
     globus_macro_cond_destroy((cv)->cond))
 
 #define globus_macro_cond_space_wait(cv, mut) \
-    (globus_thread_blocking_will_block(), \
+    (globus_thread_blocking_space_will_block((cv)->space), \
     (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
     (globus_macro_cond_wait((cv)->cond, (mut))) : \
     (globus_mutex_unlock((mut)), \
@@ -360,7 +360,7 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
     globus_mutex_lock((mut)), 0)))
 
 #define globus_macro_cond_space_timedwait(cv, mut, abstime) \
-    (globus_thread_blocking_will_block(), \
+    (globus_thread_blocking_space_will_block((cv)->space), \
     (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
     (globus_macro_cond_timedwait((cv)->cond, (mut), (abstime))) : \
     (globus_mutex_unlock((mut)), \
