@@ -1,6 +1,6 @@
 diff -u -r -P cyrus-sasl-1.5.27/configure cyrus-sasl-1.5.27-patched/configure
---- cyrus-sasl-1.5.27/configure	Fri Mar 23 17:48:12 2001
-+++ cyrus-sasl-1.5.27-patched/configure	Mon Oct 29 15:39:45 2001
+--- cyrus-sasl-1.5.27/configure	2001-03-23 19:48:12.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/configure	2002-09-19 12:19:22.000000000 -0500
 @@ -3741,7 +3741,9 @@
  #define WITH_DES 1
  EOF
@@ -579,8 +579,8 @@ diff -u -r -P cyrus-sasl-1.5.27/configure cyrus-sasl-1.5.27-patched/configure
    eval "ac_cv_func_$ac_func=yes"
  else
 diff -u -r -P cyrus-sasl-1.5.27/configure.in cyrus-sasl-1.5.27-patched/configure.in
---- cyrus-sasl-1.5.27/configure.in	Fri Mar 23 17:47:27 2001
-+++ cyrus-sasl-1.5.27-patched/configure.in	Mon Oct 29 15:39:20 2001
+--- cyrus-sasl-1.5.27/configure.in	2001-03-23 19:47:27.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/configure.in	2002-09-19 12:19:22.000000000 -0500
 @@ -390,7 +390,9 @@
  
  if test "$with_des" != no; then
@@ -600,9 +600,36 @@ diff -u -r -P cyrus-sasl-1.5.27/configure.in cyrus-sasl-1.5.27-patched/configure
    AC_CHECK_LIB(resolv,res_search)
    if test -d ${gssapi}; then 
       CPPFLAGS="$CPPFLAGS -I$gssapi/include"
+diff -u -r -P cyrus-sasl-1.5.27/include/saslplug.h cyrus-sasl-1.5.27-patched/include/saslplug.h
+--- cyrus-sasl-1.5.27/include/saslplug.h	2000-02-27 14:39:50.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/include/saslplug.h	2002-09-19 12:20:10.000000000 -0500
+@@ -46,14 +46,6 @@
+ 			       int (**pproc)(),
+ 			       void **pcontext);
+ 
+-#ifdef WIN32
+-/* need to handle the fact that errno has been defined as a function
+-   in a dll, not an extern int */
+-#ifdef errno
+-#undef errno
+-#endif /* errno */
+-#endif /* WIN32 */
+-
+ /* utility function set for plug-ins
+  */
+ typedef struct sasl_utils {
+@@ -116,7 +108,7 @@
+ 	       int priority,
+ 	       const char *plugin_name,
+ 	       int sasl_error,	/* %z */
+-	       int errno,	/* %m */
++	       int errnum,	/* %m */
+ 	       const char *format,
+ 	       ...);
+ } sasl_utils_t;
 diff -u -r -P cyrus-sasl-1.5.27/lib/client.c cyrus-sasl-1.5.27-patched/lib/client.c
---- cyrus-sasl-1.5.27/lib/client.c	Mon Mar 27 22:47:55 2000
-+++ cyrus-sasl-1.5.27-patched/lib/client.c	Mon Oct 29 15:34:23 2001
+--- cyrus-sasl-1.5.27/lib/client.c	2000-03-28 00:47:55.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/lib/client.c	2002-09-19 12:19:22.000000000 -0500
 @@ -579,7 +579,8 @@
  	    name[place]=list[pos];
  	    pos++;
@@ -613,9 +640,44 @@ diff -u -r -P cyrus-sasl-1.5.27/lib/client.c cyrus-sasl-1.5.27-patched/lib/clien
  		place--;
  		while(pos<list_len && (isalnum((unsigned char)list[pos])
  				       || list[pos] == '_'
+diff -u -r -P cyrus-sasl-1.5.27/lib/common.c cyrus-sasl-1.5.27-patched/lib/common.c
+--- cyrus-sasl-1.5.27/lib/common.c	2000-11-21 23:55:31.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/lib/common.c	2002-09-19 12:20:10.000000000 -0500
+@@ -53,13 +53,6 @@
+ #include <saslutil.h>
+ #include <saslplug.h>
+ #include "saslint.h"
+-#ifdef WIN32
+-/* need to handle the fact that errno has been defined as a function
+-   in a dll, not an extern int */
+-# ifdef errno
+-#  undef errno
+-# endif /* errno */
+-#endif /* WIN32 */
+ #ifdef HAVE_UNISTD_H
+ #include <unistd.h>
+ #endif
+@@ -826,7 +819,7 @@
+ 	   int priority,
+ 	   const char *plugin_name,
+ 	   int sasl_error,	/* %z */
+-	   int errno,	/* %m */
++	   int errnum,	/* %m */
+ 	   const char *format,
+ 	   ...)
+ {
+@@ -909,7 +902,7 @@
+ 
+ 	  case 'm': /* insert the errno string */
+ 	    result = add_string(&out, &alloclen, &outlen,
+-				strerror(errno));
++				strerror(errnum));
+ 	    if (result != SASL_OK)
+ 	      return result;
+ 	    done=1;
 diff -u -r -P cyrus-sasl-1.5.27/lib/dlopen.c cyrus-sasl-1.5.27-patched/lib/dlopen.c
---- cyrus-sasl-1.5.27/lib/dlopen.c	Sun Aug 13 18:44:02 2000
-+++ cyrus-sasl-1.5.27-patched/lib/dlopen.c	Mon Oct 29 15:34:23 2001
+--- cyrus-sasl-1.5.27/lib/dlopen.c	2000-08-13 20:44:02.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/lib/dlopen.c	2002-09-19 12:19:22.000000000 -0500
 @@ -174,6 +174,7 @@
      flag = 0;
  #endif
@@ -633,8 +695,8 @@ diff -u -r -P cyrus-sasl-1.5.27/lib/dlopen.c cyrus-sasl-1.5.27-patched/lib/dlope
  	    }
  
 diff -u -r -P cyrus-sasl-1.5.27/utils/sasldblistusers.c cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c
---- cyrus-sasl-1.5.27/utils/sasldblistusers.c	Sun Mar 11 11:33:10 2001
-+++ cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c	Mon Oct 29 15:34:23 2001
+--- cyrus-sasl-1.5.27/utils/sasldblistusers.c	2001-03-11 13:33:10.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c	2002-09-19 12:19:22.000000000 -0500
 @@ -136,7 +136,8 @@
  
      while (dkey.dptr != NULL) {
