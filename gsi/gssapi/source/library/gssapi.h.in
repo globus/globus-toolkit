@@ -41,6 +41,7 @@
 #ifndef SIZEOF_LONG
 #undef SIZEOF_LONG 
 #endif
+
 #ifndef SIZEOF_SHORT
 #undef SIZEOF_SHORT
 #endif
