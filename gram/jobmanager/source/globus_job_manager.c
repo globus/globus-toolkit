@@ -174,6 +174,8 @@ main(int argc,
 		    "nx",         /* package designator              */
 		    NULL);        /* additional modules              */
 
+    nexus_enable_fault_tolerance(NULL, NULL);
+
     if (rc != NEXUS_SUCCESS)
     {
 	fprintf(stderr, "nexus_init() failed with rc=%d\n", rc);
@@ -340,7 +342,7 @@ main(int argc,
                             NULL);
     if (rc != 0)
     {
-       return(GRAM_ERROR_INVALID_REQUEST);
+       return(GRAM_ERROR_JM_FAILED_ALLOW_ATTACH);
     } 
     else
     {
@@ -383,8 +385,6 @@ main(int argc,
                    NEXUS_FALSE);
 
     nexus_startpoint_destroy(&reply_sp);
-
-    nexus_enable_fault_tolerance(NULL, NULL);
 
 /*
     nexus_mutex_lock(&job_manager_monitor.mutex);
@@ -589,7 +589,7 @@ grami_jm_request_params(gram_specification_t * description_tree,
     struct stat statbuf;
 
     if (description_tree == NULL)
-        return(GRAM_ERROR_INVALID_REQUEST);
+        return(GRAM_ERROR_NULL_SPECIFICATION_TREE);
  
     *(params->pgm)       = '\0';
     *(params->pgm_args)  = '\0';
