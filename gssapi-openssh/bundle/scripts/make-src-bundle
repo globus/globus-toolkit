@@ -1,20 +1,11 @@
 #!/bin/sh
 #
-# Usage:
-#
-#   1) Run the src-bundle creation script:
-#
-#        ./make-src-bundle
-#
 
 source ./scripts/version.sh
 
 NAME="gsi_openssh_bundle-$VERSION-src.tar.gz"
-XML="gsi_openssh_bundle-src.xml"
-
-cp scripts/$XML work/
 
 cd work/
-$GPT_LOCATION/sbin/gpt-bundle -nodeps -nosetups -srcdir=sources/ -output=$NAME -bv=$VERSION -xml=$XML
-mv $NAME ../
+$GPT_LOCATION/sbin/gpt-bundle -nodeps -srcdir=sources/ -output=$NAME gsi_openssh gsi_openssh_setup
+mv sources/gsi_openssh_bundle-$VERSION-src_src.tar.gz ../$NAME
 cd ../
