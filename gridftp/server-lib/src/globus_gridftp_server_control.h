@@ -34,8 +34,7 @@ typedef enum globus_gsc_response_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACCESS_DENINED,
     GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_DATA_CONN_TERMINATED,
     GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_DATA_CONN_FAILED,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_DATA_CONN_AUTH,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC
+    GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_DATA_CONN_AUTH
 } globus_gridftp_server_control_response_t;
 
 #ifdef __GNUC__
@@ -205,7 +204,7 @@ typedef void
 globus_result_t
 globus_gridftp_server_control_finished_auth(
     globus_gridftp_server_control_op_t      op,
-    const char *                            username,
+    uid_t                                   uid,
     globus_gridftp_server_control_response_t response_code,
     const char *                            msg);
 
@@ -271,13 +270,11 @@ typedef void
     globus_gridftp_server_control_op_t      op,
     void *                                  data_handle,
     const char *                            path,
-    const char *                            fact_str,
     void *                                  user_arg);
 
 globus_result_t
 globus_gridftp_server_control_list_buffer_alloc(
-    const char *                            fact_str,
-    uid_t                                   uid,
+    globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_stat_t *  stat_info_array,
     int                                     stat_count,
     globus_byte_t **                        out_buf,
@@ -411,7 +408,6 @@ globus_gridftp_server_control_finished_resource(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_stat_t *  stat_info_array,
     int                                     stat_count,
-    uid_t                                   uid,
     globus_gridftp_server_control_response_t response_code,
     const char *                            msg);
 

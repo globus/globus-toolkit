@@ -22,12 +22,7 @@ static
 void
 globus_l_gfs_terminate_server(
     globus_bool_t                       immediately);
-
-static
-globus_result_t
-globus_l_gfs_open_new_server(
-    globus_xio_handle_t                 handle);
-
+        
 /* now have an open channel (when we get here, we hand off to the
  * control or data server code)
  * XXX all thats left for process management is to setuid iff this is an inetd
@@ -39,15 +34,13 @@ void
 globus_l_gfs_sigchld(
     int                                 signal) 
 {
+    int                                 child_rc;
     int                                 child_pid;
     int                                 child_status;
 
     child_pid = waitpid(-1, &child_status, WNOHANG);
     
-/*  
-    int                                 child_rc;
-
-    if(child_pid < 0)
+/*    if(child_pid < 0)
     {
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_ERR, 
@@ -81,11 +74,14 @@ globus_result_t
 globus_l_gfs_spawn_child(
     globus_xio_handle_t                 handle)
 {
-    globus_result_t                     result;
-    pid_t                               child_pid;
-    struct sigaction                    act;
-    struct sigaction                    oldact;
     GlobusGFSName(globus_l_gfs_spawn_child);
+    globus_xio_system_handle_t          socket_handle;
+    globus_result_t                     result;
+    int                                 rc;
+    pid_t child_pid;
+
+    struct sigaction                act;
+    struct sigaction                oldact;
     
     signal(SIGPIPE, SIG_IGN);
     
@@ -107,9 +103,6 @@ globus_l_gfs_spawn_child(
         globus_l_gfs_terminate_server(GLOBUS_TRUE);
         
 #if 0
-    globus_xio_system_handle_t          socket_handle;
-    globus_result_t                     result;
-    int                                 rc;
         result = globus_xio_handle_cntl(
             handle,
             globus_l_gfs_tcp_driver,
@@ -192,25 +185,25 @@ globus_l_gfs_new_server_cb(
     
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_INFO, "New connection from: %s\n", remote_contact);
-
-    result = globus_xio_handle_cntl(
-        handle,
-        globus_l_gfs_tcp_driver,
-        GLOBUS_XIO_TCP_GET_HANDLE,
-        &system_handle);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_peername;
-    }
     
     if(globus_i_gfs_config_bool("data_node"))
     {
         /* here is where I would start a new 'data node server' */
-        result = globus_i_gfs_data_node_start(
-            handle, system_handle, remote_contact);
+        globus_assert(0 && "Data node channel not written");
+        exit(1);
     }
     else
-    {        
+    {
+        result = globus_xio_handle_cntl(
+            handle,
+            globus_l_gfs_tcp_driver,
+            GLOBUS_XIO_TCP_GET_HANDLE,
+            &system_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_peername;
+        }
+        
         result = globus_i_gfs_control_start(
             handle, system_handle, remote_contact);
     }
@@ -282,6 +275,7 @@ globus_l_gfs_prepare_stack(
     
     result = globus_xio_stack_push_driver(*stack, globus_l_gfs_tcp_driver);
     globus_l_gfs_check_log_and_die(result);
+
 }
 
 /* begin a server instance from the channel already connected on stdin */

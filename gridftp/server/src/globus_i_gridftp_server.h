@@ -4,16 +4,12 @@
 #include "globus_gridftp_server.h"
 #include "globus_ftp_control.h"
 
-typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
-
 typedef struct
 {
     globus_xio_handle_t             xio_handle;
     char *                          remote_contact;
     char *                          rnfr_pathname;
-    globus_gfs_ipc_handle_t         ipc_handle;
-    int                             transfer_id;
-    globus_gridftp_server_control_op_t op;
+    globus_gridftp_server_operation_t op;
     
     union
     {
@@ -96,7 +92,7 @@ typedef struct
 typedef struct
 {
     void * nothing;    
-} globus_i_gfs_oldipc_handle_t;
+} globus_i_gfs_ipc_handle_t;
 
 /* !! if this changes, code will have to corrected as all 3 types here are
  * upcasted/downcasted at will
@@ -104,14 +100,13 @@ typedef struct
 typedef union
 {
     globus_i_gfs_data_handle_t          data;
-    globus_i_gfs_oldipc_handle_t        ipc;
+    globus_i_gfs_ipc_handle_t           ipc;
 } globus_i_gfs_ipc_data_handle_t;
 
 typedef enum
 {
     GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN,
-    GLOBUS_I_GFS_EVENT_BYTES_RECVD,
-    GLOBUS_I_GFS_EVENT_RANGES_RECVD,
+    GLOBUS_I_GFS_EVENT_UPDATE_BYTES,
     GLOBUS_I_GFS_EVENT_DISCONNECTED
 } globus_i_gfs_event_t;
 

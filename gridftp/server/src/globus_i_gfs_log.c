@@ -72,14 +72,7 @@ globus_i_gfs_log_result(
 {
     char *                              message;
     
-    if(result != GLOBUS_SUCCESS)
-    {
-        message = globus_error_print_friendly(globus_error_peek(result));
-    }
-    else
-    {
-        message = globus_libc_strdup("(no error)");
-    }
+    message = globus_error_print_friendly(globus_error_peek(result));
     globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_ERR, "%s:\n%s\n", lead, message);
     globus_free(message);
 }

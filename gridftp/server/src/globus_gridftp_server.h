@@ -14,6 +14,23 @@ typedef globus_gridftp_server_control_stat_t globus_gridftp_server_stat_t;
 /* (optional) this is used for listings, size, etc... it is only used in the
  * 'default' module
  */
+typedef globus_result_t
+(*globus_gridftp_server_resource_t)(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname,
+    int                                 mask);
+
+typedef globus_result_t
+(*globus_gridftp_server_recv_t)(
+    globus_gridftp_server_operation_t   op,
+    const char *                        arguments,
+    const char *                        pathname);
+
+typedef globus_result_t
+(*globus_gridftp_server_send_t)(
+    globus_gridftp_server_operation_t   op,
+    const char *                        arguments,
+    const char *                        pathname);
 
 void
 globus_gridftp_server_finished_resource(
@@ -116,7 +133,6 @@ globus_i_gfs_server_closed();
 typedef enum
 {
     GLOBUS_GFS_ERROR_MEMORY,
-    GLOBUS_GFS_ERROR_PARAMETER,
     GLOBUS_GFS_ERROR_SYSTEM_ERROR,
     GLOBUS_GFS_ERROR_WRAPPED,
     GLOBUS_GFS_ERROR_DATA,
@@ -132,22 +148,6 @@ typedef enum
 #define GlobusGFSErrorMemory(mem_name)                                      \
     globus_error_put(GlobusGFSErrorObjMemory(mem_name))                               
 
-#define GlobusGFSErrorParameter(mem_name)                                   \
-    globus_error_put(GlobusGFSErrorObjParameter(mem_name)) 
-
-#define GlobusGFSErrorIPC()                                                 \
-    globus_error_put(GlobusGFSErrorObjIPC())
-
-#define GlobusGFSErrorObjIPC()                                              \
-    globus_error_construct_error(                                           \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_GFS_ERROR_MEMORY,                                            \
-        __FILE__,                                                           \
-        _gfs_name,                                                          \
-        __LINE__,                                                           \
-        "IPC Commincation error.")
-                                                                            
 #define GlobusGFSErrorObjMemory(mem_name)                                   \
     globus_error_construct_error(                                           \
         GLOBUS_NULL,                                                        \
@@ -158,17 +158,6 @@ typedef enum
         __LINE__,                                                           \
         "Memory allocation failed on %s",                                   \
         (mem_name))                               
-                                                                            
-#define GlobusGFSErrorObjParameter(param_name)                              \
-    globus_error_construct_error(                                           \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_NULL,                                                        \
-        GLOBUS_GFS_ERROR_PARAMETER,                                         \
-        __FILE__,                                                           \
-        _gfs_name,                                                          \
-        __LINE__,                                                           \
-        "user a bad parameter %s",                                          \
-        (param_name))                               
                                                                             
 #define GlobusGFSErrorSystemError(system_func, _errno)                      \
     globus_error_put(                                                       \
