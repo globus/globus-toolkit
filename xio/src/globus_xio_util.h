@@ -40,6 +40,17 @@ globus_xio_contact_info_to_string(
     const globus_xio_contact_t *        contact_info,
     char **                             contact_string);
 
+globus_result_t
+globus_xio_contact_info_to_url(
+    const globus_xio_contact_t *        contact_info,
+    char **                             contact_string);
+
+globus_result_t
+globus_xio_contact_info_to_encoded_string(
+    const globus_xio_contact_t *        contact_info,
+    const globus_xio_contact_t *        encode_chars,
+    char **                             contact_string);
+
 /**
  * Utility macros
  */

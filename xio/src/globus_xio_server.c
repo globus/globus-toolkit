@@ -1515,6 +1515,60 @@ globus_l_xio_decode_hex(
 }
 
 /**
+ * if enc is NULL, no encoding will be done, string will just be duplicated.
+ * If it is non-NULL (but possibly empty) all characters in the
+ * string, the '%', and 01-1F and 7F-FF will be encoded with the %hh method.
+ * 
+ * every string returned by this func must be freed
+ */
+static
+char *
+globus_l_xio_encode_hex(
+    const char *                        s,
+    const char *                        enc)
+{
+    char *                              e;
+    char *                              encoded;
+    static char                         hexchars[] = "0123456789ABCDEF";
+
+    if(!s)
+    {
+        return NULL;
+    }
+    
+    if(!enc)
+    {
+        return globus_libc_strdup(s);
+    }
+    
+    
+    encoded = (char *) globus_malloc((3 * strlen(s) + 1) * sizeof(char));
+    if(encoded)
+    {
+        e = encoded;
+        while(*s)
+        {
+            unsigned                    n = (unsigned) *s;
+            
+            if(n <= 0x1F || n >= 0x7F || *s == '%' || (*enc && strchr(enc, n)))
+            {
+                *(e++) = '%';
+                *(e++) = hexchars[n >> 4];
+                *(e++) = hexchars[n & 15];
+            }
+            else
+            {
+                *(e++) = *(s++);
+            }
+        }
+        
+        *e = 0;
+    }
+    
+    return encoded;
+}
+
+/**
  *
  * -unparsed (up till end)
  * 
@@ -1835,20 +1889,47 @@ error_format:
  * be sure to update this if it can get bigger
  */
 #define GLOBUS_L_XIO_LAYOUT_SIZE        20
+
+/**
+ * if an element within encode_chars is NULL, no encoding will be done for that
+ * element.  If it is non-NULL (but possibly empty) all characters in the
+ * string, the '%', and 00-1F and 7F-FF will be encoded with the %hh method.   
+ */
 globus_result_t
-globus_xio_contact_info_to_string(
+globus_xio_contact_info_to_encoded_string(
     const globus_xio_contact_t *        contact_info,
+    const globus_xio_contact_t *        encode_chars,
     char **                             contact_string)
 {
     globus_bool_t                       path_only = GLOBUS_FALSE;
     globus_bool_t                       host_port_only = GLOBUS_FALSE;
-   
+    globus_xio_contact_t                local_info;
     const char *                        layout[GLOBUS_L_XIO_LAYOUT_SIZE];
     int                                 i = GLOBUS_L_XIO_LAYOUT_SIZE;
     GlobusXIOName(globus_xio_contact_info_to_string);
 
     GlobusXIODebugInternalEnter();
     
+    if(encode_chars)
+    {
+        contact_info = &local_info;
+        memset(&local_info, 0, sizeof(local_info));
+        local_info.resource = globus_l_xio_encode_hex(
+            contact_info->resource, encode_chars->resource);
+        local_info.host = globus_l_xio_encode_hex(
+            contact_info->host, encode_chars->host);   
+        local_info.port = globus_l_xio_encode_hex(
+            contact_info->port, encode_chars->port);   
+        local_info.scheme = globus_l_xio_encode_hex(
+            contact_info->scheme, encode_chars->scheme); 
+        local_info.user = globus_l_xio_encode_hex(
+            contact_info->user, encode_chars->user);   
+        local_info.pass = globus_l_xio_encode_hex(
+            contact_info->pass, encode_chars->pass);   
+        local_info.subject = globus_l_xio_encode_hex(
+            contact_info->subject, encode_chars->subject);
+    }
+
     if(contact_info->resource &&
         !contact_info->scheme && 
         !contact_info->host)
@@ -1865,10 +1946,22 @@ globus_xio_contact_info_to_string(
     
     if(contact_info->resource)
     {
-        layout[--i] = contact_info->resource;
-        if(!path_only && *contact_info->resource != '/')
+        if(path_only)
         {
-            layout[--i] = "/";
+            layout[--i] = contact_info->resource;
+        }
+        else
+        {
+            if(*contact_info->resource == '/')
+            {
+                layout[--i] = contact_info->resource + 1;
+                layout[--i] = "/%2F";
+            }
+            else
+            {
+                layout[--i] = contact_info->resource;
+                layout[--i] = "/";
+            }
         }
     }
     
@@ -1925,6 +2018,37 @@ globus_xio_contact_info_to_string(
     *contact_string = globus_libc_join(
         &layout[i], GLOBUS_L_XIO_LAYOUT_SIZE - i);
     
+    if(encode_chars)
+    {
+        globus_xio_contact_destroy(&local_info);
+    }
+    
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_xio_contact_info_to_string(
+    const globus_xio_contact_t *        contact_info,
+    char **                             contact_string)
+{
+    return globus_xio_contact_info_to_encoded_string(
+        contact_info, NULL, contact_string);
+}
+
+globus_result_t
+globus_xio_contact_info_to_url(
+    const globus_xio_contact_t *        contact_info,
+    char **                             contact_string)
+{
+    globus_xio_contact_t                encode_chars;
+    
+    memset(&encode_chars, 0, sizeof(encode_chars));
+    encode_chars.resource = "<> \"'#";
+    encode_chars.user = "<> @:/\"'#";
+    encode_chars.pass = "<> @:/\"'#";
+    encode_chars.subject = "<> \"'#";
+    
+    return globus_xio_contact_info_to_encoded_string(
+        contact_info, &encode_chars, contact_string);
 }
