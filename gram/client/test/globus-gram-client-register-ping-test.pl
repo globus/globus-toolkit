@@ -57,7 +57,7 @@ sub register_test
     }
     else
     {
-        skip($contact eq '');
+        skip($contact eq '', "Can't tweak contact", 0);
     }
 }
 push(@tests, "register_test('$ENV{CONTACT_STRING}', '', 0);");

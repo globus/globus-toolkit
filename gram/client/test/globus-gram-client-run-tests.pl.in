@@ -30,6 +30,7 @@ my $kill_gatekeeper=0;
     globus-gram-client-stop-manager-test.pl
     globus-gram-client-two-phase-commit-test.pl
     globus-gram-client-register-ping-test.pl
+    globus-gram-client-stdio-size-test.pl
 );
 
 chdir "$globus_location/test/@PACKAGE@";
