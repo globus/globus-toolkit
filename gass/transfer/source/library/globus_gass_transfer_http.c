@@ -2501,7 +2501,7 @@ globus_l_gass_transfer_http_connect_callback(
     globus_gass_transfer_proto_request_denied(
 	proto->request,
 	proto->code,
-	proto->reason);
+	globus_libc_strdup(proto->reason));
     globus_l_gass_transfer_http_lock();
     result = globus_io_register_close(
 	&proto->handle,
@@ -2647,7 +2647,7 @@ globus_l_gass_transfer_http_command_callback(
     globus_gass_transfer_proto_request_denied(
 	proto->request,
 	proto->code,
-	proto->reason);
+	globus_libc_strdup(proto->reason));
 
     globus_l_gass_transfer_http_lock();
     /* Close up the request */
