@@ -2311,20 +2311,19 @@ globus_xio_read(
         *nbytes = info->nbytes;
     }
 
-    globus_l_xio_blocking_destroy(info);
-
     if(info->res != GLOBUS_SUCCESS)
     {
         res = info->res;
         goto alloc_error;
     }
-
+    globus_l_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   register_error:
     globus_mutex_unlock(&info->mutex);
+    globus_l_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
 
@@ -2432,19 +2431,19 @@ globus_xio_readv(
         *nbytes = info->nbytes;
     }
 
-    globus_l_xio_blocking_destroy(info);
-
     if(info->res != GLOBUS_SUCCESS)
     {
         res = info->res;
         goto alloc_error;
     }
+    globus_l_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   register_error:
     globus_mutex_unlock(&info->mutex);
+    globus_l_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
 
@@ -2556,19 +2555,19 @@ globus_xio_write(
         *nbytes = info->nbytes;
     }
 
-    globus_l_xio_blocking_destroy(info);
-
     if(info->res != GLOBUS_SUCCESS)
     {
         res = info->res;
         goto alloc_error;
     }
+    globus_l_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   register_error:
     globus_mutex_unlock(&info->mutex);
+    globus_l_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
 
@@ -2675,19 +2674,19 @@ globus_xio_writev(
         *nbytes = info->nbytes;
     }
 
-    globus_l_xio_blocking_destroy(info);
-
     if(info->res != GLOBUS_SUCCESS)
     {
         res = info->res;
         goto alloc_error;
     }
+    globus_l_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   register_error:
     globus_mutex_unlock(&info->mutex);
+    globus_l_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
 
