@@ -98,6 +98,7 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct hostent *host_info;
     char error_string[1024];
     char *expected_dn;
+    char *port_range;
     
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -108,6 +109,26 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     } 
 
     host_info = gethostbyname(attrs->pshost); 
+
+    if ((port_range = getenv("MYPROXY_TCP_PORT_RANGE")) ||
+	(port_range = getenv("GLOBUS_TCP_PORT_RANGE"))) {
+	unsigned short port, max_port;
+	if (sscanf(port_range, "%hu,%hu", &port, &max_port)) {
+	    memset(&sin, 0, sizeof(sin));
+	    sin.sin_family = AF_INET;
+	    sin.sin_addr.s_addr = INADDR_ANY;
+	    sin.sin_port = htons(port);
+	    while (bind(attrs->socket_fd, (struct sockaddr *)&sin,
+			sizeof(sin)) < 0) {
+		if (errno != EADDRINUSE || port >= max_port) {
+		    verror_put_string("Error in bind()");
+		    return -1;
+		}
+		sin.sin_port = htons(++port);
+	    }
+	    /* fprintf(stderr, "Socket bound to port %hu.\n", port); */
+	}
+    }
 
     if (host_info == NULL)
     {
