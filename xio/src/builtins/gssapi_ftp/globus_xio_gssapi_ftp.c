@@ -1595,6 +1595,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
                     gss_release_buffer(&min_stat, &send_tok);
                     goto err;
                 }
+		memcpy(&reply[strlen(REPLY_235_ADAT_DATA)+length], "\r\n\0", 3);
             }
             *out_complete = GLOBUS_TRUE;
             break;
@@ -1981,7 +1982,7 @@ globus_l_xio_gssapi_ftp_client_incoming(
                     tmp_buf = cmd_a[1] + strlen("ADAT=");
                     res = globus_l_xio_gssapi_ftp_client_adat(
                             handle,
-                            cmd_a[1],
+                            tmp_buf,
                             &send_buffer,
                             &complete);
                     if(res != GLOBUS_SUCCESS)
