@@ -38,18 +38,11 @@
 #include <globus_gss_assist.h>
 #include <gssapi.h>
 
-#include "gnu_getopt.h"
+#include "myproxy.h" /* public headers */
 #include "gsi_socket.h"
-#include "myproxy.h"
-#include "myproxy_authorization.h"
-#include "myproxy_creds.h"
-#include "myproxy_delegation.h"
-#include "myproxy_log.h"
-#include "myproxy_read_pass.h"
-#include "myproxy_server.h"
+#include "gnu_getopt.h"
 #include "ssl_utils.h"
 #include "string_funcs.h"
-#include "verror.h"
 #include "vparse.h"
 
 #endif /* __MYPROXY_COMMON_H */
