@@ -9,13 +9,13 @@ import java.util.ListIterator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-//import org.globus.usage.packets.CustomByteBuffer;
+import org.globus.usage.packets.CustomByteBuffer;
 //import org.globus.usage.packets.IPTimeMonitorPacket;
 import org.globus.usage.packets.UsageMonitorPacket;
 import org.globus.usage.receiver.handlers.DefaultPacketHandler;
 import org.globus.usage.receiver.handlers.PacketHandler;
 
-//import java.sql.DriverManager;
+import java.sql.DriverManager;
 //import java.sql.Connection;
 //import java.sql.Statement;
 //import java.sql.ResultSet;
@@ -63,7 +63,7 @@ public class HandlerThread extends Thread {
 	  database connection (which, so far, is all handlers) can take
 	  connections from this pool.*/
 	GenericObjectPool connectionPool = new GenericObjectPool(null);
-	ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dburl);
+	ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dburl, "allcock", "bigio");
 	PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connectionFactory, connectionPool, null, null, false, true);
 	PoolingDriver driver = new PoolingDriver();
 	driver.registerPool("usagestats", connectionPool);
@@ -179,7 +179,7 @@ public class HandlerThread extends Thread {
 	    driver.closePool("usagestats");
 	}
 	catch(Exception e) {
-	    log.warn(e.getMessage);
+	    log.warn(e.getMessage());
 	}
     }
 }

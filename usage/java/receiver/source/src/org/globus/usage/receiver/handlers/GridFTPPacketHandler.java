@@ -16,8 +16,8 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 
     private static Log log = LogFactory.getLog(GridFTPPacketHandler.class);
 
-    public GridFTPPacketHandler(String driverClass, String db, String table) throws SQLException, ClassNotFoundException {
-        super(driverClass, db, table);
+    public GridFTPPacketHandler(String db, String table) throws SQLException {
+        super(db, table);
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {

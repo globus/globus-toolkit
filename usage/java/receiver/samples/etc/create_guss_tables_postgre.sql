@@ -31,3 +31,18 @@ CREATE TABLE gftp_packets(
     reserved BIGINT,
     PRIMARY KEY (id)
 );
+
+CREATE TABLE rft_packets(
+    id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time DATETIME,
+    ip_address VARCHAR(64) NOT NULL,
+    request_type SMALLINT NOT NULL,
+    number_of_files BIGINT,
+    number_of_bytes BIGINT,
+    number_of_resources BIGINT,
+    creation_time BIGINT,
+    factory_start_time BIGINT,
+    PRIMARY KEY (id)
+);

@@ -13,6 +13,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.globus.usage.receiver.Receiver;
 import org.globus.usage.receiver.handlers.GridFTPPacketHandler;
+import org.globus.usage.receiver.handlers.RFTPacketHandler;
 
 /*An example of how the Receiver class can be used in a program:*/
 public class ExampleReceiver {
@@ -22,6 +23,7 @@ public class ExampleReceiver {
     public static void main(String[] args) {
         int port = 0;
         String databaseDriverClass, databaseURL, defaultTable, gftpTable;
+	String rftTable;
 	int ringBufferSize = 0;
         Properties props;
         InputStream propsIn;
@@ -46,7 +48,7 @@ public class ExampleReceiver {
             defaultTable = props.getProperty("default-table");
             gftpTable = props.getProperty("gftp-table");
 	    rftTable = props.getProperty("rft-table");
-            ringBufferSize = props.getProperty("ringbuffer-size");
+            ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
 
             if (args.length == 1)
                 /*Get listening port number from command line*/

@@ -25,7 +25,7 @@ public class DefaultPacketHandler implements PacketHandler {
 
     /*Gets a database connection from the pool created by the HandlerThread.
      table is the name of the table in that database to write packets to.*/
-    public DefaultPacketHandler(String dburl, String table) throws SQLException, {
+    public DefaultPacketHandler(String dburl, String table) throws SQLException {
 	//        this.dburl = dburl;
         this.table = table;
 
