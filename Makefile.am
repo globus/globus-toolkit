@@ -20,25 +20,22 @@ LibSources= \
 	myproxy_authorization.c \
 	myproxy_authorization.h \
 	myproxy_common.h \
+	myproxy_creds.c \
+	myproxy_creds.h \
 	myproxy_delegation.c \
 	myproxy_delegation.h \
 	myproxy_read_pass.c \
 	myproxy_read_pass.h \
 	myproxy_log.c \
 	myproxy_log.h \
+	myproxy_server.h \
+	myproxy_server_config.c \
 	ssl_utils.c \
 	ssl_utils.h \
 	string_funcs.c \
 	string_funcs.h \
 	verror.c \
-	verror.h
-
-ServerSources= \
-	myproxy_creds.c \
-	myproxy_creds.h \
-	myproxy_server.c \
-	myproxy_server.h \
-	myproxy_server_config.c \
+	verror.h \
 	vparse.c \
 	vparse.h
 
@@ -50,9 +47,9 @@ Scripts= \
 
 sbin_SCRIPTS = $(Scripts)
 
-flavorinclude_HEADERS= \
-	myproxy.h \
-	myproxy_creds.h
+# flavorinclude_HEADERS= \
+# 	myproxy.h \
+# 	myproxy_creds.h
 
 lib_LTLIBRARIES = libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
@@ -92,7 +89,7 @@ myproxy_destroy_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_destroy_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
-myproxy_server_SOURCES = $(ServerSources)
+myproxy_server_SOURCES = myproxy_server.c
 myproxy_server_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_server_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
