@@ -779,13 +779,13 @@ globus_i_rsl_assist_get_ldap_param(char ** server,
 			}
 		    }
 		    else if(strncmp(buf,
-				    "GLOBUS_MDS_DN=",
-				    strlen("GLOBUS_MDS_DN=")) == 0)
+				    "GLOBUS_MDS_BASEDN=",
+				    strlen("GLOBUS_MDS_BASEDN=")) == 0)
 		    {
 			if (*base_dn ==GLOBUS_NULL)
 			{
 			    globus_libc_lock();
-			    *base_dn= strdup(buf + strlen("GLOBUS_MDS_DN=\""));
+			    *base_dn= strdup(buf + strlen("GLOBUS_MDS_BASEDN=\""));
 			    (*base_dn)[strlen(*base_dn)-2] = '\0';
 			    globus_libc_unlock();
 			}
