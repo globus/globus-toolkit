@@ -544,6 +544,7 @@ globus_l_gsc_read_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_reltime_t                    delay;
     char *                              tmp_ptr;
     globus_result_t                     res = GLOBUS_SUCCESS;
     globus_i_gsc_server_handle_t *      server_handle;
@@ -565,6 +566,29 @@ globus_l_gsc_read_cb(
         {
             res = result;
             goto err;
+        }
+        if(server_handle->idle_timeout > 0)
+        {
+            GlobusTimeReltimeSet(delay, server_handle->idle_timeout, 0);
+            globus_xio_handle_cntl(
+                xio_handle,
+                NULL,
+                GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL,
+                globus_l_gsc_timeout_cb,
+                &delay,
+                server_handle);
+        }
+        /* turn it off if no idle timeout */
+        else if(server_handle->preauth_timeout > 0)
+        {
+            GlobusTimeReltimeCopy(delay, globus_i_reltime_infinity);
+            globus_xio_handle_cntl(
+                xio_handle,
+                NULL,
+                GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL,
+                globus_l_gsc_timeout_cb,
+                &delay,
+                server_handle);
         }
         switch(server_handle->state)
         {
@@ -1059,9 +1083,8 @@ globus_l_gsc_220_write_cb(
     }
     globus_mutex_lock(&server_handle->mutex);
     {
-        /* TODO: change the timeout here */
-        GlobusGSCHandleStateChange(
-            server_handle, GLOBUS_L_GSC_STATE_OPEN);
+        GlobusGSCHandleStateChange(server_handle, GLOBUS_L_GSC_STATE_OPEN);
+
         /*  post a read on the fake buffers */
         res = globus_xio_register_read(
             xio_handle,
@@ -2546,9 +2569,12 @@ globus_gridftp_server_control_start(
     server_handle->prot = 'C';
     server_handle->dcau = 'N';
 
-    if(i_attr->idle_timeout > 0)
+    server_handle->preauth_timeout = i_attr->preauth_timeout;
+    server_handle->idle_timeout = i_attr->idle_timeout;
+
+    if(i_attr->preauth_timeout > 0)
     {
-        GlobusTimeReltimeSet(delay, i_attr->idle_timeout, 0);
+        GlobusTimeReltimeSet(delay, i_attr->preauth_timeout, 0);
         globus_xio_attr_cntl(
             xio_attr,
             NULL,
