@@ -149,7 +149,22 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 static char *
 globus_l_gram_protocol_error_7_hack_message = GLOBUS_NULL;
 
-
+/**
+ * Error code translation.
+ * @ingroup globus_gram_protocol_error_messages
+ *
+ * This function takes the error code value and returns the associated error
+ * code string. The string is statically allocated by the Globus GRAM Protocol
+ * library and should not be modified or freed.
+ *
+ * @param error_code
+ *        The error code to look up.
+ *
+ * @return An error string containing the reason for the error. The error
+ *         string is written to be used in the context
+ *         "[operation] failed because [error_string]".
+ *
+ */
 const char *
 globus_gram_protocol_error_string(int error_code)
 {
@@ -164,7 +179,19 @@ globus_gram_protocol_error_string(int error_code)
 } /* globus_gram_protocol_error_string() */
 
 
-
+/**
+ * GSI specific error code hack.
+ * @ingroup globus_gram_protocol_error_messages
+ *
+ * This function creates a custom version of the error message for the error
+ * GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION.  This function should really
+ * only used by the GRAM client library.
+ *
+ * @param message
+ *        The new message to be associated with error code 7.
+ *
+ * @return void
+ */
 void
 globus_gram_protocol_error_7_hack_replace_message(const char * message)
 {
