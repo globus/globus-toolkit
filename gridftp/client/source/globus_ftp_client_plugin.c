@@ -969,6 +969,7 @@ globus_ftp_client_plugin_remove_data_channels(
     globus_i_ftp_client_handle_t *		i_handle;
     static char *				myname = "globus_ftp_client_plugin_remove_data_channels";
 
+    i_handle = *handle;
     globus_i_ftp_client_handle_lock(i_handle);
 
     if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
