@@ -483,7 +483,6 @@ sub populate_package_list
 	}
 
 	$package_list{$pkg} = [ $tree, $subdir, $custom, $pnb ];
-	print "$pkg\n" if $listpack;
     }
 }
 
@@ -509,7 +508,6 @@ sub populate_bundle_list
 	if ( $pkg eq "BUNDLE" )
 	{
 	    $bundle = $bun;
-	    print "Bundle $bundle\n" if $listbun;
 
 	    # Process threading and gpt-build flags (like -static)
 	    if ( $threaded eq "THREADED" )
@@ -565,7 +563,7 @@ sub populate_bundle_build_list()
 	{
 	    if (exists $bundle_list{$user_bundle} )
 	    {
-		print "Adding user requested bundle of $user_bundle\n";
+		print "Bundle $user_bundle\n";
 		push @bundle_build_list, $user_bundle;
 		print "\n";
 	    } else {
@@ -577,6 +575,7 @@ sub populate_bundle_build_list()
 	for my $f ( keys %bundle_list )
 	{
 	    push @bundle_build_list, $f;
+	    print "Bundle $f\n" if $listbun;
 	}
     }
 }
@@ -618,6 +617,13 @@ sub populate_package_build_hash()
     # Eliminate duplicates in the package_build_list
     # A "Perl Idiom".
     %package_build_hash = map { $_ => 1 } @temp_build_list;
+    if ( $listpack )
+    {
+       foreach my $pack ( keys(%package_build_hash) )
+       {
+            print "$pack\n";
+       }
+    }
 }
 
 # --------------------------------------------------------------------
