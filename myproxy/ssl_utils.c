@@ -1366,13 +1366,26 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
 
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
-    /* clear default cert info so we use cert info in proxy request */
-    local_result = globus_gsi_proxy_handle_set_proxy_cert_info(proxy_handle,
-							       NULL);
+    /* what type of certificate do we have in the repository? */
+    local_result = globus_gsi_cert_utils_get_cert_type(creds->certificate,
+						       &cert_type);
     if (local_result != GLOBUS_SUCCESS) {
-	verror_put_string(
-		       "globus_gsi_proxy_handle_set_proxy_cert_info() failed");
+	verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
 	goto error;
+    }
+    /* if we don't have a GSI3 proxy in the repository,
+       i.e., we have a GSI2 proxy or an EEC,
+       then remove GSI3 proxy cert info from our proxy_handle so
+       we take on the proxy type in the request */
+    if (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type) == 0) {
+	local_result =
+	    globus_gsi_proxy_handle_set_proxy_cert_info(proxy_handle,
+							NULL);
+	if (local_result != GLOBUS_SUCCESS) {
+	    verror_put_string("globus_gsi_proxy_handle_set_proxy_cert_info() "
+			      "failed");
+	    goto error;
+	}
     }
 #endif
 
@@ -1396,12 +1409,6 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 
     /* Set lifetime and limited options on proxy before signing. */
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
-    local_result = globus_gsi_cert_utils_get_cert_type(creds->certificate,
-						       &cert_type);
-    if (local_result != GLOBUS_SUCCESS) {
-	verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
-	goto error;
-    }
     if (GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type)) {
 	local_result = globus_gsi_proxy_handle_set_type(proxy_handle,
 							cert_type);
@@ -1413,9 +1420,11 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     if (restrictions && restrictions->limited_proxy) {
 	globus_gsi_proxy_handle_get_type(proxy_handle, &cert_type);
 	if (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type)) {
-	    globus_gsi_proxy_handle_set_type(proxy_handle, GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY);
+	    globus_gsi_proxy_handle_set_type(proxy_handle,
+			      GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY);
 	} else if (GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type)) {
-	    globus_gsi_proxy_handle_set_type(proxy_handle, GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
+	    globus_gsi_proxy_handle_set_type(proxy_handle,
+			      GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
 	} else {
 	    verror_put_string("unknown proxy type for limited proxy");
 	    goto error;
