@@ -63,12 +63,12 @@ my %cvs_build_hash;
 my $flavor = "gcc32dbg";
 my $thread = "pthr";
 
-my ($install, $installer, $buildjava, $buildc, $anonymous,
-    $noupdates, $force, $help, $man, $verbose, $skippackage,
+my ($install, $installer, $anonymous,
+    $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $inplace) =
-   (0, 0, 1, 1, 0,
-    0, 0, 0, 0, 0, 0, 
+   (0, 0, 0,
+    0, 0, 0, 0, 0, 
     0, 0, 0, "1.0", 0, 
     0, 0);
 
@@ -77,11 +77,8 @@ my @user_packages;
 
 GetOptions( 'i|install=s' => \$install,
 	    'installer=s' => \$installer,
-	    'j|build-java!' => \$buildjava,
-	    'c|build-c!' => \$buildc,
 	    'a|anonymous!' => \$anonymous,
 	    'n|no-updates!' => \$noupdates,
-	    'f|force!' => \$force,
 	    'faster!' => \$faster,
 	    'flavor=s' => \$flavor,
 	    't2|gt2-tag=s' => \$cvs_archives{gt2}[3],
@@ -483,7 +480,6 @@ sub paranoia
     }
 }
 
-#TODO: Make all system() calls logging() calls instead.
 # --------------------------------------------------------------------
 sub log_system
 # --------------------------------------------------------------------
@@ -644,7 +640,6 @@ sub cvs_check_tag
     my ( $tree ) = @_;
 
     # TODO: Need to find a way to do this even if -noupdates is set.
-    # TODO: Let --force enforce a new checkout with the right tag.
     if ( -e "CVS/Tag" )
     {
 	open(TAG, "CVS/Tag");
@@ -1347,13 +1342,69 @@ Don't create source packages.  In this case, you should have source
 
 =item B<--skipbundle>
 
-Don't create source bundles
+Don't create source bundles.
+
+=item B<--install=dir>
+
+Attempt to install packages and bundles into dir.  Short
+version is "-i=".
+
+=item B<--anonymous>
+
+Use anonymous cvs checkouts.  Otherwise it defaults to using
+CVS_RSH=ssh.  Short version is "-a"
+
+=item B<--no-updates>
+
+Don't update CVS checkouts.  This is useful if you have local
+modifications.  Note, however, that make-packages won't
+check that your CVS tags match the requested CVS tags.
+Short version is "-n"
+ 
+=item B<--faster>
+
+Faster doesn't work correctly.  It is supposed to not try 
+re-creating a package that has already been packaged.
+
+=item B<--flavor=>
+
+Set flavor base.  Default gcc32dbg.  You might want to
+switch it to vendorcc.  Threading type is currently always
+"pthr" if necessary.
+
+=item B<--gt2-tag=TAG3, --gt3-tag=TAG3>
+
+Set GT2 or GT3 tag.  Default HEAD.  Short version is "-t2="
+or "-t3=".
+
+=item B<--verbose>
+
+Echoes all log output to screen.  Otherwise logs are just
+stored under log-output.  Good for getting headaches.
+
+=item B<--bundles="b1,b2,...">
+
+Create bundles b1,b2,....  Bundles are defined under
+etc/*/bundles
+
+=item B<--packages="p1,p2,...">
+
+Create packages p1,p2,....  Packages are defined under
+etc/*/package-list
+
+=item B<--paranoia>
+
+Exit at first error.  This can save you a lot of time
+and debugging effort.
 
 =back
 
 =head1 DESCRIPTION
 
-B<This program> will read the given input file(s) and do something
-useful with the contents thereof.
+B<make-packages.pl> goes from checking out CVS to
+creating GPT packges, then bundles, then installing.
+
+You can affect the flow of control by not updating
+CVS with "-n"
 
 =cut
