@@ -1788,7 +1788,6 @@ globus_xio_target_init(
     int                                     stack_size;
     int                                     ndx;
     globus_list_t *                         list;
-    void *                                  driver_attr;
     globus_xio_contact_t                    contact_info;
     globus_i_xio_op_t *                     xio_op;
     GlobusXIOName(globus_xio_target_init);
@@ -1837,7 +1836,6 @@ globus_xio_target_init(
     xio_op->ndx = 0;
     xio_op->stack_size = stack_size;
 
-    driver_attr = NULL;
     ndx = 0;
     for(list = stack->driver_stack;
         !globus_list_empty(list);
@@ -1847,20 +1845,20 @@ globus_xio_target_init(
                                         globus_list_first(list);
 
         xio_op->entry[ndx].target_attr = NULL;
-        GlobusIXIOAttrGetDS(driver_attr,
+        GlobusIXIOAttrGetDS(xio_op->entry[ndx].target_attr,
             target_attr, xio_op->entry[ndx].driver);
-        if(driver_attr != NULL)
-        {
-            xio_op->entry[ndx].driver->attr_copy_func(
-                &xio_op->entry[ndx].target_attr, driver_attr);
-        }
         ndx++;
     }
     /* hell has broken loose if these are not equal */
     globus_assert(ndx == stack_size);
 
-    globus_xio_driver_client_target_pass(xio_op, &contact_info);
-
+    res = globus_xio_driver_client_target_pass(xio_op, &contact_info);
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_free(xio_op);
+        goto err;
+    }
+    
     *target = xio_op;
 
     globus_xio_contact_destroy(&contact_info);

@@ -1357,7 +1357,7 @@ globus_xio_driver_client_target_pass(
                 &my_op->target,
                 target_op,
                 contact_info,
-                my_op->accept_attr);
+                my_op->target_attr);
         if(res != GLOBUS_SUCCESS)
         {
             goto err;
