@@ -36,8 +36,9 @@ man/man8/ssh.d/sftp-server.8
 man/man8/ssh.d/ssh-keysign.8
 man/man8/ssh.d/ssh-rand-helper.8
 man/man8/ssh.d/sshd.8
-man/cat1/ssh.d/gsiscp.1
-man/cat1/ssh.d/gsissh.1
+man/cat1/gsiscp.1
+man/cat1/gsisftp.1
+man/cat1/gsissh.1
 man/cat1/ssh.d/scp.1
 man/cat1/ssh.d/sftp.1
 man/cat1/ssh.d/slogin.1
