@@ -812,18 +812,18 @@ globus_l_gfs_data_write_eof_cb(
     
     op = (globus_gridftp_server_operation_t) user_arg;
     
-    op->callback.transfer(
-        op->instance,
-        error ? globus_error_put(globus_object_copy(error)) : GLOBUS_SUCCESS,
-        op->user_arg);
-
     /* XXX mode s only */
     op->event_callback(
         op->instance,
         GLOBUS_I_GFS_EVENT_DISCONNECTED,
         op->data_handle,
         op->user_arg);
-    
+        
+    op->callback.transfer(
+        op->instance,
+        error ? globus_error_put(globus_object_copy(error)) : GLOBUS_SUCCESS,
+        op->user_arg);
+
     globus_l_gfs_data_operation_destroy(op);
 }
 
@@ -854,18 +854,18 @@ globus_gridftp_server_finished_transfer(
         
         if(result != GLOBUS_SUCCESS)
         {
-            op->callback.transfer(
-                op->instance,
-                result,
-                op->user_arg);
-        
             /* XXX mode s only */
             op->event_callback(
                 op->instance,
                 GLOBUS_I_GFS_EVENT_DISCONNECTED,
                 op->data_handle,
                 op->user_arg);
-            
+                
+            op->callback.transfer(
+                op->instance,
+                result,
+                op->user_arg);
+        
             globus_l_gfs_data_operation_destroy(op);
         }
         break;
