@@ -878,7 +878,7 @@ globus_l_xio_system_register_write(
         /* this really shouldnt be possible, but to be thorough ... */
         if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
         {
-            result = globus_error_put(read_info->error);
+            result = globus_error_put(write_info->error);
             goto error_canceled;
         }
         

@@ -154,6 +154,7 @@ typedef struct globus_i_gfs_ipc_handle_s
     void *                              user_arg;
     globus_result_t                     cached_res;
     globus_gfs_ipc_error_callback_t     error_cb;
+    globus_gfs_ipc_error_callback_t     reply_error_cb;
     void *                              error_arg;
                                                                                 
     globus_size_t                       buffer_size;
@@ -570,6 +571,20 @@ alloc_error:
 
 static
 void
+globus_l_gfs_ipc_internal_close_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_i_gfs_ipc_handle_t *         ipc;
+                                                                                
+    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+
+    globus_l_gfs_ipc_handle_destroy(ipc);
+}
+
+static
+void
 globus_l_gfs_ipc_read_request_fault_cb(
     globus_xio_handle_t                 handle,
     globus_result_t                     result,
@@ -579,6 +594,7 @@ globus_l_gfs_ipc_read_request_fault_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_result_t                     res;
     globus_list_t *                     list;
     globus_i_gfs_ipc_handle_t *         ipc;
                                                                                 
@@ -586,12 +602,23 @@ globus_l_gfs_ipc_read_request_fault_cb(
 
     /* if it is successful or not canceled we must shut this connection
         down */
-    if(result == GLOBUS_SUCCESS ||
+    if(result != GLOBUS_SUCCESS &&
         !globus_error_match(
             globus_error_peek(result),
             GLOBUS_XIO_MODULE,
+            GLOBUS_XIO_ERROR_TIMEOUT) &&
+        globus_error_match(
+            globus_error_peek(result),
+            GLOBUS_XIO_MODULE,
             GLOBUS_XIO_ERROR_CANCELED))
+    {
+        globus_l_gfs_ipc_send_start_session(ipc);
 
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "an IPC connection has been reused\n");
+    }
+    else
     {
         globus_mutex_lock(&globus_l_ipc_mutex);
         {
@@ -603,12 +630,20 @@ globus_l_gfs_ipc_read_request_fault_cb(
                 globus_hashtable_insert(
                     &globus_l_ipc_handle_table, &ipc->connection_info, list);
             }
+            res = globus_xio_register_close(
+               ipc->xio_handle,
+                NULL,
+                globus_l_gfs_ipc_internal_close_cb,
+                ipc);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_l_gfs_ipc_handle_destroy(ipc);
+            }
         }
         globus_mutex_unlock(&globus_l_ipc_mutex);
-    }
-    else
-    {
-        globus_l_gfs_ipc_send_start_session(ipc);
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "an IPC connection has been closed due to error or time out.\n");
     }
 }
 
@@ -617,13 +652,16 @@ void
 globus_l_gfs_ipc_error_close_kickout(
     void *                              user_arg)
 {
+    globus_gfs_ipc_error_callback_t     error_cb;
     globus_i_gfs_ipc_handle_t *         ipc;
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
     if(ipc->error_cb)
     {
-        ipc->error_cb(ipc, ipc->cached_res, ipc->error_arg);
+        error_cb = ipc->error_cb;
+        ipc->error_cb = NULL;
+        error_cb(ipc, ipc->cached_res, ipc->error_arg);
     }
 
     globus_l_gfs_ipc_handle_destroy(ipc);
@@ -848,6 +886,7 @@ globus_l_gfs_ipc_reply_ss_body_cb(
     }
         
     ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
+    ipc->error_cb = ipc->reply_error_cb;
     if(ipc->iface->session_start_func)
     {
         ipc->iface->session_start_func(
@@ -1527,6 +1566,7 @@ globus_gfs_ipc_handle_create(
     ipc->cached_res = GLOBUS_SUCCESS;
     ipc->open_cb = cb;
     ipc->error_cb = error_cb;
+    ipc->reply_error_cb = error_cb;
     ipc->error_arg = error_arg;
     ipc->user_arg = user_arg;
     globus_mutex_init(&ipc->mutex, NULL);
@@ -1816,7 +1856,7 @@ globus_l_gfs_ipc_handle_connect(
                 ipc);
         }
         time = globus_i_gfs_config_int("ipc_idle_timeout");
-        if(time > 0 && 0) /* should set this when it enters cache */
+        if(time > 0)
         {
             GlobusTimeReltimeSet(timeout, time, 0);
             globus_xio_attr_cntl(
@@ -3262,6 +3302,7 @@ globus_l_gfs_ipc_reply_read_header_cb(
             case GLOBUS_GFS_OP_SESSION_STOP:
                 globus_assert(!globus_l_gfs_ipc_requester);
                 ipc->state = GLOBUS_GFS_IPC_STATE_STOPPING;
+                ipc->error_cb = NULL;
                 stopping = GLOBUS_TRUE;
                 break;
 

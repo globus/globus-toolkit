@@ -220,6 +220,11 @@ globus_l_gfs_data_end_read_kickout(
     
 static
 void
+globus_l_gfs_data_operation_destroy(
+    globus_l_gfs_data_operation_t *     op);
+
+static
+void
 globus_l_gfs_blocking_dispatch_kickout(
     void *                              user_arg)
 {
@@ -497,6 +502,7 @@ globus_l_gfs_data_auth_init_cb(
                 &finished_info,
                 op->user_arg);
         }
+        globus_l_gfs_data_operation_destroy(op);
     }    
 
     return;
@@ -519,6 +525,7 @@ error:
             &finished_info,
             op->user_arg);
     }
+    globus_l_gfs_data_operation_destroy(op);
 }
 
 

@@ -39,7 +39,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"striped_mode", "striped_mode", NULL, "-striped-mode", NULL, GLOBUS_L_GFS_CONFIG_INT, 1},
  {"data_node", "data_node", NULL, "-data-node", "-dn", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"ipc_gsi", "ipc_gsi", NULL, "-ipc-gsi", "-IG", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
- {"ipc_idle_timeout", "ipc_idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0},
+ {"ipc_idle_timeout", "ipc_idle_timeout", NULL, "--ipc-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 0},
  {"ipc_connect_timeout", "ipc_connect_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 30},
  {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"cas","cas",NULL, "-cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE},

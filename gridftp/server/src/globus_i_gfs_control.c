@@ -1117,6 +1117,10 @@ globus_l_gfs_data_passive_data_cb(
     info = (globus_gfs_data_info_t *) request->info;
     if(info)
     {
+        if(info->interface)
+        {
+            globus_free(info->interface);
+        }
         if(info->pathname)
         {
             globus_free(info->pathname);
@@ -1277,6 +1281,10 @@ globus_l_gfs_data_active_data_cb(
     info = (globus_gfs_data_info_t *) request->info;
     if(info)
     {
+        if(info->interface)
+        {
+            globus_free(info->interface);
+        }
         if(info->pathname)
         {
             globus_free(info->pathname);

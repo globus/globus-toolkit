@@ -84,7 +84,7 @@ globus_xio_contact_info_to_encoded_string(
     globus_error_construct_error(                                           \
         GLOBUS_XIO_MODULE,                                                  \
         GlobusXIOErrorObjTimeoutOnly(),                                     \
-        GLOBUS_XIO_ERROR_CANCEL,                                            \
+        GLOBUS_XIO_ERROR_CANCELED,                                          \
         __FILE__,                                                           \
         _xio_name,                                                          \
         __LINE__,                                                           \
