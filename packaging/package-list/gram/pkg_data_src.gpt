@@ -27,14 +27,15 @@
 
     <Build_Instructions>
 
-	    <Build_Step> ant stubs -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
-	    <Build_Step> ant copyEtcDir -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
-	    <Build_Step> ant gar -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
-	    <Build_Step> mkdir -p $GT3_LOCATION/gars/ </Build_Step>
-	    <Build_Step> cp lib/gram.gar $GT3_LOCATION/gars/ </Build_Step>
-	    <Build_Step> cp test.xml $GT3_LOCATION/etc/ </Build_Step>
-	    <Build_Step> chmod +x $GT3_LOCATION/etc/globus-gram-fork-provider </Build_Step>
-	    <Build_Step> chmod +x $GT3_LOCATION/etc/globus-gram-pbs-provider </Build_Step>
+	    <Build_Step> ant stubs -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> ant copyEtcDir -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> ant gar -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> mkdir -p INSTALLDIR_GPTMACRO/gars/ </Build_Step>
+	    <Build_Step> cp lib/gram.gar INSTALLDIR_GPTMACRO/gars/ </Build_Step>
+	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build.xml deployClientServer -Dgar.name=INSTALLDIR_GPTMACRO/gars/gram.gar </Build_Step>
+	    <Build_Step> cp test.xml INSTALLDIR_GPTMACRO/etc/ </Build_Step>
+	    <Build_Step> chmod +x INSTALLDIR_GPTMACRO/etc/globus-gram-fork-provider </Build_Step>
+	    <Build_Step> chmod +x INSTALLDIR_GPTMACRO/etc/globus-gram-pbs-provider </Build_Step>
 
     </Build_Instructions>
 
