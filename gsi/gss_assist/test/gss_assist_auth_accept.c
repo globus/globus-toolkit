@@ -111,7 +111,7 @@ int main(int argc, char * argv[])
             "ACCEPTOR: Couldn't authenticate as acceptor\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
 
@@ -142,7 +142,7 @@ int main(int argc, char * argv[])
             "ACCEPTOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         fprintf(stdout, "ACCEPTOR ERROR FINISHED\n");
         exit(1);
     }
@@ -179,7 +179,7 @@ int main(int argc, char * argv[])
             "ACCEPTOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         fprintf(stdout, "ACCEPTOR ERROR FINISHED\n");
         exit(1);
     }
@@ -213,7 +213,7 @@ int main(int argc, char * argv[])
             "ACCEPTOR: Couldn't encrypt and send message\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
 
@@ -234,7 +234,7 @@ int main(int argc, char * argv[])
             "ACCEPTOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         fprintf(stdout, "ACCEPTOR ERROR FINISHED\n");
         exit(1);
     }
@@ -268,7 +268,7 @@ int main(int argc, char * argv[])
             "ACCEPTOR: Couldn't encrypt and send message\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
                 

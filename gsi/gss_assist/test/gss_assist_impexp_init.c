@@ -95,7 +95,7 @@ int main(int argc, char * argv[])
             "INITIATOR: Couldn't authenticate as initiator\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
     
@@ -190,7 +190,7 @@ int main(int argc, char * argv[])
             "INITIATOR: Couldn't import security context from file\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
 
@@ -225,7 +225,7 @@ int main(int argc, char * argv[])
             "INITATOR: Couldn't wrap and send message\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
 
@@ -246,7 +246,7 @@ int main(int argc, char * argv[])
             "INITIATOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         fprintf(stdout, "INITIATOR ERROR FINISHED\n");
         exit(1);
     }
@@ -280,7 +280,7 @@ int main(int argc, char * argv[])
             "INITATOR: Couldn't wrap and send message\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         exit(1);
     }
 
@@ -301,7 +301,7 @@ int main(int argc, char * argv[])
             "INITIATOR: Couldn't get encrypted message from initiator\n",
             major_status,
             minor_status,
-            0);
+            token_status);
         fprintf(stdout, "INITIATOR ERROR FINISHED\n");
         exit(1);
     }
