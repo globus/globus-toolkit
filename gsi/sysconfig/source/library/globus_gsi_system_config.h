@@ -364,15 +364,6 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_get_authz_conf_filename_unix
 
 /**
- * Determine the location of the authorization library callout config file. 
- * @ingroup globus_gsi_system_config_defines
- * @hideinitializer
- * See globus_gsi_sysconfig_get_authz_lib_conf_filename_unix()
- */
-#    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_LIB_CONF_FILENAME \
-            globus_gsi_sysconfig_get_authz_lib_conf_filename_unix
-
-/**
  * Determine the location of the GAA callout config file. 
  * @ingroup globus_gsi_system_config_defines
  * @hideinitializer
