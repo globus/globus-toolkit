@@ -14,7 +14,7 @@
 
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
-#       define OPENSSLDIR "/sandbox/blau/i18n3/INSTALL/"
+#       define OPENSSLDIR "/sandbox/bresnaha/Globus-server-4/GL"
 #   endif
 #endif
 
@@ -109,7 +109,7 @@
 
 #ifdef OPENSSL_THREAD_DEFINES
 #   ifndef OPENSSL_THREADS
-/* #       undef OPENSSL_THREADS */
+#       define OPENSSL_THREADS 1
 #   endif
 #endif
 
