@@ -1,0 +1,40 @@
+Globus XIO
+----------
+
+The long awaited Globus XIO library is ready for alpha release.  Globus XIO 
+is an extensible input/output library for the Globus Toolkit (TM).   
+For this and future releases of the Globus Toolkit the globus_xio library 
+will provide all input and output functionality.
+ 
+Globus XIO will replaces the globus_io library.  A portability layer is 
+included with the release so legacy applications written to globus_io will
+be supported, however it is recommended that future applications code straight
+to the globus_xio API.
+
+For more information on the globus_xio see:
+
+http://www.mcs.anl.gov/~bresnaha/xio
+
+Features:
+- simple intuitive open/close/read/write API.
+- swappable IO implementations.
+- simple API to many different types of IO.
+
+Current driver implementations:
+-------------------------------
+transport drivers:
+- tcp
+- udp
+- file
+
+transform drivers:
+- gsi
+- gssapi_ftp
+- ftp_cmd
+- http
+
+Known issues:
+- framework has a bug that appears when a fast processor is heavily loaded
+  yet the system performs IO operation extremely quickly.  
+  This bug only appears in threaded builds of Globus, and is actively being 
+  pursued.
