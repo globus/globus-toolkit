@@ -2,13 +2,16 @@
 #include "globus_xio_util.h"
 #include "globus_xio_ordering_driver.h"
 #include "globus_xio_mode_e_driver.h"
+#include "globus_xio_tcp_driver.h"
 
 #define CHUNK_SIZE 5000
 #define FILE_NAME_LEN 25
 
 globus_xio_driver_t                     mode_e_driver;
 globus_xio_driver_t                     ordering_driver;
+globus_xio_driver_t                     tcp_driver;
 int 					y = 0;
+int					port = 0;
 globus_mutex_t                          mutex;
 globus_cond_t                           cond;
 
@@ -42,17 +45,18 @@ void
 help()
 {
     fprintf(stdout, 
-        "globus-xio-mode-e-file [options]\n"
+        "globus-xio-ordering-file [options]\n"
         "-----------------\n"
-        "using the -s switch sets up a server."  
-        "\n"
+        "using the -s switch sets up a server\n"  
         "specify -c <contact string> to communicate with the server\n"
+	"server can only read and the client can only write\n"
         "\n"
         "options:\n"
-        "-c <contact_string> : use this contact string (required for client)\n"
+        "-c <host:port> (required for client)\n"
         "-s : be a server\n"
-        "-p : num streams (optional)\n"
-	"-f : file name\n");
+	"-p : port (optional server option, client ignores this option)\n"
+        "-P : num streams (optional client option, server ignores this)\n"
+	"-f : file name (required for both server and client\n");
 }
 
 void
@@ -78,12 +82,26 @@ write_cb(
     }
 }
 
+globus_result_t
+attr_cntl_cb(
+    globus_xio_attr_t                       attr)
+{       
+    globus_result_t                         result;
+    result = globus_xio_attr_cntl(
+        attr,
+        tcp_driver,
+        GLOBUS_XIO_TCP_SET_PORT,
+        port);
+    return result;
+}   
+
 int
 main(
     int                                     argc,
     char **                                 argv)
 {
     globus_xio_stack_t                      stack;
+    globus_xio_stack_t                      mode_e_stack;
     globus_xio_handle_t                     xio_handle;
     globus_xio_server_t			    server;	
     globus_xio_attr_t                       attr = NULL;
@@ -109,12 +127,24 @@ main(
     test_res(res);
     res = globus_xio_stack_push_driver(stack, ordering_driver);
     test_res(res);
+    res = globus_xio_driver_load("tcp", &tcp_driver);
+    test_res(res);                      
+    res = globus_xio_stack_init(&mode_e_stack, NULL);
+    test_res(res);
+    res = globus_xio_stack_push_driver(mode_e_stack, tcp_driver);
+    test_res(res);
 
     if (argc < 4)
     {
         help();
         exit(1);
     }
+    test_res(globus_xio_attr_init(&attr));
+    test_res(globus_xio_attr_cntl(
+        attr,
+        mode_e_driver,
+        GLOBUS_XIO_MODE_E_SET_STACK,
+        mode_e_stack));
     for(ctr = 1; ctr < argc; ctr++)
     {
         if(strcmp(argv[ctr], "-h") == 0)
@@ -137,6 +167,20 @@ main(
             be_server = GLOBUS_TRUE;
         }
         else if(strcmp(argv[ctr], "-p") == 0)
+        {
+            if (argc < 6)
+            {
+                help();
+                exit(1);
+            }
+            port = atoi(argv[ctr+1]);
+            test_res(globus_xio_attr_cntl(
+                attr,
+                mode_e_driver,
+                GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS,
+                attr_cntl_cb));
+        }
+        else if(strcmp(argv[ctr], "-P") == 0)
         {
 	    if (argc < 6)
 	    {
