@@ -702,6 +702,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
                 memcpy(&reply[strlen(REPLY_235_ADAT_DATA)+length], "\r\n\0", 3);
             }
             *out_complete = GLOBUS_TRUE;
+            gss_release_buffer(&min_stat, &send_tok);
             break;
 
         /* if we have more ADATS to send around */
@@ -731,6 +732,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
             memcpy(&reply[strlen(REPLY_335_ADAT_DATA)+length], "\r\n\0", 3);
 
             *out_complete = GLOBUS_FALSE;
+            gss_release_buffer(&min_stat, &send_tok);
             break;
 
         default:
@@ -2157,6 +2159,7 @@ globus_l_xio_gssapi_ftp_user_server_write_cb(
 
     globus_mutex_lock(&handle->mutex);
     {
+        globus_free(handle->auth_write_iov.iov_base);
         handle->write_posted = GLOBUS_FALSE;
 
         globus_xio_driver_finished_write(op, result, nbytes);

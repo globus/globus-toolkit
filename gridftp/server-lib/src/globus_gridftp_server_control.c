@@ -232,6 +232,9 @@ globus_l_gsc_activate()
         return GLOBUS_FAILURE;
     }
 
+    GlobusDebugInit(GLOBUS_GRIDFTP_SERVER_CONTROL,
+        ERROR WARNING TRACE INTERNAL_TRACE INFO STATE INFO_VERBOSE);
+
     /* add all the default command handlers */
     globus_gridftp_server_control_attr_init(&globus_l_gsc_default_attr);
 
@@ -315,6 +318,7 @@ globus_l_gsc_op_destroy(
         {
             globus_free(op->password);
         }
+        globus_free(op->command);
 
         globus_free(op);
     }
@@ -526,13 +530,14 @@ globus_l_gsc_read_cb(
                 globus_assert(0 && "invalid state, likely memory curroption");
                 break;
         }
-        globus_free(buffer);
     }
     globus_mutex_unlock(&server_handle->mutex);
 
+    globus_free(buffer);
     return;
 
   err:
+    globus_free(buffer);
     if(command_name != NULL)
     {
         globus_free(command_name);
@@ -1649,6 +1654,7 @@ globus_gridftp_server_control_destroy(
 {
     globus_i_gsc_server_handle_t *          server_handle;
     globus_result_t                         res;
+    globus_list_t *                         list;
     GlobusGridFTPServerName(globus_gridftp_server_control_destroy);
 
     if(server == NULL)
@@ -1676,9 +1682,22 @@ globus_gridftp_server_control_destroy(
     {
         globus_free(server_handle->types);
     }
+    if(server_handle->pre_auth_banner != NULL)
+    {
+        globus_free(server_handle->pre_auth_banner);
+    }
+    for(list = server_handle->feature_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        globus_free(globus_list_first(list));
+    }
+    globus_list_free(server_handle->feature_list);
 
     globus_mutex_destroy(&server_handle->mutex);
     globus_hashtable_destroy(&server_handle->cmd_table);
+    globus_hashtable_destroy(&server_handle->funcs.send_cb_table);
+    globus_hashtable_destroy(&server_handle->funcs.recv_cb_table);
     globus_fifo_destroy(&server_handle->read_q);
     globus_fifo_destroy(&server_handle->reply_q);
     globus_free(server_handle);
