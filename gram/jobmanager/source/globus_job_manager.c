@@ -1155,6 +1155,19 @@ int main(int argc,
                  GLOBUS_GRAM_CLIENT_ERROR_RSL_EVALUATION_FAILED;
         }
 
+        if (request->jobmanager_log_fp != NULL)
+        {
+            if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) != GLOBUS_NULL)
+            {
+                grami_fprintf( request->jobmanager_log_fp,
+                  "JM: final rsl specification >>>>\n");
+                grami_fprintf( request->jobmanager_log_fp,
+                  "%s\n", final_rsl_spec);
+                grami_fprintf( request->jobmanager_log_fp,
+                  "JM: <<<< final rsl specification\n");
+            }
+        }
+
     }
 
     if (rc == GLOBUS_SUCCESS)
