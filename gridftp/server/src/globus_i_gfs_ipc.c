@@ -10,7 +10,8 @@ static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
  *  id:      4 bytes of message id
  *  size:    remaining size of message
  */
-#define GFS_IPC_HEADER_SIZE         (sizeof(uint32_t)+sizeof(uint32_t)+1)
+#define GFS_IPC_HEADER_SIZE         (sizeof(uint32_t) + sizeof(uint32_t) + 1)
+#define GFS_IPC_MSG_SIZE_OFFSET     (sizeof(uint32_t) + 1)
 #define GFS_IPC_DEFAULT_BUFFER_SIZE 1024 * 1024
 
 #define GFSEncodeUInt32(_start, _len, _buf, _w)                         \
@@ -274,7 +275,7 @@ globus_l_gfs_ipc_finished_reply_kickout(
     void *                              user_arg);
 
 static void
-globus_l_gfs_ipc_request_destory(
+globus_l_gfs_ipc_request_destroy(
     globus_gfs_ipc_request_t *          request)
 {
     globus_gfs_ipc_data_reply_t *       data;
@@ -304,17 +305,17 @@ globus_l_gfs_ipc_request_destory(
 
             case GLOBUS_GFS_IPC_TYPE_RESOURCE:
                 resource = (globus_gfs_ipc_resource_reply_t *)
-                    request->reply.info.resource;
+                    &request->reply->info.resource;
                 if(resource->stat_info != NULL)
                 {
                     globus_free(resource->stat_info);
                 }
-                globus_free(resource);
+                // globus_free(resource);
                 break;
 
             case GLOBUS_GFS_IPC_TYPE_COMMAND:
                 command = (globus_gfs_ipc_command_reply_t *)
-                    request->reply.info.command;
+                    &request->reply->info.command;
                 if(command->created_dir != NULL)
                 {
                     globus_free(command->created_dir);
@@ -323,12 +324,12 @@ globus_l_gfs_ipc_request_destory(
                 {
                     globus_free(command->checksum);
                 }
-                globus_free(command);
+                // globus_free(command);
                 break;
 
             case GLOBUS_GFS_IPC_TYPE_PASSIVE:
                 data = (globus_gfs_ipc_data_reply_t *)
-                    request->reply.info.data;
+                    &request->reply->info.data;
                 if(data->contact_strings != NULL)
                 {
                     for(ctr = 0; ctr < data->cs_count; ctr++)
@@ -337,7 +338,7 @@ globus_l_gfs_ipc_request_destory(
                     }
                     globus_free(data->contact_strings);
                 }
-                globus_free(data);
+                // globus_free(data);
                 break;
 
             default:
@@ -432,6 +433,7 @@ globus_l_gfs_ipc_request_destory(
             default:
                 globus_assert(0 && "possible memory corruption");
                 break;
+        }
     }
 
     globus_free(request);
@@ -833,6 +835,8 @@ globus_l_gfs_ipc_unpack_reply(
                 buffer, len, reply->info.data.data_handle_id);
             GFSDecodeUInt32(
                 buffer, len, reply->info.data.cs_count);
+            reply->info.data.contact_strings = (const char **) 
+                globus_malloc(sizeof(char *) * reply->info.data.cs_count);
             for(ctr = 0; ctr < reply->info.data.cs_count; ctr++)
             {
                 GFSDecodeString(
@@ -981,7 +985,7 @@ globus_l_gfs_ipc_unpack_data(
     data_state->net_prt = ch;
 
     GFSDecodeUInt32(buffer, len, data_state->cs_count);
-    data_state->contact_strings = (char **) 
+    data_state->contact_strings = (const char **) 
         globus_malloc(sizeof(char *) * data_state->cs_count);
     for(ctr = 0; ctr < data_state->cs_count; ctr++)
     {
@@ -1491,7 +1495,7 @@ globus_l_gfs_ipc_finished_reply_kickout(
         request->reply,
         request->user_arg);
 
-    globus_l_gfs_ipc_request_destory(request);
+    globus_l_gfs_ipc_request_destroy(request);
 }
 static void
 globus_l_gfs_ipc_event_reply_kickout(
@@ -2058,7 +2062,7 @@ globus_l_gfs_ipc_transfer_pack(
 
     /* pack range list */
     range_size = globus_range_list_size(trans_state->range_list);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, range_size);
     for(ctr = 0; ctr < range_size; ctr++)
     {
         globus_range_list_at(trans_state->range_list, ctr, &offset, &length);
