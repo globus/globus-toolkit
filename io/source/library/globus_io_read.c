@@ -467,6 +467,7 @@ globus_io_read(
     globus_i_io_monitor_t		monitor;
     globus_result_t			result; 
     globus_size_t			try_read;
+    globus_callback_space_t             saved_space;
 
     result = globus_io_try_read(handle, buf, max_nbytes, nbytes_read);
     if(result != GLOBUS_SUCCESS)
@@ -484,6 +485,10 @@ globus_io_read(
     monitor.nbytes = 0;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
+
+    /* we're going to poll on global space, save users space */
+    saved_space = handle->space;
+    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     
     result = globus_io_register_read(handle,
 				     buf + try_read,
@@ -510,6 +515,8 @@ globus_io_read(
     }
 
     globus_mutex_unlock(&monitor.mutex);
+
+    handle->space = saved_space;
 
     if(nbytes_read)
     {
