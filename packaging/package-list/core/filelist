@@ -1874,4 +1874,3 @@
 ./webapps/ogsa/WEB-INF/core-client-config.wsdd
 ./webapps/ogsa/WEB-INF/base-client-config.wsdd
 ./webapps/ogsa/WEB-INF/classes/log4j.properties
-./filelist
