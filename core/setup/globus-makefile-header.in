@@ -119,7 +119,9 @@ while(<IN>)
 
     if($copy !~ m!([A-Z]+)_([A-Z]+)!) #if copy does NOT an uppercase letter followed by a _ then another uppercase letter 
     {
-      push @temp_header, "GLOBUS_".$copy;            #prepend GLOBUS_ to the lines of globus-build-env-$flavor.sh
+      if (!($copy =~ m/^PERL/ )){  #skip PERL, 'cause it's defined in sh-tools too
+         push @temp_header, "GLOBUS_".$copy;            #prepend GLOBUS_ to the lines of globus-build-env-$flavor.sh
+      }
     }
   }   
 }
@@ -145,17 +147,19 @@ close (IN);
 
 foreach my $i (@temp_header)
 {
+  my @restofstring;
+  my $copy1;
+  ($copy1, @restofstring) = split( "=", $i);
   
-  $i =~ m!([^=]+)=([^=]+)!;                 #this splits $_ on the =  
-  
-  my $copy1=$1;
-  my $copy2=$2 ;
+  my $copy2= join("=", @restofstring);
+  $copy2 =~ s/\n//g;		      #removes linefeeds
+  if (!($copy1 =~ m/^#/)&&($copy1 =~ m/\S/)){
   if($copy2 =~ m!\S!)                 #checks to see if $copy2 is a non-whitespace character
   { #open outer
     $temp= $hash{$copy1};
     if(defined $temp)                 #this adds the value of $temp to the front of $2 it is
     { #open inner                     #useful in the case that $hash{$copy1} has already
-      $hash{$copy1} = $temp . $copy2; #received a useful value that we dont want to lose  
+      $hash{$copy1} = $temp . " ".$copy2; #received a useful value that we dont want to lose  
     } #close inner
     else
     { #else inner
@@ -169,6 +173,7 @@ foreach my $i (@temp_header)
       $hash{$copy1}="\n";              #without this exception, it is possible
     }                                 #to lose some of the necessary hash elements 
   }
+  } #end if !$copy1
 }
 
 #END of Section Two: creating hash
@@ -182,9 +187,8 @@ my @temp_file="";
 
 for my $Loop (sort keys %hash)       #for loop to store the %hash in a sorted order by it's keys
 {
-  push @temp_file, "$Loop=$hash{$Loop}\n";  #if they want the '=' sign between the GLOBUS_stuff and the stuff removed, do it here
+  push @temp_file, "$Loop = $hash{$Loop}\n";  #if they want the '=' sign between the GLOBUS_stuff and the stuff removed, do it here
 }
-
 @temp_header="";
 foreach my $i (@temp_file)
 {				     #file ./temp_file.  the file w/o the blank lines is stored
@@ -214,7 +218,13 @@ foreach my $i (@temp_header)
   $copy2 =~ s/\s$//;
 
   if (defined $copy1){		#eliminate any lines without lvalues
-  	print  "$copy1 = $copy2\n";
+	  #print  "$copy1 = $copy2\n";
+	  $i =~ s/cross_compiling/CROSS_COMPILING/;
+	  $i =~ s/\$GLOBUS_FLAVOR_NAME/$flavor/g;
+	  $i =~ s/\s+/ /g;
+	  $i =~ s/^\s//;
+	  $i =~ s/\s$//;
+	  print "$i\n";
   }
 }
 
