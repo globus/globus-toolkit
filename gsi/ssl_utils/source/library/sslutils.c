@@ -3672,7 +3672,7 @@ proxy_load_user_key(
     int                                 mismatch = 0;
     int                                 status = -1;
     FILE *                              fp;
-    EVP_PKEY *                          ucertpkey = NULL;
+    EVP_PKEY *                          ucertpkey;
     int                                 (*xpw_cb)();
 
     xpw_cb = pw_cb;
@@ -3911,15 +3911,11 @@ proxy_load_user_key(
                     }
                 }
             }
+            EVP_PKEY_free(ucertpkey);
         }
         else
         {
             mismatch=1;
-        }
-
-        if(ucertpkey != NULL)
-        {
-            EVP_PKEY_free(ucertpkey);
         }
         
         if (mismatch)
