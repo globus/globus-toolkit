@@ -1,5 +1,5 @@
 #include "globus_xio_driver.h"
-#include "globus_xio_ftp_cmd.h"
+#include "globus_xio_telnet.h"
 #include "globus_xio_load.h"
 #include "globus_common.h"
 #include "globus_error_string.h"
@@ -107,7 +107,7 @@ static char *                           globus_l_xio_gssapi_ftp_state_names[] =
     "GSSAPI_FTP_STATE_OPEN"
 };
 
-static globus_xio_driver_t              globus_l_gssapi_ftp_cmd_driver = NULL;
+static globus_xio_driver_t              globus_l_gssapi_telnet_driver = NULL;
 static char                             globus_l_xio_gssapi_ftp_pad = '=';
 static char *                           globus_l_xio_gssapi_ftp_radix_n =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -275,7 +275,7 @@ globus_l_xio_gssapi_ftp_push_driver(
 
     GlobusXIOGssapiftpDebugEnter();
 
-    res = globus_xio_stack_push_driver(stack, globus_l_gssapi_ftp_cmd_driver);
+    res = globus_xio_stack_push_driver(stack, globus_l_gssapi_telnet_driver);
     if(res != GLOBUS_SUCCESS)
     {
         return res;
@@ -2060,8 +2060,8 @@ globus_l_xio_gssapi_ftp_open(
     attr = (globus_l_xio_gssapi_attr_t *) driver_attr;
 
     globus_xio_driver_attr_cntl(
-        op, globus_l_gssapi_ftp_cmd_driver, 
-        GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER, GLOBUS_TRUE);
+        op, globus_l_gssapi_telnet_driver, 
+        GLOBUS_XIO_TELNET_BUFFER, GLOBUS_TRUE);
 
     /*
      *  create a new handle and initialize it 
@@ -2077,8 +2077,8 @@ globus_l_xio_gssapi_ftp_open(
     {
         handle->client = GLOBUS_FALSE;
         globus_xio_driver_attr_cntl(
-            op, globus_l_gssapi_ftp_cmd_driver, 
-            GLOBUS_XIO_DRIVER_FTP_CMD_FORCE_SERVER, GLOBUS_TRUE);
+            op, globus_l_gssapi_telnet_driver, 
+            GLOBUS_XIO_TELNET_FORCE_SERVER, GLOBUS_TRUE);
     }
     else
     {
@@ -2674,7 +2674,7 @@ globus_l_xio_gssapi_ftp_activate(void)
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
 
-    res = globus_xio_driver_load("ftp_cmd", &globus_l_gssapi_ftp_cmd_driver);
+    res = globus_xio_driver_load("telnet", &globus_l_gssapi_telnet_driver);
     if(res != GLOBUS_SUCCESS)
     {
         return GLOBUS_FAILURE;
@@ -2693,7 +2693,7 @@ globus_l_xio_gssapi_ftp_deactivate(void)
 
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
-    globus_xio_driver_unload(globus_l_gssapi_ftp_cmd_driver);
+    globus_xio_driver_unload(globus_l_gssapi_telnet_driver);
 
     GlobusXIOGssapiftpDebugExit();
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
