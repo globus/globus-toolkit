@@ -348,6 +348,7 @@ main(int argc,
     struct stat            statbuf;
     globus_byte_t *        ptr;
     globus_byte_t                       buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
+    globus_size_t			request_size;
     globus_byte_t *                     reply;
     globus_rsl_t *                      rsl_tree;
     globus_gass_cache_entry_t *         cache_entries;
@@ -1001,11 +1002,13 @@ main(int argc,
       return(GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
     }
 
-    if ( globus_l_gram_unpack_http_job_request (
+    if ( globus_i_gram_unpack_http_job_request_fb(
 			   buffer,
+			   &request_size,
 			   &job_state_mask,
 			   &client_contact_str,
-			   &rsl_spec)
+			   &rsl_spec,
+			   &rsl_spec_size)
 	     != GLOBUS_SUCCESS ) {
       grami_fprintf( request->jobmanager_log_fp,
 		     "JM: ERROR: globus gram protocol failure!\n");
@@ -1447,10 +1450,11 @@ main(int argc,
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request was successful, sending message to client\n");
 	
-	rc = globus_l_gram_pack_http_job_request_result (
-	                                &reply,
-					GLOBUS_SUCCESS,
-					graml_job_contact);
+	rc = globus_i_gram_pack_http_job_request_result_fb(
+	    &reply,
+	    &reply_size,
+	    GLOBUS_SUCCESS,
+	    graml_job_contact);
 
 	if (rc == GLOBUS_SUCCESS)
 	{
@@ -1517,10 +1521,11 @@ main(int argc,
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request failed, sending message to client\n");
                             
-	rc = globus_l_gram_pack_http_job_request_result (
-							 &reply,
-							 request->failure_code,
-							 NULL);
+	rc = globus_i_gram_pack_http_job_request_result(
+	    &reply,
+	    &reply_size,
+	    request->failure_code,
+	    NULL);
 
 	if (rc == GLOBUS_SUCCESS)
 	{
@@ -1881,11 +1886,12 @@ globus_l_gram_client_callback(int status, int failure_code)
 
     if (tmp_list)
     {
-	rc = globus_l_gram_http_pack_status_message(
-	                 &message,
-			 graml_job_contact,
-			 status,
-			 failure_code );
+	rc = globus_i_gram_http_pack_status_message_fb(
+	    &message,
+	    &msgsize,
+	    graml_job_contact,
+	    status,
+	    failure_code);
 
 	if (rc != GLOBUS_SUCCESS)
 	{

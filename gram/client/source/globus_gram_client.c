@@ -487,7 +487,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
     monitor.done = GLOBUS_FALSE;
 
     /* TODO: pass attr into this */
-    rc = globus_l_gram_pack_http_job_request (
+    rc = globus_i_gram_pack_http_job_request_fb(
 		       &query,	/* OUT */
 		       &query_size, /* OUT */
 		       job_state_mask /* integer (IN) */,
@@ -514,29 +514,33 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     if (rc == GLOBUS_SUCCESS)
     {
-      char * result_contact;	/* Need to fix this. */
-      int    result_status;
+	char * result_contact;	/* This points to allocated memory
+				     that must be freed.. */
+	int    result_status;
 
-      /* TODO: XXX STEVE A: Return the proper error code from unpack
-	 rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-      */
-      /* TODO:  nuke globus_gram_http_version (query), search for
-	 other occurrences of it.  */ 
+	/* TODO: XXX STEVE A: Return the proper error code from unpack
+	   rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	*/
+	/* TODO:  nuke globus_gram_http_version (query), search for
+	   other occurrences of it.  */ 
 
-	if ( rc = globus_l_gram_unpack_http_job_request_result(
-			   query,
-			   &result_status, /* GLOBUS_SUCCESS or a failure */
-			   &result_contact /* NULL if not SUCCESS */) ) {
-	  /* rc already set */
-	}
-	else {
-	  rc = result_status;
-	  if ( job_contact!=NULL ) {
-	    (*job_contact) = ((job_status==GLOBUS_SUCCESS) 
-			      ? globus_libc_strdup (result_contact)
-			      : NULL);
+	  if ( rc = globus_i_gram_unpack_http_job_request_result_fb(
+			     &query, /* IN/OUT */
+			     &query_size,	/* IN/OUT */
+			     &result_status, /* GLOBUS_SUCCESS or a failure */
+			     &result_contact /* NULL if not SUCCESS */) ) {
+	    /* rc already set */
 	  }
-	}
+	  else {
+	      rc = result_status;
+	      if ( job_contact!=NULL ) {
+		  (*job_contact) = ((job_status==GLOBUS_SUCCESS) 
+				    ? globus_libc_strdup (result_contact)
+				    : NULL);
+	      }
+	  }
+	  if (result_contact)
+	      globus_free(result_contact)
     }
 
 globus_gram_client_job_request_done:

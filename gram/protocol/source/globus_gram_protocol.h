@@ -162,6 +162,7 @@ globus_gram_http_post_and_get( char *                         url,
 			       globus_gram_http_monitor_t *   monitor);
 
 
+/* I don't use these --frame functions right now.  --Steve A, 7/20/99 */
 /* frame message with HTTP headers */
 int
 globus_gram_http_frame(globus_byte_t *    msg,
@@ -182,6 +183,82 @@ globus_gram_http_unframe(globus_byte_t *    httpmsg,
 			 globus_size_t      httpsize,
 			 globus_byte_t **   message,      /* gets allocated */
 			 globus_size_t *    msgsize);
+
+/* These functions pack and unpack GRAM requests into HTTP format
+   They come in two forms right now, depending upon how they handle
+   the memory for the HTTP request itself: the _fb forms accept a
+   "fixed size buffer" as an IN/OUT argument, the _malloc forms
+   allocate enough memory for their needs, memory which must be freed.  
+   The _fb _pack_ forms would theoretically have the size of the
+   allocated buffer passed to them as in the globus_size_t argument;
+   they get it back chopped down to the actual amount of the buffer
+   that was used.    In practice, though, the buffers are always of
+   size GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE
+
+   If the _fb_ forms wind up with the address of a pointer to the
+   buffer passed to them, don't worry about it; that will be returned
+   unscathed, and is being done for easier transition to the _malloc
+   forms.  
+
+   Also, the returned buffers, in practice, are null-terminated, so we
+   don't even need to worry about the buffer_size returns. 
+
+   TODO: We will soon standardize on the _malloc forms, but the _fb
+   forms work with other existing code.  Obviously, as an interim
+   step, the _fb versions should be written as wrappers around the
+   malloc forms.  Obviously the malloc forms are more desirable, since
+   we don't want to exceed buffer sizes.
+
+
+   --Steve A  7/20/99
+. */
+
+int
+globus_i_gram_pack_http_job_request_fb(
+    globus_byte_t *query,	/* OUT */
+    globus_size_t *query_size, /* OUT */
+    int job_state_mask /* integer (IN) */,
+    const char *callback_url /* user's state listener URL (IN) */,
+    const char *description /* user's RSL (IN) */);
+
+int
+globus_i_gram_unpack_http_job_request_fb(
+    globus_byte_t *query,
+    globus_size_t *query_size,
+    int *job_state_mask,
+    char *client_contact_str,
+    char *rsl_spec,
+    globus_size_t *rsl_spec_size);
+
+int
+globus_i_gram_pack_http_job_request_result_fb(
+    globus_byte_t *reply	/* OUT */,
+    globus_size_t *reply_size	/* OUT */,
+    int result_code		/* IN */,
+    const char *graml_job_contact /* IN */);
+
+
+/* pass in result_contactp as a pointer to a null character pointer.
+   This will be malloced. */
+int
+globus_i_gram_unpack_http_job_request_result_fb(
+    globus_byte_t *query,
+    globus_size_t *query_size,
+    int *result_status, /* GLOBUS_SUCCESS or a failure */
+    char **result_contactp /* NULL if not SUCCESS */);
+
+int
+globus_i_gram_http_pack_status_message_fb(
+    globus_byte_t *message	/* OUT */,
+    globus_size_t *message_size /* OUT */,
+    const char *graml_job_contact /* IN */,
+    int status			/* IN */,
+    int failure_code /* IN */);
+
+#define globus_gram_http_version(x) (\
+	/* TODO --steve A */ puts("Must replace this with" \
+	" a test against the return code from *_unpack_*"), \
+	GLOBUS_GRAM_PROTOCOL_VERSION)
 
 EXTERN_C_END
 
