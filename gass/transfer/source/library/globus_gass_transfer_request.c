@@ -174,7 +174,7 @@ globus_gass_transfer_request_get_referral(
     }
     else
     {
-	int i;
+	globus_size_t				i;
 
 	referral->url =
 	    globus_malloc(sizeof(char *) * req->referral_count);
@@ -346,6 +346,7 @@ globus_gass_transfer_request_set_subject(
     else
     {
 	req->subject = subject;
+	return GLOBUS_SUCCESS;
     }
 }
 /* globus_gass_transfer_request_set_subject() */

@@ -32,9 +32,9 @@ globus_gass_transfer_crlf_to_lf(
     globus_byte_t **				dst,
     globus_size_t *				dst_len)
 {
-    int						i;
-    int						j;
-    int						cr_count=0;
+    globus_size_t				i;
+    globus_size_t				j;
+    globus_size_t				cr_count=0;
 
     /* count \r\n pairs in the source string */
     for(i = 0; i < src_len-1; i++)

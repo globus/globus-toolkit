@@ -272,7 +272,6 @@ globus_l_gass_transfer_http_receive(
     globus_size_t				buffer_length,
     globus_size_t				wait_for_length)
 {
-    globus_result_t				result;
     globus_gass_transfer_http_request_proto_t *		new_proto;
 
     globus_l_gass_transfer_http_lock();
@@ -352,6 +351,9 @@ globus_l_gass_transfer_http_fail(
       case GLOBUS_GASS_TRANSFER_HTTP_STATE_CLOSING:
       case GLOBUS_GASS_TRANSFER_HTTP_STATE_DONE:
       case GLOBUS_GASS_TRANSFER_HTTP_STATE_REQUESTING:
+      case GLOBUS_GASS_TRANSFER_HTTP_STATE_RESPONDING:
+      case GLOBUS_GASS_TRANSFER_HTTP_STATE_REFERRED:
+      case GLOBUS_GASS_TRANSFER_HTTP_STATE_DENIED:
 	new_proto->failure_occurred = GLOBUS_TRUE;
 	globus_l_gass_transfer_http_unlock();
 	break;
@@ -3409,29 +3411,6 @@ globus_l_gass_transfer_http_callback_read_buffered_callback(
 }
 /* globus_l_gass_transfer_http_callback_read_buffered_callback() */
 
-static
-globus_bool_t
-globus_l_gass_transfer_http_callback_receive_callback(
-    globus_time_t				time_can_block,
-    void *					arg)
-{
-    globus_gass_transfer_http_request_proto_t *		proto;
-    globus_bool_t				last_data = GLOBUS_FALSE;
-
-    proto = (globus_gass_transfer_http_request_proto_t *) arg;
-
-    if(proto->recv_state == GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_EOF ||
-       proto->recv_state == GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_ERROR)
-    {
-	last_data = GLOBUS_TRUE;
-    }
-    globus_gass_transfer_proto_receive_complete(proto->request,
-						proto->user_buffer,
-						proto->user_offset,
-						proto->failure_occurred,
-						last_data);
-    return GLOBUS_TRUE;
-}
 
 static
 globus_bool_t

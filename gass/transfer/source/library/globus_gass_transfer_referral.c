@@ -83,7 +83,7 @@ int
 globus_gass_transfer_referral_destroy(
     globus_gass_transfer_referral_t *		referral)
 {
-    int i;
+    globus_size_t				i;
 
     if(referral == GLOBUS_NULL)
     {
