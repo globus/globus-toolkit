@@ -747,13 +747,6 @@ globus_l_io_bounce_listen_cb(
         bounce_info->user_arg,
         bounce_info->handle->io_handle,
         result);
-    
-    if(bounce_info->handle->xio_target)
-    {
-        /* user didnt 'accept' this target */
-        globus_xio_target_destroy(bounce_info->handle->xio_target);
-        bounce_info->handle->xio_target = GLOBUS_NULL;
-    }
 
     globus_free(bounce_info);
 }
