@@ -38,10 +38,6 @@ LD=$save_LD
 
 dnl config header goes here
 
-# Decide if we should use assembly code
-
-LAC_ASM
-
 # Figure out the defines
 
 LAC_CRYPTO
@@ -49,6 +45,10 @@ LAC_CRYPTO
 # Figure out the compiler flags
 
 LAC_COMPILER
+
+# Decide if we should use assembly code
+
+LAC_ASM
 
 # On solaris openssl needs the socket and nsl library
 
