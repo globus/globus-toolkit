@@ -259,7 +259,7 @@ globus_l_gsi_sysconfig_deactivate(void)
 
     return result;
 }
-/* globus_l_gsi_proxy_deactivate() */
+/* globus_l_gsi_sysconfig_deactivate() */
 
 
 globus_result_t
