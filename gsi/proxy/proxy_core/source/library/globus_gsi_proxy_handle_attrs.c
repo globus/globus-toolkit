@@ -1,4 +1,4 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+q#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_proxy_handle_attrs.c
  *
@@ -9,6 +9,9 @@
 #endif
 
 #include "globus_i_gsi_proxy.h"
+
+#define DEFAULT_KEY_BITS                1024
+#define DEFAULT_PUB_EXPONENT            0x10001  /* 65537 */
 
 /**
  * @name Initialize
@@ -32,11 +35,27 @@
  *
  * @see globus_gsi_proxy_handle_attrs_destroy()
  */
-
 globus_result_t
 globus_gsi_proxy_handle_attrs_init(
     globus_gsi_proxy_handle_attrs_t *   handle_attrs)
 {
+    globus_gsi_proxy_handle_attrs_t     attrs;
+
+    if(handle_attrs != NULL)
+    {
+        return
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE_ATTRS);
+    }
+
+    *handle_attrs = (globus_gsi_proxy_handle_attrs_t)
+        globus_malloc(sizeof(globus_i_gsi_proxy_handle_attrs_t));
+
+    attrs = *handle_attrs;
+
+    attrs->key_bits = DEFAULT_KEY_BITS;
+    attrs->init_prime = DEFAULT_PUB_EXPONENT;
+   
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_init() */
@@ -61,10 +80,130 @@ globus_result_t
 globus_gsi_proxy_handle_attrs_destroy(
     globus_gsi_proxy_handle_attrs_t     handle_attrs)
 {
+    if(handle_attrs != NULL)
+    {
+        globus_free(handle_attrs);
+        handle_attrs = NULL;
+    }
+
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_destroy() */
 /*@}*/
+
+/**
+ * @name Set Key Bits
+ */
+/* @{ */
+/**
+ * Set the length of the public key pair
+ * used by the proxy certificate
+ * @ingroup globus_gsi_proxy_handle_attrs
+ *
+ * @param handle_attrs 
+ *        the attributes to set
+ * @param bits
+ *        the length to set it to (usually 1024)
+ *
+ * @return 
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_proxy_handle_attrs_set_keybits(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int                                 bits)
+{
+    handle_attrs->key_bits = bits;
+    
+    return GLOBUS_SUCCESS;
+}
+/* @} */
+
+
+/**
+ * @name Get Key Bits
+ */
+/* @{ */
+/**
+ * Gets the length of the public key pair used by
+ * the proxy certificate
+ * @ingroup globus_gsi_proxy_handle_attrs
+ *
+ * @param handle_attrs
+ *        the attributes to get the key length from
+ * @param bits
+ *        the length of the key pair in bits
+ * @return
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_proxy_handle_attrs_get_keybits(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int *                               bits)
+{
+    *bits = handle_attrs->key_bits;
+    
+    return GLOBUS_SUCCESS;
+}
+/* @} */
+
+/**
+ * @name Set Initial Prime Number
+ */
+/* @{ */
+/**
+ * Set the initial prime number used for
+ * generating public key pairs in the RSA
+ * algorithm
+ * @ingroup globus_gsi_proxy_handle_attrs
+ *
+ * @param handle_attrs
+ *        The attributes to set
+ * @param prime
+ *        The prime number to set it to
+ *        This value needs to be a prime number
+ * @return 
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_proxy_handle_attrs_set_init_prime(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int                                 prime)
+{
+    handle_attrs->init_prime = prime;
+
+    return GLOBUS_SUCCESS;
+};
+/* @} */
+
+
+/**
+ * @name Get Initial Prime Number
+ */
+/* @{ */
+/**
+ * Get the initial prime number used for
+ * generating the public key pair in the
+ * RSA algorithm
+ * @ingroup globus_gsi_proxy_handle_attrs
+ *
+ * @param handle_attrs
+ *        The attributes to get the initial
+ *        prime number from
+ * @param prime
+ *        The initial prime number taken from the
+ *        attributes
+ * @return
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_proxy_handle_attrs_get_init_prime(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int *                               prime)
+{
+    *prime = handle_attrs->init_prime;
+};
+/* @} */
 
 
 /**

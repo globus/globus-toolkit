@@ -134,6 +134,31 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 
 #ifndef DOXYGEN
 
+#include <globus_error_generic.h>
+
+#define GLOBUS_GSI_PROXY_ERROR_CONSTRUCT(_ERRORTYPE_) \
+    globus_error_construct_error(
+        GLOBUS_GSI_PROXY_MODULE, \
+        NULL, \
+        _ERRORTYPE_, \
+        (__FILE__":"__LINE__), \
+        globus_l_gsi_proxy_error_strings[_ERRORTYPE_])
+
+#define GLOBUS_GSI_PROXY_ERROR_RESULT(_ERRORTYPE_) \
+    globus_error_put(GLOBUS_GSI_PROXY_ERROR_CONSTRUCT(_ERRORTYPE_))
+
+#define OPENSSL_ERROR_STRING_CONSTRUCT ("OpenSSL Error: "__FILE__":"__LINE__)
+
+#define GLOBUS_GSI_PROXY_OPENSSL_ERROR_CONSTRUCT(_ERRORTYPE_) \
+    globus_error_get_openssl_error( \
+        GLOBUS_GSI_PROXY_MODULE, \
+        OPENSSL_ERROR_STRING_CONSTRUCT, \
+        _ERRORTYPE_, \
+        globus_l_gsi_proxy_error_strings[_ERRORTYPE_])
+
+#define GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(_ERRORTYPE_) \
+    globus_error_put(GLOBUS_GSI_PROXY_OPENSSL_ERROR_CONSTRUCT(_ERRORTYPE_))
+
 globus_result_t
 globus_gsi_proxy_handle_init(
     globus_gsi_proxy_handle_t *         handle,
@@ -182,6 +207,38 @@ globus_result_t
 globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle);
 
+globus_result_t
+globus_gsi_proxy_handle_set_signing_algorithm(
+    globus_gsi_proxy_handle_t           handle,
+    EVP_MD *                            algorithm);
+
+globus_result_t
+globus_gsi_proxy_handle_get_signing_algorithm(
+    globus_gsi_proxy_handle_t           handle,
+    EVP_MD **                           algorithm);
+
+globus_result_t
+globus_gsi_proxy_handle_set_time_valid(
+    globus_gsi_proxy_handle_t           handle,
+    int                                 time_valid);
+
+globus_result_t
+globus_gsi_proxy_handle_get_time_valid(
+    globus_gsi_proxy_handle_t           handle,
+    int *                               time_valid);
+
+
+globus_result_t
+globus_gsi_proxy_handle_set_clock_skew_allowable(
+    globus_gsi_proxy_handle_t           handle,
+    int                                 skew);
+
+globus_result_t
+globus_gsi_proxy_handle_get_clock_skew_allowable(
+    globus_gsi_proxy_handle_t           handle,
+    int *                               skew);
+
+
 #endif
 
 /**
@@ -194,6 +251,7 @@ globus_gsi_proxy_handle_clear_cert_info(
  *
  * @see #globus_gsi_proxy_handle_t
  */
+
 #ifndef DOXYGEN
 
 
@@ -221,6 +279,8 @@ globus_gsi_proxy_handle_attrs_copy(
  * request generation, proxy request inspection and proxy request
  * signature. 
  */
+
+
 #ifndef DOXYGEN
 
 globus_result_t
@@ -244,6 +304,26 @@ globus_gsi_proxy_assemble_cred(
     globus_gsi_proxy_handle_t           handle,
     globus_gsi_cred_handle_t *          proxy_credential,
     BIO *                               input_bio);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_set_keybits(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int                                 bits);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_get_keybits(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int *                               bits);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_set_init_prime(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int                                 prime);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_get_init_prime(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int *                               prime);    
 
 #endif
 
