@@ -33,7 +33,7 @@ clean_one()
 
 TARGET_MACH_FORK="${1}"
 
-TMPSCRIPT="/tmp/cdscript$$"
+TMPSCRIPT="${local_tmpdir}/cdscript$$"
 @RM@ -rf $TMPSCRIPT > /dev/null 2>&1
 @CAT@ > $TMPSCRIPT  <<MYEND
 
