@@ -90,15 +90,13 @@ void init_arguments(int argc, char *argv[], myproxy_creds_t *my_creds);
 int main(int argc, char *argv[])
 {
     SSL_CREDENTIALS *creds;
-    myproxy_creds_t *my_creds;
+    myproxy_creds_t my_creds = {0};
+    myproxy_server_context_t server_context = {0}; /* for server config */
     char proxyfile[64] = "";
     int rval=1;
 
-    my_creds = (myproxy_creds_t *) malloc(sizeof(*my_creds));
-    memset (my_creds, 0, sizeof(*my_creds));
-
     creds = ssl_credentials_new();
-    init_arguments (argc, argv, my_creds);
+    init_arguments (argc, argv, &my_creds);
 
     if (certfile == NULL) {
 	fprintf (stderr, "Specify certificate file with -c option\n");
@@ -129,10 +127,10 @@ int main(int argc, char *argv[])
     }
 
     /* Read new credential passphrase */
-    if (!use_empty_passwd && !my_creds->passphrase) {
-	my_creds->passphrase =
+    if (!use_empty_passwd && !my_creds.passphrase) {
+	my_creds.passphrase =
 	    (char *)malloc((MAX_PASS_LEN+1)*sizeof(char));
-	if (myproxy_read_verified_passphrase(my_creds->passphrase,
+	if (myproxy_read_verified_passphrase(my_creds.passphrase,
 					     MAX_PASS_LEN, NULL) == -1) {
 	    fprintf(stderr, "%s\n", verror_get_string());
 	    goto cleanup;
@@ -145,15 +143,15 @@ int main(int argc, char *argv[])
     verror_clear();
 		
     if (ssl_proxy_store_to_file(creds, proxyfile,
-				my_creds->passphrase) != SSL_SUCCESS) {
+				my_creds.passphrase) != SSL_SUCCESS) {
 	fprintf(stderr, "%s\n", verror_get_string());
 	goto cleanup;
     }
 
-    if (my_creds->username == NULL) { /* set default username */
+    if (my_creds.username == NULL) { /* set default username */
 	if (dn_as_username) {
 	    if (ssl_get_base_subject_file(proxyfile,
-					  &my_creds->username)) {
+					  &my_creds.username)) {
 		fprintf(stderr,
 			"Cannot get subject name from your certificate\n");
 		goto cleanup;
@@ -164,19 +162,37 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Please specify a username.\n");
 		goto cleanup;
 	    }
-	    my_creds->username = strdup(username);
+	    my_creds.username = strdup(username);
 	}
     }
 
     if (ssl_get_base_subject_file(proxyfile,
-				  &my_creds->owner_name)) {
+				  &my_creds.owner_name)) {
 	fprintf(stderr,
 		"Cannot get subject name from certificate.\n");
 	goto cleanup;
     }
-    my_creds->location = strdup(proxyfile);
+    my_creds.location = strdup(proxyfile);
 
-    if (myproxy_creds_store(my_creds) < 0) {
+    if (myproxy_server_config_read(&server_context) < 0) {
+	myproxy_log_verror();
+	fprintf(stderr, "Failed to read myproxy server configuration file.\n");
+	goto cleanup;
+    }
+
+    if (myproxy_check_passphrase_policy(my_creds.passphrase,
+					server_context.passphrase_policy_pgm,
+					my_creds.username,
+					my_creds.credname,
+					my_creds.retrievers,
+					my_creds.renewers,
+					my_creds.owner_name) < 0) {
+	fprintf(stderr, verror_get_string());
+	fprintf(stderr, "Credential not stored.\n");
+	goto cleanup;
+    }
+
+    if (myproxy_creds_store(&my_creds) < 0) {
 	myproxy_log_verror();
 	fprintf (stderr, "Unable to store credentials. %s\n",
 		 verror_get_string()); 
@@ -187,7 +203,6 @@ int main(int argc, char *argv[])
     rval = 0;
  cleanup:
     if (proxyfile[0]) ssl_proxy_file_destroy(proxyfile);
-    free (my_creds);
     return rval;
 }
 
