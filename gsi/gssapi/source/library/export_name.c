@@ -1,71 +1,75 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file export_name.c
- * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
+/*********************************************************************
 
-static char *rcsid = "$Id$";
+export_name.c:
+
+Description:
+    GSSAPI routine to take an internal name and convert to a form
+	which can be used by caller. We do this using the SSLeay 
+	x509 oneline routine. which returns /X=y/X=y... form. 
+
+CVS Information:
+
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
+
+**********************************************************************/
+
+static char *rcsid = "$Header$";
+
+/**********************************************************************
+                             Include header files
+**********************************************************************/
 
 #include "gssapi.h"
-#include "globus_i_gsi_gss_utils.h"
-#include "gssapi_openssl.h"
+#include "gssutils.h"
+#include "gssapi_ssleay.h"
 #include <string.h>
 
-/**
- * @name Export Name
- * @ingroup globus_gsi_gssapi
- */
-/* @{ */
-/**
- * Produces a single line version of the internal x509 name
- */
+/**********************************************************************
+                               Type definitions
+**********************************************************************/
+
+/**********************************************************************
+                          Module specific prototypes
+**********************************************************************/
+
+/**********************************************************************
+                       Define module specific variables
+**********************************************************************/
+
+/**********************************************************************
+Function:   gss_export_name
+
+Description:
+	oProduces a single line version of the internal x509 name
+Parameters:
+
+Returns:
+**********************************************************************/
+
 OM_uint32 
-GSS_CALLCONV gss_export_name(
-    OM_uint32 *                         minor_status,
-    const gss_name_t                    input_name_P,
-    gss_buffer_t                        exported_name)
+GSS_CALLCONV gss_export_name
+(OM_uint32 *          minor_status,
+ const gss_name_t     input_name_P,
+ gss_buffer_t         exported_name
+)
 {
-    const gss_name_desc *               input_name = 
-		                        (gss_name_desc *) input_name_P;
-    OM_uint32                           major_status = GSS_S_COMPLETE;
-    static char *                       _function_name_ = 
-        "gss_export_name";
-    
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+	const gss_name_desc* input_name = 
+		(gss_name_desc*) input_name_P ;
 
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
-    if (!(input_name) || !(input_name->x509n) || !(exported_name)) {
-        
-        major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("The input name passed to: %s is not valid", _function_name_));
-        goto exit;
-    }
+	*minor_status = 0;
+	if (!(input_name) || !(input_name->x509n) ||
+			!(exported_name)) {
+            GSSerr(GSSERR_F_EXPORT_CRED, GSSERR_R_BAD_ARGUMENT);
+            *minor_status = gsi_generate_minor_status();
+            return GSS_S_FAILURE;
+	}
 
-    exported_name->value = X509_NAME_oneline(input_name->x509n, NULL, 0);
-    if(exported_name->value == NULL)
-    {
-        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            ("Couldn't get the subject name of the gss_name_t"));
-        major_status = GSS_S_FAILURE;
-        goto exit;
-    }
-        
-    exported_name->length = strlen(exported_name->value);
-    
- exit:
+	exported_name->value = X509_NAME_oneline(input_name->x509n,NULL,0);
+	exported_name->length = strlen(exported_name->value);
+  
+	return GSS_S_COMPLETE ;
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-    return major_status;
-}
-/* gss_export_name */
-/* @} */
+} /* gss_export_name */

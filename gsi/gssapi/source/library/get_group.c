@@ -1,25 +1,24 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file get_group.c
- * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
+/**********************************************************************
 
-static char *rcsid = "$Id$";
+get_group.c:
+Description:
+        GSSAPI routine to get the proxy group field in a gss_name_t.
 
-#include "gssapi_openssl.h"
-#include "globus_i_gsi_gss_utils.h"
+CVS Information:
+
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
+
+**********************************************************************/
+
+static char *rcsid = "$Header$";
+
+#include "gssapi_ssleay.h"
+#include "gssutils.h"
 #include <string.h>
 
-/**
- * @name Get Group
- * @ingroup globus_gsi_gssapi
- */
-/* @{ */
 /**
  * Get the proxy group from a GSS name.
  *
@@ -46,7 +45,10 @@ static char *rcsid = "$Id$";
  *        GSS_S_COMPLETE upon success
  *        GSS_S_BAD_NAME if the name was found to be faulty
  *        GSS_S_FAILURE upon general failure
+ *
  */
+
+
 OM_uint32 
 GSS_CALLCONV gss_get_group(
     OM_uint32 *                         minor_status,
@@ -61,147 +63,122 @@ GSS_CALLCONV gss_get_group(
     gss_name_desc *                     internal_name;
     char *                              subgroup;
     gss_buffer_desc                     buffer;
-
-    static char *                       _function_name_ =
-        "gss_get_group";
-
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+    
+    *minor_status = 0;
 
     internal_name = (gss_name_desc *) name;
 
     if(minor_status == NULL)
     {
+        GSSerr(GSSERR_F_GET_GROUP,GSSERR_R_BAD_ARGUMENT);
         major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("NULL parameter minor_status passed to function: %s",
-             _function_name_));
-        goto exit;
+        goto err;
     }
-        
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
-
+    
     if(name == GSS_C_NO_NAME)
     {
+        GSSerr(GSSERR_F_GET_GROUP,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid group name passed to function: %s",
-             _function_name_));
-        goto exit;
+        goto err;
     }
 
     if(group == NULL)
     {
+        GSSerr(GSSERR_F_GET_GROUP,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid group passed to function: %s",
-             _function_name_));
-        goto exit;
+        goto err;
     }
 
     if(group_types == NULL)
     {
+        GSSerr(GSSERR_F_GET_GROUP,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid group types passed to function: %s",
-             _function_name_));
-        goto exit;
+        goto err;
+    }
+
+    if(internal_name->group == NULL)
+    {
+        return major_status;
     }
 
     num_subgroups = sk_num(internal_name->group);
     
-    if(internal_name->group == NULL || num_subgroups == 0)
+    if(num_subgroups == 0)
     {
-        goto exit;
+        return major_status;
     }
     
     if(internal_name->group_types == NULL)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
+        GSSerr(GSSERR_F_GET_GROUP,GSSERR_R_BAD_NAME);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_BAD_NAME;
-        goto exit;
+        goto err;
     }
 
-    major_status = gss_create_empty_buffer_set(local_minor_status, group);
-    if(GSS_ERROR(major_status))
+    major_status = gss_create_empty_buffer_set(minor_status, group);
+
+    if(major_status != GSS_S_COMPLETE)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GROUP);
-        goto exit;
+        goto err;
     }
 
-    major_status = gss_create_empty_oid_set(local_minor_status, group_types);
+    major_status = gss_create_empty_oid_set(minor_status, group_types);
 
-    if(GSS_ERROR(major_status))
+    if(major_status != GSS_S_COMPLETE)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GROUP);
-        goto release_buffer;
+        gss_release_buffer_set(&tmp_minor_status, group);
+        goto err;
     }
 
-    for(++index = 0; ++index < num_subgroups; ++index)
+    for(i=0;i<num_subgroups;i++)
     {
-        subgroup = sk_value(internal_name->group, ++index);
+        subgroup = sk_value(internal_name->group,i);
+        
         buffer.value = (void *) subgroup;
+        
         buffer.length = strlen(subgroup) + 1;
-        major_status = gss_add_buffer_set_member(&local_minor_status,
+
+        major_status = gss_add_buffer_set_member(minor_status,
                                                  &buffer,
                                                  group);
-        if(GSS_ERROR(major_status))
+
+        if(major_status != GSS_S_COMPLETE)
         {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_GROUP);
-            goto release_oid;
+            gss_release_buffer_set(&tmp_minor_status, group);
+            gss_release_oid_set(&tmp_minor_status, group_types);
+            goto err;
         }
 
-        if(ASN1_BIT_STRING_get_bit(internal_name->group_types, index))
+        if(ASN1_BIT_STRING_get_bit(internal_name->group_types,i))
         {
             major_status = gss_add_oid_set_member(
-                &local_minor_status,
+                minor_status,
                 (gss_OID) gss_untrusted_group,
                 group_types);
         }
         else
         {
             major_status = gss_add_oid_set_member(
-                &local_minor_status,
+                minor_status,
                 (gss_OID) gss_trusted_group,
                 group_types);
         }
 
-        if(GSS_ERROR(major_status))
+        if(major_status != GSS_S_COMPLETE)
         {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_GROUP);
-            goto release_oid;
+            gss_release_buffer_set(&tmp_minor_status, group);
+            gss_release_oid_set(&tmp_minor_status, group_types);
+            goto err;
         }
     }
     
-    goto exit;
-
- release_oid:
-    gss_release_oid_set(&local_minor_status, group_types);
-
- release_buffer:
-    gss_release_buffer_set(&local_minor_status, group);
-
- exit:
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+err:
     return major_status;
 }
-/* @} */
+
 
 

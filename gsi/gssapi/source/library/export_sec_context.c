@@ -1,255 +1,310 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file export_sec_context.c
- * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
 
-static char *rcsid = "$Id$";
+/**********************************************************************
 
-#include "gssapi_openssl.h"
-#include "globus_i_gsi_gss_utils.h"
+export_sec_context.c:
+
+Description:
+	GSSAPI routine to export the security context
+	See: <draft-ietf-cat-gssv2-cbind-04.txt>
+
+CVS Information:
+
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
+
+**********************************************************************/
+
+static char *rcsid = "$Header$";
+
+/**********************************************************************
+                             Include header files
+**********************************************************************/
+
+#include "gssapi_ssleay.h"
+#include "gssutils.h"
 #include <string.h>
 
-/**
- * @name Export Security Context
- * @ingroup globus_gsi_gssapi
+/* 
+ * We need to include a non installed header file
+ * #include <ssl_locl.h>
+ * But for now we will include the two routines here
  */
-/* @{ */
-/**
- * Saves the important info about the session, converts
- * it to a token, then deletes the context. 
- *
- * @param minor_status
- * @param context_handle_P
- * @param interprocess_token
- *
- * @return 
- *
- * For SSL handle We need to save:
- * version of this routine. 
- * cred_usage, i.e. are we accept or initiate
- * target/source or name
- * Session:  Protocol, cipher, and Master-Key
- * Client-Random
- * Server-Random
- * tmp.key_block: client and server Mac_secrets
- * write_sequence
- * read_sequence
- * write iv
- * read iv
- * 
- * see SSL 3.0 draft http://wp.netscape.com/eng/ssl3/index.html
- */
+
+int ssl3_setup_key_block(SSL *s);
+void ssl3_cleanup_key_block(SSL *s);
+
+/**********************************************************************
+                               Type definitions
+**********************************************************************/
+
+/**********************************************************************
+                          Module specific prototypes
+**********************************************************************/
+
+/**********************************************************************
+                       Define module specific variables
+**********************************************************************/
+
+/**********************************************************************
+Function:   gss_export_sec_context()   
+
+Description:
+    Saves the important info about the session, converts
+	it to a token, then deletes the context. 
+
+Parameters:
+	
+Returns:
+**********************************************************************/
+
+
 OM_uint32 
 GSS_CALLCONV gss_export_sec_context(
-    OM_uint32 *                         minor_status,
-    gss_ctx_id_t *                      context_handle_P,
+    OM_uint32 *                         minor_status ,
+    gss_ctx_id_t *                      context_handle_P ,
     gss_buffer_t                        interprocess_token) 
 {
-    OM_uint32                           major_status = GSS_S_COMPLETE;
-    OM_uint32                           local_major_status;
-    OM_uint32                           local_minor_status;
-    globus_result_t                     local_result;
+    
+#ifdef WIN32
+    return GSS_S_UNAVAILABLE;
+#else
+    OM_uint32                           major_status = 0;
     gss_ctx_id_desc *                   context;
+    int                                 len = -1;
+    int                                 i;
     int                                 peer_cert_count;
     SSL_SESSION *                       session = NULL;
-    STACK_OF(X509) *                    cert_chain = NULL;
+    SSL *                               s;
     BIO *                               bp = NULL;
-    unsigned char                       int_buffer[4];
+    unsigned char *                     cp;
+    unsigned char                       ibuf[4];
     OM_uint32                           cred_usage;
-    int                                 index;
-    int                                 length;
-    unsigned char *                     context_serialized;
-    static char *                       _function_name_ =
-        "gss_export_sec_context";
+	
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+#ifdef DEBUG
+    fprintf(stderr,"export_sec_context:\n");
+#endif /* DEBUG */
 
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
-
-#ifdef WIN32
-    major_status = GSS_S_UNAVAILABLE;
-    GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-        minor_status,
-        GLOBUS_GSI_GSSAPI_ERROR_UNSUPPORTED,
-        ("This function does not currently support the "
-         "Windows platform"));
-    goto exit;
-#endif
+    *minor_status = 0;
 
     context = *context_handle_P;
 
     if (context_handle_P == NULL || 
         context == (gss_ctx_id_t) GSS_C_NO_CONTEXT)
     {
+        GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context handle passed to the function: %s",
-             _function_name_));
-        goto exit;
+        goto end;
     }
 
     if (interprocess_token == NULL ||
         interprocess_token ==  GSS_C_NO_BUFFER)
     {
+        GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid interprocess token parameter passed to function: %s",
-             _function_name_));
-        goto exit;
+        goto end;
     }
 
     /* Open mem bio for writing the session */
-    bp = BIO_new(BIO_s_mem());
-    if (bp == NULL)
+    
+    if ((bp = BIO_new(BIO_s_mem())) == NULL)
     {
+        GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("NULL bio for serializing SSL handle"));
-        goto exit;
+        goto end;
     }
 
     /* lock the context mutex */
+    
     globus_mutex_lock(&context->mutex);
+    
+    s = context->gs_ssl;
 
     interprocess_token->length = 0;
 
+    /*
+     * We need to save:
+     * version of this routine. 
+     * cred_usage, i.e. are we accept or initiate
+     * target/source or name
+     * Session:  Protocol, cipher, and Master-Key
+     * Client-Random
+     * Server-Random
+     * tmp.key_block: client and server Mac_secrets
+     * write_sequence
+     * read_sequence
+     * write iv
+     * read iv
+     */ 
+    
     /* version number */
-    L2N(GLOBUS_I_GSI_GSSAPI_IMPL_VERSION, int_buffer);
-    BIO_write(bp, (char *) int_buffer, 4);
+    cp = ibuf;
+    l2n(1,cp);
+    BIO_write(bp,(char *)ibuf,4);
 
     /* cred_usage */
     cred_usage = 
         context->locally_initiated ? GSS_C_INITIATE : GSS_C_ACCEPT;
-    L2N(cred_usage, int_buffer);
-    BIO_write(bp, (char *)int_buffer, 4);
+    cp = ibuf;
+    l2n(cred_usage,cp);
+    BIO_write(bp,(char *)ibuf,4);
 	
     /* get session */
-    session = SSL_get_session(context->gss_ssl);
+    
+    session = SSL_get_session(s);
     if (!session)
     {
-        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couln't retrieve SSL session handle from SSL"));
+        GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        goto unlock_mutex;
+        goto end;
     }
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT_OBJECT(3, SSL_SESSION, session);
+#ifdef DEBUG
+    SSL_SESSION_print_fp(stderr,session);
+#endif
 
-    i2d_SSL_SESSION_bio(bp, session);
+    i2d_SSL_SESSION_bio(bp,session);
 
-    local_result = globus_gsi_callback_get_cert_depth(context->callback_data,
-                                                      &peer_cert_count);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-        major_status = GSS_S_FAILURE;
-        goto unlock_mutex;
-    }
+    /* write out the peer certificate and peer cert chain*/
 
-    L2N(peer_cert_count, (char *)int_buffer);
-    BIO_write(bp, (char *)int_buffer, 4);
+    peer_cert_count = context->pvd.cert_depth;
     
-    for(index = 0; index < peer_cert_count; ++index)
+    cp = ibuf;
+    l2n(peer_cert_count,cp);
+    BIO_write(bp,(char *)ibuf,4);
+    
+    for(i=0;i<peer_cert_count;i++)
     {
-        local_result = globus_gsi_callback_get_cert_chain(
-            context->callback_data,
-            &cert_chain);
-        if(local_result != GLOBUS_SUCCESS)
+        i2d_X509_bio(bp,sk_X509_value(context->pvd.cert_chain,i));
+    }
+	
+#ifdef DEBUG
+    {
+        int j;
+        fprintf(stderr,"client_random=");
+        for (j=0; j<SSL3_RANDOM_SIZE; j++)
         {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-            major_status = GSS_S_FAILURE;
-            goto unlock_mutex;
+            fprintf(stderr,"%02X",s->s3->client_random[j]);
         }
+        fprintf(stderr,"\nserver_random =");
+        for (j=0; j<SSL3_RANDOM_SIZE; j++)
+        {
+            fprintf(stderr,"%02X",s->s3->server_random[j]);
+        }
+        fprintf(stderr,"\n");
+    }
+#endif
 
-        i2d_X509_bio(bp, sk_X509_value(cert_chain, index));
-    }
+    BIO_write(bp,(char *)&(s->s3->client_random[0]),SSL3_RANDOM_SIZE);
+    BIO_write(bp,(char *)&(s->s3->server_random[0]),SSL3_RANDOM_SIZE);
     
-    local_major_status = globus_i_gsi_gss_SSL_write_bio(&local_minor_status,
-                                                        context,
-                                                        bp);
-    if(GSS_ERROR(local_major_status))
+    /* need to get the tmp.key_block so we can save it
+     * It will have the IVs but they are initial rather
+     * then the current IVs we want
+     */
+    
+    ssl3_setup_key_block(s); 
+	
+#ifdef DEBUG
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status,
-            local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL);
-        major_status = local_major_status;
-        goto unlock_mutex;
+        int j;
+        fprintf(stderr,"tmp.key_block_length=%d\ntmp.key_block=",
+				s->s3->tmp.key_block_length);
+        for (j=0; j<s->s3->tmp.key_block_length; j++)
+        {
+            fprintf(stderr,"%02X",s->s3->tmp.key_block[j]);
+        }
+        fprintf(stderr,"\nwrite_sequence=");
+        for (j=0; j<8; j++)
+        {
+            fprintf(stderr,"%02X",s->s3->write_sequence[j]);
+        }
+        fprintf(stderr,"\nread_sequence =");
+        for (j=0; j<8; j++)
+        {
+            fprintf(stderr,"%02X",s->s3->read_sequence[j]);
+        }
+        fprintf(stderr,"\nwrite_iv=");
+        for (j=0; j<8; j++)
+        {
+            fprintf(stderr,"%02X",s->enc_write_ctx->iv[j]);
+        }
+        fprintf(stderr,"\nread_iv =");
+        for (j=0; j<8; j++)
+        {
+            fprintf(stderr,"%02X",s->enc_read_ctx->iv[j]);
+        }
+        fprintf(stderr,"\n");
     }
+#endif
+
+    cp = ibuf;
+    l2n(s->s3->tmp.key_block_length,cp);
+    BIO_write(bp,(char *)ibuf,4);
+    BIO_write(bp,(char *)s->s3->tmp.key_block,s->s3->tmp.key_block_length);
+    BIO_write(bp,(char *)&(s->s3->write_sequence[0]),8);
+    BIO_write(bp,(char *)&(s->s3->read_sequence[0]),8);
+    BIO_write(bp,(char *)&(s->enc_write_ctx->iv[0]),EVP_MAX_IV_LENGTH);
+    BIO_write(bp,(char *)&(s->enc_read_ctx->iv[0]),EVP_MAX_IV_LENGTH);
+    
+    ssl3_cleanup_key_block(s); /* clean it up */
     
     /* now get it out of the BIO and call it a token */
-    length = BIO_pending(bp);
-    if (length <= 0)
+    
+    len = BIO_pending(bp);
+    if (len <= 0)
     {
-        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't get data from BIO for serializing SSL handle"));
+        GSSerr(GSSERR_F_EXPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        goto unlock_mutex;
+        goto end;
     }
 
-    context_serialized = (unsigned char *) malloc(length);
+    cp = (unsigned char *)malloc(len);
 
-    if (!context_serialized)
+    if (!cp)
     {
-        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+        GSSerr(GSSERR_F_EXPORT_SEC, GSSERR_R_OUT_OF_MEMORY);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_NO_CONTEXT;
-        goto unlock_mutex;
+        goto end;
     }
     
-    BIO_read(bp, (char *)context_serialized, length);
+    BIO_read(bp,(char *)cp,len);
     
-    interprocess_token->length = length;
-    interprocess_token->value = context_serialized;
+    interprocess_token->length = len;
+    interprocess_token->value = cp;
+    major_status = GSS_S_COMPLETE;
 
     /* unlock the context mutex */
+    
     globus_mutex_unlock(&context->mutex);
     
     /* Now delete the GSS context as per RFC */
-    major_status = gss_delete_sec_context(&local_minor_status,
+#ifndef __CYGWIN__	 
+    major_status = gss_delete_sec_context(minor_status,
                                           context_handle_P,
                                           GSS_C_NO_BUFFER);
-    if(GSS_ERROR(major_status))
+    if (GSS_ERROR(major_status))
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
-        goto exit;
+        *minor_status = gsi_generate_minor_status();
     }
-
-    goto exit;
-
- unlock_mutex:
-
-    globus_mutex_unlock(&context->mutex);
+#endif /* !__CYGWIN */
     
- exit:
-    
-    if(bp)
-    {
-        BIO_free(bp);
-    }
+end:
+    BIO_free(bp);
 
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+#ifdef DEBUG
+    fprintf(stderr,"export_sec_context:maj=%d, len=%d\n",
+			major_status, len);
+#endif
+
     return major_status;
+#endif /* WIN32 */
 }
-/* @} */

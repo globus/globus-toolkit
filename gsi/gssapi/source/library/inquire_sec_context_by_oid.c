@@ -1,22 +1,25 @@
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/**
- * @file inquire_sec_context_by_oid.c
- * @author Sam Lang, Sam Meder
- * 
- * $RCSfile$
- * $Revision$
- * $Date$
- */
-#endif
+/**********************************************************************
 
-#include "gssapi_openssl.h"
-#include "globus_i_gsi_gss_utils.h"
+inquire_sec_context_by_oid.c:
+
+Description:
+    GSSAPI routine to extract extensions from a credential.
+
+CVS Information:
+
+    $Source$
+    $Date$
+    $Revision$
+    $Author$
+
+**********************************************************************/
+
+
+static char *rcsid = "$Header$";
+
+#include "gssapi_ssleay.h"
+#include "gssutils.h"
 #include <string.h>
-
-/* Only build if we have the extended GSSAPI */
-#ifdef _HAVE_GSI_EXTENDED_GSSAPI
-
-static char *rcsid = "$Id$";
 
 OM_uint32
 GSS_CALLCONV gss_inquire_sec_context_by_oid(
@@ -25,191 +28,135 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     const gss_OID                       desired_object,
     gss_buffer_set_t *                  data_set)
 {
-    OM_uint32                           major_status = GSS_S_COMPLETE;
-    OM_uint32                           local_minor_status;
+    OM_uint32                           major_status;
+    OM_uint32                           tmp_minor_status;
     gss_ctx_id_desc *                   context;
-    int                                 found_index;
-    int                                 chain_index;
+    int                                 i;
+    int                                 k;
     int                                 cert_count;
-    X509_EXTENSION *                    extension;
-    X509 *                              cert = NULL;
-    STACK_OF(X509) *                    cert_chain = NULL;
-    ASN1_OBJECT *                       asn1_desired_obj = NULL;
+    STACK_OF(X509_EXTENSION) *          extensions;
+    X509_EXTENSION *                    ex;
+    X509 *                              cert;
+    ASN1_OBJECT *                       asn1_obj;
     ASN1_OCTET_STRING *                 asn1_oct_string;
     gss_buffer_desc                     data_set_buffer;
-    globus_result_t                     local_result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "gss_inquire_sec_context_by_oid";
-    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+    
+    
+    *minor_status = 0;
+    major_status = GSS_S_COMPLETE;
+    context = (gss_ctx_id_desc *) context_handle;
 
     /* parameter checking goes here */
 
     if(minor_status == NULL)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid minor_status (NULL) passed to function"));
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
+        /* *minor_status = GSSERR_R_BAD_ARGUMENT; */
         major_status = GSS_S_FAILURE;
-        goto exit;
+        goto err;
     }
     
     if(context_handle == GSS_C_NO_CONTEXT)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context_handle passed to function"));
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        goto exit;
+        goto err;
     }
 
-    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
-    context = (gss_ctx_id_desc *) context_handle;
 
     if(desired_object == GSS_C_NO_OID)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid desired_object passed to function"));
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        goto exit;
+        goto err;
     }
 
     if(data_set == NULL)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid data_set (NULL) passed to function"));
+        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        goto exit;
+        goto err;
     }
 
     *data_set = NULL;
 
     /* lock the context mutex */
+    
     globus_mutex_lock(&context->mutex);
     
-    local_result = 
-        globus_gsi_callback_get_cert_depth(context->callback_data,
-                                           &cert_count);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-        major_status = GSS_S_FAILURE;
-        goto exit;
-    }
+    cert_count = context->pvd.cert_depth;
 
     if(cert_count == 0)
     {
-        goto exit;
+        goto err;
     }
     
-    major_status = gss_create_empty_buffer_set(&local_minor_status, data_set);
+    major_status = gss_create_empty_buffer_set(minor_status, data_set);
 
-    if(GSS_ERROR(major_status))
+    if(major_status != GSS_S_COMPLETE)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
-        goto exit;
+        goto err;
     }
     
-    local_result = globus_gsi_callback_get_cert_chain(
-        context->callback_data,
-        &cert_chain);
-    if(local_result != GLOBUS_SUCCESS)
+    for(k=0;k<cert_count;k++)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-        major_status = GSS_S_FAILURE;
-        goto exit;
-    }
-
-    asn1_desired_obj = ASN1_OBJECT_new();
-    if(!asn1_desired_obj)
-    {
-        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-            ("Couldn't create ASN1 object"));
-        major_status = GSS_S_FAILURE;
-        goto exit;
-    }
-
-    asn1_desired_obj->length = ((gss_OID_desc *)desired_object)->length;
-    asn1_desired_obj->data = ((gss_OID_desc *)desired_object)->elements;
-
-    found_index = -1;
-
-    for(chain_index = 0; chain_index < cert_count; chain_index++)
-    {
-        cert = sk_X509_value(cert_chain, chain_index);
-
+        cert = sk_X509_value(context->pvd.cert_chain,k);
+        extensions = cert->cert_info->extensions;
         data_set_buffer.value = NULL;
         data_set_buffer.length = 0;
-
-        found_index = X509_get_ext_by_OBJ(cert, 
-                                          asn1_desired_obj, 
-                                          found_index);
         
-        if(found_index >= 0)
+        for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
         {
-            extension = X509_get_ext(cert, found_index);
-            if(!extension)
-            {
-                GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                    ("Couldn't get extension at index %d "
-                     "from cert in credential.", found_index));
-                major_status = GSS_S_FAILURE;
-                goto exit;
-            }
+            ex = (X509_EXTENSION *) sk_X509_EXTENSION_value(extensions,i);
+            asn1_obj = X509_EXTENSION_get_object(ex);
 
-            asn1_oct_string = X509_EXTENSION_get_data(extension);
-            if(!asn1_oct_string)
+            /* if statement is kind of ugly, but I couldn't find a
+             * better way
+             */
+            
+            if((asn1_obj->length == desired_object->length) &&
+               !memcmp(asn1_obj->data, desired_object->elements, asn1_obj->length))
             {
-                GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                    ("Couldn't get cert extension in the form of an "
-                     "ASN1 octet string."));
-                major_status = GSS_S_FAILURE;
-                goto exit;
-            }
-
-            data_set_buffer.value = asn1_oct_string->data;
-            data_set_buffer.length = asn1_oct_string->length;
-
-            major_status = gss_add_buffer_set_member(
-                &local_minor_status,
-                &data_set_buffer,
-                data_set);
-            if(GSS_ERROR(major_status))
-            {
-                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status, local_minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
-                goto exit;
+                /* found a match */
+                
+                asn1_oct_string = X509_EXTENSION_get_data(ex);
+                
+                data_set_buffer.value = asn1_oct_string->data;
+                
+                data_set_buffer.length = asn1_oct_string->length;
+                
+                /* assume one extension per cert ? */
+                
+                break;
             }
         }
-    } while(chain_index < sk_X509_num(cert_chain) &&
-            (cert = sk_X509_value(cert_chain, chain_index++)));
+            
+        major_status = gss_add_buffer_set_member(minor_status,
+                                                 &data_set_buffer,
+                                                 data_set);
+        
+        if(major_status != GSS_S_COMPLETE)
+        {
+            gss_release_buffer_set(&tmp_minor_status, data_set);
+            goto err;
+        }
+    } 
 
- exit:
+err:
 
     /* unlock the context mutex */
+    
     globus_mutex_unlock(&context->mutex);
-
-    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    
     return major_status;
 }
-/* @} */
 
-#endif /* _HAVE_GSI_EXTENDED_GSSAPI */
+
+
+
+
+
+
