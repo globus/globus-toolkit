@@ -1,8 +1,6 @@
 Immediate:
 ----------
 0) max off t
-1) make data_destroy go
-2) implement security stuff in dsi
 3) add striping stuff to feat list
 4) guc
     stripes
@@ -17,7 +15,6 @@ Immediate:
         daemon
         detached
         inetd 
-6) check what version this should be, and change package name.
 7) merge branch to trunk and verify nothing broke
 8) update doc to reflect striping info and current issues/limitations
 

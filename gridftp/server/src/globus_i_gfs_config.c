@@ -495,7 +495,8 @@ globus_l_gfs_config_misc()
         hostname = globus_malloc(1024);
         globus_libc_gethostname(hostname, 1024);
         data = globus_common_create_string(
-            "GridFTP Server %s %d.%d (%s, %d-%d) ready.",
+            "GridFTP Server %s %d.%d (%s, %d-%d) ready."
+            GLOBUS_GRIDFTP_SERVER_RELEASE_TYPE,
             hostname,
             local_version.major,
             local_version.minor,

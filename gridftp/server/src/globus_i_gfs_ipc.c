@@ -2333,13 +2333,15 @@ globus_gfs_ipc_set_cred(
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
             /* body */
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, gsi_buffer.length);
-            if(ptr - buffer + gsi_buffer.length >= ipc->buffer_size)
+            if(gsi_buffer.length > 0)
             {
-                ipc->buffer_size += gsi_buffer.length;
-                buffer = globus_libc_realloc(buffer, ipc->buffer_size);
+                if(ptr - buffer + gsi_buffer.length >= ipc->buffer_size)
+                {
+                    ipc->buffer_size += gsi_buffer.length;
+                    buffer = globus_libc_realloc(buffer, ipc->buffer_size);
+                }
+                memcpy(ptr, gsi_buffer.value, gsi_buffer.length);
             }
-            memcpy(ptr, gsi_buffer.value, gsi_buffer.length);
-
             msg_size = ptr - buffer + gsi_buffer.length;
             res = globus_xio_register_write(
                 ipc_handle->xio_handle,
@@ -3113,13 +3115,15 @@ globus_l_gfs_ipc_pack_data(
     GFSEncodeString(buffer, ipc->buffer_size, ptr, data_info->pathname);
 
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, gsi_buffer.length);
-    if(ptr - buffer + gsi_buffer.length >= ipc->buffer_size)
+    if(gsi_buffer.length > 0)
     {
-        ipc->buffer_size += gsi_buffer.length;
-        buffer = globus_libc_realloc(buffer, ipc->buffer_size);
+        if(ptr - buffer + gsi_buffer.length >= ipc->buffer_size)
+        {
+            ipc->buffer_size += gsi_buffer.length;
+            buffer = globus_libc_realloc(buffer, ipc->buffer_size);
+        }
+        memcpy(ptr, gsi_buffer.value, gsi_buffer.length);
     }
-    memcpy(ptr, gsi_buffer.value, gsi_buffer.length);
-
     msg_size = ptr - buffer + gsi_buffer.length;
     /* now that we know size, add it in */
     ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
