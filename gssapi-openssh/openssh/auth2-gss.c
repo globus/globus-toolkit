@@ -1,4 +1,4 @@
-/*	$OpenBSD: auth2-gss.c,v 1.7 2003/11/21 11:57:03 djm Exp $	*/
+/*	$OpenBSD: auth2-gss.c,v 1.8 2004/06/21 17:36:31 avsm Exp $	*/
 
 /*
  * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
@@ -70,7 +70,7 @@ userauth_external(Authctxt *authctxt)
 static int
 userauth_gssapi(Authctxt *authctxt)
 {
-	gss_OID_desc oid = {0, NULL};
+	gss_OID_desc goid = {0, NULL};
 	Gssctxt *ctxt = NULL;
 	int mechs;
 	gss_OID_set supported;
@@ -100,13 +100,13 @@ userauth_gssapi(Authctxt *authctxt)
 
 		if (doid[0] != SSH_GSS_OIDTYPE || doid[1] != len-2) {
 			logit("Mechanism OID received using the old encoding form");
-			oid.elements = doid;
-			oid.length = len;
+			goid.elements = doid;
+			goid.length = len;
 		} else {
-			oid.elements = doid + 2;
-			oid.length   = len - 2;
+			goid.elements = doid + 2;
+			goid.length   = len - 2;
 		}
-		gss_test_oid_set_member(&ms, &oid, supported, &present);
+		gss_test_oid_set_member(&ms, &goid, supported, &present);
 	} while (mechs > 0 && !present);
 
 	gss_release_oid_set(&ms, &supported);
@@ -116,7 +116,7 @@ userauth_gssapi(Authctxt *authctxt)
 		return (0);
 	}
 
-	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt, &oid)))) {
+	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt, &goid)))) {
 		xfree(doid);
 		return (0);
 	}

@@ -68,24 +68,25 @@ LIBSSH_OBJS=acss.o authfd.o authfile.o bufaux.o buffer.o \
 	compat.o compress.o crc32.o deattack.o fatal.o hostfile.o \
 	log.o match.o moduli.o mpaux.o nchan.o packet.o \
 	readpass.o rsa.o tildexpand.o ttymodes.o xmalloc.o \
-	atomicio.o key.o dispatch.o kex.o mac.o uuencode.o misc.o \
-	rijndael.o ssh-dss.o ssh-rsa.o dh.o kexdh.o kexgex.o \
-	kexdhc.o kexgexc.o scard.o msg.o progressmeter.o dns.o \
-	entropy.o scard-opensc.o kexgssc.o gss-genr.o
+	atomicio.o key.o dispatch.o kex.o mac.o uidswap.o uuencode.o misc.o \
+	monitor_fdpass.o rijndael.o ssh-dss.o ssh-rsa.o dh.o kexdh.o \
+	kexgex.o kexdhc.o kexgexc.o scard.o msg.o progressmeter.o dns.o \
+	kexgssc.o \
+	entropy.o scard-opensc.o gss-genr.o
 
 SSHOBJS= ssh.o readconf.o clientloop.o sshtty.o \
 	sshconnect.o sshconnect1.o sshconnect2.o
 
 SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o auth-rsa.o auth-rh-rsa.o \
-	sshpty.o sshlogin.o servconf.o serverloop.o uidswap.o \
+	sshpty.o sshlogin.o servconf.o serverloop.o \
 	auth.o auth1.o auth2.o auth-options.o session.o \
 	auth-chall.o auth2-chall.o groupaccess.o \
 	auth-skey.o auth-bsdauth.o auth2-hostbased.o auth2-kbdint.o \
 	auth2-none.o auth2-passwd.o auth2-pubkey.o \
-	monitor_mm.o monitor.o monitor_wrap.o monitor_fdpass.o \
-	kexdhs.o kexgexs.o kexgsss.o \
+	monitor_mm.o monitor.o monitor_wrap.o kexdhs.o kexgexs.o \
+	kexgsss.o gss-serv-gsi.o \
 	auth-krb5.o \
-	auth2-gss.o gss-serv.o gss-serv-krb5.o gss-serv-gsi.o \
+	auth2-gss.o gss-serv.o gss-serv-krb5.o \
 	loginrec.o auth-pam.o auth-shadow.o auth-sia.o md5crypt.o
 
 MANPAGES	= scp.1.out ssh-add.1.out ssh-agent.1.out ssh-keygen.1.out ssh-keyscan.1.out ssh.1.out sshd.8.out sftp-server.8.out sftp.1.out ssh-rand-helper.8.out ssh-keysign.8.out sshd_config.5.out ssh_config.5.out
@@ -201,11 +202,14 @@ clean:	regressclean
 
 distclean:	regressclean
 	rm -f *.o *.a $(TARGETS) logintest config.cache config.log
-	rm -f *.out core
-	rm -f Makefile config.h config.status ssh_prng_cmds *~
+	rm -f *.out core opensshd.init
+	rm -f Makefile buildpkg.sh config.h config.status ssh_prng_cmds *~
 	rm -rf autom4te.cache
 	(cd openbsd-compat && $(MAKE) distclean)
 	(cd scard && $(MAKE) distclean)
+	if test -d pkg ; then \
+		rm -fr pkg ; \
+	fi
 
 veryclean: distclean
 	rm -f configure config.h.in *.0
@@ -400,7 +404,7 @@ tests:	$(TARGETS)
 	[ -d `pwd`/regress ]  ||  mkdir -p `pwd`/regress; \
 	[ -f `pwd`/regress/Makefile ]  || \
 	    ln -s $(srcdir)/regress/Makefile `pwd`/regress/Makefile ; \
-	TEST_SHELL="@TEST_MINUS_S_SH@"; \
+	TEST_SHELL="@TEST_SHELL@"; \
 	TEST_SSH_SSH="$${BUILDDIR}/ssh"; \
 	TEST_SSH_SSHD="$${BUILDDIR}/sshd"; \
 	TEST_SSH_SSHAGENT="$${BUILDDIR}/ssh-agent"; \
@@ -432,3 +436,9 @@ regressclean:
 	if [ -f regress/Makefile -a -r regress/Makefile ]; then \
 		(cd regress && $(MAKE) clean) \
 	fi
+
+package: $(CONFIGFILES) ssh_prng_cmds.out $(MANPAGES) $(TARGETS)
+	if [ "@MAKE_PACKAGE_SUPPORTED@" = yes ]; then \
+		sh buildpkg.sh; \
+	fi
+

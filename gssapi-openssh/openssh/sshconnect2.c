@@ -23,7 +23,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: sshconnect2.c,v 1.135 2004/03/05 10:53:58 markus Exp $");
+RCSID("$OpenBSD: sshconnect2.c,v 1.138 2004/06/13 12:53:24 djm Exp $");
 
 #include "openbsd-compat/sys-queue.h"
 
@@ -43,7 +43,7 @@ RCSID("$OpenBSD: sshconnect2.c,v 1.135 2004/03/05 10:53:58 markus Exp $");
 #include "authfd.h"
 #include "log.h"
 #include "readconf.h"
-#include "readpass.h"
+#include "misc.h"
 #include "match.h"
 #include "dispatch.h"
 #include "canohost.h"
@@ -149,6 +149,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	/* start key exchange */
 	kex = kex_setup(myproposal);
 	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_client;
+	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_client;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_client;
 #ifdef GSSAPI
 	kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_client;
@@ -513,7 +514,7 @@ input_userauth_pk_ok(int type, u_int32_t seq, void *ctxt)
 	 * moved to the end of the queue.  this also avoids confusion by
 	 * duplicate keys
 	 */
-	TAILQ_FOREACH_REVERSE(id, &authctxt->keys, next, idlist) {
+	TAILQ_FOREACH_REVERSE(id, &authctxt->keys, idlist, next) {
 		if (key_equal(key, id->key)) {
 			sent = sign_and_send_pubkey(authctxt, id);
 			break;

@@ -44,5 +44,6 @@ char ** fetch_pam_child_environment(void);
 void free_pam_environment(char **);
 void sshpam_thread_cleanup(void);
 void sshpam_cleanup(void);
+int sshpam_auth_passwd(Authctxt *, const char *);
 
 #endif /* USE_PAM */
