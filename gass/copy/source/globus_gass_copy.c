@@ -146,7 +146,7 @@ globus_gass_copy_url_to_url(
 	
 	/* use dest_attr to create dest_ftp_client_attr */
 	
-	globus_ftp_client_register_transfer(
+	globus_ftp_client_thirdparty_transfer(
 	    handle->ftp_handle,
 	    source_url,
 	    source_ftp_client_attr,
@@ -398,11 +398,11 @@ globus_l_gass_copy_transfer_start(
         /* This register_get function calls the callback function only
          * after the transfer has completed.  So we need to call the ftp_setup
          * callback function by hand.
-	globus_ftp_client_register_get(
+	globus_ftp_client_get(
 	    handle->ftp_handle,
 	    state->source.url,
 	    state->source.attr.ftp,
-	    globus_l_gass_copy_ftp_done_callback,
+	    globus_l_gass_copy_ftp_get_done_callback,
 	    (void *) state);
 
         globus_l_gass_copy_ftp_setup_callback(state);
@@ -422,10 +422,55 @@ globus_l_gass_copy_transfer_start(
 
       case GLOBUS_I_GASS_COPY_TARGET_MODE_IO:
 
-	globus_l_gass_copy_io_setup_callback(state);
+	globus_l_gass_copy_io_setup_get_callback(state);
 
 	break;
     }
+
+    /* wait for ok from the source */
+    state->number = SOURCE_READY;
+
+    /*
+     * Now get the destination side ready
+     */
+    switch (state->dest.mode)
+    {
+      case GLOBUS_I_GASS_COPY_TARGET_MODE_FTP:
+
+	state->dest.data.ftp.n_channels = 0;
+	state->dest.data.ftp.n_reads_posted = 0;
+
+        /* This register_get function calls the callback function only
+         * after the transfer has completed.  So we need to call the ftp_setup
+         * callback function by hand.
+	globus_ftp_client_put(
+	    handle->ftp_handle,
+	    state->dest.url,
+	    state->dest.attr.ftp,
+	    globus_l_gass_copy_ftp_put_done_callback,
+	    (void *) state);
+
+	break;
+
+      case GLOBUS_I_GASS_COPY_TARGET_MODE_GASS:
+
+	globus_gass_transfer_register_put(
+	    state->dest.data.gass.request,
+	    state->dest.attr.gass,
+	    state->dest.url,
+	    globus_l_gass_copy_gass_setup_callback,
+	    (void *) state);
+
+	break;
+
+      case GLOBUS_I_GASS_COPY_TARGET_MODE_IO:
+
+	globus_l_gass_copy_io_setup_put_callback(state);
+
+	break;
+    }
+
+    /* wait for ok from the dest */
 
     return(GLOBUS_SUCCESS);
 } /* globus_l_gass_copy_transfer_start() */
@@ -471,7 +516,7 @@ globus_l_gass_copy_register_read(
     switch (state->source.mode)
     {
       case GLOBUS_I_GASS_COPY_TARGET_MODE_FTP:
-	globus_ftp_client_data_register_read(
+	globus_ftp_client_register_read(
 	    state->source.data.ftp.handle,
 	    buffer,
 	    state->buffer_length,
@@ -516,13 +561,14 @@ globus_l_gass_copy_generic_setup_callback(
     globus_l_gass_copy_register_read(
 	state,
 	(globus_byte_t *) GLOBUS_NULL); /* malloc new buffer */
+
 } /* globus_l_gass_copy_generic_setup_callback() */
 
 void
 globus_l_gass_copy_ftp_setup_callback(
     globus_i_gass_copy_state_t * state)
 {
-    globus_l_gass_copy_generic_setup_callback();
+    globus_l_gass_copy_generic_setup_callback(state);
 } /* globus_l_gass_copy_ftp_setup_callback() */
 
 /**
@@ -566,27 +612,60 @@ globus_l_gass_copy_gass_setup_callback(
            globus_gass_transfer_request_get_referral(request, &referral);
            globus_gass_transfer_request_destroy(request);
 
-           state->source.url =
-               globus_gass_transfer_referral_get_url(&referral, 0);
-
-           globus_gass_transfer_referral_destroy(&referral);
-
-           if ( (rc = globus_gass_transfer_register_get(
-                 &request,
-                 state->source.attr.gass,
-                 state->source.url,
-                 globus_l_gass_copy_gass_setup_callback,
-                 (void *) state)) != GLOBUS_SUCCESS )
+           if (state->number == INITIAL)
            {
-               globus_mutex_lock(&state->monitor.mutex);
-               state->err = rc;
-               goto wakeup_state;
+               /* first setup the source with the register get
+                */
+               state->source.url =
+                   globus_gass_transfer_referral_get_url(&referral, 0);
+
+               globus_gass_transfer_referral_destroy(&referral);
+
+               if ( (rc = globus_gass_transfer_register_get(
+                     &request,
+                     state->source.attr.gass,
+                     state->source.url,
+                     globus_l_gass_copy_gass_setup_callback,
+                     (void *) state)) != GLOBUS_SUCCESS )
+               {
+                   globus_mutex_lock(&state->monitor.mutex);
+                   state->err = rc;
+                   goto wakeup_state;
+               }
            }
+           else
+           {
+               /* if the state is not INITIAL then assume the source is ready
+                * so now setup the destination with the register put
+                */
+
+               state->dest.url =
+                   globus_gass_transfer_referral_get_url(&referral, 0);
+
+               globus_gass_transfer_referral_destroy(&referral);
+
+               if ( (rc = globus_gass_transfer_register_get(
+                     &request,
+                     state->dest.attr.gass,
+                     state->dest.url,
+                     globus_l_gass_copy_gass_setup_callback,
+                     (void *) state)) != GLOBUS_SUCCESS )
+               {
+                   globus_mutex_lock(&state->monitor.mutex);
+                   state->err = rc;
+                   goto wakeup_state;
+               }
+           }
+
            break;
 
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
 
-           globus_l_gass_copy_generic_setup_callback(state);
+           if (state->number == INITIAL)
+               globus_l_gass_copy_generic_setup_callback(state);
+           else
+               state->dest.ready = GLOBUS_TRUE;
+
            break;
 
       case GLOBUS_GASS_TRANSFER_REQUEST_DONE:
@@ -626,7 +705,7 @@ globus_l_gass_copy_gass_setup_callback(
 } /* globus_l_gass_copy_gass_setup_callback() */
 
 void
-globus_l_gass_copy_io_setup_callback(
+globus_l_gass_copy_io_setup_get_callback(
     globus_i_gass_copy_state_t * state)
 {
     globus_url_t parsed_url;
@@ -647,7 +726,62 @@ globus_l_gass_copy_io_setup_callback(
 
     globus_l_gass_copy_generic_setup_callback(state);
 
-} /* globus_l_gass_copy_io_setup_callback() */
+} /* globus_l_gass_copy_io_setup_get_callback() */
+
+void
+globus_l_gass_copy_io_setup_put_callback(
+    globus_i_gass_copy_state_t * state)
+{
+    globus_url_t parsed_url;
+
+    if (state->dest.free_handle)
+    {
+        globus_url_parse(state->dest.url, &parsed_url);
+        state->dest.data.io.handle =
+            globus_libc_malloc(sizeof(globus_io_handle_t));
+
+        globus_io_file_open(
+                 parsed_url.path,
+                 GLOBUS_IO_FILE_RDONLY,
+                 GLOBUS_IO_FILE_IRUSR,
+                 state->dest.attr.io,
+                 state->dest.data.io.handle);
+    }
+
+    state->dest.ready = GLOBUS_TRUE;
+
+} /* globus_l_gass_copy_io_setup_put_callback() */
+
+void
+globus_l_gass_copy_ftp_get_done_callback(
+    void * callback_arg,
+    globus_ftp_client_handle * handle)
+{
+    globus_i_gass_copy_state_t * state
+	= (globus_i_gass_copy_state_t *) callback_arg;
+
+    globus_mutex_lock(&state->monitor.mutex);
+    done = 1;
+    globus_cond_signal(&state->monitor.cond);
+    globus_mutex_unlock(&state->monitor.mutex);
+
+} /* globus_l_gass_copy_ftp_get_done_callback() */
+
+void
+globus_l_gass_copy_ftp_put_done_callback(
+    void * callback_arg,
+    globus_ftp_client_handle * handle)
+{
+    globus_i_gass_copy_state_t * state
+	= (globus_i_gass_copy_state_t *) callback_arg;
+
+    globus_mutex_lock(&state->monitor.mutex);
+    done = 1;
+    globus_cond_signal(&state->monitor.cond);
+    globus_mutex_unlock(&state->monitor.mutex);
+
+} /* globus_l_gass_copy_ftp_put_done_callback() */
+
 
 /*****************************************************************
  * read callbacks
@@ -770,8 +904,8 @@ globus_l_gass_copy_write_from_queue(
 {
     globus_gass_copy_buffer_t *  buffer_entry;
 
-    while (state->writes_pending < state->dest.simultaneous_writes)
-and write side is ready to go
+    while ((state->writes_pending < state->dest.simultaneous_writes) &&
+           state->dest.ready)
     {
 	/*
 	 * There is not a write pending.  So check the write queue,
@@ -784,7 +918,7 @@ and write side is ready to go
 	    {
 	      case GLOBUS_I_GASS_COPY_TARGET_MODE_FTP:
 		/* check the offset to see if its what we are expecting */
-		globus_ftp_client_data_register_write(
+		globus_ftp_client_register_write(
 		    state->dest.data.ftp.handle,
 		    buffer_entry->bytes,
 		    buffer_entry->nbytes,

@@ -33,12 +33,14 @@ struct globus_i_gass_copy_target_s
     globus_gass_copy_attr_t			attr;
     globus_mutex_t                              mutex;
     globus_fifo_t                               queue;
+    globus_bool_t                               ready;
     union
     {
 	struct /* GLOBUS_I_GASS_COPY_TARGET_MODE_FTP */
 	{
 	    globus_ftp_handle *			handle;
 	    int					n_channels;
+	    int					n_reads_posted;
             globus_ftp_client_attr_t		attr;
 	} ftp;
 	
