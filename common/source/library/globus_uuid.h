@@ -15,7 +15,6 @@
 #define GLOBUS_UUID_MATCH(u1, u2)                                           \
     (memcmp((u1).binary.bytes, (u2).binary.bytes, 16) == 0)
 
-/* all multibyte fields in network byte order */
 typedef struct
 {
     uint32_t                    time_low;
@@ -31,6 +30,7 @@ typedef struct
     union
     {
         uint8_t                         bytes[16];
+        /* all multibyte fields in network byte order */
         globus_uuid_fields_t            fields;
     } binary;
     
@@ -52,5 +52,13 @@ int
 globus_uuid_import(
     globus_uuid_t *                     uuid,
     const char *                        str);
-    
+
+/**
+ * copy the fields from uuid to uuid_fields in host byte order
+ */
+int
+globus_uuid_fields(
+    globus_uuid_t *                     uuid,
+    globus_uuid_fields_t *              uuid_fields);
+
 #endif
