@@ -151,8 +151,16 @@ struct globus_io_authentication_info_s
     /* Additional for accept support */
     char *				name;
     globus_bool_t			user_to_user;
-} ;
 
+    /* fields used by delegation functions */
+
+    gss_cred_id_t                       cred_handle;
+    gss_OID_set                         restriction_oids;
+    gss_buffer_set_t                    restriction_buffers;
+    OM_uint32                           time_req;
+    globus_io_delegation_callback_t     delegation_callback; 
+} ;
+    
 static
 globus_result_t
 globus_l_io_copy_unwrapped_data_to_buffer(
@@ -204,6 +212,36 @@ globus_l_io_read_auth_token(
     void *				arg,
     globus_io_handle_t *		handle,
     globus_result_t			result);
+
+static
+void
+globus_l_io_delegation_cb_wrapper(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    globus_io_authentication_info_t *	auth_info);
+
+static
+void 
+globus_l_io_accept_delegation(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result);
+
+static
+void 
+globus_l_io_init_delegation(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result);
+
+static
+void
+globus_l_io_delegation_cb(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    gss_cred_id_t                       delegated_cred);
 
 /*
  * Function:    globus_i_io_setup_securesocket()
@@ -2506,3 +2544,714 @@ globus_l_io_read_input_token(
     return result;
 }
 /* globus_l_io_read_input_token() */
+
+/**
+ * Asynchronous credential delegation initiation.
+ *
+ * This call initiates credential delegation. It is assumed that the
+ * user will synchronize this call with the accepting side. It is also
+ * assumed that user will not try to send or read data while this
+ * operation is in progress (i.e. the user should not operate on the
+ * Globus IO handle until the callback is received) and that the read
+ * buffer has been flushed before this function is called.
+ *
+ * @param handle
+ *        The handle to use for this operation. The handle must be of
+ *        the type GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED and must
+ *        contain a valid security context.
+ * @param cred_handle
+ *        The credential to be delegated. If this parameter is set to
+ *        GSS_C_NO_CREDENTIAL, the credential will be obtained from
+ *        the security context in the Globus IO handle.
+ * @param restriction_oids
+ *        A sequence of restriction OIDs
+ * @param restriction_buffers
+ *        A sequence of restriction buffers, each of which corresponds
+ *        to a OID in the restriction_oids parameter
+ * @param time_req
+ *        The time in seconds the delegated credential will be valid.
+ * @param callback
+ *        Function to be called once the delegation is finished.
+ * @param callback_arg
+ *        Parameter to the callback function.
+ *
+ * @return 
+ *        This function returns GLOBUS_SUCCESS or a result pointing
+ *        to an error object.
+ *
+ * @ingroup security
+ */
+
+globus_result_t
+globus_io_register_init_delegation(
+    globus_io_handle_t *                handle,
+    const gss_cred_id_t                 cred_handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    globus_io_delegation_callback_t	callback,
+    void *				callback_arg)
+{
+    globus_io_authentication_info_t *   init_info;
+    globus_result_t                     rc = GLOBUS_SUCCESS;
+    int                                 save_errno;
+    static char *			myname= "globus_io_register_init_delegation";
+
+    /* argument checking goes here */
+
+    if(handle == GLOBUS_NULL)
+    {
+	rc = globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+	
+	return rc;
+    }
+
+    if(cred_handle == GSS_C_NO_CREDENTIAL)
+    {
+	rc = globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "cred_handle",
+                1,
+                myname));
+	
+	return rc;
+    }
+
+    if(callback == GLOBUS_NULL)
+    {
+	rc = globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "callback",
+                1,
+                myname));
+	
+	return rc;
+    }
+
+    
+    init_info = (globus_io_authentication_info_t *) globus_malloc(
+        sizeof(globus_io_authentication_info_t));
+
+    if(init_info == GLOBUS_NULL)
+    {
+        save_errno = errno;
+        rc = globus_error_put(
+            globus_io_error_construct_system_failure(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle,
+                save_errno));
+    }
+
+    memset(init_info,0,sizeof(globus_io_authentication_info_t));
+    
+    init_info->callback = globus_l_io_delegation_cb_wrapper;
+    init_info->delegation_callback = callback;
+    init_info->callback_arg = callback_arg;
+    init_info->cred_handle = cred_handle;
+    init_info->restriction_oids = restriction_oids;
+    init_info->restriction_buffers = restriction_buffers;
+    init_info->time_req = time_req;
+    init_info->iteration = globus_l_io_init_delegation;
+    init_info->any_token_received = GLOBUS_FALSE;
+
+    init_info->iteration(init_info,
+			 handle,
+			 GLOBUS_SUCCESS);
+    return rc;
+} /* globus_io_register_init_delegation */
+
+
+/**
+ * Blocking credential delegation initiation.
+ *
+ * This call initiates credential delegation. It is assumed that the
+ * user will synchronize this call with the accepting side. It is also
+ * assumed that user will not try to send or read data while this
+ * operation is in progress (i.e. the user should not operate on the
+ * Globus IO handle until this call returns) and that the read
+ * buffer has been flushed before this function is called.
+ *
+ * @param handle
+ *        The handle to use for this operation. The handle must be of
+ *        the type GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED and must
+ *        contain a valid security context.
+ * @param cred_handle
+ *        The credential to be delegated. If this parameter is set to
+ *        GSS_C_NO_CREDENTIAL, the credential will be obtained from
+ *        the security context in the Globus IO handle.
+ * @param restriction_oids
+ *        A sequence of restriction OIDs
+ * @param restriction_buffers
+ *        A sequence of restriction buffers, each of which corresponds
+ *        to a OID in the restriction_oids parameter
+ * @param time_req
+ *        The time in seconds the delegated credential will be valid.
+ *
+ * @return 
+ *        This function returns GLOBUS_SUCCESS or a result pointing
+ *        to an error object.
+ *
+ * @ingroup security
+ */
+
+globus_result_t
+globus_io_init_delegation(
+    globus_io_handle_t *                handle,
+    const gss_cred_id_t                 cred_handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req)
+{
+    globus_i_io_monitor_t		monitor;
+    globus_result_t			rc;
+
+    globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    monitor.done = GLOBUS_FALSE;
+    monitor.nbytes = 0;
+    monitor.err = GLOBUS_NULL;
+    monitor.use_err = GLOBUS_FALSE;
+
+    rc = globus_io_register_init_delegation(handle,
+                                            cred_handle,
+                                            restriction_oids,
+                                            restriction_buffers,
+                                            time_req,
+                                            globus_l_io_delegation_cb,
+                                            &monitor);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	monitor.done = GLOBUS_TRUE;
+	monitor.err = globus_error_get(rc);
+	monitor.use_err = GLOBUS_TRUE;
+    }
+
+    globus_mutex_lock(&monitor.mutex);
+    {
+        while(!monitor.done)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);	
+        }
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
+    globus_mutex_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
+
+    if(monitor.use_err)
+    {
+	return globus_error_put(monitor.err);
+    }
+    else
+    {
+	return GLOBUS_SUCCESS;
+    }
+}
+
+/**
+ * Asynchronous credential delegation accept.
+ *
+ * This call accepts credential delegation. It is assumed that the
+ * user will synchronize this call with the initiating side. It is also
+ * assumed that user will not try to send or read data while this
+ * operation is in progress (i.e. the user should not operate on the
+ * Globus IO handle until the callback is received) and that the read
+ * buffer has been flushed before this function is called.
+ *
+ * @param handle
+ *        The handle to use for this operation. The handle must be of
+ *        the type GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED and must
+ *        contain a valid security context.
+ * @param restriction_oids
+ *        A sequence of restriction OIDs
+ * @param restriction_buffers
+ *        A sequence of restriction buffers, each of which corresponds
+ *        to a OID in the restriction_oids parameter
+ * @param callback
+ *        Function to be called once the delegation is finished. The
+ *        delegated credential is passed to the user through this
+ *        callback. 
+ * @param callback_arg
+ *        Parameter to the callback function.
+ *
+ * @return 
+ *        This function returns GLOBUS_SUCCESS or a result pointing
+ *        to an error object.
+ *
+ * @ingroup security
+ */
+
+globus_result_t
+globus_io_register_accept_delegation(
+    globus_io_handle_t *                handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    globus_io_delegation_callback_t	callback,
+    void *				callback_arg)
+{
+    globus_io_authentication_info_t *   accept_info;
+    globus_result_t                     rc = GLOBUS_SUCCESS;
+    int                                 save_errno;
+    static char *			myname= "globus_io_register_accept_delegation";
+    
+    /* argument checking goes here */
+
+    if(handle == GLOBUS_NULL)
+    {
+	rc = globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+	
+	return rc;
+    }
+
+    if(callback == GLOBUS_NULL)
+    {
+	rc = globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "callback",
+                1,
+                myname));
+	
+	return rc;
+    }
+
+    accept_info = (globus_io_authentication_info_t *) globus_malloc(
+        sizeof(globus_io_authentication_info_t));
+
+    if(accept_info == GLOBUS_NULL)
+    {
+        save_errno = errno;
+        rc = globus_error_put(
+            globus_io_error_construct_system_failure(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle,
+                save_errno));
+    }
+    
+    memset(accept_info,0,sizeof(globus_io_authentication_info_t));
+    
+    accept_info->callback = globus_l_io_delegation_cb_wrapper;
+    accept_info->delegation_callback = callback;
+    accept_info->callback_arg = callback_arg;
+    accept_info->restriction_oids = restriction_oids;
+    accept_info->restriction_buffers = restriction_buffers;
+    accept_info->cred_handle = GSS_C_NO_CREDENTIAL;
+    accept_info->iteration = globus_l_io_accept_delegation;
+    accept_info->any_token_received = GLOBUS_FALSE;
+
+    accept_info->iteration(accept_info,
+                           handle,
+                           GLOBUS_SUCCESS);
+    return rc;
+}
+
+
+/**
+ * Blocking credential delegation accept.
+ *
+ * This call accepts credential delegation. It is assumed that the
+ * user will synchronize this call with the initiating side. It is also
+ * assumed that user will not try to send or read data while this
+ * operation is in progress (i.e. the user should not operate on the
+ * Globus IO handle until this function returns) and that the read
+ * buffer has been flushed before this function is called.
+ *
+ * @param handle
+ *        The handle to use for this operation. The handle must be of
+ *        the type GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED and must
+ *        contain a valid security context.
+ * @param delegated_cred
+ *        This parameter will contain the delegated credential upon
+ *        success. 
+ * @param restriction_oids
+ *        A sequence of restriction OIDs
+ * @param restriction_buffers
+ *        A sequence of restriction buffers, each of which corresponds
+ *        to a OID in the restriction_oids parameter
+ *
+ * @return 
+ *        This function returns GLOBUS_SUCCESS or a result pointing
+ *        to an error object.
+ *
+ * @ingroup security
+ */
+
+globus_result_t
+globus_io_accept_delegation(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t *                     delegated_cred,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers)
+{
+    globus_i_io_monitor_t		monitor;
+    globus_result_t			rc;
+    static char *			myname= "globus_io_accept_delegation";
+
+    if(delegated_cred == GLOBUS_NULL)
+    {
+	rc = globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "delegated_cred",
+                1,
+                myname));
+	
+	return rc;
+    }
+    
+    
+    globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    monitor.done = GLOBUS_FALSE;
+    monitor.nbytes = 0;
+    monitor.err = GLOBUS_NULL;
+    monitor.use_err = GLOBUS_FALSE;
+
+    rc = globus_io_register_accept_delegation(handle,
+                                              restriction_oids,
+                                              restriction_buffers,
+                                              globus_l_io_delegation_cb,
+                                              &monitor);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	monitor.done = GLOBUS_TRUE;
+	monitor.err = globus_error_get(rc);
+	monitor.use_err = GLOBUS_TRUE;
+    }
+    
+    globus_mutex_lock(&monitor.mutex);
+    {
+        while(!monitor.done)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);	
+        }
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
+    globus_mutex_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
+
+    if(monitor.use_err)
+    {
+	return globus_error_put(monitor.err);
+    }
+    else
+    {
+        *delegated_cred = (gss_cred_id_t) monitor.data;
+	return GLOBUS_SUCCESS;
+    }
+}
+
+static
+void 
+globus_l_io_init_delegation(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result)
+{
+    globus_io_authentication_info_t *	init_info;
+    globus_object_t *			err;
+    gss_buffer_desc *                   token_ptr;
+    gss_buffer_desc                     input_token;
+    gss_buffer_desc                     output_token; 
+    
+    init_info = (globus_io_authentication_info_t *) arg;
+
+    globus_i_io_mutex_lock();
+
+    if(init_info->input_token.token)
+    {
+        input_token.value = init_info->input_token.token;
+        input_token.length = init_info->input_token.token_length;
+        token_ptr = &input_token;
+    }
+    else
+    {
+        token_ptr = GSS_C_NO_BUFFER;
+    }
+    
+    init_info->maj_stat = gss_init_delegation(
+        &init_info->min_stat,
+        handle->context,
+        init_info->cred_handle,
+        GSS_C_NO_OID,
+        init_info->restriction_oids,
+        init_info->restriction_buffers,
+        init_info->time_req,
+        token_ptr,
+        &output_token);
+
+    if(init_info->input_token.token)
+    {
+	globus_free(init_info->input_token.token);
+	memset(&init_info->input_token,
+	       '\0',
+	       sizeof(globus_io_input_token_t));
+    }
+
+    if(init_info->maj_stat != GSS_S_COMPLETE &&
+       init_info->maj_stat != GSS_S_CONTINUE_NEEDED)
+    {
+	err = globus_io_error_construct_authentication_failed(
+	    GLOBUS_IO_MODULE,
+	    GLOBUS_NULL,
+	    handle,
+	    (int) init_info->maj_stat,
+	    (int) init_info->min_stat,
+	    0);
+	
+	goto error_exit;
+    }
+
+    init_info->output_buflen = output_token.length;
+    init_info->output_buffer = output_token.value;
+    
+    if(init_info->output_buflen != 0)
+    {
+	/* send token asynchronously. When completed, this will register
+	 * a receive of the input token, or call the user code, depending
+	 * on init_info->maj_stat
+         */
+	globus_i_io_register_write_func(
+	    handle,
+	    globus_l_io_write_auth_token,
+	    (void *) init_info,
+	    GLOBUS_NULL);
+	globus_i_io_mutex_unlock();
+    }
+    else
+    {
+	if(init_info->maj_stat == GSS_S_CONTINUE_NEEDED)
+	{
+	    /* get another token */
+	    globus_i_io_register_read_func(
+		handle,
+		globus_l_io_read_auth_token,
+		(void *) init_info,
+		GLOBUS_NULL,
+		GLOBUS_TRUE);
+	    globus_i_io_mutex_unlock();
+	}
+	else
+	{
+	    globus_i_io_mutex_unlock();
+
+	    /* completed */
+	    init_info->callback(init_info->callback_arg,
+				handle,
+				GLOBUS_SUCCESS,
+				init_info);
+	    globus_free(init_info);
+	}
+    }
+    return;
+    
+  error_exit:
+
+    err = globus_io_error_construct_authentication_failed(
+	GLOBUS_IO_MODULE,
+	err,
+	handle,
+	(int) init_info->maj_stat,
+	(int) init_info->min_stat,
+	0);
+
+    globus_i_io_close(handle);
+
+    globus_i_io_mutex_unlock();
+    init_info->callback(init_info->callback_arg,
+			handle,
+			globus_error_put(err),
+			init_info);
+    globus_free(init_info);
+}
+
+static
+void 
+globus_l_io_accept_delegation(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result)
+{
+    globus_io_authentication_info_t *	accept_info;
+    globus_object_t *			err;
+    gss_buffer_desc *                   token_ptr;
+    gss_buffer_desc                     input_token;
+    gss_buffer_desc                     output_token;
+    gss_OID                             mech_type; 
+    
+    accept_info = (globus_io_authentication_info_t *) arg;
+
+    globus_i_io_mutex_lock();
+
+    output_token.length = 0;
+    
+    if(accept_info->input_token.token)
+    {
+        input_token.value = accept_info->input_token.token;
+        input_token.length = accept_info->input_token.token_length;
+        token_ptr = &input_token;
+    }
+    else
+    {
+        token_ptr = GSS_C_NO_BUFFER;
+    }
+    
+    accept_info->maj_stat = gss_accept_delegation(
+        &accept_info->min_stat,
+        handle->context,
+        &accept_info->cred_handle,
+        &mech_type,
+        accept_info->restriction_oids,
+        accept_info->restriction_buffers,
+        token_ptr,
+        &output_token);
+
+    if(accept_info->input_token.token)
+    {
+	globus_free(accept_info->input_token.token);
+	memset(&accept_info->input_token,
+	       '\0',
+	       sizeof(globus_io_input_token_t));
+    }
+
+    if(accept_info->maj_stat != GSS_S_COMPLETE &&
+       accept_info->maj_stat != GSS_S_CONTINUE_NEEDED)
+    {
+	err = globus_io_error_construct_authentication_failed(
+	    GLOBUS_IO_MODULE,
+	    GLOBUS_NULL,
+	    handle,
+	    (int) accept_info->maj_stat,
+	    (int) accept_info->min_stat,
+	    0);
+	
+	goto error_exit;
+    }
+
+    accept_info->output_buflen = output_token.length;
+    accept_info->output_buffer = output_token.value;
+    
+    if(accept_info->output_buflen != 0)
+    {
+	/* send token asynchronously. When completed, this will register
+	 * a receive of the input token, or call the user code, depending
+	 * on accept_info->maj_stat
+         */
+	globus_i_io_register_write_func(
+	    handle,
+	    globus_l_io_write_auth_token,
+	    (void *) accept_info,
+	    GLOBUS_NULL);
+	globus_i_io_mutex_unlock();
+    }
+    else
+    {
+	if(accept_info->maj_stat == GSS_S_CONTINUE_NEEDED)
+	{
+	    /* get another token */
+	    globus_i_io_register_read_func(
+		handle,
+		globus_l_io_read_auth_token,
+		(void *) accept_info,
+		GLOBUS_NULL,
+		GLOBUS_TRUE);
+	    globus_i_io_mutex_unlock();
+	}
+	else
+	{
+	    globus_i_io_mutex_unlock();
+
+	    /* completed */
+	    accept_info->callback(accept_info->callback_arg,
+                                  handle,
+                                  GLOBUS_SUCCESS,
+                                  accept_info);
+	    globus_free(accept_info);
+	}
+    }
+    return;
+    
+  error_exit:
+
+    err = globus_io_error_construct_authentication_failed(
+	GLOBUS_IO_MODULE,
+	err,
+	handle,
+	(int) accept_info->maj_stat,
+	(int) accept_info->min_stat,
+	0);
+
+    globus_i_io_close(handle);
+
+    globus_i_io_mutex_unlock();
+    accept_info->callback(accept_info->callback_arg,
+                          handle,
+                          globus_error_put(err),
+                          accept_info);
+    globus_free(accept_info);
+}
+
+static
+void
+globus_l_io_delegation_cb_wrapper(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    globus_io_authentication_info_t *	auth_info)
+{
+    (auth_info->delegation_callback)(arg,
+                                     handle,
+                                     result,
+                                     auth_info->cred_handle);
+    return;
+}
+
+static
+void
+globus_l_io_delegation_cb(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    gss_cred_id_t                       delegated_cred)
+{
+    globus_i_io_monitor_t *		monitor;
+    globus_object_t *			err;
+
+    err = globus_error_get(result);
+
+    monitor = (globus_i_io_monitor_t *) arg;
+
+    globus_mutex_lock(&monitor->mutex);
+
+    monitor->data = (void *) delegated_cred;
+    monitor->done = GLOBUS_TRUE;
+    if(result != GLOBUS_SUCCESS)
+    {
+	monitor->use_err = GLOBUS_TRUE;
+	monitor->err = err;
+    }
+    
+    globus_cond_signal(&monitor->cond);
+    globus_mutex_unlock(&monitor->mutex);
+}

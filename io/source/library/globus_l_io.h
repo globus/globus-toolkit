@@ -158,6 +158,7 @@ typedef struct
     globus_bool_t			use_err;
     volatile globus_bool_t		done;
     globus_size_t			nbytes;
+    void *                              data;
 } globus_i_io_monitor_t;
 
 typedef void (*globus_io_destructor_t)(void *arg);

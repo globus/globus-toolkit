@@ -277,6 +277,37 @@ typedef globus_bool_t (*globus_io_secure_authorization_callback_t)(
     char *				identity,
     gss_ctx_id_t *			context_handle);
 
+
+/**
+ * Signature of a Globus I/O delegation callback.
+ *
+ * This callback function is invoked once delegation is completed. 
+ *
+ * The parameters to this function are
+ *
+ * @param arg
+ * The callback argument set in the authorization attribute.
+ * @param handle
+ * The handle which the authorization check pertains to.
+ * @param result
+ * The result of the authentication operation.
+ * @param delegated_cred
+ * The credential involved in the delegation.
+ *
+ * @return
+ * This function returns GLOBUS_SUCCESS on success, or a
+ * globus_result_t indicating the error that occured.
+ *
+ * @ingroup security
+ */
+
+typedef void (* globus_io_delegation_callback_t)(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    gss_cred_id_t                       delegated_cred);
+
+
 typedef void (*globus_io_udp_sendto_callback_t)(
     void *				arg, 
     globus_io_handle_t *		handle,
@@ -1149,6 +1180,43 @@ globus_result_t
 globus_io_attr_get_udp_multicast_interface(
     globus_io_attr_t * attr,
     char ** interface);
+
+/* delegation functions */
+
+globus_result_t
+globus_io_register_init_delegation(
+    globus_io_handle_t *                handle,
+    const gss_cred_id_t                 cred_handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
+    globus_io_delegation_callback_t	callback,
+    void *				callback_arg);
+
+globus_result_t
+globus_io_init_delegation(
+    globus_io_handle_t *                handle,
+    const gss_cred_id_t                 cred_handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req);
+
+globus_result_t
+globus_io_register_accept_delegation(
+    globus_io_handle_t *                handle,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers,
+    globus_io_delegation_callback_t	callback,
+    void *				callback_arg);
+
+globus_result_t
+globus_io_accept_delegation(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t *                     delegated_cred,
+    const gss_OID_set                   restriction_oids,
+    const gss_buffer_set_t              restriction_buffers);
+
+
 #endif
 
 
