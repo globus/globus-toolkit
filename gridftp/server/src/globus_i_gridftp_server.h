@@ -98,6 +98,14 @@ typedef struct
     void * nothing;    
 } globus_i_gfs_oldipc_handle_t;
 
+typedef struct globus_i_gfs_community_s
+{
+    int                                 cs_count;
+    char *                              name;
+    char *                              root;
+    char **                             contact_strings;
+} globus_i_gfs_community_t;
+
 /* !! if this changes, code will have to corrected as all 3 types here are
  * upcasted/downcasted at will
  */

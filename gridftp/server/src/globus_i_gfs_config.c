@@ -5,7 +5,8 @@ typedef enum
 {
     GLOBUS_L_GFS_CONFIG_BOOL,
     GLOBUS_L_GFS_CONFIG_INT,
-    GLOBUS_L_GFS_CONFIG_STRING
+    GLOBUS_L_GFS_CONFIG_STRING,
+    GLOBUS_L_GFS_CONFIG_LIST
 } globus_l_gfs_config_type_t;
 
 typedef struct
@@ -18,34 +19,36 @@ typedef struct
     globus_l_gfs_config_type_t          type;
     int                             int_value;
     char *                          string_value;
+    globus_list_t *                 list_value;
 } globus_l_gfs_config_option_t;
 
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
- {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, 200, NULL},
- {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, 0, NULL},
- {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL},
- {"detach", "detach", NULL, "-detach", "-S", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL},
- {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL},
- {"no_security", "no_security", NULL, "-no-security", "-ns", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL},
- {"allow_anonymous", "allow_anonymous", NULL, "-allow-anon", "-aa", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL},
- {"anonymous_user", "anonymous_user", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"data_node", "data_node", NULL, "-data-node", "-dn", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL},
- {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL},
- {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"login_msg", "login_msg", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"login_msg_file", "login_msg_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"connections_disabled", "connections_disabled", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL},
- {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"hostname", "hostname", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"idle_timeout", "idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL},
- {"globus_location", "globus_location", "GLOBUS_LOCATION", "-G", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"logfile", "logfile", NULL, "-logfile", "-l", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"remote", "remote", NULL, "-remote", "-r", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
- {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, 1, NULL},
- {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL}
+ {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, 200, NULL, NULL},
+ {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, 0, NULL, NULL},
+ {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
+ {"detach", "detach", NULL, "-detach", "-S", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
+ {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
+ {"no_security", "no_security", NULL, "-no-security", "-ns", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
+ {"allow_anonymous", "allow_anonymous", NULL, "-allow-anon", "-aa", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
+ {"anonymous_user", "anonymous_user", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"data_node", "data_node", NULL, "-data-node", "-dn", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
+ {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
+ {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"login_msg", "login_msg", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"login_msg_file", "login_msg_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"connections_disabled", "connections_disabled", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
+ {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"hostname", "hostname", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"idle_timeout", "idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL, NULL},
+ {"globus_location", "globus_location", "GLOBUS_LOCATION", "-G", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"logfile", "logfile", NULL, "-logfile", "-l", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"remote", "remote", NULL, "-remote", "-r", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
+ {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, 1, NULL, NULL},
+ {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
+ {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL, NULL} 
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
@@ -550,6 +553,47 @@ globus_l_gfs_config_misc()
         globus_free(value);
     }
     
+    if((value = globus_i_gfs_config_string("remote")) != GLOBUS_NULL)
+    {
+        globus_i_gfs_community_t *      community;
+        globus_list_t *                 community_list;
+        community = (globus_i_gfs_community_t *)
+            globus_malloc(sizeof(globus_i_gfs_community_t)); 
+
+        community->name = globus_libc_strdup("default");
+        community->root = globus_libc_strdup("/");
+        community->cs_count = 1;
+        community->contact_strings = (char **) globus_malloc(sizeof(char *));
+        *community->contact_strings = (char *)
+             globus_libc_strdup(value);
+        
+        globus_list_insert(&community_list, community);  
+        
+        option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
+        &option_table, "community");   
+        if(!option)
+        {
+            option = (globus_l_gfs_config_option_t *)
+                globus_malloc(sizeof(globus_l_gfs_config_option_t));
+            for(i = 0; 
+                i < option_count && 
+                    strcmp("community", option_list[i].option_name); 
+                i++);
+            if(i == option_count)
+            {
+            }    
+            memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
+        }
+    
+        option->list_value = community_list;
+        rc = globus_hashtable_insert(
+            &option_table,
+            "community",
+            (void *) option);
+
+        globus_free(value);
+    }
+    
     return GLOBUS_SUCCESS;
 }
     
@@ -663,3 +707,20 @@ globus_i_gfs_config_string(
     return value;
 }
 
+globus_list_t *
+globus_i_gfs_config_list(
+    const char *                        option_name)
+{
+    globus_l_gfs_config_option_t *      option;
+    globus_list_t *                     value = GLOBUS_NULL;    
+    
+    option = (globus_l_gfs_config_option_t *) 
+        globus_hashtable_lookup(&option_table, (void *) option_name);
+        
+    if(option && option->list_value)
+    {        
+        value = option->list_value;
+    }
+
+    return value;
+}

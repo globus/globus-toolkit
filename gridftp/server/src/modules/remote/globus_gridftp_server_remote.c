@@ -10,7 +10,7 @@ globus_l_gfs_remote_stat(
 {
     GlobusGFSName(globus_l_gfs_remote_stat);
 
-globus_gfs_ipc_handle_obtain(
+/* globus_gfs_ipc_handle_obtain(
     const char *                        user_id,
     globus_gfs_ipc_iface_t *            iface,
     const char *                        contact_string,
@@ -18,7 +18,7 @@ globus_gfs_ipc_handle_obtain(
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
-
+*/
 }
 
 static
@@ -139,3 +139,5 @@ globus_gridftp_server_storage_iface_t   globus_gfs_remote_dsi_iface =
     globus_l_gfs_remote_stat,
     NULL
 };
+
+
