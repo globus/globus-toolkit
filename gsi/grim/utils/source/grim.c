@@ -35,6 +35,9 @@
 static globus_bool_t                        g_quiet = GLOBUS_FALSE;
 static FILE *                               g_logfile = NULL;
 static char *                               g_username = NULL;
+
+extern char **environ;
+
 /************************************************************************
  *                     function signatures
  ***********************************************************************/
@@ -160,7 +163,20 @@ main(
     FILE *                                  port_type_fptr;
     FILE *                                  fptr;
     globus_grim_config_t                    config;
+    char **                                 tmp_env;
 
+
+    sleep(15);
+
+    tmp_env = environ;
+    while(*tmp_env)
+    {
+        if(strncmp("LD_", *tmp_env, 3) == 0)
+        {
+            unsetenv(*tmp_env);
+        }
+        tmp_env++;
+    }
 
     /*
      *  verify that setuid bit is set
@@ -313,6 +329,7 @@ main(
      */
     user_id = getuid();
     seteuid(user_id);
+    setegid(getgid());
     /***** END PRIVLEDGES *****/
 
     /*
