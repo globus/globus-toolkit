@@ -1,19 +1,10 @@
-The GSI-OpenSSH development team announces the release of version 3.0 of
-the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.0 is based
-on OpenSSH 3.7.1p2 and NCSA's latest GSI patch for that version of
+The GSI-OpenSSH development team announces the release of version 3.1 of
+the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.1 is based
+on OpenSSH 3.8p1 and NCSA's latest GSI patch for that version of
 OpenSSH.  A summary of the major changes found in this version is given
 at the end of this document.
 
-In response to interest members of the user community have shown in 
-a mode where GSI-OpenSSH does not override a previously-installed system 
-SSH, we have redesigned the main package so that the default behaviour is 
-to make available in $GLOBUS_LOCATION/bin/ only the commands 'gsissh', 
-'gsisftp', and 'gsiscp'.  Those users who wish for GSI-OpenSSH to also 
-install 'ssh' and the rest of the standard SSH commands into 
-$GLOBUS_LOCATION/bin/ should add the new "compatibility package" 
-onto their installation.
-
-GSI-OpenSSH 3.0 is available for download from
+GSI-OpenSSH 3.1 is available for download from
 
   <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.0/>
 
@@ -27,26 +18,17 @@ team.  This bugzilla system is located at:
 
    <https://bugzilla.ncsa.uiuc.edu/index.cgi>
 
-GSI-OpenSSH 3.0 Major changes
+GSI-OpenSSH 3.1 Major changes
 
    New features
 
-      * Moved to OpenSSH 3.7.1p2 codebase.
-
-      * Removed GSSAPI support for protocol 1.
-
-      * Added NCSA_GSSAPI comment in version string to help identify 
-        OpenSSH versions with NCSA patches for debugging purposes.
-
-      * Added gsisftp install target.
-
-      * Enable -static to link statically with Globus GSI libraries.  
+      * Moved to OpenSSH 3.8p1 codebase, including support for new
+        'gssapi-with-mic' authentication method.  Compatibility with
+        the older 'gssapi' authentication method is retained.
 
    Bugs fixed
 
-      * Fixed bug where client would attempt external-keyx even when 
-        GSSAPI key exchange was not performed, causing compatibility 
-        problems between GSSAPI mechanisms.
+      * Fixed bug in GSI code for handling case when PAM support is
+        built in but 'UsePam yes' is not set in the sshd_config file.
 
-      * Fixed misleading "Protocol error: didn't expect packet type 34" 
-        message.
+      * Fixed shell syntax error in configure script.
