@@ -10,6 +10,7 @@ Sources= \
 INCLUDES += $(GPT_INCLUDES)
 
 Scripts= \
+	TESTS.pl \
 	globus-openssl-error-test.pl \
 	run-openssl-error-tests.pl
 

@@ -17,6 +17,7 @@ Sources= \
 INCLUDES += $(GPT_INCLUDES)
 
 Scripts= \
+	TESTS.pl \
 	gssapi-anonymous-test.pl \
 	gssapi-delegation-test.pl \
 	gssapi-limited-delegation-test.pl \

@@ -34,6 +34,7 @@ INCLUDES += $(GPT_INCLUDES)
 
 # Scripts contains all of the scripts in this directory
 Scripts= \
+	TESTS.pl \
 	globus-common-args-test.pl \
 	globus-common-poll-test.pl \
 	globus-common-error-stg-test.pl \
