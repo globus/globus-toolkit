@@ -853,7 +853,7 @@ gss_create_and_fill_cred(
     gss_cred_id_desc **                 output_cred_handle = 
         (gss_cred_id_desc**) output_cred_handle_P ;
     OM_uint32                           major_status = GSS_S_NO_CRED;
-    OM_uint32                           minor_status;
+    OM_uint32                           local_minor_status;
     gss_cred_id_desc *                  newcred;
     STACK_OF(X509_EXTENSION) *          extensions;
     X509_EXTENSION *                    ex;
@@ -885,141 +885,58 @@ gss_create_and_fill_cred(
 
     newcred->cred_usage = cred_usage;
     newcred->globusid = NULL;
-    newcred->gss_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
     
-    if (!(newcred->pcd = proxy_cred_desc_new()))
+    result = globus_gsi_cred_handle_init(newcred->cred_handle, NULL);
+
+    if (result != GLOBUS_SUCCESS)
     {
+#error add error obj
         GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         major_status = GSS_S_FAILURE;
         goto err;
     }
 
     /* delegated certificate, save in pcd */
-    
-    if (ucert)
-    {
-        newcred->pcd->ucert = ucert;
-    }
 
-    if (upkey)
+    if(bp)
     {
-        newcred->pcd->upkey = upkey;
-    }
-
-    if (cert_chain)
-    {
-        /* Delegated credential is a proxy */
-        newcred->pcd->type = CRED_TYPE_PROXY;   
-        newcred->pcd->cert_chain = sk_X509_new_null();
-        for(i=0;i<sk_X509_num(cert_chain);i++)
+        result = globus_gsi_cred_read_bio(newcred->cred_handle,
+                                          bp);
+        if(result != GLOBUS_SUCCESS)
         {
-            sk_X509_insert(newcred->pcd->cert_chain,
-                           X509_dup(sk_X509_value(cert_chain,i)),
-                           sk_X509_num(cert_chain));
+#error add error obj
         }
     }
+    else {
 
-
-    /*
-     * setup SSLeay environment
-     * This will find the user's cert, key, proxy etc
-     */ 
-    
-    if ((status = proxy_init_cred(newcred->pcd, 
-                                  proxy_password_callback_no_prompt,
-                                  bp)))
-    {
-        if (status == PRXYERR_R_USER_CERT_EXPIRED || 
-          status == PRXYERR_R_SERVER_CERT_EXPIRED ||
-          status == PRXYERR_R_PROXY_EXPIRED)
-        { 
-            major_status =  GSS_S_CREDENTIALS_EXPIRED;
-        }
-        else
+        if (ucert)
         {
-            major_status = GSS_S_NO_CRED;
-        }
- 
-        goto err;
-    }
-
-    /*
-     * The SSLeay when built by default excludes the NULL 
-     * encryption options: #ifdef SSL_ALLOW_ENULL in ssl_ciph.c
-     * Since the user obtains and builds the SSLeay, we have 
-     * no control over how it is built. 
-     *
-     * We have an export licence for this code, and don't
-     * need/want encryption. We will therefore turn off
-     * any encryption by placing the RSA_NULL_MD5 cipher
-     * first. See s3_lib.c ssl3_ciphers[]=  The RSA_NUL_MD5
-     * is the first, but the way to get at it is as  n-1 
-     *
-     * Now that we support encryption, we may still add
-     * RSA_NUL_MD5 but it may be at the begining or end
-     * of the list. This will allow for some compatability. 
-     * (But in this code we will put it last for now.)
-     *
-     * Where, if at all, RSA_NUL_MD5 is added:
-     *
-     *                 |  Initiate     Accept
-     * ----------------------------------------
-     * GSS_C_CONF_FLAG |
-     *     set         |  end        don't add
-     *   notset        |  begining   end
-     *                 ------------------------
-     *
-     * This gives the initiator control over the encryption
-     * but lets the server force encryption.
-     *
-     *                         Acceptor
-     *                   |    yes     no    either
-     * ----------------------------------------------
-     *             yes   |    yes    reject  yes
-     * Initiator   no    |    reject  no     no
-     *             either|    yes     no     no
-     * 
-     * When encryption is selected, the ret_flags will have
-     * ret_flags set with GSS_C_CONF_FLAG. The initiator and
-     * acceptor can then decied if this was acceptable, i.e.
-     * reject the connection. 
-     *                 
-     * 
-     * This method may need to be checked with new versions
-     * of the SSLeay packages. 
-     */ 
-
-    {
-        int n;
-        int i;
-        int j;
-        SSL_CIPHER * cipher;
-
-        j = 0;
-        n = ((*newcred->pcd->gss_ctx->method->num_ciphers))();
-        for (i=0; i<n; i++)
-        {
-            cipher = (*(newcred->pcd->gss_ctx->method->get_cipher))(i);
-#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-#define MY_NULL_MASK 0x130021L
-#else
-#define MY_NULL_MASK 0x830021L
-#endif
-            if (cipher && 
-                ((cipher->algorithms & MY_NULL_MASK) == MY_NULL_MASK))
+            result = globus_gsi_cred_set_cert(newcred->cred_handle, ucert);
+            if(result != GLOBUS_SUCCESS)
             {
-                j++;
-#ifdef DEBUG
-                fprintf(stderr,"adding cipher %d %d\n", i, j);
-#endif
-		
-                sk_SSL_CIPHER_push(
-                    newcred->pcd->gss_ctx->cipher_list, cipher);
-                sk_SSL_CIPHER_push(
-                    newcred->pcd->gss_ctx->cipher_list_by_id, cipher);
+#error add error obj
             }
         }
-        newcred->pcd->num_null_enc_ciphers = j;
+
+        if (upkey)
+        {
+            result = globus_gsi_cred_set_key(newcred->cred_handle, upkey);
+            if(result != GLOBUS_SUCCESS)
+            {
+#error add error obj
+            }
+        }
+    
+        if (cert_chain)
+        {
+            /* Delegated credential is a proxy */
+            result = globus_gsi_cred_set_cert_chain(newcred->cred_handle, 
+                                                    cert_chain);
+            if(result != GLOBUS_SUCCESS)
+            {
+#error add error obj
+            }
+        }
     }
 
     /*
@@ -1029,17 +946,19 @@ gss_create_and_fill_cred(
     newcred->globusid = (gss_name_desc*) malloc(sizeof(gss_name_desc)) ;
     if (newcred->globusid == NULL)
     {
+#error add error obj
         GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         major_status = GSS_S_FAILURE;
         goto err;
     }
     newcred->globusid->name_oid = GSS_C_NO_OID;
 
-    newcred->globusid->x509n =
-        X509_NAME_dup(X509_get_subject_name(newcred->pcd->ucert));
+    result = globus_gsi_cred_get_subject(newcred->cred_handle, 
+                                & newcred->globusid->x509n);
 
-    if (newcred->globusid->x509n == NULL)
+    if (result != GLOBUS_SUCCESS)
     {
+#error add error obj stuff
         GSSerr(GSSERR_F_ACQUIRE_CRED,GSSERR_R_PROCESS_CERT);
         major_status = GSS_S_FAILURE;
         goto err;
@@ -1047,170 +966,54 @@ gss_create_and_fill_cred(
 
     /* now strip off any /CN=proxy entries */
 
-    proxy_get_base_name(newcred->globusid->x509n);
-
-    
-    if(newcred->pcd->cert_chain)
+    result = globus_gsi_cred_get_base_name(newcred->globusid->x509n);
+    if(result != GLOBUS_SUCCESS)
     {
-        cert_count = sk_X509_num(newcred->pcd->cert_chain);
-    }
-    else
-    {
-        cert_count = 0;
-    }
-        
-    newcred->globusid->group = sk_new_null();
-
-    if(newcred->globusid->group == NULL)
-    {
-        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
-        major_status = GSS_S_FAILURE;
-        goto err;
-    }
-        
-    newcred->globusid->group_types = ASN1_BIT_STRING_new();
-
-    if(newcred->globusid->group_types == NULL)
-    {
-        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
-        major_status = GSS_S_FAILURE;
-        goto err;
+#error add error
     }
 
-    cert = newcred->pcd->ucert;
-    previous_cert=NULL;
-    k = 0;
-
-    do
-    {
-        if(previous_cert != NULL)
-        {
-            if(!X509_verify(previous_cert,X509_get_pubkey(cert)))
-            {
-                GSSerr(GSSERR_F_ACQUIRE_CRED,
-                       GSSERR_R_UNORDERED_CHAIN);
-                major_status = GSS_S_FAILURE;
-                goto err;
-            }
-        }
-
-        previous_cert = cert;
-        extensions = cert->cert_info->extensions;
-        
-        for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
-        {
-            ex = (X509_EXTENSION *) sk_X509_EXTENSION_value(extensions,i);
-            asn1_obj = X509_EXTENSION_get_object(ex);
-
-            /* if statement is kind of ugly, but I couldn't find a
-             * better way
-             */
-            
-            if((asn1_obj->length == gss_trusted_group->length) &&
-               !memcmp(asn1_obj->data,
-                       gss_trusted_group->elements,
-                       asn1_obj->length))
-            {
-                /* found a trusted group match */
-                asn1_oct_string = X509_EXTENSION_get_data(ex);
-                
-                subgroup = malloc(asn1_oct_string->length + 1);
-
-                if(subgroup == NULL)
-                {
-                    GSSerr(GSSERR_F_ACQUIRE_CRED,
-                           GSSERR_R_OUT_OF_MEMORY);
-                    major_status = GSS_S_FAILURE;
-                    goto err;
-                }
-                    
-                memcpy((void *) subgroup,
-                       asn1_oct_string->data,
-                       asn1_oct_string->length);
-
-                /* terminate string */
-
-                subgroup[asn1_oct_string->length] = '\0';
-
-                sk_push(newcred->globusid->group,subgroup);
-                j++;
-                
-                /* assume one extension per cert */
-                
-                break;
-            }
-            else if((asn1_obj->length == gss_untrusted_group->length) &&
-                    !memcmp(asn1_obj->data,
-                            gss_untrusted_group->elements,
-                            asn1_obj->length))
-            {
-                /* found a untrusted group match */
-                asn1_oct_string = X509_EXTENSION_get_data(ex);
-                
-                subgroup = malloc(asn1_oct_string->length + 1);
-
-                if(subgroup == NULL)
-                {
-                    GSSerr(GSSERR_F_ACQUIRE_CRED,
-                           GSSERR_R_OUT_OF_MEMORY);
-                    major_status = GSS_S_FAILURE;
-                    goto err;
-                }
-                    
-                memcpy((void *) subgroup,
-                       asn1_oct_string->data,
-                       asn1_oct_string->length);
-
-                /* terminate string */
-                
-                subgroup[asn1_oct_string->length] = '\0';
-
-                sk_push(newcred->globusid->group,subgroup);
-                ASN1_BIT_STRING_set_bit(newcred->globusid->group_types,
-                                        j,1);
-                j++;
-                
-                /* assume one extension per cert */
-                
-                break;
-            }
-
-        }
-        
-    } while(k < cert_count &&
-            (cert = sk_X509_value(newcred->pcd->cert_chain,k)) &&
-            k++);
+    globus_gsi_cred_get_group_name(newcred->cred_handle,
+                                   & newcred->globusid->group,
+                                   & newcred->globusid->group_types);
 
     *output_cred_handle = newcred;
     
     major_status = GSS_S_COMPLETE;
     
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+    
     return major_status;
     
 err:
 
-    gss_release_cred(&minor_status,(gss_cred_id_t *) &newcred);
+    gss_release_cred(& local_minor_status, (gss_cred_id_t *) &newcred);
     
-#ifdef DEBUG
-    fprintf(stderr,"gss_create_and_fill_cred:major_status:%08x\n",major_status);
-#endif
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    
     return major_status;
 }
 
 int gss_verify_extensions_callback(
-    proxy_verify_desc *                 pvd,
+    globus_gsi_cred_callback_data_t     callback_data,
     X509_EXTENSION *                    extension)
 {
     gss_OID_set                         extension_oids;
     ASN1_OBJECT *                       extension_obj;
     int                                 i;
+    int                                 return_val;
     gss_OID_desc                        oid;
+
+    static char *                       _function_name_ =
+        "gss_verify_extensions_callback";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
-    extension_oids = (gss_OID_set) pvd->extension_oids;
+    extension_oids = (gss_OID_set) callback_data->extension_oids;
 
     if(extension_oids == GSS_C_NO_OID_SET)
     {
-        return 0;
+        return_val = 0;
+        goto exit;
     }
     
     extension_obj = X509_EXTENSION_get_object(extension);
@@ -1221,11 +1024,17 @@ int gss_verify_extensions_callback(
         if((extension_obj->length == oid.length) &&
            !memcmp(extension_obj->data, oid.elements, extension_obj->length))
         {
-            return 1;
+            return_val = 1;
+            goto exit;
         }
     }
 
-    return 0;
+    return_val = 0;
+
+ exit:
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return return_val;
 }
 
 
