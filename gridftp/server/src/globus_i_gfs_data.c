@@ -1665,6 +1665,13 @@ globus_i_gfs_data_request_transfer_event(
     session_handle = (globus_l_gfs_data_session_t *) session_id;
     op = (globus_l_gfs_data_operation_t *) transfer_id;
 
+    if(op == NULL)
+    {
+        /* possibly getting TRANSFER_COMPLETE when transfer_finished happens
+            without a transfer_begin (should prevent requesting
+            events with null transfer_id within control.c)*/
+        goto error;
+    }
     globus_mutex_lock(&op->mutex);
     {
         /* this is the final event.  dec reference */
@@ -1742,6 +1749,12 @@ globus_i_gfs_data_request_transfer_event(
                             "Forced data connection closed.\n");                           
                     }
                 }
+                else
+                {
+                    globus_i_gfs_log_message(
+                        GLOBUS_I_GFS_LOG_INFO, 
+                        "Transfer already complete.\n");  
+                }                         
                 break;
                 
             /* if anything else pass it through if they
@@ -1789,6 +1802,10 @@ globus_i_gfs_data_request_transfer_event(
             globus_l_gfs_data_operation_destroy(op);
         }
     }
+    return;
+
+error:
+    return;
 }
 
 static
@@ -1963,18 +1980,20 @@ globus_i_gfs_data_session_stop(
     GlobusGFSName(globus_i_gfs_data_session_stop);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
-
-    if(session_handle->data_handle != NULL)
+    if(session_handle != NULL)
     {
-        globus_i_gfs_data_destroy_handle(
-            ipc_handle, session_id, (int) session_handle->data_handle);
-    }    
-    if(globus_l_gfs_dsi->destroy_func != NULL)
-    {
-        globus_l_gfs_dsi->destroy_func(session_handle->session_arg);
+        if(session_handle->data_handle != NULL)
+        {
+            globus_i_gfs_data_destroy_handle(
+                ipc_handle, session_id, (int) session_handle->data_handle);
+        }    
+        if(globus_l_gfs_dsi->destroy_func != NULL)
+        {
+            globus_l_gfs_dsi->destroy_func(session_handle->session_arg);
+        }
+    
+        globus_free(session_handle);
     }
-
-    globus_free(session_handle);
 }
 
 
