@@ -88,7 +88,7 @@ static globus_memory_t                  globus_l_callback_space_attr_memory;
 static globus_l_callback_space_t        globus_l_callback_global_space;
 static globus_bool_t                    globus_l_callback_shutting_down;
 
-static globus_list_t                    globus_l_callback_threaded_spaces;
+static globus_list_t *                  globus_l_callback_threaded_spaces;
 
 static globus_thread_key_t              globus_l_callback_restart_info_key;
 
@@ -233,7 +233,7 @@ globus_l_callback_activate()
     globus_l_callback_global_space.shutdown = GLOBUS_FALSE;
     
     globus_list_insert(
-        globus_l_callback_threaded_spaces, &globus_l_callback_global_space);
+        &globus_l_callback_threaded_spaces, &globus_l_callback_global_space);
     
     globus_mutex_init(&globus_l_callback_handle_lock, GLOBUS_NULL);
     globus_mutex_init(&globus_l_callback_space_lock, GLOBUS_NULL);
@@ -279,7 +279,7 @@ static
 int
 globus_l_callback_deactivate()
 {
-    globus_list_t                       tmp_list;
+    globus_list_t *                     tmp_list;
     globus_l_callback_space_t *         i_space;
     
     globus_mutex_lock(&globus_l_callback_thread_lock);
@@ -941,7 +941,7 @@ globus_callback_space_init(
                     globus_assert(rc == 0);
                 
                     globus_list_insert(
-                        globus_l_callback_threaded_spaces, i_space);
+                        &globus_l_callback_threaded_spaces, i_space);
                 }
             }
             globus_mutex_unlock(&globus_l_callback_thread_lock);
@@ -1908,7 +1908,7 @@ globus_l_callback_thread_poll(
         globus_mutex_lock(&globus_l_callback_space_lock);
         {
             globus_handle_table_decrement_reference(
-                &globus_l_callback_space_table, space);
+                &globus_l_callback_space_table, i_space->handle);
         }
         globus_mutex_unlock(&globus_l_callback_space_lock);
     }
