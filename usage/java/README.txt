@@ -1,5 +1,6 @@
-org.globus.usage
-A simple extensible system for remotely logging gt4 usage statistics with UDP packets.
+org.globus.usage.*;
+A simple extensible system for remotely logging gt4 usage statistics with
+UDP packets.
 by Jonathan DiCarlo
 Jan 28, 2005
 
@@ -9,30 +10,64 @@ Bug reports, questions, suggestions, etc. to jdicarlo@mcs.anl.gov.
 Compiling and running:
 *******************************************
 
-This should be compatible with Java 1.3 and up.  If you find any incompatibility with Java 1.3, it is a bug -- please tell me about it!
+This should be compatible with Java 1.3 and up.  If you find any
+incompatibility with Java 1.3, it is a bug -- please tell me about it!
 
-The main() functions in ExampleGFTPSender.java and in ReceiverExample.java
-show how a program would use the other classes.
+ExampleGFTPSender.java and ReceiverExample.java show how a program would
+use the other classes.
 
-First you will have to set up a database (see SQL SCHEMA), and edit the file
-udpUsage.properties with the right driver class, url, and table names for your
-database.
+To run the receiver example, you will have to first set up a database (see SQL
+SCHEMA), and edit the file udpUsage.properties with the right driver class,
+url, and table names for your database.
 
-Also, edit udpUsage.properties to set the hostname and port number for the machine
-running the receiver.  If you want to send to multiple receivers, put a comma-separated list
-of hostnames (or IP addresses) on one line.  For example:
-receiver-ip = localhost, 192.168.0.101, foovax@bar.baz.edu
+On the sender side, edit udpUsage.properties to set the hostname and port
+number for the machine running the receiver.  If you want to send to multiple
+receivers, put a comma-separated list of hostnames (or IP addresses) on one
+line.  For example:
 
-Once you're done editing the properties, you can start the receiver simply by executing:
+receiver-ip = localhost, 192.168.0.101, foovax.ubar.edu
+
+Once you're done editing the properties, you can compile and start the
+receiver simply by executing:
 
 ant run-reciever 
 
-(this will block, so open another terminal or run it in background).  You can test the receiver
-by running the example sender:
+(this will block, so open another terminal or run it in background).  You can
+test the receiver by running the example sender:
 
 ant run-sender
 
 The example sender just sends a few GFTPMonitorPackets and then exits.
+
+*******************************************
+Packages and Dependencies
+*******************************************
+
+org.globus.usage.packets contains the UsageMonitorPacket class, its
+subclasses, and the utility classes that it depends on.  Both senders and
+receivers need this package.
+
+org.globus.usage.receiver contains the Receiver class and all of the Handler
+classes that plug into the Receiver.  These depend on classes in
+org.globus.usage.packets.
+
+There are example classes ExampleGFTPSender and ExampleReceiver which are not
+part of either package.  They demonstrate how to use the packets and receiver
+packages, but they themselves are in org.globus.usage.
+
+Therefore, programs that want to send usage-monitor packets need to
+include only org.globus.usage.packets.*;  programs that want to receive
+packets need to include both org.globus.usage.packets.* and
+org.globus.usage.receiver.*.
+
+If you run ant with no target, the default target will compile two jar files:
+GlobusUsage_Sender.jar and GlobusUsage_Receiver.jar.  Each of these is
+self-contained and contains everything needed for sending and receiving
+packets, respectively.
+
+Both sender and receiver use log4j, so you will need Apache's log4j.jar
+(included in lib/) to compile.  The receiver additionally needs a database
+driver, such as the msyql-connector-java.jar included in lib/.
 
 *******************************************
 How to Add your own Packet Formats:

@@ -1,4 +1,4 @@
-<project name="UDPUsage" default="compile" basedir=".">
+<project name="GlobusUsage" default="make-jars" basedir=".">
 
   <path id="lib.classpath">
     <fileset dir="./lib/">
@@ -19,47 +19,63 @@
 
   </target>
 
-  <target name="compile" depends="clean">
+  <target name="make-jars" depends="clean">
     <mkdir dir="./dist"/>
-    <javac srcdir="./src/" destdir="./dist/">
+    <javac destdir="./dist/" srcdir="./src/">
+      <include name="org/globus/usage/packets/*.java"/>
+      <include name="org/globus/usage/receiver/*.java"/>
       <classpath>
 	<path refid="lib.classpath"/>
       </classpath>
     </javac>
-    <jar destfile = "UDPSender.jar">
+    <jar destfile = "GlobusUsage_Sender.jar">
       <fileset dir="./dist/">
-	<include name="**/UsageMonitorPacket.class"/>
-	<include name="**/IPTimeMonitorPacket.class"/>
-	<include name="**/GFTPMonitorPacket.class"/>
-	<include name="**/ExampleGFTPSender.class"/>
-	<include name="**/CustomByteBuffer.class"/>
+	<include name="org/globus/usage/packets/*.class"/>
       </fileset>
-      <fileset file="./udpUsage.properties"/>
-      <fileset file="./log4j.properties"/>
     </jar>
-    <jar destfile = "UDPReceiver.jar">
+    <jar destfile = "GlobusUsage_Receiver.jar">
       <fileset dir="./dist/">
-        <include name="**/*.class"/>
-	<exclude name="**/ExampleGFTPSender.class"/>
+        <include name="org/globus/usage/packets/*.class"/>
+        <include name="org/globus/usage/receiver/*.class"/>
+      </fileset>
+    </jar>
+  </target>
+  
+  <target name="compile-example" depends="make-jars">
+    <javac srcdir="./src/" destdir="./dist/">
+      <include name="org/globus/usage/ExampleGFTPSender.java"/>
+      <include name="org/globus/usage/ExampleReceiver.java"/>
+      <classpath>
+	<path refid="lib.classpath"/>
+	<pathelement location="./GlobusUsage_Sender.jar"/>
+	<pathelement location="./GlobusUsage_Receiver.jar"/>
+      </classpath>
+    </javac>
+    <jar destfile = "GlobusUsage_Examples.jar">
+      <fileset dir="./dist/">
+	<include name="**/ExampleGFTPSender.class"/>
+	<include name="**/ExampleReceiver.class"/>
       </fileset>
       <fileset file="./udpUsage.properties"/>
       <fileset file="./log4j.properties"/>
     </jar>
   </target>
 
-  <target name="run-receiver" depends="compile">
-    <java classname="org.globus.usage.ReceiverExample" fork="true">
+  <target name="run-receiver" depends="compile-example">
+    <java classname="org.globus.usage.ExampleReceiver" fork="true">
       <classpath>
-	<pathelement location="./UDPReceiver.jar"/>
+	<pathelement location="./GlobusUsage_Examples.jar"/>
+	<pathelement location="./GlobusUsage_Receiver.jar"/>
 	<path refid="lib.classpath"/>
       </classpath>
     </java>
   </target>
 
-  <target name="run-sender" depends="compile">
+  <target name="run-sender" depends="compile-example">
     <java classname="org.globus.usage.ExampleGFTPSender">
       <classpath>
-	<pathelement location="./UDPSender.jar"/>
+	<pathelement location="./GlobusUsage_Examples.jar"/>
+	<pathelement location="./GlobusUsage_Sender.jar"/>
         <path refid="lib.classpath"/>
       </classpath>
     </java>
