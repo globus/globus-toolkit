@@ -179,7 +179,7 @@ globus_l_gram_protocol_free_old_credentials();
  *        hold the URL of the listener. This URL may be published or
  *        otherwise passed to applications which need to contact this
  *        protocol server. The URL will be of the form
- *        https://<host>:<port>/. It is the user's responsibility
+ *        https://&lt;host&gt;:&lt;port&gt;/. It is the user's responsibility
  *        to free this memory.
  * @param callback
  *        The callback function to be called when a new request has been
@@ -2020,7 +2020,10 @@ globus_l_gram_protocol_post(
  free_framed_exit:
     globus_libc_free(framed);
  error_exit:
-    *handle = 0;
+    if (handle)
+    {
+        *handle = 0;
+    }
     globus_url_destroy(&parsed_url);
 
     return rc;
