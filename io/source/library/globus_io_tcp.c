@@ -423,11 +423,10 @@ globus_io_tcp_connect(
     if(attr)
     {
         attr->space = saved_space;
-    }
-    
-    if(handle)
-    {
-        handle->space = saved_space;
+        if(handle)
+        {
+            handle->space = saved_space;
+        }
     }
 
     globus_mutex_destroy(&monitor.mutex);
