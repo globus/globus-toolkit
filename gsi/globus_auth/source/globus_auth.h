@@ -6,11 +6,12 @@
 #ifndef __GLOBUS_AUTH_H_
 #define __GLOBUS_AUTH_H_
 
-#include "gssapi.h"
 #include "gaa.h"
 #include "gaa_core.h"
 #include "globus_auth_error.h"
+#include "gssapi.h"
 #include "gaa_simple.h"
+#include "gaa_gss_generic.h"
 
 #ifndef _HAVE_GSI_EXTENDED_GSSAPI
 #include "globus_gss_ext_compat.h"
@@ -20,7 +21,7 @@ extern
 const gss_OID_desc * const gss_mech_globus_gssapi_ssleay;
  
 extern
-const gss_OID_desc * const gss_restrictions_extension;
+const gss_OID_desc * const gss_cas_policy_extension;; 
 
 struct globus_authorization_struct
 {
@@ -29,11 +30,14 @@ struct globus_authorization_struct
     /* GAA security context */
     gaa_sc_ptr                          gaa_sc; 
     /* GSS security context. Used as raw credentials for gaa_new_cred */
-    gss_ctx_id_t                        gss_context;
+    gaa_gss_generic_param_t		gss_param;
     /* The config file from which policy info is parsed: */
     gaa_policy_ptr                      policy;         
     gaa_string_data                     policy_source;
-    gaa_simple_callback_arg_t           gaa_cb_arg;   
+    gaa_simple_callback_arg_t           gaa_cb_arg;
+    char *				audit_identity;
+    char *				authorization_identity;
+    char *				policy_display_string; /* for logging */
 #ifdef DEBUG
     gaa_answer_ptr                      debug_answer;
 #endif
@@ -93,7 +97,19 @@ globus_authorization_eval(
     char *                              object, 
     char *                              service_type, 
     char *                              action);      
- 
+
+extern char *
+globus_auth_get_authorization_identity(globus_authorization_handle_t handle);
+
+extern char *
+globus_auth_get_audit_identity(globus_authorization_handle_t handle);
+
+extern globus_auth_result_t
+globus_auth_check_condition(globus_authorization_handle_t handle,
+			    char *			  condtype,
+			    char *			  condauth,
+			    char *			  condval);
+
 #define GLOBUS_AUTH_DEFAULT_CONFIG_FILE "/etc/grid-security/globus_gaa.conf"
 
 #endif  /* __GLOBUS_AUTH_H_ */
