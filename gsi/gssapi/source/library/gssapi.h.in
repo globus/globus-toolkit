@@ -238,7 +238,7 @@ typedef struct gss_channel_bindings_struct {
 #define GSS_C_NO_CREDENTIAL ((gss_cred_id_t) 0)
 #define GSS_C_NO_CHANNEL_BINDINGS ((gss_channel_bindings_t) 0)
 #define GSS_C_EMPTY_BUFFER {0, NULL}
-
+#define GSS_C_EMPTY_BUFFER_SET {0, (gss_buffer_t) 0}
 
 /*
  * Some alternate names for a couple of the above
@@ -926,6 +926,7 @@ typedef struct gss_buffer_set_desc_struct {
 
 extern const gss_OID_desc * const GSS_DISALLOW_ENCRYPTION;
 extern const gss_OID_desc * const GSS_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION;
+extern const gss_OID_desc * const GSS_APPLICATION_WILL_HANDLE_EXTENSIONS;
 
 #endif /* GSI_EXTENDED_GSSAPI */
 
