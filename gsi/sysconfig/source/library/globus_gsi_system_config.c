@@ -3307,7 +3307,7 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR,
                 ("X509_CERT_DIR=%s, but the the path "
-                 "is not a valid directory"));
+                 "is not a valid directory", env_cert_dir));
             goto error_exit;
         }
     }
