@@ -356,12 +356,21 @@ sub generate_build_list()
        install_globus_core();
        install_gt2_autotools();
        print "Final package build list:\n";
-       print "$installer: ";
-       foreach my $pack ( @package_build_list )
+
+       foreach my $bun ( @bundle_build_list )
        {
-            print "$pack ";
+            my ($flavor, $flag, @packs) = @{$bundle_list{$bun}};
+            print "$bun: ";
+            foreach my $pack ( @package_build_list )
+            {
+                 if ( grep /^$pack$/, @packs )
+                 {
+                     print "$pack ";
+                 }
+            }
+            print "\n";
        }
-       print "\n";
+            
        foreach my $pack ( @package_build_list )
        {
             print "$pack:\n";
