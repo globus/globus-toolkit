@@ -213,7 +213,7 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
      */    
 
     service = "jobmanager";
-    iport = 1754;
+    iport = 2119;
 
     if ((duplicate = globus_libc_strdup(contact_string)))
     {
