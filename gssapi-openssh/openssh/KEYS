@@ -6,8 +6,7 @@ because some keys are only used for code signing.
 
 Please realize that this file itself or the public key servers may be
 compromised.  You are encouraged to validate the authenticity of these keys in
-an out-of-band manner.  For information about our validation and signing
-policies, please read http://httpd.apache.org/dev/verification.html.
+an out-of-band manner.
 
 GSI-OpenSSH users: pgp < KEYS
 GSI-OpenSSH developers: 
