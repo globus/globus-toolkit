@@ -377,10 +377,10 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     }
 
     //credential name
-    if (request->cred_name!= NULL)
+    if (request->credname!= NULL)
     { 
       len = concatenate_strings(data, datalen, MYPROXY_CRED_NAME_STRING,
-			      request->cred_name, "\n", NULL); 
+			      request->credname, "\n", NULL); 
       if (len < 0)
         return -1;
 
@@ -599,8 +599,8 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  buf, sizeof(buf));
 
-    if (len == -2)  /*-2 indicates string not found*/
-       request->cred_name = NULL;
+    if (len == -2)  /*-2 indicates string not found - assign default*/
+       request->credname = strdup("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");
     else
        if (len <= -1)
        {
@@ -609,9 +609,9 @@ myproxy_deserialize_request(const char *data, const int datalen,
        }
        else
        {
-         request->cred_name = strdup(buf);
+         request->credname = strdup(buf);
     
-         if (request->cred_name == NULL)
+         if (request->credname == NULL)
          {
 	  verror_put_string("strdup() failed");
 	  verror_put_errno(errno);
@@ -626,7 +626,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  buf, sizeof(buf));
 
     if (len == -2)  /*-2 indicates string not found*/
-       request->cred_desc = NULL;
+       request->cred_desc = strdup ("This is the default credential");
     else
        if (len <= -1)
        {

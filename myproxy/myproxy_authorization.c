@@ -63,12 +63,12 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 { 
    char *tmp1;
 
-   if (creds->pass_phrase != NULL &&
+   if (creds->passphrase != NULL &&
        client_auth_data->client_data_len >= MIN_PASS_PHRASE_LEN &&
        client_auth_data->client_data != NULL && 
        (tmp1 = (char *)crypt(client_auth_data->client_data,
 		    &creds->owner_name[strlen(creds->owner_name)-3])) != NULL &&
-       strcmp(creds->pass_phrase, tmp1) == 0) {
+       strcmp(creds->passphrase, tmp1) == 0) {
       return 1;
    }
    else 

@@ -96,9 +96,9 @@ typedef struct
     char                         **authorized_client_dns;
     char                         *retrievers;
     char                         *renewers;
-    char			 *cred_name;
-    char			 *cred_desc;
-    int				 force_dbase_write;
+    char		   *credname;
+    char		   *cred_desc;
+    int		   force_dbase_write;
 } myproxy_request_t;
 
 /* A server response object */

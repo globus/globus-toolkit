@@ -329,7 +329,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     client_context = malloc(sizeof(*client_context));
     memset(client_context, 0, sizeof(*client_context));
 
-    client_creds->cred_name = strdup ("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");    //initialize with defaults
+    client_creds->credname = strdup ("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");    //initialize with defaults
     client_creds->cred_desc = strdup ("This is the default credential description");
 
     /* Create a new gsi socket */
@@ -416,8 +416,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     /* Fill in credential structure = owner, user, passphrase, proxy location */
     client_creds->owner_name  = strdup(client_name);
-    client_creds->user_name   = strdup(client_request->username);
-    client_creds->pass_phrase = strdup(client_request->passphrase);
+    client_creds->username   = strdup(client_request->username);
+    client_creds->passphrase = strdup(client_request->passphrase);
     
     if (client_request->retrievers != NULL)
     {
@@ -438,15 +438,17 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     }
 
     /* Copy credential name and description, if present */
-    if (client_request->cred_name != NULL)
-	client_creds->cred_name = strdup (client_request->cred_name);
+    if (client_request->credname != NULL)
+	client_creds->credname = strdup (client_request->credname);
   
     if (client_request->cred_desc != NULL)
 	client_creds->cred_desc = strdup (client_request->cred_desc);
 
     client_creds->force_dbase_write = client_request->force_dbase_write;
 
-    /* First level authorization checking happens here - server-wide policy. For proxy initialization only one level of authorization is sufficient*/
+    /* First level authorization checking happens here - server-wide policy. 
+      For proxy initialization only one level of authorization is sufficient*/
+
     if (myproxy_authorize_accept(context, attrs, 
 	                         client_request, client_name) < 0) {
        myproxy_log(DBG_LO, debug_level,"authorization failed - server-wide policy failure");
@@ -636,11 +638,11 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	if (client_creds->owner_name != NULL) {
 	    free(client_creds->owner_name);
 	}
-	if (client_creds->user_name != NULL) {
-	    free(client_creds->user_name);
+	if (client_creds->username != NULL) {
+	    free(client_creds->username);
 	}
-	if (client_creds->pass_phrase != NULL) {
-	    free(client_creds->pass_phrase);
+	if (client_creds->passphrase != NULL) {
+	    free(client_creds->passphrase);
 	}
 	if (client_creds->location != NULL) {
 	    free(client_creds->location);
@@ -846,11 +848,19 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 	       myproxy_response_t *response) 
 {
     int min_lifetime;
+    char filename[64];
   
     /* Delegate credentials to client */
     min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
 
-    if (myproxy_init_delegation(attrs, creds->location, min_lifetime) < 0) {
+    if (copy_credential_to_file(creds, filename) == -1) {  //write credential to temporary file. Get filename
+					//GSI requires credential to be in file before delegation
+        myproxy_log_verror();
+	response->response_type =  MYPROXY_ERROR_RESPONSE; 
+	strcat(response->error_string, "Unable to write credential to temporary file.\n");
+    }
+    else
+    if (myproxy_init_delegation(attrs, filename, min_lifetime) < 0) {
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	strcat(response->error_string, "Unable to delegate credentials.\n");
@@ -867,7 +877,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 {
     char delegfile[64];
 
-    myproxy_debug("Storing credentials for username \"%s\"", creds->user_name);
+    myproxy_debug("Storing credentials for username \"%s\"", creds->username);
     myproxy_debug("  Owner is \"%s\"", creds->owner_name);
     myproxy_debug("  Delegation lifetime is %d seconds", creds->lifetime);
     myproxy_log (DBG_HI, debug_level," Retrievers = %s Renewers = %s", creds->retrievers, creds->renewers); 
@@ -919,7 +929,7 @@ void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
 
 void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     
-    myproxy_debug("Deleting credentials for username \"%s\"", creds->user_name);
+    myproxy_debug("Deleting credentials for username \"%s\"", creds->username);
     myproxy_debug("  Owner is \"%s\"", creds->owner_name);
     myproxy_debug("  Delegation lifetime is %d seconds", creds->lifetime);
     
@@ -1087,6 +1097,7 @@ become_daemon(myproxy_server_context_t *context)
  * rules are as follows.
  * GET with passphrase (credential retrieval):
  *   Client DN must match allowed_retrievers.
+ 	
  *   Passphrase in request must match passphrase for credentials.
  * GET with certificate (credential renewal):
  *   Client DN must match allowed_renewers.
@@ -1136,9 +1147,10 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        }
        if (!(authorization_ok == 1)) break;
 
-       if (myproxy_creds_fetch_entry(client_request->username, &creds) < 0) {
+	// get information about credential
+       if (myproxy_creds_fetch_entry(client_request->username, client_request->credname, &creds) < 0) {
 	   myproxy_log_verror();
-	   verror_put_string("Unable to retrieve credentials.\n");
+	   verror_put_string("Unable to retrieve credential information.\n");
 	   goto end;
        }
 	 
@@ -1154,6 +1166,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        authorization_ok = myproxy_server_check_cred(context, client_name);
        if (!(authorization_ok == 1)) break;
 
+#ifdef LATER
        credentials_exist = myproxy_creds_exist(client_request->username);
        if (credentials_exist == -1) {
 	   myproxy_log_verror();
@@ -1176,8 +1189,8 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   goto end;
        }
        break;
+#endif
    }
-
    if (authorization_ok == -1) {
       myproxy_log_verror();
       verror_put_string("Error checking authorization");
@@ -1192,8 +1205,8 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    return_status = 0;
 
 end:
-   if (creds.pass_phrase)
-      memset(creds.pass_phrase, 0, strlen(creds.pass_phrase));
+   if (creds.passphrase)
+      memset(creds.passphrase, 0, strlen(creds.passphrase));
    myproxy_creds_free_contents(&creds);
    if (auth_data.server_data)
       free(auth_data.server_data);

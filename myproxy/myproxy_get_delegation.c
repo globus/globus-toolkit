@@ -44,7 +44,7 @@ static char usage[] = \
 "       -d | --dn_as_username             Use subject of the authorization\n"
 "                                         credential as the default username\n"
 "                                         instead of the LOGNAME env. var.\n"
-"	-k | --cred_name	<name>    Specify credential name\n"
+"	-k | --credname	<name>    Specify credential name\n"
 "\n";
 
 struct option long_options[] =
@@ -59,7 +59,7 @@ struct option long_options[] =
     {"version",                no_argument, NULL, 'v'},
     {"authorization",    required_argument, NULL, 'r'},
     {"dn_as_username",         no_argument, NULL, 'd'},
-    {"cred_name",	 required_argument, NULL, 'k'},
+    {"credname",	 required_argument, NULL, 'k'},
     {0, 0, 0, 0}
 };
 
@@ -201,7 +201,7 @@ init_arguments(int argc,
 	    dn_as_username = 1;
 	    break;
 	case 'k':   /* credential name */
-	    request->cred_name = strdup (gnu_optarg);
+	    request->credname = strdup (gnu_optarg);
 	    break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);

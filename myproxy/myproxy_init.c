@@ -54,7 +54,7 @@ static char usage[] = \
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
-"	-k | --cred_name <name>		  Specifies credential name\n"
+"	-k | --credname <name>		  Specifies credential name\n"
 "	-K | --cred_desc <description>	  Specifies credential description\n"
 "	-f | --force_dbase_write	  Forces write to database even if credential with the specified name is present\n"
 "\n";
@@ -78,7 +78,7 @@ struct option long_options[] =
   {"renewable_by",    required_argument, NULL, 'R'},
   {"regex_dn_match",        no_argument, NULL, 'x'},
   {"match_cn_only", 	    no_argument, NULL, 'X'},
-  {"cred_name",	      required_argument, NULL, 'k'},
+  {"credname",	      required_argument, NULL, 'k'},
   {"cred_desc",	      required_argument, NULL, 'K'},
   {"force_dbase_write",	    no_argument, NULL, 'f'},
   {0, 0, 0, 0}
@@ -370,7 +370,7 @@ init_arguments(int argc,
 	    request->renewers = strdup ("*");
 	    break;
 	case 'k':  /*credential name*/
-	    request->cred_name = strdup (gnu_optarg);
+	    request->credname = strdup (gnu_optarg);
 	    break;
 	case 'K':  /*credential description*/
 	    request->cred_desc = strdup (gnu_optarg);
