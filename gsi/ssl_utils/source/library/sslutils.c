@@ -134,35 +134,39 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_PROCESS_CERTS, "unable to access trusted certificates in:"},
     {PRXYERR_R_PROCESS_PROXY, "processing user proxy cert"},
     {PRXYERR_R_NO_TRUSTED_CERTS, "check X509_CERT_DIR and X509_CERT_FILE"},
-    {PRXYERR_R_PROBLEM_KEY_FILE, "Bad file system permissions on private key"},
-    {PRXYERR_R_PROBLEM_NOKEY_FILE, "Private key not found"},
-    {PRXYERR_R_PROBLEM_NOCERT_FILE, "Certificate not found"},
-    {PRXYERR_R_CERT_EXPIRED, "Cert has expired"},
-    {PRXYERR_R_PROXY_EXPIRED, "Proxy has expired"},
-    {PRXYERR_R_CRL_SIGNATURE_FAILURE, "Invalid signature on a CRL"},
-    {PRXYERR_R_CRL_NEXT_UPDATE_FIELD, "Invalid nextupdate field in CRL"},
-    {PRXYERR_R_CRL_HAS_EXPIRED, "Outdated CRL found, revoking all certs till you get new CRL"},
-    {PRXYERR_R_CERT_REVOKED, "Certificate revoked per CRL"},
-    {PRXYERR_R_NO_HOME, "Can't determine HOME directory"},
-    {PRXYERR_R_KEY_CERT_MISMATCH, "Key and certificate don't match"},
-    {PRXYERR_R_WRONG_PASSPHRASE, "Wrong pass phrase"},
-    {PRXYERR_R_CA_POLICY, "certificate does not match CA policy"},
-    {PRXYERR_R_CA_POLICY_ERR,"misconfigured CA policy"}, 
+    {PRXYERR_R_PROBLEM_KEY_FILE, "bad file system permissions on private key"},
+    {PRXYERR_R_ZERO_LENGTH_KEY_FILE, "zero file length on private key"},
+    {PRXYERR_R_ZERO_LENGTH_CERT_FILE, "zero file length on certificate"},
+    {PRXYERR_R_PROBLEM_NOKEY_FILE, "user private key not found"},
+    {PRXYERR_R_PROBLEM_NOCERT_FILE, "user certificate not found"},
+    {PRXYERR_R_USER_CERT_EXPIRED, "user certificate has expired"},
+    {PRXYERR_R_SERVER_CERT_EXPIRED, "server certificate has expired"},
+    {PRXYERR_R_PROXY_EXPIRED, "proxy expired: run grid-proxy-init or wgpi first"},
+    {PRXYERR_R_NO_PROXY, "no proxy credentials: run grid-proxy-init or wgpi first"},
+    {PRXYERR_R_CRL_SIGNATURE_FAILURE, "invalid signature on a CRL"},
+    {PRXYERR_R_CRL_NEXT_UPDATE_FIELD, "invalid nextupdate field in CRL"},
+    {PRXYERR_R_CRL_HAS_EXPIRED, "outdated CRL found, revoking all certs till you get new CRL"},
+    {PRXYERR_R_CERT_REVOKED, "certificate revoked per CRL"},
+    {PRXYERR_R_NO_HOME, "can't determine HOME directory"},
+    {PRXYERR_R_KEY_CERT_MISMATCH, "user key and certificate don't match"},
+    {PRXYERR_R_WRONG_PASSPHRASE, "wrong pass phrase"},
+    {PRXYERR_R_CA_POLICY_VIOLATION, "remote certificate CA signature not allowed by policy"},
+    {PRXYERR_R_CA_POLICY_ERR,"no matching CA found in file for remote certificate"}, 
     {PRXYERR_R_CA_NOFILE,"could not find CA policy file"}, 
     {PRXYERR_R_CA_NOPATH,"could not determine path to CA policy file"}, 
     {PRXYERR_R_CA_POLICY_RETRIEVE, "CA policy retrieve problems"},
     {PRXYERR_R_CA_POLICY_PARSE, "CA policy parse problems"},
-    {PRXYERR_R_CA_UNKNOWN,"Certificate signed by unknown CA"},
-    {PRXYERR_R_PROBLEM_CLIENT_CA, "Problems geting client_CA list"},
-    {PRXYERR_R_CB_NO_PW, "Run grid-proxy-init or wgpi first"},
+    {PRXYERR_R_CA_UNKNOWN,"remote certificate signed by unknown CA"},
+    {PRXYERR_R_PROBLEM_CLIENT_CA, "Problems getting client_CA list"},
+    {PRXYERR_R_CB_NO_PW, "proxy expired:Run grid-proxy-init or wgpi first"},
     {PRXYERR_R_CB_CALLED_WITH_ERROR,"Certificate verify failed:"},
-    {PRXYERR_R_CLASS_ADD_OID,"Can't find CLASS_ADD OID"},
-    {PRXYERR_R_CLASS_ADD_EXT,"Problem adding CLASS_ADD Extension"},
-    {PRXYERR_R_DELEGATE_VERIFY,"Problem verifiying the delegate extension"},
-    {PRXYERR_R_EXT_ADD,"Problem adding extension"},
-    {PRXYERR_R_DELEGATE_CREATE,"Problem creating delegate extension"},
-    {PRXYERR_R_DELEGATE_COPY,"Problem copying delegate extension to proxy"},
-    {PRXYERR_R_BUFFER_TOO_SMALL,"Buffer too small"},
+    {PRXYERR_R_CLASS_ADD_OID,"can't find CLASS_ADD OID"},
+    {PRXYERR_R_CLASS_ADD_EXT,"problem adding CLASS_ADD Extension"},
+    {PRXYERR_R_DELEGATE_VERIFY,"problem verifiying the delegate extension"},
+    {PRXYERR_R_EXT_ADD,"problem adding extension"},
+    {PRXYERR_R_DELEGATE_CREATE,"problem creating delegate extension"},
+    {PRXYERR_R_DELEGATE_COPY,"problem copying delegate extension to proxy"},
+    {PRXYERR_R_BUFFER_TOO_SMALL,"buffer too small"},
     {0,NULL},
 };
 
@@ -1921,7 +1925,7 @@ proxy_verify_callback(
             goto fail_verify;
         }
 #ifdef DEBUG
-        fprintf(stderr,"proxy_verify_callback:overridng:%d\n\n",
+        fprintf(stderr,"proxy_verify_callback:overriding:%d\n\n",
                 ctx->error);
 #endif
         ctx->error = 0;
@@ -2119,7 +2123,7 @@ proxy_verify_callback(
             if (ca_policy_file_path == NULL)
             {
                 PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_NOPATH);
-                ctx->error = X509_V_ERR_INVALID_PURPOSE; 
+                ctx->error =  X509_V_ERR_APPLICATION_VERIFICATION; 
                 goto fail_verify;
             }
 
@@ -2130,8 +2134,8 @@ proxy_verify_callback(
             if (checkstat(ca_policy_file_path) == 1)
             {
                 PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_NOFILE);
-                ERR_add_error_data(2, "\n        File=", ca_policy_file_path); 
-                ctx->error = X509_V_ERR_INVALID_PURPOSE;
+                /*ERR_add_error_data(2, "\n        File=", ca_policy_file_path); */
+                ctx->error = X509_V_ERR_APPLICATION_VERIFICATION;
                 goto fail_verify;
             }
 
@@ -2184,7 +2188,7 @@ proxy_verify_callback(
                     PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY_RETRIEVE);
                     ERR_add_error_data(3,buf,"\n        ",
                                        policy_db->error_str);
-                    ctx->error=X509_V_ERR_INVALID_PURPOSE;
+                    ctx->error=X509_V_ERR_APPLICATION_VERIFICATION;
                     goto fail_verify;
                 }
 
@@ -2201,7 +2205,7 @@ proxy_verify_callback(
                     PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY_PARSE);
                     ERR_add_error_data(3,buf,"\n        ",
                                        policy_db->error_str);
-                    ctx->error = X509_V_ERR_INVALID_PURPOSE;
+                    ctx->error =  X509_V_ERR_APPLICATION_VERIFICATION;
                     goto fail_verify;
                 }
 
@@ -2215,7 +2219,6 @@ proxy_verify_callback(
                 if (!detailed_answer)
                 {
                     PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY_ERR);
-                    ERR_add_error_data(2, "\n        File=", ca_policy_file_path);
                     ctx->error = X509_V_ERR_INVALID_PURPOSE; 
                     
                     if (subject_name) free(subject_name);
@@ -2250,8 +2253,6 @@ proxy_verify_callback(
                     oldgaa_release_principals(&minor_status, &policy_handle);
                 }
                 
-                
-
 
                 oldgaa_globus_cleanup(&oldgaa_sc,
                                       &rights,
@@ -2276,9 +2277,8 @@ proxy_verify_callback(
 
                 if (result != 0)
                 {
-                    PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY);
+                    PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY_VIOLATION);
 
-                    ERR_add_error_data(2, "\n        File=", ca_policy_file_path); 
                     ctx->error = X509_V_ERR_INVALID_PURPOSE; 
                                 
                     if (error_string != NULL)
@@ -2287,6 +2287,15 @@ proxy_verify_callback(
                          * Seperate error message returned from policy check
                          * from above error message with colon
                          */
+                        
+                        /* Will this block further add error string requests
+                         * for the same err? If ERR_add_error_string data
+                         * is called multiple times in openssl 0.9.6a for the
+                         * same error you don't get all of the strings back.
+                         * This has been tested in linux need to test other 
+                         * versions on other architectures CTN
+                         */
+
                         ERR_add_error_data(2, ": ", error_string);
                         free(error_string);
                     }
@@ -2340,10 +2349,6 @@ proxy_verify_callback(
     return(ok);
 
 fail_verify:
-    if (ca_policy_file_path != NULL)
-    {
-        free(ca_policy_file_path);
-    }
 
     if (ctx->current_cert)
     {
@@ -2354,27 +2359,44 @@ fail_verify:
             X509_get_subject_name(ctx->current_cert),NULL,0);
         issuer_s = X509_NAME_oneline(
             X509_get_issuer_name(ctx->current_cert),NULL,0);
-
-        /* using our own error string instead of openssl's */
-        if (ctx->error==X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN)
+        
+        switch (ctx->error)
         {
-             PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CA_UNKNOWN);
-             ERR_add_error_data(2,
-                           "\n        issuer =",
-                            issuer_s ? issuer_s : "UNKNOWN");
+            case X509_V_OK:
+            case X509_V_ERR_INVALID_PURPOSE:
+            case X509_V_ERR_APPLICATION_VERIFICATION:
+                 ERR_add_error_data(7, 
+                    "\n        File=", 
+                    ca_policy_file_path ? ca_policy_file_path : "UNKNOWN",
+                    "\n    Remote Certificate:",
+                    "\n        subject=",
+                    subject_s ? subject_s : "UNKNOWN",
+                    "\n        issuer =",
+                    issuer_s ? issuer_s : "UNKNOWN");
+            break;
+
+            case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
+                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CA_UNKNOWN);
+                    ERR_add_error_data(2, "\n        issuer =",
+                    issuer_s ? issuer_s : "UNKNOWN");
+            break;
+
+            default:
+                PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CB_CALLED_WITH_ERROR);
+                ERR_add_error_data(6,"\n        error =",
+                    X509_verify_cert_error_string(ctx->error),
+                    "\n        subject=",
+                    subject_s ? subject_s : "UNKNOWN",
+                    "\n        issuer =",
+                    issuer_s ? issuer_s : "UNKNOWN");
         }
-        else
-        {    
-            PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CB_CALLED_WITH_ERROR);
-            ERR_add_error_data(6,"\n        error=",
-                           X509_verify_cert_error_string(ctx->error),
-                           "\n        subject=",
-                           subject_s ? subject_s : "UNKNOWN",
-                           "\n        issuer =",
-                           issuer_s ? issuer_s : "UNKNOWN");
-        }
+
         free(subject_s);
         free(issuer_s);
+    }
+    if (ca_policy_file_path != NULL)
+    {
+        free(ca_policy_file_path);
     }
 
     return(0);
@@ -2616,6 +2638,7 @@ Returns:
 
 int
 proxy_get_filenames(
+    proxy_cred_desc *                   pcd,
     int                                 proxy_in,
     char **                             p_cert_file,
     char **                             p_cert_dir,
@@ -2651,6 +2674,13 @@ proxy_get_filenames(
 #ifdef WIN32
     RegOpenKey(HKEY_CURRENT_USER,GSI_REGISTRY_DIR,&hkDir);
 #endif
+    
+    /* setup some default values */
+    if (pcd) 
+    {
+        pcd->owner = CRED_OWNER_USER;
+        pcd->type = CRED_TYPE_PERMANENT;
+    }
 
     if (p_cert_dir)
     {
@@ -2890,6 +2920,8 @@ proxy_get_filenames(
                 X509_USER_PROXY_FILE,
                 uid);
 
+        if (pcd) pcd->owner = CRED_OWNER_SERVER;
+
 #ifndef WIN32
         if ((!proxy_in || getuid() != 0)
             && checkstat(default_user_proxy) == 0) 
@@ -2902,6 +2934,7 @@ proxy_get_filenames(
     {
         user_cert = user_proxy;
         user_key = user_proxy;
+        if (pcd) pcd->type = CRED_TYPE_PROXY;
     }
     else
     {
@@ -2972,10 +3005,12 @@ proxy_get_filenames(
             {
                 if (checkstat(X509_DEFAULT_HOST_CERT) != 1)
                 {
+                    if (pcd) pcd->owner=CRED_OWNER_SERVER;
                     user_cert = X509_DEFAULT_HOST_CERT;
                 }
                 if (checkstat(X509_DEFAULT_HOST_KEY) != 1)
                 {
+                    if (pcd) pcd->owner=CRED_OWNER_SERVER;
                     user_key = X509_DEFAULT_HOST_KEY;
                 }
             }
@@ -3023,6 +3058,7 @@ proxy_get_filenames(
         }
     }
 
+ 
 #ifdef DEBUG
     fprintf(stderr,"Using x509_user_cert=%s\n      x509_user_key =%s\n",
             user_cert, user_key);
@@ -3123,6 +3159,7 @@ proxy_load_user_cert(
     {
         PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOCERT_FILE);
         ERR_add_error_data(1, "\n        No certificate file found");
+        status = PRXYERR_R_PROBLEM_NOCERT_FILE;        
         goto err;   
     }
 
@@ -3140,6 +3177,7 @@ proxy_load_user_cert(
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOCERT_FILE);
             ERR_add_error_data(2, "\n        SmartCard reference=",
                                user_cert);
+            status = PRXYERR_R_PROBLEM_NOCERT_FILE;
             goto err;
         }
         kp++; /* skip the : */
@@ -3152,6 +3190,7 @@ proxy_load_user_cert(
                 ERR_add_error_data(
                     1,
                     "\n        Failed to open session to smartcard");
+                status = PRXYERR_R_PROCESS_CERT;
                 goto err;
             }
         }
@@ -3164,6 +3203,7 @@ proxy_load_user_cert(
                 2,
                 "\n        Could not find certificate on smartcard, label=",
                 kp);
+            status = PRXYERR_R_PROCESS_CERT;
             goto err;
         }
 #else
@@ -3171,6 +3211,7 @@ proxy_load_user_cert(
         ERR_add_error_data(
             1,
             "\n       Smartcard support not compiled with this program");
+        status = PRXYERR_R_PROCESS_CERT;
         goto err;
 
         /*
@@ -3188,16 +3229,28 @@ proxy_load_user_cert(
                                   OPENSSL_PEM_CB(NULL,NULL)) == NULL)
             {
                 PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
+                status = PRXYERR_R_PROCESS_CERT;
                 goto err;
 
             }
         }
         else
         {
+
             if((fp = fopen(user_cert,"r")) == NULL)
             {
-                PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOCERT_FILE);
-                ERR_add_error_data(2, "\n        File=", user_cert);
+                if (pcd->type == CRED_TYPE_PROXY && pcd->owner == CRED_OWNER_USER)
+                {
+                    PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_NO_PROXY);
+                    ERR_add_error_data(2, "\n        Proxy File=", user_cert);
+                    status = PRXYERR_R_NO_PROXY;
+                }
+                else
+                {
+                    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOCERT_FILE);
+                    ERR_add_error_data(2, "\n        Cert File=", user_cert);
+                    status = PRXYERR_R_PROBLEM_NOCERT_FILE;
+                }
                 goto err;
             }
 
@@ -3208,6 +3261,7 @@ proxy_load_user_cert(
                 PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
                 ERR_add_error_data(2, "\n        File=", user_cert);
                 fclose(fp);
+                status = PRXYERR_R_PROCESS_CERT;
                 goto err;
             }
             fclose(fp);
@@ -3231,6 +3285,7 @@ Description:
 Parameters:
 
 Returns:
+    an int specifying the error
 **********************************************************************/
 
 int
@@ -3264,6 +3319,7 @@ proxy_load_user_key(
     {
         PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOKEY_FILE);
         ERR_add_error_data(1,"\n        No key file found");
+        status = PRXYERR_R_PROBLEM_NOKEY_FILE;
         goto err;   
     }
 
@@ -3281,6 +3337,7 @@ proxy_load_user_key(
         {
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_KEY_FILE);
             ERR_add_error_data(2,"\n        SmartCard reference=",user_key);
+            status = PRXYERR_R_PROBLEM_KEY_FILE;
             goto err;
         }
         kp++; /* skip the : */
@@ -3293,6 +3350,7 @@ proxy_load_user_key(
                 ERR_add_error_data(
                     1,
                     "\n        Failed to open session to smartcard");
+                status = PRXYERR_R_PROCESS_KEY;
                 goto err;
             }
         }
@@ -3305,6 +3363,7 @@ proxy_load_user_key(
                 2,
                 "\n        Could not find key on smartcard, label=",
                 kp);
+            status = PRXYERR_R_PROCESS_KEY;
             goto err;
         }
 #else
@@ -3312,8 +3371,9 @@ proxy_load_user_key(
         ERR_add_error_data(
             1,
             "\n       Smartcard support not compiled with this program");
+        status = PRXYERR_R_PROCESS_KEY;
         goto err;
-
+        
         /*
          * DEE? could add a random number routine here, to use
          * the random number generator on the card
@@ -3329,15 +3389,18 @@ proxy_load_user_key(
                                         OPENSSL_PEM_CB(xpw_cb,NULL)) == NULL)
             {
                 PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
+                status = PRXYERR_R_PROCESS_KEY;
                 goto err;
             }
         }
         else
         {
+            int keystatus;
             if ((fp = fopen(user_key,"r")) == NULL)
             {
                 PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOKEY_FILE);
                 ERR_add_error_data(2, "\n        File=",user_key);
+                status = PRXYERR_R_PROBLEM_NOKEY_FILE;
                 goto err;
             }
 
@@ -3345,9 +3408,19 @@ proxy_load_user_key(
              * only be the user
              */
 
-            if (checkstat(user_key))
+            if (keystatus = checkstat(user_key))
             {
-                PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_KEY_FILE);
+                if (keystatus == 4)
+                {
+                    status = PRXYERR_R_ZERO_LENGTH_KEY_FILE;
+                    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_ZERO_LENGTH_KEY_FILE);
+                }
+                else
+                {
+                    status = PRXYERR_R_PROBLEM_KEY_FILE;
+                    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_KEY_FILE);
+                }
+
                 ERR_add_error_data(2, "\n        File=", user_key);
                 fclose(fp);
                 goto err;
@@ -3371,11 +3444,13 @@ proxy_load_user_key(
                 {
                     ERR_clear_error();
                     PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_WRONG_PASSPHRASE);
+                    status = PRXYERR_R_WRONG_PASSPHRASE;
                 }
                 else
                 {
                     PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
                     ERR_add_error_data(2, "\n        File=", user_key);
+                    status = PRXYERR_R_PROCESS_KEY;
                 }
                 goto err;
             }
@@ -3445,6 +3520,7 @@ proxy_load_user_key(
         if (mismatch)
         {
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_KEY_CERT_MISMATCH);
+            status = PRXYERR_R_KEY_CERT_MISMATCH;
             goto err;
         }
     }
@@ -3505,7 +3581,8 @@ proxy_init_cred(
     pcd->hPrivKey = 0;
 #endif
 
-    if (proxy_get_filenames(1,
+    if (proxy_get_filenames(pcd,
+                            1,
                             &cert_file,
                             &cert_dir,
                             (pcd->ucert||pcd->upkey)? NULL : &user_proxy,
@@ -3524,19 +3601,6 @@ proxy_init_cred(
     if (cert_file)
     {
         pcd->certfile = strdup(cert_file);
-    }
-
-    /* Assumed to be proxy or permanent early for
-       error messages that occure during parsing
-       similiar functions are repeated after file is parsed*/ 
- 
-    if (user_proxy)
-    {
-        pcd->type = CRED_TYPE_PROXY;
-    }
-    else
-    {
-        pcd->type = CRED_TYPE_PERMANENT;
     }
 
     SSLeay_add_ssl_algorithms();
@@ -3565,7 +3629,7 @@ proxy_init_cred(
                            (cert_file) ? cert_file: "NONE" ,
                            "\n        x509_cert_dir=",
                            (cert_dir) ? cert_dir : "NONE");
-                
+        status = PRXYERR_R_PROCESS_CERTS;       
         goto err;
     }
         
@@ -3584,6 +3648,7 @@ proxy_init_cred(
         {
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_CLIENT_CA);
             ERR_add_error_data(2,"\n        File=", cert_file);
+            status = PRXYERR_R_PROBLEM_CLIENT_CA;
             goto err;
         }
     }
@@ -3626,6 +3691,7 @@ proxy_init_cred(
                 if (!fname)
                 {
                     PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
+                    status = ERR_R_MALLOC_FAILURE;
                     goto err;
                 }
                 sprintf(fname,"%s%s%s", cert_dir,
@@ -3640,6 +3706,7 @@ proxy_init_cred(
                     PRXYerr(PRXYERR_F_INIT_CRED,
                             PRXYERR_R_PROBLEM_NOCERT_FILE);
                     ERR_add_error_data(2, "\n        File=", fname);
+                    status = PRXYERR_R_PROBLEM_NOCERT_FILE;
                     goto err;
                 }
 
@@ -3647,6 +3714,7 @@ proxy_init_cred(
                 {
                     PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
                     ERR_add_error_data(2, "\n        File=", fname);
+                    status = PRXYERR_R_PROCESS_CERT;
                     goto err;
                 }
 
@@ -3664,7 +3732,7 @@ proxy_init_cred(
 
     if (!pcd->ucert)
     {
-        if (proxy_load_user_cert(pcd, user_cert,
+        if (status = proxy_load_user_cert(pcd, user_cert,
                                  pw_cb, NULL))
         {
             goto err;
@@ -3686,7 +3754,7 @@ proxy_init_cred(
 
     if (!pcd->upkey)
     {
-        if (proxy_load_user_key(pcd, user_key,
+        if (status = proxy_load_user_key(pcd, user_key,
                                 pw_cb, NULL))
         {
             goto err;
@@ -3697,6 +3765,7 @@ proxy_init_cred(
     {
         PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
         ERR_add_error_data(2,"\n        File=", user_cert);
+        status = PRXYERR_R_PROCESS_CERT;
         goto err;
     }
     /* test if the cert is still valid */
@@ -3707,9 +3776,16 @@ proxy_init_cred(
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROXY_EXPIRED);
             status = PRXYERR_R_PROXY_EXPIRED; 
         }
-        else {
-            PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_CERT_EXPIRED);
-            status = PRXYERR_R_CERT_EXPIRED; 
+        else if (pcd->type==CRED_OWNER_SERVER)
+        {
+                        
+            PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_SERVER_CERT_EXPIRED);
+            status = PRXYERR_R_SERVER_CERT_EXPIRED; 
+        }
+        else 
+        {
+            PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_USER_CERT_EXPIRED);
+            status = PRXYERR_R_USER_CERT_EXPIRED; 
         }
 
         ERR_add_error_data(2,"\n        File=", user_cert);
@@ -3720,6 +3796,7 @@ proxy_init_cred(
     {
         PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
         ERR_add_error_data(2, "\n        File=", user_key);
+        status = PRXYERR_R_PROCESS_KEY;
         goto err;
     }
 
@@ -3745,6 +3822,7 @@ proxy_init_cred(
             { 
                 ERR_add_error_data(2,"\n        x509_user_proxy=", user_proxy);
             }
+            status = PRXYERR_R_PROCESS_PROXY;
             goto err;
         }
     }
