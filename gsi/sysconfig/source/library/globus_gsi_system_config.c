@@ -410,6 +410,12 @@ globus_i_gsi_sysconfig_create_key_string(
 
  exit:
 
+    if(*key_string_value &&
+       *key_string_value != *key_string)
+    {
+        free(*key_string_value);
+    }
+    
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
 }
@@ -2359,7 +2365,7 @@ globus_gsi_sysconfig_set_key_permissions_unix(
         "globus_gsi_sysconfig_set_key_permissions_unix";
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    if((fd = open(filename, 0)) < 0)
+    if((fd = open(filename, O_RDONLY|O_CREAT)) < 0)
     {
         result = globus_error_put(
             globus_error_wrap_errno_error(
@@ -5446,7 +5452,6 @@ globus_result_t
 globus_gsi_sysconfig_get_unique_proxy_filename(
     char **                             unique_filename)
 {
-    char *                              default_unique_filename = NULL;
     globus_result_t                     result;
     char *                              proc_id_string = NULL;
     char                                unique_tmp_name[L_tmpnam];
@@ -5483,47 +5488,41 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
     unique_postfix = strrchr(unique_tmp_name, '/');
     ++unique_postfix;
 
-    if((result = globus_i_gsi_sysconfig_create_key_string(
-            unique_filename,
-            & default_unique_filename,
-            "%s%s%s%s.%s.%d",
-            DEFAULT_SECURE_TMP_DIR,
-            FILE_SEPERATOR,
-            X509_UNIQUE_PROXY_FILE,
-            proc_id_string,
-            unique_postfix,
-            ++i)) != GLOBUS_SUCCESS &&
-       !GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+    do
     {
-        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_DELEG_FILENAME);
-        goto done;
-    }
-
-    *unique_filename = default_unique_filename;
-
-    if(!(*unique_filename))
-    {            
-        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT( 
-            result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_DELEG_FILENAME,
-            ("A file location for writing the unique proxy cert"
-             " could not be found in: %s\n",
-             default_unique_filename));
+        *unique_filename = globus_common_create_string("%s%s%s%s.%s.%d", DEFAULT_SECURE_TMP_DIR,
+                                                       FILE_SEPERATOR, X509_UNIQUE_PROXY_FILE,
+                                                       proc_id_string, unique_postfix, ++i);
         
-        goto done;
+        if(*unique_filename == NULL)
+        {
+            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto done;
+        }
+
+        result = globus_gsi_sysconfig_set_key_permissions_unix(*unique_filename);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            free(*unique_filename);
+            if(i > 25)
+            {
+                GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_DELEG_FILENAME);
+                goto done;
+            }
+        }
+        else
+        {
+            break;
+        }
     }
+    while(1);
 
     result = GLOBUS_SUCCESS;
 
  done:
-
-    if(default_unique_filename && 
-       (default_unique_filename != (*unique_filename)))
-    {
-        globus_libc_free(default_unique_filename);
-    }
 
     if(proc_id_string != NULL)
     {
