@@ -118,6 +118,8 @@ EXTRA_DIST = $(Scripts) LICENSE VERSION PROTOCOL myproxy-server.config \
                etc.services.modifications etc.inetd.conf.modifications \
                etc.init.d.myproxy etc.xinetd.myproxy
 
+dirt.sh:
+	touch dirt.sh
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
-
