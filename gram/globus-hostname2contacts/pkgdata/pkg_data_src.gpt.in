@@ -12,7 +12,7 @@
       <Dependency Name="globus_mds_common" Package="pgm"><Version > <Simple_Version Major="2" /> </Version> </Dependency>
     </Source_Dependencies>
 
-<With_Flavors build="no" />
+<With_Flavors build="yes" />
 <Build_Environment>
 <cflags>@GPT_CFLAGS@</cflags>
 <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
