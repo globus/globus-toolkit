@@ -60,9 +60,17 @@ globus_l_gass_transfer_http_line_mode =
 #define GLOBUS_L_TEXT_BYTE(text) (text & 0x7f)
 
 static globus_mutex_t globus_l_gass_transfer_http_mutex;
+static globus_cond_t globus_l_gass_transfer_http_cond;
 
-#define globus_l_gass_transfer_http_lock()	globus_mutex_lock(&globus_l_gass_transfer_http_mutex)
-#define globus_l_gass_transfer_http_unlock()	globus_mutex_unlock(&globus_l_gass_transfer_http_mutex)
+#define globus_l_gass_transfer_http_lock() \
+	globus_mutex_lock(&globus_l_gass_transfer_http_mutex)
+#define globus_l_gass_transfer_http_unlock() \
+	globus_mutex_unlock(&globus_l_gass_transfer_http_mutex)
+#define globus_l_gass_transfer_http_wait() \
+	globus_cond_wait(&globus_l_gass_transfer_http_cond, \
+			 &globus_l_gass_transfer_http_mutex)
+#define globus_l_gass_transfer_http_signal() \
+	globus_cond_signal(&globus_l_gass_transfer_http_cond)
 
 static char * globus_l_gass_transfer_http_subject_name;
 
@@ -217,6 +225,9 @@ typedef struct globus_gass_transfer_http_request_proto_s
     /* Begin internal http-specific proto state */
     globus_io_handle_t				handle;
     /* last data for sending, and EOF on receiving */
+
+    volatile globus_bool_t			oneshot_registered;
+    volatile globus_bool_t			oneshot_active;
 
     volatile globus_gass_transfer_http_state_t	state;
 
