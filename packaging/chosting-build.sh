@@ -83,6 +83,12 @@ fi
 export GPT_LOCATION=$BASEDIR/gpt-3.0.1
 cd $BASEDIR/package-output
 $GPT_LOCATION/sbin/gpt-bundle -srcdir=$PWD -bn=globus_chosting -bv=0.1 `ls | sed -e "s|\(.*\)-.*|\1|" | xargs`
+if test ! $? = 0; then
+	echo ""
+	echo "Failed to create chosting bundle."
+	echo ""
+	exit 1
+fi
 
 if test -z "$GLOBUS_LOCATION"; then
 	echo ""
@@ -92,3 +98,9 @@ if test -z "$GLOBUS_LOCATION"; then
 fi
 
 $GPT_LOCATION/sbin/gpt-build globus_chosting-0.1-src_bundle.tar.gz gcc32dbg
+if test ! $? = 0; then
+	echo ""
+	echo "Failed to build chosting bundle."
+	echo ""
+	exit 1
+fi
