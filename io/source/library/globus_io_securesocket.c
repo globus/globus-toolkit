@@ -97,6 +97,11 @@ globus_l_io_read_input_token(
     globus_io_handle_t *	handle,
     globus_io_input_token_t *	input_token);
 
+static
+globus_result_t
+globus_l_io_securesocket_call_auth_callback(
+	globus_io_handle_t *	handle);
+
 typedef struct globus_io_authentication_info_s globus_io_authentication_info_t;
 
 typedef void (* globus_io_authentication_callback_t)(
@@ -618,6 +623,14 @@ globus_i_io_securesocket_register_connect_callback(
 	flags |= GSS_C_MUTUAL_FLAG;
         break;     
       case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK:
+	flags |= GSS_C_MUTUAL_FLAG;
+	if(handle->securesocket_attr.authorized_identity != GLOBUS_NULL)
+	{
+	    globus_libc_free(handle->securesocket_attr.authorized_identity);
+	}
+	handle->securesocket_attr.authorized_identity =
+	    globus_libc_strdup("GSI-NO-TARGET");
+	break;
       case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE:
 	globus_assert(GLOBUS_FALSE ||
 		      "unsupported authorization mode");
@@ -1779,12 +1792,22 @@ globus_l_io_init_sec_context(
 	}
 	else
 	{
+	    result = GLOBUS_SUCCESS;
+	    if(handle->securesocket_attr.auth_callback)
+	    {
+		result = globus_l_io_securesocket_call_auth_callback(handle);
+		if(result != GLOBUS_SUCCESS)
+		{
+		    /* not authorized */
+		    globus_i_io_close(handle);
+		}
+	    }
 	    globus_i_io_mutex_unlock();
 
 	    /* completed */
 	    init_info->callback(init_info->callback_arg,
 				handle,
-				GLOBUS_SUCCESS,
+				result,
 				init_info);
 	    globus_free(init_info);
 	}
@@ -1954,6 +1977,7 @@ globus_l_io_write_auth_token(
 
     init_info = (globus_io_authentication_info_t *) arg;
 
+    globus_i_io_mutex_lock();
     if(init_info->output_buffer_header == GLOBUS_NULL)
     {
 	/* If this is not an SSL token, then we must prepend a
@@ -2055,9 +2079,23 @@ globus_l_io_write_auth_token(
      */
     if(init_info->maj_stat == GSS_S_COMPLETE)
     {
+	result = GLOBUS_SUCCESS;
+
+	if(handle->securesocket_attr.auth_callback)
+	{
+	    result = globus_l_io_securesocket_call_auth_callback(handle);
+	    if(result != GLOBUS_SUCCESS) 
+	    {
+		/* Not authorized */
+		globus_i_io_close(handle);
+	    }
+	}
+
+	globus_i_io_mutex_unlock();
+
 	init_info->callback(init_info->callback_arg,
 			    handle,
-			    GLOBUS_SUCCESS,
+			    result,
 			    init_info);
 	if(init_info->name)
 	{
@@ -2085,6 +2123,8 @@ globus_l_io_write_auth_token(
 	goto error_exit;
     }
 
+    globus_i_io_mutex_unlock();
+
     return;
 
   continue_write:
@@ -2094,6 +2134,7 @@ globus_l_io_write_auth_token(
 	(void *) init_info,
 	GLOBUS_NULL);
 
+    globus_i_io_mutex_unlock();
     return;
 
   error_exit:
@@ -2104,6 +2145,8 @@ globus_l_io_write_auth_token(
 	(int) init_info->maj_stat,
 	(int) init_info->min_stat,
 	0);
+
+    globus_i_io_mutex_unlock();
 
     init_info->callback(init_info->callback_arg,
 			handle,
@@ -3350,3 +3393,92 @@ globus_l_io_delegation_cb(
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);
 }
+
+/**
+ * Call the authorization callback for a handle.
+ *
+ * This function calls the user's authorization callback to allow
+ * the user to decide whether to authorize the connection or not.
+ * This function is used when the user wants an authorization callback
+ * on the "connect" side of a secure connection. In that case, we must
+ * extract the subject name of the target from the security context.
+ *
+ * Called with i/o mutex locked.
+ *
+ * @param handle
+ *        Handle to authorize.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         User has authorized the connection.
+ * @retval GLOBUS_IO_ERROR_AUTHORIZATION_FAILED
+ *         User has denied authorization.
+ */
+static
+globus_result_t
+globus_l_io_securesocket_call_auth_callback(
+	globus_io_handle_t *		handle)
+{
+    globus_result_t			result;
+    gss_name_t				target;
+    gss_buffer_desc			target_name_buffer;
+    OM_uint32				maj_stat;
+    OM_uint32				min_stat;
+
+    target_name_buffer.length = (size_t) 0;
+    target_name_buffer.value = GLOBUS_NULL;
+
+    maj_stat = gss_inquire_context(&min_stat,
+				   handle->context,
+				   GLOBUS_NULL,
+				   &target,
+				   GLOBUS_NULL,
+				   GLOBUS_NULL,
+				   GLOBUS_NULL,
+				   GLOBUS_NULL,
+				   GLOBUS_NULL);
+
+    if(maj_stat == GSS_S_COMPLETE)
+    {
+	maj_stat = gss_display_name(&min_stat,
+				    target,
+				    &target_name_buffer,
+				    GLOBUS_NULL);
+	if(maj_stat != GSS_S_COMPLETE)
+	{
+	    /* Error creating name string */
+	    target_name_buffer.length = (size_t) 0;
+	    target_name_buffer.value = GLOBUS_NULL;
+	}
+	gss_release_name(&min_stat, &target);
+    }
+
+    if(! handle->securesocket_attr.auth_callback(
+	handle->securesocket_attr.auth_callback_arg,
+	handle,
+	GLOBUS_SUCCESS,
+	(char *) target_name_buffer.value,
+	handle->context))
+    {
+	/* not authorized */
+	result = globus_error_put(
+		globus_io_error_construct_authorization_failed(
+		    GLOBUS_IO_MODULE,
+		    GLOBUS_NULL,
+		    handle,
+		    0,
+		    0,
+		    0));
+    }
+    else
+    {
+	result = GLOBUS_SUCCESS;
+    }
+
+    if(target_name_buffer.value)
+    {
+	gss_release_buffer(&min_stat, &target_name_buffer);
+    }
+
+    return result;
+}
+/* globus_l_io_securesocket_call_auth_callback() */
