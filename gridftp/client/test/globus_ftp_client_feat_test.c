@@ -88,6 +88,8 @@ print_features(
 	  printf("maybe\n");
 	else printf("no\n");
     }
+    
+    printf("\n");
 }
 
 int main(
