@@ -1,5 +1,5 @@
  
-  Copyright (c) 1999 WU-FTPD Development Group.  
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
   All rights reserved.
   
   Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994
@@ -23,6 +23,22 @@
   $Id$
 
 
+Changes in 2.6.1: Released 2 Jul, 2000
+
+ o  Fix security leaks that could result in a root shell compromise.
+
+ o  Fix memory leaks in internal ls (this feature still needs more testing;
+    you should probably not use it on high-traffic production servers yet.)
+
+ o  Fix up the port-allow command in ftpaccess.
+
+ o  Merge in the virtual passwd/virtual shadow features of BeroFTPD.
+
+ o  Some fixes to the configure script.
+
+ o  SITE MINFO was missed in 2.6.0 when disabling SITE NEWER.
+
+ o  Fix documentation of data-limit.
 
 Changes in 2.6.0: Released 18 Oct, 1999
 

@@ -1,6 +1,6 @@
 /****************************************************************************  
  
-  Copyright (c) 1999 WU-FTPD Development Group.  
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
   All rights reserved.
   
   Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994
@@ -37,7 +37,7 @@ o Add a configuration option changing the behavior of the daemon when an
 o Rewrite all configuration file handling for robustness and calrity.
 
 o Limit logins based upon system load.  From a patch submitted to the
-  mailing list by pschwan@@apk.net on Sep 27, 1997.  This closes Stan's TODO
+  mailing list by pschwan@apk.net on Sep 27, 1997.  This closes Stan's TODO
   item 18.  Phil has lost his patch.  I'm thinking about yanking the code
   from sendmail to determine the system load and recreating Phil's work from
   that base.
@@ -47,14 +47,14 @@ o Limit logins and/or uploads based upon free space.  Take a look at how
 
 o Add 'onupload' syntax to run external programs/scripts at the end of an
   upload.  A Frequently Requested Feature.  From a request to the mailing
-  list from breif@@rol3.com on Aug 25, 1997.
+  list from breif@rol3.com on Aug 25, 1997.
 
 o Add 'virtual-retrieve' to run specified program and pipe output when a
   given GET is handled.  If wildcards/globbing/regex is allowed, pass the
   requested name to the program for processing.
 
 o Use a stats file in addition to or in place of SETPROCTITLE.  From a patch
-  referenced on the mailing list by mjm@@doc.ic.ac.uk on Jun 12, 1997.  This
+  referenced on the mailing list by mjm@doc.ic.ac.uk on Jun 12, 1997.  This
   closes Stan's TODO items 4 and 6 and possbily item 8.  I'm thinking about
   yanking the code from Apache's scoreboard to use as a base for this.
 

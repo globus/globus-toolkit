@@ -1,7 +1,7 @@
 
 /****************************************************************************  
  
-  Copyright (c) 1999 WU-FTPD Development Group.  
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
   All rights reserved.
   
   Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994
@@ -66,6 +66,18 @@
 
 #if defined(HAVE_FCNTL_H)
 #include <fcntl.h>
+#endif
+
+#ifdef OTHER_PASSWD
+#include "getpwnam.h"
+extern char _path_passwd[];
+#ifdef SHADOW_PASSWORD
+extern char _path_shadow[];
+#endif
+#endif
+
+#if defined(USE_PAM) && defined(OTHER_PASSWD)
+extern int use_pam;
 #endif
 
 extern char remotehost[], remoteaddr[], *remoteident, *aclbuf;
@@ -356,7 +368,11 @@ int acl_guestgroup(struct passwd *pw)
 		}
 	    }
 	    else {
+#ifdef OTHER_PASSWD
+		struct passwd *g_pw = bero_getpwnam(ARG[which], _path_passwd);
+#else
 		struct passwd *g_pw = getpwnam(ARG[which]);
+#endif
 		if (g_pw && (g_pw->pw_uid == pw->pw_uid))
 		    return (1);
 	    }
@@ -478,7 +494,11 @@ int acl_realgroup(struct passwd *pw)
 		}
 	    }
 	    else {
+#ifdef OTHER_PASSWD
+		struct passwd *g_pw = bero_getpwnam(ARG[which], _path_passwd);
+#else
 		struct passwd *g_pw = getpwnam(ARG[which]);
+#endif
 		if (g_pw && (g_pw->pw_uid == pw->pw_uid))
 		    return (1);
 	    }
@@ -1038,6 +1058,41 @@ void acl_datalimit(char *class)
     }
 }
 
+
+#ifdef RATIO
+
+/*************************************************************************/
+/* FUNCTION  : acl_downloadrate                                          */
+/* PURPOSE   : Scan the ACL buffer and determine what data limit to use  */
+/*             based upon the class                                      */
+/* ARGUMENTS : pointer to class name                                     */
+/*************************************************************************/
+
+void acl_downloadrate(char *class)
+{
+    struct aclmember *entry = NULL;
+    extern int upload_download_rate;
+    int which;
+
+    /* ul-dl-rate <rate> [<class> ...] */
+    while (getaclentry("ul-dl-rate", &entry)) {
+	if (!ARG0 )
+	    continue;
+
+	if (!ARG1) {
+	    upload_download_rate = atol(ARG0);
+	}
+	else {
+	    for (which = 1; (which < MAXARGS) && ARG[which]; which++) {
+		if (!strcasecmp(ARG[which], class))
+		    upload_download_rate = atol(ARG0);
+	    }
+	}
+
+    }
+}
+#endif /* RATIO */
+
 #endif
 #endif
 
@@ -1375,6 +1430,24 @@ void access_init(void)
     entry = (struct aclmember *) NULL;
     if (getaclentry("shutdown", &entry) && ARG0 != NULL)
 	(void) strncpy(Shutdown, ARG0, sizeof(Shutdown));
+#ifdef OTHER_PASSWD
+    entry = (struct aclmember *) NULL;
+    while (getaclentry("passwd", &entry) && ARG0 != NULL) {
+	    strcpy(_path_passwd, ARG0);
+#ifdef USE_PAM
+	    use_pam = 0;
+#endif
+    }
+#ifdef SHADOW_PASSWORD
+    entry = (struct aclmember *) NULL;
+    while (getaclentry("shadow", &entry) && ARG0 != NULL) {
+	    strcpy(_path_shadow, ARG0);
+#ifdef USE_PAM
+	    use_pam = 0;
+#endif
+    }
+#endif
+#endif
     entry = (struct aclmember *) NULL;
     if (getaclentry("keepalive", &entry) && ARG0 != NULL)
 	if (!strcasecmp(ARG0, "yes"))
@@ -1431,6 +1504,9 @@ int access_ok(int msgcode)
 #ifdef TRANSFER_LIMIT
     acl_filelimit(class);
     acl_datalimit(class);
+#ifdef RATIO
+    acl_downloadrate(class);
+#endif
 #endif
 #endif
     /* if no limits defined, no limits apply -- access OK */

@@ -1,6 +1,6 @@
 /****************************************************************************  
  
-  Copyright (c) 1999 WU-FTPD Development Group.  
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
   All rights reserved.
   
   Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994
@@ -238,7 +238,7 @@ static int acl_countusers(char *class)
 #elif defined(sun)
 			sprintf(line, "/usr/ucb/ps auxww %ld", buf[which]);
 #else
-#if defined (LINUX)
+#if defined (LINUX_BUT_NOT_REDHAT_6_0)
 			sprintf(line, "/bin/ps axwww %d", buf[which]);
 #else
 			sprintf(line, "/bin/ps -f -p %d", buf[which]);

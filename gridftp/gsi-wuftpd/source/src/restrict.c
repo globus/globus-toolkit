@@ -1,5 +1,5 @@
 /****************************************************************************    
-  Copyright (c) 1999 WU-FTPD Development Group.  
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
   All rights reserved.
    
   Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994  
@@ -158,8 +158,12 @@ int restrict_list_check(char *name)
 
 /*
  * $Log$
- * Revision 1.1.1.1  2000/02/14 16:59:29  welch
- * Initial import of wuftpd 2.6.0 (with configure removed)
+ * Revision 1.1.1.2  2000/07/10 19:33:53  welch
+ * Import of wuftpd 2.6.1
+ *
+ * Revision 1.14  2000/07/01 18:17:39  wuftpd
+ *
+ * Updated copyright statement for the WU-FTPD Development Group.
  *
  * Revision 1.13  1999/10/08 03:42:12  wuftpd
  * Fixed a bug in restrict_check which could allow access outside the users home

@@ -1,5 +1,5 @@
 /****************************************************************************    
-  Copyright (c) 1999 WU-FTPD Development Group.  
+  Copyright (c) 1999,2000 WU-FTPD Development Group.  
   All rights reserved.
   
   Portions Copyright (c) 1980, 1985, 1988, 1989, 1990, 1991, 1993, 1994 
@@ -98,6 +98,11 @@ static char *gpath, *gpathp, *lastgpathp;
 static int globbed;
 static char *entp;
 static char **sortbas;
+
+#ifdef OTHER_PASSWD
+#include "getpwnam.h"
+extern char _path_passwd[];
+#endif
 
 char **ftpglob(register char *v)
 {
@@ -655,7 +660,11 @@ static char *strend(register char *cp)
  */
 int gethdir(char *home)
 {
+#ifdef OTHER_PASSWD
+    register struct passwd *pp = bero_getpwnam(home, _path_passwd);
+#else
     register struct passwd *pp = getpwnam(home);
+#endif
     register char *root = NULL;
     if (!pp || home + strlen(pp->pw_dir) >= lastgpathp)
 	return (1);
