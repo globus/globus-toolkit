@@ -33,14 +33,14 @@ globus_result_t
 globus_gass_copy_init(
     globus_gass_copy_handle_t * handle)
 {
-    globus_gsiftp_client_init(&handle->gsiftp_handle);
+    globus_ftp_client_init(&handle->ftp_handle);
 }
 
 globus_result_t
 globus_gass_copy_destroy(
     globus_gass_copy_handle_t * handle)
 {
-    globus_gsiftp_client_destroy(&handle->gsiftp_handle);
+    globus_ftp_client_destroy(&handle->ftp_handle);
 }
 
 /************************************************************
@@ -105,17 +105,17 @@ globus_gass_copy_url_to_url(
     if (   (source_url_scheme == GLOBUS_I_GASS_COPY_URL_SCHEME_FTP)
 	&& (dest_url_scheme == GLOBUS_I_GASS_COPY_URL_SCHEME_FTP) )
     {
-	/* use source_attr to create source_gsiftp_client_attr */
+	/* use source_attr to create source_ftp_client_attr */
 	
-	/* use dest_attr to create dest_gsiftp_client_attr */
+	/* use dest_attr to create dest_ftp_client_attr */
 	
-	globus_gsiftp_client_register_transfer(
-	    handle->gsiftp_handle,
+	globus_ftp_client_register_transfer(
+	    handle->ftp_handle,
 	    source_url,
-	    source_gsiftp_client_attr,
+	    source_ftp_client_attr,
 	    dest_url,
-	    dest_gsiftp_client_attr,
-	    globus_l_gass_copy_gsiftp_transfer_callback,
+	    dest_ftp_client_attr,
+	    globus_l_gass_copy_ftp_transfer_callback,
 	    &monitor);
     }
     else
@@ -343,10 +343,10 @@ globus_l_gass_copy_transfer_start(
 	state->source.data.ftp.n_reads_posted = 0;
 
 	/* Setup the ftp get */
-	globus_gsiftp_client_register_get(
-	    handle->gsiftp_handle,
+	globus_ftp_client_register_get(
+	    handle->ftp_handle,
 	    state->source.url,
-	    attr,
+	    state->source.attr.ftp,
 	    globus_l_gass_copy_ftp_setup_callback,
 	    (void *) state);
 
@@ -357,7 +357,7 @@ globus_l_gass_copy_transfer_start(
 	/* Setup the gass get */
 	globus_gass_transfer_register_get(
 	    state->source.data.gass.request,
-	    request_attr,
+	    state->source.attr.gass,
 	    state->source.url,
 	    globus_l_gass_copy_gass_setup_callback,
 	    (void *) state);
@@ -378,6 +378,30 @@ globus_l_gass_copy_transfer_start(
  *****************************************************************/
 
 void
+globus_l_gass_copy_ftp_setup_callback(
+    void * callback_arg,
+    globus_gass_transfer_request_t * request)
+{
+    globus_l_gass_copy_generic_setup_callback();
+}
+
+void
+globus_l_gass_copy_gass_setup_callback(
+    void * callback_arg,
+    globus_gass_transfer_request_t * request)
+{
+    globus_l_gass_copy_generic_setup_callback();
+}
+
+void
+globus_l_gass_copy_io_setup_callback(
+    void * callback_arg,
+    globus_gass_transfer_request_t * request)
+{
+    globus_l_gass_copy_generic_setup_callback();
+}
+
+void
 globus_l_gass_copy_generic_setup_callback(
     void * callback_arg,
     ...)
@@ -393,45 +417,29 @@ globus_l_gass_copy_generic_setup_callback(
 
 }
 
-void
-globus_l_gass_copy_ftp_setup_callback(
-    void * callback_arg,
-    globus_gass_transfer_request_t * request)
-{
-}
-
-void
-globus_l_gass_copy_gass_setup_callback(
-    void * callback_arg,
-    globus_gass_transfer_request_t * request)
-{
-}
-
-void
-globus_l_gass_copy_io_setup_callback(
-    void * callback_arg,
-    globus_gass_transfer_request_t * request)
-{
-}
-
-
 /*****************************************************************
  * read callbacks
  *****************************************************************/
 
 void
 globus_l_gass_copy_generic_read_callback(
-    void * callback_arg,
-    ...)
+    globus_i_gass_copy_state_t *    state,
+    globus_byte_t *                 bytes,
+    globus_size_t                   nbytes,
+    globus_size_t                   offset)
 {
-    globus_i_gass_copy_state_t * state
-	= (globus_i_gass_copy_state_t *) callback_arg;
+    globus_gass_copy_buffer_t *  buffer_entry;
 
     globus_mutex_lock(&(state->dest.mutex));
 
-    /* put this buffer onto the write queue */
-    enqueue({buffer, offset, size},
-	    state->dest.write_queue);
+    buffer_entry = (globus_i_gass_copy_buffer_t *)
+         globus_libc_malloc(sizeof(globus_i_gass_copy_buffer_t));
+    buffer_entry.bytes  = bytes;
+    buffer_entry.nbytes = nbytes;
+    buffer_entry.offset = offset;
+
+    /* put this read buffer entry onto the write queue */
+    globus_fifo_enqueue( state->dest.write_queue, buffer_entry);
 
     /* start the next write if there isn't already one outstanding */
     globus_i_gass_copy_generic_write_from_queue(state);
@@ -441,26 +449,53 @@ globus_l_gass_copy_generic_read_callback(
 
 void
 globus_l_gass_copy_ftp_read_callback(
-    void * callback_arg,
-    ...)
+    void *                          callback_arg,
+    globus_ftp_handle_t *           handle,
+    globus_result_t                 result,
+    globus_byte_t *                 bytes,
+    globus_size_t                   nbytes)
 {
-    globus_l_gass_copy_generic_read_callback(callback_arg, ...);
+    globus_i_gass_copy_state_t * state
+	= (globus_i_gass_copy_state_t *) callback_arg;
+
+    globus_l_gass_copy_generic_read_callback(
+        state,
+        bytes,
+        nbytes);
 }
 
 void
 globus_l_gass_copy_gass_read_callback(
-    void * callback_arg,
-    ...)
+    void *                          callback_arg,
+    globus_gass_transfer_request_t  request,
+    globus_byte_t *                 bytes,
+    globus_size_t                   nbytes,
+    globus_bool_t                   last_data)
 {
-    globus_l_gass_copy_generic_read_callback(callback_arg, ...);
+    globus_i_gass_copy_state_t * state
+	= (globus_i_gass_copy_state_t *) callback_arg;
+
+    globus_l_gass_copy_generic_read_callback(
+        state,
+        bytes,
+        nbytes);
 }
 
 void
 globus_l_gass_copy_io_read_callback(
-    void * callback_arg,
-    ...)
+    void *                          callback_arg,
+    globus_io_handle_t *            handle,
+    globus_result_t                 result,
+    globus_byte_t *                 bytes,
+    globus_size_t                   nbytes)
 {
-    globus_l_gass_copy_generic_read_callback(callback_arg, ...);
+    globus_i_gass_copy_state_t * state
+	= (globus_i_gass_copy_state_t *) callback_arg;
+
+    globus_l_gass_copy_generic_read_callback(
+        state,
+        bytes,
+        nbytes);
 }
 
 void
@@ -482,11 +517,11 @@ globus_l_gass_copy_register_read(
     switch (state->source.mode)
     {
       case GLOBUS_I_GASS_COPY_TARGET_MODE_FTP:
-	globus_gsiftp_client_data_register_read(
-	    handle->gsiftp_handle,
+	globus_ftp_client_data_register_read(
+	    state->source.data.ftp.handle,
 	    buffer,
 	    state->buffer_length,
-	    globus_l_gass_copy_gsiftp_read_callback,
+	    globus_l_gass_copy_ftp_read_callback,
 	    (void *) state);
 	break;
 
@@ -502,7 +537,7 @@ globus_l_gass_copy_register_read(
 
       case GLOBUS_I_GASS_COPY_TARGET_MODE_IO:
 	globus_io_register_read(
-	    io_handle,
+	    state->source.data.io.handle,
 	    buffer
 	    state->buffer_length,
 	    state->buffer_length,
@@ -564,6 +599,7 @@ void
 globus_l_gass_copy_register_write_from_queue(
     globus_i_gass_copy_state_t * state)
 {
+    globus_gass_copy_buffer_t *  buffer_entry;
 
     while (state->dest.writes_pending < state->dest.simultaneous_writes)
     {
@@ -571,17 +607,18 @@ globus_l_gass_copy_register_write_from_queue(
 	 * There is not a write pending.  So check the write queue,
 	 * and if there is one then register the first one to write.
 	 */
-	if ((buffer = dequeue(state->dest.write_queue)) != GLOBUS_NULL)
+	if ((buffer_entry = globus_fifo_dequeue(state->dest.write_queue))
+              != GLOBUS_NULL)
 	{
 	    switch (state->dest.mode)
 	    {
 	      case GLOBUS_I_GASS_COPY_TARGET_MODE_FTP:
 		/* check the offset to see if its what we are expecting */
-		globus_gsiftp_client_data_register_write(
-		    handle->gsiftp_handle,
-		    buffer,
-		    size,
-		    globus_l_gass_copy_gsiftp_write_callback,
+		globus_ftp_client_data_register_write(
+		    state->dest.data.ftp.handle,
+		    buffer_entry->bytes,
+		    buffer_entry->nbytes,
+		    globus_l_gass_copy_ftp_write_callback,
 		    (void *) state);
 		break;
 
@@ -589,10 +626,10 @@ globus_l_gass_copy_register_write_from_queue(
 		/* check the offset to see if its what we are expecting */
 		globus_gass_transfer_send_bytes(
 		    state->dest.data.gass.request,
-		    buffer,
-		    size,
+		    buffer_entry->bytes,
+		    buffer_entry->nbytes,
 		    state->buffer_length,
-		    globus_l_gass_copy_gass_read_callback,
+		    globus_l_gass_copy_gass_write_callback,
 		    (void *) state);
 		break;
 
@@ -601,14 +638,14 @@ globus_l_gass_copy_register_write_from_queue(
 		{
 		    globus_io_file_seek(
 			state->dest.data.io.handle,
-			offset,
+			buffer_entry->offset,
 			GLOBUS_IO_SEEK_SET);
 		}
 	
 		globus_io_register_write(
 		    state->dest.data.io.handle,
-		    buffer
-		    size,
+		    buffer_entry->bytes
+		    buffer_entry->nbytes,
 		    globus_l_gass_copy_io_write_callback,
 		    (void *) state);
 
@@ -616,10 +653,14 @@ globus_l_gass_copy_register_write_from_queue(
 	    }
 	}
 
+        globus_libc_free(buffer_entry);
+
 	state->dest.writes_pending++;
     }
     
-    globus_mutex_unlock(&(state->dest.mutex));
+    /* i dont think we want this unlock here ???
+     * globus_mutex_unlock(&(state->dest.mutex));
+     */
 }
 
 void
@@ -721,8 +762,8 @@ globus_gass_copy_cache_url_state(
     if (   (strcmp(source_url_info.schema, "ftp") == 0)
 	|| (strcmp(source_url_info.schema, "gsiftp") == 0)    )
     {
-	globus_gsiftp_client_cache_url_state(
-	    &handle->gsiftp_handle,
+	globus_ftp_client_cache_url_state(
+	    &handle->ftp_handle,
 	    url);
     }
 }
@@ -737,8 +778,8 @@ globus_gass_copy_flush_url_state(
     if (   (strcmp(source_url_info.schema, "ftp") == 0)
 	|| (strcmp(source_url_info.schema, "gsiftp") == 0)    )
     {
-	globus_gsiftp_client_flush_url_state(
-	    &handle->gsiftp_handle,
+	globus_ftp_client_flush_url_state(
+	    &handle->ftp_handle,
 	    url);
     }
 }
@@ -771,21 +812,21 @@ globus_gass_copy_get_user_pointer(
 globus_result_t
 globus_gass_copy_attr_set_tcpbuffer(
     globus_gass_copy_attr_t * attr,
-    globus_gsiftp_control_tcpbuffer_t * tcpbuffer_info)
+    globus_ftp_control_tcpbuffer_t * tcpbuffer_info)
 {
 }
 
 globus_result_t
 globus_gass_copy_attr_set_parallelism(
     globus_gass_copy_attr_t * attr,
-    globus_gsiftp_control_parallelism_t * parallelism_info)
+    globus_ftp_control_parallelism_t * parallelism_info)
 {
 }
 
 globus_result_t
 globus_gass_copy_attr_set_striping(
     globus_gass_copy_attr_t * attr,
-    globus_gsiftp_control_striping_t * striping_info)
+    globus_ftp_control_striping_t * striping_info)
 {
 }
 

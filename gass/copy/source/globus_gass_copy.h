@@ -69,10 +69,20 @@ globus_module_descriptor_t        globus_i_gass_copy_module;
 struct globus_gass_copy_handle_s
 {
     void *				user_pointer;
-    globus_gsiftp_client_handle_t	gsiftp_handle;
+    globus_ftp_client_handle_t	        ftp_handle;
     globus_io_handle_t *		io_handle;
 
 } globus_gass_copy_handle_t;
+
+/**
+ * gass copy attribute structure
+ */
+struct globus_gass_copy_attr_s
+{
+    globus_gass_transfer_requestattr_t	gass;
+    globus_io_attr_t	                io;
+    globus_ftp_attr_t	                ftp;
+} globus_gass_copy_attr_t;
 
 
 /**
@@ -187,19 +197,19 @@ globus_gass_copy_get_user_pointer(
 globus_result_t
 globus_gass_copy_attr_set_tcpbuffer(
     globus_gass_copy_attr_t * attr,
-    globus_gsiftp_control_tcpbuffer_t * tcpbuffer_info);
+    globus_ftp_control_tcpbuffer_t * tcpbuffer_info);
 
 /* parallel transfer options */
 globus_result_t
 globus_gass_copy_attr_set_parallelism(
     globus_gass_copy_attr_t * attr,
-    globus_gsiftp_control_parallelism_t * parallelism_info);
+    globus_ftp_control_parallelism_t * parallelism_info);
 
 /* striping options */
 globus_result_t
 globus_gass_copy_attr_set_striping(
     globus_gass_copy_attr_t * attr,
-    globus_gsiftp_control_striping_t * striping_info);
+    globus_ftp_control_striping_t * striping_info);
 
 /* authorization options */
 globus_result_t

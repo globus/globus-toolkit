@@ -13,10 +13,13 @@ struct globus_i_gass_copy_target_s
     globus_i_gass_copy_target_mode_t		mode;
     char *					url;
     globus_gass_copy_attr_t			attr;
+    globus_mutex_t                              mutex;
+    globus_fifo_t                               queue;
     union
     {
 	struct /* GLOBUS_I_GASS_COPY_TARGET_MODE_FTP */
 	{
+	    globus_ftp_handle *			handle;
 	    int					n_channels;
 	} ftp;
 	
@@ -55,6 +58,14 @@ enum
     GLOBUS_I_GASS_COPY_STATE_INITIAL,
 } globus_i_gass_copy_state_number_t;
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+typedef struct
+{
+    globus_byte_t *                     bytes;
+    globus_size_t                       nbytes;
+    globus_size_t                       offset;
+} globus_i_gass_copy_buffer_t;
+#endif
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 typedef struct
