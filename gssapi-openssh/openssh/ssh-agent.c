@@ -938,6 +938,7 @@ main(int ac, char **av)
 	pid_t pid;
 	char *shell, *format, *pidstr, pidstrbuf[1 + 3 * sizeof pid];
 	char *agentsocket = NULL;
+	extern char *optarg;
 	extern int optind;
 	fd_set *readsetp = NULL, *writesetp = NULL;
 

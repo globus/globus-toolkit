@@ -418,6 +418,11 @@ struct winsize {
 
 #ifndef HAVE_GETOPT_OPTRESET
 #define getopt(ac, av, o)  BSDgetopt(ac, av, o)
+#define opterr BSDopterr
+#define optind BSDoptind
+#define optopt BSDoptopt
+#define optreset BSDoptreset
+#define optarg BSDoptarg
 #endif
 
 /* In older versions of libpam, pam_strerror takes a single argument */

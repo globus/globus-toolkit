@@ -475,6 +475,107 @@ int main(void){struct dirent d;return(sizeof(d.d_name)<=sizeof(char));}
 	]
 )
 
+# Check whether the user wants GSI (Globus) support
+gsi_path="no"
+AC_ARG_WITH(gsi,
+	[  --with-gsi=PATH         Enable GSI/Globus authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+AC_ARG_WITH(globus,
+	[  --with-globus=PATH      Enable GSI/Globus authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+# Check whether the user has a Globus flavor type
+globus_flavor_type="no"
+AC_ARG_WITH(globus-flavor,
+	[  --with-globus-flavor=TYPE         Describe Globus flavor type (ex: gcc32dbg, etc.)],
+	[
+		globus_flavor_type="$withval"
+	]
+)
+
+if test "x$gsi_path" != "xno" ; then
+	# Globus GSSAPI configuration
+	AC_DEFINE(GSSAPI)
+	AC_DEFINE(GSI)
+
+	# Find GLOBUS/GSI installation Directory
+	AC_MSG_CHECKING(for Globus/GSI installation directory)
+
+	globus_install_dir=$gsi_path
+
+	if test "x$globus_install_dir" = "xyes" ; then
+                AC_MSG_ERROR(Cannot find Globus/GSI installation directory -- a path must be specified!)
+	fi
+	AC_MSG_RESULT($globus_install_dir)
+
+	# Find GLOBUS/GSI development directory
+	AC_MSG_CHECKING(for Globus/GSI development directory)
+
+	if test -d ${globus_install_dir}/lib ; then
+		# Looks like a flat directory structure from configure/make
+		# and not globus-install or gsi-install
+		globus_dev_dir=$globus_install_dir
+
+	else
+		# Assume a true globus installation with architecture
+		# directories and run globus-development-path to find
+		# the development directory
+
+		# Set GLOBUS_INSTALL_PATH
+		GLOBUS_INSTALL_PATH=$globus_install_dir
+		export GLOBUS_INSTALL_PATH
+
+		dev_path_program=${globus_install_dir}/bin/globus-development-path
+
+		if test ! -x ${dev_path_program} ; then
+			AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
+		fi
+
+		globus_dev_dir=`${dev_path_program}`
+
+		if test -z "$globus_dev_dir" -o "X$globus_dev_dir" = "X<not found>" ; then
+			AC_MSG_ERROR(Cannot find Globus/GSI development directory)
+		fi
+
+		if test ! -d "$globus_dev_dir" ; then
+			AC_MSG_ERROR(Cannot find Globus/GSI development directory: $globus_dev_dir does not exist)
+		fi
+	fi
+	AC_MSG_RESULT($globus_dev_dir)
+
+	# Find GLOBUS/GSI flavor Directory
+	AC_MSG_CHECKING(for Globus flavor type)
+
+        if test "x$globus_flavor_type" = "xno" ; then
+		GSI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa"
+		GSI_LDFLAGS="-L${globus_dev_dir}/lib"
+		GSI_CFLAGS="-I${globus_dev_dir}/include"
+		AC_MSG_RESULT(none)
+	else
+                GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
+
+		if test ! -d "$GLOBUS_FLAVOR_TYPE_INCL_DIR" ; then
+			AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_FLAVOR_TYPE_INCL_DIR})
+                fi
+
+		AC_MSG_RESULT($globus_flavor_type)
+		GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
+		GSI_CFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
+	fi
+
+	LIBS="$LIBS $GSI_LIBS"
+	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
+	CFLAGS="$CFLAGS $GSI_CFLAGS"
+# End Globus/GSI section
+fi
+
 # Check whether user wants S/Key support
 SKEY_MSG="no" 
 AC_ARG_WITH(skey,
@@ -663,6 +764,7 @@ AC_ARG_WITH(pam,
 			AC_CHECK_LIB(dl, dlopen, , )
 			AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
 			AC_CHECK_FUNCS(pam_getenvlist)
+			AC_CHECK_FUNCS(pam_putenv)
 
 			disable_shadow=yes
 			PAM_MSG="yes"
@@ -725,7 +827,20 @@ AC_ARG_WITH(ssl-dir,
 		fi
 	]
 )
-LIBS="$LIBS -lcrypto"
+
+# Patch up SSL libraries for GSI authentication as needed
+if test "x$globus_flavor_type" != "xno" ; then
+	# For Globus 2, always link with the static libraries
+	LIBS="$LIBS ${gsi_path}/lib/libglobus_ssl_utils_${globus_flavor_type}.a ${gsi_path}/lib/libssl_${globus_flavor_type}.a ${gsi_path}/lib/libcrypto_${globus_flavor_type}.a"
+else
+	if test "x$gsi_path" != "xno" ; then
+		# Older GSI needs -lssl too
+		LIBS="$LIBS -lssl -lcrypto"
+	else # if no GSI authentication (i.e., OpenSSL default)
+		LIBS="$LIBS -lcrypto"
+	fi
+fi # globus_flavor_type
+
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL),
 	[
 		dnl Check default openssl install dir
@@ -1701,6 +1816,31 @@ AC_ARG_WITH(kerberos5,
                                 blibpath="$blibpath:${KRB5ROOT}/lib"
                         fi
                         AC_CHECK_LIB(resolv, dn_expand, , )
+
+			AC_CHECK_LIB(gssapi,gss_init_sec_context,
+				[ AC_DEFINE(GSSAPI)
+				  K5LIBS="-lgssapi $K5LIBS" ],
+				[ AC_CHECK_LIB(gssapi_krb5,gss_init_sec_context,
+					[ AC_DEFINE(GSSAPI)
+				  	  K5LIBS="-lgssapi_krb5 $K5LIBS" ],
+					AC_MSG_WARN([Cannot find any suitable gss-api library - build may fail]),
+					$K5LIBS)
+				],
+				$K5LIBS)
+			
+			AC_CHECK_HEADER(gssapi.h, ,
+				[ unset ac_cv_header_gssapi_h
+				  CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi" 
+				  AC_CHECK_HEADERS(gssapi.h, ,
+					AC_MSG_WARN([Cannot find any suitable gss-api header - build may fail])
+				  ) 
+				]
+			)
+
+			oldCPP="$CPPFLAGS"
+			CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi"
+			AC_CHECK_HEADER(gssapi_krb5.h, ,
+					[ CPPFLAGS="$oldCPP" ])
 
                         KRB5=yes
                 fi
