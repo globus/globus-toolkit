@@ -764,7 +764,7 @@ globus_gram_job_manager_state_machine(
                 globus_object_free(error);
                 request->failure_code = rc;
                 request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
                 break;
             }
         }
@@ -778,7 +778,7 @@ globus_gram_job_manager_state_machine(
                 free(filename);
                 request->failure_code = rc;
                 request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
                 break;                
             }
             
@@ -791,7 +791,7 @@ globus_gram_job_manager_state_machine(
                 globus_callout_handle_destroy(authz_handle);
                 request->failure_code = rc;
                 request->jobmanager_state =
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
                 break;                
             }
             
@@ -821,7 +821,7 @@ globus_gram_job_manager_state_machine(
                     globus_object_free(error);
                     request->failure_code = rc;
                     request->jobmanager_state =
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
                     break;
                 }
             }
