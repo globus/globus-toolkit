@@ -240,7 +240,6 @@ read_token(const int sock,
     } while (retval == 1);
     
 done:
-    myproxy_debug("read %d bytes", tot_buffer_len);
     return tot_buffer_len;
 }
 
@@ -262,7 +261,6 @@ write_token(const int sock,
 
     return_value = write_all(sock, buffer, buffer_size);
 
-    myproxy_debug("wrote %d bytes", return_value);
     return (return_value == -1 ? -1 : 0);
 }
 
