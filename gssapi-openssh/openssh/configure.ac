@@ -689,7 +689,7 @@ AC_ARG_WITH(globus-static,
 	[  --with-globus-static    Link statically with Globus GSI libraries],
 	[
 		gsi_static="-static"
-		if test "x$gsi_path" == "xno" ; then
+		if test "x$gsi_path" = "xno" ; then
 			gsi_path="$withval"
 		fi
 	]
@@ -701,7 +701,7 @@ AC_ARG_WITH(globus-flavor,
 	[  --with-globus-flavor=TYPE  Specify Globus flavor type (ex: gcc32dbg)],
 	[
 		globus_flavor_type="$withval"
-		if test "x$gsi_path" == "xno" ; then
+		if test "x$gsi_path" = "xno" ; then
 			gsi_path="yes"
 		fi
 	]
