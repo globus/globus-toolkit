@@ -27,7 +27,7 @@
 
             <Dependency Name="globus_io">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
