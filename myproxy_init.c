@@ -37,6 +37,11 @@ static char usage[] = \
 "					  Can also set MYPROXY_SERVER env. var.\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -n | --no_passphrase              Disable passphrase authentication\n"
+#if !defined(DN_DEFAULT_USERNAME)
+"	-d | --dn_as_username             Use the proxy certificate subject\n"
+"                                         (DN) as the default username\n"
+"                                         of the LOGNAME env. var.\n"
+#endif
 "\n";
 
 struct option long_options[] =
@@ -50,15 +55,17 @@ struct option long_options[] =
   {"username",        required_argument, NULL, 'l'},
   {"version",               no_argument, NULL, 'v'},
   {"no_passphrase",         no_argument, NULL, 'n'},
+  {"dn_as_username",        no_argument, NULL, 'd'},
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhs:p:t:c:l:vn";
+static char short_options[] = "uhs:p:t:c:l:vnd";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 static int use_empty_passwd = 0;
+static int dn_as_username = 0;
 
 /* Function declarations */
 int init_arguments(int argc, char *argv[], 
@@ -75,7 +82,7 @@ main(int argc, char *argv[])
 {    
     int cred_lifetime, hours;
     float days;
-    char *username, *pshost; 
+    char *pshost; 
     char proxyfile[64];
     char request_buffer[1024]; 
     int requestlen;
@@ -119,7 +126,7 @@ main(int argc, char *argv[])
     }
     
     /* Create a proxy by running [grid-proxy-init] */
-    sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned) getpid());
+    sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned) getuid());
 
     /* Run grid-proxy-init to create a proxy */
     if (grid_proxy_init(cred_lifetime, proxyfile) != 0) {
@@ -130,10 +137,24 @@ main(int argc, char *argv[])
     /* Be sure to delete the user proxy on abnormal exit */
     cleanup_user_proxy = 1;
     
-    if (client_request->username == NULL &&
-	ssl_get_base_subject_file(proxyfile, &client_request->username)) {
-       fprintf(stderr, "Cannot get subject name from your certificate\n");
-       goto cleanup;
+    if (client_request->username == NULL) { /* set default username */
+#if !defined(DN_DEFAULT_USERNAME)
+	if (!use_empty_passwd && !dn_as_username) {
+	    if (!(client_request->username = getenv("LOGNAME"))) {
+		fprintf(stderr, "Please specify a username.\n");
+		goto cleanup;
+	    }
+	} else {
+#endif
+	    if (ssl_get_base_subject_file(proxyfile,
+					  &client_request->username)) {
+		fprintf(stderr,
+			"Cannot get subject name from your certificate\n");
+		goto cleanup;
+	    }
+#if !defined(DN_DEFAULT_USERNAME)
+	}
+#endif
     }
 
     /* Allow user to provide a passphrase */
@@ -273,6 +294,10 @@ init_arguments(int argc,
 	case 'n':   /* use an empty passwd == require certificate based
 		       authorization while getting the creds */
 	    use_empty_passwd = 1;
+	    break;
+	case 'd':   /* use the certificate subject (DN) as the default
+		       username instead of LOGNAME */
+	    dn_as_username = 1;
 	    break;
         default:  
 	    fprintf(stderr, usage);
