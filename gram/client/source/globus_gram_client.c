@@ -22,6 +22,7 @@ CVS Information:
 /******************************************************************************
                              Include header files
 ******************************************************************************/
+#include <assert.h>
 #include <stdio.h>
 #include <malloc.h>
 #include <sys/param.h>
