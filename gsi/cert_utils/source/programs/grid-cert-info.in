@@ -140,7 +140,7 @@ eval set -- "$toprint"
 for i in "$@"; do
     case "$i" in
     -*)
-	eval "{ ${command_stub} $i || exit $?; } | ${GLOBUS_SH_SED-sed} 's/^[A-z]*=[ ]*//'"
+	eval "{ ${command_stub} $i || exit $?; } | ${GLOBUS_SH_SED-sed} 's/^[a-zA-Z]*=[ ]*//'"
 	;;
     SUBJECT)
 	# Do not show the proxy levels
