@@ -1,12 +1,9 @@
 package org.globus.ogsa.impl.base.multirft.util;
-
-import org.globus.util.GlobusURL;
-import org.globus.ogsa.utils.MessageUtils;
+import java.io.File;
 import java.rmi.RemoteException;
 import java.util.Vector;
-import org.globus.ogsa.impl.base.multirft.TransferJob;
-import org.globus.ogsa.impl.base.multirft.TransferDbAdapter;
-import org.globus.ogsa.base.multirft.TransferType;
+
+import java.util.Vector;
 
 import org.apache.log4j.Logger;
 
@@ -14,9 +11,12 @@ import org.globus.ftp.GridFTPClient;
 import org.globus.ftp.GridFTPSession;
 import org.globus.ftp.HostPort;
 import org.globus.ftp.MlsxEntry;
+import org.globus.ogsa.base.multirft.TransferType;
+import org.globus.ogsa.impl.base.multirft.TransferDbAdapter;
+import org.globus.ogsa.impl.base.multirft.TransferJob;
+import org.globus.ogsa.utils.MessageUtils;
 
-import java.util.Vector;
-import java.io.File;
+import org.globus.util.GlobusURL;
 
 /**
  *  Description This class should take the sourceUrl and destination Url from
@@ -28,125 +28,131 @@ import java.io.File;
  */
 public class URLExpander extends Thread {
 
-	TransferJob transferJob;
-	GridFTPClient sourceHost, destinationHost;
-	String sourcePath, destinationPath;
-	FileSystemUtil fileSystemUtil;
-	Vector processURLs;
-	Vector sourceUrlsEx;
-	GlobusURL sourceGlobusUrl, destinationGlobusUrl;
-	TransferDbAdapter dbAdapter;
-	// This transferJob should include directory in source and dest
-	private static Logger logger = Logger.getLogger(URLExpander.class.getName());
+    TransferJob transferJob;
+    GridFTPClient sourceHost, destinationHost;
+    String sourcePath, destinationPath;
+    FileSystemUtil fileSystemUtil;
+    Vector processURLs;
+    Vector sourceUrlsEx;
+    GlobusURL sourceGlobusUrl, destinationGlobusUrl;
+    TransferDbAdapter dbAdapter;
+    // This transferJob should include directory in source and dest
+    private static Logger logger = Logger.getLogger( URLExpander.class.getName() );
 
 
-	/**
-	 *  Constructor for the URLExpander object
-	 *
-	 *@param  sourceHost            Description of the Parameter
-	 *@param  destinationHost       Description of the Parameter
-	 *@param  sourceGlobusUrl       Description of the Parameter
-	 *@param  destinationGlobusUrl  Description of the Parameter
-	 *@exception  RemoteException
-	 */
-	public URLExpander(GridFTPClient sourceHost, GridFTPClient destinationHost, GlobusURL sourceGlobusUrl, GlobusURL destinationGlobusUrl)
-			 throws RemoteException {
-		try {
-			this.sourceHost = sourceHost;
-			this.destinationHost = destinationHost;
-			this.sourceGlobusUrl = sourceGlobusUrl;
-			this.destinationGlobusUrl = destinationGlobusUrl;
-			this.sourcePath = "/" + sourceGlobusUrl.getPath();
-			this.destinationPath = "/" + destinationGlobusUrl.getPath();
-			this.fileSystemUtil = new FileSystemUtil();
-			this.destinationHost.changeDir(destinationPath);
-			processURLs = new Vector();
-			this.sourceUrlsEx = new Vector();
-			this.sourceUrlsEx.add(this.sourcePath);
-			this.fileSystemUtil.setGridFTPClient(this.destinationHost);
-			this.dbAdapter = TransferDbAdapter.getTransferDbAdapter();
-		} catch (Exception e) {
-			logger.debug("Invalid source/dest urls");
-			throw new RemoteException(MessageUtils.toString(e));
-		}
-	}
+    /**
+     *  Constructor for the URLExpander object
+     *
+     *@param  sourceHost            source gridftp server
+     *@param  destinationHost       Description of the Parameter
+     *@param  sourceGlobusUrl       Description of the Parameter
+     *@param  destinationGlobusUrl  Description of the Parameter
+     *@exception  RemoteException
+     */
+    public URLExpander( GridFTPClient sourceHost, GridFTPClient destinationHost,
+            GlobusURL sourceGlobusUrl, GlobusURL destinationGlobusUrl )
+             throws RemoteException {
+        try {
+            this.sourceHost = sourceHost;
+            this.destinationHost = destinationHost;
+            this.sourceGlobusUrl = sourceGlobusUrl;
+            this.destinationGlobusUrl = destinationGlobusUrl;
+            this.sourcePath = "/" + sourceGlobusUrl.getPath();
+            this.destinationPath = "/" + destinationGlobusUrl.getPath();
+            this.fileSystemUtil = new FileSystemUtil();
+            this.destinationHost.changeDir( destinationPath );
+            processURLs = new Vector();
+            this.sourceUrlsEx = new Vector();
+            this.sourceUrlsEx.add( this.sourcePath );
+            this.fileSystemUtil.setGridFTPClient( this.destinationHost );
+            this.dbAdapter = TransferDbAdapter.getTransferDbAdapter();
+        } catch ( Exception e ) {
+            logger.debug( "Invalid source/dest urls" );
+            throw new RemoteException( MessageUtils.toString( e ) );
+        }
+    }
 
 
-	/**
-	 *  Description of the Method
-	 *
-	 *@param  localSourcePath  Description of the Parameter
-	 *@return                  Description of the Return Value
-	 *@exception  Exception    Description of the Exception
-	 */
-	public Vector doMlsd(String localSourcePath)
-			 throws Exception {
-		//this.sourceHost.setType(GridFTPSession.TYPE_ASCII);
-		logger.debug("Source Path : " + localSourcePath);
-		HostPort hp = this.sourceHost.setLocalPassive();
-		this.sourceHost.setActive(hp);
-		this.sourceHost.changeDir(localSourcePath);
-		return this.sourceHost.mlsd();
-	}
+    /**
+     *  Description of the Method
+     *
+     *@param  localSourcePath  Description of the Parameter
+     *@return                  Description of the Return Value
+     *@exception  Exception    Description of the Exception
+     */
+    public Vector doMlsd( String localSourcePath )
+             throws Exception {
+        //this.sourceHost.setType(GridFTPSession.TYPE_ASCII);
+        logger.debug( "Source Path : " + localSourcePath );
+        HostPort hp = this.sourceHost.setLocalPassive();
+        this.sourceHost.setActive( hp );
+        this.sourceHost.changeDir( localSourcePath );
+        return this.sourceHost.mlsd();
+    }
 
 
-	/**
-	 *  this invokes the MLST command from GridFTPClient on the source hands it
-	 *  over to parser utility which gives set of directories that need to be made
-	 *  at the destination.Recursive directory traversal or Iterative?
-	 */
-	public void run() {
-		try {
-			while (this.sourceUrlsEx.size() > 0) {
-                logger.debug("Size of SourceUrlsEx " + this.sourceUrlsEx.size()); 
-				String currentUrl = (String) this.sourceUrlsEx.remove(0);
-				logger.debug("Current dir : " + currentUrl);
-				Vector v = doMlsd(currentUrl);
-                
-				while (!v.isEmpty()) {
-					MlsxEntry f = (MlsxEntry) v.remove(0);
-					if (f.get(f.TYPE).equals(f.TYPE_DIR)) {
-						logger.debug("The directory name: " + f.getFileName());
-						fileSystemUtil.makeDirectory(f.getFileName());
-						String newSourcePath = currentUrl + "/" + f.getFileName();
-						logger.debug("This dir is added to list for further processing ");
-						logger.debug(newSourcePath);
-						this.sourceUrlsEx.add(newSourcePath);
-					} else if (f.get(f.TYPE).equals(f.TYPE_FILE)) {
-						logger.debug("This is a file : " + f.getFileName());
-						String newSourceUrl = "gsiftp://" 
-                        + this.sourceGlobusUrl.getHost() 
-                        + currentUrl + File.separator
-                        + f.getFileName();
-                        String mkdir = currentUrl.substring(currentUrl.lastIndexOf("//")+2);
-						String newDestinationUrl = "gsiftp://" 
-                                + this.destinationGlobusUrl.getHost()
-                                + this.destinationPath  
-                                + File.separator + mkdir 
-                                + File.separator+ f.getFileName();
-						logger.debug("Adding these to db : " 
-                        + newSourceUrl + "  " + newDestinationUrl);
-						TransferType transferType = new TransferType();
-						transferType.setSourceUrl(newSourceUrl);
-						transferType.setDestinationUrl(newDestinationUrl);
-						TransferJob transferJob = new TransferJob(transferType, 0, 4);
-						this.dbAdapter.storeTransferJob(transferJob);
-					}
-				}
-                currentUrl = (String) this.sourceUrlsEx.elementAt(0);
-                String mkdir = currentUrl.substring(currentUrl.lastIndexOf("//")+2);
-                logger.debug("mkdir: " + mkdir);
-                
-                mkdir = mkdir.trim();
-                if (!mkdir.equals("") ) {
-                    mkdir = this.destinationPath + mkdir;
-                    this.fileSystemUtil.changeDir(mkdir);
+    /**
+     *  this invokes the MLST command from GridFTPClient on the source hands it
+     *  over to parser utility which gives set of directories that need to be
+     *  made at the destination.Recursive directory traversal or Iterative?
+     */
+    public void run() {
+        try {
+            while ( this.sourceUrlsEx.size() > 0 ) {
+                logger.debug(
+                        "Size of SourceUrlsEx " + this.sourceUrlsEx.size() );
+                String currentUrl = (String) this.sourceUrlsEx.remove( 0 );
+                logger.debug( "Current dir : " + currentUrl );
+                Vector v = doMlsd( currentUrl );
+
+                while ( !v.isEmpty() ) {
+                    MlsxEntry f = (MlsxEntry) v.remove( 0 );
+                    if ( f.get( f.TYPE ).equals( f.TYPE_DIR ) ) {
+                        logger.debug( "The directory name: " + f.getFileName() );
+                        fileSystemUtil.makeDirectory( f.getFileName() );
+                        String newSourcePath = currentUrl + "/" + f.getFileName();
+                        logger.debug
+                                ( "This dir is added to list for further processing " );
+                        logger.debug( newSourcePath );
+                        this.sourceUrlsEx.add( newSourcePath );
+                    } else if ( f.get( f.TYPE ).equals( f.TYPE_FILE ) ) {
+                        logger.debug( "This is a file : " + f.getFileName() );
+                        String newSourceUrl = "gsiftp://"
+                                 + this.sourceGlobusUrl.getHost()
+                                 + currentUrl + File.separator
+                                 + f.getFileName();
+                        String mkdir = currentUrl.substring
+                                ( currentUrl.lastIndexOf( "//" ) + 2 );
+                        String newDestinationUrl = "gsiftp://"
+                                 + this.destinationGlobusUrl.getHost()
+                                 + this.destinationPath
+                                 + File.separator + mkdir
+                                 + File.separator + f.getFileName();
+                        logger.debug( "Adding these to db : "
+                                 + newSourceUrl + "  " + newDestinationUrl );
+                        TransferType transferType = new TransferType();
+                        transferType.setSourceUrl( newSourceUrl );
+                        transferType.setDestinationUrl( newDestinationUrl );
+                        TransferJob transferJob = new
+                                TransferJob( transferType, 0, 4 );
+                        this.dbAdapter.storeTransferJob( transferJob );
+                    }
                 }
-			}
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-		}
-	}
+                currentUrl = (String) this.sourceUrlsEx.elementAt( 0 );
+                String mkdir = currentUrl.substring
+                        ( currentUrl.lastIndexOf( "//" ) + 2 );
+                logger.debug( "mkdir: " + mkdir );
+
+                mkdir = mkdir.trim();
+                if ( !mkdir.equals( "" ) ) {
+                    mkdir = this.destinationPath + mkdir;
+                    this.fileSystemUtil.changeDir( mkdir );
+                }
+            }
+        } catch ( Exception e ) {
+            logger.error( e.getMessage() );
+        }
+    }
 }
 
 
