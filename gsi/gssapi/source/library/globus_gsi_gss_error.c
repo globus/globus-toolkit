@@ -12,7 +12,6 @@
 #include "globus_i_gsi_gss_utils.h"
 #include "globus_gsi_gss_constants.h"
 #include "globus_error_openssl.h"
-#include "globus_error_gssapi.h"
 
 char *
 globus_l_gsi_gssapi_error_strings[GLOBUS_GSI_GSSAPI_ERROR_LAST] =

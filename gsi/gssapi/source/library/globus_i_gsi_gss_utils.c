@@ -14,9 +14,9 @@
 
 #warning also look for X509_REQ_get_pubkey, it does the same kind of refcounting thing
 
-#warning need to check mutex locks and unlocks of the context's mutex
+#warning need to check mutex locks and unlocks of the contexts mutex
 
-#warning look at BUG 147
+/* #warning look at BUG 147 */
 
 static char *rcsid = "$Id$";
 
