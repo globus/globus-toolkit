@@ -390,11 +390,15 @@ globus_l_xio_gsi_target_init(
     target->target_name = GSS_C_NO_NAME;
     target->init = GLOBUS_TRUE;
 
-    result = globus_xio_driver_client_target_pass(target_op, contact_info);
-    if(result != GLOBUS_SUCCESS)
+    /* might be called by accept_cb */
+    if(target_op)
     {
-        globus_free(target);
-        goto error_target;
+        result = globus_xio_driver_client_target_pass(target_op, contact_info);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_free(target);
+            goto error_target;
+        }
     }
 
     *out_target = target;
