@@ -3499,21 +3499,22 @@ globus_l_gfs_ipc_cache_error_cb(
         entry);
 }
 
+static
 globus_result_t
-globus_l_gfs_handle_get(
+globus_l_gfs_ipc_handle_get(
     const char *                        hash_str,
     const char *                        user_id,
+    const char *                        cs,
     globus_gfs_ipc_iface_t *            iface,
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg)
 {
-    char **                             cs;
     globus_result_t                     res;
     globus_list_t *                     list = NULL;
     globus_l_gfs_ipc_cache_entry_t *    entry = NULL;
-    GlobusGFSName(globus_l_gfs_handle_get);
+    GlobusGFSName(globus_l_gfs_ipc_handle_get);
 
     list = (globus_list_t *) globus_hashtable_lookup(
         &globus_l_ipc_handle_table, (void *)hash_str);
@@ -3539,7 +3540,7 @@ globus_l_gfs_handle_get(
         res = globus_l_gfs_ipc_open(
             &entry->ipc_handle,
             iface,
-            cs[0],
+            cs,
             globus_l_gfs_ipc_cache_open_cb,
             entry,
             globus_l_gfs_ipc_cache_error_cb,
@@ -3707,6 +3708,7 @@ globus_l_gfs_community_get_nodes(
     /* clean up */
     globus_free(size_a);
     *contact_strings = cs;
+    *count = community->cs_count;
 
     return GLOBUS_SUCCESS;
 
@@ -3739,8 +3741,8 @@ globus_gfs_ipc_handle_get_by_contact(
             goto err;
         }
 
-        res = globus_l_gfs_handle_get(
-            hash_str, user_id, iface, cb, user_arg, error_cb, error_user_arg);
+        res = globus_l_gfs_ipc_handle_get(
+            hash_str, user_id, contact_string, iface, cb, user_arg, error_cb, error_user_arg);
         if(res != GLOBUS_SUCCESS)
         {
             goto err;
@@ -3800,8 +3802,9 @@ globus_gfs_ipc_handle_get(
             goto err;
         }
 
-        res = globus_l_gfs_handle_get(
-            hash_str, user_id, iface, cb, user_arg, error_cb, error_user_arg);
+        res = globus_l_gfs_ipc_handle_get(
+            hash_str, user_id, (const char *) cs[0], 
+            iface, cb, user_arg, error_cb, error_user_arg);
         if(res != GLOBUS_SUCCESS)
         {
             goto err;
