@@ -520,7 +520,7 @@ case ${host}--$1 in
         lac_F90FLAGS="$lac_64bit_flag $lac_F90FLAGS"
       ;;
     *-ibm-aix*--pthreads )
-        
+
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpcc_r mpicc)
             AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC_r mpiCC)
@@ -531,39 +531,67 @@ case ${host}--$1 in
             fi
         else
             if test "$GLOBUS_CC" = "gcc"; then
-                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-            else
-                AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
+                AC_MSG_ERROR(GCC not supported on this platform)
+                exit 1
             fi
-            
+
+            AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
+            if test "x$lac_cv_CC" != "x"; then
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_CC="$lac_cv_CC -q64"
+                else
+                    lac_cv_CC="$lac_cv_CC -q32"
+                fi
+            fi
+
             AC_PATH_PROGS(lac_cv_CXX, $CXX xlC_r)
+            if test "x$lac_cv_CXX" != "x"; then
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_CXX="$lac_cv_CXX -q64"
+                else
+                    lac_cv_CXX="$lac_cv_CXX -q32"
+                fi
+            fi
             AC_PATH_PROGS(lac_cv_F77, $F77 xlf_r)
+            if test "x$lac_cv_F77" != "x"; then
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_F77="$lac_cv_F77 -q64"
+                else
+                    lac_cv_F77="$lac_cv_F77 -q32"
+                fi
+            fi
+
             AC_PATH_PROGS(lac_cv_F90, $F90 xlf90_r)
             if test "$lac_cv_F90" = "xlf_r" ; then
                 lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
             fi
+            if test "x$lac_cv_F90" != "x"; then
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_F90="$lac_cv_F90 -q64"
+                else
+                    lac_cv_F90="$lac_cv_F90 -q32"
+                fi
+            fi
         fi
-
-        CC="$lac_cv_CC" 
+        CC="$lac_cv_CC"
         LAC_PROG_CC_GNU($lac_cv_CC,
             [],
             [
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
+                dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
-                    lac_cv_CC="/usr/bin/xlc -q64"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
-                    lac_CFLAGS="-q64 $lac_CFLAGS"
-                    lac_CXXFLAGS="-q64 $lac_CXXFLAGS"
+                    lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
+                    lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
                     lac_LDFLAGS="-b64 $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
-                    lac_cv_CC="/usr/bin/xlc -q32"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
-                    lac_CFLAGS="-q32 $lac_CFLAGS"
-                    lac_CXXFLAGS="-q32 $lac_CXXFLAGS"
+                    lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
+                    lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
                     lac_LDFLAGS="-b32 $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
@@ -573,16 +601,16 @@ case ${host}--$1 in
         lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
         lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
-           LAC_PROG_CC_GNU($lac_cv_CC,
-               [],
-               [
-                lac_CFLAGS="-qfullpath $lac_CFLAGS"
-                lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
-               ])
-        fi
+            LAC_PROG_CC_GNU($lac_cv_CC,
+                [],
+                [
+                    lac_CFLAGS="-qfullpath $lac_CFLAGS"
+                    lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
+                ])
+        fi  
       ;;
     *-ibm-aix*--no )
-        
+
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpcc mpicc)
             AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC mpiCC)
@@ -593,39 +621,74 @@ case ${host}--$1 in
             fi
         else
             if test "$GLOBUS_CC" = "gcc"; then
-                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
-            else
-                AC_PATH_PROGS(lac_cv_CC, $CC xlc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC xlC)
+                AC_MSG_ERROR(GCC not supported on this platform)
+                exit 1
             fi
-            
-            AC_PATH_PROGS(lac_cv_F77, $F77 xlf)
-            AC_PATH_PROGS(lac_cv_F90, $F90 xlf90)
-            if test "$lac_cv_F90" = "xlf" ; then
+
+            dnl Note: we are using the reentrant compilers (_r)
+            dnl even for non-threaded flavors. It looks like
+            dnl this is needed when linking with some system
+            dnl libraries.
+
+            AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
+            if test "x$lac_cv_CC" != "x"; then
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_CC="$lac_cv_CC -q64"
+                else
+                    lac_cv_CC="$lac_cv_CC -q32"
+                fi
+            fi
+
+            AC_PATH_PROGS(lac_cv_CXX, $CXX xlC_r)
+            if test "x$lac_cv_CXX" != "x"; then
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_CXX="$lac_cv_CXX -q64"
+                else
+                    lac_cv_CXX="$lac_cv_CXX -q32"
+                fi
+            fi
+
+            AC_PATH_PROGS(lac_cv_F77, $F77 xlf_r)
+            if test "x$lac_cv_F77" != "x"; then
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_F77="$lac_cv_F77 -q64"
+                else
+                    lac_cv_F77="$lac_cv_F77 -q32"
+                fi
+            fi
+
+            AC_PATH_PROGS(lac_cv_F90, $F90 xlf90_r)
+            if test "$lac_cv_F90" = "xlf_r" ; then
                 lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
             fi
+            if test "x$lac_cv_F90" != "x"; then
+                if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_F90="$lac_cv_F90 -q64"
+                else
+                    lac_cv_F90="$lac_cv_F90 -q32"
+                fi
+            fi
         fi
-        CC="$lac_cv_CC" 
+
+        CC="$lac_cv_CC"
         LAC_PROG_CC_GNU($lac_cv_CC,
             [],
             [
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
+                dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
-                    lac_cv_CC="/usr/bin/xlc -q64"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
-                    lac_CFLAGS="-q64 $lac_CFLAGS"
-                    lac_CXXFLAGS="-q64 $lac_CXXFLAGS"
+                    lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
+                    lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
                     lac_LDFLAGS="-b64 $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
-                    lac_cv_CC="/usr/bin/xlc -q32"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
-                    lac_CFLAGS="-q32 $lac_CFLAGS"
-                    lac_CXXFLAGS="-q32 $lac_CXXFLAGS"
+                    lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
+                    lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
                     lac_LDFLAGS="-b32 $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
@@ -635,13 +698,13 @@ case ${host}--$1 in
         lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
         lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
-           LAC_PROG_CC_GNU($lac_cv_CC,
-               [],
-               [
-                lac_CFLAGS="-qfullpath $lac_CFLAGS"
-                lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
-               ])
-        fi
+            LAC_PROG_CC_GNU($lac_cv_CC,
+                [],
+                [
+                    lac_CFLAGS="-qfullpath $lac_CFLAGS"
+                    lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
+                ])
+        fi  
       ;;
     *-dec-osf4* | *-dec-osf5* )
         if test "$lac_cv_build_64bit" = "no"; then
