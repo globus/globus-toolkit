@@ -197,7 +197,7 @@ main(
     time_t                              time_diff;
     time_t                              time_after_proxy;
     ASN1_UTCTIME *                      asn1_time = NULL;
-    void *                              restriction_buf = NULL;
+    char *                              restriction_buf = NULL;
     size_t                              restriction_buf_len = 0;
     char *                              restriction_filename = NULL;
     FILE *                              fp;
@@ -485,7 +485,7 @@ main(
             goto err;
         }
         
-        restriction_buf = malloc(512);
+        restriction_buf = (char *) malloc(512);
         
         while(restriction_buf_len !=
               (restriction_buf_len += 
