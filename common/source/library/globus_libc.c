@@ -3262,7 +3262,10 @@ globus_libc_addr_is_loopback(
         }
         break;
       case AF_INET6:
-        if(IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6 *) _addr)->sin6_addr))
+        if(IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6 *) _addr)->sin6_addr) ||
+          (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
+     (*(uint32_t *) &((struct sockaddr_in6 *) _addr)->sin6_addr.s6_addr[12]) ==
+                INADDR_LOOPBACK))
         {
             result = GLOBUS_TRUE;
         }
@@ -3294,7 +3297,10 @@ globus_libc_addr_is_wildcard(
         break;
       case AF_INET6:
         if(IN6_IS_ADDR_UNSPECIFIED(
-            &((struct sockaddr_in6 *) _addr)->sin6_addr))
+          &((struct sockaddr_in6 *) _addr)->sin6_addr) ||
+          (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
+     (*(uint32_t *) &((struct sockaddr_in6 *) _addr)->sin6_addr.s6_addr[12]) ==
+                INADDR_ANY))
         {
             result = GLOBUS_TRUE;
         }
