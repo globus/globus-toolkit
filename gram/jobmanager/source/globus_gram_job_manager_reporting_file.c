@@ -54,8 +54,13 @@ globus_gram_job_manager_reporting_file_create(
 	    request,
 	    "JM: in globus_gram_job_manager_reporting_file_create()\n");
 
-    if(!request->publish_jobs)
+    if ((!request->publish_jobs) ||
+        (request->job_reporting_file == NULL))
     {
+        globus_gram_job_manager_request_log(
+	   request,
+	   "JM: not reporting job information\n");
+
 	return GLOBUS_SUCCESS;
     }
 
