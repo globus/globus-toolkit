@@ -29,6 +29,7 @@ typedef enum
     GLOBUS_XIO_SYSTEM_ERROR_TOO_MANY_FDS,
     GLOBUS_XIO_SYSTEM_ERROR_ALREADY_REGISTERED,
     GLOBUS_XIO_SYSTEM_ERROR_OPERATION_CANCELED,
+    GLOBUS_XIO_SYSTEM_ERROR_NOT_REGISTERED,
     GLOBUS_XIO_SYSTEM_ERROR_MEMORY_ALLOC
     
 } globus_xio_system_error_type_t;
@@ -39,7 +40,6 @@ typedef void
 (*globus_xio_system_callback_t)(
     globus_xio_system_handle_t          handle,
     globus_result_t                     result,
-    globus_xio_system_handle_t          new_handle,
     void *                              user_arg);
 
 typedef void 
@@ -61,6 +61,7 @@ globus_xio_system_register_open(
     const char *                        pathname,
     int                                 flags,
     int                                 mode,
+    globus_xio_system_handle_t *        out_handle,
     globus_xio_system_callback_t        callback,
     void *                              user_arg);
 
@@ -79,12 +80,13 @@ globus_xio_system_register_connect(
 
 globus_result_t
 globus_xio_system_accept(
-    globus_xio_system_handle_t          handle,
+    globus_xio_system_handle_t          listener_handle,
     globus_xio_system_handle_t *        out_handle);
 
 globus_result_t
 globus_xio_system_register_accept(
-    globus_xio_system_handle_t          handle,
+    globus_xio_system_handle_t          listener_handle,
+    globus_xio_system_handle_t *        out_handle,
     globus_xio_system_callback_t        callback,
     void *                              user_arg);
 
@@ -177,7 +179,7 @@ globus_xio_system_cancel_connect(
 
 globus_result_t
 globus_xio_system_cancel_accept(
-    globus_xio_system_handle_t          handle);
+    globus_xio_system_handle_t          listener_handle);
 
 globus_result_t
 globus_xio_system_cancel_read(
