@@ -42,7 +42,7 @@ struct globus_memory_s
     int                                         free_ptrs_offset;
 };
 
-#ifndef GLOBUS_MEMORY_DEBUG_LEAKS
+#ifndef BUILD_DEBUG
 
 typedef struct globus_l_memory_header_s
 {
@@ -254,7 +254,7 @@ globus_memory_destroy(
     return GLOBUS_TRUE;
 }
 
-#else /* GLOBUS_MEMORY_DEBUG_LEAKS */
+#else /* BUILD_DEBUG */
 
 globus_bool_t
 globus_i_memory_pre_activate(void)
@@ -310,6 +310,7 @@ globus_bool_t
 globus_memory_destroy(
     globus_memory_t * mem_info)
 {
+    globus_free(*mem_info);
     return GLOBUS_TRUE;
 }
 
