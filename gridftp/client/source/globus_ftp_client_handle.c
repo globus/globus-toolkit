@@ -70,6 +70,11 @@ globus_l_ftp_client_target_new(
     globus_i_ftp_client_operationattr_t *	attr);
 
 static
+globus_result_t
+globus_l_ftp_client_override_attr(
+    globus_i_ftp_client_target_t *		target);
+
+static
 int
 globus_l_ftp_client_compare_canonically(
     void *					datum,
@@ -744,7 +749,6 @@ globus_l_ftp_client_target_new(
     globus_i_ftp_client_target_t *		target;
     globus_result_t				result;
     globus_object_t *				err;
-    globus_ftp_control_dcau_t			dcau;
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_target_new() entering\n"));
@@ -833,6 +837,50 @@ globus_l_ftp_client_target_new(
 	    goto free_url;
 	}
     }
+    
+    /* override default settings */
+    result = globus_l_ftp_client_override_attr(target);
+    if(result)
+    {
+        goto destroy_attr;
+    }
+    
+    /* Set the state of the new handle to the disconnected state */
+    target->state = GLOBUS_FTP_CLIENT_TARGET_START;
+    target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_NONE;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_target_new() exiting\n"));
+
+    return target;
+
+destroy_attr:
+    globus_ftp_client_operationattr_destroy(&target->attr);
+free_url:
+    globus_url_destroy(&target->url);
+free_url_string:
+    globus_libc_free(target->url_string);
+destroy_control_handle:
+    globus_ftp_control_handle_destroy(target->control_handle);
+free_control_handle:
+    globus_libc_free(target->control_handle);
+free_target:
+    globus_libc_free(target);
+error_exit:
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_target_new() exiting with error\n"));
+
+    return GLOBUS_NULL;
+}
+/* globus_l_ftp_client_target_new() */
+
+static
+globus_result_t
+globus_l_ftp_client_override_attr(
+    globus_i_ftp_client_target_t *		target)
+{
+    globus_result_t				result;
+    globus_ftp_control_dcau_t			dcau;
 
     /* We bind the authentication state right away, however */
     if(target->url.scheme_type != GLOBUS_URL_SCHEME_GSIFTP)
@@ -908,35 +956,13 @@ globus_l_ftp_client_target_new(
 	    goto destroy_attr;
 	}
     }
-
-    /* Set the state of the new handle to the disconnected state */
-    target->state = GLOBUS_FTP_CLIENT_TARGET_START;
-    target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_NONE;
     
-    globus_i_ftp_client_debug_printf(1, 
-        (stderr, "globus_l_ftp_client_target_new() exiting\n"));
-
-    return target;
-
+    return GLOBUS_SUCCESS;
+    
 destroy_attr:
-    globus_ftp_client_operationattr_destroy(&target->attr);
-free_url:
-    globus_url_destroy(&target->url);
-free_url_string:
-    globus_libc_free(target->url_string);
-destroy_control_handle:
-    globus_ftp_control_handle_destroy(target->control_handle);
-free_control_handle:
-    globus_libc_free(target->control_handle);
-free_target:
-    globus_libc_free(target);
-error_exit:
-    globus_i_ftp_client_debug_printf(1, 
-        (stderr, "globus_l_ftp_client_target_new() exiting with error\n"));
-
-    return GLOBUS_NULL;
+    return result;
 }
-/* globus_l_ftp_client_target_new() */
+
 
 /**
  * Free an ftp client target.
@@ -1212,6 +1238,14 @@ globus_i_ftp_client_target_find(
 		goto free_target;
 	    }
 	}
+
+        /* override default settings */
+        result = globus_l_ftp_client_override_attr((*target));
+        if(result)
+        {
+            goto destroy_attr;
+        }
+    
 	if((*target)->url_string)
         {
     	    globus_libc_free((*target)->url_string);
@@ -1255,6 +1289,10 @@ globus_i_ftp_client_target_find(
     return GLOBUS_SUCCESS;
 
     /* Exception handling */
+
+destroy_attr:
+    globus_ftp_client_operationattr_destroy(&(*target)->attr);
+
 free_target:
     if(*target)
     {
