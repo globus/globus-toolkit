@@ -3379,7 +3379,7 @@ globus_l_gsc_unreg_perf_marker(
 {
     globus_i_gsc_op_t *                     op;
 
-    user_arg = (globus_i_gsc_op_t *) op;
+    op = (globus_i_gsc_op_t *) user_arg;
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
