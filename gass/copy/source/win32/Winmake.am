@@ -20,3 +20,8 @@ LibDependencies = \
 	libglobus_gass_transfer_$(GLOBUS_FLAVOR_NAME).lib \
 	libglobus_ftp_control_$(GLOBUS_FLAVOR_NAME).lib \
 	libglobus_ftp_client_$(GLOBUS_FLAVOR_NAME).lib
+
+# Program Only External Library Dependencies
+ProgramLibDependencies = \
+    libgssapi_error_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gass_copy_$(GLOBUS_FLAVOR_NAME).lib
