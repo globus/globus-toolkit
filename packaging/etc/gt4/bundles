@@ -17,6 +17,11 @@ BUNDLE gt4-mds
         globus_wsrf_mds_ganglia
         globus_wsrf_servicegroup
 
+BUNDLE gt4-rft
+	globus_wsrf_rft_service_source
+	globus_wsrf_rft_common_java_source
+	globus_wsrf_rft_common_schema
+
 BUNDLE gt4-gram
         globus_user_env        
         globus_wsrf_gram_service_java_source        
