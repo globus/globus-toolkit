@@ -28,9 +28,10 @@
   <property name="jar.name" value="testing-throughput.jar" />
   <property name="gar.name" value="testing-throughput.gar" />
   <property name="test-reports.dir" value="test-reports" />
-  <property name="service.port" value="8080" />
   <property name="container.initialization" value="eager" />
-  <property name="job.count" value="1" />
+  <property name="log.dir" value="logs" />
+  <property name="service.host" value="localhost" />
+  <property name="service.port" value="8080" />
 
   <target name="setenv">
     <!--provide a property for when we must be-->
@@ -73,6 +74,7 @@
 
     <mkdir dir="${build.dest}"/>
     <mkdir dir="${build.lib}"/>
+    <mkdir dir="${log.dir}"/>
 
     <available property="config.present" file="${server.deploy}" />
 
@@ -293,11 +295,15 @@
              value="${absolute.ogsa.root}"/>
     <replace file="./date.xml" token="CWD" value="${cwd}"/>
 
+    <echo message="Host: ${service.host}"/>
+    <echo message="Port: ${service.port}"/>
+    <echo message="Count: ${job.count}"/>
+
     <java classname="org.globus.ogsa.base.gram.testing.throughput.ThroughputTester"
           fork="yes"
           classpathref="classpath" failonerror="true" >
 
-      <arg value="http://$service.host:$service.port/ogsa/services/base/gram/MasterForkManagedJobFactoryService"/>
+      <arg value="http://${service.host}:${service.port}/ogsa/services/base/gram/MasterForkManagedJobFactoryService"/>
       <arg value="./date.xml"/>
       <arg value="${job.count}"/>
     </java>
