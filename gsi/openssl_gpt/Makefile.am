@@ -35,7 +35,12 @@ report:
 	@$(PERL) util/selftest.pl
 
 
-EXTRA_DIST = globus_openssl_post globus_openssl_pre CHANGES CHANGES.gpt
+EXTRA_DIST = \
+	globus_openssl_post \
+	globus_openssl_pre \
+	LICENSE \
+	CHANGES \
+	CHANGES.gpt
 
 
 links: $(opensslinclude_HEADERS)
