@@ -106,7 +106,7 @@ GSS_CALLCONV gss_display_status
 					  "not be understood";
 				break;
 			case GSS_S_UNAUTHORIZED:
-				reason = "Unexpected Gatekeeper or Service";
+				reason = "Unexpected Gatekeeper or Service Name";
 				break;
 			case GSS_S_NO_CRED:
 				reason = "Problem with local credentials";			
