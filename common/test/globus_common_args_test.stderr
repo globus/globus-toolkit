@@ -29,12 +29,6 @@ Syntax : globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]
 
 Use -help to display full usage.
 
-Error, argument #2 (bolas.isi.edu) : (no error message)
-
-Syntax : globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]
-
-Use -help to display full usage.
-
 Error, argument #2 (smutt.mqs.anl.gov) : (no error message)
 
 Syntax : globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]

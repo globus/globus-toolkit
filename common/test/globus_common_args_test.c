@@ -148,10 +148,10 @@ static char * test1[] = {
     "globus_args_test", "-foo", GLOBUS_NULL };    /* ok */
 
 static char * test2[] = {
-    "globus_args_test", "-file", "Makefile", GLOBUS_NULL };   /* ok */
+    "globus_args_test", "-file", "globus_common_args_test", GLOBUS_NULL };   /* ok */
 
 static char * test3[] = {
-    "globus_args_test", "-rep", "Makefile", "3", GLOBUS_NULL };   /* ok */
+    "globus_args_test", "-rep", "globus_common_args_test", "3", GLOBUS_NULL };   /* ok */
 
 static char * test4[] = {
     "globus_args_test", "-np", "12", GLOBUS_NULL };   /* ok */
