@@ -23,7 +23,6 @@ CVS Information:
 ******************************************************************************/
 #include "globus_common.h"
 
-
 /******************************************************************************
 				 C/C++ macros
 ******************************************************************************/
@@ -94,9 +93,10 @@ typedef int globus_thread_once_t;
     (*(M) ? 1 : globus_macro_mutex_lock(M))
 
 #define globus_macro_cond_init(C,A) \
-    (((A) ? (*(C) = *(A)) : (*(C) = GLOBUS_CALLBACK_GLOBAL_SPACE)), 0)
+    (((A) ? (*(C) = *((int *)A)) : (*(C) = GLOBUS_CALLBACK_GLOBAL_SPACE)), 0)
     
-#define globus_macro_cond_destroy(C) 0
+#define globus_macro_cond_destroy(C) \
+    (*(C) = 0)
     
 #define globus_macro_cond_wait(C,M) \
     ( ((*(M)) = 0), \
@@ -120,7 +120,8 @@ typedef int globus_thread_once_t;
 #define globus_macro_condattr_init(A) \
     ((*(A) = GLOBUS_CALLBACK_GLOBAL_SPACE), 0)
     
-#define globus_macro_condattr_destroy(A) 0
+#define globus_macro_condattr_destroy(A) \
+    (*(A) = 0)
 
 #define globus_macro_condattr_setspace(A, S) \
     ((*(A) = (S)), 0)
