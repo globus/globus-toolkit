@@ -200,6 +200,7 @@ BUNDLE globus-data-management-sdk
 	globus_ftp_control
 	globus_gass_transfer
 	globus_ftp_client
+    globus_xio_gridftp_driver
 	globus_gass_copy
 
 BUNDLE globus-data-management-client
@@ -230,7 +231,8 @@ BUNDLE globus-data-management-client
 	globus_ftp_control
 	globus_gass_transfer
 	globus_ftp_client
-	globus_gass_copy
+    globus_xio_gridftp_driver
+    globus_gass_copy
 
 BUNDLE globus-information-services-server THREADED
 	globus_core
