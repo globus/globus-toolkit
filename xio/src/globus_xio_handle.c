@@ -354,8 +354,8 @@ globus_i_xio_read_write_callback(
 
     globus_mutex_lock(&handle->mutex);
     {
-        globus_assert(handle->state == GLOBUS_XIO_HANDLE_STATE_OPEN &&
-            handle->state != GLOBUS_XIO_HANDLE_STATE_CLOSING);
+        globus_assert(handle->state == GLOBUS_XIO_HANDLE_STATE_OPEN ||
+            handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSING);
 
         /* set to finished for the sake of the timeout */
         if(op->state == GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING)

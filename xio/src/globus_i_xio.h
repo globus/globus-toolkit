@@ -177,6 +177,7 @@ typedef struct globus_i_xio_context_entry_s
 
     /* every level but the top MUST be GLOBAL_SPACE */
     globus_callback_space_t                     space;
+    globus_bool_t                               read_eof;
 
     struct globus_i_xio_op_s *                  open_op;
     struct globus_i_xio_op_s *                  close_op;
@@ -205,7 +206,6 @@ typedef struct globus_i_xio_context_s
 #define _op_ent_iovec               type_u.handle_s.iovec
 #define _op_ent_iovec_count         type_u.handle_s.iovec_count
 #define _op_ent_fake_iovec          type_u.handle_s.fake_iovec
-#define _op_ent_read_eof            type_u.handle_s.read_eof
 
 #define _op_ent_driver              type_u.target_s.driver;
 
@@ -232,7 +232,6 @@ typedef struct globus_i_xio_op_entry_s
             globus_xio_iovec_t *                iovec;
             int                                 iovec_count;
             globus_xio_iovec_t *                fake_iovec;
-            globus_bool_t                       read_eof;
         } handle_s;
         /* target op entries */
         struct
@@ -486,6 +485,26 @@ globus_xio_driver_write_deliver_DEBUG(
     globus_xio_operation_t                          op);
 
 
+void
+globus_xio_driver_pass_read_DEBUG(
+    globus_result_t *                               _out_res,
+    globus_xio_operation_t                          _in_op,
+    globus_xio_iovec_t *                            _in_iovec,
+    int                                             _in_iovec_count,
+    globus_size_t                                   _in_wait_for,
+    globus_xio_driver_data_callback_t               _in_cb,
+    void *                                          _in_user_arg);
+
+void
+globus_xio_driver_finished_read_DEBUG(
+    globus_xio_operation_t                          op,
+    globus_result_t                                 result,
+    globus_size_t                                   nbytes);
+
+void
+globus_xio_driver_read_deliver_DEBUG(
+    globus_xio_operation_t                          op);
+
 #   define GlobusXIODriverPassOpen(                                         \
             _out_res, _out_context, _in_op, _in_cb, _in_user_arg)           \
         globus_xio_driver_pass_open_DEBUG(                                  \
@@ -517,6 +536,22 @@ globus_xio_driver_write_deliver_DEBUG(
 
 #define GlobusIXIODriverWriteDeliver(op) \
             globus_xio_driver_write_deliver_DEBUG(op)
+
+
+#define GlobusXIODriverPassRead(                                           \
+            _out_res, _in_op, _in_iovec, _in_iovec_count,                   \
+            _in_wait_for, _in_cb, _in_user_arg)                             \
+        globus_xio_driver_pass_read_DEBUG(                                 \
+            &_out_res, _in_op, _in_iovec, _in_iovec_count,                   \
+            _in_wait_for, _in_cb, _in_user_arg)
+
+#define GlobusXIODriverFinishedRead(op, res, nbytes)           \
+            globus_xio_driver_finished_read_DEBUG(op, res, nbytes)
+
+#define GlobusIXIODriverReadDeliver(op) \
+            globus_xio_driver_read_deliver_DEBUG(op)
+
+
 
 #else /* BUILD_DEBUG */
 

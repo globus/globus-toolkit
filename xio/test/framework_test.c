@@ -10,13 +10,16 @@ typedef struct test_info_s
     /* always points to nothing */
     globus_byte_t *                         buffer; 
     globus_size_t                           buffer_length;
+    globus_size_t                           chunk_size;
 
     globus_size_t                           nwritten;
     globus_size_t                           nread;
     globus_size_t                           total_write_bytes;
     globus_size_t                           total_read_bytes;
 
-    globus_bool_t                           closed;
+    int                                     closed;
+    globus_bool_t                           write_done;
+    globus_bool_t                           read_done;
 
     globus_mutex_t                          mutex;
 } test_info_t;
@@ -44,14 +47,39 @@ print_help()
 }
 
 void
+failed_exit(
+    char *                                  fmt,
+    ...)
+{
+    va_list                                 ap;
+
+#   ifdef HAVE_STDARG_H
+    {
+        va_start(ap, fmt);
+    }
+#   else
+    {
+        va_start(ap);
+    }
+#   endif
+
+    fprintf(stderr, "ERROR: ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+
+    va_end(ap);
+
+    globus_assert(0);
+}
+
+void
 test_res(
     globus_result_t                         res,
     int                                     line)
 {
     if(res != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "error at line %d.\n", line);
-        globus_assert(res == GLOBUS_SUCCESS);
+        failed_exit("error at line %d.", line);
     }
 }
 
@@ -75,6 +103,64 @@ close_cb(
 }
 
 void
+read_cb(
+    globus_xio_handle_t                         handle,
+    globus_result_t                             result,
+    globus_byte_t *                             buffer,
+    globus_size_t                               len,
+    globus_size_t                               nbytes,
+    globus_xio_data_descriptor_t                data_desc,
+    void *                                      user_arg)
+{
+    test_info_t *                               info;
+    globus_result_t                             res;
+
+    info = (test_info_t *) user_arg;
+
+    globus_mutex_lock(&info->mutex);
+    {
+        if(len < nbytes)
+        {
+            failed_exit("read wait for has failed");
+        }
+        else if(nbytes > len)
+        {
+            failed_exit("too many bytes were read.");
+        }
+
+        info->nread += nbytes;
+
+        if(info->nread >= info->total_read_bytes && !info->read_done)
+        {
+            info->closed++;
+            info->read_done = GLOBUS_TRUE;
+            if(info->closed == 2 || info->write_count == 0)
+            {
+                res = globus_xio_register_close(
+                        handle,
+                        NULL,
+                        close_cb,
+                        user_arg);
+                test_res(res, __LINE__);
+            }
+        }
+        else if(!info->closed)
+        {
+            res = globus_xio_register_read(
+                    handle,
+                    info->buffer,
+                    info->buffer_length,
+                    info->buffer_length,
+                    NULL,
+                    read_cb,
+                    user_arg);
+            test_res(res, __LINE__);
+        }
+    }
+    globus_mutex_unlock(&info->mutex);
+}
+
+void
 write_cb(
     globus_xio_handle_t                         handle,
     globus_result_t                             result,
@@ -91,17 +177,30 @@ write_cb(
 
     globus_mutex_lock(&info->mutex);
     {
+        if(len < nbytes)
+        {
+            failed_exit("write wait for has failed");
+        }
+        else if(nbytes > len)
+        {
+            failed_exit("too many bytes were written.");
+        }
+
         info->nwritten += nbytes;
 
-        if(info->nwritten >= info->total_write_bytes && !info->closed)
+        if(info->nwritten >= info->total_write_bytes && !info->write_done)
         {
-            res = globus_xio_register_close(
-                    handle,
-                    NULL,
-                    close_cb,
-                    user_arg);
-            test_res(res, __LINE__);
-            info->closed = GLOBUS_TRUE;
+            info->closed++;
+            info->write_done = GLOBUS_TRUE;
+            if(info->closed == 2 || info->read_count == 0)
+            {
+                res = globus_xio_register_close(
+                        handle,
+                        NULL,
+                        close_cb,
+                        user_arg);
+                test_res(res, __LINE__);
+            }
         }
         else if(!info->closed)
         {
@@ -143,6 +242,20 @@ open_cb(
                 user_arg);
         test_res(res, __LINE__);
     }
+
+    for(ctr = 0; ctr < info->read_count; ctr++)
+    {
+        res = globus_xio_register_read(
+                handle,
+                info->buffer,
+                info->buffer_length,
+                info->buffer_length,
+                NULL,
+                read_cb,
+                user_arg);
+        test_res(res, __LINE__);
+    }
+
 }
 
 
@@ -161,7 +274,7 @@ parse_parameters(
     int                                     eof_bytes = -1;
     char                                    c;
     globus_size_t                           buffer_length = 2048;
-    int                                     read_count = 0;
+    int                                     read_count = 1;
     int                                     write_count = 1;
     int                                     total_write_bytes = 2048 * 100;
     int                                     total_read_bytes = 2048 * 100;
@@ -220,13 +333,16 @@ parse_parameters(
     globus_l_test_info.read_count = read_count;
     globus_l_test_info.buffer = 0x10;
     globus_l_test_info.buffer_length = buffer_length;
+    globus_l_test_info.chunk_size = chunk_size;
     globus_mutex_init(&globus_l_test_info.mutex, NULL);
 
     globus_l_test_info.nwritten = 0;
     globus_l_test_info.nread = 0;
     globus_l_test_info.total_write_bytes = total_write_bytes;
     globus_l_test_info.total_read_bytes = total_read_bytes;
-    globus_l_test_info.closed = GLOBUS_FALSE;
+    globus_l_test_info.closed = 0;
+    globus_l_test_info.write_done = GLOBUS_FALSE;
+    globus_l_test_info.read_done = GLOBUS_FALSE;
 
 
     /* set up the attr */
