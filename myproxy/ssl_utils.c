@@ -15,20 +15,8 @@
  * Constants
  *
  */
-#define PROXY_EXTENSION			"proxy"
-#define LIMITED_PROXY_EXTENSION		"limited proxy"
-
 #define PROXY_DEFAULT_LIFETIME		-1L /* magic # for lifetime */
                                             /*   of signing cert    */
-
-/* Amount of clock skew to allow for when generating certificates */
-#define PROXY_CLOCK_SKEW_ALLOWANCE	60 * 5 /* seconds */
-
-#define PROXY_DEFAULT_VERSION		2L /* == v3 */
-
-/* Return values for ssl_check_keys_match() */
-#define SSL_KEYS_MATCH			1
-#define SSL_KEYS_MISMATCH		-1
 
 /**********************************************************************
  *
@@ -694,7 +682,7 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     
     if (key_file == NULL)
     {
-	verror_put_string("Error opening certificate file %s", path);
+	verror_put_string("Error opening key file %s", path);
 	verror_put_errno(errno);
 	goto error;
     }
@@ -702,12 +690,14 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     if (PEM_read_PrivateKey(key_file, &(key), (pass_phrase_prompt) ? 
 			    NULL : my_pass_phrase_callback, NULL) == NULL)
     {
-	unsigned long error;
+	unsigned long error, reason;
 	
 	error = ERR_peek_error();
+	reason = ERR_GET_REASON(error);
 
 	/* If this is a bad password, return a better error message */
-	if (ERR_GET_REASON(error) == EVP_R_BAD_DECRYPT)
+	if (reason == EVP_R_BAD_DECRYPT ||
+	    reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED)
 	{
 	    verror_put_string("Bad password");
 	}
@@ -735,8 +725,56 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     {
 	fclose(key_file);
     }
+    _ssl_pass_phrase = NULL;
     
     return return_status;
+}
+
+int
+ssl_private_key_is_encrypted(const char	*path)
+{
+    FILE		*key_file = NULL;
+    EVP_PKEY		*key = NULL;
+    int			return_status = -1;
+    
+    my_init();
+    
+    key_file = fopen(path, "r");
+    
+    if (key_file == NULL) {
+	verror_put_string("Error opening key file %s", path);
+	verror_put_errno(errno);
+	goto cleanup;		/* error */
+    }
+
+    _ssl_pass_phrase = NULL;
+    ERR_clear_error();
+
+    if (PEM_read_PrivateKey(key_file, &(key), my_pass_phrase_callback,
+			    NULL) == NULL) {
+	unsigned long error, reason;
+	
+	error = ERR_peek_error();
+	reason = ERR_GET_REASON(error);
+	if (reason == EVP_R_BAD_DECRYPT ||
+	    reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED) {
+	    return_status = 1;		/* key is encrypted */
+	    goto cleanup;
+	} else {
+	    verror_put_string("Error reading private key %s", path);
+	    ssl_error_to_verror();
+	    goto cleanup;	/* error */
+	}
+    }
+
+    return_status = 0;		/* key unencrypted */
+    
+ cleanup:
+    if (key_file) fclose(key_file);
+    if (key) EVP_PKEY_free(key);
+    ERR_clear_error();
+
+    return return_status;	/* key unencrypted */
 }
 
 int
@@ -785,12 +823,14 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
     if (PEM_read_bio_PrivateKey(bio, &(key),
 				PEM_CALLBACK(my_pass_phrase_callback)) == NULL)
     {
-	unsigned long error;
+	unsigned long error, reason;
 	
 	error = ERR_peek_error();
+	reason = ERR_GET_REASON(error);
 
 	/* If this is a bad password, return a better error message */
-	if (ERR_GET_REASON(error) == EVP_R_BAD_DECRYPT)
+	if (ERR_GET_REASON(error) == EVP_R_BAD_DECRYPT ||
+	    reason == EVP_R_NO_SIGN_FUNCTION_CONFIGURED)
 	{
 	    verror_put_string("Bad password");
 	}
