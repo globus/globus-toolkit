@@ -1,3 +1,5 @@
+bin/gsiscp
+bin/gsissh
 bin/scp
 bin/sftp
 bin/ssh
