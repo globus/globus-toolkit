@@ -168,8 +168,6 @@ init_arguments(int argc,
     int arg;
     int expr_type = MATCH_CN_ONLY;  /*default */
 
-    certfile = NULL;
-    keyfile = NULL;
     my_creds->lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_DELEG_HOURS;
 
     while((arg = gnu_getopt_long(argc, argv, short_options, 
