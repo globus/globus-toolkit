@@ -618,7 +618,8 @@ globus_i_gsi_callback_check_revoked(
     X509_REVOKED *                      revoked = NULL;
     X509_CRL *                          crl = NULL;
     X509_CRL_INFO *                     crl_info = NULL;        
-    X509_OBJECT *                       x509_object = NULL;
+    X509_OBJECT                         x509_object;
+    int					contents_freed = 1;
     int                                 i, n;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -636,6 +637,7 @@ globus_i_gsi_callback_check_revoked(
      * 
      * When future versions of SSLeay support this better,
      * we can remove these tests. 
+     * 
      * we come through this code for each certificate,
      * starting with the CA's We will check for a CRL
      * each time, but only check the signature if the
@@ -646,13 +648,16 @@ globus_i_gsi_callback_check_revoked(
     if (X509_STORE_get_by_subject(
             x509_context,
             X509_LU_CRL, 
-            X509_get_subject_name(x509_context->current_cert),
-            x509_object))
+            X509_get_issuer_name(x509_context->current_cert),
+            &x509_object))
     {
+	X509 *				issuer = NULL;
         time_t                          last_time;
         time_t                          next_time;
 
-        crl =  x509_object->data.crl;
+	contents_freed = 0;
+
+        crl =  x509_object.data.crl;
         crl_info = crl->crl;
         
         globus_gsi_cert_utils_make_time(crl_info->lastUpdate, &last_time);
@@ -670,8 +675,21 @@ globus_i_gsi_callback_check_revoked(
 
         /* verify the signature on this CRL */
     
-        if (X509_CRL_verify(crl,
-                            X509_get_pubkey(x509_context->current_cert)) <= 0)
+	if(x509_context->get_issuer(&issuer, 
+				    x509_context, 
+				    x509_context->current_cert) <= 0)
+	{
+	    GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+		result,
+		GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+		("Couldn't get the issuer certificate of the CRL with "
+		 "subject: %s",
+		 X509_NAME_oneline(
+		     X509_get_issuer_name(x509_context->current_cert),
+		     NULL, 0)));
+	}
+
+        if (X509_CRL_verify(crl, X509_get_pubkey(issuer)) <= 0)
         {
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
@@ -704,28 +722,16 @@ globus_i_gsi_callback_check_revoked(
             goto free_X509_object;
         }
 
-        X509_OBJECT_free_contents(x509_object);
-
-    /* now check if the issuer has a CRL, and we are revoked */
-    
-        if (X509_STORE_get_by_subject(
-            x509_context, 
-            X509_LU_CRL, 
-            X509_get_issuer_name(x509_context->current_cert),
-            x509_object))
-        {
-            crl = x509_object->data.crl;
-            crl_info = crl->crl;
-
-            GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "Checking CRL\n");
-        }
+        X509_OBJECT_free_contents(&x509_object);
+	contents_freed = 1;
 
         /* check if this cert is revoked */
 
         n = sk_X509_REVOKED_num(crl_info->revoked);
         for (i = 0; i < n; i++)
         {
-            revoked = (X509_REVOKED *) sk_X509_REVOKED_value(crl_info->revoked, i);
+            revoked = (X509_REVOKED *) 
+		sk_X509_REVOKED_value(crl_info->revoked, i);
         
             if(!ASN1_INTEGER_cmp(
                 revoked->serialNumber,
@@ -742,14 +748,16 @@ globus_i_gsi_callback_check_revoked(
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_REVOKED_CERT,
-                    ("Serial number = %ld (0x%lX) Subject=%s",
+                    ("Serial number = %ld (0x%lX) "
+		     "Subject=%s",
                      serial, serial, subject_string));
 
                 x509_context->error = X509_V_ERR_CERT_REVOKED;
 
                 GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(
                     2, (globus_i_gsi_callback_debug_fstream,
-                        "revoked %lX\n", ASN1_INTEGER_get(revoked->serialNumber)));
+                        "revoked %lX\n", 
+			ASN1_INTEGER_get(revoked->serialNumber)));
 
                 free(subject_string);
             }
@@ -758,9 +766,9 @@ globus_i_gsi_callback_check_revoked(
 
  free_X509_object:
 
-    if(x509_object)
+    if(!contents_freed)
     {
-        X509_OBJECT_free_contents(x509_object);
+	X509_OBJECT_free_contents(&x509_object);
     }
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
