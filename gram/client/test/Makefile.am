@@ -7,6 +7,7 @@ SUBDIRS= \
 Scripts = globus-gram-client-activate-test.pl \
           globus-gram-client-callback-contact-test.pl \
           globus-gram-client-cancel-test.pl \
+	  globus-gram-client-nonblocking-register-test.pl \
           globus-gram-client-ping-test.pl \
           globus-gram-client-register-test.pl \
 	  globus-gram-client-register-callback-test.pl \
@@ -18,6 +19,7 @@ test_PROGRAMS= \
 	globus-gram-client-callback-contact-test \
 	globus-gram-client-test \
 	globus-gram-client-cancel-test \
+	globus-gram-client-nonblocking-register-test \
 	globus-gram-client-ping-test \
 	globus-gram-client-register-callback-test \
 	globus-gram-client-status-test \
@@ -40,6 +42,10 @@ globus_gram_client_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_gram_client_ping_test_SOURCES = globus_gram_client_ping_test.c
 globus_gram_client_ping_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_gram_client_nonblocking_register_test_SOURCES = \
+    globus_gram_client_nonblocking_register_test.c
+globus_gram_client_nonblocking_register_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_gram_client_cancel_test_SOURCES = globus_gram_client_cancel_test.c
 globus_gram_client_cancel_test_LDFLAGS = $(GPT_LDFLAGS)

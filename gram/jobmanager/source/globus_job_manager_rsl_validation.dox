@@ -1,0 +1,74 @@
+/**
+@page globus_gram_job_manager_rsl_validation_file RSL Validation File Format
+
+The idea behind the RSL Validation file is to allow the job manager to
+determine whether the RSL which the user sends contains only valid RSL
+attributes. Valid attributes are defined in a job manager and a scheduler
+specific RSL file.
+
+The main purpose of this validation is to allow the job manager add
+support for scheduler-specific RSL extensions without having to make
+changes to the way the job manager handles job requests internally. As
+a side affect, this makes it possible for sites to customize behavior of
+Globus started jobs, by providing site-specific defaults for RSL parameters
+(such as setting a default queue or project).
+
+
+Each RSL record consists of a set of pairs of the form
+@code
+RecordItem: Value
+@endcode
+
+Where the value can span multiple lines if it begins with a quote. Records are
+separated by a blank line.
+RecordItems which are not understood are ignored by the parser.
+Currently, the following RecordItems are defined
+
+<dl>
+<dt>Attribute</dt>
+<dd>The name of the RSL parameter to which this record refers.</dd>
+<dt>Description</dt>
+<dd>A textual description of what the RSL parameter means.</dd>
+<dt>Default</dt>
+<dd>The default value of the RSL parameter if it is not found in the
+    RSL. The default value is only used if the DefaultWhen value matches
+    the current validation mode.</dd>
+<dt>Values</dt>
+<dd>A string containing whitespace-separated list of enumerated values
+    which are valid for this RSL attribute. For example, for the "dryrun"
+    parameter, this may be <b>"yes no"</b>.</dd>
+<dt>RequiredWhen</dt>
+<dd>Some subset of the "when strings" (* see below), indicating when
+    the RSL parameter is required for the RSL to be valid.</dd>
+<dt>DefaultWhen</dt>
+<dd> Some subset of the "when strings" indicating when then RSL's
+     default value will be used if the RSL attribute is not present
+     in the RSL.</dd>
+<dt>ValidWhen</dt>
+<dd>Some subset of the "when strings" indicating when then RSL attribute
+    may be used</dd>
+</dl>
+
+The job manager supports having multiple validation files, one for the
+RSL contexts. Currently, there are two different types of RSL which may be
+validated: a job request RSL and a job manager restart RSL. Others may be
+defined, for example, to handle the RSL argument passed to a stdio_update
+signal. The default validation file for a job submission request is found
+in the @ref globus_gram_job_manager_rsl_validation_submit section of the manual.
+The default validation file for a job manager restart RSL is found
+in the @ref globus_gram_job_manager_rsl_validation_restart section of the
+manual.
+
+*/
+
+/**
+@page globus_gram_job_manager_rsl_validation_submit Job Request RSL Validation File
+
+@verbinclude submit.rvf
+*/
+
+/**
+@page globus_gram_job_manager_rsl_validation_restart Job Manager Restart RSL Validation File
+
+@verbinclude restart.rvf
+*/

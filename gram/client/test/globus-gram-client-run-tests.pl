@@ -13,6 +13,7 @@ my $contact;
     globus-gram-client-activate-test.pl
     globus-gram-client-callback-contact-test.pl
     globus-gram-client-cancel-test.pl
+    globus-gram-client-nonblocking-register-test.pl
     globus-gram-client-register-test.pl
     globus-gram-client-register-callback-test.pl
     globus-gram-client-ping-test.pl

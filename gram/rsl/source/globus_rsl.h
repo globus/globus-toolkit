@@ -395,6 +395,9 @@ globus_rsl_parse(char * rsl_spec);
 char *
 globus_rsl_unparse (globus_rsl_t *rsl_spec);
 
+char *
+globus_rsl_value_unparse (globus_rsl_value_t * rsl_value);
+
 EXTERN_C_END
 
 #endif /* _GLOBUS_INCLUDE_GLOBUS_RSL_H */

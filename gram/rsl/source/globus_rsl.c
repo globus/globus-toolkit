@@ -824,14 +824,10 @@ globus_rsl_value_free_recursive (globus_rsl_value_t * globus_rsl_value_ptr)
 
             while (! globus_list_empty(tmp_rsl_list))
             {
-                tmp_rsl_value_ptr = (globus_rsl_value_t *) globus_list_first
-                     (tmp_rsl_list);
+                tmp_rsl_value_ptr = (globus_rsl_value_t *)
+		    globus_list_remove(&tmp_rsl_list, tmp_rsl_list);
                 globus_rsl_value_free_recursive(tmp_rsl_value_ptr);
-
-                tmp_rsl_list = globus_list_rest(tmp_rsl_list);
             }
-
-            globus_list_free(tmp_rsl_list);
 
             break;
 
@@ -1167,6 +1163,9 @@ globus_rsl_eval (globus_rsl_t *ast_node,
         rsl_substitution_flag = globus_rsl_is_relation_attribute_equal(
                                    ast_node,
                                    "rsl_substitution");
+        rsl_substitution_flag |= globus_rsl_is_relation_attribute_equal(
+                                   ast_node,
+                                   "rslsubstitution");
 
         while (! globus_list_empty(tmp_value_list))
         {
@@ -1193,7 +1192,7 @@ globus_rsl_eval (globus_rsl_t *ast_node,
                         (globus_rsl_value_t *) globus_list_replace_first
                              (tmp_value_list,
                              (void *) globus_rsl_value_make_literal
-                                  (string_value)));
+                                  (globus_libc_strdup(string_value))));
                 }
             }
             else
@@ -1588,6 +1587,39 @@ unparse_exit:
   return char_buffer;
 }
 
+char *
+globus_rsl_value_unparse (globus_rsl_value_t * rsl_value)
+{
+  int             err;
+  globus_fifo_t   buffer;
+  int             size;
+  char          * char_buffer;
+
+  globus_fifo_init (&buffer);
+
+  err = globus_i_rsl_value_unparse_to_fifo (rsl_value, &buffer);
+
+  if (err) {
+    char_buffer = NULL;
+    goto unparse_exit;
+  }
+
+  size = globus_fifo_size (&buffer);
+  char_buffer = globus_malloc (sizeof(char) * (size + 1));
+
+  if ( char_buffer != NULL ) {
+    int i;
+
+    for (i=0; (i<size) && (!globus_fifo_empty (&buffer)); i++) {
+      char_buffer[i] = (char) (long) globus_fifo_dequeue (&buffer);
+    }
+    char_buffer[size] = '\0';
+  }
+
+unparse_exit:
+  globus_fifo_destroy (&buffer);
+  return char_buffer;
+}
 
 static int
 globus_i_rsl_unparse_string_literal_to_fifo (const char    * string,

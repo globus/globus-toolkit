@@ -54,7 +54,7 @@ Default: /dev/null
 </dd>
 <dt><b>(stdout=value)</b> <em>GASS enabled</em></dt>
 <dd>
-The name of the remote file to store the standard output from the job.  If the
+The name of the remote file to store the standard output from the job. If the
 value is a GASS URL, the standard output from the job is transferred
 dynamically during the execution of the job.
 
@@ -63,7 +63,7 @@ Default: /dev/null
 
 <dt><b>(stderr=value)</b> <em>GASS enabled</em></dt>
 <dd>
-The name of the remote file to store the standard error from the job.  If the value is a GASS URL, the standard error from the job is transferred dynamically during the execution of the job.
+The name of the remote file to store the standard error from the job. If the value is a GASS URL, the standard error from the job is transferred dynamically during the execution of the job.
  
 Default: /dev/null
 </dd>

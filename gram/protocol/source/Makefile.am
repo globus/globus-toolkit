@@ -22,10 +22,15 @@ Sources= \
 	globus_gram_protocol_error.c \
 	globus_gram_protocol_pack.c
 
-BUILT_SOURCES = globus_gram_protocol_constants.h
+perlscripts = Error.pm JobSignal.pm JobState.pm
+
+BUILT_SOURCES = globus_gram_protocol_constants.h \
+                $(perlscripts)
+
 EXTRA_DIST = globus-gram-protocol-constants.sh \
-	version.h.in \
-	dirt.sh
+                $(perlscripts) \
+		version.h.in \
+		dirt.sh
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -44,11 +49,18 @@ noinst_HEADERS = globus_i_gram_protocol.h
 
 libexec_SCRIPTS = globus-gram-protocol-constants.sh
 
+perllibdir=$(libdir)/perl/Globus/GRAM
+perllib_SCRIPTS = $(perlscripts)
+
 globus_gram_protocol_constants.h: globus-gram-protocol-constants.sh
 	$(RM) globus_gram_protocol_constants.h
 	@PERL@ $(srcdir)/scripts/create_protocol_constants.pl \
 		$(srcdir)/globus-gram-protocol-constants.sh \
 		> globus_gram_protocol_constants.h
+
+$(perlscripts):
+	@PERL@ $(srcdir)/scripts/create_protocol_constants-perl.pl < \
+		$(srcdir)/globus-gram-protocol-constants.sh
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
