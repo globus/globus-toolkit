@@ -1727,6 +1727,7 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
     
     char                    notready_file_path[MAXPATHLEN+1];
     struct stat             file_stat;
+    int tmp_fd;
     
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
@@ -1780,23 +1781,28 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   
 	   CACHE_TRACE(*local_filename);
 	   
-	   if (creat(*local_filename, GLOBUS_L_GASS_CACHE_STATE_MODE) == -1 )
+	   if ((tmp_fd = creat(*local_filename, 
+                               GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
 	   {
 	       CACHE_TRACE("Could not create new data file");
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_unlock_close(cache_handle, 
+                                                GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
 	   }
+           close(tmp_fd);
 	   
 	   /* set the file as not ready */
 	   strcpy(notready_file_path,*local_filename);
 	   strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-	   if (creat(notready_file_path, GLOBUS_L_GASS_CACHE_STATE_MODE) == -1 )
+	   if ((tmp_fd = creat(notready_file_path, 
+                                GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
 	   {
 	       CACHE_TRACE("Could not create new data filei lock");
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+                                                GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
 	   }
-	   
+           close(tmp_fd);
 	   
 	   /* create a new stat entry and initialise it */
 	   new_entry_pt = globus_malloc(sizeof(globus_gass_cache_entry_t));
@@ -2012,12 +2018,15 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	       
 	       /* New tag added, therefor */
 	       /* lock the cache entry (set the file as not ready ) */
-	       if (creat(notready_file_path, GLOBUS_L_GASS_CACHE_STATE_MODE) == -1 )
+	       if ((tmp_fd = creat(notready_file_path, 
+                                   GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
 	       {
 		   CACHE_TRACE("Could not create new data file lock");
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   globus_l_gass_cache_unlock_close(cache_handle,
+                                                    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
 	       }
+               close(tmp_fd);
 	       
 	       /* release lock */
 	       rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
@@ -2185,6 +2194,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *  cache_handle,
     char                    notready_file_path[MAXPATHLEN+1];
     struct stat             file_stat;
     globus_gass_cache_tag_t *      tag_pt;
+    int tmp_fd;
         
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
@@ -2319,12 +2329,15 @@ globus_gass_cache_delete_start(globus_gass_cache_t *  cache_handle,
 	       }
 	       
 	       /* lock the cache entry */
-	       if (creat(notready_file_path, GLOBUS_L_GASS_CACHE_STATE_MODE) == -1 )
+	       if ((tmp_fd = creat(notready_file_path, 
+                                   GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
 	       {
 		   CACHE_TRACE("Could not create new data file lock");
 		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
 		   return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
 	       }   
+               close(tmp_fd);
+
 	       /* release lock */
 	       rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
 	       /* and return */
