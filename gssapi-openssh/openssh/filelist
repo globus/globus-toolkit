@@ -8,8 +8,8 @@ bin/ssh-add
 bin/ssh-agent
 bin/ssh-keygen
 bin/ssh-keyscan
-bin/ssh-keysign
 libexec/sftp-server
+libexec/ssh-keysign
 libexec/ssh-rand-helper
 man/man1/gsiscp.1
 man/man1/gsissh.1
