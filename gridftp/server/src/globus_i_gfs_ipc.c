@@ -2149,6 +2149,7 @@ globus_gfs_ipc_set_user(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -2224,6 +2225,7 @@ globus_gfs_ipc_set_user_buffer(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -2302,6 +2304,7 @@ globus_gfs_ipc_set_cred(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -2510,6 +2513,7 @@ globus_gfs_ipc_request_recv(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -2581,6 +2585,7 @@ globus_gfs_ipc_request_send(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -2645,6 +2650,7 @@ globus_gfs_ipc_request_list(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -2717,6 +2723,7 @@ globus_gfs_ipc_request_command(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -2978,6 +2985,7 @@ globus_gfs_ipc_request_active_data(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -3060,6 +3068,7 @@ globus_gfs_ipc_request_passive_data(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -3142,6 +3151,7 @@ globus_gfs_ipc_request_stat(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -3254,6 +3264,7 @@ globus_gfs_ipc_request_data_destroy(
     globus_mutex_lock(&ipc->mutex);
     {
         if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
@@ -3539,6 +3550,7 @@ globus_gfs_ipc_handle_release(
     globus_mutex_lock(&globus_l_ipc_mutex);
     {
         if(ipc_handle->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc_handle->state != GLOBUS_GFS_IPC_STATE_GETTING &&
             ipc_handle->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc_handle");
