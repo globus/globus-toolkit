@@ -124,8 +124,8 @@ if test "$gssapi_type" = "globus" ; then
 	else
 	    AC_MSG_ERROR(failed)
 	fi
-	. gpt_build_temp.sh
-	rm gpt_build_temp.sh
+	. ./gpt_build_temp.sh
+	rm ./gpt_build_temp.sh
 
 	inc="${GLOBUS_LOCATION}/include"
 	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
@@ -371,7 +371,7 @@ AC_DEFUN(CHECK_GLOBUS_DEVELOPMENT_PATH,[dnl
 	else
 	    AC_MSG_ERROR(missing)
 	fi
-        GLOBUS_LIBTOOL=${GPT_LOCATION}/sbin/libtool-${GLOBUS_FLAVOR_NAME}
+        GLOBUS_LIBTOOL=${GLOBUS_LOCATION}/sbin/libtool-${GLOBUS_FLAVOR_NAME}
 	globus_cv_development_path=${GLOBUS_LOCATION}
     fi
 ])dnl CHECK_GLOBUS_DEVELOPMENT_PATH
@@ -393,8 +393,8 @@ AC_ARG_ENABLE(globus-data, [  --disable-globus-data   don't use globus data code
 	else
 	    AC_MSG_ERROR(failed)
 	fi
-	. gpt_build_temp.sh
-	rm gpt_build_temp.sh
+	. ./gpt_build_temp.sh
+	rm ./gpt_build_temp.sh
 
 	inc="${GLOBUS_LOCATION}/include"
 	GLOBUS_DATA_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"

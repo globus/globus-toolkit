@@ -888,7 +888,8 @@ FTPSetProtectionLevel(const FTPCIPtr cip)
 	if (strcmp(cip->magic, kLibraryMagic))
 		return (kErrBadMagic);
 
-	if (cip->curProtectionLevel != cip->protectionLevel) {
+	if (cip->authenticated &&
+		cip->curProtectionLevel != cip->protectionLevel) {
 		switch (cip->protectionLevel) {
 			case kProtectionLevelClear:
 			case kProtectionLevelSafe:

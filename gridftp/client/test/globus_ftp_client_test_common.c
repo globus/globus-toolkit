@@ -11,13 +11,15 @@
 #include "globus_ftp_client_test_abort_plugin.h"
 #include "globus_ftp_client_debug_plugin.h"
 #include "globus_ftp_client_restart_plugin.h"
+#include "globus_ftp_client_test_perf_plugin.h"
+#include "globus_ftp_client_test_throughput_plugin.h"
 #include "globus_ftp_client_test_pause_plugin.h"
 
 int test_abort_count = 0;
 
 void
-test_parse_args(int argc, 
-		char *argv[],
+test_parse_args(int argc,
+		char **argv,
 		globus_ftp_client_handleattr_t * handle_attr,
 		globus_ftp_client_operationattr_t * operation_attr,
 		char **src,
@@ -39,17 +41,17 @@ test_parse_args(int argc,
     *dst = GLOBUS_NULL;
 
     setvbuf(stdout, 0, _IONBF, 0);
-    
-    while((c = getopt(argc, argv, "f:a:ps:d:r:zc:t:i")) != -1)
+
+    while((c = getopt(argc, argv, "f:a:ps:d:r:zMTc:t:i")) != -1)
     {
 	switch(c)
 	{
 	case 'a':
 	    globus_module_activate(GLOBUS_FTP_CLIENT_TEST_ABORT_PLUGIN_MODULE);
-	    
+
 	    plugin = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
 	    globus_ftp_client_test_abort_plugin_init(plugin);
-	    
+
 
 	    if(atoi(optarg) >= FTP_ABORT_LAST ||
 	       atoi(optarg) < 0)
@@ -74,8 +76,25 @@ test_parse_args(int argc,
 	    globus_ftp_client_debug_plugin_init(plugin, stderr, "[Debug Plugin]");
 
 	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
-	    
+
 	    break;
+	case 'M':
+	    plugin = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
+	    globus_module_activate(GLOBUS_FTP_CLIENT_TEST_PERF_PLUGIN_MODULE);
+	    globus_ftp_client_test_perf_plugin_init(plugin);
+
+	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
+
+	    break;
+	case 'T':
+	    plugin = globus_libc_malloc(sizeof(globus_ftp_client_plugin_t));
+	    globus_module_activate(GLOBUS_FTP_CLIENT_TEST_THROUGHPUT_PLUGIN_MODULE);
+	    globus_ftp_client_test_throughput_plugin_init(plugin);
+
+	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
+
+	    break;
+
 	case 'z':
 	    globus_module_activate(GLOBUS_FTP_CLIENT_TEST_PAUSE_PLUGIN_MODULE);
 
@@ -83,7 +102,7 @@ test_parse_args(int argc,
 	    globus_ftp_client_test_pause_plugin_init(plugin);
 
 	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
-	    
+
 	    break;
 	case 'r':
 	    globus_module_activate(GLOBUS_FTP_CLIENT_TEST_RESTART_PLUGIN_MODULE);
@@ -185,7 +204,7 @@ test_parse_args(int argc,
 						  &deadline_time);
 	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
 	    break;
-	    
+
 	case 'i':
 	    globus_ftp_client_operationattr_set_control_protection(
 			operation_attr,
@@ -216,5 +235,5 @@ test_remove_arg(int *argc, char **argv, int *start, int num_of_options)
 	argv[j] = argv[j + num_of_options + 1];
     }
     *argc -= num_of_options + 1;
-    *start--;
+    (*start)--;
 }

@@ -1,3 +1,6 @@
+#ifndef GLOBUS_INCLUDE_FTP_CLIENT_H
+#define GLOBUS_INCLUDE_FTP_CLIENT_H
+
 /**
  * @anchor globus_ftp_client_api
  * @mainpage Globus FTP Client API
@@ -50,9 +53,6 @@
 #include "globus_ftp_control.h"
 #include "globus_priority_q.h"
 
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_H
-
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
 #define EXTERN_C_BEGIN extern "C" {
@@ -93,6 +93,14 @@ EXTERN_C_BEGIN
 
 extern globus_module_descriptor_t globus_i_ftp_client_module;
 
+/**
+ * Restart marker types.
+ * @ingroup globus_ftp_client_restart_markers
+ * @internal
+ *
+ * This enum defines the different types of restart markers which may be used
+ * with the client library.
+ */
 typedef enum
 {
     GLOBUS_FTP_CLIENT_RESTART_NONE,
@@ -101,17 +109,59 @@ typedef enum
 }
 globus_ftp_client_restart_type_t;
 
+/**
+ * Stream mode restart marker
+ * @ingroup globus_ftp_client_restart_markers
+ * @internal
+ *
+ * This structure contains all restart marker information from a
+ * stream mode transfer. Markers should be accessed and modified
+ * using the functions described in the
+ * @ref globus_ftp_client_restart_marker "restart marker"
+ * section of this manual.
+ */
 typedef struct
 {
+    /**
+     * @internal
+     * Must be GLOBUS_FTP_CLIENT_STREAM
+     */ 
     globus_ftp_client_restart_type_t		type;
+    /**
+     * @internal
+     * The offset of a binary file transfer.
+     */
     globus_off_t				offset;
+    /**
+     * @internal
+     * The offset of an ASCII file transfer.
+     */
     globus_off_t				ascii_offset;
 }
 globus_ftp_client_restart_stream_t;
 
+/**
+ * Extended block mode restart marker
+ * @ingroup globus_ftp_client_restart_markers
+ * @internal
+ *
+ * This structure contains all restart marker information from an
+ * extended block mode transfer. Markers should be accessed and modified
+ * using the functions described in the
+ * @ref globus_ftp_client_restart_marker "restart marker"
+ * section of this manual.
+ */
 typedef struct
 {
+    /**
+     * @internal
+     * Must be GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK
+     */ 
     globus_ftp_client_restart_type_t		type;
+    /**
+     * @internal
+     * A fifo of globus_i_ftp_client_range_t byte range entries
+     */
     globus_fifo_t				ranges;
 }
 globus_ftp_client_restart_extended_block_t;
@@ -156,8 +206,8 @@ typedef struct globus_i_ftp_client_handle_t * globus_ftp_client_handle_t;
 /**
  * FTP Client plugin
  * @ingroup globus_ftp_client_plugins
- * 
- * An FTP Client plugin is used to add restart, monitoring, 
+ *
+ * An FTP Client plugin is used to add restart, monitoring,
  * and performance tuning operations to the FTP Client library, without
  * modifying the base API. Multiple plugins may be associated with a
  * globus_ftp_client_handle_t.
@@ -185,7 +235,7 @@ typedef struct globus_i_ftp_client_plugin_t * globus_ftp_client_plugin_t;
  *        The handle on which the operation was done.
  * @param error
  *        A Globus error object indicating any problem which occurred,
- *        or GLOBUS_SUCCESS, if the operation completed successfully. 
+ *        or GLOBUS_SUCCESS, if the operation completed successfully.
  */
 typedef void (*globus_ftp_client_complete_callback_t) (
     void *					user_arg,
@@ -211,7 +261,8 @@ typedef void (*globus_ftp_client_complete_callback_t) (
  * @param buffer
  *        The data buffer passed to the original read or write call.
  * @param length
- *        The amount of data in the data buffer.
+ *        The amount of data in the data buffer. When reading data, this
+ *        may be smaller than original buffer's length.
  * @param offset
  *        The offset into the file which this data block contains.
  * @param eof
@@ -236,7 +287,7 @@ typedef void (*globus_ftp_client_data_callback_t) (
  * access an URL using the FTP protocol. Attributes are created and
  * manipulated using the functions in the
  * @link globus_ftp_client_operationattr attributes @endlink section
- * of the library. 
+ * of the library.
  *
  * @see globus_ftp_client_operationattr_init(),
  * globus_ftp_client_operationattr_destroy()
@@ -300,6 +351,11 @@ globus_ftp_client_restart_marker_set_ascii_offset(
     globus_off_t				ascii_offset);
 
 globus_result_t
+globus_ftp_client_restart_marker_get_total(
+    globus_ftp_client_restart_marker_t *	marker,
+    globus_off_t *				total_bytes);
+
+globus_result_t
 globus_ftp_client_restart_marker_to_string(
     globus_ftp_client_restart_marker_t *	marker,
     char **					marker_string);
@@ -352,6 +408,17 @@ globus_result_t
 globus_ftp_client_handle_get_user_pointer(
     const globus_ftp_client_handle_t *		handle,
     void **					user_pointer);
+
+globus_result_t
+globus_ftp_client_handle_add_plugin(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_plugin_t *		plugin);
+
+globus_result_t
+globus_ftp_client_handle_remove_plugin(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_plugin_t *		plugin);
+
 #endif
 
 /**
@@ -404,6 +471,13 @@ globus_result_t
 globus_ftp_client_handleattr_set_netlogger(
     globus_ftp_client_handleattr_t *		attr,
     globus_netlogger_handle_t *	                nl_handle);
+
+globus_result_t
+globus_ftp_client_handleattr_set_netlogger_ftp_io(
+    globus_ftp_client_handleattr_t *            attr,
+    globus_netlogger_handle_t *                 nl_handle,
+    globus_bool_t                               ftp,
+    globus_bool_t                               io);
 
 globus_result_t
 globus_ftp_client_handleattr_remove_plugin(
@@ -488,7 +562,7 @@ globus_ftp_client_put(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     globus_ftp_client_operationattr_t *		attr,
-    globus_ftp_client_restart_marker_t *	restart,    
+    globus_ftp_client_restart_marker_t *	restart,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg);
 
@@ -499,7 +573,7 @@ globus_ftp_client_third_party_transfer(
     globus_ftp_client_operationattr_t *		source_attr,
     const char *				dest_url,
     globus_ftp_client_operationattr_t *		dest_attr,
-    globus_ftp_client_restart_marker_t *	restart,    
+    globus_ftp_client_restart_marker_t *	restart,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg);
 
@@ -519,7 +593,7 @@ globus_ftp_client_partial_put(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     globus_ftp_client_operationattr_t *		attr,
-    globus_ftp_client_restart_marker_t *	restart,    
+    globus_ftp_client_restart_marker_t *	restart,
     globus_off_t				partial_offset,
     globus_off_t				partial_end_offset,
     globus_ftp_client_complete_callback_t	complete_callback,

@@ -22,6 +22,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
     globus-ftp-client-partial-get-test.pl
     globus-ftp-client-partial-put-test.pl
     globus-ftp-client-partial-transfer-test.pl
+    globus-ftp-client-plugin-test.pl
     globus-ftp-client-put-test.pl
     globus-ftp-client-size-test.pl 
     globus-ftp-client-transfer-test.pl

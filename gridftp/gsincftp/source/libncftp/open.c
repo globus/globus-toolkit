@@ -437,6 +437,8 @@ FTPLoginHost(const FTPCIPtr cip)
 							break;
 						}
 						
+						result = kErrLoginFailed;
+
 						goto done;
 					}
 					if(send_tok.length != 0) {
@@ -551,9 +553,6 @@ okay:
 	/* When a new site is opened, Authenticate only protection is assumed
 	 * (by protocol).
 	 */
-#if HAVE_GSSAPI
-	cip->curProtectionLevel = kProtectionLevelAuthenticated;
-#endif
 
 	PrintF(cip, "Logged in to %s as %s.\n", cip->host, cip->user);
 
@@ -729,6 +728,13 @@ FTPQueryFeatures(const FTPCIPtr cip)
 					FTPExamineMlstFeatures(cip, cp + 5);
 				} else if (ISTRNCMP(cp, "CLNT", 4) == 0) {
 					cip->hasCLNT = kCommandAvailable;
+#if HAVE_GSSAPI
+				} else if(ISTRNCMP( cp, "DCAU", 4) == 0) {
+					cip->hasDCAU = kCommandAvailable;
+					cip->hasPROT = kCommandAvailable;
+					cip->hasPBSZ = kCommandAvailable;
+					cip->curProtectionLevel = kProtectionLevelAuthenticated;
+#endif
 				} else if (ISTRNCMP(cp, "Compliance Level: ", 18) == 0) {
 					/* Probably only NcFTPd will ever implement this.
 					 * But we use it internally to differentiate
@@ -1325,6 +1331,14 @@ FTPInitConnectionInfo(const FTPLIPtr lip, const FTPCIPtr cip, size_t bufSize)
 	cip->NLSTfileParamWorks = kCommandAvailabilityUnknown;
 	cip->firewallType = kFirewallNotInUse;
 	cip->startingWorkingDirectory = NULL;
+	cip->doAuth = 1;
+	cip->authenticated = 0;
+	cip->hasPROT = kCommandAvailabilityUnknown;
+	cip->hasPBSZ = kCommandAvailabilityUnknown;
+	cip->connectionContext = GSS_C_NO_CONTEXT;
+	cip->protectionLevel = kProtectionLevelClear;
+	cip->curProtectionLevel = kProtectionLevelClear;
+
 	(void) STRNCPY(cip->magic, kLibraryMagic);
 	(void) STRNCPY(cip->user, "anonymous");
 	return (kNoErr);

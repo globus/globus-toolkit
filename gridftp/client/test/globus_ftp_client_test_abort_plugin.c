@@ -78,7 +78,7 @@ globus_l_ftp_client_test_abort_plugin_authenticate(
     {
 	printf("[abort plugin]: Aborting during authentication\n");
 	globus_ftp_client_plugin_abort(handle);
-	d->counter++;
+	(*d->counter)++;
     }
     d->next = FTP_ABORT_AT_AUTH_RESPONSE;
     return;
@@ -100,7 +100,7 @@ globus_l_ftp_client_test_abort_plugin_connect(
     {
 	printf("[abort plugin]: Aborting during connect\n");
 	globus_ftp_client_plugin_abort(handle);
-	d->counter++;
+	(*d->counter)++;
     }
     d->next = FTP_ABORT_AT_CONNECT_RESPONSE;
     return;
@@ -222,7 +222,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during SITE HELP\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_SITE_HELP_RESPONSE;
     }
@@ -232,7 +232,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during FEAT\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_FEAT_RESPONSE;
     }
@@ -242,7 +242,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during TYPE\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_TYPE_RESPONSE;
     }
@@ -252,7 +252,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during MODE\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_MODE_RESPONSE;
     }
@@ -262,7 +262,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during OPTS RETR\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_OPTS_RETR_RESPONSE;
     }
@@ -272,7 +272,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during PASV\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_PASV_RESPONSE;
     }
@@ -282,7 +282,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during PORT\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_PORT_RESPONSE;
     }
@@ -292,7 +292,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during REST\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_REST_RESPONSE;
     }
@@ -302,7 +302,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during RETR\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_RETR_RESPONSE;
     }
@@ -312,7 +312,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[abort plugin]: Aborting during STOR\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_STOR_RESPONSE;
     }
@@ -322,7 +322,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[restart plugin]: About to restart during LIST\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_LIST_RESPONSE;
     }
@@ -332,7 +332,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[restart plugin]: About to restart during NLST\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_NLST_RESPONSE;
     }
@@ -342,7 +342,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[restart plugin]: About to restart during MKD\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_MKD_RESPONSE;
     }
@@ -352,7 +352,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[restart plugin]: About to restart during RMD\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_RMD_RESPONSE;
     }
@@ -362,7 +362,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[restart plugin]: About to restart during DELE\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_DELE_RESPONSE;
     }
@@ -372,7 +372,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[restart plugin]: About to restart during RNFR\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_RNFR_RESPONSE;
     }
@@ -382,7 +382,7 @@ globus_l_ftp_client_test_abort_plugin_command(
 	{
 	    printf("[restart plugin]: About to restart during RNTO\n");
 	    globus_ftp_client_plugin_abort(handle);
-	    d->counter++;
+	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_RNTO_RESPONSE;
     }
@@ -408,7 +408,7 @@ globus_l_ftp_client_test_abort_plugin_response(
 	printf("[abort plugin]: Aborting during response (when=%d)\n",
 	       (int) d->when);
 	globus_ftp_client_abort(handle);
-	d->counter++;
+	(*d->counter)++;
     }
     return;
 }
@@ -429,7 +429,7 @@ globus_l_ftp_client_test_abort_plugin_read(
     {
 	printf("[abort plugin]: Aborting during read\n");
 	globus_ftp_client_abort(handle);
-	d->counter++;
+	(*d->counter)++;
     }
     return;
 }
@@ -453,7 +453,7 @@ globus_l_ftp_client_test_abort_plugin_data(
     {
 	printf("[abort plugin]: Aborting during data callback\n");
 	globus_ftp_client_abort(handle);
-	d->counter++;
+	(*d->counter)++;
     }
     return;
 }
@@ -476,7 +476,7 @@ globus_l_ftp_client_test_abort_plugin_write(
     {
 	printf("[abort plugin]: Aborting during write\n");
 	globus_ftp_client_abort(handle);
-	d->counter++;
+	(*d->counter)++;
     }
     return;
 }
@@ -537,7 +537,7 @@ globus_l_ftp_client_test_abort_plugin_destroy(
 }
 
 static
-void 
+void
 globus_l_ftp_client_test_abort_plugin_third_party_transfer(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
@@ -551,7 +551,7 @@ globus_l_ftp_client_test_abort_plugin_third_party_transfer(
 }
 
 static
-void 
+void
 globus_l_ftp_client_test_abort_plugin_abort(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
@@ -561,7 +561,7 @@ globus_l_ftp_client_test_abort_plugin_abort(
 }
 
 static
-void 
+void
 globus_l_ftp_client_test_abort_plugin_fault(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,

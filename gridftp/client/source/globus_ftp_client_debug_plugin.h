@@ -34,6 +34,8 @@
 
 #include "globus_ftp_client_plugin.h"
 
+EXTERN_C_BEGIN
+
 /** Module descriptor
  * @ingroup globus_ftp_client_debug_plugin
  */
@@ -50,5 +52,7 @@ globus_ftp_client_debug_plugin_init(
 globus_result_t
 globus_ftp_client_debug_plugin_destroy(
     globus_ftp_client_plugin_t *		plugin);
+
+EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_FTP_CLIENT_DEBUG_PLUGIN_H */

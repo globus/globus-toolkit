@@ -86,7 +86,6 @@ int access_ok(int);
 #if defined(USE_GLOBUS_DATA_CODE)
 
 int
-#ifdef THROUGHPUT
 g_send_data(
     char *                                          name,
     FILE *                                          instr,
@@ -95,15 +94,6 @@ g_send_data(
     off_t                                           logical_offset,
     off_t                                           length,
     off_t					    size);
-#else
-g_send_data(
-    FILE *                                          instr,
-    globus_ftp_control_handle_t *                   handle,
-    off_t                                           offset,
-    off_t                                           logical_offset,
-    off_t                                           length,
-    off_t					    size);
-#endif
 
 int
 g_receive_data(
@@ -121,7 +111,9 @@ void
 g_passive();
 
 void
-g_start();
+g_start(
+    int                                             argc,
+    char **                                         argv);
 
 void
 g_end();
@@ -134,6 +126,28 @@ void
 globus_i_wu_free_ranges(globus_fifo_t * ranges);
 
 #endif /* USE_GLOBUS_DATA_CODE */
+
+#ifdef GSSAPI_GLOBUS
+#ifdef GLOBUS_AUTHORIZATION
+int
+ftp_check_authorization(char * object,
+                        char * action);
+
+int 
+ftp_authorization_initialize(char *             cffile,
+                             char *             errstr,
+                             int                errstr_len);
+
+int 
+ftp_authorization_initialize_sc(gss_ctx_id_t    ctx,
+                                char *          errstr,
+                                int             errstr_len);
+
+void 
+ftp_authorization_cleanup(void);
+
+#endif /* GLOBUS_AUTHORIZATION */
+#endif /* GSSAPI_GLOBUS */
 
 /*
    ** acl.c

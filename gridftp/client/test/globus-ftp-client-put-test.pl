@@ -1,4 +1,4 @@
-#! /usr/bin/env perl 
+#! /usr/bin/env perl
 
 =head1 Simple Put Tests
 
@@ -69,7 +69,7 @@ sub basic_func
     if($use_proxy)
     {
     	my $diffs = `diff /etc/group $tmpname 2>&1 | sed -e 's/^/# /'`;
-	
+
 	if($diffs ne "")
 	{
 	    $errors .= "\n# Differences between /etc/group and output.";
@@ -275,7 +275,7 @@ sub dcau_test
     if($errors eq "" && $desired_rc == 0)
     {
 	my $diffs = `diff /etc/group $tmpname 2>&1 | sed -e 's/^/# /'`;
-	
+
 	if($diffs ne "")
 	{
 	    $errors .= "\n# Differences between /etc/group and output.";
@@ -346,7 +346,7 @@ sub prot_test
     if($errors eq "" && $desired_rc == 0)
     {
 	my $diffs = `diff /etc/group $tmpname 2>&1 | sed -e 's/^/# /'`;
-	
+
 	if($diffs ne "")
 	{
 	    $errors .= "\n# Differences between /etc/group and output.";
@@ -368,6 +368,80 @@ sub prot_test
 push(@tests, "prot_test('clear', 0);");
 push(@tests, "prot_test('safe', 0);");
 push(@tests, "prot_test('private', 0);");
+
+=head2 I<perf_test> (Test 93)
+
+Do a simple put of /etc/group, enabling perf_plugin
+
+=back
+
+=cut
+sub perf_test
+{
+    my $tmpname = POSIX::tmpnam();
+    my ($errors,$rc) = ("",0);
+
+    unlink('core');
+
+    $rc = system("$test_exec -d 'gsiftp://localhost$tmpname' -M < /etc/group >/dev/null 2>&1") / 256;
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok("\n# $test_exec -M\n#$errors", 'success');
+    }
+    unlink($tmpname);
+}
+
+push(@tests, "perf_test();");
+
+=head2 I<throughput_test> (Test 94)
+
+Do a simple put of /etc/group, enabling throughput_plugin
+
+=back
+
+=cut
+sub throughput_test
+{
+    my $tmpname = POSIX::tmpnam();
+    my ($errors,$rc) = ("",0);
+
+    unlink('core');
+
+    $rc = system("$test_exec -d 'gsiftp://localhost$tmpname' -M -T < /etc/group >/dev/null 2>&1") / 256;
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok("\n# $test_exec -T\n#$errors", 'success');
+    }
+    unlink($tmpname);
+}
+
+push(@tests, "throughput_test();");
 
 =head2 I<restart_plugin_test> (Test 93-?)
 
@@ -418,12 +492,12 @@ foreach (&FtpTestLib::ftp_commands())
 {
     push(@tests, "restart_plugin_test('$_');");
 }
-push(@tests, "restart_plugin_test('PROT', '-c self -t safe')"); 
-push(@tests, "restart_plugin_test('DCAU', '-c self -t safe')"); 
-push(@tests, "restart_plugin_test('PBSZ', '-c self -t safe')"); 
+push(@tests, "restart_plugin_test('PROT', '-c self -t safe')");
+push(@tests, "restart_plugin_test('DCAU', '-c self -t safe')");
+push(@tests, "restart_plugin_test('PBSZ', '-c self -t safe')");
 
 
-	
+
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
 

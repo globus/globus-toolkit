@@ -1,9 +1,53 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_ftp_client_perf_plugin.c GridFTP Performance Marker Plugin Implementation
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ * $Author$
+ */
+
 #include "globus_ftp_client_perf_plugin.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <ctype.h>
+#include <sys/timeb.h>
 
-#define GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME "perf_plugin"
+/* for 'get' mode (in seconds) */
+#define MIN_CB_INTERVAL 1
+
+#define GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME "globus_ftp_client_perf_plugin"
+
+static globus_bool_t globus_l_ftp_client_perf_plugin_activate(void);
+static globus_bool_t globus_l_ftp_client_perf_plugin_deactivate(void);
+
+globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module =
+{
+    GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME,
+    globus_l_ftp_client_perf_plugin_activate,
+    globus_l_ftp_client_perf_plugin_deactivate,
+    GLOBUS_NULL
+};
+
+static
+int
+globus_l_ftp_client_perf_plugin_activate(void)
+{
+    int rc;
+
+    rc = globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
+    return rc;
+}
+
+static
+int
+globus_l_ftp_client_perf_plugin_deactivate(void)
+{
+    return globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE);
+}
 
 typedef struct perf_plugin_info_s
 {
@@ -14,9 +58,12 @@ typedef struct perf_plugin_info_s
     globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb;
     globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb;
 
-    /* used for get command only */
-    globus_bool_t                                   get_command;
-    globus_size_t                                   nbytes;
+    globus_bool_t                                   success;
+
+    /* used for get command or put (when put not in EB mode) only */
+    globus_bool_t                                   use_data;
+    double                                          last_time;
+    globus_off_t                                    nbytes;
     globus_mutex_t                                  lock;
 
 } perf_plugin_info_t;
@@ -24,6 +71,7 @@ typedef struct perf_plugin_info_s
 
 /**
  * Plugin complete callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback will be called when one of the transfer commands
  * is completed. Will also call user's 'complete' callback
@@ -43,13 +91,59 @@ perf_plugin_complete_cb(
     if(ps->complete_cb)
     {
         ps->complete_cb(
+            ps->user_specific,
             handle,
-            ps->user_specific);
+            ps->success);
     }
 }
 
 /**
+ * Plugin abort callback
+ * @ingroup globus_ftp_client_perf_plugin
+ *
+ * This callback will be called when an abort has been requested
+ */
+
+static
+void perf_plugin_abort_cb(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle)
+{
+    perf_plugin_info_t *                        ps;
+
+    ps = (perf_plugin_info_t *) plugin_specific;
+
+    ps->success = GLOBUS_FALSE;
+}
+
+/**
+ * Plugin fault callback
+ * @ingroup globus_ftp_client_restart_marker_plugin
+ *
+ * This callback will be called when one of the transfer commands
+ * has failed.
+ */
+
+static
+void
+perf_plugin_fault_cb(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle,
+    const char *                                url,
+    globus_object_t *                           error)
+{
+    perf_plugin_info_t *                        ps;
+
+    ps = (perf_plugin_info_t *) plugin_specific;
+
+    ps->success = GLOBUS_FALSE;
+}
+
+/**
  * Plugin response callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * Parses out performance markers and calls user's 'marker' callback.
  */
@@ -68,72 +162,101 @@ perf_plugin_response_cb(
     char *                                      buffer;
     char *                                      tmp_ptr;
     int                                         count;
-    time_t                                      time_stamp;
+    long                                        time_stamp_int;
+    char                                        time_stamp_tenght;
     int                                         stripe_ndx;
     int                                         num_stripes;
-    globus_size_t                               nbytes;
+    globus_off_t                                nbytes;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
     if(ps->marker_cb &&
+        !error &&
         ftp_response &&
         ftp_response->response_buffer &&
-        ftp_response->code == 112)
+        ftp_response->code == 112 &&
+        !ps->use_data) /* bad server... sending markers in non-EB mode */
     {
         buffer = (char *) ftp_response->response_buffer;
 
         /* parse out time stamp */
-        tmp_ptr = strstr(buffer, "Timestamp: ");
+        tmp_ptr = strstr(buffer, "Timestamp:");
         if(tmp_ptr == NULL)
-        {
-            return;
-        }
-        count = scanf(tmp_ptr, "%ld", &time_stamp);
-        if(count != 1)
         {
             return;
         }
 
+        tmp_ptr += sizeof("Timestamp:");
+        while(isspace(*tmp_ptr))
+        {
+            tmp_ptr++;
+        }
+
+        time_stamp_int = 0;
+        while(isdigit(*tmp_ptr))
+        {
+            time_stamp_int = (time_stamp_int * 10) + (*tmp_ptr - '0');
+            tmp_ptr++;
+        }
+
+        time_stamp_tenght = 0;
+        if(*tmp_ptr == '.')
+        {
+            tmp_ptr++;
+            time_stamp_tenght = *tmp_ptr - '0';
+            tmp_ptr++;
+        }
+
+        if(!isspace(*tmp_ptr))
+        {
+            /* invalid value */
+            return;
+        }
+
         /* parse out Stripe Index */
-        tmp_ptr = strstr(buffer, "Stripe Index: ");
+        tmp_ptr = strstr(buffer, "Stripe Index:");
         if(tmp_ptr == NULL)
         {
             return;
         }
-        count = scanf(tmp_ptr, "%d", &stripe_ndx);
+        count = sscanf(tmp_ptr + sizeof("Stripe Index:"),
+            " %d", &stripe_ndx);
         if(count != 1)
         {
             return;
         }
 
         /* parse out total stripe count */
-        tmp_ptr = strstr(buffer, "Total Stripe Count: ");
+        tmp_ptr = strstr(buffer, "Total Stripe Count:");
         if(tmp_ptr == NULL)
         {
             return;
         }
-        count = scanf(tmp_ptr, "%d", &num_stripes);
+        count = sscanf(tmp_ptr + sizeof("Total Stripe Count:"),
+            " %d", &num_stripes);
         if(count != 1)
         {
             return;
         }
 
         /* parse out bytes transfered */
-        tmp_ptr = strstr(buffer, "Stripe Bytes Transfererred: ");
+        tmp_ptr = strstr(buffer, "Stripe Bytes Transferred:");
         if(tmp_ptr == NULL)
         {
             return;
         }
-        count = scanf(tmp_ptr, "%ld", &nbytes);
+        count = sscanf(tmp_ptr + sizeof("Stripe Bytes Transferred:"),
+            " %" GLOBUS_OFF_T_FORMAT, &nbytes);
         if(count != 1)
         {
             return;
         }
 
         ps->marker_cb(
-            handle,
             ps->user_specific,
-            time_stamp,
+            handle,
+            time_stamp_int,
+            time_stamp_tenght,
             stripe_ndx,
             num_stripes,
             nbytes);
@@ -142,6 +265,7 @@ perf_plugin_response_cb(
 
 /**
  * Plugin data callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This plugin is used to create performance marker callbacks in the case
  * of a 'get' command.  (no performance markers are received in the 'get'
@@ -161,24 +285,28 @@ perf_plugin_data_cb(
     globus_bool_t                               eof)
 {
     perf_plugin_info_t *                        ps;
-    time_t                                      time_now;
+    struct timeb                                timebuf;
+    double                                      time_now;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    if(ps->get_command && !error)
+    if(ps->use_data && !error)
     {
-        time_now = time(NULL);
-
         globus_mutex_lock(&ps->lock);
 
+        ftime(&timebuf);
+        time_now = timebuf.time + (timebuf.millitm / 1000.0);
         ps->nbytes += length;
 
-        if(ps->marker_cb)
+        if(ps->marker_cb && (time_now - ps->last_time) > MIN_CB_INTERVAL)
         {
+            ps->last_time = time_now;
+
             ps->marker_cb(
-                handle,
                 ps->user_specific,
-                time_now,
+                handle,
+                timebuf.time,
+                timebuf.millitm / 100,
                 0,
                 1,
                 ps->nbytes);
@@ -190,6 +318,7 @@ perf_plugin_data_cb(
 
 /**
  * Plugin get command callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback signifies the start of a 'get' command. It will
  * call the user's 'begin' callback
@@ -209,20 +338,27 @@ perf_plugin_get_cb(
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    ps->get_command = GLOBUS_TRUE;
+    ps->success = GLOBUS_TRUE;
+
+    ps->use_data = GLOBUS_TRUE;
     ps->nbytes = 0;
+    ps->last_time = 0;
 
     if(ps->begin_cb)
     {
         ps->begin_cb(
+            ps->user_specific,
             handle,
-            ps->user_specific);
+            url,
+            GLOBUS_NULL,
+            restart);
     }
 }
 
 
 /**
  * Plugin put command callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback signifies the start of a 'put' command. It will
  * call the user's 'begin' callback
@@ -239,23 +375,41 @@ perf_plugin_put_cb(
     globus_bool_t                               restart)
 {
     perf_plugin_info_t *                        ps;
+    globus_ftp_control_mode_t                   mode;
+    globus_result_t                             result;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    ps->get_command = GLOBUS_FALSE;
-    ps->nbytes = 0;
+    ps->success = GLOBUS_TRUE;
+
+    result = globus_ftp_client_operationattr_get_mode(attr, &mode);
+    if(result == GLOBUS_SUCCESS &&
+        mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+    {
+        ps->use_data = GLOBUS_FALSE;
+    }
+    else
+    {
+        ps->use_data = GLOBUS_TRUE;
+        ps->nbytes = 0;
+        ps->last_time = 0;
+    }
 
     if(ps->begin_cb)
     {
         ps->begin_cb(
+            ps->user_specific,
             handle,
-            ps->user_specific);
+            GLOBUS_NULL,
+            url,
+            restart);
     }
 }
 
 
 /**
  * Plugin thrid party transfer command callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback signifies the start of a 'transfer' command. It will
  * call the user's 'begin' callback
@@ -277,19 +431,23 @@ perf_plugin_transfer_cb(
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    ps->get_command = GLOBUS_FALSE;
-    ps->nbytes = 0;
+    ps->success = GLOBUS_TRUE;
+    ps->use_data = GLOBUS_FALSE;
 
     if(ps->begin_cb)
     {
         ps->begin_cb(
+            ps->user_specific,
             handle,
-            ps->user_specific);
+            source_url,
+            dest_url,
+            restart);
     }
 }
 
 /**
  * Plugin copy callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback is called to create a new copy of this plugin. It will also
  * call the user's 'copy' callback
@@ -330,14 +488,12 @@ perf_plugin_copy_cb(
         old_ps->begin_cb,
         old_ps->marker_cb,
         old_ps->complete_cb,
-        old_ps->copy_cb,
-        old_ps->destroy_cb,
         new_user_specific);
 
     if(result != GLOBUS_SUCCESS)
     {
         globus_free(new_plugin);
-        if(old_ps->copy_cb && old_ps->destroy_cb)
+        if(old_ps->destroy_cb)
         {
             old_ps->destroy_cb(new_user_specific);
         }
@@ -345,15 +501,20 @@ perf_plugin_copy_cb(
         return GLOBUS_NULL;
     }
 
+    globus_ftp_client_perf_plugin_set_copy_destroy(
+        new_plugin,
+        old_ps->copy_cb,
+        old_ps->destroy_cb);
+
     return new_plugin;
 }
 
 /**
  * Plugin destroy callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback is called to destroy a copy of a plugin made with the
  * copy callback above.  It will also call the user's 'destroy' callback
- * iff the user has registered a 'copy' callback
  */
 
 static
@@ -366,7 +527,7 @@ perf_plugin_destroy_cb(
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
-    if(ps->copy_cb && ps->destroy_cb)
+    if(ps->destroy_cb)
     {
         ps->destroy_cb(ps->user_specific);
     }
@@ -375,8 +536,11 @@ perf_plugin_destroy_cb(
     globus_free(plugin);
 }
 
+#endif  /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 /**
  * Initialize a perf plugin
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This function initializes a performance marker plugin. Any params
  * except for the plugin may be GLOBUS_NULL
@@ -397,16 +561,6 @@ perf_plugin_destroy_cb(
  * @param complete_cb
  *        the callback to be called to indicate transfer completion
  *
- * @param copy_cb
- *        a copy of this plugin is automatically made for every handle
- *        that uses it.  This callback will be called to allow
- *        a user to create new state data to accompany this copy of the
- *        plugin
- *
- * @param destroy_cb
- *        the callback to be called upon destruction of a copy of the plugin
- *        (Note: will only be called if a copy_cb is also registered)
- *
  * @return
  *        - GLOBUS_SUCCESS
  *        - Error on NULL plugin
@@ -419,8 +573,6 @@ globus_ftp_client_perf_plugin_init(
     globus_ftp_client_perf_plugin_begin_cb_t        begin_cb,
     globus_ftp_client_perf_plugin_marker_cb_t       marker_cb,
     globus_ftp_client_perf_plugin_complete_cb_t     complete_cb,
-    globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb,
-    globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb,
     void *                                          user_specific)
 {
     perf_plugin_info_t *                            ps;
@@ -458,15 +610,15 @@ globus_ftp_client_perf_plugin_init(
     ps->begin_cb            = begin_cb;
     ps->marker_cb           = marker_cb;
     ps->complete_cb         = complete_cb;
-    ps->copy_cb             = copy_cb;
-    ps->destroy_cb          = destroy_cb;
+    ps->copy_cb             = GLOBUS_NULL;
+    ps->destroy_cb          = GLOBUS_NULL;
 
     globus_mutex_init(&ps->lock, GLOBUS_NULL);
 
     result = globus_ftp_client_plugin_init(
               plugin,
               GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME,
-              GLOBUS_FTP_CLIENT_CMD_MASK_ALL,
+              GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS,
               ps);
 
     if(result != GLOBUS_SUCCESS)
@@ -493,12 +645,77 @@ globus_ftp_client_perf_plugin_init(
         perf_plugin_response_cb);
     globus_ftp_client_plugin_set_complete_func(plugin,
         perf_plugin_complete_cb);
+    globus_ftp_client_plugin_set_fault_func(plugin,
+        perf_plugin_fault_cb);
+    globus_ftp_client_plugin_set_abort_func(plugin,
+        perf_plugin_abort_cb);
+
+    return GLOBUS_SUCCESS;
+}
+
+/**
+ * Set user copy and destroy callbacks
+ * @ingroup globus_ftp_client_perf_plugin
+ *
+ * Use this to have the plugin make callbacks any time a copy of this
+ * plugin is being made.  This will allow the user to keep state for
+ * different handles.
+ *
+ * @param plugin
+ *        plugin previously initialized with init (above)
+ *
+ * @param copy_cb
+ *        func to be called when a copy is needed
+ *
+ * @param destroy_cb
+ *        func to be called when a copy is to be destroyed
+ *
+ * @return
+ *        - Error on NULL arguments
+ *        - GLOBUS_SUCCESS
+ */
+
+globus_result_t
+globus_ftp_client_perf_plugin_set_copy_destroy(
+    globus_ftp_client_plugin_t *                    plugin,
+    globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb,
+    globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb)
+{
+    globus_result_t                             result;
+    perf_plugin_info_t *                        ps;
+    static char *                               myname =
+        "globus_ftp_client_perf_plugin_set_copy_destroy";
+
+    if(plugin == GLOBUS_NULL ||
+        copy_cb == GLOBUS_NULL ||
+        destroy_cb == GLOBUS_NULL)
+    {
+        return globus_error_put(globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] NULL arg at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    result = globus_ftp_client_perf_plugin_get_user_specific(
+              plugin,
+              (void **) &ps);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    ps->copy_cb = copy_cb;
+    ps->destroy_cb = destroy_cb;
 
     return GLOBUS_SUCCESS;
 }
 
 /**
  * Destroy performance marker plugin
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * Frees up memory associated with plugin
  *
@@ -546,6 +763,7 @@ globus_ftp_client_perf_plugin_destroy(
 
 /**
  * Retrieve user specific pointer
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * @param plugin
  *        plugin previously initialized with init (above)

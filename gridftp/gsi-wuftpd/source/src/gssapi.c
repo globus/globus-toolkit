@@ -39,11 +39,22 @@ extern struct sockaddr_in ctrl_addr;
 #define GSS_C_NT_HOSTBASED_SERVICE	gss_nt_service_name
 #endif /* GSS_C_NT_HOSTBASED_SERVICE */
 #endif /* GSSAPI_KRB5 */
-#ifdef GSSAPI_GLOBUS
-char* gss_services[] = { "host", 0 };
-#endif /* GSSAPI_GLOBUS */
 
 #include <gssapi.h>
+
+#ifdef GSSAPI_GLOBUS
+char* gss_services[] = { "host", 0 };
+extern const gss_OID_desc * const gss_untrusted_group;
+
+/* Compare OIDs */
+
+#define g_OID_equal(o1,o2) \
+        (((o1) == (o2)) || \
+         ((o1) && (o2) && \
+         ((o1)->length == (o2)->length) && \
+         (memcmp((o1)->elements,(o2)->elements,(int) (o1)->length) == 0)))
+
+#endif /* GSSAPI_GLOBUS */
 
 #if USE_GLOBUS_DATA_CODE
 #include "globus_ftp_control.h"
@@ -61,6 +72,8 @@ static gss_ctx_id_t gcontext = GSS_C_NO_CONTEXT;
 
 /* Identity of authenticated client */
 static gss_buffer_desc client_name = { 0, NULL };
+
+static char * group_info = NULL;
 
 #ifndef NUL
 #define	NUL	'\0'
@@ -756,11 +769,15 @@ gssapi_handle_auth_data(char *data, int length)
 {
     int replied = 0;			/* Have we replied */
     int rc;
+    int i;
     static gss_name_t client;
     OM_uint32 ret_flags = 0;
     struct gss_channel_bindings_struct *pchan;
 #ifndef GSSAPI_GLOBUS
     struct gss_channel_bindings_struct chan;
+#else
+    gss_buffer_set_t client_group = GSS_C_NO_BUFFER_SET;
+    gss_OID_set subgroup_types = GSS_C_NO_OID_SET;
 #endif /* !GSSAPI_GLOBUS */
 
     OM_uint32 accept_maj;
@@ -792,6 +809,33 @@ gssapi_handle_auth_data(char *data, int length)
     chan.application_data.value = 0;
     pchan = &chan;
 #endif /* !GSSAPI_GLOBUS */
+
+#ifdef GLOBUS_AUTHORIZATION
+    /*
+     * Need to set option in context before first call to inform
+     * GSSAPI libraries we wil handle any restrictions in GSI
+     * credentials used to authenticate.
+     */
+    if (gcontext == GSS_C_NO_CONTEXT)
+    {
+        stat_maj = globus_gss_assist_will_handle_restrictions(&stat_min,
+                                                          &gcontext);
+    
+        if (stat_maj != GSS_S_COMPLETE) 
+        {
+            /*
+             * Don't need to fail here, since if there are no restrictions
+             * in the credentials used to authenticate, we're fine. And if
+             * there are we'll fail later anyways. But we should make a note
+             * of this error to help someone figure out what's going on.
+             */
+            syslog(LOG_NOTICE,
+                   "Warning: globus_gss_assist_will_handle_restrictions() failed"
+                   " (major status = %x minor_status = %x)",
+                   stat_maj, stat_min);
+        }
+    }
+#endif /* GLOBUS_AUTHORIZATION */
 
     rc = gssapi_acquire_server_credentials();
 
@@ -874,10 +918,47 @@ gssapi_handle_auth_data(char *data, int length)
 	    syslog(LOG_ERR, "gssapi error extracting identity");
 	    return -1;
 	}
-
+        
 	if (debug)
 	    syslog(LOG_INFO, "Client identity is: %s", client_name.value);
 
+#ifdef GSSAPI_GLOBUS
+        stat_maj = gss_get_group(&stat_min, client,
+                                 &client_group, &subgroup_types);
+
+	if (stat_maj != GSS_S_COMPLETE) {
+	    gssapi_reply_error(535, stat_maj, stat_min,
+			       "extracting GSSAPI group");
+	    syslog(LOG_ERR, "gssapi error extracting group");
+	    return -1;
+	}
+        
+        if(client_group != NULL)
+        {
+            syslog(LOG_INFO,
+                   "Client identity %s is in the following group:",
+                   client_name.value);
+
+            for(i=0;i<client_group->count;i++)
+            {
+                if(g_OID_equal((gss_OID) &subgroup_types->elements[i],
+                               gss_untrusted_group))
+                {
+                    syslog(LOG_INFO,
+                           "\tUntrusted subgroup %s\n",
+                           (char *) client_group->elements[i].value);
+                }
+                else
+                {
+                    syslog(LOG_INFO,
+                           "\tTrusted subgroup %s\n",
+                           (char *) client_group->elements[i].value);
+                }   
+            }
+
+        }
+#endif
+        
 	/* If the server accepts the security data, but does
 	   not require any additional data (i.e., the security
 	   data exchange has completed successfully), it must
@@ -1067,5 +1148,24 @@ gssapi_unsetenv(const char *var)
     *p1 = NULL;
 #endif /* HAVE_UNSETENV */
 }
+
+
+#ifdef GLOBUS_AUTHORIZATION
+/*
+ * gssapi_get_gss_ctx_id_t()
+ * 
+ * Used by globus Authorization functions
+ *
+ * Arguments: none
+ * Returns: the gss security context
+ *
+ */
+
+gss_ctx_id_t
+gssapi_get_gss_ctx_id_t(void)
+{
+    return gcontext;
+}
+#endif /* GLOBUS_AUTHORIZATION */
 
 #endif /* GSSAPI */

@@ -1,4 +1,4 @@
-#! /usr/bin/env perl 
+#! /usr/bin/env perl
 #
 # Test to exercise the "put" functionality of the Globus FTP client library
 # in extended block mode
@@ -46,7 +46,7 @@ sub basic_func
     }
 
     my $diffs = `diff $test_file $tmpname 2>&1 | sed -e 's/^/# /'`;
-	
+
     if($diffs ne "")
     {
 	$errors .= "\n# Differences between $test_file and output.";
@@ -176,6 +176,85 @@ for(my $i = 1; $i <= 41; $i++)
     push(@tests, "restart_test($i);");
 }
 push(@todo, 79);
+
+
+=head2 I<perf_test> (Test 95)
+
+Do an extended put of $testfile, enabling perf_plugin
+
+=back
+
+=cut
+sub perf_test
+{
+    my $tmpname = POSIX::tmpnam();
+    my ($errors,$rc) = ("",0);
+
+    unlink('core');
+
+    $rc = system("$test_exec -d 'gsiftp://localhost/$tmpname' -M < $test_file >/dev/null 2>&1") / 256;
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok("\n# $test_exec -M \n#$errors", 'success');
+    }
+    unlink($tmpname);
+    if($i == 38)
+    {
+	push(@todo, 54 + $i);
+    }
+}
+push(@tests, "perf_test();");
+
+=head2 I<throughput_test> (Test 96)
+
+Do an extended put of $testfile, enabling throughput_plugin
+
+=back
+
+=cut
+sub throughput_test
+{
+    my $tmpname = POSIX::tmpnam();
+    my ($errors,$rc) = ("",0);
+
+    unlink('core');
+
+    $rc = system("$test_exec -d 'gsiftp://localhost/$tmpname' -T < $test_file >/dev/null 2>&1") / 256;
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok("\n# $test_exec -T\n#$errors", 'success');
+    }
+    unlink($tmpname);
+}
+
+push(@tests, "throughput_test();");
+
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

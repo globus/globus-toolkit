@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/* Module specific macros */
 #define GLOBUS_L_FTP_CLIENT_DEBUG_PLUGIN_NAME "globus_ftp_client_debug_plugin"
 
 #define GLOBUS_L_FTP_CLIENT_DEBUG_PLUGIN_RETURN(plugin) \
@@ -29,13 +31,23 @@
     result = globus_ftp_client_plugin_set_##func##_func(d, globus_l_ftp_client_debug_plugin_##func); \
     if(result != GLOBUS_SUCCESS) goto result_exit;
 
+/* Module specific data structures */
+
+/**
+ * Plugin specific data for the debugging plugin.
+ * @internal
+ */
 typedef struct
 {
+    /** file stream to log information to */
     FILE *					stream;
+    /** user-supplied text prefix to logging information. */
     char *					text;
 }
 globus_l_ftp_client_debug_plugin_t;
 
+
+/* Module specific prototypes */
 static
 globus_ftp_client_plugin_t *
 globus_l_ftp_client_debug_plugin_copy(
@@ -315,7 +327,6 @@ globus_l_ftp_client_debug_plugin_connect(
     const char *				url)
 {
     globus_l_ftp_client_debug_plugin_t *	d;
-    char url_port[10];
 
     d = (globus_l_ftp_client_debug_plugin_t *) plugin_specific;
 
@@ -638,7 +649,7 @@ globus_l_ftp_client_debug_plugin_read(
 	    d->text ? d->text : "",
 	    d->text ? ": " : "",
 	    buffer,
-	    buffer_length);
+	    (long) buffer_length);
 }
 /* globus_l_ftp_client_debug_plugin_read() */
 
@@ -667,7 +678,7 @@ globus_l_ftp_client_debug_plugin_write(
 	    d->text ? d->text : "",
 	    d->text ? ": " : "",
 	    buffer,
-	    buffer_length,
+	    (long) buffer_length,
 	    offset,
 	    eof ? "true" : "false");
 }
@@ -712,7 +723,7 @@ globus_l_ftp_client_debug_plugin_data(
 	    error_str ? " " : "",
 	    error_str ? error_str : "",
 	    buffer,
-	    length,
+	    (long) length,
 	    offset,
 	    eof ? "true" : "false");
     if(error_str)
@@ -740,7 +751,7 @@ globus_l_ftp_client_debug_plugin_command(
 	return;
     }
 
-    fprintf(d->stream, "%s%ssending command %s\n",
+    fprintf(d->stream, "%s%ssending command:\n%s\n",
 	    d->text ? d->text : "",
 	    d->text ? ": " : "",
 	    command_name);
@@ -769,7 +780,7 @@ globus_l_ftp_client_debug_plugin_response(
 
     if(!error)
     {
-	fprintf(d->stream, "%s%sresponse from %s: %s\n",
+	fprintf(d->stream, "%s%sresponse from %s:\n%s\n",
 		d->text ? d->text : "",
 		d->text ? ": " : "",
 		url,
@@ -852,6 +863,7 @@ globus_l_ftp_client_debug_plugin_complete(
 	    d->text ? ": " : "");
 }
 /* globus_l_ftp_client_debug_plugin_complete() */
+#endif
 
 /**
  * Initialize an instance of the GridFTP debugging plugin

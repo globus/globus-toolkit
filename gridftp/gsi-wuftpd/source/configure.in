@@ -210,6 +210,28 @@ INCLUDE_GLOBUS_MAKEFILE_HEADER=""
 dnl Macro from aclocal.m4
 GSSAPI_CONFIG   
 
+if test "$gssapi_type" = "globus"; then
+	AC_MSG_CHECKING(Globus Authorization usage)
+	AC_ARG_WITH(globus-authorization,
+		[  --with-globus-authorization   Use Globus authorization libraries],
+	[ globus_authorization=$withval ],
+	[ globus_authorization="no"])
+	AC_MSG_RESULT($globus_authorization)
+fi
+
+if test "$globus_authorization" = "yes"; then
+	AC_DEFINE(GLOBUS_AUTHORIZATION)
+	# XXX Need to check to make sure globus_auth is installed
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_auth_${GLOBUS_FLAVOR_NAME}"
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_plugin_${GLOBUS_FLAVOR_NAME}"
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_util_${GLOBUS_FLAVOR_NAME}"
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_debug_${GLOBUS_FLAVOR_NAME}"
+	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_core_${GLOBUS_FLAVOR_NAME}"
+	# Linktool's dynamic loader library
+	# XXX May need to specify path for this?
+	GSSAPI_LIBS="$GSSAPI_LIBS -lltdl"
+fi	
+	
 AC_SUBST(GSSAPI_LIBS)
 AC_SUBST(GSSAPI_LDFLAGS)
 AC_SUBST(GSSAPI_CFLAGS)

@@ -29,12 +29,7 @@ globus_ftp_client_restart_marker_init(
     if(marker == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot initialize NULL marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
     }
 
     memset(marker, '\0', sizeof(globus_ftp_client_restart_marker_t));
@@ -68,22 +63,12 @@ globus_ftp_client_restart_marker_copy(
     if(new_marker == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot initialize NULL new_marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("new_marker"));
     }
     if(marker == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot duplicate NULL marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
     }
 
     globus_ftp_client_restart_marker_init(new_marker);
@@ -112,7 +97,7 @@ globus_ftp_client_restart_marker_copy(
 	    globus_i_ftp_client_range_t *	range;
 
 	    range = (globus_i_ftp_client_range_t *) globus_fifo_dequeue(tmp);
-	    
+
 	    globus_ftp_client_restart_marker_insert_range(new_marker,
 							  range->offset,
 							  range->end_offset);
@@ -145,12 +130,7 @@ globus_ftp_client_restart_marker_destroy(
     if(marker == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot destroy NULL marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
     }
 
     switch(marker->type)
@@ -170,7 +150,7 @@ globus_ftp_client_restart_marker_destroy(
     case GLOBUS_FTP_CLIENT_RESTART_STREAM:
 	memset(marker, '\0', sizeof(globus_ftp_client_restart_marker_t));
 	marker->type = GLOBUS_FTP_CLIENT_RESTART_NONE;
-	
+
 	break;
     }
     return GLOBUS_SUCCESS;
@@ -182,7 +162,7 @@ globus_ftp_client_restart_marker_destroy(
  * @ingroup globus_ftp_client_restart_marker
  *
  * This function updates a restart marker with a new byte range,
- * suitable for using to restart an extended block mode transfer. 
+ * suitable for using to restart an extended block mode transfer.
  * Adjacent ranges within the marker will be combined into a single
  * entry in the marker.
  *
@@ -220,12 +200,7 @@ globus_ftp_client_restart_marker_insert_range(
     if(marker == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot process NULL marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
     }
     if(marker->type != GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK)
     {
@@ -248,12 +223,7 @@ globus_ftp_client_restart_marker_insert_range(
 		newrange = globus_malloc(sizeof(globus_i_ftp_client_range_t));
 		if(newrange == NULL)
 		{
-		    err = globus_error_construct_string(
-			GLOBUS_FTP_CLIENT_MODULE,
-			GLOBUS_NULL,
-			"[%s] Could not allocate internal data structure at %s\n",
-			GLOBUS_FTP_CLIENT_MODULE->module_name,
-			myname);
+		    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 		    if(!err)
 			err = GLOBUS_ERROR_NO_INFO;
 
@@ -283,14 +253,17 @@ globus_ftp_client_restart_marker_insert_range(
 	}
 	else
 	{
-	    if(range->end_offset < offset-1)
+	    if(range->end_offset < offset - 1)
 	    {
 		globus_fifo_enqueue(&marker->extended_block.ranges, range);
 	    }
-	    else if(range->end_offset == offset-1)
+	    else if(range->end_offset >= offset - 1)
 	    {
 		offset = range->offset;
-		end_offset = end_offset;
+		if(end_offset < range->end_offset)
+		{
+		    end_offset = range->end_offset;
+		}
 		globus_libc_free(range);
 	    }
 	    else
@@ -303,12 +276,7 @@ globus_ftp_client_restart_marker_insert_range(
     newrange = globus_malloc(sizeof(globus_i_ftp_client_range_t));
     if(newrange == GLOBUS_NULL)
     {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Could not allocate internal data structure at %s\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
+	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 	if(!err)
 	    err = GLOBUS_ERROR_NO_INFO;
 
@@ -332,7 +300,7 @@ copy_rest:
  * @ingroup globus_ftp_client_restart_marker
  *
  * This function modifies a restart marker to contain a stream offset,
- * suitable for using to restart a steam mode transfer. 
+ * suitable for using to restart a steam mode transfer.
  *
  * The marker must first be initialized by calling
  * globus_ftp_client_restart_marker_init() or
@@ -359,7 +327,7 @@ copy_rest:
  *        The network ascii representation of the offset.
  *
  * @see globus_ftp_client_restart_marker_insert_range(),
- * @globus_ftp_client_restart_marker_set_offset(),
+ * globus_ftp_client_restart_marker_set_offset(),
  * globus_ftp_client_operationattr_set_mode(),
  * globus_ftp_client_operationattr_set_type()
  */
@@ -374,12 +342,7 @@ globus_ftp_client_restart_marker_set_ascii_offset(
     if(marker == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot process NULL marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
     }
     if(marker->type != GLOBUS_FTP_CLIENT_RESTART_STREAM)
     {
@@ -397,7 +360,7 @@ globus_ftp_client_restart_marker_set_ascii_offset(
  * @ingroup globus_ftp_client_restart_marker
  *
  * This function modifies a restart marker to contain a stream offset,
- * suitable for using to restart a steam mode transfer. 
+ * suitable for using to restart a steam mode transfer.
  *
  * The marker must first be initialized by calling
  * globus_ftp_client_restart_marker_init() or
@@ -432,12 +395,7 @@ globus_ftp_client_restart_marker_set_offset(
     if(marker == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot process NULL marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
     }
     if(marker->type != GLOBUS_FTP_CLIENT_RESTART_STREAM)
     {
@@ -449,6 +407,76 @@ globus_ftp_client_restart_marker_set_offset(
 }
 /* globus_ftp_client_restart_marker_set_offset() */
 
+
+/**
+ * Get total bytes accounted for in restart marker
+ * @ingroup globus_ftp_client_restart_marker
+ *
+ * This funtion will return the sum of all bytes accounted for in
+ * a restart marker.  If this restart marker contains a stream offset
+ * then this value is the same as the offset (not the ascii offset)
+ * that it was set with.  If it is a range list, it a sum of all the
+ * bytes in the ranges.
+ *
+ * @param marker
+ *        A previously initialized or copied restart marker
+ *
+ * @param total_bytes
+ *        pointer to storage for total bytes in marker
+ *
+ * @return
+ *        - Error on NULL marker or total bytes
+ *        - <possible return>
+ */
+globus_result_t
+globus_ftp_client_restart_marker_get_total(
+    globus_ftp_client_restart_marker_t *	marker,
+    globus_off_t *				total_bytes)
+{
+    static char * myname = "globus_ftp_client_restart_marker_get_total";
+
+    if(marker == GLOBUS_NULL)
+    {
+        return globus_error_put(
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
+    }
+
+    if(total_bytes == GLOBUS_NULL)
+    {
+        return globus_error_put(
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("total_bytes"));
+    }
+
+    *total_bytes = 0;
+
+    if(marker->type == GLOBUS_FTP_CLIENT_RESTART_STREAM)
+    {
+        *total_bytes = marker->stream.offset;
+    }
+    else if(marker->type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK &&
+            !globus_fifo_empty(&marker->extended_block.ranges))
+    {
+        globus_fifo_t *			        tmp;
+        globus_off_t			        total;
+        globus_i_ftp_client_range_t *           range;
+
+        tmp = globus_fifo_copy(&marker->extended_block.ranges);
+        total = 0;
+
+        while((!globus_fifo_empty(tmp)))
+        {
+	    range = (globus_i_ftp_client_range_t *) globus_fifo_dequeue(tmp);
+
+            total += range->end_offset - range->offset;
+        }
+
+        *total_bytes = total;
+        globus_libc_free(tmp);
+    }
+
+    return GLOBUS_SUCCESS;
+
+}
 
 /**
  * Create a string representation of a restart marker.
@@ -487,22 +515,12 @@ globus_ftp_client_restart_marker_to_string(
     if(marker == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot process NULL marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
     }
     else if(marker_string == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL marker_string at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker_string"));
     }
 
     (*marker_string) = GLOBUS_NULL;
@@ -527,12 +545,7 @@ globus_ftp_client_restart_marker_to_string(
 
 	if(!(*marker_string))
 	{
-	    err = globus_error_construct_string(
-	        GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Could not allocate internal data structure at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	    if(!err)
 	    {
@@ -559,17 +572,12 @@ globus_ftp_client_restart_marker_to_string(
 	    mylen++;
 	    mylen += globus_i_ftp_client_count_digits(range->end_offset);
 	    mylen++;
-    
+
 	    tbuf = realloc(buf, length + mylen + 1);
 
 	    if(!tbuf)
 	    {
-	        err = globus_error_construct_string(
-	            GLOBUS_FTP_CLIENT_MODULE,
-		    GLOBUS_NULL,
-		    "[%s] Could not allocate internal data structure at %s\n",
-		    GLOBUS_FTP_CLIENT_MODULE->module_name,
-		    myname);
+		err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
 
 	        if(!err)
 	        {
@@ -632,22 +640,12 @@ globus_ftp_client_restart_marker_from_string(
     if(marker == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Cannot process NULL marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+	    GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker"));
     }
     else if(marker_string == GLOBUS_NULL)
     {
         return globus_error_put(
-	    globus_error_construct_string(
-		GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] NULL marker_string at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname));
+	    GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("marker_string"));
     }
 
     res = globus_ftp_client_restart_marker_init(marker);
@@ -665,12 +663,7 @@ globus_ftp_client_restart_marker_from_string(
 	}
 	if(marker->type != GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK)
 	{
-	    err = globus_error_construct_string(
-	        GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Invalid marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("marker");
 
 	    goto error_exit;
 	}
@@ -708,23 +701,13 @@ globus_ftp_client_restart_marker_from_string(
 	}
 	if(marker->type != GLOBUS_FTP_CLIENT_RESTART_STREAM)
 	{
-	    err = globus_error_construct_string(
-	        GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Invalid marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("marker");
 
 	    goto error_exit;
 	}
 	if(sscanf(marker_string, "%"GLOBUS_OFF_T_FORMAT, &offset) != 1)
 	{
-	    err = globus_error_construct_string(
-	        GLOBUS_FTP_CLIENT_MODULE,
-		GLOBUS_NULL,
-		"[%s] Invalid marker at %s\n",
-		GLOBUS_FTP_CLIENT_MODULE->module_name,
-		myname);
+	    err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("marker_string");
 
 	    goto error_exit;
 	}
