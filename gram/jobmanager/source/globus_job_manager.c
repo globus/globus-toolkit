@@ -877,7 +877,7 @@ main(int argc,
     if (rc == GLOBUS_SUCCESS)
     {
         grami_fprintf( request->jobmanager_log_fp,
-              "JM: opening stdout stderr fds");
+              "JM: opening stdout stderr fds\n");
 
         /* open "real" stdout and stderr descriptors
          */
@@ -942,6 +942,25 @@ main(int argc,
             request->environment[x] = GLOBUS_NULL;
         }
     }
+    else
+    {
+        graml_env_x509_user_proxy = (char *) getenv("X509_USER_PROXY");
+        if (graml_env_x509_user_proxy)
+        {
+            if (remove(graml_env_x509_user_proxy) != 0)
+            {
+                grami_fprintf( request->jobmanager_log_fp, 
+                  "JM: Cannot remove user proxy file --> %s\n",
+                  graml_env_x509_user_proxy);
+            }
+            else
+            {
+                grami_fprintf( request->jobmanager_log_fp, 
+                  "JM: request failed at startup removed user proxy --> %s\n",
+                  graml_env_x509_user_proxy);
+            }
+        }
+    }
 
     if (rc == GLOBUS_SUCCESS)
     {
@@ -956,7 +975,7 @@ main(int argc,
     if (rc == GLOBUS_SUCCESS)
     {
         grami_fprintf( request->jobmanager_log_fp,
-              "JM: request was successful replying to client\n");
+              "JM: request was successful, sending message to client\n");
                             
         count= strlen(graml_job_contact);
 	size = nexus_sizeof_int(1);
@@ -993,7 +1012,7 @@ main(int argc,
     else
     {
         grami_fprintf( request->jobmanager_log_fp,
-              "JM: request failed replying to client\n");
+              "JM: request failed, sending message to client\n");
                             
 	size = nexus_sizeof_int(2);
 	nexus_buffer_init(&reply_buffer, size, 0);
