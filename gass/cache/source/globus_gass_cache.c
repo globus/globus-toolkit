@@ -1490,7 +1490,37 @@ globus_gass_cache_open(char                *cache_directory_path,
 	    }
 	    strcpy(cache_handle->cache_directory_path,
 		   pt);
-	    
+	    /* before going on, verify the .globus directory exist 
+               and create it if not */ 
+	    strcat(cache_handle->cache_directory_path,
+		   GLOBUS_L_DOT_GLOBUS_DIR_NAME);
+	    rc =  stat(cache_handle->cache_directory_path,
+		       &cache_dir_stat);
+	    if (rc == 0)
+	    {
+		
+		if ( (cache_dir_stat.st_mode & S_IFMT) != S_IFDIR )
+		{
+		    CACHE_TRACE("The .globus directory exist and is not a directory");
+		    return (GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
+		}
+	    }
+	    if (rc != 0)
+	    {
+		/* I assume the error is "directory not existing"    */
+		/* but it could occur if it is not accessible; the   */
+		/* creation call would the fail also, and the error  */
+		/* code send back would be a little erroneous        */
+		/* ok for now.                                       */
+		rc = mkdir(cache_handle->cache_directory_path,
+			   GLOBUS_L_GASS_CACHE_DIR_MODE);
+		if ( rc != 0 )
+		{
+		    CACHE_TRACE("could not create the .globus directory");
+		    return (GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
+		}
+	    }
+	    /* here the .globus existe and is a directory */
 	    strcat(cache_handle->cache_directory_path,
 		   GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME);
 	}
@@ -1507,9 +1537,9 @@ globus_gass_cache_open(char                *cache_directory_path,
     else			/* cache_directory_path is valid */
     {
 	/* For the first version, we do not accept a  cache_directory_path */
-	/*
+#       if 0
 	CACHE_TRACE("Parrameter cache_directory_path must be NULL when calling globus_gass_cache_open() in this version of GLOBUS_GASS_CACHE\n");
-	return (GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER);*/
+	
 	/* for the version which will accept a cache directory not null  */
 	if (f_name_lenght >= FILENAME_MAX)
 	{
@@ -1518,6 +1548,9 @@ globus_gass_cache_open(char                *cache_directory_path,
 	}
 	strcpy(cache_handle->cache_directory_path,
 	       cache_directory_path);
+#       else
+	return (GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER);
+#       endif
 
     }
 

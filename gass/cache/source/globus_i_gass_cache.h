@@ -19,7 +19,11 @@ CVS Information:
 
 /* if GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR is not defined in user env.            */
 /* we use $HOME and  GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME below                       */
+/* before V0.9:
 #define GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME    "/.globus_gass_cache"
+*/
+#define GLOBUS_L_DOT_GLOBUS_DIR_NAME		"/.globus"
+#define GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME    "/.gass_cache"
 
 /* name of the files ! if you change one of them, you might have to change   */
 /* the definition of LONGER_NAME_USED below !!!                              */
