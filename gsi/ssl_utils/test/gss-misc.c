@@ -200,10 +200,7 @@ int recv_token(s, tok)
      return 0;
 }
 
-static void display_status_1(m, code, type)
-     char *m;
-     OM_uint32 code;
-     int type;
+static void display_status_1(char *m, OM_uint32 code, int type)
 {
      OM_uint32 maj_stat, min_stat;
      gss_buffer_desc msg;
