@@ -773,11 +773,25 @@ globus_gsi_proxy_sign_req(
         
         ASN1_digest(i2d_PUBKEY,sha1,(char *) req_pubkey,md,&len);
 
-        common_name = malloc(sizeof(long)*4 + 1);
-
         sub_hash = md[0] + (md[1] + (md[2] + (md[3] >> 1) * 256) * 256) * 256; 
         
-        sprintf(common_name, "%ld", sub_hash);
+        if(handle->common_name)
+        {
+            common_name = strdup(handle->common_name);
+        }
+        else
+        { 
+            common_name = malloc(sizeof(long)*4 + 1);
+
+            if(!common_name)
+            {
+                result =
+                    GLOBUS_GSI_PROXY_MALLOC_ERROR(sizeof(long)*4 + 1);
+                goto done;
+            }
+
+            sprintf(common_name, "%ld", sub_hash);        
+        }
 
         serial_number = ASN1_INTEGER_new();
 
@@ -1181,7 +1195,7 @@ globus_gsi_proxy_sign_req(
             ASN1_INTEGER_free(serial_number);
         }
 
-        if(common_name)
+        if(!handle->common_name && common_name)
         {
             free(common_name);
         }

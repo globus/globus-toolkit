@@ -9,13 +9,13 @@
  */
 #endif
 
-#define GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR \
+#define GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(_LENGTH_) \
     globus_error_put(globus_error_wrap_errno_error( \
         GLOBUS_GSI_PROXY_MODULE, \
         errno, \
         GLOBUS_GSI_PROXY_ERROR_ERRNO, \
         "%s:%d: Could not allocate enough memory: %d bytes", \
-        __FILE__, __LINE__, len))
+        __FILE__, __LINE__, _LENGTH_))
 
 #include "globus_i_gsi_proxy.h"
 
@@ -72,7 +72,7 @@ globus_gsi_proxy_handle_init(
 
     if(*handle == NULL)
     {
-        result = GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR;
+        result = GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(len);
         goto exit;
     }
 
@@ -1342,3 +1342,139 @@ globus_gsi_proxy_handle_get_key_gen_callback(
     return result;
 } 
 /* @} */        
+
+
+/**
+ * @name Get Proxy Common Name
+ */
+/*@{*/
+/**
+ * Get the proxy common name stored in the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function retrieves the proxy common name from the GSI Proxy
+ * handle. The common name only impacts draft compliant proxies.
+ *
+ * @param handle
+ *        The handle from which to get the proxy common name.
+ * @param common_name
+ *        Contains the proxy common name upon successful return. If the
+ *        handle does not contain a common name, this parameter will be NULL
+ *        upon return.
+ * @return
+ *        GLOBUS_SUCCESS upon success
+ *        GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE if handle is invalid
+ */
+globus_result_t
+globus_gsi_proxy_handle_get_common_name(
+    globus_gsi_proxy_handle_t           handle,
+    char **                             common_name)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_handle_get_proxy_common_name";
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+    
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            ("Invalid handle (NULL) passed to function"));
+        goto exit;
+    }
+
+    if(!common_name)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            ("Invalid common name passed to function"));
+        goto exit;
+    }
+
+    if(handle->common_name)
+    { 
+        *common_name = strdup(handle->common_name);
+        if(!*common_name)
+        {
+            result = GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(
+                strlen(handle->common_name));
+            goto exit;
+        }
+    }
+    else
+    {
+        *common_name = NULL;
+    }
+
+ exit:
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_handle_get_common_name */
+/*@}*/
+
+/**
+ * @name Set Proxy Common Name
+ */
+/*@{*/
+/**
+ * Set the proxy common name stored in the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function sets the proxy common name in the GSI Proxy handle. Note
+ * that the common name is only used for draft compliant proxies.
+ *
+ * @param handle
+ *        The handle for which to set the proxy common name.
+ * @param common_name
+ *        The proxy common name to set.
+ * @return
+ *        GLOBUS_SUCCESS upon success
+ *        GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE if handle is invalid
+ */
+globus_result_t
+globus_gsi_proxy_handle_set_common_name(
+    globus_gsi_proxy_handle_t           handle,
+    char *                              common_name)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_handle_set_common_name";
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            ("Invalid handle (NULL) passed to function"));
+        goto exit;
+    }
+
+    if(handle->common_name)
+    {
+        free(handle->common_name);
+        handle->common_name = NULL;
+    }
+    
+    if(common_name)
+    {
+        handle->common_name = strdup(common_name);
+        if(!handle->common_name)
+        {
+            result = GLOBUS_GSI_PROXY_HANDLE_MALLOC_ERROR(
+                strlen(handle->common_name));
+            goto exit;
+        }
+    } 
+
+ exit:
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_handle_set_common_name */
+/*@}*/

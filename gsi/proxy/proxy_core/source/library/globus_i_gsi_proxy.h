@@ -246,6 +246,8 @@ typedef struct globus_l_gsi_proxy_handle_s
     int                                 time_valid;
     /** The type of the generated proxy */
     globus_gsi_cert_utils_cert_type_t   type;
+    /** The common name used for draft compliant proxies. If not set a random common name will be generated. */
+    char *                              common_name;
 } globus_i_gsi_proxy_handle_t;
 
 

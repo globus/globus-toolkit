@@ -232,6 +232,16 @@ globus_gsi_proxy_handle_set_proxy_cert_info(
     PROXYCERTINFO *                     pci);
 
 globus_result_t
+globus_gsi_proxy_handle_get_common_name(
+    globus_gsi_proxy_handle_t           handle,
+    char **                             common_name);
+
+globus_result_t
+globus_gsi_proxy_handle_set_common_name(
+    globus_gsi_proxy_handle_t           handle,
+    char *                              common_name);
+
+globus_result_t
 globus_gsi_proxy_is_limited(
     globus_gsi_proxy_handle_t           handle,
     globus_bool_t *                     is_limited);
