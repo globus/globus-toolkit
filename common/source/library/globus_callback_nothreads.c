@@ -125,12 +125,15 @@ globus_l_callback_blocked_cb(
     globus_thread_callback_index_t      index,
     void *                              user_args)
 {
-    if(globus_l_callback_restart_info &&
-        !globus_l_callback_restart_info->restarted)
+    globus_l_callback_restart_info_t *  restart_info;
+    
+    restart_info = (globus_l_thread_restart_info_t *) user_args;
+    
+    if(restart_info && !restart_info->restarted)
     {
         globus_l_callback_info_t *      callback_info;
 
-        callback_info = globus_l_callback_restart_info->callback_info;
+        callback_info = restart_info->callback_info;
 
         if(callback_info->my_space->handle == GLOBUS_CALLBACK_GLOBAL_SPACE ||
             callback_info->my_space->handle == space)
@@ -140,7 +143,7 @@ globus_l_callback_blocked_cb(
                 globus_l_callback_requeue(callback_info);
             }
 
-            globus_l_callback_restart_info->restarted = GLOBUS_TRUE;
+            restart_info->restarted = GLOBUS_TRUE;
         }
     }
 }
@@ -227,11 +230,6 @@ globus_l_callback_activate()
 
     globus_l_callback_restart_info = GLOBUS_NULL;
 
-    globus_thread_blocking_callback_push(
-        globus_l_callback_blocked_cb,
-        GLOBUS_NULL,
-        GLOBUS_NULL);
-
     return GLOBUS_SUCCESS;
 }
 
@@ -239,8 +237,6 @@ static
 int
 globus_l_callback_deactivate()
 {
-    globus_thread_blocking_callback_pop(GLOBUS_NULL);
-    
     globus_priority_q_destroy(&globus_l_callback_global_space.queue);
     
     /* any handles left here will be destroyed by destructor.
@@ -944,12 +940,6 @@ globus_callback_space_poll(
     globus_l_callback_restart_info_t    restart_info;
     globus_abstime_t                    l_timestop;
 
-    if(!timestop)
-    {
-        GlobusTimeAbstimeCopy(l_timestop, globus_i_abstime_zero);
-        timestop = &l_timestop;
-    }
-
     space_queue = GLOBUS_NULL;
 
     if(space != GLOBUS_CALLBACK_GLOBAL_SPACE)
@@ -964,11 +954,7 @@ globus_callback_space_poll(
             space_queue = &i_space->queue;
         }
     }
-
-    done = GLOBUS_FALSE;
-
-    GlobusTimeAbstimeGetCurrent(time_now);
-
+    
     last_restart_info = globus_l_callback_restart_info;
     globus_l_callback_restart_info = &restart_info;
     
@@ -976,6 +962,21 @@ globus_callback_space_poll(
      * If we get signaled, we will jump out of this function asap
      */
     restart_info.signaled = GLOBUS_FALSE;
+    
+    globus_thread_blocking_callback_push(
+        globus_l_callback_blocked_cb,
+        &restart_info,
+        GLOBUS_NULL);
+    
+    if(!timestop)
+    {
+        GlobusTimeAbstimeCopy(l_timestop, globus_i_abstime_zero);
+        timestop = &l_timestop;
+    }
+    
+    GlobusTimeAbstimeGetCurrent(time_now);
+    
+    done = GLOBUS_FALSE;
     
     do
     {
@@ -1142,6 +1143,8 @@ globus_callback_space_poll(
     }
     
     globus_l_callback_restart_info = last_restart_info;
+    
+    globus_thread_blocking_callback_pop(GLOBUS_NULL);
 }
 
 void
