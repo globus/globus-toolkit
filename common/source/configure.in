@@ -42,28 +42,6 @@ CHECK_SIZES
 
 GPT_SET_LIBS($THREAD_LIB_FLAGS)
 
-dnl set define for thread type
-case $globus_cv_threads_type in
-   "no") 
-       GLOBUS_THREAD_PACKAGE="none"
-       ;;
-   "pthreads") 
-       GLOBUS_THREAD_PACKAGE="pthreads"
-       ;;
-   "solaristhreads") 
-       GLOBUS_THREAD_PACKAGE="solaristhreads"
-       ;;
-   "sproc")
-       GLOBUS_THREAD_PACKAGE="sproc"
-       ;;
-   "external")
-       GLOBUS_THREAD_PACKAGE="external"
-       ;;
-   *)
-       GLOBUS_THREAD_PACKAGE="none"
-       ;;
-esac
-
 AC_SUBST(GLOBUS_THREADS)
 
 LAC_DOXYGEN(["Globus Common"],
