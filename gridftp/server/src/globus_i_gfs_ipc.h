@@ -413,6 +413,13 @@ globus_gfs_ipc_handle_get_by_contact(
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
 
+globus_result_t
+globus_l_gfs_community_get_nodes(
+    const char *                        pathname,
+    const char *                        user_id,
+    char ***                            contact_strings,
+    int *                               count);
+
 void
 globus_gfs_ipc_init();
 

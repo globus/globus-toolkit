@@ -30,13 +30,6 @@ globus_l_gfs_ipc_cache_error_cb(
     globus_result_t                     result,
     void *                              user_arg);
 
-static globus_result_t
-globus_l_gfs_community_get_nodes(
-    const char *                        pathname,
-    const char *                        user_id,
-    char ***                            contact_strings,
-    int *                               count);
-
 static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
 static globus_xio_driver_t              globus_l_gfs_queue_driver = GLOBUS_NULL;
 
@@ -48,7 +41,7 @@ static globus_xio_driver_t              globus_l_gfs_queue_driver = GLOBUS_NULL;
  */
 #define GFS_IPC_HEADER_SIZE         (sizeof(uint32_t) + sizeof(uint32_t) + 1)
 #define GFS_IPC_HEADER_SIZE_OFFSET  (sizeof(uint32_t) + 1)
-#define GFS_IPC_DEFAULT_BUFFER_SIZE 1024 * 1024
+#define GFS_IPC_DEFAULT_BUFFER_SIZE 8 * 1024
 #define GFS_IPC_VERSION             '\1'
 
 #define GFSEncodeUInt32(_start, _len, _buf, _w)                         \
@@ -3777,7 +3770,7 @@ globus_l_gfs_ipc_find_community(
     return found;
 }
 
-static globus_result_t
+globus_result_t
 globus_l_gfs_community_get_nodes(
     const char *                        pathname,
     const char *                        user_id,
@@ -3826,9 +3819,14 @@ globus_l_gfs_community_get_nodes(
 
     /* clean up */
     globus_free(size_a);
-    *contact_strings = cs;
-    *count = community->cs_count;
-
+    if(contact_strings != NULL)
+    {
+        *contact_strings = cs;
+    }
+    if(count != NULL)
+    {
+        *count = community->cs_count;
+    }
     return GLOBUS_SUCCESS;
 
   err:
