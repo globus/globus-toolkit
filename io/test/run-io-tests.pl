@@ -9,17 +9,11 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
 
 system('chmod go-rw testcred.pem');
 
-@tests = qw( globus_io_file_test.pl
-             globus_io_authorization_test.pl
-	     globus_io_tcp_test.pl
-	     globus_io_udp_test.pl
+@tests = qw( globus-io-file-test.pl
+             globus-io-authorization-test.pl
+	     globus-io-tcp-test.pl
+	     globus-io-udp-test.pl
 	     );
-
-#	     globus_io_tcp_client_test.pl
-#	     globus_io_tcp_server_test.pl
-#	     globus_io_udp_test.pl
-#	     globus_io_udp_client_test.pl
-#	     globus_io_udp_server_test.pl
 
 push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
 

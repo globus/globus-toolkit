@@ -8,10 +8,10 @@ SUBDIRS = \
 	doxygen
 
 Scripts = \
-	globus_io_authorization_test.pl \
-        globus_io_file_test.pl \
-        globus_io_tcp_test.pl \
-        globus_io_udp_test.pl \
+	globus-io-authorization-test.pl \
+        globus-io-file-test.pl \
+        globus-io-tcp-test.pl \
+        globus-io-udp-test.pl \
         run-io-tests.pl
 
 Data = \
