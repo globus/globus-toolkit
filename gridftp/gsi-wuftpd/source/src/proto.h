@@ -86,7 +86,6 @@ int access_ok(int);
 #if defined(USE_GLOBUS_DATA_CODE)
 
 int
-#ifdef THROUGHPUT
 g_send_data(
     char *                                          name,
     FILE *                                          instr,
@@ -95,15 +94,6 @@ g_send_data(
     off_t                                           logical_offset,
     off_t                                           length,
     off_t					    size);
-#else
-g_send_data(
-    FILE *                                          instr,
-    globus_ftp_control_handle_t *                   handle,
-    off_t                                           offset,
-    off_t                                           logical_offset,
-    off_t                                           length,
-    off_t					    size);
-#endif
 
 int
 g_receive_data(
@@ -121,7 +111,9 @@ void
 g_passive();
 
 void
-g_start();
+g_start(
+    int                                             argc,
+    char **                                         argv);
 
 void
 g_end();
