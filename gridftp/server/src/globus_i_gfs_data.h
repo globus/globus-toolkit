@@ -108,7 +108,7 @@ globus_i_gfs_data_node_start(
 globus_result_t
 globus_i_gfs_data_session_start(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 id,
+    int *                               id,
     const char *                        user_dn,
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg);

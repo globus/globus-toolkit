@@ -19,6 +19,7 @@ typedef struct
     /* XXX: is this a good place ? */
     void *                          user_data_handle;
     globus_i_gfs_acl_handle_t       acl_handle;
+    int                             session_id;
 
     union
     {

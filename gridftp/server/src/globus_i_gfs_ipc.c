@@ -835,6 +835,7 @@ globus_l_gfs_ipc_unpack_reply(
             break;
 
         case GLOBUS_GFS_OP_SESSION_START:
+            GFSDecodeUInt32(buffer, len, reply->session_id);
             break;
 
         case GLOBUS_GFS_OP_STAT:
@@ -1844,6 +1845,7 @@ globus_gfs_ipc_reply_finished(
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_FINAL_REPLY);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->id);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->session_id);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
             /* pack the body--this part is like a reply header */
@@ -1856,6 +1858,9 @@ globus_gfs_ipc_reply_finished(
             /* encode the specific types */
             switch(reply->type)
             {
+                case GLOBUS_GFS_OP_SESSION_START:
+                    break;
+
                 case GLOBUS_GFS_OP_AUTH:
                     break;
 
@@ -2042,6 +2047,7 @@ globus_gfs_ipc_reply_event(
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_EVENT_REPLY);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->id);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->session_id);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
             /* pack the body--this part is like a reply header */

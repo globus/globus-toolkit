@@ -2427,7 +2427,7 @@ globus_i_gfs_data_node_start(
 globus_result_t
 globus_i_gfs_data_session_start(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 id,
+    int *                               id,
     const char *                        user_dn,
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg)
@@ -2436,10 +2436,18 @@ globus_i_gfs_data_session_start(
     globus_result_t                     res;
     globus_gfs_ipc_reply_t *            reply;   
 
+    reply = (globus_gfs_ipc_reply_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
+ 
     dsi_handle = globus_calloc(sizeof(globus_l_gfs_dsi_handle_t), 1);
+    reply->code = 230;
     if(dsi->init_func != NULL)
     {
         res = dsi->init_func(user_dn, &dsi_handle->mod_handle);
+        if(res != GLOBUS_SUCCESS)
+        {
+            reply->code = 530;
+        }
     }
     else
     {
@@ -2447,9 +2455,6 @@ globus_i_gfs_data_session_start(
         dsi_handle->mod_handle = NULL;
     }
 
-    reply = (globus_gfs_ipc_reply_t *) 
-        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
- 
     reply->type = GLOBUS_GFS_OP_SESSION_START;
     reply->id = id;
     reply->session_id = (int) dsi_handle->mod_handle;
