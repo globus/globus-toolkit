@@ -23,7 +23,7 @@
 
     <Build_Instructions>
 
-      <Build_Step>patch -N -p1 -i ../patches/openssl-0.9.6a-patch</Build_Step>
+      <Build_Step>patch -N -p1 -i ../patches/openssl-0.9.6b-patch</Build_Step>
 
       <Build_Step>MAKE_GPTMACRO clean</Build_Step>
 
@@ -37,6 +37,22 @@
 
       <Build_Step>RUN_FLAVOR_INSTALL_GPTMACRO</Build_Step>
 
+        <flavors Format_Version="0.1" >
+         <flavor_choice>
+        <flavor_label conf="CC=gcc" label="gcc"/>
+        <flavor_label conf="CC=cc" label="vendorcc"/>
+        </flavor_choice>
+        <flavor_choice>
+           <flavor_label conf="threads" label="pthr"/>
+           <flavor_label conf="threads" label="solthr"/>
+           <flavor_label conf="threads" label="sproc"/>
+        </flavor_choice>
+        <flavor_choice>
+           <flavor_label conf="no-shared" label="static"/>
+           <flavor_label conf="shared" label="dynamic"/>
+        </flavor_choice>
+       
+        </flavors>
     </Build_Instructions>
 
   </src_pkg >
