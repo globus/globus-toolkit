@@ -72,13 +72,13 @@ my ($install, $installer, $anonymous, $force,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $inplace, $gt2dir, $gt3dir, $doxygen,
     $autotools, $deps, $graph, $listpack, $listbun,
-    $cvsuser, $gpt ) =
+    $cvsuser, $gpt, $enable_64bit ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
     0, 0, "", "", 0,
     1, 0, 0, 0, 0,
-    "", 1);
+    "", 1, "");
 
 my @user_bundles;
 my @user_packages;
@@ -137,6 +137,10 @@ if ( $gt3dir )
 {
     $cvs_archives{gt3}[2] = $gt3dir;
     $cvs_archives{cbindings}[2] = $gt3dir;
+}
+
+if ( $flavor =~ /64/ ) {
+    $enable_64bit = "--enable-64bit";
 }
 
 
@@ -1195,7 +1199,7 @@ sub package_source_gpt()
 		       "$pkglog/$package");
 	    paranoia "system() call failed.  See $pkglog/$package.";
 	} else {	
-	    log_system("./configure --with-flavor=$flavor",
+	    log_system("./configure --with-flavor=$flavor $enable_64bit",
 		       "$pkglog/$package");
 	    paranoia "configure failed.  See $pkglog/$package.";
 	    log_system("make dist", "$pkglog/$package");
