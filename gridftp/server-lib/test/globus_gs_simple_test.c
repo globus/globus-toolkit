@@ -91,6 +91,17 @@ globus_l_resource_cb(
 }
 
 static void
+list_cb(
+    globus_gridftp_server_control_op_t      op,
+    void *                                  data_handle,
+    const char *                            path,
+    globus_gridftp_server_control_resource_mask_t   mask)
+{
+    globus_gridftp_server_control_begin_transfer(op);
+    globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
+}
+
+static void
 passive_connect(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_network_protocol_t net_prt,
@@ -228,6 +239,10 @@ main(
 
     res = globus_gridftp_server_control_attr_set_resource(
         ftp_attr, globus_l_resource_cb);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_list(
+        ftp_attr, list_cb);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_data_functions(

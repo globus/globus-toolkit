@@ -211,8 +211,12 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_RESOURCE,
     GLOBUS_L_GSC_OP_TYPE_CREATE_PASV,
     GLOBUS_L_GSC_OP_TYPE_CREATE_PORT,
-    GLOBUS_L_GSC_OP_TYPE_TRANSFER,
+    GLOBUS_L_GSC_OP_TYPE_SEND,
+    GLOBUS_L_GSC_OP_TYPE_RECV,
     GLOBUS_L_GSC_OP_TYPE_DESTROY,
+    GLOBUS_L_GSC_OP_TYPE_LIST,
+    GLOBUS_L_GSC_OP_TYPE_NLST,
+    GLOBUS_L_GSC_OP_TYPE_MLST
 } globus_i_gsc_op_type_t;
 
 typedef struct globus_i_gsc_op_s
@@ -232,6 +236,7 @@ typedef struct globus_i_gsc_op_s
     gss_cred_id_t                           del_cred;
     globus_i_gsc_auth_cb_t                  auth_cb;
     globus_i_gsc_resource_cb_t              stat_cb;
+    globus_i_gsc_transfer_cb_t              list_cb;
 
     globus_gridftp_server_control_stat_t *  stat_info;
     int                                     stat_count;
@@ -282,6 +287,7 @@ typedef struct globus_i_gsc_attr_s
     globus_gridftp_server_control_data_destroy_cb_t     data_destroy_cb;
     globus_gridftp_server_control_transfer_cb_t         default_recv_cb;
     globus_gridftp_server_control_transfer_cb_t         default_send_cb;
+    globus_gridftp_server_control_list_cb_t             list_cb;
 } globus_i_gsc_attr_t;
 
 
@@ -375,6 +381,7 @@ typedef struct globus_i_gsc_server_handle_s
     globus_gridftp_server_control_passive_connect_cb_t  passive_cb;
     globus_gridftp_server_control_active_connect_cb_t   active_cb;
     globus_gridftp_server_control_data_destroy_cb_t     data_destroy_cb;
+    globus_gridftp_server_control_list_cb_t             list_cb;
 
     /* list function */
     globus_gridftp_server_control_resource_cb_t         resource_cb;
@@ -444,6 +451,15 @@ globus_i_gsc_authenticate(
     void *                                  user_arg);
 
 globus_result_t
+globus_i_gsc_list(
+    globus_i_gsc_op_t *                     op,
+    const char *                            path,
+    globus_gridftp_server_control_resource_mask_t mask,
+    globus_i_gsc_op_type_t                  type,
+    globus_i_gsc_transfer_cb_t              list_cb,
+    void *                                  user_arg);
+
+globus_result_t
 globus_i_gsc_resource_query(
     globus_i_gsc_op_t *                     op,
     const char *                            path,
@@ -500,5 +516,15 @@ char *
 globus_i_gsc_concat_path(
     globus_i_gsc_server_handle_t *                  i_server,
     const char *                                    in_path);
+
+char *
+globus_i_gsc_list_line(
+    globus_gridftp_server_control_stat_t *  stat_info,
+    int                                     stat_count);
+
+char *
+globus_i_gsc_nlst_line(
+    globus_gridftp_server_control_stat_t *  stat_info,
+    int                                     stat_count);
 
 #endif

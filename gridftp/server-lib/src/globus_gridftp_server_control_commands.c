@@ -24,18 +24,13 @@ typedef struct globus_l_gsc_cmd_wrapper_s
     int                                     max;
     globus_gridftp_server_control_network_protocol_t prt;
 
-    char                                    cmd[8];
+    globus_i_gsc_op_type_t                  type;
     int                                     cmd_ndx;
 
     char **                                 cs;
     int                                     cs_count;
     int                                     reply_code;
 } globus_l_gsc_cmd_wrapper_t;
-
-char *
-globus_l_gsc_ls_line(
-    globus_gridftp_server_control_stat_t *  stat_info,
-    char *                                  path);
 
 static void
 globus_l_gsc_cmd_transfer(
@@ -83,6 +78,7 @@ globus_l_gsc_cmd_mode(
     else
     {
         msg = globus_common_create_string("200 Mode set to %c.\r\n", ch);
+        op->server_handle->mode = ch;
     }
     if(msg == NULL)
     {
@@ -119,6 +115,7 @@ globus_l_gsc_cmd_type(
     else
     {
         msg = globus_common_create_string("200 Type set to %c.\r\n", ch);
+        op->server_handle->type = ch;
     }
     if(msg == NULL)
     {
@@ -208,15 +205,19 @@ globus_l_gsc_cmd_cwd_cb(
             l_path = globus_i_gsc_concat_path(op->server_handle, path);
             if(l_path == NULL)
             {
-                globus_i_gsc_command_panic(op);
-                goto err;
+                msg = globus_common_create_string(
+                    "550 %s: Could not change directory.\r\n",
+                    path);
             }
-            if(op->server_handle->cwd != NULL)
+            else
             {
-                globus_free(op->server_handle->cwd);
+                if(op->server_handle->cwd != NULL)
+                {
+                    globus_free(op->server_handle->cwd);
+                }
+                op->server_handle->cwd = globus_libc_strdup(path);
+                msg = globus_libc_strdup("250 CWD command successful.\r\n");
             }
-            op->server_handle->cwd = path;
-            msg = globus_libc_strdup("250 CWD command successful.\r\n");
         }
     }
     if(msg == NULL)
@@ -268,12 +269,18 @@ globus_l_gsc_cmd_cwd(
     }
     else if(argc == 2)
     {
-        path = strdup(cmd_a[1]);
+        path = globus_i_gsc_concat_path(op->server_handle, cmd_a[1]);
+        if(path == NULL)
+        {
+            globus_i_gsc_finished_command(op,
+                "550 Could not change directory.\r\n");
+            goto err;
+        }
     }
     else
     {
         globus_i_gsc_finished_command(op,
-            "501 Syntax error in parameters or arguments.\r\n");
+            "550 Could not change directory.\r\n");
         goto err;
     }
 
@@ -309,13 +316,8 @@ globus_l_gsc_cmd_stat_cb(
     int                                     stat_count,
     void *                                  user_arg)
 {
-    globus_size_t                           msg_size;
-    globus_size_t                           msg_ndx = 0;
     char *                                  msg;
     char *                                  tmp_ptr;
-    char *                                  tmp_ptr2;
-    int                                     ctr;
-    char *                                  end_tok = "213 End of Status\r\n";
     GlobusGridFTPServerName(globus_l_gsc_cmd_stat_cb);
 
     if(result != GLOBUS_SUCCESS)
@@ -324,48 +326,10 @@ globus_l_gsc_cmd_stat_cb(
     }
     else
     {
-        msg_size = (stat_count + 2) * 80;
-        msg = globus_malloc(msg_size);
-        if(msg == NULL)
-        {
-            globus_i_gsc_command_panic(op);
-            goto err;
-        }
-
-        sprintf(msg, "213-status of %s\r\n", op->path);
-
-        for(ctr = 0; ctr < stat_count; ctr++)
-        {
-            tmp_ptr = globus_l_gsc_ls_line(&stat_info[ctr], path);
-            if(msg_ndx + strlen(tmp_ptr) > msg_size)
-            {
-                msg_size = (msg_size + strlen(tmp_ptr)) * 2;
-                tmp_ptr2 = globus_libc_realloc(msg, msg_size);
-                if(tmp_ptr2 == NULL)
-                {
-                    globus_i_gsc_command_panic(op);
-                    goto err;
-                }
-                msg = tmp_ptr2;
-            }
-
-            strcat(msg, tmp_ptr);
-            msg_ndx += strlen(tmp_ptr);
-            globus_free(tmp_ptr);
-        }
-
-        if(msg_ndx + sizeof(end_tok) > msg_size)
-        {
-            msg_size *= 2;
-            msg = globus_libc_realloc(msg, msg_size);
-            if(tmp_ptr2 == NULL)
-            {
-                globus_i_gsc_command_panic(op);
-                goto err;
-            }
-            msg = tmp_ptr2;
-        } 
-        strcat(msg, end_tok);
+        tmp_ptr = globus_i_gsc_list_line(stat_info, stat_count);
+        msg =  globus_common_create_string(
+            "213-status of %s\r\n%s213 End of Status\r\n", 
+            op->path, tmp_ptr);
     }
 
     globus_i_gsc_finished_command(op, msg);
@@ -374,19 +338,6 @@ globus_l_gsc_cmd_stat_cb(
         globus_free(stat_info);
     }
     globus_free(msg);
-
-    return;
-
-  err:
-    if(stat_info != NULL)
-    {
-        globus_free(stat_info);
-    }
-
-    if(msg != NULL)
-    {
-        globus_free(msg);
-    }
 }
 
 static void
@@ -861,6 +812,26 @@ globus_l_gsc_cmd_opts(
             msg = "500 OPTS failed.\r\n";
         }
     }
+    else if(strcasecmp("MLST", cmd_a[1]) == 0 || 
+        strcasecmp("MLSD", cmd_a[1]) == 0)
+    {
+    }
+    else if(strcasecmp("LIST", cmd_a[1]) == 0)
+    {
+        char                                tmp_buf[4];
+        if(sscanf(cmd_a[2], "usedatamode=%s", tmp_buf) == 1)
+        {
+            if(strcasecmp(tmp_buf, "yes") == 0)
+            {
+            }
+            else
+            {
+            }
+        }
+        else
+        {
+        }
+    }
     else
     {
         msg = "500 OPTS failed.\r\n";
@@ -1278,8 +1249,6 @@ globus_l_gsc_cmd_pasv(
         globus_i_gsc_finished_command(op, msg);
         globus_free(wrapper);
     }
-
-    return;
 }
 
 /*
@@ -1341,21 +1310,20 @@ globus_l_gsc_cmd_port(
         goto err;
     }
     wrapper->op = op;
-    strcpy(wrapper->cmd, cmd_a[0]);
 
-    if(strcasecmp(wrapper->cmd, "PORT") == 0)
+    if(strcasecmp(cmd_a[0], "PORT") == 0)
     {
         wrapper->dc_parsing_alg = op->server_handle->dc_parsing_alg;
         wrapper->prt = op->server_handle->port_prt;
         wrapper->max = op->server_handle->port_max;
     }
-    else if(strcasecmp(wrapper->cmd, "SPOR") == 0)
+    else if(strcasecmp(cmd_a[0], "SPOR") == 0)
     {
         wrapper->dc_parsing_alg = op->server_handle->dc_parsing_alg;
         wrapper->prt = op->server_handle->port_prt;
         wrapper->max = -1;
     }
-    else if(strcasecmp(wrapper->cmd, "EPRT") == 0)
+    else if(strcasecmp(cmd_a[0], "EPRT") == 0)
     {
         wrapper->dc_parsing_alg = 1;
         wrapper->prt = op->server_handle->port_prt;
@@ -1450,7 +1418,7 @@ globus_l_gsc_cmd_port(
     {
         tmp_ptr = cmd_a[1];
         globus_assert(tmp_ptr != NULL);
-        tmp_ptr += strlen(wrapper->cmd);
+        tmp_ptr += 4; /* length of all PASV type commands */
 
         done = GLOBUS_FALSE;
         sc = sscanf(tmp_ptr, " %c%d", &del, (int *)&wrapper->prt);
@@ -1648,33 +1616,44 @@ globus_l_gsc_cmd_transfer(
 {
     globus_result_t                         res;
 
-    if(strcasecmp(wrapper->cmd, "RETR") == 0 ||
-        strcasecmp(wrapper->cmd, "ERET") == 0)
+    switch(wrapper->type)
     {
-        res = globus_i_gsc_send(
-            wrapper->op,
-            wrapper->path,
-            wrapper->mod_name,
-            wrapper->mod_parms,
-            globus_l_gsc_data_cb,
-            globus_l_gsc_event_cb,
-            wrapper);
-    }
-    else if(strcasecmp(wrapper->cmd, "STOR") == 0 ||
-        strcasecmp(wrapper->cmd, "ESTO") == 0)
-    {
-        res = globus_i_gsc_recv(
-            wrapper->op,
-            wrapper->path,
-            wrapper->mod_name,
-            wrapper->mod_parms,
-            globus_l_gsc_data_cb,
-            globus_l_gsc_event_cb,
-            wrapper);
-    }
-    else
-    {
-        globus_assert(GLOBUS_FALSE);
+        case GLOBUS_L_GSC_OP_TYPE_SEND:
+            res = globus_i_gsc_send(
+                wrapper->op,
+                wrapper->path,
+                wrapper->mod_name,
+                wrapper->mod_parms,
+                globus_l_gsc_data_cb,
+                globus_l_gsc_event_cb,
+                wrapper);
+            break;
+
+        case GLOBUS_L_GSC_OP_TYPE_RECV:
+            res = globus_i_gsc_recv(
+                wrapper->op,
+                wrapper->path,
+                wrapper->mod_name,
+                wrapper->mod_parms,
+                globus_l_gsc_data_cb,
+                globus_l_gsc_event_cb,
+                wrapper);
+            break;
+
+        case GLOBUS_L_GSC_OP_TYPE_NLST:
+        case GLOBUS_L_GSC_OP_TYPE_LIST:
+            res = globus_i_gsc_list(
+                wrapper->op,
+                wrapper->path,
+                GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_USER_DEFINED,
+                wrapper->type,
+                globus_l_gsc_data_cb,
+                wrapper);
+            break;
+
+        default:
+            globus_assert(GLOBUS_FALSE);
+            break;
     }
 
     if(res != GLOBUS_SUCCESS)
@@ -1710,9 +1689,29 @@ globus_l_gsc_cmd_stor_retr(
     }
     wrapper->op = op;
 
-    strcpy(wrapper->cmd, cmd_a[0]);
-    if(strcasecmp(cmd_a[0], "STOR") == 0 ||
-            strcasecmp(cmd_a[0], "RETR") == 0)
+    if(strcmp(cmd_a[0], "STOR") == 0 ||  strcmp(cmd_a[0], "ESTO") == 0)
+    {
+        wrapper->type = GLOBUS_L_GSC_OP_TYPE_RECV;
+    }
+    else if(strcmp(cmd_a[0], "RETR") == 0 ||  strcmp(cmd_a[0], "ERET") == 0)
+    {
+        wrapper->type = GLOBUS_L_GSC_OP_TYPE_SEND;
+    }
+    else if(strcmp(cmd_a[0], "LIST") == 0)
+    {
+        wrapper->type = GLOBUS_L_GSC_OP_TYPE_LIST;
+    }
+    else if(strcmp(cmd_a[0], "NLST") == 0)
+    {
+        wrapper->type = GLOBUS_L_GSC_OP_TYPE_NLST;
+    }
+    else
+    {
+        globus_assert(0 && "func shouldn't be called for this command");
+    }
+
+    if(strcmp(cmd_a[0], "STOR") == 0 ||
+            strcmp(cmd_a[0], "RETR") == 0)
     {
         if(argc != 2)
         {
@@ -1724,8 +1723,8 @@ globus_l_gsc_cmd_stor_retr(
         mod_name = NULL;
         mod_parm = NULL;
     }
-    else if(strcasecmp(cmd_a[0], "ESTO") == 0 ||
-        strcasecmp(cmd_a[0], "ERET") == 0)
+    else if(strcmp(cmd_a[0], "ESTO") == 0 ||
+        strcmp(cmd_a[0], "ERET") == 0)
     {
         if(argc != 3)
         {
@@ -1758,9 +1757,17 @@ globus_l_gsc_cmd_stor_retr(
 
         path = globus_libc_strdup(cmd_a[2]);
     }
+    /* all list stuff is here */
     else
     {
-        globus_assert(GLOBUS_FALSE);
+        if(cmd_a[1] == NULL)
+        {
+            path = NULL;
+        }
+        else
+        {
+            path = strdup(cmd_a[1]);
+        }
     }
 
     wrapper->mod_name = mod_name;
@@ -1797,120 +1804,6 @@ globus_l_gsc_cmd_stor_retr(
  *                          helpers
  *                          -------
  ************************************************************************/
-/*
- *  turn a stat struct into a string
- */
-char *
-globus_l_gsc_ls_line(
-    globus_gridftp_server_control_stat_t *  stat_info,
-    char *                                  path)
-{
-    char *                                  username;
-    char *                                  grpname;
-    struct passwd *                         pw;
-    struct group *                          gr;
-    struct tm *                             tm;
-    char                                    perms[11];
-    char *                                  tmp_ptr;
-    char *                                  month_lookup[12] = 
-        {"Jan", "Feb", "Mar", "April", "May", "June", "July", "Aug", 
-        "Sept", "Oct", "Nov", "Dec" };
-
-    strcpy(perms, "----------");
-
-    tm = localtime(&stat_info->mtime);
-    pw = getpwuid(stat_info->uid);
-    if(pw == NULL)
-    {
-        username = "(null)";
-    }
-    else
-    {
-        username = pw->pw_name;
-    }
-    gr = getgrgid(stat_info->gid);
-    if(pw == NULL)
-    {
-        grpname = "(null)";
-    }
-    else
-    {
-        grpname = gr->gr_name;
-    }
-
-    if(S_ISDIR(stat_info->mode))
-    {
-        perms[0] = 'd';
-    }
-    else if(S_ISLNK(stat_info->mode))
-    {
-        perms[0] = 'l';
-    }
-    else if(S_ISFIFO(stat_info->mode))
-    {
-        perms[0] = 'x';
-    }
-    else if(S_ISCHR(stat_info->mode))
-    {
-        perms[0] = 'c';
-    }
-    else if(S_ISBLK(stat_info->mode))
-    {
-        perms[0] = 'b';
-    }
-
-    if(S_IRUSR & stat_info->mode)
-    {
-        perms[1] = 'r';
-    }
-    if(S_IWUSR & stat_info->mode)
-    {
-        perms[2] = 'w';
-    }
-    if(S_IXUSR & stat_info->mode)
-    {
-        perms[3] = 'x';
-    }
-    if(S_IRGRP & stat_info->mode)
-    {
-        perms[4] = 'r';
-    }
-    if(S_IWGRP & stat_info->mode)
-    {
-        perms[5] = 'w';
-    }
-    if(S_IXGRP & stat_info->mode)
-    {
-        perms[6] = 'x';
-    }
-    if(S_IROTH & stat_info->mode)
-    {
-        perms[7] = 'r';
-    }
-    if(S_IWOTH & stat_info->mode)
-    {
-        perms[8] = 'w';
-    }
-    if(S_IXOTH & stat_info->mode)
-    {
-        perms[9] = 'x';
-    }
-
-    tmp_ptr = globus_common_create_string(
-        " %s %d %s %s %ld %s %2d %02d:%02d %s\r\n",
-        perms,
-        stat_info->nlink,
-        username,
-        grpname,
-        stat_info->size,
-        month_lookup[tm->tm_mon],
-        tm->tm_mday,
-        tm->tm_hour,
-        tm->tm_min,
-        path);
-
-    return tmp_ptr;
-}
 
 void
 globus_i_gsc_add_commands(
@@ -1975,6 +1868,28 @@ globus_i_gsc_add_commands(
         1,
         2,
         "214 Syntax: HELP [<sp> command]\r\n",
+        NULL);
+
+    globus_i_gsc_command_add(
+        server_handle,
+        "LIST", 
+        globus_l_gsc_cmd_stor_retr,
+        GLOBUS_GSC_COMMAND_PRE_AUTH | 
+            GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        2,
+        "214 Syntax: LIST [<sp> <filename>]\r\n",
+        NULL);
+
+    globus_i_gsc_command_add(
+        server_handle,
+        "NLST", 
+        globus_l_gsc_cmd_stor_retr,
+        GLOBUS_GSC_COMMAND_PRE_AUTH | 
+            GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        2,
+        "214 Syntax: NLST [<sp> <filename>]\r\n",
         NULL);
 
     globus_i_gsc_command_add(
@@ -2178,5 +2093,12 @@ globus_i_gsc_add_commands(
         2,
         "214 Syntax: USER <sp> username\r\n",
         NULL);
-}
 
+/*
+    LIST
+    NLST
+    MLSD
+    MLST
+    MDTM
+*/
+}

@@ -202,7 +202,8 @@ globus_gridftp_server_control_finished_auth(
 typedef enum globus_gridftp_server_control_resource_mask_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_DIRECTORY_LIST = 1,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY      = 2
+    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY      = 2,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_USER_DEFINED   = 3
 } globus_gridftp_server_control_resource_mask_t;
 
 /**
@@ -243,6 +244,24 @@ typedef void
     const char *                            local_target,
     const char *                            mod_name,
     const char *                            mod_parms);
+
+typedef void
+(*globus_gridftp_server_control_list_cb_t)(
+    globus_gridftp_server_control_op_t      op,
+    void *                                  data_handle,
+    const char *                            path,
+    globus_gridftp_server_control_resource_mask_t   mask);
+
+globus_byte_t *
+globus_gridftp_server_control_list_buffer_malloc(
+    globus_gridftp_server_control_op_t      op,
+    globus_gridftp_server_control_stat_t *  stat_info_array,
+    int                                     stat_count);
+
+void
+globus_gridftp_server_control_list_buffer_free(
+    globus_gridftp_server_control_op_t      op,
+    globus_byte_t *                         buffer);
 
 typedef void
 (*globus_gridftp_server_control_abort_cb_t)(
@@ -344,6 +363,11 @@ globus_result_t
 globus_gridftp_server_control_attr_set_auth(
     globus_gridftp_server_control_attr_t    in_attr,
     globus_gridftp_server_control_auth_cb_t auth_cb);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_list(
+    globus_gridftp_server_control_attr_t    in_attr,
+    globus_gridftp_server_control_list_cb_t list_cb);
 
 /*
  *  if module name is NULL then it is the default handler
