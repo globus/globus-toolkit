@@ -66,7 +66,7 @@ if( ! -w $reqfile ){
 }
 
 $cert_request_buf = `cat $reqfile`;
-$cert_request_buf =~ s/secconfdir=GRID_SECURITY_DIR/secconfdir=$target_dir/;
+$cert_request_buf =~ s/secconfdir=.*/secconfdir=$target_dir/;
 
 open(CERT_REQ, ">$reqfile");
 print CERT_REQ $cert_request_buf;
