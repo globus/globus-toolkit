@@ -1003,8 +1003,9 @@ globus_libc_gethostname(char *name, int len)
 } /* globus_libc_gethostname() */
 
 int
-globus_libc_gethostaddr(
-    globus_sockaddr_t *                 addr)
+globus_libc_gethostaddr_by_family(
+    globus_sockaddr_t *                 addr,
+    int                                 family)
 {
     int                                 rc;
     char                                hostname[MAXHOSTNAMELEN];
@@ -1021,7 +1022,7 @@ globus_libc_gethostaddr(
     
     memset(&hints, 0, sizeof(globus_addrinfo_t));
     hints.ai_flags = 0;
-    hints.ai_family = PF_UNSPEC;
+    hints.ai_family = family;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = 0;
     
@@ -1045,6 +1046,13 @@ globus_libc_gethostaddr(
     globus_libc_freeaddrinfo(save_addrinfo);
     
     return 0;
+}
+
+int
+globus_libc_gethostaddr(
+    globus_sockaddr_t *                 addr)
+{
+    return globus_libc_gethostaddr_by_family(addr, PF_UNSPEC);
 }
 
 /*
@@ -3331,7 +3339,14 @@ globus_libc_addr_to_contact_string(
     if(opts_mask & GLOBUS_LIBC_ADDR_LOCAL ||
         globus_libc_addr_is_wildcard(addr))
     {
-        if(globus_libc_gethostaddr(&myaddr) != 0)
+        int                             family;
+        
+        family = (opts_mask & GLOBUS_LIBC_ADDR_IPV6)
+            ? PF_INET6 : ((opts_mask & GLOBUS_LIBC_ADDR_IPV4)
+            ? PF_INET4 : PF_UNSPEC);
+        {
+            
+        if(globus_libc_gethostaddr_by_family(&myaddr, family) != 0)
         {
             result = globus_error_put(
                 globus_error_construct_error(
