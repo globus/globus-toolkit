@@ -3,6 +3,14 @@
 GLOBUS_DEPLOY_PATH=                # This line is overwritten during deployment
 GLOBUS_DEPLOYED='FALSE'            # This line is overwritten during deployment
 
+if [ -n "${GSI_INSTALL_PATH}" -a -z "${GLOBUS_INSTALL_PATH}" ]; then
+    GLOBUS_INSTALL_PATH=${GSI_INSTALL_PATH}
+fi
+
+if [ -n "${GSI_DEPLOY_PATH}" -a -z "${GLOBUS_DEPLOY_PATH}" ]; then
+    GLOBUS_DEPLOY_PATH=${GSI_DEPLOY_PATH}
+fi
+
 if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
     if [ -z "${GLOBUS_DEPLOY_PATH}" ]; then
 	echo "ERROR: environment variable GLOBUS_DEPLOY_PATH not defined"  1>&2
