@@ -3153,7 +3153,10 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 				 pw_cb, NULL)) {
 	    goto err;
 	}
-    }
+	if (proxy_check_proxy_name(pcd->ucert)>0) pcd->type = CRED_TYPE_PROXY;
+	else pcd->type = CRED_TYPE_PERMANENT;		
+    } else pcd->type = CRED_TYPE_PERMANENT;
+
     if (!pcd->upkey) {
 	if (proxy_load_user_key(pcd, user_key,
 				pw_cb, NULL)) {
@@ -3225,10 +3228,7 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 		}
 	    }
 	}
-	if (i) pcd->type = CRED_TYPE_PROXY;
-	else pcd->type = CRED_TYPE_PERMANENT;
-
-    } else pcd->type = CRED_TYPE_PERMANENT;
+    }
 
     status = 0;
   err:
