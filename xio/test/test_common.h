@@ -102,6 +102,11 @@ block_barrier_main(
     int                                     argc,
     char **                                 argv);
 
+int
+blocking_dd_main(
+    int                                     argc,
+    char **                                 argv);
+
 void
 test_common_end();
 
