@@ -150,7 +150,21 @@ typedef enum
     globus_error_put(GlobusGFSErrorObjMemory(mem_name))                               
 
 #define GlobusGFSErrorParameter(mem_name)                                   \
-    globus_error_put(GlobusGFSErrorObjParameter(mem_name))                               
+    globus_error_put(GlobusGFSErrorObjParameter(mem_name)) 
+
+#define GlobusGFSErrorIPC()                                                 \
+    globus_error_put(GlobusGFSErrorObjIPC())
+
+#define GlobusGFSErrorObjIPC()                                              \
+    globus_error_construct_error(                                           \
+        GLOBUS_NULL,                                                        \
+        GLOBUS_NULL,                                                        \
+        GLOBUS_GFS_ERROR_MEMORY,                                            \
+        __FILE__,                                                           \
+        _gfs_name,                                                          \
+        __LINE__,                                                           \
+        "IPC Commincation error.")
+                                                                            
 #define GlobusGFSErrorObjMemory(mem_name)                                   \
     globus_error_construct_error(                                           \
         GLOBUS_NULL,                                                        \

@@ -34,85 +34,89 @@ do                                                                      \
     /* verify buffer size */                                            \
     if(_len - 4 <= 0)                                                   \
     {                                                                   \
+        goto decode_err;                                                \
     }                                                                   \
-    else                                                                \
-    {                                                                   \
-        memcpy(&_cw, _buf, 4);                                          \
-        _w = htonl((uint32_t)_cw);                                      \
-        _buf += 4;                                                      \
-        _len -= 4;                                                      \
-    }                                                                   \
+    memcpy(&_cw, _buf, 4);                                              \
+    _w = htonl((uint32_t)_cw);                                          \
+    _buf += 4;                                                          \
+    _len -= 4;                                                          \
 } while(0)
 
 
+/*
+ *  if architecture is big endian already
+ */
 #ifdef WORDS_BIGENDIAN                                               
+
 #define GFSEncodeUInt64(_start, _len, _buf, _w)                         \
-    do                                                                  \
+do                                                                      \
+{                                                                       \
+    if((globus_byte_t *)_buf - (globus_byte_t *)_start + 8 > _len)      \
     {                                                                   \
-        uint64_t                            _cw;                        \
-        if((globus_byte_t *)_buf - (globus_byte_t *)_start + 8 > _len)  \
-        {                                                               \
-            _len *= 2;                                                  \
-            _start = globus_libc_realloc(_start, _len);                 \
-        }                                                               \
+        _len *= 2;                                                      \
+        _start = globus_libc_realloc(_start, _len);                     \
+    }                                                                   \
+    memcpy(_buf, &_w, 8);                                               \
+    _buf += 8;                                                          \
+} while(0)
+
+#define GFSDecodeUInt64(_buf, _len, _w)                                 \
+do                                                                      \
+{                                                                       \
+    if(_len - 8 <= 0)                                                   \
+    {                                                                   \
+        goto decode_err;                                                \
+    }                                                                   \
                                                                         \
-        {                                                               \
-            _cw = _w;                                                   \
-        }                                                               \
-    } while(0)
+    memcpy(&_w, _buf, 8);                                               \
+    _buf += 8;                                                          \
+    _len -= 8;                                                          \
+} while(0)
+
 #else                                                                
+/* not a big indian arch */
 #define GFSEncodeUInt64(_start, _len, _buf, _w)                         \
-    do                                                                  \
-    {                                                                   \
-        uint64_t                            _cw;                        \
-        if((globus_byte_t *)_buf - (globus_byte_t *)_start + 8 > _len)  \
-        {                                                               \
-            _len *= 2;                                                  \
-            _start = globus_libc_realloc(_start, _len);                 \
-        }                                                               \
+do                                                                      \
+{                                                                       \
+    uint64_t                            _cw;                            \
+    uint32_t                            _lo = _w & 0xffffffff;          \
+    uint32_t                            _hi = _w >> 32U;                \
                                                                         \
-        {                                                               \
-            uint32_t                        lo = _w & 0xffffffff;       \
-            uint32_t                        hi = _w >> 32U;             \
-            lo = ntohl(lo);                                             \
-            hi = ntohl(hi);                                             \
-            _cw = ((uint64_t) lo) << 32U | hi;                          \
-        }                                                               \
-        memcpy(_buf, &_cw, 8);                                          \
-        _buf += 8;                                                      \
-    } while(0)
-#endif                                                               
+    if((globus_byte_t *)_buf - (globus_byte_t *)_start + 8 > _len)      \
+    {                                                                   \
+        _len *= 2;                                                      \
+        _start = globus_libc_realloc(_start, _len);                     \
+    }                                                                   \
+                                                                        \
+    _lo = ntohl(_lo);                                                   \
+    _hi = ntohl(_hi);                                                   \
+    _cw = ((uint64_t) _lo) << 32U | _hi;                                \
+    memcpy(_buf, &_cw, 8);                                              \
+    _buf += 8;                                                          \
+} while(0)
 
-
-#ifdef WORDS_BIGENDIAN                                               
 #define GFSDecodeUInt64(_buf, _len, _w)                                 \
-    do                                                                  \
-    {                                                                   \
-        uint64_t                            _cw;                        \
+do                                                                      \
+{                                                                       \
+    uint64_t                            _cw;                            \
+    uint32_t                            _lo;                            \
+    uint32_t                            _hi;                            \
                                                                         \
-        memcpy(&_w, _buf, 8);                                           \
-        {                                                               \
-            _cw = _w;                                                   \
-        }                                                               \
-    } while(0)
-#else                                                                
-#define GFSDecodeUInt64(_buf, _len, _w)                                 \
-    do                                                                  \
+    if(_len - 8 <= 0)                                                   \
     {                                                                   \
-        uint64_t                            _cw;                        \
+        goto decode_err;                                                \
+    }                                                                   \
                                                                         \
-        memcpy(&_w, _buf, 8);                                           \
-        {                                                               \
-            uint32_t                        lo = w & 0xffffffff;        \
-            uint32_t                        hi = w >> 32U;              \
-            lo = ntohl(lo);                                             \
-            hi = ntohl(hi);                                             \
-            _cw = ((uint64_t) lo) << 32U | hi;                          \
-        }                                                               \
-        _buf += 8;                                                      \
-    } while(0)
+    memcpy(&_w, _buf, 8);                                               \
+    _lo = _w & 0xffffffff;                                              \
+    _hi = _w >> 32U;                                                    \
+    _lo = ntohl(_lo);                                                   \
+    _hi = ntohl(_hi);                                                   \
+    _cw = ((uint64_t) _lo) << 32U | _hi;                                \
+    _buf += 8;                                                          \
+    _len -= 8;                                                          \
+} while(0)
 #endif                                                               
-
 
 #define GFSEncodeChar(_start, _len, _buf, _w)                           \
 do                                                                      \
@@ -129,8 +133,13 @@ do                                                                      \
 #define GFSDecodeChar(_buf, _len, _w)                                   \
 do                                                                      \
 {                                                                       \
+    if(_len - 1 <= 0)                                                   \
+    {                                                                   \
+        goto decode_err;                                                \
+    }                                                                   \
     _w = *_buf;                                                         \
     _buf++;                                                             \
+    _len--;                                                             \
 } while(0)
 
 #define GFSEncodeString(_start, _len, _buf, _w)                         \
@@ -144,17 +153,18 @@ do                                                                      \
     GFSEncodeChar(_start, _len, _buf, *_str);                           \
 } while(0)
 
-#define GFSDecodeString(_buf, _len, _w, _max)                           \
+#define GFSDecodeString(_buf, _len, _w)                                 \
 do                                                                      \
 {                                                                       \
-    char *                              _str;                           \
-                                                                        \
-    while(*_buf != '\0')                                                \
+    int                                 _ctr;                           \
+    /* make sure that strip in terminated properly */                   \
+    for(_ctr = 0; _ctr < _len && _buf[_ctr] != '\0'; _ctr++);           \
+    if(_buf[_ctr] != '\0')                                              \
     {                                                                   \
-                                                         \
+        goto decode_err;                                                \
     }                                                                   \
-                                                                        \
-    GFSDecodeChar(_buf, _str);                                          \
+    _w = strdup(_buf);                                                  \
+    _buf += strlen(_buf) + 1;                                           \
 } while(0)
 
 /*** XXX  this will eventually determine if the data node is part of a
@@ -481,6 +491,217 @@ globus_l_gfs_ipc_close_cb(
  *   body callback is then posted with that size.  There is always
  *   at least 1 callback posted.
  *********************************************************************/
+
+/*
+ *  decode functions
+ */
+static globus_gfs_command_state_t *
+globus_l_gfs_ipc_unpack_command(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    globus_gfs_command_state_t *        cmd_state;
+
+    cmd_state = (globus_gfs_command_state_t *)
+        globus_malloc(sizeof(globus_gfs_command_state_t));
+    if(cmd_state == NULL)
+    {
+        return NULL;
+    }
+
+    GFSDecodeUInt32(buffer, len, cmd_state->command);
+    GFSDecodeString(buffer, len, cmd_state->pathname);
+    GFSDecodeUInt64(buffer, len, cmd_state->cksm_offset);
+    GFSDecodeUInt64(buffer, len, cmd_state->cksm_length);
+    GFSDecodeString(buffer, len, cmd_state->cksm_alg);
+    GFSDecodeString(buffer, len, cmd_state->cksm_response);
+    GFSDecodeUInt32(buffer, len, cmd_state->chmod_mode);
+    GFSDecodeString(buffer, len, cmd_state->rnfr_pathname);
+
+    return cmd_state;
+
+  decode_err:
+    globus_free(cmd_state);
+
+    return NULL;
+}
+
+static globus_gfs_transfer_state_t *
+globus_l_gfs_ipc_unpack_transfer(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    globus_gfs_transfer_state_t *       trans_state;
+    int                                 ctr;
+    int                                 range_size;
+    globus_off_t                        offset;
+    globus_off_t                        length;
+
+    trans_state = (globus_gfs_transfer_state_t *)
+        globus_malloc(sizeof(globus_gfs_transfer_state_t));
+    if(trans_state == NULL)
+    {
+        return NULL;
+    }
+    globus_range_list_init(&trans_state->range_list);
+
+    GFSDecodeString(buffer, len, trans_state->pathname);
+    GFSDecodeString(buffer, len, trans_state->module_name);
+    GFSDecodeString(buffer, len, trans_state->module_args);
+    GFSDecodeUInt64(buffer, len, trans_state->partial_offset);
+    GFSDecodeUInt64(buffer, len, trans_state->partial_length);
+
+    /* unpack range list */
+    GFSDecodeUInt32(buffer, len, range_size);
+    for(ctr = 0; ctr < range_size; ctr++)
+    {
+        GFSDecodeUInt64(buffer, len, offset);
+        GFSDecodeUInt64(buffer, len, length);
+        globus_range_list_insert(trans_state->range_list, offset, length);
+    }
+    GFSDecodeUInt32(buffer, len, trans_state->data_handle_id);
+
+    /* unpack op */
+
+    return trans_state;
+
+  decode_err:
+    globus_range_list_destroy(trans_state->range_list);
+    globus_free(trans_state);
+
+    return NULL;
+}
+
+static globus_gfs_data_state_t *
+globus_l_gfs_ipc_unpack_data(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    globus_gfs_data_state_t *           data_state;
+    char                                ch;
+    int                                 ctr;
+
+    data_state = (globus_gfs_data_state_t *)
+        globus_malloc(sizeof(globus_gfs_data_state_t));
+    if(data_state == NULL)
+    {
+        return NULL;
+    }
+
+    GFSDecodeChar(buffer, len, ch);
+    data_state->ipv6 = (globus_bool_t) ch;
+    GFSDecodeUInt32(buffer, len, data_state->nstreams);
+    GFSDecodeChar(buffer, len, data_state->mode);
+    GFSDecodeChar(buffer, len, data_state->type);
+    GFSDecodeUInt32(buffer, len, data_state->tcp_bufsize);
+    GFSDecodeUInt32(buffer, len, data_state->blocksize);
+    GFSDecodeChar(buffer, len, data_state->prot);
+    GFSDecodeChar(buffer, len, data_state->dcau);
+    GFSDecodeChar(buffer, len, ch);
+    data_state->net_prt = ch;
+
+    GFSDecodeUInt32(buffer, len, data_state->cs_count);
+    for(ctr = 0; ctr < data_state->cs_count; ctr++)
+    {
+        GFSDecodeString(buffer, len, data_state->contact_strings[ctr]);
+    }
+
+    return data_state;
+
+  decode_err:
+    globus_free(data_state);
+
+    return NULL;
+}
+
+static globus_gfs_resource_state_t *
+globus_l_gfs_ipc_unpack_resource(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    globus_gfs_resource_state_t *       resource_state;
+    char                                ch;
+
+    resource_state = (globus_gfs_resource_state_t *)
+        globus_malloc(sizeof(globus_gfs_resource_state_t));
+    if(resource_state == NULL)
+    {
+        return NULL;
+    }
+
+    GFSDecodeChar(buffer, len, ch);
+    resource_state->file_only = (globus_bool_t) ch;
+    GFSDecodeString(buffer, len, resource_state->pathname);
+
+    return resource_state;
+
+  decode_err:
+    globus_free(resource_state);
+
+    return NULL;
+}
+
+static int
+globus_l_gfs_ipc_unpack_data_destroy(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    int *                               data_connection_id)
+{
+    int                                 id;
+
+    GFSDecodeUInt32(buffer, len, id);
+    *data_connection_id = id;
+
+    return 0;
+
+  decode_err:
+
+    return -1;
+}
+
+static char *
+globus_l_gfs_ipc_unpack_user(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    char *                              user_dn;
+
+    GFSDecodeString(buffer, len, user_dn);
+                                                                                
+    return user_dn;
+
+  decode_err:
+
+    return NULL;
+}
+
+static int
+globus_l_gfs_ipc_unpack_cred(
+    globus_i_gfs_ipc_handle_t *         ipc,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    gss_buffer_desc *                   out_gsi_buffer)
+{
+    gss_buffer_desc                     gsi_buffer;
+
+    GFSDecodeUInt32(buffer, len, gsi_buffer.length);
+    gsi_buffer.value = buffer;
+
+    *out_gsi_buffer = gsi_buffer;
+
+    return 0;
+
+  decode_err:
+
+    return -1;
+}
+
 static void
 globus_l_gfs_ipc_read_body_cb(
     globus_xio_handle_t                 handle,
@@ -491,12 +712,11 @@ globus_l_gfs_ipc_read_body_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_byte_t *                     new_buf;
-    globus_byte_t *                     ptr;
+    globus_byte_t *                     new_buf = NULL;
     globus_gfs_ipc_request_t *          request;
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_result_t                     res;
-    globus_size_t                       size;
+    globus_gfs_command_state_t *        cmd_state;
 
     request = (globus_gfs_ipc_request_t *) user_arg;
     ipc = request->ipc;
@@ -520,9 +740,7 @@ globus_l_gfs_ipc_read_body_cb(
             break;
 
         case GLOBUS_GFS_IPC_TYPE_COMMAND:
-            ptr = buffer;
-            size = len;
-
+            cmd_state = globus_l_gfs_ipc_unpack_command(ipc, buffer, len);
             break;
 
         case GLOBUS_GFS_IPC_TYPE_PASSIVE:
@@ -547,14 +765,16 @@ globus_l_gfs_ipc_read_body_cb(
     {
         goto err;
     }
+
     globus_free(buffer);
 
     return;
 
   err:
-    if(buffer != NULL)
+    globus_free(buffer);
+    if(new_buf != NULL)
     {
-        globus_free(buffer);
+        globus_free(new_buf);
     }
     ipc->error_cb(ipc, res, ipc->error_arg);
 }
@@ -607,7 +827,7 @@ globus_l_gfs_ipc_read_header_cb(
                     globus_hashtable_lookup(&ipc->call_table, (void *)id);
                 if(request == NULL)
                 {
-                    res = IPC_ERROR;
+                    res = GlobusGFSErrorIPC();
                     goto lock_err;
                 }
                 break;
@@ -631,7 +851,7 @@ globus_l_gfs_ipc_read_header_cb(
                 request->ipc = ipc;
 
             default:
-                res = IPC_ERROR;
+                res = GlobusGFSErrorIPC();
                 goto lock_err;
                 break;
         }
@@ -655,6 +875,8 @@ globus_l_gfs_ipc_read_header_cb(
 
   lock_err:
     globus_mutex_unlock(&ipc->mutex);
+
+  decode_err:
   err:
     if(buffer != NULL)
     {
