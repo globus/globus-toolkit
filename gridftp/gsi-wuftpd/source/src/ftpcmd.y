@@ -1041,6 +1041,7 @@ cmd: USER SP username CRLF
 #               if defined(USE_GLOBUS_DATA_CODE)
                 {
 		    globus_result_t                            res;
+		    globus_bool_t             bad_arg = GLOBUS_FALSE;
 		    if(g_dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT)
 		    {
 			globus_libc_free(g_dcau.subject.subject);
@@ -1058,17 +1059,27 @@ cmd: USER SP username CRLF
 			g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SUBJECT;
 			g_dcau.subject.subject = globus_libc_strdup($4+2);
 		    }
-		    res = globus_ftp_control_local_dcau(&g_data_handle,
-		                                        &g_dcau,
-                                                        g_deleg_cred);
-		    if(res != GLOBUS_SUCCESS)
-		    {
-		        reply(432, "Data channel authentication failed");
-		    }
 		    else
 		    {
-		        reply(200, "DCAU %c", $4[0]);
+		        bad_arg = GLOBUS_TRUE;
+		        reply(504, "Bad DCAU mode");
 		    }
+		    
+		    if(!bad_arg)
+		    {
+        		res = globus_ftp_control_local_dcau(&g_data_handle,
+        		                                    &g_dcau,
+                                                            g_deleg_cred);
+        		if(res != GLOBUS_SUCCESS)
+        		{
+        		    reply(432, "Data channel authentication failed");
+        		}
+        		else
+        		{
+        		    reply(200, "DCAU %c", $4[0]);
+        		}
+        	    }
+        		    
                 }
 #               endif
 	    }
