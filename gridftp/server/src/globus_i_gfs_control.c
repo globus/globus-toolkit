@@ -91,8 +91,8 @@ globus_l_gfs_request_abort(
     instance = (globus_i_gfs_server_instance_t *) user_arg;
             
     globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR,
-        "Aborting \n");
+        GLOBUS_I_GFS_LOG_INFO,
+        "Requesting abort...\n");
 
     globus_i_gfs_data_request_transfer_event(
         NULL, 

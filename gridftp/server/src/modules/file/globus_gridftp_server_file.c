@@ -339,17 +339,6 @@ error_stat1:
 }
 
 static
-void
-globus_l_gfs_file_trev(
-    int                                 transfer_id,
-    int                                 event_type,
-    void *                              user_arg)
-{
-fprintf(stderr, "globus_l_gfs_file_trev() : abort\n");
-}
-
-
-static
 globus_result_t
 globus_l_gfs_file_mkdir(
     globus_gfs_operation_t   op,
@@ -1520,6 +1509,7 @@ globus_l_gfs_file_event(
                 monitor->aborted = GLOBUS_TRUE;
             }
             globus_mutex_unlock(&monitor->lock);
+            fprintf(stderr, "globus_l_gfs_file_event: aborted.\n");
             break;
             
         default:

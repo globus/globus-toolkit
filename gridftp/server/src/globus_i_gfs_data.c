@@ -1613,7 +1613,7 @@ globus_i_gfs_data_request_transfer_event(
                 else
                 {
                     /* if the DSI is handling these events */
-                    if(globus_l_gfs_dsi->trev_func != NULL ||
+                    if(globus_l_gfs_dsi->trev_func != NULL &&
                         event_type & op->event_mask)
                     {
                         pass = GLOBUS_TRUE;
