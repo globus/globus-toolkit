@@ -506,6 +506,7 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
 			       &output_token_desc);
 	
 	/* XXX Should deal with output_token_desc here */
+	gss_release_buffer(&self->minor_status, &output_token_desc);
     }
 #endif
 
@@ -824,8 +825,8 @@ my_ssl_init(int verify, int peer_has_proxy)
 #if SSLEAY_VERSION_NUMBER >= 0x0090581fL
 	SSL_CTX_set_purpose(cred_handle->gs_ctx,X509_PURPOSE_ANY);
 	SSL_CTX_set_session_id_context(cred_handle->gs_ctx,
-				       "DG_LBSERVICE",
-				       strlen("DG_LBSERVICE"));
+				       "MYPROXY",
+				       strlen("MYPROXY"));
 #endif
     }
 
@@ -968,8 +969,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	char buf[1024], *cn=NULL;
 	X509_NAME_oneline(X509_get_subject_name(peer), buf, sizeof(buf));
 	cn = strstr(buf, "/CN=");
-	cn += 4;
-	if (!cn || strcmp(cn, server_name)) {
+	if (!cn || strcmp(cn+4, server_name)) {
 	    self->error_string = strdup("Server authentication failed");
 	    return GSI_SOCKET_ERROR;
 	}
