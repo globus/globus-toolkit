@@ -1,6 +1,9 @@
 #include "globus_i_gram_protocol.h"
 #include "version.h"
 
+/**
+ * @defgroup globus_gram_protocol_functions Functions
+ */
 gss_cred_id_t				globus_i_gram_protocol_credential;
 globus_mutex_t				globus_i_gram_protocol_mutex;
 globus_cond_t				globus_i_gram_protocol_cond;

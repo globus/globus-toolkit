@@ -21,5 +21,6 @@ AC_OUTPUT(
 	doxygen/Makefile
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
+	scripts/Makefile
 	version.h
 )

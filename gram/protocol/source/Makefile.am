@@ -1,19 +1,11 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-
-# SUBDIRS is an automake macro which contains 
-# the list of subdirectories that have Makefile.am's
 SUBDIRS= \
 	 doxygen \
-	 pkgdata 
+	 pkgdata \
+	 scripts
 
-# Sources contains all of the source files in the directory.
-# Header files are included because automake will generate dependency targets 
-# for them and include them in a source distribution.
-#
-# If this directory builds multiple programs or libraries than these sources
-# will need to be seperated into seperate macros.
 Sources= \
 	globus_gram_protocol.c \
 	globus_gram_protocol.h \
@@ -22,13 +14,10 @@ Sources= \
 	globus_gram_protocol_error.c \
 	globus_gram_protocol_pack.c
 
-perlscripts = Error.pm JobSignal.pm JobState.pm
-
-BUILT_SOURCES = globus_gram_protocol_constants.h \
-                $(perlscripts)
+BUILT_SOURCES = globus_gram_protocol_constants.h
 
 EXTRA_DIST = globus-gram-protocol-constants.sh \
-                $(perlscripts) \
+	     globus_gram_protocol.dox \
 		version.h.in \
 		dirt.sh
 
@@ -49,21 +38,11 @@ noinst_HEADERS = globus_i_gram_protocol.h
 
 libexec_SCRIPTS = globus-gram-protocol-constants.sh
 
-perllibdir=$(libdir)/perl/Globus/GRAM
-perllib_SCRIPTS = $(perlscripts)
-
 globus_gram_protocol_constants.h: globus-gram-protocol-constants.sh
-	$(RM) globus_gram_protocol_constants.h
-	@PERL@ $(srcdir)/scripts/create_protocol_constants.pl \
-		$(srcdir)/globus-gram-protocol-constants.sh \
-		> globus_gram_protocol_constants.h
-
-$(perlscripts):
-	@PERL@ $(srcdir)/scripts/create_protocol_constants-perl.pl < \
+	$(RM) globus_gram_protocol_constants
+	@PERL@ $(srcdir)/scripts/create_protocol_constants.pl -header \
 		$(srcdir)/globus-gram-protocol-constants.sh
 
-# lib_LTLIBRARIES is an automake macro which contains
-# a list of libtool libraries that are to be installed in $prefix/lib
 lib_LTLIBRARIES = libglobus_gram_protocol_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)

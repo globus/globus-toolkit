@@ -4,11 +4,17 @@
 /**
  * @mainpage Globus GRAM Protocol
  *
- * The Globus GRAM Protocol Library implements the GRAM protocol, and is used
+ * The Globus GRAM Protocol Library implements the GRAM protocol. It is used
  * by the GRAM Client and GRAM Job Manager. It provides the constants used
  * by in the sending and receiving of GRAM messages. It also provides
  * functions to encode GRAM requests and replies, and to send and receive
- * the GRAM messages.
+ * the GRAM queries.
+ *
+ * - @ref globus_gram_protocol_functions "GRAM Protocol Functions"
+ * - @ref globus_gram_protocol_job_state_t "Job States"
+ * - @ref globus_gram_protocol_job_signal_t "Signals"
+ * - @ref globus_gram_protocol_error_t "GRAM Errors"
+ * - @ref globus_gram_protocol "GRAM Protocol Message Format"
  */
 
 #ifndef EXTERN_C_BEGIN

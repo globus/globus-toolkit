@@ -89,7 +89,15 @@ globus_l_gram_protocol_parse_reply_header(
 #endif
 
 /**
+ * @defgroup globus_gram_protocol_io Message I/O
+ * @ingroup globus_gram_protocol_functions
+ *
+ * The functions in this section 
+ */
+
+/**
  * Create a GRAM Protocol listener.
+ * @ingroup globus_gram_protocol_io
  *
  * Creates a GRAM Protocol listener. The listener will automatically
  * accept new connections on it's TCP/IP port and parse GRAM requests.
@@ -102,14 +110,14 @@ globus_l_gram_protocol_parse_reply_header(
  *        hold the URL of the listener. This URL may be published or
  *        otherwise passed to applications which need to contact this
  *        protocol server. The URL will be of the form
- *        https://&lt;host&gt;:&lt;port&gt;/. It is the user's responsibility
+ *        https://<host>:<port>/. It is the user's responsibility
  *        to free this memory.
  * @param callback
  *        The callback function to be called when a new request has been
  *        received by this listener. This function will be passed the
  *        request, which may be unpacked using one of the functions described 
- *        in the @link globus_gram_protocol_unpack unpack @endlink section of
- *        the documentation.
+ *        in the @link globus_gram_protocol_pack message packing @endlink
+ *        section of the documentation.
  * @param callback_arg
  *        A pointer to arbitrary user data which will be passed to the callback
  *        function as it's first parameter.
@@ -237,6 +245,7 @@ globus_gram_protocol_allow_attach(
 
 /**
  * Disable a listener from handling any new requests.
+ * @ingroup globus_gram_protocol_io
  *
  * Disables a listener making it unable to receive any new requests,
  * and freeing memory associated with the listener. Will block if a request
@@ -318,6 +327,7 @@ globus_gram_protocol_callback_disallow(
 
 /**
  * Frame and send a GRAM protocol request.
+ * @ingroup globus_gram_protocol_io
  *
  * Connects to the GRAM Protocol server specified by the @a url
  * parameter, frames the message with HTTP headers, and sends
@@ -492,10 +502,10 @@ globus_gram_protocol_post(
 
 /**
  * Frame and send a GRAM protocol reply.
+ * @ingroup globus_gram_protocol_io
  *
- * On an existing @link handle globus_gram_protocol_handle_t @endlink,
- * frame and send the reply. The reply consists of a response code and
- * a message.
+ * On an existing handle, frame and send the reply. The reply consists of a
+ * response code and a message.
  *
  * This function should only be called in response to a callback containing
  * a GRAM Protocol request. It should not be called using the same handle

@@ -1,6 +1,13 @@
 #include "globus_common.h"
 #include "globus_gram_protocol_constants.h"
 
+/**
+ * @defgroup globus_gram_protocol_error_messages Error Translation
+ * @ingroup globus_gram_protocol_functions
+ *
+ * Functions in this section handle translating GRAM error codes to
+ * strings which can help the user diagnose GRAM problems. 
+ */
 static char *
 globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 {
@@ -187,13 +194,11 @@ globus_gram_protocol_error_string(int error_code)
  * @ingroup globus_gram_protocol_error_messages
  *
  * This function creates a custom version of the error message for the error
- * GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION.  This function should really
- * only used by the GRAM client library.
+ * GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION.  <b>This function should really
+ * only used by the GRAM client library.</b>
  *
  * @param message
  *        The new message to be associated with error code 7.
- *
- * @return void
  */
 void
 globus_gram_protocol_error_7_hack_replace_message(const char * message)

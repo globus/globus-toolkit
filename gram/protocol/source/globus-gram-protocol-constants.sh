@@ -143,6 +143,10 @@ GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE=137
 GLOBUS_GRAM_PROTOCOL_ERROR_LAST=138
 
 ## globus_gram_protocol_job_state_t GRAM Job States
+## The globus_gram_protocol_job_state_t contains information about
+## the current state of the job as known by the job manager. Job state
+## changes are sent by the Job Manager to all registered clients. A client
+## may ask for information from the job manager via the status request.
 ### The job is waiting for resources to become available to run.
 GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING=1
 ### The job has received resources and the application is executing.
