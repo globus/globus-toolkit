@@ -4,9 +4,9 @@
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="
                 http://www.globus.org/namespaces/2004/02/rsl
-                /sandbox/lane/globus/schema/base/gram/rsl.xsd
+                /home/lane/Software/globus/schema/base/gram/rsl.xsd
                 http://www.globus.org/namespaces/2004/02/rsl/gram
-                /sandbox/lane/globus/schema/base/gram/gram_rsl.xsd">
+                /home/lane/Software/globus/schema/base/gram/gram_rsl.xsd">
 <gram:job>
     <gram:executable> <rsl:path>
         <rsl:stringElement value="/bin/echo"/> </rsl:path>
@@ -25,12 +25,14 @@
     -->
     <gram:stdout>
         <rsl:pathArray> <rsl:path>
-            <rsl:stringElement value="/home/lane/Testing/logs/echo-test.stdout"/>
+            <rsl:substitutionRef name="HOME"/>
+            <rsl:stringElement value="/testing/gram_scalability/logs/echo-test.stdout"/>
         </rsl:path> </rsl:pathArray>
     </gram:stdout>
     <gram:stderr>
         <rsl:pathArray> <rsl:path>
-            <rsl:stringElement value="/home/lane/Testing/logs/echo-test.stderr"/>
+            <rsl:substitutionRef name="HOME"/>
+            <rsl:stringElement value="/testing/gram_scalability/logs/echo-test.stderr"/>
         </rsl:path> </rsl:pathArray>
     </gram:stderr>
     <gram:fileStageOut>
