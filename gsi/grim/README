@@ -2,7 +2,7 @@
 globus-grim
 ===========
 
-required grim packages (grim has additional dependecies in gsi and common)
+required grim packages (grim has additional dependencies in gsi and common)
 
 +======================================+
 |    package         |  cvs module     |
@@ -13,12 +13,12 @@ required grim packages (grim has additional dependecies in gsi and common)
 +--------------------+-----------------+
 
 cvs-build has been modified to build all of the above packages when the
-gsi_bundle is requested.  See `cvs-build -help` for more inforamtion.
+gsi_bundle is requested.  See `cvs-build -help` for more information.
 
 Once built a statically linked program can be found at:
 $GLOBUS_LOCATION/bin/globus-grim
 
-This program must be run as a setuid program.  The privaledged user does 
+This program must be run as a setuid program.  The privileged user does 
 not need to be root or any type of super user.  They simply need read 
 permission to some sensitive files.
 
@@ -54,7 +54,7 @@ If no configuration file is found grim will use the following settings:
 
     gridmap file:           /etc/grid-security/grid-mapfile
     ca_cert_directory       /etc/grid-security/certificates/
-    certficate file         /etc/grid-security/hostcert.pem
+    certificate file         /etc/grid-security/hostcert.pem
     key file                /etc/grid-security/hostkey.pem
     port type file          /etc/grid-security/port_type.xml || 
                             ~/.globus/grim-port-types.xml
