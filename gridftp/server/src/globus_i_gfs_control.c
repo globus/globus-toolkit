@@ -195,16 +195,28 @@ globus_l_gfs_auth_ipc_open_cb(
 
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
 
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_INFO,
-        "***IPC open, finishing auth\n");
-
-    globus_gridftp_server_control_finished_auth(
-        auth_info->control_op, 
-        auth_info->username, 
-        auth_info->response, 
-        auth_info->msg);
-
+    if(result == GLOBUS_SUCCESS)
+    {
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "***IPC open, finishing auth\n");
+    
+        globus_gridftp_server_control_finished_auth(
+            auth_info->control_op, 
+            auth_info->username, 
+            auth_info->response, 
+            auth_info->msg);
+    }
+    else
+    {
+        globus_i_gfs_log_result(
+            "IPC open failed", result);
+        globus_gridftp_server_control_finished_auth(
+            auth_info->control_op, 
+            NULL, 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC, 
+            "internal error");
+    }        
     return;
 }    
 
