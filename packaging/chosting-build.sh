@@ -18,6 +18,10 @@ if test ! -d $BASEDIR/source-trees/gt2-cvs; then
 	mkdir $BASEDIR/source-trees/gt2-cvs
 fi
 
+if test ! -d $BASEDIR/source-trees/autotools; then
+	mkdir $BASEDIR/source-trees/autotools;
+fi
+
 
 if test -z "$CVSROOT"; then
 	echo ""
@@ -57,8 +61,24 @@ if test ! $? = 0; then
 	exit 1
 fi
 
+cd $BASEDIR/source-trees/autotools
+
+cvs -d$GT2CVS co autotools side_tools
+if test ! $? = 0; then
+	echo ""
+	echo "cvs checkout of $GT2CVS failed"
+	echo ""
+	exit 1
+fi
+
 cd $BASEDIR
 ./make-packages.pl -no-updates -packages="$PKGLIST"
+if test ! $? = 0; then
+	echo ""
+	echo "ERROR: make-packages.pl failed."
+	echo ""
+	exit 1
+fi
 
 export GPT_LOCATION=$BASEDIR/gpt-3.0.1
 cd $BASEDIR/package-output
