@@ -57,3 +57,8 @@ BUNDLE gt4-gram-condor
         globus_gram_job_manager_setup_condor
         globus_scheduler_event_generator_condor
         globus_scheduler_event_generator_condor_setup        
+
+BUNDLE gt4-gram-lsf
+        globus_gram_job_manager_setup_lsf
+        globus_scheduler_event_generator_lsf
+        globus_scheduler_event_generator_lsf_setup        
