@@ -529,20 +529,4 @@ public class JobStateMonitor
             }
         }
     }
-    
-    private class ShutdownHook extends Thread
-    {
-        JobStateMonitor jsm;
-        public ShutdownHook(JobStateMonitor jsm)
-        {
-            this.jsm = jsm;
-        }
-
-        public void run()
-        {
-            logger.debug("stopping JSM");
-            this.stop();
-            logger.debug("JSM stopped");
-        }
-    }
 }
