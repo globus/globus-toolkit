@@ -376,7 +376,7 @@ globus_i_gsi_callback_cred_verify(
     globus_result_t                     result = GLOBUS_SUCCESS;
     X509 *                              tmp_cert = NULL;
     static char *                       _function_name_ = 
-        "globus_i_gsi_callback_proxy_verify";
+        "globus_i_gsi_callback_cred_verify";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
     
@@ -935,7 +935,10 @@ globus_i_gsi_callback_check_gaa_auth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
-            ("Error checking authorization"));
+            ("Error checking certificate with subject %s"
+             "against signing policy file %s",
+             subject_name == NULL ? "NULL" : subject_name,
+             ca_policy_file_path == NULL ? "NULL" : ca_policy_file_path));
         x509_context->error = X509_V_ERR_INVALID_PURPOSE; 
         
         oldgaa_globus_cleanup(&oldgaa_sc,
