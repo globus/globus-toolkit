@@ -533,7 +533,7 @@ globus_gram_http_client_callback( void *                 arg,
 				  globus_size_t          nbytes,
 				  int                    errorcode)
 {
-    globus_gram_client_callback_func_t *   userfunc;
+    globus_gram_client_callback_func_t     userfunc;
     globus_byte_t *                        reply;
     globus_size_t                          replysize;
     char *                                 url;
@@ -576,9 +576,9 @@ globus_gram_http_client_callback( void *                 arg,
 			      GLOBUS_NULL );
 
     globus_io_handle_get_user_pointer( handle,
-				       (void *) userfunc );
+				       (void **) &userfunc );
     
-    (*userfunc)(arg, url, job_status, failure_code);
+    (userfunc)(arg, url, job_status, failure_code);
 
     my_free(url);
 }	      
@@ -1034,7 +1034,7 @@ globus_gram_http_callback_disallow(char *   httpsurl)
     }
     
     if (!handle)
-	return GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT;
+	return GLOBUS_GRAM_CLIENT_ERROR_CALLBACK_NOT_FOUND;
 
     globus_list_remove(&globus_i_gram_http_listeners, list);
     my_free(listener);
@@ -1789,7 +1789,7 @@ globus_gram_http_pack_status_update_message(
 			 status,
 			 failure_code );
 	     
-    *replysize = strlen(*reply);
+    *replysize = (globus_size_t)(strlen((char *)*reply) + 1);
     
     return GLOBUS_SUCCESS;
 }

@@ -277,20 +277,20 @@ static globus_bool_t               graml_jm_can_exit = GLOBUS_TRUE;
 }
 
 #define GRAM_TIMED_WAIT(wait_time) { \
-    globus_abstime_t abs; \
-    int save_errno; \
-    abs.tv_sec = time(GLOBUS_NULL) + wait_time; \
-    abs.tv_nsec = 0; \
-    while(1) \
-    { \
-        save_errno = globus_cond_timedwait(&graml_api_cond, \
-			                   &graml_api_mutex, \
-                                           &abs); \
-        if(save_errno == ETIMEDOUT) \
-        { \
-	    break; \
-        } \
-    } \
+     globus_abstime_t abs; \
+     int save_errno; \
+     abs.tv_sec = time(GLOBUS_NULL) + wait_time; \
+     abs.tv_nsec = 0; \
+     while(!graml_jm_done) \
+     { \
+         save_errno = globus_cond_timedwait(&graml_api_cond, \
+                                            &graml_api_mutex, \
+                                            &abs); \
+         if(save_errno == ETIMEDOUT) \
+         { \
+           break; \
+         } \
+     } \
 }
 
 /******************************************************************************
@@ -1574,11 +1574,15 @@ int main(int argc,
 	GRAM_LOCK;
         while (!graml_jm_done)
         {
-	    GRAM_TIMED_WAIT(request->poll_frequency);
-	    
 	    /* 
-	     * handler may have occurred while we were unlocked,
-	     * so we need to poll file descriptors, etc
+	     * The only thing that can wake this up prematurely is a request
+	     * from the client to cancel the job.
+	     */
+	    GRAM_TIMED_WAIT(request->poll_frequency);
+
+	    /*
+	     * stuff may have occurred while we were unlocked,
+	     * so we need to poll file descriptors, etc to see
 	     * if state change occurred
 	     */
 	    if (!graml_jm_done)
@@ -1659,13 +1663,10 @@ int main(int argc,
 	 */
 	while (!graml_jm_can_exit)
 	{
-	    GRAM_UNLOCK;
-	    globus_poll_nonblocking();
-	    GRAM_LOCK;
 	    globus_cond_wait(&graml_api_cond, &graml_api_mutex);
 	}
-
 	GRAM_UNLOCK;
+
 	globus_callback_unregister(stat_cleanup_poll_handle);
 	globus_callback_unregister(gass_poll_handle);
 
@@ -3965,7 +3966,10 @@ globus_l_jm_http_query_callback( void *               arg,
 	 * NOTE: old code set state to FAILED. Shouldn't it be DONE?
 	 */
 	status = request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;  
-	graml_jm_done = 1;
+	/*
+	 * wake up the timed() wait in the main routine
+	 */
+	graml_jm_done = GLOBUS_TRUE;
 	globus_cond_signal(&graml_api_cond);
 	GRAM_UNLOCK;
     }
@@ -4081,7 +4085,7 @@ globus_l_jm_http_query_send_reply:
 	grami_fprintf( request->jobmanager_log_fp, "JM : sending reply:\n");
 	for (i=0; i<sendsize; i++)
 	{
-	    grami_fprintf( request->jobmanager_log_fp, "%c", i);
+	    grami_fprintf( request->jobmanager_log_fp, "%c", sendbuf[i]);
 	}
 	grami_fprintf( request->jobmanager_log_fp, "-------------------\n");
     }

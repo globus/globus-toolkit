@@ -1,7 +1,7 @@
 #include "globus_gram_client.h"
 
 static char *
-globus_l_gram_client_error_strings[] =
+globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 {
   /* 
    * these error strings are phrased to fit grammatically into 
@@ -101,8 +101,9 @@ globus_l_gram_client_error_strings[] =
 /*  90 */     "the packing of information into a HTTP message failed",
 /*  91 */     "an incoming HTTP message did not contain the expected information",
 /*  92 */     "the job manager does not support the service that the client requested",
-/*  93 */     "the gatekeeper failed to find the requested service"
-/*  94 */     "the jobmanager does not accept any new requests (shutting down)"
+/*  93 */     "the gatekeeper failed to find the requested service",
+/*  94 */     "the jobmanager does not accept any new requests (shutting down)",
+/*  95 */     "the client failed to close the listener associated with the callback URL"
 };
 
 const char *
