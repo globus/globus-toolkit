@@ -1013,7 +1013,8 @@ globus_gsi_proxy_sign_req(
         X509_EXTENSION_free(extension);
     }
 
-    if(position = X509_get_ext_by_NID(issuer_cert, NID_ext_key_usage, -1) > -1)
+    if((position =
+        X509_get_ext_by_NID(issuer_cert, NID_ext_key_usage, -1)) > -1)
     {
         if(!(extension = X509_get_ext(issuer_cert, position)))
         {
