@@ -29,6 +29,7 @@ struct _gsi_socket
     int				error_number;
     OM_uint32			major_status;
     OM_uint32			minor_status;
+    char			*expected_peer_name;
     char			*peer_name;
     /* Buffer to hold unread, unwrapped data */
     char			*input_buffer;
@@ -524,6 +525,11 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
 	free(self->input_buffer);
     }
 
+    if (self->expected_peer_name != NULL)
+    {
+	free(self->expected_peer_name);
+    }
+    
     if (self->peer_name != NULL)
     {
 	free(self->peer_name);
@@ -679,6 +685,38 @@ GSI_SOCKET_set_encryption(GSI_SOCKET *self,
 }
 
 
+int
+GSI_SOCKET_set_expected_peer_name(GSI_SOCKET *self,
+				  const char *name)
+{
+    if (self == NULL)
+    {
+	return GSI_SOCKET_ERROR;
+    }
+
+    if (self->peer_name != NULL)
+    {
+	self->error_string = strdup("Already connected to peeer");
+	return GSI_SOCKET_ERROR;
+    }
+    
+    if (name == NULL)
+    {
+	self->error_string = strdup("Bad name");
+	return GSI_SOCKET_ERROR;
+    }
+    
+    self->expected_peer_name = strdup(name);
+
+    if (self->expected_peer_name == NULL)
+    {
+	self->error_number = errno;
+	return GSI_SOCKET_ERROR;
+    }
+
+    return GSI_SOCKET_SUCCESS;
+}  
+
 /* XXX This routine really needs a complete overhaul */
 int
 GSI_SOCKET_use_creds(GSI_SOCKET *self,
@@ -733,40 +771,58 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	goto error;
     }
 
-    /*
-     * Get the FQDN of server from the socket
-     */
-    if (getpeername(self->sock, (struct sockaddr *) &server_addr,
-		    &server_addr_len) < 0)
+    if (self->expected_peer_name == NULL)
     {
-	self->error_number = errno;
-	self->error_string = strdup("Could not get server address");
-	goto error;
-    }
+	/*
+	 * No expected peer name supplied, use "host/<fqdn>"
+	 */
 
-    server_info = gethostbyaddr((char *) &server_addr.sin_addr,
-				sizeof(server_addr.sin_addr),
-				server_addr.sin_family);
+	if (getpeername(self->sock, (struct sockaddr *) &server_addr,
+			&server_addr_len) < 0)
+	{
+	    self->error_number = errno;
+	    self->error_string = strdup("Could not get server address");
+	    goto error;
+	}
+
+	server_info = gethostbyaddr((char *) &server_addr.sin_addr,
+				    sizeof(server_addr.sin_addr),
+				    server_addr.sin_family);
     
-    if ((server_info == NULL) || (server_info->h_name == NULL))
-    {
-	self->error_number = errno;
-	self->error_string = strdup("Could not get server hostname");
-	goto error;
+	if ((server_info == NULL) || (server_info->h_name == NULL))
+	{
+	    self->error_number = errno;
+	    self->error_string = strdup("Could not get server hostname");
+	    goto error;
+	}
+
+	server_name = (char *) malloc(strlen(DEFAULT_SERVICE_NAME) +
+				      strlen(server_info->h_name) + 
+				      2 /* 1 for '@', 1 for NUL */);
+
+	if (server_name == NULL)
+	{
+	    self->error_string = strdup("malloc() failed");
+	    goto error;
+	}
+
+	sprintf(server_name, "%s@%s", DEFAULT_SERVICE_NAME,
+		server_info->h_name);
     }
-
-    server_name = (char *) malloc(strlen(DEFAULT_SERVICE_NAME) +
-				  strlen(server_info->h_name) + 
-				  2 /* 1 for '@', 1 for NUL */);
-
-    if (server_name == NULL)
+    else 
     {
-	self->error_string = strdup("malloc() failed");
-	goto error;
+	/*
+	 * Use supplied expected peer name
+	 */
+	server_name = strdup(self->expected_peer_name);
+	
+	if (server_name == NULL)
+	{
+	    self->error_number = errno;
+	    goto error;
+	}
     }
-
-    sprintf(server_name, "%s@%s", DEFAULT_SERVICE_NAME, server_info->h_name);
-    
+	
     req_flags |= GSS_C_REPLAY_FLAG;
     req_flags |= GSS_C_MUTUAL_FLAG;
 

@@ -74,6 +74,19 @@ int GSI_SOCKET_set_encryption(GSI_SOCKET *gsi_socket,
 			     int value);
 
 /*
+ * GSI_SOCKET_set_expected_peer_name()
+ *
+ * This should be called before GSI_SOCKET_authentication_init() to
+ * set the expected name of the entity we are connecting do. By default
+ * an appropriate service name will be expected. This allows the
+ * connector to set it to anything they desire.
+ *
+ * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
+ */
+int GSI_SOCKET_set_expected_peer_name(GSI_SOCKET *gsi_socket,
+				      const char *name);
+
+/*
  * GSI_SOCKET_authentication_init()
  *
  * Perform the client-side authentication process.
