@@ -67,7 +67,7 @@ closedir(ACLOCAL);
 open (OUTPUT, ">$aclocal/automake_rules");
 
 my ($d, $t);
-my ($link, $unlink, $rules, $filelist, $phony) = ("link: link-recursive ","unlink: unlink-recursive ","", "filelist: filelist_file filelist-recursive ",".PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-am");
+my ($link, $unlink, $rules, $filelist, $phony) = ("link: link-recursive ","unlink: unlink-recursive ","", "filelist: filelist-recursive ",".PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-am");
 for $d (@installdirs) {
   my @targets = @{$installdir_target_list{$d}};
   for $t (@targets) {
@@ -90,7 +90,7 @@ print OUTPUT $rules;
 close OUTPUT;
 
 my $result = `cat $aclocal/subdirs.am >> $aclocal/automake_rules`;
-my $result = `cat $aclocal/filelist.am >> $aclocal/automake_rules`;
+my $result = `cat $aclocal/filelist.am > $aclocal/automake_top_rules`;
 
 
 sub generate_rule
