@@ -506,12 +506,12 @@ int main(int argc,
      */
     for (i = 1; i < argc; i++)
     {
-        if ((strcmp(argv[i], "-read_rsl_file") == 0)
+        if ((strcmp(argv[i], "-read-rsl-file") == 0)
                  && (i + 1 < argc))
         {
             strcpy(read_rsl_file, argv[i+1]); i++;
         }
-        else if ((strcmp(argv[i], "-write_rsl_file") == 0)
+        else if ((strcmp(argv[i], "-write-rsl-file") == 0)
                  && (i + 1 < argc))
         {
             strcpy(write_rsl_file, argv[i+1]); i++;
@@ -535,41 +535,41 @@ int main(int argc,
         {
             libexecdir = argv[i+1]; i++;
         }
-        else if (strcmp(argv[i], "-publish_jobs") == 0)
+        else if (strcmp(argv[i], "-publish-jobs") == 0)
         {
             publish_jobs_flag = 1;
         }
-        else if ((strcmp(argv[i], "-condor_arch") == 0)
+        else if ((strcmp(argv[i], "-condor-arch") == 0)
                  && (i + 1 < argc))
         {
             conf.condor_arch = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-condor_os") == 0)
+        else if ((strcmp(argv[i], "-condor-os") == 0)
                  && (i + 1 < argc))
         {
             conf.condor_os = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_org_dn") == 0)
+        else if ((strcmp(argv[i], "-globus-org-dn") == 0)
                  && (i + 1 < argc))
         {
             conf.org_dn = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_gatekeeper_host") == 0)
+        else if ((strcmp(argv[i], "-globus-gatekeeper-host") == 0)
                  && (i + 1 < argc))
         {
             conf.gate_host = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_gatekeeper_port") == 0)
+        else if ((strcmp(argv[i], "-globus-gatekeeper-port") == 0)
                  && (i + 1 < argc))
         {
             conf.gate_port = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_gatekeeper_subject") == 0)
+        else if ((strcmp(argv[i], "-globus-gatekeeper-subject") == 0)
                  && (i + 1 < argc))
         {
             conf.gate_subject = globus_libc_strdup(argv[i+1]); i++;
@@ -581,37 +581,37 @@ int main(int argc,
             conf.rdn = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_host_dn") == 0)
+        else if ((strcmp(argv[i], "-globus-host-dn") == 0)
                  && (i + 1 < argc))
         {
             conf.host_dn = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_host_manufacturer") == 0)
+        else if ((strcmp(argv[i], "-globus-host-manufacturer") == 0)
                  && (i + 1 < argc))
         {
             conf.host_manufacturer = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_host_cputype") == 0)
+        else if ((strcmp(argv[i], "-globus-host-cputype") == 0)
                  && (i + 1 < argc))
         {
             conf.host_cputype = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_host_osname") == 0)
+        else if ((strcmp(argv[i], "-globus-host-osname") == 0)
                  && (i + 1 < argc))
         {
             conf.host_osname = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_host_osversion") == 0)
+        else if ((strcmp(argv[i], "-globus-host-osversion") == 0)
                  && (i + 1 < argc))
         {
             conf.host_osversion = globus_libc_strdup(argv[i+1]); i++;
             conf.num_env_adds++;
         }
-        else if ((strcmp(argv[i], "-globus_install_path") == 0)
+        else if ((strcmp(argv[i], "-globus-install-path") == 0)
                  && (i + 1 < argc))
         {
             conf.install_path = globus_libc_strdup(argv[i+1]); i++;
@@ -625,25 +625,26 @@ int main(int argc,
             fprintf(stderr, "Required Arguments:\n");
             fprintf(stderr, "\t-type jobmanager type, i.e. fork, lsf ...\n");
             fprintf(stderr, "\t-rdn relative domain name\n");
-            fprintf(stderr, "\t-globus_org_dn organization's domain name\n");
-            fprintf(stderr, "\t-globus_host_dn host domain name\n");
-            fprintf(stderr, "\t-globus_host_manufacturer manufacturer\n");
-            fprintf(stderr, "\t-globus_host_cputype cputype\n");
-            fprintf(stderr, "\t-globus_host_osname osname\n");
-            fprintf(stderr, "\t-globus_host_osversion osversion\n");
-            fprintf(stderr, "\t-globus_gatekeeper_host host\n");
-            fprintf(stderr, "\t-globus_gatekeeper_port port\n");
-            fprintf(stderr, "\t-globus_gatekeeper_subject subject\n");
+            fprintf(stderr, "\t-globus-org-dn organization's domain name\n");
+            fprintf(stderr, "\t-globus-host-dn host domain name\n");
+            fprintf(stderr, "\t-globus-host-manufacturer manufacturer\n");
+            fprintf(stderr, "\t-globus-host-cputype cputype\n");
+            fprintf(stderr, "\t-globus-host-osname osname\n");
+            fprintf(stderr, "\t-globus-host-osversion osversion\n");
+            fprintf(stderr, "\t-globus-gatekeeper-host host\n");
+            fprintf(stderr, "\t-globus-gatekeeper-port port\n");
+            fprintf(stderr, "\t-globus-gatekeeper-subject subject\n");
             fprintf(stderr, "\nNon-required Arguments:\n");
             fprintf(stderr, "\t-home deploy dir\n");
             fprintf(stderr, "\t-e libexec dir\n");
-            fprintf(stderr, "\t-e globus_install_path dir\n");
-            fprintf(stderr, "\t-e condor_arch arch, i.e. SUN4x\n");
-            fprintf(stderr, "\t-e condor_os os, i.e. SOLARIS26\n");
+            fprintf(stderr, "\t-globus-install-path dir\n");
+            fprintf(stderr, "\t-condor-arch arch, i.e. SUN4x\n");
+            fprintf(stderr, "\t-condor-os os, i.e. SOLARIS26\n");
+            fprintf(stderr, "\t-publish-jobs\n");
             fprintf(stderr, "\t-d write a log file in the users home dir\n");
             fprintf(stderr, "\n");
             fprintf(stderr, "Note: if type=condor then\n");
-            fprintf(stderr, "      -condor_os & -condor_arch are required.\n");
+            fprintf(stderr, "      -condor-os & -condor-arch are required.\n");
             fprintf(stderr, "\n");
             exit(1);
         }
