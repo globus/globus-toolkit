@@ -4,9 +4,9 @@ BEGIN
 {
     use Config;
 
-    push(@INC, "@GLOBUS_LOCATION@/lib/perl");
-    $ENV{GLOBUS_LOCATION} =
-        "@GLOBUS_LOCATION@" if(!exists($ENV{GLOBUS_LOCATION}));
+    push(@INC, '@GLOBUS_LOCATION@/lib/perl');
+    $ENV{GLOBUS_LOCATION} = '@GLOBUS_LOCATION@'
+        if(!exists($ENV{GLOBUS_LOCATION}));
 }
 
 my $path = $ENV{GLOBUS_LOCATION} . '/lib';
@@ -28,7 +28,7 @@ my($manager_name, $argument_file, $command) = (undef, undef, undef);
 GetOptions('manager-name|m=s' => \$manager_name,
            'argument-file|f=s' => \$argument_file,
 	   'command|c=s' => \$command);
-STDOUT->autoflush();
+$|=1;
 
 if((!defined($manager_name)) ||
    (!defined($argument_file)) ||
@@ -42,8 +42,24 @@ my $job_description = new Globus::GRAM::JobDescription($argument_file);
 
 eval "require $manager_class";
 
-if($@) {
-    &fail(Globus::GRAM::Error::GATEKEEPER_MISCONFIGURED);
+if($@)
+{
+    my $error_string = $@;
+
+    if (defined($job_description) && defined($job_description->logfile()))
+    {
+        my $log = $job_description->logfile;
+
+        local(*FH);
+
+        open(FH, ">>$log") || &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
+
+        print FH "JobManagerScript: Error loading $manager_class:\n",
+            $error_string;
+        close(FH);
+
+    }
+    &fail(Globus::GRAM::Error::BAD_SCRIPT_ARG_FILE);
 }
 
 $manager = new $manager_class($job_description) or
@@ -70,7 +86,7 @@ sub fail
 {
     my $error = shift;
 
-    print "GRAM_SCRIPT_ERROR:" . $error->value() . "\n";
+    print 'GRAM_SCRIPT_ERROR:', $error->value(), "\n";
     exit 1;
 }
 
