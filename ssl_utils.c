@@ -934,7 +934,7 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
 		 const char			*pass_phrase)
 {
     BIO				*bio = NULL;
-    EVP_CIPHER			*cipher;
+    const EVP_CIPHER		*cipher;
     int				pass_phrase_len;
     int				cert_chain_index;
     int				return_status = SSL_ERROR;
