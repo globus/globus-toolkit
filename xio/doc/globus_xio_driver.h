@@ -70,7 +70,7 @@
  *        driver then has a context.  The context allows the user to do some
  *        complex things that will be described later.
  *
- *    globus_xio_target_t
+ *    globus_xio_stack_t
  *        This structure provides the driver with information about the
  *        driver stack  It is mainly used for creating context as a
  *        parameter to lobus_xio_driver_open()..
@@ -158,6 +158,7 @@
  */
 
 /**
+ *  @ingroup driver_interface_grp
  *  give a caller a reference to the driver structure
  */
 typedef globus_result_t
@@ -178,14 +179,34 @@ typedef globus_result_t
  *  globus_xio_driver_attr_destroy_t
  */
 /**
+ *  @ingroup driver_interface_grp
+ *  Create a driver specific attribute.
  *
+ *  The driver should implement this function to create a driver 
+ *  specific attribute and return it via the out_attr parameter. 
+ * 
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_init_t)(
     void **                                     out_attr);
 
 /**
+ *  @ingroup driver_interface_grp
+ *  get or set information in an attr.
  *
+ *  The cmd parameter determines what functionality the user is requesting.
+ *  The driver is resonsible for providing documentation to the user on
+ *  all the possible values that cmd can be.
+ *
+ *  @param attr
+ *         The driver specific attr, created by globus_xio_driver_attr_init_t.
+ *
+ *  @param cmd
+ *         An integer representing what functionality the user is requesting.
+ *
+ *  @param ap
+ *         variable arguments.  These are determined by the driver and the 
+ *         value of cmd.
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_cntl_t)(
@@ -194,7 +215,11 @@ typedef globus_result_t
     va_list                                     ap);
 
 /**
+ *  @ingroup driver_interface_grp
+ *  Copy a driver attr.
  *
+ *  When this function is called the driver will create a copy of the attr 
+ *  in parameter src and place it in the parameter dst.
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_copy_t)(
@@ -202,15 +227,38 @@ typedef globus_result_t
     void *                                      src);
 
 /**
+ *  @ingroup driver_interface_grp
+ *  Destroy the driver attr.
+ *
+ *  Clean up all resources associate with the attr. 
  *
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_destroy_t)(
     void *                                      attr);
 
-
 /**
- * like create_listener
+ *  @ingroup driver_interface_grp
+ *  Initialize a server object
+ *
+ *  The driver developer should implement this function if their driver
+ *  handles server operations (pasive opens).  In the tcp driver this 
+ *  function should create a listener.
+ *
+ *  @param out_server
+ *         An output parameter.  Upon return from this function this
+ *         should point to user defined memory that will serve as a 
+ *         handle to this server object.
+ *
+ *  @param server_attr
+ *         A server attr if the user specified any driver specific 
+ *         attributes.  This may be NULL.
+ *
+ *  @param stack
+ *         The stack object.  This contains information explaining
+ *         the stack of drivers that the user wished to use.  I can be used
+ *         to create contexts and will be valid until server_destroy is 
+ *         called.  TODO: or should we copy it?
  */
 typedef globus_result_t
 (*globus_xio_driver_server_init_t)(
@@ -219,25 +267,124 @@ typedef globus_result_t
     globus_xio_driver_stack_t                   stack);
 
 /**
- *  acts like register accept
+ *  @ingroup driver_interface_grp
+ *  Accept a server connection
+ *
+ *  The driver developer should implement this function if their driver 
+ *  handles server operations.  Once the accept operation complets the
+ *  connection is esstablished.  The user still has an opertunity to
+ *  open the target or destroy it.  The can query the target for 
+ *  additional information on which to base a decision to open upon.
+ *
+ *  @param out_target
+ *         When the operation completes the driver should point this 
+ *         out parameter to an area of memory that will be used as a 
+ *         handle to this target.
+ *
+ *  @param target_attr
+ *         If a driver specific attribute was set this will point to it.
+ *         Ths parameter may be NULL.
+ *
+ *  @param server
+ *         The server object from which the target connection will be 
+ *         accepted.
+ *
+ *  @param op
+ *         The reuqested operation.  When the driver is finished acepting
+ *         the server connection it uses this structure to signal globus_xio 
+ *         that it has completed the operation.
  */
 typedef globus_result_t
-(*globus_xio_driver_server_accept)(
+(*globus_xio_driver_server_accept_t)(
     void **                                     out_target,
     void *                                      target_attr,
     void *                                      server,
     globus_xio_driver_operation_t               op);
 
+/**
+ *  @ingroup driver_interface_grp
+ *  Query a server for information.
+ *
+ *  This function allows a user to request information from a driver
+ *  specific server handle.
+ *
+ *  @param server
+ *         the server handle.
+ *
+ *  @param cmd
+ *         An integer telling the driver what operation to preform on this
+ *         server handle.
+ *
+ *  @param ap
+ *         variable args.
+ */
 typedef globus_result_t
-(*globus_xio_driver_target_init)(
+(*globus_xio_driver_server_cntl_t)(
+    void *                                      server,
+    int                                         cmd,
+    va_list                                     ap);
+
+
+/**
+ *  @ingroup driver_interface_grp
+ *  destroy a server.
+ *
+ *  When this function is called the driver should free up all resources
+ *  associated with a server.
+ *
+ *  @param server
+ *         The server that the driver should clean up.
+ */
+typedef globus_result_t
+(*globus_xio_driver_server_destroy_t)(
+    void *                                      server);
+
+/**
+ *  @ingroup driver_interface_grp
+ *  Initalize a target.
+ *
+ *  This function is only called when the user is setting up a client
+ *  target.  It does not imply any i/o operation will be preformed.  It
+ *  mearly gives the driver a chance to set up memory for a client target.
+ *
+ *  @param out_target
+ *         An output parameter.  upon return from this function this should
+ *         point to a area of memory that will serve as a handle to the
+ *         target.
+ *
+ *  @param target_attr
+ *         If the user added any driver specific attributes for this 
+ *         operation this will point to a driver specific operation.
+ *
+ *  @param contact_string
+ *         The contact string to which the user wishes to open a connection.
+ *
+ *  @param stack
+ *         The stack object.  This contains information explaining
+ *         the stack of drivers that the user wished to use.  I can be used
+ *         to create contexts and will be valid until server_destroy is 
+ *         called.  TODO: or should we copy it?
+ */
+typedef globus_result_t
+(*globus_xio_driver_target_init_t)(
     void **                                     out_target,
     void *                                      target_attr,
     const char *                                contact_string,
     globus_xio_driver_stack_t                   stack);
 
+/**
+ *  @ingroup driver_interface_grp
+ *  destroy a target
+ *
+ *  The driver should clean up all resources associated with the target
+ *  when this function is called.
+ *
+ *  @param target
+ *         The target to be destroyed.
+ */
 typedef globus_result_t
-(*globus_xio_driver_server_destroy)(
-    void *                                      server);
+(*globus_xio_driver_target_destroy_t)(
+    void *                                      target);
 
 
 /**********************************************************************
@@ -263,7 +410,8 @@ typedef globus_result_t
  *         interface funstion.
  *
  *  @param target
- *         Hold stack information.
+ *         Holds stack information and tells the user how to preform the
+ *         open operation.
  * 
  *  @param server
  *         If a passive open is requested this will be the value passed 
@@ -421,15 +569,32 @@ globus_xio_driver_context_compatable_operation(
     globus_xio_driver_context_t                 context,
     globus_xio_driver_operation_t               operation);
 
+/**
+ *  Is Operation blocking.
+ *  @ingroup driver_api_grp
+ *
+ *  If the operation is blocking the driver developer may be able to make
+ *  certian optimizations.  The function returns true if the given operation
+ *  was created via a user call to a blocking funciton.
+ */
+globus_bool_t
+globus_xio_driver_operation_is_blocking(
+    globus_xio_driver_operation_t               operation);
 
 /*
  * getting general xio parameters from within driver
+ */
+/**
+ *  @ingroup driver_api_grp
  */
 globus_result_t
 globus_xio_driver_get_handle(
     globus_xio_handle_t *                       handle,
     globus_xio_driver_operation_t               operation);
 
+/**
+ *  @ingroup driver_api_grp
+ */
 globus_result_t
 globus_xio_driver_get_handle_attr(
     globus_xio_attr_t *                         handle,
@@ -892,15 +1057,19 @@ typedef struct globus_xio_driver_s
     globus_xio_driver_read_t                            read_func;
     globus_xio_driver_write_t                           write_func;
     globus_xio_driver_handle_cntl_t                     handle_cntl_func;
+    int                                                 max_handle_cntl_cmd;
 
+    globus_xio_driver_target_init_t                     target_init_func;
+    globus_xio_driver_target_destroy_t                  target_destroy_finc;
 
     /*
      * target init functions.  Must have client or server
      */
-    globus_xio_driver_server_accept    target_server_init_func;
-    globus_xio_driver_target_init    target_client_init_func;
-    globus_xio_driver_target_cntl_t         target_cntl;
-    globus_xio_driver_target_destroy        target_client_destroy_func;
+    globus_xio_driver_server_init_t                     server_init_func;
+    globus_xio_driver_server_accept_t                   server_accept_func;
+    globus_xio_driver_server_destroy_t                  server_destroy_func;
+    globus_xio_driver_server_cntl_t                     server_cntl_func;
+    int                                                 max_server_cntl_cmd;
 
     /*
      *  driver attr functions.  All or none may be NULL
@@ -909,7 +1078,8 @@ typedef struct globus_xio_driver_s
     globus_xio_driver_attr_copy_t                       attr_copy_func;
     globus_xio_driver_attr_cntl_t                       attr_cntl_func;
     globus_xio_driver_attr_destroy_t                    attr_destroy_func;
-
+    int                                                 max_attr_cntl_cmd;
+    
     /*
      *  data descriptor functiosn.  All or none
      */
@@ -917,6 +1087,7 @@ typedef struct globus_xio_driver_s
     globus_xio_driver_driver_data_descriptor_copy_t     dd_copy;
     globus_xio_driver_driver_data_descriptor_destroy_t  dd_destroy;
     globus_xio_driver_driver_data_descriptor_cntl_t     dd_cntl;
+    int                                                 max_dd_cntl_cmd;
 };
 /*******************************************************************
  *                        signal stuff
@@ -947,7 +1118,7 @@ globus_result_t
 globus_xio_driver_context_cntl(
      globus_xio_driver_context_t                context,
      int                                        cmd,
-     va_list                                    ap);
+     ...);
 
 /**
  *  @ingroup driver_api_grp
