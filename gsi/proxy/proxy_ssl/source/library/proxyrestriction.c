@@ -5,6 +5,17 @@
 
 #include "proxyrestriction.h"
 
+/**
+ * @ingroup proxyrestriction
+ *  
+ * Creates an ASN1_METHOD structure, which contains
+ * pointers to routines that convert any PROXYRESTRICTION
+ * structure to its associated ASN1 DER encoded form
+ * and vice-versa.
+ *
+ * @return the ASN1_METHOD object
+ */
+
 ASN1_METHOD * PROXYRESTRICTION_asn1_meth()
 {
     static ASN1_METHOD proxyrestriction_asn1_meth =
@@ -17,6 +28,13 @@ ASN1_METHOD * PROXYRESTRICTION_asn1_meth()
     return (&proxyrestriction_asn1_meth);
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Allocates and initializes a new PROXYRESTRICTION structure.
+ *
+ * @return pointer to the new PROXYRESTRICTION
+ */
 PROXYRESTRICTION * PROXYRESTRICTION_new()
 {
     ASN1_CTX                            c;
@@ -31,6 +49,13 @@ PROXYRESTRICTION * PROXYRESTRICTION_new()
     M_ASN1_New_Error(ASN1_F_PROXYRESTRICTION_NEW);
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Frees a PROXYRESTRICTION
+ *
+ * @param restriction the proxy restriction to free
+ */
 void PROXYRESTRICTION_free(
     PROXYRESTRICTION *                  restriction)
 {
@@ -40,6 +65,18 @@ void PROXYRESTRICTION_free(
     OPENSSL_free(restriction);
 }
 
+/**
+ * @ingroup proxyrestriction
+ * 
+ * Makes a copy of the proxyrestriction - this function
+ * allocates space for a new PROXYRESTRICTION, so the
+ * returned PROXYRESTRICTION must be freed when
+ * its no longer needed
+ *
+ * @param restriction the proxy restriction to copy
+ *
+ * @return the new PROXYRESTRICTION
+ */
 PROXYRESTRICTION * PROXYRESTRICTION_dup(
     PROXYRESTRICTION *                  restriction)
 {
@@ -48,6 +85,15 @@ PROXYRESTRICTION * PROXYRESTRICTION_dup(
                                           (char *)restriction));
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Compares two PROXYRESTRICTION structs for equality
+ * This function first compares the policy language numeric
+ * id's, if they're equal, it then compares the two policies.
+ *
+ * @return 1 if equal, 0 if not
+ */
 int PROXYRESTRICTION_cmp(
     const PROXYRESTRICTION *            a,
     const PROXYRESTRICTION *            b)
@@ -61,6 +107,16 @@ int PROXYRESTRICTION_cmp(
     return 0;
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Prints the PROXYRESTRICTION struct using the BIO stream
+ *
+ * @param bp the BIO stream to print to
+ * @param restriction the PROXYRESTRICTION to print
+ *
+ * @return the number of bytes printed, -1 or -2 on error
+ */
 int PROXYRESTRICTION_print(
     BIO *                               bp,
     PROXYRESTRICTION *                  restriction)
@@ -94,6 +150,16 @@ int PROXYRESTRICTION_print(
     return (ret + tmpret);
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Prints the PROXYRESTRICTION to the file stream FILE*
+ *
+ * @param fp the FILE* stream to print to
+ * @param restriction the PROXYRESTRICTION to print
+ *
+ * @return number of bytes printed, -2 or -1 on error
+ */
 int PROXYRESTRICTION_print_fp(
     FILE *                              fp,
     PROXYRESTRICTION *                  restriction)
@@ -108,6 +174,15 @@ int PROXYRESTRICTION_print_fp(
     return (ret);
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Sets the policy language of the PROXYRESTRICTION
+ *
+ * @param restriction the PROXYRESTRICTION to set the policy language of
+ * @param policy_language the policy language to set it to
+ *
+ * @return 
 int PROXYRESTRICTION_set_policy_language(
     PROXYRESTRICTION *                  restriction,
     ASN1_OBJECT *                       policy_language)
