@@ -6,7 +6,7 @@ libexec_PROGRAMS = globus-libc-hostname
 
 EXTRA_DIST = $(sbin_SCRIPTS) $(bin_SCRIPTS)
 
-INCLUDES = -I $(top_srcdir)/library $(GPT_INCLUDES) 
+INCLUDES = -I$(top_srcdir)/library $(GPT_INCLUDES) 
 
 globus_libc_hostname_SOURCES = globus_libc_hostname.c
 
