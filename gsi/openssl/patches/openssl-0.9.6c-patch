@@ -1,6 +1,6 @@
 diff -u -r openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
 --- openssl-0.9.6c/Configure	Thu Dec  6 07:11:39 2001
-+++ openssl-0.9.6c-patched/Configure	Tue Feb 12 21:33:32 2002
++++ openssl-0.9.6c-patched/Configure	Fri Feb 15 09:03:12 2002
 @@ -329,8 +329,8 @@
  # The intel boxes :-), It would be worth seeing if bsdi-gcc can use the
  # bn86-elf.o file file since it is hand tweaked assembler.
@@ -58,7 +58,7 @@ diff -u -r openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
  while (<IN>)
 diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
 --- openssl-0.9.6c/Makefile.org	Wed Nov 14 04:44:11 2001
-+++ openssl-0.9.6c-patched/Makefile.org	Wed Feb 13 09:21:09 2002
++++ openssl-0.9.6c-patched/Makefile.org	Fri Feb 15 09:14:57 2002
 @@ -231,33 +231,42 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -199,7 +199,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  			-h lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
  			$${OBJS} $$libs ${EX_LIBS} ) || exit 1; \
  		libs="$$libs -l$$i"; \
-@@ -352,10 +386,15 @@
+@@ -352,33 +386,39 @@
  	if ${DETECT_GNU_LD}; then \
  		$(MAKE) do_gnu-shared; \
  	else \
@@ -218,7 +218,41 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  		libs="$$libs -l$$i"; \
  		done; \
  	fi
-@@ -409,14 +448,14 @@
+ 
+ # This assumes that GNU utilities are *not* used
+ do_hpux-shared:
+-	libs='${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
++	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+ 	( set -x; /usr/ccs/bin/ld +vnocompatwarnings \
+-		-b -z -o lib$$i.sl.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		+h lib$$i.sl.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		-Fl lib$$i.a $$libs ${EX_LIBS} -lc ) || exit 1; \
+-	libs="$$libs -L. -l$$i"; \
++		-b -z -o lib$${i}.sl.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		+h $(INSTALLTOP)/lib/lib$${i}.sl.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		-Fl lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	libs="$$libs -l$$i"; \
+ 	done
+ 
+ # This assumes that GNU utilities are *not* used
+ do_hpux64-shared:
+-	libs='${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
+-	( set -x; /usr/ccs/bin/ld -b -z -o lib$$i.sl.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		+h lib$$i.sl.${SHLIB_MAJOR}.${SHLIB_MINOR} \
+-		+forceload lib$$i.a $$libs ${EX_LIBS} -lc ) || exit 1; \
+-	libs="$$libs -L. -l$$i"; \
++	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
++	( set -x; /usr/ccs/bin/ld -b -z -o lib$${i}.sl.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		+h $(INSTALLTOP)/lib/lib$${i}.sl.${SHLIB_MAJOR}.${SHLIB_MINOR} \
++		+forceload lib$${i}.a $$libs ${EX_LIBS} -lc ) || exit 1; \
++	libs="$$libs -l$$i"; \
+ 	done
+ 
++
+ # The following method is said to work on all platforms.  Tests will
+ # determine if that's how it's gong to be used.
+ # This assumes that for all but GNU systems, GNU utilities are *not* used.
+@@ -409,14 +449,14 @@
  #  HP/UX-64bit: /usr/ccs/bin/ld
  #  AIX:		$(CC)
  ALLSYMSFLAG=-bnogc
@@ -239,7 +273,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  	libs="$$libs -l$$i"; \
 diff -u -r openssl-0.9.6c/config openssl-0.9.6c-patched/config
 --- openssl-0.9.6c/config	Wed Dec 19 13:37:41 2001
-+++ openssl-0.9.6c-patched/config	Tue Feb 12 21:33:32 2002
++++ openssl-0.9.6c-patched/config	Fri Feb 15 09:03:12 2002
 @@ -349,9 +349,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -358,7 +392,7 @@ diff -u -r openssl-0.9.6c/config openssl-0.9.6c-patched/config
    sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
 diff -u -r openssl-0.9.6c/crypto/asn1/a_bitstr.c openssl-0.9.6c-patched/crypto/asn1/a_bitstr.c
 --- openssl-0.9.6c/crypto/asn1/a_bitstr.c	Sat Aug  5 20:35:03 2000
-+++ openssl-0.9.6c-patched/crypto/asn1/a_bitstr.c	Tue Feb 12 21:33:32 2002
++++ openssl-0.9.6c-patched/crypto/asn1/a_bitstr.c	Fri Feb 15 09:03:12 2002
 @@ -230,7 +230,7 @@
  	if (a == NULL) return(0);
  	if ((a->length < (w+1)) || (a->data == NULL))
@@ -384,7 +418,7 @@ diff -u -r openssl-0.9.6c/crypto/asn1/a_bitstr.c openssl-0.9.6c-patched/crypto/a
  	return(1);
 diff -u -r openssl-0.9.6c/crypto/asn1/a_d2i_fp.c openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c
 --- openssl-0.9.6c/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
-+++ openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c	Tue Feb 12 21:33:32 2002
++++ openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c	Fri Feb 15 09:03:12 2002
 @@ -169,13 +169,17 @@
  					ASN1err(ASN1_F_ASN1_D2I_BIO,ERR_R_MALLOC_FAILURE);
  					goto err;
