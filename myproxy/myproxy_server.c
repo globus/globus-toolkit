@@ -251,6 +251,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     char  client_buffer[1024];
     int   requestlen;
     int   authorization_ok = 0;
+    int   credentials_exist = 0;
+    int   client_owns_credentials = 0;
     
     myproxy_creds_t *client_creds;          
     myproxy_request_t *client_request;
@@ -385,6 +387,38 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	respond_with_error_and_die(attrs, "Authorization failed");
     }
 
+    /*
+     * Find out if the crentials already exist and if the client owns
+     * them. These values are then used below for further checking.
+     */
+    credentials_exist = myproxy_creds_exist(client_request->username);
+    
+    if (credentials_exist == -1)
+    {
+	myproxy_log_verror();
+	respond_with_error_and_die(attrs,
+				    "Error checking credential existance");
+    }
+    
+    if (credentials_exist == 1)
+    {
+	/* If credentials exist are we the owner? */
+	client_owns_credentials =
+	    myproxy_creds_is_owner(client_request->username,
+				   client_name);
+	
+    } else 
+    {
+	client_owns_credentials = 0;
+    }
+    
+    if (client_owns_credentials == -1)
+    {
+	myproxy_log_verror();
+	respond_with_error_and_die(attrs,
+				    "Error checking credential ownership");
+    }	
+	
     /* Handle client request */
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY:
@@ -412,6 +446,18 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 	myproxy_debug("  Lifetime is %d seconds", client_request->portal_lifetime);
 
+	/*
+	 * If credentials exist, the user must own them
+	 */
+	if (credentials_exist &&
+	    !client_owns_credentials)
+	{
+	    myproxy_log("Username \"%s\" in user by another client",
+			client_request->username);
+	    respond_with_error_and_die(attrs,
+				       "Username in use by another client");
+	}
+
 	/* Set lifetime of credentials on myproxy-server */ 
 	client_creds->lifetime = client_request->portal_lifetime;
 
@@ -429,6 +475,19 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	/* log request type */
         myproxy_log("Received client %s command: DESTROY", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
+
+	/*
+	 * If credentials exist, the user must own them
+	 */
+	if (credentials_exist &&
+	    !client_owns_credentials)
+	{
+	    myproxy_log("Credentials not owned by client",
+			client_request->username);
+	    respond_with_error_and_die(attrs,
+				       "Not owner");
+	}
+
         destroy_proxy(client_creds, server_response);
         break;
     default:

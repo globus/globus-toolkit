@@ -51,6 +51,26 @@ int myproxy_creds_retrieve(struct myproxy_creds *creds);
 int myproxy_creds_delete(const struct myproxy_creds *creds);
 
 /*
+ * myproxy_creds_exist()
+ *
+ * Check to see if the given user already has credentials stored.
+ *
+ * Returns 1 if the user does, 0 if they do not, -1 on error.
+ */
+int myproxy_creds_exist(const char *user_name);
+
+/*
+ * myproxy_creds_is_owner()
+ *
+ * Check to see if the given client is the owner of the credentials
+ * referenced by user_name.
+ *
+ * Returns 1 if the client owns the credentials, 0 if they do not, -1 on error.
+ */
+int myproxy_creds_is_owner(const char *username,
+			   const char *client_name);
+
+/*
  * myproxy_creds_free_contents()
  *
  * Free all the contents of the myproxy_creds structure, but not the

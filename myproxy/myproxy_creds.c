@@ -68,7 +68,53 @@ mystrdup(const char *string)
     return dup;
 }
 
-        
+
+/*
+ * file_exists()
+ *
+ * Check for existance of a file.
+ *
+ * Returns 1 if exists, 0 if not, -1 on error.
+ */
+static int
+file_exists(const char *path)
+{
+    struct stat					statbuf;
+    int						return_value = -1;
+
+    if (path == NULL)
+    {
+	verror_put_errno(EINVAL);
+	return -1;
+    }
+    
+    if (stat(path, &statbuf) == -1)
+    {
+	switch (errno)
+	{
+	  case ENOENT:
+	  case ENOTDIR:
+	    /* File does not exist */
+	    return_value = 0;
+	    break;
+	    
+	  default:
+	    /* Some error */
+	    return_value = -1;
+	    break;
+	}
+    }
+    else
+    {
+	/* File exists */
+	return_value = 1;
+    }
+    
+    return return_value;
+}
+
+
+
 /*
  * check_storage_directory()
  *
@@ -686,6 +732,124 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     return return_code;
 }
 
+
+int
+myproxy_creds_exist(const char *user_name)
+{
+    int return_value = -1;
+    char creds_path[MAXPATHLEN] = "";
+    char data_path[MAXPATHLEN] = "";
+    int rc;
+
+    if (user_name == NULL)
+    {
+	verror_put_errno(EINVAL);
+	return -1;
+    }
+
+    if (get_storage_locations(user_name,
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path)) == -1)
+    {
+	return -1;
+    }
+
+    rc = file_exists(creds_path);
+    
+    switch(rc)
+    {
+      case 0:
+	/* File does not exist */
+	return 0;
+
+      case 1:
+	/* File exists, keep checking */
+	break;
+	
+      case -1:
+	/* Error */
+	return -1;
+
+      default:
+	/* Should not be here */
+	verror_put_string("file_exists(%s) return unknown value (%d)",
+			  creds_path, rc);
+	return -1;
+    }
+
+    rc = file_exists(data_path);
+    
+    switch(rc)
+    {
+      case 0:
+	/* File does not exist */
+	return 0;
+
+      case 1:
+	/* File exists, keep checking */
+	break;
+	
+      case -1:
+	/* Error */
+	return -1;
+
+      default:
+	/* Should not be here */
+	verror_put_string("file_exists(%s) return unknown value (%d)",
+			  data_path, rc);
+	return -1;
+    }
+    
+    /* Everything seems to exist */
+    
+    /* XXX Should check for expiration? */
+
+    return 1;
+}
+
+int
+myproxy_creds_is_owner(const char		*username,
+			const char		*client_name)
+{
+    char creds_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN];
+    struct myproxy_creds retrieved_creds;
+    int return_code = -1;
+    int authorization_ok = 0;
+
+    memset(&retrieved_creds, 0, sizeof(retrieved_creds));
+
+    assert(username != NULL);
+    assert(client_name != NULL);
+    
+    if (get_storage_locations(username,
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path)) == -1)
+    {
+        goto error;
+    }
+
+    if (read_data_file(&retrieved_creds, data_path) == -1)
+    {
+        goto error;
+    }
+
+    if (strcmp(retrieved_creds.owner_name, client_name) == 0)
+    {
+	/* Is owner */
+	return_code = 1;
+    }
+    else
+    {
+	/* Is not owner */
+	return_code = 0;
+    }
+    
+  error:
+    myproxy_creds_free_contents(&retrieved_creds);
+    
+    return return_code;
+}
 
 int
 myproxy_creds_delete(const struct myproxy_creds *creds)
