@@ -52,6 +52,7 @@ typedef struct
 {
     globus_mutex_t			mutex;
     globus_fifo_t			queue;
+    globus_bool_t                       poll_space;
     int                                 space;
 }
 globus_cond_t;

@@ -857,6 +857,8 @@ globus_cond_init(globus_cond_t *cond, globus_condattr_t *attr)
     cond->space = attr ? *attr : GLOBUS_CALLBACK_GLOBAL_SPACE;
     globus_callback_space_reference(cond->space);
     
+    cond->poll_space = globus_callback_space_is_single(cond->space);
+    
     return (rc);
 }
 
@@ -881,7 +883,7 @@ globus_cond_signal(globus_cond_t *cond)
 
     usema_t *					sema;
     
-    if(cond->space != GLOBUS_CALLBACK_GLOBAL_SPACE)
+    if(cond->poll_space)
     {
         globus_callback_signal_poll();
         
@@ -924,7 +926,7 @@ globus_cond_broadcast(globus_cond_t *cond)
     globus_fifo_t				queue;
     usema_t *					sema;
     
-    if(cond->space != GLOBUS_CALLBACK_GLOBAL_SPACE)
+    if(cond->poll_space)
     {
         globus_callback_signal_poll();
         
@@ -967,7 +969,7 @@ globus_cond_wait(globus_cond_t *cond,
     /* added by JB */
     globus_thread_blocking_space_will_block(cond->space);
 
-    if(cond->space == GLOBUS_CALLBACK_GLOBAL_SPACE)
+    if(!cond->poll_space)
     {
     thread = (globus_i_thread_t *) globus_thread_self();
     sema = thread->sema;
@@ -1023,7 +1025,7 @@ globus_cond_timedwait(globus_cond_t *cond,
     
     globus_thread_blocking_space_will_block(cond->space);
     
-    if(cond->space == GLOBUS_CALLBACK_GLOBAL_SPACE)
+    if(!cond->poll_space)
     {
     thread = (globus_i_thread_t *) globus_thread_self();
 

@@ -62,6 +62,7 @@ typedef pthread_mutex_t		globus_mutex_t;
 typedef struct
 {
     pthread_cond_t              cond;
+    globus_bool_t               poll_space;
     int                         space;
 } globus_cond_t;
 
@@ -345,6 +346,7 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
         ((cv)->space = ((globus_condattr_t *)(attr))->space) : \
         ((cv)->space = GLOBUS_CALLBACK_GLOBAL_SPACE)), \
         globus_callback_space_reference((cv)->space), \
+        (cv)->poll_space = globus_callback_space_is_single((cv)->space), \
         globus_macro_cond_init(&(cv)->cond, (attr) ? \
         &((globus_condattr_t *)(attr))->condattr : GLOBUS_NULL))
 
@@ -354,7 +356,7 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
 
 #define globus_macro_cond_space_wait(cv, mut) \
     (globus_thread_blocking_space_will_block((cv)->space), \
-    (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
+    (!((cv)->poll_space) ? \
     (globus_macro_cond_wait(&(cv)->cond, (mut))) : \
     (globus_mutex_unlock((mut)), \
     globus_callback_space_poll(&globus_i_abstime_infinity, (cv)->space), \
@@ -362,7 +364,7 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
 
 #define globus_macro_cond_space_timedwait(cv, mut, abstime) \
     (globus_thread_blocking_space_will_block((cv)->space), \
-    (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
+    (!((cv)->poll_space) ? \
     (globus_macro_cond_timedwait(&(cv)->cond, (mut), (abstime))) : \
     (globus_mutex_unlock((mut)), \
     globus_callback_space_poll((abstime), (cv)->space), \
@@ -370,12 +372,12 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
     (time(GLOBUS_NULL) >= (abstime)->tv_sec) ? ETIMEDOUT : 0)))
     
 #define globus_macro_cond_space_signal(cv) \
-    (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
+    (!((cv)->poll_space) ? \
     (globus_macro_cond_signal(&(cv)->cond)) : \
     (globus_callback_signal_poll(), 0))
 
 #define globus_macro_cond_space_broadcast(cv) \
-    (((cv)->space == GLOBUS_CALLBACK_GLOBAL_SPACE) ? \
+    (!((cv)->poll_space) ? \
     (globus_macro_cond_broadcast(&(cv)->cond)) : \
     (globus_callback_signal_poll(), 0))
 

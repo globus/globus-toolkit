@@ -479,10 +479,10 @@ globus_callback_adjust_period(
  * space will only be delivered when this is called with that space.
  *
  * For threaded builds, this only needs to be called to poll user spaces with
- * behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED.  The 'global' space
- * and user spaces with behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_THREADED
- * are constantly polled in a separate thread.  (If it is called in a threaded
- * build for these spaces, it will just yield its thread)
+ * behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE.  The 'global' space
+ * and other user spaces are constantly polled in a separate thread.  
+ * (If it is called in a threaded build for these spaces, it will just yield
+ * its thread)
  *
  * In general, you never need to call this function directly.  It is called
  * (when necessary) by globus_cond_wait().  The only case in which a user may
@@ -616,18 +616,25 @@ globus_callback_was_restarted();
  * Callback space behaviors describe how a space behaves.
  *
  * In a non-threaded build all spaces exhibit a
- * behavior == _BEHAVIOR_SERIALIZED.  Setting a specific behavior in this case
+ * behavior == _BEHAVIOR_SINGLE.  Setting a specific behavior in this case
  * is ignored.
  * 
- * In a threaded build, _BEHAVIOR_SERIALIZED retains all the rules and
+ * In a threaded build, _BEHAVIOR_SINGLE retains all the rules and
  * behaviors of a non-threaded build while _BEHAVIOR_THREADED makes the
  * space act as the global space.
  *
- * Setting a space's behavior to _BEHAVIOR_SERIALIZED guarantees that the 
+ * Setting a space's behavior to _BEHAVIOR_SINGLE guarantees that the 
  * poll protection will always be there and all callbacks are serialized and
  * only kicked out when polled for.  In a threaded build, it is still necessary
- * to poll for callbacks in a _BEHAVIOR_SERIALIZED space. (globus_cond_wait()
+ * to poll for callbacks in a _BEHAVIOR_SINGLE space. (globus_cond_wait()
  * will take care of this for you also)
+ *
+ * Setting a space's behavior to _BEHAVIOR_SERIALIZED guarantees that the 
+ * poll protection will always be there and all callbacks are serialized.  In a
+ * threaded build, it is NOT necessary to poll for callbacks in a 
+ * _BEHAVIOR_SERIALIZED space.  Callbacks in this space will be delivered as
+ * soon as possible, but only one outstanding (and unblocked) callback will be
+ * allowed at any time.
  *
  * Setting a space's behavior to _BEHAVIOR_THREADED allows the user to 
  * have the poll protection provided by spaces when built non-threaded, yet,
@@ -636,10 +643,14 @@ globus_callback_was_restarted();
 typedef enum
 {
     /** The default behavior.  Indicates that you always want poll protection
-     * and serialized callbacks
+     * and single threaded behavior (callbacks need to be explicitly polled for
+     */
+    GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE,
+    /** Indicates that you want poll protection and all callbacks to be 
+     * serialized (but they do not need to be polled for in a threaded build)
      */
     GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED,
-     /** Indicates that you only want poll protection */
+    /** Indicates that you only want poll protection */
     GLOBUS_CALLBACK_SPACE_BEHAVIOR_THREADED
 } globus_callback_space_behavior_t;
 
@@ -654,7 +665,7 @@ typedef enum
  *
  * @param attr
  *        a space attr descibing desired behaviors.  If GLOBUS_NULL, 
- *        the default behavior of GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED 
+ *        the default behavior of GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE 
  *        is assumed.  This attr is copied into the space, so it is acceptable
  *        to destroy the attr as soon as it is no longer needed
  *
@@ -724,7 +735,7 @@ globus_callback_space_destroy(
  * Initialize a space attr.
  *
  * Currently, the only attr to set is the behavior.  The default behavior
- * associated with this attr is GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED
+ * associated with this attr is GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE
  *
  * @param attr
  *        storage for the intialized attr.  Must be destroyed with
@@ -780,7 +791,7 @@ globus_callback_space_attr_set_behavior(
  * Get the behavior associated with an attr
  *
  * Note: for a non-threaded build, this will always pass back a behavior ==
- * GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED.
+ * GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE.
  *
  * @param attr
  *        attr on which to query behavior
@@ -811,6 +822,21 @@ globus_callback_space_attr_get_behavior(
 globus_result_t
 globus_callback_space_get(
     globus_callback_space_t *           space);
+
+/**
+ * See if the specified space is a single threaded behavior space 
+ *
+ * @param space
+ *        the space to query
+ *
+ * @return
+ *        - GLOBUS_TRUE if space's behavior is _BEHAVIOR_SINGLE
+ *        - GLOBUS_FALSE otherwise
+ */
+globus_bool_t
+globus_callback_space_is_single(
+    globus_callback_space_t             space);
+
 /* @} */
 
 EXTERN_C_END

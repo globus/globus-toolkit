@@ -855,7 +855,7 @@ globus_callback_space_attr_get_behavior(
             "globus_callback_space_attr_get_behavior", "behavior");
     }
 
-    *behavior = GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED;
+    *behavior = GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE;
 
     return GLOBUS_SUCCESS;
 }
@@ -1181,7 +1181,14 @@ globus_callback_space_get(
     
     return GLOBUS_SUCCESS;
 }
-    
+
+globus_bool_t
+globus_callback_space_is_single(
+    globus_callback_space_t             space)
+{
+    return GLOBUS_TRUE;
+}
+
 /**
  * globus_callback_get_timeout
  *
