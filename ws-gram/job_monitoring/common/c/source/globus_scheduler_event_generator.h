@@ -40,7 +40,7 @@ typedef void (*globus_scheduler_event_generator_fault_t)(
             NULL, \
             GLOBUS_SEG_ERROR_TYPE_NULL, \
             __FILE__, \
-            __func__, \
+            MYNAME, \
             __LINE__, \
             "Null parameter")
 
@@ -49,7 +49,7 @@ typedef void (*globus_scheduler_event_generator_fault_t)(
             NULL, \
             GLOBUS_SEG_ERROR_TYPE_ALREADY_SET, \
             __FILE__, \
-            __func__, \
+            MYNAME, \
             __LINE__, \
             "Value already set")
     
@@ -58,7 +58,7 @@ typedef void (*globus_scheduler_event_generator_fault_t)(
             NULL, \
             GLOBUS_SEG_ERROR_TYPE_INVALID_MODULE, \
             __FILE__, \
-            __func__, \
+            MYNAME, \
             __LINE__, \
             "Invalid module %s: %s", \
             module, \
@@ -69,7 +69,7 @@ typedef void (*globus_scheduler_event_generator_fault_t)(
             NULL, \
             GLOBUS_SEG_ERROR_TYPE_INVALID_FORMAT, \
             __FILE__, \
-            __func__, \
+            MYNAME, \
             __LINE__, \
             "Invalid format %s", \
             fmt)
@@ -79,7 +79,7 @@ typedef void (*globus_scheduler_event_generator_fault_t)(
             NULL, \
             GLOBUS_SEG_ERROR_TYPE_OUT_OF_MEMORY, \
             __FILE__, \
-            __func__, \
+            MYNAME, \
             __LINE__, \
             "Out of memory")
 
@@ -88,7 +88,7 @@ typedef void (*globus_scheduler_event_generator_fault_t)(
             NULL, \
             GLOBUS_SEG_ERROR_TYPE_LOADING_MODULE, \
             __FILE__, \
-            __func__, \
+            MYNAME, \
             __LINE__, \
             "Unable to dlopen module \"%s\": %s", \
             module_name, \
