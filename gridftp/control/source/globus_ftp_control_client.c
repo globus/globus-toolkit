@@ -3114,7 +3114,10 @@ globus_l_ftp_control_send_cmd_cb(
 
 	globus_libc_free(cb_arg);
 	
-	break;	
+	break;
+    
+    default:
+        break;
     }
     
     globus_i_ftp_control_debug_printf(1,
