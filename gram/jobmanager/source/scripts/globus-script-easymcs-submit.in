@@ -79,7 +79,7 @@ if [ ! -z "${grami_args}" ] ; then
          if [ "$1" = "${args_string}" ] ; then
             $DEBUG_ECHO "JM_SCRIPT: no dollar sign found">> $grami_logfile
 
-            args_string=`echo ${aa} | awk -F\" '{print $1; exit;}'`
+            args_string=`echo $1 | awk -F\" '{print $1; exit;}'`
             if [ "$1" = "${args_string}" ] ; then
                $DEBUG_ECHO "JM_SCRIPT: no double quote found, "\
                            "use double quotes">> $grami_logfile
