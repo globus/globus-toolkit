@@ -5285,7 +5285,7 @@ globus_l_ftp_data_eb_poll(
     globus_result_t                              res;
     globus_bool_t                                done = GLOBUS_FALSE;
     globus_reltime_t                             reltime;
-    int                                          tmp_len;
+    globus_off_t                                 tmp_len;
     globus_byte_t *                              tmp_buf;
     int                                          ctr;
     globus_i_ftp_dc_transfer_handle_t *          transfer_handle;
