@@ -1308,10 +1308,9 @@ globus_l_xio_register_readv(
         {
             globus_i_xio_op_destroy(op, &destroy_handle);
         }
-
     }
     globus_mutex_unlock(&handle->context->mutex);
-    globus_mutex_unlock(&handle->context->mutex);
+
     if(destroy_handle)
     {
         globus_i_xio_handle_destroy(handle);
@@ -1502,10 +1501,10 @@ globus_l_xio_register_close(
                     !globus_list_empty(list);
                     list = globus_list_rest(list))
                 {
+                    tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
                     GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
                         ("[%s] : canceling read op @ 0x%x\n", 
                         _xio_name, tmp_op));
-                    tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
                     globus_i_xio_operation_cancel(tmp_op);
                 }
     

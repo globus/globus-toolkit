@@ -439,12 +439,10 @@ globus_l_xio_driver_op_write_kickout(
         my_op->_op_ent_data_cb(op, GlobusXIOObjToResult(op->cached_obj),
             my_op->_op_ent_nbytes, my_op->user_arg);
     
-        if(op->restarted)
+        if(!op->restarted)
         {
-            globus_l_xio_op_restarted(op);
-            goto exit;
+            globus_thread_blocking_callback_pop(&wb_ndx);
         }
-        globus_thread_blocking_callback_pop(&wb_ndx);
     }
     else
     {
@@ -459,11 +457,6 @@ globus_l_xio_driver_op_write_kickout(
             my_op->_op_ent_data_cb(op, 
                 GlobusXIOObjToResult(op->cached_obj),
                 my_op->_op_ent_nbytes, my_op->user_arg);
-        }
-        if(op->restarted)
-        {        
-            globus_l_xio_op_restarted(op);
-            goto exit;
         }
     }
 
@@ -521,12 +514,10 @@ globus_l_xio_driver_op_read_kickout(
         my_op->_op_ent_data_cb(op, GlobusXIOObjToResult(op->cached_obj),
             my_op->_op_ent_nbytes, my_op->user_arg);
     
-        if(op->restarted)
+        if(!op->restarted)
         {
-            globus_l_xio_op_restarted(op);
-            goto exit;
+            globus_thread_blocking_callback_pop(&wb_ndx);
         }
-        globus_thread_blocking_callback_pop(&wb_ndx);
     }
     else
     {
@@ -541,11 +532,6 @@ globus_l_xio_driver_op_read_kickout(
             my_op->_op_ent_data_cb(op, 
                 GlobusXIOObjToResult(op->cached_obj),
                 my_op->_op_ent_nbytes, my_op->user_arg);
-        }
-        if(op->restarted)
-        {        
-            globus_l_xio_op_restarted(op);
-            goto exit;
         }
     }
 
@@ -760,12 +746,10 @@ globus_l_xio_driver_open_op_kickout(
             op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: handle->space,
             &wb_ndx);
         my_op->cb(op, GlobusXIOObjToResult(op->cached_obj), my_op->user_arg);
-        if(op->restarted)
+        if(!op->restarted)
         {
-            globus_l_xio_op_restarted(op);
-            goto exit;
+            globus_thread_blocking_callback_pop(&wb_ndx);
         }
-        globus_thread_blocking_callback_pop(&wb_ndx);
     }
     else
     {
@@ -778,11 +762,6 @@ globus_l_xio_driver_open_op_kickout(
         {
             my_op->cb(op, 
                 GlobusXIOObjToResult(op->cached_obj), my_op->user_arg);
-        }
-        if(op->restarted)
-        {
-            globus_l_xio_op_restarted(op);
-            goto exit;
         }
     }
 

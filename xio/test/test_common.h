@@ -5,6 +5,7 @@
 #include "test_common.h"
 #include "globus_common.h"
 #include "globus_xio_test_transport.h"
+#include "globus_xio_test_transport.h"
 
 typedef struct test_info_s
 {

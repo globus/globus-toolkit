@@ -4,18 +4,6 @@
 #include "globus_common.h"
 #include "globus_xio_null_pass.h"
 
-#define GLOBUS_XIO_DEBUG_DRIVER_MODULE &globus_i_xio_test_module
-
-#define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \
-{                                                                       \
-    ow = (globus_l_xio_test_op_wrapper_t *)                             \
-            globus_malloc(sizeof(globus_l_xio_test_op_wrapper_t));      \
-    ow->dh = _in_dh;                                                    \
-    ow->op = (_in_op);                                                  \
-    ow->res = res;                                                      \
-    ow->nbytes = nb;                                                    \
-}
-
 static int
 globus_l_xio_null_pass_activate();
 
@@ -24,7 +12,7 @@ globus_l_xio_null_pass_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_null_pass_module =
+globus_module_descriptor_t  globus_i_xio_null_pass_module =
 {
     "globus_xio_null_pass",
     globus_l_xio_null_pass_activate,

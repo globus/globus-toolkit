@@ -1,6 +1,7 @@
 #if !defined(GLOBUS_XIO_DRIVER_H)
 #define GLOBUS_XIO_DRIVER_H 1
 
+#include "globus_common.h"
 #include "globus_xio_load.h"
 
 /************************************************************************

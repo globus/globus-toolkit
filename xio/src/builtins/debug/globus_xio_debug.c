@@ -4,8 +4,6 @@
 #include "globus_common.h"
 #include "globus_xio_debug.h"
 
-#define GLOBUS_XIO_DEBUG_DRIVER_MODULE &globus_i_xio_test_module
-
 #define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \
 {                                                                       \
     ow = (globus_l_xio_test_op_wrapper_t *)                             \

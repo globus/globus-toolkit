@@ -1,7 +1,13 @@
-#include "test_common.h"
-#include "globus_hashtable.h"
 #include "globus_common.h"
+#include "globus_hashtable.h"
 #include "globus_xio_bounce.h"
+#include "globus_xio_op.h"
+#include "globus_xio_null.h"
+#include "globus_xio_null_pass.h"
+#include "globus_xio_debug.h"
+#include "globus_xio_stack_driver.h"
+#include "globus_xio_verify.h"
+#include "test_common.h"
 
 typedef  int
 (*main_func_t)(
@@ -327,7 +333,6 @@ main(
     int                                         ctr;
     int                                         rc = 0;
     globus_bool_t                               done = GLOBUS_FALSE;
-    globus_bool_t                               activate = GLOBUS_TRUE;
     globus_bool_t                               file = GLOBUS_FALSE;
     char *                                      name = NULL;
 
@@ -412,11 +417,7 @@ main(
 
     for(ctr = 1; ctr < argc && !done; ctr++)
     {
-        if(strcmp(argv[ctr], "-A") == 0)
-        {
-            activate = GLOBUS_FALSE;
-        }
-        else if (strcmp(argv[ctr], "-D") == 0)
+        if (strcmp(argv[ctr], "-D") == 0)
         {
             file = GLOBUS_TRUE;
         }
@@ -435,14 +436,25 @@ main(
         return 1;
     }
 
-    /* actiavte now to prevent xio from getting actiavted and deactivated
-        in every test */
-    if(activate)
-    {
-        rc = globus_module_activate(GLOBUS_XIO_MODULE);
-        rc = globus_module_activate(GLOBUS_XIO_TEST_DRIVER_BOUNCE_MODULE);
-        globus_assert(rc == GLOBUS_SUCCESS);
-    }
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_TEST_DRIVER_BOUNCE_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_DEBUG_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_NULL_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_NULL_PASS_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_OP_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_DRIVER_STACK_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_module_activate(GLOBUS_XIO_VERIFY_DRIVER_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+
     if(file)
     {
         FILE *                          in;
@@ -476,14 +488,8 @@ main(
         rc = call_test(argc, argv);
     }
 
-    if(activate)
-    {
-        globus_module_deactivate(GLOBUS_XIO_MODULE);
-    }
-
     globus_hashtable_destroy(&globus_l_test_hash);
 
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate_all();
 
     return rc;
