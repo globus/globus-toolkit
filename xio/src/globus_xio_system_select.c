@@ -953,7 +953,8 @@ globus_l_xio_system_select_wakeup(void)
     GlobusXIOName(globus_l_xio_system_select_wakeup);
 
     GlobusXIOSystemDebugEnter();
-
+    
+    globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
     byte = 0;
 
     do
@@ -961,11 +962,7 @@ globus_l_xio_system_select_wakeup(void)
         rc = write(globus_l_xio_system_wakeup_pipe[1], &byte, sizeof(byte));
     } while(rc < 0 && errno == EINTR);
 
-    if(rc > 0)
-    {
-        globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
-    }
-    else
+    if(rc <= 0)
     {
         globus_panic(
             GLOBUS_XIO_SYSTEM_MODULE,
