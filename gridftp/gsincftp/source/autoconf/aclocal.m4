@@ -2422,7 +2422,7 @@ AC_DEFUN(wi_LIB_GSSAPI, [
 dnl Find the GLOBUS/GSI development directory
 	AC_MSG_CHECKING(for Globus/GSI development directory)
 
-	if test -d ${globus_install_dir}/lib; then
+	if test -n "$GLOBUS_LOCATION" ; then
 		# Looks like a flat directory structure from configure/make
 		# and not globus-install or gsi-install
 		globus_dev_dir=$globus_install_dir
