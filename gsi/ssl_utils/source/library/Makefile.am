@@ -14,6 +14,8 @@ lib_LTLIBRARIES = libglobus_ssl_utils_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = $(GPT_INCLUDES)
 
+AM_CFLAGS = -DDEBUG
+
 libglobus_ssl_utils___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
 libglobus_ssl_utils___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIBS)
