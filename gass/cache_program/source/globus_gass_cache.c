@@ -133,18 +133,26 @@ main(int argc, char **argv)
     {
 	if(GLOBUS_RELEASE_NOT_BETA)
 	{
-	    globus_libc_printf("Version %d.%d.%d\n",
+	    globus_libc_printf("Version %d.%d.%d,\n"
+			       "GASS Protocol Version %d\n"
+			       "GASS Cache File Version %d\n",
 			       globus_release_major(),
 			       globus_release_minor(),
-			       globus_release_patch());
+			       globus_release_patch(),
+			       GLOBUS_GASS_PROTO_VERSION,
+			       GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION);
 	}
 	else
 	{
-	   globus_libc_printf("Version %d.%d.%db%d\n",
+	   globus_libc_printf("Version %d.%d.%db%d\n"
+			      "GASS Protocol Version %d\n"
+			      "GASS Cache File Version %d\n",
 			      globus_release_major(),
 			      globus_release_minor(),
 			      globus_release_patch(),
-			      globus_release_beta());
+			      globus_release_beta(),
+			      GLOBUS_GASS_PROTO_VERSION,
+			      GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION);
 
 	}
 	exit(0);

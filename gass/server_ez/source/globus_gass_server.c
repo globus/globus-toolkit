@@ -68,7 +68,7 @@ int main(int argc, char **argv)
     globus_mutex_init(&mutex, NULL);
     globus_cond_init(&cond, NULL);
     
-    while((c = getopt(argc, argv, "cp:slturwoen:h")) != EOF)
+    while((c = getopt(argc, argv, "vcp:slturwoen:h")) != EOF)
     {
 	switch (c)
 	{
@@ -102,6 +102,27 @@ int main(int argc, char **argv)
 	case 'c':
 	    options |= GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE;
 	    break;
+	case 'v':
+	    if(GLOBUS_RELEASE_NOT_BETA)
+	    {
+		globus_libc_printf("Globus Version %d.%d.%d\n"
+				   "GASS Protocol Version %d\n",
+				   globus_release_major(),
+				   globus_release_minor(),
+				   globus_release_patch(),
+				   GLOBUS_GASS_PROTO_VERSION);
+	    }
+	    else
+	    {
+		globus_libc_printf("Globus Version %d.%d.%db%d\n"
+				   "GASS Protocol Version %d\n",
+				   globus_release_major(),
+				   globus_release_minor(),
+				   globus_release_patch(),
+				   globus_release_beta(),
+				   GLOBUS_GASS_PROTO_VERSION);
+	    }
+	    return 0;
 	case 'n':
 	    switch(optarg[0])
 	    {
