@@ -29,66 +29,72 @@ AC_MSG_RESULT($MYPROXY_CLIENT_DIR)
 AC_SUBST(MYPROXY_CLIENT_DIR)
 
 
-AC_MSG_CHECKING(for Globus/GSI installation path)
-GLOBUS_INSTALL_PATH=""
+AC_MSG_CHECKING(for GSI installation path)
+GSI_INSTALL_PATH=""
+
 dnl --with-globus
 AC_ARG_WITH(globus,
-	[  --with-globus=PATH           Specify Globus install path],
-	GLOBUS_INSTALL_PATH=$withval)
+	[  --with-globus=PATH           Don't use. Must build with GSI],
+	AC_MSG_ERROR(Must build MyProxy with GSI and not Globus))
 
 dnl --with-gsi
 AC_ARG_WITH(gsi,
 	[  --with-gsi=PATH              Specify GSI install path],
-	GLOBUS_INSTALL_PATH=$withval)
+	GSI_INSTALL_PATH=$withval)
 
-dnl Check GLOBUS_INSTALL_PATH
-if test -z "${GLOBUS_INSTALL_PATH}" ; then
-	AC_MSG_ERROR(Must specify --with-gsi or --with-globus)
+dnl Check GSI_INSTALL_PATH
+if test -z "${GSI_INSTALL_PATH}" ; then
+	AC_MSG_ERROR(Must specify --with-gsi)
 fi
 
-if test ! -d "${GLOBUS_INSTALL_PATH}" ; then
-	AC_MSG_ERROR(Globus/GSI install path not found: ${GLOBUS_INSTALL_PATH})
+if test ! -d "${GSI_INSTALL_PATH}" ; then
+	AC_MSG_ERROR(GSI install path not found: ${GSI_INSTALL_PATH})
 fi
 
-AC_MSG_RESULT($GLOBUS_INSTALL_PATH)
-AC_SUBST(GLOBUS_INSTALL_PATH)
+AC_MSG_RESULT($GSI_INSTALL_PATH)
+AC_SUBST(GSI_INSTALL_PATH)
 
-AC_MSG_CHECKING(for Globus/GSI development directory)
-if test -d ${GLOBUS_INSTALL_PATH}/lib ; then
+AC_MSG_CHECKING(for GSI development directory)
+if test -d ${GSI_INSTALL_PATH}/lib ; then
 	# Looks like a flat directory structure from configure/make and not
-	# globus-install or gsi-install
-	GLOBUS_DEV_PATH=${GLOBUS_INSTALL_PATH}
+	# gsi-install
+	GSI_DEV_PATH=${GSI_INSTALL_PATH}
 
 else
-	# Assume a true globus installation with architecture
+	# Assume a true gsi installation with architecture
 	# directories and run globus-development-path to find
 	# the development directory
 
-	# Export GLOBUS_INSTALL_PATH so programs will run
+	# Export GLOBUS_INSTALL_PATH so programs will run.
 	# Also override any GLOBUS_INSTALL_PATH that may be set that
-	# is pointing to a different directory
-
+	# is pointing to a different directory.
+	#
+	# Note that the GLOBUS_INSTALL_PATH environment variable overrides
+	# the GSI_INSTALL_PATH environment variable, so we must set it
+	# instead.
+	
+	GLOBUS_INSTALL_PATH=${GSI_INSTALL_PATH}
 	export GLOBUS_INSTALL_PATH
 
-	dev_path_program=${GLOBUS_INSTALL_PATH}/bin/globus-development-path
+	dev_path_program=${GSI_INSTALL_PATH}/bin/globus-development-path
 
 	if test ! -x ${dev_path_program} ; then
-		AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
+		AC_MSG_ERROR(Cannot find GSI installation directory: program ${dev_path_program} does not exist or is not executable)
 	fi
 
-	GLOBUS_DEV_PATH=`${dev_path_program}`
+	GSI_DEV_PATH=`${dev_path_program}`
 
-	if test -z "$GLOBUS_DEV_PATH" -o "X$GLOBUS_DEV_PATH" = "X<not found>" ; then
-		AC_MSG_ERROR(Cannot find Globus/GSI development directory)
+	if test -z "$GSI_DEV_PATH" -o "X$GSI_DEV_PATH" = "X<not found>" ; then
+		AC_MSG_ERROR(Cannot find GSI development directory)
 	fi
 
-	if test ! -d "$GLOBUS_DEV_PATH" ; then
-		AC_MSG_ERROR(Cannot find Globus/GSI development directory: $GLOBUS_DEV_PATH does not exist)
+	if test ! -d "$GSI_DEV_PATH" ; then
+		AC_MSG_ERROR(Cannot find GSI development directory: $GSI_DEV_PATH does not exist)
 	fi
 fi
 
-AC_MSG_RESULT($GLOBUS_DEV_PATH)
-AC_SUBST(GLOBUS_DEV_PATH)
+AC_MSG_RESULT($GSI_DEV_PATH)
+AC_SUBST(GSI_DEV_PATH)
 
 dnl
 dnl Figure out which regular expression parser to use.
