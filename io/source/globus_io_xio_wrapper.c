@@ -94,6 +94,9 @@
     {                                                                       \
         globus_mutex_lock(&globus_l_io_driver_lock);                        \
         {                                                                   \
+            globus_assert(                                                  \
+                globus_l_io_##_driver_name##_driver.ref_count > 0           \
+                && "Freeing unloaded driver");                              \
             globus_l_io_##_driver_name##_driver.ref_count--;                \
             if(globus_l_io_##_driver_name##_driver.ref_count == 0)          \
             {                                                               \
@@ -843,13 +846,13 @@ globus_l_io_file_open(
     ihandle->io_handle = handle;
     *handle = ihandle;
     
-    globus_xio_target_destroy(target);
+    /* XXX globus_xio_target_destroy(target); */
     globus_xio_stack_destroy(stack);
     
     return GLOBUS_SUCCESS;
 
 error_open:
-    globus_xio_target_destroy(target);
+    /* XXX globus_xio_target_destroy(target); */
     
 error_target:
 error_push:
@@ -930,7 +933,8 @@ error_open:
 error_cntl:
     globus_io_fileattr_destroy(&myattr);
     
-error_attr:   
+error_attr:
+    *handle = GLOBUS_NULL;
     return result;
 }
 
@@ -948,7 +952,7 @@ globus_io_file_seek(
         (*handle)->xio_handle,
         globus_l_io_file_driver.driver,
         GLOBUS_XIO_FILE_SEEK,
-        offset,
+        &offset,
         whence);
 }
 
@@ -1048,14 +1052,14 @@ globus_io_file_posix_convert(
     ihandle->io_handle = handle;
     *handle = ihandle;
     
-    globus_xio_target_destroy(target);
+    /* XXX globus_xio_target_destroy(target); */
     globus_xio_stack_destroy(stack);
     globus_xio_attr_destroy(myattr);
     
     return GLOBUS_SUCCESS;
 
 error_open:
-    globus_xio_target_destroy(target);
+    /* XXX globus_xio_target_destroy(target); */
 
 error_target:
 error_push:
@@ -1070,6 +1074,7 @@ error_attr:
     globus_free(ihandle);
 
 error_alloc:
+    *handle = GLOBUS_NULL;
     return result;
 }
 

@@ -164,7 +164,6 @@ globus_module_activate(
     {
 	globus_i_module_initialized = GLOBUS_TRUE;
 	globus_l_module_initialize();
-/*	globus_i_module_initialized = GLOBUS_TRUE;*/
     }
 
     /*
@@ -850,9 +849,11 @@ globus_l_module_decrement(
 	
 	client_entry = globus_list_search(entry->clients,
 					  (void *) parent_key);
-	globus_assert(client_entry != GLOBUS_NULL);
-
-	globus_list_remove(&entry->clients, client_entry);
+	if(client_entry != GLOBUS_NULL)
+        {
+	    globus_list_remove(&entry->clients, client_entry);
+	}
+	/* else module was activated outside this parent */
     }
 
     if (entry->reference_count == 0)
@@ -949,16 +950,6 @@ globus_l_module_mutex_lock(
     globus_mutex_lock(&mutex->mutex);
     {
 	globus_assert(mutex->level >= 0);
-/* The following 2 lines were changed to preserve the encapsulation of the 
- *  globus_thread_t datatype.  This change was necessary because this datatype maps
- *  to different implementations on different platforms, and the UNIX implementation 
- *  conflicted with the Windows implementation.
- *    Michael Lebman 2-8-02
- */
-/*	
-	
-	while (mutex->level > 0
-	       && mutex->thread_id != globus_thread_self()) */
 	while (mutex->level > 0
 		   && !globus_thread_equal( mutex->thread_id, globus_thread_self()) )
 	{
@@ -996,15 +987,6 @@ globus_l_module_mutex_unlock(
     globus_mutex_lock(&mutex->mutex);
     {
 	globus_assert(mutex->level > 0);
-/* The following line was changed to preserve the encapsulation of the 
- *  globus_thread_t datatype.  This change was necessary because this datatype maps
- *  to different implementations on different platforms, and the UNIX implementation 
- *  conflicted with the Windows implementation.
- *    Michael Lebman 4-2-02
- */
-/*	
-	globus_assert(mutex->thread_id == globus_thread_self());
-*/		
 	globus_assert( globus_thread_equal( mutex->thread_id, globus_thread_self() ) );
 
 	mutex->level--;

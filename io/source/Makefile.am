@@ -5,7 +5,6 @@ Sources= \
 	globus_io.h \
 	globus_io_error_hierarchy.c \
 	globus_io_error_hierarchy.h \
-	globus_io_error_strings.c \
 	globus_io_xio_wrapper.c
 
 flavorinclude_HEADERS = \
