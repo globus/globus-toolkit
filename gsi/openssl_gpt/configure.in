@@ -20,21 +20,7 @@ else
     AC_ENABLE_SHARED([yes])
 fi
 
-dnl libtool hack
-
-with_tags=
-
-save_LD=$LD
-LD=
-
-AC_PROVIDE([AC_PROG_CXX])
-AC_PROVIDE([AC_PROG_CXXCPP])
-
-enable_libtool_lock="no"
-
 AM_PROG_LIBTOOL
-
-LD=$save_LD
 
 dnl config header goes here
 
