@@ -32,13 +32,13 @@ import org.globus.ogsa.base.streaming.FileStreamPortType;
 import org.globus.ogsa.GridConstants;
 import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
-import org.globus.ogsa.utils.QueryHelper;
 import org.globus.ogsa.impl.ogsi.GridServiceImpl;
 import org.globus.ogsa.impl.security.authentication.SecureServicePropertiesHelper;
 import org.globus.ogsa.impl.security.authentication.SecurityManager;
 import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.ogsa.repository.ServiceNode;
 import org.globus.ogsa.utils.AnyHelper;
+import org.globus.ogsa.utils.QueryHelper;
 import org.globus.util.GlobusURL;
 import org.gridforum.ogsi.ExtensibilityType;
 

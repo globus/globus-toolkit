@@ -50,25 +50,33 @@ Southern California. All Rights Reserved.
   
   
   <!-- properties added for filestreaming -->
- 
-  <!-- =================================================================== -->
-  <!-- Determine what dependencies are present                             -->
-  <!-- =================================================================== -->
-  <path id="classpath">
-    <pathelement location="."/>
-    <pathelement location="${java.home}/../lib/tools.jar"/>
-    <pathelement location="${build.dest}"/>
-    <pathelement location="${ogsa.root}/${build.dest}"/>
-    <fileset dir="lib">
-     <include name="*.jar"/>
-    </fileset>
-    <fileset dir="${ogsa.root}/lib">
-     <include name="*.jar"/>
-    </fileset>
-    <pathelement path="${java.class.path}"/>
-  </path>
 
   <target name="setenv">
+    <basename property="ogsa.root.base" file="${ogsa.root}"/>
+    <dirname property="absolute.ogsa.root.parent.path" file="${ogsa.root}"/>
+    <property name="absolute.ogsa.root"
+              value="${absolute.ogsa.root.parent.path}/${ogsa.root.base}"/>
+ 
+    <path id="classpath">
+        <pathelement location="."/>
+        <pathelement location="${java.home}/../lib/tools.jar"/>
+        <pathelement location="${build.dest}"/>
+        <pathelement location="${ogsa.root}/${build.dest}"/>
+        <fileset dir="lib">
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="${absolute.ogsa.root}/lib">
+            <include name="*.jar"/>
+            <exclude name="${jar.name}"/>
+        </fileset>
+        <pathelement path="${java.class.path}"/>
+    </path>
+
+    <path id="test-classpath">
+        <pathelement location="${build.dest}" />
+        <path refid="classpath"/>
+    </path>
+
     <mkdir dir="${build.dest}"/>
     <mkdir dir="${build.lib}"/>
 
@@ -133,39 +141,25 @@ Southern California. All Rights Reserved.
         <property name="mapping.file" value="${mapping.file}"/>
     </ant>
 
-    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
+    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS"
+         inheritrefs="false">
         <property name="build.schema" value="${schema.dir}"/>
         <property name="schema.file.dir" value="${streaming.schema.dir}"/>
         <property name="schema.file" value="file_stream_factory_service.wsdl"/>
         <!-- Command run from within schema dir -->
         <property name="stubs.dest" value="../src"/>
+        <reference refid="classpath"/>
     </ant>
-    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
+    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS"
+         inheritrefs="false">
         <property name="build.schema" value="${schema.dir}"/>
         <property name="schema.file.dir" value="${streaming.schema.dir}"/>
         <property name="schema.file" value="file_stream_service.wsdl"/>
         <!-- Command run from within schema dir -->
         <property name="stubs.dest" value="../src"/>
+        <reference refid="classpath"/>
     </ant>
   </target>
-
-  <target name="generateStubs">
-    <echo message=" Generating stubs from ${build.schema}/${schema.file.dir}/${schema.file} " />
-    <java classname="${wsdl.tool}" dir="${build.schema}" fork="yes"
-          classpathref="classpath" failonerror="true" >
-       <sysproperty key="java.protocol.handler.pkgs"
-                 value="org.globus.net.protocol" />
-      <arg value="-o"/>
-      <arg value="${stubs.dest}"/>
-      <arg value="-N${base.namespace}=${base.package}"/>
-      <arg value="-N${base.namespace}/bindings=${base.package}.bindings"/>
-      <arg value="-N${base.namespace}/service=${base.package}.service"/>
-      <arg value="-O"/>
-      <arg value="${stubs.timeout}"/>
-      <arg value="${schema.file.dir}/${schema.file}"/>
-    </java>
-  </target>
-
 
   <!-- =================================================================== -->
   <!-- Compiles the source directory                                       -->
@@ -210,16 +204,12 @@ Southern California. All Rights Reserved.
     </ant>
   </target>
 
-  <path id="test-classpath">
-    <pathelement location="${build.dest}" />
-    <path refid="classpath"/>
-  </path>
-
   <!-- =================================================================== -->
   <!-- Compiles the JUnit testcases                                        -->
   <!-- =================================================================== -->
 
   <target name="buildTest" depends="compile">
+    <echo message="${absolute.ogsa.root}"/>
     <javac  srcdir="${src.dir}" destdir="${build.dest}"
             debug="${debug}">
       <classpath>
