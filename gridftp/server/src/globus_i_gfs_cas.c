@@ -30,6 +30,10 @@ globus_gfs_acl_cas_init(
 {
     globus_gsi_authz_handle_t           cas_handle;
 
+    if(acl_handle->context == NULL)
+    {
+        goto err;
+    }
     *out_res = globus_gsi_authz_handle_init(
         &cas_handle,
         resource_id,
@@ -57,15 +61,24 @@ globus_gfs_acl_cas_authorize(
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
+    char *                              full_object;
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
+    if(acl_handle->context == NULL)
+    {
+        goto err;
+    }
 
+    full_object = globus_common_create_string(
+        "ftp://%s%s", acl_handle->hostname, object);
+        
     *out_res = globus_gsi_authorize(
         cas_handle,
         action,
-        object,
+        full_object,
         globus_gfs_acl_cas_cb,
         acl_handle);
+    globus_free(full_object);
     if(*out_res != GLOBUS_SUCCESS)
     {
         goto err;
@@ -74,9 +87,6 @@ globus_gfs_acl_cas_authorize(
     return GLOBUS_GFS_ACL_WOULD_BLOCK;
 
   err:
-
-*out_res = GLOBUS_SUCCESS;
-
     return GLOBUS_GFS_ACL_COMPLETE;
 }
 

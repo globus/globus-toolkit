@@ -25,5 +25,9 @@ globus_i_gfs_config_is_anonymous(
 const char *
 globus_i_gfs_config_get_module_name(
     const char *                        client_supplied_name);
+
+globus_bool_t
+globus_i_gfs_config_allow_addr(
+    const char *                        remote_addr);
     
 #endif

@@ -23,7 +23,7 @@ typedef void
     globus_result_t                     result);
 
 
-globus_result_t
+int
 globus_gfs_acl_authorize(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
     const char *                        action,
@@ -35,6 +35,7 @@ globus_gfs_acl_authorize(
 int
 globus_i_gfs_acl_init(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
+    const gss_ctx_id_t                  context,
     const struct passwd *               pwent,
     const struct group *                grent,
     const char *                        given_pw,
@@ -98,6 +99,7 @@ typedef struct globus_i_gfs_acl_handle_s
     char *                              ipaddr;
     globus_i_gfs_acl_type_t             type;
     char *                              user_id;
+    char *                              hostname;
     char *                              auth_action;
     char *                              auth_object;
     globus_gfs_acl_cb_t                 cb;

@@ -4,6 +4,8 @@
 #include "globus_common.h"
 #include "globus_gridftp_server_control.h"
 
+#define GLOBUS_MAPPING_STRING ":globus-mapping:"
+
 #define _GSSL(s) globus_common_i18n_get_string_by_key(\
 		    NULL, \
 		    "globus_gridftp_server", \
@@ -98,7 +100,7 @@ typedef enum globus_gfs_event_type_e
 } globus_gfs_event_type_t;
 
 /*
- *  globus_gfs_error_type_t
+ *  globus_gfs_buffer_type_t
  *
  */
 typedef enum globus_gfs_buffer_type_e
@@ -107,6 +109,17 @@ typedef enum globus_gfs_buffer_type_e
     GLOBUS_GFS_BUFFER_SERVER_DEFINED = 0xFFFF
     /* user defined types will start at 0x00010000 */
 } globus_gfs_buffer_type_t;
+
+/*
+ *  globus_gfs_layout_type_t
+ * 
+ * Striped layout types.
+ */
+typedef enum globus_gfs_layout_type_e
+{
+    GLOBUS_GFS_LAYOUT_PARTITIONED = 1,
+    GLOBUS_GFS_LAYOUT_BLOCKED
+} globus_gfs_layout_type_t;
 
 /*
  *  globus_gfs_stat_t
@@ -177,12 +190,32 @@ typedef struct globus_gfs_cmd_finshed_info_s
 typedef struct globus_gfs_stat_finished_info_s
 {
     /** uid of the user that performed the stat */
-    uid_t                               uid;
+    int                                 uid;
+    /** count of gids in gid_array */
+    int                                 gid_count;
+    /** array of gids of which user that performed the stat is a member */
+    int *                               gid_array;
     /** number of stat objects in the array */
     int                                 stat_count;
     /** array of stat objects */
     globus_gfs_stat_t *                 stat_array;
 } globus_gfs_stat_finished_info_t;
+
+/*
+ *  globus_gfs_session_finished_info_t
+ * 
+ * Contains specific result info for a stat.
+ */
+typedef struct globus_gfs_session_finished_info_s
+{
+    /** arg to pass back with each request */
+    void *                              session_arg;
+    /** local username of authenticated user */
+    char *                              username;
+    /** home directory of authenticated user */
+    char *                              home_dir;
+    
+} globus_gfs_session_finished_info_t;
 
 /*
  *  globus_gfs_finished_info_t
@@ -199,13 +232,12 @@ typedef struct globus_gfs_finished_info_s
     int                                 code;
     /** additional message, usually for failure */
     char *                              msg;
-    /** result_t (will go away, use above two) */
+    /** result_t */
     globus_result_t                     result;
-
-    void *                              session_arg;
 
     union
     {
+        globus_gfs_session_finished_info_t session;
         globus_gfs_data_finished_info_t data;
         globus_gfs_cmd_finshed_info_t   command;
         globus_gfs_stat_finished_info_t stat;
@@ -237,7 +269,7 @@ typedef struct globus_gfs_event_info_s
     globus_off_t                        recvd_bytes;
     /** ranges of bytes received for current transfer */
     globus_range_list_t                 recvd_ranges;
-    /** unique key of data handle that event is related to */    
+    /** arg representing data handle that event is related to */    
     void *                              data_arg;
     
     /* request data */
@@ -332,6 +364,8 @@ typedef struct globus_gfs_data_info_s
     int                                 blocksize;
     /** blocksize to use for stripe layout */
     int                                 stripe_blocksize;
+    /** stripe layout to use */
+    int                                 stripe_layout;
 
     /** protection mode */
     char                                prot;
@@ -365,6 +399,8 @@ typedef struct globus_gfs_stat_info_s
 {
     /** if pathname is a directory, should stat report its info or its contents */
     globus_bool_t                       file_only;
+    /** this stat is requested internally -- bypasses authorization checks */
+    globus_bool_t                       internal;
     /** pathname to stat */
     char *                              pathname;
 } globus_gfs_stat_info_t;
@@ -373,6 +409,7 @@ typedef struct globus_gfs_session_info_s
 {
     gss_cred_id_t                       del_cred;
     globus_bool_t                       free_cred;
+    globus_bool_t                       map_user;
     char *                              username;
     char *                              password;
     char *                              subject;
@@ -762,10 +799,7 @@ globus_gridftp_server_get_block_size(
  * get read_range
  * 
  * This should be called during send() in order to know the specific
- * offset and length of the file to read from the storage system, as well
- * as the delta from the file offset that you should write to the server.
- * i.e. you would pass (write_delta + current file offset) as the offset 
- * parameter to globus_gridftp_server_register_write()
+ * offset and length of the file to read from the storage system
  * You should continue calling this and transferring the speficied data
  * until it returns a length of 0.
  */ 
@@ -773,17 +807,14 @@ void
 globus_gridftp_server_get_read_range(
     globus_gfs_operation_t              op,
     globus_off_t *                      offset,
-    globus_off_t *                      length,
-    globus_off_t *                      write_delta);
+    globus_off_t *                      length);
+
 
 /*
  * get write_range
  * 
  * This should be called during recv() in order to know the specific
- * offset and length that the data will be written to storage system, as well
- * as the delta from the server read offset that you should write to the 
- * storage system (write_delta) and the delta from the server read offset to
- * the offset that you should pass to 
+ * offset and length that the data will be written to storage system.
  * globus_gridftp_server_update_bytes_written();  
  */ 
  /* XXX explain better */
@@ -791,9 +822,7 @@ void
 globus_gridftp_server_get_write_range(
     globus_gfs_operation_t              op,
     globus_off_t *                      offset,
-    globus_off_t *                      length,
-    globus_off_t *                      write_delta,
-    globus_off_t *                      transfer_delta);
+    globus_off_t *                      length);
 
 
 

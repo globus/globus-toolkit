@@ -40,6 +40,7 @@ void
 globus_i_gfs_control_init();
 
 extern globus_gfs_acl_module_t          globus_gfs_acl_cas_module;
+extern globus_gfs_acl_module_t          globus_gfs_acl_test_module;
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"
