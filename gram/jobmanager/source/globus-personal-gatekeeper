@@ -297,7 +297,7 @@ stderr_log,local_cred - ${libexecdir}/globus-job-manager globus-job-manager -con
 EOF
 
     ${GLOBUS_SH_CAT-cat} > ${scratch}/gatekeeper.conf <<EOF
--x509_cert_dir /etc/grid-security/certificates
+-x509_cert_dir ${X509_CERT_DIR-/etc/grid-security/certificates}
 -gridmap ${scratch}/gridmap
 -home ${GLOBUS_LOCATION}
 -e libexec
