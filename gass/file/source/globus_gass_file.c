@@ -40,6 +40,7 @@ typedef struct globus_l_gass_file_s
     unsigned long timestamp;
     unsigned long total_length;
     FILE *fp;
+    globus_url_scheme_t scheme_type;
 } globus_l_gass_file_t;
 
 /******************************************************************************
@@ -216,7 +217,7 @@ globus_gass_open(char *url, int oflag, ...)
 	globus_gass_file_exit();
 	return fd;
     }
-    globus_url_destroy(&globus_url);
+
 
     /* check for invalid combos on GASS urls */
     if((O_RDONLY != 0 &&
@@ -225,6 +226,7 @@ globus_gass_open(char *url, int oflag, ...)
        ((oflag & (O_RDONLY|O_TRUNC))  == (O_RDONLY|O_TRUNC)))
     {
 	globus_gass_file_exit();
+	globus_url_destroy(&globus_url);
 	return -1;
     }
 
@@ -235,7 +237,25 @@ globus_gass_open(char *url, int oflag, ...)
     file->oflag = oflag;
     file->fd = -1;
     file->fp = GLOBUS_NULL;
+    file->scheme_type=globus_url.scheme_type;
+    
+    if(globus_url.scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE)
+    {
+	rc = globus_l_gass_add_and_trunc(file,
+				 oflag,
+				 mode);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    goto failure;
+	}
+	globus_url_destroy(&globus_url);
+	globus_gass_file_exit();
+	return file->fd;
+    }
 
+    globus_url_destroy(&globus_url);
+
+    
     switch(oflag & (O_RDONLY|O_WRONLY|O_RDWR|O_TRUNC|O_APPEND))
     {
     case (O_RDONLY):
@@ -416,48 +436,60 @@ globus_gass_close(int fd)
     else
     {
 	close(file->fd);
-	switch(file->oflag & (O_RDONLY|O_WRONLY|O_APPEND|O_RDWR))
+	
+	if (file->scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE)
 	{
-	case (O_RDONLY):
 	    globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
 			      file->url,
 			      globus_l_gass_file_tag,
 			      file->timestamp,
 			      GLOBUS_FALSE);
-	    break;
-	case (O_WRONLY|O_APPEND):
-	    globus_gass_client_put_socket_close(file->fd,
-					 GLOBUS_NULL,
-					 GLOBUS_NULL,
-					 GLOBUS_NULL);
-	    break;
-	case (O_WRONLY):
-	case (O_RDWR):
-	    file->fd = open(file->filename,
-			    O_RDONLY);
-	    globus_gass_client_put_fd(file->url,
-			       GLOBUS_NULL,
-			       file->fd,
-			       GLOBUS_GASS_LENGTH_UNKNOWN,
-			       GLOBUS_GASS_LENGTH_UNKNOWN,
-			       GLOBUS_FALSE,
-			       GLOBUS_GASS_ACK_COMPLETE,
-			       &file->timestamp,
-			       &file->total_length,
-			       &rc);
-	    close(file->fd);
-	    globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
-			      file->url,
-			      globus_l_gass_file_tag,
-			      file->timestamp,
-			      GLOBUS_FALSE);
-			    
-	    break;
-	default:
-	    globus_gass_file_exit();
-	    return -1;
 	}
-
+	else
+	{
+	    switch(file->oflag & (O_RDONLY|O_WRONLY|O_APPEND|O_RDWR))
+	    {
+	    case (O_RDONLY):
+		globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+					 file->url,
+					 globus_l_gass_file_tag,
+					 file->timestamp,
+					 GLOBUS_FALSE);
+		break;
+	    case (O_WRONLY|O_APPEND):
+		globus_gass_client_put_socket_close(file->fd,
+						    GLOBUS_NULL,
+						    GLOBUS_NULL,
+						    GLOBUS_NULL);
+		break;
+	    case (O_WRONLY):
+	    case (O_RDWR):
+		file->fd = open(file->filename,
+				O_RDONLY);
+		globus_gass_client_put_fd(file->url,
+					  GLOBUS_NULL,
+					  file->fd,
+					  GLOBUS_GASS_LENGTH_UNKNOWN,
+					  GLOBUS_GASS_LENGTH_UNKNOWN,
+					  GLOBUS_FALSE,
+					  GLOBUS_GASS_ACK_COMPLETE,
+					  &file->timestamp,
+					  &file->total_length,
+					  &rc);
+		close(file->fd);
+		globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
+					 file->url,
+					 globus_l_gass_file_tag,
+					 file->timestamp,
+					 GLOBUS_FALSE);
+		
+		break;
+	    default:
+		globus_gass_file_exit();
+		return -1;
+	    } /* switch(file->oflag... */
+	} /* if file->scheme_type =... else */
+	
 	if(file->filename != GLOBUS_NULL)
 	{
 	    globus_free(file->filename);	    
