@@ -108,7 +108,8 @@ perf_plugin_response_cb(
     if(ps->marker_cb &&
         ftp_response &&
         ftp_response->response_buffer &&
-        ftp_response->code == 112)
+        ftp_response->code == 112 &&
+        !ps->use_data) /* bad server... sending markers in non-EB mode */
     {
         buffer = (char *) ftp_response->response_buffer;
 
