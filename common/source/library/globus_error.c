@@ -382,11 +382,11 @@ globus_error_put (globus_object_t * error)
   globus_result_t new_result;
   int err;
 
-  if (! s_error_cache_initialized ) return GLOBUS_SUCCESS;
-  globus_i_error_output_error(error);
+  if (! s_error_cache_initialized || !error) return GLOBUS_SUCCESS;
   
   err = globus_mutex_lock (&s_result_to_object_mutex);
   if (err) return GLOBUS_SUCCESS;
+  globus_i_error_output_error(error);
 
   if ( globus_object_type_match (globus_object_get_type(error),
 				 GLOBUS_ERROR_TYPE_BASE)

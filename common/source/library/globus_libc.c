@@ -3172,6 +3172,17 @@ globus_libc_addr_to_contact_string(
     int                                 ni_flags;
     char *                              cs;
     
+    if(!GlobusLibcProtocolFamilyIsIP(GlobusLibcSockaddrGetFamily(*addr)))
+    {
+        result = globus_error_put(
+            globus_error_construct_error(
+               GLOBUS_COMMON_MODULE,
+               GLOBUS_NULL,
+               0,
+               "[globus_libc_addr_to_contact_string] Invalid addr family"));
+        goto error_nameinfo;
+    }
+    
     if(opts_mask & GLOBUS_LIBC_ADDR_LOCAL ||
         globus_libc_addr_is_loopback(addr) || 
         globus_libc_addr_is_wildcard(addr))
@@ -3183,7 +3194,7 @@ globus_libc_addr_to_contact_string(
                    GLOBUS_COMMON_MODULE,
                    GLOBUS_NULL,
                    0,
-                   "[globus_libc_addr_to_string] globus_libc_gethostaddr failed"));
+                   "[globus_libc_addr_to_contact_string] globus_libc_gethostaddr failed"));
             goto error_nameinfo;
         }
         
@@ -3214,7 +3225,7 @@ globus_libc_addr_to_contact_string(
                 GLOBUS_COMMON_MODULE,
                 GLOBUS_NULL,
                 0,
-                "[globus_libc_addr_to_string] malloc fsiled"));
+                "[globus_libc_addr_to_contact_string] malloc fsiled"));
         goto error_memory;
     }
     
