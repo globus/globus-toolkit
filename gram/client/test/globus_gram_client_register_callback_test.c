@@ -18,7 +18,8 @@ gram_state_callback(
     int					state,
     int					errorcode);
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
     char *				callback_contact;
     char *				job_contact;
@@ -60,45 +61,43 @@ int main(int argc, char *argv[])
     globus_mutex_lock(&monitor.mutex);
     rc = globus_gram_client_job_request(
 	    argv[1],
-	    "&(executable=/bin/sleep)(arguments=300)",
+	    "&(executable=/bin/sleep)(arguments=90)",
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
-	    callback_contact,
+	    GLOBUS_NULL,
 	    &job_contact);
 
     if(rc != GLOBUS_SUCCESS)
     {
 	fprintf(stderr,
-		"Error submitting job request %s.\n",
+		"Failed submitting job request because %s.\n",
+		globus_gram_client_error_string(rc));
+
+	goto destroy_callback_contact;
+    }
+    
+    rc = globus_gram_client_job_callback_register(
+	    job_contact,
+	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
+	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
+	    callback_contact,
+	    &monitor.state,
+	    &monitor.errorcode);
+
+    if(rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr,
+		"Error registering callback contact because %s.\n",
 		globus_gram_client_error_string(rc));
 
 	goto destroy_callback_contact;
     }
 
-    while(monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE &&
-	  monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED &&
+    while(monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED &&
 	  monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
     {
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
 
-    if(monitor.state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE)
-    {
-	rc = globus_gram_client_job_cancel(job_contact);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    fprintf(stderr,
-		    "Error cancelling job %s.\n",
-		    globus_gram_client_error_string(rc));
-
-	    goto destroy_callback_contact;
-	}
-    }
-
-    while(monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE &&
-	  monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
-    {
-	globus_cond_wait(&monitor.cond, &monitor.mutex);
-    }
     rc = monitor.errorcode;
 destroy_callback_contact:
     globus_gram_client_callback_disallow(callback_contact);
