@@ -1086,10 +1086,6 @@ main(int ac, char **av)
 	if (test_flag)
 		exit(0);
 
-#ifdef GSSAPI
-	ssh_gssapi_clean_env();
-#endif /* GSSAPI */
-
 	/*
 	 * Clear out any supplemental groups we may have inherited.  This
 	 * prevents inadvertent creation of files with bad modes (in the
@@ -1798,7 +1794,7 @@ do_ssh1_kex(void)
     Buffer buf;
     unsigned char *data;
     unsigned int data_len;
-    extern unsigned char ssh1_key_digest[16];   /* in gss-genr.c */
+    extern unsigned char ssh1_key_digest[16];   /* in auth2-gss.c */
 
 
     debug("Calculating MD5 hash of server and host keys...");
@@ -1892,7 +1888,7 @@ do_ssh2_kex(void)
 		orig= NULL;
 		
         if (options.gss_keyex)
-        	gss = ssh_server_gssapi_mechanisms();
+        	gss = ssh_gssapi_server_mechanisms();
         else
         	gss = NULL;
         

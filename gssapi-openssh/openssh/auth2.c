@@ -253,7 +253,6 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		debug2("input_userauth_request: try method %s", method);
 		authenticated =	m->userauth(authctxt);
 	}
-
 	userauth_finish(authctxt, authenticated, method);
 
 	xfree(service);

@@ -114,13 +114,13 @@ struct Kex {
 	Buffer	peer;
 	int	done;
 	int	flags;
-	char 	*host;
+	char    *host;
 	char	*client_version_string;
 	char	*server_version_string;
+	struct  KexOptions options;
 	int	(*verify_host_key)(Key *);
 	Key	*(*load_host_key)(int);
 	int	(*host_key_index)(Key *);
-	struct  KexOptions options;
 	void	(*kex[KEX_MAX])(Kex *);
 };
 
@@ -137,11 +137,9 @@ void	 kexdh_client(Kex *);
 void	 kexdh_server(Kex *);
 void	 kexgex_client(Kex *);
 void	 kexgex_server(Kex *);
-void	 kexgex_client(Kex *);
-void	 kexgex_server(Kex *);
 #ifdef GSSAPI
-void	 kexgss_client(Kex *);
-void	 kexgss_server(Kex *);
+void     kexgss_client(Kex *);
+void     kexgss_server(Kex *);
 #endif
 
 u_char *
@@ -150,11 +148,6 @@ kex_dh_hash(char *, char *, char *, int, char *, int, u_char *, int,
 u_char *
 kexgex_hash(char *, char *, char *, int, char *, int, u_char *, int,
     int, int, int, BIGNUM *, BIGNUM *, BIGNUM *, BIGNUM *, BIGNUM *);
-#ifdef GSSAPI
-u_char *
-kex_gssapi_hash(char *, char *, char *, int, char *, int, u_char *, int,
-    BIGNUM *, BIGNUM *, BIGNUM *);
-#endif
 
 #if defined(DEBUG_KEX) || defined(DEBUG_KEXDH)
 void	dump_digest(char *, u_char *, int);

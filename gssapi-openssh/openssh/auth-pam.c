@@ -413,6 +413,16 @@ char **fetch_pam_environment(void)
 #endif /* HAVE_PAM_GETENVLIST */
 }
 
+void free_pam_environment(char **env)
+{
+	int i;
+
+	if (env != NULL) {
+		for (i = 0; env[i] != NULL; i++)
+			xfree(env[i]);
+	}
+}
+
 /* Set a PAM environment string. We need to do this so that the session
  * modules can handle things like Kerberos/GSI credentials that appear
  * during the ssh authentication process.
@@ -431,16 +441,6 @@ int do_pam_putenv(char *name, char *value) {
 	}
 #endif
 	return(ret);
-}
-
-void free_pam_environment(char **env)
-{
-	int i;
-
-	if (env != NULL) {
-		for (i = 0; env[i] != NULL; i++)
-			xfree(env[i]);
-	}
 }
 
 /* Print any messages that have been generated during authentication */

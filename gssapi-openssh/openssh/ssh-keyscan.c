@@ -356,9 +356,6 @@ keygrab_ssh2(con *c)
 	c->c_kex = kex_setup(myproposal);
 	c->c_kex->kex[KEX_DH_GRP1_SHA1] = kexdh_client;
 	c->c_kex->kex[KEX_DH_GEX_SHA1] = kexgex_client;
-#ifdef GSSAPI
-	c->c_kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_client;
-#endif
 	c->c_kex->verify_host_key = hostjump;
 
 	if (!(j = setjmp(kexjmp))) {

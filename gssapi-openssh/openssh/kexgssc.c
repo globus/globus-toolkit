@@ -38,7 +38,6 @@
 #include "dh.h"
 #include "ssh2.h"
 #include "ssh-gss.h"
-#include "monitor_wrap.h"
 #include "canohost.h"
 
 
@@ -55,13 +54,15 @@ kexgss_client(Kex *kex)
 	unsigned char *kbuf;
 	unsigned char *hash;
 	unsigned char *serverhostkey;
+	char *msg;
+	char *lang;
 	int type = 0;
 	int first = 1;
-	int slen = 0;
+	int slen = 0, strlen;
 	
 	/* Initialise our GSSAPI world */
 	ssh_gssapi_build_ctx(&ctxt);
-	if (ssh_gssapi_id_kex(ctxt,kex->name)==NULL) {
+	if (ssh_gssapi_client_id_kex(ctxt,kex->name)==NULL) {
 		fatal("Couldn't identify host exchange");
 	}
 	if (ssh_gssapi_import_name(ctxt,get_canonical_hostname(1))) {
@@ -81,7 +82,7 @@ kexgss_client(Kex *kex)
     	}
     		
 	token_ptr = GSS_C_NO_BUFFER;
-			 
+			
 	do {
 		debug("Calling gss_init_sec_context");
 		
@@ -141,20 +142,20 @@ kexgss_client(Kex *kex)
 				debug("Received GSSAPI_CONTINUE");
 				if (maj_status == GSS_S_COMPLETE) 
 					fatal("GSSAPI Continue received from server when complete");
-				recv_tok.value=packet_get_string(&slen);
-				recv_tok.length=slen; /* int vs. size_t */
+				recv_tok.value=packet_get_string(&strlen);
+				recv_tok.length=strlen; /* int vs. size_t */
 				break;
 			case SSH2_MSG_KEXGSS_COMPLETE:
 				debug("Received GSSAPI_COMPLETE");
 			        packet_get_bignum2(dh_server_pub);
-			    	msg_tok.value=packet_get_string(&slen);
-				msg_tok.length=slen; /* int vs. size_t */
+			    	msg_tok.value=packet_get_string(&strlen);
+				msg_tok.length=strlen; /* int vs. size_t */
 
 				/* Is there a token included? */
 				if (packet_get_char()) {
 					recv_tok.value=
-					    packet_get_string(&slen);
-					recv_tok.length=slen; /* int/size_t */
+					    packet_get_string(&strlen);
+					recv_tok.length=strlen; /*int/size_t*/
 					/* If we're already complete - protocol error */
 					if (maj_status == GSS_S_COMPLETE)
 						packet_disconnect("Protocol error: received token when complete");
@@ -164,6 +165,13 @@ kexgss_client(Kex *kex)
 				   		packet_disconnect("Protocol error: did not receive final token");
 				}
 				break;
+			case SSH2_MSG_KEXGSS_ERROR:
+				debug("Received Error");
+				maj_status=packet_get_int();
+				min_status=packet_get_int();
+				msg=packet_get_string(NULL);
+				lang=packet_get_string(NULL);
+				fatal(msg);
 			default:
 				packet_disconnect("Protocol error: didn't expect packet type %d",
 		    		type);
@@ -193,8 +201,8 @@ kexgss_client(Kex *kex)
         memset(kbuf, 0, klen);
         xfree(kbuf);
         
-	slen=0;
-        hash = kex_gssapi_hash(
+        /* The GSS hash is identical to the DH one */
+        hash = kex_dh_hash(
  	    kex->client_version_string,
             kex->server_version_string,
             buffer_ptr(&kex->my), buffer_len(&kex->my),

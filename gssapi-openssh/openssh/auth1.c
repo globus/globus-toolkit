@@ -30,14 +30,13 @@ RCSID("$OpenBSD: auth1.c,v 1.47 2003/02/06 21:22:42 markus Exp $");
 
 /* import */
 extern ServerOptions options;
-extern Authmethod method_gssapi;
-
-
 
 #ifdef GSSAPI
 #ifdef GSI
 #include "globus_gss_assist.h"
 #endif
+
+extern Authmethod method_gssapi;
 
 int     userauth_gssapi(Authctxt *authctxt);
 
