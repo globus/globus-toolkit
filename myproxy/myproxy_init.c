@@ -57,8 +57,8 @@ static char usage[] = \
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
-"       -k | --credname <name>		  Specifies credential name\n"
-"       -K | --creddesc <description>	  Specifies credential description\n"
+"       -k | --credname        <name>     Specifies credential name\n"
+"       -K | --creddesc        <desc>     Specifies credential description\n"
 "\n";
 
 struct option long_options[] =
