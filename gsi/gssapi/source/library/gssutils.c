@@ -102,214 +102,246 @@ gss_create_and_fill_context(
     const gss_cred_usage_t              cred_usage,
     OM_uint32                           req_flags)
 {
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    gss_ctx_id_desc*                    context = NULL;
+    gss_cred_id_t                       output_cred_handle= NULL;
+    int                                 j;
 
-	OM_uint32 major_status = GSS_S_COMPLETE;
-	gss_ctx_id_desc* context = NULL;
-	gss_cred_id_t output_cred_handle= NULL;
-	int j;
+    context = (gss_ctx_id_desc*) malloc(sizeof(gss_ctx_id_desc)) ;
+    if (context == NULL)
+    {
+        GSSerr(GSSERR_F_CREATE_FILL,ERR_R_MALLOC_FAILURE);
+        return GSS_S_FAILURE;
+    }
 
-	context = (gss_ctx_id_desc*) malloc(sizeof(gss_ctx_id_desc)) ;
-	if (context == NULL) {
-		GSSerr(GSSERR_F_CREATE_FILL,ERR_R_MALLOC_FAILURE);
-		return GSS_S_FAILURE;
-	}
-	*context_handle_P = context;
+    *context_handle_P = context;
   
-	context->target_name = NULL;
-	context->source_name = NULL; 
-	context->cred_handle = (gss_cred_id_desc*) NULL ;
-	context->ret_flags = 0;
-	context->req_flags = req_flags;
-	context->gs_ssl = NULL;
-	context->gs_rbio = NULL;
-	context->gs_wbio = NULL;
-	context->gs_sslbio = NULL;
-	context->gs_state = GS_CON_ST_HANDSHAKE;
-	context->delegation_state = GS_DELEGATION_START;
-	context->dpkey = NULL;
-	context->dcert = NULL;
-	context->locally_initiated = (cred_usage == GSS_C_INITIATE);
+    context->target_name = NULL;
+    context->source_name = NULL; 
+    context->cred_handle = (gss_cred_id_desc*) NULL ;
+    context->ret_flags = 0;
+    context->req_flags = req_flags;
+    context->gs_ssl = NULL;
+    context->gs_rbio = NULL;
+    context->gs_wbio = NULL;
+    context->gs_sslbio = NULL;
+    context->gs_state = GS_CON_ST_HANDSHAKE;
+    context->delegation_state = GS_DELEGATION_START;
+    context->dpkey = NULL;
+    context->dcert = NULL;
+    context->locally_initiated = (cred_usage == GSS_C_INITIATE);
+    
+    proxy_verify_ctx_init(&(context->pvxd));
+    proxy_verify_init(&(context->pvd), &(context->pvxd));
 
-	proxy_verify_ctx_init(&(context->pvxd));
-	proxy_verify_init(&(context->pvd), &(context->pvxd));
-
-	if (cred_handle == GSS_C_NO_CREDENTIAL) {
-
-		major_status = gss_acquire_cred(minor_status,
-							GSS_C_NO_NAME,
-							GSS_C_INDEFINITE,
-							GSS_C_NO_OID_SET,
-							cred_usage,
-							&output_cred_handle,
-							NULL,
-							NULL) ;
-		if (GSS_ERROR(major_status)) {
-			return major_status ;
-		}
+    if (cred_handle == GSS_C_NO_CREDENTIAL)
+    {
+        major_status = gss_acquire_cred(minor_status,
+                                        GSS_C_NO_NAME,
+                                        GSS_C_INDEFINITE,
+                                        GSS_C_NO_OID_SET,
+                                        cred_usage,
+                                        &output_cred_handle,
+                                        NULL,
+                                        NULL);
+        if (GSS_ERROR(major_status))
+        {
+            return major_status;
+        }
 
 #ifdef DEBUG
-		fprintf(stderr,"Passed gss_acquire_cred\n");
+        fprintf(stderr,"Passed gss_acquire_cred\n");
 #endif
-		context->cred_handle = output_cred_handle;
-		context->cred_obtained = 1 ;
-	} else {
-		context->cred_handle =  cred_handle ;
-		context->cred_obtained = 0 ;
-	}
+        context->cred_handle = output_cred_handle;
+        context->cred_obtained = 1;
+    }
+    else
+    {
+        context->cred_handle = cred_handle;
+        context->cred_obtained = 0;
+    }
 
-	if (cred_usage == GSS_C_INITIATE) {
-		major_status = gss_copy_name_to_name(minor_status,
-								&context->source_name,
-								context->cred_handle->globusid) ;
-	} else {
-		major_status = gss_copy_name_to_name(minor_status,
-								&context->target_name,
-								context->cred_handle->globusid) ;
-	}
+    if (cred_usage == GSS_C_INITIATE)
+    {
+        major_status = gss_copy_name_to_name(minor_status,
+                                             &context->source_name,
+                                             context->cred_handle->globusid);
+    }
+    else
+    {
+        major_status = gss_copy_name_to_name(minor_status,
+                                             &context->target_name,
+                                             context->cred_handle->globusid);
+    }
 
-	/* Set the verify callback to test our proxy 
-	 * policies. 
-	 * The SSL_set_verify does not appear to work as 
-	 * expected. The SSL_CTX_set_verify does more,
-	 * it also sets the X509_STORE_set_verify_cb_func
-	 * which is what we want. This occurs in both 
-	 * SSLeay 0.8.1 and 0.9.0 
-	 */
+    /* Set the verify callback to test our proxy 
+     * policies. 
+     * The SSL_set_verify does not appear to work as 
+     * expected. The SSL_CTX_set_verify does more,
+     * it also sets the X509_STORE_set_verify_cb_func
+     * which is what we want. This occurs in both 
+     * SSLeay 0.8.1 and 0.9.0 
+     */
 
-	if (context->cred_handle->pcd->certdir) {
-		context->pvxd.certdir = strdup(context->cred_handle->pcd->certdir);
-	}
+    if (context->cred_handle->pcd->certdir)
+    {
+        context->pvxd.certdir = strdup(context->cred_handle->pcd->certdir);
+    }
 
-	SSL_CTX_set_verify(context->cred_handle->pcd->gs_ctx,
-		SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-		proxy_verify_callback);
+    SSL_CTX_set_verify(context->cred_handle->pcd->gs_ctx,
+                       SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                       proxy_verify_callback);
 
 #ifdef DEBUG
-	fprintf(stderr,"SSL_CTX_set_app_data to pvd %p\n",
-			context->pvd);
+    fprintf(stderr,"SSL_CTX_set_app_data to pvd %p\n",
+            context->pvd);
 #endif
 #if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-	/*
-	 * for now we will accept any purpose, as Globus does
+    /*
+     * for now we will accept any purpose, as Globus does
      * nor have any restrictions such as this is an SSL client
-	 * or SSL server. Globus certificates are not required
-	 * to have these fields set today.
-	 * DEE - Need  to look at this in future if we use 
-	 * certificate extensions...  
-	 */
-	SSL_CTX_set_purpose(context->cred_handle->pcd->gs_ctx,
+     * or SSL server. Globus certificates are not required
+     * to have these fields set today.
+     * DEE - Need  to look at this in future if we use 
+     * certificate extensions...  
+     */
+    SSL_CTX_set_purpose(context->cred_handle->pcd->gs_ctx,
 			X509_PURPOSE_ANY);
 #endif
 
-	/* setup the SSL  for the gs_shuffle routine */
+    /* setup the SSL  for the gs_shuffle routine */
   
-        context->gs_ssl = SSL_new(context->cred_handle->pcd->gs_ctx);
-	if (context->gs_ssl == NULL) {
-		return GSS_S_FAILURE;
-	}
+    context->gs_ssl = SSL_new(context->cred_handle->pcd->gs_ctx);
 
-	if (cred_usage == GSS_C_ACCEPT) {
-		SSL_set_ssl_method(context->gs_ssl,SSLv23_method());
-		SSL_set_options(context->gs_ssl,SSL_OP_NO_SSLv2|SSL_OP_NO_TLSv1);
-	} else {
-		SSL_set_ssl_method(context->gs_ssl,SSLv3_method());
-	}
+    if (context->gs_ssl == NULL)
+    {
+        return GSS_S_FAILURE;
+    }
 
-	SSL_set_ex_data(context->gs_ssl, PVD_SSL_EX_DATA_IDX, 
-			(char *)&(context->pvd)); 
+    if (cred_usage == GSS_C_ACCEPT)
+    {
+        SSL_set_ssl_method(context->gs_ssl,SSLv23_method());
+        SSL_set_options(context->gs_ssl,SSL_OP_NO_SSLv2|SSL_OP_NO_TLSv1);
+    }
+    else
+    {
+        SSL_set_ssl_method(context->gs_ssl,SSLv3_method());
+    }
 
-	/*
-	 * If accept and caller set GSS_C_CONF_FLAG, remove
-	 * the NULL encryptions.    
-	 * If initiate and caller did not set the GSS_C_CONF_FLAG
-	 * then move NULLs to begining.
-	 * else, it is already set in the end, so nothing to do.
-	 */
+    SSL_set_ex_data(context->gs_ssl, PVD_SSL_EX_DATA_IDX, 
+                    (char *)&(context->pvd)); 
 
-	if (cred_usage == GSS_C_ACCEPT) {
-		if (context->req_flags & GSS_C_CONF_FLAG) {
-			context->gs_ssl->cipher_list = sk_SSL_CIPHER_dup(
-				context->cred_handle->pcd->gs_ctx->cipher_list);
-	 		context->gs_ssl->cipher_list_by_id = sk_SSL_CIPHER_dup(
-				context->cred_handle->pcd->gs_ctx->cipher_list_by_id);
-		}
-		if (context->gs_ssl->cipher_list_by_id 
-			&& context->gs_ssl->cipher_list) {
-		  for(j=0;j<context->cred_handle->pcd->num_null_enc_ciphers;j++) {
-			/* need to delete_ptr to get the same cipher, if not at end */
-			  sk_SSL_CIPHER_delete_ptr(context->gs_ssl->cipher_list_by_id,
-				sk_SSL_CIPHER_pop(context->gs_ssl->cipher_list));
-			}
-		}
-	} else {
-		if (!(context->req_flags & GSS_C_CONF_FLAG)) {
-			context->gs_ssl->cipher_list = sk_SSL_CIPHER_dup(
-				context->cred_handle->pcd->gs_ctx->cipher_list);
-			context->gs_ssl->cipher_list_by_id = sk_SSL_CIPHER_dup(
-				context->cred_handle->pcd->gs_ctx->cipher_list_by_id);
-		}
-		if (context->gs_ssl->cipher_list) {
-			for(j=0;j<context->cred_handle->pcd->num_null_enc_ciphers;j++) {
-				sk_SSL_CIPHER_unshift(context->gs_ssl->cipher_list,
-					sk_SSL_CIPHER_pop(context->gs_ssl->cipher_list));
-			}
-		}
-	}
+    /*
+     * If accept and caller set GSS_C_CONF_FLAG, remove
+     * the NULL encryptions.    
+     * If initiate and caller did not set the GSS_C_CONF_FLAG
+     * then move NULLs to begining.
+     * else, it is already set in the end, so nothing to do.
+     */
+
+    if (cred_usage == GSS_C_ACCEPT)
+    {
+        if (context->req_flags & GSS_C_CONF_FLAG)
+        {
+            context->gs_ssl->cipher_list = sk_SSL_CIPHER_dup(
+                context->cred_handle->pcd->gs_ctx->cipher_list);
+            context->gs_ssl->cipher_list_by_id = sk_SSL_CIPHER_dup(
+                context->cred_handle->pcd->gs_ctx->cipher_list_by_id);
+        }
+
+        if (context->gs_ssl->cipher_list_by_id 
+            && context->gs_ssl->cipher_list)
+        {
+            for(j=0;j<context->cred_handle->pcd->num_null_enc_ciphers;j++)
+            {
+                /* need to delete_ptr to get the same cipher, if not at end */
+                sk_SSL_CIPHER_delete_ptr(
+                    context->gs_ssl->cipher_list_by_id,
+                    sk_SSL_CIPHER_pop(context->gs_ssl->cipher_list));
+            }
+        }
+    }
+    else
+    {
+        if (!(context->req_flags & GSS_C_CONF_FLAG))
+        {
+            context->gs_ssl->cipher_list = sk_SSL_CIPHER_dup(
+                context->cred_handle->pcd->gs_ctx->cipher_list);
+            context->gs_ssl->cipher_list_by_id = sk_SSL_CIPHER_dup(
+                context->cred_handle->pcd->gs_ctx->cipher_list_by_id);
+        }
+        if (context->gs_ssl->cipher_list)
+        {
+            for(j=0;j<context->cred_handle->pcd->num_null_enc_ciphers;j++)
+            {
+                sk_SSL_CIPHER_unshift(
+                    context->gs_ssl->cipher_list,
+                    sk_SSL_CIPHER_pop(context->gs_ssl->cipher_list));
+            }
+        }
+    }
 
 #ifdef DEBUG
-	fprintf(stderr,"SSL is at %p\n",context->gs_ssl);
-	fprintf(stderr,"SSL_set_app_data to pvd %p\n",
-			context->pvd);
+    fprintf(stderr,"SSL is at %p\n",context->gs_ssl);
+    fprintf(stderr,"SSL_set_app_data to pvd %p\n",
+            context->pvd);
 #endif
 
 	
     
-	if ((context->gs_rbio = BIO_new(BIO_s_mem())) == NULL) {
-		return GSS_S_FAILURE;
-	}
+    if ((context->gs_rbio = BIO_new(BIO_s_mem())) == NULL)
+    {
+        return GSS_S_FAILURE;
+    }
 
-	if ((context->gs_wbio = BIO_new(BIO_s_mem())) == NULL) {
-		return GSS_S_FAILURE;
-	}
+    if ((context->gs_wbio = BIO_new(BIO_s_mem())) == NULL)
+    {
+        return GSS_S_FAILURE;
+    }
 
-	if ((context->gs_sslbio = BIO_new(BIO_f_ssl())) == NULL) {
-		return GSS_S_FAILURE;
-	}
+    if ((context->gs_sslbio = BIO_new(BIO_f_ssl())) == NULL)
+    {
+        return GSS_S_FAILURE;
+    }
 #ifdef DEBUG
-	fprintf(stderr,"Setting the SSL state\n");
+    fprintf(stderr,"Setting the SSL state\n");
 #endif
 
-	if ( cred_usage == GSS_C_INITIATE) { 
-		SSL_set_connect_state(context->gs_ssl);
-	} else {
-		SSL_set_accept_state(context->gs_ssl);
-	}
+    if ( cred_usage == GSS_C_INITIATE)
+    {
+        SSL_set_connect_state(context->gs_ssl);
+    }
+    else
+    {
+        SSL_set_accept_state(context->gs_ssl);
+    }
 
-	SSL_set_bio(context->gs_ssl,
-				context->gs_rbio,
-				context->gs_wbio);
+    SSL_set_bio(context->gs_ssl,
+                context->gs_rbio,
+                context->gs_wbio);
 
-	BIO_set_ssl(context->gs_sslbio, 
-				context->gs_ssl, 
-				BIO_NOCLOSE);
+    BIO_set_ssl(context->gs_sslbio, 
+                context->gs_ssl, 
+                BIO_NOCLOSE);
 
 #ifdef DEBUG
-	{
-		char buff[256];
-		int i;
-		STACK *sk;
-
-		fprintf(stderr,"Ciphers available:\n");
-		sk=(STACK *)SSL_get_ciphers(context->gs_ssl);
-		 for (i=0; i<sk_num(sk); i++) {
-			SSL_CIPHER_description((SSL_CIPHER *)sk_value(sk,i),
-					buff,256);
-			fprintf(stderr,buff);
-		 }
-	}
+    {
+        char buff[256];
+        int i;
+        STACK *sk;
+        
+        fprintf(stderr,"Ciphers available:\n");
+        sk=(STACK *)SSL_get_ciphers(context->gs_ssl);
+        for (i=0; i<sk_num(sk); i++)
+        {
+            SSL_CIPHER_description((SSL_CIPHER *)sk_value(sk,i),
+                                   buff,256);
+            fprintf(stderr,buff);
+        }
+    }
 #endif
 
-	return GSS_S_COMPLETE;
+    return GSS_S_COMPLETE;
 }
 
 

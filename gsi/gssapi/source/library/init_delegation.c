@@ -34,12 +34,11 @@ GSS_CALLCONV gss_init_delegation(
     const gss_OID                       desired_mech,
     const gss_OID_set                   restriction_oids,
     const gss_buffer_set_t              restriction_buffers,
+    OM_uint32                           time_req,
     const gss_buffer_t                  input_token,
     gss_buffer_t                        output_token)
 {
     OM_uint32 		                major_status = GSS_S_COMPLETE;
-    OM_uint32                           time_req; /* probably a
-                                                     parameter */
     gss_ctx_id_desc *                   context;
     gss_cred_id_desc *                  cred;
     X509_REQ *                          reqp = NULL;
@@ -48,7 +47,7 @@ GSS_CALLCONV gss_init_delegation(
     X509_EXTENSION *                    ex = NULL;
     STACK_OF(X509_EXTENSION) *          extensions = NULL;
     int                                 i;
-    int                                 cert_chain_length;
+    int                                 cert_chain_length = 0;
     
 #ifdef DEBUG
     fprintf(stderr, "init_delegation:\n") ;
@@ -56,14 +55,21 @@ GSS_CALLCONV gss_init_delegation(
 
     *minor_status = 0;
     output_token->length = 0;
-    time_req = GSS_C_INDEFINITE;
     context = (gss_ctx_id_desc *) context_handle;
-    if (cred_handle == GSS_C_NO_CREDENTIAL)
-	cred_handle = context->cred_handle;
+
     cred = (gss_cred_id_desc *) cred_handle; 
         
     /* parameter checking goes here */
 
+    /* take the cred from the context if no cred is given us
+     * explicitly
+     */
+    
+    if (cred_handle == GSS_C_NO_CREDENTIAL)
+    {
+	cred = (gss_cred_id_desc *) context->cred_handle;
+    }
+    
     if(minor_status == NULL)
     {
         GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
@@ -199,18 +205,13 @@ GSS_CALLCONV gss_init_delegation(
             }
         }
 
-        if(proxy_sign_ext(0,
-                          cred->pcd->ucert,
-                          cred->pcd->upkey,
-                          EVP_md5(),
-                          reqp,
-                          &ncert,
-                          0,
-                          /*time_req, why can we use GSS_C_INDEFINITE here?*/
-                          0, /* don't want limited proxy */
-                          0,
-                          "proxy",
-                          extensions))
+        if(proxy_sign(cred->pcd->ucert,
+                      cred->pcd->upkey,
+                      reqp,
+                      &ncert,
+                      time_req,
+                      extensions,
+                      0))
         {
             /* should probably return a error related to not being
                able to sign the cert */
@@ -229,23 +230,16 @@ GSS_CALLCONV gss_init_delegation(
 
         /* push the number of certs in the cert chain */
 
-        cert_chain_length = sk_X509_num(cred->pcd->cert_chain);
-        
-        /*
-         * XXX: Look at me. Seems like sk_X509_num() returns -1 if the
-         *      chain is uninitialized. Maybe it's indicating an error?
-         */
-        if (cert_chain_length == -1)
+        if(cred->pcd->cert_chain != NULL)
         {
-            cert_chain_length = 0;
+            cert_chain_length = sk_X509_num(cred->pcd->cert_chain);
         }
         
         /* Add one for the issuer's certificate */
-        cert_chain_length++;
         
-        i2d_integer_bio(context->gs_sslbio, cert_chain_length);
+        i2d_integer_bio(context->gs_sslbio, cert_chain_length + 1);
 
-        for(i=sk_X509_num(cred->pcd->cert_chain)-1;i>=0;i--)
+        for(i=cert_chain_length-1;i>=0;i--)
         {
             cert = sk_X509_value(cred->pcd->cert_chain,i);
             
@@ -343,6 +337,8 @@ proxy_extension_create(
     }
     asn1_oct_string = NULL;
 
+    X509_EXTENSION_set_critical(ex,1);
+    
     return ex;
 
 err:

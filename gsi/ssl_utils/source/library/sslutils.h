@@ -181,15 +181,18 @@ ERR_set_continue_needed(void);
  * These match strings defined in gsserr.c
  */
     
-#define PRXYERR_F_PROXY_GENREQ          100
-#define PRXYERR_F_PROXY_SIGN            101      
-#define PRXYERR_F_VERIFY_CB             102         
-#define PRXYERR_F_PROXY_LOAD            103       
-#define PRXYERR_F_PROXY_TMP             104
-#define PRXYERR_F_INIT_CRED             105
-#define PRXYERR_F_LOCAL_CREATE          106
-#define PRXYERR_F_CB_NO_PW              107
-#define PRXYERR_F_GET_CA_SIGN_PATH      108
+#define PRXYERR_F_PROXY_GENREQ                 100
+#define PRXYERR_F_PROXY_SIGN                   101      
+#define PRXYERR_F_VERIFY_CB                    102         
+#define PRXYERR_F_PROXY_LOAD                   103       
+#define PRXYERR_F_PROXY_TMP                    104
+#define PRXYERR_F_INIT_CRED                    105
+#define PRXYERR_F_LOCAL_CREATE                 106
+#define PRXYERR_F_CB_NO_PW                     107
+#define PRXYERR_F_GET_CA_SIGN_PATH             108
+#define PRXYERR_F_PROXY_SIGN_EXT               109
+#define PRXYERR_F_PROXY_CHECK_SUBJECT_NAME     110
+#define PRXYERR_F_PROXY_CONSTRUCT_NAME         111
 
 /* 
  * defines for reasons 
@@ -413,27 +416,37 @@ proxy_genreq(
 
 int
 proxy_sign(
-    X509 *                              ucert,
-    EVP_PKEY *                          upkey,
-    EVP_MD *                            method,
+    X509 *                              user_cert,
+    EVP_PKEY *                          user_private_key,
     X509_REQ *                          req,
-    X509 **                             ncertp,
-    int                                 hours,
-    int                                 limit_proxy);
+    X509 **                             new_cert,
+    int                                 seconds,
+    STACK_OF(X509_EXTENSION) *          extensions,
+    int                                 limited_proxy);
 
 int
 proxy_sign_ext(
-    int                                 function,
-    X509 *                              ucert,
-    EVP_PKEY *                          upkey,
+    X509 *                              user_cert,
+    EVP_PKEY *                          user_private_key,
     EVP_MD *                            method,
     X509_REQ *                          req,
-    X509 **                             ncertp,
+    X509 **                             new_cert,
+    X509_NAME *                         subject_name,
+    X509_NAME *                         issuer_name,    
     int                                 seconds,
-    int                                 limit_proxy,
-    int                                 serial,
-    char *                              newcn,
+    int                                 serial_num,
     STACK_OF(X509_EXTENSION) *          extensions);
+
+int
+proxy_check_subject_name(
+    X509_REQ *                          req,
+    X509_NAME *                         subject_name);
+
+int
+proxy_construct_name(
+    X509 *                              cert,
+    X509_NAME **                        name,
+    char *                              newcn);
 
 int
 proxy_marshal_tmp(

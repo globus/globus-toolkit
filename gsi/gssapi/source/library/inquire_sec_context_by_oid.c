@@ -79,10 +79,10 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         goto err;
     }
     
-    cert_count = 0;
-    
     data_set->count = sk_X509_num(context->pvd.cert_chain);
 
+    cert_count=data_set->count;
+    
     data_set->elements = (gss_buffer_desc *) malloc(
         sizeof(gss_buffer_desc) *
         data_set->count);
@@ -97,7 +97,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     
     memset(data_set->elements,0,sizeof(gss_buffer_desc) * data_set->count);
 
-    while(cert_count < data_set->count &&
+    while(cert_count-- &&
           (cert = sk_X509_value(context->pvd.cert_chain,cert_count)))
     {
         extensions = cert->cert_info->extensions;
@@ -148,9 +148,6 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 break;
             }
         }
-
-        cert_count++;
-        
     } 
 
 err:

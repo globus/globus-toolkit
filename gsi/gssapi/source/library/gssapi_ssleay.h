@@ -300,7 +300,7 @@ extern
 const gss_OID_desc * const gss_mech_globus_gssapi_ssleay;
 
 extern
-const gss_OID_desc * const gss_restrictions_extension;;
+const gss_OID_desc * const gss_restrictions_extension;
 
 /**********************************************************************
                                Function prototypes

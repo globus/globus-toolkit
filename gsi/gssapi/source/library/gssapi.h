@@ -845,6 +845,8 @@ typedef struct gss_buffer_set_desc_struct {
                gss_cred_id_t *,    /* cred to be exported */
                const gss_OID,      /* desired mech*/
                OM_uint32,          /* option req */
+               OM_uint32,          /* time req */
+               OM_uint32 *,        /* time rec */
                const gss_buffer_t  /* import buffer */
               );
 
@@ -869,6 +871,7 @@ typedef struct gss_buffer_set_desc_struct {
                const gss_OID,
                const gss_OID_set,
                const gss_buffer_set_t,
+               OM_uint32,        /* time_req */
                const gss_buffer_t,
                gss_buffer_t
               );

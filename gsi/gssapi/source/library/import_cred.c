@@ -64,6 +64,8 @@ GSS_CALLCONV gss_import_cred(
     gss_cred_id_t *                     output_cred_handle,
     const gss_OID                       desired_mech,
     OM_uint32                           option_req,
+    OM_uint32                           time_req,
+    OM_uint32 *                         time_rec,
     const gss_buffer_t                  import_buffer)
 {
     OM_uint32                           major_status = 0;
@@ -111,8 +113,6 @@ GSS_CALLCONV gss_import_cred(
         goto err;
     }
     
-
-        
     if (import_buffer->length > 0)
     {
         if(option_req == 0)
@@ -160,7 +160,28 @@ GSS_CALLCONV gss_import_cred(
                                             NULL,
                                             NULL,
                                             bp);
+
+    /* If I understand this right, time_rec should contain the time
+     * until the cert expires */
+    
+    if (time_rec != NULL)
+    {
+        time_t                time_after;
+        time_t                time_now;
+        ASN1_UTCTIME *        asn1_time = NULL;
+
+        asn1_time = ASN1_UTCTIME_new();
+        X509_gmtime_adj(asn1_time,0);
+        time_now = ASN1_UTCTIME_mktime(asn1_time);
+        time_after = ASN1_UTCTIME_mktime(
+            X509_get_notAfter(
+                ((gss_cred_id_desc *) output_cred_handle)->pcd->ucert));
+        *time_rec = (OM_uint32) time_after - time_now;
+        ASN1_UTCTIME_free(asn1_time);
+    }
         
+
+
 err:
     if (bp) 
     {

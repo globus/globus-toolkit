@@ -1,4 +1,4 @@
- /**********************************************************************
+/**********************************************************************
 
 init_sec_context.c:
 
@@ -360,18 +360,15 @@ GSS_CALLCONV gss_init_sec_context(
             }
         }
 #endif
-        proxy_sign_ext(0,
-                       context->cred_handle->pcd->ucert,
-                       context->cred_handle->pcd->upkey,
-                       EVP_md5(),
-                       reqp,
-                       &ncert,
-                       time_req,
-                       (context->req_flags &
-                        GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)? 1:0,
-                       0,
-                       "proxy",
-                       extensions);
+        proxy_sign(context->cred_handle->pcd->ucert,
+                   context->cred_handle->pcd->upkey,
+                   reqp,
+                   &ncert,
+                   time_req,
+                   extensions,
+                   (context->req_flags &
+                    GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)? 1:0);
+
 		
         if (extensions)
         {
