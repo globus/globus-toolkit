@@ -378,7 +378,6 @@ print "them for you.\n";
 print "\n";
 
 $response = query_boolean("Do you wish to continue with the setup package?","y");
-
 if ($response eq "n")
 {
     print "\n";
@@ -386,6 +385,8 @@ if ($response eq "n")
 
     exit 0;
 }
+
+print "\n";
 
 $keyhash = determineKeys();
 runKeyGen($keyhash->{gen});
@@ -396,8 +397,6 @@ my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
 $metadata->finish();
 
-print "---------------------------------------------------------------------\n";
-print "$myname: Finished configuring package 'gsi_openssh'.\n";
 print "\n";
 print "Additional Notes:\n";
 print "\n";
@@ -416,6 +415,7 @@ print "    \t\$ LD_LIBRARY_PATH=\"$gpath/lib:\$LD_LIBRARY_PATH\"; \\\n";
 print "    \t     export LD_LIBRARY_PATH\n";
 print "\n";
 print "---------------------------------------------------------------------\n";
+print "$myname: Finished configuring package 'gsi_openssh'.\n";
 
 #
 # Just need a minimal action() subroutine for now..
