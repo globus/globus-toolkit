@@ -196,6 +196,12 @@ globus_i_gram_client_deactivate(void);
 
 extern globus_module_descriptor_t	globus_gram_client_module;
 
+/*** internal, shouldn't be here really ***/
+extern void
+globus_gram_client_error_7_hack_replace_message(const char* new_message);
+
+
+
 /******************************************************************************
  * Backward compatibility
  *****************************************************************************/

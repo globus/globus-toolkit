@@ -1189,6 +1189,8 @@ globus_gram_http_attach( char *                job_contact,
 		    globus_object_get_type(err))))
         {   
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION;
+	    globus_gram_client_error_7_hack_replace_message(
+		globus_object_printable_to_string(err));
         }
         else
         {

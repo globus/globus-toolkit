@@ -142,11 +142,16 @@ globus_i_gram_client_deactivate(void)
     {
 	globus_l_is_initialized = 0;
     }
+
+    /* 
+     * this will free any allocated space, but not malloc any new
+     */
+    globus_gram_client_error_7_hack_replace_message((const char*) GLOBUS_NULL);
     
     rc = globus_module_deactivate(GLOBUS_GRAM_HTTP_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-	    return(rc);
+	return(rc);
     }
 
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);
