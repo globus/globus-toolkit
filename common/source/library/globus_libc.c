@@ -2007,7 +2007,10 @@ globus_libc_readdir_r(DIR *dirp,
     {
 	struct dirent *tmpdir, *entry;
 	int save_errno;
-	
+
+	entry = (struct dirent *) globus_malloc(sizeof(struct dirent)
+						+ MAXPATHLEN
+						+ 1);
 	globus_libc_lock();
 
 	tmpdir = readdir(dirp);
@@ -2019,13 +2022,13 @@ globus_libc_readdir_r(DIR *dirp,
 
 	    globus_libc_unlock();
 
+            globus_free(entry);
+
 	    errno = save_errno;
 
 	    return -1;
 	}
-	entry = (struct dirent *) globus_malloc(sizeof(struct dirent)
-						+ MAXPATHLEN
-						+ 1);
+
 	/* copy returned buffer into data structure */
 	entry->d_ino = tmpdir->d_ino;
 #       if defined(GLOBUS_HAVE_DIRENT_OFF)
