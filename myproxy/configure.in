@@ -149,10 +149,6 @@ dnl Check for vsnprintf()
 dnl
 AC_CHECK_FUNCS(vsnprintf)
 dnl
-dnl Check for mkstemp()
-dnl
-AC_CHECK_FUNCS(mkstemp)
-dnl
 dnl Check for setenv()
 dnl
 AC_CHECK_FUNCS(setenv)
