@@ -150,7 +150,7 @@ if test "x$JAVAC_PATH" = "x"; then
     AC_MSG_WARN(A Java compiler is needed for some parts of the toolkit) 
     AC_MSG_WARN(If you know you will not need one, this message can be ignored)
 else
-    if test "$JAVAC_PATH" != "$JAVA_HOME/javac"; then
+    if test "$JAVAC_PATH" != "$JAVA_HOME/bin/javac"; then
         AC_MSG_WARN(the javac in your path is not from your \$JAVA_HOME environment)
     fi
 fi
