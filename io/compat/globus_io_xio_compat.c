@@ -363,6 +363,34 @@ error_alloc:
     return result;
 }
 
+/* this is here to remove references to xio before allowing users to destroy
+ * handle
+ */
+static
+void
+globus_l_io_handle_pre_destroy(
+    globus_l_io_handle_t *              ihandle)
+{
+    if(ihandle->attr)
+    {
+        if(ihandle->attr->type == GLOBUS_I_IO_TCP_ATTR)
+        {
+            globus_io_tcpattr_destroy(&ihandle->attr);
+        }
+        else if(ihandle->attr->type == GLOBUS_I_IO_FILE_ATTR)
+        {
+            globus_io_fileattr_destroy(&ihandle->attr);
+        }
+        
+        ihandle->attr = GLOBUS_NULL;
+    }
+    if(ihandle->accepted_handle)
+    {
+        globus_xio_close(ihandle->accepted_handle, GLOBUS_NULL);
+        ihandle->accepted_handle = GLOBUS_NULL;
+    }
+}
+
 static
 void
 globus_l_io_handle_destroy(
@@ -984,6 +1012,7 @@ done:
         globus_xio_close(ihandle->xio_handle, GLOBUS_NULL);
         ihandle->xio_handle = GLOBUS_NULL;
         *ihandle->io_handle = GLOBUS_NULL;
+        globus_l_io_handle_pre_destroy(ihandle);
     }
     
     if(perform_callback)
@@ -3228,6 +3257,8 @@ globus_l_io_bounce_close_cb(
     
     bounce_info = (globus_l_io_bounce_t *) user_arg;
     
+    globus_l_io_handle_pre_destroy(bounce_info->handle);
+    
     bounce_info->cb.non_io(
         bounce_info->user_arg,
         bounce_info->handle->io_handle,
@@ -3253,6 +3284,8 @@ globus_l_io_server_close_cb(
     GlobusIOName(globus_l_io_server_close_cb);
     
     bounce_info = (globus_l_io_bounce_t *) user_arg;
+    
+    globus_l_io_handle_pre_destroy(bounce_info->handle);
     
     bounce_info->cb.non_io(
         bounce_info->user_arg,
