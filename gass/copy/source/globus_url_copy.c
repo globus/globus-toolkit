@@ -443,6 +443,7 @@ main(int argc, char **argv)
             {
                 globus_ftp_client_operationattr_set_authorization(
 		    source_ftp_attr,
+		    GSS_C_NO_CREDENTIAL,
 		    source_url.user,
 		    source_url.password,
 		    NULL,
@@ -540,6 +541,7 @@ main(int argc, char **argv)
             {
                 globus_ftp_client_operationattr_set_authorization(
 		    dest_ftp_attr,
+		    GSS_C_NO_CREDENTIAL,
 		    dest_url.user,
 		    dest_url.password,
 		    dest_url.user,

@@ -846,6 +846,7 @@ globus_l_gass_transfer_ftp_new_request(
       {
 	globus_ftp_client_operationattr_set_authorization(
 						          &ftp_attr,
+							  GSS_C_NO_CREDENTIAL,
 						          proto->url.user,
 						          proto->url.password,
 						          NULL,
