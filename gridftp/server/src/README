@@ -17,7 +17,7 @@ Create a proxy with grid-proxy-init
 
 Run the server:
 
-globus-gridftp-server <args>
+globus-gridftp-server -nofork <args>
 
 
 
@@ -35,7 +35,6 @@ globus-gridftp-server < -s | -S > <args>
 -S detaches from the terminal and runs in the background
 
 
-
 ***
 Under xinetd/inetd:
 
@@ -51,13 +50,20 @@ env                     += GLOBUS_LOCATION=<globus_location>
 env                     += LD_LIBRARY_PATH=<globus_location>/lib
 server                  = <globus_location>/sbin/globus-gridftp-server
 server_args             = -i
-port                    = 5555
-log_on_success         += DURATION USERID
-log_on_failure         += USERID
+log_on_success         += DURATION
 nice                    = 10
 disable                 = no
 }
 -------------------------------
+
+and a sample inetd.conf entry:
+-------------------------------
+gridftp   stream   tcp   nowait   root   /usr/bin/env  \
+    GLOBUS_LOCATION=<globus_location>                  \
+    LD_LIBRARY_PATH=<globus_location>/lib              \ 
+    <globus_location>/sbin/globus-gridftp-server -i
+-------------------------------
+
 note that the service name used (gridftp in this case) should be defined in 
 /etc/services with the desired port.
 
@@ -67,9 +73,6 @@ Remote data-node and striped configuration:
 
 Note: the frontend and data-nodes can each be run in any of the above modes.
 
-The data node will currently perform all operations as the user it is started
-as (i.e. it does not setuid).  For this reason it is not recommended to run
-the data node as root.
 
 frontend: 
 globus-gridftp-server <args> -r <host:port>[,<host:port>,...]
@@ -89,40 +92,9 @@ The client then would of course only connect to machineA:5000.
 -- globus-url-copy now includes a -stripe option that should be used when
 striped transfers are desired.
 
-
-
-
-***
-Command line arguments:
-
--v            show server version information
--V            show version info for all globus packages used by the server
--p <port>     specify the port to listen on
--s, -S        run in daemon mode (see above)
--i            run in inetd mode (see above)
--ns           run with no security at all.  unencrypted access to anyone.
-              for testing only!
--aa           allow unencrypted anonymous access.  should be run as an 
-              unprivledged user, or as root when the 'anonymous_user' 
-              and 'anonymous_group' options are set in the config file 
-              (see configfile section).  note that gsi clients may still
-              connect as normal when this mode is enabled.
--d <num>      debug level.  default of 1 only shows errors, 3 will show other
-              info, and 7 will dump the entire control channel.
--l <logfile>  logging defaults to stderr.  speficy the full path to a logfile.
-              this is the only way to get logging/debug info with -i or -S.
--c <config>   load this config file instead of the 
-              default $GLOBUS_LOCATION/etc/gridftp.conf 
--G <globus_loc> use this path as the $GLOBUS_LOCATION
--bs <num>     specify the size of buffers used for reading from disk
-
-Striping/remote data node options:
--dn           run as a remote data-node
--r <host:port>[,<host:port>...]
-              list of remote data-nodes to connect to
               
-
-Configuration file and environment variables:
+***
+Configuration file and command-line options:
 
 The configuration is loaded from /etc/grid-security/gridftp.conf and then 
 either $GLOBUS_LOCATION/etc/gridftp.conf or the file given with the -c 
@@ -144,67 +116,112 @@ banner "Welcome!"
 
 The following options are allowed:
 
-allow_anonymous <1>         same as the -aa option
-anonymous_user <username>   user to setuid to an anonymous connection is made
-anonymous_group <group>     group to setgid to an anonymous connection is made
-banner_file <filename>      filename to read the banner (pre-login) message from
-banner <string>             define the banner directly with this
-blocksize                   same as -bs option
-connections_disabled <1>    disable connections
-daemon <1>                  same as -s or -S options
-debug_level <num>           same as -d option
-detach <1>                  same as -S option
-globus_location <path>      same as -G option
-hostname <hostname or ip>   defines interface to use for data connections
-                            (sets GLOBUS_HOSTNAME env var)
-idle_timeout <secs>        control channel idle timeout until session is closed
-inetd <1>                   same as -i option
-login_msg_file <filename>   filename to read the post-login message from
-login_msg <string>          define the post-login message directly with this
-logfile <filename>          same as -l option
-max_connections <num>       maximum concurrent connections to allow
-no_security <1>             same as -ns option
-port <num>                  same as -p option
-tcp_port_range <low-high>   defines port range to use for data connections
-                            (sets GLOBUS_TCP_PORT_RANGE env var)
-terse_banner <1>            enable minimal pre-login banner
-data_node <1>               same as -dn option
-remote <host:port[,<host:port>,...]
-                            same as -r option
-
+usage             Show this.
+                  (FLAG)  Command line or ENV args: -help,
+log_module        globus_logging module that will be loaded. Default is stdio.
+                  Command line or ENV args: -log-module,
+log_single        Path of a single file to log all activity to.
+                  Command line or ENV args: -l, -logfile,
+log_unique        Partial path to which 'gridftp.<pid>.log' will be appended to make the log filename.
+                  Command line or ENV args: -L, -logdir,
+log_filemode      File access permissions of log files.
+                  Command line or ENV args:
+debug_level       Log level. 1 only logs errors, 16 logs everything.
+                  Command line or ENV args: -d, -debug,
+allow_anonymous    Allow cleartext anonymous access. If server is running as root anonymous_user must also be set.
+                  (FLAG)  Command line or ENV args: -aa, -allow-anon,
+anonymous_user    User to setuid to for an anonymous connection. Only applies when running as root.
+                  Command line or ENV args:
+anonymous_group    Group to setgid to for an anonymous connection. Default is the default group of anonymous_user.
+                  Command line or ENV args:
+pw_file           Enable cleartext access and authenticate users against this /etc/passwd style file.
+                  Command line or ENV args: -pf, --password-file,
+no_security       No security whatsoever. Don't use this.
+                  (FLAG)  Command line or ENV args: -no-security,
+cas               Enable CAS authorization.
+                  (FLAG)  Command line or ENV args: -cas,
+node_authorizes    This node will authenticate users. Default is yes for frontend only.
+                  Command line or ENV args: --node-authorizes,
+ipc_gsi           Encrypt ipc channel.
+                  (FLAG)  Command line or ENV args: -IG, -ipc-gsi,
+max_connections    Max connections to allow while running as a daemon process.
+                  Command line or ENV args: -mc, -max-connections,
+connections_disabled    Disable all new connections.
+                  (FLAG)  Command line or ENV args:
+nofork            Server will not fork. All connections will work in a single process and will not setuid.
+                  (FLAG)  Command line or ENV args: -nf, -nofork,
+daemon            Run as a daemon.  All connections will fork off a new process and setuid if allowed.
+                  (FLAG)  Command line or ENV args: -s, -daemon,
+detach            Run as a background daemon detached from any controlling terminals.
+                  (FLAG)  Command line or ENV args: -S, -detach,
+inetd             Run under an inetd service.
+                  (FLAG)  Command line or ENV args: -i, -inetd,
+chdir_to          Directory to chdir to after starting.  Default is /.
+                  Command line or ENV args: -chdir-to,
+no_chdir          Do not move out of the current directory.  This is default only for non-forked mode.
+                  (FLAG)  Command line or ENV args: -no-chdir,
+exec              For staticly compiled or non-GL standard binary locations, force the full path of server to exec when forking.
+                  Command line or ENV args: -exec,
+control_interface    Hostname or IP address of the interface to listen for control connections on. Default is all.
+                  Command line or ENV args:
+data_interface    Hostname or IP address of the interface to use for data connections. Default is the current control interface.
+                  Command line or ENV args:
+port              Port to listen for control connections on.  If not speficied a random port will be chosen.
+                  Command line or ENV args: -p, -port, $GLOBUS_GRIDFTP_SERVER_PORT
+ipc_port          Port to listen for data node registrations.
+                  Command line or ENV args: -ipc-port,
+tcp_port_range    Port range to use for PASV data connections.  Sets GLOBUS_TCP_PORT_RANGE.
+                  Command line or ENV args:
+hostname          Sets GLOBUS_HOSTNAME.  Effectively forces control_hostname and data_hostname.
+                  Command line or ENV args:
+ipc_idle_timeout    Idle time in seconds before an unused ipc connection will close.
+                  Command line or ENV args: --ipc-idle-timeout,
+ipc_connect_timeout    Time in seconds before cancelling an attempted ipc connection.
+                  Command line or ENV args:
+idle_timeout      Time in seconds to allow a user to remain connected to the control channel without activity.
+                  Command line or ENV args:
+terse_banner      Display the absolute minimum 220 message to unauthenticated users.
+                  (FLAG)  Command line or ENV args:
+banner            Message to display before authentication.
+                  Command line or ENV args:
+banner_file       File to read banner message from.
+                  Command line or ENV args:
+login_msg         Message to display after authentication.
+                  Command line or ENV args:
+login_msg_file    File to read login message from.
+                  Command line or ENV args:
+data_node         This server is a backend data node.
+                  (FLAG)  Command line or ENV args: -dn, -data-node,
+dsi               Data Storage Interface module to load. Defaults to file unless remote is specified, which loads remote.
+                  Command line or ENV args: -dsi,
+allowed_modules    Comma seperated list of ERET/ESTO modules to allow. i.e. <module1>,<alias2>:<module2>,<module3> (module2 will be loaded when a client asks for alias2).
+                  Command line or ENV args: -allowed-modules,
+remote            Comma seperated list of backend contact strings.
+                  Command line or ENV args: -r, -remote,
+striped_mode      Default is a 1-1 stripe configuration. Mode 2 would be ALL-ALL.
+                  Command line or ENV args: -striped-mode,
+stripe_blocksize    Multiple of blocksize used to divide files over each stripe.
+                  Command line or ENV args: -sbs, -stripe-blocksize,
+blocksize         Size of data blocks to read from disk before posting to the network.
+                  Command line or ENV args: -bs, -blocksize,
+sync              Flush disk writes before sending restart markers. May impact performance.
+                  (FLAG)  Command line or ENV args: -sync,
+globus_location    GLOBUS_LOCATION.
+                  Command line or ENV args: -G, $GLOBUS_LOCATION
+version           Show version information for the server.
+                  (FLAG)  Command line or ENV args: -v, -version,
+versions          Show version information for all loaded globus libraries.
+                  (FLAG)  Command line or ENV args: -V, -versions,
 
 Note that commandline options and configuration file options may both be used
     and that the commandline will override the config file.
 
 
-
 ***
 Known issues:
 
--- There are numerous known memory leaks.
+-- There are some small memory leaks.  In general, they should not grow.
 
 -- Threaded builds are not expected to work properly.
 
 -- Error resonses are unclear and inconsistent.
-
--- Running as a daemon (-s or -S) sometimes triggers a bug that causes 
-an assertion that does not come up when running as a single process.
-
--- The server will leak a socket (and the child process will hang in 
-daemon mode) when the client sends a PASV and then RETR or STOR and
-then terminating.
-
--- The server running in inetd mode may not automatically load the
-config file from $GLOBUS_LOCATION/etc/gridftp.conf.  Use the
--c <configfile> parameter to specify the config file.
-
--- When running a striped transfer with more parallelism of more than 1, the
-transfer may hang when finished, but before eof.  This is more likely as
-parallelism increases and the size of the transfer decreases.
-
--- An assertion or other failure may occur when the connection between
-a data node and front-end is closed unexpectedly.
-
--- There is no security whatsoever on the connection between the front end and
-data nodes.  Additionally, the data node only operates as the user it is
-started as.

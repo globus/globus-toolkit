@@ -373,3 +373,10 @@ globus_logging_module_t                 globus_logging_stdio_module =
     globus_logging_stdio_time_func
 };
 
+globus_logging_module_t                 globus_logging_syslog_module =
+{
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};

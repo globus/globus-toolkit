@@ -76,7 +76,29 @@ globus_xio_contact_info_to_encoded_string(
         _xio_name,                                                          \
         __LINE__,							    \
         _XIOSL("Operation was canceled"))                                          
-                                                                            
+#define GlobusXIOErrorTimeout()                                             \
+    globus_error_put(GlobusXIOErrorObjTimeout())                               
+
+#define GlobusXIOErrorObjTimeout()                                          \
+    globus_error_construct_error(                                           \
+        GLOBUS_XIO_MODULE,                                                  \
+        GlobusXIOErrorObjTimeoutOnly(),                                     \
+        GLOBUS_XIO_ERROR_CANCELED,                                          \
+        __FILE__,                                                           \
+        _xio_name,                                                          \
+        __LINE__,                                                           \
+        _XIOSL("Operation was canceled"))
+
+#define GlobusXIOErrorObjTimeoutOnly()                                      \
+    globus_error_construct_error(                                           \
+        GLOBUS_XIO_MODULE,                                                  \
+        GLOBUS_NULL,                                                        \
+        GLOBUS_XIO_ERROR_TIMEOUT,                                           \
+        __FILE__,                                                           \
+        _xio_name,                                                          \
+        __LINE__,                                                           \
+        _XIOSL("Operation timed out"))
+
 #define GlobusXIOErrorObjEOF()                                              \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
@@ -115,17 +137,20 @@ globus_xio_contact_info_to_encoded_string(
             _XIOSL("Contact string invalid. %s"),                           \
             (reason)))                                 
                                                                             
+#define GlobusXIOErrorObjParameter(param_name)                              \
+    globus_error_construct_error(                                           \
+        GLOBUS_XIO_MODULE,                                                  \
+        GLOBUS_NULL,                                                        \
+        GLOBUS_XIO_ERROR_PARAMETER,                                         \
+        __FILE__,                                                           \
+        _xio_name,                                                          \
+        __LINE__,                                                           \
+        _XIOSL("Bad parameter, %s"),                                        \
+        (param_name))
+
 #define GlobusXIOErrorParameter(param_name)                                 \
     globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_XIO_MODULE,                                              \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_ERROR_PARAMETER,                                     \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            _XIOSL("Bad parameter, %s"),                                    \
-            (param_name)))                             
+        GlobusXIOErrorObjParameter(param_name))
                                                                             
 #define GlobusXIOErrorObjMemory(mem_name)                                   \
         globus_error_construct_error(                                       \

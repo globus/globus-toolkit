@@ -537,9 +537,10 @@ globus_l_xio_accept_timeout_callback(
             {
                 globus_i_xio_op_entry_t * my_op;
                 my_op = &xio_op->entry[xio_op->ndx - 1];
-		my_op->in_register = GLOBUS_TRUE;
-                xio_op->cancel_cb(xio_op, xio_op->cancel_arg);
-		my_op->in_register = GLOBUS_FALSE;
+                my_op->in_register = GLOBUS_TRUE;
+                xio_op->cancel_cb(
+                    xio_op, xio_op->cancel_arg, GLOBUS_XIO_ERROR_TIMEOUT);
+                my_op->in_register = GLOBUS_FALSE;
             }            
         }
 
@@ -1171,10 +1172,10 @@ globus_xio_server_cancel_accept(
             {
                 globus_i_xio_op_entry_t * my_op;
                 my_op = &xio_server->op->entry[xio_server->op->ndx - 1];
-		my_op->in_register = GLOBUS_TRUE;
+                my_op->in_register = GLOBUS_TRUE;
                 xio_server->op->cancel_cb(xio_server->op,
-                    xio_server->op->cancel_arg);
-		my_op->in_register = GLOBUS_FALSE;
+                    xio_server->op->cancel_arg, GLOBUS_XIO_ERROR_CANCELED);
+                my_op->in_register = GLOBUS_FALSE;
             }            
         }
     }
@@ -1316,10 +1317,10 @@ globus_i_xio_server_close(
             {
                 globus_i_xio_op_entry_t * my_op;
                 my_op = &xio_server->op->entry[xio_server->op->ndx - 1];
-		my_op->in_register = GLOBUS_TRUE;
+                my_op->in_register = GLOBUS_TRUE;
                 xio_server->op->cancel_cb(xio_server->op,
-                    xio_server->op->cancel_arg);
-		my_op->in_register = GLOBUS_FALSE;
+                    xio_server->op->cancel_arg, GLOBUS_XIO_ERROR_CANCELED);
+                my_op->in_register = GLOBUS_FALSE;
             }
         }
 

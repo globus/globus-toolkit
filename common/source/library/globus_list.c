@@ -121,13 +121,13 @@ globus_list_concat(
     globus_list_t *                     back_copy = NULL;
     globus_list_t *                     list;
 
-    front_copy = globus_list_copy(front_list);
     back_copy = globus_list_copy(back_list);
 
-    if(front_copy == NULL)
+    if(front_list == NULL)
     {
         return back_copy;
     }
+    front_copy = globus_list_copy(front_list);
     for(list = front_copy; list->next != NULL; list = list->next);
     list->next = back_copy;
 

@@ -89,13 +89,12 @@ void
 globus_i_gfs_data_request_handle_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_arg,
-    int                                 data_connection_id);
+    void *                              data_arg);
 
 void
 globus_i_gfs_data_request_transfer_event(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_arg,
-    int                                 transfer_id,
     globus_gfs_event_info_t *           event_info);
 
 void

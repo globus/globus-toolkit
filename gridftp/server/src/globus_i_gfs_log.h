@@ -25,4 +25,8 @@ globus_i_gfs_log_result(
     const char *                        lead,
     globus_result_t                     result);
 
+
+void
+globus_i_gfs_config_display_usage();
+
 #endif

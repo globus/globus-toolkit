@@ -516,7 +516,8 @@ static
 void
 globus_l_xio_ordering_cancel_cb(
     globus_xio_operation_t              op,
-    void *                              user_arg)
+    void *                              user_arg,
+    globus_xio_error_type_t             reason)
 {
     globus_l_xio_ordering_handle_t *	handle;
     globus_size_t			nbytes;

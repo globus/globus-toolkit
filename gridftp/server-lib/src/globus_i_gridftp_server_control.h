@@ -271,6 +271,8 @@ typedef struct globus_i_gsc_op_s
     globus_bool_t                           aborted;
     void *                                  abort_user_arg;
     void *                                  user_arg;
+
+    globus_i_gsc_data_t *                   data_destroy_obj;
 } globus_i_gsc_op_t;
 
 typedef struct globus_i_gsc_attr_s
@@ -537,5 +539,10 @@ globus_i_gsc_log(
     globus_i_gsc_server_handle_t *      server_handle,
     const char *                        command,
     int                                 mask);
+
+globus_bool_t
+globus_i_guc_data_object_destroy(
+    globus_i_gsc_server_handle_t *      server_handle,
+    globus_i_gsc_data_t *               data_object);
 
 #endif

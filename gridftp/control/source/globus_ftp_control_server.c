@@ -1618,18 +1618,18 @@ globus_l_ftp_control_auth_read_cb(
                     goto error_cmd_destroy;
                 }
                 
-                length = recv_tok.length;
                 rc=globus_i_ftp_control_radix_decode(
                     command.adat.string_arg, 
                     recv_tok.value, 
                     &length);
-                
                 if(rc != GLOBUS_SUCCESS)
                 {
                     globus_libc_free(recv_tok.value);
                     error=globus_error_get(rc);
                     goto error_cmd_destroy;
                 }
+                
+                recv_tok.length = length;
 
                 if(cc_handle->auth_info.encrypt)
                 {

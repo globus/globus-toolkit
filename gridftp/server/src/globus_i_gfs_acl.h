@@ -54,7 +54,7 @@ globus_i_gfs_acl_destroy(
 enum
 {
     GLOBUS_GFS_ACL_COMPLETE,
-    GLOBUS_GFS_ACL_WOULD_BLOCK,
+    GLOBUS_GFS_ACL_WOULD_BLOCK
 };
 
 typedef int

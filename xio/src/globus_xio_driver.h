@@ -498,7 +498,8 @@ globus_xio_driver_pass_accept(
 typedef void
 (*globus_xio_driver_cancel_callback_t)(
     globus_xio_operation_t              op,
-    void *                              user_arg);
+    void *                              user_arg,
+    globus_xio_error_type_t             reason);
 
 /**
  *  @ingroup driver_pgm

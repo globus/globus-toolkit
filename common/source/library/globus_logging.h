@@ -74,5 +74,6 @@ globus_logging_destroy(
     globus_logging_handle_t             handle);
 
 extern globus_logging_module_t          globus_logging_stdio_module;
+extern globus_logging_module_t          globus_logging_syslog_module;
 
 #endif
