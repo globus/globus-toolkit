@@ -129,6 +129,17 @@ typedef struct globus_i_gass_copy_state_target_s
     int                                         n_complete;
 
     /**
+     * The total number of bytes transfered
+     */
+    int                                         n_bytes_transfered;
+
+    /**
+     * The total number of bytes transfered in this time period.
+     * Used to determine the transfer rate.
+     */
+    int                                         n_bytes_in_period;
+
+    /**
      * signifies the target has been successfully setup
      */
     globus_i_gass_copy_target_status_t          status;
@@ -218,10 +229,22 @@ struct globus_gass_copy_state_s
      * total number of read/write buffers that can be used at a time
      */
     int                                 max_buffers;
+
     /*
      * number of buffers that have been allocated for reading/writing
      */
     int                                 n_buffers;
+  
+    /*
+     * Used to mark the start of a timing period in order to determine the
+     * current transfer rate.
+     */
+    double                              timestamp;
+  
+    /*
+     * transfer rate (in bytes) for current timing period.
+     */
+    int                       transfer_rate;
   
     /**
      * coordinates the modifying of the state,  aside from the target structures

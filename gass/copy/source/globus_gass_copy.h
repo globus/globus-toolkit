@@ -111,6 +111,16 @@ typedef enum
 } globus_gass_copy_status_t;
 
 /**
+ * tranfer performance info
+ */
+typedef struct globus_gass_copy_performance_s
+{
+    globus_gass_copy_status_t status;
+    int                       bytes_transfered;
+    int             transfer_rate;
+} globus_gass_copy_performance_t;
+
+/**
  * valid url modes
  */
 typedef enum
@@ -299,6 +309,14 @@ globus_result_t
 globus_gass_copy_get_status(
     globus_gass_copy_handle_t * handle,
     globus_gass_copy_status_t *status);
+
+/**
+ * get the performance info of the current transfer
+ */
+globus_result_t
+globus_gass_copy_get_performance(
+    globus_gass_copy_handle_t * handle,
+    globus_gass_copy_performance_t * perf_info);
 
 /**
  * cancel the current transfer

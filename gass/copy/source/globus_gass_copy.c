@@ -14,9 +14,12 @@ static int globus_l_gass_copy_activate(void);
 
 static int globus_l_gass_copy_deactivate(void);
 
+/* uncomment this line for transfer rate timings
+*/
+#define GLOBUS_I_GASS_COPY_TIMING
 
 /* uncomment this line for debug messages
-   #define GLOBUS_I_GASS_COPY_DEBUG
+#define GLOBUS_I_GASS_COPY_DEBUG
 */
 
 #define globus_i_gass_copy_set_error(handle, error) \
@@ -763,6 +766,74 @@ globus_gass_copy_get_status(
     }
 } /* globus_gass_copy_get_status() */
 
+globus_result_t
+globus_gass_copy_get_performance(
+    globus_gass_copy_handle_t * handle,
+    globus_gass_copy_performance_t * perf_info)
+{
+    globus_object_t * err;
+    static char * myname="globus_gass_copy_get_performance";
+    if(handle != GLOBUS_NULL)
+    {
+	switch(handle->status)
+	{
+	case GLOBUS_GASS_COPY_STATUS_FAILURE:
+	    perf_info->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_NONE:
+	    perf_info->status = GLOBUS_GASS_COPY_STATUS_NONE;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_INITIAL:
+	case GLOBUS_GASS_COPY_STATUS_SOURCE_READY:
+	    perf_info->status = GLOBUS_GASS_COPY_STATUS_PENDING;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS:
+	case GLOBUS_GASS_COPY_STATUS_READ_COMPLETE:
+	case GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE:
+	    perf_info->status = GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_DONE:
+	    perf_info->status = GLOBUS_GASS_COPY_STATUS_DONE;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_CANCEL:
+	    perf_info->status = GLOBUS_GASS_COPY_STATUS_CANCEL;
+	    break;
+	}
+
+        if(handle->state == GLOBUS_NULL)
+        {
+            perf_info->bytes_transfered=0;
+            perf_info->transfer_rate=0;
+        }
+        else
+        {
+            double current_timestamp;
+            current_timestamp = globus_libc_wallclock();
+            if ((current_timestamp - handle->state->timestamp) > 30)
+            {
+                perf_info->bytes_transfered = 0;
+            }
+            else
+            {
+                perf_info->bytes_transfered =
+                    handle->state->dest.n_bytes_transfered;
+                perf_info->transfer_rate = handle->state->transfer_rate;
+            }
+        }
+
+        return GLOBUS_SUCCESS;
+    }
+    else
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: BAD_PARAMETER, handle is NULL",
+	    myname);
+	
+	return globus_error_put(err);
+    }
+} /* globus_gass_copy_get_performance() */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -818,6 +889,7 @@ globus_l_gass_copy_target_populate(
     globus_mutex_init(&(target->mutex), GLOBUS_NULL);
 
     target->n_pending = 0;
+    target->n_bytes_transfered = 0;
     target->n_complete = 0;
     target->status = GLOBUS_I_GASS_COPY_TARGET_INITIAL;
 
@@ -1355,6 +1427,8 @@ globus_l_gass_copy_transfer_start(
 #endif
     /* both sides are ready, start the transfer */
     state->n_buffers = 0;
+    state->timestamp = globus_libc_wallclock();
+    state->transfer_rate = 0;
     state->max_buffers = state->source.n_simultaneous +
 	state->dest.n_simultaneous;
     handle->status = GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS;
@@ -2165,6 +2239,7 @@ globus_l_gass_copy_generic_read_callback(
 #endif   
     globus_mutex_lock(&(state->source.mutex));
     state->source.n_pending--;
+    state->source.n_bytes_transfered+=nbytes;
     globus_mutex_unlock(&(state->source.mutex));
 
     if(state->cancel == GLOBUS_I_GASS_COPY_CANCEL_TRUE)
@@ -2502,6 +2577,32 @@ globus_l_gass_copy_generic_write_callback(
     
     globus_mutex_lock(&(state->dest.mutex));
     state->dest.n_pending--;
+    state->dest.n_bytes_transfered+=nbytes;
+
+#if defined(GLOBUS_I_GASS_COPY_TIMING)
+    state->dest.n_bytes_in_period+=nbytes;
+    {
+       double current_timestamp;
+       current_timestamp = globus_libc_wallclock();
+       if ((current_timestamp - state->timestamp) > 5)
+       {
+           if (state->dest.n_bytes_in_period > 0)
+           {
+               state->transfer_rate = state->dest.n_bytes_in_period /
+                    (current_timestamp - state->timestamp);
+           }
+           else
+           {
+               state->transfer_rate = 0;
+           }
+
+           /* reset values */
+           state->timestamp = current_timestamp;
+           state->dest.n_bytes_in_period = 0;
+       }
+    }
+#endif
+
     globus_mutex_unlock(&(state->dest.mutex));
 
     if(state->cancel == GLOBUS_I_GASS_COPY_CANCEL_TRUE)
