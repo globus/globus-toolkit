@@ -54,6 +54,7 @@ globus_gatekeeper               gatekeeper/source               dirt.sh
 globus_gatekeeper_setup         gatekeeper/setup                dirt.sh
 globus_gsi_wuftpd               gridftp/gsi-wuftpd/source       dirt.sh
 globus_io                       io/source                       dirt.sh
+globus_io_compat                io/compat/source                dirt.sh
 globus_io_test                  io/test                         dirt.sh
 globus_mp                       mp/source                       dirt.sh
 globus_nexus                    nexus/source                    dirt.sh
