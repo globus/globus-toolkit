@@ -496,7 +496,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
         GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
-
+#if NODEE
     /* We still have the GSSAPI context setup and could use
      * some of the other routines, such as get_mic, verify_mic
      * at this point. But in this client we don't.
@@ -504,19 +504,34 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
      * sometime before returning from this module.
      */
 
+	/*DEE context needs to be passed as a parameter, since 
+	 * all messages should be wrapped. 
+	 * This will require changes to many routines. 
+	 * For testing with new gatekeeper, don't delete yet. 
+	 */
+
      gss_delete_sec_context(&minor_status,
             &context_handle,
             GSS_C_NO_BUFFER);
 
+#endif
     /*
-     * Use the token_get routine to read a final status
+     * Use the get_unwrap routine to read a status
      * message from the gatekeeper after the GSSAPI
-     * authentication has completed. This is done
+     * authentication has completed.
+	 * This is either the version number or an error
+	 * message. This is done
      * since authorization is done outside of GSSAPI.
      */
 
-    if (globus_gss_assist_token_get_nexus((void *) gatekeeper_fd,
-				  (void **) &auth_msg_buf, &auth_msg_buf_size))
+	if (globus_gss_assist_get_unwrap(&minor_status,
+				context_handle,
+				&auth_msg_buf,
+				&auth_msg_buf_size,
+				&token_status,
+				globus_gss_assist_token_get_nexus,
+				gatekeeper_fd,
+				globus_l_print_fp) != GSS_S_COMPLETE)
     {
         grami_fprintf(globus_l_print_fp,
 	      "Authorization message not received");
@@ -551,6 +566,58 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 
     grami_fprintf(globus_l_print_fp,
 		  "Authentication/authorization complete\n");
+
+	free(auth_msg_buf);
+	auth_msg_buf = NULL;
+
+	/* send the service name */ 
+	/*DEE for now this is hardcodded as "jobmanager" */
+
+	if (globus_gss_assist_wrap_send(&minor_status,
+					context_handle,
+					"jobmanager",
+					strlen("jobmanager")+1,
+					&token_status,
+					globus_gss_assist_token_send_nexus_without_length,
+                    (void *) gatekeeper_fd,
+					globus_l_print_fp) != GSS_S_COMPLETE)
+    {
+		grami_fprintf(globus_l_print_fp,
+			"Send of service name failed");
+		GLOBUS_L_UNLOCK;
+		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+	}
+
+    /*
+     * Use the get_unwrap to read a status
+     * message from the gatekeeper after the GSSAPI
+	 * authorization complete and the service has been selected. 
+     */
+
+	if (globus_gss_assist_get_unwrap(&minor_status,
+				context_handle,
+				&auth_msg_buf,
+				&auth_msg_buf_size,
+				&token_status,
+				globus_gss_assist_token_get_nexus,
+				gatekeeper_fd,
+				globus_l_print_fp) != GSS_S_COMPLETE)
+    {
+        grami_fprintf(globus_l_print_fp,
+	      "Service message not received");
+	GLOBUS_L_UNLOCK;
+	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+    }
+
+    if (auth_msg_buf_size > 1 )
+    { 
+        grami_fprintf(globus_l_print_fp,
+              "service error buffer = %s\n", auth_msg_buf);
+		globus_nexus_fd_close(*gatekeeper_fd);
+		GLOBUS_L_UNLOCK;
+		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+    }
+	/*DEE This could also be a job manager version number */
 
 #else
     grami_fprintf(globus_l_print_fp,
