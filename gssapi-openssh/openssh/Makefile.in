@@ -321,17 +321,17 @@ gpt-install-files:
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1; \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5; \
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8
-	$(INSTALL) -m 0755 -s ssh $(DESTDIR)$(bindir)/ssh
-	$(INSTALL) -m 0755 -s scp $(DESTDIR)$(bindir)/scp
-	$(INSTALL) -m 0755 -s ssh-add $(DESTDIR)$(bindir)/ssh-add
-	$(INSTALL) -m 0755 -s ssh-agent $(DESTDIR)$(bindir)/ssh-agent
-	$(INSTALL) -m 0755 -s ssh-keygen $(DESTDIR)$(bindir)/ssh-keygen
-	$(INSTALL) -m 0755 -s ssh-keyscan $(DESTDIR)$(bindir)/ssh-keyscan
-	$(INSTALL) -m 0755 -s sshd $(DESTDIR)$(sbindir)/sshd
-	$(INSTALL) -m 0755 -s ssh-rand-helper $(DESTDIR)$(libexecdir)/ssh-rand-helper ; \
-	$(INSTALL) -m 4711 -s ssh-keysign $(DESTDIR)$(SSH_KEYSIGN)
-	@NO_SFTP@$(INSTALL) -m 0755 -s sftp $(DESTDIR)$(bindir)/sftp
-	@NO_SFTP@$(INSTALL) -m 0755 -s sftp-server $(DESTDIR)$(SFTP_SERVER)
+	$(INSTALL) -m 0755 ssh $(DESTDIR)$(bindir)/ssh
+	$(INSTALL) -m 0755 scp $(DESTDIR)$(bindir)/scp
+	$(INSTALL) -m 0755 ssh-add $(DESTDIR)$(bindir)/ssh-add
+	$(INSTALL) -m 0755 ssh-agent $(DESTDIR)$(bindir)/ssh-agent
+	$(INSTALL) -m 0755 ssh-keygen $(DESTDIR)$(bindir)/ssh-keygen
+	$(INSTALL) -m 0755 ssh-keyscan $(DESTDIR)$(bindir)/ssh-keyscan
+	$(INSTALL) -m 0755 sshd $(DESTDIR)$(sbindir)/sshd
+	$(INSTALL) -m 0755 ssh-rand-helper $(DESTDIR)$(libexecdir)/ssh-rand-helper ; \
+	$(INSTALL) -m 4711 ssh-keysign $(DESTDIR)$(SSH_KEYSIGN)
+	@NO_SFTP@$(INSTALL) -m 0755 sftp $(DESTDIR)$(bindir)/sftp
+	@NO_SFTP@$(INSTALL) -m 0755 sftp-server $(DESTDIR)$(SFTP_SERVER)
 	-rm -f $(DESTDIR)$(bindir)/slogin
 	ln -s ./ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
 	-rm -f $(DESTDIR)$(bindir)/gsissh
