@@ -82,7 +82,7 @@ globus_io_test			io/test
 globus_xio			xio/src
 globus_xio_test			xio/test
 globus_ldapmodules		mds/openldap/ldapmodules
-globus_libtool mds/libtool pnb libtool-1.5.6.tar.gz
+globus_libtool mds/libtool pnb libtool-1.5.8.tar.gz
 globus_mds_back_giis		mds/openldap/giis-ldapmodules
 globus_mds_common		mds/common/source
 globus_mds_common_setup		mds/common/setup
