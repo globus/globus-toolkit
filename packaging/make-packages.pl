@@ -156,6 +156,7 @@ else
         $cvs_archives{gt2}[2] = $inplace;
         $cvs_archives{autotools}[2] = $inplace;
         $cvs_archives{gt3}[2] = $inplace;
+        $cvs_archives{gt4}[2] = $inplace;
         $cvs_archives{cbindings}[2] = $inplace;
     }
     

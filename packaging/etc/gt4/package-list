@@ -61,3 +61,5 @@ globus_handler_ws_addressing                wsrf/c/handlers/addressing/source gp
 globus_xio_buffer                           wsrf/c/transport/buffer/source gpt
 globus_c_wsrf_sample_counter_test           wsrf/c/samples/counter/test gpt
 globus_c_wsrf_sample_counter_client_bindings wsrf/c/samples/counter/source/ tar
+globus_globusrun_ws                         ws-gram/client/c/source gpt
+
