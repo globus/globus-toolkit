@@ -4,6 +4,7 @@
 #SHELL = @SH@
 
 DISTPERL=perl
+DISTSED=sed
 AUTORECONF=autoreconf
 
 prefix=@prefix@
@@ -106,6 +107,7 @@ PATHSUBS	= \
 	-e 's|/usr/bin:/bin:/usr/sbin:/sbin|@user_path@|g'
 
 FIXPATHSCMD	= $(SED) $(PATHSUBS)
+DISTFIXPATHSCMD	= $(DISTSED) $(PATHSUBS)
 
 all: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 
@@ -210,7 +212,7 @@ catman-do:
 		echo -n "$$f -> cat.." ; \
 		nroff -mandoc $$f | cat -v | sed -e 's/.\^H//g' > ./cat/$$f ; \
 		echo -n "man.." ; \
-		$(FIXPATHSCMD) $$f | $(DISTPERL) ./mdoc2man.pl > ./man/$$f ; \
+		$(DISTFIXPATHSCMD) $$f | $(DISTPERL) ./mdoc2man.pl > ./man/$$f ; \
 		echo "done." ; \
 	done
 
