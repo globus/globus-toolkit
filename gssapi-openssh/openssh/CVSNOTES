@@ -71,3 +71,13 @@ contains the GSI-OpenSSH code.  Consider it a living document.
         - original base: OPENSSH_3_4P1_GSI_20020926
         - new base: OPENSSH_3_4P1_GSI_20021008
       Conflicts: 0
+
+    2002/10/18
+    ----------
+      Action: Merge
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+        - original base: OPENSSH_3_4P1_GSI_20021008
+        - new base: OPENSSH_3_5P1_GSI_20021018
+      Conflicts: 1
+        - Makefile.in
+            resolved by removing check-user and adding check-config.
