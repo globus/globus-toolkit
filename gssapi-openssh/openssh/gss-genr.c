@@ -38,6 +38,7 @@
 #include "log.h"
 #include "compat.h"
 #include "monitor_wrap.h"
+#include "canohost.h"
 
 #include <netdb.h>
 
@@ -442,49 +443,20 @@ OM_uint32
 ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 	gss_buffer_desc gssbuf = {0,NULL};
 	OM_uint32 maj_status, min_status;
-	struct hostent *hostinfo = NULL;
-	char *xhost, *addr;
+	char *xhost;
 	
 	/* Make a copy of the host name, in case it was returned by a
 	 * previous call to gethostbyname(). */	
 	xhost = xstrdup(host);
 
-	/* Make sure we have the FQDN. Some GSSAPI implementations don't do
-	 * this for us themselves */
-	hostinfo = gethostbyname(xhost);
-	
-	/* Use local hostname when coming in on loopback interface because
-	   we won't have 'localhost' credentials. */
-	if (hostinfo &&
-	    hostinfo->h_addrtype == AF_INET) {
-	    struct in_addr addr;
-	    addr = *(struct in_addr *)(hostinfo->h_addr);
-	    if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
-		char buf[4096];
-		if (gethostname(buf, 4096) == 0) {
-		    hostinfo = gethostbyname(buf);
-		}
-	    }
-	}
+	/* If xhost is the loopback interface, switch it to our
+	   true local hostname. */
+	resolve_localhost(&xhost);
 
-	/* Go to the resolver to get the official hostname for our target.
-	   WARNING: This makes us vulnerable to DNS spoofing. */
-	if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
-		debug("Unable to get FQDN for \"%s\"", xhost);
-	} else {
-	    	addr = xmalloc(hostinfo->h_length);
-		memcpy(addr, hostinfo->h_addr, hostinfo->h_length);
-		hostinfo = gethostbyaddr(addr, hostinfo->h_length,
-					 hostinfo->h_addrtype);
-		xfree(addr);
-		if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
-		    debug("Unable to get FQDN for \"%s\"", xhost);
-		} else {
-		    xfree(xhost);
-		    xhost = xstrdup(hostinfo->h_name);
-		}
-	}
-		
+	/* Make sure we have the FQHN. Some GSSAPI implementations don't do
+	 * this for us themselves */
+	make_fqhn(&xhost);
+
         gssbuf.length = sizeof("host@")+strlen(xhost);
 
         gssbuf.value = xmalloc(gssbuf.length);

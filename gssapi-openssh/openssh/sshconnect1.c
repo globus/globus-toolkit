@@ -1086,44 +1086,20 @@ int try_gssapi_authentication(char *host, Options *options)
   OM_uint32 ret_flags;
   int type;
   char *gssapi_auth_type = NULL;
-  struct hostent *hostinfo;
-  char *addr;
+  char *xhost;
   unsigned int slen;
 
-  /*
-   * host is not guarenteed to be a FQDN, so we need to make sure it is.
-   */
-  hostinfo = gethostbyname(host);
+  /* Make a copy of the host name, in case it was returned by a
+   * previous call to gethostbyname(). */	
+  xhost = xstrdup(host);
 
-  /* Use local hostname when coming in on loopback interface because
-     we won't have 'localhost' credentials. */
-  if (hostinfo && hostinfo->h_addrtype == AF_INET) {
-      struct in_addr addr;
-      addr = *(struct in_addr *)(hostinfo->h_addr);
-      if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
-	  char buf[4096];
-	  if (gethostname(buf, 4096) == 0) {
-	      hostinfo = gethostbyname(buf);
-	  }
-      }
-  }
+  /* If xhost is the loopback interface, switch it to our
+     true local hostname. */
+  resolve_localhost(&xhost);
 
-  if ((hostinfo == NULL) || (hostinfo->h_addr == NULL)) {
-      debug("GSSAPI authentication: Unable to get FQDN for \"%s\"", host);
-      goto cleanup;
-  }
-
-  addr = xmalloc(hostinfo->h_length);
-  memcpy(addr, hostinfo->h_addr, hostinfo->h_length);
-  hostinfo = gethostbyaddr(addr, hostinfo->h_length, AF_INET);
-  xfree(addr);
-
-  /* Go to the resolver to get the official hostname for our target.
-     WARNING: This makes us vulnerable to DNS spoofing. */
-  if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
-      debug("GSSAPI authentication: Unable to get FQDN for \"%s\"", host);
-      goto cleanup;
-  }
+  /* Make sure we have the FQHN. Some GSSAPI implementations don't do
+   * this for us themselves */
+  make_fqhn(&xhost);
 
   /*
    * Default flags
@@ -1152,17 +1128,14 @@ int try_gssapi_authentication(char *host, Options *options)
 
   debug("Attempting %s authentication", gssapi_auth_type);
 
-  service_name = (char *) malloc(strlen("host") +
-                                 strlen(hostinfo->h_name) +
-                                 2 /* 1 for '@', 1 for NUL */);
+  service_name = (char *) xmalloc(strlen("host") +
+				  strlen(xhost) +
+				  2 /* 1 for '@', 1 for NUL */);
 
-  if (service_name == NULL) {
-    debug("malloc() failed");
-    goto cleanup;
-  }
+  sprintf(service_name, "host@%s", xhost);
 
-
-  sprintf(service_name, "host@%s", hostinfo->h_name);
+  xfree(xhost);
+  xhost = NULL;
 
   name_type = GSS_C_NT_HOSTBASED_SERVICE;
 
