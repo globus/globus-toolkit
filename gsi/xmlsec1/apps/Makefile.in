@@ -273,12 +273,14 @@ xmlsec1_SOURCES = \
 
 
 xmlsec1_LDFLAGS = \
+	@GPT_LDFLAGS@ \
 	$(CRYPTO_LD_FLAGS) \
 	@XMLSEC_STATIC_BINARIES@ \
 	$(NULL)
 
 
 xmlsec1_LDADD = \
+        @GPT_PGM_LINKS@ \
 	$(CRYPTO_LD_ADD) \
 	$(LIBXSLT_LIBS) \
 	$(LIBXML_LIBS) \

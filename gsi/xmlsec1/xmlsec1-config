@@ -118,7 +118,7 @@ the_xml_libs="`@LIBXML_CONFIG@ --libs`"
 #
 the_xslt_flags=""
 the_xslt_libs=""
-if test "@XMLSEC_NO_LIBXSLT@" = "0"; then 
+if test "1" = "0"; then 
     the_xslt_flags="`@LIBXSLT_CONFIG@ --cflags`"
     the_xslt_libs="`@LIBXSLT_CONFIG@ --libs`"
 fi    
@@ -147,7 +147,7 @@ default)
     
 openssl)
     if test "0" = "0"; then
-        the_crypto_flags="-DXMLSEC_CRYPTO_OPENSSL=1  -DXMLSEC_OPENSSL_096=1 -DXMLSEC_CRYPTO=\\\"openssl\\\""
+        the_crypto_flags="-DXMLSEC_CRYPTO_OPENSSL=1  -DXMLSEC_CRYPTO=\\\"openssl\\\""
 	the_crypto_libs="-lcrypto"
         the_xmlsec_crypto_lib="-lxmlsec1-openssl"
     else
@@ -188,7 +188,7 @@ esac
 #
 # Assemble all the settings together
 #
-the_flags="$the_flags  -D__XMLSEC_FUNCTION__=__FUNCTION__ -DXMLSEC_NO_XKMS=1 -I${prefix}/include/xmlsec1   $the_xml_flags $the_xslt_flags $the_crypto_flags"
+the_flags="$the_flags  -D__XMLSEC_FUNCTION__=__FUNCTION__ -DXMLSEC_NO_XSLT=1 -DXMLSEC_NO_XKMS=1 -I${prefix}/include/xmlsec1   $the_xml_flags $the_xslt_flags $the_crypto_flags"
 the_libs="$the_libs -L${exec_prefix}/lib -lxmlsec1  -ldl  $the_xmlsec_crypto_lib -lxmlsec1 $the_xml_libs $the_xslt_libs $the_crypto_libs"
 
 if $cflags; then
