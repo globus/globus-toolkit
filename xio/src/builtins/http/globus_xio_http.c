@@ -107,11 +107,6 @@ l_http_create_new_info()
                           globus_hashtable_string_hash,
                           globus_hashtable_string_keyeq);
 
-    string_pair = (globus_xio_http_string_pair_t*)malloc(sizeof(globus_xio_http_string_pair_t));
-    string_pair->key = "Content";
-    string_pair->value = "bob";
-    globus_hashtable_insert(&info->user_headers, "Content", string_pair);
-
     return info;
 }
 
@@ -281,7 +276,7 @@ globus_l_xio_http_parse_header( l_http_info_t * info)
             else
                 {
                     key = globus_libc_strndup(current_location, colon_loc - current_location);
-                    value = globus_libc_strndup(colon_loc, line_end - colon_loc);
+                    value = globus_libc_strndup(colon_loc + 2, line_end - colon_loc - 2);
                     string_pair = (globus_xio_http_string_pair_t*)malloc(sizeof(globus_xio_http_string_pair_t));
                     string_pair->key = key;
                     string_pair->value = value;
