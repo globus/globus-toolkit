@@ -269,6 +269,8 @@ globus_l_gfs_spawn_child(
     int                                 rc;
     GlobusGFSName(globus_l_gfs_spawn_child);
 
+printf("globus_l_gfs_spawn_child() : enter\n");
+
     result = globus_xio_handle_cntl(
         handle,
         globus_l_gfs_tcp_driver,
@@ -284,6 +286,7 @@ globus_l_gfs_spawn_child(
     child_pid = fork();
     if(child_pid == 0)
     { 
+printf("globus_l_gfs_spawn_child() : kid\n");
         if(globus_l_gfs_xio_server)
         {
             globus_xio_server_close(globus_l_gfs_xio_server);
@@ -693,6 +696,7 @@ globus_l_gfs_server_accept_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+printf("globus_l_gfs_server_accept_cb() : enter\n");
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         globus_l_gfs_xio_server_accepting = GLOBUS_FALSE;
@@ -904,15 +908,49 @@ globus_l_gfs_be_clean_up()
     globus_module_deactivate_all();
 }
 
+static
+void
+globus_l_gfs_server_detached()
+{
+    pid_t                               pid;
+    /* this is where i detach the server into the background
+     * not sure how this will work for win32.  if it involves starting a
+     * new process, need to set server handle to not close on exec
+     */
+    pid = fork();
+    if(pid < 0)
+    {
+    }
+    else if(pid != 0)
+    {
+        exit(0);
+    }
+    else
+    {
+        setsid();
+        freopen("/dev/null", "w+", stdin);
+        freopen("/dev/null", "w+", stdout);
+        freopen("/dev/null", "w+", stderr);
+    }
+}
+
 int
 main(
     int                                 argc,
     char **                             argv)
 {
-    pid_t                               pid;
+    int                                 i;
     int                                 rc = 0;
     char *                              config;
     globus_result_t                     result;
+
+    for(i = 0; i < argc; i++)
+    {
+        if(strcmp("-S", argv[i]) == 0)
+        {
+            globus_l_gfs_server_detached();
+        }
+    }
 
     /* activte globus stuff */    
     globus_module_activate(GLOBUS_XIO_MODULE);
@@ -969,38 +1007,19 @@ main(
 
     if(globus_i_gfs_config_bool("detach"))
     {
-        /* this is where i detach the server into the background
-         * not sure how this will work for win32.  if it involves starting a
-         * new process, need to set server handle to not close on exec
-         */
-        pid = fork();
-        if(pid < 0)
+        if(globus_i_gfs_config_bool("chdir"))
         {
-        }
-        else if(pid != 0)
-        {
-            exit(0);
-        }
-        else
-        {
-            setsid();
-            freopen("/dev/null", "w+", stdin);
-            freopen("/dev/null", "w+", stdout);
-            freopen("/dev/null", "w+", stderr);
-            if(globus_i_gfs_config_bool("chdir"))
+            char *                  chdir_to;
+            chdir_to = globus_i_gfs_config_string("chdir_to");
+            if(chdir_to != NULL)
             {
-                char *                  chdir_to;
-                chdir_to = globus_i_gfs_config_string("chdir_to");
-                if(chdir_to != NULL)
-                {
-                    chdir(chdir_to);
-                }
-                else
-                {
-                    chdir("/");
-                }
+                chdir(chdir_to);
             }
-        }
+            else
+            {
+                chdir("/");
+            }
+       }
     }
     if(globus_i_gfs_config_bool("cas"))
     {
