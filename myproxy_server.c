@@ -805,10 +805,12 @@ become_daemon(myproxy_server_context_t *context)
     (void)open("/dev/null", O_RDWR);
     dup(0); 
     dup(0);
+#ifdef TIOCNOTTY
     fd = open("/dev/tty", O_RDWR);
     if (fd >= 0) {
       ioctl(fd, TIOCNOTTY, 0);
       (void)close(fd);
     } 
+#endif /* TIOCNOTTY */
     return 0;
 }
