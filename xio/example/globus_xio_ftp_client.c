@@ -30,7 +30,7 @@ main(
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
     char *                                  cs;
-    char *                                  subject;
+    char *                                  subject = NULL;
     globus_result_t                         res;
     char                                    line[LINE_LEN];
     globus_bool_t                           done = GLOBUS_FALSE;
@@ -40,7 +40,7 @@ main(
 
     if(argc < 2)
     {
-        fprintf(stderr, "arg error: <contact string> <subject>\n");
+        fprintf(stderr, "arg error: <contact string> \n");
         return 1;
     }
 
@@ -57,7 +57,10 @@ main(
     test_res(res, __LINE__);
 
     cs = argv[argc - 1];
-    subject = argv[argc - 2];
+    if (argc > 2)
+    {		
+        subject = argv[argc - 2];
+    }	
     res = globus_xio_handle_create(&xio_handle, stack);
     test_res(res, __LINE__);
     res = globus_xio_attr_init(&attr);
@@ -69,6 +72,7 @@ main(
 
     res = globus_xio_open(xio_handle, cs, attr);
     test_res(res, __LINE__);
+    fprintf(stdout, "Type \"bye\" to exit\n");
 
     while(!done)
     {
@@ -86,6 +90,10 @@ main(
             res = globus_xio_write(
                 xio_handle, line, len, len, &nbytes, NULL);
             test_res(res, __LINE__);
+	    if (strncmp(line, "bye\n\r\n", 6) == 0)
+	    {
+		done = GLOBUS_TRUE;
+	    }
         }
     }
 

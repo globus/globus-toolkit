@@ -38,7 +38,6 @@ main(
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_xio_stack_init(&stack, NULL);
 
-    res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
     test_res(res, __LINE__);
@@ -66,8 +65,11 @@ main(
             xio_handle, line, LINE_LEN, 1, &nbytes, NULL);
         test_res(res, __LINE__);
         line[nbytes] = '\0';
-
         fprintf(stdout, "%s", line);
+	if (strcmp(line, "bye\n") == 0) 
+	{
+	    done = GLOBUS_TRUE;
+	}
     }
 
     globus_xio_close(xio_handle, NULL);
