@@ -4,18 +4,21 @@ This version should be compatible with all versions since v0.2.
 Version History
 ---------------
 v0.6.2
-  - fixed GT 2.2 incompatibility introduced in v0.6.1.
+  - fixed GT 2.2 and Java CoG incompatibility introduced in v0.6.1.
+    Note: if repository contains end-entity credentials, Java CoG
+    will retrieve old-style (legacy) proxies because the Java CoG
+    certificate request doesn't specify proxy type.
 
 v0.6.1 30 Mar 2004 (GPT package version 1.13)
-  - fixed bug where myproxy-server would always delegate new-style
-    proxy credentials from end-entity credentials in repository.
-    myproxy-server now respects proxy type in certificate request
-    when end-entity credentials are stored in repository.
-    however, if repository contains proxy credentials, the server will
-    delegate a proxy of the same type as stored in the repository
-    irrespective of the certificate request, because new-style
-    and old-style proxies can't be mixed.
-    this bug fix resulted in an incompatibility with GT 2.2.
+  Fixed a bug where the myproxy-server would always delegate new-style
+  proxy credentials from end-entity credentials in repository.  The
+  myproxy-server now respects proxy type in the certificate request
+  when end-entity credentials are stored in repository.  However, if
+  the repository contains proxy credentials, the server will delegate
+  a proxy of the same type as stored in the repository irrespective of
+  the certificate request, because new-style and old-style proxies
+  can't be mixed.  This bug fix resulted in an incompatibility with GT
+  2.2 and Java CoG clients, fixed in v0.6.2.
 
 v0.6.0 22 Mar 2004 (GPT package version 1.12)
   - added max_proxy_lifetime server configuration option for limiting
