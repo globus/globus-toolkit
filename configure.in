@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.40 $)
+AC_REVISION($Revision: 1.41 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -81,7 +81,7 @@ AC_ARG_WITH(sasl2,
 		   AC_MSG_ERROR([--with-sasl2 requires PATH argument])
 		fi
 		if test "x$withval" != "xno" ; then
-		   CPPFLAGS="$CPPFLAGS -I${withval}/include/sasl"
+		   CPPFLAGS="-I${withval}/include/sasl $CPPFLAGS"
 		   LDFLAGS="$LDFLAGS -L${withval}/lib"
 		   AC_CHECK_HEADER(sasl.h)
 		   AC_CHECK_LIB(sasl2, sasl_client_init, ,
