@@ -47,7 +47,7 @@ static int convert_message(const char		*buffer,
 static int parse_command(const char			*command_str,
 			 myproxy_proto_request_type_t	*command_value);
 
-//returns 0 if character not found
+/* returns 0 if character not found */
 static int findchr (const char *p, const char c)
 {
   int i = 0;
@@ -85,12 +85,11 @@ static int parse_add_creds (char *response_str, char ***pstrs, int *num_creds)
 	{
 		tmp = findchr(p+len, ',');
 
-		if (tmp == 0) // last credential name
+		if (tmp == 0) /* last credential name */
 		{
 			size_t slen;
 			slen = strlen (p+len);
-			strs[idx] = (char *) malloc(slen+1); // corrected after
-							     // jim suggested
+			strs[idx] = (char *) malloc(slen+1);
 			if (strncpy (strs[idx], p+len, slen) == NULL)
 				return -1;
 
@@ -353,7 +352,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     assert(data != NULL);
     assert(datalen > 0);
    
-    // version
+    /* version */
     data[0] = '\0';
     
     len = concatenate_strings(data, datalen, MYPROXY_VERSION_STRING,
@@ -363,7 +362,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     
     totlen += len;
 
-    // command type
+    /* command type */
     command_string = encode_command((myproxy_proto_request_type_t)request->command_type);
     
     if (command_string == NULL)
@@ -379,7 +378,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     
     totlen += len;
 
-    // username
+    /* username */
     len = concatenate_strings(data, datalen, MYPROXY_USERNAME_STRING,
 			      request->username, "\n", NULL); 
     if (len < 0)
@@ -387,7 +386,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
 
-    //passphrase
+    /* passphrase */
     len = concatenate_strings(data, datalen, MYPROXY_PASSPHRASE_STRING,
 			       request->passphrase, "\n", NULL);
     if (len < 0)
@@ -395,7 +394,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
 
-    //lifetime
+    /* lifetime */
     if (encode_integer(request->proxy_lifetime,
 			lifetime_string,
 			sizeof(lifetime_string)) == -1)
@@ -410,7 +409,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
    
-    // retrievers
+    /* retrievers */
     if (request->retrievers != NULL)
     { 
       len = concatenate_strings(data, datalen, MYPROXY_RETRIEVER_STRING,
@@ -422,7 +421,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
-    //renewers
+    /* renewers */
     if (request->renewers != NULL)
     { 
       len = concatenate_strings(data, datalen, MYPROXY_RENEWER_STRING,
@@ -434,7 +433,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
-    //credential name
+    /* credential name */
     if (request->credname!= NULL)
     {
 	char *buf = strdup (request->credname);
@@ -449,7 +448,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
-    //credential description
+    /* credential description */
     if (request->creddesc != NULL)
     { 
 	char *buf = strdup (request->creddesc);
@@ -463,7 +462,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
-    //force database write
+    /* force database write */
     if (encode_integer(request->force_credential_overwrite,
 			str,
 			sizeof(str)) == -1)
@@ -492,7 +491,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     assert(request != NULL);
     assert(data != NULL);
 
-    //version
+    /* version */
     len = convert_message(data, datalen,
 			  MYPROXY_VERSION_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -508,12 +507,11 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
     if (request->version == NULL)
     {
-	//verror_put_string("strdup() failed");
 	verror_put_errno(errno);
 	return -1;
     }
 
-    //command 
+    /* command */
     len = convert_message(data, datalen,
 			  MYPROXY_COMMAND_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -530,7 +528,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
 
-    // username 
+    /* username */
     len = convert_message(data, datalen,
 			  MYPROXY_USERNAME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -545,12 +543,11 @@ myproxy_deserialize_request(const char *data, const int datalen,
 
     if (request->username == NULL)
     {
-	//verror_put_string("strdup() failed");
 	verror_put_errno(errno);
 	return -1;
     }
 
-    //passphrase
+    /* passphrase */
     len = convert_message(data, datalen,
 			  MYPROXY_PASSPHRASE_STRING, 
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -565,7 +562,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     /* XXX request_passphrase is a static buffer. Why? */
     strncpy(request->passphrase, buf, sizeof(request->passphrase));
 
-    //lifetime
+    /* lifetime */
     len = convert_message(data, datalen,
 			  MYPROXY_LIFETIME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -581,7 +578,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
 
-    //retriever
+    /* retriever */
     len = convert_message(data, datalen,
 			  MYPROXY_RETRIEVER_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -601,14 +598,13 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
       if (request->retrievers == NULL)
       {
-	//verror_put_string("strdup() failed");
 	verror_put_errno(errno);
 	return -1;
       }
     }
 
 
-    //renewer
+    /* renewer */
     len = convert_message(data, datalen,
 			  MYPROXY_RENEWER_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -628,13 +624,12 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
          if (request->renewers == NULL)
          {
-	  //verror_put_string("strdup() failed");
 	  verror_put_errno(errno);
 	  return -1;
          }
        }
 
-    //credential name
+    /* credential name */
     tmp[0] = '\0';
     len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", 
 				MYPROXY_CRED_NAME_STRING, NULL);
@@ -660,13 +655,12 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
          if (request->credname == NULL)
          {
-	  //verror_put_string("strdup() failed");
 	  verror_put_errno(errno);
 	  return -1;
          }
        }
 
-    //credential description
+    /* credential description */
     tmp[0] = '\0';
     len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_",
     				MYPROXY_CRED_DESC_STRING, NULL);
@@ -676,7 +670,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  buf, sizeof(buf));
 
     if (len == -2)  /*-2 indicates string not found*/
-       request->creddesc = NULL; //strdup ("This is the default credential");
+	request->creddesc = NULL;
     else
        if (len <= -1)
        {
@@ -689,13 +683,12 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
          if (request->creddesc == NULL)
          {
-	  //verror_put_string("strdup() failed");
 	  verror_put_errno(errno);
 	  return -1;
          }
        }
 
-    //force credential overwrite
+    /* force credential overwrite */
     len = convert_message(data, datalen,
 			  MYPROXY_FORCE_CREDENTIAL_OVERWRITE,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -706,7 +699,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
     else
-      if (len == -2) // string not found
+	if (len == -2) /* string not found */
          request->force_credential_overwrite = 0;
       else
     	if (parse_string(buf, &request->force_credential_overwrite) == -1)  
@@ -779,7 +772,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	{
 		if (!response->info_creds[i].credname)
 		{
-			// credential description
+		    /* credential description */
 			if (response->info_creds[i].creddesc) {
 			    len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_DESC_STRING, response->info_creds[i].creddesc, "\n", NULL);
 
@@ -789,7 +782,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			    totlen += len;
 			}
 
-			// start time
+			/* start time */
 			snprintf(date, sizeof (date), "%lu",  response->info_creds[i].cred_start_time);
 			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_START_TIME_STRING, 
 					date, "\n", NULL);
@@ -799,7 +792,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 				
 			totlen += len;
 
-			// end time
+			/* end time */
 			snprintf(date, sizeof (date), "%lu",  response->info_creds[i].cred_end_time);
 			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_END_TIME_STRING, 
 					date, "\n", NULL);
@@ -809,7 +802,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			
 			totlen += len;
 
-			// owner string
+			/* owner string */
 			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_OWNER_STRING,
 					response->info_creds[i].cred_owner, "\n", NULL);
 
@@ -818,7 +811,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 		
 			totlen += len;
 
-			// retriever string
+			/* retriever string */
 			if (response->info_creds[i].retriever_str != NULL)
 			{
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_RETRIEVER_STRING,
@@ -830,7 +823,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 				totlen += len;
 			}	
 			
-			//renewer string
+			/*renewer string */
 			if (response->info_creds[i].renewer_str != NULL)
 			{
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_RENEWER_STRING,
@@ -880,7 +873,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 		for (i = 0; i < response->num_creds; i ++)
 		{
 
-			// don't add default credential as it has already been added
+		    /* don't add default credential as it has already been added */
 			if (!response->info_creds[i].credname)
 				continue;
 
@@ -896,7 +889,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 				totlen += len;
 			}
 
-			// start time
+			/* start time */
 			if (response->info_creds[i].cred_start_time) {
 				snprintf (date, sizeof (date), "%lu", response->info_creds[i].cred_start_time);
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
@@ -909,7 +902,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 				totlen += len;
 			}
 
-			// end time
+			/* end time */
 			if (response->info_creds[i].cred_end_time) {
 				snprintf (date, sizeof (date), "%lu", response->info_creds[i].cred_end_time);
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
@@ -922,7 +915,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 				totlen += len;
 			}
 
-			// owner
+			/* owner */
 			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", 
 					response->info_creds[i].credname, "_", MYPROXY_CRED_OWNER_STRING,
 					response->info_creds[i].cred_owner, "\n", NULL);
@@ -932,7 +925,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 		
 			totlen += len;
 
-			// retriever
+			/* retriever */
 			if (response->info_creds[i].retriever_str != NULL)
 			{
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
@@ -945,7 +938,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 				totlen += len;
 			}
 
-			// renewer 
+			/* renewer  */
 			if (response->info_creds[i].renewer_str != NULL)
 			{
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
@@ -998,7 +991,6 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
     assert(data != NULL); 
 
-    //(response->data).error_str=strdup("");  REMOVE
     response->authorization_data = NULL;
 
     len = convert_message(data, datalen,
@@ -1021,7 +1013,6 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
     if (response->version == NULL)
     {
-	//verror_put_string("strdup() failed");
 	verror_put_errno(errno);
 	return -1;
     }
@@ -1048,7 +1039,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	response->info_creds = (myproxy_info_t *) malloc (sizeof (myproxy_info_t));
 	/*Nameless credential*/
 	
-	// start time
+	/* start time */
     	tmp[0] = '\0';
     	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_START_TIME_STRING, NULL);
     	if (len < 0)
@@ -1073,18 +1064,18 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		}
 	    }
 
-	if (len == -2) // nameless credential not present
+       if (len == -2) /* nameless credential not present */
 	{
 		num_creds = 0;
 		goto skipover;
 	}
 
 	idx = 1;
-	// Credential name
+	/* Credential name */
 
 	response->info_creds[0].credname = NULL;
 
-	// credential description
+	/* credential description */
 	tmp[0] = '\0';
 	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_DESC_STRING, NULL);
 	if (len < 0) return -1;
@@ -1100,7 +1091,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	else
 		response->info_creds[0].creddesc = strdup (buffer);
 		
-	// end time
+	/* end time */
     	tmp[0] = '\0';
     	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_END_TIME_STRING, NULL);
     	if (len < 0)
@@ -1124,7 +1115,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		}
 	    }
 
-	// owner 
+       /* owner  */
 	tmp[0] = '\0';
     	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_OWNER_STRING, NULL);
     	if (len < 0)
@@ -1143,7 +1134,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	if (len != -2)
     		strcpy (response->info_creds[0].cred_owner, response_str); 
 
-	// retriever
+	/* retriever */
 	tmp[0] = '\0';
     	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_RETRIEVER_STRING, NULL);
     	if (len < 0)
@@ -1162,7 +1153,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	if (len != -2)
     		response->info_creds[0].retriever_str = strdup (response_str); 
 
-	//renewer
+	/*renewer */
 	tmp[0] = '\0';
     	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_RENEWER_STRING, NULL);
     	if (len < 0)
@@ -1193,7 +1184,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		return -1;
     	}
 
-	if (len == -2) // no additional credentials
+	if (len == -2) /* no additional credentials */
 	{
 		response->num_creds = idx;
 		return 0;
@@ -1208,13 +1199,13 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		return -1;
 	}
 
-	//Get additional credentials 
+	/*Get additional credentials  */
 	for (i = 0; i < num_creds; i++)
 	{
 		response->info_creds = realloc (response->info_creds, (i+idx+1) * sizeof (myproxy_info_t));
-		response->info_creds[i+idx].credname = strdup (strs[i]); // credential name
+		response->info_creds[i+idx].credname = strdup (strs[i]); /* credential name */
 
-		// credential description
+		/* credential description */
 		tmp[0] = '\0';
 		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", 
 						MYPROXY_CRED_DESC_STRING, NULL);
@@ -1235,7 +1226,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		else
 			response->info_creds[i+idx].creddesc = strdup(buffer);
 
-		// credential start time
+		/* credential start time */
 		tmp[0]='\0';
 		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", MYPROXY_START_TIME_STRING, 
 						NULL);
@@ -1266,7 +1257,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		    }
 		}
 
-		// credential end time
+		/* credential end time */
 		tmp[0] = '\0';
 		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", 
 						strs[i], "_", MYPROXY_END_TIME_STRING, NULL);
@@ -1297,7 +1288,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		    }
 		}
 
-		//credential owner
+		/*credential owner */
 		tmp[0] = '\0';
 		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", 
 						MYPROXY_CRED_OWNER_STRING, NULL);
@@ -1322,7 +1313,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			}
 		}
 
-		//retriever string
+		/*retriever string */
 		tmp[0] = '\0';
 		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", 
 						MYPROXY_RETRIEVER_STRING, NULL);
@@ -1336,7 +1327,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			{
 				case -1:
 					verror_prepend_string ("Error extracting retriever string");
-					// fall through
+					/* fall through */
 
 				case -2:
 					response->info_creds[i+idx].retriever_str = NULL;
@@ -1347,7 +1338,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			}
 		}
 
-		//renewer string
+		/*renewer string */
 		tmp[0] = '\0';
 		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", 
 						MYPROXY_RENEWER_STRING, NULL);
@@ -1361,7 +1352,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			{
 				case -1:
 					verror_prepend_string ("Error extracting renewer string");
-					// fall through
+					/* fall through */
 
 				case -2:
 					response->info_creds[i+idx].renewer_str = NULL;
@@ -1581,7 +1572,6 @@ convert_message(const char			*buffer,
     
     if (buffer_copy == NULL)
     {
-	//verror_put_string("malloc(%d) failed", buffer_len);
 	verror_put_errno(errno);
 	goto error;
     }
@@ -1998,7 +1988,6 @@ parse_entry(char *buffer, authorization_data_t *data)
 
    data->server_data = malloc(strlen(str) + 1);
    if (data->server_data == NULL) {
-      //verror_put_string("malloc()");
       verror_put_errno(errno);
       return NULL;
    }
@@ -2026,7 +2015,6 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data)
 
    data = malloc(sizeof(*data));
    if (data == NULL) {
-      //verror_put_string("malloc()");
       verror_put_errno(errno);
       return -1;
    }
@@ -2043,7 +2031,6 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data)
 
       tmp = realloc(data, (num_data + 1 + 1) * sizeof(*data));
       if (tmp == NULL) {
-	 //verror_put_string("realloc()");
 	 verror_put_errno(errno);
 	 goto end;
       }
@@ -2051,7 +2038,6 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data)
 
       data[num_data] = malloc(sizeof(entry));
       if (data[num_data] == NULL) {
-	 //verror_put_string("malloc()");
 	 verror_put_errno(errno);
 	 goto end;
       }
