@@ -679,10 +679,8 @@ globus_l_gfs_list_request(
     
     return;
 error_ipc:     
-    globus_gridftp_server_control_finished_resource(
+    globus_gridftp_server_control_finished_transfer(
         op,
-        GLOBUS_NULL, 
-        0, 
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         globus_error_print_friendly(globus_error_peek(result)));
 }
