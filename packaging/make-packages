@@ -325,9 +325,6 @@ collate_packages() {
 
 	#This is our gt3 src bundle.
 	#Package it with the gt2 src bundle to make a distro
-        # - hostinfo require bootstrap, currently working around with fait_accompli
-        rm package-output/hostinfo-0.3-src.tar.gz
-        cp fait_accompli/gt3_hostinfo-0.3_src.tar.gz package-output
 
 	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=1.0 -srcdir=package-output -all
 
