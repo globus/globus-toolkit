@@ -4,8 +4,6 @@
 
 #ifdef BUILD_DEBUG
 
-char * strdup(const char *);
-
 static
 unsigned
 globus_l_debug_get_level(
