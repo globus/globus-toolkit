@@ -1275,7 +1275,7 @@ static void doit()
 
     if ((length==0) || (length>=http_length))
     {
-	failure4(FAILED_SERVICELOOKUP,
+	failure2(FAILED_SERVICELOOKUP,
 		 "Incoming message has invalid first-line length %ld\n",
 		 length);
 
@@ -1285,7 +1285,7 @@ static void doit()
     service_name = (char *) malloc(length);
     if (1 != sscanf(http_message, "POST /%s", service_name))
     {
-	failure4(FAILED_SERVICELOOKUP, 
+	failure(FAILED_SERVICELOOKUP, 
 		 "Unable to extract service name from incoming message\n");
     }
 
