@@ -10,6 +10,7 @@ use vars qw(@tests);
 
 my $globus_location = $ENV{GLOBUS_LOCATION};
 
+system('chmod go-rw testcred.pem');
 
 @tests = qw(gssapi-anonymous-test.pl
             gssapi-delegation-test.pl

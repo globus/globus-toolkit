@@ -40,8 +40,7 @@ libglobus_gram_client___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 EXTRA_DIST= resource_manager_contact.dox \
 	rsl_parameters.dox \
-	version.h.in \
-	dirt.sh
+	version.h.in
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

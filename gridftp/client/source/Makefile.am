@@ -69,8 +69,7 @@ EXTRA_DIST = globus_ftp_client_restart_plugin.example \
 	globus_ftp_client_restart_marker_plugin.example \
 	globus_ftp_client_throughput_nl_plugin.h \
 	globus_ftp_client_throughput_nl_plugin.c \
-	version.h.in \
-	dirt.sh
+	version.h.in
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

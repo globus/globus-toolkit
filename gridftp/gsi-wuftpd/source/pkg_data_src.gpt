@@ -6,7 +6,7 @@
     <Description>
 	Globus binary package for gsi-wuftpd
     </Description>
-    <Version_Stability Release="Beta2"/>
+    <Version_Stability Release="Experimental" />
 
     <src_pkg >
 

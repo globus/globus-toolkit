@@ -297,8 +297,8 @@ my ($help, $man);
                 print #DEBUG "\n";
 				print "\n";
 
-				print "ERROR: Dependent package(s) @missing not found\n";
-				exit(0);
+				print STDERR "ERROR: Dependent package(s) @missing not found\n";
+				exit(1);
         }else{
 				#we're good on dependencies, let's find our interesting values
 

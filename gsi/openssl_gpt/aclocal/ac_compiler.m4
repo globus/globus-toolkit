@@ -16,11 +16,6 @@ AC_DEFUN(LAC_COMPILER_ARGS,
         [Disable DSO module])],
         [],
         [])
-    AC_ARG_ENABLE([debug],
-        [AC_HELP_STRING([--enable-debug],
-        [Turn of compiler optimizations])],
-        [],
-        [])
 
 # Check whether --with-dso or --without-dso was given.
 
@@ -28,11 +23,6 @@ AC_DEFUN(LAC_COMPILER_ARGS,
         with_dso="yes"
     fi
 
-# Check whether --enable-debug or --disable-debug was given.
-
-    if test "${enable_debug+set}" != "set"; then
-        enable_debug="no"
-    fi
 ])
 
 dnl LAC_COMPILER()
@@ -51,7 +41,7 @@ AC_DEFUN(LAC_COMPILER,
     lac_HAVE_DLFCN_H=""
     lac_THREADS=""    
 
-    if test "$enable_debug" != "yes"; then
+    if test "$GLOBUS_DEBUG" != "yes"; then
         LAC_COMPILER_SET_OPTIMIZATIONS
     fi
 

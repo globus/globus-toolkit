@@ -87,6 +87,7 @@ GSS_CALLCONV gss_get_mic(
     int                                 npad;
     int                                 i;
     unsigned char *                     md;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     
     *minor_status = 0;
 
@@ -98,6 +99,12 @@ GSS_CALLCONV gss_get_mic(
     {
         return GSS_S_NO_CONTEXT;
     }
+
+
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
+
     
     if(context->ctx_flags & GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION)
     {
@@ -107,7 +114,8 @@ GSS_CALLCONV gss_get_mic(
 
         if(current_time > context->goodtill)
         {
-            return GSS_S_CONTEXT_EXPIRED;
+            major_status = GSS_S_CONTEXT_EXPIRED;
+            goto err;
         }
     }
 
@@ -121,7 +129,8 @@ GSS_CALLCONV gss_get_mic(
 
     if (message_token->value == NULL)
     {
-        return GSS_S_FAILURE ;
+        major_status = GSS_S_FAILURE;
+        goto err;
     }
 
     message_token->length = 12 + md_size;
@@ -165,7 +174,13 @@ GSS_CALLCONV gss_get_mic(
     }
 #endif
 
-    return GSS_S_COMPLETE;
+err:
+    /* unlock the context mutex */
+    
+    globus_mutex_unlock(&context->mutex);
+
+    
+    return major_status;
 }
 
 /**********************************************************************

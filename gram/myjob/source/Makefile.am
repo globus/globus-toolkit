@@ -6,8 +6,7 @@ SUBDIRS= \
 	doxygen
 
 EXTRA_DIST = \
-	version.h.in \
-	dirt.sh
+	version.h.in
 
 Sources = \
 	globus_gram_myjob.h \

@@ -70,8 +70,15 @@ GSS_CALLCONV gss_delete_sec_context(
         output_token->value = NULL;
     }
 
-    if (*context_handle == NULL || *context_handle == GSS_C_NO_CONTEXT) 
+    if (*context_handle == NULL ||
+        *context_handle == GSS_C_NO_CONTEXT)
+    {
         return GSS_S_COMPLETE ;
+    }
+
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&(*context_handle)->mutex);
 
     /*
      * we might want to send a ssl shutdown 
@@ -169,13 +176,17 @@ GSS_CALLCONV gss_delete_sec_context(
             (gss_ctx_id_t*) &((*context_handle)-> cred_handle)) ;
     }
 
+    globus_mutex_unlock(&(*context_handle)->mutex);
+
+    globus_mutex_destroy(&(*context_handle)->mutex);
+    
     free(*context_handle) ;
     *context_handle = GSS_C_NO_CONTEXT;
 
 #ifdef DEBUG
     fprintf(stderr,"delete_sec_context: done\n");
 #endif
-
+    
     return GSS_S_COMPLETE ;
 
 } /* gss_delete_sec_context */

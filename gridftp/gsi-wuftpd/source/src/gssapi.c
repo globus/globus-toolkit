@@ -509,76 +509,85 @@ gssapi_unwrap_message(char *wrapped_message,
  * Returns: 0 on success, -1 on error
  */
 int
-gssapi_wrap_message(char *message,
-		    char *wrapped_message,
-		    int *wrapped_len,
-		    int msg_prot_level)
+gssapi_wrap_message(
+    char *                              message,
+    char *                              wrapped_message,
+    int *                               wrapped_len,
+    int                                 msg_prot_level)
 {
     gss_buffer_desc in_buf, out_buf;
     OM_uint32 maj_stat, min_stat;
     int conf_state;
     
 
-    if (msg_prot_level == PROT_E) {
-	syslog(LOG_ERR, "gssapi_wrap_message() called with unsupported protection level %d",
-	       msg_prot_level);
-	*wrapped_len = 0;
-	return -1;
+    if (msg_prot_level == PROT_E)
+    {
+        syslog(
+            LOG_ERR,
+            "gssapi_wrap_message() called with unsupported protection level %d",
+            msg_prot_level);
+        *wrapped_len = 0;
+        return -1;
     }
     
 
     in_buf.value = message;
-    in_buf.length = strlen(message) + 1;
+    in_buf.length = strlen(message);
 
-    if (debug) {
-	syslog(LOG_DEBUG, "Calling gss_wrap() with %d byte message",
-	       in_buf.length);
-	syslog(LOG_DEBUG, "Target buffer is %d bytes. Encrypt is %s",
-	       *wrapped_len,
-	       (PROT_ENCRYPTION(msg_prot_level) ? "on" : "off"));
+    if (debug)
+    {
+        syslog(LOG_DEBUG, "Calling gss_wrap() with %d byte message",
+               in_buf.length);
+        syslog(LOG_DEBUG, "Target buffer is %d bytes. Encrypt is %s",
+               *wrapped_len,
+               (PROT_ENCRYPTION(msg_prot_level) ? "on" : "off"));
     }
     
     maj_stat = gss_wrap(&min_stat, gcontext,
-			PROT_ENCRYPTION(msg_prot_level),
-			GSS_C_QOP_DEFAULT,
-			&in_buf,
-			&conf_state,
-			&out_buf);
+                        PROT_ENCRYPTION(msg_prot_level),
+                        GSS_C_QOP_DEFAULT,
+                        &in_buf,
+                        &conf_state,
+                        &out_buf);
 
-    if (maj_stat != GSS_S_COMPLETE) {
-	syslog(LOG_ERR,
-	       PROT_ENCRYPTION(msg_prot_level) ?
-	       "gss_wrap ENC didn't complete":
-	       "gss_wrap MIC didn't complete");
-	*wrapped_len = 0;
-	return -1;
-
-    } else if (PROT_ENCRYPTION(msg_prot_level) && !conf_state) {
-	syslog(LOG_ERR, "GSSAPI didn't encrypt message");
-	gss_release_buffer(&min_stat, &out_buf);
-	*wrapped_len = 0;
-	return -1;
+    if (maj_stat != GSS_S_COMPLETE)
+    {
+        syslog(LOG_ERR,
+               PROT_ENCRYPTION(msg_prot_level) ?
+               "gss_wrap ENC didn't complete":
+               "gss_wrap MIC didn't complete");
+        *wrapped_len = 0;
+        return -1;
+        
+    }
+    else if (PROT_ENCRYPTION(msg_prot_level) && !conf_state)
+    {
+        syslog(LOG_ERR, "GSSAPI didn't encrypt message");
+        gss_release_buffer(&min_stat, &out_buf);
+        *wrapped_len = 0;
+        return -1;
     }
 
     if (debug)
-	syslog(LOG_DEBUG, "gss_wrap() producted %d bytes buffer",
-	       out_buf.length);
+        syslog(LOG_DEBUG, "gss_wrap() producted %d bytes buffer",
+               out_buf.length);
     
     /* Don't overflow output buffer */
-    if (out_buf.length > *wrapped_len) {
-	syslog(LOG_ERR, "GSSAPI wrapped message too large (%d)", 
-	       out_buf.length);
-	gss_release_buffer(&min_stat, &out_buf);
-	*wrapped_len = 0;
-	return -1;
+    if (out_buf.length > *wrapped_len)
+    {
+        syslog(LOG_ERR, "GSSAPI wrapped message too large (%d)", 
+               out_buf.length);
+        gss_release_buffer(&min_stat, &out_buf);
+        *wrapped_len = 0;
+        return -1;
     }
 
     memcpy(wrapped_message, out_buf.value, out_buf.length);
     *wrapped_len = out_buf.length;
     gss_release_buffer(&min_stat, &out_buf);
-
+    
     if (debug)
-	syslog(LOG_DEBUG, "gssapi wrapping complete");
+        syslog(LOG_DEBUG, "gssapi wrapping complete");
     
     return 0;
 }

@@ -29,13 +29,16 @@
 #define GSS_MAKE_TYPEDEF
 #endif
 
+#include "globus_common.h"
+
+
 /*
- * First, include stddef.h to get size_t defined.
+ * Include stddef.h to get size_t defined.
  */
 #include <stddef.h>
 
 /*
- * Configure set the following
+ * Configure sets the following
  */
 
 #ifndef SIZEOF_LONG
@@ -60,6 +63,45 @@
 #endif
 
 EXTERN_C_BEGIN
+
+/**
+ * @defgroup globus_gsi_gssapi_activation Activation
+ *
+ * Globus GSI GSSAPI uses standard Globus module activation and
+ * deactivation. Before any Globus GSI GSSAPI functions are called,
+ * the following function should be called:
+ *
+ * @code
+ *      globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE)
+ * @endcode
+ *
+ *
+ * This function returns GLOBUS_SUCCESS if Globus GSI GSSAPI was
+ * successfully initialized, and you are therefore allowed to
+ * subsequently call Globus GSI GSSAPI functions.  Otherwise, an error
+ * code is returned, and Globus GSI GSSAPI functions should not 
+ * subsequently be called. This function may be called multiple times.
+ *
+ * To deactivate Globus GSI GSSAPI, the following function should be called:
+ *
+ * @code
+ *    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE)
+ * @endcode
+ *
+ * This function should be called once for each time Globus GSI GSSAPI
+ * was activated. 
+ *
+ * Note that it is not mandatory to call the above functions.
+ */
+
+/** Module descriptor
+ * @ingroup globus_gsi_gssapi_activation
+ * @hideinitializer
+ */
+#define GLOBUS_GSI_GSSAPI_MODULE (&globus_i_gsi_gssapi_module)
+
+extern
+globus_module_descriptor_t		globus_i_gsi_gssapi_module;
 
 /*
  * If the platform supports the xom.h header file, it should be

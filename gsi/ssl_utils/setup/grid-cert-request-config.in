@@ -9,6 +9,7 @@ if test -z "${GLOBUS_LOCATION}"; then
 fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
 
 secconfdir=${GRID_SECURITY_DIR-/etc/grid-security}
 
@@ -30,7 +31,7 @@ if test \! -r ${security_conf} ; then
     exit 1
 fi
 
-. "${security_conf}"
+globus_source "${security_conf}"
 
 ldap_dn_to_ssl_dn() {
     echo "$1" | ${GLOBUS_SH_AWK-awk} '

@@ -6,7 +6,7 @@
   <Aging_Version Age="0" Major="3" Minor="0" />
   <Description >GRAM Protocol Library</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
-  <Version_Stability Release="Beta2" />
+  <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
 
   <src_pkg >
 

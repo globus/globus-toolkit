@@ -52,9 +52,6 @@ gss_set_sec_context_option(
     fprintf(stderr, "set_sec_context_option:\n") ;
 #endif /* DEBUG */
     
-
-    context = *context_handle;
-
     if(minor_status == NULL)
     {
         GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
@@ -64,6 +61,16 @@ gss_set_sec_context_option(
     }
 
     *minor_status = 0;
+    
+    if(context_handle == NULL)
+    {
+        GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
+    context = *context_handle;
 
     if(option == GSS_C_NO_OID)
     {
@@ -90,6 +97,13 @@ gss_set_sec_context_option(
         *context_handle = context;
 
         memset(context,0,sizeof(gss_ctx_id_desc));
+    }
+    else if(context->ctx_flags & GSS_I_CTX_INITIALIZED)
+    {
+        GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
+        *minor_status = gsi_generate_minor_status();
+        major_status = GSS_S_FAILURE;
+        goto err;
     }
 
     if(g_OID_equal(option, GSS_DISALLOW_ENCRYPTION))

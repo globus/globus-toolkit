@@ -5,7 +5,7 @@
 <Aging_Version Major="1" Minor="0" Age="0"/>
 <Description>Job Manager Service Lookup Tool</Description>
 <Functional_Group >ResourceManagement</Functional_Group>
-<Version_Stability Release="Beta2"/>
+<Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 <src_pkg>
 
     <Source_Dependencies Type="pgm_runtime" >

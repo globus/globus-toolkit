@@ -101,7 +101,6 @@ GSS_CALLCONV gss_accept_delegation(
     if(context_handle == GSS_C_NO_CONTEXT)
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -109,7 +108,6 @@ GSS_CALLCONV gss_accept_delegation(
     if(delegated_cred_handle == NULL)
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -119,7 +117,6 @@ GSS_CALLCONV gss_accept_delegation(
         extension_oids->count != extension_buffers->count))
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -127,7 +124,6 @@ GSS_CALLCONV gss_accept_delegation(
     if(output_token == GSS_C_NO_BUFFER)
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -153,12 +149,16 @@ GSS_CALLCONV gss_accept_delegation(
         bio = context->gs_sslbio;
     }
     
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
+
     major_status = gs_put_token(context, read_bio, input_token);
 
     if (major_status != GSS_S_COMPLETE)
     {
         *minor_status = gsi_generate_minor_status();
-        goto err;
+        goto err_unlock;
     }
 
     switch(context->delegation_state)
@@ -184,8 +184,7 @@ GSS_CALLCONV gss_accept_delegation(
             {
                 /* can we get more error stuff here? */
                 major_status = GSS_S_FAILURE;
-                *minor_status = gsi_generate_minor_status();
-                goto err;
+                goto err_unlock;
             }
 
             
@@ -199,8 +198,7 @@ GSS_CALLCONV gss_accept_delegation(
         else
         {
             major_status = GSS_S_FAILURE;
-            *minor_status = gsi_generate_minor_status();
-            goto err;
+            goto err_unlock;
         }
         
         break;
@@ -215,8 +213,7 @@ GSS_CALLCONV gss_accept_delegation(
         if(dcert == NULL)
         {
             major_status = GSS_S_FAILURE;
-            *minor_status = gsi_generate_minor_status();
-            goto err;
+            goto err_unlock;
         }
         
 #ifdef DEBUG
@@ -249,7 +246,7 @@ GSS_CALLCONV gss_accept_delegation(
 
         if(major_status != GSS_S_COMPLETE)
         {
-            goto err;
+            goto err_unlock;
         }
 
 
@@ -279,6 +276,17 @@ GSS_CALLCONV gss_accept_delegation(
         major_status |= GSS_S_CONTINUE_NEEDED;
     }
 
+    if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
+    {
+        BIO_free(bio);
+    }
+    
+    globus_mutex_unlock(&context->mutex);
+    
+    return major_status;
+
+err_unlock:
+    globus_mutex_unlock(&context->mutex);
 err:
 
     if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
@@ -286,6 +294,17 @@ err:
         BIO_free(bio);
     }
 
-    return major_status;
+    if(minor_status)
+    {
+        *minor_status = gsi_generate_minor_status();
+    }
 
+    return major_status;
 }
+
+
+
+
+
+
+

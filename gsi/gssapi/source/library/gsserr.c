@@ -129,15 +129,9 @@ Returns:
 int
 ERR_load_gsserr_strings(int i)
 {
-	static int init=1;
-
-	if (init) {
-        init=0;
-		i = ERR_load_prxyerr_strings(i);
-		ERR_load_strings(ERR_USER_LIB_GSSERR_NUMBER, gsserr_str_functs);
-		ERR_load_strings(ERR_USER_LIB_GSSERR_NUMBER, gsserr_str_reasons);
-		i++;
-	}
+    i = ERR_load_prxyerr_strings(i);
+    ERR_load_strings(ERR_USER_LIB_GSSERR_NUMBER, gsserr_str_functs);
+    ERR_load_strings(ERR_USER_LIB_GSSERR_NUMBER, gsserr_str_reasons);
 	return i;
 }
 

@@ -106,12 +106,13 @@ GSS_CALLCONV gss_import_sec_context(
 
     *minor_status = 0;
 
-    /* 
-     * We need to get the SSL error strings loaded. This may be
-     * the first gssapi call. 
+    /* module activation if not already done by calling
+     * globus_module_activate
      */
-
-    ERR_load_gsserr_strings(0);
+    
+    globus_thread_once(
+        &once_control,
+        (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
 
     if (interprocess_token == NULL || 
         interprocess_token == GSS_C_NO_BUFFER || 

@@ -209,6 +209,10 @@ GSS_CALLCONV gss_init_delegation(
     {
         bio = context->gs_sslbio;
     }
+
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
     
     /* pass the input to the BIO */
     
@@ -224,7 +228,7 @@ GSS_CALLCONV gss_init_delegation(
             GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
             *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
-            goto err;
+            goto err_unlock;
         }
 
         major_status = gs_put_token(context, read_bio, input_token);
@@ -232,7 +236,7 @@ GSS_CALLCONV gss_init_delegation(
         if (major_status != GSS_S_COMPLETE)
         {
             *minor_status = gsi_generate_minor_status();
-            goto err;
+            goto err_unlock;
         }
     }
 
@@ -257,7 +261,7 @@ GSS_CALLCONV gss_init_delegation(
         {
             GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_PROXY_NOT_RECEIVED);
             major_status=GSS_S_FAILURE;
-            goto err;
+            goto err_unlock;
         }
         
 #ifdef DEBUG
@@ -268,7 +272,7 @@ GSS_CALLCONV gss_init_delegation(
         {
             GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_ADD_EXT);
             major_status = GSS_S_FAILURE;
-            goto err;
+            goto err_unlock;
         }
 
         /* add the extensions here */
@@ -288,7 +292,7 @@ GSS_CALLCONV gss_init_delegation(
                         GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                         major_status = GSS_S_FAILURE;
                         *minor_status = gsi_generate_minor_status();
-                        goto err;
+                        goto err_unlock;
                     }
                     else
                     {
@@ -304,7 +308,7 @@ GSS_CALLCONV gss_init_delegation(
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                     major_status = GSS_S_FAILURE;
                     *minor_status = gsi_generate_minor_status();
-                    goto err;
+                    goto err_unlock;
                 }
             
                 
@@ -313,7 +317,7 @@ GSS_CALLCONV gss_init_delegation(
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                     major_status = GSS_S_FAILURE;
                     *minor_status = gsi_generate_minor_status();
-                    goto err;
+                    goto err_unlock;
                 }
             }
         }
@@ -342,7 +346,7 @@ GSS_CALLCONV gss_init_delegation(
             GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_ADD_EXT);
             *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
-            goto err;
+            goto err_unlock;
         }
         
 #ifdef DEBUG
@@ -395,6 +399,8 @@ GSS_CALLCONV gss_init_delegation(
         major_status |=GSS_S_CONTINUE_NEEDED;
     }
 
+err_unlock:
+    globus_mutex_unlock(&context->mutex);
 err:
 
     if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
@@ -407,7 +413,7 @@ err:
         sk_X509_EXTENSION_pop_free(extensions, 
                                    X509_EXTENSION_free);
     }
-    
+
     return major_status;
 }
 

@@ -227,6 +227,22 @@ case ${host}--$1 in
 	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
 	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         ;;
+    alpha*linux* )
+        if test "$lac_cv_build_64bit" = "no"; then
+            AC_MSG_ERROR(32 bits not supported on this platform)
+            exit 1
+        fi
+	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+	if test "$GLOBUS_CC" = "gcc"; then
+	    AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+	else
+	    AC_PATH_PROGS(lac_cv_CC, $CC ccc cc)
+	fi
+	CC="$lac_cv_CC"
+	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        ;;
     *-hp-hpux11* )
            case $lac_cv_build_64bit in
                yes )  lac_64bit_flag="+DA2.0W"
@@ -584,6 +600,9 @@ else
 	lac_CXXFLAGS="$lac_cxxflags_opt $lac_CXXFLAGS"
     fi
 fi
+
+GLOBUS_DEBUG="$lac_cv_debug"
+AC_SUBST(GLOBUS_DEBUG)
 
 LAC_PROG_CC_GNU([$lac_cv_CC],
 [
