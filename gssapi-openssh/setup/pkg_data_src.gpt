@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="gsi_openssh_setup" >
 
-  <Aging_Version Major="1" Minor="2" Age="0" />
+  <Aging_Version Major="1" Minor="3" Age="0" />
   <Description>GSI-OpenSSH 3.4p1 setup package</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="stable" />
@@ -40,7 +40,7 @@
     </Post_Install_Message>
 
     <Setup Name="gsi_openssh_setup">
-      <Aging_Version Major="1" Minor="2" Age="0" />
+      <Aging_Version Major="1" Minor="3" Age="0" />
     </Setup>
 
   </src_pkg >
