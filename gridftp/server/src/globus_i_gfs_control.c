@@ -497,13 +497,15 @@ globus_l_gfs_request_stat(
     
     return;
 error_data:     
-    globus_gridftp_server_control_finished_resource(
+/*    globus_gridftp_server_control_finished_resource(
         op, 
         GLOBUS_NULL, 
         0,
         0,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
         globus_error_print_friendly(globus_error_peek(result)));
+*/
+    return;
 }
 
 static
@@ -697,10 +699,12 @@ globus_l_gfs_request_command(
     
     return;
 err:
-error_data:  
+
     globus_gsc_959_finished_command(op,
         "501 Invalid command arguments.\r\n");
 
+error_data:  
+    return;
 }
 
 static
@@ -894,10 +898,12 @@ globus_l_gfs_request_send(
 error_data:
     globus_i_gfs_op_attr_destroy(op_attr);
 error_attr:
-    globus_gridftp_server_control_finished_transfer(
+/*    globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         globus_error_print_friendly(globus_error_peek(result)));
+*/
+    return;
 }
 
 static
@@ -986,10 +992,12 @@ globus_l_gfs_request_recv(
 error_data:
     globus_i_gfs_op_attr_destroy(op_attr);
 error_attr:
-    globus_gridftp_server_control_finished_transfer(
+/*    globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         globus_error_print_friendly(globus_error_peek(result)));
+*/
+    return;
 }
 
 static
