@@ -3025,6 +3025,8 @@ globus_i_gsc_add_commands(
     /* add features */
     globus_gridftp_server_control_add_feature(server_handle, "MDTM");
     globus_gridftp_server_control_add_feature(server_handle, "REST STREAM");
+    globus_gridftp_server_control_add_feature(server_handle, "SPOR");
+    globus_gridftp_server_control_add_feature(server_handle, "SPAS");
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
     globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;");    
