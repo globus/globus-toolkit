@@ -288,11 +288,11 @@ main(int argc, char **argv)
 end:
     if(fd_source >= 0)
     {
-	globus_libc_close(fd_source);
+	globus_gass_close(fd_source);
     }
     if(fd_dest >= 0)
     {
-	globus_libc_close(fd_dest);
+	globus_gass_close(fd_dest);
     }
     globus_module_deactivate(GLOBUS_GASS_FILE_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
