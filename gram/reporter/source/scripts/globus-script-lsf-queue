@@ -42,10 +42,10 @@ globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
 
 
 # programs used in this script located by autoconf:
-lsload=${GLOBUS_SH_LSLOAD-lsload}
-lshosts=${GLOBUS_SH_LSHOSTS-lshosts}
-bjobs=${GLOBUS_SH_BJOBS-bjobs}
-bqueues=${GLOBUS_SH_BQUEUES-bqueues}
+lsload=${GLOBUS_GRAM_JOB_MANAGER_LSLOAD-lsload}
+lshosts=${GLOBUS_GRAM_JOB_MANAGER_LSHOSTS-lshosts}
+bjobs=${GLOBUS_GRAM_JOB_MANAGER_BJOBS-bjobs}
+bqueues=${GLOBUS_GRAM_JOB_MANAGER_BQUEUES-bqueues}
 grep=${GLOBUS_SH_GREP-grep}
 awk=${GLOBUS_SH_AWK-awk}
 tmp_file="${local_tmpdir}/globus_tmp_file.$$"

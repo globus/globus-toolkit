@@ -36,7 +36,7 @@ globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
 
 
 # programs used in this script located by autoconf:
-glustat=${GLOBUS_SH_GLUSTAT-glustat}
+glustat=${GLOBUS_GRAM_JOB_MANAGER_GLUSTAT-glustat}
 ps=${GLOBUS_SH_PS-ps}
 awk=${GLOBUS_SH_AWK-awk}
 sed=${GLOBUS_SH_SED-sed}

@@ -36,8 +36,8 @@ globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
 
 
 # programs used in this script located by autoconf:
-showpart=${GLOBUS_SH_SHOWPART-showpart}
-ps=${GLOBUS_SH_PS-ps}
+showpart=${GLOBUS_GRAM_JOB_MANAGER_SHOWPART-showpart}
+ps=${GLOBUS_GRAM_JOB_MANAGER_PS-ps}
 awk=${GLOBUS_SH_AWK-awk}
 ########
 

@@ -31,8 +31,8 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
 
 
-condor_q=${GLOBUS_SH_CONDOR_Q-condor_q}
-condor_status=${GLOBUS_SH_CONDOR_STATUS-condor_status}
+condor_q=${GLOBUS_GRAM_JOB_MANAGER_CONDOR_Q-condor_q}
+condor_status=${GLOBUS_GRAM_JOB_MANAGER_CONDOR_STATUS-condor_status}
 awk=${GLOBUS_SH_AWK-awk}
 cp=${GLOBUS_SH_CP-cp}
 date=${GLOBUS_SH_DATE-date}

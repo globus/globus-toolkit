@@ -42,9 +42,9 @@ globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
 
 
 # programs used in this script located by autoconf:
-qstat=${GLOBUS_SH_QSTAT-qstat}
-qhost=${GLOBUS_SH_QHOST-qhost}
-qconf=${GLOBUS_SH_QCONF-qconf}
+qstat=${GLOBUS_GRAM_JOB_MANAGER_QSTAT-qstat}
+qhost=${GLOBUS_GRAM_JOB_MANAGER_QHOST-qhost}
+qconf=${GLOBUS_GRAM_JOB_MANAGER_QCONF-qconf}
 grep=${GLOBUS_SH_GREP-grep}
 awk=${GLOBUS_SH_AWK-awk}
 sed=${GLOBUS_SH_SED-sed}

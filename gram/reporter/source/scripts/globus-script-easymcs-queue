@@ -61,9 +61,9 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
 
 # programs used in this script located by autoconf:
-llstatus=${GLOBUS_SH_LLSTATUS-llstatus}
-spfree=${GLOBUS_SH_SPFREE-spfree}
-llq=${GLOBUS_SH_LLQ-llq}
+llstatus=${GLOBUS_GRAM_JOB_MANAGER_LLSTATUS-llstatus}
+spfree=${GLOBUS_GRAM_JOB_MANAGER_SPFREE-spfree}
+llq=${GLOBUS_GRAM_JOB_MANAGER_LLQ-llq}
 awk=${GLOBUS_SH_AWK-awk}
 grep=${GLOBUS_SH_GREP-grep}
 

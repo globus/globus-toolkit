@@ -38,12 +38,12 @@ globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
 
 
 # programs used in this script located by autoconf:
-preserve=${GLOBUS_SH_PRESERVE-preserve}
-ps=${GLOBUS_SH_PS-ps}
+preserve=${GLOBUS_GRAM_JOB_MANAGER_PRESERVE-preserve}
+ps=${GLOBUS_GRAM_JOB_MANAGER_PS-ps}
+pool=${GLOBUS_GRAM_JOB_MANAGER_POOL-pool}
 awk=${GLOBUS_SH_AWK-awk}
 rm=${GLOBUS_SH_RM-rm}
 grep=${GLOBUS_SH_GREP-grep}
-pool=${GLOBUS_SH_POOL-pool}
 ########
 
 
