@@ -2,8 +2,17 @@
 #
 # make_gpt_dist - adapted from GPT's make_gpt_dist script
 #
-# Create a GPT source package after deriving the necessary build files.  You can define
-# the source directory and package names to suit your needs.
+# Create a GPT source package after deriving the necessary build files.
+#
+
+#
+# You can define the source directory and package names to suit your needs.  It's
+# important to remember that GPT needs the source package name to be similar to
+# the name of the package as defined in the package metadata (pkg_data_src.gpt).
+#
+# Failing to do this correctly will not affect bundle-creation, but will affect
+# globus-build's ability to select and untar the correct package corresponding
+# to the name gpt-bundle gives in its 'packaging_list'.
 #
 
 $srcdirname = "gsi_openssh";
