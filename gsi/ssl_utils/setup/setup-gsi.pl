@@ -198,7 +198,7 @@ print "$myname: Complete\n";
 
 my @statres = stat "$globusdir/etc/globus_packages/globus_ssl_utils_setup/pkg_data_noflavor_rtl.gpt";
 
-if($statres[5] != $EUID)
+if($statres[4] != $EUID)
 {
    ($EUID,$EGID) = ($statres[4],$statres[5]);
 }
