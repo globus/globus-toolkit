@@ -550,10 +550,21 @@ gs_handshake
 			fprintf(stderr,"shutdown=%d\n",
 			SSL_get_shutdown(context_handle->gs_ssl));
 #endif
-			GSSerr(GSSERR_F_GS_HANDSHAKE,GSSERR_R_HANDSHAKE);
-            
+            /* checks for ssl alert 42 */
+            if (ERR_peek_error() == 
+               ERR_PACK(ERR_LIB_SSL,SSL_F_SSL3_READ_BYTES,
+                   SSL_R_SSLV3_ALERT_BAD_CERTIFICATE))
+            {
+               ERR_clear_error();
+               GSSerr(GSSERR_F_GS_HANDSHAKE,GSSERR_R_REMOTE_CERT_VERIFY_FAILED);
+            }
+            else
+            {
+                GSSerr(GSSERR_F_GS_HANDSHAKE,GSSERR_R_HANDSHAKE);
+            }
+
             *minor_status = convert_minor_codes(ERR_GET_LIB(ERR_peek_error()),
-                                                ERR_GET_REASON(ERR_peek_error()));
+                               ERR_GET_REASON(ERR_peek_error()));
             
 			major_status = GSS_S_DEFECTIVE_CREDENTIAL;
 		}
