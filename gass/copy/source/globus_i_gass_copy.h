@@ -55,3 +55,16 @@ enum
     GLOBUS_I_GASS_COPY_STATE_INITIAL,
 } globus_i_gass_copy_state_number_t;
 
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+typedef struct
+{
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    globus_object_t *                   err;
+    globus_bool_t                       use_err;
+    volatile globus_bool_t              done;
+    globus_size_t                       nbytes;
+} globus_i_gass_copy_monitor_t;
+#endif
+

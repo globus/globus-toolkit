@@ -63,7 +63,6 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t        globus_i_gass_copy_module;
 
-
 /**
  * gass copy handle
  */

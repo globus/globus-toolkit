@@ -47,6 +47,30 @@ globus_gass_copy_destroy(
  * Transfer functions (synchronous)
  ************************************************************/
 
+/**
+ * Transfer data from source URL to destination URL
+ *
+ * @param handle
+ *        The handle to perform the copy operation
+ * @param source_url
+ *        transfer data from this URL
+ * @param source_attr
+ *        Attributes describing how the transfer form the source should be done
+ * @param dest_url
+ *        transfer data to this URL
+ * @param dest_attr
+ *        Attributes describing how the transfer to the destination should be
+ *        done
+ *
+ * @return
+ *         This function returns GLOBUS_SUCCESS or a result pointing to an
+ *         object of one of the the following error types:
+ * @retval GLOBUS_GASS_COPY_ERROR_TYPE_NULL_PARAMETER
+ *         The handle was equal to GLOBUS_NULL, so the transfer could not 
+ *         processed.
+ * @retval GLOBUS_GASS_COPY_ERROR_TYPE_next_error
+ *         next error description
+ */
 globus_result_t
 globus_gass_copy_url_to_url(
     globus_gass_copy_handle_t * handle,
@@ -55,18 +79,26 @@ globus_gass_copy_url_to_url(
     char * dest_url,
     globus_gass_copy_attr_t * dest_attr)
 {
-    globus_i_gass_copy_url_scheme(
-	source_url,
-	&source_url_scheme);
-    globus_i_gass_copy_url_scheme(
-	source_url,
-	&source_url_scheme);
-
     /* setup a monitor to wait for completion */
+    globus_i_gass_copy_monitor_t  monitor;
+    globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    monitor.done = GLOBUS_FALSE;
+    monitor.nbytes = 0;
+    monitor.err = GLOBUS_NULL;
+    monitor.use_err = GLOBUS_FALSE;
     
+    globus_l_gass_copy_url_scheme(
+	source_url,
+	&source_url_scheme);
+    globus_l_gass_copy_url_scheme(
+	dest_url,
+	&dest_url_scheme);
+
     if (   (source_url_scheme == GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED)
         || (dest_url_scheme == GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED) )
     {
+        return GLOBUS_FAILURE;
 	/* return error */
     }
     
@@ -75,7 +107,7 @@ globus_gass_copy_url_to_url(
     {
 	/* use source_attr to create source_gsiftp_client_attr */
 	
-	/* use source_attr to create dest_gsiftp_client_attr */
+	/* use dest_attr to create dest_gsiftp_client_attr */
 	
 	globus_gsiftp_client_register_transfer(
 	    handle->gsiftp_handle,
@@ -83,8 +115,8 @@ globus_gass_copy_url_to_url(
 	    source_gsiftp_client_attr,
 	    dest_url,
 	    dest_gsiftp_client_attr,
-	    globus_i_gass_copy_gsiftp_transfer_callback,
-	    callback_arg);
+	    globus_l_gass_copy_gsiftp_transfer_callback,
+	    &monitor);
     }
     else
     {
@@ -92,120 +124,177 @@ globus_gass_copy_url_to_url(
 	globus_i_gass_copy_state_t * state;
 
 	/* Initialize the state for this transfer */
-	globus_i_gass_copy_state_new(&state);
+	globus_l_gass_copy_state_new(&state);
 
 	state->handle = handle;
 
 	/* comes from source_attr, or defaults */
 	state->buffer_length = something;
 	
-	/* Populate the transfer_source structures */
-	switch (source_url_scheme)
-	{
-	  case GLOBUS_I_GASS_COPY_URL_SCHEME_FTP:
-	    globus_i_gass_copy_state_source(
-		state,
-		GLOBUS_I_GASS_COPY_TARGET_MODE_FTP,
-		source_url,
-		source_attr);
-	    break;
+	globus_l_gass_copy_target_populate(
+            state->source,
+            source_url_scheme
+	    source_url,
+	    source_attr);
 
-	  case GLOBUS_I_GASS_COPY_URL_SCHEME_HTTP:
-	    globus_i_gass_copy_state_source(
-		state,
-		GLOBUS_I_GASS_COPY_TARGET_MODE_GASS,
-		source_url,
-		source_attr);
-	    transfer_source.url = globus_libc_strdup(source_url);
-	    break;
+	globus_l_gass_copy_target_populate(
+            state->dest,
+            dest_url_scheme
+	    dest_url,
+	    dest_attr);
 
-	  case GLOBUS_I_GASS_COPY_URL_SCHEME_FILE:
-	    globus_i_gass_copy_state_source(
-		state,
-		GLOBUS_I_GASS_COPY_TARGET_MODE_IO,
-		source_url,
-		source_attr);
-	    globus_url_parse(source_url, &parsed_url);
-	    state->source.data.io.handle
-		= malloc(sizeof(globus_io_handle_t));
-	    globus_io_file_open(
-		parsed_url.path,
-		/* other args */,
-		state->source.data.io.handle);
-	    state->source.data.io.free_handle = GLOBUS_TRUE;
-	    state->source.data.io.seekable = GLOBUS_TRUE;
-	    break;
-
-	  case GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED:
-	    /* something went horribly wrong */
-	    break;
-	}
-	
-	/* similar sort of switch for the destination */
-
-	globus_i_gass_copy_transfer_start(
-	    transfer_source,
-	    transfer_dest,
+	globus_l_gass_copy_transfer_start(
+	    state,
 	    callback_func, /* signals completion */
 	    callback_arg);
-
     }
     
     /* wait on cond_wait() for completion */
+    globus_mutex_lock(&monitor.mutex);
+   
+    while(!monitor.done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+
+    globus_mutex_unlock(&monitor.mutex);
+
+    if(monitor.use_err)
+    {
+        return globus_error_put(monitor.err);
+    }
+    else
+    {
+        return GLOBUS_SUCCESS;
+    }
 }
 
+/**
+ * Classify the URL schema into the transfer method that will be used to do
+ * the actual tranfer.
+ *
+ * @param url
+ *        The URL for schema checking
+ * @param type
+ *        the filled in schema type of the URL param
+ *
+ * @return
+ *         This function returns GLOBUS_SUCCESS or a result pointing to an
+ *         object of one of the the following error types:
+ * @retval GLOBUS_URL_ERROR_*
+ *         one of the GLOBUS_URL_ERROR_ values
+ */
 globus_result_t
-globus_i_gass_copy_url_scheme(
+globus_l_gass_copy_url_scheme(
     char * url,
     globus_i_gass_copy_url_scheme_t * type)
 {
+    globus_url_t url_info;
+
+    if ((rc = globus_url_parse(url, &url_info)) != GLOBUS_SUCCESS)
+    {
+        return rc;
+    }
+
+    if ( (url_info.schema_type == GLOBUS_URL_SCHEME_FTP) ||
+         (url_info.schema_type == GLOBUS_URL_SCHEME_GSIFTP) )
+    {
+       *type = GLOBUS_I_GASS_COPY_URL_SCHEME_FTP;
+    }
+    else if ( (url_info.schema_type == GLOBUS_URL_SCHEME_HTTP) ||
+              (url_info.schema_type == GLOBUS_URL_SCHEME_HTTPS) )
+    {
+       *type = GLOBUS_I_GASS_COPY_URL_SCHEME_GASS;
+    }
+    else if ( (url_info.schema_type == GLOBUS_URL_SCHEME_FILE)
+    {
+       *type = GLOBUS_I_GASS_COPY_URL_SCHEME_FILE;
+    }
+    else
+    {
+       *type = GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED;
+    }
+
+    return GLOBUS_SUCCESS;
 }
 
+/**
+ * instantiate state structure
+ */
 globus_result_t
-globus_i_gass_copy_state_new(
+globus_l_gass_copy_state_new(
     globus_gass_copy_handle_t *handle,
     globus_i_gass_copy_target_mode_t * mode,
     char * url,
     globus_gass_copy_attr_t * attr,
     globus_i_gass_copy_state_t ** state)
 {
-    *state = malloc(...);
+    *state = (globus_i_gass_copy_state_t *)
+         globus_libc_malloc(sizeof(globus_i_gass_copy_state_t));
     (*state)->handle = handle;
     (*state)->number = GLOBUS_I_GASS_COPY_STATE_INITIAL;
 }
 
+/**
+ * Populate the target transfer structures
+ */
 globus_result_t
-globus_i_gass_copy_state_source(
-    globus_i_gass_copy_state_t *state,
-    globus_i_gass_copy_target_mode_t * mode,
+globus_l_gass_copy_target_populate(
+    globus_i_gass_copy_target_t * target,
+    globus_i_gass_copy_url_scheme_t * url_scheme,
     char * url,
     globus_gass_copy_attr_t * attr)
 {
-    state->source.mode = mode;
-    state->source.url = globus_libc_strdup(url);
-    state->source.attr = *attr;
+    globus_url_t parsed_url;
+
+    switch (url_scheme)
+    {
+        case GLOBUS_I_GASS_COPY_URL_SCHEME_FTP:
+
+             target->mode = GLOBUS_I_GASS_COPY_TARGET_MODE_FTP;
+             target->url = globus_libc_strdup(url);
+             target->attr = *attr;
+             break;
+
+        case GLOBUS_I_GASS_COPY_URL_SCHEME_HTTP:
+
+             target->mode = GLOBUS_I_GASS_COPY_TARGET_MODE_GASS;
+             target->url = globus_libc_strdup(url);
+             target->attr = *attr;
+             break;
+
+        case GLOBUS_I_GASS_COPY_URL_SCHEME_FILE:
+
+             target->mode = GLOBUS_I_GASS_COPY_TARGET_MODE_IO;
+             target->url = globus_libc_strdup(url);
+             target->attr = *attr;
+
+             globus_url_parse(url, &parsed_url);
+             target->data.io.handle =
+                 globus_libc_malloc(sizeof(globus_io_handle_t));
+             globus_io_file_open(
+                 parsed_url.path,
+                 /* other args */,
+                 target->data.io.handle);
+             target->data.io.free_handle = GLOBUS_TRUE;
+             target->data.io.seekable = GLOBUS_TRUE;
+             break;
+
+        case GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED:
+             /* something went horribly wrong */
+             break;
+    }
+    return GLOBUS_SUCCESS;
 }
 
 globus_result_t
-globus_i_gass_copy_state_dest(
-    globus_i_gass_copy_state_t *state,
-    globus_i_gass_copy_target_mode_t * mode,
-    char * url,
-    globus_gass_copy_attr_t * attr)
-{
-    state->dest.mode = mode;
-    state->dest.url = globus_libc_strdup(url);
-    state->dest.attr = *attr;
-}
-
-globus_result_t
-globus_i_gass_copy_state_free(
+globus_l_gass_copy_state_free(
     globus_i_gass_copy_state_t * transfer_state)
 {
 }
 
 globus_result_t
-globus_i_gass_copy_transfer_start(
+globus_l_gass_copy_transfer_start(
     globus_i_gass_copy_state_t * state,
     globus_gass_copy_callback_t callback_func,
     void * callback_arg)
@@ -258,7 +347,7 @@ globus_i_gass_copy_transfer_start(
 	    handle->gsiftp_handle,
 	    state->source.url,
 	    attr,
-	    globus_i_gass_copy_ftp_setup_callback,
+	    globus_l_gass_copy_ftp_setup_callback,
 	    (void *) state);
 
 	break;
@@ -270,14 +359,14 @@ globus_i_gass_copy_transfer_start(
 	    state->source.data.gass.request,
 	    request_attr,
 	    state->source.url,
-	    globus_i_gass_copy_gass_setup_callback,
+	    globus_l_gass_copy_gass_setup_callback,
 	    (void *) state);
 
 	break;
 
       case GLOBUS_I_GASS_COPY_TARGET_MODE_IO:
 
-	globus_i_gass_copy_io_setup_callback(
+	globus_l_gass_copy_io_setup_callback(
 	    (void *) state);
 
 	break;
@@ -289,7 +378,7 @@ globus_i_gass_copy_transfer_start(
  *****************************************************************/
 
 void
-globus_i_gass_copy_generic_setup_callback(
+globus_l_gass_copy_generic_setup_callback(
     void * callback_arg,
     ...)
 {
@@ -298,28 +387,28 @@ globus_i_gass_copy_generic_setup_callback(
 
     /* how to handle multiple buffers? for loop around register_read */
     
-    globus_i_gass_copy_register_read(
+    globus_l_gass_copy_register_read(
 	state,
 	(globus_byte_t *) GLOBUS_NULL); /* malloc new buffer */
 
 }
 
 void
-globus_i_gass_copy_ftp_setup_callback(
+globus_l_gass_copy_ftp_setup_callback(
     void * callback_arg,
     globus_gass_transfer_request_t * request)
 {
 }
 
 void
-globus_i_gass_copy_gass_setup_callback(
+globus_l_gass_copy_gass_setup_callback(
     void * callback_arg,
     globus_gass_transfer_request_t * request)
 {
 }
 
 void
-globus_i_gass_copy_io_setup_callback(
+globus_l_gass_copy_io_setup_callback(
     void * callback_arg,
     globus_gass_transfer_request_t * request)
 {
@@ -331,7 +420,7 @@ globus_i_gass_copy_io_setup_callback(
  *****************************************************************/
 
 void
-globus_i_gass_copy_generic_read_callback(
+globus_l_gass_copy_generic_read_callback(
     void * callback_arg,
     ...)
 {
@@ -351,31 +440,31 @@ globus_i_gass_copy_generic_read_callback(
 }
 
 void
-globus_i_gass_copy_ftp_read_callback(
+globus_l_gass_copy_ftp_read_callback(
     void * callback_arg,
     ...)
 {
-    globus_i_gass_copy_generic_read_callback(callback_arg, ...);
+    globus_l_gass_copy_generic_read_callback(callback_arg, ...);
 }
 
 void
-globus_i_gass_copy_gass_read_callback(
+globus_l_gass_copy_gass_read_callback(
     void * callback_arg,
     ...)
 {
-    globus_i_gass_copy_generic_read_callback(callback_arg, ...);
+    globus_l_gass_copy_generic_read_callback(callback_arg, ...);
 }
 
 void
-globus_i_gass_copy_io_read_callback(
+globus_l_gass_copy_io_read_callback(
     void * callback_arg,
     ...)
 {
-    globus_i_gass_copy_generic_read_callback(callback_arg, ...);
+    globus_l_gass_copy_generic_read_callback(callback_arg, ...);
 }
 
 void
-globus_i_gass_copy_register_read(
+globus_l_gass_copy_register_read(
     globus_i_gass_copy_state_t * state,
     globus_byte_t * buffer)
 {
@@ -397,7 +486,7 @@ globus_i_gass_copy_register_read(
 	    handle->gsiftp_handle,
 	    buffer,
 	    state->buffer_length,
-	    globus_i_gass_copy_gsiftp_read_callback,
+	    globus_l_gass_copy_gsiftp_read_callback,
 	    (void *) state);
 	break;
 
@@ -407,7 +496,7 @@ globus_i_gass_copy_register_read(
 	    buffer,
 	    state->buffer_length,
 	    state->buffer_length,
-	    globus_i_gass_copy_gass_read_callback,
+	    globus_l_gass_copy_gass_read_callback,
 	    (void *) state);
 	break;
 
@@ -417,7 +506,7 @@ globus_i_gass_copy_register_read(
 	    buffer
 	    state->buffer_length,
 	    state->buffer_length,
-	    globus_i_gass_copy_io_read_callback,
+	    globus_l_gass_copy_io_read_callback,
 	    (void *) state);
 	break;
     }
@@ -426,7 +515,7 @@ globus_i_gass_copy_register_read(
 }
 
 void
-globus_i_gass_copy_register_write(
+globus_l_gass_copy_register_write(
     globus_i_gass_copy_state_t * state,
     globus_byte_t * buffer,
     size_t offset,
@@ -437,7 +526,7 @@ globus_i_gass_copy_register_write(
     enqueue({buffer, offset, size},
 	    state->dest.write_queue);
 
-    globus_i_gass_copy_register_write_from_queue(state);
+    globus_l_gass_copy_register_write_from_queue(state);
     
     globus_mutex_unlock(&(state->dest.mutex));
 }
@@ -447,7 +536,7 @@ globus_i_gass_copy_register_write(
  *****************************************************************/
 
 void
-globus_i_gass_copy_generic_write_callback(
+globus_l_gass_copy_generic_write_callback(
     void * callback_arg
     buffer,
     offset,
@@ -461,18 +550,18 @@ globus_i_gass_copy_generic_write_callback(
     state->dest.writes_pending--;
     
     /* register the next io write */
-    globus_i_gass_copy_write_from_queue(state);
+    globus_l_gass_copy_write_from_queue(state);
 
     globus_mutex_unlock(&(state->dest.mutex));
 
     /* register a new read using this buffer */
-    globus_i_gass_copy_register_read(
+    globus_l_gass_copy_register_read(
 	state,
 	buffer);
 }
 
 void
-globus_i_gass_copy_register_write_from_queue(
+globus_l_gass_copy_register_write_from_queue(
     globus_i_gass_copy_state_t * state)
 {
 
@@ -492,7 +581,7 @@ globus_i_gass_copy_register_write_from_queue(
 		    handle->gsiftp_handle,
 		    buffer,
 		    size,
-		    globus_i_gass_copy_gsiftp_write_callback,
+		    globus_l_gass_copy_gsiftp_write_callback,
 		    (void *) state);
 		break;
 
@@ -503,7 +592,7 @@ globus_i_gass_copy_register_write_from_queue(
 		    buffer,
 		    size,
 		    state->buffer_length,
-		    globus_i_gass_copy_gass_read_callback,
+		    globus_l_gass_copy_gass_read_callback,
 		    (void *) state);
 		break;
 
@@ -520,7 +609,7 @@ globus_i_gass_copy_register_write_from_queue(
 		    state->dest.data.io.handle,
 		    buffer
 		    size,
-		    globus_i_gass_copy_io_write_callback,
+		    globus_l_gass_copy_io_write_callback,
 		    (void *) state);
 
 		break;
@@ -534,27 +623,27 @@ globus_i_gass_copy_register_write_from_queue(
 }
 
 void
-globus_i_gass_copy_ftp_write_callback(
+globus_l_gass_copy_ftp_write_callback(
     void * callback_arg
     /* other args */)
 {
-    globus_i_gass_copy_generic_write_callback(callback_arg, /* ... */);
+    globus_l_gass_copy_generic_write_callback(callback_arg, /* ... */);
 }
    
 void
-globus_i_gass_copy_gass_write_callback(
+globus_l_gass_copy_gass_write_callback(
     void * callback_arg
     /* other args */)
 {
-    globus_i_gass_copy_generic_write_callback(callback_arg, /* ... */);
+    globus_l_gass_copy_generic_write_callback(callback_arg, /* ... */);
 }
    
 void
-globus_i_gass_copy_io_write_callback(
+globus_l_gass_copy_io_write_callback(
     void * callback_arg
     /* other args */)
 {
-    globus_i_gass_copy_generic_write_callback(callback_arg, /* ... */);
+    globus_l_gass_copy_generic_write_callback(callback_arg, /* ... */);
 }
    
 
