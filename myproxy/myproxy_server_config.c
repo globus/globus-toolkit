@@ -252,7 +252,7 @@ regex_compare(const char *regex,
     char		*bufp;
 
     /*
-     * First we convert the regular expression from the human-readable
+     e First we convert the regular expression from the human-readable
      * form (e.g. *.domain.com) to the machine-readable form
      * (e.g. ^.*\.domain\.com$).
      *
@@ -454,6 +454,8 @@ myproxy_server_config_read(myproxy_server_context_t *context)
     context->accepted_credential_dns = NULL;
     context->authorized_retriever_dns = NULL;
     context->authorized_renewer_dns = NULL;
+    context->default_retriever_dns = NULL;
+    context->default_renewer_dns = NULL;
     
     /* Clear any outstanding error */
     verror_clear();

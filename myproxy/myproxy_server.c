@@ -291,6 +291,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     int   requestlen;
     myproxy_server_context_t *client_context;
     int num_strings;
+    _request_type request_type;
 
     authorization_data_t *client_auth_data = NULL;
     authorization_data_t auth_data;
@@ -356,6 +357,13 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
         respond_with_error_and_die(attrs,
 				   "error in myproxy_deserialize_request()");
     }
+
+    /* Note request type - retrieval or renewal */
+    if (client_request->passphrase && strlen(client_request->passphrase) )
+	request_type = RETRIEVAL;
+    else
+	request_type = RENEWAL;
+
 
     /* Check client version */
     if (strcmp(client_request->version, MYPROXY_VERSION) != 0) {
@@ -441,6 +449,15 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	char *str = NULL;  //we need a comma separated string of retriever dns
 
 	int len = 0, str_num = 0; 
+
+	if (context->default_retriever_dns == NULL) //defaults not specified
+	{
+	  if (request_type == RETRIEVAL)
+	   goto bypass_second_level_check; //indicates retrieval 
+	  else
+	   goto renewal;
+	}
+
 	while (context->default_retriever_dns[str_num] != NULL)
 	{
 	  str = (char *) realloc (str, len+strlen(context->default_retriever_dns[str_num])+1);  
@@ -463,11 +480,22 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
           client_creds->retrievers = strdup (str);
     } 
 
+    renewal:;
+
     /*if renewers are specified use them else use defaults for second level check*/
     if (client_creds->renewers == NULL)  // use defaults
     {
 	char *str = NULL;  //we need a comma separated string of renewer dns
 	int len = 0, str_num = 0; 
+
+	if (context->default_renewer_dns == NULL) //defaults not specified
+	{
+          if (request_type == RETRIEVAL)
+	    goto second_level_check;
+	  else
+	   goto bypass_second_level_check; //indicates retrieval 
+         }
+
 	while (context->default_renewer_dns[str_num] != NULL)
 	{
 	  str = (char *) realloc (str, len+strlen(context->default_renewer_dns[str_num])+1 );  //+1 is for the comma-separator
@@ -489,25 +517,32 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	else
           client_creds->renewers = strdup (str);
     }
+	
+	second_level_check:;
 
-	// parse retriever DNS
 	memcpy (client_context, context, sizeof (context));
-	num_strings = parse_string (&(client_context->authorized_retriever_dns),client_creds->retrievers)  ;  
 
-        if (num_strings < 0){
-	    respond_with_error_and_die(attrs, verror_get_string());
+	if (request_type == RETRIEVAL)
+	{
+		// parse retriever DNS
+		num_strings = parse_string (&(client_context->authorized_retriever_dns),client_creds->retrievers)  ;  
+
+        	if (num_strings < 0){
+	    		respond_with_error_and_die(attrs, verror_get_string());
+		}
+  		client_context->authorized_retriever_dns[num_strings] = NULL; // end of sequence indicator
+	}
+	else
+	{
+		// parse renewer DNS
+		num_strings = parse_string (&(client_context->authorized_renewer_dns),client_creds->renewers)  ;  
+
+        	if (num_strings < 0){
+	    		respond_with_error_and_die(attrs, verror_get_string());
+		}
+  		client_context->authorized_renewer_dns[num_strings] = NULL; // end of sequence indicator
 	}
 	
-  	client_context->authorized_retriever_dns[num_strings] = NULL; // end of sequence indicator
-
-	// parse renewer DNS
-	num_strings = parse_string (&(client_context->authorized_renewer_dns),client_creds->renewers)  ;  
-
-        if (num_strings < 0){
-	    respond_with_error_and_die(attrs, verror_get_string());
-	}
-	
-  	client_context->authorized_renewer_dns[num_strings] = NULL; // end of sequence indicator
 
     /* Second level (per-user) authorization checking happens here. */
 
@@ -516,7 +551,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
        myproxy_log(DBG_LO, debug_level,"authorization failed - per-user policy failure");
        respond_with_error_and_die(attrs, verror_get_string());
       }
-    
+   
+    bypass_second_level_check:;
+ 
 	myproxy_debug("  Username is \"%s\"", client_request->username);
 	myproxy_debug("  Location is %s", client_creds->location);
 	myproxy_debug("  Lifetime is %d seconds", client_request->proxy_lifetime);
