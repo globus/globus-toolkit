@@ -601,22 +601,6 @@ typedef void
 
 /**
  *  @ingroup driver_pgm
- */
-void
-globus_xio_driver_enable_cancel(
-    globus_xio_operation_t                  accept_op,
-    globus_xio_driver_cancel_callback_t     cancel_cb,
-    void *                                  user_arg);
-
-/**
- *  @ingroup driver_pgm
- */
-void
-globus_xio_server_disable_cancel(
-    globus_xio_operation_t                  op);
-
-/**
- *  @ingroup driver_pgm
  *  Driver API finished accept
  *
  *  This function should be called to signal globus_xio that it has 
@@ -906,6 +890,7 @@ globus_xio_driver_operation_destroy(
  */
 globus_result_t
 globus_xio_driver_operation_cancel(
+    globus_xio_driver_handle_t              driver_handle,
     globus_xio_operation_t                  operation);
 
 /**

@@ -17,3 +17,6 @@ also, if something like target init or server accept fails somewhere along the w
 -- take ref on driver handle to prevent close barrier
 -- something to do with target destroy
 
+check thread id before doing oneshot due to in_register...  too many unnecessary ones in threaded builds
+
+should pass close respect cancel?  definitely not when TOP LEVEL op is open

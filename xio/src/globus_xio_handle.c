@@ -995,14 +995,36 @@ globus_i_xio_operation_cancel(
      * set cancel flag
      * if a driver has a registered callback it will be called
      * if it doesn't the next pass or finished will pick it up
+     * 
+     * we offset by 2 because source_ndx for user == -1 and top driver == 0
+     * and we want op->canceled to be non-zero when a cancel is pending.
      */
     op->canceled = source_ndx + 2;
-    if(op->cancel_cb != NULL)
+    
+    /* only cancel it if its not in source's possession
+     * 
+     * (op->ndx == source_ndx + 1)
+     */
+    if(op->ndx > source_ndx + 1)
     {
-        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] : op @ 0x%x calling cancel\n",
-                    _xio_name, op));
-        op->cancel_cb(op, op->cancel_arg);
+        if(op->cancel_cb != NULL)
+        {
+            GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                ("[%s] : op @ 0x%x calling cancel\n",
+                        _xio_name, op));
+            op->cancel_cb(op, op->cancel_arg);
+        }
+    }
+    else
+    {
+        /* we set canceled above first to ensure that the op->ndx we are
+         * reading is stable. what may happen is that above ndx may change
+         * to source_ndx + 1 immediately after we read it. this would cause us
+         * to errorneously 'cancel' this op.  This is ok, since we are
+         * guaranteed to hit the locked section in GlobusIXIOClearCancel which
+         * will set canceled back to 0 for us
+         */
+        op->canceled = 0;
     }
 
   exit:
@@ -1104,7 +1126,7 @@ globus_l_xio_timeout_callback(
         {
             op->cached_obj = GlobusXIOErrorObjTimedout();
             rc = GLOBUS_TRUE;
-            /* XXX this assumes that timeouts cannot happen on driver ops */
+            /* Assume all timeouts originate from user */
             op->canceled = 1;
             if(op->cancel_cb)
             {

@@ -448,11 +448,7 @@ globus_l_xio_driver_op_write_kickout(
     handle = op->_op_handle;
     context = op->_op_context;
 
-    /* see comment in globus_l_xio_driver_open_op_kickout */
-    if(op->canceled == (op->start_ndx + 2))
-    {
-        op->canceled = 0;
-    }
+    GlobusIXIOClearCancel(op);
 
     /*
      *  before releasing the op back to the user we can safely set this 
@@ -525,11 +521,8 @@ globus_l_xio_driver_op_read_kickout(
     handle = op->_op_handle;
     context = op->_op_context;
 
-    /* see comment in globus_l_xio_driver_open_op_kickout */
-    if(op->canceled == (op->start_ndx + 2))
-    {
-        op->canceled = 0;
-    }
+    GlobusIXIOClearCancel(op);
+    
     /*
      *  before releasing the op back to the user we can safely set this 
      *  outside of a mutex.  Once the users callbcak is called the value
@@ -699,11 +692,7 @@ globus_l_xio_driver_op_close_kickout(
     my_op = &op->entry[op->ndx - 1];
     op->ndx = my_op->prev_ndx;
 
-    /* see comment in globus_l_xio_driver_open_op_kickout */
-    if(op->canceled == (op->start_ndx + 2))
-    {
-        op->canceled = 0;
-    }
+    GlobusIXIOClearCancel(op);
 
     if(my_op->cb != NULL)
     {
@@ -739,11 +728,7 @@ globus_l_xio_driver_op_accept_kickout(
     my_op = &op->entry[op->ndx - 1];
     op->ndx = my_op->prev_ndx;
                                                                                 
-    /* see comment in globus_l_xio_driver_open_op_kickout */
-    if(op->canceled == (op->start_ndx + 2))
-    {
-        op->canceled = 0;
-    }
+    GlobusIXIOClearCancel(op);
 
     if(my_op->cb != NULL)
     {
@@ -789,15 +774,7 @@ globus_l_xio_driver_open_op_kickout(
     deliver_type = my_op->type;
     my_op->deliver_type =&deliver_type;
 
-    /* if index == the level at which is was canceld then we reset the 
-       canceled flag for the operation.  This should be safe outside of
-       the lock because once cancel is set it is not unset and we only
-       provide a best effort cancel server, meaning that is you call cancel
-       it is possible that you get your operation back successfully. */
-    if(op->canceled == (op->start_ndx + 2))
-    {
-        op->canceled = 0;
-    }
+    GlobusIXIOClearCancel(op);
 
     if(ndx == 0)
     {
@@ -1041,7 +1018,6 @@ globus_xio_driver_operation_create(
         goto err;
     }
     op->ndx = index + 1;
-    op->start_ndx = index;
 
     op->type = GLOBUS_XIO_OPERATION_TYPE_DRIVER;
     op->state = GLOBUS_XIO_OP_STATE_OPERATING;
@@ -1508,11 +1484,13 @@ globus_xio_driver_handle_cntl(
 
 globus_result_t
 globus_xio_driver_operation_cancel(
+    globus_xio_driver_handle_t              driver_handle,
     globus_xio_operation_t                  operation)
 {
     globus_result_t                         res;
     globus_i_xio_context_t *                context;
     globus_i_xio_op_t *                     op;
+    int                                     source_ndx;
     GlobusXIOName(globus_xio_driver_operation_cancel);
 
     GlobusXIODebugEnter();
@@ -1525,14 +1503,25 @@ globus_xio_driver_operation_cancel(
     }
 
     context = op->_op_context;
-
+    for(source_ndx = 0;
+        source_ndx < context->stack_size &&
+            &context->entry[source_ndx] != driver_handle;
+        source_ndx++)
+    {
+    }
+    
+    if(source_ndx == context->stack_size)
+    {
+        res = GlobusXIOErrorParameter("driver_handle");
+        goto err;
+    }
+    
     globus_mutex_lock(&context->cancel_mutex);
     {
-        /* XXX pass driver's index here instead */
-        res = globus_i_xio_operation_cancel(op, op->start_ndx);
+        res = globus_i_xio_operation_cancel(op, source_ndx);
     }
     globus_mutex_unlock(&context->cancel_mutex);
-
+    
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 

@@ -163,6 +163,28 @@ do                                                                          \
     _out_op = _X_op;                                                        \
 } while(0)
 
+
+/* if index == the level at which a cancel was requested then we reset the 
+ * canceled flag for the operation. 
+ */
+#define GlobusIXIOClearCancel(op)                                           \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_op_t *                 _op = (op);                         \
+    /* op->ndx is source_ndx + 1, canceled is source_ndx + 2 */             \
+    /* so, source_ndx == op->ndx + 1                         */             \
+    /* see globus_i_xio_operation_cancel                     */             \
+    if(_op->canceled)                                                       \
+    {                                                                       \
+        globus_mutex_lock(&_op->_op_context->mutex);                        \
+        if(_op->canceled == _op->ndx + 1)                                   \
+        {                                                                   \
+            _op->canceled = 0;                                              \
+        }                                                                   \
+        globus_mutex_unlock(&_op->_op_context->mutex);                      \
+    }                                                                       \
+} while(0)
+
 /***************************************************************************
  *                 state and type enumerations
  *                 ---------------------------
@@ -513,7 +535,7 @@ typedef struct globus_i_xio_op_s
         } target_s;
     } type_u;
 
-    /* flag to determine if cancel should happen */
+    /* flag to determine if timeout should happen */
     globus_bool_t                           progress;
 
     /* reference count for destruction */
@@ -530,7 +552,6 @@ typedef struct globus_i_xio_op_s
     /* result code saved in op for kickouts */
     globus_object_t *                       cached_obj;
 
-    int                                     start_ndx;
     /* size of the arrays */
     int                                     stack_size;
     /* current index in the driver stack */
