@@ -1580,6 +1580,15 @@ globus_result_t globus_gsi_cred_write_proxy(
         goto exit;
     }
 
+    result = GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS(proxy_filename);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED);
+        goto exit;
+    }
+
     result = globus_gsi_cred_write(handle, proxy_bio);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1593,15 +1602,6 @@ globus_result_t globus_gsi_cred_write_proxy(
     {
         BIO_free(proxy_bio);
         proxy_bio = NULL;
-    }
-
-    result = GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS(proxy_filename);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED);
-        goto exit;
     }
 
     goto exit;

@@ -2362,10 +2362,17 @@ globus_gsi_sysconfig_set_key_permissions_unix(
     result = globus_gsi_sysconfig_file_exists_unix(filename);
     if(result != GLOBUS_SUCCESS)
     {
-        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_SETTING_PERMS);
-        goto exit;
+        if(!GLOBUS_GSI_SYSCONFIG_FILE_ZERO_LENGTH(result))
+        {
+            GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_SYSCONFIG_ERROR_SETTING_PERMS);
+            goto exit;
+        }
+        else
+        {
+            result = GLOBUS_SUCCESS;
+        }
     }
     
     if(chmod(filename, S_IRUSR|S_IWUSR) < 0)
