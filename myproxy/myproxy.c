@@ -51,8 +51,8 @@ static const char *
 encode_command(const myproxy_proto_request_type_t	command_value);
 
 static int
-parse_string(const char			*lifetime_str,
-	       int				*lifetime_value);
+parse_string(const char			*str,
+	       int			*value);
 
 static int
 encode_integer(int				value,
@@ -697,7 +697,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 {
     int len;
     int totlen = 0;
-    const char *response_string;
+    const char *response_type_string;
     authorization_data_t **p;
     char date[64];
     
@@ -713,19 +713,45 @@ myproxy_serialize_response(const myproxy_response_t *response,
     
     totlen += len;
 
-    response_string = encode_response((myproxy_proto_response_type_t) response->response_type);
+    response_type_string = encode_response((myproxy_proto_response_type_t) response->response_type);
 
-    if (response_string == NULL)
+    if (response_type_string == NULL)
     {
 	return -1;
     }
     
-    len = concatenate_strings(data, datalen, MYPROXY_RESPONSE_STRING, 
-			      response_string, "\n", NULL);
+    len = concatenate_strings(data, datalen, MYPROXY_RESPONSE_TYPE_STRING, 
+			      response_type_string, "\n", NULL);
     if (len < 0)
         return -1;
     
     totlen += len;
+
+    /* Only add response if necessary */
+    if (strcmp(response->response_string, "") != 0) {
+	int response_size = strlen (response->response_string);
+	char buf[10];
+	
+    if (encode_integer(response_size,
+			buf,
+			sizeof(buf)) == -1)
+    {
+	return -1;
+    }
+	len = concatenate_strings(data, datalen, MYPROXY_RESPONSE_SIZE_STRING,
+				  buf, "\n", NULL);
+	if (len < 0)
+	  return -1;
+
+	totlen += len;
+
+        len = concatenate_strings(data, datalen, MYPROXY_RESPONSE_STRING,
+				  response->response_string, "\n", NULL);
+        if (len < 0)
+	  return -1;
+
+        totlen += len;
+    }
 
     /* Only add error string if necessary */
     if (strcmp(response->error_string, "") != 0) {
@@ -786,9 +812,12 @@ myproxy_deserialize_response(myproxy_response_t *response,
 {
     int len;
     char version_str[128];
-    char response_str[128];
+    char response_type_str[128];
     char authorization_data[4096];
     int value;
+    char buf[10];
+    char *response_str;
+    int response_size = 0;
 
     assert(data != NULL); 
       
@@ -816,9 +845,9 @@ myproxy_deserialize_response(myproxy_response_t *response,
     }
 
     len = convert_message(data, datalen,
-			  MYPROXY_RESPONSE_STRING,
+			  MYPROXY_RESPONSE_TYPE_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-			  response_str, sizeof(response_str));
+			  response_type_str, sizeof(response_type_str));
 
     if (len == -1)
     {
@@ -826,11 +855,42 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	return -1;
     }
 
-    if (parse_response_type(response_str, &response->response_type) == -1)
+    if (parse_response_type(response_type_str, &response->response_type) == -1)
     {
 	return -1;
     }
 
+    len = convert_message(data, datalen,		// response string length
+			  MYPROXY_RESPONSE_SIZE_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  buf, sizeof(response_size));
+
+    if (len == -1)
+    {
+	verror_prepend_string("Error_parsing response size from server response");
+	return -1;
+    }
+
+        if (parse_string(buf, &response_size) == -1)
+        {
+ 	   return -1;
+        }
+
+    response_str = (char *) malloc (response_size+2);
+
+    len = convert_message(data, datalen,	//Response string
+			  MYPROXY_RESPONSE_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  response_str, response_size+2);
+
+    if (len == -1)
+    {
+	verror_prepend_string("Error_parsing response string from server response");
+	return -1;
+    }
+
+    response->response_string = strdup (response_str);
+    
     /* It's ok if ERROR not present */
     len = convert_message(data, datalen,
 			  MYPROXY_ERROR_STRING, 

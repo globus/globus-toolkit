@@ -182,6 +182,31 @@ main(int argc, char *argv[])
 	time_diff = server_response->cred_end_time - time(NULL);
 	if (server_response->cred_owner && strlen(server_response->cred_owner))
 	   printf("proxy owned by : %s\n", server_response->cred_owner); 
+
+	printf ("\n\n=================== Credentials Present ==============");
+	if (server_response->response_string)
+	{
+	   int i;
+	   int len = strlen (server_response->response_string);
+	   printf ("\n\nCredential 1:\n");
+	   for (i = 0; i < len; i ++)
+	   {
+		static int tab_count=0; 
+		if (server_response->response_string[i] == '\t')
+		{
+		    	tab_count ++;
+
+			if (tab_count %3 == 0)
+			{
+				printf ("\n\nCredential %d:\n",tab_count/3+1);
+				continue;
+			}
+		}
+			printf ("%c", server_response->response_string[i]);
+	    }
+	}
+			
+	   //printf ("%s\n", server_response->response_string);
 	if (server_response->cred_end_time == 0)
 	   break;
 	printf("timeleft       : %ld:%02ld:%02ld", 
@@ -200,6 +225,7 @@ main(int argc, char *argv[])
         break;
     }
 
+    printf ("\n");
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
 

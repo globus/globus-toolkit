@@ -40,7 +40,9 @@
 #define MYPROXY_CRED_OWNER_STRING   "CRED_OWNER="
 
 /* myproxy server protocol information */
-#define MYPROXY_RESPONSE_STRING     "RESPONSE="
+#define MYPROXY_RESPONSE_TYPE_STRING     "RESPONSE_TYPE="
+#define MYPROXY_RESPONSE_SIZE_STRING     "RESPONSE_SIZE="
+#define MYPROXY_RESPONSE_STRING   "RESPONSE="
 #define MYPROXY_ERROR_STRING        "ERROR="
 
 /* number of last error */
@@ -104,6 +106,8 @@ typedef struct
 {
   char                          *version;
   myproxy_proto_response_type_t response_type;
+  char				*response_string; 
+		/*response_string - contains valid string if response is OK*/
   char                          error_string[2048];
   authorization_data_t          **authorization_data; 
   /* NULL-terminated array describing acceptable authorization methods */

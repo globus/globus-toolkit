@@ -30,7 +30,8 @@
 
 struct myproxy_database mydbase; //database structure
 
-char *dbase_name; //database name
+extern char *mydsn, *myuid, *mypwd;
+   char *dbase_name; //database name
 
 /*
  * Doesn't always seem to be define in <unistd.h>
@@ -176,9 +177,9 @@ void my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
 int my_retrieve(SQLHDBC hdbc, SQLHSTMT hstmt)
 {
   SQLRETURN   rc;
-  SQLINTEGER  id;
+  SQLINTEGER  id, lifetime;
   SQLCHAR owner[MAX_VARCHAR_LEN];
-  //SQLCHAR  passphrase[MAX_VARCHAR_LEN], retrievers[MAX_VARCHAR_LEN], renewers[MAX_VARCHAR_LEN];
+  SQLCHAR  passphrase[MAX_VARCHAR_LEN], retrievers[MAX_VARCHAR_LEN], renewers[MAX_VARCHAR_LEN];
   SQLCHAR cred_name[CRED_NAME_LEN], cred_desc[MAX_TEXT_LEN];
 
    printf ("mpi-0");
@@ -187,28 +188,12 @@ int my_retrieve(SQLHDBC hdbc, SQLHSTMT hstmt)
    rc = SQLBindCol(hstmt,1, SQL_C_CHAR, owner,  
                       MAX_VARCHAR_LEN,NULL);
    mystmt(hstmt,rc);
- /*   
-   rc = SQLBindCol(hstmt,2, SQL_C_CHAR, passphrase,  
-                      MAX_VARCHAR_LEN,NULL);
-   mystmt(hstmt,rc);
-    
-   rc = SQLBindCol(hstmt,3, SQL_C_ULONG, lifetime,  
-                      sizeof (lifetime),NULL);
-   mystmt(hstmt,rc);
-    
-   rc = SQLBindCol(hstmt,4, SQL_C_CHAR, retrievers,  
-                      MAX_VARCHAR_LEN,NULL);
-   mystmt(hstmt,rc);
-    
-   rc = SQLBindCol(hstmt,5, SQL_C_CHAR, renewers,  
-                      MAX_VARCHAR_LEN,NULL);
-   mystmt(hstmt,rc);
-   */ 
-   rc = SQLBindCol(hstmt,6, SQL_C_CHAR, cred_name,  
+   
+   rc = SQLBindCol(hstmt,2, SQL_C_CHAR, cred_name,  
                       CRED_NAME_LEN,NULL);
    mystmt(hstmt,rc);
     
-   rc = SQLBindCol(hstmt,7, SQL_C_CHAR, cred_desc,  
+   rc = SQLBindCol(hstmt,3, SQL_C_CHAR, cred_desc,  
                       MAX_TEXT_LEN,NULL);
    mystmt(hstmt,rc);
     
@@ -732,10 +717,17 @@ write_data_file(const struct myproxy_creds *creds,
     return return_code;
 }
 
+struct dbase_info
+{
+  char *owner;
+  char *cred_name;
+  char *cred_desc;
+};
+
 /*
  * read_data_file()
  *
- * Read the data contained in the given data file and fill in the
+ * Read the data contained in the given data file and fills in the
  * given creds structure.
  *
  * Returns 0 on success, -1 on error.
@@ -749,6 +741,9 @@ read_data_file(struct myproxy_creds *creds,
     int done = 0;
     int line_number = 0;
     int return_code = -1;
+    struct dbase_info *dbase_recs;
+    int num_recs,i;
+    //char *pchr;
     
     assert(creds != NULL);
     assert(datafile_path != NULL);
@@ -881,10 +876,15 @@ read_data_file(struct myproxy_creds *creds,
         goto error;
     }
 
-    memset (&mydbase, 0, sizeof (mydbase));
-    read_from_database();
+    //dbase_recs = (struct dbase_info *) malloc (sizeof (struct dbase_info));
+    //num_recs = read_from_database(&dbase_recs);
 
+//    pchr = read_from_database(&dbase_recs);
 
+/*    for (i = 0; i < num_recs; i++)
+	printf ("%s\t%s\t%s\n-------------------\n",(dbase_recs+i)->owner, dbase_recs[i].cred_name, dbase_recs[i].cred_desc);
+*/
+    //printf ("%s",pchr);
     /* Success */
     return_code = 0;
     
@@ -897,12 +897,25 @@ read_data_file(struct myproxy_creds *creds,
     return return_code;
 }
 
-int read_from_database()
+/*
+ * Reads all records and returns a pointer to a character string having the record data (owner, credential name , credential description) 
+ */
+
+char *read_from_database()
 {
   SQLHENV    henv;
   SQLHDBC    hdbc;
   SQLHSTMT   hstmt;
   SQLINTEGER narg;
+  SQLRETURN   rc;
+  //int size = sizeof (struct dbase_info) ;
+  //SQLBIGINT size;
+  //SQLSMALLINT size;
+  //SQLINTEGER size;
+  //int size;
+  unsigned long size;
+  int index = -1;
+  char *data;
 
     mydsn = strdup (dbase_name);
     myuid = strdup ("root");
@@ -912,26 +925,77 @@ int read_from_database()
     */ 
     myconnect(&henv,&hdbc,&hstmt);
 
+    /* Get size */
+
+    //rc = SQLExecDirect (hstmt, "Select  sum(length(owner))+sum(length(cred_name))+sum(length(cred_desc)) from main", SQL_NTS);
+    //rc = SQLExecDirect (hstmt, "Select  8", SQL_NTS);
+/*	rc = SQLExecDirect (hstmt, "Select lifetime from main", SQL_NTS);
+    mystmt (hstmt,rc);
+
+    rc = SQLBindCol(hstmt,1, SQL_C_ULONG, &size,  
+                      0,NULL);
+    mystmt(hstmt,rc);
+
+    data = (char *) malloc (size);
+    memset (data, 0, size);
+  */  
     /*
      * retrieve data
     */
+
+   data = NULL;
+   rc = SQLExecDirect (hstmt, "Select owner, cred_name, cred_desc from main", SQL_NTS);
+   mystmt (hstmt,rc);
+
+//    pinfo = NULL;
+
+    memset (&mydbase, 0, sizeof (mydbase));
     while (my_retrieve(hdbc, hstmt))
     {
-	printf ("%s\t%s\t%s\n-------------------\n",mydbase.owner, mydbase.cred_name, mydbase.cred_desc);
+	
+	//pinfo[++index] = (struct dbase_info *) malloc (sizeof (struct dbase_info));
+
+//	printf ("%s\t%s\t%s\n-------------------\n",mydbase.owner, mydbase.cred_name, mydbase.cred_desc);
+/*	pinfo[++index]->owner = strdup (mydbase.owner);
+	pinfo[index]->cred_name= strdup (mydbase.cred_name);
+	pinfo[index]->cred_desc = strdup (mydbase.cred_desc);
+*/
+	int len = strlen (mydbase.owner)+strlen (mydbase.cred_name)+strlen(mydbase.cred_desc);	
+	static int tot_len = 0;
+
+	tot_len += len+3;  //3 extra characters for new lines. 
+
+	data = realloc (data, tot_len);
+
+	if (tot_len == len+3)  // indicates first record
+ 		strcpy (data, mydbase.owner);
+	else
+		strcat (data, mydbase.owner);	
+	strcat (data, "\t");
+	strcat (data, mydbase.cred_name);
+	strcat (data, "\t");
+	strcat (data, mydbase.cred_desc);
+	strcat (data, "\t");
+
 	if (mydbase.owner != NULL)
 		free (mydbase.owner);
 	if (mydbase.cred_name != NULL)
 		free (mydbase.cred_name);
 	if (mydbase.cred_desc != NULL)
 		free (mydbase.cred_desc);
-    }
+/*
+	size += sizeof (struct dbase_info );
+	*pinfo = (struct dbase_info *) realloc (pinfo, size);
+  */  }
+
+	data[strlen(data)-1] = '\0';	//avoid last tab
     /*
      * disconnect from the server, by freeing all resources
     */
     mydisconnect(&henv,&hdbc,&hstmt);
 
+    return data;
 }
-
 
 void write_to_database()
 {
@@ -1324,7 +1388,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
 }
 
 int
-myproxy_creds_info(struct myproxy_creds *creds)
+myproxy_creds_info(struct myproxy_creds *creds, char **records)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
@@ -1346,6 +1410,7 @@ myproxy_creds_info(struct myproxy_creds *creds)
     if (ssl_get_times(creds_path, &creds->start_time, &creds->end_time) != 0)
        goto error;
 
+    *records = read_from_database();
     return_code = 0;
 
 error:

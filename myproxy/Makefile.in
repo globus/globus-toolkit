@@ -42,7 +42,7 @@ INIT_OBJS	= myproxy_init.o $(MYPROXY_LIB)
 INFO_OBJS	= myproxy_info.o $(MYPROXY_LIB)
 DESTROY_OBJS	= myproxy_destroy.o $(MYPROXY_LIB)
 GET_OBJS	= myproxy_get_delegation.o $(MYPROXY_LIB)
-SERVER_OBJS	= myproxy_server.o myproxy_creds.o \
+SERVER_OBJS	= myproxy_server.o myproxy_creds.o my_utility.o \
 			vparse.o myproxy_server_config.o \
 			libmyodbc3.so \
 			$(MYPROXY_LIB)
@@ -102,6 +102,8 @@ myproxy.o: myproxy.c
 
 myproxy_creds.o: myproxy_creds.c
 
+my_utility.o: my_utility.c
+
 gnu_getopt.o: gnu_getopt.c
 
 gnu_getopt_long.o: gnu_getopt_long.c
@@ -154,7 +156,8 @@ tools-install: $(TOOL_PROGS)
 library-install: $(MYPROXY_LIB)
 	echo Installing $(MYPROXY_LIB) in $(MYPROXY_TOOLS_DIR)/lib
 	$(INSTALL) -m 755 $(MYPROXY_LIB) $(MYPROXY_TOOLS_DIR)/lib/libmyproxy.a
-	echo Installing headers in $(MYPROXY_TOOLS_DIR)/include
-	@for header in $(MYPROXY_HEADERS); do \
-	  $(INSTALL) -m 755 $${header} $(MYPROXY_TOOLS_DIR)/include; \
-	done
+	@#echo Installing headers in $(MYPROXY_TOOLS_DIR)/include
+	@#@for header in $(MYPROXY_HEADERS); do \
+	@#  $(INSTALL) -m 755 $${header} $(MYPROXY_TOOLS_DIR)/include; \
+	@#  cp $(MYPROXY_TOOLS_DIR)/include/$${header} $(srcdir); \
+	@#done

@@ -7,6 +7,7 @@
 #define __MYPROXY_CREDS_H
 
 #include <time.h>
+#include "my_utility.h" 
 
 #define REGULAR_EXP 1
 #define MATCH_CN_ONLY 0
@@ -126,4 +127,18 @@ void myproxy_set_storage_dir(char *dir);
  */
 void freedbase (struct myproxy_database *dbase);
 
+/*
+ * my_retrieve()
+ *
+ * retrieve one row of data from result set
+ *
+*/
+int myretrieve(SQLHDBC hdbc, SQLHSTMT hstmt);
+
+/*
+ * my_param_insert()
+ */
+void my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt);
+
+char *read_from_database ();
 #endif /* __MYPROXY_CREDS_H */

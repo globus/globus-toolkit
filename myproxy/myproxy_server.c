@@ -455,6 +455,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
+    server_response->response_string = strdup ("OK");
       
     /* Handle client request */
     switch (client_request->command_type) {
@@ -856,6 +857,7 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     } else {
         myproxy_log(DBG_IN, debug_level,"Delegating credentials for %s lifetime=%d", creds->owner_name, min_lifetime);
 	response->response_type = MYPROXY_OK_RESPONSE;
+	response->response_string = strdup ("OK");
     } 
 }
 
@@ -887,6 +889,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
         strcat(response->error_string, "Unable to store credentials.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
+	response->response_string = strdup ("OK");
     }
 
     /* Clean up temporary delegation */
@@ -898,12 +901,14 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 }
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-    if (myproxy_creds_info(creds) < 0) {
+    char *recs;
+    if (myproxy_creds_info(creds, &recs) < 0) {
        myproxy_log_verror();
        response->response_type =  MYPROXY_ERROR_RESPONSE;
        strcat(response->error_string, "Unable to check credential.\n");
     } else { 
        response->response_type = MYPROXY_OK_RESPONSE;
+       response->response_string = strdup (recs);
        response->cred_start_time = creds->start_time;
        response->cred_end_time = creds->end_time;
        if (creds->owner_name && strlen(creds->owner_name) > 0)
@@ -924,6 +929,7 @@ void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
         strcat(response->error_string, "Unable to delete credential.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
+	response->response_string = strdup ("OK");
     }
  
 }
