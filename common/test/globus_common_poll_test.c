@@ -1,9 +1,11 @@
 #include "globus_common.h"
+/*
 #include "globus_thread_common.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
+*/
 
 globus_bool_t                         test_failed;
 int                                   basic_test_count;
@@ -444,7 +446,7 @@ basic_periodic_handler(
     const globus_abstime_t *            time_stop,
     void *                              user_arg)
 {
-   verbose_printf(2, "basic_periodic_handler() : called");
+   verbose_printf(2, "basic_periodic_handler() : called\n");
 
    basic_periodic_test_ctr++;
 }
@@ -574,23 +576,23 @@ nested_wait_handler(
     if(count == 5)
     {
         globus_mutex_lock(&nested_wait_B_mutex);
-	{
+		{
             while(!signaled)
             {
-                verbose_printf(3, "nested_wait_handler() : waiting on B\n");
+               verbose_printf(3, "nested_wait_handler() : waiting on B\n");
                globus_cond_wait(
-	           &nested_wait_B_cond,
-	           &nested_wait_B_mutex);
+	            &nested_wait_B_cond,
+	            &nested_wait_B_mutex);
             }
-	}
+		}
         globus_mutex_unlock(&nested_wait_B_mutex);
 
         globus_mutex_lock(&nested_wait_A_mutex); 
-	{
+		{
             verbose_printf(3, "nested_wait_handler() : signaling A\n");
-	    nested_wait_test_done = GLOBUS_TRUE;
-	    globus_cond_signal(&nested_wait_A_cond);
-	}
+			nested_wait_test_done = GLOBUS_TRUE;
+			globus_cond_signal(&nested_wait_A_cond);
+		}
         globus_mutex_unlock(&nested_wait_A_mutex); 
     }
     else if(count == 10)

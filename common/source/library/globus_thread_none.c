@@ -18,11 +18,13 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
-#include "globus_common.h"
+#include "globus_common_include.h"
+#include "globus_thread_none.h"
 #include "globus_thread_common.h"
 #include "globus_i_thread.h"
 #include "version.h"
+#include "globus_time.h"
+#include "globus_libc.h"
 
 /******************************************************************************
 			       Define macros
@@ -68,7 +70,11 @@ globus_module_descriptor_t             globus_i_thread_module =
 int
 globus_i_thread_pre_activate()
 {
+#ifndef WIN32
     return globus_i_thread_ignore_sigpipe();
+#else
+    return 1;
+#endif
 }
 
 /*
@@ -496,3 +502,4 @@ globus_i_thread_id(globus_thread_t *Thread_ID)
 {
     *Thread_ID = 0;
 }
+

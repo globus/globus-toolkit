@@ -8,15 +8,7 @@ Description:
 #ifndef GLOBUS_INCLUDE_GLOBUS_TILDE_EXPAND_H_
 #define GLOBUS_INCLUDE_GLOBUS_TILDE_EXPAND_H_ 1
  
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
+#include "globus_common_include.h"
  
 EXTERN_C_BEGIN
  
@@ -68,3 +60,5 @@ globus_tilde_expand(
 EXTERN_C_END
  
 #endif
+
+

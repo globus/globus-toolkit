@@ -1,9 +1,7 @@
 #ifndef GLOBUS_INCLUDE_GENERIC_ERROR_H
 #define GLOBUS_INCLUDE_GENERIC_ERROR_H
 
-#ifdef HAVE_STDARG_H
-#   include <stdarg.h>
-#endif
+#include "globus_common_include.h"
 
 /**
  * @defgroup globus_error_api Globus Error API
@@ -54,15 +52,6 @@
  * @endhtmlonly
  */
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
 
 EXTERN_C_BEGIN
 

@@ -1,7 +1,11 @@
-#include "config.h"
-#include "globus_common.h"
+#include "globus_common_include.h"
 #include "globus_thread_pool.h"
 #include "version.h"
+#include "globus_fifo.h"
+#include "globus_time.h"
+#include "globus_libc.h"
+#include "globus_callback.h"
+#include "globus_thread_common.h"
 
 /* Number of idle threads we're willing to have waiting for tasks. Any more
  * idle threads than this will expire after TOO_MANY_IDLE_TIMEOUT seconds of
@@ -15,7 +19,7 @@
  * on the task queue condition variable when there's nothing for them to do.
  */
 globus_mutex_t                            globus_l_thread_pool_q_mutex;
-globus_cond_t				  globus_l_thread_pool_q_cond;
+globus_cond_t				              globus_l_thread_pool_q_cond;
 globus_fifo_t                             globus_l_thread_pool_q;
 volatile int                              globus_l_thread_pool_pending_tasks;
 
@@ -328,3 +332,4 @@ globus_i_thread_start(
     }
     globus_mutex_unlock(&globus_l_thread_pool_q_mutex);
 }
+

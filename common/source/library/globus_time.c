@@ -1,32 +1,29 @@
-#include "config.h"
-#include "globus_common.h"
-
-#include <assert.h>
-#include <stdlib.h>
-#include <sys/time.h>
+#include "globus_common_include.h"
+#include "globus_time.h"
+#include "globus_libc.h"
 
 const globus_abstime_t        globus_i_abstime_infinity = 
 {
-GLOBUS_I_TIME_INFINITY_SEC,
-GLOBUS_I_TIME_INFINITY_NSEC,
+    GLOBUS_I_TIME_INFINITY_SEC,
+    GLOBUS_I_TIME_INFINITY_NSEC,
 };
 
 const globus_abstime_t        globus_i_abstime_zero =
 {
-0,
-0,
+    0,
+    0,
 };
 
 const globus_reltime_t        globus_i_reltime_infinity = 
 {
-GLOBUS_I_TIME_INFINITY_SEC,
-GLOBUS_I_TIME_INFINITY_NSEC,
+    GLOBUS_I_TIME_INFINITY_SEC,
+    GLOBUS_I_TIME_INFINITY_NSEC,
 };
 
 const globus_reltime_t        globus_i_reltime_zero =
 {
-0,
-0,
+    0,
+    0,
 };
 
 globus_bool_t
@@ -37,7 +34,7 @@ globus_time_has_expired(
 
     GlobusTimeAbstimeGetCurrent(time_now);     
 
-    if(globus_abstime_cmp(abstime, &time_now) > 0)
+    if(globus_abstime_cmp(abstime, &time_now) < 0)
     {
         return GLOBUS_TRUE;
     }
@@ -84,11 +81,11 @@ globus_abstime_cmp(
     
     if(tv_sec1 > tv_sec2)
     {
-	return 1;
+		return 1;
     }
     else if(tv_sec1 < tv_sec2)
     {
-	return -1;
+	    return -1;
     }
     else
     {
@@ -100,17 +97,17 @@ globus_abstime_cmp(
     
         /* look at nanosecs */
         if(tv_nsec1 > tv_nsec2)
-	{
+		{
             return 1;
-	}
-	else if(tv_nsec1 < tv_nsec2)
-	{
+		}
+		else if(tv_nsec1 < tv_nsec2)
+		{
             return -1;
-	}
-	else
-	{
+		}
+		else
+		{
             return 0;
-	}
+		}
     }
 }
 
@@ -127,11 +124,11 @@ globus_reltime_cmp(
     
     if(tv_sec1 > tv_sec2)
     {
-	return 1;
+	    return 1;
     }
     else if(tv_sec1 < tv_sec2)
     {
-	return -1;
+	    return -1;
     }
     else
     {
@@ -143,16 +140,18 @@ globus_reltime_cmp(
     
         /* look at microosecs */
         if(tv_usec1 > tv_usec2)
-	{
+		{
             return 1;
-	}
-	else if(tv_usec1 < tv_usec2)
-	{
+		}
+		else if(tv_usec1 < tv_usec2)
+		{
             return -1;
-	}
-	else
-	{
+		}
+		else
+		{
             return 0;
-	}
+		}
     }
 }
+
+

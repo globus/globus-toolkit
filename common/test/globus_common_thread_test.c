@@ -368,14 +368,14 @@ main(
 
     if (argc != 4)
     {
-	globus_stdio_lock();
-	{
-	    printf("\nusage: globus_thread_test "
-		   "nproducers nconsumers nitems\n\n");
-	}
-	globus_stdio_unlock();
-	
-	exit(1);
+		globus_stdio_lock();
+		{
+			printf("\nusage: globus_thread_test "
+			"nproducers nconsumers nitems\n\n");
+		}
+		globus_stdio_unlock();
+		
+		exit(1);
     }
 
     nproducers = atoi(argv[1]);
@@ -410,69 +410,69 @@ main(
      */
     globus_stdio_lock();
     {
-	printf("%04ld: main() - starting %d producer and %d consumer threads\n",
-	       thread_id,
-	       nproducers,
-	       nconsumers);
+		printf("%04ld: main() - starting %d producer and %d consumer threads\n",
+			thread_id,
+			nproducers,
+			nconsumers);
     }
     globus_stdio_unlock();
     
     for (i = 0 ; i < nproducers ; i ++)
     {
-	int					rc;
-	int					nitems_per_thread;
+		int					rc;
+		int					nitems_per_thread;
 
-	nitems_per_thread = nitems / nproducers +
-	    ((i < nitems % nproducers) ? 1 : 0);
-	
-	rc =
-	    globus_thread_create(
-		&thread,
-		NULL,
-		producer,
-		(void *) nitems_per_thread);
-	
-	if (rc != 0)
-	{
-	    globus_stdio_lock();
-	    {
-		printf("%04ld: main() - ERROR: "
-		       "unable to create consumer thread %d\n",
-		       thread_id,
-		       i);
-		exit(1);
-	    }
-	    globus_stdio_unlock();
-	}
+		nitems_per_thread = nitems / nproducers +
+			((i < nitems % nproducers) ? 1 : 0);
+		
+		rc =
+			globus_thread_create(
+			&thread,
+			NULL,
+			producer,
+			(void *) nitems_per_thread);
+		
+		if (rc != 0)
+		{
+			globus_stdio_lock();
+			{
+				printf("%04ld: main() - ERROR: "
+					"unable to create producer thread %d\n",
+					thread_id,
+					i);
+				exit(1);
+			}
+			globus_stdio_unlock();
+		}
     }
     
     for (i = 0 ; i < nconsumers ; i ++)
     {
-	int					rc;
-	int					nitems_per_thread;
+		int					rc;
+		int					nitems_per_thread;
 
-	nitems_per_thread = nitems / nconsumers +
-	    ((i < nitems % nconsumers) ? 1 : 0);
-	
-	rc =
-	    globus_thread_create(
-		&thread,
-		NULL,
-		consumer,
-		(void *) nitems_per_thread);
+		nitems_per_thread = nitems / nconsumers +
+			((i < nitems % nconsumers) ? 1 : 0);
+		
+		rc =
+			globus_thread_create(
+			&thread,
+			NULL,
+			consumer,
+			(void *) nitems_per_thread);
 
-	if (rc != 0)
-	{
-	    globus_stdio_lock();
-	    {
-		printf("%04ld: main() - ERROR: "
-		       "unable to create consumer thread %d\n",
-		       thread_id,
-		       i);
-		exit(1);
-	    }
-	    globus_stdio_unlock();
-	}
+		if (rc != 0)
+		{
+			globus_stdio_lock();
+			{
+				printf("%04ld: main() - ERROR: "
+					"unable to create consumer thread %d\n",
+					thread_id,
+					i);
+				exit(1);
+			}
+			globus_stdio_unlock();
+		}
     }
 
     /*
@@ -482,8 +482,8 @@ main(
 
     globus_stdio_lock();
     {
-	printf("%04ld: main() - all threads started\n",
-	       thread_id);
+		printf("%04ld: main() - all threads started\n",
+			thread_id);
     }
     globus_stdio_unlock();
     
@@ -494,8 +494,8 @@ main(
 
     globus_stdio_lock();
     {
-	printf("%04ld: main() - all threads have completed their work\n",
-	       thread_id);
+		printf("%04ld: main() - all threads have completed their work\n",
+			thread_id);
     }
     globus_stdio_unlock();
     
@@ -504,12 +504,12 @@ main(
      */
     while (thread_ids_destruct_cnt < nproducers + nconsumers)
     {
-	globus_thread_yield();
+		globus_thread_yield();
     }
 
     globus_stdio_lock();
     {
-	printf("%04ld: main() - all threads terminated\n",
+		printf("%04ld: main() - all threads terminated\n",
 	       thread_id);
     }
     globus_stdio_unlock();
