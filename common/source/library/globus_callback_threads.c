@@ -1781,6 +1781,10 @@ globus_l_callback_thread_poll(
                 }
             }
             
+            /* logic of loop above insures that it is
+             * impossible to have a callbak when shutdown is true.  We
+             * leave it as an exercise for the reader to prove this.
+             */
             if(i_space->shutdown)
             {
                 done = GLOBUS_TRUE;
