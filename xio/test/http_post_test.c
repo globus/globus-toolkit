@@ -505,7 +505,6 @@ globus_l_xio_test_write_buffer(
     while ((left > 0) && (result == GLOBUS_SUCCESS))
     {
         to_write = (left > buffer_size) ? buffer_size : left;
-        fprintf(stderr, "writing %u bytes\n", to_write);
         result = globus_xio_write(
                 handle,
                 ptr,
@@ -581,7 +580,6 @@ globus_l_xio_test_read_buffer(
 
         if (nbytes > 0)
         {
-            fprintf(stderr, "read %u bytes\n", nbytes);
             if (left > 0)
             {
                 if (memcmp(message+offset, buffer, nbytes) != 0)

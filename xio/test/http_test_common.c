@@ -195,16 +195,18 @@ http_test_server_init(
         goto free_cond_error;
     }
 
+    /*
     result = globus_xio_attr_cntl(
         attr,
         tcp_driver,
         GLOBUS_XIO_TCP_SET_LINGER,
         GLOBUS_TRUE,
-        30);
+        1200);
     if (result != GLOBUS_SUCCESS)
     {
         goto destroy_attr_error;
     }
+    */
 
     result = globus_xio_server_create(
         &server->server, 
@@ -487,16 +489,18 @@ http_l_test_server_accept_callback(
         goto destroy_attr_exit;
     }
 
+    /* 
     result = globus_xio_attr_cntl(
             attr,
             test_server->tcp_driver,
             GLOBUS_XIO_TCP_SET_LINGER,
             GLOBUS_TRUE,
-            30);
+            1200);
     if (result != GLOBUS_SUCCESS)
     {
         goto destroy_attr_exit;
     }
+    */
 
     result = globus_xio_register_open(
             &test_server->handle,
@@ -675,16 +679,18 @@ http_test_client_request(
         goto destroy_attr_exit;
     }
 
+    /*
     result = globus_xio_attr_cntl(
             attr,
             tcp_driver,
             GLOBUS_XIO_TCP_SET_LINGER,
             GLOBUS_TRUE,
-            30);
+            1200);
     if (result != GLOBUS_SUCCESS)
     {
         goto destroy_attr_exit;
     }
+    */
 
     for (i = 0; i < header_array_length; i++)
     {
