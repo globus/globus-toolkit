@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 
 # This script iterates over directories in the subdirectory package-list
 # and package-list-cdeps.
@@ -247,7 +247,7 @@ make_source_package() {
         rm -rf $destdir
         rm -rf BUILD/$destdir
         rm -rf BUILD/$destdir.tar.gz
-	fi
+    fi
 
 	if [ -d $destdir ]; then
 		echo Skipping package $name;
