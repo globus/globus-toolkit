@@ -60,6 +60,7 @@ typedef struct globus_usage_stats_handle_s
     uint16_t                            version;
     globus_list_t *                     targets;
     globus_xio_data_descriptor_t        xio_desc;
+    const char *                        optout;
 } globus_i_usage_stats_handle_t;
 
 static
@@ -329,6 +330,8 @@ globus_usage_stats_handle_init(
     {
         return result;
     }
+
+    new_handle->optout = globus_libc_getenv("GLOBUS_USAGE_OPTOUT");
     
     *handle = new_handle;
 
@@ -397,6 +400,11 @@ globus_usage_stats_vsend(
     int                                 i = 0;
     uint16_t                            ncode;
     uint16_t                            nversion;
+
+    if(handle->optout)
+    {
+        return result;
+    }
 
     globus_mutex_lock(&globus_l_usage_stats_mutex);
 
@@ -480,8 +488,8 @@ globus_usage_stats_vsend(
 
         GlobusUsageStatsDebugPrintf(
             GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
-            ("\n================BEGIN USAGE MESSAGE==(length: %d)========\n",
-             data_length));
+            ("\n==========SENDING USAGE INFO: %s==(length: %d)===\n",
+             (char *)globus_list_first(targets_list), data_length));
         GlobusUsageStatsDebugDump(
             GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
             globus_l_usage_stats_data,
