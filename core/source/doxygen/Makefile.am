@@ -1,5 +1,4 @@
-include $(top_srcdir)/globus_automake_config
-include $(top_srcdir)/globus_automake_targets
+include $(top_srcdir)/aclocal/automake_targets
 
 all-local: @DOXYFILE@
 	@if test ! -z "@DOXYGEN@"; then \
