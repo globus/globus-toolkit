@@ -2057,6 +2057,18 @@ error_alloc:
     return;  
 }
 
+static
+void
+globus_l_gfs_data_ipc_error_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_i_gfs_log_result(
+        "IPC ERROR", result);
+    
+    return;
+}
 
 
 globus_result_t
@@ -2072,7 +2084,7 @@ globus_i_gfs_data_node_start(
         &ipc_handle,
         &globus_gfs_ipc_default_iface,
         handle,
-        NULL,
+        globus_l_gfs_data_ipc_error_cb,
         NULL);
 
     

@@ -159,6 +159,54 @@ globus_l_gfs_done_cb(
     }
 }
 
+static
+void
+globus_l_gfs_control_ipc_error_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_i_gfs_log_result(
+        "IPC ERROR", result);
+    
+    return;
+}
+
+typedef struct globus_l_gfs_auth_info_s
+{
+    uid_t                               uid;
+    const char *                        username;
+    const char *                        password;
+    const char *                        subject;
+    globus_gridftp_server_control_op_t  control_op;
+    globus_gridftp_server_control_response_t response;
+    char *                              msg;
+    globus_i_gfs_server_instance_t *    instance;
+} globus_l_gfs_auth_info_t;
+
+static
+void
+globus_l_gfs_auth_ipc_open_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_l_gfs_auth_info_t *          auth_info;  
+
+    auth_info = (globus_l_gfs_auth_info_t *) user_arg;
+
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_INFO,
+        "***IPC open, finishing auth\n");
+
+    globus_gridftp_server_control_finished_auth(
+        auth_info->control_op, 
+        auth_info->username, 
+        auth_info->response, 
+        auth_info->msg);
+
+    return;
+}    
 
 static
 void
@@ -170,7 +218,6 @@ globus_l_gfs_request_auth(
     const char *                        pw,
     void *                              user_arg)
 {
-    globus_result_t                     result; 
     int                                 rc;
     char *                              local_name;
     struct passwd *                     pwent;
@@ -181,19 +228,23 @@ globus_l_gfs_request_auth(
     gid_t                               gid;
     char *                              err_msg = GLOBUS_NULL;
 
-
-
-    globus_i_gfs_server_instance_t *        instance;
-    globus_gfs_ipc_handle_t                 ipc_handle;
-    char *                                  remote_cs;
-    instance = (globus_i_gfs_server_instance_t *) user_arg;
-    
-    remote_cs = globus_i_gfs_config_string("remote");
+    globus_l_gfs_auth_info_t *          auth_info;  
+    globus_i_gfs_server_instance_t *    instance;
+    char *                              remote_cs;
 
 /* XXX add error responses */
-    result = GLOBUS_FAILURE;
     
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
     current_uid = getuid();
+    auth_info = (globus_l_gfs_auth_info_t *) 
+        globus_calloc(1, sizeof(globus_l_gfs_auth_info_t));
+
+    auth_info->control_op = op;
+    auth_info->instance = instance;
+    auth_info->subject = globus_libc_strdup(subject);
+    auth_info->password = globus_libc_strdup(pw);
+               
+    remote_cs = globus_i_gfs_config_string("remote");
     
     if(secure_type == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
     {
@@ -232,29 +283,16 @@ globus_l_gfs_request_auth(
                     "Could not set user or group");
                 goto error;
             }
-        }        
+        }
+        auth_info->username = globus_libc_strdup(pwent->pw_name);
     }
     else if(globus_i_gfs_config_bool("allow_anonymous"))
     {   
-        if(current_uid != 0)
+        if(current_uid == 0)
         {
-            globus_gridftp_server_control_finished_auth(
-                op, 
-                NULL, 
-                GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
-                GLOBUS_NULL);
-                
-            globus_gfs_ipc_open(
-                &ipc_handle,
-                &globus_gfs_ipc_default_iface,
-                remote_cs,
-                NULL,
-                NULL,
-                NULL,
-                NULL);      
-            instance->ipc_handle = ipc_handle;
-            
-            return;    
+           err_msg = globus_common_create_string(
+                "Invalid authentication method");
+            goto error;
         }
         else if(globus_i_gfs_config_bool("inetd") || 
             globus_i_gfs_config_bool("daemon"))
@@ -310,29 +348,19 @@ globus_l_gfs_request_auth(
                 goto error;
             }
         }
-        else
-        {
-           err_msg = globus_common_create_string(
-                "Invalid authentication method");
-            goto error;
-        }
     }     
                       
-    globus_gridftp_server_control_finished_auth(
-        op, 
-        globus_libc_strdup(pwent->pw_name), 
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
-        GLOBUS_NULL);
-
+    auth_info->response = 
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
+    
     globus_gfs_ipc_open(
-        &ipc_handle,
+        &instance->ipc_handle,
         &globus_gfs_ipc_default_iface,
         remote_cs,
-        NULL,
-        NULL,
-        NULL,
-        NULL);
-    instance->ipc_handle = ipc_handle;
+        globus_l_gfs_auth_ipc_open_cb,
+        auth_info,
+        globus_l_gfs_control_ipc_error_cb,
+        instance);
 
     return;
 
@@ -342,6 +370,11 @@ error:
         NULL, 
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         err_msg);
+    if(err_msg != NULL)
+    {
+        globus_free(err_msg);
+    }
+
 }
 
 static
