@@ -5007,10 +5007,11 @@ store(
     if(restart_point)
     {
         tmp_restart = restart_point;
+        if(offset != -1) tmp_restart += offset;
     }
     else if(offset != -1)
     {
-        tmp_restart += offset;
+        tmp_restart = offset;
     }
     else
     {
@@ -5057,7 +5058,7 @@ store(
  */
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        TransferIncomplete = g_receive_data(&g_data_handle, fout, offset, name);
+        TransferIncomplete = g_receive_data(&g_data_handle, fout, tmp_restart, name);
     }
 #   else
     {
