@@ -104,6 +104,7 @@ typedef struct globus_l_gram_conf_values_s
     char *    host_manufacturer;
     char *    x509_cert_dir;
     char *    globus_location;
+    char *    tcp_port_range;
     int       num_env_adds;
 } globus_l_gram_conf_values_t;
 
@@ -698,6 +699,11 @@ int main(int argc,
         {
             conf.host_osname = globus_libc_strdup(argv[i+1]); i++;
         }
+        else if ((strcmp(argv[i], "-globus-tcp-port-range") == 0)
+                 && (i + 1 < argc))
+        {
+            conf.tcp_port_range = globus_libc_strdup(argv[i+1]); i++;
+        }
         else if ((strcmp(argv[i], "-globus-host-osversion") == 0)
                  && (i + 1 < argc))
         {
@@ -734,6 +740,7 @@ int main(int argc,
                     "\t-condor-os os, i.e. SOLARIS26\n"
                     "\t-publish-jobs\n"
                     "\t-save-logfile [ always | on_errors ]\n"
+                    "\t-globus-tcp-port-range <min port #>,<max port #>\n"
                     "\n"
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"
@@ -874,6 +881,14 @@ int main(int argc,
 
     if (conf.x509_cert_dir)
     {
+       conf.num_env_adds++;
+    }
+
+    if (conf.tcp_port_range)
+    {
+       globus_libc_setenv("GLOBUS_TCP_PORT_RANGE",
+                          conf.tcp_port_range,
+                          GLOBUS_TRUE);
        conf.num_env_adds++;
     }
 
@@ -2707,6 +2722,7 @@ globus_l_gram_conf_values_init( globus_l_gram_conf_values_t * conf )
     conf->host_manufacturer = GLOBUS_NULL;
     conf->x509_cert_dir     = GLOBUS_NULL;
     conf->globus_location   = GLOBUS_NULL;
+    conf->tcp_port_range    = GLOBUS_NULL;
     conf->num_env_adds      = 0;
 
     return;
@@ -3865,8 +3881,14 @@ globus_l_gram_request_environment_append(globus_gram_jobmanager_request_t * req,
 
     if (conf->globus_location)
     {
-        req->environment[x] = "GLOBUS_LOCATION";        ++x;
-        req->environment[x] = conf->globus_location;    ++x;
+        req->environment[x] = "GLOBUS_LOCATION";           ++x;
+        req->environment[x] = conf->globus_location;       ++x;
+    }
+
+    if (conf->tcp_port_range)
+    {
+        req->environment[x] = "GLOBUS_TCP_PORT_RANGE";     ++x;
+        req->environment[x] = conf->tcp_port_range;        ++x;
     }
 
     req->environment[x] = GLOBUS_NULL;
