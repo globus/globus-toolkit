@@ -86,7 +86,7 @@ GSS_CALLCONV gss_init_delegation(
         goto err;
     }
 
-    if(cred_handle == GSS_C_NO_CREDENTIAL)
+    if(cred == GSS_C_NO_CREDENTIAL)
     {
         GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
         *minor_status = gsi_generate_minor_status();
