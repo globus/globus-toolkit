@@ -57,7 +57,7 @@ Scripts= \
 	globus-gass-server-shutdown
 
 bin_SCRIPTS = $(Scripts)
-EXTRA_DIST = $(Scripts) \
+EXTRA_DIST = globus-gass-server-shutdown.in \
 	version.h.in \
 	dirt.sh
 
