@@ -885,6 +885,7 @@ globus_l_globus_get_performance(globus_abstime_t *  time_stop,
 {
     double                             current_timestamp;
     double                             transfer_rate;
+    
     globus_gass_copy_performance_t     perf_info;
     globus_gass_copy_handle_t * gass_copy_handle =
          ( globus_gass_copy_handle_t * ) user_args;
@@ -892,11 +893,13 @@ globus_l_globus_get_performance(globus_abstime_t *  time_stop,
     if (globus_gass_copy_get_performance(gass_copy_handle, &perf_info)
         == GLOBUS_SUCCESS)
     {
-        printf("bytes transfered = %lu\n", perf_info.bytes_transfered);
-        printf("bytes transfered per second = %d\n", perf_info.transfer_rate);
-        printf("source url = %s\n", perf_info.source_url);
-        printf("dest url = %s\n", perf_info.dest_url);
-
+        globus_libc_printf("bytes transfered = %lu\n", perf_info.bytes_transfered);
+        globus_libc_printf("bytes transfered per second = %d\n", perf_info.transfer_rate);
+        globus_libc_printf("source url = %s\n", perf_info.source_url);
+        globus_libc_printf("dest url = %s\n", perf_info.dest_url);
+	globus_libc_printf("status = %s\n",
+			   globus_gass_copy_get_status_string(gass_copy_handle));
+	
 #if defined(USE_NETLOGGER)
         NetLoggerWrite(lp,
                        "bytes transfered",
