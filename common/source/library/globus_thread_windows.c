@@ -860,3 +860,15 @@ int globus_cond_broadcast(globus_cond_t *cv)
 	return GLOBUS_SUCCESS;
 } /* globus_cond_broadcast() */
 
+
+/*
+ *  globus_cond_cancel()
+ */
+int
+globus_thread_cancel(
+    globus_thread_t                     thread)
+{
+    /* Per Joe Link, This is Stubbed Out For Windows */
+    /* June 10, 2004 R Gaffaney */
+	return GLOBUS_SUCCESS;
+}
