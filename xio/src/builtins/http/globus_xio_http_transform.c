@@ -769,6 +769,7 @@ globus_l_xio_http_read_callback(
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_i_xio_http_header_info_t *   headers;
+    globus_size_t                       nbytes_result = nbytes;
     GlobusXIOName(globus_l_xio_http_read_callback);
 
     if (http_handle->target_info.is_client)
@@ -783,6 +784,10 @@ globus_l_xio_http_read_callback(
     globus_mutex_lock(&http_handle->mutex);
 
     globus_libc_free(http_handle->read_operation.iov);
+
+    /* Add in amt of data pre-read when chunk header was read */
+    nbytes_result += http_handle->read_operation.nbytes;
+
     http_handle->read_operation.iov = NULL;
     http_handle->read_operation.iovcnt = 0;
     http_handle->read_operation.operation = NULL;
@@ -818,7 +823,7 @@ globus_l_xio_http_read_callback(
     }
 
     globus_mutex_unlock(&http_handle->mutex);
-    globus_xio_driver_finished_read(op, result, nbytes);
+    globus_xio_driver_finished_read(op, result, nbytes_result);
 }
 /* globus_l_xio_http_read_callback() */
 
