@@ -543,7 +543,7 @@ char ls_plain[1024];
 
 #ifdef DAEMON
 int be_daemon = 0;		/* Run standalone? */
-int daemon_port = 0;
+int daemon_port = -1;
 void do_daemon(int argc, char **argv, char **envp);
 #endif
 int Bypass_PID_Files = 0;
@@ -8030,6 +8030,7 @@ void do_daemon(int argc, char **argv, char **envp)
     struct servent *serv;
     int pgrp;
     int lsock;
+    int namelen;
     int one = 1;
     FILE *pidfile;
     int i;
@@ -8134,24 +8135,40 @@ void do_daemon(int argc, char **argv, char **envp)
 
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = acl_DaemonAddress();
-    if (daemon_port == 0) {
+    if (daemon_port == -1) {
 	if (!(serv = getservbyname("ftp", "tcp"))) {
 	    syslog(LOG_ERR, "Cannot find service ftp: %m");
 	    exit(1);
 	}
 	server.sin_port = serv->s_port;
-	daemon_port = ntohs(serv->s_port);
+    }
+    else if(daemon_port >= 0)
+    { 
+	server.sin_port = htons(daemon_port);
     }
     else
-	server.sin_port = htons(daemon_port);
+    {
+        syslog(LOG_ERR, "Bad port number passed to server");
+        exit(1);
+    }
 
-    if (bind(lsock, (struct sockaddr *) &server, sizeof(server)) < 0) {
+    namelen = sizeof(server);
+    
+    if (bind(lsock, (struct sockaddr *) &server, namelen) < 0) {
 	syslog(LOG_ERR, "Cannot bind socket: %m");
 	exit(1);
     }
-
+    
     listen(lsock, MAX_BACKLOG);
 
+    if(getsockname(lsock,(struct sockaddr *) &server, &namelen) < 0)
+    {
+        syslog(LOG_ERR, "Cannot get local address of socket: %m");
+	exit(1);
+    }
+    
+    daemon_port = ntohs(server.sin_port);
+    
     sprintf(proctitle, "accepting connections on port %i", daemon_port);
     setproctitle("%s", proctitle);
 
