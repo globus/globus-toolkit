@@ -2,12 +2,9 @@ package org.globus.ogsa.impl.base.gram.filestreaming;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.rmi.RemoteException;
 import java.util.HashMap;
-import java.util.Calendar;
 import java.util.Map;
 
 import javax.xml.namespace.QName;
@@ -25,29 +22,20 @@ import org.globus.io.streams.GassOutputStream;
 import org.globus.io.streams.GlobusFileOutputStream;
 import org.globus.io.streams.GridFTPOutputStream;
 import org.globus.io.streams.HTTPOutputStream;
-import org.globus.ftp.exception.FTPException;
 import org.globus.ogsa.base.gram.filestreaming.FileStreamingOptionsType;
-import org.globus.ogsa.impl.base.gram.filestreaming.CallBackInterface;
 import org.globus.ogsa.base.gram.filestreaming.FileStreamingType;
 import org.globus.ogsa.base.gram.filestreaming.FileStreamingPortType;
 import org.globus.ogsa.base.gram.filestreaming.DestinationURLElement;
 import org.globus.ogsa.GridConstants;
 import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
-import org.globus.ogsa.impl.core.handle.HandleHelper;
 import org.globus.ogsa.impl.core.notification.NotificationSourceDelegationSkeleton;
 import org.globus.ogsa.impl.core.notification.SecureNotificationServiceSkeleton;
-import org.globus.ogsa.impl.core.handle.HandleHelper;
 import org.globus.ogsa.impl.security.authentication.SecContext;
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.repository.ServiceNode;
-import org.globus.ogsa.utils.MessageUtils;
-import org.globus.ogsa.utils.AnyHelper;
-import org.globus.ogsa.wsdl.GSR;
 import org.globus.ogsa.ServiceData;
-import org.gridforum.ogsa.ServiceDataType;
 import org.globus.util.GlobusURL;
-import org.globus.util.Util;
 
 import org.ietf.jgss.GSSCredential;
 
@@ -141,7 +129,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
         try { 
             _outputFollower.addFile(outputFile,out,offset);
         } catch(IOException e) {
-            e.printStackTrace();
+	    logger.error("Error streaming file", e);
             throw new RemoteException("Error in Streaming");
         }
     }
@@ -158,8 +146,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
             this.managedJobImpl = (CallBackInterface)ServiceNode.getRootNode().activate(callBack);
             this.managedJobImpl.register(this);
         } catch(Exception e) {
-            logger.debug("Invalid handle");
-            e.printStackTrace();
+            logger.debug("Invalid handle", e);
         }
  
        try {
@@ -191,7 +178,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
         try {
             return openUrl(url);
         } catch(Exception e) {
-            e.printStackTrace();
+	    logger.debug("Failed to open remote URL", e);
             throw new RemoteException("Failed to open remote URL");
         }
     }

@@ -137,7 +137,6 @@ import org.globus.ogsa.base.gram.filestreaming.FileStreamingOptionsType;
 import org.globus.ogsa.base.gram.filestreaming.FileStreamingType;
 import org.globus.ogsa.base.gram.filestreaming.FileStreamingPortType;
 import org.globus.ogsa.impl.core.factory.SecureFactoryServiceSkeleton;
-import org.globus.ogsa.impl.core.notification.NotificationSinkCallback;
 import org.globus.ogsa.impl.core.service.ServiceSkeleton;
 import org.globus.ogsa.impl.core.service.QueryHelper;
 import org.globus.ogsa.repository.ServiceNode;
@@ -158,12 +157,7 @@ import org.gridforum.ogsa.ServiceDataType;
 import org.gridforum.ogsa.ServiceHandleElementType;
 import org.gridforum.ogsa.ServiceTerminationReferenceType;
 
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Text;
-
 import java.util.Vector;
-
 
 public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton
         implements ServiceDataValueCallback {
