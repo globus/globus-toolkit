@@ -1013,10 +1013,12 @@ globus_gram_job_manager_state_machine(
 	}
 	else if(request->save_state)
 	{
+	    request->two_phase_commit_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
 	}
 	else
 	{
+	    request->two_phase_commit_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
 	}
 	break;

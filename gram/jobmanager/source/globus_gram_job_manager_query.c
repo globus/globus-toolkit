@@ -464,7 +464,7 @@ globus_l_gram_job_manager_renew(
 	    {
 		GlobusTimeReltimeSet(delay, 0, 0);
 		globus_callback_register_oneshot(
-			&request->two_phase_commit_timer,
+			&request->poll_timer,
 			&delay,
 			globus_gram_job_manager_state_machine_callback,
 			request);
@@ -568,7 +568,7 @@ globus_l_gram_job_manager_signal(
 		{
 		    GlobusTimeReltimeSet(delay, 0, 0);
 		    globus_callback_register_oneshot(
-			    &request->two_phase_commit_timer,
+			    &request->poll_timer,
 			    &delay,
 			    globus_gram_job_manager_state_machine_callback,
 			    request);
@@ -622,9 +622,10 @@ globus_l_gram_job_manager_signal(
 		 * Cancelled callback before it ran--schedule the
 		 * state machine to run after the query handler exits.
 		 */
+		request->two_phase_commit_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
 		GlobusTimeReltimeSet(delay, 0, 0);
 		globus_callback_register_oneshot(
-			&request->two_phase_commit_timer,
+			&request->poll_timer,
 			&delay,
 			globus_gram_job_manager_state_machine_callback,
 			request);
@@ -713,9 +714,65 @@ int
 globus_l_gram_job_manager_query_stop_manager(
     globus_gram_jobmanager_request_t *	request)
 {
-    int rc = GLOBUS_SUCCESS;
+    int					rc = GLOBUS_SUCCESS;
+    globus_result_t			result;
+    globus_bool_t			active;
+    globus_gram_jobmanager_state_t	state;
+    globus_reltime_t			delay;
 
-    switch(request->jobmanager_state)
+    state = request->jobmanager_state;
+
+    if(state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
+    {
+	if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
+	{
+	    result = globus_callback_unregister(
+		request->poll_timer,
+		NULL,
+		NULL,
+		&active);
+
+	    if(result == GLOBUS_SUCCESS && !active)
+	    {
+		GlobusTimeReltimeSet(delay, 0, 0);
+		globus_callback_register_oneshot(
+			&request->poll_timer,
+			&delay,
+			globus_gram_job_manager_state_machine_callback,
+			request);
+	    }
+	}
+    }
+    else if(state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE ||
+	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END ||
+	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE ||
+	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND ||
+	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND ||
+	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND)
+    {
+	if(request->two_phase_commit_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
+	{
+	    result = globus_callback_unregister(
+		request->two_phase_commit_timer,
+		NULL,
+		NULL,
+		&active);
+
+	    if(result == GLOBUS_SUCCESS && !active)
+	    {
+		request->two_phase_commit_timer =
+		    GLOBUS_HANDLE_TABLE_NO_HANDLE;
+
+		GlobusTimeReltimeSet(delay, 0, 0);
+		globus_callback_register_oneshot(
+			&request->poll_timer,
+			&delay,
+			globus_gram_job_manager_state_machine_callback,
+			request);
+	    }
+	}
+    }
+    switch(state)
     {
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:

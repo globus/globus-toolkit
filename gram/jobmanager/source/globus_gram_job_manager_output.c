@@ -2066,7 +2066,8 @@ globus_l_gram_job_manager_output_close_done(
 	                               NULL,
 	                               NULL,
 				       NULL);
-	    request->output->callback_handle = GLOBUS_NULL_HANDLE;
+	    request->output->callback_handle =
+		GLOBUS_HANDLE_TABLE_NO_HANDLE;
 	    do
 	    {
 		event_registered =
