@@ -1,9 +1,5 @@
 #include "myproxy_common.h"	/* all needed headers included here */
 
-static int copy_file(const char *source,
-		     const char *dest,
-		     const mode_t mode);
-
 static int myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
                                   char *passphrase,
 				  char *certfile);
