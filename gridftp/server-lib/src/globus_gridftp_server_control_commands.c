@@ -55,6 +55,30 @@ globus_l_gsc_cmd_noop(
 }
 
 static void
+globus_l_gsc_cmd_pbsz(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    char *                                  msg;
+
+    if(strlen(cmd_a[1]) > 10 || 
+        (strlen(cmd_a[1]) == 10 && strcmp(cmd_a[1], "4294967296") >= 0))
+    {
+        msg = globus_common_create_string("501 Bad value for PBSZ: %s\r\n",
+            cmd_a[1]);
+    }
+    else
+    {
+        msg = globus_common_create_string("200 PBSZ= %s.\r\n", cmd_a[1]);
+    }
+    globus_gsc_959_finished_command(op, msg);
+    globus_free(msg);
+}
+
+static void
 globus_l_gsc_cmd_dcau(
     globus_i_gsc_op_t *                     op,
     const char *                            full_command,
@@ -2367,6 +2391,16 @@ globus_i_gsc_add_commands(
         1,
         1,
         "214 Syntax: PASS <sp> password\r\n",
+        NULL);
+
+    globus_gsc_959_command_add(
+        server_handle,
+        "PBSZ", 
+        globus_l_gsc_cmd_pbsz,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: PBSZ <sp> size\r\n",
         NULL);
 
     globus_gsc_959_command_add(
