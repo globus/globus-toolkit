@@ -60,7 +60,7 @@ else
    fi
 fi
 
-
+GLOBUS_FINALIZE
 
 
 AC_OUTPUT(
