@@ -1179,7 +1179,7 @@ globus_l_xio_gssapi_ftp_server_read_cb(
     char **                             cmd_a = NULL;
     globus_byte_t *                     in_buffer;
     globus_size_t                       in_buffer_len;
-    globus_size_t                       finish_len = -1;
+    globus_ssize_t                      finish_len = -1;
     OM_uint32                           maj_stat;
     OM_uint32                           min_stat;
     GlobusXIOName(globus_l_xio_gssapi_ftp_server_read_cb);
