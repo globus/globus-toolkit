@@ -67,6 +67,7 @@ EXTERN_C_BEGIN
 #include "globus_error_errno.h"
 #include "globus_error_generic.h"
 #include "globus_extension.h"
+#include "globus_uuid.h"
 
 # if !defined(alloca)
 /* AIX requires this to be the first thing in the file.  */
