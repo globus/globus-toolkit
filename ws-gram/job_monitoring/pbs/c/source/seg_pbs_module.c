@@ -393,6 +393,9 @@ globus_l_pbs_read_callback(
             fclose(state->fp);
             state->fp = NULL;
             state->start_timestamp.tm_mday++;
+            state->start_timestamp.tm_hour = 0;
+            state->start_timestamp.tm_min = 0;
+            state->start_timestamp.tm_sec = 0;
         }
 
         rc = globus_l_pbs_find_logfile(state);
