@@ -95,7 +95,6 @@ GSS_CALLCONV gss_init_delegation(
     gss_cred_id_desc *                  cred;
     X509 *                              cert = NULL;
     STACK_OF(X509) *                    cert_chain = NULL;
-    X509 *                              issuer_cert = NULL;
     PROXYCERTINFO *                     pci;
     globus_gsi_cert_utils_proxy_type_t  proxy_type = GLOBUS_FULL_PROXY;
     int                                 index;

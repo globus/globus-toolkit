@@ -56,7 +56,8 @@ globus_gss_assist_wrap_send(
     FILE *                              fperr)
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    OM_uint32                           minor_status1 = 0;
+    OM_uint32                           local_minor_status;
+    globus_result_t                     local_result;
     gss_buffer_desc                     input_token_desc  = GSS_C_EMPTY_BUFFER;
     gss_buffer_t                        input_token       = &input_token_desc;
     gss_buffer_desc                     output_token_desc = GSS_C_EMPTY_BUFFER;
@@ -69,7 +70,7 @@ globus_gss_assist_wrap_send(
     input_token->value = data;
     input_token->length = length;
 
-    major_status = gss_wrap(minor_status,
+    major_status = gss_wrap(&local_minor_status,
                             context_handle,
                             0,
                             GSS_C_QOP_DEFAULT,
@@ -85,35 +86,67 @@ globus_gss_assist_wrap_send(
             input_token->length = length,
             output_token->length));
 
-    if (major_status == GSS_S_COMPLETE)
+    if (major_status != GSS_S_COMPLETE)
     {
-	*token_status = (*gss_assist_send_token)(gss_assist_send_context,
-                                                 output_token->value,
-                                                 output_token->length);
+        globus_object_t *               error_obj;
+        globus_object_t *               error_copy;
+
+        error_obj = globus_error_get(local_minor_status);
+        error_copy = globus_object_copy(error_obj);
+
+        local_minor_status = (OM_uint32) globus_error_put(error_obj);
+        if(fperr)
+        {
+            globus_gss_assist_display_status(
+                stderr,
+                "gss_assist_wrap_send failure:",
+                major_status,
+                local_minor_status,
+                *token_status);
+        }
+        
+        local_result = globus_error_put(error_copy);
+        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+            local_result,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_WRAP);
+        *minor_status = (OM_uint32) local_result;
+        goto release_output_token;
     }
 
-    gss_release_buffer(&minor_status1,
-                       output_token);
-  
-    if (fperr && (major_status != GSS_S_COMPLETE || *token_status != 0)) 
+    *token_status = (*gss_assist_send_token)(gss_assist_send_context,
+                                             output_token->value,
+                                             output_token->length);
+    if(*token_status != 0)
     {
-        globus_gss_assist_display_status(
-            stderr,
-            "gss_assist_wrap_send failure:",
-            major_status,
-            *minor_status,
-            *token_status);
-    }
-
-    if (*token_status) {
-
-        GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
-            3, (globus_i_gsi_gss_assist_debug_fstream,
-                "TOKEN STATUS: %d\n", *token_status));
-      
+        GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+            local_result,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_WRAP,
+            ("Error sending output token. token status: %d\n", 
+             *token_status));
+        *minor_status = (OM_uint32) local_result;
         major_status = GSS_S_FAILURE;
+        goto release_output_token;
     }
 
+    major_status = gss_release_buffer(& local_minor_status,
+                                      output_token);
+    if(GSS_ERROR(major_status))
+    {
+        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+            local_result,
+            GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_WRAP);
+        *minor_status = (OM_uint32) local_result;
+    }
+
+    goto exit;
+
+ release_output_token:
+
+    gss_release_buffer(&local_minor_status,
+                       output_token);
+
+ exit:
+    
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return major_status;
 }

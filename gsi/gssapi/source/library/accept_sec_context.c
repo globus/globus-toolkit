@@ -53,6 +53,7 @@ GSS_CALLCONV gss_accept_sec_context(
     gss_cred_id_t *                     delegated_cred_handle_P) 
 {
     gss_ctx_id_desc *                   context = NULL;
+    globus_gsi_cred_handle_t            delegated_cred = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
     OM_uint32                           local_major_status;
@@ -314,12 +315,9 @@ GSS_CALLCONV gss_accept_sec_context(
 
         case(GSS_CON_ST_CERT):
 
-            *delegated_cred_handle_P = 
-                (gss_cred_id_t) malloc(sizeof(gss_cred_id_desc));
-            
             local_result = globus_gsi_proxy_assemble_cred(
                 context->proxy_handle,
-                &((gss_cred_id_desc *)(*delegated_cred_handle_P))->cred_handle,
+                &delegated_cred,
                 context->gss_sslbio);
             if(local_result != GLOBUS_SUCCESS)
             {
@@ -328,6 +326,19 @@ GSS_CALLCONV gss_accept_sec_context(
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
                 context->gss_state = GSS_CON_ST_DONE;
                 major_status = GSS_S_FAILURE;
+                break;
+            }
+
+            major_status = globus_i_gsi_gss_create_cred(
+                &local_minor_status,
+                GSS_C_BOTH,
+                delegated_cred_handle_P,
+                delegated_cred);
+            if(GSS_ERROR(major_status))
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
                 break;
             }
             

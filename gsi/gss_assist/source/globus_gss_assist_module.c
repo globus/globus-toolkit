@@ -9,6 +9,7 @@
  */
 #endif
 
+#include <stdlib.h>
 #include "globus_i_gss_assist.h"
 #include "version.h"
 
@@ -45,7 +46,7 @@ globus_l_gsi_gss_assist_activate(void)
     static char *                       _function_name_ =
         "globus_l_gsi_gss_assist_activate";
 
-    tmp_string = globus_module_getenv("GLOUBS_GSI_GSS_ASSIST_DEBUG_LEVEL");
+    tmp_string = getenv("GLOBUS_GSI_GSS_ASSIST_DEBUG_LEVEL");
     if(tmp_string != GLOBUS_NULL)
     {
         globus_i_gsi_gss_assist_debug_level = atoi(tmp_string);
@@ -55,7 +56,7 @@ globus_l_gsi_gss_assist_activate(void)
         }
     }
 
-    tmp_string = globus_module_getenv("GLOBUS_GSI_GSS_ASSIST_DEBUG_FILE");
+    tmp_string = getenv("GLOBUS_GSI_GSS_ASSIST_DEBUG_FILE");
     if(tmp_string != GLOBUS_NULL)
     {
         globus_i_gsi_gss_assist_debug_fstream = fopen(tmp_string, "w");

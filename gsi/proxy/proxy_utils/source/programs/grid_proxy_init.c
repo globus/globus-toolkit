@@ -516,7 +516,11 @@ main(
             &temp_filename);
         if(result != GLOBUS_SUCCESS)
         {
-            free(proxy_absolute_path);
+            if(proxy_absolute_path)
+            {
+                free(proxy_absolute_path);
+                proxy_absolute_path = NULL;
+            }
             globus_libc_fprintf(
                 stderr,
                 "\n\nERROR: Can't split the full path into "
@@ -529,8 +533,18 @@ main(
         if(result != GLOBUS_SUCCESS ||
            file_status != GLOBUS_FILE_DIR)
         {
-            free(temp_dir);
-            free(temp_filename);
+            if(temp_dir)
+            {
+                free(temp_dir);
+                temp_dir = NULL;
+            }
+            
+            if(temp_filename)
+            {
+                free(temp_filename);
+                temp_dir = NULL;
+            }
+
             globus_libc_fprintf(
                 stderr, 
                 "\n\nERROR: %s is not a valid directory for writing the "
@@ -546,8 +560,17 @@ main(
             }
         }
 
-        free(temp_dir);
-        free(temp_filename);
+        if(temp_dir);
+        {
+            free(temp_dir);
+            temp_dir = NULL;
+        }
+        
+        if(temp_filename)
+        {
+            free(temp_filename);
+            temp_filename = NULL;
+        }
     }
 
     if(debug)
@@ -651,7 +674,11 @@ main(
             }
             
             printf("Your identity: %s\n", subject);
-            free(subject);
+            if(subject)
+            {
+                free(subject);
+                subject = NULL;
+            }
         }
     }
     else if(user_cert_filename != user_key_filename)
@@ -684,7 +711,11 @@ main(
             }
             
             printf("Your identity: %s\n", subject);
-            free(subject);
+            if(subject)
+            {
+                free(subject);
+                subject = NULL;
+            }
         }
         
         result = globus_gsi_cred_read_key(

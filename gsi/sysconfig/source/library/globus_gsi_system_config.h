@@ -74,6 +74,8 @@ extern
 globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
 
 #ifdef WIN32
+#    define GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS \
+            globus_gsi_sysconfig_set_key_permissions_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR \
             globus_gsi_sysconfig_get_home_dir_win32
 #    define GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE \
@@ -115,6 +117,8 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
 #    define GLOBUS_GSI_SYSCONFIG_GET_USERNAME \
             globus_gsi_sysconfig_get_username_win32
 #else
+#    define GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS \
+            globus_gsi_sysconfig_set_key_permissions_unix
 #    define GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR \
             globus_gsi_sysconfig_get_home_dir_unix
 #    define GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE \
@@ -161,6 +165,10 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_get_unique_proxy_filename
 
 #ifdef WIN32
+
+globus_result_t
+globus_gsi_sysconfig_set_key_permissions_win32(
+    char *                              filename);
 
 globus_result_t
 globus_gsi_sysconfig_get_home_dir_win32(
@@ -255,6 +263,10 @@ globus_gsi_sysconfig_get_gridmap_filename_win32(
     char **                             filename);
 
 #else /* if WIN32 is not defined, then define the unix functions */
+
+globus_result_t
+globus_gsi_sysconfig_set_key_permissions_unix(
+    char *                              filename);
 
 globus_result_t
 globus_gsi_sysconfig_get_home_dir_unix(

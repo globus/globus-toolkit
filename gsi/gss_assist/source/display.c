@@ -195,11 +195,11 @@ globus_gss_assist_display_status_str(
                                    major_status,
                                    GSS_C_GSS_CODE,
                                    GSS_C_NO_OID,
-                                   &message_context,
+                                   &minor_status,
                                    status_string) == GSS_S_COMPLETE) {
                 if (status_string->length) {
                     msg = globus_gss_assist_strcatr(msg,
-                                                    "    ",
+                                                    "",
                                                     (char *) status_string->value,
                                                     status_string->length,
                                                     "\n");
@@ -222,7 +222,7 @@ globus_gss_assist_display_status_str(
                                status_string) == GSS_S_COMPLETE) {
             if (status_string->length) {
                 msg = globus_gss_assist_strcatr(msg,
-						"    ",
+						"",
 						(char *) status_string->value,
 						status_string->length,
 						"\n");

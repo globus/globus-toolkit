@@ -20,7 +20,15 @@ char *
 globus_l_gsi_gss_assist_error_strings[GLOBUS_GSI_GSS_ASSIST_ERROR_LAST] =
 {
 
-/* 0 */   "Success"
+/* 0 */   "Success",
+/* 1 */   "Error with arguments passed to function",
+/* 2 */   "Error user ID doesn't match",
+/* 3 */   "No user entry in gridmap file",
+/* 4 */   "Error querying gridmap file",
+/* 5 */   "Invalid gridmap file format",
+/* 6 */   "System Error",
+/* 7 */   "Error during context initialization",
+/* 8 */   "Error during message wrap"
 
 };
 

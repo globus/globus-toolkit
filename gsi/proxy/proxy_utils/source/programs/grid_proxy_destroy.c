@@ -118,21 +118,6 @@ int main(
         exit(1);
     }
 
-    result = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&default_full_file,
-                                                     GLOBUS_PROXY_FILE_INPUT);
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_libc_fprintf(
-            stderr,
-            "Proxy file: %s doesn't exist or is not writeable", 
-            default_full_file);
-        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-    }
-
-    GLOBUS_GSI_SYSCONFIG_SPLIT_DIR_AND_FILENAME(default_full_file,
-                                                &dummy_dir_string,
-                                                &default_file);
-
     if (strrchr(argv[0],'/'))
     {
 	program = strrchr(argv[0],'/') + 1;
@@ -184,6 +169,10 @@ int main(
 	{
 	    args_show_version();
 	}
+        else if (strcmp(argp, "-debug") == 0)
+        {
+            debug = 1;
+        }            
 	else 
 	{
 	    args_error(i, argp, "unknown option");
@@ -200,6 +189,17 @@ int main(
     {
 	globus_i_gsi_proxy_utils_clear_and_remove(default_full_file, 
                                                   dryrun_flag);
+    }
+
+    result = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&default_full_file,
+                                                     GLOBUS_PROXY_FILE_INPUT);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(
+            stderr,
+            "Proxy file doesn't exist or has bad permissions", 
+            default_full_file);
+        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
     if (all_flag)
@@ -220,6 +220,10 @@ int main(
      * no options, remove the default file, which is the ENV
      * or the /tmp/x509up_u<uid> file
      */
+
+    GLOBUS_GSI_SYSCONFIG_SPLIT_DIR_AND_FILENAME(default_full_file,
+                                                &dummy_dir_string,
+                                                &default_file);
 
     if (!default_flag && !all_flag)
     {
@@ -286,7 +290,7 @@ globus_i_gsi_proxy_utils_print_error(
     {
         char *                          error_string = NULL;
         globus_libc_fprintf(stderr,
-                            "\n%s:%d:",
+                            "\n\n%s:%d:",
                             filename, line);
         error_string = globus_error_print_chain(error_obj);
         globus_libc_fprintf(stderr, "%s\n", error_string);
@@ -308,7 +312,7 @@ globus_i_gsi_proxy_utils_print_error(
     else 
     {
         globus_libc_fprintf(stderr,
-                            "Use -debug for further information.\n\n");
+                            "\nUse -debug for further information.\n\n");
     }
     globus_object_free(error_obj);
     exit(1);

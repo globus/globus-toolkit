@@ -140,6 +140,7 @@ globus_result_t
 globus_i_gsi_sysconfig_create_key_string(
     char **                             key_string,
     char **                             key_string_value,
+    globus_gsi_statcheck_t *            status,
     const char *                        format,
     ...);
 

@@ -75,10 +75,10 @@ globus_gsi_callback_data_destroy(
         goto exit;
     }
 
-    if(callback_data->cert_chain)
-    {
-        sk_X509_pop_free(callback_data->cert_chain, X509_free);
-    }
+/*      if(callback_data->cert_chain) */
+/*      { */
+/*          sk_X509_pop_free(callback_data->cert_chain, X509_free); */
+/*      } */
     
     if(callback_data->cert_dir)
     {
@@ -202,12 +202,7 @@ int globus_gsi_callback_openssl_free(
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
-    /* free the callback data */
-    if(globus_gsi_callback_data_destroy((globus_gsi_callback_data_t)ptr) 
-       != GLOBUS_SUCCESS)
-    {
-        result = 0;
-    }
+    /* free the callback data - currently not used*/
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
@@ -398,9 +393,10 @@ globus_gsi_callback_get_cert_chain(
 
     for(index = 0; index < sk_X509_num(callback_data->cert_chain); ++index)
     {
-        if(!sk_X509_insert(*cert_chain,
-                           sk_X509_value(callback_data->cert_chain, index),
-                           index))
+        if(!sk_X509_insert(
+            *cert_chain,
+            X509_dup(sk_X509_value(callback_data->cert_chain, index)),
+            index))
         {
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
@@ -436,6 +432,12 @@ globus_gsi_callback_set_cert_chain(
              _function_name_));
         goto exit;
     }
+
+/*      if(callback_data->cert_chain) */
+/*      { */
+/*          sk_X509_pop_free(callback_data->cert_chain, X509_free); */
+/*          callback_data->cert_chain = NULL; */
+/*      } */
 
     callback_data->cert_chain = sk_X509_new_null();
     

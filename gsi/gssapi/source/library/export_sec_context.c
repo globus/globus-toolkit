@@ -182,7 +182,7 @@ GSS_CALLCONV gss_export_sec_context(
         i2d_X509_bio(bp, sk_X509_value(cert_chain, index));
     }
     
-    local_major_status = globus_i_gsi_gss_ssl_serialize(&local_minor_status,
+    local_major_status = globus_i_gsi_gss_SSL_write_bio(&local_minor_status,
                                                         context,
                                                         bp);
     if(GSS_ERROR(local_major_status))

@@ -289,7 +289,7 @@ GSS_CALLCONV gss_wrap(
         {
             /* problem, did not take the whole buffer */
 
-            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WRAP_BIO,
                 ("SSL failed wrapping entire message: "

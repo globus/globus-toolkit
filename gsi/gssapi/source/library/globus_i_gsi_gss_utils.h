@@ -123,11 +123,13 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
 
 #define GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER \
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF( \
-                1, (stderr, "%s entering\n", _function_name_))
+                1, (globus_i_gsi_gssapi_debug_fstream, \
+                    "%s entering\n", _function_name_))
 
 #define GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT \
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF( \
-                1, (stderr, "%s exiting\n", _function_name_))
+                1, (globus_i_gsi_gssapi_debug_fstream, \
+                    "%s exiting\n", _function_name_))
 
 typedef enum {
     
@@ -215,13 +217,13 @@ globus_i_gsi_gss_retrieve_peer(
     const gss_cred_usage_t              cred_usage);
 
 OM_uint32
-globus_i_gsi_gss_ssl_serialize(
+globus_i_gsi_gss_SSL_write_bio(
     OM_uint32 *                         minor_status,
     gss_ctx_id_desc *                   context,
     BIO *                               bp);
 
 OM_uint32
-globus_i_gsi_gss_ssl_unserialize(
+globus_i_gsi_gss_SSL_read_bio(
     OM_uint32 *                         minor_status,
     gss_ctx_id_desc *                   context,
     BIO *                               bp);

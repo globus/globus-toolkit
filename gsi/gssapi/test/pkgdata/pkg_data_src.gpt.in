@@ -40,7 +40,6 @@
       <cflags>@GPT_CFLAGS@</cflags>
       <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
       <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
-      <pkg_libs>-lglobus_gssapi_gsi</pkg_libs>
     </Build_Environment>
 
   </src_pkg>

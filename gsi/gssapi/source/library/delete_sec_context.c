@@ -103,6 +103,7 @@ GSS_CALLCONV gss_delete_sec_context(
         major_status = GSS_S_FAILURE;
         goto exit;
     }
+    (*context_handle)->callback_data = NULL;
     
     local_major_status = gss_release_cred(
         &local_minor_status,
@@ -115,19 +116,22 @@ GSS_CALLCONV gss_delete_sec_context(
         major_status = GSS_S_FAILURE;
         goto exit;
     } 
-       
-    local_major_status = gss_release_cred(
-        &local_minor_status,
-        (gss_cred_id_t *) &(*context_handle)->cred_handle);
-    if(GSS_ERROR(local_major_status))
+
+    if((*context_handle)->cred_obtained)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto exit;
+        local_major_status = gss_release_cred(
+            &local_minor_status,
+            (gss_cred_id_t *) &(*context_handle)->cred_handle);
+        if(GSS_ERROR(local_major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
     }
-    
+
     local_result = globus_gsi_proxy_handle_destroy(
         (*context_handle)->proxy_handle);
     if(local_result != GLOBUS_SUCCESS)
@@ -142,11 +146,13 @@ GSS_CALLCONV gss_delete_sec_context(
     if ((*context_handle)->gss_ssl)
     {
         SSL_clear((*context_handle)->gss_ssl);
+        (*context_handle)->gss_ssl = NULL;
     }
         
     if ((*context_handle)->gss_sslbio)
     {
         BIO_free_all((*context_handle)->gss_sslbio);
+        (*context_handle)->gss_sslbio = NULL;
     }
 
     if ((*context_handle)->gss_rbio)
@@ -166,6 +172,7 @@ GSS_CALLCONV gss_delete_sec_context(
         (*context_handle)->gss_ssl->rbio = NULL;
         (*context_handle)->gss_ssl->wbio = NULL;
         SSL_free((*context_handle)->gss_ssl);
+        (*context_handle)->gss_ssl = NULL;
     } 
 
     globus_mutex_unlock(&(*context_handle)->mutex);

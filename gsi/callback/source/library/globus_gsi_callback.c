@@ -31,6 +31,8 @@
 #endif
 #endif
 
+globus_mutex_t                          globus_l_gsi_callback_oldgaa_mutex;
+
 static int globus_l_gsi_callback_activate(void);
 static int globus_l_gsi_callback_deactivate(void);
 
@@ -128,8 +130,8 @@ globus_l_gsi_callback_deactivate(void)
     return result;
 }
 
-static int globus_i_gsi_callback_SSL_callback_data_index = -1;
-static int globus_i_gsi_callback_X509_STORE_callback_data_index = -1;
+static int globus_i_gsi_callback_SSL_callback_data_index = 5;
+static int globus_i_gsi_callback_X509_STORE_callback_data_index = 6;
 
 globus_result_t
 globus_gsi_callback_get_X509_STORE_callback_data_index(
@@ -193,8 +195,7 @@ globus_gsi_callback_get_SSL_callback_data_index(
         }
     }
 
-    *index = 5;
-//globus_i_gsi_callback_SSL_callback_data_index;
+    *index = globus_i_gsi_callback_SSL_callback_data_index;
 
  exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
@@ -226,6 +227,7 @@ int globus_gsi_callback_create_proxy_callback(
     int                                 preverify_ok,
     X509_STORE_CTX *                    x509_context)
 {
+    int                                 cb_index;
     int                                 verify_result;
     globus_result_t                     result;
     globus_gsi_callback_data_t          callback_data;
@@ -234,10 +236,17 @@ int globus_gsi_callback_create_proxy_callback(
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
+    result = globus_gsi_callback_get_X509_STORE_callback_data_index(&cb_index);
+    if(result != GLOBUS_SUCCESS)
+    {
+        verify_result = 0;
+        goto exit;
+    }
+            
     callback_data = (globus_gsi_callback_data_t)
        X509_STORE_CTX_get_ex_data(
            x509_context, 
-           globus_i_gsi_callback_X509_STORE_callback_data_index);
+           cb_index);
 
     if(!callback_data)
     {
@@ -281,22 +290,14 @@ int globus_gsi_callback_handshake_callback(
     globus_result_t                     result;
     globus_gsi_callback_data_t          callback_data;
     SSL *                               ssl = NULL;
-    int                                 ssl_index;
     static char *                       _function_name_ = 
         "globus_i_gsi_callback_handshake_callback";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-     
-    ssl_index = SSL_get_ex_data_X509_STORE_CTX_idx();
-    if(ssl_index < 0)
-    {
-        verify_result = 0;
-        goto exit;
-    }
 
     /* the first index should contain the SSL structure */
     ssl = (SSL *)
-        X509_STORE_CTX_get_ex_data(x509_context, ssl_index);
+        X509_STORE_CTX_get_ex_data(x509_context, 0);
     if(!ssl)
     {
         verify_result = 0;
@@ -850,6 +851,8 @@ globus_i_gsi_callback_check_gaa_auth(
         2, (globus_i_gsi_callback_debug_fstream,
             "ca_policy_file_path is %s\n", ca_policy_file_path));
 
+    globus_mutex_lock(&globus_l_gsi_callback_oldgaa_mutex);
+
     if(oldgaa_globus_initialize(&oldgaa_sc,
                                 &rights,
                                 &options,
@@ -865,6 +868,7 @@ globus_i_gsi_callback_check_gaa_auth(
             ("Couldn't initialize OLD GAA: "
              "Minor status=%d", policy_db->error_code));
         x509_context->error = X509_V_ERR_APPLICATION_VERIFICATION;
+        globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
         goto exit;
     }
     
@@ -881,6 +885,7 @@ globus_i_gsi_callback_check_gaa_auth(
             ("Could not get policy info: "
              "Minor status=%d", minor_status));
         x509_context->error =  X509_V_ERR_APPLICATION_VERIFICATION;
+        globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
         goto exit;
     }
     
@@ -906,6 +911,7 @@ globus_i_gsi_callback_check_gaa_auth(
                               &detailed_answer,  
                               policy_db,
                               NULL);
+        globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
         goto exit;
     }
 
@@ -940,6 +946,8 @@ globus_i_gsi_callback_check_gaa_auth(
                           &detailed_answer,  
                           policy_db,
                           NULL);
+
+    globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
     
 #else /* Von's code */
     

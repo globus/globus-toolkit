@@ -417,7 +417,8 @@ GSS_CALLCONV gss_init_sec_context(
     gss_delete_sec_context(&local_minor_status, 
                            (gss_ctx_id_t *) &context,
                            output_token);
-   
+    *context_handle_P = (gss_ctx_id_t) context;
+ 
  exit:
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;

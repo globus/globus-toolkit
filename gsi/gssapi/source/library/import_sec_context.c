@@ -223,7 +223,7 @@ GSS_CALLCONV gss_import_sec_context(
         STACK_OF(X509) *                cert_chain = sk_X509_new_null();
 
         /* import the peer's cert chain */
-        for(index = 1; index < length; index++)
+        for(index = 0; index < length; index++)
         {
             peer_cert = d2i_X509_bio(bp, NULL);
             
@@ -240,9 +240,10 @@ GSS_CALLCONV gss_import_sec_context(
             sk_X509_push(cert_chain, peer_cert);
         }
 
+        
         local_result = 
             globus_gsi_callback_set_cert_depth(context->callback_data,
-                                               length - 1);
+                                               length);
         if(local_result)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -252,22 +253,7 @@ GSS_CALLCONV gss_import_sec_context(
             goto exit;
         }
 
-        /* import the peer's cert */
-        peer_cert = d2i_X509_bio(bp, NULL);
-
-        if (!peer_cert)
-        {
-            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-                minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_IMPORT_FAIL,
-                ("Couldn't read peer cert from the BIO while importing "
-                 "security context"));
-            major_status = GSS_S_NO_CONTEXT;
-            goto exit;
-        }
-
-        session->peer = peer_cert;
-        sk_X509_push(cert_chain, X509_dup(peer_cert));
+        session->peer = sk_X509_value(cert_chain, 0);
 
         local_result = 
             globus_gsi_callback_set_cert_chain(context->callback_data,
@@ -321,6 +307,18 @@ GSS_CALLCONV gss_import_sec_context(
         goto exit;
     }
 
+    major_status = globus_i_gsi_gss_SSL_read_bio(
+        &local_minor_status,
+        context,
+        bp);
+    if(GSS_ERROR(major_status))
+    {
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL);
+        goto exit;
+    }
+
     major_status = globus_i_gsi_gss_retrieve_peer(&local_minor_status,
                                                   context, cred_usage);
     if(GSS_ERROR(major_status))
@@ -328,7 +326,6 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL);
-        major_status = GSS_S_FAILURE;
         goto exit;
     }
 

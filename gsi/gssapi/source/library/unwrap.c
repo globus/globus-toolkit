@@ -268,13 +268,11 @@ GSS_CALLCONV gss_unwrap(
             
             if(!ssl_error == SSL_ERROR_WANT_READ)
             {
-                char errbuf[256];
-                
                 /* Problem, we should have some data here! */
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status, 
                     GLOBUS_GSI_GSSAPI_ERROR_WRAP_BIO,
-                    ("\n        SSL_read rc=%d", rc));
+                    ("SSL_read rc=%d", rc));
                 major_status = GSS_S_FAILURE;
 
                 /* free allocated mem */
