@@ -213,13 +213,6 @@ sub submit
 	$rank = "rank = Memory\n";
     }
 
-    if($universe eq 'vanilla' &&
-       $description->stdin() eq '/dev/null' &&
-       $description->stdout() eq '/dev/null' &&
-       $description->stderr() eq '/dev/null')
-    {
-	$requirements .= "&& FileSystemDomain != \"xxx\"";
-    }
     $script_file->print("Requirements = $requirements\n");
     if($rank ne "")
     {
