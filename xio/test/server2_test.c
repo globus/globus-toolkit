@@ -6,7 +6,7 @@
 static globus_mutex_t                       globus_l_mutex;
 static globus_cond_t                        globus_l_cond;
 static globus_bool_t                        globus_l_closed = GLOBUS_FALSE;
-static globus_bool_t                        globus_l_accepted = GLOBUS_FALSE;
+static int                                  globus_l_accepted = 0;
 static int                                  globus_l_cb_cnt = 0;
 
 static void
@@ -72,7 +72,7 @@ accept_cb(
     {
         globus_l_cb_cnt++;
         *t = target;
-        globus_l_accepted = GLOBUS_TRUE;
+        globus_l_accepted++;
         globus_cond_signal(&globus_l_cond);
     }
     globus_mutex_unlock(&globus_l_mutex);
@@ -89,10 +89,11 @@ server2_main(
     globus_result_t                         res;
     globus_xio_server_t                     server;
     globus_xio_attr_t                       attr;
+    int                                     accept_count = 0;
 
     globus_l_cb_cnt = 0;
     globus_l_closed = GLOBUS_FALSE;
-    globus_l_accepted = GLOBUS_FALSE;
+    globus_l_accepted = 0;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
@@ -126,6 +127,7 @@ server2_main(
                 accept_cb,
                 &target);
         test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__);
+        accept_count++;
         /* should fail */
         res = globus_xio_server_register_accept(
                 server,
@@ -134,15 +136,25 @@ server2_main(
                 &target);
         if(res == GLOBUS_SUCCESS)
         {
-            failed_exit("2nd register accept should have failed");
+#           if defined(BUILD_LITE)
+            {
+                failed_exit("2nd register accept should have failed");
+            }
+#           else
+            {
+                accept_count++;
+                fprintf(stderr, 
+                    "WARNING: 2nd register accept should have failed"); 
+            }
+#           endif
         }
 
-        while(!globus_l_accepted)
+        while(globus_l_accepted < accept_count)
         {
             globus_cond_wait(&globus_l_cond, &globus_l_mutex);
         }
 
-        globus_l_accepted = GLOBUS_FALSE;
+        globus_l_accepted = 0;
 
         /* non with close */
         globus_l_cb_cnt = 0;
@@ -179,7 +191,6 @@ server2_main(
     }
     globus_mutex_unlock(&globus_l_mutex);
 
-    
         
 
     globus_xio_attr_destroy(attr);

@@ -198,6 +198,8 @@ typedef struct globus_i_xio_server_s
     globus_xio_server_callback_t            cb;
     void *                                  user_arg;
 
+    int                                     outstanding_operations;
+
     int                                     ref;
     globus_mutex_t                          mutex;
     globus_callback_space_t                 space;

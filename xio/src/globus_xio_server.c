@@ -69,6 +69,28 @@ globus_result_t
 globus_l_xio_close_server(
     globus_i_xio_server_t *                 xio_server);
 
+void
+globus_i_xio_server_post_accept(
+    globus_i_xio_op_t *                     xio_op);
+
+void
+globus_i_xio_server_will_block_cb(
+    globus_thread_callback_index_t          wb_ndx,
+    globus_callback_space_t                 space,
+    void *                                  user_args)
+{
+    globus_i_xio_op_t *                     xio_op;
+
+    xio_op = (globus_i_xio_op_t *) user_args;
+
+    xio_op->restarted = GLOBUS_TRUE;
+    xio_op->ref++;
+
+    globus_thread_blocking_callback_pop(&wb_ndx);
+
+    globus_i_xio_server_post_accept(xio_op);
+}
+
 /*
  *  this is the only mechanism for delivering a callback to the user 
  */
@@ -77,10 +99,11 @@ globus_l_xio_server_accept_kickout(
     void *                                  user_arg)
 {
     int                                     ctr;
+    int                                     wb_ndx;
     globus_i_xio_target_t *                 xio_target = NULL;
-    globus_bool_t                           destroy_server = GLOBUS_FALSE;
     globus_i_xio_server_t *                 xio_server;
     globus_i_xio_op_t *                     xio_op;
+    globus_bool_t                           destroy_server = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_server_accept_kickout);
 
     GlobusXIODebugInternalEnter();
@@ -124,13 +147,56 @@ globus_l_xio_server_accept_kickout(
         }
     }
 
+    globus_thread_blocking_space_callback_push(
+        globus_i_xio_server_will_block_cb,
+        (void *) xio_op,
+        xio_op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: xio_server->space,
+        &wb_ndx);
+
     /* call the users callback */
     xio_op->_op_accept_cb(
         xio_server,
         xio_target,
         xio_op->cached_res,
         xio_op->user_arg);
+    if(xio_op->restarted)
+    {
+        globus_mutex_lock(&xio_server->mutex);
+        {
+            xio_op->ref--;
 
+            if(xio_op->ref == 0)
+            {
+                /* remove the reference for the target on the server */
+                GlobusIXIOServerDec(destroy_server, xio_server);
+            }
+        }
+        globus_mutex_unlock(&xio_server->mutex);
+        if(destroy_server)
+        {
+            GlobusIXIOServerDestroy(xio_server);
+        }
+        return;
+    }
+
+    globus_thread_blocking_callback_pop(&wb_ndx);
+
+    globus_i_xio_server_post_accept(xio_op);
+
+    GlobusXIODebugInternalExit();
+}
+
+void
+globus_i_xio_server_post_accept(
+    globus_i_xio_op_t *                     xio_op)
+{
+    globus_bool_t                           destroy_server = GLOBUS_FALSE;
+    globus_i_xio_server_t *                 xio_server;
+    GlobusXIOName(globus_i_xio_server_post_accept);
+
+    GlobusXIODebugInternalEnter();
+
+    xio_server = xio_op->_op_server;
     /* if user called register accept in the callback we will be back from
         the completeing state and into the accepting state */
  
@@ -138,6 +204,8 @@ globus_l_xio_server_accept_kickout(
     globus_mutex_lock(&xio_server->mutex);
     {
         globus_assert(xio_op->state == GLOBUS_XIO_OP_STATE_FINISH_WAITING);
+
+        xio_server->outstanding_operations--;
 
         switch(xio_server->state)
         {
@@ -148,7 +216,10 @@ globus_l_xio_server_accept_kickout(
 
             case GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING:
                 xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSING;
-                globus_l_xio_close_server(xio_server);
+                if(xio_server->outstanding_operations == 0)
+                {
+                    globus_l_xio_close_server(xio_server);
+                }
                 break;
 
             case GLOBUS_XIO_SERVER_STATE_CLOSED:
@@ -538,6 +609,7 @@ globus_l_xio_server_register_accept(
         }
 
         xio_server->state = GLOBUS_XIO_SERVER_STATE_ACCEPTING;
+        xio_server->outstanding_operations++;
 
         xio_op->type = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
         xio_op->state = GLOBUS_XIO_OP_STATE_OPERATING;
@@ -1082,11 +1154,11 @@ globus_xio_server_register_close(
             switch(xio_server->state)
             {
                 case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
+                case GLOBUS_XIO_SERVER_STATE_COMPLETING:
                     xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING;
                     break;
 
                 case GLOBUS_XIO_SERVER_STATE_OPEN:
-                case GLOBUS_XIO_SERVER_STATE_COMPLETING:
                     xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSING;
                     globus_l_xio_close_server(xio_server);
                     break;
