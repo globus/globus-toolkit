@@ -37,7 +37,7 @@ libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_SOURCES =\
 	$(NULL)
 
 libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	$(top_builddir)/src/libxmlsec1_$(GLOBUS_FLAVOR_NAME).la \
+#	$(top_builddir)/src/libxmlsec1_$(GLOBUS_FLAVOR_NAME).la \
 	$(OPENSSL_LIBS) \
 	$(LIBXSLT_LIBS) \
 	$(LIBXML_LIBS) \

@@ -257,14 +257,12 @@ libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	$(NULL)
 
 
-libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	$(top_builddir)/src/libxmlsec1_$(GLOBUS_FLAVOR_NAME).la \
-	$(OPENSSL_LIBS) \
-	$(LIBXSLT_LIBS) \
-	$(LIBXML_LIBS) \
-	$(NULL)
 
-
+#	$(top_builddir)/src/libxmlsec1_$(GLOBUS_FLAVOR_NAME).la \
+#	$(OPENSSL_LIBS) \
+#	$(LIBXSLT_LIBS) \
+#	$(LIBXML_LIBS) \
+#	$(NULL)
 libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	-version-info @XMLSEC_VERSION_INFO@ \
 	$(NULL)
@@ -275,8 +273,7 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(lib_LTLIBRARIES)
 
-libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = \
-	$(top_builddir)/src/libxmlsec1_$(GLOBUS_FLAVOR_NAME).la
+libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD =
 am__objects_1 =
 am_libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_OBJECTS = app.lo bn.lo \
 	ciphers.lo crypto.lo digests.lo evp.lo hmac.lo kw_aes.lo \
