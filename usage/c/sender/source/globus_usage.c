@@ -395,16 +395,21 @@ globus_usage_stats_vsend(
     globus_size_t                       written;
     char                                hostname[255];
     int                                 i = 0;
+    uint16_t                            ncode;
+    uint16_t                            nversion;
 
     globus_mutex_lock(&globus_l_usage_stats_mutex);
 
     memset(globus_l_usage_stats_data, 0, 1472);
 
+    ncode = htons(handle->code);
     memcpy(globus_l_usage_stats_data + data_length, 
-           (void *)&htons(handle->code), 2);
+           (void *)&ncode, 2);
     data_length += 2;
+
+    nversion = htons(handle->version);
     memcpy(globus_l_usage_stats_data + data_length, 
-           (void *)&htons(handle->version), 2);
+           (void *)&nversion, 2);
     data_length += 2;
 
     globus_libc_gethostaddr(&addr);
