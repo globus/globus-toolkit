@@ -25,7 +25,7 @@
 
 /* specify maximum delegation lifetime allowed on myproxy-server */
 #define MYPROXY_DEFAULT_HOURS          168     /* 1 week */
-#define MYPROXY_DEFAULT_DELEG_HOURS    2     
+#define MYPROXY_DEFAULT_DELEG_HOURS    12
 
 /* myproxy client protocol information */
 #define MYPROXY_VERSION_STRING      "VERSION="
