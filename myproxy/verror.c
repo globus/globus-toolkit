@@ -203,6 +203,7 @@ verror_strerror()
     {
 	return_string = strerror(my_context.number);
     }
+    return return_string;
 }
 
 int
