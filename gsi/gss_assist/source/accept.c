@@ -1,75 +1,65 @@
-/******************************************************************************
-accept.c
- 
-Description:
-Globus GSSAPI Assist routine for the gss_accept_sec_context
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file display.c
+ * @author Sam Lang, Sam Meder
+ * 
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
-        This routine accepts a GSSAPI security context and 
-        is called by the gram_gatekeeper. It isolates 
-        the GSSAPI from the rest of the gram code. 
-
-CVS Information:
- 
-        $Source$
-        $Date$
-        $Revision$
-        $Author$
-******************************************************************************/
-
-/******************************************************************************
-                             Include header files
-******************************************************************************/
-#include "globus_gss_assist.h"
+#include "globus_i_gss_assist.h"
 #include <gssapi.h>
 #include <string.h>
 
-/******************************************************************************
-                               Type definitions
-******************************************************************************/
-/******************************************************************************
-                          Module specific prototypes
-******************************************************************************/
-/******************************************************************************
-                       Define module specific variables
-******************************************************************************/
-
-/******************************************************************************
-Function:   globus_gss_assist_init_sec_context()
-Description:
-    Initialize a gssapi security connection. Used by the server.  
-    The context_handle is returned, and there is one for each
-    connection.  This routine will take cake of the looping
-    and token processing, using the supplied get_token and
-    send_token routines. 
-
-
-Parameters:
-        token_status - assist routine get/send token status
-    minor_status - gssapi return code
-    context_handle - pointer to returned context. 
-    initiator_cred_handle - the cred handle obtained by acquire_cred.
-    src_name_char - Pointer to char string repersentation of the
-        client which contacted the server. Maybe NULL if not wanted.  
-                Should be freed when done. 
-    ret_flags - Pointer to which services are available after
-        the connection is established. Maybe NULL if not wanted. 
-                We will also use this to pass in flags to the globus
-                version of gssapi_ssleay
-
-        user_to_user_flag - Pointer to flag to be set if
-                the src_name is the same as our name. 
-        (Follwing are particular to this assist routine)
-        token_status - assist routine get/send token status
-        a get token routine 
-        first arg for the get token routine 
-        a send token routine 
-        first arg for the send token routine
-
-Returns:
-    GSS_S_COMPLETE on sucess
-    Other gss errors on failure.
-
-******************************************************************************/
+/**
+ * @name Accept Security Context
+ * @group globus_gsi_gss_assist
+ */
+/* @{ */
+/**
+ * This routine accepts a GSSAPI security context and 
+ * is called by the gram_gatekeeper. It isolates 
+ * the GSSAPI from the rest of the gram code. 
+ *
+ * Initialize a gssapi security connection. Used by the server.  
+ * The context_handle is returned, and there is one for each
+ * connection.  This routine will take cake of the looping
+ * and token processing, using the supplied get_token and
+ * send_token routines. 
+ *
+ * @param token_status
+ *        assist routine get/send token status
+ * @param minor_status
+ *        gssapi return code
+ * @param context_handle
+ *        pointer to returned context. 
+ * @param initiator_cred_handle
+ *        the cred handle obtained by acquire_cred.
+ * @param src_name_char
+ *        Pointer to char string repersentation of the
+ *        client which contacted the server. Maybe NULL if not wanted.  
+ *        Should be freed when done. 
+ * @param ret_flags
+ *        Pointer to which services are available after
+ *        the connection is established. Maybe NULL if not wanted. 
+ *        We will also use this to pass in flags to the globus
+ *        version of gssapi_ssleay
+ * @param user_to_user_flag
+ *        Pointer to flag to be set if
+ *        the src_name is the same as our name. 
+ *        (Follwing are particular to this assist routine)
+ * @param token_status
+ *        assist routine get/send token status
+ *        a get token routine 
+ *        first arg for the get token routine 
+ *        a send token routine 
+ *        first arg for the send token routine
+ * @return
+ *        GSS_S_COMPLETE on sucess
+ *        Other gss errors on failure.
+ */
 OM_uint32
 globus_gss_assist_accept_sec_context(
     OM_uint32 *                         minor_status,
@@ -86,31 +76,33 @@ globus_gss_assist_accept_sec_context(
     void *                              gss_assist_send_context)
 {
 
-    OM_uint32                             major_status = GSS_S_COMPLETE;
-    OM_uint32                             minor_status1 = 0;
-    OM_uint32                             minor_status2 = 0;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           minor_status1 = 0;
+    OM_uint32                           minor_status2 = 0;
 
-    gss_buffer_desc                       input_token_desc = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t                          input_token = &input_token_desc;
-    gss_buffer_desc                       output_token_desc = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t                          output_token = &output_token_desc;
+    gss_buffer_desc                     input_token_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        input_token = &input_token_desc;
+    gss_buffer_desc                     output_token_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        output_token = &output_token_desc;
 
-    gss_channel_bindings_t                input_chan_bindings =
+    gss_channel_bindings_t              input_chan_bindings =
         GSS_C_NO_CHANNEL_BINDINGS;
-    gss_name_t                            client_name = GSS_C_NO_NAME;
-    gss_name_t                            my_name = GSS_C_NO_NAME;
-    gss_OID                               mech_type = GSS_C_NO_OID;
-    OM_uint32                             time_req;
+    gss_name_t                          client_name = GSS_C_NO_NAME;
+    gss_name_t                          my_name = GSS_C_NO_NAME;
+    gss_OID                             mech_type = GSS_C_NO_OID;
+    OM_uint32                           time_req;
 
-    char *                                cp;
-    gss_buffer_desc                       tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
-    gss_buffer_t                          tmp_buffer = &tmp_buffer_desc;
-
+    char *                              cp;
+    gss_buffer_desc                     tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_t                        tmp_buffer = &tmp_buffer_desc;
+    static char *                       _function_name_ =
+        "globus_gss_assist_accept_sec_context";
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
 
 /*
-  should not set context_handle to NULL since it may have been
-  allocated by a call to set_sec_context_option
-*/
+ * should not set context_handle to NULL since it may have been
+ * allocated by a call to set_sec_context_option
+ */
 /*    *context_handle = GSS_C_NO_CONTEXT; */
     *token_status = 0;
 
@@ -127,44 +119,50 @@ globus_gss_assist_accept_sec_context(
     do
     {
         if ((*token_status = gss_assist_get_token(
-                 gss_assist_get_context,
-                 &input_token->value,
-                 &input_token->length)) < 0)
+            gss_assist_get_context,
+            &input_token->value,
+            &input_token->length)) < 0)
         {
             major_status = 
                 GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ;
             break;
         }
-#ifdef DEBUG
-        fprintf(stderr,"gss_assist_accept_sec_context(1):inlen:%d\n",
-                input_token->length);
-#endif
+        
+        GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
+            3, (globus_i_gsi_gss_assist_debug_fstream, 
+                "gss_assist_accept_sec_context(1):inlen:%d\n",
+                input_token->length));
 
-        major_status = gss_accept_sec_context(&minor_status1,
-                                              context_handle,
-                                              cred_handle,
-                                              input_token,
-                                              input_chan_bindings,
-                                              &client_name,
-                                              &mech_type,
-                                              output_token,
-                                              ret_flags,
-                                              &time_req,
-                                              delegated_cred_handle);
+        major_status = gss_accept_sec_context(
+            &minor_status1,
+            context_handle,
+            cred_handle,
+            input_token,
+            input_chan_bindings,
+            &client_name,
+            &mech_type,
+            output_token,
+            ret_flags,
+            &time_req,
+            delegated_cred_handle);
 
-#ifdef DEBUG
-        fprintf(stderr,"gss_assist_accept_sec_context(2)maj:%8.8x:min:%8.8x:ret:%8.8x outlen:%d:context:%p\n",
-                major_status, minor_status1, 
-                (ret_flags)?*ret_flags:-1,
-                output_token->length,*context_handle);
-#endif
-
+        GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
+            3, (globus_i_gsi_gss_assist_debug_fstream, 
+                "gss_assist_accept_sec_context(2)"
+                "maj:%8.8x:min:%8.8x:ret:%8.8x "
+                "outlen:%d:context:%p\n",
+                (unsigned int) major_status, 
+                (unsigned int) minor_status1, 
+                (unsigned int) ((ret_flags) ? *ret_flags : -1),
+                output_token->length, 
+                *context_handle));
+        
         if (output_token->length != 0)
         {
             if ((*token_status = gss_assist_send_token(
-                     gss_assist_send_context, 
-                     output_token->value,
-                     output_token->length)) < 0)
+                gss_assist_send_context, 
+                output_token->value,
+                output_token->length)) < 0)
             {
                 major_status = 
                     GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -245,67 +243,70 @@ globus_gss_assist_accept_sec_context(
     gss_release_name(&minor_status2, &my_name);
   
     *minor_status = minor_status1;
+
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return major_status;
 }
+/* @} */
 
-
-
-/******************************************************************************
-Function:   globus_gss_assist_accept_sec_context_async()
-Description:
-        This is a asynchronous version of the
-        globus_gss_assist_accept_sec_context() function. Instead of looping
-        itself it passes in and out the read and written buffers and
-        the calling application is responsible for doing the I/O directly.
-
-
-Parameters:
-        token_status - assist routine get/send token status
-
-        minor_status - gssapi return code
-
-        context_handle - pointer to returned context. 
-
-        initiator_cred_handle - the cred handle obtained by acquire_cred.
-
-        src_name_char - Pointer to char string repersentation of the
-
-        client which contacted the server. Maybe NULL if not wanted.  
-                Should be freed when done. 
-
-        ret_flags - Pointer to which services are available after
-                the connection is established. Maybe NULL if not wanted. 
-                We will also use this to pass in flags to the globus
-                version of gssapi_ssleay
-
-        user_to_user_flag - Pointer to flag to be set if
-                the src_name is the same as our name. 
-
-        input_buffer - pointer to a buffer received from peer.
-
-        input_buffer_len - length of the buffer input_buffer.
-
-        output_bufferp - pointer to a pointer which will be filled in
-                with a pointer to a allocated block of memory. If
-                non-NULL the contents of this block should be written
-                to the peer where they will be fed into the
-                gss_assist_init_sec_context_async() function.
-
-        output_buffer_lenp - pointer to an integer which will be filled
-                in with the length of the allocated output buffer
-                pointed to by *output_bufferp.
-        
-                
-Returns:
-        GSS_S_COMPLETE on successful completion when this function does not
-        need to be called again.
-
-        GSS_S_CONTINUE_NEEDED when *output_bufferp should be sent to the
-        peer and a new input_buffer read and this function called again.
-        
-        Other gss errors on failure.
-
-******************************************************************************/
+/**
+ * @name Accept Security Context Asyncronous
+ * @ingroup globus_gsi_gss_assist
+ */
+/* @{ */
+/**
+ * This is a asynchronous version of the
+ * globus_gss_assist_accept_sec_context() function. Instead of looping
+ * itself it passes in and out the read and written buffers and
+ * the calling application is responsible for doing the I/O directly.
+ *
+ * @param token_status
+ *        assist routine get/send token status
+ * @param minor_status
+ *        gssapi return code
+ * @param context_handle
+ *        pointer to returned context. 
+ * @param initiator_cred_handle
+ *        the cred handle obtained by acquire_cred.
+ * @param src_name_char
+ *        Pointer to char string repersentation of the
+ *        client which contacted the server. Maybe NULL if not wanted.  
+ *        Should be freed when done. 
+ * @param ret_flags 
+ *        Pointer to which services are available after
+ *        the connection is established. Maybe NULL if not wanted. 
+ *        We will also use this to pass in flags to the globus
+ *        version of gssapi_ssleay
+ *
+ * @param user_to_user_flag
+ *        Pointer to flag to be set if
+ *        the src_name is the same as our name. 
+ *
+ * @param input_buffer
+ *        pointer to a buffer received from peer.
+ * @param input_buffer_len
+ *        length of the buffer input_buffer.
+ * @param output_bufferp
+ *        pointer to a pointer which will be filled in
+ *        with a pointer to a allocated block of memory. If
+ *        non-NULL the contents of this block should be written
+ *        to the peer where they will be fed into the
+ *        gss_assist_init_sec_context_async() function.
+ *
+ * @param output_buffer_lenp
+ *        pointer to an integer which will be filled
+ *        in with the length of the allocated output buffer
+ *        pointed to by *output_bufferp.
+ *
+ * @return
+ *        GSS_S_COMPLETE on successful completion when this function does not
+ *        need to be called again.
+ *
+ *        GSS_S_CONTINUE_NEEDED when *output_bufferp should be sent to the
+ *        peer and a new input_buffer read and this function called again.
+ *
+ *        Other gss errors on failure.
+ */
 OM_uint32
 globus_gss_assist_accept_sec_context_async(
     OM_uint32 *                         minor_status,
@@ -328,7 +329,8 @@ globus_gss_assist_accept_sec_context_async(
     gss_buffer_t                        input_token = &input_token_desc;
     gss_buffer_desc                     output_token_desc = GSS_C_EMPTY_BUFFER;
     gss_buffer_t                        output_token = &output_token_desc;
-    gss_channel_bindings_t              input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
+    gss_channel_bindings_t              input_chan_bindings 
+        = GSS_C_NO_CHANNEL_BINDINGS;
     gss_name_t                          client_name = GSS_C_NO_NAME;
     gss_name_t                          my_name = GSS_C_NO_NAME;
     gss_OID                             mech_type = GSS_C_NO_OID;
@@ -336,7 +338,9 @@ globus_gss_assist_accept_sec_context_async(
     char *                              cp;
     gss_buffer_desc                     tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
     gss_buffer_t                        tmp_buffer = &tmp_buffer_desc;
-
+    static char *                       _function_name_ = 
+        "globus_gss_assist_accept_sec_context_async";        
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
 
     /* Set up our input token from passed buffer */
     if ((input_buffer != NULL) && (input_buffer_len != 0))
@@ -364,11 +368,12 @@ globus_gss_assist_accept_sec_context_async(
             *user_to_user_flag = -1;
         }
     }
+    
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
+        3, (globus_i_gsi_gss_assist_debug_fstream,
+            "gss_assist_accept_sec_context_async(1):inlen:%d\n",
+            input_token->length));
 
-#ifdef DEBUG
-    fprintf(stderr,"gss_assist_accept_sec_context_async(1):inlen:%d\n",
-            input_token->length);
-#endif
     major_status = gss_accept_sec_context(&minor_status1,
                                           context_handle,
                                           cred_handle,
@@ -380,13 +385,17 @@ globus_gss_assist_accept_sec_context_async(
                                           ret_flags,
                                           &time_req,
                                           delegated_cred_handle);
-#ifdef DEBUG
-    fprintf(stderr,"gss_assist_accept_sec_context_async(2)maj:%8.8x:min:%8.8x:ret:%8.8x outlen:%d:context:%p\n",
-            major_status, minor_status1, 
-            (ret_flags)?*ret_flags:-1,
-            output_token->length,*context_handle);
-#endif
 
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
+        3, (globus_i_gsi_gss_assist_debug_fstream, 
+            "gss_assist_accept_sec_context_async(2)"
+            "maj:%8.8x:min:%8.8x:ret:%8.8x outlen:%d:context:%p\n",
+            (unsigned int) major_status, 
+            (unsigned int) minor_status1, 
+            (unsigned int) ((ret_flags) ? *ret_flags : -1),
+            (unsigned int) output_token->length, 
+            (char *) *context_handle));
+    
     if (output_token->length != 0)
     {
         *output_bufferp = output_token->value;
@@ -462,50 +471,64 @@ globus_gss_assist_accept_sec_context_async(
                                                  client_name,
                                                  my_name,
                                                  user_to_user_flag);
-#ifdef DEBUG
                 {
                     OM_uint32 major_status3;
                     OM_uint32 minor_status3;
-
-                    fprintf(stderr,"gss_assist_accept_sec_context_async(3): u2uflag:%d\n",*user_to_user_flag);
+                    
+                    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
+                        3, (globus_i_gsi_gss_assist_debug_fstream, 
+                            "gss_assist_accept_sec_context_async(3):"
+                                 "u2uflag:%d\n",
+                         *user_to_user_flag));
 
                     major_status3 = gss_display_name(&minor_status3,
                                                      client_name,
                                                      tmp_buffer,
                                                      NULL);
-
+                    
                     if (GSS_ERROR(major_status3))
                     {
-                        fprintf(stderr,"   NO client_name: status:%8.8x %8.8x\n",
-                                major_status3, minor_status3);
+                        GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
+                            3, 
+                            (globus_i_gsi_gss_assist_debug_fstream,
+                             "   NO client_name: status:%8.8x %8.8x\n",
+                             (unsigned int) major_status3, 
+                             (unsigned int) minor_status3));
                     }
                     else
                     {
-                        fprintf(stderr,"     client_name=%*s\n",
+                        GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
+                            3, (globus_i_gsi_gss_assist_debug_fstream,
+                                "     client_name=%*s\n",
                                 tmp_buffer->length,
-                                tmp_buffer->value);
+                                (char *) tmp_buffer->value));
+
                         gss_release_buffer(&minor_status2, tmp_buffer);
                     }
-        
+                    
                     major_status3 = gss_display_name(&minor_status3,
                                                      my_name,
                                                      tmp_buffer,
                                                      NULL);
-
+                    
                     if (GSS_ERROR(major_status3))
                     {
-                        fprintf(stderr,"   NO my_name: status:%8.8x %8.8x\n",
-                                major_status3, minor_status3);
+                        GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
+                            3, (globus_i_gsi_gss_assist_debug_fstream,
+                                "   NO my_name: status:%8.8x %8.8x\n",
+                                (unsigned int) major_status3, 
+                                (unsigned int) minor_status3));
                     }
                     else
                     {
-                        fprintf(stderr,"     my_name=%*s\n",
-                                tmp_buffer->length,
-                                tmp_buffer->value);
+                        GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FNPRINTF(
+                            3, (tmp_buffer->length + 14,
+                                "     my_name=%*s\n",
+                                (char *) tmp_buffer->value));
+
                         gss_release_buffer(&minor_status2, tmp_buffer);
                     }
                 }
-#endif
             }
 
             if (GSS_ERROR(major_status2))
@@ -520,7 +543,9 @@ globus_gss_assist_accept_sec_context_async(
     gss_release_name(&minor_status2, &client_name);
     gss_release_name(&minor_status2, &my_name);
  
-
     *minor_status = minor_status1;
+
+    GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return major_status;
 }
+/* @} */

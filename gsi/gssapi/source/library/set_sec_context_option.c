@@ -1,26 +1,23 @@
-/**********************************************************************
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file inquire_cred.h
+ * @author Sam Lang, Sam Meder
+ * 
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
-set_sec_context_option.c:
-
-Description:
-    GSSAPI routine to initiate the sending of a security context
-	See: <draft-ietf-cat-gssv2-cbind-04.txt>
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-
-**********************************************************************/
-
-static char *rcsid = "$Header$";
-
-
-#include "gssapi_ssleay.h"
-#include "gssutils.h"
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 #include "openssl/evp.h"
+
+/* Only build if we have the extended GSSAPI */
+#ifdef  _HAVE_GSI_EXTENDED_GSSAPI
+
+static char *rcsid = "$Id$";
 
 static const gss_OID_desc GSS_DISALLOW_ENCRYPTION_OID =
    {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03\x01"}; 
@@ -37,6 +34,23 @@ static const gss_OID_desc GSS_APPLICATION_WILL_HANDLE_EXTENSIONS_OID =
 const gss_OID_desc * const GSS_APPLICATION_WILL_HANDLE_EXTENSIONS =
    &GSS_APPLICATION_WILL_HANDLE_EXTENSIONS_OID;
 
+/**
+ * @name Set Sec Context Option
+ * @ingroup globu_gsi_gssapi_extensions
+ */
+/* @{ */
+/**
+ *
+ * GSSAPI routine to initiate the sending of a security context
+ * See: <draft-ietf-cat-gssv2-cbind-04.txt>
+ *
+ * @param minor_status
+ * @param context_handle
+ * @param option
+ * @param value
+ *
+ * @return
+ */
 OM_uint32
 gss_set_sec_context_option(
     OM_uint32 *                         minor_status,
@@ -46,64 +60,68 @@ gss_set_sec_context_option(
 {
     gss_ctx_id_desc *                   context = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    int                                 i;
-    
-#ifdef DEBUG
-    fprintf(stderr, "set_sec_context_option:\n") ;
-#endif /* DEBUG */
+    OM_uint32                           local_minor_status;
+    void *                              extension_oids = NULL;
+    globus_result_t                     local_result = GLOBUS_SUCCESS;
+    int                                 index;
+    static char *                       _function_name_ =
+        "gss_set_sec_context_option";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     if(minor_status == NULL)
     {
-        GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
-        /* *minor_status = gsi_generate_minor_status(); */
         major_status = GSS_S_FAILURE;
-        goto err;
+        goto exit;
     }
 
-    *minor_status = 0;
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
     
     if(context_handle == NULL)
     {
-        GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Invalid context_handle passed to function - cannot be NULL"));
         major_status = GSS_S_FAILURE;
-        goto err;
+        goto exit;
     }
 
     context = *context_handle;
 
     if(option == GSS_C_NO_OID)
     {
-        GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Invalid option passed to function with value: GSS_C_NO_OID"));
         major_status = GSS_S_FAILURE;
-        goto err;
+        goto exit;
     }
     
     if ((*context_handle == (gss_ctx_id_t) GSS_C_NO_CONTEXT))
     {
         /* for now just malloc and zero the context */
-        
-        context = (gss_ctx_id_desc*) malloc(sizeof(gss_ctx_id_desc)) ;
-
+        context = (gss_ctx_id_desc *) malloc(sizeof(gss_ctx_id_desc));
         if (context == NULL)
         {
-            GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT, GSSERR_R_OUT_OF_MEMORY);
-            *minor_status = gsi_generate_minor_status();
+            GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
             major_status = GSS_S_FAILURE;
-            goto err;
+            goto exit;
         }
 
         *context_handle = context;
-
-        memset(context,0,sizeof(gss_ctx_id_desc));
+        memset(context, 0, sizeof(gss_ctx_id_desc));
+        context->ctx_flags = 0;
     }
     else if(context->ctx_flags & GSS_I_CTX_INITIALIZED)
     {
-        GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
+            ("The context has already been initialized!  %s should be "
+             "called on a context before initialization", _function_name_));
         major_status = GSS_S_FAILURE;
-        goto err;
+        goto exit;
     }
 
     if(g_OID_equal(option, GSS_DISALLOW_ENCRYPTION))
@@ -118,50 +136,86 @@ gss_set_sec_context_option(
     {
         if(value == GSS_C_NO_BUFFER)
         {
-            GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
-            *minor_status = gsi_generate_minor_status();
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                ("Invalid buffer passed to function"));
             major_status = GSS_S_FAILURE;
-            goto err;
+            goto exit;
+        }
+
+        local_result = globus_gsi_callback_get_extension_oids(
+            context->callback_data,
+            (void **) &extension_oids);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto exit;
         }
 
         major_status = gss_create_empty_oid_set(
-            minor_status,
-            (gss_OID_set *) &context->pvd.extension_oids);
+            &local_minor_status,
+            (gss_OID_set *) &extension_oids);
 
-        if(major_status != GSS_S_COMPLETE)
+        if(GSS_ERROR(major_status))
         {
-            goto err;
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
+            goto exit;
         }
 
-        for(i=0;i<((gss_OID_set_desc *) value->value)->count;i++)
+        for(index = 0; 
+            index < ((gss_OID_set_desc *) value->value)->count; 
+            index++)
         {
             major_status = gss_add_oid_set_member(
-                minor_status,
-                (gss_OID) &((gss_OID_set_desc *) value->value)->elements[i],
-                (gss_OID_set *) &context->pvd.extension_oids);
+                &local_minor_status,
+                (gss_OID) 
+                &((gss_OID_set_desc *) value->value)->elements[index],
+                (gss_OID_set *) &extension_oids);
 
-            if(major_status != GSS_S_COMPLETE)
+            if(GSS_ERROR(major_status))
             {
-                goto err;
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
+                goto exit;
             }
         }
-        
-        context->pvd.extension_cb = gss_verify_extensions_callback;
-        
+
+        local_result = globus_gsi_callback_set_extension_cb(
+            context->callback_data,
+            globus_i_gsi_gss_verify_extensions_callback);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+
         context->ctx_flags |= GSS_I_APPLICATION_WILL_HANDLE_EXTENSIONS;
     }
     else
     {
         /* unknown option */
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_UNKNOWN_OPTION,
+            (NULL));
         major_status = GSS_S_FAILURE;
+        goto exit;
     }
 
-err:
+ exit:
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
 
-
-
-
-
-
+#endif /* _HAVE_GSI_EXTENDED_GSSAPI */

@@ -363,13 +363,13 @@ typedef struct
     globus_gram_jobmanager_state_t	jobmanager_state;
     globus_gram_jobmanager_state_t	restart_state;
     globus_bool_t			unsent_status_change;
-    globus_callback_handle_t		two_phase_commit_timer;
     globus_callback_handle_t		poll_timer;
     globus_callback_handle_t		proxy_expiration_timer;
     globus_callback_handle_t		reporting_file_cleanup_timer;
     char *				url_base;
     char *				job_contact;
     char *				job_contact_path;
+    char *				old_job_contact;
     gss_ctx_id_t			response_context;
     globus_fifo_t			pending_queries;
     globus_bool_t			publish_jobs;
@@ -527,8 +527,6 @@ globus_gram_job_manager_output_check_size(
 /* globus_gram_job_manager_state.c */
 void
 globus_gram_job_manager_state_machine_callback(
-    const globus_abstime_t *		time_now,
-    const globus_abstime_t *		time_stop,
     void *				arg);
 
 globus_bool_t
@@ -685,10 +683,6 @@ globus_gram_job_manager_state_file_read(
     globus_gram_jobmanager_request_t *	request);
 int
 globus_gram_job_manager_state_file_write(
-    globus_gram_jobmanager_request_t *	request);
-
-int
-globus_gram_job_manager_state_file_update(
     globus_gram_jobmanager_request_t *	request);
 
 int

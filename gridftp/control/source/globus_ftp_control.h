@@ -24,6 +24,8 @@
 #include <globus_gss_assist.h>
 #include <globus_handle_table.h>
 
+EXTERN_C_BEGIN
+
 /**
  * @mainpage Globus GSIFTP Control Connection API
  *
@@ -1177,8 +1179,6 @@ typedef struct globus_ftp_data_server_s
 {
     int bogus;
 } globus_ftp_data_server_t;
-
-EXTERN_C_BEGIN
 
 /*
  * API Functions -- Doxygen comments are included with the function

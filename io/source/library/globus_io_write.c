@@ -1789,9 +1789,11 @@ globus_i_io_try_writev(
 
 	count_used = (int) (iovcnt > IOV_MAX) ? IOV_MAX : iovcnt;
 
-        /*
-         *  NETLOGGER information
-         */
+    /*
+     *  NETLOGGER information
+     */
+    if(handle->nl_handle) 
+    {
         sprintf(tag_str, "SOCK=%d",
             handle->fd);
         globus_netlogger_write(
@@ -1800,12 +1802,14 @@ globus_i_io_try_writev(
             "GIOTWV",
             "Important",
             tag_str);
-
+    }
 	n_written = globus_libc_writev(
 	    handle->fd,
 	    iov,
 	    count_used);
 
+    if(handle->nl_handle) 
+    {
         sprintf(tag_str, "SOCK=%d GLOBUS_IO_NBYTES=%d",
             handle->fd,
             n_written);
@@ -1815,7 +1819,7 @@ globus_i_io_try_writev(
             "GIOTWV",
             "Important",
             tag_str);
-
+    }
 	save_errno = errno;
 	
 	globus_i_io_debug_printf(

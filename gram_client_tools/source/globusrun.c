@@ -137,8 +137,6 @@ globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int));
 
 #if defined(BUILD_LITE)
     static void globus_l_globusrun_signal_wakeup(
-                   const globus_abstime_t *            time_now,
-                   const globus_abstime_t *            time_stop,
                    void *                              user_args);
 
 #   define globus_l_globusrun_remove_cancel_poll()  \
@@ -448,8 +446,14 @@ static int arg_f_mode = O_RDONLY;
 	    globus_libc_fprintf(stderr, "Error initializing globus\n");
 	    return 1;
 	}
+        err = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+        if ( err != GLOBUS_SUCCESS )
+        {
+            globus_libc_fprintf(stderr, "Error initializing GSI GSS ASSIST\n");
+            return 1;
+        }
         err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-	if(err != GLOBUS_SUCCESS)
+	if ( err != GLOBUS_SUCCESS)
 	{
 	    globus_libc_fprintf(stderr,
 				"Error initializing GRAM: %s\n",
@@ -2239,8 +2243,6 @@ Returns:
 static
 void
 globus_l_globusrun_signal_wakeup(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     if(globus_l_globusrun_ctrlc)

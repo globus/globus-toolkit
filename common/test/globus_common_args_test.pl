@@ -1,4 +1,4 @@
-#! perl
+#!/usr/bin/env perl
 
 =pod
 
@@ -39,7 +39,7 @@ sub basic_func
    
    if($rc != 0)
    {
-      $errors .= "Test produced unexpected output, see $test_prog.log.stdout";
+      $errors .= "\n# Test produced unexpected output, see $test_prog.log.stdout";
    }
 
 
@@ -47,7 +47,7 @@ sub basic_func
    
    if($rc != 0)
    {
-      $errors .= "Test produced unexpected output, see $test_prog.log.stderr";
+      $errors .= "\n# Test produced unexpected output, see $test_prog.log.stderr";
    }
    
    if($errors eq "")

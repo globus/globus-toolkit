@@ -3,24 +3,22 @@ include $(top_srcdir)/globus_automake_pre_top
 
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
-SUBDIRS= \
+SUBDIRS = \
 	pkgdata \
 	doxygen
 
-EXTRA_DIST= \
-	globus_io_authorization_test.pl.in \
-        globus_io_file_test.pl.in \
-        globus_io_tcp_test.pl.in \
-        globus_io_udp_test.pl.in \
-        run-io-tests.pl.in
+Scripts = \
+	globus_io_authorization_test.pl \
+        globus_io_file_test.pl \
+        globus_io_tcp_test.pl \
+        globus_io_udp_test.pl \
+        run-io-tests.pl
 
-# Sources contains all of the source files in the directory.
-# Header files are included because automake will generate dependency targets 
-# for them and include them in a source distribution.
-#
-# If this directory builds multiple programs or libraries than these sources
-# will need to be seperated into seperate macros.
-Sources=
+Data = \
+	dc31a685.0 \
+	dc31a685.signing_policy \
+	testcred.pem
+
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -39,7 +37,9 @@ INCLUDES += $(GPT_INCLUDES)
 # You can also use any directory defined by a macro of the form 
 # <directory_name>dir
 
-test_PROGRAMS= \
+test_DATA = $(Data) 
+
+test_PROGRAMS = \
 	globus_io_tcp_test \
 	globus_io_tcp_test_server \
 	globus_io_tcp_test_client \
@@ -49,12 +49,7 @@ test_PROGRAMS= \
 	globus_io_udp_test \
 	globus_io_authorization_test
 
-test_SCRIPTS= \
-        globus_io_authorization_test.pl \
-        globus_io_file_test.pl \
-        globus_io_tcp_test.pl \
-        globus_io_udp_test.pl \
-        run-io-tests.pl
+test_SCRIPTS = $(Scripts)
 
 globus_io_tcp_test_SOURCES = globus_io_tcp_test.c
 globus_io_tcp_test_LDFLAGS = $(GPT_LDFLAGS)
@@ -87,6 +82,8 @@ globus_io_udp_test_LDADD = $(GPT_PGM_LINKS)
 globus_io_authorization_test_SOURCES = globus_io_authorization_test.c
 globus_io_authorization_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_io_authorization_test_LDADD = $(GPT_PGM_LINKS)
+
+EXTRA_DIST = $(Scripts) $(Data)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

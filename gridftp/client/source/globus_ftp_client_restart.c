@@ -22,29 +22,21 @@
 static
 void
 globus_l_ftp_client_restart_get_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *				user_arg);
 
 static
 void
 globus_l_ftp_client_restart_put_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *				user_arg);
 
 static
 void
 globus_l_ftp_client_restart_transfer_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *				user_arg);
 
 static
 void
 globus_l_ftp_client_restart_no_connection(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *			        user_arg);
 
 
@@ -149,8 +141,6 @@ globus_i_ftp_client_restart_register_oneshot(
 static
 void
 globus_l_ftp_client_restart_get_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *				user_arg)
 {
     globus_i_ftp_client_handle_t *	handle;
@@ -318,8 +308,6 @@ restart:
 static
 void
 globus_l_ftp_client_restart_put_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *				user_arg)
 {
     globus_i_ftp_client_handle_t *	handle;
@@ -481,8 +469,6 @@ restart:
 static
 void
 globus_l_ftp_client_restart_transfer_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *				user_arg)
 {
     globus_i_ftp_client_handle_t *	handle;
@@ -835,8 +821,6 @@ globus_i_ftp_client_restart(
 static
 void
 globus_l_ftp_client_restart_no_connection(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *			        user_arg)
 {
     globus_i_ftp_client_target_t *		target;

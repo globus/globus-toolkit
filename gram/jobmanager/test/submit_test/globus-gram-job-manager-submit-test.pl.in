@@ -10,6 +10,7 @@ my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
 my $testtmp = &make_tmpdir();
 my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
+my $verbose = 0;
 
 my @test_cases=qw(
     submit001 submit002 submit003 submit004 submit005
@@ -36,18 +37,32 @@ sub test_rsl
     my $testerr = "$testtmp/$testname.err";
     my $test_rsl_fp = new IO::File("$testdatadir/$testrsl", '<');
     my $out_rsl_fp = new IO::File($additionalrslfile, '>');
+    my @all_rsl;
 
     while(<$test_rsl_fp>)
     {
+	push(@all_rsl, $_);
+
 	$out_rsl_fp->print($_);
     }
     $test_rsl_fp->close();
 
     if($additional_rsl ne "")
     {
+	push(@all_rsl, $additional_rsl);
 	$out_rsl_fp->print($additional_rsl);
     }
     $out_rsl_fp->close();
+
+    if($verbose)
+    {
+	print "# Submitting job\n";
+
+	foreach(@all_rsl)
+	{
+	    print "#    $_";
+	}
+    }
 
 
     system("globusrun -s -r \"$contact\" -f $additionalrslfile >$testout 2>$testerr");
@@ -77,6 +92,9 @@ foreach(@todo_cases)
 if(@ARGV)
 {
     my @doit;
+
+    $verbose = 1;
+
 
     foreach(@ARGV)
     {

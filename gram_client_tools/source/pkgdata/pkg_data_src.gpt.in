@@ -19,7 +19,7 @@
       <Dependency Name="globus_gass_server_ez"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_rsl"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_rsl_assist"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
-      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
    </Source_Dependencies>
 
    <Source_Dependencies Type="pgm_link" >
@@ -30,7 +30,7 @@
       <Dependency Name="globus_gass_server_ez"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_duroc_control"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_nexus"><Version><Simple_Version Major="6"></Simple_Version></Version></Dependency>
-      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_gss_assist"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
    </Source_Dependencies>
 
    <Source_Dependencies Type="pgm_runtime" >

@@ -382,15 +382,11 @@ globus_l_gass_transfer_http_read_buffered_callback(
 static
 void
 globus_l_gass_transfer_http_callback_read_buffered_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg);
 
 static
 void
 globus_l_gass_transfer_http_callback_ready_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg);
 void
 globus_l_gass_transfer_http_copy_text_buffer(
@@ -522,8 +518,6 @@ globus_l_gass_transfer_http_listener_proto_destroy(
 static
 void
 globus_l_gass_transfer_http_callback_listen_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg);
 
 static
@@ -575,8 +569,6 @@ istspecial(
 static
 void
 globus_l_gass_transfer_http_callback_send_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg);
 
 static
@@ -628,8 +620,6 @@ globus_l_gass_transfer_http_extract_referral(
 static
 void
 globus_l_gass_transfer_http_callback_denied(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg);
 
 static

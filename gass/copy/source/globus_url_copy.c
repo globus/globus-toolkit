@@ -67,8 +67,6 @@ globus_l_globus_url_copy_sigint_handler(int dummy);
 static
 void
 globus_l_globus_url_copy_signal_wakeup(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args);
 
 #define globus_l_globus_url_copy_remove_cancel_poll() \
@@ -83,8 +81,8 @@ globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int));
 static
 void
 globus_l_gass_copy_performance_cb(
-    globus_gass_copy_handle_t *                     handle,
     void *                                          user_arg,
+    globus_gass_copy_handle_t *                     handle,
     globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
@@ -967,8 +965,6 @@ Returns:
 static 
 void
 globus_l_globus_url_copy_signal_wakeup(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     if(globus_l_globus_url_copy_ctrlc)
@@ -1006,8 +1002,8 @@ Returns:
 static
 void
 globus_l_gass_copy_performance_cb(
-    globus_gass_copy_handle_t *                     handle,
     void *                                          user_arg,
+    globus_gass_copy_handle_t *                     handle,
     globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput)

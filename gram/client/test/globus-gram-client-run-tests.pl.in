@@ -28,6 +28,7 @@ my $kill_gatekeeper=0;
     globus-gram-client-register-cancel-test.pl
     globus-gram-client-ping-test.pl
     globus-gram-client-status-test.pl
+    globus-gram-client-stop-manager-test.pl
 );
 if(0 != system("grid-proxy-info -exists -hours 2") / 255)
 {

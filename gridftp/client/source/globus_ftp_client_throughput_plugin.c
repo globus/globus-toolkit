@@ -11,7 +11,6 @@
 #include "globus_ftp_client_throughput_plugin.h"
 #include "globus_ftp_client_perf_plugin.h"
 #include <time.h>
-#include <sys/timeb.h>
 #include "version.h"
 
 #define GLOBUS_L_FTP_CLIENT_THROUGHPUT_PLUGIN_NAME "globus_ftp_client_throughput_plugin"
@@ -90,7 +89,9 @@ throughput_plugin_begin_cb(
     globus_bool_t                               restart)
 {
     throughput_plugin_info_t *                  info;
-    struct timeb                                timebuf;
+    globus_abstime_t                            timebuf;
+    long                                        secs;
+    long                                        usecs;
     globus_ftp_client_restart_marker_t          marker;
     globus_off_t                                total_bytes;
 
@@ -123,9 +124,10 @@ throughput_plugin_begin_cb(
             source_url,
             dest_url);
     }
-
-    ftime(&timebuf);
-    info->start_time = timebuf.time + (timebuf.millitm / 1000.0);
+    
+    GlobusTimeAbstimeGetCurrent(timebuf);
+    GlobusTimeAbstimeGet(timebuf, secs, usecs);
+    info->start_time = secs + (usecs / 1000000.0);
 }
 
 /**

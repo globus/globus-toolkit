@@ -81,7 +81,7 @@ main(int argc, char **argv)
     globus_module_activate(GLOBUS_IO_MODULE);
     
 
-#if 0
+#if 1
     test1();				/* connect, read, write, read */
     test2();				/* connect, read, writev, read */
     test3();				/* failed connect */
@@ -210,7 +210,7 @@ test1(void)
     
     /* simple connection to known services with read and write */
     result = globus_io_tcp_register_connect(
-	"antares.mcs.anl.gov",
+	"localhost",
 	25,
 	GLOBUS_NULL,
 	test1_connect_callback,
@@ -513,7 +513,7 @@ test2(void)
     }
     else
     {
-	globus_libc_printf("test 1 write message:\n%s\n",
+	globus_libc_printf("test 1 wrote message:\n%s\n",
 			   test_buffer);
     }
     test_monitor_reset(&monitor);

@@ -38,6 +38,7 @@ AC_CHECK_HEADERS(fcntl.h)
 AC_CHECK_HEADERS(utime.h)
 AC_CHECK_HEADERS(arpa/inet.h)
 AC_CHECK_HEADERS(signal.h)
+AC_CHECK_HEADERS(inttypes.h)
 
 dnl Broken IRIX 6.5.3 headers
 case $target in
@@ -84,6 +85,8 @@ AC_CHECK_FUNCS(nrand48)
 AC_CHECK_FUNCS(mktime)
 AC_CHECK_FUNCS(writev)
 AC_CHECK_FUNCS(strerror)
+AC_CHECK_FUNCS(snprintf)
+AC_CHECK_FUNCS(vsnprintf)
 dnl used in RSL
 AC_FUNC_ALLOCA
 

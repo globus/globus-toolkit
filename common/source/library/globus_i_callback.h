@@ -59,4 +59,55 @@
             "[%s] No cuurently running callback",                           \
             (func)))
 
+#define GlobusICallbackReadyInit(queue)                                     \
+    do {                                                                    \
+        (queue)->head = GLOBUS_NULL;                                        \
+        (queue)->tail = &(queue)->head;                                     \
+    } while(0)
+    
+#define GlobusICallbackReadyEnqueue(queue, callback_info)                   \
+    do {                                                                    \
+        (callback_info)->next = GLOBUS_NULL;                                \
+        *(queue)->tail = callback_info;                                     \
+        (queue)->tail = &callback_info->next;                               \
+    } while(0)
+    
+#define GlobusICallbackReadyDequeue(queue, callback_info)                   \
+    do {                                                                    \
+        (callback_info) = (queue)->head;                                    \
+        if((callback_info))                                                 \
+        {                                                                   \
+            (queue)->head = (callback_info)->next;                          \
+            if(!(queue)->head)                                              \
+            {                                                               \
+                (queue)->tail = &(queue)->head;                             \
+            }                                                               \
+        }                                                                   \
+    } while(0)
+
+#define GlobusICallbackReadyPeak(queue, callback_info)                      \
+    do {                                                                    \
+        (callback_info) = (queue)->head;                                    \
+    } while(0)
+
+#define GlobusICallbackReadyRemove(queue, callback_info)                    \
+    do {                                                                    \
+        globus_l_callback_info_t **     tmp;                                \
+                                                                            \
+        tmp = &(queue)->head;                                               \
+        while(*tmp && *tmp != (callback_info))                              \
+        {                                                                   \
+            tmp = &(*tmp)->next;                                            \
+        }                                                                   \
+                                                                            \
+        if(*tmp)                                                            \
+        {                                                                   \
+            if(!(callback_info)->next)                                      \
+            {                                                               \
+                (queue)->tail = tmp;                                        \
+            }                                                               \
+            *tmp = (*tmp)->next;                                            \
+        }                                                                   \
+    } while(0)
+    
 #endif

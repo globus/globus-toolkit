@@ -82,8 +82,6 @@ globus_l_gram_job_manager_state_string(
  */
 void
 globus_gram_job_manager_state_machine_callback(
-    const globus_abstime_t *		time_now,
-    const globus_abstime_t *		time_stop,
     void *				user_arg)
 {
     globus_gram_jobmanager_request_t *	request;
@@ -92,6 +90,17 @@ globus_gram_job_manager_state_machine_callback(
     request = user_arg;
 
     globus_mutex_lock(&request->mutex);
+
+    /*
+     * If nobody tried to cancel this callback, then we need to unregister
+     * it to free memory in the callback code.
+     */
+    if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
+    {
+	globus_callback_unregister(request->poll_timer, NULL, NULL, NULL);
+	request->poll_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+    }
+    
     do
     {
 	event_registered = globus_gram_job_manager_state_machine(request);
@@ -1126,10 +1135,12 @@ globus_gram_job_manager_state_machine(
 
 	    if(request->two_phase_commit != 0 && rc == GLOBUS_SUCCESS)
 	    {
-		GlobusTimeReltimeSet(delay_time, request->two_phase_commit, 0);
+		GlobusTimeReltimeSet(delay_time,
+		                     request->two_phase_commit,
+				     0);
 
 		globus_callback_register_oneshot(
-			&request->two_phase_commit_timer,
+			&request->poll_timer,
 			&delay_time,
 			globus_gram_job_manager_state_machine_callback,
 			request);
@@ -1150,12 +1161,12 @@ globus_gram_job_manager_state_machine(
 	}
 	else if(request->save_state)
 	{
-	    request->two_phase_commit_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+	    request->poll_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
 	}
 	else
 	{
-	    request->two_phase_commit_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+	    request->poll_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
 	}
 	break;
@@ -1278,7 +1289,9 @@ globus_gram_job_manager_state_machine(
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
 	first_poll = GLOBUS_TRUE;
 	
-	/* FALLSTHROUGH so we can do a quick 1st poll */
+	/* FALLSTHROUGH so we can act on a job state change returned from
+	 * the submit script.
+	 */
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
 	if(request->unsent_status_change && request->save_state)
 	{
@@ -1972,7 +1985,7 @@ globus_gram_job_manager_state_machine(
 	    GlobusTimeReltimeSet(delay_time, request->two_phase_commit, 0);
 
 	    globus_callback_register_oneshot(
-		    &request->two_phase_commit_timer,
+		    &request->poll_timer,
 		    &delay_time,
 		    globus_gram_job_manager_state_machine_callback,
 		    request);
@@ -2010,7 +2023,7 @@ globus_gram_job_manager_state_machine(
 			     0);
 
 	globus_callback_register_oneshot(
-		&request->two_phase_commit_timer,
+		&request->poll_timer,
 		&delay_time,
 		globus_gram_job_manager_state_machine_callback,
 		request);
@@ -2044,7 +2057,7 @@ globus_l_gram_job_manager_reply(
 
     failure_code = request->failure_code;
 
-    if(request->failure_code == 0 && request->two_phase_commit != 0)
+    if(request->two_phase_commit != 0)
     {
 	failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT;
     }
@@ -2052,6 +2065,10 @@ globus_l_gram_job_manager_reply(
        failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
     {
 	sent_contact = request->job_contact;
+    }
+    else if (failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
+    {
+	sent_contact = request->old_job_contact;
     }
     else
     {

@@ -249,7 +249,7 @@ int main(int argc, char * argv[])
     }
     
     print_buffer = malloc(buffer_length + 1);
-    snprintf(print_buffer, buffer_length + 1, "%s", recv_buffer);
+    globus_libc_snprintf(print_buffer, buffer_length + 1, "%s", recv_buffer);
 
     if(verbose_env)
     {
@@ -304,7 +304,7 @@ int main(int argc, char * argv[])
     }
     
     print_buffer = malloc(buffer_length + 1);
-    snprintf(print_buffer, buffer_length + 1, "%s", recv_buffer);
+    globus_libc_snprintf(print_buffer, buffer_length + 1, "%s", recv_buffer);
     
     if(verbose_env)
     {

@@ -1,58 +1,47 @@
-/*********************************************************************
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+* @file unwrap.c
+* @author Sam Lang, Sam Meder
+*
+* $RCSfile$
+* $Revision$
+* $Date$
+*/
+#endif
 
-unwrap.c
-
-Description:
-    GSSAPI routine to unwrap a buffer which may have been
-        received and wraped by wrap.c
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-
-**********************************************************************/
-
-static char *rcsid = "$Header$";
-
-/**********************************************************************
-                             Include header files
-**********************************************************************/
+static char *rcsid = "$Id$";
 
 #include "gssapi.h"
-#include "gssutils.h"
-#include "gssapi_ssleay.h"
+#include "globus_i_gsi_gss_utils.h"
+#include "gssapi_openssl.h"
 #include <string.h>
+#include "ssl_locl.h"
 
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-/**********************************************************************
-Function:   gss_unwrap
-
-Description:
-        Return the data from the wrapped buffer. There may also
-        be errors, such as integraty errors. 
-        Since we can not communicate directly with our peer,
-        we can not do everything SSL could, i.e. return a token
-        for example. 
-
-Parameters:
-
-Returns:
-**********************************************************************/
-
+/**
+ * @name Unwrap
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ *
+ * GSSAPI routine to unwrap a buffer which may have been
+ * received and wraped by wrap.c
+ *
+ * Return the data from the wrapped buffer. There may also
+ * be errors, such as integraty errors. 
+ * Since we can not communicate directly with our peer,
+ * we can not do everything SSL could, i.e. return a token
+ * for example. 
+ *
+ * @param minor_status
+ * @param context_handle
+ * @param input_message_buffer
+ * @param output_message_buffer
+ * @param conf_state
+ * @param qop_state
+ * 
+ * @return
+ */
 OM_uint32 
 GSS_CALLCONV gss_unwrap(
     OM_uint32 *                         minor_status,
@@ -65,41 +54,67 @@ GSS_CALLCONV gss_unwrap(
     gss_ctx_id_desc *                   context =
         (gss_ctx_id_desc *)context_handle; 
     int                                 rc;
-    int                                 ssl_error;
     char                                readarea[SSL3_RT_MAX_PLAIN_LENGTH];
-    unsigned char *                     p;
+    unsigned char *                     input_value;
     gss_buffer_desc                     mic_buf_desc;
     gss_buffer_t                        mic_buf = &mic_buf_desc;
     gss_buffer_desc                     data_buf_desc;
     gss_buffer_t                        data_buf = &data_buf_desc;
     OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_minor_status;
+    time_t                              context_goodtill;
+    int                                 ssl_error;
+    static char *                       _function_name_ =
+        "gss_unwrap";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
-    *minor_status = 0;
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+
     output_message_buffer->value = NULL;
     output_message_buffer->length = 0;
     
     if (context_handle == GSS_C_NO_CONTEXT)
     {
-        return GSS_S_NO_CONTEXT;
+        major_status = GSS_S_NO_CONTEXT;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Uninitialized Context"));
+        goto exit;
     }
 
     /* lock the context mutex */
-    
     globus_mutex_lock(&context->mutex);
     
     if(context->ctx_flags & GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION)
     {
         time_t                          current_time;
 
+        major_status = 
+            globus_i_gsi_gss_get_context_goodtill(&local_minor_status,
+                                                  context,
+                                                  &context_goodtill);
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
+            goto exit;
+        }
+
         current_time = time(NULL);
 
-        if(current_time > context->goodtill)
+        if(current_time > context_goodtill)
         {
             major_status = GSS_S_CONTEXT_EXPIRED;
-            goto err;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_EXPIRED_CREDENTIAL,
+                ("Credential has expired: %s < %s",
+                 ctime(&context_goodtill), ctime(&current_time)));
+            goto exit;
         }
     }
-
     
     if (qop_state)
     {
@@ -110,91 +125,109 @@ GSS_CALLCONV gss_unwrap(
      * see if the token is a straight SSL packet or 
      * one of ours made by wrap using get_mic
      */
-
-    p = input_message_buffer->value;
+    input_value = input_message_buffer->value;
     if ( input_message_buffer->length > 17 &&
-         *p++ == SSL3_RT_GSSAPI_SSLEAY &&
-         *p++ == 3 &&
-         *p++ == 0)
+         *input_value++ == SSL3_RT_GSSAPI_OPENSSL &&
+         *input_value++ == 3 &&
+         *input_value++ == 0)
     {
         if (qop_state)
         {
-            *qop_state = GSS_C_QOP_GLOBUS_GSSAPI_SSLEAY_BIG;
+            *qop_state = GSS_C_QOP_GLOBUS_GSSAPI_OPENSSL_BIG;
         }
 
-        n2s(p,mic_buf->length);
-        mic_buf->value = p; 
-        data_buf->value = &p[mic_buf->length];
-        p = &p[8]; /* skip the sequence number, point at 32 bit data length */
-        n2l(p,data_buf->length);  /* get data length */
+        N2S(input_value, mic_buf->length);
+        input_value += 2;
+        mic_buf->value = input_value; 
+        data_buf->value = input_value + mic_buf->length;
 
-#ifdef DEBUG
-        fprintf(stderr,
+        /* skip the sequence number, point at 32 bit data length */
+        input_value += GSS_SSL3_WRITE_SEQUENCE_SIZE; 
+
+        /* get data length */
+        N2L(input_value, data_buf->length);  
+        input_value += 4;
+
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            2, (globus_i_gsi_gssapi_debug_fstream,
                 "gss_unwrap input_len=%d mic_len=%d data_len=%d\n",
                 input_message_buffer->length,
                 mic_buf->length,
-                data_buf->length);
-#endif
+                data_buf->length));
 
         if (input_message_buffer->length != 
             (5 + mic_buf->length + data_buf->length))
         {
             major_status = GSS_S_DEFECTIVE_TOKEN;
-            goto err;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+                ("Couldn't create input message buffer"));
+            goto exit;
         }
                 
-        /*
-          gss requires us to copy the data to a new token, as the input
-          * token is read only 
-          */
+        /* gss requires us to copy the data to a new token, as the input
+         * token is read only 
+         */
 
-        output_message_buffer->value = (char *)malloc(data_buf->length);
-        if ( output_message_buffer->value == NULL)
+        output_message_buffer->value = (char *) malloc(data_buf->length);
+        if (output_message_buffer->value == NULL)
         {
-            GSSerr(GSSERR_F_UNWRAP, GSSERR_R_OUT_OF_MEMORY);
-            *minor_status = gsi_generate_minor_status();
+            GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
             major_status = GSS_S_FAILURE;
-            goto err;
+            goto exit;
         }
+
         output_message_buffer->length = data_buf->length;
         memcpy(output_message_buffer->value, 
-               data_buf->value,
+               data_buf->value, 
                data_buf->length);
 
         if (conf_state)
         {
-            *conf_state = 0;
+            *conf_state = GSS_INTEGRITY_ONLY;
         }
 
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            2, (globus_i_gsi_gssapi_debug_fstream,
+                "gss_unwrap: calling verify_mic\n"));
 
-#ifdef DEBUG
-        fprintf(stderr,"gss_unwrap: calling verify_mic\n");
-#endif
-        major_status = gss_verify_mic(minor_status,
+        major_status = gss_verify_mic(&local_minor_status,
                                       context_handle,
                                       output_message_buffer,
                                       mic_buf,
                                       qop_state);               
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_MIC);
+            goto exit;
+        }
     }
     else
     {
-        /*
-         * data received is straight SSL, insert into SSL input
+        /* data received is straight SSL, insert into SSL input
          * stream, and read from the SSL 
          */
-
-        if (gs_put_token(context,
-                         NULL,
-                         input_message_buffer) != GSS_S_COMPLETE)
+        major_status = globus_i_gsi_gss_put_token(&local_minor_status,
+                                                  context,
+                                                  NULL,
+                                                  input_message_buffer);
+        if (GSS_ERROR(major_status))
         {
             major_status = GSS_S_DEFECTIVE_TOKEN;
-            goto err;
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
+            goto exit;
         }
 
         /* now get the data from SSL. 
          * We don't know how big it is, so assume the max?
          */
-        while((rc = SSL_read(context->gs_ssl, readarea, sizeof(readarea))) > 0)
+        while((rc = SSL_read(context->gss_ssl, 
+                             readarea, sizeof(readarea))) > 0)
         {
             void * realloc_ptr;
 
@@ -204,8 +237,7 @@ GSS_CALLCONV gss_unwrap(
 
             if(realloc_ptr == NULL)
             {
-                GSSerr(GSSERR_F_UNWRAP, GSSERR_R_OUT_OF_MEMORY);
-                *minor_status = gsi_generate_minor_status();
+                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
                 major_status = GSS_S_FAILURE;
 
                 /* free allocated mem */
@@ -213,8 +245,8 @@ GSS_CALLCONV gss_unwrap(
                 { 
                     free(output_message_buffer->value);
                 }
-
-                goto err;
+                
+                goto exit;
                 
             }
 
@@ -230,19 +262,15 @@ GSS_CALLCONV gss_unwrap(
         
         if (rc < 0)
         {
-            ssl_error = SSL_get_error(context->gs_ssl, rc);
+            ssl_error = SSL_get_error(context->gss_ssl, rc);
             
             if(!(ssl_error == SSL_ERROR_WANT_READ))
             {
-                char errbuf[256];
-                
                 /* Problem, we should have some data here! */
-                
-                GSSerr(GSSERR_F_UNWRAP,GSSERR_R_WRAP_BIO);
-                sprintf(errbuf,"\n        SSL_read rc=%d SSLerr=%d",
-                        rc,ssl_error);
-                ERR_add_error_data(1,errbuf);
-                *minor_status = gsi_generate_minor_status();
+                GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                    minor_status, 
+                    GLOBUS_GSI_GSSAPI_ERROR_WRAP_BIO,
+                    ("SSL_read rc=%d", rc));
                 major_status = GSS_S_FAILURE;
 
                 /* free allocated mem */
@@ -250,50 +278,73 @@ GSS_CALLCONV gss_unwrap(
                 { 
                     free(output_message_buffer->value);
                 }
-                
-                goto err;
+
+                goto exit;
             }
         }
-                
+
+        if(GLOBUS_I_GSI_GSSAPI_DEBUG(3))
+        {
+            BIO *                       debug_bio;
+            fprintf(globus_i_gsi_gssapi_debug_fstream,
+                    "output message: length = %d\n"
+                    "                value  = \n",
+                    output_message_buffer->length);
+        
+            debug_bio = BIO_new_fp(globus_i_gsi_gssapi_debug_fstream, 
+                                   BIO_NOCLOSE);
+            BIO_dump(debug_bio, 
+                     output_message_buffer->value,
+                     output_message_buffer->length);
+            BIO_free(debug_bio);
+        }
+
         if (conf_state)
         {
-            if (context->gs_ssl->session->cipher->algorithms 
-                & SSL_eNULL)
+            if (context->gss_ssl->session->cipher->algorithms & SSL_eNULL)
             {
-                *conf_state = 0;
+                *conf_state = GSS_INTEGRITY_ONLY;
             }
             else
             {
-                *conf_state = 1;
+                *conf_state = GSS_CONFIDENTIALITY;
             }
         }
     }
-err:
+
+ exit:
+
     /* unlock the context mutex */
-    
     globus_mutex_unlock(&context->mutex);
     
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
+/* @} */
 
-/**********************************************************************
-Function:   gss_unseal
-
-Description:
-        Obsolete variant of gss_wrap for V1 compatability 
-        allow for non 32 bit integer in qop_state.
-
-        Return the data from the wrapped buffer. There may also
-        be errors, such as integraty errors. 
-        Since we can not communicate directly with our peer,
-        we can not do everything SSL could, i.e. return a token
-        for example. 
-
-Parameters:
-
-Returns:
-**********************************************************************/
-
+/**
+ * @name Unseal
+ * @ingroup globus_gsi_gssapi
+ */
+/**
+ * Obsolete variant of gss_wrap for V1 compatability 
+ * allow for non 32 bit integer in qop_state.
+ *
+ * Return the data from the wrapped buffer. There may also
+ * be errors, such as integraty errors. 
+ * Since we can not communicate directly with our peer,
+ * we can not do everything SSL could, i.e. return a token
+ * for example. 
+ *
+ * @param minor_status
+ * @param context_handle
+ * @param input_message_buffer
+ * @param output_message_buffer
+ * @param conf_state
+ * @param qop_state
+ *
+ * @return
+ */
 OM_uint32 
 GSS_CALLCONV gss_unseal(
     OM_uint32 *                         minor_status,
@@ -303,28 +354,28 @@ GSS_CALLCONV gss_unseal(
     int *                               conf_state,
     int *                               qop_state)
 {
-    OM_uint32                           major_status;
-    gss_qop_t                           tmp_qop_state;
-    gss_qop_t *                         ptmp_qop_state = NULL;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_minor_status;
+        
+    static char *                       _function_name_ =
+        "gss_unseal";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-  if (qop_state)
-  {
-      ptmp_qop_state = &tmp_qop_state;
-      tmp_qop_state = *qop_state;
-  }
-
-  major_status = gss_unwrap(minor_status,
+  major_status = gss_unwrap(&local_minor_status,
                             context_handle,
                             input_message_buffer,
                             output_message_buffer,
                             conf_state,
-                            ptmp_qop_state);
-  if (qop_state)
+                            (gss_qop_t *) qop_state);
+
+  if(GSS_ERROR(major_status))
   {
-      *qop_state = tmp_qop_state;
+      GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+          minor_status, local_minor_status,
+          GLOBUS_GSI_GSSAPI_ERROR_ENCRYPTING_MESSAGE);
   }
 
+  GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
   return major_status;
 }
-
-
+/* @} */

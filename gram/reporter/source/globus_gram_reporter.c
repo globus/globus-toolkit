@@ -517,6 +517,7 @@ globus_l_gram_check_globus_jobs( globus_l_gram_conf_values_t * vals,
     struct dirent * dir_entry;
     char match_str[56];
     unsigned long now;
+    int rc;
 
     if (q_list == GLOBUS_NULL)
        return;
@@ -543,9 +544,9 @@ globus_l_gram_check_globus_jobs( globus_l_gram_conf_values_t * vals,
     now = (unsigned long) time(NULL);
     sprintf(match_str, "%s_", vals->rdn);
 
-    for(globus_libc_readdir_r(reporting_dir, &dir_entry);
-        dir_entry != GLOBUS_NULL;
-        globus_libc_readdir_r(reporting_dir, &dir_entry))
+    for(rc=globus_libc_readdir_r(reporting_dir, &dir_entry);
+        rc==0 && dir_entry != GLOBUS_NULL;
+        rc=globus_libc_readdir_r(reporting_dir, &dir_entry))
     {
         if ( strstr(dir_entry->d_name, match_str) )
         {

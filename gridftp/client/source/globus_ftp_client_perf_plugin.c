@@ -14,7 +14,6 @@
 #include <time.h>
 #include <string.h>
 #include <ctype.h>
-#include <sys/timeb.h>
 #include "version.h"
 
 /* for 'get' mode (in seconds) */
@@ -288,7 +287,9 @@ perf_plugin_data_cb(
     globus_bool_t                               eof)
 {
     perf_plugin_info_t *                        ps;
-    struct timeb                                timebuf;
+    globus_abstime_t                            timebuf;
+    long                                        secs;
+    long                                        usecs;
     double                                      time_now;
 
     ps = (perf_plugin_info_t *) plugin_specific;
@@ -296,9 +297,11 @@ perf_plugin_data_cb(
     if(ps->use_data && !error)
     {
         globus_mutex_lock(&ps->lock);
-
-        ftime(&timebuf);
-        time_now = timebuf.time + (timebuf.millitm / 1000.0);
+        
+        GlobusTimeAbstimeGetCurrent(timebuf);
+        GlobusTimeAbstimeGet(timebuf, secs, usecs);
+        time_now = secs + (usecs / 1000000.0);
+        
         ps->nbytes += length;
 
         if(ps->marker_cb && (time_now - ps->last_time) > MIN_CB_INTERVAL)
@@ -308,8 +311,8 @@ perf_plugin_data_cb(
             ps->marker_cb(
                 ps->user_specific,
                 handle,
-                timebuf.time,
-                timebuf.millitm / 100,
+                secs,
+                usecs / 100000,
                 0,
                 1,
                 ps->nbytes);

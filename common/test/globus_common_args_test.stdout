@@ -67,7 +67,7 @@ after args_scan : argc = 1
 	argv[ 0] = [globus_args_test]
 option list : 
 	id=3 arity=1
-		val[ 0] = [bolas.isi.edu]
+		val[ 0] = [www.globus.org]
 test 12 returned 1
 globus_args_scan returned -1
 error_msg = null

@@ -4,8 +4,7 @@ include $(top_srcdir)/globus_automake_pre_top
 setup_SCRIPTS = \
 	setup-common-sh-scripts \
 	setup-globus-common \
-	setup-globus-common.pl \
-	setup-globus-common-test
+	setup-globus-common.pl
 
 setup_DATA = \
 	globus-hostname.in
@@ -17,7 +16,6 @@ EXTRA_DIST = \
 	setup-common-sh-scripts.in \
 	setup-globus-common \
 	setup-globus-common.pl \
-	setup-globus-common-test \
 	globus-hostname.in
 
 include $(top_srcdir)/globus_automake_post

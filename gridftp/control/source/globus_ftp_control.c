@@ -164,6 +164,11 @@ globus_i_ftp_parallelism_copy(
         src_parallelism, 
         sizeof(globus_ftp_control_parallelism_t));
 
+    if(dest_parallelism->mode == GLOBUS_FTP_CONTROL_PARALLELISM_NONE)
+    {
+        dest_parallelism->base.size = 1;
+    }
+
     /* TODO check src_parallelism for vaid members */
     return GLOBUS_SUCCESS;
 }

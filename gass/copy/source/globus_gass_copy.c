@@ -7,7 +7,6 @@
  */
 
 #include "globus_gass_copy.h"
-#include <sys/timeb.h>
 #include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -1009,8 +1008,6 @@ globus_gass_copy_register_performance_cb(
 static
 void
 globus_l_gass_copy_perf_local_cb(
-    const globus_abstime_t *                timenow,
-    const globus_abstime_t *                time_stop,
     void *                                  user_arg)
 {
     globus_gass_copy_perf_info_t *          perf_info;
@@ -1019,7 +1016,9 @@ globus_l_gass_copy_perf_local_cb(
     double                                  time_now;
     globus_off_t                            bytes_now;
     double                                  time_elapsed;
-    struct timeb                            timebuf;
+    globus_abstime_t                        timebuf;
+    long                                    secs;
+    long                                    usecs;
     globus_gass_copy_handle_t *             handle;
     globus_gass_copy_performance_cb_t       callback;
     
@@ -1027,8 +1026,10 @@ globus_l_gass_copy_perf_local_cb(
 
     globus_mutex_lock(&perf_info->lock);
     {
-        ftime(&timebuf);
-        time_now = timebuf.time + (timebuf.millitm / 1000.0);
+        GlobusTimeAbstimeGetCurrent(timebuf);
+        GlobusTimeAbstimeGet(timebuf, secs, usecs);
+        time_now = secs + (usecs / 1000000.0);
+        
         bytes_now = perf_info->live_bytes;
     
         time_elapsed = time_now - perf_info->prev_time;
@@ -1099,10 +1100,14 @@ globus_l_gass_copy_perf_setup_local_callback(
 {
     globus_reltime_t                        delay_time;
     globus_reltime_t                        period_time;
-    struct timeb                            timebuf;
-
-    ftime(&timebuf);
-    perf_info->start_time = timebuf.time + (timebuf.millitm / 1000.0);
+    globus_abstime_t                        timebuf;
+    long                                    secs;
+    long                                    usecs;
+    
+    GlobusTimeAbstimeGetCurrent(timebuf);
+    GlobusTimeAbstimeGet(timebuf, secs, usecs);
+    perf_info->start_time = secs + (usecs / 1000000.0);
+    
     perf_info->prev_time = perf_info->start_time;
     perf_info->prev_bytes = 0;
     perf_info->live_bytes = 0;

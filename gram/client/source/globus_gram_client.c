@@ -212,6 +212,13 @@ globus_i_gram_client_activate(void)
     {
 	return(rc);
     }
+
+    rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        return(rc);
+    }
+
     rc = globus_module_activate(GLOBUS_GRAM_PROTOCOL_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -267,6 +274,12 @@ globus_i_gram_client_deactivate(void)
     if (rc != GLOBUS_SUCCESS)
     {
 	return(rc);
+    }
+
+    rc = globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        return(rc);
     }
 
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);

@@ -421,6 +421,12 @@ main(int xargc,
     OM_uint32 major_status = 0;
     OM_uint32 minor_status = 0;
 
+    rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        exit(1);
+    }
+
 #if defined(TARGET_ARCH_CRAYT3E)
     unicos_init();
 #endif
@@ -1101,6 +1107,13 @@ main(int xargc,
             close(connection_fd);
         }
     }
+
+    rc = globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        exit(1);
+    }
+
     return 0;
 }
 
@@ -1258,11 +1271,12 @@ static void doit()
      * don't need any special processing
      */
 
+#if 0
     extension_oids.elements = (gss_OID) gss_restrictions_extension;
     extension_oids.count = 1;
     
     option_token.value = (void *) &extension_oids;
-#if 0
+
     /* don't use this code until we require CAS for the gatekeeper */
     major_status = gss_set_sec_context_option(
         &minor_status,
@@ -1310,7 +1324,6 @@ static void doit()
         globus_gss_assist_token_send_fd,
         (void *)fdout);
 
-
     if (major_status != GSS_S_COMPLETE)
     {
         if (logging_usrlog) 
@@ -1336,41 +1349,6 @@ static void doit()
      */
 
     notice2(LOG_NOTICE, "Authenticated globus user: %s", client_name);
-
-#ifdef CLASS_ADD
-    {
-        /* This is only a sample to show the class adds */
-        gss_buffer_desc * class_add_array = NULL;
-        gss_buffer_desc * class_add_array_entry = NULL;
-
-        minor_status = 0xdee0;
-        major_status = gss_inquire_context(&minor_status,
-                                           context_handle,
-                                           NULL,
-                                           (gss_name_t) &class_add_array,
-                                           NULL,
-                                           NULL,
-                                           NULL,
-                                           NULL,
-                                           NULL);
-        if (minor_status == 0xdee1) {
-            fprintf(stderr,"ClassADD strings:\n");
-            class_add_array_entry = class_add_array;
-            while(class_add_array_entry->length != -1) {
-                if (class_add_array_entry->length) { 
-                    fprintf(stderr,"   %5d %*s\n", 
-                            class_add_array_entry->length,
-                            class_add_array_entry->length,
-                            class_add_array_entry->value);
-                    free(class_add_array_entry->value);
-                } else
-                    fprintf(stderr,"      0\n");
-                class_add_array_entry++;        
-            }
-            free(class_add_array);     
-        }
-    }
-#endif
 
     /*
      * now do authorization  i.e. globus userid must be in the 
@@ -1398,7 +1376,6 @@ static void doit()
         }
     }
 #endif /* TARGET_ARCH_CRAYT3E */
-
 
     /* End of authentication */
 
@@ -1665,43 +1642,35 @@ static void doit()
         failure(FAILED_PING, "ping successful");
     }
 
-    /*
-     * The old Kerberos (with mods) and the old GSI both
-     * set environment variables to point at the delegated cred. 
-     * Keberos 1.1 and the new GSI now both return a cred handle
-     * which allows the application to to deal with the 
-     * delegated cred. Unfortunatly, the GSSAPI does not define
-     * a gss_export_cred. So in the new GSI we have overloaded
-     * the gss_inquire_cred to write out the delegated
-     * cred and return a string  which can be used for the
-     * setenv. Mods for Kerberos 1.1 have been sent to MIT 
-     * as well. 
-     * The string returned is ready for a putenv
-     * The GSI returns X509_USER_DELEG_PROXY=...,
-     * Kerberos returns KRB5CCNAME=FILE:... 
-     */
-
     if (delegated_cred_handle)
     {
-        minor_status = 0xdee0;
-        major_status = gss_inquire_cred(&minor_status,
-                                        delegated_cred_handle,
-                                        (gss_name_t *) &delcname,
-                                        NULL,
-                                        NULL,
-                                        NULL);
-        if (major_status == GSS_S_COMPLETE )
-        {
-            if  ( minor_status == 0xdee1 && delcname)
-            {
-                char * cp;
+        gss_buffer_desc                 deleg_proxy_filename;
+        
+        major_status = gss_export_cred(&minor_status,
+                                       delegated_cred_handle,
+                                       NULL,
+                                       1,
+                                       &deleg_proxy_filename);
 
-                cp = strchr(delcname,'=');
-                *cp = '\0';
-                cp++;
-                setenv(delcname,cp,1);
-                delcname = NULL;
-            }
+        if (major_status == GSS_S_COMPLETE)
+        {
+            char *                      cp;
+
+            cp = strchr((char *)deleg_proxy_filename.value, '=');
+            *cp = '\0';
+            cp++;
+            setenv((char *)deleg_proxy_filename.value, cp, 1);
+            free(deleg_proxy_filename.value);
+        }
+        else
+        {
+            char *                      error_str = NULL;
+            globus_object_t *           error_obj;
+
+            error_obj = globus_error_get((globus_result_t) minor_status);
+            
+            error_str = globus_error_print_chain(error_obj);
+            failure(FAILED_SERVER, error_str);
         }
     }
 
@@ -1920,8 +1889,8 @@ static void doit()
         fcntl(fileno(context_tmpfile), F_SETFD, 0);
         sprintf(buf, "%d", fileno(context_tmpfile));
         setenv("GRID_SECURITY_CONTEXT_FD", buf, 1);
-        notice2(0,"GRID_SECURITY_CONTEXT_FD=%s",buf)
-            }
+        notice2(0,"GRID_SECURITY_CONTEXT_FD=%s",buf);
+    }
     else
     {
         failure(FAILED_SERVER, "Unable to create context tmpfile");

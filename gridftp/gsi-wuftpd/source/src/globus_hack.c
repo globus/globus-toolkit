@@ -254,8 +254,6 @@ globus_l_wu_create_range_string(globus_fifo_t * ranges);
 static
 void
 globus_l_wu_perf_update_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *				user_args);
 
 static globus_bool_t
@@ -610,8 +608,6 @@ wu_monitor_destroy(
 static
 void
 g_timeout_wakeup(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args)
 {
     globus_mutex_lock(&g_monitor.mutex);
@@ -2189,8 +2185,6 @@ globus_l_wu_create_range_string(
 static
 void
 globus_l_wu_perf_update_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
     void *				user_args)
 {
     globus_i_wu_monitor_t *		monitor;

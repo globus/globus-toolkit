@@ -10,6 +10,7 @@ use File::Compare;
 
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
+my $verbose = 0;
 
 sub expire_test
 {
@@ -23,6 +24,16 @@ sub expire_test
 
     $rsl .= "${extra_rsl}(proxy_timeout=${timeout})";
 
+    if($verbose)
+    {
+	print "# Submitting job\n";
+
+	foreach(split(/\n/, $rsl))
+	{
+	    print "#    $_\n";
+	}
+    }
+
     system("globusrun -s -r \"$contact\" \"$rsl\" >/dev/null 2>&1");
     $rc = $? >> 8;
 
@@ -35,6 +46,8 @@ push(@tests, "expire_test(\"(save_state = yes)\")");
 if(@ARGV)
 {
     my @doit;
+
+    $verbose = 1;
 
     foreach(@ARGV)
     {

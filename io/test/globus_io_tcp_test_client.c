@@ -1,6 +1,6 @@
 #include "globus_io.h"
 
-void test1(int argc, char **argv);
+int test1(int argc, char **argv);
 
 typedef struct
 {
@@ -73,16 +73,17 @@ main(int argc, char **argv)
     int					rc;
     
     globus_module_activate(GLOBUS_COMMON_MODULE);
-    globus_module_activate(GLOBUS_IO_MODULE);
-    
+    globus_module_activate(GLOBUS_IO_MODULE);    
 
-    test1(argc, argv); /* connect to secure server */
+    rc = test1(argc, argv); /* connect to secure server */
     globus_module_deactivate(GLOBUS_IO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
+
+    return rc;
 }
 /* main() */
 
-void
+int
 test1(int argc, char **argv)
 {
     globus_result_t			result;
@@ -90,8 +91,6 @@ test1(int argc, char **argv)
     test_monitor_t 			monitor;
     globus_io_handle_t			handle;
     globus_size_t			nbytes;
-    char				buf[6];
-    struct iovec			iov[6];
     globus_io_attr_t			attr;
     globus_io_secure_authorization_data_t
 					auth_data;
@@ -105,7 +104,11 @@ test1(int argc, char **argv)
     char *				host=GLOBUS_NULL;
     unsigned short			port=0;
     char *			        errstring=GLOBUS_NULL;
-
+    int                                 rc = 0;
+    int                                 vector = 0;
+    int                                 io_delegation = 0;
+    struct iovec			iov_write[16];
+    
     globus_io_tcpattr_init(&attr);
     globus_io_secure_authorization_data_initialize(&auth_data);
     globus_io_attr_set_secure_authentication_mode(
@@ -121,24 +124,69 @@ test1(int argc, char **argv)
     globus_io_attr_set_tcp_restrict_port(
 	&attr,
 	GLOBUS_FALSE);
-    while (( c = getopt(argc, argv, "rHi:gsch:p:I:dD")) != EOF)
+    while (( c = getopt(argc, argv, "abrHi:vgsch:p:I:dD")) != EOF)
     {
 	switch(c)
 	{
+          case 'a':
+            result = globus_io_attr_set_secure_authentication_mode(
+                &attr,
+                GLOBUS_IO_SECURE_AUTHENTICATION_MODE_ANONYMOUS, 
+                GSS_C_NO_CREDENTIAL);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
+            break;
+          case 'b': /* all good options were taken */
+            io_delegation = 1;
+            break;
 	  case 'g':
-	    globus_io_attr_set_secure_channel_mode(
-		&attr,
+	    result = globus_io_attr_set_secure_channel_mode(
+                &attr,
 		GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
 	    break;
 	  case 's':
-	    globus_io_attr_set_secure_channel_mode(
+	    result = globus_io_attr_set_secure_channel_mode(
 		&attr,
 		GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
 	    break;
 	  case 'c':
-	    globus_io_attr_set_secure_channel_mode(
+	    result = globus_io_attr_set_secure_channel_mode(
 		&attr,
 		GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
 	    break;
 	  case 'h':
 	    host = optarg;
@@ -147,38 +195,86 @@ test1(int argc, char **argv)
 	    port = atoi(optarg);
 	    break;
           case 'H':
-            globus_io_attr_set_secure_authorization_mode(
+            result = globus_io_attr_set_secure_authorization_mode(
 	        &attr,
 	        GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST,
 	        &auth_data);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
             break;
           case 'i':
-	    globus_io_secure_authorization_data_set_identity(&auth_data,
+	    result = globus_io_secure_authorization_data_set_identity(&auth_data,
 	        optarg);
-            globus_io_attr_set_secure_authorization_mode(
+            result = globus_io_attr_set_secure_authorization_mode(
 	        &attr,
 	        GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
 	        &auth_data);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
             break;
 	  case 'd':
-	    globus_io_attr_set_secure_delegation_mode(
-		    &attr,
-		    GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY);
+	    result = globus_io_attr_set_secure_delegation_mode(
+                &attr,
+                GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY);
 	    break;
 	  case 'D':
-	    globus_io_attr_set_secure_delegation_mode(
-		    &attr,
-		    GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY);
+	    result = globus_io_attr_set_secure_delegation_mode(
+                &attr,
+                GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
 	    break;
           case 'r':
-            globus_io_attr_set_tcp_restrict_port(
+            result = globus_io_attr_set_tcp_restrict_port(
 		&attr,
                 GLOBUS_TRUE);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
 	    break;
           case 'I':
-            globus_io_attr_set_tcp_interface(
+            result = globus_io_attr_set_tcp_interface(
 		&attr,
                 optarg);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
+            break;
+          case 'v':
+            vector = 1;
             break;
 	  default:
 	    printf("unknown flag -%c\n",(char) c);
@@ -199,22 +295,64 @@ test1(int argc, char **argv)
 	&attr,
 	&handle);
 
-    err = globus_error_get(result);
-    errstring = globus_object_printable_to_string(err);
-
     globus_io_tcpattr_destroy(&attr);
 
     if(result != GLOBUS_SUCCESS)
     {
-	
+        err = globus_error_get(result);
+        errstring = globus_object_printable_to_string(err);
 	globus_libc_printf("test 1 connect failed: %s\n", errstring);
-
+        rc = -1;
 	goto exit;
     }
     else
     {
 	globus_libc_printf("test 1 connect succeeded\n");
     }
+
+    if(io_delegation)
+    {
+        OM_uint32                       major_status;
+        OM_uint32                       minor_status = 0;
+        gss_cred_id_t                   credential;
+        
+        major_status = gss_acquire_cred(&minor_status,
+                                        NULL,
+                                        GSS_C_INDEFINITE,
+                                        GSS_C_NO_OID_SET,
+                                        GSS_C_BOTH,
+                                        &credential,
+                                        NULL,
+                                        NULL);
+        if(major_status != GSS_S_COMPLETE)
+        {
+            globus_libc_printf(
+                "test failed to acquire credential for delegation\n");
+            rc = -1;
+            goto exit;
+        }
+
+        result = globus_io_init_delegation(
+            &handle,
+            credential,
+            GSS_C_NO_OID_SET,
+            GSS_C_NO_BUFFER_SET,
+            0);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            errstring = globus_object_printable_to_string(err);
+            globus_libc_printf("test1 delegation failed: %s\n", errstring);
+            rc = -1;
+            goto exit;
+        }
+        else
+        {
+            globus_libc_printf("delegated credential\n");
+        }
+    }
+    
     /* attempt large write */
     large_buf_size = 1024*1024;
     large_buf = (globus_byte_t *) globus_malloc(large_buf_size);
@@ -225,28 +363,45 @@ test1(int argc, char **argv)
 	large_buf[i] = i & 0xff;
     }
 
-    result = globus_io_write(&handle,
-		             large_buf,
-		             large_buf_size,
-		             &nbytes);
+    if(vector)
+    {
+        for(i = 0; i < 16; i++)
+        {
+            iov_write[i].iov_base = large_buf + i * 65536;
+            iov_write[i].iov_len = 65536;
+        }
+
+        result = globus_io_writev(&handle,
+                                  iov_write,
+                                  16,
+                                  &nbytes);
+    }
+    else
+    { 
+        result = globus_io_write(&handle,
+                                 large_buf,
+                                 large_buf_size,
+                                 &nbytes);
+    }
 
     if(result != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(result);
 	errstring = globus_object_printable_to_string(err);
 	globus_libc_printf("test1 large write failed: %s\n", errstring);
+        rc = -1;
 	goto exit;
     }
     else
     {
-	globus_libc_printf("wrote large_block\n");
+	globus_libc_printf("wrote large_block (%d bytes)\n", nbytes);
     }
 
     result = globus_io_read(&handle,
-			    large_buf2,
-			    large_buf_size,
-			    large_buf_size,
-			    &nbytes);
+                            large_buf2,
+                            large_buf_size,
+                            large_buf_size,
+                            &nbytes);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -257,6 +412,7 @@ test1(int argc, char **argv)
 	    errstring = globus_object_printable_to_string(err);
 	    globus_libc_printf("test1 large read failed: %s\n", errstring);
 	}
+        rc = -1;
 	goto exit;
     }
     else
@@ -268,7 +424,7 @@ test1(int argc, char **argv)
 	if(large_buf[i] != large_buf2[i])
 	{
 	    globus_libc_printf("comparison failed at byte %d\n",i);
-
+            rc = -1;
 	    goto exit;
 	}
     }
@@ -290,4 +446,6 @@ test1(int argc, char **argv)
 	globus_free(errstring);
     }
     globus_io_close(&handle);
+
+    return rc;
 }

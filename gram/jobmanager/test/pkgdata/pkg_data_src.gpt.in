@@ -32,12 +32,6 @@
             </Dependency>
         </Source_Dependencies>
 
-        <Source_Dependencies Type="pgm_runtime" >
-            <Dependency Name="globus_ssl_utils" Package="pgm" >
-        	<Version >
-        	    <Simple_Version Major="2" />
-        	</Version>
-            </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_runtime" >

@@ -23,8 +23,6 @@
 static
 void
 globus_l_ftp_client_abort_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					user_arg);
 #endif
 
@@ -4433,8 +4431,6 @@ globus_i_ftp_client_force_close_callback(
 static
 void
 globus_l_ftp_client_abort_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					user_arg)
 {
     globus_i_ftp_client_handle_t *		handle;

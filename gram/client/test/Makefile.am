@@ -16,7 +16,8 @@ Scripts = globus-gram-client-activate-test.pl \
 	  globus-gram-client-register-callback-test.pl \
 	  globus-gram-client-register-cancel-test.pl \
 	  globus-gram-client-register-refresh-credentials-test.pl \
-	  globus-gram-client-status-test.pl
+	  globus-gram-client-status-test.pl \
+	  globus-gram-client-stop-manager-test.pl
 
 pkgtest_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl
 
@@ -34,6 +35,7 @@ pkgtest_PROGRAMS= \
 	globus-gram-client-register-status-test \
 	globus-gram-client-status-test \
 	globus-gram-client-stdio-update-test \
+	globus-gram-client-stop-manager-test \
 	globus-gram-client-register-test
 EXTRA_DIST = $(Scripts) globus-gram-client-run-tests.pl.in
 
@@ -82,6 +84,9 @@ globus_gram_client_refresh_credentials_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_gram_client_register_refresh_credentials_test_SOURCES = globus_gram_client_register_refresh_credentials_test.c
 globus_gram_client_register_refresh_credentials_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_gram_client_stop_manager_test_SOURCES = globus_gram_client_stop_manager_test.c
+globus_gram_client_stop_manager_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

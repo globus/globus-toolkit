@@ -55,6 +55,10 @@ globus_gram_job_manager_request_init(
     r->condor_os = NULL;
     r->condor_arch = NULL;
     r->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED;
+    r->url_base = GLOBUS_NULL;
+    r->job_contact = GLOBUS_NULL;
+    r->job_contact_path = GLOBUS_NULL;
+    r->old_job_contact = GLOBUS_NULL;
     r->two_phase_commit = GLOBUS_FALSE;
     r->save_state = GLOBUS_FALSE;
     r->jm_restart = NULL;
@@ -112,6 +116,14 @@ globus_gram_job_manager_request_destroy(
         globus_libc_free(request->local_stderr);
     if (request->cache_tag)
 	globus_libc_free(request->cache_tag);
+    if (request->url_base)
+	globus_libc_free(request->url_base);
+    if (request->job_contact)
+	globus_libc_free(request->job_contact);
+    if (request->job_contact_path)
+	globus_libc_free(request->job_contact_path);
+    if (request->old_job_contact)
+	globus_libc_free(request->old_job_contact);
     if (request->job_state_file_dir)
 	globus_libc_free(request->job_state_file_dir);
     if (request->job_state_file)

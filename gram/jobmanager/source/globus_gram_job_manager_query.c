@@ -11,7 +11,6 @@
  */
 #include "globus_gram_job_manager.h"
 #include <string.h>
-#include <sslutils.h>
 #endif
 
 
@@ -609,10 +608,10 @@ globus_l_gram_job_manager_signal(
 
 	    break;
 	}
-	if(request->two_phase_commit_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
+	if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
 	{
 	    result = globus_callback_unregister(
-		    request->two_phase_commit_timer,
+		    request->poll_timer,
 		    NULL,
 		    NULL,
 		    &active);
@@ -622,7 +621,7 @@ globus_l_gram_job_manager_signal(
 		 * Cancelled callback before it ran--schedule the
 		 * state machine to run after the query handler exits.
 		 */
-		request->two_phase_commit_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+		request->poll_timer = GLOBUS_HANDLE_TABLE_NO_HANDLE;
 		GlobusTimeReltimeSet(delay, 0, 0);
 		globus_callback_register_oneshot(
 			&request->poll_timer,
@@ -709,6 +708,14 @@ globus_l_gram_job_manager_signal(
 }
 /* globus_l_gram_job_manager_signal() */
 
+/**
+ * Handle a STOP_MANAGER signal.
+ *
+ * This signal causes the job manager to stop monitoring the job and exit,
+ * without killing the job. We want this stop to happen pretty quickly, so
+ * we'll unregister any poll_timer events (either the intra-poll delay or
+ * the two_phase_commit delay) and reregister as a oneshot.
+ */
 static
 int
 globus_l_gram_job_manager_query_stop_manager(
@@ -743,35 +750,7 @@ globus_l_gram_job_manager_query_stop_manager(
 	    }
 	}
     }
-    else if(state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE ||
-	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END ||
-	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE ||
-	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND ||
-	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND ||
-	    state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND)
-    {
-	if(request->two_phase_commit_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
-	{
-	    result = globus_callback_unregister(
-		request->two_phase_commit_timer,
-		NULL,
-		NULL,
-		&active);
 
-	    if(result == GLOBUS_SUCCESS && !active)
-	    {
-		request->two_phase_commit_timer =
-		    GLOBUS_HANDLE_TABLE_NO_HANDLE;
-
-		GlobusTimeReltimeSet(delay, 0, 0);
-		globus_callback_register_oneshot(
-			&request->poll_timer,
-			&delay,
-			globus_gram_job_manager_state_machine_callback,
-			request);
-	    }
-	}
-    }
     switch(state)
     {
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
@@ -817,6 +796,9 @@ globus_l_gram_job_manager_query_stop_manager(
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
 	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 	  request->unsent_status_change = GLOBUS_TRUE;
 	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
@@ -840,9 +822,6 @@ globus_l_gram_job_manager_query_stop_manager(
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE:
-	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
-	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND:
-	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
 	  rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
 	  break;
     }

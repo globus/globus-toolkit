@@ -346,6 +346,7 @@ main(
                     "\t-home globus_location\n"
                     "\t-condor-arch arch, i.e. SUN4x\n"
                     "\t-condor-os os, i.e. SOLARIS26\n"
+                    "\t-history job-history-directory\n" 
                     "\t-publish-jobs\n"
                     "\t-save-logfile [ always | on_errors ]\n"
 		    "\t-scratch-dir-base scratch-directory\n"
@@ -565,6 +566,13 @@ globus_l_gram_job_manager_activate(void)
 	goto common_failed;
     }
 
+    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "gss assist activation failed with rc=%d\n", rc);
+        goto gss_assist_failed;
+    }
+
     rc = globus_module_activate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -621,6 +629,7 @@ duct_control_failed:
 gass_cache_failed:
 gram_protocol_failed:
 io_failed:
+gss_assist_failed:
     if(rc)
     {
 	globus_module_deactivate_all();

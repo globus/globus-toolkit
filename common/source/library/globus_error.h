@@ -7,7 +7,19 @@
 
 #include "globus_object.h"
 
-#include <inttypes.h>
+#if defined(HAVE_INTTYPES_H)
+#include <inttypes.h>  
+#endif
+
+#if defined(UINT_LEAST32_MAX)
+typedef uint_least32_t globus_uint_t;
+#elif SIZEOF_LONG == 4
+typedef unsigned long globus_uint_t;
+#elif SIZEOF_SHORT == 4
+typedef unsigned short globus_uint_t;
+#else
+typedef unsigned int globus_uint_t;
+#endif
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus

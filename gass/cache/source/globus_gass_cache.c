@@ -38,7 +38,7 @@ CVS Information:
     $Date$
     $Revision$
     $Author$
-		    
+
 ******************************************************************************/
 
 /******************************************************************************
@@ -51,10 +51,24 @@ CVS Information:
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
+#include <utime.h>
+#include <sys/types.h>
+#include <ctype.h>
 
+#include "openssl/md5.h"
+
+#define DEBUG				1
+#define GLOBUS_L_GASS_CACHE_LOG 	1
 #include "globus_i_gass_cache.h"
 #include "globus_gass_cache.h"
 #include "version.h"
+
+/* Lock existing files when returning ADD_EXISTS? */
+#define LOCK_ADD_EXISTS			1
+
+/* RedHat 6.2 (2.2.19 kernel) appears to have a bug in rename */
+/* See the code for more details */
+#define GLOBUS_L_GASS_CACHE_RENAMEBUG	1
 
 /*
  * UNICOS has four quota errno values: EQUSR, EQGRP, EQACT, EOFQUOTA
@@ -75,10 +89,130 @@ CVS Information:
 #define IS_QUOTA_ERROR(err) (GLOBUS_FALSE)
 #endif
 
+/* Local error to return; never returned to the application */
+#define GLOBUS_L_EOTHER		-100	/* Unknown error */
+#define GLOBUS_L_ENOENT		-101	/* Does not exist */
+#define GLOBUS_L_EEXISTS	-102	/* Does exist */
+#define GLOBUS_L_ENODATA	-103	/* No data file */
+#define GLOBUS_L_ENOTDIR	-104	/* Not a directory */
+#define GLOBUS_L_ENOTUNIQ	-105	/* Not the first */
+#define GLOBUS_L_UNLINK_LAST	-106	/* Last file unlinked */
+#define GLOBUS_L_READY_MYPROC	-107	/* Data prev. ready for this PID */
+#define GLOBUS_L_READY_OTHER	-108	/* Data ready from another process */
+
+/* Prototype the mangling functions. */
+static
+int
+globus_l_gass_cache_mangle_html(const char	*string,
+				char		*mangled,
+				int		*length );
+static
+int
+globus_l_gass_cache_mangle_md5(const char	*string,
+			       char		*mangled,
+			       int		*length );
+
+/* Other prototypes */
+static
+int
+globus_l_gass_cache_make_dirtree( const char *filepath );
+
+
+/* Structure for storing directory paths & other info */
+typedef struct cache_names_s
+{
+    /* Mangled URL & tag */
+    char	*mangled_url;
+    char	*mangled_tag;
+
+    /* The directories that we use */
+    char	*global_dir;
+    char	*local_dir;
+    char	*local_base_dir;
+
+    /* The data file names are built if the URL (& tag for local) are spec. */
+    char	*global_data_file;
+    char	*global_url_file;
+    char	*local_data_file;
+    char	*local_tag_file;
+    char	*local_tag_link;
+
+    /* The "uniq" name that we use */
+    char	*uniq;
+
+    /* Other names that can be stored here.. */
+    /* There aren't allocated/filled automatically */
+
+    /* Items in the "local" directory */
+    char	*local_uniq_file;
+    char	*localdir_lock_file;
+
+    /* Items in the "global" directory */
+    char	*global_uniq_file;
+    char	*globaldir_lock_file;	/* Only used in RH62 */
+
+    /* These *never* get freed up 'cause they're aliases to stuff in
+       the cache_handle */
+    const char	*global_root;
+    const char	*local_root;
+    const char	*tmp_root;
+    const char	*log_root;
+
+    /* These *never* get freed up 'cause they're aliases to the
+       original tag & URL */
+    const char	*tag;
+    const char	*url;
+} cache_names;
+
+/* Size of an MD5ed URL / tag */
+#define MD5_SIZE	(32 + 3)
+
+/* Free a pointer if it's not NULL */
+#define FREE_PTR(_ptr_) \
+ if ( GLOBUS_NULL != (_ptr_) ) { globus_free(_ptr_); (_ptr_) = GLOBUS_NULL; }
+
+/* Array of mangling functions.. */
+#define MANGLING_OPTION_HTML	0x0001
+#define MANGLING_OPTION_MD5	0x0002
+#define MANGLING_OPTION_ALL	(MANGLING_OPTION_HTML | MANGLING_OPTION_MD5)
+#define MANGLING_OPTION_DEFAULT	(MANGLING_OPTION_MD5)
+typedef struct cache_mangling_option_s
+{
+    unsigned	flagbits;
+    char	*prefix;
+    int (* function) (const char *, char *, int * );
+} cache_mangling_option;
+static cache_mangling_option cache_mangling_list [] =
+{
+    { MANGLING_OPTION_HTML, "html/", globus_l_gass_cache_mangle_html },
+    { MANGLING_OPTION_MD5, "md5/", globus_l_gass_cache_mangle_md5 },
+    { 0x0000, GLOBUS_NULL, GLOBUS_NULL }
+};
+
+/* Structures for listing URLs */
+typedef struct url_list_elem_s
+{
+    struct url_list_elem_s	*next;
+    char			*mangled;
+} url_list_elem;
+typedef struct
+{
+    url_list_elem	*first;
+    int			count;
+} url_list_head;
+
 static globus_bool_t globus_l_gass_cache_link_works = GLOBUS_TRUE;
 
 static int
 globus_l_gass_cache_module_activate(void);
+
+/* NRLs Debugging stuff */
+static double TODOGetTime(void)
+{
+    struct timeval tv;
+    gettimeofday( &tv, NULL );
+    return ( tv.tv_sec + ( tv.tv_usec * 0.000001 ) );
+}
 
 globus_module_descriptor_t globus_i_gass_cache_module =
 {
@@ -104,8 +238,8 @@ static int globus_l_gass_cache_pid;
 static int globus_l_gass_cache_fn_fudge;
 
 /* it is fine to declare those macro here, together with the var. they uses  */
-#define CHECK_CACHE_IS_INIT() if (cache_handle->init != &globus_l_gass_cache_is_init) return(GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED)
-#define CHECK_CACHE_IS_NOT_INIT() if (cache_handle->init == &globus_l_gass_cache_is_init) return(GLOBUS_GASS_CACHE_ERROR_CACHE_ALREADY_OPENED)
+#define CHECK_CACHE_IS_INIT(_handle_) if (_handle_->init != &globus_l_gass_cache_is_init) return(GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED)
+#define CHECK_CACHE_IS_NOT_INIT(_handle_) if (_handle_->init == &globus_l_gass_cache_is_init) return(GLOBUS_GASS_CACHE_ERROR_CACHE_ALREADY_OPENED)
 									   
 /* this is not in the globus_gass_cache specs, but we can see if we want to
    add it. It is a list of error message corresponding to each error codes
@@ -150,7 +284,7 @@ static
 void
 globus_l_gass_cache_log(
     FILE*                               f,
-    char *                              str,...);
+    const char *                        str,...);
 
 #endif
 
@@ -158,75 +292,10 @@ globus_l_gass_cache_log(
 static
 void
 globus_l_gass_cache_trace(
-    char*                              source_file,
+    const char*                        source_file,
     int                                line,
-    char *                             str, ...);
+    const char *                       str, ...);
 #endif
-
-static
-void
-globus_l_gass_cache_entry_free(
-    globus_gass_cache_entry_t**         entry,
-    globus_bool_t                       itself);
-static
-int
-globus_l_gass_cache_read_nb_entries(
-    globus_gass_cache_t* cache_handle);
-static
-int
-globus_l_gass_cache_write_nb_entries(
-    int                                 fd,
-    int                                 nb_entries);
-static
-int
-globus_l_gass_cache_lookfor_url(
-    globus_gass_cache_entry_t**         return_entry,
-    char *                              searched_url,
-    globus_gass_cache_t *               cache_handle);
-static
-int
-globus_l_gass_cache_write_state_file(
-    globus_gass_cache_entry_t *         entry,
-    globus_gass_cache_t *               cache_handle);
-static
-int
-globus_l_gass_cache_write_one_str(
-    char*                               buff_pt,
-    int                                 fd);
-static
-int
-globus_l_gass_cache_write_one_entry(
-    int                                 fd,
-    globus_gass_cache_entry_t *         entry);
-static
-int
-globus_l_gass_cache_read_one_str(
-    char**                              buff_pt,
-    int                                 fd);
-static
-int
-globus_l_gass_cache_read_one_entry(
-    int                                 fd,
-    globus_gass_cache_entry_t**         entry);
-
-static
-int
-globus_l_gass_cache_lock_file(
-    char *                              file,
-    char *                              temp_file);
-static
-int
-globus_l_gass_cache_unlock_file(
-    char*                               file);
-static
-int
-globus_l_gass_cache_lock_open(
-    globus_gass_cache_t*                cache_handle);
-static
-int
-globus_l_gass_cache_unlock_close(
-    globus_gass_cache_t *               cache_handle,
-    globus_bool_t                       abort);
 
 static int
 globus_l_gass_cache_module_activate(void)
@@ -253,7 +322,7 @@ globus_l_gass_cache_module_activate(void)
     
     fd = open(file1, 
 	      O_RDWR|O_CREAT,
-	      GLOBUS_L_GASS_CACHE_STATE_MODE);
+	      GLOBUS_L_FILE_MODE);
 
     if (fd < 0)
 	goto real_exit;
@@ -285,12 +354,87 @@ globus_l_gass_cache_module_activate(void)
 
 void
 globus_l_gass_cache_name_lock_file(char * lock_file,
-				   char * file_to_be_locked);
+				   const char * file_to_be_locked);
 void
 globus_l_gass_cache_name_uniq_lock_file(char * uniq_lock_file,
-					char * file_to_be_locked);
+					const char * file_to_be_locked);
 
 #ifdef GLOBUS_L_GASS_CACHE_LOG
+#define CACHE_ERROR_MSGSIZE	255
+typedef struct
+{
+    int		SrcLine;
+    int		ErrNo;
+    int		rc;
+    char	msgbuf[CACHE_ERROR_MSGSIZE + 1];
+} CACHE_ERROR;
+#define MAX_ERRORS	20
+static struct
+{
+    int		NumErrors;
+    CACHE_ERROR	Errors[MAX_ERRORS];
+} cache_errors;
+void error_return(int line, int ErrNo, int rc, const char *msg )
+{
+    int		num = cache_errors.NumErrors;
+    if ( num < ( MAX_ERRORS - 1 ) )
+    {
+	CACHE_ERROR	*error = &cache_errors.Errors[num];
+	error->SrcLine = line;
+	error->ErrNo = ErrNo;
+	error->rc = rc;
+	if ( GLOBUS_NULL != msg )
+	{
+	    strncpy( error->msgbuf, msg, CACHE_ERROR_MSGSIZE );
+	    error->msgbuf[CACHE_ERROR_MSGSIZE] = '\0';
+	}
+	else
+	{
+	    error->msgbuf[0] = '\0';
+	}
+	cache_errors.NumErrors++;
+    }
+}
+void error_backtrace(FILE *fp)
+{
+    int		num;
+    if ( cache_errors.NumErrors )
+    {
+	globus_l_gass_cache_log( fp, "Backtrace:\n" );
+	for ( num = (cache_errors.NumErrors - 1) ; num >= 0;  num-- )
+	{
+	    CACHE_ERROR	*error = &cache_errors.Errors[num];
+	    if ( '\0' == error->msgbuf[0] )
+	    {
+		globus_l_gass_cache_log(
+		    fp,
+		    "  Line=%d, errno=%d, Rc=%d\n",
+		    error->SrcLine, error->ErrNo, error->rc );
+	    }
+	    else
+	    {
+		globus_l_gass_cache_log(
+		    fp,
+		    "  Line=%d, errno=%d, Rc=%d, msg='%s'\n",
+		    error->SrcLine, error->ErrNo, error->rc, error->msgbuf );
+	    }
+	}
+    }
+}
+#define CLR_ERROR	cache_errors.NumErrors = 0
+#define MARK_ERROR(_rc_)		\
+	error_return(__LINE__, errno, (_rc_), GLOBUS_NULL);
+#define MARK_ERRORMSG(_rc_,_msg_)	\
+	error_return(__LINE__, errno, (_rc_), (_msg_) );
+#define RET_ERROR(_rc_)			\
+	error_return(__LINE__, errno, (_rc_), GLOBUS_NULL); return (_rc_)
+#define RET_ERRORMSG(_rc_,_msg_)	\
+	error_return(__LINE__, errno, (_rc_), (_msg_) ); return (_rc_)
+#define LOG_ERROR(_x_) \
+    globus_l_gass_cache_log(cache_handle->log_FILE,\
+	"ERROR: Line %d, errno %d; rc=%d\n",\
+        __LINE__, errno, _x_ );\
+    error_backtrace(cache_handle->log_FILE)
 /*
  * globus_l_gass_cache_log()
  *
@@ -306,8 +450,8 @@ globus_l_gass_cache_name_uniq_lock_file(char * uniq_lock_file,
 static
 void 
 globus_l_gass_cache_log(
-    FILE*      f,
-    char*      str,
+    FILE*       f,
+    const char* str,
     ...)
 {
     va_list    args;
@@ -316,17 +460,22 @@ globus_l_gass_cache_log(
     time_t ttime;
     long mytid;
 
-    /* Note : I use the local time to log. This might not be the best        */
+    /* Note : I use the local time to log. This might not be the best */
     time(&ttime);
 
     globus_libc_ctime_r(&ttime,time_buff,sizeof(time_buff));
-    
+
+    /* If the log file hasn't been opened yet (i.e. we're logging from open) */
+    /* log *somewhere* */
+    if ( GLOBUS_NULL == f )
+	f = stderr;
+
     /* remove the \n */
     time_buff[24]='\0';
     globus_libc_gethostname(hname,sizeof(hname));
     mytid = (long) globus_thread_self();
 
-    globus_libc_fprintf(f,"%s %s PID:%ld TID:%ld : ",
+    globus_libc_fprintf(f,"GASSCACHE: %s %s PID:%ld TID:%ld : ",
 	    time_buff,
 	    hname,
 	    (long)getpid(),
@@ -341,6 +490,11 @@ globus_l_gass_cache_log(
     globus_libc_unlock();
 }
 /* globus_gass_cache_log() */
+#else
+#define CLR_ERROR
+#define LOG_ERROR(_x_)
+#define RET_ERROR(_rc_)			return(_rc_)
+#define RET_ERRORMSG(_rc_,_msg_)	return(_rc_)
 #endif
 
 #ifdef DEBUG
@@ -364,14 +518,15 @@ globus_l_gass_cache_log(
 static
 void 
 globus_l_gass_cache_trace(
-    char*                        source_file,
+    const char*                  source_file,
     int                          line,
-    char                         *str,
+    const char                   *format,
     ...)
 {
     va_list    args;
     static FILE *fp = GLOBUS_NULL;
-    
+    struct timeval	tv;
+
     globus_libc_lock();
     if(fp == GLOBUS_NULL)
     {
@@ -380,16 +535,20 @@ globus_l_gass_cache_trace(
 	           "a+");
 #else
         fp = stderr;
+        /* fp = stdout; */
 #endif
     }
     globus_libc_unlock();
 
-    va_start(args,str);
+    gettimeofday( & tv, NULL );
+
+    va_start(args,format);
     
-    globus_libc_fprintf(fp,"%s %d : ",source_file,  line);
-    globus_libc_vfprintf(fp, str, args);
+    globus_libc_fprintf(fp,"GC %ld.%06ld: %s %d : ", 
+			tv.tv_sec, tv.tv_usec, source_file, line);
+    globus_libc_vfprintf(fp, format, args);
     va_end(args);
-    
+
     globus_libc_fprintf(fp,"\n");
 
     globus_libc_lock();
@@ -401,1693 +560,3259 @@ globus_l_gass_cache_trace(
 #endif
 
 /*
- * globus_l_gass_cache_name_lock_file()
+ * globus_l_gass_cache_build_filename()
+ *
+ * Build a cache filename by concatenating a file name onto a
+ * directory name.  If no file name is provided, the directory name
+ * alone is copied into the output path buffer.
+ *  
+ * Parameters:
+ *	dir	- Incoming directory name
+ *	file	- Optional file name
+ *	path	- Outgoing full file path
+ *
+ * Returns: VOID
  *
  */
-void
-globus_l_gass_cache_name_lock_file(char * lock_file,
-				   char * file_to_be_locked)
+static
+int
+globus_l_gass_cache_build_filename(const char	*dir,
+				   const char	*file,
+				   const char	*uniq,
+				   int		overwrite,
+				   char		**path )
 {
-    strcpy(lock_file, file_to_be_locked);
-    strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);    
-} /* globus_l_gass_cache_name_lock_file() */
+    int		len = strlen( dir ) + 1;	/* String + \0 */
+
+    /* Did we already do this? */
+    if ( GLOBUS_NULL != *path )
+    {
+	/* If we're supposed to overwrite, free up the buffer */
+	if ( overwrite )
+	{
+	    globus_free( *path );
+	}
+	/* Otherwise, we're done! */
+	else
+	{
+	    return GLOBUS_SUCCESS;
+	}
+    }
+
+    /* Compute the lengths */
+    if ( file )
+    {
+	len += strlen( file ) + 1;		/* slash + string */
+    }
+    if ( uniq )
+    {
+	len += strlen( uniq ) + 1;		/* (no slash) string */
+    }
+
+    /* Allocate the buffer */
+    *path = globus_malloc( len );
+    if ( GLOBUS_NULL == *path )
+    {
+	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+    }
+
+    /* Fill it */
+    strcpy( *path, dir );
+    if ( file )
+    {
+	strcat( *path, "/" );
+	strcat( *path, file );
+    }
+    if ( uniq )
+    {
+	strcat( *path, uniq );
+    }
+
+    /* All done, good */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_build_filename() */
 
 /*
- * globus_l_gass_cache_name_uniq_lock_file()
+ * globus_l_gass_cache_mangle_html()
+ *  
+ * Parameters:
+ *	string - The string to mangle
+ *	mangled - Pointer to the buffer to mangle into (or GLOBUS_NULL)
+ *	length - Pointer to the length of the mangled output (or GLOBUS_NULL)
+ *
+ * Returns:
  *
  */
-void
-globus_l_gass_cache_name_uniq_lock_file(char * uniq_lock_file,
-					char * file_to_be_locked)
+static
+int
+globus_l_gass_cache_mangle_html(const char	*string,
+				char		*mangled,
+				int		*length )
 {
-    char   hname[MAXHOSTNAMELEN];
+    /* These are "safe" characters */
+    const char	*safe = "$-_.+";
+    const char	*extra = "!*'(),";
+    int		mangle_slash = 0;	/* Bool: Mangle extra slashes? */
+    int		len = 0;
+    int		c;
+
+    /* Copy & clean.. */
+    while( ( c = *string++ ) != '\0' )
+    {
+	int	mangle = 0;
+
+	/* Alpha-numerics get copied directly */
+	if ( isalnum( c ) )
+	{
+	    /* Do nothing */
+	}
+
+	/* Safe chars get copied directly */
+	else if ( strchr( safe, c ) != NULL )
+	{
+	    /* Do nothing */
+	}
+
+	/* Extra chars get copied directly */
+	else if ( strchr( extra, c ) != NULL )
+	{
+	    /* Do nothing */
+	}
+
+	/* Copy slashes (/) directly... */
+	else if (  ( '/' == c ) && ( ! mangle_slash )  )
+	{
+	    /* Do nothing */
+	}
+
+	/* Everything else gets mangled */
+	else
+	{
+	    mangle = 1;
+	}
+
+	/* Copy directly.. */
+	if ( ! mangle )
+	{
+	    mangle_slash = ( '/' == c );
+	    len++;
+	    if ( mangled )
+	    {
+		*mangled++ = c;
+	    }
+	}
+	/* Mangle the byte here */
+	else
+	{
+	    len += 3;
+	    if ( mangled )
+	    {
+		sprintf( mangled, "%%%02x", c );
+		mangled += 3;
+	    }
+
+	    /* If this isn't a slash, force off / mangling for the next one */
+	    if ( '/' != c )
+	    {
+		mangle_slash = 0;
+	    }
+	}
+    }
+
+    /* Terminate the string */
+    if ( mangled )
+    {
+	*mangled = '\0';
+    }
+
+    /* Store off the length (add one for \0) */
+    if ( length )
+    {
+	*length = ++len;
+    }
+
+    /* All ok! */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_mangle_html() */
+
+/*
+ * globus_l_gass_cache_mangle_md5()
+ *  
+ * Parameters:
+ *	string - The string to mangle
+ *	mangled - Pointer to the buffer to mangle into (or GLOBUS_NULL)
+ *	length - Pointer to the length of the mangled output (or GLOBUS_NULL)
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_mangle_md5(const char	*string,
+			       char		*mangled,
+			       int		*length )
+{
+    /* Length is fixed */
+    if ( GLOBUS_NULL != length )
+    {
+	/* +1 for \0, +3 for added slashes, +3 for .00 extension */
+	*length = ( MD5_DIGEST_LENGTH * 2 ) + 1 + 3 + 3;
+    }
+
+    /* Do the mangling? */
+    if ( GLOBUS_NULL != mangled )
+    {
+	unsigned char	md5[MD5_DIGEST_LENGTH], *md5ptr = &md5[0];
+	int		i;
+
+	/* Do the real work. */
+	MD5( string, strlen(string), md5 );
+
+	/* Convert it to string format */
+	for ( i=0;  i<MD5_DIGEST_LENGTH;  i++ )
+	{
+	    sprintf( mangled, "%02x", *md5ptr );
+	    mangled += 2;
+	    md5ptr++;
+	    if ( i <= 2 )
+	    {
+		*mangled++ = '/';
+	    }
+	}
+	*mangled = '\0';
+    }
+
+    /* All ok! */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_mangle_md5() */
+
+/*
+ * globus_l_gass_cache_mangle()
+ *
+ * Mangles the given string (typically URL or tag) into a chunk
+ * suitable for using as a file / path name.
+ *  
+ * Parameters:
+ *	string - The incoming string to mangle (\0 terminated)
+ *
+ *	mangling_options - Flag bits defining the mangling options to
+ *	try.
+ *	
+ *	max_mangled_len - Max allowable length of the mangled string
+ *
+ *	mangled - Pointer to the output string; a buffer for the real
+ *	string is malloc()ed for the application.  If mangled is NULL,
+ *	then no such buffer is allocated, and no mangled string is
+ *	created.  This can be useful to just get the length of the
+ *	mangled string.
+ *
+ *	Length - The length of the resulting string.  If NULL, this is
+ *	not assigned to.
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
+ */
+int
+globus_l_gass_cache_mangle( const char	*string,
+			    unsigned	mangling_options,
+			    int		max_mangled_len,
+			    char	**mangled,
+			    int		*length )
+{
+    int				rc;
+    int				len;
+    int				option_no;
+    cache_mangling_option	*option;
+
+    /* Get the mangled length */
+    for ( option_no = 0, option = &cache_mangling_list[0];
+	  option->flagbits;
+	  option_no++, option++ )
+    {
+	if ( mangling_options & option->flagbits )
+	{
+	    rc = option->function( string, GLOBUS_NULL, &len );
+	    if ( GLOBUS_SUCCESS != rc )
+	    {
+		RET_ERROR( rc );
+	    }
+	    len += strlen( option-> prefix );
+	    if (  ( max_mangled_len > 0 ) && ( len <= max_mangled_len )  )
+	    {
+		break;
+	    }
+	}
+    }
+
+    /* Valid option found? */
+    if ( ! option->flagbits )
+    {
+	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG );
+    }
+
+    /* Store the length */
+    if ( length )
+    {
+	*length = len;
+    }
+
+    /* Allocate a buffer for it & mangle into it */
+    if ( mangled )
+    {
+	char	*mptr;
+	mptr = *mangled = globus_malloc( len );
+	if ( GLOBUS_NULL == mptr )
+	{
+	    return GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	}
+	strcpy( mptr, option->prefix );
+	mptr += strlen( mptr );
+	rc = option->function( string, mptr, GLOBUS_NULL );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+    }
+
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_mangle() */
+
+/*
+ * globus_l_gass_cache_build_dirname()
+ *
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_build_dirname( const char	*root,
+				   const char	*mangled_tag,
+				   const char	*mangled_url,
+				   char		**path,
+				   int		*path_len )
+{
+    int		len = strlen( root ) + 1;		/* root + '\0' */
+
+    /* NULL out the passed in parameters in case of error */
+    *path = GLOBUS_NULL;
+
+    /* Add in for the tag, if relevant. */
+    if ( mangled_tag )
+    {
+	len += ( strlen( mangled_tag ) + 1 );		/* + slash */
+    }
+
+    /* Add in the mangled */
+    if ( GLOBUS_NULL != mangled_url )
+    {
+	len += ( strlen( mangled_url ) + 1 );		/* + slash */
+    }
+
+    /* Allocate the buffer.. */
+    *path = globus_malloc( len );
+    if ( GLOBUS_NULL == *path )
+    {
+	return GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+    }
+
+    /* Store off the length.. */
+    if ( path_len )
+    {
+	*path_len = len;
+    }
+
+    /* Build it */
+    strcpy( *path, root );
+    if ( mangled_tag )
+    {
+	strcat( *path, "/" );
+	strcat( *path, mangled_tag );
+    }
+    if ( mangled_url )
+    {
+	strcat( *path, "/" );
+	strcat( *path, mangled_url );
+    }
+
+    /* Ok */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_build_dirname() */
+
+/*
+ * globus_l_gass_cache_build_uniqname()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_build_uniqname( char **uniq )
+{
+    char	hostname[MAXHOSTNAMELEN];
+    char	uniq_string[UNIQ_NAME_MAX];
+
     /* !!! need to handle multi threaded !!! */
-    globus_libc_gethostname(hname,sizeof(hname));
+    globus_libc_gethostname( hostname, sizeof(hostname) );
 
-    globus_libc_sprintf(uniq_lock_file,"%s%s_%s_%ld_%ld",
-			file_to_be_locked,
-			GLOBUS_L_GASS_CACHE_LOCK_EXT,
-			hname,
+    globus_libc_sprintf(uniq_string,
+			UNIQ_NAME_FORMAT,
+			hostname,
 			(long) globus_libc_getpid(),
-			(long) globus_thread_self());
+			(long) globus_thread_self() );
 
-} /* globus_l_gass_cache_name_uniq_lock_file() */
+    /* Assign to the uniq passed in.. */
+    *uniq = globus_libc_strdup( uniq_string );
+    if ( GLOBUS_NULL == *uniq )
+    {
+	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+    }
+
+    /* Outa here */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_build_uniqname() */
 
 /*
- * globus_l_gass_cache_write_comment()
+ * globus_l_gass_cache_names_free()
  *
- * Write the first line of the file containning the version of
- * the format of the stat file and a comment.
- *   
+ * Free all allocated names
+ *  
  * Parameters:
- *
- *     cache_handle - handler to the chache directory to use.
- *     fd - File descriptor where to write the comment  
- * 
- * Returns: 
- *     GLOBUS_SUCCESS or
- *     GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen.
- */
-static
-int
-globus_l_gass_cache_write_comment(
-    globus_gass_cache_t*             cache_handle,
-    int                              fd)
-{
-    /* In future version, We should take care of backward compatibility,
-       and eventually write an other version number, but for now
-       we do not care */
-    globus_libc_sprintf(
-	cache_handle->comment,
-	"%s%5u%-65s",
-	"-Version ",
-	GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION,
-	" # Gass_cache state file - DO NOT MODIFY ! ");
-    cache_handle->comment[sizeof(cache_handle->comment)-1] = '\n';
-    
-    while (write(fd,
-		 cache_handle->comment,sizeof(cache_handle->comment))
-	   != sizeof(cache_handle->comment))
-    {
-	if (errno != EINTR)
-	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
-	}
-    }
-    return(GLOBUS_SUCCESS);
-
-}
-/* globus_l_gass_cache_write_comment() */
-
-/*
- * globus_l_gass_cache_write_one_str()
- * 
- * Write one string of variable length (buff_pt*) into the file fd,
- * by writing first its length (in ascii coded decimal format) and then
- * the string itself.
- *    
- * Parameters:
- *
- *     buff_pt - pointer to the string of variable length to be writen.
- *
- *     fd - descriptor of the file to write in.
- *
- * Returns: 
- *     GLOBUS_SUCCESS or
- *     GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen.
- */
-static
-int
-globus_l_gass_cache_write_one_str(
-    char*                           buff_pt,
-    int                             fd)
-{
-    /* ascii coded size of the next data to read */
-    char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    /* size of the data to write             */
-    unsigned int size;  
-
-    
-    /* write buffer length, including \n */
-    size = strlen(buff_pt) +1;	/* include the terminating null char     */
-    globus_libc_sprintf(size_s,"%40u",size);
-    /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!    */
-    size_s[sizeof(size_s)-1] = '\n';
-
-    while ( write(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
-    {
-	if (errno != EINTR)
-	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
-	}
-    }
-    /* write buffer */
-    while ( write(fd, buff_pt, size-1 ) != size-1 )
-    {
-	if (errno != EINTR)
-	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
-	}
-    }
-    while ( write(fd, "\n", 1 ) != 1 ) /* replace 0 with \n                  */
-    {
-	if (errno != EINTR)
-	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
-	}
-    }
-    return(GLOBUS_SUCCESS);
-
-}
-/* globus_l_gass_cache_write_one_str() */
-
-/*
- * globus_l_gass_cache_read_one_str()
- * 
- * Read one string of variable length from the file fd.
- *     Read first the string length from the file (ascii coded decimal), then
- *     allocate the memory for the string and at last, read the string
- *     and return the address of this buffer.
- *     
- *     fd must be positioned in the file at a place where a "variable-length"
- *     followed by the string itself are expected.
- *    
- * Parameters: 
- * 	       
- *     fd - descriptor of the file to read from.
- * 	       
- *     buff_pt - pointer to the string read. 	  
- * 	       
- * Returns: 
- * 	       
- *     GLOBUS_SUCCESS or
- *     GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT if the string could not be read
- *     GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
- */
-static
-int
-globus_l_gass_cache_read_one_str(
-    char**                        buff_pt,
-    int                           fd)
-{
-    /* ascii coded size of the next data to read */
-    char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    /* size of the next data to read             */
-    size_t size;  
-
-    
-    /* read buffer length, including \n */
-    while ( read(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
-    {
-	if (errno != EINTR)
-	{
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-    }
-    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0';
-    /* replace \n with  0 (end of string) */
-    
-    size = atoi(size_s);
-    
-    if (!size)
-    {
-	CACHE_TRACE("Error reading state file");
-	return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-    }
-    *buff_pt=(char *) globus_malloc(size);
-    if (*buff_pt == NULL)
-    {
-    	CACHE_TRACE("No more memory");
-	return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-    }   
-    while ( read(fd,*buff_pt , size) != size )
-    {
-	if (errno != EINTR)
-	{
-	    CACHE_TRACE("Error reading state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-    }
-    /* replace \n with  0 (end of string) */
-    (*buff_pt)[size-1]='\0';  
-    
-    return(GLOBUS_SUCCESS);
-}
-/* globus_l_gass_cache_read_one_str() */
-
-/*
- * globus_l_gass_cache_read_nb_entries()
- * 
- * Read from the cache state file the number of globus_gass_cache_entry
- * it contains. This number is always the last information storred in the
- * file; The file pointer must be correctly positionned in the file before
- * this function is called.
- *     
- * Parameters:
- *     
- *    cache_handle - contains the file desciptor of the cache file
- * 	                      to read (cache_handle->state_file_fd)
- *     
- *    cache_handle - this function update the field
- * 	                      cache_handle->nb_entries whith the values read.
- * 			      
- * Returns: 
- *     
- *     GLOBUS_SUCCESS or
- *     GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT if the data could not be read.
- */
-static int
-globus_l_gass_cache_read_nb_entries(
-    globus_gass_cache_t*  cache_handle)
-{
-    /* ascii coded size of the next data to read */
-    char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-
-    /* read buffer length, including \n */
-    while ( read(cache_handle->state_file_fd,
-	      size_s,sizeof(size_s)) != sizeof(size_s) )
-    {
-	if (errno != EINTR)
-	{
-	    CACHE_TRACE("Error reading state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-    }
-    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0';
-    /* replace \n with  0 (end of string) */
-    
-    cache_handle->nb_entries = atoi(size_s);
-
-    return(GLOBUS_SUCCESS);
-}
-/* globus_l_gass_cache_read_nb_entries() */
-
-/*
- * globus_l_gass_cache_write_nb_entries()
- * 
- * Write into the cache state file the number of globus_gass_cache_entry
- * it contains. This number is always the last information storred in the
- * file; The file pointer must be correctly positionned in the file before
- * this function is called.
- *     
- * Parameters:
- *      fd - contains the file desciptor of the cache file to write in.
- * 	(in the current implementation, it is cache_handle->state_file_temp_fd)
- *
- * 	nb_entries - number of entries to write.
- * 	(it should be cache_handle->nb_entries)
- *     
- *      cache_handle - this function update the field
- *	cache_handle->nb_entries whith the values read.
- *     		      
- * Returns: 
- *      GLOBUS_SUCCESS or
- *      GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE if the data could not be writen. 
- */
-static
-int
-globus_l_gass_cache_write_nb_entries(
-    int                               fd,
-    int                               nb_entries)
-{
-    /* ascii coded size of the next data to read */
-    char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-
-    
-    /* first lets write an entry separator to tell that there is one more    */
-    while ( write(fd, "*\n",2) != 2 )
-    {
-	if (errno != EINTR)
-	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
-	}
-    }
-
-    globus_libc_sprintf(size_s,"%40u",nb_entries);
-    /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !*/
-    size_s[sizeof(size_s)-1] = '\n';
-
-    while (write(fd,
-	      size_s,sizeof(size_s))  != sizeof(size_s) )
-    {
-	if (errno != EINTR)
-	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
-	}
-    }
-
-    return(GLOBUS_SUCCESS);
-}
-/* globus_l_gass_cache_write_nb_entries() */
-
-
-/*
- * globus_l_gass_cache_write_one_entry()
- *
- * Write one globus_gass_cache_entry_t structure in a file ,
- *   mapping the data to text as desribed below:
- *   - Eache data is ascii coded, on one line (terminated by \n)
- *   - Eache entry is preceded by a "header" : #
- *   - numerical values are ascii coded into a fixed number of char:
- *     GLOBUS_L_GASS_CACHE_L_LENGHT
- *   - Eache string (url, filename,...) is preceded by is length, coded as
- *     described above
- *    
- * Parameters:
- *
- *     fd - file descriptor of the open file to write in at the
- *     current position.
- *
- *     entry - address of the globus_gass_cache_entry_t to write in the file
+ *	names - Pointer to the "names" structure
  *
  * Returns:
- *     GLOBUS_SUCCESS or
- *     GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE
- */        
+ *	GLOBUS_SUCCESS
+ */
 static
 int
-globus_l_gass_cache_write_one_entry(
-    int                               fd,
-    globus_gass_cache_entry_t*        entry)
+globus_l_gass_cache_names_free( cache_names	*names )
 {
-    /* ascii coded size of the next data to read         */
-    char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    /* size of the next data to read                     */
-    /* to loop in the tags array                         */
-    unsigned int i;
 
-    
-    /* first lets write an entry separator to tell that there is one more    */
-    while ( write(fd, "#\n",2) != 2 )
-    {
-	if (errno != EINTR)
-	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
-	}
-    }
-    /* write url */
-    if (globus_l_gass_cache_write_one_str(entry->url, fd))
-    {
-	CACHE_TRACE("Error writing state file");
-	return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-    }
+    /* Free the mangled URL & tag */
+    FREE_PTR( names->mangled_url );
+    FREE_PTR( names->mangled_tag );
 
-     /* write filename  */
-    if (globus_l_gass_cache_write_one_str(entry->filename, fd))
-    {
-	CACHE_TRACE("Error writing state file");
-	return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-    }
+    /* Free the global... */
+    FREE_PTR( names->global_dir );
 
-    /* write timestamp */
-    /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!*/
-    globus_libc_sprintf(size_s,"%40lu",entry->timestamp);
-    size_s[sizeof(size_s)-1] = '\n';
-                             
-    while ( write(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
+    /* Free the local dir.. */
+    FREE_PTR( names->local_dir );
+    FREE_PTR( names->local_base_dir );
+
+    /* The Uniq string */
+    FREE_PTR( names->uniq );
+
+    /* Optional names. */
+
+    /* The local names. */
+    FREE_PTR( names->local_data_file );
+    FREE_PTR( names->local_tag_file );
+    FREE_PTR( names->local_tag_link );
+    FREE_PTR( names->local_uniq_file );
+    FREE_PTR( names->localdir_lock_file );
+
+    /* The global names. */
+    FREE_PTR( names->global_data_file );
+    FREE_PTR( names->global_url_file );
+    FREE_PTR( names->global_uniq_file );
+    FREE_PTR( names->globaldir_lock_file );
+
+
+    /* Finally, zero out the PATHs */
+    memset( names, 0, sizeof( cache_names ) );
+
+    /* Here, all is good.  Return ok. */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_names_free() */
+
+/*
+ * globus_l_gass_cache_names_fill_global()
+ *
+ * Fill the global portion of the names structure
+ *  
+ * Parameters:
+ *	names - The names structure to fill
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
+ */
+static
+int
+globus_l_gass_cache_names_fill_global( cache_names *names )
+{
+    int		rc = GLOBUS_SUCCESS;
+
+    /* Assemble the global... */
+    if ( GLOBUS_NULL == names->mangled_url )
     {
-	if (errno != EINTR)
-	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
-	}
+	return GLOBUS_SUCCESS;
     }
 
-    /* status */
-    if (entry->lock_tag != GLOBUS_NULL)
+    if ( GLOBUS_SUCCESS == rc )
     {
-	/* write it is locked  */
-	while (write(fd, "L\n", 2) != 2 )        
-	{
-	    if (errno != EINTR)
-	    {
-	        if (errno == ENOSPC)
-                {
-                    return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-                }
-                else if (IS_QUOTA_ERROR(errno))
-                {
-                    return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-                }
-                else
-                {
-	            CACHE_TRACE("Error writing state file");
-	            return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-                }
-	    }
-	}
-        /* write the tag_lock */
-	if (globus_l_gass_cache_write_one_str(entry->lock_tag, fd))
-	{
-	    CACHE_TRACE("Error writing state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-	}
+	rc = globus_l_gass_cache_build_dirname( 
+	    names->global_root,
+	    GLOBUS_NULL,
+	    names->mangled_url,
+	    &names->global_dir,
+	    GLOBUS_NULL );
+    }
+
+    /* Build the global data file name; *everything* uses it anyway */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_filename( 
+	    names->global_dir, DATA_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	    &names->global_data_file );
+    }
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_filename( 
+	    names->global_dir, URL_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	    &names->global_url_file );
+    }
+
+    /* Done; */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	return GLOBUS_SUCCESS;
     }
     else
     {
-	/* write it is NOT locked  */
-	while (write(fd, "R\n", 2) != 2 )        
-	{
-	    if (errno != EINTR)
-	    {
-	        if (errno == ENOSPC)
-                {
-                    return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-                }
-                else if (IS_QUOTA_ERROR(errno))
-                {
-                    return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-                }
-                else
-                {
-	            CACHE_TRACE("Error writing state file");
-	            return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-                }
-	    }
-	}
+	RET_ERROR( rc );
     }
 
-
-    /* write the number of existing tag enties */
-    /* Changed in 1.1
-       Here is a hack because the Pending flag did not exist in version 1.0
-       of globus_gass_cache. I added it in this line to preserve backward
-       compatibility; The hack is that I moved the "num_tag" 2 char to the left
-       and add a \0 in the string to make atoi (below) not read the 3 last char
-       I use this 2 last char to put the Pending flag and the \n.
-       It reduce the number of tag possible, but the 38 digits left should be
-       enought... */
-    globus_libc_sprintf(size_s,"%38lu",entry->num_tags);
-    size_s[sizeof(size_s)-3] = '\0';
-    if (entry->pending != 'F' && entry->pending != 'P')
-    {
-	globus_libc_printf("Error Pending flag not set when writing\n");
-    }
-    size_s[sizeof(size_s)-2] = entry->pending;
-    size_s[sizeof(size_s)-1] = '\n';
-    
-    while ( write(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
-    {
-	if (errno != EINTR)
-	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
-	}
-    }
-
-    /* write each tag */
-    /* I use num_tags+1 to be sure to get the last one if I have deleted one */
-    /* not that if I have created one, I will not point outside of the       */
-    /* allocated array because I alocate num_tags+2 when I read the entry    */
-    
-    for (i=0; i<entry->num_tags+1; i++)
-    {
-	/* if this tag has not been deleted */
-	if ((entry->tags+i)->tag != GLOBUS_NULL)
-	{
-	    /* write each tag   */
-	    if (globus_l_gass_cache_write_one_str((entry->tags+i)->tag, fd))
-	    {
-		CACHE_TRACE("Error writing state file");
-		return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-	    }
-	
-	    /* write the count */
-	    /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT  !!!     */
-	    globus_libc_sprintf(size_s,"%40u",(entry->tags+i)->count);
-	    size_s[sizeof(size_s)-1] = '\n';
-
-	    while ( write(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
-	    {
-		if (errno != EINTR)
-		{
-	            if (errno == ENOSPC)
-                    {
-                        return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-                    }
-                    else if (IS_QUOTA_ERROR(errno))
-                    {
-                        return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-                    }
-                    else
-                    {
-	                CACHE_TRACE("Error writing state file");
-	                return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-                    }
-		}
-	    }
-	} /* this tag has not been deleted */
-    }
-    return(GLOBUS_SUCCESS);
-} /*  globus_l_gass_cache_write_one_entry() */
-
+} /* globus_l_gass_cache_names_fill_global() */
 
 /*
- * globus_l_gass_cache_read_one_entry()
+ * globus_l_gass_cache_names_fill_local()
  *
- * Read one globus_gass_cache_entry_t structure from a file.
- * The entry must have been writen following the format described and used in
- * globus_l_gass_cache_write_one_entry(). All the memory necessary to store
- * this structure is allocated: The function globus_l_gass_cache_entry_free()
- * must be called subsequently.
- * 
- * Parameters:
- *      fd - file descriptor of the open file to read from at the
- *      current position.  
- * 	   
- * 	entry - Pointer to the  globus_gass_cache_entry_t read
- * 	from the file.
- * 
- * Returns:
- *      GLOBUS_SUCCESS or
- *      GLOBUS_GASS_CACHE_ERROR_NO_MEMORY or
- * 	GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT if not all the
- *      expected structure fields could be read.	    
- */         
-static int
-globus_l_gass_cache_read_one_entry(
-    int                                fd,
-    globus_gass_cache_entry_t**        entry)
-{
-    /* ascii coded size of the next data to read */
-    char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    int i;              /* tag array index                           */
-
-    if (*entry == NULL)
-    {
-	/* allocate the memory for one entry */
-	*entry = (globus_gass_cache_entry_t *)globus_malloc(sizeof(globus_gass_cache_entry_t));
-	if (entry == NULL)
-	{
-	    CACHE_TRACE("No more memory");
-	    return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-	}
-    }
-    /* init some fields */
-    (*entry)->num_tags=0;
-    (*entry)->tags= GLOBUS_NULL;
-    (*entry)->pending= 'F';
-    /* read url */
-    if (globus_l_gass_cache_read_one_str(&((**entry).url), fd))
-    {
-	CACHE_TRACE("Error reading state file");
-	globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-	return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-    }
-   
-    /* read file name */
-    if (globus_l_gass_cache_read_one_str(&((**entry).filename), fd))
-    {
-	CACHE_TRACE("Error reading state file");
-	globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-	return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-    }
-
-    /* read timestamp */
-    while ( read(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
-    {
-	if (errno != EINTR)
-	{
-	    CACHE_TRACE("Error reading state file");
-	    globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-    }
-    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0'; /* replace \n with  0 (end of string) */
-    (**entry).timestamp = atol(size_s);
-    
-    /* read status */
-    while (read(fd, &size_s[0], 2) != 2 )           
-    {
-	if (errno != EINTR)
-	{
-	    CACHE_TRACE("Error reading state file");
-	    globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-    }
-    if (size_s[0] == 'L')
-    { /* File locked, let read the lock_tag */
-	    /* read file name, including \n */
-	if (globus_l_gass_cache_read_one_str(&((**entry).lock_tag), fd))
-	{
-	    CACHE_TRACE("Error reading state file");
-	    globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-    }
-    else
-    {
-	/* file not locked */
-	(**entry).lock_tag = GLOBUS_NULL;
-    }
-
-    /* read Tags */
-
-    /* first the number of tags */
-    while ( read(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
-    {
-	if (errno != EINTR)
-	{
-	    CACHE_TRACE("Error reading state file");
-	    globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-    }
-    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0'; /* replace \n with  0 (end of string) */
-
-    /* Changed in 1.1
-       Here is a hack because the Pending flag did not exist in version 1.0
-       of globus_gass_cache. I added it in this line to preserve backward
-       compatibility; The hack is that I moved the "num_tag" 2 char to the left
-       and add a \0 in the string to make atoi (below) not read the 3 last char
-       I use this 2 last char to put the Pending flag and the \n.
-       It reduce the number of tag possible, but the 38 digits left should be
-       enought... */
-
-    if (size_s[sizeof(size_s)-3] == '\0' )
-    {
-	(**entry).pending = size_s[sizeof(size_s)-2];
-	if ((**entry).pending != 'P' &&
-	    (**entry).pending != 'F')
-	{
-	    CACHE_TRACE("Error reading state file");
-	    globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);	    
-	}
-    }
-
-    (**entry).num_tags= atoi(size_s);
-    /* allocate 2 too much : one spare for add  and one for the last (NULL) */
-    (**entry).tags=(globus_gass_cache_tag_t *)
-	globus_malloc(((**entry).num_tags+2)* sizeof(globus_gass_cache_tag_t)); 
-    if ((**entry).tags == GLOBUS_NULL)
-    {
-    	CACHE_TRACE("No more memory");
-	(*entry)->num_tags=0;
-	globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-	return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-    }
-
-    /* read each tag */
-    for (i=0; i<(**entry).num_tags; i++)
-    {
-	/* read each tag */
-	if (globus_l_gass_cache_read_one_str(&((**entry).tags[i].tag), fd))
-	{
-	    CACHE_TRACE("Error reading state file");
-	    globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-
-	/* read the tag count */
-	while ( read(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
-	{
-	    if (errno != EINTR)
-	    {
-		CACHE_TRACE("Error reading state file");
-		globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
-		return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	    }
-	}
-	size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0';/* replace \n with 0(end of string)*/
-	(**entry).tags[i].count = atoi(size_s);
-    }
-    /* initialize the 2 extra entries with NULL */
-    (**entry).tags[(**entry).num_tags].tag=GLOBUS_NULL;
-    (**entry).tags[(**entry).num_tags+1].tag=GLOBUS_NULL;
-    return(GLOBUS_SUCCESS);
-    
-}
-/* globus_l_gass_cache_read_one_entry() */
-
-
-/*
- * globus_l_gass_cache_entry_free()
- *
- * Free the memory allocated by globus_l_gass_cache_read_one_entry().
- * 
- * Parameters: 
- *      entry - address to the "entry pointer" pointing to
- *	the globus_gass_cache_entry_t structure to free.
- *
- *      itself - indicate if the pointer "entry" itself should be freed, or
- *      if only the entries should be freed
- * Returns: 
- *      none
- */
-static void
-globus_l_gass_cache_entry_free(
-    globus_gass_cache_entry_t**           entry,
-    globus_bool_t                         itself)
-{
-    int i;
-    if (*entry != GLOBUS_NULL)
-    {
-
-	globus_free((*entry)->url);
-	(*entry)->url = GLOBUS_NULL;
-	globus_free((*entry)->filename);
-	(*entry)->filename = GLOBUS_NULL;
-	globus_free((*entry)->lock_tag);
-	(*entry)->lock_tag = GLOBUS_NULL;
-	if ((*entry)->tags != GLOBUS_NULL)
-	{
-	    for (i=0; i<(*entry)->num_tags+1; i++)
-	    {
-		globus_free(((*entry)->tags+i)->tag);
-		((*entry)->tags+i)->tag = GLOBUS_NULL;
-	    }
-	}
-	globus_free((*entry)->tags);
-	(*entry)->tags = GLOBUS_NULL;
-	if (itself == GLOBUS_TRUE)
-	{
-	    globus_free(*entry);
-	    *entry=GLOBUS_NULL;
-	}	
-    }
-}
-/* globus_l_gass_cache_entry_free() */
-
-/*
- * globus_l_gass_cache_write_state_file()
- *
- * Call globus_l_gass_cache_write_one_entry() to write one
- * globus_gass_cache_entry_t structure in the state file. In this function, we
- * define in which file we want the entry to be writen.
- * (globus_l_gass_cache_write_one_entry() is independant of this choice)
- * For the current implementation, we use a temporary file.
- * => cache_handle->temp_file_fd.
+ * Fill the local portion of the names structure
  *  
- * 
  * Parameters:
- *
- *     entry : address of the globus_gass_cache_entry_t to write in the file
- *
- *     cache_handle : contains the name/file descriptor of the file
- *     to write to.
+ *	names - The names structure to fill
  *
  * Returns:
- *     GLOBUS_SUCCESS or
- *     error code returned by globus_l_gass_cache_write_one_entry().
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
  */
 static
 int
-globus_l_gass_cache_write_state_file(
-    globus_gass_cache_entry_t *            entry,
-    globus_gass_cache_t *                  cache_handle)
+globus_l_gass_cache_names_fill_local( cache_names *names )
 {
-    int      rc; /* general purpose return code */
+    int		rc = GLOBUS_SUCCESS;
 
-    if (entry != NULL)
+    /* Valid tag? */
+    if ( GLOBUS_NULL == names->mangled_tag )
     {
-	rc = globus_l_gass_cache_write_one_entry(cache_handle->temp_file_fd,
-					entry);
-	globus_l_gass_cache_entry_free(&entry,GLOBUS_TRUE);
-	if (rc != GLOBUS_SUCCESS)
+	return GLOBUS_SUCCESS;
+    }
+
+    /* Create the base local directory name (we don't need the URL for it) */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_dirname( 
+	    names->local_root,
+	    names->mangled_tag,
+	    GLOBUS_NULL,
+	    &names->local_base_dir,
+	    GLOBUS_NULL );
+	if ( GLOBUS_SUCCESS != rc )
 	{
-	    return (rc);
+	    RET_ERROR( rc );
 	}
     }
-    return(GLOBUS_SUCCESS);
-}
-/* globus_l_gass_cache_write_state_file() */
+
+    /* And, the local tag file */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_filename( 
+	    names->local_base_dir, TAG_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	    &names->local_tag_file );
+    }
+
+    /* For everything else, we need a valid URL, too */
+    if ( GLOBUS_NULL == names->mangled_url )
+    {
+	return GLOBUS_SUCCESS;
+    }
+
+    /* Create the local directory name. */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_dirname( 
+	    names->local_root,
+	    names->mangled_tag,
+	    names->mangled_url,
+	    &names->local_dir,
+	    GLOBUS_NULL );
+    }
+
+    /* Build the local data file name; *everything* uses it anyway */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_filename( 
+	    names->local_dir, DATA_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	    &names->local_data_file );
+    }
+    /* The local tag "link" name */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_filename( 
+	    names->local_dir, TAG_FILE, GLOBUS_NULL, GLOBUS_FALSE,
+	    &names->local_tag_link );
+    }
+
+    /* Done; */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	return GLOBUS_SUCCESS;
+    }
+    else
+    {
+	RET_ERROR( rc );
+    }
+
+} /* globus_l_gass_cache_names_fill_local() */
 
 /*
- * globus_l_gass_cache_lookfor_url()
+ * globus_l_gass_cache_names_init()
  *
- * Search [read] in the cache state file for an existing entry
- *    with an url identic to the url (searched_url).
- *    When an entry is read, if it does not correspond to the searched url, the
- *    entry is writen back in the state file (actually to the temporary state
- *    file in the current implementation)
- *    
- *    If the entry read correspond to the searched url, it is returned 
- *    in an allocated  globus_gass_cache_entry_t structure.
- *    
- *    if none are found, NULL pointer is returned.
- * 
- *    Note that the whole file is scaned, self the url has been found before
- *    the last entry.
+ * Initialize the common names structure
  *  
  * Parameters:
  *
- *       searched_url - url to look for in the file
+ * Returns:
  *
- *       cache_handle - cache handler used to get the
- *       file names /descriptor to read/write.
- *      
- *       return_entry - pointer to the entry found; NULL if none found
+ */
+static
+int
+globus_l_gass_cache_names_init( const globus_gass_cache_t	*cache,
+				const char			*url,
+				const char			*tag,
+				cache_names			*names )
+{
+    int		rc = GLOBUS_SUCCESS;
+
+    /* Zero out the PATHs first... */
+    memset( names, 0, sizeof( cache_names ) );
+
+    /* Create the links to the root dirs */
+    names->global_root = cache->global_directory_path;
+    names->local_root = cache->local_directory_path;
+    names->tmp_root = cache->tmp_directory_path;
+    names->log_root = cache->tmp_directory_path;
+
+    /* if no tag supplied, we map it to the tag
+       GLOBUS_L_GASS_CACHE_NULL_TAG ("null") */
+    if ( GLOBUS_NULL == tag )
+    {
+	tag = GLOBUS_L_GASS_CACHE_NULL_TAG;
+    }
+
+    /* Create the URL & tag aliases */
+    names->url = url;
+    names->tag = tag;
+
+    /* Mangle the URL */
+    if (  ( GLOBUS_SUCCESS == rc ) && ( GLOBUS_NULL != url )  )
+    {
+	rc = globus_l_gass_cache_mangle( url,
+					 cache->mangling_options,
+					 cache->max_mangled_url,
+					 &names->mangled_url,
+					 GLOBUS_NULL );
+    }
+
+    /* And, the tag */
+    if (  ( GLOBUS_SUCCESS == rc ) && ( GLOBUS_NULL != tag )  )
+    {
+	rc = globus_l_gass_cache_mangle( tag,
+					 cache->mangling_options,
+					 cache->max_mangled_tag,
+					 &names->mangled_tag, 
+					 GLOBUS_NULL );
+    }
+
+    /* Assemble the global dir & related names */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_names_fill_global( names );
+    }
+
+    /* Assemble the local dir.. */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_names_fill_local( names );
+    }
+
+    /* Uniq string */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_uniqname( &names->uniq );
+    }
+
+    /* If we've had failures, free up all allocated memory */
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	globus_l_gass_cache_names_free( names );
+	RET_ERROR( rc );
+    }
+
+    /* Here, all is good.  Return ok. */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_names_init() */
+
+/*
+ * globus_l_gass_cache_names_new_murl()
+ *
+ * Set a new mangled URL in the names structure.  This is for use
+ * primarily for cleanup_tag_all().
+ *
+ * Parameters:
  *
  * Returns:
  *
- *    GLOBUS_SUCCESS or
- *    GLOBUS_GASS_CACHE_ERROR_OPEN_STATE
- *    GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE
- *    GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT
- *    error code returned by globus_l_gass_cache_read_one_entry()
- *    error code returned by globus_l_gass_cache_write_one_entry()
  */
-static int
-globus_l_gass_cache_lookfor_url(
-    globus_gass_cache_entry_t **       return_entry,
-    char *                             searched_url,
-    globus_gass_cache_t *              cache_handle)
+static
+int
+globus_l_gass_cache_names_new_murl( const char	*mangled_url,
+				    cache_names	*names )
 {
-    globus_gass_cache_entry_t* globus_gass_cache_entry_pt=NULL;
-				/* for general usage            */
+    int		rc = GLOBUS_SUCCESS;
 
-    int rc;			/* return code                  */
-    char entry_separator[2];	/* eache entry is preceded by   */
-				/* a line containing #\n        */
-  
-    /* Write the  comment */
-    rc = globus_l_gass_cache_write_comment(cache_handle,
-					   cache_handle->temp_file_fd);
-    if (rc != GLOBUS_SUCCESS)
+    /* We don't know the unmangled URL here... */
+    names->url = GLOBUS_NULL;
+
+    /* Is it really different? */
+    if ( GLOBUS_NULL != names->mangled_url )
     {
-	return(rc);
-    }
-    
-    *return_entry = NULL;   /* initialised to "not found" */
-    /* scann the file */
-    /* I do not "rewind" because I should have just opened the file         */
-
-    
-    while ( read( cache_handle->state_file_fd,
-		  entry_separator,
-		  sizeof(entry_separator))
-	    == sizeof(entry_separator) && entry_separator[0] == '#' )
-   
-    {   /* If I manage to read an entry separator, I should have an entry */
-	rc = globus_l_gass_cache_read_one_entry(cache_handle->state_file_fd,
-				       &globus_gass_cache_entry_pt);
-	if (rc != GLOBUS_SUCCESS)
+	if ( ! strcmp( names->mangled_url, mangled_url )  )
 	{
-	    return (rc);
-	}
-
-	if ( strcmp(globus_gass_cache_entry_pt->url,searched_url))
-	{
-	    /* not the same url */
-	    rc = globus_l_gass_cache_write_one_entry(cache_handle->temp_file_fd,
-					    globus_gass_cache_entry_pt);
-	    if (rc != GLOBUS_SUCCESS)
-	    {
-		globus_l_gass_cache_entry_free(&globus_gass_cache_entry_pt,
-					       GLOBUS_TRUE);
-		return (rc);
-	    }
-	    globus_l_gass_cache_entry_free(&globus_gass_cache_entry_pt,
-					   GLOBUS_TRUE);
+	    return GLOBUS_SUCCESS;
 	}
 	else
 	{
-	    /* the same url */
-	    GLOBUS_L_GASS_CACHE_LG("URL found ");
-	    *return_entry=globus_gass_cache_entry_pt;
-	    globus_gass_cache_entry_pt=GLOBUS_NULL;
+	    globus_free( names->mangled_url );
 	}
     }
 
-    if (entry_separator[0] != '*')
+    /* Copy it */
+    names->mangled_url = globus_libc_strdup( mangled_url );
+    if ( GLOBUS_NULL == names->mangled_url )
     {
-	CACHE_TRACE("Error reading state file");
-	return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
+	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
     }
-    else
-    {
-	return(globus_l_gass_cache_read_nb_entries(cache_handle));
-    }
-}
-/* globus_l_gass_cache_lookfor_url() */
 
+    /* Free up existing local & global directories */
+    FREE_PTR( names->global_dir );
+    FREE_PTR( names->local_dir );
+    FREE_PTR( names->local_base_dir );
+
+    /* And, anything else that might be affected. */
+    FREE_PTR( names->local_data_file );
+    FREE_PTR( names->local_uniq_file );
+    FREE_PTR( names->local_tag_file );
+    FREE_PTR( names->local_tag_link );
+    FREE_PTR( names->localdir_lock_file );
+
+    /* The global names. */
+    FREE_PTR( names->global_data_file );
+    FREE_PTR( names->global_url_file );
+    FREE_PTR( names->global_uniq_file );
+    FREE_PTR( names->globaldir_lock_file );
+
+
+    /* Assemble the global dir & related names */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_names_fill_global( names );
+    }
+    CACHE_TRACE3( "MURL: '%s'; Global='%s'", mangled_url, names->global_dir );
+
+    /* Assemble the local dir.. */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_names_fill_local( names );
+    }
+    
+    /* If we've had failures, free up all allocated memory */
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	globus_l_gass_cache_names_free( names );
+	RET_ERROR( rc );
+    }
+
+    /* Here, all is good.  Return ok. */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_names_new_murl() */
 
 /*
- * globus_l_gass_cache_lock_file()
+ * globus_l_gass_cache_stat()
  *
- * Create an advisory lock on a file. To methode have been
- * implemented: using hard link (if NEW_LOCK is not defined) and
- *  using open(... O_CREAT|O_EXCL) which return an error if file exist.
- *  ->hard links do not exist on AFS
- *  -> open(... O_CREAT|O_EXCL) do not work on all version of unix (But
- *  all the new versions/POSIX [IEEE 1988]
- *  Note : If compilled with LOCK_TOUT defined, the lock will timeout after
- *  LOCK_TOUT try to get the lock, if the file to lock is older than
- *  LOCK_TOUT*LOOP_TIME
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_stat ( const char	*filepath,
+			   struct stat	*statptr )
+{
+    struct stat	statbuf;
+    int		rc;
+
+    /* Check for null statptr.. */
+    if ( GLOBUS_NULL == statptr )
+    {
+	statptr = &statbuf;
+    }
+
+    /* Run stat 'til we get an answer.. */
+    while( 1 )
+    {
+	rc = stat( filepath, statptr );
+	if ( 0 == rc )
+	{
+	    return GLOBUS_SUCCESS;
+	}
+	if ( ENOENT == errno )
+	{
+	    RET_ERRORMSG( GLOBUS_L_ENOENT, filepath );
+	}
+	if ( EINTR != errno )
+	{
+	    RET_ERROR( GLOBUS_L_EOTHER );
+	}
+    }
+} /* globus_l_gass_cache_stat() */
+
+#if defined( DEBUGxxxx )
+static void TODOgu( const char *g, const char *u, const char *msg )
+{
+    static char	uniq_name[1024], data_name[1024];
+    struct stat	statbuf;
+    int		uniq_inode = -1, data_inode = -1;
+
+    if ( g )
+    {
+	sprintf( data_name, "%s/%s", g, DATA_FILE );
+	CACHE_TRACE3( "%d: Data name is '%s'", getpid(), data_name );
+	if ( u )
+	{
+	    sprintf( uniq_name, "%s/%s%s", g, DATA_FILE_PAT, u );
+	    CACHE_TRACE3( "%d: Uniq name is '%s'", getpid(), uniq_name );
+	}
+    }
+
+    if ( msg )
+    {
+	if ( globus_l_gass_cache_stat( data_name, &statbuf ) == 0 )
+	    data_inode = statbuf.st_ino;
+	if ( globus_l_gass_cache_stat( uniq_name, &statbuf ) == 0 )
+	    uniq_inode = statbuf.st_ino;
+	CACHE_TRACE5( "%d/%s: data/uniq %d/%d",
+		      getpid(), msg, data_inode, uniq_inode );
+    }
+   
+}
+#else
+# define TODOgu(_g_,_u_,_m_)
+#endif
+
+/*
+ * globus_l_gass_cache_create()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_create( const char	*filepath,
+			    const char	*dir,
+			    int		mode,
+			    const char	*buf,
+			    int		buflen )
+{
+    int		fd;
+    int		mkdir_try = 0;
+
+    /* Try to create the file... */
+    while ( ( fd = creat( filepath, mode ) ) < 0 )
+    {
+	/* Interrupted? Go try again */
+	if ( EINTR == errno )
+	{
+	    continue;
+	}
+
+	/* ENOENT?  Directory went away.. */
+	if ( ENOENT == errno )
+	{
+	    /* If the app gave us a directory, try again... */
+	    if (  ( GLOBUS_NULL != dir ) && ( ++mkdir_try < 20 ) )
+	    {
+		int	rc = globus_l_gass_cache_make_dirtree( dir );
+		if ( GLOBUS_SUCCESS != rc )
+		{
+		    RET_ERROR( rc );
+		}
+		continue;	/* Try again.. */
+	    }
+	    /* No dir specified or time to give up */
+	    else
+	    {
+		RET_ERROR( GLOBUS_L_ENOENT );
+	    }
+	}
+
+	/* Handle other errors */
+	if ( ENOSPC == errno)
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_SPACE );
+	}
+	else if (IS_QUOTA_ERROR(errno))
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED );
+	}
+	else
+	{
+	    CACHE_TRACE2("Error creat()ing '%s'", filepath );
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+	}
+    }
+
+    /* Write a buffer to it.. */
+    if (  ( GLOBUS_NULL != buf ) && ( 0 != buflen )  )
+    {
+	int	written;
+
+	while( buflen > 0)
+	{
+	    written = write( fd, buf, buflen );
+	    if ( written < 0 )
+	    {
+		if ( errno != EINTR )
+		{
+		    CACHE_TRACE2( "creat: Error writing to '%s'; unlinking\n",
+				  filepath );
+		    unlink( filepath );
+		    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+		}
+	    }
+	    else if ( written > 0 )
+	    {
+		buf += written;
+		buflen -= written;
+	    }
+	}
+    }
+
+    /* Close it */
+    while ( close( fd ) < 0 )
+    {
+	if (errno != EINTR)
+	{
+	    CACHE_TRACE2( "creat: Error closing '%s'; unlinking\n", filepath );
+	    unlink( filepath );
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+	}
+    }
+
+    /* Done */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_create() */
+
+/*
+ * globus_l_gass_cache_link()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_link( const char *oldfile,
+			  const char *newfile )
+{
+    int		link_retry = 0;		/* How many link() retries? */
+
+    /* Loop til link fails w/o EINTR or 'til link succeeds */
+    while ( link( oldfile, newfile ) < 0 )
+    {
+	if ( EINTR == errno )
+	{
+	    continue;
+	}
+	else if (errno == ENOSPC)
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_SPACE );
+	}
+	else if ( EEXIST == errno )
+	{
+	    RET_ERROR( GLOBUS_L_EEXISTS );
+	}
+	/*else if (  ( ENOENT == errno ) || ( EINVAL == errno )  ) */
+	else if ( ENOENT == errno )
+	{
+	    int		rc;
+
+	    /* RedHat 6.2 seems to return ENOENT sometimes even though
+	     * it *does* exist & stat says so.  So, we'll stat it, and, if
+	     * it does exist, sleep a bit & try again. 
+	     */
+	    if ( ++link_retry < LINKBUG_MAX_RETRY )
+	    {
+		rc = globus_l_gass_cache_stat( oldfile, GLOBUS_NULL );
+		if ( GLOBUS_SUCCESS == rc )
+		{
+		    CACHE_TRACE3( 
+			"LINK: link bug encountered; try %d, errno %d",
+			link_retry, errno );
+		    globus_libc_usleep( LINKBUG_SLEEP_USEC );
+		    continue;
+		}
+		RET_ERROR( GLOBUS_L_ENOENT );
+	    }
+	    /* Give up! */
+	    else
+	    {
+		RET_ERROR( GLOBUS_L_ENOENT );
+	    }
+	}
+	else if ( IS_QUOTA_ERROR(errno) )
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED );
+	}
+	else
+	{
+	    MARK_ERRORMSG( GLOBUS_L_EOTHER, oldfile );
+	    MARK_ERRORMSG( GLOBUS_L_EOTHER, newfile );
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+	}
+    }
+
+    /* Return ok */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_link() */
+
+/*
+ * globus_l_gass_cache_rename()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_rename( const char *oldfile,
+			    const char *newfile )
+{
+    int		rename_retry = 0;	/* How many rename() retries? */
+
+    /* Loop til link fails w/o EINTR or 'til link succeeds */
+    while ( rename( oldfile, newfile ) < 0 )
+    {
+	if ( EINTR == errno )
+	{
+	    continue;
+	}
+	else if (errno == ENOSPC)
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_SPACE );
+	}
+	else if ( EEXIST == errno )
+	{
+	    RET_ERROR( GLOBUS_L_EEXISTS );
+	}
+	else if ( ENOENT == errno )
+	{
+	    int		rc;
+
+	    /* RedHat 6.2 seems to return ENOENT sometimes even though
+	     * it *does* exist & stat says so.  So, we'll stat it, and, if
+	     * it does exist, sleep a bit & try again. 
+	     */
+	    if ( ++rename_retry < LINKBUG_MAX_RETRY )
+	    {
+		rc = globus_l_gass_cache_stat( oldfile, GLOBUS_NULL );
+		if ( GLOBUS_SUCCESS == rc )
+		{
+		    CACHE_TRACE3( "RENAME/%d: rename bug encountered; try %d",
+				  getpid(), rename_retry );
+		    globus_libc_usleep( LINKBUG_SLEEP_USEC );
+		    continue;
+		}
+		RET_ERROR( GLOBUS_L_ENOENT );
+	    }
+	    /* Give up! */
+	    else
+	    {
+		RET_ERROR( GLOBUS_L_ENOENT );
+	    }
+	}
+	else if ( IS_QUOTA_ERROR(errno) )
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED );
+	}
+	else
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+	}
+    }
+
+    /* Return ok */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_link() */
+
+/*
+ * globus_l_gass_cache_unlink()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_unlink( const char *filepath )
+{
+    int		tries = 0;
+
+    /* Loop til unlink fails w/o EINTR or 'til link succeeds */
+    while ( unlink( filepath ) < 0 )
+    {
+	/* EINTR; just try again */
+	if ( EINTR == errno )
+	{
+	    if ( ++tries > 20 )
+	    {
+		RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+	    }
+	    continue;
+	}
+
+	/* If it's already gone, then we'll consider it a success */
+	if ( ENOENT == errno )
+	{
+	    return GLOBUS_SUCCESS;
+	}
+
+	/* If it's "busy" wait a bit & try again.. */
+	else if ( EBUSY == errno )
+	{
+	    if ( ++tries > 20 )
+	    {
+		RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+	    }
+	    globus_libc_usleep( EBUSY_SLEEP_USEC );
+	    continue;
+	}
+
+	/* Otherwise, something bad happened. */
+	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE );
+    }
+
+    /* Return ok */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_unlink() */
+
+/*
+ * globus_l_gass_cache_scandir_free()
+ *
+ * Free the list from scandir()
  *
  * Parameters:
  *
- *     file_to_be_locked : path to the file to lock
+ * Returns:
  *
- * Returns: 
+ */
+static
+void
+globus_l_gass_cache_scandir_free( struct dirent **list,
+				  int		count )
+{
+    int		i;
+
+    /* IF the list is empty, do nothing! */
+    if ( GLOBUS_NULL == list )
+    {
+	return;
+    }
+
+    /* Loop til unlink fails w/o EINTR or 'til link succeeds */
+    for( i = 0;  i < count;  i++ )
+    {
+	globus_free( list[i] );
+    }
+    globus_free( list );
+
+} /* globus_l_gass_cache_scandir_free() */
+
+/*
+ * globus_l_gass_cache_scandir()
+ *  
+ * Parameters:
  *
- *     GLOBUS_SUCCESS or
- *     GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR or
- *     GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT
- */	    
+ * Returns:
+ *
+ */
 static
 int
-globus_l_gass_cache_lock_file(
-    char *                       file_to_be_locked,
-    char *                       temp_file)
+globus_l_gass_cache_scandir( const char *directory,
+			     struct dirent ***list,
+			     int (*selectfn)(const struct dirent *) )
 {
-    char   lock_file[PATH_MAX+1];
-    int    temp_file_fd;
-    char   uniq_lock_file[PATH_MAX+1];
-    int    uniq_lock_file_fd;
-    struct stat file_stat, tmp_file_stat;
-    int    return_code=GLOBUS_SUCCESS;
 
-#   ifdef LOCK_TOUT
-	int    lock_tout=0;
-	struct timeval tv;
-#   endif
+#if 0
+    int		count;
 
-    /* build the name of the file used to lock "file_to_be_locked" */
-    globus_l_gass_cache_name_lock_file(lock_file, file_to_be_locked);
-    globus_l_gass_cache_name_uniq_lock_file(uniq_lock_file, file_to_be_locked);
-
-    
-    while ( (uniq_lock_file_fd = creat(uniq_lock_file,
-				       GLOBUS_L_GASS_CACHE_STATE_MODE)) < 0 )
+    /* Loop til unlink fails w/o EINTR or 'til link succeeds */
+    *list = GLOBUS_NULL;
+    while ( ( count = scandir( directory, list, select, alphasort ) ) < 0 )
     {
-	if (errno != EINTR)
+	if ( GLOBUS_NULL != *list )
 	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
+	    globus_free( *list );
+	    *list = GLOBUS_NULL;
+	}
+	/* If it's already gone, then we'll consider it a success */
+	if ( ENOENT == errno )
+	{
+	    RET_ERROR( GLOBUS_L_ENOENT );
+	}
+
+	/* Otherwise, if it's not EINTR, something bad happened. */
+	if ( EINTR != errno )
+	{
+	    RET_ERROR( GLOBUS_L_EOTHER );
 	}
     }
-    
-    /* write its own name in the file, so it could be read in the "common"
-       lock file */
-    /* NOT USED 
-    while ( write(uniq_lock_file_fd, uniq_lock_file, strlen(uniq_lock_file) )
-	    != strlen(uniq_lock_file))
+
+    /* Return ok */
+    return count;
+#else
+    DIR			*dirptr;
+    struct dirent	*dir_entry = GLOBUS_NULL;
+    struct dirent	**newlist;
+    int			newlist_size = 2;
+    int			count = 0;
+    int			rc = GLOBUS_SUCCESS;
+
+    /* Open the directory for reading.. */
+    if (  ( dirptr = globus_libc_opendir( directory ) ) == NULL )
     {
-	if (errno != EINTR)
+	if ( ENOENT == errno )
 	{
-	    if (errno == ENOSPC)
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-            }
-            else if (IS_QUOTA_ERROR(errno))
-            {
-                return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-            }
-            else
-            {
-	        CACHE_TRACE("Error writing state file");
-	        return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-            }
+	    RET_ERROR( GLOBUS_L_ENOENT );
 	}
-    }*/
-    
-    while (close(uniq_lock_file_fd) < 0 )
-    {
-	if (errno != EINTR)
+	else if ( EINTR != errno )
 	{
-	    CACHE_TRACE2("could not close uniq lock file %s",uniq_lock_file);
-	    return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+	    RET_ERROR( GLOBUS_L_EOTHER );
 	}
     }
-    
-    do
+
+    /* Allocate & fill our "head" node */
+    newlist = globus_malloc( newlist_size * sizeof( struct dirent * ) );
+    if ( GLOBUS_NULL == newlist )
     {
-	while ( link(uniq_lock_file, lock_file) < 0)
+	closedir( dirptr );
+	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+    }
+
+    /* Read the whole directory... */
+    for( globus_libc_readdir_r( dirptr, &dir_entry );
+	 ( dir_entry != GLOBUS_NULL ) && ( GLOBUS_SUCCESS == rc );
+	 globus_libc_readdir_r( dirptr, &dir_entry ) )
+    {
+
+	int	keep = GLOBUS_FALSE;
+
+	/* Invoke the select function... */
+	if (  ( GLOBUS_NULL == selectfn ) || ( selectfn( dir_entry ) )  )
 	{
-            /* ENOTEMPTY: I try to ignore it for problems on DFS from a      */
-	    /* Solaris machine                                               */
-	    /* EEXIST : the file is locked by an other process               */
-	    /* EINTR : system call interrupted: retry                        */
-	    if (errno != EEXIST && errno != EINTR  && errno != ENOTEMPTY  )
+	    keep = GLOBUS_TRUE;
+	}
+
+	/* If we should keep this entry.. */
+	if ( GLOBUS_TRUE == keep )
+	{
+	    /* Did we exceed the size of our list? */
+	    if ( count >= newlist_size )
 	    {
-		CACHE_TRACE3("Lock: Could not link files %s and %s\n",uniq_lock_file, lock_file);
-		CACHE_TRACE2("Lock: Errno :%d\n",errno);
-		return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+		struct dirent	**tmp;
+
+		/* Grow our list... */
+		newlist_size *= 2;
+		tmp = globus_realloc( 
+		    newlist,
+		    newlist_size * sizeof( struct dirent *) );
+		if ( GLOBUS_NULL == tmp )
+		{
+		    globus_l_gass_cache_scandir_free( newlist, count );
+		    closedir( dirptr );
+		    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+		}
+		newlist = tmp;
 	    }
 
-#           ifdef LOCK_TOUT
+	    /* The globus readdir_r() function malloc()s the dir_entry,
+	     * so, I can just use it as is */
+	    newlist[count++] = dir_entry;
+	}
+
+	/* Not keeping it;  because readdir_r() malloc()ed dir_entry,
+	 * I must free it */
+	else
+	{
+	    globus_free( dir_entry );
+	}
+    }
+
+    /* Done */
+    *list = newlist;
+    closedir( dirptr );
+    return count;
+
+#endif
+
+} /* globus_l_gass_cache_scandir() */
+
+/*
+ * globus_l_gass_cache_set_timestamp()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_set_timestamp( const char	*filepath,
+				   unsigned long timestamp )
+{
+    struct utimbuf	timebuf;
+    int			rc;
+
+    /* Copy the timestamp into the utime structure */
+    timebuf.actime = (time_t) timestamp;
+    timebuf.modtime = (time_t) timestamp;
+
+    /* Loop til we succeed or fail */
+    while( 1 )
+    {
+	rc = utime( filepath, &timebuf );
+	if ( 0 == rc )
+	{
+	    return GLOBUS_SUCCESS;
+	}
+	else if ( ENOENT == errno )
+	{
+	    RET_ERROR( GLOBUS_L_ENOENT );
+	}
+	else if ( EINTR != errno )
+	{
+	    RET_ERROR( GLOBUS_L_EOTHER );
+	}
+	else
+	{
+	    continue;
+	}
+    }
+
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_set_timestamp() */
+
+/*
+ * globus_l_gass_cache_calc_timeskew()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_calc_timeskew( const char		*tmp_file,
+				   struct timeval	*skew )
+{
+    int			rc;
+    struct timeval	start, end;
+    double		mean;
+    struct stat		statbuf;
+    double		mtime;
+    double		diff;
+
+    /* Get start time */
+    gettimeofday( & start, NULL );
+
+    /* Create the file. */
+    rc = globus_l_gass_cache_create(
+	tmp_file, GLOBUS_NULL, GLOBUS_L_GASS_CACHE_SKEWFILE_MODE,
+	GLOBUS_NULL, 0 );
+    if ( rc != GLOBUS_SUCCESS )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Get the end time. */
+    gettimeofday( & end, NULL );
+
+    /* Go get it's time stamp. */
+    rc = globus_l_gass_cache_stat( tmp_file, &statbuf );
+    if ( rc != GLOBUS_SUCCESS )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Perform the calculations... */
+    mean = 0.5 * ( ( end.tv_sec + ( 1e-6 * end.tv_usec ) ) +
+		   ( start.tv_sec + ( 1e-6 * start.tv_usec ) )  );
+    mtime = statbuf.st_mtime;
+    diff = mtime - mean;
+    skew->tv_sec = ( long ) diff;
+    skew->tv_usec = ( long ) ( ( diff - skew->tv_sec ) * 1e6 );
+
+    /* Done with the file */
+    (void) globus_l_gass_cache_unlink( tmp_file );
+
+    /* Done */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_calc_timeskew() */
+
+/*
+ * globus_l_gass_cache_calc_timeskew()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_calc_file_age( const char	*tmp_file,
+				   time_t	cur_time,
+				   time_t	mtime )
+{
+    static time_t	next_skewcalc = -1;
+    static int		cur_skew = 0;
+    static const  char	*file = GLOBUS_NULL;
+    struct timeval	skew;
+    int			tmp_skew;
+    int			rc;
+    int			age;
+
+    /* Do we need the tmp file? */
+    if (  ( GLOBUS_NULL == file ) && ( GLOBUS_NULL != tmp_file ) )
+    {
+	file = globus_libc_strdup( tmp_file );
+	if ( GLOBUS_NULL == file )
+	{
+	    file = tmp_file;
+	}
+    }
+
+    /* Do we need to recalculate? */
+    if (  ( GLOBUS_NULL != file ) &&
+	  ( ( next_skewcalc < 0 ) || ( cur_time > next_skewcalc ) )  )
+    {
+	next_skewcalc = cur_time + SKEWCALC_SECONDS;
+	rc = globus_l_gass_cache_calc_timeskew( file, & skew );
+	if ( GLOBUS_SUCCESS == rc )
+	{
+	    tmp_skew = skew.tv_sec;
+	    if (  ( skew.tv_usec > 500000 ) && ( cur_skew >= 0 )  )
 	    {
-		lock_tout++;
-		if (lock_tout> LOCK_TOUT)
+		tmp_skew++;
+	    }
+	    else if (  ( skew.tv_usec >= 500000 ) && ( cur_skew < 0 )  )
+	    {
+		tmp_skew--;
+	    }
+
+	    /* Update in one (should be atomic) operation. */
+	    cur_skew = tmp_skew;
+	}
+
+	/* If we're using the tmp file, reset to NULL */
+	if ( file == tmp_file )
+	{
+	    file = GLOBUS_NULL;
+	}
+    }
+
+    /* Perform the calc.. */
+    age = ( cur_time - mtime ) + cur_skew;
+    return age;
+
+} /* globus_l_gass_cache_calc_file_age() */
+
+/*
+ * globus_l_gass_cache_make_dirtree()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_make_dirtree( const char *filepath )
+{
+    char	*temppath = (char *) globus_malloc( strlen( filepath ) + 1 );
+    const char	*pos;
+    int		offset = 0;
+    int		rc;
+    unsigned	length = strlen( filepath );
+    struct stat	statbuf;
+    int		tries = 0;
+
+    /* Check that malloc() dien't fail */
+    if ( NULL == temppath )
+    {
+	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+    }
+
+
+    /* Loop through each component of the path... */
+    while( *(filepath + offset) != '\0' )
+    {
+	pos = strchr( filepath + offset, '/' );
+	if ( NULL == pos )
+	{
+	    pos = filepath + strlen( filepath );
+	}
+
+	/* Calculate the offset of the current "/" in the path */
+	offset = ( pos - filepath );
+
+	/* Copy the up to this "/" into the temp buffer */
+	if ( 0 == offset )
+	{
+	    strcpy( temppath, "/" );
+	}
+	else
+	{
+	    strncpy( temppath, filepath, offset );
+	    *(temppath + offset) = '\0';
+	}
+
+
+	/* Does it exist?  Is it a directory? */
+	rc = globus_l_gass_cache_stat( temppath, &statbuf );
+
+	/* If it exists, make sure its a directory! */
+	if ( GLOBUS_SUCCESS == rc )
+	{
+	    if ( ! S_ISDIR( statbuf.st_mode ) )
+	    {
+		free( temppath );
+		RET_ERROR( GLOBUS_L_ENOTDIR );
+	    }
+	}
+	/* If it doesn't exist, create it */
+	else if ( GLOBUS_L_ENOENT == rc )
+	{
+	    CLR_ERROR;
+	    if ( mkdir( temppath, GLOBUS_L_GASS_CACHE_DIR_MODE ) < 0 )
+	    {
+		/* Check if somebody else beat me to it */
+		if ( EEXIST == errno )
 		{
-		    /* check the age of the file to lock */
-		    while ( stat(lock_file ,&file_stat) != 0)
-		    {
-			if (errno != EINTR)
-			{
-			    CACHE_TRACE2("could not get stat of file %s",
-					 lock_file);
-			    return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
-			}
-		    }
-		    while ( stat(temp_file,&tmp_file_stat) != 0)
-		    {
-			if (errno != EINTR)
-			{
-			    CACHE_TRACE2("could not get stat of file %s",
-					 temp_file);
-			    /*
-			      If this has occurred, then either :
-			      1/ The lock file has either been broken by
-			      another process/thread
-			      2/ the lock has been has been released, 
-			      3/ the locking process crashed just when the
-			      temp file was not here (before creation or after 
-			      rename/deletion) but when the lock was 
-			      already/still there.	
-			      In case 1 and 2 I should try again to acquire
-			      the lock. In case 3 the lock will never be 
-			      released if I do not do some thing. I will create
-			      an empty "temp" file (no trunc) so next time I 
-			      timeout.
-			      I could see that this file is old (or not)
-			      */
-			    while ((temp_file_fd =
-				    open(temp_file,
-					 O_WRONLY |O_CREAT,
-					 GLOBUS_L_GASS_CACHE_STATE_MODE))
-				   == -1)
-			    {
-	                        if (errno == ENOSPC)
-                                {
-                                    return(GLOBUS_GASS_CACHE_ERROR_NO_SPACE);
-                                }
-                                else if (IS_QUOTA_ERROR(errno))
-                                {
-                                    return(GLOBUS_GASS_CACHE_ERROR_QUOTA_EXCEEDED);
-                                }
-				else if (errno != EINTR )
-				{
-	                            return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
-                                }
-			    }
-			    while (close (temp_file_fd) == -1)
-			    {
-				if (errno != EINTR )
-				{
-				    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-				}
-			    }
-  
-			    
-			    /* let's wait again */
-			    lock_tout = 0;
-			    
-			    goto end_of_while;
-			}
-		    }
-		    /* get system time */
-		    gettimeofday(&tv, 0);
-		    
-		    if ( ( file_stat.st_ctime + (LOOP_TIME*LOCK_TOUT)/1000000 < tv.tv_sec) &&
-			 ( tmp_file_stat.st_ctime + (LOOP_TIME*LOCK_TOUT)/1000000 < tv.tv_sec) )
-			
-		    {
-			/* the file has not been accessed for long,
-			 *
-			 * BREAK THE LOCK !!!!!!!!
-			 *
-			 * This is very dangerous, can not be done without
-			 * taking a chance (risk of corruption of the cache)
-			 */
-			/*
-			  CACHE_TRACE2("Lock on %s too old: I BREAK IT !!\n",
-			  file_to_be_locked);
-			  */
-			while ( unlink(temp_file) != 0 )
-			{
-			    if (errno != EINTR && errno != ENOENT )
-			    {
-				CACHE_TRACE2("Could not remove lock file %s",
-					     temp_file);
-				return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-			    }
-			    if (errno == ENOENT )
-			    {
-				break;
-			    }
-			}
-			
-			while (unlink(lock_file) != 0 )
-			{
-			    if (errno != EINTR && errno != ENOENT )
-			    {
-				CACHE_TRACE2("Could not remove lock file %s",lock_file);
-				return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-			    }
-			    if (errno == ENOENT )
-			    {
-				break;
-			    }
-			}
-			return_code=GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT
-			    ;
-		    }
-		    
-		    lock_tout=0;
+		    continue;
 		}
+		/* Somebody else deleted the base out from under us... */
+		else if ( ENOENT == errno )
+		{
+		    /* If we keep failing something else must be wrong */
+		    if ( ++tries > 20 )
+		    {
+			free( temppath );
+			RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
+		    }
+
+		    /* Start the whole process over */
+		    offset = 0;
+		    continue;
+		}
+		/* Something else went wrong; give up. */
 		else
 		{
-		    globus_libc_usleep(LOOP_TIME);
+		    free( temppath );
+		    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
 		}
-	    }
-#           else
-	    {	
-		globus_libc_usleep(LOOP_TIME);
-	    }
-#           endif
-	    /* try again to lock the file */
-
-            end_of_while:
-	    ;
-	}
-
-	while ( stat(uniq_lock_file ,&file_stat) != 0)
-	{
-	    if (errno != EINTR)
-	    {
-		CACHE_TRACE("could not get stat of files");
-		return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
 	    }
 	}
-	
-	if  ( file_stat.st_nlink != 2)
+	/* Otherwise, something else is wrong.. */
+	else
 	{
-	    if (!globus_l_gass_cache_link_works)
-		break;
+	    free( temppath );
+	    RET_ERROR( rc );
+	}
 
-	    /* we manage to create the file, but it is not a hard link
-	       to the uniq_file, for some wird reasons. let try again */
-	    while (unlink(lock_file) != 0 )
+	/* Are we done? */
+	if ( length <= strlen( temppath ) )
+	{
+	    break;
+	}
+
+	/* Move the offset past the "/" for next time */
+	offset++;
+    }
+
+    /* Done */
+    free( temppath );
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_make_dirtree() */
+
+/*
+ * globus_l_gass_cache_remove_dirtree()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_remove_dirtree( const char *base,
+				    const char *tree )
+{
+    char	*fullpath = GLOBUS_NULL;
+    char	*pos;
+    struct stat	statbuf;
+    int		rc;
+    unsigned	length = strlen( base );
+
+    /* Make a local copy of hte full path.. */
+    fullpath = globus_libc_strdup( tree );
+    if ( GLOBUS_NULL == fullpath )
+    {
+	RET_ERROR( -1 );
+    }
+
+    /* Loop through each component of the path... */
+    while( strlen( fullpath ) > length )
+    {
+	/* Does it exist?  Is it a directory? */
+	rc = globus_l_gass_cache_stat( fullpath, &statbuf );
+	if ( GLOBUS_SUCCESS == rc )
+	{
+	    /* Bomb out if it's not a directory! */
+	    if ( ! S_ISDIR( statbuf.st_mode ) )
 	    {
-		if (errno != EINTR && errno != ENOENT )
-		{
-		    CACHE_TRACE2("Could not remove lock file %s",lock_file);
-		    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-		}
-		if (errno == ENOENT )
-		{
-		    break;
-		}
+		globus_free( fullpath );
+		RET_ERROR( -1 );
 	    }
+	    /* If rmdir fails for any reason, we're hosed */
+	    while ( rmdir( fullpath ) < 0 )
+	    {
+		if ( ENOTEMPTY == errno )
+		{
+		    globus_free( fullpath );
+		    return 1;
+		}
+		else if ( EINTR == errno )
+		{
+		    continue;
+		}
+		else if ( ENOENT == errno )
+		{
+		    break;	/* Somebody else beat me to it! */
+		}
+		globus_free( fullpath );
+		RET_ERROR( -1 );
+	    }
+	}
+	else if ( GLOBUS_L_ENOENT == rc )
+	{
+	    /* Nothing to do */
 	}
 	else
 	{
-	    /* we aquired the lock correctly, lets continue */
-	    break;
+	    globus_free( fullpath );
+	    return rc;
 	}
-	globus_libc_usleep(LOOP_TIME);
-	
-	/* try again to lock the file */
-    } while ( 1 );
-    
-    return(return_code);
-}
-/* globus_l_gass_cache_lock_file() */
 
+	/* Back up one level... */
+	pos = strrchr( fullpath, '/' );
+	*pos = '\0';
+    }
+
+    /* Done */
+    globus_free( fullpath );
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_remove_dirtree() */
 
 /*
- * globus_l_gass_cache_unlock_file()
+ * globus_l_gass_cache_scandir_select_uniq()
  *
- * Remove the lock previously created by globus_l_gass_cache_lock_file()
- *
- * Parameters:
- *
- *     file_to_be_locked - path to the file to lock
- *
- * Returns: 
- *     GLOBUS_SUCCESS or
- *     GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK
- */  
-static
-int
-globus_l_gass_cache_unlock_file(
-    char *                        file_to_be_locked)
-{
-    char   lock_file[PATH_MAX+1];
-
-    char   uniq_lock_file[PATH_MAX+1];
- 
-    /* build the name of the file used to lock "file_to_be_locked" */
-    globus_l_gass_cache_name_lock_file(lock_file, file_to_be_locked);
-    globus_l_gass_cache_name_uniq_lock_file(uniq_lock_file, file_to_be_locked);
- 
-    /* remove the lock */
-    while (unlink(lock_file) != 0 )
-    {
-	if (errno != EINTR && errno != ENOENT )
-	{
-	    CACHE_TRACE("Could not remove lock file");
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-	}
-	if (errno == ENOENT )
-	{
-	    break;
-	}
-    }
-    while ( unlink(uniq_lock_file) != 0 )
-    {
-	if (errno != EINTR && errno != ENOENT)
-	{
-	    /* it strangely happens that the file is not here any more */
-	    /* well, all my  test seems to show it work like this......*/
-	    break;
-	}
-	if (errno == ENOENT )
-	{
-	    break;
-	}
-    }
-    
-    return(GLOBUS_SUCCESS); 
-}
-/* globus_l_gass_cache_unlock_file() */
-
-/*
- * globus_l_gass_cache_lock_open()
- *
- * Check if the cache state file is locked; wait it is unlocked
- * using a simple sleep loop and lock it.
- * The lock is implemented using a hard link on the file to lock.
- *
- * Open the cache state file when locked.
- *  
- * It also initialise the file if it is empty (first use) (this is done in
- * this function because we need the file to be locked before it can be
- * modified)
+ * Select only files which match any file name.  Passed as the third
+ * paramter to scandir()
  *  
  * Parameters:
  *
- *      cache_handle - handler to the chache directory to use.
- *      cache_handle->state_file_path  and
- *      cache_handle->state_file_lock_path
- *	
- *      cache_handle->state_file_fd - file descriptor of the open
- *      cache state file
- *	    
- *      cache_handle->temp_file_fd - file descriptor of an open
- *      temporary cache state file into which every modification
- *      made to the cache state file is stored. Used to prevent
- *      cache state file corruption in case of proglobus_gramm
- *      crash.
- *      the temporary file will "atomically" overwrite the
- *      cache state file by the function
- *      globus_l_gass_cache_unlock_close()
- *	   
- *      cache_handle->nb_entries  - If the cache state file was empty,
- *      this variable is initialised to 0 (zero).
- *	    
  * Returns:
- *      GLOBUS_SUCCESS or error code:
- *      GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR or
- *      GLOBUS_GASS_CACHE_ERROR_OPEN_STATE or
- *      GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT (Not implemented in this version)
- */ 
+ *	- 0: Don't include in the dirlist
+ *	- <>0: Include in dirlist
+ */
 static
 int
-globus_l_gass_cache_lock_open(
-    globus_gass_cache_t*             cache_handle)
+globus_l_gass_cache_scandir_select_uniq(const struct dirent *entry )
 {
-    int rc;
+    const char	*pattern = DATA_FILE_PAT;
 
-    rc =globus_l_gass_cache_lock_file(cache_handle->state_file_path,
-				      cache_handle->temp_file_path);
-    if ( rc != GLOBUS_SUCCESS && rc !=GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT)
+    /* All uniq files should start with our "data" pattern */
+    return ( ! strncmp( entry->d_name, pattern, DATA_FILE_PAT_LEN )  );
+
+} /* globus_l_gass_cache_scandir_select_uniq() */
+
+/*
+ * globus_l_gass_cache_scandir_select_uniq()
+ *
+ * Select only files which match our "uniq" pattern.  Passed as the
+ * third paramter to scandir()
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	- 0: Don't include in the dirlist
+ *	- <>0: Include in dirlist
+ */
+static
+int
+globus_l_gass_cache_scandir_select_all(const struct dirent *entry )
+{
+    (void) entry;
+    return 1;
+
+} /* globus_l_gass_cache_scandir_select_all() */
+
+/*
+ * globus_l_gass_cache_create_uniq_global_file()
+ *
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	- GLOBUS_SUCCESS
+ *	- GLOBUS_L_ENOTUNIQ		- We ddin't win the race
+ *	- Returned failures from globus_l_gass_cache_creat()
+ *	- Returned failures from globus_l_gass_cache_link()
+ *	- Returned failures from globus_l_gass_cache_unlink()
+ */
+static
+int
+globus_l_gass_cache_create_uniq_global_file( const cache_names	*names )
+{
+    int			rc;
+    int			uniq_count;
+    struct dirent 	**uniq_list = NULL;
+    struct stat		statbuf;
+    int			uniq_num;
+    ino_t		uniq_inode;
+    int			lower_inode_found = GLOBUS_FALSE;
+    const char		*TODOname = NULL;
+    ino_t		TODOinode;
+
+    /* Create my uniq file */
+    rc = globus_l_gass_cache_create( 
+	names->global_uniq_file, names->global_dir,
+	GLOBUS_L_GASS_CACHE_UNIQFILE_MODE,
+	GLOBUS_NULL, 0 );
+
+    /* Other error */
+    if ( rc < 0 )
     {
-	return(rc);
+	RET_ERROR( rc );
     }
 
-    GLOBUS_L_GASS_CACHE_LG2("State file %s LOCKED", cache_handle->state_file_path );
+    /* Stat *my* file */
+    rc = globus_l_gass_cache_stat( names->global_uniq_file, &statbuf );
 
-    while ((cache_handle->state_file_fd =
-	    open(cache_handle->state_file_path,
-		 O_RDWR,GLOBUS_L_GASS_CACHE_STATE_MODE))
-	   == -1)
+    /* There are no errors that I can handle here... */
+    if ( rc < 0 )
     {
-	if ( errno != EINTR )
+	(void) globus_l_gass_cache_unlink( names->global_uniq_file );
+	RET_ERROR( rc );
+    }
+    uniq_inode = statbuf.st_ino;
+
+    /* Scan the directory; we're looking at *all* of the "uniq" files */
+    rc = globus_l_gass_cache_scandir( 
+	names->global_dir,
+	&uniq_list,
+	globus_l_gass_cache_scandir_select_uniq );
+
+    /* ENOENT means the directory somehow got smoked on us... */
+    if ( GLOBUS_L_ENOENT == rc )
+    {
+	(void) globus_l_gass_cache_unlink( names->global_uniq_file );
+	RET_ERROR( rc );
+    }
+    /* Something else bad happenned */
+    else if ( rc < 0 )
+    {
+	(void) globus_l_gass_cache_unlink( names->global_uniq_file );
+	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
+    }
+    /* rc == 0 means no matches...  Something's wrong.. */
+    else if ( 0 == rc )
+    {
+	if ( GLOBUS_NULL != uniq_list )
 	{
-	    /* well, if we can not open the state file,there is probably
-	       a serious problem. but any way, lets try to unlock it before
-	       we return an error */
-	    globus_l_gass_cache_unlock_file(cache_handle->state_file_path);
-	    GLOBUS_L_GASS_CACHE_LG("Could not open the state file");
-	    return(GLOBUS_GASS_CACHE_ERROR_OPEN_STATE);
+	    globus_free( uniq_list );
+	}
+	(void) globus_l_gass_cache_unlink( names->global_uniq_file );
+	RET_ERROR( GLOBUS_L_ENOENT );
+    }
+    /* rc >= 0 is the number of matches found; just *my* file (hopefully) */
+    else if ( 1 == rc )
+    {
+	globus_l_gass_cache_scandir_free( uniq_list, 1 );
+	return GLOBUS_SUCCESS;
+    }
+
+    /* More than one "uniq" file.  Look at them all, find the lowest inode */
+    /* If we're the lowest, return SUCCESS, else ENOTUNIQ */
+    uniq_count = rc;
+    for ( uniq_num = 0;  uniq_num < uniq_count; uniq_num++ )
+    {
+	/* Don't need to stat my uniq; I already did that above. */
+	if ( ! strcmp( names->uniq, uniq_list[uniq_num]->d_name ) )
+	{
+	    /* If it's indoe # is lower than mine, it wins, we lose */
+	    if ( uniq_list[uniq_num]->d_ino < uniq_inode )
+	    {
+		lower_inode_found = GLOBUS_TRUE;
+		TODOname = globus_libc_strdup( uniq_list[uniq_num]->d_name );
+		TODOinode = uniq_list[uniq_num]->d_ino;
+		break;		/* Don't need to look any further */
+	    }
 	}
     }
-    
-    do
+
+    /* Free up the list that scandir() built so we don't leak memory */
+    globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
+
+    /* Found a lower inode; it wins, we lose */
+    if ( GLOBUS_TRUE == lower_inode_found )
     {
-	rc = read( cache_handle->state_file_fd,
-		    cache_handle->comment,
-		    sizeof(cache_handle->comment));
-    
-        if (rc!=sizeof(cache_handle->comment))
+	CACHE_TRACE5( "INODE %d '%s' < %d '%s'",
+		      TODOinode, TODOname, uniq_inode, 
+		      names->global_uniq_file );
+	free( (void *) TODOname );
+	rc = globus_l_gass_cache_unlink( names->global_uniq_file );
+	if (  ( GLOBUS_L_ENOENT != rc ) && ( rc < 0 )  )
 	{
-	    
-	    if (rc == -1 &&errno == EINTR)
+	    RET_ERROR( rc );
+	}
+	RET_ERROR( GLOBUS_L_ENOTUNIQ );
+    }
+    else
+    {
+	return GLOBUS_SUCCESS;
+    }
+
+} /* globus_l_gass_cache_create_uniq_global_file() */
+
+/*
+ * globus_l_gass_cache_create_global_url_file()
+ *
+ * Create the global "URL" file
+ * Note: Currently we're not checking the URL for match
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	Errors returned by _build_filename(), _create(), _link()
+ */
+static
+int
+globus_l_gass_cache_create_global_url_file( cache_names	*names )
+{
+    int		rc = GLOBUS_SUCCESS;
+    char	*uniq_filename = GLOBUS_NULL;
+
+    /* Build "uniq" file name */
+    rc = globus_l_gass_cache_build_filename( 
+	names->global_dir,
+	URL_FILE,
+	names->uniq,
+	GLOBUS_FALSE,
+	&uniq_filename );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Write the file */
+    rc = globus_l_gass_cache_create( 
+	uniq_filename, names->global_dir, GLOBUS_L_GASS_CACHE_URLFILE_MODE,
+	names->url, strlen( names->url )  );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	globus_free( uniq_filename );
+	RET_ERROR( rc );
+    }
+
+    /* Link it to the real URL file */
+    rc = globus_l_gass_cache_link( uniq_filename, names->global_url_file );
+    (void) globus_l_gass_cache_unlink( uniq_filename );
+    globus_free( uniq_filename );
+    if ( GLOBUS_L_EEXISTS == rc )
+    {
+	/* Probably, here, we should verify that the URLs match... */
+	return GLOBUS_SUCCESS;
+    }
+    else if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* All ok! */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_create_global_url_file() */
+
+/*
+ * globus_l_gass_cache_create_global_file()
+ *
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	- GLOBUS_SUCCESS
+ *	- Returned failures from globus_l_gass_cache_creat()
+ *	- Returned failures from globus_l_gass_cache_link()
+ *	- Returned failures from globus_l_gass_cache_unlink()
+ */
+static
+int
+globus_l_gass_cache_create_global_file( cache_names	*names )
+{
+    int			rc = GLOBUS_SUCCESS;
+    int			uniq_count;
+    struct dirent 	**uniq_list;
+
+    /* Build file name */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_filename( 
+	    names->global_dir,
+	    DATA_FILE_PAT,
+	    names->uniq,
+	    GLOBUS_FALSE,
+	    &names->global_uniq_file );
+    }
+
+    /* Scan the directory */
+    uniq_count = globus_l_gass_cache_scandir( 
+	names->global_dir,
+	&uniq_list,
+	globus_l_gass_cache_scandir_select_uniq );
+
+    /* We're not actually interested in the list itself, so free it */
+    if ( uniq_count >= 0 )
+    {
+	globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
+    }
+    if ( GLOBUS_L_ENOENT == uniq_count )
+    {
+	return GLOBUS_L_ENOENT;
+    }
+    else if ( uniq_count < 0 )
+    {
+	return GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE;
+    }
+
+    /* By definition, to be here, the count is zero... */
+
+    /* Create my uniq file */
+    rc = globus_l_gass_cache_create_uniq_global_file( names );
+    if ( rc < 0 )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Create my "URL" file */
+    rc = globus_l_gass_cache_create_global_url_file( names );
+    if ( rc < 0 )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Done; all ok */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_create_global_file() */
+
+/*
+ * globus_l_gass_cache_make_ready()
+ *
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_make_ready( cache_names	*names,
+				unsigned long	timestamp )
+{
+    struct stat		statbuf;
+    int			rc = GLOBUS_SUCCESS;
+
+    /* Build the file names */
+    /* Note that these will be freed by the top level call to names_free() */
+
+    /* Build the uniq file name */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_filename( 
+	    names->global_dir, DATA_FILE_PAT, names->uniq, GLOBUS_FALSE,
+	    &names->global_uniq_file );
+    }
+
+    /* Handle errors */
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Does the uniq file exist?  If so, something's wrong! */
+    while ( 1 )
+    {
+	rc = globus_l_gass_cache_stat( names->global_uniq_file, &statbuf );
+	if ( GLOBUS_L_ENOENT == rc )
+	{
+	    /* If uniq doesn't exist & data does, it's already ready! */
+	    rc = globus_l_gass_cache_stat( names->global_data_file,
+					   GLOBUS_NULL );
+	    if ( GLOBUS_SUCCESS == rc )
 	    {
-		continue;
-	    }
-	    if (rc == 0)
-	    {
-		/* file is probably empty */
-		/* initialise the number of entries */
-		cache_handle->nb_entries=0;
-		/* Write the  comment */
-		rc = globus_l_gass_cache_write_comment(
-		    cache_handle,
-		    cache_handle->state_file_fd);
-		if (rc != GLOBUS_SUCCESS)
-		{
-		    globus_l_gass_cache_unlock_close(
-			cache_handle,
-			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		    return(rc);
-		}
-		/* write the number of entry, 0 */
-		rc = globus_l_gass_cache_write_nb_entries(
-		    cache_handle->state_file_fd,
-		    0);
-		if (rc != GLOBUS_SUCCESS)
-		{
-		    globus_l_gass_cache_unlock_close(
-			cache_handle,
-			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		    return(rc);
-		}
-		lseek(cache_handle->state_file_fd, 0,SEEK_SET);
-		/*
-		rc=sizeof(cache_handle->comment);
-		*/
-		continue;
-		
+		RET_ERROR( GLOBUS_L_READY_MYPROC );
 	    }
 	    else
 	    {
-		CACHE_TRACE("Error reading  state file");
-		globus_l_gass_cache_unlock_close(
-		    cache_handle,
-		    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_READ);
+		RET_ERROR( GLOBUS_L_ENODATA );
 	    }
 	}
-	else
+	else if ( GLOBUS_SUCCESS != rc )
 	{
-	    /* comment read correctly */
-	    cache_handle->comment[sizeof(cache_handle->comment)-1]='\0';
-	    /* verify the version number */
-	    if (strncmp(cache_handle->comment,"# Gass_cache state file",23))
-	    {
-		int nbfield_scanned;
-
-		nbfield_scanned = sscanf(cache_handle->comment,
-					 "-Version %5u",
-					 &cache_handle->version);
-		if (nbfield_scanned != 1)
-		{
-		    globus_l_gass_cache_unlock_close(
-			cache_handle,
-			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-		}
-		
-		if (cache_handle->version >
-		    GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION)
-		{
-		    globus_l_gass_cache_unlock_close(
-			cache_handle,
-			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		    return(GLOBUS_GASS_CACHE_ERROR_INVALID_VERSION);
-		}
-		
-	    }
-	    else /* version beta has no version number and is equivalent to */
-		 /* version 1 */               
-	    {
-		cache_handle->version = 1;
-	    }
-	    
+	    RET_ERROR( rc );
 	}
-    } while (rc!=sizeof(cache_handle->comment)); /* just to handle the EINTR */
-    
-    GLOBUS_L_GASS_CACHE_LG("State file opened");
-    while ((cache_handle->temp_file_fd =
-	    open(cache_handle->temp_file_path,
-		 O_WRONLY |O_CREAT|O_TRUNC,
-		 GLOBUS_L_GASS_CACHE_STATE_MODE ))
-	   == -1)
-    {
-	if (errno != EINTR )
+	if ( S_ISDIR( statbuf.st_mode ) )
 	{
-	    GLOBUS_L_GASS_CACHE_LG(
-		"Could not open/create the temporary state file");
-	    globus_l_gass_cache_unlock_close(
-		cache_handle,
-		GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	    return(GLOBUS_GASS_CACHE_ERROR_OPEN_STATE);
+	    RET_ERROR( GLOBUS_L_EOTHER );
 	}
-    }
 
-    GLOBUS_L_GASS_CACHE_LG("Temporary State file opened");
-    
-    return (GLOBUS_SUCCESS);
-}
-/* globus_l_gass_cache_lock_open() */
-
-/*
- * globus_l_gass_cache_unlock_close()
- *
- * Close the state file of the cache and remove its lock.
- * Actually, because of the choice of using a temporary state file
- * to avoid file corruption, some more is done:
- * 
- *      - the number of entries is writen at the end of the temp file,
- *      - the temporary state file and the state are closed, 
- *      - if the function is called with the parameter "commit",
- *        the temporary state file "atomically" overwrite the state
- *        file (using a rename system call), and therefor, the changes are
- *        commited.
- *      - if the function is called with the parameter "abort",
- *        the temporary file is just abandonned, and the changes are
- *        therefor discarded.
- *
- *      - The lock is removed
- *    
- * Parameters:
- *
- *      cache_handle - handler to the chache directory to use.
- *      cache_handle->state_file_path  and
- *	cache_handle->temp_file_fd     and
- *	cache_handle->state_file_lock_path are used to access
- *	the corresponding files.
- *
- * Returns:
- *      BLOBUS_SUCCESS or error code:
- *      GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR if the lock could not be removed,
- *      error code returned by globus_l_gass_cache_write_nb_entries()
- */ 
-static
-int
-globus_l_gass_cache_unlock_close(
-    globus_gass_cache_t *           cache_handle,
-    globus_bool_t                   abort)
-{
-    /* return code                  */
-    int                 rc;                  
-    struct stat         lock_stat;   
-    char   uniq_lock_file[PATH_MAX+1];
-
-    /* before I close, I want to write the number of entries */
-    if (!abort)
-    {
-	    rc = globus_l_gass_cache_write_nb_entries(
-		cache_handle->temp_file_fd,
-		cache_handle->nb_entries);
-	    
-	    if ( rc!= GLOBUS_SUCCESS )
-	    {
-		globus_l_gass_cache_unlock_close(cache_handle,
-						 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		return(rc);
-	    }
-    }
-    if (cache_handle->state_file_fd >0 )
-    {
-	if (close(cache_handle->state_file_fd) <0)
+	/* Set the uniq file's timestamp */
+	rc = globus_l_gass_cache_set_timestamp(
+	    names->global_uniq_file, timestamp );
+	if ( GLOBUS_L_ENOENT == rc )
 	{
-	    GLOBUS_L_GASS_CACHE_LG("Error closing the state file");
-	    /* do not return: we want to [try to] unlock it any way */
+	    continue;	/* Do nothing, loop back to top, should fail stat() */
 	}
-	cache_handle->state_file_fd = -1;
-    }
-    if (cache_handle->temp_file_fd>0 )
-    {
-	if (close(cache_handle->temp_file_fd) <0)
+	else if ( GLOBUS_SUCCESS != rc )
 	{
-	    GLOBUS_L_GASS_CACHE_LG("Error closing the temporary state file");
-	    /* do not return: we want to [try to] unlock it any way */
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
 	}
-	cache_handle->temp_file_fd = -1;
-    }
 
-    /* for test purpose: add this so you can remove manually the lock...
-       sleep(10);
-       */
-    
-    /* if I still have the lock
-     */    
-    globus_l_gass_cache_name_uniq_lock_file(uniq_lock_file,
-					    cache_handle->state_file_path);
-    while ((rc =  stat(uniq_lock_file,
-		      &lock_stat)) != 0)
-    {
-	if (errno != EINTR )
+	/* Create a link between uniq and data */
+	rc = globus_l_gass_cache_link( names->global_uniq_file,
+				       names->global_data_file );
+
+	/* If successful, exit the loop */
+	if ( GLOBUS_SUCCESS == rc )
 	{
 	    break;
 	}
-    }
 
-    if ((rc==0) && (!globus_l_gass_cache_link_works || lock_stat.st_nlink==2))
-    {
-	/* I still have the lock */
-
-	if (!abort)                    /* if (abort=GLOBUS_SUCCESS) */
+	/* Handle errors from link() */
+	if ( GLOBUS_L_EEXISTS == rc )
 	{
-	    if (rename(cache_handle->temp_file_path,cache_handle->state_file_path))
-	    {
-		/* that is too bad... and should not happen... lets test it...   */
-		GLOBUS_L_GASS_CACHE_LG("Error renaming the temporary state file/state file");
-	    }
+	    /* Other process beat us to it; no harm done, though... */
+	    CACHE_TRACE2( "MAKE_READY: Lost, unlinking '%s'",
+			  names->global_uniq_file );
+	    globus_l_gass_cache_unlink( names->global_uniq_file );
+	    RET_ERROR( GLOBUS_L_READY_OTHER );
+	}
+	else if ( GLOBUS_L_ENOENT == rc )
+	{
+	    /* Do nothing, loop back to top, should fail stat() */
 	}
 	else
 	{
-	    if (unlink(cache_handle->temp_file_path))
-	    {
-		GLOBUS_L_GASS_CACHE_LG("Error unlinking the temporary state file");
-	    }
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
 	}
-	
-	/* release the lock */
-	rc = globus_l_gass_cache_unlock_file(cache_handle->state_file_path);
-	if ( rc != GLOBUS_SUCCESS)
+    }
+
+    /* And, unlink the "uniq" version, leaving behind only the global */
+    rc = globus_l_gass_cache_unlink( names->global_uniq_file );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Done. */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_make_ready() */
+
+/*
+ * globus_l_gass_cache_make_unready()
+ *
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	GLOBUS_L_CACHE_UNLINK_LAST
+ *
+ */
+static
+int
+globus_l_gass_cache_make_unready( cache_names	*names )
+{
+# if GLOBUS_L_GASS_CACHE_RENAMEBUG
+    struct stat	statbuf;
+    int		lock_age;
+    time_t	cur_time;
+# endif
+    int		rc = GLOBUS_SUCCESS;
+
+    /* Build the name of the uniq file... */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_filename( 
+	    names->global_dir, DATA_FILE_PAT, names->uniq, GLOBUS_FALSE,
+	    &names->global_uniq_file );
+    }
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+
+    /* The RedHat 6.2 kernel (2.2.19) seems to have a race bug in which
+     * rename() allows two processes to "win".  i.e.:
+     * process a: a=rename("x", "a");
+     * process b: b=rename("x", "b");
+     * Results: a==0, b==0, file "x" gone, but "a" and "b" are hard
+     * links to each other.  This is a work-around for this bug
+     */
+# if GLOBUS_L_GASS_CACHE_RENAMEBUG
+
+    /*
+     * 1. Link data -> lock
+     * 2a. Fail: Check lock age, break lock if old, start over
+     * 2b. Fail, lock not old: return ENODATA
+     * 2c. Ok: Rename 'data' -> data.uniq
+     */
+
+    /* Create lock file name */
+    rc = globus_l_gass_cache_build_filename(
+	names->global_dir, LOCK_FILE, GLOBUS_NULL, GLOBUS_FALSE, 
+	&names->globaldir_lock_file );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Loop 'til we get the lock ok, lock taken, or failure */
+    while( 1 )
+    {
+
+	/* Link it to the lock file */
+	rc = globus_l_gass_cache_link( names->global_data_file,
+				       names->globaldir_lock_file );
+
+	/* If ok, we win! */
+	if ( GLOBUS_SUCCESS == rc )
 	{
-	    return(rc);
+	    break;
+	}
+	/* Some other process killed our temp file! */
+	else if ( GLOBUS_L_ENOENT == rc )
+	{
+	    CACHE_TRACE( "Unready; data file (@link) gone!" );
+	    RET_ERROR( GLOBUS_L_ENODATA );
 	}
 
-    
+	/* Some other error from link().  Bomb out */
+	else if ( GLOBUS_L_EEXISTS != rc )
+	{
+	    MARK_ERRORMSG( rc, names->global_data_file );
+	    MARK_ERRORMSG( rc, names->globaldir_lock_file );
+	    RET_ERRORMSG( rc, "Unready: unknown link error" );
+	}
+
+	/* Lock file already exists */
+	/* ( GLOBUS_L_EEXISTS == rc ) */
+	CACHE_TRACE( "Unready; didn't get lock (EEXISTS)" );
+
+	/* Check the lock file's status. */
+	rc = globus_l_gass_cache_stat( names->globaldir_lock_file, &statbuf );
+	if ( GLOBUS_L_ENOENT == rc )
+	{
+	    /* It went away; go try again */
+	    CACHE_TRACE( "Unready: Link failed, but ENOENT" );
+	    continue;
+	}
+	else if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+
+	/* Make sure it's still valid */
+	cur_time = time( NULL );
+	lock_age = globus_l_gass_cache_calc_file_age( GLOBUS_NULL,
+						      cur_time,
+						      statbuf.st_mtime );
+	/* If it's too old, invalidate it */
+	if ( lock_age > LOCK_MAX_SECONDS )
+	{
+	    CACHE_TRACE3( "Killing global lock file %s; age = %d sec",
+			  names->globaldir_lock_file, lock_age );
+	    (void) globus_l_gass_cache_unlink( names->globaldir_lock_file );
+	    /* Go back to the top and try again! */
+	    continue;
+	}
+
+	/* Here, we lost the race.  Return ENODATA to the caller. */
+	globus_libc_usleep( LOCK_SLEEP_USEC );
+	rc = GLOBUS_L_ENODATA;
+	break;
     }
+
+# endif
+
+    /* Do the rename if all is ok */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	int	tmp_rc = GLOBUS_SUCCESS;
+	rc = globus_l_gass_cache_rename( names->global_data_file,
+					 names->global_uniq_file );
+
+	/* Unlock the file (if required) */
+#     if GLOBUS_L_GASS_CACHE_RENAMEBUG
+	tmp_rc = globus_l_gass_cache_unlink( names->globaldir_lock_file );
+#     endif
+
+	/* Just call rename.. */
+	if ( ( GLOBUS_SUCCESS == rc ) && ( GLOBUS_SUCCESS == tmp_rc )  )
+	{
+	    return GLOBUS_SUCCESS;
+	}
+	else if ( GLOBUS_L_ENOENT == rc )
+	{
+	    RET_ERROR( GLOBUS_L_ENODATA );
+	}
+	else
+	{
+	    RET_ERROR( GLOBUS_L_EOTHER );
+	}
+    }
+
+    /* Failed to get the lock */
+
+    /* Return the error */
+    RET_ERROR( rc );
+
+} /* globus_l_gass_cache_make_unready() */
+
+/*
+ * globus_l_gass_cache_wait_ready()
+ *
+ * Wait for the global file to become ready.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *  GLOBUS_SUCCESS
+ *  GLOBUS_L_ENODATA - *Data* file does not exist
+ *  Retuned failures from globus_l_gass_cache_stat()
+ *  Retuned failures from globus_l_gass_cache_unlink()
+ *
+ */
+static
+int
+globus_l_gass_cache_wait_ready( const cache_names	*names,
+				unsigned long		*timestamp )
+{
+    int			rc;
+    struct stat		statbuf;
+    time_t		checktime;	/* When should we do a lock check? */
+    int			uniq_count;
+    struct dirent 	**uniq_list = GLOBUS_NULL;
+    int			uniq_num;
+    int			uniq_num_recent;
+    time_t		cur_time;
+
+    /* Run til we're done */
+    checktime = ( time(NULL) + NOTREADY_CHECK_SECONDS );
+    while( 1 )
+    {
+
+	/* Stat the global data file.  If it's there, we're done. */
+	rc = globus_l_gass_cache_stat( names->global_data_file, &statbuf );
+	if ( GLOBUS_SUCCESS == rc )
+	{
+	    if ( GLOBUS_NULL != timestamp )
+	    {
+		*timestamp = (unsigned long) statbuf.st_mtime;
+	    }
+	    return GLOBUS_SUCCESS;
+	}
+	/* If it's not ENOENT, bad... */
+	else if ( GLOBUS_L_ENOENT != rc )
+	{
+	    RET_ERROR( rc );
+	}
+	CLR_ERROR;
+
+	/* Time to check the transfer stats? */
+	if ( time(NULL) < checktime )
+	{
+	    sleep( 1 );
+	    continue;
+	}
+	/* Update for next time.. */
+	checktime = ( time(NULL) + NOTREADY_CHECK_SECONDS );
+
+	/* Scan the directory; we're looking at *all* of the "uniq" files */
+	rc = globus_l_gass_cache_scandir( 
+	    names->global_dir,
+	    &uniq_list,
+	    globus_l_gass_cache_scandir_select_uniq );
+
+	/* ENOENT means the directory somehow got smoked on us... */
+	if ( GLOBUS_L_ENOENT == rc )
+	{
+	    RET_ERROR( GLOBUS_L_ENODATA );
+	}
+	/* Something else bad happenned */
+	else if ( rc < 0 )
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
+	}
+	/* rc == 0 means no matches...  Something's wrong.. */
+	else if ( 0 == rc )
+	{
+	    RET_ERRORMSG( GLOBUS_L_ENODATA, names->global_dir );
+	}
+	/* rc >= 0 is the number of matches found */
+	uniq_count = rc;
+
+	/* Stat them all, check their mtime's */
+	uniq_num_recent = 0;
+	cur_time = time( NULL );
+	for ( uniq_num = 0;  uniq_num < uniq_count; uniq_num++ )
+	{
+	    time_t	age;		/* Age (seconds) of the file */
+
+	    /* Don't need to stat my uniq; I already did that above. */
+	    rc = globus_l_gass_cache_stat( uniq_list[uniq_num]->d_name,
+					   & statbuf);
+	    /* If it's gone away, ignore it.. */
+	    if ( GLOBUS_L_ENOENT == rc )
+	    {
+		CLR_ERROR;
+		continue;
+	    }
+	    else if ( rc < 0 )
+	    {
+		/* BAD */
+		globus_free( uniq_list );
+		RET_ERROR( rc );
+	    }
+
+	    /* Now, if the file's been modified recently, update our oount */
+	    age = globus_l_gass_cache_calc_file_age( GLOBUS_NULL,
+						     cur_time,
+						     statbuf.st_mtime );
+	    if ( age <  NOTREADY_MAX_SECONDS )
+	    {
+		uniq_num_recent++;
+	    }
+	}
+
+	/* Done with the list! */
+	globus_l_gass_cache_scandir_free( uniq_list, uniq_count );
+
+	/*
+	 * If there are none, it means we should give up waiting, and
+	 * take over the download process oursleves.
+	 */
+	if ( 0 == uniq_num_recent )
+	{
+	    RET_ERROR( GLOBUS_L_ENODATA );
+	}
+
+	/* Otherwise, just sleep a bit, then go try the whole thing over.. */
+	sleep( 1 );
+	continue;
+    }
+
+
+} /* globus_l_gass_cache_wait_ready() */
+
+/*
+ * globus_l_gass_cache_find_uniq()
+ *
+ * Find a uniq file
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *  GLOBUS_SUCCESS
+ *  GLOBUS_L_ENODATA - *Data* file does not exist
+ *  Retuned failures from globus_l_gass_cache_stat()
+ *  Retuned failures from globus_l_gass_cache_unlink()
+ *
+ */
+static
+int
+globus_l_gass_cache_find_uniq( const char	*dir,
+			       char		**uniq_file,
+			       int		*uniq_count )
+{
+    int			rc;
+    struct dirent 	**uniq_list = GLOBUS_NULL;
+
+    /* Scan the directory; we're looking at *all* of the "uniq" files */
+    *uniq_count = 0;
+    rc = globus_l_gass_cache_scandir( 
+	dir,
+	&uniq_list,
+	globus_l_gass_cache_scandir_select_uniq );
+
+    /* Something else bad happenned */
+    if ( rc < 0 )
+    {
+	RET_ERROR( GLOBUS_L_ENOENT );
+    }
+    /* rc == 0 means no matches...  Something's wrong.. */
+    else if ( 0 == rc )
+    {
+	RET_ERROR( GLOBUS_L_ENOENT );
+    }
+
+    /* rc >= 0 is the number of matches found */
+    *uniq_count = rc;
+
+    /* Copy out the name of the first one.. */
+    *uniq_file = globus_libc_strdup( uniq_list[0]->d_name );
+
+    /* Free the list */
+    globus_l_gass_cache_scandir_free( uniq_list, *uniq_count );
+
+    /* Done */
+    return (  ( GLOBUS_NULL == uniq_file ) ? 
+	      GLOBUS_GASS_CACHE_ERROR_NO_MEMORY : GLOBUS_SUCCESS );
+
+} /* globus_l_gass_cache_find_uniq() */
+
+/*
+ * globus_l_gass_cache_lock_delay()
+ *
+ * Sleep for LOOP_LOCK_TIME uSeconds, but backs off based on the value of
+ * tryno, and also has a random factor built in.
+ *
+ * Parameters:
+ *
+ *	tryno : Attempt number
+ *
+ * Returns: 
+ *
+ *     # Of uSec acutal slept
+ */
+static
+long
+globus_l_gass_cache_lock_delay( int tryno )
+{
+    long	usec;
+
+    usec = LOCK_SLEEP_USEC + ( random() % LOCK_SLEEP_USEC );
+    if ( tryno > 5 )
+	usec >>= 1;
+    if ( tryno > 10 )
+	usec >>= 1;
+    if ( tryno > 100 )
+	usec >>= 1;
+    if ( tryno > 1000 )
+	usec >>= 1;
+    if ( 0 != usec )
+    {
+	globus_libc_usleep( usec );
+    }
+    return usec;
+}
+/* globus_l_gass_cache_lock_delay() */
+
+/*
+ * globus_l_gass_cache_lock_local_dir()
+ *
+ * Lock the local directory
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_lock_local_dir( cache_names	*names,
+				    const char	*existing_file )
+{
+    int			rc;
+    struct stat		statbuf;
+    time_t		cur_time;
+    int			tryno = 0;
+    int			lock_age;
+
+    /* Build the lock file name */
+    rc = globus_l_gass_cache_build_filename(
+	names->local_dir, LOCK_FILE, GLOBUS_NULL,
+	GLOBUS_FALSE, &names->localdir_lock_file );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+    CACHE_TRACE2( "Locking local dir '%s'", names->local_dir );
+
+    /* Run til we're done */
+    while( 1 )
+    {
+	/* Link to the lock file.  If it works, we're done */
+	rc = globus_l_gass_cache_link( existing_file, 
+				       names->localdir_lock_file );
+	if ( GLOBUS_SUCCESS == rc )
+	{
+	    CACHE_TRACE3( "Lock on %s ok after %d retries",
+			  names->local_dir, tryno );
+	    return GLOBUS_SUCCESS;
+	}
+	/* If it's not EEXISTS, bad... */
+	else if ( GLOBUS_L_EEXISTS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+	CLR_ERROR;
+
+	/* EEXISTS; check the lock file time stamp */
+	rc = globus_l_gass_cache_stat( names->localdir_lock_file, &statbuf );
+	if ( GLOBUS_L_ENOENT == rc )
+	{
+	    CLR_ERROR;
+	    continue;
+	}
+	else if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+
+	/* Has the file been modified recently?  If not, then probably
+	   the process which is downloading it died */
+	cur_time = time( NULL );
+	lock_age = globus_l_gass_cache_calc_file_age( GLOBUS_NULL,
+						      cur_time,
+						      statbuf.st_mtime );
+	if ( lock_age > LOCK_MAX_SECONDS )
+	{
+	    /* Kill the file and start over */
+	    rc = globus_l_gass_cache_unlink( names->localdir_lock_file );
+	    if ( GLOBUS_SUCCESS != rc )
+	    {
+		RET_ERROR( rc );
+	    }
+	    continue;
+	}
+
+	/* Sleep for a bit, then go back and try again.. */
+	globus_l_gass_cache_lock_delay( tryno++ );
+    }
+
+} /* globus_l_gass_cache_lock_local_dir() */
+
+/*
+ * globus_l_gass_cache_unlock_local_dir()
+ *
+ * Unlock the local directory
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_unlock_local_dir( cache_names	*names,
+				      const char	*target_name )
+{
+    int		rc = GLOBUS_SUCCESS;
+
+    /* Build the lock file name (should be valid already, but doesn't hurt */
+    rc = globus_l_gass_cache_build_filename(
+	names->local_dir, LOCK_FILE, GLOBUS_NULL,
+	GLOBUS_FALSE, &names->localdir_lock_file );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* If the target name is valid, rename to it.. */
+    if ( GLOBUS_NULL != target_name )
+    {
+	CACHE_TRACE3( "Unlocking local dir '%s' -> '%s'",
+		      names->local_dir, target_name );
+	rc = globus_l_gass_cache_rename( names->localdir_lock_file,
+					 target_name );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+
+	/* Huh? */
+	if ( globus_l_gass_cache_stat( names->localdir_lock_file, GLOBUS_NULL )
+	     == GLOBUS_SUCCESS )
+	{
+	    CACHE_TRACE2( "Unlock: '%s' stats ok\n", 
+			  names->localdir_lock_file );
+	}
+	if ( globus_l_gass_cache_stat( target_name, GLOBUS_NULL )
+	     != GLOBUS_SUCCESS )
+	{
+	    CACHE_TRACE2( "Unlock: '%s' stats ok\n", target_name );
+	}
+    }
+    /* Otherwise, just kill the lock file */
     else
     {
-	/* if I lost the lock, I just leave every thing in place
-	 * and do nothing: I do not want to take a chance of corrupting the
-	 * cache if someone "stole" the lock 
-	 */
-	return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
+	CACHE_TRACE2( "Unlocking local dir '%s' via unlink",
+		      names->local_dir );
+	rc = globus_l_gass_cache_unlink( names->localdir_lock_file );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
     }
-    GLOBUS_L_GASS_CACHE_LG("State file UNlocked");
+
+    /* All ok */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_unlock_local_dir() */
+
+/*
+ * globus_l_gass_cache_create_local_tag_file()
+ *
+ * Create the local "Tag" file
+ * Note: Currently we're not checking the tag for match
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	Errors returned by _build_filename(), _create(), _link()
+ */
+static
+int
+globus_l_gass_cache_create_local_tag_file( cache_names	*names )
+{
+    int		rc = GLOBUS_SUCCESS;
+    char	*uniq_filename = GLOBUS_NULL;
+
+    /* Build "uniq" file name */
+    rc = globus_l_gass_cache_build_filename( 
+	names->tmp_root,
+	TAG_FILE,
+	names->uniq,
+	GLOBUS_FALSE,
+	&uniq_filename );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Write the file */
+    rc = globus_l_gass_cache_create( 
+	uniq_filename, names->local_dir, GLOBUS_L_GASS_CACHE_TAGFILE_MODE,
+	names->tag, strlen( names->tag )  );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	globus_free( uniq_filename );
+	RET_ERROR( rc );
+    }
+
+    /* Create the real tag file by linking to this temp one.. */
+    rc = globus_l_gass_cache_link( uniq_filename, names->local_tag_file );
+    (void) globus_l_gass_cache_unlink( uniq_filename );
+    globus_free( uniq_filename );
+    if ( ( GLOBUS_SUCCESS != rc ) && ( GLOBUS_L_EEXISTS != rc )  )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Link it to the "tag link" file, which is down in the URL subdir */
+    rc = globus_l_gass_cache_link( names->local_tag_file,
+				   names->local_tag_link );
+    if ( ( GLOBUS_SUCCESS != rc ) && ( GLOBUS_L_EEXISTS != rc )  )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* All ok! */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_create_local_tag_file() */
+
+/*
+ * globus_l_gass_cache_make_local_file()
+ *
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *
+ */
+static
+int
+globus_l_gass_cache_make_local_file( cache_names	*names,
+				     const char		*global_name,
+				     const char		*global_uniq )
+{
+    int		rc = GLOBUS_SUCCESS;
+    char	*global_file = GLOBUS_NULL;
+
+    /* Build the uniq file name */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_filename(
+	    names->local_dir, DATA_FILE_PAT, names->uniq,
+	    GLOBUS_FALSE, &names->local_uniq_file );
+    }
+
+    /* Make sure the local directory exists. */
+    rc = globus_l_gass_cache_make_dirtree( names->local_dir );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Create the "tag" file... */
+    rc = globus_l_gass_cache_create_local_tag_file( names );
+
+    /* Build the name of the global file.. */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	/* Note that we're using our own "global_file" here... */
+	rc = globus_l_gass_cache_build_filename(
+	    names->global_dir, global_name, global_uniq, GLOBUS_TRUE,
+	    &global_file );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+    }
+
+    /* Link the global file to the local file. */
+    rc = globus_l_gass_cache_link( global_file, names->local_data_file );
     
-    return (GLOBUS_SUCCESS);
-} /*  globus_l_gass_cache_unlock_close() */
+    /* We're done with the gloal file buffer, so free it right away. */
+    globus_free( global_file );
+
+    /* Now, check the return status of the _link() call above */
+    if ( GLOBUS_L_ENOENT == rc )
+    {
+	RET_ERROR( GLOBUS_L_ENODATA );
+    }
+    else if ( GLOBUS_SUCCESS == rc )
+    {
+	/* Create the tag file */
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+    }
+    else if ( GLOBUS_L_EEXISTS == rc )
+    {
+	CLR_ERROR;	/* This is ok! */
+    }
+    else
+    {	
+	/* Badness 10000 */
+	RET_ERROR( rc );
+    }
+
+    /* Get a lock on the local directory (use data to link from; its easy) */
+    rc = globus_l_gass_cache_lock_local_dir( names, names->local_data_file );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	/* Failed to get lock for some reason.  Bail out. */
+	RET_ERROR( rc );
+    }
+
+    /* Release the lock & create a uniq "link count" file in one op */
+    rc = globus_l_gass_cache_link( names->localdir_lock_file,
+				   names->local_uniq_file );
+    rc = globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
+    /* 				       names->local_uniq_file );*/
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+    return rc;
+
+} /* globus_l_gass_cache_make_local_file() */
+
+/*
+ * globus_l_gass_cache_unlink_local()
+ *
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	GLOBUS_L_CACHE_UNLINK_LAST
+ *
+ */
+static
+int
+globus_l_gass_cache_unlink_local( cache_names	*names )
+{
+    char	*uniq_file = GLOBUS_NULL;
+    int		uniq_count;
+    int		rc = GLOBUS_SUCCESS;
+
+    /* Lock the target tag directory */
+    rc = globus_l_gass_cache_lock_local_dir( names, names->local_data_file );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Find a uniq file to kill... */
+    rc = globus_l_gass_cache_find_uniq( names->local_dir,
+					&uniq_file, 
+					&uniq_count );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	(void) globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
+	RET_ERROR( rc );
+    }
+
+    /* Kill the uniq file */
+    if ( uniq_count > 0 )
+    {
+	char	*uniq_filepath = GLOBUS_NULL;
+	rc = globus_l_gass_cache_build_filename(
+	    names->local_dir, uniq_file, GLOBUS_NULL, GLOBUS_FALSE,
+	    &uniq_filepath );
+	globus_free( uniq_file );	/* We're done with this */
+	uniq_file = GLOBUS_NULL;
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    (void) globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
+	    RET_ERROR( rc );
+	}
+	rc = globus_l_gass_cache_unlink( uniq_filepath );
+	globus_free( uniq_filepath );	/* We're done with this now */
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    (void) globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
+	    RET_ERROR( rc );
+	}
+    }
+
+    /* Free up the buffer for the uniq file. */
+    if ( GLOBUS_NULL != uniq_file )
+    {
+	globus_free( uniq_file );
+    }
+
+    /* If this is the last one, we can do some bigger cleanups... */
+    if ( 1 == uniq_count )
+    {
+	rc = globus_l_gass_cache_unlink( names->local_data_file );
+	if (  ( GLOBUS_SUCCESS != rc ) && 
+	      ( GLOBUS_L_ENOENT != rc ) )
+	{
+	    (void) globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
+	    RET_ERROR( rc );
+	}
+	CLR_ERROR;
+    }
+
+    /* Release the lock */
+    rc = globus_l_gass_cache_unlock_local_dir( names, GLOBUS_NULL );
+    if (  ( GLOBUS_SUCCESS != rc ) && ( GLOBUS_L_ENOENT != rc ) )
+    {
+	RET_ERROR( rc );
+    }
+    CLR_ERROR;
+
+    /* Finally, cleanup the directory tree... */
+    if ( 1 == uniq_count )
+    {
+	struct stat	statbuf;
+
+	/* Kill the local data file */
+	rc = globus_l_gass_cache_unlink( names->local_data_file );
+	if (  ( GLOBUS_SUCCESS != rc ) && 
+	      ( GLOBUS_L_ENOENT != rc ) )
+	{
+	    RET_ERROR( rc );
+	}
+
+	/* Kill the URL under the local tag dir (if empty) */
+	rc = globus_l_gass_cache_remove_dirtree( names->local_root,
+						 names->local_dir );
+
+	/* >0 is ok: remove_dirtree() is oportunistic... */
+	if ( rc < 0 )
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DELETE_DATA_F );
+	}
+
+	/* Kill the tag *link* file */
+	/* It's ok if somebody else beat us to it */
+	(void) globus_l_gass_cache_unlink( names->local_tag_link );
+
+	/* Now, stat the *main* tag file, see how many links it has */
+	/* It's ok if somebody else killed it before us! */
+	rc = globus_l_gass_cache_stat( names->local_tag_file, &statbuf );
+	if ( GLOBUS_SUCCESS == rc )
+	{
+	    if ( 1 == statbuf.st_nlink )
+	    {
+		(void) globus_l_gass_cache_unlink( names->local_tag_file );
+	    }
+	}
+
+	/* Finally, try to kill the rest of the tree... */
+	rc = globus_l_gass_cache_remove_dirtree( names->local_root,
+						 names->local_dir );
+
+	/* >0 is ok: remove_dirtree() is oportunistic... */
+	if ( rc < 0 )
+	{
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DELETE_DATA_F );
+	}
+
+	/* Tell the caller that we've removed the last one.. */
+	return GLOBUS_L_UNLINK_LAST;
+    }
+
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_unlink_local() */
+
+/*
+ * globus_l_gass_cache_unlink_global()
+ *
+ * Unlink the global data & URL file, remove the global directory if empty.
+ *  
+ * Parameters:
+ *	names - File & dir name
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_L_CACHE_UNLINK_LAST
+ *	Errors returned by _stat(), _unlink(), _remove_dirtree()
+ *
+ */
+static
+int
+globus_l_gass_cache_unlink_global( const cache_names	*names )
+{
+    struct stat	statbuf;
+    int		rc = GLOBUS_SUCCESS;
+
+    /* How many links does the global file have? */
+    rc = globus_l_gass_cache_stat( names->global_data_file, &statbuf );
+    if ( GLOBUS_L_ENOENT == rc )
+    {
+	return GLOBUS_SUCCESS;
+    }
+    else if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* If it's still in use, nothing to do! */
+    if ( statbuf.st_nlink > 1 )
+    {
+	return GLOBUS_SUCCESS;
+    }
+
+    /* Kill it */
+    (void) globus_l_gass_cache_unlink( names->global_url_file );
+    rc = globus_l_gass_cache_unlink( names->global_data_file );
+    if ( ( GLOBUS_SUCCESS != rc ) && ( GLOBUS_L_ENOENT != rc ) )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* And, clean up the dirtree.. */
+    rc = globus_l_gass_cache_remove_dirtree( names->global_root, 
+					     names->global_dir );
+    if ( rc < 0 )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Tell the caller that we've removed the last one.. */
+    return GLOBUS_L_UNLINK_LAST;
+
+} /* globus_l_gass_cache_unlink_global() */
+
+/*
+ * globus_l_gass_cache_list_all_urls()
+ *
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	- GLOBUS_SUCCESS
+ *	- GLOBUS_L_ENOTUNIQ		- We ddin't win the race
+ *	- Returned failures from globus_l_gass_cache_creat()
+ *	- Returned failures from globus_l_gass_cache_link()
+ *	- Returned failures from globus_l_gass_cache_unlink()
+ */
+static
+int
+globus_l_gass_cache_list_all_urls( const char		*search_dir,
+				   const char		*base_mangled,
+				   url_list_head	*url_list )
+{
+    int			rc;
+    int			dirent_count;
+    int			dirent_num;
+    struct dirent 	**dirent_list = NULL;
+    struct stat		statbuf;
+    int			file_count = 0;
+
+    /* Scan the directory; we're looking at *all* of the "uniq" files */
+    rc = globus_l_gass_cache_scandir( 
+	search_dir,
+	&dirent_list,
+	globus_l_gass_cache_scandir_select_all );
+
+    /* Something bad happenned */
+    if ( rc < 0 )
+    {
+	CACHE_TRACE2( "SCAN: Error scanning '%s'", search_dir );
+	RET_ERROR( rc );
+    }
+    /* rc == 0 means no matches.  Hmmmm..  Skip it for now  */
+    else if ( 0 == rc )
+    {
+	globus_l_gass_cache_scandir_free( dirent_list, rc );
+	CACHE_TRACE2( "SCAN: Dir '%s': empty", search_dir );
+	RET_ERROR( GLOBUS_L_ENOENT );
+    }
+    /* Just . & .. ? */
+    else if ( rc <= 2 )
+    {
+	globus_l_gass_cache_scandir_free( dirent_list, rc );
+	return GLOBUS_SUCCESS;
+    }
+
+    /* rc >= 0 is the number of matches found */
+    dirent_count = rc;
+    CACHE_TRACE3( "SCAN: Dir '%s': %d entries", search_dir, dirent_count );
+    for ( dirent_num = 0;  dirent_num < dirent_count; dirent_num++ )
+    {
+	const char	*name = dirent_list[dirent_num]->d_name;
+	char		name_path[ PATH_MAX + 1 ];
+
+	/* Build it's full path */
+	strcpy( name_path, search_dir );
+	strcat( name_path, "/" );
+	strcat( name_path, name );
+
+	/* Stat it to find out what it is... */
+	rc = globus_l_gass_cache_stat( name_path, &statbuf );
+
+	/* Errors?! */
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    globus_l_gass_cache_scandir_free( dirent_list, dirent_count );
+	    CACHE_TRACE2( "SCAN: Can't stat '%s'", name_path );
+	    RET_ERROR( rc );
+	}
+
+	/* If it's a file, this must be a URL; mark it & go on */
+	if ( ! S_ISDIR( statbuf.st_mode ) )
+	{
+	    file_count++;
+	}
+	/* Ignore "." and "..", but process all other dirs */
+	else if (  ( strcmp ( name, "." ) ) && ( strcmp( name, ".." ) )  )
+	{
+	    char	new_mangled[ PATH_MAX + 1 ];
+
+	    strcpy( new_mangled, base_mangled );
+	    if ( new_mangled[0] != '\0' )
+	    {
+		strcat( new_mangled, "/" );
+	    }
+	    strcat( new_mangled, name );
+	    rc = globus_l_gass_cache_list_all_urls( name_path,
+						    new_mangled,
+						    url_list );
+	}
+    }
+
+    /* Free up the dirent list */
+    globus_l_gass_cache_scandir_free( dirent_list, dirent_count );
+
+    /* Add myself to the list */
+    if ( file_count )
+    {
+	url_list_elem	*new_url_elem = 
+	    globus_malloc( sizeof( url_list_elem ) );
+	if ( GLOBUS_NULL == new_url_elem )
+	{
+	    CACHE_TRACE( "list_all_files: malloc failed" );
+	    RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+	}
+	else
+	{
+	    new_url_elem->mangled = globus_libc_strdup( base_mangled );
+	    new_url_elem->next = url_list->first;
+	    url_list->first = new_url_elem;
+	    url_list->count++;
+	}
+    }
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_list_all_urls() */
+
+/*
+ * globus_l_gass_cache_delete()
+ *
+ * Build a cache filename; can be used to generate either the global
+ * or local file names.  Pass tag=NULL for global.
+ *  
+ * Parameters:
+ *
+ * Returns:
+ *	- GLOBUS_SUCCESS
+ *	- GLOBUS_L_ENOTUNIQ		- We ddin't win the race
+ *	- Returned failures from globus_l_gass_cache_creat()
+ *	- Returned failures from globus_l_gass_cache_link()
+ *	- Returned failures from globus_l_gass_cache_unlink()
+ */
+static
+int
+globus_l_gass_cache_delete( cache_names		*names,
+			    const unsigned long	*timestamp,
+			    int			lock )
+{
+    int		rc = GLOBUS_SUCCESS;		/* Temp return code */
+
+    /* Wait for the file to become "ready" */
+    if ( lock )
+    {
+	rc = globus_l_gass_cache_wait_ready( names, GLOBUS_NULL );
+
+	/* It got blown away by somebody else */
+	if ( ( GLOBUS_L_ENODATA == rc ) || ( GLOBUS_L_ENOENT == rc ) )
+	{
+	    return GLOBUS_SUCCESS;	    /* Nothing to do */
+	}
+	else if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+    }
+
+    /* Cleanup the local */
+    rc = globus_l_gass_cache_unlink_local( names );
+    if ( GLOBUS_L_UNLINK_LAST == rc )
+    {
+	rc = globus_l_gass_cache_unlink_global( names );
+	if ( GLOBUS_L_UNLINK_LAST == rc )
+	{
+	    /* Do nothing */
+	}
+	else if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+    }
+    /* Set the file's timestamp (if the we're passed one) */
+    else if ( ( GLOBUS_SUCCESS == rc ) && ( GLOBUS_NULL != timestamp ) )
+    {
+	rc = globus_l_gass_cache_set_timestamp( 
+	    names->global_data_file, *timestamp );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    RET_ERROR( rc );
+	}
+    }
+    /* Log erros from unlink_local */
+    else if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
+    }
+
+    /* Done */
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_gass_cache_delete() */
 
 
 
@@ -2141,28 +3866,30 @@ globus_l_gass_cache_unlock_close(
  *	 
  */
 int 
-globus_gass_cache_open(char                *cache_directory_path,
-		       globus_gass_cache_t *cache_handle)
+globus_gass_cache_open(const char		*cache_directory_path,
+		       globus_gass_cache_t	*cache_handle)
 
 {
-    int         rc;		/* general purpose returned code           */
-    char *      pt;		/* general purpose returned pointer        */
-
-    int         f_name_length;	/* too verify the length of the file names */
-    char        f_name[PATH_MAX+1];/* path name of the 3 files we */
-				     /* will open */
-#   if defined GLOBUS_L_GASS_CACHE_LOG
-    char        log_f_name[PATH_MAX+1]; /* log file file name           */
-#   endif
-    int         state_f_fd;	/* to open/create the state file          */
-    struct stat cache_dir_stat;   
-
+    int         rc;			/* general purpose returned code */
+    char *      pt;			/* general purpose returned pointer */
+    int		f_name_length;		/* to verify len of the file names */
+    char	f_name[PATH_MAX+1];	/* path name of the 3 files to open */
+#  if defined GLOBUS_L_GASS_CACHE_LOG
+    char        log_f_name[PATH_MAX+1]; /* log file file name */
+#  endif
+    char	*uniq;
     char        homedir[PATH_MAX];
 
-    CHECK_CACHE_IS_NOT_INIT();
+    CHECK_CACHE_IS_NOT_INIT(cache_handle);
+    memset( cache_handle, 0, sizeof( globus_gass_cache_t ) );
+    CLR_ERROR;
 
-    cache_handle->state_file_fd = -1;
-    cache_handle->temp_file_fd = -1;
+    /* Random initialize */
+    {
+	struct timeval tv;
+	gettimeofday( &tv, NULL );
+	srandom( tv.tv_usec );
+    }
     
     /* look for the correct directory path */
 
@@ -2175,7 +3902,6 @@ globus_gass_cache_open(char                *cache_directory_path,
 	    cache_directory_path = GLOBUS_NULL;
 
 	    CACHE_TRACE("Error: cache_directory_path empty");
-
 	}
     }
 
@@ -2184,22 +3910,23 @@ globus_gass_cache_open(char                *cache_directory_path,
     {
       	pt = globus_libc_getenv(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR);
 
-	/* if GLOBUS_GASS_CACHE_DEFAUL empty (""), behave as if not defined */
-	if ( pt != GLOBUS_NULL)
+	/* if GLOBUS_GASS_CACHE_DEFAULT empty (""),
+	   behave as if not defined */
+	if ( GLOBUS_NULL != pt )
 	{
-	    f_name_length=strlen(pt);
-	    if ( f_name_length == 0)
+	    f_name_length = strlen(pt);
+	    if ( 0 == f_name_length )
 	    {
 		pt = GLOBUS_NULL;
 	    }
 	}
 
-	if ( pt == GLOBUS_NULL )
+	if ( GLOBUS_NULL == pt )
 	{
-	    GLOBUS_L_GASS_CACHE_LG("GLOBUS_GASS_CACHE_DEFAULT_DIR_ENV_VAR is empty");
+	    GLOBUS_L_GASS_CACHE_LG2( "'%s' is empty", 
+				     GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR );
 	    /* cache directory still not defined; use the defaults */
 	    /*   "$HOME/.globus_gass_cache" */
-
 	    if ( globus_libc_gethomedir(homedir,PATH_MAX) == GLOBUS_SUCCESS)
 	    {
 		f_name_length=strlen(homedir);
@@ -2207,196 +3934,275 @@ globus_gass_cache_open(char                *cache_directory_path,
 		    pt = homedir;
 	    }
 	    
-	    if (pt == GLOBUS_NULL)
+	    if ( GLOBUS_NULL == pt )
 	    {
 		/* $HOME not defined or null ! this should not happen */
-		CACHE_TRACE("HOME not defined or empty");
+		LOG_ERROR(0);
 		return ( GLOBUS_GASS_CACHE_ERROR_NO_HOME );
 	    }
-	    
+
 	    if ((f_name_length +
 		 strlen(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME))>=PATH_MAX)
 	    {
 		CACHE_TRACE("ENAMETOOLONG");
-                printf("NAMETOOLONG: f_name_length: %d, default_name_length: %d, filename_max: %d\n",
+                printf("NAMETOOLONG: f_name_length: %d, "
+		       "default_name_length: %d, filename_max: %d\n",
                        f_name_length,
                        strlen(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME),
                        PATH_MAX);
+		LOG_ERROR(0);
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
 	    }
-	    strcpy(cache_handle->cache_directory_path,
-		   pt);
 
-	    /* before going on, verify the .globus directory exist 
-               and create it if not */ 
-	    strcat(cache_handle->cache_directory_path,
-		   GLOBUS_L_DOT_GLOBUS_DIR_NAME);
-	    rc =  stat(cache_handle->cache_directory_path,
-		       &cache_dir_stat);
-	    if (rc == 0)
+	    /* Allocate a buffer for & build the base directory */
+	    cache_handle->cache_directory_path = (char * ) malloc(
+		1 +
+		strlen( pt ) +
+		strlen( GLOBUS_L_DOT_GLOBUS_DIR_NAME ) +
+		strlen( GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME) );
+	    if ( GLOBUS_NULL == cache_handle->cache_directory_path )
 	    {
-		
-		if ( (cache_dir_stat.st_mode & S_IFMT) != S_IFDIR )
-		{
-		    CACHE_TRACE("The .globus directory exist and is not a directory");
-		    return (GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
-		}
+		LOG_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+		return GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
 	    }
-	    if (rc != 0)
-	    {
-		/* I assume the error is "directory not existing"    */
-		/* but it could occur if it is not accessible; the   */
-		/* creation call would the fail also, and the error  */
-		/* code send back would be a little erroneous        */
-		/* ok for now.                                       */
-		rc = mkdir(cache_handle->cache_directory_path,
-			   GLOBUS_L_GASS_CACHE_DIR_MODE);
-		if ( rc != 0 )
-		{
-		    CACHE_TRACE("could not create the .globus directory");
-		    return (GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
-		}
-	    }
-	    /* here the .globus existe and is a directory */
+	    strcpy( cache_handle->cache_directory_path, pt );
+	    strcat( cache_handle->cache_directory_path,
+		    GLOBUS_L_DOT_GLOBUS_DIR_NAME );
 	    strcat(cache_handle->cache_directory_path,
 		   GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME);
+	    cache_handle->global_dir_len = 
+		strlen( cache_handle->cache_directory_path );
+
+	    /* Build & verify the whole tree */
+	    rc = globus_l_gass_cache_make_dirtree( 
+		cache_handle->cache_directory_path );
+	    if ( GLOBUS_L_ENOTDIR == rc )
+	    {
+		CACHE_TRACE( " .globus is not a directory" );
+		LOG_ERROR(rc);
+		return GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE;
+	    }
+	    else if ( GLOBUS_SUCCESS != rc )
+	    {
+		CACHE_TRACE( "Could not create the .globus directory" );
+		LOG_ERROR(rc);
+		return GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE;
+	    }
+
 	}
 	else /* *pt is not null or empty */
 	{
 	    if (f_name_length >= PATH_MAX)
 	    {
 		CACHE_TRACE("ENAMETOOLONG");
+		LOG_ERROR(0);
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
 	    }
-	    strcpy(cache_handle->cache_directory_path, pt);
+	    cache_handle->cache_directory_path = globus_libc_strdup( pt );
+	    if ( GLOBUS_NULL == cache_handle->cache_directory_path )
+	    {
+		LOG_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+		return GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	    }
 	}
     }
     else			/* cache_directory_path is valid */
     {
-	/* for the version which will accept a cache directory not null  */
-	if (f_name_length >= PATH_MAX)
+	/* For the first version, we do not accept a cache_directory_path */
+#      if 0
 	{
-	    CACHE_TRACE("ENAMETOOLONG");
-	    return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
+	    /* for the version which will accept a cache directory not null  */
+	    if (f_name_length >= PATH_MAX)
+	    {
+		CACHE_TRACE("ENAMETOOLONG");
+		LOG_ERROR(0);
+		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
+	    }
+	    cache_handle->cache_directory_path = 
+		globus_libc_strdup( cache_directory_path );
+	    if ( GLOBUS_NULL == cache_handle->cache_directory_path )
+	    {
+		LOG_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+		return GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	    }
 	}
-	strcpy(cache_handle->cache_directory_path,
-	       cache_directory_path);
+#      else
+	{
+	    CACHE_TRACE("Parameter cache_directory_path must be NULL when "
+			"calling globus_gass_cache_open() in this version "
+			"of GLOBUS_GASS_CACHE");
+	    LOG_ERROR(0);
+	    return (GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER);
+	}
+#      endif
+
     }
     GLOBUS_L_GASS_CACHE_LG2(" cache directory :%s ",
 		 cache_handle->cache_directory_path );
 
     /* here, *cache_handle.cache_directory_path should be defined */
     /* let see if it exists, and create it if it does not */
-    rc =  stat(cache_handle->cache_directory_path,
-	       &cache_dir_stat);
-    if (rc == 0)
+    rc = globus_l_gass_cache_make_dirtree( 
+	cache_handle->cache_directory_path );
+    if ( GLOBUS_L_ENOTDIR == rc )
     {
-	
-	if ( (cache_dir_stat.st_mode & S_IFMT) != S_IFDIR )
-	{
-	    CACHE_TRACE("The cache directory exist and is not a directory");
-	    return (GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
-	}
+	CACHE_TRACE( " The cache directory is not a directory" );
+	LOG_ERROR(rc);
+	return GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE;
     }
-    if (rc != 0)
+    else if ( GLOBUS_SUCCESS != rc )
     {
-        /* I assume the error is "directory not existing"    */
-	/* but it could occur if it is not accessible; the   */
-	/* creation call would the fail also, and the error  */
-	/* code send back would be a little erroneous        */
-	/* ok for now.                                       */
-	
-	rc = mkdir(cache_handle->cache_directory_path,
-		   GLOBUS_L_GASS_CACHE_DIR_MODE);
-        if ( rc != 0 )
-	{
-	    CACHE_TRACE("could not create the cache directory");
-	    return (GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
-	}
+	CACHE_TRACE( "Could not create the cache directory" );
+	LOG_ERROR(rc);
+		return GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE;
     }
 
+
     /* here I suppose cache_directory_path existe and is a directory */
-    if ((f_name_length + LONGER_NAME_USED )>=PATH_MAX)
+    if ( ( f_name_length + MAX_FILENAME_LEN ) >= PATH_MAX )
     {
 	CACHE_TRACE("ENAMETOOLONG");
+	LOG_ERROR(0);
 	return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
     }
     strcpy(f_name,cache_handle->cache_directory_path);
     strcat(f_name,GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME);
     
     /* open the log file and log the some informations */
-#   if defined GLOBUS_L_GASS_CACHE_LOG
+# if defined GLOBUS_L_GASS_CACHE_LOG
     {
-	strcpy(log_f_name,cache_handle->cache_directory_path);
-	strcat(log_f_name,GLOBUS_L_GASS_CACHE_LOG_F_NAME);
-	cache_handle->log_FILE = fopen( log_f_name,"a");
-	if (cache_handle->log_FILE == GLOBUS_NULL)
+	char	tmp[20];
+	strcpy( log_f_name, cache_handle->cache_directory_path );
+	strcat( log_f_name, "/" );
+	strcat( log_f_name, GLOBUS_L_GASS_CACHE_LOG_DIR );
+	rc = globus_l_gass_cache_make_dirtree( log_f_name );
+	if ( GLOBUS_SUCCESS != rc )
 	{
-	    CACHE_TRACE("Could NOT open or create the log file");
+	    CACHE_TRACE("Could NOT open or create the log directory");
 	}
-    }
-#   endif
-
-    /* Prepare a lock file name */
-    strcpy(cache_handle->state_file_lock_path,
-	   cache_handle->cache_directory_path);
-    strcat(cache_handle->state_file_lock_path,
-	   GLOBUS_L_GASS_CACHE_STATE_F_LOCK);
-    
-    /* open or create the state file */
-    strcpy(cache_handle->state_file_path,cache_handle->cache_directory_path);
-    strcat(cache_handle->state_file_path,GLOBUS_L_GASS_CACHE_STATE_F_NAME );
-    GLOBUS_L_GASS_CACHE_LG(cache_handle->state_file_path);
-
-    while ((state_f_fd = open(cache_handle->state_file_path,
-			      O_RDWR|O_CREAT,
-			      GLOBUS_L_GASS_CACHE_STATE_MODE))
-	   == -1)
-    {
-	if (errno != EINTR )
+	else
 	{
-	    GLOBUS_L_GASS_CACHE_LG("Could NOT open or create the state file");
-#           if defined GLOBUS_L_GASS_CACHE_LOG
+	    sprintf( tmp, "/%05d", getpid() );
+	    strcat( log_f_name, tmp );
+	    cache_handle->log_FILE = fopen( log_f_name, "a" );
+	    if ( cache_handle->log_FILE == GLOBUS_NULL )
 	    {
-		fclose(cache_handle->log_FILE);
+		CACHE_TRACE("Could NOT open or create the log file");
 	    }
-#           endif
-	    return ( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
+	    cache_handle->log_file_name = globus_libc_strdup( log_f_name );
+	    if ( cache_handle->log_file_name == GLOBUS_NULL )
+	    {
+		CACHE_TRACE("Could NOT copy log file name");
+	    }
 	}
     }
-    
-    while (close (state_f_fd) == -1)
-    {
-	if (errno != EINTR )
-	{
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
-	}
-    }
-     
-    /* just prepare a temporary file name */
-    strcpy(cache_handle->temp_file_path,
-	   cache_handle->cache_directory_path);
-    strcat(cache_handle->temp_file_path,
-	   GLOBUS_L_GASS_CACHE_STATE_F_TEMP);
+# endif
 
-    GLOBUS_L_GASS_CACHE_LG("Cache Opened");
-    /* to simply check if the cache has been open, in any other function */
+    /* Crate the global directory name & path */
+    rc = globus_l_gass_cache_build_filename(
+	cache_handle->cache_directory_path,
+	GLOBUS_L_GASS_CACHE_GLOBAL_DIR,
+	GLOBUS_NULL,
+	GLOBUS_FALSE,
+	&cache_handle->global_directory_path );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
+    rc = globus_l_gass_cache_make_dirtree(
+	cache_handle->global_directory_path );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	CACHE_TRACE( "Can't create the global cache directory" );
+	LOG_ERROR(0);
+	return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
+    }
+
+    /* Crate the local directory name & path */
+    rc = globus_l_gass_cache_build_filename(
+	cache_handle->cache_directory_path,
+	GLOBUS_L_GASS_CACHE_LOCAL_DIR,
+	GLOBUS_NULL,
+	GLOBUS_FALSE,
+	&cache_handle->local_directory_path );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
+    rc = globus_l_gass_cache_make_dirtree(
+	cache_handle->local_directory_path );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	CACHE_TRACE( "Can't create the local cache directory" );
+	LOG_ERROR(0);
+	return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
+    }
+
+    /* Crate the tmp directory name & path */
+    rc = globus_l_gass_cache_build_filename(
+	cache_handle->cache_directory_path,
+	GLOBUS_L_GASS_CACHE_TMP_DIR,
+	GLOBUS_NULL,
+	GLOBUS_FALSE,
+	&cache_handle->tmp_directory_path );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
+    rc = globus_l_gass_cache_make_dirtree(
+	cache_handle->tmp_directory_path );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	CACHE_TRACE( "Can't create the tmp cache directory" );
+	LOG_ERROR(0);
+	return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
+    }
+
+    /* Finally, initialize the skew calc stuff */
+    rc = globus_l_gass_cache_build_uniqname( &uniq );
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	char	*skew_file;
+	rc = globus_l_gass_cache_build_filename( 
+	    cache_handle->tmp_directory_path, GLOBUS_NULL,
+	    uniq, GLOBUS_FALSE, &skew_file );
+	globus_free( uniq );
+	if ( GLOBUS_SUCCESS != rc )
+	{
+	    LOG_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+	    return GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	}
+	(void) globus_l_gass_cache_calc_file_age( skew_file,
+						  time(NULL), 
+						  time(NULL) );
+	globus_free( skew_file );
+    }
+    else
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
+
+    /* Max mangled lengths */
+    {
+	/* Just take the longest & tack on some "buffer"... */
+	int	max_dirlen = strlen( cache_handle->global_directory_path ) + 8;
+	int	max_len = _POSIX_PATH_MAX - max_dirlen;
+
+	cache_handle->max_mangled_url = max_len / 2;
+	cache_handle->max_mangled_tag = max_len / 2;
+
+	/* Default to enable all mangling options. */
+	cache_handle->mangling_options = MANGLING_OPTION_DEFAULT;
+    }
+    /* Lastly, note that we are initialized. */
     cache_handle->init = &globus_l_gass_cache_is_init;
 
-    /* just to check the version number */
-    rc = globus_l_gass_cache_lock_open(cache_handle);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	/* mark this handle as not opened */
-	cache_handle->init=&globus_l_gass_cache_is_not_init;
-	
-	return(rc);
-    }
-    return(globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT));
-    
+    /* Done */
+    return GLOBUS_SUCCESS;
 }
 /*  globus_gass_cache_open() */
 
@@ -2425,15 +4231,42 @@ globus_gass_cache_close(
     globus_gass_cache_t *          cache_handle)
 {
     /* simply check if the cache has been opened */
-    CHECK_CACHE_IS_INIT();
+    CHECK_CACHE_IS_INIT(cache_handle);
+    CLR_ERROR;
 
     /* marque this handle as not opened */
     cache_handle->init=&globus_l_gass_cache_is_not_init;
-#   if defined GLOBUS_L_GASS_CACHE_LOG
+# if defined GLOBUS_L_GASS_CACHE_LOG
     {
-	fclose(cache_handle->log_FILE);
+	if ( GLOBUS_NULL != cache_handle->log_FILE )
+	{
+	    fclose(cache_handle->log_FILE);
+	    cache_handle->log_FILE = GLOBUS_NULL;
+	}
+	/* Blow away zero sized log files */
+	if ( GLOBUS_NULL != cache_handle->log_file_name )
+	{
+	    struct stat	statbuf;
+	    int		rc;
+	    rc = globus_l_gass_cache_stat( 
+		cache_handle->log_file_name, &statbuf );
+	    if ( GLOBUS_SUCCESS == rc )
+	    {
+		if ( 0 == statbuf.st_size )
+		{
+		    globus_l_gass_cache_unlink( cache_handle->log_file_name );
+		}
+	    }
+	    globus_free( cache_handle->log_file_name );
+	}
     }
-#   endif
+# endif
+
+    /* Free up memory */
+    globus_free( cache_handle->cache_directory_path );
+    globus_free( cache_handle->global_directory_path );
+    globus_free( cache_handle->local_directory_path );
+    globus_free( cache_handle->tmp_directory_path );
     
     GLOBUS_L_GASS_CACHE_LG("Cache Closed");
     return(GLOBUS_SUCCESS);
@@ -2515,387 +4348,209 @@ globus_gass_cache_close(
  */
 int
 globus_gass_cache_add(
-    globus_gass_cache_t *      cache_handle,
-    char*                      url,
-    char *                     tag,
-    globus_bool_t              create,
-    unsigned long *            timestamp,
-    char **                    local_filename)
+    globus_gass_cache_t *	cache_handle,
+    const char			*url,
+    const char			*tag,
+    globus_bool_t		create,
+    unsigned long *		timestamp,
+    char **			local_filename )
 {
-    int                        rc;   /* general purpose return code */
-    globus_gass_cache_entry_t *entry_found_pt;
-    globus_gass_cache_entry_t *new_entry_pt;
-    globus_gass_cache_tag_t   *tag_pt; /* to scan thrue the tag arrays */
-    char                       notready_file_path[PATH_MAX+1];
-    struct stat                file_stat;
-    int                        tmp_fd;
-    
+    int		rc;			/* general purpose return code */
+    int		retval = GLOBUS_SUCCESS; /* Our return value. */
+    cache_names	names;
+    struct stat	file_stat;
+    int		TODOattempts = 0;
+    double	TODOstime = TODOGetTime();
+    const char	*global_name;
+    const char	*global_uniq;
+
     /* simply check if the cache has been opened */
-    CHECK_CACHE_IS_INIT();
+    CHECK_CACHE_IS_INIT(cache_handle);
+    CLR_ERROR;
     
-   /* if no tag supplied, we map it to the tag
-      GLOBUS_L_GASS_CACHE_NULL_TAG ("null") */
-   if (tag == GLOBUS_NULL)
-   {
-       tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
-   }
-   
-   /* I want to do every thing again and again until the data file 
-      is ready */
-   while (GLOBUS_TRUE)
-   {
-       rc = globus_l_gass_cache_lock_open(cache_handle);
-       if (rc != GLOBUS_SUCCESS)
-       {
-	   *local_filename=GLOBUS_NULL;
-	   return(rc);
-       }
-       
-       rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
-					    url,
-					    cache_handle);
-       if (rc != GLOBUS_SUCCESS)
-       {
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	   return(rc);
-       }
-       
-       if (entry_found_pt == GLOBUS_NULL)   /* url not found */
-       {
-	   GLOBUS_L_GASS_CACHE_LG("URL not found");
+    /* Timestamp is unknown for now, no filename, ... */
+    *timestamp = GLOBUS_GASS_CACHE_TIMESTAMP_UNKNOWN;
+    *local_filename = GLOBUS_NULL;
 
-	   if (create == GLOBUS_FALSE)
-	   {
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_URL_NOT_FOUND);
-       }
-	   
-	   /* create requested: I have to add the entry */
-	   
-	   cache_handle->nb_entries++;
-	   
-	   /* create a new file name */
-	   *local_filename=(char *) globus_malloc(PATH_MAX+1);
-	   GLOBUS_L_GASS_CACHE_FILENAME(*local_filename);
-	   globus_libc_lock();
-	   while (stat(*local_filename,&file_stat) != -1)
-	   {
-	       GLOBUS_L_GASS_CACHE_FILENAME(*local_filename);
-	   }
-	   globus_libc_unlock();
+    /* Generate the local and global filenames */
+    rc = globus_l_gass_cache_names_init( cache_handle, url, tag, &names );
 
-	   GLOBUS_L_GASS_CACHE_LG(*local_filename);
+    /* Check if it all succeeded. */
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
 
-	   if ((tmp_fd = creat(*local_filename, 
-                               GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
-	   {
-	       CACHE_TRACE("Could not create new data file");
-	       globus_l_gass_cache_unlock_close(cache_handle, 
-                                                GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
-	   }
-           close(tmp_fd);
-	   
-	   /* set the file as not ready */
-	   strcpy(notready_file_path,*local_filename);
-	   strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-	   if ((tmp_fd = creat(notready_file_path, 
-			       GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
-	   {
-	       CACHE_TRACE("Could not create new data filei lock");
-	       globus_l_gass_cache_unlock_close(cache_handle,
-                                                GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
-	   }
-           close(tmp_fd);
-	   
-	   /* create a new stat entry and initialise it */
-	   new_entry_pt = (globus_gass_cache_entry_t *)
-	       globus_malloc(sizeof(globus_gass_cache_entry_t));
-	   
-	   if (new_entry_pt == GLOBUS_NULL)
-	   {
-	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-	   }
-	   
-	   /* url */
-	   new_entry_pt->url = (char *) globus_malloc(strlen(url)+1);
-	   if (new_entry_pt->url == GLOBUS_NULL)
-	   {
-	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-	   }
-	   strcpy(new_entry_pt->url,url);
-	   
-	   /* file name */
-	   new_entry_pt->filename=(char *)
-	       globus_malloc(strlen(*local_filename)+1);
-	   if (new_entry_pt->filename == GLOBUS_NULL)
-	   {
-	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-	   }
-	   strcpy(new_entry_pt->filename,*local_filename);
-	   
-	   /* status */
-	   /* we could point directly in the tag area, but it is not
-	   very clean confusing problems could occur when unlocked and
-	   locked on an other tag...  */
-	   
-	   /* status */
-	   /* lets lock the file on the new tag */
-	   new_entry_pt->lock_tag = (char *) globus_malloc(strlen(tag)+1);
-	   
-	   if ( new_entry_pt->lock_tag == GLOBUS_NULL)
-	   {
-	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_entry_free(&new_entry_pt,
-					      GLOBUS_TRUE);
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-	   }
-	   strcpy( new_entry_pt->lock_tag, tag);
-	   
-	   
-	   /* timestamp */
-	   /* for the time being */
-	   new_entry_pt->timestamp = GLOBUS_GASS_CACHE_TIMESTAMP_UNKNOWN;
-	   *timestamp = GLOBUS_GASS_CACHE_TIMESTAMP_UNKNOWN;
-	   
-	   /* tags */
-	   /* allocate an array of 2 tags (one real, and one "end" indicator */
-	   new_entry_pt->tags = (globus_gass_cache_tag_t *)
-	       globus_malloc(2*sizeof(globus_gass_cache_tag_t));
-	   
-	   if (new_entry_pt->tags == GLOBUS_NULL)
-	   {
-	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_entry_free(&new_entry_pt,
-					      GLOBUS_TRUE);
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-	   }
-	   
-	   (*(new_entry_pt->tags)).tag= (char *) globus_malloc(strlen(tag)+1);
-	   if ( (*(new_entry_pt->tags)).tag == GLOBUS_NULL)
-	   {
-	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_entry_free(&new_entry_pt,
-					      GLOBUS_TRUE);
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-	   }
-	   strcpy( (*(new_entry_pt->tags)).tag,tag);
-	   (*(new_entry_pt->tags)).count=1;
-	   (*(new_entry_pt->tags+1)).tag = GLOBUS_NULL;
-	   (*(new_entry_pt->tags+1)).count=0;
-	   new_entry_pt->num_tags=1;
-	   new_entry_pt->pending='F';
-	       
-	   /* ok now lets write this new entry */
-	   rc= globus_l_gass_cache_write_state_file(new_entry_pt,
-						    cache_handle);
-	   if (rc != GLOBUS_SUCCESS)
-	   {
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(rc);
-	   }
-	   rc = globus_l_gass_cache_unlock_close(cache_handle,
-						 GLOBUS_L_GASS_CACHE_COMMIT);
-	   if (rc != GLOBUS_SUCCESS)
-	   {
-	       return(rc);
-	   }
-	   
-	   GLOBUS_L_GASS_CACHE_LG3( "Url %s tag %s CREATED",
-				    url,
-				    tag);
-	   return(GLOBUS_GASS_CACHE_ADD_NEW);
-       } 
-       else /* url found */
-       {
-	   GLOBUS_L_GASS_CACHE_LG("URL found");
+    /* I want to do every thing again and again until the data file 
+       is ready */
+    while ( 1 )
+    {
+	TODOattempts++;
 
-	   if (entry_found_pt->lock_tag != GLOBUS_NULL) /* data file not ready */
-	   {
-	       GLOBUS_L_GASS_CACHE_LG("Data file not ready: wait");
+	/* Create the global directory tree if we need to */
+	if ( create )
+	{
+	    rc = globus_l_gass_cache_make_dirtree( names.global_dir );
+	    if ( rc != GLOBUS_SUCCESS )
+	    {
+		globus_l_gass_cache_names_free( &names );
+		LOG_ERROR( rc );
+		return rc;
+	    }
+	}
 
-	       /* new with 1.1 */
-	       entry_found_pt->pending='P';
-	       
-	       strcpy(notready_file_path,
-		      entry_found_pt->filename);
-	       strcat(notready_file_path,
-		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-	       
-	       /* just check coherence between state file and blocking file */
-	       if ( stat(notready_file_path, &file_stat) == -1 )
-	       {
-		   GLOBUS_L_GASS_CACHE_LG(
-		       "State file and bloking file are not coherent");
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-		   
-	       }
-	       
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
-							 cache_handle);
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(rc);
-	       }
-	       rc = globus_l_gass_cache_unlock_close(
-		   cache_handle,
-		   GLOBUS_L_GASS_CACHE_COMMIT);
-	       
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   return(rc);
-	       }
-	       
-	       /* wait */
-	       rc = stat(notready_file_path,
-			 &file_stat);
-	       while ( rc != -1 )
-	       {
-		   globus_libc_usleep(LOOP_TIME);
-		   rc = stat(notready_file_path,
-			     &file_stat);
-	       }
-	       
-	       GLOBUS_L_GASS_CACHE_LG("Data file now ready: continue");
+	/* Check the file *data* file */
+	rc = globus_l_gass_cache_stat( 
+	    names.global_data_file, &file_stat );
 
-	       continue;
-	   }
-	   else  /* file ready */
-	   {
-	       GLOBUS_L_GASS_CACHE_LG("Data file ready...");
-	   
-	       /* new with 1.1 */
-	       entry_found_pt->pending='F';
+	/* Doesn't exist? */
+	if ( GLOBUS_L_ENOENT == rc )
+	{
+	    CLR_ERROR;
+	    /* If we're not supposed to create it, give up.. */
+	    if ( ! create )
+	    {
+		globus_l_gass_cache_names_free( &names );
+		return GLOBUS_GASS_CACHE_URL_NOT_FOUND;
+	    }
 
-	       /* return the file name and the timestamp */
-	       /* create a new file name */
-	       *local_filename = (char *) globus_malloc(PATH_MAX+1);
-	       strcpy(*local_filename,
-		      entry_found_pt->filename);
-	       *timestamp = entry_found_pt->timestamp;
-	       
-	       /* add a tag */
-	       tag_pt = entry_found_pt->tags;
-	       while (tag_pt->tag != GLOBUS_NULL)
-	       {
-		   if ( !strcmp(tag_pt->tag,
-				tag))
-		   {
-		       /* tag found */
-		       tag_pt->count++;
-		       break;
-		   }
-		   tag_pt++;
-	       }
-	       if (tag_pt->tag == GLOBUS_NULL)
-	       {
-		   GLOBUS_L_GASS_CACHE_LG("Tag Not found");
+	    /* Now, go create the global file. */
+	    CACHE_TRACE4( "Global file DNE; creating %s/%s%s",
+			  names.global_dir, DATA_FILE_PAT, names.uniq );
+	    rc = globus_l_gass_cache_create_global_file( &names );
+	    if ( GLOBUS_L_ENOENT == rc )
+	    {
+		/* Directory has disappeared. */
+		continue;
+	    }
+	    else if ( GLOBUS_SUCCESS != rc )
+	    {
+		globus_l_gass_cache_names_free( &names );
+		LOG_ERROR( rc );
+		return rc;
+	    }
 
-		   /* the tag was not found. Now, we are pointing one
-		   the first empty tag entry allocated for tag
-		   creation. Lets create it */
-		   tag_pt->tag = (char *) globus_malloc(strlen(tag) +1);
-		   if (tag_pt->tag == GLOBUS_NULL)
-		   {
-		       CACHE_TRACE("No more memory");
-		       globus_l_gass_cache_unlock_close(
-			   cache_handle,
-			   GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		       
-		       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-		   }
-		   strcpy(tag_pt->tag, tag);
-		   tag_pt->count=1;
-		   entry_found_pt->num_tags++;
-		   
-	       } /* tag not found */
-	       
-	       /* tag added; now lock the cache entry */
-	       entry_found_pt->lock_tag= (char *) globus_malloc(strlen(tag)+1);
-	       if ( entry_found_pt->lock_tag == GLOBUS_NULL)
-	       {
-		   CACHE_TRACE("No more memory");
-		   globus_l_gass_cache_entry_free(&entry_found_pt,
-						  GLOBUS_TRUE);
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-	       }
-	       strcpy( entry_found_pt->lock_tag, tag);
-	       
-	       /* prepare to lock the datafile */
-	       /* do it before I write the state file */
-	       /* wich also free entry_found_pt */
-	       strcpy(notready_file_path,
-		      entry_found_pt->filename);
-	       
-	       strcat(notready_file_path,
-		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-	       
-	       /* Write this url entry  */
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
-							 cache_handle);
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(rc);
-	       }
-	       
-	       /* New tag added, therefor */
-	       /* lock the cache entry (set the file as not ready ) */
-	       if ((tmp_fd = creat(notready_file_path, 
-                                   GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
-	       {
-		   CACHE_TRACE("Could not create new data file lock");
-		   globus_l_gass_cache_unlock_close(cache_handle,
-                                                    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
-	       }
-               close(tmp_fd);
-	       
-	       /* release lock */
-	       rc = globus_l_gass_cache_unlock_close(
-		   cache_handle,
-		   GLOBUS_L_GASS_CACHE_COMMIT);
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   return(rc);
-	       }
-	       
-	       /* and return */
-	       GLOBUS_L_GASS_CACHE_LG3("Url %s with tag %s ADDed",url, tag);
-	       return(GLOBUS_GASS_CACHE_ADD_EXISTS);
-	       
-	   } /* file ready */
-       } /* url found */
-   } /* while recurs */
+	    /* Ok.  We've created the global "uniq" file.  Now, make
+	     * the local.  Don't wait for it to become ready - we
+	     * created it!! */
+	    rc = globus_l_gass_cache_make_local_file( 
+		&names,
+		DATA_FILE_PAT,
+		names.uniq );
+	    if ( GLOBUS_L_ENODATA == rc )
+	    {
+		continue;
+	    }
+	    else if ( GLOBUS_SUCCESS != rc )
+	    {
+		globus_l_gass_cache_names_free( &names );
+		LOG_ERROR( rc );
+		return rc;
+	    }
+
+	    /* Ok.  We're done! */
+	    retval = GLOBUS_GASS_CACHE_ADD_NEW;
+	    break;
+	}
+	else if ( GLOBUS_SUCCESS != rc )
+	{
+	    globus_l_gass_cache_names_free( &names );
+	    LOG_ERROR( rc );
+	    return rc;
+	}
+
+
+	/* Ok, the global data existed before we got here. */
+	/*   Wait for it to become ready */
+	CACHE_TRACE3( "Global file exists; using %s/%s", 
+		      names.global_dir, DATA_FILE );
+	rc = globus_l_gass_cache_wait_ready( &names, timestamp );
+	if ( GLOBUS_L_ENODATA == rc )
+	{
+	    continue;	/* Data file went away; start over. */
+	}
+	else if ( GLOBUS_SUCCESS != rc )
+	{
+	    globus_l_gass_cache_names_free( &names );
+	    LOG_ERROR( rc );
+	    return rc;
+	}
+
+	/* Lock the file */
+#     if ( LOCK_ADD_EXISTS )
+	TODOgu( global_dir, uniq, NULL );
+	TODOgu( NULL, NULL, "Ready; locking" );
+	CACHE_TRACE2( "Global file ready; locking -> %s", names.uniq );
+	rc = globus_l_gass_cache_make_unready( &names );
+	if ( GLOBUS_L_ENODATA == rc )
+	{
+	    CACHE_TRACE( "Global file went away!" );
+	    continue;		/* Data file went away; start over. */
+	}
+	else if ( GLOBUS_SUCCESS != rc )
+	{
+	    globus_l_gass_cache_names_free( &names );
+	    LOG_ERROR( rc );
+	    return rc;
+	}
+	/* Lock used; use the uniq file name in make_local_file() */
+	global_name = DATA_FILE_PAT;
+	global_uniq = names.uniq;
+#     else
+	/* No lock; use the "raw" data file name in make_local_file() */
+	global_name = DATA_FILE;
+	global_uniq = GLOBUS_NULL;
+#     endif
+
+	/* Ok; it's ready.  Make the local file, then we're done */
+	TODOgu( NULL, NULL, "Before MLF" );
+	rc = globus_l_gass_cache_make_local_file( 
+	    &names,
+	    global_name,
+	    global_uniq );
+	TODOgu( NULL, NULL, "After MLF" );
+	if ( GLOBUS_L_ENODATA == rc )
+	{
+	    CACHE_TRACE( "Global file went away!" );
+	    continue;	/* Data file went away; start over. */
+	}
+	else if ( GLOBUS_SUCCESS != rc )
+	{
+	    LOG_ERROR( rc );
+	    return rc;
+	}
+	else
+	{
+	    retval = GLOBUS_GASS_CACHE_ADD_EXISTS;
+	    break;
+	}
+    }
+
+    {
+	char buf[256];
+	globus_libc_lock();
+	sprintf( buf, "%s: %d attempts; %.5fs",
+		 (  ( GLOBUS_GASS_CACHE_ADD_NEW == retval ) ?
+		    "AddNew" : "AddExists" ),
+		 TODOattempts,
+		 TODOGetTime() - TODOstime );
+	globus_libc_unlock();
+	CACHE_TRACE( buf );
+	TODOgu( NULL, NULL, "AddExists" );
+    }
+
+    if ( retval == GLOBUS_GASS_CACHE_ADD_NEW ||
+	 retval == GLOBUS_GASS_CACHE_ADD_EXISTS )
+    {
+	*local_filename = globus_libc_strdup( names.local_data_file );
+    }
+
+    /* Free up the allocated memory */
+    globus_l_gass_cache_names_free( &names );
+    return retval;
 }
 /*  globus_gass_cache_add() */
-
     
 /*
  * globus_gass_cache_add_done()
@@ -2922,106 +4577,64 @@ globus_gass_cache_add(
  */
 int
 globus_gass_cache_add_done(
-    globus_gass_cache_t *cache_handle,
-    char                *url,
-    char                *tag,
-    unsigned long        timestamp)
+    globus_gass_cache_t	*cache_handle,
+    const char		*url,
+    const char		*tag,
+    unsigned long	timestamp)
 {
-    int                        rc;   /* general purpose return code */
-    char                       notready_file_path[PATH_MAX+1];
-    globus_gass_cache_entry_t *entry_found_pt;
-
-
+    int		rc;			/* general purpose return code */
+    cache_names	names;
+    
     /* simply check if the cache has been opened */
-    CHECK_CACHE_IS_INIT();
+    CHECK_CACHE_IS_INIT(cache_handle);
+    CLR_ERROR;
     
-    rc = globus_l_gass_cache_lock_open(cache_handle);
-    if (rc != GLOBUS_SUCCESS)
+    /* Generate the local and global filenames */
+    rc = globus_l_gass_cache_names_init( 
+	cache_handle, url, tag, &names );
+    if ( GLOBUS_SUCCESS != rc )
     {
-	return(rc);
-    }  
-    rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
-					 url,
-					 cache_handle);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	return(rc);
+	LOG_ERROR( rc );
+	return rc;
     }
-    
-    if (entry_found_pt == GLOBUS_NULL)   /* url not found */
-    {
-	GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_add_done() "
-			       "called with URL not in cache state file");
-	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
-    }
-    else
-    { /* URL found */
-	
-	if ( entry_found_pt->lock_tag == GLOBUS_NULL)
-	{
-	    GLOBUS_L_GASS_CACHE_LG("Cache file already Done");
-	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	    return(GLOBUS_GASS_CACHE_ERROR_ALREADY_DONE);
-	}
-	if (tag == GLOBUS_NULL)
-	{
-	    tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
-	}
-	if ( strcmp(entry_found_pt->lock_tag,tag))
-	{
-	    /* wrong tag */
-	    GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_add_done() called with wrong tag");
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	   return(GLOBUS_GASS_CACHE_ERROR_WRONG_TAG);
-	}
-	
-	/* set the file as ready and copy the timestamp *//* ??? */
-	globus_free(entry_found_pt->lock_tag);
-	entry_found_pt->lock_tag= GLOBUS_NULL; 
-	entry_found_pt->timestamp=timestamp;
 
+    /* Create the ready file */
+    rc = globus_l_gass_cache_make_ready( &names, timestamp );
 
-	/* prepare to unlock the datafile */
-	/* do it before I write the state file */
-	/* wich also free entry_found_pt */
-	strcpy(notready_file_path,
-	       entry_found_pt->filename);
-        strcat(notready_file_path,
-	       GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-	
-	/* update the state file */
-	rc= globus_l_gass_cache_write_state_file(entry_found_pt,
-						 cache_handle);
-	if (rc != GLOBUS_SUCCESS)
-	{
-	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	    return(rc);
-	}
-	
-	/* then unlock the process waiting on the data file to be ready      */
-        if ( unlink(notready_file_path) )
-	{
-	    CACHE_TRACE("Could not delete data file lock");
-	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-	}
-	
-	/* and realease the data file */
-	rc = globus_l_gass_cache_unlock_close(cache_handle,
-					      GLOBUS_L_GASS_CACHE_COMMIT);
-	return(rc);
+    /* Another process beat us to the punch */
+    if ( GLOBUS_L_READY_OTHER == rc )
+    {
+	/* No harm done, make_ready() killed our uniq file for us. */
+	globus_l_gass_cache_names_free( &names );
+	return GLOBUS_SUCCESS;
     }
+    /* OUR process already has it in the ready state */
+    else if ( GLOBUS_L_READY_MYPROC == rc )
+    {
+# if ( ! LOCK_ADD_EXISTS )
+	globus_l_gass_cache_names_free( &names );
+	CLR_ERROR;	
+	return GLOBUS_SUCCESS;
+# else
+	CACHE_TRACE3( "Lost my uniq file '%s' in '%s', data exists",
+		      names.uniq, names.global_dir );
+	globus_l_gass_cache_names_free( &names );
+	LOG_ERROR( GLOBUS_GASS_CACHE_ERROR_ALREADY_DONE );
+	return GLOBUS_GASS_CACHE_ERROR_ALREADY_DONE;
+# endif
+    }
+    else if ( GLOBUS_SUCCESS != rc )
+    {
+	globus_l_gass_cache_names_free( &names );
+	LOG_ERROR( rc );
+	return rc;
+    }
+
+    globus_l_gass_cache_names_free( &names );
+    return GLOBUS_SUCCESS;
+
 }
 /* globus_gass_cache_add_done() */
-
 
 /*
  * globus_gass_cache_delete_start()
@@ -3051,218 +4664,64 @@ globus_gass_cache_add_done(
  *
  */
 int
-globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
-			       char                *url,
-			       char                *tag,
-			       unsigned long       *timestamp)
+globus_gass_cache_delete_start(globus_gass_cache_t	*cache_handle,
+			       const char		*url,
+			       const char		*tag,
+			       unsigned long		*timestamp)
 {
-    int                        rc; /* general purpose return code */
-    globus_gass_cache_entry_t *entry_found_pt;
-    char                       notready_file_path[PATH_MAX+1];
-    struct stat                file_stat;
-    globus_gass_cache_tag_t   *tag_pt;
-    int                        tmp_fd;
-    int count =0;
-        
-    /* simply check if the cache has been opened */
-    CHECK_CACHE_IS_INIT();
-
-    /* if no tag supplied, we map it to the tag
-       GLOBUS_L_GASS_CACHE_NULL_TAG ("null")*/
-    if (tag == GLOBUS_NULL)
-    {
-       tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
-    }
+    int		rc;			/* general purpose return code */
+    cache_names	names;
     
-    /* I want to do every thing again and again until the data file is
-       ready */
-   while (GLOBUS_TRUE)
-   {
-       rc = globus_l_gass_cache_lock_open(cache_handle);
-       if (rc != GLOBUS_SUCCESS)
-       {
-	   return(rc);
-       }
-       
-       rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
-					    url,
-					    cache_handle);
-       if (rc != GLOBUS_SUCCESS)
-       {
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	   return(rc);
-       }
-       
-       if (entry_found_pt == GLOBUS_NULL)   /* url not found */
-       {
-	   GLOBUS_L_GASS_CACHE_LG("Function "
-				  "globus_gass_cache_delete_start() "
-				  "called with URL not in cache state file");
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	   return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
-       }
-       else
-       { /* URL found */
-	   GLOBUS_L_GASS_CACHE_LG("URL found");
+    /* simply check if the cache has been opened */
+    CHECK_CACHE_IS_INIT(cache_handle);
+    CLR_ERROR;
+    
+    /* Generate the local and global filenames */
+    rc = globus_l_gass_cache_names_init( 
+	cache_handle, url, tag, &names );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
 
-	   /* new with 1.1 */      
-	   if (entry_found_pt->pending == 'P' &&
-	       count < 10  &&
-	       entry_found_pt->lock_tag == GLOBUS_NULL)
-	   {
-	       /*  I wait               */
-	       GLOBUS_L_GASS_CACHE_LG("Some add Pending on this url: wait");
-	       
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
-							 cache_handle);
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(rc);
-	       }
-	       rc = globus_l_gass_cache_unlock_close(cache_handle,
-						     GLOBUS_L_GASS_CACHE_COMMIT);
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   return(rc);
-	       }
-	       
-	       count++;
-	       globus_libc_usleep(LOOP_TIME);
-	       continue;
-	       
-	   }
-	   
-	   if (entry_found_pt->lock_tag != GLOBUS_NULL)   
-	   {			/* data file not ready */
+    /* Wait for the file to become "ready" */
+    rc = globus_l_gass_cache_wait_ready( &names, timestamp );
+    if ( GLOBUS_L_ENODATA == rc )
+    {
+	globus_l_gass_cache_names_free( &names );
+	LOG_ERROR( rc );
+	return GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND;
+    }
+    else if ( GLOBUS_SUCCESS != rc )
+    {
+	globus_l_gass_cache_names_free( &names );
+	LOG_ERROR( rc );
+	return GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT;
+    }
 
-	       GLOBUS_L_GASS_CACHE_LG("Data file not ready: wait");
-	       
-	       strcpy(notready_file_path,
-		      entry_found_pt->filename);
-	       strcat(notready_file_path,
-		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-	       
-	       /* just check coherence between state file and blocking file */
-	       if ( stat(notready_file_path, &file_stat) == -1 )
-	       {
-		   GLOBUS_L_GASS_CACHE_LG("State file and bloking file "
-					  "are not coherent");
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-		
-	       }
-	       
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
-							 cache_handle);
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(rc);
-	       }
-	       rc = globus_l_gass_cache_unlock_close(
-		   cache_handle,
-		   GLOBUS_L_GASS_CACHE_COMMIT);
-	       
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   return(rc);
-	       }
+    /* Lock the file */
+    CACHE_TRACE2( "Global file ready; locking -> %s", names.uniq );
+    rc = globus_l_gass_cache_make_unready( &names );
 
-	       /* wait */
-	       rc = stat(notready_file_path, &file_stat);
-	       while ( rc != -1 )
-	       {
-		   globus_libc_usleep(LOOP_TIME);
-		   rc = stat(notready_file_path, &file_stat);
-	       }
-	       GLOBUS_L_GASS_CACHE_LG("Data file now ready: continue/call recursivelly");
-	       continue;
-	   }
-	   else  /* file ready */
-	   {
-	       GLOBUS_L_GASS_CACHE_LG("Data file ready...");
-	       
-	       /* return the timestamp */
-	       *timestamp=entry_found_pt->timestamp;
-	       
-	       /* look for the tag */
-	       tag_pt = entry_found_pt->tags;
-	       while (tag_pt->tag != GLOBUS_NULL)
-	       {
-		   if ( !strcmp(tag_pt->tag, tag))
-		   {
-		       /* tag found */
-		       break;
-		   }
-		   tag_pt++;
-	       }
-	       if (tag_pt->tag == GLOBUS_NULL)
-	       {
-		   GLOBUS_L_GASS_CACHE_LG("Function "
-					  "globus_gass_cache_delete_start() "
-					  "called with unknown tag");
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return( GLOBUS_GASS_CACHE_ERROR_WRONG_TAG);
-	       } /* tag not found */
-	       
-	       /* tag found; now lock the cache entry */
-	       entry_found_pt->lock_tag= (char *) globus_malloc(strlen(tag)+1);
-	       if ( entry_found_pt->lock_tag == GLOBUS_NULL)
-	       {
-		   CACHE_TRACE("No more memory");
-		   globus_l_gass_cache_entry_free(&entry_found_pt,
-						  GLOBUS_TRUE);
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-	       }
-	       strcpy( entry_found_pt->lock_tag, tag);
-	       
-	       /* prepare to unlock the datafile */
-	       /* do it before I write the state file */
-	       /* wich also free entry_found_pt */
-	       strcpy(notready_file_path,
-		      entry_found_pt->filename);
-	       strcat(notready_file_path,
-		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-	       
-	       /* Write this url entry  */
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
-							 cache_handle);
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(rc);
-	       }
-	       
-	       /* lock the cache entry */
-	       if ((tmp_fd = creat(notready_file_path, 
-                                   GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
-	       {
-		   CACHE_TRACE("Could not create new data file lock");
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
-	       }   
-               close(tmp_fd);
+    /* Free up the name buffers before checking for simplicity */
+    globus_l_gass_cache_names_free( &names );
 
-	       /* release lock */
-	       rc = globus_l_gass_cache_unlock_close(
-		   cache_handle,
-		   GLOBUS_L_GASS_CACHE_COMMIT);
-	       /* and return */
-	       return(rc);
-	   }
-       } /* file ready */
-   } /* while recurs */    
+    /* Now, check the status */
+    if ( GLOBUS_L_ENODATA == rc )
+    {
+	CACHE_TRACE( "Global file went away!" );
+	LOG_ERROR( rc );
+	return GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND;
+    }
+    else if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT;
+    }
+
+    /* Done */
+    return GLOBUS_SUCCESS;
 }
 /* globus_gass_cache_delete_start() */
 /*
@@ -3313,241 +4772,54 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 int
 globus_gass_cache_delete(
     globus_gass_cache_t *cache_handle,
-    char                *url,
-    char                *tag,
+    const char		*url,
+    const char		*tag,
     unsigned long        timestamp,
-    globus_bool_t        is_locked)
+    globus_bool_t        is_locked )
 { 
-    int                        rc; /* general purpose return code */
-    globus_gass_cache_entry_t *entry_found_pt;
-    char                       notready_file_path[PATH_MAX+1];
-    struct stat                file_stat;
-    globus_gass_cache_tag_t   *tag_pt;
-    int                        same_tag;
-    int count =0;
-
+    int		rc;			/* general purpose return code */
+    int		retval = GLOBUS_SUCCESS; /* Our return value. */
+    cache_names	names;
+    double	TODOstime = TODOGetTime();
+    
     /* simply check if the cache has been opened */
-    CHECK_CACHE_IS_INIT();
+    CHECK_CACHE_IS_INIT(cache_handle);
+    
+    /* Generate the local and global filenames */
+    rc = globus_l_gass_cache_names_init( 
+	cache_handle, url, tag, &names );
 
-    /* if no tag supplied, we map it to the tag GLOBUS_L_GASS_CACHE_NULL_TAG ("null")*/
-    if (tag == GLOBUS_NULL)
+    /* Check if they all succeeded. */
+    if ( GLOBUS_SUCCESS != rc )
     {
-	tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
+	LOG_ERROR( rc );
+	return rc;
     }
-    
-/* I want to do every thing again and again until the data file */
-/* is ready */
-   while (GLOBUS_TRUE)
-   {
-       rc = globus_l_gass_cache_lock_open(cache_handle);
-       if (rc != GLOBUS_SUCCESS)
-       {
-	   return(rc);
-       }
-    
-       rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
-					    url,
-					    cache_handle);
-       if (rc != GLOBUS_SUCCESS)
-       {
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	   return(rc);
-       }
-    
-       if (entry_found_pt == GLOBUS_NULL)   /* url not found */
-       {
-	   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete() "
-				  "called with  URL not in cache state file");
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	   return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
-       }
-    
-       /* URL found */
-       GLOBUS_L_GASS_CACHE_LG("URL found");
-    
-       /* new with 1.1 */      
-       if (entry_found_pt->pending == 'P' &&
-	   count < 10  &&
-	   entry_found_pt->lock_tag == GLOBUS_NULL)
-       {
-	   /*  I wait               */
-	   GLOBUS_L_GASS_CACHE_LG("Some add Pending on this url: wait");
 
-	   rc = globus_l_gass_cache_write_state_file(entry_found_pt,
-						     cache_handle);
-	   if (rc != GLOBUS_SUCCESS)
-	   {
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(rc);
-	   }
-	   rc = globus_l_gass_cache_unlock_close(cache_handle,
-						 GLOBUS_L_GASS_CACHE_COMMIT);
-	   if (rc != GLOBUS_SUCCESS)
-	   {
-	       return(rc);
-	   }
-	   
+    /* Do the actual delete... */
+    rc = globus_l_gass_cache_delete( 
+	&names, &timestamp, ( is_locked ? GLOBUS_FALSE : GLOBUS_TRUE ) );
 
-	   count++;
-	   globus_libc_usleep(LOOP_TIME);
-	   continue;
-	   
-       } 
-       
-       
-       if ((entry_found_pt->lock_tag != GLOBUS_NULL) )
-       {			/* if file locked and */
-	   same_tag = !strcmp(entry_found_pt->lock_tag, tag);
-	   if ( !same_tag ||	/* Not by me (tag !=) or */
-		( same_tag && !is_locked) /* might be me (tag ==)  */
-				/* but I did not do it   */
-	       )
-	   {			/*  I wait               */
-	       GLOBUS_L_GASS_CACHE_LG("Data file not ready: wait");
-	    
-	       strcpy(notready_file_path,
-		      entry_found_pt->filename);
-	       strcat(notready_file_path,
-		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-	    
-	       /* just check coherence between state file and blocking file */
-	       if ( stat(notready_file_path, &file_stat) == -1 )
-	       {
-		   GLOBUS_L_GASS_CACHE_LG("State file and blocking file "
-					  "are not coherent");
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-		
-	       }
-	    
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
-							 cache_handle);
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		   return(rc);
-	       }
-	       rc = globus_l_gass_cache_unlock_close(cache_handle,
-						     GLOBUS_L_GASS_CACHE_COMMIT);
-	       if (rc != GLOBUS_SUCCESS)
-	       {
-		   return(rc);
-	       }
-	    
+    /* Free up name buffers */
+    globus_l_gass_cache_names_free( &names );
 
-	       /* wait */
-	       rc = stat(notready_file_path,
-			 &file_stat);
-	       while ( rc != -1 )
-	       {
-		   globus_libc_usleep(LOOP_TIME);
-		   rc = stat(notready_file_path,
-			     &file_stat);
-	       }
-	       GLOBUS_L_GASS_CACHE_LG("Data file now ready: continue/call recursivelly");
-	       continue;
-	   } 
-       }       /* file ready or I did lockit*/
-    
-       /* look for the tag */
-       tag_pt = entry_found_pt->tags;
-       while (tag_pt->tag != GLOBUS_NULL)
-       {
-	   if ( !strcmp(tag_pt->tag, tag))
-	   {
-	       /* tag found */
-	       break;
-	   }
-	   tag_pt++;
-       }
-       if (tag_pt->tag == GLOBUS_NULL)
-       {
-	   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete() "
-				  "called with unknown tag");
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	   return( GLOBUS_GASS_CACHE_ERROR_WRONG_TAG);
-       } /* tag not found */
-    
-       /* tag found; Here, either it is not locked, or it was locked
-	  with the same tag : Unlock the file and Remove the tag
-	  set the file as ready and copy the timestamp */
-       
-       if (entry_found_pt->lock_tag != GLOBUS_NULL)
-       {
-	   globus_free(entry_found_pt->lock_tag);
-	   entry_found_pt->lock_tag= GLOBUS_NULL; 
-	   /* Unlock the cache entry */
-	   strcpy(notready_file_path,
-		  entry_found_pt->filename);
-	   
-	   strcat(notready_file_path,
-		  GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-	   
-	   if ( unlink(notready_file_path) )
-	   {
-	       CACHE_TRACE("Could not delete data file lock");
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-	   }
-       }
-    
-       entry_found_pt->timestamp=timestamp;
-    
-       /* remove the tag */
-       tag_pt->count--;
-       if (!tag_pt->count)   /* no tag left */ 
-       {
-	   globus_free(tag_pt->tag);
-	   tag_pt->tag= GLOBUS_NULL;
-	   entry_found_pt->num_tags--;
-       }
-    
-       if (entry_found_pt->num_tags)    /* some more tag */
-       {
-	   /* I do write the last entry */
-	   rc = globus_l_gass_cache_write_state_file(entry_found_pt,
-						     cache_handle);
-	   if (rc != GLOBUS_SUCCESS)
-	   {
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	       return(rc);
-	   }
-       }
-       else
-       {
-	   cache_handle->nb_entries--;
-	   /* else, if no more tag at all, I do not write this entry */
-	   /* and I remove the data file */
-	   if ( unlink(entry_found_pt->filename) )
-	   {
-	       CACHE_TRACE("Could not delete data file");
-	       /* remove the entry anyway... we might have a zomby */
-	       /* data file */
-	       globus_l_gass_cache_entry_free(&entry_found_pt,
-					      GLOBUS_TRUE);
-	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_COMMIT);
-	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
-	   }
-	   /* since we do not write it, lets free the entry here */
-	   globus_l_gass_cache_entry_free(&entry_found_pt,
-					  GLOBUS_TRUE);
-       }
-    
-       /* release lock */
-       rc = globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_COMMIT);
-       /* and return */
-       return(rc);
-   } /* while recurs */
+    /* Clean up! */
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
+
+    /* Build some file names that we'll use. */
+    {
+	char buf[256];
+	globus_libc_lock();
+	sprintf( buf, "DELETE; %.3fs", TODOGetTime() - TODOstime );
+	globus_libc_unlock();
+	CACHE_TRACE( buf );
+    }
+    return retval;
+
 }
 /* globus_gass_cache_delete() */
 
@@ -3585,135 +4857,442 @@ globus_gass_cache_delete(
 int
 globus_gass_cache_cleanup_tag(
     globus_gass_cache_t *cache_handle,
-    char                *url,
-    char                *tag)
+    const char		*url,
+    const char		*tag)
 {
-    int                        rc; /* general purpose return code */
-    globus_gass_cache_entry_t *entry_found_pt;
-    char                       notready_file_path[PATH_MAX+1];
-    globus_gass_cache_tag_t   *tag_pt;
-    int                        same_tag;
-
+    int		rc;			/* general purpose return code */
+    cache_names	names;
+    double	TODOstime = TODOGetTime();
+    int		TODOnum = 0;
+    
     /* simply check if the cache has been opened */
-    CHECK_CACHE_IS_INIT();
+    CHECK_CACHE_IS_INIT(cache_handle);
+    
+    /* Generate the local and global filenames */
+    rc = globus_l_gass_cache_names_init( 
+	cache_handle, url, tag, &names );
 
-    /* if no tag supplied, we map it to the tag
-       GLOBUS_L_GASS_CACHE_NULL_TAG ("null")*/
-   if (tag == GLOBUS_NULL)
-   {
-       tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
-   }
-   
-   rc = globus_l_gass_cache_lock_open(cache_handle);
-   if (rc != GLOBUS_SUCCESS)
-   {
-       return(rc);
-   }
+    /* Check if they all succeeded. */
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
 
-   rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
-					url,
-					cache_handle);
-   if (rc != GLOBUS_SUCCESS)
-   {
-       globus_l_gass_cache_unlock_close(cache_handle,
-					GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-       return(rc);
-   }
+    /* It's got a mangled name; kill it! */
+    rc = globus_l_gass_cache_delete( &names, GLOBUS_NULL, GLOBUS_TRUE );
 
-   if (entry_found_pt == GLOBUS_NULL)   /* url not found */
-   {
-       GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_cleanup_tag() called with  URL not in cache state file");
-       globus_l_gass_cache_unlock_close(cache_handle,
-					GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-       return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
-   }
-   /* URL found */
-   GLOBUS_L_GASS_CACHE_LG("URL found");
+    /* Free up the name strings */
+    globus_l_gass_cache_names_free( &names );
 
-   /* look for the tag */
-   tag_pt = entry_found_pt->tags;
-   while (tag_pt->tag != GLOBUS_NULL)  /* Note : Here I can use while        */
-   /* because I know there is no hole in the tag array (just read from file) */
-   {
-       if ( !strcmp(tag_pt->tag, tag))
-       {
-	   /* tag found */
-	   globus_free(tag_pt->tag);
-	   tag_pt->tag= GLOBUS_NULL;
-	   tag_pt->count=0;
-	   entry_found_pt->num_tags--;
-	   break;
-       }
-       tag_pt++;
-   }
+    /* Check our status */
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
 
-   /* no check if tag was not existing... */
-
-   
-
-   if ( entry_found_pt->lock_tag != GLOBUS_NULL ) /* file locked */
-   {
-       same_tag = !strcmp(entry_found_pt->lock_tag, tag);
-       /* if locked with the same tag or if there is no more tag left
-       at all Note that it should not happen that the file is locked
-       with a not existing tag. But then we clean every thing any way */
-       if (same_tag || !entry_found_pt->num_tags) 
-       {
-	   /* locked with the tag to be cleaned up : remove lock */
-	   globus_free(entry_found_pt->lock_tag);
-	   entry_found_pt->lock_tag= GLOBUS_NULL; 
-	   /* Unlock the cache entry */
-           strcpy(notready_file_path,entry_found_pt->filename);
-           strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
-           if ( unlink(notready_file_path) )
-	   {
-	       CACHE_TRACE("Could not delete data file lock, "
-			   "but continue cleanup");
-	       /* weel, since this is a clean up, lets try to clean up
-		  any way and not abort/return an error here... */
-	   }
-       } /* same tag */
-   } /* file locked */
-
-   if (entry_found_pt->num_tags) /* some other tag */
-   {
-       /* I do write the last entry */
-       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
-						 cache_handle);
-       if (rc != GLOBUS_SUCCESS)
-       {
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	   return(rc);
-       } 
-   }
-   else
-   {
-       cache_handle->nb_entries--;
-       /* else, if no more tag at all, I do not write this entry */
-       /* and I remove the data file */
-       if ( unlink(entry_found_pt->filename) )
-       {
-	   CACHE_TRACE("Could not delete data file, clean up anyway...");
-	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_COMMIT);
-	   return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DELETE_DATA_F);
-       }
-       /* since we did not write it, lets free the entry here */
-       globus_l_gass_cache_entry_free(&entry_found_pt,
-				      GLOBUS_TRUE);
-   } /* no more tag at all */
-   
-   /* release lock */
-   rc = globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_COMMIT);
-   /* and return */
-   return(rc);
+    /* Build some file names that we'll use. */
+    {
+	char buf[256];
+	globus_libc_lock();
+	sprintf( buf, "Cleanup %d; %.3fs", TODOnum, TODOGetTime()-TODOstime );
+	globus_libc_unlock();
+	CACHE_TRACE( buf );
+    }
+    return rc;
     
 }
 /*globus_gass_cache_add_cleanup_tag() */
 
+/*
+ * globus_gass_cache_cleanup_tag_all()
+ *
+ * Remove all instances of the tag from the cache entry's tag list.
+ * If there are no more tags in the tag list, then remove this cache entry
+ * and delete the associated local cache file.
+ * If the cache entry is locked with the same tag as is passed to this
+ * function, then the entry is unlocked after removing the tags.
+ * Otherwise, the cache entry's lock is left untouched.
+ *
+ * This function does not block on a locked reference.  This function
+ * differs from globus_gass_cache_cleanup_tag() in that this cleans up
+ * *all* URLs related with this tag.
+ *
+ * Note: The GLOBUS_GRAM job manager will automatically call this function
+ * with a tag of getenv("GLOBUS_GRAM_JOB_CONTACT") upon completion of a job.
+ *
+ * Parameters:
+ *
+ *     cache_handle - Handler to the opened cahe directory to use.
+ *
+ *     tag - tag specifying which job is/are using the cache. This
+ *     is usually the GLOBUS_GRAM_JOB_CONTACT. Can be NULL or empty; the
+ *     tag "null" is then used.
+ *
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS or error code:
+ *     or any of the defined gass error code.   
+ */
+int
+globus_gass_cache_cleanup_tag_all(
+    globus_gass_cache_t *cache_handle,
+    char                *tag )
+{
+    int			rc;			/* Temp return code */
+    int			retval = GLOBUS_SUCCESS; /* Our return value. */
+    cache_names		names;
+    char		*base_local_dir;
+    double		TODOstime = TODOGetTime();
+    url_list_head	url_list;
+    url_list_elem	*url_elem, *url_next;
+    
+    /* simply check if the cache has been opened */
+    CHECK_CACHE_IS_INIT(cache_handle);
+    
+    /* Build the base local directory to use. */
+    rc = globus_l_gass_cache_names_init( 
+	cache_handle, GLOBUS_NULL, tag, &names );
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	rc = globus_l_gass_cache_build_dirname(
+	    names.local_root,
+	    names.mangled_tag,
+	    GLOBUS_NULL,
+	    &base_local_dir,
+	    GLOBUS_NULL );
+    }
 
+    /* Scan for URLs */
+    url_list.first = GLOBUS_NULL;
+    url_list.count = 0;
+    rc = globus_l_gass_cache_list_all_urls( base_local_dir,
+					    "",
+					    &url_list );
+    CACHE_TRACE4( "cleanup: scanned '%s' (tag '%s'), found %d", 
+		  base_local_dir, tag, url_list.count );
+
+    /* Walk through 'em all */
+    url_elem = url_list.first;
+    while ( GLOBUS_NULL != url_elem )
+    {
+	/* It's got a mangled name; kill it! */
+	if ( ( GLOBUS_NULL != url_elem->mangled ) &&
+	     ( strlen( url_elem->mangled ) > 0 )  )
+	{
+	    rc = globus_l_gass_cache_names_new_murl(
+		url_elem->mangled, &names );
+	    if ( GLOBUS_SUCCESS != rc )
+	    {
+		MARK_ERRORMSG( rc, url_elem->mangled );
+		LOG_ERROR( rc );
+		retval = rc;
+		continue;
+	    }
+	    rc = globus_l_gass_cache_delete( &names, GLOBUS_NULL, GLOBUS_TRUE);
+	    if ( GLOBUS_SUCCESS != rc )
+	    {
+		char	buff[1024];
+		sprintf(buff,"MURL=\"%s\"", url_elem->mangled);
+		MARK_ERRORMSG( rc, buff );
+		LOG_ERROR( rc );
+		retval = rc;
+	    }
+
+	}
+
+	/* Free up the mangled URL buffer */
+	if ( GLOBUS_NULL != url_elem->mangled )
+	{
+	    free( url_elem->mangled );
+	}
+
+	/* Free up the URL list structure & name buffer */
+	url_next = url_elem->next;
+	free( url_elem );
+	url_elem = url_next;
+    }
+
+    /* Done */
+    globus_l_gass_cache_names_free( &names );
+
+    /* Build some file names that we'll use. */
+    {
+	char buf[256];
+	globus_libc_lock();
+	sprintf( buf, "CleanupAll %.3fs", TODOGetTime()-TODOstime );
+	globus_libc_unlock();
+	CACHE_TRACE( buf );
+    }
+    return retval;
+}
+/*globus_gass_cache_add_cleanup_tag_all() */
+
+/*
+ * globus_gass_cache_mangle_url()
+ *
+ * Mangles the given URL into a chunk suitable for using as a file /
+ * path name.  This is exported for use in the globus_gass_cache
+ * program.
+ *  
+ * Parameters:
+ *      cache_handle - Handler to the opened cahe directory to use.
+ *
+ *	url - The incoming URL to mangle (\0 terminated)
+ *
+ *	mangled_url - Pointer to the output string; a buffer for the
+ *	real string is malloc()ed for the application.  If mangled is
+ *	NULL, then no such buffer is allocated, and no mangled string
+ *	is created.  This can be useful to just get the length of the
+ *	mangled string.
+ *
+ *	Length - The length of the resulting string.  If NULL, this is
+ *	not assigned to.
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
+ */
+int
+globus_gass_cache_mangle_url( const globus_gass_cache_t	*cache_handle,
+			      const char		*url,
+			      char			**mangled_url,
+			      int			*length )
+{
+
+    /* Let _mangle() do all the work! */
+    return globus_l_gass_cache_mangle( url,
+				       cache_handle->mangling_options,
+				       cache_handle->max_mangled_url,
+				       mangled_url,
+				       length );
+
+} /* globus_gass_cache_mangle_url() */
+
+/*
+ * globus_gass_cache_mangle_tag()
+ *
+ * Mangles the given tag into a chunk suitable for using as a file /
+ * path name.  This is exported for use in the globus_gass_cache
+ * program.
+ *  
+ * Parameters:
+ *      cache_handle - Handler to the opened cahe directory to use.
+ *
+ *	tag - The incoming tag to mangle (\0 terminated)
+ *
+ *	mangled_tag - Pointer to the output string; a buffer for the
+ *	real string is malloc()ed for the application.  If mangled is
+ *	NULL, then no such buffer is allocated, and no mangled string
+ *	is created.  This can be useful to just get the length of the
+ *	mangled string.
+ *
+ *	Length - The length of the resulting string.  If NULL, this is
+ *	not assigned to.
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
+ */
+int
+globus_gass_cache_mangle_tag( const globus_gass_cache_t	*cache_handle,
+			      const char		*tag,
+			      char			**mangled_tag,
+			      int			*length )
+{
+
+    /* Let _mangle() do all the work! */
+    return globus_l_gass_cache_mangle( tag,
+				       cache_handle->mangling_options,
+				       cache_handle->max_mangled_tag,
+				       mangled_tag,
+				       length );
+
+} /* globus_gass_cache_mangle_tag() */
+
+/*
+ * globus_gass_cache_get_dirs()
+ *
+ * Gets a bunch of directories.  This is exported for use in the
+ * globus_gass_cache program.
+ *  
+ * Parameters:
+ *      cache_handle - Handler to the opened cahe directory to use.
+ *
+ *	URL - The incoming URL
+ *
+ *	tag - The incoming tag
+ *
+ *	local_root - Pointer to the "local root" directory
+ *
+ *	global_root - Pointer to the "global root" directory
+ *
+ *	tmp_root - Pointer to the "tmp root" directory
+ *
+ *	log_root - Pointer to the root log directory
+ *
+ *	local_dir - Pointer to the related "local" directory
+ *
+ *	global_dir - Pointer to the related "global" directory
+ *
+ * Returns:
+ *	GLOBUS_SUCCESS
+ *	GLOBUS_GASS_CACHE_ERROR_NO_MEMORY
+ *
+ */
+int
+globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
+			    const char			*url,
+			    const char			*tag,
+			    char			**global_root,
+			    char			**local_root,
+			    char			**tmp_root,
+			    char			**log_root,
+			    char			**global_dir,
+			    char			**local_dir )
+{
+    int		rc = GLOBUS_SUCCESS;	/* general purpose return code */
+    cache_names	names;
+
+    /* Initialize 'em all to NULL */
+    if ( global_root )
+    {
+	*global_root = GLOBUS_NULL;
+    }
+    if ( local_root )
+    {
+	*local_root = GLOBUS_NULL;
+    }
+    if ( tmp_root )
+    {
+	*tmp_root = GLOBUS_NULL;
+    }
+    if ( log_root )
+    {
+	*log_root = GLOBUS_NULL;
+    }
+    if ( global_dir )
+    {
+	*global_dir = GLOBUS_NULL;
+    }
+    if ( local_dir )
+    {
+	*local_dir = GLOBUS_NULL;
+    }
+    
+    /* simply check if the cache has been opened */
+    CHECK_CACHE_IS_INIT(cache_handle);
+    
+    /* Generate the local and global filenames */
+    rc = globus_l_gass_cache_names_init( 
+	cache_handle, url, tag, &names );
+
+    /* Check if they all succeeded. */
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	LOG_ERROR( rc );
+	return rc;
+    }
+
+    /* Copy out the path pieces.... */
+    if ( ( global_root ) && ( names.global_root ) )
+    {
+	if (  ( *global_root = globus_libc_strdup( names.global_root ) )
+              == GLOBUS_NULL )
+	{
+	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	}
+    }
+    if ( ( local_root ) && ( names.local_root ) )
+    {
+	if (  ( *local_root = globus_libc_strdup( names.local_root ) )
+              == GLOBUS_NULL )
+	{
+	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	}
+    }
+    if ( ( tmp_root ) && ( names.tmp_root ) )
+    {
+	if (  ( *tmp_root = globus_libc_strdup( names.tmp_root ) )
+              == GLOBUS_NULL )
+	{
+	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	}
+    }
+    if ( ( log_root ) && ( names.log_root ) )
+    {
+	if (  ( *log_root = globus_libc_strdup( names.log_root ) )
+              == GLOBUS_NULL )
+	{
+	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	}
+    }
+    if ( ( global_dir ) && ( names.global_dir ) )
+    {
+	if (  ( *global_dir = globus_libc_strdup( names.global_dir ) )
+              == GLOBUS_NULL )
+	{
+	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	}
+    }
+    if ( ( local_dir ) && ( names.local_dir ) )
+    {
+	if (  ( *local_dir = globus_libc_strdup( names.local_dir ) )
+              == GLOBUS_NULL )
+	{
+	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+	}
+    }
+
+    /* Free up name buffers */
+    globus_l_gass_cache_names_free( &names );
+
+    /* Done if all ok. */
+    if ( GLOBUS_SUCCESS == rc )
+    {
+	return GLOBUS_SUCCESS;
+    }
+
+    /* Handle errors w/o leaking memory! */
+    if ( ( global_root ) && ( *global_root ) )
+    {
+	globus_free( *global_root );
+	*global_root = GLOBUS_NULL;
+    }
+    if ( ( local_root ) && ( *local_root ) )
+    {
+	globus_free( *local_root );
+	*local_root = GLOBUS_NULL;
+    }
+    if ( ( tmp_root ) && ( *tmp_root ) )
+    {
+	globus_free( *tmp_root );
+	*tmp_root = GLOBUS_NULL;
+    }
+    if ( ( log_root ) && ( *log_root ) )
+    {
+	globus_free( *log_root );
+	*log_root = GLOBUS_NULL;
+    }
+    if ( ( global_dir ) && ( *global_dir ) )
+    {
+	globus_free( *global_dir );
+	*global_dir = GLOBUS_NULL;
+    }
+    if ( ( local_dir ) && ( *local_dir ) )
+    {
+	globus_free( *local_dir );
+	*local_dir = GLOBUS_NULL;
+    }
+
+    return rc;
+
+} /* globus_gass_cache_get_dirs() */
+
+#if 0
 /*
  * Function: globus_gass_cache_cleanup_file()
  * 
@@ -3744,11 +5323,12 @@ globus_gass_cache_cleanup_file(
     char                       notready_file_path[PATH_MAX+1];
 
     /* simply check if the cache has been opened */
-    CHECK_CACHE_IS_INIT();
+    CHECK_CACHE_IS_INIT(cache_handle);
 
     rc = globus_l_gass_cache_lock_open(cache_handle);
     if (rc != GLOBUS_SUCCESS)
     {
+	LOG_ERROR(rc);
 	return(rc);
     }
     
@@ -3758,7 +5338,8 @@ globus_gass_cache_cleanup_file(
     if (rc != GLOBUS_SUCCESS)
     {
 	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
+					 GLOBUS_L_DO_NOT_COMMIT);
+	LOG_ERROR(rc);
 	return(rc);
     }
     
@@ -3767,7 +5348,8 @@ globus_gass_cache_cleanup_file(
 	GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_cleanup_file() "
 			       "called with  URL not in cache state file");
 	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
+					 GLOBUS_L_DO_NOT_COMMIT);
+	LOG_ERROR(0);
 	return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
     }
     /* URL found */
@@ -3788,7 +5370,7 @@ globus_gass_cache_cleanup_file(
         strcpy(notready_file_path,
 	       entry_found_pt->filename);
         strcat(notready_file_path,
-	       GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+	       GLOBUS_L_EXT_NOTREADY);
         if ( unlink(notready_file_path) )
 	{
 	    CACHE_TRACE("Could not delete data file lock, "
@@ -3802,208 +5384,13 @@ globus_gass_cache_cleanup_file(
 				   GLOBUS_TRUE);
     /* release lock */
     rc = globus_l_gass_cache_unlock_close(cache_handle,
-					  GLOBUS_L_GASS_CACHE_COMMIT);
+					  GLOBUS_L_COMMIT);
     /* and return */
     return(rc);
     
 }
 /*globus_gass_cache_add_cleanup_file() */
-
-/*
- * globus_gass_cache_add_list()
- *
- * Return the entries of the cache in *entries as an array of
- * globus_gass_cache_entry_t structures, and return the number of elements in
- * this array in *size.
- *
- * The function globus_gass_cache_list_free() must be called subsequently to
- * free the entrie array allocated by globus_gass_cache_list();
- *
- * Parameters:
- *
- *     cache_handle - Handler to the opened cahe directory to use.
- *
- *     entries - array of globus_gass_cache_entry_t structure describing
- *     eache cache entry.
- *		
- *     size - size of the "entries" array, (nb of entries)
- *		
- * Returns:
- *		
- *      GLOBUS_SUCCESS 
- *	or any of the defined gass error code.      
- */
-int
-globus_gass_cache_list(
-    globus_gass_cache_t        *cache_handle,
-    globus_gass_cache_entry_t **entries,
-    int                        *size)
-{
-    int      rc;		/* general purpose return code */
-    char     size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    char     entry_separator[2]; /* eache entry is preceded by   */
-				 /* a line containing #\n or *\n */
-    int      i;
-    
-    /* simply check if the cache has been opened */
-    CHECK_CACHE_IS_INIT();
-
-    
-    rc = globus_l_gass_cache_lock_open(cache_handle);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	return(rc);
-    }
-
-    /* lets read the number of entries at the end of the file I must
-    rewind LENGHT_LENGH for the nb_entries, +1 for the \n and + 2 for
-    the "*\n" preceding the nb_entries, = LENGHT_LENGH+3 */
-    lseek(cache_handle->state_file_fd,
-	  -(GLOBUS_L_GASS_CACHE_L_LENGHT+3),
-	  SEEK_END);
-    
-    while (read( cache_handle->state_file_fd,
-		  entry_separator,
-		  sizeof(entry_separator))
-	    != sizeof(entry_separator))
-    {
-	/* file empty, probably */
-	if (errno == EINTR)
-	{
-	    continue;
-	}
-	*entries = NULL;
-	*size = 0;
-	return(globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT));
-    }
-    if (entry_separator[0] != '*')
-    {
-	CACHE_TRACE("Error reading state file");
-	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-    }
-    while ( read(cache_handle->state_file_fd,
-		 size_s,sizeof(size_s)) != sizeof(size_s) )
-    {
-	if (errno != EINTR)
-	{
-	    CACHE_TRACE("Error reading state file");
-	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-    }
-    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0'; /* replace \n with \0 */
-    *size = atoi(size_s);
-
-    if ( *size == 0)
-    {
-	/* No entries, job finished */
-	*entries =GLOBUS_NULL;
-	return(globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT));
-    }
-    
-    *entries = (globus_gass_cache_entry_t *)
-	globus_malloc( (*size) *  sizeof(globus_gass_cache_entry_t));
-    if (*entries == GLOBUS_NULL)
-    {
-	CACHE_TRACE("No more memory");
-	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
-    }
-
-    /* scan the file */
-    lseek(cache_handle->state_file_fd,
-	  COMMENT_LENGHT,
-	  SEEK_SET);
-
-    for (i=0; i<*size; i++)
-    {
-	globus_gass_cache_entry_t * entry_pt;
-
-	while ( read( cache_handle->state_file_fd,
-			    entry_separator,
-			    sizeof(entry_separator))
-		      != sizeof(entry_separator) )
-	{
-	    if (errno != EINTR)
-		{
-		    CACHE_TRACE("Error reading state file");
-		    globus_l_gass_cache_unlock_close(
-			cache_handle,
-			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-		    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-		}
-	}
-	if (entry_separator[0] != '#' ) 
-	{
-	    CACHE_TRACE("Error reading state file");
-	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
-	}
-	entry_pt =  *entries+i;
-	rc = globus_l_gass_cache_read_one_entry(cache_handle->state_file_fd,
-						&entry_pt);
-	if (rc != GLOBUS_SUCCESS)
-	{
-	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-	    return (rc);
-	}
-    }
-    /* here I could verify the number of entries... */
-    
-    /* release lock; But I do NOT want to update the file */
-
-    /* I do not free the memory allocated by each read: the user must */
-    /* call gass-cache_list_free() */
-    rc = globus_l_gass_cache_unlock_close(cache_handle,
-					  GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
-    /* and return */
-    return(rc);
-    
-}
-/* globus_gass_cache_list() */
-
-/*
- * globus_gass_cache_list_free()
- *
- * Free the cache entries previously returned by globus_gass_cache_list().
- *
- * Parameters:
- *
- *     entries - array of globus_gass_cache_entry_t structure describing
- *     eache cache entry.
- *
- *     size - size of the "entries" array, (nb of entries)
- *
- * Returns:
- *     GLOBUS_SUCCESS
- *
- */
-int 
-globus_gass_cache_list_free(
-    globus_gass_cache_entry_t *entries,
-    int                        size)
-{
-    int i;
-    globus_gass_cache_entry_t *an_entry_pt;
-    
-    for (i=size-1; i>=0 ; i--)
-    {
-	an_entry_pt=entries+i;
-	
-        globus_l_gass_cache_entry_free(&an_entry_pt,GLOBUS_FALSE);
-    }
-    globus_free(entries);
-
-    return(GLOBUS_SUCCESS);
-} /* globus_gass_cache_add_list_free() */
+#endif
 
 
 /*
@@ -4023,14 +5410,15 @@ char *
 globus_gass_cache_error_string(
     int error_code)
 {
-    if (error_code > 0 ||
-	-error_code >=
-	(sizeof(globus_gass_cache_error_strings) /
-	 sizeof(globus_gass_cache_error_strings[0])))
+    unsigned	pos_errcode = ( unsigned ) ( 0 - error_code );
+    unsigned	max_errcode = ( sizeof( globus_gass_cache_error_strings ) /
+				sizeof( globus_gass_cache_error_strings[0] ) );
+
+    /* Check; is this a valid error code? */
+    if (  ( error_code > 0 ) || ( pos_errcode >= max_errcode )  )
     {
         return("Invalid error code");
     }
-    return(globus_gass_cache_error_strings[-error_code]);
+    return ( globus_gass_cache_error_strings[ pos_errcode ] );
 }
 /* globus_gass_cache_error_string() */
-

@@ -20,8 +20,6 @@
 static
 void
 globus_l_gass_transfer_callback_close_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg);
 #endif
 
@@ -932,8 +930,6 @@ globus_i_gass_transfer_close_listener(
 static
 void
 globus_l_gass_transfer_callback_close_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *					arg)
 {
     globus_gass_transfer_listener_t 		listener;

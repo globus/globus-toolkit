@@ -404,29 +404,21 @@ globus_l_ftp_io_close_callback(
 static
 void
 globus_l_ftp_control_command_kickout(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args);
 
 static
 void
 globus_l_ftp_control_send_data_kickout(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args);
 
 static
 void
 globus_l_ftp_control_reuse_connect_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args);
 
 static
 void
 globus_l_ftp_control_close_kickout(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args);
 
 void
@@ -5313,8 +5305,6 @@ globus_i_ftp_control_create_data_info(
 static
 void
 globus_l_ftp_control_release_data_kickout(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args)
 {
     globus_l_ftp_handle_table_entry_t *          cb_ent;
@@ -5942,8 +5932,6 @@ globus_l_ftp_control_data_register_eod(
 static
 void
 globus_l_ftp_control_send_data_kickout(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args)
 {
     globus_i_ftp_dc_handle_t *                   dc_handle;
@@ -6358,8 +6346,6 @@ globus_l_ftp_control_data_adjust_connection(
 static
 void
 globus_l_ftp_control_command_flush_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args)
 {
     globus_l_ftp_handle_table_entry_t *          entry;
@@ -6471,8 +6457,6 @@ globus_l_error_flush_command_q(
 static
 void
 globus_l_ftp_control_command_kickout(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args)
 {
     globus_l_ftp_handle_table_entry_t *          entry;
@@ -6517,8 +6501,6 @@ globus_l_ftp_control_command_kickout(
 static
 void
 globus_l_ftp_control_reuse_connect_callback(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args)
 {
     globus_l_ftp_dc_connect_cb_info_t *          connect_cb_info;
@@ -6695,8 +6677,6 @@ globus_l_ftp_control_dc_dec_ref(
 static
 void
 globus_l_ftp_control_close_kickout(
-    const globus_abstime_t *                    time_now,
-    const globus_abstime_t *                    time_stop,
     void *                                      user_args)
 {
     globus_ftp_control_handle_t *                control_handle;
