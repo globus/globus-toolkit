@@ -73,7 +73,7 @@ extern FILE *                           globus_i_gsi_cred_debug_fstream;
          
 #define GLOBUS_I_GSI_CRED_DEBUG_ENTER \
             GLOBUS_I_GSI_CRED_DEBUG_FPRINTF( \
-                1, (globus_i_gsi_cred_debug_fstream, \
+                2, (globus_i_gsi_cred_debug_fstream, \
                     "%s entering\n", _function_name_))
 
 #define GLOBUS_I_GSI_CRED_DEBUG_EXIT \

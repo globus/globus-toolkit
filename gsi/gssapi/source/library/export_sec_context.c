@@ -89,7 +89,7 @@ GSS_CALLCONV gss_export_sec_context(
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Invalid context handle passed to the function: %s",
              _function_name_));
@@ -101,7 +101,7 @@ GSS_CALLCONV gss_export_sec_context(
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Invalid interprocess token parameter passed to function: %s",
              _function_name_));
@@ -114,7 +114,7 @@ GSS_CALLCONV gss_export_sec_context(
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
             ("NULL bio for serializing SSL handle"));
         goto exit;
@@ -144,7 +144,7 @@ GSS_CALLCONV gss_export_sec_context(
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
             ("Couln't retrieve SSL session handle from SSL"));
         major_status = GSS_S_FAILURE;
-        goto exit;
+        goto unlock_mutex;
     }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT_OBJECT(3, SSL_SESSION, session);
@@ -159,7 +159,7 @@ GSS_CALLCONV gss_export_sec_context(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
         major_status = GSS_S_FAILURE;
-        goto exit;
+        goto unlock_mutex;
     }
 
     L2N(peer_cert_count, (char *)int_buffer);
@@ -176,7 +176,7 @@ GSS_CALLCONV gss_export_sec_context(
                 minor_status, local_result,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
             major_status = GSS_S_FAILURE;
-            goto exit;
+            goto unlock_mutex;
         }
 
         i2d_X509_bio(bp, sk_X509_value(cert_chain, index));
@@ -192,7 +192,7 @@ GSS_CALLCONV gss_export_sec_context(
             local_minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL);
         major_status = local_major_status;
-        goto exit;
+        goto unlock_mutex;
     }
     
     /* now get it out of the BIO and call it a token */
@@ -204,7 +204,7 @@ GSS_CALLCONV gss_export_sec_context(
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
             ("Couldn't get data from BIO for serializing SSL handle"));
         major_status = GSS_S_FAILURE;
-        goto exit;
+        goto unlock_mutex;
     }
 
     context_serialized = (unsigned char *) malloc(length);
@@ -213,7 +213,7 @@ GSS_CALLCONV gss_export_sec_context(
     {
         GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
         major_status = GSS_S_NO_CONTEXT;
-        goto exit;
+        goto unlock_mutex;
     }
     
     BIO_read(bp, (char *)context_serialized, length);
@@ -235,8 +235,14 @@ GSS_CALLCONV gss_export_sec_context(
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
         goto exit;
     }
+
+    goto exit;
+
+ unlock_mutex:
+
+    globus_mutex_unlock(&context->mutex);
     
-exit:
+ exit:
     
     if(bp)
     {

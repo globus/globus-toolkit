@@ -76,6 +76,8 @@
 #define X509_DEFAULT_CERT_DIR           "SLANG: NEEDS TO BE DETERMINED"
 #define X509_INSTALLED_CERT_DIR         "etc"
 #define X509_LOCAL_CERT_DIR             ".globus"
+#define DEFAULT_GRIDMAP                 "SLANG: NEEDS TO BE DETERMINED"
+#define LOCAL_GRIDMAP                   "SLANG: NEEDS TO BE DETERMINED"
 #else
 #define FILE_SEPERATOR                  "/"
 #define X509_DEFAULT_USER_CERT          ".globus/usercert.pem"
@@ -87,6 +89,8 @@
 #define X509_DEFAULT_CERT_DIR           "/etc/grid-security"
 #define X509_INSTALLED_CERT_DIR         "etc"
 #define X509_LOCAL_CERT_DIR             ".globus"
+#define DEFAULT_GRIDMAP                 "/etc/grid-security/grid-mapfile"
+#define LOCAL_GRIDMAP                   ".gridmap"
 #endif
 
 #define X509_HOST_PREFIX                "host"
@@ -134,7 +138,7 @@ static
 int
 globus_l_gsi_sysconfig_activate(void)
 {
-    int                                 result;
+    int                                 result = (int) GLOBUS_SUCCESS;
     const char *                              random_file = NULL;
     char *                              egd_path = NULL;
     clock_t                             cputime;
@@ -160,7 +164,7 @@ globus_l_gsi_sysconfig_activate(void)
         globus_i_gsi_sysconfig_debug_fstream = fopen(tmp_string, "w");
         if(globus_i_gsi_sysconfig_debug_fstream == NULL)
         {
-            result = GLOBUS_NULL;
+            result = (int) GLOBUS_FAILURE;
             goto exit;
         }
     }
@@ -205,14 +209,16 @@ globus_l_gsi_sysconfig_activate(void)
     }
 
     cputime = clock();
+#warning
 /*    RAND_add((void *) cputime, sizeof(cputime), 2); */
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_FPRINTF(
         2, (globus_i_gsi_sysconfig_debug_fstream,
             "RAND_status = %d", RAND_status()));
- exit:
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
+
+ exit:
     return result;
 }
 
@@ -820,13 +826,39 @@ globus_gsi_sysconfig_split_dir_and_filename_win32(
  * On Windows, SLANG: NOT DETERMINED
  */
 globus_result_t
-globus_i_gsi_sysconfig_get_user_id_string_win32(
+globus_gsi_sysconfig_get_user_id_string_win32(
     char **                             user_id_string)
 {
     int                                 uid;
 
     static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_get_user_id_string_win32";
+        "globus_gsi_sysconfig_get_user_id_string_win32";
+
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+    result = globus_gsi_sysconfig_get_username_win32(user_id_string);
+
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
+    
+    return GLOBUS_SUCCESS;
+}
+/* @} */
+
+/**
+ * WIN32 - Get Username
+ * @ingroup globus_i_gsi_sysconfig_win32
+ */
+/* @{ */
+/**
+ * Get the username of the current user.  
+ * On Windows, SLANG: NOT DETERMINED
+ */
+globus_result_t
+globus_gsi_sysconfig_get_username_win32(
+    char **                             username)
+{
+    static char *                       _function_name_ =
+        "globus_gsi_sysconfig_get_username_win32";
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
@@ -838,7 +870,6 @@ globus_i_gsi_sysconfig_get_user_id_string_win32(
 }
 /* @} */
 
-
 /**
  * WIN32 - Get Process ID
  * @ingroup globus_i_gsi_sysconfig_win32
@@ -849,13 +880,13 @@ globus_i_gsi_sysconfig_get_user_id_string_win32(
  * On Windows, SLANG: NOT DETERMINED
  */
 globus_result_t
-globus_i_gsi_sysconfig_get_proc_id_string_win32(
+globus_gsi_sysconfig_get_proc_id_string_win32(
     char **                             proc_id_string)
 {
     int                                 uid;
 
     static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_get_proc_id_string_win32";
+        "globus_gsi_sysconfig_get_proc_id_string_win32";
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
@@ -2048,7 +2079,7 @@ globus_gsi_sysconfig_get_proxy_filename_win32(
 
     if (!user_proxy)
     {
-        if((result = GLOBUS_I_GSI_SYSCONFIG_GET_USER_ID_STRING(
+        if((result = GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING(
             &user_id_string))
            != GLOBUS_SUCCESS)
         {
@@ -2151,6 +2182,20 @@ globus_gsi_sysconfig_remove_all_owned_files_win32(
     return result;
 }
 
+globus_result_t
+globus_gsi_sysconfig_get_gridmap_filename_win32(
+    char **                             filename)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_sysconfig_get_gridmap_filename_win32";
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+#error SLANG: need to fill this in
+
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
+    return result;
+}
 
 /* END WIN32 SYSCONFIG DEFINITIONS */
 
@@ -2177,7 +2222,7 @@ globus_gsi_sysconfig_remove_all_owned_files_win32(
  *        GLOBUS_SUCCESS unless an error occurred
  */
 globus_result_t
-globus_i_gsi_sysconfig_get_user_id_string_unix(
+globus_gsi_sysconfig_get_user_id_string_unix(
     char **                             user_id_string)
 {
     int                                 uid;
@@ -2186,7 +2231,7 @@ globus_i_gsi_sysconfig_get_user_id_string_unix(
     globus_result_t                     result;
 
     static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_get_user_id_string_unix";
+        "globus_gsi_sysconfig_get_user_id_string_unix";
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
@@ -2232,6 +2277,54 @@ globus_i_gsi_sysconfig_get_user_id_string_unix(
 }
 /* @} */
 
+/**
+ * Unix - Get Username
+ * @ingroup globus_i_gsi_sysconfig_unix
+ */
+/* @{ */
+/**
+ * Get the username of the current user.  
+ */
+globus_result_t
+globus_gsi_sysconfig_get_username_unix(
+    char **                             username)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    struct passwd *                     passwd_username;
+    int                                 uid;
+    static char *                       _function_name_ =
+        "globus_gsi_sysconfig_get_username_unix";
+
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+    uid = getuid();
+    passwd_username = getpwuid(uid);
+    if(!passwd_username)
+    {
+        globus_error_put(globus_error_wrap_errno_error(
+            GLOBUS_GSI_SYSCONFIG_MODULE,
+            errno,
+            GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+            "%s:%d: Error getting passwd username from uid: %d",
+            __FILE__, __LINE__, uid));
+        goto exit;
+    }
+        
+    if((*username = malloc(strlen(passwd_username->pw_name))) == NULL)
+    {
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        goto exit;
+    }
+
+    strncpy(*username, 
+            passwd_username->pw_name, 
+            strlen(passwd_username->pw_name));
+
+ exit:
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
+    return GLOBUS_SUCCESS;
+}
+/* @} */
 
 /**
  * UNIX - Get Process ID
@@ -2249,7 +2342,7 @@ globus_i_gsi_sysconfig_get_user_id_string_unix(
  *        GLOBUS_SUCCESS unless an error occurred
  */
 globus_result_t
-globus_i_gsi_sysconfig_get_proc_id_string_unix(
+globus_gsi_sysconfig_get_proc_id_string_unix(
     char **                             proc_id_string)
 {
     int                                 pid;
@@ -2258,7 +2351,7 @@ globus_i_gsi_sysconfig_get_proc_id_string_unix(
     globus_result_t                     result;
 
     static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_get_proc_id_string_unix";
+        "globus_gsi_sysconfig_get_proc_id_string_unix";
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
@@ -3958,7 +4051,7 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
 
     if (!*user_proxy)
     {
-        result = GLOBUS_I_GSI_SYSCONFIG_GET_USER_ID_STRING(&user_id_string);
+        result = GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING(&user_id_string);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_exit;
@@ -4306,6 +4399,127 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
 }
+/* @} */
+
+/**
+ * @name 
+ * @ingroup
+ */
+globus_result_t
+globus_gsi_sysconfig_is_superuser_unix(
+    int *                               is_superuser)
+{
+    static char *                       _function_name_ =
+        "globus_gsi_sysconfig_is_superuser_unix";
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+    if(getuid() == 0)
+    {
+        *is_superuser = 1;
+    }
+    else
+    {
+        *is_superuser = 0;
+    }
+
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
+    return GLOBUS_SUCCESS;
+}
+/* @} */
+
+globus_result_t
+globus_gsi_sysconfig_get_gridmap_filename_unix(
+    char **                             filename)
+{
+    char *                              home_dir = NULL;
+    char *                              gridmap_env = NULL;
+    char *                              gridmap_filename = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_sysconfig_get_gridmap_filename_unix";
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+    if(((gridmap_env = (char *) getenv("GRIDMAP"))   != NULL) ||
+       ((gridmap_env = (char *) getenv("GLOBUSMAP")) != NULL) ||
+       ((gridmap_env = (char *) getenv("globusmap")) != NULL) ||
+       ((gridmap_env = (char *) getenv("GlobusMap")) != NULL))
+    {
+        gridmap_filename = malloc(sizeof(gridmap_env));
+        if(!gridmap_filename)
+        {
+            GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto error_exit;
+        }
+        strncpy(gridmap_filename, gridmap_env, sizeof(gridmap_env));
+    }
+
+    if(!gridmap_filename)
+    {
+        if(getuid() == 0)
+        {
+            /* being run as root */
+            
+            gridmap_filename = malloc(sizeof(DEFAULT_GRIDMAP));
+            if(!gridmap_filename)
+            {
+                GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+                goto error_exit;
+            }
+            strncpy(gridmap_filename, 
+                    DEFAULT_GRIDMAP, 
+                    sizeof(DEFAULT_GRIDMAP));
+        }
+        else
+        {
+            result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home_dir);
+            if(result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_HOME_DIR);
+                goto error_exit;
+            }
+            
+            gridmap_filename = globus_gsi_cert_utils_create_string(
+                "%s%s%s",
+                home_dir,
+                FILE_SEPERATOR,
+                LOCAL_GRIDMAP);
+            if(!gridmap_filename)
+            {
+                GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+                goto error_exit;
+            }
+        }
+    }
+
+    if(!gridmap_filename)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_GRIDMAP_FILENAME,
+            ("A valid gridmap file could not be found."));
+        goto error_exit;
+    }
+
+    *filename = gridmap_filename;
+
+ error_exit:
+
+    if(gridmap_env)
+    {
+        free(gridmap_env);
+    }
+
+    if(gridmap_filename)
+    {
+        free(gridmap_filename);
+    }
+
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
+    return result;
+}
+/* @} */
 
 #endif /* done defining *_unix functions */
 
@@ -4341,8 +4555,8 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
     
     *unique_filename = NULL;
 
-    if((result = GLOBUS_I_GSI_SYSCONFIG_GET_PROC_ID_STRING(&proc_id_string))
-       != GLOBUS_SUCCESS)
+    result = GLOBUS_GSI_SYSCONFIG_GET_PROC_ID_STRING(&proc_id_string);
+    if(result != GLOBUS_SUCCESS)
     {
         result = GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
             result,

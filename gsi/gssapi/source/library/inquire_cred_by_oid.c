@@ -9,14 +9,14 @@
  */
 #endif
 
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
+#include <string.h>
+
 /* Only build if we have the extended GSSAPI */
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
 
 static char *rcsid = "$Id$";
-
-#include "gssapi_openssl.h"
-#include "globus_i_gsi_gss_utils.h"
-#include <string.h>
 
 /**
  * @name Inquire Cred By OID
@@ -49,14 +49,19 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
     gss_cred_id_desc *                  cred;
-    int                                 i;
-    int                                 cert_count;
-    STACK_OF(X509_EXTENSION) *          extensions;
-    X509_EXTENSION *                    ex;
-    X509 *                              cert;
-    ASN1_OBJECT *                       asn1_obj;
+    X509_EXTENSION *                    extension;
+    X509 *                              cert = NULL;
+    STACK_OF(X509) *                    cert_chain = NULL;
+    ASN1_OBJECT *                       desired_asn1_obj;
     ASN1_OCTET_STRING *                 asn1_oct_string;
     gss_buffer_desc                     data_set_buffer;
+    gss_ctx_id_desc *                   context = NULL;
+    int                                 chain_index;
+    int                                 found_index;
+    globus_result_t                     local_result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "gss_inquire_cred_by_oid";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
     cred = (gss_cred_id_desc *) cred_handle;
@@ -99,19 +104,19 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         goto exit;
     }
 
-    local_result = globus_gsi_callback_data_get_cert_chain(
+    local_result = globus_gsi_callback_get_cert_chain(
         context->callback_data,
         &cert_chain);
     if(local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_CERT_CHAIN);
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
         major_status = GSS_S_FAILURE;
         goto exit;
     }
 
-    major_status = globus_i_gsi_gss_create_empty_buffer_set(
+    major_status = gss_create_empty_buffer_set(
         &local_minor_status, 
         data_set);
 
@@ -123,13 +128,14 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         goto exit;
     }
 
-    local_result = globus_gsi_cred_handle_get_cert(cred_handle->cred_handle,
-                                                   &cert);
+    local_result = globus_gsi_cred_get_cert(
+        ((gss_cred_id_desc *)cred_handle)->cred_handle,
+        &cert);
     if(local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_CERT);
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -146,8 +152,8 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         goto exit;
     }
 
-    desired_asn1_obj.length = desired_object->length;
-    desired_asn1_obj.data   = desired_object->elements;
+    desired_asn1_obj->length = desired_object->length;
+    desired_asn1_obj->data   = desired_object->elements;
 
     /* check the extensions in the cert first */
 
@@ -191,21 +197,21 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
             data_set_buffer.value = asn1_oct_string->data;
             data_set_buffer.length = asn1_oct_string->length;
         
-            major_status = globus_i_gsi_gss_add_buffer_set_member(
+            major_status = gss_add_buffer_set_member(
                 &local_minor_status,
                 &data_set_buffer,
                 data_set);
             if(GSS_ERROR(major_status))
             {
                 GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status,
+                    minor_status, local_minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_BUFFER);
                 goto exit;
             }
         }
 
     } while(chain_index < sk_X509_num(cert_chain) &&
-            cert = sk_X509_value(cert_chain, chain_index++));
+            (cert = sk_X509_value(cert_chain, chain_index++)));
 
  exit:
 

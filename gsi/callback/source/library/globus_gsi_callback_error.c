@@ -21,6 +21,21 @@ globus_l_gsi_callback_error_strings[GLOBUS_GSI_CALLBACK_ERROR_LAST] =
 {
 
 /* 0 */   "Success",
+/* 1 */   "Could not verify credential",
+/* 2 */   "The certificate is not yet valid",
+/* 3 */   "Can't get the local trusted CA certificate",
+/* 4 */   "The certificate has expired",
+/* 5 */   "Invalid proxy certificate",
+/* 6 */   "Error with limited proxy certificate",
+/* 7 */   "Invalid CRL",
+/* 8 */   "The certificate has been revoked",
+/* 9 */   "Error verifying new proxy certificate",
+/* 10 */  "Error with signing policy",
+/* 11 */  "Error in OLD GAA code",
+/* 12 */  "Error with callback data",
+/* 13 */  "System error",
+/* 14 */  "Error in the certificate chain",
+/* 15 */  "Error with callback data index",
 
 };
 
@@ -120,7 +135,10 @@ globus_i_gsi_callback_error_chain_result(
             filename, line_number, function_name, 
             globus_l_gsi_callback_error_strings[error_type]);
 
-    globus_error_set_long_desc(error_object, long_desc);
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
 

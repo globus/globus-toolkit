@@ -49,6 +49,10 @@ globus_gsi_callback_data_init(
 
     memset(*callback_data, (int) NULL, sizeof(globus_i_gsi_callback_data_t));
 
+    (*callback_data)->proxy_type = GLOBUS_NOT_PROXY;
+
+    (*callback_data)->cert_chain = sk_X509_new_null();
+
     (*callback_data)->error = GLOBUS_SUCCESS;
 
  exit:
@@ -73,7 +77,7 @@ globus_gsi_callback_data_destroy(
 
     if(callback_data->cert_chain)
     {
-        sk_pop_free(callback_data->cert_chain, (void(*)(void *))X509_free);
+        sk_X509_pop_free(callback_data->cert_chain, X509_free);
     }
     
     if(callback_data->cert_dir)
@@ -130,7 +134,7 @@ globus_gsi_callback_data_copy(
     (*dest)->cert_depth = source->cert_depth;
     (*dest)->proxy_depth = source->proxy_depth;
     (*dest)->proxy_type = source->proxy_type;
-    (*dest)->cert_chain = sk_X509_dup(source->cert_chain);
+    (*dest)->cert_chain = sk_X509_new_null();
 
     for(index = 0; index < sk_X509_num(source->cert_chain); ++index)
     {
@@ -390,7 +394,7 @@ globus_gsi_callback_get_cert_chain(
         goto exit;
     }
 
-    *cert_chain = sk_X509_dup(callback_data->cert_chain);
+    *cert_chain = sk_X509_new_null();
 
     for(index = 0; index < sk_X509_num(callback_data->cert_chain); ++index)
     {
@@ -433,7 +437,7 @@ globus_gsi_callback_set_cert_chain(
         goto exit;
     }
 
-    callback_data->cert_chain = sk_X509_dup(cert_chain);
+    callback_data->cert_chain = sk_X509_new_null();
     
     for(index = 0; index < sk_X509_num(cert_chain); ++index)
     {

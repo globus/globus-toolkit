@@ -62,7 +62,12 @@ AC_OUTPUT(
         pkgdata/Makefile
         pkgdata/pkg_data_src.gpt
 	library/Makefile
-	doxygen/Makefile
+        programs/Makefile
+	programs/grid-cert-info
+        programs/grid-cert-renew
+        programs/grid-change-pass-phrase
+        programs/grid-cert-request
+        doxygen/Makefile
 	doxygen/Doxyfile 
 	doxygen/Doxyfile-internal
 	version.h

@@ -61,7 +61,7 @@ GSS_CALLCONV gss_accept_sec_context(
     OM_uint32                           nreq_flags = 0;
     char                                dbuf[1];
     STACK_OF(X509) *                    cert_chain = NULL;
-    int                                 limited_proxy;
+    globus_gsi_cert_utils_proxy_type_t  proxy_type;
 
     static char *                       _function_name_ =
         "gss_accept_sec_context";
@@ -71,18 +71,6 @@ GSS_CALLCONV gss_accept_sec_context(
     output_token->length = 0;
 
     context = *context_handle_P;
-
-    if(delegated_cred_handle_P == NULL && 
-       !((*ret_flags) & GSS_C_GLOBUS_SSL_COMPATIBLE))
-    {
-        major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION,
-            ("NULL parameter for delegated cred handle to "
-             "be passed to function"));
-        goto exit;
-    } 
 
     /* module activation if not already done by calling
      * globus_module_activate
@@ -224,11 +212,17 @@ GSS_CALLCONV gss_accept_sec_context(
                     context->gss_state = GSS_CON_ST_DONE;
                     break;
                 }
+
+                if(context->ret_flags & GSS_C_ANON_FLAG)
+                {
+                    ((gss_name_desc *)(*src_name_P))->name_oid
+                        = GSS_C_NT_ANONYMOUS;
+                }
             }
                         
-            local_result = globus_gsi_callback_get_limited_proxy(
+            local_result = globus_gsi_callback_get_proxy_type(
                 context->callback_data,
-                &limited_proxy);
+                &proxy_type);
 
             if(local_result != GLOBUS_SUCCESS)
             {
@@ -240,7 +234,7 @@ GSS_CALLCONV gss_accept_sec_context(
                 break;
             }
 
-            if (limited_proxy)
+            if (proxy_type == GLOBUS_LIMITED_PROXY)
             {
                 context->ret_flags |= GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG;
                 /*
@@ -253,7 +247,7 @@ GSS_CALLCONV gss_accept_sec_context(
                 {
                     major_status = GSS_S_DEFECTIVE_CREDENTIAL;
                     GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                        minor_status, major_status,
+                        minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_PROXY_VIOLATION,
                         ("Function set to not accept limited proxies"));
                     context->gss_state = GSS_CON_ST_DONE;
@@ -384,6 +378,11 @@ GSS_CALLCONV gss_accept_sec_context(
             minor_status, local_minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
         major_status = local_major_status;
+        goto exit;
+    }
+
+    if(GSS_ERROR(major_status))
+    {
         goto exit;
     }
 

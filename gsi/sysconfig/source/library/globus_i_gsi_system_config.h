@@ -143,40 +143,6 @@ globus_i_gsi_sysconfig_create_key_string(
     const char *                        format,
     ...);
 
-#ifdef WIN32
-#    define GLOBUS_I_GSI_SYSCONFIG_GET_USER_ID_STRING \
-            globus_i_gsI_sysconfig_get_user_id_string_win32
-#    define GLOBUS_I_GSI_SYSCONFIG_GET_PROC_ID_STRING \
-            globus_i_gsi_sysconfig_get_proc_id_string_win32
-#else
-#    define GLOBUS_I_GSI_SYSCONFIG_GET_USER_ID_STRING \
-            globus_i_gsi_sysconfig_get_user_id_string_unix
-#    define GLOBUS_I_GSI_SYSCONFIG_GET_PROC_ID_STRING \
-            globus_i_gsi_sysconfig_get_proc_id_string_unix
-#endif
-
-#ifdef WIN32
-
-globus_result_t
-globus_i_gsi_sysconfig_get_user_id_string_unix(
-    char **                             user_id_string);
-
-globus_result_t
-globus_i_gsi_sysconfig_get_proc_id_string_unix(
-    char **                             proc_id_string);
-
-#else
-
-globus_result_t
-globus_i_gsi_sysconfig_get_user_id_string_win32(
-    char **                             user_id_string);
-
-globus_result_t
-globus_i_gsi_sysconfig_get_proc_id_string_win32(
-    char **                             proc_id_string);
-
-#endif
-
 globus_result_t
 globus_i_gsi_sysconfig_error_chain_result(
     globus_result_t                     chain_result,

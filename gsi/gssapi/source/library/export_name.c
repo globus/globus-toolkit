@@ -43,7 +43,7 @@ GSS_CALLCONV gss_export_name(
         
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("The input name passed to: %s is not valid", _function_name_));
         goto exit;

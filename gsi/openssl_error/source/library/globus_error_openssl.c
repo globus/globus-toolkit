@@ -11,6 +11,7 @@
 #endif
 
 #include <openssl/err.h>
+#include <openssl/ssl.h>
 #include "globus_i_error_openssl.h"
 #include "globus_common.h"
 #include "globus_openssl.h"
@@ -44,7 +45,7 @@ static
 int
 globus_l_gsi_openssl_error_activate(void)
 {
-    globus_bool_t                       result = GLOBUS_TRUE;
+    globus_bool_t                       result = (int) GLOBUS_SUCCESS;
     char *                              tmp_string;
     static char *                       _function_name_ =
         "globus_l_gsi_openssl_error_activate";
@@ -66,7 +67,7 @@ globus_l_gsi_openssl_error_activate(void)
         globus_i_gsi_openssl_error_debug_fstream = fopen(tmp_string, "w");
         if(globus_i_gsi_openssl_error_debug_fstream == NULL)
         {
-            result = GLOBUS_NULL;
+            result = (int) GLOBUS_FAILURE;
             goto exit;
         }
     }
@@ -83,9 +84,11 @@ globus_l_gsi_openssl_error_activate(void)
      * function names, library names, and reasons for errors
      */
     ERR_load_crypto_strings();
+    SSL_load_error_strings();
+
+    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
 
  exit:
-    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return result;
 }
 

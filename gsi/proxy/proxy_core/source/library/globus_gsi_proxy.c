@@ -59,7 +59,7 @@ globus_l_gsi_proxy_activate(void)
     X509V3_EXT_METHOD *                 pci_x509v3_ext_meth = NULL;
     int                                 pci_NID;
     char *                              tmpstring = NULL;
-    int                                 result = (int) GLOBUS_TRUE;
+    int                                 result = (int) GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_l_gsi_proxy_activate";
 
@@ -85,7 +85,7 @@ globus_l_gsi_proxy_activate(void)
         globus_i_gsi_proxy_debug_fstream = fopen(tmpstring, "w");
         if(globus_i_gsi_proxy_debug_fstream == NULL)
         {
-            result = GLOBUS_FALSE;
+            result = (int) GLOBUS_FAILURE;
             goto exit;
         }
     }
@@ -104,9 +104,9 @@ globus_l_gsi_proxy_activate(void)
         CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
     }
 
-    if(!globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE))
+    result = globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
+    if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_FALSE;
         goto exit;
     }
 
@@ -124,9 +124,9 @@ globus_l_gsi_proxy_activate(void)
 
     X509V3_EXT_add(pci_x509v3_ext_meth);
 
- exit:
-
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+
+ exit:
     return result;
 }
 
@@ -530,6 +530,7 @@ globus_gsi_proxy_sign_req(
     X509 *                              issuer_cert = NULL;
     X509_EXTENSION *                    pci_ext = NULL;
     EVP_PKEY *                          issuer_pkey = NULL;
+    EVP_PKEY *                          req_pubkey = NULL;
     globus_result_t                     result;
     int                                 res;
     
@@ -556,15 +557,28 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
 
-    res = X509_REQ_verify(handle->req, X509_REQ_get_pubkey(handle->req));
+    req_pubkey = X509_REQ_get_pubkey(handle->req);
+    if(!req_pubkey)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
+            ("Error getting public key from request structure"));
+        goto done;
+    }
+
+    res = X509_REQ_verify(handle->req, req_pubkey);
     if(!res)
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
             ("Error verifying X509_REQ struct"));
-        goto done;
+        goto free_req_pubkey;
     }
+
+    EVP_PKEY_free(req_pubkey);
+    req_pubkey = NULL;
     
     if(PROXYCERTINFO_get_restriction(handle->proxy_cert_info) != NULL)
     {
@@ -666,8 +680,18 @@ globus_gsi_proxy_sign_req(
             GLOBUS_GSI_PROXY_ERROR_WITH_X509);
         goto free_issuer_cert;
     }
-       
-    if(!X509_set_pubkey(new_pc, X509_REQ_get_pubkey(handle->req)))
+
+    req_pubkey  = X509_REQ_get_pubkey(handle->req);
+    if(!req_pubkey)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_X509,
+            ("Couldnt get the public key from the request"));
+        goto free_issuer_cert;
+    }
+    
+    if(!X509_set_pubkey(new_pc, req_pubkey))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -675,6 +699,9 @@ globus_gsi_proxy_sign_req(
             ("Couldn't set pubkey of X509 cert"));
         goto free_issuer_cert;
     }
+
+    EVP_PKEY_free(req_pubkey);
+    req_pubkey = NULL;
        
     pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
     /* create the X509 extension from the PROXYCERTINFO */
@@ -758,12 +785,20 @@ globus_gsi_proxy_sign_req(
         goto free_pci_DER;
     }
 
-    if(!X509_add_ext(new_pc, pci_ext, 0))
+    /* 
+     * Right now we don't add the PROXYCERTINFO extension
+     * until the PCI draft comes to a stable point and 
+     * its decided that the PCI should be added to certs.
+     */
+    if(pci_critical)
     {
-        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
-            ("Couldn't add X509 extension to new proxy cert"));
+        if(!X509_add_ext(new_pc, pci_ext, 0))
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't add X509 extension to new proxy cert"));
+        }
     }
 
     /* sign the new certificate */
@@ -844,6 +879,12 @@ globus_gsi_proxy_sign_req(
     if(new_pc)
     {
         X509_free(new_pc); 
+    }
+    
+ free_req_pubkey:
+    if(req_pubkey)
+    {
+        EVP_PKEY_free(req_pubkey);
     }
 
  done:  
@@ -1181,76 +1222,6 @@ globus_gsi_proxy_assemble_cred(
 }
 /* globus_gsi_proxy_assemble_cred */
 /*@}*/
-    
-/**
- * Get Base Name
- * @ingroup globus_gsi_proxy_operations
- */
-/* @{ */
-/**
- * Ge the base name of a proxy certificate.  Given an X509 name, strip
- * off the /CN=proxy component (can be "limited proxy" or "restricted proxy")
- * to get the base name of the certificate's subject
- *
- * @param subject
- *        Pointer to an X509_NAME object which gets stripped
- *
- * @return
- *        GLOBUS_SUCCESS
- */
-globus_result_t
-globus_l_gsi_proxy_get_base_name(
-    X509_NAME *                     subject)
-{
-    X509_NAME_ENTRY *                  ne;
-    ASN1_STRING *                      data;
-
-    static char *                       _function_name_ =
-        "globus_l_gsi_proxy_get_base_name";
-
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-    
-    /* 
-     * drop all the /CN=proxy entries 
-     */
-    for(;;)
-    {
-        ne = X509_NAME_get_entry(subject,
-                                 X509_NAME_entry_count(subject)-1);
-        if (!OBJ_cmp(ne->object,OBJ_nid2obj(NID_commonName)))
-        {
-            data = X509_NAME_ENTRY_get_data(ne);
-            if ((data->length == 5 && 
-                 !memcmp(data->data,"proxy",5)) ||
-                (data->length == 13 && 
-                 !memcmp(data->data,"limited proxy",13)) ||
-                (data->length == 16 &&
-                 !memcmp(data->data,"restricted proxy",16)))
-            {
-                ne = X509_NAME_delete_entry(subject,
-                                            X509_NAME_entry_count(subject)-1);
-                if(ne)
-                {
-                    X509_NAME_ENTRY_free(ne);
-                    ne = NULL;
-                }
-            }
-            else
-            {
-                break;
-            }
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
-}
-/* @} */
-
 
 /* INTERNAL FUNCTIONS */
 

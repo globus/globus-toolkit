@@ -1,11 +1,14 @@
 
 #define EXT_SIZE 16
 #include <gssapi.h>
-#include "../source/library/gssapi_ssleay.h"
-
+#include "../source/library/gssapi_openssl.h"
+#include "globus_gss_assist.h"
 
 int verify_cred(
     gss_cred_id_t                       credential);
+
+void globus_print_error(
+    globus_result_t                     error_result);
 
 
 int main()
@@ -33,6 +36,8 @@ int main()
     gss_cred_id_t                       imported_cred;
     gss_cred_id_t                       cred_handle;
     char *                              error_str;
+    globus_result_t                     result;
+    X509 *                              cert;
 
     /* Initialize variables */
     
@@ -415,15 +420,28 @@ int main()
            __FILE__,
            __LINE__);
 
+    result = globus_gsi_cred_get_cert(
+        ((gss_cred_id_desc *)imported_cred)->cred_handle,
+        &cert);
+    if(result != GLOBUS_SUCCESS)
+    {
+        char *                          error_str;
+        globus_object_t *               error_obj;
+
+        error_obj = globus_error_get(result);
+        error_str = globus_error_print_chain(error_obj);
+        fprintf(stderr, error_str);
+        globus_libc_free(error_str);
+        globus_object_free(error_obj);
+        exit(1);
+    }
 
     printf("%s:%d: Received subject name: %s\n",
            __FILE__,
            __LINE__,
            X509_NAME_oneline(
                X509_NAME_dup(
-                   X509_get_subject_name(
-                       ((gss_cred_id_desc *)imported_cred)->pcd->ucert)),NULL,0));
-    
+                   X509_get_subject_name(cert)), NULL, 0));
 
     /* Extract and print the restrictions extension from the security
      * context.
@@ -434,24 +452,51 @@ int main()
 }
 
 
-
 int verify_cred(
     gss_cred_id_t                       credential)
 {
     gss_cred_id_desc *                  cred_handle;
     X509 *                              cert;
     X509 *                              previous_cert;
+    STACK_OF(X509) *                    cert_chain;
     int                                 cert_count;
+    char *                              error_str;
+    globus_object_t *                   error_obj;
+    globus_result_t                     result;
 
     cert_count = 1;
     cred_handle = (gss_cred_id_desc *) credential;
-    
-    if(cred_handle->pcd->cert_chain)
+
+    result = globus_gsi_cred_get_cert_chain(
+        cred_handle->cred_handle,
+        &cert_chain);
+    if(result != GLOBUS_SUCCESS)
     {
-        cert_count += sk_X509_num(cred_handle->pcd->cert_chain);
+        error_obj = globus_error_get(result);
+        error_str = globus_error_print_chain(error_obj);
+        fprintf(stderr, error_str);
+        globus_libc_free(error_str);
+        globus_object_free(error_obj);
+        exit(1);
+    }        
+    
+    if(cert_chain)
+    {
+        cert_count += sk_X509_num(cert_chain);
     }
 
-    cert = cred_handle->pcd->ucert;
+    result = globus_gsi_cred_get_cert(cred_handle->cred_handle,
+                                      &cert);
+    if(result != GLOBUS_SUCCESS)
+    {
+        error_obj = globus_error_get(result);
+        error_str = globus_error_print_chain(error_obj);
+        fprintf(stderr, error_str);
+        globus_libc_free(error_str);
+        globus_object_free(error_obj);
+        exit(1);
+    }
+
     previous_cert=NULL;
     cert_count--;
 
@@ -459,15 +504,50 @@ int verify_cred(
     {
         if(previous_cert != NULL)
         {
-            if(!X509_verify(previous_cert,X509_get_pubkey(cert)))
+            if(!X509_verify(previous_cert, X509_get_pubkey(cert)))
             {
                 return 0;
             }
         }
+
         previous_cert = cert;
+
     } while(cert_count-- &&
-            (cert = sk_X509_value(cred_handle->pcd->cert_chain,cert_count)));
+            (cert = sk_X509_value(cert_chain, cert_count)));
 
     return 1;
 }
 
+void globus_print_error(
+    globus_result_t                     error_result)
+{
+    globus_object_t *                   error_obj = NULL;
+    globus_object_t *                   base_error_obj = NULL;
+    char *                              error_string = NULL;
+    
+    error_obj = globus_error_get(error_result);
+    error_string = globus_error_print_chain(error_obj);
+    globus_libc_fprintf(stderr, "%s\n", error_string);
+    globus_libc_free(error_string);
+
+    base_error_obj = error_obj;
+    while(1)
+    {
+        if(!globus_error_get_cause(base_error_obj) ||
+           globus_object_get_type(
+               globus_error_get_cause(base_error_obj))
+           == GLOBUS_ERROR_TYPE_OPENSSL)
+        {
+            break;
+        }
+        base_error_obj = globus_error_get_cause(base_error_obj);
+    }
+
+    error_string = globus_error_get_long_desc(base_error_obj);
+    if(error_string)
+    {
+        globus_libc_fprintf(stderr, "\nBASE CAUSE: %s\n\n",
+                            globus_error_get_long_desc(base_error_obj));
+    }
+    globus_object_free(error_obj);
+};

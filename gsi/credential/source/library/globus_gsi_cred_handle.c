@@ -116,11 +116,108 @@ globus_result_t globus_gsi_cred_handle_init(
 /* globus_gsi_cred_handle_init */
 /* @} */
 
+globus_result_t globus_gsi_cred_handle_copy(
+    globus_gsi_cred_handle_t            a,
+    globus_gsi_cred_handle_t *          b)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_handle_copy";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    if(!b)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("Null parameter passed to function"));
+        goto exit;
+    }
+
+    result = globus_gsi_cred_handle_init(b, NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+        goto exit;
+    }
+
+    if(a->cert)
+    {
+        (*b)->cert = X509_dup(a->cert);
+        if(!(*b)->cert)
+        {
+            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+                ("Error copying X509 cert in handle"));
+            goto exit;
+        }
+    }
+
+    if(a->key)
+    {
+        BIO *                           pk_mem_bio;
+        int                             len;
+
+        pk_mem_bio = BIO_new(BIO_s_mem());
+        len = i2d_PrivateKey_bio(pk_mem_bio, a->key);
+        if(len <= 0)
+        {
+            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+                ("Error converting private key to DER encoded form."));
+            BIO_free(pk_mem_bio);
+            goto exit;
+        }
+
+        (*b)->key = d2i_PrivateKey_bio(pk_mem_bio, &(*b)->key);
+        BIO_free(pk_mem_bio);
+    }
+
+    if(a->cert_chain)
+    {
+        int                             chain_index = 0;
+        (*b)->cert_chain = sk_X509_new_null();
+        for(chain_index = 0; 
+            chain_index < sk_X509_num(a->cert_chain); 
+            ++chain_index)
+        {
+            sk_X509_insert((*b)->cert_chain, 
+                           sk_X509_value(a->cert_chain, chain_index), 
+                           chain_index);
+        }
+    }
+
+    if(a->attrs)
+    {
+        result = globus_gsi_cred_handle_attrs_copy(a->attrs,
+                                                   &(*b)->attrs);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+            goto exit;
+        }
+    }
+
+    (*b)->goodtill = a->goodtill;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+        
 globus_result_t globus_gsi_cred_get_handle_attrs(
     globus_gsi_cred_handle_t            handle,
     globus_gsi_cred_handle_attrs_t *    attrs)
 {
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_cred_get_handle_attrs";
 
@@ -542,7 +639,7 @@ globus_result_t globus_gsi_cred_set_cert_chain(
             
             prev_cert = tmp_cert;
             tmp_cert = sk_X509_value(cert_chain, i); 
-        } while(++i < numcerts);
+        } while(i++ < numcerts);
     }
 
     for(i = 0; i < numcerts; ++i)
@@ -743,19 +840,26 @@ globus_result_t globus_gsi_cred_get_cert_chain(
         goto error_exit;
     }
 
-    *cert_chain = sk_X509_dup(handle->cert_chain);
-    for(i = 0; i < sk_X509_num(handle->cert_chain); ++i)
+    if(!handle->cert_chain)
     {
-        if((tmp_cert = X509_dup(sk_X509_value(handle->cert_chain, i)))
-           == NULL)
+        *cert_chain = NULL;
+    }
+    else
+    {
+        *cert_chain = sk_X509_new_null();
+        for(i = 0; i < sk_X509_num(handle->cert_chain); ++i)
         {
-            GLOBUS_GSI_CRED_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
-                ("Error copying cert from cred's cert chain"));
-            goto error_exit;
+            if((tmp_cert = X509_dup(sk_X509_value(handle->cert_chain, i)))
+               == NULL)
+            {
+                GLOBUS_GSI_CRED_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
+                    ("Error copying cert from cred's cert chain"));
+                goto error_exit;
+            }
+            sk_X509_push(*cert_chain, tmp_cert);
         }
-        sk_X509_push(*cert_chain, tmp_cert);
     }
 
     result = GLOBUS_SUCCESS;
@@ -814,7 +918,7 @@ globus_result_t globus_gsi_cred_get_X509_subject_name(
     }
 
     if((*subject_name = 
-        X509_get_subject_name(handle->cert)) == NULL)
+        X509_NAME_dup(X509_get_subject_name(handle->cert))) == NULL)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
@@ -988,12 +1092,12 @@ globus_result_t globus_gsi_cred_get_group_names(
     free(data_string);
     data_string = NULL;
 
-    if((result = globus_i_gsi_cred_get_proxycertinfo(
+    result = globus_i_gsi_cred_get_proxycertinfo(
         handle->cert,
-        &pci))
-       != GLOBUS_SUCCESS)
+        &pci);
+    if(result != GLOBUS_SUCCESS)
     {
-        result= GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT);
         goto error_exit;

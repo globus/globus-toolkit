@@ -46,7 +46,17 @@ globus_l_gsi_gssapi_error_strings[GLOBUS_GSI_GSSAPI_ERROR_LAST] =
 /* 24 */  "Out of memory",
 /* 25 */   "Bad GSS name",
 /* 26 */  "Cert chain not in signing order",
-
+/* 27 */  "Error with GSI credential",
+/* 28 */  "Error with openssl",
+/* 29 */  "Error with GSS token",
+/* 30 */  "Error during delegation",
+/* 31 */  "Error with OID",
+/* 32 */  "Credential has expired",
+/* 33 */  "Error with MIC (Message Integrity Check)",
+/* 34 */  "Error could not encrypt message",
+/* 35 */  "Error with buffer",
+/* 36 */  "Error getting peer credential",
+/* 37 */  "Error unknown option"
 };
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -90,7 +100,6 @@ globus_i_gsi_gssapi_openssl_error_result(
 
 globus_result_t
 globus_i_gsi_gssapi_error_result(
-    const OM_uint32                     major_status,
     const OM_uint32                     minor_status,
     const char *                        filename,
     const char *                        function_name,
@@ -106,11 +115,10 @@ globus_i_gsi_gssapi_error_result(
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     error_object =
-        globus_error_wrap_gssapi_error(
+        globus_error_construct_error(
             GLOBUS_GSI_GSSAPI_MODULE,
-            major_status,
+            NULL,
             GLOBUS_GSI_GSSAPI_ERROR_MINOR_STATUS(minor_status),
-            minor_status,
             "%s:%d: %s: %s",
             filename, line_number, function_name,
             globus_l_gsi_gssapi_error_strings[minor_status]);
@@ -152,8 +160,11 @@ globus_i_gsi_gssapi_error_chain_result(
             filename, line_number, function_name,
             globus_l_gsi_gssapi_error_strings[error_type]);
         
-    globus_error_set_long_desc(error_object, long_desc);
-    
+    if(long_desc)
+    {    
+        globus_error_set_long_desc(error_object, long_desc);
+    }
+
     result = globus_error_put(error_object);
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;

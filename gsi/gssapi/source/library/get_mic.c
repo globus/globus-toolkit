@@ -92,7 +92,7 @@ GSS_CALLCONV gss_get_mic(
     {
         major_status = GSS_S_NO_CONTEXT;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Invalid context_handle parameter passed to function: %s",
              _function_name_));
@@ -121,7 +121,7 @@ GSS_CALLCONV gss_get_mic(
         {
             major_status = GSS_S_CONTEXT_EXPIRED;
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status, major_status,
+                minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL,
                 ("The credential has expired"));
             goto unlock_mutex;

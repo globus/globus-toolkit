@@ -57,7 +57,7 @@ gss_display_name(
         !(output_name)) {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status, 
+            minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
             (NULL));
         goto exit;

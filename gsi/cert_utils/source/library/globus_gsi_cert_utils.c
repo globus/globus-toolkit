@@ -32,7 +32,7 @@ static
 int
 globus_l_gsi_cert_utils_activate(void)
 {
-    int                                 result;
+    int                                 result = (int) GLOBUS_SUCCESS;
     char *                              tmp_string;
     static char *                       _function_name_ =
         "globus_l_gsi_cert_utils_activate";
@@ -54,7 +54,7 @@ globus_l_gsi_cert_utils_activate(void)
         globus_i_gsi_cert_utils_debug_fstream = fopen(tmp_string, "w");
         if(globus_i_gsi_cert_utils_debug_fstream == NULL)
         {
-            result = GLOBUS_NULL;
+            result = (int) GLOBUS_FAILURE;
             goto exit;
         }
     }
@@ -68,9 +68,9 @@ globus_l_gsi_cert_utils_activate(void)
 
     result = globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
 
- exit:
-
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
+
+ exit:
     return result;
 }
 
@@ -199,10 +199,10 @@ globus_gsi_cert_utils_check_proxy_name(
     X509 *                                    cert,
     globus_gsi_cert_utils_proxy_type_t *      type)
 {
-    X509_NAME *                         subject;
-    X509_NAME *                         name;
-    X509_NAME_ENTRY *                   ne;
-    ASN1_STRING *                       data;
+    X509_NAME *                         subject = NULL;
+    X509_NAME *                         name = NULL;
+    X509_NAME_ENTRY *                   ne = NULL;
+    ASN1_STRING *                       data = NULL;
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_i_gsi_cred_X509_check_proxy_name";
@@ -268,7 +268,7 @@ globus_gsi_cert_utils_check_proxy_name(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_GETTING_CN_ENTRY,
                     ("Error creating X509 name entry of: %s", data->data));
-                goto free_name;
+                goto exit;
             }
             
             if(!X509_NAME_add_entry(name, ne, X509_NAME_entry_count(name),0))
@@ -279,7 +279,7 @@ globus_gsi_cert_utils_check_proxy_name(
                     GLOBUS_GSI_CERT_UTILS_ERROR_ADDING_CN_TO_SUBJECT,
                     ("Error adding name entry with value: %s, to subject",
                      data->data));
-                goto free_name_entry;
+                goto exit;
             }
             
             if (X509_NAME_cmp(name,subject))
@@ -294,20 +294,6 @@ globus_gsi_cert_utils_check_proxy_name(
     }
 
     result = GLOBUS_SUCCESS;
-    
- free_name_entry:
-
-    if(ne != NULL)
-    {
-        X509_NAME_ENTRY_free(ne);
-    }
-
- free_name:
-
-    if(name != NULL)
-    {
-        X509_NAME_free(name);
-    }
 
  exit:
 
@@ -323,8 +309,8 @@ globus_gsi_cert_utils_check_proxy_name(
 /* @{ */
 /**
  * Get the X509_NAME from a subject string.
- * OpenSSL doesn't provide this function, primarily because
- * its dangerous to use.  If you are getting an X509_NAME from
+ * OpenSSL doesn't provide this function, probably because
+ * it shouldn't be used.  If you are getting an X509_NAME from
  * just a string, its impossible to verify its integrity.
  *
  * @param subject_string
@@ -499,6 +485,74 @@ globus_gsi_cert_utils_get_x509_name(
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return result;
+}
+/* @} */
+
+/**
+ * @name Get Base Name
+ * @ingroup globus_gsi_cert_utils
+ */
+/* @{ */
+/**
+ * Ge the base name of a proxy certificate.  Given an X509 name, strip
+ * off the /CN=proxy component (can be "limited proxy" or "restricted proxy")
+ * to get the base name of the certificate's subject
+ *
+ * @param subject
+ *        Pointer to an X509_NAME object which gets stripped
+ *
+ * @return
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_cert_utils_get_base_name(
+    X509_NAME *                     subject)
+{
+    X509_NAME_ENTRY *                  ne;
+    ASN1_STRING *                      data;
+
+    static char *                       _function_name_ =
+        "globus_gsi_cert_utils_get_base_name";
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
+    
+    /* 
+     * drop all the /CN=proxy entries 
+     */
+    for(;;)
+    {
+        ne = X509_NAME_get_entry(subject,
+                                 X509_NAME_entry_count(subject)-1);
+        if (!OBJ_cmp(ne->object,OBJ_nid2obj(NID_commonName)))
+        {
+            data = X509_NAME_ENTRY_get_data(ne);
+            if ((data->length == 5 && 
+                 !memcmp(data->data,"proxy",5)) ||
+                (data->length == 13 && 
+                 !memcmp(data->data,"limited proxy",13)) ||
+                (data->length == 16 &&
+                 !memcmp(data->data,"restricted proxy",16)))
+            {
+                ne = X509_NAME_delete_entry(subject,
+                                            X509_NAME_entry_count(subject)-1);
+                if(ne)
+                {
+                    X509_NAME_ENTRY_free(ne);
+                    ne = NULL;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
+    return GLOBUS_SUCCESS;
 }
 /* @} */
 

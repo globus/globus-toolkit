@@ -11,9 +11,13 @@
 
 static char *rcsid = "$Id$";
 
+
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 #include <string.h>
+
+/* Only build if we have the extended GSSAPI */
+#ifdef _HAVE_GSI_EXTENDED_GSSAPI
 
 /**
  * @defgroup globus_gsi_gssapi_buffer_set 
@@ -61,7 +65,7 @@ GSS_CALLCONV gss_create_empty_buffer_set(
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("NULL parameters passed to function: %s",
              _function_name_));
@@ -139,7 +143,7 @@ GSS_CALLCONV gss_add_buffer_set_member(
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Invalid buffer_set passed to function"));
         goto exit;
@@ -237,7 +241,7 @@ GSS_CALLCONV gss_release_buffer_set(
     if (buffer_set == NULL || *buffer_set == GSS_C_NO_BUFFER_SET)
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("NULL parameters passed to function: %s",
              _function_name_));
@@ -272,3 +276,5 @@ GSS_CALLCONV gss_release_buffer_set(
 } 
 /* gss_release_buffer_set */
 /* @} */
+
+#endif /* _HAVE_GSI_EXTENDED_GSSAPI */

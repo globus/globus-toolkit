@@ -111,7 +111,7 @@ extern FILE *                           globus_i_gsi_callback_debug_fstream;
     }
 
 #define GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(_TOP_RESULT_, _ERRORTYPE_) \
-    _TOP_RESULT_ = globus_i_gsi_callback_error_chain_result(                \
+    _TOP_RESULT_ = globus_i_gsi_callback_error_chain_result(              \
                        _TOP_RESULT_,                                      \
                        _ERRORTYPE_,                                       \
                        __FILE__,                                          \

@@ -77,7 +77,7 @@ GSS_CALLCONV gss_unwrap(
     {
         major_status = GSS_S_NO_CONTEXT;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Uninitialized Context"));
         goto exit;
@@ -108,7 +108,7 @@ GSS_CALLCONV gss_unwrap(
         {
             major_status = GSS_S_CONTEXT_EXPIRED;
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status, major_status,
+                minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_EXPIRED_CREDENTIAL,
                 ("Credential has expired: %s < %s",
                  ctime(&context_goodtill), ctime(&current_time)));
@@ -160,7 +160,7 @@ GSS_CALLCONV gss_unwrap(
         {
             major_status = GSS_S_DEFECTIVE_TOKEN;
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status, major_status,
+                minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
                 ("Couldn't create input message buffer"));
             goto exit;

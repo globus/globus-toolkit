@@ -46,7 +46,7 @@ static
 int
 globus_l_gsi_credential_activate(void)
 {
-    int                                 result;
+    int                                 result = (int) GLOBUS_SUCCESS;
     char *                              tmp_string;
     static char *                       _function_name_ =
         "globus_l_gsi_credential_activate";
@@ -68,7 +68,7 @@ globus_l_gsi_credential_activate(void)
         globus_i_gsi_cred_debug_fstream = fopen(tmp_string, "w");
         if(globus_i_gsi_cred_debug_fstream == NULL)
         {
-            result = GLOBUS_NULL;
+            result = (int) GLOBUS_FAILURE;
             goto exit;
         }
     }
@@ -83,10 +83,11 @@ globus_l_gsi_credential_activate(void)
     globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
 
     OpenSSL_add_all_algorithms();
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     
  exit:
 
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
 
@@ -545,6 +546,7 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
 
     while(!BIO_eof(bio))
     {
+        tmp_cert = NULL;
         if(!PEM_read_bio_X509(bio, &tmp_cert, NULL, NULL))
         {
             /* appears to continue reading after EOF and
@@ -1169,11 +1171,12 @@ globus_i_gsi_cred_get_proxycertinfo(
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
     pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-    if(pci_NID != NID_undef)
+    if(pci_NID == NID_undef)
     {
-        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("Couldn't get numeric ID for PROXYCERTINFO extension"));
         goto exit;
     }
 

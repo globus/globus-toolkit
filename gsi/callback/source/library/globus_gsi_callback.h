@@ -26,6 +26,7 @@ EXTERN_C_BEGIN
 
 #include <openssl/x509.h>
 #include <globus_common.h>
+#include "globus_gsi_cert_utils.h"
 
 /** 
  * @defgroup globus_gsi_callback_activation Activation
@@ -78,16 +79,8 @@ globus_gsi_callback_get_X509_STORE_callback_data_index(
     int *                               index);
 
 globus_result_t
-globus_gsi_callback_set_X509_STORE_callback_data_index(
-    int                                 index);
-
-globus_result_t
 globus_gsi_callback_get_SSL_callback_data_index(
     int *                               index);
-
-globus_result_t
-globus_gsi_callback_set_SSL_callback_data_index(
-    int                                 index);
 
 int
 globus_gsi_callback_create_proxy_callback(
@@ -156,14 +149,15 @@ globus_gsi_callback_set_cert_depth(
     int                                 cert_depth);
 
 globus_result_t
-globus_gsi_callback_get_limited_proxy(
+globus_gsi_callback_set_proxy_type(
     globus_gsi_callback_data_t          callback_data,
-    int *                               limited_proxy);
+    globus_gsi_cert_utils_proxy_type_t  proxy_type);
 
 globus_result_t
-globus_gsi_callback_set_limited_proxy(
+globus_gsi_callback_get_proxy_type(
     globus_gsi_callback_data_t          callback_data,
-    int                                 limited_proxy);
+    globus_gsi_cert_utils_proxy_type_t *    
+                                        proxy_type);
 
 globus_result_t
 globus_gsi_callback_get_cert_chain(

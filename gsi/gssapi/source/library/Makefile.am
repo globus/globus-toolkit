@@ -22,6 +22,7 @@ Sources = \
 	verify_mic.c \
 	wrap.c \
 	release_buffer.c \
+	module.c \
 	gssapi_working.c \
 	gssapi.h \
 	gssapi_openssl.h \
@@ -33,7 +34,6 @@ Sources = \
 	$(Sources_OPENSSL_INTERNALS)
 
 Sources_GSS_EXTENSIONS = \
-	module.c \
 	accept_delegation.c \
 	import_cred.c \
 	export_cred.c \

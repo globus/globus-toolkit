@@ -9,14 +9,15 @@
  */
 #endif
 
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
+#include <string.h>
+#include "proxycertinfo.h"
+
 /* Only build if we have the extended GSSAPI */
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
 
 static char *rcsid = "$Id$";
-
-#include "gssapi_openssl.h"
-#include "globus_i_gsi_gss_utils.h"
-#include <string.h>
 
 /**
  * Initiate the delegation of a credential.
@@ -89,18 +90,16 @@ GSS_CALLCONV gss_init_delegation(
     BIO *                               read_bio = NULL;
     BIO *                               write_bio = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_minor_status;
     gss_ctx_id_desc *                   context;
     gss_cred_id_desc *                  cred;
-    X509_REQ *                          reqp = NULL;
-    X509 *                              ncert = NULL;
     X509 *                              cert = NULL;
-    X509_EXTENSION *                    ex = NULL;
-    STACK_OF(X509_EXTENSION) *          extensions = NULL;
-    globus_proxy_type_t                 proxy_type = GLOBUS_FULL_PROXY;
-    int                                 i;
-    int                                 cert_chain_length = 0;
-    int                                 found_group_extension = 0;
-    
+    STACK_OF(X509) *                    cert_chain = NULL;
+    X509 *                              issuer_cert = NULL;
+    PROXYCERTINFO *                     pci;
+    globus_gsi_cert_utils_proxy_type_t  proxy_type = GLOBUS_FULL_PROXY;
+    int                                 index;
+    globus_result_t                     local_result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "init_delegation";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
@@ -147,7 +146,7 @@ GSS_CALLCONV gss_init_delegation(
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT<
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Invalid desired_mech passed to function"));
         major_status = GSS_S_FAILURE;
         goto exit;
@@ -179,17 +178,32 @@ GSS_CALLCONV gss_init_delegation(
 
     if(req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
     {
-
-        local_result = 
-            globus_gsi_cred_check_proxy_name(cred->cred_handle, &proxy_type);
+        local_result = globus_gsi_cred_get_cert(cred->cred_handle,
+                                                &cert);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
             major_status = GSS_S_FAILURE;
             goto exit;
         }
+
+        local_result = 
+            globus_gsi_cert_utils_check_proxy_name(cert, 
+                                                   &proxy_type);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            X509_free(cert);
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+
+        X509_free(cert);
+        cert = NULL;
 
         if(extension_oids != GSS_C_NO_OID_SET ||
            proxy_type == GLOBUS_RESTRICTED_PROXY)
@@ -250,7 +264,7 @@ GSS_CALLCONV gss_init_delegation(
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_TOKEN);
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
             goto mutex_unlock;
         }
     }
@@ -279,7 +293,7 @@ GSS_CALLCONV gss_init_delegation(
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEG_PROXY);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
             major_status = GSS_S_FAILURE;
             goto mutex_unlock;
         }
@@ -290,10 +304,11 @@ GSS_CALLCONV gss_init_delegation(
             for(index = 0; index < extension_oids->count; index++)
             {
                 if(g_OID_equal((gss_OID) &extension_oids->elements[index],
-                               gss_proxycertinfo))
+                               gss_proxycertinfo_extension))
                 {
                     d2i_PROXYCERTINFO(
                         &pci, 
+                        (unsigned char **) 
                         &extension_oids->elements[index].elements,
                         extension_oids->elements[index].length);
                     
@@ -305,7 +320,7 @@ GSS_CALLCONV gss_init_delegation(
                     {
                         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                             minor_status, local_result,
-                            GLOBUS_GSI_GSSAPI_ERROR_WITH_PROXY_HANDLE);
+                            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
                         major_status = GSS_S_FAILURE;
                         goto mutex_unlock;
                     }
@@ -321,26 +336,39 @@ GSS_CALLCONV gss_init_delegation(
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_PROXY_HANDLE);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
             major_status = GSS_S_FAILURE;
             goto mutex_unlock;
         }
 
-        /* push the number of certs in the cert chain */
-        local_result = globus_gsi_cred_handle_get_cert_chain(cred->cred_handle,
-                                                             &cert_chain);
+        local_result = globus_gsi_cred_get_cert(cred->cred_handle, &cert);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto mutex_unlock;
+        }
+                
+        /* push the cert used to sign the proxy */
+        i2d_X509_bio(bio, cert);
+
+        /* push the number of certs in the cert chain */
+        local_result = globus_gsi_cred_get_cert_chain(cred->cred_handle,
+                                                      &cert_chain);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
             major_status = GSS_S_FAILURE;
             goto mutex_unlock;
         }
 
-        for(index = sk_X509_num(cert_chain) - 1; index >= 0; index--)
+        for(index = 0; index < sk_X509_num(cert_chain); index++)
         {
-            cert = sk_X509_value(cert_chain);
+            cert = sk_X509_value(cert_chain, index);
             if(!cert)
             {
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
@@ -354,21 +382,12 @@ GSS_CALLCONV gss_init_delegation(
             i2d_X509_bio(bio, cert);
         }
 
-        local_result = globus_gsi_cred_get_cert(cred->cred_handle, &cert);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED);
-            major_status = GSS_S_FAILURE;
-            goto mutex_unlock;
-        }
-                
-        /* push the cert used to sign the proxy */
-        i2d_X509_bio(bio, cert);
-
         /* reset state machine */
         context->delegation_state = GSS_DELEGATION_START; 
+        break;
+
+    case GSS_DELEGATION_COMPLETE_CRED:
+    case GSS_DELEGATION_DONE:
         break;
     }
     
@@ -380,7 +399,7 @@ GSS_CALLCONV gss_init_delegation(
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_TOKEN);
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
         goto mutex_unlock;
     }
 

@@ -9,15 +9,15 @@
  */
 #endif
 
-/* Only build if we have the extended GSSAPI */
-#ifdef  _HAVE_GSI_EXTENDED_GSSAPI
-
-static char *rcsid = "$Id$";
-
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 #include "openssl/evp.h"
+
+/* Only build if we have the extended GSSAPI */
+#ifdef  _HAVE_GSI_EXTENDED_GSSAPI
+
+static char *rcsid = "$Id$";
 
 static const gss_OID_desc GSS_DISALLOW_ENCRYPTION_OID =
    {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x03\x01"}; 
@@ -60,7 +60,10 @@ gss_set_sec_context_option(
 {
     gss_ctx_id_desc *                   context = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    int                                 i;
+    OM_uint32                           local_minor_status;
+    void *                              extension_oids = NULL;
+    globus_result_t                     local_result = GLOBUS_SUCCESS;
+    int                                 index;
     static char *                       _function_name_ =
         "gss_set_sec_context_option";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
@@ -114,7 +117,7 @@ gss_set_sec_context_option(
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_CONTEXT,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
             ("The context has already been initialized!  %s should be "
              "called on a context before initialization", _function_name_));
         major_status = GSS_S_FAILURE;
@@ -141,9 +144,9 @@ gss_set_sec_context_option(
             goto exit;
         }
 
-        local_result = globus_gsi_callback_data_get_extension_oids(
+        local_result = globus_gsi_callback_get_extension_oids(
             context->callback_data,
-            &extension_oids);
+            (void **) &extension_oids);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -153,7 +156,7 @@ gss_set_sec_context_option(
             goto exit;
         }
 
-        major_status = globus_i_gsi_gss_create_empty_oid_set(
+        major_status = gss_create_empty_oid_set(
             &local_minor_status,
             (gss_OID_set *) &extension_oids);
 
@@ -161,7 +164,7 @@ gss_set_sec_context_option(
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_OID_SET);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
             goto exit;
         }
 
@@ -171,26 +174,27 @@ gss_set_sec_context_option(
         {
             major_status = gss_add_oid_set_member(
                 &local_minor_status,
-                (gss_OID) &((gss_OID_set_desc *) value->value)->elements[i],
+                (gss_OID) 
+                &((gss_OID_set_desc *) value->value)->elements[index],
                 (gss_OID_set *) &extension_oids);
 
             if(GSS_ERROR(major_status))
             {
                 GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                     minor_status, local_minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_OID_SET);
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
                 goto exit;
             }
         }
 
-        local_result = globus_gsi_callback_data_set_extension_cb(
+        local_result = globus_gsi_callback_set_extension_cb(
             context->callback_data,
-            gss_verify_extensions_callback);
+            globus_i_gsi_gss_verify_extensions_callback);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
             major_status = GSS_S_FAILURE;
             goto exit;
         }
@@ -210,7 +214,7 @@ gss_set_sec_context_option(
 
  exit:
 
-    GLOBUS_I_GSI_GSSAPI_ERROR_EXIT;
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
 

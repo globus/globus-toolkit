@@ -11,11 +11,11 @@
 
 static char *rcsid = "$Id$";
 
-/* Only build if we have the extended GSSAPI */
-#ifdef _HAVE_GSI_EXTENDED_GSSAPI
-
 #include "gssapi_openssl.h"
 #include "globus_i_gsi_gss_utils.h"
+
+/* Only build if we have the extended GSSAPI */
+#ifdef _HAVE_GSI_EXTENDED_GSSAPI
 
 /**
  * Accept a delegated credential.
@@ -84,12 +84,10 @@ GSS_CALLCONV gss_accept_delegation(
     BIO *                               read_bio = NULL;
     BIO *                               write_bio = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_minor_status;
+    globus_result_t                     local_result = GLOBUS_SUCCESS;
     gss_ctx_id_desc *                   context;
-    X509_REQ *                          reqp = NULL;
-    X509 *                              dcert = NULL;
-    STACK_OF(X509) *                    cert_chain;
-    int                                 cert_chain_length = 0;
-    int                                 i;
+    globus_gsi_cred_handle_t            delegated_cred = NULL;
     char                                dbuf[1];
 
     static char *                       _function_name_ =
@@ -108,7 +106,7 @@ GSS_CALLCONV gss_accept_delegation(
     if(context_handle == GSS_C_NO_CONTEXT)
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
+            minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Invalid context_handle passed to function"));
         major_status = GSS_S_FAILURE;
@@ -134,7 +132,7 @@ GSS_CALLCONV gss_accept_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid extension parameters passed to function"));
+            ("Invalid restriction parameters passed to function"));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -180,7 +178,7 @@ GSS_CALLCONV gss_accept_delegation(
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_TOKEN);
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
         goto mutex_unlock;
     }
 
@@ -225,13 +223,13 @@ GSS_CALLCONV gss_accept_delegation(
                 goto mutex_unlock;
             }
 
-            context->delegation_state = GS_DELEGATION_COMPLETE_CRED;
+            context->delegation_state = GSS_DELEGATION_COMPLETE_CRED;
         }
         else
         {
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_IN_DELEGATION,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION,
                 ("Invalid initial hello message, expecting: 'D', "
                  "received: '%c'", dbuf[0]));
             major_status = GSS_S_FAILURE;
@@ -248,13 +246,13 @@ GSS_CALLCONV gss_accept_delegation(
 
         local_result = globus_gsi_proxy_assemble_cred(
             context->proxy_handle,
-            delegated_cred,
+            &delegated_cred,
             bio);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_PROXY_CRED);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
             major_status = GSS_S_FAILURE;
             goto mutex_unlock;
         }
@@ -262,38 +260,14 @@ GSS_CALLCONV gss_accept_delegation(
         major_status = globus_i_gsi_gss_create_cred(&local_minor_status,
                                                     GSS_C_BOTH,
                                                     delegated_cred_handle,
-                                                    delegetad_cred);
+                                                    delegated_cred);
         if(GSS_ERROR(major_status))
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
             goto mutex_unlock;
         }
-
-        cert_chain = sk_X509_new_null();
-
-        while(BIO_pending(bio))
-        {
-            sk_X509_insert(cert_chain,
-                           d2i_X509_bio(bio, NULL),
-                           cert_chain_length);
-            cert_chain_length++;
-        }
-
-        local_result = globus_gsi_cred_handle_set_cert_chain(
-            delegated_cred_handle->cred_handle,
-            cert_chain);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED);
-            major_status = GSS_S_FAILURE;
-            goto mutex_unlock;
-        }
-
-        sk_X509_pop_free(cert_chain, X509_free);
 
         /* reset state machine */
         context->delegation_state = GSS_DELEGATION_START;
@@ -301,17 +275,22 @@ GSS_CALLCONV gss_accept_delegation(
         if (time_rec != NULL)
         {
             local_result = globus_gsi_cred_get_lifetime(
-                delegated_cred_handle->cred_handle,
-                &time_rec);
-            if(local_result != GLOBUS_SUCCESS)
+                ((gss_cred_id_desc *)(*delegated_cred_handle))->cred_handle,
+                (time_t *)time_rec);
+                if(local_result != GLOBUS_SUCCESS)
             {
                 GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                     minor_status, local_result,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED);
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
                 major_status = GSS_S_FAILURE;
                 goto mutex_unlock;
             }
         }
+        
+    case GSS_DELEGATION_SIGN_CERT:
+    case GSS_DELEGATION_DONE:
+        break;
+        
     }
 
     /* returns empty token when there is no output */
@@ -324,7 +303,7 @@ GSS_CALLCONV gss_accept_delegation(
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_TOKEN);
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
         goto mutex_unlock;
     }
 

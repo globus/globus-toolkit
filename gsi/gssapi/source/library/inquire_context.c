@@ -59,7 +59,7 @@ GSS_CALLCONV gss_inquire_context(
     {
         major_status = GSS_S_NO_CONTEXT;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Invalid context parameter passed to function"));
         goto exit;

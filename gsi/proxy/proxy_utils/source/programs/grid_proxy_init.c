@@ -169,7 +169,7 @@ main(
     char *                              subgroup = NULL;
     int                                 return_value = 0;
     
-    if(!globus_module_activate(GLOBUS_GSI_PROXY_MODULE))
+    if(globus_module_activate(GLOBUS_GSI_PROXY_MODULE) != (int)GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(
             stderr,
@@ -954,6 +954,10 @@ globus_i_gsi_proxy_utils_print_error(
                             filename, line);
         error_string = globus_error_print_chain(error_obj);
         globus_libc_fprintf(stderr, "%s\n", error_string);
+        if(error_string)
+        {
+            globus_libc_free(error_string);
+        }
         base_error_obj = error_obj;
         while(1)
         {

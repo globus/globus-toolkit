@@ -67,7 +67,7 @@ GSS_CALLCONV gss_export_cred(
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("NULL or emtpy export_buffer parameter passed to function: %s",
              _function_name_));
@@ -81,7 +81,7 @@ GSS_CALLCONV gss_export_cred(
     { 
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("NULL or emtpy export_buffer parameter passed to function: %s",
              _function_name_));
@@ -93,7 +93,7 @@ GSS_CALLCONV gss_export_cred(
     {
         major_status = GSS_S_BAD_MECH;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH,
             ("The desired mechanism of: %s, is not supported by this "
              "GSS implementation", desired_mech->elements));
@@ -187,7 +187,7 @@ GSS_CALLCONV gss_export_cred(
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Unrecognized option_req of: %d", option_req));
         goto exit;

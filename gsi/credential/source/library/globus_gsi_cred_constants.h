@@ -1,3 +1,14 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gsi_cred_constants.h
+ * Globus GSI Credential Library
+ * @author Sam Lang, Sam Meder
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
 #ifndef GLOBUS_GSI_CREDENTIAL_CONSTANTS_H
 #define GLOBUS_GSI_CREDENTIAL_CONSTANTS_H

@@ -73,7 +73,6 @@ EXTERN_C_BEGIN
 extern 
 globus_module_descriptor_t              globus_i_gsi_credential_module;
 
-
 #include "globus_gsi_cred_constants.h"
 
 /**
@@ -130,6 +129,10 @@ globus_result_t globus_gsi_cred_handle_init(
 globus_result_t globus_gsi_cred_handle_destroy(
     globus_gsi_cred_handle_t            handle);
 
+globus_result_t globus_gsi_cred_handle_copy(
+    globus_gsi_cred_handle_t            a,
+    globus_gsi_cred_handle_t *          b);
+
 globus_result_t globus_gsi_cred_handle_attrs_init(
     globus_gsi_cred_handle_attrs_t *    handle_attrs);
 
@@ -170,35 +173,13 @@ globus_result_t globus_gsi_cred_read_pkcs12(
     globus_gsi_cred_handle_t            handle,
     char *                              pkcs12_filename);
 
-/* Read a credential from a BIO. IE: read cert, read key, read cert
- * chain.
- */
-globus_result_t globus_gsi_cred_read_bio(
-    globus_gsi_cred_handle_t            handle,
-    BIO *                               bio);
-
-/* Write a credential to a BIO. IE: write cert_chain, write key, write
- * cert. 
- */
-
 globus_result_t globus_gsi_cred_write(
     globus_gsi_cred_handle_t            handle,
     BIO *                               bio);
 
-/* Utility function that will write the credential to the standard
- * proxy file.
- */
-
 globus_result_t globus_gsi_cred_write_proxy(
     globus_gsi_cred_handle_t            handle,
     char *                              proxy_filename);
-
-/* Utility function that will write the credential to the standard
- * proxy file.
- */
-
-/* Determine whether the credential structure contains a proxy */
-
 
 globus_result_t
 globus_gsi_cred_verify_cert_chain(

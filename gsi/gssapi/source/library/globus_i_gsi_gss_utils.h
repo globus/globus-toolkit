@@ -15,18 +15,16 @@
 #include "gssapi.h"
 #include "gssapi_openssl.h"
 
-#warning need to check all major_status = GSS_S_FAILURE; lines - could be wrong return code 
-
 /* ERROR MACROS */
 
-#define GLOBUS_GSI_GSSAPI_ERROR_RESULT(_MIN_RESULT_, _MAJ_, _MIN_,      \
+#define GLOBUS_GSI_GSSAPI_ERROR_RESULT(_MIN_RESULT_, _MIN_,             \
                                        _ERRSTR_)                        \
     {                                                                   \
          char *                         tmpstr =                        \
              globus_gsi_cert_utils_create_string _ERRSTR_;              \
          *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_result(  \
-             _MAJ_, _MIN_,                                              \
-             __FILE__, _function_name_, __LINE__, tmpstr);              \
+             _MIN_, __FILE__, _function_name_,                          \
+             __LINE__, tmpstr);                                         \
          globus_libc_free(tmpstr);                                      \
     }
 
@@ -131,7 +129,11 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF( \
                 1, (stderr, "%s exiting\n", _function_name_))
 
-#warning should all these be OM_uint32 or globus_result_t ??
+typedef enum {
+    
+    GLOBUS_I_GSI_GSS_DEFAULT_CONTEXT,
+    GLOBUS_I_GSI_GSS_ANON_CONTEXT
+} globus_i_gsi_gss_context_type_t;
 
 OM_uint32
 globus_i_gsi_gss_copy_name_to_name(
@@ -233,7 +235,8 @@ globus_i_gsi_gss_get_context_goodtill(
 OM_uint32
 globus_i_gsi_gssapi_init_ssl_context(
     OM_uint32 *                         minor_status,
-    gss_cred_id_t                       credential);
+    gss_cred_id_t                       credential,
+    globus_i_gsi_gss_context_type_t     anon_ctx);
 
 globus_result_t
 globus_i_gsi_gssapi_openssl_error_result(
@@ -245,7 +248,6 @@ globus_i_gsi_gssapi_openssl_error_result(
 
 globus_result_t
 globus_i_gsi_gssapi_error_result(
-    const OM_uint32                     major_status,
     const OM_uint32                     minor_status,
     const char *                        filename,
     const char *                        function_name,

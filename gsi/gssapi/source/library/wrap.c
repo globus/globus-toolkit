@@ -61,7 +61,7 @@ GSS_CALLCONV gss_wrap_size_limit(
     {
         major_status = GSS_S_NO_CONTEXT;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Invalid context handle passed to function"));
         goto exit;
@@ -188,7 +188,7 @@ GSS_CALLCONV gss_wrap(
     {
         major_status = GSS_S_NO_CONTEXT;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Invalid context handle passed to function"));
         goto exit;
@@ -220,7 +220,7 @@ GSS_CALLCONV gss_wrap(
         {
             major_status = GSS_S_CONTEXT_EXPIRED;
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                minor_status, major_status,
+                minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_EXPIRED_CREDENTIAL,
                 ("Expired credential: %s < %s", 
                  ctime(&context_goodtill), ctime(&current_time)));

@@ -109,6 +109,15 @@ int main(
     char *                              dummy_dir_string;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
+    if(globus_module_activate(GLOBUS_GSI_PROXY_MODULE) != (int)GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(
+            stderr,
+            "\n\nERROR: Couldn't load module: GLOBUS_GSI_PROXY_MODULE.\n"
+            "Make sure Globus is installed correctly.\n\n");
+        exit(1);
+    }
+
     result = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&default_full_file,
                                                      GLOBUS_PROXY_FILE_INPUT);
     if(result != GLOBUS_SUCCESS)

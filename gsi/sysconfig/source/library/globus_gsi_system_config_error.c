@@ -34,7 +34,9 @@ globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 /* 9 */   "Could not find a valid delegated proxy certificate file location",
 /* 10 */  "Error getting the list of trusted CA certificates",
 /* 11 */  "Error getting the current working directory",
-/* 12 */  "Error removing all owned files from secure tmp directory"
+/* 12 */  "Error removing all owned files from secure tmp directory",
+/* 13 */  "Could not find a valid gridmap file",
+/* 14 */  "Error checking superuser status"
 
 };
 

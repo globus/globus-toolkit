@@ -106,9 +106,10 @@ GSS_CALLCONV gss_inquire_cred(
 
     if(lifetime != NULL)
     {
+        time_t                      temp_lifetime;
         local_result = globus_gsi_cred_get_lifetime(
             cred_handle->cred_handle,
-            lifetime);
+            &temp_lifetime);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -117,11 +118,11 @@ GSS_CALLCONV gss_inquire_cred(
             major_status = GSS_S_FAILURE;
             goto exit;
         }
+        *lifetime = (OM_uint32) temp_lifetime;
     }
 
     if(name != NULL)
     {
-#warning what about 0xdee0 and 0xdee1
         major_status = globus_i_gsi_gss_copy_name_to_name(
             &local_minor_status,
             (gss_name_desc **) name,
@@ -136,7 +137,6 @@ GSS_CALLCONV gss_inquire_cred(
     }        
     
  exit:
-
         
     if(cred_handle_P == GSS_C_NO_CREDENTIAL &&
        cred_handle != GSS_C_NO_CREDENTIAL)

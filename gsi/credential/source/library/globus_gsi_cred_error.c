@@ -134,7 +134,10 @@ globus_i_gsi_cred_error_chain_result(
             filename, line_number, function_name, 
             globus_l_gsi_cred_error_strings[error_type]);
 
-    globus_error_set_long_desc(error_object, long_desc);
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
 

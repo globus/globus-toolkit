@@ -14,11 +14,16 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION, 0)
 
 GLOBUS_FINALIZE
 
+LAC_DOXYGEN(["../library"])
+
 AC_OUTPUT(
 	Makefile
         version.h
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
-	library/Makefile
+	doxygen/Makefile
+        doxygen/Doxyfile
+        doxygen/Doxyfile-internal
+        library/Makefile
 )
 

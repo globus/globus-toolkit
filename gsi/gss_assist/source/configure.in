@@ -19,18 +19,19 @@ dnl GPT_SET_LIBS(-lglobus_gssapi_gsi_$GLOBUS_FLAVOR_NAME)
 
 GLOBUS_FINALIZE
 
+LAC_DOXYGEN(["../"])
+
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
+        programs/Makefile
+        programs/grid-mapfile-add-entry
+        programs/grid-mapfile-delete-entry
+        programs/grid-mapfile-check-consistency
+        doxygen/Makefile
+        doxygen/Doxyfile
+        doxygen/Doxyfile-internal
+        version.h
 )
-
-
-
-
-
-
-
-
-
 

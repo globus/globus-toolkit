@@ -92,7 +92,7 @@ GSS_CALLCONV gss_import_sec_context(
     {
         major_status = GSS_S_DEFECTIVE_TOKEN;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
             ("The inter-process token is not valid"));
         goto exit;
@@ -120,7 +120,7 @@ GSS_CALLCONV gss_import_sec_context(
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
             ("Trying to import version %d of a security context token "
              "only version %d is supported by this implementation",
@@ -300,7 +300,7 @@ GSS_CALLCONV gss_import_sec_context(
     {
         major_status = GSS_S_NO_CONTEXT;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, major_status,
+            minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_NO_CIPHER,
             ("Attempt to set the session cipher failed"));
         goto exit;

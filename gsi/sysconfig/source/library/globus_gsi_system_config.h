@@ -104,6 +104,16 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_split_dir_and_fliename_win32
 #    define GLOBUS_GSI_SYSCONFIG_REMOVE_ALL_OWNED_FILES \
             globus_gsi_sysconfig_remove_all_owned_files_win32
+#    define GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME \
+            globus_gsi_sysconfig_get_gridmap_filename_win32
+#    define GLOBUS_GSI_SYSCONFIG_IS_SUPERUSER \
+            globus_gsi_sysconfig_is_superuser_win32
+#    define GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING \
+            globus_gsI_sysconfig_get_user_id_string_win32
+#    define GLOBUS_GSI_SYSCONFIG_GET_PROC_ID_STRING \
+            globus_gsi_sysconfig_get_proc_id_string_win32
+#    define GLOBUS_GSI_SYSCONFIG_GET_USERNAME \
+            globus_gsi_sysconfig_get_username_win32
 #else
 #    define GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR \
             globus_gsi_sysconfig_get_home_dir_unix
@@ -135,6 +145,16 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_split_dir_and_filename_unix
 #    define GLOBUS_GSI_SYSCONFIG_REMOVE_ALL_OWNED_FILES \
             globus_gsi_sysconfig_remove_all_owned_files_unix
+#    define GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME \
+            globus_gsi_sysconfig_get_gridmap_filename_unix
+#    define GLOBUS_GSI_SYSCONFIG_IS_SUPERUSER \
+            globus_gsi_sysconfig_is_superuser_unix
+#    define GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING \
+            globus_gsi_sysconfig_get_user_id_string_unix
+#    define GLOBUS_GSI_SYSCONFIG_GET_PROC_ID_STRING \
+            globus_gsi_sysconfig_get_proc_id_string_unix
+#    define GLOBUS_GSI_SYSCONFIG_GET_USERNAME \
+            globus_gsi_sysconfig_get_username_unix
 #endif
 
 #define     GLOBUS_GSI_SYSCONFIG_GET_UNIQUE_PROXY_FILENAME \
@@ -214,6 +234,26 @@ globus_result_t
 globus_gsi_sysconfig_remove_all_owned_files_win32(
     char *                              default_filename);
 
+globus_result_t
+globus_gsi_sysconfig_is_superuser_win32(
+    int *                               is_superuser);
+
+globus_result_t
+globus_gsi_sysconfig_get_user_id_string_win32(
+    char **                             user_id_string);
+
+globus_result_t
+globus_gsi_sysconfig_get_username_win32(
+    char **                             username);
+
+globus_result_t
+globus_gsi_sysconfig_get_proc_id_string_win32(
+    char **                             proc_id_string);
+
+globus_result_t
+globus_gsi_sysconfig_get_gridmap_filename_win32(
+    char **                             filename);
+
 #else /* if WIN32 is not defined, then define the unix functions */
 
 globus_result_t
@@ -290,6 +330,26 @@ globus_result_t
 globus_gsi_sysconfig_remove_all_owned_files_unix(
     char *                              default_filename);
 
+globus_result_t
+globus_gsi_sysconfig_is_superuser_unix(
+    int *                               is_superuser);
+
+globus_result_t
+globus_gsi_sysconfig_get_user_id_string_unix(
+    char **                             user_id_string);
+
+globus_result_t
+globus_gsi_sysconfig_get_username_unix(
+    char **                             username);
+
+globus_result_t
+globus_gsi_sysconfig_get_proc_id_string_unix(
+    char **                             proc_id_string);
+
+globus_result_t
+globus_gsi_sysconfig_get_gridmap_filename_unix(
+    char **                             filename);
+
 #endif /* WIN32 */
 
 globus_result_t
@@ -297,5 +357,3 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
     char **                             unique_filename);
 
 #endif /* GLOBUS_GSI_SYSTEM_CONFIG_H */
-
-

@@ -9,14 +9,14 @@
  */
 #endif
 
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
+#include <string.h>
+
 /* Only build if we have the extended GSSAPI */
 #ifdef  _HAVE_GSI_EXTENDED_GSSAPI
 
 static char *rcsid = "$Id$";
-
-#include "gssapi_ssleay.h"
-#include "gssutils.h"
-#include <string.h>
 
 /**
  * @name Import Cred
@@ -68,6 +68,7 @@ GSS_CALLCONV gss_import_cred(
     OM_uint32                           time_req,
     OM_uint32 *                         time_rec)
 {
+    globus_result_t                     local_result = GLOBUS_SUCCESS;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
     BIO *                               bp = NULL;
@@ -119,7 +120,7 @@ GSS_CALLCONV gss_import_cred(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH,
             ("The desired_mech: %s, is not supported",
-             desired_mech.elements));
+             ((gss_OID_desc *)desired_mech)->elements));
         major_status = GSS_S_BAD_MECH;
         goto exit;
     }
@@ -151,7 +152,7 @@ GSS_CALLCONV gss_import_cred(
             {
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_IMPORTING_CRED,
+                    GLOBUS_GSI_GSSAPI_ERROR_IMPORT_FAIL,
                     ("Couldn't open the file: %s",
                      filename));
                 major_status = GSS_S_FAILURE;
@@ -176,13 +177,13 @@ GSS_CALLCONV gss_import_cred(
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_TOKEN,
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
             ("Invalid token passed to function"));
         major_status = GSS_S_DEFECTIVE_TOKEN;
         goto exit;
     }
     
-    major_status = globus_i_gsi_gss_cred_read(
+    major_status = globus_i_gsi_gss_cred_read_bio(
         &local_minor_status,
         GSS_C_BOTH,
         output_cred_handle,
@@ -192,7 +193,7 @@ GSS_CALLCONV gss_import_cred(
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_READING_CREDENTIAL);
+            GLOBUS_GSI_GSSAPI_ERROR_IMPORT_FAIL);
         goto exit;
     }
     
@@ -200,14 +201,14 @@ GSS_CALLCONV gss_import_cred(
      * until the cert expires */    
     if (time_rec != NULL)
     {
-        local_result = globus_gsi_cred_lifetime(
+        local_result = globus_gsi_cred_get_lifetime(
             ((gss_cred_id_desc *) *output_cred_handle)->cred_handle,
-            &time_rec);
+            (time_t *) time_rec);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
             major_status = GSS_S_FAILURE;
             goto exit;
         }

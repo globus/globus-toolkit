@@ -9,7 +9,6 @@
  * $Date $
  */
 
-
 #include "gssapi.h"
 #include "version.h"
 #include "globus_openssl.h"
@@ -24,7 +23,14 @@ static int globus_l_gsi_gssapi_deactivate(void);
  * Currently this isn't terribly well defined. The idea is that 0 is no
  * debugging output, and 9 is a whole lot.
  */
-int globus_i_gsi_gssapi_debug_level = 0;
+int                                     globus_i_gsi_gssapi_debug_level;
+
+/**
+ * Debugging Log File
+ *
+ * Debugging output gets written to this file
+ */
+FILE *                                  globus_i_gsi_gssapi_debug_fstream;
 
 /**
  * Module descriptor static initializer.
@@ -56,6 +62,7 @@ static
 int
 globus_l_gsi_gssapi_activate(void)
 {
+    int                                 result = (int) GLOBUS_SUCCESS;
     char *                              tmp_string;
     static char *                       _function_name_ =
         "globus_l_gsi_gssapi_activate";
@@ -73,16 +80,33 @@ globus_l_gsi_gssapi_activate(void)
             }
         }
 
+        tmp_string = globus_module_getenv("GLOBUS_GSSAPI_DEBUG_FILE");
+        if(tmp_string != GLOBUS_NULL)
+        {
+            globus_i_gsi_gssapi_debug_fstream = fopen(tmp_string, "w");
+            if(!globus_i_gsi_gssapi_debug_fstream)
+            {
+                result = (int) GLOBUS_FAILURE;
+                goto exit;
+            }
+        }
+        else
+        {
+            globus_i_gsi_gssapi_debug_fstream = stderr;
+        }
+
         GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-        globus_module_activate(GLOBUS_COMMON_MODULE);
-        globus_module_activate(GLOBUS_OPENSSL_MODULE);
+        globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
+        globus_module_activate(GLOBUS_GSI_CALLBACK_MODULE);
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
 
         active = 1;
     }
-    return GLOBUS_SUCCESS;
+
+ exit:
+    return result;
 }
 /* globus_l_gsi_gssapi_activate() */
 
@@ -99,8 +123,8 @@ globus_l_gsi_gssapi_deactivate(void)
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
-    globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_CALLBACK_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
     active = 0;
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
@@ -109,4 +133,3 @@ globus_l_gsi_gssapi_deactivate(void)
 }
 /* globus_l_gsi_gssapi_deactivate() */
 #endif
-
