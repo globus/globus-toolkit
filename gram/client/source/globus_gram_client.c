@@ -804,22 +804,11 @@ globus_gram_client_job_request(char * gatekeeper_url,
     }
 
     /*
-     * contact_msg_size includes the extra int added to the front of the 
-     * message.
      * size is the size of the message without the extra int.
      */
-    contact_msg_size = size + 4;
+    contact_msg_size = size;
     tmp_buffer = (globus_byte_t *) globus_malloc(contact_msg_size);
     contact_msg_buffer = tmp_buffer;
-    
-    /*
-     * Put 4-byte big-endian unsigned integer into front of message,
-     * this is the size of the message to be peeled off by the gatekeeper
-     */
-    *tmp_buffer++ = (globus_byte_t) (((size) & 0xFF000000) >> 24);
-    *tmp_buffer++ = (globus_byte_t) (((size) & 0xFF0000) >> 16);
-    *tmp_buffer++ = (globus_byte_t) (((size) & 0xFF00) >> 8);
-    *tmp_buffer++ = (globus_byte_t)  ((size) & 0xFF);
 
     /*
      * Pack the rest of the message that goes to the gram_job_manager
@@ -848,18 +837,9 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     globus_nexus_user_put_startpoint_transfer(&tmp_buffer, &reply_sp, 1);
 
-#if NODEE
-    rc = globus_nexus_fd_register_for_write(gatekeeper_fd,
-                                           (char *) contact_msg_buffer,
-                                           contact_msg_size,
-                                           globus_l_write_callback,
-                                           globus_l_write_error_callback,
-                                           (void *) &job_request_monitor);
-#endif
-
 	if (globus_gss_assist_wrap_send(&minor_status,
 					context_handle,
-					contact_msg_buffer+4,
+					(char *)contact_msg_buffer,
 					size,
 					&token_status,
 					globus_gss_assist_token_send_nexus,
