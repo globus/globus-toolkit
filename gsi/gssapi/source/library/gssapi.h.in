@@ -143,7 +143,6 @@ typedef struct gss_channel_bindings_struct {
   gss_buffer_desc application_data;
 } *gss_channel_bindings_t;
 
-
 /*
  * Flag bits for context-level services.
  */
@@ -426,6 +425,8 @@ extern gss_OID GSS_C_NT_EXPORT_NAME;
 #define GSS_S_UNAVAILABLE (16ul << GSS_C_ROUTINE_ERROR_OFFSET)
 #define GSS_S_DUPLICATE_ELEMENT (17ul << GSS_C_ROUTINE_ERROR_OFFSET)
 #define GSS_S_NAME_NOT_MN (18ul << GSS_C_ROUTINE_ERROR_OFFSET)
+#define GSS_S_EXT_COMPAT (19ul << GSS_C_ROUTINE_ERROR_OFFSET)
+
 
 /*
  * Supplementary info bits:
