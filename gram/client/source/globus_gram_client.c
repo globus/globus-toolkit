@@ -374,7 +374,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     } 
     else
     {
-        fprintf(stderr,"strdup failed for gatekeeper_url");
+        grami_fprintf(globus_l_print_fp, "strdup failed for gatekeeper_url\n");
         GLOBUS_L_UNLOCK;
         return(1);
     }
@@ -390,7 +390,8 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 				 gatekeeper_fd);
     if (rc != 0)
     {
-        fprintf(stderr, " globus_nexus_fd_connect failed.  rc = %d\n", rc);
+        grami_fprintf(globus_l_print_fp,
+              " globus_nexus_fd_connect failed.  rc = %d\n", rc);
 	GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED);
     }
@@ -457,14 +458,16 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     if (globus_gss_assist_token_get_nexus((void *) gatekeeper_fd,
 				  (void **) &auth_msg_buf, &auth_msg_buf_size))
     {
-	fprintf(stderr, "Authoirization message not received");
+        grami_fprintf(globus_l_print_fp,
+	      "Authoirization message not received");
 	GLOBUS_L_UNLOCK;
 	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
 
     if (auth_msg_buf_size > 1 )
-    {
-	fprintf(stderr, auth_msg_buf);
+    { 
+        grami_fprintf(globus_l_print_fp,
+              "authorization buffer = %s\n", auth_msg_buf);
 	globus_nexus_fd_close(*gatekeeper_fd);
 	GLOBUS_L_UNLOCK;
 	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
@@ -644,7 +647,8 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     if (rc != 0)
     {
-        fprintf(stderr, "globus_nexus_fd_register_for_write failed\n");
+        grami_fprintf(globus_l_print_fp,
+	       "globus_nexus_fd_register_for_write returned %d\n", rc);
         globus_nexus_fd_close(gatekeeper_fd);
         GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
@@ -821,7 +825,8 @@ globus_gram_client_job_cancel(char * job_contact)
     rc = globus_nexus_attach(job_contact, &sp_to_job_manager);
     if (rc != 0)
     {
-        printf("globus_nexus_attach returned %d\n", rc);
+        grami_fprintf(globus_l_print_fp,
+	       "globus_nexus_attach returned %d\n", rc);
 	GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
@@ -837,7 +842,8 @@ globus_gram_client_job_cancel(char * job_contact)
 			       GLOBUS_FALSE);
     if (rc != 0)
     {
-	printf("globus_nexus_send_rsr returned %d\n", rc);
+        grami_fprintf(globus_l_print_fp,
+	       "globus_nexus_attach returned %d\n", rc);
 	GLOBUS_L_UNLOCK;
 	return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
@@ -931,7 +937,8 @@ globus_gram_client_callback_allow(
        
     if (rc != 0)
     {
-        printf("globus_nexus_allow_attach returned %d\n", rc);
+        grami_fprintf(globus_l_print_fp, 
+              "globus_nexus_allow_attach returned %d\n", rc);
         return (1);
     }
 
@@ -1021,14 +1028,14 @@ globus_gram_client_callback_disallow(char * callback_contact)
     char * 		  host;
 
     grami_fprintf(globus_l_print_fp,
- "in globus_gram_client_callback_disallow()\n");
+          "in globus_gram_client_callback_disallow()\n");
 
     if (globus_nexus_split_url(callback_contact,
 			       &host,
 			       &port,
 			       NULL) != 0)
     {
-        printf(" invalid url.\n");
+        grami_fprintf(globus_l_print_fp, " invalid url.\n");
         return (1);
     }
 
@@ -1083,7 +1090,8 @@ globus_gram_client_job_start_time(char * job_contact,
     rc = globus_nexus_attach(job_contact, &sp_to_job_manager);
     if (rc != 0)
     {
-	printf("globus_nexus_attach returned %d\n", rc);
+        grami_fprintf(globus_l_print_fp,
+	       "globus_nexus_attach returned %d\n", rc);
 	GLOBUS_L_UNLOCK;
 	return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
@@ -1103,7 +1111,8 @@ globus_gram_client_job_start_time(char * job_contact,
 
     if (rc != 0)
     {
-	printf("globus_nexus_send_rsr returned %d\n", rc);
+        grami_fprintf(globus_l_print_fp,
+	       "globus_nexus_send_rsr returned %d\n", rc);
 	GLOBUS_L_UNLOCK;
 	return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
