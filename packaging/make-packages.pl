@@ -357,8 +357,14 @@ sub generate_build_list()
        install_gt2_autotools();
        print "Final package build list:\n";
 
-       print "all: \@prewsgram\@ \@prewsgridftp\@ \@prewsmds\@ \@rls\@ \@wsjava\@ \@wsmds\@ \@wsdel\@ \@wsrft\@ \@wsgram\@ \@wscas\@ \@wsc\@ \@tests\@ postinstall\n";
+       print "all: gpt \@prewsgram\@ \@prewsgridftp\@ \@prewsmds\@ \@rls\@ \@wsjava\@ \@wsmds\@ \@wsdel\@ \@wsrft\@ \@wsgram\@ \@wscas\@ \@wsc\@ \@tests\@ postinstall\n";
+       print "GLOBUS_LOCATION=\@prefix\@\n";
+       print "GPT_LOCATION=\@prefix\@\n";
        print "GLOBUS_IODBC_PATH=\@globus_iodbc\@\n";
+       print "export GLOBUS_IODBC_PATH GPT_LOCATION GLOBUS_LOCATION\n";
+       print "FLAVOR=\@flavor\@\n";
+       print "THR=\@thr\@\n\n";
+       print "gpt:\n\tcd gpt-3.2autotools2004 && ./build_gpt\n";
 
        foreach my $bun ( @user_bundles )
        {
