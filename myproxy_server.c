@@ -1073,7 +1073,8 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    case MYPROXY_PUT_PROXY:
    case MYPROXY_DESTROY_PROXY:
        /* Is this client authorized to store credentials here? */
-       authorization_ok = myproxy_server_check_cred(context, client_name);
+       authorization_ok =
+	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
        if (!(authorization_ok == 1)) break;
 
        credentials_exist = myproxy_creds_exist(client_request->username, client_request->credname);
@@ -1089,13 +1090,17 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       verror_put_string("%s","Error checking credential ownership");
 	       goto end;
 	   }
-       }
 
-       if (credentials_exist && !client_owns_credentials) {
-	   myproxy_log("Username \"%s\" in use by another client",
-		       client_request->username);
-	   verror_put_string("%s","Username in use by another client");
-	   goto end;
+	   if (!client_owns_credentials) {
+	       if (client_request->command_type == MYPROXY_PUT_PROXY) {
+		   myproxy_log("Username and credential name in use by another client.");
+		   verror_put_string("%s","Username and credential name in use by someone else.");
+	       } else {
+		   myproxy_log("Failed credential owner check.");
+		   verror_put_string("%s","Credentials owned by someone else.");
+	       }
+	       goto end;
+	   }
        }
        break;
 
@@ -1108,27 +1113,10 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   goto end;
        }
 
-#if defined (TO_BE_REMOVED)
-       credentials_exist = myproxy_creds_exist(client_request->username);
-       if (credentials_exist == -1) {
-	   verror_put_string("Error checking credential existence");
-	   goto end;
-       }
+       /* Further authorization checking done inside the processing
+	  of the INFO request, since there may be multiple credentials
+          stored under this username. */
 
-       if (credentials_exist == 1) {
-	   client_owns_credentials = myproxy_creds_is_owner(client_request->username, client_name);
-	   if (client_owns_credentials == -1) {
-	       verror_put_string("Error checking credential ownership");
-	       goto end;
-	   }
-       }
-       if (credentials_exist && !client_owns_credentials) {
-	   myproxy_log("Username \"%s\" in use by another client",
-		       client_request->username);
-	   verror_put_string("%s","Username in use by another client");
-	   goto end;
-       }
-#endif
        break;
    }
    if (authorization_ok == -1) {
