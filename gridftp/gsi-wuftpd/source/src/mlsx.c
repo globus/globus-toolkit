@@ -45,7 +45,7 @@ get_mlsx_options()
 {
     if(!options) 
     {
-        return "Type;Size;Modify;UNIX.mode;Perm;";
+        return "Type;Size;Modify;UNIX.mode;Perm;Unique;";
     }
     
     return options;

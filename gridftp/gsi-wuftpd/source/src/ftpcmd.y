@@ -2463,7 +2463,7 @@ char * feattab[] =
     "ESTO",
     "ERET",
     "MDTM",
-    "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;", 
+    "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;", 
     "SIZE",
 #ifdef USE_GLOBUS_DATA_CODE
     "PARALLEL",

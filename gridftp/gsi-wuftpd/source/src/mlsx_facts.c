@@ -43,6 +43,7 @@ get_fact_string(
     char                                size_buf[100];
     char                                perm_buf[100];
     char                                mode_buf[100];
+    char                                unique_buf[100];
     
     mutable_facts = strdup(facts);
     if(!mutable_facts)
@@ -137,7 +138,7 @@ get_fact_string(
     *size_buf = '\0';
     if(strstr(mutable_facts, "size")) 
     {
-        sprintf(size_buf, "Size=%lu;", (unsigned long) stat_buf.st_size);
+        sprintf(size_buf, "Size=%llu;", (unsigned long long) stat_buf.st_size);
     }
     
     ptr = perm_buf;
@@ -298,17 +299,27 @@ get_fact_string(
             "UNIX.mode=%04o;",
             (unsigned) (stat_buf.st_mode & 07777));
     }
+    
+    *unique_buf = '\0';
+    if(strstr(mutable_facts, "unique")) 
+    {
+        sprintf(
+            unique_buf,
+            "Unique=%lx-%lx;",
+            (unsigned long) stat_buf.st_dev, (unsigned long) stat_buf.st_ino);
+    }
 
     snprintf(
         ret_val,
         size,
-        "%s%s%s%s%s%s %s",
+        "%s%s%s%s%s%s%s %s",
         type_buf,
         modify_buf,
         charset_buf,
         size_buf,
         perm_buf,
         mode_buf,
+        unique_buf,
         unqualified_path);
     ret_val[size - 1] = '\0';
 
