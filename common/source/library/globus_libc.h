@@ -401,7 +401,7 @@ typedef struct addrinfo                 globus_addrinfo_t;
         switch(_addr->sa_family)                                            \
         {                                                                   \
           case AF_INET:                                                     \
-            ((struct sockaddr_in *) _addr)->sin_lin = (len);                \
+            ((struct sockaddr_in *) _addr)->sin_len = (len);                \
             break;                                                          \
                                                                             \
           case AF_INET6:                                                    \
