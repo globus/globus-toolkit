@@ -9,6 +9,7 @@ my $start = time();
 my $testtmp = &make_tmpdir();
 my @log_data;
 my $log_path = &get_log_path();
+my $skip_all = 0;
 
 if (! defined($log_path))
 {
@@ -48,8 +49,7 @@ sub run_condor_seg
     my $output = shift;
     my $seg = $ENV{GLOBUS_LOCATION} .
         '/libexec/globus-scheduler-event-generator';
-    my @args = ($seg, '-s', $ENV{GLOBUS_LOCATION} .
-            '/lib/libglobus_seg_condor_gcc32dbg.so', '-t', $start);
+    my @args = ($seg, '-s', 'condor', '-t', $start);
     my $pid2 = open(FH, "|-");
     my $size;
 
