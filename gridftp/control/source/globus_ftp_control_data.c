@@ -9008,7 +9008,7 @@ globus_l_ftp_eb_write_callback(
                  */
                 else
                 {
-                    if(stripe->connection_count > 1)
+                    if(stripe->connection_count > 1 || stripe->eof_sent)
                     {
                         res = globus_l_ftp_control_data_register_eod(
                                   stripe,
