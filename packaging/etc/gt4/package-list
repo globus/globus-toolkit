@@ -37,6 +37,7 @@ globus_fork_starter                         ws-gram/job_management/fork/c/source
 globus_wsrf_mds_aggregator		    ws-mds/aggregator/source
 globus_wsrf_mds_index                       ws-mds/index/source
 globus_wsrf_mds_trigger                     ws-mds/trigger/source
+globus_wsrf_mds_archive                     ws-mds/archive/source
 globus_wsrf_mds_ganglia                     ws-mds/ganglia/source
 globus_wsrf_mds_usefulrp                    ws-mds/usefulrp/source
 globus_wsrf_mds_usefulrp_schema             ws-mds/usefulrp/schema
