@@ -2184,6 +2184,7 @@ globus_l_xio_gssapi_ftp_attr_copy(
     {
         dst_attr->subject = strdup(src_attr->subject);
     }
+    *dst = dst_attr;
 
     return GLOBUS_SUCCESS;
 }
