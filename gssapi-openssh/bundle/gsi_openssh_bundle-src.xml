@@ -8,7 +8,7 @@
 </BundleInfo>
 <BundleReleaseInfo >
 <BundleStability Release="EMPTY" />
-<BundleVersion Age="0" Major="2" Minor="1" />
+<BundleVersion Age="EMPTY" Major="EMPTY" Minor="EMPTY" />
 <VersionLabel >EMPTY</VersionLabel>
 <TypeOfBundle ContentsType="src" />
 </BundleReleaseInfo>
