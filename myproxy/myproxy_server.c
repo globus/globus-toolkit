@@ -188,7 +188,6 @@ main(int argc, char *argv[])
 	exit(1);
     }
 
-    
     /* 
      * Test to see if we're run out of inetd 
      * If so, then stdin will be connected to a socket,
@@ -228,6 +227,12 @@ main(int argc, char *argv[])
     my_signal(SIGTERM, sig_exit); 
     my_signal(SIGINT,  sig_exit); 
     
+    /* Make sure all's well with the storage directory. */
+    if (myproxy_check_storage_dir() == -1) {
+	fprintf(stderr, "%s\n", verror_get_string());
+	exit(1);
+    }
+
     if (!server_context->run_as_daemon) {
        myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
        socket_attrs->socket_fd = fileno(stdin);
