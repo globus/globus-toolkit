@@ -1,6 +1,6 @@
 Running the server:
 
-It is assumed that the installation was successful and that globus
+It is assumed that the toolkit installation was successful and that globus
 security is properly configured.
 
 
@@ -22,7 +22,7 @@ globus-gridftp-server <args>
 
 
 ***
-as a daemon:
+Daemon mode:
 
 The server should generally be run as root in daemon mode, though it is
 possible to run it as a user.  In that case only that user will be able
@@ -31,13 +31,13 @@ When run as a user you will need a proxy as above.
 When run as root you will need to have a host certificate.
 
 globus-gridftp-server < -s | -S > <args>
--s runs in the foreground, and allows logging to stdout/stderr
+-s runs in the foreground
 -S detaches from the terminal and runs in the background
 
 
 
 ***
-under xinetd/inetd:
+Under xinetd/inetd:
 
 here is a sample gridftp xinetd config entry:
 -------------------------------
@@ -63,10 +63,34 @@ note that the service name used (gridftp2 in this case) should be defined in
 /etc/services with the desired port.
 
 
+***
+Remote data-node and striped configuration:
+
+Note: the frontend and data-nodes can each be run in any of the above modes.
+
+frontend: 
+globus-gridftp-server <args> -r <host:port>[,<host:port>,...]
+
+data-node:
+globus-gridftp-server <args> -dn
+
+The data node will currently perform all operations as the user it is started
+as (i.e. it does not setuid).  For this reason it is not recommended to run
+the data node as root.
+
+
+-- globus-url-copy now includes a -stripe option that should be used when
+striped transfers are desired.
+
+
+
+
 
 ***
 Command line arguments:
 
+-v            show server version information
+-V            show version info for all globus packages used by the server
 -p <port>     specify the port to listen on
 -s, -S        run in daemon mode (see above)
 -i            run in inetd mode (see above)
@@ -84,6 +108,13 @@ Command line arguments:
 -c <config>   load this config file instead of the 
               default $GLOBUS_LOCATION/etc/gridftp.conf 
 -G <globus_loc> use this path as the $GLOBUS_LOCATION
+-bs <num>     specify the size of buffers used for reading from disk
+
+Striping/remote data node options:
+-dn           run as a remote data-node
+-r <host:port>[,<host:port>...]
+              list of remote data-nodes to connect to
+              
 
 Configuration file and environment variables:
 
@@ -112,6 +143,7 @@ anonymous_user <username>   user to setuid to an anonymous connection is made
 anonymous_group <group>     group to setgid to an anonymous connection is made
 banner_file <filename>      filename to read the banner (pre-login) message from
 banner <string>             define the banner directly with this
+blocksize                   same as -bs option
 connections_disabled <1>    disable connections
 daemon <1>                  same as -s or -S options
 debug_level <num>           same as -d option
@@ -130,6 +162,9 @@ port <num>                  same as -p option
 tcp_port_range <low-high>   defines port range to use for data connections
                             (sets GLOBUS_TCP_PORT_RANGE env var)
 terse_banner <1>            enable minimal pre-login banner
+data_node <1>               same as -dn option
+remote <host:port[,<host:port>,...]
+                            same as -r option
 
 
 Note that commandline options and configuration file options may both be used
@@ -140,13 +175,30 @@ Note that commandline options and configuration file options may both be used
 ***
 Known issues:
 
-running as a daemon (-s or -S) sometimes triggers a bug that causes 
-an assertion. that do not come up when running as a single process.
+-- There are numerous known memory leaks.
 
-the server will leak a socket (and the child process will hang in 
+-- Threaded builds are not expected to work properly.
+
+-- Error resonses are unclear and inconsistent.
+
+-- Running as a daemon (-s or -S) sometimes triggers a bug that causes 
+an assertion that does not come up when running as a single process.
+
+-- The server will leak a socket (and the child process will hang in 
 daemon mode) when the client sends a PASV and then RETR or STOR and
 then terminating.
 
-the server running in inetd mode may not automatically load the
-config file from $GLOBUS_LOCATION/etc/gridftp.conf.  use the
--c <configfile> parameter to specify the config file. 
+-- The server running in inetd mode may not automatically load the
+config file from $GLOBUS_LOCATION/etc/gridftp.conf.  Use the
+-c <configfile> parameter to specify the config file.
+
+-- When running a striped transfer with more parallelism of more than 1, the
+transfer may hang when finished, but before eof.  This is more likely as
+parallelism increases and the size of the transfer decreases.
+
+-- An assertion or other failure may occur when the connection between
+a data node and front-end is closed unexpectedly.
+
+-- There is no security whatsoever on the connection between the front end and
+data nodes.  Additionally, the data node only operates as the user it is
+started as.
