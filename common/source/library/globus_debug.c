@@ -4,6 +4,8 @@
 
 #ifdef BUILD_DEBUG
 
+char * strdup(const char *);
+
 static
 int
 globus_l_debug_get_level(
@@ -22,7 +24,7 @@ globus_l_debug_get_level(
         char *                          my_levels[31];
         int                             i;
         
-        my_names = globus_libc_strdup(level_names);
+        my_names = strdup(level_names);
         if(!my_names)
         {
             return 0;
@@ -80,7 +82,7 @@ globus_l_debug_get_level(
             }
         } while((levels = next_name));
         
-        globus_free(my_names);
+        free(my_names);
     }
     else if(level < 0)
     {
@@ -113,7 +115,7 @@ globus_debug_init(
         char *                          filename;
         char *                          show_tid;
         
-        levels = globus_libc_strdup(tmp);
+        levels = strdup(tmp);
         if(!levels)
         {
             return;
@@ -161,7 +163,7 @@ globus_debug_init(
             }
         }
         
-        globus_free(levels);
+        free(levels);
     }
 }
 
