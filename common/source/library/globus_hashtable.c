@@ -17,12 +17,6 @@ struct globus_hashtable_s
     globus_hashtable_keyeq_func_t volatile  keyeq_func;
 };
 
-typedef struct hashtentry 
-{
-    void *                              key;
-    void *                              datum;
-} globus_hashtable_entry_t;
-
 typedef struct hashtsearchargs 
 {
     struct globus_hashtable_s *         s_table;
@@ -222,8 +216,7 @@ globus_hashtable_destroy(
 void
 globus_hashtable_destroy_all(
     globus_hashtable_t *                table,
-    void                                (*element_free)(void * key,
-                                                        void * data))
+    void                                (*element_free)(void * element))
 {
     int                                 i;
     struct globus_hashtable_s *         s_table;

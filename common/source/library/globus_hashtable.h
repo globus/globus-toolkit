@@ -31,6 +31,12 @@ struct globus_hashtable_s;
 
 typedef struct globus_hashtable_s *     globus_hashtable_t;
 
+typedef struct hashtentry 
+{
+    void *                              key;
+    void *                              datum;
+} globus_hashtable_entry_t;
+
 /*
  * function prototypes
  */
@@ -64,8 +70,8 @@ globus_hashtable_destroy(
 void
 globus_hashtable_destroy_all(
     globus_hashtable_t *                table,
-    void                                (*element_free)(void * key,
-                                                        void * data));
+    void                                (*element_free)(void * element));
+
 int 
 globus_hashtable_string_hash(  
     void *                              string, 
