@@ -36,12 +36,6 @@ mandir = ${prefix}/man
 includedir = ${prefix}/include
 oldincludedir = /usr/include
 
-saslsrcdir = /home/myproxy/cyrus-sasl-2.1.7
-sasllibdir = /usr/grid/lib
-krb5dir = /usr/kerberos
-SASL_INCLUDES = -I$(saslsrcdir)/include -I$(krb5dir)/include 
-SASL_LDFLAGS = -L$(krb5dir)/lib $(krb5dir)/lib/libkrb5.so $(sasllibdir)/libsasl2.so -ldl -lresolv -Wl,--rpath -Wl,$(saslsrcdir)/lib
-
 DESTDIR =
 
 pkgdatadir = $(datadir)/myproxy
@@ -73,64 +67,68 @@ AR = /usr/bin/ar
 ARFLAGS = ruv
 AS = @AS@
 CC = /usr/bin/gcc
-CFLAGS = -g   -Wall
+CFLAGS = -g -g   -Wall  -Wall
 CPP = /usr/bin/gcc -E
-CPPFLAGS =  -I/usr/grid/include -I/usr/grid/include/gcc32dbg
+CPPFLAGS =  -I/home/globus/gt-3.2.0/include -I/home/globus/gt-3.2.0/include/gcc32dbg -I/home/globus/gt-3.2.0/include -I/home/globus/gt-3.2.0/include/gcc32dbg -I../cyrus-sasl-2.1.18/include -I/usr/kerberos/include
 CROSS = no
-CXX = /usr/bin/c++
-CXXCPP = /usr/bin/c++ -E
-CXXFLAGS = -g  
+CXX = /usr/bin/g++
+CXXCPP = /usr/bin/g++ -E
+CXXFLAGS = -g -g   
 DIRT_BRANCH_ID = 99999
-DIRT_TIMESTAMP = 1047427167
+DIRT_TIMESTAMP = 1083875216
 DLLTOOL = @DLLTOOL@
 DOT = 
 DOXYFILE = Doxyfile
 DOXYGEN = 
+ECHO = @ECHO@
 EXEEXT = 
-F77 = /usr/bin/f77
+F77 = /usr/bin/g77
 F77FLAGS =  
 F90 = 
 F90FLAGS =  
-FILELIST_FILE = /home/myproxy/sasl-branch/pkgdata/master.filelist
+FILELIST_FILE = /home/jbasney/afs/myproxy-ws/sasl-branch/pkgdata/master.filelist
 GLOBUS_FLAVOR_NAME = gcc32dbg
-GPT_CFLAGS =  -D_FILE_OFFSET_BITS=64 
-GPT_CONFIG_CFLAGS =  -D_FILE_OFFSET_BITS=64 
+GPT_CFLAGS =  
+GPT_CONFIG_CFLAGS =  
 GPT_CONFIG_INCLUDES =  
 GPT_CONFIG_LIBS =  -ldl 
-GPT_CONFIG_PKG_LIBS = -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lglobus_common_gcc32dbg 
+GPT_CONFIG_PKG_LIBS = -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_callout_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lltdl_gcc32dbg -lglobus_common_gcc32dbg 
 GPT_EXTERNAL_INCLUDES = 
 GPT_EXTERNAL_LIBS = 
-GPT_INCLUDES = -I/usr/grid/include/gcc32dbg  
+GPT_INCLUDES = -I/home/globus/gt/include/gcc32dbg  
 GPT_IS_2 = yes
-GPT_LDFLAGS =  -L/usr/grid/lib
-GPT_LIBS = -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lglobus_common_gcc32dbg   -ldl 
-GPT_LIB_LINKS = -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lglobus_common_gcc32dbg   -ldl 
+GPT_LDFLAGS =  -L/home/globus/gt/lib 
+GPT_LIBS = -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_callout_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lltdl_gcc32dbg -lglobus_common_gcc32dbg   -ldl 
+GPT_LIB_LINKS = -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_callout_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lltdl_gcc32dbg -lglobus_common_gcc32dbg   -ldl 
 GPT_LINKTYPE = shared
-GPT_LOCATION = /usr/grid
+GPT_LOCATION = /home/globus/gt
 GPT_MAJOR_VERSION = 1
 GPT_MINOR_VERSION = 4
-GPT_PGM_LINKS = -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lglobus_common_gcc32dbg   -ldl 
+GPT_PGM_LINKS = -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_callout_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lltdl_gcc32dbg -lglobus_common_gcc32dbg   -ldl 
 GPT_PKG_CFLAGS = 
 HAVE_DOT = 
 INSURE = 
 LD = /usr/bin/gcc
-LDFLAGS = -L/usr/grid/lib 
-LIBS =  
+LDFLAGS =  -L/home/globus/gt-3.2.0/lib -L/home/globus/gt-3.2.0/lib -L../cyrus-sasl-2.1.18/lib -L/usr/kerberos/lib
+LIBS = -lkrb5 -lsasl2  
 LIBTOOL = $(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)
 LN_S = 
 MAINT = #
 MAKEINFO = makeinfo
 OBJDUMP = @OBJDUMP@
+OBJECT_MODE = 
 OBJEXT = o
 PACKAGE = myproxy
 PERL = /usr/bin/perl
 RANLIB = /usr/bin/ranlib
+STRIP = @STRIP@
 SYSLIBS = 
 VERSION = 1.4
-builddir = /home/myproxy/sasl-branch
+builddir = /home/jbasney/afs/myproxy-ws/sasl-branch
 cross_compiling = no
 lac_doxygen_examples = 
 lac_doxygen_file_patterns = 
+lac_doxygen_input_filter = 
 lac_doxygen_installdox = 
 lac_doxygen_internal_tagfiles = 
 lac_doxygen_output_tagfile = 
@@ -169,7 +167,7 @@ LibSources =  	gnu_getopt.c 	gnu_getopt.h 	gnu_getopt_long.c 	gsi_socket.c 	gsi_
 ServerSources =  	myproxy_creds.c 	myproxy_creds.h 	myproxy_server.c 	myproxy_server.h 	myproxy_server_config.c 	vparse.c 	vparse.h
 
 
-INCLUDES =  $(GPT_INCLUDES) $(SASL_INCLUDES)
+INCLUDES =  $(GPT_INCLUDES)
 
 Scripts =  	myproxy-test
 
@@ -195,48 +193,48 @@ sbin_PROGRAMS =  	myproxy-server 	myproxy-admin-load-credential 	myproxy-admin-q
 
 myproxy_init_SOURCES = myproxy_init.c
 
-myproxy_init_LDFLAGS = $(GPT_LDFLAGS) $(SASL_LDFLAGS)
+myproxy_init_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_init_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_info_SOURCES = myproxy_info.c
 
-myproxy_info_LDFLAGS = $(GPT_LDFLAGS) $(SASL_LDFLAGS)
+myproxy_info_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_info_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_destroy_SOURCES = myproxy_destroy.c
 
-myproxy_destroy_LDFLAGS = $(GPT_LDFLAGS)  $(SASL_LDFLAGS)
+myproxy_destroy_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_destroy_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_server_SOURCES = $(ServerSources)
-myproxy_server_LDFLAGS = $(GPT_LDFLAGS) $(SASL_LDFLAGS)
+myproxy_server_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_server_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_get_delegation_SOURCES = myproxy_get_delegation.c
 
-myproxy_get_delegation_LDFLAGS = $(GPT_LDFLAGS) $(SASL_LDFLAGS)
+myproxy_get_delegation_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_get_delegation_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_change_pass_phrase_SOURCES = myproxy_cp.c
 
-myproxy_change_pass_phrase_LDFLAGS = $(GPT_LDFLAGS) $(SASL_LDFLAGS)
+myproxy_change_pass_phrase_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_change_pass_phrase_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_admin_query_SOURCES = myproxy_arq.c myproxy_creds.c myproxy_creds.h
 
-myproxy_admin_query_LDFLAGS = $(GPT_LDFLAGS) $(SASL_LDFLAGS)
+myproxy_admin_query_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_admin_query_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_admin_load_credential_SOURCES = myproxy_alcf.c ssl_utils.c ssl_utils.h myproxy_creds.c myproxy_creds.h
 
-myproxy_admin_load_credential_LDFLAGS = $(GPT_LDFLAGS) $(SASL_LDFLAGS)
+myproxy_admin_load_credential_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_admin_load_credential_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
@@ -244,7 +242,7 @@ noinst_PROGRAMS = gsi_socket_test
 
 gsi_socket_test_SOURCES = gsi_socket_test.c gsi_socket.c
 
-gsi_socket_test_LDFLAGS = $(GPT_LDFLAGS) $(SASL_LDFLAGS)
+gsi_socket_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gsi_socket_test_LDADD = $(GPT_PGM_LINKS)  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
@@ -261,36 +259,45 @@ CONFIG_CLEAN_FILES =  myproxy.cron
 LTLIBRARIES =  $(lib_LTLIBRARIES)
 
 
-DEFS =  -DPACKAGE=\"myproxy\" -DVERSION=\"1.4\" -DHAVE_REGEX_H=1 -DHAVE_REGCOMP=1 -DHAVE_VSNPRINTF=1 -DHAVE_SETENV=1 -DHAVE_UNSETENV=1  -I. -I$(srcdir) 
+DEFS =  -DPACKAGE=\"myproxy\" -DVERSION=\"1.4\" -DHAVE_REGEX_H=1 -DHAVE_REGCOMP=1 -DHAVE_VSNPRINTF=1 -DHAVE_SETENV=1 -DHAVE_UNSETENV=1 -DHAVE_LIBSASL2=1 -DHAVE_LIBKRB5=1  -I. -I$(srcdir) 
 libmyproxy___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = 
 libmyproxy___GLOBUS_FLAVOR_NAME__la_OBJECTS =  gnu_getopt.lo \
 gnu_getopt_long.lo gsi_socket.lo myproxy.lo myproxy_authorization.lo \
 myproxy_delegation.lo myproxy_read_pass.lo myproxy_log.lo ssl_utils.lo \
 string_funcs.lo verror.lo
+bin_PROGRAMS =  myproxy-init$(EXEEXT) myproxy-info$(EXEEXT) \
+myproxy-destroy$(EXEEXT) myproxy-get-delegation$(EXEEXT) \
+myproxy-change-pass-phrase$(EXEEXT)
+noinst_PROGRAMS =  gsi_socket_test$(EXEEXT)
+sbin_PROGRAMS =  myproxy-server$(EXEEXT) \
+myproxy-admin-load-credential$(EXEEXT) myproxy-admin-query$(EXEEXT)
 PROGRAMS =  $(bin_PROGRAMS) $(noinst_PROGRAMS) $(sbin_PROGRAMS)
 
-myproxy_init_OBJECTS =  myproxy_init.o
+myproxy_init_OBJECTS =  myproxy_init.$(OBJEXT)
 myproxy_init_DEPENDENCIES =  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
-myproxy_info_OBJECTS =  myproxy_info.o
+myproxy_info_OBJECTS =  myproxy_info.$(OBJEXT)
 myproxy_info_DEPENDENCIES =  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
-myproxy_destroy_OBJECTS =  myproxy_destroy.o
+myproxy_destroy_OBJECTS =  myproxy_destroy.$(OBJEXT)
 myproxy_destroy_DEPENDENCIES =  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
-myproxy_get_delegation_OBJECTS =  myproxy_get_delegation.o
+myproxy_get_delegation_OBJECTS =  myproxy_get_delegation.$(OBJEXT)
 myproxy_get_delegation_DEPENDENCIES =  \
 ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
-myproxy_change_pass_phrase_OBJECTS =  myproxy_cp.o
+myproxy_change_pass_phrase_OBJECTS =  myproxy_cp.$(OBJEXT)
 myproxy_change_pass_phrase_DEPENDENCIES =  \
 ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
-gsi_socket_test_OBJECTS =  gsi_socket_test.o gsi_socket.o
+gsi_socket_test_OBJECTS =  gsi_socket_test.$(OBJEXT) \
+gsi_socket.$(OBJEXT)
 gsi_socket_test_DEPENDENCIES =  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
-myproxy_server_OBJECTS =  myproxy_creds.o myproxy_server.o \
-myproxy_server_config.o vparse.o
+myproxy_server_OBJECTS =  myproxy_creds.$(OBJEXT) \
+myproxy_server.$(OBJEXT) myproxy_server_config.$(OBJEXT) \
+vparse.$(OBJEXT)
 myproxy_server_DEPENDENCIES =  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
-myproxy_admin_load_credential_OBJECTS =  myproxy_alcf.o ssl_utils.o \
-myproxy_creds.o
+myproxy_admin_load_credential_OBJECTS =  myproxy_alcf.$(OBJEXT) \
+ssl_utils.$(OBJEXT) myproxy_creds.$(OBJEXT)
 myproxy_admin_load_credential_DEPENDENCIES =  \
 ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
-myproxy_admin_query_OBJECTS =  myproxy_arq.o myproxy_creds.o
+myproxy_admin_query_OBJECTS =  myproxy_arq.$(OBJEXT) \
+myproxy_creds.$(OBJEXT)
 myproxy_admin_query_DEPENDENCIES =  \
 ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 SCRIPTS =  $(sbin_SCRIPTS)
@@ -304,8 +311,8 @@ DATA =  $(pkgdata_DATA) $(sysconf_DATA)
 HEADERS =  $(flavorinclude_HEADERS)
 
 DIST_COMMON =  README INSTALL Makefile.am Makefile.in TODO aclocal.m4 \
-config.guess config.sub configure configure.in install-sh ltconfig \
-ltmain.sh missing mkinstalldirs myproxy.cron.in
+config.guess config.sub configure configure.in install-sh ltmain.sh \
+missing mkinstalldirs myproxy.cron.in
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
@@ -317,7 +324,7 @@ OBJECTS = $(libmyproxy___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(myproxy_init_OBJECTS)
 
 all: all-redirect
 .SUFFIXES:
-.SUFFIXES: .S .c .lo .o .s
+.SUFFIXES: .S .c .lo .o .obj .s
 $(srcdir)/Makefile.in: # Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) $(top_srcdir)/globus_automake_pre $(top_srcdir)/globus_automake_pre_top $(top_srcdir)/globus_automake_post $(top_srcdir)/globus_automake_post_top
 	cd $(top_srcdir) && $(AUTOMAKE) --foreign Makefile
 
@@ -363,6 +370,11 @@ uninstall-libLTLIBRARIES:
 .c.o:
 	$(COMPILE) -c $<
 
+# FIXME: We should only use cygpath when building on Windows,
+# and only if it is available.
+.c.obj:
+	$(COMPILE) -c `cygpath -w $<`
+
 .s.o:
 	$(COMPILE) -c $<
 
@@ -371,6 +383,7 @@ uninstall-libLTLIBRARIES:
 
 mostlyclean-compile:
 	-rm -f *.o core *.core
+	-rm -f *.$(OBJEXT)
 
 clean-compile:
 
@@ -460,40 +473,40 @@ uninstall-sbinPROGRAMS:
 	  rm -f $(DESTDIR)$(sbindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
 	done
 
-myproxy-init: $(myproxy_init_OBJECTS) $(myproxy_init_DEPENDENCIES)
-	@rm -f myproxy-init
+myproxy-init$(EXEEXT): $(myproxy_init_OBJECTS) $(myproxy_init_DEPENDENCIES)
+	@rm -f myproxy-init$(EXEEXT)
 	$(LINK) $(myproxy_init_LDFLAGS) $(myproxy_init_OBJECTS) $(myproxy_init_LDADD) $(LIBS)
 
-myproxy-info: $(myproxy_info_OBJECTS) $(myproxy_info_DEPENDENCIES)
-	@rm -f myproxy-info
+myproxy-info$(EXEEXT): $(myproxy_info_OBJECTS) $(myproxy_info_DEPENDENCIES)
+	@rm -f myproxy-info$(EXEEXT)
 	$(LINK) $(myproxy_info_LDFLAGS) $(myproxy_info_OBJECTS) $(myproxy_info_LDADD) $(LIBS)
 
-myproxy-destroy: $(myproxy_destroy_OBJECTS) $(myproxy_destroy_DEPENDENCIES)
-	@rm -f myproxy-destroy
+myproxy-destroy$(EXEEXT): $(myproxy_destroy_OBJECTS) $(myproxy_destroy_DEPENDENCIES)
+	@rm -f myproxy-destroy$(EXEEXT)
 	$(LINK) $(myproxy_destroy_LDFLAGS) $(myproxy_destroy_OBJECTS) $(myproxy_destroy_LDADD) $(LIBS)
 
-myproxy-get-delegation: $(myproxy_get_delegation_OBJECTS) $(myproxy_get_delegation_DEPENDENCIES)
-	@rm -f myproxy-get-delegation
+myproxy-get-delegation$(EXEEXT): $(myproxy_get_delegation_OBJECTS) $(myproxy_get_delegation_DEPENDENCIES)
+	@rm -f myproxy-get-delegation$(EXEEXT)
 	$(LINK) $(myproxy_get_delegation_LDFLAGS) $(myproxy_get_delegation_OBJECTS) $(myproxy_get_delegation_LDADD) $(LIBS)
 
-myproxy-change-pass-phrase: $(myproxy_change_pass_phrase_OBJECTS) $(myproxy_change_pass_phrase_DEPENDENCIES)
-	@rm -f myproxy-change-pass-phrase
+myproxy-change-pass-phrase$(EXEEXT): $(myproxy_change_pass_phrase_OBJECTS) $(myproxy_change_pass_phrase_DEPENDENCIES)
+	@rm -f myproxy-change-pass-phrase$(EXEEXT)
 	$(LINK) $(myproxy_change_pass_phrase_LDFLAGS) $(myproxy_change_pass_phrase_OBJECTS) $(myproxy_change_pass_phrase_LDADD) $(LIBS)
 
-gsi_socket_test: $(gsi_socket_test_OBJECTS) $(gsi_socket_test_DEPENDENCIES)
-	@rm -f gsi_socket_test
+gsi_socket_test$(EXEEXT): $(gsi_socket_test_OBJECTS) $(gsi_socket_test_DEPENDENCIES)
+	@rm -f gsi_socket_test$(EXEEXT)
 	$(LINK) $(gsi_socket_test_LDFLAGS) $(gsi_socket_test_OBJECTS) $(gsi_socket_test_LDADD) $(LIBS)
 
-myproxy-server: $(myproxy_server_OBJECTS) $(myproxy_server_DEPENDENCIES)
-	@rm -f myproxy-server
+myproxy-server$(EXEEXT): $(myproxy_server_OBJECTS) $(myproxy_server_DEPENDENCIES)
+	@rm -f myproxy-server$(EXEEXT)
 	$(LINK) $(myproxy_server_LDFLAGS) $(myproxy_server_OBJECTS) $(myproxy_server_LDADD) $(LIBS)
 
-myproxy-admin-load-credential: $(myproxy_admin_load_credential_OBJECTS) $(myproxy_admin_load_credential_DEPENDENCIES)
-	@rm -f myproxy-admin-load-credential
+myproxy-admin-load-credential$(EXEEXT): $(myproxy_admin_load_credential_OBJECTS) $(myproxy_admin_load_credential_DEPENDENCIES)
+	@rm -f myproxy-admin-load-credential$(EXEEXT)
 	$(LINK) $(myproxy_admin_load_credential_LDFLAGS) $(myproxy_admin_load_credential_OBJECTS) $(myproxy_admin_load_credential_LDADD) $(LIBS)
 
-myproxy-admin-query: $(myproxy_admin_query_OBJECTS) $(myproxy_admin_query_DEPENDENCIES)
-	@rm -f myproxy-admin-query
+myproxy-admin-query$(EXEEXT): $(myproxy_admin_query_OBJECTS) $(myproxy_admin_query_DEPENDENCIES)
+	@rm -f myproxy-admin-query$(EXEEXT)
 	$(LINK) $(myproxy_admin_query_LDFLAGS) $(myproxy_admin_query_OBJECTS) $(myproxy_admin_query_LDADD) $(LIBS)
 
 install-sbinSCRIPTS: $(sbin_SCRIPTS)
