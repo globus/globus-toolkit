@@ -21,34 +21,31 @@ CVS Information:
 #include <fcntl.h>
 #include <string.h>
 
-#include "lber.h"
-#include "ldap.h"
 #include "globus_gram_client.h"
 #include "globus_gass_server_ez.h"
 #include "globus_gass_client.h"
 #include "globus_gass_cache.h"
+#include "globus_rsl_assist.h"
+#include "globus_i_rsl_assist.h"
 #include "globus_nexus.h"
 
 /******************************************************************************
                              Type definitions
 ******************************************************************************/
 typedef enum {
+    GASSL_UNKNOWN = 0,
     GASSL_ADD,
     GASSL_DELETE,
     GASSL_CLEANUP_TAG,
-    GASSL_CLEANUP_FILE,
+    GASSL_CLEANUP_URL,
     GASSL_LIST,
-    GASSL_QUERY_URL
+    GASSL_QUERY_URL,
 } globus_l_cache_op_t;
 
 /******************************************************************************
                              Module specific prototypes
 ******************************************************************************/
-static char *globus_l_cache_get_contact_string(LDAP *ldap_server,
-						    LDAPMessage* entry);
-
 static int globus_l_cache_usage(void);
-static char *globus_l_cache_get_rm_contact(char *resource);
 static void globus_l_cache_remote_op(globus_l_cache_op_t op,
 			             char *tag,
 			             char *url,
@@ -70,55 +67,152 @@ static globus_mutex_t globus_l_cache_monitor_mutex;
 static globus_cond_t  globus_l_cache_monitor_cond;
 static globus_bool_t  globus_l_cache_monitor_done = GLOBUS_FALSE;
 
-#define GLOBUS_CACHE_USAGE \
-"usage: globus-gass-cache operation [-r resource] [-n new_name ] [-t tag] [URL]\n"\
-"       globus-gass-cache -v\n"\
-"valid values for \"operation\" are:\n"\
-"    add            - add an URL to the cache\n"\
-"                     This operation requires that an URL be specified on\n"\
-"                     the command line. If the [-t tag] option is specified,\n"\
-"                     then the URL will be added with that tag; Otherwise \n"\
-"                     the default \"null\" tag will be used.\n"\
-"    delete         - decrement the reference count for an URL\n"\
-"                     This operation requires that an URL be specified on\n"\
-"                     the command line. If the [-t tag] option is specified,\n"\
-"                     then a single instance of that tag will be removed\n"\
-"                     from that URLs cache entry; Otherwise, a single\n"\
-"                     reference to the default \"null\" tag will be removed\n"\
-"    cleanup_tag    - remove all references to a tag from the cache.\n"\
-"                     If an URL is specified, then all references to the\n"\
-"                     tag will be removed from that URL. If no tag is\n"\
-"                     specified by the [-t tag] option, then the \"null\"\n"\
-"                     tag will be used.\n"\
-"    cleanup_url    - remove all tags for an URL in the cache\n"\
-"                     This operation requires that the URL be specified on\n"\
-"                     the command line.\n"\
-"    list           - list the contents of the cache.\n"\
-"                     If either the [-t tag] or the URL are specified on the\n"\
-"                     command line, then only cache entries which match\n"\
-"                     those will be listed\n"\
-"\n"\
-"optional arguments:\n"\
-"    -v             - Display the program version and exit\n"\
-"    -t tag         - The string passed as the tag argument will be used\n"\
-"                     as described above\n"\
-"    -n new_name    - Store the URL in the cache as new_name (argument to add\n"\
-"                     only)\n"\
-"    -mdshost   <mds ldap server hostname>\n"\
-"    -mdsport   <mds ldap server port to contact>\n"\
-"    -mdsbasedn <mds ldap server hostname>\n"\
-"                     mdshost, mdsport and mdsbasedn let you overwrite the\n"\
-"                     default information necessary to contact the MDS ldap\n"\
-"                     server.\n"\
-"    -T <mds ldap server timeout in seconds>\n"\
-"    -mdstimeout <mds ldap server timeout in seconds\n"\
-"		      mdstimeout or T let you override the default timeout\n"\
-"		      to contact the MDS ldap server.\n"\
-"    -r resource    - The resource argument specifies that the cache\n"\
-"                     operation will be performed on a remote cache. The\n"\
-"                     resource string can be either a resource manager name\n"\
-"                     located in the MDS, or a resource manager contact\n"\
-"                     string.\n"
+
+static char * oneline_usage = 
+"globus-gass-cache [-help] -op [-r resource][-t tag]...[URL]";
+
+static char * long_usage = 
+"\n"
+"Usage: globus-gass-cache -help | -usage | -version\n"
+"       globus-gass-cache -op [-r resource][-n new_name][-t tag]...[URL]\n"
+"\n"
+"Valid operations (-op) are:\n"
+"    -add           - add an URL to the cache\n"
+"                     This operation requires that an URL be specified on\n"
+"                     the command line. If the [-t tag] option is specified\n"
+"                     the URL will be added with that tag; Otherwise the \n"
+"                     default \"null\" tag will be used.\n"
+"    -delete        - decrement the reference count for an URL\n"
+"                     This operation requires that an URL be specified on\n"
+"                     the command line. If the [-t tag] option is specified\n"
+"                     a single instance of that tag will be removed from\n"
+"                     that URLs cache entry; Otherwise, a single reference\n"
+"                     of the default \"null\" tag will be removed\n"
+"    -cleanup_tag   - remove all references to a tag from the cache.\n"
+"                     If an URL is specified, then all references to the\n"
+"                     tag will be removed from that URL. If no tag is\n"
+"                     specified by the [-t tag] option, then the \"null\"\n"
+"                     tag will be used.\n"
+"    -cleanup_url   - remove all tags for an URL in the cache\n"
+"                     This operation requires that the URL be specified on\n"
+"                     the command line.\n"
+"    -list          - list the contents of the cache.\n"
+"                     If either the [-t tag] or a URL is specified on the\n"
+"                     command line, then only cache entries which match\n"
+"                     those will be listed\n"
+"    -query         - prints the name of the local file in the cache that\n"
+"                     is associated with the URL\n"
+"\n"
+"Options\n"
+"    -t tag         - The string passed as the tag argument will be used\n"
+"                     as described above\n"
+"    -n new_name    - Store the URL in the cache as new_name (argument to\n"
+"                     -add only)\n"
+"    -mdshost host    \n"
+"    -mdsport port    \n"
+"    -mdsbasedn DN    \n"
+"    -mdstimeout sec  \n"
+"                   - mdshost, mdsport, mdsbasedn and mdstimeout overrides\n"
+"                     default settings for contacting the MDS LDAP server.\n"
+"    -r resource    - The resource argument specifies that the cache\n"
+"                     operation will be performed on a remote cache. The\n"
+"                     resource string can be either a resource manager name\n"
+"                     located in the MDS, or a resource manager contact\n"
+"                     string.\n\n" ;
+
+int
+test_hostname( char *  value, void *  ignored,  char **  errmsg )
+{
+    struct hostent *   hostent;
+    struct hostent     result;
+    char               buf[1024];
+    int                rc;
+    
+    hostent = globus_libc_gethostbyname_r( (char *) value,
+					   &result,
+					   buf,
+					   1024,
+					   &rc     );
+    if (rc != GLOBUS_SUCCESS)
+	*errmsg = globus_libc_strdup("cannot resolve hostname");
+    return rc;
+}
+
+int
+test_integer( char *  value, void *   ignored, char **  errmsg )
+{
+    int  res = (atoi(value) <= 0);
+    if (res)
+	*errmsg = globus_libc_strdup("argument is not a positive integer");
+    return res;
+}
+
+
+enum { arg_a = 1, arg_d, arg_ct, arg_cu, arg_l, arg_q, arg_h, arg_p,
+       arg_b,     arg_T, arg_r,  arg_n,  arg_t, n_args=arg_t };
+
+#define listname(x) x##_aliases
+#define namedef(id,alias1,alias2) \
+static char * listname(id)[] = { alias1, alias2, GLOBUS_NULL }
+#define defname(x) x##_definition
+#define flagdef(id,alias1,alias2) \
+namedef(id,alias1,alias2); \
+static globus_args_option_descriptor_t defname(id) = { id, listname(id), 0, \
+						GLOBUS_NULL, GLOBUS_NULL }
+#define funcname(x) x##_predicate_test
+#define oneargdef(id,alias1,alias2,testfunc) \
+namedef(id,alias1,alias2); \
+static globus_args_valid_predicate_t funcname(id)[] = { testfunc }; \
+globus_args_option_descriptor_t defname(id) = \
+    { (int) id, (char **) listname(id), 1, funcname(id), GLOBUS_NULL }
+  
+flagdef(arg_a,   "-a", "-add");
+flagdef(arg_d,   "-d", "-delete");
+flagdef(arg_l,   "-l", "-list");
+flagdef(arg_q,   "-q", "-query");
+
+flagdef(arg_ct,  "-cleanup-tag", GLOBUS_NULL);
+flagdef(arg_cu,  "-cleanup-url", GLOBUS_NULL);
+
+oneargdef(arg_h, "-h", "-mdshost",    test_hostname);
+oneargdef(arg_p, "-p", "-mdsport",    test_integer);
+oneargdef(arg_b, "-b", "-mdsbasedn",  GLOBUS_NULL);
+oneargdef(arg_T, "-T", "-mdstimeout", test_integer);
+oneargdef(arg_r, "-r", "-resource",   GLOBUS_NULL);
+oneargdef(arg_n, "-n", "-newname",    GLOBUS_NULL);
+oneargdef(arg_t, "-t", "-tag",        GLOBUS_NULL);
+
+static globus_args_option_descriptor_t args_options[n_args];
+
+#define setupopt(id) args_options[id-1] = defname(id)
+
+#define globus_i_gass_cache_args_init() \
+    setupopt(arg_a);  setupopt(arg_d);   setupopt(arg_l); setupopt(arg_q); \
+    setupopt(arg_cu); setupopt(arg_ct); \
+    setupopt(arg_h);  setupopt(arg_p);   setupopt(arg_b); setupopt(arg_T); \
+    setupopt(arg_r);  setupopt(arg_n);   setupopt(arg_t);
+
+
+#define globus_l_args_usage() \
+{ \
+    globus_libc_fprintf(stderr, \
+			"\nSyntax: %s\n" \
+			"\nUse -help to display full usage\n", \
+			oneline_usage); \
+    globus_module_deactivate_all(); \
+    exit(1); \
+}
+
+#define globus_l_args_error(a) \
+{ \
+    globus_libc_fprintf(stderr, \
+			"\nERROR: " \
+			a \
+			"\n"); \
+    globus_l_args_usage(); \
+}    
+
+
 
 /******************************************************************************
 Function: main()
@@ -132,209 +226,140 @@ Returns:
 int
 main(int argc, char **argv)
 {
-    int i;
-    globus_l_cache_op_t op;
-    int arg = 1;
-    char *resource    = GLOBUS_NULL,
-	 *url         = GLOBUS_NULL,
-	 *name        = GLOBUS_NULL,
-	 *rm_contact  = GLOBUS_NULL,
-	 *tag         = GLOBUS_NULL;
+    globus_l_cache_op_t                op                = GASSL_UNKNOWN;
+    globus_list_t *                    options_found     = GLOBUS_NULL;
+    globus_list_t *                    list              = GLOBUS_NULL;
+    globus_args_option_instance_t *    instance          = GLOBUS_NULL;
+    char *                             resource          = GLOBUS_NULL;
+    char *                             url               = GLOBUS_NULL;
+    char *                             name              = GLOBUS_NULL;
+    char *                             tag               = GLOBUS_NULL;
+    int                                rc;
 
-    if(argc < 2)
-    {
-	return globus_l_cache_usage();
+    globus_module_activate(GLOBUS_COMMON_MODULE);
+
+    globus_i_gass_cache_args_init();
+
+    if ( 0 > globus_args_scan( &argc,
+			       &argv,
+			       n_args,
+			       args_options,
+			       oneline_usage,
+			       long_usage,
+			       &options_found,
+			       GLOBUS_NULL   ) )  /* error on argument line */
+    {	 
+	globus_module_deactivate_all();
+	exit(1);
     }
-    if(argc == 2 &&
-       strcmp(argv[1], "-v") == 0)
+
+    if (argc > 2)
+	globus_l_args_usage();
+
+    for (list = options_found; 
+	 !globus_list_empty(list); 
+	 list = globus_list_rest(list))
     {
-	if(GLOBUS_RELEASE_NOT_BETA)
+	instance = globus_list_first(list);
+
+	switch(instance->id_number)	
 	{
-	    globus_libc_printf("Version %d.%d.%d,\n"
-			       "GASS Protocol Version %d\n"
-			       "GASS Cache File Version %d\n",
-			       globus_release_major(),
-			       globus_release_minor(),
-			       globus_release_patch(),
-			       GLOBUS_GASS_PROTO_VERSION,
-			       GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION);
-	}
-	else
-	{
-	   globus_libc_printf("Version %d.%d.%db%d\n"
-			      "GASS Protocol Version %d\n"
-			      "GASS Cache File Version %d\n",
-			      globus_release_major(),
-			      globus_release_minor(),
-			      globus_release_patch(),
-			      globus_release_beta(),
-			      GLOBUS_GASS_PROTO_VERSION,
-			      GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION);
-
-	}
-	exit(0);
-    }
-
-    /* parse op */
-    if(strncmp("add", argv[arg], strlen(argv[arg])) == 0)
-    {
-	op = GASSL_ADD;
-    }
-    else if(strncmp("delete", argv[arg], strlen(argv[arg])) == 0)
-    {
-	op = GASSL_DELETE;
-    }
-    else if(
-	strncmp("cleanup_tag", argv[arg], strlen(argv[arg])) == 0 &&
-	strncmp("cleanup_url", argv[arg], strlen(argv[arg])) != 0)
-    {
-	op = GASSL_CLEANUP_TAG;
-    }
-    else if(
-	strncmp("cleanup_url", argv[arg], strlen(argv[arg])) == 0 &&
-	strncmp("cleanup_tag", argv[arg], strlen(argv[arg])) != 0)
-    {
-	op = GASSL_CLEANUP_FILE;
-    }
-    else if(strncmp("list", argv[arg], strlen(argv[arg])) == 0)
-    {
-	op = GASSL_LIST;
-    }
-    else if(strncmp("query", argv[arg], strlen(argv[arg])) == 0)
-    {
-	op = GASSL_QUERY_URL;
-    }
-    else
-    {
-	return globus_l_cache_usage();
-    }
-
-    arg++;
-
-    /* parse options [-t tag] [-r resource] */
-    while(arg < argc)
-    {
-	int err;
-	if ( strcmp(argv[arg],"-mdshost") == 0 )
-	{
-	    err = globus_libc_setenv("GLOBUS_MDS_HOST",
-				     (char *) argv[++arg],1);
-	    if (err != GLOBUS_SUCCESS)
+	case arg_a: 
+	case arg_d: 
+	case arg_l: 
+	case arg_q: 
+	case arg_ct: 
+	case arg_cu: 
+	    if (op != GASSL_UNKNOWN)
+		globus_l_args_error("only one operation can be specified");
+	    switch(instance->id_number)
 	    {
-		globus_libc_fprintf(
-		    stderr,
-		    "Error setting environment variable GLOBUS_MDS_HOST\n");
-		globus_module_deactivate(GLOBUS_COMMON_MODULE);
-		return -1;
+	    case arg_a: 
+		op = GASSL_ADD;
+		break;
+	    case arg_d: 
+		op = GASSL_DELETE;
+		break;
+	    case arg_q: 
+		op = GASSL_QUERY_URL;
+		break;
+	    case arg_l: 
+		op = GASSL_LIST;
+		break;
+	    case arg_ct: 
+		op = GASSL_CLEANUP_TAG;
+		break;
+	    case arg_cu: 
+		op = GASSL_CLEANUP_URL;
+		break;
 	    }
+	    break;
+
+	case arg_h:
+	    globus_libc_setenv("GLOBUS_MDS_HOST", instance->values[0], 1);
+	    break;
+
+	case arg_p:
+	    globus_libc_setenv("GLOBUS_MDS_PORT", instance->values[0], 1);
+	    break;
+
+	case arg_b:
+	    globus_libc_setenv("GLOBUS_MDS_BASEDN", instance->values[0], 1);
+	    break;
 	    
-	}
-	else if ( strcmp(argv[arg],"-T") == 0 || strcmp(argv[arg],"-mdstimeout") == 0 )
-	{
-	    err = globus_libc_setenv("GLOBUS_MDS_TIMEOUT",
-				     (char *) argv[++arg],1);
-	    if (err != GLOBUS_SUCCESS)
+	case arg_T:
+	    globus_libc_setenv("GLOBUS_MDS_TIMEOUT", instance->values[0], 1);
+	    break;
+
+	case arg_r:
+	    resource = globus_i_rsl_assist_get_rm_contact(instance->values[0]);
+	    if (!resource)
+		globus_l_args_error("cannot resolve contact string");
+	    if (rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE))
 	    {
-		globus_libc_fprintf(
-		    stderr,
-		    "Error setting environment variable GLOBUS_MDS_TIMEOUT\n");
-		globus_module_deactivate(GLOBUS_COMMON_MODULE);
-		return -1;
+		globus_libc_fprintf(stderr,
+				    "ERROR initializing GRAM: %s\n",
+				    globus_gram_client_error_string(rc));
+		globus_l_args_usage();
 	    }
-	}
-	else if ( strcmp(argv[arg],"-mdsport") == 0 )
-	{
-	    err = globus_libc_setenv("GLOBUS_MDS_PORT",
-				     (char *) argv[++arg],1);
-	    if (err != GLOBUS_SUCCESS)
-	    {
-		globus_libc_fprintf(
-		    stderr,
-		    "Error setting environment variable GLOBUS_MDS_PORT\n");
-		globus_module_deactivate(GLOBUS_COMMON_MODULE);
-		return -1;
-	    }
-	}
-	else if ( strcmp(argv[arg],"-mdsbasedn") == 0 )
-	{
-	    err = globus_libc_setenv("GLOBUS_MDS_BASEDN",
-				     (char *) argv[++arg],1);
-	    if (err != GLOBUS_SUCCESS)
-	    {
-		globus_libc_fprintf(
-		    stderr,
-		    "Error setting environment variable GLOBUS_MDS_BASEDN\n");
-		globus_module_deactivate(GLOBUS_COMMON_MODULE);
-		return -1;
-	    }
-	}
-	if(strcmp("-t", argv[arg]) == 0)
-	{
-	    arg++;
-	    if(arg == argc)
-	    {
-		return globus_l_cache_usage();
-	    }
-		tag = argv[arg++];
-	}
-	else if(strcmp("-n", argv[arg]) == 0)
-	{
-	    arg++;
-	    if(arg == argc)
-	    {
-		return globus_l_cache_usage();
-	    }
-	    name = argv[arg++];
-	}
-	else if(strcmp("-r", argv[arg]) == 0)
-	{
-	    arg++;
-	    if(arg == argc)
-	    {
-		return globus_l_cache_usage();
-	    }
-	    resource = argv[arg++];
-	}
-	else
-	{
-	    if(url != GLOBUS_NULL)
-	    {
-		return globus_l_cache_usage();
-	    }
-	    url = argv[arg++];
+	    if (globus_gram_client_ping(resource))
+		globus_l_args_error("cannot authenticate to remote resource");
+	    break;
+
+	case arg_t:
+	    tag = globus_libc_strdup(instance->values[0]);
+	    break;
+
+	case arg_n:
+	    if (op != GASSL_ADD)
+		globus_l_args_error("-n option can only be used with -add");
+	    name = globus_libc_strdup(instance->values[0]);
+	    break;
 	}
     }
 
-    /* verify globus_l_cache_usage */
-    if(op == GASSL_ADD ||
-       op == GASSL_DELETE ||
-       op == GASSL_CLEANUP_FILE ||
-       op == GASSL_QUERY_URL)
-    {
-	if(url == GLOBUS_NULL)
-	{
-	    return globus_l_cache_usage();
-	}
-    }
+    globus_args_option_instance_list_free( &options_found );
+
+    if (op == GASSL_UNKNOWN)
+	globus_l_args_error("need to specify an operation");
     
-    if(name != GLOBUS_NULL &&
-       op != GASSL_ADD)
+    if (argc == 2)
+	url = argv[1];
+
+    /* what options require the URL? */
+    if ( !url &&
+	 (op==GASSL_ADD ||  op==GASSL_DELETE || 
+	 op == GASSL_CLEANUP_URL || op == GASSL_QUERY_URL) )
     {
-	return globus_l_cache_usage();
-    }
-    if(resource != GLOBUS_NULL)
-    {
-	rm_contact = globus_l_cache_get_rm_contact(resource);
-	if(rm_contact == GLOBUS_NULL)
-	{
-	    globus_libc_printf("Couldn't find resource %s\n", resource);
-	    exit(1);
-	}
+	globus_l_args_error("operation requires an URL");
     }
 
-    if(rm_contact != GLOBUS_NULL)
+    if (tag && op==GASSL_QUERY_URL)
+	globus_l_args_error("tag has no meaning for -query operation")
+
+    if (resource)
     {
-	globus_l_cache_remote_op(op, tag, url, name, rm_contact);
+	globus_l_cache_remote_op(op, tag, url, name, resource);
     }
     else
     {
@@ -343,151 +368,6 @@ main(int argc, char **argv)
     return 0;
 } /* main() */
 
-/******************************************************************************
-Function: globus_l_cache_get_rm_contact()
-
-Description:
-
-Parameters: 
-
-Returns: 
-******************************************************************************/
-static char *
-globus_l_cache_get_rm_contact(char *resource)
-{
-    LDAP *ldap_server;
-    int port		      = 0;
-    char *base_dn	      = GLOBUS_NULL;
-    char *server	      = GLOBUS_NULL;
-    char *search_string;
-    LDAPMessage *reply;
-    LDAPMessage *entry;
-    char *attrs[3];
-    FILE *mds_conf;
-    char buf[512];
-    int  rc;
-    
-    if(strchr(resource, (int) ':') != GLOBUS_NULL)
-    {
-	return strdup(resource);
-    }
-
-    rc = globus_i_rsl_assist_get_ldap_param(&server, &port, &base_dn);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	return GLOBUS_NULL;
-    }
-    
-    attrs[0] = "contact";
-    attrs[1] = GLOBUS_NULL;
-    
-    if((ldap_server = ldap_open(server, port)) == GLOBUS_NULL)
-    {
-	ldap_perror(ldap_server, "ldap_open");
-	globus_free(server);
-	exit(1);
-    }
-    globus_free(server);
-
-    if(ldap_simple_bind_s(ldap_server, "", "") != LDAP_SUCCESS)
-    {
-	ldap_perror(ldap_server, "ldap_simple_bind_s");
-	ldap_unbind(ldap_server);
-	exit(1);
-    }
-
-    search_string=malloc(strlen(resource)+5);
-
-    globus_libc_sprintf(search_string, "cn=%s", resource);
-    
-    if(ldap_search_s(ldap_server,
-		     base_dn,
-		     LDAP_SCOPE_SUBTREE,
-		     search_string,
-		     attrs,
-		     0,
-		     &reply) != LDAP_SUCCESS)
-    {
-	ldap_perror(ldap_server, "ldap_search");
-	ldap_unbind(ldap_server);
-	globus_free(search_string);
-	globus_free(base_dn);
-	exit(1);
-    }
-
-    for(entry = ldap_first_entry(ldap_server, reply);
-	entry != GLOBUS_NULL;
-	entry = ldap_next_entry(ldap_server, entry))
-    {
-	char *contact;
-	contact = globus_l_cache_get_contact_string(ldap_server, entry);
-	if(contact != GLOBUS_NULL)
-	{
-	    ldap_unbind(ldap_server);
-	    globus_free(base_dn);
-	    globus_free(search_string);
-	    return contact;
-	}
-    }
-    ldap_msgfree(reply);
-    ldap_unbind(ldap_server);
-
-    globus_free(base_dn);
-    globus_free(search_string);
-    return GLOBUS_NULL;
-} /* globus_l_cache_get_rm_contact() */
-
-/******************************************************************************
-Function: globus_l_cache_usage()
-
-Description:
-
-Parameters: 
-
-Returns: 
-******************************************************************************/
-static int
-globus_l_cache_usage(void)
-{
-    globus_libc_printf(GLOBUS_CACHE_USAGE);
-
-    return 1;
-} /* globus_l_cache_usage() */
-
-/******************************************************************************
-Function: globus_l_cache_get_contact_string()
-
-Description:
-
-Parameters: 
-
-Returns: 
-******************************************************************************/
-static char *
-globus_l_cache_get_contact_string(LDAP *ldap_server, LDAPMessage* entry)
-{
-    char *a, *dn;
-    BerElement *ber;
-    char** values;
-    int numValues;
-    int i;
-    char *contact=GLOBUS_NULL;
-
-    for (a = ldap_first_attribute(ldap_server,entry,&ber); a != NULL;
-	 a = ldap_next_attribute(ldap_server,entry,ber) )
-    {
-	values = ldap_get_values(ldap_server,entry,a);
-	numValues = ldap_count_values(values);
-	
-	if(strcmp(a, "contact") == 0)
-	{
-	    contact = strdup(values[0]);
-	    ldap_value_free(values);
-	    break;
-	}
-    }
-    return contact;
-} /* globus_l_cache_get_contact_string() */
 
 /******************************************************************************
 Function: globus_l_cache_url_arg()
@@ -589,15 +469,17 @@ globus_l_cache_op_string(globus_l_cache_op_t op)
     switch(op)
     {
     case GASSL_ADD:
-	return "add";
+	return "-add";
     case GASSL_DELETE:
-	return "delete";
+	return "-delete";
     case GASSL_CLEANUP_TAG:
-	return "cleanup_tag";
-    case GASSL_CLEANUP_FILE:
-	return "cleanup_url";
+	return "-cleanup-tag";
+    case GASSL_CLEANUP_URL:
+	return "-cleanup-url";
     case GASSL_LIST:
-	return "list";
+	return "-list";
+    case GASSL_QUERY_URL:
+	return "-query";
     default:
 	return "";
     }
@@ -637,26 +519,20 @@ Parameters:
 Returns: 
 ******************************************************************************/
 static void
-globus_l_cache_remote_op(globus_l_cache_op_t op,
-			 char *tag,
-			 char *url,
-			 char *name,
-			 char *rm_contact)
+globus_l_cache_remote_op( globus_l_cache_op_t op,
+			  char *              tag,
+			  char *              url,
+			  char *              name,
+			  char *              rm_contact)
 {
-    char spec[1024];
-    char *server_url;
-    unsigned short port=0;
-    char *callback_contact;
-    char *job_contact;
-    int rc;
+    char *           callback_contact;
+    char *           job_contact;
+    char             spec[1024];
+    char *           server_url;
+    unsigned short   port                = 0;
+    int              rc;
     
-    rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	printf("Error initializing GRAM: %s\n",
-	       globus_gram_client_error_string(rc));
-	exit(1);
-    }
+
     rc = globus_gram_client_callback_allow(globus_l_cache_callback_func,
 			                   GLOBUS_NULL,
 			                   &callback_contact);
@@ -673,7 +549,8 @@ globus_l_cache_remote_op(globus_l_cache_op_t op,
 			            GLOBUS_GASS_SERVER_EZ_STDOUT_ENABLE|
 			            GLOBUS_GASS_SERVER_EZ_STDERR_ENABLE|
 			            GLOBUS_GASS_SERVER_EZ_LINE_BUFFER,
-			            (globus_gass_server_ez_client_shutdown_t) GLOBUS_NULL);
+			            (globus_gass_server_ez_client_shutdown_t)
+				        GLOBUS_NULL);
 
     if ( rc != GLOBUS_SUCCESS )
     {
@@ -682,20 +559,19 @@ globus_l_cache_remote_op(globus_l_cache_op_t op,
 	exit(1);
     }
 
-    globus_libc_lock();
-    sprintf(spec,
-	    "&(executable=$(GLOBUS_SERVICES_PREFIX)/bin/globus-gass-cache)"
-	    " (stdout=%s/dev/stdout)"
-	    " (stderr=%s/dev/stdout)"
-	    " (stdin=/dev/null)"
-	    " (arguments=%s %s %s %s)",
-	    server_url,
-	    server_url,
-	    globus_l_cache_op_string(op),
-	    globus_l_cache_tag_arg(tag),
-	    globus_l_cache_name_arg(name),
-	    globus_l_cache_url_arg(url));
-    globus_libc_unlock();
+    globus_libc_sprintf(
+	spec,
+	"&(executable=$(GLOBUS_TOOLS_PATH)/bin/globus-gass-cache)"
+	" (stdout=%s/dev/stdout)"
+	" (stderr=%s/dev/stdout)"
+	" (stdin=/dev/null)"
+	" (arguments=%s %s %s %s)",
+	server_url,
+	server_url,
+	globus_l_cache_op_string(op),
+	globus_l_cache_tag_arg(tag),
+	globus_l_cache_name_arg(name),
+	globus_l_cache_url_arg(url));
 
     globus_mutex_init(&globus_l_cache_monitor_mutex, GLOBUS_NULL);
     globus_cond_init(&globus_l_cache_monitor_cond, GLOBUS_NULL);
@@ -703,10 +579,10 @@ globus_l_cache_remote_op(globus_l_cache_op_t op,
     globus_mutex_lock(&globus_l_cache_monitor_mutex);
     
     rc = globus_gram_client_job_request(rm_contact,
-			    spec,
-			    31,
-			    callback_contact,
-			    &job_contact);
+					spec,
+					31,
+					callback_contact,
+					&job_contact);
 				
     if(rc != GLOBUS_SUCCESS)
     {
@@ -715,7 +591,8 @@ globus_l_cache_remote_op(globus_l_cache_op_t op,
     }
     while(!globus_l_cache_monitor_done)
     {
-	globus_cond_wait(&globus_l_cache_monitor_cond, &globus_l_cache_monitor_mutex);
+	globus_cond_wait(&globus_l_cache_monitor_cond,
+			 &globus_l_cache_monitor_mutex);
     }
     globus_mutex_unlock(&globus_l_cache_monitor_mutex);
     globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
@@ -732,33 +609,29 @@ Parameters:
 Returns: 
 ******************************************************************************/
 static void
-globus_l_cache_local_op(globus_l_cache_op_t op,
-	                char *tag,
-	                char *url,
-			char *name)
+globus_l_cache_local_op( globus_l_cache_op_t op,
+	                 char *              tag,
+	                 char *              url,
+			 char *              name)
 {
-    globus_gass_cache_t cache_handle;
-    unsigned long timestamp;
-    char *local_filename;
-    int rc;
-    globus_gass_cache_entry_t *entries;
-    int size=0;
-    int i, j;
+    globus_gass_cache_entry_t *  entries;
+    globus_gass_cache_t          cache_handle;
+    unsigned long                timestamp;
+    char *                       local_filename;
+    int                          rc;
+    int                          i;
+    int                          j;
+    int                          size             = 0;
     
-    rc = globus_module_activate(GLOBUS_GASS_CLIENT_MODULE);
+    
+    globus_module_activate(GLOBUS_GASS_CLIENT_MODULE);
 
-    if(rc != GLOBUS_SUCCESS)
-    {
-	globus_libc_printf("Error %d activating GASS client library\n",
-			   rc);
-	return;
-    }
-    
     rc = globus_gass_cache_open(GLOBUS_NULL, &cache_handle);
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_libc_printf("Could not open GASS cache because %s\n",
-			   globus_gass_cache_error_string(rc));
+	globus_libc_fprintf(stderr,
+			    "ERROR: Could not open GASS cache because %s\n",
+			    globus_gass_cache_error_string(rc));
 	return;
     }
     
@@ -784,7 +657,7 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 	}
 	else if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
 	{
-	    int fd = open(local_filename, O_WRONLY|O_TRUNC);
+	    int fd = globus_libc_open(local_filename, O_WRONLY|O_TRUNC);
 
 	    globus_gass_client_get_fd(url,
 			              GLOBUS_NULL,
@@ -800,17 +673,22 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 				            timestamp);
 	    if(rc != GLOBUS_SUCCESS)
 	    {
-	        globus_libc_printf("Could not unlock cache entry because %s\n",
-			           globus_gass_cache_error_string(rc));
+	        globus_libc_fprintf(
+		    stderr,
+		    "Unable to unlock cache entry because %s\n",
+		    globus_gass_cache_error_string(rc));
 	    }
 	}
 	else
 	{
-	    globus_libc_printf("Could not add cache entry because %s\n",
-			       globus_gass_cache_error_string(rc));
+	    globus_libc_fprintf(
+		stderr,
+		"Could not add cache entry because %s\n",
+		globus_gass_cache_error_string(rc));
 	}
 	free(local_filename);
 	break;
+
     case GASSL_DELETE:
 	rc = globus_gass_cache_delete_start(&cache_handle,
 				            url,
@@ -818,8 +696,9 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 				            &timestamp);
 	if(rc != GLOBUS_SUCCESS)
 	{
-	    globus_libc_printf("Could not delete cache entry because %s\n",
-			       globus_gass_cache_error_string(rc));
+	    globus_libc_fprintf(stderr,
+				"Could not delete cache entry because %s\n",
+				globus_gass_cache_error_string(rc));
 	}
 	rc = globus_gass_cache_delete(&cache_handle,
 			              url,
@@ -828,10 +707,12 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 			              GLOBUS_TRUE);
 	if(rc != GLOBUS_SUCCESS)
 	{
-	    globus_libc_printf("Could not unlock cache entry because %s\n",
-	                       globus_gass_cache_error_string(rc));
+	    globus_libc_fprintf(stderr,
+				"Could not unlock cache entry because %s\n",
+				globus_gass_cache_error_string(rc));
 	}
 	break;
+
     case GASSL_CLEANUP_TAG:
 	if(url == GLOBUS_NULL)
 	{
@@ -841,9 +722,10 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 
             if(rc != GLOBUS_SUCCESS)
 	    {
-		globus_libc_printf("Listing cache entries failed because "
-				   "%s, cannot clean up tag\n",
-				   globus_gass_cache_error_string(rc));
+		globus_libc_fprintf(stderr,
+				    "Listing cache entries failed because "
+				    "%s, cannot clean up tag\n",
+				    globus_gass_cache_error_string(rc));
 		break;
 	    }
             for(i = 0; i < size; i++)
@@ -861,10 +743,11 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 		}
 		else if(rc != GLOBUS_SUCCESS)
 		{
-		    globus_libc_printf("Could not clean up tag for "
-				       "URL %s because %s\n",
-				       entries[i].url,
-				       globus_gass_cache_error_string(rc));
+		    globus_libc_fprintf(stderr,
+					"Could not clean up tag for "
+					"URL %s because %s\n",
+					entries[i].url,
+					globus_gass_cache_error_string(rc));
 		}
 	    }
 	    globus_gass_cache_list_free(entries, size);
@@ -876,48 +759,49 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 			                       tag);
 	    if(rc != GLOBUS_SUCCESS)
 	    {
-		globus_libc_printf("Could not clean up tag because %s\n",
-				   globus_gass_cache_error_string(rc));
+		globus_libc_fprintf(stderr,
+				    "Could not clean up tag because %s\n",
+				    globus_gass_cache_error_string(rc));
 	    }
 	}
 	break;
 	
-    case GASSL_CLEANUP_FILE:
+    case GASSL_CLEANUP_URL:
 	rc = globus_gass_cache_cleanup_file(&cache_handle,
 				            url);
 	if(rc != GLOBUS_SUCCESS)
 	{
-	    globus_libc_printf("Could not clean up file because %s\n",
-			       globus_gass_cache_error_string(rc));
+	    globus_libc_fprintf(stderr,
+				"Could not clean up file because %s\n",
+				globus_gass_cache_error_string(rc));
 	}
 	break;
+
     case GASSL_LIST:
 	rc = globus_gass_cache_list(&cache_handle,
 			            &entries,
 			            &size);
         if(rc != GLOBUS_SUCCESS)
 	{
-	    globus_libc_printf("Could not list cache entries because %s\n",
-			       globus_gass_cache_error_string(rc));
+	    globus_libc_fprintf(stderr,
+				"Could not list cache entries because %s\n",
+				globus_gass_cache_error_string(rc));
 	    break;
 	}
 
-	for(i = 0; i < size; i++)
+	for (i=0; i<size; i++)
 	{
-	    if(url != GLOBUS_NULL)
+	    if (url)
 	    {
 		if(strcmp(url, entries[i].url) == 0)
-		{
 		    globus_l_cache_print_url(&entries[i], tag);
-		}
 	    }
 	    else
-	    {
 		globus_l_cache_print_url(&entries[i], tag);
-	    }
 	}
 	globus_gass_cache_list_free(entries, size);
 	break;
+
     case GASSL_QUERY_URL:
 	rc = globus_gass_cache_add(&cache_handle,
 				   url,
@@ -928,10 +812,6 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 	
 	if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
 	{
-	    /*globus_gass_cache_add_done(&cache_handle,
-				url,
-				tag,
-				timestamp);*/    
 	    globus_gass_cache_delete(&cache_handle,
 				     url,
 				     tag,
@@ -945,8 +825,9 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 	}
 	else
 	{
-	    globus_libc_printf("Could not query cache because %s\n",
-			   globus_gass_cache_error_string(rc));
+	    globus_libc_fprintf(stderr,
+				"Could not query cache because %s\n",
+				globus_gass_cache_error_string(rc));
 	    return;
 	}
 	globus_free(local_filename);
