@@ -1,5 +1,8 @@
+#include "gaa.h"
 #include "globus_auth.h"
 #include "globus_auth_error.h"
+#include <string.h>
+#include <ctype.h>
 
 #define MAX_POLICY_BUF_LENGTH 8192
 
@@ -274,7 +277,6 @@ globus_authorization_handle_set_gss_ctx(
     OM_uint32               maj_stat, 
                             min_stat;
     gss_buffer_set_t	    policy_extension = 0;
-    int                     ii,len_so_far, old_len;
     gss_name_t		    signer_identity;
     gss_buffer_desc	    signer_namebuf;
     gss_buffer_desc	    policy_buf;
@@ -633,7 +635,6 @@ globus_authorization_eval(
     gaa_list_ptr right_list = 0;
     gaa_request_right_ptr right = 0;
     gaa_answer_ptr answer = 0;
-    int i = 0;
     int status;
     globus_auth_result_t ret_val;
     /*gaa_policy_ptr    policy;*/
@@ -672,15 +673,6 @@ globus_authorization_eval(
                    gaa_get_err()));
     }
 
-    {
-        char buffer[512];
-        
-        /* Requires gaa debug library to be linked in */
-
-        gaadebug_policy_string(handle->gaa, buffer, sizeof(buffer), handle->policy);
-
-    }
-    
     /*Build the requested right*/
     right_list = gaa_new_req_rightlist();
     
@@ -848,8 +840,6 @@ globus_authorization_handle_set_policy_source(
     globus_authorization_handle_t handle,
     char * policy_source)
 {
-    int status;
-
     if (!handle) 
     {
         return(globus_result_set(
@@ -947,6 +937,7 @@ globus_l_authorization_cas_policy_new()
     if ((cp = malloc(sizeof(cas_policy))) == 0)
 	return(0);
     cp->target_subject = cp->start_time = cp->end_time = cp->rights = 0;
+    return(cp);
 }
 
 
@@ -1147,4 +1138,46 @@ char *
 globus_auth_get_policy_string(globus_authorization_handle_t handle)
 {
     return(handle->policy_display_string);
+}
+
+globus_auth_result_t
+globus_auth_check_condition(globus_authorization_handle_t handle,
+			    char *			  condtype,
+			    char *			  condauth,
+			    char *			  condval)
+{
+    gaa_status		    status = GAA_S_SUCCESS;
+    gaa_condition *	    cond = 0;
+    int 	 	    ynm = GAA_C_MAYBE;
+    gaa_time_period	    vtp;
+
+    if (handle == 0)
+	return(globus_result_set(GLOBUS_AUTH_BAD_HANDLE,
+				 "null auth handle"));
+    if (handle->gaa == 0)
+	return(globus_result_set(GLOBUS_AUTH_BAD_HANDLE,
+				 "auth handle has null gaa pointer"));
+    if (handle->gaa_sc == 0)
+	return(globus_result_set(GLOBUS_AUTH_BAD_HANDLE,
+				 "auth handle has null sc pointer"));
+    if ((status = gaa_new_condition(&cond, condtype, condauth,
+				    condval)) != GAA_S_SUCCESS)
+        return(globus_result_set(
+                   GLOBUS_AUTH_INTERNAL_GAA_ERROR,
+                   "failed to create condition : %s (%s)",
+                   gaacore_majstat_str(status),
+                   gaa_get_err()));
+    if ((status = gaa_check_condition(handle->gaa, handle->gaa_sc, cond, &vtp,
+				      &ynm, 0)) != GAA_S_SUCCESS)
+	return(globus_result_set(
+	    GLOBUS_AUTH_INTERNAL_GAA_ERROR,
+	    "failed to check condition : %s (%s)",
+	    gaacore_majstat_str(status),
+	    gaa_get_err()));
+    if (ynm == GAA_C_YES)
+	return(GLOBUS_SUCCESS);
+    else
+	return(globus_result_set(GLOBUS_AUTH_AUTHORIZATION_FAILED,
+				 "condition check returned %s",
+				 gaacore_majstat_str(ynm)));
 }

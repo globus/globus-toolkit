@@ -103,6 +103,12 @@ globus_auth_get_authorization_identity(globus_authorization_handle_t handle);
 extern char *
 globus_auth_get_audit_identity(globus_authorization_handle_t handle);
 
+extern globus_auth_result_t
+globus_auth_check_condition(globus_authorization_handle_t handle,
+			    char *			  condtype,
+			    char *			  condauth,
+			    char *			  condval);
+
 #define GLOBUS_AUTH_DEFAULT_CONFIG_FILE "/etc/grid-security/globus_gaa.conf"
 
 #endif  /* __GLOBUS_AUTH_H_ */
