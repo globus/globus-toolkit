@@ -878,14 +878,7 @@ OBJECT_MODE="$lac_OBJECT_MODE"
 dnl LAC_PROG_CC_GNU(COMPILER, ACTION-IF-TRUE, ACTION-IF-FALSE)
 AC_DEFUN(LAC_PROG_CC_GNU,
 [
-if test "X$1" != "X" ; then
-	_SAVED_CC="$CC"
-	CC="$1"
-	AC_PROG_CC_GNU
-	CC="$_SAVED_CC"
-else
-	AC_PROG_CC_GNU
-fi
+AC_PROG_CC_GNU
 
 if test "$ac_cv_prog_gcc" = "yes" ; then
     :

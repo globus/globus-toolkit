@@ -7,12 +7,9 @@
 #include "globus_handle_table.h"
 #include "globus_thread_common.h"
 #include "globus_libc.h"
-#include "globus_list.h"
-#include "globus_print.h"
 
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 32
 #define GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE 16
-#define GLOBUS_L_CALLBACK_SIGNAL_BLOCK_SIZE 64
 
 /* this is the number of ready oneshots that will be fired after time has
  * expired in globus_callback_space_poll()
@@ -97,28 +94,6 @@ typedef struct
     globus_l_callback_info_t *          callback_info;
 } globus_l_callback_restart_info_t;
 
-typedef struct
-{
-    volatile globus_bool_t              pending;
-    globus_callback_func_t              callback;
-    void *                              user_arg;
-    globus_callback_space_t             space;
-    
-#ifndef TARGET_ARCH_WIN32
-    struct sigaction                    old_action;
-#endif
-    globus_bool_t                       persist;
-    globus_bool_t                       running;
-    globus_callback_func_t              unregister_callback;
-    void *                              unreg_arg;
-} globus_l_callback_signal_handler_t;
-
-typedef struct
-{
-    void                                (*wakeup)(void *);
-    void *                              user_arg;
-} globus_l_callback_wakeup_handler_t;
-
 static globus_handle_table_t            globus_l_callback_handle_table;
 static globus_handle_table_t            globus_l_callback_space_table;
 static globus_memory_t                  globus_l_callback_info_memory;
@@ -126,12 +101,6 @@ static globus_memory_t                  globus_l_callback_space_memory;
 
 static globus_l_callback_space_t        globus_l_callback_global_space;
 static globus_l_callback_restart_info_t * globus_l_callback_restart_info;
-
-static int                              globus_l_callback_signal_handlers_size;
-static globus_l_callback_signal_handler_t **
-    globus_l_callback_signal_handlers;
-static volatile globus_bool_t           globus_l_callback_signal_pending;
-static globus_list_t *                  globus_l_callback_wakeup_handlers;
 
 /**
  * globus_l_callback_requeue
@@ -337,16 +306,6 @@ globus_l_callback_activate()
         GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE);
 
     globus_l_callback_restart_info = GLOBUS_NULL;
-    
-    globus_l_callback_signal_handlers_size =    
-        GLOBUS_L_CALLBACK_SIGNAL_BLOCK_SIZE;
-    globus_l_callback_signal_handlers = (globus_l_callback_signal_handler_t **)
-        globus_calloc(
-            globus_l_callback_signal_handlers_size,
-            sizeof(globus_l_callback_signal_handler_t *));
-    
-    globus_l_callback_signal_pending = GLOBUS_FALSE;
-    globus_l_callback_wakeup_handlers = GLOBUS_NULL;
 
     return GLOBUS_SUCCESS;
 }
@@ -355,8 +314,6 @@ static
 int
 globus_l_callback_deactivate()
 {
-    int                                 i;
-    
     globus_priority_q_destroy(&globus_l_callback_global_space.timed_queue);
     
     /* any handles left here will be destroyed by destructor.
@@ -369,29 +326,6 @@ globus_l_callback_deactivate()
     
     globus_memory_destroy(&globus_l_callback_info_memory);
     globus_memory_destroy(&globus_l_callback_space_memory);
-    
-        for(i = 0; i < globus_l_callback_signal_handlers_size; i++)
-    {
-        if(globus_l_callback_signal_handlers[i])
-        {
-#ifndef TARGET_ARCH_WIN32
-            sigaction(
-                i,
-                &globus_l_callback_signal_handlers[i]->old_action,
-                GLOBUS_NULL);
-#endif
-            globus_free(globus_l_callback_signal_handlers[i]);
-        }
-    }
-    globus_free(globus_l_callback_signal_handlers);
-    
-    while(!globus_list_empty(globus_l_callback_wakeup_handlers))
-    {
-        globus_free(
-            globus_list_remove(
-                &globus_l_callback_wakeup_handlers,
-                globus_l_callback_wakeup_handlers));
-    }
     
     return globus_module_deactivate(GLOBUS_THREAD_MODULE);
 }
@@ -411,8 +345,7 @@ globus_l_callback_register(
     const globus_reltime_t *            period,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_callback_space_t             space,
-    globus_bool_t                       priority)
+    globus_callback_space_t             space)
 {
     globus_l_callback_info_t *          callback_info;
 
@@ -526,16 +459,8 @@ globus_l_callback_register(
     {
         callback_info->in_queue = GLOBUS_L_CALLBACK_QUEUE_READY;
         
-        if(priority)
-        {
-            GlobusICallbackReadyEnqueueFirst(
-                &callback_info->my_space->ready_queue, callback_info);
-        }
-        else
-        {
-            GlobusICallbackReadyEnqueue(
-                &callback_info->my_space->ready_queue, callback_info);
-        }
+        GlobusICallbackReadyEnqueue(
+            &callback_info->my_space->ready_queue, callback_info);
     }
     
     return GLOBUS_SUCCESS;
@@ -584,8 +509,7 @@ globus_callback_space_register_oneshot(
         GLOBUS_NULL,
         callback_func,
         callback_user_args,
-        space,
-        GLOBUS_FALSE);
+        space);
 }
 
 /**
@@ -645,8 +569,7 @@ globus_callback_space_register_periodic(
         period,
         callback_func,
         callback_user_args,
-        space,
-        GLOBUS_FALSE);
+        space);
 }
 
 /**
@@ -1169,78 +1092,6 @@ globus_l_callback_get_next(
     return callback_info;
 }
 
-static
-void
-globus_l_callback_signal_kickout(
-    void *                              user_arg)
-{
-    globus_l_callback_signal_handler_t *handler;
-    
-    handler = (globus_l_callback_signal_handler_t *) user_arg;
-    handler->callback(handler->user_arg);
-    
-    if(--handler->running == 0 && !handler->persist)
-    {
-        if(handler->unregister_callback)
-        {
-            handler->unregister_callback(handler->unreg_arg);
-        }
-        globus_callback_space_destroy(handler->space);
-        globus_free(handler);
-    }
-}
-
-static
-void
-globus_l_callback_handle_signals(void)
-{
-    while(globus_l_callback_signal_pending)
-    {
-        int                             i;
-        
-        globus_l_callback_signal_pending = GLOBUS_FALSE;
-        
-        for(i = 0; i < globus_l_callback_signal_handlers_size; i++)
-        {
-            globus_l_callback_signal_handler_t *handler;
-            
-            handler = globus_l_callback_signal_handlers[i];
-            if(handler && handler->pending)
-            {
-                globus_result_t         result;
-                
-                handler->pending = GLOBUS_FALSE;
-                handler->running++;
-                
-                if(!handler->persist)
-                {
-                    globus_l_callback_signal_handlers[i] = GLOBUS_NULL;
-#ifndef TARGET_ARCH_WIN32
-                    sigaction(i, &handler->old_action, GLOBUS_NULL);
-#endif
-                }
-                
-                result = globus_l_callback_register(
-                    GLOBUS_NULL,
-                    GLOBUS_NULL,
-                    GLOBUS_NULL,
-                    globus_l_callback_signal_kickout,
-                    handler,
-                    handler->space,
-                    GLOBUS_TRUE);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    globus_panic(
-                        GLOBUS_CALLBACK_MODULE,
-                        result,
-                        "[globus_l_callback_handle_signals] "
-                            "Couldn't register callback");
-                }
-            }
-        }
-    }
-}
-
 /**
  * globus_callback_space_poll
  *
@@ -1248,6 +1099,7 @@ globus_l_callback_handle_signals(void)
  * space.  may also poll global 'space'
  *
  */
+
 void
 globus_callback_space_poll(
     const globus_abstime_t *            timestop,
@@ -1270,6 +1122,14 @@ globus_callback_space_poll(
                 &globus_l_callback_space_table, space);
     }
     
+    last_restart_info = globus_l_callback_restart_info;
+    globus_l_callback_restart_info = &restart_info;
+    
+    globus_thread_blocking_callback_push(
+        globus_l_callback_blocked_cb,
+        &restart_info,
+        &idx);
+    
     if(!timestop)
     {
         timestop = &globus_i_abstime_zero;
@@ -1279,16 +1139,7 @@ globus_callback_space_poll(
      * If we get signaled, we will jump out of this function asap
      */
     restart_info.signaled = GLOBUS_FALSE;
-    /* i wonder if this should be limited by last_restart_info->time_stop */
     restart_info.time_stop = timestop;
-    
-    last_restart_info = globus_l_callback_restart_info;
-    globus_l_callback_restart_info = &restart_info;
-    
-    globus_thread_blocking_callback_push(
-        globus_l_callback_blocked_cb,
-        &restart_info,
-        &idx);
     
     GlobusTimeAbstimeGetCurrent(time_now);
     
@@ -1306,12 +1157,7 @@ globus_callback_space_poll(
         globus_l_callback_info_t *      callback_info;
         globus_abstime_t                space_ready_time;
         globus_abstime_t                global_ready_time;
-        
-        if(globus_l_callback_signal_pending)
-        {
-            globus_l_callback_handle_signals();
-        }
-        
+
         callback_info = GLOBUS_NULL;
 
         /* first we'll see if there is a callback ready on the polled space */
@@ -1423,26 +1269,19 @@ globus_callback_space_poll(
                 GlobusTimeAbstimeDiff(sleep_time, *first_ready_time, time_now);
                 GlobusTimeReltimeToUSec(usec, sleep_time);
 
-                if(usec > 0 && !globus_l_callback_signal_pending)
+                if(usec > 0)
                 {
-                    /* still a race here.. might miss a signal, too bad.
-                     * need pselect which doesnt appear portable enough yet
-                     */
                     globus_libc_usleep(usec);
                 }
             }
-            else if(globus_time_abstime_is_infinity(timestop)
-                && !globus_l_callback_signal_pending)
+            else if(globus_time_abstime_is_infinity(timestop))
             {
                 /* we can only get here if both queues are empty
                  * and we are blocking forever. in this case, it is not
                  * possible for a new callback to be registered, except by
                  * a signal handler. pause will wake up in that case
                  */
-                /* still a race here.. might miss a signal, too bad.
-                 * need pselect which doesnt appear portable enough yet
-                 */
-                pause();
+                 pause();
             }
             else
             {
@@ -1656,312 +1495,6 @@ globus_callback_was_restarted()
     return globus_l_callback_restart_info
         ? globus_l_callback_restart_info->restarted
         : GLOBUS_FALSE;
-}
-
-static
-globus_bool_t
-globus_l_callback_uncatchable_signal(
-    int                                 signum)
-{
-#ifndef TARGET_ARCH_WIN32
-/* i would have used a switch here, but some of the signal numbers have the
- * same value
- */
-    if(
-#ifdef SIGKILL
-        signum == SIGKILL ||
-#endif
-#ifdef SIGSEGV
-        signum == SIGSEGV ||
-#endif
-#ifdef SIGABRT
-        signum == SIGABRT ||
-#endif
-#ifdef SIGBUS
-        signum == SIGBUS ||
-#endif
-#ifdef SIGFPE
-        signum == SIGFPE ||
-#endif
-#ifdef SIGILL
-        signum == SIGILL ||
-#endif
-#ifdef SIGIOT
-        signum == SIGIOT ||
-#endif
-#ifdef SIGPIPE
-        signum == SIGPIPE ||
-#endif
-#ifdef SIGEMT
-        signum == SIGEMT ||
-#endif
-#ifdef SIGSYS
-        signum == SIGSYS ||
-#endif
-#ifdef SIGTRAP
-        signum == SIGTRAP ||
-#endif
-#ifdef SIGSTOP
-        signum == SIGSTOP ||
-#endif
-#ifdef SIGCONT
-        signum == SIGCONT ||
-#endif
-#ifdef SIGWAITING
-        signum == SIGWAITING ||
-#endif
-        0)
-    {
-        return GLOBUS_TRUE;
-    }
-    else
-#endif
-    {
-        return GLOBUS_FALSE;
-    }
-}
-
-static
-void
-globus_l_callback_signal_handler(
-    int                                 signum)
-{
-    globus_l_callback_signal_handler_t *handler;
-    
-    if(globus_l_callback_signal_handlers &&
-        signum >= 0 && signum < globus_l_callback_signal_handlers_size)
-    {
-        handler = globus_l_callback_signal_handlers[signum];
-        if(handler)
-        {
-            globus_l_callback_wakeup_handler_t * wakeup_handler;
-            globus_list_t *             tmp;
-            
-            handler->pending = GLOBUS_TRUE;
-            globus_l_callback_signal_pending = GLOBUS_TRUE;
-            
-            /* wake up folks */
-            for(tmp = globus_l_callback_wakeup_handlers;
-                !globus_list_empty(tmp);
-                tmp = globus_list_rest(tmp))
-            {
-                wakeup_handler = (globus_l_callback_wakeup_handler_t *)
-                    globus_list_first(tmp);
-                    
-                wakeup_handler->wakeup(wakeup_handler->user_arg);
-            }
-            
-            if(globus_l_callback_restart_info)
-            {
-                /* just in case I missed somebody, dont let them take anymore
-                 * time
-                 */
-                globus_l_callback_restart_info->time_stop = 
-                    &globus_i_abstime_zero;
-            }
-        }
-    }
-}
-
-globus_result_t
-globus_callback_space_register_signal_handler(
-    int                                 signum,
-    globus_bool_t                       persist,
-    globus_callback_func_t              callback_func,
-    void *                              callback_user_arg,
-    globus_callback_space_t             space)
-{
-    globus_l_callback_signal_handler_t *handler;
-    globus_result_t                     result;
-    
-    if(!callback_func)
-    {
-        result = GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
-            "globus_callback_space_register_signal_handler", "callback_func");
-        goto error_params;
-    }
-    
-    if(globus_l_callback_uncatchable_signal(signum) ||
-        signum < 0 ||
-        (signum < globus_l_callback_signal_handlers_size &&
-            globus_l_callback_signal_handlers[signum]))
-    {
-        result = GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
-            "globus_callback_space_register_signal_handler", "signum");
-        goto error_params;
-    }
-    
-    result = globus_callback_space_reference(space);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_params;
-    }
-    
-    handler = (globus_l_callback_signal_handler_t *)
-        globus_calloc(1, sizeof(globus_l_callback_signal_handler_t));
-    if(!handler)
-    {
-        result = GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(
-            "globus_callback_space_register_signal_handler", "handler");
-        goto error_handler;
-    }
-    
-    handler->callback = callback_func;
-    handler->user_arg = callback_user_arg;
-    handler->space = space;
-    handler->persist = persist;
-    
-#ifndef TARGET_ARCH_WIN32
-    {
-        struct sigaction                action;
-        
-        memset(&action, '\0', sizeof(action));
-        sigemptyset(&action.sa_mask);
-        action.sa_handler = globus_l_callback_signal_handler;
-        if(sigaction(signum, &action, &handler->old_action) < 0)
-        {
-            result = GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
-                "globus_callback_space_register_signal_handler", "signum");
-            goto error_action;
-        }
-    }
-#endif
-
-    if(signum >= globus_l_callback_signal_handlers_size)
-    {
-        globus_l_callback_signal_handler_t ** volatile old_table;
-        globus_l_callback_signal_handler_t ** new_table;
-        int                             new_size;
-        
-        /* cant let a signal handler muck with this while i change it,
-         * might miss a signal, too bad.  not likely to ever need to increase
-         * size anyway and, even if we did, most sig handlers are registered
-         * before program does anything
-         */
-        old_table = globus_l_callback_signal_handlers;
-        globus_l_callback_signal_handlers = GLOBUS_NULL;
-        
-        new_size = globus_l_callback_signal_handlers_size + 
-            GLOBUS_L_CALLBACK_SIGNAL_BLOCK_SIZE;
-        if(signum >= new_size)
-        {
-            new_size = signum + 1;
-        }
-        
-        new_table = (globus_l_callback_signal_handler_t **)
-            globus_realloc(
-                old_table,
-                new_size * sizeof(globus_l_callback_signal_handler_t *));
-        if(!new_table)
-        {
-            globus_l_callback_signal_handlers = old_table;
-            result = GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(
-                "globus_callback_space_register_signal_handler",
-                "new_table");
-            goto error_resize;
-        }
-        memset(
-            new_table + 
-                globus_l_callback_signal_handlers_size * 
-                sizeof(globus_l_callback_signal_handler_t *),
-            0,
-            GLOBUS_L_CALLBACK_SIGNAL_BLOCK_SIZE *
-                sizeof(globus_l_callback_signal_handler_t *));
-        globus_l_callback_signal_handlers = new_table;
-        globus_l_callback_signal_handlers_size = new_size;
-    }
-    
-    globus_l_callback_signal_handlers[signum] = handler;
-    
-    return GLOBUS_SUCCESS;
-
-error_resize:
-#ifndef TARGET_ARCH_WIN32
-    sigaction(signum, &handler->old_action, GLOBUS_NULL);
-#endif
-error_action:
-    globus_free(handler);
-error_handler:
-    globus_callback_space_destroy(space);
-error_params:
-    return result;
-}
-
-globus_result_t
-globus_callback_unregister_signal_handler(
-    int                                 signum,
-    globus_callback_func_t              unregister_callback,
-    void *                              unreg_arg)
-{
-    globus_l_callback_signal_handler_t *handler;
-    globus_result_t                     result;
-    
-    if(signum >= globus_l_callback_signal_handlers_size ||
-        signum < 0 ||
-        !globus_l_callback_signal_handlers[signum])
-    {
-        result = GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
-            "globus_callback_space_unregister_signal_handler", "signum");
-        goto error_params;
-    }
-    
-    handler = globus_l_callback_signal_handlers[signum];
-    globus_l_callback_signal_handlers[signum] = GLOBUS_NULL;
-    
-#ifndef TARGET_ARCH_WIN32
-    sigaction(signum, &handler->old_action, GLOBUS_NULL);
-#endif
-    
-    if(!handler->running)
-    {
-        result = GLOBUS_SUCCESS;
-        if(unregister_callback)
-        {
-            result = globus_callback_space_register_oneshot(
-                GLOBUS_NULL,
-                GLOBUS_NULL,
-                unregister_callback,
-                unreg_arg,
-                handler->space);
-        }
-        
-        globus_callback_space_destroy(handler->space);
-        globus_free(handler);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_register;
-        }
-    }
-    else
-    {
-        handler->persist = GLOBUS_FALSE;
-        handler->unregister_callback = unregister_callback;
-        handler->unreg_arg = unreg_arg;
-    }
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-error_params:
-    return result;
-}
-
-void
-globus_callback_add_wakeup_handler(
-    void                                (*wakeup)(void *),
-    void *                              user_arg)
-{
-    globus_l_callback_wakeup_handler_t *wakeup_handler;
-    
-    wakeup_handler = (globus_l_callback_wakeup_handler_t *)
-        globus_malloc(sizeof(globus_l_callback_wakeup_handler_t));
-    if(wakeup_handler)
-    {
-        wakeup_handler->wakeup = wakeup;
-        wakeup_handler->user_arg = user_arg;
-        
-        globus_list_insert(&globus_l_callback_wakeup_handlers, wakeup_handler);
-    }
 }
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -3450,6 +3450,7 @@ globus_ftp_control_force_close(
 	if(handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTED &&
 	    handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTING)
 	{
+	    globus_mutex_unlock(&(handle->cc_handle.mutex));
 	    rc = globus_error_put(
 		globus_error_construct_string(
 		    GLOBUS_FTP_CONTROL_MODULE,
@@ -4187,7 +4188,7 @@ globus_i_ftp_control_encode_command(
     OM_uint32                              maj_stat;
     OM_uint32                              min_stat;
     int                                    conf_state;
-    int                                    length;
+
 
     if(cc_handle == GLOBUS_NULL ||
        cmd == GLOBUS_NULL ||
@@ -4249,15 +4250,14 @@ globus_i_ftp_control_encode_command(
         (*encoded_cmd)[2]='C';
         (*encoded_cmd)[3]=' ';
     }
-    
-    length = out_buf.length;
+
     globus_i_ftp_control_radix_encode(out_buf.value,
                                       &((*encoded_cmd)[4]), 
-                                      &length);
+                                      &out_buf.length);
 
-    (*encoded_cmd)[length+4]='\r';
-    (*encoded_cmd)[length+5]='\n';
-    (*encoded_cmd)[length+6]='\0';
+    (*encoded_cmd)[out_buf.length+4]='\r';
+    (*encoded_cmd)[out_buf.length+5]='\n';
+    (*encoded_cmd)[out_buf.length+6]='\0';
 
     gss_release_buffer(&min_stat, &out_buf);
     

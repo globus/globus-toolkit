@@ -219,29 +219,25 @@ timeout_main(
         res = globus_xio_attr_cntl(attr, NULL, 
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN,
                     timeout_cb,
-                    &delay,
-                    NULL);
+                    &delay);
     }
     else if(strcmp(argv[opt_offset], "D") == 0)
     {
         res = globus_xio_attr_cntl(attr, NULL,
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_READ,
                     timeout_cb,
-                    &delay,
-                    NULL);
+                    &delay);
         res = globus_xio_attr_cntl(attr, NULL, 
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE,
                     timeout_cb,
-                    &delay,
-                    NULL);
+                    &delay);
     }
     else if(strcmp(argv[opt_offset], "C") == 0)
     {
         res = globus_xio_attr_cntl(attr, NULL, 
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE,
                     timeout_cb,
-                    &delay,
-                    NULL);
+                    &delay);
     }
     else
     {

@@ -302,9 +302,6 @@ typedef struct globus_i_xio_attr_s
     globus_bool_t                       cancel_read;
     globus_bool_t                       cancel_write;
 
-    globus_bool_t                       no_cancel;
-    void *                              timeout_arg;
-
     globus_callback_space_t             space;
 
     int                                 max;
@@ -373,7 +370,6 @@ typedef struct globus_i_xio_handle_s
     struct globus_i_xio_op_s *          open_op;
     struct globus_i_xio_op_s *          close_op;
 
-    void *                              timeout_arg;
     /* counts outstanding read and write operations */
     int                                 outstanding_operations;
 

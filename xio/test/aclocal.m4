@@ -113,7 +113,6 @@ AC_SUBST(CROSS)
 AC_SUBST(cross_compiling)
 AC_SUBST(OBJEXT)
 AC_SUBST(EXEEXT)
-AC_SUBST(OBJECT_MODE)
 
 
 define([AM_PROG_LIBTOOL],[
@@ -355,7 +354,6 @@ CC="$CC" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="$LIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
 DLLTOOL="$DLLTOOL" AS="$AS" OBJDUMP="$OBJDUMP" \
-AR="$AR" \
 ${CONFIG_SHELL-/bin/sh} $ac_aux_dir/ltconfig --no-reexec \
 $libtool_flags --no-verify $ac_aux_dir/ltmain.sh $lt_target \
 || AC_MSG_ERROR([libtool configure failed])

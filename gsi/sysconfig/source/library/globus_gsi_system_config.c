@@ -901,12 +901,17 @@ globus_gsi_sysconfig_dir_exists_win32(
  * 
  * @param filename
  *        The name of the file to check the status of
+ * @param status
+ *        The status of the file being checked
+ *        see @ref globus_gsi_statcheck_t for possible values
+ *        of this variable 
  *
  * @return 
  *        GLOBUS_SUCCESS if the status of the file was able
  *        to be determined.  Otherwise, an error object
  *        identifier
  *
+ * @see globus_gsi_statcheck_t
  */
 globus_result_t
 globus_gsi_sysconfig_check_keyfile_win32(
@@ -1019,12 +1024,17 @@ globus_gsi_sysconfig_check_keyfile_win32(
  * 
  * @param filename
  *        The name of the file to check the status of
+ * @param status
+ *        The status of the file being checked
+ *        see @ref globus_gsi_statcheck_t for possible values
+ *        of this variable 
  *
  * @return 
  *        GLOBUS_SUCCESS if the status of the file was able
  *        to be determined.  Otherwise, an error object
  *        identifier
  *
+ * @see globus_gsi_statcheck_t
  */
 globus_result_t
 globus_gsi_sysconfig_check_certfile_win32(

@@ -399,27 +399,17 @@ globus_gram_job_manager_output_open(
 	    request,
 	    "JM: Opening output destinations\n");
 
-    rc = globus_gram_job_manager_output_get_cache_name(
+    out_cache_name = globus_gram_job_manager_output_get_cache_name(
 		    request,
-		    "stdout",
-                    &out_cache_name);
-    if (rc != 0)
-    {
-        goto failed_out_cache_name_exit;
-    }
+		    "stdout");
     globus_gram_job_manager_request_log(
 	    request,
 	    "JM: stdout goes to %s\n",
 	    out_cache_name);
 
-    rc = globus_gram_job_manager_output_get_cache_name(
+    err_cache_name = globus_gram_job_manager_output_get_cache_name(
 		    request,
-		    "stderr",
-                    &err_cache_name);
-    if (rc != 0)
-    {
-        goto failed_err_cache_name_exit;
-    }
+		    "stderr");
     globus_gram_job_manager_request_log(
 	    request,
 	    "JM: stderr goes to %s\n",
@@ -427,15 +417,9 @@ globus_gram_job_manager_output_open(
 
     if(!globus_l_gram_job_manager_url_is_dev_null(request->local_stdout))
     {
-	request->output->stdout_fd =
-	    globus_libc_open(request->local_stdout, O_RDONLY|O_CREAT,
-                    S_IRUSR|S_IWUSR);
-        if (request->output->stdout_fd == -1)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT;
 
-            goto error_exit;
-        }
+	request->output->stdout_fd =
+	    globus_libc_open(request->local_stdout, O_RDONLY);
         fcntl(request->output->stdout_fd, F_SETFD, FD_CLOEXEC);
 	destinations = request->output->stdout_destinations;
 
@@ -468,16 +452,7 @@ globus_gram_job_manager_output_open(
     if(!globus_l_gram_job_manager_url_is_dev_null(request->local_stderr))
     {
 	request->output->stderr_fd =
-	    globus_libc_open(request->local_stderr, O_RDONLY|O_CREAT,
-                    S_IRUSR|S_IWUSR);
-
-        if (request->output->stderr_fd == -1)
-        {
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR;
-
-            goto error_exit;
-        }
-
+	    globus_libc_open(request->local_stderr, O_RDONLY);
         fcntl(request->output->stderr_fd, F_SETFD, FD_CLOEXEC);
 	destinations = request->output->stderr_destinations;
 	while(!globus_list_empty(destinations))
@@ -508,10 +483,8 @@ globus_gram_job_manager_output_open(
 
 error_exit:
 
-failed_err_cache_name_exit:
-    globus_libc_free(err_cache_name);
-failed_out_cache_name_exit:
     globus_libc_free(out_cache_name);
+    globus_libc_free(err_cache_name);
 
     if(request->output->stderr_fd != -1 ||
        request->output->stdout_fd != -1)
@@ -681,8 +654,10 @@ globus_gram_job_manager_output_local_name(
     globus_l_gram_job_manager_output_destination_t *
 					destination;
     char *				out_file;
+    char *				fname;
+    unsigned long			timestamp;
     globus_list_t *			destinations;
-    int                                 rc;
+    int					rc;
 
     if(strcmp(type, GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM) == 0)
     {
@@ -707,16 +682,38 @@ globus_gram_job_manager_output_local_name(
 	    /* We have at least one valid destination, create cache
 	     * entry for stdout
 	     */
-	    rc = globus_gram_job_manager_output_get_cache_name(
+	    out_file = globus_gram_job_manager_output_get_cache_name(
 		    request,
-		    type,
-                    &out_file);
-            if (rc != 0)
-            {
-                return NULL;
-            }
+		    type);
 
-	    return out_file;
+	    rc = globus_gass_cache_add(
+		    request->cache_handle,
+		    out_file,
+		    request->cache_tag,
+		    GLOBUS_TRUE,
+		    &timestamp,
+		    &fname);
+	    if(rc != GLOBUS_GASS_CACHE_ADD_NEW &&
+	       rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
+	    {
+		globus_gram_job_manager_request_log(
+			request,
+			"Adding %s to gass cache failed, "
+			"globus_gram_cache_add() returned %d\n",
+			type == GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM ?
+			"stdout" : "stderr", rc);
+		return GLOBUS_NULL;
+	    }
+
+	    globus_gass_cache_add_done(
+		    request->cache_handle,
+		    out_file,
+		    request->cache_tag,
+		    timestamp);
+
+	    globus_libc_free(out_file);
+
+	    return fname;
 	}
     }
     return globus_libc_strdup("/dev/null");
@@ -737,116 +734,35 @@ globus_gram_job_manager_output_local_name(
  * @param request
  *        The job request structure.
  * @param type
- *        The type of output file to get the name of (intended to be
- *        used with "stdout", "stderr", or "x509_up).
- * @param output_name
-          Pointer to char to be set to the value of the name.
+ *        The type of output file to get the name of. Only 
+ *        "stdout" or "stderr" will return meaningful values.
  */
 extern
-int
+char *
 globus_gram_job_manager_output_get_cache_name(
     globus_gram_jobmanager_request_t *	request,
-    const char *			type,
-    char **                             output_name)
-{
-    char *                              out_file;
-    int                                 rc;
-
-    if (request->job_dir == NULL)
-    {
-        rc = globus_gram_job_manager_output_make_job_dir(request);
-
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
-
-    out_file = globus_libc_malloc(strlen(request->job_dir) + strlen(type) + 2);
-
-    if (out_file == NULL)
-    {
-        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-    }
-    sprintf(out_file,
-		"%s/%s",
-		request->job_dir,
-                type);
-
-    *output_name = out_file;
-    return 0;
-}
-/* globus_gram_job_manager_output_get_cache_name() */ 
-
-extern
-int
-globus_gram_job_manager_output_make_job_dir(
-    globus_gram_jobmanager_request_t *	request)
+    const char *			type)
 {
     char				hostname[MAXHOSTNAMELEN];
-    const char *                        dir_format = "%s/.globus/job/%s/%s";
     char *				out_file;
-    char *                              tmp;
-    int                                 rc;
-    struct stat                         statbuf;
 
     globus_libc_gethostname(hostname, sizeof(hostname));
 
     out_file = globus_libc_malloc(
-                strlen(dir_format) +
-                strlen(request->home) +
+		strlen("x-gass-cache://%s/%s/dev/%s") +
 		strlen(hostname) +
-		strlen(request->uniq_id) + 2);
+		strlen(request->uniq_id) +
+		strlen(type));
 
     sprintf(out_file,
-		dir_format,
-                request->home,
+		"x-gass-cache://%s/%s/dev/%s",
 		hostname,
-		request->uniq_id);
+		request->uniq_id,
+		type);
 
-
-    if ((rc = stat(out_file, &statbuf)) < 0)
-    {
-        tmp = out_file;
-
-        while (tmp != NULL)
-        {
-            tmp = strchr(tmp+1, '/');
-            if (tmp != out_file)
-            {
-                if (tmp != NULL)
-                {
-                    *tmp = '\0';
-                }
-                if ((rc = stat(out_file, &statbuf)) < 0)
-                {
-                    mkdir(out_file, S_IRWXU);
-                }
-                if ((rc = stat(out_file, &statbuf)) < 0)
-                {
-                    globus_gram_job_manager_request_log(
-                        request,
-                        "JMI: Unable to create part of job dir path: %s\n",
-                        out_file);
-                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-
-                    goto error_exit;
-                }
-                if (tmp != NULL)
-                {
-                    *tmp = '/';
-                }
-            }
-        }
-    }
-
-    request->job_dir = out_file;
-    return 0;
-error_exit:
-    globus_libc_free(out_file);
-    return rc;
+    return out_file;
 }
-/* globus_gram_job_manager_output_make_job_dir() */
+/* globus_gram_job_manager_output_get_cache_name() */ 
 
 /**
  * Get size of standard out

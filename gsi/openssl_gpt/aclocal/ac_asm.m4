@@ -126,8 +126,8 @@ AC_DEFUN(LAC_ASM_SET,
             ;;
         esac
     else
-        lac_CFLAGS="-DOPENSSL_NO_ASM $lac_CFLAGS"
-        AC_DEFINE(OPENSSL_NO_ASM)
+        lac_CFLAGS="-DNO_ASM $lac_CFLAGS"
+        AC_DEFINE(NO_ASM)
     fi
 ])
 

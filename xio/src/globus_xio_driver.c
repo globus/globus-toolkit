@@ -1113,7 +1113,6 @@ globus_i_xio_driver_attr_cntl(
             case GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL:
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
-                attr->timeout_arg = va_arg(ap, void *);
 
                 attr->open_timeout_cb = timeout_cb;
                 attr->close_timeout_cb = timeout_cb;
@@ -1129,8 +1128,6 @@ globus_i_xio_driver_attr_cntl(
             case GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN:
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
-                attr->timeout_arg = va_arg(ap, void *);
-
                 attr->open_timeout_cb = timeout_cb;
                 GlobusTimeReltimeCopy(attr->open_timeout_period, *delay_time);
                 break;
@@ -1138,7 +1135,6 @@ globus_i_xio_driver_attr_cntl(
             case GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE:
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
-                attr->timeout_arg = va_arg(ap, void *);
 
                 attr->close_timeout_cb = timeout_cb;
                 GlobusTimeReltimeCopy(attr->close_timeout_period, *delay_time);
@@ -1147,7 +1143,6 @@ globus_i_xio_driver_attr_cntl(
             case GLOBUS_XIO_ATTR_SET_TIMEOUT_READ:
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
-                attr->timeout_arg = va_arg(ap, void *);
 
                 attr->read_timeout_cb = timeout_cb;
                 GlobusTimeReltimeCopy(attr->read_timeout_period, *delay_time);
@@ -1156,7 +1151,6 @@ globus_i_xio_driver_attr_cntl(
             case GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE:
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
-                attr->timeout_arg = va_arg(ap, void *);
 
                 attr->write_timeout_cb = timeout_cb;
                 GlobusTimeReltimeCopy(attr->write_timeout_period, *delay_time);
@@ -1166,7 +1160,6 @@ globus_i_xio_driver_attr_cntl(
                 server_timeout_cb =
                     va_arg(ap, globus_xio_timeout_server_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
-                attr->timeout_arg = va_arg(ap, void *);
 
                 attr->accept_timeout_cb = server_timeout_cb;
                 GlobusTimeReltimeCopy(attr->accept_timeout_period, *delay_time);
@@ -1180,10 +1173,6 @@ globus_i_xio_driver_attr_cntl(
                 }
                 globus_callback_space_destroy(attr->space);
                 attr->space = space;
-                break;
-
-            case GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL:
-                attr->no_cancel = va_arg(ap, globus_bool_t);
                 break;
         }
 

@@ -33,11 +33,6 @@ globus_list_int_less (void * low_datum, void * high_datum,
 extern int 
 globus_list_empty (globus_list_t * head);
 
-globus_list_t *
-globus_list_concat(
-    globus_list_t *                     front_list,
-    globus_list_t *                     back_list);
-
 extern void *
 globus_list_first (globus_list_t * head);
 

@@ -985,50 +985,6 @@ int globus_cond_broadcast(globus_cond_t *cv)
     return(rc);
 } /* globus_cond_broadcast() */
 
-
-#undef globus_thread_sigmask
-int
-globus_thread_sigmask(
-    int                                 how,
-    const sigset_t *                    newmask,
-    sigset_t *                          oldmask)
-{
-    int rc; 
-    rc = globus_macro_thread_sigmask(how, newmask, oldmask); 
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_sigmask() failed\n");
-    return(rc);
-}
-
-#undef globus_thread_cancel
-int
-globus_thread_cancel(
-    globus_thread_t                     thread)
-{
-    int rc; 
-    rc = globus_macro_thread_cancel(thread);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_cancel() failed\n");
-    return(rc);
-}
-
-#undef globus_thread_testcancel
-void
-globus_thread_testcancel(void)
-{
-    globus_macro_thread_testcancel();
-}
-
-#undef globus_thread_setcancelstate
-int
-globus_thread_setcancelstate(
-    int                                 state,
-    int *                               oldstate)
-{
-    int rc; 
-    rc = globus_macro_thread_setcancelstate(state, oldstate);
-    globus_i_thread_test_rc(rc, "GLOBUSTHREAD: pthread_setcancelstate() failed\n");
-    return(rc);
-}
-
 void
 globus_thread_prefork(void)
 {

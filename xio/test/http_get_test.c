@@ -571,7 +571,7 @@ globus_l_xio_test_read_buffer(
             offset += nbytes;
         }
     }
-    if (offset == message_size && http_is_eof(result))
+    if (offset == message_size && globus_xio_error_is_eof(result))
     {
         result = GLOBUS_SUCCESS;
     }

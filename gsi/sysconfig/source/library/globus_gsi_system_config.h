@@ -419,6 +419,7 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_get_unique_proxy_filename
 
 #ifdef WIN32
+typedef int globus_gsi_statcheck_t;
 
 globus_result_t
 globus_gsi_sysconfig_set_key_permissions_win32(

@@ -98,11 +98,6 @@ sub new
     bless $self, $class;
 
     $self->log("New Perl JobManager created.");
-    eval { File::Path::mkpath($self->job_dir(), 0, 0700); };
-
-    if ($@) {
-        $self->log("Couldn't create job dir");
-    }
 
     return $self;
 }
@@ -510,7 +505,8 @@ sub stage_in
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
+    my $tag = $description->cache_tag()
+        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my ($remote, $local, $local_resolved, $cached, $stderr, $rc, @arg);
 
     $self->log("stage_in(enter)");
@@ -603,7 +599,7 @@ sub stage_in
             });
             return Globus::GRAM::Error::STAGE_IN_FAILED
         }
-        $self->nfssync($local_resolved, 0);
+        $self->nfssync($local_resolved);
 	$self->respond({'STAGED_IN' => "$remote $local"});
     }
     foreach($description->file_stage_in_shared())
@@ -670,7 +666,8 @@ sub stage_out
     my $self = shift;
     my $description = $self->{JobDescription};
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
-    my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
+    my $tag = $description->cache_tag() 
+        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $local_path;
     my @arg;
 
@@ -739,22 +736,15 @@ sub cache_cleanup
     my $self = shift;
     my $description = $self->{JobDescription};
     my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
-    my $job_path = $self->job_dir();
 
     $self->log("cache_cleanup(enter)");
     if ( ! defined $tag )
     {
 	$self->log( "No cache tag defined to cleanup" );
+	return {};
     }
 
-    ($stderr, $rc) = $self->pipe_err_cmd($cache_pgm,
-        '-cleanup-tag', '-t', $tag);
-
-    $self->log("Cleaning files in job dir $job_path");
-
-    my $count = File::Path::rmtree($job_path);
-
-    $self->log("Removed $count files from $job_path");
+    ($stderr, $rc) = $self->pipe_err_cmd($cache_pgm, '-cleanup-tag', '-t', $tag);
 
     if ($rc != 0) {
         $self->log("cache cleanup failed with $stderr");
@@ -766,7 +756,7 @@ sub cache_cleanup
 
 =item $manager->remote_io_file_create()
 
-Create the remote I/O file in the job dir which will contain the
+Create the remote I/O file in the GASS cache which will contain the
 remote_io_url RSL attribute's value.
 
 =cut
@@ -775,22 +765,56 @@ sub remote_io_file_create
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
-    my $job_path = $self->job_dir();
-    my $filename = "$job_path/remote_io_url";
+    my $tag = $description->cache_tag()
+        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
+    my $filename = "${tag}dev/remote_io_url";
+    my $result;
+    my $stderr;
+    my $rc;
 
     $self->log("remote_io_file_create(enter)");
 
     local(*FH);
 
-    open(FH, ">$filename");
-    print FH $description->remote_io_url . "\n";
-    close(FH);
+    $result = $self->pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $filename);
 
-    $self->nfssync($filename, 0);
+    if($result eq '')
+    {
+	# no remote_io_url in the cache yet
+	my $tmpname = POSIX::tmpnam();
+        open(FH, '>'. $tmpname)
+            || return Globus::GRAM::Error::WRITING_REMOTE_IO_URL;
+	print FH $description->remote_io_url(), "\n";
+        close FH;
+
+        ($stderr, $rc) = $self->pipe_err_cmd($cache_pgm, '-add', '-t', $tag, '-n',
+                $filename, "file:$tmpname");
+        if ($rc != 0) {
+            $self->log("remote I/O file create failed with $stderr");
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'remoteiofile',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+            });
+        }
+	unlink($tmpname);
+
+        $result = $self->pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $filename);
+    }
+    else
+    {
+	# already in cache
+        open(FH, '>'. $result);
+        print FH $description->remote_io_url, "\n";
+	close(FH);
+    }
+
+    return Globus::GRAM::Error::WRITING_REMOTE_IO_URL
+        if ($result eq '');
+
+    $self->nfssync($result, 0);
 
     $self->log("remote_io_file_create(exit)");
-    return { REMOTE_IO_FILE => $filename };
+    return { REMOTE_IO_FILE => $result };
 }
 
 =item $manager->proxy_relocate()
@@ -808,15 +832,19 @@ sub proxy_relocate
     my $self = shift;
     my $description = $self->{JobDescription};
     my $proxy_filename;
-    my $proxy_data;
-    my $new_proxy;
 
     $self->log("proxy_relocate(enter)");
 
+    return { X509_USER_PROXY => $ENV{'X509_USER_PROXY'} }
+        if exists($ENV{'X509_USER_PROXY'});
+
     $proxy_filename = $self->pipe_out_cmd($info_pgm, '-path');
     return Globus::GRAM::Error::OPENING_USER_PROXY
-        if ( $? != 0 || $proxy_filename eq '' );
+        if($proxy_filename eq '');
 
+    $proxy_filename =~ s/^\S+\s+:\s+//;
+
+    $self->log("proxy_relocate(exit)");
     return { X509_USER_PROXY => $proxy_filename }
 }
 
@@ -981,45 +1009,6 @@ sub fork_and_exec_cmd
     # parent
     waitpid($pid,0);   # FIXME: deal with EINTR and EAGAIN
     $?;
-}
-
-=item $manager->job_dir()
-
-Return the temporary directory to store job-related files, which have no
-need for file caching.
-
-=cut
-
-sub job_dir {
-    my $self = shift;
-    my $description = $self->{JobDescription};
-    my $posix_hostname;
-    my $job_dir = $description->job_dir();
-    
-    if ($job_dir ne '') {
-        $self->log("Using jm supplied job dir: $job_dir");
-        return $job_dir;
-    } elsif (exists $ENV{GLOBUS_HOSTNAME}) {
-        $posix_hostname = $ENV{GLOBUS_HOSTNAME};
-    } else {
-        $posix_hostname = (POSIX::uname)[1];
-
-        if ($posix_hostname !~ m/\./) {
-            my $aliases = gethostbyname($posix_hostname);
-
-            for $alias (split(/\s+/, $aliases)) {
-                if ($alias =~ m/\./) {
-                    $posix_hostname = $alias;
-
-                    last;
-                }
-            }
-        }
-    }
-
-    $job_dir = $ENV{HOME}."/.globus/job/$posix_hostname/".$description->uniq_id();
-    $self->log("making my own job dir @ $job_dir");
-
 }
 
 1;

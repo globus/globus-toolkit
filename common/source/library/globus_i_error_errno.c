@@ -118,6 +118,7 @@ globus_l_error_errno_printable(
     {
         printable = globus_libc_malloc(length);
         globus_libc_snprintf(printable,length,"%s %s",
+                             base_source->module_name,
                              sys_failed,
                              sys_error);
     }

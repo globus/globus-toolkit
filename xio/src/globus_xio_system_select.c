@@ -403,26 +403,6 @@ globus_l_xio_system_unregister_write(
     int                                 fd);
 
 static
-void
-globus_l_xio_system_wakeup_handler(
-    void *                              user_arg)
-{
-    int                                 rc;
-    char                                byte;
-    GlobusXIOName(globus_l_xio_system_wakeup_handler);
-
-    GlobusXIOSystemDebugEnter();
-    
-    byte = 0;
-    do
-    {
-        rc = write(globus_l_xio_system_wakeup_pipe[1], &byte, sizeof(byte));
-    } while(rc < 0 && errno == EINTR);
-
-    GlobusXIOSystemDebugExit();
-}
-
-static
 int
 globus_l_xio_system_activate(void)
 {
@@ -531,9 +511,6 @@ globus_l_xio_system_activate(void)
             "globus_callback_register_periodic", result);
         goto error_register;
     }
-    
-    globus_callback_add_wakeup_handler(
-        globus_l_xio_system_wakeup_handler, GLOBUS_NULL);
 
     GlobusXIOSystemDebugExit();
     return GLOBUS_SUCCESS;

@@ -36,16 +36,18 @@ globus_xio_attr_init(
    
     /* allocate the attr */ 
     xio_attr = (globus_i_xio_attr_t *)
-                globus_calloc(sizeof(globus_i_xio_attr_t), 1);
+                globus_malloc(sizeof(globus_i_xio_attr_t));
     if(xio_attr == NULL)
     {
         res = GlobusXIOErrorMemory("attr");
         goto err;
     }
+    memset(xio_attr, '\0', sizeof(globus_i_xio_attr_t));
 
     xio_attr->entry = (globus_i_xio_attr_ent_t *)
-        globus_calloc(sizeof(globus_i_xio_attr_ent_t) *
-            GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE, 1);
+        globus_malloc(sizeof(globus_i_xio_attr_ent_t) *
+            GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE);
+
     if(xio_attr->entry == NULL)
     {
         *attr = GLOBUS_NULL;
@@ -55,6 +57,8 @@ globus_xio_attr_init(
     }
 
     /* zero it out */
+    memset((xio_attr->entry), '\0', sizeof(globus_i_xio_attr_ent_t) *
+        GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE);
     xio_attr->max = GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE;
     xio_attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     

@@ -16,7 +16,7 @@ globus_l_xio_verify_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_verify_module =
+globus_module_descriptor_t  globus_i_xio_verify_module =
 {
     "globus_xio_verify",
     globus_l_xio_verify_activate,

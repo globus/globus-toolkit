@@ -727,9 +727,9 @@ int i = 0;
 #endif /* DAEMON */
 
 #ifndef DAEMON
-    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1G:H:C")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1G:H:")) != -1) {
 #else /* DAEMON */
-    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1G:H:C")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1G:H:")) != -1) {
 #endif /* DAEMON */
 	switch (c) {
 
@@ -862,11 +862,7 @@ int i = 0;
 	case '1':
 	    debug_no_fork = 1;
 	    break;
-
-    case 'C':
-        gssapi_authentication_required = 0;
-        break;
-        
+            
 	case 'G':
 	    globus_libc_setenv("GLOBUS_LOCATION", optarg, 1);
 	    break;

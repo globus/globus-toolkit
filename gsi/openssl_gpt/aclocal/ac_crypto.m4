@@ -226,16 +226,8 @@ AC_DEFUN(LAC_CRYPTO_SET,
         ;;
         *-ibm-aix*)
             # gcc and vendor
+            lac_BN_LLONG="1"
             lac_RC4_INT="unsigned char"
-            case ${GLOBUS_FLAVOR_NAME} in
-                *64* )
-                    lac_SIXTY_FOUR_BIT_LONG="1"
-                    lac_THIRTY_TWO_BIT=""
-                ;;
-                *32* )
-                    lac_BN_LLONG="1"
-                ;;
-            esac
         ;;
         *-dec-osf*)
             if test "$GCC" = "yes"; then

@@ -35,7 +35,7 @@ typedef struct globus_l_xio_op_handle_s
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_op_module =
+globus_module_descriptor_t  globus_i_xio_op_module =
 {
     "globus_xio_op",
     globus_l_xio_op_activate,

@@ -112,28 +112,6 @@ globus_list_size(
     return size;
 }
 
-globus_list_t *
-globus_list_concat(
-    globus_list_t *                     front_list,
-    globus_list_t *                     back_list)
-{
-    globus_list_t *                     front_copy = NULL;
-    globus_list_t *                     back_copy = NULL;
-    globus_list_t *                     list;
-
-    front_copy = globus_list_copy(front_list);
-    back_copy = globus_list_copy(back_list);
-
-    if(front_copy == NULL)
-    {
-        return back_copy;
-    }
-    for(list = front_copy; list->next != NULL; list = list->next);
-    list->next = back_copy;
-
-    return front_copy;
-}
-
 /* return the old datum value */
 void *
 globus_list_replace_first(

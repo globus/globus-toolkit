@@ -694,7 +694,7 @@ extern globus_module_descriptor_t       globus_i_xio_http_module;
 
 #define GlobusXIOHttpErrorObjInvalidHeader(name, value)                     \
         globus_error_construct_error(                                       \
-            GLOBUS_XIO_HTTP_MODULE,                                         \
+            GLOBUS_XIO_HTTP_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_HTTP_ERROR_INVALID_HEADER,                           \
             __FILE__,                                                       \
@@ -709,7 +709,7 @@ extern globus_module_descriptor_t       globus_i_xio_http_module;
 
 #define GlobusXIOHttpErrorObjNoEntity()                                     \
     globus_error_construct_error(                                           \
-            GLOBUS_XIO_HTTP_MODULE,                                         \
+            GLOBUS_XIO_HTTP_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_HTTP_ERROR_NO_ENTITY,                                \
             __FILE__,                                                       \
@@ -721,19 +721,6 @@ extern globus_module_descriptor_t       globus_i_xio_http_module;
     globus_error_put(                                                       \
         GlobusXIOHttpErrorObjNoEntity())
 
-#define GlobusXIOHttpErrorObjEOF()                                          \
-        globus_error_construct_error(                                       \
-            GLOBUS_XIO_HTTP_MODULE,                                         \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_HTTP_ERROR_EOF,                                      \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "End of Entity")
-
-#define GlobusXIOHttpErrorEOF()                                             \
-    globus_error_put(                                                       \
-        GlobusXIOHttpErrorObjEOF())
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #endif /* GLOBUS_I_XIO_HTTP_H */

@@ -24,7 +24,6 @@ my @drivers;
 push(@drivers, "");
 push(@drivers, "-D bounce");
 push(@drivers, "-D bounce -D debug");
-#push(@drivers, "-D bounce -D null");
 push(@drivers, "-D debug -D bounce -D verify");
 
 sub close_barrier

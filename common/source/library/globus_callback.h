@@ -176,12 +176,12 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
         callback_handle,                                                    \
         delay_time,                                                         \
         callback_func,                                                      \
-        callback_user_arg)                                                  \
+        callback_user_args)                                                 \
     globus_callback_space_register_oneshot(                                 \
         (callback_handle),                                                  \
         (delay_time),                                                       \
         (callback_func),                                                    \
-        (callback_user_arg),                                                \
+        (callback_user_args),                                               \
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 
 /**
@@ -197,34 +197,13 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
         delay_time,                                                         \
         period,                                                             \
         callback_func,                                                      \
-        callback_user_arg)                                                  \
+        callback_user_args)                                                 \
     globus_callback_space_register_periodic(                                \
         (callback_handle),                                                  \
         (delay_time),                                                       \
         (period),                                                           \
         (callback_func),                                                    \
-        (callback_user_arg),                                                \
-        GLOBUS_CALLBACK_GLOBAL_SPACE)
-
-/**
- * @hideinitializer
- *
- * Specifies the global space for
- * globus_callback_space_register_signal_handler() all other arguments are
- * the same as specified there.
- *
- * @see globus_callback_space_register_signal_handler()
- */
-#define globus_callback_register_signal_handler(                            \
-        signum,                                                             \
-        persist,                                                            \
-        callback_func,                                                      \
-        callback_user_arg)                                                  \
-    globus_callback_space_register_signal_handler(                          \
-        (signum),                                                           \
-        (persist),                                                          \
-        (callback_func),                                                    \
-        (callback_user_arg),                                                \
+        (callback_user_args),                                               \
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 
 /* @} */
@@ -250,7 +229,7 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  * globus_callback_get_timeout() to see how long this function can safely block
  * or call globus_thread_blocking_space_will_block()
  *
- * @param user_arg
+ * @param user_args
  *        The user argument registered with this callback
  *
  * @return
@@ -264,7 +243,7 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
 typedef
 void
 (*globus_callback_func_t)(
-    void *                              user_arg);
+    void *                              user_args);
 
 /* @} */
 
@@ -290,8 +269,8 @@ void
  * @param callback_func
  *        the user func to call
  *
- * @param callback_user_arg
- *        user arg that will be passed to callback
+ * @param callback_user_args
+ *        user args that will be passed to callback
  *
  * @param space
  *        The space with which to register this callback
@@ -309,7 +288,7 @@ globus_callback_space_register_oneshot(
     globus_callback_handle_t *          callback_handle,
     const globus_reltime_t *            delay_time,
     globus_callback_func_t              callback_func,
-    void *                              callback_user_arg,
+    void *                              callback_user_args,
     globus_callback_space_t             space);
 
 /* @} */
@@ -339,8 +318,8 @@ globus_callback_space_register_oneshot(
  * @param callback_func
  *        the user func to call
  *
- * @param callback_user_arg
- *        user arg that will be passed to callback
+ * @param callback_user_args
+ *        user args that will be passed to callback
  *
  * @param space
  *        The space with which to register this callback
@@ -360,7 +339,7 @@ globus_callback_space_register_periodic(
     const globus_reltime_t *            delay_time,
     const globus_reltime_t *            period,
     globus_callback_func_t              callback_func,
-    void *                              callback_user_arg,
+    void *                              callback_user_args,
     globus_callback_space_t             space);
 
 /**
@@ -387,11 +366,10 @@ globus_callback_space_register_periodic(
  *
  * @param unregister_callback
  *        the function to call when the callback has been canceled and
- *        there are no running instances of it. This will be
- *        delivered to the same space used in the register call.
+ *        there are no running instances of it
  *
- * @param unreg_arg
- *        user arg that will be passed to the unregister callback
+ * @param unreg_args
+ *        user args that will be passed to the unregister callback
  *
  * @param active
  *        storage for an indication of whether the callback was running when
@@ -409,7 +387,7 @@ globus_result_t
 globus_callback_unregister(
     globus_callback_handle_t            callback_handle,
     globus_callback_func_t              unregister_callback,
-    void *                              unreg_arg,
+    void *                              unreg_args,
     globus_bool_t *                     active);
 
 /**
@@ -834,129 +812,6 @@ globus_callback_space_get_depth(
 globus_bool_t
 globus_callback_space_is_single(
     globus_callback_space_t             space);
-
-/* @} */
-
-/**
- * @defgroup globus_callback_signal Globus Callback Signal Handling
- *
- * @htmlonly
- * <a href="main.html" target="_top">View documentation without frames</a><br>
- * <a href="index.html" target="_top">View documentation with frames</a><br>
- * @endhtmlonly
- */
-/* @{ */
-
-/**
- * @hideinitializer
- * 
- * Use this to trap interrupts (SIGINT on unix).  In the future, this will
- * also map to handle ctrl-C on win32.
- */
-#ifdef SIGINT
-#define GLOBUS_SIGNAL_INTERRUPT SIGINT
-#else
-#define GLOBUS_SIGNAL_INTERRUPT 0
-#endif
-
-/**
- * Fire a callback when the specified signal is received.
- * Note that there is a tiny delay between the time this call returns
- * and the signal is actually handled by this library.  It is likely that, if
- * the signal was received the instant the call returned, it will be lost
- * (this is normally not an issue, since you
- * would call this in your startup code anyway)
- *
- * @param signum
- *        The signal to receive. The following signals are not allowed:
- *        SIGKILL, SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGIOT, SIGPIPE,
- *        SIGEMT, SIGSYS, SIGTRAP, SIGSTOP, SIGCONT, and SIGWAITING
- *
- * @param persist
- *        If GLOBUS_TRUE, keep this callback registered for multiple
- *        signals.  If GLOBUS_FALSE, the signal handler will
- *        automatically be unregistered once the signal has been received.
- *
- * @param callback_func
- *        the user func to call when a signal is received
- *
- * @param callback_user_arg
- *        user arg that will be passed to callback
- *
- * @param space
- *        the space to deliver callbacks to.
- *
- * @return
- *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE
- *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT
- *        - GLOBUS_SUCCESS otherwise
- */
-globus_result_t
-globus_callback_space_register_signal_handler(
-    int                                 signum,
-    globus_bool_t                       persist,
-    globus_callback_func_t              callback_func,
-    void *                              callback_user_arg,
-    globus_callback_space_t             space);
-
-/**
- * Unregister a signal handling callback
- *
- * @param signum
- *        The signal to unregister.
- *
- * @param unregister_callback
- *        the function to call when the callback has been canceled and
- *        there are no running instances of it (may be NULL). This will be
- *        delivered to the same space used in the register call.
- *
- * @param unreg_arg
- *        user arg that will be passed to callback
- *
- * @return
- *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT
- *          if this signal was registered with persist == false, then
- *          there is a race between a signal actually being caught and
- *          therefor automatically unregistered and the attempt to manually
- *          unregister it.  If that race occurs, you will receive this error
- *          just as you would for any signal not registered.
- *        - GLOBUS_SUCCESS otherwise
- */
-globus_result_t
-globus_callback_unregister_signal_handler(
-    int                                 signum,
-    globus_callback_func_t              unregister_callback,
-    void *                              unreg_arg);
-
-/**
- * Register a wakeup handler with callback library
- * 
- * This is really only needed in non-threaded builds, but for cross builds
- * should be used everywhere that a callback may sleep for an extended period
- * of time.
- * 
- * An example use is for an io poller that sleeps indefinitely on select().  If
- * the callback library receives a signal that it needs to deliver asap, it
- * will call the wakeup handler(s), These wakeup handlers must run as though
- * they were called from a signal handler (dont use any thread utilities).
- * The io poll example will likely write a single byte to a pipe that select()
- * is monitoring.
- * 
- * This handler will not be unregistered until the callback library is
- * deactivated (via common).
- * 
- * @param wakeup
- *       function to call when callback library needs you to return asap
- *       from any blocked callbacks.
- * 
- * @param user_arg
- *       user data that will be passed along in the wakeup handler
- * 
- */
-void
-globus_callback_add_wakeup_handler(
-    void                                (*wakeup)(void *),
-    void *                              user_arg);
 
 /* @} */
 

@@ -14,7 +14,6 @@ SUBDIRS= \
 # If this directory builds multiple programs or libraries than these sources
 # will need to be seperated into seperate macros.
 Sources= \
-    globus_common_log_test.c \
 	globus_common_args_test.c \
 	globus_common_error_string_test.c \
 	globus_common_error_test.c \
@@ -119,7 +118,6 @@ EXTRA_DIST = $(Scripts) $(Data)
 # You can also use any directory defined by a macro of the form 
 # <directory_name>dir
 test_PROGRAMS= \
-    globus_common_log_test \
 	globus_common_args_test \
 	globus_common_error_string_test \
 	globus_common_error_test \
@@ -135,10 +133,6 @@ test_PROGRAMS= \
 	globus_common_strptime_test \
 	globus_common_handle_table_test \
 	globus_common_libcsetenv_test	
-
-globus_common_log_test_SOURCES = globus_common_log_test.c
-globus_common_log_test_LDFLAGS = $(GPT_LDFLAGS)
-globus_common_log_test_LDADD = $(GPT_PGM_LINKS)
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.

@@ -1101,7 +1101,6 @@ globus_i_xio_http_server_read_next_request_callback(
 
     globus_xio_driver_operation_destroy(
             http_handle->read_operation.operation);
-    http_handle->read_operation.operation = NULL;
 
     globus_mutex_unlock(&http_handle->mutex);
 

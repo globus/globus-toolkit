@@ -12,8 +12,6 @@
  *   Set transfer encoding (for HTTP/1.1 transfers only)
  * - -b buffer-size<br>
  *   Set the size (in bytes) to be read/written at a time
- * - -i iterations
- *   Set the number of transfer iterations to do
  *
  * The test client will send the POST request for the /post-test URI.
  *
@@ -48,7 +46,6 @@ char *                                  transfer_encoding = NULL;
 globus_xio_driver_t                     tcp_driver;
 globus_xio_driver_t                     http_driver;
 globus_xio_stack_t                      stack;
-int                                     iterations = 1;
 
 #define HTTP_1_0 "HTTP/1.0"
 #define HTTP_1_1 "HTTP/1.1"
@@ -107,7 +104,6 @@ static void usage(const char * cmd)
             "Options:\n"
             "    -v \"HTTP/1.0\" | \"HTTP/1.1\"    HTTP version\n"
             "    -t \"chunked\" | \"identity\"     Client Transfer-Encoding\n"
-            "    -i iterations                     Set number of iterations\n"
             "    -b buffer-size                    Size of reads and writes\n",
             cmd);
 }
@@ -124,7 +120,6 @@ client_main(
     char                                content_length_buffer[64];
     globus_xio_http_header_t            headers[2];
     globus_xio_handle_t                 handle;
-    int                                 i;
 
     rc = globus_l_xio_test_read_file(filename);
     if (rc != 0)
@@ -153,81 +148,66 @@ client_main(
         header_cnt++;
     }
 
-    handle = NULL;
-    for (i = 0; i < iterations; i++)
+    result = http_test_client_request(
+            &handle,
+            tcp_driver,
+            http_driver,
+            stack,
+            contact,
+            "%2fpost-test",
+            "POST",
+            http_version,
+            headers,
+            header_cnt,
+            globus_l_xio_test_client_response_callback,
+            NULL);
+
+    if (result != GLOBUS_SUCCESS)
     {
+        fprintf(stderr, "Error making request: %s\n",
+                globus_object_printable_to_string(globus_error_get(result)));
+        rc = 50;
+        goto error_exit;
+    }
 
-        if (handle != NULL)
-        {
-            globus_xio_close(handle, NULL);
-        }
-        result = http_test_client_request(
-                &handle,
-                tcp_driver,
-                http_driver,
-                stack,
-                contact,
-                "%2fpost-test",
-                "POST",
-                http_version,
-                headers,
-                header_cnt,
-                globus_l_xio_test_client_response_callback,
-                NULL);
+    result = globus_l_xio_test_write_buffer(
+            handle,
+            message_body,
+            file_size,
+            buffer_size);
 
-        if (result != GLOBUS_SUCCESS)
-        {
-            fprintf(stderr, "Error making request: %s\n",
-                    globus_object_printable_to_string(
-                    globus_error_get(result)));
-            rc = 50;
-            goto error_exit;
-        }
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = 51;
+        goto close_exit;
+    }
 
-        result = globus_l_xio_test_write_buffer(
+    globus_mutex_lock(&mutex);
+    while (done == 0)
+    {
+        globus_cond_wait(&cond, &mutex);
+    }
+    globus_mutex_unlock(&mutex);
+
+    if (done == 1)
+    {
+        result = globus_l_xio_test_read_buffer(
                 handle,
                 message_body,
                 file_size,
                 buffer_size);
-
-        if (result != GLOBUS_SUCCESS)
-        {
-            rc = 51;
-            break;
-        }
-
-        globus_mutex_lock(&mutex);
-        while (done == 0)
-        {
-            globus_cond_wait(&cond, &mutex);
-        }
-
-        if (done == 1)
-        {
-            result = globus_l_xio_test_read_buffer(
-                    handle,
-                    message_body,
-                    file_size,
-                    buffer_size);
-        }
-        else
-        {
-            rc = 53;
-        }
-
-        if (result != GLOBUS_SUCCESS)
-        {
-            rc = 52;
-        }
-        done = 0;
-
-        if (rc != 0)
-        {
-            break;
-        }
-        globus_mutex_unlock(&mutex);
+    }
+    else
+    {
+        rc = 53;
     }
 
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = 52;
+    }
+
+close_exit:
     globus_xio_close(handle, NULL);
 error_exit:
     if (rc == 0)
@@ -386,11 +366,8 @@ globus_l_xio_test_server_request_callback(
         goto error_exit;
     }
 
-    if (--iterations == 0)
-    {
-        http_test_server_close_handle(test_server);
-        http_test_server_shutdown(test_server);
-    }
+    http_test_server_close_handle(test_server);
+    http_test_server_shutdown(test_server);
 
     return;
 
@@ -622,7 +599,7 @@ globus_l_xio_test_read_buffer(
             offset += nbytes;
         }
     }
-    if (offset == message_size && http_is_eof(result))
+    if (offset == message_size && globus_xio_error_is_eof(result))
     {
         result = GLOBUS_SUCCESS;
     }
@@ -656,7 +633,7 @@ main(
     globus_bool_t                       server = GLOBUS_FALSE;
     char                                gets_buffer[1024];
 
-    while ((rc = getopt(argc, argv, "hf:cst:b:v:i:")) != EOF)
+    while ((rc = getopt(argc, argv, "hf:cst:b:v:")) != EOF)
     {
         switch (rc)
         {
@@ -710,15 +687,6 @@ main(
                     exit(1);
                 }
                 break;
-            case 'i':
-                iterations = atoi(optarg);
-
-                if (iterations <= 0)
-                {
-                    usage(argv[0]);
-                    exit(1);
-                }
-                break;
             default:
                 usage(argv[0]);
                 exit(1);
@@ -726,14 +694,6 @@ main(
     }
     if (((!server) && (contact == NULL)) || (filename == NULL))
     {
-        usage(argv[0]);
-        exit(1);
-    }
-
-    if (iterations > 1 && version == GLOBUS_XIO_HTTP_VERSION_1_0)
-    {
-        fprintf(stderr,
-                "Can't have multiple iterations with HTTP/1.0 server\n");
         usage(argv[0]);
         exit(1);
     }

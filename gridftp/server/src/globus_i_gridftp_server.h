@@ -8,8 +8,6 @@ typedef struct
 {
     globus_xio_handle_t             xio_handle;
     char *                          remote_contact;
-    char *                          rnfr_pathname;
-    globus_gridftp_server_operation_t op;
     
     union
     {
@@ -34,51 +32,7 @@ typedef struct
     char                                type;
     int                                 tcp_bufsize;
     globus_size_t                       blocksize;
-        
-    globus_ftp_control_protection_t     prot;
-    globus_ftp_control_dcau_t           dcau;
-    gss_cred_id_t                       delegated_cred;
 } globus_i_gfs_data_attr_t;
-
-typedef struct
-{
-    /* XXX this shouldn't be passed from control->data*/
-    globus_gridftp_server_control_op_t  control_op;
-
-    globus_range_list_t                 range_list;
-    globus_off_t                        partial_offset;
-    globus_off_t                        partial_length;
-            
-} globus_i_gfs_op_attr_t;
-
-typedef enum
-{
-    GLOBUS_I_GFS_CMD_MKD,
-    GLOBUS_I_GFS_CMD_RMD,
-    GLOBUS_I_GFS_CMD_DELE,
-    GLOBUS_I_GFS_CMD_RNTO,
-    GLOBUS_I_GFS_CMD_RNFR,
-    GLOBUS_I_GFS_CMD_CKSM,
-    GLOBUS_I_GFS_CMD_SITE_CHMOD
-} globus_i_gfs_command_t;
-
-
-typedef struct
-{
-    globus_i_gfs_command_t              command;
-    char *                              pathname;
-
-    globus_off_t                        cksm_offset;
-    globus_off_t                        cksm_length;
-    char *                              cksm_alg;
-    char *                              cksm_response;
-    
-    mode_t                              chmod_mode;
-    
-    char *                              rnfr_pathname;    
-/* XXX use a union here when we get into commands with different args */
-            
-} globus_i_gfs_cmd_attr_t;
 
 typedef struct
 {
@@ -106,7 +60,6 @@ typedef union
 typedef enum
 {
     GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN,
-    GLOBUS_I_GFS_EVENT_UPDATE_BYTES,
     GLOBUS_I_GFS_EVENT_DISCONNECTED
 } globus_i_gfs_event_t;
 

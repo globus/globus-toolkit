@@ -107,9 +107,6 @@ typedef void *(*globus_thread_func_t)(void *);
 #define GLOBUS_THREAD_RETURN_USES_ERRNO
 #endif
 
-#define GLOBUS_THREAD_CANCEL_ENABLE PTHREAD_CANCEL_ENABLE
-#define GLOBUS_THREAD_CANCEL_DISABLE PTHREAD_CANCEL_DISABLE
-
 typedef void (*globus_thread_key_destructor_func_t)(void *value);
 
 typedef struct globus_i_thread_global_vars_s
@@ -333,19 +330,7 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
 
 #endif /* PORTS0_RETURN_USES_ERRNO */
 
-#define globus_macro_thread_sigmask(how, newmask, oldmask) \
-    pthread_sigmask((how), (newmask), (oldmask))
-#define globus_macro_thread_cancel(thread) \
-    pthread_cancel((thread))
-#define globus_macro_thread_cleanup_push(func, arg) \
-    pthread_cleanup_push((func), (arg))
-#define globus_macro_thread_cleanup_pop(execute) \
-    pthread_cleanup_pop((execute))
-#define globus_macro_thread_testcancel() \
-    pthread_testcancel()
-#define globus_macro_thread_setcancelstate(state, oldstate) \
-    pthread_setcancelstate((state), (oldstate))
-    
+
 /* callback space handling macros */
 #define globus_macro_condattr_space_init(attr) \
     (globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE), \
@@ -468,15 +453,6 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
 #define globus_condattr_getspace(A,S) \
     globus_macro_condattr_getspace(A,S)
 
-#define globus_thread_sigmask(how, newmask, oldmask) \
-    globus_macro_thread_sigmask(how, newmask, oldmask)
-#define globus_thread_cancel(thread) \
-    globus_macro_thread_cancel(thread)
-#define globus_thread_testcancel() \
-    globus_macro_thread_testcancel()
-#define globus_thread_setcancelstate(state, oldstate) \
-    globus_macro_thread_setcancelstate(state, oldstate)
-
 #else  /* USE_MACROS */
 
 extern int		globus_threadattr_init(globus_threadattr_t *attr);
@@ -539,34 +515,6 @@ globus_condattr_getspace(
     globus_condattr_t *                 attr,
     int *                               space);
 
-extern int
-globus_thread_sigmask(
-    int                                 how,
-    const sigset_t *                    newmask,
-    sigset_t *                          oldmask);
-
-extern int
-globus_thread_cancel(
-    globus_thread_t                     thread);
-
-extern void
-globus_thread_testcancel(void);
-
-extern int
-globus_thread_setcancelstate(
-    int                                 state,
-    int *                               oldstate);
-
-#endif /* USE_MACROS */
-
-/* these cant be implemented as functions, they're already macros and must be
- * matched (see man pthread_cancel_push)
- */
-#define globus_thread_cleanup_push(func, arg) \
-    globus_macro_thread_cleanup_push(func, arg)
-#define globus_thread_cleanup_pop(execute) \
-    globus_macro_thread_cleanup_pop(execute)
-
 /******************************************************************************
 			       Module definition
 ******************************************************************************/
@@ -577,6 +525,8 @@ extern globus_module_descriptor_t	globus_i_thread_module;
 #define GLOBUS_THREAD_MODULE (&globus_i_thread_module)
 
 EXTERN_C_END
+
+#endif /* USE_MACROS */
 
 globus_bool_t
 globus_thread_preemptive_threads(void);

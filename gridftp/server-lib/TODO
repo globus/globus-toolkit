@@ -1,73 +1,85 @@
-MUST HAVE
---------------------------------------------------------------
-SERVER:
--instrument logging in server
--implement abort_cb on server side
--verify data destroy working on server end (and no leaks!)
--call control_disconnected() when needed
--server mem management... i know there are some leaks with attrs and now with instance for event stuff
--mimic wu cmdline opt names when applicable i.e. -S -p etc etc (important now so people don't start using opts that we will drop)
--verify inetd is prepped right
--return from event cb immediately
-
-LIB:
--verify feat list
--decide if locking in event cb is right api decision
-
-BOTH:
--add proper return vals/messages for error situations
--verify reply codes
--recheck exit/quit/abort states (after server abort/exit stuff is good)
-
---------------------------------------------------------------
-
-OTHER: (non-code)
-merge with trunk (i assume 3.3. will be cut from trunk)
-update gridftp-server-stable-branch tag
-verify shit still works after that!
+send control channel connection ip with pasv op so pasv response ip will match
+ip that client connected to.
 
 
+ At a very high level it needs to support login, security, basic
+info/configuration, data movement, channel caching, restart functionality,
+performance markers, files system ops, and the one new thing, IPV6
+support.  I have people who can provide us platforms for basic IPV6 testing \
+and they will do the majority of the testing for us on IPV6.
 
+Ok, so now the details:
 
-if time, desire, etc etc:
---------------------------------------------------------------
-SERVER:
--make forking/daemon mode better (maybe leave this out for now)
--define logging classes in config
--implement setuid/setgid to anonymous_user
--produce netlogger output (based on event timer i guess?... -Z option in wu)
--global config opts can be non-overridable, or forced to a range
--think about config val checking/verification
--sync(2) before each transfer stat update (by option only, unless it doesn't affect perf)
--make sure server will work with tcpd
+Login:
+USER?, PASS? (Not sure if we need these, I think we fill them with bogus
+values.  Also need to decide if we want to honor anonymous logins)
+DCAU N,Y, PROT P,S,C
+  -- server library takes care of control channel security
+  -- data channel security?
+     -- how do we can the certificate
+Banners
+  -- pre authentication
+  -- post auth
+  -- terse
+  
+(ala tcpd)
 
-LIB:
--additional functionality for STAT (959 says transfer stats and other shit)
--additional command to get server version
+mike eats the ass.
+-- yes it is true
 
---------------------------------------------------------------
+Security:
+PBSZ
+-- find out what the server should do (joe)
 
+Info/Configuration:
+FEAT, DCAU
 
+LIST, MLST, MDTM, MLSD
+MDTM on a directory.
+-- general functionality
+-- mlst extenstions
 
+Data Movement:
+ESTO, ERET
+-- check these, verify partial
 
+REST
+TREV
 
+File System Ops:
+MKDIR, RMDIR, SITE CHMOD, DELE, RETO, REFR
 
+CKSM, ABOR
 
+IPV6:
+EPRT, EPSV
 
+Timeouts
+-- configuarable
 
+Server config
+Heirarchy should be Master config, local config, env variable.
+Should some things be unable to be over-ridden YES, NO, RANGE
+Restrict port range from a configuration file.
+accept KB, MB, GB as specifiers for buffer sizes, etc.
 
+disable connections; important if run from inetd.  also for benchmarking
+purposes.
 
+Logging
 
+Sudharshan equivilent
 
+netlogger instrumentation
 
+Anon support
 
-(old shit that was already here)
-partial
--- add offset to tranfer func callout
+read from /dev/zero write to /dev/null
+--or equalvalent
 
-test
---crazy messages sent to server
+server version command (query the server for its version)
+-- post authentication version command?
+-- how is this different than a post auth banner?
 
-errors
--- create error codes for user
--- check proper replys etc
+For module select commands (ERET, ESTO) how to get list of installed
+modules.  FEAT and HELP responses.
