@@ -599,6 +599,7 @@ main(
     free(issuer);
     free(identity);
 
+    globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
     globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
 
     return (is_valid);
