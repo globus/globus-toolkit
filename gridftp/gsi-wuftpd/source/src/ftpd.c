@@ -665,11 +665,12 @@ int i = 0;
 #ifndef DAEMON
     struct servent *serv;
 #endif
-    extern char **environ;
-    
 #ifdef GLOBUS_AUTHORIZATION
-    char *globus_authorization_config_file = NULL /* Use Default */;
-#endif /* GLOBUS_AUTHORIZATION */
+    char *my_hostname = 0;
+    char *authz_cfg_file = 0;
+#endif
+
+    extern char **environ;
     
     /* generate version string; populates char * version global*/
     gsi_wuftp_get_version();
@@ -726,9 +727,9 @@ int i = 0;
 #endif /* DAEMON */
 
 #ifndef DAEMON
-    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1G:c:")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1G:H:")) != -1) {
 #else /* DAEMON */
-    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1G:c:")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1G:H:")) != -1) {
 #endif /* DAEMON */
 	switch (c) {
 
@@ -861,23 +862,18 @@ int i = 0;
 	case '1':
 	    debug_no_fork = 1;
 	    break;
-
-        case 'c':
-#ifdef GLOBUS_AUTHORIZATION
- 	    if ((optarg != NULL) && (optarg[0] != '\0'))
-            {
- 		globus_authorization_config_file =
-                    strdup(optarg);
- 	    }
-#else /* !GLOBUS_AUTHORIZATION */
-            syslog(LOG_ERR, "Not build with Globus authorization libraries: -c option ignored");
-#endif /* !GLOBUS_AUTHORIZATION */
- 	    break;
             
 	case 'G':
 	    globus_libc_setenv("GLOBUS_LOCATION", optarg, 1);
 	    break;
 
+	case 'H':
+#ifdef GLOBUS_AUTHORIZATION
+	    my_hostname = strdup(optarg);
+#else
+	    syslog(LOG_ERR, "Not built with Globus authorization libraries: -%c option ignored", optopt);
+#endif
+	    break;
 	default:
 	    syslog(LOG_ERR, "unknown option -%c ignored", optopt);
 	    break;
@@ -1078,8 +1074,8 @@ int i = 0;
     gssapi_setup_environment();
 
 #ifdef GLOBUS_AUTHORIZATION
-    if (!ftp_authorization_initialize(globus_authorization_config_file,
-                                      ftp_authorization_error_buffer,
+    if (!ftp_authorization_initialize(my_hostname,
+				      ftp_authorization_error_buffer,
                                       sizeof(ftp_authorization_error_buffer)))
     {
         syslog(LOG_ERR,
@@ -1902,6 +1898,28 @@ void user(char *name)
     DelayedMessageFile[0] = '\0';
 #endif
 
+#if (defined(GSSAPI) && defined(GLOBUS_AUTHORIZATION))
+    if (!ftp_authorization_initialize_sc(gssapi_get_gss_ctx_id_t(),
+                                         ftp_authorization_error_buffer,
+                                         sizeof(ftp_authorization_error_buffer)))
+    {
+        syslog(LOG_NOTICE,
+               "Error initializing gss security context for authorization: %s",
+               ftp_authorization_error_buffer);
+
+        /*
+         * Could probably reply with something better here, but what
+         * escapes me at the moment.
+         */
+        reply(530,
+              "Error initializing gss security context for authorization: %s",
+              ftp_authorization_error_buffer);
+        return;
+    }
+    syslog(LOG_INFO, "authenticated identity is %s, authz identity is %s",
+	   gssapi_audit_identity(), gssapi_identity());
+#endif (defined(GSSAPI) && defined(GLOBUS_AUTHORIZATION))
+
 #ifdef GSSAPI
     if (gssapi_authentication_required)
     {
@@ -1935,28 +1953,10 @@ void user(char *name)
 	    return;
 	}
 	if (debug)
-	    syslog(LOG_INFO, "Globus user maps to local user %s", name);
+	    syslog(LOG_INFO, "Globus user %s maps to local user %s",
+		   identity, name);
     }	
 
-#ifdef GLOBUS_AUTHORIZATION
-    if (!ftp_authorization_initialize_sc(gssapi_get_gss_ctx_id_t(),
-                                         ftp_authorization_error_buffer,
-                                         sizeof(ftp_authorization_error_buffer)))
-    {
-        syslog(LOG_NOTICE,
-               "Error initializing gss security context for authorization: %s",
-               ftp_authorization_error_buffer);
-
-        /*
-         * Could probably reply with something better here, but what
-         * escapes me at the moment.
-         */
-        reply(530,
-              "Error initializing gss security context for authorization: %s",
-              ftp_authorization_error_buffer);
-        return;
-    }
-#endif /* GLOBUS_AUTHORIZATION */
 #endif /* GSSAPI_GLOBUS */
 
 #ifdef	BSD_AUTH

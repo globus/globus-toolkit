@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 
 #ifdef GLOBUS_AUTHORIZATION
-#include "globus_auth.h"
+#include "globus_gsi_authz.h"
 #endif /* GLOBUS_AUTHORIZATION */
 
 #define TIME_DELAY_112  5
@@ -36,8 +36,33 @@ static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
 
 #ifdef GLOBUS_AUTHORIZATION
-static globus_authorization_handle_t globus_auth_handle;
+#define FTP_PROTO_STRING "ftp://"
+#define FTP_SERVICE_NAME "file"
 extern char chroot_path[];   /* From ftpd.c */
+static char *Urlbase = 0;
+static globus_gsi_authz_handle_t	    Authz_handle = 0;
+
+static void
+ftp_l_authz_handle_init_callback(void *				cb_arg,
+				 globus_gsi_authz_handle_t 	handle,
+				 globus_result_t		result);
+
+static void
+ftp_l_authorize_callback(void *				cb_arg,
+			 globus_gsi_authz_handle_t 	handle,
+			 globus_result_t		result);
+
+static void
+ftp_l_authz_handle_destroy_callback(void *				cb_arg,
+				 globus_gsi_authz_handle_t 	handle,
+				 globus_result_t		result);
+
+static void
+ftp_l_authz_get_authorization_identity_callback(
+    void *			cb_arg,
+    globus_gsi_authz_handle_t 	handle,
+    globus_result_t		result);
+
 #endif /* GLOBUS_AUTHORIZATION */
 
 globus_bool_t g_eof_receive = GLOBUS_FALSE;
@@ -2593,34 +2618,73 @@ int ftp_check_authorization(char * object,
                             char * action)
 {
     char                realname[MAXPATHLEN];
-    
-    
-    if (object[0] != '\0')
+    char		url[2*(MAXPATHLEN)];
+    int			nchars;
+    globus_result_t	result;
+
+    if (! (object && action && *action))
     {
-        /*
-         * I believe this function basically just appends object to
-         * chroot and returns the result in realname.
-         * It will return NULL on error (buffer overflow).
-         */
-        if (wu_realpath(object, realname, chroot_path) == NULL)
-        {
-            return 0;
-        }
-    }
-    else
-    {
-        strcpy(realname, object);
+	syslog(LOG_INFO, "ftp_check_authorization: null object or action");
+	return(0);
     }
 
-    if (globus_authorization_eval(globus_auth_handle,
-                                  realname,
-                                  "file",
-                                  action) != GLOBUS_SUCCESS)
+    if (! (Urlbase && *Urlbase))
     {
-        return 0;
+	syslog(LOG_NOTICE,
+	       "ftp_check_authorization:  ftp authorization system was not initialized");
+	return(0);
     }
-    
-    return 1;
+
+    /*
+     * I believe this function basically just appends object to
+     * chroot and returns the result in realname.
+     * It will return NULL on error (buffer overflow).
+     */
+    if (wu_realpath(object, realname, chroot_path) == NULL)
+    {
+	syslog(LOG_INFO,
+	       "ftp_check_authorization: could not get pathname for object '%s'",
+	       object);
+	syslog(LOG_DEBUG,
+	       "ftp_check_authorization: chroot_path was '%s'",
+	       (chroot_path ? chroot_path : ""));
+	return(0);
+    }
+
+    nchars = globus_libc_snprintf(url,
+				  sizeof(url),
+				  "%s%s",
+				  Urlbase,
+				  realname);
+    if ((nchars < 0) || (nchars >= sizeof(url)-1))
+    {
+	syslog(LOG_INFO,
+	       "ftp_check_authorization: could not construct URL for object '%s'",
+	       object);
+	syslog(LOG_DEBUG,
+	       "ftp_check_authorization: Urlbase was '%s'",
+	       Urlbase);
+	syslog(LOG_DEBUG,
+	       "ftp_check_authorization: realpath was '%s'",
+	       realpath);
+	return(0);
+    }
+
+    syslog(LOG_DEBUG, "ftp_check_authorization: url is '%s'", url);
+    result = globus_gsi_authorize(Authz_handle,
+				  action,
+				  url,
+				  ftp_l_authorize_callback, 
+				  0);
+    if (result != GLOBUS_SUCCESS)
+    {
+	syslog(LOG_INFO,
+	       "ftp_check_authorization: authz denied or failed: %s",
+	       globus_error_print_chain(globus_error_get(result)));
+	return(0);
+    }
+
+    return(1);
 }
 
 char **
@@ -2644,46 +2708,57 @@ ftp_i_list_possible_actions()
  *
  * Initializes the globus authorization handle
  *
- * Parameters: cffile      -globus authorization config file  
- *             errstr      -Buffer for returning an error message
- *             errstr_len  -length of errstr buffer
+ * Parameters: use_hostname  -use <use_hostname> (instead of gethostname()) 
+ *                            when comparing URLs in policy statements
+ *             errstr        -Buffer for returning an error message
+ *             errstr_len    -length of errstr buffer
  * 
  * returns:    1  success
  *             0  failure
  */
 
-int ftp_authorization_initialize(char *         cffile,
-                                 char *         errstr,
+int ftp_authorization_initialize(char *         use_hostname,
+				 char *		errstr,
                                  int            errstr_len)
 {
-    globus_auth_result_t                result;
-    char *                              service_type = "file";
-    char                                urlbase[262];
+    globus_result_t	                result;
+    char *              	        service_type = "file";
+    char                                hostbuf[256];
+    char *				hostname = 0;
 
-    strcpy(urlbase,"ftp://");
-
-    if(globus_libc_gethostname(&urlbase[6],256) == -1)
+    if (use_hostname && *use_hostname)
     {
-        strncpy(errstr,"Unable to resolve ftp server hostname",errstr_len);
-        return 0;
+	hostname = use_hostname;
+    }
+    else
+    {
+	if(globus_libc_gethostname(hostbuf, sizeof(hostbuf)-1) == -1)
+	{
+	    strncpy(errstr,
+		    "Unable to resolve ftp server hostname",
+		    errstr_len);
+	    return 0;
+	}
+	
+	hostbuf[sizeof(hostbuf)-1]='\0';
+	hostname = hostbuf;
     }
 
-    urlbase[261]='\0';
-    result = globus_authorization_handle_init(&globus_auth_handle,
-                                              cffile,
-                                              ftp_i_list_possible_actions(),
-                                              urlbase,
-                                              service_type);
-
-    if (result != GLOBUS_SUCCESS)
+    if ((Urlbase = globus_libc_malloc(sizeof(FTP_PROTO_STRING) +
+				      strlen(hostname) + 1)) == 0)
     {
-        globus_result_get_error_string(result, errstr, errstr_len);
-        
-        globus_result_destroy(result);
-        
-        return 0;
+	strncpy(errstr, "malloc failed", errstr_len);
+	return 0;
     }
-    
+
+    sprintf(Urlbase, "%s%s", FTP_PROTO_STRING, hostname);
+
+    if (globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE) != GLOBUS_SUCCESS)
+    {
+	strncpy(errstr, "activation of authz module failed", errstr_len);
+	return 0;
+    }
+
     return 1;
 }
 
@@ -2705,19 +2780,22 @@ int ftp_authorization_initialize_sc(gss_ctx_id_t        ctx,
                                     char *              errstr,
                                     int                 errstr_len)
 {
-    globus_auth_result_t            result;
-    
-    result = globus_authorization_handle_set_gss_ctx(globus_auth_handle,
-                                                     ctx);
+    globus_result_t	            result;
+    syslog(LOG_DEBUG, "entering ftp_init_sc");        
+    result = globus_gsi_authz_handle_init(&Authz_handle,
+					  FTP_SERVICE_NAME,
+					  ctx,
+					  ftp_l_authz_handle_init_callback,
+					  0);
+
     if (result != GLOBUS_SUCCESS)
     {
-        globus_result_get_error_string(result, errstr, errstr_len);
-        
-        globus_result_destroy(result);
-        
+	strncpy(errstr,
+		globus_error_print_chain(globus_error_get(result)),
+		errstr_len);
         return 0;
     }
-    
+    syslog(LOG_DEBUG, "ftp_init_sc succeeded");    
     return 1;
 }
 
@@ -2734,7 +2812,62 @@ int ftp_authorization_initialize_sc(gss_ctx_id_t        ctx,
 
 void ftp_authorization_cleanup(void)
 {
-    globus_authorization_handle_destroy(&globus_auth_handle);
+
+   (void)globus_gsi_authz_handle_destroy(Authz_handle,
+					 ftp_l_authz_handle_destroy_callback,
+					 0);
+   Authz_handle = 0;
+
+   (void)globus_module_deactivate(GLOBUS_GSI_AUTHZ_MODULE);
+}
+
+
+char *
+ftp_authz_identity()
+{
+    globus_result_t	result;
+    char *		identity = 0;
+
+    result = globus_gsi_authz_get_authorization_identity (
+	Authz_handle,
+	&identity,
+	ftp_l_authz_get_authorization_identity_callback,
+	0);
+    if (result != GLOBUS_SUCCESS)
+    {
+	syslog(LOG_INFO, "error getting authorization identity");
+	return(0);
+    }
+    return(identity);
+}
+
+static void
+ftp_l_authz_handle_init_callback(void *				cb_arg,
+				 globus_gsi_authz_handle_t 	handle,
+				 globus_result_t		result)
+{
+}
+
+static void
+ftp_l_authorize_callback(void *				cb_arg,
+			 globus_gsi_authz_handle_t 	handle,
+			 globus_result_t		result)
+{
+}
+
+static void
+ftp_l_authz_handle_destroy_callback(void *				cb_arg,
+				    globus_gsi_authz_handle_t 	handle,
+				    globus_result_t		result)
+{
+}
+
+static void
+ftp_l_authz_get_authorization_identity_callback(
+    void *			cb_arg,
+    globus_gsi_authz_handle_t 	handle,
+    globus_result_t		result)
+{
 }
 
 #endif /* GLOBUS_AUTHORIZATION */

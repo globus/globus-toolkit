@@ -54,7 +54,7 @@ gsi_wuftp_get_version(void)
       version,
       "GridFTP Server %d.%d"
 #ifdef GLOBUS_AUTHORIZATION
-      " CAS enabled" 
+      " CAS/SAML enabled" 
 #endif
       " GSSAPI type"
 #ifdef GSSAPI_GLOBUS

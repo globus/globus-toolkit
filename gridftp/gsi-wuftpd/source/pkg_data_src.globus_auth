@@ -10,9 +10,9 @@
 
     <src_pkg >
 	<Source_Dependencies Type="compile" >
-	    <Dependency Name="globus_auth">
-		<Version>
-		    <Simple_Version Major="0"></Simple_Version>
+	    <Dependency Name="globus_authz" >
+		<Version >
+		    <Simple_Version Major="0" />
 		</Version>
 	    </Dependency>
 	</Source_Dependencies>

@@ -240,7 +240,7 @@ if test "$globus_authorization" = "yes"; then
 	rm ./gpt_build_temp.sh
 
 	inc="${GLOBUS_LOCATION}/include"
-	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
+	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS} -DGLOBUS_AUTHORIZATION"
 	GSSAPI_LDFLAGS="-L${GLOBUS_LOCATION}/lib"
 	GSSAPI_LIBS="${GPT_CONFIG_PGM_LINKS} ${GPT_CONFIG_LIBS}"
     
