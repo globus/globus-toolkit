@@ -2677,6 +2677,8 @@ globus_xio_system_register_close(
 
     GlobusXIOSystemDebugEnterFD(fd);
 
+    GlobusIXIOSystemRemoveNonBlocking(fd, rc);
+
     do
     {
         rc = close(fd);
