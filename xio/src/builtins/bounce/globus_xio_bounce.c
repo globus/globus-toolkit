@@ -47,7 +47,6 @@ typedef struct bounce_info_s
     int                                 iovec_count;
     globus_size_t                       wait_for;
     globus_xio_iovec_t                  tmp_iovec;
-    globus_mutex_t                      mutex;
 } bounce_info_t;
 
 void
@@ -97,7 +96,6 @@ test_bounce_finish_op(
             break;
     }
 
-    globus_mutex_destroy(&info->mutex);
     globus_free(info);
 }
 
@@ -248,7 +246,6 @@ globus_l_xio_bounce_open(
     info->bounce_count = 0;
     info->max_count = MAX_COUNT;
     info->start_op = TEST_OPEN;
-    globus_mutex_init(&info->mutex, NULL);
 
     GlobusXIODriverPassOpen(res, &info->context, op, 
                 bounce_cb, (void*)info);

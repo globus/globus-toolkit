@@ -197,6 +197,19 @@ globus_i_xio_handle_dec(
                 globus_panic(GLOBUS_XIO_MODULE, res, "failed to unregister");
             }
         }
+        if(handle->shutting_down)
+        {
+            globus_assert(handle->sd_monitor != NULL);
+
+            globus_mutex_lock(&handle->sd_monitor->mutex);
+            {
+                handle->sd_monitor->count--;
+                globus_cond_signal(&handle->sd_monitor->cond);
+                handle->shutting_down = GLOBUS_FALSE;
+            }
+            globus_mutex_unlock(&handle->sd_monitor->mutex);
+            handle->sd_monitor = NULL;
+        }
     }
 }
 
