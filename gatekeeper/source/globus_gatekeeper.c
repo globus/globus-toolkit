@@ -617,7 +617,8 @@ main(int xargc,
         else
         {
 
-            fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s \n ",
+            fprintf(stderr, "Unknown argument %s\n", argv[i]);
+            fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s\n ",
                     argv[0], 
                     "{-c parmfile [-test]} | {[-d] [-inetd | -f] [-p port] ",
                     "[-home path] [-l logfile] [-e path] [-jm job_manager]",
@@ -626,8 +627,7 @@ main(int xargc,
                     "[-x509_user_cert file] [-x509_user_key file]",
                     "[-x509_user_proxy file]",
                     "[-k] [-globuskmap file]",
-                    "[-test]",
-                    "[-jmargs job_manager_args ...]}"
+                    "[-test]"
                    );
             exit(1);
         }
