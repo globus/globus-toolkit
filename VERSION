@@ -1,8 +1,17 @@
-This is myproxy v0.5.3 19 Mar 2003
+This is MyProxy v0.5.4 2 May 2003
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.5.4 2 May 2003 (GPT package version 1.6)
+  - myproxy-admin-adduser command added
+  - default lifetime of delegated proxies changed to 12 hours instead of 2
+  - --passphrase option added to myproxy-admin-load-credential
+  - new options (including remove option) added to myproxy-admin-query
+  - compatibility problem with v0.2 (introduced in v0.5.0) fixed
+  - OSX build problem fixed
+  - support for delegating proxies with maximum lifetime added
+
 v0.5.3 19 Mar 2003 (GPT package version 1.5)
   This version fixes a build problem on AIX.
 
