@@ -203,23 +203,19 @@ void GSI_SOCKET_free_token(unsigned char *buffer);
  * but typically a file path. If NULL, the default credentials for
  * the current context will be used.
  *
- * flags is reserved for future use and should currently always be
- * GSI_SOCKET_DELEGATION_FLAGS_DEFAULT.
- *
  * lifetime should be the lifetime of the delegated credentials
  * in seconds. A value of GSI_SOCKET_DELEGATION_LIFETIME_MAXIMUM
  * indicates that the longest possible lifetime should be delegated.
  *
- * restrictions is reserved for future use and should currently always be
- * GSI_SOCKET_DELEGATION_RESTRICTIONS_DEFAULT.
+ * passphrase is the passphrase set for the source_credentials.
+ * NULL if no passphrase is set.
  *
  * Returns GSI_SOCKET_SUCCESS success, GSI_SOCKET_ERROR otherwise.
  */
 int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *gsi_socket,
 				   const char *source_credentials,
-				   int flags,
 				   int lifetime,
-				   const void *restrictions);
+				   const char *passphrase);
 /*
  * Values for GSI_SOCKET_DELEGATION_init() flags:
  */
@@ -244,11 +240,14 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *gsi_socket,
  * the delegated credentials. This is mechanism-specific but
  * probably a file path.
  *
- * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
- */
+ * passphrase is an optional passphrase to use to encrypt the
+ * delegated credentials.  May be NULL.
+ *
+ * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.  */
 int GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *gsi_socket,
 				     char *delegated_credentials,
-				     int delegated_credentials_len);
+				     int delegated_credentials_len,
+				     char *passphrase);
 
 /*
  * GSI_SOCKET_allow_anonymous()

@@ -305,7 +305,7 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
 }
 
 int
-myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime)
+myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime, char *passphrase)
 {
   
   char error_string[1024];
@@ -314,10 +314,9 @@ myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, co
     return -1;
 
   if (GSI_SOCKET_delegation_init_ext(attrs->gsi_socket, 
-				     delegfile,  /* delegation file */
-				     0,          /* flags */
-				     lifetime,   /* lifetime */
-				     NULL        /* restrictions */) == GSI_SOCKET_ERROR) {
+				     delegfile,
+				     lifetime,
+				     passphrase) == GSI_SOCKET_ERROR) {
     
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				sizeof(error_string));
@@ -329,13 +328,13 @@ myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, co
 }
 
 int
-myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int datalen)
+myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int datalen, char *passphrase)
 {
   char error_string[1024];
 
   assert(data != NULL);
 
-  if (GSI_SOCKET_delegation_accept_ext(attrs->gsi_socket, data, datalen) == GSI_SOCKET_ERROR) {
+  if (GSI_SOCKET_delegation_accept_ext(attrs->gsi_socket, data, datalen, passphrase) == GSI_SOCKET_ERROR) {
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				sizeof(error_string));
     verror_put_string("Error accepting delegated credentials: %s\n", error_string);

@@ -704,7 +704,8 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     /* Delegate credentials to client */
     min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
 
-    if (myproxy_init_delegation(attrs, creds->location, min_lifetime) < 0) {
+    if (myproxy_init_delegation(attrs, creds->location, min_lifetime,
+				creds->passphrase) < 0) {
 
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
@@ -731,7 +732,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     if (creds->renewers != NULL)
     	    myproxy_debug("  Renewers = %s", creds->renewers); 
     /* Accept delegated credentials from client */
-    if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
+    if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile), creds->passphrase) < 0) {
 	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
         (response->data).error_str = strdup("Failed to accept credentials.\n"); 

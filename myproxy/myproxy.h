@@ -236,7 +236,7 @@ int  myproxy_recv(myproxy_socket_attrs_t *attrs,
  *
  * returns 0 on success, -1 on error 
  */
-int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime_seconds);
+int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime_seconds, char *passphrase);
 
 /*
  * myproxy_accept_delegation()
@@ -245,7 +245,7 @@ int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile
  *
  * returns 0 on success, -1 on error 
  */
-int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int datalen);
+int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int datalen, char *passphrase);
 
 /*
  * myproxy_free()

@@ -1136,9 +1136,8 @@ void GSI_SOCKET_free_token(unsigned char *buffer)
 
 int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 				   const char *source_credentials,
-				   int flags,
 				   int lifetime,
-				   const void *restrictions)
+				   const char *passphrase)
 {
     int				return_value = GSI_SOCKET_ERROR;
     SSL_CREDENTIALS		*creds = NULL;
@@ -1161,16 +1160,6 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     }
 
     /*
-     * None of these are currently supported.
-     */
-    if ((flags != 0) ||
-	(restrictions != NULL))
-    {
-	self->error_number = EINVAL;
-	goto error;
-    }
-
-    /*
      * Load proxy we are going to use to sign delegation
      */
     creds = ssl_credentials_new();
@@ -1181,8 +1170,11 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 	goto error;
     }
     
+    if (passphrase && passphrase[0] == '\0') {
+	passphrase = NULL;
+    }
     if (ssl_proxy_load_from_file(creds, source_credentials,
-				 NULL /* No pass phrase */) == SSL_ERROR)
+				 passphrase) == SSL_ERROR)
     {
 	GSI_SOCKET_set_error_from_verror(self);
 	goto error;
@@ -1268,7 +1260,8 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 int
 GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 				 char *delegated_credentials,
-				 int delegated_credentials_len)
+				 int delegated_credentials_len,
+				 char *passphrase)
 {
     int			return_value = GSI_SOCKET_ERROR;
     SSL_CREDENTIALS	*creds = NULL;
@@ -1333,8 +1326,10 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 	goto error;
     }
     
-    if (ssl_proxy_store_to_file(creds, filename,
-				NULL /* No pass phrase */) == SSL_ERROR)
+    if (passphrase && passphrase[0] == '\0') {
+	passphrase = NULL;
+    }
+    if (ssl_proxy_store_to_file(creds, filename, passphrase) == SSL_ERROR)
     {
 	GSI_SOCKET_set_error_from_verror(self);
 	goto error;
