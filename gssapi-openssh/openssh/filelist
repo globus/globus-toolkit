@@ -8,7 +8,9 @@ bin/ssh-add
 bin/ssh-agent
 bin/ssh-keygen
 bin/ssh-keyscan
+bin/ssh-keysign
 libexec/sftp-server
+libexec/ssh-rand-helper
 man/man1/gsiscp.1
 man/man1/gsissh.1
 man/man1/scp.1
@@ -19,6 +21,8 @@ man/man1/ssh-add.1
 man/man1/ssh-agent.1
 man/man1/ssh-keygen.1
 man/man1/ssh-keyscan.1
+man/man8/ssh-keysign.8
+man/man8/ssh-rand-helper.8
 man/man8/sftp-server.8
 man/man8/sshd.8
 sbin/sshd
