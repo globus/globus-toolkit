@@ -78,7 +78,7 @@ EOF
 		    _done=yes
 		    ;;
 		--*)
-		    globus_args_option_error $1 "double-dashed option syntax is not allowed"
+                    globus_args_option_error ${_arg} "double-dashed option syntax is not allowed"
 		    ;;
 		*)
 		    _n=`${GLOBUS_SH_EXPR-expr} $_n + 1`
