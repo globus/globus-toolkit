@@ -71,6 +71,14 @@ globus_i_gfs_data_list_request(
     globus_i_gfs_data_transfer_event_cb_t event_callback,
     void *                              user_arg);
 
+globus_result_t
+globus_i_gfs_data_command_request(
+    globus_i_gfs_server_instance_t *    instance,
+    char **                             cmd_array,
+    int                                 argc,
+    globus_i_gfs_data_command_cb_t      callback,
+    void *                              user_arg);
+
 typedef void
 (*globus_i_gfs_data_passive_cb_t)(
     globus_i_gfs_server_instance_t *    instance,

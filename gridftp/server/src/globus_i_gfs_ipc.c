@@ -114,7 +114,7 @@ globus_i_gfs_ipc_command_request(
         cmd_array,
         argc,
         globus_l_gfs_data_command_cb,
-        bounce_info);
+        (void *) bounce_info);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(

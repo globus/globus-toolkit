@@ -500,8 +500,6 @@ globus_l_gfs_op_to_attr(
 {
     globus_result_t                     result;
     int                                 buf_size;
-    char                                dcau;
-    char                                prot;
         
     *attr = globus_i_gfs_data_attr_defaults;
     if(net_prt == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
@@ -537,8 +535,8 @@ globus_l_gfs_op_to_attr(
         result = globus_gridftp_server_control_get_data_auth(
             op, 
             &attr->dcau.subject.subject, 
-            &attr->dcau.mode,
-            &attr->prot, 
+            (char *) &attr->dcau.mode,
+            (char *) &attr->prot, 
             &attr->delegated_cred);
         globus_assert(result == GLOBUS_SUCCESS);
                 
@@ -766,21 +764,6 @@ globus_i_gfs_control_start(
         goto error_init;
     }
 
-/*
-    result = globus_gsc_959_command_add(
-        instance->u.control.server,
-        "MKD",
-        globus_l_gfs_command_request,
-        GLOBUS_GSC_COMMAND_POST_AUTH,
-        2,
-        2,
-        "214 Syntax: MKD <sp> pathname\r\n",
-        GLOBUS_NULL);    
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_command_add;
-    }
-*/
     result = globus_gridftp_server_control_start(
         instance->u.control.server, 
         attr, 
@@ -797,7 +780,6 @@ globus_i_gfs_control_start(
     return GLOBUS_SUCCESS;
 
 error_start:
-error_command_add:
     globus_gridftp_server_control_destroy(instance->u.control.server);
 error_init:
 error_attr_setup:
@@ -849,5 +831,19 @@ void
 globus_gsc_959_finished_command(
     globus_gsc_959_op_t                     op,
     char *                                  reply_msg);
+
+    result = globus_gsc_959_command_add(
+        instance->u.control.server,
+        "MKD",
+        globus_l_gfs_command_request,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: MKD <sp> pathname\r\n",
+        GLOBUS_NULL);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_command_add;
+    }
     
 */    

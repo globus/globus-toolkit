@@ -31,6 +31,7 @@ typedef struct globus_l_gfs_data_operation_s
     globus_bool_t                       sending;
     globus_i_gfs_op_attr_t *            op_attr;
 
+    globus_i_gfs_data_command_cb_t      command_callback;
     globus_i_gfs_data_resource_cb_t     resource_callback;
     globus_i_gfs_data_transfer_cb_t     transfer_callback;
     globus_i_gfs_data_transfer_event_cb_t event_callback;
@@ -264,7 +265,7 @@ globus_i_gfs_data_command_request(
     globus_i_gfs_server_instance_t *    instance,
     char **                             cmd_array,
     int                                 argc,
-    globus_i_gfs_data_resource_cb_t     callback,
+    globus_i_gfs_ipc_command_cb_t       callback,
     void *                              user_arg)
 {
     globus_l_gfs_data_operation_t *     op;
@@ -280,9 +281,13 @@ globus_i_gfs_data_command_request(
     }
     
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
-    op->resource_callback = callback;
+    op->command_callback = callback;
     op->user_arg = user_arg;
-        
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_hook;
+    }    
     globus_mutex_lock(&op->lock);
     {
         if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
