@@ -541,11 +541,8 @@ globus_ftp_control_command_init(
     }
     else
     {
-        rc = globus_error_put(
-            globus_error_construct_string(
-                GLOBUS_FTP_CONTROL_MODULE,
-                GLOBUS_NULL,
-                "globus_ftp_control_command_init: unrecognized command"));
+        command->code = GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN;
+        rc = GLOBUS_SUCCESS;
     }
         
     return rc;
