@@ -1072,7 +1072,7 @@ globus_callback_space_destroy(
 }
 
 /**
- * initiaze and attr with default of serialized behavior
+ * initialze and attr with default of single threaded behavior
  */
 globus_result_t
 globus_callback_space_attr_init(
@@ -1342,6 +1342,57 @@ globus_l_callback_blocked_cb(
     }
 }
 
+static
+void
+globus_l_callback_finish_callback(
+    globus_l_callback_info_t *          callback_info,
+    globus_bool_t                       restarted)
+{
+    globus_l_callback_space_t *         i_space;
+    globus_bool_t                       unregister;
+    globus_callback_func_t              unregister_callback;
+    
+    i_space = callback_info->myspace;
+    unregister = GLOBUS_FALSE;
+    
+    globus_mutex_lock(&i_space->lock);
+    {
+        /* this was incremented after the 'get_next' call */
+        callback_info->running_count--;
+
+        /* a periodic that was canceled has is_periodic == false */
+        if(!callback_info->is_periodic &&
+            callback_info->running_count == 0)
+        {
+            unregister_callback = callback_info->unregister_callback;
+            unregister = GLOBUS_TRUE;
+        }
+        else if(callback_info->is_periodic && !restarted)
+        {
+            globus_l_callback_requeue(callback_info);
+        }
+    }
+    globus_mutex_unlock(&i_space->lock);
+    
+    if(unregister)
+    {
+        if(unregister_callback)
+        {
+            globus_callback_space_register_oneshot(
+                GLOBUS_NULL,
+                &globus_i_reltime_zero,
+                globus_l_callback_cancel_kickout_cb,
+                callback_info,
+                i_space->handle);
+        }
+        else
+        {
+            /* no unreg callback so I'll decrement my ref */
+            globus_l_callback_info_dec_ref(callback_info->handle);
+        }
+    }
+}
+
 /**
  * globus_callback_space_poll
  *
@@ -1416,8 +1467,6 @@ globus_callback_space_poll(
     {
         globus_l_callback_info_t *      callback_info;
         globus_abstime_t                next_ready_time;
-        globus_bool_t                   unregister;
-        globus_callback_func_t          unregister_callback;
         
         globus_mutex_lock(&i_space->lock);
         
@@ -1457,43 +1506,8 @@ globus_callback_space_poll(
             
             globus_thread_blocking_callback_disable(&restart_index);
             
-            unregister = GLOBUS_FALSE;
-            globus_mutex_lock(&i_space->lock);
-            {
-                /* this was incremented after the 'get_next' call */
-                callback_info->running_count--;
-    
-                /* a periodic that was canceled has is_periodic == false */
-                if(!callback_info->is_periodic &&
-                    callback_info->running_count == 0)
-                {
-                    unregister_callback = callback_info->unregister_callback;
-                    unregister = GLOBUS_TRUE;
-                }
-                else if(callback_info->is_periodic && !restart_info.restarted)
-                {
-                    globus_l_callback_requeue(callback_info);
-                }
-            }
-            globus_mutex_unlock(&i_space->lock);
-            
-            if(unregister)
-            {
-                if(unregister_callback)
-                {
-                    globus_callback_space_register_oneshot(
-                        GLOBUS_NULL,
-                        &globus_i_reltime_zero,
-                        globus_l_callback_cancel_kickout_cb,
-                        callback_info,
-                        space);
-                }
-                else
-                {
-                    /* no unreg callback so I'll decrement my ref */
-                    globus_l_callback_info_dec_ref(callback_info->handle);
-                }
-            }
+            globus_l_callback_finish_callback(
+                callback_info, restart_info.restarted);
             
             done = restart_info.signaled;
         }
@@ -1577,8 +1591,6 @@ globus_l_callback_thread_callback(
     globus_l_callback_restart_info_t    restart_info;
     int                                 restart_index;
     globus_bool_t                       run_now;
-    globus_bool_t                       unregister;
-    globus_callback_func_t              unregister_callback;
     globus_l_callback_space_t *         i_space;
     
     callback_info = (globus_l_callback_info_t *) user_args;
@@ -1675,49 +1687,7 @@ globus_l_callback_thread_callback(
         
     } while(run_now);
     
-    unregister = GLOBUS_FALSE;
-    
-    globus_mutex_lock(&i_space->lock);
-    {
-        /* this was incremented after the 'get_next' call */
-        callback_info->running_count--;
-        
-        if(!i_space->shutdown)
-        {
-            if(!callback_info->is_periodic &&
-                callback_info->running_count == 0)
-            {
-                unregister_callback = callback_info->unregister_callback;
-                unregister = GLOBUS_TRUE;
-            }
-            else if(callback_info->is_periodic && !restart_info.restarted)
-            {
-                /* someone changed the period to something larger than 
-                 * own_thread_period .. we need to requeue
-                 */
-                 globus_l_callback_requeue(callback_info);
-            }
-        }
-    }
-    globus_mutex_unlock(&i_space->lock);
-        
-    if(unregister)
-    {
-        if(unregister_callback)
-        {
-            globus_callback_space_register_oneshot(
-                GLOBUS_NULL,
-                &globus_i_reltime_zero,
-                globus_l_callback_cancel_kickout_cb,
-                callback_info,
-                callback_info->my_space->handle);
-        }
-        else
-        {
-            /* no unreg callback so I'll decrement my ref */
-            globus_l_callback_info_dec_ref(callback_info->handle);
-        }
-    }
+    globus_l_callback_finish_callback(callback_info, restart_info.restarted);    
     
     globus_thread_blocking_reset();
     
@@ -1778,28 +1748,21 @@ globus_l_callback_thread_poll(
         {
             while(!i_space->shutdown && !callback_info)
             {
-                if(globus_priority_q_empty(
-                    &i_space->queue))
+                if(globus_priority_q_empty(&i_space->queue))
                 {
-                    globus_cond_wait(
-                        &i_space->cond,
-                        &i_space->lock);
+                    globus_cond_wait(&i_space->cond, &i_space->lock);
                 }
                 else
                 {
                     GlobusTimeAbstimeGetCurrent(time_now);
                 
                     callback_info = globus_l_callback_get_next(
-                        &i_space->queue,
-                        &time_now,
-                        &next_ready_time);
+                        &i_space->queue, &time_now, &next_ready_time);
                         
                     if(!callback_info)
                     {
                         globus_cond_timedwait(
-                            &i_space->cond,
-                            &i_space->lock,
-                            &next_ready_time);
+                            &i_space->cond, &i_space->lock, &next_ready_time);
                     }
                     else
                     {
@@ -1830,9 +1793,6 @@ globus_l_callback_thread_poll(
             /* if function does not have its own thread */
             if(!gets_own_thread)
             {
-                globus_bool_t           unregister;
-                globus_callback_func_t  unregister_callback;
-                
                 restart_info.callback_info = callback_info;
                 
                 if(globus_abstime_cmp(&time_now, &next_ready_time) > 0)
@@ -1853,46 +1813,9 @@ globus_l_callback_thread_poll(
                 
                 globus_thread_yield();
                 
-                unregister = GLOBUS_FALSE;
-                globus_mutex_lock(&i_space->lock);
-                {
-                    /* this was incremented after the 'get_next' call */
-                    callback_info->running_count--;
-                    
-                    /* a periodic that was canceled has is_periodic == false */
-                    if(!callback_info->is_periodic &&
-                        callback_info->running_count == 0)
-                    {
-                        unregister_callback = 
-                            callback_info->unregister_callback;
-                        unregister = GLOBUS_TRUE;
-                    }
-                    else if(callback_info->is_periodic &&
-                        !restart_info.restarted)
-                    {
-                        globus_l_callback_requeue(callback_info);
-                    }
-                }
-                globus_mutex_unlock(&i_space->lock);
-                
-                if(unregister)
-                {
-                    if(unregister_callback)
-                    {
-                        globus_callback_space_register_oneshot(
-                            GLOBUS_NULL,
-                            &globus_i_reltime_zero,
-                            globus_l_callback_cancel_kickout_cb,
-                            callback_info,
-                            callback_info->my_space->handle);
-                    }
-                    else
-                    {
-                        /* no unreg callback so I'll decrement my ref */
-                        globus_l_callback_info_dec_ref(callback_info->handle);
-                    }
-                }
-                
+                globus_l_callback_finish_callback(
+                    callback_info, restart_info.restarted);
+
                 /* if I was restarted, a new thread has taken my place */
                 done = restart_info.restarted;
             }
