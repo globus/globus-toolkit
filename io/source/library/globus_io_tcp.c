@@ -979,7 +979,8 @@ globus_io_tcp_register_accept(
             
             if(rc != GLOBUS_SUCCESS)
             {
-                globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+                globus_i_io_end_operation(
+                    new_handle, GLOBUS_I_IO_WRITE_OPERATION);
             }
         }
     }
@@ -1005,7 +1006,8 @@ globus_io_tcp_register_accept(
             
             if(rc != GLOBUS_SUCCESS)
             {
-                globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+                globus_i_io_end_operation(
+                    new_handle, GLOBUS_I_IO_WRITE_OPERATION);
             }
         }
     }
