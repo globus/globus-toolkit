@@ -192,6 +192,7 @@ Southern California. All Rights Reserved.
     <copy todir="${build.lib}">
       <fileset dir="${lib.dir}">
           <include name="*.jar"/>
+          <include name="*.LICENSE"/>
       </fileset>
     </copy>
     <ant antfile="${ogsa.root}/build-packages.xml" target="makeGar">
