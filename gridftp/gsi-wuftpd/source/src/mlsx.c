@@ -183,5 +183,10 @@ mlsx_options(const char *options)
 const char *
 get_mlsx_options()
 {
+    if(!options) 
+    {
+        return "Type;UNIX.mode;Perm;";
+    }
+    
     return options;
 }

@@ -16,16 +16,14 @@ main(int argc, char *argv[] )
     FILE *fd;
 
     fd = fopen("/tmp/bob","w");
-    fwrite("bob", 4, 1, fd);
-    
+    fwrite(argv[1], strlen(argv[1]), 1, fd);
     fclose(fd);
+    
 
     if(argc == 3)
         dir = opendir(argv[2]);
     else
         dir = opendir(".");
-    
-    printf("TESTESTSETETS\n");
     
     dirp = readdir(dir);
     while(dirp) 
@@ -37,6 +35,7 @@ main(int argc, char *argv[] )
 
             get_fact_list(facts, 512, filename, argv[1]);
             printf("%s %s\n", facts, filename);
+            
             
             dirp = readdir(dir);
         }

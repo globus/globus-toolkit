@@ -869,8 +869,8 @@ cmd: USER SP username CRLF
 		dologout(0);
 	    }
 	    if (log_commands)
-		syslog(LOG_INFO, "DELE dummy");
-        mlst("",get_mlsx_options());
+		syslog(LOG_INFO, "mlst dummy");
+        mlst(getcwd((char *)0, 2048),get_mlsx_options());
 	}
 
     | MLST check_login SP pathname CRLF
@@ -880,23 +880,29 @@ cmd: USER SP username CRLF
 		dologout(0);
 	    }
 	    if (log_commands)
-		syslog(LOG_INFO, "DELE dummy");
+		syslog(LOG_INFO, "mlst dummy");
         mlst($4,get_mlsx_options());
 	}
 
 
     | MLSD check_login CRLF
 	=	{
+        char *workStr = malloc(2048);
+        sprintf(workStr, "%s %s", get_mlsx_options(), getcwd((char *)0, 2048));
+        
 	    if(exit_at == MLST)
 	    {
 		dologout(0);
 	    }
 	    if (log_commands)
-		syslog(LOG_INFO, "MLST");
-        retrieve("mlsd %s",get_mlsx_options(),-1,-1);
+		syslog(LOG_INFO, "MLSD");
+        retrieve("mlsd %s",workStr,-1,-1);
 	}
     | MLSD check_login SP pathname CRLF
 	=	{
+        char *workStr = malloc(2048);
+        sprintf(workStr, "%s %s", get_mlsx_options(), $4);
+
 	    if(exit_at == LIST)
 	    {
 		dologout(0);
@@ -905,7 +911,7 @@ cmd: USER SP username CRLF
 		syslog(LOG_INFO, "LIST %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_list_check($4)) {
 		retrieve_is_data = 0;
-        retrieve("mlsd", $4, -1, -1);
+        retrieve("mlsd %s", workStr, -1, -1);
 	    }
 	    if ($4 != NULL)
 		free($4);
@@ -2372,6 +2378,8 @@ struct tab cmdtab[] =
     {"CWD", CWD, OSTR, 1, "[ <sp> directory-name ]"},
     {"XCWD", CWD, OSTR, 1, "[ <sp> directory-name ]"},
     {"LIST", LIST, OSTR, 1, "[ <sp> path-name ]"},
+    {"MLSD", MLSD, OSTR, 1, "[ <sp> path-name ]"},
+    {"MLST", MLST, OSTR, 1, "[ <sp> path-name ]"},
     {"NLST", NLST, OSTR, 1, "[ <sp> path-name ]"},
     {"SITE", SITE, SITECMD, 1, "site-cmd [ <sp> arguments ]"},
     {"SYST", SYST, ARGS, 1, "(get type of operating system)"},
@@ -3031,7 +3039,8 @@ int yylex(void)
 		cbuf[cpos] = c;
 		return DELAYED_PASV;
 	    }
-	    else if(strcasecmp(cp, "mlst") == 0)
+        /*
+	    else if(strcasecmp(cp, "mlst" == 0)
 	    {
 		cbuf[cpos] = c;
 		return MLST;
@@ -3046,6 +3055,7 @@ int yylex(void)
 		cbuf[cpos] = c;
 		return MLSX;
 	    }
+        */
 	    else
 	    {
 		yylval.String = copy(cp);
