@@ -709,6 +709,43 @@ globus_grim_config_set_port_type_filename(
     globus_grim_config_t                    config,
     char *                                  port_type_filename);
 
+/**
+ *  @ingroup globus_grim_config
+ *
+ *  Get the logfile
+ *
+ *  Get the filename for the log file
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param logfile
+ *         An out paramter.  Upon Completion of this function it will
+ *         point to a path to the logfile.
+ */
+globus_result_t
+globus_grim_config_get_log_filename(
+    globus_grim_config_t                    config,
+    char **                                 log_filename);
+
+/**
+ *  @ingroup globus_grim_config
+ *
+ *  Set the log filename
+ *
+ *  Set the path to the log filename
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param log_filename
+ *         The logfile to be used.
+ */
+globus_result_t
+globus_grim_config_set_log_filename(
+    globus_grim_config_t                    config,
+    char *                                  log_filename);
+
 /** 
  *  @defgroup globus_grim_port_type Grim Port Type Functions
  *  
