@@ -1921,12 +1921,12 @@ byte_size: NUMBER
     ;
 
 opts: 
-    SP MLSX SP STRING
+    SP MLST SP STRING
     {
         mlsx_options($4);
     }
     |
-    SP MLSX
+    SP MLST
     {
         mlsx_options(NULL);
     }
@@ -2451,7 +2451,7 @@ struct tab sitetab[] =
 struct tab optstab[] =
 {
     {"RETR", RETR, NEWARGS, 1, "<sp> <retr_opts>"},
-    {"MLSX", MLSX, OSTR, 1, "[ <sp> <fact list> ]"},
+    {"MLST", MLST, OSTR, 1, "[ <sp> <fact list> ]"},
     {NULL, 0, 0, 0, 0}
 };
 
