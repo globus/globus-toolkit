@@ -49,8 +49,8 @@
  * 
  *  //build the stack
  *  globus_xio_stack_init(&stack);
- *  globus_xio_stack_push_driver(stack, tcp_driver);
- *  globus_xio_stack_push_driver(stack, gsi_driver);
+ *  globus_xio_stack_push_driver(stack, tcp_driver, NULL);
+ *  globus_xio_stack_push_driver(stack, gsi_driver, NULL);
  */
 
 /**
@@ -69,7 +69,12 @@
  *
  *  passive target setup example:
  * 
- *  globus_xio_server_init(&server, "http", GLOBUS_NULL, stack);
+ *  globus_xio_server_attr_init(&server_attr);
+ *  globus_xio_server_attr_cntl(server_attr, 
+ *          tcp_driver,
+ *          TCP_SERVER_ATTR_SET_PORT,
+ *          80);
+ *  globus_xio_server_init(&server, GLOBUS_NULL, stack);
  *  globus_xio_server_get_contact_string(server, &buf);
  *  globus_libc_fprintf(stdout, "serving at: %s.\n", buf);
  *  globus_xio_server_listen(server, &target);
@@ -77,16 +82,16 @@
  *    // build the stack
  *    globus_xio_target_attr_init(&target_attr);
  *    globus_xio_target_push_driver(
- *        target_attr, GLOBUS_XIO_TCP_DRIVER, tcp_target_attr);
+ *        target_attr, tcp_driver, tcp_target_attr);
  *    globus_xio_target_push_driver(
- *        target_attr, GLOBUS_XIO_GSI_DRIVER, GLOBUS_NULL);
+ *        target_attr, gsi_driver, GLOBUS_NULL);
  *    globus_xio_target_init(&target, target_attr);
  */
 
 /**
  *  @page handle_setup Handle Construction
  *
- *  Handles are constructed from factories.  Many handles can be created
+ *  Handles are constructed from targets.  Many handles can be created
  *  from a single target.  The state of the target at the time of
  *  handle constructions partially determines the initial state of the
  *  handle.  The initial state is also deteremined of the attribute 
@@ -101,73 +106,11 @@
  *  attr ex:
  *
  *  globus_xio_handle_attr_init(&attr);
- *  globus_xio_handle_attr_set_mode(attr, O_WRONLY);
- *  globus_xio_handle_open(&handle, attr);
- *
- *  driver specific attr example:
- *
- *  globus_xio_handle_attr_init(&attr);
- *  // driver specifi function
- *  globus_xio_tcp_attr_init(&tcp_attr);
- *  globus_xio_tcp_attr_set_nodelay(tcp_attr, GLOBUS_TRUE);
- *  // set driver sepcific attr on xio attr via a driver devel api call
- *  globus_xio_attr_add_driver_attr(attr, tcp_attr);
- *  // open the handle
- *  globus_xio_handle_open(..&handle, attr..);
- *
- *  The driver should implement a convience function for setting attributes
- *  that would initialize the driver specific attr, set the value, and
- *  connect it with the xio_attr all in one call.
- *
- *  When globus_xio_open() is called it may return a warning stating that
- *  a driver specific attribute was reqested on a driver that is not in 
- *  the factories stack.  This would happen if the user requesed that
- *  the gsi driver use encryption and authentication but the stack only
- *  consisted of a TCP driver. 
- */
-/**
- *  @page muttable_attrs Mutable Attributes
- *
- *  Mutable attributes are those that can be changed at any time during 
- *  the lifespan of a handle.  The function globus_xio_handle_fcntl() is 
- *  used to both change mutable attributes and query the handle for
- *  values.
- *
- *  Example of setting a muttable attribute:
- * 
- *  globus_xio_attr_init(&attr);
- *  globus_xio_attr_set_optimal_buffer_size(attr, 65536);
- *  globus_xio_handle_fcntl(handle, GLOBUS_XIO_SET_BUFFER_SIZE, attr);
- *
- *  Example of getting a muttable value:
- *
- *  globus_xio_attr_init(&attr);
- *  globus_xio_handle_fcntl(handle, GLOBUS_XIO_GET_BUFFER_SIZE, attr);
- *  globus_xio_attr_get_optimal_buffer_size(attr, &size);
- * 
- *  Driver specific mutable attrs can be set on a handle as well.  This
- *  is done in a similar process but by using a driver_handle_attr.
- *
- *  Example of setting driver specific muttable attrs
- *
- *   globus_xio_tcp_attr_init(&tcp_attr);
- *   globus_xio_tcp_attr_set_window_size(tcp_attr, 65536);
- *   globus_xio_handle_driver_fcntl(
- *       handle, 
- *       GLOBUS_XIO_TCP_DRIVER,
- *       GLOBUS_XIO_TCP_SET_WINDOW_SIZE,
- *       tcp_attr);
- *
- *  and getting driver specific mutable attrs:
- *    
- *   globus_xio_tcp_attr_init(&tcp_attr);
- *   globus_xio_handle_driver_fcntl(
- *       handle, 
- *       GLOBUS_XIO_TCP_DRIVER,
- *       GLOBUS_XIO_TCP_GET_WINDOW_SIZE,
- *       tcp_attr);
- *   globus_xio_tcp_attr_get_window_size(tcp_attr, &window_size);
- *
+ *  globus_xio_handle_attr_cntl(attr, 
+ *      NULL, 
+ *      GLOBUS_XIO_HANDLE_ATTR_SET_MODE,
+ *      O_WRONLY);
+ *  globus_xio_handle_open(target, &handle, attr);
  */
 /**
  *  @page timeouts Timeouts
@@ -219,11 +162,14 @@
  *
  *  ex:
  *  globus_xio_data_descriptor_init(&desc);
- *  globus_xio_data_descriptor_set_offset(desc, 1024);
- *  globus_xio_tcp_data_descriptor_set_oob(desc, GLOBUS_TRUE);
- *
- *  note: The driver api provides the tcp driver the power to manipulate the
- *        desc ADT.
+ *  globus_xio_data_descriptor_cntl(desc, 
+ *      NULL, 
+ *      GLOBUS_XIO_DATA_DESCRIPTOR_SET_OFFSET, 
+ *      1024);
+ *  globus_xio_data_descriptor_cntl(desc, 
+ *      tcp_driver,
+ *      GLOBUS_XIO_TCP_DD_SET_OOB,
+ *      GLOBUS_TRUE);
  */
 /**
  *  @page signal_user Globus XIO Signals
@@ -254,50 +200,89 @@
 
 /**
  *  @ingroup GLOBUS_XIO_API
+ *  Lookup a driver structure.
+ *
+ *  A driver structure is a static pointer that has a globally uniques 
+ *  string asociated with it.  This may cause a search in .so
  *  Initialize a handle target with a given attribute set.
  */
+
+globus_result_t
+globus_xio_lookup_driver(
+    globus_xio_driver_t *                       driver,
+    const char *                                driver_lookup_string);
+
+globus_result_t
+globus_xio_stack_init(
+    globus_xio_stack_t *                        stack);
+
+globus_result_t
+globus_xio_stack_push_driver(
+    globus_xio_stack_t                          stack,
+    globus_xio_driver_t                         driver,
+    globus_xio_driver_attr_t                    driver_attr);
+
+globus_result_t
+globus_xio_driver_attr_init(
+    globus_xio_driver_attr_t *                  driver_attr);
+
+globus_result_t
+globus_xio_driver_attr_cntl(
+    globus_xio_driver_attr_t                    driver_attr,
+    globus_xio_driver_t                         driver,
+    int                                         cmd,
+    ...);
+
+/**
+ *  @ingroup GLOBUS_XIO_API
+ *  Initialize a globus_xio server object.
+ */
+globus_result_t
+globus_xio_server_init(
+    globus_xio_server_t *                       server,
+    globus_xio_server_attr_t                    server_attr,
+    globus_xio_stack_t                          stack);
+
+globus_result_t
+globus_xio_server_attr_init(
+    globus_xio_server_attr_t *                  server_attr);
+
+globus_result_t
+globus_xio_server_attr_cntl(
+    globus_xio_server_attr_t                    server_attr,
+    globus_xio_driver_t                         driver,
+    int                                         cmd,
+    ...);
+
+globus_result_t
+globus_xio_server_get_contact_string(
+    globus_xio_server_t                         server,
+    char *                                      out_contact_string,
+    int                                         str_len);
+
+globus_result_t
+globus_xio_server_listen(
+    globus_xio_server_t                         server,
+    globus_xio_target_t *                       out_target);
+
 globus_result_t
 globus_xio_target_init(
-    globus_xio_target_t *                      target,
-    globus_xio_target_attr_t                   attr);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  clean up a target
- */
-globus_result_t
-globus_xio_target_destroy(
-    globus_xio_target_t                        target);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  target attribute init
- */
-globus_result_t
-globus_xio_target_attr_init(
-    globus_xio_target_attr_t *                 attr);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  clean up an attr
- */
-globus_result_t
-globus_xio_target_attr_destroy(
-    globus_xio_target_attr_t                   attr);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  push a driver to the top of the stack
- */
-globus_result_t
-globus_xio_target_push_driver(
-    globus_xio_target_attr_t                   target_attr,
-    globus_xio_driver_t                         driver,
-    globus_xio_driver_target_attr_t            driver_target_attr);
+    globus_xio_target_t *                       target,
+    const char *                                contact_string,
+    globus_xio_stack_t                          stack);
 
 /******************************************************************
  *                      handle construction
  *****************************************************************/
+
+enum globus_xio_handle_attr_cmd_t
+{
+    GLOBUS_XIO_HANDLE_ATTR_OPEN_TIMEOUT,
+    GLOBUS_XIO_HANDLE_ATTR_READ_TIMEOUT,
+    GLOBUS_XIO_HANDLE_ATTR_WRITE_TIMEOUT,
+    GLOBUS_XIO_HANDLE_ATTR_CLOSE_TIMEOUT,
+    GLOBUS_XIO_HANDLE_ATTR_ALL_TIMEOUT,
+};
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -319,96 +304,10 @@ globus_xio_handle_attr_destroy(
  *  @ingroup GLOBUS_XIO_API
  */
 globus_result_t
-globus_xio_handle_attr_set_mode(
+globus_xio_handle_attr_cntl(
     globus_xio_handle_attr_t                    attr,
-    int                                         mode);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- */
-globus_result_t
-globus_xio_handle_attr_get_mode(
-    globus_xio_handle_attr_t                    attr,
-    int *                                       mode);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  Set the best buffer possible buffer size.
- *
- *  Setting this on an attr may cause the function that associates the
- *  attr with a handle to fail (open for example), depending on what is
- *  contained in ther driver stack.
- */
-globus_result_t
-globus_xio_handle_attr_set_optimal_buffer_size(
-    globus_xio_handle_attr_t                    attr,
-    globus_size_t                               buffer_size);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  Discover the best possible buffer size
- */
-globus_result_t
-globus_xio_handle_attr_get_optimal_buffer_size(
-    globus_xio_handle_attr_t                    attr,
-    globus_size_t *                             buffer_size);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  Set the best possible outstanding number of buffers to post
- *
- *  Setting this on an attr may cause the function that associates the
- *  attr with a handle to fail (open for example), depending on what is
- *  contained in ther driver stack.
- */
-globus_result_t
-globus_xio_handle_attr_set_optimal_posted_buffers(
-    globus_xio_handle_attr_t                    attr,
-    int                                         buffer_size);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  Discover the best possible outstanding number of buffers to post
- */
-globus_result_t
-globus_xio_handle_attr_get_optimal_poseted_buffers(
-    globus_xio_handle_attr_t                    attr,
-    int *                                       buffer_size);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  This function adds a driver specific attribute to an initialized
- *  handle attribute.  The driver specific attr is initilized by
- *  finctions the driver will provide.
- */
-globus_result_t
-globus_xio_handle_attr_add_driver_attr(
-    globus_xio_handle_attr_t                    attr,
-    globus_xio_driver_handle_attr_t             driver_attr);
-
-/******************************************************************
- *                      mutable attributes
- *****************************************************************/
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  set and get mutable attributes on a handle
- */
-globus_result_t 
-globus_xio_handle_fcntl(
-    globus_xio_handle_t                         handle,
-    int                                         command,
-    ...);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  set and get driver specific mutable attributes on a handle
- */
-globus_result_t 
-globus_xio_handle_driver_fcntl(
-    globus_xio_handle_t                         handle,
     globus_xio_driver_t                         driver,
-    int                                         command,
+    int                                         cmd,
     ...);
 
 /******************************************************************
@@ -460,35 +359,11 @@ enum globus_xio_operation_type_t
  *  set timeouts for the various operations
  */
 globus_result_t
-globus_xio_handle_attr_set_timeout(
+globus_xio_handle_attr_cntl(
     globus_xio_handle_attr_t                    attr,
-    globus_reltime_t                            timeout,
-    globus_xio_timeout_callback_t               open_cb,
-    void *                                      open_arg,
-    globus_xio_timeout_callback_t               close_cb,
-    void *                                      close_arg,
-    globus_xio_timeout_callback_t               read_cb,
-    void *                                      read_arg,
-    globus_xio_timeout_callback_t               write_cb,
-    void *                                      write_arg);
-/*
- *  @ingroup GLOBUS_XIO_API
- */
-globus_result_t
-globus_xio_handle_attr_set_open_timeout(
-    globus_xio_handle_attr_t                    attr,
-    globus_reltime_t                            timeout,
-    globus_xio_timeout_callback_t               open_cb,
-    void *                                      open_arg);
-/*
- *  @ingroup GLOBUS_XIO_API
- */
-globus_result_t
-globus_xio_handle_attr_set_close_timeout(
-    globus_xio_handle_attr_t                    attr,
-    globus_reltime_t                            timeout,
-    globus_xio_timeout_callback_t               close_cb,
-    void *                                      close_arg);
+    globus_xio_driver_t                         driver,
+    <GLOBUS_XIO_HANDLE_ATTR_XXXX_TIMEOUT>
+    globus_xio_timeout_callback_t               timeout_callback);
 
 /******************************************************************
  *                      data descriptor
@@ -521,21 +396,13 @@ globus_xio_data_descriptor_destroy(
 
 /**
  *  @ingroup GLOBUS_XIO_API
- *  set the offset in the data descriptor.
  */
 globus_result_t
-globus_xio_data_descriptor_set_offset(
+globus_xio_data_descriptor_cntl(
     globus_xio_data_descriptor_t                data_desc,
-    globus_off_t                                offset);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  get the offset in the data descriptor.
- */
-globus_result_t
-globus_xio_data_descriptor_get_offset(
-    globus_xio_data_descriptor_t                data_desc,
-    globus_off_t *                              offset);
+    globus_xio_driver_t                         driver,
+    int                                         cmd,
+    ...);
 
 /*********************************************************************
  *                         callbacks
@@ -574,7 +441,7 @@ typedef void (*globus_xio_data_callback_t)(
  *  @ingroup GLOBUS_XIO_API
  *
  * Creates an open handle based on the state contained in the given
- * target.
+ * factory.
  * 
  * No operation can be preformed on a handle until it is opened.  If 
  * an already open handle used the information contaned in that handle
@@ -582,7 +449,7 @@ typedef void (*globus_xio_data_callback_t)(
  */ 
 globus_result_t
 globus_xio_register_open(
-    globus_xio_target_t                        target,
+    globus_xio_target_t                         target,
     globus_xio_handle_t *                       handle,
     globus_xio_handle_attr_t                    attr,
     globus_xio_callback_t                       cb,
@@ -683,23 +550,12 @@ typedef void
     globus_xio_signal_type_t                    signal_type,
     globus_xio_driver_t                         driver);
 
-/**
- *  @ingroup GLOBUS_XIO_API
- *  Get the current optimal buffer size from a handle.
- */
 globus_result_t
-globus_xio_signal_get_optimal_buffer_size(
-    globus_xio_handle_t                         handle,
-    globus_size_t *                             buffer_size);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- * Get the current optimal buffer post count
- */
-globus_result_t
-globus_xio_signal_get_optimal_buffer_post(
-    globus_xio_handle_t                         handle,
-    int *                                       post);
+globus_xio_handle_attr_cntl(
+    globus_xio_handle_t                         attr,
+    globus_xio_driver_t                         driver,
+    int                                         cmd,
+    ...);
 
 /**
  *  Register a signal listener.
@@ -739,10 +595,10 @@ globus_xio_handle_register_signal_handler(
  *  @ingroup GLOBUS_XIO_API
  *
  *  Reqest notification when event change in the system relating
- *  to a given target.
+ *  to a given factory.
  *
- *  @param target
- *         The target on which the user would like to receive 
+ *  @param factory
+ *         The factory on which the user would like to receive 
  *         notifications of events.
  *
  *  @param signal_mask
@@ -760,43 +616,9 @@ globus_xio_handle_register_signal_handler(
  *         A user pointed threaded through to the callback.
  */
 globus_result_t
-globus_xio_target_register_signal_handler(
-    globus_xio_target_t                        target,
+globus_xio_factory_register_signal_handler(
+    globus_xio_factory_t                        factory,
     int                                         signal_mask,
     globus_xio_driver_t                         driver,
     globus_xio_callback_t                       callback,
     void *                                      user_arg);
-
-/***************************************************************
- *                  target serialization
- *                  ---------------------
- *  The idea here is to provide a way tell a remote application
- *  the protocol stack to use.  So a program could be written 
- *  that, for example, simple routes messages from any protocol
- *  to any protocol where both protocols are determined at
- *  runtime.
- *
- *  There is an issue here with module activation that will need
- *  to be resolved one way or another.  For now we are going
- *  to table this issue in the interest of progress.
- **************************************************************/
-/*
- *  Create a serialized string from an initialized target.
- *
- *  This function will be used to serialized protocol stack 
- *  information.
- */
-globus_result_t
-globus_xio_target_serialize(
-    globus_xio_target_t                        target,
-    char *                                      cs);
-
-/*
- *  Take a serialized string and create an initialized target from 
- *  it.  
- */
-globus_result_t
-globus_xio_target_unserialize(
-    globus_xio_target_t *                      target,
-    const char *                                cs);
-
