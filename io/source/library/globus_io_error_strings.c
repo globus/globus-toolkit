@@ -24,7 +24,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
 	    return tmp;
 	}
-	string = "an internal error_occurred";
+	string = "an internal error_occurred in globus_io";
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_READ_ALREADY_REGISTERED))
     {

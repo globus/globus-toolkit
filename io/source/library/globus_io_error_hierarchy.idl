@@ -60,4 +60,4 @@ REGISTRATION_ERROR: BASE {globus_io_handle_t * handle} NULL :a registration oper
    EXCEPT_ALREADY_REGISTERED: REGISTRATION_ERROR { } NULL :the handle was already registreed for exception handling
    CLOSE_ALREADY_REGISTERED: REGISTRATION_ERROR { } NULL :the handle was already registered for closing
 
-INTERNAL_ERROR: BASE { char * function } NULL:an internal error occurred
+INTERNAL_ERROR: BASE { char * function } NULL:an internal error occurred in globus_io
