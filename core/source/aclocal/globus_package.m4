@@ -77,7 +77,8 @@ fi
 
 define([AM_PROG_LIBTOOL],[
 	LIBTOOL='$(SHELL) $(GLOBUS_INSTALL_PATH)/bin/libtool-$(GLOBUS_FLAVOR_NAME)'
-	AC_SUBST(LIBTOOL) 
+	AC_SUBST(LIBTOOL)
+	AC_SUBST(LN_S)
 ])
 
 dnl define FILELIST_FILE variable
@@ -85,4 +86,38 @@ FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/$GLOBUS_FLAVOR_NAME.filelist"
 AC_SUBST(FILELIST_FILE)
 
+])
+
+dnl GLOBUS_BUILD_DEPS(<list of package names seperated by spaces>)
+AC_DEFUN(GLOBUS_SET_BUILD_DEPS, [
+
+	for $pkg in $1; do
+		bfile="$GLOBUS_INSTALL_PATH/etc/globus_packages/$pkg/build_parameter_$GLOBUS_FLAVOR_NAME"
+		if ! test -f $bfile; then
+
+			AC_MSG_ERROR(["Package $pkg is not installed for flavor $GLOBUS_FLAVOR_NAME"])
+		fi 
+	done
+
+	GLOBUS_BUILD_DEPS="$1";
+
+])
+
+dnl GLOBUS_SET_XTRA_LIBS("External libraries the package needs to link with")
+AC_DEFUN(GLOBUS_ADD_XTRA_LIBS, [
+
+	GLOBUS_XTRA_LIBS= "$GLOBUS_XTRA_LIBS $1"
+
+])
+
+dnl GLOBUS_GENERATE
+AC_DEFUN(GLOBUS_GENERATE, [
+
+	AC_SUBST(GLOBUS_XTRA_LIBS)
+	AC_SUBST(GLOBUS_BUILD_DEPS)
+
+	GLOBUS_LINKLINE=`$GLOBUS_INSTALL_PATH/bin/globus_build_config --flavor=$GLOBUS_FLAVOR_NAME --ldflags=$GLOBUS_XTRA_LIBS $GLOBUS_BUILD_DEPS`
+
+	AC_SUBST(GLOBUS_LINKLINE)
+	
 ])
