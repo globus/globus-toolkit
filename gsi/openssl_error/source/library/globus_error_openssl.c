@@ -119,7 +119,7 @@ globus_l_gsi_openssl_error_deactivate(void)
 #endif
 
 /**
- * Get Error Code
+ * @name Get Error Code
  * @ingroup globus_openssl_error_object
  */
 /* @{ */
@@ -158,7 +158,7 @@ globus_openssl_error_handle_get_error_code(
 /* @} */
 
 /**
- * Get Error Data
+ * @name Get Error Data
  * @ingroup globus_openssl_error_object
  */
 /* @{ */
@@ -196,7 +196,7 @@ globus_openssl_error_handle_get_data(
 }
 /* @} */
 /**
- * Get Error Data Flags
+ * @name Get Error Data Flags
  * @ingroup globus_openssl_error_object
  */
 /* @{ */
@@ -234,7 +234,7 @@ globus_openssl_error_handle_get_data_flags(
 /* @} */
 
 /**
- * Get Filename
+ * @name Get Filename
  * @ingroup globus_openssl_error_object
  */
 /* @{ */
@@ -273,7 +273,7 @@ globus_openssl_error_handle_get_filename(
 /* @} */
 
 /**
- * Get Linenumber
+ * @name Get Linenumber
  * @ingroup globus_openssl_error_object
  */
 /* @{ */
@@ -312,7 +312,7 @@ globus_openssl_error_handle_get_linenumber(
 /* @} */
 
 /**
- * Get Library
+ * @name Get Library
  * @ingroup globus_openssl_error_object
  */
 /* @{ */
@@ -352,7 +352,7 @@ globus_openssl_error_handle_get_library(
 
 
 /**
- * Get Function
+ * @name Get Function
  * @ingroup globus_openssl_error_object
  */
 /* @{ */
@@ -391,7 +391,7 @@ done:
 /* @} */
 
 /**
- * Get Reason
+ * @name Get Reason
  * @ingroup globus_openssl_error_object
  */
 /* @{ */
@@ -1012,9 +1012,6 @@ globus_error_match_openssl_error(
  *
  * @param base_source
  *        The module that the error was generated from
- * @param openssl_error_string
- *        The error string constaining the line number and filename
- *        where the error occurred
  * @param error_type
  *        The type of error encapsulating the openssl error
  * @param source_file

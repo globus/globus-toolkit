@@ -29,7 +29,7 @@
         _LENGTH_))
 
 /**
- * Initialize Handle
+ * @name Initializing and Destroying a Handle
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
@@ -44,8 +44,12 @@
  *        The handle to be initialized
  * @param handle_attrs 
  *        The immutable attributes of the handle
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error captured in a globus_result_t
  */
-globus_result_t globus_gsi_cred_handle_init(
+globus_result_t
+globus_gsi_cred_handle_init(
     globus_gsi_cred_handle_t *          handle,
     globus_gsi_cred_handle_attrs_t      handle_attrs)
 {
@@ -114,24 +118,73 @@ globus_result_t globus_gsi_cred_handle_init(
     return result;
 }
 /* globus_gsi_cred_handle_init */
+
+/**
+ * Destroys the credential handle
+ *
+ * @param handle
+ *        The credential handle to be destroyed
+ * @return 
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_cred_handle_destroy(
+    globus_gsi_cred_handle_t            handle)
+{
+    static char *                       _function_name_ =
+        "globus_gsi_cred_handle_destroy";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    if(handle != NULL)
+    {
+        if(handle->cert != NULL)
+        {
+            X509_free(handle->cert);
+        }
+        if(handle->key != NULL)
+        {
+            EVP_PKEY_free(handle->key);
+        }
+        if(handle->cert_chain != NULL)
+        {
+            sk_X509_pop_free(handle->cert_chain, X509_free);
+        }
+        if(handle->attrs != NULL)
+        {
+            globus_gsi_cred_handle_attrs_destroy(handle->attrs);
+        }
+
+        globus_libc_free(handle);
+    }
+    
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_gsi_cred_handle_destroy */
 /* @} */
 
 /**
- * Copy Handle
+ * @name Copying a Handle
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
  * Copies a credential handle.
  *
- * @param a
+ * @param source
  *        The handle to be copied
- * @param b
+ * @param dest
  *        The destination of the copy
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error captured in a globus_result_t
  */
-globus_result_t globus_gsi_cred_handle_copy(
-    globus_gsi_cred_handle_t            a,
-    globus_gsi_cred_handle_t *          b)
+globus_result_t
+globus_gsi_cred_handle_copy(
+    globus_gsi_cred_handle_t            source,
+    globus_gsi_cred_handle_t *          dest)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -139,7 +192,7 @@ globus_result_t globus_gsi_cred_handle_copy(
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
-    if(!b)
+    if(!dest)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
@@ -148,13 +201,13 @@ globus_result_t globus_gsi_cred_handle_copy(
         goto exit;
     }
     
-    if(a->attrs)
+    if(source->attrs)
     {
-        result = globus_gsi_cred_handle_init(b, a->attrs);
+        result = globus_gsi_cred_handle_init(dest, source->attrs);
     }
     else
     {
-        result = globus_gsi_cred_handle_init(b, NULL);
+        result = globus_gsi_cred_handle_init(dest, NULL);
     }
 
     if(result != GLOBUS_SUCCESS)
@@ -165,10 +218,10 @@ globus_result_t globus_gsi_cred_handle_copy(
         goto exit;
     }
 
-    if(a->cert)
+    if(source->cert)
     {
-        (*b)->cert = X509_dup(a->cert);
-        if(!(*b)->cert)
+        (*dest)->cert = X509_dup(source->cert);
+        if(!(*dest)->cert)
         {
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
@@ -178,13 +231,13 @@ globus_result_t globus_gsi_cred_handle_copy(
         }
     }
 
-    if(a->key)
+    if(source->key)
     {
         BIO *                           pk_mem_bio;
         int                             len;
 
         pk_mem_bio = BIO_new(BIO_s_mem());
-        len = i2d_PrivateKey_bio(pk_mem_bio, a->key);
+        len = i2d_PrivateKey_bio(pk_mem_bio, source->key);
         if(len <= 0)
         {
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -195,25 +248,26 @@ globus_result_t globus_gsi_cred_handle_copy(
             goto exit;
         }
 
-        (*b)->key = d2i_PrivateKey_bio(pk_mem_bio, &(*b)->key);
+        (*dest)->key = d2i_PrivateKey_bio(pk_mem_bio, &(*dest)->key);
         BIO_free(pk_mem_bio);
     }
 
-    if(a->cert_chain)
+    if(source->cert_chain)
     {
         int                             chain_index = 0;
-        (*b)->cert_chain = sk_X509_new_null();
+        (*dest)->cert_chain = sk_X509_new_null();
         for(chain_index = 0; 
-            chain_index < sk_X509_num(a->cert_chain); 
+            chain_index < sk_X509_num(source->cert_chain); 
             ++chain_index)
         {
-            sk_X509_insert((*b)->cert_chain, 
-                           X509_dup(sk_X509_value(a->cert_chain, chain_index)), 
+            sk_X509_insert((*dest)->cert_chain, 
+                           X509_dup(sk_X509_value(source->cert_chain,
+                                                  chain_index)), 
                            chain_index);
         }
     }
 
-    (*b)->goodtill = a->goodtill;
+    (*dest)->goodtill = source->goodtill;
 
  exit:
 
@@ -222,7 +276,24 @@ globus_result_t globus_gsi_cred_handle_copy(
 }
 /* @} */
         
-globus_result_t globus_gsi_cred_get_handle_attrs(
+/**
+ * @name Getting the Handle Attributes
+ * @ingroup globus_gsi_cred_handle
+ */
+/* @{ */
+/**
+ * This function retreives a copy of the credential handle attributes
+ *
+ * @param handle
+ *        The credential handle to retrieve the attributes from
+ * @param attrs
+ *        Contains the credential attributes on return
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error captured in a globus_result_t
+ */
+globus_result_t
+globus_gsi_cred_get_handle_attrs(
     globus_gsi_cred_handle_t            handle,
     globus_gsi_cred_handle_attrs_t *    attrs)
 {
@@ -266,8 +337,27 @@ globus_result_t globus_gsi_cred_get_handle_attrs(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
-globus_result_t globus_gsi_cred_get_goodtill(
+/**
+ * @name Getting the Credential Expiration
+ * @ingroup globus_gsi_cred_handle
+ */
+/* @{ */
+/**
+ * This function retreives the expiration time of the credential contained
+ * in the handle
+ *
+ * @param cred_handle
+ *        The credential handle to retrieve the expiration time from
+ * @param goodtill
+ *        Contains the expiration time on return
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error captured in a globus_result_t
+ */
+globus_result_t
+globus_gsi_cred_get_goodtill(
     globus_gsi_cred_handle_t            cred_handle,
     time_t *                            goodtill)
 {
@@ -296,9 +386,27 @@ globus_result_t globus_gsi_cred_get_goodtill(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* }@ */
 
-
-globus_result_t globus_gsi_cred_get_lifetime(
+/**
+ * @name Getting the Credential Lifetime
+ * @ingroup globus_gsi_cred_handle
+ */
+/* @{ */
+/**
+ * This function retreives the lifetime of the credential contained
+ * in a handle
+ *
+ * @param cred_handle
+ *        The credential handle to retrieve the lifetime from
+ * @param lifetime
+ *        Contains the lifetime on return
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error captured in a globus_result_t
+ */
+globus_result_t
+globus_gsi_cred_get_lifetime(
     globus_gsi_cred_handle_t            cred_handle,
     time_t *                            lifetime)
 {
@@ -334,59 +442,10 @@ globus_result_t globus_gsi_cred_get_lifetime(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* }@ */
 
 /**
- * Destroy Credential Handle
- * @ingroup globus_gsi_cred_handle_attrs
- */
-/* @{ */
-/**
- * Destroys the credential handle
- *
- * @param handle
- *        The credential handle to be destroyed
- * @return 
- *        GLOBUS_SUCCESS
- */
-globus_result_t globus_gsi_cred_handle_destroy(
-    globus_gsi_cred_handle_t            handle)
-{
-    static char *                       _function_name_ =
-        "globus_gsi_cred_handle_destroy";
-
-    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
-
-    if(handle != NULL)
-    {
-        if(handle->cert != NULL)
-        {
-            X509_free(handle->cert);
-        }
-        if(handle->key != NULL)
-        {
-            EVP_PKEY_free(handle->key);
-        }
-        if(handle->cert_chain != NULL)
-        {
-            sk_X509_pop_free(handle->cert_chain, X509_free);
-        }
-        if(handle->attrs != NULL)
-        {
-            globus_gsi_cred_handle_attrs_destroy(handle->attrs);
-        }
-
-        globus_libc_free(handle);
-    }
-    
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-
-    return GLOBUS_SUCCESS;
-}
-/* globus_gsi_cred_handle_destroy */
-/* @} */
-
-/**
- * Set Cert
+ * @name Setting and Getting the Certificate
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
@@ -396,16 +455,17 @@ globus_result_t globus_gsi_cred_handle_destroy(
  * object
  *
  * @param handle
- *        The credential containing the certificate to be set
+ *        The credential handle to set the certificate on
  * @param cert
  *        The X509 cert to set in the cred handle.  The cert
- *        passed in can be NULL, and will set the cert in
+ *        passed in can be NULL which will set the cert in
  *        the handle to NULL, freeing the current cert in the
  *        handle.
  * @return 
  *        GLOBUS_SUCCESS or an error object id if an error
  */
-globus_result_t globus_gsi_cred_set_cert(
+globus_result_t
+globus_gsi_cred_set_cert(
     globus_gsi_cred_handle_t            handle,
     X509 *                              cert)
 {
@@ -458,10 +518,63 @@ globus_result_t globus_gsi_cred_set_cert(
 
     return result;
 }
+
+/**
+ * Get the certificate of a credential 
+ *
+ * @param handle
+ *        The credential handle to get the certificate from
+ * @param cert
+ *        The resulting X509 certificate, a duplicate of the
+ *        certificate in the credential handle.  This variable
+ *        should be freed when the user is finished with it using
+ *        the function X509_free.
+ * @return
+ *        GLOBUS_SUCCESS if no error, otherwise an error object id
+ *        is returned
+ */
+globus_result_t
+globus_gsi_cred_get_cert(
+    globus_gsi_cred_handle_t            handle,
+    X509 **                             cert)
+{
+    globus_result_t                     result;
+    static char *                       _function_name_ = 
+        "globus_gsi_cred_get_cert";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("NULL cred handle passed to function: %s", _function_name_));
+        goto error_exit;
+    }
+
+    if(cert == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("NULL X509 cert passed to function: %s", _function_name_));
+        goto error_exit;
+    }
+
+    *cert = X509_dup(handle->cert);
+
+    result = GLOBUS_SUCCESS;
+
+ error_exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
 /* @} */
 
 /**
- * Set Cred Key
+ * @name Setting and Getting the Credential Key
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
@@ -469,13 +582,14 @@ globus_result_t globus_gsi_cred_set_cert(
  * Set the private key of the credential handle
  *
  * @param handle
- *        The handle containing the key to be set
+ *        The handle on which to set the key.
  * @param key 
  *        The private key to set the handle's key to.  This
  *        value can be NULL, in which case the current handle's
  *        key is freed.       
  */
-globus_result_t globus_gsi_cred_set_key(
+globus_result_t
+globus_gsi_cred_set_key(
     globus_gsi_cred_handle_t            handle,
     EVP_PKEY *                          key)
 {
@@ -545,18 +659,85 @@ globus_result_t globus_gsi_cred_set_key(
 
     return result;
 }    
-/* @} */
 
 /**
- * Set Cert Chain
+ * Get the credential handle's private key
+ *
+ * @param handle
+ *        The credential handle containing the private key to get
+ * @param key
+ *        The private key which after this function returns is set
+ *        to a duplicate of the private key of the credential 
+ *        handle.  This variable needs to be freed by the user when
+ *        it is no longer used via the function EVP_PKEY_free. 
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error object identifier
+ */
+globus_result_t
+globus_gsi_cred_get_key(
+    globus_gsi_cred_handle_t            handle,
+    EVP_PKEY **                         key)
+{
+    globus_result_t                     result;
+    int                                 len;
+    BIO *                               pk_mem_bio = NULL;
+    static char *                       _function_name_ = 
+        "globus_gsi_cred_get_key";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("NULL cred handle passed to function: %s", _function_name_));
+        goto error_exit;
+    }
+
+    if(key == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("NULL key parameter passed to function: %s", _function_name_));
+        goto error_exit;
+    }
+
+    pk_mem_bio = BIO_new(BIO_s_mem());
+    len = i2d_PrivateKey_bio(pk_mem_bio, handle->key);
+    if(len <= 0)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("Couldn't convert private key to DER encoded form"));
+        goto error_exit;
+    }
+
+    *key = d2i_PrivateKey_bio(pk_mem_bio, key);
+    BIO_free(pk_mem_bio);
+
+    result = GLOBUS_SUCCESS;
+
+ error_exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+/* @} */
+    
+/**
+ * @name Setting and Getting the Certificate Chain
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
- * Set the certificate chain of the credential
+ * Set the certificate chain of the credential handle
  *
  * @param handle
- *        The handle containing the certificate chain to set
+ *        The handle containing the certificate chain field to set
  * @param cert_chain
  *        The certificate chain to set the handle's certificate chain
  *        to
@@ -564,7 +745,8 @@ globus_result_t globus_gsi_cred_set_key(
  *        GLOBUS_SUCCESS if no error, otherwise an error object id
  *        is returned
  */
-globus_result_t globus_gsi_cred_set_cert_chain(
+globus_result_t
+globus_gsi_cred_set_cert_chain(
     globus_gsi_cred_handle_t            handle,
     STACK_OF(X509) *                    cert_chain)
 {
@@ -645,143 +827,7 @@ globus_result_t globus_gsi_cred_set_cert_chain(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
-/**
- * Get Cred Cert
- * @ingroup globus_gsi_cred_handle
- */
-/* @{ */
-/**
- * Get the certificate of a credential 
- *
- * @param handle
- *        The credential handle to get the certificate from
- * @param cert
- *        The resulting X509 certificate, a duplicate of the
- *        certificate in the credential handle.  This variable
- *        should be freed when the user is finished with it using
- *        the function X509_free.
- * @return
- *        GLOBUS_SUCCESS if no error, otherwise an error object id
- *        is returned
- */
-globus_result_t globus_gsi_cred_get_cert(
-    globus_gsi_cred_handle_t            handle,
-    X509 **                             cert)
-{
-    globus_result_t                     result;
-    static char *                       _function_name_ = 
-        "globus_gsi_cred_get_cert";
-
-    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
-
-    if(handle == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("NULL cred handle passed to function: %s", _function_name_));
-        goto error_exit;
-    }
-
-    if(cert == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("NULL X509 cert passed to function: %s", _function_name_));
-        goto error_exit;
-    }
-
-    *cert = X509_dup(handle->cert);
-
-    result = GLOBUS_SUCCESS;
-
- error_exit:
-
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return result;
-}
-/* @} */
-
-/**
- * Get Cred Key
- * @ingroup globus_gsi_cred_handle
- */
-/* @{ */
-/**
- * Get the credential handle's private key
- *
- * @param handle
- *        The credential handle containing the private key to get
- * @param key
- *        The private key which after this function returns is set
- *        to a duplicate of the private key of the credential 
- *        handle.  This variable needs to be freed by the user when
- *        it is no longer used via the function EVP_PKEY_free. 
- *
- * @return
- *        GLOBUS_SUCCESS or an error object identifier
- */
-globus_result_t globus_gsi_cred_get_key(
-    globus_gsi_cred_handle_t            handle,
-    EVP_PKEY **                         key)
-{
-    globus_result_t                     result;
-    int                                 len;
-    BIO *                               pk_mem_bio = NULL;
-    static char *                       _function_name_ = 
-        "globus_gsi_cred_get_key";
-
-    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
-
-    if(handle == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("NULL cred handle passed to function: %s", _function_name_));
-        goto error_exit;
-    }
-
-    if(key == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("NULL key parameter passed to function: %s", _function_name_));
-        goto error_exit;
-    }
-
-    pk_mem_bio = BIO_new(BIO_s_mem());
-    len = i2d_PrivateKey_bio(pk_mem_bio, handle->key);
-    if(len <= 0)
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("Couldn't convert private key to DER encoded form"));
-        goto error_exit;
-    }
-
-    *key = d2i_PrivateKey_bio(pk_mem_bio, key);
-    BIO_free(pk_mem_bio);
-
-    result = GLOBUS_SUCCESS;
-
- error_exit:
-
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return result;
-}
-/* @} */
-    
-/**
- * Get Cert Chain
- * @ingroup globus_gsi_cert_handle
- */
-/* @{ */
 /**
  * Get the certificate chain of the credential handle
  *
@@ -797,7 +843,8 @@ globus_result_t globus_gsi_cred_get_key(
  *        GLOBUS_SUCCESS if no error, otherwise an error object
  *        id is returned
  */
-globus_result_t globus_gsi_cred_get_cert_chain(
+globus_result_t
+globus_gsi_cred_get_cert_chain(
     globus_gsi_cred_handle_t            handle,
     STACK_OF(X509) **                   cert_chain)
 {
@@ -860,7 +907,7 @@ globus_result_t globus_gsi_cred_get_cert_chain(
 /* @} */
 
 /**
- * Get Cred Cert X509 Subject Name object
+ * @name Get Cred Cert X509 Subject Name object
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
@@ -925,7 +972,7 @@ globus_result_t globus_gsi_cred_get_X509_subject_name(
 /* @} */
 
 /**
- * Get X509 Identity Name
+ * @name Get X509 Identity Name
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
@@ -935,7 +982,7 @@ globus_result_t globus_gsi_cred_get_X509_subject_name(
  * @param handle
  *        The credential handle containing the certificate to
  *        get the identity from
- * @param issuer_name
+ * @param identity_name
  *        The identity certificate's X509 subject name
  *
  * @return
@@ -1016,7 +1063,7 @@ globus_result_t globus_gsi_cred_get_X509_identity_name(
 /* @} */
 
 /**
- * Get Cred Cert Subject Name
+ * @name Get Cred Cert Subject Name
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
@@ -1080,12 +1127,12 @@ globus_result_t globus_gsi_cred_get_subject_name(
 /* @} */
 
 /**
- * Get Policies of Cert Chain 
+ * @name Get Policies from Cert Chain 
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
- * Get the Policies of the Cert Chain in the handle.  The policies
+ * Get the Policies from the Cert Chain in the handle.  The policies
  * will be null-terminated as they are added to the handle.
  * If a policy for a cert in the chain doesn't exist, the string
  * in the stack will be set to the static string GLOBUS_NULL_POLICIES
@@ -1241,12 +1288,12 @@ globus_gsi_cred_get_policies(
 
 
 /**
- * Get Policy Languages of Cert Chain 
+ * @name Get Policy Languages from Cert Chain 
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
- * Get the policy languages of the cert chain in the handle.
+ * Get the policy languages from the cert chain in the handle.
  *
  * @param handle
  *        the handle to get the cert chain containing the policies
@@ -1359,7 +1406,7 @@ globus_gsi_cred_get_policy_languages(
 /* @} */
 
 /**
- * Get Issuer Name
+ * @name Get Issuer Name
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
@@ -1427,7 +1474,7 @@ globus_result_t globus_gsi_cred_get_issuer_name(
 /* @} */
 
 /**
- * Get Identity Name
+ * @name Get Identity Name
  * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
@@ -1437,7 +1484,7 @@ globus_result_t globus_gsi_cred_get_issuer_name(
  * @param handle
  *        The credential handle containing the certificate to
  *        get the identity of
- * @param issuer_name
+ * @param identity_name
  *        The identity certificate's subject name
  *
  * @return
@@ -1508,6 +1555,25 @@ globus_result_t globus_gsi_cred_get_identity_name(
 }
 /* @} */
 
+/**
+ * @name Credential validation functions
+ * @ingroup globus_gsi_cred_handle
+ */
+/* @{ */
+/**
+ * This function performs path valiadtion on the certificate chain contained in
+ * the credential handle.
+ *
+ * @param cred_handle
+ *        The credential handle containing the certificate chain to
+ *        be validated
+ * @param callback_data
+ *        A initialized callback data structure
+ *
+ * @return
+ *        GLOBUS_SUCCESS if no error, otherwise an error object
+ *        identifier is returned
+ */
 globus_result_t
 globus_gsi_cred_verify_cert_chain(
     globus_gsi_cred_handle_t            cred_handle,
@@ -1653,7 +1719,18 @@ globus_gsi_cred_verify_cert_chain(
     return result;
 }
 
-
+/**
+ * This function ensures that the certificate and private key in the credential
+ * handle match.
+ *
+ * @param handle
+ *        The credential handle containing the certificate and key to
+ *        be validated
+ *
+ * @return
+ *        GLOBUS_SUCCESS if no error, otherwise an error object
+ *        identifier is returned
+ */
 globus_result_t
 globus_gsi_cred_verify(
     globus_gsi_cred_handle_t            handle)
@@ -1703,11 +1780,12 @@ globus_gsi_cred_verify(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
- * Good Till
+ * @name Good Till
  * @ingroup globus_gsi_cred_operations
  */
 /* @{ */

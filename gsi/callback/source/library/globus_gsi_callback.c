@@ -32,6 +32,7 @@
 #endif
 #endif
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static globus_mutex_t                   globus_l_gsi_callback_oldgaa_mutex;
 
 static int globus_l_gsi_callback_activate(void);
@@ -155,9 +156,93 @@ globus_l_gsi_callback_deactivate(void)
     return result;
 }
 
-static int globus_i_gsi_callback_SSL_callback_data_index = 5;
-static int globus_i_gsi_callback_X509_STORE_callback_data_index = 6;
+static int globus_i_gsi_callback_SSL_callback_data_index = -1;
+static int globus_i_gsi_callback_X509_STORE_callback_data_index = -1;
 
+
+static int
+globus_l_gsi_callback_openssl_new(
+    void *                              parent, 
+    void *                              ptr, 
+    CRYPTO_EX_DATA *                    ad,
+    int                                 idx, 
+    long                                argl, 
+    void *                              argp)
+{
+    int                                 result = 1;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_openssl_new";
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    /* init app specific data (callback data)
+     * since we can't allocate the ptr here
+     * this function isn't particularly useful
+     */
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+static int
+globus_l_gsi_callback_openssl_free(
+    void *                              parent, 
+    void *                              ptr, 
+    CRYPTO_EX_DATA *                    ad,
+    int                                 idx, 
+    long                                argl, 
+    void *                              argp)
+{
+    int                                 result = 1;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_openssl_free";
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    /* free the callback data - currently not used*/
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+static int
+globus_l_gsi_callback_openssl_dup(
+    CRYPTO_EX_DATA *                    to, 
+    CRYPTO_EX_DATA *                    from, 
+    void *                              from_d,                   
+    int                                 idx, 
+    long                                argl, 
+    void *                              argp)
+{
+    int                                 result = 1;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_openssl_dup";
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    /* copy the callback data - currenlty not used by OpenSSL */
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+#endif
+
+/**
+ * @name Get callback data index from X509_STORE
+ * @ingroup globus_gsi_callback
+ */
+/* @{ */
+/**
+ * Retrieve or create the index for our callback data structure in the
+ * X509_STORE.
+ *
+ * @param index
+ *        Will contain the index upon return
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_X509_STORE_callback_data_index(
     int *                               index)
@@ -173,9 +258,9 @@ globus_gsi_callback_get_X509_STORE_callback_data_index(
         globus_i_gsi_callback_X509_STORE_callback_data_index = 
             X509_STORE_CTX_get_ex_new_index(
                 0, NULL, 
-                (CRYPTO_EX_new *)  &globus_gsi_callback_openssl_new,
-                (CRYPTO_EX_dup *)  &globus_gsi_callback_openssl_dup,
-                (CRYPTO_EX_free *) &globus_gsi_callback_openssl_free);
+                (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
+                (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
+                (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
         if(globus_i_gsi_callback_X509_STORE_callback_data_index < 0)
         {
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
@@ -192,7 +277,24 @@ globus_gsi_callback_get_X509_STORE_callback_data_index(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+/**
+ * @name Get callback data index from SSL structure
+ * @ingroup globus_gsi_callback
+ */
+/* @{ */
+/**
+ * Retrieve or create the index for our callback data structure in the
+ * SSL structure.
+ *
+ * @param index
+ *        Will contain the index upon return
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_SSL_callback_data_index(
     int *                               index)
@@ -207,9 +309,9 @@ globus_gsi_callback_get_SSL_callback_data_index(
     {
         globus_i_gsi_callback_SSL_callback_data_index = SSL_get_ex_new_index(
             0, NULL, 
-            (CRYPTO_EX_new *)  &globus_gsi_callback_openssl_new,
-            (CRYPTO_EX_dup *)  &globus_gsi_callback_openssl_dup,
-            (CRYPTO_EX_free *) &globus_gsi_callback_openssl_free);
+            (CRYPTO_EX_new *)  &globus_l_gsi_callback_openssl_new,
+            (CRYPTO_EX_dup *)  &globus_l_gsi_callback_openssl_dup,
+            (CRYPTO_EX_free *) &globus_l_gsi_callback_openssl_free);
         if(globus_i_gsi_callback_SSL_callback_data_index < 0)
         {
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
@@ -226,7 +328,26 @@ globus_gsi_callback_get_SSL_callback_data_index(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+/**
+ * @name Certificate verify wrapper
+ * @ingroup globus_gsi_callback
+ */
+/* @{ */
+/**
+ * This function wraps the OpenSSL certificate verification callback for the
+ * purpose of a replacing the standard issuer check with one that deals with
+ * proxy certificates. Should be used with SSL_CTX_set_cert_verify_callback()
+ *
+ * @param context
+ *        The X509_STORE_CTX for which to register the callback.
+ * @param arg
+ *        Arguments to the callback. Currently ignored.
+ * @return
+ *        1 on success
+ *        0 on failure
+ */
 int 
 globus_gsi_callback_X509_verify_cert(
     X509_STORE_CTX *                    context,
@@ -248,7 +369,26 @@ globus_gsi_callback_X509_verify_cert(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+/**
+ * @name Independent path validation callback.
+ * @ingroup globus_gsi_callback
+ */
+/* @{ */
+/**
+ * This function provides a path validation callback for validation outside of
+ * a SSL session. It should be used in X509_STORE_set_verify_cb_func().
+ *
+ * @param preverify_ok
+ *        Communicates the result of default validation steps performed by
+ *        OpenSSL  
+ * @param x509_context
+ *        The validation state object
+ * @return
+ *        1 on success
+ *        0 on failure 
+ */
 int globus_gsi_callback_create_proxy_callback(
     int                                 preverify_ok,
     X509_STORE_CTX *                    x509_context)
@@ -306,7 +446,27 @@ int globus_gsi_callback_create_proxy_callback(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return verify_result;
 }
+/* @} */
 
+/**
+ * @name SSL path validation callback.
+ * @ingroup globus_gsi_callback
+ */
+/* @{ */
+/**
+ * This function provides a path validation callback for the validation part of
+ * establishing a SSL session. It handles proxy certificates, X509 Extensions
+ * and CRL checking. It should be used in SSL_CTX_set_verify().
+ *
+ * @param preverify_ok
+ *        Communicates the result of default validation steps performed by
+ *        OpenSSL  
+ * @param x509_context
+ *        The validation state object.
+ * @return
+ *        1 on success
+ *        0 on failure 
+ */
 int globus_gsi_callback_handshake_callback(
     int                                 preverify_ok,
     X509_STORE_CTX *                    x509_context)
@@ -372,6 +532,78 @@ int globus_gsi_callback_handshake_callback(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return verify_result;
 }
+/* @} */
+
+/**
+ * @name OpenSSL X509_check_issued() wrapper
+ * @ingroup globus_gsi_callback
+ */
+/* @{ */
+/**
+ * This function wraps the OpenSSL X509_check_issued() call and catches the
+ * error caused by the fact that a proxy certificate issuer may not have to
+ * have the correct KeyUsage fields set.
+ *
+ * @param context
+ *        The validation state object.
+ * @param cert
+ *        The certificate to check
+ * @param issuer
+ *        The issuer certificate to check 
+ * @return
+ *        1 on success
+ *        0 on failure 
+ */
+int globus_gsi_callback_check_issued(
+    X509_STORE_CTX *                    context,
+    X509 *                              cert,
+    X509 *                              issuer)
+{
+    globus_result_t                     result;
+    int                                 return_value;
+    int                                 return_code = 1;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_check_issued";
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+    
+    return_value = X509_check_issued(issuer, cert);
+    if(return_value != X509_V_OK)
+    {
+        return_code = 0;
+        switch(return_value)
+        {
+ 
+        case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
+             /* If this is a proxy certificate then the issuer
+              * does not need to have the key_usage set.
+              * So check if its a proxy, and ignore
+              * the error if so. 
+              */
+            result = globus_gsi_cert_utils_get_cert_type(cert, &cert_type);
+            if(result != GLOBUS_SUCCESS)
+            {
+                return_code = 0;
+                break;
+            }
+            
+            if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
+            {
+                /* its a proxy! */
+                return_code = 1;
+            }
+            break;
+            
+        default:
+            break;
+        }
+    }
+    
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return return_code;
+}
+/* @} */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -1321,56 +1553,6 @@ globus_i_gsi_callback_check_path_length(
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
-}
-
-int globus_gsi_callback_check_issued(
-    X509_STORE_CTX *                    context,
-    X509 *                              cert,
-    X509 *                              issuer)
-{
-    globus_result_t                     result;
-    int                                 return_value;
-    int                                 return_code = 1;
-    globus_gsi_cert_utils_cert_type_t   cert_type;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_check_issued";
-    
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-    
-    return_value = X509_check_issued(issuer, cert);
-    if(return_value != X509_V_OK)
-    {
-        return_code = 0;
-        switch(return_value)
-        {
- 
-        case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
-             /* If this is a proxy certificate then the issuer
-              * does not need to have the key_usage set.
-              * So check if its a proxy, and ignore
-              * the error if so. 
-              */
-            result = globus_gsi_cert_utils_get_cert_type(cert, &cert_type);
-            if(result != GLOBUS_SUCCESS)
-            {
-                return_code = 0;
-                break;
-            }
-            
-            if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
-            {
-                /* its a proxy! */
-                return_code = 1;
-            }
-            break;
-            
-        default:
-            break;
-        }
-    }
-    
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return return_code;
 }
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -92,11 +92,6 @@ void
 globus_i_openssl_error_handle_destroy(
     globus_openssl_error_handle_t       handle);
 
-char *
-globus_error_openssl_create_error_string(
-    const char *                        format,
-    ...);
-
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 #endif /* GLOBUS_I_ERROR_OPENSSL_H */

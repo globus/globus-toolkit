@@ -11,7 +11,7 @@
  * types defined by OpenSSL
  *
  * Any program that uses Globus OpenSSL Error functions must include
- * "globus_common.h". 
+ * "globus_error_openssl.h". 
  *
  * @htmlonly
  * <a href="main.html" target="_top">View documentation without frames</a><br>
@@ -37,18 +37,8 @@ EXTERN_C_BEGIN
 #include <string.h>
 
 /**
- * @defgroup globus_openssl_error_object Error Construction
- * @ingroup globus_openssl_error_api
- *
- * Create and initialize a Globus OpenSSL Error object.
- *
- * This section defines operations to create and initialize Globus
- * OpenSSLError objects.
- */
-
-
-/**
  * @defgroup globus_gsi_openssl_error_activation Activation
+ * @ingroup globus_openssl_error_api
  *
  * Globus GSI OpenSSL Error uses standard Globus module activation and
  * deactivation. Before any Globus GSI OpenSSL Error functions are called, the
@@ -95,6 +85,16 @@ globus_module_descriptor_t		globus_i_gsi_openssl_error_module;
                                 (&GLOBUS_ERROR_TYPE_OPENSSL_DEFINITION)
 
 extern const globus_object_type_t GLOBUS_ERROR_TYPE_OPENSSL_DEFINITION;
+
+/**
+ * @defgroup globus_openssl_error_object Error Construction
+ * @ingroup globus_openssl_error_api
+ *
+ * Create and initialize a Globus OpenSSL Error object.
+ *
+ * This section defines operations to create and initialize Globus
+ * OpenSSLError objects.
+ */
 
 typedef struct globus_l_openssl_error_handle_s *
                                         globus_openssl_error_handle_t;

@@ -155,13 +155,13 @@ globus_l_gsi_cred_subject_cmp(
 #endif
 
 /**
- * Read Credential
- * @ingroup globus_gsi_cred_operation
+ * @name Read Credential
+ * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
- * Read a Credential from a filesystem location.  The credential
- * to read will be determined by the search order of the handle
+ * Read a Credential from a filesystem location. The credential
+ * to read will be determined by the search order specified in the handle
  * attributes.  
  * NOTE:  This function always searches for the desired credential.
  *        If you don't want to perform a search, then don't use this
@@ -787,17 +787,19 @@ globus_result_t globus_gsi_cred_read(
 /* @} */
 
 /**
- * Read Proxy
- * @ingroup globus_gsi_cred_operation
+ * @name Reading Proxy Credentials
+ * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
- * Read a proxy from a PEM file.  Assumes that the handle
- * attributes contain the filename of the proxy to read
+ * Read a proxy from a PEM file.
  *
  * @param handle
  *        The credential handle to set based on the proxy
- *        parameters read from the file
+ *        credential read from the file
+ * @param proxy_filename
+ *        The file containing the proxy credential
+ *
  * @return
  *        GLOBUS_SUCCESS or an error object identifier
  */
@@ -852,15 +854,9 @@ globus_result_t globus_gsi_cred_read_proxy(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * Read Credential
- * @ingroup globus_gsi_cred_operations
- */
-/* @{ */
-/**
- * Read a Credential from a BIO stream and set the 
+ * Read a Proxy Credential from a BIO stream and set the 
  * credential handle to represent the read credential.
  * The values read from the stream, in order, will be
  * the signed certificate, the private key, 
@@ -868,9 +864,10 @@ globus_result_t globus_gsi_cred_read_proxy(
  *
  * @param handle
  *        The credential handle to set.  The credential
- *        should not be initialized (i.e. NULL).
+ *        should handle be initialized (i.e. not NULL).
  * @param bio
  *        The stream to read the credential from
+ *
  * @return
  *        GLOBUS_SUCCESS unless an error occurred, in which
  *        case an error object is returned
@@ -1016,20 +1013,20 @@ globus_gsi_cred_read_proxy_bio(
 /* @} */
 
 /**
- * Read Key
+ * @name Read Key
  * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
- * Read a key from a the file locations specified in the
- * handle attributes.  Cert and key should be in PEM format.
+ * Read a key from a PEM file.
  *
  * @param handle
  *        the handle to set based on the key that is read
  * @param key_filename
  *        the filename of the key to read
  * @param pw_cb
- *        the callback for the password to read in the key
+ *        the callback for obtaining a password for decrypting the key. 
+ *
  * @return
  *        GLOBUS_SUCCESS or an error object identifier
  */
@@ -1107,18 +1104,18 @@ globus_gsi_cred_read_key(
 /* @} */
 
 /**
- * Read Cert
+ * @name Read Cert
  * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
- * Read a cert from a the file locations specified in the
- * handle attributes.  Cert should be in PEM format.
+ * Read a cert from a file.  Cert should be in PEM format.
  *
  * @param handle
  *        the handle to set based on the certificate that is read
  * @param cert_filename
  *        the filename of the certificate to read
+ *
  * @return
  *        GLOBUS_SUCCESS or an error object identifier
  */
@@ -1230,6 +1227,22 @@ globus_result_t globus_gsi_cred_read_cert(
 }
 /* @} */
 
+/**
+ * @name Read Cert & Key in PKCS12 Format
+ * @ingroup globus_gsi_cred_operations
+ */
+/* @{ */
+/**
+ * Read a cert & key from a file. The file should be in PKCS12 format.
+ *
+ * @param handle
+ *        the handle to populate with the read credential
+ * @param pkcs12_filename
+ *        the filename containing the credential to read
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error object identifier
+ */
 globus_result_t globus_gsi_cred_read_pkcs12(
     globus_gsi_cred_handle_t            handle,
     char *                              pkcs12_filename)
@@ -1457,9 +1470,10 @@ globus_result_t globus_gsi_cred_read_pkcs12(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
 /**
- * Write Credential
+ * @name Write Credential
  * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
@@ -1543,14 +1557,22 @@ globus_result_t globus_gsi_cred_write(
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
-}
-/* @} */
+}    
     
-    
-/* Utility function that will write the credential to the standard
- * proxy file.
+/**
+ * Write out a credential to a file.  The credential parameters written,
+ * in order, are the signed certificate, the RSA private key,
+ * and the certificate chain (a set of X509 certificates).
+ * the credential is written out in PEM format. 
+ *
+ * @param handle
+ *        The credential to write out
+ * @param proxy_filename
+ *        The file to write out to
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which
+ *        case an error object ID is returned.
  */
-
 globus_result_t globus_gsi_cred_write_proxy(
     globus_gsi_cred_handle_t            handle,
     char *                              proxy_filename)
@@ -1619,7 +1641,25 @@ globus_result_t globus_gsi_cred_write_proxy(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }    
+/* @} */
 
+/**
+ * @name Get the X509 certificate type (EEC, CA, proxy type, etc.)
+ * @ingroup globus_gsi_cred_operations
+ */
+/* @{ */
+/**
+ * Determine the type of the given X509 certificate For the list of possible
+ * values returned, see globus_gsi_cert_utils_cert_type_t.
+ *
+ * @param handle
+ *        The credential handle containing the certificate
+ * @param type
+ *        The returned X509 certificate type
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error captured in a globus_result_t
+ */
 globus_result_t
 globus_gsi_cred_get_cert_type(
     globus_gsi_cred_handle_t            handle,
@@ -1641,12 +1681,12 @@ globus_gsi_cred_get_cert_type(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-
+/* @} */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
- * Get PROXYCERTINFO Struct
+ * @name Get PROXYCERTINFO Struct
  * @ingroup globus_i_gsi_cred
  */
 /* @{ */

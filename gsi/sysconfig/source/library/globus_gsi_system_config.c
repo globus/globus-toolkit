@@ -4308,7 +4308,7 @@ globus_gsi_sysconfig_get_current_working_dir_unix(
 
 /**
  * @name UNIX - Get HOME Directory
- * @ingroup globus_i_gsi_sysconfig_unix
+ * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
@@ -4420,7 +4420,7 @@ globus_gsi_sysconfig_get_home_dir_unix(
 
 /**
  * @name UNIX - File Exists
- * @ingroup globus_i_gsi_sysconfig_unix
+ * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
@@ -4522,7 +4522,7 @@ globus_gsi_sysconfig_file_exists_unix(
 
 /**
  * @name UNIX - Directory Exists
- * @ingroup globus_i_gsi_sysconfig_unix
+ * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
@@ -4617,7 +4617,7 @@ globus_gsi_sysconfig_dir_exists_unix(
 
 /**
  * @name UNIX - Check File Status for Key
- * @ingroup globus_i_gsi_sysconfig_unix
+ * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
@@ -4628,17 +4628,12 @@ globus_gsi_sysconfig_dir_exists_unix(
  * 
  * @param filename
  *        The name of the file to check the status of
- * @param status
- *        The status of the file being checked
- *        see @ref globus_gsi_statcheck_t for possible values
- *        of this variable 
  *
  * @return 
  *        GLOBUS_SUCCESS if the status of the file was able
  *        to be determined.  Otherwise, an error object
  *        identifier
  *
- * @see globus_gsi_statcheck_t
  */
 globus_result_t
 globus_gsi_sysconfig_check_keyfile_unix(
@@ -4752,7 +4747,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
 
 /**
  * @name UNIX - Check File Status for Cert
- * @ingroup globus_i_gsi_sysconfig_unix
+ * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
@@ -4763,17 +4758,12 @@ globus_gsi_sysconfig_check_keyfile_unix(
  * 
  * @param filename
  *        The name of the file to check the status of
- * @param status
- *        The status of the file being checked
- *        see @ref globus_gsi_statcheck_t for possible values
- *        of this variable 
  *
  * @return 
  *        GLOBUS_SUCCESS if the status of the file was able
  *        to be determined.  Otherwise, an error object
  *        identifier
  *
- * @see globus_gsi_statcheck_t
  */
 globus_result_t
 globus_gsi_sysconfig_check_certfile_unix(

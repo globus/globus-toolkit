@@ -15,6 +15,21 @@
 #include "globus_gsi_callback_constants.h"
 #include "openssl/x509.h"
 
+/**
+ * @name Initializing and destroying a callback data structure
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function initializes a globus_gsi_callback_data_t.
+ *
+ * @param callback_data
+ *        Reference to the structure to be initialized
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_data_init(
     globus_gsi_callback_data_t *        callback_data)
@@ -65,6 +80,16 @@ globus_gsi_callback_data_init(
     return result;
 }
 
+/**
+ * This function destroys a globus_gsi_callback_data_t.
+ *
+ * @param callback_data
+ *        The structure to be destroyed
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_data_destroy(
     globus_gsi_callback_data_t          callback_data)
@@ -100,7 +125,26 @@ globus_gsi_callback_data_destroy(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }   
+/* @} */
 
+
+/**
+ * @name Copying a callback data structure
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function copies a globus_gsi_callback_data_t.
+ *
+ * @param source
+ *        The structure to be copied
+ * @param dest
+ *        The destination of the copy
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_data_copy(
     globus_gsi_callback_data_t     source,
@@ -169,69 +213,25 @@ globus_gsi_callback_data_copy(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
-int globus_gsi_callback_openssl_new(
-    void *                              parent, 
-    void *                              ptr, 
-    CRYPTO_EX_DATA *                    ad,
-    int                                 idx, 
-    long                                argl, 
-    void *                              argp)
-{
-    int                                 result = 1;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_openssl_new";
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    /* init app specific data (callback data)
-     * since we can't allocate the ptr here
-     * this function isn't particularly useful
-     */
-    
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
-int globus_gsi_callback_openssl_free(
-    void *                              parent, 
-    void *                              ptr, 
-    CRYPTO_EX_DATA *                    ad,
-    int                                 idx, 
-    long                                argl, 
-    void *                              argp)
-{
-    int                                 result = 1;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_openssl_free";
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    /* free the callback data - currently not used*/
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
-int globus_gsi_callback_openssl_dup(
-    CRYPTO_EX_DATA *                    to, 
-    CRYPTO_EX_DATA *                    from, 
-    void *                              from_d,                   
-    int                                 idx, 
-    long                                argl, 
-    void *                              argp)
-{
-    int                                 result = 1;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_openssl_dup";
-    
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    /* copy the callback data - currenlty not used by OpenSSL */
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
+/**
+ * @name Getting and setting the certificate chain depth
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function returns the certificate chain depth
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to retrieve the depth from
+ * @param cert_depth
+ *        The returned certificate chain depth
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_cert_depth(
     globus_gsi_callback_data_t          callback_data,
@@ -270,6 +270,18 @@ globus_gsi_callback_get_cert_depth(
     return result;
 }
 
+/**
+ * This function sets the certificate chain depth
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to retrieve the depth from
+ * @param cert_depth
+ *        The certificate chain depth
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_set_cert_depth(
     globus_gsi_callback_data_t          callback_data,
@@ -296,7 +308,25 @@ globus_gsi_callback_set_cert_depth(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+/**
+ * @name Getting and setting the "proxy chain" depth
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function returns the number of proxies in the certificate chain.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to retrieve the depth from
+ * @param proxy_depth
+ *        The returned "proxy chain" depth
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_proxy_depth(
     globus_gsi_callback_data_t          callback_data,
@@ -335,6 +365,18 @@ globus_gsi_callback_get_proxy_depth(
     return result;
 }
 
+/**
+ * This function sets the number of proxies in the certificate chain.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to retrieve the depth from
+ * @param proxy_depth
+ *        The "proxy chain" depth
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_set_proxy_depth(
     globus_gsi_callback_data_t          callback_data,
@@ -361,7 +403,26 @@ globus_gsi_callback_set_proxy_depth(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-    
+/* @} */
+
+/**
+ * @name Getting and setting the certificate type
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function returns the certificate type of the certificate currently
+ * being processed
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to retrieve the certificate type from
+ * @param cert_type
+ *        Variable containing the certificate type on return
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_cert_type(
     globus_gsi_callback_data_t          callback_data,
@@ -399,6 +460,19 @@ globus_gsi_callback_get_cert_type(
     return result;
 }
 
+/**
+ * This function sets the certificate type of the certificate currently being
+ * processed
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to set the certificate type on
+ *
+ * @param cert_type
+ *        The certificate type
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_set_cert_type(
     globus_gsi_callback_data_t          callback_data,
@@ -426,7 +500,26 @@ globus_gsi_callback_set_cert_type(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+/**
+ * @name Getting and setting the certificate chain
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function returns the certificate chain associated with the callback
+ * data.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to retreive the certificate chain
+ *        from.
+ * @param cert_chain
+ *        Contains the certificate chain upon successful return
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_cert_chain(
     globus_gsi_callback_data_t          callback_data,
@@ -479,7 +572,20 @@ globus_gsi_callback_get_cert_chain(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-        
+
+/**
+ * This function sets the certificate chain associated with the callback
+ * data.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to set the certificate chain
+ *        on
+ * @param cert_chain
+ *        The certificate chain
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_set_cert_chain(
     globus_gsi_callback_data_t          callback_data,
@@ -528,7 +634,28 @@ globus_gsi_callback_set_cert_chain(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+/**
+ * @name Getting and setting the limited proxy handling setting
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function gets the value of the limited proxy handling setting. This
+ * setting determines whether path validation will accept limited proxies that
+ * have been further delegated, ie certificate chains with a limited proxy
+ * followed by further proxies. 
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to get the limited proxy setting
+ *        from
+ * @param multiple_limited_proxy_ok
+ *        Contains the value of the setting upon successful return.
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_multiple_limited_proxy_ok(
     globus_gsi_callback_data_t          callback_data,
@@ -566,6 +693,21 @@ globus_gsi_callback_get_multiple_limited_proxy_ok(
     return result;
 }
 
+/**
+ * This function sets the value of the limited proxy handling setting. This
+ * setting determines whether path validation will accept limited proxies that
+ * have been further delegated, ie certificate chains with a limited proxy
+ * followed by further proxies. 
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to set the limited proxy setting
+ *        on
+ * @param multiple_limited_proxy_ok
+ *        The value of the setting
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_set_multiple_limited_proxy_ok(
     globus_gsi_callback_data_t          callback_data,
@@ -593,7 +735,26 @@ globus_gsi_callback_set_multiple_limited_proxy_ok(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+/**
+ * @name Getting and setting a set of X.509 extension OIDs.
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function gets a list of X.509 extension OIDs that may be used by the
+ * extensions callback to allow or disallow certain extensions.   
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to get the array of extension OIDs
+ *        from.
+ * @param extension_oids
+ *        Contains the list of extension OIDs upon successful return.
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_extension_oids(
     globus_gsi_callback_data_t          callback_data,
@@ -631,6 +792,19 @@ globus_gsi_callback_get_extension_oids(
     return result;
 }
 
+/**
+ * This function sets a list of X.509 extension OIDs that may be used by the
+ * extensions callback to allow or disallow certain extensions.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to get the array of extension OIDs
+ *        from.
+ * @param extension_oids
+ *        The list of extension OIDs
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_set_extension_oids(
     globus_gsi_callback_data_t          callback_data,
@@ -658,7 +832,27 @@ globus_gsi_callback_set_extension_oids(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+/**
+ * @name Getting and setting the trusted certificate directory
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function gets the trusted certificate directory from the callback
+ * data.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to get the trusted certificates
+ *        directory from.
+ * @param cert_dir
+ *        Contains the path to the trusted certificate directory upon
+ *        successful return. 
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_cert_dir(
     globus_gsi_callback_data_t          callback_data,
@@ -696,6 +890,20 @@ globus_gsi_callback_get_cert_dir(
     return result;
 }
 
+/**
+ * This function sets the trusted certificate directory on the callback
+ * data.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to set the trusted certificates
+ *        directory on.
+ * @param cert_dir
+ *        The path to the trusted certificate directory
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_set_cert_dir(
     globus_gsi_callback_data_t          callback_data,
@@ -729,7 +937,24 @@ globus_gsi_callback_set_cert_dir(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+/**
+ * @name Getting and setting the callback to be called for unknown X.509 extensions
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function gets the callback that is called for unknown X.509 extensions
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to get the callback information from
+ * @param extension_cb
+ *        Contains the extension callback upon successful return. 
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_extension_cb(
     globus_gsi_callback_data_t          callback_data,
@@ -767,6 +992,17 @@ globus_gsi_callback_get_extension_cb(
     return result;
 }
 
+/**
+ * This function sets the callback that is called for unknown X.509 extensions
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to set the callback information on
+ * @param extension_cb
+ *        The extension callback
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_set_extension_cb(
     globus_gsi_callback_data_t          callback_data,
@@ -794,7 +1030,25 @@ globus_gsi_callback_set_extension_cb(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
+
+/**
+ * @name Getting and setting the error status
+ * @ingroup globus_gsi_callback_data
+ */
+/* @{ */
+/**
+ * This function gets the error status stored in the callback data.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to get the error from
+ * @param error
+ *        Contains the error upon successful return. 
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_get_error(
     globus_gsi_callback_data_t          callback_data,
@@ -822,6 +1076,17 @@ globus_gsi_callback_get_error(
     return result;
 }
 
+/**
+ * This function sets the error status stored in the callback data.
+ *
+ * @param callback_data
+ *        The globus_gsi_callback_data_t to set the error on
+ * @param error
+ *        The error
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
 globus_result_t
 globus_gsi_callback_set_error(
     globus_gsi_callback_data_t          callback_data,
@@ -849,3 +1114,4 @@ globus_gsi_callback_set_error(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
+/* @} */

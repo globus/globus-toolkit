@@ -286,7 +286,7 @@ globus_gsi_proxy_handle_get_key_gen_callback(
  *
  * Currently there are no attributes.
  *
- * @see #globus_gsi_proxy_handle_t
+ * @see globus_gsi_proxy_handle_t
  */
 
 #ifndef DOXYGEN

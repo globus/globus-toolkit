@@ -36,16 +36,6 @@ EXTERN_C_BEGIN
 #include <openssl/x509v3.h>
 #include <string.h>
 
-/**
- * @defgroup proxycertinfo ProxyCertInfo
- * 
- * @author Sam Meder
- * @author Sam Lang
- * 
- * The proxycertinfo.h file defines a method of
- * maintaining information about proxy certificates.
- */
-
 #define IMPERSONATION_PROXY_OID         "1.3.6.1.5.5.7.21.1"
 #define IMPERSONATION_PROXY_SN          "IMPERSONATION_PROXY"
 #define IMPERSONATION_PROXY_LN          "GSI impersonation proxy"

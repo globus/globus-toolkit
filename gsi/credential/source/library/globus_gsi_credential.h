@@ -35,6 +35,19 @@ EXTERN_C_BEGIN
 #include "openssl/bio.h"
 #include "openssl/ssl.h"
 
+/**
+ * @mainpage Globus GSI Credential
+ *
+ * The Globus GSI Credential library. This library contains functions that
+ * provide support for handling X.509 based PKI credentials
+ *
+ * - @ref globus_gsi_credential_activation
+ * - @ref globus_gsi_cred_handle
+ * - @ref globus_gsi_cred_handle_attrs
+ * - @ref globus_gsi_cred_operations
+ * - @ref globus_gsi_credential_constants
+ */
+
 /** 
  * @defgroup globus_gsi_credential_activation Activation
  *
@@ -73,6 +86,42 @@ EXTERN_C_BEGIN
 extern 
 globus_module_descriptor_t              globus_i_gsi_credential_module;
 
+/**
+ * @defgroup globus_gsi_cred_handle Credential Handle Management
+ *
+ * Create/Destroy/Modify a GSI Credential Handle.
+ *
+ * Within the Globus GSI Credential Library, all credential operations 
+ * require a handle parameter.  Currenlty only one operation may be
+ * in progress at once per credential handle.
+ *
+ * This section defines operations to create, modify and destroy GSI
+ * Credential handles.
+ */
+
+/**
+ * @defgroup globus_gsi_cred_handle_attrs Credential Handle Attributes
+ *
+ * Create/Destroy/Modify GSI Credential Handle Attributes.
+ *
+ * Within the Globus GSI Credential Library, all credential handles 
+ * contain a attribute structure, which in turn contains handle instance
+ * independent attributes.
+ *
+ * This section defines operations to create, modify and destroy GSI
+ * Credential handle attributes.
+ */
+
+
+/**
+ * @defgroup globus_gsi_cred_operations Credential Operations
+ *
+ * Read/Write a GSI Credential Handle.
+ *
+ * This section defines operations to read and write GSI
+ * Credential handles.
+ */
+
 #include "globus_gsi_cred_constants.h"
 
 /**
@@ -87,7 +136,6 @@ globus_module_descriptor_t              globus_i_gsi_credential_module;
  * @see globus_gsi_cred_handle_init(),
  * globus_gsi_cred_handle_destroy(), globus_gsi_cred_handle_attrs_t
  */
-
 typedef struct globus_l_gsi_cred_handle_s * 
                                         globus_gsi_cred_handle_t;
 
@@ -100,31 +148,8 @@ typedef struct globus_l_gsi_cred_handle_s *
  *
  * @see globus_gsi_cred_handle_init
  */
-
 typedef struct globus_l_gsi_cred_handle_attrs_s *
                                         globus_gsi_cred_handle_attrs_t;
-
-/**
- * @defgroup globus_gsi_cred_handle Credential Handle Management
- *
- * Create/Destroy/Modify a GSI Credential Handle.
- *
- * Within the Globus GSI Credential Library, all credential operations 
- * require a handle parameter.  Currenlty only one operation may be
- * in progress at once per proxy handle.
- *
- * This section defines operations to create, modify and destroy GSI
- * Credential handles.
- */
-
-/**
- * @defgroup globus_gsi_cred_operation Credential Operations
- *
- * Read/Write a GSI Credential Handle.
- *
- * This section defines operations to read and write GSI
- * Credential handles.
- */
 
 
 #ifndef DOXYGEN
@@ -140,8 +165,8 @@ globus_result_t globus_gsi_cred_handle_destroy(
     globus_gsi_cred_handle_t            handle);
 
 globus_result_t globus_gsi_cred_handle_copy(
-    globus_gsi_cred_handle_t            a,
-    globus_gsi_cred_handle_t *          b);
+    globus_gsi_cred_handle_t            source,
+    globus_gsi_cred_handle_t *          dest);
 
 globus_result_t globus_gsi_cred_handle_attrs_init(
     globus_gsi_cred_handle_attrs_t *    handle_attrs);
@@ -150,8 +175,8 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
     globus_gsi_cred_handle_attrs_t      handle_attrs);
 
 globus_result_t globus_gsi_cred_handle_attrs_copy(
-    globus_gsi_cred_handle_attrs_t      a,
-    globus_gsi_cred_handle_attrs_t *    b);
+    globus_gsi_cred_handle_attrs_t      source,
+    globus_gsi_cred_handle_attrs_t *    dest);
 
 globus_result_t
 globus_gsi_cred_handle_init_ssl_context(

@@ -28,12 +28,12 @@
         len))
 
 /**
- * @name Initialize
+ * @name Initialize & Destroy
+ * @ingroup globus_gsi_proxy_handle_attrs
  */
 /*@{*/
 /**
  * Initialize GSI Proxy Handle Attributes.
- * @ingroup globus_gsi_proxy_handle_attrs
  *
  * Initialize proxy handle attributes, which
  * can (and should) be associated with a proxy handle.
@@ -45,7 +45,8 @@
  * @param handle_attrs
  *        The handle attributes structure to be initialized
  * @return
- *        GLOBUS_SUCCESS
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
  *
  * @see globus_gsi_proxy_handle_attrs_destroy()
  */
@@ -95,15 +96,9 @@ globus_gsi_proxy_handle_attrs_init(
     return result;
 }
 /* globus_gsi_proxy_handle_init() */
-/*@}*/
 
 /**
- * @name Destroy
- */
-/* @{ */
-/**
  * Destroy the GSI Proxy handle attributes
- * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param handle_attrs
  *        The handle attributes to be destroyed.
@@ -134,13 +129,13 @@ globus_gsi_proxy_handle_attrs_destroy(
 /*@}*/
 
 /**
- * @name Set Key Bits
+ * @name Get/Set Key Bits
+ * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
  * Set the length of the public key pair
  * used by the proxy certificate
- * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param handle_attrs 
  *        the attributes to set
@@ -165,17 +160,10 @@ globus_gsi_proxy_handle_attrs_set_keybits(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return GLOBUS_SUCCESS;
 }
-/* @} */
 
-
-/**
- * @name Get Key Bits
- */
-/* @{ */
 /**
  * Gets the length of the public key pair used by
  * the proxy certificate
- * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param handle_attrs
  *        the attributes to get the key length from
@@ -202,14 +190,14 @@ globus_gsi_proxy_handle_attrs_get_keybits(
 /* @} */
 
 /**
- * @name Set Initial Prime Number
+ * @name Get/Set Initial Prime Number
+ * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
  * Set the initial prime number used for
  * generating public key pairs in the RSA
  * algorithm
- * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param handle_attrs
  *        The attributes to set
@@ -234,18 +222,11 @@ globus_gsi_proxy_handle_attrs_set_init_prime(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return GLOBUS_SUCCESS;
 }
-/* @} */
 
-
-/**
- * @name Get Initial Prime Number
- */
-/* @{ */
 /**
  * Get the initial prime number used for
  * generating the public key pair in the
  * RSA algorithm
- * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param handle_attrs
  *        The attributes to get the initial
@@ -274,7 +255,8 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
 /* @} */
 
 /**
- * @name Set Signing Algorithm
+ * @name Get/Set Signing Algorithm
+ * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
@@ -282,7 +264,6 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
  * the certificate request.  In most cases, the
  * signing party will ignore this value, and sign
  * with an algorithm of its choice.
- * @ingroup globus_gsi_proxy_handle
  *
  * @param handle_attrs
  *        The proxy handle to set the signing algorithm of
@@ -323,19 +304,12 @@ globus_gsi_proxy_handle_attrs_set_signing_algorithm(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
-
-/**
- * @name Get Signing Algorithm
- */
-/* @{ */
 /**
  * Gets the Signing Algorithm to used to sign
  * the certificate request.  In most cases, the
  * signing party will ignore this value, and sign
  * with an algorithm of its choice.
- * @ingroup globus_gsi_proxy_handle
  *
  * @param handle_attrs
  *        The proxy handle_attrs to get the signing algorithm of
@@ -380,14 +354,14 @@ globus_gsi_proxy_handle_attrs_get_signing_algorithm(
 
 
 /**
- * @name Set Clock Skew Allowable
+ * @name Get/Set Clock Skew Allowable
+ * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
  * Sets the clock skew in minutes of the proxy cert request
  * so that time differences between hosts won't
  * cause problems.  This value defaults to 5 minutes.
- * @ingroup globus_gsi_proxy_handle
  *
  * @param handle_attrs
  *        the handle_attrs containing the clock skew to be set
@@ -425,15 +399,9 @@ globus_gsi_proxy_handle_attrs_set_clock_skew_allowable(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
- * @name Get Clock Skew Allowable
- */
-/* @{ */
-/**
  * Get the allowable clock skew for the proxy certificate
- * @ingroup globus_gsi_proxy_handle
  *
  * @param handle_attrs
  *        The handle_attrs to get the clock skew from
@@ -477,15 +445,14 @@ globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
 /* @} */
 
 /**
- * @name Get Key Gen Callback 
+ * @name Get/Set Key Gen Callback 
+ * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
  * Get the public/private key generation callback that provides status
  * during the generation of the keys
  * 
- * @ingroup globus_gsi_proxy_handle
- *
  * @param handle_attrs
  *        The handle_attrs to get the callback from
  * @param callback
@@ -523,17 +490,10 @@ globus_gsi_proxy_handle_attrs_get_key_gen_callback(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
-/**
- * @name Set Key Gen Callback 
- */
-/* @{ */
 /**
  * Set the public/private key generation callback that provides status
  * during the generation of the keys
- * 
- * @ingroup globus_gsi_proxy_handle
  *
  * @param handle_attrs
  *        The handle_attrs to get the callback from
@@ -576,11 +536,11 @@ globus_gsi_proxy_handle_attrs_set_key_gen_callback(
 
 /**
  * @name Copy Attributes
+ * @ingroup globus_gsi_proxy_handle_attrs
  */
 /*@{*/
 /**
  * Make a copy of GSI Proxy handle attributes
- * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param a 
  *        The handle attributes to copy

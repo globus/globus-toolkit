@@ -261,7 +261,7 @@ ASN1_OBJECT * PROXYPOLICY_get_policy_language(
  *
  * Sets the policy of the PROXYPOLICY
  *
- * @param policy the proxy policy to set the policy of
+ * @param proxypolicy the proxy policy to set the policy of
  * @param policy the policy to set it to
  * @param length the lenght of the policy
  *

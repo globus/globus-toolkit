@@ -1,7 +1,8 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_callback.h
- * @author Sam Lang, Sam Meder
+ * @author Sam Lang
+ * @author Sam Meder
  *
  * $RCSfile$
  * $Revision$
@@ -27,6 +28,18 @@ EXTERN_C_BEGIN
 #include "globus_common.h"
 #include "globus_gsi_cert_utils.h"
 #include "openssl/x509.h"
+
+/**
+ * @mainpage Globus GSI Callback
+ *
+ * The Globus GSI Callback library. This library contains functions that extend
+ * OpenSSL path validation.
+ *
+ * - @ref globus_gsi_callback_activation
+ * - @ref globus_gsi_callback
+ * - @ref globus_gsi_callback_data
+ */
+
 
 /** 
  * @defgroup globus_gsi_callback_activation Activation
@@ -57,7 +70,8 @@ EXTERN_C_BEGIN
  *
  */
 
-/** Module descriptor
+/**
+ * Module descriptor
  * @ingroup globus_gsi_callback_activation
  * @hideinitializer
  */
@@ -66,13 +80,38 @@ EXTERN_C_BEGIN
 extern 
 globus_module_descriptor_t              globus_i_gsi_callback_module;
 
+/**
+ * @defgroup globus_gsi_callback Callback Functions
+ * 
+ * Functions that plug into various plug points in the OpenSSL path validation
+ * mechanism. These functions add CRL checking, X509 Extension handling and
+ * proxy validation.
+ */
 
+/**
+ * @defgroup globus_gsi_callback_data Callback Data Functions
+ *
+ * Functions that deal with the data structure that contains state associated
+ * with the path validation callback. 
+ */
+
+
+/**
+ * Callback data typedef
+ * @ingroup globus_gsi_callback_data
+ */
 typedef struct globus_l_gsi_callback_data_s *
                                         globus_gsi_callback_data_t;
 
+/**
+ * Typedef for a callback that may be registered for dealing with unhandled X.509 extension
+ * @ingroup globus_gsi_callback
+ */
 typedef int (*globus_gsi_extension_callback_t)(
     globus_gsi_callback_data_t          callback_data,
     X509_EXTENSION *                    extension);
+
+#ifndef DOXYGEN
 
 globus_result_t
 globus_gsi_callback_get_X509_STORE_callback_data_index(
@@ -114,30 +153,6 @@ globus_result_t
 globus_gsi_callback_data_copy(
     globus_gsi_callback_data_t     source,
     globus_gsi_callback_data_t *   dest);
-
-int globus_gsi_callback_openssl_new(
-    void *                              parent, 
-    void *                              ptr, 
-    CRYPTO_EX_DATA *                    ad,
-    int                                 idx, 
-    long                                argl, 
-    void *                              argp);
-
-int globus_gsi_callback_openssl_free(
-    void *                              parent, 
-    void *                              ptr, 
-    CRYPTO_EX_DATA *                    ad,
-    int                                 idx, 
-    long                                argl, 
-    void *                              argp);
-
-int globus_gsi_callback_openssl_dup(
-    CRYPTO_EX_DATA *                    to, 
-    CRYPTO_EX_DATA *                    from, 
-    void *                              from_d,                   
-    int                                 idx, 
-    long                                argl, 
-    void *                              argp);
 
 globus_result_t
 globus_gsi_callback_get_cert_depth(
@@ -238,6 +253,8 @@ globus_result_t
 globus_gsi_callback_set_error(
     globus_gsi_callback_data_t          callback_data,
     globus_result_t                     error);
+
+#endif /* DOXYGEN */
 
 EXTERN_C_END
 

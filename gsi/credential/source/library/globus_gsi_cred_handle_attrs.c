@@ -28,14 +28,17 @@
                 GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS]))
 
 /**
- * Initialize Credential Handle Attributes
+ * @name Credential Handle Attributes Initialization and Destruction
  * @ingroup globus_gsi_cred_handle_attrs
  */
 /* @{ */
 /**
  * Initializes the immutable Credential Handle Attributes
  * The handle attributes are initialized as follows:
- * 
+ *
+ * - The search order is set to SERVICE, HOST, PROXY, USER
+ * - All other attributes are set to 0/NULL
+ *
  * @param handle_attrs
  *        the attributes to be initialized
  * @return
@@ -94,18 +97,10 @@ globus_gsi_cred_handle_attrs_init(
     return result;
 }
 /* globus_gsi_cred_handle_attrs_init */
-/* @} */
 
-
-/**
- * Destroy Credential Handle Attributes
- * @ingroup globus_gsi_cred_handle_attrs
- */
-/* @{ */
 /**
  * Destroy the Credential Handle Attributes.  This function
  * does some cleanup and deallocation of the handle attributes.
- * The attributes should be set to NULL after this function is called.
  * 
  * @param handle_attrs
  *        The handle attributes to destroy
@@ -135,18 +130,19 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
     
     return GLOBUS_SUCCESS;
 }
+/* @} */
 
 /**
- * Copy Credential Handle Attributes
+ * @name Copy Credential Handle Attributes
  * @ingroup globus_gsi_cred_handle_attrs
  */
 /* @{ */
 /**
  * Copy the Credential Handle Attributes. 
  *
- * @param a 
+ * @param source
  *        The handle attribute to be copied
- * @param b
+ * @param dest
  *        The copy
  * @return
  *        GLOBUS_SUCESS unless there was an error, in which
@@ -154,8 +150,8 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
  */
 globus_result_t 
 globus_gsi_cred_handle_attrs_copy(
-    globus_gsi_cred_handle_attrs_t      a,
-    globus_gsi_cred_handle_attrs_t *    b)
+    globus_gsi_cred_handle_attrs_t      source,
+    globus_gsi_cred_handle_attrs_t *    dest)
 {
     int                                 size;
     int                                 index;
@@ -166,7 +162,7 @@ globus_gsi_cred_handle_attrs_copy(
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
-    if(a == NULL || b == NULL)
+    if(source == NULL || dest == NULL)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
@@ -175,10 +171,10 @@ globus_gsi_cred_handle_attrs_copy(
         goto exit;
     }
 
-    result = globus_gsi_cred_handle_attrs_init(b);
+    result = globus_gsi_cred_handle_attrs_init(dest);
     if(result != GLOBUS_SUCCESS)
     {
-        *b = NULL;
+        *dest = NULL;
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_HANDLE_ATTRS);
@@ -186,9 +182,9 @@ globus_gsi_cred_handle_attrs_copy(
     }
     
     size = -1;
-    while(a->search_order[++size] != GLOBUS_SO_END);
+    while(source->search_order[++size] != GLOBUS_SO_END);
 
-    if((!(*b)->search_order) && ((*b)->search_order = 
+    if((!(*dest)->search_order) && ((*dest)->search_order = 
         (globus_gsi_cred_type_t *) malloc(sizeof(globus_gsi_cred_type_t) 
                                           * (size + 1))) == NULL)
     {
@@ -198,7 +194,7 @@ globus_gsi_cred_handle_attrs_copy(
 
     for(index = 0; index <= size; ++index)
     {
-        (*b)->search_order[index] = a->search_order[index];
+        (*dest)->search_order[index] = source->search_order[index];
     }
 
     result = GLOBUS_SUCCESS;
@@ -206,9 +202,9 @@ globus_gsi_cred_handle_attrs_copy(
  exit:
 
     if(result != GLOBUS_SUCCESS &&
-       *b != NULL)
+       *dest != NULL)
     {
-        globus_gsi_cred_handle_attrs_destroy(*b);
+        globus_gsi_cred_handle_attrs_destroy(*dest);
     }
     
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
@@ -218,7 +214,7 @@ globus_gsi_cred_handle_attrs_copy(
 /* @} */
     
 /** 
- * Set CA Cert Dir
+ * @name Seting and Getting the CA Cert Dir
  * @ingroup globus_gsi_cred_handle_attrs
  */
 /* @{ */
@@ -233,7 +229,8 @@ globus_gsi_cred_handle_attrs_copy(
  *        GLOBUS_SUCCESS if no errors occurred.  In case of
  *        a null handle_attrs, an error object id is returned
  */
-globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
+globus_result_t
+globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char *                              ca_cert_dir)
 {
@@ -262,13 +259,7 @@ globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
-/**
- * Get CA Cert Dir
- * @ingroup globus_gsi_cred_handle_attrs
- */
-/* @{ */
 /** 
  * Get the trusted ca cert directory
  *
@@ -282,7 +273,8 @@ globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
  *        a null handle_attrs or pointer to ca_cert_dir, 
  *        an error object id is returned
  */
-globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
+globus_result_t
+globus_gsi_cred_handle_attrs_get_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char **                             ca_cert_dir)
 {
@@ -329,20 +321,21 @@ globus_result_t globus_gsi_cred_handle_attrs_get_ca_cert_dir(
 /* @} */
 
 /**
- * Set Search Order
+ * @name Setting and Getting the Search Order
  * @ingroup globus_gsi_cred_handle_attrs
  */
 /* @{ */
 /**
  * Set the search order for finding a user certificate.  The
- * default value is {PROXY, USER, HOST}
+ * default value is {SERVICE, HOST, PROXY, USER}
  *
  *
  * @param handle_attrs
  *        The handle attributes to set the search order of
  * @param search_order
  *        The search order.  Should be a three element array containing
- *        in some order PROXY, USER, HOST
+ *        in some order PROXY, USER, HOST, SERVICE. The array should be
+ *        terminated by the value GLOBUS_SO_END.
  * @return 
  *        GLOBUS_SUCCESS unless handle_attrs is null
  */
@@ -391,12 +384,7 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
-/**
- * Get Search Order
- */
-/* @{ */
 /**
  * Get the search order of the handle attributes
  *

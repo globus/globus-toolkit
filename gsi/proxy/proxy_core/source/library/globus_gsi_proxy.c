@@ -19,6 +19,8 @@
 #include "globus_openssl.h"
 #include "proxycertinfo.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 #define GLOBUS_GSI_PROXY_MALLOC_ERROR(_LENGTH_) \
     globus_error_put(globus_error_wrap_errno_error( \
         GLOBUS_GSI_PROXY_MODULE, \
@@ -29,8 +31,6 @@
         __LINE__, \
         "Could not allocate enough memory: %d bytes", \
         _LENGTH_))
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 static int globus_l_gsi_proxy_activate(void);
 static int globus_l_gsi_proxy_deactivate(void);
@@ -157,11 +157,11 @@ globus_l_gsi_proxy_deactivate(void)
     
 /**
  * @name Create Request
+ * @ingroup globus_gsi_proxy_operations
  */
 /*@{*/
 /**
  * Create a proxy credential request
- * @ingroup globus_gsi_proxy_operations
  *
  * This function creates a proxy credential request, ie. a unsigned 
  * certificate and the corresponding private key, based on the handle
@@ -177,7 +177,8 @@ globus_l_gsi_proxy_deactivate(void)
  * @param output_bio
  *        A BIO to write the resulting request structure to.
  * @return
- *        GLOBUS_SUCCESS
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
  */
 globus_result_t
 globus_gsi_proxy_create_req(
@@ -467,11 +468,11 @@ globus_gsi_proxy_create_req(
 
 /**
  * @name Inquire Request
+ * @ingroup globus_gsi_proxy_operations
  */
 /*@{*/
 /**
  * Inquire a proxy credential request
- * @ingroup globus_gsi_proxy_operations
  *
  * This function reads the public part of a proxy credential request
  * from input_bio and if the request contains a ProxyCertInfo
@@ -483,7 +484,8 @@ globus_gsi_proxy_create_req(
  * @param input_bio
  *        A BIO to read a request structure from.
  * @return
- *        GLOBUS_SUCCESS
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
  */
 globus_result_t
 globus_gsi_proxy_inquire_req(
@@ -658,11 +660,11 @@ globus_gsi_proxy_inquire_req(
 
 /**
  * @name Sign Request
+ * @ingroup globus_gsi_proxy_operations
  */
 /*@{*/
 /**
  * Sign a proxy certificate request
- * @ingroup globus_gsi_proxy_operations
  *
  * This function signs the public part of a proxy credential request,
  * i.e. the unsigned certificate, previously read by inquire req using
@@ -681,7 +683,8 @@ globus_gsi_proxy_inquire_req(
  * @param output_bio
  *        A BIO to write the resulting certificate and cert chain to.
  * @return
- *        GLOBUS_SUCCESS
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
  */
 globus_result_t
 globus_gsi_proxy_sign_req(
@@ -1214,7 +1217,7 @@ globus_gsi_proxy_sign_req(
 
 /**
  * @name Create Signed
- * @ingropu globus_gis_proxy_operations
+ * @ingroup globus_gsi_proxy_operations
  */
 /* @{ */
 /**
@@ -1413,11 +1416,11 @@ globus_gsi_proxy_create_signed(
 
 /**
  * @name Assemble credential
+ * @ingroup globus_gsi_proxy_operations
  */
 /*@{*/
 /**
  * Assemble a proxy credential
- * @ingroup globus_gsi_proxy_operations
  *
  * This function assembles a proxy credential. It reads a signed proxy
  * certificate and a associated certificate chain from the input_bio

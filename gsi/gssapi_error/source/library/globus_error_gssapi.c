@@ -199,7 +199,7 @@ globus_error_gssapi_set_major_status(
  * @ingroup globus_gssapi_error_accessor  
  *
  * @param error
- *        The error from which to retrieve the major status
+ *        The error from which to retrieve the minor status
  * @return
  *        The minor status stored in the object
  */

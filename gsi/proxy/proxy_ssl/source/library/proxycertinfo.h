@@ -6,13 +6,13 @@
  * @mainpage Globus GSI Proxy SSL API
  *
  * The globus_gsi_proxy_ssl library provides the ability
- * to create a PROXYCERTINFO extension to be included in
+ * to create a PROXYCERTINFO extension for inclusion in
  * an X509 certificate.  The current specification for the
  * extension is described in the Internet Draft 
- * Document: draft-ietf-pkix-proxy-01.txt
+ * Document: draft-ietf-pkix-proxy-08.txt
  * 
  * The library conforms to the ASN1 implementation in
- * the OPENSSL library (formerly SSLeay), and provides
+ * the OPENSSL library (0.9.6, formerly SSLeay), and provides
  * an interface to convert from a DER encoded PROXYCERTINFO
  * to its internal structure and vice-versa.
  */

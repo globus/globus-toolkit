@@ -103,7 +103,7 @@ globus_l_error_openssl_printable(
 
     if(globus_openssl_error_handle_get_data_flags(handle) & ERR_TXT_STRING)
     {
-        error_string = globus_error_openssl_create_error_string(
+        error_string = globus_common_create_string(
             "OpenSSL Error: %s:%d: in library: %s, function %s: %s %s",
             globus_openssl_error_handle_get_filename(handle) == NULL ? "(null)" :
             globus_openssl_error_handle_get_filename(handle),
@@ -118,7 +118,7 @@ globus_l_error_openssl_printable(
     }
     else
     {
-        error_string = globus_error_openssl_create_error_string(
+        error_string = globus_common_create_string(
             "OpenSSL Error: %s:%d: in library: %s, function %s: %s",
             globus_openssl_error_handle_get_filename(handle) == NULL ? "(null)" :
             globus_openssl_error_handle_get_filename(handle),
@@ -220,41 +220,3 @@ globus_i_openssl_error_handle_destroy(
 /* @} */
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-
-char *
-globus_error_openssl_create_error_string(
-    const char *                        format,
-    ...)
-{
-    int                                 len;
-    va_list                             ap;
-    char *                              error_string;
-    static char *                       _function_name_ =
-        "globus_error_openssl_create_string";
-
-    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
-
-    va_start(ap, format);
-
-    len = globus_libc_vprintf_length(format,ap);
-
-    va_end(ap);
-
-    len++;
-
-    if((error_string = malloc(len)) == NULL)
-    {
-        return NULL;
-    }
-
-    va_start(ap, format);
-    
-    globus_libc_vsnprintf(error_string,
-                          len,
-                          format,
-                          ap);
-    va_end(ap);
-
-    GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
-    return error_string;
-}
