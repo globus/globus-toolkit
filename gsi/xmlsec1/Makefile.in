@@ -237,7 +237,7 @@ docdir = $(GLOBUS_LOCATION)/share/doc
 LINK_BAK = orig
 AUTOMAKE_OPTIONS = no-dependencies
 
-SUBDIRS = include src pkgdata
+SUBDIRS = include src pkgdata apps man docs
 
 NULL = 
 
