@@ -42,86 +42,91 @@ setup_environment() {
 
 }
 
-# If we're on an MCS machine, just checkout from filesystem.
-# Otherwise use ssh.
-# If we have a co already, just update it.
-# Use a tag if it is passed in.
+# checkout_cvs_generic cvsdir checkoutdir [ tag ]
+checkout_cvs_generic() {
+	cvsdir=$1
+	checkoutdir=$2
+	cvstag=$3
 
-checkout_cvs() {
-	tag=$1
-
-	if [ x"$tag" = "x" ]; then
+	if [ x"$cvstag" = "x" ]; then
 		cvs_opts="";
 	else
-		cvs_opts="-r $tag";
-		echo "Using tag $tag"
+		cvs_opts="-r $cvstag";
+		echo "Using tag $cvstag"
 	fi
 
 	if [ $anonymous = 1 ]; then
 		echo Using anonymous CVS ...
-		export CVSROOT=:pserver:anonymous@cvs.globus.org:/home/globdev/CVS/gridservices
-	elif [ -d /home/globdev/CVS/gridservices ]; then
-		export CVSROOT=/home/globdev/CVS/gridservices
+		export CVSROOT=:pserver:anonymous@cvs.globus.org:$cvsdir
+	elif [ -d $cvsdir ]; then
+		export CVSROOT=$cvsdir
 	else
-		export CVSROOT=cvs.globus.org:/home/globdev/CVS/gridservices
+		export CVSROOT=cvs.globus.org:$cvsdir
 		export CVS_RSH=ssh
 	fi
-	if [ ! -d ogsa-cvs ]; then
-		echo Making fresh CVS checkout
-		mkdir ogsa-cvs
-		cd ogsa-cvs
+
+	if [ ! -d $checkoutdir ]; then
+		echo Making fresh CVS checkout.
+		mkdir $checkoutdir
+		cd $checkoutdir
 		cvs co $cvs_opts all 
-	else
+	elif [ $update = 1 ]; then
 		echo "Updating CVS checkout."
-		cvs stat ogsa-cvs/ogsa/impl/java/build.xml | grep Tag
-		cd ogsa-cvs
+		# cvs stat ogsa-cvs/ogsa/impl/java/build.xml | grep Tag
+		cd $checkoutdir
 		for f in *; do
 			cd $f
 			cvs -z3 -qq up 
 			cd ..
 		done
+		cd ..
+	else
+		echo "Skipping CVS update"
 	fi
-	cd ..
 
 	echo
+}
+
+# Checkout GT3 cvs
+checkout_cvs() {
+	checkout_cvs_generic /home/globdev/CVS/gridservices ogsa-cvs $tag
+}
+
+checkout_cvs_gt2() {
+	checkout_cvs_generic /home/globdev/CVS/globus-packages gt2-cvs $tag
 }
 
 #If GPT hasn't been built here yet, build it now.
 #Some packages use GPT_LOCATION commands in build-info.
 
-install_gpt() {
-	if [ -d gpt-2.2.5 ]; then
+install_gpt_generic() {
+	installdir=$1
+	bundle=$2
+
+	if [ -d $installdir ]; then
 		echo Skipping GPT installation.
-		echo Delete gpt-2.2.5 to force rebuild
-		export GPT_LOCATION=`pwd`/gpt-2.2.5
+		echo Delete $installdir to force rebuild
+		export GPT_LOCATION=`pwd`/$installdir
 	else
-		echo Installing gpt-2.2.5
-		tar xzf fait_accompli/gpt-2.2.5-src.tar.gz
-		cd gpt-2.2.5
+		echo Installing gpt
+		tar xzf $bundle
+		cd $installdir
 		export GPT_LOCATION=`pwd`
 		./build_gpt
 		cd ..
 	fi
 	echo
+}
+
+install_gpt2() {
+	install_gpt_generic gpt-2.2.5 fait_accompli/gpt-2.2.5-src.tar.gz
 }
 
 install_gpt3() {
-	if [ -d gpt-3.0rc1 ]; then
-		echo Skipping GPT installation.
-		echo Delete gpt-3.0rc1 to force rebuild
-		export GPT_LOCATION=`pwd`/gpt-3.0rc1
-	else
-		echo Installing gpt-3.0rc1
-		tar xzf fait_accompli/gpt-3.0rc1-src.tar.gz
-		cd gpt-3.0rc1
-		export GPT_LOCATION=`pwd`
-		./build_gpt
-		cd ..
-	fi
-	echo
+	install_gpt_generic gpt-3.0rc1 fait_accompli/gpt-3.0rc1-src.tar.gz
 }
 
-install_gt2() {
+install_gt2_binary() {
 	export GLOBUS_LOCATION=$1
 	echo Installing custom GT2 bundle
 	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz
@@ -134,37 +139,9 @@ install_gt2_source() {
         flavor="gcc32dbg"
 	export GLOBUS_LOCATION=$1
 
-        if [ $anonymous = 1 ]; then
-                echo Using anonymous cvs ...
-                export CVSROOT=:pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages
-        elif [ -d /home/globdev/CVS/globus-packages ]; then
-                export CVSROOT=/home/globdev/CVS/globus-packages
-        else
-                export CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
-                export CVS_RSH=ssh
-        fi
+        checkout_cvs_gt2 $gt2_branch 
 
-	if [ ! -d gt2-cvs ]; then
-		echo Making fresh GT2 CVS checkout
-		mkdir gt2-cvs
-		cd gt2-cvs
-                cvs -d$CVSROOT co -r $gt2_branch all
-	else
-		echo "Updating GT2 CVS checkout."
-		# FIND GT2 EQUIV. cvs stat ogsa-cvs/ogsa/impl/java/build.xml | grep Tag
-		cd gt2-cvs
-		if [ $update = 1 ]; then
-			for f in *; do
-				cd $f
-				cvs -z3 -qq up 
-				cd ..
-			done
-		else
-			echo Skipping CVS update
-			echo
-		fi
-	fi
-	# You are now still in gt2-cvs
+	cd gt2-cvs
 
 	# Always build autotools, since cbindings needs it also.
 	./side_tools/build-autotools
@@ -199,9 +176,9 @@ install_cdeps() {
 	
 	export GPT_LOCATION=$OGPT
 	cd bin_packages
-	$GPT_LOCATION/sbin/gpt-bundle -bindir=. -output=ogsa_cbindings_bin_bundle.tar.gz `cat packaging_list | xargs`
+	$GPT_LOCATION/sbin/gpt-bundle -all -bindir=. -output=ogsa_cbindings_bin_bundle.tar.gz
 	cd ../source_packages
-	$GPT_LOCATION/sbin/gpt-bundle -srdir=. -output=ogsa_cbindings_src_bundle.tar.gz `cat packaging_list | xargs`
+	$GPT_LOCATION/sbin/gpt-bundle -all -srcdir=. -output=ogsa_cbindings_src_bundle.tar.gz 
 	popd
 
 	mkdir -p package-output
@@ -210,44 +187,8 @@ install_cdeps() {
 
 # Go to subdir, run the build script.
 # Copy gar if one is specified.
-make_binary_package() {
-	export destdir=`pwd`/gt3-${name}/${name}
-
-	if [ -d $destdir ]; then
-		echo Skipping package $name;
-		echo Delete $destdir to force rebuild;
-	elif [ x$name = x ]; then
-		echo Skipping missing packagedata
-	else
-		echo Building package $name;
-		mkdir -p $destdir
-		echo Moving to build directory
-		pushd ogsa-cvs/$subdir
-		echo Executing build script:
-		echo ----------------------
-		echo $build
-		echo ----------------------
-		echo
-		/bin/bash -c "$build"
-		popd
-		if [ "x"$gar != "x" ]; then
-			echo Copying GAR $gar
-			cp ogsa-cvs/$subdir/$gar $destdir
-		fi
-		if [ -f package-list/$name/pkg_data_src.gpt ]; then
-			cp package-list/$name/pkg_data_src.gpt gt3-$name
-		fi
-		touch $destdir/INSTALL
-	fi
-	
-	unset destdir;
-	echo
-}
-
-# Go to subdir, run the build script.
-# Copy gar if one is specified.
 make_source_package() {
-	export destdir=`pwd`/${name}-0.3-src/
+	export destdir=`pwd`/${name}-${version}-src/
 
 	if [ -d $destdir ]; then
 		echo Skipping package $name;
@@ -295,14 +236,29 @@ unset_env() {
 	unset name subdir build gar;
 }
 
+#iter_generic dir
+#dir should contain a file called build-info
+iter_generic() {
+	if [ -e $1/build-info ]; then
+		source $1/build-info
+		make_source_package
+		unset_env
+	else
+		echo "Couldn't find $1/build-info"
+	fi
+}
+
+#iterate over a directory
 dir_iter() {
 	for f in $1/*; do
-		if [ -e $f/build-info ]; then
-			source $f/build-info
-			make_source_package
-			# make_binary_package
-			unset_env
-		fi
+		iter_generic $f
+	done
+}
+
+#iterate over package names
+package_iter() {
+	for f in $@; do
+		iter_generic package-list/$f;
 	done
 }
 
@@ -337,8 +293,6 @@ collate_packages() {
 		popd
 	fi
 
-	# cp fait_accompli/* package-output
-
 }
 
 install_bundle() {
@@ -370,7 +324,7 @@ install_bundle() {
 	fi
 
 	echo Installing GT2 dep bundle into $dir
-	install_gt2 $dir
+	install_gt2_binary $dir
 
 	if [ $release = 1 ]; then
 		# This is gt3 core binary.  Distribute by itself.
@@ -445,31 +399,22 @@ read_args() {
 # main
 
 read_args "$@"
+setup_environment
 
-#The one-package case.
-if [ x$package != "x" ]; then
-	setup_environment
-	if [ $update = 1 ]; then
-		checkout_cvs
-	fi
-	source package-list/$package/build-info
-	make_source_package
-	mkdir -p package-output
-	tar czf package-output/${name}-0.2.tar.gz ${name}*-src
-	# make_binary_package
+#The named packages case.
+if [ x"$package" != "x" ]; then
+	checkout_cvs
+
+	package_iter $package
+
+	tar czf package-output/${name}-${version}.tar.gz ${name}*-src
 	exit
 fi
 
-setup_environment
-install_gpt
+install_gpt2
 #install_gpt3
 
-if [ $update = 1 ]; then
-	checkout_cvs $tag
-else
-	echo Skipping CVS update
-	echo
-fi
+checkout_cvs $tag
 
 #This is the poor man's dependency code ...
 
