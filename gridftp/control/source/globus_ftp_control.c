@@ -48,17 +48,17 @@ globus_l_ftp_control_activate(void)
     {
         return rc;
     }
-    rc = globus_i_ftp_control_server_activate();
+    rc = (int)globus_i_ftp_control_server_activate();
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;
     }
-    rc = globus_i_ftp_control_client_activate();
+    rc = (int)globus_i_ftp_control_client_activate();
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;
     }
-    rc = globus_i_ftp_control_data_activate();
+    rc = (int)globus_i_ftp_control_data_activate();
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;
@@ -73,17 +73,17 @@ globus_l_ftp_control_deactivate(void)
 {
     int                             rc;
 
-    rc = globus_i_ftp_control_data_deactivate();
+    rc = (int)globus_i_ftp_control_data_deactivate();
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;
     }
-    rc = globus_i_ftp_control_client_deactivate();
+    rc = (int)globus_i_ftp_control_client_deactivate();
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;
     }
-    rc = globus_i_ftp_control_server_deactivate();
+    rc = (int)globus_i_ftp_control_server_deactivate();
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;

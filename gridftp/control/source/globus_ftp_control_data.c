@@ -12,8 +12,8 @@
 /*
  *  logging messages 
  */
-#define GFTP_NL_EVENT_RECEIVED_DATA       "GFTPC_DATA_IN_END"
-#define GFTP_NL_EVENT_SENT_DATA           "GFTPC_DATA_SENT_END"
+#define GFTP_NL_EVENT_RECEIVED_DATA       "GFTPC_DATA_RECEIVED"
+#define GFTP_NL_EVENT_SENT_DATA           "GFTPC_DATA_SENT"
 
 #define GLOBUS_FTP_CONTROL_DATA_MAGIC               "FTPControlData-1.0"
 
@@ -388,7 +388,7 @@ globus_byte_t *
 globus_l_ftp_control_add_ascii(
     globus_byte_t *                             in_buf,
     int                                         length,
-    int *                                       ascii_len);
+    globus_off_t *                              ascii_len);
 
 int
 globus_l_ftp_control_strip_ascii(
@@ -5411,7 +5411,7 @@ globus_l_ftp_data_stream_stripe_poll(
             if(entry->direction == GLOBUS_FTP_DATA_STATE_CONNECT_WRITE)
             {
                 globus_byte_t *                   tmp_buf = entry->buffer;
-                int                               tmp_len;
+                globus_off_t                      tmp_len;
 
                 tmp_len = entry->length;
                 if(stripe->whos_my_daddy->whos_my_daddy->type == 
@@ -6935,7 +6935,7 @@ globus_byte_t *
 globus_l_ftp_control_add_ascii(
     globus_byte_t *                                 in_buf,
     int                                             length,
-    int *                                           ascii_len)
+    globus_off_t *                                  ascii_len)
 {
     globus_byte_t *                                 out_buf;
     int                                             ctr;
@@ -7610,12 +7610,14 @@ globus_l_ftp_stream_write_callback(
         if(dc_handle->nl_ftp_handle_set)
         {
             /* faking memory allocation */
-            char * tag_str = "MODE=S TYPE=A NBYTES=0123456789012345678901234556789";
-            sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%d", dc_handle->type, nl_nbytes);
-
+            char  tag_str[128];
+            sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%d", 
+                    dc_handle->type, nl_nbytes);
             globus_netlogger_write(
                 &dc_handle->nl_ftp_handle,
                 GFTP_NL_EVENT_SENT_DATA,
+                "GFTPC",
+                3,
                 tag_str);
         }
     }
@@ -7809,13 +7811,14 @@ globus_l_ftp_stream_read_callback(
             }
             if(dc_handle->nl_ftp_handle_set)
             {
-                char * tag_str = 
-                        "MODE=S TYPE=A NBYTES=0123456789012345678901234556789";
+                char tag_str[128];
                 sprintf(tag_str, "MODE=S TYPE=%c NBYTES=%d",
                         dc_handle->type, nl_nbytes);
                 globus_netlogger_write(
                     &dc_handle->nl_ftp_handle,
                     GFTP_NL_EVENT_RECEIVED_DATA,
+                    "GFTPC",
+                    3,
                     tag_str);
             }
         }
@@ -8569,13 +8572,14 @@ globus_l_ftp_eb_read_callback(
             }
             if(dc_handle->nl_ftp_handle_set)
             {
-                char * tag_str = 
-                         "MODE=E TYPE=E NBYTES=0123456789012345678901234556789";
+                char tag_str[128];
                 sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%d", 
                          dc_handle->type, nl_bytes);
                 globus_netlogger_write(
                     &dc_handle->nl_ftp_handle,
                     GFTP_NL_EVENT_RECEIVED_DATA,
+                    "GFTPC",
+                    3,
                     tag_str);
             }
         }
@@ -9024,12 +9028,14 @@ globus_l_ftp_eb_write_callback(
         if(dc_handle->nl_ftp_handle_set)
         {
             /* faking memory allocation */
-            char * tag_str = "MODE=E TYPE=A NBYTES=0123456789012345678901234556789";
-            sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%d", dc_handle->type, nl_bytes);
-
+            char tag_str[128];
+            sprintf(tag_str, "MODE=E TYPE=%c NBYTES=%d", 
+                    dc_handle->type, nl_bytes);
             globus_netlogger_write(
                 &dc_handle->nl_ftp_handle,
                 GFTP_NL_EVENT_SENT_DATA,
+                "GFTPC",
+                3,
                 tag_str);
         }
     }
