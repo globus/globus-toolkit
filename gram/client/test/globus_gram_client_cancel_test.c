@@ -105,10 +105,10 @@ int main(int argc, char *argv[])
 	rc = GLOBUS_SUCCESS;
     }
 destroy_callback_contact:
+    globus_mutex_unlock(&monitor.mutex);
     globus_gram_client_callback_disallow(callback_contact);
     globus_libc_free(callback_contact);
     globus_libc_free(job_contact);
-    globus_mutex_unlock(&monitor.mutex);
 error_exit:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);

@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     globus_mutex_lock(&monitor.mutex);
     rc = globus_gram_client_job_request(
 	    argv[1],
-	    "&(executable=/bin/sleep)(arguments=300)",
+	    "&(executable=/bin/sleep)(arguments=90)",
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
 	    callback_contact,
 	    &job_contact);
@@ -104,10 +104,10 @@ int main(int argc, char *argv[])
     }
     rc = monitor.errorcode;
 destroy_callback_contact:
+    globus_mutex_unlock(&monitor.mutex);
     globus_gram_client_callback_disallow(callback_contact);
     globus_libc_free(callback_contact);
     globus_libc_free(job_contact);
-    globus_mutex_unlock(&monitor.mutex);
 error_exit:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
