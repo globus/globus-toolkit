@@ -2828,7 +2828,7 @@ globus_l_gfs_ipc_unpack_reply(
                     buffer, len, reply->info.stat.stat_array[ctr].uid);
                 GFSDecodeUInt32(
                     buffer, len, reply->info.stat.stat_array[ctr].gid);
-                GFSDecodeUInt32(
+                GFSDecodeUInt64(
                     buffer, len, reply->info.stat.stat_array[ctr].size);
                 GFSDecodeUInt32(
                     buffer, len, reply->info.stat.stat_array[ctr].atime);
@@ -4427,7 +4427,7 @@ globus_gfs_ipc_reply_finished(
                         GFSEncodeUInt32(
                             buffer, ipc->buffer_size, ptr, 
                             reply->info.stat.stat_array[ctr].gid);
-                        GFSEncodeUInt32(
+                        GFSEncodeUInt64(
                             buffer, ipc->buffer_size, ptr, 
                             reply->info.stat.stat_array[ctr].size);
                         GFSEncodeUInt32(

@@ -68,7 +68,7 @@ do                                                                      \
 /*
  *  if architecture is big endian already
  */
-#if !defined(WORDS_BIGENDIAN)
+#if defined(WORDS_BIGENDIAN)
 
 
 #define GFSEncodeUInt64(_start, _len, _buf, _w)                         \

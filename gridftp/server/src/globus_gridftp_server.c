@@ -11,6 +11,7 @@
 #include "globus_xio_tcp_driver.h"
 #include "globus_i_gridftp_server.h"
 #include "version.h"
+#include "globus_i_gfs_ipc.h"
 
 #include <sys/wait.h>
 #include <signal.h>

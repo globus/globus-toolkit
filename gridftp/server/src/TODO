@@ -11,11 +11,10 @@ striping:
 -- consolidate some restart ranges instead of sending one from every stripe
 -- need some spec compliant support for partitioned layout
     current stripeblocksize impl is basically spec compliant RR
-    
+
 logging:
 -- instrument code
 -- clean up transfer and usage logging
--- log commands
 
 other:
 -- error out of option parsing properly

@@ -800,6 +800,7 @@ globus_l_gfs_request_command(
     int                                 argc,
     void *                              user_arg)
 {
+    int                                 type;
     globus_l_gfs_server_instance_t *    instance;
     globus_gfs_command_info_t *         command_info;
     globus_l_gfs_request_info_t *       request;
@@ -829,6 +830,7 @@ globus_l_gfs_request_command(
         {
             goto err;
         }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
     else if(strcmp(cmd_array[0], "RMD") == 0)
     {
@@ -839,6 +841,7 @@ globus_l_gfs_request_command(
         {
             goto err;
         }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
     else if(strcmp(cmd_array[0], "DELE") == 0)
     {
@@ -849,6 +852,7 @@ globus_l_gfs_request_command(
         {
             goto err;
         }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
     else if(strcmp(cmd_array[0], "RNFR") == 0)
     {
@@ -878,6 +882,7 @@ globus_l_gfs_request_command(
             globus_l_gfs_data_internal_stat_cb,
             request);
         done = GLOBUS_TRUE;
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
     else if(strcmp(cmd_array[0], "RNTO") == 0)
     {
@@ -894,6 +899,7 @@ globus_l_gfs_request_command(
         }
         command_info->rnfr_pathname = instance->rnfr_pathname;
         instance->rnfr_pathname = GLOBUS_NULL;
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
     }
     else if(strcmp(cmd_array[0], "CKSM") == 0)
     {
@@ -913,6 +919,7 @@ globus_l_gfs_request_command(
             cmd_array[3],
             &command_info->cksm_length,
             GLOBUS_NULL);
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS;
 
     }
     else if(strcmp(cmd_array[0], "SITE") == 0 &&
@@ -926,6 +933,7 @@ globus_l_gfs_request_command(
             goto err;
         }
         command_info->chmod_mode = strtol(cmd_array[2], NULL, 8);
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
     }
     else if(strcmp(cmd_array[0], "SITE") == 0 &&
         strcmp(cmd_array[1], "DSI") == 0)
@@ -936,6 +944,7 @@ globus_l_gfs_request_command(
         {
             goto err;
         }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
     }
     else if(strcmp(cmd_array[0], "SITE") == 0 &&
         strcmp(cmd_array[1], "RDEL") == 0)
@@ -946,6 +955,7 @@ globus_l_gfs_request_command(
         {
             goto err;
         }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
     }
     else
     {
@@ -962,12 +972,17 @@ globus_l_gfs_request_command(
             globus_l_gfs_data_command_cb,
             request);
     }
+    globus_l_gfs_control_log(instance->server_handle, full_command,
+        type, instance);
     
     GlobusGFSDebugExit();
     return;
 
 err:   
 error_init:
+
+    globus_l_gfs_control_log(instance->server_handle, full_command,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR, instance);
     globus_gsc_959_finished_command(op,
         "501 Invalid command arguments.\r\n");
 
