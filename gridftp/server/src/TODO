@@ -1,61 +1,61 @@
 This is the current list of things outstanding for the 4.0 release.
-** denotes must happen before feature freeze
-XX denotes unlikely that this will be in 4.0
 
 protocol:
--- correct FEAT response?
+-- verify FEAT response
 -- reply codes - verify.
--- verify that dsi api is correct wrt to errors
--- error out usefully to server and client when cred problem in gssapi driver
+-- notify server of error when cred problem in gssapi_ftp driver
 
 striping:
--- verify eofc handling, should move out of remote into data.c
--- verify _get_read_range()
+-- verify eofc handling, see if we can move out of dsi into data.c
+-- optimize _get_read_range()
 -- consolidate some restart ranges instead of sending one from every stripe
-
-ipc:
-XX connect backwards!! 0
-XX ipc local mode doesn't work (besides no way to initiate it)
-
-XX commands belong in server-lib
-
+-- need some spec compliant support for partitioned layout
+    current stripeblocksize impl is basically spec compliant RR
+    
 logging:
 -- instrument code
--- verify output format
--- specify log format by configuration
--- syslog module for globus_logging
+-- clean up transfer and usage logging
 
-Pre-Auth Timeout
-
-GID and MLST need to wotk correctly.
+other:
+-- error out of option parsing properly
+-- send a connection denied message to connections we don't want to accept, 
+    rather than ignoring the accept.
+-- int->void*->int casting over ipc... better way?
 
 cleanup:
+-- format -help screen
 -- verify test suite
--- clean majority of memory leaks
-
-**Usability issues:
-DOC DOC DOC
-be chatty while parsing config
-ipc security options - doc well, make sure it works the way we expect
-need some spec compliant support for partitioned layout
-    current stripeblocksize impl is basically spec compliant RR
+-- find leaks in error cases
+-- DOC
 
 -----------------------------------------------------------------------
-known bugs:
--- force_close after transfer_complete when an error is passed to 
-   finished_transfer().
--- error out of option parsing properly
+known issues:
+-- errors in some control.c requests will hang -- need to finish() there
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other
-    calls that attempt to use the handle.
--- need to make sure ints in various places are change to size_t if they
-    need to be, and on passing size_t's over ipc need to do some smarts
-    to treat it as 4 or 8 bytes... possible probs if sizes differ on front
-    and back?  This is specifically a problem with tcp_bs, we treat it as an
-    int on the server side, but server-lib gives it to us as a size_t (as
-    it probably should), which is a different size on most 64 bit platforms.
-    
+    calls that attempt to use the handle. (verify fixed?)
+-- passing size_t's over ipc as ints... will be a problem on 64 bit systems 
+    where int isn't big enough.  not likely to be a problem in practice
+    since the args we store in size_t (buffer sizes, etc) should never be
+    too large for an int...
+-- problem with preauth timeout    
+-- there may be an issue with group permissions -- not sure if it results
+    in any problems.
+-- closing connections reports an xio error when the connection was closed
+    normally.  possibly an xio/cancel problem.
+-- ipc connections with security enabled (default) aren't being cached
+    correctly, results in IPC ERRORs as the client closes.
+-- detach check is before config file is read, so detach in config file
+    doesn't work.  also possible other issues with config checks at 
+    fork/exec time when using only config file.
+-- server exec name discovery fails when there is not a valid $GL. -exec
+    flag works around this, but not ideal.
 
 
 
-ability to send 500 go away to control channel before server-lib has control
+
+
+future:
+-- alternate ipc connection modes
+-- ipc local mode
+-- specify log format by configuration

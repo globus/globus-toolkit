@@ -15,7 +15,8 @@ typedef struct
     void *                              close_arg;
 
     void *                              session_arg;
-
+    char *                              home_dir;
+    char *                              username;
     globus_gridftp_server_control_t     server_handle;
 } globus_l_gfs_server_instance_t;
 
@@ -198,6 +199,7 @@ globus_l_gfs_get_full_path(
     char                                    path[MAXPATHLEN];
     char *                                  cwd = GLOBUS_NULL;
     int                                     cwd_len;
+    char *                                  slash = "/";
     GlobusGFSName(globus_l_gfs_get_full_path);
     GlobusGFSDebugEnter();
 
@@ -209,6 +211,39 @@ globus_l_gfs_get_full_path(
     if(*in_path == '/')
     {
         strncpy(path, in_path, sizeof(path));
+    }
+    else if(*in_path == '~')
+    {
+        if(instance->home_dir == NULL)
+        {
+            result = GlobusGFSErrorGeneric(
+                "No home directory, cannot expand ~");
+            goto done;            
+        }
+        in_path++;
+        if(*in_path == '/')
+        {
+            in_path++;
+        }
+        else if(*in_path == '\0')
+        {
+            slash = "";
+        }
+        else
+        {
+            /* XXX expand other usernames here */
+            result = GlobusGFSErrorGeneric(
+                "Cannot expand ~");
+            goto done;            
+        } 
+        cwd = globus_libc_strdup(instance->home_dir);
+        cwd_len = strlen(cwd);
+        if(cwd[cwd_len - 1] == '/')
+        {
+            cwd[--cwd_len] = '\0';
+        }
+        snprintf(path, sizeof(path), "%s%s%s", cwd, slash, in_path);
+        globus_free(cwd);
     }
     else
     {
@@ -262,6 +297,15 @@ globus_l_gfs_channel_close_cb(
     {
         instance->close_func(instance->close_arg);
     }
+    
+    if(instance->home_dir)
+    {
+        globus_free(instance->home_dir);
+    }
+    if(instance->username)
+    {
+        globus_free(instance->username);
+    }
     globus_free(instance->local_contact);
     globus_free(instance->remote_contact);
     globus_free(instance);
@@ -296,18 +340,14 @@ globus_l_gfs_done_cb(
         char *                          tmp_str;
 
         tmp_str = globus_error_print_friendly(globus_error_peek(result));
+        /* XXX find out why we get (false) error here 
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_INFO,
             "Control connection closed with error: %s\n",
-             tmp_str);
+             tmp_str); */
         globus_free(tmp_str);
     }
-    else
-    {
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
-            "Control connection closed\n");
-    }
+    
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
@@ -352,8 +392,13 @@ globus_l_gfs_auth_session_cb(
     }
     else
     {
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "User %s successfully authorized\n",
+            reply->info.session.username);
+
         if(reply->info.session.home_dir != NULL && 
-            globus_i_gfs_config_bool("chdir_on_login"))
+            globus_i_gfs_config_bool("use_home_dirs"))
         {
             globus_gridftp_server_control_set_cwd(
                 auth_info->instance->server_handle,
@@ -365,6 +410,11 @@ globus_l_gfs_auth_session_cb(
             reply->info.session.username,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             NULL);
+        
+        auth_info->instance->home_dir = 
+            globus_libc_strdup(reply->info.session.home_dir);
+        auth_info->instance->username = 
+            globus_libc_strdup(reply->info.session.username);
     }
     globus_free(auth_info->session_info->username);
     if(auth_info->session_info->password != NULL)
@@ -608,12 +658,6 @@ globus_l_gfs_data_command_cb(
     {
         switch(reply->info.command.command)
         {
-          case GLOBUS_GFS_CMD_RMD:
-          case GLOBUS_GFS_CMD_DELE:
-          case GLOBUS_GFS_CMD_RNTO:
-          case GLOBUS_GFS_CMD_SITE_CHMOD:
-            globus_gsc_959_finished_command(op, "250 OK.\r\n");
-            break;
           case GLOBUS_GFS_CMD_MKD:
             msg = globus_common_create_string(
                 "257 Directory \"%s\" created successfully.\r\n",
@@ -632,7 +676,7 @@ globus_l_gfs_data_command_cb(
             break;
 
           default:
-            globus_gsc_959_finished_command(op, "500 Unknown error.\r\n");
+            globus_gsc_959_finished_command(op, "250 OK.\r\n");
             break;
         }
     }
@@ -642,7 +686,7 @@ globus_l_gfs_data_command_cb(
             globus_error_peek(reply->result));
         tmp_msg = globus_common_create_string("Command failed : %s", msg);
         globus_free(msg);
-        msg = globus_i_gsc_string_to_959(500, tmp_msg, NULL);
+        msg = globus_gsc_string_to_959(500, tmp_msg, NULL);
         globus_gsc_959_finished_command(op, msg);
         globus_free(tmp_msg);
         globus_free(msg);
@@ -796,6 +840,16 @@ globus_l_gfs_request_command(
         strcmp(cmd_array[1], "DSI") == 0)
     {
         command_info->command = GLOBUS_GFS_CMD_SITE_DSI;
+        command_info->pathname = strdup(cmd_array[2]);
+        if(command_info->pathname == NULL)
+        {
+            goto err;
+        }
+    }
+    else if(strcmp(cmd_array[0], "SITE") == 0 &&
+        strcmp(cmd_array[1], "RDEL") == 0)
+    {
+        command_info->command = GLOBUS_GFS_CMD_SITE_RDEL;
         command_info->pathname = strdup(cmd_array[2]);
         if(command_info->pathname == NULL)
         {
@@ -1729,6 +1783,19 @@ globus_l_gfs_add_commands(
     }
     result = globus_gsc_959_command_add(
         control_handle,
+        "SITE RDEL",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE RDEL <sp> pathname",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
         "SITE CHMOD",
         globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
@@ -1814,6 +1881,7 @@ globus_i_gfs_control_start(
     globus_gridftp_server_control_attr_t attr;
     globus_l_gfs_server_instance_t *    instance;
     int                                 idle_timeout;
+    int                                 preauth_timeout;
     char *                              banner;
     char *                              login_msg;
     globus_list_t *                     module_list;
@@ -1856,8 +1924,6 @@ globus_i_gfs_control_start(
 
     result = globus_gridftp_server_control_attr_set_security(
         attr,
-        (globus_i_gfs_config_bool("no_security")) ?
-        GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE :
         GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI |
         ((globus_i_gfs_config_bool("allow_anonymous")) ?
         GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE : 0));
@@ -1867,14 +1933,13 @@ globus_i_gfs_control_start(
     }
 
     idle_timeout = globus_i_gfs_config_int("control_idle_timeout");
-    if(idle_timeout)
+    preauth_timeout = globus_i_gfs_config_int("control_preauth_timeout");
+    
+    result = globus_gridftp_server_control_attr_set_idle_time(
+        attr, idle_timeout, preauth_timeout);
+    if(result != GLOBUS_SUCCESS)
     {
-        result = globus_gridftp_server_control_attr_set_idle_time(
-            attr, idle_timeout);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_attr_setup;
-        }
+        goto error_attr_setup;
     }
 
     banner = globus_i_gfs_config_string("banner");

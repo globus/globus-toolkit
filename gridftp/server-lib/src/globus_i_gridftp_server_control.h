@@ -204,7 +204,7 @@ typedef struct globus_i_gsc_handle_opts_s
     int                                     perf_frequency;
     int                                     restart_frequency;
     globus_gsc_layout_t                     layout;
-    int                                     block_size;
+    globus_size_t                           block_size;
 } globus_i_gsc_handle_opts_t;
 
 typedef struct globus_i_gsc_module_func_s
@@ -310,6 +310,7 @@ typedef struct globus_i_gsc_attr_s
     globus_gridftp_server_control_security_type_t   security;
 
     int                                     idle_timeout;
+    int                                     preauth_timeout;
 
     globus_i_gsc_user_funcs_t               funcs;
 } globus_i_gsc_attr_t;
@@ -547,12 +548,6 @@ globus_i_gsc_mlsx_line(
     int                                 stat_count,
     const char *                        mlsx_fact_string,
     uid_t                               uid);
-
-char *
-globus_i_gsc_string_to_959(
-    int                                 code,
-    const char *                        in_str, 
-    const char *                        preline);
 
 void
 globus_i_guc_command_data_destroy(

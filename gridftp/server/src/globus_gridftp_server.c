@@ -494,7 +494,7 @@ void
 globus_l_gfs_ipc_open_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_finished_info_t *        reply,
     void *                              user_arg)
 {
     GlobusGFSName(globus_l_gfs_ipc_open_cb);
@@ -736,6 +736,7 @@ globus_l_gfs_convert_inetd_handle(void)
         goto error_stack;
     }
     
+    globus_xio_stack_destroy(stack);
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -1034,10 +1035,14 @@ main(
     /* activte globus stuff */    
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE);
+    globus_module_activate(GLOBUS_USAGE_MODULE);
 
     /* init all the server modules */
     globus_i_gfs_config_init(argc, argv);
     globus_i_gfs_log_open();
+    globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "Server started\n");
     globus_l_gfs_signal_init();
     globus_i_gfs_data_init();
     globus_gfs_ipc_init(!globus_i_gfs_config_bool("data_node"), NULL);

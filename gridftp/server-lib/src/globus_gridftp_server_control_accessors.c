@@ -1,5 +1,4 @@
 #include "globus_i_gridftp_server_control.h"
-#include "version.h"
 #include <sys/utsname.h>
 
 /*************************************************************************
@@ -51,7 +50,7 @@ globus_result_t
 globus_gridftp_server_control_get_layout(
     globus_gridftp_server_control_op_t      op,
     globus_gsc_layout_t *                   layout_type,
-    int *                                   block_size)
+    globus_size_t *                         block_size)
 {
     GlobusGridFTPServerName(globus_gridftp_server_control_get_layout);
 

@@ -371,7 +371,7 @@ globus_l_gsc_cmd_mdtm_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
+    tmp_ptr = globus_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -685,7 +685,7 @@ globus_l_gsc_cmd_cwd_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
+    tmp_ptr = globus_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -811,7 +811,7 @@ globus_l_gsc_cmd_stat_cb(
     }
     else
     {
-        if((int)user_arg == 0)
+        if(user_arg == NULL)
         {
             code = 213;
             tmp_ptr = globus_i_gsc_list_single_line(stat_info);
@@ -820,7 +820,11 @@ globus_l_gsc_cmd_stat_cb(
         {
             code = 250;
             /* for mlst we want the requested path, not just the filename */
-            snprintf(stat_info->name, MAXPATHLEN, "%s", path);
+            if(stat_info->name != NULL)
+            {
+                globus_free(stat_info->name);
+            }
+            stat_info->name = globus_libc_strdup(path);
             tmp_ptr = globus_i_gsc_mlsx_line_single(
                 op->server_handle->opts.mlsx_fact_str, uid, stat_info);
         }
@@ -838,7 +842,7 @@ globus_l_gsc_cmd_stat_cb(
         free(tmp_ptr);
     }
     /* set a blank preline -- mlst output already has the initial space */
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg, preline);
+    tmp_ptr = globus_gsc_string_to_959(code, msg, preline);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -960,7 +964,7 @@ globus_l_gsc_cmd_size_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
+    tmp_ptr = globus_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -1132,7 +1136,7 @@ globus_l_gsc_auth_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
+    tmp_ptr = globus_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -2176,7 +2180,7 @@ globus_l_gsc_cmd_port_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
+    tmp_ptr = globus_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
@@ -2499,7 +2503,7 @@ globus_l_gsc_data_cb(
         msg = globus_common_create_string("%s : %s", msg, response_msg);
         free(tmp_ptr);
     }
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg, NULL);
+    tmp_ptr = globus_gsc_string_to_959(code, msg, NULL);
     globus_gsc_959_finished_command(wrapper->op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);
