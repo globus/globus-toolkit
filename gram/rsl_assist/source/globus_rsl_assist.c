@@ -314,6 +314,130 @@ globus_rsl_assist_replace_manager_name(
     return GLOBUS_NULL;
 } /* globus_rsl_assist_replace_manager_name() */
 
+/*
+ * Function: globus_i_rsl_assist_extract_attribute()
+ *
+ * Parse the RSL rsl and return a string corresponding to the 
+ * first attribute "attribute" found in the rsl.
+ * Because this function returns only the first string of the first attribute
+ * found in the RSL, it is meant to be used with -not-compound-RSLs
+ * (e.g.: the RSLs stored in the MDS entries "scheduledjobs",
+ * and for attribute with single literal values.
+ *
+ * Parameters:
+ *     rsl -            rsl to parse
+ *     attribute -      Attribute to search
+ *     value -          the string (char *) corresponding to the values
+ *                      of the attribute. (GOBUSS_NULL if none)
+ * 
+ * Returns:
+ *     GLOBUS_SUCCESS or 
+ *     error code
+ */ 
+int
+globus_i_rsl_assist_extract_attribute(globus_rsl_t * rsl,
+				   char * attribute,
+				   char ** value)
+{
+    globus_list_t * lists;
+    int rc;
+    
+    *value=GLOBUS_NULL;
+    
+    if (globus_rsl_is_boolean_multi(rsl))
+    {
+	return -1;
+    }
+    if(globus_rsl_is_boolean(rsl))
+    {
+	lists = globus_rsl_boolean_get_operand_list(rsl);
+	while(!globus_list_empty(lists))
+	{
+	    globus_rsl_t *	head;
+
+	    head = globus_list_first(lists);
+
+	    /* if boolean, recursively process the request */
+	    if(globus_rsl_is_boolean(head))
+	    {
+		rc = globus_i_rsl_assist_extract_attribute(
+		    head,
+		    attribute,
+		    value);
+		if (rc != GLOBUS_SUCCESS || value != GLOBUS_NULL)
+		{
+		    /* found one or error */
+		    return rc;
+		}
+	    }
+	    else if(globus_rsl_is_relation_eq(head))
+	    {
+		
+		/* RSL attributes are case insensitive */
+		if(strcasecmp(globus_rsl_relation_get_attribute(head),
+			      attribute) == 0)
+		{
+		    globus_rsl_value_t * value_rsl;
+		    value_rsl = globus_rsl_relation_get_single_value(head);
+		    
+		    if(value_rsl == NULL)
+		    {
+			/* ill-formed RSL, abort */
+			return -1;
+		    }
+		    else if(!globus_rsl_value_is_literal(value_rsl))
+		    {
+		        /* don't process substitutions */
+			return -1;
+		    }
+		    else
+		    {
+			char * value_string;
+			value_string =
+			    globus_rsl_value_literal_get_string(value_rsl);
+			*value = strdup(value_string);
+			return GLOBUS_SUCCESS;
+			
+		    }
+		    
+		}
+	    }
+	    lists = globus_list_rest(lists);
+	}
+    }
+    if(globus_rsl_is_relation_eq(rsl))
+    {
+	
+	/* RSL attributes are case insensitive */
+	if(strcasecmp(globus_rsl_relation_get_attribute(rsl),
+		      attribute) == 0)
+	{
+	    globus_rsl_value_t * value_rsl;
+	    value_rsl = globus_rsl_relation_get_single_value(rsl);
+	    
+	    if(value_rsl == NULL)
+	    {
+		/* ill-formed RSL, abort */
+		return -1;
+	    }
+	    else if(!globus_rsl_value_is_literal(value_rsl))
+	    {
+		/* don't process substitutions */
+		return -1;
+	    }
+	    else
+	    {
+		char * value_string;
+		value_string = globus_rsl_value_literal_get_string(value_rsl);
+		*value= strdup(value_string);
+		return GLOBUS_SUCCESS;
+	    }
+	    
+	}
+    }
+
+return GLOBUS_SUCCESS;
+}/* globus_i_rsl_assist_extract_attribute() */
 
 /*
  * Function: globus_l_rsl_assist_query_ldap()
@@ -341,8 +465,8 @@ globus_l_rsl_assist_simple_query_ldap(
 {
     LDAP *			ldap_server;
     int				port;
-    char*                       port_str;
-    char *			base_dn=GLOBUS_MDS_ROOT_DN;
+    char *		       	port_str;
+    char *			base_dn;
     char *			server;
     LDAPMessage *		reply;
     LDAPMessage *		entry;
@@ -354,11 +478,19 @@ globus_l_rsl_assist_simple_query_ldap(
 
     if ((port_str=globus_libc_getenv("GLOBUS_MDS_PORT")) == GLOBUS_NULL)
     {
-	port=atoi(port_str);
+	port=atoi(GLOBUS_MDS_PORT);
+    }
+    else
+    {
+	port=atoi(port_str);	
     }
     if ((server=globus_libc_getenv("GLOBUS_MDS_HOST")) == GLOBUS_NULL)
     {
 	server=GLOBUS_MDS_HOST;
+    }
+    if ((base_dn=globus_libc_getenv("GLOBUS_BASE_DN")) == GLOBUS_NULL)
+    {
+	base_dn=GLOBUS_MDS_ROOT_DN;
     }
     /* connect to the ldap server */
     if((ldap_server = ldap_open(server, port)) == GLOBUS_NULL)
@@ -538,5 +670,5 @@ globus_i_rsl_assist_get_rm_contact(
     globus_libc_free(search_string);
     return result;
     
-} /* globus_rsl_assist_get_rm_contact() */
+} /* globus_i_rsl_assist_get_rm_contact() */
 

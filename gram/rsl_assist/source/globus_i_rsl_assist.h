@@ -28,7 +28,7 @@
 #endif
 
 /*
- * globus_rsl_assist_get_rm_contact()
+ * globus_i_rsl_assist_get_rm_contact()
  *
  *     Return the resourceManagerContact corresponding to 
  *     the resourceManagerName given as argument, by querying the MDS. 
@@ -46,26 +46,7 @@ char*
 globus_i_rsl_assist_get_rm_contact(char* resourceManagerName);
 
 /*
- * Structure: job_listing_entry_t
- *
- * This structure is used by the function
- * globus_rsl_assist_get_job_contact_list() to return a list of job contact,
- * job rsl and job status
- */
-
-/*
-  typedef struct
-{
-    char *    job_contact;
-    char *    rsl_string;
-    char *    status;
-} globus_i_rsl_assist_job_listing_entry_t;
-*/
-
-typedef char * globus_i_rsl_assist_job_listing_entry_t;
-
-/*
- * globus_rsl_assist_get_job_contact_list()
+ * globus_i_rsl_assist_get_job_list()
  *
  *     By querying the MDS, return the list of job contact currently
  *     registerd in the MDS, the rsl for each job and the status of the job.
@@ -80,13 +61,37 @@ typedef char * globus_i_rsl_assist_job_listing_entry_t;
  *
  * Returns:
  *    A pointer to the head of a list of  
- *    globus_i_rsl_assist_job_listing_entry_t defined above.
+ *    string containing the rsl of the job.
  *    OR
  *    GLOBUS_NULL in case of failure.
  */
 int
-globus_i_rsl_assist_get_job_contact_list(globus_list_t ** job_contact_list);
+globus_i_rsl_assist_get_job_list(globus_list_t ** job_list);
 
+/*
+ * Function: globus_i_rsl_assist_extract_attribute()
+ *
+ * Parse the RSL rsl and return a string corresponding to the 
+ * first attribute "attribute" found in the rsl.
+ * Because this function returns only the first string of the first attribute
+ * found in the RSL, it is meant to be used with -not-compound-RSLs
+ * (e.g.: the RSLs stored in the MDS entries "scheduledjobs",
+ * and for attribute with single literal values.
+ *
+ * Parameters:
+ *     rsl -            rsl to parse
+ *     attribute -      Attribute to search
+ *     value -          the string (char *) corresponding to the values
+ *                      of the attribute. (GOBUSS_NULL if none)
+ * 
+ * Returns:
+ *     GLOBUS_SUCCESS or 
+ *     error code
+ */ 
+int
+globus_i_rsl_assist_extract_attribute(globus_rsl_t * rsl,
+				   char * attribute,
+				   char ** value);
 #endif
 
 
