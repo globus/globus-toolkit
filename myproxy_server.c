@@ -947,6 +947,9 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        authorization_ok = myproxy_server_check_cred(context, client_name);
        if (!(authorization_ok == 1)) break;
 
+       if (strcmp(client_name, client_request->username) == 0)
+	  break;
+
        credentials_exist = myproxy_creds_exist(client_request->username);
        if (credentials_exist == -1) {
 	   myproxy_log_verror();
@@ -962,18 +965,19 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   }
        }
 
-       if (credentials_exist && !client_owns_credentials) {
+       if (credentials_exist) {
+	 if (!client_owns_credentials) {
 	   myproxy_log("Username \"%s\" in use by another client",
 		       client_request->username);
 	   verror_put_string("Username in use by another client");
 	   goto end;
-       }
-
-       if (strchr(client_request->username, '/') != NULL) {
-	   myproxy_log("Requested username contains invalid characters");
-	   verror_put_string("Requested username contains invalid characters");
-	   goto end;
-       }
+	 }
+       } else 
+   	  if (strchr(client_request->username, '/') != NULL) {
+  	     myproxy_log("Requested username contains invalid characters");
+  	     verror_put_string("Requested username contains invalid characters");
+  	     goto end;
+	  }
        break;
    }
 
