@@ -39,7 +39,7 @@ test_parse_args(int argc,
 
     setvbuf(stdout, 0, _IONBF, 0);
     
-    while((c = getopt(argc, argv, "f:a:ps:d:r:zc:t:")) != -1)
+    while((c = getopt(argc, argv, "f:a:ps:d:r:zc:t:i")) != -1)
     {
 	switch(c)
 	{
@@ -144,19 +144,19 @@ test_parse_args(int argc,
 	case 't':
 	    if(!strcmp(optarg, "clear"))
 	    {
-		globus_ftp_client_operationattr_set_protection(
+		globus_ftp_client_operationattr_set_data_protection(
 			operation_attr,
 			GLOBUS_FTP_CONTROL_PROTECTION_CLEAR);
 	    }
 	    else if(!strcmp(optarg, "safe"))
 	    {
-		globus_ftp_client_operationattr_set_protection(
+		globus_ftp_client_operationattr_set_data_protection(
 			operation_attr,
 			GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
 	    }
 	    else if(!strcmp(optarg, "private"))
 	    {
-		globus_ftp_client_operationattr_set_protection(
+		globus_ftp_client_operationattr_set_data_protection(
 			operation_attr,
 			GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE);
 	    }
@@ -183,6 +183,11 @@ test_parse_args(int argc,
 	    globus_ftp_client_handleattr_add_plugin(handle_attr, plugin);
 	    break;
 	    
+	case 'i':
+	    globus_ftp_client_operationattr_set_control_protection(
+			operation_attr,
+			GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
+	    break;
 	case '?':
 	    globus_module_deactivate_all();
 	    exit(0);
