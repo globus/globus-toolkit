@@ -105,6 +105,12 @@ AC_ARG_ENABLE(insure,
 
 AC_DEFUN([LAC_COMPILERS],
 [
+
+dnl this is to prevent AC_PROG_CC being called
+dnl automatically from autoconf dependencies
+AC_PROVIDE([AC_PROG_CC])
+
+AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 LAC_COMPILERS_ARGS
 LAC_THREADS
@@ -896,6 +902,11 @@ fi
 GLOBUS_DEBUG="$lac_cv_debug"
 AC_SUBST(GLOBUS_DEBUG)
 
+dnl we have to run AC_PROG_CC to get the all the other
+dnl autoconf macros to work correctly
+CC=$lac_cv_CC
+AC_PROG_CC()
+
 LAC_PROG_CC_GNU([$lac_cv_CC $lac_CFLAGS],
 [
     lac_CFLAGS="$lac_CFLAGS -Wall"
@@ -942,15 +953,27 @@ dnl LAC_PROG_CC_GNU(COMPILER, ACTION-IF-TRUE, ACTION-IF-FALSE)
 AC_DEFUN([LAC_PROG_CC_GNU],
 [
 if test "X$1" != "X" ; then
-	_SAVED_CC="$CC"
-	CC="$1"
-	_AC_LANG_COMPILER_GNU
-	CC="$_SAVED_CC"
+    _SAVED_CC="$CC"
+    CC="$1"
+    AC_TRY_COMPILE([],
+                   [#ifndef __GNUC__
+    choke me
+#endif
+],
+    [lac_compiler_gnu=yes],
+    [lac_compiler_gnu=no])
+    CC="$_SAVED_CC"
 else
-	_AC_LANG_COMPILER_GNU
+    AC_TRY_COMPILE([],
+                   [#ifndef __GNUC__
+    choke me
+#endif
+],
+    [lac_compiler_gnu=yes],
+    [lac_compiler_gnu=no])
 fi
 
-if test "$ac_cv_prog_gcc" = "yes" ; then
+if test "$lac_compiler_gnu" = "yes" ; then
     :
     $2
 else
