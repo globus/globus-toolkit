@@ -225,7 +225,7 @@ startnew=false
 host=`${bindir}/globus-hostname`
 file_location="$HOME/.globus"
 file_prefix="personal-gatekeeper.$host"
-log=on_error
+log=never
 startargs=''
 
 while [ -n "$1" ]; do
