@@ -185,7 +185,7 @@ globus_l_callback_space_attr_destructor(
 {
     globus_l_callback_space_attr_t *    attr;
     
-    attr = (globus_l_callback_space_t *) datum;
+    attr = (globus_l_callback_space_attr_t *) datum;
 
     globus_memory_push_node(
         &globus_l_callback_space_attr_memory, attr);
@@ -244,8 +244,6 @@ globus_l_callback_activate()
 
     /* init global 'space' */
     globus_l_callback_global_space.handle = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    globus_l_callback_global_space.behavior = 
-        GLOBUS_CALLBACK_SPACE_BEHAVIOR_THREADED;
     globus_priority_q_init(
         &globus_l_callback_global_space.queue,
         (globus_priority_q_cmp_func_t) globus_abstime_cmp);
@@ -308,7 +306,7 @@ globus_l_callback_deactivate()
         }
         globus_mutex_unlock(&globus_l_callback_global_space.lock);
         
-        while(globus_l_callback_outstanding_threads > 0)
+        while(globus_l_callback_thread_count > 0)
         {
             globus_cond_wait(
                 &globus_l_callback_thread_cond,
@@ -884,7 +882,7 @@ globus_callback_space_init(
     {
         globus_mutex_lock(&globus_l_callback_space_lock);
         {
-            i_attr = (globus_l_callback_info_t *)
+            i_attr = (globus_l_callback_space_attr_t *)
                 globus_handle_table_lookup(
                     &globus_l_callback_space_attr_table, attr);
             
@@ -1258,6 +1256,67 @@ globus_l_callback_requeue(
 }
 
 /**
+ * globus_l_callback_blocked_cb
+ *
+ * This call is registered with globus_thread_blocking_callback_push.  It is
+ * called when a user calls globus_thread_blocking_will_block/globus_cond_wait
+ *
+ * When called, this function will requeue a periodic callback iff .
+ * globus_thread_blocking_will_block/globus_cond_wait was called on that
+ * callbacks 'space' or if that callback belongs to the global space
+ */
+
+static
+void
+globus_l_callback_blocked_cb(
+    globus_callback_space_t             space,
+    globus_thread_callback_index_t      index,
+    void *                              user_args)
+{
+    globus_l_callback_restart_info_t *  restart_info;
+    
+    restart_info = (globus_l_callback_restart_info_t *) user_args;
+    
+    if(restart_info && !restart_info->restarted)
+    {
+        globus_l_callback_info_t *      callback_info;
+
+        callback_info = restart_info->callback_info;
+
+        if(callback_info->my_space->handle == GLOBUS_CALLBACK_GLOBAL_SPACE ||
+            callback_info->my_space->handle == space)
+        {
+            if(callback_info->is_periodic)
+            {
+                globus_l_callback_requeue(callback_info);
+            }
+
+            restart_info->restarted = GLOBUS_TRUE;
+        }
+        
+        if(restart_info->create_thread)
+        {
+            globus_mutex_lock(&globus_l_callback_thread_lock);
+            {
+                if(!globus_l_callback_shutting_down)
+                {
+                    int                 rc;
+                    
+                    globus_l_callback_thread_count++;
+                    rc = globus_thread_create(
+                        GLOBUS_NULL,
+                        GLOBUS_NULL,
+                        globus_l_callback_thread_poll,
+                        GLOBUS_NULL);
+                    globus_assert(rc == 0);
+                }
+            } 
+            globus_mutex_unlock(&globus_l_callback_thread_lock);
+        }
+    }
+}
+
+/**
  * globus_callback_space_poll
  *
  * external function to poll for callbacks.  will poll at least the passed
@@ -1473,67 +1532,6 @@ globus_callback_signal_poll()
     }
 }
 
-/**
- * globus_l_callback_blocked_cb
- *
- * This call is registered with globus_thread_blocking_callback_push.  It is
- * called when a user calls globus_thread_blocking_will_block/globus_cond_wait
- *
- * When called, this function will requeue a periodic callback iff .
- * globus_thread_blocking_will_block/globus_cond_wait was called on that
- * callbacks 'space' or if that callback belongs to the global space
- */
-
-static
-void
-globus_l_callback_blocked_cb(
-    globus_callback_space_t             space,
-    globus_thread_callback_index_t      index,
-    void *                              user_args)
-{
-    globus_l_callback_restart_info_t *  restart_info;
-    
-    restart_info = (globus_l_callback_restart_info_t *) user_args;
-    
-    if(restart_info && !restart_info->restarted)
-    {
-        globus_l_callback_info_t *      callback_info;
-
-        callback_info = restart_info->callback_info;
-
-        if(callback_info->my_space->handle == GLOBUS_CALLBACK_GLOBAL_SPACE ||
-            callback_info->my_space->handle == space)
-        {
-            if(callback_info->is_periodic)
-            {
-                globus_l_callback_requeue(callback_info);
-            }
-
-            restart_info->restarted = GLOBUS_TRUE;
-        }
-        
-        if(restart_info->create_thread)
-        {
-            globus_mutex_lock(&globus_l_callback_thread_lock);
-            {
-                if(!globus_l_callback_shutting_down)
-                {
-                    int                 rc;
-                    
-                    globus_l_callback_outstanding_threads++;
-                    rc = globus_thread_create(
-                        GLOBUS_NULL,
-                        GLOBUS_NULL,
-                        globus_l_callback_thread_poll,
-                        GLOBUS_NULL);
-                    globus_assert(rc == 0);
-                }
-            } 
-            globus_mutex_unlock(&globus_l_thread_create_lock);
-        }
-    }
-}
-
 /*
  * function for callbacks that get their own thread
  */
@@ -1587,8 +1585,8 @@ globus_l_callback_thread_callback(
             if(!restart_info.restarted &&
                 callback_info->is_periodic &&
                 globus_reltime_cmp(
-                    callback_info->period,
-                    globus_l_callback_own_thread_period) <= 0)
+                    &callback_info->period,
+                    &globus_l_callback_own_thread_period) <= 0)
             {
                 /* period is still small enough to keep him in his own 
                  * thread. gotta figure out if I should sleep or run again
@@ -1671,8 +1669,8 @@ globus_l_callback_thread_callback(
     /* this thread is exiting */
     globus_mutex_lock(&globus_l_callback_thread_lock);
     {
-        globus_l_callback_outstanding_threads--;
-        if(globus_l_callback_outstanding_threads == 0)
+        globus_l_callback_thread_count--;
+        if(globus_l_callback_thread_count == 0)
         {
             globus_cond_signal(&globus_l_callback_thread_cond);
         } 
@@ -1765,7 +1763,7 @@ globus_l_callback_thread_poll(
         {
             /* if function does not have its own thread */
             if(globus_reltime_cmp(
-                period, globus_l_callback_own_thread_period) > 0 ||
+                &period, &globus_l_callback_own_thread_period) > 0 ||
                 callback_info->my_space->handle != 
                     GLOBUS_CALLBACK_GLOBAL_SPACE)
             {
@@ -1840,7 +1838,7 @@ globus_l_callback_thread_poll(
                     {
                         int             rc;
 
-                        globus_l_callback_outstanding_threads++;
+                        globus_l_callback_thread_count++;
                         rc = globus_thread_create(
                             GLOBUS_NULL,
                             GLOBUS_NULL,
@@ -1849,7 +1847,7 @@ globus_l_callback_thread_poll(
                         globus_assert(rc == 0);
                     }
                 } 
-                globus_mutex_unlock(&globus_l_thread_create_lock);
+                globus_mutex_unlock(&globus_l_callback_thread_lock);
             }
         }
     } while(!done);
@@ -1859,8 +1857,8 @@ globus_l_callback_thread_poll(
     /* this thread is exiting */
     globus_mutex_lock(&globus_l_callback_thread_lock);
     {
-        globus_l_callback_outstanding_threads--;
-        if(globus_l_callback_outstanding_threads == 0)
+        globus_l_callback_thread_count--;
+        if(globus_l_callback_thread_count == 0)
         {
             globus_cond_signal(&globus_l_callback_thread_cond);
         } 
