@@ -28,14 +28,11 @@ Southern California. All Rights Reserved.
 
   <property file="${user.home}/build.properties"/>
   <property file="build.properties"/>
-  <!--
-  <property name="ogsacore.javadir" value="${user.home}/.globus/ogsa/impl/java"/>
-  -->
-  <property name="ogsacore.javadir" value="${user.home}/.globus/ogsa-alpha"/>
-  <property file="${ogsacore.javadir}/ogsa.properties"/>
-  <property name="ogsacore.builddir" value="${ogsacore.javadir}/build" />
-  <property name="ogsacore.libdir" value="${ogsacore.javadir}/lib" />
-  <property name="ogsacore.gardir" value="${ogsacore.builddir}/gar" />
+  <property name="ogsa.root" value="../../ogsa/impl/java"/>
+  <property file="${ogsa.root}/ogsa.properties"/>
+  <property name="ogsa.builddir" value="${ogsa.root}/build" />
+  <property name="ogsa.libdir" value="${ogsa.root}/lib" />
+  <property name="ogsa.gardir" value="${ogsa.builddir}/gar" />
 
 <!-- the name of the jarfile to generate -->
   <property name="jarname" value="filestreaming" />
@@ -45,12 +42,12 @@ Southern California. All Rights Reserved.
   <property name="build.dest" value="${build.dir}/classes"/>
   <property name="build.lib" value="./lib"/>
   <property name="build.javadocs" value="${build.dir}/javadocs"/>
-  <property name="build.services" value="${ogsacore.javadir}/build-services.xml"/>
+  <property name="build.services" value="${ogsa.root}/build-services.xml"/>
   <property name="stubs.dir" value="./src/org/globus/ogsa/base"/>
   <property name="schema.dir" value="schema"/>
-  <property name="schema.origin" value="${ogsacore.javadir}/schema"/>
+  <property name="schema.origin" value="${ogsa.root}/schema"/>
   <property name="package.dir" value="filestreaming"/>
-  <property name="build.packages" value="${ogsacore.javadir}/build-packages.xml"/>
+  <property name="build.packages" value="build-packages.xml"/>
   <property name="test-reports.dir" value="test-reports"/>
   
   
@@ -63,11 +60,11 @@ Southern California. All Rights Reserved.
     <pathelement location="."/>
     <pathelement location="${java.home}/../lib/tools.jar"/>
     <pathelement location="${build.dest}"/>
-    <pathelement location="${ogsacore.javadir}/build/classes"/>
+    <pathelement location="${ogsa.root}/build/classes"/>
     <fileset dir="lib">
      <include name="*.jar"/>
     </fileset>
-    <fileset dir="${ogsacore.javadir}/lib">
+    <fileset dir="${ogsa.root}/lib">
      <include name="*.jar"/>
     </fileset>
     <pathelement path="${java.class.path}"/>
@@ -105,7 +102,7 @@ Southern California. All Rights Reserved.
     <copy toDir="${schema.dir}">
         <fileset dir="${schema.origin}" casesensitive="yes"/>
     </copy>
-    <copy file="${ogsacore.javadir}/${nsmap.file}" toDir="./"/>
+    <copy file="${ogsa.root}/${nsmap.file}" toDir="./"/>
  
 
     <echo message="Generating schema for file_streaming_factory"/>
@@ -222,8 +219,8 @@ Southern California. All Rights Reserved.
           <include name="**/*.jar"/>
       </fileset>
     </copy>
-    <replaceregexp file="${package.dir}-server-config.wsdd" match="GT3_LOCATION" replace="${ogsacore.javadir}" byline="true"/>
-    <ant antfile="${ogsacore.javadir}/build-packages.xml" target="makeClientServerGar">
+    <replaceregexp file="${package.dir}-server-config.wsdd" match="GT3_LOCATION" replace="${ogsa.root}" byline="true"/>
+    <ant antfile="${ogsa.root}/${build.packages}" target="makeClientServerGar">
       <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
       <property name="garlib.dir" value="${build.lib}"/>
       <property name="garserverdeployment.file" value="${package.dir}-server-config.wsdd"/>
@@ -237,28 +234,23 @@ Southern California. All Rights Reserved.
   <!-- Cleans everything                                                   -->
   <!-- =================================================================== -->
   <target name="clean">
-    <antcall target="cleanBuild"/>
-    <delete dir="${stubs.dir}"/>
+    <delete dir="${build.dir}"/>
     <delete file="${build.lib}/${jarname}.jar"/>
     <delete file="${build.lib}/${package.dir}.gar"/>
 
   </target>
-    <!-- clean setuid c stuff -->
 
-  <target name="cleanBuild">
-    <delete dir="${build.dir}"/>
+  <target name="cleanAll">
+    <delete dir="${stubs.dir}"/>
   </target>
 
-  
-<target name="deployFileStreaming" depends="gar">
-       <copy todir="${ogsacore.javadir}/lib" file="${build.lib}/${package.dir}.gar"/>
-       <ant antfile="${ogsacore.javadir}/build-packages.xml" target="deployClientServerGar" dir="${ogsacore.javadir}">
+  <target name="deployGar" depends="gar">
+       <copy todir="${ogsa.root}/lib" file="${build.lib}/${package.dir}.gar"/>
+       <ant antfile="${build.packages}" target="deployClientServerGar" dir="${ogsa.root}">
          <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>       
          <reference refid="classpath" torefid="classpath"/>
        </ant>
-   </target>
-
- <target name="deployGar" depends="deployFileStreaming"/>
+  </target>
 
 
  </project>
