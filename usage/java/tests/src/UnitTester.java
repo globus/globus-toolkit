@@ -27,6 +27,7 @@ import org.globus.usage.receiver.handlers.*;
 public class UnitTester extends TestCase {
     static final int portNum = 4811;
 	
+    /*Use the database on mayed as a place to conduct tests:*/
     static final String dbdriver = "org.postgresql.Driver";
     static final String dbURL = "database-url = jdbc:postgresql://mayed.mcs.anl.gov/guss?user=jdicarlo&password=abcdefg";
     static final int buffersize = 128;
@@ -72,7 +73,7 @@ public class UnitTester extends TestCase {
 	    
 
 	    //now try the GridFTPPacketHandler on it:
-	    myHandler = new GridFTPPacketHandler(dbdriver, dbURL, "gftp_packets");
+	    myHandler = new GridFTPPacketHandler(dbURL, "gftp_packets");
 	    buf = CustomByteBuffer.wrap(mysteryPacketBytes);
 	    
 	    maybePack = myHandler.instantiatePacket(buf);
@@ -114,49 +115,23 @@ public class UnitTester extends TestCase {
 	}
     }
 
-    public void testTrimmingPacket() {
-	DatagramSocket outSock, inSock;
-	DatagramPacket outPack, inPack;
-	byte[] outData, inData, trimmedOutData;
 
-	try {
-	inSock = new DatagramSocket(4811);
-	outSock = new DatagramSocket();
-	outData = new byte[]{36, 24, 36};
-	
-	inData = new byte[1400];
-	inPack = new DatagramPacket(inData, inData.length);
-	outPack = new DatagramPacket(outData, 3);
-	outPack.setPort(4811);
-	outPack.setAddress(InetAddress.getByName("localhost"));
-	outSock.send(outPack);
-	inSock.receive(inPack);
-	trimmedOutData = inPack.getData();
-	System.out.println("Incoming packet has length "+ inPack.getLength());
-	System.out.println("But its data buffer is "+ trimmedOutData.length);
-	outSock.close();
-	inSock.close();
-	} catch (Exception e) {
-	    Assert.fail("Socket experiment failed: "+e.getMessage());
-	}
-    }
 
     public static TestSuite suite() { 
 	TestSuite suite= new TestSuite(); 
-	//	suite.addTest(new UnitTester("testGFTPTextFormat"));
-	suite.addTest(new UnitTester("testTrimmingPacket"));
+	//suite.addTest(new UnitTester("testGFTPTextFormat"));
+	//suite.addTest(new UnitTester("testTrimmingPacket"));
 	//suite.addTest(new TestSuite(SendReceiveTester.class));
-		suite.addTest(new TestSuite(RingBufferTester.class));
-	        suite.addTest(new TestSuite(ByteBufferTester.class));
+	//suite.addTest(new TestSuite(GFTPRecordTester.class)); 
+	suite.addTest(new TestSuite(ReceiverThreadTester.class));
+	suite.addTest(new TestSuite(RingBufferTester.class));
+	suite.addTest(new TestSuite(ByteBufferTester.class));
 	return suite;
     }
 
-    //        suite.addTest(new TestSuite(GFTPRecordTester.class)); 
 
     public static void main(String args[]) {
         junit.textui.TestRunner.run(suite());
     }
 
 }
-
-

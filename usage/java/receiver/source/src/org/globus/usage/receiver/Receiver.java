@@ -120,13 +120,11 @@ public class Receiver {
 	return buf.toString();
     }
 
-
     public void shutDown() {
         log.debug("shutting down receiver.");
         theRecvThread.shutDown();
         theHandleThread.shutDown();
     }
-
 }
 
 /*Should this actually be an inner class of Receiver?*/
@@ -172,11 +170,11 @@ class ReceiverThread extends Thread {
                 if (!theRing.insert(storage)) {
                     //failed == ring is full
                     log.error("Ring buffer is FULL.  We are LOSING PACKETS!");
-                    //todo:  throw an exception?
+                   //todo:  throw an exception?
                 }
 
             } catch (IOException e) {
-                log.error("When trying to recieve, an IO exception occurred:");
+                log.error("When trying to recieve, an exception occurred:"+e.getMessage());
             }
             /*Todo: if the socket is no longer open here, for some reason,
               should we maybe try to open a new socket?*/
@@ -190,6 +188,8 @@ class ReceiverThread extends Thread {
 
     public void shutDown() {
         stillGood = false; //lets the loop in run() finish.
-        socket.close();
+	try {
+	    socket.close();
+	} catch (Exception e) {}
     }
 }

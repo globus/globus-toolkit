@@ -58,10 +58,18 @@ public class DefaultPacketHandler implements PacketHandler {
                 + table + ": ");
 
             log.info(pack.toString());
-
-            stmt = makeSQLInsert(pack);
-            stmt.executeUpdate();
-            stmt.close();
+	    
+	    if (pack.getComponentCode() == null ||
+		pack.getPacketVersion() == null ) {
+		
+		log.error("Can't happen: componentCode and/or packetVersion are null.  Here are all the bytes:");
+		showPacketContentsBinary(pack);
+		
+	    } else {
+		stmt = makeSQLInsert(pack);
+		stmt.executeUpdate();
+		stmt.close();
+	    }
         }
         
         catch( SQLException e ) {
@@ -69,6 +77,15 @@ public class DefaultPacketHandler implements PacketHandler {
 	    log.error("Packet contents:"+ new String(pack.getBinaryContents()));
         }
 
+    }
+
+    protected void showPacketContentsBinary(UsageMonitorPacket pack) {
+	int q;
+	byte[] binary = pack.getBinaryContents();
+	
+	for (q = 0; q < binary.length; q++) {
+	    System.out.println(binary[q]);
+	}
     }
 
     /*If you want to write a handler that writes packets into a database,

@@ -68,7 +68,6 @@ public class HandlerThread extends Thread {
 	PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connectionFactory, connectionPool, null, null, false, true);
 	PoolingDriver driver = new PoolingDriver();
 	driver.registerPool("usagestats", connectionPool);
-
     }
 
     /*The handler thread maintains counts of the number of packets 
