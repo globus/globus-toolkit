@@ -961,13 +961,19 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
     return return_code;
 }
 
-/* Retrieves info about all credentials. Does not verify username */
+/* Retrieves info about all credentials. Verifies username and remaining lifetime if specified.
+   If query is username or lifetime based, username should be specified in creds->username
+   and remaining lifetime in creds->end_time
+*/
 int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 {
     struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
     DIR *dir;
     struct dirent *de;
     int return_code = -1;
+
+    char *username = NULL;
+    time_t time_left = 0;
 
     /*
      * cur_cred always points to the last valid credential in the list.
@@ -983,6 +989,18 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 
     new_cred = creds; /* new_cred is what we're filling in */
 
+    if (creds->username)
+    {
+	username = strdup (creds->username);
+	free (creds->username);
+    }
+
+    if (creds->end_time)
+    {
+	time_left = creds->end_time;
+	creds->end_time = 0;
+    }
+
     if ((dir = opendir(storage_dir)) == NULL) {
 	verror_put_string("failed to open credential storage directory");
 	goto error;
@@ -994,7 +1012,9 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
     while ((de = readdir(dir)) != NULL) {
 	    if (!strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
 	    char *credname = NULL, *dot, *dash;
+	    time_t now;
 
+	    now = time(0);
 	    dash = strchr (de->d_name, '-');	/*Get a pointer to '-' */
 
 	    dot = strchr(de->d_name, '.');
@@ -1011,18 +1031,26 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 
 	    new_cred->username = strdup(de->d_name);
 
+	    if (username)	/* use username to query if specified */
+		if (strcmp(username, new_cred->username))
+			continue;
+
 	    if (credname)
 	    	new_cred->credname = strdup(credname);
 	    else
 		new_cred->credname = NULL;
 
 	    if (myproxy_creds_retrieve(new_cred) == 0) {
-		    if (dash == NULL)	// Default credential
-			new_cred->credname = strdup ("(Default Credential)");
-		
+	    
+		if (time_left > 0) /* check time_left if specified */
+		    if (time_left < (new_cred->end_time-now))
+			goto skip;
+
 		    if (cur_cred) cur_cred->next = new_cred;
 		    cur_cred = new_cred;
 		    new_cred = malloc(sizeof(struct myproxy_creds));
+
+		    skip:;
 		    memset(new_cred, 0, sizeof(struct myproxy_creds));
 		}
 	    }

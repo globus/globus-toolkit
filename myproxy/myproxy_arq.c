@@ -20,6 +20,7 @@
 #include <assert.h>
 
 #define BINARY_NAME "myproxy-arq"
+#define SECONDS_PER_HOUR 3600
 
 static char usage[] = \
 "\n"\
@@ -29,6 +30,8 @@ static char usage[] = \
 "    -h | --help                	Displays usage\n"\
 "    -u | --usage                             \n"\
 "						\n"\
+"    -l | --username <name>		Username of credentials (optional)\n"\
+"    -t | --time_left <hours>		Time left in hours (optional)\n"\
 "    -v | --verbose             	Display debugging messages\n"\
 "    -V | --version             	Displays version\n"\
 "    -s | --storage <directory> 	Specifies the credential storage directory\n"
@@ -39,13 +42,18 @@ struct option long_options[] =
 {
     {"help",             no_argument, NULL, 'h'},
     {"usage",            no_argument, NULL, 'u'},
+    {"username",   required_argument, NULL, 'l'},
+    {"time_left",  required_argument, NULL, 't'},
     {"storage",	   required_argument, NULL, 's'},
     {"verbose",          no_argument, NULL, 'v'},
     {"version",          no_argument, NULL, 'V'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:vV";
+static char short_options[] = "hul:t:s:vV";
+
+char *username;  /* User preferences */
+time_t time_left;
 
 static char version[] =
 BINARY_NAME "version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -59,11 +67,21 @@ int
 main(int argc, char *argv[]) 
 {
     struct myproxy_creds cred;
- 
+
+    username = NULL;
+    time_left = 0;
+
    /* Initialize arguments*/
     init_arguments(argc, argv);
 
     memset (&cred, 0, sizeof (cred));
+
+    if (username)
+	cred.username = strdup (username);
+
+    if (time_left)
+	cred.end_time = time_left;
+
     if (myproxy_admin_retrieve_all(&cred) < 0) {
         myproxy_log_verror();
         fprintf (stderr, "Unable to read credentials !! %s\n", verror_get_string());
@@ -101,6 +119,12 @@ init_arguments(int argc,
             fprintf(stderr, usage);
             exit(1);
             break;
+        case 'l':	/* username */
+	    username = strdup (gnu_optarg);
+	    break;
+	case 't':	/* time left */
+	    time_left = SECONDS_PER_HOUR * atoi(gnu_optarg);
+	    break;
 	case 'v':	/* verbose */
 	    myproxy_debug_set_level(1);
 	    break;
@@ -123,18 +147,23 @@ print_cred_info(myproxy_creds_t *creds)
 {
     int first_time = 1;
     if (!creds) return;
+
+    if (creds->owner_name == NULL && creds->next == NULL)
+    {
+	printf ("No credentials present !!\n");
+	return;
+    }
+
     for (; creds; creds = creds->next) {
         time_t time_diff, now;
         float days;
+
+    	printf("owner: %s\n", creds->owner_name);
+    	printf("username: %s\n", creds->username);
+
         if (creds->credname) {
             printf("%s:\n", creds->credname);
-        } else if (first_time) {
-            printf("default credential:\n");
-        } else {
-            printf("unnamed credential:\n");
-        }
-
-    	printf("  owner: %s\n", creds->owner_name);
+	}
         if (creds->creddesc) {
             printf("  description: %s\n", creds->creddesc);
         }
