@@ -487,10 +487,9 @@ globus_extension_registry_remove(
             if(entry && entry->datum)
             {
                 datum = entry->datum;
-                entry->datum = NULL;
+                globus_hashtable_remove(&registry->table, (void *) symbol);
                 if(--entry->ref == 0)
                 {
-                    globus_hashtable_remove(&registry->table, (void *) symbol);
                     globus_free(entry->symbol);
                     globus_free(entry);
                 }
@@ -532,7 +531,7 @@ globus_extension_lookup(
         {
             entry = (globus_l_extension_handle_t *)
                 globus_hashtable_lookup(&registry->table, (void *) symbol);
-            if(entry && entry->datum)
+            if(entry)
             {
                 datum = entry->datum;
                 entry->ref++;
