@@ -193,7 +193,7 @@ static int      foreground;
 static int      krb5flag;
 static int      run_from_inetd;
 static char *   gatekeeperhome = NULL;
-static char *	job_manager_exe = NULL;
+static char *	job_manager_exe = "globus-job-manager";
 static char *   jm_conf_path = NULL;
 static char *   libexecdir = GLOBUS_LIBEXECDIR;
 static char *   service_name = NULL;
