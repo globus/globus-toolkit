@@ -1940,6 +1940,8 @@ proxy_verify_callback(
     X509_REVOKED *                      revoked;
     STACK_OF(X509_EXTENSION) *          extensions;
     X509_EXTENSION *                    ex;
+    ASN1_OBJECT *                       extension_obj;
+    int                                 nid;
     char *                              s = NULL;
     SSL *                               ssl = NULL;
     proxy_verify_desc *                 pvd;
@@ -2499,9 +2501,21 @@ proxy_verify_callback(
 
         if(X509_EXTENSION_get_critical(ex))
         {
-            PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_UNKNOWN_CRIT_EXT);
-            ctx->error = X509_V_ERR_CERT_REJECTED;
-            goto fail_verify;
+            extension_obj = X509_EXTENSION_get_object(ex);
+
+            nid = OBJ_obj2nid(extension_obj);
+            
+            if(nid != NID_basic_constraints &&
+               nid != NID_key_usage &&
+               nid != NID_ext_key_usage &&
+               nid != NID_netscape_cert_type &&
+               nid != NID_subject_key_identifier &&
+               nid != NID_authority_key_identifier)
+            {
+                PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_UNKNOWN_CRIT_EXT);
+                ctx->error = X509_V_ERR_CERT_REJECTED;
+                goto fail_verify;
+            }
         }
     }
 
