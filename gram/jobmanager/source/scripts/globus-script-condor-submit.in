@@ -208,14 +208,12 @@ fi
 #  we want to return "45" from this line.
 #
 out_file=${condor_file}".out"
-${condor_submit} $condor_file 1> ${out_file}
+err_file=${condor_file}".err"
+${condor_submit} $condor_file 1> ${out_file} 2> ${err_file}
 
-status=`$cat $out_file | ${grep} "submitted to cluster" | ${awk} '{print $6}' | ${awk} -F. '{print $1; exit;}'`
+if [ "$?" -eq "0" ]; then
+   status=`$cat $out_file | ${grep} "submitted to cluster" | ${awk} '{print $6}' | ${awk} -F. '{print $1; exit;}'`
 
-#old method getting status all in one command
-#status=`${condor_submit} $condor_file | ${grep} "submitted to cluster" | ${awk} '{print $6}' | ${awk} -F. '{print $1; exit;}'`
-
-if test -n "${status}"; then
    $DEBUG_ECHO "JM_SCRIPT: returning job state: "\
                "$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING" >> $grami_logfile
    echo "GRAM_SCRIPT_JOB_ID:$status"
@@ -230,13 +228,13 @@ else
    echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED"
    echo ""                                                   >> ${grami_stderr}
    echo "-------- output from scheduler submission --------" >> ${grami_stderr}
-   cat ${out_file}                                           >> ${grami_stderr}
+   cat ${err_file}                                           >> ${grami_stderr}
    echo "--------------------------------------------------" >> ${grami_stderr}
    echo ""                                                   >> ${grami_stderr}
 
 fi
 
-${rm} ${condor_file} ${out_file}
+${rm} ${condor_file} ${out_file} ${err_file}
 
 # write the job_id to the argument file.  This is used by any subsequent
 # grami_jm_shell routines.  I.E. condor poll script -or- condor rm script
