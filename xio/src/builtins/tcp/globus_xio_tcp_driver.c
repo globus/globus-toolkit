@@ -1718,6 +1718,9 @@ globus_l_xio_tcp_connect_next(
         }
     }
     
+    /* addrinfo maybe a dangling pointer here, but I am only checking for
+     * null, so we're safe
+     */
     if(!addrinfo)
     {
         if(result == GLOBUS_SUCCESS)

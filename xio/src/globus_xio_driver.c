@@ -691,7 +691,7 @@ globus_l_xio_driver_op_close_kickout(
 {
     globus_i_xio_op_t *                     op;
     globus_i_xio_op_entry_t *               my_op;
-    GlobusXIOName(globus_l_xio_driver_op_kickout);
+    GlobusXIOName(globus_l_xio_driver_op_close_kickout);
 
     GlobusXIODebugInternalEnter();
     op = (globus_i_xio_op_t *) user_arg;
