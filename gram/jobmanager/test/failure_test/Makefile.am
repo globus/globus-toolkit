@@ -1,10 +1,11 @@
 include $(top_srcdir)/globus_automake_pre
 
-test_SCRIPTS = globus-gram-job-manager-failure-test.pl
+pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
+pkgdatadir = $(GLOBUS_LOCATION)/share/$(PACKAGE)
 
-testdatadir = $(GLOBUS_LOCATION)/share/globus-gram-job-manager-test
+pkgtest_SCRIPTS = globus-gram-job-manager-failure-test.pl
 
-testdata_DATA = \
+pkgdata_DATA = \
     error_bad_directory.rsl \
     error_evaluation_failed.rsl \
     error_executable_not_found.rsl \
@@ -75,6 +76,6 @@ testdata_DATA = \
     error_stdin_not_found.rsl \
     error_undefined_executable.rsl
 
-EXTRA_DIST = $(test_SCRIPTS) $(testdata_DATA)
+EXTRA_DIST = globus-gram-job-manager-failure-test.pl.in $(pkgdata_DATA)
 
 include $(top_srcdir)/globus_automake_post

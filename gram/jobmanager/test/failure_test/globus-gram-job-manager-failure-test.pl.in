@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/env perl
 
 use Globus::GRAM::Error;
 use IO::File;
@@ -6,7 +6,7 @@ use Test;
 
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
-my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/globus-gram-job-manager-test";
+my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
 
 my @test_rsls=qw(
 	error_bad_directory.rsl

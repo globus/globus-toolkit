@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/env perl
 
 use Globus::GRAM::Error;
 use IO::File;
@@ -9,36 +9,15 @@ use File::Compare;
 my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
 my $testtmp = &make_tmpdir();
-my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/globus-gram-job-manager-test";
+my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
 
 my @test_cases=qw(
-    submit001
-    submit002
-    submit003
-    submit004
-    submit005
-    submit006
-    submit007
-    submit008
-    submit009
-    submit010
-    submit011
-    submit012
-    submit013
-    submit014
-    submit015
-    submit016
-    submit017
-    submit018
-    submit019
-    submit020
-    submit021
-    submit022
-    submit023
-    submit024
-    submit025
-    submit026
-    submit027
+    submit001 submit002 submit003 submit004 submit005
+    submit006 submit007 submit008 submit009 submit010
+    submit011 submit012 submit013 submit014 submit015
+    submit016 submit017 submit018 submit019 submit020
+    submit021 submit022 submit023 submit024 submit025
+    submit026 submit027
 );
 
 my @todo_cases=qw(

@@ -20,4 +20,7 @@ AC_OUTPUT(
 	pkgdata/pkg_data_src.gpt
         submit_test/Makefile
         failure_test/Makefile
+	globus-gram-job-manager-run-tests.pl
+	submit_test/globus-gram-job-manager-submit-test.pl
+	failure_test/globus-gram-job-manager-failure-test.pl
 )

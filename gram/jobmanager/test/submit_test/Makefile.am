@@ -1,9 +1,11 @@
 include $(top_srcdir)/globus_automake_pre
 
-test_SCRIPTS = globus-gram-job-manager-submit-test.pl
+pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
+pkgdatadir = $(GLOBUS_LOCATION)/share/$(PACKAGE)
 
-testdatadir = $(GLOBUS_LOCATION)/share/globus-gram-job-manager-test
-testdata_DATA = \
+pkgtest_SCRIPTS = globus-gram-job-manager-submit-test.pl
+
+pkgdata_DATA = \
     submit001.err submit001.out submit001.rsl \
     submit002.err submit002.out submit002.rsl \
     submit003.err submit003.out submit003.rsl \
@@ -32,6 +34,6 @@ testdata_DATA = \
     submit026.err submit026.out submit026.rsl \
     submit027.err submit027.out submit027.rsl
 
-EXTRA_DIST = $(test_SCRIPTS) $(testdata_DATA)
+EXTRA_DIST = globus-gram-job-manager-submit-test.pl.in $(pkgdata_DATA)
 
 include $(top_srcdir)/globus_automake_post
