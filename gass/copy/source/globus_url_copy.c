@@ -629,7 +629,7 @@ globus_l_url_copy_monitor_callback(void * callback_arg,
         monitor->err = err;
     }
     globus_cond_signal(&monitor->cond);
-    globus_mutex_lock(&monitor->mutex);
+    globus_mutex_unlock(&monitor->mutex);
 
     return;
 } /* globus_l_url_copy_monitor_callback() */
@@ -667,7 +667,7 @@ globus_l_url_copy_cancel_callback(void * callback_arg,
         monitor->err = err;
     }
     globus_cond_signal(&monitor->cond);
-    globus_mutex_lock(&monitor->mutex);
+    globus_mutex_unlock(&monitor->mutex);
 
     return;
 } /* globus_l_url_copy_cancel_callback() */
