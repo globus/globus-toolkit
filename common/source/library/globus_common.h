@@ -1,5 +1,5 @@
 /******-*- C -*-**************************************************************
-globus_common.h.in
+globus_common.h
 
 Description:
   Headers common to all of Globus

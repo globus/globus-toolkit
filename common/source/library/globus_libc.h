@@ -118,6 +118,18 @@ EXTERN_C_BEGIN
 #    define globus_libc_write           _write
 #           define globus_libc_writev(fd,iov,iovcnt) \
 	            write(fd,iov[0].iov_base,iov[0].iov_len)
+
+/*
+ * these are only on windows for now
+ */
+int
+globus_libc_system_memory(
+    globus_off_t *                  mem);
+
+int
+globus_libc_free_memory(
+    globus_off_t *                  mem);
+
 #endif /* TARGET_ARCH_WIN32 */
 
 /*
@@ -221,14 +233,6 @@ globus_libc_gethomedir(char *result, int bufsize);
 #  define memmove(d, s, n) bcopy ((s), (d), (n))
 #  define HAVE_MEMMOVE
 #endif
-
-int
-globus_libc_system_memory(
-    globus_size_t *                  mem);
-
-int
-globus_libc_free_memory(
-    globus_size_t *                  mem);
 
 
 EXTERN_C_END

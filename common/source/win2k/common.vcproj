@@ -18,7 +18,7 @@
 				<Tool
 					Name="VCCLCompilerTool"
 					Optimization="0"
-					IncludePaths="$(GLOBUS_LOCATION)/include"
+					IncludePaths="$(GLOBUS_LOCATION)/include;../win2k"
 					Defines="WIN32;_DEBUG;_CONSOLE"
 					MinimalRebuild="TRUE"
 					FullRuntimeChecks="TRUE"
@@ -186,7 +186,7 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\library\config.h">
+				RelativePath="config.h">
 			</File>
 			<File
 				RelativePath="..\library\globus_args.h">
@@ -202,9 +202,6 @@
 			</File>
 			<File
 				RelativePath="..\library\globus_common_include.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_config.h">
 			</File>
 			<File
 				RelativePath="..\library\globus_debug.h">
