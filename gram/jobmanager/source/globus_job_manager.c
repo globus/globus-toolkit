@@ -1875,9 +1875,7 @@ int main(int argc,
 		globus_callback_register_oneshot(&proxy_expiration_handle,
 						 &delay_time,
 						 globus_l_gram_proxy_expiration,
-						 (void *)request,
-						 GLOBUS_NULL,
-						 GLOBUS_NULL);
+						 (void *)request);
 	    }
 
 /* Freeing this struct seems to screw up other stuff that uses X509
@@ -1920,9 +1918,7 @@ int main(int argc,
 					  &delay_time,
 					  &period_time,
 					  globus_l_gram_ttl_update,
-					  (void *)GRAM_JOB_MANAGER_TTL_LIMIT,
-					  GLOBUS_NULL,
-					  GLOBUS_NULL);
+					  (void *)GRAM_JOB_MANAGER_TTL_LIMIT);
     }
 
     if (request->two_phase_commit != 0)
@@ -2275,18 +2271,14 @@ int main(int argc,
 					  &delay_time,
 					  &period_time,
 					  globus_l_gram_status_file_cleanup,
-					  (void *) job_reporting_dir,
-					  GLOBUS_NULL,
-					  GLOBUS_NULL);
+					  (void *) job_reporting_dir);
 
         GlobusTimeReltimeSet(period_time, 2, 0);
 	globus_callback_register_periodic(&gass_poll_handle,
 					  &delay_time,
 					  &period_time,
 					  globus_l_gram_jm_check_files,
-					  (void *) request,
-					  GLOBUS_NULL,
-					  GLOBUS_NULL);
+					  (void *) request);
         while (!graml_jm_done && !graml_jm_ttl_expired)
         {
 	    /*
@@ -5164,9 +5156,7 @@ globus_l_jm_http_query_callback(
     globus_callback_register_oneshot( &query_handle,
 				      &delay_time,
 				      globus_l_jm_http_query_handler,
-				      (void *)query_args,
-				      GLOBUS_NULL,
-				      GLOBUS_NULL );
+				      (void *)query_args);
 }
 
 void

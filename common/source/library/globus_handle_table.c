@@ -47,8 +47,8 @@ globus_handle_table_init(
     }
 
     handle_table->table = (globus_l_handle_entry_t **)
-        globus_libc_malloc(
-            GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE * sizeof(globus_l_handle_entry_t *));
+        globus_libc_malloc(GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE * 
+            sizeof(globus_l_handle_entry_t *));
     if(!handle_table->table)
     {
         return GLOBUS_FAILURE;
@@ -151,7 +151,7 @@ globus_handle_table_insert(
     if(handle_table->inactive)
     {
         entry = handle_table->inactive;
-        handle_table->inactive = handle_table->inactive->pnext;
+        handle_table->inactive = entry->pnext;
     }
     /* otherwise allocate a new entry */
     else
@@ -164,7 +164,8 @@ globus_handle_table_insert(
             new_table = (globus_l_handle_entry_t **)
                 globus_libc_realloc(
                     handle_table->table,
-                    (handle_table->table_size + GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE) *
+                    (handle_table->table_size + 
+                        GLOBUS_L_HANDLE_TABLE_BLOCK_SIZE) *
                         sizeof(globus_l_handle_entry_t *));
 
             if(!new_table)

@@ -718,8 +718,6 @@ G_ENTER();
              &delay_time,
              &period_time,
              g_timeout_wakeup,
-             GLOBUS_NULL,
-             GLOBUS_NULL,
              GLOBUS_NULL);
     assert(res == GLOBUS_SUCCESS);
 
@@ -1668,9 +1666,7 @@ g_receive_data(
 	    &five_seconds,
 	    &five_seconds,
 	    globus_l_wu_perf_update_callback,
-	    &g_monitor,
-	    GLOBUS_NULL,
-	    GLOBUS_NULL);
+	    &g_monitor);
 
         globus_l_wu_perf_update(&g_monitor);
         g_monitor.callback_count = 0; 

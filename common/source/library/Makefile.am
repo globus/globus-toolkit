@@ -5,6 +5,7 @@ Sources= \
 	globus_args.h \
 	globus_callback_$(GLOBUS_CALLBACK_BUILD).c \
 	globus_callback.h \
+	globus_i_callback.h \
 	globus_common_paths.c \
 	globus_cfifo.c \
 	globus_cfifo.h \
@@ -113,8 +114,8 @@ libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
 
 EXTRA_DIST = \
-    globus_callback_nothreads.c \
-    globus_callback_threads.c \
+	globus_callback_nothreads.c \
+	globus_callback_threads.c \
 	globus_thread_none.c \
 	globus_thread_none.h \
 	globus_thread_pthreads.c \

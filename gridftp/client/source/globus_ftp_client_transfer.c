@@ -3944,9 +3944,7 @@ globus_ftp_client_abort(
 		GLOBUS_NULL,
 		&globus_i_reltime_zero,
 		globus_l_ftp_client_abort_callback,
-		handle,
-		GLOBUS_NULL,
-		GLOBUS_NULL);
+		handle);
 
 	    if(result != GLOBUS_SUCCESS)
 	    {

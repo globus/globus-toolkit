@@ -104,9 +104,6 @@ typedef struct globus_io_cancel_info_s
     struct globus_io_cancel_info_s *	next;
 } globus_io_cancel_info_t;
 
-static void
-globus_l_io_handler_wakeup(void *arg);
-
 static 
 void
 globus_l_io_poll(
@@ -326,7 +323,6 @@ globus_cond_t                           globus_i_io_cond;
 int                                     globus_i_io_mutex_cnt;
 int                                     globus_i_io_cond_cnt;
 
-static globus_callback_wakeup_func_t    globus_l_io_core_wakeup_func_ptr;
 static globus_l_io_adaptive_skip_poll_t globus_l_io_skip_poll_info;
 static globus_bool_t                    globus_l_io_use_skip_poll;
 
@@ -1985,8 +1981,6 @@ globus_l_io_handle_events(
                 &time_now,
                 globus_l_io_kickout_read_cb,
                 select_info,
-                GLOBUS_NULL,
-                GLOBUS_NULL,
                 handle->socket_attr.space);
 	    globus_assert(result == GLOBUS_SUCCESS);
 	    
@@ -2020,8 +2014,6 @@ globus_l_io_handle_events(
                 &time_now,
                 globus_l_io_kickout_cancel_cb,
                 cancel_info,
-                GLOBUS_NULL,
-                GLOBUS_NULL,
                 cancel_info->handle->socket_attr.space);
             globus_assert(result == GLOBUS_SUCCESS);
 	    
@@ -2181,8 +2173,6 @@ globus_l_io_handle_events(
                             &time_now,
                             globus_l_io_kickout_read_cb,
                             select_info,
-                            GLOBUS_NULL,
-                            GLOBUS_NULL,
                             handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
                     }
@@ -2215,8 +2205,6 @@ globus_l_io_handle_events(
                             &time_now,
                             globus_l_io_kickout_write_cb,
                             select_info,
-                            GLOBUS_NULL,
-                            GLOBUS_NULL,
                             handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
 		    }
@@ -2249,8 +2237,6 @@ globus_l_io_handle_events(
                             &time_now,
                             globus_l_io_kickout_except_cb,
                             select_info,
-                            GLOBUS_NULL,
-                            GLOBUS_NULL,
                             handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
 		    }
@@ -2381,12 +2367,6 @@ globus_l_io_poll(
     globus_i_io_mutex_unlock();
 }
 
-static void
-globus_l_io_handler_wakeup(void *arg)
-{
-    globus_l_io_shutdown_called = GLOBUS_TRUE;
-}
-
 /*
  * Function:	globus_l_io_activate()
  *
@@ -2459,7 +2439,6 @@ globus_l_io_activate(void)
     globus_i_io_debug_printf(3,
         (stderr, "globus_l_io_activate(): entering\n"));
     
-    globus_l_io_core_wakeup_func_ptr = GLOBUS_NULL;
     globus_l_io_shutdown_called = GLOBUS_FALSE;
 
     globus_mutex_init(&globus_i_io_mutex, (globus_mutexattr_t *) GLOBUS_NULL);
@@ -2522,13 +2501,6 @@ globus_l_io_activate(void)
 
     /* setup default attributes */
     globus_i_io_attr_activate();
-
-#   if defined (HAVE_THREAD_SAFE_SELECT)
-    {
-        globus_l_io_core_wakeup_func_ptr = globus_l_io_handler_wakeup;
-    }
-#   endif
-
 
     globus_l_io_fd_table_modified = GLOBUS_FALSE;
     globus_l_io_select_count = 0;
@@ -2630,8 +2602,6 @@ globus_l_io_activate(void)
                              &delay,
                              &delay,
                		     globus_l_io_poll,
-			     GLOBUS_NULL,
-			     globus_l_io_core_wakeup_func_ptr,
 			     GLOBUS_NULL);
     globus_assert(result == GLOBUS_SUCCESS);
 	    
@@ -2650,6 +2620,8 @@ globus_l_io_activate(void)
 static
 void
 globus_l_unregister_periodic_cb(
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     globus_i_io_mutex_lock();

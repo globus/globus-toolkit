@@ -129,7 +129,7 @@ typedef int globus_thread_once_t;
 #define globus_macro_condattr_setspace(A, S) \
     ((globus_callback_space_reference((S)) \
      ? 1 \
-     : globus_callback_space_destroy(*(A)), (*(A) = (S)), 0))
+     : (globus_callback_space_destroy(*(A)), (*(A) = (S)), 0)))
 
 #define globus_macro_condattr_getspace(A, S) \
     ((*(S) = *(A)), 0)
@@ -283,6 +283,11 @@ int
 globus_thread_key_create(
     globus_thread_key_t *               key,
     globus_thread_key_destructor_func_t func);
+    
+int
+globus_thread_key_delete(
+    globus_thread_key_t                 key);
+
 extern void
 globus_thread_yield(void);
 

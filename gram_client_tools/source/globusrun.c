@@ -1225,8 +1225,6 @@ globus_l_globusrun_gramrun(char * request_string,
 					      &delay_time,
 					      &period_time,
 	                                      globus_l_globusrun_signal_wakeup,
-					      GLOBUS_NULL,
-					      GLOBUS_NULL,
 					      GLOBUS_NULL);
 	}
 #       endif
@@ -1416,8 +1414,6 @@ globus_l_globusrun_durocrun(char *request_string,
 					      &delay_time,
 					      &period_time,
 	                                      globus_l_globusrun_signal_wakeup,
-					      GLOBUS_NULL,
-					      GLOBUS_NULL,
 					      GLOBUS_NULL);
     }
 #   endif

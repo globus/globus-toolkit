@@ -331,7 +331,7 @@ extern void *   globus_i_thread_getspecific(globus_thread_key_t key);
 #define globus_thread_key_create(key, func) \
     globus_macro_thread_key_create(key, func)
 #define globus_thread_key_destroy(key) \
-    globus_macro_thread_key_destroy(key)
+    globus_macro_thread_key_delete(key)
 #define globus_thread_setspecific(key, value) \
     globus_macro_thread_setspecific(key, value)
 #define globus_thread_getspecific(key) \

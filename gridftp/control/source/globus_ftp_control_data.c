@@ -1003,9 +1003,7 @@ globus_l_ftp_control_data_eb_connect_write(
                         GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_reuse_connect_callback,
-                        (void *) connect_cb_info,
-                        GLOBUS_NULL,
-                        GLOBUS_NULL);
+                        (void *) connect_cb_info);
                     /* register callback */
                 }
             }
@@ -1187,9 +1185,7 @@ globus_l_ftp_control_data_eb_connect_read(
                         GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_reuse_connect_callback,
-                        (void *) connect_cb_info,
-                        GLOBUS_NULL,
-                        GLOBUS_NULL);
+                        (void *) connect_cb_info);
                 }
             }
         }
@@ -5364,9 +5360,7 @@ globus_i_ftp_control_release_data_info(
             GLOBUS_NULL,
             &reltime,
             globus_l_ftp_control_release_data_kickout,
-            (void *) cb_ent,
-            GLOBUS_NULL,
-            GLOBUS_NULL);
+            (void *) cb_ent);
     }
 
     return GLOBUS_SUCCESS;
@@ -5611,9 +5605,7 @@ globus_l_ftp_data_eb_poll(
                                     GLOBUS_NULL,
                                     &reltime,
                                     globus_l_ftp_control_send_data_kickout,
-                                    (void *) entry,
-                                    GLOBUS_NULL,
-                                    GLOBUS_NULL);
+                                    (void *) entry);
                             }
                         }
                         /*
@@ -5760,9 +5752,7 @@ globus_l_ftp_data_eb_poll(
                         GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_command_kickout,
-                        (void *) entry,
-                        GLOBUS_NULL,
-                        GLOBUS_NULL);
+                        (void *) entry);
                 }
             }
 
@@ -5795,9 +5785,7 @@ globus_l_ftp_data_eb_poll(
                         GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_command_kickout,
-                        (void *) entry,
-                        GLOBUS_NULL,
-                        GLOBUS_NULL);
+                        (void *) entry);
                 }
                 /*
                  *  if we are not at eof and there is a free data connection
@@ -6478,9 +6466,7 @@ globus_l_error_flush_command_q(
             GLOBUS_NULL,
             &reltime,
             globus_l_ftp_control_command_flush_callback,
-            (void *) entry,
-            GLOBUS_NULL,
-            GLOBUS_NULL);
+            (void *) entry);
     }
 }
 
@@ -6680,9 +6666,7 @@ globus_l_ftp_control_dc_dec_ref(
                          GLOBUS_NULL,
                          &reltime,
                          globus_l_ftp_control_close_kickout,
-                         (void *)dc_handle,
-                         GLOBUS_NULL,
-                         GLOBUS_NULL);
+                         (void *)dc_handle);
             assert(res == GLOBUS_SUCCESS);
         }
         else if(globus_list_empty(dc_handle->transfer_list))

@@ -87,8 +87,9 @@ globus_priority_q_init(
     }
     
     priority_q->heap = (globus_l_priority_q_entry_t **)
-        globus_libc_malloc(GLOBUS_L_PRIORITY_Q_CHUNK_SIZE * 
-            sizeof(globus_l_priority_q_entry_t *));
+        globus_libc_malloc(
+            GLOBUS_L_PRIORITY_Q_CHUNK_SIZE * 
+                sizeof(globus_l_priority_q_entry_t *));
     if(!priority_q->heap)
     {
         return GLOBUS_FAILURE;

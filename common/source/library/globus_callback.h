@@ -79,14 +79,12 @@ typedef enum
     GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC,
     /** One of the arguments is NULL or out of range */
     GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT,
-    /** Attempted a blocking cancel on a callback in the current stack */
-    GLOBUS_CALLBACK_ERROR_BLOCKING_CANCEL_RUNNING,
-    /** Attempt to unregister running callback, unregister will be defferred */
+    /** Attempt to unregister running callback, unregister will be deferred */
     GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING,
+    /** Attempt to unregister callback again */
+    GLOBUS_CALLBACK_ERROR_ALREADY_CANCELED,
     /** Attempt to retrieve info about a callback not in callers's stack */
-    GLOBUS_CALLBACK_ERROR_NO_ACTIVE_CALLBACK,
-    /** The behavior argument is not valid */
-    GLOBUS_CALLBACK_ERROR_INVALID_BEHAVIOR
+    GLOBUS_CALLBACK_ERROR_NO_ACTIVE_CALLBACK
 } globus_callback_error_type_t;
 
 /**
@@ -186,8 +184,8 @@ typedef int                             globus_callback_space_attr_t;
  *
  * @see globus_callback_space_register_oneshot()
  */
-#define globus_callback_register_oneshot(a,b,c,d,e,f)                       \
-    globus_callback_space_register_oneshot((a),(b),(c),(d),(e),(f),         \
+#define globus_callback_register_oneshot(a,b,c,d)                           \
+    globus_callback_space_register_oneshot((a),(b),(c),(d),                 \
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 
 /**
@@ -199,8 +197,8 @@ typedef int                             globus_callback_space_attr_t;
  *
  * @see globus_callback_space_register_abstime_oneshot()
  */
-#define globus_callback_register_abstime_oneshot(a,b,c,d,e,f)               \
-    globus_callback_space_register_abstime_oneshot((a),(b),(c),(d),(e),(f), \
+#define globus_callback_register_abstime_oneshot(a,b,c,d)                   \
+    globus_callback_space_register_abstime_oneshot((a),(b),(c),(d),         \
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 
 /**
@@ -211,8 +209,8 @@ typedef int                             globus_callback_space_attr_t;
  *
  * @see globus_callback_space_register_periodic()
  */
-#define globus_callback_register_periodic(a,b,c,d,e,f,g)                    \
-    globus_callback_space_register_periodic((a),(b),(c),(d),(e),(f),(g),    \
+#define globus_callback_register_periodic(a,b,c,d,e)                        \
+    globus_callback_space_register_periodic((a),(b),(c),(d),(e),            \
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 /* @} */
 
@@ -259,48 +257,6 @@ void
     const globus_abstime_t *            time_stop,
     void *                              user_args);
 
-/**
- * Globus wakeup callback prototype
- *
- * This is the signature of the wake up function registered with the 
- * globus_callback_register_* calls.  When this function is called, the user
- * must terminate any callback he has running that was registered with this
- * wakeup function
- *
- * @param user_args
- *        The user argument registered with this wakeup callback
- *
- * @return
- *        - void
- * 
- * @see globus_callback_space_register_oneshot()
- * @see globus_callback_space_register_abstime_oneshot()
- * @see globus_callback_space_register_periodic()
- */
-typedef
-void
-(*globus_callback_wakeup_func_t)(
-    void *                              user_args);
-
-/**
- * Globus unregister callback prototype
- *
- * The callback registered with globus_callback_unregister().
- * This is called when the user's callback had been canceled and will NOT run
- * any more.
- *
- * @param user_args
- *        The user argument registered with this unregister callback
- *
- * @return
- *        - void
- * 
- * @see globus_callback_unregister()
- */
-typedef
-void
-(*globus_callback_unregister_func_t)(
-    void *                              user_args);
 /* @} */
 
 /**
@@ -327,17 +283,6 @@ void
  * @param callback_user_args
  *        user args that will be passed to callback
  *
- * @param wakeup_func
- *        if this is NOT NULL, then this callback will run in its own thread
- *        this function will be called when it is necessary to terminate that
- *        thread.
- *
- *        Note:  This and the following arguments are ignored on non-threaded
- *        builds.
- *
- * @param wakeup_user_args
- *        user args that will be passed to the wakeup callback
- *
  * @param space
  *        The space with which to register this callback
  *
@@ -347,7 +292,6 @@ void
  *        - GLOBUS_SUCCESS
  * 
  * @see globus_callback_func_t
- * @see globus_callback_wakeup_func_t
  * @see globus_callback_spaces
  */
 globus_result_t
@@ -356,8 +300,6 @@ globus_callback_space_register_oneshot(
     const globus_reltime_t *            delay_time,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_callback_wakeup_func_t       wakeup_func,
-    void *                              wakeup_user_args,
     globus_callback_space_t             space);
 
 /**
@@ -378,17 +320,6 @@ globus_callback_space_register_oneshot(
  * @param callback_user_args
  *        user args that will be passed to callback
  *
- * @param wakeup_func
- *        if this is NOT NULL, then this callback will run in its own thread
- *        this function will be called when it is necessary to terminate that
- *        thread.
- *
- *        Note:  This and the following arguments are ignored on non-threaded
- *        builds.
- *
- * @param wakeup_user_args
- *        user args that will be passed to the wakeup callback
- *
  * @param space
  *        The space with which to register this callback
  *
@@ -398,7 +329,6 @@ globus_callback_space_register_oneshot(
  *        - GLOBUS_SUCCESS
  * 
  * @see globus_callback_func_t
- * @see globus_callback_wakeup_func_t
  * @see globus_callback_spaces
  */
 globus_result_t
@@ -407,8 +337,6 @@ globus_callback_space_register_abstime_oneshot(
     const globus_abstime_t *            start_time,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_callback_wakeup_func_t       wakeup_func,
-    void *                              wakeup_user_args,
     globus_callback_space_t             space);
 /* @} */
 
@@ -439,14 +367,6 @@ globus_callback_space_register_abstime_oneshot(
  * @param callback_user_args
  *        user args that will be passed to callback
  *
- * @param wakeup_func
- *        if this is NOT NULL, then this callback will run in its own thread
- *        this function will be called when it is necessary to terminate that
- *        thread.
- *
- * @param wakeup_user_args
- *        user args that will be passed to the wakeup callback
- *
  * @param space
  *        The space with which to register this callback
  *
@@ -457,7 +377,6 @@ globus_callback_space_register_abstime_oneshot(
  * 
  * @see globus_callback_unregister()
  * @see globus_callback_func_t
- * @see globus_callback_wakeup_func_t
  * @see globus_callback_spaces
  */
 globus_result_t
@@ -467,8 +386,6 @@ globus_callback_space_register_periodic(
     const globus_reltime_t *            period,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_callback_wakeup_func_t       wakeup_func,
-    void *                              wakeup_user_args,
     globus_callback_space_t             space);
 
 /**
@@ -481,7 +398,7 @@ globus_callback_space_register_periodic(
  *
  * If the callback is currently running (or unstoppably about to be run), then
  * the callback is prevented from being requeued, but, the 'official' cancel
- * is defferred until the last running instance of the callback returns.  In 
+ * is deferred until the last running instance of the callback returns.  In 
  * this case, GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING is returned.  (This is an 
  * informative error) If you need to know when the callback is guaranteed to 
  * have been canceled, pass an unregister callback.
@@ -500,40 +417,17 @@ globus_callback_space_register_periodic(
  * @return
  *        - GLOBUS_CALLBACK_ERROR_INVALID_CALLBACK_HANDLE
  *        - GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING
+ *        - GLOBUS_CALLBACK_ERROR_ALREADY_CANCELED
  *        - GLOBUS_SUCCESS
  * 
  * @see globus_callback_space_register_periodic()
- * @see globus_callback_unregister_func_t
+ * @see globus_callback_func_t
  */
 globus_result_t
 globus_callback_unregister(
     globus_callback_handle_t            callback_handle,
-    globus_callback_unregister_func_t   unregister_callback,
+    globus_callback_func_t              unregister_callback,
     void *                              unreg_args);
-
-/**
- * Block, canceling a callback
- *
- * This function will block until a callback has been canceled.
- * It is an error to call this function within the callback to be canceled.  In
- * this case (if you havent called globus_thread_blocking_space_will_block()
- * or globus_cond_wait()) just call globus_callback_unregister()
- * with a NULL unregister callback.  The callback will not be fired again.
- *
- * @param callback_handle
- *        the handle received from a globus_callback_space_register_periodic()
- *        call
- *
- * @return
- *        - GLOBUS_CALLBACK_ERROR_INVALID_CALLBACK_HANDLE
- *        - GLOBUS_CALLBACK_ERROR_BLOCKING_CANCEL_RUNNING
- *        - GLOBUS_SUCCESS
- * 
- * @see globus_callback_space_register_periodic()
- */
-globus_result_t
-globus_callback_blocking_unregister(
-    globus_callback_handle_t            callback_handle);
 
 /**
  * Adjust the period of a periodic callback.
@@ -546,10 +440,8 @@ globus_callback_blocking_unregister(
  * until another time by passing a period of NULL.  The callback can later
  * be resumed by passing in a new period.
  *
- * Note that the new period (or suspension) will take place 'as soon as
- * possible'.  If the callback was previously suspended, it will be fired no
- * sooner than new_period from now. A 'suspended' callback
- * must still be canceled to free its resources.
+ * Note that the callback will not be fired sooner than 'new_period' from now. 
+ * A 'suspended' callback must still be unregistered to free its resources.
  *
  * @param callback_handle
  *        the handle received from a globus_callback_space_register_periodic()
@@ -562,6 +454,7 @@ globus_callback_blocking_unregister(
  *
  * @return
  *        - GLOBUS_CALLBACK_ERROR_INVALID_CALLBACK_HANDLE
+ *        - GLOBUS_CALLBACK_ERROR_ALREADY_CANCELED
  *        - GLOBUS_SUCCESS
  * 
  * @see globus_callback_space_register_periodic()
@@ -877,7 +770,7 @@ globus_callback_space_attr_destroy(
  *
  * @return
  *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR
- *        - GLOBUS_CALLBACK_ERROR_INVALID_BEHAVIOR
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT
  *        - GLOBUS_SUCCESS
  * 
  * @see globus_callback_space_behavior_t

@@ -896,9 +896,7 @@ globus_i_gass_transfer_close_listener(
 	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_callback_close_callback,
-	    (void *) listener,
-	    GLOBUS_NULL /* wakeup func */,
-	    GLOBUS_NULL /* wakeup arg */);
+	    (void *) listener);
 
 	break;
 

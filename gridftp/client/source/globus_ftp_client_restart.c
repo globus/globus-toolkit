@@ -106,9 +106,7 @@ globus_i_ftp_client_restart_register_oneshot(
 	    &handle->restart_info->callback_handle,
 	    &when,
 	    globus_l_ftp_client_restart_get_callback,
-	    handle,
-	    GLOBUS_NULL,
-	    GLOBUS_NULL);
+	    handle);
     }
     else if(handle->op == GLOBUS_FTP_CLIENT_PUT)
     {
@@ -116,9 +114,7 @@ globus_i_ftp_client_restart_register_oneshot(
 	    &handle->restart_info->callback_handle,
 	    &when,
 	    globus_l_ftp_client_restart_put_callback,
-	    handle,
-	    GLOBUS_NULL,
-	    GLOBUS_NULL);
+	    handle);
     }
     else if(handle->op == GLOBUS_FTP_CLIENT_TRANSFER)
     {
@@ -126,9 +122,7 @@ globus_i_ftp_client_restart_register_oneshot(
 	    &handle->restart_info->callback_handle,
 	    &when,
 	    globus_l_ftp_client_restart_transfer_callback,
-	    handle,
-	    GLOBUS_NULL,
-	    GLOBUS_NULL);
+	    handle);
     }
 
     return result;
@@ -754,9 +748,7 @@ globus_i_ftp_client_restart(
 			GLOBUS_NULL,
 			&globus_i_reltime_zero,
 			globus_l_ftp_client_restart_no_connection,
-			handle->source,
-			GLOBUS_NULL,
-			GLOBUS_NULL);
+			handle->source);
 
 		if(rc == GLOBUS_SUCCESS)
 		{

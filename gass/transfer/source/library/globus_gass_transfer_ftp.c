@@ -977,9 +977,7 @@ globus_l_gass_transfer_ftp_new_request(
         GLOBUS_NULL,
 	&delay_time,
 	globus_l_gass_transfer_ftp_callback_denied,
-	(void *) request,
-	GLOBUS_NULL /* wakeup func */,
-	GLOBUS_NULL /* wakeup arg */);
+	(void *) request);
 }
 /* globus_l_gass_transfer_ftp_new_request() */
 

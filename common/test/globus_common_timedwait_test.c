@@ -72,8 +72,6 @@ int main()
 	globus_callback_register_oneshot(GLOBUS_NULL,
 	                                 &delay_time,
 					 wakeup_func,
-					 GLOBUS_NULL,
-					 GLOBUS_NULL,
 					 GLOBUS_NULL);
 	wait_func(tests[i][1],
 		  &signalled,

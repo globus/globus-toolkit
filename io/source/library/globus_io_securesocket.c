@@ -327,8 +327,6 @@ globus_i_io_securesocket_register_accept(
                 &delay_time,
                 globus_l_io_oneshot_auth_callback,
                 (void *) info,
-                GLOBUS_NULL /* wakeup func */,
-                GLOBUS_NULL /* wakeup arg */,
                 handle->socket_attr.space);
             return GLOBUS_SUCCESS;
         }
@@ -366,8 +364,6 @@ globus_i_io_securesocket_register_accept(
                 &delay_time,
                 globus_l_io_oneshot_auth_callback,
                 (void *) info,
-                GLOBUS_NULL /* wakeup func */,
-                GLOBUS_NULL /* wakeup arg */,
                 handle->socket_attr.space);
             return GLOBUS_SUCCESS;
         }

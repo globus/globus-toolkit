@@ -59,7 +59,7 @@
  * 			 globus_thread_key_destructor_func_t destructor_func);
  * 
  * int		
- * globus_threaad_key_delete(globus_thread_key_t key);
+ * globus_thread_key_delete(globus_thread_key_t key);
  * 
  * int		
  * globus_thread_setspecific(globus_thread_key_t key,

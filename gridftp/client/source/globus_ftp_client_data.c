@@ -255,9 +255,7 @@ globus_ftp_client_register_read(
 		    GLOBUS_NULL,
 		    &reltime,
 		    globus_l_ftp_client_complete_kickout,
-		    (void *) handle,
-		    GLOBUS_NULL,
-		    GLOBUS_NULL);
+		    (void *) handle);
 
 	    }
 
@@ -465,9 +463,7 @@ globus_ftp_client_register_write(
 		    GLOBUS_NULL,
 		    &reltime,
 		    globus_l_ftp_client_complete_kickout,
-		    (void *) handle,
-		    GLOBUS_NULL,
-		    GLOBUS_NULL);
+		    (void *) handle);
 
 	    }
 

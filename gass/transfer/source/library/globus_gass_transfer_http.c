@@ -350,9 +350,7 @@ globus_l_gass_transfer_http_send(
         GLOBUS_NULL,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_send_callback,
-	(void *) new_proto,
-	GLOBUS_NULL /* wakeup func */,
-	GLOBUS_NULL /* wakeup arg */);
+	(void *) new_proto);
 
     globus_l_gass_transfer_http_unlock();
     debug_printf(1, ("exiting %s()\n",myname));
@@ -407,9 +405,7 @@ globus_l_gass_transfer_http_receive(
         GLOBUS_NULL,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_read_buffered_callback,
-	(void *) new_proto,
-	GLOBUS_NULL /* wakeup func */,
-	GLOBUS_NULL /* wakeup arg */);
+	(void *) new_proto);
 
     globus_l_gass_transfer_http_unlock();
     debug_printf(1, ("exiting %s()\n",myname));
@@ -1430,9 +1426,7 @@ globus_l_gass_transfer_http_listen(
 	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_http_callback_listen_callback,
-	    (void *) new_proto,
-	    GLOBUS_NULL /* wakeup func */,
-	    GLOBUS_NULL /* wakeup arg */);
+	    (void *) new_proto);
 	
     }
     else
@@ -1889,9 +1883,7 @@ globus_l_gass_transfer_http_request_authorize(
 	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_http_callback_ready_callback,
-	    (void *) proto,
-	    GLOBUS_NULL /* wakeup func */,
-	    GLOBUS_NULL /* wakeup arg */);
+	    (void *) proto);
 
     }
 
@@ -2390,9 +2382,7 @@ globus_l_gass_transfer_http_new_request(
         GLOBUS_NULL,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_denied,
-	(void *) request,
-	GLOBUS_NULL /* wakeup func */,
-	GLOBUS_NULL /* wakeup arg */);
+	(void *) request);
 
     debug_printf(1, ("Exiting %s()\n",myname));
 }

@@ -194,8 +194,6 @@ globus_l_gass_file_activate(void)
 	&delay_time,
 	&period_time,
 	globus_l_gass_file_append_callback,
-	GLOBUS_NULL,
-	GLOBUS_NULL,
 	GLOBUS_NULL);
 	
     globus_l_gass_file_inited = GLOBUS_TRUE;

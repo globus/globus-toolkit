@@ -1018,7 +1018,9 @@ globus_l_gass_copy_perf_local_cb(
     globus_off_t                            bytes_now;
     double                                  time_elapsed;
     struct timeb                            timebuf;
-
+    globus_gass_copy_handle_t *             handle;
+    globus_gass_copy_performance_cb_t       callback;
+    
     perf_info = (globus_gass_copy_perf_info_t *) user_arg;
 
     globus_mutex_lock(&perf_info->lock);
@@ -1026,37 +1028,42 @@ globus_l_gass_copy_perf_local_cb(
         ftime(&timebuf);
         time_now = timebuf.time + (timebuf.millitm / 1000.0);
         bytes_now = perf_info->live_bytes;
+    
+        time_elapsed = time_now - perf_info->prev_time;
+        if(time_elapsed < 0.1)
+        {
+            /* shouldnt be possible (callback delay is 2 secs) */
+            time_elapsed = 0.1;
+        }
+    
+        instantaneous_throughput =
+            (bytes_now - perf_info->prev_bytes) /
+            time_elapsed;
+    
+        time_elapsed = time_now - perf_info->start_time;
+        if(time_elapsed < 0.1)
+        {
+            /* shouldnt be possible (callback delay is 2 secs) */
+            time_elapsed = 0.1;
+        }
+    
+        avg_throughput =
+            bytes_now /
+            time_elapsed;
+    
+        perf_info->prev_time = time_now;
+        perf_info->prev_bytes = bytes_now;
+        
+        handle = perf_info->copy_handle;
+        user_arg = perf_info->user_arg;
+        
+        callback = perf_info->callback;
     }
     globus_mutex_unlock(&perf_info->lock);
 
-    time_elapsed = time_now - perf_info->prev_time;
-    if(time_elapsed < 0.1)
-    {
-        /* shouldnt be possible (callback delay is 2 secs) */
-        time_elapsed = 0.1;
-    }
-
-    instantaneous_throughput =
-        (bytes_now - perf_info->prev_bytes) /
-        time_elapsed;
-
-    time_elapsed = time_now - perf_info->start_time;
-    if(time_elapsed < 0.1)
-    {
-        /* shouldnt be possible (callback delay is 2 secs) */
-        time_elapsed = 0.1;
-    }
-
-    avg_throughput =
-        bytes_now /
-        time_elapsed;
-
-    perf_info->prev_time = time_now;
-    perf_info->prev_bytes = bytes_now;
-
-    perf_info->callback(
-        perf_info->user_arg,
-        perf_info->copy_handle,
+    callback(
+        user_arg,
+        handle,
         bytes_now,
         instantaneous_throughput,
         avg_throughput);
@@ -1105,9 +1112,7 @@ globus_l_gass_copy_perf_setup_local_callback(
         &delay_time,
         &period_time,
         globus_l_gass_copy_perf_local_cb,
-        perf_info,
-        GLOBUS_NULL,
-        GLOBUS_NULL);
+        perf_info);
 }
 
 static
@@ -1125,8 +1130,8 @@ void
 globus_l_gass_copy_perf_cancel_local_callback(
     globus_gass_copy_perf_info_t *          perf_info)
 {
-    globus_callback_blocking_unregister(
-        perf_info->local_cb_handle);
+    globus_callback_unregister(
+        perf_info->local_cb_handle, GLOBUS_NULL, GLOBUS_NULL);
 }
 
 static
