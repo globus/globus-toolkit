@@ -213,6 +213,14 @@ EXTERN_C_BEGIN
 	@GLOBUS_GRAM_CLIENT_ERROR_OPENING_CACHE_USER_PROXY@
 #define GLOBUS_GRAM_CLIENT_ERROR_OPENING_CACHE\
 	@GLOBUS_GRAM_CLIENT_ERROR_OPENING_CACHE@
+#define GLOBUS_GRAM_CLIENT_ERROR_INSERTING_CLIENT_CONTACT\
+	@GLOBUS_GRAM_CLIENT_ERROR_INSERTING_CLIENT_CONTACT@
+#define GLOBUS_GRAM_CLIENT_ERROR_CLIENT_CONTACT_NOT_FOUND\
+	@GLOBUS_GRAM_CLIENT_ERROR_CLIENT_CONTACT_NOT_FOUND@
+#define GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER\
+	@GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER@
+#define GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT\
+	@GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT@
 
 /* Add new GLOBUS_GRAM_CLIENT_ERROR code here */
 /* don't forget to update GLOBUS_GRAM_CLIENT_error.c also !! */
@@ -303,10 +311,28 @@ globus_gram_client_job_start_time(char * job_contact,
 extern int 
 globus_gram_client_job_cancel(char * job_contact);
 
+extern int
+globus_gram_client_job_status(char * job_contact,
+                              int * job_status,
+                              int * failure_code);
+
+extern int
+globus_gram_client_job_callback_register(char * job_contact,
+                                         const char * callback_contact,
+                                         int job_state_mask,
+                                         int * job_status,
+                                         int * failure_code);
+
+extern int
+globus_gram_client_job_callback_unregister(char * job_contact,
+                                           const char * callback_contact,
+                                           int * failure_code);
+
 extern int 
-globus_gram_client_callback_allow(globus_gram_client_callback_func_t callback_func,
-				  void * user_callback_arg,
-				  char ** callback_contact);
+globus_gram_client_callback_allow(
+                          globus_gram_client_callback_func_t callback_func,
+			  void * user_callback_arg,
+			  char ** callback_contact);
 
 extern int 
 globus_gram_client_callback_disallow(char * callback_contact);

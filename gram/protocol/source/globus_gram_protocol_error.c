@@ -83,7 +83,11 @@ globus_l_gram_client_error_strings[] =
     "the job manager failed to open stdout",
     "the job manager failed to open stderr",
     "the cache file could not be opened in order to relocate the user proxy",  /* NEEDS EDITING */
-    "the job manager failed to open the cache"  /* NEEDS EDITING */
+    "the job manager failed to open the cache",  /* NEEDS EDITING */
+    "the job manager failed to insert the contact in the client contact list",
+    "the contact was not found in the job manager's client contact list",
+    "connecting to the job manager failed.  Possible reasons: job terminated, invalid job contact, network problems, ...",
+    "the syntax of the job contact is invalid"
 };
 
 const char *
