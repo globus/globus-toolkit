@@ -104,7 +104,7 @@ sub new
                 my $arrayref = $self->{$key};
 
                 for ($i = 0; $i < scalar(@{$arrayref}); $i++) {
-                    $arrayref->[$i] =~ s/\${GLOBUS_HOME}/$home/g;
+                    $arrayref->[$i] =~ s/\${GLOBUS_USER_HOME}/$home/g;
                 }
             }
         }
