@@ -56,6 +56,8 @@ sub submit
     my $argument_string;
     my %library_vars;
     my @response_text;
+    my @submit_attrs;
+    my $submit_attrs_string;
 
     if($description->jobtype() eq 'single' ||
        $description->jobtype() eq 'multiple')
@@ -167,6 +169,24 @@ sub submit
 	$argument_string = '';
     }
 
+    @submit_attrs = $description->condorsubmit();
+    if(defined($submit_attrs[0]))
+    {
+	foreach $tuple (@submit_attrs)
+	{
+	    if(!ref($tuple) || scalar(@$tuple) != 2)
+	    {
+		return Globus::GRAM::Error::RSL_SCHEDULER_SPECIFIC();
+	    }
+	}
+	$submit_attrs_string = join("\n",
+				map {$_->[0] . "=" . $_->[1]} @submit_attrs);
+    }
+    else
+    {
+	$submit_attrs_string = "";
+    }
+
     # Create script for condor submission
     $script_url = "$tag/condor_script.$$";
     system("$cache_pgm -add -t $tag -n $script_url file:/dev/null >/dev/null");
@@ -212,6 +232,8 @@ sub submit
     $script_file->print("Output = " . $description->stdout() . "\n");
     $script_file->print("Error = " . $description->stderr() . "\n");
     $script_file->print("Log = " . $self->{condor_logfile} . "\n");
+    $script_file->print("#Extra attributes specified by client\n");
+    $script_file->print("$submit_attrs_string\n");
     $script_file->print("queue " . $description->count() . "\n");
 
     $script_file->close();
@@ -255,6 +277,7 @@ sub poll
     my $job_id = $description->job_id();
     my $num_done;
     my $num_run;
+    my $num_evict;
     my $num_abort;
 
     $self->log("polling job " . $description->jobid());
@@ -262,17 +285,11 @@ sub poll
     $condor_log_file = new IO::File($self->{condor_logfile}, '<');
 
     @status = grep(/^[0-9]* \(0*${job_id}/, <$condor_log_file>);
-    @status = sort(map { join(' ', (split(/ /))[0,1]) } @status);
-    foreach(@status)
-    {
-	unless($seen{$_}++)
-	{
-	    push(@uniq, $_);
-	}
-    }
-    $num_done = scalar(grep(/^005/, @uniq));
-    $num_run = scalar(grep(/^001/, @uniq));
-    $num_abort = scalar(grep(/^(013|009)/, @uniq));
+
+    $num_done = scalar(grep(/^005/, @status));
+    $num_run = scalar(grep(/^001/, @status));
+    $num_evict = scalar(grep(/^004/, @status));
+    $num_abort = scalar(grep(/^009/, @status));
 
     if($num_abort > 0)
     {
@@ -284,13 +301,17 @@ sub poll
 	$state = Globus::GRAM::JobState::DONE;
 	unlink($self->{condor_logfile});
     }
-    elsif($num_done > 0 || $num_run > 0)
+    elsif($num_run == 0)
+    {
+	$state = Globus::GRAM::JobState::PENDING;
+    }
+    elsif($num_run > $num_evict)
     {
 	$state = Globus::GRAM::JobState::ACTIVE;
     }
     else
     {
-	$state = Globus::GRAM::JobState::PENDING;
+	$state = Globus::GRAM::JobState::SUSPENDED;
     }
 
     return { JOB_STATE => $state };

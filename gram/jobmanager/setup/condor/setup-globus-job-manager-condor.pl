@@ -44,17 +44,27 @@ chmod 0755, 'globus-condor-print-config';
 my $condor_jm_config = `globus-condor-print-config`;
 chomp($condor_jm_config);
 
+# Create service
 $cmd = "$libexecdir/globus-job-manager-service -add -m condor -s \"$name\"";
 system("$cmd -extra-config='$condor_jm_config' >/dev/null 2>/dev/null");
+if($? != 0)
+{
+    print STDERR "Error creating service entry $name. Aborting!\n";
+    exit 3;
+}
 
-if($? == 0)
-{
-    $metadata->finish();
-}
-else
-{
-    print STDERR "Error creating service entry $name.\n";
-}
+open(VALIDATION_FILE, ">$ENV{GLOBUS_LOCATION}/share/globus_gram_job_manager/condor.rvf");
+
+print VALIDATION_FILE <<EOF;
+Attribute: condorsubmit
+Description: "Allow the client to specify abitrary additional attributes to
+             be included in the Condor submit description file."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+EOF
+
+close VALIDATION_FILE;
+
+$metadata->finish();
 
 sub usage
 {
