@@ -4,13 +4,12 @@ AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
 AC_ARG_WITH(flavor,
-	[ --with-flavor=<FL>     Specify the globus build flavor  ],
+	[ --with-flavor=<FL>     Specify the globus build flavor or without-flavor for a flavor independent  ],
 
 	[
 	case $withval in
 	no)
-		echo "Please specify a globus build flavor" >&2
-		exit 1
+		NO_FLAVOR="yes"
 		;;
 	yes)
 		echo "Please specify a globus build flavor" >&2
@@ -28,6 +27,7 @@ AC_ARG_WITH(flavor,
 	]
 )
 
+AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
 AC_SUBST(FL)
 
 # checking for the GLOBUS_INSTALL_PATH
@@ -38,7 +38,7 @@ if test "x$GLOBUS_INSTALL_PATH" = "x"; then
 fi
 
 # get the environment scripts
-#. $GLOBUS_INSTALL_PATH/etc/globus-sh-tools.sh
+. $GLOBUS_INSTALL_PATH/etc/globus-sh-tools.sh
 
 . $GLOBUS_INSTALL_PATH/etc/globus-build-env-$FL.sh
 
@@ -57,20 +57,17 @@ AM_INIT_AUTOMAKE(globus_common, 2.0.0)
 dnl Configure a libtool script for the distribution
 AM_PROG_LIBTOOL
 
-dnl Set up conditionals for thread building.
-AM_CONDITIONAL(USE_NO_THREADS, test "$GLOBUS_THREADS" = "none")
-AM_CONDITIONAL(USE_PTHREADS, test "$GLOBUS_THREADS" = "pthreads")
-AM_CONDITIONAL(USE_SOLARIS_THREADS, test "$GLOBUS_THREADS" = "solaristhreads")
-AM_CONDITIONAL(USE_SPROC_THREADS, test "$GLOBUS_THREADS" = "sproc")
 
 dnl Determine thread library flags
+if test "x$NO_FLAVOR" = "x"; then
 LAC_THREADS
+fi
 
 AC_SUBST(GLOBUS_THREADS)
 
 AC_OUTPUT(
 	Makefile
-	globus_common_$FL.gpd:globus_common.gpd.in
+	build_parameters_$FL:build_parameters.in
 	library/globus_common.h
 	library/Makefile
 	tests/run-tests
