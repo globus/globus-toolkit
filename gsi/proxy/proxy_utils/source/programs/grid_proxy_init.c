@@ -754,7 +754,11 @@ main(
             printf("Your identity: %s\n", subject);
             if(subject)
             {
+                #ifdef WIN32
+                X509_free((void *) subject);
+                #else
                 free(subject);
+                #endif
                 subject = NULL;
             }
         }
