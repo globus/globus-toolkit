@@ -2,7 +2,8 @@
 
 # temporary setup script, should be improved
 
-for i in $GLOBUS_LOCATION/test/globus_common*.pl; do
+for i in $GLOBUS_LOCATION/test/globus_common*.pl \
+         $GLOBUS_LOCATION/test/run-common-tests.pl; do
 PERL=`which perl`
 cat $i|sed "s,perl,$PERL," > $i.tmp
 mv $i.tmp $i
