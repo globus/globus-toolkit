@@ -578,6 +578,7 @@ globus_l_gfs_ipc_unpack_reply(
 {
     int                                 ctr;
     char                                ch;
+    char *                              str;
     globus_gfs_ipc_reply_t *            reply;
 
     reply = (globus_gfs_ipc_reply_t *)
@@ -621,8 +622,16 @@ globus_l_gfs_ipc_unpack_reply(
                     buffer, len, reply->info.resource.stat_info[ctr].mode);
                 GFSDecodeUInt32(
                     buffer, len, reply->info.resource.stat_info[ctr].nlink);
-                //GFSDecodeString(
-                //    buffer, len, reply->info.resource.stat_info[ctr].name);
+                GFSDecodeString(buffer, len, str);
+                if(strlen(str) < MAXPATHLEN)
+                {
+                    strcpy(reply->info.resource.stat_info[ctr].name, str);
+                    globus_free(str);
+                }
+                else
+                {
+                    goto decode_err;
+                }
                 GFSDecodeUInt32(
                     buffer, len, reply->info.resource.stat_info[ctr].uid);
                 GFSDecodeUInt32(
