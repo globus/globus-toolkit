@@ -858,13 +858,6 @@ main(int argc,
 
     if (rc == GLOBUS_SUCCESS)
     {
-        /* fill the request structure with values from the RSL
-         */
-        rc = globus_l_gram_request_fill(rsl_tree, request);
-    }
-
-    if (rc == GLOBUS_SUCCESS)
-    {
         rc = globus_gass_cache_open(NULL, &globus_l_cache_handle);
 
         if( rc != GLOBUS_SUCCESS )
@@ -876,6 +869,15 @@ main(int argc,
  
     if (rc == GLOBUS_SUCCESS)
     {
+        /* fill the request structure with values from the RSL
+         */
+        rc = globus_l_gram_request_fill(rsl_tree, request);
+    }
+
+    if (rc == GLOBUS_SUCCESS)
+    {
+        grami_fprintf( request->jobmanager_log_fp,
+              "JM: opening stdout stderr fds");
 
         /* open "real" stdout and stderr descriptors
          */
@@ -902,6 +904,9 @@ main(int argc,
 
     if (rc == GLOBUS_SUCCESS)
     {
+        grami_fprintf( request->jobmanager_log_fp,
+              "JM: user proxy relocation\n");
+                            
         /* relocate the user proxy to the gass cache and 
          * return the local file name.
          */
@@ -950,6 +955,9 @@ main(int argc,
      */
     if (rc == GLOBUS_SUCCESS)
     {
+        grami_fprintf( request->jobmanager_log_fp,
+              "JM: request was successful replying to client\n");
+                            
         count= strlen(graml_job_contact);
 	size = nexus_sizeof_int(1);
 	size += nexus_sizeof_int(1);
@@ -984,6 +992,9 @@ main(int argc,
     }
     else
     {
+        grami_fprintf( request->jobmanager_log_fp,
+              "JM: request failed replying to client\n");
+                            
 	size = nexus_sizeof_int(2);
 	nexus_buffer_init(&reply_buffer, size, 0);
         nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
@@ -1100,6 +1111,9 @@ main(int argc,
         } /* endwhile */
     } /* endif */
 
+    grami_fprintf( request->jobmanager_log_fp,
+          "JM: we're done.  doing cleanup\n");
+                            
     nexus_disallow_attach(my_port);
 
     if (globus_l_gram_stdout_fd != -1)
@@ -1118,6 +1132,9 @@ main(int argc,
     if ((request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) || 
         (request->status == GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
     {
+        grami_fprintf( request->jobmanager_log_fp,
+              "JM: sending final callback.\n");
+                            
         globus_l_gram_client_callback(request->status,
                                       request->failure_code);
     }
@@ -2276,8 +2293,7 @@ globus_l_gram_stage_file(char **url, int mode)
         *url = tmpname;
     }
     globus_url_destroy(&gurl);
-    grami_fprintf( graml_log_fp, 
-                   "JM: new name = %s\n", *url);
+    grami_fprintf( graml_log_fp, "JM: new name = %s\n", *url);
 
     if (error_flag != GLOBUS_SUCCESS)
     {
