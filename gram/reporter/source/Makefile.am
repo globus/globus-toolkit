@@ -5,7 +5,7 @@ include $(top_srcdir)/globus_automake_pre_top
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
 SUBDIRS= \
-	pkgdata
+	pkgdata doxygen
 
 # Sources contains all of the source files in the directory.
 # Header files are included because automake will generate dependency targets 
@@ -23,7 +23,11 @@ PgmSources = \
 sysconf_DATA = \
         grid-info-gram-reporter.schema
 
-EXTRA_DIST = $(sysconf_DATA)
+EXTRA_DIST = $(sysconf_DATA) \
+             configuration.dox \
+             globus_gram_reporter_script_interface.dox \
+             main.dox
+             
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.

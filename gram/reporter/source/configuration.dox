@@ -1,0 +1,77 @@
+/**
+@page globus_gram_reporter_configuration GRAM Reporter Configuration
+
+The GRAM Reporter is generally configured using the setup-globus-gram-reporter
+setup script. This section of the GRAM Reporter Manager manual describes all
+options which may be passed to the GRAM Reporter on the command line.
+
+@subsection globus_gram_reporter_configuration_opts Configuration File Options
+
+@par -conf PATH
+Set the path to the jobmanager configuration file.  The gram reporter publishes
+some of the values in this file.  It reads the arguments from this file in
+addition to other command line arguments.  If the same arguments are found in
+the conf file and on the command line, the values from the conf file will
+override.
+
+Arguments looked for in the job manager's configuration file include:
+   -home
+   -globus-gatekeeper-host
+   -globus-gatekeeper-port
+   -globus-gatekeeper-subject
+   -globus-host-manufacturer
+   -globus-host-osname
+   -globus-host-osversion
+   -globus-host-cputype
+   -job-reporting-dir
+   -machine-type
+   -condor-arch
+   -condor-os
+   
+@par -home GLOBUS_LOCATION
+Set the GLOBUS_LOCATION environment variable to the specified Globus-Location.
+
+@par -type JOB_MANAGER_TYPE
+Set the type of scheduler interface to use for this gram reporter. A similarly
+named program is required in the $HOME/libexec/globus-script-<type>-queue shell
+script is required.
+
+@par -condor-arch ARCH
+Set the condor architecture for this GRAM reporter to be the specified ARCH.
+This is required when the job manager type is @a condor.
+
+@par -condor-os OSNAME
+Set the condor operating system name for this GRAM reporter to be the specified
+OSNAME.  This is required when the job manager type is @a condor.
+
+@par -job-reporting-dir PATH
+Set the path to the directory to look for GRAM job status files.
+
+@par -dont-publish-jobs
+Job information is published by default.  Use this option if you would like to
+not publish job information.
+
+@par -rdn <relative domain name>
+This argument uniquely identifies the job manager service for a host.  For
+example, if 2 pbs job manager services are installed on a host, the -rdn arg
+will uniquely identify them.  -rdn jobmanager-pbs-1 and -rdn jobmanager-pbs-2.
+
+The GRAM reporter uses this argument to construct a complete dn for the MDS
+objects.
+
+@par -dmdn <base domain name>
+This argument is used as the base dn under which the GRAM reporter objects will
+be published.  Typically the base dn for the host object.
+
+@par -keep-to <seconds>
+Sets the number of seconds that the objects are valid for.  The default is 600
+(15 minutes).
+
+@par -cldif PATH
+File path to write the ldif information.  Otherwise the information is printed
+to STDOUT.
+
+@par -machine-type
+Unused by the GRAM reporter at this time.
+
+*/
