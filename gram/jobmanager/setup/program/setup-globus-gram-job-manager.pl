@@ -1,3 +1,36 @@
+use Getopt::Long;
+
+my $selected_jm_type;
+my @all_jm_types = ('condor', 'easymcs', 'fork', 'glunix', 'grd', 'loadleveler', 'lsf',
+                    'nqe', 'nswc', 'pbs', 'pexec', 'prun'); 
+
+
+GetOptions( 'type=s' => \$selected_jm_type,
+            'help' => \$help)
+  or pod2usage(1);
+
+pod2usage(0) if $help;
+
+sub pod2usage {
+  my $ex = shift;
+  print "setup-globus-gram-job-manager [ \\
+               -help \\
+               -type=[ @all_jm_types ]\\
+                     (fork is default)\\
+              ]\n";
+  exit $ex;
+}
+
+if ( $selected_jm_type eq "" )
+{
+   $selected_jm_type='fork';
+}
+
+if ( ! grep {$_ eq $selected_jm_type} @all_jm_types)
+{
+   die "Invalid Job Manager Type, valid types are: @all_jm_types"
+}
+
 my $gpath = $ENV{GPT_LOCATION};
 
 if (!defined($gpath))
@@ -20,11 +53,25 @@ my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus/";
 my $gk_conf = "$globusdir/etc/globus-gatekeeper.conf";
 my $jm_conf = "$globusdir/etc/globus-job-manager.conf";
-my $jm_service = "$globusdir/etc/grid-services/jobmanager";
 my $need_print = 1;
 my $port;
 my $subject;
 my $junk;
+
+print "Setting up $selected_jm_type job manager\n";
+print "------------------------------\n";
+
+
+if ($selected_jm_type eq "fork")
+{
+   $rdn="jobmanager";
+}
+else
+{
+   $rdn="jobmanager-$selected_jm_type";
+}
+
+my $jm_service = "$globusdir/etc/grid-services/$rdn";
 
 if ( -f "$jm_conf" )
 {
@@ -138,7 +185,7 @@ else
                        "$globusdir/libexec/globus-job-manager ".
                        "globus-job-manager ".
                        "-conf $globusdir/etc/globus-job-manager.conf ".
-                       "-type fork -rdn jobmanager -machine-type unknown ".
+                       "-type $selected_jm_type -rdn $rdn -machine-type unknown ".
                        "-publish-jobs\n";
 
          $need_print=0;
