@@ -556,6 +556,7 @@ globus_l_gsc_read_cb(
     {
         globus_free(command_name);
     }
+    server_handle->cached_res = res;
     server_handle->ref--;
     globus_i_gsc_terminate(server_handle);
     globus_l_gsc_server_ref_check(server_handle);
@@ -911,6 +912,7 @@ globus_l_gsc_open_cb(
     return;
 
   err:
+    server_handle->cached_res = res;
     server_handle->ref--;
     globus_l_gsc_server_ref_check(server_handle);
     globus_mutex_unlock(&server_handle->mutex);
