@@ -66,7 +66,6 @@ main(int argc, char **argv)
     char *                           error_msg;
     int                              n_options;
     int                              err;
-    int                              i;
     char *                           sourceURL;
     char *                           destURL;
 
@@ -162,6 +161,7 @@ main(int argc, char **argv)
     /* To find out if I need to do some netASCII to Unix or
        Unix to netASCII conversion, I need to know what is the kind of each
        URL. I will convert netASCII to Unix
+     */
     
     /* open the source and dest url */
    
