@@ -8,8 +8,8 @@
    and structures are not defined in public header files. 
    
 */
-#if !defined(DGSSLUTILS_H)
-#define DGSSLUTILS_H
+#if !defined(SSLUTILS_H)
+#define SSLUTILS_H
 
 #include <stdio.h>		/* ssl.h seems to require it: yuk! */
 #include <ssl.h>
@@ -110,6 +110,7 @@
 
 #  else
    /* Globus 1.1.4, Globus 1.1.3 */
+#  define PVD_SSL_EX_DATA_IDX 0
 
    typedef struct proxy_cred_desc_struct {
 	   X509                     *ucert ;
