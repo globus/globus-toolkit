@@ -204,12 +204,11 @@
         int                             _iovc;                              \
         int                             _i;                                 \
                                                                             \
-        _n = (nbytes);                                                      \
         _iov = (iov);                                                       \
         _iovc = (iovc);                                                     \
                                                                             \
         /* skip all completely filled iovecs */                             \
-        for(_i = 0, _n = rc;                                                \
+        for(_i = 0, _n = (nbytes);                                          \
             _i < _iovc &&  _n >= _iov[_i].iov_len;                          \
             _n -= _iov[_i].iov_len, _i++);                                  \
                                                                             \
@@ -234,13 +233,12 @@
         int                             _j;                                 \
         int                             _k;                                 \
                                                                             \
-        _n = (nbytes);                                                      \
         _iov = (iov);                                                       \
         _iovc = (iovc);                                                     \
         _new_iov = (new_iov);                                               \
                                                                             \
         /* skip all completely filled iovecs */                             \
-        for(_i = 0, _n = rc;                                                \
+        for(_i = 0, _n = (nbytes);                                          \
             _i < _iovc &&  _n >= _iov[_i].iov_len;                          \
             _n -= _iov[_i].iov_len, _i++);                                  \
                                                                             \
