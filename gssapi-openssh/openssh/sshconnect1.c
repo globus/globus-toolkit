@@ -51,7 +51,6 @@ RCSID("$OpenBSD: sshconnect1.c,v 1.48 2002/02/11 16:15:46 markus Exp $");
 #include "canohost.h"
 #include "auth.h"
 
-/*modified by binhe*/
 #ifdef GSSAPI
 #include "ssh-gss.h"
 #include "bufaux.h"
@@ -62,7 +61,6 @@ RCSID("$OpenBSD: sshconnect1.c,v 1.48 2002/02/11 16:15:46 markus Exp $");
  */
 unsigned char ssh_key_digest[16];
 #endif /* GSSAPI */
-/*end of modification*/
 
 /* Session id for the current session. */
 u_char session_id[16];
@@ -958,7 +956,6 @@ try_password_authentication(char *prompt)
 	return 0;
 }
 
-/*modified by binhe*/
 #ifdef GSSAPI
 /*
  * This code stolen from the gss-client.c sample program from MIT's
@@ -1390,7 +1387,6 @@ int try_gssapi_authentication(char *host, Options *options)
 
 #endif /* GSSAPI */
 
-/*end of modification*/
 
 /*
  * SSH1 key exchange
@@ -1443,7 +1439,6 @@ ssh_kex(char *host, struct sockaddr *hostaddr)
 		log("Warning: This may be due to an old implementation of ssh.");
 	}
 
-/*modified by binhe*/
 #ifdef GSSAPI
   {
     MD5_CTX md5context;
@@ -1482,7 +1477,6 @@ ssh_kex(char *host, struct sockaddr *hostaddr)
     buffer_free(&buf);
   }
 #endif /* GSSAPI */
-/*end of modification*/
 
 	/* Get protocol flags. */
 	server_flags = packet_get_int();
@@ -1626,13 +1620,11 @@ void
 ssh_userauth1(const char *local_user, const char *server_user, char *host,
     Key **keys, int nkeys)
 {
-/*modified by binhe*/
 #ifdef GSSAPI
 #ifdef GSI
   	const char *save_server_user = NULL;
 #endif /* GSI */
 #endif /* GSSAPI */
-/*end of modification*/
 
 #ifdef KRB5
 	krb5_context context = NULL;
@@ -1643,7 +1635,6 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
 	if (supported_authentications == 0)
 		fatal("ssh_userauth1: server supports no auth methods");
 
-/*modified by binhe*/
 #ifdef GSSAPI
 #ifdef GSI
   /* if no user given, tack on the subject name after the server_user.
@@ -1692,7 +1683,6 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
   }
 #endif /* GSI */
 #endif /* GSSAPI */
-/*end of modification*/
 
 	/* Send the name of the user to log in as on the server. */
 	packet_start(SSH_CMSG_USER);
@@ -1700,14 +1690,12 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
 	packet_send();
 	packet_write_wait();
 
-/*modified by binhe*/
 #if defined(GSI)
   if(save_server_user)
     {
       server_user = save_server_user;
     }
 #endif
-/*end of modification*/
 	/*
 	 * The server should respond with success if no authentication is
 	 * needed (the user has no password).  Otherwise the server responds
@@ -1721,7 +1709,6 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
 	if (type != SSH_SMSG_FAILURE)
 		packet_disconnect("Protocol error: got %d in response to SSH_CMSG_USER", type);
 
-/*modified by binhe*/
 #ifdef GSSAPI
   /* Try GSSAPI authentication */
   if ((supported_authentications & (1 << SSH_AUTH_GSSAPI)) &&
@@ -1746,7 +1733,6 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
       debug("GSSAPI authentication failed");
     }
 #endif /* GSSAPI */
-/*end of modification*/
 	
 #ifdef KRB5
 	if ((supported_authentications & (1 << SSH_AUTH_KERBEROS)) &&
