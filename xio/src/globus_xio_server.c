@@ -215,9 +215,9 @@ globus_i_xio_server_post_accept(
                 break;
 
             case GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING:
-                xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSING;
                 if(xio_server->outstanding_operations == 0)
                 {
+                    xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSING;
                     globus_l_xio_close_server(xio_server);
                 }
                 break;

@@ -356,6 +356,8 @@ globus_l_xio_system_activate(void)
 {
     int                                 i;
     char *                              block;
+    globus_result_t                     result;
+    globus_reltime_t                    period;
     GlobusXIOName(globus_l_xio_system_activate);
 
     GlobusDebugInit(GLOBUS_XIO_SYSTEM, TRACE DATA INFO);
@@ -373,8 +375,6 @@ globus_l_xio_system_activate(void)
     globus_l_xio_system_select_active = GLOBUS_FALSE;
     globus_l_xio_system_wakeup_pending = GLOBUS_FALSE;
     globus_l_xio_system_shutdown_called = GLOBUS_FALSE;
-
-    globus_l_xio_system_highest_fd = -1;
 
     /*
      * On some machines (SGI Irix at least), the fd_set structure isn't
@@ -438,24 +438,22 @@ globus_l_xio_system_activate(void)
     {
         goto error_pipe;
     }
-    else
-    {
-        globus_result_t                 result;
-        globus_reltime_t                period;
+    
+    globus_l_xio_system_highest_fd = globus_l_xio_system_wakeup_pipe[0];
+    FD_SET(globus_l_xio_system_wakeup_pipe[0], globus_l_xio_system_read_fds);
 
-        GlobusTimeReltimeSet(period, 0, 0);
-        result = globus_callback_register_periodic(
-            &globus_l_xio_system_poll_handle,
-             GLOBUS_NULL,
-             &period,
-             globus_l_xio_system_poll,
-             GLOBUS_NULL);
-        if(result != GLOBUS_SUCCESS)
-        {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_callback_register_periodic", result);
-            goto error_register;
-        }
+    GlobusTimeReltimeSet(period, 0, 0);
+    result = globus_callback_register_periodic(
+        &globus_l_xio_system_poll_handle,
+         GLOBUS_NULL,
+         &period,
+         globus_l_xio_system_poll,
+         GLOBUS_NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_callback_register_periodic", result);
+        goto error_register;
     }
 
     GlobusXIOSystemDebugExit();
@@ -496,7 +494,7 @@ globus_l_xio_system_unregister_periodic_cb(
         globus_l_xio_system_shutdown_called = GLOBUS_FALSE;
         globus_cond_signal(&globus_l_xio_system_cond);
     }
-    globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
+    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
 
     GlobusXIOSystemDebugExit();
 }
@@ -525,7 +523,7 @@ globus_l_xio_system_deactivate(void)
                 &globus_l_xio_system_cond, &globus_l_xio_system_fdset_mutex);
         }
     }
-    globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
+    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
 
     GlobusIXIOSystemCloseFd(globus_l_xio_system_wakeup_pipe[0]);
     GlobusIXIOSystemCloseFd(globus_l_xio_system_wakeup_pipe[1]);
@@ -943,6 +941,15 @@ globus_l_xio_system_select_wakeup(void)
     if(rc > 0)
     {
         globus_l_xio_system_wakeup_pending = GLOBUS_TRUE;
+    }
+    else
+    {
+        globus_panic(
+            GLOBUS_XIO_SYSTEM_MODULE,
+            GlobusXIOErrorSystemError("write", errno),
+            "[%s:%d] Couldn't wakeup select",
+            _xio_name,
+            __LINE__);
     }
 
     GlobusXIOSystemDebugExit();
