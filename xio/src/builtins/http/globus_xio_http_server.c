@@ -152,6 +152,8 @@ globus_i_xio_http_server_open_callback(
     globus_result_t                     result2;
     GlobusXIOName(globus_i_xio_http_server_open_callback);
 
+    globus_mutex_lock(&http_handle->mutex);
+
     handle = http_handle->handle;
     if (result != GLOBUS_SUCCESS)
     {
@@ -181,6 +183,7 @@ globus_i_xio_http_server_open_callback(
     {
         goto free_buffer_exit;
     }
+    globus_mutex_unlock(&http_handle->mutex);
 
     return;
 
@@ -224,12 +227,15 @@ error_exit:
     }
 
 destroy_handle_exit:
+    globus_mutex_unlock(&http_handle->mutex);
+
     if (!pass_close_on_error)
     {
         globus_i_xio_http_handle_destroy(http_handle);
         globus_libc_free(http_handle);
         http_handle = NULL;
     }
+
     globus_xio_driver_finished_open(
             handle,
             http_handle,
@@ -249,6 +255,8 @@ destroy_handle_exit:
  * This call may be triggered by either the first write on a server handle,
  * or by calling the #GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY handle
  * control function.
+ *
+ * Called with my mutex lock.
  *
  * @param http_handle
  *     Handle associated with this HTTP stream.
@@ -395,13 +403,12 @@ globus_i_xio_http_server_write_response(
                 == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY &&
              http_handle->response_info.headers.content_length_set))
         {
+            http_handle->response_info.headers.transfer_encoding
+                = GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY;
             /* Transfer-Encoding mustn't be sent to a HTTP/1.0 client */
             if (http_handle->request_info.http_version
                 != GLOBUS_XIO_HTTP_VERSION_1_0)
             {
-                http_handle->response_info.headers.transfer_encoding =
-                    GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY;
-
                 GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
                         "Transfer-Encoding: identity\r\n",
                         29,
@@ -570,6 +577,8 @@ globus_l_xio_http_server_write_response_callback(
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     int                                 i;
 
+    globus_mutex_lock(&http_handle->mutex);
+
     for (i = 0; i < http_handle->header_iovcnt; i++)
     {
         globus_libc_free(http_handle->header_iovec[i].iov_base);
@@ -623,6 +632,7 @@ globus_l_xio_http_server_write_response_callback(
                 globus_i_xio_http_close_callback,
                 http_handle);
 
+        globus_mutex_unlock(&http_handle->mutex);
         if (result != GLOBUS_SUCCESS)
         {
             globus_i_xio_http_close_callback(
@@ -630,6 +640,10 @@ globus_l_xio_http_server_write_response_callback(
                 result,
                 http_handle);
         }
+    }
+    else
+    {
+        globus_mutex_unlock(&http_handle->mutex);
     }
 }
 /* globus_l_xio_http_server_write_response_callback() */
@@ -669,8 +683,9 @@ globus_l_xio_http_server_read_request_callback(
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_bool_t                       eof = GLOBUS_FALSE;
     globus_bool_t                       done;
-    globus_bool_t                       copy_residue = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_http_server_read_request_callback);
+
+    globus_mutex_lock(&http_handle->mutex);
 
     if (result != GLOBUS_SUCCESS)
     {
@@ -683,8 +698,6 @@ globus_l_xio_http_server_read_request_callback(
             goto error_exit;
         }
     }
-
-    globus_assert(!http_handle->parsed_headers);
 
     /* Haven't parsed request and headers yet */
     http_handle->read_buffer_valid += nbytes;
@@ -717,7 +730,8 @@ globus_l_xio_http_server_read_request_callback(
     {
         http_handle->response_info.headers.connection_close = GLOBUS_TRUE;
     }
-    http_handle->parsed_headers = GLOBUS_TRUE;
+
+    globus_mutex_unlock(&http_handle->mutex);
 
     globus_xio_driver_finished_open(
             http_handle->handle,
@@ -725,20 +739,7 @@ globus_l_xio_http_server_read_request_callback(
             op,
             result);
 
-    if (http_handle->read_operation.operation != NULL)
-    {
-        copy_residue = GLOBUS_TRUE;
-    }
-
     globus_l_xio_http_server_call_ready_callback(http_handle, result);
-
-    if (copy_residue)
-    {
-        /* User registered a read before we parsed everything, handle
-         * residue.
-         */
-        globus_i_xio_http_parse_residue(http_handle);
-    }
 
     return;
 reregister_read:
@@ -767,28 +768,17 @@ reregister_read:
         goto error_exit;
     }
 
+    globus_mutex_unlock(&http_handle->mutex);
     return;
+
 error_exit:
-    if (http_handle->read_operation.operation != NULL)
-    {
-        copy_residue = GLOBUS_TRUE;
-    }
+    globus_mutex_unlock(&http_handle->mutex);
 
     globus_xio_driver_finished_open(
             http_handle->handle,
             http_handle,
             op,
             result);
-
-    globus_l_xio_http_server_call_ready_callback(http_handle, result);
-
-    if (copy_residue)
-    {
-        /* User registered a read before we parsed everything, handle
-         * residue.
-         */
-        globus_i_xio_http_parse_residue(http_handle);
-    }
 }
 /* globus_l_xio_http_server_read_request_callback() */
 
@@ -799,6 +789,8 @@ error_exit:
  * Parses the HTTP request line and then uses globus_i_xio_http_header_parse()
  * to parse the header bock .If the entire request header section is reqad, the
  * boolean pointed to by @a done will be modified to be GLOBUS_TRUE
+ *
+ * Called with mutex locked.
  *
  * @param http_handle
  * @param done

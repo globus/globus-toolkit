@@ -69,6 +69,8 @@ globus_i_xio_http_client_open_callback(
     globus_xio_driver_handle_t          handle;
     globus_result_t                     result2;
 
+    globus_mutex_lock(&http_handle->mutex);
+
     handle = http_handle->handle;
     if (result != GLOBUS_SUCCESS)
     {
@@ -85,6 +87,7 @@ globus_i_xio_http_client_open_callback(
         goto error_exit;
     }
 
+    globus_mutex_unlock(&http_handle->mutex);
     return;
 
 error_exit:
@@ -119,6 +122,8 @@ error_exit:
         }
     }
 destroy_handle_exit:
+    globus_mutex_unlock(&http_handle->mutex);
+
     if (http_handle->send_state == GLOBUS_XIO_HTTP_CLOSE)
     {
         globus_i_xio_http_handle_destroy(http_handle);
@@ -139,6 +144,8 @@ destroy_handle_exit:
  *
  * Composes and writes an HTTP request which corresponds to the attributes and
  * target which were passed to the HTTP driver's open implementation.
+ *
+ * Called with the mutex locked.
  *
  * @param op
  *     Previously allocated XIO operation which is associaed with the current
@@ -427,6 +434,8 @@ globus_l_xio_http_client_write_request_callback(
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     GlobusXIOName(globus_l_xio_http_client_write_request_callback);
 
+    globus_mutex_lock(&http_handle->mutex);
+
     if (result != GLOBUS_SUCCESS)
     {
         goto error_exit;
@@ -486,6 +495,8 @@ globus_l_xio_http_client_write_request_callback(
         goto free_read_buffer_exit;
     }
 
+    globus_mutex_unlock(&http_handle->mutex);
+
     globus_xio_driver_finished_open(
             http_handle->handle,
             http_handle,
@@ -502,7 +513,8 @@ free_read_buffer_exit:
     globus_libc_free(http_handle->read_buffer.iov_base);
     http_handle->read_buffer.iov_len = 0;
 error_exit:
-    /* Does the http handle need to be freed here? */
+    globus_mutex_unlock(&http_handle->mutex);
+
     globus_xio_driver_finished_open(
             http_handle->handle,
             http_handle,
@@ -545,9 +557,10 @@ globus_l_xio_http_client_read_response_callback(
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_bool_t                       eof = GLOBUS_FALSE;
     globus_bool_t                       done;
-    globus_bool_t                       copy_residue = GLOBUS_FALSE;
+    globus_bool_t                       finish_read = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_http_client_read_response_callback);
 
+    globus_mutex_lock(&http_handle->mutex);
     if (result != GLOBUS_SUCCESS)
     {
         if (globus_xio_error_is_eof(result))
@@ -560,8 +573,6 @@ globus_l_xio_http_client_read_response_callback(
         }
     }
 
-    globus_assert(!http_handle->parsed_headers);
-
     http_handle->read_buffer_valid += nbytes;
 
     /* Parsed response line and headers. */
@@ -572,22 +583,48 @@ globus_l_xio_http_client_read_response_callback(
         goto reregister_read;
     }
 
-    /* Parsed all header information */
-    http_handle->parsed_headers = GLOBUS_TRUE;
-
     /* If user registered a read before we finished parsing, we'll
      * have to handle it after we call the ready callback
      */
     if (http_handle->read_operation.operation != NULL)
     {
-        copy_residue = GLOBUS_TRUE;
+        result = globus_i_xio_http_parse_residue(http_handle);
+
+        if (http_handle->read_operation.wait_for <= 0
+                || result != GLOBUS_SUCCESS)
+        {
+            if (http_handle->response_info.headers.transfer_encoding !=
+                    GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
+                    http_handle->response_info.headers.content_length_set &&
+                    http_handle->response_info.headers.content_length == 0)
+            {
+                /* Synthesize EOF if we've read all of the entity content */
+                result = GlobusXIOErrorEOF();
+            }
+
+            /*
+             * Either we've read enough, hit end of chunk, no entity was
+             * present, or pass to transport failed. Call finished_read
+             */
+            op = http_handle->read_operation.operation;
+
+            nbytes = http_handle->read_operation.nbytes;
+            globus_libc_free(http_handle->read_operation.iov);
+            http_handle->read_operation.iov = NULL;
+            http_handle->read_operation.iovcnt = 0;
+            http_handle->read_operation.operation = NULL;
+            http_handle->read_operation.nbytes = 0;
+
+            finish_read = GLOBUS_TRUE;
+        }
     }
 
+    globus_mutex_unlock(&http_handle->mutex);
     globus_l_xio_http_client_call_ready_callback(http_handle, result);
 
-    if (copy_residue)
+    if (finish_read)
     {
-        globus_i_xio_http_parse_residue(http_handle);
+        globus_xio_driver_finished_read(op, result, nbytes);
     }
 
     return;
@@ -619,22 +656,35 @@ reregister_read:
         goto error_exit;
     }
 
+    globus_mutex_unlock(&http_handle->mutex);
     return;
+
 error_exit:
     if (http_handle->read_operation.operation != NULL)
     {
-        copy_residue = GLOBUS_TRUE;
-    }
+        /*
+         * Either we've read enough, hit end of chunk, no entity was
+         * present, or pass to transport failed. Call finished_read
+         */
+        op = http_handle->read_operation.operation;
 
+        nbytes = http_handle->read_operation.nbytes;
+        globus_libc_free(http_handle->read_operation.iov);
+        http_handle->read_operation.iov = NULL;
+        http_handle->read_operation.iovcnt = 0;
+        http_handle->read_operation.operation = NULL;
+        http_handle->read_operation.nbytes = 0;
+
+        finish_read = GLOBUS_TRUE;
+    }
+    globus_mutex_unlock(&http_handle->mutex);
     globus_l_xio_http_client_call_ready_callback(http_handle, result);
 
-    if (copy_residue)
+    if (finish_read)
     {
-        /* User registered a read before we parsed everything, handle
-         * residue.
-         */
-        globus_i_xio_http_parse_residue(http_handle);
+        globus_xio_driver_finished_read(op, result, nbytes);
     }
+
 }
 /* globus_l_xio_http_client_read_response_callback() */
 
@@ -646,6 +696,7 @@ error_exit:
  * parse the header block. If the entire response header section is read, 
  * the boolean pointed to by @a done will be modified to be GLOBUS_TRUE.
  *
+ * Called with mutex locked.
  * @param http_handle
  * @param done
  *

@@ -316,11 +316,6 @@ typedef struct
     globus_xio_operation_t              close_operation;
     
     /**
-     * Flag to indicating whether the headers have been parsed.
-     */
-    globus_bool_t                       parsed_headers;
-
-    /**
      * Remaining-to-be-read chunk.
      */
     globus_size_t                       read_chunk_left;
@@ -340,6 +335,11 @@ typedef struct
      * Flag indicating whether close was called on this handle.
      */
     globus_bool_t                       user_close;
+
+    /**
+     * Lock for thread-safety
+     */
+    globus_mutex_t                      mutex;
 }
 globus_i_xio_http_handle_t;
 
@@ -439,6 +439,11 @@ globus_i_xio_http_handle_cntl(
     void *                              handle,
     int                                 cmd,
     va_list                             ap);
+
+extern
+globus_result_t
+globus_i_xio_http_set_end_of_entity(
+    globus_i_xio_http_handle_t *        http_handle);
 
 /* globus_xio_http_header.c */
 extern
@@ -598,7 +603,7 @@ globus_i_xio_http_write(
     globus_xio_operation_t                  op);
 
 extern
-void
+globus_result_t
 globus_i_xio_http_parse_residue(
     globus_i_xio_http_handle_t *        handle);
 
@@ -625,6 +630,11 @@ globus_i_xio_http_close(
     void *                              attr,
     globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op);
+
+extern 
+globus_result_t
+globus_i_xio_http_close_internal(
+    globus_i_xio_http_handle_t *        http_handle);
 
 extern
 void

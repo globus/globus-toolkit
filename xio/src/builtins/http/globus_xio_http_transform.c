@@ -149,6 +149,11 @@ error_exit:
  * to handle any residual data in the header buffer and pass the read
  * to the transport if necessary.
  *
+ * If there is sufficient data in the buffer residue to satisfy the "wait_for"
+ * value passed to the read function, then this will cause
+ * globus_xio_driver_finished_read() to be called. Otherwise, the driver
+ * will pass the read to the transport driver.
+ *
  * @param handle
  *     Void pointer to a globus_i_xio_http_handle_t.
  * @param iovec
@@ -165,8 +170,8 @@ error_exit:
  *     errors directly.
  *
  * @retval GLOBUS_SUCCESS
- *     Read handled successfully. At some point later,
- *     globus_xio_driver_finished_read() will be called.
+ *     Read handled successfully. Either the read was passed to the transport,
+ *     or globus_xio_driver_finished_read() was be called.
  * @retval GLOBUS_XIO_ERROR_ALREADY_REGISTERED
  *     A read is already registered with the HTTP handle, so we can't deal
  *     with this new one.
@@ -185,6 +190,7 @@ globus_i_xio_http_read(
     globus_i_xio_http_handle_t *        http_handle = handle;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_xio_http_header_info_t *   header_info;
+    globus_size_t                       nbytes;
     int                                 i;
     GlobusXIOName(globus_i_xio_http_read);
 
@@ -197,10 +203,19 @@ globus_i_xio_http_read(
         header_info = &http_handle->request_info.headers;
     }
 
+    globus_mutex_lock(&http_handle->mutex);
+
     if (http_handle->read_operation.operation != NULL)
     {
         /* Only one read in progress per handle, sorry */
         result = GlobusXIOErrorAlreadyRegistered();
+
+        goto error_exit;
+    }
+    else if (http_handle->parse_state == GLOBUS_XIO_HTTP_REQUEST_LINE)
+    {
+        /* Haven't read a request, don't allow reads yet */
+        result = GlobusXIOErrorParameter("handle [not ready]");
 
         goto error_exit;
     }
@@ -230,17 +245,51 @@ globus_i_xio_http_read(
         /* Still reading header information---read will be handled after
          * headers are parsed
          */
+        globus_mutex_unlock(&http_handle->mutex);
         return result;
     }
 
     /* Parse any residual information in our buffer, maybe copying to use
      * buffer, maybe registering a read
      */
-    globus_i_xio_http_parse_residue(http_handle);
+    result = globus_i_xio_http_parse_residue(http_handle);
 
+    if (http_handle->read_operation.wait_for <= 0 || result != GLOBUS_SUCCESS)
+    {
+        if (header_info->transfer_encoding !=
+                GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
+            header_info->content_length_set &&
+            header_info->content_length == 0)
+        {
+            /* Synthesize EOF if we've read all of the entity content */
+            result = GlobusXIOErrorEOF();
+        }
+        /*
+         * Either we've read enough, hit end of chunk, no entity was present,
+         * or pass to transport failed. Call finished_read 
+         */
+        op = http_handle->read_operation.operation;
+
+        nbytes = http_handle->read_operation.nbytes;
+        globus_libc_free(http_handle->read_operation.iov);
+        http_handle->read_operation.iov = NULL;
+        http_handle->read_operation.iovcnt = 0;
+        http_handle->read_operation.operation = NULL;
+        http_handle->read_operation.nbytes = 0;
+
+        globus_mutex_unlock(&http_handle->mutex);
+        globus_xio_driver_finished_read(op, result, nbytes);
+
+        result = GLOBUS_SUCCESS;
+    }
+    else
+    {
+        globus_mutex_unlock(&http_handle->mutex);
+    }
     return result;
 
 error_exit:
+    globus_mutex_unlock(&http_handle->mutex);
     return result;
 }
 /* globus_i_xio_http_read() */
@@ -251,18 +300,16 @@ error_exit:
  *
  * Parses the data in the @a http_handle's read_buffer---if content is
  * present, it will be copied into the user buffer
- * passed to the http driver via globus_xio_http_driver_pass_read(). If
- * there is sufficient data in the buffer residue to satisfy the "wait_for"
- * value passed to the read function, then this will cause
- * globus_xio_driver_finished_open() to be called. Otherwise, the driver
- * will pass the read to the transport driver.
+ * passed to the http driver via globus_xio_http_driver_pass_read().
+ *
+ * Called with the handle's mutex locked.
  *
  * @param http_handle
  *     Handle associated with the read.
  * 
  * @return void
  */
-void
+globus_result_t
 globus_i_xio_http_parse_residue(
     globus_i_xio_http_handle_t *        http_handle)
 {
@@ -272,7 +319,6 @@ globus_i_xio_http_parse_residue(
     globus_size_t                       nbytes;
     globus_bool_t                       done;
     globus_size_t                       max_content = 0;
-    globus_xio_operation_t              op;
     GlobusXIOName(globus_i_xio_http_parse_residue);
 
     if (http_handle->target_info.is_client)
@@ -402,40 +448,21 @@ globus_i_xio_http_parse_residue(
 
             case GLOBUS_XIO_HTTP_CLOSE:
                 globus_assert(http_handle->parse_state
-                        != GLOBUS_XIO_HTTP_EOF);
+                        != GLOBUS_XIO_HTTP_CLOSE);
+
+                result = GlobusXIOErrorParameter("handle [invalid state]");
+                break;
         }
     }
 
 finish:
-    if (http_handle->read_operation.wait_for <= 0 || result != GLOBUS_SUCCESS)
-    {
-        if (headers->transfer_encoding !=
-                GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
-            headers->content_length_set &&
-            headers->content_length == 0)
-        {
-            /* Synthesize EOF if we've read all of the entity content */
-            result = GlobusXIOErrorEOF();
-        }
-        /*
-         * Either we've read enough, hit end of chunk, no entity was present,
-         * or pass to transport failed. Call finished_read 
-         */
-        op = http_handle->read_operation.operation;
-
-        nbytes = http_handle->read_operation.nbytes;
-        globus_libc_free(http_handle->read_operation.iov);
-        http_handle->read_operation.iov = NULL;
-        http_handle->read_operation.iovcnt = 0;
-        http_handle->read_operation.operation = NULL;
-        http_handle->read_operation.nbytes = 0;
-
-        globus_xio_driver_finished_read(op, result, nbytes);
-    }
-    return;
+    return result;
 }
 /* globus_i_xio_http_parse_residue() */
 
+/**
+ * Called with mutex locked.
+ */
 static
 void
 globus_l_xio_http_copy_residue(
@@ -574,6 +601,8 @@ globus_l_xio_http_read_callback(
         headers = &http_handle->request_info.headers;
     }
 
+    globus_mutex_lock(&http_handle->mutex);
+
     globus_libc_free(http_handle->read_operation.iov);
     http_handle->read_operation.iov = NULL;
     http_handle->read_operation.iovcnt = 0;
@@ -602,6 +631,7 @@ globus_l_xio_http_read_callback(
         }
     }
 
+    globus_mutex_unlock(&http_handle->mutex);
     globus_xio_driver_finished_read(op, result, nbytes);
 }
 /* globus_l_xio_http_read_callback() */
@@ -633,10 +663,51 @@ globus_l_xio_http_read_chunk_header_callback(
     void *                              user_arg)
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
+    globus_i_xio_http_header_info_t *   headers;
+    GlobusXIOName(globus_l_xio_http_read_chunk_header_callback);
 
+    globus_mutex_lock(&http_handle->mutex);
     http_handle->read_buffer_valid += nbytes;
 
+    if (http_handle->target_info.is_client)
+    {
+        headers = &http_handle->response_info.headers;
+    }
+    else
+    {
+        headers = &http_handle->request_info.headers;
+    }
     globus_i_xio_http_parse_residue(http_handle);
+    if (http_handle->read_operation.wait_for <= 0 || result != GLOBUS_SUCCESS)
+    {
+        if (headers->transfer_encoding !=
+                GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
+            headers->content_length_set &&
+            headers->content_length == 0)
+        {
+            /* Synthesize EOF if we've read all of the entity content */
+            result = GlobusXIOErrorEOF();
+        }
+        /*
+         * Either we've read enough, hit end of chunk, no entity was present,
+         * or pass to transport failed. Call finished_read 
+         */
+        op = http_handle->read_operation.operation;
+
+        nbytes = http_handle->read_operation.nbytes;
+        globus_libc_free(http_handle->read_operation.iov);
+        http_handle->read_operation.iov = NULL;
+        http_handle->read_operation.iovcnt = 0;
+        http_handle->read_operation.operation = NULL;
+        http_handle->read_operation.nbytes = 0;
+
+        globus_mutex_unlock(&http_handle->mutex);
+        globus_xio_driver_finished_read(op, result, nbytes);
+    }
+    else
+    {
+        globus_mutex_unlock(&http_handle->mutex);
+    }
 }
 /* globus_l_xio_http_read_chunk_header_callback() */
 
@@ -657,6 +728,8 @@ globus_l_xio_http_read_chunk_header_callback(
  * @return This function returns GLOBUS_SUCCESS, GLOBUS_XIO_HTTP_ERROR_PARSE,
  * or GLOBUS_XIO_ERROR_EOF. It also modifies the value pointed to by the
  * @a done parameter as described above.
+ *
+ * Called with mutex locked.
  *
  * @retval GLOBUS_SUCCESS
  *     No parsing errors encountered.
@@ -831,7 +904,7 @@ globus_l_xio_http_parse_chunk_header(
                     GLOBUS_XIO_HTTP_EOF);
         case GLOBUS_XIO_HTTP_CLOSE:
             globus_assert(http_handle->parse_state
-                    != GLOBUS_XIO_HTTP_EOF);
+                    != GLOBUS_XIO_HTTP_CLOSE);
     }
 
     return result;
@@ -899,6 +972,7 @@ globus_i_xio_http_write(
         headers = &http_handle->response_info.headers;
     }
 
+    globus_mutex_lock(&http_handle->mutex);
     switch (http_handle->send_state)
     {
         case GLOBUS_XIO_HTTP_STATUS_LINE:
@@ -958,7 +1032,7 @@ globus_i_xio_http_write(
             result = GlobusXIOErrorParameter(handle);
             break;
     }
-
+    globus_mutex_unlock(&http_handle->mutex);
 
     return result;
 }
@@ -972,6 +1046,8 @@ globus_i_xio_http_write(
  * passes it to the transport driver. When the transport returns,
  * globus_i_xio_http_write_callback() will be called to finish the write
  * operation.
+ *
+ * Called with the handle's mutex locked.
  *
  * @param http_handle
  *     Handle to the HTTP stream.
@@ -1101,7 +1177,6 @@ globus_i_xio_http_write_callback(
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_i_xio_http_header_info_t *   headers;
-    va_list                             dummy;
 
     if (http_handle->target_info.is_client)
     {
@@ -1112,6 +1187,7 @@ globus_i_xio_http_write_callback(
         headers = &http_handle->response_info.headers;
     }
 
+    globus_mutex_lock(&http_handle->mutex);
     if (headers->transfer_encoding == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED)
     {
         /* Subtract off the amount of data which can be attributed to chunk
@@ -1139,6 +1215,11 @@ globus_i_xio_http_write_callback(
     else if (headers->content_length_set)
     {
         headers->content_length -= nbytes;
+
+        if (headers->content_length == 0)
+        {
+            http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
+        }
     }
     http_handle->write_operation.iov = NULL;
     http_handle->write_operation.iovcnt = 0;
@@ -1146,20 +1227,39 @@ globus_i_xio_http_write_callback(
     http_handle->write_operation.nbytes = 0;
     http_handle->write_operation.wait_for = 0;
 
-    if (headers->transfer_encoding
-            == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY &&
-        headers->content_length_set && headers->content_length == 0)
-    {
-        /* Wrote the end of the content */
-        globus_i_xio_http_handle_cntl(
-                http_handle,
-                GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY, dummy); 
+    globus_mutex_unlock(&http_handle->mutex);
 
-    }
     globus_xio_driver_finished_write(op, result, nbytes);
 }
 /* globus_i_xio_http_write_callback() */
 
+/**
+ * Close an HTTP handle
+ * @ingroup globus_i_xio_http_transform
+ *
+ * Starts the process of closing the handle. If the request or response
+ * contains an entity, but end-of-file hasn't been marked on it yet,
+ * then we call globus_i_xio_http_handle_cntl() to mark the end of the entity.
+ * If the handle is all ready to close, we'll call
+ * globus_i_xio_http_close_internal() to register the close events.
+ *
+ * @param handle
+ *     Void pointer to a #globus_i_xio_http_handle_t.
+ * @param attr
+ *     Close attributes. (Ignored by the HTTP driver).
+ * @param driver_handle
+ *     XIO driver handle associated with this handle which we are closing.
+ *     We ignore this now, as we receive this value when we open the 
+ *     handle and store it in the HTTP handle.
+ * @param op
+ *     Operation associated with the close.
+ *
+ * @retval GLOBUS_XIO_ERROR_ALREADY_REGISTERED
+ *     The handle has already been closed.
+ * @retval GLOBUS_XIO_ERROR_PARAMETER
+ *     The handle is in some unexpected state and the close could not
+ *     be handled.
+ */
 globus_result_t
 globus_i_xio_http_close(
     void *                              handle,
@@ -1167,8 +1267,104 @@ globus_i_xio_http_close(
     globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
-    va_list                             dummy;
+    globus_result_t                     result;
     globus_i_xio_http_handle_t *        http_handle = handle;
+    GlobusXIOName(globus_i_xio_http_close);
+
+    globus_mutex_lock(&http_handle->mutex);
+    switch (http_handle->send_state)
+    {
+        case GLOBUS_XIO_HTTP_CLOSE:
+            /* Close already called */
+            result = GlobusXIOErrorAlreadyRegistered();
+            break;
+
+        case GLOBUS_XIO_HTTP_STATUS_LINE:
+        case GLOBUS_XIO_HTTP_CHUNK_BODY:
+            http_handle->close_operation = op;
+            http_handle->user_close = GLOBUS_TRUE;
+
+            result = globus_i_xio_http_set_end_of_entity(http_handle);
+
+            if (result != GLOBUS_SUCCESS)
+            {
+                http_handle->close_operation = NULL;
+                http_handle->user_close = GLOBUS_FALSE;
+            }
+            break;
+
+        case GLOBUS_XIO_HTTP_IDENTITY_BODY:
+            globus_assert(http_handle->send_state
+                    != GLOBUS_XIO_HTTP_IDENTITY_BODY);
+        case GLOBUS_XIO_HTTP_REQUEST_LINE:
+            globus_assert(http_handle->send_state
+                    != GLOBUS_XIO_HTTP_REQUEST_LINE);
+        case GLOBUS_XIO_HTTP_HEADERS:
+            globus_assert(http_handle->send_state
+                    != GLOBUS_XIO_HTTP_HEADERS);
+        case GLOBUS_XIO_HTTP_CHUNK_CRLF:
+            globus_assert(http_handle->send_state
+                    != GLOBUS_XIO_HTTP_CHUNK_CRLF);
+        case GLOBUS_XIO_HTTP_CHUNK_LINE:
+            globus_assert(http_handle->send_state
+                    != GLOBUS_XIO_HTTP_CHUNK_LINE);
+        case GLOBUS_XIO_HTTP_CHUNK_FOOTERS:
+            globus_assert(http_handle->send_state
+                    != GLOBUS_XIO_HTTP_CHUNK_FOOTERS);
+
+            result = GlobusXIOErrorParameter("header");
+            break;
+
+        case GLOBUS_XIO_HTTP_EOF:
+            http_handle->close_operation = op;
+            http_handle->user_close = GLOBUS_TRUE;
+
+            if (http_handle->write_operation.operation != NULL)
+            {
+                /* EOF writing in progress, return success and eof callback
+                 * will finish the close
+                 */
+                result = GLOBUS_SUCCESS;
+                break;
+            }
+
+            result = globus_i_xio_http_close_internal(http_handle);
+
+            if (result != GLOBUS_SUCCESS)
+            {
+                http_handle->close_operation = NULL;
+                http_handle->user_close = GLOBUS_FALSE;
+            }
+            break;
+    }
+    globus_mutex_unlock(&http_handle->mutex);
+
+    return result;
+}
+/* globus_i_xio_http_close() */
+
+/**
+ * Close an http handle
+ * @ingroup globus_i_xio_http_transform
+ *
+ * Pass the close event to the transport. This is either called by the above
+ * or after the end-of-entity callback occurs.  In the server case, we delay
+ * 100ms before passing the close to the transport, this seems to help avoid
+ * some ECONNRESET errors on the client side---more investigation is needed to
+ * remove this hack.
+ *
+ * Called with mutex locked.
+ *
+ * @param http_handle
+ *     The HTTP handle we will be closing
+ *
+ * @return
+ * This function returns the error result of globus_xio_driver_pass_close().
+ */
+globus_result_t
+globus_i_xio_http_close_internal(
+    globus_i_xio_http_handle_t *        http_handle)
+{
     globus_i_xio_http_header_info_t *   headers;
     globus_result_t                     result;
     globus_reltime_t                    delay;
@@ -1182,85 +1378,60 @@ globus_i_xio_http_close(
         headers = &http_handle->response_info.headers;
     }
 
+    http_handle->send_state = GLOBUS_XIO_HTTP_CLOSE;
 
-    http_handle->close_operation = op;
-    http_handle->user_close = GLOBUS_TRUE;
-
-    if (http_handle->send_state == GLOBUS_XIO_HTTP_CHUNK_BODY ||
-            http_handle->send_state == GLOBUS_XIO_HTTP_STATUS_LINE)
+    if (! http_handle->target_info.is_client)
     {
-        result = globus_i_xio_http_handle_cntl(
-                http_handle,
-                GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY,
-                dummy); 
+        /* Server will wait 100ms before closing connection */
+        GlobusTimeReltimeSet(delay, 0, 100000);
 
-        if (result != GLOBUS_SUCCESS)
+        result = globus_callback_register_oneshot(
+                NULL,
+                &delay,
+                globus_l_xio_http_server_close_kickout,
+                http_handle);
+
+        if (result == GLOBUS_SUCCESS)
         {
-            goto reset_close_op_exit;
+            goto finish;
         }
+
     }
-    else
-    {
-        if (! http_handle->target_info.is_client)
-        {
-            /* Server will wait 100ms before closing connection */
-            http_handle->close_operation = op;
-            http_handle->user_close = GLOBUS_TRUE;
-
-            GlobusTimeReltimeSet(delay, 0, 100000);
-
-            result = globus_callback_register_oneshot(
-                    NULL,
-                    &delay,
-                    globus_l_xio_http_server_close_kickout,
-                    http_handle);
-
-            if (result == GLOBUS_SUCCESS)
-            {
-                goto finish;
-            }
-
-        }
-        result = globus_xio_driver_pass_close(
-                op,
-                globus_i_xio_http_close_callback,
-                handle);
-
-        if (result != GLOBUS_SUCCESS)
-        {
-            goto reset_close_op_exit;
-        }
-    }
+    /* If the above fails, we'll continue through to here */
+    result = globus_xio_driver_pass_close(
+            http_handle->close_operation,
+            globus_i_xio_http_close_callback,
+            http_handle);
 
 finish:
     return result;
-
-reset_close_op_exit:
-    http_handle->close_operation = NULL;
-    http_handle->user_close = GLOBUS_FALSE;
-    return result;
 }
-/* globus_i_xio_http_close() */
+/* globus_i_xio_http_close_internal() */
 
 void
 globus_i_xio_http_close_callback(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg)
 {
-    globus_i_xio_http_handle_t *            http_handle = user_arg;
-    globus_xio_driver_handle_t              driver_handle = http_handle->handle;
+    globus_i_xio_http_handle_t *        http_handle = user_arg;
+    globus_xio_driver_handle_t          driver_handle = http_handle->handle;
 
+    globus_mutex_lock(&http_handle->mutex);
+    /*
+     * If the close is generated by a failure during open (after we've
+     * opened the transport, then this flag is set to false.
+     */
     if (http_handle->user_close)
     {
+        globus_mutex_unlock(&http_handle->mutex);
         globus_xio_driver_finished_close(op, result);
     }
     else
     {
+        globus_mutex_unlock(&http_handle->mutex);
         globus_xio_driver_operation_destroy(http_handle->close_operation);
     }
-    http_handle->user_close = GLOBUS_FALSE;
-    http_handle->close_operation = GLOBUS_NULL;
     globus_xio_driver_handle_close(driver_handle);
 
     globus_i_xio_http_handle_destroy(user_arg);

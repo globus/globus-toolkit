@@ -37,6 +37,16 @@ globus_i_xio_http_handle_init(
     globus_i_xio_http_target_t *        target)
 {
     globus_result_t                     result;
+    int                                 rc;
+    GlobusXIOName(globus_i_xio_http_handle_init);
+
+    rc = globus_mutex_init(&http_handle->mutex, NULL);
+
+    if (rc != 0)
+    {
+        result = GlobusXIOErrorMemory("mutex");
+        goto error_exit;
+    }
 
     if (target->is_client && attr != NULL)
     {
@@ -62,7 +72,7 @@ globus_i_xio_http_handle_init(
 
     if (result != GLOBUS_SUCCESS)
     {
-        goto error_exit;
+        goto free_mutex_exit;
     }
 
     result = globus_i_xio_http_response_init(&http_handle->response_info);
@@ -102,6 +112,8 @@ free_response_exit:
     globus_i_xio_http_response_destroy(&http_handle->response_info);
 free_request_exit:
     globus_i_xio_http_request_destroy(&http_handle->request_info);
+free_mutex_exit:
+    globus_mutex_destroy(&http_handle->mutex);
 error_exit:
     return result;
 }
@@ -125,6 +137,7 @@ globus_i_xio_http_handle_destroy(
 {
     int                                 i;
 
+    globus_mutex_destroy(&http_handle->mutex);
     globus_i_xio_http_request_destroy(&http_handle->request_info);
     globus_i_xio_http_response_destroy(&http_handle->response_info);
     globus_i_xio_http_target_destroy_internal(&http_handle->target_info);
@@ -181,13 +194,13 @@ globus_i_xio_http_handle_cntl(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_xio_http_handle_t *        http_handle = handle;
-    globus_i_xio_http_header_info_t *   headers;
     char *                              in_str;
     char *                              in_str2;
     char *                              save_str;
     int                                 in_int;
-    static globus_xio_iovec_t           end_of_body_iovec = { "0\r\n\r\n", 5 };
     GlobusXIOName(globus_i_xio_http_handle_cntl);
+
+    globus_mutex_lock(&http_handle->mutex);
 
     switch (cmd)
     {
@@ -288,67 +301,86 @@ globus_i_xio_http_handle_cntl(
                     va_arg(ap, globus_xio_http_version_t);
             break;
         case GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY:
-            if (http_handle->write_operation.operation != NULL)
-            {
-                result = GlobusXIOErrorAlreadyRegistered();
-                break;
-            }
-            else if (http_handle->target_info.is_client)
-            {
-                headers = &http_handle->request_info.headers;
-            }
-            else
-            {
-                headers = &http_handle->response_info.headers;
-            }
-            
-            if (http_handle->send_state == GLOBUS_XIO_HTTP_STATUS_LINE)
-            {
-                /* To send an empty response from server */
-                result = globus_i_xio_http_server_write_response(
-                        http_handle,
-                        NULL,
-                        0,
-                        NULL);
-            }
-            else if (http_handle->send_state == GLOBUS_XIO_HTTP_CHUNK_BODY)
-            {
-                result = globus_xio_driver_operation_create(
-                        &http_handle->write_operation.operation,
-                        http_handle->handle);
-
-                if (result != GLOBUS_SUCCESS)
-                {
-                    break;
-                }
-
-                result = globus_xio_driver_pass_write(
-                        http_handle->write_operation.operation,
-                        &end_of_body_iovec,
-                        1,
-                        5,
-                        globus_l_xio_http_write_eof_callback,
-                        http_handle);
-
-                if (result != GLOBUS_SUCCESS)
-                {
-                    globus_xio_driver_operation_destroy(
-                            http_handle->write_operation.operation);
-                }
-                else
-                {
-                    http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
-                }
-            }
+            result = globus_i_xio_http_set_end_of_entity(http_handle);
 
             break;
         default:
             result = GlobusXIOErrorParameter("cmd");
             break;
     }
+    globus_mutex_unlock(&http_handle->mutex);
     return result;
 }
 /* globus_i_xio_http_handle_cntl() */
+
+/**
+ * Called with mutex locked
+ */
+globus_result_t
+globus_i_xio_http_set_end_of_entity(
+    globus_i_xio_http_handle_t *        http_handle)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_i_xio_http_header_info_t *   headers;
+    static globus_xio_iovec_t           end_of_body_iovec = { "0\r\n\r\n", 5 };
+    GlobusXIOName(globus_i_xio_http_set_end_of_entity);
+
+    if (http_handle->write_operation.operation != NULL)
+    {
+        result = GlobusXIOErrorAlreadyRegistered();
+
+        goto error_exit;
+    }
+    else if (http_handle->target_info.is_client)
+    {
+        headers = &http_handle->request_info.headers;
+    }
+    else
+    {
+        headers = &http_handle->response_info.headers;
+    }
+    
+    if (http_handle->send_state == GLOBUS_XIO_HTTP_STATUS_LINE)
+    {
+        /* To send an empty response from server */
+        result = globus_i_xio_http_server_write_response(
+                http_handle,
+                NULL,
+                0,
+                NULL);
+    }
+    else if (http_handle->send_state == GLOBUS_XIO_HTTP_CHUNK_BODY)
+    {
+        result = globus_xio_driver_operation_create(
+                &http_handle->write_operation.operation,
+                http_handle->handle);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+
+        result = globus_xio_driver_pass_write(
+                http_handle->write_operation.operation,
+                &end_of_body_iovec,
+                1,
+                5,
+                globus_l_xio_http_write_eof_callback,
+                http_handle);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_xio_driver_operation_destroy(
+                    http_handle->write_operation.operation);
+        }
+        else
+        {
+            http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
+        }
+    }
+error_exit:
+    return result;
+}
 
 static
 void
@@ -358,8 +390,20 @@ globus_l_xio_http_write_eof_callback(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
+    globus_i_xio_http_handle_t *        http_handle = user_arg;
+
+    globus_mutex_lock(&http_handle->mutex);
+
     /* How should error be handled here? */
     globus_xio_driver_operation_destroy(op);
+
+    http_handle->write_operation.operation = NULL;
+
+    if (http_handle->close_operation != NULL)
+    {
+        result = globus_i_xio_http_close_internal(http_handle);
+    }
+    globus_mutex_unlock(&http_handle->mutex);
 
     return;
 }
