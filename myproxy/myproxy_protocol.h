@@ -212,4 +212,17 @@ void myproxy_free(myproxy_socket_attrs_t *attrs, myproxy_request_t *request, myp
  */
 int myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response); 
 
+/*
+ * myproxy_handle_authorization()
+ *
+ * If MYPROXY_AUTHORIZATION_RESPONSE is received, pass it to this
+ * function to be processed.
+ *
+ */
+int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
+				 myproxy_response_t *server_response,
+				 myproxy_request_t *client_request,
+				 char *certfile,
+				 int  use_kerberos);
+
 #endif /* __MYPROXY_PROTOCOL_H */
