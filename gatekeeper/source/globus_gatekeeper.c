@@ -859,6 +859,50 @@ main(int xargc,
         exit(0);
     }
 
+    {
+      char hostname[255];
+      char *globusid;
+      struct hostent *hp;
+      char *fqdn;
+      char * contact_string;
+      
+      gethostname(hostname, sizeof(hostname)-1);
+      
+      if ((hp = gethostbyname(hostname)))
+      {
+          fqdn = (char *) hp->h_name;
+      }
+      else
+      {
+          fqdn = (hostname ? hostname : "HOSTNAME");
+      }
+      
+      globusid = get_globusid();
+      
+      /* ajr,vs --changed printf to sprintf, and added grami_setenv
+       * This is considered to be a temporary change */
+      if ((contact_string = (char *)malloc(strlen(fqdn) 
+                + strlen(globusid) + 8 ))) 
+      {
+	
+          sprintf(contact_string, "%s:%.*d:%s",
+                  fqdn, 5, daemon_port, globusid);
+          if (!run_from_inetd)
+              printf("GRAM contact: %s\n", contact_string);
+          grami_setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
+                  contact_string,
+                  1);
+     
+          if (!run_from_inetd)
+              notice3(LOG_INFO, "GRAM contact: %.*s\n",
+                   strlen(tmpbuf)-15, contact_string);
+
+          free(contact_string);
+      }
+      free(globusid);
+    }
+
+
     if (run_from_inetd)
     {
 		(void) setsid();
@@ -880,43 +924,6 @@ main(int xargc,
 	}
 #       endif
 
-        {
-            char hostname[255];
-            char *globusid;
-            struct hostent *hp;
-            char *fqdn;
-
-            gethostname(hostname, sizeof(hostname)-1);
-
-            if ((hp = gethostbyname(hostname)))
-            {
-                fqdn = (char *) hp->h_name;
-            }
-            else
-            {
-                fqdn = (hostname ? hostname : "HOSTNAME");
-            }
-
-            globusid = get_globusid();
-	    
-	    /* ajr,vs --changed printf to sprintf, and added grami_setenv
-	     * This is considered to be a temporary change */
-	    if (strlen(fqdn) + strlen(globusid) + 7 < 512)
-	    {
-		char contact_string[512];
-		
-		sprintf(contact_string, "%s:%d:%s",
-			fqdn, daemon_port, globusid);
-		printf("GRAM contact: %s\n", contact_string);
-		grami_setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
-			     contact_string,
-			     1);
-	    }
-	    
-	    notice4(LOG_INFO, "GRAM contact: %s:%d:%s\n",
-		    fqdn, daemon_port, globusid);
-            free(globusid);
-        }
 
         if (!foreground)
         {
