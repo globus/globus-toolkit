@@ -1342,10 +1342,15 @@ globus_xio_driver_client_target_pass(
         res = GlobusXIOErrorParameter("target_op");
         goto err;
     }
-
-    my_op = &target_op->entry[target_op->ndx];
-    target_op->ndx++;
-
+    
+    do
+    {
+        my_op = &target_op->entry[target_op->ndx];
+        target_op->ndx++;
+    }
+    while(my_op->driver->target_init_func == NULL &&
+        target_op->ndx < target_op->stack_size);
+    
     if(my_op->driver->target_init_func != NULL)
     {
         res = my_op->driver->target_init_func(
