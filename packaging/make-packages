@@ -7,7 +7,7 @@
 # make_source_package will create a GPT package containing subdir
 # with the metadata in pkg_data_src.gpt
 
-version="0.2"
+version="0.3"
 
 usage () {
 	echo $0: Usage:  $0 [-p package] [-t tag] [-n] [-h]
@@ -100,16 +100,11 @@ install_gpt() {
 }
 
 install_gt2() {
-	export GLOBUS_LOCATION=`pwd`/gt2-installation
-	if [ -d gt2-installation ]; then
-		echo Skipping GT2 installation.
-		echo Delete gt2-installation to force rebuild
-	else
-		echo Installing custom GT2 bundle
-		$GPT_LOCATION/sbin/gpt-install fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz
-		$GPT_LOCATION/sbin/gpt-build -force fait_accompli/globus_core-2.8.tar.gz gcc32dbg
-		$GPT_LOCATION/sbin/gpt-postinstall
-	fi
+	export GLOBUS_LOCATION=$1
+	echo Installing custom GT2 bundle
+	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz
+	$GPT_LOCATION/sbin/gpt-build -force fait_accompli/globus_core-2.8.tar.gz gcc32dbg
+	$GPT_LOCATION/sbin/gpt-postinstall
 	echo
 }
 
@@ -177,7 +172,7 @@ make_binary_package() {
 # Go to subdir, run the build script.
 # Copy gar if one is specified.
 make_source_package() {
-	export destdir=`pwd`/${name}-0.2-src/
+	export destdir=`pwd`/${name}-0.3-src/
 
 	if [ -d $destdir ]; then
 		echo Skipping package $name;
@@ -247,15 +242,21 @@ collate_packages() {
 
 	$GPT_LOCATION/sbin/gpt-bundle -srcdir=package-output -all -exclude=mmjfs -exclude=gt3_hostinfo -exclude=sdb
 
-	cp fait_accompli/* package-output
-	cp install-alpha2-src package-output
+	# cp fait_accompli/* package-output
+
 }
 
 install_bundle() {
 	echo Installing into $dir
-
 	$GPT_LOCATION/sbin/gpt-build --installdir=$dir package-output/gpt_bundle_src.tar.gz gcc32dbg
 
+	echo Collecting GT3 binaries from $dir
+	$GPT_LOCATION/sbin/gpt-pkg --installdir=$dir -all
+
+	$GPT_LOCATION/sbin/gpt-bundle -all -bindir=binaries
+
+	echo Installing GT2 dep bundle into $dir
+	install_gt2 $dir
 }
 
 read_args() {
@@ -333,9 +334,9 @@ if [ $onlyc != 1 ]; then
 	echo
 fi
 
-install_gt2
 
 # echo Building C-dependent packages
+# install_gt2
 # install_cdeps
 # dir_iter package-list-cdeps
 
