@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <md5global.h>
 #include <md5.h>
 
 /*
