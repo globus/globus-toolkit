@@ -63,87 +63,134 @@ int
 main(int argc, char *argv[]) 
 {    
     int rc;
+    int is_err = 0;
+    char *username; 
+    char error_string[1024];
+    char proxyfile[64];
     char request_buffer[1024], response_buffer[1024];
     int requestlen, responselen;
-    char proxyfile[64];
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
-    myproxy_response_t     *client_response;
+    myproxy_response_t     *server_response;
     
     socket_attrs = malloc(sizeof(*socket_attrs));
     client_request = malloc(sizeof(*client_request));
-    client_response = malloc(sizeof(*client_response));
+    server_response = malloc(sizeof(*server_response));
 
+    /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
     strcpy(client_request->version, MYPROXY_VERSION);
-    client_request->command = (char *)malloc(strlen(MYPROXY_PUT_COMMAND) + 1);
-    sprintf(client_request->command, "%s", MYPROXY_PUT_COMMAND);
+    client_request->command_type = MYPROXY_PUT_PROXY;
 
+    username = getenv("LOGNAME");
+    client_request->username = malloc(strlen(username)+1);
+    strcpy(client_request->username, username);
+
+    client_request->hours    = MYPROXY_DEFAULT_HOURS;
+ 
+    socket_attrs->psport = MYPROXYSERVER_PORT;
+    socket_attrs->pshost = malloc(strlen(MYPROXYSERVER_HOST) + 1);
+    sprintf(socket_attrs->pshost, "%s", MYPROXYSERVER_HOST);
+
+
+    /* Initialize client arguments and create client request object */
     if (init_arguments(argc, argv, socket_attrs, client_request) < 0) {
         fprintf(stderr, usage);
-	exit(1);
+        exit(1);
     }
 
-    sprintf(proxyfile, "MYPROXY_DEFAULT_PROXY.%s", client_request->username);
+    /* Create a proxy by running [grid-proxy-init] */
+    sprintf(proxyfile, "%s.%s", MYPROXY_DEFAULT_PROXY, client_request->username);
     if (grid_proxy_init(client_request->hours, proxyfile) != 0) {
         fprintf(stderr, "Program grid_proxy_init failed\n");
         exit(1);
     }
 
+    /* Allow user to provide a passphrase */
     if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1) < 0) {
-	fprintf(stderr, "error in myproxy_read_passphrase()\n");
-	exit(1);
+        fprintf(stderr, "error in myproxy_read_passphrase()\n");
+        exit(1);
     }
     
+    /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-	fprintf(stderr, "error in myproxy_init_client()\n");
-	exit(1);
-    }
-    
-    requestlen = myproxy_create_request(client_request, 
-					request_buffer, sizeof(request_buffer));
-    
-    if (requestlen < 0) {
-	fprintf(stderr, "error in myproxy_create_request()\n");
-	exit(1);
+        fprintf(stderr, "error in myproxy_init_client()\n");
+        exit(1);
     }
 
-    if (myproxy_send_request(socket_attrs, request_buffer, requestlen) < 0) {
-	fprintf(stderr, "error in myproxy_send_request()\n");
-	exit(1);
+    /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs) < 0) {
+        fprintf(stderr, "error in myproxy_authenticate_init()\n");
+        exit(1);
     }
 
-    responselen = myproxy_recv_response(socket_attrs, 
-					response_buffer, sizeof(response_buffer));
-    if (responselen < 0) {
-	fprintf(stderr, "error in myproxy_recv_response()\n");
-	exit(1);
+    /* Delegate credentials to server  */
+    if (myproxy_init_delegation(socket_attrs, proxyfile) < 0) {
+        fprintf(stderr, "error in myproxy_delegate_proxy()\n");
+        exit(1);
     }
 
-    if (myproxy_create_response(client_response, response_buffer, responselen) < 0) {
-      fprintf(stderr, "error in myproxy_create_response()\n");
-      exit(1);
-    }
-    
-
-    /* Check response */
-    if (myproxy_check_response(client_response) != 0) {
-      fprintf(stderr, "error in myproxy_check_response()\n");
-      exit(1);
-    }
-
-    if (myproxy_delegate_proxy(socket_attrs, proxyfile) < 0) {
-      fprintf(stderr, "error in myproxy_delegate_proxy()\n");
-      exit(1);
-    }
-
+    /* Delete proxy file */
     if (grid_proxy_destroy(proxyfile) != 0) {
         fprintf(stderr, "Program grid_proxy_destroy failed\n");
         exit(1);
     }
 
-    (void)myproxy_destroy_client(socket_attrs, client_request, client_response);
+    /* Serialize client request object */
+    requestlen = myproxy_serialize_request(client_request, 
+                                           request_buffer, sizeof(request_buffer));
+    
+    if (requestlen < 0) {
+        fprintf(stderr, "error in myproxy_serialize_request()\n");
+        exit(1);
+    }
+
+    /* Send request to the myproxy-server */
+    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
+        fprintf(stderr, "error in myproxy_send_request()\n");
+        exit(1);
+    }
+
+    /* Receive a response from the server */
+    responselen = myproxy_recv(socket_attrs, 
+                               response_buffer, sizeof(response_buffer));
+    if (responselen < 0) {
+        fprintf(stderr, "error in myproxy_recv_response()\n");
+        exit(1);
+    }
+
+    /* Make a response object from the response buffer */
+    if (myproxy_deserialize_response(server_response, response_buffer, responselen) < 0) {
+      fprintf(stderr, "error in myproxy_deserialize_response()\n");
+      exit(1);
+    }
+
+    /* Check version */
+    if (strcmp(server_response->version, MYPROXY_VERSION) != 0) {
+      fprintf(stderr, "Invalid version number received from server\n");
+      is_err = 1;
+    } 
+
+    /* Check response */
+    switch(server_response->response_type) {
+        case MYPROXY_ERROR_RESPONSE:
+            strcat(error_string, server_response->error_string);
+            is_err = 1;
+            break;
+        case MYPROXY_OK_RESPONSE:
+            break;
+        default:
+            strcat(error_string, "Invalid response type received.\n");
+            is_err = 1;
+            break;
+    }
+
+    if (is_err) {
+      fprintf(stderr, "%s", error_string);
+    }
+    
+    myproxy_destroy(socket_attrs, client_request, server_response);
 
     exit(0);
 }
@@ -159,14 +206,6 @@ init_arguments(int argc,
 
     int arg;
     int arg_error = 0;
-
-    /* setup defaults */
-    request->username = getenv("LOGNAME");
-    request->hours    = MYPROXY_DEFAULT_HOURS; 
-    request->command  = malloc(strlen(MYPROXY_PUT_COMMAND) + 1);
-    sprintf(request->command, "%s", MYPROXY_PUT_COMMAND); 
-    attrs->psport = MYPROXYSERVER_PORT;
-    attrs->pshost = MYPROXYSERVER_HOST;
 
     while((arg = getopt_long(argc, argv, short_options, 
 			     long_options, NULL)) != EOF) 
@@ -212,8 +251,8 @@ grid_proxy_init(int hours, const char *proxyfile) {
   
   int rc;
   char command[128];
-
-  sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);
+  sprintf(command, "grid-proxy-init -hours %d", hours, proxyfile);
+  /*sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);*/
   rc = system(command);
 
   return rc;
@@ -225,7 +264,8 @@ grid_proxy_destroy(const char *proxyfile) {
     int rc;
     char command[128], file[128];
 
-    sprintf(command, "grid-proxy-destroy %s", proxyfile);
+    sprintf(command, "grid-proxy-destroy", proxyfile);
+    /*sprintf(command, "grid-proxy-destroy %s", proxyfile);*/
     rc = system(command);
 
     return rc;
