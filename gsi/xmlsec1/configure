@@ -11300,7 +11300,6 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
 
 	    OPENSSL_VERSION="0.9.6"
-	    OPENSSL_CFLAGS="$OPENSSL_CFLAGS -DXMLSEC_OPENSSL_096=1"
 
 fi
 rm -f conftest*
