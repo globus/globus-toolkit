@@ -70,13 +70,13 @@ do                                                                      \
  */
 void
 globus_l_xio_server_accept_kickout(
-    void *                                      user_arg)
+    void *                                  user_arg)
 {
-    int                                         ctr;
-    globus_i_xio_target_t *                     xio_target = NULL;
-    globus_bool_t                               destroy_server = GLOBUS_FALSE;
-    globus_i_xio_server_t *                     xio_server;
-    globus_i_xio_op_t *                         xio_op;
+    int                                     ctr;
+    globus_i_xio_target_t *                 xio_target = NULL;
+    globus_bool_t                           destroy_server = GLOBUS_FALSE;
+    globus_i_xio_server_t *                 xio_server;
+    globus_i_xio_op_t *                     xio_op;
     GlobusXIOName(globus_l_xio_server_accept_kickout);
 
     xio_op = (globus_i_xio_op_t *) user_arg;
@@ -171,13 +171,13 @@ globus_l_xio_server_accept_kickout(
  */
 void
 globus_i_xio_server_accept_callback(
-    globus_xio_operation_t                      op,
-    globus_result_t                             result,
-    void *                                      user_arg)
+    globus_xio_operation_t                  op,
+    globus_result_t                         result,
+    void *                                  user_arg)
 {
-    globus_i_xio_server_t *                     xio_server;
-    globus_i_xio_op_t *                         xio_op;
-    globus_bool_t                               accept = GLOBUS_TRUE;
+    globus_i_xio_server_t *                 xio_server;
+    globus_i_xio_op_t *                     xio_op;
+    globus_bool_t                           accept = GLOBUS_TRUE;
 
     xio_op = op;
     xio_server = xio_op->_op_server;
@@ -234,15 +234,15 @@ globus_i_xio_server_accept_callback(
 
 globus_bool_t
 globus_l_xio_accept_timeout_callback(
-    void *                                      user_arg)
+    void *                                  user_arg)
 {
-    globus_i_xio_op_t *                         xio_op;
-    globus_i_xio_server_t *                     xio_server;
-    globus_bool_t                               rc;
-    globus_bool_t                               cancel;
-    globus_bool_t                               accept;
-    globus_bool_t                               timeout = GLOBUS_FALSE;
-    globus_bool_t                               destroy_server = GLOBUS_FALSE;
+    globus_i_xio_op_t *                     xio_op;
+    globus_i_xio_server_t *                 xio_server;
+    globus_bool_t                           rc;
+    globus_bool_t                           cancel;
+    globus_bool_t                           accept;
+    globus_bool_t                           timeout = GLOBUS_FALSE;
+    globus_bool_t                           destroy_server = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_accept_timeout_callback);
 
     xio_op = (globus_i_xio_op_t *) user_arg;
@@ -390,18 +390,18 @@ globus_l_xio_accept_timeout_callback(
  */
 globus_result_t
 globus_xio_server_init(
-    globus_xio_server_t *                       server,
-    globus_xio_attr_t                           server_attr,
-    globus_xio_stack_t                          stack)
+    globus_xio_server_t *                   server,
+    globus_xio_attr_t                       server_attr,
+    globus_xio_stack_t                      stack)
 {
-    globus_list_t *                             list;
-    globus_i_xio_server_t *                     xio_server = NULL;
-    globus_result_t                             res;
-    globus_bool_t                               done = GLOBUS_FALSE;
-    int                                         ctr;
-    int                                         ctr2;
-    int                                         stack_size;
-    void *                                      ds_attr = NULL;
+    globus_list_t *                         list;
+    globus_i_xio_server_t *                 xio_server = NULL;
+    globus_result_t                         res;
+    globus_bool_t                           done = GLOBUS_FALSE;
+    int                                     ctr;
+    int                                     ctr2;
+    int                                     stack_size;
+    void *                                  ds_attr = NULL;
     GlobusXIOName(globus_xio_server_init);
 
     if(server == NULL)
@@ -484,16 +484,16 @@ globus_xio_server_init(
  */
 globus_result_t
 globus_xio_server_cntl(
-    globus_xio_server_t                         server,
-    globus_xio_driver_t                         driver,
-    int                                         cmd,
+    globus_xio_server_t                     server,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
     ...)
 {
-    globus_bool_t                               found = GLOBUS_FALSE;
-    int                                         ctr;
-    globus_result_t                             res = GLOBUS_SUCCESS;
-    va_list                                     ap;
-    globus_i_xio_server_t *                     xio_server;
+    globus_bool_t                           found = GLOBUS_FALSE;
+    int                                     ctr;
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    va_list                                 ap;
+    globus_i_xio_server_t *                 xio_server;
     GlobusXIOName(globus_xio_server_cntl);
 
     if(server == NULL)
@@ -543,15 +543,15 @@ globus_xio_server_cntl(
  */
 globus_result_t
 globus_xio_server_register_accept(
-    globus_xio_server_t                         server,
-    globus_xio_attr_t                           accept_attr,
-    globus_xio_accept_callback_t                cb,
-    void *                                      user_arg)
+    globus_xio_server_t                     server,
+    globus_xio_attr_t                       accept_attr,
+    globus_xio_accept_callback_t            cb,
+    void *                                  user_arg)
 {
-    int                                         ctr;
-    globus_result_t                             res = GLOBUS_SUCCESS;
-    globus_i_xio_server_t *                     xio_server;
-    globus_i_xio_op_t *                         xio_op;
+    int                                     ctr;
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_i_xio_server_t *                 xio_server;
+    globus_i_xio_op_t *                     xio_op;
     GlobusXIOName(globus_xio_server_register_accept);
 
     if(server == NULL)
@@ -667,13 +667,13 @@ globus_xio_server_register_accept(
  */
 globus_result_t
 globus_xio_server_cancel_accept(
-    globus_xio_server_t                         server)
+    globus_xio_server_t                     server)
 {
-    globus_result_t                             res = GLOBUS_SUCCESS;
-    globus_i_xio_server_t *                     xio_server;
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_i_xio_server_t *                 xio_server;
     GlobusXIOName(globus_xio_server_cancel_accept);
 
-    xio_server = (globus_i_xio_server_t *) server;
+    xio_server = (globus_i_xio_server_t *)  server;
 
     globus_mutex_lock(&xio_server->mutex);
     {
@@ -709,13 +709,13 @@ globus_xio_server_cancel_accept(
  */
 globus_result_t
 globus_xio_server_destroy(
-    globus_xio_server_t                         server)
+    globus_xio_server_t                     server)
 {
-    globus_i_xio_server_t *                     xio_server;
-    globus_result_t                             res = GLOBUS_SUCCESS;
-    globus_result_t                             tmp_res;
-    globus_bool_t                               destroy_server = GLOBUS_FALSE;
-    int                                         ctr;
+    globus_i_xio_server_t *                 xio_server;
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_result_t                         tmp_res;
+    globus_bool_t                           destroy_server = GLOBUS_FALSE;
+    int                                     ctr;
     GlobusXIOName(globus_xio_server_destroy);
 
     if(server == NULL)
@@ -767,12 +767,12 @@ globus_xio_server_destroy(
 
 globus_result_t
 globus_xio_target_destroy(
-    globus_xio_target_t                         target)
+    globus_xio_target_t                     target)
 {   
-    globus_i_xio_target_t *                     xio_target;
-    globus_result_t                             res;
-    globus_result_t                             tmp_res;
-    int                                         ctr;
+    globus_i_xio_target_t *                 xio_target;
+    globus_result_t                         res;
+    globus_result_t                         tmp_res;
+    int                                     ctr;
     GlobusXIOName(globus_xio_target_destroy);
 
     /*
@@ -812,15 +812,15 @@ globus_xio_target_destroy(
  */
 globus_result_t
 globus_xio_target_cntl(
-    globus_xio_target_t                         target,
-    globus_xio_driver_t                         driver,
-    int                                         cmd,
+    globus_xio_target_t                     target,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
     ...)
 {
-    globus_i_xio_target_t *                     xio_target;
-    int                                         ctr;
-    globus_result_t                             res;
-    va_list                                     ap;
+    globus_i_xio_target_t *                 xio_target;
+    int                                     ctr;
+    globus_result_t                         res;
+    va_list                                 ap;
     GlobusXIOName(globus_xio_target_cntl);
 
     if(target == NULL)
@@ -875,18 +875,18 @@ globus_xio_target_cntl(
  */
 globus_result_t
 globus_xio_target_init(
-    globus_xio_target_t *                       target,
-    globus_xio_attr_t                           target_attr,
-    const char *                                contact_string,
-    globus_xio_stack_t                          stack)
+    globus_xio_target_t *                   target,
+    globus_xio_attr_t                       target_attr,
+    const char *                            contact_string,
+    globus_xio_stack_t                      stack)
 {
-    globus_result_t                             res;
-    globus_i_xio_target_t *                     xio_target;
-    int                                         stack_size;
-    int                                         ctr;
-    int                                         ndx;
-    globus_list_t *                             list;
-    void *                                      driver_attr;
+    globus_result_t                         res;
+    globus_i_xio_target_t *                 xio_target;
+    int                                     stack_size;
+    int                                     ctr;
+    int                                     ndx;
+    globus_list_t *                         list;
+    void *                                  driver_attr;
     GlobusXIOName(globus_xio_target_init);
 
     /*
