@@ -26,6 +26,7 @@ my $perljmdir = "$globusdir/lib/perl/Globus/GRAM/JobManager";
 
 GetOptions('service-name|s=s' => \$servicename,
            'manager-type|m=s' => \$manager_type,
+	   'extra-config|e=s' => \$extra_config,
 	   'help|h' => \$help);
 
 &usage() if $help;
@@ -60,17 +61,18 @@ sub create_services_file
                     "${libexecdir}/globus-job-manager globus-job-manager ".
 		    "-conf ${job_manager_conf} -type ${manager_type} ".
 		    "-rdn ${servicename} -machine-type unknown ".
-		    "-publish-jobs\n";
+		    "-publish-jobs $extra_config\n";
 
     $service_file->close();
 }
 
 sub usage
 {
-    print "Usage: $0 [--service-name|-s service_name]
-                     [--manager-type|-m manager_type]
-		     [--force]
-		     [--help]\n";
+    print "Usage: $0 [-service-name|-s service_name]\n".
+          "          [-manager-type|-m manager_type]\n".
+          "          [-extra-config=EXTRA]\n".
+          "          [-force]\n".
+          "          [-help]\n";
     exit 1;
 }
 
