@@ -537,7 +537,6 @@ globus_l_gsc_read_cb(
     return;
 
   err:
-    globus_free(buffer);
     if(command_name != NULL)
     {
         globus_free(command_name);
