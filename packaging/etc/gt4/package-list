@@ -102,6 +102,7 @@ globus_c_wsrf_provider_test                 wsrf/c/core/providers/test gpt
 globus_c_wsrf_resource                      wsrf/c/resource/source gpt
 globus_c_wsrf_resource_test                 wsrf/c/resource/test gpt
 globus_c_ws_security                        wsrf/c/core/security/source gpt
+globus_c_handler_ws_security                wsrf/c/handlers/secure/message/source gpt
 globus_globusrun_ws                         ws-gram/client/c/source gpt
 globus_c_rendezvous_client_bindings         ws-rendezvous/client/c/bindings tar
 globus_c_wsrf_rendezvous_test               ws-rendezvous/client/c/test gpt
