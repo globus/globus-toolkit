@@ -25,9 +25,9 @@ check_expired() {
     cyear=`${GLOBUS_SH_DATE-date} +%Y`
     
     if test ${year} -lt ${cyear}; then
-        return 1
+        echo "1"
     elif test ${year} -gt ${cyear}; then
-        return 0
+        echo "0"
     fi
 
     month=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|\([^0-9]*\).*|\1|"`
@@ -62,9 +62,9 @@ check_expired() {
     cmonnum=`date +%m`
 
     if test ${monnum} -lt ${cmonnum}; then
-        return 1
+       echo "1" 
     elif test ${monnum} -gt ${cmonnum}; then
-        return 0
+       echo "0" 
     fi
 
     day=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*\([0-9]*\).*|\1|"`
@@ -72,9 +72,9 @@ check_expired() {
     cday=`date +%d`
 
     if test ${day} -lt ${cday}; then
-        return 1
+       echo "1" 
     elif test ${day} -gt ${cday}; then
-        return 0
+       echo "0" 
     fi
  
     hour=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ]\([0-9]*\):[0-9]*:[0-9]*.*|\1|"`
@@ -82,9 +82,9 @@ check_expired() {
     chour=`date +%H`
 
     if test ${hour} -lt ${chour}; then
-        return 1
+       echo "1" 
     elif test ${hour} -gt ${chour}; then
-        return 0
+       echo "0"  
     fi
 
     min=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:\([0-9]*\):[0-9]*.*|\1|"`
@@ -92,9 +92,9 @@ check_expired() {
     cmin=`date +%M`
 
     if test ${min} -lt ${cmin}; then
-        return 1
+        echo  "1"
     elif test ${min} -gt ${cmin}; then
-        return 0
+        echo "0"
     fi
 
     sec=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:[0-9]*:\([0-9]*\).*|\1|"`
@@ -102,12 +102,12 @@ check_expired() {
     csec=`date +%S`
 
     if test ${sec} -lt ${csec}; then
-        return 1
+        echo "1"
     elif test ${sec} -gt ${csec}; then
-        return 0
+        echo  "0"
     fi
 
-    return 0
+    echo "0"
 }
 
 
@@ -267,7 +267,8 @@ ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
                   > $tmp_output 2>&1
 
 openssl_result=$?
-
+end_password_input
+ 
 # check to see if an error occurred while signing
 if test ${openssl_result} != 0; then
 
@@ -336,7 +337,7 @@ if test ${openssl_result} != 0; then
         exp_date=`${openssl_cmd} x509 -in ${SIGNED_CERT} -noout -enddate | \
                          ${GLOBUS_SH_SED-sed} -e "s|notAfter=[ ]*||"`
         expired=`check_expired ${exp_date}`
-        if test -n "${force_sign}" || test ${expired} != 0; then
+        if test -n "${force_sign}" || test "${expired}" == "0"; then
 
             echo ""
             echo "Revoking previous certificate"
@@ -348,7 +349,8 @@ if test ${openssl_result} != 0; then
                     -revoke ${SIGNED_CERT} \
                     2> ${tmp_revoke_output}
 	    res=$?
-	    if test $res != 0; then
+	    end_password_input
+            if test $res != 0; then
                 echo ""
 	        echo "ERROR: Failed to revoke previous certificate with subject:"
 		echo "       ${SIGNED_SUBJECT}"
