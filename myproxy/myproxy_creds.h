@@ -147,7 +147,7 @@ int myretrieve(SQLHDBC hdbc, SQLHSTMT hstmt);
 /*
  * my_param_insert()
  */
-void my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt);
+int my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt);
 
 /*
  * read_from_database_for_info ()

@@ -189,7 +189,7 @@ main(int argc, char *argv[])
     if (!use_empty_passwd) {
 	if (myproxy_read_verified_passphrase(client_request->passphrase,
 					     sizeof(client_request->passphrase)) == -1) {
-	    fprintf(stderr, "error in myproxy_read_passphrase(): %s\n",
+	    fprintf(stderr, "%s\n",
 		    verror_get_string());
 	    goto cleanup;
 	}
@@ -197,7 +197,7 @@ main(int argc, char *argv[])
     
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "error in myproxy_init_client(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
         goto cleanup;
     }
@@ -211,7 +211,7 @@ main(int argc, char *argv[])
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
-        fprintf(stderr, "error in myproxy_authenticate_init(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
         goto cleanup;
     }
@@ -220,7 +220,7 @@ main(int argc, char *argv[])
     requestlen = myproxy_serialize_request(client_request, 
                                            request_buffer, sizeof(request_buffer));
     if (requestlen < 0) {
-        fprintf(stderr, "error in myproxy_serialize_request()\n");
+        fprintf(stderr, "%s\n",verror_get_string());
 	goto cleanup;
     }
 
@@ -228,21 +228,21 @@ main(int argc, char *argv[])
     myproxy_log(DBG_HI, debug_level, "Request buffer = %s \nRequestlen = %d\n", request_buffer,requestlen);
 
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "error in myproxy_send_request(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
 	goto cleanup;
     }
 
     /* Continue unless the response is not OK */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "error in myproxy_recv_response(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
         goto cleanup;
     }
     
     /* Delegate credentials to server using the default lifetime of the cert. */
     if (myproxy_init_delegation(socket_attrs, proxyfile, cred_lifetime) < 0) {
-	fprintf(stderr, "error in myproxy_init_delegation(): %s\n", 
+	fprintf(stderr, "%s\n", 
 		verror_get_string());
 	goto cleanup;
     }
@@ -256,7 +256,7 @@ main(int argc, char *argv[])
     
     /* Get final response from server */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "error in myproxy_recv_response(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
         goto cleanup;
     }

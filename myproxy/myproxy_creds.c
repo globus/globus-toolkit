@@ -132,7 +132,7 @@ file_exists(const char *path)
 /********************************************************
 * initialize tables                                     *
 *********************************************************/
-void my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
+int my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
 {
   SQLRETURN   rc;
 
@@ -187,6 +187,8 @@ void my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
     /* commit the transaction*/
     rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
     mycon(hdbc,rc);
+
+   return 0;
 }
 
 /* Retrieve data		                          *
@@ -217,21 +219,22 @@ int my_retrieve(SQLHDBC hdbc, SQLHSTMT hstmt)
    printf ("mpi-9");
    rc = SQLFetch (hstmt);
 
-   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)  //failed
-	return 0;
-
+   /*if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)  //failed
+	return -1;
+*/
+   mystmt (hstmt,rc);
    printf ("mpi-10");
 
    mydbase.owner = strdup (owner);
    mydbase.credname = strdup (credname);
    mydbase.cred_desc = strdup (cred_desc);
-   return (1);
+   return 0;
 }
 
 
 /* Insert data using parameters                          *
 *********************************************************/
-void my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
+int my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
 {
   SQLRETURN   rc;
   SQLINTEGER  id;
@@ -316,6 +319,8 @@ void my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
     /* commit the transaction */
     rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
     mycon(hdbc,rc);
+
+    return 0;
 }
 
 /*
@@ -581,7 +586,8 @@ copy_credential_to_file(struct myproxy_creds *creds, char *filename)
    /*
     * connect to MySQL server
     */ 
-    myconnect(&henv,&hdbc,&hstmt);
+    if (myconnect(&henv,&hdbc,&hstmt) < 0)
+	return -1;
 
     /*
      * retrieve data
@@ -1047,7 +1053,8 @@ char *read_from_database_for_info()
    /*
     * connect to MySQL server
     */ 
-    myconnect(&henv,&hdbc,&hstmt);
+    if (myconnect(&henv,&hdbc,&hstmt) < 0)
+	return NULL;
 
     /*
      * retrieve data
@@ -1055,10 +1062,11 @@ char *read_from_database_for_info()
 
    data = NULL;
    rc = SQLExecDirect (hstmt, "Select owner, cred_name, cred_desc from main", SQL_NTS);
-   mystmt (hstmt,rc);
+   if (mystmt_wrap (hstmt,rc) < 0)
+	return NULL;
 
     memset (&mydbase, 0, sizeof (mydbase));
-    while (my_retrieve(hdbc, hstmt))
+    while (my_retrieve(hdbc, hstmt) == 0)
     {
 	
 	int len = strlen (mydbase.owner)+strlen (mydbase.credname)+strlen(mydbase.cred_desc);	
@@ -1118,7 +1126,8 @@ int retrieve_from_database_given_username_credname(char *username, char *crednam
 	/*
 	 * connect to MySQL server
 	 */ 
-	myconnect(&henv,&hdbc,&hstmt);
+	if (myconnect(&henv,&hdbc,&hstmt) < 0)
+		return -1;
 
 	/* Get size */
 
@@ -1183,12 +1192,13 @@ int retrieve_from_database_given_username_credname(char *username, char *crednam
     return 0;
 }
 
-void write_to_database()
+int write_to_database()
 {
   SQLHENV    henv;
   SQLHDBC    hdbc;
   SQLHSTMT   hstmt;
   SQLINTEGER narg;
+  int retcode = -1;
 
     mydsn = strdup (dbase_name); // connect to default database
     myuid = strdup ("root");
@@ -1198,23 +1208,30 @@ void write_to_database()
    /*
     * connect to MySQL server
     */ 
-    myconnect(&henv,&hdbc,&hstmt);
+    if (myconnect(&henv,&hdbc,&hstmt) < 0)
+	return retcode;
 
     mydsn = strdup (dbase_name); //set dsn to actual database
     /* 
      * initialize table
     */
-    my_init_table(hdbc, hstmt);
+    if (my_init_table(hdbc, hstmt) < 0)
+	goto error;
 
     /*
      * insert data using parameters
     */
-    my_param_insert(hdbc, hstmt);
+    if (my_param_insert(hdbc, hstmt) < 0)
+	goto error;
 
+	retcode = 0;
     /*
      * disconnect from the server, by freeing all resources
     */
+    error:
     mydisconnect(&henv,&hdbc,&hstmt);
+
+   return retcode;
 
 }
 
@@ -1277,7 +1294,8 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     }
 
     printf ("Hi - 3\n");
-    write_to_database ();
+    if (write_to_database () < 0)
+	goto error;
 
     printf ("Hi - 4\n");
     freedbase (&mydbase);

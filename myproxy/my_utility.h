@@ -70,48 +70,49 @@ SQLCHAR *myuid = "venu";
 SQLCHAR *mypwd = "venu";
 */
 /* PROTOTYPE */
-void myerror(SQLRETURN rc,SQLSMALLINT htype, SQLHANDLE handle);
+int myerror(SQLRETURN rc,SQLSMALLINT htype, SQLHANDLE handle);
 
 /* UTILITY MACROS */
 #define myenv(henv,r)  \
-        if ( ((r) != SQL_SUCCESS) ) \
-            myerror(r, 1,henv); \
-        assert( ((r) == SQL_SUCCESS) || ((r) == SQL_SUCCESS_WITH_INFO) )
+        if ( ((r) != SQL_SUCCESS) )  \
+            return myerror(r, 1,henv);
+        //assert( ((r) == SQL_SUCCESS) || ((r) == SQL_SUCCESS_WITH_INFO) ) 
 
 #define myenv_err(henv,r,rc)  \
-        if ( rc == SQL_ERROR || rc == SQL_SUCCESS_WITH_INFO ) \
-            myerror(rc, 1, henv); \
-        assert( r )
+        if ( rc == SQL_ERROR || rc == SQL_SUCCESS_WITH_INFO )  \
+            return myerror(rc, 1, henv) ;
+        //assert( r ) 
 
 #define mycon(hdbc,r)  \
-        if ( ((r) != SQL_SUCCESS) ) \
-            myerror(r, 2, hdbc); \
-        assert( ((r) == SQL_SUCCESS) || ((r) == SQL_SUCCESS_WITH_INFO) )
+        if ( ((r) != SQL_SUCCESS) )  \
+            return myerror(r, 2, hdbc);
+        //assert( ((r) == SQL_SUCCESS) || ((r) == SQL_SUCCESS_WITH_INFO) ) 
 
 #define mycon_err(hdbc,r,rc)  \
-        if ( rc == SQL_ERROR || rc == SQL_SUCCESS_WITH_INFO ) \
-            myerror(rc, 2, hdbc); \
-        assert( r )
+        if ( rc == SQL_ERROR || rc == SQL_SUCCESS_WITH_INFO )  \
+            return myerror(rc, 2, hdbc); 
+        //assert( r ) 
 
 #define mystmt(hstmt,r)  \
-        if ( ((r) != SQL_SUCCESS) ) \
-            myerror(r, 3, hstmt); \
-        assert( ((r) == SQL_SUCCESS) || ((r) == SQL_SUCCESS_WITH_INFO) )
+        if ( ((r) != SQL_SUCCESS) )  \
+            return myerror(r, 3, hstmt) ;
+        //assert( ((r) == SQL_SUCCESS) || ((r) == SQL_SUCCESS_WITH_INFO) ) 
 
 #define mystmt_err(hstmt,r,rc)  \
-        if ( rc == SQL_ERROR || rc == SQL_SUCCESS_WITH_INFO ) \
-            myerror(rc, 3, hstmt); \
-        assert( r )
+        if ( rc == SQL_ERROR || rc == SQL_SUCCESS_WITH_INFO ) { \
+            return myerror(rc, 3, hstmt);
+        //assert( r ) 
 
+int mystmt_wrap(SQLHSTMT h, SQLRETURN r); //wrapper for mystmt macro
 /********************************************************
 * MyODBC 3.51 error handler                             *
 *********************************************************/
-void myerror(SQLRETURN rc, SQLSMALLINT htype, SQLHANDLE handle);
+int myerror(SQLRETURN rc, SQLSMALLINT htype, SQLHANDLE handle);
 
 /********************************************************
 * MyODBC 3.51 connection handler                        *
 *********************************************************/
-void myconnect(SQLHENV *henv,SQLHDBC *hdbc, SQLHSTMT *hstmt);
+int myconnect(SQLHENV *henv,SQLHDBC *hdbc, SQLHSTMT *hstmt);
 
 /********************************************************
 * MyODBC 3.51 closes the connection                     *

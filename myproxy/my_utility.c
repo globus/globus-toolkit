@@ -70,7 +70,7 @@ SQLCHAR *myuid = "venu";
 SQLCHAR *mypwd = "venu";
 
 /* PROTOTYPE */
-void myerror(SQLRETURN rc,SQLSMALLINT htype, SQLHANDLE handle);
+int myerror(SQLRETURN rc,SQLSMALLINT htype, SQLHANDLE handle);
 
 /* UTILITY MACROS */
 #define myenv(henv,r)  \
@@ -103,10 +103,14 @@ void myerror(SQLRETURN rc,SQLSMALLINT htype, SQLHANDLE handle);
             myerror(rc, 3, hstmt); \
         assert( r )
 
+int mystmt_wrap (SQLHSTMT h, SQLRETURN r)
+{
+	mystmt (h,r);
+}
 /********************************************************
 * MyODBC 3.51 error handler                             *
 *********************************************************/
-void myerror(SQLRETURN rc, SQLSMALLINT htype, SQLHANDLE handle)
+int myerror(SQLRETURN rc, SQLSMALLINT htype, SQLHANDLE handle)
 {
   SQLRETURN lrc;
 
@@ -123,16 +127,24 @@ void myerror(SQLRETURN rc, SQLSMALLINT htype, SQLHANDLE handle)
                          SQL_MAX_MESSAGE_LENGTH-1,
                         (SQLSMALLINT *)&pcbErrorMsg);
     if(lrc == SQL_SUCCESS || lrc == SQL_SUCCESS_WITH_INFO)
-      printf("\n [%s][%d:%s]\n",szSqlState,pfNativeError,szErrorMsg);
+    {
+      //printf("\n [%s][%d:%s]\n",szSqlState,pfNativeError,szErrorMsg);
+      verror_put_string("Database error :");
+      verror_put_string("\n [%s][%d:%s]\n",szSqlState,pfNativeError,szErrorMsg);
+    }
+
   }
+    return -1;
 }
 
 /********************************************************
 * MyODBC 3.51 connection handler                        *
 *********************************************************/
-void myconnect(SQLHENV *henv,SQLHDBC *hdbc, SQLHSTMT *hstmt)
+int myconnect(SQLHENV *henv,SQLHDBC *hdbc, SQLHSTMT *hstmt)
 {
+  char buf[257];
   SQLRETURN rc;
+  short buflen;
   
   printf("\nmyconnect:\n");
 
@@ -146,9 +158,14 @@ void myconnect(SQLHENV *henv,SQLHDBC *hdbc, SQLHSTMT *hstmt)
     myenv(*henv,rc);    
 
     printf(" connecting to '%s' with user name '%s'...\n",mydsn,myuid);
-    rc = SQLConnect(*hdbc, mydsn, SQL_NTS, myuid, SQL_NTS,  mypwd, SQL_NTS);
-    mycon(*hdbc,rc);
+    //rc = SQLConnect(*hdbc, mydsn, SQL_NTS, myuid, SQL_NTS,  mypwd, SQL_NTS);
+    //mycon(*hdbc,rc);
 
+    rc = SQLDriverConnect (*hdbc, 0, "DSN=mydbase", SQL_NTS, (UCHAR *) buf, sizeof (buf), &buflen, SQL_DRIVER_COMPLETE);   
+
+  if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+      return -1;
+      
     rc = SQLSetConnectAttr(*hdbc,SQL_ATTR_AUTOCOMMIT,(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
     mycon(*hdbc,rc);
 

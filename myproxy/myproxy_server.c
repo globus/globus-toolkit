@@ -372,7 +372,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
                                     client_request) < 0) {
 	myproxy_log_verror();
         respond_with_error_and_die(attrs,
-				   "error in myproxy_deserialize_request()");
+				   "error");
     }
 
     /* Note request type - retrieval or renewal. For credential adding and info requests these don't matter */
@@ -403,7 +403,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     }
 
     /* XXX Put real pass word policy here */
-    if (client_request->passphrase //&& strlen(client_request->passphrase) 
+    if (client_request->passphrase && strlen(client_request->passphrase) // this allows credentials with no passwords to be stored but not retrieved
 	&& strlen(client_request->passphrase) < MIN_PASS_PHRASE_LEN)
     {
 	myproxy_log(DBG_LO, debug_level, "client %s Pass phrase too short",
@@ -920,6 +920,7 @@ void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
        myproxy_log_verror();
        response->response_type =  MYPROXY_ERROR_RESPONSE;
        strcat(response->error_string, "Unable to check credential.\n");
+       strcat(response->error_string, verror_get_string());
     } else { 
        response->response_type = MYPROXY_OK_RESPONSE;
        response->response_string = strdup (recs);
