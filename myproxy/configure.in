@@ -1,29 +1,29 @@
 AC_INIT(myproxy_server.c)
 
-AC_MSG_CHECKING(for myproxy-server installation path)
+AC_MSG_CHECKING(for myproxy-server installation prefix)
 dnl The default:
 MYPROXY_SERVER_DIR="/usr/local/myproxy-server"
 AC_ARG_WITH(myproxy-server-path,
-	[  -with-myproxy-server-path=PATH  Speicify myproxy-server intall path],
+	[  -with-myproxy-server-path=PATH  Speicify myproxy-server install prefix],
 	MYPROXY_SERVER_DIR=$withval)
 AC_MSG_RESULT($MYPROXY_SERVER_DIR)
 AC_SUBST(MYPROXY_SERVER_DIR)
 
-AC_MSG_CHECKING(for myproxy tools install path)
+AC_MSG_CHECKING(for myproxy tools install prefix)
 dnl The default:
 MYPROXY_TOOLS_DIR="/usr/local"
 AC_ARG_WITH(myproxy-tools-path,
-	[  -with-myproxy-tools-path=PATH  Speicify myproxy tools intall path],
+	[  -with-myproxy-tools-path=PATH  Speicify myproxy tools install prefix],
 	MYPROXY_TOOLS_DIR=$withval)
 AC_MSG_RESULT($MYPROXY_TOOLS_DIR)
 AC_SUBST(MYPROXY_TOOLS_DIR)
 
 
-AC_MSG_CHECKING(for myproxy client install path)
+AC_MSG_CHECKING(for myproxy client install prefix)
 dnl The default:
 MYPROXY_CLIENT_DIR="/usr/local"
 AC_ARG_WITH(myproxy-client-path,
-	[  -with-myproxy-client-path=PATH  Speicify myproxy client intall path],
+	[  -with-myproxy-client-path=PATH  Speicify myproxy client intall prefix],
 	MYPROXY_CLIENT_DIR=$withval)
 AC_MSG_RESULT($MYPROXY_CLIENT_DIR)
 AC_SUBST(MYPROXY_CLIENT_DIR)
@@ -130,6 +130,17 @@ dnl
 dnl Check for vsnprintf()
 dnl
 AC_CHECK_FUNCS(vsnprintf)
+dnl
+dnl Check to see if we need "netlibs" (specifically, libnsl and libsocket)
+dnl
+uname=`(uname) 2>/dev/null`
+if test "$uname" != IRIX -a "$uname" != IRIX64 ; then
+	AC_CHECK_LIB(socket, socket,
+[	SYSLIBS="$SYSLIBS -lsocket"], ,-lnsl)
+	AC_CHECK_LIB(nsl, t_bind,
+[	SYSLIBS="$SYSLIBS -lnsl"])
+fi
+AC_SUBST(SYSLIBS)
 dnl
 dnl
 dnl
