@@ -4266,6 +4266,18 @@ globus_l_gfs_ipc_no_read_write_cb(
         }
         globus_mutex_unlock(&ipc->mutex);
     }
+    else
+    {
+        switch(request->type)
+        {
+            case GLOBUS_GFS_OP_DESTROY:
+            case GLOBUS_GFS_OP_EVENT:
+                globus_free(request);
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 /*
@@ -4808,9 +4820,8 @@ globus_gfs_ipc_request_transfer_event(
     
         request->ipc = ipc_handle;
         request->type = GLOBUS_GFS_OP_EVENT;
-        request->id = globus_handle_table_insert(
-            &ipc_handle->call_table, request, 1);
-
+        request->id = -1;
+        
         if(!ipc->local)
         {
             /* pack the header */
@@ -5291,8 +5302,7 @@ globus_gfs_ipc_request_data_destroy(
         }
         request->ipc = ipc_handle;
         request->type = GLOBUS_GFS_OP_DESTROY;
-        request->id = globus_handle_table_insert(
-            &ipc_handle->call_table, request, 1);
+        request->id = -1;
 
         if(!ipc->local)
         {
@@ -5301,7 +5311,8 @@ globus_gfs_ipc_request_data_destroy(
             ptr = buffer;
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_DESTROY);
-            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
+            /* no reply, no id */
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
             /* pack body */
