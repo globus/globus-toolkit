@@ -1,4 +1,3 @@
-#include "gaa.h"
 #include "gaa_util.h"
 #include <strings.h>
 #include <string.h>
