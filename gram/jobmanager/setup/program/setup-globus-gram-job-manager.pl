@@ -49,7 +49,7 @@ if ( ( -d "$globusdir/etc/grid-services" ) &&
 {
    print "Creating grid service jobmanager...\n";
   
-   if ( ! open(SERVICE, ">jm_service") )
+   if ( ! open(SERVICE, ">$jm_service") )
    {
       print STDERR "open failed for $jm_service\n";
    }
