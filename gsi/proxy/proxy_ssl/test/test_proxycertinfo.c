@@ -21,10 +21,9 @@ int main(int argc, char * argv[])
     ASN1_OBJECT * pol_lang;
 
     int haspclength, haspolicy, pclength;
-    int ind, from_file, to_file, version;
+    int ind, from_file, to_file;
 
     from_file = to_file = haspclength = haspolicy = pclength = 0;
-    version = 1;
 
     if(argc > 1)
     {	
@@ -39,13 +38,6 @@ int main(int argc, char * argv[])
 		ind++;
                 continue;
 	    }
-            else if(!strcmp(argv[ind], "-version"))
-            {
-                ind++;
-                version = atoi(argv[ind]);
-                ind++;
-                continue;
-            }
 	    else if(!strcmp(argv[ind], "-rest"))
 	    {
 		ind++;
@@ -108,8 +100,6 @@ int main(int argc, char * argv[])
     else
     {
 	pcinfo = PROXYCERTINFO_new();
-	
-        PROXYCERTINFO_set_version(pcinfo, version);
 	
 	if(haspclength)
 	{

@@ -101,7 +101,7 @@ $SIG{'KILL'} = 'sig_handler';
 
 push(@tests, "basic_func(1, \"-path 10 -rest POLICYLANGUAGE POLICY\");");
 push(@tests, "basic_func(2, \"-path 10\");");
-push(@tests, "basic_func(3, \"-path 0 -rest POLICYLANGUAGE POLICY -version 10\");");
+push(@tests, "basic_func(3, \"-path 0 -rest POLICYLANGUAGE POLICY\");");
 push(@tests, "basic_func(4, \"-rest POLICYLANGUAGE POLICY\");");
 push(@tests, "basic_func(5, \"-out test_pci5.der\");");
 
