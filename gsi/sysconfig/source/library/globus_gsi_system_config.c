@@ -4915,7 +4915,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
     }
 
     while(globus_libc_readdir_r(secure_tmp_dir, &dir_entry) == 0 &&
-          tmp_entry != NULL)
+          dir_entry != NULL)
     {
         if((default_filename && 
             !strcmp(dir_entry->d_name, default_filename)) ||
