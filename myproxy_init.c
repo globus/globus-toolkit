@@ -269,7 +269,7 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
         }	
         i = strlen(pass) - 1;
         if ((i < min) || (i > max)) {
-            printf("Password must be between %d and %d characters\n, min, max");
+            printf("Password must be between %d and %d characters\n", min, max);
         } else {
             done = 1;
         }
