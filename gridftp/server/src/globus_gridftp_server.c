@@ -1055,9 +1055,6 @@ main(
     /* init all the server modules */
     globus_i_gfs_config_init(argc, argv);
     globus_i_gfs_log_open();
-    globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
-            "Server started\n");
     globus_l_gfs_signal_init();
     globus_i_gfs_data_init();
     globus_gfs_ipc_init(!globus_i_gfs_config_bool("data_node"), NULL);
@@ -1155,6 +1152,9 @@ main(
         {
             freopen("/dev/null", "w+", stdout);
             freopen("/dev/null", "w+", stderr);
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO,
+                "Server started in inetd mode.\n");
             if(config)
             {
                 globus_i_gfs_log_message(
@@ -1165,11 +1165,14 @@ main(
         }
         else
         {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO,
+                "Server started in daemon mode.\n");
             if(config)
             {
                 globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_INFO,
-                    "Configuration read from %s\n", config);
+                    "Configuration read from %s.\n", config);
             }            
             result = globus_l_gfs_be_daemon();
         }
