@@ -59,9 +59,6 @@
 /* Define if you are on Cygwin */
 #undef HAVE_CYGWIN
 
-/* Define if you lack native POSIX regex and you are using PCRE */
-#undef HAVE_LIBPCRE
-
 /* Define if you have a broken realpath. */
 #undef BROKEN_REALPATH
 
@@ -88,9 +85,6 @@
 
 /* Define if you want IRIX kernel jobs */
 #undef WITH_IRIX_JOBS
-
-/* Location of random number pool  */
-#undef RANDOM_POOL
 
 /* Location of PRNGD/EGD random number socket */
 #undef PRNGD_SOCKET
@@ -275,9 +269,6 @@
 #undef HAVE_SS_FAMILY_IN_SS
 #undef HAVE___SS_FAMILY_IN_SS
 
-/* Define if you have a regcomp() function */
-#undef HAVE_REGCOMP
-
 /* Define if you have /dev/ptmx */
 #undef HAVE_DEV_PTMX
 
@@ -340,6 +331,9 @@
 
 /* Define if you want smartcard support */
 #undef SMARTCARD
+
+/* Define if you want to use OpenSSL's internally seeded PRNG only */
+#undef OPENSSL_PRNG_ONLY
 
 @BOTTOM@
 
