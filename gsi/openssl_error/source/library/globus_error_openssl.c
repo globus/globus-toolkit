@@ -554,6 +554,7 @@ globus_error_initialize_openssl_error(
          * openssl error chain
          */
         error = base_cause;
+        globus_i_openssl_error_handle_destroy(openssl_error_handle);
         goto done;
     }
 
