@@ -66,14 +66,6 @@ myproxy_socket_attrs_t *socket_attrs,
         return(1);
     }
     
-#if defined(CONDITIONAL_ENCRYPTION)
-    /* DK: due to compatibility with globus 1.1.4 that doesn't support 
-       encryption. In this way at least certificate based authorization will
-       be available. */
-    if (strlen(client_request->passphrase) == 0)
-       GSI_SOCKET_set_encryption(socket_attrs->gsi_socket, 0);
-#endif
-
     /* Attempt anonymous-mode credential retrieval if we don't have a
        credential. */
     GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);

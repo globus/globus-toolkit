@@ -119,12 +119,6 @@ main(int argc, char *argv[])
         return 1;
     }
 
-#if defined(CONDITIONAL_ENCRYPTION)
-    /* As we neither send the real passphrase nor another sensitive data we 
-       can disable encryption entirely */
-    GSI_SOCKET_set_encryption(socket_attrs->gsi_socket, 0);
-#endif
-
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
         fprintf(stderr, "error in myproxy_authenticate_init(): %s\n",

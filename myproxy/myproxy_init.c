@@ -202,13 +202,6 @@ main(int argc, char *argv[])
         goto cleanup;
     }
 
-#if defined(CONDITIONAL_ENCRYPTION)
-    /* if the client requires using an empty password there is no need to 
-       encrypt the channel (and we can use the export version of Globus) */
-    if (use_empty_passwd) 
-       GSI_SOCKET_set_encryption(socket_attrs->gsi_socket, 0);
-#endif
-
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
         fprintf(stderr, "%s\n", 
