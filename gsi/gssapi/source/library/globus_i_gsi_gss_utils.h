@@ -64,10 +64,10 @@
 
 /* DEBUG MACROS */
 
-#ifdef BUILD_DEBUG
-
 extern int                              globus_i_gsi_gssapi_debug_level;
 extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
+
+#ifdef BUILD_DEBUG
 
 #define GLOBUS_I_GSI_GSSAPI_DEBUG(_LEVEL_) \
     (globus_i_gsi_gssapi_debug_level >= (_LEVEL_))
