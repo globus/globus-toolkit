@@ -15,6 +15,7 @@
 # -----------------------------------------------------------------------
 
 use strict;
+use Cwd;
 
 my @tests = qw( 
         globus_test_setup_environment.pl
@@ -28,6 +29,14 @@ my @tests = qw(
 #       globus_test_mds_local.pl
 #       globus_test_mds_remote.pl
 
-foreach my $test (@tests) {
-    system("$test");
+if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 256)
+{
+    $ENV{X509_CERT_DIR} = cwd();
+    $ENV{X509_USER_PROXY} = "testcred.pem";
+    system('chmod go-rw testcred.pem'); 
+}
+
+foreach (@tests)
+{
+    system("$_");
 }
