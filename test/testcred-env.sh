@@ -1,0 +1,5 @@
+X509_CERT_DIR=$GLOBUS_LOCATION/test/globus_test
+X509_USER_CERT=$X509_CERT_DIR/testcred.pem
+X509_USER_KEY=$X509_CERT_DIR/testcred.pem
+X509_USER_PROXY=$X509_CERT_DIR/testcred.pem
+GRIDMAP=$X509_CERT_DIR/grid-mapfile
