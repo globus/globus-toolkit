@@ -127,21 +127,6 @@ typedef struct
 globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 
 /**
- * Globus Proxy Type Enum
- * @ingroup globus_gsi_proxy
- *
- * SLANG: This enum needs documentation
- */
-typedef enum
-{
-    GLOBUS_ERROR_PROXY = -1,
-    GLOBUS_NOT_PROXY = 0,
-    GLOBUS_FULL_PROXY = 1,
-    GLOBUS_LIMITED_PROXY = 2,
-    GLOBUS_RESTRICTED_PROXY = 3
-} globus_proxy_type_t;
-
-/**
  * @defgroup globus_gsi_proxy_handle Handle Management
  *
  * Create/Destroy/Modify a GSI Proxy Handle.
@@ -211,9 +196,9 @@ globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle);
 
 globus_result_t
-globus_gsi_proxy_handle_set_signing_algorithm(
+globus_gsi_proxy_is_limited(
     globus_gsi_proxy_handle_t           handle,
-    EVP_MD *                            algorithm);
+    globus_bool_t *                     is_limited);
 
 globus_result_t
 globus_gsi_proxy_handle_get_signing_algorithm(
@@ -221,20 +206,19 @@ globus_gsi_proxy_handle_get_signing_algorithm(
     EVP_MD **                           algorithm);
 
 globus_result_t
-globus_gsi_proxy_handle_set_time_valid(
+globus_gsi_proxy_handle_get_keybits(
     globus_gsi_proxy_handle_t           handle,
-    int                                 time_valid);
+    int *                               key_bits);
+
+globus_result_t
+globus_gsi_proxy_handle_get_init_prime(
+    globus_gsi_proxy_handle_t           handle,
+    int *                               init_prime);
 
 globus_result_t
 globus_gsi_proxy_handle_get_time_valid(
     globus_gsi_proxy_handle_t           handle,
     int *                               time_valid);
-
-
-globus_result_t
-globus_gsi_proxy_handle_set_clock_skew_allowable(
-    globus_gsi_proxy_handle_t           handle,
-    int                                 skew);
 
 globus_result_t
 globus_gsi_proxy_handle_get_clock_skew_allowable(
@@ -327,6 +311,36 @@ globus_result_t
 globus_gsi_proxy_handle_attrs_get_init_prime(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
     int *                               prime);    
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_set_signing_algorithm(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    EVP_MD *                            algorithm);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_get_signing_algorithm(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    EVP_MD **                           algorithm);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_set_time_valid(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int                                 time_valid);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_get_time_valid(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    int *                               time_valid);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_set_clock_skew_allowable(
+    globus_gsi_proxy_handle_attrs_t     handle,
+    int                                 skew);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
+    globus_gsi_proxy_handle_attrs_t     handle,
+    int *                               skew);
 
 #endif
 

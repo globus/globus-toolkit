@@ -11,6 +11,7 @@
 
 #include "globus_gsi_proxy.h"
 #include "proxycertinfo.h"
+#include "globus_common.h"
 
 #ifndef GLOBUS_I_INCLUDE_GSI_PROXY_H
 #define GLOBUS_I_INCLUDE_GSI_PROXY_H
@@ -27,21 +28,84 @@
 
 EXTERN_C_BEGIN
 
-#define GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(_ERRORTYPE_) \
+/* DEBUG MACROS */
+
+#ifdef BUILD_DEBUG
+
+extern int                              globus_i_gsi_proxy_debug_level;
+extern FILE *                           globus_i_gsi_proxy_debug_fstream;
+
+#define GLOBUS_I_GSI_PROXY_DEBUG(_LEVEL_) \
+    (globus_i_gsi_proxy_debug_level >= (_LEVEL_))
+
+#define GLOBUS_I_GSI_PROXY_DEBUG_FPRINTF(_LEVEL_, _MESSAGE_) \
+    { \
+        if (GLOBUS_I_GSI_PROXY_DEBUG(_LEVEL_)) \
+        { \
+           globus_libc_fprintf _MESSAGE_; \
+        } \
+    }
+
+#define GLOBUS_I_GSI_PROXY_DEBUG_FNPRINTF(_LEVEL_, _MESSAGE_) \
+    { \
+        if (GLOBUS_I_GSI_PROXY_DEBUG(_LEVEL_)) \
+        { \
+           globus_libc_fprintf _MESSAGE_; \
+        } \
+    }
+
+#define GLOBUS_I_GSI_PROXY_DEBUG_PRINT(_LEVEL_, _MESSAGE_) \
+    { \
+        if (GLOBUS_I_GSI_PROXY_DEBUG(_LEVEL_)) \
+        { \
+           globus_libc_fprintf(globus_i_gsi_proxy_debug_fstream, _MESSAGE_); \
+        } \
+    }
+
+#define GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(_LEVEL_, _OBJ_NAME_, _OBJ_) \
+    { \
+        if (GLOBUS_I_GSI_PROXY_DEBUG(_LEVEL_)) \
+        { \
+           _OBJ_NAME_##_print_fp(globus_i_gsi_proxy_debug_fstream, _OBJ_); \
+        } \
+    }
+
+#else
+
+#define GLOBUS_I_GSI_PROXY_DEBUG_FPRINTF(_LEVEL_, _MESSAGE_) {}
+#define GLOBUS_I_GSI_PROXY_DEBUG_FNPRINTF(_LEVEL_, _MESSAGE_) {}
+#define GLOBUS_I_GSI_PROXY_DEBUG_PRINT(_LEVEL_, _MESSAGE_) {}
+#define GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(_LEVEL_, _OBJ_NAME_, _OBJ_) {}
+
+#endif
+
+#define GLOBUS_I_GSI_PROXY_DEBUG_ENTER \
+            GLOBUS_I_GSI_PROXY_DEBUG_FPRINTF( \
+                1, (globus_i_gsi_proxy_debug_fstream, \
+                    "%s entering\n", _function_name_))
+
+#define GLOBUS_I_GSI_PROXY_DEBUG_EXIT \
+            GLOBUS_I_GSI_PROXY_DEBUG_FPRINTF( \
+                1, (globus_i_gsi_proxy_debug_fstream, \
+                    "%s exiting\n", _function_name_))
+
+/* ERROR MACROS */
+
+#define GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(_ERRORTYPE_, _ERRORSTR_) \
     globus_i_gsi_proxy_openssl_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
         _function_name_, \
         __LINE__, \
-        NULL)
+        globus_i_gsi_proxy_create_string _ERRORSTR_)
 
-#define GLOBUS_GSI_PROXY_ERROR_RESULT(_ERRORTYPE_) \
+#define GLOBUS_GSI_PROXY_ERROR_RESULT(_ERRORTYPE_, _ERRORSTR_) \
     globus_i_gsi_proxy_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
         _function_name_, \
         __LINE__, \
-        NULL)
+        globus_i_gsi_proxy_create_string _ERRORSTR_)
 
 #define GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(_TOP_RESULT_, _ERRORTYPE_) \
     globus_i_gsi_proxy_error_chain_result( \
@@ -53,7 +117,7 @@ EXTERN_C_BEGIN
         NULL)
 
 #include "globus_gsi_proxy_constants.h"
-extern char * globus_l_gsi_proxy_error_strings[GLOBUS_GSI_PROXY_ERROR_LAST];
+
 /**
  * Handle attributes.
  * @ingroup globus_gsi_credential_handle_attrs
@@ -79,6 +143,22 @@ typedef struct globus_l_gsi_proxy_handle_attrs_s
      * the key pair
      */
     int                                 init_prime;
+    /**
+     * The signing algorithm to use for 
+     * generating the proxy certificate
+     */
+    EVP_MD *                            signing_algorithm;
+    /**
+     * The number of minutes the proxy certificate
+     * is valid for
+     */
+    int                                 time_valid;
+    /**
+     * The clock skew (in seconds) allowed 
+     * for the proxy certificate.  The skew
+     * adjusts the validity time of the proxy cert.
+     */
+    int                                 clock_skew;
 
 } globus_i_gsi_proxy_handle_attrs_t;
 
@@ -101,24 +181,11 @@ typedef struct globus_l_gsi_proxy_handle_s
     EVP_PKEY *                          proxy_key;
     /** Proxy handle attributes */
     globus_gsi_proxy_handle_attrs_t     attrs;
+    /** Flag for whether the proxy is limited or not */
+    globus_bool_t                       is_limited;
+
     /** The proxy cert info extension used in the operations */
     PROXYCERTINFO *                     proxy_cert_info;    
-    /**
-     * The signing algorithm to use for 
-     * generating the proxy certificate
-     */
-    EVP_MD *                            signing_algorithm;
-    /**
-     * The number of minutes the proxy certificate
-     * is valid for
-     */
-    int                                 time_valid;
-    /**
-     * The clock skew (in seconds) allowed 
-     * for the proxy certificate.  The skew
-     * adjusts the validity time of the proxy cert.
-     */
-    int                                 clock_skew;
 
 } globus_i_gsi_proxy_handle_t;
 
@@ -151,17 +218,7 @@ globus_i_gsi_proxy_openssl_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
-    const char *                        format,
-    ...);
-
-globus_object_t *
-globus_i_gsi_proxy_openssl_error_construct(
-    int                                 error_type,
-    const char *                        filename,
-    const char *                        function_name,
-    int                                 line_number,
-    const char *                        format,
-    va_list                             ap);
+    const char *                        long_desc);
 
 globus_result_t
 globus_i_gsi_proxy_error_result(
@@ -169,17 +226,7 @@ globus_i_gsi_proxy_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
-    const char *                        format,
-    ...);
-
-globus_object_t *
-globus_i_gsi_proxy_error_construct(
-    int                                 error_type,
-    const char *                        filename,
-    const char *                        function_name,
-    int                                 line_number,
-    const char *                        format,
-    va_list                             ap);
+    const char *                        long_desc);
 
 globus_result_t
 globus_i_gsi_proxy_error_chain_result(
@@ -188,19 +235,12 @@ globus_i_gsi_proxy_error_chain_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        long_desc);
+
+char *
+globus_i_gsi_proxy_create_string(
     const char *                        format,
     ...);
-
-globus_object_t *
-globus_i_gsi_proxy_error_chain_construct(
-    globus_result_t                     chain_result,
-    int                                 error_type,
-    const char *                        filename,
-    const char *                        function_name,
-    int                                 line_number,
-    const char *                        format,
-    va_list                             ap);
-
 
 EXTERN_C_END
 
