@@ -144,9 +144,6 @@ if [ ! -z "${already_signed}" ]; then
 
     export TZ "GMT"
     CURRENT_DATE=`date +%y%m%d`
-
-    recho ${SIGNED_EXP_DATE}
-    recho ${CURRENT_DATE}
     
     if [ ${SIGNED_EXP_DATE} -lt ${CURRENT_DATE} ] || [ ! -z "${force_sign}" ]; then
 
