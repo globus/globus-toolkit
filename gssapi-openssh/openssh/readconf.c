@@ -104,7 +104,7 @@ typedef enum {
 	oHostKeyAlgorithms, oBindAddress, oSmartcardDevice,
 	oClearAllForwardings, oNoHostAuthenticationForLocalhost,
 	oEnableSSHKeysign, oRekeyLimit, oVerifyHostKeyDNS, oConnectTimeout,
-	oAddressFamily, oGssAuthentication, oGssDelegateCreds,
+	oAddressFamily, oGssAuthentication, oGssKeyEx, oGssDelegateCreds,
 	oServerAliveInterval, oServerAliveCountMax, oIdentitiesOnly,
 	oDeprecated, oUnsupported
 } OpCodes;
@@ -138,9 +138,11 @@ static struct {
 	{ "afstokenpassing", oUnsupported },
 #if defined(GSSAPI)
 	{ "gssapiauthentication", oGssAuthentication },
+	{ "gssapikeyexchange", oGssKeyEx },
 	{ "gssapidelegatecredentials", oGssDelegateCreds },
 #else
 	{ "gssapiauthentication", oUnsupported },
+	{ "gssapikeyexchange", oUnsupported },
 	{ "gssapidelegatecredentials", oUnsupported },
 #endif
 	{ "fallbacktorsh", oDeprecated },
@@ -390,6 +392,10 @@ parse_flag:
 
 	case oGssAuthentication:
 		intptr = &options->gss_authentication;
+		goto parse_flag;
+
+	case oGssKeyEx:
+	    	intptr = &options->gss_keyex;
 		goto parse_flag;
 
 	case oGssDelegateCreds:
@@ -833,6 +839,7 @@ initialize_options(Options * options)
 	options->pubkey_authentication = -1;
 	options->challenge_response_authentication = -1;
 	options->gss_authentication = -1;
+	options->gss_keyex = -1;
 	options->gss_deleg_creds = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
@@ -910,9 +917,11 @@ fill_default_options(Options * options)
 	if (options->challenge_response_authentication == -1)
 		options->challenge_response_authentication = 1;
 	if (options->gss_authentication == -1)
-		options->gss_authentication = 0;
+		options->gss_authentication = 1;
+	if (options->gss_keyex == -1)
+		options->gss_keyex = 1;
 	if (options->gss_deleg_creds == -1)
-		options->gss_deleg_creds = 0;
+		options->gss_deleg_creds = 1;
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
