@@ -4,13 +4,13 @@
 <gpt_package_metadata Format_Version="0.02" Name="gsi_openssh_setup" >
 
   <Aging_Version Major="1" Minor="7" Age="0" />
-  <Description>GSI-OpenSSH 3.4p1 setup package</Description>
+  <Description>GSI-Enabled OpenSSH setup package</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="stable" />
 
   <src_pkg >
 
-    <Version_Label>3.4p1</Version_Label>
+    <Version_Label>3.5p1</Version_Label>
 
     <With_Flavors build="no" />
 
