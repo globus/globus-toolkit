@@ -92,8 +92,9 @@ AC_SUBST(GLOBUS_FLAVOR_NAME)
 
 # get the environment scripts
 
-. $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
-
+if test ! "x$GLOBUS_FLAVOR_NAME"="xnoflavor" ; then
+	. $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
+fi
 
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
