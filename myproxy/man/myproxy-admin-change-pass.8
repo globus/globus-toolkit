@@ -1,4 +1,4 @@
-.TH myproxy-admin-change-pass 8 "2003-10-23" "NCSA" "MyProxy"
+.TH myproxy-admin-change-pass 8 "2004-6-18" "NCSA" "MyProxy"
 .SH NAME
 myproxy-admin-change-pass \- change credential passphrase
 .SH SYNOPSIS
@@ -9,10 +9,12 @@ myproxy-admin-change-pass \- change credential passphrase
 .SH DESCRIPTION
 The
 .B myproxy-admin-change-pass
-command changes the passphrase under which a credential is protected
+command changes the passphrase used to encrypt a credential
 in the MyProxy repository.
 The command first prompts for the current passphrase for the
 credential, then prompts twice for the new passphrase.
+If an empty passphrase is given, the credential will not be
+encrypted.
 It accesses the repository directly and must be run on the machine
 where the
 .BR myproxy-server (8)
