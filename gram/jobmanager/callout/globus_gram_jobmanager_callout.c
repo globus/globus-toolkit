@@ -33,8 +33,43 @@ globus_l_gram_callout_authorize_self(
  * @mainpage Globus GRAM Jobmanager Callout Example
  */
 
+
+/**
+ * @defgroup globus_gram_callout_example Globus GRAM Jobmanager Callout Example
+ */
+
+
+/**
+ * Example GRAM Authorization Callout Function
+ * @ingroup globus_gram_callout_example
+ */
+/* @{ */
+/**
+ * Example GRAM Authorization Callout Function
+ *
+ * This function exemplifies the GRAM authorization callout usage by writing
+ * some of its arguments to the file "authz_callout.txt".
+ *
+ * @param ap
+ *        This function, like all functions using the Globus Callout API, is 
+ *        passed parameter though the variable argument list facility. The
+ *        actual arguments that are passed are:
+ *
+ *        - The GSS Security context established during job startup
+ *        - The GSS Security context established for the current operation.
+ *        - The job id string
+ *        - The parsed RSL used for job startup
+ *        - A string describing the current operation. This string is currently
+ *          limited to the values: "start", "cancel", "register", "unregister",
+ *          "signal", "status" and "renew"
+ *
+ * @return
+ *        GLOBUS_SUCCESS upon success
+ *        A globus result structure upon failure (needs to be defined better)
+ */
 globus_result_t
-globus_gram_callout(va_list ap)
+globus_gram_callout(
+    va_list                             ap)
 {
     gss_ctx_id_t                        job_initiator_ctx;
     gss_ctx_id_t                        requester_ctx;
@@ -143,6 +178,7 @@ globus_gram_callout(va_list ap)
  exit:
     return result;
 }
+/* @} */
 
 
 static
