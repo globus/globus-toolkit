@@ -178,6 +178,12 @@ print "        \$ . \$GLOBUS_LOCATION/etc/globus-user-env.sh\n";
 print "\n";
 print "    to prepare your environment for running the gsi_openssh\n";
 print "    executables.\n";
+print "\n";
+print "  o I recommend you review and customize to your liking the contents of\n";
+print "\n";
+print "        \$GLOBUS_LOCATION/etc/ssh\n";
+print "\n";
+print "    \"I can only show you the door.  You have to walk through it.\"\n";
 
 if ( !getPrivilegeSeparation() )
 {
