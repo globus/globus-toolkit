@@ -41,7 +41,7 @@ myproxy:
 	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-1.16 ${FLAVOR}
 gsi-openssh: gpt globus-gsi gsi_openssh gsi_openssh_setup
 gsi_openssh:
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh-3.5-src ${FLAVOR} GSI_OPENSSH_GPTMACRO="@gsiopensshargs@"
+	GSI_OPENSSH_GPTMACRO="@gsiopensshargs@" ${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh-3.5-src ${FLAVOR} 
 gsi_openssh_setup:
 	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh_setup-3.5-src ${FLAVOR}
 
