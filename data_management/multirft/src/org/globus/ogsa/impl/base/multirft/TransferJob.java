@@ -3,6 +3,9 @@ package org.globus.ogsa.impl.base.multirft;
 
 import org.apache.axis.utils.XMLUtils;
 
+import org.globus.ogsa.impl.base.multirft.TransferDbAdapter;
+import org.globus.ogsa.impl.base.multirft.RftDBException;
+
 import org.globus.ogsa.base.multirft.TransferType;
 
 import org.w3c.dom.Document;
@@ -11,6 +14,7 @@ import org.w3c.dom.Element;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.rmi.RemoteException;
 /** This class defines a transfer request which is sent to the reliable
  *  transfer server from the control client.  It is also used when the
  *  control client requests a listing of currently executing transfers.
@@ -20,6 +24,7 @@ public class TransferJob {
     TransferType transfer;
     int status;
     int attempts;
+    TransferDbAdapter dbAdapter;
     public static final int STATUS_FINISHED = 0;
     public static final int STATUS_RETRYING = 1;
     public static final int STATUS_FAILED = 2;
@@ -30,10 +35,11 @@ public class TransferJob {
     static Log logger =
     LogFactory.getLog(TransferJob.class.getName());
 
-    public TransferJob(TransferType transfer, int status, int attempts) {
+    public TransferJob(TransferType transfer, int status, int attempts) { 
         this.transfer = transfer;
         this.status = status;
         this.attempts = attempts;
+        this.dbAdapter = TransferDbAdapter.getTransferDbAdapter();
         processURLs();
     }
 
@@ -48,6 +54,11 @@ public class TransferJob {
             String fileName = extractFileName(sourceURL);
             destinationURL = destinationURL + fileName;
             this.transfer.setDestinationUrl(destinationURL);
+            try {
+                dbAdapter.update(this);
+            } catch(RftDBException rdb) {
+                logger.debug("Error processing urls");
+            }
             //change the destUrl by appending filename to it
         }
     }

@@ -55,6 +55,10 @@ public class TransferDbAdapter {
                                  def_idleConnections);
     }
 
+    public static TransferDbAdapter getTransferDbAdapter() {
+        return dbAdapter;
+    }
+
     public static TransferDbAdapter setupDBConnection(TransferDbOptions dbOptions, 
                                                       int activeConnections)
                                                throws RftDBException {
@@ -555,12 +559,14 @@ public class TransferDbAdapter {
         Connection c = getDBConnection();
 
         try {
-
+            logger.debug("In transfer dbAdapter update " + transferJob.getTransferId() + " " + transferJob.getDestinationUrl());
             Statement st = c.createStatement();
             int update = st.executeUpdate(
                                  "UPDATE transfer SET status= " + 
                                  transferJob.getStatus() + ",attempts=" + 
-                                 transferJob.getAttempts() + " where id=" + 
+                                 transferJob.getAttempts() + ",dest_url='"
+                                 +transferJob.getDestinationUrl()+"',source_url='"
+                                 +transferJob.getSourceUrl()+"' where id=" + 
                                  transferJob.getTransferId());
             st.close();
         } catch (Exception e) {

@@ -157,7 +157,6 @@ public class RftImpl
                     cred.getName().toString());
             dbAdapter.storeProxyLocation(requestId, path);
 
-            //     this.transferRequest = transferRequestElement.getTransferRequest();
             int temp = 0;
 
             while (temp < concurrency) {
