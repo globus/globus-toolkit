@@ -726,78 +726,13 @@ globus_l_gass_server_ez_tilde_expand(unsigned long options,
 	    goto notilde;
 	}
     }
-    
-    if(strlen(inpath) < 2U ||
-       (((options & GLOBUS_GASS_SERVER_EZ_TILDE_EXPAND) == 0UL) &&
-       ((options & GLOBUS_GASS_SERVER_EZ_TILDE_USER_EXPAND) == 0UL)))
-    {
-        goto notilde;
-    }
-    if(inpath[1] == '~')
-    {
-	int pos = 2;
-	char *username;
-	struct passwd *pw;
 
-	while(isalnum(inpath[pos]))
-	{
-	    pos++;
-	}
-	if(pos == 2)
-	{
-	   if((options & GLOBUS_GASS_SERVER_EZ_TILDE_EXPAND) == 0UL)
-	   {
-	       goto notilde;
-	   }
-	    /* expand ~ to home of current user */
-           globus_libc_getpwuid_r(getuid(),
-				  &pwd,
-				  buf,
-				  1024,
-				  &pw);
-	}
-	else
-	{
-	    if((options & GLOBUS_GASS_SERVER_EZ_TILDE_USER_EXPAND) == 0UL)
-	    {
-	       goto notilde;
-	    }
-	    /* expand ~ to home of current user */
-	    username = globus_malloc(pos-1);
-	    strncpy(username,
-		    &inpath[2],
-		    pos-2);
-	    username[pos-2] = '\0';
+    /* here call the new function globus_tilde_expand()*/
+    return globus_tilde_expand(options,
+				   GLOBUS_TRUE, /* url form /~[user][/etc]*/
+				   inpath,
+				   outpath);
 
-	    globus_libc_getpwnam_r(username,
-				   &pwd,
-				   buf,
-				   1024,
-				   &pw);
-	    globus_free(username);
-	}
-	if(pw != NULL)
-	{
-	    size_t path_length = 0;
-	    path_length += strlen(pw->pw_dir);
-	    path_length += strlen(inpath)-pos+1;
-	    path_length += 1;
-	    
-	    *outpath = globus_malloc(path_length);
-	    strcpy(*outpath, pw->pw_dir);
-	    strcat(*outpath, &inpath[pos]);
-	}
-	else
-	{
-	    *outpath = globus_malloc(strlen(inpath)+1);
-	    strcpy(*outpath, inpath);
-	}
-    }
-    else
-    {
-	goto notilde;
-    }
-    return GLOBUS_SUCCESS;
 notilde:
     *outpath = globus_malloc(strlen(inpath)+1);
     strcpy(*outpath, inpath);
