@@ -60,14 +60,14 @@ static int dn_as_username = 0;
 void init_arguments(int argc, char *argv[],
                     myproxy_socket_attrs_t *attrs, myproxy_request_t *request);
 
+void print_cred_info(myproxy_creds_t *creds);
+
 int
 main(int argc, char *argv[])
 {
     char *pshost;
     char request_buffer[1024], response_buffer[10240];
     int requestlen, responselen;
-    int i;
-    time_t time_diff;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -179,33 +179,8 @@ main(int argc, char *argv[])
         fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_str);
         break;
     case MYPROXY_OK_RESPONSE:
-	for (i = 0; i < server_response->num_creds; i ++)
-	{
-		if (server_response->info_creds[i].credname)
-			printf ("Credential Name: %s\n", server_response->info_creds[i].credname);
-
-		if (server_response->info_creds[i].creddesc)
-			printf ("Credential Description: %s\n", server_response->info_creds[i].creddesc);
-
-		printf ("Credential Owner: %s\n", server_response->info_creds[i].cred_owner);
-
-		if (server_response->info_creds[i].retriever_str)
-			printf ("Retrievers : %s\n", server_response->info_creds[i].retriever_str);
-
-		if (server_response->info_creds[i].renewer_str)
-			printf ("Renewers: %s\n", server_response->info_creds[i].renewer_str);
-		
-		if (server_response->info_creds[i].cred_end_time == 0)
-			continue;
-
-		time_diff = server_response->info_creds[i].cred_end_time - time(NULL);
-
-		printf("timeleft       : %ld:%02ld:%02ld\n", 
-	    		   	(long)(time_diff / 3600),
-			       	(long)(time_diff % 3600) / 60,
-	       			(long)time_diff % 60 );
-	
-	}
+	printf("username: %s\n", client_request->username);
+	print_cred_info(server_response->info_creds);
 	break;
     default:
         fprintf(stderr, "Invalid response type received.\n");
@@ -277,4 +252,49 @@ init_arguments(int argc,
     }
 
     return;
+}
+
+void
+print_cred_info(myproxy_creds_t *creds)
+{
+    int first_time = 1;
+    if (!creds) return;
+    printf("owner: %s\n", creds->owner_name);
+    for (; creds; creds = creds->next) {
+	time_t time_diff, now;
+	float days;
+	if (creds->credname) {
+	    printf("%s:\n", creds->credname);
+	} else if (first_time) {
+	    printf("default credential:\n");
+	} else {
+	    printf("unnamed credential:\n");
+	}
+	if (creds->creddesc) {
+	    printf("  description: %s\n", creds->creddesc);
+	}
+	if (creds->retrievers) {
+	    printf("  retrieval policy: %s\n", creds->retrievers);
+	}
+	if (creds->renewers) {
+	    printf("  renewal policy: %s\n", creds->renewers);
+	}
+	now = time(0);
+	if (creds->end_time > 0) {
+	    time_diff = creds->end_time - now;
+	    days = time_diff / 86400.0;
+	} else {
+	    time_diff = 0;
+	}
+	printf("  timeleft: %ld:%02ld:%02ld", 
+	       (long)(time_diff / 3600),
+	       (long)(time_diff % 3600) / 60,
+	       (long)time_diff % 60 );
+	if (days > 1.0) {
+	    printf("  (%.1f days)\n", days);
+	} else {
+	    printf("\n");
+	}
+	first_time = 0;
+    }
 }
