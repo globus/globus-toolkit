@@ -183,7 +183,7 @@ read_length(const int sock)
     unsigned char length_array[4];
     int length = 0;
     
-    if (read_all(sock, length_array, sizeof(length_array)) < 0)
+    if (read_all(sock, (char *) length_array, sizeof(length_array)) < 0)
     {
 	return -1;
     }
@@ -212,7 +212,7 @@ write_length(const int sock,
     length_array[2] = (length >> 8) & 0xFF;
     length_array[3] = length & 0xFF;
     
-    return write_all(sock, length_array, sizeof(length_array));
+    return write_all(sock, (char *) length_array, sizeof(length_array));
 }
 
 
@@ -926,7 +926,7 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 
 	return_value = read_token(self->sock,
 				  &(self->input_buffer),
-				  &(self->input_buffer_length));
+				  (size_t *)&(self->input_buffer_length));
 	
 	if (return_value == -1)
 	{
