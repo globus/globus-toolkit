@@ -28,9 +28,11 @@ static char *  LONG_USAGE = \
 "    Options\n" \
 "    -help, -usage             Displays usage\n" \
 "    -version                  Displays version\n" \
+"    -debug                    Display debugging information\n" \
 "    -dryrun                   Prints what files would have been destroyed\n" \
 "    -default                  Destroys file at default proxy location\n" \
-"    -all                      Destroys any delegated proxy as well\n" \
+"    -all                      Destroys any user (default) and delegated "
+"                              proxies that are found\n" \
 "    --                        End processing of options\n" \
 "    file1 file2 ...           Destroys files listed\n" \
 "\n";
@@ -55,7 +57,6 @@ static char *  LONG_USAGE = \
                 "\nOption -help will display usage.\n", \
                 program); \
         globus_module_deactivate_all(); \
-        exit(0); \
     }
 
 #   define args_show_full_usage() \
@@ -105,11 +106,12 @@ int main(
     int                                 all_flag      = 0;
     int                                 default_flag  = 0;
     int                                 dryrun_flag   = 0;
+    int                                 filename_flag = 0;
     int                                 i;
     char *                              argp;
     char *                              program;
     char *                              default_file;
-    char *                              default_full_file;
+    char *                              default_full_file = NULL;
     char *                              dummy_dir_string;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
@@ -183,9 +185,28 @@ int main(
     }
 
     /* remove the files listed on the command line first */
+
+    if(i < argc)
+    {
+        filename_flag = 1;
+    }
+    
     for (; i < argc; i++)
     {
         globus_i_gsi_proxy_utils_clear_and_remove(argv[i], dryrun_flag);
+    }
+
+    if(!filename_flag || default_flag || all_flag)
+    {
+        result = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&default_full_file,
+                                                         GLOBUS_PROXY_FILE_INPUT);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\nERROR: Proxy file doesn't exist or has bad permissions\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
     }
 
     if (default_flag)
@@ -194,19 +215,20 @@ int main(
                                                   dryrun_flag);
     }
 
-    result = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&default_full_file,
-                                                     GLOBUS_PROXY_FILE_INPUT);
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_libc_fprintf(
-            stderr,
-            "\nERROR: Proxy file: %s doesn't exist or has bad permissions\n", 
-            default_full_file ? default_full_file : "(null)");
-        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-    }
-
     if (all_flag)
     {
+        result = GLOBUS_GSI_SYSCONFIG_SPLIT_DIR_AND_FILENAME(default_full_file,
+                                                             &dummy_dir_string,
+                                                             &default_file);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\nERROR: Failed to determine the secure "
+                "tmp directory proxies are stored in\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+        
         result = GLOBUS_GSI_SYSCONFIG_REMOVE_ALL_OWNED_FILES(
             default_file);
         if(result != GLOBUS_SUCCESS)
@@ -225,17 +247,18 @@ int main(
      * or the /tmp/x509up_u<uid> file
      */
 
-    GLOBUS_GSI_SYSCONFIG_SPLIT_DIR_AND_FILENAME(default_full_file,
-                                                &dummy_dir_string,
-                                                &default_file);
-
-    if (!default_flag && !all_flag)
+    if (!default_flag && !all_flag && !filename_flag)
     {
         globus_i_gsi_proxy_utils_clear_and_remove(default_full_file,
                                                   dryrun_flag);
     }
 
-    free(default_full_file);
+ done:
+
+    if(default_full_file)
+    { 
+        free(default_full_file);
+    }
 
     globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
 
