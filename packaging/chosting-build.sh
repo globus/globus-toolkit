@@ -11,6 +11,13 @@ globus_axiscpp_wsdl2ws,\
 globus_axiscpp_transport_stdio,\
 globus_axiscpp_server_engine,\
 globus_axiscpp_stdio_server_test,\
+globus_axiscpp_transport_http,\
+globus_axiscpp_http_server_test,\
+globus_axiscpp_client_engine,\
+globus_axiscpp_client,\
+globus_client_CounterService,\
+globus_service_CounterService,\
+globus_client_CounterService_test,\
 globus_core,\
 globus_common,\
 globus_common_setup,\
@@ -32,9 +39,7 @@ globus_gsi_proxy_ssl,\
 globus_gsi_openssl_error,\
 globus_proxy_wrapper,\
 globus_openssl,\
-globus_gcs_b38b4d8c_setup,\
-globus_axis_http_transport,\
-globus_axiscpp_http_server_test
+globus_gcs_b38b4d8c_setup
 
 if test ! -d $BASEDIR/source-trees; then
 	mkdir $BASEDIR/source-trees

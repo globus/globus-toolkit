@@ -37,7 +37,11 @@ globus_expat                            chosting/tools/expat
 globus_axiscpp_wsdl2ws                  chosting/tools/axiscpp/wsdl
 globus_axiscpp_transport_stdio          chosting/transport/stdio/source
 globus_axiscpp_stdio_server_test        chosting/transport/stdio/test
-globus_axis_http_transport              chosting/transport/http/source
+globus_axiscpp_transport_http           chosting/transport/http/source
 globus_axiscpp_http_server_test         chosting/transport/http/test
 globus_axiscpp_server_engine            chosting/server/engine/source
-globus_service_GetQuoteCPP              chosting/tools/axiscpp/test/GetQuoteCPP
+globus_axiscpp_client_engine            chosting/client/engine/source
+globus_axiscpp_client                   chosting/tools/axiscpp/client
+globus_client_CounterService            chosting/tools/axiscpp/test/CounterC/client
+globus_service_CounterService           chosting/tools/axiscpp/test/CounterC/service
+globus_client_CounterService_test       chosting/tools/axiscpp/test/CounterC/client_test
