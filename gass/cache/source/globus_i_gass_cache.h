@@ -37,7 +37,7 @@ CVS Information:
 /* 10 char are enought to code the nb of second for 100 years ...            */
 #define GLOBUS_L_GASS_CACHE_FILENAME(str) sprintf((str),"%s/globus_gass_cache_%-i",\
 					 cache_handle->cache_directory_path,\
-					 time(GLOBUS_NULL))
+					 (int) time(GLOBUS_NULL))
 
 /* !! this variable must contain the lenght of the longer name used in       */
 /* the cache including cache files, state files and lock files.              */

@@ -537,15 +537,9 @@ EXTERN_C_END
  *                    Module Definition
  */
 
-#define GLOBUS_GASS_CACHE_MODULE (&globus_gass_cache_module)
+#define GLOBUS_GASS_CACHE_MODULE (&globus_i_gass_cache_module)
 
-static globus_module_descriptor_t globus_gass_cache_module =
-{
-    "globus_gass_cache",
-    GLOBUS_NULL,
-    GLOBUS_NULL,
-    GLOBUS_NULL
-};
+extern globus_module_descriptor_t globus_i_gass_cache_module;
 
 
 #endif   /* _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H */

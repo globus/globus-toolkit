@@ -50,10 +50,19 @@ CVS Information:
 #include <stdlib.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <string.h>
 
 #include "globus_i_gass_cache.h"
 #include "globus_gass_cache.h"
 
+
+globus_module_descriptor_t globus_i_gass_cache_module =
+{
+    "globus_gass_cache",
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    GLOBUS_NULL
+};
 
 /******************************************************************************
                           Module specific variables
@@ -106,18 +115,24 @@ globus_gass_cache_error_strings[] =
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
+#ifdef GLOBUS_L_GASS_CACHE_LOG
 static
 void
 globus_l_gass_cache_log(
     FILE*                               f,
     char *                              str,...);
 
+#endif
+
+#ifdef DEBUG
 static
 void
 globus_l_gass_cache_trace(
     char*                              source_file,
     int                                line,
     char *                             str, ...);
+#endif
+
 static
 void
 globus_l_gass_cache_entry_free(
@@ -189,6 +204,7 @@ void
 globus_l_gass_cache_name_uniq_lock_file(char * uniq_lock_file,
 					char * file_to_be_locked);
 
+#ifdef GLOBUS_L_GASS_CACHE_LOG
 /*
  * globus_l_gass_cache_log()
  *
@@ -210,7 +226,6 @@ globus_l_gass_cache_log(
     ...)
 {
     va_list    args;
-    char *     fmt;
     char hname[MAXHOSTNAMELEN];
     char time_buff[26];
     time_t ttime;
@@ -233,9 +248,6 @@ globus_l_gass_cache_log(
 	    mytid);
 
     va_start(args, str);
-    /*
-    fmt = va_arg(args, char *);
-    */
     globus_libc_vfprintf(f, str, args);
     va_end(args);
     globus_libc_fprintf(f,"\n");
@@ -244,7 +256,9 @@ globus_l_gass_cache_log(
     globus_libc_unlock();
 }
 /* globus_gass_cache_log() */
+#endif
 
+#ifdef DEBUG
 /*
  * globus_l_gass_cache_trace()
  *
@@ -271,7 +285,6 @@ globus_l_gass_cache_trace(
     ...)
 {
     va_list    args;
-    char *     fmt;
     static FILE *fp = GLOBUS_NULL;
     
     globus_libc_lock();
@@ -289,9 +302,6 @@ globus_l_gass_cache_trace(
     va_start(args,str);
     
     globus_libc_fprintf(fp,"%s %d : ",source_file,  line);
-    /*
-    fmt = va_arg(args, char *);
-    */
     globus_libc_vfprintf(fp, str, args);
     va_end(args);
     
@@ -303,6 +313,7 @@ globus_l_gass_cache_trace(
     
 }
 /* globus_l_gass_cache_trace() */
+#endif
 
 /*
  * globus_l_gass_cache_name_lock_file()
@@ -663,7 +674,6 @@ globus_l_gass_cache_write_one_entry(
     /* ascii coded size of the next data to read         */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
     /* size of the next data to read                     */
-    unsigned int size;  
     /* to loop in the tags array                         */
     unsigned int i;
 
@@ -830,7 +840,6 @@ globus_l_gass_cache_read_one_entry(
 {
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    unsigned int size;  /* size of the next data to read             */
     int i;              /* tag array index                           */
 
     if (*entry == NULL)
@@ -1119,7 +1128,6 @@ globus_l_gass_cache_lookfor_url(
 				/* for general usage            */
 
     int rc;			/* return code                  */
-    char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
     char entry_separator[2];	/* eache entry is preceded by   */
 				/* a line containing #\n        */
   
@@ -1215,7 +1223,6 @@ globus_l_gass_cache_lock_file(
     char *                       temp_file)
 {
     char   lock_file[PATH_MAX+1];
-    int    lock_file_fd;
     int    temp_file_fd;
     char   uniq_lock_file[PATH_MAX+1];
     int    uniq_lock_file_fd;
@@ -1471,10 +1478,8 @@ globus_l_gass_cache_unlock_file(
     char *                        file_to_be_locked)
 {
     char   lock_file[PATH_MAX+1];
-    int    lock_file_fd;
 
     char   uniq_lock_file[PATH_MAX+1];
-    int    uniq_lock_file_fd;
  
     /* build the name of the file used to lock "file_to_be_locked" */
     globus_l_gass_cache_name_lock_file(lock_file, file_to_be_locked);
@@ -1902,7 +1907,9 @@ globus_gass_cache_open(char                *cache_directory_path,
     int         f_name_lenght;	/* too verify the lenght of the file names */
     char        f_name[PATH_MAX+1];/* path name of the 3 files we */
 				     /* will open */
+#   if defined GLOBUS_L_GASS_CACHE_LOG
     char        log_f_name[PATH_MAX+1]; /* log file file name           */
+#   endif
     int         state_f_fd;	/* to open/create the state file          */
     struct stat cache_dir_stat;   
 
@@ -2689,7 +2696,6 @@ globus_gass_cache_add_done(
 {
     int                        rc;   /* general purpose return code */
     char                       notready_file_path[PATH_MAX+1];
-    struct stat                file_stat;
     globus_gass_cache_entry_t *entry_found_pt;
 
 
@@ -3352,7 +3358,6 @@ globus_gass_cache_cleanup_tag(
     int                        rc; /* general purpose return code */
     globus_gass_cache_entry_t *entry_found_pt;
     char                       notready_file_path[PATH_MAX+1];
-    struct stat                file_stat;
     globus_gass_cache_tag_t   *tag_pt;
     int                        same_tag;
 
@@ -3687,10 +3692,10 @@ globus_gass_cache_list(
     {
 	globus_gass_cache_entry_t * entry_pt;
 
-	while ( rc = (read( cache_handle->state_file_fd,
+	while ( read( cache_handle->state_file_fd,
 			    entry_separator,
 			    sizeof(entry_separator))
-		      != sizeof(entry_separator)))
+		      != sizeof(entry_separator) )
 	{
 	    if (errno != EINTR)
 		{

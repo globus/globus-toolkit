@@ -45,7 +45,6 @@ typedef enum {
 /******************************************************************************
                              Module specific prototypes
 ******************************************************************************/
-static int globus_l_cache_usage(void);
 static void globus_l_cache_remote_op(globus_l_cache_op_t op,
 			             char *tag,
 			             char *url,
@@ -627,7 +626,6 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
     char *                       local_filename;
     int                          rc;
     int                          i;
-    int                          j;
     int                          size             = 0;
     
     rc = globus_module_activate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
@@ -859,6 +857,8 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 	    return;
 	}
 	globus_free(local_filename);
+	break;
+    case GASSL_UNKNOWN:
 	break;
     }
     globus_gass_cache_close(&cache_handle);
