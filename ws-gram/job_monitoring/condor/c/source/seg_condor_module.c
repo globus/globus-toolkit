@@ -425,7 +425,6 @@ int
 globus_l_condor_find_logfile(
     globus_l_condor_logfile_state_t *   state)
 {
-    char                                logfile[] = "/tmp/gram_condor_log";
     struct stat                         s;
     int                                 rc;
 
@@ -435,7 +434,9 @@ globus_l_condor_find_logfile(
     if (state->path == NULL)
     {
         SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE, ("allocating path\n"));
-        state->path = globus_libc_strdup(logfile);
+
+        globus_common_get_attribute_from_config_file(NULL,
+                "etc/globus-condor.conf", "log_path", &state->path);
 
         if (state->path == NULL)
         {
