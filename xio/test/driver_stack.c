@@ -15,9 +15,6 @@ stack_main(
     globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_byte_t                           buffer[1024];
-    int                                     pos;
-
-    pos = atoi(argv[1]);
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
