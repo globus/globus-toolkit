@@ -197,6 +197,14 @@ GSS_CALLCONV gss_unwrap(
         rc = SSL_read(context->gs_ssl, readarea, sizeof(readarea));
         if (rc < 0)
         {
+            if(BIO_should_retry(context->gs_rbio) &&
+               !BIO_pending(context->gs_rbio))
+            {
+                output_message_buffer->value = NULL;
+                output_message_buffer->length = 0;
+            }
+            else
+            { 
             char errbuf[256];
         
             /* Problem, we should have some data here! */
@@ -209,6 +217,7 @@ GSS_CALLCONV gss_unwrap(
             *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
             goto err;
+            }
         }
         else if (rc == 0)
         {
