@@ -51,6 +51,9 @@ close(PACKAGE_DEF);
 
 if(!$package_loc)
 {
+    # consume rest of input
+    while(defined(<STDIN>)) {}
+
     exit(0);
 }
 
@@ -65,8 +68,13 @@ my $rcsfile = "$package_loc/$template_filename,v";
 if(!-f $rcsfile) 
 {
     $rcsfile = "$package_loc/Attic/$template_filename,v";
-    (-f $rcsfile) 
-        || print("DiRT Warning: Package defined for DiRT but no users\n") && exit(0);
+    if(!-f $rcsfile) 
+    {
+        # consume rest of input
+        while(defined(<STDIN>)) {}
+        print("DiRT Warning: Package defined for DiRT but no users\n");
+        exit(0);
+    }
 }
 
 # parse log message for the tags we need to update
