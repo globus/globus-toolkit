@@ -69,6 +69,14 @@ globus_l_openssl_activate(void)
 
     OBJ_create("0.9.2342.19200300.100.1.1","USERID","userId");
 
+    OBJ_create(IMPERSONATION_PROXY_OID,
+               IMPERSONATION_PROXY_SN,
+               IMPERSONATION_PROXY_LN);
+
+    OBJ_create(INDEPENDENT_PROXY_OID,
+               INDEPENDENT_PROXY_SN,
+               INDEPENDENT_PROXY_LN);
+
     pci_NID = OBJ_create(PROXYCERTINFO_OID,PROXYCERTINFO_SN,PROXYCERTINFO_LN);
 
     pci_x509v3_ext_meth = PROXYCERTINFO_x509v3_ext_meth();
