@@ -6877,9 +6877,11 @@ globus_l_ftp_control_dc_dec_ref(
 
         globus_handle_table_destroy(&transfer_handle->handle_table);
         globus_free(transfer_handle->stripes);
+        
+        globus_assert(dc_handle->transfer_handle != transfer_handle && 
+                "Destroying a transfer_handle we still have a pointer to");
+        
         globus_free(transfer_handle);
-        dc_handle->transfer_handle = NULL;
-
         globus_cond_signal(&globus_l_ftp_control_data_cond);
     }
 
