@@ -95,7 +95,7 @@ grim_write_log(
         return 0;
     }
 
-    sprintf(buf, "grim-proxy-init:%d: %s ::", (int)time(NULL), g_username);
+    sprintf(buf, "globus-grim:%d: %s ::", (int)time(NULL), g_username);
     strcat(buf, format);
 
 #ifdef HAVE_STDARG_H
@@ -243,8 +243,10 @@ main(
         if(res != GLOBUS_SUCCESS)
         {
             grim_write_log(
-                "WARNING: Did not sucessfully parse config file: %s.\n",
+                "ERROR: Did not sucessfully parse config file: %s.\n",
                 conf_filename);
+            rc = 1;
+            goto exit;
         }
         fclose(fptr);
     }
@@ -318,6 +320,8 @@ main(
             user_key_filename);
     if(rc != 0)
     {
+        grim_write_log("ERROR executing privledged code.\n");
+
         goto exit;
     }
 
@@ -340,6 +344,9 @@ main(
               &port_types);
     if(res != GLOBUS_SUCCESS)
     {
+        grim_write_log("ERROR parsing port type file: %s.\n",
+            globus_object_printable_to_string(globus_error_get(res)));
+
         goto exit;
     }
 
@@ -455,7 +462,7 @@ grim_parse_input(
            (strcmp(argv[ctr], "-usage") == 0))
         {
             fprintf(stderr, 
-                SHORT_USAGE_FORMAT"%s", "grim-proxy-init", LONG_USAGE);
+                SHORT_USAGE_FORMAT"%s", "globus-grim", LONG_USAGE);
             return 1;
         }
         else if(strcmp(argv[ctr], "-version") == 0)
@@ -521,7 +528,7 @@ grim_parse_input(
         }
         else
         {
-            fprintf(stderr, SHORT_USAGE_FORMAT, "grim-proxy-init");
+            fprintf(stderr, SHORT_USAGE_FORMAT, "globus-grim");
             return 1;
         }
     }

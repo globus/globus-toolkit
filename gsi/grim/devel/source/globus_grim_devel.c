@@ -1169,6 +1169,7 @@ globus_grim_devel_port_type_file_parse_uid(
             }
         }
     }
+    endgrent();
     groups[groups_ndx] = NULL;
 
     res = globus_l_grim_devel_parse_port_type_file(
@@ -1263,13 +1264,12 @@ globus_l_grim_devel_parse_port_type_file(
 {
     char **                                 pt_rc;
     int                                     ctr;
-    globus_byte_t *                         buffer;
+    globus_byte_t *                         buffer = NULL;
     xmlChar *                               pt;
     xmlDocPtr                               doc;
     xmlNodePtr                              cur;
     struct stat                             stat_info;
     globus_bool_t                           found = GLOBUS_FALSE;
-    globus_bool_t                           all = GLOBUS_FALSE;
     char *                                  tmp_pt;
     char *                                  tmp_str;
     globus_result_t                         res = GLOBUS_SUCCESS;
@@ -1340,103 +1340,106 @@ globus_l_grim_devel_parse_port_type_file(
     cur = cur->xmlChildrenNode;
     while(cur != NULL) 
     {
-        all = GLOBUS_TRUE;
-        if(xmlStrcmp(cur->name, (const xmlChar *)"port_type") != 0)
+        
+        if(cur->type == XML_ELEMENT_NODE)
         {
-            res = globus_error_put(
-                   globus_error_construct_error(
-                       GLOBUS_GRIM_DEVEL_MODULE,
-                       GLOBUS_NULL,
-                       GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
-                       "[globus_grim_devel]:: Invalid node type."));
-
-            goto exit;
-        }
-
-        pt = xmlNodeGetContent(cur);
-        if(pt == NULL)
-        {
-            res = globus_error_put(
-                   globus_error_construct_error(
-                       GLOBUS_GRIM_DEVEL_MODULE,
-                       GLOBUS_NULL,
-                       GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
-                       "[globus_grim_devel]:: No porttype in node."));
-
-            goto exit;
-        }
-
-        /* find out if we want to remove the porttype */
-        remove = GLOBUS_FALSE;
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"access");
-        if(tmp_str != NULL)
-        {
-            if(strcmp(tmp_str, "no") == 0)
+            if(xmlStrcmp(cur->name, (const xmlChar *)"port_type") != 0)
             {
-                remove = GLOBUS_TRUE;
-            }
-            free(tmp_str);
-        }
+                res = globus_error_put(
+                       globus_error_construct_error(
+                            GLOBUS_GRIM_DEVEL_MODULE,
+                            GLOBUS_NULL,
+                            GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
+                            "[globus_grim_devel]:: Invalid element."));
 
-        /* user and group are mutally exclusive to a given node */
-        found = GLOBUS_TRUE;
-        /* find user */
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"user");
-        if(tmp_str != NULL)
-        {
-            if(strcmp(tmp_str, username) != 0)
-            {
-                /* if use tag exists but is not me, not found */
-                found = GLOBUS_FALSE;
-                /* if user attr exists but not equal we do not remove */
-                remove = GLOBUS_FALSE;
+                goto exit;
             }
-            free(tmp_str);
-        }
-        /* if use not found check group */
-        else
-        { 
-            tmp_str = xmlGetProp(cur, (const xmlChar *)"group");
+
+            pt = xmlNodeGetContent(cur);
+            if(pt == NULL)
+            {
+                res = globus_error_put(
+                       globus_error_construct_error(
+                            GLOBUS_GRIM_DEVEL_MODULE,
+                            GLOBUS_NULL,
+                            GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
+                            "[globus_grim_devel]:: No port type in node."));
+
+                goto exit;
+            }
+
+            /* find out if we want to remove the porttype */
+            found = GLOBUS_TRUE;
+            remove = GLOBUS_FALSE;
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"access");
             if(tmp_str != NULL)
             {
-                found = GLOBUS_FALSE;
-                for(ctr = 0; groups[ctr] != NULL && !found; ctr++)
+                if(strcmp(tmp_str, "no") == 0)
                 {
-                    if(strcmp(groups[ctr], tmp_str) == 0)
-                    {
-                        found = GLOBUS_TRUE;
-                    }
+                    remove = GLOBUS_TRUE;
                 }
-                if(!found)
+                free(tmp_str);
+            }
+
+            /* user and group are mutally exclusive to a given node */
+            /* find user */
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"username");
+            if(tmp_str != NULL)
+            {
+                if(strcmp(tmp_str, username) != 0)
                 {
+                    /* if use tag exists but is not me, not found */
+                    found = GLOBUS_FALSE;
+                    /* if user attr exists but not equal we do not remove */
                     remove = GLOBUS_FALSE;
                 }
+                free(tmp_str);
             }
-        }
-
-        /* remove will only be true if found is true */
-        if(remove)
-        {
-            for(list = pt_list;
-                !globus_list_empty(list);
-                list = globus_list_rest(list))
-            {
-                tmp_pt = (char *) globus_list_first(list);
-                if(strcmp(pt, tmp_pt) == 0)
+            /* if use not found check group */
+            else
+            { 
+                tmp_str = xmlGetProp(cur, (const xmlChar *)"group");
+                if(tmp_str != NULL)
                 {
-                    globus_list_remove(&pt_list, list);
-                    free(tmp_pt);
+                    found = GLOBUS_FALSE;
+                    for(ctr = 0; groups[ctr] != NULL && !found; ctr++)
+                    {
+                        if(strcmp(groups[ctr], tmp_str) == 0)
+                        {
+                            found = GLOBUS_TRUE;
+                        }
+                    }
+                    if(!found)
+                    {
+                        remove = GLOBUS_FALSE;
+                    }
                 }
             }
-        }
-        /* if not remove but found add it */
-        else if(found)
-        {
-            globus_list_insert(&pt_list, globus_libc_strdup(pt));
-        }
+
+            /* remove will only be true if found is true */
+            if(remove)
+            {
+                for(list = pt_list;
+                    !globus_list_empty(list);
+                    list = globus_list_rest(list))
+                {
+                    tmp_pt = (char *) globus_list_first(list);
+                    if(strcmp(pt, tmp_pt) == 0)
+                    {
+                        globus_list_remove(&pt_list, list);
+                        free(tmp_pt);
+                    }
+                }
+            }
+            /* if not remove but found add it */
+            else if(found)
+            {
+                globus_list_insert(&pt_list, globus_libc_strdup(pt));
+            }
  
-        free(pt);
-         
+            free(pt);
+        }
+
         cur = cur->next;
     }
       
@@ -1457,7 +1460,11 @@ globus_l_grim_devel_parse_port_type_file(
     }
 
   exit:
-    fclose(fptr);
+
+    if(buffer != NULL)
+    {
+        globus_free(buffer);
+    }
 
     return res;
 }
@@ -1470,7 +1477,7 @@ globus_l_grim_parse_conf_file(
     struct globus_l_grim_conf_info_s *      info,
     FILE *                                  fptr)
 {
-    globus_byte_t *                         buffer;
+    globus_byte_t *                         buffer = NULL;
     xmlDocPtr                               doc;
     xmlNodePtr                              cur;
     char *                                  tmp_str;
@@ -1541,75 +1548,89 @@ globus_l_grim_parse_conf_file(
     cur = cur->xmlChildrenNode;
     while(cur != NULL) 
     {
-        if(xmlStrcmp(cur->name, (const xmlChar *)"conf") != 0)
+        if(cur->type == XML_ELEMENT_NODE)
         {
-            res = globus_error_put(
-                   globus_error_construct_error(
-                       GLOBUS_GRIM_DEVEL_MODULE,
-                       GLOBUS_NULL,
-                       GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
-                       "[globus_grim_devel]:: Invalid node type."));
+            if(xmlStrcmp(cur->name, (const xmlChar *)"conf") != 0)
+            {
+                res =  globus_error_put(
+                            globus_error_construct_error(
+                            GLOBUS_GRIM_DEVEL_MODULE,
+                            GLOBUS_NULL,
+                            GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
+                            "[globus_grim_devel]:: Invalid element."));
 
-            goto err;
+                goto err;
+            }
+
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"max_time");
+            if(tmp_str != NULL)
+            {
+                info->max_time = atoi(tmp_str);
+                free(tmp_str);
+            }
+
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"default_time");
+            if(tmp_str != NULL)
+            {
+                info->default_time = atoi(tmp_str);
+                free(tmp_str);
+            }
+
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"key_bits");
+            if(tmp_str != NULL)
+            {
+                info->key_bits = atoi(tmp_str);
+                free(tmp_str);
+            }
+
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"cert_filename");
+            if(tmp_str != NULL)
+            {
+                free(info->cert_filename);
+                info->cert_filename = strdup(tmp_str);
+                free(tmp_str);
+            }
+
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"key_filename");
+            if(tmp_str != NULL)
+            {
+                free(info->key_filename);
+                info->key_filename = strdup(tmp_str);
+                free(tmp_str);
+            }
+
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"gridmap_filename");
+            if(tmp_str != NULL)
+            {
+                free(info->gridmap_filename);
+                info->gridmap_filename = strdup(tmp_str);
+                free(tmp_str);
+            }
+
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"port_type_filename");
+            if(tmp_str != NULL)
+            {
+                free(info->port_type_filename);
+                info->port_type_filename = strdup(tmp_str);
+                free(tmp_str);
+            }
+
+            tmp_str = xmlGetProp(cur, (const xmlChar *)"log_filename");
+            if(tmp_str != NULL)
+            {
+                info->log_filename = strdup(tmp_str);
+                free(tmp_str);
+            }
         }
-
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"max_time");
-        if(tmp_str != NULL)
-        {
-            info->max_time = atoi(tmp_str);
-        }
-
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"default_time");
-        if(tmp_str != NULL)
-        {
-            info->default_time = atoi(tmp_str);
-        }
-
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"key_bits");
-        if(tmp_str != NULL)
-        {
-            info->key_bits = atoi(tmp_str);
-        }
-
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"cert_filename");
-        if(tmp_str != NULL)
-        {
-            free(info->cert_filename);
-            info->cert_filename = strdup(tmp_str);
-        }
-
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"key_filename");
-        if(tmp_str != NULL)
-        {
-            free(info->key_filename);
-            info->key_filename = strdup(tmp_str);
-        }
-
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"gridmap_filename");
-        if(tmp_str != NULL)
-        {
-            free(info->gridmap_filename);
-            info->gridmap_filename = strdup(tmp_str);
-        }
-
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"port_type_filename");
-        if(tmp_str != NULL)
-        {
-            free(info->port_type_filename);
-            info->port_type_filename = strdup(tmp_str);
-        }
-
-        tmp_str = xmlGetProp(cur, (const xmlChar *)"log_filename");
-        if(tmp_str != NULL)
-        {
-            info->log_filename = strdup(tmp_str);
-        }
-
-        free(tmp_str);
+        cur = cur->next;
     }
 
   err:
-    fclose(fptr);      
+
+    if(buffer != NULL)
+    {
+        globus_free(buffer);
+    }
 
     return res;
 }
@@ -1756,7 +1777,6 @@ globus_l_grim_parse_assertion(
     cur = cur->xmlChildrenNode;
     while(cur != NULL)
     {
-
         if(xmlStrcmp(cur->name, (const xmlChar *)"ServiceGridId") == 0)
         {
             info->issuer = xmlNodeGetContent(cur);

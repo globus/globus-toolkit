@@ -50,7 +50,7 @@ main(
             serialized_assertion);
     assert(res == GLOBUS_SUCCESS);
 
-    res = globus_grim_assertion_get_subject(
+    res = globus_grim_assertion_get_issuer(
             assertion,
             &out_subject);
     assert(res == GLOBUS_SUCCESS);
