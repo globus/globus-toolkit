@@ -126,10 +126,22 @@ chomp($hostname);
 chomp($cg_results);
 chomp($uname_cmd);
 
-my $os_version=`$uname_cmd -r`;
 my $os_name=`$uname_cmd -s`;
-chomp($os_version);
+my $os_version="";
+
 chomp($os_name);
+
+if($os_name eq "AIX")
+{
+   $os_version=`$uname_cmd -v`;
+   chomp($os_version);
+   $os_version.=".";
+}
+
+$os_version.=`$uname_cmd -r`;
+
+chomp($os_version);
+
 
 ($cpu, $manuf, $junk) = split(/-/, $cg_results);
 
