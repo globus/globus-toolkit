@@ -96,26 +96,6 @@ AC_ARG_ENABLE(insure,
 		lac_cv_INSURE=""
 	])
 
-AC_ARG_ENABLE(doxygen,
- 	changequote(<<, >>)dnl	
-  <<--enable-doxygen[=PATH]	use Doxygen to generate documentation>>,
-	changequote([, ])dnl
-	[
-		if test "$enableval" = "yes"; then
-			AC_PATH_PROG(lac_cv_DOXYGEN,
-				doxygen,
-				[
-					AC_MSG_ERROR(Doxygen installation not found)
-				])
-		else
-			lac_cv_DOXYGEN="$enableval"
-		fi 
-	],
-	[
-		lac_cv_DOXYGEN=""
-	])
-		 
-
 AC_ARG_WITH(mp,
 	[  --with-mp=protocol            include the IBM SP MPL, MPI, or Paragon INX protocols],
 	[case $withval in
@@ -256,7 +236,6 @@ LAC_SUBSTITUTE_COMPILER_VAR(AR)
 LAC_SUBSTITUTE_COMPILER_VAR(ARFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(RANLIB)
 LAC_SUBSTITUTE_COMPILER_VAR(INSURE)
-LAC_SUBSTITUTE_COMPILER_VAR(DOXYGEN)
 LAC_SUBSTITUTE_COMPILER_VAR(F77)
 LAC_SUBSTITUTE_COMPILER_VAR(CROSS)
 LAC_SUBSTITUTE_COMPILER_VAR(F77FLAGS)
