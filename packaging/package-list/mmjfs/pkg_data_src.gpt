@@ -26,6 +26,7 @@
       <Dependency Name="core" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="grim" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="mjs" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="rips" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Build_Instructions>
