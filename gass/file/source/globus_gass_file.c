@@ -980,16 +980,13 @@ globus_l_gass_file_append_callback(
 	cur = (globus_l_gass_file_tailf_t *)
 	    globus_fifo_dequeue(&globus_l_gass_file_append_fifo);
 	
-	if(cur->transfer_in_progress == GLOBUS_TRUE ||
-	   cur->closing == GLOBUS_TRUE ||
-	   cur->ignore == GLOBUS_TRUE)
+	if(! (cur->transfer_in_progress == GLOBUS_TRUE ||
+	      cur->closing == GLOBUS_TRUE ||
+	      cur->ignore == GLOBUS_TRUE))
 	{
-	    goto next_append;
+	    handled_event |= globus_l_gass_file_handle_append(cur);
 	}
-
-	handled_event |= globus_l_gass_file_handle_append(cur);
 							  
-    next_append:
 	globus_fifo_enqueue(&processed,
 			    (void *) cur);
     }
