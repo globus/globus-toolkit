@@ -89,114 +89,112 @@ void init_arguments(int argc, char *argv[], myproxy_creds_t *my_creds);
 
 int main(int argc, char *argv[])
 {
-	SSL_CREDENTIALS *creds;
-	myproxy_creds_t *my_creds;
-	char proxyfile[64] = "";
-	int rval=1;
+    SSL_CREDENTIALS *creds;
+    myproxy_creds_t *my_creds;
+    char proxyfile[64] = "";
+    int rval=1;
 
-	my_creds = (myproxy_creds_t *) malloc(sizeof(*my_creds));
-	memset (my_creds, 0, sizeof(*my_creds));
+    my_creds = (myproxy_creds_t *) malloc(sizeof(*my_creds));
+    memset (my_creds, 0, sizeof(*my_creds));
 
-	creds = ssl_credentials_new();
-	init_arguments (argc, argv, my_creds);
+    creds = ssl_credentials_new();
+    init_arguments (argc, argv, my_creds);
 
-	if (certfile == NULL)
-	{
-		fprintf (stderr, "Specify certificate file with -c option\n");
-		fprintf(stderr, usage);
-		goto cleanup;
+    if (certfile == NULL) {
+	fprintf (stderr, "Specify certificate file with -c option\n");
+	fprintf(stderr, usage);
+	goto cleanup;
+    }
+
+    if (keyfile == NULL) {
+	fprintf (stderr, "Specify key file with -y option\n");
+	fprintf(stderr, usage);
+	goto cleanup;
+    }
+
+    if (ssl_certificate_load_from_file(creds, certfile) == SSL_SUCCESS) {
+	/* Read private key */
+	if (ssl_private_key_load_from_file(creds, keyfile, NULL,
+					   "Enter GRID pass phrase")
+	    == SSL_ERROR) {
+	    fprintf (stderr, "Error reading private key: %s\n",
+		     verror_get_string());
+	    goto cleanup;
 	}
 
-	if (keyfile == NULL)
-	{
-		fprintf (stderr, "Specify key file with -y option\n");
-		fprintf(stderr, usage);
+	/* Read new credential passphrase */
+	if (!use_empty_passwd && !my_creds->passphrase) {
+	    my_creds->passphrase =
+		(char *)malloc((MAX_PASS_LEN+1)*sizeof(char));
+	    if (myproxy_read_verified_passphrase(my_creds->passphrase,
+						 MAX_PASS_LEN, NULL) == -1) {
+		fprintf(stderr, "%s\n", verror_get_string());
 		goto cleanup;
+	    }
 	}
 
-	if (ssl_certificate_load_from_file(creds, certfile) == SSL_SUCCESS)
-	{
-		/* Read private key */
-		if (ssl_private_key_load_from_file(creds, keyfile, NULL,
-						   "Enter GRID pass phrase")
-		    == SSL_ERROR)
-		{
-			fprintf (stderr, "Error reading private key: %s\n",
-				 verror_get_string());
-			goto cleanup;
-		}
-
-		/* Read new credential passphrase */
-
-		if (!use_empty_passwd && !my_creds->passphrase) {
-			my_creds->passphrase = (char *) malloc ((MAX_PASS_LEN+1)*sizeof(char));
-			if (myproxy_read_verified_passphrase(my_creds->passphrase, MAX_PASS_LEN, NULL) == -1) {
-		     	    fprintf(stderr, "%s\n", verror_get_string());
-		    	    goto cleanup;
-		    	}
-		}
-
-	    	sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned) getuid());
-		/* Remove proxyfile if it already exists. */
-		ssl_proxy_file_destroy(proxyfile);
-		verror_clear();
+	sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned)getuid());
+	/* Remove proxyfile if it already exists. */
+	ssl_proxy_file_destroy(proxyfile);
+	verror_clear();
 		
-		if (ssl_proxy_store_to_file(creds, proxyfile, my_creds->passphrase) != SSL_SUCCESS) {
-		    fprintf(stderr, "%s\n", verror_get_string());
-		    goto cleanup;
-		}
+	if (ssl_proxy_store_to_file(creds, proxyfile,
+				    my_creds->passphrase) != SSL_SUCCESS) {
+	    fprintf(stderr, "%s\n", verror_get_string());
+	    goto cleanup;
+	}
 
-    		if (my_creds->username == NULL) { /* set default username */
-			if (dn_as_username) {
-	   			 if (ssl_get_base_subject_file(proxyfile,
-								  &my_creds->username)) {
-					fprintf(stderr,
-						"Cannot get subject name from your certificate\n");
-					goto cleanup;
-	    			}
-			} else {
-	   		 	char *username = NULL;
-	    			if (!(username = getenv("LOGNAME"))) {
-					fprintf(stderr, "Please specify a username.\n");
-					goto cleanup;
-	    			}
-	    			my_creds->username = strdup(username);
-			}
-    		}
-
+	if (my_creds->username == NULL) { /* set default username */
+	    if (dn_as_username) {
 		if (ssl_get_base_subject_file(proxyfile,
-					      &my_creds->owner_name)) {
+					      &my_creds->username)) {
 		    fprintf(stderr,
-			    "Cannot get subject name from certificate.\n");
+			    "Cannot get subject name from your certificate\n");
 		    goto cleanup;
 		}
-		my_creds->location = strdup (proxyfile);
-
-		if (myproxy_creds_store(my_creds) < 0) {
-			myproxy_log_verror();
-			fprintf (stderr, "Unable to store credentials. %s\n", verror_get_string()); 
-			} else {
-				fprintf (stdout, "Credential stored successfully\n");
-			}
-	}
-	else
-	{
-		myproxy_log_verror();
-		fprintf (stderr, "Unable to load certificate. %s\n", verror_get_string()); 
-		goto cleanup;
+	    } else {
+		char *username = NULL;
+		if (!(username = getenv("LOGNAME"))) {
+		    fprintf(stderr, "Please specify a username.\n");
+		    goto cleanup;
+		}
+		my_creds->username = strdup(username);
+	    }
 	}
 
-	rval = 0;
-	cleanup:
-	if (proxyfile[0]) ssl_proxy_file_destroy(proxyfile);
-	free (my_creds);
-	return rval;
+	if (ssl_get_base_subject_file(proxyfile,
+				      &my_creds->owner_name)) {
+	    fprintf(stderr,
+		    "Cannot get subject name from certificate.\n");
+	    goto cleanup;
+	}
+	my_creds->location = strdup (proxyfile);
+
+	if (myproxy_creds_store(my_creds) < 0) {
+	    myproxy_log_verror();
+	    fprintf (stderr, "Unable to store credentials. %s\n",
+		     verror_get_string()); 
+	} else {
+	    fprintf (stdout, "Credential stored successfully\n");
+	}
+    } else {
+	myproxy_log_verror();
+	fprintf (stderr, "Unable to load certificate. %s\n",
+		 verror_get_string()); 
+	goto cleanup;
+    }
+
+    rval = 0;
+ cleanup:
+    if (proxyfile[0]) ssl_proxy_file_destroy(proxyfile);
+    free (my_creds);
+    return rval;
 }
 
 
 void 
 init_arguments(int argc, 
-		       char *argv[], myproxy_creds_t *my_creds)
+	       char *argv[], myproxy_creds_t *my_creds)
 {
     extern char *gnu_optarg;
     int arg;
@@ -207,13 +205,13 @@ init_arguments(int argc,
     my_creds->lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_DELEG_HOURS;
 
     while((arg = gnu_getopt_long(argc, argv, short_options, 
-                             long_options, NULL)) != EOF) 
+				 long_options, NULL)) != EOF) 
     {
         switch(arg) 
         {  
         case 's': /* set the credential storage directory */
-          myproxy_set_storage_dir(gnu_optarg);
-          break;
+	    myproxy_set_storage_dir(gnu_optarg);
+	    break;
 	
 	case 'c': /* credential file name*/
 	    certfile = strdup (gnu_optarg);
@@ -258,14 +256,15 @@ init_arguments(int argc,
 		exit(1);
 	    }
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
-	      my_creds->retrievers = strdup (gnu_optarg);
+		my_creds->retrievers = strdup (gnu_optarg);
 	    else
 	    {
-		my_creds->retrievers = (char *) malloc (strlen (gnu_optarg) + 5);
+		my_creds->retrievers = (char *)malloc(strlen(gnu_optarg)+5);
 		strcpy (my_creds->retrievers, "*/CN=");
 		myproxy_debug("authorized retriever %s",
 			      my_creds->retrievers);
-		my_creds->retrievers = strcat (my_creds->retrievers,gnu_optarg);
+		my_creds->retrievers = strcat(my_creds->retrievers,
+					      gnu_optarg);
 	    }
 	    break;
 	case 'R':   /* renewers list */
@@ -278,10 +277,10 @@ init_arguments(int argc,
 		exit(1);
 	    }
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
-	      my_creds->renewers = strdup (gnu_optarg);
+		my_creds->renewers = strdup (gnu_optarg);
 	    else
 	    {
-		my_creds->renewers = (char *) malloc (strlen (gnu_optarg) + 6);
+		my_creds->renewers = (char *)malloc(strlen(gnu_optarg)+6);
 		strcpy (my_creds->renewers, "*/CN=");
 		myproxy_debug("authorized renewer %s",
 			      my_creds->renewers);
@@ -354,4 +353,3 @@ init_arguments(int argc,
         }
     }
 }
-
