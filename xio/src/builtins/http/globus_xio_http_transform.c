@@ -61,7 +61,7 @@ globus_l_xio_http_copy_residue(
 
 static
 void
-globus_l_xio_http_server_close_kickout(
+globus_l_xio_http_client_cache_kickout(
     void *                              user_arg);
 
 /**
@@ -1573,7 +1573,7 @@ globus_i_xio_http_close_internal(
         result = globus_callback_register_oneshot(
                 NULL,
                 &delay,
-                globus_l_xio_http_server_close_kickout,
+                globus_l_xio_http_client_cache_kickout,
                 http_handle);
 
         if (result == GLOBUS_SUCCESS)
@@ -1581,29 +1581,15 @@ globus_i_xio_http_close_internal(
             goto finish;
         }
     }
-    else if (! http_handle->target_info.is_client)
-    {
-        /* HACK: Server will wait 100ms before closing connection */
-        GlobusTimeReltimeSet(delay, 0, 100000);
 
-        result = globus_callback_register_oneshot(
-                NULL,
-                &delay,
-                globus_l_xio_http_server_close_kickout,
-                http_handle);
+    /* If oneshot registration failed, or if the close is "normal", we'll just
+     * pass the close down
+     */
 
-        if (result == GLOBUS_SUCCESS)
-        {
-            goto finish;
-        }
-
-    }
-    /* If the above fails, we'll continue through to here */
     result = globus_xio_driver_pass_close(
             http_handle->close_operation,
             globus_i_xio_http_close_callback,
             http_handle);
-
 finish:
     return result;
 }
@@ -1640,35 +1626,24 @@ globus_i_xio_http_close_callback(
 
 static
 void
-globus_l_xio_http_server_close_kickout(
+globus_l_xio_http_client_cache_kickout(
     void *                              user_arg)
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
-    if (http_handle->target_info.is_client &&
+    globus_assert(http_handle->target_info.is_client &&
         http_handle->user_close &&
-        http_handle->request_info.http_version == GLOBUS_XIO_HTTP_VERSION_1_1)
-    {
-        globus_xio_driver_finished_close(http_handle->close_operation, result);
+        http_handle->request_info.http_version==GLOBUS_XIO_HTTP_VERSION_1_1);
 
-        globus_mutex_lock(&globus_i_xio_http_cached_handle_mutex);
-        globus_list_insert(&globus_i_xio_http_cached_handles, http_handle);
-        globus_mutex_unlock(&globus_i_xio_http_cached_handle_mutex);
-
-        return;
-    }
-    result = globus_xio_driver_pass_close(
+    globus_xio_driver_finished_close(
             http_handle->close_operation,
-            globus_i_xio_http_close_callback,
-            http_handle);
+            GLOBUS_SUCCESS);
 
-    if (result != GLOBUS_SUCCESS)
-    {
-        globus_i_xio_http_close_callback(
-                http_handle->close_operation,
-                result,
-                user_arg);
-    }
+    globus_mutex_lock(&globus_i_xio_http_cached_handle_mutex);
+    globus_list_insert(&globus_i_xio_http_cached_handles, http_handle);
+    globus_mutex_unlock(&globus_i_xio_http_cached_handle_mutex);
+
+    return;
 }
-/* globus_l_xio_http_server_close_kickout() */
+/* globus_l_xio_http_client_cache_kickout() */
