@@ -65,7 +65,7 @@ public class ThroughputTester {
             }
 
             try {
-                wait();
+                wait(5000);
             } catch (Exception e) {
                 logger.error("unabled to wait", e);
             }
@@ -109,7 +109,7 @@ public class ThroughputTester {
             }
 
             try {
-                wait();
+                wait(5000);
             } catch (Exception e) {
                 logger.error("unabled to wait", e);
             }
@@ -149,7 +149,7 @@ public class ThroughputTester {
             }
 
             try {
-                wait();
+                wait(5000);
             } catch (Exception e) {
                 logger.error("unabled to wait", e);
             }
@@ -198,7 +198,7 @@ public class ThroughputTester {
             }
 
             try {
-                wait();
+                wait(5000);
             } catch (Exception e) {
                 logger.error("unabled to wait", e);
             }

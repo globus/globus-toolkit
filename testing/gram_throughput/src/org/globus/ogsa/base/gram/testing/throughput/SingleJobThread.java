@@ -74,6 +74,7 @@ public class SingleJobThread
     NotificationSinkManager notificationSinkManager = null;
     String notificationSinkId = null;
     int jobIndex = -1;
+    boolean started = false;
     boolean completed = false;
 
     PerformanceLog perfLog = new PerformanceLog(
@@ -242,14 +243,17 @@ public class SingleJobThread
 
         //wait for Active signal
         if (logger.isDebugEnabled()) {
-            logger.debug("waiting for signal to start timming complete");
+            logger.debug("job #" + this.jobIndex
+                        + " waiting for signal to start timming complete");
         }
-        try {
-            this.wait();
-        } catch (Exception e) {
-            logger.error("unable to wait", e);
-            return;
-        }
+        while (!started) {
+            try {
+                this.wait(2000);
+            } catch (Exception e) {
+                logger.error("unable to wait", e);
+                return;
+            }
+       }
 
         //START TIMMING complete
         if (logger.isDebugEnabled()) {
@@ -261,11 +265,17 @@ public class SingleJobThread
         if (logger.isDebugEnabled()) {
             logger.debug("waiting for signal to stop timming complete");
         }
-        try {
-            this.wait();
-        } catch (Exception e) {
-            logger.error("unable to wait", e);
-            return;
+        while (!completed) {
+            try {
+                this.wait(15000);
+            } catch (Exception e) {
+                logger.error("unable to wait", e);
+                return;
+            }
+       }
+        this.harness.notifyCompleted(this.jobIndex);
+        if (logger.isDebugEnabled()) {
+            logger.debug("notified harness that I completed");
         }
 
         //STOP TIMMING complete
@@ -340,7 +350,7 @@ public class SingleJobThread
                 AnyHelper.getAsServiceDataValues(message),
                 JobStatusType.class);
         } catch (Exception e) {
-            logger.error("unabled to get message as service data", e);
+            logger.error("unable to get message as service data", e);
             return;
         }
         JobStateType jobState = jobStatus.getJobState();
@@ -350,17 +360,18 @@ public class SingleJobThread
 
         if (jobState.equals(JobStateType.Active)) {
             synchronized (this) {
+                started = true;
                 this.notifyAll();
             }
         } else
         if (   jobState.equals(JobStateType.Done)
             || jobState.equals(JobStateType.Failed)) {
             if (!completed) {
-                synchronized (this) {
+               synchronized (this) {
+                    started = true;
+                    completed = true;
                     this.notifyAll();
                 }
-                this.harness.notifyCompleted(this.jobIndex);
-                completed = true;
             }
         }
     }

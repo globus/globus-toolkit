@@ -14,7 +14,7 @@ my ($help,  $man) =
 
 GetOptions(
     "verbose!"      => \$verbose,
-    "host=s"        => \$host,
+    "h|host=s"        => \$host,
     "port=s"        => \$port,
     "startcount=s"  => \$startCount,
     "endcount=s"    => \$endCount,

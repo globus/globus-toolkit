@@ -305,6 +305,8 @@
           fork="yes"
           classpathref="classpath" failonerror="true" >
 
+      <jvmarg value="-Xdebug"/>
+      <jvmarg value="-Xrunjdwp:transport=dt_socket,address=31420,server=y,suspend=n"/>
       <arg value="${factory.url}"/>
       <arg value="./date.xml"/>
       <arg value="${job.count}"/>
