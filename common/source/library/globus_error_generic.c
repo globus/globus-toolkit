@@ -191,7 +191,7 @@ globus_error_initialize_error(
         if ((instance_data->short_desc = malloc (size)) == NULL)
         {
             va_end(ap);
-            return;
+            return NULL;
         }
         
         globus_libc_vsnprintf(instance_data->short_desc,
