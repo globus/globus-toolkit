@@ -362,7 +362,23 @@ globus_l_gfs_resource_request(
     instance = (globus_i_gfs_server_instance_t *) user_arg;
 
     globus_l_gfs_get_full_path(instance, path, &fullpath);
+    
+    {
+    globus_gfs_resource_state_t *       resource_state;
+    
+    resource_state = (globus_gfs_resource_state_t *) 
+        globus_calloc(1, sizeof(globus_gfs_resource_state_t));
+    
+    resource_state->pathname = fullpath;
+    resource_state->mask = mask;
 
+    globus_gfs_ipc_resource_query(
+        instance->ipc_handle,
+        resource_state,
+        globus_l_gfs_ipc_resource_cb,
+        op);
+    }
+    /*
     result = globus_i_gfs_ipc_resource_request(
         instance,
         fullpath,
@@ -371,6 +387,7 @@ globus_l_gfs_resource_request(
             : GLOBUS_FALSE,
         globus_l_gfs_ipc_resource_cb,
         op);
+    */
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -448,6 +465,7 @@ globus_l_gfs_command_request(
     GlobusGFSName(globus_l_gfs_command_request);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
+    
     
     if(strcmp(cmd_array[0], "MKD") == 0)
     {
@@ -539,12 +557,35 @@ globus_l_gfs_command_request(
     {
         goto err;
     }
+    
+    {
+    globus_gfs_command_state_t *        command_state;
 
+    command_state = (globus_gfs_command_state_t *) 
+        globus_calloc(1, sizeof(globus_gfs_command_state_t));
+        
+    command_state->command = cmd_attr.command;
+    command_state->pathname = cmd_attr.fullpath;
+    command_state->cksm_offset = cmd_attr.cksm_offset;
+    command_state->cksm_length = cmd_attr.cksm_length;
+    command_state->cksm_alg = cmd_attr.cksm_alg;
+    command_state->cksm_response = cmd_attr.cksm_response;
+    command_state->chmod_mode = cmd_attr.chmod_mode;
+    command_state->rnfr_pathname = cmd_attr.rnfr_pathname; 
+
+    globus_gfs_ipc_command(
+        instance->ipc_handle,
+        command_state,
+        globus_l_gfs_ipc_command_cb,
+        op);
+    }
+    /*
     result = globus_i_gfs_ipc_command_request(
         instance,
         &cmd_attr,
         globus_l_gfs_ipc_command_cb,
         op);
+    */
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
