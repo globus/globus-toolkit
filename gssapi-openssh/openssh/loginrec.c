@@ -564,6 +564,11 @@ line_abbrevname(char *dst, const char *src, int dstsize)
 	if (strncmp(src, "/dev/", 5) == 0)
 		src += 5;
 
+#ifdef WITH_ABBREV_NO_TTY
+	if (strncmp(src, "tty", 3) == 0)
+		src += 3;
+#endif
+
 	len = strlen(src);
 
 	if (len > 0) {

@@ -7,7 +7,7 @@
 
 void start_pam(const char *user);
 void finish_pam(void);
-int auth_pam_password(struct passwd *pw, const char *password);
+int auth_pam_password(Authctxt *authctxt, const char *password);
 char **fetch_pam_environment(void);
 int do_pam_authenticate(int flags);
 int do_pam_account(char *username, char *remote_user);

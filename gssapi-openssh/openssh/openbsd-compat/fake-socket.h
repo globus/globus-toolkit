@@ -3,7 +3,7 @@
 #ifndef _FAKE_SOCKET_H
 #define _FAKE_SOCKET_H
 
-#include "config.h"
+#include "includes.h"
 #include "sys/types.h"
 
 #ifndef HAVE_STRUCT_SOCKADDR_STORAGE

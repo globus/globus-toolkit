@@ -34,7 +34,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.\" $OpenBSD: ssh.1,v 1.148 2002/02/18 17:55:20 markus Exp $
+.\" $OpenBSD: ssh.1,v 1.151 2002/05/06 23:34:33 millert Exp $
 .Dd September 25, 1999
 .Dt SSH 1
 .Os
@@ -297,6 +297,12 @@ Background ssh at logout when waiting for forwarded connection / X11 sessions
 to terminate
 .It Cm ~?
 Display a list of escape characters
+.It Cm ~C
+Open command line (only useful for adding port forwardings using the
+.Fl L
+and
+.Fl R
+options)
 .It Cm ~R
 Request rekeying of the connection (only useful for SSH protocol version 2
 and if the peer supports it)
@@ -1445,7 +1451,7 @@ The purpose for
 having this file is to be able to use rhosts authentication with
 .Nm
 without permitting login with
-.Xr rlogin 1
+.Nm rlogin
 or
 .Xr rsh 1 .
 .It Pa /etc/hosts.equiv
@@ -1502,7 +1508,6 @@ created OpenSSH.
 Markus Friedl contributed the support for SSH
 protocol versions 1.5 and 2.0.
 .Sh SEE ALSO
-.Xr rlogin 1 ,
 .Xr rsh 1 ,
 .Xr scp 1 ,
 .Xr sftp 1 ,
@@ -1518,7 +1523,7 @@ protocol versions 1.5 and 2.0.
 .%A T. Rinne
 .%A S. Lehtinen
 .%T "SSH Protocol Architecture"
-.%N draft-ietf-secsh-architecture-09.txt
-.%D July 2001
+.%N draft-ietf-secsh-architecture-12.txt
+.%D January 2002
 .%O work in progress material
 .Re
