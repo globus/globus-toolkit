@@ -235,7 +235,7 @@ globus_l_xio_http_parse_header( l_http_info_t * info)
     globus_xio_http_string_pair_t *string_pair;
     current_location = info->buffer.iov_base + info->buffer_offset;
     if(!info->uri) {
-        //first word is GET or POST
+        //first word is GET, POST, PUT
         if( strstr(current_location, "GET") )
             {
                 info->request_type = globus_libc_strdup("GET");
@@ -243,6 +243,10 @@ globus_l_xio_http_parse_header( l_http_info_t * info)
         else if(strstr(current_location, "POST") )
             {
                 info->request_type = globus_libc_strdup("POST");
+            }
+        else if(strstr(current_location, "PUT") )
+            {
+                info->request_type = globus_libc_strdup("PUT");
             }
         else
             {
