@@ -178,6 +178,11 @@ int main(int argc, char **argv)
     char *                             p;
     char *                             url;
     int                                rc;
+    globus_gass_transfer_listener_t    listener;
+    globus_gass_transfer_listenerattr_t * attr;
+    char *                             scheme;
+    globus_gass_transfer_requestattr_t * reqattr;
+
     
     globus_module_activate(GLOBUS_NEXUS_MODULE);
 
@@ -236,6 +241,10 @@ int main(int argc, char **argv)
 	    break;
 	case arg_p:
 	    port = (unsigned short) atoi(instance->values[0]);	    
+	    attr=(globus_gass_transfer_listenerattr_t *)globus_malloc(
+			sizeof(globus_gass_transfer_listenerattr_t));
+	    globus_gass_transfer_listenerattr_set_port(attr,
+						       port);
 	    break;
 	case arg_n:
 	    for (p=instance->values[0]; p; ++p)
@@ -292,15 +301,21 @@ int main(int argc, char **argv)
 					  GLOBUS_NULL);
     }
 #   endif
+     
     rc = globus_gass_server_ez_init(
-	&port,
-	&url,
-	options,
-	options & GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE
-	? client_shutdown_callback
-	: (globus_gass_server_ez_client_shutdown_t) GLOBUS_NULL);
+		&listener,
+        	attr,
+        	scheme,
+        	reqattr,
+        	options,
+        	options & GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE
+        	? client_shutdown_callback
+        	: (globus_gass_server_ez_client_shutdown_t) GLOBUS_NULL);
+
     if(rc != GLOBUS_SUCCESS)
     {
+	globus_gass_transfer_listenerattr_get_port(attr,
+					    	   port);
 	if(port == 0)
 	{
 	    globus_libc_printf("Error: Cannot listen on port\n");
@@ -313,6 +328,7 @@ int main(int argc, char **argv)
     }
     if(!silent)
     {
+	url=globus_gass_transfer_listener_get_base_url(listener);	
 	globus_libc_printf("%s\n",url);
 	fflush(stdout);
     }
