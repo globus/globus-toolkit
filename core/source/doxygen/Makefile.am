@@ -8,5 +8,3 @@ doxygen_DATA = Doxyfile-internal.include \
 	globus_head.tex
 
 EXTRA_DIST = $(doxygen_DATA)
-
-include $(top_srcdir)/aclocal/automake_rules

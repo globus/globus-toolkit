@@ -1,30 +1,27 @@
 
-if test ! -h globus_automake_targets ; then
-    echo "installing globus_automake_targets link"
-    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_targets \
-    globus_automake_targets
-fi
 
-if test ! -h globus_automake_rules ; then
-    echo "installing globus_automake_rules link"
-    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_rules \
-    globus_automake_rules
-fi
+for file in 'globus_automake_pre' \
+    'globus_automake_post' \
+    'globus_automake_pre_top' \
+    'globus_automake_post_top'
+do
+    if test ! -h $file ; then
+        echo "installing $file link"
+        ln -s $GLOBUS_LOCATION/share/globus_aclocal/$file $file
+    fi
+done
 
-if test ! -h globus_automake_doxygen_rules ; then
-    echo "installing globus_automake_doxygen_rules link"
-    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_doxygen_rules \
-    globus_automake_doxygen_rules
-fi
+for file in 'Doxyfile.in' \
+    'Doxyfile-internal.in'
+do
+    if test ! -h doxygen/$file ; then
+        echo "installing doxygen/$file link"
+        ln -s $GLOBUS_LOCATION/share/globus_aclocal/$file doxygen/$file
+    fi
+done
 
-if test ! -h globus_automake_top_rules ; then
-    echo "installing globus_automake_top_rules link"
-    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_top_rules \
-    globus_automake_top_rules
-fi
-
-if test ! -h globus_automake_config ; then
-    echo "installing globus_automake_config link"
-    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_config \
-    globus_automake_config
+if test ! -h doxygen/Makefile.am ; then
+    echo "installing Makefile.am link in doxygen"
+    ln -s $GLOBUS_LOCATION/share/globus_aclocal/doxygen_Makefile.am \
+    doxygen/Makefile.am
 fi

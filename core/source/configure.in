@@ -92,7 +92,6 @@ AC_OUTPUT(Makefile
 	aclocal/automake_config
 	config/Makefile
 	doxygen/Makefile
-	tests/Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	,

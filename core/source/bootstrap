@@ -1,4 +1,11 @@
-#!/bin/sh
+#! /bin/sh
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
 
 error()
 {
@@ -7,6 +14,7 @@ error()
     echo ""
     exit 1
 }
+
 
 # check for autotools
 
@@ -18,15 +26,15 @@ for program in automake aclocal autoconf autoheader
     }
 done
 
-# checking for the GLOBUS_LOCATION
+# Always include globus macros
+config=
 
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
+# test for local macros
+if test -d "./config"; then
+    config="$config -I ./config"
 fi
 
-config="-I ./config"
-
+# test to see if GPT macros are in a seperate location
 if test ! -f "$GLOBUS_LOCATION/share/globus_aclocal/gpt_autoconf_macros.m4"; then
     if test "x$GPT_LOCATION" = "x"; then
         echo "ERROR Globus Packaging Tools not found" >&2
@@ -35,25 +43,29 @@ if test ! -f "$GLOBUS_LOCATION/share/globus_aclocal/gpt_autoconf_macros.m4"; the
     else
         config="$config -I $GPT_LOCATION/share/globus_aclocal"
     fi
-else
-    config="$config -I $GLOBUS_LOCATION/share/globus_aclocal"
 fi
 
- echo "running libtoolize --automake --copy --force"
-libtoolize --automake --copy --force || error
+if test "x$GPT_LOCATION" = "x"; then
+    GPT_LOCATION=$GLOBUS_LOCATION
+fi
 
 echo "running aclocal $config"
 aclocal $config || error
 
 if test -f acconfig.h ; then
- echo "running autoheader"
-   autoheader || error
+echo "running autoheader"
+    autoheader || error
 fi
 
 echo "running automake --copy -add-missing --foreign"
 automake --copy --add-missing --foreign || \
   automake --copy --add-missing --foreign  || error
 
+echo "running gpt_create_automake_rules"
+$GPT_LOCATION/sbin/gpt_create_automake_rules || error
+
+
 echo "running autoconf"
 autoconf || error
-exit 0
+
+

@@ -5,5 +5,3 @@ libexec_SCRIPTS= \
 	globus-bootstrap.sh
 
 EXTRA_DIST = globus-build-env.sh.in globus-args-parser-header globus-bootstrap.sh
-
-include $(top_srcdir)/aclocal/automake_rules
