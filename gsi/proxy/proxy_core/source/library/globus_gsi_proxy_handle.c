@@ -106,7 +106,7 @@ globus_gsi_proxy_handle_init(
         result = globus_gsi_proxy_handle_attrs_init(&handle_i->attrs);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
             goto free_handle;
@@ -118,7 +118,7 @@ globus_gsi_proxy_handle_init(
                                                     &handle_i->attrs);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
             goto free_handle;
@@ -1166,7 +1166,7 @@ globus_gsi_proxy_handle_get_signing_algorithm(
         signing_algorithm);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
@@ -1206,7 +1206,7 @@ globus_gsi_proxy_handle_get_keybits(
                                                        key_bits);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
@@ -1248,7 +1248,7 @@ globus_gsi_proxy_handle_get_init_prime(
                                                           init_prime);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
@@ -1292,7 +1292,7 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
         skew);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
@@ -1333,7 +1333,7 @@ globus_gsi_proxy_handle_get_key_gen_callback(
         callback);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
     }
