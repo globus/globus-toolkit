@@ -14,6 +14,13 @@ export GLOBUS_LOCATION
 
 PID_FILE=${localstatedir}/sshd.pid
 
+#
+# SSHD arguments can be added here within the following
+# set of double quotes.
+#
+
+SSHD_ARGS=""
+
 case "$1" in
     start)
         if [ ! -f $PID_FILE ]; then
@@ -21,7 +28,7 @@ case "$1" in
                 mkdir -p $localstatedir
             fi
             echo "Starting up GSI-OpenSSH sshd server"
-            ${sbindir}/sshd > /dev/null 2>&1 &
+            ${sbindir}/sshd $SSHD_ARGS > /dev/null 2>&1 &
             if [ $? -ne 0 ] ; then
                 echo "Failed to start up GSI-OpenSSH sshd server"
             fi
