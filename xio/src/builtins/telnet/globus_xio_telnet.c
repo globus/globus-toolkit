@@ -35,7 +35,7 @@ enum
     GLOBUS_XIO_TELNET_WONT = 252,
     GLOBUS_XIO_TELNET_DO = 253,
     GLOBUS_XIO_TELNET_DONT = 254,
-    GLOBUS_XIO_TELNET_IAC = 255,
+    GLOBUS_XIO_TELNET_IAC = 255
 };
 
 typedef struct globus_l_xio_telnet_handle_s
