@@ -1304,7 +1304,9 @@ redo:
 	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
 	    pbsz = 0;
-	    sscanf(response->response_buffer, "PBSZ=%lu", &pbsz);
+	    
+	    /* skip 200 <SP> */
+	    sscanf(response->response_buffer + 4, "PBSZ=%lu", &pbsz);
 
 	    if(pbsz != 0)
 	    {
