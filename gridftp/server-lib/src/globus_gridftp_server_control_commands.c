@@ -1879,6 +1879,7 @@ globus_l_gsc_cmd_pasv(
             op,
             wrapper->max,
             wrapper->prt,
+            NULL,
             globus_l_gsc_cmd_pasv_cb,
             wrapper);
         if(res != GLOBUS_SUCCESS)
@@ -2515,6 +2516,7 @@ globus_l_gsc_cmd_stor_retr(
             wrapper->op,
             wrapper->max,
             wrapper->prt,
+            wrapper->path,
             globus_l_gsc_cmd_pasv_cb,
             wrapper);
         if(res != GLOBUS_SUCCESS)

@@ -434,6 +434,7 @@ globus_i_gsc_passive(
     globus_i_gsc_op_t *                 op,
     int                                 max,
     int                                 net_prt,
+    const char *                        pathname,
     globus_i_gsc_passive_cb_t           cb,
     void *                              user_arg);
 

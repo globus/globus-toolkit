@@ -358,6 +358,7 @@ typedef void
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_network_protocol_t net_prt,
     int                                     max,
+    const char *                            pathname,
     void *                                  user_arg);
 
 /** 
