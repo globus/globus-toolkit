@@ -1,15 +1,16 @@
-/******************************************************************************
-globus_rsl_assist.h
-
-Description:
-    This header contains the interface prototypes for the rsl_assist library.
-    
-CVS Information:
- 
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
+/*
+ * globus_rsl_assist.h
+ *
+ * Description:
+ *
+ *   This header contains the interface prototypes for the rsl_assist library.
+ *   
+ * CVS Information:
+ *
+ * $Source$
+ * $Date$
+ * $Revision$
+ * $Author$
 ******************************************************************************/
 #ifndef _GLOBUS_RSL_ASSIST_INCLUDE_GLOBUS_RSL_ASSIST_H_
 #define _GLOBUS_RSL_ASSIST_INCLUDE_GLOBUS_RSL_ASSIST_H_
