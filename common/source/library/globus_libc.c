@@ -742,7 +742,7 @@ globus_libc_gethostname(char *name, int len)
         if(strchr(hostname, '.') != GLOBUS_NULL)
 	{
              int i=0;
-             for (i=0; i<len; i++)
+             for (i=0; i<hostname_length; i++)
                hostname[i] = tolower(hostname[i]);
 	    strncpy(name, hostname, len);
             globus_mutex_unlock(&gethostname_mutex);
