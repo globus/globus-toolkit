@@ -27,7 +27,7 @@ BUNDLE mmjfs
 	mjs
 	mmjfs
 
-BUNDLE mmjfs-static
+BUNDLE mmjfs-static NOTHREADS -static
 	globus_libxml2
 	globus_grim_devel
 	globus_grim

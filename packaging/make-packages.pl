@@ -49,7 +49,7 @@ my %cvs_archives = (
 # package_name => [ tree, subdir, custom_build, (patch-n-build file, if exists) ]
 my %package_list;
 
-# bundle_name => [ flavor, @package_array ]
+# bundle_name => [ flavor, flags, @package_array ]
 my %bundle_list;
 
 # Which of the bundles defined should I build?
@@ -352,19 +352,28 @@ sub populate_bundle_list
 
     while ( <BUN> )
     {
-	my ($pkg, $bun, $isthreaded) = split(' ', $_);
-	
+	my ($pkg, $bun, $threaded, $flags) = split(' ', $_);
 	next if ( $pkg eq "" or $pkg eq "#" );
-	chomp $isthreaded;
     
+	chomp $flags;
+
 	if ( $pkg eq "BUNDLE" )
 	{
 	    $bundle = $bun;
-	    if ( $isthreaded eq "THREADED" )
+
+	    # Process threading and gpt-build flags (like -static)
+	    if ( $threaded eq "THREADED" )
 	    {
 		push @{$bundle_list{$bundle}}, $flavor . $thread;
 	    } else {
 		push @{$bundle_list{$bundle}}, $flavor;
+	    }
+
+	    if ( defined $flags )
+	    {
+		push @{$bundle_list{$bundle}}, $flags;
+	    } else {
+		push @{$bundle_list{$bundle}}, "";
 	    }
 	} else {
 	    if ( $bundle eq undef )
@@ -393,7 +402,9 @@ sub populate_bundle_build_list()
 	my $bundle = "user_def";
 
 	#TODO: How do I know what flavor for the user_def bundle?
+	# Also, how do I know what flags?  For now, empty string.
 	push @{$bundle_list{$bundle}}, $flavor;
+	push @{$bundle_list{$bundle}}, "";
 	push @{$bundle_list{$bundle}}, @user_packages;
 	push @bundle_build_list, $bundle;
     } 
@@ -772,9 +783,13 @@ sub package_sources()
 
 	    foreach my $pkg_array (@array)
 	    {
-		foreach my $pkg (@{$pkg_array}) {
-		    # TODO: There must be a better way to skip flavors.
-		    next if $pkg eq $flavor or $pkg eq $flavor . $thread;
+		# TODO: There must be a better way to skip flavors.
+		# I don't like the magic number "2" below.  It comes
+		# from having "flavor, flags" in the array ahead of
+		# @package_list.  However, if I change it, this is
+		# kludgy.
+		my @tmp_array = @{$pkg_array};
+		foreach my $pkg (@tmp_array[2..$#tmp_array]) {
 		    push @package_build_list, $pkg;
 		}
 	    }
@@ -827,7 +842,11 @@ sub package_source_gpt()
     {
 	print "$subdir does not exist, skipping\n";
     } else {
+	#This causes GPT not to worry about whether dependencies
+	#have been installed while doing configure/make dist.
+	#Any non-zero value will do.  I chose "and how" for fun.
 	$ENV{'GPT_IGNORE_DEPS'}="and how";
+
 	chdir $subdir;
 
 	print "Following GPT packaging for $package.\n";
@@ -1003,7 +1022,6 @@ sub package_source_tar()
 }
 
 #TODO: Add bundle logging.
-#TODO: Add release version.  (--bundle-version and -bv)
 # --------------------------------------------------------------------
 sub bundle_sources()
 # --------------------------------------------------------------------
@@ -1024,9 +1042,10 @@ sub bundle_sources()
 
 	open(PKG, ">$bundle/packaging_list") or die "Can't open packaging_list: $!\n";
 
-	for my $package ( @{$bundle_list{$bundle}} )
+	my @tmp_array = @{$bundle_list{$bundle}};
+	for my $package ( @tmp_array[2..$#tmp_array])
 	{
-	    next if $package eq $flavor or $package eq $flavor . $thread;
+#	    next if $package eq $flavor or $package eq $flavor . $thread;
 	    system("cp $package_output/${package}-* $bundle");
 	    paranoia("cp of $package_output/${package}-* failed.");
 	    print PKG "$package\n";
@@ -1049,10 +1068,10 @@ sub install_bundles
     {
 	next if $bundle eq "" or $bundle eq "user_def";
 	
-	my ($flava, @packages) = @{$bundle_list{$bundle}};
+	my ($flava, $flags, @packages) = @{$bundle_list{$bundle}};
 	
-	print "Installing $bundle to $install using flavor $flava.\n";
-	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $verbose ${bundle}-*.tar.gz $flava");
+	print "Installing $bundle to $install using flavor $flava, flags $flags.\n";
+	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $verbose $flags ${bundle}-*.tar.gz $flava");
 	paranoia("Building of $bundle failed.\n");
     }
 
