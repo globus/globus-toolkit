@@ -189,9 +189,23 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 goto exit;
             }
 
+            asn1_oct_string = ASN1_OCTET_STRING_dup(asn1_oct_string);
+
+            if(!asn1_oct_string)
+            {
+                GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                    minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+                    ("Failed to make copy of extension data"));
+                major_status = GSS_S_FAILURE;
+                goto exit;
+            }
+
             data_set_buffer.value = asn1_oct_string->data;
             data_set_buffer.length = asn1_oct_string->length;
 
+            OPENSSL_free(asn1_oct_string);
+            
             major_status = gss_add_buffer_set_member(
                 &local_minor_status,
                 &data_set_buffer,
