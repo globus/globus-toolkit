@@ -74,7 +74,6 @@ static char *  LONG_USAGE = \
                 "\nOption -help will display usage.\n", \
                 program); \
         globus_module_deactivate_all(); \
-        exit(0); \
     }
 
 #   define args_show_full_usage() \
