@@ -756,6 +756,7 @@ AC_ARG_WITH(pam,
 			AC_CHECK_LIB(dl, dlopen, , )
 			AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([*** libpam missing]))
 			AC_CHECK_FUNCS(pam_getenvlist)
+			AC_CHECK_FUNCS(pam_putenv)
 
 			disable_shadow=yes
 			PAM_MSG="yes"
@@ -766,6 +767,7 @@ AC_ARG_WITH(pam,
 			else
 				LIBPAM="-lpam"
 			fi
+
 			AC_SUBST(LIBPAM)
 		fi
 	]

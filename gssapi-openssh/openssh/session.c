@@ -61,20 +61,6 @@ RCSID("$OpenBSD: session.c,v 1.128 2002/02/16 00:51:44 markus Exp $");
 #include "ssh-gss.h"
 #endif
 
-#ifdef WITH_IRIX_PROJECT
-#include <proj.h>
-#endif /* WITH_IRIX_PROJECT */
-#ifdef WITH_IRIX_JOBS
-#include <sys/resource.h>
-#endif
-#ifdef WITH_IRIX_AUDIT
-#include <sat.h>
-#endif /* WITH_IRIX_AUDIT */
-
-#if defined(HAVE_USERSEC_H)
-#include <usersec.h>
-#endif
-
 #ifdef HAVE_CYGWIN
 #include <windows.h>
 #include <sys/cygwin.h>

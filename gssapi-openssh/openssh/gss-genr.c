@@ -36,6 +36,7 @@
 #include "cipher.h"
 #include "kex.h"
 #include "log.h"
+#include "compat.h"
 
 #include <netdb.h>
 
@@ -103,7 +104,8 @@ ssh_gssapi_mechanisms(int server,char *host) {
 	Gssctxt		ctx;	
 	gss_buffer_desc	token;		
 
-
+	if (datafellows & SSH_OLD_GSSAPI) return NULL;
+	
 	gss_indicate_mechs(&min_status, &supported);
 	
 	buffer_init(&buf);	

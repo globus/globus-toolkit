@@ -52,6 +52,7 @@
 #define SSH_BUG_OPENFAILURE	0x00020000
 #define SSH_BUG_DERIVEKEY	0x00040000
 #define SSH_BUG_DUMMYCHAN	0x00100000
+#define SSH_OLD_GSSAPI		0x00200000
 
 void     enable_compat13(void);
 void     enable_compat20(void);
