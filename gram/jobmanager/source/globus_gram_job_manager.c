@@ -687,7 +687,8 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     if ((script_arg_fp = fopen(graml_script_arg_file, "w")) == NULL)
     {
         grami_fprintf( request->jobmanager_log_fp,
-              "JMI: Failed to open gram script argument file.\n");
+              "JMI: Failed to open gram script argument file. %s\n",
+              graml_script_arg_file );
         request->failure_code = 
               GLOBUS_GRAM_CLIENT_ERROR_ARG_FILE_CREATION_FAILED;
         return(GLOBUS_FAILURE);
