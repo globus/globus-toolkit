@@ -15,14 +15,6 @@ globus_gfs_acl_cas_cb(
     globus_gfs_acl_authorized_finished((int)callback_arg, result);
 }
 
-static
-void
-tmp_cb(
-    void *                              callback_arg)
-{
-    globus_gfs_acl_authorized_finished((int)callback_arg, GLOBUS_SUCCESS);
-}
-
 static int
 globus_gfs_acl_cas_init(
     void **                             out_handle,
@@ -46,17 +38,6 @@ globus_gfs_acl_cas_init(
     }
     *out_handle = cas_handle;
     return GLOBUS_GFS_ACL_WOULD_BLOCK;
-/*
-globus_callback_register_oneshot(
-    NULL,
-    NULL,
-    tmp_cb,
-    request_id);
-
-*out_res = GLOBUS_SUCCESS;
-    return GLOBUS_GFS_ACL_WOULD_BLOCK;
-*/
-
 
   err:
     return GLOBUS_GFS_ACL_COMPLETE;

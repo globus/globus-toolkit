@@ -263,8 +263,8 @@ typedef struct globus_i_gsc_op_s
     globus_gridftp_server_control_transfer_cb_t user_data_cb;
     globus_bool_t                           transfer_started;
 
-    globus_range_list_t                     range_list;;
-    globus_range_list_t                     perf_range_list;;
+    globus_range_list_t                     range_list;
+    globus_range_list_t                     perf_range_list;
     globus_i_gsc_event_data_t               event;
 
     globus_bool_t                           aborted;

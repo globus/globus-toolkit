@@ -75,7 +75,7 @@ globus_gfs_acl_authorized_finished(
 
 typedef void
 (*globus_gfs_acl_destroy_t)(
-    void **                             out_handle);
+    void *                              out_handle);
 
 typedef struct globus_gfs_acl_module_s
 {

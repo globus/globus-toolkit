@@ -38,35 +38,18 @@ globus_i_gsc_reverse_restart(
     globus_range_list_t                 out_range)
 {
     globus_off_t                        offset;
-    globus_off_t                        off_2;
     globus_off_t                        length;
 
-    if(in_range == NULL)
-    {
-        globus_range_list_insert(out_range, 0, GLOBUS_RANGE_LIST_MAX);
-    }
-    else
-    {
-        globus_range_list_at(in_range, 0, &offset, &length);
-        if(offset != 0)
-        {
-            globus_range_list_insert(out_range, 0, offset);
-        }
+    globus_range_list_insert(out_range, 0, GLOBUS_RANGE_LIST_MAX);
 
-        while(globus_range_list_size(in_range) != 1)
+    if(in_range != NULL)
+    {
+        while(globus_range_list_size(in_range))
         {
             globus_range_list_remove_at(in_range, 0, &offset, &length);
-
-            offset = offset + length;
-
-            globus_range_list_at(in_range, 0, &off_2, &length);
-
-            length = off_2 + offset;
-            globus_range_list_insert(out_range, offset, length);
+            
+            globus_range_list_remove(out_range, offset, length);
         }
-        globus_range_list_remove_at(in_range, 0, &offset, &length);
-        globus_range_list_insert(
-            out_range, offset + length, GLOBUS_RANGE_LIST_MAX);
     }
 }
 
@@ -77,7 +60,6 @@ globus_i_gsc_event_start(
     globus_gridftp_server_control_event_cb_t event_cb,
     void *                              user_arg)
 {
-    int                                 ctr;
     globus_result_t                     res;
     globus_reltime_t                    delay;
     globus_i_gsc_event_data_t *         event;

@@ -1543,8 +1543,8 @@ globus_l_gsc_cmd_rest(
     void *                                  user_arg)
 {
     globus_range_list_t                     range_list;
-    globus_off_t                            offset;
-    globus_off_t                            length;
+    globus_off_t                            start_offset;
+    globus_off_t                            end_offset;
     int                                     sc;
     char *                                  tmp_ptr;
 
@@ -1555,14 +1555,15 @@ globus_l_gsc_cmd_rest(
     /* mode s */
     if(strchr(cmd_a[1], '-') == NULL)
     {
-        sc = sscanf(cmd_a[1], "%"GLOBUS_OFF_T_FORMAT, &length);
+        sc = sscanf(cmd_a[1], "%"GLOBUS_OFF_T_FORMAT, &end_offset);
         if(sc != 1)
         {
             globus_gsc_959_finished_command(op, "501 bad parameter.\r\n");
             globus_range_list_destroy(range_list);
+            return;
         }
 
-        globus_range_list_insert(range_list, 0, length);
+        globus_range_list_insert(range_list, 0, end_offset);
     }
     /* mode e */
     else
@@ -1572,7 +1573,7 @@ globus_l_gsc_cmd_rest(
         {
             sc = sscanf(tmp_ptr, 
                 "%"GLOBUS_OFF_T_FORMAT"-%"GLOBUS_OFF_T_FORMAT, 
-                &offset, &length);
+                &start_offset, &end_offset);
             if(sc != 2)
             {
                 globus_gsc_959_finished_command(
@@ -1581,7 +1582,8 @@ globus_l_gsc_cmd_rest(
                 return;
             }
 
-            globus_range_list_insert(range_list, offset, length);
+            globus_range_list_insert(
+                range_list, start_offset, end_offset - start_offset);
             tmp_ptr = strchr(tmp_ptr, ',');
             if(tmp_ptr)
             {

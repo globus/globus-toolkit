@@ -16,7 +16,6 @@ globus_l_gfs_acl_next(
     globus_result_t *                   out_res)
 {
     int                                 rc = GLOBUS_GFS_ACL_COMPLETE;
-    globus_gfs_acl_module_t *           module;
     globus_l_gfs_acl_request_t *        acl_request;
 
     *out_res = GLOBUS_SUCCESS;
@@ -27,7 +26,7 @@ globus_l_gfs_acl_next(
     {
         acl_request = (globus_l_gfs_acl_request_t *) globus_list_remove(
             &acl_handle->current_list, acl_handle->current_list);
-        globus_assert(module != NULL);
+        globus_assert(acl_request->module != NULL);
 
         switch(acl_handle->type)
         {
@@ -112,7 +111,7 @@ globus_i_gfs_acl_init(
     {
         goto err;
     }
-    acl_handle->auth_action = strdup(resource_id);
+    acl_handle->auth_action = globus_libc_strdup(resource_id);
     if(acl_handle->auth_action == NULL)
     {
         goto err;
