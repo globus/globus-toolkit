@@ -282,8 +282,8 @@ globus_i_gram_q_entry_init(
 #define GRAM_VERSION "@GRAMVERSION@"
 #define GRAM_VERSION_DATE "@GRAMVERSIONDATE@"
 #define GRAM_SECURITY "@GSSAPI_TYPE@"
-#define GLOBUS_MPIRUN_PATH "${GLOBUS_SH_MPIRUN-mpirun}"
-#define GLOBUS_POE_PATH "${GLOBUS_SH_POE-poe}"
+#define GLOBUS_MPIRUN_PATH "@MPIRUN@"
+#define GLOBUS_POE_PATH "@POE@"
 
 /* remove or ignore old status files after no activity for
  * GRAM_JOB_MANAGER_STATUS_FILE_SECONDS
