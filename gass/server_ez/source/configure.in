@@ -12,6 +12,10 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
+dnl doxygen stuff
+
+LAC_DOXYGEN("../")
+
 AC_PATH_PROG(SH, sh ksh bash, /bin/sh, /bin:/usr/bin:$PATH)
 
 GLOBUS_FINALIZE
