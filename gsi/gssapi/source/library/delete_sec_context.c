@@ -124,6 +124,12 @@ GSS_CALLCONV gss_delete_sec_context(
     }
 
     proxy_verify_release(&((*context_handle)->pvd));
+
+    if((*context_handle)->pvd.extension_oids != NULL)
+    {
+        free(((gss_OID_set_desc *) (*context_handle)->pvd.extension_oids)->elements);
+        free((*context_handle)->pvd.extension_oids);
+    }
         
     if ((*context_handle)->gs_ssl)
     {

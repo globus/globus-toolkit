@@ -46,12 +46,13 @@ gss_set_sec_context_option(
 {
     gss_ctx_id_desc *                   context = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-
+    int                                 i;
+    
 #ifdef DEBUG
     fprintf(stderr, "set_sec_context_option:\n") ;
 #endif /* DEBUG */
     
-    *minor_status = 0;
+
     context = *context_handle;
 
     if(minor_status == NULL)
@@ -61,6 +62,8 @@ gss_set_sec_context_option(
         major_status = GSS_S_FAILURE;
         goto err;
     }
+
+    *minor_status = 0;
 
     if(option == GSS_C_NO_OID)
     {
@@ -104,10 +107,31 @@ gss_set_sec_context_option(
             GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
             *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_FAILURE;
+            goto err;
         }
 
-        context->pvd.extension_oids = value->value;
+        major_status = gss_create_empty_oid_set(
+            minor_status,
+            (gss_OID_set *) &context->pvd.extension_oids);
 
+        if(major_status != GSS_S_COMPLETE)
+        {
+            goto err;
+        }
+
+        for(i=0;i<((gss_OID_set_desc *) value->value)->count;i++)
+        {
+            major_status = gss_add_oid_set_member(
+                minor_status,
+                (gss_OID) &((gss_OID_set_desc *) value->value)->elements[i],
+                (gss_OID_set *) &context->pvd.extension_oids);
+
+            if(major_status != GSS_S_COMPLETE)
+            {
+                goto err;
+            }
+        }
+        
         context->pvd.extension_cb = gss_verify_extensions_callback;
         
         context->ctx_flags |= GSS_I_APPLICATION_WILL_HANDLE_EXTENSIONS;
@@ -121,3 +145,9 @@ gss_set_sec_context_option(
 err:
     return major_status;
 }
+
+
+
+
+
+
