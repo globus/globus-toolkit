@@ -91,3 +91,31 @@ AC_CHECK_FUNCS(poll)
 
 ])
 
+AC_DEFUN(CHECK_LIBS, [
+
+dnl
+dnl Check whether we need -lsocket -lnsl
+dnl
+
+AC_MSG_CHECKING(for -lsocket -lnsl)
+
+AC_TRY_LINK(
+    [
+	#include <sys/socket.h>
+    ],
+    [
+	int fd;
+  	fd = socket(AF_INET,SOCK_STREAM,0);
+    ],
+    [
+	lac_cv_lsocket="no"	
+    ],
+    [
+	lac_cv_lsocket="yes"
+	COMMON_EXTERNAL_LIBS="-lsocket -lnsl"
+    ]
+)
+
+AC_MSG_RESULT($lac_cv_lsocket)
+
+])
