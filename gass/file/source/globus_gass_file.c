@@ -292,7 +292,7 @@ globus_gass_open(
     
     if(globus_l_gass_file_inited == GLOBUS_FALSE)
     {
-	return(GLOBUS_GASS_ERROR_NOT_INITIALIZED);
+	return(-GLOBUS_GASS_ERROR_NOT_INITIALIZED);
     }
 
     rc = globus_url_parse(url, &globus_url);
