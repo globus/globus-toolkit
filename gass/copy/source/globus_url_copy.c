@@ -130,7 +130,7 @@ globus_l_guc_parse_arguments(
     globus_l_guc_info_t *                           guc_info);
 
 static
-int
+globus_result_t
 globus_l_guc_expand_urls(
     globus_l_guc_info_t *                        guc_info,
     globus_gass_copy_attr_t *                    gass_copy_attr,   
@@ -363,6 +363,7 @@ static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
 static globus_bool_t g_verbose_flag = GLOBUS_FALSE;
 static globus_bool_t g_use_debug = GLOBUS_FALSE;
+static globus_bool_t g_use_restart = GLOBUS_FALSE;
 
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     globus_netlogger_handle_t                       gnl_handle;
@@ -485,7 +486,7 @@ main(int argc, char **argv)
                  &gass_copy_handle);
     if(result != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Error: unable to expand url %s\n",
+        fprintf(stderr, "Error: unable to expand url: %s\n",
                 globus_object_printable_to_string(globus_error_get(result)));
         return 1;
     }
@@ -970,6 +971,7 @@ globus_l_guc_parse_arguments(
 
     guc_info->no_3pt = GLOBUS_FALSE;
     guc_info->no_dcau = GLOBUS_FALSE;
+    guc_info->encrypt_data = GLOBUS_FALSE;
     guc_info->num_streams = 0;
     guc_info->tcp_buffer_size = 0;
     guc_info->block_size = 0;
@@ -1048,8 +1050,14 @@ globus_l_guc_parse_arguments(
         case arg_nodcau:
             guc_info->no_dcau = GLOBUS_TRUE;
             break;
+        case arg_encrypt_data:
+            guc_info->encrypt_data = GLOBUS_TRUE;
+            break;
         case arg_debugftp:
             g_use_debug = GLOBUS_TRUE;
+            break;
+        case arg_restart:
+            g_use_restart = GLOBUS_TRUE;
             break;
         default:
             globus_url_copy_l_args_error_fmt("parse panic, arg id = %d",
@@ -1140,13 +1148,12 @@ globus_l_guc_parse_arguments(
 }
 
 static
-int
+globus_result_t
 globus_l_guc_expand_urls(
     globus_l_guc_info_t *                        guc_info,
     globus_gass_copy_attr_t *                    gass_copy_attr,   
     globus_gass_copy_handle_t *                  gass_copy_handle)
 {
-    globus_object_t *                            err;
     globus_fifo_t                                matched_url_list;
     globus_l_guc_src_dst_pairs_t *               user_url_pair;
     globus_l_guc_src_dst_pairs_t *               expanded_url_pair;
@@ -1201,7 +1208,6 @@ globus_l_guc_expand_urls(
 
         if(result != GLOBUS_SUCCESS)
         {
-            err = globus_error_get(result);
             goto error_expand;  
         }
                                      
@@ -1251,7 +1257,7 @@ error_expand:
     globus_free(user_url_pair->dst_url);
     globus_free(user_url_pair);
  
-    return globus_error_put(err);                
+    return result;                
 }
 
 static
@@ -1263,22 +1269,26 @@ globus_l_guc_init_gass_copy_handle(
     globus_ftp_client_handleattr_t                  ftp_handleattr;
     globus_result_t                                 result;
     globus_ftp_client_plugin_t                      debug_plugin;
+    globus_ftp_client_plugin_t                      restart_plugin;
+    globus_reltime_t                                interval;
+    globus_abstime_t                                timeout;
     globus_gass_copy_handleattr_t                   gass_copy_handleattr;
 
     globus_gass_copy_handleattr_init(&gass_copy_handleattr);
 
     result = globus_ftp_client_handleattr_init(&ftp_handleattr);
+    if(result != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "Error: Unable to init ftp handle attr %s\n",
+            globus_object_printable_to_string(globus_error_get(result)));
+
+        return -1;
+    }
+
     globus_ftp_client_handleattr_set_cache_all(&ftp_handleattr, GLOBUS_TRUE);
+
     if(g_use_debug)
     {
-        if(result != GLOBUS_SUCCESS)
-        {
-            fprintf(stderr, "Error: Unable to init ftp handle attr %s\n",
-                globus_object_printable_to_string(globus_error_get(result)));
-
-            return -1;
-        }
-
         result = globus_ftp_client_debug_plugin_init(
             &debug_plugin,
             stderr,
@@ -1297,6 +1307,36 @@ globus_l_guc_init_gass_copy_handle(
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to register debug plugin %s\n",
+                globus_object_printable_to_string(globus_error_get(result)));
+
+            return -1;
+        }
+    }
+
+    if(g_use_restart)
+    {
+        GlobusTimeReltimeSet(interval, 0, 0);
+        GlobusTimeAbstimeSet(timeout, 60, 0);
+        
+        result = globus_ftp_client_restart_plugin_init(
+            &restart_plugin,
+            5, /* retry times 0=forever */
+            &interval, /* time between tries 0=exponential backoff */
+            &timeout); /* absolute timeout */
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "Error: Unable to init debug plugin %s\n",
+                globus_object_printable_to_string(globus_error_get(result)));
+
+            return -1;
+        }
+
+        result = globus_ftp_client_handleattr_add_plugin(
+            &ftp_handleattr,
+            &restart_plugin);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "Error: Unable to register restart plugin %s\n",
                 globus_object_printable_to_string(globus_error_get(result)));
 
             return -1;

@@ -5987,12 +5987,12 @@ typedef struct
 {
     globus_mutex_t                     mutex;
     globus_cond_t                      cond;
-    globus_object_t *                  err;
-    globus_bool_t                      use_err;
-    int                                done;
+    globus_result_t                    result;
+    int                                callbacks_left;
     globus_fifo_t *                    url_list;
     globus_size_t                      buffer_length;
     char *                             base_url;
+    int                                base_url_len;
     char *                             glob_pattern;
     char *                             list_buffer;
     globus_l_gass_copy_ftp_op_t        list_op;
@@ -6049,69 +6049,115 @@ globus_gass_copy_glob_expand_url(
 { 
     static char *   myname = "globus_gass_copy_glob_expand_url";
     globus_result_t                    result;
-    globus_object_t *                  err;
+    int                                retval;
     globus_url_scheme_t                scheme_type;
     char *                             url_copy;
+    int                                url_len;
+    globus_bool_t                      glob = GLOBUS_TRUE;
+    globus_bool_t                      url_needs_free = GLOBUS_FALSE;
     
-    
-    globus_url_get_scheme(
-        url,
-        &scheme_type);
-    
-    if(strcspn(url, "[]*?") == strlen(url) &&
-           url[strlen(url) - 1] != '/')
+    retval = globus_url_get_scheme(url, &scheme_type);
+    if(retval != 0)
     {
-        url_copy = globus_libc_strdup(url);
-        globus_fifo_enqueue(url_list, url_copy);
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url scheme. "
+                "globus_url_get_scheme returned %d",
+                myname,
+                retval));
+        goto error;
     }
-    else 
+            
+    url_len = strlen(url);
+    /* check if url contains glob characters,
+       and append * if it is a directory */
+    if(strcspn(url, "[]*?") == url_len)
     {
+        url_copy = (char *)
+            globus_malloc((url_len + 2) * sizeof(char));
+    
+        if(url_copy == GLOBUS_NULL)
+        {
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: Memory allocation error",
+                    myname));
+            goto error;
+        }
+        
+        strcpy(url_copy, url);
+
+        if(url_copy[url_len - 1] == '/')
+        {        
+            url_copy[url_len++] = '*';
+            url_copy[url_len] = '\0'; 
+            url_needs_free = GLOBUS_TRUE;
+        }
+        else
+        {    
+            globus_fifo_enqueue(url_list, url_copy);
+            glob = GLOBUS_FALSE;
+            result = GLOBUS_SUCCESS;
+        }
+    }
+    else
+    {
+        url_copy = url;
+    }
+    if(glob)
+    {
+        
         switch (scheme_type)
         {
           case GLOBUS_URL_SCHEME_FTP:
           case GLOBUS_URL_SCHEME_GSIFTP:
             result = globus_l_gass_copy_glob_expand_ftp_url(
-                        handle,
-                        url,
-                        attr,
-                        url_list);
+                handle,
+                url_copy,
+                attr,
+                url_list);
     
             if(result != GLOBUS_SUCCESS)
             {
-                err = globus_error_get(result);
                 goto error;
             }
             break;
     
           case GLOBUS_URL_SCHEME_FILE:
             result = globus_l_gass_copy_glob_expand_file_url(
-                        url,
-                        attr,
-                        url_list);
+                url_copy,
+                attr,
+                url_list);
     
             if(result != GLOBUS_SUCCESS)
             {
-                err = globus_error_get(result);
                 goto error;
             }
             break;
           
           default:
-            err = globus_error_construct_string(
-                      GLOBUS_GASS_COPY_MODULE,
-                      GLOBUS_NULL,
-                      "[%s]: Globbing used with unsupported url scheme.",
-                      myname);
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: Globbing used with unsupported url scheme.",
+                    myname));
             goto error;
             break;    
         }
-    }    
+    }        
     
-    return GLOBUS_SUCCESS;
-
 error:
+    if(url_needs_free)
+    {
+        globus_free(url_copy);
+    }
 
-    return globus_error_put(err);
+    return result;
 }
 
 
@@ -6125,80 +6171,61 @@ globus_l_gass_copy_glob_expand_file_url(
     static char *   myname = "globus_l_gass_copy_glob_expand_file_url";
     glob_t                             file_list;
     globus_result_t                    result;
-    globus_object_t *                  err;
-    int                                glob_result;
+    int                                retval;
+    int                                file_len;
     globus_url_t                       parsed_url;
-    char *                             path;
     char *                             matched_url;
     int                                i;
-   
-    result = (globus_result_t)
-             globus_url_parse_loose(
-                 url,
-                 &parsed_url);
     
-    if(result != GLOBUS_SUCCESS)
+    retval = globus_url_parse_loose(url, &parsed_url);
+    
+    if(retval != 0 || parsed_url.url_path == GLOBUS_NULL)
     {
-        err = globus_error_get(result);
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url scheme. "
+                "globus_url_parse_loose returned %d",
+                myname,
+                retval));
         goto error_url;
     }    
-            
-    if(parsed_url.url_path[strlen(parsed_url.url_path) - 1] == '/')
+                
+    retval = glob(
+        parsed_url.url_path,
+        GLOB_MARK,
+        NULL,
+        &file_list);
+
+    switch(retval)
     {
-        path = (char *)
-             globus_malloc((strlen(parsed_url.url_path) + 2) * sizeof(char));
-        
-        if(path == GLOBUS_NULL)
-        {
-             err = globus_error_construct_string(
-                       GLOBUS_GASS_COPY_MODULE,
-                       GLOBUS_NULL,
-                       "[%s]: Memory allocation error",
-                       myname);
-            goto error_malloc_path;
-        }
-    
-        sprintf(path, "%s*",parsed_url.url_path);
-    }
-    else
-    {
-        path = parsed_url.url_path;
-    }
-    
-    glob_result = glob(
-                      path,
-                      GLOB_MARK,
-                      NULL,
-                      &file_list);
-    switch(glob_result)
-    {
-        case 0:
+      case 0:
         for(i = 0; i < file_list.gl_pathc; i++)
         {
-            if(file_list.gl_pathv[i][strlen(file_list.gl_pathv[i]) - 1] == '/')
+            file_len = strlen(file_list.gl_pathv[i]);
+            if(file_list.gl_pathv[i][file_len - 1] == '/')
             {
                 continue;
             }
             
-            matched_url = (char *) globus_malloc(
-                                      (strlen(file_list.gl_pathv[i]) + 8) * 
-                                      sizeof(char));
+            matched_url = (char *) 
+                globus_malloc((file_len + 8) * sizeof(char));
              
             if(matched_url == GLOBUS_NULL)
             {
-                 err = globus_error_construct_string(
-                           GLOBUS_GASS_COPY_MODULE,
-                           GLOBUS_NULL,
-                           "[%s]: Memory allocation error",
-                           myname);
-                goto error_malloc_matched_url;
+                 result = globus_error_put(
+                    globus_error_construct_string(
+                        GLOBUS_GASS_COPY_MODULE,
+                        GLOBUS_NULL,
+                        "[%s]: Memory allocation error",
+                        myname));
+                goto error_malloc;
             }
             
             sprintf(matched_url, "file://%s", file_list.gl_pathv[i]);
             
-            globus_fifo_enqueue(
-                url_list,
-                matched_url);
+            globus_fifo_enqueue(url_list, matched_url);
         }
         break;
       
@@ -6206,42 +6233,34 @@ globus_l_gass_copy_glob_expand_file_url(
         break;
       
       default:
-        err = globus_error_construct_string(
-                  GLOBUS_GASS_COPY_MODULE,
-                  GLOBUS_NULL,
-                  "[%s]: glob() error",
-                  myname);
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: glob() returned %d",
+                myname,
+                retval));
         goto error_glob;
         break;
     }  
       
     globfree(&file_list);    
-    if (path != parsed_url.url_path)
-    {
-        globus_free(path);
-    }
     globus_url_destroy(&parsed_url);
     
     return GLOBUS_SUCCESS;    
 
     
-error_malloc_matched_url:
+error_malloc:
     globfree(&file_list);
     
 error_glob:
-    if(path != parsed_url.url_path)
-    {
-        globus_free(path);
-    }
-
-error_malloc_path:
     globus_url_destroy(&parsed_url);
     
 error_url:
 
-    return globus_error_put(err);
-
+    return result;
 }    
+
 
 static
 globus_result_t
@@ -6252,63 +6271,63 @@ globus_l_gass_copy_glob_expand_ftp_url(
     globus_fifo_t *                    url_list)
 {
     static char *   myname = "globus_l_gass_copy_glob_expand_ftp_url";    
-    globus_result_t                    result;
-    globus_object_t *                  err;
-    
+    globus_result_t                    result;    
     globus_l_gass_copy_glob_info_t     info;
     globus_ftp_client_tristate_t       feature_response;
     globus_ftp_client_features_t       features;
-    char *                             pattern;
     globus_byte_t *                    read_buffer;
     
 
-    info.list_buffer = NULL;
-    info.buffer_length = 0;
-    info.url_list = url_list;
-
-    read_buffer = (globus_byte_t *)
-                      globus_malloc(GLOBUS_GASS_COPY_FTP_LIST_BUFFER_SIZE);
-
-    if(read_buffer == GLOBUS_NULL)
-    {
-        err = globus_error_construct_string(
-              GLOBUS_GASS_COPY_MODULE,
-              GLOBUS_NULL,
-              "[%s]: Memory allocation error",
-              myname);
-        goto error_malloc;
-    }        
 
     info.base_url = globus_libc_strdup(url);
-    pattern = strrchr(info.base_url,'/');
-    if(pattern == GLOBUS_NULL)
+    info.glob_pattern = strrchr(info.base_url, '/');
+    
+    if(info.glob_pattern == GLOBUS_NULL  || *info.glob_pattern == '\0')
     {
-        err = globus_error_construct_string(
-              GLOBUS_GASS_COPY_MODULE,
-              GLOBUS_NULL,
-              "[%s]: Bad URL",
-              myname);
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: Bad URL",
+                myname));
         goto error_url;
     }
 
-    pattern++;
-    if(*pattern != '\0')
+    *(info.glob_pattern++) = '\0';
+    
+    info.base_url_len = strlen(info.base_url);
+    info.list_buffer = NULL;
+    info.buffer_length = 0;
+    info.url_list = url_list;
+    info.result = GLOBUS_SUCCESS;
+    
+    read_buffer = (globus_byte_t *)
+        globus_malloc(GLOBUS_GASS_COPY_FTP_LIST_BUFFER_SIZE * 
+            sizeof(globus_byte_t));
+
+    if(read_buffer == GLOBUS_NULL)
     {
-        info.glob_pattern = globus_libc_strdup(pattern);
-        *pattern = '\0';
-    }
-    else
-    {
-        info.glob_pattern = "*";
-        pattern = GLOBUS_NULL;
-    }
-   
-   
+        result = globus_error_put(
+            globus_error_construct_string(
+            GLOBUS_GASS_COPY_MODULE,
+            GLOBUS_NULL,
+            "[%s]: Memory allocation error",
+            myname));
+        goto error_malloc;
+    }        
+
+
     globus_mutex_init(&info.mutex, GLOBUS_NULL);
     globus_cond_init(&info.cond, GLOBUS_NULL);
-    globus_ftp_client_features_init(&features);
 
-    info.done = 1;
+    result = globus_ftp_client_features_init(&features);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_feat;
+    }
+
+    info.callbacks_left = 1;
     result = globus_ftp_client_feat(
                  &handle->ftp_handle,
                  info.base_url,
@@ -6319,20 +6338,19 @@ globus_l_gass_copy_glob_expand_ftp_url(
      
     if(result != GLOBUS_SUCCESS)
     {
-        err = globus_error_get(result);
         goto error_feat;
     }
                  
     globus_mutex_lock(&info.mutex);
-    while(info.done > 0)
+    while(info.callbacks_left > 0)
     {
         globus_cond_wait(&info.cond, &info.mutex);
     }
+    result = info.result;
     globus_mutex_unlock(&info.mutex);
-    
-    if(info.use_err)
+        
+    if(result != GLOBUS_SUCCESS)
     {
-        err = info.err;
         goto error_feat;
     }
     
@@ -6343,11 +6361,10 @@ globus_l_gass_copy_glob_expand_ftp_url(
 
     if(result != GLOBUS_SUCCESS)
     {
-        err = globus_error_get(result);
         goto error_feat;
     }
     
-    info.done = 2;        
+    info.callbacks_left = 2;        
     if(feature_response == GLOBUS_FTP_CLIENT_TRUE)
     {       
         info.list_op = GLOBUS_GASS_COPY_FTP_OP_MLSD;
@@ -6371,7 +6388,6 @@ globus_l_gass_copy_glob_expand_ftp_url(
 
     if(result != GLOBUS_SUCCESS)
     {
-        err = globus_error_get(result);
         goto error_list;
     }
 
@@ -6384,45 +6400,36 @@ globus_l_gass_copy_glob_expand_ftp_url(
 
     if(result != GLOBUS_SUCCESS)
     {
-        err = globus_error_get(result);
-        goto error_read;
+        globus_ftp_client_abort(&handle->ftp_handle);
+        
+        globus_mutex_lock(&info.mutex);
+        info.callbacks_left--;
+        while(info.callbacks_left > 0)
+        {
+            globus_cond_wait(&info.cond, &info.mutex);
+        }
+        globus_mutex_unlock(&info.mutex);
+        
+        goto error_read;    
     }
 
     globus_mutex_lock(&info.mutex);
-    while(info.done > 1)
+    while(info.callbacks_left > 0)
     {
-            globus_cond_wait(&info.cond, &info.mutex);
+        globus_cond_wait(&info.cond, &info.mutex);
     }
+    result = info.result;
     globus_mutex_unlock(&info.mutex);
 
-    if(info.use_err)
+    if(result != GLOBUS_SUCCESS)
     {
-        err = info.err;
         goto error_read;
     }
-
-
-    globus_mutex_lock(&info.mutex);
-    while(info.done > 0)
-    {
-            globus_cond_wait(&info.cond, &info.mutex);
-    }
-    globus_mutex_unlock(&info.mutex);
-
-    if(info.use_err)
-    {
-        err = info.err;
-        goto error_read;
-    }
-
     
     globus_ftp_client_features_destroy(&features);
     globus_cond_destroy(&info.cond);
     globus_mutex_destroy(&info.mutex);
-    if(pattern != GLOBUS_NULL)
-    {
-        globus_free(info.glob_pattern);
-    }
+    
     globus_free(info.base_url);
 
     return GLOBUS_SUCCESS;
@@ -6434,17 +6441,12 @@ error_feat:
     globus_ftp_client_features_destroy(&features);
     globus_cond_destroy(&info.cond);
     globus_mutex_destroy(&info.mutex);
-    if(pattern != GLOBUS_NULL)
-    {
-        globus_free(info.glob_pattern);
-    }
 
 error_url:
     globus_free(info.base_url);
 
 error_malloc:
-
-    return globus_error_put(err);
+    return result;
 }
 
 
@@ -6460,30 +6462,17 @@ globus_l_gass_copy_ftp_client_op_done_callback(
     globus_l_gass_copy_glob_info_t * info;
 
     info = (globus_l_gass_copy_glob_info_t *) user_arg;
-
-    if(err != GLOBUS_SUCCESS)
-    {
-        err = globus_object_copy(err);
-        goto error_before_callback;
-    }
            
     globus_mutex_lock(&info->mutex);
-    info->done--;
+    if (err != GLOBUS_SUCCESS && info->result != GLOBUS_SUCCESS)
+    {
+        info->result = globus_object_copy(err);
+    }
+    info->callbacks_left--;
     globus_cond_signal(&info->cond);
     globus_mutex_unlock(&info->mutex);
     
     return;
-    
-error_before_callback:
-
-    globus_mutex_lock(&info->mutex);
-    info->err = err;
-    info->use_err = GLOBUS_TRUE;
-    info->done--;
-    globus_cond_signal(&info->cond);
-    globus_mutex_unlock(&info->mutex);
-
-    return;           
 }
 
 
@@ -6494,9 +6483,10 @@ globus_l_gass_copy_glob_parse_ftp_list(
     globus_l_gass_copy_glob_info_t *   info)
 {
     static char *   myname = "globus_l_gass_copy_glob_parse_ftp_list";
-    globus_object_t *                  err;
+    globus_result_t                    result;
     int                                i;
     globus_l_gass_copy_ftp_list_entry_t     filetype;
+    char *                             space;
     char *                             temp_p;
     char *                             filename;
     char *                             matched_url;
@@ -6516,10 +6506,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
         while(*startline == '\r' || 
               *startline == '\n')
         {
-        startline++;
-        }
-        if (startline >= (info->list_buffer + info->buffer_length))
-        {
+            startline++;
             continue;
         }
         
@@ -6529,10 +6516,9 @@ globus_l_gass_copy_glob_parse_ftp_list(
         {
             endline++;
         } 
-    
         *endline = '\0';
     
-        temp_p = strchr(startline, ' ');
+        space = strchr(startline, ' ');
     
         if (info->list_op == GLOBUS_GASS_COPY_FTP_OP_NLST)
         {
@@ -6540,44 +6526,42 @@ globus_l_gass_copy_glob_parse_ftp_list(
         }
         else 
         {
-            if (temp_p == GLOBUS_NULL)
+            if (space == GLOBUS_NULL)
             {
-                err = globus_error_construct_string(
-                          GLOBUS_GASS_COPY_MODULE,
-                          GLOBUS_NULL,
-                          "[%s]: Bad MLSD output",
-                          myname);
+                result = globus_error_put(
+                    globus_error_construct_string(
+                        GLOBUS_GASS_COPY_MODULE,
+                        GLOBUS_NULL,
+                        "[%s]: Bad MLSD output",
+                        myname));
                           
                 goto error_invalid_mlsd;
             }
-            
-            filename = temp_p + 1;
+            *space = '\0';            
+            filename = space + 1;
             startfact = startline;
     
-            while(startfact != temp_p && 
+            while(startfact != space && 
                   filetype == GLOBUS_GASS_COPY_FTP_LIST_ENTRY_ASSUMED_FILE)
             {
                 endfact = strchr(startfact, ';');
                 *endfact = '\0';
                 
-                i=0; 
-                while(startfact[i] != '\0')
+                for(i = 0; startfact[i] != '\0'; i++)
                 {
                     startfact[i] = tolower(startfact[i]);
-                    i++;
                 }
     
                 factval = strchr(startfact, '=');
-                *factval = '\0';
-                factval++;
+                *(factval++) = '\0';
             
-                if(!strcmp(startfact, "type"))
+                if(strcmp(startfact, "type") == 0)
                 {
-                    if(!strcmp(factval, "dir"))
+                    if(strcmp(factval, "dir") == 0)
                     {
                         filetype = GLOBUS_GASS_COPY_FTP_LIST_ENTRY_DIR;
                     }
-                    else if(!strcmp(factval, "file"))
+                    else if(strcmp(factval, "file") == 0)
                     {
                         filetype = GLOBUS_GASS_COPY_FTP_LIST_ENTRY_FILE;
                     }
@@ -6594,7 +6578,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
         {
           case GLOBUS_GASS_COPY_FTP_LIST_ENTRY_FILE:
           case GLOBUS_GASS_COPY_FTP_LIST_ENTRY_ASSUMED_FILE:
-            temp_p = strrchr(filename,'/');
+            temp_p = strrchr(filename, '/');
             if (temp_p != GLOBUS_NULL)
             {
                 filename = temp_p + 1;
@@ -6607,25 +6591,23 @@ globus_l_gass_copy_glob_parse_ftp_list(
             {
                 
                 matched_url = (char *) 
-                    globus_malloc((strlen(info->base_url) + 
-                                   strlen(filename) + 1) * 
+                    globus_malloc((info->base_url_len + strlen(filename) + 2) * 
                                    sizeof(char));
                 
                 if(matched_url == GLOBUS_NULL)
                 {
-                    err = globus_error_construct_string(
-                          GLOBUS_GASS_COPY_MODULE,
-                          GLOBUS_NULL,
-                          "[%s]: Memory allocation error",
-                          myname);
+                    result = globus_error_put(
+                        globus_error_construct_string(
+                            GLOBUS_GASS_COPY_MODULE,
+                            GLOBUS_NULL,
+                            "[%s]: Memory allocation error",
+                            myname));
                     goto error_malloc;
                 }
                 
-                sprintf(matched_url, "%s%s", info->base_url, filename);
+                sprintf(matched_url, "%s/%s", info->base_url, filename);
                 
-                globus_fifo_enqueue(
-                    info->url_list,
-                    matched_url);
+                globus_fifo_enqueue(info->url_list, matched_url);
             }
             break;
           
@@ -6644,7 +6626,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
 error_invalid_mlsd:
 error_malloc:
 
-    return globus_error_put(err);    
+    return result;    
     
 }
 
@@ -6670,7 +6652,6 @@ globus_l_gass_copy_ftp_client_list_read_callback(
 
     if(err != GLOBUS_SUCCESS)
     {
-        err = globus_object_copy(err);
         goto error_before_callback;
     }
 
@@ -6684,29 +6665,27 @@ globus_l_gass_copy_ftp_client_list_read_callback(
     {
         if((length + offset) > info->buffer_length)
         {
-            temp_p = (globus_byte_t *) globus_realloc(
-                                           info->list_buffer, 
-                                           length + offset);
+            temp_p = (globus_byte_t *) 
+                globus_realloc(info->list_buffer, length + offset);
             if(temp_p == GLOBUS_NULL)
             {
-                err = globus_error_construct_string(
-                      GLOBUS_GASS_COPY_MODULE,
-                      GLOBUS_NULL,
-                      "[%s]: Memory allocation error",
-                      myname);
-
+                result = globus_error_put(
+                    globus_error_construct_string(
+                        GLOBUS_GASS_COPY_MODULE,
+                        GLOBUS_NULL,
+                        "[%s]: Memory allocation error",
+                        myname));
                 goto error_malloc;
             }
     
             info->list_buffer = temp_p;
+            info->buffer_length = length + offset;
         }       
 
-        (globus_byte_t *) memcpy(
+        memcpy(
             info->list_buffer + offset,
             buffer, 
             length);
-        
-        info->buffer_length = length + offset;
     }
     
     if(!eof)
@@ -6720,7 +6699,6 @@ globus_l_gass_copy_ftp_client_list_read_callback(
 
         if(result != GLOBUS_SUCCESS)
         {
-           err = globus_error_get(result);
            goto error_register_read;
         } 
     }
@@ -6730,12 +6708,11 @@ globus_l_gass_copy_ftp_client_list_read_callback(
         
         if(result != GLOBUS_SUCCESS)
         {
-            err = globus_error_get(result);
             goto error_parsing;
         } 
         
         globus_mutex_lock(&info->mutex);
-        info->done--;
+        info->callbacks_left--;
         globus_cond_signal(&info->cond);
         globus_mutex_unlock(&info->mutex);
 
@@ -6768,9 +6745,18 @@ error_before_callback:
     }
 
     globus_mutex_lock(&info->mutex);
-    info->err = err;
-    info->use_err = GLOBUS_TRUE;
-    info->done--;
+    if (info->result != GLOBUS_SUCCESS)
+    {
+        if (err != GLOBUS_SUCCESS)
+        { 
+            info->result = globus_object_copy(err);
+        }
+        else
+        {
+            info->result = result;
+        }
+    }
+    info->callbacks_left--;
     globus_cond_signal(&info->cond);
     globus_mutex_unlock(&info->mutex);
 
