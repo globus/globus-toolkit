@@ -66,7 +66,9 @@ sub test_gridftp_local
 
     if($rc != 0)
     {
-        kill(9, $source_pid, $dest_pid); 
+        if ($source_pid > 0 && $dest_pid > 0) {
+           kill(9, $source_pid, $dest_pid); 
+        }
     }
 
     my ($server_rc, $server_output) = $u->wait_command($source_pid,
