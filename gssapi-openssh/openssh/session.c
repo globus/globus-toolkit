@@ -940,7 +940,7 @@ do_setup_env(Session *s, const char *shell)
 		 * needed for loading shared libraries. So the path better
 		 * remains intact here.
 		 */
-		child_set_env(&env, &envsize, "PATH", _PATH_STDPATH);
+		child_set_env(&env, &envsize, "PATH", _PATH_STDPATH_WITH_SCP);
 # endif /* HAVE_CYGWIN */
 #endif /* HAVE_LOGIN_CAP */
 
