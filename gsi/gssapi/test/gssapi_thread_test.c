@@ -148,7 +148,7 @@ main()
     
     /* release credentials */
 
-/*      globus_gsi_gssapi_test_release_credential(&credential); */
+    globus_gsi_gssapi_test_release_credential(&credential); 
 
     /* free address */
 

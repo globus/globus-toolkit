@@ -1,11 +1,20 @@
 #!/usr/bin/env perl
 
+=pod
+
+=head1 Tests for the globus common error object code
+
+Tests to exercise the error object functionality of the globus
+common library.
+
+=cut
+
 use strict;
 use POSIX;
 use Test;
 use Cwd;
 
-my $test_prog = 'gssapi-context-test';
+my $test_prog = 'gssapi-thread-test';
 
 my $diff = 'diff';
 my @tests;
