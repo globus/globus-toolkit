@@ -91,6 +91,8 @@ static char *rcsid = "$Header$";
 
 int fix_add_entry_asn1_set_param = 0;
 
+extern globus_mutex_t                   globus_l_gsi_ssl_utils_mutex;
+
 /**********************************************************************
                                Type definitions
 **********************************************************************/
@@ -2416,7 +2418,9 @@ proxy_verify_callback(
                     0);
 
 #ifndef NO_OLDGAA_API
- 
+
+                globus_mutex_lock(&globus_l_gsi_ssl_utils_mutex);
+                
                 if(oldgaa_globus_initialize(&oldgaa_sc,
                                             &rights,
                                             &options,
@@ -2434,6 +2438,7 @@ proxy_verify_callback(
                                        policy_db->error_str);
                     ctx->error=X509_V_ERR_APPLICATION_VERIFICATION;
                     ERR_set_continue_needed();
+                    globus_mutex_unlock(&globus_l_gsi_ssl_utils_mutex);
                     goto fail_verify;
                 }
 
@@ -2452,6 +2457,7 @@ proxy_verify_callback(
                                        policy_db->error_str);
                     ctx->error =  X509_V_ERR_APPLICATION_VERIFICATION;
                     ERR_set_continue_needed(); 
+                    globus_mutex_unlock(&globus_l_gsi_ssl_utils_mutex);
                     goto fail_verify;
                 }
 
@@ -2476,6 +2482,7 @@ proxy_verify_callback(
                                           &detailed_answer,  
                                           policy_db,
                                           NULL);
+                    globus_mutex_unlock(&globus_l_gsi_ssl_utils_mutex);
                     goto fail_verify;
                 }
 #ifdef DEBUG
@@ -2507,7 +2514,8 @@ proxy_verify_callback(
                                       policy_db,
                                       NULL);
 
-                
+                globus_mutex_unlock(&globus_l_gsi_ssl_utils_mutex);
+                    
 #else /* Von's code */
 
                 result = ca_policy_file_check_signature(issuer_name,
@@ -2516,7 +2524,6 @@ proxy_verify_callback(
                                                         pvd->certdir);
 
 #endif /* #ifndef NO_OLDGAA_API */
-
 
                 free(subject_name);
                 free(issuer_name);

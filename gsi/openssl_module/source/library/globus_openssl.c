@@ -33,7 +33,7 @@ static globus_mutex_t *                 mutex_pool;
 /**
  * Module descriptor static initializer.
  */
-globus_module_descriptor_t		globus_i_openssl_module =
+globus_module_descriptor_t              globus_i_openssl_module =
 {
     "globus_openssl",
     globus_l_openssl_activate,
@@ -82,7 +82,7 @@ globus_l_openssl_deactivate(void)
 
     for (i=0; i<CRYPTO_num_locks(); i++)
     {
-		globus_mutex_destroy(&(mutex_pool[i]));
+        globus_mutex_destroy(&(mutex_pool[i]));
     }
 
     free(mutex_pool);
@@ -107,11 +107,11 @@ globus_l_openssl_locking_cb(
 {
     if (mode & CRYPTO_LOCK)
     {
-		globus_mutex_lock(&(mutex_pool[type]));
+        globus_mutex_lock(&(mutex_pool[type]));
     }
-	else
+    else
     {
-		globus_mutex_unlock(&(mutex_pool[type]));
+        globus_mutex_unlock(&(mutex_pool[type]));
     }
 }
 /* globus_l_openssl_locking_cb() */
@@ -123,7 +123,7 @@ globus_l_openssl_locking_cb(
 static unsigned long
 globus_l_openssl_thread_id(void)
 {
-	return (unsigned long) globus_thread_self();
+    return (unsigned long) globus_thread_self();
 }
 /* globus_l_openssl_thread_id() */
 
