@@ -113,6 +113,7 @@
             GLOBUS_XIO_ERROR_CANCELED,                                  \
             "Error Type Undefined."))
 
+#define GlobusXIOErrorIsEOF(res) 0
 
 #define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE             16
 #define GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT   4

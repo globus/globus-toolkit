@@ -250,7 +250,7 @@ do                                                                          \
     _my_context->driver_handle = (_in_dh);                                  \
     _my_op = &_op->entry[_caller_ndx];                                      \
     /* no operation can happen while in OPENING state so no need to lock */ \
-    if((res) != GLOBUS_SUCCESS)                                             \
+    if(_res != GLOBUS_SUCCESS)                                              \
     {                                                                       \
         _my_context->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;                \
     }                                                                       \
