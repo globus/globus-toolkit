@@ -75,6 +75,8 @@ typedef struct
     globus_off_t                        offset;
     globus_off_t                        expected_offset;
     int                                 outstanding_read_count;
+    int					read_count;
+    int					write_count;
     int					buffer_count;
     globus_xio_operation_t              close_op;
     globus_xio_driver_handle_t		driver_handle;
@@ -291,15 +293,17 @@ globus_l_xio_ordering_handle_create(
 {
     globus_l_xio_ordering_handle_t *    handle;
     globus_result_t                     result;
+    globus_size_t			handle_size;
     GlobusXIOName(globus_l_xio_ordering_handle_create);
 
     GlobusXIOOrderingDebugEnter();
-    handle = (globus_l_xio_ordering_handle_t *)
-                globus_malloc(sizeof(globus_l_xio_ordering_handle_t));
+    handle_size = sizeof(globus_l_xio_ordering_handle_t);
+    handle = (globus_l_xio_ordering_handle_t *)globus_malloc(handle_size);
     if (handle == GLOBUS_NULL)
     {
         goto error_handle;
     }
+    memset(handle, 0, handle_size);
     handle->user_req = (globus_l_xio_ordering_user_req_t *)
 		    globus_malloc(sizeof(globus_l_xio_ordering_user_req_t));
     if (handle->user_req == GLOBUS_NULL)
@@ -328,13 +332,7 @@ globus_l_xio_ordering_handle_create(
         goto error_buffer_q_init;
     }
     memset(handle->user_req, 0, sizeof(globus_l_xio_ordering_user_req_t));
-    handle->driver_op_list = GLOBUS_NULL;
     globus_mutex_init(&handle->mutex, NULL);     
-    handle->state = GLOBUS_XIO_ORDERING_NONE;
-    handle->expected_offset = 0;
-    handle->offset = 0;
-    handle->outstanding_read_count = 0;
-    handle->buffer_count = 0;
     GlobusXIOOrderingDebugExit();
     *out_handle = handle;
     return GLOBUS_SUCCESS;
@@ -539,9 +537,16 @@ globus_l_xio_ordering_cancel_cb(
     switch (handle->state)
     {
 	case GLOBUS_XIO_ORDERING_IO_PENDING:
-	    nbytes = handle->user_req->nbytes;
-	    finish_read = GLOBUS_TRUE;
-	    handle->state = GLOBUS_XIO_ORDERING_READY;
+	    if (handle->read_count == 1)
+	    {
+		nbytes = handle->user_req->nbytes;
+		finish_read = GLOBUS_TRUE;
+		--handle->read_count;
+		if (handle->write_count == 0)
+		{
+		    handle->state = GLOBUS_XIO_ORDERING_READY;
+		}
+	    }
 	    break;
 	/* 
 	 * If the handle's state is READY or CLOSING. it implies that 
@@ -577,18 +582,33 @@ error:
 }
 
 
+/* called locked */
 static
 void
 globus_l_xio_ordering_buffer_destroy(
     globus_l_xio_ordering_handle_t *    handle,
     globus_l_xio_ordering_buffer_t *	buffer)
 {
-    globus_list_t *			op_sub_list;
+    globus_list_t *			op_sub_list = GLOBUS_NULL;
     GlobusXIOName(globus_l_xio_ordering_buffer_destroy);
 
     GlobusXIOOrderingDebugEnter();
-    op_sub_list = globus_list_search(handle->driver_op_list, buffer->op);
-    globus_list_remove(&handle->driver_op_list, op_sub_list);
+    /*
+     * I do this checking here becoz if user calls close and there are some
+     * reads pending with driver created op, those ops will be available in
+     * handle->driver_op_list. I remove those ops from the driver_op_list
+     * in the close interface and call cancel on those ops. Once they are
+     * canceled, i'll get read_cb and I call buffer_destroy (this function) 
+     * in read_cb. I do remove only if i'm sure the element is present.
+     */  
+    if (handle->driver_op_list)
+    {
+	op_sub_list = globus_list_search(handle->driver_op_list, buffer->op);
+    }
+    if (op_sub_list)
+    {
+        globus_list_remove(&handle->driver_op_list, op_sub_list);
+    }
     globus_xio_driver_operation_destroy(buffer->op);
     globus_free(buffer->iovec[0].iov_base);
     globus_free(buffer->iovec);
@@ -783,13 +803,16 @@ globus_l_xio_ordering_read_cb(
 		 * the condition on the 'if loop' succeeds, then copy() might
 		 * modify handle->expected_offset. thats why i store it above
 		 */
-		if (handle->state == GLOBUS_XIO_ORDERING_IO_PENDING && 
-		    offset == expected_offset)
+		if (handle->read_count == 1 && offset == expected_offset)
 		{
 		    finish = globus_l_xio_ordering_copy(handle);
 		    if (finish)
 		    {
-			handle->state = GLOBUS_XIO_ORDERING_READY;
+			--handle->read_count;
+			if (handle->write_count == 0)
+			{
+			    handle->state = GLOBUS_XIO_ORDERING_READY;
+			}
 			requestor_op = handle->user_req->op;
 			requestor_result = globus_error_put(
 						handle->user_req->error);
@@ -835,7 +858,6 @@ globus_l_xio_ordering_read_cb(
 	    }
 	    else
 	    {
-		globus_l_xio_ordering_buffer_destroy(handle, buffer);
 		res = result;
 		goto error;
 	    }
@@ -890,8 +912,10 @@ globus_l_xio_ordering_read_cb(
     return;
 
 error:
-    if (handle->state == GLOBUS_XIO_ORDERING_IO_PENDING)
+    globus_l_xio_ordering_buffer_destroy(handle, buffer);
+    if (handle->read_count == 1)
     {
+	--handle->read_count;
 	finish = GLOBUS_TRUE;
     }
     handle->state = GLOBUS_XIO_ORDERING_ERROR;
@@ -933,6 +957,13 @@ globus_l_xio_ordering_read(
     globus_mutex_lock(&handle->mutex);
     switch (handle->state)
     {
+	case GLOBUS_XIO_ORDERING_IO_PENDING:
+	    if (handle->read_count == 1)
+	    {
+		result = GlobusXIOErrorInvalidState(handle->state);
+		goto error;
+	    }
+	    /* fall through */
         case GLOBUS_XIO_ORDERING_READY:
 	    user_req = handle->user_req;
 	    user_req->op = op;
@@ -974,6 +1005,7 @@ globus_l_xio_ordering_read(
 	    else
 	    {
 		handle->state = GLOBUS_XIO_ORDERING_IO_PENDING;
+	        ++handle->read_count;
 	    }
             break;
         default:
@@ -989,7 +1021,11 @@ globus_l_xio_ordering_read(
         op, globus_l_xio_ordering_cancel_cb, handle))
     {
 	globus_mutex_lock(&handle->mutex);
-	handle->state = GLOBUS_XIO_ORDERING_READY;
+	--handle->read_count;
+	if (handle->write_count == 0)
+	{
+	    handle->state = GLOBUS_XIO_ORDERING_READY;
+	}
         result = GlobusXIOErrorCanceled();
 	goto error;
     }
@@ -1017,7 +1053,11 @@ globus_l_xio_ordering_write_cb(
     GlobusXIOOrderingDebugEnter();
     handle = (globus_l_xio_ordering_handle_t *) user_arg;
     globus_mutex_lock(&handle->mutex);
-    handle->state = GLOBUS_XIO_ORDERING_READY;
+    --handle->write_count;
+    if (handle->write_count == 0 && handle->read_count == 0)
+    {
+        handle->state = GLOBUS_XIO_ORDERING_READY;
+    }
     globus_mutex_unlock(&handle->mutex);
     globus_xio_driver_finished_write(op, result, nbytes);
     GlobusXIOOrderingDebugExit();
@@ -1041,12 +1081,32 @@ globus_l_xio_ordering_write(
     GlobusXIOOrderingDebugEnter();
     handle = (globus_l_xio_ordering_handle_t *) driver_specific_handle;
 
+    /* 
+     * I dont have to do anything special in cancel_cb if the user cancels a
+     * write operation. So I dont do any enable cancel here. As I just pass
+     * the user op to the driver below, I assume xio_cancel will invoke 
+     * cancel on driver below and I'll eventually get the write_cb
+     */
     globus_mutex_lock(&handle->mutex);
     switch (handle->state)
     {
+	/* 
+	 * I allow multiple outstanding writes from the user. Otherwise user
+	 * of this ordering driver will not be able to take advantage of the
+	 * mode_e or gridftp driver below (basically use parallel writes on
+	 * multiple sockets. Also the order in which the write_cb goes to the 
+	 * user does not matter (unlike the read_cb's). I use read_count and
+	 * write_count to track the number of pending reads and writes. 
+	 * read_count can be either 0 or 1 as i dont allow multiple pending 
+	 * reads.
+	 */
         case GLOBUS_XIO_ORDERING_READY:
+	    handle->state = GLOBUS_XIO_ORDERING_IO_PENDING;
+	    /* fall through */
+        case GLOBUS_XIO_ORDERING_IO_PENDING:
 	    /* ??? this may be right. not sure if this will work for indicating
 	       the offset to the driver below ??? */
+	    ++handle->write_count;
             result = globus_xio_driver_data_descriptor_cntl(
                         op,
                         NULL,
@@ -1069,7 +1129,6 @@ globus_l_xio_ordering_write(
                 goto error;
             }
             handle->offset += length;
-	    handle->state = GLOBUS_XIO_ORDERING_IO_PENDING;
             break;
         default:
 	    result = GlobusXIOErrorInvalidState(handle->state);
