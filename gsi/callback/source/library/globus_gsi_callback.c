@@ -13,7 +13,6 @@
 #include "proxycertinfo.h"
 #include "globus_gsi_callback_constants.h"
 #include "globus_i_gsi_callback.h"
-#include "globus_gsi_system_config.h"
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <openssl/ssl.h>
