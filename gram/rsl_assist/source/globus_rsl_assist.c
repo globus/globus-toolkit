@@ -650,6 +650,7 @@ globus_i_rsl_assist_get_rm_contact(char* resource)
     {
 	host = globus_malloc( 1 + (globus_size_t)(c-resource));
 	if (!host) return GLOBUS_NULL;
+	memcpy(host, resource, c-resource);
 	host[c-resource] = '\0';
 	service = globus_malloc(strlen(resource) - strlen(host));
 	++c;
