@@ -657,6 +657,34 @@ globus_i_gsc_terminate(
 {
     GlobusGridFTPServerName(globus_i_gsc_terminate);
 
+    if(server_handle->data_object)
+    {
+        globus_i_gsc_data_t *               data_obj;
+
+        data_obj = server_handle->data_object;
+        switch(data_obj->state)
+        {
+            case GLOBUS_L_GSC_DATA_OBJ_READY:
+                data_obj->state = GLOBUS_L_GSC_DATA_OBJ_DESTROYING;
+                globus_i_guc_data_object_destroy(server_handle, data_obj);
+                server_handle->data_object = NULL;
+                break;
+                                                                                
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+            case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
+                /* do nuttin */
+                break;
+                                                                                
+            case GLOBUS_L_GSC_DATA_OBJ_INUSE:
+                /* start an abort event */
+                data_obj->state = GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT;
+                break;
+                                                                                
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
+        }
+    }
     switch(server_handle->state)
     {
         case GLOBUS_L_GSC_STATE_OPENING:
@@ -3363,12 +3391,12 @@ globus_i_gsc_port(
                         op->server_handle, op->server_handle->data_object);
                     op->server_handle->data_object = NULL;
                     break;
-                                                                                
-                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+
                 case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
                     /* do nuttin */
                     break;
-                                                                                
+
+                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
                 case GLOBUS_L_GSC_DATA_OBJ_INUSE:
                 default:
                     globus_assert(0 && "possible memory corruption");
@@ -3440,11 +3468,11 @@ globus_i_gsc_passive(
                     op->server_handle->data_object = NULL;
                     break;
                                                                                 
-                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
                 case GLOBUS_L_GSC_DATA_OBJ_DESTROYING:
                     /* do nuttin */
                     break;
-                                                                                
+
+                case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
                 case GLOBUS_L_GSC_DATA_OBJ_INUSE:
                 default:
                     globus_assert(0 && "possible memory corruption");
@@ -4083,7 +4111,7 @@ globus_gridftp_server_control_disconnected(
 
     globus_mutex_lock(&server->mutex);
     {
-        data_obj = (globus_i_gsc_data_t *) globus_hashtable_remove(
+        data_obj = (globus_i_gsc_data_t *) globus_hashtable_lookup(
             &server->data_object_table, user_data_handle);
         if(data_obj == NULL)
         {
@@ -4095,6 +4123,10 @@ globus_gridftp_server_control_disconnected(
             case GLOBUS_L_GSC_DATA_OBJ_READY:
                 data_obj->state = GLOBUS_L_GSC_DATA_OBJ_DESTROYING;
                 globus_i_guc_data_object_destroy(server, data_obj);
+                if(data_obj == server->data_object)
+                {
+                    server->data_object = NULL;
+                }
                 break;
 
             case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
@@ -4203,6 +4235,8 @@ globus_gridftp_server_control_finished_transfer(
 
             /* is already removed from the hashtable */
             case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
+                /* data_object will get freed when event processing
+                    ends */
                 op->data_destroy_obj = op->server_handle->data_object;
                 op->server_handle->data_object = NULL;
                 break;
