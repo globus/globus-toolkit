@@ -38,6 +38,7 @@
 #include "kex.h"
 #include "auth.h"
 #include "log.h"
+#include "channels.h"
 #include "session.h"
 #include "dispatch.h"
 #include "servconf.h"
@@ -439,13 +440,13 @@ ssh_gssapi_userok(char *user)
 int
 userauth_external(Authctxt *authctxt)
 {
-	packet_done();
+	packet_check_eom();
 
 	return(ssh_gssapi_userok(authctxt->user));
 }
 
-void input_gssapi_token(int type, int plen, void *ctxt);
-void input_gssapi_exchange_complete(int type, int plen, void *ctxt);
+void input_gssapi_token(int type, u_int32_t plen, void *ctxt);
+void input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt);
 
 /* We only support those mechanisms that we know about (ie ones that we know
  * how to check local user kuserok and the like
@@ -472,7 +473,7 @@ userauth_gssapi(Authctxt *authctxt)
 	do {
 		if (oid.elements)
 			xfree(oid.elements);
-		oid.elements = packet_get_string(&oid.length);
+		oid.elements = packet_get_string(NULL);
 		gss_test_oid_set_member(&ms, &oid, supported, &present);
 		mechs--;
 	} while (mechs>0 && !present);
@@ -507,7 +508,7 @@ userauth_gssapi(Authctxt *authctxt)
 }
 
 void
-input_gssapi_token(int type, int plen, void *ctxt)
+input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
@@ -522,7 +523,7 @@ input_gssapi_token(int type, int plen, void *ctxt)
 	recv_tok.value=packet_get_string(&recv_tok.length);
 	
 	maj_status=ssh_gssapi_accept_ctx(gssctxt, &recv_tok, &send_tok, NULL);
-	packet_done();
+	packet_check_eom();
 	
 	if (GSS_ERROR(maj_status)) {
 		/* Failure <sniff> */
@@ -553,7 +554,7 @@ input_gssapi_token(int type, int plen, void *ctxt)
  */
  
 void
-input_gssapi_exchange_complete(int type, int plen, void *ctxt)
+input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
