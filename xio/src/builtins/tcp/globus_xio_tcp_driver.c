@@ -1421,24 +1421,15 @@ globus_l_xio_tcp_system_connect_cb(
     
     connect_info = (globus_l_connect_info_t *) user_arg;
     
-    if(result != GLOBUS_SUCCESS)
+    if(result != GLOBUS_SUCCESS && !globus_xio_error_is_canceled(result))
     {
         globus_result_t                 res;
-        globus_object_t *               err;
         
-        err = globus_error_get(result);
-        
-        if(!globus_xio_error_is_canceled(err))
+        res = globus_l_xio_tcp_connect_next(connect_info);
+        if(res == GLOBUS_SUCCESS)
         {
-            res = globus_l_xio_tcp_connect_next(connect_info);
-            if(res == GLOBUS_SUCCESS)
-            {
-                globus_object_free(err);
-                goto error_tryagain;
-            }
+            goto error_tryagain;
         }
-        
-        result = globus_error_put(err);
     }
     
     if(result != GLOBUS_SUCCESS)

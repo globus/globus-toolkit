@@ -151,6 +151,8 @@ globus_l_xio_server_accept_kickout(
                 break;
 
             case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
+            case GLOBUS_XIO_SERVER_STATE_CLOSING:
+            case GLOBUS_XIO_SERVER_STATE_CLOSED:
                 break;
 
             default:
@@ -415,8 +417,8 @@ globus_l_xio_server_close_kickout(
     {
         /* dec refrence count then free.  this makes sure we don't
            free while in a user callback */
-        GlobusIXIOServerDec(destroy_server, xio_server);
         xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSED;
+        GlobusIXIOServerDec(destroy_server, xio_server);
     }
     globus_mutex_unlock(&xio_server->mutex);
 

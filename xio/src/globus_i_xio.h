@@ -14,6 +14,8 @@
  *                         internal macros
  *                         ---------------
  **************************************************************************/
+GlobusDebugDeclare(GLOBUS_XIO);
+
 #define GlobusXIODebugPrintf(level, message)                                \
     GlobusDebugPrintf(GLOBUS_XIO, level, message)
 

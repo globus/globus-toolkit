@@ -42,10 +42,11 @@ GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
 enum globus_l_xio_error_levels
 {
     GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE     = 1,
-    GLOBUS_L_XIO_SYSTEM_DEBUG_DATA      = 2
+    GLOBUS_L_XIO_SYSTEM_DEBUG_DATA      = 2,
+    GLOBUS_L_XIO_SYSTEM_DEBUG_INFO      = 4
 };
 
-
+/*** XXXX ***/
 #ifdef HAVE_SYSCONF
 #define GLOBUS_L_OPEN_MAX sysconf(_SC_OPEN_MAX)
 #else
@@ -357,7 +358,7 @@ globus_l_xio_system_activate(void)
     char *                              block;
     GlobusXIOName(globus_l_xio_system_activate);
 
-    GlobusDebugInit(GLOBUS_XIO_SYSTEM, TRACE DATA);
+    GlobusDebugInit(GLOBUS_XIO_SYSTEM, TRACE DATA INFO);
     GlobusXIOSystemDebugEnter();
 
     if(globus_module_activate(GLOBUS_XIO_MODULE) != GLOBUS_SUCCESS)
@@ -570,13 +571,23 @@ globus_l_xio_system_cancel_cb(
                 if(op_info->state == GLOBUS_L_OPERATION_NEW)
                 {
                     op_info->state = GLOBUS_L_OPERATION_CANCELED;
+                    
+                    GlobusXIOSystemDebugPrintf(
+                        GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                        ("[%s] fd=%d, Canceling NEW\n",
+                            _xio_name, op_info->fd));
                 }
                 else
                 {
                     if(globus_l_xio_system_select_active)
                     {
                         op_info->state = GLOBUS_L_OPERATION_CANCELED;
-
+                        
+                        GlobusXIOSystemDebugPrintf(
+                            GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                            ("[%s] fd=%d, Canceling Active\n",
+                                _xio_name, op_info->fd));
+                            
                         /* pend the cancel for after select wakes up */
                         if(!globus_l_xio_system_wakeup_pending)
                         {
@@ -590,7 +601,12 @@ globus_l_xio_system_cancel_cb(
                         globus_result_t     result;
 
                         op_info->state = GLOBUS_L_OPERATION_COMPLETE;
-
+                        
+                        GlobusXIOSystemDebugPrintf(
+                            GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                            ("[%s] fd=%d, Canceling Pending\n",
+                                _xio_name, op_info->fd));
+                                
                         /* unregister and kickout now */
                         op_info->result = GlobusXIOErrorCanceled();
 
@@ -1695,7 +1711,7 @@ globus_l_xio_system_handle_write(
 
             if(err)
             {
-                result = GlobusXIOErrorSystemError("getsockopt", err);
+                result = GlobusXIOErrorSystemError("connect", err);
                 GlobusIXIOSystemCloseFd(fd);
             }
         }
@@ -1919,7 +1935,11 @@ globus_l_xio_system_poll(
                 fd = (int) globus_list_remove(
                     &globus_l_xio_system_canceled_reads,
                     globus_l_xio_system_canceled_reads);
-
+                
+                GlobusXIOSystemDebugPrintf(
+                    GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                    ("[%s] fd=%d, Setting canceled read\n", _xio_name, fd));
+                    
                 if(!FD_ISSET(fd, globus_l_xio_system_ready_reads))
                 {
                     FD_SET(fd, globus_l_xio_system_ready_reads);
@@ -1932,7 +1952,11 @@ globus_l_xio_system_poll(
                 fd = (int) globus_list_remove(
                     &globus_l_xio_system_canceled_writes,
                     globus_l_xio_system_canceled_writes);
-
+                
+                GlobusXIOSystemDebugPrintf(
+                    GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                    ("[%s] fd=%d, Setting canceled read\n", _xio_name, fd));
+                    
                 if(!FD_ISSET(fd, globus_l_xio_system_ready_writes))
                 {
                     FD_SET(fd, globus_l_xio_system_ready_writes);
