@@ -70,29 +70,27 @@
  *                    Internally exposed data structures
  **************************************************************************/
 
-struct globus_l_xio_dd_s
+#define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE         16
+
+
+typedef struct globus_i_xio_attr_ent_s
 {
+    globus_xio_driver_t                         driver;
+    void *                                      driver_data;
+} globus_i_xio_attr_ent_t;
 
-    /* matching length arrays */
-    void **                                     drivers;
-    void **                                     drivers_data;
-
-    /* contains the length of the above 2 arrays */
-    int                                         stack_size;
-};
-
-struct globus_l_xio_attr_ds_s
+typedef struct globus_i_xio_attr_s
 {
-    void *                                      driver;
-    void *                                      driver_attr;
-}
-
-struct globus_l_xio_attr_s
-{
-    struct globus_l_xio_attr_ds_s *             ds_array;
     int                                         max;
     int                                         ndx;
-};
+    globus_i_xio_attr_ent_t *                   entry;
+} globus_i_xio_attr_t;
+
+typedef struct globus_i_xio_dd_s
+{
+    int                                         stack_size;
+    globus_i_xio_attr_ent_t                     entry[1];
+} globus_i_xio_dd_t;
 
 struct globus_i_xio_stack_s
 {

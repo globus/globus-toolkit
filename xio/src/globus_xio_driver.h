@@ -1191,19 +1191,13 @@ typedef struct globus_xio_driver_s
 
     /*
      *  driver attr functions.  All or none may be NULL
+     *
+     *   data descriptor is done with attr
      */
     globus_xio_driver_attr_init_t                       attr_init_func;
     globus_xio_driver_attr_copy_t                       attr_copy_func;
     globus_xio_driver_attr_cntl_t                       attr_cntl_func;
     globus_xio_driver_attr_destroy_t                    attr_destroy_func;
-    
-    /*
-     *  data descriptor functiosn.  All or none
-     */
-    globus_xio_driver_data_descriptor_init_t            dd_init;  
-    globus_xio_driver_driver_data_descriptor_copy_t     dd_copy;
-    globus_xio_driver_driver_data_descriptor_destroy_t  dd_destroy;
-    globus_xio_driver_driver_data_descriptor_cntl_t     dd_cntl;
 };
 /*******************************************************************
  *                        signal stuff
