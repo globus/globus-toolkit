@@ -618,6 +618,12 @@ globus_l_gass_transfer_http_extract_referral(
     char ***						referral,
     globus_size_t *					referral_count);
 
+static
+globus_bool_t
+globus_l_gass_transfer_http_callback_denied(
+    globus_time_t				time_can_block,
+    void *					arg);
+
 EXTERN_C_END
 
 #endif /* GLOBUS_GASS_INCLUDE_GLOBUS_L_GASS_TRANSFER_HTTP_H */

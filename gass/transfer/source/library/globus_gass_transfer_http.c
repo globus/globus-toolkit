@@ -2057,11 +2057,13 @@ globus_l_gass_transfer_http_new_request(
   proto_error:
     globus_free(proto);
   error_exit:
-    /* should be a oneshot */
-    globus_gass_transfer_proto_request_denied(
-	request,
-	GLOBUS_L_DEFAULT_FAILURE_CODE,
-	globus_libc_strdup(GLOBUS_L_DEFAULT_FAILURE_REASON));
+    globus_callback_register_oneshot(
+	GLOBUS_NULL /* callback handle */,
+	(globus_time_t) 0,
+	globus_l_gass_transfer_http_callback_denied,
+	(void *) request,
+	GLOBUS_NULL /* wakeup func */,
+	GLOBUS_NULL /* wakeup arg */);
 }
 /* globus_l_gass_transfer_http_new_request() */
 
@@ -5791,3 +5793,21 @@ globus_l_gass_transfer_http_extract_referral(
     return;
 }
 /* globus_l_gass_transfer_http_extract_referral() */
+
+static
+globus_bool_t
+globus_l_gass_transfer_http_callback_denied(
+    globus_time_t				time_can_block,
+    void *					arg)
+{
+    globus_gass_transfer_request_t		request;
+
+    request = (globus_gass_transfer_request_t) arg;
+    
+    globus_gass_transfer_proto_request_denied(
+	request,
+	GLOBUS_L_DEFAULT_FAILURE_CODE,
+	globus_libc_strdup(GLOBUS_L_DEFAULT_FAILURE_REASON));
+
+    return GLOBUS_TRUE;
+}
