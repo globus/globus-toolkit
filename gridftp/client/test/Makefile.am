@@ -38,11 +38,15 @@ LibHeaders = \
 	globus_ftp_client_test_abort_plugin.h \
 	globus_ftp_client_test_pause_plugin.h \
 	globus_ftp_client_test_restart_plugin.h \
+	globus_ftp_client_test_perf_plugin.h \
+	globus_ftp_client_test_throughput_plugin.h \
 	globus_ftp_client_test_common.h
 LibSources = \
 	globus_ftp_client_test_abort_plugin.c \
 	globus_ftp_client_test_pause_plugin.c \
 	globus_ftp_client_test_restart_plugin.c \
+	globus_ftp_client_test_perf_plugin.c \
+	globus_ftp_client_test_throughput_plugin.c \
 	globus_ftp_client_test_common.c
 
 noinst_LTLIBRARIES = libglobus_ftp_client_test_$(GLOBUS_FLAVOR_NAME).la

@@ -16,6 +16,13 @@
 
 EXTERN_C_BEGIN
 
+/** Module descriptor
+ */
+#define GLOBUS_FTP_CLIENT_PERF_PLUGIN_MODULE (&globus_i_ftp_client_perf_plugin_module)
+
+extern
+globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module;
+
 /**
  * Transfer begin callback
  *
@@ -41,7 +48,14 @@ typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
 /**
  * Performance marker received callback
  *
- * This callback is called for every performance marker that is received
+ * This callback is called for all types of transfers except a third
+ * party in which extended block mode is not used (because 112 perf markers
+ * wont be sent in that case). For extended mode 'put' and '3pt', actual 112
+ * perf markers will be used and the frequency of this callback is dependent
+ * upon the frequency those messages are received. For 'put' in which
+ * extended block mode is not enabled and 'get' transfers, the information in
+ * this callback will be determined locally and the frequency of this callback
+ * will be at a maximum of one per second.
  *
  * @param handle
  *        this the client handle that this transfer is occurring on
@@ -52,17 +66,15 @@ typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
  *        init
  *
  * @param time_stamp
- *        the timestamp specified on the performance marker received
+ *        the timestamp at which the number of bytes is valid
  *
  * @param stripe_ndx
- *        the stripe index specified by the performance marker received
+ *        the stripe index this data refers to
  *
- * @param num_stripes total number of stripes involved in this transfer as
- *        specified by the performance marker received
+ * @param num_stripes total number of stripes involved in this transfer
  *
  * @param nbytes
- *        the total bytes transfered on this stripe as specified by the
- *        performance marker received
+ *        the total bytes transfered on this stripe
  *
  * @return
  *        - n/a

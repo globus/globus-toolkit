@@ -1,4 +1,4 @@
-#! /usr/bin/env perl 
+#! /usr/bin/env perl
 
 
 =head1 Get Tests
@@ -348,7 +348,89 @@ push(@tests, "prot_test('clear', 0);");
 push(@tests, "prot_test('safe', 0);");
 push(@tests, "prot_test('private', 0);");
 
-=head2 I<restart_plugin_test> (Test 93-?)
+=head2 I<perf_test> (Test 93)
+
+Do a simple get of $test_url, enabling perf_plugin
+
+=back
+
+=cut
+sub perf_test
+{
+    my $tmpname = POSIX::tmpnam();
+    my ($errors,$rc) = ("",0);
+
+    unlink('core');
+
+    $rc = system("$test_exec -s '$test_url' -M >$tmpname 2>/dev/null") / 256;
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+    if($errors eq "")
+    {
+        $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+    }
+
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok("\n# $test_exec -M\n#$errors", 'success');
+    }
+    unlink($tmpname);
+}
+
+push(@tests, "perf_test();");
+
+=head2 I<throughput_test> (Test 94)
+
+Do a simple get of $test_url, enabling throughput_plugin
+
+=back
+
+=cut
+sub throughput_test
+{
+    my $tmpname = POSIX::tmpnam();
+    my ($errors,$rc) = ("",0);
+
+    unlink('core');
+
+    $rc = system("$test_exec -s '$test_url' -T >$tmpname 2>/dev/null") / 256;
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+    if($errors eq "")
+    {
+        $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+    }
+
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok("\n# $test_exec -T\n#$errors", 'success');
+    }
+    unlink($tmpname);
+}
+
+push(@tests, "throughput_test();");
+
+=head2 I<restart_plugin_test> (Test 95-?)
 
 Do a get of $test_url, triggering server-side faults, and using
 the default restart plugin to cope with them.
@@ -398,9 +480,9 @@ foreach (&FtpTestLib::ftp_commands())
     push(@tests, "restart_plugin_test('$_');");
 }
 
-push(@tests, "restart_plugin_test('PROT', '-c self -t safe')"); 
-push(@tests, "restart_plugin_test('DCAU', '-c self -t safe')"); 
-push(@tests, "restart_plugin_test('PBSZ', '-c self -t safe')"); 
+push(@tests, "restart_plugin_test('PROT', '-c self -t safe')");
+push(@tests, "restart_plugin_test('DCAU', '-c self -t safe')");
+push(@tests, "restart_plugin_test('PBSZ', '-c self -t safe')");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

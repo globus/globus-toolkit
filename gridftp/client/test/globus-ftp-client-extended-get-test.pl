@@ -1,4 +1,4 @@
-#! /usr/bin/env perl 
+#! /usr/bin/env perl
 #
 # Test to exercise the "get" functionality of the Globus FTP client library
 # in extended block mode
@@ -202,6 +202,80 @@ for(my $i = 1; $i <= 41; $i++)
         push(@tests, "restart_test($i, $j);");
     }
 }
+
+=head2 I<perf_test> (Test 852)
+
+Do an extended get of $testfile, enabling perf_plugin
+
+=back
+
+=cut
+sub perf_test
+{
+    my $tmpname = POSIX::tmpnam();
+    my ($errors,$rc) = ("",0);
+
+    unlink('core');
+
+    $rc = system("$test_exec -s gsiftp://localhost$testfile -M >$tmpname 2>/dev/null") / 256;
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok("\n# $test_exec -M -s gsiftp://localhost$testfile\n#$errors", 'success');
+    }
+    unlink($tmpname);
+}
+
+push(@tests, "perf_test();");
+
+=head2 I<throughput_test> (Test 853)
+
+Do an extended get of $testfile, enabling throughput_plugin
+
+=back
+
+=cut
+sub throughput_test
+{
+    my $tmpname = POSIX::tmpnam();
+    my ($errors,$rc) = ("",0);
+
+    unlink('core');
+
+    $rc = system("$test_exec -s gsiftp://localhost$testfile -T >$tmpname 2>/dev/null") / 256;
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok("\n# $test_exec -s gsiftp://localhost$testfile -T\n#$errors", 'success');
+    }
+    unlink($tmpname);
+}
+
+push(@tests, "throughput_test();");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
