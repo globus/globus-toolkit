@@ -322,8 +322,8 @@ typedef struct addrinfo                 globus_addrinfo_t;
 #define GlobusLibcProtocolFamilyIsIP(family)                                \
     ((family == AF_INET ? 1 : (family == AF_INET6 ? 1 : 0)))
 
-#define GlobusLibcSockaddrSetFamily(_addr, fam)  (_addr).ss_family = fam
-#define GlobusLibcSockaddrGetFamily(_addr)  (_addr).ss_family
+#define GlobusLibcSockaddrSetFamily(_addr, fam)  ((struct sockaddr *) &(_addr))->sa_family = fam
+#define GlobusLibcSockaddrGetFamily(_addr)  ((struct sockaddr *) &(_addr))->sa_family
 
 #define GlobusLibcSockaddrGetPort(addr, port)                               \
     do                                                                      \
