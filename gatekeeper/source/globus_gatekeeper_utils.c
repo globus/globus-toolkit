@@ -49,10 +49,36 @@ CVS Information:
                           Module specific prototypes
 ******************************************************************************/
 
+static
+char * fgetscont(char *line, int size, FILE* fd);
+
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
 
+static
+char * fgetscont(char * line, int size, FILE* fd)
+{
+	int i;
+	int len;
+	char * cp;
+
+	i = 2;
+	len = size;
+    cp = line;
+	*cp = '\0';
+
+	while(fgets(cp, len, fd) &&  
+		(i = strlen(line)) > 2 && 
+		line[i-1] == '\n' && line[i-2] == '\\') {
+      len = size - i - 2;
+	  cp = line + i - 2;
+	}
+	if (*cp == '\0') {
+		return NULL;
+	}
+	return line;
+}
 /******************************************************************************
 Function:   globus_gatekeeper_util_globusxmap()
 Description:
@@ -79,7 +105,7 @@ globus_gatekeeper_util_globusxmap( char * filename, char * index, char ** comman
 
   if ((fd = fopen(filename, "r")) != NULL) {
 
-    while(fgets(line, sizeof(line), fd)) {
+    while(fgetscont(line, sizeof(line), fd)) {
       i = strlen(line);
 	  if (line[0] != '#') {   /* comment line */
 	    if (line[i - 1] == '\n') {
@@ -132,13 +158,11 @@ globus_gatekeeper_util_tokenize(char * command,
 								int * n,
 								char * sep)
 {
-  int i,j,k;
+  int i;
   char * cp;
   char * pp;
   char * qp;
-  char * next;
   char ** arg;
-  int  quotes = 0;
 
   arg = args;
   i = *n - 1;
@@ -212,7 +236,6 @@ Returns:
 int
 globus_gatekeeper_util_envsub(char ** arg)
 {
-	int  i;
 	char * cp;
 	char * pp;
 	char * qp;
@@ -264,7 +287,6 @@ globus_gatekeeper_util_exec(char *args[],
 					char **errmsgp)
 {
 
-  int i,j;
   int pid;
   int err; 
   int rc;
