@@ -107,12 +107,14 @@ globus_debug_init(
  *    they will map to a 2^i value (so, list them in same order as value)
  *
  * will look in env for {module_name}_DEBUG whose value is:
- * <levels> [, [ [ # ] <file name>] [, <show_tids>] [, <timestamp_levels>] ]
+ * <levels> [, [ [ # ] <file name>] [, <flags> [, <timestamp_levels>] ] ]
  * where <levels> can be a single numeric or '|' separated level names
  * <file name> is a debug output file... can be empty.  stderr by default
  *    if a '#' precedes the filename, the file will be overwritten on each run
  *    otherwise, the default is to append to the existing (if one exists)
- * <show_tids> 0 or 1, use 1 to show thread ids.
+ * <flags> 0 default (or any of the following to enable:
+ *         1 show thread ids
+ *         2 append pid to debug filename
  * <timestamp_levels> similar to <levels>. specifies which levels to print
  *   timestamps with.  default is none.
  * Also, users can use the ALL level in their env setting to turn on 

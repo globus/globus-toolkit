@@ -172,8 +172,34 @@ globus_debug_init(
 
         if(handle->levels)
         {
+            globus_bool_t               append_pid = GLOBUS_FALSE;
+            
+            if(show_tid && *show_tid)
+            {
+                int                     flags;
+                
+                flags = atoi(show_tid);
+                if((flags & 0x1))
+                {
+                    handle->thread_ids = GLOBUS_TRUE;
+                }
+                
+                if((flags & 0x2))
+                {
+                    append_pid = GLOBUS_TRUE;
+                }
+            }
+            
             if(filename && *filename)
             {
+                char                    buf[1024];
+                
+                if(append_pid)
+                {
+                    sprintf(buf, "%s.%d", filename, (int) getpid());
+                    filename = buf;
+                }
+                
                 if(*filename == '#')
                 {
                     filename += 1;
@@ -197,11 +223,6 @@ globus_debug_init(
                         env_name,
                         filename);
                 }
-            }
-                                                   /* I DO mean the digit 0 */
-            if(show_tid && *show_tid && *show_tid != '0')
-            {
-                handle->thread_ids = GLOBUS_TRUE;
             }
             
             if(timestamp_levels)
