@@ -1,17 +1,17 @@
-/******************************************************************************
-globus_url.c 
-
-Description:
-    Globus URL parsing utility functions. Parses URLs of the form
-    <scheme>://[<user>[:<password>]@]<host>[:<port>]/<url-path>
-     or
-    <scheme>://<scheme-specific-part>
-
-******************************************************************************/
-
-/******************************************************************************
-                             Include header files
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_url.c Globus URL parsing utility functions
+ *
+ * Parses URLs of the form
+ * @code
+ *  <scheme>://[<user>[:<password>]@]<host>[:<port>]/<url-path>
+ * @endcode
+ *
+ * @code
+ * <scheme>://<scheme-specific-part>
+ * @endcode
+ */
+#endif
 
 #include "config.h"
 #include "globus_common.h"
@@ -21,9 +21,10 @@ Description:
 #include <string.h>
 #include <ctype.h>
 
-/******************************************************************************
-		      Module specific prototypes
-******************************************************************************/
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/*
+ * Module specific prototypes
+ */
 static int globusl_url_get_substring(const char *src,
 				    char **destp,
 				    int nullp);
@@ -54,16 +55,49 @@ globusl_url_get_file_specific(const char **stringp,
 static int globusl_url_issafe(char x);
 static int globusl_url_isextra(char x);
 static int globusl_url_isscheme_special(char x);
-/******************************************************************************
-Function: int globus_url_parse()
+#endif
 
-Description: Parse a string containing a URL into a globus_url_t
-
-Parameters: url_string (in), url (out)
-
-Returns: GLOBUS_SUCCESS on success, GLOBUS_URL_ERROR_* on ERROR
-******************************************************************************/
-
+/**
+ * Parse a string containing a URL into a globus_url_t
+ * @ingroup globus_url
+ *
+ * @param url_string
+ *        String to parse
+ * @param url
+ *        Pointer to globus_url_t to be filled with the fields of the url
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The string was successfully parsed.
+ * @retval GLOBUS_URL_ERROR_NULL_STRING
+ *         The url_string was GLOBUS_NULL.
+ * @retval GLOBUS_URL_ERROR_NULL_URL
+ *         The URL pointer was GLOBUS_NULL.
+ * @retval GLOBUS_URL_ERROR_BAD_SCHEME 
+ *         The URL scheme (protocol) contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_USER 
+ *         The user part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_PASSWORD
+ *         The password part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_HOST
+ *         The host part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_PORT
+ *         The port part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_PATH
+ *         The path part of the URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_DN -9
+ *         The DN part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_ATTRIBUTES -10
+ *         The attributes part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_SCOPE -11
+ *         The scope part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_BAD_FILTER -12
+ *         The filter part of an LDAP URL contained invalid characters.
+ * @retval GLOBUS_URL_ERROR_OUT_OF_MEMORY -13
+ *         The library was unable to allocate memory to create the
+ *         the globus_url_t contents.
+ * @retval GLOBUS_URL_ERROR_INTERNAL_ERROR -14
+ *         Some unexpected error occurred parsing the URL.
+ */
 int
 globus_url_parse(const char *url_string,
 		 globus_url_t *url)
@@ -251,16 +285,21 @@ parse_error:
 
     return rc;
 }
+/* globus_url_parse() */
 
-/******************************************************************************
-Function: globus_url_destroy()
-
-Description: Destroy a globus_url_t structure.
-
-Parameters:
-
-Returns: GLOBUS_SUCCESS on success, GLOBUS_URL_ERROR_* on ERROR
-******************************************************************************/
+/**
+ * Destroy a globus_url_t structure.
+ * @ingroup globus_url
+ *
+ * This function frees all memory associated with a
+ * globus_url_t structure.
+ *
+ * @param url
+ *        The url structure to destroy
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The URL was successfully destroyed.
+ */
 int
 globus_url_destroy(globus_url_t *url)
 {
@@ -1019,6 +1058,14 @@ globusl_url_get_path(const char **stringp,
     {
 	return GLOBUS_URL_ERROR_BAD_PATH;
     }
+
+    /* reduce /~ to ~ */
+
+    if(pos > 1 && **stringp == '/' && *(*stringp + 1) == '~')
+    {
+	*stringp = *stringp + 1;
+    }
+
     rc = globusl_url_get_substring(*stringp, url_path, pos);
 
     #if defined(TARGET_ARCH_CYGWIN)
@@ -1132,6 +1179,27 @@ globusl_url_isscheme_special(char x)
     }
 }
 
+/**
+ * Get the scheme of an URL.
+ * @ingroup globus_url
+ *
+ * This function determines the scheme type of the url string, and populates
+ * the variable pointed to by second parameter with that value.
+ * This performs a less expensive parsing than globus_url_parse() and is
+ * suitable for applications which need only to choose a handler based on
+ * the URL scheme.
+ *
+ * @param url_string
+ *        The string containing the URL.
+ * @param scheme_type
+ *        A pointer to a globus_url_scheme_t which will be set to
+ *        the scheme.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The URL scheme was recogized, and scheme_type has been updated.
+ * @retval GLOBUS_URL_ERROR_BAD_SCHEME
+ *         The URL scheme was not recogized.
+ */
 int
 globus_url_get_scheme(const char *url_string, globus_url_scheme_t *scheme_type)
 {
@@ -1175,8 +1243,89 @@ globus_url_get_scheme(const char *url_string, globus_url_scheme_t *scheme_type)
     else
     {
 	*scheme_type = GLOBUS_URL_SCHEME_UNKNOWN;
-	return -1;
+        return GLOBUS_URL_ERROR_BAD_SCHEME;
     }
 
     return GLOBUS_SUCCESS;
 }
+/* globus_url_get_scheme() */
+
+#define COPY_FIELD(x,prev) \
+    if(src->x && !(dst->x = globus_libc_strdup(src->x))) { goto free_##prev; }
+
+
+#define FREE_EXIT(x) \
+    free_##x: if(dst->x) { globus_libc_free(dst->x); }
+
+
+/**
+ * Create a copy of an URL structure.
+ * @ingroup globus_url
+ *
+ * This function copies the contents of a url structure into another.
+ *
+ * @param dst
+ *        The URL structure to be populated with a copy of the contents
+ *        of src.
+ * @param src
+ *        The original URL.
+ *
+ * @retval GLOBUS_SUCCESS
+ *         The URL was successfully copied.
+ * @retval GLOBUS_URL_ERROR_NULL_URL
+ *         One of the URLs was GLOBUS_NULL.
+ * @retval GLOBUS_URL_ERROR_OUT_OF_MEMORY;
+ *         The library was unable to allocate memory to create the
+ *         the globus_url_t contents.
+ */
+int
+globus_url_copy(
+    globus_url_t *				dst,
+    const globus_url_t *			src)
+{
+    if(src == NULL)
+    {
+	return GLOBUS_URL_ERROR_NULL_URL;
+    }
+    if(dst == NULL)
+    {
+	return GLOBUS_URL_ERROR_NULL_URL;
+    }
+    memset(dst, '\0', sizeof(globus_url_t));
+    
+    dst->scheme_type = src->scheme_type;
+    dst->port = src->port;
+
+    if(src->scheme)
+    {
+	if(!(dst->scheme = globus_libc_strdup(src->scheme)))
+	{
+	    goto error_exit;
+	}
+    }
+
+    COPY_FIELD(user, scheme)
+    COPY_FIELD(password, user)
+    COPY_FIELD(host, password)
+    COPY_FIELD(url_path, host)
+    COPY_FIELD(dn, url_path)
+    COPY_FIELD(attributes, dn)
+    COPY_FIELD(scope, attributes)
+    COPY_FIELD(filter, scope)
+    COPY_FIELD(url_specific_part, filter)
+
+    FREE_EXIT(filter)
+    FREE_EXIT(scope)
+    FREE_EXIT(attributes)
+    FREE_EXIT(dn)
+    FREE_EXIT(url_path)
+    FREE_EXIT(host)
+    FREE_EXIT(password)
+    FREE_EXIT(user)
+    FREE_EXIT(scheme)
+    
+ error_exit:
+    memset(dst, '\0', sizeof(globus_url_t));
+    return GLOBUS_URL_ERROR_OUT_OF_MEMORY;
+}
+/* globus_url_copy() */
