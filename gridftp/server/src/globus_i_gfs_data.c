@@ -501,6 +501,17 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
     }
+    if(handle->info.ipv6)
+    {
+        result = globus_ftp_control_ipv6_allow(
+            &handle->data_channel, GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_ipv6_allow", result);
+            goto error_control;
+        }
+    }
     
     handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
     globus_mutex_init(&handle->lock, GLOBUS_NULL);
@@ -709,7 +720,7 @@ globus_i_gfs_data_request_passive(
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
 
-    if(globus_l_gfs_dsi->active_func != NULL)
+    if(globus_l_gfs_dsi->passive_func != NULL)
     {
         result = globus_l_gfs_data_operation_init(&op);
         if(result != GLOBUS_SUCCESS)
@@ -748,7 +759,14 @@ globus_i_gfs_data_request_passive(
                 "globus_ftp_control_local_pasv", result);
             goto error_control;
         }
-              
+
+        /* XXX This needs to be smarter.  The address should be the same one
+         * the user is connected to on the control channel (at least when
+         * operating as a normal standalone server)
+         */
+        /* its ok to use AF_INET here since we are requesting the LOCAL
+         * address.  we just use AF_INET to store the port
+         */
         GlobusLibcSockaddrSetFamily(addr, AF_INET);
         GlobusLibcSockaddrSetPort(addr, address.port);
         result = globus_libc_addr_to_contact_string(
@@ -899,19 +917,13 @@ globus_i_gfs_data_request_active(
         
         for(i = 0; i < data_info->cs_count; i++)
         {
-            int                             rc;
-            
-            rc = sscanf(
+            result = globus_libc_contact_string_to_ints(
                 data_info->contact_strings[i],
-                "%d.%d.%d.%d:%hu",
-                &addresses[i].host[0],
-                &addresses[i].host[1],
-                &addresses[i].host[2], 
-                &addresses[i].host[3], 
-                &addresses[i].port);
-            if(rc < 5)
+                addresses[i].host,  &addresses[i].hostlen, &addresses[i].port);
+            if(result != GLOBUS_SUCCESS)
             {
-                result = GlobusGFSErrorGeneric("Bad contact string");
+                result = GlobusGFSErrorWrapFailed(
+                    "globus_libc_contact_string_to_ints", result);
                 goto error_format;
             }
         }

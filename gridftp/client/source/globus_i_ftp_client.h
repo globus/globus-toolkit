@@ -126,6 +126,7 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_bool_t                               read_all;
     globus_ftp_client_data_callback_t           read_all_intermediate_callback;
     void *                                      read_all_intermediate_callback_arg;
+    globus_bool_t                               allow_ipv6;
 }
 globus_i_ftp_client_operationattr_t;
 

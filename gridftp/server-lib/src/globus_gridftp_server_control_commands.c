@@ -1357,77 +1357,13 @@ globus_l_gsc_cmd_opts(
         }
     }
     else if(strcmp("PASV", cmd_a[1]) == 0 || 
-        strcmp("SPAS", cmd_a[1]) == 0)
+        strcmp("SPAS", cmd_a[1]) == 0 ||
+        strcmp("EPSV", cmd_a[1]) == 0)
     {
         msg = "200 OPTS Command Successful.\r\n";
         if(sscanf(cmd_a[2], "AllowDelayed=%d", &tmp_i) == 1)
         {
             opts->delayed_passive = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "DefaultProto=%d", &tmp_i) == 1)
-        {
-            if(tmp_i == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4 ||
-                tmp_i == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
-            {
-                opts->pasv_prt = tmp_i;
-            }
-            else
-            {
-                msg = "500 OPTS failed.\r\n";
-            }
-            
-        }
-        else if(sscanf(cmd_a[2], "DefaultStripes=%d", &tmp_i) == 1)
-        {
-            opts->pasv_max = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "ParsingAlgorithm=%d", &tmp_i) == 1)
-        {
-            if(tmp_i == 0 || tmp_i == 1)
-            {
-                opts->dc_parsing_alg = tmp_i;
-            }
-            else
-            {
-                msg = "500 OPTS failed.\r\n";
-            }
-        }
-        else
-        {
-            msg = "500 OPTS failed.\r\n";
-        }
-    }
-    else if(strcmp("PORT", cmd_a[1]) == 0 || 
-        strcmp("SPOR", cmd_a[1]) == 0)
-    {
-        msg = "200 OPTS Command Successful.\r\n";
-        if(sscanf(cmd_a[2], "DefaultProto=%d", &tmp_i) == 1)
-        {
-            if(tmp_i == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4 ||
-                tmp_i == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
-            {
-                opts->port_prt = tmp_i;
-            }
-            else
-            {
-                msg = "500 OPTS failed.\r\n";
-            }
-            
-        }
-        else if(sscanf(cmd_a[2], "DefaultStripes=%d", &tmp_i) == 1)
-        {
-            opts->port_max = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "ParsingAlgrythm=%d", &tmp_i) == 1)
-        {
-            if(tmp_i == 0 || tmp_i == 1)
-            {
-                opts->dc_parsing_alg = tmp_i;
-            }
-            else
-            {
-                msg = "500 OPTS failed.\r\n";
-            }
         }
         else
         {
@@ -1681,11 +1617,10 @@ globus_l_gsc_cmd_pasv_cb(
     int                                     ctr;
     char *                                  tmp_ptr;
     char *                                  host;
-    int                                     host_ip[4];
-    int                                     port;
+    int                                     host_ip[16];
+    int                                     ip_count;
+    unsigned short                          port;
     int                                     sc;
-    int                                     hi;
-    int                                     low;
     char *                                  msg = NULL;
     globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
     GlobusGridFTPServerName(globus_l_gsc_cmd_pasv_cb);
@@ -1704,136 +1639,228 @@ globus_l_gsc_cmd_pasv_cb(
         globus_gsc_959_finished_command(wrapper->op, "500 Command failed.\r\n");
         goto err;
     }
-    else
+    else if(wrapper->dc_parsing_alg == 0)
     {
-        if(wrapper->dc_parsing_alg == 0)
+        /* if pasv */
+        if(wrapper->cmd_ndx == 1)
         {
-            if(wrapper->cmd_ndx == 1)
+            if(globus_libc_contact_string_to_ints(
+                cs[0], host_ip, &ip_count, &port) != GLOBUS_SUCCESS)
             {
-                sc = sscanf(cs[0], " %d.%d.%d.%d:%d",
-                    &host_ip[0],
-                    &host_ip[1],
-                    &host_ip[2],
-                    &host_ip[3],
-                    &port);
-                globus_assert(sc == 5);
-                hi = port / 256;
-                low = port % 256;
-
-                msg = globus_common_create_string(
-                    "%d Entering Passive Mode (%d,%d,%d,%d,%d,%d)\r\n",
-                        wrapper->reply_code,
-                        host_ip[0],
-                        host_ip[1],
-                        host_ip[2],
-                        host_ip[3],
-                        hi,
-                        low);
+                globus_gsc_959_finished_command(
+                    wrapper->op, "500 Resource error.\r\n");
+                goto err;
             }
-            else
+            if(ip_count > 4)
             {
-                /* allow SPAS to work until real striping gets done */
-                if(addr_count == -1)
+                globus_gsc_959_finished_command(
+                    wrapper->op, "522 Network protocol not supported.\r\n");
+                goto err;
+            }
+            
+            msg = globus_common_create_string(
+                "%d Entering Passive Mode (%d,%d,%d,%d,%d,%d)\r\n",
+                    wrapper->reply_code,
+                    host_ip[0],
+                    host_ip[1],
+                    host_ip[2],
+                    host_ip[3],
+                    (int) (port / 256),
+                    (int) (port % 256));
+        }
+        else
+        {
+            /* allow SPAS to work until real striping gets done */
+            if(addr_count == -1)
+            {
+                addr_count = 1;
+            }
+            msg =  globus_common_create_string(
+                "%d-Entering Striped Passive Mode.\r\n", 
+                wrapper->reply_code);
+            for(ctr = 0; ctr < addr_count; ctr++)
+            {
+                if(globus_libc_contact_string_to_ints(
+                    cs[ctr], host_ip, &ip_count, &port) != GLOBUS_SUCCESS)
                 {
-                    addr_count = 1;
+                    globus_gsc_959_finished_command(
+                        wrapper->op, "500 Resource problem.\r\n");
+                    goto err;
                 }
-                msg =  globus_common_create_string(
-                    "%d-Entering Striped Passive Mode.\r\n", 
-                    wrapper->reply_code);
-                for(ctr = 0; ctr < addr_count; ctr++)
+                if(ip_count > 4)
                 {
-                    sc = sscanf(cs[ctr], " %d.%d.%d.%d:%d",
-                        &host_ip[0],
-                        &host_ip[1],
-                        &host_ip[2],
-                        &host_ip[3],
-                        &port);
-                    globus_assert(sc == 5);
-                    hi = port / 256;
-                    low = port % 256;
-
-                    tmp_ptr = globus_common_create_string(
-                        "%s %d,%d,%d,%d,%d,%d\r\n",
-                        msg,
-                        host_ip[0],
-                        host_ip[1],
-                        host_ip[2],
-                        host_ip[3],
-                        hi,
-                        low);
-                    if(tmp_ptr == NULL)
-                    {
-                        goto err;
-                    }
-                    globus_free(msg);
-                    msg = tmp_ptr;
+                    globus_gsc_959_finished_command(
+                       wrapper->op, "522 Network protocol not supported.\r\n");
+                    goto err;
                 }
-                tmp_ptr = globus_common_create_string("%s%d End\r\n", 
-                    msg, wrapper->reply_code);
+            
+                tmp_ptr = globus_common_create_string(
+                    "%s %d,%d,%d,%d,%d,%d\r\n",
+                    msg,
+                    host_ip[0],
+                    host_ip[1],
+                    host_ip[2],
+                    host_ip[3],
+                    (int) (port / 256),
+                    (int) (port % 256));
                 if(tmp_ptr == NULL)
                 {
+                    globus_gsc_959_finished_command(
+                        wrapper->op, "500 Resource error.\r\n");
                     goto err;
                 }
                 globus_free(msg);
                 msg = tmp_ptr;
             }
-        }
-        else if(wrapper->dc_parsing_alg == 1)
-        {
-            msg =  globus_common_create_string(
-                "%d-Entering Striped Passive Mode.\r\n", wrapper->reply_code);
-            for(ctr = 0; ctr < addr_count; ctr++)
-            {
-                switch(wrapper->prt)
-                {
-                    case GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4:
-                        sc = sscanf(cs[ctr], "%d.%d.%d.%d:%d",
-                            &host_ip[0], &host_ip[1], &host_ip[2], &host_ip[3],
-                            &port);
-                        globus_assert(sc == 5);
-                        tmp_ptr = globus_common_create_string(
-                            "%s |%d|%d.%d.%d.%d|%d|\r\n", msg,
-                            wrapper->prt, 
-                            host_ip[0], host_ip[1], host_ip[2], host_ip[3],
-                            port);
-                        msg = tmp_ptr;
-                        break;
-                
-                    case GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6:
-                        host = globus_malloc(strlen(cs[ctr]));
-                        sc = sscanf(cs[ctr], "[%s]:%d", host, &port);
-                        globus_assert(sc == 2);
-
-                        tmp_ptr = globus_common_create_string(
-                            " |%s|%d|%s|%d|\r\n", msg,
-                            wrapper->prt, host, port);
-                        globus_free(host);
-                        globus_free(msg);
-                        msg = tmp_ptr;
-                        break;
-                
-                    default:
-                        globus_assert(GLOBUS_FALSE);
-                        break;
-                }
-                if(tmp_ptr == NULL)
-                {
-                    goto err;
-                }
-            }
-            tmp_ptr = globus_common_create_string(
-                "%s%d End\r\n", msg, wrapper->reply_code);
+            tmp_ptr = globus_common_create_string("%s%d End\r\n", 
+                msg, wrapper->reply_code);
             if(tmp_ptr == NULL)
             {
+                globus_gsc_959_finished_command(
+                    wrapper->op, "500 Resource error.\r\n");
                 goto err;
             }
             globus_free(msg);
             msg = tmp_ptr;
         }
+    }
+    else if(wrapper->dc_parsing_alg == 1)
+    {
+        /* if epsv */
+        if(wrapper->cmd_ndx == 2)
+        {
+            char *                      p;
+            char *                      h;
+            
+            host = globus_libc_strdup(cs[0]);
+            if(!host)
+            {
+                globus_gsc_959_finished_command(
+                    wrapper->op, "500 Resource error.\r\n");
+                goto err;
+            }
+            
+            p = strrchr(host, ':');
+            if(!p || p == host)
+            {
+                globus_free(host);
+                globus_gsc_959_finished_command(
+                    wrapper->op, "500 Internal Parse error.\r\n");
+                goto err;
+            }
+            
+            h = host;
+            if(*cs[0] == '[')
+            {
+                h++;
+                *(p - 1) = 0;
+            }
+            else
+            {
+                *p = 0;
+            }
+            p++;
+            
+            sc = sscanf(p, "%hu", &port);
+            if(sc != 1)
+            {
+                globus_free(host);
+                globus_gsc_959_finished_command(
+                    wrapper->op, "500 Internal Parse error.\r\n");
+                goto err;
+            }
+            
+            msg = globus_common_create_string(
+                "%d Entering Passive Mode (|%d|%s|%d|)\r\n",
+                    wrapper->reply_code,
+                    *cs[0] == '[' ? 2 : 1,
+                    h,
+                    (int) port);
+            globus_free(host);
+        }
         else
         {
-            globus_assert(GLOBUS_FALSE);
+            /* allow SPAS to work until real striping gets done */
+            if(addr_count == -1)
+            {
+                addr_count = 1;
+            }
+            msg =  globus_common_create_string(
+                "%d-Entering Striped Passive Mode.\r\n", wrapper->reply_code);
+            for(ctr = 0; ctr < addr_count; ctr++)
+            {
+                char *                  p;
+                char *                  h;
+                
+                host = globus_libc_strdup(cs[ctr]);
+                if(!host)
+                {
+                    globus_gsc_959_finished_command(
+                        wrapper->op, "500 Resource error.\r\n");
+                    goto err;
+                }
+                
+                p = strrchr(host, ':');
+                if(!p || p == host)
+                {
+                    globus_free(host);
+                    globus_gsc_959_finished_command(
+                        wrapper->op, "500 Internal Parse error.\r\n");
+                    goto err;
+                }
+                
+                h = host;
+                if(*cs[0] == '[')
+                {
+                    h++;
+                    *(p - 1) = 0;
+                }
+                else
+                {
+                    *p = 0;
+                }
+                p++;
+            
+                sc = sscanf(p, "%hu", &port);
+                if(sc != 1)
+                {
+                    globus_free(host);
+                    globus_gsc_959_finished_command(
+                        wrapper->op, "500 Internal Parse error.\r\n");
+                    goto err;
+                }
+                
+                tmp_ptr = globus_common_create_string(
+                    "%s |%d|%s|%d|\r\n",
+                    msg,
+                    *cs[ctr] == '[' ? 2 : 1,
+                    h,
+                    (int) port);
+                globus_free(host);
+                if(tmp_ptr == NULL)
+                {
+                    globus_gsc_959_finished_command(
+                        wrapper->op, "500 Resource error.\r\n");
+                    goto err;
+                }
+                globus_free(msg);
+                msg = tmp_ptr;
+            }
+            tmp_ptr = globus_common_create_string("%s%d End\r\n", 
+                msg, wrapper->reply_code);
+            if(tmp_ptr == NULL)
+            {
+                globus_gsc_959_finished_command(
+                    wrapper->op, "500 Resource error.\r\n");
+                goto err;
+            }
+            globus_free(msg);
+            msg = tmp_ptr;
         }
+    }
+    else
+    {
+        globus_assert(GLOBUS_FALSE);
     }
 
     /* if we were in delayed passive mode we start transfer now */
@@ -1890,56 +1917,73 @@ globus_l_gsc_cmd_pasv(
 
     if(strncmp(cmd_a[0], "PASV", 4) == 0)
     {
-        wrapper->dc_parsing_alg = op->server_handle->opts.dc_parsing_alg;
-        wrapper->max = op->server_handle->opts.pasv_max;
-        wrapper->prt = op->server_handle->opts.pasv_prt;
+        wrapper->dc_parsing_alg = 0;
+        wrapper->max = 1;
+        wrapper->prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
         msg = "227 Passive delayed.\r\n";
         wrapper->cmd_ndx = 1;
         wrapper->reply_code = 227;
     }
-    else if(strncmp(cmd_a[0], "EPSV", 4) == 0 && argc == 2)
+    else if(strncmp(cmd_a[0], "EPSV", 4) == 0)
     {
         wrapper->dc_parsing_alg = 1;
+        wrapper->prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6;
+        wrapper->max = 1;
         msg = "229 Passive delayed.\r\n";
-        if(strstr(cmd_a[1], "ALL") != NULL)
+        if(argc == 2)
         {
-            reply_flag = GLOBUS_TRUE;
-            op->server_handle->opts.passive_only = GLOBUS_TRUE;
-            msg = "229 EPSV ALL Successful.\r\n";
-            dp = op->server_handle->opts.delayed_passive;
-        }
-        else
-        {
-            sc = sscanf(cmd_a[1], "%d", (int*)&wrapper->prt);
-            if(sc != 1)
+            if(strstr(cmd_a[1], "ALL") != NULL)
             {
-                dp = op->server_handle->opts.delayed_passive;
                 reply_flag = GLOBUS_TRUE;
-                msg = "501 Invalid network command.\r\n";
-            }
-            else if(wrapper->prt != GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4
-                && wrapper->prt != GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
-            {
+                op->server_handle->opts.passive_only = GLOBUS_TRUE;
+                msg = "229 EPSV ALL Successful.\r\n";
                 dp = op->server_handle->opts.delayed_passive;
-                reply_flag = GLOBUS_TRUE;
-                msg = "501 Invalid protocol.\r\n";
             }
             else
             {
-                wrapper->max = op->server_handle->opts.pasv_max;
+                sc = sscanf(cmd_a[1], "%d", (int*)&wrapper->prt);
+                if(sc != 1)
+                {
+                    dp = op->server_handle->opts.delayed_passive;
+                    reply_flag = GLOBUS_TRUE;
+                    msg = "501 Invalid network command.\r\n";
+                }
+                else if(wrapper->prt !=
+                    GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4
+                    && wrapper->prt !=
+                        GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
+                {
+                    dp = op->server_handle->opts.delayed_passive;
+                    reply_flag = GLOBUS_TRUE;
+                    msg = "501 Invalid protocol.\r\n";
+                }
             }
         }
+        
         wrapper->reply_code = 229;
         wrapper->cmd_ndx = 2;
     }
     else if(strcmp(cmd_a[0], "SPAS") == 0)
     {
-        wrapper->dc_parsing_alg = op->server_handle->opts.dc_parsing_alg;
         msg = "229 Passive delayed.\r\n";
         wrapper->max = -1;
-        wrapper->prt = op->server_handle->opts.pasv_prt;
         wrapper->cmd_ndx = 3;
         wrapper->reply_code = 229;
+        wrapper->prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
+        
+        /* optional 2nd argument similar to epsv */
+        if(argc == 2)
+        {
+            wrapper->dc_parsing_alg = 1;
+            if(*cmd_a[1] == '2')
+            {
+                wrapper->prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6;
+            }
+        }
+        else
+        {
+            wrapper->dc_parsing_alg = 0;
+        }
     }
     else
     {
@@ -2017,22 +2061,18 @@ globus_l_gsc_cmd_port(
     int                                     argc,
     void *                                  user_arg)
 {
-    int                                     host_ip[4];
-    int                                     hi;
-    int                                     low;
-    int                                     port;
+    unsigned                                host_ip[4];
+    unsigned                                hi;
+    unsigned                                low;
+    unsigned                                port;
     int                                     sc;
+    int                                     i;
     int                                     stripe_count;
-    char                                    del;
+    char                                    delim;
     globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
     char *                                  msg = NULL;
-    char *                                  scan_str;
-    char *                                  host_str;
-    char *                                  tmp_ptr;
-    char **                                 tmp_ptr2;
+    char *                                  p;
     char **                                 contact_strings = NULL;
-    int                                     cs_sz = 64;
-    globus_bool_t                           done;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_l_gsc_cmd_port);
 
@@ -2048,66 +2088,180 @@ globus_l_gsc_cmd_port(
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE);
     if(strcmp(cmd_a[0], "PORT") == 0)
     {
-        wrapper->dc_parsing_alg = op->server_handle->opts.dc_parsing_alg;
-        wrapper->prt = op->server_handle->opts.port_prt;
-        wrapper->max = op->server_handle->opts.port_max;
+        wrapper->max = 1;
+        stripe_count = 1;
     }
     else if(strcmp(cmd_a[0], "SPOR") == 0)
     {
-        wrapper->dc_parsing_alg = op->server_handle->opts.dc_parsing_alg;
-        wrapper->prt = op->server_handle->opts.port_prt;
         wrapper->max = -1;
+        
+        stripe_count = -2; /* for the first and last lines */
+        p = cmd_a[1];
+        while((p = strchr(p, '\n')))
+        {
+            stripe_count++;
+            p++;
+        }
     }
     else if(strcmp(cmd_a[0], "EPRT") == 0)
     {
-        wrapper->dc_parsing_alg = 1;
-        wrapper->prt = op->server_handle->opts.port_prt;
-        wrapper->max = op->server_handle->opts.port_max;
+        wrapper->max = 1;
+        stripe_count = 1;
     }
     else
     {
         globus_assert(GLOBUS_FALSE);
     }
-
-    /* 
-     *  parse in the traditional rfc959 ftp way
-     */
-    if(wrapper->dc_parsing_alg == 0)
+    
+    contact_strings = globus_libc_calloc(stripe_count, sizeof(char *));
+    if(contact_strings == NULL)
     {
-        /* move to the first command argument */
-        tmp_ptr = cmd_a[1];
-        globus_assert(tmp_ptr != NULL);
-
-        contact_strings = globus_malloc(sizeof(char **) * cs_sz);
-        if(contact_strings == NULL)
+        goto err;
+    }
+            
+    /* move to the first command argument */
+    p = cmd_a[1];
+    if(stripe_count > 1)
+    {
+        /* skip first line (must exist if > 1) */
+        p = strchr(p, '\n');
+    }
+    while(isspace(*p)) p++;
+    if(isdigit(delim = *p))
+    {
+        delim = 0;
+    }
+    
+    for(i = 0; i < stripe_count && *p; i++)
+    {
+        if(delim)
         {
-            goto err;
+            /* |prt|ip|port| */
+            while(*p && *p != delim) p++;
+            if(*p)
+            {
+                p++;
+                if(*p != delim)
+                {
+                    /* get prt portion */
+                    if(sscanf(p, "%d", &sc) < 1 || (sc != 1 && sc != 2))
+                    {
+                        msg = 
+                          "522 Network protocol not supported, use (1,2).\r\n";
+                        break;
+                    }
+                    
+                    /* may need to handle mixed prt in striped mode */
+                    if(sc == 1)
+                    {
+                        wrapper->prt =
+                            GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
+                    }
+                    else
+                    {
+                        wrapper->prt =
+                            GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6;
+                    }
+                    
+                    while(*p && *p != delim) p++;
+                }
+                else
+                {
+                    msg = "501 Malformed argument.\r\n";
+                    break;
+                }
+            }
+            
+            if(*p)
+            {
+                int                     j = 0;
+                char *                  s;
+                char *                  c;
+                char                    buf[100];
+                
+                p++;
+                c = strchr(p, ':');
+                s = strchr(p, delim);
+                
+                if(*p != delim)
+                {
+                    /* get ip portion */
+                    if(c && c < s)
+                    {
+                        buf[j++] = '[';
+                    }
+                
+                    while(j < sizeof(buf) - 1 && p < s)
+                    {
+                        buf[j++] = *(p++);
+                    }
+                    
+                    /* need room for ], :, 5 digits, and nul */
+                    if(*p == delim && j + 7 < sizeof(buf))
+                    {
+                        /* get port portion */
+                        p++;
+                        if(*buf == '[')
+                        {
+                            buf[j++] = ']';
+                        }
+                        
+                        buf[j++] = ':';
+                        while(j < sizeof(buf) - 1 &&
+                            isdigit(*p) && *p != delim)
+                        {
+                            buf[j++] = *(p++);
+                        }
+                        if(*p == delim)
+                        {
+                            p++;
+                        }
+                        else
+                        {
+                            msg = "501 Malformed argument.\r\n";
+                            break;
+                        }
+                        
+                        buf[j] = 0;
+                        
+                        contact_strings[i] = globus_libc_strdup(buf);
+                    }
+                    else
+                    {
+                        msg = "501 Malformed argument.\r\n";
+                        break;
+                    }
+                }
+                else
+                {
+                    msg = "501 Malformed argument.\r\n";
+                    break;
+                }
+            }
         }
-        /* parse out all the arguments */
-        stripe_count = 0;
-        done = GLOBUS_FALSE;
-        while(!done && *tmp_ptr != '\0')
+        else
         {
-            /* move past all the leading spaces */
-            while(isspace(*tmp_ptr)) tmp_ptr++;
-
-            sc = sscanf(tmp_ptr, "%d,%d,%d,%d,%d,%d",
-                &host_ip[0],
-                &host_ip[1],
-                &host_ip[2],
-                &host_ip[3],
-                &hi,
-                &low);
+            int                         consumed;
+            
+            wrapper->prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
+            
+            while(*p && !isdigit(*p)) p++;
+    
+            sc = sscanf(p,
+                        "%u,%u,%u,%u,%u,%u%n",
+                        &host_ip[0],
+                        &host_ip[1],
+                        &host_ip[2],
+                        &host_ip[3],
+                        &hi,
+                        &low,
+                        &consumed);
             port = hi * 256 + low;
             /* if string improperly parsed */
-            if(sc != 6)
+            if(sc < 6)
             {
-                /* if nothing could be read it implies the string was ok */
-                if(sc != 0)
-                {
-                    msg = "501 Illegal PORT command.\r\n";
-                }
-                done = GLOBUS_TRUE;
+                msg = "501 Illegal PORT command.\r\n";
+                break;
             }
             /* if received port is not valid */
             else if(host_ip[0] > 255 ||
@@ -2117,149 +2271,27 @@ globus_l_gsc_cmd_port(
                     port > 65535)
             {
                 msg = "501 Illegal PORT command.\r\n";
-                done = GLOBUS_TRUE;
+                break;
             }
             /* all is well with the client string */
             else
             {
-                if(stripe_count >= cs_sz)
-                {
-                    cs_sz *= 2;
-                    tmp_ptr2 = globus_libc_realloc(
-                        contact_strings, sizeof(char **)*cs_sz);
-                    if(contact_strings == NULL)
-                    {
-                        goto err;
-                    }
-                    contact_strings = tmp_ptr2;
-                }
-                /* create teh stripe count string */
-                contact_strings[stripe_count] = globus_common_create_string(
-                    "%d.%d.%d.%d:%d",
+                /* create the stripe count string */
+                contact_strings[i] = globus_common_create_string(
+                    "%u.%u.%u.%u:%d",
                     host_ip[0], host_ip[1], host_ip[2], host_ip[3], port);
-
-                stripe_count++;
-                /* move to next space */
-                while(!isspace(*tmp_ptr) && *tmp_ptr != '\0') tmp_ptr++;
+                p += consumed;
             }
         }
-    }
-    /* 
-     *  parse in the new eprt way, ipv6 respected
-     */
-    else if(wrapper->dc_parsing_alg == 1)
-    {
-        tmp_ptr = cmd_a[1];
-        globus_assert(tmp_ptr != NULL);
-        tmp_ptr += 4; /* length of all PASV type commands */
-
-        done = GLOBUS_FALSE;
-        sc = sscanf(tmp_ptr, " %c%d", &del, (int *)&wrapper->prt);
-        if(sc != 2)
+        
+        if(!contact_strings[i])
         {
-            done = GLOBUS_TRUE;
-            msg = "501 Malformed argument.\r\n";
-        }
-        else if(wrapper->prt != GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4 && 
-            wrapper->prt != GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
-        {
-            msg = "501 Invalid network protocol.\r\n";
-            done = GLOBUS_TRUE;
-        }
-        else if(!isascii(del))
-        {
-            msg = "501 Invalid delimiter.\r\n";
-            done = GLOBUS_TRUE;
-        }
-
-        while(!done)
-        {
-            /* move past all the leading spaces */
-            while(isspace(*tmp_ptr)) tmp_ptr++;
-
-            if(stripe_count >= cs_sz)
-            {
-                cs_sz *= 2;
-                tmp_ptr2 = globus_libc_realloc(
-                    contact_strings, sizeof(char **)*cs_sz);
-                if(contact_strings == NULL)
-                {
-                    goto err;
-                }
-                contact_strings = tmp_ptr2;
-            }
-
-            switch(wrapper->prt)
-            {
-                case GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4:
-                    /* build the scan string */
-                    scan_str = globus_common_create_string(
-                        "%c%d%c%%d.%%d.%%d.%%d%c%%d%c",
-                        del, wrapper->prt, del, del, del);
-
-                    sc = sscanf(full_command, scan_str, 
-                        &host_ip[0],
-                        &host_ip[1],
-                        &host_ip[2],
-                        &host_ip[3],
-                        &port);
-                    globus_free(scan_str);
-                    if(sc != 5)
-                    {
-                        if(sc != 0)
-                        {
-                            msg = "501 Bad parameters to EPRT\r\n";
-                        }
-                        done = GLOBUS_TRUE;
-                    }
-                    else
-                    {
-                        contact_strings[stripe_count] = 
-                            globus_common_create_string(
-                                "%d.%d.%d.%d:%d",
-                                host_ip[0], host_ip[1], host_ip[2], host_ip[3], 
-                                port);
-
-                        stripe_count++;
-                    }
-                    break;
-
-                case GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6:
-                    /* build the scan string */
-                    scan_str = globus_common_create_string(
-                        "%c%d%c%%s%c%%d%c",
-                        del, wrapper->prt, del, del, del);
-                    host_str = globus_malloc(strlen(full_command));                          
-                    sc = sscanf(full_command, scan_str,
-                        host_str,
-                        &port);
-                    globus_free(scan_str);
-                    if(sc != 2)
-                    {
-                        if(sc != 0)
-                        {
-                            msg = "501 Bad parameters to EPRT\r\n";
-                        }
-                        done = GLOBUS_TRUE;
-                    }
-                    else
-                    {
-                        contact_strings[stripe_count] = 
-                        globus_common_create_string("[%s]:%d",
-                            host_str, port);
-                        stripe_count++;
-                    }
-                    break;
-
-                default:
-                    globus_assert(GLOBUS_FALSE);
-                    break;
-            }
-            while(!isspace(*tmp_ptr) && *tmp_ptr != '\0') tmp_ptr++;
+            msg = "501 Resource error.\r\n";
+            break;
         }
     }
 
-    if((stripe_count > wrapper->max && wrapper->max != -1) || stripe_count == 0)
+    if(i < stripe_count && msg == NULL)
     {
         msg = "501 Illegal PORT command.\r\n";
     }

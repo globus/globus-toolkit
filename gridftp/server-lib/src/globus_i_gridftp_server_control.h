@@ -166,14 +166,9 @@ typedef struct globus_i_gsc_handle_opts_s
     globus_bool_t                           refresh;
     globus_size_t                           packet_size;
     globus_bool_t                           delayed_passive;
-    int                                     port_max;
-    int                                     pasv_max;
     globus_bool_t                           passive_only;
-    int                                     dc_parsing_alg;
     int                                     perf_frequency;
     int                                     restart_frequency;
-    globus_gridftp_server_control_network_protocol_t     port_prt;
-    globus_gridftp_server_control_network_protocol_t     pasv_prt;
 } globus_i_gsc_handle_opts_t;
 
 typedef struct globus_i_gsc_module_func_s

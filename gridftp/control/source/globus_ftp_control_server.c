@@ -713,6 +713,7 @@ globus_ftp_control_command_copy(
         dest->port.host_port.host[2]=src->port.host_port.host[2];
         dest->port.host_port.host[3]=src->port.host_port.host[3];
         dest->port.host_port.port=src->port.host_port.port;
+        dest->port.host_port.hostlen=4;
         break;
     case GLOBUS_FTP_CONTROL_COMMAND_SPOR:
         dest->spor.num_args=src->spor.num_args;
@@ -3717,7 +3718,7 @@ globus_result_t globus_l_ftp_control_parse_port_cmd(
     }
         
     command->port.host_port.port= (short) 256*port[0]+port[1];
-        
+    command->port.host_port.hostlen = 4;
     return GLOBUS_SUCCESS;
 }
 
@@ -3820,7 +3821,8 @@ globus_result_t globus_l_ftp_control_parse_spor_cmd(
                     
             command->spor.host_port[j].port= 
                 (short) 256*port[0]+port[1];
-                    
+            command->spor.host_port[j].hostlen = 4;
+            
             i++;
             while(command->noop.raw_command[i] &&
                   !isspace(command->noop.raw_command[i]))

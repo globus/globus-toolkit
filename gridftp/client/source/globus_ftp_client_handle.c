@@ -1081,12 +1081,12 @@ globus_i_ftp_client_target_release(
 	    if(cache_entry->target == GLOBUS_NULL)
 	    {
 		cache_entry->target = target;
-	    }
 	    
 	        globus_i_ftp_client_debug_printf(1, 
                     (stderr, "globus_i_ftp_client_target_release() exiting\n"));
-
-	    return;
+            
+	        return;
+	    }
 	}
     }
 
@@ -1191,9 +1191,10 @@ globus_i_ftp_client_target_find(
     else /* found copy in cache... update attrs, url */
     {
 	globus_result_t				result;
+	
+	globus_ftp_client_operationattr_destroy(&(*target)->attr);
 	if(attr)
 	{
-	    globus_ftp_client_operationattr_destroy(&(*target)->attr);
 	    result = globus_ftp_client_operationattr_copy(&(*target)->attr,
 							  &attr);
 	    if(result)
@@ -1239,6 +1240,10 @@ globus_i_ftp_client_target_find(
 
 	goto free_url;
     }
+    
+    globus_ftp_control_ipv6_allow(
+        (*target)->control_handle, (*target)->attr->allow_ipv6);
+    
     globus_url_destroy(&parsed_url);
 
     globus_i_ftp_client_control_is_active((*target)->control_handle);
@@ -1724,7 +1729,9 @@ globus_i_ftp_client_cache_remove(
 	    searcher.want_empty = !searcher.want_empty;
         }
     } while(node || searcher.want_empty);
-
+    
+    globus_url_destroy(&parsed_url);
+    
     return GLOBUS_SUCCESS;
 
  error:

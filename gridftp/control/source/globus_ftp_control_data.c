@@ -2196,9 +2196,10 @@ globus_ftp_control_data_get_remote_hosts(
             {
                 data_conn = (globus_ftp_data_connection_t *)
                                  globus_list_first(list);
-                res = globus_io_tcp_get_remote_address(
+                res = globus_io_tcp_get_remote_address_ex(
                           &data_conn->io_handle,
                           address[ndx].host,
+                          &address[ndx].hostlen,
                           &address[ndx].port);
                 if(res != GLOBUS_SUCCESS)
                 {
@@ -2432,7 +2433,6 @@ globus_ftp_control_local_pasv(
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_ftp_data_stripe_t *                  stripe;
     globus_i_ftp_dc_handle_t *                  dc_handle;
-    unsigned short                              tmp_s;
     globus_object_t *                           err;
     static char *                               myname=
                                       "globus_ftp_control_local_pasv";
@@ -2513,24 +2513,27 @@ globus_ftp_control_local_pasv(
         {
             dc_handle->transfer_handle->ref++;
             stripe->listening = GLOBUS_TRUE;
-    
+            address->hostlen = 4;
             if(address->host[0] == 0 &&
                address->host[1] == 0 &&
                address->host[2] == 0 &&
-               address->host[3] == 0)
+               address->host[3] == 0 &&
+               handle->cc_handle.cc_state == GLOBUS_FTP_CONTROL_CONNECTED)
             {
-                res = globus_i_ftp_control_client_get_connection_info(
-                          handle,
+                unsigned short       p;
+                
+                res = globus_io_tcp_get_local_address_ex(
+                          &handle->cc_handle.io_handle,
                           address->host,
-                          &tmp_s,
-                          GLOBUS_NULL,
-                          GLOBUS_NULL);
+                          &address->hostlen,
+                          &p);
                if(res != GLOBUS_SUCCESS)
                {
                    address->host[0] = 0;
                    address->host[1] = 0;
                    address->host[2] = 0;
                    address->host[3] = 0;
+                   address->hostlen = 4;
                }
            }
     
@@ -7162,7 +7165,7 @@ globus_l_ftp_control_data_register_connect(
     void *                                      user_arg)
 {
     globus_ftp_data_connection_t *              data_conn;
-    char                                        remote_host[30];
+    char                                        remote_host[256];
     unsigned int                                remote_port;
     globus_result_t                             result;
     globus_l_ftp_data_callback_info_t *         callback_info;

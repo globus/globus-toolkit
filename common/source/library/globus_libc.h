@@ -525,6 +525,24 @@ globus_libc_addr_to_contact_string(
     int                                 opts_mask,
     char **                             contact_string);
 
+globus_result_t
+globus_libc_contact_string_to_ints(
+    const char *                        contact_string,
+    int *                               host,
+    int *                               count,
+    unsigned short *                    port);
+
+/* create a contact string... if port == 0, it will be omitted
+ * returned string must be freed
+ * 
+ * count should be 4 for ipv4 or 16 for ipv6
+ */
+char *
+globus_libc_ints_to_contact_string(
+    int *                               host,
+    int                                 count,
+    unsigned short                      port);
+
 int
 globus_libc_gethostaddr(
     globus_sockaddr_t *                 addr);

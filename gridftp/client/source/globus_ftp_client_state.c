@@ -35,6 +35,7 @@ globus_l_ftp_client_parse_feat(
 static
 void
 globus_l_ftp_client_parse_pasv(
+    globus_ftp_control_handle_t *               handle,
     globus_ftp_control_response_t *		response,
     globus_ftp_control_host_port_t **		host_port,
     int *					num_pasv_addresses);
@@ -1604,7 +1605,18 @@ redo:
 	   (target->attr->layout.mode != GLOBUS_FTP_CONTROL_STRIPING_NONE ||
 	    target->attr->force_striped))
 	{
-	    tmpstr = "SPAS";
+	    if(target->attr->allow_ipv6)
+	    {
+	        tmpstr = "SPAS 2";
+	    }
+	    else
+	    {
+	        tmpstr = "SPAS";
+	    }
+	}
+	else if(target->attr->allow_ipv6)
+	{
+	    tmpstr = "EPSV";
 	}
 	else
 	{
@@ -1655,13 +1667,16 @@ redo:
 	}
 	if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
 	{
-	    client_handle->pasv_address
-		= globus_libc_malloc(sizeof(globus_ftp_control_host_port_t));
+	    if(client_handle->pasv_address)
+	    {
+	        globus_free(client_handle->pasv_address);
+	    }
+	    client_handle->pasv_address =
+	        globus_libc_malloc(sizeof(globus_ftp_control_host_port_t));
 	    client_handle->num_pasv_addresses = 1;
-
-	    globus_ftp_control_host_port_init(client_handle->pasv_address,
-					      0,
-					      0);
+            
+	    memset(client_handle->pasv_address, 0,
+	        sizeof(globus_ftp_control_host_port_t));
 
 	    result = globus_ftp_control_local_pasv(target->control_handle,
 					           client_handle->pasv_address);
@@ -1671,8 +1686,9 @@ redo:
 	    }
 	}
 
-	tmpstr = globus_libc_malloc(26 * client_handle->num_pasv_addresses
-				   + 7 /*SPOR|PORT\r\n\0*/);
+	tmpstr = globus_libc_malloc(56 * client_handle->num_pasv_addresses
+				   + 7 /*SPOR|PORT|EPRT\r\n\0*/);
+	                             /* ' |2|<45>|<5>|' == 56 */
 	if(tmpstr == GLOBUS_NULL)
 	{
 	    error = GLOBUS_ERROR_NO_INFO;
@@ -1684,7 +1700,15 @@ redo:
 	    rc = oldrc = 0;
 	    if(client_handle->num_pasv_addresses == 1)
 	    {
-		rc += sprintf(tmpstr, "PORT");
+	        if(target->attr->allow_ipv6 &&
+	            client_handle->pasv_address[0].hostlen == 16)
+	        {
+	            rc += sprintf(tmpstr, "EPRT");
+	        }
+	        else
+	        {
+		    rc += sprintf(tmpstr, "PORT");
+		}
 	    }
 	    else
 	    {
@@ -1700,22 +1724,41 @@ redo:
 
 	    for(i = 0; i < client_handle->num_pasv_addresses; i++)
 	    {
-		oldrc = rc;
-		rc += sprintf(&tmpstr[oldrc],
-			     " %d,%d,%d,%d,%d,%d",
-			     client_handle->pasv_address[i].host[0],
-			     client_handle->pasv_address[i].host[1],
-			     client_handle->pasv_address[i].host[2],
-			     client_handle->pasv_address[i].host[3],
-			     (client_handle->pasv_address[i].port >> 8)
-			     & 0xff,
-			     client_handle->pasv_address[i].port & 0xff);
-		if(rc == oldrc)
-		{
-		    error = GLOBUS_ERROR_NO_INFO;
+	        oldrc = rc;
+	        if(target->attr->allow_ipv6 &&
+	            (client_handle->num_pasv_addresses > 1 ||
+	            client_handle->pasv_address[0].hostlen == 16))
+	        {
+	            char                buf[50];
+	            
+	            globus_ftp_control_host_port_get_host(
+                        &client_handle->pasv_address[i], buf);
+    
+	            rc += sprintf(&tmpstr[oldrc],
+                                 " |%d|%s|%d|",
+                                 client_handle->pasv_address[i].hostlen == 16
+                                    ? 2 : 1,
+                                 buf,
+                                 (int) client_handle->pasv_address[i].port);
+	        }
+	        else
+	        {
+                    rc += sprintf(&tmpstr[oldrc],
+                                 " %d,%d,%d,%d,%d,%d",
+                                 client_handle->pasv_address[i].host[0],
+                                 client_handle->pasv_address[i].host[1],
+                                 client_handle->pasv_address[i].host[2],
+                                 client_handle->pasv_address[i].host[3],
+                                 (client_handle->pasv_address[i].port >> 8)
+                                 & 0xff,
+                                 client_handle->pasv_address[i].port & 0xff);
+                }
+                if(rc == oldrc)
+                {
+                    error = GLOBUS_ERROR_NO_INFO;
 
-	            goto notify_fault;
-		}
+                    goto notify_fault;
+                }
 	    }
 
 	    target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_DATA_ESTABLISHMENT;
@@ -1768,12 +1811,15 @@ redo:
 	if((!error) &&
 	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
-	    globus_l_ftp_client_parse_pasv(response,
-					   &client_handle->pasv_address,
-					   &client_handle->num_pasv_addresses);
-
+	    globus_l_ftp_client_parse_pasv(
+	        handle,
+	        response, 
+	        &client_handle->pasv_address, 
+	        &client_handle->num_pasv_addresses);
+            
 	    if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
 	    {
+	        
 		if(client_handle->num_pasv_addresses == 1)
 		{
 		    result =
@@ -1846,18 +1892,27 @@ redo:
 	}
         else if(!error)
 	{
-	    /* Try doing a PORT in some cases */
-	    if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER &&
-	       target->mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK)
+	    if(target->attr->allow_ipv6)
 	    {
+	        /* lets try without ipv6 */
+	        target->attr->allow_ipv6 = GLOBUS_FALSE;
+	        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV;
+	    }
+	    else if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER &&
+	       target->mode != GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK )
+	    {
+	        /* Try doing a PORT in some cases */
 	        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PORT;
-		goto redo;
+	    }
+	    else
+	    {
+	        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+	        goto notify_fault;
 	    }
 	}
 	else
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
-
 	    goto notify_fault;
 	}
 
@@ -1907,6 +1962,12 @@ redo:
 	    {
 		target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION;
 	    }
+	}
+	else if(!error && target->attr->allow_ipv6 &&
+	    client_handle->op == GLOBUS_FTP_CLIENT_GET)
+	{
+	    target->attr->allow_ipv6 = GLOBUS_FALSE;
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PORT;
 	}
 	else
 	{
@@ -3571,6 +3632,7 @@ globus_l_ftp_client_parse_feat(
 static
 void
 globus_l_ftp_client_parse_pasv(
+    globus_ftp_control_handle_t *               handle,
     globus_ftp_control_response_t *		response,
     globus_ftp_control_host_port_t **		host_port,
     int *					num_pasv_addresses)
@@ -3580,54 +3642,150 @@ globus_l_ftp_client_parse_pasv(
     int						rc;
     int						i;
     int						consumed;
-
+    char                                        delim;
+    char                                        buf[100];
+    
+    p = strchr((char *) response->response_buffer, '(');
     if(response->code == 229)
     {
-	p = strchr((char *) response->response_buffer, '\n');
-
-	(*num_pasv_addresses) = -2;
-
-	while(GLOBUS_NULL != (p = strchr(p, '\n')))
-	{
-	    (*num_pasv_addresses)++;
-	    p++;
-	}
-
-	/* skip the first line of the 229 response */
-	p = strchr((char *) response->response_buffer, '\n') + 1;
+        if(!p)
+        {
+            /* spas */
+            (*num_pasv_addresses) = -2;
+            
+            p = (char *) response->response_buffer;
+            while(GLOBUS_NULL != (p = strchr(p, '\n')))
+            {
+                (*num_pasv_addresses)++;
+                p++;
+            }
+    
+            /* skip the first line of the 229 response */
+            p = strchr((char *) response->response_buffer, '\n') + 1;
+            while(isspace(*p)) p++;
+        }
+        else
+        {
+            /* epsv */
+            (*num_pasv_addresses) = 1;
+            p++;
+        }
     }
     else
     {
 	(*num_pasv_addresses) = 1;
 
 	/* skip the initial 227 in the response */
-	p = (char *) response->response_buffer + 3;
+	if(!p)
+	{
+	    p = (char *) response->response_buffer + 3;
+	    while(isspace(*p)) p++;
+	}
+	else
+	{
+	    p++;
+	}
     }
     (*host_port) = globus_libc_calloc((*num_pasv_addresses),
 				   sizeof(globus_ftp_control_host_port_t));
 
-    for(i = 0; i < (*num_pasv_addresses); i++)
+    if(isdigit(delim = *p))
     {
-	while(p && *p && !isdigit(*p)) p++;
-
-	rc = sscanf(p,
-		    "%d,%d,%d,%d,%d,%d%n",
-		    &(*host_port)[i].host[0],
-		    &(*host_port)[i].host[1],
-		    &(*host_port)[i].host[2],
-		    &(*host_port)[i].host[3],
-		    &port[0],
-		    &port[1],
-		    &consumed);
-	if(rc == 6)
-	{
-	    (*host_port)[i].port = (port[0] * 256) + port[1];
-	}
-	else
-	{
-	    host_port[i]->port = 0;
-	}
-	p += consumed;
+        delim = 0;
+    }
+    
+    for(i = 0; i < (*num_pasv_addresses) && *p; i++)
+    {
+        if(delim)
+        {
+            /* |prt|ip|port| */
+            while(*p && *p != delim) p++;
+            if(*p)
+            {
+                p++;
+            }
+            while(*p && *p != delim) p++;
+            if(*p)
+            {
+                int                     j = 0;
+                char *                  s;
+                char *                  c;
+                
+                p++;
+                c = strchr(p, ':');
+                s = strchr(p, delim);
+                
+                if(*p != delim)
+                {
+                    if(c && c < s)
+                    {
+                        buf[j++] = '[';
+                    }
+                
+                    while(j < sizeof(buf) - 1 && p < s)
+                    {
+                        buf[j++] = *(p++);
+                    }
+                    
+                    if(*p == delim && j + 7 < sizeof(buf))
+                    {
+                        p++;
+                        if(*buf == '[')
+                        {
+                            buf[j++] = ']';
+                        }
+                        
+                        buf[j++] = ':';
+                        while(j < sizeof(buf) - 2 && *p && *p != delim)
+                        {
+                            buf[j++] = *(p++);
+                        }
+                        if(*p == delim)
+                        {
+                            p++;
+                        }
+                    }
+                    
+                    buf[j] = 0;
+                    
+                    globus_libc_contact_string_to_ints(buf,
+                        (*host_port)[i].host,
+                        &(*host_port)[i].hostlen,
+                        &(*host_port)[i].port);
+                }
+                else if((*num_pasv_addresses) == 1)
+                {
+                    /* only accept missing ip for epsv responses */
+                    p++;
+                    globus_ftp_control_client_get_connection_info_ex(
+                        handle, GLOBUS_NULL, &(*host_port)[i]);
+                    (*host_port)[i].port = atoi(p);
+                }
+            }
+        }
+        else
+        {
+            while(*p && !isdigit(*p)) p++;
+    
+            rc = sscanf(p,
+                        "%d,%d,%d,%d,%d,%d%n",
+                        &(*host_port)[i].host[0],
+                        &(*host_port)[i].host[1],
+                        &(*host_port)[i].host[2],
+                        &(*host_port)[i].host[3],
+                        &port[0],
+                        &port[1],
+                        &consumed);
+            if(rc >= 6)
+            {
+                (*host_port)[i].port = (port[0] * 256) + port[1];
+            }
+            else
+            {
+                host_port[i]->port = 0;
+            }
+            p += consumed;
+        }
     }
 }
 

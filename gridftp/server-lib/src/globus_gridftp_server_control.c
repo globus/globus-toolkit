@@ -1459,7 +1459,7 @@ globus_i_gridftp_server_control_cs_verify(
            ip[1] > 255 ||
            ip[2] > 255 ||
            ip[3] > 255 ||
-           port > 65536)
+           port > 65535)
         {
             return GLOBUS_FALSE;
         }
@@ -1476,10 +1476,12 @@ globus_i_gridftp_server_control_cs_verify(
             return GLOBUS_FALSE;
         }
 
-        /* verify that the string contains nothing but numbers and ':' */
+        /* verify that the string contains nothing but
+         * hex digits, ':'. and '.'
+         */
         for(ctr = 0; ctr < strlen(cs); ctr++)
         {
-            if(cs[ctr] != ':' && !isdigit(cs[ctr]))
+            if(cs[ctr] != ':' && cs[ctr] != '.' && !isxdigit(cs[ctr]))
             {
                 globus_free(host_str);
                 return GLOBUS_FALSE;
@@ -2053,13 +2055,6 @@ globus_gridftp_server_control_start(
         server_handle->opts.packet_size = -1;
         server_handle->opts.delayed_passive = GLOBUS_FALSE;
         server_handle->opts.passive_only = GLOBUS_FALSE;
-        server_handle->opts.pasv_max = 1;
-        server_handle->opts.port_max = 1;
-        server_handle->opts.port_prt = 
-            GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
-        server_handle->opts.pasv_prt = 
-            GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
-        server_handle->opts.dc_parsing_alg = 0;;
 
         /* default state */
         server_handle->modes = globus_libc_strdup(i_attr->modes);
@@ -3647,14 +3642,6 @@ globus_gridftp_server_control_finished_passive_connect(
     if(op->type != GLOBUS_L_GSC_OP_TYPE_CREATE_PASV)
     {
         return GlobusGridFTPServerErrorParameter("op");
-    }
-
-    for(ctr = 0; ctr < cs_count; ctr++)
-    {
-        if(!globus_i_gridftp_server_control_cs_verify(cs[ctr], op->net_prt))
-        {
-            return GlobusGridFTPServerErrorParameter("contact string");
-        }
     }
 
     data_obj = (globus_i_gsc_data_t *) globus_malloc(
