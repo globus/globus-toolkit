@@ -314,6 +314,7 @@ int main(int argc,
     int                    job_state_mask;
     int                    format;
     int                    print_debug_flag = 0;
+    int                    krbflag = 0;
     int                    tmp_status;
     int                    publish_jobs_flag = 0;
     char                   *rsl_spec = GLOBUS_NULL; /* Must free! */
@@ -519,6 +520,10 @@ int main(int argc,
         else if (strcmp(argv[i], "-d") == 0)
         {
             print_debug_flag = 1;
+        }
+        else if (strcmp(argv[i], "-k") == 0)
+        {
+            krbflag = 1;
         }
         else if ((strcmp(argv[i], "-home") == 0)
                  && (i + 1 < argc))
@@ -1331,6 +1336,8 @@ int main(int argc,
 	}
     }
 
+    if (!krbflag) 
+    {
     if (rc == GLOBUS_SUCCESS)
     {
         grami_fprintf( request->jobmanager_log_fp,
@@ -1390,6 +1397,7 @@ int main(int argc,
             }
         }
     }
+    } /*krbflag */
 
     if (graml_env_x509_user_proxy)
     {

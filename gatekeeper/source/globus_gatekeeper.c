@@ -1489,6 +1489,22 @@ static void doit()
         }
     }
 
+	/* For the Kerberos GSSAPI with the mode to 
+	 * src/lib/gssapi/krb5/accept_sec_context.c 
+	 * to setenv KRB5CCNAME, the KRB5CCANME will be 
+	 * owned by root, and we need to change the ownership. 
+	 */
+	{
+		char *ccname;
+		if ((ccname = getenv("KRB5CCNAME")) != NULL
+			&& strlen(ccname) > 5 
+			&& !strncmp(ccname,"FILE:",5))
+		{
+			chown(ccname+5,service_uid,service_gid);
+		}
+	}
+
+
 	/* now check for options */
 	if (globus_gatekeeper_util_tokenize(
 					service_args[SERVICE_OPTIONS_INDEX],
