@@ -1,6 +1,6 @@
 /* spool.c
  *
- * Copyright (c) 1992-2000 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -173,6 +173,9 @@ SpoolX(
 	int recursive,
 	int delete,
 	int passive,
+	const char *const precmd,
+	const char *const perfilecmd,
+	const char *const postcmd,
 	time_t when)
 {
 	char sdir[256];
@@ -246,6 +249,12 @@ SpoolX(
 		goto err;
 	if (fprintf(fp, "local-file=%s\n", lfile) < 0)
 		goto err;
+	if ((precmd != NULL) && (precmd[0] != '\0') && (fprintf(fp, "pre-command=%s\n", precmd) < 0))
+		goto err;
+	if ((perfilecmd != NULL) && (perfilecmd[0] != '\0') && (fprintf(fp, "per-file-command=%s\n", perfilecmd) < 0))
+		goto err;
+	if ((postcmd != NULL) && (postcmd[0] != '\0') && (fprintf(fp, "post-command=%s\n", postcmd) < 0))
+		goto err;
 
 	if (fclose(fp) < 0)
 		goto err2;
@@ -280,10 +289,10 @@ PWrite(int sfd, const char *const buf0, size_t size)
 
 	nleft = (int) size;
 	for (;;) {
-		nwrote = write(sfd, buf, nleft);
+		nwrote = (int) write(sfd, buf, nleft);
 		if (nwrote < 0) {
 			if (errno != EINTR) {
-				nwrote = size - nleft;
+				nwrote = (int) size - nleft;
 				if (nwrote == 0)
 					nwrote = -1;
 				return (nwrote);
@@ -298,7 +307,7 @@ PWrite(int sfd, const char *const buf0, size_t size)
 			break;
 		buf += nwrote;
 	}
-	nwrote = size - nleft;
+	nwrote = (int) size - nleft;
 	return (nwrote);
 }	/* PWrite */
 #endif
@@ -408,7 +417,11 @@ RunBatch(int Xstruct, const FTPCIPtr cip)
 		} else if (pid == 0) {
 			(void) close(pfd[1]);	/* Child closes write end. */
 			argv[0] = (char *) "ncftpbatch";
+#ifdef DEBUG_NCFTPBATCH
+			argv[1] = (char *) "-SD";
+#else
 			argv[1] = (char *) "-d";
+#endif
 			argv[2] = (char *) "-|";
 			argv[3] = pfdstr;
 			argv[4] = NULL;
@@ -441,8 +454,13 @@ RunBatch(int Xstruct, const FTPCIPtr cip)
 			argv[0] = (char *) "ncftpbatch";
 			argv[1] = (char *) "-d";
 			argv[2] = NULL;
+#ifdef BINDIR
+			(void) execv(ncftpbatch, argv);
+			(void) fprintf(stderr, "Could not run %s.  Is it in installed as %s?\n", argv[0], ncftpbatch);
+#else	/* BINDIR */
 			(void) execvp(argv[0], argv);
 			(void) fprintf(stderr, "Could not run %s.  Is it in your $PATH?\n", argv[0]);
+#endif	/* BINDIR */
 			perror(argv[0]);
 			exit(1);
 		}
@@ -466,9 +484,12 @@ RunBatchIfNeeded(const FTPCIPtr cip)
 	if (gUnprocessedJobs > 0) {
 #ifdef ncftp
 		Trace(0, "Running ncftp_batch for %d job%s.\n", gUnprocessedJobs, gUnprocessedJobs > 0 ? "s" : "");
-#endif
+		gUnprocessedJobs = 0;
+		RunBatch(1, cip);
+#else
 		gUnprocessedJobs = 0;
 		RunBatch(0, cip);
+#endif
 	}
 }	/* RunBatchIfNeeded */
 

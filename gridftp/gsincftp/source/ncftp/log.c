@@ -1,6 +1,6 @@
 /* log.c
  *
- * Copyright (c) 1992-2000 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -65,7 +65,7 @@ void
 EndLog(void)
 {
 	FILE *new, *old;
-	struct stat st;
+	struct Stat st;
 	long fat;
 	char str[512];
 	char tmpLog[256];
@@ -77,7 +77,7 @@ EndLog(void)
 	 * so it doesn't waste too much disk space.  If the log is too fat, trim the
 	 * older lines (at the top) until we're under the limit.
 	 */
-	if ((gMaxLogSize <= 0) || (stat(gLogFileName, &st) < 0))
+	if ((gMaxLogSize <= 0) || (Stat(gLogFileName, &st) < 0))
 		return;						   /* Never trim, or no log. */
 
 	if ((size_t)st.st_size < (size_t)gMaxLogSize)
@@ -96,7 +96,7 @@ EndLog(void)
 		fat -= (long) strlen(str);
 	}
 	/* skip lines until a new site was opened */
-	while (1) {
+	for (;;) {
 		if (fgets(str, (int) sizeof(str), old) == NULL) {
 			(void) fclose(old);
 			(void) remove(gLogFileName);

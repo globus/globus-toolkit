@@ -131,6 +131,36 @@ the main
 .I ncftp
 program is more of a browser-type program.
 .\"-------
+.SS "OPTIONS"
+.\"-------
+The program allows you to specify a host or directory URL
+on the command line.  This is a synonym for running
+.I ncftp
+and then using the
+.I open
+command.
+A few command-line flags are allowed with this mode:
+.TP 8
+.BI "-u " "XX"
+Use username
+.I XX
+instead of anonymous.
+.TP 8
+.BI "-p " "XX"
+Use password
+.I XX
+with the username.
+.TP 8
+.BI "-j " "XX"
+Use account 
+.I XX
+in supplement to the username and password (deprecated).
+.TP 8
+.BI "-P " "XX"
+Use port number
+.I XX
+instead of the default FTP service port (21).
+.\"-------
 .SS "INTRODUCTION TO THE COMMAND SHELL"
 .\"-------
 .PP
@@ -667,6 +697,30 @@ using the username ``mario:''
 .Xs
 open -u mario bowser.nintendo.co.jp
 .De
+.IP
+Here is a list of options available for use with the
+.I open
+command:
+.IP
+.BI "-u " "XX"
+Use username
+.I XX
+instead of anonymous.
+.IP
+.BI "-p " "XX"
+Use password
+.I XX
+with the username.
+.IP
+.BI "-j " "XX"
+Use account 
+.I XX
+in supplement to the username and password (deprecated).
+.IP
+.BI "-P " "XX"
+Use port number
+.I XX
+instead of the default FTP service port (21).
 .\"-------
 .IP page
 .\"-------
@@ -1041,7 +1095,7 @@ mode only, which you can do from a
 .I ncftp
 command prompt like this:
 .Ds
-set passive yes
+set passive on
 .De
 .PP
 The reason for this is because many firewalls do not allow incoming

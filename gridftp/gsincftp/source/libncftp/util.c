@@ -1,6 +1,6 @@
 /* util.c
  *
- * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  * Modified 2/22/2000 by JWB
@@ -625,6 +625,7 @@ SetSockBufSize(int sockfd, size_t rsize, size_t ssize)
 		rc = setsockopt(sockfd, IPPROTO_TCP, TCP_RFC1323, &opt, optsize);
 	}
 #endif
+
 	if (ssize > 0) {
 		opt = (int) ssize;
 		optsize = sizeof(opt);
@@ -831,7 +832,7 @@ MkDirs(const char *const newdir, int mode1)
 	struct _stat st;
 	char *share;
 #else
-	struct stat st;
+	struct Stat st;
 	mode_t mode = (mode_t) mode1;
 #endif
 
@@ -864,7 +865,7 @@ MkDirs(const char *const newdir, int mode1)
 	}
 #else
 	if (access(newdir, F_OK) == 0) {
-		if (stat(newdir, &st) < 0)
+		if (Stat(newdir, &st) < 0)
 			return (-1);
 		if (! S_ISDIR(st.st_mode)) {
 			errno = ENOTDIR;
@@ -949,6 +950,12 @@ MkDirs(const char *const newdir, int mode1)
 			 */
 			if (sl != NULL)
 				*sl = LOCAL_PATH_DELIM;
+
+			/* We refer to cp + 1 below,
+			 * so this is why we can
+			 * set "cp" to point to the
+			 * byte before the array starts.
+			 */
 			cp = s - 1;
 			break;
 		}
@@ -989,6 +996,68 @@ MkDirs(const char *const newdir, int mode1)
 	}
 	return (0);
 }	/* MkDirs */
+
+
+
+
+int
+FilenameExtensionIndicatesASCII(const char *const pathName, const char *const extnList)
+{
+	const char *extn;
+	char *cp;
+	int c;
+	char extnPattern[16];
+
+	extn = pathName + strlen(pathName) - 1;
+	forever {
+		if (extn <= pathName)
+			return (0);	/* End of pathname, no extension. */
+		c = (int) *--extn;
+		if (IsLocalPathDelim(c))
+			return (0);	/* End of filename, no extension. */
+		if (c == '.') {
+			extn += 1;
+			break;
+		}
+	}
+	if (strlen(extn) > (sizeof(extnPattern) - 2 - 1 - 1)) {
+		return (0);
+	}
+#ifdef HAVE_SNPRINTF
+	snprintf(extnPattern, sizeof(extnPattern),
+#else
+	sprintf(extnPattern,
+#endif
+		"|.%s|",
+		extn
+	);
+
+	cp = extnPattern;
+	forever {
+		c = *cp;
+		if (c == '\0')
+			break;
+		if (isupper(c)) {
+			c = tolower(c);
+			*cp++ = (char) c;
+		} else {
+			cp++;
+		}
+	}
+
+	/* Extension list is specially formatted, like this:
+	 *
+	 * 	|ext1|ext2|ext3|...|extN|
+	 *
+	 * I.e, each filename extension is delimited with 
+	 * a pipe, and we always begin and end the string
+	 * with a pipe.
+	 */
+	if (strstr(extnList, extnPattern) != NULL) {
+		return (1);
+	}
+	return (0);
+}	/* FilenameExtensionIndicatesASCII */
 
 
 

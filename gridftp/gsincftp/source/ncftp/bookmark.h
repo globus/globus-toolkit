@@ -1,6 +1,6 @@
 /* bookmark.h
  *
- * Copyright (c) 1992-2000 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -40,7 +40,7 @@ typedef struct Bookmark {
 #define kOldBookmarkFileName		"hosts"
 #define kBookmarkBupFileName		"bookmarks.old"
 
-#define BMTINDEX(p) ((int) ((char *) p - (char *) gBookmarkTable) / sizeof(Bookmark))
+#define BMTINDEX(p) ((int) ((char *) p - (char *) gBookmarkTable) / (int) sizeof(Bookmark))
 
 /* bookmark.c */
 void BookmarkToURL(BookmarkPtr, char *, size_t);

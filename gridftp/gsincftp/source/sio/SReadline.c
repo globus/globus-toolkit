@@ -139,14 +139,17 @@ SReadline(SReadlineInfo *srl, char *const linebuf, size_t linebufsize)
 			if (dst < dstlim)
 				*dst++ = *src++;
 			else
-				src++;
+			    break;
+			    /* 	src++; */
 		}
 	}
 
 done:
 	srl->bufPtr = src;
+	/*
 	if ((requireEOLN != 0) && (dst != linebuf) && (dst[-1] != '\n'))
 		*dst++ = '\n';
+	*/
 	if ((requireEOLN != 0) && (dst == linebuf) && (illegals > 0))
 		*dst++ = '\n';
 	*dst = '\0';

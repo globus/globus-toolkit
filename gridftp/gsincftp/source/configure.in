@@ -11,7 +11,7 @@ no_signals=yes
 AC_ARG_ENABLE(curses,[  --disable-curses        do not try to find and use the curses library],nc_cv_curses=$enableval)
 AC_ARG_ENABLE(ncurses,[  --disable-ncurses       do not try to find and use the ncurses library],nc_cv_ncurses=$enableval)
 dnl AC_ARG_ENABLE(readline,[  --disable-readline      do not try to find and use the readline library],nc_cv_readline=$enableval)
-AC_ARG_ENABLE(signals,[  --enable-signals       allow use of signal handling],[no_signals=no])
+AC_ARG_ENABLE(signals,[  --disable-select        use alarm() for timeout handling rather than select()],[no_signals=no])
 AC_ARG_ENABLE(extra-dirs,[  --disable-extra-dirs    do not look for extra -I/include and -L/lib dirs],nc_cv_extra_dirs=$enableval)
 AC_ARG_ENABLE(gssapi,[  --enable-gssapi         use the GSSAPI],nc_cv_gssapi=$enableval)
 
@@ -108,7 +108,8 @@ AC_SUBST(MAINDIR)
 
 
 AC_PROG_CC
-wi_CFLAGS
+wi_REQUEST_NO_Y2K_WARNINGS
+wi_CFLAGS_LFS64
 wi_DEFINE_UNAME
 AC_C_CONST
 AC_OBJEXT
@@ -144,14 +145,15 @@ AC_CHECK_FUNCS(getpass getpassphrase strcasecmp getdomainname mktime symlink)
 AC_CHECK_FUNCS(memmove syslog uname setvbuf waitpid strtoq sigaction)
 AC_CHECK_FUNCS(res_init snprintf vsnprintf setsid setpgid setpgrp)
 AC_CHECK_FUNCS(setlocale strcoll strncoll inet_ntop)
+AC_CHECK_FUNCS(open64 stat64 fstat64 lstat64 lseek64 llseek)
 AC_FUNC_SETPGRP
 AC_FUNC_SETVBUF_REVERSED
 wi_FUNC_SIGSETJMP
 wi_CURSES_FEATURES
 if test "$LIBCURSES" = "" ; then
-	VIS_DPROGS='# ../bin/ncftpbookmarks'
+	VIS_DPROGS="# ../bin/ncftpbookmarks${EXEEXT}"
 else
-	VIS_DPROGS='../bin/gsincftpbookmarks'
+	VIS_DPROGS='../bin/gsincftpbookmarks${EXEEXT}'
 fi
 AC_SUBST(VIS_DPROGS)
 
@@ -160,7 +162,7 @@ AC_CHECK_HEADERS(unistd.h syslog.h utime.h resolv.h arpa/nameser.h sys/utsname.h
 AC_CHECK_HEADERS(termios.h termio.h sgtty.h sys/ioctl.h)
 AC_CHECK_HEADERS(sys/types.h sys/time.h sys/socket.h)
 dnl Readline headers #ifdefs for string.h
-AC_CHECK_HEADERS(string.h)
+AC_CHECK_HEADERS(string.h strings.h)
 wi_HEADER_SYS_SELECT_H
 AC_FUNC_SELECT_ARGTYPES
 
@@ -277,6 +279,22 @@ dnl 	LDFLAGS="$LDFLAGS -L${ldir}"
 dnl 	CPPFLAGS="$CPPFLAGS -I${ldir}"
 dnl 	LIBS="$LIBS -lStrn"
 dnl fi
+
+if test "x$mandir" = 'x${prefix}/man' ; then
+	# Mandir is at default value -- try to see
+	# if $prefix/share/man would be better.
+	#
+
+	# $prefix is probably set to NONE.
+	#
+	p=`cd / ; cd $prefix 2>/dev/null ; pwd`
+	if test "x$p" != "x/" ; then
+		p="/usr/local"
+	fi
+	if test -d "$p/share/man" ; then
+		mandir='${prefix}/share/man'
+	fi
+fi
 
 LIBS=`echo "$LIBS" | sed 's/^ *//;s/ *$//;s/  */ /g'`
 LDFLAGS=`echo "$LDFLAGS" | sed 's/^ *//;s/ *$//;s/  */ /g'`

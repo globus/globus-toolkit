@@ -60,6 +60,36 @@ regular if the passive connection fails or times out.
 Redial a maximum of 
 .I XX
 times until connected to the remote FTP server.
+.TP 8
+.BI "-W " "XX"
+Send raw FTP command
+.I XX
+after logging in.
+.TP 8
+.BI "-X " "XX"
+Send raw FTP command
+.I XX
+after each file transferred.
+.TP 8
+.BI "-Y " "XX"
+Send raw FTP command
+.I XX
+before logging out.
+.IP
+The
+.BR "-W" ", " "-X" ", and " "-Y"
+options are useful for advanced users who need to tweak
+behavior on some servers.
+For example, users accessing mainframes might need to send
+some special SITE commands to set blocksize and record format information.
+.IP
+When using those options, you can use a newline character to delimit
+multiple commands.
+For the
+.B "-X"
+option, you can use the cookie
+.B %s
+to expand into the name of the file that was transferred.
 .\"-------
 .SH "DESCRIPTION"
 .\"-------

@@ -1,6 +1,148 @@
 Change Log:
 ===========
 
+3.0.3, 2001-04-11:
+
++ Preference options can now be "file" completed on the command line with
+  the set/show/prefs commands.
+
++ NcFTP directory changes are now always one subdirectory at a time, for
+  better portability on remote servers with non-UNIX filesystems.
+
++ NcFTP tries to maintain the current directory itself, like /bin/ksh and
+  Bash do, which means that symlinks remain part of the current working
+  directory when possible.  For example, on ftp.freesoftware.com if your
+  current directory is /pub and you "cd linux", NcFTP will use /pub/linux
+  as the current directory, even though the canonical directory on the
+  server is /.0/linux.  This is also useful for things like Linux's
+  Kernel.org mirrors, so if you bgget a kernel.tar.gz file the "virtual"
+  current directory is used rather than a specific-machine's layout.
+
++ Mac OS X support added.  No Mac or Aqua specific features yet.
+
++ NcFTP now has an option to automatically use ASCII mode for transfers
+  if the file's extension corresponds to a textual data file type.
+
++ Using homegrown gl_getpass in place of getpass() and getpassphrase for
+  all platforms, not just Windows..
+
++ Incorporating a few getline suggestions from Ken Cox.
+
++ Configuration tweaks for Cygwin port.
+
++ Removed some arbitrary buffer size limits.
+
++ Lint fixes.
+
++ Curses configuration fixes for HP-UX.
+
++ Shell utilities now have a "-bb" flag which is just like "-b" only
+  the job is submitted only (and no ncftpbatch is spawned).
+
++ More problems fixed with interaction with Windows FTP servers.
+
++ Better compatibility with non-standard extensions to the FTP which
+  allow for TCP Large Windows (specifically, SITE BUFSIZE).
+
++ Win32 port had a bug which leaked file handles.
+
++ Miscellaneous Win32 port fixes.
+
++ Changed default anonymous password to NcFTP@, since no one really cares
+  any more about using a real e-mail address.
+
++ Bug fixed where some types of servers' features might not be queried.
+
++ Fixed some inconsistencies with the -a and -A flags among NcFTP and the
+  shell utilities.  "-a" is now ASCII mode across the board, and "-A" is
+  the flag to use for append mode (which not many people use anyway).
+
++ Bug fixed where the flag for delete after upload (-DD) was being
+  ignored.
+
++ You can now do "set yes-i-know-about-NcFTPd yes" from a NcFTP prompt to get
+  it to quit plugging NcFTPd every 7th time you run the program.
+
++ Like the system-wide /etc/ncftp.firewall and /etc/ncftp.firewall.fixed
+  files for global preferences, there is now the equivalent for regular
+  preference files (/etc/ncftp.prefs_v3 and /etc/ncftp.prefs_v3.fixed).
+
++ The ncftpbatch spool files now support some additional options for sending
+  additional FTP commands.  The options are called "pre-command",
+  "post-command", and "per-file-command".  This is useful if you need to
+  send some odd SITE command before transfer, for example.
+
++ Similarly, ncftpget and ncftpput have new -W/-X/-Y switches so you can
+  send pre/each/post commands.  (i.e. "-W SITE MY_WEIRD_IBM_MAINFRAME_OPTION").
+
++ Bug fixed where NcFTP was not taking advantage of re-using a currently
+  open host when exiting and launching ncftpbatch.  If you bgget a file
+  from within NcFTP, then exit while the host is still connected,
+  ncftpbatch is supposed to inherit that existing context without having
+  to reopen the host.
+
++ When using a URL with ncftpget, you can do "-a" to have it use ASCII.
+  Prior versions forced to you use the little-known URL syntax to specify
+  ASCII mode (btw, example of that is "ftp://ftp.foo.com/pub/README.TXT;a")
+
++ Bug fixed where our handling of the TCP_NODELAY option was not getting
+  enabled.
+
++ A few tweaks for C++ compatibility.
+
+
+3.0.2, 2000-10-18:
+
++ Fixed bug introduced in 3.0.1 which stripped off the leading slash
+  for the directory parameter of ncftpget and ncftpput.
+
++ Problem where NcFTP would not timeout a hung data transfer fixed.
+
++ Improved support for large files (> 2 GB).
+
++ Increased some internal buffers to handle longer response lines.
+
++ Pagers are now enabled on the Win32 port.
+
++ Format bug in quote and site commands fixed.
+
++ Possibly fix problem with Solaris 2.5 complaining about "pollable
+  event."
+
++ Win32 port bug fixed where NcFTP was not stripping off the quotation
+  marks on your HOME or NCFTPDIR environment variable.
+
++ Fixed bug where your firewall information could be ignored.
+
++ Utilities now accept a "-j" flag for an account (ACCT) if you need
+  to use that in addition to a USER and PASSword.
+
++ License has been changed.
+
+
+3.0.1, 2000-03-27:
+
++ ncftpput has been changed to cd to the destination directory on the
+  remote host before storing files.  In addition, it does it one
+  subdirectory node at a time, like URL mode does for ncftpget.
+
++ Bug fixed where the "ncftp_bookmarks --dimensions-terse" hack could
+  be closed and generate a SIGPIPE which caused it to exit uncleanly,
+  and possibly leave the terminal state hosed.
+
++ Added a snippet from Felix von Leitner <leitner@fefe.de> to get the
+  terminal width fairly painlessly, so the aforementioned hack should
+  not be necessary in many cases.
+
++ Dtterm and vt220 added to the short list of vt100ish term types.
+
++ Win32 version bug fixed where ncftpbookmarks was not honoring the
+  HOME enviornment variable, instead writing data to the install
+  directory under Program Files.
+
++ Win32 version now uses Wise installer instead of InstallShield.
+
+
 3.0.0, 2000-03-19:
 
 + New "redial-delay" preference setting, so you can easily set it and

@@ -1,7 +1,11 @@
 /* rdline.c
  *
- * Copyright (c) 1992-2000 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
+ *
+ * Note: It should still be simple to backport the old GNU Readline
+ * support in here.  Feel free to do that if you hate NcFTP's built-in
+ * implementation.
  * 
  */
 
@@ -11,6 +15,7 @@
 #include "util.h"
 #include "bookmark.h"
 #include "cmds.h"
+#include "pref.h"
 #include "ls.h"
 #include "readln.h"
 #include "getline.h"
@@ -37,6 +42,8 @@ extern char gOurDirectoryPath[];
 extern char gVersion[];
 extern int gNumBookmarks;
 extern BookmarkPtr gBookmarkTable;
+extern PrefOpt gPrefOpts[];
+extern int gNumPrefOpts;
 extern int gScreenColumns;
 extern int gIsTTYr;
 extern int gUid;
@@ -48,17 +55,64 @@ void
 GetScreenColumns(void)
 {
 #if defined(WIN32) || defined(_WINDOWS)
-	/* don't do this on Windows */
-#else
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+	if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+		gScreenColumns = (int) csbi.dwSize.X;
+		if (gScreenColumns < 80)
+			gScreenColumns = 80;
+	}
+#else	/* Unix */
 #ifdef BINDIR
 	char ncftpbookmarks[256];
 	FILE *infp;
 	vsigproc_t osigpipe;
 	int columns;
+#endif	/* BINDIR */
+	char *cp;
 
+	if ((cp = (char *) getenv("COLUMNS")) == NULL) {
+		gScreenColumns = 80;
+	} else {
+		gScreenColumns = atoi(cp);
+		return;
+	}
+
+#ifdef TIOCGWINSZ
+	{
+		struct winsize felix;
+
+		memset(&felix, 0, sizeof(felix));
+		if (ioctl(0, TIOCGWINSZ, &felix) == 0) {
+			columns = felix.ws_col;
+			if ((columns > 0) && (columns < GL_BUF_SIZE))
+				gScreenColumns = columns;
+			else
+				gScreenColumns = 80;
+			return;
+		}
+	}
+#endif
+
+#ifdef BINDIR
 	/* Don't run things as root unless really necessary. */
 	if (gUid == 0)
 		return;
+
+	/* This is a brutal hack where we've hacked a
+	 * special command line option into ncftp_bookmarks
+	 * (which is linked with curses) so that it computes
+	 * the screen size and prints it to stdout.
+	 *
+	 * This function runs ncftp_bookmarks and gets
+	 * that information.  The reason we do this is that
+	 * we may or may not have a sane installation of
+	 * curses/termcap, and we don't want to increase
+	 * NcFTP's complexity by the curses junk just to
+	 * get the screen size.  Instead, we delegate this
+	 * to ncftp_bookmarks which already deals with the
+	 * ugliness of curses.
+	 */
 
 	STRNCPY(ncftpbookmarks, BINDIR);
 	STRNCAT(ncftpbookmarks, "/");
@@ -69,19 +123,18 @@ GetScreenColumns(void)
 
 	STRNCAT(ncftpbookmarks, " --dimensions-terse");
 
+	osigpipe = NcSignal(SIGPIPE, SIG_IGN);
 	infp = popen(ncftpbookmarks, "r");
-	if (infp == NULL)
-		return;
+	if (infp != NULL) {
+		columns = 0;
+		(void) fscanf(infp, "%d", &columns);
+		while (getc(infp) != EOF) {}
+		(void) pclose(infp);
 
-	osigpipe = (vsigproc_t) NcSignal(SIGPIPE, SIG_IGN);
+		if ((columns > 0) && (columns < GL_BUF_SIZE))
+			gScreenColumns = columns;
+	}
 	(void) NcSignal(SIGPIPE, (sigproc_t) osigpipe);
-
-	columns = 0;
-	(void) fscanf(infp, "%d", &columns);
-	(void) pclose(infp);
-
-	if ((columns > 0) && (columns < GL_BUF_SIZE))
-		gScreenColumns = columns;
 #endif	/* BINDIR */
 #endif	/* Windows */
 }	/* GetScreenColumns */
@@ -125,6 +178,7 @@ InitTermcap(void)
 	term = gTerm;
 	if (	(strstr(term, "xterm") != NULL) ||
 		(strstr(term, "rxvt") != NULL) ||
+		(strstr(term, "dtterm") != NULL) ||
 		(ISTRCMP(term, "scoterm") == 0)
 	) {
 		gXterm = gXtermTitle = 1;
@@ -133,6 +187,7 @@ InitTermcap(void)
 	if (	(gXterm != 0) ||
 		(strcmp(term, "vt100") == 0) ||
 		(strcmp(term, "linux") == 0) ||
+		(strcmp(term, "vt220") == 0) ||
 		(strcmp(term, "vt102") == 0)
 	) {
 		tcap_normal = "\033[0m";       /* Default ANSI escapes */
@@ -425,6 +480,37 @@ CommandCompletionFunction(const char *text, int state)
 
 
 
+static char *
+PrefOptCompletionFunction(const char *text, int state)
+{
+	char *cp;
+	size_t textlen;
+	int i, matches;
+
+	if (state >= gNumPrefOpts)
+		return (NULL);
+
+	textlen = strlen(text);
+	if (textlen == 0) {
+		cp = StrDup(gPrefOpts[state].varname);
+	} else {
+		cp = NULL;
+		for (i=0, matches=0; i<gNumPrefOpts; i++) {
+			if (ISTRNCMP(gPrefOpts[i].varname, text, textlen) == 0) {
+				if (matches >= state) {
+					cp = StrDup(gPrefOpts[i].varname);
+					break;
+				}
+				matches++;
+			}
+		}
+	}
+	return cp;
+}	/* PrefOptCompletionFunction */
+
+
+
+
 void
 ReCacheBookmarks(void)
 {
@@ -505,6 +591,9 @@ CompletionFunction(const char *text, int state)
 		return cp;
 	} else if ((flags & kCompleteBookmark) != 0) {
 		cp = BookmarkCompletionFunction(text, state);
+		return cp;
+	} else if ((flags & kCompletePrefOpt) != 0) {
+		cp = PrefOptCompletionFunction(text, state);
 		return cp;
 	}	
 	return NULL;

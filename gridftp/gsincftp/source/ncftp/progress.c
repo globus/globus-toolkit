@@ -1,6 +1,6 @@
 /* progress.c
  *
- * Copyright (c) 1992-2000 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -164,7 +164,7 @@ try \"get -T\" to resume the directory transfer.\n\n");
 			 * stuff that might have been left over from the last
 			 * update.
 			 */
-			for (i=strlen(line); i < 80 - 2; i++)
+			for (i = (int) strlen(line); i < 80 - 2; i++)
 				line[i] = ' ';
 			line[i] = '\0';
 
@@ -320,7 +320,7 @@ PrStatBar(const FTPCIPtr cip, int mode)
 			 * stuff that might have been left over from the last
 			 * update.
 			 */
-			for (i=strlen(line); i < 80 - 2; i++)
+			for (i = (int) strlen(line); i < 80 - 2; i++)
 				line[i] = ' ';
 			line[i] = '\0';
 

@@ -46,12 +46,14 @@ find . -depth -follow -type f | sed '
 /\.pch$/d
 /\.ilk$/d
 /\.res$/d
+/\.aps$/d
 /\.opt$/d
 /\.plg$/d
 /\.obj$/d
 /\.exe$/d
 /\.zip$/d
 /\.gz$/d
+/\.tgz$/d
 /\.tar$/d
 /\.swp$/d
 /\.orig$/d

@@ -46,12 +46,14 @@ find . -depth -follow -type f | sed '
 /\.pch$/d
 /\.ilk$/d
 /\.res$/d
+/\.aps$/d
 /\.opt$/d
 /\.plg$/d
 /\.obj$/d
 /\.exe$/d
 /\.zip$/d
 /\.gz$/d
+/\.tgz$/d
 /\.tar$/d
 /\.swp$/d
 /\.orig$/d
@@ -69,14 +71,35 @@ find . -depth -follow -type f | sed '
 /\/config\./d
 /\/Makefile$/d
 /\/OLD/d
-/\/old/d' | cut -c3- | tee "$wd/doc/manifest" | cpio -Lpdm $TMPDIR/TAR/$TARDIR
+/\/old/d' | cut -c3- > "$wd/doc/manifest"
 
 if [ -f "$wd/sh/unix2dos.sh" ] ; then
 	cp "$wd/doc/manifest" "$wd/doc/manifest.txt" 
 	$wd/sh/unix2dos.sh "$wd/doc/manifest.txt"
 fi
 
-( cd $TMPDIR/TAR ; tar cvf - $TARDIR | gzip -c > $STGZFILE )
+cpio -Lpdm $TMPDIR/TAR/$TARDIR < "$wd/doc/manifest"
+
+x=`tar --help 2>&1 | sed -n 's/.*owner=NAME.*/owner=NAME/g;/owner=NAME/p'`
+case "$x" in
+	*owner=NAME*)
+		TARFLAGS="-c --owner=bin --group=bin --verbose -f"
+		TAR=tar
+		;;
+	*)
+		TARFLAGS="cvf"
+		TAR=tar
+		x2=`gtar --help 2>&1 | sed -n 's/.*owner=NAME.*/owner=NAME/g;/owner=NAME/p'`
+		case "$x2" in
+			*owner=NAME*)
+				TARFLAGS="-c --owner=bin --group=bin --verbose -f"
+				TAR=gtar
+				;;
+		esac
+		;;
+esac
+
+( cd $TMPDIR/TAR ; $TAR $TARFLAGS - $TARDIR | gzip -c > $STGZFILE )
 cp $TMPDIR/TAR/$STGZFILE .
 chmod 644 $STGZFILE
 rm -rf $TMPDIR/TAR

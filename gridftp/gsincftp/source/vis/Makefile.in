@@ -16,7 +16,7 @@ BINDIR=@bindir@
 
 CURSESLIBS=@LIBCURSES@
 LIBS=$(CURSESLIBS) @LIBS@
-STRIPFLAG=-s
+STRIP=strip
 LDFLAGS=-L../libncftp -L../Strn -L../sio @LDFLAGS@
 
 # Any -D definitions:
@@ -27,8 +27,9 @@ DPROGS=@VIS_DPROGS@
 all: $(DPROGS)
 	-@echo 'Done making NcFTP full-screen utilities.'
 
-../bin/gsincftpbookmarks@EXEEXT@: bmed.c wgets.@OBJEXT@ wutil.@OBJEXT@ pref.@OBJEXT@ preffw.@OBJEXT@ util.@OBJEXT@ bookmark.@OBJEXT@ version.@OBJEXT@ bmed.h wgets.h syshdrs.h ../libncftp/libncftp.a
-	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) bmed.c wgets.@OBJEXT@ wutil.@OBJEXT@ pref.@OBJEXT@ preffw.@OBJEXT@ util.@OBJEXT@ bookmark.@OBJEXT@ version.@OBJEXT@ -o ../bin/gsincftpbookmarks@EXEEXT@ $(LDFLAGS) -lncftp -lStrn -lsio $(LIBS) $(STRIPFLAG)
+../bin/gsincftpbookmarks@EXEEXT@: bmed.c wgets.@OBJEXT@ wutil.@OBJEXT@ pref.@OBJEXT@ preffw.@OBJEXT@ trace.@OBJEXT@ util.@OBJEXT@ bookmark.@OBJEXT@ version.@OBJEXT@ bmed.h wgets.h syshdrs.h ../libncftp/libncftp.a
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) bmed.c wgets.@OBJEXT@ wutil.@OBJEXT@ pref.@OBJEXT@ preffw.@OBJEXT@ trace.@OBJEXT@ util.@OBJEXT@ bookmark.@OBJEXT@ version.@OBJEXT@ -o ../bin/gsincftpbookmarks@EXEEXT@ $(LDFLAGS) -lncftp -lStrn -lsio $(LIBS)
+	-@$(STRIP) ../bin/gsincftpbookmarks@EXEEXT@
 
 bookmark.@OBJEXT@: ../ncftp/bookmark.c ../ncftp/bookmark.h syshdrs.h
 	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) ../ncftp/bookmark.c -c
@@ -38,6 +39,9 @@ pref.@OBJEXT@: ../ncftp/pref.c ../ncftp/pref.h syshdrs.h
 
 preffw.@OBJEXT@: ../ncftp/preffw.c ../ncftp/pref.h syshdrs.h
 	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) ../ncftp/preffw.c -c
+
+trace.@OBJEXT@: ../ncftp/trace.c ../ncftp/trace.h syshdrs.h
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) ../ncftp/trace.c -c
 
 util.@OBJEXT@: ../ncftp/util.c ../ncftp/util.h syshdrs.h
 	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) ../ncftp/util.c -c

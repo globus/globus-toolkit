@@ -1,6 +1,6 @@
 /* util.c
  *
- * Copyright (c) 1992-2000 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  * Modified Feb 22, 2000 by JWB
@@ -18,7 +18,9 @@ char gHome[256];
 char gShell[256];
 char gOurDirectoryPath[260];
 char gOurInstallationPath[260];
+#ifdef ncftp
 static int gResolveSig;
+#endif
 
 #if defined(WIN32) || defined(_WINDOWS)
 #elif defined(HAVE_SIGSETJMP)
@@ -565,9 +567,19 @@ InitOurDirectory(void)
 
 	if (gOurInstallationPath[0] != '\0') {
 		if ((cp = getenv("NCFTPDIR")) != NULL) {
+			if (*cp == '"')
+				cp++;
 			(void) STRNCPY(gOurDirectoryPath, cp);
+			cp = strrchr(gOurDirectoryPath, '"');
+			if ((cp != NULL) && (cp[1] == '\0'))
+				*cp = '\0';
 		} else if ((cp = getenv("HOME")) != NULL) {
+			if (*cp == '"')
+				cp++;
 			(void) STRNCPY(gOurDirectoryPath, cp);
+			cp = strrchr(gOurDirectoryPath, '"');
+			if ((cp != NULL) && (cp[1] == '\0'))
+				*cp = '\0';
 		} else {
 			STRNCPY(gOurDirectoryPath, gOurInstallationPath);
 			if (gUser[0] == '\0') {
@@ -751,6 +763,7 @@ StrToBool(const char *const s)
 	result = 0;
 	switch (c) {
 		case 'f':			       /* false */
+			/*FALLTHROUGH*/
 		case 'n':			       /* no */
 			break;
 		case 'o':			       /* test for "off" and "on" */
@@ -759,8 +772,9 @@ StrToBool(const char *const s)
 				c = tolower(c);
 			if (c == 'f')
 				break;
-			/* fall through */
+			/*FALLTHROUGH*/
 		case 't':			       /* true */
+			/*FALLTHROUGH*/
 		case 'y':			       /* yes */
 			result = 1;
 			break;
@@ -800,11 +814,13 @@ AbsoluteToRelative(char *const dst, const size_t dsize, const char *const dir, c
 static void
 CancelGetHostByName(int sigNum)
 {
+#ifdef ncftp
 	gResolveSig = sigNum;
+#endif
 #ifdef HAVE_SIGSETJMP
-	siglongjmp(gGetHostByNameJmp, 1);
+	siglongjmp(gGetHostByNameJmp, (sigNum != 0) ? 1 : 0);
 #else	/* HAVE_SIGSETJMP */
-	longjmp(gGetHostByNameJmp, 1);
+	longjmp(gGetHostByNameJmp, (sigNum != 0) ? 1 : 0);
 #endif	/* HAVE_SIGSETJMP */
 }	/* CancelGetHostByName */
 
@@ -856,32 +872,34 @@ GetHostByName(char *const volatile dst, size_t dsize, const char *const hn, int 
 #endif
 
 #ifdef HAVE_SIGSETJMP
+	osigpipe = osigint = osigalrm = (sigproc_t) 0;
 	sj = sigsetjmp(gGetHostByNameJmp, 1);
 #else	/* HAVE_SIGSETJMP */
+	osigpipe = osigint = osigalrm = (sigproc_t) 0;
 	sj = setjmp(gGetHostByNameJmp);
 #endif	/* HAVE_SIGSETJMP */
 
 	if (sj != 0) {
 		/* Caught a signal. */
 		(void) alarm(0);
-		(void) NcSignal(SIGPIPE, (sigproc_t) osigpipe);
-		(void) NcSignal(SIGINT, (sigproc_t) osigint);
-		(void) NcSignal(SIGALRM, (sigproc_t) osigalrm);
+		(void) NcSignal(SIGPIPE, osigpipe);
+		(void) NcSignal(SIGINT, osigint);
+		(void) NcSignal(SIGALRM, osigalrm);
 #ifdef ncftp
 		Trace(0, "Canceled GetHostByName because of signal %d.\n", gResolveSig);
 #endif
 	} else {
-		osigpipe = (vsigproc_t) NcSignal(SIGPIPE, CancelGetHostByName);
-		osigint = (vsigproc_t) NcSignal(SIGINT, CancelGetHostByName);
-		osigalrm = (vsigproc_t) NcSignal(SIGALRM, CancelGetHostByName);
+		osigpipe = NcSignal(SIGPIPE, CancelGetHostByName);
+		osigint = NcSignal(SIGINT, CancelGetHostByName);
+		osigalrm = NcSignal(SIGALRM, CancelGetHostByName);
 		if (t > 0)
 			(void) alarm((unsigned int) t);
 		hp = gethostbyname(hn);
 		if (t > 0)
 			(void) alarm(0);
-		(void) NcSignal(SIGPIPE, (sigproc_t) osigpipe);
-		(void) NcSignal(SIGINT, (sigproc_t) osigint);
-		(void) NcSignal(SIGALRM, (sigproc_t) osigalrm);
+		(void) NcSignal(SIGPIPE, osigpipe);
+		(void) NcSignal(SIGINT, osigint);
+		(void) NcSignal(SIGALRM, osigalrm);
 		if (hp != NULL) {
 #ifdef HAVE_INET_NTOP	/* Mostly to workaround bug in IRIX 6.5's inet_ntoa */
 			(void) memset(dst, 0, dsize);

@@ -21,8 +21,9 @@ libncftp/io.c
 libncftp/Readme.txt
 libncftp/config.h.in
 libncftp/dos2unix.sh
-libncftp/mksrczip.bat
 libncftp/radix.c
+libncftp/mksrczip.bat
+libncftp/mksrctar.sh
 Strn/Strn.dsp
 Strn/Strn.dsw
 Strn/Strn.h
@@ -37,6 +38,10 @@ Strn/version.c
 Strn/Makefile.in
 Strn/Strn.3
 Strn/configure.in
+Strn/config.h.in
+Strn/Strn.version
+Strn/tester
+Strn/Dynscat.c
 sh_util/ncftpget.c
 sh_util/ncftpput.c
 sh_util/gpshare.c
@@ -76,6 +81,8 @@ doc/html/ncftpget.html
 doc/html/ncftpls.html
 doc/html/ncftpput.html
 doc/html/ncftp.html
+doc/html/ncftpbatch.html
+doc/html/index.html
 Makefile.in
 configure
 config.h.in
@@ -135,9 +142,10 @@ sh/dos2unix.sh
 sh/mksrczip.bat
 sh/mksrctar.sh
 sh/mksrczip.sh
-autoconf/aclocal.m4
+sh/autoconfall.sh
+sh/man2html.sh
 autoconf/acconfig.h
-autoconf/configure.in
+autoconf/aclocal.m4
 sio/sio.dsw
 sio/usio.h
 sio/srltest.c
@@ -181,6 +189,7 @@ sio/SRead.c
 sio/SWrite.c
 sio/sio.h
 sio/config.h.in
+sio/SWait.c
 FIREWALL-PROXY-README
 win/bmed/bmed.clw
 win/bmed/util.c
@@ -202,6 +211,7 @@ win/bmed/bookmark.c
 win/bmed/util.h
 win/bmed/BookmarkProperties.h
 win/bmed/BookmarkProperties.cpp
+win/setup/ncftp.wse
 NcFTP_All.dsp
 NcFTP_All.dsw
 Makefile.bin

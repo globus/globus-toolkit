@@ -1,6 +1,6 @@
 /* trace.c
  *
- * Copyright (c) 1992-2000 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -17,7 +17,6 @@ time_t gTraceTime;
 FILE *gTraceFile = NULL;
 char gTraceLBuf[256];
 int gDebug = 0;
-static FTPCIPtr gUnused;
 
 extern FTPLibraryInfo gLib;
 extern FTPConnectionInfo gConn;
@@ -64,9 +63,9 @@ Trace(const int level, const char *const fmt, ...)
 
 
 void
-ErrorHook(const FTPCIPtr cipUnused, char *msg)
+ErrorHook(const FTPCIPtr UNUSED(cipUnused), char *msg)
 {
-	gUnused = cipUnused;			/* shut up gcc */
+	LIBNCFTP_USE_VAR(cipUnused);		/* shut up gcc */
 
 	/* Will also get Trace'd. */
 	(void) fprintf(stdout, "%s", msg);
@@ -76,9 +75,9 @@ ErrorHook(const FTPCIPtr cipUnused, char *msg)
 
 
 void
-DebugHook(const FTPCIPtr cipUnused, char *msg)
+DebugHook(const FTPCIPtr UNUSED(cipUnused), char *msg)
 {
-	gUnused = cipUnused;			/* shut up gcc */
+	LIBNCFTP_USE_VAR(cipUnused);		/* shut up gcc */
 	Trace(0, "%s", msg);
 }	/* DebugHook */
 
@@ -113,6 +112,7 @@ OpenTrace(void)
 	char pathName[256];
 	char tName[32];
 	int pid;
+	const char *cp;
 #if defined(HAVE_SYS_UTSNAME_H) && defined(HAVE_UNAME)
 	struct utsname u;
 #endif
@@ -144,6 +144,10 @@ OpenTrace(void)
 #endif	/* UNAME */
 		FTPInitializeOurHostName(&gLib);
 		(void) fprintf(fp, "          Hostname:  %s  (rc=%d)\n", gLib.ourHostName, gLib.hresult);
+		cp = (const char *) getenv("TERM");
+		if (cp == NULL)
+			cp = "unknown?";
+		(void) fprintf(fp, "          Terminal:  %s\n", cp);
 		gTraceFile = fp;
 	}
 }	/* OpenTrace */

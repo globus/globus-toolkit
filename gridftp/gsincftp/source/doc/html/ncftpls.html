@@ -62,6 +62,28 @@ of the default FTP service port (21). </DD>
  </DD>
 </DL>
 
+<DT><B>-W </B><I>XX</I> </DT>
+<DD>Send raw FTP command <I>XX</I> after logging in.</DD>
+
+<DT><B>-X </B><I>XX</I> </DT>
+<DD>Send raw FTP command <I>XX</I> after each file transferred.</DD>
+
+<DT><B>-Y </B><I>XX</I> </DT>
+<DD>
+Send raw FTP command <I>XX</I> before logging out.
+<P>
+The <B>-W</B>, <B>-X</B>, and <B>-Y</B> options are useful for advanced
+users  who need to tweak behavior on some servers.
+For example, users accessing mainframes might need
+to  send  some special SITE commands to set block-
+size and record format information.
+<P>
+When using those options, you can  use  a  newline
+character  to  delimit multiple commands.  For the
+<B>-X</B> option, you can use the  cookie <TT>%s</TT>  to  expand
+into the name of the file that was transferred.
+</DD>
+
 </blockquote>
 
 <H2>Description</H2>
@@ -92,7 +114,7 @@ and password information like you can with <I>ncftpget</I> or <I>ncftpput</I>.
 
 <P>
 <I>ncftpls</I> returns the following exit values: 
-<OL>
+<OL start="0">
 <LI>Success. </LI><LI>Could not connect to
 remote host. </LI><LI>Could not connect to remote host - timed out. </LI><LI>Transfer failed.
 </LI><LI>Transfer failed - timed out. </LI><LI>Directory change failed. </LI><LI>Directory change failed

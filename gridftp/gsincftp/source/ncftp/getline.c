@@ -1,5 +1,5 @@
 /* Based on: "$Id$"; */
-static char copyright[] = "getline:  Copyright (C) 1991, 1992, 1993, Chris Thewalt";
+static const char copyright[] = "getline:  Copyright (C) 1991, 1992, 1993, Chris Thewalt";
 
 /*
  * Copyright (C) 1991, 1992, 1993 by Chris Thewalt (thewalt@ce.berkeley.edu)
@@ -113,6 +113,9 @@ static char copyright[] = "getline:  Copyright (C) 1991, 1992, 1993, Chris Thewa
 
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_STRINGS_H
+#	include <strings.h>
+#endif
 #include <stdlib.h>
 #include <ctype.h>
 #include <signal.h>
@@ -140,11 +143,12 @@ char gl_buf[GL_BUF_SIZE];       /* input buffer */
 
 static int      gl_init_done = -1;	/* terminal mode flag  */
 static int      gl_termw = 80;		/* actual terminal width */
+static int      gl_termh = 24;		/* actual terminal height */
 static int      gl_scroll = 27;		/* width of EOL scrolling region */
 static int      gl_width = 0;		/* net size available for input */
 static int      gl_extent = 0;		/* how far to redraw, 0 means all */
 static int      gl_overwrite = 0;	/* overwrite mode */
-static int      gl_pos, gl_cnt = 0;     /* position and size of input */
+static int      gl_pos = 0, gl_cnt = 0; /* position and size of input */
 static char     gl_killbuf[GL_BUF_SIZE]=""; /* killed text */
 static const char *gl_prompt;		/* to save the prompt string */
 static char     gl_intrc = 0;		/* keyboard SIGINT char */
@@ -156,6 +160,7 @@ static char   **gl_matchlist = 0;
 static char    *gl_home_dir = NULL;
 static int      gl_vi_preferred = -1;
 static int      gl_vi_mode = 0;
+static int	gl_result = GL_OK;
 
 static void     gl_init(void);		/* prepare to edit a line */
 static void     gl_cleanup(void);	/* to undo gl_init */
@@ -203,15 +208,16 @@ gl_char_init(void)			/* turn off input echo */
 {
 #ifdef __unix__
 #	ifdef HAVE_TERMIOS_H		/* Use POSIX */
-		tcgetattr(0, &old_termios);
-		gl_intrc = old_termios.c_cc[VINTR];
-		gl_quitc = old_termios.c_cc[VQUIT];
+		if (tcgetattr(0, &old_termios) == 0) {
+			gl_intrc = old_termios.c_cc[VINTR];
+			gl_quitc = old_termios.c_cc[VQUIT];
 #		ifdef VSUSP
 			gl_suspc = old_termios.c_cc[VSUSP];
 #		endif
 #		ifdef VDSUSP
 			gl_dsuspc = old_termios.c_cc[VDSUSP];
 #		endif
+		}
 		new_termios = old_termios;
 		new_termios.c_iflag &= ~(BRKINT|ISTRIP|IXON|IXOFF);
 		new_termios.c_iflag |= (IGNBRK|IGNPAR);
@@ -220,10 +226,11 @@ gl_char_init(void)			/* turn off input echo */
 		new_termios.c_cc[VTIME] = 0;
 		tcsetattr(0, TCSANOW, &new_termios);
 #	elif defined(TIOCSETN)		/* BSD */
-		ioctl(0, TIOCGETC, &tch);
+		if (ioctl(0, TIOCGETC, &tch) == 0) {
+			gl_intrc = tch.t_intrc;
+			gl_quitc = tch.t_quitc;
+		}
 		ioctl(0, TIOCGLTC, &ltch);
-		gl_intrc = tch.t_intrc;
-		gl_quitc = tch.t_quitc;
 		gl_suspc = ltch.t_suspc;
 		gl_dsuspc = ltch.t_dsuspc;
 		ioctl(0, TIOCGETP, &old_tty);
@@ -232,9 +239,10 @@ gl_char_init(void)			/* turn off input echo */
 		new_tty.sg_flags &= ~ECHO;
 		ioctl(0, TIOCSETN, &new_tty);
 #	else				/* SYSV */
-		ioctl(0, TCGETA, &old_termio);
-		gl_intrc = old_termio.c_cc[VINTR];
-		gl_quitc = old_termio.c_cc[VQUIT];
+		if (ioctl(0, TCGETA, &old_termio) == 0) {
+			gl_intrc = old_termio.c_cc[VINTR];
+			gl_quitc = old_termio.c_cc[VQUIT];
+		}
 		new_termio = old_termio;
 		new_termio.c_iflag &= ~(BRKINT|ISTRIP|IXON|IXOFF);
 		new_termio.c_iflag |= (IGNBRK|IGNPAR);
@@ -259,6 +267,17 @@ gl_char_cleanup(void)		/* undo effects of gl_char_init */
 #	endif
 #endif /* __unix__ */
 }
+
+
+
+int
+gl_get_result(void)
+{
+	return (gl_result);
+}	/* gl_get_result */
+
+
+
 
 #if defined(MSDOS) || defined(__windows__)
 
@@ -320,7 +339,7 @@ gl_getc(void)
 
 #ifdef __unix__
     ch = '\0';
-    while ((c = read(0, &ch, 1)) == -1) {
+    while ((c = (int) read(0, &ch, 1)) == -1) {
 	if (errno != EINTR)
 	    break;
     }
@@ -384,7 +403,7 @@ gl_getcx(int tlen)
 	}
 
 	for (errno = 0;;) {
-		c = read(0, &ch, 1);
+		c = (int) read(0, &ch, 1);
 		if (c == 1)
 			return ((int) ch);
 		if (errno != EINTR)
@@ -450,7 +469,7 @@ gl_puts(const char *const buf)
     int len; 
     
     if (buf) {
-        len = strlen(buf);
+        len = (int) strlen(buf);
         write(1, buf, len);
     }
 }
@@ -458,7 +477,7 @@ gl_puts(const char *const buf)
 static void
 gl_error(const char *const buf)
 {
-    int len = strlen(buf);
+    int len = (int) strlen(buf);
 
     gl_cleanup();
     write(2, buf, len);
@@ -478,6 +497,12 @@ gl_init(void)
 	    w = atoi(cp);
 	    if (w > 20)
 	        gl_setwidth(w);
+	}
+	cp = (const char *) getenv("ROWS");
+	if (cp != NULL) {
+	    w = atoi(cp);
+	    if (w > 10)
+	        gl_setheight(w);
 	}
         hist_init();
     }
@@ -568,6 +593,18 @@ gl_setwidth(int w)
 
 
 
+void
+gl_setheight(int w)
+{
+    if (w > 10) {
+	gl_termh = w;
+    } else {
+	gl_error("\n*** Error: minimum screen height is 10\n");
+    }
+}	/* gl_setheight */
+
+
+
 
 char *
 getline(char *prompt)
@@ -581,6 +618,9 @@ getline(char *prompt)
 #ifdef __unix__
     int	            sig;
 #endif
+
+    /* We'll change the result code only if something happens later. */
+    gl_result = GL_OK;
 
 	/* Even if it appears that "vi" is preferred, we
 	 * don't start in gl_vi_mode.  They need to hit
@@ -612,7 +652,8 @@ getline(char *prompt)
 
     while ((c = gl_getc()) != (-1)) {
 	gl_extent = 0;  	/* reset to full extent */
-	if ((isprint(c) != 0) || ((c & 0x80) != 0)) {
+	/* Note: \n may or may not be considered printable */
+	if ((c != '\t') && ((isprint(c) != 0) || ((c & 0x80) != 0))) {
 	    if (gl_vi_mode > 0) {
 	    	/* "vi" emulation -- far from perfect,
 		 * but reasonably functional.
@@ -674,11 +715,9 @@ vi:
 						vi_delete = 0;
 						gl_vi_mode = 0;
 						goto vi_break;
-					} else {
-						vi_delete = 1;
-						goto vi_break;
 					}
-					break;
+					vi_delete = 1;
+					goto vi_break;
 				case '^':	/* start of line */
 					if (vi_delete) {
 						vi_count = gl_pos;
@@ -763,8 +802,6 @@ vi_break:
 		gl_newline();
 		gl_cleanup();
 		return gl_buf;
-		/*NOTREACHED*/
-		break; 
 	      case '\001': gl_fixup(gl_prompt, -1, 0);		/* ^A */
 		break;
 	      case '\002': gl_fixup(gl_prompt, -1, gl_pos-1);	/* ^B */
@@ -774,6 +811,7 @@ vi_break:
 		    gl_buf[0] = 0;
 		    gl_cleanup();
 		    gl_putc('\n');
+		    gl_result = GL_EOF;
 		    return gl_buf;
 		} else {
 		    gl_del(0, 1);
@@ -871,6 +909,15 @@ ansi:
 		    gl_word(-1);
 		} else if (c != (-1)) {
 			/* enter vi command mode */
+#if defined(__windows__) || defined(MSDOS)
+			if (gl_vi_preferred == 0) {
+				/* On Windows, ESC acts like a line kill,
+				 * so don't use vi mode unless they prefer
+				 * vi mode.
+				 */
+              			gl_kill(0);
+			} else
+#endif
 			if (gl_vi_mode == 0) {
 				gl_vi_mode = 1;
 				vi_count = 1;
@@ -886,35 +933,52 @@ ansi:
 					goto vi;
 				}
 				gl_vi_mode = 0;
+			} else {
+				gl_beep();
 			}
-			gl_beep();
 		}
 		break;
 	      default:		/* check for a terminal signal */
-#ifdef __unix__
 	        if (c > 0) {	/* ignore 0 (reset above) */
-	            sig = 0;
-#ifdef SIGINT
-	            if (c == gl_intrc)
-	                sig = SIGINT;
-#endif
-#ifdef SIGQUIT
-	            if (c == gl_quitc)
-	                sig = SIGQUIT;
-#endif
-#ifdef SIGTSTP
-	            if (c == gl_suspc || c == gl_dsuspc)
-	                sig = SIGTSTP;
-#endif
-                    if (sig != 0) {
+	            if (c == gl_intrc) {
+			gl_result = GL_INTERRUPT;
+			gl_buf[0] = 0;
 	                gl_cleanup();
+#ifdef SIGINT
+	                raise(SIGINT);
+	                gl_init();
+	                gl_redraw();
+#endif
+			return gl_buf;
+		    }
+
+	            if (c == gl_quitc) {
+			gl_result = GL_INTERRUPT;
+			gl_buf[0] = 0;
+	                gl_cleanup();
+#ifdef SIGQUIT
+	                raise(SIGQUIT);
+	                gl_init();
+	                gl_redraw();
+#endif
+			return gl_buf;
+		    }
+
+#ifdef __unix__
+	            if (c == gl_suspc || c == gl_dsuspc) {
+#ifdef SIGTSTP
+			gl_result = GL_INTERRUPT;
+			gl_buf[0] = 0;
+			gl_cleanup();
+	                sig = SIGTSTP;
 	                kill(0, sig);
 	                gl_init();
 	                gl_redraw();
-			c = 0;
-		    } 
-		}
+			return gl_buf;
+#endif
+		    }
 #endif /* __unix__ */
+		}
                 if (c > 0)
 		    gl_beep();
 		break;
@@ -923,8 +987,8 @@ ansi:
 	if (c > 0)
 	    lastch = c;
     }
-    gl_cleanup();
     gl_buf[0] = 0;
+    gl_cleanup();
     return gl_buf;
 }
 
@@ -955,7 +1019,7 @@ gl_yank(void)
 {
     int  i, len;
 
-    len = strlen(gl_killbuf);
+    len = (int) strlen(gl_killbuf);
     if (len > 0) {
 	if (gl_overwrite == 0) {
             if (gl_cnt + len >= GL_BUF_SIZE - 1) 
@@ -1011,7 +1075,7 @@ gl_newline(void)
         gl_error("\n*** Error: getline(): input buffer overflow\n");
     if (gl_out_hook) {
 	change = gl_out_hook(gl_buf);
-        len = strlen(gl_buf);
+        len = (int) strlen(gl_buf);
     } 
     if (loc > len)
 	loc = len;
@@ -1166,10 +1230,10 @@ gl_fixup(const char *prompt, int change, int cursor)
 	gl_puts(prompt);
 	strcpy(last_prompt, prompt);
 	change = 0;
-        gl_width = gl_termw - gl_strlen(prompt);
+        gl_width = gl_termw - (int) gl_strlen(prompt);
     } else if (strcmp(prompt, last_prompt) != 0) {
-	l1 = gl_strlen(last_prompt);
-	l2 = gl_strlen(prompt);
+	l1 = (int) gl_strlen(last_prompt);
+	l2 = (int) gl_strlen(prompt);
 	gl_cnt = gl_cnt + l1 - l2;
 	strcpy(last_prompt, prompt);
 	gl_putc('\r');
@@ -1181,7 +1245,7 @@ gl_fixup(const char *prompt, int change, int cursor)
     pad = (off_right)? gl_width - 1 : gl_cnt - gl_shift;   /* old length */
     backup = gl_pos - gl_shift;
     if (change >= 0) {
-        gl_cnt = strlen(gl_buf);
+        gl_cnt = (int) strlen(gl_buf);
         if (change > gl_cnt)
 	    change = gl_cnt;
     }
@@ -1263,7 +1327,7 @@ gl_tab(char *buf, int offset, int *loc, size_t bufsize)
 {
     int i, count, len;
 
-    len = strlen(buf);
+    len = (int) strlen(buf);
     count = 8 - (offset + *loc) % 8;
     for (i=len; i >= *loc; i--)
     	if (i+count < (int) bufsize)
@@ -1311,7 +1375,7 @@ gl_histadd(char *buf)
     while (*p == ' ' || *p == '\t' || *p == '\n') 
 	p++;
     if (*p) {
-	len = strlen(buf);
+	len = (int) strlen(buf);
 	if (strchr(p, '\n')) 	/* previously line already has NL stripped */
 	    len--;
 	if ((prev == 0) || ((int) strlen(prev) != len) || 
@@ -1499,7 +1563,7 @@ search_addchar(int c)
 	strcpy(gl_buf, hist_buf[hist_pos]);
     }
     if ((loc = strstr(gl_buf, search_string)) != 0) {
-	gl_fixup(search_prompt, 0, loc - gl_buf);
+	gl_fixup(search_prompt, 0, (int) (loc - gl_buf));
     } else if (search_pos > 0) {
         if (search_forw_flg) {
 	    search_forw(0);
@@ -1544,7 +1608,7 @@ search_back(int new_search)
 	       found = 1;
 	    } else if ((loc = strstr(p, search_string)) != 0) {
 	       strcpy(gl_buf, p);
-	       gl_fixup(search_prompt, 0, loc - p);
+	       gl_fixup(search_prompt, 0, (int) (loc - p));
 	       if (new_search)
 		   search_last = hist_pos;
 	       found = 1;
@@ -1578,7 +1642,7 @@ search_forw(int new_search)
 	       found = 1;
 	    } else if ((loc = strstr(p, search_string)) != 0) {
 	       strcpy(gl_buf, p);
-	       gl_fixup(search_prompt, 0, loc - p);
+	       gl_fixup(search_prompt, 0, (int) (loc - p));
 	       if (new_search)
 		   search_last = hist_pos;
 	       found = 1;
@@ -1633,8 +1697,7 @@ gl_display_matches(int nused)
 		qsort(gl_matchlist, (size_t) nused, sizeof(char *), gl_display_matches_sort_proc);
 
 		/* Find the greatest amount that matches. */
-		glen = 1;
-		for (glen = 1; ; glen++) {
+		for (glen = 0; ; glen++) {
 			allmatch = 1;
 			for (i=1; i<nused; i++) {
 				if (gl_matchlist[0][glen] != gl_matchlist[i][glen]) {
@@ -1663,7 +1726,7 @@ gl_display_matches(int nused)
 		/* Subtract amount we'll skip for each item. */
 		imaxlen -= glen;
 
-		ncol = (gl_termw - 8) / (imaxlen + 2);
+		ncol = (gl_termw - 8) / ((int) imaxlen + 2);
 		if (ncol < 1)
 			ncol = 1;
 
@@ -1672,8 +1735,8 @@ gl_display_matches(int nused)
 		if ((nused % ncol) != 0)
 			nrow++;
 
-		if (nrow > 10) {
-			nrow = 10;
+		if (nrow > (gl_termh - 4)) {
+			nrow = gl_termh - 4;
 			nmax = ncol * nrow; 
 		}
 
@@ -1724,7 +1787,7 @@ gl_do_tab_completion(char *buf, int *loc, size_t bufsize, int tabtab)
 	char *qstart;
 	char *lastspacestart;
 	char *cp;
-	int ntoalloc, nused, nalloced, i;
+	int ntoalloc, nused, nprocused, nalloced, i;
 	char **newgl_matchlist;
 	char *strtoadd, *strtoadd1;
 	int addquotes;
@@ -1812,7 +1875,7 @@ gl_do_tab_completion(char *buf, int *loc, size_t bufsize, int tabtab)
 		gl_matchlist[i] = NULL;
 	
 	gl_completion_exact_match_extra_char = ' ';
-	for (;; nused++) {
+	for (nprocused = 0;; nprocused++) {
 		if (nused == nalloced) {
 			ntoalloc += GL_COMPLETE_VECTOR_BLOCK_SIZE;
 			newgl_matchlist = (char **) realloc((char *) gl_matchlist, (size_t) (sizeof(char *) * (ntoalloc + 1)));
@@ -1831,10 +1894,12 @@ gl_do_tab_completion(char *buf, int *loc, size_t bufsize, int tabtab)
 			for (i=nused; i<=nalloced; i++)
 				gl_matchlist[i] = NULL;
 		}
-	        cp = gl_completion_proc(matchpfx, nused);
-		gl_matchlist[nused] = cp;
+	        cp = gl_completion_proc(matchpfx, nprocused);
 		if (cp == NULL)
 			break;
+		if ((cp[0] == '.') && ((cp[1] == '\0') || ((cp[1] == '.') && (cp[2] == '\0'))))
+			continue;	/* Skip . and .. */
+		gl_matchlist[nused++] = cp;
 	}
 
 	if (gl_ellipses_during_completion != 0) {
@@ -1857,8 +1922,7 @@ gl_do_tab_completion(char *buf, int *loc, size_t bufsize, int tabtab)
 		gl_display_matches(nused);
 	} else if ((nused > 1) && (mlen > 0)) {
 		/* Find the greatest amount that matches. */
-		glen = 1;
-		for (glen = 1; ; glen++) {
+		for (glen = strlen(matchpfx); ; glen++) {
 			allmatch = 1;
 			for (i=1; i<nused; i++) {
 				if (gl_matchlist[0][glen] != gl_matchlist[i][glen]) {
@@ -2030,6 +2094,84 @@ gl_set_home_dir(const char *homedir)
 		memcpy(gl_home_dir, homedir, len);
 	}
 }	/* gl_set_home_dir */
+
+
+
+
+char *gl_getpass(const char *const prompt, char *const pass, int dsize)
+{
+#ifdef __unix__
+	char *cp;
+	int c;
+
+	memset(pass, 0, (size_t) sizeof(dsize));
+	dsize--;
+	gl_init();
+
+	/* Display the prompt first. */
+	if ((prompt != NULL) && (prompt[0] != '\0'))
+		gl_puts(prompt);
+
+	cp = pass;
+	while ((c = gl_getc()) != (-1)) {
+		if ((c == '\r') || (c == '\n'))
+			break;
+		if ((c == '\010') || (c == '\177'))	{
+			/* ^H and DEL */
+			if (cp > pass) {
+				*--cp = '\0';
+				gl_putc('\010');
+				gl_putc(' ');
+				gl_putc('\010');
+			}
+		} else if (cp < (pass + dsize)) {
+			gl_putc('*');
+			*cp++ = c;
+		}
+	}
+	*cp = '\0';
+	gl_putc('\n');
+	gl_cleanup();
+	return (pass);
+#else
+#ifdef __windows__
+	char *cp;
+	int c;
+
+	FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+	ZeroMemory(pass, (DWORD) sizeof(dsize));
+	dsize--;
+
+	if ((prompt != NULL) && (prompt[0] != '\0'))
+		_cputs(prompt);
+
+	for (cp = pass;;) {
+		c = (int) _getch();
+		if ((c == '\r') || (c == '\n'))
+			break;
+		if ((c == '\010') || (c == '\177'))	{
+			/* ^H and DEL */
+			if (cp > pass) {
+				*--cp = '\0';
+				_putch('\010');
+				_putch(' ');
+				_putch('\010');
+			}
+		} else if (cp < (pass + dsize)) {
+			_putch('*');
+			*cp++ = c;
+		}
+	}
+	_putch('\r');
+	_putch('\n');
+	Sleep(40);
+	FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+
+	*cp = '\0';
+	return (pass);
+#endif	/* __windows__ */
+#endif	/* ! __unix__ */
+}	/* gl_getpass */
 
 
 
@@ -2327,47 +2469,5 @@ next:
 	}
 	return (NULL);
 }	/* gl_local_filename_completion_proc */
-
-
-
-
-char *gl_win_getpass(const char *const prompt, char *const pass, int dsize)
-{
-	char *cp;
-	int c;
-
-	FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-	ZeroMemory(pass, (DWORD) sizeof(dsize));
-	dsize--;
-
-	if ((prompt != NULL) && (prompt[0] != '\0'))
-		_cputs(prompt);
-
-	for (cp = pass;;) {
-		c = (int) _getch();
-		if ((c == '\r') || (c == '\n'))
-			break;
-		if ((c == '\010') || (c == '\177'))	{
-			/* ^H and DEL */
-			if (cp > pass) {
-				*--cp = '\0';
-				_putch('\010');
-				_putch(' ');
-				_putch('\010');
-			}
-		} else if (cp < (pass + dsize)) {
-			_putch('*');
-			*cp++ = c;
-		}
-	}
-	_putch('\r');
-	_putch('\n');
-	Sleep(40);
-	FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-
-	*cp = '\0';
-	return (pass);
-}	/* gl_getpass */
-
 
 #endif	/* __windows__ */

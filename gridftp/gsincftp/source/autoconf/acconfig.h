@@ -140,6 +140,8 @@
 
 #undef HAVE_SOCKADDR_UN_SUN_LEN
 
+#undef HAVE_STATFS_F_BAVAIL
+
 /* Define if your struct stat has st_blksize.  */
 #undef HAVE_ST_BLKSIZE
 
@@ -159,6 +161,8 @@
 #undef HAVE_STRINGIZE
 
 #undef HAVE_STRUCT_CMSGDHR
+
+#undef HAVE_STRUCT_STAT64
 
 /* Define if you have <sys/wait.h> that is POSIX.1 compatible.  */
 #undef HAVE_SYS_WAIT_H
@@ -189,6 +193,8 @@
 #undef HAVE_UTMP_UT_PID
 
 #undef HAVE_UTMP_UT_TIME
+
+#undef HAVE_UTMPX_UT_SYSLEN
 
 /* Define if you have <vfork.h>.  */
 #undef HAVE_VFORK_H
@@ -265,6 +271,9 @@
 
 /* Define if printing a "long long" with "%qd" works . */
 #undef PRINTF_LONG_LONG_QD
+
+/* Define if your C compiler supports ANSI C function prototyping. */
+#undef PROTOTYPES
 
 /* Define as the return type of signal handlers (int or void).  */
 #undef RETSIGTYPE

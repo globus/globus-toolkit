@@ -1,6 +1,6 @@
 /* pref.c
  *
- * Copyright (c) 1992-2000 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -54,16 +54,19 @@ int gSOBufsize;
 /* Size of the user log before we trim it.  0 means do not log at all. */
 int gMaxLogSize;
 
+/* Use ASCII mode automatically for files with these extensions. */
+char gAutoAscii[512];
+
 #ifdef ncftp
 /* Which meter to use. */
 FTPProgressMeterProc gProgressMeter;
 #endif
 
+/* Allow us to plug our other products? */
+int gDoNotDisplayAds;
+
 /* Do we need to save the prefs, or can we skip it? */
 int gPrefsDirty = 0;
-
-/* Fool gcc into thinking some parameters are used. */
-static int gUnused = 0;
 
 extern FTPLibraryInfo gLib;
 extern FTPConnectionInfo gConn;
@@ -73,8 +76,9 @@ PrefOpt gPrefOpts[] = {
 	{ "anonopen",				PREFOBSELETE },
 	{ "anonpass", 				SetAnonPass, kPrefOptObselete },
 	{ "anon-password",			SetAnonPass, 1 },
+	{ "auto-ascii",				SetAutoAscii, 1 },
 	{ "auto-resume",			SetAutoResume, 1 },
-	{ "autosave-bookmark-changes", SetAutoSaveChangesToExistingBookmarks, 1 },
+	{ "autosave-bookmark-changes",		SetAutoSaveChangesToExistingBookmarks, 1 },
 	{ "blank-lines",			PREFOBSELETE },
 	{ "confirm-close",			SetConfirmClose, 1 },
 	{ "connect-timeout",			SetConnTimeout, 1 },
@@ -107,6 +111,7 @@ PrefOpt gPrefOpts[] = {
 	{ "utime",				PREFOBSELETE },
 	{ "visual",				PREFOBSELETE },
 	{ "xfer-timeout",			SetXferTimeout, 1 },
+	{ "yes-i-know-about-NcFTPd",		SetNoAds, 1 },
 	{ NULL,					(PrefProc) 0, kPrefOptInvisible, },
 };
 
@@ -115,9 +120,9 @@ int gNumPrefOpts = ((int)(sizeof(gPrefOpts) / sizeof(PrefOpt)) - 1);
 
 
 void
-SetAnonPass(int t, const char *const val, FILE *const fp)
+SetAnonPass(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%s", gLib.defaultAnonPassword);
 	} else {
@@ -128,9 +133,27 @@ SetAnonPass(int t, const char *const val, FILE *const fp)
 
 
 void
-SetAutoResume(int t, const char *const val, FILE *const fp)
+SetAutoAscii(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
+	if (fp != NULL) {
+		(void) fprintf(fp, "%s", gAutoAscii);
+	} else {
+		(void) STRNCPY(gAutoAscii, val);
+		if ((gAutoAscii[0] == '\0') || (ISTREQ(gAutoAscii, "no")) || (ISTREQ(gAutoAscii, "off")) || (ISTREQ(gAutoAscii, "false"))) {
+			gConn.asciiFilenameExtensions = NULL;
+		} else {
+			gConn.asciiFilenameExtensions = gAutoAscii;
+		}
+	}
+}	/* SetAutoAscii */
+
+
+
+void
+SetAutoResume(int UNUSED(t), const char *const val, FILE *const fp)
+{
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%s", YESNO(gAutoResume));
 	} else {
@@ -141,22 +164,9 @@ SetAutoResume(int t, const char *const val, FILE *const fp)
 
 
 void
-SetConfirmClose(int t, const char *const val, FILE *const fp)
+SetAutoSaveChangesToExistingBookmarks(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
-	if (fp != NULL) {
-		(void) fprintf(fp, "%s", YESNO(gConfirmClose));
-	} else {
-		gConfirmClose = StrToBool(val);
-	}
-}	/* SetConfirmClose */
-
-
-
-void
-SetAutoSaveChangesToExistingBookmarks(int t, const char *const val, FILE *const fp)
-{
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%s", YESNO(gAutoSaveChangesToExistingBookmarks));
 	} else {
@@ -167,9 +177,22 @@ SetAutoSaveChangesToExistingBookmarks(int t, const char *const val, FILE *const 
 
 
 void
-SetConnTimeout(int t, const char *const val, FILE *const fp)
+SetConfirmClose(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
+	if (fp != NULL) {
+		(void) fprintf(fp, "%s", YESNO(gConfirmClose));
+	} else {
+		gConfirmClose = StrToBool(val);
+	}
+}	/* SetConfirmClose */
+
+
+
+void
+SetConnTimeout(int UNUSED(t), const char *const val, FILE *const fp)
+{
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%d", gConnTimeout);
 	} else {
@@ -180,9 +203,9 @@ SetConnTimeout(int t, const char *const val, FILE *const fp)
 
 
 void
-SetCtrlTimeout(int t, const char *const val, FILE *const fp)
+SetCtrlTimeout(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%d", gCtrlTimeout);
 	} else {
@@ -193,9 +216,9 @@ SetCtrlTimeout(int t, const char *const val, FILE *const fp)
 
 
 void
-SetLogSize(int t, const char *const val, FILE *const fp)
+SetLogSize(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%d", gMaxLogSize);
 	} else {
@@ -206,9 +229,22 @@ SetLogSize(int t, const char *const val, FILE *const fp)
 
 
 void
-SetOneTimeMessages(int t, const char *const val, FILE *const fp)
+SetNoAds(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
+	if (fp != NULL) {
+		(void) fprintf(fp, "%s", YESNO(gDoNotDisplayAds));
+	} else {
+		gDoNotDisplayAds = StrToBool(val);
+	}
+}	/* SetNoAds */
+
+
+
+void
+SetOneTimeMessages(int UNUSED(t), const char *const val, FILE *const fp)
+{
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%s", gOneTimeMessagesSeen);
 	} else {
@@ -219,9 +255,9 @@ SetOneTimeMessages(int t, const char *const val, FILE *const fp)
 
 
 void
-SetPager(int t, const char *const val, FILE *const fp)
+SetPager(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%s", gPager);
 	} else {
@@ -232,11 +268,11 @@ SetPager(int t, const char *const val, FILE *const fp)
 
 
 void
-SetPassive(int t, const char *const val, FILE *const fp)
+SetPassive(int UNUSED(t), const char *const val, FILE *const fp)
 {
 	int m;
-	gUnused = t;
 
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		m = (gFwDataPortMode >= 0) ? gFwDataPortMode : gDataPortMode;
 		if (m == kSendPortMode) {
@@ -265,11 +301,11 @@ SetPassive(int t, const char *const val, FILE *const fp)
 
 
 
-void
-SetProgressMeter(int t, const char *const val, FILE *const fp)
-{
 #ifdef ncftp
-	gUnused = t;
+void
+SetProgressMeter(int UNUSED(t), const char *const val, FILE *const fp)
+{
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		if (gProgressMeter == PrStatBar) {
 			(void) fprintf(fp, "%s", "2 (statbar)");
@@ -287,21 +323,25 @@ SetProgressMeter(int t, const char *const val, FILE *const fp)
 			gProgressMeter = PrStatBar;
 		gConn.progress = gProgressMeter;
 	}
-#else
-	gUnused = t;
-	gUnused = (val == NULL);
-	gUnused = (fp == NULL);
-#endif
 }	/* SetProgressMeter */
+#else
+void
+SetProgressMeter(int UNUSED(t), const char *const UNUSED(val), FILE *const UNUSED(fp))
+{
+	LIBNCFTP_USE_VAR(t);
+	LIBNCFTP_USE_VAR(val);
+	LIBNCFTP_USE_VAR(fp);
+}	/* SetProgressMeter */
+#endif
 
 
 
 void
-SetRedialDelay(int t, const char *const val, FILE *const fp)
+SetRedialDelay(int UNUSED(t), const char *const val, FILE *const fp)
 {
 	int i;
 
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%d", gRedialDelay);
 	} else {
@@ -315,9 +355,9 @@ SetRedialDelay(int t, const char *const val, FILE *const fp)
 
 
 void
-SetSavePasswords(int t, const char *const val, FILE *const fp)
+SetSavePasswords(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		if (gSavePasswords < 0)
 			(void) fprintf(fp, "%s", "ask");
@@ -334,9 +374,9 @@ SetSavePasswords(int t, const char *const val, FILE *const fp)
 
 
 void
-SetSOBufsize(int t, const char *const val, FILE *const fp)
+SetSOBufsize(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%d", gSOBufsize);
 		if (gSOBufsize <= 0)
@@ -350,9 +390,9 @@ SetSOBufsize(int t, const char *const val, FILE *const fp)
 
 
 void
-SetXferTimeout(int t, const char *const val, FILE *const fp)
+SetXferTimeout(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%d", gXferTimeout);
 	} else {
@@ -363,9 +403,9 @@ SetXferTimeout(int t, const char *const val, FILE *const fp)
 
 
 void
-SetXtTitle(int t, const char *const val, FILE *const fp)
+SetXtTitle(int UNUSED(t), const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		(void) fprintf(fp, "%s", YESNO(gMaySetXtermTitle));
 	} else {
@@ -378,7 +418,7 @@ SetXtTitle(int t, const char *const val, FILE *const fp)
 void
 SetProtectionLevel(int t, const char *const val, FILE *const fp)
 {
-	gUnused = t;
+	LIBNCFTP_USE_VAR(t);
 	if (fp != NULL) {
 		char * protectionString = "Clear";
 
@@ -511,58 +551,94 @@ OneTimeMessage(const char *const msg)
 
 
 
+void
+ProcessPrefsFile(FILE *const fp)
+{
+	char line[1024];
+	char *tok1, *tok2;
+	int t;
+
+	line[sizeof(line) - 1] = '\0';
+	while (fgets(line, sizeof(line) - 1, fp) != NULL) {
+		tok1 = strtok(line, " =\t\r\n");
+		if ((tok1 == NULL) || (tok1[0] == '#'))
+			continue;
+		tok2 = strtok(NULL, "\r\n");
+		if (tok2 == NULL)
+			continue;
+
+		for (t=0; t<gNumPrefOpts; t++) {
+			if (ISTREQ(tok1, gPrefOpts[t].varname)) {
+				if (gPrefOpts[t].visible == kPrefOptObselete) {
+					/* Probably converting an
+					 * old 2.4.2 file.
+					 */
+					gPrefsDirty++;
+				} else if (gPrefOpts[t].proc != (PrefProc) 0) {
+					(*gPrefOpts[t].proc)(t, tok2, NULL);
+				}
+			}
+		}
+	}
+}	/* ProcessPrefsFile */
+
+
+
+
 /* Read the saved configuration settings from a preferences file. */
 void
 LoadPrefs(void)
 {
 	FILE *fp;
 	char pathName[256];
-	char line[256];
-	char *tok1, *tok2;
-	int t;
 
-	if (gOurDirectoryPath[0] == '\0')
-		return;		/* Don't create in root directory. */
-	(void) OurDirectoryPath(pathName, sizeof(pathName), kPrefFileName);
+	/* As with the firewall preference file, there can be
+	 * site-wide preferences and user-specific preferences.
+	 * The user pref file is of course kept in the user's
+	 * NcFTP home directory.
+	 *
+	 * The way we do this is we first look for a global
+	 * preferences file.  We then process the user's pref
+	 * file, which could override the global prefs.  Finally,
+	 * we open a "global fixed" prefs file which then
+	 * overrides anything the user may have done.
+	 */
 
-	fp = fopen(pathName, FOPEN_READ_TEXT);
-	if (fp == NULL) {
-		/* Try loading the version 2 prefs.
-		 * There will be options we no longer recognize, but
-		 * we'd like to import the prefs when possible.
-		 */
-		gPrefsDirty++;
-		(void) OurDirectoryPath(pathName, sizeof(pathName), kPrefFileNameV2);
-		fp = fopen(pathName, FOPEN_READ_TEXT);
+	fp = fopen(kGlobalPrefFileName, FOPEN_READ_TEXT);
+	if (fp != NULL) {
+		/* Opened the global (but user-overridable) prefs file. */
+		ProcessPrefsFile(fp);
+		(void) fclose(fp);
 	}
 
-	if (fp == NULL) {
-		/* Write a new one when we're done. */
-		gPrefsDirty++;
-	} else {
-		/* Opened the preferences file. */
-		line[sizeof(line) - 1] = '\0';
-		while (fgets(line, sizeof(line) - 1, fp) != NULL) {
-			tok1 = strtok(line, " =\t\r\n");
-			if ((tok1 == NULL) || (tok1[0] == '#'))
-				continue;
-			tok2 = strtok(NULL, "\r\n");
-			if (tok2 == NULL)
-				continue;
+	if (gOurDirectoryPath[0] != '\0') {
+		(void) OurDirectoryPath(pathName, sizeof(pathName), kPrefFileName);
 
-			for (t=0; t<gNumPrefOpts; t++) {
-				if (ISTREQ(tok1, gPrefOpts[t].varname)) {
-					if (gPrefOpts[t].visible == kPrefOptObselete) {
-						/* Probably converting an
-						 * old 2.4.2 file.
-						 */
-						gPrefsDirty++;
-					} else if (gPrefOpts[t].proc != (PrefProc) 0) {
-						(*gPrefOpts[t].proc)(t, tok2, NULL);
-					}
-				}
-			}
+		fp = fopen(pathName, FOPEN_READ_TEXT);
+		if (fp == NULL) {
+			/* Try loading the version 2 prefs.
+			 * There will be options we no longer recognize, but
+			 * we'd like to import the prefs when possible.
+			 */
+			gPrefsDirty++;
+			(void) OurDirectoryPath(pathName, sizeof(pathName), kPrefFileNameV2);
+			fp = fopen(pathName, FOPEN_READ_TEXT);
 		}
+
+		if (fp == NULL) {
+			/* Write a new one when we're done. */
+			gPrefsDirty++;
+		} else {
+			/* Opened the preferences file. */
+			ProcessPrefsFile(fp);
+			(void) fclose(fp);
+		}
+	}
+
+	fp = fopen(kGlobalFixedPrefFileName, FOPEN_READ_TEXT);
+	if (fp != NULL) {
+		/* Opened the global (and not overridable) prefs file. */
+		ProcessPrefsFile(fp);
 		(void) fclose(fp);
 	}
 }	/* LoadPrefs */
@@ -590,6 +666,15 @@ InitPrefs(void)
 	gConfirmClose = 1;
 	gAutoSaveChangesToExistingBookmarks = 0;
 	gRedialDelay = kDefaultRedialDelay;
+	STRNCPY(gAutoAscii, "|.txt|.asc|.html|.htm|.css|.xml|.ini|.sh|.pl|.hqx|.cfg|.c|.h|.cpp|.hpp|.bat|.m3u|.pls|");
+
+	/* PLEASE do not change the default from 0, and please
+	 * don't hack out the portion in main.c which displays
+	 * a plug every 7th time you run the program.  This is
+	 * not much to ask for all the work I've put into this
+	 * since 1991.
+	 */
+	gDoNotDisplayAds = 0;
 
 #if (defined(WIN32) || defined(_WINDOWS)) && defined(_CONSOLE)
 	gMaySetXtermTitle = 1;

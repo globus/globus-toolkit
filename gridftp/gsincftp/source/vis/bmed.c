@@ -3,6 +3,7 @@
 #include "syshdrs.h"
 
 #include "../ncftp/util.h"
+#include "../ncftp/trace.h"
 #include "../ncftp/pref.h"
 #include "../ncftp/bookmark.h"
 #include "wutil.h"
@@ -78,8 +79,10 @@ FTPConnectionInfo gConn;
 
 extern int gWinInit;
 extern int gScreenWidth;
+extern int gScreenHeight;
 extern int gNumBookmarks;
 extern BookmarkPtr gBookmarkTable;
+extern int gDebug;
 
 
 
@@ -224,12 +227,90 @@ void DrawHostList(void)
 int HostWinGetKey(void)
 {
 	int c;
+	int uc;
 	int maxy, maxx;
+	int escmode;
 
 	getmaxyx(gHostWin, maxy, maxx);
 	wmove(gHostWin, maxy - 1, 0);
-	c = wgetch(gHostWin);
-/*	TraceMsg("[%c, 0x%x]\n", c, c); */
+	for (escmode = 0; ; escmode++) {
+		uc = (unsigned int) wgetch(gHostWin);
+		c = (int) uc;
+		if (uc > 255) {
+			Trace(1, "[0x%04X]\n", c);
+		} else if (isprint(c) && !iscntrl(c)) {
+			Trace(1, "[0x%04X, %c]\n", c, c);
+		} else if (iscntrl(c)) {
+			Trace(1, "[0x%04X, ^%c]\n", c, (c & 31) | ('A' - 1));
+		} else {
+			Trace(1, "[0x%04X]\n", c);
+		}
+
+		/* Some implementations of curses (i.e. Mac OS X)
+		 * don't seem to detect the arrow keys on
+		 * typical terminal types like "vt100" or "ansi",
+		 * so we try and detect them the hard way.
+		 */
+		switch (escmode) {
+			case 0:
+				if (uc != 0x001B) {
+					goto gotch;
+				}
+				/* else ESC key (^[) */
+				break;
+			case 1:
+				if ((c != '[') && (c != 'O')) {
+					goto gotch;
+				}
+				/* else ANSI ESC sequence continues */
+				break;
+			case 2:
+				switch (c) {
+					case 'A':
+					case 'a':
+#ifdef KEY_UP
+						c = KEY_UP;
+						Trace(1, "  --> [0x%04X, %s]\n", c, "UP");
+#else
+						c = 'k';	/* vi UP */
+						Trace(1, "  --> [0x%04X, %s]\n", c, "k");
+#endif
+						break;
+					case 'B':
+					case 'b':
+#ifdef KEY_DOWN
+						c = KEY_DOWN;
+						Trace(1, "  --> [0x%04X, %s]\n", c, "DOWN");
+#else
+						c = 'j';	/* vi DOWN */
+						Trace(1, "  --> [0x%04X, %s]\n", c, "j");
+#endif
+						break;
+					case 'D':
+					case 'd':
+#ifdef KEY_LEFT
+						c = KEY_LEFT;
+						Trace(1, "  --> [0x%04X, %s]\n", c, "LEFT");
+#else
+						c = 'h';	/* vi LEFT */
+						Trace(1, "  --> [0x%04X, %s]\n", c, "h");
+#endif
+						break;
+					case 'C':
+					case 'c':
+#ifdef KEY_RIGHT
+						c = KEY_RIGHT;
+						Trace(1, "  --> [0x%04X, %s]\n", c, "RIGHT");
+#else
+						c = 'l';	/* vi RIGHT */
+						Trace(1, "  --> [0x%04X, %s]\n", c, "l");
+#endif
+						break;
+				}
+				goto gotch;
+		}
+	}
+gotch:
 	return (c);
 }	/* HostWinGetKey */
 
@@ -628,7 +709,7 @@ void ToggleXferType(void)
 {
 	int c;
 
-	while (1) {
+	for (;;) {
 		c = wgetch(gEditHostWin);
 		if ((c == 'x') || (c == 10) || (c == 13)
 #ifdef KEY_ENTER
@@ -655,7 +736,7 @@ void EditWinToggle(int *val, int bitNum, int min, int max)
 {
 	int c;
 
-	while (1) {
+	for (;;) {
 		c = wgetch(gEditHostWin);
 		if ((c == 'x') || (c == 10) || (c == 13)
 #ifdef KEY_ENTER
@@ -715,7 +796,7 @@ void HostWinEdit(void)
 
 		EditHostWinDraw(kAllWindowItems, kNoHilite);
 		field = 1;
-		while (1) {
+		for (;;) {
 			EditHostWinMsg("Select an item to edit by typing its corresponding letter.");
 			c = wgetch(gEditHostWin);
 			if (islower(c))
@@ -996,9 +1077,9 @@ void HostWinGetStr(char *str, size_t size)
 
 /*ARGSUSED*/
 static void
-SigIntHostWin(int unused)
+SigIntHostWin(int UNUSED(sig))
 {
-	unused = 0;
+	LIBNCFTP_USE_VAR(sig);
 	alarm(0);
 #ifdef HAVE_SIGSETJMP
 	siglongjmp(gHostWinJmp, 1);
@@ -1057,7 +1138,7 @@ int HostWindow(void)
 	int maxy, maxx;
 	int lmaxy, lmaxx;
 
-	si = (vsigproc_t) (-1);
+	si = (sigproc_t) (-1);
 	if (gWinInit) {
 		gHostListWin = NULL;
 		gHostWin = NULL;
@@ -1082,7 +1163,7 @@ int HostWindow(void)
 		if (setjmp(gHostWinJmp) == 0) {
 #endif	/* HAVE_SIGSETJMP */
 			/* Gracefully cleanup the screen if the user ^C's. */
-			si = (vsigproc_t) NcSignal(SIGINT, SigIntHostWin);
+			si = NcSignal(SIGINT, SigIntHostWin);
 			
 			/* Initialize the page start and select a host to be
 			 * the current one.
@@ -1146,7 +1227,7 @@ int HostWindow(void)
 			wmove(gHostWin, maxy - 1, 0);
 			UpdateHostWindows(1);
 
-			while (1) {
+			for (;;) {
 				c = HostWinGetKey();
 				if (gNeedToClearMsg) {
 					wmove(gHostWin, maxy - 2, 0);
@@ -1174,14 +1255,18 @@ int HostWindow(void)
 						HostWinMsg("Invalid bookmark editor command.");
 				} else switch(c) {
 					case 10:	/* ^J == newline */
+						goto enter;
 					case 13:	/* ^M == carriage return */
+						goto enter;
 #ifdef KEY_ENTER
 					case KEY_ENTER:
+						Trace(1, "  [0x%04X, %s]\n", c, "ENTER");
 #endif
+enter:
 						if (gCurHostListItem == NULL)
 							HostWinMsg("Nothing to open.  Try 'open sitename' from the main screen.");
 						else {
-							toOpen = (volatile BookmarkPtr) gCurHostListItem;
+							toOpen = (BookmarkPtr) gCurHostListItem;
 							goto done;
 						}
 						break;
@@ -1192,49 +1277,72 @@ int HostWindow(void)
 	
 					case 'u':
 					case 'k':	/* vi up key */
-#ifdef KEY_UP
-					case KEY_UP:
-#endif
+					case 'h':	/* vi left key */
 						HostListLineUp();
 						break;
+#ifdef KEY_UP
+					case KEY_UP:
+						Trace(1, "  [0x%04X, %s]\n", c, "UP");
+						HostListLineUp();
+						break;
+#endif
+
+#ifdef KEY_LEFT
+					case KEY_LEFT:
+						Trace(1, "  [0x%04X, %s]\n", c, "LEFT");
+						HostListLineUp();
+						break;
+#endif
 					
 					case 'd':
 					case 'j':	/* vi down key */
-#ifdef KEY_DOWN
-					case KEY_DOWN:
-#endif
+					case 'l':	/* vi right key */
 						HostListLineDown();
 						break;
-						
-					case 'p':
-#ifdef KEY_LEFT
-					case KEY_LEFT:
-#endif
-#ifdef KEY_PPAGE
-					case KEY_PPAGE:
-#endif
-						HostListPageUp();
+
+#ifdef KEY_DOWN
+					case KEY_DOWN:
+						Trace(1, "  [0x%04X, %s]\n", c, "DOWN");
+						HostListLineDown();
 						break;
-						
-					case 'n':
+#endif
+
 #ifdef KEY_RIGHT
 					case KEY_RIGHT:
+						Trace(1, "  [0x%04X, %s]\n", c, "RIGHT");
+						HostListLineDown();
+						break;
 #endif
-#ifdef KEY_NPAGE
-					case KEY_NPAGE:
+						
+					case 'p':
+						HostListPageUp();
+						break;
+
+#ifdef KEY_PPAGE
+					case KEY_PPAGE:
+						Trace(1, "  [0x%04X, %s]\n", c, "PPAGE");
+						HostListPageUp();
+						break;
 #endif
+
+					case 'n':
 						HostListPageDown();
 						break;
-	
-#ifdef KEY_END
-					case KEY_END:
+
+#ifdef KEY_NPAGE
+					case KEY_NPAGE:
+						Trace(1, "  [0x%04X, %s]\n", c, "NPAGE");
+						HostListPageDown();
+						break;
 #endif
+
 					case 'x':
 					case 'q':
 						goto done;
 	
 					default:
 						HostWinMsg("Invalid key.");
+						Trace(1, "  [0x%04X, %s]\n", c, "<invalid>");
 						break;
 				}
 			}
@@ -1248,7 +1356,7 @@ done:
 		gHostListWin = gHostWin = NULL;
 		if (si != (sigproc_t) (-1))
 			NcSignal(SIGINT, si);
-		if (toOpen != (volatile BookmarkPtr) 0) {
+		if (toOpen != (BookmarkPtr) 0) {
 			/* If the user selected a site to open, connect to it now. */
 			if (gStandAlone != 0) {
 				LaunchNcFTP(toOpen->bookmarkName);
@@ -1270,6 +1378,7 @@ int
 main(int argc, const char **argv)
 {
 	int result;
+	int argi;
 
 	gStandAlone = 1;
 	gBookmarkSelectionFile = NULL;
@@ -1288,17 +1397,21 @@ main(int argc, const char **argv)
 		 * want to complicate NcFTP itself with
 		 * that.
 		 */
+		argi = 1;
 		if (strcmp(argv[1], "--dimensions") == 0) {
 			result = PrintDimensions(0);
 			exit((result == 0) ? 0 : 1);
 		} else if (strcmp(argv[1], "--dimensions-terse") == 0) {
 			result = PrintDimensions(1);
 			exit((result == 0) ? 0 : 1);
+		} else if (strcmp(argv[1], "--debug") == 0) {
+			SetDebug(1);
+			argi++;
 		}
 		/* Requested that we were run from ncftp. */
 		gStandAlone = 0;
-		if (argv[1][0] == '/')
-			gBookmarkSelectionFile = (const char *) argv[1];
+		if ((argc > argi) && (argv[argi][0] == '/'))
+			gBookmarkSelectionFile = (const char *) argv[argi];
 		if (gNumBookmarks < 1)
 			exit(7);
 	}
@@ -1315,12 +1428,17 @@ main(int argc, const char **argv)
 		exit(1);
 	}
 
+	if (gDebug > 0)
+		OpenTrace();
 	InitPrefs();
 	LoadFirewallPrefs(0);
 	LoadPrefs();
 
 	InitWindows();
+	Trace(1, "Terminal size is %d columns by %d rows.\n", gScreenWidth, gScreenHeight);
 	HostWindow();
+	if (gDebug > 0)
+		CloseTrace();
 	Exit(0);
 	/*NOTREACHED*/
 	return 0;

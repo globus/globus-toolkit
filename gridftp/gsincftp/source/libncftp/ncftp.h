@@ -1,6 +1,6 @@
 /* ncftp.h
  *
- * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -17,7 +17,7 @@
 #ifndef _ncftp_h_
 #define _ncftp_h_ 1
 
-#define kLibraryVersion "@(#) LibNcFTP 3.0.0G (March 21, 2000)"
+#define kLibraryVersion "@(#) LibNcFTP 3.0.6G (April 14, 2001)"
 
 #if defined(WIN32) || defined(_WINDOWS)
 #	define longest_int LONGLONG
@@ -76,11 +76,15 @@
  * It also specifies the minimum version that is binary-compatibile with
  * this version.  (So this may not necessarily be kLibraryVersion.)
  */
-#define kLibraryMagic "LibNcFTP 3.0.0G"
+#define kLibraryMagic "LibNcFTP 3.0.6G"
 
 #ifndef longest_int
 #define longest_int long long
 #define longest_uint unsigned long long
+#endif
+
+#ifndef forever
+#	define forever for ( ; ; )
 #endif
 
 typedef void (*FTPSigProc)(int);
@@ -116,6 +120,7 @@ typedef struct SReadlineInfo {
 	int malloc;		/* If non-zero, malloc() was used for buf. */
 	int fd;			/* File descriptor to use for I/O. */
 	int timeoutLen;		/* Timeout to use, in seconds. */
+	int requireEOLN;	/* When buffer is full, continue reading and discarding until \n? */
 } SReadlineInfo;
 #endif
 
@@ -234,6 +239,7 @@ typedef struct FTPConnectionInfo {
 	const char *lname;			/* Do not modify this field. */
 	struct timeval t0;			/* Do not modify this field. */
 	int stalled;				/* Do not modify this field. */
+	int dataTimedOut;			/* Do not modify this field. */
 	int eofOkay;				/* Do not use or modify. */
 	char lastFTPCmdResultStr[128];		/* You may modify this if you want. */
 	LineList lastFTPCmdResultLL;		/* Use, but do not modify. */
@@ -264,10 +270,14 @@ typedef struct FTPConnectionInfo {
 	int protectionLevel;			/* You may modify this. */
 #endif
 #if USE_SIO
-	char srlBuf[512];
+	char srlBuf[768];
 	SReadlineInfo ctrlSrl;		/* Do not use or modify. */
 #endif
 	FTPGetPassphraseProc passphraseProc;	/* You may modify this. */
+	int iUser;				/* Scratch integer field you can use. */
+	void *pUser;				/* Scratch pointer field you can use. */
+	longest_int llUser;			/* Scratch long long field you can use. */
+	const char *asciiFilenameExtensions;	/* You may assign this. */
 	int reserved[32];			/* Do not use or modify. */
 } FTPConnectionInfo;
 
@@ -339,7 +349,7 @@ typedef struct MLstItem{
 #define kDefaultFTPPort			21
 #endif
 
-#define kDefaultFTPBufSize		4096
+#define kDefaultFTPBufSize		32768
 
 #ifdef USE_SIO
 /* This version of the library can handle timeouts without
@@ -441,6 +451,12 @@ typedef struct MLstItem{
 #define kFtwFile 0
 #define kFtwDir 1
 
+/* For FTPChdir3(). */
+#define kChdirOnly		00000
+#define kChdirAndMkdir		00001
+#define kChdirAndGetCWD		00002
+#define kChdirOneSubdirAtATime	00004
+
 /* Return codes for custom ConfirmResumeDownloadProcs. */
 #define kConfirmResumeProcNotUsed 0
 #define kConfirmResumeProcSaidSkip 1
@@ -492,6 +508,7 @@ typedef int (*ConfirmResumeUploadProc)(
 #define kServerTypeFTP_Max		9
 #define kServerTypeRoxen		10
 #define kServerTypeNetWareFTP		11
+#define kServerTypeWS_FTP		12
 
 
 #if !defined(WIN32) && !defined(_WINDOWS) && !defined(closesocket)
@@ -525,14 +542,31 @@ extern "C"
 {
 #endif	/* __cplusplus */
 
-#ifndef _ftp_c_
+#ifndef _libncftp_ftp_c_
 extern char gLibNcFTPVersion[64];
+#endif
+
+#ifndef _libncftp_errno_c_
+extern int gLibNcFTP_Uses_Me_To_Quiet_Variable_Unused_Warnings;
+#endif
+
+#if (defined(__GNUC__)) && (__GNUC__ >= 2)
+#	ifndef UNUSED
+#		define UNUSED(a) a __attribute__ ((unused))
+#	endif
+#	define LIBNCFTP_USE_VAR(a)
+#else
+#	define LIBNCFTP_USE_VAR(a) gLibNcFTP_Uses_Me_To_Quiet_Variable_Unused_Warnings = (a == 0)
+#	ifndef UNUSED
+#		define UNUSED(a) a
+#	endif
 #endif
 
 /* Public routines */
 void FTPAbortDataTransfer(const FTPCIPtr cip);
 int FTPChdir(const FTPCIPtr cip, const char *const cdCwd);
 int FTPChdirAndGetCWD(const FTPCIPtr cip, const char *const cdCwd, char *const newCwd, const size_t newCwdSize);
+int FTPChdir3(FTPCIPtr cip, const char *const cdCwd, char *const newCwd, const size_t newCwdSize, int flags);
 int FTPChmod(const FTPCIPtr cip, const char *const pattern, const char *const mode, const int doGlob);
 int FTPCloseHost(const FTPCIPtr cip);
 int FTPCmd(const FTPCIPtr cip, const char *const cmdspec, ...)
@@ -590,6 +624,7 @@ void Scramble(unsigned char *dst, size_t dsize, unsigned char *src, char *key);
 time_t UnMDTMDate(char *);
 int MkDirs(const char *const, int mode1);
 char *GetPass(const char *const prompt);
+int FilenameExtensionIndicatesASCII(const char *const pathName, const char *const extnList);
 void StrRemoveTrailingSlashes(char *dst);
 #if defined(WIN32) || defined(_WINDOWS)
 char *StrFindLocalPathDelim(const char *src);

@@ -91,16 +91,54 @@ downloading it. </DD>
 
 <DT><B>-r </B><I>XX</I> </DT>
 <DD>Redial
-a maximum of  <I>XX</I> times until connected to the remote FTP server. </DD>
+a maximum of <I>XX</I> times until connected to the remote FTP server. </DD>
 
 <DT><B>-b</B> </DT>
 <DD>Run in
 background (by submitting a job to <I>ncftpbatch</I>). </DD>
 
+<DT><B>-bb</B> </DT>
+<DD>
+Similar to <b>-b</b> option, but only submits the batch
+job. You will need to run <i>ncftpbatch</i> for the
+batch job to be processed. This is useful if you
+already have a <i>ncftpbatch</i> process running, or wish
+to have better control of when batch jobs are processed.
+<P>
+For example, if you wanted to do background processing
+of three files all on the same remote
+server, it is more polite to use just one <i>ncftpbatch</i>
+process to process the three jobs sequentially,
+rather than having three <i>ncftpbatch</i> processes open
+three simultaneous FTP sessions to the same server.
+</DD>
+
 <DT><B>-B </B><I>XX</I> </DT>
 <DD>Try setting the TCP/IP
 socket buffer size to <I>XX</I> bytes.  </DD>
 </DL>
+
+<DT><B>-W </B><I>XX</I> </DT>
+<DD>Send raw FTP command <I>XX</I> after logging in.</DD>
+
+<DT><B>-X </B><I>XX</I> </DT>
+<DD>Send raw FTP command <I>XX</I> after each file transferred.</DD>
+
+<DT><B>-Y </B><I>XX</I> </DT>
+<DD>
+Send raw FTP command <I>XX</I> before logging out.
+<P>
+The <B>-W</B>, <B>-X</B>, and <B>-Y</B> options are useful for advanced
+users  who need to tweak behavior on some servers.
+For example, users accessing mainframes might need
+to  send  some special SITE commands to set block-
+size and record format information.
+<P>
+When using those options, you can  use  a  newline
+character  to  delimit multiple commands.  For the
+<B>-X</B> option, you can use the  cookie <TT>%s</TT>  to  expand
+into the name of the file that was transferred.
+</DD>
 
 </blockquote>
 
@@ -180,7 +218,7 @@ list output. Example: <blockquote><pre>$ ncftpget -R ftp.ncftp.com /tmp /pub/ncf
  <P>
 <I>ncftpget</I> returns
 the following exit values: 
-<OL>
+<OL start="0">
 <LI>Success. </LI><LI>Could not connect to remote host. </LI><LI>Could
 not connect to remote host - timed out. </LI><LI>Transfer failed. </LI><LI>Transfer failed -
 timed out. </LI><LI>Directory change failed. </LI><LI>Directory change failed - timed out. </LI><LI>Malformed
