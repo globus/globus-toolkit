@@ -131,12 +131,14 @@ g_passive()
         return;
     }
 
+    host_port.port = 0;
     res = globus_ftp_control_local_pasv(
               &g_data_handle,
               &host_port);
     if(res != GLOBUS_SUCCESS)
     {
-        perror_reply(425, "Can't open passive connection");
+        perror_reply(425, 
+                 globus_object_printable_to_string(globus_error_get(res)));
     }
 
     a = (char *)&ctrl_addr.sin_addr;
@@ -273,7 +275,6 @@ g_send_data(
                ((c = getc(instr)) != EOF) &&
                !eof)
         {
-
             /*
              *  reset timeout every 4096 bytes
              */
