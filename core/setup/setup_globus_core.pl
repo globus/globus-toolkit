@@ -31,5 +31,13 @@ while (<TOOLS>) {
 $result = system("ln -s $perl_location $globusdir/bin");
 $result = system("ln -s $sh_location $globusdir/bin");
 
+for my $f ('globus-script-initializer', 'globus-sh-tools.sh')
+{
+    $result = system("cp $f $globusdir/libexec");
+}
+
+
+
+
 $metadata->finish();
 
