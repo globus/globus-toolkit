@@ -41,12 +41,12 @@ globus_gram_job_manager_print_validation_SOURCES = \
 # Compiler flags
 INCLUDES += $(GPT_INCLUDES)
 globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)
-globus_job_manager_LDADD = $(GPT_PGM_LINKS) \
-	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
+globus_job_manager_LDADD = \
+	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
 globus_gram_job_manager_print_validation_LDFLAGS = $(GPT_LDFLAGS)
-globus_gram_job_manager_print_validation_LDADD = $(GPT_PGM_LINKS) \
-	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la
+globus_gram_job_manager_print_validation_LDADD = \
+	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
 # Files which we want to put in the source package
 EXTRA_DIST = globus-personal-gatekeeper $(validation_DATA) \
