@@ -2639,22 +2639,23 @@ globus_l_ftp_control_send_cmd_cb(
 
 	    /* initialize security context 
 	     */
-	    maj_stat = gss_init_sec_context(&min_stat,
-					    handle->cc_handle.auth_info.credential_handle,
-					    &(handle->cc_handle.auth_info.
-					      auth_gssapi_context),
-					    handle->cc_handle.auth_info.
-					    target_name,
-					    GSS_C_NULL_OID,
-					    handle->cc_handle.auth_info.
-					    req_flags,
-					    0,
-					    chan_bindings,
-					    token_ptr,
-					    NULL,
-					    &send_tok,
-					    NULL,
-					    NULL);
+	    maj_stat = gss_init_sec_context(
+                &min_stat,
+                handle->cc_handle.auth_info.credential_handle,
+                &(handle->cc_handle.auth_info.
+                  auth_gssapi_context),
+                handle->cc_handle.auth_info.
+                target_name,
+                GSS_C_NULL_OID,
+                handle->cc_handle.auth_info.
+                req_flags,
+                0,
+                chan_bindings,
+                token_ptr,
+                NULL,
+                &send_tok,
+                NULL,
+                NULL);
 	    
 	    if(maj_stat != GSS_S_COMPLETE && 
 	       maj_stat != GSS_S_CONTINUE_NEEDED) 
@@ -2778,22 +2779,23 @@ globus_l_ftp_control_send_cmd_cb(
 	    recv_tok.length = len;
 	    token_ptr = &recv_tok;
 	    
-	    maj_stat = gss_init_sec_context(&min_stat,
-					    handle->cc_handle.auth_info.credential_handle,
-					    &(handle->cc_handle.auth_info.
-					      auth_gssapi_context),
-					    handle->cc_handle.auth_info.
-					    target_name,
-					    GSS_C_NULL_OID,
-					    handle->cc_handle.auth_info.
-					    req_flags,
-					    0,
-					    chan_bindings,
-					    token_ptr,
-					    NULL,
-					    &send_tok,
-					    NULL,
-					    NULL);
+	    maj_stat = gss_init_sec_context(
+                &min_stat,
+                handle->cc_handle.auth_info.credential_handle,
+                &(handle->cc_handle.auth_info.
+                  auth_gssapi_context),
+                handle->cc_handle.auth_info.
+                target_name,
+                GSS_C_NULL_OID,
+                handle->cc_handle.auth_info.
+                req_flags,
+                0,
+                chan_bindings,
+                token_ptr,
+                NULL,
+                &send_tok,
+                NULL,
+                NULL);
 	    
 	    	    
 	    if(maj_stat != GSS_S_COMPLETE && 
@@ -2819,56 +2821,156 @@ globus_l_ftp_control_send_cmd_cb(
 	    gss_release_buffer(&min_stat, token_ptr);
 
 	    len = send_tok.length;
-	    	    
-	    radix_buf = globus_libc_malloc(send_tok.length * 8 / 6 + 4);
+
+            if(len != 0)
+            { 
+                radix_buf = globus_libc_malloc(send_tok.length * 8 / 6 + 4);
 	    
-	    if(radix_buf == GLOBUS_NULL)
-	    {
-		gss_release_buffer(&min_stat, &send_tok);
+                if(radix_buf == GLOBUS_NULL)
+                {
+                    gss_release_buffer(&min_stat, &send_tok);
+                    error_obj = globus_error_construct_string(
+                        GLOBUS_FTP_CONTROL_MODULE,
+                        GLOBUS_NULL,
+                        "globus_l_ftp_control_send_cmd_cb: malloc failed");
+                    goto return_error;
+                }
+                
+                rc = globus_i_ftp_control_radix_encode(send_tok.value, 
+                                                       radix_buf, 
+                                                       &len);
+                
+                if(rc != GLOBUS_SUCCESS) 
+                {
+                    globus_libc_free(radix_buf);
+                    gss_release_buffer(&min_stat, &send_tok);
+                    error_obj = globus_error_get(rc);
+                    goto return_error;
+                }
+                
+                rc = globus_ftp_control_send_command(
+                    handle,"ADAT %s\r\n",
+                    globus_l_ftp_control_send_cmd_cb,
+                    callback_arg,radix_buf);
+                
+                globus_libc_free(radix_buf);
+                gss_release_buffer(&min_stat, &send_tok);
+		
+                if(rc != GLOBUS_SUCCESS)
+                {
+                    error_obj = globus_error_get(rc);
+                    goto return_error;
+                }
+            }
+            else
+            {
 		error_obj = globus_error_construct_string(
 		    GLOBUS_FTP_CONTROL_MODULE,
 		    GLOBUS_NULL,
-		    "globus_l_ftp_control_send_cmd_cb: malloc failed");
+		    "globus_l_ftp_control_send_cmd_cb: gss_init_sec_context failed to generate output token\n");
 		goto return_error;
-	    }
-
-	    rc = globus_i_ftp_control_radix_encode(send_tok.value, 
-						   radix_buf, 
-						   &len);
-	    
-	    if(rc != GLOBUS_SUCCESS) 
-	    {
-		globus_libc_free(radix_buf);
-		gss_release_buffer(&min_stat, &send_tok);
-		error_obj = globus_error_get(rc);
-		goto return_error;
-	    }
-
-	    rc = globus_ftp_control_send_command(
-		handle,"ADAT %s\r\n",
-		globus_l_ftp_control_send_cmd_cb,
-		callback_arg,radix_buf);
-	    
-	    globus_libc_free(radix_buf);
-	    gss_release_buffer(&min_stat, &send_tok);
-		
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		error_obj = globus_error_get(rc);
-		goto return_error;
-	    }
+            }
 
 	    break;
 	    
 	case GLOBUS_FTP_POSITIVE_COMPLETION_REPLY:
 
 	    cb_arg->cmd=GLOBUS_I_FTP_USER;
+	    /* base64 decode the reply */
+
+            if(!strncmp(ftp_response->response_buffer, "235 ADAT=", 8))
+            { 
+            
+                ftp_response->response_buffer
+                    [ftp_response->response_length-3]='\0';
 	    
-	    globus_mutex_lock(&(handle->cc_handle.mutex));
-	    {
-		handle->cc_handle.auth_info.authenticated = GLOBUS_TRUE;
+                len = strlen(ftp_response->response_buffer);
+						
+                radix_buf = globus_libc_malloc((len + 1) * 6 / 8 + 1);
+	    
+                if(radix_buf == GLOBUS_NULL)
+                {
+                    error_obj = globus_error_construct_string(
+                        GLOBUS_FTP_CONTROL_MODULE,
+                        GLOBUS_NULL,
+                        "globus_l_ftp_control_send_cmd_cb: malloc failed");
+                    goto return_error;
+                }
+
+                rc = globus_i_ftp_control_radix_decode(
+                    ftp_response->response_buffer + strlen("235 ADAT="), 
+                    radix_buf, 
+                    &len);
+
+
+                if(rc != GLOBUS_SUCCESS)
+                {
+                    globus_libc_free(radix_buf);
+                    error_obj = globus_error_get(rc);
+                    goto return_error;
+                }
+	    
+                recv_tok.value = radix_buf;
+                recv_tok.length = len;
+                token_ptr = &recv_tok;
+	    
+                maj_stat = gss_init_sec_context(
+                    &min_stat,
+                    handle->cc_handle.auth_info.credential_handle,
+                    &(handle->cc_handle.auth_info.
+                      auth_gssapi_context),
+                    handle->cc_handle.auth_info.
+                    target_name,
+                    GSS_C_NULL_OID,
+                    handle->cc_handle.auth_info.
+                    req_flags,
+                    0,
+                    chan_bindings,
+                    token_ptr,
+                    NULL,
+                    &send_tok,
+                    NULL,
+                    NULL);
+                
+                
+                if(maj_stat != GSS_S_COMPLETE)
+                {
+                    globus_gss_assist_display_status_str(&error_str,
+                                                         GLOBUS_NULL,
+                                                         maj_stat,
+                                                         min_stat,
+                                                         0);
+
+                    error_obj = globus_error_construct_string(
+                        GLOBUS_FTP_CONTROL_MODULE,
+                        GLOBUS_NULL,
+                        "globus_l_ftp_control_send_cmd_cb: gss_init_sec_context failed\n\n %s",
+                        error_str);
+                    globus_libc_free(error_str);
+                    gss_release_buffer(&min_stat, token_ptr);
+		
+                    goto return_error;
+                }
+	    
+                gss_release_buffer(&min_stat, token_ptr);
+
+                if(send_tok.length != 0)
+                {
+                    error_obj = globus_error_construct_string(
+                        GLOBUS_FTP_CONTROL_MODULE,
+                        GLOBUS_NULL,
+                        "globus_l_ftp_control_send_cmd_cb: gss_init_sec_context generated unexpected output token\n");
+                    gss_release_buffer(&min_stat, &send_tok);
+                    goto return_error;
+   
+                }
 	    }
-	    globus_mutex_unlock(&(handle->cc_handle.mutex));
+            
+            globus_mutex_lock(&(handle->cc_handle.mutex));
+            {
+                handle->cc_handle.auth_info.authenticated = GLOBUS_TRUE;
+            }
+            globus_mutex_unlock(&(handle->cc_handle.mutex));
 
 	    gss_wrap_size_limit(
 		    &min_stat,

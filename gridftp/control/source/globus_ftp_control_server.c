@@ -1677,15 +1677,6 @@ globus_l_ftp_control_auth_read_cb(
                         cc_handle->auth_info.target_name,
                         &subject_buf);
 
-                    if(maj_stat != GSS_S_COMPLETE)
-                    {
-                        error=globus_error_construct_string(
-                            GLOBUS_FTP_CONTROL_MODULE,
-                            GLOBUS_NULL,
-                            "globus_l_ftp_control_auth_read_cb: gss_export_name failed");
-                        goto error_cmd_destroy;
-                    }
-
                     cc_handle->auth_info.auth_gssapi_subject =
                         globus_libc_malloc(sizeof(char)*
                                            (subject_buf.length + 1));
@@ -1712,16 +1703,53 @@ globus_l_ftp_control_auth_read_cb(
                     if(cc_handle->auth_requirements & 
                        GLOBUS_FTP_CONTROL_AUTH_REQ_USER)
                     {
-                        reply=globus_libc_strdup(
-                            globus_i_ftp_server_235_reply);
-                        
-                        if(reply == GLOBUS_NULL)
+                        if(send_tok.length == 0)
+                        { 
+                            reply=globus_libc_strdup(
+                                globus_i_ftp_server_235_reply);
+                            
+                            if(reply == GLOBUS_NULL)
+                            {
+                                error=globus_error_construct_string(
+                                    GLOBUS_FTP_CONTROL_MODULE,
+                                    GLOBUS_NULL,
+                                    "globus_l_ftp_control_auth_read_cb: strdup failed");
+                                goto error_cmd_destroy;   
+                            }
+                        }
+                        else
                         {
-                            error=globus_error_construct_string(
-                                GLOBUS_FTP_CONTROL_MODULE,
-                                GLOBUS_NULL,
-                                "globus_l_ftp_control_auth_read_cb: strdup failed");
-                            goto error_cmd_destroy;   
+                            reply= (char *) globus_libc_malloc(
+                                send_tok.length * 8 / 6 + 16);
+                            
+                            if(reply == GLOBUS_NULL)
+                            {
+                                gss_release_buffer(&min_stat, &send_tok);
+                                error=globus_error_construct_string(
+                                    GLOBUS_FTP_CONTROL_MODULE,
+                                    GLOBUS_NULL,
+                                    "globus_l_ftp_control_auth_read_cb: malloc failed");
+                                goto error_cmd_destroy;
+                            }
+                    
+                            strcpy(reply,"235 ADAT=");
+                    
+                            length=send_tok.length;
+                            
+                            rc = globus_i_ftp_control_radix_encode(send_tok.value, 
+                                                                   &(reply[9]), 
+                                                                   &length);
+                            gss_release_buffer(&min_stat, &send_tok);
+                            
+                            if(rc != GLOBUS_SUCCESS)
+                            {
+                                globus_libc_free(reply);
+                                error=globus_error_get(rc);
+                                goto error_cmd_destroy;
+                            }
+
+                            reply[length+9]='\r';
+                            reply[length+10]='\n';
                         }
                         
                         rc=globus_io_register_write(
