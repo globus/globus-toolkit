@@ -273,7 +273,6 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	       unsigned long	*timestamp,
 	       char		**local_filename);
 
-
 /*
  * globus_gass_cache_add_done()
  *
@@ -304,13 +303,56 @@ globus_gass_cache_add_done(
     const char		*tag,
     unsigned long	timestamp);
 
-extern
+/*
+ * globus_gass_cache_query()
+ *
+ * Query if an item is in the cache
+ *
+ * This call will block only if wait_for_lock is GLOBUS_TRUE
+ *
+ * Parameters:
+ *
+ *     cache_handle - Handler to the opened cahe directory to use.
+ *
+ *     url - url of the file to query. It is used as the main
+ *     key to the cache entries.
+ *
+ *     tag - tag specifying which job is/are using the cache. This
+ *     is usually the GLOBUS_GRAM_JOB_CONTACT. Can be NULL or empty; the
+ *     tag "null" is then used.
+ *     create - Tells if the cache entry should be created if it is
+ *     not already existing.
+ *
+ *     wait_for_lock - If GLOBUS_TRUE, wait for any lock existing lock
+ *     to be released.  If GLOBUS_FALSE, doesn't wait for a lock to be
+ *     released.
+ *
+ *     timestamp - time stamp of the cached file, set by
+ *     globus_gass_cache_done(), (or globus_gass_cache_delete() ).
+ *
+ *     local_filename - Path the the local file caching the file
+ *     specified by "url". NULL if "url" not yet cached and
+ *     creation not requested (create false).
+ *
+ *     is_locked - GLOBUS_TRUE if the file is currently (at return
+ *     time) locked.
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS
+ *     GLOBUS_GASS_CACHE_URL_NOT_FOUND
+ *     or any of the defined gass error code.
+ *
+ */
 int
-globus_gass_cache_delete_start(
-    globus_gass_cache_t	*cache_handle,
-    const char		*url,
-    const char		*tag,
-    unsigned long	*timestamp);
+globus_gass_cache_query(
+    globus_gass_cache_t		*cache_handle,
+    const char			*url,
+    const char			*tag,
+    globus_bool_t		wait_for_lock,
+    unsigned long		*timestamp,
+    char			**local_filename,
+    globus_bool_t		*is_locked );
+
 
 /*
  * globus_gass_cache_delete()
@@ -357,6 +399,15 @@ globus_gass_cache_delete_start(
  *      GLOBUS_SUCCESS or error code:
  *      or any of the defined gass error code.   
  */
+
+extern
+int
+globus_gass_cache_delete_start(
+    globus_gass_cache_t	*cache_handle,
+    const char		*url,
+    const char		*tag,
+    unsigned long	*timestamp);
+
 extern
 int
 globus_gass_cache_delete(

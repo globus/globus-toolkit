@@ -32,20 +32,21 @@ INCLUDES += $(GPT_INCLUDES)
 # libexec is $prefix/libexec
 # You can also use any directory defined by a macro of the form 
 # <directory_name>dir
-bin_PROGRAMS = \
-	globus-gass-cache
 bin_SCRIPTS = \
+	globus-gass-cache \
 	globus-gass-cache-destroy
+libexec_PROGRAMS = \
+	globus-gass-cache-util
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
-globus_gass_cache_SOURCES = $(Sources)
+globus_gass_cache_util_SOURCES = $(Sources)
 # _LDFLAGS is an automake macro which contains
 # directives to the linker add before the list of objects and libraries.
 # 
 # GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-globus_gass_cache_LDFLAGS = $(GPT_LDFLAGS)
+globus_gass_cache_util_LDFLAGS = $(GPT_LDFLAGS)
 
 # _LDADD is an automake macro which contains
 # directives to the linker added after the list of objects.  
@@ -53,10 +54,11 @@ globus_gass_cache_LDFLAGS = $(GPT_LDFLAGS)
 # 
 # GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-globus_gass_cache_LDADD = $(GPT_PGM_LINKS)
+globus_gass_cache_util_LDADD = $(GPT_PGM_LINKS)
 
-EXTRA_DIST = globus-gass-cache-destroy \
-	version.h.in
+EXTRA_DIST = globus-gass-cache \
+	     globus-gass-cache-destroy \
+	     version.h.in
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

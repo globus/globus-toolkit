@@ -190,7 +190,7 @@ sub submit
     # Create script for condor submission
     $script_url = "$tag/condor_script.$$";
     system("$cache_pgm -add -t $tag -n $script_url file:/dev/null >/dev/null");
-    $script_filename = `$cache_pgm -query $script_url 2>/dev/null`;
+    $script_filename = `$cache_pgm -query -t $tag $script_url 2>/dev/null`;
     chomp($script_filename);
 
     if($script_filename eq "")

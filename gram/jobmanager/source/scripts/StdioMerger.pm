@@ -198,12 +198,12 @@ sub lookup_or_add_in_cache
     my $tag = shift;
     my $result;
 
-    chomp($result = `$cache_pgm -query $url`);
+    chomp($result = `$cache_pgm -query -t $tag $url`);
     if($result eq '')
     {
 	system("$cache_pgm -add -n $url -t $tag file:/dev/null");
     }
-    chomp($result = `$cache_pgm -query $url`);
+    chomp($result = `$cache_pgm -query -t $tag $url`);
     if($result eq '')
     {
 	return undef;
