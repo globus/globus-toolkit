@@ -749,6 +749,15 @@ globus_l_io_bounce_authz_cb(
     
     if(result != GLOBUS_SUCCESS)
     { 
+        if(globus_xio_error_is_canceled(result))
+        {
+            result = globus_error_put(
+                globus_io_error_construct_io_cancelled(
+                    GLOBUS_IO_MODULE,
+                    globus_error_get(result),
+                    ihandle->io_handle));
+        }
+        
         goto done;
     }
     
@@ -1022,6 +1031,15 @@ globus_l_io_bounce_listen_cb(
     
     if(globus_l_io_cancel_precallback(bounce_info))
     {
+        if(result != GLOBUS_SUCCESS && globus_xio_error_is_canceled(result))
+        {
+            result = globus_error_put(
+                globus_io_error_construct_io_cancelled(
+                    GLOBUS_IO_MODULE,
+                    globus_error_get(result),
+                    ihandle->io_handle));
+        }
+        
         bounce_info->cb.non_io(
             bounce_info->user_arg,
             ihandle->io_handle,
