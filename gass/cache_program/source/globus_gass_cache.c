@@ -104,6 +104,12 @@ static globus_bool_t  globus_l_cache_monitor_done = GLOBUS_FALSE;
 "                     as described above\n"\
 "    -n new_name    - Store the URL in the cache as new_name (argument to add\n"\
 "                     only)\n"\
+"    -mdshost   <mds ldap server hostname>\n"\
+"    -mdsport   <mds ldap server port to contact>\n"\
+"    -mdsbasedn <mds ldap server hostname>\n"\
+"                     mdshost, mdsport and mdsbasedn let you overwrite the\n"\
+"                     default information necessary to contact the MDS ldap\n"\
+"                     server.\n"\
 "    -r resource    - The resource argument specifies that the cache\n"\
 "                     operation will be performed on a remote cache. The\n"\
 "                     resource string can be either a resource manager name\n"\
@@ -204,6 +210,47 @@ main(int argc, char **argv)
     /* parse options [-t tag] [-r resource] */
     while(arg < argc)
     {
+	int err;
+	if ( strcmp(argv[arg],"-mdshost") == 0 )
+	{
+	    err = globus_libc_setenv("GLOBUS_MDS_HOST",
+				     (char *) argv[++arg],1);
+	    if (err != GLOBUS_SUCCESS)
+	    {
+		globus_libc_fprintf(
+		    stderr,
+		    "Error setting environment variable GLOBUS_MDS_HOST\n");
+		globus_module_deactivate(GLOBUS_COMMON_MODULE);
+		return -1;
+	    }
+	    
+	}
+	else if ( strcmp(argv[arg],"-mdsport") == 0 )
+	{
+	    err = globus_libc_setenv("GLOBUS_MDS_PORT",
+				     (char *) argv[++arg],1);
+	    if (err != GLOBUS_SUCCESS)
+	    {
+		globus_libc_fprintf(
+		    stderr,
+		    "Error setting environment variable GLOBUS_MDS_PORT\n");
+		globus_module_deactivate(GLOBUS_COMMON_MODULE);
+		return -1;
+	    }
+	}
+	else if ( strcmp(argv[arg],"-mdsbasedn") == 0 )
+	{
+	    err = globus_libc_setenv("GLOBUS_MDS_BASE_DN",
+				     (char *) argv[++arg],1);
+	    if (err != GLOBUS_SUCCESS)
+	    {
+		globus_libc_fprintf(
+		    stderr,
+		    "Error setting environment variable GLOBUS_MDS_BASE_DN\n");
+		globus_module_deactivate(GLOBUS_COMMON_MODULE);
+		return -1;
+	    }
+	}
 	if(strcmp("-t", argv[arg]) == 0)
 	{
 	    arg++;
@@ -211,7 +258,7 @@ main(int argc, char **argv)
 	    {
 		return globus_l_cache_usage();
 	    }
-	    tag = argv[arg++];
+		tag = argv[arg++];
 	}
 	else if(strcmp("-n", argv[arg]) == 0)
 	{
@@ -292,11 +339,8 @@ static char *
 globus_l_cache_get_rm_contact(char *resource)
 {
     LDAP *ldap_server;
-    int default_port          = atoi(GLOBUS_MDS_PORT);
     int port		      = 0;
-    char *default_base_dn     = GLOBUS_MDS_ROOT_DN;
     char *base_dn	      = GLOBUS_NULL;
-    char *default_server      = GLOBUS_MDS_HOST;
     char *server	      = GLOBUS_NULL;
     char *search_string;
     LDAPMessage *reply;
@@ -304,63 +348,17 @@ globus_l_cache_get_rm_contact(char *resource)
     char *attrs[3];
     FILE *mds_conf;
     char buf[512];
+    int  rc;
     
     if(strchr(resource, (int) ':') != GLOBUS_NULL)
     {
 	return strdup(resource);
     }
 
-    
-    mds_conf = fopen(GLOBUS_SYSCONFDIR "/grid-info.conf", "r");
-    if(mds_conf != GLOBUS_NULL)
+    rc = globus_i_rsl_assist_get_ldap_param(&server, &port, &base_dn);
+    if (rc != GLOBUS_SUCCESS)
     {
-	while(fgets(buf, 512, mds_conf) != GLOBUS_NULL)
-	{
-	    /* break off comments */
-	    strtok(buf, "#");
-	    if(strlen(buf) > 0U)
-	    {
-		if(strncmp(buf,
-			   "GLOBUS_MDS_HOST=",
-			   strlen("GLOBUS_MDS_HOST=")) == 0)
-		{
-		    globus_libc_lock();
-		    server=strdup(buf+strlen("GLOBUS_MDS_HOST=\""));
-		    server[strlen(server)-2] = '\0';
-		    globus_libc_unlock();
-		}
-		else if(strncmp(buf,
-				"GLOBUS_MDS_PORT=",
-				strlen("GLOBUS_MDS_PORT=")) == 0)
-		{
-		    port = atoi(buf + strlen("GLOBUS_MDS_PORT=\""));
-		}
-		else if(strncmp(buf,
-				"GLOBUS_MDS_DN=",
-				strlen("GLOBUS_MDS_DN=")) == 0)
-		{
-		    globus_libc_lock();
-		    base_dn = strdup(buf + strlen("GLOBUS_MDS_DN=\""));
-		    base_dn[strlen(base_dn)-2] = '\0';
-		    globus_libc_unlock();
-		}
-	    }
-	}
-	fclose(mds_conf);
-    }
-    /* fall back to defaults if we can't parse the file, or the file
-       can't be opened */
-    if(server == GLOBUS_NULL)
-    {
-	server = default_server;
-    }
-    if(port == 0)
-    {
-	port = default_port;
-    }
-    if(base_dn == GLOBUS_NULL)
-    {
-	base_dn = default_base_dn;
+	return GLOBUS_NULL;
     }
     
     attrs[0] = "contact";
@@ -369,8 +367,10 @@ globus_l_cache_get_rm_contact(char *resource)
     if((ldap_server = ldap_open(server, port)) == GLOBUS_NULL)
     {
 	ldap_perror(ldap_server, "ldap_open");
+	globus_free(server);
 	exit(1);
     }
+    globus_free(server);
 
     if(ldap_simple_bind_s(ldap_server, "", "") != LDAP_SUCCESS)
     {
@@ -393,6 +393,8 @@ globus_l_cache_get_rm_contact(char *resource)
     {
 	ldap_perror(ldap_server, "ldap_search");
 	ldap_unbind(ldap_server);
+	globus_free(search_string);
+	globus_free(base_dn);
 	exit(1);
     }
 
@@ -405,15 +407,7 @@ globus_l_cache_get_rm_contact(char *resource)
 	if(contact != GLOBUS_NULL)
 	{
 	    ldap_unbind(ldap_server);
-
-	    if(server != default_server)
-	    {
-		globus_free(server);
-	    }
-	    if(base_dn != default_base_dn)
-	    {
-		globus_free(base_dn);
-	    }
+	    globus_free(base_dn);
 	    globus_free(search_string);
 	    return contact;
 	}
@@ -421,14 +415,7 @@ globus_l_cache_get_rm_contact(char *resource)
     ldap_msgfree(reply);
     ldap_unbind(ldap_server);
 
-    if(server != default_server)
-    {
-	globus_free(server);
-    }
-    if(base_dn != default_base_dn)
-    {
-	globus_free(base_dn);
-    }
+    globus_free(base_dn);
     globus_free(search_string);
     return GLOBUS_NULL;
 } /* globus_l_cache_get_rm_contact() */
