@@ -1,5 +1,7 @@
 include $(top_srcdir)/aclocal/automake_targets
 
+flavordir = $(GLOBUS_LOCATION)/etc/$(PACKAGE)
+
 FILELIST_FILES = noflavor_data.filelist \
 	$(GLOBUS_FLAVOR_NAME)_dev.filelist \
 	noflavor_doc.filelist \
@@ -21,6 +23,8 @@ pkg_DATA = \
 	pkg_data_$(GLOBUS_FLAVOR_NAME)_rtl.gpt \
 	$(FILELIST_FILES)
 
+flavor_DATA = flavor_$(GLOBUS_FLAVOR_NAME).gpt
+
 filelist_file: $(MAKEFILE_AMS)
 	@mydir=`pwd`; \
 	if test -f "master.filelist"; then \
@@ -38,6 +42,10 @@ $(FILELIST_FILES): sort_filelist
 
 sort_filelist: all_filelists
 	$(GPT_LOCATION)/sbin/gpt_sort_filelist  --flavor=$(GLOBUS_FLAVOR_NAME) ./master.filelist
+
+
+$(flavor_DATA): build-parameters
+	$(GPT_LOCATION)/sbin/gpt_save_flavor --flavor=$(GLOBUS_FLAVOR_NAME) build-parameters
 
 distclean-local:
 	@if test -f master.filelist; then \

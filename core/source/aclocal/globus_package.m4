@@ -34,7 +34,12 @@ AC_ARG_WITH(flavor,
 		exit 1
 		;;
 	*)
+        if test "x$GLOBUS_FLAVOR_NAME" = "xnoflavor"; then
+	        echo "Warning: package doesn't build with flavors $withval ignored" >&2
+	        echo "Warning: $withval ignored" >&2
+        else
 		GLOBUS_FLAVOR_NAME=$withval
+        fi
 		;;
 	esac
 	],

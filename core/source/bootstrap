@@ -58,9 +58,9 @@ echo "running autoheader"
     autoheader || error
 fi
 
-echo "running libtoolize --copy"
-libtoolize --copy  || \
-  libtoolize --copy || error
+echo "running libtoolize --copy --force"
+libtoolize --copy --force || \
+  libtoolize --copy --force || error
 
 echo "running automake --copy -add-missing --foreign"
 automake --copy --add-missing --foreign || \
