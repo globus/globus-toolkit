@@ -132,7 +132,8 @@ globus_i_xio_pass_failed(
     if((my_context->state == GLOBUS_XIO_CONTEXT_STATE_CLOSING ||
         my_context->state ==
         GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING) &&
-        my_context->outstanding_operations == 0)
+        my_context->outstanding_operations == 0 &&
+        !my_context->close_started)
     {
         globus_assert(my_context->close_op != NULL);
         *close = GLOBUS_TRUE;

@@ -1,11 +1,3 @@
-unload/deactivate
---on unload, before deactivating a driver, all handles with 
-  that driver should be destroyed enough that a driver can unload but user
-  can still call close
---tests for this
-
-doc updates
-
 contact string details
 
 reexamine build process
