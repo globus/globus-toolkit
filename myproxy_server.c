@@ -107,9 +107,11 @@ static int get_client_authdata(myproxy_socket_attrs_t *attrs,
 			       char *client_name,
 			       authorization_data_t *auth_data);
 
+#if defined(HAVE_LIBSASL2)
 static int do_account_authorization(myproxy_socket_attrs_t *attrs,
 				    myproxy_request_t *client_request,
 				    char *client_name);
+#endif
 
 static int debug = 0;
 
