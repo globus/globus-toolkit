@@ -61,7 +61,9 @@ read_cb(
     test_info_t *                               info;
     globus_result_t                             res;
 
-    if(!globus_xio_error_is_eof(result))
+    if(!globus_xio_error_is_eof(result) &&
+       !globus_xio_error_is_canceled(result) &&
+       !globus_xio_error_is_timeout(result))
     {
         test_res(GLOBUS_XIO_TEST_FAIL_FINISH_READ, result, __LINE__);
     }
@@ -124,7 +126,11 @@ write_cb(
     test_info_t *                               info;
     globus_result_t                             res;
 
-    test_res(GLOBUS_XIO_TEST_FAIL_FINISH_WRITE, result, __LINE__);
+    if(!globus_xio_error_is_canceled(result) &&
+       !globus_xio_error_is_timeout(result))
+    {
+        test_res(GLOBUS_XIO_TEST_FAIL_FINISH_WRITE, result, __LINE__);
+    }
 
     info = (test_info_t *) user_arg;
 

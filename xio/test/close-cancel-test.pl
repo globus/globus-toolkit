@@ -8,16 +8,24 @@ require "test-common.pl";
 
 my $type = 0;
 if(@ARGV == 1)
-{   
+{
     $type = 1;
 }
 
 my @tests;
 my @todo;
 my $test_exec="./framework_test";
-my $inline_finish;
-my $test_name="cancel";
+my $test_name="close_cancel";
 
+my $inline_finish;
+my $buffer_size=2048;
+my $c;
+
+# setup different chunk sizes
+my @chunk_sizes;
+push(@chunk_sizes, "1024");
+push(@chunk_sizes, "1924");
+push(@chunk_sizes, "2048");
 
 #setup different driver combinations
 my @drivers;
@@ -25,27 +33,29 @@ push(@drivers, "");
 push(@drivers, "-D debug");
 push(@drivers, "-D bounce");
 push(@drivers, "-D debug -D bounce");
+push(@drivers, "-D bounce -D debug");
 push(@drivers, "-D debug -D bounce -D debug");
+push(@drivers, "-D bounce -D debug -D bounce");
 
-my @cancel_position;
-push(@cancel_position, "O");
-push(@cancel_position, "D");
-
-sub basic_tests
+sub close_barrier
 {
-        foreach(@drivers)
+    my $inline_finish="-i";
+
+    for(my $i = 0; $i < 2; $i++)
+    {
+        foreach(@chunk_sizes)
         {
-            my $d=$_;
-            foreach(@cancel_position)
+            my $c = $_;
+            foreach(@drivers)
             {
-                my $t=$_;
-                push(@tests, "$test_name -d 300000 -w 1 -r 0 $d $t");
-                push(@tests, "$test_name -d 300000 -w 0 -r 1 $d $t");
+                push(@tests, "$test_name -c $c -b $buffer_size $inline_finish $_");
             }
         }
+        $inline_finish="";
+    }
 }
 
-&basic_tests();
+&close_barrier();
 if($type == 1)
 {
     foreach(@tests)
@@ -55,8 +65,8 @@ if($type == 1)
 }
 else
 {
-    my $cnt=0;
     plan tests => scalar(@tests), todo => \@todo;
+    my $cnt=0;
     foreach(@tests)
     {
         my $test_str="$test_name.$cnt";

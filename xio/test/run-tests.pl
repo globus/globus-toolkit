@@ -16,6 +16,7 @@ unlink("test_results.txt");
 @tests = qw(
             basic-test.pl
             close-barrier-test.pl
+            close-cancel-test.pl
             failure-test.pl
             read-barrier-test.pl
             timeout-test.pl
@@ -23,6 +24,8 @@ unlink("test_results.txt");
             random-test.pl
             server-test.pl
             verify-test.pl
+            attr-test.pl
+            threads-test.pl
             );
 
 my $runserver;
