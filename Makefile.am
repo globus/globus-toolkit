@@ -126,14 +126,6 @@ myproxy_admin_load_credential_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_admin_load_credential_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
-noinst_PROGRAMS = gsi_socket_test
-
-gsi_socket_test_SOURCES = gsi_socket_test.c gsi_socket.c
-
-gsi_socket_test_LDFLAGS = $(GPT_LDFLAGS)
-
-gsi_socket_test_LDADD = $(GPT_PGM_LINKS)  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
-
 sysconf_DATA = myproxy-server.config
 
 pkgdata_DATA = README INSTALL LICENSE VERSION PROTOCOL \
