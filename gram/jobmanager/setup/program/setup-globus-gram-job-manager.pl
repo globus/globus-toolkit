@@ -28,8 +28,10 @@ my $bindir	= "$globusdir/bin";
 my $sbindir	= "$globusdir/sbin";
 
 &setup_job_manager_conf();
-&setup_script_shbang("${setupdir}/globus-job-manager-service-add.in",
-                      "${libexecdir}/globus-job-manager-service-add");
+&setup_script_shbang("${setupdir}/globus-job-manager-service.in",
+                      "${libexecdir}/globus-job-manager-service");
+&setup_script_shbang("${setupdir}/globus-job-manager-mds-provider.in",
+                      "${libexecdir}/globus-job-manager-mds-provider");
 &setup_script_shbang("$setupdir/globus-job-manager-script.in",
                      "$libexecdir/globus-job-manager-script.pl");
 print "Done\n";
