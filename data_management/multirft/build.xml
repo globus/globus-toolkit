@@ -15,7 +15,7 @@ Southern California. All Rights Reserved.
   <property file="build.properties"/>
 
   <!-- Set properties -->
-  <property name="ogsa.root" value="${user.home}/integrationTest/gt3"/>
+  <property name="ogsa.root" value="../../ogsa/impl/java"/>
   <property file="${ogsa.root}/ogsa.properties"/>
 
   <property name="schema.origin" value="${ogsa.root}/schema"/>
@@ -151,6 +151,24 @@ Southern California. All Rights Reserved.
     <include name="**/test/*"/> 
    </javac>
    <mkdir dir="${test.reports.dir}"/>
+  </target>
+
+  <!-- Run tests -->
+  <target name="test" depends="compileTests">
+   <mkdir dir="${test.reports.dir}"/>
+    <junit printsummary="yes" haltonfailure="yes" fork="yes">
+      <classpath refid="classpath"/>
+      <formatter type="xml" />
+      <batchtest todir="${test.reports.dir}">
+        <fileset dir="${build.dir}/classes">
+          <include name="**/PackageTests.class" />
+        </fileset>
+      </batchtest>
+      <jvmarg value="-DtestServiceMachine=${testServiceMachine}" />
+      <jvmarg value="-DtestServicePort=${testServicePort}" />
+      <jvmarg value="-DrftRequestFile=${rftRequestFile}" />
+      <jvmarg value="-DverifyTrue=${verifyTrue}"/>
+    </junit>
   </target>
 
   <!-- Creates a jar of the relevant files -->
