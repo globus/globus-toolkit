@@ -10,6 +10,12 @@ EXTERN_C_BEGIN
 extern globus_module_descriptor_t       globus_i_extension_module;
 #define GLOBUS_EXTENSION_MODULE (&globus_i_extension_module)
 
+enum
+{
+    GLOBUS_EXTENSION_ERROR_OPEN_FAILED,
+    GLOBUS_EXTENSION_ERROR_LOOKUP_FAILED
+};
+
 /**
  * Declare your module with the following.
  * 
