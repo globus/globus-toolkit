@@ -741,7 +741,7 @@ g_send_data(
     {
 	if(g_layout.mode == GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED)
 	{
-	    if(!retrieve_is_data)
+	    if(retrieve_is_data)
 	    {
 		struct stat s;
 
