@@ -310,6 +310,9 @@ globus_gram_k5_kinit(char * globus_client)
   if ((rc = globus_gram_k5_tokenize( command, args, 100)))
 	return(rc);
 
+  if (args[0] == NULL)
+	return(0); /* no command */
+
   i = 0;
   do {
    sprintf(ccname,"FILE:/tmp/krb5cc_p%d%d",getpid(),i++);
