@@ -23,6 +23,10 @@ exec_prefix='$(GLOBUS_LOCATION)'
 SAVED_CC="$CC"
 SAVED_CFLAGS="$CFLAGS"
 
+# AIX: we don't want OBJECT_MODE to affect the compiler detection
+# if gcc is found and OBJECT_MODE=64, things will likely fail
+unset OBJECT_MODE
+
 # Call init macros
 
 GPT_INIT
