@@ -358,7 +358,7 @@ sub generate_build_list()
        install_gt2_autotools();
        print "Final package build list:\n";
 
-       print "all: gpt \@prewsgram\@ \@prewsgridftp\@ \@prewsmds\@ \@rls\@ \@wsjava\@ \@wsmds\@ \@wsdel\@ \@wsrft\@ \@wsgram\@ \@wscas\@ \@wsc\@ \@tests\@ postinstall\n";
+       print "all: gpt \@prewsgram\@ \@prewsgridftp\@ \@prewsmds\@ \@rls\@ \@wsjava\@ \@wsmds\@ \@wsdel\@ \@wsrft\@ \@wsgram\@ \@wsgramcondor\@ \@wsgramlsf\@ \@wsgrampbs\@ \@wscas\@ \@wsc\@ \@tests\@ postinstall\n";
        print "GLOBUS_LOCATION=\@prefix\@\n";
        print "GPT_LOCATION=\@prefix\@\n";
        print "GLOBUS_IODBC_PATH=\@globus_iodbc\@\n";
