@@ -366,7 +366,9 @@ int sign_server(s, server_creds)
      gss_buffer_desc client_name, xmit_buf, msg_buf;
      gss_ctx_id_t context;
      OM_uint32 maj_stat, min_stat;
-     int i, conf_state, ret_flags;
+     int i;
+     int conf_state = 0;
+     int ret_flags = 0;
      char	*cp;
      
      /* Establish a context with the client */
