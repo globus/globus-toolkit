@@ -85,13 +85,18 @@ BUNDLE gt4-gram-lsf
 BUNDLE gt4-cas
         globus_wsrf_cas_client_java
         globus_wsrf_cas_service_java
-        globus_wsrf_cas_service_unit_test
         globus_wsrf_cas_common
         globus_wsrf_cas_utils_java
+
+BUNDLE gt4-cas-test
+        globus_wsrf_cas_service_unit_test
 
 BUNDLE gt4-delegation
         globus_wsrf_delegation_client_java
         globus_wsrf_delegation_service_java
-        globus_wsrf_delegation_service_java_test
         globus_wsrf_delegation_common_java
+
+BUNDLE gt4-delegation-test
+        globus_wsrf_delegation_service_java_test
+
 
