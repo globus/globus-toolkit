@@ -263,10 +263,6 @@ auth_krb5_password(Authctxt *authctxt, const char *password)
 #ifdef HEIMDAL
 	problem = krb5_cc_gen_new(authctxt->krb5_ctx, &krb5_mcc_ops,
 	    &authctxt->krb5_fwd_ccache);
-#else
-	problem = krb5_cc_resolve(authctxt->krb5_ctx, "MEMORY:",
-	    &authctxt->krb5_fwd_ccache);
-#endif
 	if (problem)
 		goto out;
 
@@ -276,8 +272,6 @@ auth_krb5_password(Authctxt *authctxt, const char *password)
 		goto out;
 
 	restore_uid();
-
-#ifdef HEIMDAL
 	problem = krb5_verify_user(authctxt->krb5_ctx, authctxt->krb5_user,
 	    authctxt->krb5_fwd_ccache, password, 1, NULL);
 	temporarily_use_uid(authctxt->pw);
