@@ -16,6 +16,101 @@ recho() {
     echo $ECHOOPTION $@ $ECHOTAIL
 }
 
+check_expired() {
+    
+    d=$@
+    
+    year=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:[0-9]*:[0-9]*[ ]\([0-9]*\).*|\1|"`
+
+    cyear=`${GLOBUS_SH_DATE-date} +%Y`
+    
+    if test ${year} -lt ${cyear}; then
+        return 1
+    elif test ${year} -gt ${cyear}; then
+        return 0
+    fi
+
+    month=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|\([^0-9]*\).*|\1|"`
+    if test "${month}" == "Jan"; then
+        monnum=01
+    elif test "${month}" == "Feb"; then
+        monnum=02
+    elif test "${month}" == "Mar"; then
+        monnum=03
+    elif test "${month}" == "Apr"; then
+        monnum=04
+    elif test "${month}" == "May"; then
+        monnum=05
+    elif test "${month}" == "Jun"; then
+        monnum=06
+    elif test "${month}" == "Jul"; then
+        monnum=07
+    elif test "${month}" == "Aug"; then
+        monnum=08
+    elif test "${month}" == "Sep"; then
+        monnum=09
+    elif test "${month}" == "Oct"; then
+        monnum=10
+    elif test "${month}" == "Nov"; then
+        monnum=11
+    elif test "${month}" == "Dec"; then
+        monnum=12
+    else
+        monnum=00
+    fi
+
+    cmonnum=`date +%m`
+
+    if test ${monnum} -lt ${cmonnum}; then
+        return 1
+    elif test ${monnum} -gt ${cmonnum}; then
+        return 0
+    fi
+
+    day=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*\([0-9]*\).*|\1|"`
+
+    cday=`date +%d`
+
+    if test ${day} -lt ${cday}; then
+        return 1
+    elif test ${day} -gt ${cday}; then
+        return 0
+    fi
+ 
+    hour=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ]\([0-9]*\):[0-9]*:[0-9]*.*|\1|"`
+
+    chour=`date +%H`
+
+    if test ${hour} -lt ${chour}; then
+        return 1
+    elif test ${hour} -gt ${chour}; then
+        return 0
+    fi
+
+    min=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:\([0-9]*\):[0-9]*.*|\1|"`
+
+    cmin=`date +%M`
+
+    if test ${min} -lt ${cmin}; then
+        return 1
+    elif test ${min} -gt ${cmin}; then
+        return 0
+    fi
+
+    sec=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:[0-9]*:\([0-9]*\).*|\1|"`
+
+    csec=`date +%S`
+
+    if test ${sec} -lt ${csec}; then
+        return 1
+    elif test ${sec} -gt ${csec}; then
+        return 0
+    fi
+
+    return 0
+}
+
+
 ############################################################
 # main code section
 ############################################################
@@ -99,7 +194,7 @@ readCommandLine() {
                 ;;
             -openssl-help)
                 shift;
-		openssl ca -help;
+		${GLOBUS_LOCATION}/bin/openssl ca -help
 		exit;
 		;;
 	    *)
@@ -203,16 +298,132 @@ do_sign() {
 tmp_output=/tmp/tmp_output.$$
 ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
                   -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} \
-                  2> $tmp_output 
+                  > $tmp_output 2>&1
 
 openssl_result=$?
 
-SIGNED_SERIAL=`cat ${tmp_output} | ${GLOBUS_SH_GREP-grep} "Serial Number" | \
-               ${GLOBUS_SH_SED-sed} -e "s/Serial Number ://"`
-
 # check to see if an error occurred while signing
-if test "${openssl_result}" = "1"; then
+if test ${openssl_result} != 0; then
 
+    # check that a certificate with the same subject has not
+    # already been signed
+    already_signed=`${GLOBUS_SH_GREP-grep} \
+                        "ERROR:There is already a certificate" \
+                        ${tmp_output}`
+    already_signed2=`${GLOBUS_SH_GREP-grep} \
+                        "unique_subject = \"yes\"" \
+                        ${tmp_output}`
+    if test -n "${already_signed}" || test -n "${already_signed2}"; then
+
+        subj_tmp_output=/tmp/tmp_output.$$
+        ${openssl_cmd} req -noout -in ${INPUT_REQ_FILE} \
+                           -subject > ${subj_tmp_output} 2>&1
+        res=$?
+        if test $res != 0; then
+            echo ""
+            echo "ERROR: Failed to get subject of request ${INPUT_REQ_FILE}"
+            echo ""
+            do_cleanup
+            exit 1
+        fi
+        
+        req_subj=`cat ${subj_tmp_output} | ${GLOBUS_SH_GREP-grep} "subject=" \
+                                 | ${GLOBUS_SH_SED-sed} -e "s/subject=[ ]*//"` 
+        # find signed cert
+        for p in ${GRID_CA_DIR}/newcerts/*.pem; do
+            subj_tmp_output=/tmp/tmp_output.$$
+            ${openssl_cmd} x509 -noout -subject -in ${p} \
+                               > ${subj_tmp_output} 2>&1
+            res=$?
+            if test $res != 0; then
+                echo ""
+                echo "ERROR: Failed to get subject of signed cert at: ${p}"
+                echo ""
+            fi
+
+            signed_subj=`cat ${subj_tmp_output} | ${GLOBUS_SH_SED-sed} -e "s/subject=[ ]*//"`
+
+            if test "${signed_subj}" = "${req_subj}"; then
+                SIGNED_CERT=${p}
+            fi
+        done
+
+        if test -z "${SIGNED_CERT}"; then
+            echo ""
+            echo "ERROR: Failed to find signed cert in CA cert store with subject:"
+            echo "       ${req_subj}"
+            echo ""
+            do_cleanup
+            exit 1
+        fi
+
+        if test ! -f "${SIGNED_CERT}"; then
+            echo ""
+            echo "ERROR: Could not find cert file to revoke in certificate store:"
+            echo "       ${SIGNED_CERT}"
+            echo ""
+            do_cleanup
+            exit 1
+        fi
+
+        SIGNED_SUBJECT="${req_subj}"
+        exp_date=`${openssl_cmd} x509 -in ${SIGNED_CERT} -noout -enddate | \
+                         ${GLOBUS_SH_SED-sed} -e "s|notAfter=[ ]*||"`
+        expired=`check_expired ${exp_date}`
+        if test -n "${force_sign}" || test ${expired} != 0; then
+
+            echo ""
+            echo "Revoking previous certificate"
+
+            tmp_revoke_output=/tmp/tmp_revoke_out.$$
+
+            ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
+                    -revoke ${SIGNED_CERT} \
+                    2> ${tmp_revoke_output}
+	    res=$?
+	    if test $res != 0; then
+                echo ""
+	        echo "ERROR: Failed to revoke previous certificate with subject:"
+		echo "       ${SIGNED_SUBJECT}"
+                echo ""
+    		echo "========== ERROR MESSAGES FROM OPENSSL =========="
+    		cat ${tmp_revoke_output} 1>&2
+    		echo "================================================="
+	        echo ""
+                ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
+                do_cleanup
+                exit 1
+            else
+                
+                ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
+                echo "Signing new certificate"
+                do_sign;
+                return;
+            fi
+
+        else
+            echo ""
+            echo "There is already a valid certificate that matches this subject at:"
+            echo
+            echo "${SIGNED_CERT}"
+            echo
+            echo "You can use the -force option to overwrite"
+            echo "this certificate and create a new one."
+            echo ""
+
+            ${GLOBUS_SH_RM-rm} -f ${subj_tmp_output}
+            
+            do_cleanup
+            exit 1
+        fi
+    fi
+
+    echo ""
+    echo "ERROR running command:"
+    echo ""
+    echo " ${openssl_cmd} ca $openssl_options \\"
+    echo "    -batch -config ${grid_ca_conf} \\"
+    echo "    -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE}"
     echo ""
     echo "========== ERROR MESSAGES FROM OPENSSL =========="
     cat ${tmp_output} 1>&2
@@ -229,8 +440,6 @@ if test "${openssl_result}" = "1"; then
         echo ""
         echo "  ${grid_ca_conf}"
         echo ""
-        do_cleanup
-        exit 1
     fi
 
     # check if the CA's private key could be loaded
@@ -241,54 +450,6 @@ if test "${openssl_result}" = "1"; then
         echo "ERROR: The CA private key could not be loaded."
         echo "Possibly an incorrect password for the CA key was used."
         echo ""
-        do_cleanup
-        exit 1
-    fi
-
-    # check that a certificate with the same subject has not
-    # already been signed
-    already_signed=`${GLOBUS_SH_GREP-grep} "ERROR:There is already a certificate" \
-                                       ${tmp_output}`
-    if test -n "${already_signed}"; then
-
-        SIGNED_EXP_DATE=`cat ${tmp_output} | ${GLOBUS_SH_GREP-grep} "Expires on" | \
-                     ${GLOBUS_SH_SED-sed} -e "s|Expires on[^:]*:\(.\{6\}\).*|\1|"`
-        TZ="GMT"   
-        export TZ
-        CURRENT_DATE=`date +%y%m%d`
-    
-        if test "${SIGNED_EXP_DATE}" -lt "${CURRENT_DATE}" || test -n "${force_sign}"; then
-
-            echo ""
-            echo "Revoking previous certificate"
-
-            tmp_revoke_output=/tmp/tmp_revoke_out.$$
-
-            ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
-                    -revoke ${GRID_CA_DIR}/newcerts/${SIGNED_SERIAL}.pem \
-                    2> ${tmp_revoke_output}
-        
-            ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
-
-            echo "Signing new certificate"
-            do_sign;
-            return;
-
-        else
-            echo ""
-            echo "There is already a valid certificate that matches this subject at:"
-            echo
-            echo "${GRID_CA_DIR}/newcerts/${SIGNED_SERIAL}.pem"
-            echo
-            echo "You can use the -force option to overwrite"
-            echo "this certificate and create a new one."
-            echo ""
-
-            ${GLOBUS_SH_RM-rm} -f ${tmp_output}
-
-            do_cleanup
-            exit 1
-        fi
     fi
 
     # check that the cert request matches the CA cert
@@ -304,9 +465,9 @@ if test "${openssl_result}" = "1"; then
         echo "the command:  grid-default-ca, or via the -ca option"
         echo "to grid-cert-request."
         echo ""
-        do_cleanup
-        exit 1
     fi
+
+    ${GLOBUS_SH_RM-rm} -f ${tmp_output}
 
     echo ""
     do_cleanup
@@ -316,6 +477,20 @@ fi
 }
 
 do_sign;
+
+if test ! -f ${TMP_CERT_FILE}; then
+	echo "ERROR: ${TMP_CERT_FILE} does not exist.  Invalid internal state, exiting..."
+	echo ""
+	exit 1
+fi
+
+${openssl_cmd} x509 -in ${TMP_CERT_FILE} -noout -serial > /dev/null 2>&1
+res=$?
+if test $res != 0; then
+	echo ""
+	echo "ERROR: Failed to get serial number of newly signed cert at: ${TMP_CERT_FILE}"
+	echo ""
+fi
 
 NEW_SERIAL=`${openssl_cmd} x509 -in ${TMP_CERT_FILE} -noout -serial | ${GLOBUS_SH_SED-sed} -e "s|serial=||"`
 
