@@ -38,8 +38,12 @@ use IPC::Open3;
 #
 # handle cmdline options
 #
-$usage = "usage: myproxy-test [-help] [-verbose] [-startserver]\n";
+$usage = "usage: myproxy-test [-help] [-verbose] [-startserver]\n" .
+         "                    [-performance iterations clients]\n";
 $startserver = 0;
+$performance = 0;
+$perfiters = 0;
+$perfclients = 0;
 $verbose = 0;
 while (($arg = shift @ARGV)) {
     if ($arg eq "-h" || $arg eq "-help") {
@@ -49,6 +53,10 @@ while (($arg = shift @ARGV)) {
 	$verbose = 1;
     } elsif ($arg eq "-startserver") {
 	$startserver = 1;
+    } elsif ($arg eq "-performance") {
+	$performance = 1;
+	$perfiters = shift @ARGV;
+	$perfclients = shift @ARGV;
     } else {
 	print STDERR $usage;
 	exit 1;
@@ -149,6 +157,14 @@ if ($startserver) {
 	&docleanup();
 	exit 1;
     }
+}
+
+#
+# run performance tests if requested
+#
+if ($performance) {
+    &doperftests();
+    exit 0;
 }
 
 #
@@ -556,3 +572,178 @@ sub docleanup {
     unlink($serverconf) if (defined($serverconf));
     `rm -rf $serverdir` if (defined($serverdir));
 }
+
+sub doperftests {
+    &doinitperftest();
+    &dogetdelegperftest();
+    &doinfoperftest();
+    &docpperftest();
+    &docleanup();
+}
+
+sub doinitperftest {
+    $starttime = time();
+    $i = $perfclients;
+    while ($i--) {
+	$pid = fork();
+	last if ($pid == 0);
+    }
+    if ($pid == 0) {
+	$i = $perfiters;
+	while ($i--) {
+	    ($exitstatus, $output) =
+		&runtest("myproxy-init -v -a -c 1 -t 1 -S -k $$",
+			 $passphrase . "\n");
+	    if ($exitstatus != 0) {
+		print "$$: myproxy-init FAILED with $i iters to go.\n";
+		print STDERR $output;
+		exit($exitstatus>>8);
+	    }
+	}
+	&runtest("myproxy-destroy -v -k $$", undef);
+	&debug("$$ is done.");
+	exit 0;
+    }
+    $i = $perfclients;
+    while ($i--) {
+	wait();
+	if ($?) {
+	    printf "child failed. aborting.\n";
+	    &docleanup(); exit 1;
+	}
+    }
+    $endtime = time();
+    print $perfiters*$perfclients, " myproxy-inits in ";
+    print $endtime-$starttime, " seconds.\n";
+}
+
+sub dogetdelegperftest {
+    ($exitstatus, $output) =
+	&runtest("myproxy-init -v -a -c 1 -t 1 -S",
+		 $passphrase . "\n");
+    if ($exitstatus != 0) {
+	print "myproxy-init failed\n"; print STDERR $output;
+	exit($exitstatus>>8);
+    }
+    $starttime = time();
+    $i = $perfclients;
+    while ($i--) {
+	$pid = fork();
+	last if ($pid == 0);
+    }
+    if ($pid == 0) {
+	$i = $perfiters;
+	while ($i--) {
+	    ($exitstatus, $output) =
+		&runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+			 $passphrase . "\n");
+	    if ($exitstatus != 0) {
+		print "$$: myproxy-get-delegation FAILED with $i iters to go.\n";
+		print STDERR $output;
+		exit($exitstatus>>8);
+	    }
+	}
+	unlink("/tmp/myproxy-test.$$");
+	&debug("$$ is done.");
+	exit 0;
+    }
+    $i = $perfclients;
+    while ($i--) {
+	wait();
+	if ($?) {
+	    printf "child failed. aborting.\n";
+	    &docleanup(); exit 1;
+	}
+    }
+    $endtime = time();
+    print $perfiters*$perfclients, " myproxy-get-delegations in ";
+    print $endtime-$starttime, " seconds.\n";
+}
+
+sub doinfoperftest {
+    ($exitstatus, $output) =
+	&runtest("myproxy-init -v -a -c 1 -t 1 -S",
+		 $passphrase . "\n");
+    if ($exitstatus != 0) {
+	print "myproxy-init failed\n"; print STDERR $output;
+	exit($exitstatus>>8);
+    }
+    $starttime = time();
+    $i = $perfclients;
+    while ($i--) {
+	$pid = fork();
+	last if ($pid == 0);
+    }
+    if ($pid == 0) {
+	$i = $perfiters;
+	while ($i--) {
+	    ($exitstatus, $output) = &runtest("myproxy-info -v", undef);
+	    if ($exitstatus != 0) {
+		print "$$: myproxy-info FAILED with $i iters to go.\n";
+		print STDERR $output;
+		exit($exitstatus>>8);
+	    }
+	}
+	unlink("/tmp/myproxy-test.$$");
+	&debug("$$ is done.");
+	exit 0;
+    }
+    $i = $perfclients;
+    while ($i--) {
+	wait();
+	if ($?) {
+	    printf "child failed. aborting.\n";
+	    &docleanup(); exit 1;
+	}
+    }
+    $endtime = time();
+    print $perfiters*$perfclients, " myproxy-infos in ";
+    print $endtime-$starttime, " seconds.\n";
+}
+
+sub docpperftest {
+    $starttime = time();
+    $i = $perfclients;
+    while ($i--) {
+	$pid = fork();
+	last if ($pid == 0);
+    }
+    if ($pid == 0) {
+	($exitstatus, $output) =
+	    &runtest("myproxy-init -v -a -c 1 -t 1 -S -k $$",
+		     $passphrase . "\n");
+	if ($exitstatus != 0) {
+	    print "$$: myproxy-init FAILED with $i iters to go.\n";
+	    print STDERR $output;
+	    exit($exitstatus>>8);
+	}
+	$i = $perfiters;
+	while ($i--) {
+	    $old_passphrase = $passphrase;
+	    $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
+	    ($exitstatus, $output) =
+		&runtest("myproxy-change-pass-phrase -v -S -k $$",
+			 "$old_passphrase\n$passphrase\n");
+	    if ($exitstatus != 0) {
+		print "$$: myproxy-change-pass-phrase FAILED with $i iters to go.\n";
+		print STDERR $output;
+		exit($exitstatus>>8);
+	    }
+	}
+	&runtest("myproxy-destroy -v -k $$", undef);
+	&debug("$$ is done.");
+	exit 0;
+    }
+    $i = $perfclients;
+    while ($i--) {
+	wait();
+	if ($?) {
+	    printf "child failed. aborting.\n";
+	    &docleanup(); exit 1;
+	}
+    }
+    $endtime = time();
+    print $perfiters*$perfclients, " myproxy-change-pass-phrases in ";
+    print $endtime-$starttime, " seconds.\n";
+}
+
