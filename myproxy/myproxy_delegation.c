@@ -36,9 +36,11 @@ int myproxy_get_delegation(
     int  requestlen;
 
     /* Set up client socket attributes */
-    if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "Error: %s\n", verror_get_string());
-        return(1);
+    if (socket_attrs->gsi_socket == NULL) {
+	if (myproxy_init_client(socket_attrs) < 0) {
+	    fprintf(stderr, "Error: %s\n", verror_get_string());
+	    return(1);
+	}
     }
     
     /* Attempt anonymous-mode credential retrieval if we don't have a
