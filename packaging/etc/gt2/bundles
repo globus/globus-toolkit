@@ -9,7 +9,6 @@ BUNDLE globus-resource-management-server
 	globus_gram_job_manager_setup
 	globus_gram_job_manager_setup_fork
 	globus_openssl
-	globus_trusted_ca_42864e48_setup
 	globus_user_env
 	globus_gass_cache
 	globus_gsi_openssl_error
@@ -52,7 +51,6 @@ BUNDLE globus-resource-management-sdk
         globus_callout
 	globus_data_conversion
 	globus_openssl
-	globus_trusted_ca_42864e48_setup
 	globus_user_env
 	globus_gass_cache
 	globus_gsi_openssl_error
@@ -96,7 +94,6 @@ BUNDLE globus-resource-management-client
 	globus_data_conversion
 	globus_openssl
 	globus_proxy_wrapper
-	globus_trusted_ca_42864e48_setup
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -133,7 +130,6 @@ BUNDLE globus-data-management-server
 	globus_libtool
         globus_callout
 	globus_openssl
-	globus_trusted_ca_42864e48_setup
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -160,7 +156,6 @@ BUNDLE globus-data-management-sdk
 	globus_libtool
         globus_callout
 	globus_openssl
-	globus_trusted_ca_42864e48_setup
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -189,7 +184,6 @@ BUNDLE globus-data-management-client
         globus_callout
 	globus_openssl
 	globus_proxy_wrapper
-	globus_trusted_ca_42864e48_setup
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -221,7 +215,6 @@ BUNDLE globus-information-services-server THREADED
 	globus_mds_gris
 	globus_mds_gris_setup
 	globus_openssl
-	globus_trusted_ca_42864e48_setup
 	globus_user_env
 	globus_cyrus-sasl
 	globus_gsi_openssl_error
@@ -247,7 +240,6 @@ BUNDLE globus-information-services-sdk THREADED
 	globus_libtool
         globus_callout
 	globus_openssl
-	globus_trusted_ca_42864e48_setup
 	globus_user_env
 	globus_cyrus-sasl
 	globus_gsi_openssl_error
@@ -277,7 +269,6 @@ BUNDLE globus-information-services-client THREADED
 	globus_mds_common_setup
 	globus_openssl
 	globus_proxy_wrapper
-	globus_trusted_ca_42864e48_setup
 	globus_user_env
 	globus_cyrus-sasl
 	globus_gsi_openssl_error
@@ -330,7 +321,6 @@ BUNDLE globus-gsi
 	globus_gsi_proxy_ssl
 	globus_gsi_openssl_error
 	globus_user_env
-	globus_trusted_ca_42864e48_setup
 	globus_proxy_wrapper
 	globus_openssl
 	globus_libtool
