@@ -44,6 +44,7 @@ case $gssapi_type in
 		;;
   krb5) # Kerberos 5 support
 		AC_MSG_RESULT([Kerberos 5])
+		gssapi_type="krb5"
 		;;
   gsi|globus) # Globus SSLeasy
 		AC_MSG_RESULT([Globus/GSI SSLeay])
