@@ -862,7 +862,6 @@ Optional Packages:
   --with-kerberos5=PATH   Enable Kerberos 5 support
   --with-kerberos4=PATH   Enable Kerberos 4 support
   --with-afs=PATH         Enable AFS support
-  --with-rsh=PATH         Specify path to remote shell program 
   --with-privsep-path=xxx Path for privilege separation chroot 
   --with-xauth=PATH       Specify path to xauth program 
   --with-mantype=man|cat|doc  Set man page type
@@ -3637,6 +3636,10 @@ _ACEOF
 @%:@define DISABLE_LASTLOG 1
 _ACEOF
 
+	cat >>confdefs.h <<\_ACEOF
+@%:@define LOGIN_NEEDS_UTMPX 1
+_ACEOF
+
 	;;
 *-*-cygwin*)
 	LIBS="$LIBS /usr/lib/textmode.o"
@@ -3662,6 +3665,10 @@ _ACEOF
 
 	cat >>confdefs.h <<\_ACEOF
 @%:@define NO_X11_UNIX_SOCKETS 1
+_ACEOF
+
+	cat >>confdefs.h <<\_ACEOF
+@%:@define BROKEN_FD_PASSING 1
 _ACEOF
 
 	cat >>confdefs.h <<\_ACEOF
@@ -4123,7 +4130,6 @@ _ACEOF
 	CPPFLAGS="$CPPFLAGS -Dftruncate=chsize -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
 	LIBS="$LIBS -los -lprot -lx -ltinfo -lm"
-	rsh_path="/usr/bin/rcmd"
 	RANLIB=true
 	no_dev_ptmx=1
 	cat >>confdefs.h <<\_ACEOF
@@ -4231,7 +4237,6 @@ done
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
 	LIBS="$LIBS -lprot -lx -ltinfo -lm"
 	no_dev_ptmx=1
-	rsh_path="/usr/bin/rcmd"
 	cat >>confdefs.h <<\_ACEOF
 @%:@define USE_PIPES 1
 _ACEOF
@@ -4242,6 +4247,10 @@ _ACEOF
 
 	cat >>confdefs.h <<\_ACEOF
 @%:@define DISABLE_SHADOW 1
+_ACEOF
+
+	cat >>confdefs.h <<\_ACEOF
+@%:@define BROKEN_FD_PASSING 1
 _ACEOF
 
 	
@@ -4328,6 +4337,10 @@ done
 	no_libnsl=1
 	cat >>confdefs.h <<\_ACEOF
 @%:@define USE_PIPES 1
+_ACEOF
+
+	cat >>confdefs.h <<\_ACEOF
+@%:@define BROKEN_FD_PASSING 1
 _ACEOF
 
 	LDFLAGS="$LDFLAGS -Wl,-Dmsglevel=334:fatal,-L/usr/local/lib"
@@ -6515,6 +6528,63 @@ fi
 done
 
 
+if test $ac_cv_func_mmap = yes ; then
+echo "$as_me:$LINENO: checking for mmap anon shared" >&5
+echo $ECHO_N "checking for mmap anon shared... $ECHO_C" >&6
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling" >&5
+echo "$as_me: error: cannot run test program while cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+#line $LINENO "configure"
+#include "confdefs.h"
+
+#include <stdio.h>
+#include <sys/mman.h>
+#if !defined(MAP_ANON) && defined(MAP_ANONYMOUS)
+#define MAP_ANON MAP_ANONYMOUS
+#endif
+main() { char *p;
+p = (char *) mmap(NULL, 10, PROT_WRITE|PROT_READ, MAP_ANON|MAP_SHARED, -1, 0);
+if (p == (char *)-1)
+	exit(1);
+exit(0);
+}
+	
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  
+		echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+		cat >>confdefs.h <<\_ACEOF
+@%:@define HAVE_MMAP_ANON_SHARED 1
+_ACEOF
+
+	
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+cat conftest.$ac_ext >&5
+( exit $ac_status )
+ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6  
+
+fi
+rm -f core core.* *.core conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+fi
+
 
 for ac_func in dirname
 do
@@ -8482,21 +8552,22 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-ssh_privsep_user=sshd
+SSH_PRIVSEP_USER=sshd
 
 # Check whether --with-privsep-user or --without-privsep-user was given.
 if test "${with_privsep_user+set}" = set; then
   withval="$with_privsep_user"
   
 		if test -n "$withval"; then
-			ssh_privsep_user=$withval
+			SSH_PRIVSEP_USER=$withval
 		fi
 		
 
 fi; 
 cat >>confdefs.h <<_ACEOF
-@%:@define SSH_PRIVSEP_USER "$ssh_privsep_user"
+@%:@define SSH_PRIVSEP_USER "$SSH_PRIVSEP_USER"
 _ACEOF
+
 
 
 # We do this little dance with the search path to insure
@@ -15238,59 +15309,6 @@ LIBS="$LIBS $KLIBS $K5LIBS"
 
 # Looking for programs, paths and files
 
-# Check whether --with-rsh or --without-rsh was given.
-if test "${with_rsh+set}" = set; then
-  withval="$with_rsh"
-  
-		if test "x$withval" != "$no" ; then
-			rsh_path=$withval
-		fi
-	
-else
-  
-		# Extract the first word of "rsh", so it can be a program name with args.
-set dummy rsh; ac_word=$2
-echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
-if test "${ac_cv_path_rsh_path+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $rsh_path in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_rsh_path="$rsh_path" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_rsh_path="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-
-  ;;
-esac
-fi
-rsh_path=$ac_cv_path_rsh_path
-
-if test -n "$rsh_path"; then
-  echo "$as_me:$LINENO: result: $rsh_path" >&5
-echo "${ECHO_T}$rsh_path" >&6
-else
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-fi
-
-	
-
-fi; 
-
 PRIVSEP_PATH=/var/empty
 
 # Check whether --with-privsep-path or --without-privsep-path was given.
@@ -15372,12 +15390,6 @@ _ACEOF
 
 	XAUTH_PATH=$xauth_path
 	
-fi
-if test ! -z "$rsh_path" ; then
-	cat >>confdefs.h <<_ACEOF
-@%:@define RSH_PATH "$rsh_path"
-_ACEOF
-
 fi
 
 # Check for mail directory (last resort if we cannot get it from headers)
@@ -16993,6 +17005,7 @@ s,@LD@,$LD,;t t
 s,@LIBWRAP@,$LIBWRAP,;t t
 s,@LIBPAM@,$LIBPAM,;t t
 s,@INSTALL_SSH_RAND_HELPER@,$INSTALL_SSH_RAND_HELPER,;t t
+s,@SSH_PRIVSEP_USER@,$SSH_PRIVSEP_USER,;t t
 s,@PROG_LS@,$PROG_LS,;t t
 s,@PROG_NETSTAT@,$PROG_NETSTAT,;t t
 s,@PROG_ARP@,$PROG_ARP,;t t
@@ -17012,7 +17025,6 @@ s,@PROG_TAIL@,$PROG_TAIL,;t t
 s,@INSTALL_SSH_PRNG_CMDS@,$INSTALL_SSH_PRNG_CMDS,;t t
 s,@NO_SFTP@,$NO_SFTP,;t t
 s,@OPENSC_CONFIG@,$OPENSC_CONFIG,;t t
-s,@rsh_path@,$rsh_path,;t t
 s,@PRIVSEP_PATH@,$PRIVSEP_PATH,;t t
 s,@xauth_path@,$xauth_path,;t t
 s,@XAUTH_PATH@,$XAUTH_PATH,;t t
