@@ -65,25 +65,6 @@ do                                                                      \
  *                       ------------------
  *************************************************************************/
 /*
- *  driver callback kickout
- *
- *  when in a register the finish function kicks this out as a oneshot
- */
-void
-globus_l_xio_driver_op_kickout(
-    void *                                      user_arg)
-{
-    globus_i_xio_op_t *                         xio_op;
-
-    xio_op = (globus_i_xio_server_t *) user_arg;
-
-    xio_op->entry[xio_p->ndx].cb(
-        xio_op, 
-        xio_op->cached_res,
-        xio_op->entry[xio_op->ndx].user_arg);
-}
-
-/*
  *  this is the only mechanism for delivering a callback to the user 
  */
 void

@@ -247,6 +247,11 @@ do                                                                          \
     else                                                                    \
     {                                                                       \
         _my_context->state = GLOBUS_XIO_HANDLE_STATE_OPEN;                  \
+        globus_mutex_lock(&_context->mutex);                                \
+        {                                                                   \
+            _context->ref++;                                                \
+        }                                                                   \
+        globus_mutex_unlock(&_context->mutex);                              \
     }                                                                       \
                                                                             \
     _op->ndx = _caller_ndx;                                                 \
@@ -1000,5 +1005,9 @@ globus_result_t
 globus_i_xio_driver_start_close(
     globus_i_xio_op_t *                         op,
     globus_bool_t                               can_fail);
+
+void
+globus_l_xio_driver_op_kickout(
+    void *                                      user_arg);
 
 #endif

@@ -171,7 +171,6 @@ typedef struct globus_xio_server_s
 typedef struct globus_i_xio_handle_s
 {
     globus_mutex_t                              mutex;
-    globus_memory_t                             op_memory;
     int                                         ref;
     int                                         stack_size;
     globus_i_xio_context_t *                    context;
@@ -211,13 +210,15 @@ typedef struct globus_i_xio_context_entry_s
     /* each level must implement the entire state machine */
     globus_i_xio_handle_state_t                 state;
     int                                         outstanding_operations;
+    int                                         read_operations;
     globus_mutex_t                              mutex;
 
-    globus_i_xio_op_t *                         open_op;
-    globus_i_xio_op_t *                         close_op;
-    globus_list_t *                             write_op_list;
-    globus_list_t *                             read_op_list;
+    /* every level but the top MUST be GLOBAL_SPACE */
+    globus_xio_callback_space_t                 space;
 
+    globus_list_t *                             eof_op_list;
+    globus_list_t *                             read_op_list;
+    globus_i_xio_context_t *                    whos_my_daddy;
 } globus_i_xio_context_entry_t;
 
 /* 
@@ -225,9 +226,11 @@ typedef struct globus_i_xio_context_entry_s
  */
 typedef struct globus_i_xio_context_s
 {
+    /* handle has a reference and every entry has a reference */
     int                                         ref;
     int                                         stack_size;
     globus_i_xio_context_entry_t                entry[1];
+    globus_memory_t                             op_memory;
 } globus_i_xio_context_t;
 
 /* MACROS for accessing the op_entry structure unin elements */
@@ -249,7 +252,6 @@ typedef struct globus_i_xio_op_entry_s
     /* callback info arrays */
     globus_xio_driver_callback_t                cb;
     void *                                      user_arg;
-    globus_xio_driver_t                         driver;
 
     union
     {
@@ -262,10 +264,12 @@ typedef struct globus_i_xio_op_entry_s
             globus_iovec_t *                    iovec;
             int                                 iovec_count;
             globus_iovec_t *                    fake_iovec;
+            globus_bool_t                       read_eof;
         } handle_s;
         /* target op entries */
         struct
         {
+            globus_xio_driver_t *               driver;
         } target_s;
     } type_u;
     globus_bool_t                               in_register;
@@ -273,6 +277,7 @@ typedef struct globus_i_xio_op_entry_s
 
     void *                                      target;
     void *                                      attr;
+    int                                         caller_ndx;
 } globus_i_xio_op_entry_t;
 
 
@@ -296,7 +301,7 @@ typedef struct globus_i_xio_op_entry_s
 typedef struct globus_i_xio_op_s
 {
     /* operation type */
-    globus_i_xio_op_type_t                      op_type;
+    globus_i_xio_op_type_t                      type;
     globus_i_xio_op_state_t                     state;
 
     /*
@@ -349,9 +354,6 @@ typedef struct globus_i_xio_op_s
     globus_xio_driver_cancel_callback_t         cancel_cb;
     void *                                      cancel_arg;
     globus_bool_t                               canceled;
-
-    /* user callback variables */
-    globus_xio_callback_space_t                 space;
 
     /* result code saved in op for kickouts */
     globus_result_t                             cached_res;
