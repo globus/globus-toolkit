@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_sasl_gssapi_gsi" Format_Version="0.02">
 
-  <Aging_Version Major="0" Minor="1" Age="0"/>
+  <Aging_Version Major="0" Minor="2" Age="0"/>
   <Description >SASL library</Description>
   <Functional_Group >Security</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
@@ -27,6 +27,25 @@
       <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
       <pkg_libs></pkg_libs>
     </Build_Environment>
+
+    <Build_Instructions>
+        <Build_Step>
+            MAKE_GPTMACRO distclean
+        </Build_Step>
+
+        <Build_Step>
+            CONFIGENV_GPTMACRO ./configure --with-name=GSI CONFIGOPTS_GPTMACRO FLAVOR_CONFIGOPTS_GPTMACRO
+        </Build_Step>
+
+        <Build_Step>
+            MAKE_GPTMACRO
+        </Build_Step>
+
+        <Build_Step>
+            MAKE_GPTMACRO install
+        </Build_Step>
+
+    </Build_Instructions>
 
   </src_pkg>
 
