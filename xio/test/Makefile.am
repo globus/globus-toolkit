@@ -21,7 +21,7 @@ Sources=                                \
 	block_barrier_test.c            \
 	read_barrier_test.c
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 test_PROGRAMS=                          \
 	framework_test			\

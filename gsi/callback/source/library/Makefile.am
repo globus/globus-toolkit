@@ -23,6 +23,6 @@ libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
 libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@ -lglobus_oldgaa_$(GLOBUS_FLAVOR_NAME)
 
-libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@ -L./oldgaa/.libs
+libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@ -L./oldgaa/
 
 include $(top_srcdir)/globus_automake_post
