@@ -2724,16 +2724,7 @@ redo:
 		 GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT));
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
             
-	    globus_l_ftp_client_connection_error(client_handle,
-						 target,
-						 error,
-						 response);
-            
-            globus_i_ftp_client_debug_printf(1, (stderr, 
-                "globus_i_ftp_client_response_callback() exiting\n"));
-            globus_i_ftp_client_debug_states(2, client_handle);
-
-	    return;
+            goto connection_error;
 	}
 
 	break;
@@ -2840,11 +2831,7 @@ redo:
 	
 	globus_i_ftp_client_transfer_complete(client_handle);
 	
-	globus_i_ftp_client_debug_printf(1, (stderr, 
-            "globus_i_ftp_client_response_callback() exiting\n"));
-        globus_i_ftp_client_debug_states(2, client_handle);
-
-	return;
+	goto do_return;
 
     case GLOBUS_FTP_CLIENT_TARGET_FAULT:
 	/*
@@ -2945,16 +2932,7 @@ redo:
 			target->url_string,
 			error);
                     
-		    globus_l_ftp_client_connection_error(client_handle,
-							 target,
-							 error,
-							 response);
-		    
-		    globus_i_ftp_client_debug_printf(1, (stderr, 
-                        "globus_i_ftp_client_response_callback() exiting\n"));
-                    globus_i_ftp_client_debug_states(2, client_handle);
-
-		    return;
+		    goto connection_error;
 		}
 	    }
 	}
@@ -2964,7 +2942,7 @@ redo:
     }
  finish:
     globus_i_ftp_client_handle_unlock(client_handle);
-    
+ do_return:   
     globus_i_ftp_client_debug_printf(1, (stderr, 
         "globus_i_ftp_client_response_callback() exiting\n"));
     globus_i_ftp_client_debug_states(2, client_handle);
@@ -2984,11 +2962,6 @@ redo:
 					 error,
 					 response);
 
-    if(error != caller_error && error != GLOBUS_ERROR_NO_INFO)
-    {
-        globus_object_free(error);
-    }
-    
     globus_i_ftp_client_debug_printf(1, (stderr, 
         "globus_i_ftp_client_response_callback() exiting with error\n"));
     globus_i_ftp_client_debug_states(2, client_handle);
