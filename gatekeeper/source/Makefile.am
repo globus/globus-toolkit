@@ -17,7 +17,7 @@ globus_gatekeeper_SOURCES = \
 	globus_gatekeeper_utils.c
 globus_gatekeeper_LDFLAGS = $(GPT_LDFLAGS)
 
-globus_k5_SOURCES = globus_gram_k5.c unicos.c globus_gatekeeper_utils.c
+globus_k5_SOURCES = globus_k5.c unicos.c globus_gatekeeper_utils.c
 globus_k5_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
