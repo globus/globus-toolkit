@@ -18,6 +18,10 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#ifndef SUPPORT_SSL_ANONYMOUS_AUTH
+#include <gssapi.h>
+#endif
+
 struct _gsi_socket 
 {
     int				sock;
