@@ -1,3 +1,6 @@
+globus_wsrf_rft_service_source              ws-transfer/reliable/service/java/source
+globus_wsrf_rft_common_java_source          ws-transfer/reliable/common/java/source
+globus_wsrf_rft_common_schema               ws-transfer/reliable/common/schema
 globus_wsrf_gram_service_java_source        ws-gram/service/java/source 
 
 globus_wsrf_gram_utils_java_source          ws-gram/utils/java/source                       
