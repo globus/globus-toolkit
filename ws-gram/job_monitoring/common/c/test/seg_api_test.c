@@ -1,5 +1,11 @@
 #include "globus_scheduler_event_generator.h"
 #include "globus_gram_protocol_constants.h"
+/** @page seg_api_test API Test
+ * 
+ * Test event portions of the SEG API. Passed as an argument,
+ * the name of a file containing SEG messages. These are parsed and passed
+ * to the event api. The standard output should be identical to the input file.
+ */
 
 int main(int argc, char *argv[])
 {

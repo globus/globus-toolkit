@@ -2,10 +2,6 @@
  * @mainpage SEG Tests
  *
  * - @ref seg_load_test "Load module test"
-
- * - Timestamp test
- * - Pending test
- * - Active test
- * - Done test
- * - Failed test
+ * - @ref seg_timestamp_test "Timestamp Test"
+ * - @ref seg_api_test "API Test"
  */
