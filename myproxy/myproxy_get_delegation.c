@@ -84,7 +84,7 @@ int
 main(int argc, char *argv[]) 
 {    
     int noerr = 1;
-    char *pshost;
+    char *username, *pshost;
     char request_buffer[1024];
     int  requestlen;
     char delegfile[128];
@@ -109,6 +109,11 @@ main(int argc, char *argv[])
     client_request->version = strdup(MYPROXY_VERSION);
     client_request->command_type = MYPROXY_GET_PROXY;
 
+    username = getenv("LOGNAME");
+    if (username != NULL) {
+      client_request->username = strdup(username);
+    }
+
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
 	socket_attrs->pshost = strdup(pshost);
@@ -120,6 +125,10 @@ main(int argc, char *argv[])
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
+
+    if (!outputfile) {
+	proxy_get_filenames(0, NULL, NULL, &outputfile, NULL, NULL);
+    }
 
     /* Allow user to provide a passphrase */
     if (myproxy_read_passphrase(client_request->passphrase,
@@ -187,7 +196,7 @@ main(int argc, char *argv[])
     }
 
     /* free memory allocated */
-    myproxy_destroy(socket_attrs, client_request, server_response);
+    myproxy_free(socket_attrs, client_request, server_response);
     exit(0);
 }
 
@@ -301,7 +310,7 @@ receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
     /* Receive a response from the server */
     responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
     if (responselen < 0) {
-        fprintf(stderr, "Error in myproxy_recv_response():\n");
+        fprintf(stderr, "Error in myproxy_recv():\n");
         exit(1);
     }
 
