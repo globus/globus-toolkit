@@ -522,7 +522,8 @@ getpwnamallow(const char *user)
 	pw = getpwnam(user);
 	if (pw == NULL) {
 		logit("Illegal user %.100s from %.100s",
-		    user, get_remote_ipaddr());
+		      (user && user[0]) ? user : "<implicit>",
+		      get_remote_ipaddr());
 #ifdef CUSTOM_FAILED_LOGIN
 		record_failed_login(user, "ssh");
 #endif
