@@ -1399,6 +1399,11 @@ globus_callback_space_poll(
         {
             callback_info = globus_l_callback_get_next(
                 space_queue, &time_now, &next_ready_time);
+            
+            if(callback_info)
+            {
+                callback_info->running_count++;
+            }
         }
         globus_mutex_unlock(&i_space->lock);
         
@@ -1424,6 +1429,8 @@ globus_callback_space_poll(
             
             callback_info->callback_func(
                 &time_now, restart_info.timeout, callback_info->callback_args);
+            
+            globus_thread_yield();
             
             unregister = GLOBUS_FALSE;
             globus_mutex_lock(&i_space->lock);
@@ -1575,6 +1582,8 @@ globus_l_callback_thread_callback(
             restart_info.timeout,
             callback_info->callback_args);
         
+        globus_thread_yield();
+        
         run_now = GLOBUS_FALSE;
         
         globus_thread_blocking_callback_disable(&restart_index);
@@ -1595,22 +1604,32 @@ globus_l_callback_thread_callback(
                 GlobusTimeAbstimeInc(
                     callback_info->start_time, callback_info->period);
                 
-                while(!globus_l_callback_shutting_down &&
+                if(!globus_l_callback_shutting_down &&
                     globus_abstime_cmp(
                         &time_now, &callback_info->start_time) < 0)
                 {
-                    globus_cond_timedwait(
-                        &globus_l_callback_global_space.cond,
-                        &globus_l_callback_global_space.lock,
-                        &callback_info->start_time);
-                    
-                    GlobusTimeAbstimeGetCurrent(time_now);
+                    do
+                    {
+                        globus_cond_timedwait(
+                            &globus_l_callback_global_space.cond,
+                            &globus_l_callback_global_space.lock,
+                            &callback_info->start_time);
+                        
+                        GlobusTimeAbstimeGetCurrent(time_now);
+                        
+                    } while(!globus_l_callback_shutting_down &&
+                        globus_abstime_cmp(
+                            &time_now, &callback_info->start_time) < 0)
                 }
-                
-                if(!globus_l_callback_shutting_down)
+                else
                 {
                     GlobusTimeAbstimeCopy(
                         callback_info->start_time, time_now);
+                }
+                
+                /*XXXXXXXXX not checking period again */
+                if(!globus_l_callback_shutting_down)
+                {
                     run_now = GLOBUS_TRUE;
                 }
             }
@@ -1763,9 +1782,7 @@ globus_l_callback_thread_poll(
         {
             /* if function does not have its own thread */
             if(globus_reltime_cmp(
-                &period, &globus_l_callback_own_thread_period) > 0 ||
-                callback_info->my_space->handle != 
-                    GLOBUS_CALLBACK_GLOBAL_SPACE)
+                &period, &globus_l_callback_own_thread_period) > 0)
             {
                 globus_bool_t           unregister;
                 
@@ -1786,6 +1803,8 @@ globus_l_callback_thread_poll(
                     &time_now,
                     restart_info.timeout,
                     callback_info->callback_args);
+                
+                globus_thread_yield();
                 
                 unregister = GLOBUS_FALSE;
                 globus_mutex_lock(&globus_l_callback_global_space.lock);
