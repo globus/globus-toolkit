@@ -665,6 +665,9 @@ globus_l_gram_client_to_jobmanager(char *   job_contact,
 	globus_libc_free(reply);
 
 globus_l_gram_client_to_jobmanager_http_failed:
+    if (rc == GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED)
+	rc = GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER;
+
     globus_libc_free(query);
     
 globus_l_gram_client_to_jobmanager_pack_failed:
@@ -727,7 +730,7 @@ globus_gram_client_job_status(char * job_contact,
 					     request,
 					     job_status,
 					     failure_code );
-    
+
     return rc;
 }
 
