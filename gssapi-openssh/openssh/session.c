@@ -245,10 +245,6 @@ do_authenticated(Authctxt *authctxt)
             }
         }
 #endif
-#ifdef KRB5
-	if (options.kerberos_ticket_cleanup)
-		krb5_cleanup_proc(authctxt);
-#endif
 
 	do_cleanup(authctxt);
 }
