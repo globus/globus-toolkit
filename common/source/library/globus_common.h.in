@@ -142,7 +142,7 @@ char *
 
 
 
-extern get_string_by_key_t              globus_i18n_get_string_by_key;
+extern get_string_by_key_t              globus_common_i18n_get_string_by_key;
 
 extern globus_extension_registry_t i18n_registry;
 #define I18N_REGISTRY &i18n_registry
