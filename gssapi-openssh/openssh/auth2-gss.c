@@ -141,7 +141,7 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 	Gssctxt *gssctxt;
 	gss_buffer_desc send_tok = GSS_C_EMPTY_BUFFER;
 	gss_buffer_desc recv_tok;
-	OM_uint32 maj_status, min_status, flags;
+	OM_uint32 maj_status, min_status, flags=0;
 	u_int len;
 
 	if (authctxt == NULL || (authctxt->methoddata == NULL && !use_privsep))
@@ -242,7 +242,8 @@ gssapi_set_implicit_username(Authctxt *authctxt)
     }
     if (authctxt->pw) {
 #ifdef USE_PAM
-	PRIVSEP(start_pam(authctxt->pw->pw_name));
+	if (options.use_pam)
+		PRIVSEP(start_pam(authctxt->pw->pw_name));
 #endif
     }
 }
