@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deployment name="defaultClientConfig" 
+            xmlns="http://xml.apache.org/axis/wsdd/" 
+            xmlns:java="http://xml.apache.org/axis/wsdd/providers/java"
+            xmlns:multirft-port-type="http://multirft.base.ogsa.globus.org" 
+            xmlns:multirft-types="http://multirft.base.ogsa.globus.org/rft_types" 
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+ <!-- RFT Mappings-->
+<typeMapping
+    qname="multirft-types:RFTAttributesElement"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.RFTAttributesElement"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/>
+<typeMapping
+    qname="multirft-types:RFTOptionsType"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.RFTOptionsType"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/>
+<typeMapping
+    qname="multirft-port-type:transferRequestElement"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.TransferRequestElement"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/>
+<typeMapping
+    qname="multirft-types:transferJob"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.TransferType"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/>
+<typeMapping
+    qname="multirft-types:TransferType"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.TransferType"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/>
+<typeMapping
+    qname="transferRequestElement"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.TransferRequestElement"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/>
+<typeMapping
+    qname="multirft-port-type:TransferRequestElement"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.TransferRequestElement"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/>
+<typeMapping
+    qname="multirft-types:TransferRequestType"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.TransferRequestType"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/>
+<typeMapping
+    qname="multirft-types:FileTransferProgressType"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.FileTransferProgressType"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/>
+<typeMapping
+    qname="multirft-types:FileTransferRestartMarker"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.FileTransferRestartMarker"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/> 
+ <typeMapping 
+    qname="multirft-types:FileTransferStatusElement"
+    languageSpecificType="java:org.globus.ogsa.base.multirft.FileTransferStatusElement"
+    serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+    deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+    encodingStyle=""/> 
+ 
+ </deployment>
+                                    
