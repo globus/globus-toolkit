@@ -14,4 +14,8 @@ if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
     exit
 fi
 
+# set up local aclocal includes
+
+aclocal_includes="-I ./aclocal"
+
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
