@@ -204,7 +204,7 @@ typedef enum
 #define my_free(ptr)   globus_free(ptr)
 
 
-#if 0
+#if 1
 #define verbose(q) q
 #else
 #define verbose(q) { }
@@ -454,12 +454,46 @@ globus_l_gram_http_listen_callback( void *                ignored,
     globus_gram_http_read_t *     status;
     void **                       p;
     
-    /* TODO: Globus result_t needs to be printed out specially; it's
-       implemented as a void * --Steve A
-*/
-    verbose(notice("listen_callback : got connection on listener %d, res=%ld\n",
+    verbose(notice("listen_callback : got connection on listener %d res=%ld\n",
 		   listener_handle->fd, (long) result));
-    
+
+    if (result!=GLOBUS_SUCCESS)
+    {
+	globus_object_t *  error = globus_error_get(result);
+
+        if (globus_object_type_match(
+	    GLOBUS_IO_ERROR_TYPE_NULL_PARAMETER,
+	    globus_object_get_type(error)))
+	{
+	    verbose(notice("listen_callback : type = NULL_PARAMETER\n"));
+	}
+        if (globus_object_type_match(
+	    GLOBUS_IO_ERROR_TYPE_NOT_INITIALIZED,
+	    globus_object_get_type(error)))
+	{
+	    verbose(notice("listen_callback : type = NOT_INITIALIZED\n"));
+	}
+        if (globus_object_type_match(
+	    GLOBUS_IO_ERROR_TYPE_CLOSE_ALREADY_REGISTERED,
+	    globus_object_get_type(error)))
+	{
+	    verbose(notice("listen_callback : type = CLOSE_ALREADY_REGISTERED\n"));
+	}
+        if (globus_object_type_match(
+	    GLOBUS_IO_ERROR_TYPE_READ_ALREADY_REGISTERED,
+	    globus_object_get_type(error)))
+	{
+	    verbose(notice("listen_callback : type = READ_ALREADY_REGISTERED\n"));
+	}
+        if (globus_object_type_match(
+	    GLOBUS_IO_ERROR_TYPE_SYSTEM_FAILURE,
+	    globus_object_get_type(error)))
+	{
+	    verbose(notice("listen_callback : type = SYSTEM_FAILURE\n"));
+	}
+	globus_object_free(error);
+	return;
+    }
     if (result == GLOBUS_SUCCESS)
     {
 	globus_io_handle_get_user_pointer( listener_handle,
@@ -1171,7 +1205,6 @@ globus_gram_http_frame_request(char *             uri,
     framedlen += strlen((char *) uri);
     framedlen += strlen(GLOBUS_GRAM_HTTP_HOST_LINE);
     framedlen += strlen((char *)hostname);
-    framedlen += strlen(GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE);
     framedlen += strlen(GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE);
     framedlen += strlen(GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE);
     framedlen += digits;
@@ -1187,9 +1220,6 @@ globus_gram_http_frame_request(char *             uri,
     tmp += globus_libc_sprintf(buf + tmp,
 			      GLOBUS_GRAM_HTTP_HOST_LINE,
 			      hostname);
-    tmp += globus_libc_sprintf(buf + tmp,
-			       GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE,
-			       GLOBUS_GRAM_PROTOCOL_VERSION);
     tmp += globus_libc_sprintf(buf + tmp,
 			       GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE);
     tmp += globus_libc_sprintf(buf + tmp,
@@ -1229,13 +1259,11 @@ globus_gram_http_frame_reply(int		code,
     /*
      * HTTP reply message framing:
      *    HTTP/1.1 <3 digit code> Reason String<CR><LF>
-     *    Gram-Protocol-Version: <GLOBUS_GRAM_PROTOCOL_VERSION><CR><LF>
      *    Connection: close<CR><LF>
      *    <CR><LF>
      *
      * or
      *    HTTP/1.1 <3 digit code> Reason String<CR><LF>
-     *    Gram-Protocol-Version: <GLOBUS_GRAM_PROTOCOL_VERSION><CR><LF>
      *    Content-Type: application/x-globus-gram<CR><LF>
      *    Content-Length: <msgsize><CR><LF>
      *    <CR><LF>
@@ -1246,19 +1274,9 @@ globus_gram_http_frame_reply(int		code,
     
     if(msgsize == 0)
     {
-	tmp = GLOBUS_GRAM_PROTOCOL_VERSION;
-	do
-	{
-	    tmp /= 10;
-	    digits++;
-	}
-	while(tmp > 0);
-
 	framedlen = 0;
 	framedlen += strlen(GLOBUS_GRAM_HTTP_REPLY_LINE);
 	framedlen += strlen(reason);
-	framedlen += strlen(GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE);
-	framedlen += digits;
 	framedlen += strlen(GLOBUS_GRAM_HTTP_CONNECTION_LINE);
 
 	buf = (char *) globus_malloc(framedlen + 1 /* null terminator */);
@@ -1268,9 +1286,6 @@ globus_gram_http_frame_reply(int		code,
 				   GLOBUS_GRAM_HTTP_REPLY_LINE,
 				   code,
 				   reason);
-	tmp += globus_libc_sprintf(buf + tmp,
-				   GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE,
-				   GLOBUS_GRAM_PROTOCOL_VERSION);
 	tmp += globus_libc_sprintf(buf + tmp,
 				   GLOBUS_GRAM_HTTP_CONNECTION_LINE);
 	tmp += globus_libc_sprintf(buf + tmp,
@@ -1287,18 +1302,9 @@ globus_gram_http_frame_reply(int		code,
 	}
 	while(tmp > 0);
 
-	tmp = GLOBUS_GRAM_PROTOCOL_VERSION;
-	do
-	{
-	    tmp /= 10;
-	    digits++;
-	}
-	while(tmp > 0);
-
 	framedlen = 0;
 	framedlen += strlen(GLOBUS_GRAM_HTTP_REPLY_LINE);
 	framedlen += strlen(reason);
-	framedlen += strlen(GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE);
 	framedlen += strlen(GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE);
 	framedlen += strlen(GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE);
 	framedlen += digits;
@@ -1311,9 +1317,6 @@ globus_gram_http_frame_reply(int		code,
 				   GLOBUS_GRAM_HTTP_REPLY_LINE,
 				   code,
 				   reason);
-	tmp += globus_libc_sprintf(buf + tmp,
-				   GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE,
-				   GLOBUS_GRAM_PROTOCOL_VERSION);
 	tmp += globus_libc_sprintf(buf + tmp,
 		       GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE);
 	tmp += globus_libc_sprintf(buf + tmp,
@@ -1976,7 +1979,6 @@ globus_l_gram_http_parse_reply(
     globus_size_t *			payload_length)
 {
     int rc;
-    int protocol_version;
     int code;
     int offset;
     char * reason;
@@ -1987,21 +1989,15 @@ globus_l_gram_http_parse_reply(
     
     globus_libc_lock();
     rc = sscanf( (char *) buf,
-		 GLOBUS_GRAM_HTTP_PARSE_REPLY_LINE
-		 GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE "%n",
+		 GLOBUS_GRAM_HTTP_PARSE_REPLY_LINE "%n",
 		 &code,
 		 reason,
-		 &protocol_version,
 		 &offset);
     globus_libc_unlock();
 		       
-    if(rc < 3)
+    if(rc < 2)
     {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-    }
-    else if(protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNFRAME_FAILED;
     }
     else if(code == 200)
     {
@@ -2013,7 +2009,7 @@ globus_l_gram_http_parse_reply(
 	globus_libc_unlock();
 	if(rc != 1)
 	{
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNFRAME_FAILED;
 	    *payload_length = 0;
 	}
 	else
@@ -2021,9 +2017,25 @@ globus_l_gram_http_parse_reply(
 	    rc = GLOBUS_SUCCESS;
 	}
     }
-    else
+    else if(code==400)  /* JM failed to frame reply */
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+    }
+    else if(code==403)
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION;
+    }
+    else if(code==404)
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_SERVICE_NOT_FOUND;
+    }
+    else if(code==500)
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+    }
+    else
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNFRAME_FAILED;
     }
 
     globus_free(reason);

@@ -162,9 +162,7 @@ globus_i_gram_client_activate(void)
         return GRAM_ERROR_AUTHORIZATION; /* need better return code */
     }
 
-    globus_gram_client_debug();
     return 0;
-
 } /* globus_i_gram_client_activate() */
 
 

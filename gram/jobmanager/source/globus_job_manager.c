@@ -338,6 +338,8 @@ int main(int argc,
     globus_result_t                     error;
     globus_callback_handle_t		gass_poll_handle;
     globus_callback_handle_t		stat_cleanup_poll_handle;
+    char *                              sleeptime_str;
+    long                                sleeptime;
     
     /* gssapi */
 
@@ -665,6 +667,13 @@ int main(int argc,
         grami_fprintf( request->jobmanager_log_fp,
             "JM: -rdn parameter required\n");
         return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+    }
+
+
+    if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
+    {
+	sleeptime = atoi(sleeptime_str);
+	globus_libc_usleep(sleeptime * 1000 * 1000);
     }
 
     if (print_debug_flag)
@@ -1328,8 +1337,8 @@ int main(int argc,
     if (rc == GLOBUS_SUCCESS)
     {
         grami_fprintf( request->jobmanager_log_fp,
-              "JM: user proxy relocation\n");
-                            
+		       "JM: user proxy relocation\n");
+	
         /* relocate the user proxy to the gass cache and 
          * return the local file name.
          */
@@ -1338,16 +1347,16 @@ int main(int argc,
         {
             grami_fprintf( request->jobmanager_log_fp,
                   "JM: GSSAPI type is %s\n", GLOBUS_GSSAPI_IMPLEMENTATION);
-                            
+	    
             if ((strncmp(GLOBUS_GSSAPI_IMPLEMENTATION, "ssleay", 6) == 0) &&
                 (!graml_env_x509_user_proxy)) 
             {
                 request->failure_code =
                     GLOBUS_GRAM_CLIENT_ERROR_USER_PROXY_NOT_FOUND;
-               rc = GLOBUS_FAILURE;
+		rc = GLOBUS_FAILURE;
             }
         }
-
+	
         if (graml_env_x509_user_proxy)
         {
             for(x = 0; request->environment[x] != GLOBUS_NULL; x++)
@@ -1356,8 +1365,8 @@ int main(int argc,
             }
             request->environment = (char **)
                 globus_libc_realloc(request->environment,
-                    (x+3) * sizeof(char *));
-
+				    (x+3) * sizeof(char *));
+	    
             request->environment[x] = "X509_USER_PROXY";
             ++x;
             request->environment[x] = graml_env_x509_user_proxy;
@@ -1384,6 +1393,10 @@ int main(int argc,
             }
         }
     }
+
+    globus_libc_setenv( "X509_USER_PROXY",
+			graml_env_x509_user_proxy,
+			GLOBUS_TRUE );
 
     fflush(request->jobmanager_log_fp);
 
@@ -1429,7 +1442,7 @@ int main(int argc,
     if (rc!=GLOBUS_SUCCESS)
     {
 	rc = globus_gram_http_frame_reply(
-	    500,
+	    400,
 	    GLOBUS_NULL,
 	    0,
 	    &sendbuf,
