@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLib"
-	ProjectGUID="{8E150BB1-6A53-4933-B018-0A97BB18CB73}"
+	Name="ControlDebugLibThr"
+	ProjectGUID="{EDD32BA7-2A9B-40BC-BDC0-2117859A6D62}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,21 +19,21 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;"
+				AdditionalIncludeDirectories="$(GLOBUS_LOCATION)\include;$(GLOBUS_LOCATION)\include\nonthreaded;$(SolutionDir);\gsi\gssapi\source\WinProjects"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
+				DebugInformationFormat="0"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gridftp_control_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_ftp_control_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -72,7 +72,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/DebugLib.lib"/>
+				OutputFile="$(OutDir)/DebugLibThr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -110,12 +110,6 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
-			<File
-				RelativePath="..\globus_ftp_control.h">
-			</File>
-			<File
-				RelativePath="..\globus_i_ftp_control.h">
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

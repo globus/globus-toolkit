@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLibThr"
-	ProjectGUID="{EDD32BA7-2A9B-40BC-BDC0-2117859A6D62}"
+	Name="ClientDebugLibThr"
+	ProjectGUID="{16B9F788-DBFE-4B3F-809A-35A398F97417}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,21 +19,21 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;;&quot;$(SolutionDir)&quot;"
+				AdditionalIncludeDirectories="$(GLOBUS_LOCATION)\include;$(GLOBUS_LOCATION)\include\nonthreaded;$(SolutionDir);\gsi\gssapi\source\WinProjects"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
+				DebugInformationFormat="0"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gridftp_control_win32dbgthr.lib"/>
+				OutputFile="$(OutDir)/libglobus_dftp_client_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -92,19 +92,49 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\globus_ftp_control.c">
+				RelativePath="..\globus_ftp_client.c">
 			</File>
 			<File
-				RelativePath="..\globus_ftp_control_client.c">
+				RelativePath="..\globus_ftp_client_attr.c">
 			</File>
 			<File
-				RelativePath="..\globus_ftp_control_data.c">
+				RelativePath="..\globus_ftp_client_data.c">
 			</File>
 			<File
-				RelativePath="..\globus_ftp_control_layout.c">
+				RelativePath="..\globus_ftp_client_debug_plugin.c">
 			</File>
 			<File
-				RelativePath="..\globus_ftp_control_server.c">
+				RelativePath="..\globus_ftp_client_exists.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_handle.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_perf_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_restart.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_restart_marker.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_restart_marker_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_restart_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_state.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_throughput_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_transfer.c">
 			</File>
 		</Filter>
 		<Filter
