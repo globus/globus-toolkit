@@ -6,8 +6,8 @@ Scripts = \
 	setup-ssl-utils.pl \
 	setup-gsi \
 	setup-gsi.pl \
-	grid-cert-request-config \
-        grid-security-config
+	grid-cert-request-config.in \
+        grid-security-config.in
 
 
 setup_SCRIPTS = $(Scripts)
