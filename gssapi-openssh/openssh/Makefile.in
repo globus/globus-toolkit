@@ -302,17 +302,6 @@ gpt-install-files:
 	ln -s ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
 	ln -s ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
-	if [ ! -d $(DESTDIR)$(sysconfdir) ]; then \
-		$(srcdir)/mkinstalldirs $(DESTDIR)$(sysconfdir); \
-	fi
-	if [ -f ssh_prng_cmds -a ! -z "$(INSTALL_SSH_PRNG_CMDS)" ]; then \
-		$(PERL) $(srcdir)/fixprogs ssh_prng_cmds $(ENT); \
-		if [ ! -f $(DESTDIR)$(sysconfdir)/ssh_prng_cmds ] ; then \
-			$(INSTALL) -m 644 ssh_prng_cmds.out $(DESTDIR)$(sysconfdir)/ssh_prng_cmds; \
-		else \
-			echo "$(DESTDIR)$(sysconfdir)/ssh_prng_cmds already exists, install will not overwrite"; \
-		fi ; \
-	fi
 
 host-key: ssh-keygen$(EXEEXT)
 	if [ -z "$(DESTDIR)" ] ; then \
