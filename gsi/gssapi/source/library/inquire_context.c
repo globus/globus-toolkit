@@ -86,6 +86,9 @@ GSS_CALLCONV gss_inquire_context
 	gss_ctx_id_desc * context = 
 				(gss_ctx_id_desc *)context_handle_P;
 	int i,j,k;
+	time_t time_now;
+	ASN1_UTCTIME * asn1_time = NULL;
+	
 #ifdef CLASS_ADD
 	gss_buffer_desc * class_add_array = NULL;
 	gss_buffer_desc * class_add_array_entry = NULL;
@@ -198,7 +201,20 @@ GSS_CALLCONV gss_inquire_context
 	}
 	
 	if (lifetime_rec) {
-		*lifetime_rec = GSS_C_INDEFINITE;
+		asn1_time = ASN1_UTCTIME_new();
+		if (!asn1_time) {
+			major_status = GSS_S_FAILURE;
+			goto err;
+		}
+		X509_gmtime_adj(asn1_time,0);
+		time_now = ASN1_UTCTIME_mktime(asn1_time);
+		*lifetime_rec = context->pvxd.goodtill - time_now;
+		if ( context->pvxd.goodtill == 0) {
+			*lifetime_rec = GSS_C_INDEFINITE;
+		} else {
+			*lifetime_rec = context->pvxd.goodtill - time_now;
+		}
+		ASN1_UTCTIME_free(asn1_time);
 	}
 
 	if (mech_type) {
