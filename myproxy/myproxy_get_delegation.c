@@ -5,20 +5,15 @@
  */
 
 #include "myproxy.h"
+#include "myproxy_server.h"
 #include "gnu_getopt.h"
 #include "version.h"
+#include "verror.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
-
-
-/*
-static char usage_short[] = "\
-Usage: %s [-help] [-s server] [-p port] [-t lifetime] [-l username] ...\n\
-Try `%s --help' for more information.\n"; 
-*/
-
 
 static char usage[] = \
 "\n"\
@@ -37,7 +32,7 @@ static char usage[] = \
 struct option long_options[] =
 {
     {"help",             no_argument, NULL, 'u'},
-    {"pshost",   	 required_argument, NULL, 's'},
+    {"pshost",     required_argument, NULL, 's'},
     {"psport",     required_argument, NULL, 'p'},
     {"hours",      required_argument, NULL, 'h'},
     {"usage",            no_argument, NULL, 'u'},
@@ -46,23 +41,28 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "us:p:t:h:v";
+static char short_options[] = "us:p:l:h:v";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
+void 
+init_arguments(int argc, char *argv[], 
+	       myproxy_socket_attrs_t *attrs,
+	       myproxy_request_t *request); 
+
 int  read_passphrase(char *passphrase, const int passlen, 
                      const int min, const int max);
+
+void receive_response(myproxy_socket_attrs_t *attrs, 
+		      myproxy_response_t *response);
 
 int
 main(int argc, char *argv[]) 
 {    
-    int  rc;
-    char *username;
-    char error_string[1024];
-    char request_buffer[1024], response_buffer[1024];
-    int  requestlen, responselen;
-    char proxyfile[64];
+    char *pshost;
+    char request_buffer[1024];
+    int  requestlen;
     char delegfile[64];
 
     myproxy_socket_attrs_t *socket_attrs;
@@ -78,26 +78,23 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
-    /* setup defaults */
+    /* Setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_GET_PROXY;
 
-    username = getenv("LOGNAME");
-    client_request->username = malloc(strlen(username)+1);
-    strcpy(client_request->username, username);
+    pshost = getenv("MYPROXY_SERVER");
+    if (pshost != NULL) {
+	socket_attrs->pshost = malloc(strlen(pshost) + 1);
+	strcpy(socket_attrs->pshost, pshost);
+    }
 
-    client_request->hours = MYPROXY_DEFAULT_PROXY_HOURS; 
+    client_request->lifetime_seconds = 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS; 
  
-    socket_attrs->psport = MYPROXYSERVER_PORT;
-    socket_attrs->pshost = malloc(strlen(MYPROXYSERVER_HOST) + 1);
-    sprintf(socket_attrs->pshost, "%s", MYPROXYSERVER_HOST);
+    socket_attrs->psport = MYPROXY_SERVER_PORT;
 
     /* Initialize client arguments and create client request object */
-    if (init_arguments(argc, argv, socket_attrs, client_request) < 0) {
-        fprintf(stderr, usage);
-        exit(1);
-    }
+    init_arguments(argc, argv, socket_attrs, client_request);
 
     /* Allow user to provide a passphrase */
     if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1,
@@ -108,13 +105,15 @@ main(int argc, char *argv[])
     
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "Error in myproxy_init_client()\n");
+        fprintf(stderr, "Error in myproxy_init_client(): %s\n", 
+		verror_get_string());
         exit(1);
     }
     
      /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        fprintf(stderr, "Unable to authenticate to %s\n", socket_attrs->pshost);
+        fprintf(stderr, "Unable to authenticate to %s: %s\n", 
+		socket_attrs->pshost, verror_get_string());
         exit(1);
     }
 
@@ -128,7 +127,8 @@ main(int argc, char *argv[])
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "error in myproxy_send_request()\n");
+        fprintf(stderr, "error in myproxy_send_request(): %s\n", 
+		verror_get_string());
         exit(1);
     }
 
@@ -137,7 +137,8 @@ main(int argc, char *argv[])
 
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile)) < 0) {
-        fprintf(stderr, "error in myproxy_accept_delegation()\n");
+        fprintf(stderr, "error in myproxy_accept_delegation(): %s\n", 
+		verror_get_string());
 	exit(1);
     }      
 
@@ -150,27 +151,23 @@ main(int argc, char *argv[])
     exit(0);
 }
 
-int 
+void 
 init_arguments(int argc, 
-		       char *argv[], 
-		       myproxy_socket_attrs_t *attrs,
-		       myproxy_request_t *request) 
+	       char *argv[], 
+	       myproxy_socket_attrs_t *attrs,
+	       myproxy_request_t *request) 
 {   
     extern char *gnu_optarg;
-    extern int gnu_optind;
-
     int arg;
-    int arg_error = 0;
 
     while((arg = gnu_getopt_long(argc, argv, short_options, 
 				 long_options, NULL)) != EOF) 
     {
         switch(arg) 
         {
-	    
-        case 'h': 	/* Specify lifetime in hours */
-            request->hours = atoi(gnu_optarg);
-            break;      
+	case 'h':       /* Specify lifetime in seconds */
+	  request->lifetime_seconds = 60*60*atoi(gnu_optarg);
+	  break;
         case 's': 	/* pshost name */
             attrs->pshost = malloc(strlen(gnu_optarg) + 1);
             strcpy(attrs->pshost, gnu_optarg); 
@@ -186,17 +183,37 @@ init_arguments(int argc,
             request->username = malloc(strlen(gnu_optarg) + 1);
             strcpy(request->username, gnu_optarg); 
             break;
-        case 'v': /* print version and exit */
+        case 'v':       /* print version and exit */
             fprintf(stderr, version);
             exit(1);
             break;
-        default: /* ignore unknown */ 
-            arg_error = -1;
-            break;	
+        default:        /* print usage and exit */ 
+	    fprintf(stderr, usage);
+	    exit(1);
+	    break;	
         }
     }
 
-    return arg_error;
+    /* Check to see if myproxy-server specified */
+    if (attrs->pshost == NULL) {
+	fprintf(stderr, "Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
+	exit(1);
+    }
+
+    /* Check to see if username specified */
+    if (request->username == NULL) {
+	fprintf(stderr, usage);
+	fprintf(stderr, "Please specify a username!\n");
+	exit(1);
+    }
+
+    /* Check to see that lifetime is < MYPROXY_SERVER_MAX_DELEG_HOURS */
+    if (request->lifetime_seconds > 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS) {
+        fprintf(stderr, "The delegated credential lifetime cannot be greater than %d.\n", MYPROXY_SERVER_MAX_DELEG_HOURS);
+        exit(1);
+    } 
+
+    return;
 }
 
 /* read_passphrase()
@@ -210,7 +227,7 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
     int i;
     char pass[1024];
     int done = 0;
-
+ 
     assert(passphrase != NULL);
     assert(passlen < 1024);
 
@@ -224,7 +241,7 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
         }	
         i = strlen(pass) - 1;
         if ((i < min) || (i > max)) {
-            printf("Password must be between %d and %d characters\n", min, max);
+            fprintf(stderr, "Password must be between %d and %d characters\n", min, max);
         } else {
             done = 1;
         }
@@ -264,7 +281,7 @@ receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
     /* Check response */
     switch(response->response_type) {
         case MYPROXY_ERROR_RESPONSE:
-            fprintf(stderr, "Received ERROR: %s\n", response->error_string);
+            fprintf(stderr, "%s\n", response->error_string);
 	    exit(1);
             break;
         case MYPROXY_OK_RESPONSE:
