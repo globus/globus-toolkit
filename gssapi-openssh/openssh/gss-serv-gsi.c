@@ -80,11 +80,11 @@ ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name)
 #endif
 
     /* This returns 0 on success */
-    authorized = (globus_gss_assist_userok(client->name.value,
+    authorized = (globus_gss_assist_userok(client->displayname.value,
 					   name) == 0);
     
-    log("GSI user %s is%s authorized as target user %s",
-	(char *) client->name.value, (authorized ? "" : " not"), name);
+    logit("GSI user %s is%s authorized as target user %s",
+	(char *) client->displayname.value, (authorized ? "" : " not"), name);
     
     return authorized;
 }
@@ -100,7 +100,7 @@ ssh_gssapi_gsi_localname(ssh_gssapi_client *client, char **user)
 	return 0;
     }
 #endif
-    return(globus_gss_assist_gridmap(client->name.value, user) == 0);
+    return(globus_gss_assist_gridmap(client->displayname.value, user) == 0);
 }
 
 /*
@@ -136,7 +136,7 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 	
 	p = strchr((char *) export_cred.value, '=');
 	if (p == NULL) {
-	    log("Failed to parse exported credentials string '%.100s'",
+	    logit("Failed to parse exported credentials string '%.100s'",
 		(char *)export_cred.value);
 	    gss_release_buffer(&minor_status, &export_cred);
 	    return;

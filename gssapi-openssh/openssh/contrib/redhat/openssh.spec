@@ -1,4 +1,4 @@
-%define ver 3.6.1p2
+%define ver 3.7.1p2
 %define rel 1
 
 # OpenSSH privilege separation requires a user & group ID
@@ -26,9 +26,6 @@
 # Is this build for RHL 6.x?
 %define build6x 0
 
-# Disable IPv6 (avoids DNS hangs on some glibc versions)
-%define noip6 0
-
 # Do we want kerberos5 support (1=yes 0=no)
 %define kerberos5 1
 
@@ -43,7 +40,6 @@
 # If this is RHL 6.x, the default configuration has sysconfdir in /usr/etc.
 %if %{build6x}
 %define _sysconfdir /etc
-%define noip6 1
 %endif
 
 # Options for static OpenSSL link:
@@ -53,10 +49,6 @@
 # Options for Smartcard support: (needs libsectok and openssl-engine)
 # rpm -ba|--rebuild --define "smartcard 1"
 %{?smartcard:%define scard 1}
-
-# Option to disable ipv6
-# rpm -ba|--rebuild --define "noipv6 1"
-%{?noipv6:%define noip6 1}
 
 # Is this a build for the rescue CD (without PAM, with MD5)? (1=yes 0=no)
 %define rescue 0
@@ -87,12 +79,12 @@ PreReq: initscripts >= 5.00
 %else
 PreReq: initscripts >= 5.20
 %endif
-BuildPreReq: perl, openssl-devel, sharutils, tcp_wrappers
+BuildPreReq: perl, openssl-devel, tcp_wrappers
 BuildPreReq: /bin/login
 %if ! %{build6x}
 BuildPreReq: glibc-devel, pam
 %else
-BuildPreReq: db1-devel, /usr/include/security/pam_appl.h
+BuildPreReq: /usr/include/security/pam_appl.h
 %endif
 %if ! %{no_x11_askpass}
 BuildPreReq: XFree86-devel
@@ -196,9 +188,6 @@ CFLAGS="$RPM_OPT_FLAGS -Os"; export CFLAGS
 %if %{scard}
 	--with-smartcard \
 %endif
-%if %{noip6}
-	--with-ipv4-default \
-%endif
 %if %{rescue}
 	--without-pam --with-md5-passwords \
 %else
@@ -274,9 +263,11 @@ install -s contrib/gnome-ssh-askpass $RPM_BUILD_ROOT%{_libexecdir}/openssh/gnome
 	 rm -f $RPM_BUILD_ROOT/usr/share/openssh/Ssh.bin
 %endif
 
+%if ! %{no_gnome_askpass}
 install -m 755 -d $RPM_BUILD_ROOT%{_sysconfdir}/profile.d/
 install -m 755 contrib/redhat/gnome-ssh-askpass.csh $RPM_BUILD_ROOT%{_sysconfdir}/profile.d/
 install -m 755 contrib/redhat/gnome-ssh-askpass.sh $RPM_BUILD_ROOT%{_sysconfdir}/profile.d/
+%endif
 
 perl -pi -e "s|$RPM_BUILD_ROOT||g" $RPM_BUILD_ROOT%{_mandir}/man*/*
 
@@ -400,6 +391,14 @@ fi
 %endif
 
 %changelog
+* Mon Jun 2 2003 Damien Miller <djm@mindrot.org>
+- Remove noip6 option. This may be controlled at run-time in client config 
+  file using new AddressFamily directive
+
+* Mon May 12 2003 Damien Miller <djm@mindrot.org>
+- Don't install profile.d scripts when not building with GNOME/GTK askpass
+  (patch from bet@rahul.net)
+
 * Wed Oct 01 2002 Damien Miller <djm@mindrot.org>
 - Install ssh-agent setgid nobody to prevent ptrace() key theft attacks
 

@@ -137,7 +137,7 @@ int getaddrinfo(const char *, const char *,
     const struct addrinfo *, struct addrinfo **);
 #endif /* !HAVE_GETADDRINFO */
 
-#ifndef HAVE_GAI_STRERROR
+#if !defined(HAVE_GAI_STRERROR) && !defined(HAVE_CONST_GAI_STRERROR_PROTO)
 char *gai_strerror(int);
 #endif /* !HAVE_GAI_STRERROR */
 

@@ -7,7 +7,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: ssh-keyscan.c,v 1.41 2003/02/16 17:09:57 markus Exp $");
+RCSID("$OpenBSD: ssh-keyscan.c,v 1.44 2003/06/28 16:23:06 deraadt Exp $");
 
 #include "openbsd-compat/sys-queue.h"
 
@@ -32,11 +32,7 @@ RCSID("$OpenBSD: ssh-keyscan.c,v 1.41 2003/02/16 17:09:57 markus Exp $");
 
 /* Flag indicating whether IPv4 or IPv6.  This can be set on the command line.
    Default value is AF_UNSPEC means both IPv4 and IPv6. */
-#ifdef IPV4_DEFAULT
-int IPv4or6 = AF_INET;
-#else
 int IPv4or6 = AF_UNSPEC;
-#endif
 
 int ssh_port = SSH_DEFAULT_PORT;
 
@@ -398,7 +394,7 @@ tcpconnect(char *host)
 	if ((gaierr = getaddrinfo(host, strport, &hints, &aitop)) != 0)
 		fatal("getaddrinfo %s: %s", host, gai_strerror(gaierr));
 	for (ai = aitop; ai; ai = ai->ai_next) {
-		s = socket(ai->ai_family, SOCK_STREAM, 0);
+		s = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 		if (s < 0) {
 			error("socket: %s", strerror(errno));
 			continue;
@@ -546,7 +542,7 @@ congreet(int s)
 	n = snprintf(buf, sizeof buf, "SSH-%d.%d-OpenSSH-keyscan\r\n",
 	    c->c_keytype == KT_RSA1? PROTOCOL_MAJOR_1 : PROTOCOL_MAJOR_2,
 	    c->c_keytype == KT_RSA1? PROTOCOL_MINOR_1 : PROTOCOL_MINOR_2);
-	if (atomicio(write, s, buf, n) != n) {
+	if (atomicio(vwrite, s, buf, n) != n) {
 		error("write (%s): %s", c->c_name, strerror(errno));
 		confree(s);
 		return;
@@ -686,7 +682,7 @@ fatal(const char *fmt,...)
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-v46] [-p port] [-T timeout] [-f file]\n"
+	fprintf(stderr, "usage: %s [-v46] [-p port] [-T timeout] [-t type] [-f file]\n"
 	    "\t\t   [host | addrlist namelist] [...]\n",
 	    __progname);
 	exit(1);
@@ -702,7 +698,7 @@ main(int argc, char **argv)
 	extern int optind;
 	extern char *optarg;
 
-	__progname = get_progname(argv[0]);
+	__progname = ssh_get_progname(argv[0]);
 	init_pathnames();
 	init_rng();
 	seed_rng();

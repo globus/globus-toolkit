@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2000 Ben Lindstrom.  All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -38,15 +40,16 @@ waitpid(int pid, int *stat_loc, int options)
 	if (pid <= 0) {
 		if (pid != -1) {
 			errno = EINVAL;
-			return -1;
+			return (-1);
 		}
-		pid = 0;   /* wait4() wants pid=0 for indiscriminate wait. */
+		/* wait4() wants pid=0 for indiscriminate wait. */
+		pid = 0;
 	}
         wait_pid = wait4(pid, &statusp, options, NULL);
 	if (stat_loc)
         	*stat_loc = (int) statusp.w_status;            
 
-        return wait_pid;                               
+        return (wait_pid);                               
 }
 
 #endif /* !HAVE_WAITPID */
