@@ -290,6 +290,7 @@ globus_l_gfs_spawn_child(
     int                                 j;
     int                                 rc;
     GlobusGFSName(globus_l_gfs_spawn_child);
+
     GlobusGFSDebugEnter();
 
     result = globus_xio_handle_cntl(

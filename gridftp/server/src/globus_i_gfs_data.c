@@ -23,6 +23,7 @@ typedef enum
     GLOBUS_L_GFS_DATA_ABORTING,
     GLOBUS_L_GFS_DATA_ABORT_CLOSING,
     GLOBUS_L_GFS_DATA_FINISH,
+    GLOBUS_L_GFS_DATA_FINISH_WITH_ERROR,
     GLOBUS_L_GFS_DATA_COMPLETING,
     GLOBUS_L_GFS_DATA_COMPLETE
 } globus_l_gfs_data_state_t;
@@ -1512,12 +1513,68 @@ globus_l_gfs_data_abort_kickout(
 
 static
 void
+globus_l_gfs_data_fc_return(
+    globus_l_gfs_data_operation_t *     op)
+{
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_data_fc_return);
+
+    GlobusGFSDebugEnter();
+
+    switch(op->data_handle->state)
+    {
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+            op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+            break;
+
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+            result = globus_ftp_control_handle_destroy(
+                &op->data_handle->data_channel);
+            globus_assert(result == GLOBUS_SUCCESS);
+            globus_free(op->data_handle);
+            op->data_handle = NULL;
+            break;
+
+        case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+        case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+        default:
+            globus_assert(0 && "possible memory corruption");
+            break;
+    }
+
+    GlobusGFSDebugExit();
+}
+
+static
+void
+globus_l_gfs_data_complete_fc_cb(
+    void *                              callback_arg,
+    globus_ftp_control_handle_t *       ftp_handle,
+    globus_object_t *                   error)
+{
+    globus_l_gfs_data_operation_t *     op;
+    GlobusGFSName(globus_l_gfs_data_complete_fc_cb);
+    GlobusGFSDebugEnter();
+
+    op = (globus_l_gfs_data_operation_t *) callback_arg;
+
+    globus_mutex_lock(&op->session_handle->mutex);
+    {
+        globus_l_gfs_data_fc_return(callback_arg);
+    }
+    globus_mutex_unlock(&op->session_handle->mutex);
+
+    GlobusGFSDebugExit();
+}
+
+static
+void
 globus_l_gfs_data_finish_fc_cb(
     void *                              callback_arg,
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
-    globus_result_t                     result;
     globus_l_gfs_data_operation_t *     op;
     GlobusGFSName(globus_l_gfs_data_finish_fc_cb);
     GlobusGFSDebugEnter();
@@ -1526,27 +1583,7 @@ globus_l_gfs_data_finish_fc_cb(
 
     globus_mutex_lock(&op->session_handle->mutex);
     {
-        switch(op->data_handle->state)
-        {
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
-                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-                break;
-
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
-                result = globus_ftp_control_handle_destroy(
-                    &op->data_handle->data_channel);
-                globus_assert(result == GLOBUS_SUCCESS);
-                globus_free(op->data_handle);
-                op->data_handle = NULL;
-                break;
-
-            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
-            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
-            default:
-                globus_assert(0 && "possible memory corruption");
-                break;
-        }
+        globus_l_gfs_data_fc_return(callback_arg);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
@@ -1562,7 +1599,6 @@ globus_l_gfs_data_abort_fc_cb(
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
-    globus_result_t                     result;
     globus_l_gfs_data_operation_t *     op;
     GlobusGFSName(globus_l_gfs_data_abort_fc_cb);
     GlobusGFSDebugEnter();
@@ -1571,27 +1607,7 @@ globus_l_gfs_data_abort_fc_cb(
 
     globus_mutex_lock(&op->session_handle->mutex);
     {
-        switch(op->data_handle->state)
-        {
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
-                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-                break;
-
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
-                result = globus_ftp_control_handle_destroy(
-                    &op->data_handle->data_channel);
-                globus_assert(result == GLOBUS_SUCCESS);
-                globus_free(op->data_handle);
-                op->data_handle = NULL;
-                break;
-
-            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
-            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
-            default:
-                globus_assert(0 && "possible memory corruption");
-                break;
-        }
+        globus_l_gfs_data_fc_return(op);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
@@ -3623,7 +3639,6 @@ void
 globus_l_gfs_data_force_close(
     globus_l_gfs_data_operation_t *     op)
 {
-    globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_data_force_close);
     GlobusGFSDebugEnter();
 
@@ -3634,21 +3649,12 @@ globus_l_gfs_data_force_close(
         {
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
-                result = globus_ftp_control_data_force_close(
-                    &op->data_handle->data_channel,
-                    globus_l_gfs_data_finish_fc_cb,
+
+                globus_callback_register_oneshot(
+                    NULL,
+                    NULL,
+                    globus_l_gfs_data_end_transfer_kickout,
                     op);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-                    globus_i_gfs_log_result(
-                        "force_close", result);
-                    globus_callback_register_oneshot(
-                        NULL,
-                        NULL,
-                        globus_l_gfs_data_end_transfer_kickout,
-                        op);
-                }
                 break;
 
             /* already started closing the handle */
@@ -3793,18 +3799,34 @@ globus_i_gfs_data_request_transfer_event(
             /* if this event has been received we SHOULD be in complete state
                 if we are not it is a bad message and we ignore it */
             case GLOBUS_GFS_EVENT_TRANSFER_COMPLETE:
-                if(op->state == GLOBUS_L_GFS_DATA_FINISH)
+                switch(op->state)
                 {
-                    /* even tho we are passing do not up the ref because this
-                        is the barrier message */
-                    op->state = GLOBUS_L_GFS_DATA_COMPLETING;
-                    pass = GLOBUS_TRUE;
-                }
-                else
-                {
-                    /* XXX log a bad message */
-                    globus_assert(0 && "for now we assert");
-                    pass = GLOBUS_FALSE;
+                    case GLOBUS_L_GFS_DATA_FINISH:
+                        /* even tho we are passing do not up the ref because
+                           this is the barrier message */
+                        op->state = GLOBUS_L_GFS_DATA_COMPLETING;
+                        pass = GLOBUS_TRUE;
+                        break;
+
+                    case GLOBUS_L_GFS_DATA_FINISH_WITH_ERROR:
+                        result = globus_ftp_control_data_force_close(
+                            &op->data_handle->data_channel,
+                            globus_l_gfs_data_complete_fc_cb,
+                            op);
+                        if(result != GLOBUS_SUCCESS)
+                        {
+                            globus_i_gfs_log_result("force_close", result);
+                            globus_l_gfs_data_fc_return(op);
+                        }
+                        op->state = GLOBUS_L_GFS_DATA_COMPLETING;
+                        pass = GLOBUS_TRUE;
+                        break;
+
+                    default:
+                        /* XXX log a bad message */
+                        globus_assert(0 && "for now we assert");
+                        pass = GLOBUS_FALSE;
+                        break;
                 }
                 break;
 
@@ -4405,11 +4427,11 @@ globus_gridftp_server_finished_transfer(
             case GLOBUS_L_GFS_DATA_CONNECTED:
                 if(result != GLOBUS_SUCCESS)
                 {
-                    op->cached_res = result;
-                    globus_l_gfs_data_force_close(op);
+                    GlobusGFSDebugInfo("passed error in CONNECTED state\n");
                     goto err_close;
                 }
                 globus_l_gfs_data_finish_connected(op);
+                op->state = GLOBUS_L_GFS_DATA_FINISH;
                 break;
 
             /* finishing in connecting state with no error likely means
@@ -4421,19 +4443,19 @@ globus_gridftp_server_finished_transfer(
             case GLOBUS_L_GFS_DATA_CONNECTING:
                 if(result != GLOBUS_SUCCESS)
                 {
-                    op->cached_res = result;
-                    globus_l_gfs_data_force_close(op);
+                    GlobusGFSDebugInfo("passed error in CONNECTING state\n");
                     goto err_close;
                 }
+                op->state = GLOBUS_L_GFS_DATA_FINISH;
                 break;
-            case GLOBUS_L_GFS_DATA_REQUESTING:
+
             case GLOBUS_L_GFS_DATA_ABORTING:
+            case GLOBUS_L_GFS_DATA_REQUESTING:
                 if(result != GLOBUS_SUCCESS)
                 {
                     op->cached_res = result;
-                    globus_l_gfs_data_force_close(op);
-                    goto err_close;
                 }
+                op->state = GLOBUS_L_GFS_DATA_FINISH;
                 globus_callback_register_oneshot(
                     NULL,
                     NULL,
@@ -4445,6 +4467,7 @@ globus_gridftp_server_finished_transfer(
                 to the finished state, when the force close callback comes
                 back it will continue the finish process */
             case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
+                op->state = GLOBUS_L_GFS_DATA_FINISH;
                 break;
 
             case GLOBUS_L_GFS_DATA_COMPLETING:
@@ -4454,7 +4477,6 @@ globus_gridftp_server_finished_transfer(
                 globus_assert(0 && "Invalid state");
                 break;
         }
-        op->state = GLOBUS_L_GFS_DATA_FINISH;
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
@@ -4462,7 +4484,9 @@ globus_gridftp_server_finished_transfer(
     return;
 
 err_close:
-    op->state = GLOBUS_L_GFS_DATA_FINISH;
+    globus_l_gfs_data_force_close(op);
+    op->cached_res = result;
+    op->state = GLOBUS_L_GFS_DATA_FINISH_WITH_ERROR;
     globus_mutex_unlock(&op->session_handle->mutex);
     GlobusGFSDebugExitWithError();
 }

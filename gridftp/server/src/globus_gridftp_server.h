@@ -844,7 +844,8 @@ extern globus_gfs_storage_iface_t       globus_gfs_remote_dsi_iface;
 /** Error and result object helper macros */   
 enum
 {
-    GLOBUS_GFS_DEBUG_TRACE = 8
+    GLOBUS_GFS_DEBUG_TRACE = 8,
+    GLOBUS_GFS_DEBUG_INFO = 16
 };
 
 #ifdef __GNUC__
@@ -857,6 +858,11 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
 
 #define GlobusGFSDebugPrintf(level, message)                                \
     GlobusDebugPrintf(GLOBUS_GRIDFTP_SERVER, level, message)
+
+#define GlobusGFSDebugInfo(_msg)                                            \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_INFO,                                              \
+        ("[%s] %s\n", _gfs_name, _msg))
 
 #define GlobusGFSDebugEnter()                                               \
     GlobusGFSDebugPrintf(                                                   \

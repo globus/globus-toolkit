@@ -17,6 +17,8 @@ ipc:
 XX connect backwards!! 0
 XX ipc local mode doesn't work (besides no way to initiate it)
 
+XX commands belong in server-lib
+
 logging:
 -- instrument code
 -- verify output format
@@ -46,8 +48,6 @@ known bugs:
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other
     calls that attempt to use the handle.
-XX commands belong in server-lib
-
 -- need to make sure ints in various places are change to size_t if they
     need to be, and on passing size_t's over ipc need to do some smarts
     to treat it as 4 or 8 bytes... possible probs if sizes differ on front
