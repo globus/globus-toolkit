@@ -119,8 +119,6 @@ static ERR_STRING_DATA scerr_str_reasons[]=
     {0,NULL},
 };
 
-static int ERR_user_lib_scerr_number;
-
 CK_FUNCTION_LIST_PTR pFunctionList = NULL;
 
 #ifdef WIN32
@@ -258,7 +256,8 @@ Description:
     Only the first call does anything.
 
 Parameters:
-
+        i should be zero the first time any of the ERR_load_.*_string functions is called and
+        non-zero for the rest of the calls.
 Returns:
 **********************************************************************/
 
@@ -271,22 +270,16 @@ ERR_load_scerr_strings(
     if (init)
     {
         init=0;
+
 	if (i == 0)
 	{
 	    SSL_load_error_strings();
 	}
-        ERR_load_strings(ERR_LIB_USER+i,scerr_str_functs);
-        ERR_load_strings(ERR_LIB_USER+i,scerr_str_reasons);
-	ERR_user_lib_scerr_number = ERR_LIB_USER+i;
-	i++;
+        ERR_load_strings(ERR_USER_LIB_SCERR_NUMBER,scerr_str_functs);
+        ERR_load_strings(ERR_USER_LIB_SCERR_NUMBER,scerr_str_reasons);
+	    i++;
     }
     return i;
-}
-
-int
-ERR_user_lib_scerr_num()
-{
-    return ERR_user_lib_scerr_number;
 }
 
 /********************************************************************/
