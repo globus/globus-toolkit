@@ -229,7 +229,7 @@ init_arguments(int argc,
 
     /* Check to see if myproxy-server specified */
     if (attrs->pshost == NULL) {
-	fprintf(stderr, "Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
+	fprintf(stderr, "Unspecified myproxy-server.  Set the MYPROXY_SERVER environment variable to\nthe hostname of the myproxy-server or run with '-s server-hostname'.\n");
 	exit(1);
     }
 
