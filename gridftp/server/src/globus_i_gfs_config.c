@@ -161,6 +161,10 @@ static const globus_l_gfs_config_option_t option_list[] =
         and any or all of ALL, init, or read, write, etc action to fail on */},
  {"fqdn", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* used to store list of known backends and associated info */},
+ {"configfile", NULL, NULL, "c", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+     NULL /* placeholder so configfile check doesn't fail */},
+ {"loaded_config", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+     NULL /* placeholder so configfile check doesn't fail */},
  {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
     NULL /* used to store list of known backends and associated info */},
  {"module_list", "module_list", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
@@ -256,7 +260,7 @@ globus_l_gfs_config_load_config_file(
     {
         return -2; /* XXX construct real error */
     }
-    
+    globus_l_gfs_config_set("loaded_config", 0, globus_libc_strdup(filename));  
     line_num = 0;
     while(fgets(line, sizeof(line), fptr) != NULL)
     {

@@ -879,6 +879,7 @@ main(
 {
     pid_t                               pid;
     int                                 rc = 0;
+    char *                              config;
     globus_result_t                     result;
 
     /* activte globus stuff */    
@@ -1002,14 +1003,27 @@ main(
             rc = 0;
             goto error_lock;
         }
+        config = globus_i_gfs_config_string("loaded_config");
         if(globus_i_gfs_config_bool("inetd"))
         {
             freopen("/dev/null", "w+", stdout);
             freopen("/dev/null", "w+", stderr);
+            if(config)
+            {
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_INFO, 
+                    "Configuration read from %s\n", config);
+            }
             result = globus_l_gfs_convert_inetd_handle();
         }
         else
         {
+            if(config)
+            {
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_INFO,
+                    "Configuration read from %s\n", config);
+            }            
             result = globus_l_gfs_be_daemon();
         }
         if(result != GLOBUS_SUCCESS)
