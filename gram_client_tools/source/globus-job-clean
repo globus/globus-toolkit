@@ -56,7 +56,7 @@ EOF
     echo "" >&2
 }
 
-globus_source ${libexecdir}/globus-args-parser-header
+globus_source ${libexecdir}/globus-args-parser-header $*
 
 cancelJob()
 {

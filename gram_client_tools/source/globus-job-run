@@ -101,7 +101,7 @@ host-clause syntax:
 EOF
 }
 
-globus_source ${libexecdir}/globus-args-parser-header
+globus_source ${libexecdir}/globus-args-parser-header $*
 
 rslfile=${local_tmpdir}/globus_job_run.`${GLOBUS_SH_WHOAMI-whoami}`.rsl.$$
 tmpfile=${local_tmpdir}/globus_job_run.`${GLOBUS_SH_WHOAMI-whoami}`.tmp.$$
