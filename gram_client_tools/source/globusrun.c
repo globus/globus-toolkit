@@ -1154,6 +1154,18 @@ globus_l_globusrun_gram_callback_func(void *user_arg,
 	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING\n");
 	}
 	break;
+    case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN:
+	if(monitor->verbose)
+	{
+	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN\n");
+	}
+	break;
+    case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT:
+	if(monitor->verbose)
+	{
+	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT\n");
+	}
+	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE:
 	if(monitor->verbose)
 	{
