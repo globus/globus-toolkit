@@ -69,7 +69,7 @@ main(int argc, char *argv[])
     if (read_passwd_from_stdin) {
 	rval = myproxy_read_passphrase_stdin(passphrase, sizeof(passphrase),
 		 "Enter (current) MyProxy pass phrase:");
-    } else {
+    } else if (myproxy_creds_encrypted(&cred)) {
 	rval = myproxy_read_passphrase(passphrase, sizeof(passphrase),
 		 "Enter (current) MyProxy pass phrase:");
     }
