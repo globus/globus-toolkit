@@ -29,7 +29,7 @@ sub run_test
     {
         my $core_str = "$output_dir/$test_str.core";
         system("mv core $core_str");
-        $errors .= "\n# Core file generated.";
+        $errors .= "\n# Core file generated." . $errors;
         unlink("core");
     }
 
@@ -44,7 +44,7 @@ sub run_test
         my $filename="$output_dir/$test_str.fail";
         open(FAIL, ">$filename");
         print FAIL "\n";
-        print FAIL "Test :$test_str: failed\n";
+        print FAIL "Test :$test_str: failed with :$rc:\n";
         print FAIL "stdout :$output_dir/$test_str.out:\n";
         print FAIL "stderr :$output_dir/$test_str.err:\n";
         if(-r "$output_dir/$test_str.core")
@@ -54,7 +54,7 @@ sub run_test
         print FAIL "cmd :$cmd\n";
         close(FAIL);
 
-        $errors = "\n# Test failed\n# $cmd\n# " . $errors;
+        $errors .= "\n# Test failed\n# $cmd\n# " . $errors;
         ok($errors, 'success');
     }
 }

@@ -204,6 +204,9 @@ close_barrier_main(
 
     test_common_end();
 
+    globus_mutex_destroy(&globus_l_mutex);
+    globus_cond_destroy(&globus_l_cond);
+
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 

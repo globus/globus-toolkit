@@ -75,15 +75,16 @@ globus_i_xio_driver_start_close(
     op->progress = GLOBUS_TRUE;
     op->block_timeout = GLOBUS_FALSE;
     my_op = &op->entry[op->ndx - 1];
-    my_op->in_register = GLOBUS_TRUE;
     my_context = &op->_op_context->entry[op->ndx - 1];
 
+    my_op->in_register = GLOBUS_TRUE;
     res = my_context->driver->close_func(
                     my_context->driver_handle,
                     my_op->attr,
                     my_context,
                     op);
     my_op->in_register = GLOBUS_FALSE;
+
     if(res != GLOBUS_SUCCESS && !can_fail)
     {
         GlobusXIODriverFinishedClose(op, res);

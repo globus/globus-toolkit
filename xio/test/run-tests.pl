@@ -22,7 +22,6 @@ unlink("test_results.txt");
             random-test.pl
             server-test.pl
             verify-test.pl
-            all_in_one.pl
             );
 
 my $runserver;

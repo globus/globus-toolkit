@@ -1076,6 +1076,7 @@ globus_l_xio_register_close(
     }
     globus_mutex_unlock(&handle->mutex);
 
+    GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
 
   err:
@@ -1107,14 +1108,8 @@ globus_l_xio_register_close(
     }
     globus_mutex_unlock(&handle->mutex);
 
-    if(res != GLOBUS_SUCCESS)
-    {
-        GlobusXIODebugInternalExit();
-    }
-    else
-    {
-        GlobusXIODebugInternalExitWithError();
-    }
+    GlobusXIODebugInternalExitWithError();
+
     return res;
 }
 

@@ -8,23 +8,23 @@
 
 1 void
 1 globus_xio_driver_pass_open_DEBUG(
-1     globus_result_t * _out_res,
-1     globus_xio_context_t * _out_context,
-1     globus_xio_operation_t  _in_op,
-1     globus_xio_driver_callback_t _in_cb,
-1     void * _in_user_arg) 
+1     globus_result_t *                     _out_res,
+1     globus_xio_context_t *                _out_context,
+1     globus_xio_operation_t                _in_op,
+1     globus_xio_driver_callback_t          _in_cb,
+1     void *                                _in_user_arg) 
 2 #define GlobusXIODriverPassOpen(_out_res, _out_context,                   \
 2            _in_op, _in_cb, _in_user_arg)                                  \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_i_xio_handle_t *                         _handle;                \
-    globus_i_xio_context_t *                        _context;               \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    int                                             _caller_ndx;            \
-    globus_result_t                                 _res;                   \
-    globus_xio_driver_t                             _driver;                \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_i_xio_handle_t *                 _handle;                        \
+    globus_i_xio_context_t *                _context;                       \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    int                                     _caller_ndx;                    \
+    globus_result_t                         _res;                           \
+    globus_xio_driver_t                     _driver;                        \
     GlobusXIOName(GlobusXIODriverPassOpen);                                 \
                                                                             \
     _op = (_in_op);                                                         \
@@ -85,20 +85,22 @@
 
 1 void
 1 globus_xio_driver_finished_open_DEBUG(
-1     globus_xio_context_t                            _in_context,
-1     void *                                          _in_dh,
-1     globus_xio_operation_t                          _in_op,
-1     globus_result_t                                 _in_res)
+1     globus_xio_context_t                  _in_context,
+1     void *                                _in_dh,
+1     globus_xio_operation_t                _in_op,
+1     globus_result_t                       _in_res)
 2 #define GlobusXIODriverFinishedOpen(                                      \
 2     _in_context, _in_dh, _in_op, _in_res)                                 \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_i_xio_context_t *                        _context;               \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    globus_result_t                                 _res;                   \
-    int                                             _ctr;                   \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_i_xio_context_t *                _context;                       \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    globus_result_t                         _res;                           \
+    int                                     _ctr;                           \
+    globus_callback_space_t                 _space =                        \
+                            GLOBUS_CALLBACK_GLOBAL_SPACE;                   \
     GlobusXIOName(GlobusXIODriverFinishedOpen);                             \
                                                                             \
     _res = (_in_res);                                                       \
@@ -138,8 +140,13 @@
         _context->ref++;                                                    \
     }                                                                       \
                                                                             \
+    if(_op->ndx == 0 && !_op->blocking)                                     \
+    {                                                                       \
+        _space = _op->_op_handle->space;                                    \
+    }                                                                       \
     _op->cached_res = _res;                                                 \
-    if(_my_op->in_register)                                                 \
+    if(_my_op->in_register ||                                               \
+        _space != GLOBUS_CALLBACK_GLOBAL_SPACE)                             \
     {                                                                       \
         GlobusXIODebugInregisterOneShot();                                  \
         globus_callback_space_register_oneshot(                             \
@@ -147,7 +154,7 @@
             NULL,                                                           \
             globus_l_xio_driver_op_kickout,                                 \
             (void *)_op,                                                    \
-            GLOBUS_CALLBACK_GLOBAL_SPACE);                                  \
+            _space);                                                        \
     }                                                                       \
     else                                                                    \
     {                                                                       \
@@ -165,23 +172,23 @@
 
 1 void
 1 globus_xio_driver_pass_close_DEBUG(
-1     globus_result_t *                               _out_res,
-1     globus_xio_operation_t                          _in_op,
-1     globus_xio_driver_callback_t                    _in_cb,
-1     void *                                          _in_ua) 
+1     globus_result_t *                     _out_res,
+1     globus_xio_operation_t                _in_op,
+1     globus_xio_driver_callback_t          _in_cb,
+1     void *                                _in_ua) 
 2 #define GlobusXIODriverPassClose(                                         \
 2           _out_res, _in_op, _in_cb, _in_ua)                               \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_i_xio_handle_t *                         _handle;                \
-    globus_i_xio_context_t *                        _context;               \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_bool_t                                   _pass;                  \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    int                                             _caller_ndx;            \
-    globus_result_t                                 _res = GLOBUS_SUCCESS;  \
-    globus_xio_driver_t                             _driver;                \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_i_xio_handle_t *                 _handle;                        \
+    globus_i_xio_context_t *                _context;                       \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_bool_t                           _pass;                          \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    int                                     _caller_ndx;                    \
+    globus_result_t                         _res = GLOBUS_SUCCESS;          \
+    globus_xio_driver_t                     _driver;                        \
     GlobusXIOName(GlobusXIODriverPassClose);                                \
                                                                             \
     _op = (_in_op);                                                         \
@@ -267,16 +274,18 @@
 
 1 void
 1 globus_xio_driver_finished_close_DEBUG(
-1     globus_xio_operation_t                          op,
-1     globus_result_t                              _in_res)
+1     globus_xio_operation_t                op,
+1     globus_result_t                       _in_res)
 2 #define GlobusXIODriverFinishedClose(op, res)                             \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_i_xio_context_t *                        _context;               \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    globus_result_t                                 _res;                   \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_i_xio_context_t *                _context;                       \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    globus_result_t                         _res;                           \
+    globus_callback_space_t                 _space =                        \
+                            GLOBUS_CALLBACK_GLOBAL_SPACE;                   \
     GlobusXIOName(GlobusXIODriverFinishedClose);                            \
                                                                             \
     _res = (_in_res);                                                       \
@@ -294,7 +303,12 @@
                                                                             \
     globus_assert(_op->ndx >= 0); /* otherwise we are not in bad memory */  \
     _op->cached_res = _res;                                                 \
-    if(_my_op->in_register)                                                 \
+    if(_op->ndx == 0 && !_op->blocking)                                     \
+    {                                                                       \
+        _space = _op->_op_handle->space;                                    \
+    }                                                                       \
+    if(_my_op->in_register ||                                               \
+        _space != GLOBUS_CALLBACK_GLOBAL_SPACE)                             \
     {                                                                       \
         GlobusXIODebugInregisterOneShot();                                  \
         globus_callback_space_register_oneshot(                             \
@@ -320,27 +334,27 @@
 
 1 void
 1 globus_xio_driver_pass_write_DEBUG(
-1     globus_result_t *                               _out_res,
-1     globus_xio_operation_t                          _in_op,
-1     globus_xio_iovec_t *                            _in_iovec,
-1     int                                             _in_iovec_count,
-1     globus_size_t                                   _in_wait_for,
-1     globus_xio_driver_data_callback_t               _in_cb,
-1     void *                                          _in_user_arg)
+1     globus_result_t *                     _out_res,
+1     globus_xio_operation_t                _in_op,
+1     globus_xio_iovec_t *                  _in_iovec,
+1     int                                   _in_iovec_count,
+1     globus_size_t                         _in_wait_for,
+1     globus_xio_driver_data_callback_t     _in_cb,
+1     void *                                _in_user_arg)
 2 #define GlobusXIODriverPassWrite(_out_res, _in_op,                        \
 2             _in_iovec, _in_iovec_count,                                   \
 2             _in_wait_for, _in_cb, _in_user_arg)                           \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_i_xio_context_entry_t *                  _next_context;          \
-    globus_i_xio_context_t *                        _context;               \
-    globus_bool_t                                   _close = GLOBUS_FALSE;  \
-    int                                             _caller_ndx;            \
-    globus_result_t                                 _res = GLOBUS_SUCCESS;  \
-    globus_xio_driver_t                             _driver;                \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_i_xio_context_entry_t *          _next_context;                  \
+    globus_i_xio_context_t *                _context;                       \
+    globus_bool_t                           _close = GLOBUS_FALSE;          \
+    int                                     _caller_ndx;                    \
+    globus_result_t                         _res = GLOBUS_SUCCESS;          \
+    globus_xio_driver_t                     _driver;                        \
     GlobusXIOName(GlobusXIODriverPassWrite);                                \
                                                                             \
     _op = (_in_op);                                                         \
@@ -427,21 +441,23 @@
 
 1 void
 1 globus_xio_driver_finished_write_DEBUG(
-1     globus_xio_operation_t                          op,
-1     globus_result_t                                 result,
-1     globus_size_t                                   nbytes)
+1     globus_xio_operation_t                op,
+1     globus_result_t                       result,
+1     globus_size_t                         nbytes)
 2 #define GlobusXIODriverFinishedWrite(op, result, nbytes)                  \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    globus_result_t                                 _res;                   \
-    globus_bool_t                                   _fire_cb = GLOBUS_TRUE; \
-    globus_xio_iovec_t *                            _tmp_iovec;             \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_i_xio_context_entry_t *                  _next_context;          \
-    globus_i_xio_context_t *                        _context;               \
-    int                                             _iovec_count;           \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    globus_result_t                         _res;                           \
+    globus_bool_t                           _fire_cb = GLOBUS_TRUE;         \
+    globus_xio_iovec_t *                    _tmp_iovec;                     \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_i_xio_context_entry_t *          _next_context;                  \
+    globus_i_xio_context_t *                _context;                       \
+    int                                     _iovec_count;                   \
+    globus_callback_space_t                 _space =                        \
+                            GLOBUS_CALLBACK_GLOBAL_SPACE;                   \
     GlobusXIOName(GlobusXIODriverFinishedWrite);                            \
                                                                             \
     _op = (globus_i_xio_op_t *)(op);                                        \
@@ -498,7 +514,12 @@
             globus_free(_my_op->_op_ent_fake_iovec);                        \
             _my_op->_op_ent_fake_iovec = NULL;                              \
         }                                                                   \
-        if(_my_op->in_register)                                             \
+        if(_op->ndx == 0 && !_op->blocking)                                 \
+        {                                                                   \
+            _space = _op->_op_handle->space;                                \
+        }                                                                   \
+        if(_my_op->in_register ||                                           \
+            _space != GLOBUS_CALLBACK_GLOBAL_SPACE)                         \
         {                                                                   \
             GlobusXIODebugInregisterOneShot();                              \
             globus_callback_space_register_oneshot(                         \
@@ -701,6 +722,8 @@
     globus_i_xio_context_entry_t *                  _next_context;          \
     globus_i_xio_context_t *                        _context;               \
     int                                             _iovec_count;           \
+    globus_callback_space_t                 _space =                        \
+                            GLOBUS_CALLBACK_GLOBAL_SPACE;                   \
     GlobusXIOName(GlobusXIODriverFinishedRead);                             \
                                                                             \
     _op = (globus_i_xio_op_t *)(op);                                        \
@@ -799,7 +822,12 @@
             _my_op->_op_ent_fake_iovec = NULL;                              \
         }                                                                   \
                                                                             \
-        if(_my_op->in_register)                                             \
+        if(_op->ndx == 0 && !_op->blocking)                                 \
+        {                                                                   \
+            _space = _op->_op_handle->space;                                \
+        }                                                                   \
+        if(_my_op->in_register ||                                           \
+            _space != GLOBUS_CALLBACK_GLOBAL_SPACE)                         \
         {                                                                   \
             _op->cached_res = (_res);                                       \
             GlobusXIODebugInregisterOneShot();                              \
@@ -986,6 +1014,8 @@
 {                                                                           \
     globus_i_xio_op_t *                             _op;                    \
     globus_i_xio_op_entry_t *                       _my_op;                 \
+    globus_callback_space_t                 _space =                        \
+                            GLOBUS_CALLBACK_GLOBAL_SPACE;                   \
     GlobusXIOName(GlobusXIODriverFinishedAccept);                           \
                                                                             \
     _op = (globus_i_xio_op_t *)(_in_op);                                    \
@@ -998,7 +1028,12 @@
                                                                             \
     _my_op->target = (_in_target);                                          \
                                                                             \
-    if(_my_op->in_register)                                                 \
+    if(_op->ndx == 0 && !_op->blocking)                                     \
+    {                                                                       \
+        _space = _op->_op_handle->space;                                    \
+    }                                                                       \
+    if(_my_op->in_register ||                                               \
+        _space != GLOBUS_CALLBACK_GLOBAL_SPACE)                             \
     {                                                                       \
         GlobusXIODebugInregisterOneShot();                                  \
         globus_callback_space_register_oneshot(                             \

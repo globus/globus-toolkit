@@ -465,6 +465,7 @@ typedef struct globus_i_xio_op_s
     globus_bool_t                           canceled;
     globus_bool_t                           block_timeout;
 
+    globus_bool_t                           blocking;
     /* result code saved in op for kickouts */
     globus_result_t                         cached_res;
 
