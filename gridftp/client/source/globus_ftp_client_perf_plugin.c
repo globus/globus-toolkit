@@ -53,6 +53,8 @@ typedef struct perf_plugin_info_s
     globus_ftp_client_perf_plugin_user_copy_cb_t    copy_cb;
     globus_ftp_client_perf_plugin_user_destroy_cb_t destroy_cb;
 
+    globus_bool_t                                   success;
+
     /* used for get command or put (when put not in EB mode) only */
     globus_bool_t                                   use_data;
     time_t                                          last_time;
@@ -85,8 +87,53 @@ perf_plugin_complete_cb(
     {
         ps->complete_cb(
             handle,
-            ps->user_specific);
+            ps->user_specific,
+            ps->success);
     }
+}
+
+/**
+ * Plugin abort callback
+ * @ingroup globus_ftp_client_restart_marker_plugin
+ *
+ * This callback will be called when an abort has been requested
+ */
+
+static
+void perf_plugin_abort_cb(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle)
+{
+    perf_plugin_info_t *                        ps;
+
+    ps = (perf_plugin_info_t *) plugin_specific;
+
+    ps->success = GLOBUS_FALSE;
+}
+
+/**
+ * Plugin fault callback
+ * @ingroup globus_ftp_client_restart_marker_plugin
+ *
+ * This callback will be called when one of the transfer commands
+ * has failed.
+ */
+
+static
+void
+perf_plugin_fault_cb(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle,
+    const char *                                url,
+    globus_object_t *                           error)
+{
+    perf_plugin_info_t *                        ps;
+
+    ps = (perf_plugin_info_t *) plugin_specific;
+
+    ps->success = GLOBUS_FALSE;
 }
 
 /**
@@ -257,12 +304,14 @@ perf_plugin_get_cb(
 {
     perf_plugin_info_t *                        ps;
 
+    ps = (perf_plugin_info_t *) plugin_specific;
+
+    ps->success = GLOBUS_TRUE;
+
     if(restart)
     {
         return;
     }
-
-    ps = (perf_plugin_info_t *) plugin_specific;
 
     ps->use_data = GLOBUS_TRUE;
     ps->nbytes = 0;
@@ -301,12 +350,14 @@ perf_plugin_put_cb(
     globus_ftp_control_mode_t                   mode;
     globus_result_t                             result;
 
+    ps = (perf_plugin_info_t *) plugin_specific;
+
+    ps->success = GLOBUS_TRUE;
+
     if(restart)
     {
         return;
     }
-
-    ps = (perf_plugin_info_t *) plugin_specific;
 
     result = globus_ftp_client_operationattr_get_mode(attr, &mode);
     if(result == GLOBUS_SUCCESS &&
@@ -354,12 +405,14 @@ perf_plugin_transfer_cb(
 {
     perf_plugin_info_t *                        ps;
 
+    ps = (perf_plugin_info_t *) plugin_specific;
+
+    ps->success = GLOBUS_TRUE;
+
     if(restart)
     {
         return;
     }
-
-    ps = (perf_plugin_info_t *) plugin_specific;
 
     ps->use_data = GLOBUS_FALSE;
 
@@ -583,6 +636,10 @@ globus_ftp_client_perf_plugin_init(
         perf_plugin_response_cb);
     globus_ftp_client_plugin_set_complete_func(plugin,
         perf_plugin_complete_cb);
+    globus_ftp_client_plugin_set_fault_func(plugin,
+        perf_plugin_fault_cb);
+    globus_ftp_client_plugin_set_abort_func(plugin,
+        perf_plugin_abort_cb);
 
     return GLOBUS_SUCCESS;
 }

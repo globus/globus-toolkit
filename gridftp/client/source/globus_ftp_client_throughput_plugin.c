@@ -253,7 +253,8 @@ static
 void
 throughput_plugin_complete_cb(
     globus_ftp_client_handle_t *                handle,
-    void *                                      user_specific)
+    void *                                      user_specific,
+    globus_bool_t                               success)
 {
     throughput_plugin_info_t *                  info;
 
@@ -261,7 +262,7 @@ throughput_plugin_complete_cb(
 
     if(info->complete_cb)
     {
-        info->complete_cb(handle, info->user_arg);
+        info->complete_cb(handle, info->user_arg, success);
     }
 
     if(info->prev_times)

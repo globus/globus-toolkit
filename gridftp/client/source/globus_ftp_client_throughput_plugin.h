@@ -157,13 +157,18 @@ typedef void (*globus_ftp_client_throughput_plugin_total_cb_t)(
  * @param user_arg
  *        User argument passed to globus_ftp_client_throughput_plugin_init
  *
+ * @param success
+ *        indicates whether this transfer completed successfully or was
+ *        interrupted (by error or abort)
+ *
  * @return
  *        - n/a
  */
 
 typedef void (*globus_ftp_client_throughput_plugin_complete_cb_t)(
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_arg);
+    void *                                          user_arg,
+    globus_bool_t                                   success);
 
 globus_result_t
 globus_ftp_client_throughput_plugin_init(

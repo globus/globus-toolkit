@@ -44,6 +44,8 @@ typedef struct
     globus_ftp_client_operationattr_t 		dest_attr;
 
     globus_i_ftp_client_operation_t		operation;
+
+    globus_bool_t                               abort_pending;
 }
 globus_l_ftp_client_restart_plugin_t;
 
@@ -151,6 +153,12 @@ globus_l_ftp_client_restart_plugin_third_party_transfer(
     const char *				dest_url,
     const globus_ftp_client_operationattr_t *	dest_attr,
     globus_bool_t 				restart);
+
+static
+void globus_l_ftp_client_restart_plugin_abort(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle);
 
 static
 void
@@ -451,6 +459,19 @@ globus_l_ftp_client_restart_plugin_third_party_transfer(
 /* globus_l_ftp_client_restart_plugin_third_party_transfer() */
 
 static
+void globus_l_ftp_client_restart_plugin_abort(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    d->abort_pending = GLOBUS_TRUE;
+}
+
+static
 void
 globus_l_ftp_client_restart_plugin_fault(
     globus_ftp_client_plugin_t *		plugin,
@@ -463,6 +484,11 @@ globus_l_ftp_client_restart_plugin_fault(
     globus_abstime_t				when;
 
     d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    if(d->abort_pending)
+    {
+        return;
+    }
 
     if(d->max_retries == 0)
     {
@@ -666,7 +692,7 @@ globus_ftp_client_restart_plugin_init(
 	d->interval.tv_sec = 1;
 	d->interval.tv_usec = 0;
     }
-    
+
     if(deadline)
     {
 	GlobusTimeAbstimeCopy(d->deadline, *deadline);
@@ -688,6 +714,7 @@ globus_ftp_client_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, put);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, third_party_transfer);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, fault);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, abort);
 
     return GLOBUS_SUCCESS;
 
@@ -762,5 +789,6 @@ globus_l_ftp_client_restart_plugin_genericify(
     globus_ftp_client_operationattr_destroy(&d->dest_attr);
 
     d->operation = GLOBUS_FTP_CLIENT_IDLE;
+    d->abort_pending = GLOBUS_FALSE;
 }
 /* globus_l_ftp_client_restart_plugin_genericify() */

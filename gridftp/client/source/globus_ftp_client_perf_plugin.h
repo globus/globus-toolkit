@@ -139,13 +139,18 @@ typedef void (*globus_ftp_client_perf_plugin_marker_cb_t)(
  *        or, if a copy method was not specified, the value passed to
  *        init
  *
+ * @param success
+ *        indicates whether this transfer completed successfully or was
+ *        interrupted (by error or abort)
+ *
  * @return
  *        - n/a
  */
 
 typedef void (*globus_ftp_client_perf_plugin_complete_cb_t)(
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific);
+    void *                                          user_specific,
+    globus_bool_t                                   success);
 
 /**
  * Copy constructor
