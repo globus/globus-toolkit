@@ -13,6 +13,4 @@ if test "$QSTAT" = "no" ; then
     AC_MSG_ERROR("Cannot locate qstat")
 fi
 
-AC_OUTPUT(
-  globus-script-pbs-queue.in
-)
+AC_OUTPUT( $GLOBUS_LOCATION/libexec/globus-script-pbs-queue:globus-script-pbs-queue.in )
