@@ -124,6 +124,7 @@ void setup_paths(void)
     FILE *svrfp;
     struct hostent *shp;
     struct stat st;
+    char *                              slash = "/";
 #if defined(UNIXWARE) || defined(AIX)
     size_t virtual_len;
 #else
@@ -135,9 +136,13 @@ void setup_paths(void)
 
 #if defined(USE_GLOBUS_PATHS)
     /* For Globus packages, we put all configuration in the GLOBUS_LOCATION */
-    char * globus_loc;
+    char * globus_loc = NULL;
 
     globus_location(&globus_loc);
+    if(globus_loc == NULL)
+    {
+        globus_loc = slash;
+    }
 
     strcpy(_path_ftpaccess, globus_loc);
     strcat(_path_ftpaccess, _PATH_FTPACCESS);
