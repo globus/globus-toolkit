@@ -17,9 +17,11 @@
 #include <errno.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #ifndef SUPPORT_SSL_ANONYMOUS_AUTH
 #include <gssapi.h>
+#include <globus_gss_assist.h>
 #endif
 
 struct _gsi_socket 
@@ -868,7 +870,6 @@ my_ssl_init(int verify, int peer_has_proxy, int allow_anonymous)
     if (userproxy) free(userproxy);
     return cred_handle;
 }
-#endif
 
 static int
 my_memccmp(unsigned char *s1, unsigned char *s2, unsigned int n)
@@ -882,6 +883,7 @@ my_memccmp(unsigned char *s1, unsigned char *s2, unsigned int n)
     }
     return 0;
 }
+#endif
 
 int
 GSI_SOCKET_authentication_init(GSI_SOCKET *self)
@@ -1786,7 +1788,7 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     int			output_buffer_len;
     unsigned char	*input_buffer = NULL;
     int			input_buffer_len;
-    char		filename[] = "/tmp/proxy-deleg-XXXXXX";
+    char		filename[L_tmpnam];
     
     if (self == NULL)
     {	
@@ -1840,10 +1842,10 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     }
     
     /* Now store the credentials */
-    if (mktemp(filename) == NULL)
+    if (tmpnam(filename) == NULL)
     {
 	self->error_number = errno;
-	self->error_string = strdup("mktemp() failed");
+	self->error_string = strdup("tmpnam() failed");
 	goto error;
     }
     
