@@ -35,9 +35,9 @@ static globus_bool_t                            g_send_range;
     signal(SIGPIPE, lostconn);     \
 }
 
-/*
+
 #define BACKEND_STRIPED_SERVER 1
-*/
+
 typedef struct
 {
     globus_size_t		offset;
