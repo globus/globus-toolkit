@@ -2354,7 +2354,7 @@ globus_l_io_handle_events(
 #endif
 
     done = GLOBUS_FALSE;
-    while(!done && !handled_something && !globus_l_io_shutdown_called)
+    while(!done && !globus_l_io_shutdown_called)
     {
         if(globus_reltime_cmp(time_left, &globus_i_reltime_zero) == 0)
         {
@@ -2444,12 +2444,6 @@ globus_l_io_handle_events(
             handled_something = GLOBUS_TRUE;
         }
     
-        if (globus_l_io_fd_num_set <= 0)
-        {
-            done = GLOBUS_TRUE;
-            continue;
-        }
-    
 		/* NOTE: While it seems like a sensible course of action to
 		 * bail out of this function if there are no I/O operations to
 		 * wait for, we cannot do so on Windows in a multi-threaded
@@ -2469,6 +2463,14 @@ globus_l_io_handle_events(
 		 * possible for globus_l_io_fd_num_set to be 0, which at times 
 		 * will allow this race condition to have effect.
 		 */
+#ifndef TARGET_ARCH_WIN32
+        if (globus_l_io_fd_num_set <= 0)
+        {
+            done = GLOBUS_TRUE;
+            continue;
+        }
+#endif
+
         /*
          * round the highest fd to the nearest 64 bits, since we
          * do not know where in the struct it will be located
@@ -2504,9 +2506,6 @@ globus_l_io_handle_events(
             use_timeout = GLOBUS_TRUE;
         }
 #ifdef TARGET_ARCH_WIN32
-		// For now, make sure the timeout is not zero; otherwise, this
-		// loop could chew up 100% of the CPU time (it happened in
-		// testing)
 		if ( time_left_is_zero )
 		{
 			winTimeout= 0;
@@ -2652,6 +2651,9 @@ globus_l_io_handle_events(
 			error= globus_i_io_windows_get_last_error();
 			if ( errno == GLOBUS_WIN_EOF )
 			{
+				// TESTING!!!
+				fprintf( stderr, "globus_l_io_handle_events().1: setting eof\n" );
+				// END TESTING
 				err = globus_io_error_construct_eof(
 						GLOBUS_IO_MODULE,
 						GLOBUS_NULL,
@@ -2904,6 +2906,9 @@ globus_l_io_handle_events(
 						== 1 && handle->type != 
 						GLOBUS_IO_HANDLE_TYPE_FILE )
 					{
+						// TESTING!!!
+						fprintf( stderr, "globus_l_io_handle_events().2: setting eof\n" );
+						// END TESTING
 						err = globus_io_error_construct_eof(
 								GLOBUS_IO_MODULE,
 								GLOBUS_NULL,

@@ -2808,10 +2808,10 @@ globus_l_io_read_auth_token(
         GLOBUS_NULL,
         GLOBUS_TRUE,
         GLOBUS_I_IO_READ_OPERATION);
-    globus_i_io_mutex_unlock();
     
     if(result != GLOBUS_SUCCESS)
     {
+	    globus_i_io_mutex_unlock();
         err = globus_error_get(result);
 
         goto error_exit;
@@ -2828,6 +2828,7 @@ globus_l_io_read_auth_token(
 		// unregister the read operation
 		globus_i_io_unregister_operation( handle, GLOBUS_FALSE,
 		 GLOBUS_I_IO_READ_OPERATION );
+	    globus_i_io_mutex_unlock();
 
 		err = globus_io_error_construct_system_failure(
 			GLOBUS_IO_MODULE,
@@ -2837,6 +2838,7 @@ globus_l_io_read_auth_token(
 		goto error_exit;
 	}
 #endif
+    globus_i_io_mutex_unlock();
     
 do_return:
     globus_i_io_debug_printf(3, (stderr, 

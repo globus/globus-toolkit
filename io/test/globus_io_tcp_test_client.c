@@ -287,14 +287,14 @@ test1(int argc, char **argv)
 	  default:
 	    printf("unknown flag -%c\n",(char) c);
 	    globus_io_tcpattr_destroy(&attr);
-	    return;
+	    return -1;
 	}
     }
     if(host == GLOBUS_NULL || port == 0)
     {
 	printf("please specify -h host and -p port\n");
 	globus_io_tcpattr_destroy(&attr);
-	return;
+	return -1;
     }
 
     result = globus_io_tcp_connect(

@@ -264,7 +264,7 @@ test1(int argc, char **argv)
 	  default:
 	    printf("unknown flag -%c\n", (char ) c);
 	    globus_io_tcpattr_destroy(&attr);
-	    return;
+	    return -1;
 	}
     }
 

@@ -1,10 +1,8 @@
 #include "globus_io.h"
 #ifndef TARGET_ARCH_WIN32
 #include <fcntl.h>
-//#else
-//#include "globus_io_windows.h"
 #endif
-// forward declaration
+/* forward declaration */
 void usage( char * executableName );
 
 /*
@@ -27,12 +25,18 @@ main(int argc, char **argv)
     globus_io_handle_t                  stdout_handle;
     globus_size_t                       bytes;
     globus_size_t                       i;
-    globus_byte_t                       buf[10];
+    globus_byte_t                       buf[1024];
 #ifdef TARGET_ARCH_WIN32
 	HANDLE						outputFile;
     globus_io_handle_t			write_handle;
 #endif
-    
+
+	if ( argc < 3 )
+	{
+		usage( argv[0] );
+		return -1;
+	}
+
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);
 
@@ -43,11 +47,6 @@ main(int argc, char **argv)
 				 GLOBUS_NULL,
 				 &handle);
 #else
-	if ( argc < 3 )
-	{
-		usage( argv[0] );
-		return -1;
-	}
     result = globus_io_file_open( argv[1],
 				 O_RDONLY,
 				 0,
@@ -59,7 +58,11 @@ main(int argc, char **argv)
     {
         error = globus_error_get(result);
         errstring = globus_object_printable_to_string(error);
+#ifndef TARGET_ARCH_WIN32
         globus_libc_printf("test failed to open /etc/group: %s\n", errstring);
+#else
+        globus_libc_printf("test failed to open %s: %s\n", argv[1], errstring);
+#endif
         goto done;
     }
     
@@ -95,8 +98,8 @@ main(int argc, char **argv)
     {
         result = globus_io_read(&handle,
                                 buf,
-                                10,
-                                1,
+                                sizeof(buf),
+                                sizeof(buf),
                                 &bytes);
         if(result == GLOBUS_SUCCESS ||
            ((error = globus_error_get(result)) &&

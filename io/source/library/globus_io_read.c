@@ -628,6 +628,9 @@ globus_i_io_try_read(
 	}
 	else if (n_read == 0)
 	{
+		// TESTING!!!
+		fprintf( stderr, "globus_i_io_try_read().1: setting eof\n" );
+		// END TESTING
 	    err =
 		globus_io_error_construct_eof(
 		    GLOBUS_IO_MODULE,
@@ -964,6 +967,9 @@ globus_l_io_read_callback(
 						if ( handle->type == GLOBUS_IO_HANDLE_TYPE_FILE 
 						 && errno == GLOBUS_WIN_EOF )
 						{
+							// TESTING!!!
+							fprintf( stderr, "globus_l_io_read_callback().1: setting eof\n" );
+							// END TESTING
 							err= globus_io_error_construct_eof(
 									GLOBUS_IO_MODULE,
 									GLOBUS_NULL,
@@ -994,6 +1000,9 @@ globus_l_io_read_callback(
 		}
 		else if (n_read == 0)
 		{
+			// TESTING!!!
+			fprintf( stderr, "globus_l_io_read_callback().2: setting eof\n" );
+			// END TESTING
 			err =
 			globus_io_error_construct_eof(
 				GLOBUS_IO_MODULE,
