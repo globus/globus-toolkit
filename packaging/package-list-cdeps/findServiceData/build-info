@@ -1,4 +1,0 @@
-name=findServiceData
-subdir=ogsa_client/findServiceData/
-build="custom"
-output=ogsa_client_findServiceData-*.tar.gz
