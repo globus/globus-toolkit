@@ -1,5 +1,4 @@
-include $(top_srcdir)/globus_automake_config
-include $(top_srcdir)/globus_automake_targets
+include $(top_srcdir)/globus_automake_pre
 
 Sources= \
 	globus_args.c \
@@ -116,6 +115,4 @@ EXTRA_DIST = \
 	globus_thread_sproc.c \
 	globus_thread_sproc.h
 
-
-include $(top_srcdir)/globus_automake_rules
-
+include $(top_srcdir)/globus_automake_post
