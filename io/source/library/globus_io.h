@@ -44,7 +44,7 @@ EXTERN_C_BEGIN
 #include "globus_gss_assist.h"
 #endif
 
-#ifdef _HAVE_GSI_EXTENDED_GSSAPI
+#ifndef _HAVE_GSI_EXTENDED_GSSAPI
 #include "globus_gss_ext_compat.h"
 #endif
 
