@@ -4,27 +4,19 @@
  */
 package org.globus.ogsa.impl.base.streaming;
 
-import java.rmi.RemoteException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.Vector;
 
 import javax.xml.namespace.QName;
-
-import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
-import org.globus.ogsa.base.streaming.FileStreamOptionsType;
-import org.globus.ogsa.base.streaming.FileStreamOptionsWrapperType;
 import org.globus.ogsa.base.streaming.FileStreamFactoryOptionsType;
 import org.globus.ogsa.base.streaming.FileStreamFactoryOptionsWrapperType;
-import org.globus.ogsa.base.streaming.FileStreamPortType;
-import org.globus.ogsa.impl.ogsi.PersistentGridServiceImpl;
 import org.globus.ogsa.impl.ogsi.GridServiceImpl;
 import org.globus.ogsa.ServiceData;
 import org.globus.ogsa.ServiceDataValueCallback;
@@ -39,7 +31,13 @@ public class FileStreamFactoryImpl extends GridServiceImpl
     private static Log logger
         = LogFactory.getLog(FileStreamFactoryImpl.class);
 
-    public static String SOURCE_PATH_SD_NAME = "sourcePath";
+    public static String FSF_NAMESPACE
+        = "http://www.globus.org/namespaces/2003/04/base/streaming";
+    public static QName SOURCE_PATH_SD_QNAME =
+        new QName(FSF_NAMESPACE, "sourcePath");
+    public static QName FILE_SIZE_SD_QNAME =
+        new QName(FSF_NAMESPACE, "fileSize");
+    private File path;
 
     public FileStreamFactoryImpl() {
         super ("File Stream Factory Service");
@@ -70,28 +68,34 @@ public class FileStreamFactoryImpl extends GridServiceImpl
             logger.debug("saving source path as service data: " + sourcePath);
         }
 
+        this.path = new File(sourcePath);
+
         try {
-            ServiceData sourcePathSd = this.serviceData.create("sourcePath");
+            ServiceData sourcePathSd = this.serviceData.create(
+                    SOURCE_PATH_SD_QNAME);
             sourcePathSd.setValue(sourcePath);
             this.serviceData.add(sourcePathSd);
+
+            ServiceData fileSizeSd = this.serviceData.create(
+                    FILE_SIZE_SD_QNAME);
+            fileSizeSd.setCallback(this);
+            this.serviceData.add(fileSizeSd);
         } catch (GridServiceException gse) {
             logger.error("problem creating source path service data", gse);
         }
     }
 
-    //*** ServiceDataValueCallback method ***//
     public Collection getServiceDataValues(QName qname) {
-        if (qname.getLocalPart().equals(SOURCE_PATH_SD_NAME)) {
-            ArrayList sdList = new ArrayList();
-            Iterator sdIter = this.serviceData.iterator();
-            while (sdIter.hasNext()) {
-                ServiceData serviceData = (ServiceData) sdIter.next();
-                sdList.add(serviceData.getName());
-            }
+        if (qname.equals(FILE_SIZE_SD_QNAME)) {
+            Integer l = new Integer((int) path.length());
+            logger.debug("query of file size will return " + l.toString());
 
-            return sdList;
+            ArrayList al = new ArrayList(1);
+            al.add(l);
+
+            return al;
+        } else {
+            return super.getServiceDataValues(qname);
         }
-
-        return new ArrayList();
     }
 }

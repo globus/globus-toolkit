@@ -28,11 +28,13 @@ import org.apache.commons.logging.LogFactory;
 import org.globus.axis.gsi.GSIConstants;
 import org.globus.ogsa.impl.security.authorization.SelfAuthorization;
 
+import org.globus.ogsa.base.streaming.FileStreamFactoryPortType;
 import org.globus.ogsa.base.streaming.FileStreamOptionsType;
 import org.globus.ogsa.base.streaming.FileStreamOptionsWrapperType;
 import org.globus.ogsa.base.streaming.FileStreamFactoryOptionsType;
 import org.globus.ogsa.base.streaming.FileStreamFactoryOptionsWrapperType;
 import org.globus.ogsa.base.streaming.FileStreamPortType;
+import org.globus.ogsa.base.streaming.service.FileStreamFactoryServiceGridLocator;
 import org.globus.ogsa.base.streaming.service.FileStreamServiceGridLocator;
 import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.ogsa.server.test.GridTestCase;
@@ -167,6 +169,17 @@ public class FileStreamTestCase extends GridTestCase {
         return fileStream;
     }
 
+    private void truncateTestFile() {
+        try {
+            //BufferedWriter writer = new BufferedWriter(
+            FileWriter writer =
+                    new FileWriter(TEST_SOURCE_FILE, false);
+            writer.close();
+        } catch (IOException ioe) {
+            logger.error("source file truncate failed", ioe);
+        }
+    }
+
     private void sendTestPattern(int testPatternIndex) {
         try {
             //BufferedWriter writer = new BufferedWriter(
@@ -191,6 +204,33 @@ public class FileStreamTestCase extends GridTestCase {
         } catch (IOException ioe) {
             logger.error("destination file read failed", ioe);
         }
+    }
+
+    private void assertFileSize(FileStreamFactoryPortType fsf, int target) {
+        try {
+            Integer i = null;
+            Object o = null;
+            QName fileSizeSDE = new QName(
+                    "http://www.globus.org/namespaces/2003/04/base/streaming",
+                    "fileSize");
+            ExtensibilityType queryResult =
+                fsf.findServiceData(QueryHelper.getNamesQuery(fileSizeSDE));
+            ServiceDataValuesType sd = (ServiceDataValuesType)
+                AnyHelper.getAsServiceDataValues(queryResult);
+
+            assertNotNull("done service data is null", sd);
+            assertNotNull("done service data doesn't contain a value", sd.get_any());
+            o = AnyHelper.getAsSingleObject(sd);
+            assertNotNull("done service data didn't contain an object", o);
+            assertEquals("done did not contain a Boolean", o.getClass(), Integer.class);
+
+            i = (Integer) o;
+
+            assertEquals("unexpected value of \"done\" SDE", i, new Integer(target));
+        } catch (Exception e) {
+            assertNull(e.toString(), e);
+        }
+        logger.debug("fileSize equalled what I expected");
     }
 
     private void assertDoneEquals(FileStreamPortType fileStream, Boolean hope) {
@@ -221,12 +261,36 @@ public class FileStreamTestCase extends GridTestCase {
     }
 
     public void testFileStream() {
+        FileStreamFactoryPortType fsf = null;
+
+        truncateTestFile();
         try {
             createServer();
         } catch (Exception e) {
             logger.error("problem creating FileStreamFactory", e);
             return;
         }
+
+        FileStreamFactoryServiceGridLocator loc = 
+                new FileStreamFactoryServiceGridLocator();
+
+        try {
+            fsf = loc.getFileStreamFactoryPort(this.factoryHandleLocator);
+            ((Stub) fsf)._setProperty(
+                    Constants.GSI_SEC_CONV,
+                    Constants.SIGNATURE);
+            ((Stub) fsf)._setProperty(
+                    Constants.AUTHORIZATION,
+                    SelfAuthorization.getInstance());
+            ((Stub) fsf)._setProperty(
+                    GSIConstants.GSI_MODE,
+                    GSIConstants.GSI_MODE_LIMITED_DELEG);
+        } catch (Exception e) {
+            logger.error("problem getting fsf port", e);
+            return;
+        }
+
+        assertFileSize(fsf, 0);
 
         FileStreamPortType fileStream = null;
 
@@ -243,6 +307,7 @@ public class FileStreamTestCase extends GridTestCase {
 					 SelfAuthorization.getInstance());
 
         sendTestPattern(0);
+        assertFileSize(fsf, TEST_PATTERNS[0].length());
 
         try {
             fileStream.start();

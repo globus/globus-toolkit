@@ -33,6 +33,18 @@
         </documentation>
     </sd:serviceData>
 
+    <sd:serviceData name="fileSize"
+                    type="xsd:nonNegativeInteger"
+                    minOccurs="1"
+                    maxOccurs="1"
+                    mutability="mutable"
+                    modifiable="false"
+                    nillable="true">
+        <documentation>
+            The current size of the file which this factory will stream.
+        </documentation>
+    </sd:serviceData>
+
 </gwsdl:portType>
 
 </definitions>

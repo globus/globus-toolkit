@@ -118,7 +118,7 @@ public class FileStreamImpl extends GridServiceImpl {
         FileStreamFactoryImpl factory
             = (FileStreamFactoryImpl) getProperty(ServiceProperties.FACTORY);
         ServiceData factoryServiceData = factory.getServiceDataSet().get(
-                FileStreamFactoryImpl.SOURCE_PATH_SD_NAME);
+                FileStreamFactoryImpl.SOURCE_PATH_SD_QNAME);
         this.sourcePath = (String) factoryServiceData.getValue();
 
         if (logger.isDebugEnabled()) {
