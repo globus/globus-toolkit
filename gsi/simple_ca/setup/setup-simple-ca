@@ -527,7 +527,7 @@ install_security_config() {
 ################################################################
 finish_simple_ca_setup() {
 
-    ${GLOBUS_SH_PERL-perl} -I${GLOBUS_LOCATION}/lib/perl -e " \
+    ${GLOBUS_SH_PERL-perl} -I${GPT_LOCATION}/lib/perl -I${GLOBUS_LOCATION}/lib/perl -e " \
 \
 use Getopt::Long; \
 use English; \
