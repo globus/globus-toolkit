@@ -16,7 +16,7 @@ Useful targets are:
 
   <property file="${user.home}/build.properties"/>
   <property file="build.properties"/>
-  <property name="ogsa.root" value="../../ogsa/impl/java"/>
+  <property name="ogsa.root" value="../ogsa/impl/java"/>
   <property file="${ogsa.root}/ogsa.properties"/>
 
   <property name="build.dir" value="build" />
@@ -80,14 +80,15 @@ Useful targets are:
   </target>
 
   <target name="stubs">
-    <ant antfile="${aggregator.dir}/build.xml target="stubs"/>
-    <ant antfile="${filestreaming.dir}/build.xml target="stubs"/>
-    <ant antfile="${index.dir}/build.xml target="stubs"/>
-    <ant antfile="${mjs.dir}/build.xml target="stubs"/>
-    <ant antfile="${multirft.dir}/build.xml target="stubs"/>
-    <ant antfile="${providers.dir}/build.xml target="stubs"/>
-    <ant antfile="${rips.dir}/build.xml target="stubs"/>
-    <ant antfile="${servicegroup.dir}/build.xml target="stubs"/>
+    <ant dir="${ogsa.root}" target="stubs" inheritAll="false"/>
+    <ant dir="${aggregator.dir}" target="stubs" inheritAll="false"/>
+    <ant dir="${filestreaming.dir}" target="stubs" inheritAll="false"/>
+    <ant dir="${index.dir}" target="stubs" inheritAll="false"/>
+    <ant dir="${mjs.dir}" target="stubs" inheritAll="false"/>
+    <ant dir="${multirft.dir}" target="stubs" inheritAll="false"/>
+    <ant dir="${providers.dir}" target="stubs" inheritAll="false"/>
+    <ant dir="${rips.dir}" target="stubs" inheritAll="false"/>
+    <ant dir="${servicegroup.dir}" target="stubs" inheritAll="false"/>
   </target>
 
   <target name="javadocs" depends="stubs">
