@@ -41,6 +41,9 @@ EXTERN_C_BEGIN
                                Define constants
 ******************************************************************************/
 
+#define GLOBUS_GSI_GSS_ASSIST_MODULE (&globus_i_gss_assist_bogus_module)
+extern globus_module_descriptor_t globus_i_gss_assist_bogus_module;
+
 #define GLOBUS_GSS_ASSIST_TOKEN_ERR_MALLOC		1
 #define GLOBUS_GSS_ASSIST_TOKEN_ERR_BAD_SIZE	2
 #define GLOBUS_GSS_ASSIST_TOKEN_EOF				3

@@ -18,6 +18,16 @@ CVS Information:
 #include "globus_gss_assist.h"
 #include <gssapi.h>
 
+globus_module_descriptor_t       globus_i_gss_assist_bogus_module =
+{
+   "globus_gss_assist",
+   GLOBUS_NULL,
+   GLOBUS_NULL,
+   GLOBUS_NULL,
+   GLOBUS_NULL,
+   GLOBUS_NULL
+};
+
 extern gss_OID gss_nt_service_name;
 /******************************************************************************
                                Type definitions
