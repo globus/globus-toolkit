@@ -215,7 +215,7 @@ globus_i_ftp_client_response_callback(
      * machine, which a few states will require.
      */
     
-    pathname = target->url.url_path ? target->url.url_path : "";
+    pathname = target->url.url_path ? target->url.url_path : "/";
     
 redo:
     switch(target->state)
@@ -1961,18 +1961,18 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION:
 	switch(client_handle->op)
 	{
-	case GLOBUS_FTP_CLIENT_LIST:
-	case GLOBUS_FTP_CLIENT_NLST:
-	case GLOBUS_FTP_CLIENT_MLSD:
+	  case GLOBUS_FTP_CLIENT_LIST:
+	  case GLOBUS_FTP_CLIENT_NLST:
+	  case GLOBUS_FTP_CLIENT_MLSD:
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST;
 	    goto redo;
-	case GLOBUS_FTP_CLIENT_GET:
+	  case GLOBUS_FTP_CLIENT_GET:
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_GET;
 	    goto redo;
-	case GLOBUS_FTP_CLIENT_PUT:
+	  case GLOBUS_FTP_CLIENT_PUT:
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PUT;
 	    goto redo;
-	case GLOBUS_FTP_CLIENT_TRANSFER:
+	  case GLOBUS_FTP_CLIENT_TRANSFER:
 	    if(client_handle->state ==
 	       GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION)
 	    {
@@ -1983,12 +1983,12 @@ redo:
 		target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_SOURCE;
 	    }
 	    goto redo;
-	case GLOBUS_FTP_CLIENT_IDLE:
+	  case GLOBUS_FTP_CLIENT_IDLE:
 	    globus_assert(client_handle->op != GLOBUS_FTP_CLIENT_IDLE);
 	    goto finish;
 
-	default:/* No other states should occur */
-	  globus_assert(0 && "Unexpected state");
+	  default:/* No other states should occur */
+	    globus_assert(0 && "Unexpected state");
 	}
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST:
@@ -2027,8 +2027,9 @@ redo:
 	    list_str = "MLSD";
 	    break;
 
-      default:
-        globus_assert(0 && "Unexpected list op");
+          default:
+            globus_assert(0 && "Unexpected list op");
+            break;
 	}
 	
 	
