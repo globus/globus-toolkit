@@ -26,25 +26,15 @@ if (!defined($gpath))
 
 require Grid::GPT::Setup;
 
-if( ! &GetOptions("nonroot|d:s") ) { 
-
-    print <<EOF
-
-setup-gsi [ options ...]
-
-  Options:
-    --nonroot=DIR, -d DIR     sets the directory that the security configuration 
-	                      files will be placed.  If no argument is given, 
-	                      the config files will be placed in \$GLOBUS_LOCATION/etc/.
-			      Without the option, the script checks to see if
-			      /etc/grid-security/ is writeable, otherwise
-			      \$GLOBUS_LOCATION/etc/ is used.
-EOF
-    ;
-
-    exit 1;
+if( ! &GetOptions("nonroot|d:s","help!") ) 
+{
+   pod2usage(1);
 }
 
+if(defined($opt_help))
+{
+   pod2usage(0);
+}
 
 my $setupdir = "$globusdir/setup/globus/";
 
@@ -52,24 +42,30 @@ my $target_dir = "";
 
 if(defined($opt_nonroot))
 {
-    if($opt_nonroot eq "") {
+    if($opt_nonroot eq "") 
+    {
 	$target_dir = $globusdir . "/etc/";
-    } else {
+    } 
+    else 
+    {
 	$target_dir = "$opt_nonroot";
     }
 
-    $ENV{GRID_SECURITY_DIR} = "$target_dir";
 }
 else
 {
    $target_dir = "/etc/grid-security";
 }
+    
+$ENV{GRID_SECURITY_DIR} = "$target_dir";
 
 my $trusted_certs_dir;
-if($target_dir eq "/etc/grid-security/") {
-    
+if($target_dir eq "/etc/grid-security/") 
+{
     $trusted_certs_dir = $target_dir . "/certificates";
-} else {
+} 
+else 
+{
     $trusted_certs_dir = $globusdir . "/share/certificates";
 }
 
@@ -215,5 +211,22 @@ if($statres[5] != $EUID)
 my $metadata = new Grid::GPT::Setup(package_name => "globus_ssl_utils_setup");
 
 $metadata->finish();
+
+sub pod2usage 
+{
+  my $ex = shift;
+
+  print "setup-gsi [
+              -help
+              -nonroot[=path] 
+                 sets the directory that the security configuration
+	         files will be placed in.  If no argument is given,
+	         the config files will be placed in \$GLOBUS_LOCATION/etc/
+                 and the CA files will be placed in  
+                 \$GLOBUS_LOCATION/share/certificates.
+          ]\n";
+
+  exit $ex;
+}
 
 # End

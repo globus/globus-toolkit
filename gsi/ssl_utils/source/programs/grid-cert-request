@@ -10,12 +10,19 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
-if [ -z "${GRID_SECURITY_DIR}" ]; then
+
+if [ ! -z "${GRID_SECURITY_DIR}" ]; then
     secconfdir=${GRID_SECURITY_DIR}
-else if [ -r "/etc/grid-security/globus-user-ssl.cnf" ]; then
+elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] && 
+     [ -r "/etc/grid-security/globus-host-ssl.conf" ] ; then
     secconfdir="/etc/grid-security/"
-else
+elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
+     [ -r "${GLOBUS_LOCATION}/etc/globus-host-ssl.conf" ] ; then
     secconfdir="${GLOBUS_LOCATION}/etc/"
+else
+    echo "Can't find valid gsi config files.  Run setup-gsi."
+    echo ""
+    exit 1
 fi
 
 #
