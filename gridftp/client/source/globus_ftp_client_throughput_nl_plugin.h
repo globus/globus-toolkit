@@ -80,8 +80,7 @@ globus_module_descriptor_t globus_i_ftp_client_throughput_nl_plugin_module;
 globus_result_t
 globus_ftp_client_throughput_nl_plugin_init(
     globus_ftp_client_plugin_t *			plugin,
-    const char *                                        nl_host,
-    unsigned short                                      nl_port,
+    const char *                                        nl_url,
     const char *                                        prog_name,
     const char *                                        opaque_string);
 

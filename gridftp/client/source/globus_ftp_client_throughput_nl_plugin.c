@@ -73,8 +73,8 @@ void throughput_plugin_begin_cb(
     }
 
     NetLoggerWrite(info->nl_handle, "TransferBegin",
-        "%s URL.SOURCE=\"%s\" URL.DEST=\"%s\"",
         info->opaque_string,
+        "URL.SOURCE=%s URL.DEST=%s",
         (info->source_url) ? info->source_url : "",
         (info->dest_url) ? info->dest_url : "");
 }
@@ -93,9 +93,9 @@ void throughput_plugin_stripe_cb(
     info = (throughput_nl_plugin_info_t *) user_arg;
 
     NetLoggerWrite(info->nl_handle, "TransferPerfStripe",
-        "%s URL.SOURCE=\"%s\" URL.DEST=\"%s\" "
-        "INDEX=%d BYTES=%" GLOBUS_OFF_T_FORMAT " BW.CURRENT=%.3f BW.AVG=%.3f",
         info->opaque_string,
+        "URL.SOURCE=%s URL.DEST=%s "
+        "INDEX=%d BYTES=%" GLOBUS_OFF_T_FORMAT " BW.CURRENT=%.3f BW.AVG=%.3f",
         (info->source_url) ? info->source_url : "",
         (info->dest_url) ? info->dest_url : "",
         stripe_ndx,
@@ -116,10 +116,10 @@ void throughput_plugin_total_cb(
 
     info = (throughput_nl_plugin_info_t *) user_arg;
 
-    NetLoggerWrite(info->nl_handle, "TransferPerfStripe",
-        "%s URL.SOURCE=\"%s\" URL.DEST=\"%s\" "
-        "BYTES=%" GLOBUS_OFF_T_FORMAT " BW.CURRENT=%.3f BW.AVG=%.3f",
+    NetLoggerWrite(info->nl_handle, "TransferPerfTotal",
         info->opaque_string,
+        "URL.SOURCE=%s URL.DEST=%s "
+        "BYTES=%" GLOBUS_OFF_T_FORMAT " BW.CURRENT=%.3f BW.AVG=%.3f",
         (info->source_url) ? info->source_url : "",
         (info->dest_url) ? info->dest_url : "",
         bytes,
@@ -150,8 +150,8 @@ void throughput_plugin_complete_cb(
     }
 
     NetLoggerWrite(info->nl_handle, "TransferEnd",
-        "%s SUCCESS=%d",
         info->opaque_string,
+        "SUCCESS=%d",
         (success) ? 1 : 0);
 }
 
@@ -201,19 +201,19 @@ throughput_plugin_user_destroy_cb(
  * @ingroup globus_ftp_client_throughput_nl_plugin
  *
  * This will initialize a netlogger wrapped throughput plugin.  Note
- * that the nl_host may be NULL (in which case nl_port is ignored).
+ * that the nl_url may be NULL.
  * Regardless of what nl_host is set to, if the env variable NL_DEST_ENV
  * is set, logging will always occur to that location.
  *
  * @param plugin
  *        a plugin to be initialized
  *
- * @param nl_host
- *        the host of the netlogger daemon (May be NULL)
- *
- * @param nl_port
- *        the port of the netlogger daemon, if 0, the default port will
- *        be used
+ * @param nl_url
+ *        the url to log to (May be NULL)
+ *        Valid urls are:
+ *          file://tmp/netlog.log
+ *          x-netlog://host[:port]
+ *          x-syslog://localhost
  *
  * @param prog_name
  *        This is used as the prog name in the NetLoggerOpen call
@@ -231,15 +231,13 @@ throughput_plugin_user_destroy_cb(
 globus_result_t
 globus_ftp_client_throughput_nl_plugin_init(
     globus_ftp_client_plugin_t *			plugin,
-    const char *                                        nl_host,
-    unsigned short                                      nl_port,
+    const char *                                        nl_url,
     const char *                                        prog_name,
     const char *                                        opaque_string)
 {
     throughput_nl_plugin_info_t *                       info;
     globus_result_t                                     result;
     NLhandle *                                          nl_handle;
-    char                                                url[4096];
     static char *                                       myname =
         "globus_ftp_client_throughput_nl_plugin_init";
 
@@ -253,19 +251,9 @@ globus_ftp_client_throughput_nl_plugin_init(
                 myname));
     }
 
-    if(nl_host)
+    if(nl_url)
     {
-        /* x-netlog://host:port */
-        if(nl_port)
-        {
-            sprintf(url, "x-netlog://%s:%d", nl_host, nl_port);
-        }
-        else
-        {
-            sprintf(url, "x-netlog://%s", nl_host);
-        }
-
-        nl_handle = NetLoggerOpen((char *)prog_name, url, 0);
+        nl_handle = NetLoggerOpen((char *)prog_name, (char *)nl_url, 0);
     }
     else
     {
