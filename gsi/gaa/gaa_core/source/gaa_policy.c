@@ -1634,10 +1634,13 @@ gaa_l_check_condition(gaa_ptr		      gaa,
     if ((status = ce->cb->func(gaa, sc, cond, vtp, options, &oflags,
 			       ce->cb->params)) != GAA_S_SUCCESS)
     {
-	sprintf(ebuf, "gaa_l_check_condition: callback function returned %s (condition type/auth was %s/%s)",
-		gaacore_majstat_str(status),
-		(cond->type ? cond->type : "(null)"),
-		(cond->authority ? cond->authority : "(null)"));
+	
+	snprintf(ebuf, sizeof(ebuf),
+		 "gaa_l_check_condition: callback function returned %s (condition type/auth was %s/%s); callback error was: %s",
+		 gaacore_majstat_str(status),
+		 (cond->type ? cond->type : "(null)"),
+		 (cond->authority ? cond->authority : "(null)"),
+		 gaa_get_callback_err());
 	gaacore_set_err(ebuf);
 	return(status);
     }
