@@ -13,7 +13,11 @@
 #define GLOBUS_CALLBACK_POLLING_THREADS 1
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 32
 #define GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE 16
+#ifdef NSIG
+#define GLOBUS_L_CALLBACK_SIGNAL_BLOCK_SIZE NSIG
+#else
 #define GLOBUS_L_CALLBACK_SIGNAL_BLOCK_SIZE 64
+#endif
 
 /* any periodic with period (in the global space) smaller than this is 
  * going to get its own thread
@@ -313,8 +317,11 @@ globus_l_callback_unset_uncatchable(
 #ifdef SIGEMT
     sigdelset(set, SIGEMT);
 #endif
+/* I use SIGSYS to kill threads on macs */
+#ifndef TARGET_ARCH_DARWIN
 #ifdef SIGSYS
     sigdelset(set, SIGSYS);
+#endif
 #endif
 #ifdef SIGTRAP
     sigdelset(set, SIGTRAP);
@@ -349,6 +356,14 @@ globus_l_callback_unset_uncatchable(
 #endif
 }
 #endif
+
+static
+void
+globus_l_callback_dummy_handler(
+    int                                 signum)
+{
+    /* does nothing */
+}
 
 static
 int
@@ -472,6 +487,21 @@ globus_l_callback_activate()
     
     sigemptyset(&globus_l_callback_signal_active_set);
 
+/* on macs, I use SIGSYS to terminate the signal thread since it doesnt
+ * support cancellation points on cond_wait or sigwait
+ */
+#ifdef TARGET_ARCH_DARWIN
+    {
+        struct sigaction            action;
+        
+        sigaddset(&globus_l_callback_signal_active_set, SIGSYS);
+        memset(&action, '\0', sizeof(action));
+        sigemptyset(&action.sa_mask);
+        action.sa_handler = globus_l_callback_dummy_handler;
+        sigaction(SIGSYS, &action, NULL);
+    }
+#endif
+
     globus_l_callback_thread_count++;
     globus_thread_create(
         &globus_l_callback_signal_thread,
@@ -492,6 +522,21 @@ globus_l_callback_activate()
 }
 
 static
+void
+globus_l_callback_cancel_signal_thread(
+    globus_thread_t                     thread)
+{
+    globus_thread_cancel(thread);
+    /* shouldn't have to do this, but osx and some 
+     * early linux ntpl need it
+     */
+    globus_cond_broadcast(&globus_l_callback_thread_cond);
+#ifdef TARGET_ARCH_DARWIN
+    pthread_kill(thread, SIGSYS);
+#endif
+}
+
+static
 int
 globus_l_callback_deactivate()
 {
@@ -505,11 +550,8 @@ globus_l_callback_deactivate()
         globus_l_callback_shutting_down = GLOBUS_TRUE;
         
         /* kill signal handling thread */
-        globus_thread_cancel(globus_l_callback_signal_thread);
-        /* shouldn't have to do this, but osx and some 
-         * early linux ntpl need it
-         */
-        globus_cond_broadcast(&globus_l_callback_thread_cond);
+        globus_l_callback_cancel_signal_thread(
+            globus_l_callback_signal_thread);
         
         /* wake up any sleeping on queue */
         tmp_list = globus_l_callback_threaded_spaces;
@@ -589,16 +631,18 @@ globus_l_callback_deactivate()
         
         if(sigpending(&pending) == 0)
         {
-            struct sigaction                oldact;
-            struct sigaction                ignore;
+            struct sigaction            oldact;
+            struct sigaction            ignore;
+            int                         limit = 64;
+            
+#ifdef NSIG;
+            limit = NSIG;
+#endif
             /* setting a signal handler to sig_ign discards pending signals */
-            /* I am going to just check the first 64 signals, dont want to
-             * deal with portability issues of NSIG (which is usually 64)
-             */
             memset(&ignore, '\0', sizeof(ignore));
             sigemptyset(&ignore.sa_mask);
             ignore.sa_handler = SIG_IGN;
-            for(i = 1; i < 64; i++)
+            for(i = 1; i < limit; i++)
             {
                 if(sigismember(&pending, i))
                 {
@@ -2738,7 +2782,7 @@ globus_l_callback_thread_signal_poll(
     globus_thread_cleanup_push(
         globus_l_callback_signal_thread_cleanup, &locked);
     
-    /* loop can only exit as a result of cancelation */
+    /* loop can only exit as a result of cancellation */
     globus_mutex_lock(&globus_l_callback_thread_lock);
     locked = GLOBUS_TRUE;
     while(1)
@@ -2764,7 +2808,7 @@ globus_l_callback_thread_signal_poll(
         
         if(globus_l_callback_signal_active_count == 0)
         {
-            /* this is another cancelation point.  I sleep here instead of
+            /* this is another cancellation point.  I sleep here instead of
              * sigwait because aix doesnt like empty sigsets
              */
             globus_cond_wait(
@@ -2813,7 +2857,7 @@ globus_l_callback_thread_signal_poll(
             }
             
             /* I shouldnt have to do this, but there is a lot happening in the
-             * following call that could trigger cancelation. better safe than
+             * following call that could trigger cancellation. better safe than
              * sorry
              */
             globus_thread_setcancelstate(
@@ -2846,14 +2890,6 @@ globus_l_callback_thread_signal_poll(
     globus_thread_cleanup_pop(1);
 #endif    
     return NULL;
-}
-
-static
-void
-globus_l_callback_dummy_handler(
-    int                                 signum)
-{
-    /* does nothing */
 }
 
 static
@@ -3049,7 +3085,7 @@ globus_callback_space_register_signal_handler(
                 globus_l_callback_thread_signal_poll,
                 GLOBUS_NULL);
             
-            globus_thread_cancel(previous);
+            globus_l_callback_cancel_signal_thread(previous);
         }
     }
     globus_mutex_unlock(&globus_l_callback_thread_lock);
@@ -3118,7 +3154,7 @@ globus_callback_unregister_signal_handler(
                 globus_l_callback_thread_signal_poll,
                 GLOBUS_NULL);
             
-            globus_thread_cancel(previous);
+            globus_l_callback_cancel_signal_thread(previous);
         }
         
         if(!handler->running)
