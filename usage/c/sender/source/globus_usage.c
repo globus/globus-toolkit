@@ -179,23 +179,13 @@ globus_l_usage_stats_split_targets(
         tmpstr, strlen(tmpstr), &start_token, &end_token, "\n\t ");
     tmpstr += end_token;
         
-    while(1)
+    while(token)
     {
         globus_list_insert(targets, token);
-        if(end_token < 0)
-        {
-            break;
-        }
 
         token = globus_l_usage_stats_my_strtok(
             tmpstr, strlen(tmpstr), &start_token, &end_token, "\n\t ");
         tmpstr += end_token;
-        if(!token)
-        {
-            break;
-        }
-
-        globus_list_insert(targets, token);
     }
 
     globus_free(newstr);
