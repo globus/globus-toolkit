@@ -100,6 +100,11 @@ globus_l_jm_getenv_var(char * env_var_name,
 static int 
 graml_rsl_add(char * attribute_name, 
               char * attribute_value);
+
+static void
+graml_basename(char * filepath,
+               char ** ptr_to_basename);
+
 /******************************************************************************
                        Define variables for external use
 ******************************************************************************/
@@ -117,6 +122,8 @@ char * grami_env_nlspath = NULL;           /* poe fork */
 char * grami_env_logname = NULL;           /* all */
 char * grami_env_home = NULL;              /* all */
 char * grami_env_tz = NULL;                /* all */
+char * grami_relocate_user_proxy = NULL;   /* security only used for 
+                                              easymcs and loadleveler */
 
 /*
  * other GRAM internal variables 
@@ -1205,8 +1212,10 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
 {
     char * tmp_dir;
     int tmp_fd;
+    int x;
     struct stat statbuf;
     char ** tmp_param;
+    char * proxy_file_name;
 
     if (rsl_tree == NULL)
         return(GLOBUS_GRAM_CLIENT_ERROR_NULL_SPECIFICATION_TREE);
@@ -1484,6 +1493,65 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
         return(1);
     }
 
+    /*
+     * Check for X509 variables and add them to the environment that is
+     * passed to the schedulers.
+     */
+    if (grami_env_x509_cert_dir)
+    {
+	for(x = 0; params->pgm_env[x] != GLOBUS_NULL; x++)
+	{
+	    ;
+	}
+	    
+	params->pgm_env = (char **)
+            globus_libc_realloc(params->pgm_env,
+                    (x+3) * sizeof(char *));
+
+        params->pgm_env[x] = "X509_CERT_DIR";
+        ++x;
+        params->pgm_env[x] = grami_env_x509_cert_dir;
+        ++x;
+        params->pgm_env[x] = GLOBUS_NULL;
+
+    }
+
+    if (grami_env_x509_user_proxy)
+    {
+	for(x = 0; params->pgm_env[x] != GLOBUS_NULL; x++)
+	{
+	    ;
+	}
+	    
+	params->pgm_env = (char **)
+            globus_libc_realloc(params->pgm_env,
+                    (x+3) * sizeof(char *));
+
+        params->pgm_env[x] = "X509_USER_PROXY";
+        ++x;
+
+        if (strcmp(grami_jm_type,"loadleveler") == 0 ||
+            strcmp(grami_jm_type,"easymcs") == 0 )
+        {
+            graml_basename(grami_env_x509_user_proxy, &proxy_file_name);
+
+            if (proxy_file_name == NULL)
+            {
+                return(GLOBUS_GRAM_CLIENT_ERROR_PROXY_FILE_RELOCATION_FAILED);
+            }
+            grami_relocate_user_proxy = globus_malloc(strlen(grami_env_home) +
+                                             strlen(proxy_file_name) + 2);
+            sprintf(grami_relocate_user_proxy, "%s/%s", grami_env_home,
+                                               proxy_file_name);
+            params->pgm_env[x] = grami_relocate_user_proxy;
+        }
+        else
+        {
+            params->pgm_env[x] = grami_env_x509_user_proxy;
+        }
+        ++x;
+        params->pgm_env[x] = GLOBUS_NULL;
+    }
 
     {
 	char *newvar;
@@ -1514,7 +1582,8 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
             if (graml_rsl_environment_add(rsl_tree, newvar, newval) != 0)
             {
                 grami_fprintf( grami_log_fp, 
-                        "JM: ERROR adding %s to the environment= parameter of the RSL.\n", newvar);
+                        "JM: ERROR adding %s to the environment= parameter "
+                        "of the RSL.\n", newvar);
             }
 	}
     }
@@ -1916,4 +1985,23 @@ globus_l_jm_getenv_var(char * env_var_name,
     }
 
     return(env_var);
+}
+
+static void graml_basename(char * filepath, char ** ptr_to_basename)
+{
+    if (filepath == NULL)
+    {
+        *ptr_to_basename = NULL;
+    }
+    else
+    {
+        if ((*ptr_to_basename = strrchr(filepath, '/')) == NULL)
+        {
+            *ptr_to_basename = NULL;
+        }
+        else
+        {
+            *ptr_to_basename = *ptr_to_basename + 1;
+        }
+    }
 }
