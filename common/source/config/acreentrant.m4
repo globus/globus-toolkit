@@ -294,9 +294,11 @@ AC_CHECK_FUNCS(readdir_r,
         [
 	    struct dirent dir, *dirp;
 	    DIR *mydir;
-	    dirp = readdir_r(mydir, &dir);
+	    int rc;
+	    rc = readdir_r(mydir, &dir, &dirp);
         ],
-        AC_DEFINE(GLOBUS_HAVE_READDIR_R_2) globus_readdir_args=2)
+        AC_DEFINE(GLOBUS_HAVE_READDIR_R_3) globus_readdir_args=3)
+
 
         if test $globus_readdir_args = no; then
             AC_TRY_COMPILE(
@@ -319,12 +321,11 @@ AC_CHECK_FUNCS(readdir_r,
 #endif
             ],
             [
-	    struct dirent dir, *dirp;
-	    DIR *mydir;
-	    int rc;
-	    rc = readdir_r(mydir, &dir, &dirp);
+	    	struct dirent dir, *dirp;
+	    	DIR *mydir;
+	    	dirp = readdir_r(mydir, &dir);
             ],
-            AC_DEFINE(GLOBUS_HAVE_READDIR_R_3) globus_readdir_args=3)
+	    AC_DEFINE(GLOBUS_HAVE_READDIR_R_2) globus_readdir_args=2)
         fi
         AC_MSG_RESULT($globus_readdir_args)
     ])
