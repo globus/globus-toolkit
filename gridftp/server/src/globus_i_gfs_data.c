@@ -4657,9 +4657,10 @@ globus_gridftp_server_operation_event(
     globus_result_t                     result,
     globus_gfs_event_info_t *           event_info)
 {
-    event_info->id = op->id;
     GlobusGFSName(globus_gridftp_server_operation_event);
     GlobusGFSDebugEnter();
+
+    event_info->id = op->id;
 
     /* XXX gotta do a onesot here ?? */
     switch(event_info->type)
