@@ -119,7 +119,7 @@ logging_startup(void);
 static int
 logging_phase2(void);
 static void 
-failure(char *s);
+failure(short failure_type, char *s);
 static void 
 notice(int, char *s);
 static int 
@@ -164,13 +164,19 @@ static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 #define PATH_MAX MAXPATHLEN
 #endif
 
+#define FAILED_AUTHORIZATION        1
+#define FAILED_SERVICELOOKUP        2
+#define FAILED_SERVER               3
+#define FAILED_NOLOGIN              4
+#define FAILED_AUTHENTICATION       5
+
 static char     tmpbuf[1024];
 #define notice2(i,a,b) {sprintf(tmpbuf, a,b); notice(i,tmpbuf);}
 #define notice3(i,a,b,c) {sprintf(tmpbuf, a,b,c); notice(i,tmpbuf);}
 #define notice4(i,a,b,c,d) {sprintf(tmpbuf, a,b,c,d); notice(i,tmpbuf);}
-#define failure2(a,b) {sprintf(tmpbuf, a,b); failure(tmpbuf);}
-#define failure3(a,b,c) {sprintf(tmpbuf, a,b,c); failure(tmpbuf);}
-#define failure4(a,b,c,d) {sprintf(tmpbuf, a,b,c,d); failure(tmpbuf);}
+#define failure2(t,a,b) {sprintf(tmpbuf, a,b); failure(t,tmpbuf);}
+#define failure3(t,a,b,c) {sprintf(tmpbuf, a,b,c); failure(t,tmpbuf);}
+#define failure4(t,a,b,c,d) {sprintf(tmpbuf, a,b,c,d); failure(t,tmpbuf);}
 
 #if ! defined(TARGET_ARCH_LINUX) & ! defined(TARGET_ARCH_FREEBSD)
 extern char *   sys_errlist[];
@@ -487,7 +493,7 @@ main(int xargc,
         pfd = open(argv[2],O_RDONLY);
         i = read(pfd, newbuf, BUFSIZ-1);
         if (i < 0) 
-            failure("Unable to read extra parameters");
+            failure(FAILED_SERVER, "Unable to read extra parameters");
         newbuf[i] = '\0';
         close(pfd);
 
@@ -767,7 +773,7 @@ main(int xargc,
 
     if (logging_startup() != 0)
     {
-        failure("Logging startup failure");
+        failure(FAILED_SERVER, "Logging startup failure");
     }
 
     notice4(LOG_INFO, "%s pid=%d starting at %s",
@@ -814,7 +820,7 @@ main(int xargc,
                               minor_status,
                               0);
 
-        failure("GSS failed to get server credentials\n");
+        failure(FAILED_SERVER, "GSS failed to get server credentials\n");
     }
 #endif /* GSS_AUTHENTICATION */
 
@@ -946,7 +952,7 @@ main(int xargc,
 
             if (pid < 0)
             {
-                failure2("Fork failed: %s\n", sys_errlist[errno]);
+                failure2(FAILED_SERVER, "Fork failed: %s\n", sys_errlist[errno]);
             }
 
             if (pid == 0)
@@ -1120,13 +1126,15 @@ static void doit()
 	if (stat(genfilename(gatekeeperhome,"etc",globusnologin),
 				&statbuf) == 0)
 	{
-		failure("Not accepting connections at this time");
+		failure(FAILED_NOLOGIN, 
+			"Not accepting connections at this time");
 	}
 
 	if (stat(genfilename(gatekeeperhome,"var",globusnologin),
 				&statbuf) == 0)
 	{
-		failure("Not accepting connections at this time");
+		failure(FAILED_NOLOGIN, 
+			"Not accepting connections at this time");
 	}
 
 #ifdef GSS_AUTHENTICATION
@@ -1174,7 +1182,8 @@ static void doit()
                 token_status);
         }
 
-        failure4("GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
+        failure4(FAILED_AUTHENTICATION,
+		 "GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
             major_status,minor_status,token_status);
     }
 
@@ -1197,7 +1206,8 @@ static void doit()
 
     if (rc != 0)
     {
-        failure2("globus_gss_assist_gridmap() failed authorization."
+        failure2(FAILED_AUTHORIZATION,
+		 "globus_gss_assist_gridmap() failed authorization."
                  " rc = %d", rc);
  
     }
@@ -1208,7 +1218,8 @@ static void doit()
         get_udbent(userid);
 	if (unicos_access_denied())
 	{
-	    failure2("UNICOS denied access to user %s.", userid);
+	    failure2(FAILED_AUTHORIZATION,
+		     "UNICOS denied access to user %s.", userid);
 	}
     }
 #endif /* TARGET_ARCH_CRAYT3E */
@@ -1225,35 +1236,12 @@ static void doit()
      */
 
     if ((service_uid = getuid()) == 0) 
-        failure("ERROR: Root requires authentication");
+        failure(FAILED_AUTHORIZATION, 
+		"ERROR: Root requires authentication");
     else
         notice(LOG_ERR, "WARNING: No authentication done");
 
 #endif /* GSS_AUTHENTICATION */
-
-#if 0 /* version checking is no longer handled by gatekeeper messages */
-    /* client will check version # sent here with it's own.  If they match
-     * then the client will continue and send the service name
-     * for the job manager or other service.
-     */
-    
-    sprintf(tmp_version,"VERSION=%d\n\0",GLOBUS_GRAM_PROTOCOL_VERSION);
-	
-    major_status = globus_gss_assist_wrap_send(&minor_status,
-					context_handle,
-					tmp_version,
-					strlen(tmp_version)+1,
-					&token_status,
-        			globus_gss_assist_token_send_fd,
-					fdout,
-					logging_usrlog?usrlog_fp:NULL);
-
-    if (major_status != GSS_S_COMPLETE) {
-      failure4("Sending Version:GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
-	       major_status,minor_status,token_status);
-    }
-#endif /* version checking is no longer handled by gatekeeper messages */
-
 
     /* 
      * Read from the client the service it would like to use
@@ -1272,14 +1260,15 @@ static void doit()
     
     if (major_status != GSS_S_COMPLETE)
       {
-	failure4("Reading service GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
+	failure4(FAILED_SERVICELOOKUP,
+	 "Reading service GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
 		 major_status,minor_status,token_status);
       }
     
     /*DEE should do sanity check on length, and null term */
     if (length > 256 || service_name[length-1] != '\0')
       {
-	failure("Service name malformed");
+	failure(FAILED_SERVICELOOKUP, "Service name malformed");
       }
     
     notice2(LOG_NOTICE,"Requested service:%s", service_name);
@@ -1309,7 +1298,8 @@ static void doit()
 	  } /* end of the easier transition */
 	else
 	  {
-	    failure3("Failed to find requested service: %s: %d", 
+	    failure3(FAILED_SERVICELOOKUP,
+		     "Failed to find requested service: %s: %d", 
 		     service_name, rc);
 	  }
       }
@@ -1324,13 +1314,13 @@ static void doit()
 					" \t\n"))
       {
 	notice(LOG_ERR, "ERROR:Tokenize failed for services");
-	failure("ERROR: gatekeeper misconfigured");
+	failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
       }
     
     if (num_service_args < SERVICE_ARG0_INDEX)
       {
 	notice(LOG_ERR, "ERROR:To few service arguments");
-	failure("ERROR: gatekeeper misconfigured");
+	failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
       }
 
 
@@ -1348,7 +1338,7 @@ static void doit()
     
     if ((pw = getpwnam(userid)) == NULL)
       {
-        failure2("getpwname() failed to find %s",userid);
+        failure2(FAILED_SERVER, "getpwname() failed to find %s",userid);
       }
 
     service_uid = pw->pw_uid;
@@ -1390,7 +1380,7 @@ static void doit()
 					","))
 	{
 		notice(LOG_ERR, "ERROR:Tokenize failed for services options");
-		failure("ERROR: gatekeeper misconfigured");
+		failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
 	}
 	
     for (i = 0; i < num_service_options; i++)
@@ -1410,7 +1400,8 @@ static void doit()
 		{
 			notice2(LOG_ERR, "ERROR:Invalid service option %s",
 						service_options[i]);
-			failure("ERROR: gatekeeper misconfigured");
+			failure(FAILED_SERVER, 
+				"ERROR: gatekeeper misconfigured");
 		}
 	}
 
@@ -1430,14 +1421,14 @@ static void doit()
     {
         notice2(LOG_ERR, "ERROR: Cannot stat globus service %s.",
                           service_path);
-        failure("ERROR: gatekeeper misconfigured");
+        failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
     }
 
     if (!(statbuf.st_mode & 0111))
     {
         notice2(LOG_ERR, "ERROR: Cannot execute globus service %s.",
                           service_path);
-        failure("ERROR: gatekeeper misconfigured");
+        failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
     }
 
     /*
@@ -1468,14 +1459,15 @@ static void doit()
         {
             if(gatekeeper_uid == 0)
             {
-                failure("Gatekeeper Kerberos code is not UNICOS compliant.");
+                failure(FAILED_SERVER,
+			"Gatekeeper Kerberos code is not UNICOS compliant.");
             }
         }
 #       endif
 		if (stat(gram_k5_path, &statbuf) != 0)
-	    	failure2("Cannot stat %s",gram_k5_path);
+	    	failure2(FAILED_SERVER, "Cannot stat %s",gram_k5_path);
 		if (!(statbuf.st_mode & 0111))
-	    	failure2("Cannot execute %s", gram_k5_path);
+	    	failure2(FAILED_SERVER, "Cannot execute %s", gram_k5_path);
 		*args = gram_k5_path;
     }
 
@@ -1493,14 +1485,14 @@ static void doit()
 
     if (pipe(p1) != 0)
     {
-	failure2("Cannot create pipe: %s", sys_errlist[errno]);
+	failure2(FAILED_SERVER, "Cannot create pipe: %s", sys_errlist[errno]);
     }
     close_on_exec_read_fd = p1[0];
     close_on_exec_write_fd = p1[1];
 
     if (fcntl(close_on_exec_write_fd, F_SETFD, 1) != 0)
     {
-	failure2("fcntl F_SETFD failed: %s", sys_errlist[errno]);
+	failure2(FAILED_SERVER, "fcntl F_SETFD failed: %s", sys_errlist[errno]);
     }
 
     grami_setenv("GLOBUS_ID",client_name,1);
@@ -1559,7 +1551,7 @@ static void doit()
 		if(globus_gatekeeper_util_envsub(argi))
 		{
 			notice(LOG_ERR,"ERROR: Failed env substitution in services");
-			failure("ERROR: gatekeeper misconfigured");
+			failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
 		}
 	}
 			
@@ -1575,7 +1567,8 @@ static void doit()
 			int rc;
 			if ((rc = globus_gatekeeper_util_trans_to_user(pw, userid, &errmsg)) != 0)
 			{
-				failure3("trans_to_user: %d: %s", rc, errmsg);
+				failure3(FAILED_SERVER, 
+					 "trans_to_user: %d: %s", rc, errmsg);
 			}
     	}
 	}
@@ -1598,7 +1591,7 @@ static void doit()
 	}
 	else
 	{
-		failure("Unable to create context tmpfile");
+		failure(FAILED_SERVER, "Unable to create context tmpfile");
 	}
 
 	major_status = gss_export_sec_context(&minor_status,
@@ -1612,7 +1605,7 @@ static void doit()
                               major_status,
                               minor_status,
                               0);
-		failure("GSS Failed exporting context");
+		failure(FAILED_SERVER, "GSS Failed exporting context");
 	}
 	
   	int_buf[0] = (unsigned char)(((context_token.length)>>24)&0xff);
@@ -1622,12 +1615,12 @@ static void doit()
 
 	if (fwrite(int_buf,4,1,context_tmpfile) != 1)
 	{
-		failure("Failure writing context length");
+		failure(FAILED_SERVER, "Failure writing context length");
 	}
 	if (fwrite(context_token.value,context_token.length,1,
 					context_tmpfile) != 1)
 	{
-		 failure("Failure writing context token");
+		 failure(FAILED_SERVER, "Failure writing context token");
 	}
 
 	gss_release_buffer(&minor_status,&context_token);
@@ -1641,7 +1634,7 @@ static void doit()
     pid = fork();
     if (pid < 0)
     {
-		failure2("fork failed: %s", sys_errlist[errno]);
+		failure2(FAILED_SERVER, "fork failed: %s", sys_errlist[errno]);
     }
 
     if (pid == 0)
@@ -1706,7 +1699,7 @@ static void doit()
     }
     if (n < 0)
     {
-	failure("child failed: error reading child fd");
+	failure(FAILED_SERVER, "child failed: error reading child fd");
     }
     close(close_on_exec_read_fd);
 
@@ -1872,7 +1865,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-failure(char * s)
+failure(short failure_type, char * s)
 {
 
 	OM_uint32 minor_status = 0;
@@ -1893,15 +1886,38 @@ failure(char * s)
      */
     if (ok_to_send_errmsg)
     {
-		/* don't care about errors here */
-    	globus_gss_assist_wrap_send(&minor_status,
-					context_handle,
-					s,
-					strlen(s) + 1,
-					&token_status,
-        			globus_gss_assist_token_send_fd,
-					fdout,
-					logging_usrlog?usrlog_fp:NULL);
+      char * response;
+
+      switch (failure_type) {
+       case FAILED_AUTHORIZATION: 
+	 response = ("HTTP/1.1 403 Forbidden\n"
+		     "Connection: close\n"
+		     "\n");
+	 break;
+       case FAILED_SERVICELOOKUP:
+	 response = ("HTTP/1.1 404 Not Found\n"
+		     "Connection: close\n"
+		     "\n");
+	 break;
+       case FAILED_SERVER:
+       case FAILED_NOLOGIN:
+       case FAILED_AUTHENTICATION:
+       default: 
+	 response = ("HTTP/1.1 404 Not Found\n"
+		     "Connection: close\n"
+		     "\n");
+	 break;
+      }
+      
+      /* don't care about errors here */
+      globus_gss_assist_wrap_send(&minor_status,
+				  context_handle,
+				  response,
+				  strlen(response) + 1,
+				  &token_status,
+				  globus_gss_assist_token_send_fd,
+				  fdout,
+				  logging_usrlog?usrlog_fp:NULL);
     }
     if (gatekeeper_test)
     {

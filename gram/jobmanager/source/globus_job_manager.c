@@ -925,7 +925,7 @@ main(int argc,
          * Stdin and stdout point at the client socket.
          * Gatekeeper has done authentication and authorization
          * we will now import security context,
-         * send version number, then get the job
+         * then get the job
          * request buffer using gssapi wrap and unwrap
          */
 
@@ -944,24 +944,6 @@ main(int argc,
             "JM: context loaded\n");
 
         /* context loaded */
-        /* Send the version number */
-
-        sprintf(tmp_version,"VERSION=%d\n\0", GLOBUS_GRAM_PROTOCOL_VERSION);
-
-        if (globus_gss_assist_wrap_send( &minor_status,
-                                         context_handle,
-                                         tmp_version,
-                                         strlen(tmp_version)+1,
-                                         &token_status,
-                                         globus_gss_assist_token_send_fd,
-                                         stdout,
-                                         request->jobmanager_log_fp)
-           != GSS_S_COMPLETE)
-        {
-            return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-        }
-
-        grami_fprintf(request->jobmanager_log_fp,"JM: version sent\n");
 
         /* Get the job request from client as wrapped message */
 
@@ -1027,87 +1009,56 @@ main(int argc,
 
     ptr = buffer;
 
-    /*
-     * Read the format incoming message.
-     */
-    format = (int)*ptr;
-    ptr++;
-
-    globus_nexus_user_get_int(&ptr, &gram_version, 1, format);
-
-    if (GLOBUS_GRAM_PROTOCOL_VERSION != gram_version)
-    {
-        grami_fprintf( request->jobmanager_log_fp,
-              "JM: ERROR: globus gram protocol version mismatch!\n");
-        grami_fprintf( request->jobmanager_log_fp,
-              "JM: gram client version      = %d\n", gram_version);
-        grami_fprintf( request->jobmanager_log_fp,
-              "JM: gram protocol version = %d\n",
-              GLOBUS_GRAM_PROTOCOL_VERSION);
-        fprintf(stderr, "ERROR: globus gram protocol version mismatch!\n");
-        fprintf(stderr, "gram client version      = %d\n", gram_version);
-        fprintf(stderr, "gram job manager version = %d\n",
-                                                 GLOBUS_GRAM_PROTOCOL_VERSION);
-        return(GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
+    if ( globus_gram_http_version (buffer) 
+	 != GLOBUS_GRAM_PROTOCOL_VERSION ) {
+      grami_fprintf( request->jobmanager_log_fp,
+		     "JM: ERROR: globus gram protocol version mismatch!\n");
+      grami_fprintf( request->jobmanager_log_fp,
+		     "JM: gram client version      = %d\n", gram_version);
+      grami_fprintf( request->jobmanager_log_fp,
+		     "JM: gram protocol version = %d\n",
+		     GLOBUS_GRAM_PROTOCOL_VERSION);
+      fprintf(stderr, "ERROR: globus gram protocol version mismatch!\n");
+      fprintf(stderr, "gram client version      = %d\n", gram_version);
+      fprintf(stderr, "gram job manager version = %d\n",
+	      GLOBUS_GRAM_PROTOCOL_VERSION);
+      return(GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
     }
 
-    /*
-     * Read the size incoming message.
-     */
-    globus_nexus_user_get_int(&ptr, &count, 1, format);
-
-    globus_nexus_user_get_int(&ptr, &len, 1, format);
-    globus_nexus_user_get_char(&ptr, rsl_spec, len, format);
-    *(rsl_spec+len)= '\0';
-    globus_nexus_user_get_int(&ptr, &job_state_mask, 1, format);
-    globus_nexus_user_get_int(&ptr, &len, 1, format);
-    if (len > 0)
-    {
-        client_contact_str = globus_libc_malloc (sizeof(char)*(len + 1));
-        globus_nexus_user_get_char(&ptr, client_contact_str, len, format);
-        client_contact_str[len] = '\0';
-
-        client_contact_node = (globus_l_gram_client_contact_t *)
-            globus_libc_malloc(sizeof(globus_l_gram_client_contact_t));
-
-        client_contact_node->contact        = client_contact_str;
-        client_contact_node->job_state_mask = job_state_mask;
-        client_contact_node->failed_count   = 0;
-
-        globus_list_insert(&globus_l_gram_client_contacts,
-                       (void *) client_contact_node);
-
-        grami_fprintf( request->jobmanager_log_fp,
-              "JM: client contact = %s\n", client_contact_str);
+    if ( globus_l_gram_unpack_http_job_request (
+			   buffer,
+			   &job_state_mask,
+			   &client_contact_str,
+			   &rsl_spec)
+	     != GLOBUS_SUCCESS ) {
+      grami_fprintf( request->jobmanager_log_fp,
+		     "JM: ERROR: globus gram protocol failure!\n");
+      return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
-    globus_nexus_user_get_startpoint(&ptr, &reply_sp, 1, format);
+
+    if (client_contact_str!=NULL)
+    {
+      client_contact_node = (globus_l_gram_client_contact_t *)
+	globus_libc_malloc(sizeof(globus_l_gram_client_contact_t));
+
+      client_contact_node->contact        = client_contact_str;
+      client_contact_node->job_state_mask = job_state_mask;
+      client_contact_node->failed_count   = 0;
+
+      globus_list_insert(&globus_l_gram_client_contacts,
+			 (void *) client_contact_node);
+
+      grami_fprintf( request->jobmanager_log_fp,
+		     "JM: client contact = %s\n", client_contact_str);
+    }
 
     grami_fprintf( request->jobmanager_log_fp,
           "JM: rsl_specification = %s\n", rsl_spec);
     grami_fprintf( request->jobmanager_log_fp,
           "JM: job status mask = %d\n",job_state_mask);
 
-#ifndef GRAM_GOES_HTTP
-    /*
-     * Create an endpoint that will be used by globus_l_gram_attach_requested
-     * when other attach to this job manager
-     */
-    globus_nexus_endpointattr_init(&graml_EpAttr);
-    globus_nexus_endpointattr_set_handler_table(&graml_EpAttr,
-                         graml_handlers,
-                         sizeof(graml_handlers)/sizeof(globus_nexus_handler_t));
-    globus_nexus_endpoint_init(&graml_GlobalEndpoint, &graml_EpAttr);
-    globus_nexus_endpoint_set_user_pointer(&graml_GlobalEndpoint, request);
 
-    /* allow other Nexus programs to attach to us */
-    my_port = 0;
-    rc = globus_nexus_allow_attach(&my_port,                /* port      */
-                            &my_host,                       /* host      */
-                            globus_l_gram_attach_requested, /*approval_func()*/
-                            NULL);
-    #define GRAM_I_PROTOCOL "x-nexus"
-
-#else
+    /* create listener port that will be used by client API funcs */
     rc = globus_gram_http_allow_attach( &my_port,
 					&my_host,
 					(void *) request,
@@ -1524,30 +1475,20 @@ main(int argc,
     {
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request was successful, sending message to client\n");
-                            
-        count= strlen(graml_job_contact);
-	size = globus_nexus_sizeof_int(1);
-	size += globus_nexus_sizeof_int(1);
-	size += globus_nexus_sizeof_int(1);
-	size += globus_nexus_sizeof_char(count);
-	globus_nexus_buffer_init(&reply_buffer, size, 0);
-        globus_nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
-        globus_nexus_put_int(&reply_buffer, &rc, 1);
-        globus_nexus_put_int(&reply_buffer, &count, 1);
-	globus_nexus_put_char(&reply_buffer, graml_job_contact, count);
+	
+	rc = globus_l_gram_pack_http_job_request_result (
+							 reply,
+							 GLOBUS_SUCCESS,
+							 graml_job_contact);
+
+	if (rc == GLOBUS_SUCCESS) {
+	  /* TODO: send this reply back down the socket to the client */
+	}
 
         if (!request->job_id)
         {
             request->job_id = (char *) globus_libc_strdup ("UNKNOWN");
         }
-
-        globus_nexus_send_rsr(&reply_buffer,
-                       &reply_sp,
-                       GLOBUS_I_GRAM_CLIENT_REPLY_HANDLER_ID,
-                       GLOBUS_TRUE,
-                       GLOBUS_FALSE);
-
-        globus_nexus_startpoint_destroy(&reply_sp);
 
         /* send callback with the status */
         globus_l_gram_client_callback(request->status, request->failure_code);
@@ -1585,18 +1526,17 @@ main(int argc,
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request failed, sending message to client\n");
                             
-	size = globus_nexus_sizeof_int(2);
-	globus_nexus_buffer_init(&reply_buffer, size, 0);
-        globus_nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
-        globus_nexus_put_int(&reply_buffer, &request->failure_code, 1);
+	rc = globus_l_gram_pack_http_job_request_result (
+							 reply,
+							 GLOBUS_SUCCESS,
+							 graml_job_contact);
 
-        globus_nexus_send_rsr(&reply_buffer,
-                       &reply_sp,
-                       GLOBUS_I_GRAM_CLIENT_REPLY_HANDLER_ID,
-                       GLOBUS_TRUE,
-                       GLOBUS_FALSE);
+	if (rc == GLOBUS_SUCCESS) {
+	  /* TODO: send this reply back down the socket to the client */
+	}
 
-        globus_nexus_startpoint_destroy(&reply_sp);
+	rc = GLOBUS_FAILURE; /* does code below depend on this?? */
+
 	jm_request_failed = GLOBUS_TRUE;
 
     }
