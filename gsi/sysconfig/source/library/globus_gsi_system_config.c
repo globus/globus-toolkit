@@ -1857,7 +1857,7 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING);
                 goto done;
             }
-            *user_cert = *user_key;
+            *user_cert = globus_libc_strdup(*user_key);
         }
         else if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
         {
