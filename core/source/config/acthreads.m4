@@ -348,7 +348,7 @@ AC_MSG_CHECKING(for pthreads)
                 lac_cv_threads_LIBS="-lpthread -lposix4"
                 lac_cv_threads_CFLAGS="$lac_cv_threads_CFLAGS -D_REENTRANT"
               ;;
-              *86-*-linux* )
+              *86-*-linux* | *darwin* )
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
@@ -495,7 +495,7 @@ for dir in $2 \
         /opt/local \
         /opt/local/$1 \
         /local/encap/$1 ; do
-  for ext in so a sl; do
+  for ext in so a sl dylib ; do
         if test -r $dir/$1.$ext ; then
             ac_find_lib_file=$dir/$1.$ext
             ac_find_lib_dir=$dir
