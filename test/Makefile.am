@@ -10,6 +10,7 @@ SUBDIRS= \
 # Scripts contains all of the scripts in this directory
 Scripts= \
 	TESTS.pl \
+	Utilities.pm \
     globus_test_check_for_commands.pl \
     globus_test_check_proxy.pl \
     globus_test_gram_local.pl \
