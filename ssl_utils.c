@@ -2079,6 +2079,66 @@ ssl_free_buffer(unsigned char *buffer)
     }
 }
 
+
+SSL_PROXY_RESTRICTIONS *
+ssl_proxy_restrictions_new()
+{
+    SSL_PROXY_RESTRICTIONS		*restrictions = NULL;
+    
+    restrictions = malloc(sizeof(SSL_PROXY_RESTRICTIONS));
+
+    if (restrictions == NULL)
+    {
+	verror_put_string("malloc() failed");
+	verror_put_errno(errno);
+	return NULL;
+    }
+    
+    /* Set defaults */
+    restrictions->limited_proxy = 0;	/* Not limited */
+    restrictions->lifetime = 0;		/* 0 == default */
+    
+    return restrictions;
+}
+
+void
+ssl_proxy_restrictions_destroy(SSL_PROXY_RESTRICTIONS *restrictions)
+{
+    if (restrictions != NULL)
+    {
+	free(restrictions);
+    }
+}
+
+int
+ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS	*restrictions,
+				    const long			lifetime)
+{
+    int				return_value = SSL_ERROR;
+    
+    /* Check arguments */
+    if (restrictions == NULL)
+    {
+	verror_put_errno(EINVAL);
+	goto error;
+    }
+    
+    if (lifetime < 0L)
+    {
+	verror_put_errno(EINVAL);
+	goto error;
+    }
+    
+    /* OK */
+    restrictions->lifetime = lifetime;
+    return_value = SSL_SUCCESS;
+    
+  error:
+    return return_value;
+}
+
+    
+    
 	    
 	    
 
