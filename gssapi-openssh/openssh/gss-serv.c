@@ -27,6 +27,7 @@
 #ifdef GSSAPI
 
 #include "ssh.h"
+#include "ssh1.h"
 #include "ssh2.h"
 #include "xmalloc.h"
 #include "buffer.h"
@@ -50,6 +51,8 @@ extern ServerOptions options;
 extern u_char *session_id2;
 extern int session_id2_len;
 
+void    userauth_reply(Authctxt *authctxt, int authenticated);
+static void gssapi_unsetenv(const char *var);
 
 typedef struct ssh_gssapi_cred_cache {
 	char *filename;
@@ -59,6 +62,16 @@ typedef struct ssh_gssapi_cred_cache {
 } ssh_gssapi_cred_cache;
 
 static struct ssh_gssapi_cred_cache gssapi_cred_store = {NULL,NULL,NULL};
+unsigned char ssh1_key_digest[16]; /* used for ssh1 gssapi */
+
+/*
+ * Environment variables pointing to delegated credentials
+ */
+static char *delegation_env[] = {
+  "X509_USER_PROXY",		/* GSSAPI/SSLeay */
+  "KRB5CCNAME",			/* Krb5 and possibly SSLeay */
+  NULL
+};
 
 #ifdef KRB5
 
@@ -503,12 +516,19 @@ userauth_gssapi(Authctxt *authctxt)
 
 	/* Send SSH_MSG_USERAUTH_GSSAPI_RESPONSE */
 
+	if (!compat20)
+	packet_start(SSH_SMSG_AUTH_GSSAPI_RESPONSE);
+	else
 	packet_start(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE);
 	packet_put_string(oid.elements,oid.length);
 	packet_send();
 	packet_write_wait();
 	xfree(oid.elements);
 		
+ 	if (!compat20)
+ 	dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN,
+ 				&input_gssapi_token);
+ 	else
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, 
 		     &input_gssapi_token);
 	authctxt->postponed = 1;
@@ -537,23 +557,32 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 	if (GSS_ERROR(maj_status)) {
 		/* Failure <sniff> */
 		authctxt->postponed = 0;
+		dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
 		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
 		userauth_finish(authctxt, 0, "gssapi");
 	}
 			
 	if (send_tok.length != 0) {
 		/* Send a packet back to the client */
+		if (!compat20)
+		packet_start(SSH_MSG_AUTH_GSSAPI_TOKEN);
+		else
 	        packet_start(SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
                 packet_put_string(send_tok.value,send_tok.length);
                 packet_send();
                 packet_write_wait();
-                gss_release_buffer(&min_status, &send_tok);                                     
+                gss_release_buffer(&min_status, &send_tok);
 	}
 	
 	if (maj_status == GSS_S_COMPLETE) {
-		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,NULL);
-		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE,
-			     &input_gssapi_exchange_complete);
+		dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
+  		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,NULL);
+		/* ssh1 does not have an extra message here */
+		if (!compat20)
+		input_gssapi_exchange_complete(0, 0, ctxt);
+		else
+  		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE,
+  			     &input_gssapi_exchange_complete);
 	}
 }
 
@@ -587,10 +616,188 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 				     		
         authenticated = ssh_gssapi_userok(authctxt->user);
 
+	/* ssh1 needs to exchange the hash of the keys */
+	if (!compat20) {
+		if (authenticated) {
+
+			OM_uint32 maj_status, min_status;
+			gss_buffer_desc gssbuf,msg_tok;
+
+			/* ssh1 uses wrap */
+			gssbuf.value=ssh1_key_digest;
+			gssbuf.length=sizeof(ssh1_key_digest);
+			if ((maj_status=gss_wrap(&min_status,
+					gssctxt->context,
+					0,
+					GSS_C_QOP_DEFAULT,
+					&gssbuf,
+					NULL,
+					&msg_tok))) {
+				ssh_gssapi_error(maj_status,min_status);
+				fatal("Couldn't wrap keys");
+			}
+			packet_start(SSH_SMSG_AUTH_GSSAPI_HASH);
+			packet_put_string((char *)msg_tok.value,msg_tok.length);
+			packet_send();
+			packet_write_wait();
+			gss_release_buffer(&min_status,&msg_tok);
+		}
+	}
+
 	authctxt->postponed = 0;
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
 	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, NULL);
 	userauth_finish(authctxt, authenticated, "gssapi");
+}
+
+/*
+ * SSLeay GSSAPI clients may send us a user name of the form:
+ *
+ *   (1) username:x:SSL Subject Name
+ *     or
+ *   (2) username:i:SSL Subject Name
+ *     or
+ *   (3) username
+ *
+ *  if case 1, then uname is an explicit name (ssh -l uname). Keep this
+ *  name always, rewrite the user parameter to be just uname. We'll pull
+ *  the GSSAPI idenity out and deal with (or skip it) later.
+ *  
+ *  if case 2, then uname is implicit (user didn't use the -l option), so
+ *  use the default gridmap mapping and replace uname with whatever
+ *  the gridmap maps to. If the gridmap mapping fails, drop down
+ *  to just uname
+ *  
+ *  if case 3, then leave it be.
+ *
+ *  This function may return the original pointer to the orginal string,
+ *  the original pointer to a modified string, or a completely new pointer.
+ */
+char *
+gssapi_parse_userstring(char *userstring)
+{
+  char name_type = '\0';	/* explicit 'x' or implicit 'i' */
+  char *ssl_subject_name = NULL;
+  char *delim = NULL;
+
+  debug("Looking at username '%s' for gssapi-ssleay type name", userstring);
+  if((delim = strchr(userstring, ':')) != NULL) {
+      /* Parse and split into components */
+      ssl_subject_name = strchr(delim + 1, ':');
+
+      if (ssl_subject_name) {
+	/* Successful parse, split into components */
+	*delim = '\0';
+	name_type = *(delim + 1);
+	*ssl_subject_name = '\0';
+	ssl_subject_name++;
+
+	debug("Name parsed. type = '%c'. ssl subject name is \"%s\"",
+	      name_type, ssl_subject_name);
+
+      } else {
+
+	debug("Don't understand name format. Letting it pass.");
+      }	
+  }	
+
+#ifdef GSI
+  if(ssl_subject_name) {
+    char *gridmapped_name = NULL;
+    switch (name_type) {
+    case 'x':
+      debug("explicit name given, using %s as username", userstring);
+      break;
+
+    case 'i':
+      /* gridmap check */
+      debug("implicit name given. gridmapping '%s'", ssl_subject_name);
+
+      if(globus_gss_assist_gridmap(ssl_subject_name,
+				     &gridmapped_name) == 0) {
+	userstring = gridmapped_name;
+	debug("I gridmapped and got %s", userstring);
+
+      } else {
+	debug("I gridmapped and got null, reverting to %s", userstring);
+      }
+      break;
+
+    default:
+      debug("Unknown name type '%c'. Ignoring.", name_type);
+      break;
+    }
+  } else {
+    debug("didn't find any :'s so I assume it's just a user name");
+  }
+#endif /* GSI */
+
+  return userstring;
+}
+
+/*
+ * Clean our environment on startup. This means removing any environment
+ * strings that might inadvertantly been in root's environment and 
+ * could cause serious security problems if we think we set them.
+ */
+void
+gssapi_clean_env(void)
+{
+  char *envstr;
+  int envstr_index;
+
+  
+   for (envstr_index = 0;
+       (envstr = delegation_env[envstr_index]) != NULL;
+       envstr_index++) {
+
+     if (getenv(envstr)) {
+       debug("Clearing environment variable %s", envstr);
+       gssapi_unsetenv(envstr);
+     }
+   }
+}
+
+/*
+ * Wrapper around unsetenv.
+ */
+static void
+gssapi_unsetenv(const char *var)
+{
+#ifdef HAVE_UNSETENV
+    unsetenv(var);
+
+#else /* !HAVE_UNSETENV */
+    extern char **environ;
+    char **p1 = environ;	/* New array list */
+    char **p2 = environ;	/* Current array list */
+    int len = strlen(var);
+
+    /*
+     * Walk through current environ array (p2) copying each pointer
+     * to new environ array (p1) unless the pointer is to the item
+     * we want to delete. Copy happens in place.
+     */
+    while (*p2) {
+	if ((strncmp(*p2, var, len) == 0) &&
+	    ((*p2)[len] == '=')) {
+	    /*
+	     * *p2 points at item to be deleted, just skip over it
+	     */
+	    p2++;
+	} else {
+	    /*
+	     * *p2 points at item we want to save, so copy it
+	     */
+	    *p1 = *p2;
+	    p1++;
+	    p2++;
+	}
+    }
+
+    /* And make sure new array is NULL terminated */
+    *p1 = NULL;
+#endif /* HAVE_UNSETENV */
 }
 
 #endif /* GSSAPI */
