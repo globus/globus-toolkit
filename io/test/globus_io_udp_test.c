@@ -63,7 +63,7 @@ globus_l_udp_test_receive_callback(
     globus_result_t                   result,
     globus_byte_t *                   buf,
     globus_size_t                     nbytes,
-    char *                            host,
+    const char *                      host,
     unsigned short                    port);
 
 static int                   msg_count = 1;
@@ -195,7 +195,6 @@ unicast_receive_multicast_send(
     globus_result_t			result;
     globus_io_handle_t                  handle;
     globus_io_attr_t			attr;
-    char                                c;
     char *                              myname = "unicast_receive_multicast_send";
     int                                 rc;
 
@@ -274,7 +273,6 @@ unicast_send_multicast_receive(
     char *                           msg)
 {
     globus_result_t			result;
-    globus_io_handle_t                  handle;
     globus_io_attr_t			attr;
     globus_io_handle_t                  mc_handle;
     globus_io_attr_t			mc_attr;
@@ -363,9 +361,6 @@ globus_l_udp_test_recv(
 {
     globus_result_t			result;
     globus_byte_t  			buf[BUF_SIZE];
-    char *                              from_host;
-    unsigned short                      from_port;
-    globus_size_t			from_bytes;
     static char *                       myname = "globus_l_udp_test_recv";
 
     globus_cond_init(&globus_l_io_udp_cond, 
@@ -402,10 +397,10 @@ globus_l_udp_test_recv(
     return GLOBUS_TRUE;
 }
 
+int
 globus_io_udp_receive_wait()
 {
     static char *                       myname = "globus_io_udp_receive_wait";
-    globus_result_t			result;
 
     globus_libc_printf("%s() : waiting for signal\n", myname);
     globus_mutex_lock(&globus_l_io_udp_mutex);
@@ -447,10 +442,9 @@ globus_l_udp_test_receive_callback(
     globus_result_t                   result,
     globus_byte_t *                   buf,
     globus_size_t                     nbytes,
-    char *                            host,
+    const char *                      host,
     unsigned short                    port)
 {
-    static int                       count = 0;
     static char *                    myname = "globus_l_udp_test_receive_callback";
     
     msgs_received++;

@@ -341,8 +341,19 @@ typedef void (*globus_io_udp_recvfrom_callback_t)(
     globus_result_t			result,
     globus_byte_t *			buf,
     globus_size_t			nbytes_recvd,
-    char *				host,
+    const char *				host,
     unsigned short			port);
+
+typedef void
+(*globus_io_udp_recvfromv_callback_t)(
+    void *                                  arg,
+    globus_io_handle_t *                    handle,
+    globus_result_t			                result,
+    struct iovec *                          iov,
+    int                                     iovc,
+    globus_size_t                           nbytes_recvd,
+    const char *                            host,
+    unsigned short                          port);
 
 typedef void (*globus_io_sendto_callback_t)(
     void *				arg, 
@@ -1228,6 +1239,25 @@ globus_io_udp_recvfrom(
      char **                             host,
      unsigned short *                    port,
      globus_size_t *                     nbytes_received);
+
+globus_result_t
+globus_io_udp_register_recvfromv(
+    globus_io_handle_t *                handle,
+    struct iovec *                      iovec,
+    int                                 iovec_count,
+    int                                 flags,
+    globus_io_udp_recvfromv_callback_t  recvfromv_callback,
+    void *                              callback_arg);
+
+globus_result_t 
+globus_io_udp_recvfromv(
+    globus_io_handle_t *                handle,
+    struct iovec *                      iovec,
+    int                                 iovec_count,
+    int                                 flags,
+    char **                             host,
+    unsigned short *                    port,
+    globus_size_t *                     nbytes_received);
 
 globus_result_t
 globus_io_udpattr_init(
