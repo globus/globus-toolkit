@@ -20,7 +20,7 @@ int errorsOccurred= 0;
 
 void destructor( void * datum )
 {
-	static count= 1;
+	static int count= 1;
 	printf( "destructor() called; datum is %p, count is %d\n", datum, count++ );
 }
 
