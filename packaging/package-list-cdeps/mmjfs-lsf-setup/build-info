@@ -1,4 +1,0 @@
-name=mmjfs_lsf_setup
-subdir=program_execution/mmjfs-lsf-setup
-build="custom"
-output=mmjfs_lsf_setup-*.tar.gz
