@@ -22,8 +22,12 @@ PGP keyservers (such as pgpkeys.mit.edu).
 pub  1024D/A58DA2D4 2003-12-29 Chase Phillips <shepard@ameth.org>
      Key fingerprint = 7497 3DA3 7671 064B 5CEA  9024 BB0B 8647 A58D A2D4
 sig 3       A58DA2D4 2003-12-30   Chase Phillips <shepard@ameth.org>
+sig 3       BB25A6E9 2004-01-15   Jim Basney <jbasney@ncsa.uiuc.edu>
+sig 3       82205CFA 2004-01-15   Joe Greenseid <jgreenseid@wesleyan.edu>
 uid                            Chase Phillips <cmp@uiuc.edu>
 sig 3       A58DA2D4 2003-12-29   Chase Phillips <shepard@ameth.org>
+sig 3       BB25A6E9 2004-01-15   Jim Basney <jbasney@ncsa.uiuc.edu>
+sig 3       82205CFA 2004-01-15   Joe Greenseid <jgreenseid@wesleyan.edu>
 sub  2048g/E3DF96EB 2003-12-29 [expires: 2004-03-28]
 sig         A58DA2D4 2003-12-29   Chase Phillips <shepard@ameth.org>
 
@@ -41,23 +45,30 @@ xKK+ZELe9up4fJeTgOXLtELZLWDuinTtPauK8KDraFZ5xtJEJNee2I6EqQY/u0hf
 JSOscgb7r+aYIR0e7OCNR80bAypvq8WA2XtK4jScUk535rac2bQdQ2hhc2UgUGhp
 bGxpcHMgPGNtcEB1aXVjLmVkdT6IXwQTEQIAHwUCP/CmGgUJAHanAAQLBwMCAxUC
 AwMWAgECHgECF4AACgkQuwuGR6WNotSBRgCfWx8/0jIAjLssvB2xQkdt8wtnVQgA
-n3RD/ibX+kkOubf1mPjlJ9NfoHQwtCJDaGFzZSBQaGlsbGlwcyA8c2hlcGFyZEBh
-bWV0aC5vcmc+iGIEExECACIFAj/x3ygCGwMFCQB2pwAECwcDAgMVAgMDFgIBAh4B
-AheAAAoJELsLhkeljaLU+pIAmwbnFn/RNBvFOWdWPlnUWq9G+cgzAJ923ij53LtG
-KaCY4VMXG95wUE9nrLkCDQQ/8KYoEAgA3vfQ/arf1y6z+DqErY5B2cQA7Yu+zMQV
-Ue4UQaA2Kl2OCp8YABx9kkeuo7NrhW64fhmUyr0rAB0C0U+n3W0uMfbIi5Zn2KPs
-iaDp2n8VnAKs7j7gRO3GAOqEP2TBJhNE5WNzeMrycrSS6ZCa46tOiDUeY2YxCajy
-dAWJsF6xgFWLN0xaKRclkaYNmpXg6NLbzxz33MDB/uY8s7lWBU6Zud4rgtbdU4Wd
-h7GdxCK38ly8U/l7P4OwZ53sMYNwc2eW+6ln7psuNHXxWFhC2RMSM02yeLSzKAsL
-A636DRkQDGR/CC/CObtE7ttfii2y5y9lUqo6pZkUz+QOmQ/gczB8gwADBQf/Zp3z
-/73GYmqv3rFXOYF90KZqPNXiISThSw9pfVt6y0MYmRvVEpSDhZt18tH6/vyVoAxE
-Kknz5sBesz03QnWAkZYXBiFX9O1KE2VLsGEtn2GbMoIGiXIcMD89hW9w4qqLinjx
-zs3Ehd6ApwXp9QuxbWnDaHWqJwuycosuWYW915X9GPVRnFDyctNjMI0/ybVZEAmP
-KCqfICs+28MMUGi1B6DsTI8q8WE1ei9B2UNAB/hQM4ACaxyOGZcW16FLYHhn7l3u
-Kdl6Qy8jV0TGZw4DheAL3Kfwb7cUQY1f1Fm5bA2k6PQqnHtEZp+Jnkk0YfY+gmNj
-UNrwq9Hrlr7YdiVPaYhMBBgRAgAMBQI/8KYoBQkAdqcAAAoJELsLhkeljaLUlSQA
-n3iIIc6YmITQ10cCreqJh41CCMQkAJ9rNkh6V6UB5naJ8Fg+hk8XW9Imqg==
-=ju6E
+n3RD/ibX+kkOubf1mPjlJ9NfoHQwiEwEExECAAwFAkAG7JIFgwBgYIgACgkQNe2b
+grslpum0VACfUMtZjy8iNzqmmsyauHoVU+1hVXkAnjnJoIrSjOwQnAhC0qFqHysn
+TJa8iEsEExECAAwFAkAHGEcFgwBgNNMACgkQS58MsYIgXPopbQCYxvb9sbgSNX+2
+3YNjGS2qD3C6ZwCfQZN4UEq3xfHhkEXndVe8VMm4xW60IkNoYXNlIFBoaWxsaXBz
+IDxzaGVwYXJkQGFtZXRoLm9yZz6IYgQTEQIAIgUCP/HfKAIbAwUJAHanAAQLBwMC
+AxUCAwMWAgECHgECF4AACgkQuwuGR6WNotT6kgCbBucWf9E0G8U5Z1Y+WdRar0b5
+yDMAn3beKPncu0YpoJjhUxcb3nBQT2esiEwEExECAAwFAkAG7JIFgwBgYIgACgkQ
+Ne2bgrslpukTGACeNpiYhgm+rUv+sJFZYnXiFZYubzgAnRV31p7l9P3px7yymG1i
+p3LfLZNWiEwEExECAAwFAkAHGEcFgwBgNNMACgkQS58MsYIgXPozkgCaA9bx6nrM
+W/fKtsejQoM7w48Iia0AoJKdeFGXlFhFHBiGowgRaH2ja3tBuQINBD/wpigQCADe
+99D9qt/XLrP4OoStjkHZxADti77MxBVR7hRBoDYqXY4KnxgAHH2SR66js2uFbrh+
+GZTKvSsAHQLRT6fdbS4x9siLlmfYo+yJoOnafxWcAqzuPuBE7cYA6oQ/ZMEmE0Tl
+Y3N4yvJytJLpkJrjq06INR5jZjEJqPJ0BYmwXrGAVYs3TFopFyWRpg2aleDo0tvP
+HPfcwMH+5jyzuVYFTpm53iuC1t1ThZ2HsZ3EIrfyXLxT+Xs/g7Bnnewxg3BzZ5b7
+qWfumy40dfFYWELZExIzTbJ4tLMoCwsDrfoNGRAMZH8IL8I5u0Tu21+KLbLnL2VS
+qjqlmRTP5A6ZD+BzMHyDAAMFB/9mnfP/vcZiaq/esVc5gX3Qpmo81eIhJOFLD2l9
+W3rLQxiZG9USlIOFm3Xy0fr+/JWgDEQqSfPmwF6zPTdCdYCRlhcGIVf07UoTZUuw
+YS2fYZsyggaJchwwPz2Fb3DiqouKePHOzcSF3oCnBen1C7FtacNodaonC7Jyiy5Z
+hb3Xlf0Y9VGcUPJy02MwjT/JtVkQCY8oKp8gKz7bwwxQaLUHoOxMjyrxYTV6L0HZ
+Q0AH+FAzgAJrHI4ZlxbXoUtgeGfuXe4p2XpDLyNXRMZnDgOF4Avcp/BvtxRBjV/U
+WblsDaTo9Cqce0Rmn4meSTRh9j6CY2NQ2vCr0euWvth2JU9piEwEGBECAAwFAj/w
+pigFCQB2pwAACgkQuwuGR6WNotSVJACfeIghzpiYhNDXRwKt6omHjUIIxCQAn2s2
+SHpXpQHmdonwWD6GTxdb0iaq
+=y8x6
 -----END PGP PUBLIC KEY BLOCK-----
 
 pub  1024D/BB25A6E9 2004-01-05 Jim Basney <jbasney@ncsa.uiuc.edu>
