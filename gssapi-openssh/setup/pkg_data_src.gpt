@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
-<gpt_package_metadata Format_Version="0.01" Name="gsi-openssh-setup" >
+<gpt_package_metadata Format_Version="0.01" Name="gsi_openssh_setup" >
 
   <Aging_Version Age="0" Major="1" Minor="0" />
   <Description>GSI binary package openssh version 3.0.2p1 with patches (setup)</Description>
-  <Functional_Group >gsi-openssh</Functional_Group>
+  <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="alpha" />
 
   <src_pkg >
@@ -34,7 +34,7 @@
       You need to run setup-openssh
     </Post_Install_Message>
 
-    <Setup Name="gsi-openssh-setup">
+    <Setup Name="gsi_openssh_setup">
       <Aging_Version Age="0" Major="1" Minor="0" />
     </Setup>
 
