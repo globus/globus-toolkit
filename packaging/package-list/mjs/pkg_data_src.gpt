@@ -24,6 +24,7 @@
     <Source_Dependencies Type="compile" >
       <Dependency Name="core" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="filestreaming" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="mds-db" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="providers" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="rips" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="mds-db" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
@@ -58,7 +59,7 @@
 	    <Build_Step> cp build/lib/mjs.gar INSTALLDIR_GPTMACRO/gars/ </Build_Step>
 	    <Build_Step> cp build.xml INSTALLDIR_GPTMACRO/gars/build-mjs.xml </Build_Step>
 	    <Build_Step> ant deployGar -Dogsa.root=INSTALLDIR_GPTMACRO</Build_Step>
-	    <Build_Step> cp test.xml INSTALLDIR_GPTMACRO/etc/ </Build_Step>
+	    <!--<Build_Step> cp test.xml INSTALLDIR_GPTMACRO/etc/ </Build_Step>-->
 
     </Build_Instructions>
 
