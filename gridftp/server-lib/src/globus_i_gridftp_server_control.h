@@ -135,6 +135,7 @@ typedef struct globus_i_gsc_data_s
     int                                     stripe_count;
     void *                                  user_handle;
     globus_gridftp_server_control_data_dir_t dir;
+    globus_bool_t                           first_use;
 } globus_i_gsc_data_t;
 
 typedef enum globus_i_gsc_op_type_e

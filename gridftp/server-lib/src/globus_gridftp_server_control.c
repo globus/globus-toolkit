@@ -3861,6 +3861,7 @@ globus_gridftp_server_control_finished_active_connect(
     {
         return GlobusGridFTPServerControlErrorSytem();
     }
+    data_obj->first_use = GLOBUS_TRUE;
     data_obj->dir = data_dir;
     data_obj->user_handle = user_data_handle;
     data_obj->server_handle = op->server_handle;
@@ -3912,6 +3913,7 @@ globus_gridftp_server_control_finished_passive_connect(
     {
         return GlobusGridFTPServerControlErrorSytem();
     }
+    data_obj->first_use = GLOBUS_TRUE;
     data_obj->dir = data_dir;
     data_obj->user_handle = user_data_handle;
     data_obj->server_handle = op->server_handle;
@@ -4031,8 +4033,17 @@ globus_gridftp_server_control_begin_transfer(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        /* TODO: determine if cached */
-        res = globus_i_gsc_intermediate_reply(op, "150 Begining transfer.\r\n");
+        if(op->server_handle->data_object->first_use)
+        {
+            res = globus_i_gsc_intermediate_reply(
+                op, "150 Begining transfer.\r\n");
+            op->server_handle->data_object->first_use = GLOBUS_FALSE;
+        }
+        else
+        {
+            res = globus_i_gsc_intermediate_reply(
+                op, "125 Begining transfer; reusing existing data connection.\r\n");
+        }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
