@@ -117,6 +117,25 @@ operation struture will use stretchy array
         - it will clean up all it can
         - this is case if it returns an error or callback comes in with 
           an error or if it succeds 
+
+        cancel
+        - happens with close
+        - happens with timeouts
+
+        </PRE>
+        <BR>
+        <PRE>
+        Testing Framework
+        - echo transport driver
+            - simply calls finished op from within the same call stack
+        - delayed echo transport driver
+            - calls register_one shot to echo finished_op
+        - pass though transform driver
+            - simply calls pass_op
+        - rebuffer transform driver
+            - set a new buffer and pass
+
+        - test with file/tcp/gsi also
         </PRE>
     </body>
 </html>
