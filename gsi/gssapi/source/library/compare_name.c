@@ -248,11 +248,17 @@ GSS_CALLCONV gss_compare_name(
 	 * and some of the entries may not match
 	 * due to extensible NE's (like /Email=...)
 	 */
-	if(!strcmp(X509_NAME_oneline(name1->x509n, NULL, 0), 
-		   X509_NAME_oneline(name2->x509n, NULL, 0)))
+
+        ce1 = X509_NAME_oneline(name1->x509n, NULL, 0);
+        ce2 = X509_NAME_oneline(name2->x509n, NULL, 0);
+        
+	if(!strcmp(ce1,ce2))
         {
             *name_equal = GSS_NAMES_EQUAL;
         }
+
+        free(ce1);
+        free(ce2);
     }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
