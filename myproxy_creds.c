@@ -20,7 +20,6 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/dir.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
