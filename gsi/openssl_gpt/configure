@@ -3475,7 +3475,7 @@ fi
 with_tags=" "
 
 save_CXXCPP=$CXXCPP
-CXXCPP=$CPP
+CXXCPP=
 
 # Check whether --enable-shared or --disable-shared was given.
 if test "${enable_shared+set}" = set; then
