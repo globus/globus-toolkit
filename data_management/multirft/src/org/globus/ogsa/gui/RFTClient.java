@@ -18,7 +18,7 @@ import org.apache.axis.utils.XMLUtils;
 import org.globus.axis.gsi.GSIConstants;
 
 import org.globus.ogsa.ServiceProperties;
-import org.globus.ogsa.base.multirft.MultiFileRFTDefinitionServiceGridLocator;
+import org.globus.ogsa.base.multirft.MultiFileRFTServiceGridLocator;
 import org.globus.ogsa.base.multirft.RFTOptionsType;
 import org.globus.ogsa.base.multirft.RFTPortType;
 import org.globus.ogsa.base.multirft.TransferRequestElement;
@@ -160,8 +160,8 @@ public class RFTClient {
             LocatorType locator = gridFactory.createService(extension);
             System.out.println("Created an instance of Multi-RFT");
 
-            MultiFileRFTDefinitionServiceGridLocator loc = new MultiFileRFTDefinitionServiceGridLocator();
-            RFTPortType rftPort = loc.getMultiFileRFTDefinitionPort(locator);
+            MultiFileRFTServiceGridLocator loc = new MultiFileRFTServiceGridLocator();
+            RFTPortType rftPort = loc.getMultiFileRFTPort(locator);
             ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
                                          NoAuthorization.getInstance());
             ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE, 

@@ -235,8 +235,13 @@ Southern California. All Rights Reserved.
 
     <delete includeEmptyDirs="true" quiet="true">
         <fileset dir="${schema.dir}">
-        <exclude name="base/multirft/multirft_port_type.gwsdl"/>
-        <exclude name="base/multirft/multirft_types.wsdl"/>
+            <exclude name="base/multirft/multirft_port_type.gwsdl"/>
+            <exclude name="base/multirft/multirft_types.wsdl"/>
+        </fileset>
+
+        <fileset dir="${src.dir}">
+            <exclude name="org/globus/ogsa/gui/**"/>
+            <exclude name="org/globus/ogsa/impl/**"/>
         </fileset>
     </delete>
 </target>
@@ -249,8 +254,8 @@ Southern California. All Rights Reserved.
              use="true"
              windowtitle="Multi RFT API ">
       <packageset dir="${src.dir}">
-	<exclude name="**/databaseaccess/test/**"/>
-	<exclude name="**/client/**"/>
+        <exclude name="**/databaseaccess/test/**"/>
+        <exclude name="**/client/**"/>
       </packageset>
     </javadoc>
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions name="MultiFileRFTDefinition"
+<definitions name="MultiFileRFT"
              targetNamespace="http://multirft.base.ogsa.globus.org"
              xmlns:tns="http://multirft.base.ogsa.globus.org"
              xmlns:ogsi="http://www.gridforum.org/namespaces/2003/03/OGSI"

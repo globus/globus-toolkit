@@ -40,9 +40,10 @@ public class RftFactoryImpl
      * @return DOCUMENT ME! 
      * @throws GridServiceException DOCUMENT ME!
      */
-    public GridServiceBase createServiceObject(ExtensibilityType creation,
-					       ExtensibilityTypeHolder extensibilityOut)
-	throws GridServiceException {
+    public GridServiceBase createServiceObject(
+            ExtensibilityType                   creation,
+            ExtensibilityTypeHolder             extensibilityOutput)
+            throws                              GridServiceException {
 
         RftImpl rftImpl;
         try {
