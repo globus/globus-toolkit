@@ -1072,8 +1072,8 @@ mm_ssh_gssapi_userok(char *user) {
         int authenticated = 0;
 
         buffer_init(&m);
+        
         mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSUSEROK, &m);
-
         mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSUSEROK,
                                   &m);
 
@@ -1134,6 +1134,8 @@ mm_gss_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set)
 	OM_uint32 major,minor;
 	int count;
 	gss_OID_desc oid;
+        u_int length;
+
 	buffer_init(&m);
 
 	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSMECHS, &m);
@@ -1144,7 +1146,6 @@ mm_gss_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set)
 	
         gss_create_empty_oid_set(&minor,mech_set);
 	while(count-->0) {
-	    u_int length;
 	    oid.elements=buffer_get_string(&m,&length);
 	    oid.length=length;
 	    gss_add_oid_set_member(&minor,&oid,mech_set);

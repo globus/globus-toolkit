@@ -114,7 +114,6 @@ struct Kex {
 	Buffer	peer;
 	int	done;
 	int	flags;
-	char    *host;
 	char	*client_version_string;
 	char	*server_version_string;
 	struct  KexOptions options;
