@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="GSI_callback"
-	ProjectGUID="{48B7BE8F-92AB-4849-BB65-94F60AC3AF2A}"
+	Name="GSI_openssl_error_thr"
+	ProjectGUID="{04848777-C8F2-4FEC-BAB7-E7EE597E5414}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include;\include\nonthreaded;\include\openssl"
+				AdditionalIncludeDirectories="\include;\include\threaded;\include\openssl"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"
@@ -34,7 +34,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libglobus_gsi_callback_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_openssl_error_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -72,7 +72,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/GSI_callback.lib"/>
+				OutputFile="$(OutDir)/GSI_openssl_error.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -92,26 +92,20 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\library\globus_gsi_callback.c">
+				RelativePath="..\library\globus_error_openssl.c">
 			</File>
 			<File
-				RelativePath="..\library\globus_gsi_callback_data.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gsi_callback_error.c">
+				RelativePath="..\library\globus_i_error_openssl.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\library\globus_gsi_callback.h">
+				RelativePath="..\library\globus_error_openssl.h">
 			</File>
 			<File
-				RelativePath="..\library\globus_gsi_callback_constants.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_i_gsi_callback.h">
+				RelativePath="..\library\globus_i_error_openssl.h">
 			</File>
 		</Filter>
 		<Filter

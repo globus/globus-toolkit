@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="GSI_callback"
-	ProjectGUID="{48B7BE8F-92AB-4849-BB65-94F60AC3AF2A}"
+	Name="GSI_sys-config_thr"
+	ProjectGUID="{6D9D23EA-9A66-4C40-B5A5-93AB67D269EB}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -12,15 +12,15 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug"
+			OutputDirectory="Build"
+			IntermediateDirectory="Build"
 			ConfigurationType="4"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include;\include\nonthreaded;\include\openssl"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				AdditionalIncludeDirectories="\gsi\sysconfig\source\library\Win32;\include;\include\threaded;\include\openssl"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;BUILD_DEBUG"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
@@ -34,12 +34,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libglobus_gsi_callback_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_gsi_sysconfig_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy .\debug\*.lib \lib\*.*"/>
+				CommandLine="copy .\build\*.lib \lib\*.*"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -72,7 +72,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/GSI_callback.lib"/>
+				OutputFile="$(OutDir)/SysConfig.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -92,26 +92,23 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\library\globus_gsi_callback.c">
+				RelativePath="..\library\globus_gsi_system_config.c">
 			</File>
 			<File
-				RelativePath="..\library\globus_gsi_callback_data.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gsi_callback_error.c">
+				RelativePath="..\library\globus_gsi_system_config_error.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\library\globus_gsi_callback.h">
+				RelativePath="..\library\globus_gsi_system_config.h">
 			</File>
 			<File
-				RelativePath="..\library\globus_gsi_callback_constants.h">
+				RelativePath="..\library\globus_gsi_system_config_constants.h">
 			</File>
 			<File
-				RelativePath="..\library\globus_i_gsi_callback.h">
+				RelativePath="..\library\globus_i_gsi_system_config.h">
 			</File>
 		</Filter>
 		<Filter

@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="GSI_callback"
+	Name="GSI_callback_thr"
 	ProjectGUID="{48B7BE8F-92AB-4849-BB65-94F60AC3AF2A}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include;\include\nonthreaded;\include\openssl"
+				AdditionalIncludeDirectories="\include;\include\threaded;\include\openssl"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"
@@ -34,7 +34,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libglobus_gsi_callback_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_gsi_callback_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool

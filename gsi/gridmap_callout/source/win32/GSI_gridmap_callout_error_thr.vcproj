@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="GSI_callback"
-	ProjectGUID="{48B7BE8F-92AB-4849-BB65-94F60AC3AF2A}"
+	Name="GSI_gridmap_callout_error_thr"
+	ProjectGUID="{E73FF829-FD91-49F5-98C7-56D68A0707A2}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include;\include\nonthreaded;\include\openssl"
+				AdditionalIncludeDirectories="\include;\include\threaded;\include\openssl"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"
@@ -34,12 +34,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libglobus_gsi_callback_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_gridmap_callout_error_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-				CommandLine="copy .\debug\*.lib \lib\*.*"/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -64,7 +63,7 @@
 				StringPooling="TRUE"
 				RuntimeLibrary="4"
 				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="3"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="3"/>
@@ -72,7 +71,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/GSI_callback.lib"/>
+				OutputFile="$(OutDir)/GSI_gridmap_callout_error.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -92,26 +91,14 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\library\globus_gsi_callback.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gsi_callback_data.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gsi_callback_error.c">
+				RelativePath="..\..\error\globus_i_gridmap_callout_error.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\library\globus_gsi_callback.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_gsi_callback_constants.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_i_gsi_callback.h">
+				RelativePath="..\..\error\globus_gridmap_callout_error.h">
 			</File>
 		</Filter>
 		<Filter

@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="GSI_callback"
-	ProjectGUID="{48B7BE8F-92AB-4849-BB65-94F60AC3AF2A}"
+	Name="GSI_old_gaa_thr"
+	ProjectGUID="{7B7AE5C4-CC58-4CFB-AFE0-A58DB355D97E}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\include;\include\nonthreaded;\include\openssl"
+				AdditionalIncludeDirectories="\include;\include\threaded;\include\openssl"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"
@@ -34,7 +34,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libglobus_gsi_callback_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_oldgaa_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -72,7 +72,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/GSI_callback.lib"/>
+				OutputFile="$(OutDir)/GSI_oldgaa.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -92,26 +92,47 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\library\globus_gsi_callback.c">
+				RelativePath="..\library\oldgaa\globus_oldgaa_utils.c">
 			</File>
 			<File
-				RelativePath="..\library\globus_gsi_callback_data.c">
+				RelativePath="..\library\oldgaa\oldgaa_alloc.c">
 			</File>
 			<File
-				RelativePath="..\library\globus_gsi_callback_error.c">
+				RelativePath="..\library\oldgaa\oldgaa_api.c">
+			</File>
+			<File
+				RelativePath="..\library\oldgaa\oldgaa_gl_internal_err.c">
+			</File>
+			<File
+				RelativePath="..\library\oldgaa\oldgaa_policy_evaluator.c">
+			</File>
+			<File
+				RelativePath="..\library\oldgaa\oldgaa_release.c">
+			</File>
+			<File
+				RelativePath="..\library\oldgaa\oldgaa_utils.c">
+			</File>
+			<File
+				RelativePath="..\library\oldgaa\rfc1779.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\library\globus_gsi_callback.h">
+				RelativePath="..\library\oldgaa\globus_oldgaa_utils.h">
 			</File>
 			<File
-				RelativePath="..\library\globus_gsi_callback_constants.h">
+				RelativePath="..\library\oldgaa\oldgaa_gl_internal_err.h">
 			</File>
 			<File
-				RelativePath="..\library\globus_i_gsi_callback.h">
+				RelativePath="..\library\oldgaa\oldgaa_policy_evaluator.h">
+			</File>
+			<File
+				RelativePath="..\library\oldgaa\oldgaa_utils.h">
+			</File>
+			<File
+				RelativePath="..\library\oldgaa\rfc1779.h">
 			</File>
 		</Filter>
 		<Filter
