@@ -5,15 +5,15 @@
 #define GLOBUS_L_LOGGING_OUTSTANDING_LINES  32
 
 #ifdef __GNUC__
-#define GlobusGridFTPServerName(func) static const char * _globus_logging_name __attribute__((__unused__)) = #func
+#define GlobusLoggingName(func) static const char * _globus_logging_name __attribute__((__unused__)) = #func
 #else
-#define GlobusGridFTPServerName(func) static const char * _globus_logging_name = #func
+#define GlobusLoggingName(func) static const char * _globus_logging_name = #func
 #endif
                                                                                 
 /*
  *  error types
  */
-#define GlobusGridFTPServerErrorParameter(param_name)                       \
+#define GlobusLoggingErrorParameter(param_name)                       \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GLOBUS_COMMON_MODULE,                                           \
@@ -25,7 +25,7 @@
             "Bad parameter, %s",                                            \
             (param_name)))
 
-#define GlobusGridFTPServerMemory()                                         \
+#define GlobusLoggingMemory()                                         \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GLOBUS_COMMON_MODULE,                                           \
@@ -122,21 +122,21 @@ globus_logging_init(
     globus_result_t                     res;
     globus_l_logging_handle_t *         handle;
     globus_size_t                       buffer_length;
-    GlobusGridFTPServerName(globus_logging_init);
+    GlobusLoggingName(globus_logging_init);
 
     if(out_handle == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("out_handle");
+        res = GlobusLoggingErrorParameter("out_handle");
         goto err;
     }
     if(max_log_line < 0)
     {
-        res = GlobusGridFTPServerErrorParameter("max_mem_buffer");
+        res = GlobusLoggingErrorParameter("max_mem_buffer");
         goto err;
     }
     if(module == NULL || module->write_func == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("module");
+        res = GlobusLoggingErrorParameter("module");
         goto err;
     }
 
@@ -146,7 +146,7 @@ globus_logging_init(
         globus_malloc(sizeof(globus_l_logging_handle_t) + buffer_length - 1);
     if(handle == NULL)
     {
-        res = GlobusGridFTPServerMemory();
+        res = GlobusLoggingMemory();
         goto err;
     }
 
@@ -205,16 +205,16 @@ globus_logging_vwrite(
     globus_result_t                     res;
     globus_size_t                       remain;
     globus_size_t                       nbytes;
-    GlobusGridFTPServerName(globus_logging_write);
+    GlobusLoggingName(globus_logging_write);
 
     if(handle == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("handle");
+        res = GlobusLoggingErrorParameter("handle");
         goto err;
     }
     if(fmt == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("fmt");
+        res = GlobusLoggingErrorParameter("fmt");
         goto err;
     }
 
@@ -275,7 +275,7 @@ globus_result_t
 globus_logging_flush(
     globus_logging_handle_t             handle)
 {
-    GlobusGridFTPServerName(globus_logging_flush);
+    GlobusLoggingName(globus_logging_flush);
 
     globus_mutex_lock(&handle->mutex);
     {
@@ -291,11 +291,11 @@ globus_logging_destroy(
     globus_logging_handle_t             handle)
 {
     globus_result_t                     res;
-    GlobusGridFTPServerName(globus_logging_destroy);
+    GlobusLoggingName(globus_logging_destroy);
 
     if(handle == NULL)
     {
-        res = GlobusGridFTPServerErrorParameter("handle");
+        res = GlobusLoggingErrorParameter("handle");
         goto err;
     }
 
