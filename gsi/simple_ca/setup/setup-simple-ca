@@ -419,7 +419,7 @@ CA_REQ_INPUT=${GLOBUS_SH_TMP-/tmp}/tmp_openssl_input.conf.1.$$
 create_input_file "${GSI_CA_NAME}" "${grid_ca_conf}" > ${CA_REQ_INPUT}
 
 # create CA certificate request
-${openssl_cmd} req -config "${grid_ca_conf}" -x509 -days ${CA_CERT_DAYS} \
+${openssl_cmd} req ${openssl_options} -config "${grid_ca_conf}" -x509 -days ${CA_CERT_DAYS} \
                    -newkey rsa:1024 -keyout ${CA_KEY_FILE} \
                    -out ${CA_CERT_FILE} < ${CA_REQ_INPUT} 
 RET=$?
@@ -688,7 +688,7 @@ globus_source ${libexecdir}/globus-sh-tools-vars.sh
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
 
-short_usage="$PROGRAM_NAME [-help] [ options ...]"
+short_usage="$PROGRAM_NAME [-help] [ options ...] [ openssl options ...]"
 
 long_usage () {
     ${GLOBUS_SH_CAT-cat} >&2 <<EOF
@@ -696,7 +696,17 @@ long_usage () {
 ${short_usage}
 
   Options:
-    -dir <loc>         : Will put the Simple CA in <loc>
+    -help               : shows this help message
+    -?
+    -h
+    -usage
+
+    -openssl-help       : Show help text for openssl
+ 
+    -dir <loc>          : Will put the Simple CA in <loc>
+
+    [<openssl options>] : Give openssl options to pass to the
+                          openssl command
 EOF
 }
 
@@ -726,8 +736,15 @@ readCommandLine () {
          
          shift ; shift
          ;;
+     -openssl-help)
+         shift;
+         openssl req -help;
+         exit;
+         ;;
+
      *)
-         globus_args_unrecognized_option "$1"
+         openssl_options="$openssl_options $1"
+         shift;
          ;;
     esac
   done
