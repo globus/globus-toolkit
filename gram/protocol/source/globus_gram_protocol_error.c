@@ -19,13 +19,13 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /*   0 */     "Success",
 /*   1 */     "one of the RSL parameters is not supported",
 /*   2 */     "the RSL length is greater than the maximum allowed",
-/*   3 */     "of an unused NO_RESOURCES",  /* NEEDS EDITING */
+/*   3 */     "an I/O operation failed",
 /*   4 */     "jobmanager unable to set default to the directory requested",
 /*   5 */     "the executable does not exist",
 /*   6 */     "of an unused INSUFFICIENT_FUNDS",   /* NEEDS EDITING */
 /*   7 */     "authentication with the remote server failed",
-/*   8 */     "of an unused USER_CANCELLED",  /* NEEDS EDITING */
-/*   9 */     "of an unused SYSTEM_CANCELLED",  /* NEEDS EDITING */
+/*   8 */     "the user cancelled the job",
+/*   9 */     "the system cancelled the job",
 /*  10 */     "data transfer to the server failed",
 /*  11 */     "the stdin file does not exist",
 /*  12 */     "the connection to the server failed (check host and port)",
@@ -41,7 +41,7 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /*  22 */     "the job manager failed to create an internal script argument file",
 /*  23 */     "the job manager detected an invalid job state",
 /*  24 */     "the job manager detected an invalid script response",
-/*  25 */     "the job manager detected an invalid job state",
+/*  25 */     "the job manager detected an invalid script status",
 /*  26 */     "the provided RSL 'jobtype' value is not supported by this job manager",
 /*  27 */     "unused ERROR_UNIMPLEMENTED",  /* NEEDS EDITING */
 /*  28 */     "the job manager failed to create an internal script submission file",
