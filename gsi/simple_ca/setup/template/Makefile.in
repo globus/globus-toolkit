@@ -141,9 +141,12 @@ AUTOMAKE_OPTIONS = no-dependencies
 
 # the value of this variable gets replace when a specific
 # ca package is generated
-CACERT_HASH = __CACERT_HASH__
+CACERT_HASH = 68c28de4
 
 Scripts =  	setup-ssl-utils-sh-scripts 	setup-ssl-utils 	setup-ssl-utils.pl 	setup-gsi 	setup-gsi.pl 	grid-cert-request-config.in 	grid-security-config.in 	setup-ssl-utils-sh-scripts.in
+
+
+Data =  	grid-security.conf.$(CACERT_HASH) 	globus-ssl.conf 	$(CACERT_HASH).0 	$(CACERT_HASH).signing_policy
 
 
 bin_SCRIPTS =  	grid-cert-request         grid-default-ca
@@ -151,13 +154,14 @@ bin_SCRIPTS =  	grid-cert-request         grid-default-ca
 
 setup_SCRIPTS = $(Scripts)
 
-setup_DATA =  	globus-ssl.conf 	grid-security.conf.$(CACERT_HASH) 	$(CACERT_HASH).0 	$(CACERT_HASH).signing_policy
-
+setup_DATA = $(Data)
 
 SUBDIRS = pkgdata
 
-EXTRA_DIST =  	$(Scripts) 	grid-security.conf.$(CACERT_HASH) 	globus-ssl.conf 	$(CACERT_HASH).0 	$(CACERT_HASH).signing_policy bootstrap         globus_automake_pre         globus_automake_post         globus_automake_pre_top         globus_automake_post_top
+EXTRA_DIST =  	$(Scripts) 	$(Data) 	grid-cert-request 	grid-default-ca bootstrap         globus_automake_pre         globus_automake_post         globus_automake_pre_top         globus_automake_post_top
 
+
+TAR = @TAR@
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
@@ -172,7 +176,6 @@ mkinstalldirs
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = gtar
 GZIP_ENV = --best
 all: all-redirect
 .SUFFIXES:

@@ -1,55 +1,43 @@
 include $(top_srcdir)/globus_automake_pre
+include $(top_srcdir)/globus_automake_pre_top
 
-flavordir = $(GLOBUS_LOCATION)/etc/$(PACKAGE)
+# the value of this variable gets replace when a specific
+# ca package is generated
+CACERT_HASH=68c28de4
 
-FILELIST_FILES = noflavor_data.filelist \
-	$(GLOBUS_FLAVOR_NAME)_dev.filelist \
-	noflavor_doc.filelist \
-	$(GLOBUS_FLAVOR_NAME)_pgm.filelist \
-	$(GLOBUS_FLAVOR_NAME)_pgm_static.filelist \
-	$(GLOBUS_FLAVOR_NAME)_rtl.filelist
+Scripts = \
+	setup-ssl-utils-sh-scripts \
+	setup-ssl-utils \
+	setup-ssl-utils.pl \
+	setup-gsi \
+	setup-gsi.pl \
+	grid-cert-request-config.in \
+	grid-security-config.in \
+	setup-ssl-utils-sh-scripts.in
 
+Data = \
+	grid-security.conf.$(CACERT_HASH) \
+	globus-ssl.conf \
+	$(CACERT_HASH).0 \
+	$(CACERT_HASH).signing_policy
 
-METADATA_FILES = \
-	pkg_data_noflavor_data.gpt \
-	pkg_data_$(GLOBUS_FLAVOR_NAME)_dev.gpt \
-	pkg_data_noflavor_doc.gpt \
-	pkg_data_$(GLOBUS_FLAVOR_NAME)_pgm.gpt \
-	pkg_data_$(GLOBUS_FLAVOR_NAME)_pgm_static.gpt \
-	pkg_data_$(GLOBUS_FLAVOR_NAME)_rtl.gpt
+bin_SCRIPTS = \
+	grid-cert-request \
+        grid-default-ca
 
-pkg_DATA = $(FILELIST_FILES) $(METADATA_FILES)
+setup_SCRIPTS = $(Scripts)
 
-filelist_file: $(MAKEFILE_AMS)
-	@mydir=`pwd`; \
-	if test -f "master.filelist"; then \
-		rm $(FILELIST_FILE); \
-	fi
+setup_DATA = $(Data)
 
-all_filelists: filelist_file
-	 @(cd .. && $(MAKE) $(AM_MAKEFLAGS) filelist) \
-## This trick allows "-k" to keep its natural meaning when running a
-## recursive rule.
-	  || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac;
+SUBDIRS = pkgdata
 
+EXTRA_DIST = \
+	$(Scripts) \
+	$(Data) \
+	grid-cert-request \
+	grid-default-ca
 
-$(FILELIST_FILES): sort_filelist
-
-sort_filelist: all_filelists
-	$(GPT_LOCATION)/sbin/gpt_sort_filelist  --flavor=$(GLOBUS_FLAVOR_NAME) ./master.filelist
-
-
-$(METADATA_FILES): pkg_data_src.gpt
-	$(GPT_LOCATION)/sbin/gpt_generate_bin_pkg_data  \
-	--flavor=$(GLOBUS_FLAVOR_NAME) pkg_data_src.gpt
-
-
-distclean-local:
-	@if test -f master.filelist; then \
-		rm *.filelist; \
-	fi; \
-	if test -f pkg_data_noflavor_data.gpt; then \
-		rm pkg_data_*.gpt; \
-	fi
+TAR=@TAR@
 
 include $(top_srcdir)/globus_automake_post
+include $(top_srcdir)/globus_automake_post_top

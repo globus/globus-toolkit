@@ -160,6 +160,8 @@ SUBDIRS = pkgdata
 
 EXTRA_DIST =  	$(Scripts) 	$(Data) 	grid-cert-request 	grid-default-ca bootstrap         globus_automake_pre         globus_automake_post         globus_automake_pre_top         globus_automake_post_top
 
+
+TAR = @TAR@
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
@@ -174,7 +176,6 @@ mkinstalldirs
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = gtar
 GZIP_ENV = --best
 all: all-redirect
 .SUFFIXES:

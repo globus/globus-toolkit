@@ -1157,7 +1157,46 @@ fi
 
 
 
+# Extract the first word of "tar gtar", so it can be a program name with args.
+set dummy tar gtar; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:1164: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_path_TAR'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  case "$TAR" in
+  /*)
+  ac_cv_path_TAR="$TAR" # Let the user override the test with a path.
+  ;;
+  ?:/*)			 
+  ac_cv_path_TAR="$TAR" # Let the user override the test with a dos path.
+  ;;
+  *)
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH:/bin/:/usr/bin:/usr/local/bin"
+  for ac_dir in $ac_dummy; do 
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_path_TAR="$ac_dir/$ac_word"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  test -z "$ac_cv_path_TAR" && ac_cv_path_TAR="null"
+  ;;
+esac
+fi
+TAR="$ac_cv_path_TAR"
+if test -n "$TAR"; then
+  echo "$ac_t""$TAR" 1>&6
+else
+  echo "$ac_t""no" 1>&6
+fi
 
+
+if test $TAR = null; then
+{ echo "configure: error: "Could not find gnu tar in your current path"" 1>&2; exit 1; }
+fi
 
 trap '' 1 2 15
 cat > confcache <<\EOF
@@ -1365,6 +1404,7 @@ s%@AUTOMAKE@%$AUTOMAKE%g
 s%@AUTOHEADER@%$AUTOHEADER%g
 s%@MAKEINFO@%$MAKEINFO%g
 s%@SET_MAKE@%$SET_MAKE%g
+s%@TAR@%$TAR%g
 
 CEOF
 EOF
