@@ -224,7 +224,12 @@ static globus_bool_t verbose_flag = GLOBUS_FALSE;
 /*
  *  net logger handle
  */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+
+#include "NetLogger.h"
+
 static NLhandle   *                    g_globus_nl_handle;
+#endif
 
 /******************************************************************************
 Function: main()
@@ -279,7 +284,8 @@ main(int argc, char **argv)
     double                             start_time = 0;
     my_monitor_t                       monitor;
     globus_gass_copy_handle_t          gass_copy_handle;
-    char                               buffer[512];
+    char                               buffer[64];
+    char                               my_hostname[64];
     globus_result_t                    result;
     globus_netlogger_handle_t          gnl_handle;
     globus_ftp_client_handleattr_t     ftp_handleattr;
@@ -407,11 +413,16 @@ main(int argc, char **argv)
     globus_gass_copy_attr_init(&dest_gass_copy_attr);
 
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    sprintf(buffer, "%d", getpid());
+    globus_libc_gethostname(my_hostname, MAXHOSTNAMELEN);
     g_globus_nl_handle = NetLoggerOpen(argv[0], NULL, NL_ENV);
 
     globus_netlogger_handle_init(
         &gnl_handle,
-        g_globus_nl_handle);
+        g_globus_nl_handle,
+        my_hostname,
+        "globus-url-copy",
+        buffer);
     globus_netlogger_set_desc(
         &gnl_handle,
         "DISK");
