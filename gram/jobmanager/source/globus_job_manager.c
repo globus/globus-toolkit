@@ -862,6 +862,36 @@ grami_jm_request_params(globus_rsl_t * description_tree,
 		       GLOBUS_GRAM_CLIENT_MYJOB_PARAM,
 		       params->gram_myjob);
 
+    /*
+     * Substitute ${GLOBUS_PREFIX} with the Globus prefix directory
+     */
+    if (strncmp(params->pgm, "${GLOBUS_PREFIX}", 16) == 0)
+    {
+	char				str[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
+	int				prefix_len;
+	int				str_len;
+
+	grami_fprintf( grami_log_fp, 
+		       "JM: PGM before subst %s\n",
+		       params->pgm);
+
+	strcpy(str, params->pgm + 16);
+	str_len = strlen(str);
+	prefix_len = strlen(GLOBUS_PREFIX);
+	
+	if (str_len + prefix_len + 1 > GLOBUS_GRAM_CLIENT_PARAM_SIZE)
+	{
+	    return (GRAM_ERROR_NO_RESOURCES); /* correct error code??? */
+	}
+
+	strcpy(params->pgm, GLOBUS_PREFIX);
+	strcpy(params->pgm + prefix_len, str);
+
+    	grami_fprintf( grami_log_fp, 
+		       "JM: PGM after subst %s\n",
+		       params->pgm);
+    }
+
     /* GEM: Stage pgm and std_in to local filesystem, if they are URLs.
        Do this before paradyn rewriting.
      */
