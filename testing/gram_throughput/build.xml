@@ -45,8 +45,10 @@
         <pathelement location="${java.home}/../lib/tools.jar"/>
         <pathelement location="${build.dest}"/>
         <pathelement location="${ogsa.root}/build/classes"/>
+        <pathelement location="${ogsa.root}/lib/ogsa.jar"/>
         <fileset dir="${ogsa.root}/lib">
             <include name="*.jar"/>
+            <exclude name="ogsa.jar"/>
             <exclude name="${jar.name}"/>
         </fileset>
         <!--

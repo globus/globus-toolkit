@@ -195,6 +195,12 @@ public class ThroughputTester {
             ThroughputTester.printUsage("Error: invalid number of arguments");
             System.exit(1);
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug("Factory URL: " + args[0]);
+            logger.debug("RSL File: " + args[1]);
+            logger.debug("Job Count: " + args[2]);
+        }
+
         ThroughputTester harness = new ThroughputTester();
         harness.setFactoryUrl(args[0]);
         harness.setRslFile(args[1]);

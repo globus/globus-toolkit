@@ -100,8 +100,8 @@ public class SingleJobThread
             logger.error("unable to get factory port", e);
             return;
         }
-        ((Stub)factory)._setProperty(Constants.GSI_XML_SIGNATURE,
-                                     Boolean.TRUE);
+        ((Stub)factory)._setProperty(Constants.GSI_SEC_MSG,
+                                     Constants.SIGNATURE);
         ((Stub)factory)._setProperty(Constants.GRIM_POLICY_HANDLER,
                                  new IgnoreProxyPolicyHandler());
         ((Stub)factory)._setProperty(GSIConstants.GSI_AUTHORIZATION,
@@ -116,7 +116,8 @@ public class SingleJobThread
             logger.debug("creating job");
         }
         try {
-            ExtensibilityType creationParameters = AnyHelper.getExtensibility(rsl);
+            ExtensibilityType creationParameters
+                = AnyHelper.getExtensibility(rsl);
             LocatorType gshHolder
                 = gridServiceFactory.createService(creationParameters);
             ManagedJobServiceGridLocator mjsLocator
