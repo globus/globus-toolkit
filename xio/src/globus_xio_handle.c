@@ -132,6 +132,16 @@ globus_i_xio_monitor_destroy(
 {
 }
 
+static
+globus_bool_t
+globus_l_xio_handle_timeout_always(
+    globus_xio_handle_t                 handle,
+    globus_xio_operation_type_t         type,
+    void *                              user_arg)
+{
+    return GLOBUS_TRUE;
+}
+
 void
 globus_l_xio_oneshot_wrapper_cb(
     void *                              user_arg)
@@ -2610,6 +2620,8 @@ globus_xio_handle_cntl(
     globus_result_t                     res;
     va_list                             ap;
     globus_i_xio_context_t *            context;
+    globus_xio_timeout_callback_t       timeout_cb;
+    globus_reltime_t *                  delay_time;
     GlobusXIOName(globus_xio_handle_cntl);
 
     GlobusXIODebugEnter();
@@ -2635,8 +2647,100 @@ globus_xio_handle_cntl(
     }
 #   endif
 
-    res = globus_i_xio_driver_handle_cntl(context, driver, cmd, ap);
+    if(driver != NULL)
+    {
+        res = globus_i_xio_driver_handle_cntl(context, driver, cmd, ap);
+    }
+    else
+    {
+        globus_mutex_lock(&context->mutex);
+        {
+            /* do general settings */
+            switch(cmd)
+            {
+                case GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
 
+                    handle->open_timeout_cb = timeout_cb;
+                    handle->close_timeout_cb = timeout_cb;
+                    handle->read_timeout_cb = timeout_cb;
+                    handle->write_timeout_cb = timeout_cb;
+
+                    GlobusTimeReltimeCopy(
+                        handle->open_timeout_period, *delay_time);
+                    GlobusTimeReltimeCopy(
+                        handle->close_timeout_period, *delay_time);
+                    GlobusTimeReltimeCopy(
+                        handle->read_timeout_period, *delay_time);
+                    GlobusTimeReltimeCopy(
+                        handle->write_timeout_period, *delay_time);
+                    break;
+
+                case GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
+                    handle->open_timeout_cb = timeout_cb;
+                    GlobusTimeReltimeCopy(
+                        handle->open_timeout_period, *delay_time);
+                    break;
+
+                case GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
+                    handle->close_timeout_cb = timeout_cb;
+                    GlobusTimeReltimeCopy(
+                        handle->close_timeout_period, *delay_time);
+                    break;
+
+               case GLOBUS_XIO_ATTR_SET_TIMEOUT_READ:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
+
+                    handle->read_timeout_cb = timeout_cb;
+                    GlobusTimeReltimeCopy(
+                        handle->read_timeout_period, *delay_time);
+                    break;
+
+                case GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
+                    handle->write_timeout_cb = timeout_cb;
+                    GlobusTimeReltimeCopy(
+                        handle->write_timeout_period, *delay_time);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        globus_mutex_unlock(&context->mutex);
+    }
     va_end(ap);
 
     if(res != GLOBUS_SUCCESS)

@@ -1541,7 +1541,6 @@ globus_i_xio_driver_handle_cntl(
     }
     else
     {
-        /* do general settings */
     }
 
     GlobusXIODebugExit();
