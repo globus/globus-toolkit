@@ -23,6 +23,11 @@
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_openssl" Package="pgm"> 
+                <Version>
+                    <Simple_Version Major="1"/>
+                </Version>
+            </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="compile">
