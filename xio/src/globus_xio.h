@@ -215,7 +215,7 @@ struct globus_i_xio_server_s;
 struct globus_i_xio_dd_s;
 
 typedef struct globus_i_xio_handle_s *          globus_xio_handle_t;
-typedef struct globus_i_xio_context_s *         globus_xio_context_t;
+typedef struct globus_i_xio_context_entry_s *   globus_xio_context_t;
 typedef struct globus_i_xio_target_s *          globus_xio_target_t;
 typedef struct globus_i_xio_op_s *              globus_xio_operation_t;
 typedef struct globus_i_xio_driver_s *          globus_xio_driver_t;
@@ -805,7 +805,7 @@ typedef enum
     GLOBUS_XIO_ERROR_HANDLE_BAD_STATE,
 } globus_xio_error_t;
 
-extern globus_module_descriptor_t globus_i_xio_file_module;
+extern globus_module_descriptor_t globus_i_xio_module;
 
 #define GLOBUS_XIO_MODULE &globus_i_xio_module
 

@@ -368,16 +368,17 @@ do                                                                          \
     globus_i_xio_context_entry_t *                  _my_context;            \
     globus_i_xio_context_t *                        _context;               \
     int                                             _caller_ndx;            \
+    globus_i_xio_op_entry_t *                       _my_op;                 \
                                                                             \
     _op = (globus_i_xio_op_t *)(op);                                        \
     globus_assert(_op->ndx > 0);                                            \
                                                                             \
     _op->progress = GLOBUS_TRUE;                                            \
-    _op->timeout_blocked = GLOBUS_FALSE;                                    \
+    _op->block_timeout = GLOBUS_FALSE;                                      \
                                                                             \
     _caller_ndx = _op->entry[_op->ndx].caller_ndx;                          \
-    _context = _op->context;                                                \
-    _my_context = &context->entry[_caller_ndx];                             \
+    _context = _op->_op_context;                                            \
+    _my_context = &_context->entry[_caller_ndx];                            \
     _my_op = &_op->entry[_caller_ndx];                                      \
     /* don't need to lock because barrier makes contntion not possible */   \
     _my_context->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;                    \
@@ -386,7 +387,7 @@ do                                                                          \
     globus_assert(_op->ndx >= 0); /* otherwise we are not in bad memory */  \
     /* space is only not global by user request in the top level of the     \
      * of operations */                                                     \
-    _op->cached_res = (result);                                             \
+    _op->cached_res = (res);                                                \
     if(_my_op->in_register ||                                               \
             _my_context->space != GLOBUS_CALLBACK_GLOBAL_SPACE)             \
     {                                                                       \
@@ -596,14 +597,13 @@ do                                                                          \
     globus_i_xio_op_t *                             _op;                    \
     globus_i_xio_op_entry_t *                       _my_op;                 \
     globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_bool_t                                   _purge;                 \
     globus_bool_t                                   _close = GLOBUS_FALSE;  \
                                                                             \
     _op = (op);                                                             \
     _my_op = &_op->entry[_op->ndx];                                         \
-    _my_context = &_op->context.entry[_op->ndx];                            \
+    _my_context = &_op->_op_context->entry[_op->ndx];                       \
                                                                             \
-    _my_op->_op_ent_data_cb(_op, _op->cached_res, _my_op->nbytes,           \
+    _my_op->_op_ent_data_cb(_op, _op->cached_res, _my_op->_op_ent_nbytes,   \
                 _my_op->user_arg);                                          \
                                                                             \
     /* LOCK */                                                              \
@@ -850,22 +850,24 @@ do                                                                          \
                                                                             \
     _op = (op);                                                             \
     _my_op = &_op->entry[_op->ndx];                                         \
-    _my_context = &_op->context.entry[_op->ndx];                            \
+    _my_context = &_op->_op_context->entry[_op->ndx];                       \
                                                                             \
     /* call the callback */                                                 \
-    _my_op->cb(_op, _res, _my_op->user_arg);                                \
+    _my_op->_op_ent_data_cb(_op, _op->cached_res, _my_op->_op_ent_nbytes,   \
+                _my_op->user_arg);                                          \
+                                                                            \
                                                                             \
     /* if a temp iovec struct was used for fullfulling waitfor,             \
-      we can free it now */.                                                \
-    if(_my_op->fake_iovec != NULL)                                          \
+      we can free it now */                                                 \
+    if(_my_op->_op_ent_fake_iovec != NULL)                                  \
     {                                                                       \
-        globus_free(_my_entry->fake_iovec);                                 \
+        globus_free(_my_op->_op_ent_fake_iovec);                            \
     }                                                                       \
                                                                             \
     globus_mutex_lock(&_my_context->mutex);                                 \
     {                                                                       \
         _purge = GLOBUS_FALSE;                                              \
-        if(_my_op->read_eof)                                                \
+        if(_my_op->_op_ent_read_eof)                                        \
         {                                                                   \
             switch(_my_context->state)                                      \
             {                                                               \

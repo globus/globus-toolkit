@@ -1,5 +1,6 @@
 #include "globus_xio_pass.h"
 #include "globus_xio.h"
+#include "globus_i_xio.h"
 
 void
 globus_l_xio_driver_op_read_kickout(
@@ -7,7 +8,7 @@ globus_l_xio_driver_op_read_kickout(
 {
     globus_i_xio_op_t *                         op;
     op = (globus_i_xio_op_t *) user_arg;
-    GlobusIXIODriverReadDeliver(op)
+    GlobusIXIODriverReadDeliver(op);
 }
 
 void
@@ -28,9 +29,9 @@ globus_l_xio_driver_purge_read_eof(
             my_context->state ==
                 GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING);
 
-        tmp_op = (globus_i_xio_operation_t *)
-                    globus_list_remove(&my_context->read_eof_list,
-                        my_context->read_eof_list);
+        tmp_op = (globus_i_xio_op_t *)
+                    globus_list_remove(&my_context->eof_op_list,
+                        my_context->eof_op_list);
 
         globus_callback_space_register_oneshot(
             NULL,
@@ -72,7 +73,7 @@ globus_i_xio_driver_start_close(
     {
         op->ndx++;
         next_op = &op->entry[op->ndx];
-        next_context = &op->context->entry[op->ndx];
+        next_context = &op->_op_context->entry[op->ndx];
     }
     while(next_context->driver->close_func == NULL);
 
@@ -81,7 +82,7 @@ globus_i_xio_driver_start_close(
     res = next_context->driver->close_func(
                     next_context->driver_handle,
                     next_op->attr,
-                    op->context,
+                    &op->_op_context->entry[op->ndx],
                     op);
     if(res != GLOBUS_SUCCESS && !can_fail)
     {
@@ -101,14 +102,14 @@ void
 globus_l_xio_driver_op_kickout(
     void *                                      user_arg)
 {
-    globus_i_xio_op_t *                         xio_op;
+    globus_i_xio_op_t *                         op;
 
-    xio_op = (globus_i_xio_server_t *) user_arg;
+    op = (globus_i_xio_op_t *) user_arg;
 
-    xio_op->entry[xio_p->ndx].cb(
-        xio_op,
-        xio_op->cached_res,
-        xio_op->entry[xio_op->ndx].user_arg);
+    op->entry[op->ndx].cb(
+        op,
+        op->cached_res,
+        op->entry[op->ndx].user_arg);
 }
 
 /**************************************************************************
@@ -117,7 +118,7 @@ globus_l_xio_driver_op_kickout(
  *************************************************************************/
 globus_result_t
 globus_xio_driver_context_close(
-    globus_xio_driver_context_t                 context)
+    globus_xio_context_t                        context)
 {
     globus_i_xio_context_entry_t *              context_entry;
     globus_i_xio_context_t *                    xio_context;

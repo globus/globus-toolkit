@@ -291,6 +291,7 @@ typedef struct globus_i_xio_context_s
 #define _op_ent_iovec               type_u.handle_s.iovec
 #define _op_ent_iovec_count         type_u.handle_s.iovec_count
 #define _op_ent_fake_iovec          type_u.handle_s.fake_iovec
+#define _op_ent_read_eof            type_u.handle_s.read_eof
 
 #define _op_ent_target              type_u.target_s.target
 #define _op_ent_accept_attr         type_u.target_s.accept_attr
