@@ -8,6 +8,6 @@ globus_common_requires_build=
 
 globus_common_requires_runtime=
 
-globus_common_libraries= "-L $(GLOBUS_INSTALL_PATH)/lib -lglobus_common_$(GLOBUS_FLAVOR_NAME) @THREAD_LIB_FLAGS@"
+globus_common_libraries= "-L $(GLOBUS_INSTALL_PATH)/lib -lglobus_common_@GLOBUS_FLAVOR_NAME@ @THREAD_LIB_FLAGS@"
 
 

@@ -92,10 +92,13 @@ include_HEADERS = \
 	globus_strptime.h \
 	globus_thread_common.h
 
+if WITHOUT_FLAVORS
 lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
-
-INCLUDES = -I $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME)
-libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @THREAD_LIB_FLAGS@
+else
+lib_LTLIBRARIES = libglobus_uncommon_$(GLOBUS_FLAVOR_NAME).la
+endif
+INCLUDES = -I $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME) @GPT_
+libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIBS@
 
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

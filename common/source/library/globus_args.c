@@ -250,6 +250,8 @@ globus_args_scan(
     char ***                              argv,
     int                                   option_count,
     globus_args_option_descriptor_t  *    options,
+    const char *                          name,
+    const char *                          version,
     const char *                          oneline_usage,
     const char *                          long_usage,
     globus_list_t **                      options_found,
@@ -344,17 +346,9 @@ globus_args_scan(
         }
         if (!strcmp("-version",my_arg))
         {
-#            if (GLOBUS_RELEASE_NOT_BETA == GLOBUS_RELEASE_BETA)
-#                define version_format "%d.%d.%d\n"
-#            else
-#                define version_format "%d.%d.%db%d\n"
-#            endif
 	    globus_libc_sprintf( buf,
-				 version_format,
-				 GLOBUS_RELEASE_MAJOR,
-				 GLOBUS_RELEASE_MINOR,
-				 GLOBUS_RELEASE_PATCH,
-				 GLOBUS_RELEASE_BETA );
+				 "%s %s",
+				 name, version);
 	    
             globus_l_args_create_msg( error_msg , buf );
 	    rc = GLOBUS_FAILURE;

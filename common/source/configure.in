@@ -15,16 +15,26 @@ AM_INIT_AUTOMAKE(globus_common, 2.0.0)
 dnl Determine thread library flags
 if test "x$NO_FLAVOR" = "x"; then
 LAC_THREADS
+
 fi
+
+GPT_SET_LIBS($THREAD_LIB_FLAGS)
 
 AC_SUBST(GLOBUS_THREADS)
 
 AC_OUTPUT(
 	Makefile
 	build_parameters_$GLOBUS_FLAVOR_NAME:build_parameters.in
+	pkg_data_src.gpt
 	library/globus_common.h
 	library/Makefile
 	tests/run-tests
 	tests/Makefile
+	,
+	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data --src="./pkg_data_src.gpt" \
+	--flavor=$GLOBUS_FLAVOR_NAME
+	,
+	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+
 )
 
