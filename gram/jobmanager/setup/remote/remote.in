@@ -77,17 +77,47 @@ sub poll
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my ($stdout, $stderr) = ("", "");
     my $size;
     my $st;
     my $local_file;
     my $remote_cmd;
     my $type;
     my $tag = $description->cache_tag or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $stdout_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stdout";
+    my $stderr_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stderr";
+    my %local_files = ('stdout' => $description->stdout(),
+                      'stderr' => $description->stderr());
+    my $remote_stdout;
+    my $remote_stderr;
+    my $result_string;
+    my $result;
+
+    $remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
+                . "export GLOBUS_LOCATION;\n"
+                . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
+                . "globus-gass-cache -query -t \"$tag\" \"$stdout_url\" && "
+                . "globus-gass-cache -query -t \"$tag\" \"$stderr_url\";\n";
+
+    $self->log("Remote command = " . $remote_cmd);
+
+    $result_string = `echo '$remote_cmd' | $rsh $host /bin/sh - 2>/dev/null`;
+
+    if($? != 0)
+    {
+	return Globus::GRAM::Error::OPENING_CACHE;
+    }
+
+    ($remote_stdout, $remote_stderr) = split(/\n/, $result_string);
+    $self->log("Remote command = " . $remote_cmd);
+
+    $description->add('stdout', $remote_stdout);
+    $description->add('stderr', $remote_stderr);
+
+    $result = $self->remote_cmd('poll');
 
     foreach $type ('stdout', 'stderr')
     {
-	$local_file = $description->$type();
+	$local_file = $local_files{$type};
 	$st = File::stat::stat($local_file);
 	$size = $st->size;
 	$remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
@@ -99,8 +129,7 @@ sub poll
 
 	system("echo '$remote_cmd' | $rsh $host /bin/sh - >>$local_file 2>/dev/null");
     }
-    
-    return $self->remote_cmd('poll');
+    return $result;
 }
 
 sub cancel
