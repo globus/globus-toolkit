@@ -240,7 +240,8 @@ main(int argc, char *argv[])
     }
     
     /* Delegate credentials to server using the default lifetime of the cert. */
-    if (myproxy_init_delegation(socket_attrs, proxyfile, cred_lifetime) < 0) {
+    if (myproxy_init_delegation(socket_attrs, proxyfile, cred_lifetime,
+				NULL /* no passphrase */) < 0) {
 	fprintf(stderr, "%s\n", 
 		verror_get_string());
 	goto cleanup;

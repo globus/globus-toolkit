@@ -110,8 +110,8 @@ myproxy_socket_attrs_t *socket_attrs,
 	  return(1);
     }
 
-    /* Accept delegated credentials from client */
-    if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile)) < 0) {
+    /* Accept delegated credentials from server */
+    if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile), NULL) < 0) {
         fprintf(stderr, "Error in myproxy_accept_delegation(): %s\n", 
 		verror_get_string());
 	return(1);

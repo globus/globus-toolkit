@@ -194,7 +194,7 @@ do_receive()
 	return -1;
     }
 
-    if (GSI_SOCKET_delegation_accept_ext(gsi_socket, data, sizeof(data)) == GSI_SOCKET_ERROR)
+    if (GSI_SOCKET_delegation_accept_ext(gsi_socket, data, sizeof(data), NULL) == GSI_SOCKET_ERROR)
     {
 	GSI_SOCKET_get_error_string(gsi_socket, error_string,
 				    sizeof(error_string));
@@ -289,9 +289,8 @@ do_transmit()
     printf("Server message: %s\n", data);
 
     if (GSI_SOCKET_delegation_init_ext(gsi_socket, NULL,
-				       0 /* flags */,
 				       3600 /* lifetime */,
-				       NULL /* restrictions */) == GSI_SOCKET_ERROR)
+				       NULL /* passphrase */) == GSI_SOCKET_ERROR)
     {
 	GSI_SOCKET_get_error_string(gsi_socket, error_string,
 				    sizeof(error_string));
