@@ -273,6 +273,7 @@ status=`${qsub} < $PBS_JOB_SCRIPT`
 if (test "$?" -eq "0") then
    job_id=`echo $status | awk '{split($0,field,".");print field[1]"."field[2]}'`
    echo "grami_job_id=$job_id" >> $arg_file
+   echo "GRAM_SCRIPT_JOB_ID:$job_id"
    $DEBUG_ECHO "job submitted successfully!" >> $grami_logfile
    $DEBUG_ECHO "returning job state: 1" >> $grami_logfile
    echo "GRAM_SCRIPT_SUCCESS:@GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING@"
