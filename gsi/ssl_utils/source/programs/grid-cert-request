@@ -10,7 +10,7 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
-secconfdir=/etc/grid-security
+secconfdir=GRID_SECURITY_DIR
 
 #
 # Sample script to generate a certificate request which can be sent 
