@@ -355,6 +355,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
     int                          token_status = 0;
     OM_uint32                    ret_flags = 0;
     gss_ctx_id_t                 context_handle = GSS_C_NO_CONTEXT;
+    int                          gss_flags;
 
 
     grami_fprintf(globus_l_print_fp, "in globus_gram_client_job_request()\n");
@@ -503,11 +504,23 @@ globus_gram_client_job_request(char * gatekeeper_url,
     grami_fprintf(globus_l_print_fp,
 		  "Starting authentication to %s\n", gatekeeper_princ);
 
+    if (strlen(description) > 0)
+    {
+        gss_flags = GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG;
+    }
+    else
+    {
+        /* if we are doing a ping then do not have the gatekeeper do
+         * any delegation work.
+         */
+        gss_flags = GSS_C_MUTUAL_FLAG;
+    }
+
     major_status = globus_gss_assist_init_sec_context(&minor_status,
                     credential_handle,
                     &context_handle,
                     gatekeeper_princ,
-                    GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
+                    gss_flags,
                     &ret_flags,
                     &token_status,
                     globus_gss_assist_token_get_nexus,
@@ -571,43 +584,54 @@ globus_gram_client_job_request(char * gatekeeper_url,
 		  "WARNING: No authentication performed\n");
 #endif /* GSS_AUTHENTICATION */
 
-    rc = globus_nexus_fd_register_for_write(gatekeeper_fd,
+    if (strlen(description) > 0)
+    {
+        rc = globus_nexus_fd_register_for_write(gatekeeper_fd,
 					    (char *) contact_msg_buffer,
 					    contact_msg_size,
 					    globus_l_write_callback,
 					    globus_l_write_error_callback,
 					    (void *) &job_request_monitor);
-    if (rc != 0)
-    {
-	fprintf(stderr, "globus_nexus_fd_register_for_write failed\n");
-	globus_nexus_fd_close(gatekeeper_fd);
-	GLOBUS_L_UNLOCK;
-	return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+        if (rc != 0)
+        {
+            fprintf(stderr, "globus_nexus_fd_register_for_write failed\n");
+            globus_nexus_fd_close(gatekeeper_fd);
+            GLOBUS_L_UNLOCK;
+            return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+        }
+
+        grami_fprintf(globus_l_print_fp,
+           "test 3 globus_gram_client_job_request()\n");
+
+        globus_mutex_lock(&job_request_monitor.mutex);
+        while (!job_request_monitor.done)
+        {
+             globus_cond_wait(&job_request_monitor.cond,
+	                      &job_request_monitor.mutex);
+        }
+        globus_mutex_unlock(&job_request_monitor.mutex);
+
+        globus_mutex_destroy(&job_request_monitor.mutex);
+        globus_cond_destroy(&job_request_monitor.cond);
+
+        grami_fprintf(globus_l_print_fp,
+            "test 4 globus_gram_client_job_request()\n");
+
+        if (job_request_monitor.job_status == 0)
+        {
+            * job_contact = (char *) 
+               globus_malloc(strlen(job_request_monitor.job_contact_str) + 1);
+
+            strcpy(* job_contact, job_request_monitor.job_contact_str);
+        }
     }
-
-    grami_fprintf(globus_l_print_fp,
-		  "test 3 globus_gram_client_job_request()\n");
-
-    globus_mutex_lock(&job_request_monitor.mutex);
-    while (!job_request_monitor.done)
+    else
     {
-	globus_cond_wait(&job_request_monitor.cond,
-			 &job_request_monitor.mutex);
-    }
-    globus_mutex_unlock(&job_request_monitor.mutex);
-
-    globus_mutex_destroy(&job_request_monitor.mutex);
-    globus_cond_destroy(&job_request_monitor.cond);
-
-    grami_fprintf(globus_l_print_fp,
-		  "test 4 globus_gram_client_job_request()\n");
-
-    if (job_request_monitor.job_status == 0)
-    {
-        * job_contact = (char *) 
-           globus_malloc(strlen(job_request_monitor.job_contact_str) + 1);
-
-        strcpy(* job_contact, job_request_monitor.job_contact_str);
+        /* no RSL specification??? Assume we are running a gatekeeper ping!! */
+        *job_contact = (char *) globus_malloc(2);
+        strcpy(*job_contact, "");
+        job_request_monitor.job_status = 
+                                   GLOBUS_GRAM_CLIENT_PING_SUCCESSFUL;
     }
 
     globus_free(contact_msg_buffer);
