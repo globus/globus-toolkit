@@ -76,7 +76,6 @@ globus_rsl_assist_replace_manager_name(
     globus_rsl_t * rsl)
 {
     
-    int                         rc;
     globus_list_t *		lists=GLOBUS_NULL;
     globus_rsl_t *              an_rsl;
     globus_rsl_t *              new_rsl;
@@ -466,7 +465,6 @@ globus_l_rsl_assist_simple_query_ldap(
 {
     LDAP *			ldap_server;
     int				port;
-    char *		       	port_str;
     char *			base_dn;
     char *			server;
     LDAPMessage *		reply;
@@ -537,7 +535,6 @@ globus_l_rsl_assist_simple_query_ldap(
 	int            numValues;
 	char **        values;
 	int            i;
-	char *         desired_attribute_value=GLOBUS_NULL;
 	
 	for (a = ldap_first_attribute(ldap_server,entry,&ber);
 	     a;
@@ -587,7 +584,6 @@ globus_i_rsl_assist_get_user_job_list(
     char *           globaluserid,
     globus_list_t ** job_contact_list)
 {
-    int        rc;
     char *     search_string;
     char *     format = "(&(objectclass=GlobusQueueEntry)(globaluserid=%s))";
 
@@ -643,7 +639,7 @@ globus_i_rsl_assist_get_rm_contact(char* resource)
     }
 
     /* is the optional '/<service>' in the resource name? */
-    if (c = strchr(resource, (int) '/'))
+    if ((c = strchr(resource, (int) '/')) != NULL)
     {
 	host = globus_malloc( 1 + (globus_size_t)(c-resource));
 	if (!host) return GLOBUS_NULL;
@@ -712,7 +708,6 @@ globus_i_rsl_assist_get_ldap_param(char ** server,
 				   int  *  port,
 				   char ** base_dn)
 {
-    int				tmp_port;
     char *		       	port_str=GLOBUS_NULL;
     char *		       	tmp_port_str=GLOBUS_NULL;
     char *			tmp_base_dn=GLOBUS_NULL;
