@@ -2502,7 +2502,7 @@ dnl Find the GLOBUS/GSI development directory
 	    LIBS="$LIBS -lglobus_gsi_credential${globus_flavor_suffix} "
 	    LIBS="$LIBS -lglobus_gsi_callback${globus_flavor_suffix} "
 	    LIBS="$LIBS -lglobus_oldgaa${globus_flavor_suffix} "
-	    LIBS="$LIBS -lglobus_gsi_proxy_ssl${globus_flavor_suffix} "
+	    LIBS="$LIBS -lglobus_proxy_ssl${globus_flavor_suffix} "
 	    LIBS="$LIBS -lglobus_gsi_sysconfig${globus_flavor_suffix} "
 	    LIBS="$LIBS -lglobus_gsi_cert_utils${globus_flavor_suffix} "
 	    LIBS="$LIBS -lglobus_openssl_error${globus_flavor_suffix} "
