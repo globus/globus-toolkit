@@ -221,13 +221,31 @@ line_parse_callback(void *context_arg,
 	    index++;
 	}
     }
-    
+
+#if defined (MULTICRED_FEATURE)
+    if (strcmp (directive, "default_database_name") == 0)
+    {
+	int index = 1; /* Skip directive */
+
+	matched = 1;
+	
+	if (tokens[index] == NULL)
+	{
+		context->dbase_name = NULL;
+		goto error;
+	}
+	context->dbase_name = strdup (tokens[index]);
+    }
+#endif
+   
+/*
+	// This was disabled to facilitate upward compatibility 
     if (!matched)
     {
 	verror_put_string("Unrecognized directive \"%s\" on line %d of configuration file",
 			  directive, line_number);
     }
-
+*/
     return_code = 0;
     
   error:

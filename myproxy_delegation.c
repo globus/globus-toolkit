@@ -108,7 +108,9 @@ myproxy_socket_attrs_t *socket_attrs,
     /* Continue unless the response is not OK */
     if (myproxy_authorize_init(socket_attrs, client_request->passphrase,
 	                       certfile) < 0) {
-	  fprintf(stderr, "Error in myproxy_authorize_init(): %s\n",
+	  //fprintf(stderr, "Error in myproxy_authorize_init(): %s\n",
+	    //      verror_get_string());
+	  fprintf(stderr, "%s\n",
 	          verror_get_string());
 	  return(1);
     }
@@ -121,8 +123,8 @@ myproxy_socket_attrs_t *socket_attrs,
     }      
 
     if (myproxy_recv_response(socket_attrs, server_response) < 0) {
-       fprintf(stderr, "Error in myproxy_recv_response(): %s\n",
-	       verror_get_string());
+       fprintf(stderr, "Error in myproxy_recv_response(): %s %s\n",
+	       verror_get_string(), (server_response->data).error_str);
        return(1);
     }
 
@@ -245,7 +247,8 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
       server_response = malloc(sizeof(*server_response));
       memset(server_response, 0, sizeof(*server_response));
       if (myproxy_recv_response(attrs, server_response) < 0) {
-	 verror_put_string("Error in receive_response()");
+	 //verror_put_string("Error in receive_response()");
+	 verror_put_string((server_response->data).error_str);
 	 goto end;
       }
 
@@ -278,7 +281,7 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
 	 memcpy(buffer + sizeof(int), d->client_data, d->client_data_len);
 	 /* Send the authorization data to the server */
 	 if (myproxy_send(attrs, buffer, bufferlen) < 0) {
-	    verror_put_string("Error in myproxy_send()");
+	    //verror_put_string("Error in myproxy_send()");
 	    goto end;
 	 }
       }

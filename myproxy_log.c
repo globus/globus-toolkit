@@ -144,7 +144,8 @@ myproxy_log_verror()
 	do_log(verror_strerror(), LOG_ERR);
     }
 
-    verror_clear();
+    // Error response to be sent to the client. So shouldn't be cleared
+    //verror_clear();
     
     return;
 }
