@@ -350,8 +350,6 @@ main(int argc,
         grami_fprintf( grami_log_fp, "JM: PATH = %s\n", my_env_path);
     }
 
-    grami_fprintf( grami_log_fp, "JM: PATH = %s\n", my_env_path);
-
     tmp_env_var = (char *) getenv("USER");
     if (!tmp_env_var)
     {
