@@ -42,6 +42,8 @@ if test ! -h globus_automake_targets; then
     globus_automake_rules
     ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_top_rules \
     globus_automake_top_rules
+    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_config \
+    globus_automake_config
 fi
 
 echo "running automake --copy -add-missing --foreign"
