@@ -1,5 +1,14 @@
 #! /bin/sh
 
+error()
+{
+    echo ""
+    echo "ERROR: bootstrap failed!"
+    echo ""
+    exit 1
+}
+
+
 # check for autotools
 
 for program in automake aclocal autoconf autoheader
@@ -17,11 +26,13 @@ if test "x$GLOBUS_INSTALL_PATH" = "x"; then
     exit 1
 fi
 
-echo "running aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal"
-aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal
+echo "running aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal  -I ./config"
+aclocal -I $GLOBUS_INSTALL_PATH/share/globus_aclocal -I ./config || error
 
+if test -f acconfig.h ; then
 echo "running autoheader"
-autoheader
+    autoheader || error
+fi
 
 if test ! -h globus_automake_targets; then
     echo "installing extra automake files"
@@ -33,8 +44,9 @@ if test ! -h globus_automake_targets; then
     globus_automake_top_rules
 fi
 
-echo "running automake -c -a --foreign"
-automake -c -a --foreign
+echo "running automake --copy -add-missing --foreign"
+automake --copy --add-missing --foreign || \
+  automake --copy --add-missing --foreign  || error
 
 echo "running autoconf"
-autoconf
+autoconf || error

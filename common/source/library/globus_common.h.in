@@ -45,6 +45,7 @@ EXTERN_C_END
 		      Include globus_common header files
 ******************************************************************************/
 #include "globus_config.h"
+#include "config.h"
 
 typedef GLOBUS_OFF_T globus_off_t;
 

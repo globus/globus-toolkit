@@ -12,13 +12,54 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE(globus_common, 2.0.0)
 
+AM_CONFIG_HEADER(config.h)
+
 dnl Determine thread library flags
 if test "x$NO_FLAVOR" = "x"; then
 LAC_THREADS
 
 fi
+dnl Check for large file support before doing any other probes, it may
+dnl change prototypes for some functions.
+AC_SYS_LARGEFILE
+
+CHECK_HEADERS
+
+CHECK_FUNCS
+
+CHECK_FOR_TIMESPEC
+
+CHECK_FOR_IOVEC
+
+CHECK_FOR_TCPFASTACK
+
+CHECK_REENTRANT_FUNCS
+
+CHECK_SIZES
 
 GPT_SET_LIBS($THREAD_LIB_FLAGS)
+
+dnl set define for thread type
+case $globus_cv_threads_type in
+   "no") 
+       GLOBUS_THREAD_PACKAGE="none"
+       ;;
+   "pthreads") 
+       GLOBUS_THREAD_PACKAGE="pthreads"
+       ;;
+   "solaristhreads") 
+       GLOBUS_THREAD_PACKAGE="solaristhreads"
+       ;;
+   "sproc")
+       GLOBUS_THREAD_PACKAGE="sproc"
+       ;;
+   "external")
+       GLOBUS_THREAD_PACKAGE="external"
+       ;;
+   *)
+       GLOBUS_THREAD_PACKAGE="none"
+       ;;
+esac
 
 AC_SUBST(GLOBUS_THREADS)
 
