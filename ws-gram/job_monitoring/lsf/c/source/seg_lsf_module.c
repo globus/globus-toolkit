@@ -843,9 +843,19 @@ globus_l_lsf_parse_events(
                         tmp--;
                     }
                     sscanf(tmp, "%d", &exit_status);
-                    rc = globus_scheduler_event_done(event_timestamp,
-                            job_id_buffer,
-                            exit_status);
+
+                    if (exit_status == 0)
+                    {
+                        rc = globus_scheduler_event_done(event_timestamp,
+                                job_id_buffer,
+                                exit_status);
+                    }
+                    else
+                    {
+                        rc = globus_scheduler_event_failed(event_timestamp,
+                                job_id_buffer,
+                                exit_status);
+                    }
                     state->start_timestamp = event_timestamp;
                 }
                 break;
