@@ -32,21 +32,21 @@ BUNDLE mmjfs-static NOTHREADS -static
 	globus_grim_devel
 	globus_grim
 
-BUNDLE scheduler_fork
+BUNDLE scheduler-fork
 	mjs_fork_setup
 	mmjfs_fork_setup
 
-BUNDLE scheduler_pbs
+BUNDLE scheduler-pbs
 	mjs_pbs_setup
 	mmjfs_pbs_setup
 	rips_pbs_provider_setup
 
-BUNDLE scheduler_lsf
+BUNDLE scheduler-lsf
 	mmjfs_lsf_setup
 	mjs_lsf_setup
 	rips_lsf_provider_setup
 
-BUNDLE scheduler_condor
+BUNDLE scheduler-condor
 	mmjfs_condor_setup
 	mjs_condor_setup
 	rips_condor_provider_setup

@@ -3,8 +3,8 @@
 TAG2=HEAD
 TAG3=HEAD
 
-INSTALL_BUNDLES=globus-resource-management-server,gt3-all-src,mmjfs,mmjfs-static,scheduler_fork,gt3-extras
-BUILD_BUNDLES=ogsi-cbindings,scheduler_pbs,scheduler_condor,scheduler_lsf
+INSTALL_BUNDLES=globus-resource-management-server,gt3-all-src,mmjfs,mmjfs-static,scheduler-fork,gt3-extras
+BUILD_BUNDLES=ogsi-cbindings,scheduler-pbs,scheduler-condor,scheduler-lsf
 
 if [ x$GLOBUS_LOCATION = x ]; then
 	echo "If you set a GLOBUS_LOCATION, I will install there."
