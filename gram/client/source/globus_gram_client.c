@@ -27,6 +27,7 @@
 #include "globus_i_gram_client.h"
 #include "globus_gram_protocol.h"
 #include "globus_io.h"
+#include "globus_rsl.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -88,6 +89,7 @@ int
 globus_l_gram_client_parse_gatekeeper_contact(
     const char *			contact_string,
     const char *			service_prefix,
+    const char *                        username,
     char **				gatekeeper_url,
     char **				gatekeeper_dn);
 
@@ -335,6 +337,7 @@ int
 globus_l_gram_client_parse_gatekeeper_contact(
     const char *			contact_string,
     const char *			service_prefix,
+    const char *                        username,
     char **				gatekeeper_url,
     char **				gatekeeper_dn)
 {
@@ -443,7 +446,9 @@ globus_l_gram_client_parse_gatekeeper_contact(
 					   strlen(service) +
 					   ((service_prefix != GLOBUS_NULL)
 					       ? strlen(service_prefix)
-					       : 0));
+					       : 0) +
+                                           ((username != NULL)
+                                               ? strlen(username) + 1 : 0));
 
     if ((*gatekeeper_url) == NULL)
     {
@@ -452,11 +457,13 @@ globus_l_gram_client_parse_gatekeeper_contact(
         goto free_duplicate_exit;
     }
     globus_libc_sprintf((*gatekeeper_url),
-	                "https://%s:%hu%s/%s",
+	                "https://%s:%hu%s/%s%s%s",
 			host,
 			(unsigned short) iport,
 			((service_prefix != GLOBUS_NULL) ? service_prefix : ""),
-			service);
+			service,
+                        (username != NULL) ? "@" : "",
+                        (username != NULL) ? username : "");
 
     if (globus_url_parse(*gatekeeper_url, &some_struct) != GLOBUS_SUCCESS)
     {
@@ -2214,10 +2221,38 @@ globus_l_gram_client_job_request(
     globus_io_attr_t			attr;
     char *				url;
     char *				dn;
+    globus_rsl_t *                      rsl;
+    char *                              username = NULL;
+
+    rsl = globus_rsl_parse((char *) description);
+
+    if (rsl != NULL)
+    {
+        char **                         username_value = NULL;
+        rc = globus_rsl_param_get(
+                rsl,
+                GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                GLOBUS_GRAM_PROTOCOL_USER_NAME,
+                &username_value);
+
+        if (rc == 0 && username_value != NULL && username_value[0] != NULL)
+        {
+            username = globus_libc_strdup(username_value[0]);
+        }
+
+        if (username_value != NULL)
+        {
+            globus_libc_free(username_value);
+        }
+
+        globus_rsl_free_recursive(rsl);
+        rsl = NULL;
+    }
 
     if ((rc = globus_l_gram_client_parse_gatekeeper_contact(
 	             resource_manager_contact,
 		     GLOBUS_NULL,
+                     username,
 		     &url,
 		     &dn )) != GLOBUS_SUCCESS)
     {
@@ -2289,6 +2324,7 @@ globus_l_gram_client_ping(
     rc = globus_l_gram_client_parse_gatekeeper_contact(
 	resource_manager_contact,
 	"ping",
+        NULL,
 	&url,
 	&dn );
 

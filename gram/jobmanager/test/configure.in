@@ -23,10 +23,12 @@ AC_OUTPUT(
         submit_test/Makefile
         failure_test/Makefile
 	proxy_expire_test/Makefile
+        user_test/Makefile
 	globus-gram-job-manager-run-tests.pl
         rsl_size_test/globus-gram-job-manager-rsl-size-test.pl
 	stdio_test/globus-gram-job-manager-stdio-test.pl
 	submit_test/globus-gram-job-manager-submit-test.pl
 	failure_test/globus-gram-job-manager-failure-test.pl
 	proxy_expire_test/globus-gram-job-manager-proxy-expire-test.pl
+        user_test/globus-gram-job-manager-user-test.pl
 )

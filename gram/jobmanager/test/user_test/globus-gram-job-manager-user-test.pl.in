@@ -1,0 +1,87 @@
+#! /usr/bin/env perl
+
+BEGIN
+{
+    push(@INC, $ENV{GLOBUS_LOCATION}. '/lib/perl');
+}
+
+use Globus::GRAM::Error;
+use IO::File;
+use Test;
+
+my (@tests) = ();
+my $contact = $ENV{CONTACT_STRING};
+my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
+my $verbose = 0;
+my $me = (getpwuid($<))[0];
+
+sub test_user
+{
+    my $username = shift;
+    my $result = shift;
+    my $rc;
+    my $rsl = '&(executable=/usr/bin/whoami)';
+    my $output;
+
+    if ($username ne '') {
+        $rsl .= "(username=$username)";
+    } else {
+        $username = $me;
+    }
+    if($verbose)
+    {
+	print "# Submitting job: $rsl\n";
+    }
+
+    chomp($output = `globusrun -s -r "$contact" '$rsl' 2>/dev/null`);
+
+    $rc = $? >> 8;
+
+    if ($rc != 0) {
+        $username = '';
+    }
+
+    ok("$output:$rc", "$username:$result");
+}
+
+push(@tests, "test_user('', 0)");
+push(@tests, "test_user('$me', 0)"),
+push(@tests, "test_user('$me'.'x',
+                    Globus::GRAM::Error::AUTHORIZATION->value)");
+
+if(@ARGV)
+{
+    my @doit;
+
+    $verbose = 1;
+
+    foreach(@ARGV)
+    {
+        if(/^(\d+)-(\d+)$/)
+        {
+            foreach($1 .. $2)
+            {
+               push(@doit, $_);
+            }
+        }
+        elsif(/^(\d+)$/)
+        {
+            push(@doit, $1);
+        }
+    }
+    plan tests => scalar(@doit);
+
+    foreach (@doit)
+    {
+        eval "&$tests[$_-1]";
+    }
+}
+else
+{
+    plan tests => scalar(@tests);
+
+    foreach (@tests)
+    {
+	eval "&$_";
+    }
+}

@@ -595,6 +595,11 @@ globus_gram_job_manager_gsi_update_proxy_timeout(
     globus_gram_jobmanager_request_t *	request,
     gss_cred_id_t			cred);
 
+int
+globus_gram_job_manager_gsi_relocate_proxy(
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        new_proxy);
+
 /* globus_gram_job_manager_query.c */
 void
 globus_gram_job_manager_query_callback(

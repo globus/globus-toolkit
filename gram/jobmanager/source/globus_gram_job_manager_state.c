@@ -59,6 +59,11 @@ void
 globus_l_gram_job_manager_cancel_queries(
     globus_gram_jobmanager_request_t *	request);
 
+static
+int
+globus_l_gram_job_manager_validate_username(
+    globus_gram_jobmanager_request_t *	request);
+
 #ifdef BUILD_DEBUG
 
 #   define GLOBUS_GRAM_JOB_MANAGER_INVALID_STATE(request) \
@@ -936,7 +941,17 @@ globus_gram_job_manager_state_machine(
                 p = (q) ? q+1 : GLOBUS_NULL;
             }
         }
-                
+
+        rc = globus_l_gram_job_manager_validate_username(
+                request);
+        if (rc != 0)
+        {
+            request->failure_code = rc;
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+            break;
+        }
+
 	globus_gram_job_manager_reporting_file_start_cleaner(request);
 
 	if(globus_gram_job_manager_rsl_need_scratchdir(request) &&
@@ -2774,3 +2789,110 @@ globus_l_gram_job_manager_cancel_queries(
     }
 }
 /* globus_l_gram_job_manager_cancel_queries() */
+
+/**
+ * Validate that the job manager is running as the username specified in the
+ * RSL if it is present.
+ *
+ * @param request
+ *     Request which contains information about the job. We'll only look at
+ *     the RSL in the request to check for presence of the username attribute.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Either the username RSL attribute was not present, or it was present
+ *     and its value matched the account this process is running as.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Some system call failed when we tried to look up the user id.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_USER_NAME
+ *     This process is not running as the desired user.
+ */
+static
+int
+globus_l_gram_job_manager_validate_username(
+    globus_gram_jobmanager_request_t *	request)
+{
+    char *                              tmp_str = NULL;
+    char *                              buffer = NULL;
+    struct passwd                       pwd;
+    struct passwd *                     pwd_result = NULL;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    /* Validate username RSL attribute if present */
+    rc = globus_gram_job_manager_rsl_eval_one_attribute(
+            request,
+            GLOBUS_GRAM_PROTOCOL_USER_NAME,
+            &tmp_str);
+
+    if (rc != 0)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: eval of %s failed\n",
+                GLOBUS_GRAM_PROTOCOL_USER_NAME);
+
+        return rc;
+    }
+
+    if (tmp_str != NULL)
+    {
+        buffer = malloc(1024);
+
+        if (buffer == NULL)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: allocating buffer for getpwnam_r failed\n");
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto free_tmp_str_exit;
+        }
+
+        rc = globus_libc_getpwnam_r(
+                tmp_str,
+                &pwd,
+                buffer,
+                sizeof(1024),
+                &pwd_result);
+
+        if (rc != 0 || pwd_result == NULL)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: getpwnam_r failed\n");
+
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto free_buffer_exit;
+        }
+
+        if (pwd.pw_uid != getuid())
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: job manager is NOT running as %s (uid=%lu)"
+                    "---running as uid=%lu\n",
+                    tmp_str,
+                    (unsigned long )pwd.pw_uid,
+                    (unsigned long) getuid());
+
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_USER_NAME;
+
+            goto free_buffer_exit;
+        }
+    }
+
+free_buffer_exit:
+    if (buffer != NULL)
+    {
+        free(buffer);
+    }
+
+free_tmp_str_exit:
+    if (tmp_str != NULL)
+    {
+        free(tmp_str);
+    }
+
+    return rc;
+}
+/* globus_l_gram_job_manager_validate_username() */
