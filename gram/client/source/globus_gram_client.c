@@ -101,6 +101,13 @@ graml_start_time_callback_handler(nexus_endpoint_t * endpoint,
                                   nexus_buffer_t * buffer,
                                   nexus_bool_t is_non_threaded);
 
+#ifdef GSS_AUTHENTICATION
+static int
+grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep);
+
+static int 
+grami_ggg_send_token_nexus( void * arg,  void * buf, int size);
+#endif
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
@@ -122,6 +129,74 @@ static nexus_handler_t gram_start_time_handler_table[] =
      graml_start_time_callback_handler},
 };
 
+/******************************************************************************
+Function:	grami_ggg_get_token_nexus()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int
+grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep)
+{
+	long 	length;
+	int    	size;
+	void * 	cp;
+	int *  	fd = (int *)arg;
+	
+	if (_nx_read_blocking(*fd, (char *) &length, 4))
+	{
+		fprintf(stderr,
+			"grami_ggg_get_token_nexus(): reading token length\n");
+		return -1;
+	}
+
+    size = ntohl(length);
+	cp = (char *) malloc(size);
+	if (!cp) 
+	{
+	  return -1;
+	}
+
+	if (_nx_read_blocking(*fd, (char *) cp, size))
+	{
+	  fprintf(stderr,
+			"grami_ggg_get_token_nexus(): reading token\n");
+      return -1;
+	} 
+	*bufp = cp;
+	*sizep = size;
+
+	return 0;
+}
+
+/******************************************************************************
+Function:	grami_ggg_send_token_nexus()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int
+grami_ggg_send_token_nexus( void *arg,  void *buf, int size)
+{
+	long  	length;
+	int * 	fd = (int *) arg;
+
+	length = htonl(size);
+	if (_nx_write_blocking(*fd, (char*) &length, 4)) 
+	{
+		fprintf(stderr,
+			"grami_ggg_send_token_nexus(): sending token length");
+		return -1;
+	}
+
+	if (_nx_write_blocking(*fd, (char *) buf, size))
+	{
+		fprintf(stderr,
+    		"grami_ggg_send_token_nexus: sending token length");
+     	return -1;
+	}
+	return 0;
+}
 
 /******************************************************************************
 Function:	gram_job_request()
@@ -238,10 +313,10 @@ gram_job_request(char * gatekeeper_url,
 	printf("Starting authentication to %s\n", gatekeeper_host);
 
     rc =  grami_ggg_init(gatekeeper_host,
-                   grami_ggg_get_token_socket,
-                   (void *)&gatekeeper_fd,
-                   grami_ggg_send_token_socket,
-                   (void *)&gatekeeper_fd);
+                   grami_ggg_get_token_nexus,
+                   (void *) &gatekeeper_fd,
+                   grami_ggg_send_token_nexus,
+                   (void *) &gatekeeper_fd);
 
     if (rc != 0)
     {
