@@ -502,7 +502,7 @@ globus_l_gsc_read_cb(
                     if(op == NULL)
                     {
                         res = GlobusGridFTPServerControlErrorSytem();
-                        goto err_unlock;
+                        goto err_alloc_unlock;
                     }
 
                     globus_fifo_enqueue(&server_handle->read_q, op);
@@ -596,7 +596,9 @@ globus_l_gsc_read_cb(
     globus_free(buffer);
     return;
 
-  err_unlock:
+err_unlock:
+    globus_i_gsc_op_destroy(op);
+err_alloc_unlock:
     globus_mutex_unlock(&server_handle->mutex);
 
   err:
@@ -1632,6 +1634,7 @@ globus_l_gsc_cmd_site(
 
     op->cmd_list = (globus_list_t *) globus_hashtable_lookup(
         &op->server_handle->site_cmd_table, cmd_a[1]);
+    op->cmd_list = globus_list_copy(op->cmd_list);
     GlobusLGSCRegisterCmd(op);
 }
 
@@ -1686,9 +1689,8 @@ globus_l_gsc_command_callout(
             else
             {
                 cmd_ent = (globus_l_gsc_cmd_ent_t *)
-                    globus_list_first(op->cmd_list);
+                    globus_list_remove(&op->cmd_list, op->cmd_list);
                 /* must advance before calling the user callback */
-                op->cmd_list = globus_list_rest(op->cmd_list);
                 if(!auth && !(cmd_ent->desc & GLOBUS_GSC_COMMAND_PRE_AUTH))
                 {
                     msg = "530 Please login with USER and PASS.\r\n";

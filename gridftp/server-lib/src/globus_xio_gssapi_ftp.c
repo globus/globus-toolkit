@@ -2655,9 +2655,6 @@ globus_l_xio_gssapi_ftp_handle_cntl(
     gss_cred_id_t *                     out_del_cred;
     globus_result_t                     res = GLOBUS_SUCCESS;
     globus_l_xio_gssapi_ftp_handle_t *  ds_handle;
-    gss_buffer_desc                     gsi_buffer;
-    int                                 maj_stat;
-    int                                 min_stat;
     GlobusXIOName(globus_l_xio_gssapi_ftp_handle_cntl);
 
     GlobusXIOGssapiftpDebugEnter();
