@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
-<gpt_package_metadata Format_Version="0.02" Name="globus_gram_reporter_condor_setup" >
+<gpt_package_metadata Format_Version="0.02" Name="globus_gram_reporter_setup_condor" >
 
   <Aging_Version Age="0" Major="1" Minor="0" />
   <Description >GRAM Reporter Setup for Condor</Description>
@@ -33,7 +33,7 @@
       setup-globus-gram-reporter-condor
     </Post_Install_Program>
 
-    <Setup Name="globus_gram_reporter_condor_setup" >
+    <Setup Name="globus_gram_reporter_setup_condor" >
       <Aging_Version Age="0" Major="2" Minor="0" />
     </Setup>
 
