@@ -9,9 +9,9 @@ static globus_xio_stack_t               globus_l_usage_stats_stack;
 static globus_xio_driver_t              globus_l_usage_stats_udp_driver;
 static globus_xio_handle_t              globus_l_usage_stats_xio_handle;
 static globus_mutex_t                   globus_l_usage_stats_mutex;
-static unsigned char                    globus_l_usage_stats_data[1472];
 
-#define GLOBUS_L_USAGE_STATS_DEFAULT_TARGETS "wiggum.mcs.anl.gov:4810"
+#define GLOBUS_L_USAGE_STATS_DEFAULT_TARGETS "usage-stats.globus.org:4810"
+#define GLOBUS_L_USAGE_STATS_TIMESTAMP_OFFSET 20
 
 enum
 {
@@ -59,8 +59,10 @@ typedef struct globus_usage_stats_handle_s
     uint16_t                            code;
     uint16_t                            version;
     globus_list_t *                     targets;
-    globus_xio_data_descriptor_t        xio_desc;
+    globus_list_t *                     xio_desc_list;
     const char *                        optout;
+    int                                 header_length;
+    unsigned char                       data[1472];
 } globus_i_usage_stats_handle_t;
 
 static
@@ -287,6 +289,16 @@ globus_usage_stats_handle_init(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_usage_stats_handle_t *     new_handle;
     char *                              targets_env;
+    globus_list_t *                     targets_list;
+    char *                              contact;
+    globus_sockaddr_t                   addr;
+    int                                 host[16];
+    int                                 count;
+    size_t                              data_length = 0;
+    char                                hostname[255];
+    uint16_t                            ncode;
+    uint16_t                            nversion;
+
     new_handle = globus_malloc(sizeof(globus_i_usage_stats_handle_t));
     if(!new_handle)
     {
@@ -306,6 +318,44 @@ globus_usage_stats_handle_init(
     new_handle->code = htons(code);
     new_handle->version = htons(code);
 
+    memset(new_handle->data, 0, 1472);
+
+    ncode = htons(new_handle->code);
+    memcpy(new_handle->data + data_length, 
+           (void *)&ncode, 2);
+    data_length += 2;
+
+    nversion = htons(new_handle->version);
+    memcpy(new_handle->data + data_length, 
+           (void *)&nversion, 2);
+    data_length += 2;
+
+    globus_libc_gethostaddr(&addr);
+    globus_libc_addr_to_contact_string(
+        &addr, 0, &contact);
+    globus_libc_contact_string_to_ints(
+        contact, host, &count, NULL);
+    globus_libc_free(contact);
+
+    if(count == 4)
+    {
+        memset(new_handle->data + data_length, 0, 12);
+        data_length += 12;
+    }
+
+    memcpy(new_handle->data + data_length, host, count);
+    data_length += count;
+
+    /* timestamp will go here */
+    data_length += 4;
+
+    if(globus_libc_gethostname(hostname, 255) == 0)
+    {
+        data_length += sprintf(new_handle->data + data_length,
+                               "HOSTNAME=%s", hostname);
+    }
+    new_handle->header_length = data_length;
+    
     if(targets)
     {
         globus_l_usage_stats_split_targets(targets, &new_handle->targets);
@@ -323,12 +373,34 @@ globus_usage_stats_handle_init(
             &new_handle->targets);
     }
 
-    result = globus_xio_data_descriptor_init(
-        &new_handle->xio_desc,
-        globus_l_usage_stats_xio_handle);
-    if(result != GLOBUS_SUCCESS)
+    targets_list = new_handle->targets;
+    while(targets_list)
     {
-        return result;
+        globus_xio_data_descriptor_t *  dd;
+        dd = (globus_xio_data_descriptor_t *) globus_malloc(
+            sizeof(globus_xio_data_descriptor_t));
+            
+        result = globus_xio_data_descriptor_init(
+            dd,
+            globus_l_usage_stats_xio_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            return result;
+        }
+
+        result = globus_xio_data_descriptor_cntl(
+            *dd,
+            globus_l_usage_stats_udp_driver,
+            GLOBUS_XIO_UDP_SET_CONTACT,
+            (char *)globus_list_first(targets_list));
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto exit;
+        }
+        
+        globus_list_insert(&new_handle->xio_desc_list, dd);
+        
+        targets_list = globus_list_rest(targets_list);
     }
 
     new_handle->optout = globus_libc_getenv("GLOBUS_USAGE_OPTOUT");
@@ -336,6 +408,9 @@ globus_usage_stats_handle_init(
     *handle = new_handle;
 
     return GLOBUS_SUCCESS;
+
+exit:
+    return result;
 }
 
 void
@@ -352,11 +427,21 @@ globus_usage_stats_handle_destroy(
             globus_list_destroy_all(handle->targets, globus_libc_free);
         }
     
-        if(handle->xio_desc)
+        if(handle->xio_desc_list)
         {
-            globus_xio_data_descriptor_destroy(handle->xio_desc);
+            globus_xio_data_descriptor_t *  dd;
+            
+            while (!globus_list_empty (handle->xio_desc_list)) 
+            {
+                if((dd = globus_list_remove(
+                    &handle->xio_desc_list, handle->xio_desc_list)) != NULL)
+                {
+                    globus_xio_data_descriptor_destroy(*dd);
+                    globus_free(dd);
+                }
+            }
         }
-
+        
         globus_free(vhandle);
     }
 }
@@ -386,20 +471,13 @@ globus_usage_stats_vsend(
     int                                 param_count,
     va_list                             ap)
 {
-    char *                              contact;
-    globus_sockaddr_t                   addr;
     globus_list_t *                     targets_list;
-    int                                 host[16];
-    int                                 count;
     globus_result_t                     result = GLOBUS_SUCCESS;
     size_t                              data_length = 0;
     globus_abstime_t                    stamp;
     uint32_t                            nstamp;
     globus_size_t                       written;
-    char                                hostname[255];
     int                                 i = 0;
-    uint16_t                            ncode;
-    uint16_t                            nversion;
 
     if(handle->optout)
     {
@@ -408,49 +486,16 @@ globus_usage_stats_vsend(
 
     globus_mutex_lock(&globus_l_usage_stats_mutex);
 
-    memset(globus_l_usage_stats_data, 0, 1472);
-
-    ncode = htons(handle->code);
-    memcpy(globus_l_usage_stats_data + data_length, 
-           (void *)&ncode, 2);
-    data_length += 2;
-
-    nversion = htons(handle->version);
-    memcpy(globus_l_usage_stats_data + data_length, 
-           (void *)&nversion, 2);
-    data_length += 2;
-
-    globus_libc_gethostaddr(&addr);
-    globus_libc_addr_to_contact_string(
-        &addr, 0, &contact);
-    globus_libc_contact_string_to_ints(
-        contact, host, &count, NULL);
-    globus_libc_free(contact);
-
-    if(count == 4)
-    {
-        memset(globus_l_usage_stats_data + data_length, 0, 12);
-        data_length += 12;
-    }
-
-    memcpy(globus_l_usage_stats_data + data_length, host, count);
-    data_length += count;
-
     GlobusTimeAbstimeGetCurrent(stamp);
     nstamp = htonl(stamp.tv_sec);
-    memcpy(globus_l_usage_stats_data + data_length, 
+    memcpy(handle->data + GLOBUS_L_USAGE_STATS_TIMESTAMP_OFFSET, 
            (void *)&nstamp, 4);
-    data_length += 4;
 
-    if(globus_libc_gethostname(hostname, 255) == 0)
-    {
-        data_length += sprintf(globus_l_usage_stats_data + data_length,
-                               "HOSTNAME=%s ", hostname);
-    }
+    data_length = handle->header_length;
 
     if(param_count > 0)
     {
-        memcpy(globus_l_usage_stats_data + data_length, " ", 1);
+        memcpy(handle->data + data_length, " ", 1);
         data_length += 1;
 
         for(i = 0; i < param_count; ++i)
@@ -461,38 +506,28 @@ globus_usage_stats_vsend(
             if(index(value, ' '))
             {
                 data_length += sprintf(
-                    globus_l_usage_stats_data + data_length,
+                    handle->data + data_length,
                     "%s=\"%s\" ", key, value);
             }
             else
             {
                 data_length += sprintf(
-                    globus_l_usage_stats_data + data_length,
+                    handle->data + data_length,
                     "%s=%s ", key, value);
             }
         }
     }
 
-    targets_list = handle->targets;
+    targets_list = handle->xio_desc_list;
     while(targets_list)
     {
-        result = globus_xio_data_descriptor_cntl(
-            handle->xio_desc,
-            globus_l_usage_stats_udp_driver,
-            GLOBUS_XIO_UDP_SET_CONTACT,
-            (char *)globus_list_first(targets_list));
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto exit;
-        }
-
         GlobusUsageStatsDebugPrintf(
             GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
             ("\n==========SENDING USAGE INFO: %s==(length: %d)===\n",
              (char *)globus_list_first(targets_list), data_length));
         GlobusUsageStatsDebugDump(
             GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
-            globus_l_usage_stats_data,
+            handle->data,
             data_length);
         GlobusUsageStatsDebugPrintf(
             GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
@@ -500,11 +535,12 @@ globus_usage_stats_vsend(
 
         result = globus_xio_write(
             globus_l_usage_stats_xio_handle,
-            globus_l_usage_stats_data,
+            handle->data,
             data_length,
             0,
             &written,
-            handle->xio_desc);
+            *(globus_xio_data_descriptor_t *) 
+                globus_list_first(targets_list));
         if(result != GLOBUS_SUCCESS)
         {
             goto exit;
