@@ -1934,7 +1934,7 @@ int yylex(void)
 		    while (isdigit(cbuf[++cpos]));
 		    c = cbuf[cpos];
 		    cbuf[cpos] = '\0';
-		    yylval.Number = atoll(cp);
+		    yylval.Bignum = atoll(cp);
 		    cbuf[cpos] = c;
 
 		    state = EARGS5;
