@@ -771,6 +771,19 @@ globus_l_ftp_client_target_new(
     {
 	goto free_control_handle;
     }
+
+    result = globus_ftp_control_auth_info_init(
+        &target->auth_info,
+        GSS_C_NO_CREDENTIAL,
+        GLOBUS_FALSE,
+        0,
+        0,
+        0,
+        0);
+    if(result != GLOBUS_SUCCESS)
+    {
+	goto free_control_handle;
+    }
     
     if(handle->attr.nl_handle)
     {
@@ -896,17 +909,23 @@ globus_l_ftp_client_override_attr(
 	    goto destroy_attr;
 	}
 
-	result = globus_ftp_control_auth_info_init(&target->auth_info,
-						   GSS_C_NO_CREDENTIAL,
-						   GLOBUS_FALSE,
-						   0,
-						   0,
-						   0,
-						   0);
-	if(result)
-	{
-	    goto destroy_attr;
-	}
+        /* free current auth_info info before overwriting pointers */
+        if(target->auth_info.user)
+        {
+            globus_libc_free(target->auth_info.user);
+        }
+        if(target->auth_info.password)
+        {
+            globus_libc_free(target->auth_info.password);
+        }
+        if(target->auth_info.account)
+        {
+            globus_libc_free(target->auth_info.account);
+        }
+        if(target->auth_info.auth_gssapi_subject)
+        {
+            globus_libc_free(target->auth_info.auth_gssapi_subject);
+        }
 
 	result =
 	    globus_ftp_client_operationattr_get_authorization(
@@ -916,7 +935,6 @@ globus_l_ftp_client_override_attr(
 		&target->auth_info.password,
 		&target->auth_info.account,
 		&target->auth_info.auth_gssapi_subject);
-
 	if(result)
 	{
 	    goto destroy_attr;
