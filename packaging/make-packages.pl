@@ -273,7 +273,7 @@ sub generate_build_list()
 
     if ( not defined(@cvs_build_list) )
     {
-        @cvs_build_list = ("autotools", "gt2", "gt3", "gt4");
+        @cvs_build_list = ("autotools", "gt2", "gt4");
     }
 
     foreach my $tree (@cvs_build_list)
@@ -1327,6 +1327,41 @@ sub inplace_build()
 }
 
 # --------------------------------------------------------------------
+sub patch_package
+# --------------------------------------------------------------------
+{
+    my ($package) = @_;
+
+    my $tree = $package_list{$package}[0];
+    my $subdir = $package_list{$package}[1];
+    my $tarname = $package_list{$package}[3];
+
+    chdir $subdir;
+
+    my $tarfile = cvs_subdir($tree) . "/tarfiles/" . $tarname;
+    my $tarbase = $tarname;
+    $tarbase =~ s!\.tar\.gz!!;
+    my $patchfile = "${tarbase}-patch";
+    my $version = gpt_get_version("pkg_data_src.gpt");
+    # Some patches will fail to apply a second time
+    # So clean up the old patched tar directory if
+    # it exists from a previous build.
+    if ( -d "$tarbase" )
+    {
+        log_system("rm -fr $tarbase", "$pkglog/$package");
+        paranoia("$tarbase exists, but could not be deleted.\n");
+    }
+   
+    log_system("gzip -dc $tarfile | tar xf -",
+               "$pkglog/$package");
+    paranoia "Untarring $package failed.  See $pkglog/$package.";
+    chdir $tarbase;
+    log_system("patch -N -s -p1 -i ../patches/$patchfile",
+               "$pkglog/$package");
+    paranoia "patch failed.  See $pkglog/$package.";
+}
+
+# --------------------------------------------------------------------
 sub package_source_bootstrap()
 # --------------------------------------------------------------------
 {
@@ -1341,31 +1376,7 @@ sub package_source_bootstrap()
     if ( $custom eq "gpt" ){
        log_system("./bootstrap", "$pkglog/$package");
     } elsif ( $custom eq "pnb" ){
-       my $tarname = $package_list{$package}[3];
-       my $tarfile = cvs_subdir($tree) . "/tarfiles/" . $tarname;
-       my $tarbase = $tarname;
-       $tarbase =~ s!\.tar\.gz!!;
-       my $patchfile = "${tarbase}-patch";
-   
-       system("pwd");
-       my $version = gpt_get_version("pkg_data_src.gpt");
-   
-       # Some patches will fail to apply a second time
-       # So clean up the old patched tar directory if
-       # it exists from a previous build.
-       if ( -d "$tarbase" )
-       {
-           log_system("rm -fr $tarbase", "$pkglog/$package");
-           paranoia("$tarbase exists, but could not be deleted.\n");
-       }
-   
-       log_system("gzip -dc $tarfile | tar xf -",
-                  "$pkglog/$package");
-       paranoia "Untarring $package failed.  See $pkglog/$package.";
-       chdir $tarbase;
-       log_system("patch -N -s -p1 -i ../patches/$patchfile",
-                  "$pkglog/$package");
-       paranoia "patch failed.  See $pkglog/$package.";
+       patch_package($package);
     } elsif ( $custom eq "tar" ) {
       ; # nothing to do
     }
@@ -1453,35 +1464,35 @@ sub package_source_pnb()
 # --------------------------------------------------------------------
 {
     my ($package, $subdir, $tree) = @_;
-    my $tarname = $package_list{$package}[3];
-    my $tarfile = cvs_subdir($tree) . "/tarfiles/" . $tarname;
-    my $tarbase = $tarname;
-    $tarbase =~ s!\.tar\.gz!!;
-    my $patchfile = "${tarbase}-patch";
+    #my $tarname = $package_list{$package}[3];
+    #my $tarfile = cvs_subdir($tree) . "/tarfiles/" . $tarname;
+    #my $tarbase = $tarname;
+    #$tarbase =~ s!\.tar\.gz!!;
+    #my $patchfile = "${tarbase}-patch";
 
     print "Following PNB packaging for $package.\n";
-    print "\tUsing tarfile: $tarfile.\n";
+    #print "\tUsing tarfile: $tarfile.\n";
 
     chdir $subdir;
-
     my $version = gpt_get_version("pkg_data_src.gpt");
+    patch_package($package);
 
     # Some patches will fail to apply a second time
     # So clean up the old patched tar directory if
     # it exists from a previous build.
-    if ( -d "$tarbase" )
-    {
-        log_system("rm -fr $tarbase", "$pkglog/$package");
-        paranoia("$tarbase exists, but could not be deleted.\n");
-    }
+    #if ( -d "$tarbase" )
+    #{
+        #log_system("rm -fr $tarbase", "$pkglog/$package");
+        #paranoia("$tarbase exists, but could not be deleted.\n");
+    #}
 
-    log_system("gzip -dc $tarfile | tar xf -",
-               "$pkglog/$package");
-    paranoia "Untarring $package failed.  See $pkglog/$package.";
-    chdir $tarbase;
-    log_system("patch -N -s -p1 -i ../patches/$patchfile",
-               "$pkglog/$package");
-    paranoia "patch failed.  See $pkglog/$package.";
+    #log_system("gzip -dc $tarfile | tar xf -",
+               #"$pkglog/$package");
+    #paranoia "Untarring $package failed.  See $pkglog/$package.";
+    #chdir $tarbase;
+    #log_system("patch -N -s -p1 -i ../patches/$patchfile",
+               #"$pkglog/$package");
+    #paranoia "patch failed.  See $pkglog/$package.";
 
     # Strip off leading directory component
     my ($otherdirs, $tardir) = $subdir =~ m!(.+/)([^/]+)$!;
