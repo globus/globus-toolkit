@@ -10,17 +10,19 @@
 version="0.3"
 
 usage () {
-	echo $0: Usage:  $0 [-p package] [-t tag] [-i dir [-r]] [-n] [-h] [-c] [-a]
+	echo $0: Usage:  $0 "[-p p1 p2 ...] [-t tag] [-i dir [-r]] [-n] [-h] [-c | -j] [-a] [-s | -b]"
 	echo
 	echo "With no arguments, checkout and build all of GT3."
-	echo "		$0 -p grim		Build package-list/grim"
-	echo "		$0 -t my_tag	Use \"-r my_tag\" in cvs commands"
-	echo "		$0 -i dir	Install into dir"
-	echo "		$0 -r		Make a release candidate.  Requires -i"
-	echo "		$0 -n 		Don't update the CVS checkout"
-	echo "		$0 -a		Use anonymous CVS checkouts"
-	echo "		$0 -h		Print this help message"
-	echo "		$0 -c		Just build C bindings"
+	echo "	$0 -p \"p1 p2 ...\" 	Build packages p1, p2, ..."
+	echo "	$0 -t my_tag	Use \"-r my_tag\" in cvs commands"
+	echo "	$0 -i dir		Install into dir"
+	echo "	$0 -r		Make a release candidate.  Requires -i"
+	echo "	$0 -n 		Don't update the CVS checkout"
+	echo "	$0 -a		Use anonymous CVS checkouts"
+	echo "	$0 -h		Print this help message"
+	echo "	$0 -c		Just build C bindings"
+	echo "	$0 -j		Just build Java"
+	echo "	$0 -b		Install GT2 binaries, not source."
 	echo
 }
 
@@ -30,6 +32,9 @@ setup_environment() {
 		# For MCS machines
 		if [ -e /home/dsl/javapkgs/java-env-setup.sh ]; then
 			source /home/dsl/javapkgs/java-env-setup.sh
+		# ruly and mayed
+		elif [ -d /usr/java/jdk1.3.1_07 ]; then
+			export JAVA_HOME=/usr/java/jdk1.3.1_07
 		# My laptop
 		elif [ -d /usr/java/jdk1.3.1_06 ]; then
 			export JAVA_HOME=/usr/java/jdk1.3.1_06
@@ -42,17 +47,22 @@ setup_environment() {
 
 }
 
-# checkout_cvs_generic cvsdir checkoutdir [ tag ]
+# checkout_cvs_generic cvsdir checkoutdir module [ tag ] 
 checkout_cvs_generic() {
 	cvsdir=$1
 	checkoutdir=$2
-	cvstag=$3
+	module=$3
+	cvstag=$4
 
 	if [ x"$cvstag" = "x" ]; then
 		cvs_opts="";
 	else
 		cvs_opts="-r $cvstag";
 		echo "Using tag $cvstag"
+	fi
+
+	if [ x"$module" = "x" ]; then
+		module="all"
 	fi
 
 	if [ $anonymous = 1 ]; then
@@ -69,7 +79,7 @@ checkout_cvs_generic() {
 		echo Making fresh CVS checkout.
 		mkdir $checkoutdir
 		cd $checkoutdir
-		cvs co $cvs_opts all 
+		cvs co $cvs_opts $module
 		cd ..
 	elif [ $update = 1 ]; then
 		echo "Updating CVS checkout."
@@ -90,12 +100,32 @@ checkout_cvs_generic() {
 
 # Checkout GT3 cvs
 checkout_cvs() {
-	checkout_cvs_generic /home/globdev/CVS/gridservices ogsa-cvs $tag
+	checkout_cvs_generic /home/globdev/CVS/gridservices ogsa-cvs all $tag
 }
 
 checkout_cvs_gt2() {
-	checkout_cvs_generic /home/globdev/CVS/globus-packages gt2-cvs $tag
+	checkout_cvs_generic /home/globdev/CVS/globus-packages gt2-cvs all $tag
 }
+
+checkout_cvs_gt2_autotools() {
+	checkout_cvs_generic /home/globdev/CVS/globus-packages gt2-autotools side_tools $tag
+}
+
+# Build autotools, leave it on the path
+build_gt2_autotools() {
+	if [ ! -d gt2-autotools ]; then
+		checkout_cvs_gt2_autotools
+		cd gt2-autotools
+		./side_tools/build-autotools
+	else
+		cd gt2-autotools
+	fi
+
+	export PATH=$PWD/autotools/bin:$PATH
+
+	cd ..
+}
+
 
 #If GPT hasn't been built here yet, build it now.
 #Some packages use GPT_LOCATION commands in build-info.
@@ -144,10 +174,6 @@ install_gt2_source() {
 
 	cd gt2-cvs
 
-	# Always build autotools, since cbindings needs it also.
-	./side_tools/build-autotools
-	export PATH=$PWD/autotools/bin:$PATH
-
 	if [ -d ../gt2-installation ]; then
 		echo There is an existing gt2-installation, skipping rebuild.
 		echo Delete gt2-installation to force a rebuild.
@@ -161,8 +187,7 @@ install_gt2_source() {
 }
 
 # Our GLOBUS_LOCATION was set when we installed GT2
-# and we built autotools and put it on our path already.
-# (May need to change this if I add a "from-binary/from-source" switch for the gt2 install)
+# and we built autotools separately and put it on our path already.
 # Need to unset gpt location - it's 2.x version, and there's a 1.x version in
 # $GLOBUS_LOCATION.  This freaks cvs-build-ogsa out.
 
@@ -183,7 +208,8 @@ install_cdeps() {
 	popd
 
 	mkdir -p package-output
-	cp ogsa-cvs/ogsa-c/ogsa_cbindings_*_bundle.tar.gz package-output
+	cp ogsa-cvs/ogsa-c/build_tools/source_packages/ogsa_cbindings_src_bundle.tar.gz package-output
+	cp ogsa-cvs/ogsa-c/build_tools/bin_packages/ogsa_cbindings_bin_bundle_bin.tar.gz package-output
 }
 
 # Go to subdir, run the build script.
@@ -201,9 +227,11 @@ make_source_package() {
 
 		pushd ogsa-cvs/$subdir
 
+		# most packages
 		if [ -f build.xml ]; then
 			echo Running ant cleanAll ...
 			ant cleanAll
+		# for core
 		elif [ -f impl/java/build.xml ]; then
 			echo Running ant cleanAll ...
 			ant -f impl/java/build.xml cleanAll
@@ -225,6 +253,7 @@ make_source_package() {
 			cp package-list/$name/filelist $destdir
 		fi
 
+		# So GPT understands where the source lives
 		touch $destdir/${name}/INSTALL
 	fi
 	
@@ -303,6 +332,8 @@ install_bundle() {
 
 	if [ $release = 1 ]; then
 		echo Collecting GT3 binaries from $dir
+		# This is now broken, since I install GT2 first.  Need to use an
+		# explicit packaging_list for this.
 		$GPT_LOCATION/sbin/gpt-pkg --installdir=$dir -all
 
 		# This is our gt3 binary bundle
@@ -324,8 +355,9 @@ install_bundle() {
 		popd
 	fi
 
-	echo Installing GT2 dep bundle into $dir
-	install_gt2_binary $dir
+	# Now redundant
+	# echo Installing GT2 dep bundle into $dir
+	# install_gt2_binary $dir
 
 	if [ $release = 1 ]; then
 		# This is gt3 core binary.  Distribute by itself.
@@ -360,6 +392,7 @@ read_args() {
 	gt2_branch="HEAD"
 	update=1
 	anonymous=0
+	installbin=1
 
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
@@ -391,6 +424,9 @@ read_args() {
 			shift;
 		elif [ $1 = "-a" ]; then
 			anonymous=1;
+			shift;
+		elif [ $1 = "-b" ]; then
+			installbin=1;
 			shift;
 		else
 			echo "Unrecognized option $1"
@@ -432,8 +468,22 @@ if [ $buildjava = 1 ]; then
 fi
 
 if [ $buildc = 1 ]; then
-	echo Building GT2 from CVS ...
-	install_gt2_source `pwd`/gt2-installation
+
+	build_gt2_autotools
+
+	# If user has requested installation, go ahead and put GT2 stuff there first.
+
+	if [ x$dir = "x" ]; then
+		cinst="gt2-installation"
+	else
+		cinst=$dir
+	fi
+
+	if [ $installbin = 1 ]; then
+		install_gt2_binary $cinst
+	else
+		install_gt2_source $cinst
+	fi
 
 	echo Building C-dependent packages
 	install_cdeps
