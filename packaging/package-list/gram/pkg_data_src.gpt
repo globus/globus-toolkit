@@ -22,15 +22,24 @@
     <Version_Label>0.0.2</Version_Label>
 
     <Source_Dependencies Type="compile" >
-      <Dependency Name="ogsa_core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="mds-db"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="filestreaming"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="grim"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="providers"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="aggregators"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Build_Instructions>
 
 	    <Build_Step> ant -Dogsa.root=INSTALLDIR_GPTMACRO</Build_Step>
 	    <Build_Step> mkdir -p INSTALLDIR_GPTMACRO/gars/ </Build_Step>
-	    <Build_Step> cp lib/gram.gar INSTALLDIR_GPTMACRO/gars/ </Build_Step>
-	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build.xml deployClientServer -Dgar.name=INSTALLDIR_GPTMACRO/gars/gram.gar </Build_Step>
+	    <Build_Step> cp build/lib/gram.gar INSTALLDIR_GPTMACRO/gars/ </Build_Step>
+	    <Build_Step> cp build/mmjfsLib/mmjfs.gar INSTALLDIR_GPTMACRO/gars/ </Build_Step>
+	    <Build_Step> cp build/jmLib/jm.gar INSTALLDIR_GPTMACRO/gars/ </Build_Step>
+	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build.xml deployGar -Dgar.name=INSTALLDIR_GPTMACRO/gars/gram.gar </Build_Step>
+	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build-packages.xml deployGar -Dgar.name=INSTALLDIR_GPTMACRO/gars/mmjfs.gar </Build_Step>
+	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build-packages.xml deployGar -Dgar.name=INSTALLDIR_GPTMACRO/gars/jm.gar </Build_Step>
 	    <Build_Step> cp test.xml INSTALLDIR_GPTMACRO/etc/ </Build_Step>
 	    <Build_Step> chmod +x INSTALLDIR_GPTMACRO/etc/globus-gram-fork-provider </Build_Step>
 	    <Build_Step> chmod +x INSTALLDIR_GPTMACRO/etc/globus-gram-pbs-provider </Build_Step>

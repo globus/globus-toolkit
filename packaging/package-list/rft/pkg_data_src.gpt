@@ -22,16 +22,15 @@
     <Version_Label>0.0.2</Version_Label>
 
     <Source_Dependencies Type="compile" >
-      <Dependency Name="ogsa_core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Build_Instructions>
 
-	    <Build_Step> ant stubs -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
-	    <Build_Step> ant gar -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> ant gar -Dogsa.root=INSTALLDIR_GPTMACRO</Build_Step>
 	    <Build_Step> mkdir -p INSTALLDIR_GPTMACRO/gars</Build_Step>
 	    <Build_Step> cp lib/reliabletransfer.gar INSTALLDIR_GPTMACRO/gars</Build_Step>
-	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build.xml deployClientServer -Dgar.name=INSTALLDIR_GPTMACRO/gars/reliabletransfer.gar</Build_Step>
+	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build.xml deployGar -Dgar.name=INSTALLDIR_GPTMACRO/gars/reliabletransfer.gar</Build_Step>
 
     </Build_Instructions>
 
