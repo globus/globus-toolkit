@@ -1240,6 +1240,8 @@ globus_io_udp_recvfrom(
      unsigned short *                    port,
      globus_size_t *                     nbytes_received);
 
+#define GLOBUSIO_UDP_WRITEVE_ENABLED 1
+
 globus_result_t
 globus_io_udp_register_recvfromv(
     globus_io_handle_t *                handle,
