@@ -1116,6 +1116,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET PROGRAM (executable) PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_EXECUTABLE_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1133,6 +1134,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET PROGRAM ARGUMENTS PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                       GLOBUS_RSL_PARAM_MULTI_LITERAL,
 		       GLOBUS_GRAM_CLIENT_ARGUMENTS_PARAM, 
                        &(params->pgm_args)) != 0)
     {
@@ -1143,6 +1145,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET DIR PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
 		             GLOBUS_GRAM_CLIENT_DIR_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1158,6 +1161,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET STDIN PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_STDIN_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1173,6 +1177,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET STDOUT PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_STDOUT_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1188,6 +1193,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET STDERR PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_STDERR_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1203,6 +1209,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET COUNT PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_COUNT_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1229,6 +1236,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET MAXTIME PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_MAXTIME_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1251,6 +1259,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET HOST_COUNT PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_HOST_COUNT_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1273,6 +1282,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET PARADYN PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_PARADYN_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1288,6 +1298,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET JOBTYPE PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_JOBTYPE_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1303,6 +1314,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET MYJOB PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_MYJOB_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1318,6 +1330,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET DRYRUN PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_DRYRUN_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1333,6 +1346,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET QUEUE PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_QUEUE_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1348,6 +1362,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET PROJECT PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
                              GLOBUS_GRAM_CLIENT_PROJECT_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1363,6 +1378,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
      *  GET ENVIRONMENT PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SEQUENCE,
 	                     GLOBUS_GRAM_CLIENT_ENVIRONMENT_PARAM, 
                              &(params->pgm_env)) != 0)
     {
