@@ -17,9 +17,23 @@ LAC_DOXYGEN(["Globus_Common_Test"],
 	    ["./doc/doxygen"])
 
 if test ! "X$GLOBUS_THREADS" = "Xnone"; then
-	THREAD_TEST="globus_common_thread_test.pl"
-	AC_SUBST(THREAD_TEST)
+    THREAD_TEST="globus_common_thread_test.pl"
+else
+    THREAD_TEST=""
 fi
+
+case "$GLOBUS_HOST" in
+    alpha-cray-unicosmk* )
+	MEM_TEST=""
+	;;
+    * )
+	MEM_TEST="globus_common_mem_test.pl"
+	;;
+esac
+
+AC_SUBST(MEM_TEST)
+AC_SUBST(THREAD_TEST)
+
 
 GLOBUS_FINALIZE
 
