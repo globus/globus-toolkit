@@ -3133,9 +3133,21 @@ globus_libc_getaddrinfo(
 {
     int                                 rc;
     globus_result_t                     result;
-
+    const char *                        port_str = service;
+    
+#ifdef TARGET_ARCH_AIX5
+    if(port_str && port_str[0] == '0' && port_str[1] == '\0')
+    {
+        /* aix's getaddrinfo is broken with literal zeros
+         * change it to an arbitrary number and update the results after
+         * the getaddrinfo call
+         */
+        port_str = "56789";
+    }
+#endif
+    
     result = GLOBUS_SUCCESS;
-    rc = getaddrinfo(node, service, hints, res);
+    rc = getaddrinfo(node, port_str, hints, res);
     if(rc != 0)
     {
         if(rc == EAI_SYSTEM)
@@ -3165,6 +3177,32 @@ globus_libc_getaddrinfo(
                     gai_strerror(rc)));
         }
     }
+#ifdef TARGET_ARCH_AIX5
+    else
+    {
+        globus_addrinfo_t *             addrinfo;
+        
+        /* aix's getaddrinfo also doesnt fill in the family and len fields of
+         * the sockaddrs
+         */
+        for(addrinfo = *res;
+            addrinfo;
+            addrinfo = addrinfo->ai_next)
+        {
+            if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
+            {
+                GlobusLibcSockaddrSetFamily(
+                    *addrinfo->ai_addr, addrinfo->ai_family);
+                GlobusLibcSockaddrSetLen(
+                    *addrinfo->ai_addr, addrinfo->ai_addrlen);
+                if(port_str != service)
+                {
+                    GlobusLibcSockaddrSetPort(*addrinfo->ai_addr, 0);
+                }
+            }
+        }
+    }
+#endif
 
     return result;
 }

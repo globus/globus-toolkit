@@ -369,7 +369,7 @@ typedef struct addrinfo                 globus_addrinfo_t;
             (port) = -1;                                                    \
             break;                                                          \
         }                                                                   \
-    } while(0)                                                              \
+    } while(0)
 
 #define GlobusLibcSockaddrSetPort(addr, port)                               \
     do                                                                      \
@@ -391,7 +391,29 @@ typedef struct addrinfo                 globus_addrinfo_t;
                 "Unknown family in GlobusLibcSockaddrSetPort");             \
             break;                                                          \
         }                                                                   \
-    } while(0)                                                              \
+    } while(0)
+
+#define GlobusLibcSockaddrSetLen(addr, len)                                 \
+    do                                                                      \
+    {                                                                       \
+        struct sockaddr *               _addr = (struct sockaddr *) &(addr);\
+                                                                            \
+        switch(_addr->sa_family)                                            \
+        {                                                                   \
+          case AF_INET:                                                     \
+            ((struct sockaddr_in *) _addr)->sin_lin = (len);                \
+            break;                                                          \
+                                                                            \
+          case AF_INET6:                                                    \
+            ((struct sockaddr_in6 *) _addr)->sin6_len = (len);              \
+            break;                                                          \
+                                                                            \
+          default:                                                          \
+            globus_assert(0 &&                                              \
+                "Unknown family in GlobusLibcSockaddrSetLen");              \
+            break;                                                          \
+        }                                                                   \
+    } while(0)
 
 #define GlobusLibcSockaddrCopy(dest_addr, source_addr, source_len)          \
     (memcpy(&(dest_addr), &(source_addr), (source_len)))
