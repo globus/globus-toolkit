@@ -1090,27 +1090,6 @@ globus_l_gsc_cmd_opts(
         }
         msg = "200 OPTS Command Successful.\r\n";
     }
-    else if(strcmp("LIST", cmd_a[1]) == 0)
-    {
-        char *                                  tmp_buf;
-
-        tmp_buf = strdup(cmd_a[2]);
-        if(sscanf(cmd_a[2], "usedatamode=%s", tmp_buf) == 1)
-        {
-            if(strcmp(tmp_buf, "yes") == 0)
-            {
-                op->server_handle->list_data_mode = GLOBUS_TRUE;
-            }
-            else
-            {
-                op->server_handle->list_data_mode = GLOBUS_FALSE;
-            }
-            globus_free(tmp_buf);
-        }
-        else
-        {
-        }
-    }
     else
     {
         msg = "500 OPTS failed.\r\n";

@@ -397,8 +397,6 @@ typedef struct globus_i_gsc_server_handle_s
     globus_i_gsc_data_t *                   data_object;
     globus_fifo_t                           data_q;
 
-    globus_bool_t                           list_data_mode;
-
     globus_result_t                         cached_res;
     globus_list_t *                         feature_list;
 
