@@ -1,5 +1,7 @@
 #include "globus_xio_load.h"
 
+#define GLOBUS_L_XIO_DRIVER_TABLE_SIZE 16
+
 extern globus_xio_driver_hook_t         @XIO_BUILTIN_HOOKS_DEC@;
 
 static globus_xio_driver_hook_t *       builtins[] = 
@@ -7,20 +9,138 @@ static globus_xio_driver_hook_t *       builtins[] =
     @XIO_BUILTIN_HOOKS_DEF@, GLOBUS_NULL
 };
 
+static globus_hashtable_t               globus_l_xio_load_drivers;
+static globus_mutex_t                   globus_l_xio_load_lock;
+
+int
+globus_i_xio_load_init(void)
+{
+    globus_xio_driver_hook_t **         builtin;
+    
+    globus_mutex_init(&globus_l_xio_load_lock, GLOBUS_NULL);
+    
+    if(globus_hashtable_init(
+        &globus_l_xio_load_drivers,
+        GLOBUS_L_XIO_DRIVER_TABLE_SIZE,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq) != GLOBUS_SUCCESS)
+    {
+        return -1;
+    }
+    
+    builtin = builtins;
+    while(*builtin)
+    {
+        globus_hashtable_insert(
+            &globus_l_xio_load_drivers, 
+            (void *) (*builtin)->name, 
+            *builtin);
+            
+        builtin++;
+    }
+    
+    return GLOBUS_SUCCESS;
+}
+
+int
+globus_i_xio_load_destroy(void)
+{
+    /*** XXX need to unload all current ***/
+    globus_mutex_destroy(&globus_l_xio_load_lock);
+    
+    return globus_hashtable_destroy(&globus_l_xio_load_drivers);
+}
+
 globus_result_t
 globus_xio_driver_load(
     const char *                        name,
     globus_xio_driver_t *               out_driver,
     ...)
 {
+    globus_xio_driver_hook_t *          hook;
+    globus_result_t                     result;
+    va_list                             ap;
+    GlobusXIOName(globus_xio_driver_load);
+    
+    globus_mutex_lock(&globus_l_xio_load_lock);
+    {
+        hook = (globus_xio_driver_hook_t *) globus_hashtable_lookup(
+            &globus_l_xio_load_drivers, 
+            (void *) name);
+    }
+    globus_mutex_unlock(&globus_l_xio_load_lock);
+    
+    if(!hook)
+    {
+        /* not a builtin or not loaded yet... here is where I would do the 
+         * dll stuff
+         */
+        
+        result = GlobusXIOErrorInvalidDriver("Could not find driver");
+        goto error_load;
+    }
+    
+    if(globus_module_activate(hook->module) != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorInvalidDriver("Deactivate failed");
+        goto error_load;
+    }
+    
+    va_start(ap, out_driver);
+    result = hook->load(out_driver, ap);
+    va_end(ap);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed("globus_xio_driver_init_t", result);
+        goto error_init;
+    }
     
     return GLOBUS_SUCCESS;
+
+error_init:
+    globus_module_deactivate(hook->module);
+    
+error_load:
+    return result;
 }
 
 globus_result_t
 globus_xio_driver_unload(
+    const char *                        name,
     globus_xio_driver_t                 driver)
 {
+    globus_xio_driver_hook_t *          hook;
+    globus_result_t                     result;
+    GlobusXIOName(globus_xio_driver_unload);
+    
+    /** 
+     * XXX need to remove entry after last driver unloaded... probably need a
+     * reference counted container (or maybe, dll_unload will tell me?)
+     * 
+     * builtins would always exist.  if i do ref count, they start with 1
+     */
+    globus_mutex_lock(&globus_l_xio_load_lock);
+    {
+        hook = (globus_xio_driver_hook_t *) globus_hashtable_lookup(
+            &globus_l_xio_load_drivers, 
+            (void *) name);
+    }
+    globus_mutex_unlock(&globus_l_xio_load_lock);
+    
+    if(!hook)
+    {
+        /* not loaded yet */
+        
+        result = GlobusXIOErrorInvalidDriver("Driver not loaded");
+        goto error_hook;
+    }
+    
+    hook->unload(driver);
+    globus_module_deactivate(hook->module);
     
     return GLOBUS_SUCCESS;
+
+error_hook:
+    return result;
 }

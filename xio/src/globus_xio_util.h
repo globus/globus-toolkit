@@ -221,6 +221,7 @@
             _i < _iovc &&  _n >= _iov[_i].iov_len;                          \
             _n -= _iov[_i].iov_len, _i++);                                  \
                                                                             \
+        (new_iovc) = _iovc - _i;                                            \
         if(_i < _iovc)                                                      \
         {                                                                   \
             _new_iov[0].iov_base = (char *) _iov[_i].iov_base + _n;         \
@@ -233,8 +234,6 @@
                 _new_iov[_j].iov_len = _iov[_i].iov_len;                    \
             }                                                               \
         }                                                                   \
-                                                                            \
-        (new_iovc) = _iovc - _i;                                            \
     } while(0)
 
 

@@ -4,6 +4,8 @@
 #include "globus_common.h"
 #include "globus_xio_types.h"
 #include "globus_xio_util.h"
+#include "globus_xio_load.h"
+
 /**
  * @mainpage Globus XIO
  *

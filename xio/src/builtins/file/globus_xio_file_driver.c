@@ -1,18 +1,17 @@
 #include "globus_i_xio.h"
 #include "globus_xio_driver.h"
 #include "globus_xio_file_driver.h"
-
-static
-int
-globus_l_xio_file_activate();
-
-static
-int
-globus_l_xio_file_deactivate();
-
 #include "version.h"
 
-globus_module_descriptor_t              globus_i_xio_file_module =
+static
+int
+globus_l_xio_file_activate(void);
+
+static
+int
+globus_l_xio_file_deactivate(void);
+
+static globus_module_descriptor_t       globus_i_xio_file_module =
 {
     "globus_xio_file",
     globus_l_xio_file_activate,
@@ -626,17 +625,24 @@ globus_l_xio_file_cntl(
     return GLOBUS_SUCCESS;
 }
 
+static
 globus_result_t
-globus_l_xio_file_create_driver(
-    globus_xio_driver_t *                   out_driver)
+globus_l_xio_file_init(
+    globus_xio_driver_t *               out_driver,
+    va_list                             ap)
 {
-    globus_xio_driver_t                     driver;
-    globus_result_t                         res;
-
-    res = globus_xio_driver_init(&driver, NULL);
-    if(res != GLOBUS_SUCCESS)
+    globus_xio_driver_t                 driver;
+    globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_file_init);
+    
+    /* I dont support any driver options, so I'll ignore the ap */
+    
+    result = globus_xio_driver_init(&driver, GLOBUS_NULL);
+    if(result != GLOBUS_SUCCESS)
     {
-        return res;
+        result = GlobusXIOErrorWrapFailed(
+            "globus_l_xio_file_handle_init", result);
+        goto error_init;
     }
 
     globus_xio_driver_set_transport(
@@ -650,7 +656,7 @@ globus_l_xio_file_create_driver(
     globus_xio_driver_set_client(
         driver,
         globus_l_xio_file_target_init,
-        NULL,
+        GLOBUS_NULL,
         globus_l_xio_file_target_destroy);
 
     globus_xio_driver_set_attr(
@@ -659,10 +665,25 @@ globus_l_xio_file_create_driver(
         globus_l_xio_file_attr_copy,
         globus_l_xio_file_attr_cntl,
         globus_l_xio_file_attr_destroy);
-
+    
     *out_driver = driver;
 
     return GLOBUS_SUCCESS;
+
+error_init:
+    return result;
 }
 
+static
+void
+globus_l_xio_file_destroy(
+    globus_xio_driver_t                 driver)
+{
+    globus_xio_driver_destroy(driver);
+}
 
+GlobusXIODefineDriver(
+    file,
+    &globus_i_xio_file_module,
+    globus_l_xio_file_init,
+    globus_l_xio_file_destroy);

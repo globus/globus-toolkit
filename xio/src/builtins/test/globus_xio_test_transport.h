@@ -36,11 +36,4 @@ enum
     GLOBUS_XIO_TEST_CHUNK_SIZE,
 };
 
-extern globus_module_descriptor_t              globus_i_xio_test_module;
-
-#define GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE &globus_i_xio_test_module
-
-globus_xio_driver_t
-globus_xio_driver_test_transport_get_driver();
-
 #endif

@@ -4,6 +4,8 @@
 #include "globus_common.h"
 #include "globus_xio_test_transport.h"
 
+#define GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE &globus_i_xio_test_module
+
 #define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \
 {                                                                       \
     ow = (globus_l_xio_test_op_wrapper_t *)                             \
@@ -19,8 +21,6 @@ globus_l_xio_test_activate();
 
 static int
 globus_l_xio_test_deactivate();
-
-globus_xio_driver_hook_t                globus_i_xio_test_hook;
 
 /* 
  *  handle and attr are the same structure here
@@ -49,7 +49,7 @@ static globus_l_xio_test_handle_t       globus_l_default_attr;
 
 #include "version.h"
 
-globus_module_descriptor_t              globus_i_xio_test_module =
+static globus_module_descriptor_t       globus_i_xio_test_module =
 {
     "globus_xio_test",
     globus_l_xio_test_activate,
@@ -183,6 +183,7 @@ globus_l_xio_test_target_destroy(
     return GLOBUS_SUCCESS;
 }
 
+static
 void
 globus_l_xio_operation_kickout(
     void *                              user_arg)
@@ -581,13 +582,11 @@ globus_l_xio_test_transport_load(
     return GLOBUS_SUCCESS;
 }
 
-static globus_result_t
+static void
 globus_l_xio_test_transport_unload(
     globus_xio_driver_t                 driver)
 {
     globus_xio_driver_destroy(driver);
-
-    return GLOBUS_SUCCESS;
 }
 
 
@@ -614,11 +613,6 @@ globus_l_xio_test_activate(void)
     attr->read_nbytes = -1; /* default is no EOF (close only) */
     attr->chunk_size = -1; /* default: entire chunk requested */
 
-    globus_i_xio_test_hook.name = "globus_xio_test_transport";
-    globus_i_xio_test_hook.module = &globus_i_xio_test_module;
-    globus_i_xio_test_hook.load = globus_l_xio_test_transport_load;
-    globus_i_xio_test_hook.unload = globus_l_xio_test_transport_unload;
-
     return GLOBUS_SUCCESS;
 }
 
@@ -629,13 +623,8 @@ globus_l_xio_test_deactivate(void)
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 
-globus_xio_driver_t
-globus_xio_driver_test_transport_get_driver()
-{
-    globus_xio_driver_t                 driver;
-
-    globus_l_xio_test_transport_load(&driver, NULL);
-
-    return driver;
-}
-
+GlobusXIODefineDriver(
+    test,
+    &globus_i_xio_test_module,
+    globus_l_xio_test_transport_load,
+    globus_l_xio_test_transport_unload);
