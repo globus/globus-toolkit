@@ -150,25 +150,29 @@ only Common Name (CN).</dd>
 -a |&nbsp; --allow_anonymous_retrievers</dt>
 
 <dd>
-Allow anonymous retrievers to access credential for retrieval.</dd>
+Allow credentials to be retireved with just username/passphrase.</dd>
 
 <dt>
 -A | --allow_anonymous_renewers</dt>
 
 <dd>
-Allow anonymous renewers to access credential for renewal.</dd>
+Allow credentials to be renewed by any client (not recommended).</dd>
 
 <dt>
 -r | --retrievable_by <i>dn</i></dt>
 
 <dd>
-Specifies DN of allowed retrievers.</dd>
+Allow specified entity to retrieve credentials.  By default, the
+argument will be matched against the CN of the client.
+Use -x to use full regular expression matching instead.</dd>
 
 <dt>
 -R | --renewable_by <i>dn</i></dt>
 
 <dd>
-Specifies DN of allowed renewers.</dd>
+Allow the specified entity to renew credentials.  By default, the
+argument will be matched against the CN of the client.
+Use -x to use full regular expression matching instead.</dd>
 </dl>
 
 <dl>
