@@ -707,32 +707,34 @@ sub log_system
 sub install_gpt()
 # --------------------------------------------------------------------
 {
-    my $gpt_ver = "gpt-3.0.1";
+    my $gpt_ver = "gpt-3.2autotools2004";
     my $gpt_dir = $top_dir . "/$gpt_ver";
 
     $ENV{'GPT_LOCATION'}=$gpt_dir;
-    
+
     if ( -e "${gpt_dir}/sbin/gpt-build" )
     {
-	print "GPT is already built, skipping.\n";
-	print "\tDelete $gpt_dir to force rebuild.\n";
+        print "GPT is already built, skipping.\n";
+        print "\tDelete $gpt_dir to force rebuild.\n";
     } else {
-	print "Installing $gpt_ver\n";
-	print "Logging to ${log_dir}/$gpt_ver.log\n";
-	chdir $top_dir;
-	system("tar xzf fait_accompli/${gpt_ver}-src.tar.gz");
-	paranoia("Trouble untarring fait_accompli/${gpt_ver}-src.tar.gz");
+        print "Installing $gpt_ver\n";
+        print "Logging to ${log_dir}/$gpt_ver.log\n";
+        chdir $top_dir;
+        system("wget -nv http://www.isi.edu/~rynge/autotools-2004/" .
+               "gpt-3.2autotools2004-src.tar.gz");
+        system("tar xzf ${gpt_ver}-src.tar.gz");
+        paranoia("Trouble untarring ${gpt_ver}-src.tar.gz");
 
-	chdir $gpt_dir;
+        chdir $gpt_dir;
 
-	# gpt 3.0.1 has trouble if LANG is set, as on RH9
-	# Newer GPTs will unset LANG automatically in build_gpt.
-	my $OLANG = $ENV{'LANG'};
-	$ENV{'LANG'} = "";
-	system("./build_gpt > $log_dir/$gpt_ver.log 2>&1");
-	$ENV{'LANG'} = $OLANG;
+        # gpt 3.0.1 has trouble if LANG is set, as on RH9
+        # Newer GPTs will unset LANG automatically in build_gpt.
+        my $OLANG = $ENV{'LANG'};
+        $ENV{'LANG'} = "";
+        system("./build_gpt > $log_dir/$gpt_ver.log 2>&1");
+        $ENV{'LANG'} = $OLANG;
 
-	paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
+        paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
     }
 
     @INC = (@INC, "$gpt_dir/lib/perl", "$gpt_dir/lib/perl/$Config{'archname'}");
