@@ -180,8 +180,16 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  *
  * @see globus_callback_space_register_oneshot()
  */
-#define globus_callback_register_oneshot(a,b,c,d)                           \
-    globus_callback_space_register_oneshot((a),(b),(c),(d),                 \
+#define globus_callback_register_oneshot(                                   \
+        callback_handle,                                                    \
+        delay_time,                                                         \
+        callback_func,                                                      \
+        callback_user_args)                                                 \
+    globus_callback_space_register_oneshot(                                 \
+        (callback_handle),                                                  \
+        (delay_time),                                                       \
+        (callback_func),                                                    \
+        (callback_user_args),                                               \
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 
 /**
@@ -193,8 +201,16 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  *
  * @see globus_callback_space_register_abstime_oneshot()
  */
-#define globus_callback_register_abstime_oneshot(a,b,c,d)                   \
-    globus_callback_space_register_abstime_oneshot((a),(b),(c),(d),         \
+#define globus_callback_register_abstime_oneshot(                           \
+        callback_handle,                                                    \
+        start_time,                                                         \
+        callback_func,                                                      \
+        callback_user_args)                                                 \
+    globus_callback_space_register_abstime_oneshot(                         \
+        (callback_handle),                                                  \
+        (start_time),                                                       \
+        (callback_func),                                                    \
+        (callback_user_args),                                               \
         GLOBUS_CALLBACK_GLOBAL_SPACE)
 
 /**
@@ -205,9 +221,20 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  *
  * @see globus_callback_space_register_periodic()
  */
-#define globus_callback_register_periodic(a,b,c,d,e)                        \
-    globus_callback_space_register_periodic((a),(b),(c),(d),(e),            \
+#define globus_callback_register_periodic(                                  \
+        callback_handle,                                                    \
+        delay_time,                                                         \
+        period,                                                             \
+        callback_func,                                                      \
+        callback_user_args)                                                 \
+    globus_callback_space_register_periodic(                                \
+        (callback_handle),                                                  \
+        (delay_time),                                                       \
+        (period),                                                           \
+        (callback_func),                                                    \
+        (callback_user_args),                                               \
         GLOBUS_CALLBACK_GLOBAL_SPACE)
+
 /* @} */
 
 /**
