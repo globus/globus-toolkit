@@ -1,5 +1,7 @@
 AC_DEFUN(GLOBUS_INIT, [
 
+AM_MAINTAINER_MODE
+
 # checking for the GLOBUS_LOCATION
 
 if test "x$GLOBUS_LOCATION" = "x"; then

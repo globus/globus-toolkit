@@ -21,6 +21,7 @@ exec_prefix='$(GLOBUS_LOCATION)'
 
 GPT_INIT
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION,0)
+AM_MAINTAINER_MODE
 AM_CONFIG_HEADER(globus_config.h)
 
 AC_ARG_WITH(
@@ -101,12 +102,6 @@ AC_OUTPUT(Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	pkgdata/build-parameters
-	,
-	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data  \
-	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
-	,
-	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
-	GPT_LOCATION=$GPT_LOCATION
 	)
 
 
