@@ -267,8 +267,8 @@ lac_CFLAGS="$CFLAGS "
 lac_CXXFLAGS="$CXXFLAGS "
 lac_LDFLAGS="$LDFLAGS "
 lac_LIBS="$LIBS "
-lac_F77FLAGS=""
-lac_F90FLAGS=""
+lac_F77FLAGS="$F77FLAGS "
+lac_F90FLAGS="$F90FLAGS "
 unset lac_cflags_opt
 unset lac_cxxflags_opt
 case ${host}--$1 in

@@ -67,12 +67,23 @@ dnl Automake is using these for executables somehow
 AC_OBJEXT
 AC_EXEEXT
 
+if test "X$GCC" = "Xyes"; then
+	AUTOMAKE_OPTS = ""
+else
+	AUTOMAKE_OPTS = "no-dependencies"
+fi
+
+AC_SUBST(AUTOMAKE_OPTS)
+
+AM_CONDITIONAL(PACKAGE_NOT_CORE, false)
+
 AC_OUTPUT(Makefile
        	scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
 	scripts/globus-sh-tools.sh
 	scripts/Makefile
 	scripts/globus_build_config.pl
 	aclocal/Makefile
+	aclocal/automake_config
 	config/Makefile
 	doxygen/Makefile
 	tests/Makefile
@@ -85,3 +96,8 @@ AC_OUTPUT(Makefile
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
 
 	)
+
+
+
+
+
