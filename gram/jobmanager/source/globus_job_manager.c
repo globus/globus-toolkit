@@ -100,38 +100,6 @@ static int                         my_count;
 
 static FILE *                      gram_log_fp;
 
-/*
- * NexusExit() (required of all Nexus programs)
- */
-void NexusExit(void)
-{
-} /* end NexusExit() */
-
-/*
- * NexusAcquiredAsNode() (required of all Nexus programs)
- */
-int NexusAcquiredAsNode(nexus_startpoint_t *startpoint)
-{
-    nexus_startpoint_bind(startpoint, &GlobalEndpoint);
-    return 0;
-} /* end NexusAcquiredAsNode() */
-
-/*
- * NexusBoot() (required of all Nexus programs)
- */
-int NexusBoot(nexus_startpoint_t * startpoint)
-{
-    nexus_endpointattr_init(&EpAttr);
-    nexus_endpointattr_set_handler_table(&EpAttr,
-                                    handlers,
-                                    sizeof(handlers)/sizeof(nexus_handler_t));
-
-    nexus_endpoint_init(&GlobalEndpoint, &EpAttr);
-    nexus_startpoint_bind(startpoint, &GlobalEndpoint);
-
-    return NEXUS_SUCCESS;
-
-} /* end NexusBoot() */
 
 /******************************************************************************
 Function:       main()
@@ -169,18 +137,17 @@ main(int argc,
     gram_specification_t * description_tree;
 
 
+    /* Initialize nexus */
     rc = nexus_init(&argc,
 		    &argv,
 		    "NEXUS_ARGS", /* conf info env variable          */
 		    "nx",         /* package designator              */
 		    NULL);        /* additional modules              */
-
     if (rc != NEXUS_SUCCESS)
     {
 	fprintf(stderr, "nexus_init() failed with rc=%d\n", rc);
 	exit(1);
     }
-
     nexus_enable_fault_tolerance(NULL, NULL);
 
     *test_dat_file = '\0';
@@ -335,10 +302,20 @@ main(int argc,
     nexus_cond_init(&job_manager_monitor.cond, (nexus_condattr_t *) NULL);
     job_manager_monitor.done = NEXUS_FALSE;
 
+    /*
+     * Create an endpoint that will be used by attach_requested
+     * when other attach to this job manager
+     */
+    nexus_endpointattr_init(&EpAttr);
+    nexus_endpointattr_set_handler_table(&EpAttr,
+                                    handlers,
+                                    sizeof(handlers)/sizeof(nexus_handler_t));
+    nexus_endpoint_init(&GlobalEndpoint, &EpAttr);
+
     /* allow other Nexus programs to attach to us */
     my_port = 0;
-    rc = nexus_allow_attach(&my_port,      /* port            */
-                            &my_host,     /* host            */
+    rc = nexus_allow_attach(&my_port,         /* port            */
+                            &my_host,         /* host            */
                             attach_requested, /* approval_func() */
                             NULL);
     if (rc != 0)
