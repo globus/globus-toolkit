@@ -61,4 +61,47 @@ fi
 AC_MSG_RESULT($GLOBUS_DEV_PATH)
 AC_SUBST(GLOBUS_DEV_PATH)
 
+dnl
+dnl Figure out which regular expression parser to use.
+dnl  (taken from krb5/lib/krb5/os/configure.in)
+dnl Try, in order, regcomp, compile/step
+dnl
+AC_HAVE_HEADERS(regex.h regexpr.h)
+dnl
+dnl regcomp (which is present but non-functional on Solaris 2.4)
+dnl
+AC_CACHE_CHECK([for working regcomp],
+  [ac_cv_func_regcomp],
+  [AC_TRY_RUN([
+#include <sys/types.h>
+#include <regex.h>
+regex_t x; regmatch_t m;
+int main() { return regcomp(&x,"pat.*",0) || regexec(&x,"pattern",1,&m,0); }
+    ], ac_cv_func_regcomp=yes, ac_cv_func_regcomp=no, ac_cv_func_regcomp=no)])
+dnl
+dnl compre/step
+dnl
+save_LIBS=$LIBS
+LIBS=-lgen
+dnl this will fail if there's no compile/step in -lgen, or if there's
+dnl no -lgen.  This is fine.
+AC_CHECK_FUNCS(compile step, have_func_compile=yes)
+LIBS=$save_LIBS
+dnl
+if test "$ac_cv_func_regcomp" = yes ; then
+  AC_MSG_RESULT([Using re_comp for regular expression matching])
+  AC_DEFINE(HAVE_REGCOMP)
+elif test "$have_func_compile" = yes ; then
+  AC_MSG_RESULT([Using compile/step for regular expression matching])
+  AC_CHECK_LIB(gen, compile, [SERVERLIBS="$SERVERLIBS -lgen"])
+else
+  AC_MSG_WARN([No support for regular expression matching])
+fi
+dnl
+dnl Check for vsnprintf()
+dnl
+AC_CHECK_FUNCS(vsnprintf)
+dnl
+dnl
+dnl
 AC_OUTPUT(Makefile)
