@@ -51,7 +51,7 @@ my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
 local(*FP);
 
-open(FP, ">$globusdir/etc/globus_scheduler_event_generator_pbs.conf");
+open(FP, ">$globusdir/etc/globus-pbs.conf");
 print FP "log_path=$path\n";
 close(FP);
 
