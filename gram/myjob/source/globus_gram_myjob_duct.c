@@ -73,11 +73,16 @@ s_incoming_msg_handler (globus_duct_runtime_t * runtimep,
   err = nexus_mutex_unlock (&s_mutex);
 }
 
+static int s_myjob_initialized = 0;
+static int s_myjob_alone = 0;
+
 static int
 s_myjob_init ()
 {
   int err;
   char * duct_contact;
+
+  if ( s_myjob_initialized ) return GLOBUS_SUCCESS;
 
   err = globus_fifo_init (&s_incoming_msgs);
   assert (!err);
@@ -89,14 +94,20 @@ s_myjob_init ()
   assert (!err);
 
   duct_contact = getenv ("GLOBUS_GRAM_MYJOB_CONTACT");
+  
+  if ( duct_contact != NULL ) {
+    err = globus_duct_runtime_init (&s_duct,
+				    duct_contact,
+				    0,
+				    s_incoming_msg_handler,
+				    NULL,
+				    NULL,
+				    NULL);
+  }
+  else s_myjob_alone = 1;
 
-  err = globus_duct_runtime_init (&s_duct,
-				  duct_contact,
-				  0,
-				  s_incoming_msg_handler,
-				  NULL,
-				  NULL,
-				  NULL);
+
+  s_myjob_initialized = 1;
 
   if (err) {
     globus_fifo_destroy (&s_incoming_msgs);
@@ -272,6 +283,14 @@ globus_gram_myjob_rank (int * rankp)
   if ( rankp == NULL ) 
     return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
 
+  if ( ! s_myjob_initialized )
+    return GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED;
+
+  if ( s_myjob_alone ) {
+    (*rankp) = 0;
+    return GLOBUS_SUCCESS;
+  }
+
   err = globus_duct_runtime_structure (&s_duct,
 				       &local_addr,
 				       &remote_count,
@@ -324,8 +343,17 @@ globus_gram_myjob_size (int * sizep)
   int local_addr;
   int * remote_addrs;
 
+
+  if ( ! s_myjob_initialized )
+    return GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED;
+
   if ( sizep == NULL ) 
     return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
+
+  if ( s_myjob_alone ) {
+    (*sizep) = 1;
+    return GLOBUS_SUCCESS;
+  }
 
   err = globus_duct_runtime_structure (&s_duct,
 				       &local_addr,
@@ -362,8 +390,12 @@ globus_gram_myjob_send (int             dest_addr,
 
   if ( (msg == NULL) || (msg_len < 0)
        || (dest_addr > (size-1))
-       || (dest_addr < 0) ) 
+       || (dest_addr < 0) 
+       || (s_myjob_alone != 0) ) 
     return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
+
+  if ( ! s_myjob_initialized )
+    return GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED;
 
   err = globus_duct_runtime_structure (&s_duct,
 				       &local_addr,
@@ -417,8 +449,11 @@ globus_gram_myjob_receive (globus_byte_t * msgp,
   int i;
   globus_gram_myjob_msg_t *duct_msgp;
 
-  if ( (msgp == NULL) || (msg_lenp == NULL) ) 
+  if ( (msgp == NULL) || (msg_lenp == NULL) || (s_myjob_alone != 0) ) 
     return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
+
+  if ( ! s_myjob_initialized )
+    return GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED;
 
   err = nexus_mutex_lock (&s_mutex);
   assert (!err);
