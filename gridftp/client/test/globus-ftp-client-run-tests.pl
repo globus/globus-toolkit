@@ -95,9 +95,12 @@ sub setup_server()
     my $server_args = "-a -s -p $server_port";
     my $subject;
     
-    $ENV{X509_CERT_DIR} = cwd();
-    $ENV{X509_USER_PROXY} = "testcred.pem";
-    
+    if(0 != system("grid-proxy-info -exists -hours 2") / 256)
+    {
+        $ENV{X509_CERT_DIR} = cwd();
+        $ENV{X509_USER_PROXY} = "testcred.pem";
+    }
+
     system('chmod go-rw testcred.pem');
      
     $subject = `grid-proxy-info -subject`;
