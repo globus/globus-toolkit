@@ -75,6 +75,7 @@ GSS_CALLCONV gss_import_cred(
     OM_uint32 *                         time_rec)
 {
     OM_uint32                           major_status = 0;
+    OM_uint32                           local_minor_status;
     BIO *                               bp = NULL;
     char *                              filename;
     FILE *                              fp;
@@ -112,7 +113,7 @@ GSS_CALLCONV gss_import_cred(
     }
 
     if(desired_mech != NULL &&
-       desired_mech != (gss_OID) gss_mech_globus_gssapi_ssleay)
+       desired_mech != (gss_OID) gss_mech_globus_gssapi_openssl)
     {
         GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_MECH);
         *minor_status = gsi_generate_minor_status();
@@ -168,15 +169,15 @@ GSS_CALLCONV gss_import_cred(
         goto err;
     }
     
-    major_status = gss_create_and_fill_cred(output_cred_handle,
-                                            GSS_C_BOTH,
-                                            NULL,
-                                            NULL,
-                                            NULL,
-                                            bp);
+    major_status = globus_i_gsi_gss_cred_read(
+        local_minor_status,
+        GSS_C_BOTH,
+        output_cred_handle,
+        bp);
 
     if(major_status != GSS_S_COMPLETE)
     {
+#error blah
         goto err;
     }
     
@@ -185,18 +186,9 @@ GSS_CALLCONV gss_import_cred(
     
     if (time_rec != NULL)
     {
-        time_t                time_after;
-        time_t                time_now;
-        ASN1_UTCTIME *        asn1_time = NULL;
-
-        asn1_time = ASN1_UTCTIME_new();
-        X509_gmtime_adj(asn1_time,0);
-        time_now = ASN1_UTCTIME_mktime(asn1_time);
-        time_after = ASN1_UTCTIME_mktime(
-            X509_get_notAfter(
-                ((gss_cred_id_desc *) *output_cred_handle)->pcd->ucert));
-        *time_rec = (OM_uint32) time_after - time_now;
-        ASN1_UTCTIME_free(asn1_time);
+        globus_gsi_cred_goodtill(
+            ((gss_cred_id_desc *) *output_cred_handle)->cred_handle,
+            time_rec);
     }
         
 err:

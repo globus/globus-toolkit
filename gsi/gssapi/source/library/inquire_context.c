@@ -81,15 +81,13 @@ GSS_CALLCONV gss_inquire_context(
     
     if (src_name_P)
     {
-        if (context->source_name)
+        major_status = globus_i_gsi_gss_copy_name_to_name(
+            (gss_name_desc **)src_name_P,
+            context->cred_handle->globusid);
+        if(major_status != GSS_S_COMPLETE)
         {
-            major_status = gss_copy_name_to_name((gss_name_desc **)src_name_P,
-                                                 context->source_name);
-            if (major_status != GSS_S_COMPLETE)
-            {
-                *minor_status = gsi_generate_minor_status();
-                goto err;
-            }
+#error here
+            goto err;
         }
         else
         {
@@ -99,16 +97,14 @@ GSS_CALLCONV gss_inquire_context(
         
     if (targ_name_P)
     {
-        if (context->target_name)
+        major_status =
+            gss_copy_name_to_name(
+                (gss_name_desc **)targ_name_P,
+                context->cred_handle->globusid);
+        if (major_status != GSS_S_COMPLETE)
         {
-            major_status =
-                gss_copy_name_to_name((gss_name_desc **)targ_name_P,
-                                      context->target_name);
-            if (major_status != GSS_S_COMPLETE)
-            {
-                *minor_status = gsi_generate_minor_status();
-                goto err;
-            }
+#error here
+            goto err;
         }
         else
         {
@@ -118,35 +114,22 @@ GSS_CALLCONV gss_inquire_context(
         
     if (lifetime_rec)
     {
-        asn1_time = ASN1_UTCTIME_new();
-        if (!asn1_time)
+        if((result = globus_gsi_cred_get_lifetime(
+            context->cred_handle->cred_handle,
+            lifetime_rec)) != GLOBUS_SUCCESS)
         {
-            major_status = GSS_S_FAILURE;
-            *minor_status = gsi_generate_minor_status();
-            goto err;
+#error here
         }
-        X509_gmtime_adj(asn1_time,0);
-        time_now = ASN1_UTCTIME_mktime(asn1_time);
-        *lifetime_rec = context->pvxd.goodtill - time_now;
-        if ( context->pvxd.goodtill == 0)
-        {
-            *lifetime_rec = GSS_C_INDEFINITE;
-        }
-        else
-        {
-            *lifetime_rec = context->pvxd.goodtill - time_now;
-        }
-        ASN1_UTCTIME_free(asn1_time);
     }
 
     if (mech_type)
     {
-        *mech_type = (gss_OID) gss_mech_globus_gssapi_ssleay;
+        *mech_type = (gss_OID) gss_mech_globus_gssapi_openssl;
     }
 
     if (ctx_flags)
     {
-        if (context->gs_state == GS_CON_ST_DONE)
+        if (context->gss_state == GSS_CON_ST_DONE)
         {
             *ctx_flags = context->ret_flags;
         }
@@ -163,7 +146,7 @@ GSS_CALLCONV gss_inquire_context(
                 
     if (open)
     {
-        if (context->gs_state == GS_CON_ST_DONE)
+        if (context->gss_state == GSS_CON_ST_DONE)
         {
             *open = 1;
         }

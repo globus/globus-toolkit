@@ -62,16 +62,6 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         goto err;
     }
 
-
-    if(cred->pcd->ucert == NULL)
-    {
-        GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        major_status = GSS_S_FAILURE;
-        goto err;
-    }
-
-
     if(desired_object == GSS_C_NO_OID)
     {
         GSSerr(GSSERR_F_INQUIRE_BY_OID,GSSERR_R_BAD_ARGUMENT);
@@ -90,7 +80,7 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
 
     cert_count = 1;
 
-    if(cred->pcd->cert_chain)
+    if(cred->callback_data->cert_chain)
     {
         cert_count += sk_X509_num(cred->pcd->cert_chain);
     }

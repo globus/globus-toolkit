@@ -46,6 +46,8 @@ globus_module_descriptor_t		globus_i_gsi_gssapi_module =
 
 globus_thread_once_t                once_control;
 
+static int                          active = 0;
+
 /**
  * Module activation
  */
@@ -53,27 +55,32 @@ static
 int
 globus_l_gsi_gssapi_activate(void)
 {
-    tmp_string = globus_module_getenv("GLOBUS_GSSAPI_DEBUG_LEVEL");
-    if(tmp_string != GLOBUS_NULL)
+    char *                              tmp_string;
+    static char *                       _function_name_ =
+        "globus_l_gsi_gssapi_activate";
+
+    if(!active)
     {
-        globus_i_gssapi_debug_level = atoi(tmp_string);
-        
-        if(globus_i_gssapi_debug_level < 0)
+        tmp_string = globus_module_getenv("GLOBUS_GSSAPI_DEBUG_LEVEL");
+        if(tmp_string != GLOBUS_NULL)
         {
-            globus_i_gssapi_debug_level = 0;
+            globus_i_gssapi_debug_level = atoi(tmp_string);
+        
+            if(globus_i_gssapi_debug_level < 0)
+            {
+                globus_i_gssapi_debug_level = 0;
+            }
         }
+
+        GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+
+        globus_module_activate(GLOBUS_COMMON_MODULE);
+        globus_module_activate(GLOBUS_OPENSSL_MODULE);
+
+        GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+
+        active = 1;
     }
-
-    GLOBUS_I_GSSAPI_DEBUG_PRINTF(1,
-                                 (stderr, "globus_l_gssapi_activate() entering\n"));
-
-
-    globus_module_activate(GLOBUS_COMMON_MODULE);
-    globus_module_activate(GLOBUS_OPENSSL_MODULE);
-
-    GLOBUS_I_GSSAPI_DEBUG_PRINTF(1,
-                                 (stderr, "globus_l_gssapi_activate() exiting\n"));
-
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gsi_gssapi_activate() */
@@ -86,12 +93,17 @@ static
 int
 globus_l_gsi_gssapi_deactivate(void)
 {
-    GLOBUS_I_GSSAPI_DEBUG_PRINTF(1, (stderr, "globus_l_gssapi_deactivate() entering\n"));
-                                 
+    static char *                       _function_name_ =
+        "globus_l_gsi_gssapi_deactivate";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
+    active = 0;
 
-    GLOBUS_I_GSSAPI_DEBUG_PRINTF(1, (stderr, "globus-i_gssapi_deactivate() exiting\n"));
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gsi_gssapi_deactivate() */

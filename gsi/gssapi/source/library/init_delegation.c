@@ -156,7 +156,7 @@ GSS_CALLCONV gss_init_delegation(
     }
 
     if(desired_mech != GSS_C_NO_OID &&
-       desired_mech != (gss_OID) gss_mech_globus_gssapi_ssleay)
+       desired_mech != (gss_OID) gss_mech_globus_gssapi_openssl)
     {
         GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
         *minor_status = gsi_generate_minor_status();

@@ -87,31 +87,19 @@ gss_OID gss_nt_service_name = 	  &GSS_C_NT_HOSTBASED_SERVICE_desc;
  * iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
  * globus 3536 
  * security 1
- * gssapi_ssleay 1
+ * gssapi_openssl 1
  */
 
-static const gss_OID_desc gss_mech_oid_globus_gssapi_ssleay = 
+static const gss_OID_desc gss_mech_oid_globus_gssapi_openssl = 
 	{9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
 
-const gss_OID_desc * const gss_mech_globus_gssapi_ssleay = 
-		&gss_mech_oid_globus_gssapi_ssleay;
+const gss_OID_desc * const gss_mech_globus_gssapi_openssl = 
+		&gss_mech_oid_globus_gssapi_openssl;
 
-static const gss_OID_desc gss_restrictions_extension_oid =
-     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x03"}; 
-const gss_OID_desc * const gss_restrictions_extension = 
-                &gss_restrictions_extension_oid;
-
-static const gss_OID_desc gss_trusted_group_oid =
-     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x04"}; 
-const gss_OID_desc * const gss_trusted_group = 
-                &gss_trusted_group_oid;
-
-static const gss_OID_desc gss_untrusted_group_oid =
-     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x05"}; 
-const gss_OID_desc * const gss_untrusted_group = 
-                &gss_untrusted_group_oid;
-
-
+static const gss_OID_desc gss_proxycertinfo_extension_oid =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x06"}; 
+const gss_OID_desc * const gss_proxycertinfo_extension = 
+                &gss_proxycertinfo_extension_oid;
 
 /**********************************************************************
 Function:   gss_add_oid_set_member()
@@ -263,7 +251,7 @@ GSS_CALLCONV gss_indicate_mechs(
     }
     
     if (gss_add_oid_set_member(minor_status, 
-                               gss_mech_globus_gssapi_ssleay,
+                               gss_mech_globus_gssapi_openssl,
                                &set) == GSS_S_FAILURE)
     {
         OM_uint32       tmp_minor_status;
@@ -290,7 +278,7 @@ GSS_CALLCONV gss_release_oid_set
  gss_OID_set *             mech_set
 )
 {
-
+#error this is broken - should free the elements as well
 	*minor_status = 0;
 	if (mech_set && *mech_set && *mech_set != GSS_C_NO_OID_SET) {
 		free(*mech_set);

@@ -166,22 +166,24 @@ GSS_CALLCONV gss_export_sec_context(
     }
 
 #ifdef DEBUG
-    SSL_SESSION_print_fp(stderr,session);
+    SSL_SESSION_print_fp(stderr, session);
 #endif
 
-    i2d_SSL_SESSION_bio(bp,session);
+    i2d_SSL_SESSION_bio(bp, session);
 
     /* write out the peer certificate and peer cert chain*/
 
-    peer_cert_count = context->pvd.cert_depth;
+    peer_cert_count = context->callback_data.cert_depth;
     
     cp = ibuf;
-    l2n(peer_cert_count,cp);
-    BIO_write(bp,(char *)ibuf,4);
+    l2n(peer_cert_count, cp);
+    BIO_write(bp, (char *)ibuf, 4);
     
-    for(i=0;i<peer_cert_count;i++)
+    for(i=0; i < peer_cert_count; i++)
     {
-        i2d_X509_bio(bp,sk_X509_value(context->pvd.cert_chain,i));
+        i2d_X509_bio(bp,
+                     sk_X509_value(
+                         context->callback_data.cert_chain, i));
     }
 	
 #ifdef DEBUG

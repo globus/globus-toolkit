@@ -67,8 +67,8 @@ GSS_CALLCONV gss_init_sec_context(
 
     gss_ctx_id_desc *                   context = NULL;
     OM_uint32                           major_status = 0;
-    OM_uint32                           inv_minor_status = 0;
-    OM_uint32                           inv_major_status = 0;
+    OM_uint32                           local_minor_status = 0;
+    OM_uint32                           local_major_status = 0;
     X509_REQ *                          reqp = NULL;
     X509 *                              ncert = NULL;
     X509 *                              current_cert = NULL;
@@ -77,10 +77,11 @@ GSS_CALLCONV gss_init_sec_context(
     time_t                              goodtill = 0;
     int                                 cert_count = 0;
     globus_proxy_type_t                 proxy_type = GLOBUS_FULL_PROXY;
-    
-#ifdef DEBUG
-    fprintf(stderr, "init_sec_context:\n") ;
-#endif /* DEBUG */
+
+    static char *                       _function_name_ = 
+        "gss_init_sec_context";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = 0;
     output_token->length = 0;
@@ -97,63 +98,35 @@ GSS_CALLCONV gss_init_sec_context(
 
     if(req_flags & GSS_C_ANON_FLAG & GSS_C_DELEG_FLAG)
     {
+#error here
         GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        return major_status;
     }
     
     if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
     {
-#if defined(DEBUG) || defined(DEBUGX)
-        fprintf(stderr, 
-                "\n**********\ninit_sec_context: uid=%d pid=%d\n**********\n",
-                getuid(), getpid()) ;
-#endif /* DEBUG */
-
-#ifdef DEBUG
-        fprintf(stderr, "Creating context w/%s.\n",
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            2, (stderr, "Creating context w/%s.\n",
                 (initiator_cred_handle == GSS_C_NO_CREDENTIAL) ?
                 "GSS_C_NO_CREDENTIAL" :
-                "Credentials provided" ) ;
-#endif /* DEBUG */
+                "Credentials provided"));
 
-/* DEE - test encryption, simulating client setting the flag */
-#ifdef DEBUG
-        if (req_flags & GSS_C_DELEG_FLAG)
-        {
-            if (getenv("DEE_DEBUG_ENC_D"))
-            {
-                fprintf(stderr,"DEE_FORCING GSS_C_CONF_FLAG\n");
-                req_flags |= GSS_C_CONF_FLAG;
-            } 
-        }
-        else
-        {
-            if (getenv("DEE_DEBUG_ENC"))
-            {
-                req_flags |= GSS_C_CONF_FLAG;
-                fprintf(stderr,"DEE_FORCING GSS_C_CONF_FLAG\n");
-            }
-        }
-#endif
-
-        major_status = gss_create_and_fill_context(&context,
+        major_status = gss_create_and_fill_context(&local_minor_status,
+                                                   &context,
                                                    initiator_cred_handle,
                                                    GSS_C_INITIATE,
-                                                   req_flags) ;
+                                                   req_flags);
         if (GSS_ERROR(major_status))
         {
-            *minor_status = gsi_generate_minor_status();
-            return major_status;
+#error here
         }
 
         *context_handle_P = context;
 
         if (actual_mech_type != NULL)
         {
-            *actual_mech_type = (gss_OID) gss_mech_globus_gssapi_ssleay;
+            *actual_mech_type = (gss_OID) gss_mech_globus_gssapi_openssl;
         }
 
         if (ret_flags != NULL)
@@ -163,7 +136,7 @@ GSS_CALLCONV gss_init_sec_context(
 
         if (time_rec != NULL)
         {
-            *time_rec = GSS_C_INDEFINITE ;
+            *time_rec = GSS_C_INDEFINITE;
         }
     }
     else
@@ -173,22 +146,26 @@ GSS_CALLCONV gss_init_sec_context(
          * there will always be one
          */
 
-    	major_status = gs_put_token(context, NULL, input_token);
+    	major_status = globus_i_gsi_gss_put_token(&local_minor_status,
+                                                  context, 
+                                                  NULL, 
+                                                  input_token);
     	if (major_status != GSS_S_COMPLETE)
         {
-            return major_status;
+#error here
         }
     }
 
 
-    switch (context->gs_state)
+    switch (context->gss_state)
     {
-    case(GS_CON_ST_HANDSHAKE):
+    case(GSS_CON_ST_HANDSHAKE):
+        
         /* do the handshake work */
-
-        major_status = gs_handshake(context);
-
-
+        
+        major_status = globus_i_gsi_gss_handshake(&local_minor_status,
+                                                  context);
+        
         if (major_status == GSS_S_CONTINUE_NEEDED)
         {
             break;
@@ -196,15 +173,16 @@ GSS_CALLCONV gss_init_sec_context(
         /* if failed, may have SSL alert message too */
         if (major_status != GSS_S_COMPLETE)
         {
-            context->gs_state = GS_CON_ST_DONE;
+            context->gss_state = GSS_CON_ST_DONE;
             break;
         } 
         /* make sure we are talking to the correct server */
-        major_status = gs_retrieve_peer(context,
-                                        GSS_C_INITIATE);
+        major_status = globus_i_gsi_gss_retrieve_peer(&local_minor_status,
+                                                      context,
+                                                      GSS_C_INITIATE);
         if (major_status != GSS_S_COMPLETE)
         {
-            context->gs_state = GS_CON_ST_DONE;
+            context->gss_state = GSS_CON_ST_DONE;
             break;
         }
 
@@ -215,55 +193,33 @@ GSS_CALLCONV gss_init_sec_context(
          * use a limited proxy. 
          */
         if ((context->req_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG)
-            && context->pvd.limited_proxy)
+            && context->callback_data.limited_proxy)
         {
             GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_PROXY_VIOLATION);
-            *minor_status = gsi_generate_minor_status();
             major_status = GSS_S_UNAUTHORIZED;
-            context->gs_state = GS_CON_ST_DONE;
+            context->gss_state = GSS_CON_ST_DONE;
             break;
         }
 
         /* this is the mutual authentication test */
         if (target_name != NULL)
         {
-            inv_major_status = gss_compare_name(&inv_minor_status,
-                                                context->target_name,
-                                                target_name,
-                                                &rc);
-            if (inv_major_status != GSS_S_COMPLETE)
+            local_major_status = gss_compare_name(&local_minor_status,
+                                                  context->target_name,
+                                                  target_name,
+                                                  &rc);
+            if (local_major_status != GSS_S_COMPLETE)
             {
-                *minor_status = inv_minor_status;
-                major_status  = inv_major_status;
-                context->gs_state = GS_CON_ST_DONE;
+                *minor_status = local_minor_status;
+                major_status  = local_major_status;
+                context->gss_state = GSS_CON_ST_DONE;
                 break;
             }
             else if( rc == 0)
             {
-                GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_MUTUAL_AUTH);
-                {
-                    gss_name_desc* n1 = 
-                        (gss_name_desc*) context->target_name; 
-                    gss_name_desc* n2 = 
-                        (gss_name_desc*) target_name;
-                    char * s1;
-                    char * s2;
-                    
-                    s1 = X509_NAME_oneline(n1->x509n, NULL, 0);
-                    s2 = X509_NAME_oneline(n2->x509n, NULL, 0);
-                    
-                    ERR_add_error_data(5,
-                                       "\n Expected target subject name=\"",
-                                       s2,
-                                       "\"\n Target returned subject name=\"",
-                                       s1, "\"");
-                    
-                    free (s1);
-                    free (s2);
-                }
-                *minor_status = gsi_generate_minor_status();
+#error here
                 major_status = GSS_S_UNAUTHORIZED;
-                context->gs_state = GS_CON_ST_DONE;
+                context->gss_state = GSS_CON_ST_DONE;
                 break;
             }
         }
@@ -285,7 +241,7 @@ GSS_CALLCONV gss_init_sec_context(
 
         if (context->req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
         {
-            context->gs_state = GS_CON_ST_DONE;
+            context->gss_state = GSS_CON_ST_DONE;
             break;
         }
             
@@ -299,147 +255,101 @@ GSS_CALLCONV gss_init_sec_context(
 
         if (output_token->length != 0)
         {
-            context->gs_state=GS_CON_ST_FLAGS;
+            context->gss_state=GSS_CON_ST_FLAGS;
             break;
         }
 
-    case(GS_CON_ST_FLAGS):
+    case(GSS_CON_ST_FLAGS):
         if (input_token->length > 0)
         {   
-            BIO_read(context->gs_sslbio,cbuf,1);
+            BIO_read(context->gss_sslbio,cbuf,1);
         }
 
         /* send D if we want delegation, 0 otherwise */
         
         if (context->req_flags & GSS_C_DELEG_FLAG)
         {
-            BIO_write(context->gs_sslbio,"D",1); 
-            context->gs_state=GS_CON_ST_REQ;
+            BIO_write(context->gss_sslbio,"D",1); 
+            context->gss_state=GSS_CON_ST_REQ;
         }
         else
         {
-            BIO_write(context->gs_sslbio,"0",1);
-            context->gs_state=GS_CON_ST_DONE;
+            BIO_write(context->gss_sslbio,"0",1);
+            context->gss_state=GSS_CON_ST_DONE;
         } 
         break;
             
-    case(GS_CON_ST_REQ):
-        /* DEE? needs error processing here */
-        /* Get the cert req */
-        reqp = d2i_X509_REQ_bio(context->gs_sslbio,NULL);
+    case(GSS_CON_ST_REQ):
 
-        if (reqp == NULL)
+        if((result = globus_gsi_proxy_inquire_req(
+            context->proxy_handle,
+            context->gss_sslbio)) != GLOBUS_SUCCESS)
         {
-            GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_PROXY_NOT_RECEIVED);
-            *minor_status = gsi_generate_minor_status();
-            major_status=GSS_S_FAILURE;
-            return major_status;
-        }
-#ifdef DEBUG
-        X509_REQ_print_fp(stderr,reqp);
-#endif
-
-        if(proxy_check_proxy_name(context->cred_handle->pcd->ucert)
-           == GLOBUS_RESTRICTED_PROXY)
-        {
-            proxy_type = GLOBUS_RESTRICTED_PROXY;
-        }
-        else if(context->req_flags & GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)
-        {
-            proxy_type = GLOBUS_LIMITED_PROXY;
+#error here
         }
 
+        if(proxy_type != GLOBUS_RESTRICTED_PROXY &&
+           context->req_flags & GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)
+        {
+            context->proxy_handle->is_limited = GLOBUS_TRUE;
+        }
 
-        proxy_sign(context->cred_handle->pcd->ucert,
-                   context->cred_handle->pcd->upkey,
-                   reqp,
-                   &ncert,
-                   time_req,
-                   NULL,
-                   proxy_type);
+        if((result = globus_gsi_proxy_sign_req(
+            context->proxy_handle,
+            context->cred_handle->cred_handle,
+            context->gss_sslbio)) != GLOBUS_SUCCESS)
+        {
+#error here
+        }
 
-#ifdef DEBUG
-        X509_print_fp(stderr,ncert);
-#endif
-        i2d_X509_bio(context->gs_sslbio,ncert);
-        context->gs_state = GS_CON_ST_DONE;
-        X509_free(ncert);
-        ncert = NULL;
+        context->gss_state = GSS_CON_ST_DONE;
         break;
             
-    case(GS_CON_ST_CERT): ;
-    case(GS_CON_ST_DONE): ;
-    } /* end of switch for gs_con_st */
+    case(GSS_CON_ST_CERT): ;
+    case(GSS_CON_ST_DONE): ;
+    } /* end of switch for gss_con_st */
 
-    /*
-     * Couple of notes about this gs_get_token() call:
-     *
-     * First don't mess with minor_status here as it may contain real info.
-     *
-     * Second, we want to go ahead and get an ouput token even if we previously
-     * encountered an error since the output token may contain information
-     * about the error (i.e. an SSL alert message) we want to send to the other
-     * side.
-     */
-    gs_get_token(context, NULL, output_token);
+    local_major_status = globus_i_gsi_gss_get_token(&local_minor_status,
+                                              context, 
+                                              NULL, 
+                                              output_token);
 
-    if (context->gs_state != GS_CON_ST_DONE)
+    if(local_major_status != GSS_S_COMPLETE)
+    {
+#error here
+    }
+
+    if (context->gss_state != GSS_CON_ST_DONE)
     {
         major_status |=GSS_S_CONTINUE_NEEDED;
     }
     else if(major_status == GSS_S_COMPLETE)
     {
-        current_cert = context->cred_handle->pcd->ucert;
-
-        if(context->cred_handle->pcd->cert_chain)
+        if(result = globus_gsi_cred_goodtill(
+            context->cred_handle->cred_handle,
+            & context->goodtill) != GLOBUS_SUCCESS)
         {
-            cert_count = sk_X509_num(context->cred_handle->pcd->cert_chain);
+#error error here
         }
         
-        while(current_cert)
+        if(context->goodtill > context->callback_data.goodtill)
         {
-            goodtill = ASN1_UTCTIME_mktime(
-                X509_get_notAfter(current_cert));
-
-            if (context->goodtill == 0 || goodtill < context->goodtill)
-            {
-                context->goodtill = goodtill;
-            }
-            
-            if(context->cred_handle->pcd->cert_chain && cert_count)
-            {
-                cert_count--;
-                current_cert = sk_X509_value(
-                    context->cred_handle->pcd->cert_chain,
-                    cert_count);
-            }
-            else
-            {
-                current_cert = NULL;
-            }
-        }
-
-        if(context->goodtill > context->pvxd.goodtill)
-        {
-            context->goodtill = context->pvxd.goodtill;
+            context->goodtill = context->callback_data.goodtill;
         }
     }
-    
+       
     if (ret_flags != NULL)
     {
         *ret_flags = context->ret_flags;
     }
 
-#if defined(DEBUG) || defined(DEBUGX)
-    fprintf(stderr,"init_sec_context:major_status:%08x:gs_state:%d req_flags=%08x:ret_flags=%08x\n",
-            major_status,context->gs_state,req_flags,context->ret_flags);
-    if (GSS_ERROR(major_status))
-    {
-        ERR_print_errors_fp(stderr);
-    }
-#endif
-    return major_status;
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        2, (stderr,
+            "init_sec_context:major_status:%08x"
+            ":gss_state:%d req_flags=%08x:ret_flags=%08x\n",
+            major_status, context->gss_state,req_flags, context->ret_flags));
 
+    return major_status;
 }
 
 

@@ -44,8 +44,7 @@ Sources_GSS_EXTENSIONS = \
 	get_group.c
 
 flavorinclude_HEADERS = \
-	gssapi.h \
-	globus_gssapi_config.h
+	gssapi.h
 
 #AM_CFLAGS = -DDEBUG
 

@@ -17,25 +17,9 @@ CVS Information:
 
 static char *rcsid = "$Header$";
 
-/**********************************************************************
-                             Include header files
-**********************************************************************/
-
 #include "gssapi.h"
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
-
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
 
 /**********************************************************************
 Function:   gss_inquire_cred()
@@ -99,61 +83,26 @@ GSS_CALLCONV gss_inquire_cred(
             *cred_usage = cred_handle->cred_usage;
         }
 
-
-        if (lifetime != NULL)
+        if(lifetime != NULL)
         {
-            time_t                time_after;
-            time_t                time_now;
-            ASN1_UTCTIME *        asn1_time = NULL;
-            
-            asn1_time = ASN1_UTCTIME_new();
-            X509_gmtime_adj(asn1_time,0);
-            time_now = ASN1_UTCTIME_mktime(asn1_time);
-            time_after = ASN1_UTCTIME_mktime(
-                X509_get_notAfter(cred_handle->pcd->ucert));
-            *lifetime = (OM_uint32) time_after - time_now;
-            ASN1_UTCTIME_free(asn1_time);
-        }
-
-        if (name != NULL)
-        {
-            if (*minor_status == 0xdee0)
+            if((result = globus_gsi_cred_get_lifetime(
+                cred_handle->cred_handle,
+                lifetime)) != GLOBUS_SUCCESS)
             {
-                *minor_status = 0;
-                rc = proxy_marshal_tmp(cred_handle->pcd->ucert,
-                                       cred_handle->pcd->upkey,
-                                       NULL,
-                                       cred_handle->pcd->cert_chain,
-                                       &filename);
-                if (rc)
-                {
-                    major_status = GSS_S_FAILURE;
-                    *minor_status = gsi_generate_minor_status();
-                    if (filename)
-                    {
-                        free(filename);
-                    }
-                }
-                else
-                {
-                    *name = filename;
-                    *minor_status = 0xdee1;
-                    /* DEE passback the char string */
-                    /* non standard, but then there is no standard */
-                }
-            }
-            else
-            {
-                major_status =
-                    gss_copy_name_to_name((gss_name_desc **)name,
-                                          cred_handle->globusid);
-
-                if (GSS_ERROR(major_status))
-                {
-                    *minor_status = gsi_generate_minor_status();
-                }
+#error here
             }
         }
+
+        if(name != NULL)
+        {
+            if((major_status = globus_i_gsi_gss_copy_name_to_name(
+                &local_minor_status,
+                (gss_name_desc **) name,
+                cred_handle->globusid)) != GSS_S_COMPLETE)
+            {
+#error here
+            }
+        }        
     }
     
 err:

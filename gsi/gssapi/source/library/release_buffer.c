@@ -1,71 +1,45 @@
-/**********************************************************************
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file release_buffer.c
+ * @author Sam Lang, Sam Meder
+ * 
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
 
-release_buffer.c:
+static char *rcsid = "$Id$";
 
-Description:
-    GSSAPI routine to release the contents of a buffer
-	See: <draft-ietf-cat-gssv2-cbind-04.txt>
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-
-**********************************************************************/
-
-static char *rcsid = "$Header$";
-
-/**********************************************************************
-                             Include header files
-**********************************************************************/
-
-#include "gssapi_ssleay.h"
-
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-/**********************************************************************
-Function:  gss_release_buffer
-
-Description:
-	Release the contents of a buffer
-
-Parameters:
-
-Returns:
-**********************************************************************/
+#include "gssapi_openssl.h"
 
 OM_uint32 
-GSS_CALLCONV gss_release_buffer
-(OM_uint32 *          minor_status,
- gss_buffer_t         buffer
-)
+GSS_CALLCONV gss_release_buffer(
+    OM_uint32 *                         minor_status,
+    gss_buffer_t                        buffer)
 {
+    static char *                       _function_name_ =
+        "gss_release_buffer";
 
-	*minor_status = 0;
-	if (buffer == NULL || buffer == GSS_C_NO_BUFFER) {
-		return GSS_S_COMPLETE ;
-	}
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-	if (buffer->value && buffer->length) {
-		free(buffer->value);
-	}
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
 
-	buffer->length = (size_t) 0 ;
-	buffer->value = NULL;
+    if (buffer == NULL || buffer == GSS_C_NO_BUFFER) {
+        goto exit;
+    }
 
-	return GSS_S_COMPLETE ;
+    if (buffer->value && buffer->length) {
+        free(buffer->value);
+    }
 
-} /* gss_release_buffer */
+    buffer->length = (size_t) 0 ;
+    buffer->value = NULL;
 
+ exit:
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return GSS_S_COMPLETE;
+
+} 
+/* gss_release_buffer */
+/* @} */

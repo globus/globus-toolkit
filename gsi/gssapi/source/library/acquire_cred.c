@@ -1,24 +1,16 @@
-/**********************************************************************
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file acquire_cred.h
+ * Globus GSI GSS-API gss_acquire_cred
+ * @author Sam Meder, Sam Lang
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
-acquire_cred.c:
-
-Description:
-	GSSAPI routine to acquire the local credential
-	See: <draft-ietf-cat-gssv2-cbind-04.txt>
-
-CVS Information:
-	$Source$
-	$Date$
-	$Revision$
-	$Author$
-
-**********************************************************************/
-
-static char *rcsid = "$Header$";
-
-/**********************************************************************
-                             Include header files
-**********************************************************************/
+static char *rcsid = "$Id$";
 
 #include "gssapi.h"
 #include "gssapi_ssleay.h"
@@ -26,39 +18,48 @@ static char *rcsid = "$Header$";
 #include <stdlib.h>
 #include <sys/stat.h>
 
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-/*
- * DEE? Need to add the callback using this: 
- * user can override this to point to thier routines  
- * we will provide it to SSL for its password prompt
- * callback 
+/**
+ * @name Acquire Cred
+ * @group globus_gsi_gssapi
  */
-char * (*tis_gss_user_supplied_getpass)(char *);
-
-/**********************************************************************
-Function:   gss_acquire_cred()
-
-Description:
-	Gets the local credentials.  The proxy_init_cred does most of the
-	work of setting up the SSL_ctx, getting the user's cert, key, etc. 
-
-	The globusid will be obtained from the certificate. (Minus
-	and /CN=proxy entries.)
-
-Returns:
-**********************************************************************/
-
+/* @{ */
+/**
+ * GSSAPI routine to acquire the local credential.  
+ * See the latest IETF draft/RFC on the GSS C bindings.
+ *
+ * Gets the local credentials.  The proxy_init_cred does most of the
+ * work of setting up the SSL_ctx, getting the user's cert, key, etc. 
+ 
+ * The globusid will be obtained from the certificate. (Minus
+ * and /CN=proxy entries.)
+ *
+ * @param minor_status
+ *        Mechanism specific status code. In this implementation,
+ *        the minor_status is a cast from a globus_result_t value, which
+ *        is either GLOBUS_SUCCESS or a globus error object ID if an error
+ *        occurred.
+ * @param desired_name_P
+ *        Name of principle whose credentials should be acquired
+ *        This parameter maps to the desired subject of the cert
+ *        to be acquired as the credential.  Possible values are:
+ *        For a service cert:  <service name>@<fqdn>
+ *        For a host cert:     <fqdn>
+ *        For a proxy cert:    <subject name>
+ *        For a user cert:     <subject name>
+ *        This parameter can be NULL, in which case the cert is chosen
+ *        using a default search order of: host, proxy, user, service
+ * @param time_req
+ *        Number of seconds that credentials should remain valid.
+ *        This value can be GSS_C_INDEFINITE for an unlimited lifetime.
+ *        NOTE: in the current implementation, this parameter is ignored,
+ *        since you can't change the expiration of a signed cert.
+ *        
+ * @param desired_mechs
+ * @param cred_usage
+ * @param output_cred_handle_P
+ * @param actual_mechs
+ * @param time_rec
+ */
 OM_uint32 
 GSS_CALLCONV gss_acquire_cred(
     OM_uint32 *                         minor_status,
@@ -71,14 +72,16 @@ GSS_CALLCONV gss_acquire_cred(
     OM_uint32 *                         time_rec) 
 {
     OM_uint32                           major_status = GSS_S_NO_CRED;
+    OM_uint32                           local_minor_status;
 
-#ifdef DEBUG
-    fprintf(stderr,"acquire_cred:usage=%d\n",cred_usage);
-    fprintf(stderr,"uid=%d, pid=%d$HOME=%s\n",getuid(),getpid(),
-            getenv("HOME")?getenv("HOME"):"NO_HOME");
-#endif /* DEBUG */
-  
-    *minor_status = 0;
+    static char *                       _function_name_ =
+        "gss_acquire_cred";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+    
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+
+    *output_cred_handle_P = NULL;
   
     /* module activation if not already done by calling
      * globus_module_activate
@@ -90,36 +93,52 @@ GSS_CALLCONV gss_acquire_cred(
 
     if (actual_mechs != NULL)
     {
-        major_status = gss_indicate_mechs(minor_status,
+        major_status = gss_indicate_mechs(&local_minor_status,
                                           actual_mechs);
         if (major_status != GSS_S_COMPLETE)
         {
-            *minor_status = gsi_generate_minor_status();
-            return  major_status;
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_MECHS);
+            goto exit;
         }
     }
 
     if (time_rec != NULL)
     {
-        *time_rec = GSS_C_INDEFINITE ;
+        *time_rec = GSS_C_INDEFINITE;
     }
 
+    major_status = globus_i_gsi_gss_cred_read(
+        &local_minor_status,
+        cred_usage,
+        output_cred_handle_P,
+        (const char *)desired_name_P);
 
-    major_status = gss_create_and_fill_cred(output_cred_handle_P,
-                                            cred_usage,
-                                            NULL,
-                                            NULL,
-                                            NULL,
-                                            NULL);
-    if (GSS_ERROR(major_status))
+    if(major_status != GSS_S_COMPLETE)
     {
-        *minor_status = gsi_generate_minor_status();
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED_HANDLE);
+        goto error;
     }
-        
-#ifdef DEBUG
-    fprintf(stderr,"acquire_cred:major_status:%08x\n",major_status);
-#endif
+
+    goto exit;
+
+ error:
+
+    if(*output_cred_handle_P)
+    {
+        gss_release_cred(
+            &local_minor_status, 
+            output_cred_handle_P);
+    }
+
+ exit:
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
+/* @} */
 
-
+#error STATUS: ready to compile

@@ -18,68 +18,8 @@ CVS Information:
 
 static char *rcsid = "$Header$";
 
-/**********************************************************************
-                             Include header files
-**********************************************************************/
-
 #include "gssapi_ssleay.h"
 
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-/* BEGIN ERROR CODES */
-static ERR_STRING_DATA gsserr_str_functs[]=
-{
- {ERR_PACK(0,GSSERR_F_ACCEPT_SEC,0),"gss_accept_sec_context"},
- {ERR_PACK(0,GSSERR_F_ACQUIRE_CRED,0),"gss_acquire_cred"},
- {ERR_PACK(0,GSSERR_F_COMPARE_NAME,0),"gss_compare_name"},
- {ERR_PACK(0,GSSERR_F_DELETE_SEC,0),"gss_delete_sec_context"},
- {ERR_PACK(0,GSSERR_F_EXPORT_NAME,0),"gss_export_name"},
- {ERR_PACK(0,GSSERR_F_GLOBUSFILE,0),"retrieve_globusid"},
- {ERR_PACK(0,GSSERR_F_IMPORT_NAME,0),"gss_import_name"},
- {ERR_PACK(0,GSSERR_F_INIT_SEC,0),"gss_init_sec_context"},
- {ERR_PACK(0,GSSERR_F_RELEASE_BUFFER,0),"gss_release_buffer"},
- {ERR_PACK(0,GSSERR_F_RELEASE_CRED,0),"gss_release_cred"},
- {ERR_PACK(0,GSSERR_F_RELEASE_NAME,0),"gss_release_name"},
- {ERR_PACK(0,GSSERR_F_NAME_TO_NAME,0),"gss_copy_name_to_name"},
- {ERR_PACK(0,GSSERR_F_CREATE_FILL,0),"gss_create_and_fill_context"},
- {ERR_PACK(0,GSSERR_F_GS_HANDSHAKE,0),"gs_handshake"},
- {ERR_PACK(0,GSSERR_F_GS_RETRIEVE_PEER,0),"gs_retrieve_peer"},
- {ERR_PACK(0,GSSERR_F_WRAP,0),"gss_warp"},
- {ERR_PACK(0,GSSERR_F_UNWRAP,0),"gss_unwrap"},
- {ERR_PACK(0,GSSERR_F_GET_MIC,0),"gss_get_mic"},
- {ERR_PACK(0,GSSERR_F_VERIFY_MIC,0),"gss_verify_mic"},
- {ERR_PACK(0,GSSERR_F_IMPORT_SEC,0),"gss_import_sec_context"},
- {ERR_PACK(0,GSSERR_F_EXPORT_SEC,0),"gss_export_sec_context"},
- {ERR_PACK(0,GSSERR_F_IMPORT_CRED,0),"gss_import_cred"},
- {ERR_PACK(0,GSSERR_F_EXPORT_CRED,0),"gss_export_cred"},
- {ERR_PACK(0,GSSERR_F_INIT_DELEGATION,0),"gss_init_delegation"},
- {ERR_PACK(0,GSSERR_F_ACCEPT_DELEGATION,0),"gss_accept_delegation"},
- {ERR_PACK(0,GSSERR_F_INQUIRE_BY_OID,0),"gss_inquire_sec_context_by_oid"},
- {ERR_PACK(0,GSSERR_F_INQUIRE_CONTEXT,0),"gss_inquire_context"},
- {ERR_PACK(0,GSSERR_F_ADD_OID_SET_MEMBER,0),"gss_add_oid_set_member"},
- {ERR_PACK(0,GSSERR_F_CREATE_EMPTY_OID_SET,0),"gss_create_empty_oid_set"},
- {ERR_PACK(0,GSSERR_F_TEST_OID_SET_MEMBER,0),"gss_test_oid_set_member"},
- {ERR_PACK(0,GSSERR_F_READ,0),"gs_read"},
- {ERR_PACK(0,GSSERR_F_WRITE,0),"gs_write"},
- {ERR_PACK(0,GSSERR_F_SET_SEC_CONTEXT_OPT,0),"gss_set_sec_context_option"},
- {ERR_PACK(0,GSSERR_F_SET_SEC_CONTEXT_OPT,0),"gss_set_sec_context_option"},
- {ERR_PACK(0,GSSERR_F_CREATE_EMPTY_BUFFER_SET,0),"gss_create_empty_buffer_set"},
- {ERR_PACK(0,GSSERR_F_ADD_BUFFER_SET_MEMBER,0),"gss_add_buffer_set_member"},
- {ERR_PACK(0,GSSERR_F_RELEASE_BUFFER_SET,0),"gss_release_buffer_set"},
- {ERR_PACK(0,GSSERR_F_SET_GROUP,0),"gss_set_group"},
- {ERR_PACK(0,GSSERR_F_GET_GROUP,0),"gss_get_group"},
- {0,NULL}
-};
 
 static ERR_STRING_DATA gsserr_str_reasons[]= 
 {
