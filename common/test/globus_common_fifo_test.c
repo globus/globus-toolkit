@@ -16,7 +16,7 @@ void printError( char errorString[], int errorCode, int exitingFlag );
 void usage( char programName[] )
 {
 	printOut( "Usage-" );
-	printf( "\t%s <number of elements>\n", programName );
+	printf( "\t%s <number of elements(must be > 3)>\n", programName );
 }
 
 int main( int argc, char * argv[] )
@@ -40,7 +40,7 @@ int main( int argc, char * argv[] )
 	}
 
 	numOfItems= atoi( argv[1] );
-	if ( numOfItems == 0 )
+	if ( numOfItems <= 3 )
 	{
 		usage( argv[0] );
 		return -1;

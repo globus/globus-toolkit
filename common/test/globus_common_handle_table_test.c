@@ -21,7 +21,7 @@ int errorsOccurred= 0;
 void destructor( void * datum )
 {
 	static int count= 1;
-	printf( "destructor() called; datum is %p, count is %d\n", datum, count++ );
+	printf( "destructor() called; count is %d\n",  count++ );
 }
 
 int main( void )
@@ -43,11 +43,8 @@ int main( void )
     
 	/* add some objects to reference */
 	printOut( "Adding elements..." );
-	printf( "Adding object1: %p\n", &object1 );
 	object1_handle= globus_handle_table_insert( &handle_table, &object1, object1_count );
-	printf( "Adding object2: %p\n", &object2 );
 	object2_handle= globus_handle_table_insert( &handle_table, &object2, object2_count );
-	printf( "Adding object3: %p\n", &object3 );
 	object3_handle= globus_handle_table_insert( &handle_table, &object3, object3_count );
 
 	/* increment reference counts */
