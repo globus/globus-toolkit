@@ -35,6 +35,7 @@ import org.globus.ogsa.client.managers.NotificationSinkManager;
 import org.globus.ogsa.impl.core.service.ServicePropertiesImpl;
 import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.ogsa.impl.security.authorization.NoAuthorization;
+import org.globus.ogsa.impl.security.authorization.HostAuthorization;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.GetOpts;
 import org.globus.ogsa.utils.GridServiceFactory;
@@ -169,8 +170,9 @@ public class RFTClient {
 
             OGSIServiceGridLocator factoryService = new OGSIServiceGridLocator();
             Factory factory = factoryService.getFactoryPort(new URL(handle));
+            ((Stub)factory)._setProperty(Constants.AUTHORIZATION,
+            HostAuthorization.getInstance());
             GridServiceFactory gridFactory = new GridServiceFactory(factory);
-
             LocatorType locator = gridFactory.createService(extension);
             System.out.println("Created an instance of Multi-RFT");
 
@@ -180,6 +182,7 @@ public class RFTClient {
 
             System.out.println("  Handle: " + location);
             RFTPortType rftPort = loc.getMultiFileRFTPort(locator);
+
             opts.setOptions((Stub)rftPort);
 
 

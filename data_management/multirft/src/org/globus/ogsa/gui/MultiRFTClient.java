@@ -39,6 +39,7 @@ import org.globus.ogsa.base.multirft.FileTransferJobStatusType;
 import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.ogsa.impl.security.authorization.NoAuthorization;
 import org.globus.ogsa.impl.security.authorization.SelfAuthorization;
+import org.globus.ogsa.impl.security.authorization.HostAuthorization;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.GetOpts;
 import org.globus.ogsa.utils.GridServiceFactory;
@@ -96,7 +97,7 @@ public class MultiRFTClient
 	this.requests = new HashMap();
 	HashMap map = new HashMap();
 	map.put(GSIConstants.GSI_AUTHORIZATION, 
-        org.globus.gsi.gssapi.auth.NoAuthorization.getInstance());
+        org.globus.gsi.gssapi.auth.SelfAuthorization.getInstance());
 	map.put(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
 	map.put(Constants.GSI_SEC_CONV, Constants.SIGNATURE);
         map.put(Constants.GRIM_POLICY_HANDLER, new IgnoreProxyPolicyHandler());
@@ -215,19 +216,21 @@ public class MultiRFTClient
 
             OGSIServiceGridLocator factoryService = new OGSIServiceGridLocator();
             Factory factory = factoryService.getFactoryPort(new URL(handle));
+            ((Stub)factory)._setProperty(Constants.AUTHORIZATION,
+            HostAuthorization.getInstance());
             GridServiceFactory gridFactory = new GridServiceFactory(factory);
 
             LocatorType locator = gridFactory.createService(extension);
             System.out.println("Created an instance of Multi-RFT");
 
     	    GSR reference = GSR.newInstance(locator);
-	        sink = nm.addListener("OverallStatus", null, reference.getHandle(), this);
 
 
             MultiFileRFTServiceGridLocator loc = new MultiFileRFTServiceGridLocator();
             rftPort = loc.getMultiFileRFTPort(locator);
         
             opts.setOptions((Stub)rftPort);
+	        sink = nm.addListener("OverallStatus", null, reference.getHandle(), this);
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
             System.out.println("Overall Status in form of :");
