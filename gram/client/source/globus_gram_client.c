@@ -251,11 +251,12 @@ gram_job_request(char * gatekeeper_url,
     {
         *job_contact = (char *) 
            malloc(strlen(job_request_monitor.job_contact_str) + 1);
-
+/*
+        sprintf(*job_contact, "%s", job_request_monitor.job_contact_str);
+*/
         strcpy(*job_contact, job_request_monitor.job_contact_str);
+        free(contact_msg_buffer);
     }
-
-    free(tmp_buffer);
 
     return(job_request_monitor.job_status);
 

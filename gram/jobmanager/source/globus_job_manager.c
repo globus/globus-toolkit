@@ -55,7 +55,7 @@ attach_requested(void * arg,
                  char * url,
                  nexus_startpoint_t * sp);
 static void 
-tree_free();
+tree_free(gram_specification_t * sp);
 
 /******************************************************************************
                        Define module specific variables
@@ -445,6 +445,7 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
+void 
 grami_jm_terminate()
 {
     nexus_mutex_lock(&(job_manager_monitor.mutex));
