@@ -19,3 +19,4 @@
 #undef _SGI_MP_SOURCE
 #undef __USE_FIXED_PROTOTYPES__
 #undef BUILD_LITE
+#undef BUILD_DEBUG
