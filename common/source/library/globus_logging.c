@@ -1,5 +1,6 @@
 #include <globus_logging.h>
 #include <globus_common.h>
+#include <syslog.h>
 
 #define GLOBUS_L_LOGGING_OUTSTANDING_LINES  32
 
@@ -365,6 +366,16 @@ globus_logging_stdio_time_func(
     (*len)++;
 }
 
+void
+globus_logging_syslog_write_func(
+    globus_byte_t *                     buf,
+    globus_size_t                       length,
+    void *                              user_arg)
+{
+    openlog(NULL, LOG_PID, LOG_USER);
+    syslog(LOG_NOTICE, "%s", (char *) buf);
+}
+
 globus_logging_module_t                 globus_logging_stdio_module =
 {
     NULL,
@@ -376,7 +387,7 @@ globus_logging_module_t                 globus_logging_stdio_module =
 globus_logging_module_t                 globus_logging_syslog_module =
 {
     NULL,
-    NULL,
+    globus_logging_syslog_write_func,
     NULL,
     NULL
 };
