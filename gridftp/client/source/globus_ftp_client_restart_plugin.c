@@ -849,10 +849,11 @@ globus_l_ftp_client_restart_plugin_fault(
  *        operation.
  * @param interval
  *        The interval to wait after a failures before retrying the transfer.
- *        If the interval is 0 seconds, then an exponential backoff will be
- *        used.
+ *        If the interval is 0 seconds or GLOBUS_NULL, then an exponential 
+ *        backoff will be used.
  * @param deadline
- *        An absolute timeout
+ *        An absolute timeout.  If the deadline is GLOBUS_NULL then the retry
+ *        will never timeout.
  *
  * @return This function returns an error if
  * - plugin is null
@@ -931,7 +932,7 @@ globus_ftp_client_restart_plugin_init(
     }
     else
     {
-	GlobusTimeAbstimeCopy(d->deadline, globus_i_abstime_zero);
+	GlobusTimeAbstimeCopy(d->deadline, globus_i_abstime_infinity);
     }
 
     d->dest_url = GLOBUS_NULL;
