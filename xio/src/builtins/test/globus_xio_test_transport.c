@@ -425,6 +425,8 @@ globus_l_xio_test_read(
     globus_l_xio_test_handle_t *        dh;
     globus_result_t                     res = GLOBUS_SUCCESS;
     globus_size_t                       nbytes;
+    int                                 ctr;
+    globus_size_t                       tb;
     GlobusXIOName(globus_l_xio_test_read);
 
     dh = (globus_l_xio_test_handle_t *) driver_handle;
@@ -442,6 +444,16 @@ globus_l_xio_test_read(
     if(dh->chunk_size == -1)
     {
         nbytes = GlobusXIOOperationGetWaitFor(op);
+    }
+
+    tb = 0;
+    for(ctr = 0; ctr < iovec_count; ctr++)
+    {
+        tb += iovec[ctr].iov_len;
+    }
+    if(nbytes > tb)
+    {
+        nbytes = tb;
     }
 
     dh->bytes_read += nbytes;
@@ -484,6 +496,8 @@ globus_l_xio_test_write(
     globus_l_xio_test_handle_t *        dh;
     globus_result_t                     res = GLOBUS_SUCCESS;
     globus_size_t                       nbytes;
+    int                                 ctr;
+    globus_size_t                       tb;
     
     dh = (globus_l_xio_test_handle_t *) driver_handle;
     
@@ -501,6 +515,17 @@ globus_l_xio_test_write(
     {
         nbytes = GlobusXIOOperationGetWaitFor(op);
     }
+
+    tb = 0;
+    for(ctr = 0; ctr < iovec_count; ctr++)
+    {
+        tb += iovec[ctr].iov_len;
+    }
+    if(nbytes > tb)
+    {
+        nbytes = tb;
+    }
+
 
     if(dh->inline_finish)
     {
