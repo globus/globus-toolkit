@@ -1296,6 +1296,7 @@ globus_l_ftp_control_data_eb_connect_read(
                           (void *)data_conn);
             if(result != GLOBUS_SUCCESS)
             {
+                globus_free(data_conn);
                 return result;
             }
         }
@@ -1423,6 +1424,7 @@ globus_l_ftp_control_data_stream_connect_direction(
                           (void *)callback_info);
             if(result != GLOBUS_SUCCESS)
             {
+                globus_free(callback_info);
                 return result;
             }
             /*
@@ -4286,10 +4288,25 @@ globus_l_ftp_control_deactivate_quit_callback(
     globus_mutex_unlock(&globus_l_ftp_control_data_mutex);
 }
 
+static
+void
+globus_l_ftp_control_data_layout_clean(
+    void *                              arg)
+{
+    globus_l_ftp_c_data_layout_t *      layout_info;
+
+    layout_info = (globus_l_ftp_c_data_layout_t *) arg;
+
+    globus_free(layout_info->name);
+    globus_free(layout_info);
+}
+
 globus_result_t
 globus_i_ftp_control_data_deactivate()
 {
-    globus_hashtable_destroy(&globus_l_ftp_control_data_layout_table);
+    globus_hashtable_destroy_all(
+        &globus_l_ftp_control_data_layout_table,
+        globus_l_ftp_control_data_layout_clean);
     globus_cond_destroy(&globus_l_ftp_control_data_cond);
     globus_mutex_destroy(&globus_l_ftp_control_data_mutex);
 
@@ -7478,6 +7495,7 @@ globus_l_ftp_stream_listen_callback(
             callback = data_conn->callback;
             user_arg = data_conn->user_arg;
             stripe_ndx = stripe->stripe_ndx;
+            globus_free(callback_info);
         }
         /*
          *  if all is well register an accept
@@ -7504,8 +7522,9 @@ globus_l_ftp_stream_listen_callback(
                       globus_l_ftp_stream_accept_connect_callback,
                       (void *) callback_info);
 
-	    if(res != GLOBUS_SUCCESS)
+            if(res != GLOBUS_SUCCESS)
             {
+                globus_free(callback_info);
                 error = globus_error_get(res);
                 globus_l_ftp_control_stripes_destroy(dc_handle, error);
             }

@@ -28,6 +28,7 @@ typedef struct
     globus_gridftp_server_control_op_t  control_op;
     int                                 transfer_id;
     void *                              info;
+    globus_bool_t                       transfer_events;
 } globus_l_gfs_request_info_t;
 
 typedef struct globus_l_gfs_auth_info_s
@@ -101,6 +102,7 @@ globus_l_gfs_request_info_init(
     request->control_op = control_op;
     request->instance = instance;
     request->info = info_struct;
+    request->transfer_events = GLOBUS_FALSE;
 
     *u_request = request;
     return GLOBUS_SUCCESS;
@@ -114,10 +116,7 @@ void
 globus_l_gfs_request_info_destroy(
     globus_l_gfs_request_info_t *       request)
 {
-    if(request != NULL)
-    {
-        globus_free(request);
-    }
+    globus_free(request);
 }
 
 static
@@ -925,7 +924,8 @@ globus_l_gfs_data_event_cb(
     {
       case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
         request->transfer_id = reply->transfer_id;
-        
+
+        request->transfer_events = GLOBUS_TRUE;
         result = globus_gridftp_server_control_events_enable(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF |
@@ -935,6 +935,7 @@ globus_l_gfs_data_event_cb(
             request);
         if(result != GLOBUS_SUCCESS)
         {
+            request->transfer_events = GLOBUS_FALSE;
             /* TODO: can we ignore this */
         }
         break;
@@ -994,6 +995,10 @@ globus_l_gfs_data_transfer_cb(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             GLOBUS_NULL);
+    }
+    if(!request->transfer_events)
+    {
+        globus_l_gfs_request_info_destroy(request);
     }
 }
 

@@ -2043,6 +2043,7 @@ globus_l_gsc_cmd_port_cb(
     tmp_ptr = globus_i_gsc_string_to_959(code, msg);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
+    globus_free(msg);
 }
 
 static void

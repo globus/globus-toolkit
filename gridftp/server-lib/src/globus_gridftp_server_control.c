@@ -851,6 +851,7 @@ globus_l_gsc_finished_op(
     return;
 
   err:
+    globus_free(reply_msg);
     globus_i_gsc_terminate(server_handle);
     server_handle->ref--;
     globus_l_gsc_server_ref_check(server_handle);

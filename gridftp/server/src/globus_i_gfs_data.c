@@ -114,6 +114,7 @@ typedef struct globus_l_gfs_data_operation_s
 
     int                                 ref;
     globus_result_t                     cached_res;
+    void *                              info;
 } globus_l_gfs_data_operation_t;
 
 typedef struct
@@ -621,15 +622,34 @@ globus_l_gfs_data_finish_fc_cb(
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
+    globus_result_t                     result;
     globus_l_gfs_data_operation_t *     op;
 
     op = (globus_l_gfs_data_operation_t *) callback_arg;
 
     globus_mutex_lock(&op->session_handle->mutex);
     {
-        globus_assert(op->data_handle->state 
-            == GLOBUS_L_GFS_DATA_HANDLE_CLOSING);
-        op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+        switch(op->data_handle->state)
+        {
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+                result = globus_ftp_control_handle_destroy(
+                    &op->data_handle->data_channel);
+                globus_assert(result == GLOBUS_SUCCESS);
+                globus_free(op->data_handle);
+                op->data_handle = NULL;
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
+        }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
@@ -643,15 +663,34 @@ globus_l_gfs_data_abort_fc_cb(
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
+    globus_result_t                     result;
     globus_l_gfs_data_operation_t *     op;
 
     op = (globus_l_gfs_data_operation_t *) callback_arg;
 
     globus_mutex_lock(&op->session_handle->mutex);
     {
-        globus_assert(op->data_handle->state 
-            == GLOBUS_L_GFS_DATA_HANDLE_CLOSING);
-        op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+        switch(op->data_handle->state)
+        {
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+                result = globus_ftp_control_handle_destroy(
+                    &op->data_handle->data_channel);
+                globus_assert(result == GLOBUS_SUCCESS);
+                globus_free(op->data_handle);
+                op->data_handle = NULL;
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
+        }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
@@ -665,6 +704,7 @@ globus_l_gfs_data_destroy_cb(
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
+    globus_result_t                     result;
     globus_bool_t                       free_session = GLOBUS_FALSE;
     globus_l_gfs_data_session_t *       session_handle;
     globus_l_gfs_data_handle_t *        data_handle;
@@ -684,18 +724,14 @@ globus_l_gfs_data_destroy_cb(
         {
             /* destroy did come from server-lib so clean it up */
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
-                globus_ftp_control_handle_destroy(&data_handle->data_channel);
+                result = globus_ftp_control_handle_destroy(
+                    &data_handle->data_channel);
+                globus_assert(result == GLOBUS_SUCCESS);
                 globus_free(data_handle);
                 break;
 
-            /* destroy has not come from server library yet so 
-                just set the state */
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
-                globus_ftp_control_handle_destroy(&data_handle->data_channel);
-                data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-                break;
-
             /* none of these are possible */
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
             case GLOBUS_L_GFS_DATA_HANDLE_VALID:
@@ -769,6 +805,10 @@ globus_i_gfs_data_destroy_handle(
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+                result = globus_ftp_control_handle_destroy(
+                    &data_handle->data_channel);
+                globus_assert(result == GLOBUS_SUCCESS);
+                globus_free(data_handle);
                 break;
 
             /* we shouldn't get this callback twice */
@@ -1498,12 +1538,14 @@ globus_i_gfs_data_request_list(
         stat_op->state = GLOBUS_L_GFS_DATA_REQUESTING;
         stat_op->callback = globus_l_gfs_data_list_stat_cb;
         stat_op->user_arg = data_op;
-        
+
         stat_info = (globus_gfs_stat_info_t *) 
             globus_calloc(1, sizeof(globus_gfs_stat_info_t));
         
         stat_info->pathname = list_info->pathname;
         stat_info->file_only = GLOBUS_FALSE;
+
+        stat_op->info = stat_info;
     
         /* events and disconnects cannot happen while i am in this
             function */
@@ -2129,6 +2171,7 @@ globus_l_gfs_data_force_close(
                     op);
                 if(result != GLOBUS_SUCCESS)
                 {
+                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
                     globus_callback_register_oneshot(
                         NULL,
                         NULL,
@@ -2646,6 +2689,7 @@ globus_gridftp_server_finished_stat(
     globus_gfs_stat_t *                 stat_copy;
     GlobusGFSName(globus_gridftp_server_finished_stat);
 
+    globus_free(op->info);
     if(result == GLOBUS_SUCCESS)
     {
         stat_copy = (globus_gfs_stat_t *)

@@ -167,6 +167,11 @@ globus_l_gsc_event_done_cb(
         GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_TRANSFER_COMPLETE,
         event->user_arg);
 
+    if(event->stripe_total != NULL)
+    {
+        globus_free(event->stripe_total);
+    }
+
     globus_mutex_lock(&server_handle->mutex);
     {
         globus_i_gsc_op_destroy(op);
