@@ -2140,7 +2140,7 @@ globus_l_xio_mode_e_read(
 {
     globus_l_xio_mode_e_handle_t *      handle;
     globus_i_xio_mode_e_requestor_t *   requestor;
-    globus_l_xio_mode_e_attr_t *	dd;
+    globus_l_xio_mode_e_attr_t *	dd = GLOBUS_NULL;
     globus_result_t                     result;
     globus_size_t                       wait_for;
     globus_bool_t			finish = GLOBUS_FALSE;
@@ -2825,9 +2825,12 @@ globus_l_xio_mode_e_close_cb(
     }
     else
     {
-	globus_list_remove(
-	    &handle->close_list, 
-	    globus_list_search(handle->close_list, xio_handle));
+        if (!globus_list_empty(handle->close_list))
+	{
+	    globus_list_remove(
+		&handle->close_list, 
+		globus_list_search(handle->close_list, xio_handle));
+	}
     }
     if (--handle->connection_count == 0)
     {

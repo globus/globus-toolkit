@@ -580,11 +580,15 @@ error:
 static
 void
 globus_l_xio_ordering_buffer_destroy(
+    globus_l_xio_ordering_handle_t *    handle,
     globus_l_xio_ordering_buffer_t *	buffer)
 {
+    globus_list_t *			op_sub_list;
     GlobusXIOName(globus_l_xio_ordering_buffer_destroy);
 
     GlobusXIOOrderingDebugEnter();
+    op_sub_list = globus_list_search(handle->driver_op_list, buffer->op);
+    globus_list_remove(&handle->driver_op_list, op_sub_list);
     globus_xio_driver_operation_destroy(buffer->op);
     globus_free(buffer->iovec[0].iov_base);
     globus_free(buffer->iovec);
@@ -808,7 +812,7 @@ globus_l_xio_ordering_read_cb(
 		    }
 		}
 	    }
-            if(globus_error_match(
+            else if(globus_error_match(
                 globus_error_peek(result),
                 GLOBUS_XIO_MODULE,
                 GLOBUS_XIO_ERROR_CANCELED))
@@ -831,13 +835,14 @@ globus_l_xio_ordering_read_cb(
 	    }
 	    else
 	    {
+		globus_l_xio_ordering_buffer_destroy(handle, buffer);
 		res = result;
 		goto error;
 	    }
 	    globus_mutex_unlock(&handle->mutex);
 	    break;
 	case GLOBUS_XIO_ORDERING_CLOSE_PENDING:
-	    globus_l_xio_ordering_buffer_destroy(buffer);
+	    globus_l_xio_ordering_buffer_destroy(handle, buffer);
 	    if (handle->outstanding_read_count == 0)
 	    {
 		handle->state = GLOBUS_XIO_ORDERING_CLOSING;
@@ -1123,14 +1128,10 @@ globus_l_xio_ordering_close(
     if (!globus_priority_q_empty(&handle->buffer_q))
     {
         globus_l_xio_ordering_buffer_t* buffer;
-	globus_list_t *			op_sub_list;
 	do
 	{
 	    buffer = globus_priority_q_dequeue(&handle->buffer_q);
-	    op_sub_list = globus_list_search(
-				handle->driver_op_list, buffer->op);
-	    globus_list_remove(&handle->driver_op_list, op_sub_list);
-	    globus_l_xio_ordering_buffer_destroy(buffer);
+	    globus_l_xio_ordering_buffer_destroy(handle, buffer);
 	} while (!globus_priority_q_empty(&handle->buffer_q));
     }
     /* 
