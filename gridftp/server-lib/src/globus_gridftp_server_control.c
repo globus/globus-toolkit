@@ -1154,10 +1154,6 @@ globus_l_gsc_user_data_destroy_cb_kickout(
 
     globus_mutex_lock(&server_handle->mutex);
     {
-        if(data_object->event_op != NULL)
-        {
-            globus_i_gsc_event_end(data_object->event_op);
-        }
         server_handle->ref--;
         globus_l_gsc_server_ref_check(server_handle);
     }
@@ -1235,7 +1231,6 @@ globus_l_gsc_close_cb(
  *                         -----------------
  *
  ***********************************************************************/
-static
 globus_bool_t
 globus_i_guc_data_object_destroy(
     globus_i_gsc_server_handle_t *      server_handle,
@@ -1268,10 +1263,6 @@ globus_i_guc_data_object_destroy(
         }
         else
         {
-            if(data_object->event_op != NULL)
-            {
-                globus_i_gsc_event_end(data_object->event_op);
-            }
             globus_free(data_object);
         }
     }
@@ -4208,15 +4199,11 @@ globus_gridftp_server_control_finished_transfer(
             case GLOBUS_L_GSC_DATA_OBJ_INUSE:
                 op->server_handle->data_object->state = 
                     GLOBUS_L_GSC_DATA_OBJ_READY;
-                globus_i_gsc_event_end(op);
                 break;
 
             /* is already removed from the hashtable */
             case GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT:
-                op->server_handle->data_object->event_op = op;
-                /* kick out the callback */
-                globus_i_guc_data_object_destroy(
-                    op->server_handle, op->server_handle->data_object);
+                op->data_destroy_obj = op->server_handle->data_object;
                 op->server_handle->data_object = NULL;
                 break;
 
@@ -4230,6 +4217,7 @@ globus_gridftp_server_control_finished_transfer(
         {
             globus_range_list_destroy(op->range_list);
         }
+        globus_i_gsc_event_end(op);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
