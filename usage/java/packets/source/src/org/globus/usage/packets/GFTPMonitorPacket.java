@@ -161,7 +161,7 @@ public class GFTPMonitorPacket extends IPTimeMonitorPacket {
     }
 
     public void display() {
-        super.display();
+        log.info(super.toString());
         log.info("StorOrRetr = "+storOrRetr);
         log.info("gridFTPVersion = "+gridFTPVersion);
         log.info("StartTime = "+startTime);

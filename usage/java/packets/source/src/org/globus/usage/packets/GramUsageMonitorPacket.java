@@ -492,7 +492,7 @@ public class GramUsageMonitorPacket
 
     public void display()
     {
-        super.display();
+        logger.info(super.toString());
 
         logger.info("creationTime = "+this.creationTime);
         logger.info("schedulerType = "+this.schedulerType);

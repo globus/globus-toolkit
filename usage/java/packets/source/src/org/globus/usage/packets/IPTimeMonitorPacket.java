@@ -1,24 +1,31 @@
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
 package org.globus.usage.packets;
 
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ReadOnlyBufferException;
 import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
-/*To the component code and packet version number fields in the
-  base class, this subclass adds source IP and time-sent fields.
-  It uses a 1-byte flag to indicate whether it holds an IPv4 address
-  (32 bits) or an IPv6 address (128 bits).
-  If you want to include these in your packets, make your packet
-  format a subclass of IPTimeMonitorPacket.*/
+/*
+ * To the component code and packet version number fields in the
+ * base class, this subclass adds source IP and time-sent fields.
+ * It uses a 1-byte flag to indicate whether it holds an IPv4 address
+ * (32 bits) or an IPv6 address (128 bits).
+ * If you want to include these in your packets, make your packet
+ * format a subclass of IPTimeMonitorPacket.
+ */
 public class IPTimeMonitorPacket extends UsageMonitorPacket {
-    static Log log = LogFactory.getLog(IPTimeMonitorPacket.class);
+
+    private static Log log = 
+        LogFactory.getLog(IPTimeMonitorPacket.class.getName());
 
     protected long timeSent;
     protected InetAddress senderAddress;
@@ -40,68 +47,52 @@ public class IPTimeMonitorPacket extends UsageMonitorPacket {
     }
 
     public void packCustomFields(CustomByteBuffer buf) {
-        byte[] addressByteArray;
-        int i;
-
-            buf.putLong(timeSent);
-
-        log.debug("Turning PacketWrapper into byte array.");
-        if (senderAddress instanceof Inet4Address) {
+        buf.putLong(timeSent);
+        
+        byte[] addressByteArray = senderAddress.getAddress();
+        if (addressByteArray.length == 4) {
             log.debug("This outgoing packet is IPv4.");
             buf.put((byte)4);
-        }
-        else if (senderAddress instanceof Inet6Address) {
+        } else if (addressByteArray.length == 16) {
             log.debug("This outgoing packet is IPv6.");
             buf.put((byte)6);
         }
-        addressByteArray = senderAddress.getAddress();
         
-        log.debug("addressByteArray size: " + addressByteArray.length);
-
-        for (i = 0; i < addressByteArray.length; i++) {
-            log.debug("byte "+i+": "+addressByteArray[i]);
-        }
         buf.put(addressByteArray);
     }
 
     public void unpackCustomFields(CustomByteBuffer buf) {
-        byte[] addressByteArray = null;
-        byte IPversionFlag;
-        int i;
-
-        timeSent = buf.getLong();
+        this.timeSent = buf.getLong();
         
-        IPversionFlag = buf.get();
-        if (IPversionFlag == 4) {
+        byte ipVersion = buf.get();
+        byte [] addressByteArray = null;
+        if (ipVersion == 4) {
             addressByteArray = new byte[4];
             buf.get(addressByteArray);
-            log.debug("Found an IPv4 src address in this packet.");
-            for (i = 0; i<4; i++)
-                log.debug("Byte "+i+": "+addressByteArray[i]);
-        } 
-        else if (IPversionFlag == 6) {
+        } else if (ipVersion == 6) {
             addressByteArray = new byte[16];
             buf.get(addressByteArray);
-           log.debug("Found an IPv6 src address in this packet.");
-            for (i = 0; i<16; i++)
-                log.debug("Byte "+i+": "+addressByteArray[i]);
-
-         }
-        else
-            log.error("IP version code neither 4 nor 6; can't proceed.");
-
-        try {
-            senderAddress = InetAddress.getByAddress(addressByteArray);
-        } catch (UnknownHostException uhe) {
-            log.error("This packet came from a host I can't identify.");
         }
 
+        if (addressByteArray == null) {
+            log.error("IP version code neither 4 nor 6; can't proceed");
+        } else {
+            try {
+                this.senderAddress = 
+                    InetAddress.getByAddress(addressByteArray);
+            } catch (UnknownHostException uhe) {
+                log.error("This packet came from a host I can't identify");
+            }
+        }
     }
 
-    public void display() {
-        super.display();
-        log.info("Packet was sent at " + getDateTime());
-        log.info("From the address " + senderAddress);
+    public String toString() {
+        StringBuffer buf = new StringBuffer();
+        buf.append(super.toString());
+        buf.append(", sent at: " + getDateTime());
+        buf.append(", from: " + getHostIP());
+        return buf.toString();
     }
+
 }
 

@@ -19,7 +19,7 @@ include the following:
     - fault class name or identifier if Failed
 */
 public class RFTUsageMonitorPacket extends IPTimeMonitorPacket {
-    static Log logger = LogFactory.getLog(RFTUsageMonitorPacket.class);
+    static Log log = LogFactory.getLog(RFTUsageMonitorPacket.class);
 
     public final static byte TRANSFER = 0;
     public final static byte DELETE = 1;
@@ -90,7 +90,7 @@ public class RFTUsageMonitorPacket extends IPTimeMonitorPacket {
     }
 
     public void display() {
-        super.display();
+        log.info(super.toString());
         log.info("Request Type : " + this.requestType);
         log.info("Number of Files : " + this.numberOfFiles);
         log.info("Number of Bytes : " + this.numberOfBytes);
