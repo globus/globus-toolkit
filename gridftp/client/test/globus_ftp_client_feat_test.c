@@ -14,18 +14,12 @@ void quick_exit(char *stage)
     exit(1);
 }
 
-void okay(char *stage) 
-{
-    globus_libc_printf( "\ncompleted: %s\n", stage);
-}
-
 /* Assert result and possibly Exit
  */
 void assert_result(char* stage) 
 {
     if (GLOBUS_SUCCESS != result) 
         quick_exit(stage);
-    else okay(stage);
 }
 
 void complete_callback(
@@ -43,12 +37,12 @@ void complete_callback(
         globus_free(tmp_str);
     }
     
-    globus_mutex_lock(&mutex);
+    globus_mutex_lock(&lock);
     {
         done = GLOBUS_TRUE;
         globus_cond_signal(&cond);
     }
-    globus_mutex_unlock(&mutex);
+    globus_mutex_unlock(&lock);
 }
 
 void
