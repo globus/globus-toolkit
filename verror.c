@@ -230,6 +230,9 @@ verror_is_error()
 char *
 verror_get_string()
 {
+    if (!my_context.string) {
+	return "unknown error";
+    }
     return my_context.string;
 }
 
