@@ -92,7 +92,7 @@ AC_SUBST(GLOBUS_FLAVOR_NAME)
 
 # get the environment scripts
 
-if test ! "x$GLOBUS_FLAVOR_NAME"="xnoflavor" ; then
+if test "x$GLOBUS_FLAVOR_NAME" != "xnoflavor" ; then
 	. $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 fi
 
