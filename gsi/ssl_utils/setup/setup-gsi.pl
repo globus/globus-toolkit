@@ -50,21 +50,18 @@ if ( -d $target_dir ) {
 #
 # Create /etc/grid-security.conf if not present
 #
-if ( ! -f "$target_dir/grid-security.conf" ) {
+print "Installing $target_dir/grid-security.conf...\n";
 
-  print "Installing $target_dir/grid-security.conf...\n";
+$result = system("cp $setupdir/grid-security.conf $target_dir/grid-security.conf");
 
-  $result = system("cp $setupdir/grid-security.conf $target_dir/grid-security.conf");
+if ($result != 0) {
+  die "Failed to install grid-security.conf. Aborting.";
+}
 
-  if ($result != 0) {
-    die "Failed to install grid-security.conf. Aborting.";
-  }
+$result = system("chmod 0644 $target_dir/grid-security.conf");
 
-  $result = system("chmod 0644 $target_dir/grid-security.conf");
-
-  if ($result != 0) {
-    die "Failed to set permissions on grid-security.conf. Aborting.";
-  }
+if ($result != 0) {
+  die "Failed to set permissions on grid-security.conf. Aborting.";
 }
 
 #
@@ -103,41 +100,35 @@ if ( ! -d $trusted_certs_dir ) {
 #
 # Install Globus CA certificate if not present
 #
-if ( ! -f "$trusted_certs_dir/42864e48.0" ) {
+print "Installing Globus CA certificate into trusted CA certificate directory...\n";
 
-  print "Installing Globus CA certificate into trusted CA certificate directory...\n";
+$result = system("cp $setupdir/42864e48.0 $trusted_certs_dir");
 
-  $result = system("cp $setupdir/42864e48.0 $trusted_certs_dir");
+if ($result != 0) {
+  die "Failed to install $trusted_certs_dir/42864e48.0. Aborting.";
+}
 
-  if ($result != 0) {
-    die "Failed to install $trusted_certs_dir/42864e48.0. Aborting.";
-  }
+$result = system("chmod 644 $trusted_certs_dir/42864e48.0");
 
-  $result = system("chmod 644 $trusted_certs_dir/42864e48.0");
-
-  if ($result != 0) {
-    die "Failed to set permissions on $trusted_certs_dir/42864e48.0. Aborting.";
-  }
+if ($result != 0) {
+  die "Failed to set permissions on $trusted_certs_dir/42864e48.0. Aborting.";
 }
 
 #
 # Install Globus CA policy file if not present
 #
-if ( ! -f "$trusted_certs_dir/42864e48.signing_policy" ) {
+print "Installing Globus CA signing policy into trusted CA certificate directory...\n";
 
-  print "Installing Globus CA signing policy into trusted CA certificate directory...\n";
+$result = system("cp $setupdir/42864e48.signing_policy $trusted_certs_dir");
 
-  $result = system("cp $setupdir/42864e48.signing_policy $trusted_certs_dir");
+if ($result != 0) {
+  die "Failed to install $trusted_certs_dir/42864e48.signing_policy. Aborting.";
+}
 
-  if ($result != 0) {
-    die "Failed to install $trusted_certs_dir/42864e48.signing_policy. Aborting.";
-  }
+$result = system("chmod 644 $trusted_certs_dir/42864e48.signing_policy");
 
-  $result = system("chmod 644 $trusted_certs_dir/42864e48.signing_policy");
-
-  if ($result != 0) {
-    die "Failed to set permissions on $trusted_certs_dir/42864e48.signing_policy. Aborting.";
-  }
+if ($result != 0) {
+  die "Failed to set permissions on $trusted_certs_dir/42864e48.signing_policy. Aborting.";
 }
 
 print "$myname: Complete\n";
