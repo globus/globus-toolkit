@@ -664,10 +664,15 @@ globus_l_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
 {
     int rc;
     int save_errno;
+    va_list ap_copy;
 
+    globus_libc_va_copy(ap_copy,ap);
+    
     globus_libc_unlock();
-    rc = globus_libc_vprintf_length( format, ap );
+    rc = globus_libc_vprintf_length( format, ap_copy);
     globus_libc_lock();
+
+    va_end(ap_copy);
 
     if ( rc < 0 )
     {

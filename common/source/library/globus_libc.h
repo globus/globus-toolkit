@@ -129,6 +129,16 @@ extern int globus_libc_lock(void);
 extern int globus_libc_unlock(void);
 #endif /* USE_MACROS */
 
+#if defined(va_copy)
+#   define globus_libc_va_copy(dest,src) \
+        va_copy(dest,src)
+#elif defined(__va_copy)
+#   define globus_libc_va_copy(dest,src) \
+        __va_copy(dest,src)
+#else
+#   define globus_libc_va_copy(dest,src) \
+        memcpy(&dest, &src, sizeof(va_list))
+#endif
 
 
 #if !defined(HAVE_THREAD_SAFE_STDIO) && !defined(BUILD_LITE)
