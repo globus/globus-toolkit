@@ -135,11 +135,11 @@ X509_SIG * PROXYCERTINFO_get_issuer_signature(
 
 int i2d_PROXYCERTINFO(
     PROXYCERTINFO *                     cert_info,
-    unsigned char **                    buffer);
+    unsigned char **                    a);
 
 PROXYCERTINFO * d2i_PROXYCERTINFO(
     PROXYCERTINFO **                    cert_info,
-    unsigned char **                    buffer,
+    unsigned char **                    a,
     long                                length);
 
 #ifdef __cplusplus

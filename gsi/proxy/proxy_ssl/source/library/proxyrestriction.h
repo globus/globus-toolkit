@@ -98,11 +98,11 @@ unsigned char * PROXYRESTRICTION_get_policy(
 
 int i2d_PROXYRESTRICTION(
     PROXYRESTRICTION *                  restriction,
-    unsigned char **                    buffer);
+    unsigned char **                    a);
 
 PROXYRESTRICTION * d2i_PROXYRESTRICTION(
     PROXYRESTRICTION **                 restriction,
-    unsigned char **                    buffer,
+    unsigned char **                    a,
     long                                length);
 
 #ifdef __cplusplus

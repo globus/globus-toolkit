@@ -4,6 +4,8 @@
 #include <proxyrestriction.h>
 #include <proxygroup.h>
 
+void usage();
+
 int main(int argc, char * argv[]) 
 {
 
@@ -12,21 +14,23 @@ int main(int argc, char * argv[])
     char * pllang;
     char * filename;
     char * issuer;
-    
+
     FILE * instream;
     FILE * issuerfile;
 
     PROXYRESTRICTION * rst;
     PROXYGROUP * grp;
     PROXYCERTINFO * pcinfo;
+    PROXYCERTINFO * pc2;
     ASN1_OBJECT * pol_lang;
     X509_SIG * signature;
 
     int ispc, haspclength, hasgroup, hasrestriction, hasissuer,
 	pclength, grpatt, ind, from_file;
 
-    from_file = ispc = haspclength = hasgroup = hasissuer =
+    from_file = haspclength = hasgroup = hasissuer =
 	        hasrestriction = pclength = 0;
+    ispc = 1;
 
     if(argc > 1)
     {	
@@ -35,8 +39,10 @@ int main(int argc, char * argv[])
 	{
 	    if(!strcmp(argv[ind], "-pc"))
 	    {
-		ispc = 1;
 		ind++;
+                ispc = atoi(argv[ind]);
+                ind++;
+                continue;
 	    }
 	    if(!strcmp(argv[ind], "-path"))
 	    {
@@ -44,6 +50,7 @@ int main(int argc, char * argv[])
 		pclength = atoi(argv[ind]);
 		haspclength = 1;
 		ind++;
+                continue;
 	    }
 	    if(!strcmp(argv[ind], "-group"))
 	    {
@@ -53,6 +60,7 @@ int main(int argc, char * argv[])
 		ind++;
 		grpatt  = atoi(argv[ind]);
 		ind++;
+                continue;
 	    }
 	    else if(!strcmp(argv[ind], "-rest"))
 	    {
@@ -62,6 +70,7 @@ int main(int argc, char * argv[])
 		ind++;
 		plstring = argv[ind];
 		ind++;
+                continue;
 	    }
 	    else if(!strcmp(argv[ind], "-issuer"))
 	    {
@@ -69,6 +78,7 @@ int main(int argc, char * argv[])
 		issuer = argv[ind];
 		hasissuer = 1;
 		ind++;
+                continue;
 	    }
 	    else if(!strcmp(argv[ind], "-in"))
 	    {
@@ -76,30 +86,11 @@ int main(int argc, char * argv[])
 		from_file = 1;
 		filename = argv[ind];
 		ind++;
+                continue;
 	    }
 	    else
 	    {
-		fprintf(stderr, "Syntax: test_pci [-help][-pc] ... \\\n\n");
-		fprintf(stderr, "\t-help\t\tDisplays usage information\n");
-		fprintf(stderr, "\t-pc\t\tSets the proxy cert flag to true\n");
-		fprintf(stderr, "\t\t\tthe default is false\n");
-		fprintf(stderr, "\t-path\t<path length>\tSets the path length\n");
-		fprintf(stderr, "\t\t\tof the proxy cert, otherwise no max\n");
-		fprintf(stderr, "\t\t\tpath length exists\n");
-		fprintf(stderr, "\t-group\t<group name> <is attached>\n");
-		fprintf(stderr, "\t\t\tSets the group name and if its attached\n");
-		fprintf(stderr, "\t\t\tattached should be 0 or 1\n");
-		fprintf(stderr, "\t\t\twithout -group, none will be added\n");
-		fprintf(stderr, "\t-rest\t<language> <policy>\n");
-		fprintf(stderr, "\t\t\tadds a restriction to the proxy\n");
-		fprintf(stderr, "\t\t\tand sets the policy language and\n");
-		fprintf(stderr, "\t\t\tand policy string\n");
-		fprintf(stderr, "-issuer\t<signature file>\tadds an issuer signature\n");
-		fprintf(stderr, "\t\t\tto the proxy\n");
-		fprintf(stderr, "-in\t<proxycertfile>\ttakes a DER encoded\n");
-		fprintf(stderr, "\t\t\tproxy cert and prints it out to stderr\n");
-		fprintf(stderr, "\t\t\tthis flag causes all other flags to be ignored\n\n");
-		exit(1);
+                usage();
 	    }
 	}
     }
@@ -120,44 +111,35 @@ int main(int argc, char * argv[])
     {
 	pcinfo = PROXYCERTINFO_new();
 	
-	if(hasgroup)
+	PROXYCERTINFO_set_pC(pcinfo, ispc);
+	
+	if(haspclength)
 	{
-	    grp = PROXYCERTINFO_get_group(pcinfo);
-	    PROXYGROUP_set_name(grp, grpname, strlen(grpname));
-	    PROXYGROUP_set_attached(grp, grpatt);
-	}
-	else
-	{
-	    PROXYCERTINFO_set_group(pcinfo, NULL);
+	    PROXYCERTINFO_set_path_length(pcinfo, (long *) & pclength);
 	}
 
 	if(hasrestriction)
 	{
-	    rst = PROXYCERTINFO_get_restriction(pcinfo);
+	    rst = PROXYRESTRICTION_new();
 	    PROXYRESTRICTION_set_policy(rst, plstring, strlen(plstring));
-	    pol_lang = PROXYRESTRICTION_get_policy_language(rst);	
+	    pol_lang = ASN1_OBJECT_new();
 	    pol_lang->sn = pllang;
 	    pol_lang->ln = pllang;
 	    pol_lang->data = pllang;
 	    pol_lang->length = strlen(pllang);
 	    pol_lang->flags = 0;
-	}
-	else
-	{
-	    PROXYCERTINFO_set_restriction(pcinfo, NULL);
+            PROXYRESTRICTION_set_policy_language(rst, pol_lang);
+            PROXYCERTINFO_set_restriction(pcinfo, rst);
 	}
 
-	PROXYCERTINFO_set_pC(pcinfo, ispc);
-	
-	if(haspclength)
+	if(hasgroup)
 	{
-	    PROXYCERTINFO_set_path_length(pcinfo, (long *)&pclength);
+	    grp = PROXYGROUP_new();
+	    PROXYGROUP_set_name(grp, grpname, strlen(grpname));
+	    PROXYGROUP_set_attached(grp, grpatt);
+            PROXYCERTINFO_set_group(pcinfo, grp);
 	}
-	else
-	{
-	    PROXYCERTINFO_set_path_length(pcinfo, NULL);
-	}
-
+        
 	if(hasissuer)
 	{
 	    signature = X509_SIG_new();
@@ -166,10 +148,14 @@ int main(int argc, char * argv[])
 			(char *(*)()) d2i_X509_SIG, 
 			issuerfile, 
 			(unsigned char **) &signature);
-	    PROXYCERTINFO_set_issuer_cert_digest(pcinfo, signature);
+	    PROXYCERTINFO_set_issuer_signature(pcinfo, signature);
 	}
 
 	PROXYCERTINFO_print_fp(stderr, pcinfo);
+
+        pc2 = PROXYCERTINFO_dup(pcinfo); 
+        
+        PROXYCERTINFO_print_fp(stderr, pc2);
 
 	if(!ASN1_i2d_fp(i2d_PROXYCERTINFO, stdout, (unsigned char *)pcinfo))
 	{
@@ -178,4 +164,30 @@ int main(int argc, char * argv[])
     }
 
     PROXYCERTINFO_free(pcinfo);
+}
+
+void usage()
+{
+    fprintf(stderr, "\nSyntax: test_pci [-help][-pc] ... \\\n\n");
+    fprintf(stderr, "  -help\n      Displays usage information\n\n");
+    fprintf(stderr, "  -pc <is a proxy>\n");
+    fprintf(stderr, "      Sets the proxy cert flag to 1 (true)\n");
+    fprintf(stderr, "      or 0 (false), the default is true\n\n");
+    fprintf(stderr, "  -path  <path length>\n      Sets the path length");
+    fprintf(stderr, "of the proxy cert,\n      otherwise no max length exists\n\n");
+    fprintf(stderr, "  -group  <group name> <is attached>\n");
+    fprintf(stderr, "      Sets the group name and if its attached\n");
+    fprintf(stderr, "      attached should be 0 or 1.  Without\n");
+    fprintf(stderr, "      this option, none will be added to the proxy\n\n");
+    fprintf(stderr, "  -rest  <language> <policy>\n");
+    fprintf(stderr, "      adds a restriction to the proxy\n");
+    fprintf(stderr, "      and sets the policy language and\n");
+    fprintf(stderr, "      and policy string\n\n");
+    fprintf(stderr, "  -issuer  <signature file>\n");
+    fprintf(stderr, "      adds an issuer signature to the proxy\n\n");
+    fprintf(stderr, "  -in  <proxycertfile>\n");
+    fprintf(stderr, "      takes a DER encoded proxy cert and prints\n");
+    fprintf(stderr, "      it out to stderr.  This flag causes all other\n");
+    fprintf(stderr, "      flags to be ignored\n\n");
+    exit(1);
 }

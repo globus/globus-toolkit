@@ -69,28 +69,29 @@ int PROXYRESTRICTION_print(
     int                                 ret,
                                         tmpret;
 
-    if(ret = BIO_printf(bp, "RESTRICTION::PolicyLanguage: %s, %s, %d\n", 
-                        restriction->policy_language->ln,
-                        restriction->policy_language->sn,
-                        restriction->policy_language->nid) < 0) 
-    {
-        return ret;
-    }
+    ret = BIO_printf(bp, "PROXYRESTRICTION::PolicyLanguage: %s, %s, %d\n", 
+                     restriction->policy_language->ln,
+                     restriction->policy_language->sn,
+                     restriction->policy_language->nid);
+    if(ret < 0) { return ret; }
+
+    tmpret = BIO_dump(bp,
+                      restriction->policy_language->data,
+                      restriction->policy_language->length);
+    if(tmpret < 0) { return tmpret; }
     ret += tmpret;
 
-    if(tmpret = BIO_dump(bp,
-                         restriction->policy_language->data,
-                         restriction->policy_language->length) < 0)
-    {
-        return tmpret;
-    }
+    tmpret = BIO_printf(bp, "PROXYRESTRICTION::Policy: ");
+    if(tmpret < 0) { return tmpret; }
+    ret += tmpret;
+
+    tmpret = ASN1_STRING_print(bp, (ASN1_STRING *) restriction->policy);
+    if(tmpret < 0) { return tmpret; }
     ret += tmpret;
     
-    if(tmpret = ASN1_STRING_print(bp, (ASN1_STRING *) restriction->policy) < 0)
-    {
-        return tmpret;
-    }
-
+    tmpret = BIO_printf(bp, "\n");
+    if(tmpret < 0) { return tmpret; }
+    
     return (ret + tmpret);
 }
 
@@ -149,41 +150,34 @@ unsigned char * PROXYRESTRICTION_get_policy(
 }
 
 int i2d_PROXYRESTRICTION(
-    PROXYRESTRICTION *                  restriction,
-    unsigned char **                    buffer)
+    PROXYRESTRICTION *                  a,
+    unsigned char **                    pp)
 {
-    unsigned char **                    pp;
+    M_ASN1_I2D_vars(a);
 
-    M_ASN1_I2D_vars(restriction);
-
-    pp = buffer;
-
-    M_ASN1_I2D_len(restriction->policy_language,
+    M_ASN1_I2D_len(a->policy_language,
                    i2d_ASN1_OBJECT);
-    M_ASN1_I2D_len(restriction->policy,
+    M_ASN1_I2D_len(a->policy,
                    i2d_ASN1_OCTET_STRING);
     M_ASN1_I2D_seq_total();
-    M_ASN1_I2D_put(restriction->policy_language, i2d_ASN1_OBJECT);
-    M_ASN1_I2D_put(restriction->policy, i2d_ASN1_OCTET_STRING);
+    M_ASN1_I2D_put(a->policy_language, i2d_ASN1_OBJECT);
+    M_ASN1_I2D_put(a->policy, i2d_ASN1_OCTET_STRING);
+
     M_ASN1_I2D_finish();
 }
 
 PROXYRESTRICTION * d2i_PROXYRESTRICTION(
-    PROXYRESTRICTION **                 restriction,
-    unsigned char **                    buffer,
+    PROXYRESTRICTION **                 a,
+    unsigned char **                    pp,
     long                                length)
 {
-    unsigned char **                    pp;
-
-    M_ASN1_D2I_vars(restriction, PROXYRESTRICTION *, PROXYRESTRICTION_new);
-
-    pp = buffer;
+    M_ASN1_D2I_vars(a, PROXYRESTRICTION *, PROXYRESTRICTION_new);
     
     M_ASN1_D2I_Init();
     M_ASN1_D2I_start_sequence();
     M_ASN1_D2I_get(ret->policy_language, d2i_ASN1_OBJECT);
     M_ASN1_D2I_get(ret->policy, d2i_ASN1_OCTET_STRING);
-    M_ASN1_D2I_Finish(restriction, 
+    M_ASN1_D2I_Finish(a, 
                       PROXYRESTRICTION_free, 
                       ASN1_F_D2I_PROXYRESTRICTION);
 }

@@ -99,11 +99,11 @@ ASN1_BOOLEAN * PROXYGROUP_get_attached(
 
 int i2d_PROXYGROUP(
     PROXYGROUP *                        group,
-    unsigned char **                    buffer);
+    unsigned char **                    a);
 
 PROXYGROUP * d2i_PROXYGROUP(
     PROXYGROUP **                       group,
-    unsigned char **                    buffer,
+    unsigned char **                    a,
     long                                length);
 
 #ifdef _cplusplus
