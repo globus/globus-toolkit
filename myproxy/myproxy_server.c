@@ -289,6 +289,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     char  client_name[1024];
     char  client_buffer[4096];
     int   requestlen;
+    time_t now;
 
     myproxy_creds_t *client_creds;
     myproxy_request_t *client_request;
@@ -302,6 +303,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
+
+    now = time(0);
 
     /* Create a new gsi socket */
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
@@ -415,6 +418,12 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	myproxy_debug("  Max. delegation lifetime: %d seconds",
 		      client_creds->lifetime);
 
+	/* Are credentials expired? */
+	if (client_creds->start_time > now || client_creds->end_time < now) {
+	    respond_with_error_and_die(attrs,
+				       "requested credentials have expired");
+	}
+	
 	/* Send initial OK response */
 	send_response(attrs, server_response, client_name);
 	
@@ -676,7 +685,7 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
 
     if (myproxy_init_delegation(attrs, creds->location, min_lifetime,
-				creds->passphrase) < 0) {
+				request->passphrase) < 0) {
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	response->error_str = strdup("Unable to delegate credentials.\n");
@@ -910,6 +919,9 @@ become_daemon(myproxy_server_context_t *context)
  * PUT and DESTROY:
  *   Client DN must match accepted_credentials.
  *   If credentials already exist for the username, the client must own them.
+ * INFO:
+ *   Client DN must match accepted_credentials.
+ *   Ownership checking done in info_proxy().
  *   
  */
 static int
@@ -940,7 +952,9 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
        /* get information about credential */
        creds.username = strdup(client_request->username);
-       creds.credname = strdup(client_request->credname);
+       if (client_request->credname) {
+	   creds.credname = strdup(client_request->credname);
+       }
        if (myproxy_creds_retrieve(&creds) < 0) {
 	   verror_put_string("Unable to retrieve credential information");
 	   goto end;
