@@ -42,7 +42,7 @@
       </Source_Dependencies>
       <Build_Environment >
         <cflags >
-          @GPT_CFLAGS@
+          @GPT_PKG_CFLAGS@
         </cflags>
         <external_includes >
           @GPT_EXTERNAL_INCLUDES@
