@@ -2,7 +2,7 @@
 
 BEGIN
 {
-    push(@INC, ${GLOBUS_LOCATION} . '/lib/perl');
+    push(@INC, $ENV{'GLOBUS_LOCATION'} . '/lib/perl');
 }
 
 use Globus::Core::Paths;
