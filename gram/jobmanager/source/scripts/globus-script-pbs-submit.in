@@ -262,12 +262,11 @@ if [ $pbs_jobtype = "mpi" ] ; then
    fi
 elif [ $pbs_jobtype = "multiple" ] ; then
    if ${is_cluster} ; then
-      echo 'for $i in `cat $PBS_NODEFILE`' >> $PBS_JOB_SCRIPT
-      echo 'do' >> $PBS_JOB_SCRIPT
-      echo '   starting job on $i' >> $PBS_JOB_SCRIPT
-      echo "   rsh \$i \"cd ${grami_directory};"\
-           " $grami_program $new_grami_args < $grami_stdin\" &"\
-           >> $PBS_JOB_SCRIPT
+      echo 'counter=1' >> $PBS_JOB_SCRIPT;
+      echo 'hosts=`cat $PBS_NODEFILE`' >> $PBS_JOB_SCRIPT;
+      echo 'for host in $hosts; do' >> $PBS_JOB_SCRIPT;
+      echo '  /usr/bin/rsh $host "'"cd $grami_directory; $pbs_new_grami_env $grami_program $new_grami_args < $grami_stdin "'"&' >> $PBS_JOB_SCRIPT;
+      echo '  counter=`expr $counter + 1`' >> $PBS_JOB_SCRIPT;
       echo 'done' >> $PBS_JOB_SCRIPT
       echo 'wait' >> $PBS_JOB_SCRIPT
    else
