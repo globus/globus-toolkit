@@ -67,6 +67,7 @@
 #include "conf_def.h"
 #include <openssl/buffer.h>
 #include <openssl/err.h>
+#include "cryptlib.h"
 
 static char *eat_ws(CONF *conf, char *p);
 static char *eat_alpha_numeric(CONF *conf, char *p);
@@ -180,12 +181,12 @@ static int def_destroy_data(CONF *conf)
 static int def_load(CONF *conf, BIO *in, long *line)
 	{
 #define BUFSIZE	512
-	char btmp[16];
 	int bufnum=0,i,ii;
 	BUF_MEM *buff=NULL;
 	char *s,*p,*end;
 	int again,n;
 	long eline=0;
+	char btmp[DECIMAL_SIZE(eline)+1];
 	CONF_VALUE *v=NULL,*tv;
 	CONF_VALUE *sv=NULL;
 	char *section=NULL,*buf;
@@ -223,9 +224,9 @@ static int def_load(CONF *conf, BIO *in, long *line)
 	section_sk=(STACK_OF(CONF_VALUE) *)sv->value;
 
 	bufnum=0;
+	again=0;
 	for (;;)
 		{
-		again=0;
 		if (!BUF_MEM_grow(buff,bufnum+BUFSIZE))
 			{
 			CONFerr(CONF_F_CONF_LOAD_BIO,ERR_R_BUF_LIB);
@@ -236,7 +237,8 @@ static int def_load(CONF *conf, BIO *in, long *line)
 		BIO_gets(in, p, BUFSIZE-1);
 		p[BUFSIZE-1]='\0';
 		ii=i=strlen(p);
-		if (i == 0) break;
+		if (i == 0 && !again) break;
+		again=0;
 		while (i > 0)
 			{
 			if ((p[i-1] != '\r') && (p[i-1] != '\n'))
@@ -246,7 +248,7 @@ static int def_load(CONF *conf, BIO *in, long *line)
 			}
 		/* we removed some trailing stuff so there is a new
 		 * line on the end. */
-		if (i == ii)
+		if (ii && i == ii)
 			again=1; /* long line */
 		else
 			{

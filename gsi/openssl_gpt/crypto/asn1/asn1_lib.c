@@ -57,6 +57,7 @@
  */
 
 #include <stdio.h>
+#include <limits.h>
 #include "cryptlib.h"
 #include <openssl/asn1.h>
 #include <openssl/asn1_mac.h>
@@ -124,15 +125,13 @@ int ASN1_get_object(unsigned char **pp, long *plength, int *ptag, int *pclass,
 		(int)(omax+ *pp));
 
 #endif
-#if 0
-	if ((p+ *plength) > (omax+ *pp))
+	if (*plength > (omax - (p - *pp)))
 		{
 		ASN1err(ASN1_F_ASN1_GET_OBJECT,ASN1_R_TOO_LONG);
 		/* Set this so that even if things are not long enough
 		 * the values are set correctly */
 		ret|=0x80;
 		}
-#endif
 	*pp=p;
 	return(ret|inf);
 err:
@@ -143,7 +142,7 @@ err:
 static int asn1_get_length(unsigned char **pp, int *inf, long *rl, int max)
 	{
 	unsigned char *p= *pp;
-	long ret=0;
+	unsigned long ret=0;
 	int i;
 
 	if (max-- < 1) return(0);
@@ -159,6 +158,8 @@ static int asn1_get_length(unsigned char **pp, int *inf, long *rl, int max)
 		i= *p&0x7f;
 		if (*(p++) & 0x80)
 			{
+			if (i > sizeof(long))
+				return 0;
 			if (max-- == 0) return(0);
 			while (i-- > 0)
 				{
@@ -170,8 +171,10 @@ static int asn1_get_length(unsigned char **pp, int *inf, long *rl, int max)
 		else
 			ret=i;
 		}
+	if (ret > LONG_MAX)
+		return 0;
 	*pp=p;
-	*rl=ret;
+	*rl=(long)ret;
 	return(1);
 	}
 
@@ -407,7 +410,7 @@ int ASN1_STRING_cmp(ASN1_STRING *a, ASN1_STRING *b)
 
 void asn1_add_error(unsigned char *address, int offset)
 	{
-	char buf1[16],buf2[16];
+	char buf1[DECIMAL_SIZE(address)+1],buf2[DECIMAL_SIZE(offset)+1];
 
 	sprintf(buf1,"%lu",(unsigned long)address);
 	sprintf(buf2,"%d",offset);

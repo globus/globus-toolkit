@@ -258,6 +258,7 @@ char *PEM_ASN1_read_bio(char *(*d2i)(), const char *name, BIO *bp, char **x,
 			PKCS8_PRIV_KEY_INFO *p8inf;
 			p8inf=d2i_PKCS8_PRIV_KEY_INFO(
 					(PKCS8_PRIV_KEY_INFO **) x, &p, len);
+			if(!p8inf) goto p8err;
 			ret = (char *)EVP_PKCS82PKEY(p8inf);
 			PKCS8_PRIV_KEY_INFO_free(p8inf);
 		} else if (strcmp(nm,PEM_STRING_PKCS8) == 0) {
@@ -373,17 +374,17 @@ int PEM_ASN1_write_bio(int (*i2d)(), const char *name, BIO *bp, char *x,
 			kstr=(unsigned char *)buf;
 			}
 		RAND_add(data,i,0);/* put in the RSA key. */
-		if (RAND_pseudo_bytes(iv,8) < 0)	/* Generate a salt */
+		if (RAND_pseudo_bytes(iv,enc->iv_len) < 0) /* Generate a salt */
 			goto err;
 		/* The 'iv' is used as the iv and as a salt.  It is
 		 * NOT taken from the BytesToKey function */
 		EVP_BytesToKey(enc,EVP_md5(),iv,kstr,klen,1,key,NULL);
 
-		if (kstr == (unsigned char *)buf) memset(buf,0,PEM_BUFSIZE);
+		if (kstr == (unsigned char *)buf) OPENSSL_cleanse(buf,PEM_BUFSIZE);
 
 		buf[0]='\0';
 		PEM_proc_type(buf,PEM_TYPE_ENCRYPTED);
-		PEM_dek_info(buf,objstr,8,(char *)iv);
+		PEM_dek_info(buf,objstr,enc->iv_len,(char *)iv);
 		/* k=strlen(buf); */
 	
 		EVP_EncryptInit(&ctx,enc,key,iv);
@@ -400,12 +401,15 @@ int PEM_ASN1_write_bio(int (*i2d)(), const char *name, BIO *bp, char *x,
 	i=PEM_write_bio(bp,name,buf,data,i);
 	if (i <= 0) ret=0;
 err:
-	memset(key,0,sizeof(key));
-	memset(iv,0,sizeof(iv));
-	memset((char *)&ctx,0,sizeof(ctx));
-	memset(buf,0,PEM_BUFSIZE);
-	memset(data,0,(unsigned int)dsize);
-	OPENSSL_free(data);
+	OPENSSL_cleanse(key,sizeof(key));
+	OPENSSL_cleanse(iv,sizeof(iv));
+	OPENSSL_cleanse((char *)&ctx,sizeof(ctx));
+	OPENSSL_cleanse(buf,PEM_BUFSIZE);
+	if (data != NULL)
+		{
+		OPENSSL_cleanse(data,(unsigned int)dsize);
+		OPENSSL_free(data);
+		}
 	return(ret);
 	}
 
@@ -443,8 +447,8 @@ int PEM_do_header(EVP_CIPHER_INFO *cipher, unsigned char *data, long *plen,
 	EVP_DecryptUpdate(&ctx,data,&i,data,j);
 	o=EVP_DecryptFinal(&ctx,&(data[i]),&j);
 	EVP_CIPHER_CTX_cleanup(&ctx);
-	memset((char *)buf,0,sizeof(buf));
-	memset((char *)key,0,sizeof(key));
+	OPENSSL_cleanse((char *)buf,sizeof(buf));
+	OPENSSL_cleanse((char *)key,sizeof(key));
 	j+=i;
 	if (!o)
 		{
@@ -506,7 +510,7 @@ int PEM_get_EVP_CIPHER_INFO(char *header, EVP_CIPHER_INFO *cipher)
 		PEMerr(PEM_F_PEM_GET_EVP_CIPHER_INFO,PEM_R_UNSUPPORTED_ENCRYPTION);
 		return(0);
 		}
-	if (!load_iv((unsigned char **)&header,&(cipher->iv[0]),8)) return(0);
+	if (!load_iv((unsigned char **)&header,&(cipher->iv[0]),enc->iv_len)) return(0);
 
 	return(1);
 	}

@@ -55,6 +55,59 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.]
  */
+/* ====================================================================
+ * Copyright (c) 1998-2002 The OpenSSL Project.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *
+ * 3. All advertising materials mentioning features or use of this
+ *    software must display the following acknowledgment:
+ *    "This product includes software developed by the OpenSSL Project
+ *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+ *
+ * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
+ *    endorse or promote products derived from this software without
+ *    prior written permission. For written permission, please contact
+ *    openssl-core@openssl.org.
+ *
+ * 5. Products derived from this software may not be called "OpenSSL"
+ *    nor may "OpenSSL" appear in their names without prior written
+ *    permission of the OpenSSL Project.
+ *
+ * 6. Redistributions of any form whatsoever must retain the following
+ *    acknowledgment:
+ *    "This product includes software developed by the OpenSSL Project
+ *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
+ * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
+ * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ * ====================================================================
+ *
+ * This product includes cryptographic software written by Eric Young
+ * (eay@cryptsoft.com).  This product includes software written by Tim
+ * Hudson (tjh@cryptsoft.com).
+ *
+ */
 
 #include <stdio.h>
 #include <openssl/md5.h>
@@ -121,7 +174,7 @@ static void ssl3_generate_key_block(SSL *s, unsigned char *km, int num)
 
 		km+=MD5_DIGEST_LENGTH;
 		}
-	memset(smd,0,SHA_DIGEST_LENGTH);
+	OPENSSL_cleanse(smd,SHA_DIGEST_LENGTH);
 	}
 
 int ssl3_change_cipher_state(SSL *s, int which)
@@ -265,8 +318,8 @@ int ssl3_change_cipher_state(SSL *s, int which)
 
 	EVP_CipherInit(dd,c,key,iv,(which & SSL3_CC_WRITE));
 
-	memset(&(exp_key[0]),0,sizeof(exp_key));
-	memset(&(exp_iv[0]),0,sizeof(exp_iv));
+	OPENSSL_cleanse(&(exp_key[0]),sizeof(exp_key));
+	OPENSSL_cleanse(&(exp_iv[0]),sizeof(exp_iv));
 	return(1);
 err:
 	SSLerr(SSL_F_SSL3_CHANGE_CIPHER_STATE,ERR_R_MALLOC_FAILURE);
@@ -305,9 +358,28 @@ int ssl3_setup_key_block(SSL *s)
 
 	s->s3->tmp.key_block_length=num;
 	s->s3->tmp.key_block=p;
-
+	
 	ssl3_generate_key_block(s,p,num);
+	
+	if (!(s->options & SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS))
+		{
+		/* enable vulnerability countermeasure for CBC ciphers with
+		 * known-IV problem (http://www.openssl.org/~bodo/tls-cbc.txt)
+		 */
+		s->s3->need_empty_fragments = 1;
 
+ 		if (s->session->cipher != NULL)
+			{
+			if ((s->session->cipher->algorithms & SSL_ENC_MASK) == SSL_eNULL)
+ 				s->s3->need_empty_fragments = 0;
+ 			
+#ifndef NO_RC4
+ 			if ((s->session->cipher->algorithms & SSL_ENC_MASK) == SSL_RC4)
+ 				s->s3->need_empty_fragments = 0;
+#endif
+ 			}
+ 		}
+		
 	return(1);
 err:
 	SSLerr(SSL_F_SSL3_SETUP_KEY_BLOCK,ERR_R_MALLOC_FAILURE);
@@ -318,7 +390,7 @@ void ssl3_cleanup_key_block(SSL *s)
 	{
 	if (s->s3->tmp.key_block != NULL)
 		{
-		memset(s->s3->tmp.key_block,0,
+		OPENSSL_cleanse(s->s3->tmp.key_block,
 			s->s3->tmp.key_block_length);
 		OPENSSL_free(s->s3->tmp.key_block);
 		s->s3->tmp.key_block=NULL;
@@ -384,6 +456,7 @@ int ssl3_enc(SSL *s, int send)
 				ssl3_send_alert(s,SSL3_AL_FATAL,SSL_AD_DECRYPTION_FAILED);
 				return 0;
 				}
+			/* otherwise, rec->length >= bs */
 			}
 		
 		EVP_Cipher(ds,rec->data,rec->input,l);
@@ -392,7 +465,7 @@ int ssl3_enc(SSL *s, int send)
 			{
 			i=rec->data[l-1]+1;
 			/* SSL 3.0 bounds the number of padding bytes by the block size;
-			 * padding bytes (except that last) are arbitrary */
+			 * padding bytes (except the last one) are arbitrary */
 			if (i > bs)
 				{
 				/* Incorrect padding. SSLerr() and ssl3_alert are done
@@ -401,6 +474,7 @@ int ssl3_enc(SSL *s, int send)
 				 * (see http://www.openssl.org/~bodo/tls-cbc.txt) */
 				return -1;
 				}
+			/* now i <= bs <= rec->length */
 			rec->length-=i;
 			}
 		}

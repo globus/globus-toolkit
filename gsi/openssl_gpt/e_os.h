@@ -82,6 +82,12 @@ extern "C" {
 #define DEVRANDOM "/dev/urandom"
 #endif
 
+#if defined(VXWORKS)
+#  define NO_SYS_PARAM_H
+#  define NO_CHMOD
+#  define NO_SYSLOG
+#endif
+  
 #if defined(__MWERKS__) && defined(macintosh)
 # if macintosh==1
 #  ifndef MAC_OS_GUSI_SOURCE
@@ -108,11 +114,11 @@ extern "C" {
 #  define MS_STATIC
 #endif
 
-#if defined(_WIN32) && !defined(WIN32) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(WIN32) && !defined(__CYGWIN32__) && !defined(_UWIN)
 #  define WIN32
 #endif
 
-#if (defined(WIN32) || defined(WIN16)) && !defined(__CYGWIN32__)
+#if (defined(WIN32) || defined(WIN16)) && !defined(__CYGWIN32__) && !defined(_UWIN)
 #  ifndef WINDOWS
 #    define WINDOWS
 #  endif
@@ -136,7 +142,8 @@ extern "C" {
 #define clear_sys_error()	errno=0
 #endif
 
-#if defined(WINDOWS) && !defined(__CYGWIN32__)
+#if defined(WINDOWS) && !defined(__CYGWIN32__)  && !defined(_UWIN)
+
 #define get_last_socket_error()	WSAGetLastError()
 #define clear_socket_error()	WSASetLastError(0)
 #define readsocket(s,b,n)	recv((s),(b),(n),0)
@@ -148,6 +155,13 @@ extern "C" {
 #define closesocket(s)		MacSocket_close(s)
 #define readsocket(s,b,n)	MacSocket_recv((s),(b),(n),true)
 #define writesocket(s,b,n)	MacSocket_send((s),(b),(n))
+#elif defined(VMS)
+#define get_last_socket_error() errno
+#define clear_socket_error()    errno=0
+#define ioctlsocket(a,b,c)      ioctl(a,b,c)
+#define closesocket(s)          close(s)
+#define readsocket(s,b,n)       recv((s),(b),(n),0)
+#define writesocket(s,b,n)      send((s),(b),(n),0)
 #else
 #define get_last_socket_error()	errno
 #define clear_socket_error()	errno=0
@@ -170,7 +184,7 @@ extern "C" {
 #  define NO_FP_API
 #endif
 
-#if (defined(WINDOWS) || defined(MSDOS)) && !defined(__CYGWIN32__)
+#if (defined(WINDOWS) || defined(MSDOS)) && !defined(__CYGWIN32__) && !defined(_UWIN)
 
 #  ifndef S_IFDIR
 #    define S_IFDIR	_S_IFDIR
@@ -205,10 +219,11 @@ extern "C" {
 #    define _kbhit kbhit
 #  endif
 
-#  if defined(WIN16) && !defined(MONOLITH) && defined(SSLEAY) && defined(_WINEXITNOPERSIST)
-#    define EXIT(n) { if (n == 0) _wsetexit(_WINEXITNOPERSIST); return(n); }
+#  if defined(WIN16) && defined(SSLEAY) && defined(_WINEXITNOPERSIST)
+#    define EXIT(n) _wsetexit(_WINEXITNOPERSIST)
+#    define OPENSSL_EXIT(n) do { if (n == 0) EXIT(n); return(n); } while(0)
 #  else
-#    define EXIT(n)		return(n);
+#    define EXIT(n) return(n)
 #  endif
 #  define LIST_SEPARATOR_CHAR ';'
 #  ifndef X_OK
@@ -261,18 +276,13 @@ extern "C" {
      the status is tagged as an error, which I believe is what is wanted here.
      -- Richard Levitte
   */
-#    if !defined(MONOLITH) || defined(OPENSSL_C)
-#      define EXIT(n)		do { int __VMS_EXIT = n; \
+#    define EXIT(n)		do { int __VMS_EXIT = n; \
                                      if (__VMS_EXIT == 0) \
 				       __VMS_EXIT = 1; \
 				     else \
 				       __VMS_EXIT = (n << 3) | 2; \
                                      __VMS_EXIT |= 0x10000000; \
-				     exit(__VMS_EXIT); \
-				     return(__VMS_EXIT); } while(0)
-#    else
-#      define EXIT(n)		return(n)
-#    endif
+				     exit(__VMS_EXIT); } while(0)
 #    define NO_SYS_PARAM_H
 #  else
      /* !defined VMS */
@@ -303,11 +313,7 @@ extern "C" {
 #    define RFILE		".rnd"
 #    define LIST_SEPARATOR_CHAR ':'
 #    define NUL_DEV		"/dev/null"
-#    ifndef MONOLITH
-#      define EXIT(n)		exit(n); return(n)
-#    else
-#      define EXIT(n)		return(n)
-#    endif
+#    define EXIT(n)		exit(n)
 #  endif
 
 #  define SSLeay_getpid()	getpid()
@@ -348,7 +354,9 @@ extern HINSTANCE _hInstance;
 #    ifndef NO_SYS_PARAM_H
 #      include <sys/param.h>
 #    endif
-#    ifndef MPE
+#    ifdef VXWORKS
+#      include <time.h> 
+#    elif !defined(MPE)
 #      include <sys/time.h> /* Needed under linux for FD_XXX */
 #    endif
 
@@ -423,6 +431,14 @@ extern HINSTANCE _hInstance;
 extern char *sys_errlist[]; extern int sys_nerr;
 # define strerror(errnum) \
 	(((errnum)<0 || (errnum)>=sys_nerr) ? NULL : sys_errlist[errnum])
+#endif
+
+#ifndef OPENSSL_EXIT
+# if defined(MONOLITH) && !defined(OPENSSL_C)
+#  define OPENSSL_EXIT(n) return(n)
+# else
+#  define OPENSSL_EXIT(n) do { EXIT(n); return(n); } while(0)
+# endif
 #endif
 
 /***********************************************/

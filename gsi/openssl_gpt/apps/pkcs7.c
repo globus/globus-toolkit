@@ -88,7 +88,7 @@ int MAIN(int argc, char **argv)
 	int informat,outformat;
 	char *infile,*outfile,*prog;
 	int print_certs=0,text=0,noout=0;
-	int ret=0;
+	int ret=1;
 
 	apps_startup();
 
@@ -154,7 +154,7 @@ bad:
 		BIO_printf(bio_err," -print_certs  print any certs or crl in the input\n");
 		BIO_printf(bio_err," -text         print full details of certificates\n");
 		BIO_printf(bio_err," -noout        don't output encoded data\n");
-		EXIT(1);
+		OPENSSL_EXIT(1);
 		}
 
 	ERR_load_crypto_strings();
@@ -289,5 +289,5 @@ end:
 	if (p7 != NULL) PKCS7_free(p7);
 	if (in != NULL) BIO_free(in);
 	if (out != NULL) BIO_free_all(out);
-	EXIT(ret);
+	OPENSSL_EXIT(ret);
 	}
