@@ -1669,6 +1669,7 @@ static int
 globus_l_gram_request_validate(globus_gram_jobmanager_request_t * req)
 {
     struct stat statbuf;
+    char script_path[512];
 
     /*
      * change to the right directory, so that std* files
@@ -1729,23 +1730,78 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * req)
         return(GLOBUS_FAILURE);
     }
 
-    if ( (strcmp(req->jobmanager_type, "fork") != 0) &&
-         (strcmp(req->jobmanager_type, "poe") != 0) &&
-         (strcmp(req->jobmanager_type, "condor") != 0) &&
-         (strcmp(req->jobmanager_type, "pexec") != 0) &&
-         (strcmp(req->jobmanager_type, "t3e-nqe") != 0) &&
-         (strcmp(req->jobmanager_type, "prun") != 0) &&
-         (strcmp(req->jobmanager_type, "loadleveler") != 0) &&
-         (strcmp(req->jobmanager_type, "lsf") != 0) &&
-         (strcmp(req->jobmanager_type, "maui") != 0) &&
-         (strcmp(req->jobmanager_type, "pbs") != 0) &&
-         (strcmp(req->jobmanager_type, "glunix") != 0) &&
-         (strcmp(req->jobmanager_type, "easymcs") != 0))
+    if (strcmp(req->jobmanager_type, "fork") != 0)
     {
+       /*
+        * test that the scheduler script files exist and
+        * that the user has permission to execute then.
+        */
         grami_fprintf( req->jobmanager_log_fp,
-            "JMI: job manager type %s is invalid.\n", req->jobmanager_type);
-        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_MANAGER_TYPE;
-        return(GLOBUS_FAILURE);
+            "JMI: testing job manager scripts for type %s exist and "
+            "permissions are ok.\n", req->jobmanager_type);
+
+       /*---------------- submit script -----------------*/
+       sprintf(script_path, "%s/globus-script-%s-submit",
+                            req->jobmanager_libexecdir,
+                            req->jobmanager_type);
+
+       if (stat(script_path, &statbuf) != 0)
+       {
+          grami_fprintf( req->jobmanager_log_fp,
+              "JMI: ERROR: script %s was not found.\n", script_path);
+          req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_JM_SCRIPT_NOT_FOUND;
+          return(GLOBUS_FAILURE);
+       }
+
+       if (!(statbuf.st_mode & 0111))
+       {
+           grami_fprintf( req->jobmanager_log_fp,
+             "JMI: ERROR: Not permitted to execute script %s.\n", script_path);
+           req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_JM_SCRIPT_PERMISSIONS;
+           return(GLOBUS_FAILURE);
+       }
+
+       /*---------------- poll script -----------------*/
+       sprintf(script_path, "%s/globus-script-%s-poll",
+                            req->jobmanager_libexecdir,
+                            req->jobmanager_type);
+
+       if (stat(script_path, &statbuf) != 0)
+       {
+          grami_fprintf( req->jobmanager_log_fp,
+              "JMI: ERROR: script %s was not found.\n", script_path);
+          req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_JM_SCRIPT_NOT_FOUND;
+          return(GLOBUS_FAILURE);
+       }
+
+       if (!(statbuf.st_mode & 0111))
+       {
+           grami_fprintf( req->jobmanager_log_fp,
+             "JMI: ERROR: Not permitted to execute script %s.\n", script_path);
+           req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_JM_SCRIPT_PERMISSIONS;
+           return(GLOBUS_FAILURE);
+       }
+
+       /*---------------- rm script -----------------*/
+       sprintf(script_path, "%s/globus-script-%s-rm",
+                            req->jobmanager_libexecdir,
+                            req->jobmanager_type);
+
+       if (stat(script_path, &statbuf) != 0)
+       {
+          grami_fprintf( req->jobmanager_log_fp,
+              "JMI: ERROR: script %s was not found.\n", script_path);
+          req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_JM_SCRIPT_NOT_FOUND;
+          return(GLOBUS_FAILURE);
+       }
+
+       if (!(statbuf.st_mode & 0111))
+       {
+           grami_fprintf( req->jobmanager_log_fp,
+             "JMI: ERROR: Not permitted to execute script %s.\n", script_path);
+           req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_JM_SCRIPT_PERMISSIONS;
+           return(GLOBUS_FAILURE);
+       }
     }
 
     grami_fprintf( req->jobmanager_log_fp,
