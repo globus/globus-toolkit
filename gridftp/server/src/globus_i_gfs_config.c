@@ -728,3 +728,12 @@ globus_i_gfs_config_is_anonymous(
     }
     return GLOBUS_FALSE;
 }
+
+
+const char *
+globus_i_gfs_config_get_module_name(
+    const char *                        client_supplied_name)
+{
+    return client_supplied_name;
+}
+

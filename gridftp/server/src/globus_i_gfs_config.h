@@ -21,5 +21,9 @@ globus_i_gfs_config_int(
 globus_bool_t
 globus_i_gfs_config_is_anonymous(
     const char *                        userid);
+
+const char *
+globus_i_gfs_config_get_module_name(
+    const char *                        client_supplied_name);
     
 #endif
