@@ -98,12 +98,6 @@ static ERR_STRING_DATA gsserr_str_reasons[]=
  {0,NULL},
 };
 
-/* GSSERR_R_PROXY_EXPIRED and PRXYERR_R_CERT_EXPIRE reason strings are
-   defined under PRXYERR_R_PROXY_EXPIRE and PRXYERR_R_CERT_EXPIRE in
-   sslutils.c
-*/
-
-static int ERR_user_lib_gsserr_number;
 
 /**********************************************************************
 Function: ERR_load_gsserr_strings()
@@ -114,7 +108,8 @@ Description:
 	Only the first call does anything.
 
 Parameters:
-   
+    i should be zero to the first call of any of the ERR_load_.*_strings functions and non-zero
+    for the rest.   
 Returns:
 **********************************************************************/
 
@@ -125,20 +120,13 @@ ERR_load_gsserr_strings(int i)
 	static int init=1;
 
 	if (init) {
-		init=0;
+        init=0;
 		i = ERR_load_prxyerr_strings(i);
-		ERR_load_strings(ERR_LIB_USER+i,gsserr_str_functs);
-		ERR_load_strings(ERR_LIB_USER+i,gsserr_str_reasons);
-		ERR_user_lib_gsserr_number = ERR_LIB_USER+i;
+		ERR_load_strings(ERR_USER_LIB_GSSERR_NUMBER, gsserr_str_functs);
+		ERR_load_strings(ERR_USER_LIB_GSSERR_NUMBER, gsserr_str_reasons);
 		i++;
 	}
 	return i;
-}
-
-int
-ERR_user_lib_gsserr_num()
-{
-	return ERR_user_lib_gsserr_number;
 }
 
 /**********************************************************************
@@ -167,11 +155,9 @@ convert_minor_codes(const int lib, const int reason)
 {
     OM_uint32 ul_lib = (OM_uint32)lib;
     OM_uint32 ul_reason = (OM_uint32)reason; 
-
 #ifdef DEBUG
-    fprintf(stderr,"lib: %i, reason: %i, ssl_lib: %i\n",
-            lib,reason,ERR_user_lib_prxyerr_num());
+    fprintf(stderr,"lib: %i, reason: %i, result: %lu\n",
+            lib,reason, ((ul_lib << 16) | ul_reason));
 #endif
-                     
     return ((ul_lib << 16)  |  ul_reason);
 }
