@@ -269,3 +269,12 @@ BUNDLE globus-information-services-client THREADED
 	globus_gss_assist
 	globus_sasl_gssapi_gsi
 	gssapi_error
+BUNDLE	schedulers
+	globus_gram_job_manager_setup_condor
+	globus_gram_job_manager_setup_lsf
+	globus_gram_job_manager_setup_pbs
+	globus_gram_job_manager_setup_remote
+	globus_gram_reporter_setup_condor
+	globus_gram_reporter_setup_fork
+	globus_gram_reporter_setup_lsf
+	globus_gram_reporter_setup_pbs

@@ -25,7 +25,11 @@ globus_gram_client		gram/client/source
 globus_gram_client_tools	gram_client_tools/source
 globus_gram_job_manager		gram/jobmanager/source
 globus_gram_job_manager_setup	gram/jobmanager/setup/program
+globus_gram_job_manager_setup_condor	gram/jobmanager/setup/condor
 globus_gram_job_manager_setup_fork	gram/jobmanager/setup/fork
+globus_gram_job_manager_setup_lsf	gram/jobmanager/setup/lsf
+globus_gram_job_manager_setup_pbs	gram/jobmanager/setup/pbs
+globus_gram_job_manager_setup_remote	gram/jobmanager/setup/remote
 globus_gram_myjob		gram/myjob/source
 globus_gram_protocol		gram/protocol/source
 globus_gram_reporter		gram/reporter/source

@@ -20,3 +20,12 @@ sdb			ogsa_client/sdb
 servicegroup		information_services/servicegroup
 mjs_fork_setup		program_execution/mjs-fork-setup/		gpt
 mmjfs_fork_setup	program_execution/mmjfs-fork-setup/		gpt
+mjs_pbs_setup		program_execution/mjs-pbs-setup/		gpt
+mmjfs_pbs_setup		program_execution/mmjfs-pbs-setup/		gpt
+rips_pbs_provider_setup	information_services/rips-pbs-provider-setup	gpt
+mmjfs_condor_setup	program_execution/mmjfs-condor-setup/		gpt
+mjs_condor_setup	program_execution/mjs-condor-setup/		gpt
+rips_condor_provider_setup	information_services/rips-condor-provider-setup	gpt
+mmjfs_lsf_setup		program_execution/mmjfs-lsf-setup/		gpt
+mjs_lsf_setup		program_execution/mjs-lsf-setup/		gpt
+rips_lsf_provider_setup		information_services/rips-lsf-provider-setup	gpt

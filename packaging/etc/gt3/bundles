@@ -32,3 +32,16 @@ BUNDLE mmjfs
 BUNDLE mmjfs-static
 	globus_grim_devel
 	globus_grim
+
+BUNDLE schedulers
+	mjs_fork_setup
+	mmjfs_fork_setup
+	mjs_pbs_setup
+	mmjfs_pbs_setup
+	rips_pbs_provider_setup
+	mmjfs_condor_setup
+	mjs_condor_setup
+	rips_condor_provider_setup
+	mmjfs_lsf_setup
+	mjs_lsf_setup
+	rips_lsf_provider_setup

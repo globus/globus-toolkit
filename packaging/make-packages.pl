@@ -391,6 +391,7 @@ sub populate_bundle_build_list()
 		push @bundle_build_list, $user_bundle;
 		print "\n";
 	    }
+	    # TODO: else die with error?
 	}
     } else {
 	# build all bundles.
@@ -446,16 +447,19 @@ sub log_system
     {
 	# This contruction is like piping through tee
 	# except that I can get the return code too.
-	open LOG, $log;
+	open LOG, ">>$log";
 	open FOO, "$command 2>&1 |";
 
 	while (<FOO>)
 	{
-	    print;
-	    print LOG;
+	    my $line = $_;
+	    print $line;
+	    print LOG "$line";
+
 	}
 
 	close FOO;
+	close LOG;
 	$res = $?;
     }
     else
@@ -807,7 +811,15 @@ sub package_source_gpt()
 	print "Following GPT packaging for $package.\n";
 
 	if ( $package eq "globus_openssl" or
-	     $package eq "globus_gsoap_soapcpp2")
+	     $package eq "globus_gsoap_soapcpp2" or
+	     $package eq "globus_gsoap_stdsoap2" or
+	     $package eq "ogsa_core_grid_service" or
+	     $package eq "ogsa_core_handle" or
+	     $package eq "globus_ogsi_types_bindings" or
+	     $package eq "globus_ogsa_security_authentication_bindings" or
+#	     $package eq "globus_ogsa_security_authentication" or
+	     $package eq "globus_ogsa_samples_counter_bindings" or
+	     $package eq "gram_mj_bindings")
 	{
 	    print "\tUsing openssl_tools version of autotools.\n";
 	    my $OPATH = $ENV{PATH};
@@ -990,8 +1002,8 @@ sub bundle_sources()
 	for my $package ( @{$bundle_list{$bundle}} )
 	{
 	    next if $package eq $flavor or $package eq $flavor . $thread;
-	    system("cp $package_output/*${package}-* $bundle");
-	    paranoia("cp of $package_output/*${package}-* failed.");
+	    system("cp $package_output/${package}-* $bundle");
+	    paranoia("cp of $package_output/${package}-* failed.");
 	    print PKG "$package\n";
 	}
 	#TODO: Let user choose deps/nodeps
