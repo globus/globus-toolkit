@@ -922,11 +922,15 @@ globus_l_xio_tcp_contact_string(
         /* fall through */
         
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
-        flags |= GLOBUS_LIBC_ADDR_LOCAL;
         if(getsockname(handle, (struct sockaddr *) &sock_name, &sock_len) < 0)
         {
             result = GlobusXIOErrorSystemError("getsockname", errno);
             goto error_sockopt;
+        }
+        
+        if(globus_libc_addr_is_wildcard(&sock_name))
+        {
+            flags |= GLOBUS_LIBC_ADDR_LOCAL;
         }
         break;
         
