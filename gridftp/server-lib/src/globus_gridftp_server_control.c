@@ -1129,14 +1129,46 @@ globus_l_gsc_op_destroy(
 /*
  *  data transfer
  */
+
+globus_result_t
+globus_gridftp_server_control_begin_transfer(
+    globus_gridftp_server_control_operation_t       op)
+{
+    globus_i_gsc_op_t *                             i_op;
+    globus_i_gsc_server_t *                         i_server;
+    GlobusGridFTPServerName(globus_gridftp_server_control_begin_transfer);
+
+    i_op = (globus_i_gsc_op_t *) op;
+    if(i_op == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+    if(i_op->type != GLOBUS_L_GSC_OP_TYPE_DATA)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+
+    i_server = i_op->server;
+
+    /* this implies that pmod func can't block and that user can't call
+        finished until this returns */
+    i_op->event_cb(
+        i_server,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_BEGIN_TRANSFER,
+        "Begin Data Transfer.",
+        i_op->user_arg);
+
+    return GLOBUS_SUCCESS;
+}
+
 globus_result_t
 globus_gridftp_server_control_finished_data(
     globus_gridftp_server_control_operation_t       op,
     globus_result_t                                 res)
 {
     globus_i_gsc_op_t *                             i_op;
-    GlobusGridFTPServerName(globus_gridftp_server_control_finished_data);
     globus_i_gsc_server_t *                         i_server;
+    GlobusGridFTPServerName(globus_gridftp_server_control_finished_data);
 
     i_op = (globus_i_gsc_op_t *) op;
     if(i_op == NULL)
@@ -1213,7 +1245,8 @@ globus_l_gsc_pmod_data_transfer(
 
     globus_mutex_lock(&i_op->server->mutex);
     {
-        if(!(i_server->data_object->data_dir & dir))
+        if(i_server->data_object == NULL ||
+            !(i_server->data_object->data_dir & dir))
         {
             globus_mutex_unlock(&i_op->server->mutex);
             globus_free(i_op);

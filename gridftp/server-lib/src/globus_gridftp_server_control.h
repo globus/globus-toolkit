@@ -47,6 +47,11 @@ typedef enum globus_i_gsc_data_dir_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI = 0x03,
 } globus_gridftp_server_control_data_dir_t;
 
+typedef enum globus_gridftp_server_control_event_type_e
+{
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF_MARKER,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_BEGIN_TRANSFER = 150,
+} globus_gridftp_server_control_event_type_t;
 /*
  *  This funciton is called to tell the user a client is
  *  trying to authenticate with the creditails supplied as parameters.
@@ -412,6 +417,9 @@ globus_result_t
 globus_gridftp_server_control_disconnected(
     void *                                          user_data_handle);
 
+globus_result_t
+globus_gridftp_server_control_begin_transfer(
+    globus_gridftp_server_control_operation_t       op);
 /*
  *  when a transfer is completed, either successfully or due to
  *  failure the user must call this function to notify the user of

@@ -55,6 +55,15 @@ data_func(
     const char *                                    mod_name,
     const char *                                    mod_parms)
 {
+    int                                             ctr;
+
+    globus_gridftp_server_control_begin_transfer(op);
+
+    for(ctr = 0; ctr < 30000; ctr++)
+    {
+        globus_poll();
+    }
+
     globus_gridftp_server_control_finished_data(op, GLOBUS_SUCCESS);
 }
 
@@ -169,6 +178,7 @@ main(
     char **                                 argv)
 {
     globus_xio_driver_t                     tcp_driver;
+    globus_xio_driver_t                     q_driver;
     globus_xio_driver_t                     ftp_driver;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
@@ -187,10 +197,14 @@ main(
      */
     res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
+    res = globus_xio_driver_load("queue", &q_driver);
+    test_res(res, __LINE__);
     res = globus_xio_driver_load("ftp_cmd", &ftp_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_init(&stack, NULL);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
+    test_res(res, __LINE__);
+    res = globus_xio_stack_push_driver(stack, q_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_push_driver(stack, ftp_driver);
     test_res(res, __LINE__);

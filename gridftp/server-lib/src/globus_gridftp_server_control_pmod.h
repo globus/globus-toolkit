@@ -86,7 +86,7 @@ typedef void
 typedef void
 (*globus_gridftp_server_control_event_callback_t)(
     globus_gridftp_server_control_t                 server,
-    unsigned int                                    code,
+    globus_gridftp_server_control_event_type_t      event_t,
     const char *                                    msg,
     void *                                          user_arg);
 
