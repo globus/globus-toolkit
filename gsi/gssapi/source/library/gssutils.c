@@ -545,13 +545,17 @@ gs_handshake
 				context_handle->gs_ssl->s3->wbuf.left);
 			
 			fprintf(stderr,"SSL_get_error = %d\n",
-			 SSL_get_error(context_handle->gs_ssl, rc));
+			SSL_get_error(context_handle->gs_ssl, rc));
 
 			fprintf(stderr,"shutdown=%d\n",
 			SSL_get_shutdown(context_handle->gs_ssl));
 #endif
 			GSSerr(GSSERR_F_GS_HANDSHAKE,GSSERR_R_HANDSHAKE);
-			major_status = GSS_S_DEFECTIVE_CREDENTIAL ;
+            
+            *minor_status = convert_minor_codes(ERR_GET_LIB(ERR_peek_error()),
+                                                ERR_GET_REASON(ERR_peek_error()));
+            
+			major_status = GSS_S_DEFECTIVE_CREDENTIAL;
 		}
 	}
 
@@ -761,18 +765,19 @@ gss_create_and_fill_cred(
                                   proxy_password_callback_no_prompt,
                                   bp)))
     {
-		
-        if (status == PRXYERR_R_CERT_EXPIRED)
+        if (status == PRXYERR_R_USER_CERT_EXPIRED || 
+          status == PRXYERR_R_SERVER_CERT_EXPIRED ||
+          status == PRXYERR_R_PROXY_EXPIRED)
         { 
-            *minor_status =  GSSERR_R_CERT_EXPIRED;
             major_status =  GSS_S_CREDENTIALS_EXPIRED;
+        }
+        else
+        {
+            major_status = GSS_S_NO_CRED;
         }
 
-        if (status == PRXYERR_R_PROXY_EXPIRED)
-        { 
-            *minor_status =  GSSERR_R_PROXY_EXPIRED;
-            major_status =  GSS_S_CREDENTIALS_EXPIRED;
-        }
+        *minor_status = convert_minor_codes(ERR_user_lib_prxyerr_num(), status);
+ 
         goto err;
     }
 
