@@ -70,6 +70,10 @@ struct Authctxt {
 	krb5_principal	 krb5_user;
 	char		*krb5_ticket_file;
 #endif
+#ifdef SESSION_HOOKS
+        char            *session_env_file;
+#endif
+	void *methoddata;
 };
 
 struct Authmethod {
