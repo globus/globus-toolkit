@@ -26,7 +26,8 @@ my $setupdir    = "$globusdir/setup/globus";
 my $ldif_conf   = "$sysconfdir/grid-info-resource-ldif.conf";
 my $tmpfile     = "$sysconfdir/globus-gram-mds-provider.tmp";
 my $slapd_conf  = "$sysconfdir/grid-info-slapd.conf";
-my $schema_file = "grid-info-gram-reporter.schema";
+my $gram_reporter_schema     = "grid-info-gram-reporter.schema";
+my $gram_reporter_rsl_schema = "grid-info-gram-rsl-reporter.schema";
 
 GetOptions('service-name|s=s' => \$servicename,
            'manager-type|m=s' => \$manager_type,
@@ -81,24 +82,28 @@ if ( ! -f "$ldif_conf" )
 
 my $hostname = `${bindir}/globus-hostname`;
 
-system("grep grid-info-gram-reporter.schema $slapd_conf >/dev/null");
+system("grep $gram_reporter_schema $slapd_conf >/dev/null");
 if ( ! $? )
 {
    # entry was found in file
    if ( $add )
    {
-       print "reporter schema entries was already in $slapd_conf.  skipping...\n";
+       print "gram reporter schema entries are already in $slapd_conf.  skipping...\n";
    }
    else
    {
-       print "removing schema entries from $slapd_conf\n";
+       print "removing gram reporter schema entries from $slapd_conf\n";
        open(TMPFILE, ">$tmpfile");
        open(FILE, "<$slapd_conf");
-       # read in file contents
-       $file_data = join('',<FILE>);
-       # remove line starting with include and contains the schema name.
-       $file_data =~ s/include.*$schema_file[^\n]*\n//ms;
-       print TMPFILE "$file_data";
+       while($line = <FILE>)
+       {
+           # remove include lines for the 2 gram schemas.
+           if(($line !~ "include.*$gram_reporter_schema") &&
+              ($line !~ "include.*$gram_reporter_rsl_schema"))
+           {
+               print TMPFILE $line;
+           }
+       }
        close FILE;
        close TMPFILE;
        system("mv $tmpfile $slapd_conf");
@@ -112,7 +117,7 @@ else
       # insert line in the slapd_conf file
 
       open(INFO, "<$slapd_conf");
-      open(TMPFILE, ">./$tmpfile");
+      open(TMPFILE, ">$tmpfile");
 
       while ($line = <INFO>)
       {
@@ -136,7 +141,7 @@ else
               $line_added=1;
               print "adding gram reporter entry in $slapd_conf\n";
               print TMPFILE "include  ${globusdir}/etc/grid-info-gram-reporter.schema\n";
-              print TMPFILE "\n";
+              print TMPFILE "include  ${globusdir}/etc/grid-info-gram-rsl-reporter.schema\n";
            }
         }
 
@@ -149,7 +154,7 @@ else
    }
    else
    {
-       print "reporter schema entries not found for removal in $slapd_conf, skipping...\n";
+       print "gram reporter schema entries not found for removal in $slapd_conf, skipping...\n";
    }
 }
 
