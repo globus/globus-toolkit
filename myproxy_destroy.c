@@ -71,8 +71,13 @@ main(int argc, char *argv[])
     myproxy_response_t     *server_response;
     
     socket_attrs = malloc(sizeof(*socket_attrs));
+    memset(socket_attrs, 0, sizeof(*socket_attrs));
+
     client_request = malloc(sizeof(*client_request));
+    memset(client_request, 0, sizeof(*client_request));
+
     server_response = malloc(sizeof(*server_response));
+    memset(server_response, 0, sizeof(*server_response));
 
     /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
@@ -88,7 +93,6 @@ main(int argc, char *argv[])
     socket_attrs->psport = MYPROXYSERVER_PORT;
     socket_attrs->pshost = malloc(strlen(MYPROXYSERVER_HOST) + 1);
     sprintf(socket_attrs->pshost, "%s", MYPROXYSERVER_HOST);
-
 
     /* Initialize client arguments and create client request object */
     if (init_arguments(argc, argv, socket_attrs, client_request) < 0) {
@@ -155,7 +159,7 @@ main(int argc, char *argv[])
         fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_string);
         break;
     case MYPROXY_OK_RESPONSE:
-        printf("proxy was succesfully destroyed for user %s on %s.\n", client_request->username, socket_attrs->pshost); 
+        printf("proxy was succesfully destroyed for user %s.\n", client_request->username); 
         break;
     default:
         fprintf(stderr, "Invalid response type received.\n");

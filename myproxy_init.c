@@ -77,8 +77,13 @@ main(int argc, char *argv[])
     myproxy_response_t     *server_response;
     
     socket_attrs = malloc(sizeof(*socket_attrs));
+    memset(socket_attrs, 0, sizeof(*socket_attrs));
+
     client_request = malloc(sizeof(*client_request));
+    memset(client_request, 0, sizeof(*client_request));
+
     server_response = malloc(sizeof(*server_response));
+    memset(server_response, 0, sizeof(*server_response));
 
     /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
@@ -94,7 +99,6 @@ main(int argc, char *argv[])
     socket_attrs->psport = MYPROXYSERVER_PORT;
     socket_attrs->pshost = malloc(strlen(MYPROXYSERVER_HOST) + 1);
     sprintf(socket_attrs->pshost, "%s", MYPROXYSERVER_HOST);
-
 
     /* Initialize client arguments and create client request object */
     if (init_arguments(argc, argv, socket_attrs, client_request) < 0) {
@@ -131,7 +135,6 @@ main(int argc, char *argv[])
     /* Serialize client request object */
     requestlen = myproxy_serialize_request(client_request, 
                                            request_buffer, sizeof(request_buffer));
-    
     if (requestlen < 0) {
         fprintf(stderr, "error in myproxy_serialize_request()\n");
         exit(1);
@@ -143,9 +146,20 @@ main(int argc, char *argv[])
         exit(1);
     }
 
+    /* Delegate credentials to server  */
+    if (myproxy_init_delegation(socket_attrs, proxyfile, 60*60*client_request->hours) < 0) {
+	fprintf(stderr, "error in myproxy_delegate_proxy()\n");
+	exit(1);
+    }
+
+    /* Delete proxy file */
+    if (grid_proxy_destroy(proxyfile) != 0) {
+        fprintf(stderr, "Program grid_proxy_destroy failed\n");
+        exit(1);
+    }
+    
     /* Receive a response from the server */
-    responselen = myproxy_recv(socket_attrs, 
-                               response_buffer, sizeof(response_buffer));
+    responselen = myproxy_recv(socket_attrs, response_buffer, sizeof(response_buffer));
     if (responselen < 0) {
         fprintf(stderr, "error in myproxy_recv_response()\n");
         exit(1);
@@ -165,26 +179,15 @@ main(int argc, char *argv[])
     /* Check response */
     switch(server_response->response_type) {
         case MYPROXY_ERROR_RESPONSE:
-            fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_string);
+            fprintf(stderr, "Received ERROR: %s\n", server_response->error_string);
             break;
         case MYPROXY_OK_RESPONSE:
-           /* Delegate credentials to server  */
-          if (myproxy_init_delegation(socket_attrs, proxyfile) < 0) {
-            fprintf(stderr, "error in myproxy_delegate_proxy()\n");
-            exit(1);
-          }
-          printf("A proxy valid for %d hours for user %s now exists on %s.\n", 
+	    printf("A proxy valid for %d hours for user %s now exists on %s.\n", 
                  client_request->hours, client_request->username, socket_attrs->pshost); 
             break;
         default:
             fprintf(stderr, "Received unknown response type\n");
             break;
-    }
-    
-      /* Delete proxy file */
-    if (grid_proxy_destroy(proxyfile) != 0) {
-        fprintf(stderr, "Program grid_proxy_destroy failed\n");
-        exit(1);
     }
     
     /* free memory allocated */
@@ -238,10 +241,7 @@ init_arguments(int argc,
 	    break;	
         }
     }
-
     return arg_error;
-
-
 }
 
 
@@ -267,7 +267,7 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
             fprintf(stderr,"Failed to read password from stdin\n");   
             return -1;
         }	
-        i = strlen(pass);
+        i = strlen(pass) - 1;
         if ((i < min) || (i > max)) {
             printf("Password must be between %d and %d characters\n, min, max");
         } else {
@@ -275,8 +275,8 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
         }
     } while (!done);
     
-    if (pass[i-1] == '\n') {
-        pass[i-1] = '\0';
+    if (pass[i] == '\n') {
+        pass[i] = '\0';
     }
     strncpy(passphrase, pass, passlen);
     return 0;
