@@ -31,7 +31,7 @@ typedef enum  test_next_op_e
     TEST_CLOSE,
     TEST_READ,
     TEST_WRITE,
-    TEST_FINISH,
+    TEST_FINISH
 } test_next_op_t;
 
 typedef struct bounce_handle_s

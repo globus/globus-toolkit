@@ -498,7 +498,7 @@ enum globus_xio_handle_attr_cmd_t
     GLOBUS_XIO_HANDLE_ATTR_READ_TIMEOUT,
     GLOBUS_XIO_HANDLE_ATTR_WRITE_TIMEOUT,
     GLOBUS_XIO_HANDLE_ATTR_CLOSE_TIMEOUT,
-    GLOBUS_XIO_HANDLE_ATTR_ALL_TIMEOUT,
+    GLOBUS_XIO_HANDLE_ATTR_ALL_TIMEOUT
 };
 
 /******************************************************************

@@ -40,9 +40,6 @@ do                                                                          \
          (_in_op), (_in_op)->ref));                                         \
 } while(0)
 
-#define GlobusXIODebugPrintf(level, message)                                \
-    GlobusDebugPrintf(GLOBUS_XIO, level, message)
-
 #define GlobusXIOObjToResult(_in_obj)                                       \
     (_in_obj == NULL ? GLOBUS_SUCCESS : globus_error_put(_in_obj))
 
@@ -204,7 +201,7 @@ typedef enum globus_i_xio_context_state_e
     GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING,
     GLOBUS_XIO_CONTEXT_STATE_CLOSING,
     GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING,
-    GLOBUS_XIO_CONTEXT_STATE_CLOSED,
+    GLOBUS_XIO_CONTEXT_STATE_CLOSED
 } globus_i_xio_context_state_t;
 
 extern char * globus_i_xio_handle_state_name_table[];
@@ -217,7 +214,7 @@ typedef enum globus_i_xio_handle_state_e
     GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING,
     GLOBUS_XIO_HANDLE_STATE_OPEN,
     GLOBUS_XIO_HANDLE_STATE_CLOSING,
-    GLOBUS_XIO_HANDLE_STATE_CLOSED,
+    GLOBUS_XIO_HANDLE_STATE_CLOSED
 } globus_i_xio_handle_state_t;
 
 extern char * globus_i_xio_op_state_name_table[];
@@ -228,7 +225,7 @@ typedef enum globus_i_xio_op_state_e
     GLOBUS_XIO_OP_STATE_OPERATING,
     GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING,
     GLOBUS_XIO_OP_STATE_FINISH_WAITING,
-    GLOBUS_XIO_OP_STATE_FINISHED,
+    GLOBUS_XIO_OP_STATE_FINISHED
 } globus_i_xio_op_state_t;
 
 typedef enum globus_xio_server_state_e
@@ -239,7 +236,7 @@ typedef enum globus_xio_server_state_e
     GLOBUS_XIO_SERVER_STATE_COMPLETING,
     GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING,
     GLOBUS_XIO_SERVER_STATE_CLOSING,
-    GLOBUS_XIO_SERVER_STATE_CLOSED,
+    GLOBUS_XIO_SERVER_STATE_CLOSED
 } globus_xio_server_state_t;
 
 /***************************************************************************

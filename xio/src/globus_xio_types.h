@@ -41,12 +41,12 @@ typedef enum globus_i_xio_op_type_e
     GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
     GLOBUS_XIO_OPERATION_TYPE_CLIENT,
     GLOBUS_XIO_OPERATION_TYPE_DRIVER,
-    GLOBUS_XIO_OPERATION_TYPE_DD,
+    GLOBUS_XIO_OPERATION_TYPE_DD
 } globus_xio_operation_type_t;
 
 typedef enum globus_i_xio_signal_type_e
 {
-    GLOBUS_XIO_SIGNAL_TYPE_NONE,
+    GLOBUS_XIO_SIGNAL_TYPE_NONE
 } globus_xio_signal_type_t;
 
 typedef enum
@@ -80,7 +80,7 @@ typedef enum
     GLOBUS_XIO_ATTR_SET_TIMEOUT_READ,
     GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE,
     GLOBUS_XIO_ATTR_SET_TIMEOUT_ACCEPT,
-    GLOBUS_XIO_ATTR_SET_SPACE,
+    GLOBUS_XIO_ATTR_SET_SPACE
 } globus_xio_attr_cmd_t;
 
 typedef enum
@@ -88,7 +88,7 @@ typedef enum
     GLOBUS_XIO_CANCEL_OPEN = 0x01,
     GLOBUS_XIO_CANCEL_CLOSE = 0x02,
     GLOBUS_XIO_CANCEL_READ = 0x04,
-    GLOBUS_XIO_CANCEL_WRITE = 0x08,
+    GLOBUS_XIO_CANCEL_WRITE = 0x08
 } globus_xio_cancel_t;
 
 typedef enum
@@ -99,7 +99,7 @@ typedef enum
     GLOBUS_XIO_DEBUG_INTERNAL_TRACE = 8,
     GLOBUS_XIO_DEBUG_INFO = 16,
     GLOBUS_XIO_DEBUG_STATE = 32,
-    GLOBUS_XIO_DEBUG_INFO_VERBOSE = 64,
+    GLOBUS_XIO_DEBUG_INFO_VERBOSE = 64
 } globus_xio_debug_levels_t;
 
 typedef struct
