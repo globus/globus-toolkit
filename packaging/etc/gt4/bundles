@@ -15,4 +15,5 @@ BUNDLE gt4-java-ws-core
 BUNDLE gt4-mds
         globus_wsrf_mds_index
         globus_wsrf_mds_ganglia
+        globus_wsrf_servicegroup
 
