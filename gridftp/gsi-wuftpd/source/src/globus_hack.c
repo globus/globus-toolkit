@@ -19,6 +19,9 @@ extern globus_fifo_t				g_restarts;
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
 
+#if defined(STRIPED_SERVER_BACKEND)
+#include "bmap_file.h"
+#endif 
 /*
  *  The enter and exit macros need to be around any code that will
  *  cause globus to poll, ex: globus_cond_wait(), globus_poll().
@@ -66,6 +69,11 @@ typedef struct globus_i_wu_montor_s
     globus_callback_handle_t   callback_handle;
     globus_ftp_control_handle_t *
 			       handle;
+#if defined (STRIPED_SERVER_BACKEND)
+    char *                     name;
+    bmap_file_t                *bmap_handle;    
+#endif /* STRIPED_SERVER_BACKEND */
+
 } globus_i_wu_montor_t;
 
 /*
@@ -486,6 +494,7 @@ g_send_data(
     int *                                           length_a;
     int                                             count_a;
     int                                             ctr;
+    int                                             skipped_offset;
 #ifdef THROUGHPUT
     int                                             bps;
     double                                          bpsmult;
@@ -501,6 +510,17 @@ g_send_data(
 
     wu_monitor_reset(&g_monitor);
 
+#if defined(STRIPED_SERVER_BACKEND)
+     if( bmap_file_open( 
+                        &(g_monitor.bmap_handle),
+                        "GlobusTestFile",
+                        O_RDONLY,
+                        fileno(instr)) != 0 )
+     {
+         goto data_err;
+     }
+#endif  /* STRIPED_SERVER_BACKEND */
+    
     if(offset == -1)
     {
         offset = 0;
@@ -603,7 +623,7 @@ g_send_data(
 			*)globus_malloc(sizeof(int)*
 					(globus_fifo_size(&g_restarts) + 1));
             length_a = (int *)globus_malloc(sizeof(int)*(
-		globus_fifo_size(&g_restarts) + 1));
+		                               globus_fifo_size(&g_restarts) + 1));
             count_a = invert_restart(offset_a, length_a);
         }
         else
@@ -645,8 +665,33 @@ g_send_data(
                 {
                     jb_i = length - jb_count;
                 }
+#               if defined(STRIPED_SERVER_BACKEND)
+                {
+                    bmap_offs_t offs_out = -1;
 
-                cnt = read(filefd, buf, jb_i);
+                    cnt = bmap_file_read( 
+                            g_monitor.bmap_handle,
+                            buf,
+                            jb_i,
+                            offset,
+                            &offs_out);
+            
+                   if(offs_out > 0 && cnt > 0)
+                   {
+                       offset = offs_out;
+                   }  
+
+                   if (cnt <= 0 )
+                   {
+                      offset = 0;
+                      cnt = 0;
+                   }
+               }
+#              else
+               {
+                   cnt = read(filefd, buf, jb_i);
+               }
+#              endif
 
                 /*
                  *  if file eof, or we have read the portion we want  to 
@@ -662,7 +707,7 @@ g_send_data(
                           handle,
                           buf,
                           cnt,
-                          jb_count + offset,
+                          offset,
                           eof,
                           data_write_callback,
                           &g_monitor);
@@ -671,7 +716,7 @@ g_send_data(
                     goto data_err;
                 }
                 cb_count++;
-
+                offset += cnt;
                 jb_count += cnt;
 
                 res = globus_ftp_control_data_query_channels(
@@ -793,17 +838,36 @@ g_send_data(
         if(mode == MODE_E)
         {
             int                           data_connections;
+            int                           stripe_count;
+            int                           ctr_126;
+            int                           i_126 = 0;
+            char *                        buf_126;
 
-            res = globus_ftp_control_data_get_total_data_channels(
+            res = globus_ftp_control_get_stripe_count(
                       handle,
-                      &data_connections,
-                      0);
-            if(res != GLOBUS_SUCCESS)
+                      &stripe_count);
+            if(res != GLOBUS_SUCCESS || stripe_count == 0)
             {
                 goto data_err;
             }
 
-            reply(126, "%d", data_connections);
+            buf_126 = (char *)malloc(15 * stripe_count);
+            for(ctr_126 = 0; ctr_126 < stripe_count; ctr_126++)
+            {
+                res = globus_ftp_control_data_get_total_data_channels(
+                          handle,
+                          &data_connections,
+                          ctr_126);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto data_err;
+                }
+                sprintf(&buf_126[i_126], "%d ", data_connections);
+                i_126 += strlen(buf_126);
+            }
+
+            reply(126, "%s", buf_126);
+            free(buf_126);
         }
 
         reply(226, "Transfer complete.");
@@ -880,13 +944,22 @@ g_send_data(
     goto bail0;
 
   bail0:
+#if defined(STRIPED_SERVER_BACKEND)
+    bmap_file_close(g_monitor.bmap_handle);
+#endif 
     globus_i_wu_free_ranges(&g_restarts);
     return (0);
   bail1:
+#if defined(STRIPED_SERVER_BACKEND)
+    bmap_file_close(g_monitor.bmap_handle);
+#endif 
     globus_i_wu_free_ranges(&g_restarts);
     return (1);
 
   clean_exit:
+#if defined(STRIPED_SERVER_BACKEND)
+    bmap_file_close(g_monitor.bmap_handle);
+#endif 
 
     G_EXIT();
     return (1);
@@ -1011,6 +1084,19 @@ g_receive_data(
 
     (void) signal(SIGALRM, g_alarm_signal);
     alarm(timeout_accept);
+
+#    if defined(STRIPED_SERVER_BACKEND)
+     {
+         if(bmap_file_open( 
+                        &(g_monitor.bmap_handle),
+                        fname,
+                        O_WRONLY,
+                        fileno(outstr)) != 0 )
+         {
+             goto data_err;
+         }
+    }
+#   endif  /* STRIPED_SERVER_BACKEND */
 
     res = globus_ftp_control_data_connect_read(
               handle,
@@ -1202,10 +1288,16 @@ g_receive_data(
     perror_reply(452, "Error writing file");
 
     bail:
+#if defined(STRIPED_SERVER_BACKEND)
+    bmap_file_close(g_monitor.bmap_handle);
+#endif 
     globus_i_wu_free_ranges(&g_restarts);
     return (-1);
 
   clean_exit:
+#if defined(STRIPED_SERVER_BACKEND)
+    bmap_file_close(g_monitor.bmap_handle);
+#endif 
     globus_callback_unregister(g_monitor.callback_handle);
 
     G_EXIT();
@@ -1260,6 +1352,7 @@ data_read_callback(
 {
     globus_i_wu_montor_t *                      monitor;
     globus_result_t                             res;
+    int                                         ret;
 #ifdef BUFFER_SIZE
     size_t                                      buffer_size = BUFFER_SIZE;
 #else
@@ -1285,9 +1378,26 @@ data_read_callback(
             {
                 offset = offset + monitor->offset;
             }
-
-            lseek(monitor->fd, offset, SEEK_SET);
-            write(monitor->fd, buffer, length);
+#           if defined(STRIPED_SERVER_BACKEND)
+            {
+                int                              ret;
+    
+                if ((ret=bmap_file_write( monitor->bmap_handle,
+                               buffer,
+                               length,
+                               offset)) <= 0 )
+                 {
+                    /* How to signal error ? */
+                    assert(0);
+                    return;
+                }
+            }
+#           else
+            {
+                ret = lseek(monitor->fd, offset, SEEK_SET);
+                ret = write(monitor->fd, buffer, length);
+            }
+#           endif /* STRIPED_SERVER_BACKEND */
             byte_count += length;
 #           ifdef TRANSFER_COUNT
             {
@@ -1307,7 +1417,7 @@ data_read_callback(
 
 	    globus_i_wu_insert_range(&monitor->ranges, offset, length);
 
-	    if(t - monitor->last_range_update > 5)
+	    if(t - monitor->last_range_update > 10)
 	    {
                 g_send_range = GLOBUS_TRUE;
                 monitor->last_range_update = t;
