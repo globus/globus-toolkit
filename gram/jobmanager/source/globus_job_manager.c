@@ -19,6 +19,7 @@ CVS Information:
 #include <malloc.h>
 #include <sys/param.h>
 #include <sys/time.h>
+#include <assert.h>
 #include <string.h> /* for strdup() */
 #include <memory.h>
 #include <nexus.h>
