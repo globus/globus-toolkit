@@ -1,5 +1,5 @@
 ======
-README		Myproxy 0.1b3
+README		Myproxy 0.2alpha1
 ======
 
  1. Overview
@@ -8,12 +8,12 @@ README		Myproxy 0.1b3
  4. Installation
  5. More Information on Globus/GSI
  6. Authors
-
+ 7. Contributors
 
 1. Overview
 -----------
 
-Myproxy v0.1 provides a  server and  client-side utilities to store
+Myproxy v0.2 provides a  server and  client-side utilities to store
 and retrieve  delegated  X509  certificates  via the  Globus  Security
 Infrastructure (GSI). Services that do not  support GSI, including web
 browsers,  can retrieve user  credentials from a  myproxy-server via a
@@ -40,6 +40,9 @@ of the users credentials to the portal for use.
 The user may destroy their credentials stored with myproxy-server
 at any time using myproxy-destroy.
 
+Myproxy v0.1 has protocol differences from Myproxy v0.1 and is not
+compatible with v0.1 in any way.
+
 2. Myproxy Programs
 -------------------
 
@@ -50,19 +53,9 @@ programs and command line arguments.
 3. License and Support
 ----------------------
 
-All rights to myproxy are held by the authors, the National Center
-for Supercomputing Applications and the University of Illinois.
+Myproxy is Copyright 2000 The Board of Trustees of the University of Illinois
 
-You may freely distribute myproxy in any form as along as it is
-accompanied by this README file.
-
-You may freely use myproxy for non-commercial applications. You are
-asked, but not required, to inform the authors if you use myproxy.
-
-You may freely modify myproxy and redistribute with your changes as
-long as you clearly indicate that you have made changes and describe
-your changes, preferably in a separate README file. Modifications
-to myproxy do not effect this license.
+See the file 'LICENSE' for detailed license information.
 
 myproxy is unsupported software, use at your own risk. No warranty
 implied.
@@ -87,3 +80,8 @@ http://www.globus.org.
 ----------
 Jason Novotny <novotny@ncsa.uiuc.edu>
 Von Welch <vwelch@ncsa.uiuc.edu>
+
+7. Contributors
+---------------
+Jarek Gawor <gawor@mcs.anl.gov>
+Benjamin Temko <btemko@extreme.indiana.edu>
