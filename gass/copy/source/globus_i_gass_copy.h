@@ -102,7 +102,7 @@ typedef struct globus_i_gass_copy_state_target_s
      * If the attr was created internally then TRUE
      */
     globus_bool_t		                free_attr;
-
+    globus_bool_t                               free_ftp_attr;
     /**
      * coordinates the modifying of the target structure
      */
