@@ -45,6 +45,8 @@ PROXYCERTINFO * PROXYCERTINFO_new()
     M_ASN1_New_Malloc(ret, PROXYCERTINFO);
     ret->pC = (ASN1_BOOLEAN *)OPENSSL_malloc(sizeof(ASN1_BOOLEAN));
     *(ret->pC) = 1;
+    ret->version          = ASN1_INTEGER_new();
+    ASN1_INTEGER_set(ret->version, 1);  // current first version of protocol
     ret->path_length      = NULL;
     ret->restriction      = NULL;
     ret->group            = NULL;
@@ -67,6 +69,7 @@ void PROXYCERTINFO_free(
     if(cert_info == NULL) return;
     OPENSSL_free(cert_info->pC);
     cert_info->pC = NULL;
+    ASN1_INTEGER_free(cert_info->version);
     ASN1_INTEGER_free(cert_info->path_length);
     PROXYRESTRICTION_free(cert_info->restriction);
     PROXYGROUP_free(cert_info->group);
@@ -108,7 +111,8 @@ int PROXYCERTINFO_cmp(
     const PROXYCERTINFO *               a,
     const PROXYCERTINFO *               b)
 {
-    if((a->pC == b->pC) &&
+    if(ASN1_INTEGER_cmp(a->version, b->version) && 
+       (a->pC == b->pC) &&
        ASN1_INTEGER_cmp(a->path_length, b->path_length) &&
        PROXYRESTRICTION_cmp(a->restriction, b->restriction) &&
        PROXYGROUP_cmp(a->group, b->group) &&
@@ -135,11 +139,16 @@ int PROXYCERTINFO_print(
     int                                 ret,
                                         tmpret;
 
-    ret = BIO_printf(bp, 
-                     "PROXYCERTINFO::ProxyCertificate: %s\n", 
-                     *(cert_info->pC) ? "TRUE" : "FALSE");
+    ret = BIO_printf(bp, "PROXYCERTINFO::Version: %d\n", 
+                        ASN1_INTEGER_get(cert_info->version));
     if(ret < 0) { return ret; }
 
+    tmpret = BIO_printf(bp, 
+                        "PROXYCERTINFO::ProxyCertificate: %s\n", 
+                        *(cert_info->pC) ? "TRUE" : "FALSE");
+    if(tmpret < 0) { return tmpret; }
+    ret += tmpret;
+    
     if(cert_info->path_length != NULL)
     {
         tmpret = BIO_printf(bp, 
@@ -229,6 +238,38 @@ int PROXYCERTINFO_set_pC(
 {
     *(cert_info->pC) = pC;
     return 1;
+}
+
+/**
+ * @ingroup proxycertinfo
+ *
+ * Sets the version of the PROXYCERTINFO struct
+ * 
+ * @param cert_info the PROXYCERTINFO to set the version of
+ * @param version the version to set it to
+ *
+ * @return 1 on success, 0 on error
+ */
+int PROXYCERTINFO_set_version(
+    PROXYCERTINFO *                     cert_info,
+    long                                version)
+{
+    return ASN1_INTEGER_set(cert_info->version, version);
+}
+
+/**
+ * @ingroup proxycertinfo
+ *
+ * Gets the version of the PROXYCERTINFO structure
+ *
+ * @param cert_info the PROXYCERTINFO to get the version of
+ *
+ * @return the version
+ */
+long PROXYCERTINFO_get_version(
+    PROXYCERTINFO *                     cert_info)
+{
+    return ASN1_INTEGER_get(cert_info->version);
 }
 
 /**
@@ -460,8 +501,9 @@ int i2d_PROXYCERTINFO(
     
     v1 = v2 = v3 = v4 = 0;
 
-    M_ASN1_I2D_len(*(cert_info->pC),              
-                   i2d_ASN1_BOOLEAN);
+    M_ASN1_I2D_len(cert_info->version, i2d_ASN1_INTEGER);
+    M_ASN1_I2D_len(*(cert_info->pC), i2d_ASN1_BOOLEAN);
+
     M_ASN1_I2D_len_EXP_opt(cert_info->path_length,      
                            i2d_ASN1_INTEGER,
                            1, v1);
@@ -472,8 +514,8 @@ int i2d_PROXYCERTINFO(
     M_ASN1_I2D_len_EXP_opt(cert_info->issuer_signature, 
                            i2d_X509_SIG, 4, v4);
     M_ASN1_I2D_seq_total();
-    M_ASN1_I2D_put(*(cert_info->pC),
-                   i2d_ASN1_BOOLEAN);
+    M_ASN1_I2D_put(cert_info->version, i2d_ASN1_INTEGER);
+    M_ASN1_I2D_put(*(cert_info->pC), i2d_ASN1_BOOLEAN);
     M_ASN1_I2D_put_EXP_opt(cert_info->path_length, i2d_ASN1_INTEGER, 1, v1);
     M_ASN1_I2D_put_EXP_opt(cert_info->restriction, 
                            i2d_PROXYRESTRICTION, 2, v2);
@@ -506,6 +548,8 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
 
     M_ASN1_D2I_Init();
     M_ASN1_D2I_start_sequence();
+
+    M_ASN1_D2I_get(ret->version, d2i_ASN1_INTEGER);
 
     if((c.slen != 0) && (M_ASN1_next == (V_ASN1_UNIVERSAL|V_ASN1_BOOLEAN)))
     {

@@ -29,10 +29,11 @@ int main(int argc, char * argv[])
     X509_SIG * signature;
 
     int ispc, haspclength, hasgroup, hasrestriction, hasissuer,
-	pclength, grpatt, ind, from_file;
+	pclength, grpatt, ind, from_file, version;
 
     from_file = haspclength = hasgroup = hasissuer =
 	        hasrestriction = pclength = 0;
+    version = 1;
     ispc = 1;
 
     if(argc > 1)
@@ -47,7 +48,7 @@ int main(int argc, char * argv[])
                 ind++;
                 continue;
 	    }
-	    if(!strcmp(argv[ind], "-path"))
+	    else if(!strcmp(argv[ind], "-path"))
 	    {
 		ind++;
 		pclength = atoi(argv[ind]);
@@ -55,7 +56,14 @@ int main(int argc, char * argv[])
 		ind++;
                 continue;
 	    }
-	    if(!strcmp(argv[ind], "-group"))
+            else if(!strcmp(argv[ind], "-version"))
+            {
+                ind++;
+                version = atoi(argv[ind]);
+                ind++;
+                continue;
+            }
+	    else if(!strcmp(argv[ind], "-group"))
 	    {
 		ind++;
 		grpname = argv[ind];
@@ -115,6 +123,7 @@ int main(int argc, char * argv[])
 	pcinfo = PROXYCERTINFO_new();
 	
 	PROXYCERTINFO_set_pC(pcinfo, ispc);
+        PROXYCERTINFO_set_version(pcinfo, version);
 	
 	if(haspclength)
 	{

@@ -62,6 +62,7 @@ extern "C" {
  */
 struct PROXYCERTINFO_st
 {
+    ASN1_INTEGER *                      version;
     ASN1_BOOLEAN *                      pC;                       
     ASN1_INTEGER *                      path_length;       /* [ OPTIONAL ] */
     PROXYRESTRICTION *                  restriction;       /* [ OPTIONAL ] */

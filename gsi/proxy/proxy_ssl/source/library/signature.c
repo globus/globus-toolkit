@@ -182,13 +182,18 @@ EVP_MD * X509_SIG_get_algorithm(
  * @return 1 on success, 0 if an error or the signature
  * is NULL
  */
-int X509_SIG_set_signature(
-    X509_SIG *                    signature,
+int X509_SIG_set(
+    X509_SIG *                          signature,
     X509 *                              cert)
 {    
-    return ASN1_STRING_set(signature->digest,
-                           cert->signature->data, 
-                           cert->signature->length);
+    int                                 ret;
+
+    ret = ASN1_STRING_set(signature->digest,
+                          cert->signature->data, 
+                          cert->signature->length);
+    X509_ALGOR_free(signature->algor);
+    signature->algor = X509_ALGOR_dup(cert->sig_alg);
+    return (ret);
 }
 
 /**
