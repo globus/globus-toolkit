@@ -30,6 +30,8 @@ myproxy_creds.lo
 myproxy_delegation.lo
 myproxy_log.lo
 myproxy_read_pass.lo
+myproxy_sasl_client.lo
+myproxy_sasl_server.lo
 myproxy_server_config.lo
 ssl_utils.lo
 string_funcs.lo
