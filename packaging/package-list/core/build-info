@@ -1,6 +1,2 @@
 name=core
 subdir=ogsa
-build="ant clean
-ant dist
-rmdir \$destdir
-mv build/ogsa-alpha \$destdir"
