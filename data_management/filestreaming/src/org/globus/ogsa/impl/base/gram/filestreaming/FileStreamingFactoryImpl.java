@@ -130,6 +130,8 @@ import org.apache.commons.logging.LogFactory;
 
 import java.rmi.RemoteException;
 
+import javax.xml.namespace.QName;
+
 import org.globus.ogsa.base.gram.filestreaming.DestinationURLElement;
 import org.globus.ogsa.base.gram.filestreaming.FileStreamingOptionsType;
 import org.globus.ogsa.base.gram.filestreaming.FileStreamingType;
@@ -141,13 +143,20 @@ import org.globus.ogsa.impl.core.service.QueryHelper;
 import org.globus.ogsa.repository.ServiceNode;
 import org.globus.ogsa.GridServiceException;
 import org.globus.ogsa.ServiceData;
+import org.globus.ogsa.ServiceDataValueCallback;
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.ServicePropertiesException;
 import org.globus.ogsa.utils.AnyHelper;
+import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
 import org.gridforum.ogsa.CreationType;
 import org.gridforum.ogsa.ExtensibilityType;
+import org.gridforum.ogsa.GridServiceFault;
+import org.gridforum.ogsa.HandleType;
+import org.gridforum.ogsa.ServiceAlreadyExistsFault;
 import org.gridforum.ogsa.ServiceDataType;
+import org.gridforum.ogsa.ServiceHandleElementType;
+import org.gridforum.ogsa.ServiceTerminationReferenceType;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -156,7 +165,8 @@ import org.w3c.dom.Text;
 import java.util.Vector;
 
 
-public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton {
+public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton
+        implements ServiceDataValueCallback {
     private static Log logger
         = LogFactory.getLog(FileStreamingFactoryImpl.class);
 
@@ -165,19 +175,32 @@ public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton {
     private String localPath;
     protected ExtensibilityType extension;
     private static final String DEST_URLS_SDE_NAME = "DestinationURLs";
+    private static final String FILE_STREAMING_HANDLES_SDE_NAME
+            = "FileStreamingHandles";
+    private static final QName FILE_STREAMING_HANDLES_SDE_QNAME
+            = new QName(FILE_STREAMING_HANDLES_SDE_NAME); 
+    private ServiceData fileStreamingHandles;
 
     public FileStreamingFactoryImpl() {
         super ("File Streaming Factory Service");
 
         this.localPath = (String) getPersistentProperty(LOCAL_PATH);
+        this.secContextSkeleton.setGrimPolicyHandler(
+                new IgnoreProxyPolicyHandler());
     }
 
     public FileStreamingFactoryImpl(FileStreamingType fileStreamingAttributes)
             throws RemoteException {
         super ("File Streaming Factory Service");
+        this.secContextSkeleton.setGrimPolicyHandler(
+                new IgnoreProxyPolicyHandler());
 
         this.localPath = fileStreamingAttributes.getPath();
         this.fileStreamingAttributes = fileStreamingAttributes;
+        fileStreamingHandles = this.serviceData.create(
+                FILE_STREAMING_HANDLES_SDE_NAME);
+        fileStreamingHandles.setCallback(this);
+        this.serviceData.add(fileStreamingHandles);
 
         try {
             setPersistentProperty(LOCAL_PATH, this.localPath);
@@ -222,6 +245,17 @@ public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton {
         this.serviceData.add(destinationURLsServiceData);
     }
 
+    public ServiceTerminationReferenceType createService(CreationType creation)
+            throws RemoteException, ServiceAlreadyExistsFault,
+            GridServiceFault {
+        ServiceTerminationReferenceType retval = super.createService(creation);
+
+        fileStreamingHandles.notifyChange();
+
+        return retval;
+    }
+
+
     public Object createServiceObject(CreationType creation)
             throws GridServiceException {
         extension = creation.getServiceParameters();
@@ -261,6 +295,7 @@ public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton {
 
     public void notifyDestroy(String path) {
         super.notifyDestroy(path);
+        fileStreamingHandles.notifyChange();
 
         /*
         //Obtain the index into the list of instances of the dying instance
@@ -308,6 +343,56 @@ public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton {
         } catch (GridServiceException gse) {
             logger.error("problem updating service data", gse);
         }*/
+    }
+
+    public Object [] generateServiceDataValues(QName qname) {
+        logger.debug("generating service data for " + qname.toString());
+
+        if (qname.equals(FILE_STREAMING_HANDLES_SDE_QNAME)) {
+            return getFileStreamingHandlesDataValues();
+        } else {
+            return null;
+        }
+
+    }
+
+    protected Object [] getFileStreamingHandlesDataValues() {
+        Object [] handles;
+        String myHandle = (String) getProperty(ServiceProperties.HANDLE);
+
+        String servicePath = (String) getProperty(
+                ServiceProperties.SERVICE_PATH);
+        logger.debug("First locating my ServiceNode at " + servicePath);
+        ServiceNode node = ServiceNode.getRootNode().getNode(servicePath);
+        Vector instances = node.getAllServices();
+        int instanceCount = instances.size();
+        logger.debug("Got " + String.valueOf(instanceCount-1)
+                + " instance" + ((instanceCount-1>1) ? "s" : "")
+                + " to deal with");
+
+        handles = new Object[instanceCount-1];
+
+        for (int i = 0, j = 0; i < instanceCount; i++) {
+            ServiceSkeleton service = (ServiceSkeleton) instances.get(i);
+            String handleString =
+                    (String) service.getProperty(ServiceProperties.HANDLE);
+
+            if (handleString.equals(myHandle)) {
+                // Skip the factory---only list instances
+                continue;
+            }
+
+            logger.debug("Adding instance #" + String.valueOf(i)
+                    + ": " + handleString);
+
+            HandleType handle = new HandleType(handleString);
+            ServiceHandleElementType element = new ServiceHandleElementType();
+
+            element.setServiceHandle(handle);
+
+            handles[j++] = element;
+        }
+        return handles;
     }
 
 }
