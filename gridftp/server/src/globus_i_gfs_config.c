@@ -309,6 +309,7 @@ globus_l_gfs_config_load_config_file(
     int                                 line_num;
     int                                 optlen;
     char *                              p;
+    globus_off_t                        tmp_off;
     GlobusGFSName(globus_l_gfs_config_load_config_file);
     GlobusGFSDebugEnter();
 
@@ -409,7 +410,14 @@ globus_l_gfs_config_load_config_file(
                 option->int_value = (atoi(value) == 0) ? 0 : 1;
                 break;
               case GLOBUS_L_GFS_CONFIG_INT:
-                option->int_value = strtol(value, NULL, 0);
+                rc = globus_args_bytestr_to_num(value, &tmp_off);
+                if(rc != 0)
+                {
+                    fprintf(stderr, "Invalid value for %s\n", 
+                        option_list[i].option_name);
+                    goto error_parse;
+                }                  
+                option->int_value = (int) tmp_off;
                 break;
               case GLOBUS_L_GFS_CONFIG_STRING:
                 option->value = globus_libc_strdup(value);
@@ -450,6 +458,7 @@ globus_l_gfs_config_load_config_env()
     int                                 rc;
     int                                 i;
     globus_l_gfs_config_option_t *      option;
+    globus_off_t                        tmp_off;
     GlobusGFSName(globus_l_gfs_config_load_config_env);
     GlobusGFSDebugEnter();
     
@@ -486,7 +495,14 @@ globus_l_gfs_config_load_config_env()
             option->int_value = (atoi(value) == 0) ? 0 : 1;
             break;
           case GLOBUS_L_GFS_CONFIG_INT:
-            option->int_value = strtol(value, NULL, 0);
+            rc = globus_args_bytestr_to_num(value, &tmp_off);
+            if(rc != 0)
+            {
+                fprintf(stderr, "Invalid value for %s\n", 
+                    option_list[i].option_name);
+                return -1;
+            }                  
+            option->int_value = (int) tmp_off;
             break;
           case GLOBUS_L_GFS_CONFIG_STRING:
             option->value = globus_libc_strdup(value);
@@ -523,7 +539,7 @@ globus_l_gfs_config_load_commandline(
     globus_l_gfs_config_option_t *      option;
     globus_bool_t                       found;
     globus_bool_t                       negate;
-    globus_off_t                        tmp_num;
+    globus_off_t                        tmp_off;
     GlobusGFSName(globus_l_gfs_config_load_commandline);
     GlobusGFSDebugEnter();
     
@@ -598,13 +614,13 @@ globus_l_gfs_config_load_commandline(
                     fprintf(stderr, "Option %s is missing a value\n", argp);
                     return -1;
                 }
-                rc = globus_args_bytestr_to_num(argv[arg_num], &tmp_num);
+                rc = globus_args_bytestr_to_num(argv[arg_num], &tmp_off);
                 if(rc != 0)
                 {
                     fprintf(stderr, "Invalid value for %s\n", argp);
                     return -1;
                 }                  
-                option->int_value = (int) tmp_num;
+                option->int_value = (int) tmp_off;
                 break;
                 
               case GLOBUS_L_GFS_CONFIG_STRING:
