@@ -57,10 +57,8 @@ CVS Information:
 
 #include "openssl/md5.h"
 
-/*
-#define DEBUG				1
-#define GLOBUS_L_GASS_CACHE_LOG 	1
-*/
+#define DEBUG				0
+#define GLOBUS_L_GASS_CACHE_LOG 	0
 #include "globus_i_gass_cache.h"
 #include "globus_gass_cache.h"
 #include "version.h"
@@ -498,7 +496,6 @@ globus_l_gass_cache_log(
 #define LOG_ERROR(_x_)
 #define RET_ERROR(_rc_)			return(_rc_)
 #define RET_ERRORMSG(_rc_,_msg_)	return(_rc_)
-#define MARK_ERRORMSG(_rc_, _msg_)
 #endif
 
 #ifdef DEBUG
@@ -527,22 +524,43 @@ globus_l_gass_cache_trace(
     const char                   *format,
     ...)
 {
-    va_list    args;
-    static FILE *fp = GLOBUS_NULL;
+    va_list    		args;
     struct timeval	tv;
+    static FILE		*fp = GLOBUS_NULL;
+    static globus_bool_t enabled = GLOBUS_FALSE;
 
     globus_libc_lock();
-    if(fp == GLOBUS_NULL)
+    if( fp == GLOBUS_NULL )
     {
-#if 0
-	fp = fopen("/tmp/cache_trace.out", 
-	           "a+");
-#else
-        fp = stderr;
-        /* fp = stdout; */
-#endif
+	char	*env = getenv( GLOBUS_L_GASS_CACHE_DEBUG );
+	if ( GLOBUS_NULL == env )
+	{
+	    enabled = GLOBUS_FALSE;
+	}
+	else
+	{
+	    enabled = GLOBUS_TRUE;
+	    if (  ( '\0' == *env ) || ( ! strcmp ( env, "stderr" ) )  )
+	    {
+		fp = stderr;
+	    }
+	    else if  ( ! strcmp ( env, "stdout" ) )
+	    {
+		fp = stdout;
+	    }
+	    else
+	    {
+		fp = fopen( env, "a+" );
+	    }
+	}
     }
     globus_libc_unlock();
+
+    /* Are we enabled? */
+    if ( GLOBUS_FALSE == enabled )
+    {
+	return;
+    }
 
     gettimeofday( & tv, NULL );
 
@@ -1351,7 +1369,6 @@ globus_l_gass_cache_names_new_murl( const char	*mangled_url,
     {
 	rc = globus_l_gass_cache_names_fill_global( names );
     }
-    CACHE_TRACE3( "MURL: '%s'; Global='%s'", mangled_url, names->global_dir );
 
     /* Assemble the local dir.. */
     if ( GLOBUS_SUCCESS == rc )
@@ -2545,7 +2562,7 @@ globus_l_gass_cache_create_uniq_global_file( const cache_names	*names )
     /* Found a lower inode; it wins, we lose */
     if ( GLOBUS_TRUE == lower_inode_found )
     {
-	CACHE_TRACE5( "INODE %d '%s' < %d '%s'",
+	CACHE_TRACE5( "INODE %d '%s' < %d '%s'; we lose",
 		      TODOinode, TODOname, uniq_inode, 
 		      names->global_uniq_file );
 	free( (void *) TODOname );
@@ -3469,18 +3486,20 @@ globus_l_gass_cache_make_local_file( cache_names	*names,
 
     /* Create the "tag" file... */
     rc = globus_l_gass_cache_create_local_tag_file( names );
-
-    /* Build the name of the global file.. */
-    if ( GLOBUS_SUCCESS == rc )
+    if ( GLOBUS_SUCCESS != rc )
     {
-	/* Note that we're using our own "global_file" here... */
-	rc = globus_l_gass_cache_build_filename(
-	    names->global_dir, global_name, global_uniq, GLOBUS_TRUE,
-	    &global_file );
-	if ( GLOBUS_SUCCESS != rc )
-	{
-	    RET_ERROR( rc );
-	}
+	RET_ERROR( rc );
+    }
+
+    /* Build the name of the global file..
+     * Note: We're using our own "global_file" here, and it must
+     *  be freed up before returning */
+    rc = globus_l_gass_cache_build_filename(
+	names->global_dir, global_name, global_uniq, GLOBUS_TRUE,
+	&global_file );
+    if ( GLOBUS_SUCCESS != rc )
+    {
+	RET_ERROR( rc );
     }
 
     /* Link the global file to the local file. */
@@ -3779,7 +3798,6 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
     /* rc == 0 means no matches.  Hmmmm..  Skip it for now  */
     else if ( 0 == dirent_count )
     {
-	CACHE_TRACE2( "SCAN: Dir '%s': empty", search_dir );
 	globus_l_gass_cache_scandir_free( dirent_list, dirent_count );
 	RET_ERROR( GLOBUS_L_ENOENT );
     }
@@ -3791,7 +3809,6 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
     }
 
     /* Walk through the matches... */
-    CACHE_TRACE3( "SCAN: Dir '%s': %d entries", search_dir, dirent_count );
     for ( dirent_num = 0;  dirent_num < dirent_count; dirent_num++ )
     {
 	const char	*name = dirent_list[dirent_num]->d_name;

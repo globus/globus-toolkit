@@ -16,6 +16,7 @@ CVS Information:
 
 /* defines the environment variable to be used as default cache dir.         */
 #define GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR "GLOBUS_GASS_CACHE_DEFAULT"
+#define GLOBUS_L_GASS_CACHE_DEBUG		"GLOBUS_GASS_CACHE_DEBUG"
 
 /* if GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR is not defined in user env. */
 /* we use $HOME and  GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME below */
