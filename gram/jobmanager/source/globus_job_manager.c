@@ -41,7 +41,7 @@ CVS Information:
 #include "globus_rsl.h"
 #include "globus_gass_file.h"
 #include "globus_gass_cache.h"
-#include "globus_gass_client.h"
+#include "globus_gass_transfer_assist.h"
 #include "globus_duct_control.h"
 
 /******************************************************************************
@@ -145,7 +145,7 @@ globus_l_gram_status_file_gen(char * request_string,
                               char * job_status_file_path,
                               char * globus_id,
                               char * job_id,
-                              int status);
+			      int status);
 
 static char *
 globus_l_gram_genfilename(char * prefix,
@@ -200,8 +200,10 @@ globus_l_gram_getenv_var(char * env_var_name,
 static char *
 globus_l_gram_user_proxy_relocate();
 
-static void
-globus_l_gram_status_file_cleanup(char * job_status_dir);
+static globus_bool_t
+globus_l_gram_status_file_cleanup(
+    globus_time_t			time_can_block,
+    void *				callback_arg);
 
 static int
 globus_l_gram_tokenize(char * command,
@@ -211,6 +213,17 @@ globus_l_gram_tokenize(char * command,
 static void 
 globus_l_gram_conf_values_init(globus_l_gram_conf_values_t * conf);
 
+static
+globus_bool_t
+globus_l_gram_jm_check_files(
+    globus_time_t			time_can_block,
+    void *				callback_arg);
+
+static
+globus_bool_t
+globus_l_gram_jm_check_status(
+    globus_time_t			time_can_block,
+    void *				callback_arg);
 /******************************************************************************
                        Define variables for external use
 ******************************************************************************/
@@ -276,6 +289,7 @@ static int                         graml_my_count;
 static nexus_endpointattr_t        graml_EpAttr;
 static nexus_endpoint_t            graml_GlobalEndpoint;
 static globus_mutex_t              graml_api_mutex;
+static globus_cond_t               graml_api_cond;
 static int                         graml_api_mutex_is_initialized = 0;
 static int                         graml_jm_done = 0;
 static int                         graml_stdout_count;
@@ -290,6 +304,16 @@ static int                         graml_stderr_count;
 #define GRAM_UNLOCK { \
     int err; \
     err = globus_mutex_unlock (&graml_api_mutex); assert (!err); \
+}
+
+#define GRAM_TIMED_WAIT(wait_time) { \
+    int err; \
+    globus_abstime_t abs; \
+    abs.tv_sec = time(GLOBUS_NULL) + wait_time; \
+    abs.tv_nsec = 0; \
+    globus_cond_timedwait(&graml_api_cond, \
+			  &graml_api_mutex, \
+                          &abs); \
 }
 
 /******************************************************************************
@@ -353,6 +377,8 @@ main(int argc,
     globus_l_gram_client_contact_t *    client_contact_node;
     globus_l_gram_conf_values_t         conf;
     globus_result_t                     error;
+    globus_callback_handle_t		gass_poll_handle;
+    globus_callback_handle_t		stat_cleanup_poll_handle;
 	
     /* gssapi */
 
@@ -387,10 +413,10 @@ main(int argc,
 	exit(1);
     }
 
-    rc = globus_module_activate(GLOBUS_GASS_CLIENT_MODULE);
+    rc = globus_module_activate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-	fprintf(stderr, "gass_client activation failed with rc=%d\n", rc);
+	fprintf(stderr, "gass_transfer_assist activation failed with rc=%d\n", rc);
 	exit(1);
     }
 
@@ -432,6 +458,7 @@ main(int argc,
         int err;
 		 
         err = globus_mutex_init (&graml_api_mutex, NULL); assert (!err);
+        err = globus_cond_init (&graml_api_cond, NULL); assert (!err);
         graml_api_mutex_is_initialized = 1;
     }
 
@@ -1522,7 +1549,7 @@ main(int argc,
                                           job_status_file_path,
                                           graml_env_globus_id,
                                           request->job_id,
-                                          request->status);
+					  request->status);
         }
 
     }
@@ -1559,110 +1586,107 @@ main(int argc,
         grami_fprintf( request->jobmanager_log_fp,
               "JM: poll frequency = %d\n", request->poll_frequency);
 
-        skip_poll = request->poll_frequency;
-        skip_stat = GRAM_JOB_MANAGER_STAT_FREQUENCY;
+	globus_callback_register_periodic(&stat_cleanup_poll_handle,
+					  (globus_time_t) 0,
+					  (globus_time_t)
+					      GRAM_JOB_MANAGER_STAT_FREQUENCY *
+					          1000000,
+					  globus_l_gram_status_file_cleanup,
+					  (void *) job_status_dir,
+					  GLOBUS_NULL,
+					  GLOBUS_NULL);
+
+	globus_callback_register_periodic(&gass_poll_handle,
+					  (globus_time_t) 0,
+					  (globus_time_t) 2 * 1000000,
+					  globus_l_gram_jm_check_files,
+					  (void *) request,
+					  GLOBUS_NULL,
+					  GLOBUS_NULL);
+
+	GRAM_LOCK;
         while (!graml_jm_done)
         {
-            globus_libc_usleep(1000000);
-
-            globus_nexus_fd_handle_events(GLOBUS_NEXUS_FD_POLL_NONBLOCKING_ALL, 
-                                   &message_handled);
-            GRAM_LOCK;
-
-            /* handler may have occurred while we were unlocked,
+	    GRAM_TIMED_WAIT(10); /*request->poll_frequency);*/
+	    
+	    /* handler may have occurred while we were unlocked,
 	       so we need to poll file descriptors, etc
 	       if state change occurred
-	     */
-            if ( (--skip_poll <= 0) || (graml_jm_done) )
-            {
-                /* check if cancel handler was called */
-                if ( ! graml_jm_done )
-                {
-                    if (publish_jobs_flag)
-                    {
-                        /* touch the file so we know we did not crash */
-                        if ( utime(job_status_file_path, NULL) != 0 )
-                        {
-                            if(errno == ENOENT)
-                            {
-                                grami_fprintf( request->jobmanager_log_fp,
-                                    "JM: job status file not found, "
-                                    "rewritting it with current status.\n");
-
-                                globus_l_gram_status_file_gen(final_rsl_spec,
-                                                         job_status_file_path,
-                                                         graml_env_globus_id,
-                                                         request->job_id,
-                                                         request->status);
-                            }
-                        }
-                    }
-                    rc = globus_jobmanager_request_check(request);
-
-                    if ( rc == GLOBUS_GRAM_JOBMANAGER_STATUS_CHANGED ||
-                         rc == GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED )
-                    {
-                        if (rc == GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED)
-                        {
-                            /* unable to get a status for the job.
-                             * often the result of a broken poll script.
-                             */
-                            globus_jobmanager_request_cancel(request);
-                            request->status=GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
-                        }
-
-                        if ((request->status ==
-                                 GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) ||
-                            (request->status ==
-                                 GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
-                        {
-                            grami_fprintf( request->jobmanager_log_fp,
-                                "JM: request check returned DONE or FAILED\n");
-
-                            graml_jm_done = 1;
-                        }
-                        else
-                        {
-                            /* send callback of new status
-                             * The tmp_status variable is needed because 
-                             * a cancel request could come in and set the flag
-                             * before this callback completes.  Also, we cannot 
-                             * be lock when doing a send_rsr which is done in
-                             * the client_callback routine.
-                             */
-                            tmp_status = request->status;
-                            GRAM_UNLOCK;
-                            globus_l_gram_client_callback(tmp_status,
-                                                       request->failure_code);
-
-                            globus_l_gram_status_file_gen(final_rsl_spec,
-                                                       job_status_file_path,
-                                                       graml_env_globus_id,
-                                                       request->job_id,
-                                                       request->status);
-                            GRAM_LOCK;
-                        }
-                    }
-                }
-	    	skip_poll = request->poll_frequency;
-	    }
-
-            if ((request->status != GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) &&
-                (request->status != GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
-            {
-                globus_l_gram_check_file_list(globus_l_gram_stdout_fd,
-                                         globus_l_gram_stdout_files);
-                globus_l_gram_check_file_list(globus_l_gram_stderr_fd,
-                                         globus_l_gram_stderr_files);
-            }
-
-	    if (--skip_stat <= 0)
+	    */
+	    if (!graml_jm_done)
 	    {
-                globus_l_gram_status_file_cleanup(job_status_dir);
-		skip_stat = GRAM_JOB_MANAGER_STAT_FREQUENCY;
+		/* check if cancel handler was called */
+		if (publish_jobs_flag)
+		{
+		    /* touch the file so we know we did not crash */
+		    if ( utime(job_status_file_path, NULL) != 0 )
+		    {
+			if(errno == ENOENT)
+			{
+			    grami_fprintf( request->jobmanager_log_fp,
+					   "JM: job status file not found, "
+					   "rewritting it with current status.\n");
+			    
+			    globus_l_gram_status_file_gen(final_rsl_spec,
+							  job_status_file_path,
+							  graml_env_globus_id,
+							  request->job_id,
+							  request->status);
+			}
+		    }
+		}
+		rc = globus_jobmanager_request_check(request);
+
+		if ( rc == GLOBUS_GRAM_JOBMANAGER_STATUS_CHANGED ||
+		     rc == GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED )
+		{
+		    if (rc == GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED)
+		    {
+			/* unable to get a status for the job.
+			 * often the result of a broken poll script.
+			 */
+			globus_jobmanager_request_cancel(request);
+			request->status=GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+		    }
+
+		    if ((request->status ==
+			 GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) ||
+			(request->status ==
+			 GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
+		    {
+			grami_fprintf( request->jobmanager_log_fp,
+				       "JM: request check returned DONE or FAILED\n");
+
+			graml_jm_done = 1;
+		    }
+		    else
+		    {
+			/* send callback of new status
+			 * The tmp_status variable is needed because 
+			 * a cancel request could come in and set the flag
+			 * before this callback completes.  Also, we cannot 
+			 * be lock when doing a send_rsr which is done in
+			 * the client_callback routine.
+			 */
+			tmp_status = request->status;
+			GRAM_UNLOCK;
+			globus_l_gram_client_callback(tmp_status,
+						      request->failure_code);
+			GRAM_LOCK;
+			globus_l_gram_status_file_gen(final_rsl_spec,
+						      job_status_file_path,
+						      graml_env_globus_id,
+						      request->job_id,
+						      request->status);
+		    }
+		}
 	    }
-            GRAM_UNLOCK;
         } /* endwhile */
+
+	GRAM_UNLOCK;
+	globus_callback_unregister(stat_cleanup_poll_handle);
+	globus_callback_unregister(gass_poll_handle);
+
     } /* endif */
 
     globus_nexus_disallow_attach(my_port);
@@ -1693,11 +1717,6 @@ main(int argc,
         globus_l_gram_client_callback(request->status,
                                       request->failure_code);
         
-        globus_l_gram_status_file_gen(final_rsl_spec,
-                                      job_status_file_path,
-                                      graml_env_globus_id,
-                                      request->job_id,
-                                      request->status);
         /*
          * Check to see if the job status file exists.  If so, then delete it.
          */
@@ -1794,10 +1813,10 @@ main(int argc,
 	exit(1);
     }
 
-    rc = globus_module_deactivate(GLOBUS_GASS_CLIENT_MODULE);
+    rc = globus_module_deactivate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-	fprintf(stderr, "gass client deactivation failed with rc=%d\n", rc);
+	fprintf(stderr, "gass_transfer_assist deactivation failed with rc=%d\n", rc);
 	exit(1);
     }
 
@@ -1964,7 +1983,7 @@ globus_l_gram_status_file_gen(char * request_string,
                               char * job_status_file_path,
                               char * globus_id,
                               char * job_id,
-                              int status)
+			      int status)
 {
     FILE *       status_fp;
     char         status_str[64];
@@ -2030,7 +2049,6 @@ globus_l_gram_status_file_gen(char * request_string,
     fclose(status_fp);
 
     return(0);
-
 } /* globus_l_gram_status_file_gen() */
 
 
@@ -3335,13 +3353,13 @@ globus_l_gram_stage_file(char *url, char **staged_file_path, int mode)
 	}
 	else if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
 	{
-	    int fd = open(*staged_file_path,
-			  O_WRONLY|O_TRUNC,
-			  mode);
 	    if(gurl.scheme_type == GLOBUS_URL_SCHEME_FILE)
 	    {
 		char buf[512];
 		int ofd = open(gurl.url_path, O_RDONLY);
+		int fd = open(*staged_file_path,
+			  O_WRONLY|O_TRUNC,
+			  mode);
 		
 		while((rc = read(ofd, buf, sizeof(buf))) > 0)
 		{
@@ -3349,18 +3367,28 @@ globus_l_gram_stage_file(char *url, char **staged_file_path, int mode)
 		}
 
 		close(ofd);
+		close(fd);
 	    }
 	    else
 	    {
-		error_flag = globus_gass_client_get_fd(url,
-					  GLOBUS_NULL,
-					  fd,
-					  GLOBUS_GASS_LENGTH_UNKNOWN,
-					  &timestamp,
-					  GLOBUS_NULL,
-					  GLOBUS_NULL);
+		globus_gass_transfer_request_t stagein_request;
+		
+		error_flag = globus_gass_transfer_assist_get_file_from_url(
+		    &stagein_request,
+		    GLOBUS_NULL,
+		    url,
+		    *staged_file_path,
+		    GLOBUS_NULL,
+		    GLOBUS_TRUE);
+		    
+		if(globus_gass_transfer_request_get_status(stagein_request) !=
+		   GLOBUS_GASS_TRANSFER_REQUEST_DONE)
+		{
+		    error_flag = GLOBUS_GASS_ERROR_TRANSFER_FAILED;
+		}
+		globus_gass_transfer_request_destroy(stagein_request);
+		    
 	    }
-	    close(fd);
 	    globus_gass_cache_add_done(&globus_l_cache_handle,
 				       url,
 				       graml_job_contact,
@@ -3476,21 +3504,27 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-static void
-globus_l_gram_status_file_cleanup(char * job_status_dir)
+static globus_bool_t
+globus_l_gram_status_file_cleanup(
+    globus_time_t			time_can_block,
+    void *				callback_arg)
 {
     DIR *            status_dir;
+    char * job_status_dir;
     struct dirent *  dir_entry;
     char             logname_string[256];
     char             stat_file_path[1024];
     struct stat      statbuf;
     unsigned long    now;
+    globus_bool_t    status = GLOBUS_FALSE;
  
+    job_status_dir = (char *) callback_arg;
+    
     if(job_status_dir == GLOBUS_NULL)
     {
         grami_fprintf( graml_log_fp, 
             "JM: status directory not specified, cleanup cannot proceed.\n");
-        return;
+        return GLOBUS_FALSE;
     }
  
     status_dir = globus_libc_opendir(job_status_dir);
@@ -3498,14 +3532,14 @@ globus_l_gram_status_file_cleanup(char * job_status_dir)
     {
         grami_fprintf( graml_log_fp, 
             "JM: unable to open status directory, aborting cleanup process.\n");
-        return;
+        return GLOBUS_FALSE;
     }
 
     sprintf(logname_string, "_%s.", graml_env_logname);
     now = (unsigned long) time(NULL);
 
     for(globus_libc_readdir_r(status_dir, &dir_entry);
-        dir_entry != GLOBUS_NULL;
+        dir_entry != GLOBUS_NULL && globus_callback_get_timeout() > 0;
         globus_libc_readdir_r(status_dir, &dir_entry))
     {
         if (strstr(dir_entry->d_name, logname_string) != NULL)
@@ -3532,6 +3566,7 @@ globus_l_gram_status_file_cleanup(char * job_status_dir)
                         grami_fprintf( graml_log_fp, 
                                "JM: Removed old status file --> %s\n",
                                stat_file_path);
+			status = GLOBUS_TRUE;
                     }
                 }
             }
@@ -3539,6 +3574,7 @@ globus_l_gram_status_file_cleanup(char * job_status_dir)
     }
     globus_libc_closedir(status_dir);
 
+    return status;
 } /* globus_l_gram_status_file_cleanup() */
 
 
@@ -4183,3 +4219,28 @@ int globus_l_gram_client_contact_list_free(globus_list_t *contact_list)
     return GLOBUS_SUCCESS;
 
 } /* globus_l_gram_client_contact_list_free() */
+
+static
+globus_bool_t
+globus_l_gram_jm_check_files(
+    globus_time_t			time_can_block,
+    void *				callback_arg)
+{
+    globus_gram_jobmanager_request_t *  request;
+
+    request = (globus_gram_jobmanager_request_t *) callback_arg;
+    
+    GRAM_LOCK;
+    if ((request->status != GLOBUS_GRAM_CLIENT_JOB_STATE_DONE) &&
+	(request->status != GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
+    {
+	globus_l_gram_check_file_list(globus_l_gram_stdout_fd,
+				      globus_l_gram_stdout_files);
+	globus_l_gram_check_file_list(globus_l_gram_stderr_fd,
+				      globus_l_gram_stderr_files);
+    }
+    GRAM_UNLOCK;
+
+    return GLOBUS_FALSE;
+}
+
