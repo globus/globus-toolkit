@@ -10,7 +10,7 @@
 version="0.3"
 
 usage () {
-	echo $0: Usage:  $0 "[-p \"p1 p2 ...\"] [-t tag] [-i dir [-r] ] [-n] [-h] [-c | -j] [-a] [-s | -b]"
+	echo $0: Usage:  $0 "[-p \"p1 p2 ...\"] [-t tag] [-i dir [-r] ] [-n] [-h] [-c | -j] [-a] [-s | -b] [-v]"
 	echo
 	echo "With no arguments, checkout and build all of GT3."
 	echo "	$0 -p \"p1 p2 ...\" 	Build packages p1, p2, ..."
@@ -23,6 +23,7 @@ usage () {
 	echo "	$0 -c		Just build C bindings"
 	echo "	$0 -j		Just build Java"
 	echo "	$0 -b		Install GT2 binaries, not source."
+	echo "	$0 -v		Pass -verbose to gpt-build."
 	echo
 }
 
@@ -185,6 +186,7 @@ install_gt2_source() {
 	else
 		cd side_tools
 		echo Building GT2 using ./cvs-build -noupdates -builddir=.. -installdir=$GLOBUS_LOCATION -everything $flavor
+		echo Log goes to logsa/gt2-installation.log
         	./cvs-build -noupdates -builddir=.. -installdir=$GLOBUS_LOCATION -everything $flavor > ../../logs/gt2-installation.log 2>&1
 		cd ..
 	fi
@@ -205,7 +207,7 @@ install_cdeps() {
 	unset GPT_LOCATION
 
 	# $GPT_LOCATION/sbin/gpt-build -nosrc gcc32dbg
-	./cvs-build-ogsa --force gcc32dbg
+	./cvs-build-ogsa ${verbose} --force gcc32dbg
 	
 	export GPT_LOCATION=$OGPT
 	cd bin_packages
@@ -353,7 +355,7 @@ collate_packages() {
 install_bundle() {
 	echo Installing into $dir
 	export GLOBUS_LOCATION=$dir
-	$GPT_LOCATION/sbin/gpt-build gt3-all-src-1.0-src_bundle.tar.gz gcc32dbg
+	$GPT_LOCATION/sbin/gpt-build ${verbose} gt3-all-src-1.0-src_bundle.tar.gz gcc32dbg
 
 	if [ $release = 1 ]; then
 		echo Collecting GT3 binaries from $dir
@@ -418,6 +420,7 @@ read_args() {
 	update=1
 	anonymous=0
 	installbin=0
+	verbose=""
 
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
@@ -453,6 +456,9 @@ read_args() {
 		elif [ $1 = "-b" ]; then
 			installbin=1;
 			shift;
+		elif [ $1 = "-v" ]; then
+			verbose="-verbose";
+			shift;
 		else
 			echo "Unrecognized option $1"
 			usage
@@ -460,7 +466,7 @@ read_args() {
 		fi
 	done
 
-	export buildc buildjava install tag update package onlyc release;
+	export buildc buildjava install tag update package onlyc release verbose;
 }
 
 
@@ -488,7 +494,7 @@ if [ x"$package" != "x" ]; then
 	for f in $package; do
 		if [ -d ${f}*-src ]; then
 			tar czf package-output/${f}-${version}.tar.gz ${f}*-src
-			$GPT_LOCATION/sbin/gpt-build package-output/${f}-${version}.tar.gz gcc32dbg
+			$GPT_LOCATION/sbin/gpt-build ${verbose} package-output/${f}-${version}.tar.gz gcc32dbg
 		fi
 	done
 
