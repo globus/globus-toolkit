@@ -3388,7 +3388,7 @@ void pass(char *passwd)
 #ifdef POST_AUTH_PROCESS
 	run_post_auth_process(pw);
 #endif /* POST_AUTH_PROCESS */	
-	if (chdir(pw->pw_dir) < 0) {
+	if ((!debug_no_fork) && chdir(pw->pw_dir) < 0) {
 #ifdef PARANOID
 #ifdef VERBOSE_ERROR_LOGING
 	    syslog(LOG_NOTICE, "FTP LOGIN FAILED (cannot chdir) for %s, %s",
