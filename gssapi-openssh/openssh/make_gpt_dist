@@ -19,24 +19,6 @@ $srcdirname = "gsi_openssh";
 $srcpkgname = "gsi_openssh-3.1p1-src";
 
 #
-# uncomment when we're more mature
-#
-#for my $subdir ('packaging_tools', 'package_management', 'archive_compress') {
-#  chdir "$subdir" or die "Unable to cd to $subdir: $?";
-#  if(-e "config.cache")
-#    {
-#      #config.cache is tested for because it is generated when ./configure is executed
-#      #if config.cache is present, then a make distclean must be performed in order
-#      #to remove the cache.  if a make distclean is run and config.cache is not 
-#      #present, then this script will recieve a zero from the system and error.
-#      
-#      system("make distclean");
-#    }
-#
-#  chdir ".."  or die "Unable to cd to packaging: $?";
-#}
-
-#
 # uncomment when we've got a better place to get the current version from
 #
 # determine gpt version number
