@@ -267,9 +267,6 @@ static Authmethod *authmethod_get(char *authlist);
 static Authmethod *authmethod_lookup(const char *name);
 static char *authmethods_get(void);
 
-static int gssapi_with_mic = 1;	/* flag to toggle "gssapi-with-mic" vs.
-				   "gssapi" */
-
 Authmethod authmethods[] = {
 #ifdef GSSAPI
 	{"external-keyx",
@@ -277,11 +274,11 @@ Authmethod authmethods[] = {
 		&options.gss_authentication,
 		NULL},
 	{"gssapi-with-mic",
-		userauth_gssapi_with_mic,
+		userauth_gssapi,
 		&options.gss_authentication,
 		NULL},
 	{"gssapi",
-		userauth_gssapi_without_mic,
+		userauth_gssapi,
 		&options.gss_authentication,
 		NULL},
 #endif
@@ -606,20 +603,6 @@ userauth_gssapi(Authctxt *authctxt)
 	return 1;
 }
 
-int
-userauth_gssapi_with_mic(Authctxt *authctxt)
-{
-    gssapi_with_mic = 1;
-    return userauth_gssapi(authctxt);
-}
-
-int
-userauth_gssapi_without_mic(Authctxt *authctxt)
-{
-    gssapi_with_mic = 0;
-    return userauth_gssapi(authctxt);
-}
-
 static OM_uint32
 process_gssapi_token(void *ctxt, gss_buffer_t recv_tok)
 {
@@ -646,7 +629,8 @@ process_gssapi_token(void *ctxt, gss_buffer_t recv_tok)
 
 	if (status == GSS_S_COMPLETE) {
 		/* send either complete or MIC, depending on mechanism */
-		if (!(flags & GSS_C_INTEG_FLAG) || !gssapi_with_mic) {
+		if (strcmp(authctxt->method->name,"gssapi")==0 ||
+		    (!(flags & GSS_C_INTEG_FLAG))) {
 			packet_start(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE);
 			packet_send();
 		} else {
