@@ -1,8 +1,19 @@
 #!/bin/sh
 
-factory=$1
-rsl_file=$2
-gass_option=$3
+OPTIND=0
+while getopts "f:r:wov" arg ; do
+    if [ $arg = "f" ]; then
+        factory=$OPTARG
+    elif [ $arg = "r" ]; then
+        rsl_file=$OPTARG
+    elif [ $arg = "w" ]; then
+        gass_option=-w
+    elif [ $arg = "o" ]; then
+        gass_option=-o
+    elif [ $arg = "v" ]; then
+        verbose=1
+    fi
+done
 
 if [ -z $factory ]; then
     echo "ERROR: No factory GSH specified"
@@ -24,7 +35,6 @@ begin_time=0
 end_time=0
 
 begin_time=`date +%s`
-rm -f $logfile
 $GLOBUS_LOCATION/bin/managed-job-globusrun $gass_option -factory $factory -file $rsl_file
 end_time=`date +%s`
 echo "Time taken for managed-job-globusrun: `expr $end_time - $begin_time` Seconds"
