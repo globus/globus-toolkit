@@ -411,6 +411,10 @@ globus_libc_getnameinfo(
     globus_size_t                       servbuf_len,
     int                                 flags);
 
+globus_bool_t
+globus_libc_addr_is_loopback(
+    const globus_sockaddr_t *           addr);
+
 EXTERN_C_END
 
 #endif

@@ -2968,3 +2968,28 @@ globus_libc_getnameinfo(
 
     return result;
 }
+
+globus_bool_t
+globus_libc_addr_is_loopback(
+    const globus_sockaddr_t *           addr)
+{
+    const struct sockaddr *             _addr = &(addr);
+    globus_bool_t                       result = GLOBUS_FALSE;
+
+    switch(_addr->sa_family)
+    {
+      case PF_INET:
+        if(ntohl(((struct sockaddr_in *) _addr)->sin_addr.s_addr) ==
+           INADDR_LOOPBACK)
+        {
+            result = GLOBUS_TRUE;
+        }
+        break;
+      default:
+        globus_assert(0 &&
+                      "Unknown family in GlobusLibcSizeofSockaddr");
+        break;
+    }
+
+    return result;
+}
