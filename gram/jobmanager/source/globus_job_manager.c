@@ -384,6 +384,8 @@ main(int argc,
 
     nexus_startpoint_destroy(&reply_sp);
 
+    nexus_enable_fault_tolerance(NULL, NULL);
+
 /*
     nexus_mutex_lock(&job_manager_monitor.mutex);
 */
