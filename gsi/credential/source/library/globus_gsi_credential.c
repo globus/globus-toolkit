@@ -1676,6 +1676,8 @@ globus_i_gsi_cred_get_proxycertinfo(
     
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
+    *proxycertinfo = NULL;
+
     pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
     if(pci_NID == NID_undef)
     {
@@ -1701,7 +1703,6 @@ globus_i_gsi_cred_get_proxycertinfo(
             pci_NID, -1)) == -1)
     {
         /* no proxycertinfo extension found in cert */
-        *proxycertinfo = NULL;
         result = GLOBUS_SUCCESS;
         goto exit;
     }
@@ -1727,11 +1728,22 @@ globus_i_gsi_cred_get_proxycertinfo(
         goto exit;
     }
 
+    if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("Failed to copy extension data."));
+        goto exit;                
+    }
+    
     if((d2i_PROXYCERTINFO(
         proxycertinfo,
         &ext_data->data,
         ext_data->length)) == NULL)
     {
+        ASN1_OCTET_STRING_free(ext_data);
+        *proxycertinfo = NULL;
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
@@ -1741,11 +1753,6 @@ globus_i_gsi_cred_get_proxycertinfo(
     }
     
  exit:
-    
-    if(ext_data != NULL)
-    { 
-        ASN1_OCTET_STRING_free(ext_data);
-    }
     
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
