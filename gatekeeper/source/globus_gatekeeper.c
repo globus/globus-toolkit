@@ -10,6 +10,11 @@ CVS Information:
     $Date$
     $Revision$
     $Author$
+
+ This source file has been modified by Brent Milne (BMilne@lbl.gov)
+ with extensions for UNICOS.
+ September 1998
+ 
 ******************************************************************************/
 
 /******************************************************************************
@@ -74,7 +79,11 @@ CVS Information:
 #include <string.h>
 #endif
 
-#ifdef HAVE_PROJ_H
+#if defined(TARGET_ARCH_CRAYT3E)
+#include "unicos.h"
+#endif
+
+#if defined(HAVE_PROJ_H) && defined(TARGET_ARCH_IRIX)
 #include <proj.h>
 #endif
 
@@ -155,6 +164,8 @@ extern char *   sys_errlist[];
 #endif
 
 extern int      errno;
+
+static int      connection_fd;
 
 static FILE *   usrlog_fp;
 static char *   logfile = LOGFILE;
@@ -362,10 +373,15 @@ main(int xargc,
     netlen_t   namelen;
     int    listener_fd;
     struct sockaddr_in name;
+    char fname[256];
 
     /* GSSAPI status vaiables */
     OM_uint32 major_status = 0;
     OM_uint32 minor_status = 0;
+
+#if defined(TARGET_ARCH_CRAYT3E)
+    unicos_init();
+#endif
 
     gatekeeper_uid = getuid();
     if (gatekeeper_uid == 0)
@@ -795,6 +811,15 @@ main(int xargc,
 
         net_setup_listener(2, &daemon_port, &listener_fd);
 
+#       if defined(TARGET_ARCH_CRAYT3E)
+        {
+	    if(gatekeeper_uid == 0)
+	    {
+		set_unicos_sockopts(listener_fd);
+	    }
+	}
+#       endif
+
         {
             char hostname[255];
             char *globusid;
@@ -839,15 +864,22 @@ main(int xargc,
             (void) close(1);
 
 #if defined(SYSV) || defined(__hpux) || defined(CRAY)
-             
-            fd = open ("/dev/console", O_RDWR);
+	    /* mod here (variable "fname") no longer in use. --milne */
+            sprintf(fname, "/dev/console"); 
+            fd = open (fname, O_RDWR);
             notice2(0, "open dev console fd = %d\n", fd);
             if (fd < 0)
-                fd = open ("/dev/tty", O_RDWR);
+	    {
+		sprintf(fname, "/dev/tty");
+                fd = open (fname, O_RDWR);
+	    }
             notice2(0, "open dev tty fd = %d\n", fd);
             if (fd < 0)
-                fd = open ("/dev/null", O_RDWR);
-            notice2(0, "open dev null fd = %d\n", fd);
+	    {
+		sprintf(fname, "/dev/null");
+                fd = open (fname, O_RDWR);
+	    }
+            notice3(0, "open %s fd = %d\n", fname, fd);
             (void) dup2(2, 1); /* point out at stderr or log */
 
             (void) setpgrp();
@@ -868,7 +900,7 @@ main(int xargc,
 
         while (1)
         {
-            fd = net_accept(listener_fd);
+            connection_fd = net_accept(listener_fd);
 
             pid = fork();
 
@@ -895,7 +927,7 @@ main(int xargc,
                 close(0);
                 close(listener_fd);
 
-                dup2(fd, 0);
+                dup2(connection_fd, 0);
                 /* this should work, but not sure !? */
                 /* Reports say it is needed on some systems */
                 *stdin = *fdopen(0,"r"); /* reopen stdin  we need this since */
@@ -903,7 +935,7 @@ main(int xargc,
                 doit();
                 exit(0);
             }
-            close(fd);
+            close(connection_fd);
         }
     }
     return 0;
@@ -927,6 +959,7 @@ static void doit()
     int                 n;
     int                 i;
     int                 job_manager_uid;
+    int                 job_manager_gid;
     int                 close_on_exec_read_fd;
     int                 close_on_exec_write_fd;
     int                 message_read_fd;
@@ -963,7 +996,15 @@ static void doit()
     char *              userid;
     struct passwd *     pw;
 #endif
-#ifdef HAVE_PROJ_H
+
+#if defined(TARGET_ARCH_CRAYT3E)
+    if(gatekeeper_uid == 0)
+    {
+	get_unicos_connect_info(0);
+    }
+#endif
+
+#if defined(HAVE_PROJ_H) && defined(TARGET_ARCH_IRIX)
     prid_t user_prid;
 #endif
 
@@ -983,6 +1024,37 @@ static void doit()
 
     notice3(LOG_INFO, "Got connection %s at %s", peernum, timestamp());
 
+#ifdef TARGET_ARCH_CRAYT3E
+         /* Need to lookup hostname -- provide for use in udb updates. */
+          {
+            struct sockaddr_in from;
+            int fromlen;
+            struct hostent *hp;
+            char hostname[256];
+
+            /* Get IP address of client. */
+            fromlen = sizeof(from);
+            memset(&from, 0, sizeof(from));
+            if (getpeername(connection_fd, (struct sockaddr *)&from,
+                            &fromlen) < 0)
+            {
+              notice2(LOG_ERR,"getpeername failed: %.100s", strerror(errno));
+              strcpy(hostname, "UNKNOWN");
+            }
+            else
+            {
+              /* Map the IP address to a host name. */
+              hp = gethostbyaddr((char *)&from.sin_addr, 
+                                 sizeof(struct in_addr), from.sin_family);
+              if (hp)
+                strncpy(hostname, hp->h_name, sizeof(hostname));
+              else
+                strncpy(hostname, inet_ntoa(from.sin_addr), sizeof(hostname));
+            }
+
+            set_connection_hostname (hostname);
+          }
+#endif /* TARGET_ARCH_CRAYT3E */
 
     /* Do gss authentication here */
 
@@ -1066,6 +1138,37 @@ static void doit()
  
     }
     
+#ifdef TARGET_ARCH_CRAYT3E
+         /* Need to lookup hostname -- provide for use in udb updates. */
+          {
+            struct sockaddr_in from;
+            int fromlen;
+            struct hostent *hp;
+            char hostname[256];
+
+            /* Get IP address of client. */
+            fromlen = sizeof(from);
+            memset(&from, 0, sizeof(from));
+            if (getpeername(connection_fd, (struct sockaddr *)&from,
+                            &fromlen) < 0)
+            {
+              notice2(LOG_ERR,"getpeername failed: %.100s", strerror(errno));
+              strcpy(hostname, "UNKNOWN");
+            }
+            else
+            {
+              /* Map the IP address to a host name. */
+              hp = gethostbyaddr((char *)&from.sin_addr, 
+                                 sizeof(struct in_addr), from.sin_family);
+              if (hp)
+                strncpy(hostname, hp->h_name, sizeof(hostname));
+              else
+                strncpy(hostname, inet_ntoa(from.sin_addr), sizeof(hostname));
+            }
+
+            set_connection_hostname (hostname);
+          }
+#endif /* TARGET_ARCH_CRAYT3E */
     notice2(LOG_NOTICE, "Authorized as local user: %s", userid);
 
     if ((pw = getpwnam(userid)) == NULL)
@@ -1076,8 +1179,18 @@ static void doit()
     /* job_manager_uid will come out of gss calls */
 
     job_manager_uid = pw->pw_uid;
+#   if defined(TARGET_ARCH_CRAYT3E)
+    {
+        job_manager_gid = unicos_get_gid();
+    }
+#   else
+    {
+        job_manager_gid = pw->pw_gid;
+    }
+#   endif
 
     notice2(LOG_NOTICE, "Authorized as local uid: %d", job_manager_uid);
+    notice2(LOG_NOTICE, "          and local gid: %d", job_manager_gid);
 
     /* for gssapi_ssleay if we received delegated proxy certificate
      * they will be in a file in tmp pointed at by the 
@@ -1092,7 +1205,7 @@ static void doit()
         char *proxyfile;
         if ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
         {
-            chown(proxyfile,job_manager_uid,pw->pw_gid);
+            chown(proxyfile,job_manager_uid,job_manager_gid);
         }
     }
 
@@ -1234,6 +1347,14 @@ static void doit()
 
     if (krb5flag)
     {
+#       ifdef TARGET_ARCH_CRAYT3E
+        {
+            if(gatekeeper_uid == 0)
+            {
+                failure("Gatekeeper Kerberos code is not UNICOS compliant.");
+            }
+        }
+#       endif
 	if (stat(gram_k5_path, &statbuf) != 0)
 	    failure2("Cannot stat %s",gram_k5_path);
 	if (!(statbuf.st_mode & 0111))
@@ -1322,18 +1443,44 @@ static void doit()
 
 	if (krb5flag == 0)
 	{          /* the gram_k5 will seteuid */
+#           ifdef TARGET_ARCH_CRAYT3E
+            {
+		if(gatekeeper_uid == 0)
+		{
+		    /* If MLS is active, validate security information. If the
+		       connection is not allowed, mls_validate does not return.
+		       If MLS is not active, this is a no-op. */
+		    mls_validate( /*havepty*/ 0);
+
+		    /* Record login in user data base. */
+
+		    update_udb(pw->pw_uid, pw->pw_name, /*tty*/ "");
+
+		    /* Set user security attributes and drop all privilege. */
+		    set_seclabel();
+
+		    /* Set account number, job ID, limits, and permissions */
+
+		    if(cray_setup(job_manager_uid, userid) < 0)
+		    {
+			failure2("Failure performing Cray job setup for user %s.",
+			         userid);
+		    }
+		}
+            }
+#           endif /*TARGET_ARCH_CRAYT3E*/
 
 	    setgid(pw->pw_gid);
 	    initgroups(pw->pw_name, pw->pw_gid);
 
-#           if defined(HAVE_PROJ_H)
+#           if defined(HAVE_PROJ_H) && defined(TARGET_ARCH_IRIX)
             {
-	        if ((user_prid = getdfltprojuser(pw->pw_name)) < 0)
-                {
-                    user_prid = 0;
-                }
-                newarraysess();
-                setprid(user_prid);
+		if ((user_prid = getdfltprojuser(pw->pw_name)) < 0)
+		{
+		    user_prid = 0;
+		}
+		newarraysess();
+		setprid(user_prid);
 	    }
 #           endif
 
@@ -1643,6 +1790,19 @@ notice(int prty, char * s)
         fprintf(usrlog_fp, "Notice: %d: %s\n", prty, s);
     }
 } /* notice() */
+
+#if defined(TARGET_ARCH_CRAYT3E)
+/* Make callable entries to failure() and notice() */
+void gatekeeper_failure(char * s)
+{
+  failure(s);
+}
+
+void gatekeeper_notice(int prty, char * s)
+{
+  notice(prty, s);
+}
+#endif
 
 
 /******************************************************************************
