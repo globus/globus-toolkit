@@ -121,17 +121,12 @@ globus_gram_http_client_callback( void *                arg,
 				  int                   errorcode );
 
 int
-globus_gram_http_post( char *                         url,
-		       globus_io_attr_t *             attr,
-		       globus_byte_t *                message,
-		       globus_size_t                  msgsize,
-		       globus_gram_http_monitor_t *   monitor);
-
-int
 globus_gram_http_post_and_get( char *                         url,
 			       globus_io_attr_t *             attr,
-			       globus_byte_t *                message,
-			       globus_size_t *                msgsize,
+			       globus_byte_t *                request_message,
+			       globus_size_t                  request_size,
+			       globus_byte_t **               reply_message,
+			       globus_size_t *                reply_size,
 			       globus_gram_http_monitor_t *   monitor);
 
 

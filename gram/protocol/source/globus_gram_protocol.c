@@ -22,17 +22,14 @@
 
    Client side:
    ------------ 
-   globus_gram_http_post()
-         attaches to URL, frames the user message and sends it.
-	 
    globus_gram_http_post_and_get()
          attaches to URL, frames the user message, sends it, awaits
 	 reply and unframes the reply.
 
 	The function must forward information B:
 	    monitor       : a monitor to signal done and error codes
-	    reply_message : pointer to buf to store parsed reply in
-	    reply_size    : pointer to size_t, updated to message size
+	    reply_message : pointer to pointer to buf with parsed reply in
+	    reply_size    : pointer to size_t, updated to reply size
 
    Typedefs:
    ---------
@@ -247,7 +244,7 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
 				    void *                        arg,
 				    void *                        userptr,
 				    globus_gram_http_monitor_t *  monitor,
-				    globus_byte_t *               buf, 
+				    globus_byte_t **              buf, 
 				    globus_size_t *               bufsize) 
 { 
     *read_t = my_malloc(globus_gram_http_read_t,1);
@@ -601,7 +598,7 @@ globus_l_gram_http_read_callback( void *                 read_t,
 	    {
 		goto error_exit;
 	    }
-	    status->buf = p;
+	    status->buf = (globus_byte_t *) p;
 	    status->bufsize = status->n_read + chunk + 1;
 	}
 /*
@@ -749,11 +746,13 @@ globus_l_gram_http_get_callback( void *                read_t,
     if ((errorcode == GLOBUS_SUCCESS) &&
 	(res == GLOBUS_SUCCESS)  )
     {
-	memcpy(status->reply_buf, buf, nbytes);
+	*status->reply_buf = buf;
 	*status->reply_size = nbytes;
     }
-
-    my_free(buf);
+    else
+    {
+	my_free(buf);
+    }
 
     if (errorcode != GLOBUS_SUCCESS)
 	rc = errorcode;
@@ -819,8 +818,6 @@ globus_gram_http_allow_attach( unsigned short *             port,
     globus_i_gram_http_listener_t *        new_listener;
     void **                                buf;
 
-    /* acquire mutex */
-
     rc = globus_gram_http_setup_attr( &attr );
     if (rc != GLOBUS_SUCCESS)
     {
@@ -844,7 +841,7 @@ globus_gram_http_allow_attach( unsigned short *             port,
 	globus_object_free(err);
 	globus_io_tcpattr_destroy(&attr);
 	my_free(handle);
-	/* release mutex */
+	/* TODO: return proper error */
 	return rc;
     }
 
@@ -865,7 +862,7 @@ globus_gram_http_allow_attach( unsigned short *             port,
 	globus_object_free(err);
 	globus_io_tcpattr_destroy(&attr);
 	my_free(handle);
-	/* release mutex */
+	/* TODO: return proper error */
 	return rc;
     }
     else
@@ -878,7 +875,6 @@ globus_gram_http_allow_attach( unsigned short *             port,
 
     globus_io_tcpattr_destroy(&attr);
 
-    /* release mutex */
     return GLOBUS_SUCCESS;
 }
 
@@ -949,8 +945,6 @@ globus_l_gram_http_connection_closed( void *                arg,
     globus_gram_http_monitor_t *  monitor; 
     
     verbose(notice("connection_closed : handle %d is done\n", handle->fd));
-
-    /* acquire mutex */
 
     globus_io_handle_get_user_pointer( handle,
 				       (void **) &monitor );
@@ -1035,7 +1029,6 @@ globus_gram_http_attach( char *                job_contact,
     
     globus_url_destroy(&url);
 
-    /* release mutex */
     return rc;
 }
 
@@ -1089,9 +1082,9 @@ globus_gram_http_frame_request(globus_byte_t *	  uri,
     while(tmp > 0);
 
     framedlen  = strlen(GLOBUS_GRAM_HTTP_REQUEST_LINE);
-    framedlen += strlen(uri);
+    framedlen += strlen((char *) uri);
     framedlen += strlen(GLOBUS_GRAM_HTTP_HOST_LINE);
-    framedlen += strlen(hostname);
+    framedlen += strlen((char *)hostname);
     framedlen += strlen(GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE);
     framedlen += strlen(GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE);
     framedlen += strlen(GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE);
@@ -1248,7 +1241,7 @@ globus_gram_http_frame_response(int		   code,
     }
 
 
-    *framedmsg = buf;
+    *framedmsg = (globus_byte_t *) buf;
     *framedsize = tmp + msgsize;
 
     return GLOBUS_SUCCESS;
@@ -1280,14 +1273,15 @@ globus_l_gram_http_field_value_quote_string(
     globus_byte_t **out_startp	/* OUT */,
     globus_size_t *outsizep	/* OUT */)
 {
-    char *out = (char *) *out_startp 
+    char *out;
 	/* Assume worst case, every character in the input string is a
 	   " or a \, and therefore needs escaping.
 	   That doubles the length.  Add 2 for open and close "", add 1
 	   for null termination. */
-	= my_malloc(globus_byte_t, 2 * insize + 2 + 1);
+    *out_startp = my_malloc(globus_byte_t, 2 * insize + 2 + 1);
+    out  = (char *) *out_startp;
 
-    globus_assert(insize == strlen(in));
+    globus_assert(insize == strlen((char *)in));
     *out++='"';			/* Start the quoted string */
     while (*in) {
 	if (*in == '"' || *in == '\\') {
@@ -1299,7 +1293,7 @@ globus_l_gram_http_field_value_quote_string(
     }
     *out++ = '"';		/* End the quoted string. */
     if (outsizep)
-	*outsizep = out - out_start;
+	*outsizep = (globus_byte_t)(out - (char *)out_startp);
     return GLOBUS_SUCCESS;
 }
 
@@ -1309,7 +1303,7 @@ int
 globus_l_gram_http_field_value_unquote_string(
     const globus_byte_t *in	/* Incremented to point past the end */,
     globus_size_t insize /* Ignored; we check for null termination instead. */,
-    glogus_byte_t **out_startp,
+    globus_byte_t **out_startp,
     globus_size_t *outsizep)
 {
     int in_quote = GLOBUS_FALSE;
@@ -1609,40 +1603,13 @@ globus_l_gram_http_post( char *                          url,
 
 
 int
-globus_gram_http_post( char *                         url,
-		       globus_io_attr_t *             attr,
-		       globus_byte_t *                message,
-		       globus_size_t                  msgsize,
-		       globus_gram_http_monitor_t *   monitor )
-{
-    globus_gram_http_read_t *       status;
-
-    if (monitor)
-	initialize_monitor(monitor);
-    globus_gram_http_initialize_read_t(
-	&status,
-	GLOBUS_NULL,              /* userfunc   */
-	GLOBUS_NULL,              /* userarg    */
-	GLOBUS_NULL,              /* userptr    */
-	monitor,                  /* monitor    */
-	GLOBUS_NULL,              /* replybuf   */
-	GLOBUS_NULL );            /* replysize  */
-
-    return globus_l_gram_http_post( url,
-				    attr,
-				    message,
-				    msgsize,
-				    status,
-				    globus_l_gram_http_post_done_callback);
-}
-
-
-int
 globus_gram_http_post_and_get( char *                         url,
 			       globus_io_attr_t *             attr,
-			       globus_byte_t *                message,
-			       globus_size_t *                msgsize,
-			       globus_gram_http_monitor_t *   monitor )
+			       globus_byte_t *                request_message,
+			       globus_size_t                  request_size,
+			       globus_byte_t **               reply_message,
+			       globus_size_t *                reply_size,
+			       globus_gram_http_monitor_t *   monitor)
 {
     globus_gram_http_read_t *       status;
 
@@ -1650,23 +1617,24 @@ globus_gram_http_post_and_get( char *                         url,
 	initialize_monitor(monitor);
     globus_gram_http_initialize_read_t(
 	&status,
-	(void *)globus_l_gram_http_get_callback,    /* userfunc   */
-	GLOBUS_NULL,                                /* userarg    */
-	GLOBUS_NULL,                                /* userptr    */
-	monitor,                                    /* monitor    */
-	message,                                    /* replybuf   */
-	msgsize );                                  /* replysize  */
+	(void *)globus_l_gram_http_get_callback,    /* userfunc after get */
+	GLOBUS_NULL,                                /* userarg            */
+	GLOBUS_NULL,                                /* userptr            */
+	monitor,                                    /* monitor            */
+	reply_message,                              /* replybuf           */
+	reply_size );                               /* replysize          */
 
     status->callback_arg = (void *) status;
 
     return globus_l_gram_http_post( url,
 				    attr,
-				    message,
-				    *msgsize,
+				    request_message,
+				    *request_size,
 				    status,
 				    globus_l_gram_http_post_callback );
 
 }
+
 
 static
 char *
