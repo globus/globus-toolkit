@@ -80,7 +80,7 @@ typedef struct
 }
 globus_l_wu_range_t;
 
-typedef struct globus_i_wu_montor_s
+typedef struct globus_i_wu_monitor_s
 {
     globus_mutex_t             mutex;
     globus_cond_t              cond;
@@ -110,7 +110,7 @@ typedef struct globus_i_wu_montor_s
 #endif /* STRIPED_SERVER_BACKEND */
     globus_io_handle_t         io_handle;
 
-} globus_i_wu_montor_t;
+} globus_i_wu_monitor_t;
 
 /*
  *  global varials from ftpd.c
@@ -193,11 +193,11 @@ globus_l_wu_perf_update_callback(
 
 static globus_bool_t
 globus_l_wu_perf_update(
-    globus_i_wu_montor_t *              mon);
+    globus_i_wu_monitor_t *              mon);
 
 void
 send_range(
-    globus_i_wu_montor_t *                      monitor);
+    globus_i_wu_monitor_t *                      monitor);
 
 /*************************************************************
  *   global vairables 
@@ -205,7 +205,7 @@ send_range(
 static globus_bool_t                            g_timeout_occured;
 globus_ftp_control_handle_t                     g_data_handle;
 
-static globus_i_wu_montor_t                     g_monitor;
+static globus_i_wu_monitor_t                     g_monitor;
 
 /*
  *  define macros for file handling
@@ -349,7 +349,7 @@ std_write(
 
 void
 wu_monitor_reset(
-    globus_i_wu_montor_t *                      mon)
+    globus_i_wu_monitor_t *                      mon)
 {
     mon->done = GLOBUS_FALSE;
     mon->timed_out = GLOBUS_FALSE;
@@ -366,7 +366,7 @@ wu_monitor_reset(
 
 void
 wu_monitor_init(
-    globus_i_wu_montor_t *                      mon)
+    globus_i_wu_monitor_t *                      mon)
 {
     globus_mutex_init(&mon->mutex, GLOBUS_NULL);
     globus_cond_init(&mon->cond, GLOBUS_NULL);
@@ -376,7 +376,7 @@ wu_monitor_init(
 
 void
 wu_monitor_destroy(
-    globus_i_wu_montor_t *                      mon)
+    globus_i_wu_monitor_t *                      mon)
 {
     globus_mutex_destroy(&mon->mutex);
     globus_cond_destroy(&mon->cond);
@@ -468,7 +468,7 @@ G_EXIT();
 void
 g_end()
 {
-    globus_i_wu_montor_t                            monitor;
+    globus_i_wu_monitor_t                            monitor;
     globus_result_t                                 res;
 
     G_ENTER();
@@ -1235,9 +1235,9 @@ data_close_callback(
     struct globus_ftp_control_handle_s *        handle,
     globus_object_t *                           error)
 {
-    globus_i_wu_montor_t *                      monitor;
+    globus_i_wu_monitor_t *                      monitor;
 
-    monitor = (globus_i_wu_montor_t *)callback_arg;
+    monitor = (globus_i_wu_monitor_t *)callback_arg;
 
     globus_mutex_lock(&monitor->mutex);
     {
@@ -1258,9 +1258,9 @@ data_write_callback(
     globus_size_t                               offset,
     globus_bool_t                               eof)
 {
-    globus_i_wu_montor_t *                         monitor;
+    globus_i_wu_monitor_t *                         monitor;
 
-    monitor = (globus_i_wu_montor_t *)callback_arg;
+    monitor = (globus_i_wu_monitor_t *)callback_arg;
 
     globus_mutex_lock(&monitor->mutex);
     {
@@ -1561,9 +1561,9 @@ connect_callback(
     unsigned int                                stripe_ndx,
     globus_object_t *                           error)
 {
-    globus_i_wu_montor_t *                      monitor;
+    globus_i_wu_monitor_t *                      monitor;
 
-    monitor = (globus_i_wu_montor_t *)callback_arg;
+    monitor = (globus_i_wu_monitor_t *)callback_arg;
 
     globus_mutex_lock(&monitor->mutex);
     {
@@ -1575,7 +1575,7 @@ connect_callback(
 
 void
 send_range(
-    globus_i_wu_montor_t *                      monitor)
+    globus_i_wu_monitor_t *                      monitor)
 {
     char *		                        range_str;
 
@@ -1600,7 +1600,7 @@ data_read_callback(
     globus_size_t                               offset,
     globus_bool_t                               eof)
 {
-    globus_i_wu_montor_t *                      monitor;
+    globus_i_wu_monitor_t *                      monitor;
     globus_result_t                             res;
     int                                         ret;
 #ifdef BUFFER_SIZE
@@ -1609,7 +1609,7 @@ data_read_callback(
     size_t                                      buffer_size = BUFSIZ;
 #endif
 
-    monitor = (globus_i_wu_montor_t *)callback_arg;
+    monitor = (globus_i_wu_monitor_t *)callback_arg;
 
     globus_mutex_lock(&monitor->mutex);
     {
@@ -1848,9 +1848,9 @@ globus_l_wu_perf_update_callback(
     globus_abstime_t *			time_stop,
     void *				user_args)
 {
-    globus_i_wu_montor_t *		monitor;
+    globus_i_wu_monitor_t *		monitor;
 
-    monitor = (globus_i_wu_montor_t *) user_args;
+    monitor = (globus_i_wu_monitor_t *) user_args;
 
     globus_mutex_lock(&monitor->mutex);
     {
@@ -1864,7 +1864,7 @@ globus_l_wu_perf_update_callback(
 
 static globus_bool_t 
 globus_l_wu_perf_update(
-    globus_i_wu_montor_t *		monitor)
+    globus_i_wu_monitor_t *		monitor)
 {
     struct timeval tv;
     unsigned int 			num_channels;
