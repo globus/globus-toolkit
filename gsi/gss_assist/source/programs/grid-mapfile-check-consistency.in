@@ -81,18 +81,18 @@ done
     # Verify mapfile existance
 
 if [ ! -f $GRID_MAP_FILE ] ; then 
-    ${GLOBUS_SH_TOUCH-touch} $GRID_MAP_FILE
-    ${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
-else
-    if [ ! -r $GRID_MAP_FILE ] ; then
-        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not readable."
-        exit 1
-    fi
-    
-    if [ ! -w $GRID_MAP_FILE ] ; then
-        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
-        exit 1
-    fi
+    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" does not exist"
+    exit 1
+fi
+  
+if [ ! -r $GRID_MAP_FILE ] ; then
+    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not readable."
+    exit 1
+fi
+
+if [ ! -w $GRID_MAP_FILE ] ; then
+    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
+    exit 1
 fi
 
 RC=0
@@ -161,9 +161,9 @@ do
         echo "$line"
         RC=1
     fi
+    
 
-
-        # Check for valid login names
+    # Check for valid login names
 
     for name in $ln_list ; do
         ${libexecdir}/globus-is-local-user $name
