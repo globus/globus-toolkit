@@ -55,6 +55,9 @@
 #define SSH_BUG_EXTEOF		0x00200000
 #define SSH_BUG_PROBE		0x00400000
 #define SSH_BUG_FIRSTKEX	0x00800000
+#define SSH_BUG_GSSAPI_BER	0x01000000
+#define SSH_OLD_GSSAPI		0x02000000
+#define SSH_BUG_GSS_EMPTYUSER	0x10000000
 
 void     enable_compat13(void);
 void     enable_compat20(void);

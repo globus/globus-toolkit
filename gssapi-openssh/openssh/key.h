@@ -34,6 +34,7 @@ enum types {
 	KEY_RSA1,
 	KEY_RSA,
 	KEY_DSA,
+	KEY_NULL,
 	KEY_UNSPEC
 };
 enum fp_type {
