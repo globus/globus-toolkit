@@ -223,16 +223,12 @@ globus_l_gfs_auth_data_cb(
         goto err;
     }
 
-    res = globus_i_gfs_data_session_start(
+    globus_i_gfs_data_session_start(
         NULL,
         &auth_info->id,
         auth_info->username,
         globus_l_gfs_auth_session_cb,
         auth_info);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
 
     return;
 
