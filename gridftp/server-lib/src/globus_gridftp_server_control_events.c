@@ -107,11 +107,15 @@ globus_i_gsc_event_start(
             event->stripe_total = (globus_off_t *)globus_calloc(
                 sizeof(globus_off_t) * event->stripe_count, 1);
 
-            /* send out the first one */
+            /* don't send out the first one, unnessesary and it conflicts
+                with rft */
+            /*
             for(ctr = 0; ctr < op->event.stripe_count; ctr++)
             {
                 globus_l_gsc_send_perf(op, ctr, op->event.stripe_count, 0);
             }
+            */
+            
             /* register periodic for events */
             GlobusTimeReltimeSet(
                 delay, op->server_handle->opts.perf_frequency, 0);
@@ -309,7 +313,7 @@ globus_l_gsc_send_perf(
                                                                                 
     gettimeofday(&now, NULL);
     msg = globus_common_create_string(
-        "112-Perf Marker.\r\n"
+        "112-Perf Marker\r\n"
         " Timestamp:  %ld.%01ld\r\n"
         " Stripe Index: %d\r\n"
         " Stripe Bytes Transferred: %"GLOBUS_OFF_T_FORMAT"\r\n"

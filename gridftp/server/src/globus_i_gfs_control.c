@@ -9,6 +9,7 @@ typedef struct
 {
     globus_xio_handle_t                 xio_handle;
     char *                              remote_contact;
+    char *                              local_contact;
 
     char *                              rnfr_pathname;
 
@@ -190,6 +191,7 @@ globus_l_gfs_channel_close_cb(
     {
         instance->close_func(instance->close_arg);
     }
+    globus_free(instance->local_contact);
     globus_free(instance->remote_contact);
     globus_free(instance);
 }
@@ -1325,6 +1327,7 @@ globus_l_gfs_request_passive_data(
     globus_gfs_data_info_t *            data_info;
     globus_l_gfs_request_info_t *       request;
     globus_result_t                     result;
+    globus_xio_contact_t                parsed_contact;
     GlobusGFSName(globus_l_gfs_passive_data_connect);
 
     instance = (globus_l_gfs_server_instance_t *) user_arg;
@@ -1345,7 +1348,11 @@ globus_l_gfs_request_passive_data(
     {
         globus_l_gfs_get_full_path(instance, pathname, &data_info->pathname);
     }
+    globus_xio_contact_parse(&parsed_contact, instance->local_contact);
     data_info->max_cs = max;
+    data_info->interface = globus_libc_strdup(parsed_contact.host);
+    
+    globus_xio_contact_destroy(&parsed_contact);
 
     globus_i_gfs_data_request_passive(
         NULL,
@@ -1428,6 +1435,7 @@ globus_l_gfs_request_active_data(
     globus_gfs_data_info_t *            data_info;
     globus_l_gfs_request_info_t *       request;
     globus_result_t                     result;
+    globus_xio_contact_t                parsed_contact;
     GlobusGFSName(globus_l_gfs_active_data_connect);
 
     instance = (globus_l_gfs_server_instance_t *) user_arg;
@@ -1443,10 +1451,14 @@ globus_l_gfs_request_active_data(
     }
 
     globus_l_gfs_get_data_info(op, data_info, net_prt);
+    globus_xio_contact_parse(&parsed_contact, instance->local_contact);
 
     data_info->contact_strings = cs;
     data_info->cs_count = cs_count;
-
+    data_info->interface = globus_libc_strdup(parsed_contact.host);
+    
+    globus_xio_contact_destroy(&parsed_contact);
+    
     globus_i_gfs_data_request_active(
         NULL,
         instance->session_id,
@@ -1629,6 +1641,7 @@ globus_i_gfs_control_start(
     globus_xio_handle_t                 handle,
     globus_xio_system_handle_t          system_handle,
     const char *                        remote_contact,
+    const char *                        local_contact,
     globus_i_gfs_server_close_cb_t      close_func,
     void *                              close_arg)
 {
@@ -1656,6 +1669,12 @@ globus_i_gfs_control_start(
     if(!instance->remote_contact)
     {
         result = GlobusGFSErrorMemory("remote_contact");
+        goto error_strdup;
+    }
+    instance->local_contact = globus_libc_strdup(local_contact);
+    if(!instance->local_contact)
+    {
+        result = GlobusGFSErrorMemory("local_contact");
         goto error_strdup;
     }
 
@@ -1828,6 +1847,7 @@ error_attr_setup:
 
 error_attr:
     globus_free(instance->remote_contact);
+    globus_free(instance->local_contact);
 
 error_strdup:
     globus_free(instance);

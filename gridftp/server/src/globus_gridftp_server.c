@@ -433,6 +433,7 @@ globus_l_gfs_new_server_cb(
 {
     globus_xio_system_handle_t          system_handle;
     char *                              remote_contact;
+    char *                              local_contact;
     
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
@@ -446,6 +447,15 @@ globus_l_gfs_new_server_cb(
             globus_l_gfs_tcp_driver,
             GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
             &remote_contact);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        result = globus_xio_handle_cntl(
+            handle,
+            globus_l_gfs_tcp_driver,
+            GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
+            &local_contact);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
@@ -467,14 +477,15 @@ globus_l_gfs_new_server_cb(
         if(globus_i_gfs_config_bool("data_node"))
         {
             result = globus_i_gfs_data_node_start(
-                handle, system_handle, remote_contact);
+                handle, system_handle, remote_contact, local_contact);
         }
         else
         {        
             result = globus_i_gfs_control_start(
                 handle, 
                 system_handle, 
-                remote_contact, 
+                remote_contact,
+                local_contact, 
                 globus_l_gfs_server_closed,
                 NULL);
         }

@@ -310,6 +310,8 @@ typedef struct globus_gfs_data_info_s
     int                                 cs_count;
     /** array of contact strings (PORT) */
     const char **                       contact_strings;
+    /** interface that should be used for data connections */
+    char *                              interface;
 
     /* XXX: is this temp */
     gss_cred_id_t                       del_cred;

@@ -6,6 +6,7 @@
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
 globus_extension_registry_t             globus_i_gfs_dsi_registry;
 globus_extension_handle_t               globus_i_gfs_active_dsi_handle;
+static globus_bool_t                    globus_l_gfs_data_is_remote_node = GLOBUS_FALSE;
 
 typedef enum
 {
@@ -446,6 +447,18 @@ globus_l_gfs_data_handle_init(
 
     handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
     handle->op = NULL;
+
+    if(!globus_l_gfs_data_is_remote_node)
+    {
+        result = globus_ftp_control_data_set_interface(
+            &handle->data_channel, handle->info.interface);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_data_set_interface", result);
+            goto error_control;
+        }
+    }
 
     result = globus_ftp_control_local_mode(
         &handle->data_channel, handle->info.mode);
@@ -941,7 +954,7 @@ globus_i_gfs_data_request_passive(
             goto error_handle;
         }
         handle->session_handle = session_handle;
-        
+
         address.host[0] = 1; /* prevent address lookup */
         address.port = 0;
         result = globus_ftp_control_local_pasv(&handle->data_channel, &address);
@@ -959,15 +972,24 @@ globus_i_gfs_data_request_passive(
         /* its ok to use AF_INET here since we are requesting the LOCAL
          * address.  we just use AF_INET to store the port
          */
-        GlobusLibcSockaddrSetFamily(addr, AF_INET);
-        GlobusLibcSockaddrSetPort(addr, address.port);
-        result = globus_libc_addr_to_contact_string(
-            &addr, GLOBUS_LIBC_ADDR_LOCAL | GLOBUS_LIBC_ADDR_NUMERIC, &cs);
-        if(result != GLOBUS_SUCCESS)
+        
+        if(globus_l_gfs_data_is_remote_node)
         {
-            result = GlobusGFSErrorWrapFailed(
-                "globus_libc_addr_to_contact_string", result);
-            goto error_control;
+            GlobusLibcSockaddrSetFamily(addr, AF_INET);
+            GlobusLibcSockaddrSetPort(addr, address.port);
+            result = globus_libc_addr_to_contact_string(
+                &addr, GLOBUS_LIBC_ADDR_LOCAL | GLOBUS_LIBC_ADDR_NUMERIC, &cs);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusGFSErrorWrapFailed(
+                    "globus_libc_addr_to_contact_string", result);
+                goto error_control;
+            }
+        }
+        else
+        {
+            cs = globus_common_create_string(
+                "%s:%d", handle->info.interface, (int) address.port);
         }
         
         bounce_info = (globus_l_gfs_data_passive_bounce_t *)
@@ -2489,7 +2511,8 @@ globus_result_t
 globus_i_gfs_data_node_start(
     globus_xio_handle_t                 handle,
     globus_xio_system_handle_t          system_handle,
-    const char *                        remote_contact)
+    const char *                        remote_contact,
+    const char *                        local_contact)
 {
     globus_result_t                     res;
     globus_i_gfs_monitor_t              monitor;
@@ -2503,8 +2526,11 @@ globus_i_gfs_data_node_start(
         &monitor,
         globus_l_gfs_data_ipc_error_cb,
         NULL);
-
+    
     globus_i_gfs_monitor_wait(&monitor);
+    
+    globus_l_gfs_data_is_remote_node = GLOBUS_TRUE;
+    
     globus_i_gfs_monitor_destroy(&monitor);
 
     return res;

@@ -1147,6 +1147,7 @@ globus_l_gfs_ipc_unpack_data(
         GFSDecodeString(buffer, len, data_info->contact_strings[ctr]);
     }
     GFSDecodeString(buffer, len, data_info->pathname);
+    GFSDecodeString(buffer, len, data_info->interface);
     
     rc = globus_l_gfs_ipc_unpack_cred(ipc, buffer, len, &data_info->del_cred);
     if(rc != 0)
@@ -3146,6 +3147,7 @@ globus_l_gfs_ipc_pack_data(
             buffer, ipc->buffer_size, ptr, data_info->contact_strings[ctr]);
     }
     GFSEncodeString(buffer, ipc->buffer_size, ptr, data_info->pathname);
+    GFSEncodeString(buffer, ipc->buffer_size, ptr, data_info->interface);
 
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, gsi_buffer.length);
     if(gsi_buffer.length > 0)
