@@ -19,8 +19,6 @@ sub test_gridftp_local {
 
     my $output;
 
-#    $u->command(". env.sh");
-
     my $subject = `grid-proxy-info -subject`;
     chomp($subject);
 
@@ -38,6 +36,8 @@ sub test_gridftp_local {
         $u->command_blocking("in.ftpd -a -1 -s -p 9999");
     my ($dest_pid, $dest_fd) = 
         $u->command_blocking("in.ftpd -a -1 -s -p 9998");
+
+    sleep 5;
 
     $u->command("globus-url-copy -s \"$subject\" \\
         gsiftp://localhost:9998/etc/group \\
