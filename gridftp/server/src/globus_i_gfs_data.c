@@ -746,7 +746,8 @@ globus_l_gfs_data_passive_kickout(
     reply->info.data.data_handle_id = (int) bounce_info->handle;
     reply->info.data.bi_directional = bounce_info->bi_directional;
     reply->info.data.cs_count = 1;
-    reply->info.data.contact_strings = (char **) &bounce_info->contact_string;
+    reply->info.data.contact_strings = 
+        (const char **) &bounce_info->contact_string;
     
     globus_gfs_ipc_reply_finished(
         bounce_info->ipc_handle,

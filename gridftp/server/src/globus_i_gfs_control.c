@@ -318,7 +318,7 @@ void
 globus_l_gfs_ipc_resource_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t              reply,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg)
 /*
     globus_i_gfs_server_instance_t *    instance,
@@ -332,21 +332,21 @@ globus_l_gfs_ipc_resource_cb(
 
     op = (globus_gridftp_server_control_op_t) user_arg;
     
-    if((&reply)->result != GLOBUS_SUCCESS)
+    if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_resource(
             op,
-            (&reply)->info.resource.stat_info, 
-            (&reply)->info.resource.stat_count, 
+            reply->info.resource.stat_info, 
+            reply->info.resource.stat_count, 
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
-            globus_error_print_friendly(globus_error_peek((&reply)->result)));
+            globus_error_print_friendly(globus_error_peek(reply->result)));
     }
     else
     {
         globus_gridftp_server_control_finished_resource(
             op,
-            (&reply)->info.resource.stat_info, 
-            (&reply)->info.resource.stat_count, 
+            reply->info.resource.stat_info, 
+            reply->info.resource.stat_count, 
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
             GLOBUS_NULL);
     }    
@@ -421,7 +421,7 @@ void
 globus_l_gfs_ipc_command_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t              reply,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg)
 /*
     globus_i_gfs_server_instance_t *    instance,
@@ -435,7 +435,7 @@ globus_l_gfs_ipc_command_cb(
     
     op = (globus_gridftp_server_control_op_t) user_arg;
 
-    switch((&reply)->info.command.command)
+    switch(reply->info.command.command)
     {
       case GLOBUS_I_GFS_CMD_RMD:
       case GLOBUS_I_GFS_CMD_DELE:
@@ -446,7 +446,7 @@ globus_l_gfs_ipc_command_cb(
       case GLOBUS_I_GFS_CMD_MKD:
         msg = globus_common_create_string(
             "257 Directory \"%s\" created successfully.\r\n", 
-            (&reply)->info.command.created_dir);
+            reply->info.command.created_dir);
         globus_gsc_959_finished_command(op, msg);
         globus_free(msg);
         break;      
@@ -455,7 +455,7 @@ globus_l_gfs_ipc_command_cb(
         break;
       case GLOBUS_I_GFS_CMD_CKSM:
         msg = globus_common_create_string(
-            "213 %s\r\n", (&reply)->info.command.checksum);
+            "213 %s\r\n", reply->info.command.checksum);
         globus_gsc_959_finished_command(op, msg); 
         globus_free(msg);
         break;
@@ -642,7 +642,7 @@ void
 globus_l_gfs_ipc_event_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t              reply,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg)
 /*
     globus_i_gfs_server_instance_t *    instance,
@@ -659,7 +659,7 @@ globus_l_gfs_ipc_event_cb(
     
     op = (globus_gridftp_server_control_op_t) user_arg;
     
-    switch((&reply)->event)
+    switch(reply->event)
     {
       case GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN:
         globus_gridftp_server_control_begin_transfer(
@@ -691,7 +691,7 @@ void
 globus_l_gfs_ipc_transfer_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t              reply,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg)
 /*
     globus_i_gfs_server_instance_t *    instance,
@@ -703,12 +703,12 @@ globus_l_gfs_ipc_transfer_cb(
     
     op = (globus_gridftp_server_control_op_t) user_arg;
     
-    if((&reply)->result != GLOBUS_SUCCESS)
+    if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
-            globus_error_print_friendly(globus_error_peek((&reply)->result)));
+            globus_error_print_friendly(globus_error_peek(reply->result)));
     }
     else
     {
@@ -999,7 +999,7 @@ void
 globus_l_gfs_ipc_passive_data_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t              reply,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg)
 
 /*
@@ -1016,29 +1016,29 @@ globus_l_gfs_ipc_passive_data_cb(
     
     op = (globus_gridftp_server_control_op_t) user_arg;
 
-    if((&reply)->result != GLOBUS_SUCCESS)
+    if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_passive_connect(
             op,
-            (void *) (&reply)->info.data.data_handle_id,
-            (&reply)->info.data.bi_directional 
+            (void *) reply->info.data.data_handle_id,
+            reply->info.data.bi_directional 
                 ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
                 : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
-            (&reply)->info.data.contact_strings,
-            (&reply)->info.data.cs_count,
+            reply->info.data.contact_strings,
+            reply->info.data.cs_count,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
-            globus_error_print_friendly(globus_error_peek((&reply)->result)));
+            globus_error_print_friendly(globus_error_peek(reply->result)));
     }
     else
     {
         globus_gridftp_server_control_finished_passive_connect(
             op,
-            (void *) (&reply)->info.data.data_handle_id,
-            (&reply)->info.data.bi_directional 
+            (void *) reply->info.data.data_handle_id,
+            reply->info.data.bi_directional 
                 ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
                 : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
-            (&reply)->info.data.contact_strings,
-            (&reply)->info.data.cs_count,
+            reply->info.data.contact_strings,
+            reply->info.data.cs_count,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
             GLOBUS_NULL);
     }    
@@ -1161,7 +1161,7 @@ void
 globus_l_gfs_ipc_active_data_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_ipc_reply_t              reply,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg)
 /*
     globus_i_gfs_server_instance_t *    instance,
@@ -1175,23 +1175,23 @@ globus_l_gfs_ipc_active_data_cb(
     
     op = (globus_gridftp_server_control_op_t) user_arg;
     
-    if((&reply)->result != GLOBUS_SUCCESS)
+    if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_active_connect(
             op,
-            (void *) (&reply)->info.data.data_handle_id,
-            (&reply)->info.data.bi_directional 
+            (void *) reply->info.data.data_handle_id,
+            reply->info.data.bi_directional 
                 ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
                 : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
-            globus_error_print_friendly(globus_error_peek((&reply)->result)));
+            globus_error_print_friendly(globus_error_peek(reply->result)));
     }
     else
     {
         globus_gridftp_server_control_finished_active_connect(
             op,
-            (void *) (&reply)->info.data.data_handle_id,
-            (&reply)->info.data.bi_directional 
+            (void *) reply->info.data.data_handle_id,
+            reply->info.data.bi_directional 
                 ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
                 : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 

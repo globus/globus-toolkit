@@ -1,6 +1,9 @@
 #ifndef GLOBUS_I_GFS_IPC_H
 #define GLOBUS_I_GFS_IPC_H
 
+// stuck in globus_i_gridftp_server.h for now so ipc_handle can be in instance
+// will be outa there when ipc_handle handling shit is in control.c
+// after local version / single stripe is working i guess.
 // typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
 typedef struct globus_i_gfs_ipc_iface_s *  globus_gfs_ipc_iface_t;
 
@@ -101,14 +104,14 @@ typedef void
 (*globus_gfs_ipc_callback_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
-    globus_gfs_ipc_reply_t              reply,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg);
 
 typedef void
 (*globus_gfs_ipc_event_callback_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
-    globus_gfs_ipc_reply_t              reply,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg);
 
 typedef void

@@ -404,7 +404,7 @@ globus_l_gfs_ipc_close_cb(
             globus_list_remove(&list, list);
 
         request->cb(
-            request->ipc_handle, result, reply, request->user_arg);
+            request->ipc_handle, result, &reply, request->user_arg);
     }
 
     /* ignore result t, not much to care about at this point */
