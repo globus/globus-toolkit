@@ -160,7 +160,12 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
     if [ -r "${GRID_SECURITY_DIR}/globus-user-ssl.conf" ] && 
        [ -r "${GRID_SECURITY_DIR}/globus-host-ssl.conf" ] ; then
         secconfdir="${GRID_SECURITY_DIR}"
-        trusted_certs_dir="${secconfdir}/certificates"
+
+        if [ ! -z "${X509_CERT_DIR}" ] ; then
+               trusted_certs_dir="${secconfdir}/certificates"
+        else
+               trusted_certs_dir="${X509_CERT_DIR}"
+        fi
     else
         echo "Can't find valid CA config files in " \
              "GRID_SECURITY_DIR  = ${GRID_SECURITY_DIR}." 
