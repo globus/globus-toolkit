@@ -2625,7 +2625,12 @@ globus_xio_read(
         res = GlobusXIOErrorParameter("buffer_length");
         goto param_error;
     }
-
+    
+    if(nbytes != NULL)
+    {
+        *nbytes = 0;
+    }
+    
     op = data_desc;
     if(op == NULL)
     {
@@ -2664,7 +2669,7 @@ globus_xio_read(
     op->blocking = GLOBUS_TRUE;
 
     info->op = op;
-
+    
     globus_mutex_lock(&info->mutex);
     {
         res = globus_l_xio_register_readv(op, ref);
@@ -2703,12 +2708,6 @@ globus_xio_read(
 
   param_error:
     GlobusXIODebugExitWithError();
-
-    if(nbytes != NULL)
-    {
-        *nbytes = 0;
-    }
-
     return res;
 }
 
@@ -2749,7 +2748,12 @@ globus_xio_readv(
         res = GlobusXIOErrorParameter("buffer_length");
         goto param_error;
     }
-
+    
+    if(nbytes != NULL)
+    {
+        *nbytes = 0;
+    }
+    
     op = data_desc;
     if(op == NULL)
     {
@@ -2824,11 +2828,6 @@ globus_xio_readv(
     /* desroy op */
 
   param_error:
-    if(nbytes != NULL)
-    {
-        *nbytes = 0;
-    }
-
     GlobusXIODebugExitWithError();
     return res;
 }
@@ -2873,7 +2872,12 @@ globus_xio_write(
         res = GlobusXIOErrorParameter("buffer_length");
         goto param_error;
     }
-
+    
+    if(nbytes != NULL)
+    {
+        *nbytes = 0;
+    }
+    
     op = data_desc;
     if(op == NULL)
     {
@@ -2950,11 +2954,6 @@ globus_xio_write(
     /* desroy op */
 
   param_error:
-    if(nbytes != NULL)
-    {
-        *nbytes = 0;
-    }
-
     GlobusXIODebugExitWithError();
     return res;
 }
@@ -2995,6 +2994,11 @@ globus_xio_writev(
     {
         res = GlobusXIOErrorParameter("buffer_length");
         goto param_error;
+    }
+    
+    if(nbytes != NULL)
+    {
+        *nbytes = 0;
     }
 
     op = data_desc;
@@ -3071,12 +3075,6 @@ globus_xio_writev(
     /* desroy op */
 
   param_error:
-
-    if(nbytes != NULL)
-    {
-        *nbytes = 0;
-    }
-
     GlobusXIODebugExitWithError();
     return res;
 }
