@@ -1,10 +1,5 @@
 #include "globus_common.h"
 #include "globus_thread_common.h"
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <assert.h>
-#include <ctype.h>
 
 static globus_memory_t                   mem;
 
