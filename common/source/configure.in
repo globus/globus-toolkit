@@ -46,9 +46,7 @@ GPT_SET_LIBS(["$THREAD_LIB_FLAGS $EXTERNAL_LIBS"])
 
 AC_SUBST(GLOBUS_THREADS)
 
-LAC_DOXYGEN(["Globus Common"],
-	    ["../library"],
-	    ["./doc/doxygen"])
+LAC_DOXYGEN("../library")
 
 GLOBUS_FINALIZE
 
@@ -67,6 +65,7 @@ AC_OUTPUT(
 	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
 	,
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+	GPT_LOCATION=$GPT_LOCATION
 
 )
 
