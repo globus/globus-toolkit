@@ -1,6 +1,30 @@
 #include "globus_object.h"
 #include "globus_libc.h"
 
+static globus_mutex_t                   s_object_ref_mutex;
+
+static int s_object_init (void)
+{
+    return globus_mutex_init(&s_object_ref_mutex, GLOBUS_NULL);
+}
+
+static int s_object_destroy (void)
+{
+    return globus_mutex_destroy(&s_object_ref_mutex);
+}
+
+#include "version.h"
+globus_module_descriptor_t globus_i_object_module =
+{
+  "globus_object",
+  s_object_init,
+  s_object_destroy,
+  GLOBUS_NULL,
+  GLOBUS_NULL,
+  &local_version
+};
+
+
 globus_bool_t
 globus_object_type_assert_valid (const globus_object_type_t * type)
 {
@@ -89,6 +113,7 @@ globus_object_construct (const globus_object_type_t * create_type)
 
   new_object->type          = create_type;
   new_object->parent_object = parent_object;
+  new_object->ref_count     = 1;
 
   if ( create_type->parent_type == NULL ) {
     /* root types carry static/dynamic tag */
@@ -144,6 +169,7 @@ globus_object_copy (const globus_object_t * object)
 
   copy->type = object->type;
   copy->parent_object = parent_copy;
+  copy->ref_count     = 1;
   
   if ( object->type->parent_type == NULL ) {
     /* root types carry static/dynamic tag */
@@ -165,30 +191,50 @@ globus_object_copy (const globus_object_t * object)
 }
 
 void
+globus_object_reference(globus_object_t * object)
+{
+    globus_mutex_lock(&s_object_ref_mutex);
+    {
+        ++object->ref_count;
+    }
+    globus_mutex_unlock(&s_object_ref_mutex);
+}
+
+void
 globus_object_free (globus_object_t * object)
 {
+  int                                   ref_count;
   if ( globus_object_assert_valid (object) 
        == GLOBUS_FALSE ) return;
 
   if ( object==NULL ) return;
 
   if ( globus_object_is_static (object) == GLOBUS_TRUE ) return;
-
-  if ( object->type->destructor != NULL ) 
+    
+  globus_mutex_lock(&s_object_ref_mutex);
   {
-    (object->type->destructor) (object->instance_data);
+    ref_count = --object->ref_count;
   }
-
-  if ( object->parent_object != NULL ) 
+  globus_mutex_unlock(&s_object_ref_mutex);
+    
+  if(ref_count == 0)
   {
-    globus_object_free (object->parent_object);
-    object->parent_object = NULL;
+      if ( object->type->destructor != NULL ) 
+      {
+        (object->type->destructor) (object->instance_data);
+      }
+    
+      if ( object->parent_object != NULL ) 
+      {
+        globus_object_free (object->parent_object);
+        object->parent_object = NULL;
+      }
+    
+      object->type = NULL;
+      object->instance_data = NULL;
+    
+      globus_free (object);
   }
-
-  object->type = NULL;
-  object->instance_data = NULL;
-
-  globus_free (object);
 }
 
 
