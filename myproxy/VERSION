@@ -1,8 +1,13 @@
-This is myproxy v0.4.2 4 Feb 2002.
+This is myproxy v0.4.3 6 Mar 2002.
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.4.3 6 Mar 2002
+  This version adds support for per-credential authorization.  Users
+  can specify retrieval/renewal policies for a credential on upload
+  using myproxy-init.
+
 v0.4.2 4 Feb 2002
   This version includes the GSI distinguished name matching logic that
   was removed in v0.4.0, so for example host/fqhn will now match fqhn
