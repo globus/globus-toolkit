@@ -9,12 +9,6 @@ FILELIST_FILES = noflavor_data.filelist \
 	noflavor_hdr.filelist \
 	$(GLOBUS_FLAVOR_NAME)_rtl.filelist
 
-MAKEFILE_AMS = $(top_srcdir)/Makefile.am \
-	$(top_srcdir)/pkgdata/Makefile.am \
-	$(top_srcdir)/config/Makefile.am \
-	$(top_srcdir)/aclocal/Makefile.am \
-	$(top_srcdir)/tests/Makefile.am
-
 pkg_DATA = \
 	pkg_data_noflavor_data.gpt \
 	pkg_data_$(GLOBUS_FLAVOR_NAME)_dev.gpt \
@@ -26,13 +20,13 @@ pkg_DATA = \
 	pkg_data_$(GLOBUS_FLAVOR_NAME)_rtl.gpt \
 	$(FILELIST_FILES)
 
-filelist_file: $(MAKEFILE_AMS)
+filelist_file: 
 	@mydir=`pwd`; \
 	if test -f "master.filelist"; then \
 		rm $(FILELIST_FILE); \
 	fi
 
-all_filelists: filelist_file $(MAKEFILE_AMS)
+all_filelists: filelist_file
 	 @(cd .. && $(MAKE) $(AM_MAKEFLAGS) filelist) \
 ## This trick allows "-k" to keep its natural meaning when running a
 ## recursive rule.
