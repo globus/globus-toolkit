@@ -443,7 +443,7 @@ main(int argc, char **argv)
             if(result != GLOBUS_SUCCESS)
             {
                 fprintf(stderr, "Error: Unable to init ftp handle attr %s\n",
-                    globus_object_printable_to_string(globus_error_get(result)));
+                    globus_error_print_chain(globus_error_get(result)));
     
                 return 1;
             }
@@ -456,7 +456,7 @@ main(int argc, char **argv)
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to init debug plugin %s\n",
-                globus_object_printable_to_string(globus_error_get(result)));
+                globus_error_print_chain(globus_error_get(result)));
 
             return 1;
         }
@@ -467,7 +467,7 @@ main(int argc, char **argv)
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to register debug plugin %s\n",
-                globus_object_printable_to_string(globus_error_get(result)));
+                globus_error_print_chain(globus_error_get(result)));
 
             return 1;
         }
@@ -795,7 +795,7 @@ main(int argc, char **argv)
         if (result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to register performance handler %s\n",
-                    globus_object_printable_to_string(globus_error_get(result)));
+                    globus_error_print_chain(globus_error_get(result)));
 
             fprintf(stderr, "Continuing without performance info\n");
         }
@@ -836,7 +836,7 @@ main(int argc, char **argv)
     if (result != GLOBUS_SUCCESS)
     {
         fprintf(stderr, "error: %s\n",
-                globus_object_printable_to_string(globus_error_get(result)));
+                globus_error_print_chain(globus_error_get(result)));
         globus_mutex_destroy(&monitor.mutex);
         globus_cond_destroy(&monitor.cond);
         exit(1);
@@ -869,7 +869,7 @@ main(int argc, char **argv)
     if (monitor.use_err)
     {
         fprintf(stderr, "error: %s\n",
-                globus_object_printable_to_string(monitor.err));
+                globus_error_print_chain(monitor.err));
         globus_object_free(monitor.err);
 	ret_val = GLOBUS_TRUE;
     }
@@ -907,7 +907,7 @@ globus_l_url_copy_monitor_callback(void * callback_arg,
     {
 /*
         fprintf(stderr, " url copy error: %s\n",
-                globus_object_printable_to_string(error));
+                globus_error_print_chain(error));
 */
         use_err = GLOBUS_TRUE;
     }
