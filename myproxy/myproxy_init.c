@@ -99,11 +99,6 @@ main(int argc, char *argv[])
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_PUT_PROXY;
 
-    username = getenv("LOGNAME");
-    if (username != NULL) {
-      client_request->username = strdup(username);
-    }
-
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
       socket_attrs->pshost = strdup(pshost);
@@ -122,9 +117,9 @@ main(int argc, char *argv[])
 		       &cred_lifetime) != 0) {
       goto cleanup;
     }
-
+    
     /* Create a proxy by running [grid-proxy-init] */
-    sprintf(proxyfile, "%s.%s", MYPROXY_DEFAULT_PROXY, client_request->username);
+    sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned) getpid());
 
     /* Run grid-proxy-init to create a proxy */
     if (grid_proxy_init(cred_lifetime, proxyfile) != 0) {
@@ -134,6 +129,12 @@ main(int argc, char *argv[])
 
     /* Be sure to delete the user proxy on abnormal exit */
     cleanup_user_proxy = 1;
+    
+    if (client_request->username == NULL &&
+	ssl_get_base_subject_file(proxyfile, &client_request->username)) {
+       fprintf(stderr, "Cannot get subject name from your certificate\n");
+       goto cleanup;
+    }
 
     /* Allow user to provide a passphrase */
     if (!use_empty_passwd) {
@@ -283,13 +284,6 @@ init_arguments(int argc,
     if (attrs->pshost == NULL) {
 	fprintf(stderr, usage);
 	fprintf(stderr, "Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
-	return -1;
-    }
-
-    /* Check to see if username specified */
-    if (request->username == NULL) {
-	fprintf(stderr, usage);
-	fprintf(stderr, "Unspecified username!\n");
 	return -1;
     }
 
