@@ -95,7 +95,7 @@ typedef struct globus_i_gass_copy_state_target_s
     /**
      * attributes to control file transfer
      */
-    globus_gass_copy_attr_t			attr;
+    globus_gass_copy_attr_t *			attr;
 
     /* If the attr was passed as an argument then FALSE
      * If the attr was created internally then TRUE
