@@ -52,9 +52,9 @@ sub basic_tests
                 push(@tests, "$test_name -w 1 -r 0 -c $c -b $buffer_size $inline_finish $d $delay");
                 push(@tests, "$test_name -w 0 -r 1 -c $c -b $buffer_size $inline_finish $d $delay");
                 push(@tests, "$test_name -w 0 -r 0 -c $c -b $buffer_size $inline_finish $d $delay");
-                for(my $write_count = 1; $write_count <= 8; $write_count *= 2)
+                for(my $write_count = 1; $write_count <= 16; $write_count *= 4)
                 {
-                    for(my $read_count = 1; $read_count <= 8; $read_count *= 2)
+                    for(my $read_count = 1; $read_count <= 16; $read_count *= 4)
                     {
                         push(@tests, "$test_name -w $write_count -r $read_count -c $c -b $buffer_size $inline_finish $d $delay");
                     }
