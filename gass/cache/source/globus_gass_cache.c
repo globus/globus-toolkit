@@ -1419,7 +1419,7 @@ globus_l_gass_cache_lock_file(
 	
 	if  ( file_stat.st_nlink != 2)
 	{
-#ifdef __CYGWIN
+#ifdef __CYGWIN__
             break;
 #endif
 	    /* we manage to create the file, but it is not a hard link
@@ -1794,7 +1794,11 @@ globus_l_gass_cache_unlock_close(
 	    break;
 	}
     }
+#ifndef __CYGWIN__
     if (rc == 0  &&  lock_stat.st_nlink==2)
+#else
+    if (rc == 0  &&  lock_stat.st_nlink==1)
+#endif
     {
 	/* I still have the lock */
 
