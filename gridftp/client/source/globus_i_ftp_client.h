@@ -118,6 +118,7 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_ftp_control_auth_info_t              auth_info;
     globus_ftp_control_type_t                   type;
     globus_ftp_control_mode_t                   mode;
+    globus_ftp_control_mode_t                   list_mode;
     globus_bool_t                               append;
     globus_ftp_control_dcau_t                   dcau;
     globus_ftp_control_protection_t             data_prot;
@@ -125,7 +126,6 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_bool_t                               read_all;
     globus_ftp_client_data_callback_t           read_all_intermediate_callback;
     void *                                      read_all_intermediate_callback_arg;
-    globus_bool_t				rfc1738_url;
 }
 globus_i_ftp_client_operationattr_t;
 
@@ -600,6 +600,7 @@ typedef struct globus_i_ftp_client_target_s
     globus_ftp_control_type_t			type;
     globus_ftp_control_tcpbuffer_t		tcp_buffer;
     globus_ftp_control_mode_t			mode;
+    globus_ftp_control_mode_t			list_mode;
     globus_ftp_control_structure_t		structure;
     globus_ftp_control_layout_t			layout;
     globus_ftp_control_parallelism_t		parallelism;
@@ -615,6 +616,7 @@ typedef struct globus_i_ftp_client_target_s
     
     /** Plugin mask associated with the currently pending command. */
     globus_ftp_client_plugin_command_mask_t	mask;
+
 } globus_i_ftp_client_target_t;
 
 /**

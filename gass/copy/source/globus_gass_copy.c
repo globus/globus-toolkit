@@ -223,6 +223,40 @@ globus_l_gass_copy_monitor_callback(
     return;
 } /* globus_l_gass_copy_monitor_callback() */
 
+
+/********************************************************************
+ * generic callback to signal completion of ftp operation
+ ********************************************************************/
+
+static
+void
+globus_l_gass_copy_ftp_op_done_callback(
+    void *                             user_arg,
+    globus_ftp_client_handle_t *       handle,
+    globus_object_t *                  error)
+{
+    static char *   myname = "globus_l_gass_copy_ftp_op_done_callback";    
+
+    globus_i_gass_copy_monitor_t       *monitor;
+
+    monitor = (globus_i_gass_copy_monitor_t *) user_arg;
+           
+    globus_mutex_lock(&monitor->mutex);
+    monitor->done = GLOBUS_TRUE;
+    if(error != GLOBUS_NULL)
+    {
+	monitor->err = globus_object_copy(error);
+	monitor->use_err = GLOBUS_TRUE;
+    }
+    globus_cond_signal(&monitor->cond);
+    globus_mutex_unlock(&monitor->mutex);
+
+    return;
+}
+
+
+
+
 #endif
 
 /************************************************************
@@ -292,6 +326,8 @@ globus_gass_copy_handle_init(
 	handle->buffer_length = 1024*1024;
 	handle->user_pointer = GLOBUS_NULL;
 	handle->err = GLOBUS_NULL;
+	handle->partial_offset = -1;
+	handle->partial_end_offset = -1;
 
 	return GLOBUS_SUCCESS;
     }
@@ -622,6 +658,95 @@ globus_gass_copy_get_no_third_party_transfers(
 	return globus_error_put(err);
     }
 } /* globus_gass_copy_get_no_third_party_transfers() */
+
+/**
+ * Set the offsets to be used for doing partial transfers
+ *
+ * This function allows the user to set the offsets that will be
+ * used for doing partial transfers.  An offset of -1 will disable
+ * partial transfers.  An end_offset of -1 means EOF.
+ *
+ * @param handle
+ *       Set the offsets for partial transfers associated with this handle.
+ * @param offset
+ *       The starting offset for the partial transfer.
+ * @param end_offset
+ *       The ending offset for the partial transfer.
+ *
+ * @return
+ *       This function returns GLOBUS_SUCCESS if successful, or a
+ *       globus_result_t indicating the error that occurred.
+ */
+globus_result_t
+globus_gass_copy_set_partial_offsets(
+    globus_gass_copy_handle_t * handle,
+    globus_off_t offset,
+    globus_off_t end_offset)
+{
+    globus_object_t * err;
+    static char * myname="globus_gass_copy_set_partial_offsets";
+    if (handle)
+    {
+	handle->partial_offset = offset;
+	handle->partial_end_offset = end_offset;
+	
+	return GLOBUS_SUCCESS;
+    }
+    else
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: BAD_PARAMETER, handle is NULL",
+	    myname);
+
+	return globus_error_put(err);
+    }
+} /* globus_gass_copy_set_partial_offsets() */
+
+/**
+ * Get the offsets being used for doing partial transfers
+ *
+ * This function allows the user to get the offsets that are being
+ * used for doing partial transfers.  An offset of -1 means partial
+ * transfers are disabled.
+ *
+ * @param handle
+ *       Get the offsets for partial transfers associated with this handle.
+ * @param offset
+ *       The starting offset for the partial transfer.
+ * @param end_offset
+ *       The ending offset for the partial transfer.
+ *
+ * @return
+ *       This function returns GLOBUS_SUCCESS if successful, or a
+ *       globus_result_t indicating the error that occurred.
+ */
+globus_result_t
+globus_gass_copy_get_partial_offsets(
+    globus_gass_copy_handle_t * handle,
+    globus_off_t * offset,
+    globus_off_t * end_offset)
+{
+    globus_object_t * err;
+    static char * myname="globus_gass_copy_get_partial_offsets";
+    if (handle)
+    {
+	*offset = handle->partial_offset;
+	*end_offset = handle->partial_end_offset;
+	return GLOBUS_SUCCESS;
+    }
+    else
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: BAD_PARAMETER, handle is NULL",
+	    myname);
+
+	return globus_error_put(err);
+    }
+} /* globus_gass_copy_get_partial_offsets() */
 
 /**
  * Initialize an attribute structure
@@ -2323,6 +2448,8 @@ globus_l_gass_copy_register_read(
 
     case GLOBUS_GASS_COPY_URL_MODE_IO:
 
+        if(handle->partial_offset == -1 || handle->partial_end_offset == -1)
+        {            
 	result = globus_io_register_read(
 	    state->source.data.io.handle,
 	    buffer,
@@ -2330,7 +2457,17 @@ globus_l_gass_copy_register_read(
 	    handle->buffer_length,
 	    globus_l_gass_copy_io_read_callback,
 	    (void *) handle);
-
+        }
+        else
+        {
+	result = globus_io_register_read(
+	    state->source.data.io.handle,
+	    buffer,
+	    handle->buffer_length,
+	    handle->buffer_length,
+	    globus_l_gass_copy_io_read_callback,
+	    (void *) handle);
+        }            
 
 	break;
     }
@@ -2613,8 +2750,19 @@ globus_l_gass_copy_io_setup_get(
 	    state->source.attr->io,
 	    state->source.data.io.handle);
 
+
+        if(result == GLOBUS_SUCCESS && handle->partial_offset != -1)
+        {
+            result = globus_io_file_seek(
+                state->source.data.io.handle,
+                handle->partial_offset,
+                SEEK_SET);               
+        }
+
+
 	if(result==GLOBUS_SUCCESS)
 	{
+
 	    state->source.status = GLOBUS_I_GASS_COPY_TARGET_READY;
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    globus_libc_fprintf(stderr,
@@ -2627,6 +2775,7 @@ globus_l_gass_copy_io_setup_get(
 #endif
 	}
         globus_url_destroy(&parsed_url);
+            
     }
     else
     {
@@ -2670,7 +2819,9 @@ globus_l_gass_copy_io_setup_put(
 
         result = globus_io_file_open(
 	    parsed_url.url_path,
-	    (GLOBUS_IO_FILE_WRONLY|GLOBUS_IO_FILE_CREAT|GLOBUS_IO_FILE_TRUNC),
+	    (handle->partial_offset == -1) ?
+	    (GLOBUS_IO_FILE_WRONLY|GLOBUS_IO_FILE_CREAT|GLOBUS_IO_FILE_TRUNC) :
+	    (GLOBUS_IO_FILE_WRONLY|GLOBUS_IO_FILE_CREAT),
 #ifndef TARGET_ARCH_WIN32
 	    (GLOBUS_IO_FILE_IRUSR|GLOBUS_IO_FILE_IWUSR|
 	        GLOBUS_IO_FILE_IRGRP|GLOBUS_IO_FILE_IWGRP|
@@ -2680,6 +2831,15 @@ globus_l_gass_copy_io_setup_put(
 #endif
 	    state->dest.attr->io,
 	    state->dest.data.io.handle);
+
+        if(result == GLOBUS_SUCCESS && handle->partial_offset != -1)
+        {
+            result = globus_io_file_seek(
+                state->dest.data.io.handle,
+                handle->partial_offset,
+                SEEK_SET);               
+        }
+
 
 	if(result==GLOBUS_SUCCESS)
 	{
@@ -2716,15 +2876,81 @@ globus_l_gass_copy_ftp_setup_get(
 {
     globus_gass_copy_state_t * state = handle->state;
     globus_result_t result;
+    globus_i_gass_copy_monitor_t monitor;
 
-    result = globus_ftp_client_get(
-		   state->source.data.ftp.handle,
-		   state->source.url,
-		   state->source.attr->ftp_attr,
-                   GLOBUS_NULL,
-		   globus_l_gass_copy_ftp_get_done_callback,
-		   (void *) handle);
+    if(handle->partial_offset == -1)
+    {
+        result = globus_ftp_client_get(
+            state->source.data.ftp.handle,
+            state->source.url,
+            state->source.attr->ftp_attr,
+            GLOBUS_NULL,
+            globus_l_gass_copy_ftp_get_done_callback,
+            (void *) handle);
+    }    
+    else if(handle->partial_end_offset == -1)
+    {
+        globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+        globus_cond_init(&monitor.cond, GLOBUS_NULL);
+        monitor.done = GLOBUS_FALSE;
+        monitor.err = GLOBUS_NULL;
+        monitor.use_err = GLOBUS_FALSE;
 
+        result = globus_ftp_client_size(
+            state->source.data.ftp.handle,
+            state->source.url,
+            state->source.attr->ftp_attr,
+            &handle->partial_end_offset,
+            globus_l_gass_copy_ftp_op_done_callback,
+            (void *) &monitor);
+    
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_monitor_exit;
+        }
+        
+        globus_mutex_lock(&monitor.mutex);
+        
+        while(!monitor.done)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);
+        }
+        if(monitor.use_err)
+        {
+            result = globus_error_put(monitor.err);
+            globus_mutex_unlock(&monitor.mutex);
+            goto error_monitor_exit;
+        }
+        
+        globus_mutex_unlock(&monitor.mutex);
+        globus_mutex_destroy(&monitor.mutex);
+        globus_cond_destroy(&monitor.cond);
+        
+        result = globus_ftp_client_partial_get(
+            state->source.data.ftp.handle,
+            state->source.url,
+            state->source.attr->ftp_attr,
+            GLOBUS_NULL,
+            handle->partial_offset,
+            handle->partial_end_offset,                   
+            globus_l_gass_copy_ftp_get_done_callback,
+            (void *) handle);
+            
+        handle->partial_end_offset = -1;
+    }
+    else
+    {
+        result = globus_ftp_client_partial_get(
+            state->source.data.ftp.handle,
+            state->source.url,
+            state->source.attr->ftp_attr,
+            GLOBUS_NULL,
+            handle->partial_offset,
+            handle->partial_end_offset,                   
+            globus_l_gass_copy_ftp_get_done_callback,
+            (void *) handle);
+    }
+    
     if(result==GLOBUS_SUCCESS)
     {
 	state->source.status = GLOBUS_I_GASS_COPY_TARGET_READY;
@@ -2742,7 +2968,13 @@ globus_l_gass_copy_ftp_setup_get(
     }
 
     return result;
+    
+error_monitor_exit:
+    globus_mutex_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
 
+    return result;
+    
 } /* globus_l_gass_copy_ftp_setup_get() */
 
 globus_result_t
@@ -2752,14 +2984,29 @@ globus_l_gass_copy_ftp_setup_put(
     globus_gass_copy_state_t * state = handle->state;
     globus_result_t result;
 
-    result = globus_ftp_client_put(
-		   state->dest.data.ftp.handle,
-		   state->dest.url,
-		   state->dest.attr->ftp_attr,
-                   GLOBUS_NULL,
-		   globus_l_gass_copy_ftp_put_done_callback,
-		   (void *) handle);
-
+    if(handle->partial_offset == -1)
+    {       
+        result = globus_ftp_client_put(
+            state->dest.data.ftp.handle,
+            state->dest.url,
+            state->dest.attr->ftp_attr,
+            GLOBUS_NULL,
+            globus_l_gass_copy_ftp_put_done_callback,
+            (void *) handle);
+    }
+    else
+    {
+        result = globus_ftp_client_partial_put(
+            state->dest.data.ftp.handle,
+            state->dest.url,
+            state->dest.attr->ftp_attr,
+            GLOBUS_NULL,
+            handle->partial_offset,
+            handle->partial_end_offset,                   
+            globus_l_gass_copy_ftp_put_done_callback,
+            (void *) handle);
+    }
+    
     if(result==GLOBUS_SUCCESS)
     {
 	state->dest.status = GLOBUS_I_GASS_COPY_TARGET_READY;
@@ -4471,6 +4718,7 @@ globus_gass_copy_register_url_to_url(
     globus_gass_copy_state_t * state;
     globus_gass_copy_url_mode_t source_url_mode;
     globus_gass_copy_url_mode_t dest_url_mode;
+    globus_i_gass_copy_monitor_t monitor;
     int bad_param;
     static char * myname="globus_gass_copy_register_url_to_url";
 
@@ -4704,16 +4952,86 @@ globus_gass_copy_register_url_to_url(
         }
 
         handle->external_third_party = GLOBUS_TRUE;
-        result = globus_ftp_client_third_party_transfer(
-	    &handle->ftp_handle,
-	    source_url,
-	    state->source.attr->ftp_attr,
-	    dest_url,
-	    state->dest.attr->ftp_attr,
-            GLOBUS_NULL,
-	    globus_l_gass_copy_ftp_transfer_callback,
-	    (void *) handle);
 
+        if(handle->partial_offset == -1)
+        {
+            result = globus_ftp_client_third_party_transfer(
+                &handle->ftp_handle,
+                source_url,
+                state->source.attr->ftp_attr,
+                dest_url,
+                state->dest.attr->ftp_attr,
+                GLOBUS_NULL,
+                globus_l_gass_copy_ftp_transfer_callback,
+                (void *) handle);
+        }
+        else if(handle->partial_end_offset == -1)
+        {
+            globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+            globus_cond_init(&monitor.cond, GLOBUS_NULL);
+            monitor.done = GLOBUS_FALSE;
+            monitor.err = GLOBUS_NULL;
+            monitor.use_err = GLOBUS_FALSE;
+
+            result = globus_ftp_client_size(
+                &handle->ftp_handle,
+                source_url,
+                state->source.attr->ftp_attr,
+                &handle->partial_end_offset,
+                globus_l_gass_copy_ftp_op_done_callback,
+                (void *) &monitor);
+        
+            if (result != GLOBUS_SUCCESS)
+            {
+                goto error_monitor_exit;
+            }
+            
+            globus_mutex_lock(&monitor.mutex);
+            
+            while(!monitor.done)
+            {
+                globus_cond_wait(&monitor.cond, &monitor.mutex);
+            }
+            if(monitor.use_err)
+            {
+                result = globus_error_put(monitor.err);
+                globus_mutex_unlock(&monitor.mutex);
+                goto error_monitor_exit;
+            }
+            
+            globus_mutex_unlock(&monitor.mutex);
+            globus_mutex_destroy(&monitor.mutex);
+            globus_cond_destroy(&monitor.cond);
+
+            result = globus_ftp_client_partial_third_party_transfer(
+                &handle->ftp_handle,
+                source_url,
+                state->source.attr->ftp_attr,
+                dest_url,
+                state->dest.attr->ftp_attr,
+                GLOBUS_NULL,
+                handle->partial_offset,
+                handle->partial_end_offset,
+                globus_l_gass_copy_ftp_transfer_callback,
+                (void *) handle);
+                
+            handle->partial_end_offset = -1;
+        }
+        else 
+        {
+            result = globus_ftp_client_partial_third_party_transfer(
+                &handle->ftp_handle,
+                source_url,
+                state->source.attr->ftp_attr,
+                dest_url,
+                state->dest.attr->ftp_attr,
+                GLOBUS_NULL,
+                handle->partial_offset,
+                handle->partial_end_offset,
+                globus_l_gass_copy_ftp_transfer_callback,
+                (void *) handle);
+        }
+        
 	if (result != GLOBUS_SUCCESS)
 	{
 	    /* do some error handling */
@@ -4763,6 +5081,10 @@ error_exit:
 	myname,
 	bad_param);
     return globus_error_put(err);
+
+error_monitor_exit:
+    globus_mutex_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
 
 error_result_exit:
     handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;

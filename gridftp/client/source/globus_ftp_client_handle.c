@@ -804,6 +804,7 @@ globus_l_ftp_client_target_new(
     target->tcp_buffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_DEFAULT;
     target->tcp_buffer.fixed.size = 0;
     target->mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
+    target->list_mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
     target->structure = GLOBUS_FTP_CONTROL_STRUCTURE_NONE;
     target->layout.mode = GLOBUS_FTP_CONTROL_STRIPING_NONE;
     target->parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
@@ -1566,6 +1567,18 @@ globus_i_ftp_client_can_reuse_data_conn(
 	    return GLOBUS_TRUE;
 	}
 	break;
+      case GLOBUS_FTP_CLIENT_LIST:
+      case GLOBUS_FTP_CLIENT_NLST:
+      case GLOBUS_FTP_CLIENT_MLSD:
+	if(source == source->cached_data_conn.source &&
+	   source->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
+	   source->attr->list_mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK &&
+	   source->cached_data_conn.operation == client_handle->op)
+	{
+	    return GLOBUS_TRUE;
+	}
+	break;
+	
     default:
 	;
     }

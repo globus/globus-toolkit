@@ -1674,7 +1674,6 @@ globusl_url_get_path_rfc1738(const char **stringp,
     size_t pos = 0;
     size_t tmppos = 0;
     size_t lastpos;
-    size_t former=0;
     char * tmpbuf;
 
     tmpbuf=globus_malloc(strlen((*stringp)));

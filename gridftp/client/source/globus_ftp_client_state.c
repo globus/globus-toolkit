@@ -670,6 +670,7 @@ redo:
 	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
 	    target->mode = target->attr->mode;
+	    target->list_mode = target->attr->list_mode;
 	    result = globus_ftp_control_local_mode(target->control_handle,
 						   target->mode);
 	    if(result != GLOBUS_SUCCESS)
@@ -2318,11 +2319,12 @@ redo:
         if(rfc1738_url==GLOBUS_TRUE)
 	{
 	    result = (globus_result_t) globus_url_parse_rfc1738(client_handle->dest_url,
-                                       		    &dest_url);
+                &dest_url);
 	}
 	else
 	{
-	    result = (globus_result_t) globus_url_parse(client_handle->dest_url,							 &dest_url);
+	    result = (globus_result_t) globus_url_parse(client_handle->dest_url, 
+	        &dest_url);
 	}
 
         if(result != GLOBUS_SUCCESS)

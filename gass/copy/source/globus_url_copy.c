@@ -69,6 +69,10 @@ typedef struct
     int                                 restart_interval;
     int                                 restart_timeout;
     globus_bool_t			striped;
+    globus_bool_t			rfc1738;
+    globus_off_t			partial_offset;
+    globus_off_t			partial_length;
+    globus_ftp_control_mode_t           list_mode;
 
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
@@ -217,68 +221,83 @@ const char * long_usage =
 "Any url specifying a directory must end with a /\n\n"
 
 "OPTIONS\n"
-"\t -help | -usage\n"
-"\t      Print help\n"
-"\t -version\n"
-"\t      Print the version of this program\n"
-"\t -versions\n"
-"\t      Print the versions of all modules that this program uses\n"
-"\t -a | -ascii\n"
-"\t      Convert the file to/from ASCII format to/from local file format\n"
-"\t -b | -binary\n"
-"\t      Do not apply any conversion to the files. *default*\n"
-"\t -f <filename>\n" 
-"\t      Read a list of url pairs from filename.  Each line should contain\n"
-"\t      <sourceURL> <destURL>\n"
-"\t      Enclose URLs with spaces in double qoutes (\").\n"
-"\t      Blank lines and lines beginning with # will be ignored.\n"
-"\t -r | -recurse\n" 
-"\t      Copy files in subdirectories\n"
-
-"\t -q | -quiet \n"
-"\t      Suppress all output for successful operation\n"
-"\t -vb | -verbose \n"
-"\t      During the transfer, display the number of bytes transferred\n"
-"\t      and the transfer rate per second\n"
-"\t -dbg | -debugftp \n"
-"\t      Debug ftp connections.  Prints control channel communication\n"
-"\t      to stderr\n"
-
-"\t -rst | -restart \n"
-"\t      Restart failed ftp operations.\n"
-"\t -rst-retries <retries>\n"
-"\t      The maximum number of times to retry the operation before giving\n"
-"\t      up on the transfer.  Use 0 for infinite.  Default is 5.\n"
-"\t -rst-interval <seconds>\n"
-"\t      The interval in seconds to wait after a failure before retrying\n"
-"\t      the transfer.  Use 0 for an exponential backoff.  Default is 0.\n"
-"\t -rst-timeout <seconds>\n"
-"\t      Maximum time after a failure to keep retrying.  Use 0 for no\n" 
-"\t      timeout.  Default is 0.\n"
-
-"\t -s  <subject> | -subject <subject>\n"
-"\t      Use this subject to match with both the source and dest servers\n"
-"\t -ss <subject> | -source-subject <subject>\n"
-"\t      Use this subject to match with the source server\n"
-"\t -ds <subject> | -dest-subject <subject>\n"
-"\t      Use this subject to match with the destionation server\n"
-"\t -tcp-bs <size> | -tcp-buffer-size <size>\n"
-"\t      specify the size (in bytes) of the buffer to be used by the\n"
-"\t      underlying ftp data channels\n"
-"\t -bs <block size> | -block-size <block size>\n"
-"\t      specify the size (in bytes) of the buffer to be used by the\n"
-"\t      underlying transfer methods\n"
-"\t -p <parallelism> | -parallel <parallelism>\n"
-"\t      specify the number of parallel data connections should be used.\n"
-
-"\t -notpt | -no-third-party-transfers\n"
-"\t      turn third-party transfers off (on by default)\n"
-"\t -nodcau | -no-data-channel-authentication\n"
-"\t      turn off data channel authentication for ftp transfers\n"
-"\t -dcsafe | -data-channel-safe\n"
-"\t      set data channel protection mode to SAFE\n"
-"\t -dcpriv | -data-channel-private\n"
-"\t      set data channel protection mode to PRIVATE\n"
+"  -help | -usage\n"
+"       Print help\n"
+"  -version\n"
+"       Print the version of this program\n"
+"  -versions\n"
+"       Print the versions of all modules that this program uses\n"
+"  -a | -ascii\n"
+"       Convert the file to/from ASCII format to/from local file format\n"
+"  -b | -binary\n"
+"       Do not apply any conversion to the files. *default*\n"
+"  -f <filename>\n" 
+"       Read a list of url pairs from filename.  Each line should contain\n"
+"       <sourceURL> <destURL>\n"
+"       Enclose URLs with spaces in double qoutes (\").\n"
+"       Blank lines and lines beginning with # will be ignored.\n"
+"  -r | -recurse\n" 
+"       Copy files in subdirectories\n"
+   
+"  -elm | -extended-list-mode\n" 
+"       Use MODE E for list data connections when -p is used.\n"
+   
+"  -q | -quiet \n"
+"       Suppress all output for successful operation\n"
+"  -vb | -verbose \n"
+"       During the transfer, display the number of bytes transferred\n"
+"       and the transfer rate per second\n"
+"  -dbg | -debugftp \n"
+"       Debug ftp connections.  Prints control channel communication\n"
+"       to stderr\n"
+   
+"  -rst | -restart \n"
+"       Restart failed ftp operations.\n"
+"  -rst-retries <retries>\n"
+"       The maximum number of times to retry the operation before giving\n"
+"       up on the transfer.  Use 0 for infinite.  Default is 5.\n"
+"  -rst-interval <seconds>\n"
+"       The interval in seconds to wait after a failure before retrying\n"
+"       the transfer.  Use 0 for an exponential backoff.  Default is 0.\n"
+"  -rst-timeout <seconds>\n"
+"       Maximum time after a failure to keep retrying.  Use 0 for no\n" 
+"       timeout.  Default is 0.\n"
+   
+"  -rp | -relative-paths\n"
+"      The path portion of ftp urls will be interpereted as relative to the\n"
+"      user's starting directory.  By default, all paths are root-relative.\n"
+"      When this flag is set, the path portion of the ftp url must start \n"
+"      with %%2F if it designates a root-relative path.\n"
+   
+"  -s  <subject> | -subject <subject>\n"
+"       Use this subject to match with both the source and dest servers\n"
+"  -ss <subject> | -source-subject <subject>\n"
+"       Use this subject to match with the source server\n"
+"  -ds <subject> | -dest-subject <subject>\n"
+"       Use this subject to match with the destionation server\n"
+"  -tcp-bs <size> | -tcp-buffer-size <size>\n"
+"       specify the size (in bytes) of the buffer to be used by the\n"
+"       underlying ftp data channels\n"
+"  -bs <block size> | -block-size <block size>\n"
+"       specify the size (in bytes) of the buffer to be used by the\n"
+"       underlying transfer methods\n"
+"  -p <parallelism> | -parallel <parallelism>\n"
+"       specify the number of parallel data connections should be used.\n"
+   
+"  -notpt | -no-third-party-transfers\n"
+"       turn third-party transfers off (on by default)\n"
+"  -nodcau | -no-data-channel-authentication\n"
+"       turn off data channel authentication for ftp transfers\n"
+"  -dcsafe | -data-channel-safe\n"
+"       set data channel protection mode to SAFE\n"
+"  -dcpriv | -data-channel-private\n"
+"       set data channel protection mode to PRIVATE\n"
+   
+"  -off | -partial-offset\n"
+"       offset for partial ftp file transfers\n"
+"  -len | -partial-length\n"
+"       length for partial ftp file transfers, used only for the source url,\n"
+"       defaults to the size of file - offset.\n"
 "\n";
 
 /***********
@@ -349,6 +368,10 @@ enum
     arg_data_safe,
     arg_data_private,
     arg_recurse,
+    arg_partial_offset,
+    arg_partial_length,
+    arg_rfc1738,
+    arg_elm,
     arg_striped,
     arg_num = arg_striped
 };
@@ -383,6 +406,8 @@ flagdef(arg_data_safe, "-dcsafe", "-data-channel-safe");
 flagdef(arg_data_private, "-dcpriv", "-data-channel-private");
 flagdef(arg_recurse, "-r", "-recurse");
 flagdef(arg_striped, "-stripe", "-striped");
+flagdef(arg_rfc1738, "-rp", "-relative-paths");
+flagdef(arg_elm, "-elm", "-extended-list-mode");
 
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
@@ -394,6 +419,8 @@ oneargdef(arg_ds, "-ds", "-dest-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_rst_retries, "-rst-retries", "-restart-retries", test_integer, GLOBUS_NULL);
 oneargdef(arg_rst_interval, "-rst-interval", "-restart-interval", test_integer, GLOBUS_NULL);
 oneargdef(arg_rst_timeout, "-rst-timeout", "-restart-timeout", test_integer, GLOBUS_NULL);
+oneargdef(arg_partial_offset, "-off", "-partial-offset", test_integer, GLOBUS_NULL);
+oneargdef(arg_partial_length, "-len", "-partial-length", test_integer, GLOBUS_NULL);
 
 
 static globus_args_option_descriptor_t args_options[arg_num];
@@ -422,6 +449,10 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_data_safe);            \
     setupopt(arg_data_private);         \
     setupopt(arg_recurse);		\
+    setupopt(arg_partial_offset);	\
+    setupopt(arg_partial_length);	\
+    setupopt(arg_rfc1738);	\
+    setupopt(arg_elm);	\
     setupopt(arg_striped);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
@@ -1260,6 +1291,10 @@ globus_l_guc_parse_arguments(
     guc_info->restart_interval = 0;
     guc_info->restart_timeout = 0;
     guc_info->striped = GLOBUS_FALSE;
+    guc_info->partial_offset = -1;
+    guc_info->partial_length = -1;
+    guc_info->rfc1738 = GLOBUS_FALSE;
+    guc_info->list_mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
 
     /* determine the program name */
     
@@ -1361,9 +1396,28 @@ globus_l_guc_parse_arguments(
         case arg_recurse:
             guc_info->recurse = GLOBUS_TRUE;
             break;
+        case arg_rfc1738:
+            guc_info->rfc1738 = GLOBUS_TRUE;
+            break;
 	case arg_striped:
 	    guc_info->striped = GLOBUS_TRUE;
 	    break;
+	case arg_partial_offset:
+            globus_libc_scan_off_t(
+                instance->values[0],
+                &guc_info->partial_offset,
+                GLOBUS_NULL);
+	    break;
+	case arg_partial_length:
+            globus_libc_scan_off_t(
+                instance->values[0],
+                &guc_info->partial_length,
+                GLOBUS_NULL);
+	    break;
+	case arg_elm:
+	    guc_info->list_mode = GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK;
+	    break;
+
         default:
             globus_url_copy_l_args_error_fmt("parse panic, arg id = %d",
                                        instance->id_number);
@@ -1761,6 +1815,19 @@ globus_l_guc_init_gass_copy_handle(
     }
 #   endif
 
+    if(guc_info->rfc1738)
+    {
+        result = globus_ftp_client_handleattr_set_rfc1738_url(
+            &ftp_handleattr, GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "Error: Unable to set rfc1738 support %s\n",
+                globus_error_print_friendly(globus_error_get(result)));
+
+            return -1;
+        }
+    }        
+    
     globus_gass_copy_handleattr_set_ftp_attr(
         &gass_copy_handleattr, &ftp_handleattr);
 
@@ -1771,10 +1838,20 @@ globus_l_guc_init_gass_copy_handle(
         globus_gass_copy_set_buffer_length(gass_copy_handle, 
             guc_info->block_size);
     }
+
     if(guc_info->no_3pt)
     {
         globus_gass_copy_set_no_third_party_transfers(gass_copy_handle,
-                            GLOBUS_TRUE);
+            GLOBUS_TRUE);
+    }
+    
+    if(guc_info->partial_offset != -1)
+    {
+        globus_gass_copy_set_partial_offsets(
+            gass_copy_handle, 
+            guc_info->partial_offset,
+            (guc_info->partial_length == -1) ? -1 : 
+            guc_info->partial_offset + guc_info->partial_length);
     }
 
     if (g_verbose_flag)
@@ -1853,7 +1930,11 @@ globus_l_guc_gass_attr_init(
             parallelism.fixed.size = guc_info->num_streams;
             globus_ftp_client_operationattr_set_parallelism(
                 ftp_attr,
-                &parallelism);        	
+                &parallelism); 
+            
+            globus_ftp_client_operationattr_set_list_mode(
+                ftp_attr,
+                guc_info->list_mode);
 	}
 
 	if (guc_info->striped)

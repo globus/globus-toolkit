@@ -26,8 +26,6 @@
 #include "globus_gass_transfer.h"
 #include "globus_ftp_client.h"
 #include "globus_io.h"
-#include <glob.h>
-#include <fnmatch.h>
 
 #ifndef GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
 #define GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
@@ -237,6 +235,11 @@ struct globus_gass_copy_handle_s
   globus_ftp_client_handle_t	      ftp_handle;
   /* this handle only used when no_third_party_transfers is true (for 3pt) */
   globus_ftp_client_handle_t	      ftp_handle_2;
+  
+  /* offsets for partial file transfers */
+  globus_off_t                        partial_offset;
+  globus_off_t                        partial_end_offset;
+  
 };
 
 /**
@@ -306,6 +309,20 @@ globus_result_t
 globus_gass_copy_get_no_third_party_transfers(
     globus_gass_copy_handle_t * handle,
     globus_bool_t * no_third_party_transfers);
+    
+/** set offsets for partial file transfer */
+globus_result_t
+globus_gass_copy_get_partial_offsets(
+    globus_gass_copy_handle_t * handle,
+    globus_off_t * offset,
+    globus_off_t * end_offset);
+    
+/** get offsets for partial file transfer */
+globus_result_t
+globus_gass_copy_set_partial_offsets(
+    globus_gass_copy_handle_t * handle,
+    globus_off_t offset,
+    globus_off_t end_offset);
 
 
 /* find out what transfer mode will be used for a given url, so that the proper attributes may be passed to one of the copy function */
@@ -490,14 +507,13 @@ globus_gass_copy_attr_set_secure_channel(
  */
 
 
-
-
 globus_result_t 
 globus_gass_copy_glob_expand_url( 
      globus_gass_copy_handle_t *         handle, 
      const char *                        url, 
      globus_gass_copy_attr_t *           attr, 
      globus_fifo_t *                     url_list); 
+     
 globus_result_t
 globus_gass_copy_mkdir(
     globus_gass_copy_handle_t * handle,

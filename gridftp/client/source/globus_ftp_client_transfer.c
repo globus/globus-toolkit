@@ -4486,6 +4486,8 @@ globus_l_ftp_client_list_op(
     globus_ftp_client_operationattr_t  		local_attr;
     globus_ftp_control_parallelism_t	        parallelism;
     globus_i_ftp_client_handle_t *		handle;
+    globus_i_ftp_client_operationattr_t *	i_attr;
+
     GlobusFuncName(globus_l_ftp_client_list_op);
 
     /* Check arguments for validity */
@@ -4542,8 +4544,6 @@ globus_l_ftp_client_list_op(
 	goto reset_handle_exit;
     }
 
-    /* force stream/ASCII/no parallelism */
-
     if(attr != GLOBUS_NULL)
     {
         result = globus_ftp_client_operationattr_copy(&local_attr,
@@ -4559,41 +4559,44 @@ globus_l_ftp_client_list_op(
 	err = globus_error_get(result);
 	goto free_url_exit;
     }
+    /* force stream/ASCII/no parallelism, unless we are allowing mode e lists */
 
-    result = globus_ftp_client_operationattr_set_mode(
-	&local_attr,
-	GLOBUS_FTP_CONTROL_MODE_STREAM);
+    i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
+     
+    if(i_attr && i_attr->list_mode == GLOBUS_FTP_CONTROL_MODE_STREAM)
+    {        
+        result = globus_ftp_client_operationattr_set_mode(
+            &local_attr,
+            GLOBUS_FTP_CONTROL_MODE_STREAM);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto destroy_local_attr_exit;
+        }
 
-    if(result != GLOBUS_SUCCESS)
-    {
-	err = globus_error_get(result);
-	goto destroy_local_attr_exit;
-    }
-
-
-    result = globus_ftp_client_operationattr_set_type(
-	&local_attr,
-	GLOBUS_FTP_CONTROL_TYPE_ASCII);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-	err = globus_error_get(result);
-	goto destroy_local_attr_exit;
-    }
-
-    
-    parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
-    
-    result = globus_ftp_client_operationattr_set_parallelism(
-	&local_attr,
-	&parallelism);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-	err = globus_error_get(result);
-	goto destroy_local_attr_exit;
-    }
-
+        result = globus_ftp_client_operationattr_set_type(
+            &local_attr,
+            GLOBUS_FTP_CONTROL_TYPE_ASCII);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto destroy_local_attr_exit;
+        }
+               
+        parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
+        
+        result = globus_ftp_client_operationattr_set_parallelism(
+            &local_attr,
+            &parallelism);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto destroy_local_attr_exit;
+        }
+    }    
     
     /* Obtain a connection to the FTP server, maybe cached */
     err = globus_i_ftp_client_target_find(handle,
