@@ -199,7 +199,7 @@ main(
     res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
 
-    res = globus_xio_driver_load("gssapi_ftp", &ftp_driver);
+    res = globus_xio_driver_load("ftp_cmd", &ftp_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_init(&stack, NULL);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
@@ -221,7 +221,7 @@ main(
     res = globus_xio_attr_init(&xio_attr);
     test_res(res, __LINE__);
     res = globus_xio_attr_cntl(
-        xio_attr, ftp_driver, GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE, GLOBUS_TRUE);
+        xio_attr, ftp_driver, GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER, GLOBUS_TRUE);
     test_res(res, __LINE__);
     res = globus_xio_open(xio_handle, NULL, xio_attr);
     test_res(res, __LINE__);

@@ -51,7 +51,6 @@ globus_l_gsc_cmd_noop(
     int                                     argc,
     void *                                  user_arg)
 {
-    op->server_handle->refresh = GLOBUS_TRUE;
     globus_gsc_959_finished_command(op, "200 NOOP command successful.\r\n");
 }
 
@@ -88,6 +87,47 @@ globus_l_gsc_cmd_dcau(
         default:
             globus_gsc_959_finished_command(op, "504 Bad DCAU mode.\r\n");
             break;
+    }
+}
+
+static void
+globus_l_gsc_cmd_trev(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    char *                                  event_name;
+    char *                                  info;
+    int                                     frequency;
+    int                                     sc;
+
+    for(event_name = cmd_a[1]; *event_name != '\0'; event_name++)
+    {
+        *event_name = toupper(*event_name);
+    }
+    event_name = cmd_a[1];
+    sc = sscanf(cmd_a[2], "%d", &frequency);
+    if(sc != 1)
+    {
+        globus_gsc_959_finished_command(op, "501 Bad paramter mode.\r\n");
+    }
+    info = cmd_a[3];
+
+    if(strcmp(event_name, "RESTART") == 0)
+    {
+        op->server_handle->event.restart_frequency = frequency;
+        globus_gsc_959_finished_command(op, "200 Command Successful.\r\n");
+    }
+    else if(strcmp(event_name, "PERF") == 0)
+    {
+        op->server_handle->event.perf_frequency = frequency;
+        globus_gsc_959_finished_command(op, "200 Command Successful.\r\n");
+    }
+    else
+    {
+        globus_gsc_959_finished_command(op, "502 Unsupported event.\r\n");
     }
 }
 
@@ -1248,7 +1288,7 @@ globus_l_gsc_cmd_rest(
     }
     op->server_handle->restart_marker = restart_marker;
     globus_gsc_959_finished_command(op, 
-    "350 Restart Marker OK. Send STORE or RETRIEVE to initiate transfer.\r\n");
+        "350 Restart Marker OK. Send STORE or RETR to initiate transfer.\r\n");
 }
 
 /*************************************************************************
@@ -1967,6 +2007,7 @@ globus_l_gsc_cmd_stor_retr(
     char *                                  mod_parm = NULL;
     char *                                  tmp_ptr = NULL;
     globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
+    globus_off_t                            tmp_o;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stor);
 
     wrapper = (globus_l_gsc_cmd_wrapper_t *) globus_malloc(
@@ -2027,47 +2068,60 @@ globus_l_gsc_cmd_stor_retr(
             globus_gsc_959_finished_command(op, "500 command failed.\r\n");
             return;
         }
-        if(strcmp(cmd_a[1], "P") == 0 || strcmp(cmd_a[1], "A") == 0)
+        if(strcmp(cmd_a[1], "P") == 0 && strcmp(cmd_a[0], "ERET") == 0)
         {
-            if(*cmd_a[1] == 'P')
-            {
-                sc = sscanf(cmd_a[2], "%*d %*d");
-                if(sc != 2)
-                {
-                    globus_free(wrapper);
-                    globus_gsc_959_finished_command(
-                        op, "500 command failed.\r\n");
-                    return;
-                }
-            }
-            else
-            {
-                sc = sscanf(cmd_a[2], "%*d");
-                if(sc != 1)
-                {
-                    globus_free(wrapper);
-                    globus_gsc_959_finished_command(
-                        op, "500 command failed.\r\n");
-                    return;
-                }
-            }
-            tmp_ptr = cmd_a[2];
-            while((isspace(*tmp_ptr) || isdigit(*tmp_ptr)) && *tmp_ptr != '\0')
-            {
-                tmp_ptr++;
-            }
-            if(*tmp_ptr == '\0')
+            sc = sscanf(cmd_a[2], 
+                "%"GLOBUS_OFF_T_FORMAT" %"GLOBUS_OFF_T_FORMAT, 
+                &tmp_o, &tmp_o);
+            if(sc != 2)
             {
                 globus_free(wrapper);
-                globus_gsc_959_finished_command(op, "500 command failed.\r\n");
+                globus_gsc_959_finished_command(
+                    op, "500 command failed.\r\n");
                 return;
             }
+            mod_parm = globus_libc_strdup(cmd_a[2]);
+            while(isdigit(*tmp_ptr)) tmp_ptr++;
+            while(isspace(*tmp_ptr)) tmp_ptr++;
+            while(isdigit(*tmp_ptr)) tmp_ptr++;
+            /* up until here the scanf gauentess safety */
+            while(isspace(*tmp_ptr) && *tmp_ptr != '\0') tmp_ptr++;
+            if(*tmp_ptr == '\0')
+            {
+                globus_free(mod_parm);
+                globus_free(wrapper);
+                globus_gsc_959_finished_command(op, "501 bad parameter.\r\n");
+                return;
+            }
+            *(tmp_ptr-1) = '\0';
+
             path = globus_libc_strdup(tmp_ptr);
             mod_name = globus_libc_strdup(cmd_a[1]);
+        }
+        else if(strcmp(cmd_a[1], "A") == 0 && strcmp(cmd_a[0], "ESTO") == 0)
+        {
+            sc = sscanf(cmd_a[2], "%"GLOBUS_OFF_T_FORMAT, &tmp_o);
+            if(sc != 1)
+            {
+                globus_free(wrapper);
+                globus_gsc_959_finished_command(op, "501 bad parameter.\r\n");
+                return;
+            }
             mod_parm = globus_libc_strdup(cmd_a[2]);
-            tmp_ptr = strstr(mod_parm, path);
-            globus_assert(tmp_ptr != NULL);
-            *tmp_ptr = '\0';
+            while(isdigit(*tmp_ptr)) tmp_ptr++;
+            /* up until here the scanf gauentess safety */
+            while(isspace(*tmp_ptr) && *tmp_ptr != '\0') tmp_ptr++;
+            if(*tmp_ptr == '\0')
+            {
+                globus_free(mod_parm);
+                globus_free(wrapper);
+                globus_gsc_959_finished_command(op, "501 bad parameter.\r\n");
+                return;
+            }
+            *(tmp_ptr-1) = '\0';
+
+            path = globus_libc_strdup(tmp_ptr);
+            mod_name = globus_libc_strdup(cmd_a[1]);
         }
         else
         {
@@ -2383,6 +2437,16 @@ globus_i_gsc_add_commands(
 
     globus_gsc_959_command_add(
         server_handle,
+        "TREV", 
+        globus_l_gsc_cmd_trev,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: TREV <event name> <frequency> [info list]\r\n",
+        NULL);
+
+    globus_gsc_959_command_add(
+        server_handle,
         "PWD", 
         globus_l_gsc_cmd_pwd,
         GLOBUS_GSC_COMMAND_POST_AUTH,
@@ -2404,7 +2468,7 @@ globus_i_gsc_add_commands(
 
     globus_gsc_959_command_add(
         server_handle,
-        "RETR", 
+        "REST", 
         globus_l_gsc_cmd_rest,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,

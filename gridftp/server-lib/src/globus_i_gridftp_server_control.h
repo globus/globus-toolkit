@@ -204,6 +204,7 @@ typedef struct globus_i_gsc_data_s
 
 typedef enum globus_i_gsc_op_type_e
 {
+    GLOBUS_L_GSC_OP_TYPE_DONE,
     GLOBUS_L_GSC_OP_TYPE_AUTH,
     GLOBUS_L_GSC_OP_TYPE_RESOURCE,
     GLOBUS_L_GSC_OP_TYPE_CREATE_PASV,
@@ -229,6 +230,7 @@ typedef struct globus_i_gsc_op_s
 {
     globus_i_gsc_op_type_t                  type;
 
+    int                                     ref;
     struct globus_i_gsc_server_handle_s *   server_handle;
     globus_result_t                         res;
 
@@ -320,6 +322,12 @@ typedef enum globus_l_gsc_state_e
     GLOBUS_L_GSC_STATE_STOPPED,
 } globus_l_gsc_state_t;
 
+typedef struct globus_i_gsc_event_data_s
+{
+    int                                     perf_frequency;
+    int                                     restart_frequency;
+} globus_i_gsc_event_data_t;
+
 /* the server handle */
 typedef struct globus_i_gsc_server_handle_s
 {
@@ -330,11 +338,16 @@ typedef struct globus_i_gsc_server_handle_s
     /*
      *  authentication information
      */
+    int                                     ref;
+
     char *                                  username;
     char *                                  pw;
     gss_cred_id_t                           cred;
     gss_cred_id_t                           del_cred;
     uid_t                                   uid;
+    char                                    dcau;
+    char                                    prot;
+    globus_bool_t                           authenticated;
 
     char *                                  post_auth_banner;
     char *                                  pre_auth_banner;
@@ -360,9 +373,6 @@ typedef struct globus_i_gsc_server_handle_s
     globus_gridftp_server_control_network_protocol_t     port_prt;
     globus_gridftp_server_control_network_protocol_t     port_max;
 
-    char                                    dcau;
-    char                                    prot;
-    globus_bool_t                           authenticated;
     /*
      *  user function pointers
      */
@@ -370,25 +380,18 @@ typedef struct globus_i_gsc_server_handle_s
 
     globus_i_gsc_restart_t *                restart_marker;
 
-    /* transfer functions */
-    globus_hashtable_t                              send_cb_table;
-    globus_hashtable_t                              recv_cb_table;
-    globus_gridftp_server_control_transfer_cb_t     default_send_cb;
-    globus_gridftp_server_control_transfer_cb_t     default_recv_cb;
-
-    globus_gridftp_server_control_auth_cb_t auth_cb;
-
-    /* data functions */
+    /* user functions */
+    globus_hashtable_t                                  send_cb_table;
+    globus_hashtable_t                                  recv_cb_table;
+    globus_gridftp_server_control_transfer_cb_t         default_send_cb;
+    globus_gridftp_server_control_transfer_cb_t         default_recv_cb;
+    globus_gridftp_server_control_auth_cb_t             auth_cb;
     globus_gridftp_server_control_passive_connect_cb_t  passive_cb;
     globus_gridftp_server_control_active_connect_cb_t   active_cb;
     globus_gridftp_server_control_data_destroy_cb_t     data_destroy_cb;
     globus_gridftp_server_control_list_cb_t             list_cb;
-
-    /* list function */
     globus_gridftp_server_control_resource_cb_t         resource_cb;
-    /* done function */
     globus_gridftp_server_control_cb_t                  done_cb;
-
     globus_gridftp_server_control_abort_cb_t            abort_cb;
     void *                                              abort_arg;
     
@@ -399,6 +402,8 @@ typedef struct globus_i_gsc_server_handle_s
 
     globus_result_t                         cached_res;
     globus_list_t *                         feature_list;
+
+    globus_i_gsc_event_data_t               event;
 
     char                                    mlsx_fact_str[8];
     /* 
@@ -501,8 +506,8 @@ globus_i_gsc_command_panic(
 
 char *
 globus_i_gsc_concat_path(
-    globus_i_gsc_server_handle_t *                  i_server,
-    const char *                                    in_path);
+    globus_i_gsc_server_handle_t *          i_server,
+    const char *                            in_path);
 
 char *
 globus_i_gsc_list_single_line(
