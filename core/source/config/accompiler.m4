@@ -233,7 +233,7 @@ case ${host}--$1 in
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
             else
-                AC_PATH_PROGS(lac_cv_CC, $CC cc)
+                AC_PATH_PROGS(lac_cv_CC, $CC ecc cc)
             fi
             
             AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
