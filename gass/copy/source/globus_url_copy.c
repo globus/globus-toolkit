@@ -235,6 +235,7 @@ int
 main(int argc, char **argv)
 {
     char *                             program           = GLOBUS_NULL;
+    globus_bool_t                      ret_val           = GLOBUS_FALSE;
     globus_bool_t                      no_more_options   = GLOBUS_FALSE;
     globus_bool_t                      usage_error       = GLOBUS_FALSE;
     globus_bool_t                      ignore_ctrlc      = GLOBUS_FALSE;
@@ -732,6 +733,7 @@ main(int argc, char **argv)
         fprintf(stderr, "error: %s\n",
                 globus_object_printable_to_string(monitor.err));
         globus_object_free(monitor.err);
+	ret_val = GLOBUS_TRUE;
     }
     
     globus_gass_copy_handle_destroy(&gass_copy_handle);
@@ -745,7 +747,7 @@ main(int argc, char **argv)
     globus_module_deactivate(GLOBUS_GASS_COPY_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
-    return GLOBUS_SUCCESS;
+    return ret_val;
     
 } /* main() */
 
