@@ -283,7 +283,7 @@ globus_read(
 			 length, 
 			 &bytes_read);
 
-    return (res == GLOBUS_SUCCESS) ? bytes_read : -1;
+    return bytes_read;
 }
 
 int 
@@ -1946,4 +1946,24 @@ g_seek(
     return 0;
 }
     
+void
+g_set_tcp_buffer(int size)
+{
+    globus_ftp_control_tcpbuffer_t tcpbuffer;
+
+    if(size != 0)
+    {
+	tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
+	tcpbuffer.fixed.size = size;
+
+        globus_ftp_control_local_tcp_buffer(&g_data_handle,
+	                                    &tcpbuffer);
+    }
+    else
+    {
+	tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_DEFAULT;
+        globus_ftp_control_local_tcp_buffer(&g_data_handle,
+	                                    &tcpbuffer);
+    }
+}
 #endif /* USE_GLOBUS_DATA_CODE */

@@ -2779,15 +2779,18 @@ void print_groups(void)
 set_bufsize(int size)
 {
     TCPwindowsize = size;
+#ifdef USE_GLOBUS_DATA_CODE
+    g_set_tcp_buffer(size);
+#endif
     
-    reply(214, "TCP window size set to %d kilobytes.",
+    reply(214, "TCP window size set to %d bytes.",
 	 TCPwindowsize);
 }
  
 print_bufsize()
 {
     if (TCPwindowsize > 0)
-	reply(214, "TCP window size is %d kilobytes.",
+	reply(214, "TCP window size is %d bytes.",
 	      TCPwindowsize);
     else
 	reply(214, "TCP window size is the system default.");
