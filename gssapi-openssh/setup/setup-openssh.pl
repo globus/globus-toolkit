@@ -195,6 +195,15 @@ if ( !getPrivilegeSeparation() )
     print "    \t\$GLOBUS_LOCATION/etc/ssh/sshd_config.\n";
 }
 
+#
+# give the user a chance to read all of this output
+#
+
+print "\n";
+print "Press <return> to continue... ";
+$trash = <STDIN>;
+
+print "\n";
 print "---------------------------------------------------------------------\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
 
