@@ -51,14 +51,14 @@ Authctxt *x_authctxt = NULL;
 /* methods */
 
 extern Authmethod method_none;
-#ifdef GSSAPI
-extern Authmethod method_external;
-extern Authmethod method_gssapi;
-#endif
 extern Authmethod method_pubkey;
 extern Authmethod method_passwd;
 extern Authmethod method_kbdint;
 extern Authmethod method_hostbased;
+#ifdef GSSAPI
+extern Authmethod method_external;
+extern Authmethod method_gssapi;
+#endif
 
 Authmethod *authmethods[] = {
 	&method_none,
@@ -232,6 +232,10 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		authctxt->style = style ? xstrdup(style) : NULL;
 		if (use_privsep && (authctxt->attempt == 1))
 			mm_inform_authserv(service, style);
+	} else if (strcmp(service, authctxt->service) != 0) {
+		packet_disconnect("Change of service not allowed: "
+		    "(%s,%s) -> (%s,%s)",
+		    authctxt->user, authctxt->service, user, service);
 	}
 	/* reset state */
 	auth2_challenge_stop(authctxt);
@@ -249,7 +253,6 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		debug2("input_userauth_request: try method %s", method);
 		authenticated =	m->userauth(authctxt);
 	}
-
 	userauth_finish(authctxt, authenticated, method);
 
 	xfree(service);

@@ -81,7 +81,13 @@ compat_datafellows(const char *version)
 		{ "OpenSSH_2.9p*",	SSH_OLD_GSSAPI },
 		{ "OpenSSH_2.*,"
 		  "OpenSSH_3.0*,"
-		  "OpenSSH_3.1*",	SSH_BUG_EXTEOF|SSH_BUG_GSS_EMPTYUSER},
+		  "OpenSSH_3.1*",	SSH_BUG_EXTEOF|SSH_BUG_GSS_EMPTYUSER|
+					SSH_BUG_GSSAPI_BER},
+		{ "OpenSSH_3.2*,"
+		  "OpenSSH_3.3*,"
+		  "OpenSSH_3.4*,"
+		  "OpenSSH_3.5*,"
+		  "OpenSSH_3.6.1*",	SSH_BUG_GSSAPI_BER},
 		{ "Sun_SSH_1.0*",	SSH_BUG_NOREKEY|SSH_BUG_EXTEOF},
 		{ "OpenSSH*",		0 },
 		{ "*MindTerm*",		0 },

@@ -300,8 +300,7 @@ choose_kex(Kex *k, char *client, char *server)
 	} else if (strcmp(k->name, KEX_DHGEX) == 0) {
 		k->kex_type = KEX_DH_GEX_SHA1;
 #ifdef GSSAPI
-	} else if (strncmp(k->name, KEX_GSS_SHA1,
-			   sizeof(KEX_GSS_SHA1)-1) == 0) {
+	} else if (strncmp(k->name, KEX_GSS_SHA1, sizeof(KEX_GSS_SHA1)-1) == 0) {
 		k->kex_type = KEX_GSS_GRP1_SHA1;
 #endif
 	} else

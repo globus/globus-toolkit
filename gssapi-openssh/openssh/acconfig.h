@@ -207,9 +207,6 @@
 /* Define this is you want GSSAPI support in the version 2 protocol */
 #undef GSSAPI
 
-/* Define this if GSSAPI supports gss_export_cred() */
-#undef HAVE_GSSAPI_EXT
-
 /* Define if you want Kerberos 5 support */
 #undef KRB5
 
@@ -228,6 +225,9 @@
 
 /* Define if you want GSI/Globus authentication support */
 #undef GSI
+
+/* Define this if you want support for startup/shutdown hooks */
+#undef SESSION_HOOKS
 
 /* Define if you want S/Key support */
 #undef SKEY

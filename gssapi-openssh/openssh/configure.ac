@@ -531,14 +531,6 @@ AC_ARG_WITH(mechglue,
 		LIBS="$LIBS ${mechglue_lib}"
 		AC_MSG_RESULT(${mechglue_lib})
 
-#		if test -e ${withval}/gssapi.h ; then
-#		    CPPFLAGS="$CPPFLAGS -I${withval}"
-#		elif test -e ${withval}/include/gssapi.h ; then
-#		    CPPFLAGS="$CPPFLAGS -I${withval}/include"
-#		else
-#		    AC_MSG_ERROR("Can't find gssapi.h in ${withval}");
-#		fi
-		
 		AC_CHECK_LIB(dl, dlopen, , )
 		if test $ac_cv_lib_dl_dlopen = yes; then
 		   LDFLAGS="$LDFLAGS -ldl -Wl,-Bsymbolic"
@@ -546,7 +538,6 @@ AC_ARG_WITH(mechglue,
 
 		AC_DEFINE(GSSAPI)
 		AC_DEFINE(MECHGLUE)
-		AC_DEFINE(HAVE_GSSAPI_EXT)
 		GSSAPI="mechglue"
 
 	]
@@ -580,6 +571,7 @@ AC_ARG_WITH(globus-flavor,
 
 if test "x$gsi_path" != "xno" ; then
 	# Globus GSSAPI configuration
+	AC_MSG_CHECKING(for Globus GSI)
 	AC_DEFINE(GSI)
 
 	if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
@@ -590,79 +582,51 @@ if test "x$gsi_path" != "xno" ; then
 		GSSAPI="GSI"
 	fi
 
-	# Find GLOBUS/GSI installation Directory
-
-	AC_MSG_CHECKING(for Globus installation)
-	globus_dev_dir=$gsi_path
-	if test "x$globus_dev_dir" = "xyes" ; then
-                AC_MSG_ERROR(Cannot find Globus installation -- a path must be specified!)
+	if test "x$globus_install_dir" = "xyes" ; then
+                AC_MSG_ERROR(--with-globus=PATH must specify a path)
 	fi
-	AC_MSG_RESULT($globus_dev_dir)
 
-	# Find GLOBUS/GSI flavor Directory
-
-	AC_MSG_CHECKING(for Globus flavor)
         if test "x$globus_flavor_type" = "xno" ; then
-                AC_MSG_ERROR(No Globus flavor type specified)
-        elif test "x$globus_flavor_type" = "xyes" ; then
-                AC_MSG_ERROR(No Globus flavor type specified)
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must be specified)
+	fi
+        if test "x$globus_flavor_type" = "xyes" ; then
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
+	fi
+
+	GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
+	if test ! -d "$GLOBUS_INCLUDE" ; then
+		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
+	fi
+	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
+	
+	if test -x ${gsi_path}/bin/globus-makefile-header ; then
+		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header -static -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
+		GSI_LDFLAGS="-L${gsi_path}/lib"
+		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
 	else
-                AC_DEFINE(HAVE_GSSAPI_EXT)
-                GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
-		if test ! -d "$GLOBUS_FLAVOR_TYPE_INCL_DIR" ; then
-			AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_FLAVOR_TYPE_INCL_DIR})
-                fi
-		GSI_CPPFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
+		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
 	fi
-	AC_MSG_RESULT($globus_flavor_type)
-
-	# Build possible libraries off of the flavor name
-
-        libglobus_gss_assist="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a"
-        libglobus_gssapi_gsi="${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
-
-	# Test that the base gss_assist library is present
-
-	if test -r ${libglobus_gss_assist} ; then
-		LIBS="$LIBS ${libglobus_gss_assist}"
-	else
-		AC_MSG_ERROR([*** libglobus_gss_assist missing])
+	if test -z "$GSI_LIBS" ; then
+		AC_MSG_ERROR(globus-makefile-header failed)
 	fi
-
-	AC_MSG_CHECKING(for libglobus_gss_assist)
-	AC_TRY_LINK(
-		[],
-		[],
-		[
-			AC_MSG_RESULT(yes)
-		],
-		[
-			AC_MSG_ERROR([*** libglobus_gss_assist missing])
-		]
-	)
-
-	# If we aren't using mechglue, test that gssapi_gsi is present
-	if test "$GSSAPI" != "mechglue"; then
-		if test -r ${libglobus_gssapi_gsi} ; then
-			LIBS="$LIBS ${libglobus_gssapi_gsi}"
-		else
-			AC_MSG_ERROR([*** libglobus_gssapi_gsi missing])
-		fi
-	fi
-
-	AC_MSG_CHECKING(for libglobus_gssapi_gsi)
-	AC_TRY_LINK(
-		[],
-		[],
-		[
-			AC_MSG_RESULT(yes)
-		],
-		[
-			AC_MSG_ERROR([*** libglobus_gssapi_gsi missing])
-		]
-	)
 
 	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
+
+	# test that we got the libraries OK
+	AC_TRY_LINK(
+		[],
+		[],
+		[
+			AC_MSG_RESULT(yes)
+		],
+		[
+			AC_MSG_ERROR(link with Globus libraries failed)
+		]
+	)
+	INSTALL_GSISSH="yes"
+else
+	INSTALL_GSISSH=""
 fi
 # End Globus/GSI section
 
@@ -769,6 +733,9 @@ AC_CHECK_FUNCS(\
 )
 
 AC_SEARCH_LIBS(nanosleep, rt posix4, AC_DEFINE(HAVE_NANOSLEEP))
+
+dnl IRIX has basename() in libgen
+AC_SEARCH_LIBS(basename, gen, AC_DEFINE(HAVE_BASENAME))
 
 dnl Make sure strsep prototype is defined before defining HAVE_STRSEP
 AC_CHECK_DECL(strsep, [AC_CHECK_FUNCS(strsep)])
@@ -958,112 +925,9 @@ AC_ARG_WITH(ssl-dir,
 	]
 )
 
-# Patch up SSL libraries for GSI authentication as needed
-if test "x$globus_flavor_type" != "xno" ; then
-	#
-	# For Globus 2, always link with the static libraries
-	#
-
-	libssl_utils="${gsi_path}/lib/libglobus_ssl_utils_${globus_flavor_type}.a"
-
-	#
-	# Trouble arrives at GT 2.1.3+ with the reorg of globus_ssl_utils.  Compensating for
-	# the new library linking required here through file tests to see which libraries to 
-	# link against.
-	#
-
-	libgsi_proxy_core="${gsi_path}/lib/libglobus_gsi_proxy_core_${globus_flavor_type}.a"
-	libgsi_credential="${gsi_path}/lib/libglobus_gsi_credential_${globus_flavor_type}.a"
-	libgsi_callback="${gsi_path}/lib/libglobus_gsi_callback_${globus_flavor_type}.a"
-	liboldgaa="${gsi_path}/lib/libglobus_oldgaa_${globus_flavor_type}.a"
-	libgsi_sysconfig="${gsi_path}/lib/libglobus_gsi_sysconfig_${globus_flavor_type}.a"
-	libproxy_ssl="${gsi_path}/lib/libglobus_proxy_ssl_${globus_flavor_type}.a"
-	libgsi_cert_utils="${gsi_path}/lib/libglobus_gsi_cert_utils_${globus_flavor_type}.a"
-	libopenssl_error="${gsi_path}/lib/libglobus_openssl_error_${globus_flavor_type}.a"
-	libopenssl="${gsi_path}/lib/libglobus_openssl_${globus_flavor_type}.a"
-
-	if test -r ${libgsi_proxy_core} \
-	     -a -r ${libgsi_credential} \
-	     -a -r ${libgsi_callback} \
-	     -a -r ${liboldgaa} \
-	     -a -r ${libgsi_sysconfig} \
-	     -a -r ${libproxy_ssl} \
-	     -a -r ${libgsi_cert_utils} \
-	     -a -r ${libopenssl_error} \
-	     -a -r ${libopenssl} ; then
-		LIBS="$LIBS ${libgsi_proxy_core}"
-		LIBS="$LIBS ${libgsi_credential}"
-		LIBS="$LIBS ${libgsi_callback}"
-		LIBS="$LIBS ${liboldgaa}"
-		LIBS="$LIBS ${libgsi_sysconfig}"
-		LIBS="$LIBS ${libproxy_ssl}"
-		LIBS="$LIBS ${libgsi_cert_utils}"
-		LIBS="$LIBS ${libopenssl_error}"
-		LIBS="$LIBS ${libopenssl}"
-	elif test -r ${libssl_utils}; then
-		LIBS="$LIBS ${libssl_utils}"
-	else
-		AC_MSG_ERROR([*** missing one or more Globus GSI libraries])
-	fi
-
-	AC_MSG_CHECKING(for Globus GSI libraries)
-	AC_TRY_LINK(
-		[],
-		[],
-		[
-			AC_MSG_RESULT(yes)
-		],
-		[
-			AC_MSG_ERROR([*** missing one or more Globus GSI libraries])
-		]
-	)
-
-	#
-	# Standard openssl libraries.  They need to appear near the end of the link line.
-	#
-
-	LIBS="$LIBS ${gsi_path}/lib/libssl_${globus_flavor_type}.a"
-	LIBS="$LIBS ${gsi_path}/lib/libcrypto_${globus_flavor_type}.a"
-
-	AC_MSG_CHECKING(for Globus OpenSSL libraries)
-	AC_TRY_LINK(
-		[],
-		[],
-		[
-			AC_MSG_RESULT(yes)
-		],
-		[
-			AC_MSG_ERROR([*** missing one or more Globus OpenSSL libraries])
-		]
-	)
-
-	#
-	# Another "GT 2.1.3+"ism.
-	#
-
-	libcommon_path="${gsi_path}/lib/libglobus_common_${globus_flavor_type}.a"
-	if test -r ${libcommon_path}; then
-		LIBS="$LIBS ${libcommon_path}"
-		AC_MSG_CHECKING(for libglobus_common)
-		AC_TRY_LINK(
-			[],
-			[],
-			[
-				AC_MSG_RESULT(yes)
-			],
-			[
-				AC_MSG_ERROR([*** libglobus_common missing])
-			]
-		)
-	fi
-else
-	if test "x$gsi_path" != "xno" ; then
-		# Older GSI needs -lssl too
-		LIBS="$LIBS -lssl -lcrypto"
-	else # if no GSI authentication (i.e., OpenSSL default)
-		LIBS="$LIBS -lcrypto"
-	fi
-fi # globus_flavor_type
+if test -z "$GSI_LIBS" ; then
+LIBS="$LIBS -lcrypto"
+fi
 
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL),
 	[
@@ -2244,6 +2108,11 @@ AC_ARG_WITH(afs,
 	]
 )
 LIBS="$LIBS $KLIBS $K5LIBS"
+
+AC_ARG_WITH(session-hooks,
+        [  --with-session-hooks    Enable hooks for executing external commands                                       before/after a session],
+        [ AC_DEFINE(SESSION_HOOKS) ]
+)
 
 # Looking for programs, paths and files
 

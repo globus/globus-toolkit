@@ -102,6 +102,11 @@ initialize_server_options(ServerOptions *options)
 #ifdef AFS
 	options->afs_token_passing = -1;
 #endif
+#ifdef  SESSION_HOOKS
+        options->session_hooks_allow = -1;
+        options->session_hooks_startup_cmd = NULL;
+        options->session_hooks_shutdown_cmd = NULL;
+#endif
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
 	options->challenge_response_authentication = -1;
@@ -231,6 +236,14 @@ fill_default_server_options(ServerOptions *options)
 	if (options->afs_token_passing == -1)
 		options->afs_token_passing = 0;
 #endif
+#ifdef SESSION_HOOKS
+        if (options->session_hooks_allow == -1)
+        {
+            options->session_hooks_allow = 0;
+            options->session_hooks_startup_cmd = NULL;
+            options->session_hooks_shutdown_cmd = NULL;
+        }
+#endif
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
@@ -307,6 +320,9 @@ typedef enum {
 #ifdef AFS
 	sAFSTokenPassing,
 #endif
+#ifdef SESSION_HOOKS
+        sAllowSessionHooks, sSessionHookStartupCmd, sSessionHookShutdownCmd,
+#endif
 	sChallengeResponseAuthentication,
 	sPasswordAuthentication, sKbdInteractiveAuthentication, sListenAddress,
 	sPrintMotd, sPrintLastLog, sIgnoreRhosts,
@@ -366,6 +382,11 @@ static struct {
 #ifdef AFS
 	{ "afstokenpassing", sAFSTokenPassing },
 #endif
+#ifdef SESSION_HOOKS
+        { "allowsessionhooks", sAllowSessionHooks },
+        { "sessionhookstartupcmd", sSessionHookStartupCmd },
+        { "sessionhookshutdowncmd", sSessionHookShutdownCmd },
+#endif        
 	{ "passwordauthentication", sPasswordAuthentication },
 	{ "kbdinteractiveauthentication", sKbdInteractiveAuthentication },
 	{ "challengeresponseauthentication", sChallengeResponseAuthentication },
@@ -707,7 +728,22 @@ parse_flag:
 		intptr = &options->afs_token_passing;
 		goto parse_flag;
 #endif
-
+#ifdef SESSION_HOOKS
+        case sAllowSessionHooks:
+                intptr = &options->session_hooks_allow;
+                goto parse_flag;
+        case sSessionHookStartupCmd:
+        case sSessionHookShutdownCmd:
+                arg = strdelim(&cp);
+                if (!arg || *arg == '\0')
+                    fatal("%s line %d: empty session hook command",
+                          filename, linenum);
+                if (opcode==sSessionHookStartupCmd)
+                    options->session_hooks_startup_cmd = strdup(arg);
+                else
+                    options->session_hooks_shutdown_cmd = strdup(arg);
+                break;
+#endif                  
 	case sPasswordAuthentication:
 		intptr = &options->password_authentication;
 		goto parse_flag;
