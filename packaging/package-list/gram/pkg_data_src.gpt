@@ -27,9 +27,7 @@
 
     <Build_Instructions>
 
-	    <Build_Step> ant stubs -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
-	    <Build_Step> ant copyEtcDir -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
-	    <Build_Step> ant gar -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> ant -Dogsa.root=INSTALLDIR_GPTMACRO</Build_Step>
 	    <Build_Step> mkdir -p INSTALLDIR_GPTMACRO/gars/ </Build_Step>
 	    <Build_Step> cp lib/gram.gar INSTALLDIR_GPTMACRO/gars/ </Build_Step>
 	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build.xml deployClientServer -Dgar.name=INSTALLDIR_GPTMACRO/gars/gram.gar </Build_Step>
