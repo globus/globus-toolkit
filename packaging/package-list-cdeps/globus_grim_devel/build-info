@@ -1,0 +1,3 @@
+name=globus_grim_devel
+subdir=program_execution/globus_grim/source
+build="custom"
