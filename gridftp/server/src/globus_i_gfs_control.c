@@ -234,12 +234,83 @@ globus_l_gfs_command_request(
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
+    globus_i_gfs_cmd_attr_t             cmd_attr;
+
     GlobusGFSName(globus_l_gfs_command_request);
-    
+    GlobusGridFTPServerName(globus_l_gsc_cmd_cwd);
+
+    if(strcmp(cmd_array[0], "MKD") == 0)
+    {
+        cmd_attr.command = GLOBUS_I_GFS_CMD_MKD;
+        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        if(cmd_attr.pathname == NULL)
+        {
+            goto err;
+        }
+    }
+    else if(strcmp(cmd_array[0], "RMD") == 0)
+    {
+        cmd_attr.command = GLOBUS_I_GFS_CMD_RMD;
+        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        if(cmd_attr.pathname == NULL)
+        {
+            goto err;
+        }
+    }
+    else if(strcmp(cmd_array[0], "DELE") == 0)
+    {
+        cmd_attr.command = GLOBUS_I_GFS_CMD_DELE;
+        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        if(cmd_attr.pathname == NULL)
+        {
+            goto err;
+        }
+    }
+    else if(strcmp(cmd_array[0], "RNFR") == 0)
+    {
+        cmd_attr.command = GLOBUS_I_GFS_CMD_RNFR;
+        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        if(cmd_attr.pathname == NULL)
+        {
+            goto err;
+        }
+    }
+    else if(strcmp(cmd_array[0], "RNTO") == 0)
+    {
+        cmd_attr.command = GLOBUS_I_GFS_CMD_RNTO;
+        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        if(cmd_attr.pathname == NULL)
+        {
+            goto err;
+        }
+    }
+    else if(strcmp(cmd_array[0], "CKSM") == 0)
+    {
+        cmd_attr.command = GLOBUS_I_GFS_CMD_CKSM;
+        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        if(cmd_attr.pathname == NULL)
+        {
+            goto err;
+        }
+    }
+    else if(strcmp(cmd_array[0], "SITE") == 0 && 
+        strcmp(cmd_array[0], "CHMOD") == 0)
+    {
+        cmd_attr.command = GLOBUS_I_GFS_CMD_SITE_CHMOD;
+        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        if(cmd_attr.pathname == NULL)
+        {
+            goto err;
+        }
+    }
+    else
+    {
+        goto err;
+    }
+
     result = globus_i_gfs_ipc_command_request(
         instance,
-        cmd_array,
-        argc,
+        &cmd_attr,
         globus_l_gfs_ipc_command_cb,
         op);
     if(result != GLOBUS_SUCCESS)
@@ -250,10 +321,12 @@ globus_l_gfs_command_request(
     }
     
     return;
+err:
+error_parse:
+error_ipc:  
+    globus_gsc_959_finished_command(op,
+        "501 Invalid command arguments.\r\n");
 
-error_ipc:     
-    globus_gridftp_server_control_finished_resource(
-        op, result, GLOBUS_NULL, 0);
 }
 
 static
@@ -657,6 +730,33 @@ globus_l_gfs_data_destroy(
     globus_i_gfs_ipc_data_destroy(data_handle);
 }
 
+static
+globus_result_t
+globus_l_gfs_add_commands(
+    globus_gridftp_server_control_t     control_handle)
+{
+    globus_result_t                     result;
+    
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "MKD",
+        globus_l_gfs_command_request,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: MKD <sp> pathname\r\n",
+        GLOBUS_NULL);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error:
+    return result;
+}
+
 globus_result_t
 globus_i_gfs_control_start(
     globus_xio_handle_t                 handle,
@@ -765,6 +865,12 @@ globus_i_gfs_control_start(
         goto error_init;
     }
 
+    result = globus_l_gfs_add_commands(instance->u.control.server);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_add_commands;
+    }
+
     result = globus_gridftp_server_control_start(
         instance->u.control.server, 
         attr, 
@@ -775,11 +881,13 @@ globus_i_gfs_control_start(
     {
         goto error_start;
     }
+
     
     globus_gridftp_server_control_attr_destroy(attr);
     
     return GLOBUS_SUCCESS;
 
+error_add_commands:
 error_start:
     globus_gridftp_server_control_destroy(instance->u.control.server);
 error_init:
@@ -797,54 +905,3 @@ error_malloc:
 }
 
 
-
-/*
-
-typedef enum globus_gsc_959_command_desc_e
-{
-    GLOBUS_GSC_COMMAND_POST_AUTH = 0x01,
-    GLOBUS_GSC_COMMAND_PRE_AUTH = 0x02
-} globus_gsc_959_command_desc_t;
-
-
-typedef void
-(*globus_gsc_959_command_cb_t)(
-    globus_gsc_959_op_t                     op,
-    const char *                            full_command,
-    char **                                 cmd_array,
-    int                                     argc,
-    void *                                  user_arg);
-
-                                                                                
-globus_result_t
-globus_gsc_959_command_add(
-    globus_gridftp_server_control_t         server,
-    const char *                            command_name,
-    globus_gsc_959_command_cb_t             command_cb,
-    globus_gsc_959_command_desc_t           desc,
-    int                                     min_argc,
-    int                                     max_argc,
-    const char *                            help,
-    void *                                  user_arg);
- 
-                                                                                
-void
-globus_gsc_959_finished_command(
-    globus_gsc_959_op_t                     op,
-    char *                                  reply_msg);
-
-    result = globus_gsc_959_command_add(
-        instance->u.control.server,
-        "MKD",
-        globus_l_gfs_command_request,
-        GLOBUS_GSC_COMMAND_POST_AUTH,
-        2,
-        2,
-        "214 Syntax: MKD <sp> pathname\r\n",
-        GLOBUS_NULL);    
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_command_add;
-    }
-    
-*/    

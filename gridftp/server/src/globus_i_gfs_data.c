@@ -178,6 +178,29 @@ globus_l_gfs_data_resource_kickout(
 }
 
 void
+globus_gridftp_server_finished_command(
+    globus_gridftp_server_operation_t   op,
+    globus_result_t                     result)
+{
+    GlobusGFSName(globus_gridftp_server_finished_command);
+    
+    globus_mutex_lock(&op->lock);
+    {
+        op->state = GLOBUS_L_GFS_DATA_COMPLETE;
+    }
+    globus_mutex_unlock(&op->lock);
+    
+    op->command_callback(
+        op->instance,
+        result,
+        op->user_arg);
+        
+    globus_l_gfs_data_operation_destroy(op);
+    
+    return;
+}
+
+void
 globus_gridftp_server_finished_resource(
     globus_gridftp_server_operation_t   op,
     globus_result_t                     result,
@@ -260,11 +283,16 @@ error_alloc:
         __LINE__);
 }
 
+/* XXX */
+globus_result_t
+globus_l_gfs_file_mkdir(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname);
+    
 globus_result_t
 globus_i_gfs_data_command_request(
     globus_i_gfs_server_instance_t *    instance,
-    char **                             cmd_array,
-    int                                 argc,
+    globus_i_gfs_cmd_attr_t *           cmd_attr,
     globus_i_gfs_ipc_command_cb_t       callback,
     void *                              user_arg)
 {
@@ -284,9 +312,21 @@ globus_i_gfs_data_command_request(
     op->command_callback = callback;
     op->user_arg = user_arg;
     
+    switch(cmd_attr->command)
+    {
+      
+      case GLOBUS_I_GFS_CMD_MKD:
+        result = globus_l_gfs_file_mkdir(op, cmd_attr->pathname);
+        break;
+      
+      default:
+        result = GLOBUS_FAILURE;
+        break;
+    }
+      
     if(result != GLOBUS_SUCCESS)
     {
-        goto error_hook;
+        goto error_command;
     }    
     globus_mutex_lock(&op->lock);
     {
@@ -299,7 +339,7 @@ globus_i_gfs_data_command_request(
     
     return GLOBUS_SUCCESS;
 
-error_hook:
+error_command:
     globus_l_gfs_data_operation_destroy(op);
     
 error_op:
@@ -1391,11 +1431,6 @@ globus_gridftp_server_update_bytes_written(
 {
     GlobusGFSName(globus_gridftp_server_update_bytes_written);
     
-    globus_gridftp_server_control_update_bytes(
-        op->op_attr->control_op,
-        stripe_ndx,
-        offset,
-        length);
 
 }
 

@@ -41,7 +41,7 @@ typedef void
 globus_result_t
 globus_i_gfs_data_recv_request(
     globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_op_attr_t *    op_attr,
+    globus_i_gfs_op_attr_t *            op_attr,
     globus_i_gfs_data_handle_t *        data_handle,
     const char *                        pathname,
     const char *                        module_name,
@@ -53,7 +53,7 @@ globus_i_gfs_data_recv_request(
 globus_result_t
 globus_i_gfs_data_send_request(
     globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_op_attr_t *    op_attr,
+    globus_i_gfs_op_attr_t *            op_attr,
     globus_i_gfs_data_handle_t *        data_handle,
     const char *                        pathname,
     const char *                        module_name,
@@ -74,9 +74,8 @@ globus_i_gfs_data_list_request(
 globus_result_t
 globus_i_gfs_data_command_request(
     globus_i_gfs_server_instance_t *    instance,
-    char **                             cmd_array,
-    int                                 argc,
-    globus_i_gfs_data_command_cb_t      callback,
+    globus_i_gfs_cmd_attr_t *           cmd_attr,
+    globus_i_gfs_ipc_command_cb_t       callback,
     void *                              user_arg);
 
 typedef void

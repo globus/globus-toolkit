@@ -40,6 +40,11 @@ globus_gridftp_server_finished_resource(
     int                                 stat_count);
 
 void
+globus_gridftp_server_finished_command(
+    globus_gridftp_server_operation_t   op,
+    globus_result_t                     result);
+
+void
 globus_gridftp_server_finished_transfer(
     globus_gridftp_server_operation_t   op,
     globus_result_t                     result);

@@ -47,7 +47,29 @@ typedef struct
     globus_gridftp_server_control_restart_t restart_marker;
     globus_off_t                        partial_offset;
     globus_off_t                        partial_length;
+            
 } globus_i_gfs_op_attr_t;
+
+typedef enum
+{
+    GLOBUS_I_GFS_CMD_MKD,
+    GLOBUS_I_GFS_CMD_RMD,
+    GLOBUS_I_GFS_CMD_DELE,
+    GLOBUS_I_GFS_CMD_RNTO,
+    GLOBUS_I_GFS_CMD_RNFR,
+    GLOBUS_I_GFS_CMD_CKSM,
+    GLOBUS_I_GFS_CMD_SITE_CHMOD
+} globus_i_gfs_command_t;
+
+
+typedef struct
+{
+    globus_i_gfs_command_t              command;
+    char *                              pathname;
+    
+/* XXX use a union here when we get into commands with different args */
+            
+} globus_i_gfs_cmd_attr_t;
 
 typedef struct
 {
@@ -75,9 +97,9 @@ typedef union
 typedef enum
 {
     GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN,
+    GLOBUS_I_GFS_EVENT_UPDATE_BYTES,
     GLOBUS_I_GFS_EVENT_DISCONNECTED
 } globus_i_gfs_event_t;
-
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"

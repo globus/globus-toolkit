@@ -272,6 +272,35 @@ error_stat1:
     return result;
 }
 
+
+/* XXX static */
+globus_result_t
+globus_l_gfs_file_mkdir(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_file_mkdir);
+
+    rc = mkdir(pathname, 0777);
+    if(rc != 0)
+    {
+        result = GlobusGFSErrorSystemError("mkdir", errno);
+        goto error_mkdir;
+    }
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS);
+        
+    return GLOBUS_SUCCESS;
+    
+error_mkdir:
+    return result;
+}
+
+
+
+
 /**
  * recv calls
  */

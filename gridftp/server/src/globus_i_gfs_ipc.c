@@ -84,13 +84,21 @@ globus_l_gfs_data_command_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+    globus_l_gfs_ipc_bounce_t *         bounce_info;
+    globus_i_gfs_ipc_command_cb_t      callback;
+    
+    bounce_info = (globus_l_gfs_ipc_bounce_t *) user_arg;
+    callback = (globus_i_gfs_ipc_command_cb_t) bounce_info->callback1;
+
+    callback(instance, result, bounce_info->user_arg);
+    
+    globus_free(bounce_info);    
 }
 
 globus_result_t
 globus_i_gfs_ipc_command_request(
     globus_i_gfs_server_instance_t *    instance,
-    char **                             cmd_array,
-    int                                 argc,
+    globus_i_gfs_cmd_attr_t *           cmd_attr,
     globus_i_gfs_ipc_command_cb_t       callback,
     void *                              user_arg)
 {
@@ -111,10 +119,9 @@ globus_i_gfs_ipc_command_request(
     
     result = globus_i_gfs_data_command_request(
         instance,
-        cmd_array,
-        argc,
+        cmd_attr,
         globus_l_gfs_data_command_cb,
-        (void *) bounce_info);
+        bounce_info);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
