@@ -17,6 +17,10 @@ if ( ! $?LD_LIBRARY_PATH ) then
     setenv LD_LIBRARY_PATH ''
 endif
 
+if ( ! $?DYLD_LIBRARY_PATH ) then
+    setenv DYLD_LIBRARY_PATH ''
+endif
+
 if ( ! $?LIBPATH ) then
     setenv LIBPATH '/usr/lib:/lib'
 endif
@@ -32,6 +36,7 @@ endif
 if ( $?GLOBUS_PATH ) then
     setenv PATH `echo "${PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     setenv LD_LIBRARY_PATH `echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    setenv DYLD_LIBRARY_PATH `echo "${DYLD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     setenv LIBPATH `echo "${LIBPATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     setenv SHLIB_PATH `echo "${SHLIB_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     setenv SASL_PATH `echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
@@ -48,6 +53,7 @@ endif
 
 setenv PATH `echo "${PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 setenv LD_LIBRARY_PATH `echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+setenv DYLD_LIBRARY_PATH `echo "${DYLD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 setenv LIBPATH `echo "${LIBPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 setenv SHLIB_PATH `echo "${SHLIB_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 setenv SASL_PATH `echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
@@ -77,6 +83,12 @@ if ( "X${LD_LIBRARY_PATH}" != "X" ) then
     set DELIM=:
 endif
 setenv LD_LIBRARY_PATH "${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARY_PATH}"
+
+set DELIM=
+if ( "X${DYLD_LIBRARY_PATH}" != "X" ) then
+    set DELIM=:
+endif
+setenv DYLD_LIBRARY_PATH "${GLOBUS_LOCATION}/lib${DELIM}${DYLD_LIBRARY_PATH}"
 
 set DELIM=
 if ( "X${LIBPATH}" != "X" ) then
