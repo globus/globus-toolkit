@@ -17,7 +17,8 @@
     <Source_Dependencies Type="compile">
       <Dependency Name="globus_openssl">
         <Version>
-          <Version_Range Lower_Major="0" Lower_Minor="10" Upper_Major="1" Upper_Minor="40" />
+          <Version_Range Lower_Major="0" Lower_Minor="10" Upper_Major="0" Upper_Minor="40" />
+	  <Simple_Version Major="1"></Simple_Version>
         </Version>
       </Dependency>
       <Dependency Name="globus_gss_assist">
@@ -31,7 +32,8 @@
     <Source_Dependencies Type="pgm_link">
       <Dependency Name="globus_openssl">
         <Version>
-          <Version_Range Lower_Major="0" Lower_Minor="10" Upper_Major="1" Upper_Minor="40" />
+          <Version_Range Lower_Major="0" Lower_Minor="10" Upper_Major="0" Upper_Minor="40" />
+	  <Simple_Version Major="1"></Simple_Version>
         </Version>
       </Dependency>
       <Dependency Name="globus_gss_assist">
