@@ -8,6 +8,7 @@ $|=1;
 
 my $globus_location = $ENV{GLOBUS_LOCATION};
 my $contact;
+my $test_result=1;
 
 @tests = qw(
     globus-gram-client-activate-test.pl
@@ -39,8 +40,19 @@ if($? != 0)
 
 push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
 $ENV{CONTACT_STRING} = $contact;
-runtests(@tests);
+$test_result = eval "runtests(\@tests);";
+if(!defined($test_result))
+{
+    print $@;
+    $test_result=1;
+}
+else
+{
+    $test_result=0;
+}
+
 
 sub END {
-system("globus-personal-gatekeeper -kill \"$contact\" >/dev/null 2>/dev/null");
+    system("globus-personal-gatekeeper -kill \"$contact\" >/dev/null 2>&1");
+    exit $test_result;
 }
