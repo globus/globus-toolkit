@@ -8,7 +8,7 @@ dnl
 
 AC_DEFUN(LAC_DOXYGEN_PROJECT,dnl
 [
-    lac_doxygen_project=[$1]
+    lac_doxygen_project=`echo "$1" | sed -e 's/_/ /g'`
     AC_SUBST(lac_doxygen_project)
 ])
 
@@ -117,7 +117,7 @@ AC_DEFUN(LAC_DOXYGEN,dnl
 	LAC_DOXYGEN_PROJECT($GPT_NAME)
 	LAC_DOXYGEN_OUTPUT_TAGFILE($GPT_NAME)
 
-	lac_dep_check="$GLOBUS_LOCATION/sbin/globus_build_doxygen_dependencies"
+	lac_dep_check="$GLOBUS_LOCATION/sbin/globus-build-doxygen-dependencies"
 	AC_MSG_CHECKING([documentation dependencies])
 
 	tagfiles="`$lac_dep_check -src $srcdir/pkgdata/pkg_data_src.gpt.in 2>/dev/null`"
