@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<wsdl:definitions name="ReliableTransferServiceDefinition"
+<wsdl:definitions name="MultiFileRFTTypes"
   targetNamespace="http://multirft.base.ogsa.globus.org/rft_types"
   xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"

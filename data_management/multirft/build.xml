@@ -15,7 +15,7 @@ Southern California. All Rights Reserved.
   <property file="build.properties"/>
 
   <!-- Set properties -->
-  <property name="ogsa.root" value="../../../ogsa/impl/java"/>
+  <property name="ogsa.root" value="../../ogsa/impl/java"/>
   <property file="${ogsa.root}/ogsa.properties"/>
 
   <property name="schema.origin" value="${ogsa.root}/schema"/>

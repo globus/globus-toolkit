@@ -89,6 +89,7 @@ public class RftImpl
          extends GridServiceImpl {
 
     static Log logger = LogFactory.getLog( RftImpl.class.getName() );
+    boolean connectionPoolingEnabled = false;
     String configPath;
     TransferRequestType transferRequest;
     TransferRequestElement transferRequestElement;
@@ -286,6 +287,13 @@ public class RftImpl
             super.postCreate( messageContext );
             ServiceProperties factoryProperties = (ServiceProperties) getProperty(
                     ServiceProperties.FACTORY );
+            //turn on connection pooling if requested
+            String connectionPoolingValue
+                = (String) factoryProperties.getProperty("connection.pooling");
+            if( (connectionPoolingValue != null) 
+                && (connectionPoolingValue.equalsIgnoreCase("true"))) {
+                this.connectionPoolingEnabled = true;
+            }
             transferProgress = new FileTransferProgressType();
             restartMarkerDataType = new FileTransferRestartMarker();
             fileTransferStatusElement = new FileTransferStatusElement();
@@ -668,8 +676,9 @@ public class RftImpl
                     transferClient = getTransferClient( transferJob.getSourceUrl(),
                             transferJob.getDestinationUrl() );
 
-                    if ( transferClient == null ) {
-                        logger.debug( "No transferClient in the pool" );
+                    if ( (transferClient == null ) 
+                        || !connectionPoolingEnabled) {
+                        logger.debug( "No transferClient reuse" );
                         transferClient = new TransferClient( tempId,
                                 transferJob.getSourceUrl(),
                                 transferJob.getDestinationUrl(),
