@@ -31,6 +31,7 @@ Sources = \
 	globus_i_gfs_acl.h 		\
 	globus_i_gfs_data.c 		\
 	globus_i_gfs_data.h 		\
+    globus_i_gfs_cas.c          \
 	globus_i_gfs_ipc.c 		\
 	globus_i_gfs_ipc.h 		\
 	globus_i_gfs_control.c 		\

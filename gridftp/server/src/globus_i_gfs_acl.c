@@ -39,7 +39,11 @@ globus_l_gfs_acl_next(
 
             case GLOBUS_L_GFS_ACL_TYPE_AUTHORIZE:
                 rc = acl_request->module->authorize_func(
-                    acl_handle->auth_action, (int)acl_handle, out_res);
+                    acl_request->user_handle,
+                    acl_handle->auth_action, 
+                    acl_handle->auth_object,
+                    (int)acl_handle, 
+                    out_res);
                 break;
 
             default:
@@ -163,8 +167,8 @@ globus_i_gfs_acl_destroy(
 globus_result_t
 globus_gfs_acl_authorize(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
-    const char *                        user_id,
     const char *                        action,
+    const char *                        object,
     globus_result_t *                   out_res,
     globus_gfs_acl_cb_t                 cb,
     void *                              user_arg)
@@ -175,6 +179,12 @@ globus_gfs_acl_authorize(
     acl_handle->cb = cb;
     acl_handle->user_arg = user_arg;
     acl_handle->auth_action = strdup(action);
+    if(acl_handle->auth_action == NULL)
+    {
+        goto err;
+    }
+    acl_handle->auth_object = strdup(object);
+    if(acl_handle->auth_object == NULL)
     {
         goto err;
     }

@@ -22,12 +22,11 @@ typedef void
 globus_result_t
 globus_gfs_acl_authorize(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
-    const char *                        user_id,
     const char *                        action,
+    const char *                        object,
     globus_result_t *                   out_res,
     globus_gfs_acl_cb_t                 cb,
     void *                              user_arg);
-
 
 int
 globus_i_gfs_acl_init(
@@ -64,7 +63,9 @@ typedef int
 
 typedef int
 (*globus_gfs_acl_authorize_t)(
+    void *                              out_handle,
     const char *                        action,
+    const char *                        object,
     int                                 request_id,
     globus_result_t *                   out_res);
 
@@ -90,6 +91,7 @@ typedef struct globus_i_gfs_acl_handle_s
     globus_i_gfs_acl_type_t             type;
     char *                              user_id;
     char *                              auth_action;
+    char *                              auth_object;
     globus_gfs_acl_cb_t                 cb;
     void *                              user_arg;
     globus_list_t *                     module_list;

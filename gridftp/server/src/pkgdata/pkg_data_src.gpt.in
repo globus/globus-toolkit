@@ -27,6 +27,13 @@
                 </Version>
             </Dependency>
         </Source_Dependencies>
+        <Source_Dependencies Type="compile">
+            <Dependency Name="globus_authz">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
 	
         <Source_Dependencies Type="pgm_link">
             <Dependency Name="globus_xio"> 
@@ -46,6 +53,13 @@
             <Dependency Name="globus_ftp_control"> 
                 <Version>
                     <Simple_Version Major="1"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
+        <Source_Dependencies Type="pgm_link">
+            <Dependency Name="globus_authz"> 
+                <Version>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
