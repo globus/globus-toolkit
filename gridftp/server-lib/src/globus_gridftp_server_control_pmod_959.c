@@ -138,7 +138,9 @@ typedef struct globus_l_gsc_959_read_ent_s
  *
  ************************************************************************/
 globus_l_gsc_959_handle_t *
-globus_l_gsc_959_handle_create();
+globus_l_gsc_959_handle_create(
+    globus_gridftp_server_control_t         server,
+    globus_xio_handle_t                     xio_handle);
 
 void
 globus_l_gsc_959_handle_destroy(
@@ -179,7 +181,9 @@ static globus_size_t                        globus_l_gsc_959_fake_buffer_len
  *
  ***********************************************************************/
 globus_l_gsc_959_handle_t *
-globus_l_gsc_959_handle_create()
+globus_l_gsc_959_handle_create(
+    globus_gridftp_server_control_t         server,
+    globus_xio_handle_t                     xio_handle)
 {
     globus_l_gsc_959_handle_t *             handle;
 
@@ -203,6 +207,10 @@ globus_l_gsc_959_handle_create()
         128,
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
+    
+    handle->xio_handle = xio_handle;
+    handle->server = server;
+    
     globus_i_gsc_pmod_959_add_commands(handle);
 
     return handle;
@@ -751,15 +759,12 @@ globus_l_gsc_959_start(
     char *                                  banner_msg;
     GlobusGridFTPServerName(globus_l_gsc_959_start);
 
-    handle = globus_l_gsc_959_handle_create();
-
+    handle = globus_l_gsc_959_handle_create(server, xio_handle);
     if(handle == NULL)
     {
         res = GlobusGridFTPServerErrorMemory("handle");
         goto err;
     }
-    handle->xio_handle = xio_handle;
-    handle->server = server;
 
     globus_gridftp_server_control_get_banner(server, &banner);
     banner_msg = globus_common_create_string("220 %s\r\n", banner);

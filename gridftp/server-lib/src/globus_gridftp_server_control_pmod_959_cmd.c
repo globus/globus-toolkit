@@ -2235,9 +2235,9 @@ globus_i_gsc_pmod_959_add_commands(
     globus_assert(res == GLOBUS_SUCCESS);
 
     /* set defaults */
-    res = globus_gridftp_server_control_set_type(server, "A");
+    res = globus_gridftp_server_control_set_type(server, 'A');
     globus_assert(res == GLOBUS_SUCCESS);
-    res = globus_gridftp_server_control_set_mode(server, "S");
+    res = globus_gridftp_server_control_set_mode(server, 'S');
     globus_assert(res == GLOBUS_SUCCESS);
 
     cmd_handle = (globus_l_gsc_pmod_959_cmd_handle_t *) globus_malloc(
