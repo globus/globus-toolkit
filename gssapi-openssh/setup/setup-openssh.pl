@@ -51,7 +51,7 @@ $xauth_path = "/usr/bin/X11/xauth";
 $curr_time = time();
 $backupdir = "globus_backup_${curr_time}";
 $confbackupdir = "$backupdir/s1_conf";
-$transbackupdir = "$backupdir/s2_trans";
+$transbackupdir = "$backupdir/s3_trans";
 
 #
 # We need to make sure it's okay to copy our setup files (if some files are already
@@ -317,7 +317,7 @@ sub fixpaths
 
         if ($files{$f} == 1)
         {
-            $result = system("cp $f ${sysconfdir}/${transbackupdir}/$h 2>&1");
+            $result = system("cp $g ${sysconfdir}/${transbackupdir}/$h 2>&1");
 
             if ($result or $?)
             {
