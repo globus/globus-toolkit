@@ -1,4 +1,4 @@
-.TH myproxy-get-delegation 1 "2003-10-23" "NCSA" "MyProxy"
+.TH myproxy-get-delegation 1 "2004-10-28" "NCSA" "MyProxy"
 .SH NAME
 myproxy-get-delegation \- retrieve a credential
 .SH SYNOPSIS
@@ -134,6 +134,14 @@ form "host/<fqhn>" or "myproxy/<fqhn>"
 the server).  If the server is running with some other DN, you can set
 this environment variable to tell the MyProxy clients to accept the
 alternative DN.
+.TP
+.B GT_PROXY_MODE
+Set to "old" to retrieve a "legacy globus proxy" from an end-entity
+certificate stored in the MyProxy repository.
+If the repository contains a proxy certificate, rather than an
+end-entity certificate, the retrieved proxy will be of the same type
+as the stored proxy, regardless of the setting of this environment
+variable.
 .SH AUTHORS
 Jim Basney,
 Shiva Shankar Chetan,
