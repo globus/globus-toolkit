@@ -415,11 +415,19 @@ globus_l_gfs_ipc_active_cb(
             !globus_list_empty(list);
             list = globus_list_rest(list))
         {
+            globus_gfs_data_info_t *    info;
             node_info = (globus_l_gfs_remote_node_info_t *) 
                 globus_list_first(list);
             
             if(node_info->info && node_info->info_needs_free)
             {
+                int                     i;
+                info = (globus_gfs_data_info_t *) node_info->info;
+                for(i = 0; i < info->cs_count; i++)
+                {
+                    globus_free((void *) info->contact_strings[i]);
+                }
+                globus_free(info->contact_strings);
                 globus_free(node_info->info);
                 node_info->info = NULL;
                 node_info->info_needs_free = GLOBUS_FALSE;
