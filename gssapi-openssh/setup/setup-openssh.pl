@@ -120,7 +120,7 @@ print "I will copy them into \$GLOBUS_LOCATION/etc/ssh.  Otherwise, I will\n";
 print "generate them for you.)\n";
 print "\n";
 print "    Jacobim Mugatu says,\n";
-print "    \t\"Utopian Prime Minister Bad!  GSI-OpenSSH Good!\"\n";
+print "        \"Utopian Prime Minister Bad!  GSI-OpenSSH Good!\"\n";
 print "\n";
 
 if ( isForced() )
@@ -161,14 +161,14 @@ print "\n";
 print "  o I see that you have your GLOBUS_LOCATION environmental variable\n";
 print "    set to:\n";
 print "\n";
-print "    \t\"$gpath\"\n";
+print "        \"$gpath\"\n";
 print "\n";
 print "    Remember to keep this variable set (correctly) when you want to\n";
 print "    use the executables that came with this package.\n";
 print "\n";
 print "    After that you may execute, for example:\n";
 print "\n";
-print "    \t\$ . \$GLOBUS_LOCATION/etc/globus-user-env.sh\n";
+print "        \$ . \$GLOBUS_LOCATION/etc/globus-user-env.sh\n";
 print "\n";
 print "    to prepare your environment for running the gsi_openssh\n";
 print "    executables.\n";
@@ -183,16 +183,24 @@ if ( !getPrivilegeSeparation() )
     print "    this feature, your system appears to require some additional\n";
     print "    configuration.\n";
     print "\n";
-    print "    Perform the following steps to enable privilege separation:\n";
+    print "    From the file README.privsep, included as a part of the OpenSSH\n";
+    print "    distribution:\n";
     print "\n";
-    print "    \t1) If the system user 'sshd' does not already exist, add a\n";
-    print "    \t   user with that username.\n";
+    print "        sshd is a pseudo-account that should not be used by other\n";
+    print "        daemons, and must be locked and should contain a \"nologin\"\n";
+    print "        or invalid shell.\n";
     print "\n";
-    print "    \t2) Verify that /var/empty exists, is owned by root, and has\n";
-    print "    \t   a mode of 0700.\n";
+    print "        You should do something like the following to prepare the\n";
+    print "        privsep preauth environment:\n";
     print "\n";
-    print "    \t3) Enable the feature UsePrivilegeSeparation in\n";
-    print "    \t   \$GLOBUS_LOCATION/etc/ssh/sshd_config.\n";
+    print "            \# mkdir /var/empty\n";
+    print "            \# chown root:sys /var/empty\n";
+    print "            \# chmod 755 /var/empty\n";
+    print "            \# groupadd sshd\n";
+    print "            \# useradd -g sshd -c 'sshd privsep' -d /var/empty \\\n";
+    print "            -s /bin/false sshd\n";
+    print "\n";
+    print "        /var/empty should not contain any files.\n";
 }
 
 print "\n";
@@ -207,7 +215,6 @@ print "\n";
 print "Press <return> to continue... ";
 $trash = <STDIN>;
 
-print "\n";
 print "---------------------------------------------------------------------\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
 
