@@ -18,7 +18,7 @@
 globus_libxml25				ogsa-c/tools/libxml25
 globus_libxslt				ogsa-c/tools/libxslt
 globus_xmlsec				ogsa-c/tools/xmlsec
-globus_xmlsec1				ogsa-c/tools/xmlsec1
+#globus_xmlsec1				ogsa-c/tools/xmlsec1
 globus_gsoap_soapcpp2			ogsa-c/tools/gsoap_gpt/soapcpp2
 globus_gsoap_stdsoap2			ogsa-c/tools/gsoap_gpt/stdsoap2/source
 globus_ogsa_utils_error			ogsa-c/utils/error/source
