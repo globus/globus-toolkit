@@ -145,7 +145,6 @@ int gsi_gridmap(char *subject_name, char **mapped_name);
 #endif
 
 #ifdef MECHGLUE
-void gss_initialize();
 gss_cred_id_t __gss_get_mechanism_cred
    (gss_cred_id_t,	/* union_cred */
     gss_OID		/* mech_type */
