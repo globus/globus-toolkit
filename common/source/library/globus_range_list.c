@@ -124,8 +124,8 @@ globus_range_list_insert(
     globus_l_range_ent_t *              ent;
     globus_l_range_ent_t *              next;
     globus_l_range_ent_t *              new_ent;
-    globus_size_t                       end_offset;
-    globus_size_t                       ent_end;
+    globus_off_t                        end_offset;
+    globus_off_t                        ent_end;
     globus_bool_t                       done = GLOBUS_FALSE;
 
     if(offset < 0)
@@ -271,8 +271,8 @@ globus_range_list_remove(
     globus_l_range_ent_t *              ent;
     globus_l_range_ent_t *              next;
     globus_l_range_ent_t *              new_ent;
-    globus_size_t                       end_offset;
-    globus_size_t                       ent_end;
+    globus_off_t                        end_offset;
+    globus_off_t                        ent_end;
     globus_bool_t                       done = GLOBUS_FALSE;
 
     if(offset < 0)
