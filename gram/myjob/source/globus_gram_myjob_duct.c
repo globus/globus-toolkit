@@ -280,11 +280,11 @@ globus_gram_myjob_rank (int * rankp)
 
   addrs_list = NULL;
   
-  err = globus_list_insert (&addrs_list, (void *) local_addr);
+  err = globus_list_insert (&addrs_list, (void *) (long) local_addr);
   assert (!err);
 
   for (i=0; i<remote_count; i++) {
-    err = globus_list_insert (&addrs_list, (void *) remote_addrs[i]);
+    err = globus_list_insert (&addrs_list, (void *) (long) (remote_addrs[i]));
     assert (!err);
   }
 
@@ -373,11 +373,11 @@ globus_gram_myjob_send (int             dest_addr,
 
   addrs_list = NULL;
   
-  err = globus_list_insert (&addrs_list, (void *) local_addr);
+  err = globus_list_insert (&addrs_list, (void *) (long) local_addr);
   assert (!err);
 
   for (i=0; i<remote_count; i++) {
-    err = globus_list_insert (&addrs_list, (void *) remote_addrs[i]);
+    err = globus_list_insert (&addrs_list, (void *) (long) (remote_addrs[i]));
     assert (!err);
   }
 
