@@ -132,25 +132,19 @@ extern globus_module_descriptor_t	globus_i_common_module;
 		  		i18n 
 ******************************************************************************/
 
-
-typedef
-char *
-(*get_string_by_key_t)(
-                       char * locale,
-                       char * resource_name,
-                       char * key);
-
-
-
-extern get_string_by_key_t              globus_common_i18n_get_string_by_key;
-
 extern globus_extension_registry_t i18n_registry;
 #define I18N_REGISTRY &i18n_registry
 
 char *
+globus_common_i18n_get_string_by_key(
+    const char *                        locale,
+    const char *                        resource_name,
+    const char *                        key);
+
+char *
 globus_common_i18n_get_string(
-		                globus_module_descriptor_t * module,
-				                char * key);
+    globus_module_descriptor_t *        module,
+    const char *                        key);
 
 /******************************************************************************
 		   Install path discovery functions
