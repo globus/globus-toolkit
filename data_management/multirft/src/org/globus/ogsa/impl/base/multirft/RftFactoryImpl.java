@@ -14,7 +14,7 @@ import org.globus.ogsa.impl.ogsi.GridServiceImpl;
 import org.globus.ogsa.utils.AnyHelper;
 
 import org.gridforum.ogsi.ExtensibilityType;
-
+import org.gridforum.ogsi.holders.ExtensibilityTypeHolder;
 
 public class RftFactoryImpl
     implements FactoryCallback {
@@ -40,8 +40,9 @@ public class RftFactoryImpl
      * @return DOCUMENT ME! 
      * @throws GridServiceException DOCUMENT ME!
      */
-    public GridServiceBase createServiceObject(ExtensibilityType creation)
-                                        throws GridServiceException {
+    public GridServiceBase createServiceObject(ExtensibilityType creation,
+					       ExtensibilityTypeHolder extensibilityOut)
+	throws GridServiceException {
 
         RftImpl rftImpl;
         try {
