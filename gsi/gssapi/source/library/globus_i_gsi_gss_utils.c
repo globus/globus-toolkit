@@ -64,9 +64,6 @@ globus_i_gsi_gss_copy_name_to_name(
     OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_name_desc *                     output_name;
     X509_NAME *                         x509n = NULL;
-    STACK *                             group = NULL;
-    ASN1_BIT_STRING *                   group_types = NULL;
-    int                                 i;
 
     static char *                       _function_name_ =
         "globus_i_gsi_gss_copy_name_to_name";
@@ -96,26 +93,8 @@ globus_i_gsi_gss_copy_name_to_name(
         }
     }
 
-    if(input->group != NULL &&
-       input->group_types != NULL)
-    {
-        group_types = ASN1_BIT_STRING_new();
-        group = sk_new_null();
-
-        for(i=0;i<sk_num(input->group);i++)
-        {
-            sk_insert(group,strdup(sk_value(input->group,i)),i);
-            if(ASN1_BIT_STRING_get_bit(input->group_types,i))
-            {
-                ASN1_BIT_STRING_set_bit(group_types,i,1);
-            }
-        }
-    }
-    
     output_name->name_oid = input->name_oid;
     output_name->x509n = x509n;
-    output_name->group = group;
-    output_name->group_types = group_types;
     
     *output = output_name;
 
@@ -1150,20 +1129,6 @@ globus_i_gsi_gss_retrieve_peer(
             major_status = GSS_S_FAILURE;
             goto exit;
         }
-
-        local_result = globus_gsi_cred_get_group_names(
-            context_handle->peer_cred_handle->cred_handle,
-            & context_handle->peer_cred_handle->globusid->group,
-            & context_handle->peer_cred_handle->globusid->group_types);
-    
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_GETTING_PEER_CRED);
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
     }
 
  exit:
@@ -1246,10 +1211,6 @@ globus_i_gsi_gss_create_anonymous_cred(
 
     newcred->globusid->x509n = NULL;
 
-    newcred->globusid->group = NULL;
-
-    newcred->globusid->group_types = NULL;
- 
     major_status = globus_i_gsi_gssapi_init_ssl_context(
         &local_minor_status,
         (gss_cred_id_t) newcred,
@@ -1641,20 +1602,7 @@ globus_i_gsi_gss_create_cred(
         major_status = GSS_S_FAILURE;
         goto error_exit;
     }
-
-    local_result = globus_gsi_cred_get_group_names(
-        newcred->cred_handle,
-        &newcred->globusid->group,
-        &newcred->globusid->group_types);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        major_status = GSS_S_FAILURE;
-        goto error_exit;
-    }
-
+    
     *output_cred_handle = newcred;
     goto exit;
 
