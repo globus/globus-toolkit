@@ -367,8 +367,8 @@ AC_DEFUN(CHECK_GLOBUS_DEVELOPMENT_PATH,[dnl
 ])dnl CHECK_GLOBUS_DEVELOPMENT_PATH
 
 AC_DEFUN(GLOBUS_DATA_CONFIG,[
-AC_ARG_ENABLE(globus-data, [  --enable-globus-data    use globus data code],
-	[ globus_data=$enableval ], [ globus_data=no ])
+AC_ARG_ENABLE(globus-data, [  --disable-globus-data    don't use globus data code],
+	[ globus_data=$enableval ], [ globus_data=yes ])
 
 GLOBUS_DATA_CFLAGS=""
 GLOBUS_DATA_LDFLAGS=""
