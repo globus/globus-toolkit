@@ -1347,11 +1347,11 @@ globus_l_globusrun_gramrun(char * request_string,
     if(err == GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
     {
 	send_commit = GLOBUS_TRUE;
-	err = NULL; /*globus_gram_client_job_signal(monitor.job_contact,
-				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
-					    "commit",
-					    &tmp1,
-					    &tmp2);*/
+	err = globus_gram_client_job_signal(monitor.job_contact,
+                GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
+                            "commit",
+                            &tmp1,
+                            &tmp2);
     }
 
     if(err != GLOBUS_SUCCESS)
@@ -1431,11 +1431,11 @@ globus_l_globusrun_gramrun(char * request_string,
 
     if(send_commit == GLOBUS_TRUE)
     {
-	err = NULL; /*globus_gram_client_job_signal(monitor.job_contact,
-				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
-					    "commit",
-					    &tmp1,
-					    &tmp2);*/
+	err = globus_gram_client_job_signal(monitor.job_contact,
+                GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
+                            "commit",
+                            &tmp1,
+                            &tmp2);
     }
 
     if (options & GLOBUSRUN_ARG_BATCH)
