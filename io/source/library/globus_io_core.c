@@ -2097,7 +2097,7 @@ globus_l_io_handle_events(
 	     * the rest of the callbacks
 	     */
 	    if(FD_ISSET(
-	        globus_l_io_wakeup_pipe_handle.fd, globus_l_io_active_read_fds)
+	        globus_l_io_wakeup_pipe_handle.fd, globus_l_io_active_read_fds))
 	    {
 	        FD_CLR(
 	            globus_l_io_wakeup_pipe_handle.fd,
