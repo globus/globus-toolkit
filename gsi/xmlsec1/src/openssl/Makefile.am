@@ -37,12 +37,14 @@ libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_SOURCES =\
 	$(NULL)
 
 libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-#	$(top_builddir)/src/libxmlsec1_$(GLOBUS_FLAVOR_NAME).la \
+	$(GPT_LIB_LINKS) \
 	$(OPENSSL_LIBS) \
 	$(LIBXSLT_LIBS) \
 	$(LIBXML_LIBS) \
 	$(NULL)
-        
+
+
 libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	-version-info @XMLSEC_VERSION_INFO@ \
+	$(GPT_LDFLAGS) \
 	$(NULL)
