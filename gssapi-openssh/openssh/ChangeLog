@@ -1,3 +1,336 @@
+20020622
+ - (djm) Update README.privsep; spotted by fries@
+ - (djm) Release 3.3p1
+
+20020621
+ - (djm) Sync:
+   - djm@cvs.openbsd.org 2002/06/21 05:50:51
+     [monitor.c]
+     Don't initialise compression buffers when compression=no in sshd_config;
+     ok Niels@
+  - ID sync for auth-passwd.c
+ - (djm) Warn and disable compression on platforms which can't handle both
+   useprivilegeseparation=yes and compression=yes
+ - (djm) contrib/redhat/openssh.spec hacking:
+   - Merge in spec changes from seba@iq.pl (Sebastian Pachuta)
+   - Add new {ssh,sshd}_config.5 manpages
+   - Add new ssh-keysign program and remove setuid from ssh client
+
+20020620
+ - (bal) Fixed AIX environment handling, use setpcred() instead of existing
+   code.  (Bugzilla Bug 261)
+ - (bal) OpenBSD CVS Sync
+   - todd@cvs.openbsd.org 2002/06/14 21:35:00
+     [monitor_wrap.c]
+     spelling; from Brian Poole <raj@cerias.purdue.edu>
+   - markus@cvs.openbsd.org 2002/06/15 00:01:36
+     [authfd.c authfd.h ssh-add.c ssh-agent.c]
+     break agent key lifetime protocol and allow other contraints for key
+     usage.
+   - markus@cvs.openbsd.org 2002/06/15 00:07:38
+     [authfd.c authfd.h ssh-add.c ssh-agent.c]
+     fix stupid typo
+   - markus@cvs.openbsd.org 2002/06/15 01:27:48
+     [authfd.c authfd.h ssh-add.c ssh-agent.c]
+     remove the CONSTRAIN_IDENTITY messages and introduce a new
+     ADD_ID message with contraints instead. contraints can be
+     only added together with the private key.
+   - itojun@cvs.openbsd.org 2002/06/16 21:30:58
+     [ssh-keyscan.c]
+     use TAILQ_xx macro.  from lukem@netbsd.  markus ok
+   - deraadt@cvs.openbsd.org 2002/06/17 06:05:56
+     [scp.c]
+     make usage like man page
+   - deraadt@cvs.openbsd.org 2002/06/19 00:27:55
+     [auth-bsdauth.c auth-skey.c auth1.c auth2-chall.c auth2-none.c authfd.c
+      authfd.h monitor_wrap.c msg.c nchan.c radix.c readconf.c scp.c sftp.1
+      ssh-add.1 ssh-add.c ssh-agent.1 ssh-agent.c ssh-keygen.1 ssh-keygen.c
+      ssh-keysign.c ssh.1 sshconnect.c sshconnect.h sshconnect2.c ttymodes.c
+      xmalloc.h]
+     KNF done automatically while reading....
+   - markus@cvs.openbsd.org 2002/06/19 18:01:00
+     [cipher.c monitor.c monitor_wrap.c packet.c packet.h]
+     make the monitor sync the transfer ssh1 session key;
+     transfer keycontext only for RC4 (this is still depends on EVP
+     implementation details and is broken).
+   - stevesk@cvs.openbsd.org 2002/06/20 19:56:07
+     [ssh.1 sshd.8]
+     move configuration file options from ssh.1/sshd.8 to
+     ssh_config.5/sshd_config.5; ok deraadt@ millert@
+   - stevesk@cvs.openbsd.org 2002/06/20 20:00:05
+     [scp.1 sftp.1]
+     ssh_config(5)
+   - stevesk@cvs.openbsd.org 2002/06/20 20:03:34
+     [ssh_config sshd_config]
+     refer to config file man page
+   - markus@cvs.openbsd.org 2002/06/20 23:05:56
+     [servconf.c servconf.h session.c sshd.c]
+     allow Compression=yes/no in sshd_config
+   - markus@cvs.openbsd.org 2002/06/20 23:37:12
+     [sshd_config]
+     add Compression
+   - stevesk@cvs.openbsd.org 2002/05/25 20:40:08
+     [LICENCE]
+     missed Per Allansson (auth2-chall.c)
+ - (bal) Cygwin special handling of empty passwords wrong.  Patch by
+   vinschen@redhat.com
+ - (bal) Missed integrating ssh_config.5 and sshd_config.5
+ - (bal) Still more Makefile.in updates for ssh{d}_config.5
+
+20020613
+ - (bal) typo of setgroup for cygwin.  Patch by vinschen@redhat.com
+
+20020612
+ - (bal) OpenBSD CVS Sync
+   - markus@cvs.openbsd.org 2002/06/11 23:03:54
+     [ssh.c]
+     remove unused cruft.
+   - markus@cvs.openbsd.org 2002/06/12 01:09:52
+     [ssh.c]
+     ssh_connect returns 0 on success
+ - (bal) Build noop setgroups() for cygwin to clean up code (For other
+   platforms without the setgroups() requirement, you MUST define
+   SETGROUPS_NOOP in the configure.ac) Based on patch by vinschen@redhat.com
+ - (bal) Some platforms don't have ONLCR (Notable Mint)
+
+20020611
+ - (bal) ssh-agent.c RCSD fix (|unexpand already done)
+ - (bal) OpenBSD CVS Sync
+   - stevesk@cvs.openbsd.org 2002/06/09 22:15:15
+     [ssh.1]
+     update for no setuid root and ssh-keysign; ok deraadt@
+   - itojun@cvs.openbsd.org 2002/06/09 22:17:21
+     [sshconnect.c]
+     pass salen to sockaddr_ntop so that we are happy on linux/solaris
+   - stevesk@cvs.openbsd.org 2002/06/10 16:53:06
+     [auth-rsa.c ssh-rsa.c]
+     display minimum RSA modulus in error(); ok markus@
+   - stevesk@cvs.openbsd.org 2002/06/10 16:56:30
+     [ssh-keysign.8]
+     merge in stuff from my man page; ok markus@
+   - stevesk@cvs.openbsd.org 2002/06/10 17:36:23
+     [ssh-add.1 ssh-add.c]
+     use convtime() to parse and validate key lifetime.  can now
+     use '-t 2h' etc.  ok markus@ provos@
+   - stevesk@cvs.openbsd.org 2002/06/10 17:45:20
+     [readconf.c ssh.1]
+     change RhostsRSAAuthentication and RhostsAuthentication default to no
+     since ssh is no longer setuid root by default; ok markus@
+   - stevesk@cvs.openbsd.org 2002/06/10 21:21:10
+     [ssh_config]
+     update defaults for RhostsRSAAuthentication and RhostsAuthentication
+     here too (all options commented out with default value).
+   - markus@cvs.openbsd.org 2002/06/10 22:28:41
+     [channels.c channels.h session.c]
+     move creation of agent socket to session.c; no need for uidswapping
+     in channel.c.
+   - markus@cvs.openbsd.org 2002/06/11 04:14:26
+     [ssh.c sshconnect.c sshconnect.h]
+     no longer use uidswap.[ch] from the ssh client
+     run less code with euid==0 if ssh is installed setuid root
+     just switch the euid, don't switch the complete set of groups
+     (this is only needed by sshd). ok provos@
+   - mpech@cvs.openbsd.org 2002/06/11 05:46:20
+     [auth-krb4.c monitor.h serverloop.c session.c ssh-agent.c sshd.c]
+     pid_t cleanup. Markus need this now to keep hacking.
+     markus@, millert@ ok
+   - itojun@cvs.openbsd.org 2002/06/11 08:11:45
+     [canohost.c]
+     use "ntop" only after initialized
+ - (bal) Cygwin fix up from swap uid clean up in ssh.c patch by
+   vinschen@redhat.com
+
+20020609
+ - (bal) OpenBSD CVS Sync
+   - markus@cvs.openbsd.org 2002/06/08 05:07:56
+     [ssh.c]
+     nuke ptrace comment
+   - markus@cvs.openbsd.org 2002/06/08 05:07:09
+     [ssh-keysign.c]
+     only accept 20 byte session ids
+   - markus@cvs.openbsd.org 2002/06/08 05:17:01
+     [readconf.c readconf.h ssh.1 ssh.c]
+     deprecate FallBackToRsh and UseRsh; patch from djm@
+   - markus@cvs.openbsd.org 2002/06/08 05:40:01
+     [readconf.c]
+     just warn about Deprecated options for now
+   - markus@cvs.openbsd.org 2002/06/08 05:41:18
+     [ssh_config]
+     remove FallBackToRsh/UseRsh
+   - markus@cvs.openbsd.org 2002/06/08 12:36:53
+     [scp.c]
+     remove FallBackToRsh
+   - markus@cvs.openbsd.org 2002/06/08 12:46:14
+     [readconf.c]
+     silently ignore deprecated options, since FallBackToRsh might be passed
+     by remote scp commands.
+  - itojun@cvs.openbsd.org 2002/06/08 21:15:27
+     [sshconnect.c]
+     always use getnameinfo.  (diag message only)
+   - markus@cvs.openbsd.org 2002/06/09 04:33:27
+     [sshconnect.c]
+     abort() - > fatal()
+ - (bal) RCSID tag updates on channels.c, clientloop.c, nchan.c,
+   sftp-client.c, ssh-agenet.c, ssh-keygen.c and connect.h (we did unexpand
+   independant of them)
+
+20020607
+ - (bal) Removed --{enable/disable}-suid-ssh
+ - (bal) Missed __progname in ssh-keysign.c  patch by dtucker@zip.com.au
+ - (bal) use 'LOGIN_PROGRAM'  not '/usr/bin/login' in session.c patch by
+   Bertrand.Velle@apogee-com.fr
+
+20020606
+ - (bal) OpenBSD CVS Sync
+   - markus@cvs.openbsd.org 2002/05/15 21:56:38
+     [servconf.c sshd.8 sshd_config]
+     re-enable privsep and disable setuid for post-3.2.2
+   - markus@cvs.openbsd.org 2002/05/16 22:02:50
+     [cipher.c kex.h mac.c]
+     fix warnings (openssl 0.9.7 requires const)
+   - stevesk@cvs.openbsd.org 2002/05/16 22:09:59
+     [session.c ssh.c]
+     don't limit xauth pathlen on client side and longer print length on
+     server when debug; ok markus@
+   - deraadt@cvs.openbsd.org 2002/05/19 20:54:52
+     [log.h]
+     extra commas in enum not 100% portable
+   - deraadt@cvs.openbsd.org 2002/05/22 23:18:25
+     [ssh.c sshd.c]
+     spelling; abishoff@arc.nasa.gov
+   - markus@cvs.openbsd.org 2002/05/23 19:24:30
+     [authfile.c authfile.h pathnames.h ssh.c sshconnect.c sshconnect.h 
+      sshconnect1.c sshconnect2.c ssh-keysign.8 ssh-keysign.c Makefile.in]
+     add /usr/libexec/ssh-keysign: a setuid helper program for hostbased 
+     authentication in protocol v2 (needs to access the hostkeys).
+   - markus@cvs.openbsd.org 2002/05/23 19:39:34
+     [ssh.c]
+     add comment about ssh-keysign
+   - markus@cvs.openbsd.org 2002/05/24 08:45:14
+     [sshconnect2.c]
+     stat ssh-keysign first, print error if stat fails;
+     some debug->error; fix comment
+   - markus@cvs.openbsd.org 2002/05/25 08:50:39
+     [sshconnect2.c]
+     execlp->execl; from stevesk
+   - markus@cvs.openbsd.org 2002/05/25 18:51:07
+     [auth.h auth2.c auth2-hostbased.c auth2-kbdint.c auth2-none.c
+      auth2-passwd.c auth2-pubkey.c Makefile.in]
+     split auth2.c into one file per method; ok provos@/deraadt@
+   - stevesk@cvs.openbsd.org 2002/05/26 20:35:10
+     [ssh.1]
+     sort ChallengeResponseAuthentication; ok markus@
+   - stevesk@cvs.openbsd.org 2002/05/28 16:45:27
+     [monitor_mm.c]
+     print strerror(errno) on mmap/munmap error; ok markus@
+   - stevesk@cvs.openbsd.org 2002/05/28 17:28:02
+     [uidswap.c]
+     format spec change/casts and some KNF; ok markus@
+   - stevesk@cvs.openbsd.org 2002/05/28 21:24:00
+     [uidswap.c]
+     use correct function name in fatal()
+   - stevesk@cvs.openbsd.org 2002/05/29 03:06:30
+     [ssh.1 sshd.8]
+     spelling
+   - markus@cvs.openbsd.org 2002/05/29 11:21:57
+     [sshd.c]
+     don't start if privsep is enabled and SSH_PRIVSEP_USER or
+     _PATH_PRIVSEP_CHROOT_DIR are missing; ok deraadt@
+   - markus@cvs.openbsd.org 2002/05/30 08:07:31
+     [cipher.c]
+     use rijndael/aes from libcrypto (openssl >= 0.9.7) instead of
+     our own implementation. allow use of AES hardware via libcrypto, 
+     ok deraadt@
+   - markus@cvs.openbsd.org 2002/05/31 10:30:33
+     [sshconnect2.c]
+     extent ssh-keysign protocol:
+     pass # of socket-fd to ssh-keysign, keysign verfies locally used
+     ip-address using this socket-fd, restricts fake local hostnames
+     to actual local hostnames; ok stevesk@
+   - markus@cvs.openbsd.org 2002/05/31 11:35:15
+     [auth.h auth2.c]
+     move Authmethod definitons to per-method file.
+   - markus@cvs.openbsd.org 2002/05/31 13:16:48
+     [key.c]
+     add comment:
+     key_verify returns 1 for a correct signature, 0 for an incorrect signature
+     and -1 on error.
+   - markus@cvs.openbsd.org 2002/05/31 13:20:50
+     [ssh-rsa.c]
+     pad received signature with leading zeros, because RSA_verify expects
+     a signature of RSA_size. the drafts says the signature is transmitted
+     unpadded (e.g. putty does not pad), reported by anakin@pobox.com
+   - deraadt@cvs.openbsd.org 2002/06/03 12:04:07
+     [ssh.h]
+     compatiblity -> compatibility
+     decriptor -> descriptor
+     authentciated -> authenticated
+     transmition -> transmission
+   - markus@cvs.openbsd.org 2002/06/04 19:42:35
+     [monitor.c]
+     only allow enabled authentication methods; ok provos@
+   - markus@cvs.openbsd.org 2002/06/04 19:53:40
+     [monitor.c]
+     save the session id (hash) for ssh2 (it will be passed with the 
+     initial sign request) and verify that this value is used during 
+     authentication; ok provos@
+   - markus@cvs.openbsd.org 2002/06/04 23:02:06
+     [packet.c]
+     remove __FUNCTION__
+   - markus@cvs.openbsd.org 2002/06/04 23:05:49
+     [cipher.c monitor.c monitor_fdpass.c monitor_mm.c monitor_wrap.c]
+     __FUNCTION__ -> __func__
+   - markus@cvs.openbsd.org 2002/06/05 16:08:07
+     [ssh-agent.1 ssh-agent.c]
+     '-a bind_address' binds the agent to user-specified unix-domain
+     socket instead of /tmp/ssh-XXXXXXXX/agent.<pid>; ok djm@ (some time ago).
+   - markus@cvs.openbsd.org 2002/06/05 16:08:07
+     [ssh-agent.1 ssh-agent.c]
+     '-a bind_address' binds the agent to user-specified unix-domain
+     socket instead of /tmp/ssh-XXXXXXXX/agent.<pid>; ok djm@ (some time ago).
+   - markus@cvs.openbsd.org 2002/06/05 16:48:54
+     [ssh-agent.c]
+     copy current request into an extra buffer and just flush this
+     request on errors, ok provos@
+   - markus@cvs.openbsd.org 2002/06/05 19:57:12
+     [authfd.c authfd.h ssh-add.1 ssh-add.c ssh-agent.c]
+     ssh-add -x for lock and -X for unlocking the agent.
+     todo: encrypt private keys with locked...
+   - markus@cvs.openbsd.org 2002/06/05 20:56:39
+     [ssh-add.c]
+     add -x/-X to usage
+   - markus@cvs.openbsd.org 2002/06/05 21:55:44
+     [authfd.c authfd.h ssh-add.1 ssh-add.c ssh-agent.c]
+     ssh-add -t life,  Set lifetime (in seconds) when adding identities; 
+     ok provos@
+   - stevesk@cvs.openbsd.org 2002/06/06 01:09:41
+     [monitor.h]
+     no trailing comma in enum; china@thewrittenword.com
+   - markus@cvs.openbsd.org 2002/06/06 17:12:44
+     [sftp-server.c]
+     discard remaining bytes of current request; ok provos@
+   - markus@cvs.openbsd.org 2002/06/06 17:30:11
+     [sftp-server.c]
+     use get_int() macro (hide iqueue)
+ - (bal) Missed msg.[ch] in merge.  Required for ssh-keysign.
+ - (bal) Forgot to add msg.c Makefile.in.
+ - (bal) monitor_mm.c typos.
+ - (bal) Refixed auth2.c.  It was never fully commited while spliting out
+   authentication to different files.
+ - (bal) ssh-keysign should build and install correctly now.  Phase two
+   would be to clean out any dead wood and disable ssh setuid on install.
+ - (bal) Reverse logic, use __func__ first since it's C99
+
+20020604
+ - (stevesk) [channels.c] bug #164 patch from YOSHIFUJI Hideaki (changed
+   setsockopt from debug to error for now).
+
+20020527
+ - (tim) [configure.ac.orig monitor_fdpass.c] Enahnce msghdr tests to address
+   build problem on Irix reported by Dave Love <d.love@dl.ac.uk>. Back out
+   last monitor_fdpass.c changes that are no longer needed with new tests.
+   Patch tested on Irix by Jan-Frode Myklebust <janfrode@parallab.uib.no>
+
 20020522
  - (djm) Fix spelling mistakes, spotted by Solar Designer i
    <solar@openwall.com>
