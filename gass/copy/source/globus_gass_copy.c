@@ -112,7 +112,6 @@ globus_l_gass_copy_deactivate(void)
 } /* globus_i_gass_copy_deactivate() */
 
 
-
 /********************************************************************
  * generic callback to signal completion of asynchronous transfer
  ********************************************************************/
@@ -893,7 +892,6 @@ globus_gass_copy_get_performance(
             perf_info->bytes_transfered=handle->state->dest.n_bytes_transfered;
             perf_info->transfer_rate=handle->state->transfer_rate;
         }
-
         if(handle->state->source.url != GLOBUS_NULL)
         {
             strcpy(perf_info->source_url, handle->state->source.url);
@@ -1447,18 +1445,18 @@ globus_l_gass_copy_transfer_start(
     if(result != GLOBUS_SUCCESS)
     {
 	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE; 
-    
-	globus_i_gass_copy_set_error_from_result(handle, result);
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	fprintf(stderr, "transfer_start(): error with setting up the dest\n");
 #endif
+
         /* clean up the source side since it was already opened..... */
 	globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
 	globus_cond_init(&monitor.cond, GLOBUS_NULL);
 	monitor.done = GLOBUS_FALSE;    
 	monitor.err = GLOBUS_NULL;
 	monitor.use_err = GLOBUS_FALSE;
+        handle->user_callback = GLOBUS_NULL;
         globus_gass_copy_cancel(
 	    handle,
 	    globus_l_gass_copy_monitor_callback,
@@ -2007,7 +2005,7 @@ globus_l_gass_copy_io_setup_get(
 	else
 	{
 	    fprintf(stderr,
-                    "io_setup_get(): FAILURE opening %s\n",parsed_url.url_path);
+                    "io_setup_get(): FAILED opening %s\n",parsed_url.url_path);
 #endif
 	}
         globus_url_destroy(&parsed_url);
@@ -2069,7 +2067,7 @@ globus_l_gass_copy_io_setup_put(
 	else
 	{
 	    fprintf(stderr,
-                    "io_setup_put(): FAILURE opening %s\n",parsed_url.url_path);
+                    "io_setup_put(): FAILED opening %s\n",parsed_url.url_path);
 #endif
 	}
 
@@ -2243,6 +2241,7 @@ globus_l_gass_copy_ftp_get_done_callback(
         globus_mutex_unlock(&(source_monitor->mutex));
 
         globus_l_gass_copy_generic_cancel(cancel_info);
+        globus_libc_free(cancel_info);
     }
     else
     {
@@ -2288,6 +2287,7 @@ globus_l_gass_copy_ftp_put_done_callback(
         dest_monitor->done = GLOBUS_TRUE;
         globus_mutex_unlock(&(dest_monitor->mutex));
         globus_l_gass_copy_generic_cancel(cancel_info);
+        globus_libc_free(cancel_info);
     }
     else
     {
@@ -3179,12 +3179,18 @@ globus_l_gass_copy_io_write_callback(
 	{
 	    if(!state->cancel) /* cancel has not been set already */
 	    {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "io_write_callback(): cancel has not been set\n");
+#endif
 		globus_i_gass_copy_set_error_from_result(handle, result);
 		state->cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
 		handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
 	    }
 	    else
 	    {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "io_write_callback(): cancel has already been set\n");
+#endif
 	        globus_mutex_lock(&(state->dest.mutex));
 		state->dest.n_pending--;
 		globus_mutex_unlock(&(state->dest.mutex));
@@ -4316,7 +4322,7 @@ globus_gass_copy_cancel(
 	    err = globus_error_construct_string(
 		GLOBUS_GASS_COPY_MODULE,
 		GLOBUS_NULL,
-		"[%s]: The last transfer has already been cancled.",
+		"[%s]: The last transfer has already been canceled.",
 		myname);
 	  
 	    return globus_error_put(err);
@@ -4364,13 +4370,20 @@ globus_gass_copy_cancel(
 	dest_cancel_info->handle = handle;
 	dest_cancel_info->canceling_source = GLOBUS_FALSE;
 
-	if(handle->state->source.status != GLOBUS_I_GASS_COPY_TARGET_DONE ||
+	if(handle->state->source.status != GLOBUS_I_GASS_COPY_TARGET_DONE &&
 	   handle->state->source.status != GLOBUS_I_GASS_COPY_TARGET_INITIAL)
 	    result = globus_l_gass_copy_target_cancel(source_cancel_info);
 	
-        if(handle->state->dest.status != GLOBUS_I_GASS_COPY_TARGET_DONE ||
-	   handle->state->dest.status != GLOBUS_I_GASS_COPY_TARGET_INITIAL)
-	    result = globus_l_gass_copy_target_cancel(dest_cancel_info);
+        if (handle->state != GLOBUS_NULL)
+        {
+            if(handle->state->dest.status != GLOBUS_I_GASS_COPY_TARGET_DONE &&
+               handle->state->dest.status != GLOBUS_I_GASS_COPY_TARGET_INITIAL)
+            {
+	        result = globus_l_gass_copy_target_cancel(dest_cancel_info);
+            }
+        }
+        globus_libc_free(dest_cancel_info);
+        globus_libc_free(source_cancel_info);
     }
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -4423,17 +4436,17 @@ globus_l_gass_copy_target_cancel(
 
     switch (target->mode)
     {
-        case GLOBUS_GASS_COPY_URL_MODE_FTP:/*
+        case GLOBUS_GASS_COPY_URL_MODE_FTP:
              result = globus_ftp_client_abort(target->data.ftp.handle);
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
              if (result != GLOBUS_SUCCESS)
              {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
                  fprintf(stderr, "_ftp_client_abort():  returned an error\n");
                  fprintf(stderr, "    resetting to SUCCESS\n");
+#endif
                  result = GLOBUS_SUCCESS;
              }
-#endif
-*/
+
              break;
         case GLOBUS_GASS_COPY_URL_MODE_GASS:
              rc = globus_gass_transfer_fail(
