@@ -50,68 +50,53 @@ EXTERN_C_BEGIN
  *  globus_xio_stack_push_driver(stack, gsi_driver, NULL);
  *  \endcode
  */
-
 /**
  *  @addtogroup GLOBUS_XIO_API_ASSIST
  *
- *  \par Setting up a target
- *  A target can be created for active or passive connections.  An active
- *  target is created with a contact string and a driver stack.  
- *  A passive target is given to the user by a server.
- *  examples of both follow:
- * 
+ *  \par Servers
+ *  A server data structure provides functionality for passive opens.
+ *  A server is initialized and bound to a protocol stack and set
+ *  of attributes with the function globus_xio_server_create().  Once
+ *  a server is created many "connections" can be accepted.  Each connection
+ *  will result in an intialized handle which can later be opened.
+ *
  *  \code
- *  active target setup example:
+ *  globus_xio_server_t             server;
+ *  globus_xio_attr_t               attr;
  *
- *  globus_xio_target_init(&target, "localhost:80", GLOBUS_NULL, stack);
- *
- *  passive target setup example:
-
- *    // build the stack
- *  globus_xio_target_attr_init(&target_attr);
- *  globus_xio_target_push_driver(
- *      target_attr, tcp_driver, tcp_target_attr);
- *  globus_xio_target_push_driver(
- *      target_attr, gsi_driver, GLOBUS_NULL);
- * 
- *  globus_xio_attr_init(&server_attr);
- *  globus_xio_attr_cntl(server_attr, 
- *          tcp_driver,
- *          GLOBUS_XIO_TCP_SET_PORT,
- *          80);
- *  globus_xio_server_create(&server, GLOBUS_NULL, stack);
- *  globus_xio_server_cntl(
- *      server, tcp_driver, GLOBUS_XIO_TCP_GET_LOCAL_CONTACT, &buf);
- *  globus_libc_fprintf(stdout, "serving at: %s.\n", buf);
- *  globus_xio_server_accept(server, &target);
- *  \endcode
+ *  globus_xio_attr_init(&attr);
+ *  globus_xio_server_create(&server_handle, attr, stack); 
+ *  globus_xio_server_accept(&handle, server);
+ *  \encode
  */
 
 /**
  *  @addtogroup GLOBUS_XIO_API_ASSIST
  *
  *  \par Handle Construction
- *  Handles are constructed from targets.  Many handles can be created
- *  from a single target.  The state of the target at the time of
- *  handle constructions partially determines the initial state of the
- *  handle.  The initial state is also determined of the attribute 
- *  it is created with.\n
- *  A handle is not constructed until a user makes a call to 
- *  globus_xio_open().  handle_attrs are used to tweak attributes of
- *  the handle.  All imutable attributes must be set on the attr
- *  passed in to globus_xio_open().  Mutable attrs can be altered
+ *  There are two ways to create a handle.  The first is for use as a 
+ *  client (one that is doing an active open).  The function:
+ *  globus_xio_handle_create() is used to create such a handle and bind
+ *  that handle to a protocol stack.
+ *
+ *  \code
+ *  globus_xio_handle_create(&handle, stack);
+ *  \endcode
+ *
+ *  The second means of creating a handle is for use as a server (one
+ *  that is doing a passive open).  This is created by accepting a
+ *  connection on a server_handle with the function globus_xio_server_accept()
+ *  or globus_xio_server_register_accept().
+ *
+ *  Mutable attrs can be altered
  *  via a call to globus_xio_handle_cntl() described later.
  *
  *  \code
- *  attr ex:
- *
- *  globus_xio_attr_init(&attr);
- *  globus_xio_attr_cntl(attr, 
- *      NULL, 
- *      GLOBUS_XIO_HANDLE_ATTR_SET_MODE,
- *      O_WRONLY);
- *  globus_xio_handle_open(target, &handle, attr);a
+ *  globus_xio_server_accept(&xio_handle, server_handle);
  *  \endcode
+ * 
+ *  once a handle is intialized the user can call globus_xio_open()
+ *  to begin the open process.
  */
 
 /**
@@ -608,9 +593,10 @@ globus_xio_handle_cntl(
  *  @ingroup GLOBUS_XIO_API
  *
  * Creates an open handle based on the state contained in the given
- * target.
+ * stack.
  * 
- * No operation can be preformed on a handle until it is opened.  If 
+ * No operation can be preformed on a handle until it is initialized 
+ * and then opened.  If 
  * an already open handle used the information contaned in that handle
  * will be destoyed.
  * 
