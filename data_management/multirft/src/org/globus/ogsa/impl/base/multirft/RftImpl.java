@@ -201,7 +201,18 @@ extends GridServiceImpl {
         cancelActiveTransfers( fromId, toId );
     }
     
-    
+    public FileTransferJobStatusType getStatus( String sourceFileName) 
+    throws RemoteException {
+        logger.debug(" Getting Status for : " + sourceFileName);
+        FileTransferJobStatusType statusType = 
+            dbAdapter.getStatus( this.requestId, sourceFileName );
+        if (statusType != null) {
+            return statusType;
+        }
+        else {
+            throw new RemoteException("GetStatus returned null");
+        }
+    }
     /**
      *
      *@param  fromId           
@@ -249,7 +260,7 @@ extends GridServiceImpl {
         return sourceURL.substring( sourceURL.lastIndexOf( "/" ) + 1 );
     }
     
-    private void setOverallStatusSDE( int transferStatus){
+    private synchronized void setOverallStatusSDE( int transferStatus){
         logger.debug("Transferstatus in set:"+transferStatus);
         logger.debug(this.numberFinished+" " + this.numberActive +
             " " + this.numberPending + " " + this.numberFailed);
@@ -343,7 +354,7 @@ extends GridServiceImpl {
         setNotifyProps( credential, Constants.ENCRYPTION );
         
         Vector recoveredTransferJobs = dbAdapter.getActiveTransfers(
-        persistentRequestId );
+        persistentRequestId, this.concurrency );
         int tempSize = recoveredTransferJobs.size();
         //transfers = new TransferType[tempSize];
         
@@ -365,8 +376,8 @@ extends GridServiceImpl {
         "Concurrency of recovered request: " + concurrency_ );
         for ( int i = 0; i < concurrency_; i++ ) {
             
-            TransferJob transferJob = (TransferJob) recoveredTransferJobs.elementAt(
-            i );
+            TransferJob transferJob = (TransferJob)
+                recoveredTransferJobs.elementAt( i );
             int tempStatus = transferJob.getStatus();
             
             if ( ( tempStatus == TransferJob.STATUS_ACTIVE ) ||
@@ -375,8 +386,9 @@ extends GridServiceImpl {
                 
                 TransferThread transferThread = new TransferThread(
                 transferJob );
-                logger.debug( "Starting recovered transfer jobs " );
+                System.out.println( "Starting recovered transfer jobs "+ i );
                 transferThread.start();
+                statusChanged(transferJob);
             }
         }
     }
@@ -423,6 +435,8 @@ extends GridServiceImpl {
                 this.persistentRequestId = Integer.parseInt(
                 persistentRequestIdString );
                 this.requestId = this.persistentRequestId;
+                this.concurrency = 
+                    this.dbAdapter.getConcurrency( this.requestId);
                 recoverRequest();
                 
             } else {
@@ -535,7 +549,7 @@ extends GridServiceImpl {
      *@param  transferJob            
      *@throws  GridServiceException 
      */
-    public void statusChanged( TransferJob transferJob )
+    public synchronized void statusChanged( TransferJob transferJob )
     throws GridServiceException {
         logger.debug( "Single File Transfer Status SDE changed "
         + "for:" + transferJob.getTransferId() 
@@ -686,7 +700,7 @@ extends GridServiceImpl {
                         transferJob.setStatus( TransferJob.STATUS_ACTIVE );
                         dbAdapter.update( transferJob );
                     } else {
-                        logger.debug( "Reusing TransferClient from the pool" );
+//                        System.out.println( "Reusing TransferClient from the pool " + transferJob.getSourceUrl());
                         transferClient.setSourceURL( transferJob.getSourceUrl() );
                         transferClient.setDestinationURL
                             ( transferJob.getDestinationUrl() );
@@ -802,7 +816,7 @@ extends GridServiceImpl {
                     this.status = TransferJob.STATUS_FAILED;
                     statusChanged( transferJob );
                     transferClient.setStatus( TransferJob.STATUS_FAILED );
-                    //transferClients.add( transferClient );
+                   // transferClients.add( transferClient );
                 }
                 
                 dbAdapter.update( transferJob );
@@ -813,6 +827,23 @@ extends GridServiceImpl {
                     logger.debug( "starting a new transfer " 
                     + newTransferJob.getTransferId() 
                         + "  " + newTransferJob.getStatus() );
+                    logger.debug(numberActive + " " + concurrency);
+                    /*while (numberActive < concurrency) {
+                        logger.debug(numberActive + " " + concurrency);
+                        TransferJob tempTransferJob2 = 
+                            dbAdapter.getTransferJob(requestId);
+                        if ( tempTransferJob2 != null) {
+                            TransferThread transferThread2 = 
+                                new TransferThread( tempTransferJob2 );
+                            transferThread2.start();
+                            tempTransferJob2.
+                                setStatus( TransferJob.STATUS_ACTIVE );
+                            statusChanged( tempTransferJob2 );
+                        } else {
+                            logger.debug("no transfers");
+                        }
+                    }*/
+
                     transferThread = new TransferThread( newTransferJob );
                     newTransferJob.setStatus( TransferJob.STATUS_ACTIVE );
                     statusChanged( newTransferJob );
@@ -852,7 +883,7 @@ extends GridServiceImpl {
                                         setStatus( TransferJob.STATUS_ACTIVE );
                                     statusChanged( tempTransferJob2 );
                                 } else {
-                                    logger.debug("Done");
+                                    logger.debug("No more transfers");
                                 }
                             }
                         }

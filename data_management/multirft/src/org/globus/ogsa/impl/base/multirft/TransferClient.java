@@ -635,10 +635,10 @@ public class TransferClient {
         this.sourcePath = "/" + sourcePath;
         this.markerListener = null;
         try {
-            //this.size = sourceHost.getSize( this.sourcePath );
+            this.size = sourceHost.getSize( this.sourcePath );
         } catch ( Exception e ) {
             logger.error( "Unable to get size of : " + sourcePath, e );
-            //setStatus( TransferJob.STATUS_FAILED );
+            setStatus( TransferJob.STATUS_FAILED );
         }
 
     }

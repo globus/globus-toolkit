@@ -9,7 +9,7 @@ xmlns:grid="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
 xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/serviceData"
              xmlns="http://schemas.xmlsoap.org/wsdl/"
              
-xmlns:rft-types="http://multirft.base.ogsa.globus.org/multirft_types"
+xmlns:rft-types="http://multirft.base.ogsa.globus.org/rft_types"
              xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 <import location="../../ogsi/ogsi.gwsdl" 
 namespace="http://www.gridforum.org/namespaces/2003/03/OGSI"/>
@@ -42,6 +42,44 @@ namespace="http://www.gridforum.org/namespaces/2003/03/OGSI"/>
 <xsd:element name="cancelResponse" type="tns:CancelResponse"/>
 <xsd:complexType name="CancelResponse"/>
 
+<xsd:element name="getStatus" type="tns:GetStatus"/>
+<xsd:complexType name="GetStatus">
+    <xsd:sequence>
+        <xsd:element name="sourceUrl"
+                    type="xsd:string"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:element name="getStatusResponse" type="tns:GetStatusResponse"/>
+<xsd:complexType name="GetStatusResponse">
+    <xsd:sequence>
+        <xsd:element name="rftStatus" 
+                    type="rft-types:FileTransferJobStatusType"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:element name="getStatusGroup" type="tns:GetStatusGroup"/>
+<xsd:complexType name="GetStatusGroup">
+    <xsd:sequence>
+        <xsd:element name="initial"
+                    type="xsd:int"/>
+        <xsd:element name="offset"
+                    type="xsd:int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:element name="getStatusGroupResponse" type="tns:GetStatusGroupResponse"/>
+<xsd:complexType name="GetStatusGroupResponse">
+    <xsd:sequence>
+        <xsd:element name="rftStatusGroup"
+                     type="rft-types:FileTransferJobStatusType"
+                     maxOccurs="unbounded"
+                     minOccurs="0"/>
+    </xsd:sequence>
+</xsd:complexType>
+    
+
+    
 </xsd:schema>
 </types>
 
@@ -57,6 +95,18 @@ namespace="http://www.gridforum.org/namespaces/2003/03/OGSI"/>
 <message name="cancelOutputMessage">
  <part name="parameters" element="tns:cancelResponse"/>
 </message>
+<message name="getStatusInputMessage">
+    <part name="parameters" element="tns:getStatus"/>
+</message>
+<message name="getStatusOutputMessage">
+    <part name="parameters" element="tns:getStatusResponse"/>
+</message>
+<message name="getStatusGroupInputMessage">
+<part name="parameters" element="tns:getStatusGroup"/>
+</message>
+<message name="getStatusGroupOutputMessage">
+<part name="parameters" element="tns:getStatusGroupResponse"/>
+</message>
 
 <grid:portType name="RFTPortType" extends="ogsi:GridService 
 ogsi:NotificationSource">
@@ -68,6 +118,14 @@ ogsi:NotificationSource">
   <input message="tns:cancelInputMessage"/>
   <output message="tns:cancelOutputMessage"/>
  </operation>
+<operation name="getStatus">
+    <input message="tns:getStatusInputMessage"/>
+    <output message="tns:getStatusOutputMessage"/>
+</operation>
+<operation name="getStatusGroup">
+    <input message="tns:getStatusGroupInputMessage"/>
+    <output message="tns:getStatusGroupOutputMessage"/>
+</operation>
 
 <gwsdl:serviceData name="FileTransferProgress"
                              type="rft-types:FileTransferProgressType"

@@ -194,10 +194,10 @@ public class MultiRFTClient
 
             TransferRequestType transferRequest = new TransferRequestType();
             transferRequest.setTransferArray(transfers1);
-            if(concurrency>transfers1.length) {
+            /*if(concurrency>transfers1.length) {
                 System.out.println("Concurrency should be less than the number of transfers in the request");
                 System.exit(0);
-            }
+            }*/
 
             transferRequest.setRftOptions( multirftOptions );
             transferRequest.setConcurrency( concurrency );
@@ -309,8 +309,8 @@ public class MultiRFTClient
 	    if (transfersFinished.getNumberFinished() == transferCount) {
 	       System.out.println("Done");
            try {
-	            nm.removeListener(sink);
-                rftPort.destroy();
+	           // nm.removeListener(sink);
+               // rftPort.destroy();
 	        } catch (Exception e) {
 	            System.out.println("Unable to remove listener");
                 e.printStackTrace();

@@ -105,6 +105,15 @@ Southern California. All Rights Reserved.
     <ant antfile="${ogsa.root}/${build.services}" target="mergePackageMapping">
         <property name="mapping.file" value="./NStoPkg.properties.multirft"/>
     </ant>
+     <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
+   
+    <property name="schema.file.dir" value="${multirft.schema.dir}"/>
+
+    <property name="schema.file" value="multirft_types.wsdl"/>
+    <!-- Command run from within schema dir -->
+    <property name="stubs.dest" value="../src"/>
+    <reference refid="classpath"/>
+   </ant>
 
    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
    
@@ -115,16 +124,7 @@ Southern California. All Rights Reserved.
     <property name="stubs.dest" value="../src"/>
     <reference refid="classpath"/>
    </ant>
-   <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
-   
-    <property name="schema.file.dir" value="${multirft.schema.dir}"/>
-
-    <property name="schema.file" value="multirft_types.wsdl"/>
-    <!-- Command run from within schema dir -->
-    <property name="stubs.dest" value="../src"/>
-    <reference refid="classpath"/>
-   </ant>
-
+  
   </target>
     <!-- Compile source and tests -->
   <target name="compileAll">
