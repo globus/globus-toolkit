@@ -26,21 +26,24 @@ do_start()
     if [ ! -d $localstatedir ]; then
         mkdir -p $localstatedir
     fi
-    echo "Starting up GSI-OpenSSH sshd server..."
+    echo -n "Starting up GSI-OpenSSH sshd server... "
     ${sbindir}/sshd $SSHD_ARGS > /dev/null 2>&1 &
-    if [ $? -ne 0 ] ; then
-        echo "Failed to start up GSI-OpenSSH sshd server!"
+    if [ $? -eq 0 ]; then
+        echo "done."
+    else
+        echo "failed to start GSI-OpenSSH sshd server!"
     fi
 }
 
 do_stop()
 {
-    echo "Stopping the GSI-OpenSSH sshd server..."
+    echo -n "Stopping the GSI-OpenSSH sshd server... "
     pid=`cat $PID_FILE`
     kill -TERM $pid
     sleep 2
     kill -TERM $pid 2> /dev/null
     rm -f $PID_FILE
+    echo "done."
 }
 
 case "$1" in
@@ -51,11 +54,11 @@ case "$1" in
             pid=`cat $PID_FILE`
             psout=`ps -A | grep $pid | grep -v grep | awk "{if (\\\$1 == $pid) print}"`
             if [ "x$psout" = "x" ]; then
-                echo "Found stale sshd pid file.  Removing."
+                echo "Found stale sshd pid file... removing it."
                 rm -f $PID_FILE
                 do_start
             else
-                echo "GSI-OpenSSH sshd is already running!"
+                echo "GSI-OpenSSH sshd server is already running!"
             fi
         fi
         ;;
@@ -63,6 +66,8 @@ case "$1" in
     stop)
         if [ -f $PID_FILE ] ; then
             do_stop
+        else
+            echo "The server's pid file does not exist!  Are you sure the server is running?"
         fi
         ;;
 
