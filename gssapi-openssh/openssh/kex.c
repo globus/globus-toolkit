@@ -42,6 +42,10 @@ RCSID("$OpenBSD: kex.c,v 1.56 2003/11/21 11:57:03 djm Exp $");
 #include "dispatch.h"
 #include "monitor.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 #define KEX_COOKIE_LEN	16
 
 /* prototype */
@@ -295,6 +299,10 @@ choose_kex(Kex *k, char *client, char *server)
 		k->kex_type = KEX_DH_GRP1_SHA1;
 	} else if (strcmp(k->name, KEX_DHGEX) == 0) {
 		k->kex_type = KEX_DH_GEX_SHA1;
+#ifdef GSSAPI
+	} else if (strncmp(k->name, KEX_GSS_SHA1, sizeof(KEX_GSS_SHA1)-1) == 0) {
+		k->kex_type = KEX_GSS_GRP1_SHA1;
+#endif
 	} else
 		fatal("bad kex alg %s", k->name);
 }
