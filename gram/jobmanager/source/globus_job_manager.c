@@ -2023,25 +2023,27 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     if (tmp_param[0])
     {
         req->my_stdout = tmp_param[0];
+
+	if (tmp_param[1])
+	{
+	    req->my_stdout_tag = tmp_param[1];
+
+	    if (tmp_param[2])
+	    {
+		/* error: stdout can be of the form URL or URL TAG only */
+		req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_STDOUT;
+		return(GLOBUS_FAILURE);	
+	    }  	 
+	}
+	else
+	{
+	    req->my_stdout_tag = GLOBUS_NULL;
+	}
     }
     else
     {
         req->my_stdout = GLOBUS_GRAM_CLIENT_DEFAULT_STDOUT;
     }
-    if (tmp_param[1])
-    {
-        req->my_stdout_tag = tmp_param[1];
-    }
-    else
-    {
-	req->my_stdout_tag = GLOBUS_NULL;
-    }
-    if (tmp_param[2])
-    {
-	/* error: stdout can be of the form URL or URL TAG only */
-        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_STDOUT;
-        return(GLOBUS_FAILURE);	
-    }  	 
 
     /********************************** 
      *  GET STDERR PARAM
@@ -2058,25 +2060,27 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     if (tmp_param[0])
     {
         req->my_stderr = tmp_param[0];
+
+	if (tmp_param[1])
+	{
+	    req->my_stderr_tag = tmp_param[1];
+
+	    if (tmp_param[2])
+	    {
+		/* error: stdout can be of the form URL or URL TAG only */
+		req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_STDERR;
+		return(GLOBUS_FAILURE);	
+	    }  	 
+	}
+	else
+	{
+	    req->my_stderr_tag = GLOBUS_NULL;
+	}
     }
     else
     {
         req->my_stderr = GLOBUS_GRAM_CLIENT_DEFAULT_STDERR;
     }
-    if (tmp_param[1])
-    {
-        req->my_stderr_tag = tmp_param[1];
-    }
-    else
-    {
-	req->my_stderr_tag = GLOBUS_NULL;
-    }
-    if (tmp_param[2])
-    {
-	/* error: stdout can be of the form URL or URL TAG only */
-        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_STDERR;
-        return(GLOBUS_FAILURE);	
-    }  	 
     
     /********************************** 
      *  GET COUNT PARAM
