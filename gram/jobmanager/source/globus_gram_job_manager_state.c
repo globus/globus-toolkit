@@ -133,7 +133,6 @@ globus_gram_job_manager_state_machine(
     globus_rsl_t *			original_rsl;
     globus_rsl_t *			restart_rsl;
     globus_gram_job_manager_query_t *	query;
-    globus_bool_t			first_poll = GLOBUS_FALSE;
 
     GLOBUS_GRAM_JOB_MANAGER_DEBUG_STATE(request, "entering");
 
@@ -1159,6 +1158,16 @@ globus_gram_job_manager_state_machine(
 		    request->x509_user_proxy);
 		rc = globus_gram_job_manager_gsi_register_proxy_timeout(
 			request);
+		if (rc != GLOBUS_SUCCESS)
+		{
+		    request->jobmanager_state = 
+			GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		    globus_gram_job_manager_request_log( request,
+				   "JM: error setting proxy timeout--"
+                                   "proxy too short-lived\n");
+		    break;
+		}
 	    }
 	}
 
@@ -1382,7 +1391,7 @@ globus_gram_job_manager_state_machine(
 	}
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
-	first_poll = GLOBUS_TRUE;
+	request->first_poll = GLOBUS_TRUE;
 	
 	/* FALLSTHROUGH so we can act on a job state change returned from
 	 * the submit script.
@@ -1420,27 +1429,8 @@ globus_gram_job_manager_state_machine(
 	    }
 	    request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT;
+            request->first_poll = GLOBUS_FALSE;
 	    break;
-	    
-	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT;
-	    if(globus_gram_job_manager_rsl_need_stage_out(request))
-	    {
-		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT;
-
-
-		rc = globus_gram_job_manager_script_stage_out(request);
-
-		if(rc != GLOBUS_SUCCESS)
-		{
-		    request->failure_code = rc;
-		    request->jobmanager_state =
-			GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-		}
-		else
-		{
-		    event_registered = GLOBUS_TRUE;
-		}
-	    }
 	}
 	else
 	{
@@ -1455,11 +1445,12 @@ globus_gram_job_manager_state_machine(
 	    {
 		request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1;
+                request->first_poll = GLOBUS_FALSE;
 		break;
 	    }
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
 
-	    if(! first_poll)
+	    if(! request->first_poll)
 	    {
 		/* Register next poll of job state */
 		GlobusTimeReltimeSet(delay_time, request->poll_frequency, 0);
@@ -1473,6 +1464,7 @@ globus_gram_job_manager_state_machine(
 		event_registered = GLOBUS_TRUE;
 	    }
 	}
+        request->first_poll = GLOBUS_FALSE;
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
@@ -1724,6 +1716,16 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	if(request->remote_io_url)
+	{
+	    query->failure_code =
+                globus_gram_job_manager_script_remote_io_file_create(request);
+
+            if (query->failure_code == GLOBUS_SUCCESS)
+            {
+		event_registered = GLOBUS_TRUE;
+	    }
+        }
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
@@ -2484,6 +2486,7 @@ globus_l_gram_job_manager_set_restart_state(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
+        request->first_poll = GLOBUS_TRUE;
 	changed = GLOBUS_TRUE;
 	break;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
@@ -2491,6 +2494,7 @@ globus_l_gram_job_manager_set_restart_state(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
 	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
 	request->unsent_status_change = GLOBUS_TRUE;
+        request->first_poll = GLOBUS_TRUE;
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
 	changed = GLOBUS_TRUE;
 	break;
@@ -2499,6 +2503,7 @@ globus_l_gram_job_manager_set_restart_state(
 	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 	request->unsent_status_change = GLOBUS_TRUE;
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
+        request->first_poll = GLOBUS_TRUE;
 	changed = GLOBUS_TRUE;
 	break;
       default:
