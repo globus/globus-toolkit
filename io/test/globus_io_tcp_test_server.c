@@ -146,10 +146,11 @@ test1(int argc, char **argv)
 	&attr,
 	GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
 	&auth_data);
-
+/*
     globus_io_attr_set_tcp_restrict_port(
 	&attr,
 	GLOBUS_FALSE);
+*/
     while (( c = getopt(argc, argv, "rgsci:I:")) != EOF)
     {
         switch(c)
