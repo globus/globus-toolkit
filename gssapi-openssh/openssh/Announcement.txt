@@ -20,6 +20,12 @@ team.  This bugzilla system is located at:
 
 GSI-OpenSSH 3.2 Major changes
 
+   New features
+
+      * Source globus-user-env.sh prior to running post-install script
+        to guarantee the proper environment exists for executing
+        commands.
+
    Bugs fixed
 
       * Provided workaround for AIX 5.2 platform build error.
