@@ -1317,7 +1317,12 @@ globus_l_gfs_remote_session_end(
     GlobusGFSName(globus_l_gfs_remote_session_end);
 
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
-
+    
+    if(my_handle == NULL)
+    {
+        return;
+    }
+    
     for(list = my_handle->cached_node_list;
         !globus_list_empty(list);
         list = globus_list_rest(list))
@@ -1333,7 +1338,21 @@ globus_l_gfs_remote_session_end(
         }
         globus_free(node_info);
     }                              
-   
+    
+    if(my_handle->session_info.username != NULL)
+    {
+        globus_free(my_handle->session_info.username);
+    }
+    if( my_handle->session_info.password != NULL)
+    {
+        globus_free(my_handle->session_info.password);
+    }
+    if(my_handle->session_info.subject != NULL)
+    {
+        globus_free(my_handle->session_info.subject);
+    }
+    globus_free(my_handle);
+    
     return;
 }
 
