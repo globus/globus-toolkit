@@ -30,7 +30,7 @@ Usage: ${short_usage}
     Options:
 	-help, -usage           Display usage
 	-version                Display version
-	-resource               Fetch output using the specified resource
+	-resource         (-r)  Fetch output using the specified resource
                                 manager
 	-out, -err              Show stdout OR stderr of remote job
 	-tail N           (-t)  Show last N lines of output
@@ -52,20 +52,16 @@ jobid=
 resource=
 tailopt=no
 followopt=no
-dryrun=eval
 
 while [ -n "$1" ]; do
     case "$1" in
-	-dryrun)
-	    dryrun=echo
-	    ;;
 	-out)
 	    outopt=true
 	    ;;
 	-err)
 	    erropt=true
 	    ;;
-	-resource)
+	-r|-resource)
 	    if [ -z "$2" ]; then
 		globus_args_option_error "$1" "need a resource contact string"
 	    fi
