@@ -2145,6 +2145,7 @@ globus_l_gram_protocol_post(
     }
     globus_libc_free(connection->io_handle);
  free_connection_exit:
+    globus_mutex_unlock(&globus_i_gram_protocol_mutex);
     globus_libc_free(connection);
  free_framed_exit:
     globus_libc_free(framed);
