@@ -1002,7 +1002,7 @@ gss_create_anonymous_cred(
     }
 
     
-    if(ssl_utils_setup_ssl_ctx(
+    if(globus_ssl_utils_setup_ssl_ctx(
            &newcred->pcd->gs_ctx,
            newcred->pcd->certfile,
            newcred->pcd->certdir,
@@ -1048,8 +1048,16 @@ gss_create_and_fill_cred(
         (gss_cred_id_desc**) output_cred_handle_P ;
     OM_uint32                           major_status = GSS_S_NO_CRED;
     gss_cred_id_desc *                  newcred;
+    STACK_OF(X509_EXTENSION) *          extensions;
+    X509_EXTENSION *                    ex;
+    X509 *                              cert;
+    ASN1_OBJECT *                       asn1_obj;
+    ASN1_OCTET_STRING *                 asn1_oct_string;
     int                                 status;
     int                                 i;
+    int                                 j = 0;
+    int                                 cert_count;
+    char *                              subgroup;
 
 #ifdef DEBUG
     fprintf(stderr,"gss_create_and_fill_cred\n");
@@ -1070,7 +1078,8 @@ gss_create_and_fill_cred(
     if (!(newcred->pcd = proxy_cred_desc_new()))
     {
         GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
-        return GSS_S_FAILURE ;
+        major_status = GSS_S_FAILURE;
+        goto err;
     }
 
     /* delegated certificate, save in pcd */
@@ -1209,24 +1218,140 @@ gss_create_and_fill_cred(
     if (newcred->globusid == NULL)
     {
         GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
+        major_status = GSS_S_FAILURE;
         goto err;
     }
     newcred->globusid->name_oid = GSS_C_NO_OID;
-    newcred->globusid->group = NULL;
-    newcred->globusid->group_types = NULL;
+
     newcred->globusid->x509n =
         X509_NAME_dup(X509_get_subject_name(newcred->pcd->ucert));
 
     if (newcred->globusid->x509n == NULL)
     {
         GSSerr(GSSERR_F_ACQUIRE_CRED,GSSERR_R_PROCESS_CERT);
+        major_status = GSS_S_FAILURE;
         goto err;
     }
 
     /* now strip off any /CN=proxy entries */
 
     proxy_get_base_name(newcred->globusid->x509n);
-	
+
+    
+    cert_count = 1;
+
+    if(newcred->pcd->cert_chain)
+    {
+        cert_count += sk_X509_num(newcred->pcd->cert_chain);
+    }
+        
+    newcred->globusid->group = sk_new_null();
+
+    if(newcred->globusid->group == NULL)
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+        
+    newcred->globusid->group_types = ASN1_BIT_STRING_new();
+
+    if(newcred->globusid->group_types == NULL)
+    {
+        GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
+    cert = newcred->pcd->ucert;
+    cert_count--;
+
+        do
+    {
+        extensions = cert->cert_info->extensions;
+        
+        for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
+        {
+            ex = (X509_EXTENSION *) sk_X509_EXTENSION_value(extensions,i);
+            asn1_obj = X509_EXTENSION_get_object(ex);
+
+            /* if statement is kind of ugly, but I couldn't find a
+             * better way
+             */
+            
+            if((asn1_obj->length == gss_trusted_group->length) &&
+               !memcmp(asn1_obj->data,
+                       gss_trusted_group->elements,
+                       asn1_obj->length))
+            {
+                /* found a trusted group match */
+                asn1_oct_string = X509_EXTENSION_get_data(ex);
+                
+                subgroup = malloc(asn1_oct_string->length + 1);
+
+                if(subgroup == NULL)
+                {
+                    GSSerr(GSSERR_F_ACQUIRE_CRED,
+                           GSSERR_R_OUT_OF_MEMORY);
+                    major_status = GSS_S_FAILURE;
+                    goto err;
+                }
+                    
+                memcpy((void *) subgroup,
+                       asn1_oct_string->data,
+                       asn1_oct_string->length);
+
+                /* terminate string */
+
+                subgroup[asn1_oct_string->length] = '\0';
+
+                sk_insert(newcred->globusid->group,subgroup,j);
+                j++;
+                    
+                /* assume one extension per cert */
+                
+                break;
+            }
+            else if((asn1_obj->length == gss_untrusted_group->length) &&
+                    !memcmp(asn1_obj->data,
+                            gss_untrusted_group->elements,
+                            asn1_obj->length))
+            {
+                /* found a untrusted group match */
+                asn1_oct_string = X509_EXTENSION_get_data(ex);
+                
+                subgroup = malloc(asn1_oct_string->length + 1);
+
+                if(subgroup == NULL)
+                {
+                    GSSerr(GSSERR_F_ACQUIRE_CRED,
+                           GSSERR_R_OUT_OF_MEMORY);
+                    major_status = GSS_S_FAILURE;
+                    goto err;
+                }
+                    
+                memcpy((void *) subgroup,
+                       asn1_oct_string->data,
+                       asn1_oct_string->length);
+
+                /* terminate string */
+                
+                subgroup[asn1_oct_string->length] = '\0';
+
+                sk_insert(newcred->globusid->group,subgroup,j);
+                ASN1_BIT_STRING_set_bit(newcred->globusid->group_types,j,1);
+                j++;
+                    
+                /* assume one extension per cert */
+                
+                break;
+            }
+
+        }
+        
+    } while(cert_count-- &&
+            (cert = sk_X509_value(newcred->pcd->cert_chain,cert_count)));
+    
     major_status = GSS_S_COMPLETE;
 
 err:

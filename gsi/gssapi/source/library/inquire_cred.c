@@ -138,7 +138,7 @@ GSS_CALLCONV gss_inquire_cred(
             else
             {
                 major_status =
-                    gss_copy_name_to_name((gss_name_desc * * )name,
+                    gss_copy_name_to_name((gss_name_desc **)name,
                                           cred_handle->globusid);
 
                 if (GSS_ERROR(major_status))
@@ -150,6 +150,5 @@ GSS_CALLCONV gss_inquire_cred(
     }
     
 err:
-
     return major_status;
 }
