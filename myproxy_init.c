@@ -98,14 +98,12 @@ main(int argc, char *argv[])
 
     username = getenv("LOGNAME");
     if (username != NULL) {
-	client_request->username = malloc(strlen(username)+1);
-	strcpy(client_request->username, username);
+      client_request->username = strdup(username);
     }
 
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
-	socket_attrs->pshost = malloc(strlen(pshost) + 1);
-	strcpy(socket_attrs->pshost, pshost);
+      socket_attrs->pshost = strdup(pshost);
     }
 
     /* client_request stores the portal lifetime */
@@ -221,8 +219,7 @@ init_arguments(int argc,
 	    request->portal_lifetime = 60*60*atoi(gnu_optarg);
 	    break;        
 	case 's': 	/* pshost name */
-	    attrs->pshost = malloc(strlen(gnu_optarg) + 1);
-	    strcpy(attrs->pshost, gnu_optarg); 
+	    attrs->pshost = strdup(gnu_optarg);
 	    break;
 	case 'p': 	/* psport */
 	    attrs->psport = atoi(gnu_optarg);
@@ -232,8 +229,7 @@ init_arguments(int argc,
 	    exit(1);
 	    break;
 	case 'l':	/* username */
-	    request->username = malloc(strlen(gnu_optarg) + 1);
-	    strcpy(request->username, gnu_optarg); 
+	    request->username = strdup(gnu_optarg);
 	    break;
 	case 'v': /* print version and exit */
 	    fprintf(stderr, version);
