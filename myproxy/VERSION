@@ -7,6 +7,7 @@ v0.5.9 XX XXX 200X (GPT package version 1.11)
   - removed requirement for /dev/urandom and instead let OpenSSL seed
     its random number generator itself using its standard methods
   - added myproxy-admin-change-pass command
+  - added support for OpenSSL 0.9.7
 
 v0.5.8 23 Sep 2003 (GPT package version 1.10)
   - fixed networking problem with v0.5.7 on some platforms

@@ -1044,7 +1044,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	      We store a crypt'ed empty passphrase instead.  (yuk!) */
 	   if (creds.passphrase && creds.passphrase[0]) {
 	       char *tmp;
-	       tmp = (char *)crypt("", &creds.owner_name[strlen(creds.owner_name)-3]);
+	       tmp = (char *)des_crypt("", &creds.owner_name[strlen(creds.owner_name)-3]);
 	       if (strcmp(tmp, creds.passphrase)) {
 		   verror_put_string("credential configured for retrieval, not renewal");
 		   goto end;
