@@ -22,7 +22,7 @@ sub test_gridftp_remote {
     my $remote = $u->remote;
     my $hostname = $u->hostname;
 
-    $u->command(". env.sh");
+#    $u->command(". env.sh");
 
     $u->command("globus-url-copy \\
         gsiftp://$remote/etc/termcap \\

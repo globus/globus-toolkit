@@ -20,7 +20,7 @@ sub test_gram_local {
     my $gatekeeper_url;
     my $output;
 
-    $u->command(". env.sh");
+#    $u->command(". env.sh");
 
     $u->command("globus-personal-gatekeeper -killall");
     $u->command("globus-personal-gatekeeper -start");

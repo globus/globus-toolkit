@@ -19,7 +19,7 @@ sub test_gridftp_local {
 
     my $output;
 
-    $u->command(". env.sh");
+#    $u->command(". env.sh");
 
     my $subject = `grid-proxy-info -subject`;
     chomp($subject);

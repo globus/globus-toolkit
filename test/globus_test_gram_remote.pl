@@ -21,7 +21,7 @@ sub test_gram_remote {
     my $output;
     my $remote = $u->remote;
 
-    $u->command(". env.sh");
+#    $u->command(". env.sh");
 
     $output = $u->command("globusrun -a -r $remote",1);
     $output =~ /GRAM Authentication test successful/ ?  $u->report("SUCCESS") : $u->report("FAILURE");

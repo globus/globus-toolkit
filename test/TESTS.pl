@@ -18,7 +18,6 @@ use strict;
 use Cwd;
 
 my @tests = qw( 
-        globus_test_setup_environment.pl
         globus_test_check_for_commands.pl
         globus_test_check_proxy.pl
         globus_test_gram_local.pl
@@ -26,6 +25,8 @@ my @tests = qw(
         globus_test_gridftp_local.pl
         globus_test_gridftp_remote.pl
 );
+
+#       globus_test_setup_environment.pl
 #       globus_test_mds_local.pl
 #       globus_test_mds_remote.pl
 
