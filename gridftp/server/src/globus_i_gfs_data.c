@@ -32,6 +32,8 @@ typedef struct globus_l_gfs_data_operation_s
     globus_i_gfs_op_attr_t *            op_attr;
     globus_i_gfs_cmd_attr_t *           cmd_attr;
     
+    globus_off_t                        max_offset;
+    
     globus_off_t                        recvd_bytes[1];
     globus_range_list_t                 recvd_ranges;
     
@@ -77,6 +79,7 @@ globus_l_gfs_data_operation_init(
     op->recvd_ranges = GLOBUS_NULL;
     globus_range_list_init(&op->recvd_ranges);
     op->recvd_bytes[0] = 0;
+    op->max_offset = -1;
     
     *u_op = op;
     return GLOBUS_SUCCESS;
@@ -1538,80 +1541,123 @@ globus_gridftp_server_get_block_size(
     *block_size = op->data_handle->attr.blocksize;
 }
 
-void
-globus_gridftp_server_get_partial_offset(
-    globus_gridftp_server_operation_t   op,
-    globus_off_t *                      offset,
-    globus_off_t *                      length)
-{
-    GlobusGFSName(globus_gridftp_server_get_partial_offset);
-    
-    if(offset)
-    {
-        *offset = op->op_attr->partial_offset;
-    }
-    if(length)
-    {
-        *length = op->op_attr->partial_length;
-    }
-}
 
-
+/* this is used to translate the restart and partial offset/lengths into
+    a sets of ranges to transfer... storage interface shouldn't know about
+    partial or restart semantics, it only needs to know which offsets to 
+    read from the data source, and what offset to write to data sink
+    (dest offset only matters for mode e, but again, storage interface 
+    doesn't know about modes)
+*/
 void
-globus_gridftp_server_get_next_range(
+globus_gridftp_server_get_write_range(
     globus_gridftp_server_operation_t   op,
     globus_off_t *                      offset,
     globus_off_t *                      length,
-    globus_off_t *                      dest_offset)
+    globus_off_t *                      write_delta,
+    globus_off_t *                      transfer_delta)
 {
-    GlobusGFSName(globus_gridftp_server_get_restart_offset);
     globus_off_t                        tmp_off = 0;
     globus_off_t                        tmp_len = -1;
+    globus_off_t                        tmp_write = 0;
+    globus_off_t                        tmp_transfer = 0;
     int                                 rc;
-    
+
     if(globus_range_list_size(op->op_attr->range_list))
     {
-        rc = globus_range_list_at(
+        rc = globus_range_list_remove_at(
             op->op_attr->range_list,
             0,
             &tmp_off,
             &tmp_len);
     }
-    
+    if(op->data_handle->attr.mode == 'S')
+    {
+        tmp_write = tmp_off;
+    }
+    if(op->op_attr->partial_offset > 0)
+    {
+        tmp_off += op->op_attr->partial_offset;
+        tmp_write += op->op_attr->partial_offset;
+        tmp_transfer = 0 - op->op_attr->partial_offset;
+    }
     if(offset)
     {
-        if(!rc)
-        {
-             *offset = tmp_off;
-        }
-        else
-        {
-             *offset = 0;
-        }
+        *offset = tmp_off;
     }
-    
     if(length)
     {
-        if(!rc)
+        *length = tmp_len;
+    }
+    if(write_delta)
+    {
+        *write_delta = tmp_write;
+    }
+    if(transfer_delta)
+    {
+        *transfer_delta = tmp_transfer;
+    }
+    return;
+}
+
+void
+globus_gridftp_server_get_read_range(
+    globus_gridftp_server_operation_t   op,
+    globus_off_t *                      offset,
+    globus_off_t *                      length,
+    globus_off_t *                      write_delta)
+{
+    GlobusGFSName(globus_gridftp_server_get_restart_offset);
+    globus_off_t                        tmp_off = 0;
+    globus_off_t                        tmp_len = -1;
+    globus_off_t                        tmp_write = 0;
+    int                                 rc;
+    
+    if(globus_range_list_size(op->op_attr->range_list))
+    {
+        rc = globus_range_list_remove_at(
+            op->op_attr->range_list,
+            0,
+            &tmp_off,
+            &tmp_len);
+
+        if(op->op_attr->partial_length != -1)
         {
-             *length = tmp_len;
+            if(tmp_len == -1)
+            {
+                tmp_len = op->op_attr->partial_length;
+            }
+            if(tmp_off + tmp_len > op->op_attr->partial_length)
+            {
+                tmp_len = op->op_attr->partial_length - tmp_off;
+                if(tmp_len < 0)
+                {
+                    tmp_len = 0;
+                }
+            }
         }
-        else
+        
+        if(op->op_attr->partial_offset > 0)
         {
-             *length = -1;
+            tmp_off += op->op_attr->partial_offset;
+            tmp_write = 0 - op->op_attr->partial_offset;
         }
     }
-
-    if(dest_offset)
+    else
     {
-        if(!rc)
-        {
-             *dest_offset = tmp_off;
-        }
-        else
-        {
-             *dest_offset = 0;
-        }
+        tmp_len = 0;
+    }
+    if(offset)
+    {
+        *offset = tmp_off;
+    }
+    if(length)
+    {
+        *length = tmp_len;
+    }
+    if(write_delta)
+    {
+        *write_delta = tmp_write;
     }
     
     return; 

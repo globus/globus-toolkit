@@ -185,7 +185,6 @@ globus_l_gfs_config_load_commandline(
     int                                 arg_num;
     char *                              argp;
     int                                 i;
-    int                                 value;
     int                                 rc;
     globus_l_gfs_config_option_t *      option;
     
