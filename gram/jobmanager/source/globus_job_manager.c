@@ -144,7 +144,8 @@ static int
 globus_l_gram_status_file_gen(char * request_string,
                               char * job_status_file_path,
                               char * globus_id,
-                              char * job_id);
+                              char * job_id,
+                              int status);
 
 static char *
 globus_l_gram_genfilename(char * prefix,
@@ -1520,7 +1521,8 @@ main(int argc,
             globus_l_gram_status_file_gen(final_rsl_spec,
                                           job_status_file_path,
                                           graml_env_globus_id,
-                                          request->job_id);
+                                          request->job_id,
+                                          request->status);
         }
 
     }
@@ -1590,7 +1592,8 @@ main(int argc,
                                 globus_l_gram_status_file_gen(final_rsl_spec,
                                                          job_status_file_path,
                                                          graml_env_globus_id,
-                                                         request->job_id);
+                                                         request->job_id,
+                                                         request->status);
                             }
                         }
                     }
@@ -1631,6 +1634,12 @@ main(int argc,
                             GRAM_UNLOCK;
                             globus_l_gram_client_callback(tmp_status,
                                                        request->failure_code);
+
+                            globus_l_gram_status_file_gen(final_rsl_spec,
+                                                       job_status_file_path,
+                                                       graml_env_globus_id,
+                                                       request->job_id,
+                                                       request->status);
                             GRAM_LOCK;
                         }
                     }
@@ -1684,6 +1693,11 @@ main(int argc,
         globus_l_gram_client_callback(request->status,
                                       request->failure_code);
         
+        globus_l_gram_status_file_gen(final_rsl_spec,
+                                      job_status_file_path,
+                                      graml_env_globus_id,
+                                      request->job_id,
+                                      request->status);
         /*
          * Check to see if the job status file exists.  If so, then delete it.
          */
@@ -1949,27 +1963,71 @@ static int
 globus_l_gram_status_file_gen(char * request_string,
                               char * job_status_file_path,
                               char * globus_id,
-                              char * job_id)
+                              char * job_id,
+                              int status)
 {
-    FILE *             status_fp;
+    FILE *       status_fp;
+    char         status_str[64];
+    struct stat  statbuf;
 
     grami_fprintf( graml_log_fp, "JM: in globus_l_gram_status_file_gen\n");
 
-    if ((status_fp = fopen(job_status_file_path, "w")) == NULL)
+    switch(status)
     {
-        grami_fprintf( graml_log_fp,"JM: Failed opening job status file %s\n",
-                       job_status_file_path);
-        return(1);
+        case GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING:
+            strcpy(status_str, "PENDING   ");
+            break;
+        case GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE:
+            strcpy(status_str, "ACTIVE    ");
+            break;
+        case GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED:
+            strcpy(status_str, "FAILED    ");
+            break;
+        case GLOBUS_GRAM_CLIENT_JOB_STATE_DONE:
+            strcpy(status_str, "DONE      ");
+            break;
+        case GLOBUS_GRAM_CLIENT_JOB_STATE_SUSPENDED:
+            strcpy(status_str, "SUSPENDED ");
+            break;
+        default:
+            strcpy(status_str, "UNKNOWN   ");
+    }
+
+    if (stat(job_status_file_path, &statbuf) == 0)
+    {
+        /* the file exists, so just update the first line which is the
+         * job status
+         */
+        if ((status_fp = fopen(job_status_file_path, "r+")) == NULL)
+        {
+            grami_fprintf( graml_log_fp,
+                 "JM: Failed opening job status file %s\n",
+                 job_status_file_path);
+            return(1);
+        }
+        fprintf(status_fp, "%s\n", status_str);
     }
     else
     {
-        fprintf(status_fp, "%s\n", request_string);
-        fprintf(status_fp, "%s\n", graml_job_contact);
-        fprintf(status_fp, "%s\n", job_id);
-        fprintf(status_fp, "%s\n", globus_id);
+        if ((status_fp = fopen(job_status_file_path, "w")) == NULL)
+        {
+           grami_fprintf(graml_log_fp,
+               "JM: Failed opening job status file %s\n",
+               job_status_file_path);
+           return(1);
+        }
+        else
+        {
+            fprintf(status_fp, "%s\n", status_str);
+            fprintf(status_fp, "%s\n", request_string);
+            fprintf(status_fp, "%s\n", graml_job_contact);
+            fprintf(status_fp, "%s\n", job_id);
+            fprintf(status_fp, "%s\n", globus_id);
 
-        fclose(status_fp);
+        }
     }
+
+    fclose(status_fp);
 
     return(0);
 
@@ -2057,6 +2115,7 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     char ** tmp_param;
     char * gram_myjob;
     char * staged_file_path;
+    char * ptr;
 
     if (rsl_tree == NULL)
     {
@@ -2250,6 +2309,68 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     /* save count parameter for reporting to MDS */ 
     graml_my_count = req->count;
+
+    /********************************** 
+     *  GET MIN_MEMORY PARAM
+     */
+    if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                             GLOBUS_GRAM_CLIENT_MIN_MEMORY_PARAM,
+		             &tmp_param) != 0)
+    {
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_MIN_MEMORY;
+        return(GLOBUS_FAILURE);
+    }
+
+    if (tmp_param[0])
+    {
+        x = (int) strtol(tmp_param[0], &ptr, 10);
+
+        if (strlen(ptr) > 0 || x < 0)
+        {
+            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_MIN_MEMORY;
+            return(GLOBUS_FAILURE);
+        }
+        else
+        {
+            req->min_memory = x;
+        }
+    }
+    else
+    {
+        req->min_memory = 0;
+    }
+
+    /********************************** 
+     *  GET MAX_MEMORY PARAM
+     */
+    if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                             GLOBUS_GRAM_CLIENT_MAX_MEMORY_PARAM,
+		             &tmp_param) != 0)
+    {
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_MAX_MEMORY;
+        return(GLOBUS_FAILURE);
+    }
+
+    if (tmp_param[0])
+    {
+        x = (int) strtol(tmp_param[0], &ptr, 10);
+
+        if (strlen(ptr) > 0 || x < 0)
+        {
+            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_MAX_MEMORY;
+            return(GLOBUS_FAILURE);
+        }
+        else
+        {
+            req->max_memory = x;
+        }
+    }
+    else
+    {
+        req->max_memory = 0;
+    }
 
     /********************************** 
      *  GET MAXTIME PARAM
