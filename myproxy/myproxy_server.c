@@ -158,13 +158,6 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    if (server_context->default_retriever_dns != NULL)
-    	myproxy_debug("Default retriever policy = %s",
-		  server_context->default_retriever_dns);
-    if (server_context->default_renewer_dns != NULL)
-    	myproxy_debug("Default renewer policy = %s",
-		  server_context->default_renewer_dns);
-
    if (server_context->config_file == NULL)
     {
 	if (access(default_config_file, R_OK) == 0) {
