@@ -606,6 +606,21 @@ main(
     globus_gfs_ipc_init();
     globus_gfs_signal_init();
 
+
+{
+    globus_range_list_t        r1;
+    globus_range_list_t        r2;
+    globus_range_list_init(&r1);
+    globus_range_list_init(&r2);
+    globus_range_list_insert(r1,0,10000);
+    globus_range_list_insert(r1,233300,-1);
+    globus_range_list_insert(r1,10000,230000);
+    globus_range_list_remove(r1,10000,230000);
+    globus_range_list_remove(r1,300000,-1);
+    globus_range_list_remove(r1,0,1500);
+    globus_range_list_destroy(r1);
+    globus_range_list_destroy(r2);       
+}
     if(globus_i_gfs_config_bool("version"))
     {
         globus_version_print(

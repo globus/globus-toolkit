@@ -10,8 +10,7 @@
  ********************************************************************/
 EXTERN_C_BEGIN
 
-/* XXX should be max value of globus_off_t, fix to define portably */
-#define GLOBUS_RANGE_LIST_MAX 9223372036854775807
+#define GLOBUS_RANGE_LIST_MAX -1
 
 typedef enum
 {
