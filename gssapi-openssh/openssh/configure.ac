@@ -602,40 +602,19 @@ if test "x$gsi_path" != "xno" ; then
 		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
 	fi
 	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
-
-	#
-	# Find GPT linkline helper
-	#
-
-	AC_MSG_CHECKING(for GPT linkline helper)
-	if test -x $GPT_LOCATION/sbin/gpt_build_config ; then
-		gpt_linkline_helper="$GPT_LOCATION/sbin/gpt_build_config"
-	elif test -x ${gsi_path}/sbin/gpt_build_config ; then
-		gpt_linkline_helper="${gsi_path}/sbin/gpt_build_config"
+	
+	if test -x ${gsi_path}/bin/globus-makefile-header ; then
+		GSI_LDFLAGS="-L${gsi_path}/lib"
+		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
+		GSI_LDFLAGS="-L${gsi_path}/lib"
+		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
 	else
-		AC_MSG_ERROR(Cannot find gpt_build_config: GPT installation is incomplete)
+		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
 	fi
-	AC_MSG_RESULT(yes)
-
-	#
-	# Build Globus linkline
-	#
-
-	${gpt_linkline_helper} -f ${globus_flavor_type} -link shared -src pkg_data_src.gpt
-	. ./gpt_build_temp.sh
-	GSI_LDFLAGS="-L${gsi_path}/lib"
-	GSI_LIBS="$GPT_CONFIG_PGM_LINKS"
-	export LD_LIBRARY_PATH="${gsi_path}/lib:$LD_LIBRARY_PATH"
-
-	#
-	# Test Globus linkline
-	#
-
-	AC_MSG_CHECKING(for Globus linkline)
 	if test -z "$GSI_LIBS" ; then
-		AC_MSG_ERROR(gpt_build_config failed)
+		AC_MSG_ERROR(globus-makefile-header failed)
 	fi
-	AC_MSG_RESULT(yes)
 
 	LIBS="$LIBS $GSI_LIBS"
 	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
