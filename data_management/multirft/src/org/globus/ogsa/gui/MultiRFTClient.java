@@ -38,6 +38,7 @@ import org.globus.ogsa.base.multirft.FileTransferStatusElement;
 import org.globus.ogsa.base.multirft.FileTransferJobStatusType;
 import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.ogsa.impl.security.authorization.NoAuthorization;
+import org.globus.ogsa.impl.security.authorization.SelfAuthorization;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.GetOpts;
 import org.globus.ogsa.utils.GridServiceFactory;
@@ -113,8 +114,12 @@ public class MultiRFTClient
         System.out.println("Multifile RFT command line client");
 
         GetOpts opts = new GetOpts(
-                               "Usage: MultiRFTClient <factory handle> [id] <path to transfer>", 
-                               1);
+                               "Usage: MultiRFTClient [options] <factory handle> [id] <path to transfer>", 
+                               1, Constants.SIGNATURE,
+                               GSIConstants.GSI_MODE_FULL_DELEG,
+                               SelfAuthorization.getInstance(),
+                               Constants.SIGNATURE,
+                               new IgnoreProxyPolicyHandler());
         String error = opts.parse(args);
 
         if (error != null) {
@@ -221,15 +226,8 @@ public class MultiRFTClient
 
             MultiFileRFTServiceGridLocator loc = new MultiFileRFTServiceGridLocator();
             rftPort = loc.getMultiFileRFTPort(locator);
-            ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
-                                         NoAuthorization.getInstance());
-            ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE, 
-                                         GSIConstants.GSI_MODE_FULL_DELEG);
-            ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV, 
-                                         Constants.SIGNATURE);
-            ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                         new IgnoreProxyPolicyHandler());
-
+        
+            opts.setOptions((Stub)rftPort);
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
             System.out.println("Overall Status in form of :");

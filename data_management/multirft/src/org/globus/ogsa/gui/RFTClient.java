@@ -56,6 +56,7 @@ import org.gridforum.ogsi.WSDLReferenceType;
 import org.gridforum.ogsi.holders.ExtensibilityTypeHolder;
 import org.gridforum.ogsi.holders.LocatorTypeHolder;
 import org.gridforum.ogsi.holders.TerminationTimeTypeHolder;
+import org.globus.ogsa.impl.security.authorization.SelfAuthorization;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -71,8 +72,10 @@ public class RFTClient {
         System.out.println( "Multifile RFT command line client" );
 
         GetOpts opts = new GetOpts(
-                "Usage: RFTClient <factory handle> [id] <path to transfer>",
-                1 );
+                "Usage: RFTClient [-options] <factory handle> [id] <path to transfer>",
+                1, Constants.SIGNATURE,GSIConstants.GSI_MODE_FULL_DELEG,
+                SelfAuthorization.getInstance(),Constants.SIGNATURE,
+                new IgnoreProxyPolicyHandler());
         String error = opts.parse( args );
 
         if ( error != null ) {
@@ -177,14 +180,8 @@ public class RFTClient {
 
             System.out.println("  Handle: " + location);
             RFTPortType rftPort = loc.getMultiFileRFTPort(locator);
-            ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
-                                         NoAuthorization.getInstance());
-            ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE, 
-                                         GSIConstants.GSI_MODE_FULL_DELEG);
-            ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV, 
-                                         Constants.SIGNATURE);
-            ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                         new IgnoreProxyPolicyHandler());
+            opts.setOptions((Stub)rftPort);
+
 
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
